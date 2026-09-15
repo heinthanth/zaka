@@ -1,0 +1,8 @@
+[package]
+name = "zakac"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+zakac_cli_common = { workspace = true }
+zakac_rust_sugars = { workspace = true }

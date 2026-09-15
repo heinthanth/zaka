@@ -1,0 +1,32 @@
+_version = 2
+
+[cli.version_header]
+en = """%{component} v%{version}+%{build}
+(c) %{start} - %{current} Hein Thant Maung Maung. Distributed under %{license} license."""
+
+[cli.help]
+en = "Prints help message."
+
+[cli.version]
+en = "Prints the version information."
+
+[cli.usage_header]
+en = "Usage:"
+
+[cli.subcommands_header]
+en = "Subcommands:"
+
+[cli.options_header]
+en = "Options:"
+
+[cli.positionals_header]
+en = "Positionals:"
+
+[cli.about_header]
+en = "About:"
+
+[cli.input]
+en = "Input file, or `-` for stdin (default: stdin)"
+
+[cli.output]
+en = "Output file, or `-` for stdout (default: stdout)"

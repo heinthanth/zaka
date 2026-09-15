@@ -1,0 +1,30 @@
+[[tools.rust]]
+version = "stable"
+
+[[tools.rust]]
+version = "nightly"
+components = ["rustfmt"]
+
+[tools]
+"cargo:cargo-nextest" = "latest"
+"cargo:cargo-llvm-cov" = "latest"
+
+[tasks.format]
+run = "cargo +nightly fmt"
+description = "Format code using rustfmt"
+
+[tasks.test]
+run = "cargo nextest run --workspace"
+description = "Run tests"
+
+[tasks."test:benches"]
+run = "cargo nextest run --workspace --benches"
+description = "Run benchmark code as tests"
+
+[tasks.bench]
+run = "cargo bench"
+description = "Run benchmarks"
+
+[tasks.coverage]
+run = "cargo +nightly llvm-cov --workspace"
+description = "Generate coverage report"

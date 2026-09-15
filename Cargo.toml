@@ -1,0 +1,23 @@
+[workspace]
+resolver = "3"
+members = ["zakac", "zakac_*"]
+default-members = ["zakac"]
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+bon = "3.10.1"
+cargo-build = { version = "1.0.0", features = ["macros"] }
+chrono = "0.4.45"
+clap = { version = "4.6.7", features = ["cargo"] }
+num_enum = "0.7.6"
+rust-i18n = "4.2.2"
+shadow-rs = "2.0.0"
+sys-locale = "0.3.2"
+termcolor = "1.4.1"
+zakac_cli_common = { path = "zakac_cli_common" }
+zakac_consts = { path = "zakac_consts" }
+zakac_i18n = { path = "zakac_i18n" }
+zakac_reporter = { path = "zakac_reporter" }
+zakac_rust_sugars = { path = "zakac_rust_sugars" }

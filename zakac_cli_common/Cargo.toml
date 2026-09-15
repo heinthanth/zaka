@@ -1,0 +1,19 @@
+[package]
+name = "zakac_cli_common"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+bon = { workspace = true }
+chrono = { workspace = true }
+clap = { workspace = true }
+num_enum = { workspace = true }
+rust-i18n = { workspace = true }
+termcolor = { workspace = true }
+zakac_consts = { workspace = true }
+zakac_i18n = { workspace = true }
+zakac_reporter = { workspace = true }
+zakac_rust_sugars = { workspace = true }
+
+[build-dependencies]
+cargo-build = { workspace = true }

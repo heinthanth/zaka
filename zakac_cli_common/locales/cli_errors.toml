@@ -1,0 +1,49 @@
+_version = 2
+
+[cli_errors.template]
+en = "%{name}: %{msg}"
+
+[cli_errors.invalid_value]
+en = "Invalid value \"%{value}\" for argument \"%{arg}\". Should be one of: %{choices}"
+
+[cli_errors.unknown_argument]
+en = "Unexpected argument \"%{arg}\""
+
+[cli_errors.unknown_subcommand]
+en = "Unexpected subcommand \"%{subcommand}\""
+
+[cli_errors.arg_no_multiple_times]
+en = "The argument \"%{arg}\" cannot be used multiple times"
+
+[cli_errors.arg_conflict]
+en = "The argument \"%{arg}\" conflicts with \"%{conflict}\""
+
+[cli_errors.generic]
+en = "Something went wrong while parsing CLI arguments"
+
+[cli_errors.generic_with_detail]
+en = "Something went wrong while parsing CLI arguments: %{detail}"
+
+[cli_errors.no_equals]
+en = "Equal sign is needed when assigning values to \"%{arg}\""
+
+[cli_errors.value_validation]
+en = "Invalid value \"%{value}\" for argument \"%{arg}\""
+
+[cli_errors.value_validation_with_reason]
+en = "Invalid value \"%{value}\" for argument \"%{arg}\": %{reason}"
+
+[cli_errors.more_values_than_expected]
+en = "The argument \"%{arg}\" does not accept more than %{expected} value(s); but %{actual} were provided"
+
+[cli_errors.less_values_than_expected]
+en = "The argument \"%{arg}\" requires minimum %{expected} value(s); but %{actual} were provided"
+
+[cli_errors.wrong_number_of_values]
+en = "The argument \"%{arg}\" requires %{expected} value(s); but %{actual} were provided"
+
+[cli_errors.missing_required_argument]
+en = "The following required arguments were not provided: %{args}"
+
+[cli_errors.unsupported_subcommand]
+en = "Unsupported subcommand \"%{name}\""
