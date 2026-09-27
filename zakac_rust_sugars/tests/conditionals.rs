@@ -1,4 +1,5 @@
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_tern;
@@ -12,6 +13,15 @@ fn do_if_plain()
     do_if!(true, n += 1);
     do_if!(false, n += 10);
     assert_eq!(n, 1);
+}
+
+#[test]
+fn do_if_multiple_stmts()
+{
+    let mut n = 0;
+    do_if!(true, n += 1, n += 2);
+    do_if!(false, n += 10, n += 20);
+    assert_eq!(n, 3);
 }
 
 #[test]
@@ -108,6 +118,21 @@ fn ret_if_call_with_commas()
 }
 
 #[test]
+fn ret_if_stmts_before_value()
+{
+    let mut acc = 0;
+    fn go(opt: Option<i32>, acc: &mut i32) -> i32
+    {
+        ret_if!(let Some(n) = opt, *acc += n, *acc);
+        -1
+    }
+    assert_eq!(go(Some(3), &mut acc), 3);
+    assert_eq!(acc, 3);
+    assert_eq!(go(None, &mut acc), -1);
+    assert_eq!(acc, 3);
+}
+
+#[test]
 fn ret_if_let()
 {
     assert_eq!(ret_if_from_opt(Some(3)), 3);
@@ -189,6 +214,36 @@ fn tern_plain()
 }
 
 #[test]
+fn tern_stmts_before_true_value()
+{
+    let mut acc = 0;
+    assert_eq!(
+        tern!(
+            true,
+            {
+                acc += 1;
+            },
+            acc,
+            -1
+        ),
+        1
+    );
+    assert_eq!(acc, 1);
+    assert_eq!(
+        tern!(
+            false,
+            {
+                acc += 10;
+            },
+            acc,
+            -1
+        ),
+        -1
+    );
+    assert_eq!(acc, 1);
+}
+
+#[test]
 fn tern_call_with_commas()
 {
     assert_eq!(tern!(true, i32::saturating_add(1, 2), i32::saturating_add(3, 4)), 3);
@@ -263,4 +318,48 @@ fn ret_tern_let_chain()
     }
     assert_eq!(go(Some(2), Some(5)), 7);
     assert_eq!(go(Some(2), None), 0);
+}
+
+enum Kind
+{
+    A(i32),
+    B,
+}
+
+fn kind_a(kind: &Kind) -> i32
+{
+    extract!(Kind::A(n) = kind);
+    *n
+}
+
+#[test]
+fn extract_binds()
+{
+    assert_eq!(kind_a(&Kind::A(3)), 3);
+}
+
+#[test]
+fn extract_tuple()
+{
+    extract!(Some((a, b)) = Some((1, 2)));
+    assert_eq!(a + b, 3);
+}
+
+#[test]
+fn extract_with_message()
+{
+    extract!(Some(n) = Some(4), "expected Some");
+    assert_eq!(n, 4);
+}
+
+#[test]
+#[should_panic(expected = "internal error: entered unreachable code")]
+fn extract_panics() { kind_a(&Kind::B); }
+
+#[test]
+#[should_panic(expected = "expected A")]
+fn extract_panics_with_message()
+{
+    let kind = Kind::B;
+    extract!(Kind::A(_n) = kind, "expected A");
 }

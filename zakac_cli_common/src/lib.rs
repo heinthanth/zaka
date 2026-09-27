@@ -1,6 +1,6 @@
-pub mod command;
-pub mod clap_utils;
 pub mod clap_error_handler;
+pub mod clap_utils;
+pub mod command;
 
 pub use clap;
 pub use termcolor;
