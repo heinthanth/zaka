@@ -11,8 +11,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 FROM debian:bookworm-slim AS run
 
 COPY --from=build /usr/local/bin/zakac /usr/local/bin/zakac
-RUN useradd --uid 10001 --no-create-home zaka
-USER zaka
 
 CMD ["--help"]
 ENTRYPOINT ["zakac"]
