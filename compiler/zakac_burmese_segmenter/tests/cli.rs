@@ -6,6 +6,7 @@ use zakac_burmese_segmenter::cli::ZakacBurmeseSegmenter;
 use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
+use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 
 const TEXT_HEADER: &str = "# zakac-segment-artifact v1\n";
 
@@ -104,7 +105,7 @@ fn output_json_defaults_to_raw()
     assert!(stderr.is_empty());
 
     let raw = std::fs::read(&out_path).unwrap();
-    assert!(raw.starts_with(b"ZKSG"));
+    assert!(raw.starts_with(RAW_ARTIFACT_MAGIC));
 }
 
 #[test]
@@ -121,7 +122,7 @@ fn output_without_extension_writes_raw_artifact()
     let contents = std::fs::read_to_string(&out_path).unwrap();
     let raw = std::fs::read(&out_path).unwrap();
     assert_eq!(contents.len(), raw.len());
-    assert!(raw.starts_with(b"ZKSG"));
+    assert!(raw.starts_with(RAW_ARTIFACT_MAGIC));
 }
 
 #[test]
@@ -136,7 +137,7 @@ fn output_zksegments_writes_raw_artifact()
     assert!(stderr.is_empty());
 
     let raw = std::fs::read(&out_path).unwrap();
-    assert!(raw.starts_with(b"ZKSG"));
+    assert!(raw.starts_with(RAW_ARTIFACT_MAGIC));
 }
 
 #[test]
@@ -151,7 +152,7 @@ fn unknown_extension_defaults_to_raw()
     assert!(stderr.is_empty());
 
     let raw = std::fs::read(&out_path).unwrap();
-    assert!(raw.starts_with(b"ZKSG"));
+    assert!(raw.starts_with(RAW_ARTIFACT_MAGIC));
 }
 
 #[test]
@@ -170,7 +171,7 @@ fn output_dir_writes_basename_zksegments()
     let expected = out_dir.join("paragraph1.zksegments");
     assert!(expected.is_file());
     let raw = std::fs::read(&expected).unwrap();
-    assert!(raw.starts_with(b"ZKSG"));
+    assert!(raw.starts_with(RAW_ARTIFACT_MAGIC));
 }
 
 #[test]
@@ -185,7 +186,7 @@ fn output_format_raw_overrides_txt_extension()
     assert!(stderr.is_empty());
 
     let raw = std::fs::read(&out_path).unwrap();
-    assert!(raw.starts_with(b"ZKSG"));
+    assert!(raw.starts_with(RAW_ARTIFACT_MAGIC));
 }
 
 #[test]

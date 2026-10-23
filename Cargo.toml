@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["zakac", "zakac_*"]
-default-members = ["zakac"]
+members = ["compiler/*"]
+default-members = ["compiler/zakac"]
 
 [workspace.package]
 edition = "2024"
@@ -22,11 +22,11 @@ sys-locale = "0.3.2"
 tempfile = "3.27.0"
 termcolor = "1.4.1"
 unicode-normalization = "0.1.25"
-zakac_cli_common = { path = "zakac_cli_common" }
-zakac_consts = { path = "zakac_consts" }
-zakac_errors = { path = "zakac_errors" }
-zakac_i18n = { path = "zakac_i18n" }
-zakac_reporter = { path = "zakac_reporter" }
-zakac_rust_sugars = { path = "zakac_rust_sugars" }
-zakac_session = { path = "zakac_session" }
-zakac_span = { path = "zakac_span" }
+zakac_cli_common = { path = "compiler/zakac_cli_common" }
+zakac_consts = { path = "compiler/zakac_consts" }
+zakac_errors = { path = "compiler/zakac_errors" }
+zakac_i18n = { path = "compiler/zakac_i18n" }
+zakac_reporter = { path = "compiler/zakac_reporter" }
+zakac_rust_sugars = { path = "compiler/zakac_rust_sugars" }
+zakac_session = { path = "compiler/zakac_session" }
+zakac_span = { path = "compiler/zakac_span" }

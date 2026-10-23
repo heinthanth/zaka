@@ -19,10 +19,10 @@ use zakac_span::source_map::SourceMap;
 use crate::config::Input;
 use crate::config::Output;
 
-/// Magic prefix for raw phase artifacts.
-pub const RAW_ARTIFACT_MAGIC: &[u8; 4] = b"ZKSG";
+/// Magic prefix shared across all raw phase artifacts.
+pub const RAW_ARTIFACT_MAGIC: &[u8; 4] = b"ZKAR";
 
-/// The `zakac` raw artifact format.
+/// Length of the fixed raw header part: magic, version, and phase name length.
 const RAW_HEADER_PREFIX_LEN: usize = RAW_ARTIFACT_MAGIC.len() + 4 + 4;
 
 /// Serialized form of a phase artifact.
