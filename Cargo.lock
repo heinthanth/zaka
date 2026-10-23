@@ -1910,7 +1910,20 @@ dependencies = [
  "zakac_burmese_segmenter",
  "zakac_cli_common",
  "zakac_lexer",
+ "zakac_parser",
  "zakac_rust_sugars",
+]
+
+[[package]]
+name = "zakac_ast"
+version = "0.1.0"
+dependencies = [
+ "bon",
+ "serde",
+ "strum",
+ "zakac_lexer",
+ "zakac_rust_sugars",
+ "zakac_span",
 ]
 
 [[package]]
@@ -2006,6 +2019,7 @@ dependencies = [
  "postcard",
  "rust-i18n",
  "serde",
+ "strum",
  "tempfile",
  "termcolor",
  "unicode-ident",
@@ -2015,6 +2029,31 @@ dependencies = [
  "zakac_diagnostics",
  "zakac_host_errors",
  "zakac_i18n",
+ "zakac_reporter",
+ "zakac_rust_sugars",
+ "zakac_session",
+ "zakac_span",
+]
+
+[[package]]
+name = "zakac_parser"
+version = "0.1.0"
+dependencies = [
+ "bon",
+ "cargo-build",
+ "clap",
+ "postcard",
+ "rust-i18n",
+ "serde",
+ "tempfile",
+ "termcolor",
+ "zakac_ast",
+ "zakac_burmese_segmenter",
+ "zakac_cli_common",
+ "zakac_diagnostics",
+ "zakac_host_errors",
+ "zakac_i18n",
+ "zakac_lexer",
  "zakac_reporter",
  "zakac_rust_sugars",
  "zakac_session",

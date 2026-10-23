@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use bon::Builder;
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
@@ -88,68 +90,6 @@ pub fn lex_at(text: &str, base: Pos, options: &LexerOptions) -> LexOutput
     driver.finish()
 }
 
-/// Punctuation for a single delimiter character.
-///
-/// # Arguments
-///
-/// * `ch` - The character.
-///
-/// # Returns
-///
-/// The punctuation, or `None` for a character that is no token on its own.
-fn single_punct(ch: char) -> Option<Punct>
-{
-    let punct = match ch
-    {
-        '၊' => Punct::ListSep,
-        '။' => Punct::FullStop,
-        '၏' => Punct::Ei,
-        '(' => Punct::LParen,
-        ')' => Punct::RParen,
-        '+' => Punct::Plus,
-        '-' => Punct::Minus,
-        '*' => Punct::Star,
-        '/' => Punct::Slash,
-        '%' => Punct::Percent,
-        '&' => Punct::Amp,
-        '|' => Punct::Pipe,
-        '^' => Punct::Caret,
-        '~' => Punct::Tilde,
-        '!' => Punct::Bang,
-        '<' => Punct::Lt,
-        '>' => Punct::Gt,
-        _ => return None,
-    };
-    Some(punct)
-}
-
-/// Punctuation for two joined delimiter characters.
-///
-/// # Arguments
-///
-/// * `first` - The first character.
-/// * `second` - The second character.
-///
-/// # Returns
-///
-/// The two-character operator, or `None`.
-fn pair_punct(first: char, second: char) -> Option<Punct>
-{
-    let punct = match (first, second)
-    {
-        ('<', '=') => Punct::Le,
-        ('>', '=') => Punct::Ge,
-        ('=', '=') => Punct::EqEq,
-        ('!', '=') => Punct::Ne,
-        ('<', '<') => Punct::Shl,
-        ('>', '>') => Punct::Shr,
-        ('&', '&') => Punct::AndAnd,
-        ('|', '|') => Punct::OrOr,
-        _ => return None,
-    };
-    Some(punct)
-}
-
 /// The classifier loop over words.
 #[derive(Builder)]
 struct Driver<'w, 's>
@@ -188,8 +128,8 @@ impl Driver<'_, '_>
     }
 
     /// Lex the token(s) that start at `words[idx]`. The tests run in this
-    /// order: comments, quoted literals, punctuation, reserved words, numbers,
-    /// identifiers.
+    /// order: comments, quoted literals, punctuation, identifiers written in
+    /// two scripts, reserved words, numbers, identifiers.
     ///
     /// # Arguments
     ///
@@ -203,6 +143,7 @@ impl Driver<'_, '_>
         ret_if!(let Some(next) = self.lex_comment(idx), next);
         ret_if!(let Some(next) = self.lex_quoted(idx), next);
         ret_if!(let Some(next) = self.lex_punct(idx), next);
+        ret_if!(let Some(next) = self.lex_mixed_ident(idx), next);
         ret_if!(let Some(next) = self.lex_reserved(idx), next);
         ret_if!(let Some(next) = self.lex_digits(idx), next);
         ret_if!(let Some(next) = self.lex_ident(idx), next);
@@ -265,6 +206,40 @@ impl Driver<'_, '_>
     fn joined_delim(&self, idx: usize, ch: char) -> bool
     {
         self.words.get(idx).is_some_and(|w| w.joined && w.delim() == Some(ch))
+    }
+
+    /// Index one past the run of joined words that starts at `words[idx]`
+    /// and holds no self-delimiting character. The word builder ends a word
+    /// at each change of script, so `ဖြစ်ရပ်_၁` is three words but one run.
+    ///
+    /// # Arguments
+    ///
+    /// * `idx` - Index of the first word of the run.
+    ///
+    /// # Returns
+    ///
+    /// The index after the run.
+    fn run_end(&self, idx: usize) -> usize
+    {
+        let rest = &self.words[idx + 1..];
+        idx + 1 + rest.iter().take_while(|w| w.joined && w.delim().is_none()).count()
+    }
+
+    /// Span and text of `words[idx..end]`.
+    ///
+    /// # Arguments
+    ///
+    /// * `idx` - Index of the first word.
+    /// * `end` - Index one past the last word.
+    ///
+    /// # Returns
+    ///
+    /// The span and the source text.
+    fn run_text(&self, idx: usize, end: usize) -> (Span, &str)
+    {
+        let span = self.words[idx].span.to(&self.words[end - 1].span);
+        let text = &self.text[self.offset(span.lo)..self.offset(span.hi)];
+        (span, text)
     }
 
     /// Push a token.
@@ -479,9 +454,11 @@ impl Driver<'_, '_>
         let word = self.words[idx];
         let ch = word.delim()?;
         let next = self.words.get(idx + 1).filter(|w| w.joined).and_then(Word::delim);
-        let pair = next.and_then(|second| pair_punct(ch, second));
+        let pair =
+            next.and_then(|second| Punct::from_str(&format!("{ch}{second}")).ok());
         ret_if!(let Some(punct) = pair, Some(self.push_punct(idx, idx + 2, punct)));
-        ret_if!(let Some(punct) = single_punct(ch), Some(self.push_punct(idx, idx + 1, punct)));
+        let single = Punct::from_str(ch.encode_utf8(&mut [0; 4]));
+        ret_if!(let Ok(punct) = single, Some(self.push_punct(idx, idx + 1, punct)));
         Some(self.invalid(idx))
     }
 
@@ -522,6 +499,29 @@ impl Driver<'_, '_>
         Some(idx + 1)
     }
 
+    /// Lex an identifier written in two scripts, such as `ဖြစ်ရပ်_၁`, `က_ခ` or
+    /// `abcက`. Whitespace and self-delimiting characters end a word, a change
+    /// of script does not, so the whole run is one identifier when its text is
+    /// one. A run that starts with a digit is a number.
+    ///
+    /// # Arguments
+    ///
+    /// * `idx` - Index of the current word.
+    ///
+    /// # Returns
+    ///
+    /// The next word index, or `None` when the run is one word, starts with a
+    /// digit, or is no identifier.
+    fn lex_mixed_ident(&mut self, idx: usize) -> Option<usize>
+    {
+        let end = self.run_end(idx);
+        ret_if!(end == idx + 1 || word_script(self.words[idx].text).is_some(), None);
+        let (span, text) = self.run_text(idx, end);
+        ret_if!(!is_ident(text), None);
+        self.push(TokenKind::Ident, span, self.words[idx].joined);
+        Some(end)
+    }
+
     /// Lex a word that starts with a digit.
     ///
     /// # Arguments
@@ -536,9 +536,31 @@ impl Driver<'_, '_>
     {
         word_script(self.words[idx].text)?;
         let lexed = lex_number(self.words, idx);
+        let tail =
+            lexed.next < self.words.len() && self.run_end(lexed.next - 1) > lexed.next;
+        ret_if!(tail, Some(self.invalid_number_run(idx, lexed.next)));
         self.out.tokens.extend(lexed.token);
         self.out.diagnostics.extend(lexed.diags);
         Some(lexed.next)
+    }
+
+    /// Report a number with a word of another script joined to it, such as
+    /// `၁၂ab` or `16ဘစ်`, and skip the whole run.
+    ///
+    /// # Arguments
+    ///
+    /// * `idx` - Index of the first word of the number.
+    /// * `next` - Index of the first word after the number digits.
+    ///
+    /// # Returns
+    ///
+    /// The index after the run.
+    fn invalid_number_run(&mut self, idx: usize, next: usize) -> usize
+    {
+        let end = self.run_end(next - 1);
+        let (span, text) = self.run_text(idx, end);
+        self.out.diagnostics.push(diag::invalid_number(span, text));
+        end
     }
 
     /// Lex an identifier.

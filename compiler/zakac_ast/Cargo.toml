@@ -1,0 +1,12 @@
+[package]
+name = "zakac_ast"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+bon = { workspace = true }
+serde = { workspace = true }
+strum = { workspace = true }
+zakac_lexer = { workspace = true }
+zakac_rust_sugars = { workspace = true }
+zakac_span = { workspace = true }

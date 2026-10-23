@@ -1,0 +1,255 @@
+# zakac-parse-artifact v1
+name:
+  Custom: literals.zaka
+source: "၁၀ ကို ပြသပါ။\n16 ကို ပြသပါ။\nကိန်းပြည့် ၁၀ ကို ပြသပါ။\nလက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၁၈ ကို ပြသပါ။\nအခြေ ၂ ဖြင့် ၁၀ ကို ပြသပါ။\nအခြေ ၂ ဖြင့် ၈ ဘစ် ကိန်းပြည့် ၁၁၁၁၁၁၁၀ ကို ပြသပါ။\nအခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF ကို ပြသပါ။\n၁၂.၃၄ ကို ပြသပါ။\n-၁၁.၁၁ ကို ပြသပါ။\n100e+10 ကို ပြသပါ။\n၃၂ ဘစ် ဒဿမကိန်း ၁၀ ကို ပြသပါ။\n'春' ကို ပြသပါ။\n\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ကို ပြသပါ။\nမှန်ပါသည် ကို ပြသပါ။\n`ကို ပြသပါ` ကို ပြသပါ။\n"
+program:
+  stmts:
+  - print:
+      value:
+        expr:
+          int:
+            id: 0
+            value: 10
+            base: 10
+            kind: null
+            script: burmese
+            span:
+              lo: 0
+              hi: 6
+      span:
+        lo: 0
+        hi: 35
+  - print:
+      value:
+        expr:
+          int:
+            id: 1
+            value: 16
+            base: 10
+            kind: null
+            script: western
+            span:
+              lo: 36
+              hi: 38
+      span:
+        lo: 36
+        hi: 67
+  - print:
+      value:
+        expr:
+          int:
+            id: 2
+            value: 10
+            base: 10
+            kind:
+              base: int
+              bits: null
+              signed: null
+              span:
+                lo: 68
+                hi: 98
+            script: burmese
+            span:
+              lo: 68
+              hi: 105
+      span:
+        lo: 68
+        hi: 134
+  - print:
+      value:
+        expr:
+          int:
+            id: 3
+            value: 18
+            base: 10
+            kind:
+              base: int
+              bits: 8
+              signed: false
+              span:
+                lo: 135
+                hi: 207
+            script: burmese
+            span:
+              lo: 135
+              hi: 214
+      span:
+        lo: 135
+        hi: 243
+  - print:
+      value:
+        expr:
+          int:
+            id: 4
+            value: 2
+            base: 2
+            kind: null
+            script: burmese
+            span:
+              lo: 244
+              hi: 283
+      span:
+        lo: 244
+        hi: 312
+  - print:
+      value:
+        expr:
+          int:
+            id: 5
+            value: 254
+            base: 2
+            kind:
+              base: int
+              bits: 8
+              signed: null
+              span:
+                lo: 346
+                hi: 390
+            script: burmese
+            span:
+              lo: 313
+              hi: 415
+      span:
+        lo: 313
+        hi: 444
+  - print:
+      value:
+        expr:
+          int:
+            id: 6
+            value: 255
+            base: 16
+            kind:
+              base: int
+              bits: 8
+              signed: false
+              span:
+                lo: 481
+                hi: 553
+            script: western
+            span:
+              lo: 445
+              hi: 556
+      span:
+        lo: 445
+        hi: 585
+  - print:
+      value:
+        expr:
+          float:
+            id: 7
+            value: 12.34
+            kind: null
+            span:
+              lo: 586
+              hi: 599
+      span:
+        lo: 586
+        hi: 628
+  - print:
+      value:
+        expr:
+          prefix:
+            id: 9
+            op: neg
+            rhs:
+              float:
+                id: 8
+                value: 11.11
+                kind: null
+                span:
+                  lo: 630
+                  hi: 643
+            span:
+              lo: 629
+              hi: 643
+      span:
+        lo: 629
+        hi: 672
+  - print:
+      value:
+        expr:
+          float:
+            id: 10
+            value: 1000000000000.0
+            kind: null
+            span:
+              lo: 673
+              hi: 680
+      span:
+        lo: 673
+        hi: 709
+  - print:
+      value:
+        expr:
+          float:
+            id: 11
+            value: 10.0
+            kind:
+              base: float
+              bits: 32
+              signed: null
+              span:
+                lo: 710
+                hi: 751
+            span:
+              lo: 710
+              hi: 758
+      span:
+        lo: 710
+        hi: 787
+  - print:
+      value:
+        expr:
+          char:
+            id: 12
+            value: 春
+            span:
+              lo: 788
+              hi: 793
+      span:
+        lo: 788
+        hi: 822
+  - print:
+      value:
+        str:
+          lit:
+            parts:
+            - text: ၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ
+            value: ၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ
+          span:
+            lo: 823
+            hi: 902
+      span:
+        lo: 823
+        hi: 931
+  - print:
+      value:
+        expr:
+          bool:
+            id: 13
+            value: true
+            particle: pa_thi
+            next: other
+            span:
+              lo: 932
+              hi: 959
+      span:
+        lo: 932
+        hi: 988
+  - print:
+      value:
+        expr:
+          name:
+            id: 14
+            name: ကို ပြသပါ
+            span:
+              lo: 989
+              hi: 1016
+      span:
+        lo: 989
+        hi: 1045
+  span:
+    lo: 0
+    hi: 1046
+diagnostics: []

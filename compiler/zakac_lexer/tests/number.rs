@@ -99,3 +99,15 @@ fn minus_remains_an_operator()
     assert_eq!(kinds.len(), 2);
     assert!(matches!(kinds[1], TokenKind::Number(_)));
 }
+
+#[test]
+fn a_number_joined_to_a_word_in_another_script_is_invalid()
+{
+    for text in ["၁၂ab", "16ဘစ်", "12က", "၁၂.၅x"]
+    {
+        assert_eq!(codes(text), [Code::InvalidNumber], "{text}");
+        assert!(kinds(text).is_empty(), "{text}");
+    }
+    assert_eq!(codes("၁၂34"), [Code::MixedDigitScripts]);
+    assert!(codes("16 ဘစ်").is_empty());
+}

@@ -12,6 +12,7 @@ bon = { workspace = true }
 clap = { workspace = true }
 rust-i18n = { workspace = true }
 serde = { workspace = true }
+strum = { workspace = true }
 termcolor = { workspace = true }
 unicode-ident = { workspace = true }
 unicode-properties = { workspace = true }

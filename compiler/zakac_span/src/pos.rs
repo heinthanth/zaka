@@ -5,19 +5,8 @@ use serde::Deserialize;
 use serde::Serialize;
 
 /// An absolute offset in the [`SourceMap`](crate::SourceMap).
-#[derive(
-    Copy,
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Debug,
-    Default,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+#[derive(Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Pos(u32);
 

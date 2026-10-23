@@ -1,0 +1,268 @@
+# zakac-parse-artifact v1
+name:
+  Custom: functions.zaka
+source: "လုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ဆိုသည်မှာ\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး\nကိန်းပြည့် ရလဒ် ကို ပြန်ပေးပြီး\nထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို က * ၂ ဟု ထားပါ။\nခ ကို ခ * ၂ ဟု ထားပါ။\nဂ ကို ဂ * ၂ ဟု ထားပါ။\nက + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် ဆိုသည်မှာ\nထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် ထုတ်ပြ ကို အသက်၊ အမည် တို့ဖြင့် လုပ်ဆောင်ပါ။\n"
+program:
+  stmts:
+  - fn:
+      name:
+        name: နှစ်ဆတိုးပြီးပေါင်း
+        span:
+          lo: 40
+          hi: 97
+      params:
+      - kind:
+          base: int
+          bits: null
+          signed: null
+          span:
+            lo: 126
+            hi: 156
+        name:
+          name: က
+          span:
+            lo: 157
+            hi: 160
+        span:
+          lo: 126
+          hi: 160
+      - kind:
+          base: int
+          bits: null
+          signed: null
+          span:
+            lo: 164
+            hi: 194
+        name:
+          name: ခ
+          span:
+            lo: 195
+            hi: 198
+        span:
+          lo: 164
+          hi: 198
+      - kind:
+          base: int
+          bits: null
+          signed: null
+          span:
+            lo: 202
+            hi: 232
+        name:
+          name: ဂ
+          span:
+            lo: 233
+            hi: 236
+        span:
+          lo: 202
+          hi: 236
+      ret:
+        base: int
+        bits: null
+        signed: null
+        span:
+          lo: 287
+          hi: 317
+      block:
+        stmts:
+        - assign:
+            target:
+              name: က
+              span:
+                lo: 516
+                hi: 519
+            value:
+              infix:
+                id: 3
+                op: mul
+                lhs:
+                  name:
+                    id: 1
+                    name: က
+                    span:
+                      lo: 530
+                      hi: 533
+                rhs:
+                  int:
+                    id: 2
+                    value: 2
+                    base: 10
+                    kind: null
+                    script: burmese
+                    span:
+                      lo: 536
+                      hi: 539
+                span:
+                  lo: 530
+                  hi: 539
+            span:
+              lo: 516
+              hi: 565
+        - assign:
+            target:
+              name: ခ
+              span:
+                lo: 566
+                hi: 569
+            value:
+              infix:
+                id: 7
+                op: mul
+                lhs:
+                  name:
+                    id: 5
+                    name: ခ
+                    span:
+                      lo: 580
+                      hi: 583
+                rhs:
+                  int:
+                    id: 6
+                    value: 2
+                    base: 10
+                    kind: null
+                    script: burmese
+                    span:
+                      lo: 586
+                      hi: 589
+                span:
+                  lo: 580
+                  hi: 589
+            span:
+              lo: 566
+              hi: 615
+        - assign:
+            target:
+              name: ဂ
+              span:
+                lo: 616
+                hi: 619
+            value:
+              infix:
+                id: 11
+                op: mul
+                lhs:
+                  name:
+                    id: 9
+                    name: ဂ
+                    span:
+                      lo: 630
+                      hi: 633
+                rhs:
+                  int:
+                    id: 10
+                    value: 2
+                    base: 10
+                    kind: null
+                    script: burmese
+                    span:
+                      lo: 636
+                      hi: 639
+                span:
+                  lo: 630
+                  hi: 639
+            span:
+              lo: 616
+              hi: 665
+        - return:
+            value:
+              infix:
+                id: 16
+                op: add
+                lhs:
+                  infix:
+                    id: 14
+                    op: add
+                    lhs:
+                      name:
+                        id: 12
+                        name: က
+                        span:
+                          lo: 666
+                          hi: 669
+                    rhs:
+                      name:
+                        id: 13
+                        name: ခ
+                        span:
+                          lo: 672
+                          hi: 675
+                    span:
+                      lo: 666
+                      hi: 675
+                rhs:
+                  name:
+                    id: 15
+                    name: ဂ
+                    span:
+                      lo: 678
+                      hi: 681
+                span:
+                  lo: 666
+                  hi: 681
+            span:
+              lo: 666
+              hi: 750
+        single: false
+        span:
+          lo: 375
+          hi: 833
+      span:
+        lo: 0
+        hi: 833
+  - fn:
+      name:
+        name: နှုတ်ဆက်
+        span:
+          lo: 875
+          hi: 899
+      params: []
+      ret: null
+      block:
+        stmts:
+        - print:
+            value:
+              str:
+                lit:
+                  parts:
+                  - text: မင်္ဂလာပါ
+                  value: မင်္ဂလာပါ
+                span:
+                  lo: 1069
+                  hi: 1098
+            span:
+              lo: 1069
+              hi: 1127
+        single: false
+        span:
+          lo: 928
+          hi: 1210
+      span:
+        lo: 835
+        hi: 1210
+  - call:
+      callee:
+        name: ထုတ်ပြ
+        span:
+          lo: 1252
+          hi: 1270
+      args:
+      - name:
+          id: 17
+          name: အသက်
+          span:
+            lo: 1281
+            hi: 1293
+      - name:
+          id: 18
+          name: အမည်
+          span:
+            lo: 1297
+            hi: 1309
+      span:
+        lo: 1212
+        hi: 1374
+  span:
+    lo: 0
+    hi: 1375
+diagnostics: []

@@ -1,6 +1,7 @@
 pub mod code;
 pub mod diagnostic;
 pub mod lexer;
+pub mod parser;
 
 pub use code::Code;
 pub use diagnostic::Diagnostic;

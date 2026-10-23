@@ -1,0 +1,469 @@
+# zakac-parse-artifact v1
+name:
+  Custom: statements.zaka
+source: "အသက် ကို ပြသပါ။\nကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။\nကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။\nအသက် ကို အသက် + ၁ ဟု ထားပါ။\nအောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nလူအရေအတွက် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nအကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nဝင်ခွင့်ပြုမည် ကို မမှန် ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nထိုသို့မဟုတ်ဘဲ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ကို ပြသပါ။\nသို့မဟုတ်ပါက \"ကြိုဆိုပါသည်\" ကို ပြသပါ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ ကိန်း ကို ပြသပါ။\n၁၀ မှ ၀ အထိ ၂ စီ ကိန်း အနေဖြင့် လျှော့၍ ကိန်း ကို ပြသပါ။\nကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\nကွင်းဆက် ကို ရပ်ပါ။\nနောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nပြန်ပေးပါ။\n"
+program:
+  stmts:
+  - print:
+      value:
+        expr:
+          name:
+            id: 0
+            name: အသက်
+            span:
+              lo: 0
+              hi: 12
+      span:
+        lo: 0
+        hi: 41
+  - decl:
+      name:
+        name: အသက်
+        span:
+          lo: 70
+          hi: 82
+      kind:
+        base: int
+        bits: null
+        signed: null
+        span:
+          lo: 93
+          hi: 123
+      is_const: false
+      init:
+        int:
+          id: 1
+          value: 18
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 124
+            hi: 130
+      span:
+        lo: 42
+        hi: 158
+  - decl:
+      name:
+        name: ပိုင်
+        span:
+          lo: 181
+          hi: 196
+      kind:
+        base: float
+        bits: null
+        signed: null
+        span:
+          lo: 207
+          hi: 231
+      is_const: true
+      init:
+        float:
+          id: 2
+          value: 3.14
+          kind: null
+          span:
+            lo: 232
+            hi: 242
+      span:
+        lo: 159
+        hi: 270
+  - assign:
+      target:
+        name: အသက်
+        span:
+          lo: 271
+          hi: 283
+      value:
+        infix:
+          id: 6
+          op: add
+          lhs:
+            name:
+              id: 4
+              name: အသက်
+              span:
+                lo: 294
+                hi: 306
+          rhs:
+            int:
+              id: 5
+              value: 1
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 309
+                hi: 312
+          span:
+            lo: 294
+            hi: 312
+      span:
+        lo: 271
+        hi: 338
+  - block:
+      stmts:
+      - print:
+          value:
+            expr:
+              name:
+                id: 7
+                name: လူအရေအတွက်
+                span:
+                  lo: 419
+                  hi: 449
+          span:
+            lo: 419
+            hi: 478
+      single: false
+      span:
+        lo: 339
+        hi: 561
+  - if:
+      arms:
+      - cond:
+          verb:
+            id: 10
+            op: lt
+            args:
+            - name:
+                id: 8
+                name: အသက်
+                span:
+                  lo: 578
+                  hi: 590
+            - int:
+                id: 9
+                value: 18
+                base: 10
+                kind: null
+                script: burmese
+                span:
+                  lo: 601
+                  hi: 607
+            kind_arg: null
+            dir: null
+            particle: none
+            next: then
+            is_cmp: true
+            span:
+              lo: 578
+              hi: 633
+        block:
+          stmts:
+          - assign:
+              target:
+                name: ဝင်ခွင့်ပြုမည်
+                span:
+                  lo: 729
+                  hi: 771
+              value:
+                bool:
+                  id: 12
+                  value: false
+                  particle: none
+                  next: other
+                  span:
+                    lo: 782
+                    hi: 797
+              span:
+                lo: 729
+                hi: 823
+          single: false
+          span:
+            lo: 649
+            hi: 906
+        span:
+          lo: 562
+          hi: 906
+      - cond:
+          verb:
+            id: 15
+            op: gt
+            args:
+            - name:
+                id: 13
+                name: အသက်
+                span:
+                  lo: 950
+                  hi: 962
+            - int:
+                id: 14
+                value: 60
+                base: 10
+                kind: null
+                script: burmese
+                span:
+                  lo: 973
+                  hi: 979
+            kind_arg: null
+            dir: null
+            particle: none
+            next: then
+            is_cmp: true
+            span:
+              lo: 950
+              hi: 1002
+        block:
+          stmts:
+          - print:
+              value:
+                str:
+                  lit:
+                    parts:
+                    - text: ok
+                    value: ok
+                  span:
+                    lo: 1018
+                    hi: 1022
+              span:
+                lo: 1018
+                hi: 1051
+          single: true
+          span:
+            lo: 1018
+            hi: 1051
+        span:
+          lo: 907
+          hi: 1051
+      else_block:
+        stmts:
+        - print:
+            value:
+              str:
+                lit:
+                  parts:
+                  - text: ကြိုဆိုပါသည်
+                  value: ကြိုဆိုပါသည်
+                span:
+                  lo: 1089
+                  hi: 1127
+            span:
+              lo: 1089
+              hi: 1156
+        single: true
+        span:
+          lo: 1089
+          hi: 1156
+      span:
+        lo: 562
+        hi: 1156
+  - while:
+      cond:
+        verb:
+          id: 18
+          op: lt
+          args:
+          - name:
+              id: 16
+              name: ကိန်း
+              span:
+                lo: 1157
+                hi: 1172
+          - int:
+              id: 17
+              value: 5
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 1183
+                hi: 1186
+          kind_arg: null
+          dir: null
+          particle: none
+          next: while
+          is_cmp: true
+          span:
+            lo: 1157
+            hi: 1212
+      block:
+        stmts:
+        - print:
+            value:
+              expr:
+                name:
+                  id: 19
+                  name: ကိန်း
+                  span:
+                    lo: 1234
+                    hi: 1249
+            span:
+              lo: 1234
+              hi: 1278
+        single: true
+        span:
+          lo: 1234
+          hi: 1278
+      span:
+        lo: 1157
+        hi: 1278
+  - counted:
+      var:
+        name: ကိန်း
+        span:
+          lo: 1318
+          hi: 1333
+      from:
+        int:
+          id: 20
+          value: 10
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 1279
+            hi: 1285
+      to:
+        int:
+          id: 21
+          value: 0
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 1293
+            hi: 1296
+      step:
+        int:
+          id: 22
+          value: 2
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 1307
+            hi: 1310
+      mode: decrease
+      block:
+        stmts:
+        - print:
+            value:
+              expr:
+                name:
+                  id: 23
+                  name: ကိန်း
+                  span:
+                    lo: 1381
+                    hi: 1396
+            span:
+              lo: 1381
+              hi: 1425
+        single: true
+        span:
+          lo: 1381
+          hi: 1425
+      span:
+        lo: 1279
+        hi: 1425
+  - generic:
+      var:
+        name: ကိန်း
+        span:
+          lo: 1454
+          hi: 1469
+      kind:
+        base: int
+        bits: null
+        signed: null
+        span:
+          lo: 1480
+          hi: 1510
+      init:
+        int:
+          id: 24
+          value: 0
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 1511
+            hi: 1514
+      cond:
+        verb:
+          id: 27
+          op: lt
+          args:
+          - name:
+              id: 25
+              name: ကိန်း
+              span:
+                lo: 1540
+                hi: 1555
+          - int:
+              id: 26
+              value: 10
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 1566
+                hi: 1572
+          kind_arg: null
+          dir: null
+          particle: none
+          next: while
+          is_cmp: true
+          span:
+            lo: 1540
+            hi: 1598
+      update:
+        assign:
+          target:
+            name: ကိန်း
+            span:
+              lo: 1728
+              hi: 1743
+          value:
+            infix:
+              id: 31
+              op: add
+              lhs:
+                name:
+                  id: 29
+                  name: ကိန်း
+                  span:
+                    lo: 1754
+                    hi: 1769
+              rhs:
+                int:
+                  id: 30
+                  value: 1
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 1772
+                    hi: 1775
+              span:
+                lo: 1754
+                hi: 1775
+          span:
+            lo: 1728
+            hi: 1801
+      block:
+        stmts: []
+        single: false
+        span:
+          lo: 1620
+          hi: 1893
+      span:
+        lo: 1426
+        hi: 1893
+  - break:
+      span:
+        lo: 1894
+        hi: 1947
+  - continue:
+      span:
+        lo: 1948
+        hi: 2030
+  - return:
+      value: null
+      span:
+        lo: 2031
+        hi: 2061
+  span:
+    lo: 0
+    hi: 2062
+diagnostics: []

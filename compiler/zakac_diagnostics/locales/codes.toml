@@ -68,3 +68,194 @@ en = "blank raw identifier"
 en = "raw identifier between backticks is blank"
 [codes.ZK0109.explain]
 en = """Two backticks with nothing between them do not name a variable. A raw identifier needs at least one character between the backticks."""
+
+# --------------------------------------------------------------- parser ZK02xx
+
+[parser.help_split]
+en = "write \"%{s} %{p}\" with a space: a name joined to a particle is read as one word"
+
+[codes.ZK0201.title]
+en = "unexpected token"
+[codes.ZK0201.message]
+en = "expected %{e}, found %{f}"
+[codes.ZK0201.explain]
+en = """The parser reached a token that does not fit the statement at this point; the message names what the grammar allows here. A common cause is a name written attached to a particle, such as \"အသက်ကို\": a word that is not made of reserved words alone is one identifier, so write a space between the name and the particle."""
+
+[codes.ZK0202.title]
+en = "missing operand"
+[codes.ZK0202.message]
+en = "expected an operand, found %{f}"
+[codes.ZK0202.explain]
+en = """An operand is a literal, a name, a call expression, or an expression in parentheses. A particle such as \"ကို\" or \"နှင့်\" is followed with an operand or with the verb that closes the clause, and an operator such as \"+\" is followed with an operand. Here neither comes next."""
+
+[codes.ZK0203.title]
+en = "statement verb missing"
+[codes.ZK0203.message]
+en = "this statement does not end in a statement verb, found %{f}"
+[codes.ZK0203.help]
+en = "a statement ends in \"ပြသပါ\", \"ထားပါ\" or \"ရလဒ်အဖြစ် ပြန်ပေးပါ\", or is a loop with \"နေသရွေ့\" or \"မှ ... အထိ\""
+[codes.ZK0203.explain]
+en = """A statement that does not start with a reserved word is a clause that ends in a statement verb: \"ပြသပါ\" (print), \"ထားပါ\" (assign) or \"ရလဒ်အဖြစ် ပြန်ပေးပါ\" (return a value). It can also be a condition followed with \"နေသရွေ့\" (a while loop) or a bound followed with \"မှ\" (a counted loop). This statement ends in a value and none of these."""
+
+[codes.ZK0204.title]
+en = "statement verb inside an expression"
+[codes.ZK0204.message]
+en = "statement verb \"%{v}\" cannot stand inside an expression"
+[codes.ZK0204.explain]
+en = """Statement verbs such as \"ပြသပါ\" and \"ထားပါ\" close a whole statement and produce no value. Here one appears inside parentheses, a call argument or a condition, where a value is needed. Move the statement out, or use a verb-noun such as \"ပေါင်းလဒ်\" that produces a value."""
+
+[codes.ZK0205.title]
+en = "too few operands"
+[codes.ZK0205.message]
+en = "\"%{v}\" needs %{n} operands, found %{m}"
+[codes.ZK0205.explain]
+en = """Each verb takes a fixed number of operands, each followed with its particle: \"ပေါင်းလဒ်\" takes two (\"a နှင့် b ၏\"), \"ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်\" takes one (\"a ၏\"), and \"ထားပါ\" takes two (\"x ကို v ဟု\"). The clause before this verb holds fewer operands than the verb needs."""
+
+[codes.ZK0206.title]
+en = "wrong particle for the verb"
+[codes.ZK0206.message]
+en = "\"%{v}\" needs \"%{e}\" after operand %{i}, found %{f}"
+[codes.ZK0206.explain]
+en = """A verb checks the particle that follows each of its operands. \"ပေါင်းလဒ်\" wants \"a နှင့် b ၏\", \"စားသော စားလဒ်\" wants \"a ကို b ဖြင့်\", the comparisons want \"a သည် b\" then \"နှင့်\", \"ထက်\" or \"အောက်\", and \"ထားပါ\" wants \"x ကို v ဟု\". The operand named in the message carries a different particle, or none."""
+
+[codes.ZK0207.title]
+en = "two particles on one operand"
+[codes.ZK0207.message]
+en = "this operand has the particle \"%{p}\" before this one"
+[codes.ZK0207.explain]
+en = """Each operand in a clause is followed with one particle that names its role. Two particles in a row leave the second one without an operand. Remove one of them, or write the missing operand between them."""
+
+[codes.ZK0208.title]
+en = "clause without a verb"
+[codes.ZK0208.message]
+en = "operands wait for a verb: %{w}"
+[codes.ZK0208.explain]
+en = """In a clause, each operand is followed with the particle of its role, and a verb at the end takes the operands it needs. Here operands are left over at the end of the clause; the message lists them with their particles. Add the verb that takes them, or remove the stranded particle."""
+
+[codes.ZK0209.title]
+en = "operands before a statement verb"
+[codes.ZK0209.message]
+en = "operands left over before \"%{v}\": %{w}"
+[codes.ZK0209.explain]
+en = """A statement verb takes its own operands and ends the statement, so no operand can be left waiting before it. The listed operands belong to no verb; add the verb that needs them, or remove them."""
+
+[codes.ZK0210.title]
+en = "chained comparison"
+[codes.ZK0210.message]
+en = "a comparison cannot be the operand of another comparison"
+[codes.ZK0210.help]
+en = "join the two comparisons with \"ဖြစ်၍\", or put the inner one in parentheses"
+[codes.ZK0210.explain]
+en = """Comparisons do not chain: \"a < b < c\" and \"a သည် b နှင့် ညီ သည် c နှင့် ညီသည်\" are errors. Write \"a < b ဖြစ်၍ b < c\" to test both. A comparison in parentheses is a plain boolean operand and can be compared again."""
+
+[codes.ZK0211.title]
+en = "else without if"
+[codes.ZK0211.message]
+en = "\"%{w}\" must follow the block of a conditional"
+[codes.ZK0211.explain]
+en = """\"ထိုသို့မဟုတ်ဘဲ\" (else if) and \"သို့မဟုတ်ပါက\" (else) continue a conditional statement. These come right after the block or the single statement of an \"အကယ်၍\" arm, and cannot start a statement on their own."""
+
+[codes.ZK0212.title]
+en = "update outside a generic loop"
+[codes.ZK0212.message]
+en = "\"ပြီးလျှင်\" can appear as the last statement of a generic loop and nowhere else"
+[codes.ZK0212.explain]
+en = """\"ပြီးလျှင်\" (when done) marks the update of a generic loop, the statement that runs after each iteration. It is allowed as the last statement in the block of a loop that starts with \"ကိန်းရှင် ... ဖြစ်ပြီး\", and nowhere else."""
+
+[codes.ZK0213.title]
+en = "update is not last"
+[codes.ZK0213.message]
+en = "the \"ပြီးလျှင်\" update must be the last statement of the loop"
+[codes.ZK0213.explain]
+en = """The update of a generic loop runs after the rest of the block, so it is written last, right before the block closer. Move the statements that follow it above it."""
+
+[codes.ZK0214.title]
+en = "nested function"
+[codes.ZK0214.message]
+en = "functions can be declared at the top level and nowhere else"
+[codes.ZK0214.explain]
+en = """A function declaration cannot appear inside a block, a loop, a conditional or another function. Move it to the top level of the file; functions can be called before their declaration."""
+
+[codes.ZK0215.title]
+en = "conditional as a single-statement block"
+[codes.ZK0215.message]
+en = "a single-statement block cannot be another conditional"
+[codes.ZK0215.explain]
+en = """When a conditional arm has no block phrase, its block is the single statement that follows. That statement cannot itself be a conditional, so that each else arm belongs to one clear conditional. Wrap the inner conditional in \"အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\" and \"လုပ်ဆောင်စရာများ ပြီးပါပြီ။\"."""
+
+[codes.ZK0216.title]
+en = "invalid bit count"
+[codes.ZK0216.message]
+en = "%{n} is not a valid bit count here; use %{a}"
+[codes.ZK0216.explain]
+en = """Integer kinds come in 8, 16, 32, 64 and 128 bits, floating-point kinds in 16, 32, 64 and 128 bits. The bit count is written in decimal before \"ဘစ်\", in Burmese or Western digits."""
+
+[codes.ZK0217.title]
+en = "sign word on a kind that is not an integer"
+[codes.ZK0217.message]
+en = "a sign word can stand before \"ကိန်းပြည့်\" and no other kind"
+[codes.ZK0217.explain]
+en = """Floating-point numbers are signed, and characters and booleans have no sign, so the sign words \"လက္ခဏာရှိ\" and \"လက္ခဏာမဲ့\" are allowed in integer kinds and nowhere else."""
+
+[codes.ZK0218.title]
+en = "invalid number base"
+[codes.ZK0218.message]
+en = "%{b} is not a number base; use a decimal integer from 2 to 36"
+[codes.ZK0218.explain]
+en = """The base prefix \"အခြေ N ဖြင့်\" takes a decimal integer from 2 to 36. Digits above 9 are written as the letters A to Z."""
+
+[codes.ZK0219.title]
+en = "invalid digit"
+[codes.ZK0219.message]
+en = "\"%{d}\" is not a digit in base %{b}"
+[codes.ZK0219.explain]
+en = """Each digit of a literal must be below its base: 0 and 1 in base 2, 0 to 9 in base 10, and the letters A to Z (in either case) for 10 to 35 in higher bases. Letters are allowed after a base prefix above 10 and nowhere else, and a literal with a base prefix has integer digits but no fraction or exponent."""
+
+[codes.ZK0220.title]
+en = "literal out of range"
+[codes.ZK0220.message]
+en = "literal %{l} does not fit its kind"
+[codes.ZK0220.explain]
+en = """An integer literal must fit its kind: the bit count of its kind prefix, or 64 bits when no prefix is written. Unsigned kinds hold 0 to 2^bits - 1. Signed decimal literals hold up to 2^(bits-1), so that \"-128\" fits an 8-bit integer. A literal with a base prefix is a bit pattern of the full width."""
+
+[codes.ZK0221.title]
+en = "fraction in an integer literal"
+[codes.ZK0221.message]
+en = "an integer kind cannot hold a literal with a fraction or exponent"
+[codes.ZK0221.explain]
+en = """The kind prefix \"ကိန်းပြည့်\" makes the literal an integer, but this literal is written with a fraction or an exponent. Use \"ဒဿမကိန်း\" for a floating-point literal, or remove the fraction."""
+
+[codes.ZK0222.title]
+en = "invalid literal kind"
+[codes.ZK0222.message]
+en = "a literal kind prefix must be an integer or floating-point kind"
+[codes.ZK0222.explain]
+en = """A kind prefix such as \"လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်\" fixes the kind of the number that follows. Characters and booleans have literals of their own ('က', \"မှန်\"), so \"စာလုံး\" and \"မှန်မှားတန်ဖိုး\" cannot prefix a number."""
+
+[codes.ZK0223.title]
+en = "string literal outside a print statement"
+[codes.ZK0223.message]
+en = "a string literal is allowed as the operand of \"ပြသပါ\" and nowhere else"
+[codes.ZK0223.explain]
+en = """This version of the language has no string kind. A string literal can be printed with \"ပြသပါ\" but cannot be stored, compared or passed to a function."""
+
+[codes.ZK0224.title]
+en = "invalid assignment target"
+[codes.ZK0224.message]
+en = "the target of \"ထားပါ\" must be a variable name"
+[codes.ZK0224.explain]
+en = """An assignment \"x ကို v ဟု ထားပါ။\" stores v in the variable x. The operand before \"ကို\" must be a plain name, not a literal or a computed value."""
+
+[codes.ZK0225.title]
+en = "constant loop variable"
+[codes.ZK0225.message]
+en = "a generic loop variable must be declared with \"ကိန်းရှင်\""
+[codes.ZK0225.explain]
+en = """A generic loop updates its variable after each iteration, so the header starts with \"ကိန်းရှင်\" (variable). \"ကိန်းသေ\" (constant) declares a value that never changes and cannot start a loop."""
+
+[codes.ZK0226.title]
+en = "unmatched block closer"
+[codes.ZK0226.message]
+en = "this block closer has no open block to close"
+[codes.ZK0226.explain]
+en = """\"လုပ်ဆောင်စရာများ ပြီးပါပြီ။\" closes the block opened with \"အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\" or with a function opener. Here no block is open. Remove the closer, or add the opener it belongs to."""

@@ -67,7 +67,61 @@ BadCharLength = ("ZK0107", Level::Error),
 /// A raw identifier reaches the end of the line.
 UnterminatedRawIdentifier = ("ZK0108", Level::Error),
 /// A raw identifier has nothing between its backticks.
-BlankRawIdentifier = ("ZK0109", Level::Error) }
+BlankRawIdentifier = ("ZK0109", Level::Error),
+
+// parser: ZK02xx
+/// A token does not fit the grammar at this point.
+ExpectedToken = ("ZK0201", Level::Error),
+/// An operand is missing.
+ExpectedOperand = ("ZK0202", Level::Error),
+/// A statement does not end in a statement verb.
+ExpectedStmtVerb = ("ZK0203", Level::Error),
+/// A statement verb appears inside an expression.
+StmtVerbInExpr = ("ZK0204", Level::Error),
+/// A verb has fewer operands than it takes.
+MissingOperand = ("ZK0205", Level::Error),
+/// An operand carries the wrong particle for its verb.
+SlotMismatch = ("ZK0206", Level::Error),
+/// An operand is followed with two particles.
+DoubleParticle = ("ZK0207", Level::Error),
+/// Operands wait for a verb at the end of a clause.
+UnclosedClause = ("ZK0208", Level::Error),
+/// Operands are left over before a statement verb.
+DanglingOperands = ("ZK0209", Level::Error),
+/// A comparison is the direct operand of another comparison.
+ChainedComparison = ("ZK0210", Level::Error),
+/// An else or else-if word starts a statement.
+ElseWithoutIf = ("ZK0211", Level::Error),
+/// A generic loop update stands outside a generic loop.
+UpdateOutsideLoop = ("ZK0212", Level::Error),
+/// A generic loop update is not the last statement of its loop.
+UpdateNotLast = ("ZK0213", Level::Error),
+/// A function is declared inside a block.
+NestedFunction = ("ZK0214", Level::Error),
+/// A single-statement block is a conditional.
+NestedSingleLineIf = ("ZK0215", Level::Error),
+/// A kind has a bit count it cannot have.
+InvalidBitCount = ("ZK0216", Level::Error),
+/// A sign word stands before a kind other than an integer.
+SignedFloat = ("ZK0217", Level::Error),
+/// A base prefix is not an integer from 2 to 36.
+InvalidBase = ("ZK0218", Level::Error),
+/// A digit is not valid in the base of its literal.
+InvalidDigit = ("ZK0219", Level::Error),
+/// An integer literal does not fit its kind.
+LiteralOutOfRange = ("ZK0220", Level::Error),
+/// An integer kind prefix stands before a literal with a fraction.
+FloatForIntKind = ("ZK0221", Level::Error),
+/// A character or boolean kind prefixes a number.
+BadLiteralKind = ("ZK0222", Level::Error),
+/// A string literal is used as a value.
+StrOutsidePrint = ("ZK0223", Level::Error),
+/// The target of an assignment is not a name.
+AssignTarget = ("ZK0224", Level::Error),
+/// A generic loop is declared with the constant word.
+ConstLoop = ("ZK0225", Level::Error),
+/// A block closer has no open block.
+UnmatchedBlockClose = ("ZK0226", Level::Error) }
 
 impl Code
 {

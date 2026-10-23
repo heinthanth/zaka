@@ -19,6 +19,7 @@ group_imports = "StdExternalCrate"
 imports_granularity = "Item"
 fn_params_layout = "Compressed"
 
+merge_derives = false
 wrap_comments = true
 normalize_comments = true
 normalize_doc_attributes = true

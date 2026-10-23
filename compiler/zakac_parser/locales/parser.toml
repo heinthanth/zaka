@@ -1,0 +1,25 @@
+_version = 2
+
+[parser.about]
+en = "Parse input source code into an abstract tree."
+
+[parser.eof]
+en = "end of input"
+
+[parser.name]
+en = "a name"
+
+[parser.kind]
+en = "a kind"
+
+[parser.digits]
+en = "the digits of a literal"
+
+[parser.no_particle]
+en = "no particle"
+
+[parser.or]
+en = " or "
+
+[parser.artifact.source_changed]
+en = "source text changed after re-ingest"

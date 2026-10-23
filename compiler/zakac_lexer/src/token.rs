@@ -1,6 +1,8 @@
 use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
+use strum::AsRefStr;
+use strum::EnumString;
 use zakac_diagnostics::Diagnostic;
 use zakac_span::span::Span;
 
@@ -111,58 +113,84 @@ pub struct NumberShape
 
 /// Punctuation and operator tokens.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(AsRefStr, EnumString)]
 #[serde(rename_all = "snake_case")]
 pub enum Punct
 {
     /// `၊`
+    #[strum(serialize = "၊")]
     ListSep,
     /// `။`
+    #[strum(serialize = "။")]
     FullStop,
     /// `၏`
+    #[strum(serialize = "၏")]
     Ei,
     /// `(`
+    #[strum(serialize = "(")]
     LParen,
     /// `)`
+    #[strum(serialize = ")")]
     RParen,
     /// `+`
+    #[strum(serialize = "+")]
     Plus,
     /// `-`
+    #[strum(serialize = "-")]
     Minus,
     /// `*`
+    #[strum(serialize = "*")]
     Star,
     /// `/`
+    #[strum(serialize = "/")]
     Slash,
     /// `%`
+    #[strum(serialize = "%")]
     Percent,
     /// `&`
+    #[strum(serialize = "&")]
     Amp,
     /// `|`
+    #[strum(serialize = "|")]
     Pipe,
     /// `^`
+    #[strum(serialize = "^")]
     Caret,
     /// `~`
+    #[strum(serialize = "~")]
     Tilde,
     /// `!`
+    #[strum(serialize = "!")]
     Bang,
     /// `<`
+    #[strum(serialize = "<")]
     Lt,
     /// `>`
+    #[strum(serialize = ">")]
     Gt,
     /// `<=`
+    #[strum(serialize = "<=")]
     Le,
     /// `>=`
+    #[strum(serialize = ">=")]
     Ge,
     /// `==`
+    #[strum(serialize = "==")]
     EqEq,
     /// `!=`
+    #[strum(serialize = "!=")]
     Ne,
     /// `<<`
+    #[strum(serialize = "<<")]
     Shl,
     /// `>>`
+    #[strum(serialize = ">>")]
     Shr,
     /// `&&`
+    #[strum(serialize = "&&")]
     AndAnd,
     /// `||`
+    #[strum(serialize = "||")]
     OrOr,
 }
 

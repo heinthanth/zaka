@@ -13,6 +13,7 @@ use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
 use zakac_lexer::cli::ZakacLexer;
+use zakac_parser::cli::ZakacParser;
 use zakac_rust_sugars::ret_if;
 
 /// The `zakac` command.
@@ -71,6 +72,7 @@ impl Command for Zakac
             .with(|cmd| cmd.subcommand_required(true))
             .add_subcommand::<ZakacBurmeseSegmenter>(Some("segment"))
             .add_subcommand::<ZakacLexer>(Some("lex"))
+            .add_subcommand::<ZakacParser>(Some("parse"))
     }
 
     /// Construct this command wrapper from a finished [`CommandSetup`].

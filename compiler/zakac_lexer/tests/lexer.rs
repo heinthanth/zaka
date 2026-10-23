@@ -180,3 +180,30 @@ fn identifiers_of_several_scripts()
         assert_eq!(kinds(text), [TokenKind::Ident], "{text}");
     }
 }
+
+#[test]
+fn a_word_in_two_scripts_is_one_identifier()
+{
+    for text in ["ဖြစ်ရပ်_၁", "က_ခ", "abcက", "x_ကို", "အသက်2", "🔥က", "ရလဒ်_x"]
+    {
+        assert_eq!(kinds(text), [TokenKind::Ident], "{text}");
+        assert_eq!(common::lexemes(text), [text], "{text}");
+    }
+}
+
+#[test]
+fn a_two_script_identifier_keeps_its_neighbours()
+{
+    let text = "ဖြစ်ရပ်_၁ သို့မဟုတ် ဖြစ်ရပ်_၂၏ ပေါင်းလဒ်";
+    let want = ["ဖြစ်ရပ်_၁", "သို့မဟုတ်", "ဖြစ်ရပ်_၂", "၏", "ပေါင်းလဒ်"];
+    assert_eq!(common::lexemes(text), want);
+    assert!(codes(text).is_empty());
+}
+
+#[test]
+fn a_run_that_is_no_identifier_is_lexed_per_word()
+{
+    let text = "က«ခ";
+    assert_eq!(codes(text), [Code::InvalidCharacter]);
+    assert_eq!(common::lexemes(text), ["က", "ခ"]);
+}

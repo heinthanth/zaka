@@ -46,3 +46,49 @@ fn constructors_render_messages()
         assert!(diag.is_error());
     }
 }
+
+#[test]
+fn parser_constructors_render_messages()
+{
+    use zakac_diagnostics::parser as p;
+    use zakac_span::span::Span;
+
+    let span = Span::PLACEHOLDER;
+    let found = p::expected_token(span, "\"။\"", "\"ကို\"");
+    assert!(found.message.contains("\"။\""));
+    assert!(found.message.contains("\"ကို\""));
+    let hinted = p::with_split_hint(found, "အသက်", "ကို");
+    assert!(hinted.help.unwrap().contains("အသက် ကို"));
+    assert!(p::expected_stmt_verb(span, "x").help.is_some());
+    assert!(p::chained_comparison(span).help.is_some());
+    assert!(p::missing_operand(span, "v", 2, 1).message.contains('2'));
+    assert!(p::slot_mismatch(span, "v", 3, "ကို", "-").message.contains('3'));
+    assert!(p::invalid_digit(span, 'G', 16).message.contains("16"));
+    for diag in [
+        p::expected_operand(span, "x"),
+        p::stmt_verb_in_expr(span, "v"),
+        p::double_particle(span, "ကို"),
+        p::unclosed_clause(span, "x"),
+        p::dangling_operands(span, "v", "x"),
+        p::else_without_if(span, "w"),
+        p::update_outside_loop(span),
+        p::update_not_last(span),
+        p::nested_function(span),
+        p::nested_single_line_if(span),
+        p::invalid_bit_count(span, "7", "8"),
+        p::signed_float(span),
+        p::invalid_base(span, "40"),
+        p::literal_out_of_range(span, "300"),
+        p::float_for_int_kind(span),
+        p::bad_literal_kind(span),
+        p::str_outside_print(span),
+        p::assign_target(span),
+        p::const_loop(span),
+        p::unmatched_block_close(span),
+    ]
+    {
+        assert!(!is_missing(&diag.message), "{}", diag.code);
+        assert!(!diag.message.contains("%{"), "{}", diag.code);
+        assert!(diag.is_error());
+    }
+}
