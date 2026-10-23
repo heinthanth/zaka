@@ -1,16 +1,18 @@
 use chrono::Datelike;
 use chrono::Utc;
 use clap::Arg;
-use clap::ArgAction;
 use clap::ArgMatches;
 use termcolor::WriteColor;
 use zakac_consts::ZAKA_BUILD_NUMBER;
 use zakac_consts::ZAKA_LICENSE;
+use zakac_errors::Error;
 use zakac_i18n::t;
+use zakac_reporter::writer::write_line;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
 
 use crate::clap_error_handler::handle_args_error;
+use crate::command::CommandIO;
 use crate::command::ExitCode;
 
 /// Parse the command line arguments.
@@ -29,8 +31,8 @@ pub fn parse_cli_args<O, E>(
     cmd: &clap::Command, args: &[String], stdout: &mut O, stderr: &mut E,
 ) -> Result<ArgMatches, ExitCode>
 where
-    O: WriteColor,
-    E: WriteColor,
+    O: WriteColor + ?Sized,
+    E: WriteColor + ?Sized,
 {
     let cmd_info = command_info(cmd, &args);
     cmd.clone()
@@ -63,6 +65,41 @@ impl CommandInfo
     {
         Self { name: name.to_string(), version: version.to_string() }
     }
+}
+
+/// Format a command error using the shared CLI error template.
+///
+/// # Arguments
+///
+/// * `cmd_info` - The command or subcommand information.
+/// * `msg` - The error message content.
+///
+/// # Returns
+///
+/// A localized `name: msg` string.
+pub fn format_command_error(cmd_info: &CommandInfo, msg: impl AsRef<str>) -> String
+{
+    t!("cli_errors.template", name = cmd_info.name, msg = msg.as_ref()).to_string()
+}
+
+/// Write a localized operational error for a command to stderr.
+///
+/// # Arguments
+///
+/// * `io` - Command I/O streams.
+/// * `cmd_info` - Command name and version for the error prefix.
+/// * `error` - Operational error to report.
+///
+/// # Returns
+///
+/// [`ExitCode::IoError`].
+pub fn report_command_error(
+    io: &mut CommandIO<'_>, cmd_info: &CommandInfo, error: Error,
+) -> ExitCode
+{
+    let msg = format_command_error(cmd_info, error.to_string());
+    let _ = write_line(io.stderr, &msg);
+    ExitCode::IoError
 }
 
 /// Get the component name and version from a command.
@@ -107,57 +144,6 @@ fn active_command<'a>(mut cmd: &'a clap::Command, args: &[String])
     cmd
 }
 
-/// Helper function to create a [`clap::Command`] with shared help/version flags
-/// and a localized help template.
-///
-/// # Arguments
-///
-/// * `name` - The name used to execute the command.
-/// * `version` - Command version.
-/// * `canonical_name` - The canonical name of the command used in help,
-///   version, and errors.
-/// * `aliases` - The aliases of the command.
-///
-/// # Returns
-///
-/// A command with shared help/version flags and a localized help template.
-pub fn create_clap_command(
-    name: &'static str, version: &'static str, canonical_name: Option<&'static str>,
-    aliases: Option<&[&'static str]>,
-) -> clap::Command
-{
-    let g_help_flag = Arg::new("help")
-        .help(t!("cli.help"))
-        .short('h')
-        .long("help")
-        .action(ArgAction::Help)
-        .required(false)
-        .global(true);
-
-    let g_version_flag = Arg::new("version")
-        .help(t!("cli.version"))
-        .short('v')
-        .long("version")
-        .action(ArgAction::Version)
-        .required(false)
-        .global(true);
-
-    let mut cmd = clap::Command::new(name)
-        .version(version)
-        .propagate_version(true)
-        .disable_help_flag(true)
-        .disable_help_subcommand(true)
-        .disable_version_flag(true)
-        .arg(g_help_flag)
-        .arg(g_version_flag);
-
-    do_if!(let Some(canonical_name) = canonical_name, cmd = cmd.display_name(canonical_name));
-    do_if!(let Some(aliases) = aliases, cmd = cmd.aliases(aliases));
-
-    let help = create_help_template(&cmd);
-    cmd.help_template(help)
-}
-
 /// Create a version string for a command.
 ///
 /// # Arguments
@@ -176,6 +162,32 @@ pub(crate) fn create_version_string(component: &str, version: &str) -> String
         component = component, version = version,
         license = ZAKA_LICENSE, build = ZAKA_BUILD_NUMBER).to_string();
     version_string
+}
+
+/// Attach the common input and output arguments to a command.
+///
+/// # Arguments
+///
+/// * `cmd` - The command to attach the input and output arguments to.
+///
+/// # Returns
+///
+/// The command with the input and output arguments attached.
+pub fn attach_common_io_args(cmd: clap::Command) -> clap::Command
+{
+    let input = Arg::new("input").value_name("INPUT").help(t!("cli.input"));
+    let output = Arg::new("output")
+        .short('o')
+        .long("output")
+        .value_name("FILE")
+        .help(t!("cli.output"));
+    let output_format = Arg::new("output_format")
+        .long("output-format")
+        .value_name("FORMAT")
+        .help(t!("cli.output_format"))
+        .value_parser(["text", "raw"]);
+
+    cmd.arg(input).arg(output).arg(output_format)
 }
 
 /// Get the component name from a command.
@@ -201,7 +213,7 @@ pub(crate) fn component_name(cmd: &clap::Command) -> &str
 /// # Returns
 ///
 /// A help template for a command.
-fn create_help_template(cmd: &clap::Command) -> String
+pub(crate) fn create_help_template(cmd: &clap::Command) -> String
 {
     let name = component_name(cmd);
     let version = cmd.get_version().unwrap_or("0.0.0");

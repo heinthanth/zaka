@@ -1,0 +1,28 @@
+_version = 2
+
+[segmenter.about]
+en = "Segment input source code into pre-lexical tokens."
+
+[segmenter.input]
+en = "Input file (.zaka, .zk), or \"-\" for stdin; omit to read stdin"
+
+[segmenter.output]
+en = "Write output to a file (.zkseg) instead of stdout"
+
+[segmenter.coalesce_non_burmese]
+en = "Coalesce consecutive non-Burmese characters into a single token."
+
+[segmenter.max_lookahead]
+en = "Maximum look-ahead limit for vanna detection."
+
+[segmenter.artifact.invalid_utf8]
+en = "invalid UTF-8: %{e}"
+
+[segmenter.artifact.missing_text_header]
+en = "missing or unknown text header"
+
+[segmenter.artifact.invalid_json]
+en = "invalid JSON: %{e}"
+
+[segmenter.artifact.source_changed]
+en = "source text changed after re-ingest"

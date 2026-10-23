@@ -1,4 +1,4 @@
-/// Run `$s` for each item matched by `for $($head)*`.
+/// Run `$s` for each item that matches `for $($head)*`.
 #[rustfmt::skip]
 #[macro_export]
 macro_rules! do_for {

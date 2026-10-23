@@ -2,10 +2,12 @@ use std::fmt;
 use std::path::Path;
 use std::path::PathBuf;
 
+use serde::Deserialize;
+use serde::Serialize;
 use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_if;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FileName
 {
     /// A real file on the FS
@@ -17,7 +19,7 @@ pub enum FileName
 }
 
 /// A real file path, with optional remapping.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RealFileName
 {
     /// Path on disk.
@@ -42,7 +44,7 @@ impl FileName
         FileName::Real(RealFileName { local_path, remapped_path: None })
     }
 
-    /// Create a real file name with a remapped display path.
+    /// Create a real file name with a remapped path.
     ///
     /// # Arguments
     ///

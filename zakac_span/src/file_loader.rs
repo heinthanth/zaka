@@ -1,7 +1,7 @@
 use std::io;
 use std::path::Path;
 
-/// Abstraction over file system reads\
+/// Abstraction over FS reads
 pub trait FileLoader: Send + Sync
 {
     /// Return `true` if `path` exists.
@@ -15,7 +15,7 @@ pub trait FileLoader: Send + Sync
     /// `true` if `path` exists, `false` otherwise.
     fn file_exists(&self, path: &Path) -> bool;
 
-    /// Read the UTF-8 contents of `path`.
+    /// Read the raw u8s of `path`.
     ///
     /// # Arguments
     ///
@@ -23,8 +23,24 @@ pub trait FileLoader: Send + Sync
     ///
     /// # Returns
     ///
-    /// The contents of `path`.
-    fn read_file(&self, path: &Path) -> io::Result<String>;
+    /// The raw u8s of `path`.
+    fn read_raw_file(&self, path: &Path) -> io::Result<Vec<u8>>;
+
+    /// Read the UTF-8 source of `path`.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path to read.
+    ///
+    /// # Returns
+    ///
+    /// The UTF-8 source of `path`.
+    fn read_file(&self, path: &Path) -> io::Result<String>
+    {
+        let u8s = self.read_raw_file(path)?;
+        String::from_utf8(u8s)
+            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))
+    }
 }
 
 /// A real [`std::fs`] based [`FileLoader`]
@@ -44,7 +60,7 @@ impl FileLoader for RealFileLoader
     /// `true` if `path` exists, `false` otherwise.
     fn file_exists(&self, path: &Path) -> bool { path.exists() }
 
-    /// Read the UTF-8 contents of `path`.
+    /// Read the raw u8s of `path`.
     ///
     /// # Arguments
     ///
@@ -52,19 +68,16 @@ impl FileLoader for RealFileLoader
     ///
     /// # Returns
     ///
-    /// The contents of `path`.
-    fn read_file(&self, path: &Path) -> io::Result<String>
-    {
-        std::fs::read_to_string(path)
-    }
+    /// The raw u8s of `path`.
+    fn read_raw_file(&self, path: &Path) -> io::Result<Vec<u8>> { std::fs::read(path) }
 }
 
-/// In-memory file loader for tests.
+/// MemFS loader for tests.
 #[derive(Clone, Debug, Default)]
 pub struct MemFileLoader
 {
     /// Path to contents.
-    files: std::collections::HashMap<std::path::PathBuf, String>,
+    files: std::collections::HashMap<std::path::PathBuf, Vec<u8>>,
 }
 
 impl MemFileLoader
@@ -87,10 +100,10 @@ impl MemFileLoader
     ///
     /// The new file loader.
     pub fn insert(
-        &mut self, path: impl Into<std::path::PathBuf>, contents: impl Into<String>,
+        &mut self, path: impl Into<std::path::PathBuf>, contents: impl AsRef<[u8]>,
     )
     {
-        self.files.insert(path.into(), contents.into());
+        self.files.insert(path.into(), contents.as_ref().to_vec());
     }
 }
 
@@ -107,7 +120,7 @@ impl FileLoader for MemFileLoader
     /// `true` if `path` exists, `false` otherwise.
     fn file_exists(&self, path: &Path) -> bool { self.files.contains_key(path) }
 
-    /// Read the UTF-8 contents of `path`.
+    /// Read the raw u8s of `path`.
     ///
     /// # Arguments
     ///
@@ -115,14 +128,12 @@ impl FileLoader for MemFileLoader
     ///
     /// # Returns
     ///
-    /// The contents of `path`.
-    fn read_file(&self, path: &Path) -> io::Result<String>
+    /// The raw u8s of `path`.
+    fn read_raw_file(&self, path: &Path) -> io::Result<Vec<u8>>
     {
         self.files.get(path).cloned().ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::NotFound,
-                format!("ERR_FILE_NOT_FOUND: {}", path.display()),
-            )
+            let msg = format!("ERR_FILE_NOT_FOUND: {}", path.display());
+            io::Error::new(io::ErrorKind::NotFound, msg)
         })
     }
 }

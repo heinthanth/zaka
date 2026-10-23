@@ -1,0 +1,26 @@
+[package]
+name = "zakac_burmese_segmenter"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "zakac_burmese_segmenter"
+path = "src/main.rs"
+
+[dependencies]
+bon = { workspace = true }
+clap = { workspace = true }
+const_for = { workspace = true }
+postcard = { workspace = true }
+rust-i18n = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+termcolor = { workspace = true }
+zakac_cli_common = { workspace = true }
+zakac_i18n = { workspace = true }
+zakac_errors = { workspace = true }
+zakac_session = { workspace = true }
+zakac_reporter = { workspace = true }
+zakac_rust_sugars = { workspace = true }
+zakac_span = { workspace = true }

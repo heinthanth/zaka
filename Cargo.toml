@@ -11,13 +11,22 @@ bon = "3.10.1"
 cargo-build = { version = "1.0.0", features = ["macros"] }
 chrono = "0.4.45"
 clap = { version = "4.6.7", features = ["cargo"] }
+const_for = "0.1.6"
 num_enum = "0.7.6"
+postcard = { version = "1.1.3", features = ["alloc"] }
 rust-i18n = "4.2.2"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
 shadow-rs = "2.0.0"
 sys-locale = "0.3.2"
+tempfile = "3.27.0"
 termcolor = "1.4.1"
+unicode-normalization = "0.1.25"
 zakac_cli_common = { path = "zakac_cli_common" }
 zakac_consts = { path = "zakac_consts" }
+zakac_errors = { path = "zakac_errors" }
 zakac_i18n = { path = "zakac_i18n" }
 zakac_reporter = { path = "zakac_reporter" }
 zakac_rust_sugars = { path = "zakac_rust_sugars" }
+zakac_session = { path = "zakac_session" }
+zakac_span = { path = "zakac_span" }

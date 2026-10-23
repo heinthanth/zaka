@@ -13,7 +13,7 @@ use zakac_rust_sugars::ret_if;
 /// The result of the write operation.
 pub fn write_text<W>(writer: &mut W, text: &str) -> Result<(), std::io::Error>
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let result = write!(writer, "{text}");
     ret_if!(result.is_ok(), Ok(()));
@@ -35,7 +35,7 @@ where
 /// The result of the write operation.
 pub fn write_line<W>(writer: &mut W, text: &str) -> Result<(), std::io::Error>
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     write_text(writer, &format!("{text}\n"))
 }

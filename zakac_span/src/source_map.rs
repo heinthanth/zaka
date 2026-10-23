@@ -3,6 +3,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use bon::Builder;
 use zakac_rust_sugars::ret_if;
 
 use crate::file_loader::FileLoader;
@@ -80,19 +81,22 @@ fn file_contains_pos(file: &SourceFile, pos: &Pos) -> bool
     }
 }
 
-/// Tracks all source files and maps absolute byte positions to locations.
-#[derive(Clone)]
+/// Tracks all source files and maps absolute u8 positions to locations.
+#[derive(Clone, Builder)]
 pub struct SourceMap
 {
     /// Registered source files.
+    #[builder(default)]
     files: Vec<Arc<SourceFile>>,
     /// File loader.
     file_loader: Arc<dyn FileLoader>,
     /// Path prefix remapping.
+    #[builder(default)]
     path_mapping: FilePathMapping,
     /// Hash algorithm for new files.
+    #[builder(default)]
     hash_kind: SourceFileHashAlgorithm,
-    /// Working directory for resolving relative paths.
+    /// CWD for resolving relative paths.
     working_dir: Option<PathBuf>,
 }
 
@@ -168,13 +172,7 @@ impl SourceMap
     /// The new source map.
     pub fn with_loader(loader: Arc<dyn FileLoader>) -> Self
     {
-        SourceMap {
-            files: Vec::new(),
-            file_loader: loader,
-            path_mapping: FilePathMapping::new(),
-            hash_kind: SourceFileHashAlgorithm::Sha256,
-            working_dir: None,
-        }
+        SourceMap::builder().file_loader(loader).build()
     }
 
     /// Return the file loader.
@@ -205,11 +203,11 @@ impl SourceMap
         self.path_mapping = mapping;
     }
 
-    /// Set the working directory.
+    /// Set the CWD.
     ///
     /// # Arguments
     ///
-    /// * `dir` - The working directory to set.
+    /// * `dir` - The CWD to set.
     ///
     /// # Returns
     ///
@@ -322,12 +320,8 @@ impl SourceMap
     {
         ret_if!(sp.is_placeholder(), String::from("<PLACEHOLDER>"));
         let loc = self.lookup_char_pos(&sp.lo);
-        format!(
-            "{}:{}:{}",
-            loc.file.name.virtual_path_string(),
-            loc.line,
-            loc.col.as_u32()
-        )
+        let path = loc.file.name.virtual_path_string();
+        format!("{}:{}:{}", path, loc.line, loc.col.as_u32())
     }
 
     /// Return the next start position.
@@ -364,7 +358,7 @@ impl SourceMap
             .unwrap_or_else(|idx| idx.saturating_sub(1))
     }
 
-    /// Resolve a path relative to the working directory.
+    /// Resolve a path relative to the CWD.
     ///
     /// # Arguments
     ///
@@ -389,7 +383,7 @@ impl SourceMap
         }
     }
 
-    /// Extract the source text covered by `sp`.
+    /// Extract the source text within the span `sp`.
     ///
     /// # Arguments
     ///
@@ -397,7 +391,7 @@ impl SourceMap
     ///
     /// # Returns
     ///
-    /// The source text covered by `sp`.
+    /// The source text within the span `sp`.
     ///
     /// # Errors
     ///

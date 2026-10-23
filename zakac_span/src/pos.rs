@@ -1,8 +1,24 @@
 use std::ops::Add;
 use std::ops::Sub;
 
+use serde::Deserialize;
+use serde::Serialize;
+
 /// An absolute offset in the [`SourceMap`](crate::SourceMap).
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+#[derive(
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Debug,
+    Default,
+    Serialize,
+    Deserialize,
+)]
+#[serde(transparent)]
 pub struct Pos(u32);
 
 /// A offset relative to the start of a [`SourceFile`](crate::SourceFile).
@@ -32,11 +48,11 @@ impl Pos
     /// The new position.
     pub const fn new(pos: u32) -> Self { Pos(pos) }
 
-    /// Return the underlying `u32` value.
+    /// Return the internal `u32` value.
     ///
     /// # Returns
     ///
-    /// The underlying `u32` value.
+    /// The internal `u32` value.
     pub const fn as_u32(&self) -> u32 { self.0 }
 
     /// Advance `count` items.

@@ -1,0 +1,31 @@
+_version = 2
+
+[errors.file_not_found]
+en = "can't find %{p}"
+
+[errors.permission_denied]
+en = "can't access %{p}"
+
+[errors.file_is_a_folder]
+en = "%{p} is a folder, was expecting a file"
+
+[errors.folder_is_a_file]
+en = "%{p} is a file, was expecting a folder"
+
+[errors.failed_to_read_file]
+en = "failed to read %{p}"
+
+[errors.failed_to_write_file]
+en = "failed to write %{p}"
+
+[errors.generic_io_error]
+en = "unexpected IO error occurred while working with %{p}: %{e}"
+
+[errors.generic_error]
+en = "unexpected internal error occurred: %{e}"
+
+[errors.unsupported_artifact_format]
+en = "unsupported artifact format for %{p}"
+
+[errors.failed_to_decode_artifact]
+en = "failed to decode artifact from %{p}: %{e}"

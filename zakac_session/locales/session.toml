@@ -1,0 +1,19 @@
+_version = 2
+
+[session.artifact.truncated_raw]
+en = "truncated raw artifact"
+
+[session.artifact.invalid_raw_magic]
+en = "invalid raw magic"
+
+[session.artifact.invalid_raw_header]
+en = "invalid raw header"
+
+[session.artifact.unsupported_version]
+en = "unsupported artifact version %{v}"
+
+[session.artifact.wrong_phase]
+en = "wrong artifact phase %{got}, expected %{expected}"
+
+[session.artifact.invalid_raw]
+en = "invalid raw artifact: %{e}"

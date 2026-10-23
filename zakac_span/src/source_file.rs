@@ -1,7 +1,6 @@
 use bon::Builder;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
-use zakac_rust_sugars::tern;
 
 use crate::filename::FileName;
 use crate::hash::SourceFileHash;
@@ -63,13 +62,8 @@ fn build_line_table(src: &str) -> Vec<RelativePos>
 /// The character position.
 fn pos_to_char_rpos(slice: &str, offset: usize) -> CharPos
 {
-    let mut chars = 0u32;
-    for (idx, _) in slice.char_indices()
-    {
-        do_if!(idx >= offset, break);
-        chars += 1;
-    }
-    CharPos::new(chars)
+    let chars = slice.char_indices().take_while(|(idx, _)| *idx < offset).count();
+    CharPos::new(chars as u32)
 }
 
 impl SourceFile
@@ -91,7 +85,7 @@ impl SourceFile
         hash_kind: SourceFileHashAlgorithm,
     ) -> Self
     {
-        let src_hash = SourceFileHash::compute(hash_kind, &original_src);
+        let src_hash = SourceFileHash::compute(hash_kind, original_src.as_bytes());
         let normalized = NormalizedSource::from(original_src.as_str());
         let lines = build_line_table(&normalized.src);
 
@@ -113,7 +107,7 @@ impl SourceFile
     /// The exclusive end position.
     pub fn end_pos(&self) -> Pos { self.start_pos.advanced(self.src.len()) }
 
-    /// Convert an absolute byte position to a position relative to this file.
+    /// Convert an absolute u8 position to a position relative to this file.
     ///
     /// # Arguments
     ///
@@ -138,13 +132,13 @@ impl SourceFile
     /// The original relative position.
     pub fn original_relative_pos(&self, pos: &RelativePos) -> RelativePos
     {
-        let mut offset = 0u32;
-        for entry in &self.normalized_pos
+        let mut offset = 0i32;
+        for ent in &self.normalized_pos
         {
-            do_if!(entry.pos > pos.as_u32(), break);
-            offset = entry.diff;
+            do_if!(ent.pos > pos.as_u32(), break);
+            offset = ent.diff;
         }
-        RelativePos::new(pos.as_u32() + offset)
+        RelativePos::new(pos.as_u32().saturating_add_signed(offset))
     }
 
     /// Find the line index (0-based) containing `pos`.
@@ -181,10 +175,9 @@ impl SourceFile
         let line_idx = self.lookup_line(pos).unwrap_or(0);
         let line_start = self.lines[line_idx].as_u32() as usize;
         let line_end = self.line_end(line_idx);
-        let col = pos_to_char_rpos(
-            &self.src[line_start..line_end],
-            pos.as_u32() as usize - line_start,
-        );
+
+        let src = &self.src[line_start..line_end];
+        let col = pos_to_char_rpos(src, pos.as_u32() as usize - line_start);
         (line_idx + 1, col)
     }
 
@@ -199,11 +192,8 @@ impl SourceFile
     /// The end position of the line.
     fn line_end(&self, line_idx: usize) -> usize
     {
-        tern!(
-            line_idx + 1 < self.lines.len(),
-            self.lines[line_idx + 1].as_u32() as usize,
-            self.src.len()
-        )
+        ret_if!(line_idx + 1 >= self.lines.len(), self.src.len());
+        self.lines[line_idx + 1].as_u32() as usize
     }
 
     /// Return the text of line `line_number` (0-based).
@@ -217,10 +207,7 @@ impl SourceFile
     /// The line text.
     pub fn get_line(&self, line_number: usize) -> Option<&str>
     {
-        if line_number >= self.lines.len()
-        {
-            return None;
-        }
+        ret_if!(line_number >= self.lines.len(), None);
         let start = self.lines[line_number].as_u32() as usize;
         let end = self.line_end(line_number);
         self.src.get(start..end)

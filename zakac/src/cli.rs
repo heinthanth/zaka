@@ -1,18 +1,25 @@
-use std::io::BufRead;
+use std::collections::HashMap;
 
+use zakac_burmese_segmenter::cli::ZakacBurmeseSegmenter;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::ArgMatches;
+use zakac_cli_common::clap::crate_name;
 use zakac_cli_common::clap_error_handler::unsupported_subcommand_error;
-use zakac_cli_common::clap_utils;
 use zakac_cli_common::clap_utils::CommandInfo;
-use zakac_cli_common::clap_utils::parse_cli_args;
 use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
+use zakac_cli_common::command::CommandMode;
+use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
-use zakac_cli_common::termcolor::WriteColor;
-use zakac_rust_sugars::ret_if;
 
-pub(crate) struct Zakac;
+/// The `zakac` command.
+pub(crate) struct Zakac
+{
+    /// private [`clap::Command`] instance.
+    cmd_instance: clap::Command,
+    /// map of subcommand names to their [`Command`] instances.
+    subcommands: HashMap<String, Box<dyn Command>>,
+}
 
 impl Command for Zakac
 {
@@ -21,69 +28,96 @@ impl Command for Zakac
     /// # Returns
     ///
     /// The canonical name of the command.
-    fn name(&self) -> &'static str { "zakac" }
+    fn name() -> &'static str { crate_name!() }
 
     /// Get the name of the standalone command.
     ///
     /// # Returns
     ///
     /// The name of the standalone command.
-    fn standalone_name(&self) -> &'static str { "zakac" }
+    fn standalone_name() -> &'static str { Self::name() }
 
     /// Get the aliases of the command.
     ///
     /// # Returns
     ///
     /// The aliases of the command.
-    fn aliases(&self) -> &'static [&'static str] { &[] }
+    fn aliases() -> &'static [&'static str] { &[] }
 
     /// Get the version of the command.
     ///
     /// # Returns
     ///
     /// The version of the command.
-    fn version(&self) -> &'static str { clap::crate_version!() }
+    fn version() -> &'static str { clap::crate_version!() }
 
-    /// Create the [`clap::Command`] to be used as a standalone command.
-    ///
-    /// # Returns
-    ///
-    /// The [`clap::Command`] for the standalone command.
-    fn create_as_standalone(&self) -> clap::Command
-    {
-        clap_utils::create_clap_command(self.name(), self.version(), None, None)
-            .subcommand_required(true)
-    }
-
-    /// Create the [`clap::Command`] to be used as a subcommand.
-    ///
-    /// # Returns
-    ///
-    /// The [`clap::Command`] for the subcommand.
-    fn create_as_subcommand(&self) -> clap::Command { unimplemented!() }
-
-    /// Execute the command with given arguments.
+    /// Customize the [`clap::Command`] for standalone or subcommand use.
     ///
     /// # Arguments
     ///
-    /// * `args` - The arguments to pass (without the command name).
+    /// * `setup` - The command to configure.
+    /// * `mode` - Whether this command is standalone or a subcommand.
+    ///
+    /// # Returns
+    ///
+    /// The configured command.
+    fn configure(setup: CommandSetup, _mode: CommandMode) -> CommandSetup
+    {
+        setup
+            .with(|cmd| cmd.subcommand_required(true))
+            .add_subcommand::<ZakacBurmeseSegmenter>(Some("segment"))
+    }
+
+    /// Construct this command wrapper from a finished [`CommandSetup`].
+    ///
+    /// # Arguments
+    ///
+    /// * `setup` - The finished [`CommandSetup`].
+    ///
+    /// # Returns
+    ///
+    /// The constructed command wrapper.
+    fn from_setup(setup: CommandSetup) -> Self
+    {
+        let (cmd_instance, subcommands) = setup.into_parts();
+        Self { cmd_instance, subcommands }
+    }
+
+    /// Get the [`clap::Command`] instance stored in the command.
+    ///
+    /// # Returns
+    ///
+    /// The [`clap::Command`] instance stored in the command.
+    fn clap_command(&self) -> &clap::Command { &self.cmd_instance }
+
+    /// Get the [`Command`] instance of the registered subcommand.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the subcommand.
+    ///
+    /// # Returns
+    ///
+    /// The [`Command`] instance of the registered subcommand.
+    fn get_subcommand(&self, name: &str) -> Option<&dyn Command>
+    {
+        self.subcommands.get(name).map(|cmd| cmd.as_ref())
+    }
+
+    /// The main function for the command.
+    ///
+    /// # Arguments
+    ///
+    /// * `self` - The command instance.
+    /// * `matches` - The matches of the CLI arguments.
     /// * `io` - The I/O configuration for the command.
     ///
     /// # Returns
     ///
     /// The exit code of the command.
-    fn execute<I, O, E>(
-        &self, args: &[String], io: &mut CommandIO<'_, I, O, E>,
-    ) -> ExitCode
-    where
-        I: BufRead,
-        O: WriteColor,
-        E: WriteColor,
+    fn main(&self, matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     {
-        let clap_cmd = self.create_as_standalone();
-        let matches = parse_cli_args(&clap_cmd, args, &mut io.stdout, &mut io.stderr);
-        ret_if!(let Err(code) = matches, code);
-        command_main(&matches.unwrap(), io)
+        command_main(self, matches, io)
     }
 }
 
@@ -97,15 +131,15 @@ impl Command for Zakac
 /// # Returns
 ///
 /// The exit code of the command.
-fn command_main<I, O, E>(
-    matches: &ArgMatches, io: &mut CommandIO<'_, I, O, E>,
-) -> ExitCode
-where
-    I: BufRead,
-    O: WriteColor,
-    E: WriteColor,
+fn command_main(cmd: &Zakac, matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 {
-    let cmd_info = CommandInfo::new(Zakac.name(), Zakac.version());
+    if let Some(subcmd_matches) = matches.subcommand_matches("segment")
+        && let Some(subcmd) = cmd.get_subcommand("segment")
+    {
+        return subcmd.main(&subcmd_matches, io);
+    }
+
+    let cmd_info = CommandInfo::new(Zakac::name(), Zakac::version());
     let subcmd = matches.subcommand_name().unwrap_or_default();
     unsupported_subcommand_error(&cmd_info, subcmd, io.stderr)
 }

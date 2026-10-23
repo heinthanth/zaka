@@ -30,3 +30,6 @@ en = "Input file, or `-` for stdin (default: stdin)"
 
 [cli.output]
 en = "Output file, or `-` for stdout (default: stdout)"
+
+[cli.output_format]
+en = "Artifact output format (default: inferred from path)"

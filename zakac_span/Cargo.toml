@@ -5,5 +5,7 @@ edition = "2024"
 
 [dependencies]
 bon.workspace = true
+serde = { workspace = true }
 sha2 = "0.11.0"
+unicode-normalization.workspace = true
 zakac_rust_sugars = { workspace = true }

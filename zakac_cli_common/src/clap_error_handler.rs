@@ -31,8 +31,8 @@ pub(crate) fn handle_args_error<W, E>(
     stderr: &mut E,
 ) -> ExitCode
 where
-    W: WriteColor,
-    E: WriteColor,
+    W: WriteColor + ?Sized,
+    E: WriteColor + ?Sized,
 {
     match error.kind()
     {
@@ -72,7 +72,7 @@ fn write_cli_error<W>(
     writer: &mut W, cmd_info: &CommandInfo, msg: impl AsRef<str>,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let msg = t!("cli_errors.template", name = cmd_info.name, msg = msg.as_ref());
     let result = write_line(writer, &msg);
@@ -108,7 +108,7 @@ fn invalid_value<W>(
     error: clap::Error, cmd_info: &CommandInfo, writer: &mut W,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let Some(arg) = context_string(&error, ContextKind::InvalidArg)
     else
@@ -147,7 +147,7 @@ fn unknown_argument<W>(
     error: clap::Error, cmd_info: &CommandInfo, writer: &mut W,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let Some(arg) = context_string(&error, ContextKind::InvalidArg)
     else
@@ -173,7 +173,7 @@ fn unknown_subcommand<W>(
     error: clap::Error, cmd_info: &CommandInfo, writer: &mut W,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let Some(subcommand) = context_string(&error, ContextKind::InvalidSubcommand)
     else
@@ -199,7 +199,7 @@ fn arg_conflict<W>(
     error: clap::Error, cmd_info: &CommandInfo, writer: &mut W,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let Some(arg) = error
         .get(ContextKind::InvalidArg)
@@ -230,7 +230,7 @@ where
 /// The exit code to return.
 fn no_equals<W>(error: clap::Error, cmd_info: &CommandInfo, writer: &mut W) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let Some(arg) = context_string(&error, ContextKind::InvalidArg)
     else
@@ -257,7 +257,7 @@ fn missing_arg<W>(
     error: clap::Error, cmd_info: &CommandInfo, writer: &mut W,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let args = match error.get(ContextKind::InvalidArg)
     {
@@ -296,7 +296,7 @@ fn context_number(error: &clap::Error, kind: ContextKind) -> Option<isize>
 /// The exit code to return.
 fn missing_subcommand<W>(cmd: &Command, writer: &mut W) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let help = cmd.clone().render_help();
     let msg = tern!(writer.supports_color(), help.ansi().to_string(), help.to_string());
@@ -317,7 +317,7 @@ where
 /// The exit code to return.
 fn generic<W>(error: clap::Error, cmd_info: &CommandInfo, writer: &mut W) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let detail = error.to_string();
     let message = t!("cli_errors.generic_with_detail", detail = detail);
@@ -336,7 +336,7 @@ where
 /// The exit code to return.
 fn print_version<W>(cmd_info: &CommandInfo, writer: &mut W) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let result =
         write_line(writer, &create_version_string(&cmd_info.name, &cmd_info.version));
@@ -355,7 +355,7 @@ where
 /// The exit code to return.
 fn print_help<W>(error: clap::Error, writer: &mut W) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let help = error.render();
     let msg = tern!(writer.supports_color(), help.ansi().to_string(), help.to_string());
@@ -378,7 +378,7 @@ fn value_validation<W>(
     error: clap::Error, cmd_info: &CommandInfo, writer: &mut W,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let Some(arg) = context_string(&error, ContextKind::InvalidArg)
     else
@@ -414,7 +414,7 @@ fn more_val_count<W>(
     error: clap::Error, cmd_info: &CommandInfo, writer: &mut W,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let Some(arg) = context_string(&error, ContextKind::InvalidArg)
     else
@@ -447,7 +447,7 @@ fn less_val_count<W>(
     error: clap::Error, cmd_info: &CommandInfo, writer: &mut W,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let Some(arg) = context_string(&error, ContextKind::InvalidArg)
     else
@@ -489,7 +489,7 @@ pub fn unsupported_subcommand_error<W>(
     cmd_info: &CommandInfo, name: &str, writer: &mut W,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let msg = t!("cli_errors.unsupported_subcommand", name = name);
     write_cli_error(writer, cmd_info, msg)
@@ -510,7 +510,7 @@ fn wrong_val_count<W>(
     error: clap::Error, cmd_info: &CommandInfo, writer: &mut W,
 ) -> ExitCode
 where
-    W: WriteColor,
+    W: WriteColor + ?Sized,
 {
     let Some(arg) = context_string(&error, ContextKind::InvalidArg)
     else

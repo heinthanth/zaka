@@ -1,2 +1,5 @@
-target
+.vscode
+.zed
 .DS_Store
+
+target
