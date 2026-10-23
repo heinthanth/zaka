@@ -1,8 +1,9 @@
 use std::path::Path;
 use std::path::PathBuf;
 
+use bon::Builder;
 use clap::ArgMatches;
-use zakac_errors::Error;
+use zakac_host_errors::Error;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_session::artifact::ArtifactFormat;
@@ -10,7 +11,7 @@ use zakac_session::config::Input;
 use zakac_session::config::Output;
 
 /// Which artifact formats a phase can write and how paths are interpreted.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
 pub struct PhaseArtifactOutput
 {
     /// Formats this phase can emit (for example `[ArtifactFormat::Text,
@@ -18,14 +19,14 @@ pub struct PhaseArtifactOutput
     pub formats: &'static [ArtifactFormat],
     /// Default format when the path does not select another supported format.
     pub default_format: ArtifactFormat,
-    /// Raw file extension including the dot (for example `.zksegments`).
+    /// Raw file extension including the dot (for example `.zkseg`).
     pub raw_extension: &'static str,
-    /// Text file extension including the dot (for example `.txt`).
+    /// Text file extension including the dot (for example `.zksegt`).
     pub text_extension: &'static str,
 }
 
 /// Resolved output destination and artifact format.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Builder)]
 pub struct ResolvedArtifactOutput
 {
     /// Where to write the artifact.
@@ -71,7 +72,7 @@ pub fn output_format_from_matches(
 pub fn resolve_artifact_output(
     input: &Input, output_arg: Option<&str>, format_flag: Option<ArtifactFormat>,
     caps: &PhaseArtifactOutput,
-) -> zakac_errors::Result<ResolvedArtifactOutput>
+) -> zakac_host_errors::Result<ResolvedArtifactOutput>
 {
     ret_if!(let Some(format) = format_flag, resolve_with_exp_format(input, output_arg, format, caps));
     resolve_without_format_flag(input, output_arg, caps)
@@ -92,21 +93,21 @@ pub fn resolve_artifact_output(
 fn resolve_with_exp_format(
     input: &Input, output_arg: Option<&str>, format: ArtifactFormat,
     caps: &PhaseArtifactOutput,
-) -> zakac_errors::Result<ResolvedArtifactOutput>
+) -> zakac_host_errors::Result<ResolvedArtifactOutput>
 {
     ensure_format_supported(format, caps, output_arg)?;
     let output = build_output_path(input, output_arg, format, caps);
-    Ok(ResolvedArtifactOutput { output, format })
+    Ok(ResolvedArtifactOutput::builder().output(output).format(format).build())
 }
 
 /// Resolve output when format comes from path hints and phase defaults.
 fn resolve_without_format_flag(
     input: &Input, output_arg: Option<&str>, caps: &PhaseArtifactOutput,
-) -> zakac_errors::Result<ResolvedArtifactOutput>
+) -> zakac_host_errors::Result<ResolvedArtifactOutput>
 {
     let format = infer_format(output_arg, caps);
     let output = build_output_path(input, output_arg, format, caps);
-    Ok(ResolvedArtifactOutput { output, format })
+    Ok(ResolvedArtifactOutput::builder().output(output).format(format).build())
 }
 
 /// Infer artifact format from the output path and phase capabilities.
@@ -395,7 +396,7 @@ fn is_path_dir(path: &Path, arg: &str) -> bool
 /// An error if the format is not supported.
 fn ensure_format_supported(
     format: ArtifactFormat, caps: &PhaseArtifactOutput, output_arg: Option<&str>,
-) -> zakac_errors::Result<()>
+) -> zakac_host_errors::Result<()>
 {
     let path = output_error_path(output_arg);
     let supported = supports_format(caps, format);

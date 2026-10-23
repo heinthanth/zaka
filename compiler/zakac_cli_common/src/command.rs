@@ -134,9 +134,12 @@ impl CommandBuilder
 
 /// A [`clap::Command`] being configured, together with the subcommand handlers
 /// registered through [`CommandSetup::add_subcommand`].
+#[derive(Builder)]
+#[builder(start_fn(vis = ""), builder_type(vis = ""))]
 pub struct CommandSetup
 {
     cmd: clap::Command,
+    #[builder(default)]
     subcommands: HashMap<String, Box<dyn Command>>,
 }
 
@@ -147,7 +150,7 @@ impl CommandSetup
     /// # Arguments
     ///
     /// * `cmd` - The command to configure.
-    pub fn new(cmd: clap::Command) -> Self { Self { cmd, subcommands: HashMap::new() } }
+    pub fn new(cmd: clap::Command) -> Self { Self::builder().cmd(cmd).build() }
 
     /// Configure the internal [`clap::Command`].
     ///
@@ -160,7 +163,7 @@ impl CommandSetup
     /// The setup with the command configured.
     pub fn with(self, f: impl FnOnce(clap::Command) -> clap::Command) -> Self
     {
-        Self { cmd: f(self.cmd), subcommands: self.subcommands }
+        Self::builder().cmd(f(self.cmd)).subcommands(self.subcommands).build()
     }
 
     /// Register `C` as a subcommand.

@@ -37,10 +37,9 @@ fn round_trip(format: ArtifactFormat)
     let reloaded: SegmentArtifact =
         load_artifact(&input, format, &mut stdin, &mut source_map).unwrap();
 
-    assert_eq!(
-        reloaded.name.virtual_path_string(),
-        artifact.name.virtual_path_string()
-    );
+    let input_path = artifact.name.virtual_path_string();
+    let reloaded_path = reloaded.name.virtual_path_string();
+    assert_eq!(input_path, reloaded_path, "input path mismatch");
     assert_eq!(reloaded.source, artifact.source);
     assert_eq!(reloaded.tokens, artifact.tokens);
 }

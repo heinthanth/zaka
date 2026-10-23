@@ -1,0 +1,70 @@
+_version = 2
+
+# ---------------------------------------------------------------- lexer ZK01xx
+
+[codes.ZK0101.title]
+en = "invalid character"
+[codes.ZK0101.message]
+en = "invalid character in \"%{w}\""
+[codes.ZK0101.help_comma]
+en = "lists are separated with \"၊\", not \",\""
+[codes.ZK0101.explain]
+en = """A word holds a character that cannot start or continue a token. Identifiers start with a letter, an underscore or an emoji and continue with letters, digits, underscores or emoji; operators are the ASCII punctuation the language defines. Other punctuation such as \",\", \";\", \"=\" on its own or \"?\" has no meaning in the language. The word is skipped and lexing goes on with the next one."""
+
+[codes.ZK0102.title]
+en = "invalid number literal"
+[codes.ZK0102.message]
+en = "invalid number literal \"%{w}\""
+[codes.ZK0102.explain]
+en = """A word that starts with a digit must be a number literal: a run of digits in one script, with an optional fraction and exponent, or (for Western digits) ASCII letters that stand for digits above 9 after a base prefix. A Burmese digit run followed with letters in the same word, such as a bit count written attached to \"ဘစ်\", is not a number; put a space between the two words."""
+
+[codes.ZK0103.title]
+en = "mixed digit scripts"
+[codes.ZK0103.message]
+en = "Burmese and Western digits cannot be mixed in one number"
+[codes.ZK0103.explain]
+en = """A number literal uses one digit script: either Burmese digits (၀ to ၉) or Western digits (0 to 9). This literal switches script inside the number, in its fraction, or where two digit runs touch without a space. Rewrite the whole literal in one script."""
+
+[codes.ZK0104.title]
+en = "unterminated string literal"
+[codes.ZK0104.message]
+en = "string literal is missing its closing quote before the end of the line"
+[codes.ZK0104.explain]
+en = """A string literal starts and ends with a double quote on the same line. The lexer reached the end of the line without finding the closing quote. Add the quote, or write \\\" for a double quote that belongs to the text. The text read so far is kept so later phases can go on."""
+
+[codes.ZK0105.title]
+en = "unterminated character literal"
+[codes.ZK0105.message]
+en = "character literal is missing its closing quote before the end of the line"
+[codes.ZK0105.explain]
+en = """A character literal starts and ends with a single quote on the same line. The lexer reached the end of the line without finding the closing quote. Add the quote, or write \\' for a single quote that belongs to the literal."""
+
+[codes.ZK0106.title]
+en = "unknown escape sequence"
+[codes.ZK0106.message]
+en = "unknown escape sequence \"%{e}\""
+[codes.ZK0106.help_brace]
+en = "write \"{{\" or \"}}\" for a literal brace"
+[codes.ZK0106.explain]
+en = """Inside a string or character literal, a backslash starts one of the escapes \\n, \\r, \\t, \\0, \\\\, \\', \\\" or \\u with four or eight hex digits, and braces hold a named escape such as {နောက်တစ်ကြောင်း} or {ယူနီကုဒ် HHHH}. This escape matches none of them. Braces are reserved for named escapes and, later, variable substitution, so a literal brace is written doubled: {{ or }}."""
+
+[codes.ZK0107.title]
+en = "wrong character literal length"
+[codes.ZK0107.message]
+en = "a character literal must hold one character, found %{n}"
+[codes.ZK0107.explain]
+en = """A character literal holds one Unicode scalar value between its quotes: one letter, one digit, one escape, or one emoji. This literal holds a different count. A Burmese vanna with its signs counts as several scalar values; use a string literal for text that is longer than one scalar value."""
+
+[codes.ZK0108.title]
+en = "unterminated raw identifier"
+[codes.ZK0108.message]
+en = "raw identifier is missing its closing backtick before the end of the line"
+[codes.ZK0108.explain]
+en = """A raw identifier is written between backticks on one line and can hold spaces, reserved words and operator characters. The lexer reached the end of the line without finding the closing backtick. Add it, or remove the opening one."""
+
+[codes.ZK0109.title]
+en = "blank raw identifier"
+[codes.ZK0109.message]
+en = "raw identifier between backticks is blank"
+[codes.ZK0109.explain]
+en = """Two backticks with nothing between them do not name a variable. A raw identifier needs at least one character between the backticks."""

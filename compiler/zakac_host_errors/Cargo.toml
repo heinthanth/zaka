@@ -1,9 +1,10 @@
 [package]
-name = "zakac_errors"
+name = "zakac_host_errors"
 version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
+bon = { workspace = true }
 rust-i18n = { workspace = true }
 thiserror = "2.0.21"
 zakac_i18n = { workspace = true }

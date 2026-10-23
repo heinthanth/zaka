@@ -15,14 +15,5 @@ en = "Coalesce consecutive non-Burmese characters into a single token."
 [segmenter.max_lookahead]
 en = "Maximum look-ahead limit for vanna detection."
 
-[segmenter.artifact.invalid_utf8]
-en = "invalid UTF-8: %{e}"
-
-[segmenter.artifact.missing_text_header]
-en = "missing or unknown text header"
-
-[segmenter.artifact.invalid_json]
-en = "invalid JSON: %{e}"
-
 [segmenter.artifact.source_changed]
 en = "source text changed after re-ingest"

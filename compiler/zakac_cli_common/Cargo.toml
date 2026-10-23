@@ -11,7 +11,7 @@ num_enum = { workspace = true }
 rust-i18n = { workspace = true }
 termcolor = { workspace = true }
 zakac_consts = { workspace = true }
-zakac_errors = { workspace = true }
+zakac_host_errors = { workspace = true }
 zakac_i18n = { workspace = true }
 zakac_reporter = { workspace = true }
 zakac_rust_sugars = { workspace = true }

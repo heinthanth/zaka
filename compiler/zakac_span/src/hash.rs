@@ -1,3 +1,4 @@
+use bon::Builder;
 use sha2::Digest;
 use sha2::Sha256;
 
@@ -11,7 +12,7 @@ pub enum SourceFileHashAlgorithm
 }
 
 /// Hash of a source file's original content.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Builder)]
 pub struct SourceFileHash
 {
     /// Algorithm used.
@@ -34,7 +35,7 @@ impl SourceFileHash
     /// The new source file hash.
     pub fn new(algorithm: SourceFileHashAlgorithm, hash: [u8; 32]) -> Self
     {
-        SourceFileHash { algorithm, hash }
+        SourceFileHash::builder().algorithm(algorithm).hash(hash).build()
     }
 
     /// Make a SHA-256 hash of `src`.

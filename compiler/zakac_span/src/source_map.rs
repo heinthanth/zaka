@@ -17,7 +17,7 @@ use crate::source_file::SourceFile;
 use crate::span::Span;
 
 /// A source location (file, line, column).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Builder)]
 pub struct Loc
 {
     /// Source file.
@@ -304,7 +304,7 @@ impl SourceMap
         let file = self.lookup_source_file(pos);
         let relative = file.relative_position(pos);
         let (line, col) = file.lookup_file_pos(&relative);
-        Loc { file, line, col }
+        Loc::builder().file(file).line(line).col(col).build()
     }
 
     /// Format a span as `file:line:col`.

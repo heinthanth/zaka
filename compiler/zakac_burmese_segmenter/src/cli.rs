@@ -28,7 +28,8 @@ use zakac_span::source_map::SourceMap;
 use crate::artifact::SegmentArtifact;
 use crate::segmenter::SegmenterOptions;
 
-const SEGMENT_RAW_EXTENSION: &str = ".zksegments";
+const SEGMENT_RAW_EXTENSION: &str = ".zkseg";
+const SEGMENT_TEXT_EXTENSION: &str = ".zksegt";
 
 /// The `zakac-burmese-segmenter` command.
 pub struct ZakacBurmeseSegmenter
@@ -142,12 +143,12 @@ impl Command for ZakacBurmeseSegmenter
 /// Output capabilities for the segment phase.
 fn segment_output_caps() -> PhaseArtifactOutput
 {
-    PhaseArtifactOutput {
-        formats: &[ArtifactFormat::Text, ArtifactFormat::Raw],
-        default_format: ArtifactFormat::Raw,
-        raw_extension: SEGMENT_RAW_EXTENSION,
-        text_extension: ".txt",
-    }
+    PhaseArtifactOutput::builder()
+        .formats(&[ArtifactFormat::Text, ArtifactFormat::Raw])
+        .default_format(ArtifactFormat::Raw)
+        .raw_extension(SEGMENT_RAW_EXTENSION)
+        .text_extension(SEGMENT_TEXT_EXTENSION)
+        .build()
 }
 
 /// The main function for this "zakac_burmese_segmenter" command.

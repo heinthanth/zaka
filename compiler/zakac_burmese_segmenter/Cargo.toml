@@ -14,12 +14,11 @@ const_for = { workspace = true }
 postcard = { workspace = true }
 rust-i18n = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 tempfile = { workspace = true }
 termcolor = { workspace = true }
 zakac_cli_common = { workspace = true }
 zakac_i18n = { workspace = true }
-zakac_errors = { workspace = true }
+zakac_host_errors = { workspace = true }
 zakac_session = { workspace = true }
 zakac_reporter = { workspace = true }
 zakac_rust_sugars = { workspace = true }

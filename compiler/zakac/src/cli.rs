@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use bon::Builder;
 use zakac_burmese_segmenter::cli::ZakacBurmeseSegmenter;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::ArgMatches;
@@ -11,8 +12,11 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_lexer::cli::ZakacLexer;
+use zakac_rust_sugars::ret_if;
 
 /// The `zakac` command.
+#[derive(Builder)]
 pub(crate) struct Zakac
 {
     /// private [`clap::Command`] instance.
@@ -66,6 +70,7 @@ impl Command for Zakac
         setup
             .with(|cmd| cmd.subcommand_required(true))
             .add_subcommand::<ZakacBurmeseSegmenter>(Some("segment"))
+            .add_subcommand::<ZakacLexer>(Some("lex"))
     }
 
     /// Construct this command wrapper from a finished [`CommandSetup`].
@@ -80,7 +85,7 @@ impl Command for Zakac
     fn from_setup(setup: CommandSetup) -> Self
     {
         let (cmd_instance, subcommands) = setup.into_parts();
-        Self { cmd_instance, subcommands }
+        Self::builder().cmd_instance(cmd_instance).subcommands(subcommands).build()
     }
 
     /// Get the [`clap::Command`] instance stored in the command.
@@ -133,11 +138,10 @@ impl Command for Zakac
 /// The exit code of the command.
 fn command_main(cmd: &Zakac, matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 {
-    if let Some(subcmd_matches) = matches.subcommand_matches("segment")
-        && let Some(subcmd) = cmd.get_subcommand("segment")
-    {
-        return subcmd.main(&subcmd_matches, io);
-    }
+    let found = matches
+        .subcommand()
+        .and_then(|(name, sub)| cmd.get_subcommand(name).map(|subcmd| (subcmd, sub)));
+    ret_if!(let Some((subcmd, sub_matches)) = found, subcmd.main(sub_matches, io));
 
     let cmd_info = CommandInfo::new(Zakac::name(), Zakac::version());
     let subcmd = matches.subcommand_name().unwrap_or_default();

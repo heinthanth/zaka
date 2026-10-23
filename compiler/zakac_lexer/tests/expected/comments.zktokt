@@ -1,0 +1,85 @@
+# zakac-lex-artifact v1
+name:
+  Custom: comments.zaka
+source: "မှတ်ချက် အသက် ၁၈ အောက် ငယ်သူများကို လက်မခံပါ\n/// ဒါကတော့ Rust language ထဲကလို triple slashes comment ဖြစ်ပါတယ်\n// \"a quote that is not a string\nအသက် ကို ပြသပါ။ // trailing comment\nမှတ်ချက်ကို ပြသပါ။\n"
+tokens:
+- kind: ident
+  span:
+    lo: 266
+    hi: 278
+  particle: none
+  joined: false
+- kind:
+    kw: ko
+  span:
+    lo: 279
+    hi: 288
+  particle: none
+  joined: false
+- kind:
+    kw: print
+  span:
+    lo: 289
+    hi: 304
+  particle: none
+  joined: false
+- kind:
+    punct: full_stop
+  span:
+    lo: 304
+    hi: 307
+  particle: none
+  joined: true
+- kind:
+    kw: note
+  span:
+    lo: 328
+    hi: 352
+  particle: none
+  joined: false
+- kind:
+    kw: ko
+  span:
+    lo: 352
+    hi: 361
+  particle: none
+  joined: true
+- kind:
+    kw: print
+  span:
+    lo: 362
+    hi: 377
+  particle: none
+  joined: false
+- kind:
+    punct: full_stop
+  span:
+    lo: 377
+    hi: 380
+  particle: none
+  joined: true
+- kind: eof
+  span:
+    lo: 381
+    hi: 381
+  particle: none
+  joined: false
+comments:
+- kind: note
+  span:
+    lo: 0
+    hi: 122
+- kind: doc_slash
+  span:
+    lo: 123
+    hi: 232
+- kind: slash
+  span:
+    lo: 233
+    hi: 265
+- kind: slash
+  span:
+    lo: 308
+    hi: 327
+strings: []
+diagnostics: []

@@ -20,8 +20,11 @@ fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
     let mut stdin = Cursor::new(stdin.to_string());
     let mut stdout = Buffer::no_color();
     let mut stderr = Buffer::no_color();
-    let mut io =
-        CommandIO { stdin: &mut stdin, stdout: &mut stdout, stderr: &mut stderr };
+    let mut io = CommandIO::builder()
+        .stdin(&mut stdin)
+        .stdout(&mut stdout)
+        .stderr(&mut stderr)
+        .build();
 
     let code = command.execute(&argv, &mut io);
     let stdout = String::from_utf8(stdout.into_inner()).unwrap();
@@ -78,10 +81,10 @@ fn stdout_dash_writes_text_artifact()
 }
 
 #[test]
-fn output_txt_writes_text_artifact()
+fn output_zksegt_writes_text_artifact()
 {
     let dir = tempfile::tempdir().unwrap();
-    let out_path = dir.path().join("out.txt");
+    let out_path = dir.path().join("out.zksegt");
     let out = out_path.to_str().unwrap();
 
     let (code, stdout, stderr) = run_cli(&["-o", out], "က");
@@ -126,10 +129,10 @@ fn output_without_extension_writes_raw_artifact()
 }
 
 #[test]
-fn output_zksegments_writes_raw_artifact()
+fn output_zkseg_writes_raw_artifact()
 {
     let dir = tempfile::tempdir().unwrap();
-    let out_path = dir.path().join("out.zksegments");
+    let out_path = dir.path().join("out.zkseg");
     let out = out_path.to_str().unwrap();
 
     let (code, _stdout, stderr) = run_cli(&["-o", out], "က");
@@ -156,7 +159,7 @@ fn unknown_extension_defaults_to_raw()
 }
 
 #[test]
-fn output_dir_writes_basename_zksegments()
+fn output_dir_writes_basename_zkseg()
 {
     let dir = tempfile::tempdir().unwrap();
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("samples/paragraph1.in");
@@ -168,17 +171,17 @@ fn output_dir_writes_basename_zksegments()
     assert_eq!(code, ExitCode::Success);
     assert!(stderr.is_empty());
 
-    let expected = out_dir.join("paragraph1.zksegments");
+    let expected = out_dir.join("paragraph1.zkseg");
     assert!(expected.is_file());
     let raw = std::fs::read(&expected).unwrap();
     assert!(raw.starts_with(RAW_ARTIFACT_MAGIC));
 }
 
 #[test]
-fn output_format_raw_overrides_txt_extension()
+fn output_format_raw_overrides_zksegt_extension()
 {
     let dir = tempfile::tempdir().unwrap();
-    let out_path = dir.path().join("out.txt");
+    let out_path = dir.path().join("out.zksegt");
     let out = out_path.to_str().unwrap();
 
     let (code, _stdout, stderr) = run_cli(&["--output-format", "raw", "-o", out], "က");
@@ -190,7 +193,7 @@ fn output_format_raw_overrides_txt_extension()
 }
 
 #[test]
-fn output_format_text_to_dir_writes_txt()
+fn output_format_text_to_dir_writes_zksegt()
 {
     let dir = tempfile::tempdir().unwrap();
     let out_dir = dir.path().join("text_out");
@@ -202,8 +205,23 @@ fn output_format_text_to_dir_writes_txt()
     assert_eq!(code, ExitCode::Success);
     assert!(stderr.is_empty());
 
-    let expected = out_dir.join("stdin.txt");
+    let expected = out_dir.join("stdin.zksegt");
     assert!(expected.is_file());
     let contents = std::fs::read_to_string(&expected).unwrap();
     assert!(contents.starts_with(TEXT_HEADER));
+}
+
+#[test]
+fn output_txt_defaults_to_raw()
+{
+    let dir = tempfile::tempdir().unwrap();
+    let out_path = dir.path().join("out.txt");
+    let out = out_path.to_str().unwrap();
+
+    let (code, _stdout, stderr) = run_cli(&["-o", out], "က");
+    assert_eq!(code, ExitCode::Success);
+    assert!(stderr.is_empty());
+
+    let raw = std::fs::read(&out_path).unwrap();
+    assert!(raw.starts_with(RAW_ARTIFACT_MAGIC));
 }

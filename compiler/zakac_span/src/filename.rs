@@ -2,6 +2,7 @@ use std::fmt;
 use std::path::Path;
 use std::path::PathBuf;
 
+use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
 use zakac_rust_sugars::extract;
@@ -19,7 +20,7 @@ pub enum FileName
 }
 
 /// A real file path, with optional remapping.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct RealFileName
 {
     /// Path on disk.
@@ -41,7 +42,7 @@ impl FileName
     /// The real file name.
     pub fn real(local_path: PathBuf) -> Self
     {
-        FileName::Real(RealFileName { local_path, remapped_path: None })
+        FileName::Real(RealFileName::builder().local_path(local_path).build())
     }
 
     /// Create a real file name with a remapped path.
@@ -56,8 +57,9 @@ impl FileName
     /// The real file name.
     pub fn real_remapped(local_path: PathBuf, remapped_path: PathBuf) -> Self
     {
-        let remapped_path = Some(remapped_path);
-        FileName::Real(RealFileName { local_path, remapped_path })
+        let real =
+            RealFileName::builder().local_path(local_path).remapped_path(remapped_path);
+        FileName::Real(real.build())
     }
 
     /// Get the virtual path string for this file name.

@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use bon::Builder;
 use zakac_i18n::t;
 
 /// Possible errors that can occur during a Zakac operation.
@@ -68,7 +69,7 @@ pub enum IOErrorAction
 }
 
 /// A context for an IO error.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Builder)]
 pub struct IOErrorContext
 {
     /// The path of the resource.
@@ -89,7 +90,10 @@ impl IOErrorContext
     /// # Returns
     ///
     /// The new IO error context.
-    pub fn new(path: PathBuf, action: IOErrorAction) -> Self { Self { path, action } }
+    pub fn new(path: PathBuf, action: IOErrorAction) -> Self
+    {
+        Self::builder().path(path).action(action).build()
+    }
 }
 
 /// Convert an IO error to a Zakac error.

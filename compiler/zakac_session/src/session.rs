@@ -57,7 +57,7 @@ where
     /// Returns an error if the artifact cannot be loaded.
     pub fn load_artifact<T: PhaseArtifact>(
         &mut self, input: &Input, format: ArtifactFormat,
-    ) -> zakac_errors::Result<T>
+    ) -> zakac_host_errors::Result<T>
     {
         load_artifact(input, format, &mut self.stdin, &mut self.source_map)
     }
@@ -79,7 +79,7 @@ where
     /// Returns an error if the artifact cannot be written.
     pub fn dump_artifact<T: PhaseArtifact>(
         &mut self, output: &mut Output, value: &T, format: ArtifactFormat,
-    ) -> zakac_errors::Result<()>
+    ) -> zakac_host_errors::Result<()>
     {
         dump_artifact(output, &mut self.stdout, value, format)
     }

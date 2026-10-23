@@ -17,3 +17,12 @@ en = "wrong artifact phase %{got}, expected %{expected}"
 
 [session.artifact.invalid_raw]
 en = "invalid raw artifact: %{e}"
+
+[session.artifact.invalid_utf8]
+en = "invalid UTF-8: %{e}"
+
+[session.artifact.missing_text_header]
+en = "missing or unknown text header"
+
+[session.artifact.invalid_text]
+en = "invalid YAML: %{e}"

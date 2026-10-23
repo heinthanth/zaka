@@ -24,7 +24,7 @@ pub enum PreLexicalTokenKind
 
 /// A pre-lexical token is a unit of input for a lexer.
 /// Lexer lexes one or more of them into lexical tokens.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
 pub struct PreLexicalToken<'s>
 {
     /// Kind of the token.
@@ -119,8 +119,8 @@ pub fn segment_at<'s>(
 const BUR_FIRST: u32 = 0x1000;
 /// Number of code points in `U+1000..=U+104F`.
 const BUR_COUNT: usize = (0x104F - 0x1000 + 1) as usize;
-/// UTF-8 length of Burmese modifiers (`U+102B..=U+103E`).
-const MODIFIER_UTF8_LEN: usize = 3;
+/// Dot below (့), the one sign allowed between a killed consonant and its asat.
+const DOT_BELOW: u32 = 0x1037;
 /// Compile-time class table for `U+1000..=U+104F`.
 const BUR_CLASS: [u8; BUR_COUNT] = build_bur_class_table();
 
@@ -338,15 +338,13 @@ fn has_structural_tail(rest: &str, first: u8, max_lookahead: usize) -> bool
     // lookahead limit is 1, no structural tail
     ret_false!(max_lookahead == 1);
 
-    // `first` was classified; skip its 3 u8s and scan the
-    // remaining modifiers until a non-modifier (then test virama/asat).
-    rest.get(MODIFIER_UTF8_LEN..)
-        .unwrap_or("")
-        .chars()
-        .take(max_lookahead - 1)
-        .map(|ch| bur_class(ch as u32))
-        .find(|&c| c & F_MODIFIER == 0)
-        .is_some_and(|c| c & (F_VIRAMA | F_ASAT) != 0)
+    // A killed consonant can hold the dot below (့) before its asat, but no
+    // other sign. Vowel signs and medials mean the base starts a new vanna,
+    // as in `ကျော်`, where the asat belongs to the vowel.
+    rest.chars()
+        .take(max_lookahead)
+        .find(|&ch| ch as u32 != DOT_BELOW)
+        .is_some_and(|ch| bur_class(ch as u32) & (F_VIRAMA | F_ASAT) != 0)
 }
 
 /// Get the kind of a token from the class of its first character.
@@ -522,5 +520,7 @@ fn emit<'s>(
     let lo = base_pos + start_off;
     let hi = base_pos + end_off;
     let lexeme = &text[start_off..end_off];
-    tokens.push(PreLexicalToken { kind, lexeme, span: Span::new(lo, hi) });
+    let token =
+        PreLexicalToken::builder().kind(kind).lexeme(lexeme).span(Span::new(lo, hi));
+    tokens.push(token.build());
 }

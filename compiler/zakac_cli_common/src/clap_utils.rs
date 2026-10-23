@@ -1,3 +1,4 @@
+use bon::Builder;
 use chrono::Datelike;
 use chrono::Utc;
 use clap::Arg;
@@ -5,7 +6,7 @@ use clap::ArgMatches;
 use termcolor::WriteColor;
 use zakac_consts::ZAKA_BUILD_NUMBER;
 use zakac_consts::ZAKA_LICENSE;
-use zakac_errors::Error;
+use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_reporter::writer::write_line;
 use zakac_rust_sugars::do_if;
@@ -41,11 +42,14 @@ where
 }
 
 /// The information about the current command or subcommand.
+#[derive(Builder)]
 pub struct CommandInfo
 {
     /// The command or subcommand name.
+    #[builder(into)]
     pub name: String,
     /// The command or subcommand version.
+    #[builder(into)]
     pub version: String,
 }
 
@@ -63,7 +67,7 @@ impl CommandInfo
     /// A new CommandInfo.
     pub fn new(name: &'static str, version: &'static str) -> Self
     {
-        Self { name: name.to_string(), version: version.to_string() }
+        Self::builder().name(name).version(version).build()
     }
 }
 
@@ -117,7 +121,7 @@ pub(crate) fn command_info(cmd: &clap::Command, args: &[String]) -> CommandInfo
     let active = active_command(cmd, args);
     let component = component_name(active).to_string();
     let version = active.get_version().unwrap_or("0.0.0").to_string();
-    CommandInfo { name: component, version }
+    CommandInfo::builder().name(component).version(version).build()
 }
 
 /// Resolve the deepest subcommand referenced before a terminator

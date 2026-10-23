@@ -1,5 +1,6 @@
 use std::iter::once;
 
+use bon::Builder;
 use unicode_normalization::IsNormalized;
 use unicode_normalization::UnicodeNormalization;
 use unicode_normalization::char::canonical_combining_class;
@@ -9,7 +10,7 @@ use zakac_rust_sugars::ret_if;
 use crate::burmese_normalizer;
 
 /// A position in normalized source where normalization changed the text length.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Builder)]
 pub struct NormalizedPos
 {
     /// Offset in the normalized text.
@@ -22,11 +23,14 @@ pub struct NormalizedPos
 impl NormalizedPos
 {
     /// Create a new normalized position.
-    pub fn new(pos: u32, diff: i32) -> Self { NormalizedPos { pos, diff } }
+    pub fn new(pos: u32, diff: i32) -> Self
+    {
+        NormalizedPos::builder().pos(pos).diff(diff).build()
+    }
 }
 
 /// Result of normalizing source text.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Builder)]
 pub struct NormalizedSource
 {
     /// Normalized source text.
@@ -203,7 +207,7 @@ fn normalize_source(original: &str) -> NormalizedSource
     if src.starts_with('\u{FEFF}')
     {
         diff_acc = 3;
-        npos.push(NormalizedPos { pos: 0, diff: diff_acc });
+        npos.push(NormalizedPos::new(0, diff_acc));
         src = &src[3..];
     }
 
@@ -214,7 +218,11 @@ fn normalize_source(original: &str) -> NormalizedSource
     {
         idx += normalize_next(&src[idx..], &mut out, &mut diff_acc, &mut npos);
     }
-    NormalizedSource { src: out, unnormalized_source_len, normalized_pos: npos }
+    NormalizedSource::builder()
+        .src(out)
+        .unnormalized_source_len(unnormalized_source_len)
+        .normalized_pos(npos)
+        .build()
 }
 
 /// Normalize one line break or chunk at the start of `rest`.
@@ -306,11 +314,8 @@ mod tests
         for (normalized, original_pos) in cases
         {
             let mapped = file.original_relative_pos(&RelativePos::new(normalized));
-            assert_eq!(
-                mapped.as_u32(),
-                original_pos,
-                "wrong original offset for normalized {normalized}",
-            );
+            let msg = format!("wrong original offset for normalized {normalized}");
+            assert_eq!(mapped.as_u32(), original_pos, "{msg}");
         }
     }
 
@@ -431,11 +436,8 @@ mod tests
         for (normalized, original_pos) in cases
         {
             let mapped = file.original_relative_pos(&RelativePos::new(normalized));
-            assert_eq!(
-                mapped.as_u32(),
-                original_pos,
-                "wrong original offset for normalized {normalized}",
-            );
+            let msg = format!("wrong original offset for normalized {normalized}");
+            assert_eq!(mapped.as_u32(), original_pos, "{msg}");
         }
     }
 }

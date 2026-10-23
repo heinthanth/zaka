@@ -5,13 +5,15 @@ use std::sync::Arc;
 use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
-use zakac_errors::Error;
+use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_rust_sugars::ret_if;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::PhaseArtifact;
 use zakac_session::artifact::decode_raw;
+use zakac_session::artifact::decode_text;
 use zakac_session::artifact::encode_raw;
+use zakac_session::artifact::encode_text;
 use zakac_session::config::Input;
 use zakac_span::filename::FileName;
 use zakac_span::pos::Pos;
@@ -24,7 +26,7 @@ use crate::segmenter::PreLexicalTokenKind;
 use crate::segmenter::SegmenterOptions;
 use crate::segmenter::segment_at;
 
-const TEXT_HEADER: &str = "# zakac-segment-artifact v1\n";
+const TEXT_HEADER: &str = "# zakac-segment-artifact v1";
 const RAW_PHASE: &str = "segment";
 const ARTIFACT_VERSION: u32 = 1;
 
@@ -174,7 +176,7 @@ impl PhaseArtifact for SegmentArtifact
     fn decode(
         format: ArtifactFormat, input: &Input, stdin: &mut dyn BufRead,
         source_map: &mut SourceMap,
-    ) -> zakac_errors::Result<Self>
+    ) -> zakac_host_errors::Result<Self>
     {
         let path = input.error_path();
         let (_, content) = input.read(stdin)?;
@@ -196,7 +198,7 @@ impl PhaseArtifact for SegmentArtifact
     /// # Errors
     ///
     /// Returns an error if the artifact cannot be encoded.
-    fn encode(&self, format: ArtifactFormat) -> zakac_errors::Result<Vec<u8>>
+    fn encode(&self, format: ArtifactFormat) -> zakac_host_errors::Result<Vec<u8>>
     {
         encode_artifact(self, format)
     }
@@ -217,20 +219,6 @@ fn decode_err(path: impl Into<PathBuf>, msg: impl AsRef<str>) -> Error
     Error::FailedToDecodeArtifact { path: path.into(), msg: msg.as_ref().to_string() }
 }
 
-/// Create an encode error.
-///
-/// # Arguments
-///
-/// * `err` - The error to create the error with.
-///
-/// # Returns
-///
-/// The created error.
-fn encode_err(err: impl std::error::Error + Send + Sync + 'static) -> Error
-{
-    Error::InternalError { error: Box::new(err) }
-}
-
 /// Encode an artifact into given format.
 ///
 /// # Arguments
@@ -243,9 +231,9 @@ fn encode_err(err: impl std::error::Error + Send + Sync + 'static) -> Error
 /// The encoded artifact.
 fn encode_artifact(
     artifact: &SegmentArtifact, format: ArtifactFormat,
-) -> zakac_errors::Result<Vec<u8>>
+) -> zakac_host_errors::Result<Vec<u8>>
 {
-    ret_if!(format == ArtifactFormat::Text, encode_text(artifact));
+    ret_if!(format == ArtifactFormat::Text, encode_text(TEXT_HEADER, artifact));
     encode_raw_artifact(artifact)
 }
 
@@ -262,58 +250,10 @@ fn encode_artifact(
 /// The decoded artifact.
 fn decode_artifact(
     content: &[u8], path: &std::path::Path, format: ArtifactFormat,
-) -> zakac_errors::Result<SegmentArtifact>
+) -> zakac_host_errors::Result<SegmentArtifact>
 {
-    ret_if!(format == ArtifactFormat::Text, decode_text(content, path));
+    ret_if!(format == ArtifactFormat::Text, decode_text(TEXT_HEADER, content, path));
     decode_raw_artifact(content, path)
-}
-
-/// Decode a segment artifact from text.
-///
-/// # Arguments
-///
-/// * `content` - The content to decode the artifact from.
-/// * `path` - The path to the artifact.
-///
-/// # Returns
-///
-/// The decoded artifact.
-fn decode_text(
-    content: &[u8], path: &std::path::Path,
-) -> zakac_errors::Result<SegmentArtifact>
-{
-    let text = String::from_utf8(content.to_vec()).map_err(|err| {
-        decode_err(path, t!("segmenter.artifact.invalid_utf8", e = err.to_string()))
-    })?;
-    if !text.starts_with(TEXT_HEADER)
-    {
-        return Err(decode_err(path, t!("segmenter.artifact.missing_text_header")));
-    }
-
-    let json = text[TEXT_HEADER.len()..].trim_start();
-    let res = serde_json::from_str(json);
-    ret_if!(let Ok(artifact) = res, Ok(artifact));
-    let err = res.err().unwrap();
-    Err(decode_err(path, t!("segmenter.artifact.invalid_json", e = err.to_string())))
-}
-
-/// Encode a segment artifact into text.
-///
-/// # Arguments
-///
-/// * `artifact` - The artifact to encode.
-///
-/// # Returns
-///
-/// The encoded artifact.
-///
-/// # Errors
-///
-/// Returns an error if the artifact cannot be encoded.
-fn encode_text(artifact: &SegmentArtifact) -> zakac_errors::Result<Vec<u8>>
-{
-    let json = serde_json::to_string_pretty(artifact).map_err(encode_err)?;
-    Ok(format!("{TEXT_HEADER}{json}").into_bytes())
 }
 
 /// Decode a segment artifact from raw u8s.
@@ -332,7 +272,7 @@ fn encode_text(artifact: &SegmentArtifact) -> zakac_errors::Result<Vec<u8>>
 /// Returns an error if the artifact cannot be decoded.
 fn decode_raw_artifact(
     content: &[u8], path: &std::path::Path,
-) -> zakac_errors::Result<SegmentArtifact>
+) -> zakac_host_errors::Result<SegmentArtifact>
 {
     decode_raw(RAW_PHASE, ARTIFACT_VERSION, content, path)
 }
@@ -350,7 +290,8 @@ fn decode_raw_artifact(
 /// # Errors
 ///
 /// Returns an error if the artifact cannot be encoded.
-fn encode_raw_artifact(artifact: &SegmentArtifact) -> zakac_errors::Result<Vec<u8>>
+fn encode_raw_artifact(artifact: &SegmentArtifact)
+-> zakac_host_errors::Result<Vec<u8>>
 {
     encode_raw(RAW_PHASE, ARTIFACT_VERSION, artifact)
 }
@@ -368,7 +309,7 @@ fn encode_raw_artifact(artifact: &SegmentArtifact) -> zakac_errors::Result<Vec<u
 /// The result of the verification.
 fn run_src_verification(
     artifact: &SegmentArtifact, source_map: &mut SourceMap, path: &std::path::Path,
-) -> zakac_errors::Result<()>
+) -> zakac_host_errors::Result<()>
 {
     let registered = artifact.register_source(source_map);
     ret_if!(registered.src == artifact.source, Ok(()));

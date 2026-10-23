@@ -9,6 +9,7 @@ chain_width = 88
 struct_lit_width = 88
 attr_fn_like_width = 88
 fn_call_width = 88
+array_width = 88
 
 brace_style = "AlwaysNextLine"
 control_brace_style = "AlwaysNextLine"

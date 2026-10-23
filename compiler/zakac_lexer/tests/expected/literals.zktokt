@@ -1,0 +1,468 @@
+# zakac-lex-artifact v1
+name:
+  Custom: literals.zaka
+source: "၁၀ 16 ကိန်းပြည့် ၁၀\nလက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၁၈\nအခြေ ၂ ဖြင့် ၁၀\nအခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF\n၁၂.၃၄ -၁၁.၁၁ 12.34 100e+10 1.234e16\n၃၂ ဘစ် ဒဿမကိန်း ၁၀\n'က' 'ခ' 'A' 'B' '春' '🔥'\n\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ကို ပြသပါ။\n\"{နောက်တစ်ကြောင်း}{{x}}\" ကို ပြသပါ။\nမှန် မှန်သည် မှန်ပါသည် မမှန် မမှန်သည် မမှန်ပါ\n`ကို ပြသပါ` ကို ပြသပါ။\n"
+tokens:
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 0
+    hi: 6
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: western
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 7
+    hi: 9
+  particle: none
+  joined: false
+- kind:
+    kw: int_kind
+  span:
+    lo: 10
+    hi: 40
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 41
+    hi: 47
+  particle: none
+  joined: false
+- kind:
+    kw: unsigned
+  span:
+    lo: 48
+    hi: 75
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 76
+    hi: 79
+  particle: none
+  joined: false
+- kind:
+    kw: bit
+  span:
+    lo: 80
+    hi: 89
+  particle: none
+  joined: false
+- kind:
+    kw: int_kind
+  span:
+    lo: 90
+    hi: 120
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 121
+    hi: 127
+  particle: none
+  joined: false
+- kind:
+    kw: base
+  span:
+    lo: 128
+    hi: 140
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 141
+    hi: 144
+  particle: none
+  joined: false
+- kind:
+    kw: hpjint
+  span:
+    lo: 145
+    hi: 160
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 161
+    hi: 167
+  particle: none
+  joined: false
+- kind:
+    kw: base
+  span:
+    lo: 168
+    hi: 180
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 181
+    hi: 187
+  particle: none
+  joined: false
+- kind:
+    kw: hpjint
+  span:
+    lo: 188
+    hi: 203
+  particle: none
+  joined: false
+- kind:
+    kw: unsigned
+  span:
+    lo: 204
+    hi: 231
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 232
+    hi: 235
+  particle: none
+  joined: false
+- kind:
+    kw: bit
+  span:
+    lo: 236
+    hi: 245
+  particle: none
+  joined: false
+- kind:
+    kw: int_kind
+  span:
+    lo: 246
+    hi: 276
+  particle: none
+  joined: false
+- kind: ident
+  span:
+    lo: 277
+    hi: 279
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: true
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 280
+    hi: 293
+  particle: none
+  joined: false
+- kind:
+    punct: minus
+  span:
+    lo: 294
+    hi: 295
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: true
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 295
+    hi: 308
+  particle: none
+  joined: true
+- kind:
+    number:
+      script: western
+      has_fraction: true
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 309
+    hi: 314
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: western
+      has_fraction: false
+      has_exponent: true
+      has_letters: false
+  span:
+    lo: 315
+    hi: 322
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: western
+      has_fraction: true
+      has_exponent: true
+      has_letters: false
+  span:
+    lo: 323
+    hi: 331
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 332
+    hi: 338
+  particle: none
+  joined: false
+- kind:
+    kw: bit
+  span:
+    lo: 339
+    hi: 348
+  particle: none
+  joined: false
+- kind:
+    kw: float_kind
+  span:
+    lo: 349
+    hi: 373
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 374
+    hi: 380
+  particle: none
+  joined: false
+- kind:
+    char: က
+  span:
+    lo: 381
+    hi: 386
+  particle: none
+  joined: false
+- kind:
+    char: ခ
+  span:
+    lo: 387
+    hi: 392
+  particle: none
+  joined: false
+- kind:
+    char: A
+  span:
+    lo: 393
+    hi: 396
+  particle: none
+  joined: false
+- kind:
+    char: B
+  span:
+    lo: 397
+    hi: 400
+  particle: none
+  joined: false
+- kind:
+    char: 春
+  span:
+    lo: 401
+    hi: 406
+  particle: none
+  joined: false
+- kind:
+    char: 🔥
+  span:
+    lo: 407
+    hi: 413
+  particle: none
+  joined: false
+- kind:
+    str: 0
+  span:
+    lo: 414
+    hi: 493
+  particle: none
+  joined: false
+- kind:
+    kw: ko
+  span:
+    lo: 494
+    hi: 503
+  particle: none
+  joined: false
+- kind:
+    kw: print
+  span:
+    lo: 504
+    hi: 519
+  particle: none
+  joined: false
+- kind:
+    punct: full_stop
+  span:
+    lo: 519
+    hi: 522
+  particle: none
+  joined: true
+- kind:
+    str: 1
+  span:
+    lo: 523
+    hi: 577
+  particle: none
+  joined: false
+- kind:
+    kw: ko
+  span:
+    lo: 578
+    hi: 587
+  particle: none
+  joined: false
+- kind:
+    kw: print
+  span:
+    lo: 588
+    hi: 603
+  particle: none
+  joined: false
+- kind:
+    punct: full_stop
+  span:
+    lo: 603
+    hi: 606
+  particle: none
+  joined: true
+- kind:
+    kw: "true"
+  span:
+    lo: 607
+    hi: 619
+  particle: none
+  joined: false
+- kind:
+    kw: "true"
+  span:
+    lo: 620
+    hi: 641
+  particle: thi
+  joined: false
+- kind:
+    kw: "true"
+  span:
+    lo: 642
+    hi: 669
+  particle: pa_thi
+  joined: false
+- kind:
+    kw: "false"
+  span:
+    lo: 670
+    hi: 685
+  particle: none
+  joined: false
+- kind:
+    kw: "false"
+  span:
+    lo: 686
+    hi: 710
+  particle: thi
+  joined: false
+- kind:
+    kw: "false"
+  span:
+    lo: 711
+    hi: 732
+  particle: pa
+  joined: false
+- kind: raw_ident
+  span:
+    lo: 733
+    hi: 760
+  particle: none
+  joined: false
+- kind:
+    kw: ko
+  span:
+    lo: 761
+    hi: 770
+  particle: none
+  joined: false
+- kind:
+    kw: print
+  span:
+    lo: 771
+    hi: 786
+  particle: none
+  joined: false
+- kind:
+    punct: full_stop
+  span:
+    lo: 786
+    hi: 789
+  particle: none
+  joined: true
+- kind: eof
+  span:
+    lo: 790
+    hi: 790
+  particle: none
+  joined: false
+comments: []
+strings:
+- parts:
+  - text: ၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ
+  value: ၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ
+- parts:
+  - escape: "\n"
+  - text: "{x}"
+  value: "\n{x}"
+diagnostics: []

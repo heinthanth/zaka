@@ -4,8 +4,8 @@ use std::path::PathBuf;
 use bon::Builder;
 use termcolor::ColorChoice;
 use termcolor::WriteColor;
-use zakac_errors::errors::IOErrorAction;
-use zakac_errors::errors::IOErrorContext;
+use zakac_host_errors::errors::IOErrorAction;
+use zakac_host_errors::errors::IOErrorContext;
 use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -101,7 +101,7 @@ impl Input
     /// The file name and content.
     pub fn read(
         &self, stdin: &mut dyn BufRead,
-    ) -> zakac_errors::Result<(FileName, Vec<u8>)>
+    ) -> zakac_host_errors::Result<(FileName, Vec<u8>)>
     {
         let name = self.file_name();
         let path = self.error_path();
@@ -126,13 +126,13 @@ impl Input
 /// The file name and content.
 fn read_stdin_input(
     stdin: &mut dyn BufRead, name: &FileName, path: &PathBuf,
-) -> zakac_errors::Result<(FileName, Vec<u8>)>
+) -> zakac_host_errors::Result<(FileName, Vec<u8>)>
 {
     let mut content = Vec::new();
     let res = stdin.read_to_end(&mut content);
     ret_if!(let Ok(_) = res, Ok((name.clone(), content)));
     let ctx = IOErrorContext::new(path.clone(), IOErrorAction::Read);
-    Err(zakac_errors::Error::from_io(res.err().unwrap(), ctx))
+    Err(zakac_host_errors::Error::from_io(res.err().unwrap(), ctx))
 }
 
 /// Read input from a file.
@@ -147,12 +147,12 @@ fn read_stdin_input(
 /// The file name and content.
 fn read_file_input(
     path: &PathBuf, name: &FileName,
-) -> zakac_errors::Result<(FileName, Vec<u8>)>
+) -> zakac_host_errors::Result<(FileName, Vec<u8>)>
 {
     let res = std::fs::read(path);
     ret_if!(let Ok(content) = res, Ok((name.clone(), content)));
     let ctx = IOErrorContext::new(path.clone(), IOErrorAction::Read);
-    Err(zakac_errors::Error::from_io(res.err().unwrap(), ctx))
+    Err(zakac_host_errors::Error::from_io(res.err().unwrap(), ctx))
 }
 
 impl From<&str> for Input
@@ -251,7 +251,7 @@ impl Output
     /// The result of the operation.
     pub fn write(
         &mut self, stdout: &mut dyn WriteColor, content: &[u8],
-    ) -> zakac_errors::Result<()>
+    ) -> zakac_host_errors::Result<()>
     {
         ret_if!(let Output::Stdout = self, write_stdout_output(stdout, content));
         ret_if!(let Output::File(path) = self, write_file_output(&path, content));
@@ -272,7 +272,7 @@ impl Output
     /// The result of the operation.
     pub fn write_text(
         &mut self, stdout: &mut dyn WriteColor, text: &str,
-    ) -> zakac_errors::Result<()>
+    ) -> zakac_host_errors::Result<()>
     {
         self.write(stdout, text.as_bytes())
     }
@@ -290,12 +290,12 @@ impl Output
 /// The result of the operation.
 fn write_stdout_output(
     stdout: &mut dyn WriteColor, content: &[u8],
-) -> zakac_errors::Result<()>
+) -> zakac_host_errors::Result<()>
 {
     let res = stdout.write_all(content);
     ret_if!(let Ok(_) = res, Ok(()));
     let ctx = IOErrorContext::new(PathBuf::from("<stdout>"), IOErrorAction::Write);
-    Err(zakac_errors::Error::from_io(res.err().unwrap(), ctx))
+    Err(zakac_host_errors::Error::from_io(res.err().unwrap(), ctx))
 }
 
 /// Write u8s to a file.
@@ -308,10 +308,10 @@ fn write_stdout_output(
 /// # Returns
 ///
 /// The result of the operation.
-fn write_file_output(path: &PathBuf, content: &[u8]) -> zakac_errors::Result<()>
+fn write_file_output(path: &PathBuf, content: &[u8]) -> zakac_host_errors::Result<()>
 {
     let res = std::fs::write(path, content);
     ret_if!(let Ok(_) = res, Ok(()));
     let ctx = IOErrorContext::new(path.clone(), IOErrorAction::Write);
-    Err(zakac_errors::Error::from_io(res.err().unwrap(), ctx))
+    Err(zakac_host_errors::Error::from_io(res.err().unwrap(), ctx))
 }

@@ -1,0 +1,137 @@
+# zakac-lex-artifact v1
+name:
+  Custom: compounds.zaka
+source: "တန်ဖိုးကို တန်ဖိုး ကို\nထက်ကြီးသည် အောက်ငယ်လျှင် အောက်ပါတို့ကို\nရလဒ်၏ ပြသပါ။\nကိုကို အသက်သည် ကိန်းအနေဖြင့်\n"
+tokens:
+- kind:
+    kw: value
+  span:
+    lo: 0
+    hi: 21
+  particle: none
+  joined: false
+- kind:
+    kw: ko
+  span:
+    lo: 21
+    hi: 30
+  particle: none
+  joined: true
+- kind:
+    kw: value
+  span:
+    lo: 31
+    hi: 52
+  particle: none
+  joined: false
+- kind:
+    kw: ko
+  span:
+    lo: 53
+    hi: 62
+  particle: none
+  joined: false
+- kind:
+    kw: htet
+  span:
+    lo: 63
+    hi: 72
+  particle: none
+  joined: false
+- kind:
+    kw: greater
+  span:
+    lo: 72
+    hi: 93
+  particle: thi
+  joined: true
+- kind:
+    kw: auk
+  span:
+    lo: 94
+    hi: 109
+  particle: none
+  joined: false
+- kind:
+    kw: less
+  span:
+    lo: 109
+    hi: 118
+  particle: none
+  joined: true
+- kind:
+    kw: then
+  span:
+    lo: 118
+    hi: 133
+  particle: none
+  joined: true
+- kind:
+    kw: following
+  span:
+    lo: 134
+    hi: 155
+  particle: none
+  joined: false
+- kind:
+    kw: list_ko
+  span:
+    lo: 155
+    hi: 176
+  particle: none
+  joined: true
+- kind:
+    kw: result
+  span:
+    lo: 177
+    hi: 189
+  particle: none
+  joined: false
+- kind:
+    punct: ei
+  span:
+    lo: 189
+    hi: 192
+  particle: none
+  joined: true
+- kind:
+    kw: print
+  span:
+    lo: 193
+    hi: 208
+  particle: none
+  joined: false
+- kind:
+    punct: full_stop
+  span:
+    lo: 208
+    hi: 211
+  particle: none
+  joined: true
+- kind: ident
+  span:
+    lo: 212
+    hi: 230
+  particle: none
+  joined: false
+- kind: ident
+  span:
+    lo: 231
+    hi: 252
+  particle: none
+  joined: false
+- kind: ident
+  span:
+    lo: 253
+    hi: 292
+  particle: none
+  joined: false
+- kind: eof
+  span:
+    lo: 293
+    hi: 293
+  particle: none
+  joined: false
+comments: []
+strings: []
+diagnostics: []

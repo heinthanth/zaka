@@ -1,0 +1,5 @@
+မှတ်ချက် အသက် ၁၈ အောက် ငယ်သူများကို လက်မခံပါ
+/// ဒါကတော့ Rust language ထဲကလို triple slashes comment ဖြစ်ပါတယ်
+// "a quote that is not a string
+အသက် ကို ပြသပါ။ // trailing comment
+မှတ်ချက်ကို ပြသပါ။
