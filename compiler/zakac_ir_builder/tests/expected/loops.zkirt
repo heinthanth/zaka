@@ -1,0 +1,352 @@
+# zakac-ir-artifact v1
+name:
+  Custom: loops.zaka
+source: "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\n"
+module:
+  globals:
+  - name: ကိန်း
+    kind: isize
+    access: var
+    span:
+      lo: 28
+      hi: 43
+  - name: အမှတ်
+    kind: isize
+    access: loop_var
+    span:
+      lo: 503
+      hi: 518
+  - name: အမှတ်
+    kind: isize
+    access: loop_var
+    span:
+      lo: 1127
+      hi: 1142
+  - name: အဆင့်
+    kind: u8
+    access: var
+    span:
+      lo: 1263
+      hi: 1278
+  funcs: []
+  main:
+  - set:
+      place: g0
+      value:
+        kind: isize
+        node:
+          const: 0:isize
+        span:
+          lo: 28
+          hi: 43
+      span:
+        lo: 0
+        hi: 112
+  - loop:
+      init: []
+      cond:
+        kind: bool
+        node:
+          compare:
+            op: lt
+            lhs:
+              kind: isize
+              node:
+                read: g0
+              span:
+                lo: 113
+                hi: 128
+            rhs:
+              kind: isize
+              node:
+                const: 5:isize
+              span:
+                lo: 139
+                hi: 142
+        span:
+          lo: 113
+          hi: 168
+      update:
+      []
+      block:
+      - print:
+          value:
+            expr:
+              kind: isize
+              node:
+                read: g0
+              span:
+                lo: 270
+                hi: 285
+          span:
+            lo: 270
+            hi: 314
+      - set:
+          place: g0
+          value:
+            kind: isize
+            node:
+              infix:
+                op: add
+                lhs:
+                  kind: isize
+                  node:
+                    read: g0
+                  span:
+                    lo: 341
+                    hi: 356
+                rhs:
+                  kind: isize
+                  node:
+                    const: 1:isize
+                  span:
+                    lo: 359
+                    hi: 362
+            span:
+              lo: 341
+              hi: 362
+          span:
+            lo: 315
+            hi: 388
+      span:
+        lo: 113
+        hi: 471
+  - counted:
+      var: g1
+      from:
+        kind: isize
+        node:
+          const: 1:isize
+        span:
+          lo: 472
+          hi: 475
+      to:
+        kind: isize
+        node:
+          const: 100:isize
+        span:
+          lo: 483
+          hi: 492
+      step: null
+      mode: count
+      block:
+      - if:
+          cond:
+            kind: bool
+            node:
+              compare:
+                op: eq
+                lhs:
+                  kind: isize
+                  node:
+                    infix:
+                      op: rem
+                      lhs:
+                        kind: isize
+                        node:
+                          read: g1
+                        span:
+                          lo: 662
+                          hi: 677
+                      rhs:
+                        kind: isize
+                        node:
+                          const: 2:isize
+                        span:
+                          lo: 680
+                          hi: 683
+                  span:
+                    lo: 662
+                    hi: 683
+                rhs:
+                  kind: isize
+                  node:
+                    const: 0:isize
+                  span:
+                    lo: 694
+                    hi: 697
+            span:
+              lo: 662
+              hi: 720
+          then:
+          - continue:
+              span:
+                lo: 736
+                hi: 818
+          els:
+          []
+          span:
+            lo: 646
+            hi: 818
+      - if:
+          cond:
+            kind: bool
+            node:
+              compare:
+                op: gt
+                lhs:
+                  kind: isize
+                  node:
+                    read: g1
+                  span:
+                    lo: 835
+                    hi: 850
+                rhs:
+                  kind: isize
+                  node:
+                    const: 10:isize
+                  span:
+                    lo: 861
+                    hi: 867
+            span:
+              lo: 835
+              hi: 890
+          then:
+          - break:
+              span:
+                lo: 906
+                hi: 959
+          els:
+          []
+          span:
+            lo: 819
+            hi: 959
+      - print:
+          value:
+            expr:
+              kind: isize
+              node:
+                read: g1
+              span:
+                lo: 960
+                hi: 975
+          span:
+            lo: 960
+            hi: 1004
+      span:
+        lo: 472
+        hi: 1087
+  - counted:
+      var: g2
+      from:
+        kind: isize
+        node:
+          const: 10:isize
+        span:
+          lo: 1088
+          hi: 1094
+      to:
+        kind: isize
+        node:
+          const: 0:isize
+        span:
+          lo: 1102
+          hi: 1105
+      step:
+        kind: isize
+        node:
+          const: 2:isize
+        span:
+          lo: 1116
+          hi: 1119
+      mode: decrease
+      block:
+      - print:
+          value:
+            expr:
+              kind: isize
+              node:
+                read: g2
+              span:
+                lo: 1190
+                hi: 1205
+          span:
+            lo: 1190
+            hi: 1234
+      span:
+        lo: 1088
+        hi: 1234
+  - loop:
+      init:
+      - set:
+          place: g3
+          value:
+            kind: u8
+            node:
+              const: 0:u8
+            span:
+              lo: 1362
+              hi: 1365
+          span:
+            lo: 1263
+            hi: 1361
+      cond:
+        kind: bool
+        node:
+          compare:
+            op: lt
+            lhs:
+              kind: u8
+              node:
+                read: g3
+              span:
+                lo: 1391
+                hi: 1406
+            rhs:
+              kind: u8
+              node:
+                const: 10:u8
+              span:
+                lo: 1417
+                hi: 1423
+        span:
+          lo: 1391
+          hi: 1449
+      update:
+      - set:
+          place: g3
+          value:
+            kind: u8
+            node:
+              infix:
+                op: add
+                lhs:
+                  kind: u8
+                  node:
+                    read: g3
+                  span:
+                    lo: 1650
+                    hi: 1665
+                rhs:
+                  kind: u8
+                  node:
+                    const: 1:u8
+                  span:
+                    lo: 1668
+                    hi: 1671
+            span:
+              lo: 1650
+              hi: 1671
+          span:
+            lo: 1624
+            hi: 1697
+      block:
+      - print:
+          value:
+            expr:
+              kind: u8
+              node:
+                read: g3
+              span:
+                lo: 1551
+                hi: 1566
+          span:
+            lo: 1551
+            hi: 1595
+      span:
+        lo: 1235
+        hi: 1789
+  span:
+    lo: 0
+    hi: 1790
+diagnostics: []

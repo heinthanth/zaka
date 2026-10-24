@@ -1,0 +1,347 @@
+# zakac-ir-artifact v1
+name:
+  Custom: functions.zaka
+source: "လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ကို ၁၊ ၂၊ ၃ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\n\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nက ကို က * ၂ ဟု ထားပါ။\nခ ကို ခ * ၂ ဟု ထားပါ။\nဂ ကို ဂ * ၂ ဟု ထားပါ။\nက + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် ပျမ်းမျှ သည်\n၃၂ ဘစ် ဒဿမကိန်း က၊ ၈ ဘစ် ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း ရလဒ် ကို ပြန်ပေးမည်။\nရလဒ် ကို (က + ခ) / ၂ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ဟု ပြသပါ။\nပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n"
+module:
+  globals: []
+  funcs:
+  - name: နှစ်ဆတိုးပြီးပေါင်း
+    params: 3
+    result: 3
+    ret: isize
+    locals:
+    - name: က
+      kind: isize
+      access: var
+      span:
+        lo: 485
+        hi: 488
+    - name: ခ
+      kind: isize
+      access: var
+      span:
+        lo: 523
+        hi: 526
+    - name: ဂ
+      kind: isize
+      access: var
+      span:
+        lo: 561
+        hi: 564
+    - name: ရလဒ်
+      kind: isize
+      access: var
+      span:
+        lo: 386
+        hi: 443
+    block:
+    - set:
+        place: l3
+        value:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 386
+            hi: 443
+        span:
+          lo: 386
+          hi: 443
+    - set:
+        place: l0
+        value:
+          kind: isize
+          node:
+            infix:
+              op: mul
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 794
+                  hi: 797
+              rhs:
+                kind: isize
+                node:
+                  const: 2:isize
+                span:
+                  lo: 800
+                  hi: 803
+          span:
+            lo: 794
+            hi: 803
+        span:
+          lo: 780
+          hi: 829
+    - set:
+        place: l1
+        value:
+          kind: isize
+          node:
+            infix:
+              op: mul
+              lhs:
+                kind: isize
+                node:
+                  read: l1
+                span:
+                  lo: 844
+                  hi: 847
+              rhs:
+                kind: isize
+                node:
+                  const: 2:isize
+                span:
+                  lo: 850
+                  hi: 853
+          span:
+            lo: 844
+            hi: 853
+        span:
+          lo: 830
+          hi: 879
+    - set:
+        place: l2
+        value:
+          kind: isize
+          node:
+            infix:
+              op: mul
+              lhs:
+                kind: isize
+                node:
+                  read: l2
+                span:
+                  lo: 894
+                  hi: 897
+              rhs:
+                kind: isize
+                node:
+                  const: 2:isize
+                span:
+                  lo: 900
+                  hi: 903
+          span:
+            lo: 894
+            hi: 903
+        span:
+          lo: 880
+          hi: 929
+    - return:
+        value:
+          kind: isize
+          node:
+            infix:
+              op: add
+              lhs:
+                kind: isize
+                node:
+                  infix:
+                    op: add
+                    lhs:
+                      kind: isize
+                      node:
+                        read: l0
+                      span:
+                        lo: 930
+                        hi: 933
+                    rhs:
+                      kind: isize
+                      node:
+                        read: l1
+                      span:
+                        lo: 936
+                        hi: 939
+                span:
+                  lo: 930
+                  hi: 939
+              rhs:
+                kind: isize
+                node:
+                  read: l2
+                span:
+                  lo: 942
+                  hi: 945
+          span:
+            lo: 930
+            hi: 945
+        span:
+          lo: 930
+          hi: 1014
+    span:
+      lo: 346
+      hi: 1097
+  - name: ပျမ်းမျှ
+    params: 2
+    result: 2
+    ret: f64
+    locals:
+    - name: က
+      kind: f32
+      access: var
+      span:
+        lo: 1216
+        hi: 1219
+    - name: ခ
+      kind: i8
+      access: var
+      span:
+        lo: 1268
+        hi: 1271
+    - name: ရလဒ်
+      kind: f64
+      access: var
+      span:
+        lo: 1139
+        hi: 1163
+    block:
+    - set:
+        place: l2
+        value:
+          kind: f64
+          node:
+            const: 0.0:f64
+          span:
+            lo: 1139
+            hi: 1163
+        span:
+          lo: 1139
+          hi: 1163
+    - set:
+        place: l2
+        value:
+          kind: f64
+          node:
+            convert:
+              operand:
+                kind: f32
+                node:
+                  infix:
+                    op: div
+                    lhs:
+                      kind: f32
+                      node:
+                        infix:
+                          op: add
+                          lhs:
+                            kind: f32
+                            node:
+                              read: l0
+                            span:
+                              lo: 1505
+                              hi: 1508
+                          rhs:
+                            kind: f32
+                            node:
+                              convert:
+                                operand:
+                                  kind: i8
+                                  node:
+                                    read: l1
+                                  span:
+                                    lo: 1511
+                                    hi: 1514
+                                implicit: true
+                            span:
+                              lo: 1511
+                              hi: 1514
+                      span:
+                        lo: 1505
+                        hi: 1514
+                    rhs:
+                      kind: f32
+                      node:
+                        const: 2.0:f32
+                      span:
+                        lo: 1518
+                        hi: 1521
+                span:
+                  lo: 1504
+                  hi: 1521
+              implicit: true
+          span:
+            lo: 1504
+            hi: 1521
+        span:
+          lo: 1481
+          hi: 1547
+    - return:
+        value:
+          kind: f64
+          node:
+            read: l2
+          span:
+            lo: 1322
+            hi: 1630
+        span:
+          lo: 1322
+          hi: 1630
+    span:
+      lo: 1099
+      hi: 1630
+  - name: နှုတ်ဆက်
+    params: 0
+    result: null
+    ret: null
+    locals: []
+    block:
+    - print:
+        value:
+          text: မင်္ဂလာပါ
+        span:
+          lo: 1790
+          hi: 1845
+    - return:
+        value: null
+        span:
+          lo: 1846
+          hi: 1876
+    span:
+      lo: 1632
+      hi: 1959
+  main:
+  - call:
+      func: 2
+      name: နှုတ်ဆက်
+      args: []
+      span:
+        lo: 0
+        hi: 111
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            call:
+              func: 0
+              name: နှစ်ဆတိုးပြီးပေါင်း
+              args:
+              - kind: isize
+                node:
+                  const: 1:isize
+                span:
+                  lo: 220
+                  hi: 223
+              - kind: isize
+                node:
+                  const: 2:isize
+                span:
+                  lo: 227
+                  hi: 230
+              - kind: isize
+                node:
+                  const: 3:isize
+                span:
+                  lo: 234
+                  hi: 237
+          span:
+            lo: 112
+            hi: 315
+      span:
+        lo: 112
+        hi: 344
+  span:
+    lo: 0
+    hi: 1960
+diagnostics: []

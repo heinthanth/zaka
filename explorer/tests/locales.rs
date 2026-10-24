@@ -9,6 +9,7 @@ use zakac_explorer::state::lang::AUTO_LANG;
 use zakac_explorer::state::lang::chosen_locale;
 use zakac_explorer::state::lang::lang_name;
 use zakac_explorer::state::settings::AstMode;
+use zakac_explorer::state::settings::LowerMode;
 use zakac_explorer::state::settings::Theme;
 use zakac_i18n::SUPPORTED_LOCALES;
 
@@ -97,6 +98,9 @@ fn labels_come_from_the_table()
 {
     assert_eq!(Phase::Lex.label(), "Lex");
     assert_eq!(Phase::Parse.note(), "AST");
+    assert_eq!(Phase::Lower.label(), "Lower");
+    assert_eq!(Phase::Lower.note(), "IR");
+    assert_eq!(LowerMode::Folded.label(), "Folded");
     assert_eq!(Status::Skipped.label(), "skipped");
     assert_eq!(AstMode::Sexpr.label(), "S-expr");
     assert_eq!(Theme::Auto.label(), "Auto (OS)");

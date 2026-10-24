@@ -91,3 +91,20 @@ fn unmatched_brackets_are_kept()
 {
     assert_eq!(squeeze(&text(") (a", 60)), ")(a)");
 }
+
+#[test]
+fn ir_constants_keep_their_kind_suffix()
+{
+    let flat = "(print 'က':char) (print ')':char)";
+    let quotes: Vec<String> = arrange(flat, 60)
+        .into_iter()
+        .filter(|c| c.ink == Ink::Quote)
+        .map(|c| c.text)
+        .collect();
+    assert_eq!(quotes, ["'က':char", "')':char"]);
+    let module = "(module (globals) (block (set g0 1:isize) (print g0)))";
+    assert_eq!(
+        text(module, 60),
+        "(module\n  (globals)\n  (block\n    (set g0 1:isize)\n    (print g0)))"
+    );
+}

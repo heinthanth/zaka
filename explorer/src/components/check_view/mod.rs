@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use leptos::html;
 use leptos::html::div;
 use leptos::html::p;
@@ -7,6 +9,7 @@ use leptos_scoped_style::scss_file;
 use zakac_i18n::t;
 use zakac_rust_sugars::tern;
 
+use crate::compile::TreeSource;
 use crate::components::icon::alert;
 use crate::components::scope::ScopedSheet;
 use crate::components::scope::scoped;
@@ -32,9 +35,11 @@ pub fn check_view() -> impl IntoView
     let content = move || {
         let kinds = (
             p().class("view-note").child(t!("explorer.check.kinds_note")),
-            tree_view(true),
+            tree_view(|| TreeSource::Ast, true),
         );
-        tern!(checked(), kinds.into_any(), skipped().into_any())
+        let title = t!("explorer.check.skipped_title");
+        let note = t!("explorer.check.skipped_note");
+        tern!(checked(), kinds.into_any(), skipped(title, note).into_any())
     };
     let root = NodeRef::<html::Div>::new();
     let view = div()
@@ -45,17 +50,23 @@ pub fn check_view() -> impl IntoView
     scoped(&SHEET, root, view)
 }
 
-/// The note when the check did not run: an icon, the reason and the fix, in
-/// the middle of the pane.
+/// The note when a phase did not run: an icon, the reason and the fix, in
+/// the middle of the pane. The sheet of the view that holds it includes the
+/// `skipped-card` mixin.
+///
+/// # Arguments
+///
+/// * `title` - The reason.
+/// * `note` - The fix.
 ///
 /// # Returns
 ///
 /// The view.
-fn skipped() -> impl IntoView
+pub fn skipped(title: Cow<'static, str>, note: Cow<'static, str>) -> impl IntoView
 {
     div().class("skipped").attr("role", "status").child((
         span().class("skipped-icon").child(alert()),
-        p().class("skipped-title").child(t!("explorer.check.skipped_title")),
-        p().class("skipped-note").child(t!("explorer.check.skipped_note")),
+        p().class("skipped-title").child(title),
+        p().class("skipped-note").child(note),
     ))
 }

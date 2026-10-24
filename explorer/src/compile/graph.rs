@@ -115,7 +115,8 @@ pub fn graph(tree: &TreeNode) -> Graph
 /// The text, cut to [`VALUE_CHARS`]; blank for other nodes.
 fn value_of(node: &TreeNode) -> String
 {
-    let named = matches!(node.label, "ident" | "name" | "kind");
+    let named =
+        matches!(node.label, "ident" | "name" | "kind" | "read" | "slot" | "fn");
     let shown = node.is_literal() || named;
     let cut: String = node.detail.chars().take(VALUE_CHARS).collect();
     let more = node.detail.chars().count() > VALUE_CHARS;

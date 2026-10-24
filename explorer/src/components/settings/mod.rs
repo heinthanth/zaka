@@ -15,6 +15,7 @@ use leptos_scoped_style::scss_file;
 use strum::IntoEnumIterator;
 use zakac_i18n::SUPPORTED_LOCALES;
 use zakac_i18n::t;
+use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
@@ -151,7 +152,18 @@ fn card(state: AppState, open: RwSignal<bool>) -> impl IntoView
     );
     let compiler = section(
         "explorer.settings.compiler",
-        row("explorer.settings.platform_bits", platform_picker(state)),
+        (
+            row("explorer.settings.platform_bits", platform_picker(state)),
+            switch_row("explorer.settings.fold_exprs", fold_switch(state, Fold::Exprs)),
+            switch_row(
+                "explorer.settings.fold_consts",
+                fold_switch(state, Fold::Consts),
+            ),
+            switch_row(
+                "explorer.settings.fold_branches",
+                fold_switch(state, Fold::Branches),
+            ),
+        ),
     );
     let scroll = div().class("settings-scroll").child((general, appearance, compiler));
     div().class("settings-card").child((top, scroll))
@@ -406,6 +418,59 @@ fn italic_switch(state: AppState) -> impl IntoView
     switch(state.italic_comments, Signal::stored(false), state.set_italic_comments)
 }
 
+/// One of the foldings the settings switch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Fold
+{
+    /// Operations on constants.
+    Exprs,
+    /// Reads of constants.
+    Consts,
+    /// Branches on constants.
+    Branches,
+}
+
+impl Fold
+{
+    /// The flag of this folding in a set of foldings.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - The foldings.
+    ///
+    /// # Returns
+    ///
+    /// The flag.
+    fn flag(self, options: &mut FoldOptions) -> &mut bool
+    {
+        match self
+        {
+            Fold::Exprs => &mut options.exprs,
+            Fold::Consts => &mut options.consts,
+            Fold::Branches => &mut options.branches,
+        }
+    }
+}
+
+/// Switch of one folding of the IR.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `fold` - The folding.
+///
+/// # Returns
+///
+/// The view.
+fn fold_switch(state: AppState, fold: Fold) -> impl IntoView
+{
+    let on = Signal::derive(move || *fold.flag(&mut state.options.get().fold));
+    let set = SignalSetter::map(move |b| {
+        state.options.update(|o| *fold.flag(&mut o.fold) = b)
+    });
+    switch(on, Signal::stored(false), set)
+}
+
 /// A switch: a checkbox drawn as a track with a knob.
 ///
 /// # Arguments
@@ -418,9 +483,10 @@ fn italic_switch(state: AppState) -> impl IntoView
 ///
 /// The view.
 fn switch(
-    on: Signal<bool>, off_limits: Signal<bool>, set: WriteSignal<bool>,
+    on: Signal<bool>, off_limits: Signal<bool>, set: impl Into<SignalSetter<bool>>,
 ) -> impl IntoView
 {
+    let set: SignalSetter<bool> = set.into();
     let check = input()
         .r#type("checkbox")
         .prop("checked", on)

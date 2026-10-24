@@ -7,6 +7,8 @@ use zakac_explorer::state::permalink::Link;
 use zakac_explorer::state::permalink::decode;
 use zakac_explorer::state::permalink::encode;
 use zakac_explorer::state::settings::AstMode;
+use zakac_explorer::state::settings::LowerMode;
+use zakac_ir_builder::ir::FoldOptions;
 
 /// A link to a source with the default options.
 fn link(source: &str) -> Link
@@ -48,7 +50,38 @@ fn links_keep_the_stage_and_the_ast_view()
         }
     }
     let shown = encode(&link_at(Phase::Parse, AstMode::Graph));
-    assert!(shown.starts_with("3.64.parse.graph."), "{shown}");
+    assert!(shown.starts_with("4.64.7.parse.graph.folded."), "{shown}");
+}
+
+#[test]
+fn links_keep_the_foldings_and_the_lowering_view()
+{
+    for n in 0..8u8
+    {
+        let on = |bit: u8| n & bit != 0;
+        let fold =
+            FoldOptions::builder().exprs(on(1)).consts(on(2)).branches(on(4)).build();
+        for lower_mode in LowerMode::iter()
+        {
+            let options = Options::builder().fold(fold).build();
+            #[rustfmt::skip]
+            let link = Link::builder().source("x").options(options).stage(Phase::Lower)
+                .lower_mode(lower_mode).build();
+            let hash = encode(&link);
+            assert!(hash.starts_with(&format!("4.64.{n}.lower.")), "{hash}");
+            assert_eq!(decode(&hash), Some(link));
+        }
+    }
+}
+
+#[test]
+fn version_3_links_open_with_all_foldings()
+{
+    let decoded = decode("3.32.parse.sexpr.eA").unwrap();
+    assert_eq!(decoded.source, "x");
+    assert_eq!((decoded.stage, decoded.ast_mode), (Phase::Parse, AstMode::Sexpr));
+    assert_eq!(decoded.options.fold, FoldOptions::default());
+    assert_eq!(decoded.lower_mode, LowerMode::default());
 }
 
 #[test]
@@ -80,6 +113,10 @@ fn malformed_links_decode_to_none()
         "#",
         "1.0.64.eA",
         "4.64.lex.tree.eA",
+        "4.64.8.lex.tree.folded.eA",
+        "4.64.x.lex.tree.folded.eA",
+        "4.64.7.lex.tree.wide.eA",
+        "4.64.7.lex.tree.eA",
         "3.12.lex.tree.eA",
         "3.64.lexer.tree.eA",
         "3.64.lex.forest.eA",

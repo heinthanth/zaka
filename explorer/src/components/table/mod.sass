@@ -134,3 +134,38 @@
 
   .span-range
     color: var(--fg-muted)
+
+// The note of a phase that did not run: an icon, the reason and the fix.
+=skipped-card
+  .skipped
+    display: grid
+    justify-items: center
+    gap: 6px
+    max-width: 340px
+    text-align: center
+
+  .skipped-icon
+    display: grid
+    place-items: center
+    width: 52px
+    height: 52px
+    margin-bottom: 6px
+    border-radius: 50%
+    color: var(--diag-warning)
+    background: color-mix(in srgb, var(--diag-warning) 14%, transparent)
+
+    .icon
+      width: 26px
+      height: 26px
+
+  .skipped-title
+    margin: 0
+    font-size: 15px
+    font-weight: 600
+    color: var(--fg)
+
+  .skipped-note
+    margin: 0
+    font-size: 13px
+    line-height: 1.5
+    color: var(--fg-muted)

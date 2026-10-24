@@ -51,8 +51,8 @@ enum Form
 /// Arrange the flat S-expression form of a program as Lisp code is indented: a
 /// form that fits is kept on one line; a longer list puts its head and first
 /// argument on the first line and lines the rest up under the argument; a
-/// `block` or `program` of two or more statements puts each on its own line,
-/// two columns in.
+/// `block`, `program`, or one of the IR lists `module`, `init` and `update`.of
+/// two or more statements puts each on its own line, two columns in.
 ///
 /// # Arguments
 ///
@@ -235,13 +235,15 @@ impl Reader
     ///
     /// # Returns
     ///
-    /// The literal, both marks included.
+    /// The literal, both marks included, with a suffix that follows them.
     fn quoted(&mut self, lo: usize, mark: char) -> Form
     {
         // A char literal holds one char, which can be a quote or a bracket.
         do_if!(mark == '\'', self.at += 1);
         do_while!(self.peek().is_some_and(|c| c != mark), self.at += 1);
         self.at = (self.at + 1).min(self.chars.len());
+        // A suffix such as the `:char` of an IR constant stays attached.
+        do_while!(self.peek().is_some_and(|c| !ends_word(c)), self.at += 1);
         Form::Atom(self.since(lo), Ink::Quote)
     }
 
@@ -281,7 +283,7 @@ fn flat_len(form: &Form) -> usize
 }
 
 /// Whether the items of a `(` list are a statement list: the head is
-/// `block` or `program`.
+/// `block`, `program`, or one of the IR lists `module`, `init` and `update`.
 ///
 /// # Arguments
 ///
@@ -297,7 +299,7 @@ fn is_stmt_list(items: &[Form]) -> bool
     {
         return false;
     };
-    matches!(head.as_str(), "block" | "program")
+    matches!(head.as_str(), "block" | "program" | "module" | "init" | "update")
 }
 
 /// Whether a form must break whatever the width: a statement list of two or

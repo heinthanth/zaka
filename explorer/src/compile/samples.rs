@@ -49,6 +49,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("basics", "bits"),
     sample!("basics", "conversion"),
     sample!("basics", "comments"),
+    sample!("basics", "folding"),
     sample!("control", "branches"),
     sample!("control", "scopes"),
     sample!("control", "while"),
@@ -76,7 +77,8 @@ pub const SAMPLES: &[Sample] = &[
     sample!("diagnostics", "lexer_errors"),
     sample!("diagnostics", "parser_errors"),
     sample!("diagnostics", "check_errors"),
-    sample!("diagnostics", "platform_bits"),];
+    sample!("diagnostics", "platform_bits"),
+    sample!("diagnostics", "fold_errors"),];
 
 /// The sample shown when the page opens without a link.
 ///

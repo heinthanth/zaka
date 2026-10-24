@@ -11,6 +11,7 @@ use zakac_explorer::compile::samples::DIAGNOSTICS;
 use zakac_explorer::compile::samples::GROUPS;
 use zakac_explorer::compile::samples::SAMPLES;
 use zakac_explorer::compile::samples::find_sample;
+use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::tern;
 
 #[test]
@@ -163,6 +164,48 @@ fn phase_status_follows_the_diagnostics()
     assert_eq!(out.status(Phase::Lex), Status::Clean);
     assert_eq!(out.status(Phase::Parse), Status::Clean);
     assert_eq!(out.status(Phase::Check), Status::Failed);
+    assert_eq!(out.status(Phase::Lower), Status::Skipped);
+}
+
+#[test]
+fn clean_samples_lower_without_diagnostics()
+{
+    for sample in SAMPLES.iter().filter(|s| s.group != DIAGNOSTICS)
+    {
+        let out = compile(sample.text, &Options::default());
+        assert!(out.lowered, "{}", sample.path());
+        assert_eq!(out.status(Phase::Lower), Status::Clean, "{}", sample.path());
+        assert!(out.ir_folded_sexpr.starts_with("(module "), "{}", sample.path());
+    }
+}
+
+#[test]
+fn fold_errors_belong_to_the_lowering_stage()
+{
+    let text = find_sample("diagnostics/fold_errors").unwrap().text;
+    let out = compile(text, &Options::default());
+    assert!(out.lowered);
+    assert_eq!(out.status(Phase::Check), Status::Clean);
+    assert_eq!(out.status(Phase::Lower), Status::Failed);
+    let codes: Vec<&str> = out.diagnostics.iter().map(|d| d.code.as_str()).collect();
+    assert_eq!(codes, ["ZK0601", "ZK0602", "ZK0602", "ZK0407"]);
+    assert!(out.diagnostics.iter().all(|d| d.phase == Phase::Lower));
+}
+
+#[test]
+fn fold_options_change_the_folded_ir()
+{
+    let text = "(၂ + ၃) * ၄ ကို ပြသပါ။";
+    let all = compile(text, &Options::default());
+    assert!(
+        all.ir_folded_sexpr.contains("(print 20:isize)"),
+        "{}",
+        all.ir_folded_sexpr
+    );
+    assert!(all.ir_plain_sexpr.contains("(+ 2:isize 3:isize)"));
+    let options = Options::builder().fold(FoldOptions::none()).build();
+    let none = compile(text, &options);
+    assert_eq!(none.ir_folded_sexpr, none.ir_plain_sexpr);
 }
 
 #[test]

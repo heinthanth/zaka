@@ -255,9 +255,10 @@ impl Parser<'_>
     -> PResult<Expr>
     {
         ret_if!(is_base(kind, BaseKind::Int), Err(diag::float_for_int_kind(span)));
-        let value = western(text).parse::<f64>();
+        let text = western(text);
+        let value = text.parse::<f64>();
         let value = value.map_err(|_| diag::invalid_digit(span, '.', 10))?;
-        Ok(self.float_expr(value, kind, span))
+        Ok(self.float_expr(value, text, kind, span))
     }
 
     /// Build a floating-point literal from integer digits in another base.
@@ -277,7 +278,7 @@ impl Parser<'_>
     ) -> PResult<Expr>
     {
         let value = int_value(text, base.unwrap_or(10), span)?;
-        Ok(self.float_expr(value as f64, kind, span))
+        Ok(self.float_expr(value as f64, value.to_string(), kind, span))
     }
 
     /// Wrap a float value in a literal node.
@@ -285,17 +286,21 @@ impl Parser<'_>
     /// # Arguments
     ///
     /// * `value` - The value.
+    /// * `text` - The decimal text in Western digits.
     /// * `kind` - The kind prefix, when written.
     /// * `span` - The whole literal.
     ///
     /// # Returns
     ///
     /// The expression.
-    fn float_expr(&mut self, value: f64, kind: Option<Kind>, span: Span) -> Expr
+    fn float_expr(
+        &mut self, value: f64, text: String, kind: Option<Kind>, span: Span,
+    ) -> Expr
     {
         let id = self.new_id();
-        let node =
-            FloatLit::builder().id(id).value(value).maybe_kind(kind).span(span).build();
+        #[rustfmt::skip]
+        let node = FloatLit::builder().id(id).value(value).text(text).maybe_kind(kind)
+            .span(span).build();
         Expr::Float(node)
     }
 }

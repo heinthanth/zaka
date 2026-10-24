@@ -15,6 +15,7 @@ use zakac_rust_sugars::tern;
 use crate::compile::Phase;
 use crate::components::ast_view::ast_view;
 use crate::components::check_view::check_view;
+use crate::components::lower_view::lower_view;
 use crate::components::scope::ScopedSheet;
 use crate::components::scope::scoped;
 use crate::components::segments_view::segments_view;
@@ -41,6 +42,7 @@ pub fn pipeline() -> impl IntoView
         Phase::Lex => tokens_view().into_any(),
         Phase::Parse => ast_view().into_any(),
         Phase::Check => check_view().into_any(),
+        Phase::Lower => lower_view().into_any(),
     };
     let stages = Phase::iter().map(|phase| stage_button(state, phase)).collect_view();
     let timeline = nav()

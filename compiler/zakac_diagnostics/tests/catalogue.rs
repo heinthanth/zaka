@@ -155,3 +155,22 @@ fn kinds_constructors_render_messages()
         assert!(diag.code.id().starts_with("ZK04"), "{}", diag.code);
     }
 }
+
+#[test]
+fn fold_constructors_render_messages()
+{
+    use zakac_diagnostics::fold as f;
+    use zakac_span::span::Span;
+
+    let span = Span::PLACEHOLDER;
+    assert!(f::constant_overflow(span, "+", "i8").message.contains("i8"));
+    assert!(f::constant_zero_divisor(span, "/").message.contains('/'));
+    for diag in
+        [f::constant_overflow(span, "+", "i8"), f::constant_zero_divisor(span, "%")]
+    {
+        assert!(!is_missing(&diag.message), "{}", diag.code);
+        assert!(!diag.message.contains("%{"), "{}", diag.code);
+        assert!(diag.is_error());
+        assert!(diag.code.id().starts_with("ZK06"), "{}", diag.code);
+    }
+}

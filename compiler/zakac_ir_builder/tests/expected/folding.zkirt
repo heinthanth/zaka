@@ -1,0 +1,156 @@
+# zakac-ir-artifact v1
+name:
+  Custom: folding.zaka
+source: "// ကိန်းသေ တွက်ချက်ခြင်း - ပရိုဂရမ် မစမီ တွက်ပြီးသား တန်ဖိုးများ\nကိန်းသေ အလျား သည် ကိန်းပြည့် ၁၂ ဖြစ်ပါစေ။\nကိန်းသေ အနံ သည် ကိန်းပြည့် အလျား - ၄ ဖြစ်ပါစေ။\nကိန်းရှင် ဧရိယာ သည် ကိန်းပြည့် အလျား * အနံ ဖြစ်ပါစေ။\nဧရိယာ ကို ပြသပါ။\n\n// ကိန်းဂဏန်း ချည်းသက်သက် တွက်ချက်ချက်များ\n(၂ + ၃) * ၄ ကို ပြသပါ။\n-၁၂၈ ကို ပြသပါ။\n၁ / ၃ ကို ပြသပါ။\n၁၆ ဘစ် ဒဿမကိန်း ၁ / ၃ ကို ပြသပါ။\n၁ << ၄ ကို ပြသပါ။\n'က' ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\n\n// ကိန်းသေ အခြေအနေ - တစ်ဖက်သာ ကျန်သည်\nအကယ်၍ အလျား သည် ၁၀ ထက် ကြီးလျှင် \"ကြီးသည်\" ဟု ပြသပါ။\nသို့မဟုတ်ပါက \"ငယ်သည်\" ဟု ပြသပါ။\nအလျား သည် ၀ အောက် ငယ်နေသရွေ့ \"မရောက်ပါ\" ဟု ပြသပါ။\n"
+module:
+  globals:
+  - name: အလျား
+    kind: isize
+    access: const
+    span:
+      lo: 195
+      hi: 210
+  - name: အနံ
+    kind: isize
+    access: const
+    span:
+      lo: 309
+      hi: 318
+  - name: ဧရိယာ
+    kind: isize
+    access: var
+    span:
+      lo: 438
+      hi: 453
+  funcs: []
+  main:
+  - set:
+      place: g0
+      value:
+        kind: isize
+        node:
+          const: 12:isize
+        span:
+          lo: 252
+          hi: 258
+      span:
+        lo: 173
+        hi: 286
+  - set:
+      place: g1
+      value:
+        kind: isize
+        node:
+          const: 8:isize
+        span:
+          lo: 360
+          hi: 381
+      span:
+        lo: 287
+        hi: 409
+  - set:
+      place: g2
+      value:
+        kind: isize
+        node:
+          const: 96:isize
+        span:
+          lo: 495
+          hi: 522
+      span:
+        lo: 410
+        hi: 550
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            read: g2
+          span:
+            lo: 551
+            hi: 566
+      span:
+        lo: 551
+        hi: 595
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            const: 20:isize
+          span:
+            lo: 714
+            hi: 731
+      span:
+        lo: 714
+        hi: 760
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            const: -128:isize
+          span:
+            lo: 761
+            hi: 771
+      span:
+        lo: 761
+        hi: 800
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 801
+            hi: 810
+      span:
+        lo: 801
+        hi: 839
+  - print:
+      value:
+        expr:
+          kind: f16
+          node:
+            const: 0.33325:f16
+          span:
+            lo: 840
+            hi: 891
+      span:
+        lo: 840
+        hi: 920
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            const: 16:isize
+          span:
+            lo: 921
+            hi: 931
+      span:
+        lo: 921
+        hi: 960
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            const: 4096:isize
+          span:
+            lo: 961
+            hi: 1073
+      span:
+        lo: 961
+        hi: 1102
+  - print:
+      value:
+        text: ကြီးသည်
+      span:
+        lo: 1287
+        hi: 1336
+  span:
+    lo: 0
+    hi: 1551
+diagnostics: []

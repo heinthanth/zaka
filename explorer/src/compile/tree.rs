@@ -57,10 +57,11 @@ impl TreeNode
     ///
     /// # Returns
     ///
-    /// `true` for `int`, `float`, `char`, `bool` and `str` nodes.
+    /// `true` for `int`, `float`, `char`, `bool` and `str` nodes, and the
+    /// `const` nodes of the IR.
     pub fn is_literal(&self) -> bool
     {
-        matches!(self.label, "int" | "float" | "char" | "bool" | "str")
+        matches!(self.label, "int" | "float" | "char" | "bool" | "str" | "const")
     }
 }
 

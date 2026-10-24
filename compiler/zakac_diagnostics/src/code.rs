@@ -17,7 +17,8 @@ macro_rules! define_codes {
 /// artifacts as its id.
 ///
 /// Ids are `ZK` plus four digits; the first two give the phase:
-/// `01` lexer, `02` parser, `03` resolve, `04` kinds, `05` naturalness.
+/// `01` lexer, `02` parser, `03` resolve, `04` kinds, `05` naturalness,
+/// `06` constant folding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Code { $($(#[$meta])* $name,)+ }
 
@@ -189,7 +190,12 @@ PrintValueWithHu = ("ZK0506", Level::Warning),
 /// Parentheses around an expression that stands alone in its place.
 RedundantGroup = ("ZK0507", Level::Warning),
 /// A clause used as a value ends in `ပါ`.
-PaInValue = ("ZK0508", Level::Warning) }
+PaInValue = ("ZK0508", Level::Warning),
+// constant folding: ZK06xx
+/// An operation on constants gives a value outside its kind.
+ConstantOverflow = ("ZK0601", Level::Error),
+/// An integer division or remainder has the constant zero as divisor.
+ConstantZeroDivisor = ("ZK0602", Level::Error) }
 
 impl Code
 {

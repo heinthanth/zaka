@@ -79,6 +79,18 @@ en = "Platform bits"
 en = "Bit count of isize and usize."
 [explorer.settings.platform_bits_choice]
 en = "%{n}-bit"
+[explorer.settings.fold_exprs]
+en = "Fold constant operations"
+[explorer.settings.fold_exprs_note]
+en = "Replaces an operation on constants with its value. Overflow and zero divisors are reported when it is off too."
+[explorer.settings.fold_consts]
+en = "Fold constant names"
+[explorer.settings.fold_consts_note]
+en = "Replaces a read of a ကိန်းသေ set to a constant with its value."
+[explorer.settings.fold_branches]
+en = "Fold constant branches"
+[explorer.settings.fold_branches_note]
+en = "Keeps the taken branch of an if on a constant, and drops a loop whose condition is false."
 
 [explorer.theme.auto]
 en = "Auto (OS)"
@@ -130,6 +142,10 @@ en = "AST"
 en = "Check"
 [explorer.phase.check_note]
 en = "kinds"
+[explorer.phase.lower]
+en = "Lower"
+[explorer.phase.lower_note]
+en = "IR"
 
 [explorer.status.clean]
 en = "clean"
@@ -203,3 +219,14 @@ en = "Each expression carries the kind the check gave it."
 en = "The check did not run"
 [explorer.check.skipped_note]
 en = "It runs once the lexer and parser report no errors. Fix the problems below to see the kinds."
+
+[explorer.lower.label]
+en = "IR before or after folding"
+[explorer.lower.plain]
+en = "Lowered"
+[explorer.lower.folded]
+en = "Folded"
+[explorer.lower.skipped_title]
+en = "Lowering did not run"
+[explorer.lower.skipped_note]
+en = "It runs once the earlier phases report no errors. Fix the problems below to see the IR."

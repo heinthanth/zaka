@@ -1,0 +1,16 @@
+_version = 2
+
+[ir.about]
+en = "Lower a checked program to the IR and fold its constants."
+
+[ir.artifact.source_changed]
+en = "source text changed after re-ingest"
+
+[ir.platform_bits]
+en = "Bit width of the platform-sized integer kinds."
+
+[ir.strict_particles]
+en = "Report particle idiom warnings as errors."
+
+[ir.fold]
+en = "Foldings to run: all, none, or a comma list of exprs, consts and branches. Errors in constant operations are reported whatever this holds."

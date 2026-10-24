@@ -1,0 +1,172 @@
+# zakac-ir-artifact v1
+name:
+  Custom: fold_errors.zaka
+source: "// ကိန်းသေ တွက်ချက်ရာတွင် အမှားများ\nကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၁၂၇ + ၁ ဖြစ်ပါစေ။\n၁ / ၀ ကို ပြသပါ။\n၇ % (၂ - ၂) ကို ပြသပါ။\nကိန်းသေ န သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၇၀ ဖြစ်ပါစေ။\n၁ << န ကို ပြသပါ။\n"
+module:
+  globals:
+  - name: က
+    kind: i8
+    access: var
+    span:
+      lo: 124
+      hi: 127
+  - name: န
+    kind: usize
+    access: const
+    span:
+      lo: 335
+      hi: 338
+  funcs: []
+  main:
+  - set:
+      place: g0
+      value:
+        kind: i8
+        node:
+          infix:
+            op: add
+            lhs:
+              kind: i8
+              node:
+                const: 127:i8
+              span:
+                lo: 183
+                hi: 192
+            rhs:
+              kind: i8
+              node:
+                const: 1:i8
+              span:
+                lo: 195
+                hi: 198
+        span:
+          lo: 183
+          hi: 198
+      span:
+        lo: 96
+        hi: 226
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            infix:
+              op: div
+              lhs:
+                kind: isize
+                node:
+                  const: 1:isize
+                span:
+                  lo: 227
+                  hi: 230
+              rhs:
+                kind: isize
+                node:
+                  const: 0:isize
+                span:
+                  lo: 233
+                  hi: 236
+          span:
+            lo: 227
+            hi: 236
+      span:
+        lo: 227
+        hi: 265
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            infix:
+              op: rem
+              lhs:
+                kind: isize
+                node:
+                  const: 7:isize
+                span:
+                  lo: 266
+                  hi: 269
+              rhs:
+                kind: isize
+                node:
+                  const: 0:isize
+                span:
+                  lo: 273
+                  hi: 282
+          span:
+            lo: 266
+            hi: 283
+      span:
+        lo: 266
+        hi: 312
+  - set:
+      place: g1
+      value:
+        kind: usize
+        node:
+          const: 70:usize
+        span:
+          lo: 408
+          hi: 414
+      span:
+        lo: 313
+        hi: 442
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            infix:
+              op: shl
+              lhs:
+                kind: isize
+                node:
+                  const: 1:isize
+                span:
+                  lo: 443
+                  hi: 446
+              rhs:
+                kind: usize
+                node:
+                  const: 70:usize
+                span:
+                  lo: 450
+                  hi: 453
+          span:
+            lo: 443
+            hi: 453
+      span:
+        lo: 443
+        hi: 482
+  span:
+    lo: 0
+    hi: 483
+diagnostics:
+- code: ZK0601
+  level: error
+  message: + on these constants does not fit i8
+  span:
+    lo: 183
+    hi: 198
+  help: null
+- code: ZK0602
+  level: error
+  message: / with the constant zero as divisor
+  span:
+    lo: 227
+    hi: 236
+  help: null
+- code: ZK0602
+  level: error
+  message: "% with the constant zero as divisor"
+  span:
+    lo: 266
+    hi: 283
+  help: null
+- code: ZK0407
+  level: error
+  message: shift distance 70 is not below the 64-bit width
+  span:
+    lo: 450
+    hi: 453
+  help: null

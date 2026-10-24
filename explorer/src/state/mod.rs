@@ -32,6 +32,7 @@ use crate::monaco::Editor;
 use crate::state::permalink::Link;
 use crate::state::settings::AstMode;
 use crate::state::settings::CUSTOM_MODES;
+use crate::state::settings::LowerMode;
 use crate::state::settings::Theme;
 use crate::state::settings::font_size_or_default;
 use crate::state::split::DEFAULT_EDITOR_SHARE;
@@ -57,6 +58,9 @@ const PDA_STORE: &str = "zaka-explorer-pda-burmese";
 
 /// Local storage name of the AST view mode.
 const AST_MODE_STORE: &str = "zaka-explorer-ast-mode";
+
+/// Local storage name of the lowering view mode.
+const LOWER_MODE_STORE: &str = "zaka-explorer-lower-mode";
 
 /// Local storage name of the italic comments switch.
 const ITALIC_STORE: &str = "zaka-explorer-italic-comments";
@@ -120,6 +124,10 @@ pub struct AppState
     pub ast_mode: Signal<AstMode>,
     /// Choose how the AST view shows the tree.
     pub set_ast_mode: WriteSignal<AstMode>,
+    /// Which IR the lowering view shows.
+    pub lower_mode: Signal<LowerMode>,
+    /// Choose which IR the lowering view shows.
+    pub set_lower_mode: WriteSignal<LowerMode>,
     /// Draw comments in italics in the editor.
     pub italic_comments: Signal<bool>,
     /// Switch italic comments on or off.
@@ -242,11 +250,12 @@ impl AppState
             .options(self.options.get_untracked())
             .stage(self.stage.get_untracked())
             .ast_mode(self.ast_mode.get_untracked())
+            .lower_mode(self.lower_mode.get_untracked())
             .build();
         url::write_hash(&permalink::encode(&link));
     }
 
-    /// Open a link: its source, options, stage and AST view.
+    /// Open a link: its source, options, stage and views.
     ///
     /// # Arguments
     ///
@@ -256,6 +265,7 @@ impl AppState
         self.options.set(link.options);
         self.stage.set(link.stage);
         self.set_ast_mode.set(link.ast_mode);
+        self.set_lower_mode.set(link.lower_mode);
         self.load(link.source);
     }
 
@@ -302,6 +312,8 @@ pub fn provide_state() -> AppState
         use_local_storage::<bool, FromToStringCodec>(PDA_STORE);
     let (ast_mode, set_ast_mode, _) =
         use_local_storage::<AstMode, FromToStringCodec>(AST_MODE_STORE);
+    let (lower_mode, set_lower_mode, _) =
+        use_local_storage::<LowerMode, FromToStringCodec>(LOWER_MODE_STORE);
     let (italic_comments, set_italic_comments, _) =
         use_local_storage::<bool, FromToStringCodec>(ITALIC_STORE);
     let (stored_size, set_font_size, _) =
@@ -349,6 +361,8 @@ pub fn provide_state() -> AppState
         .set_pda_burmese(set_pda_burmese)
         .ast_mode(ast_mode)
         .set_ast_mode(set_ast_mode)
+        .lower_mode(lower_mode)
+        .set_lower_mode(set_lower_mode)
         .italic_comments(italic_comments)
         .set_italic_comments(set_italic_comments)
         .font_size(font_size)
@@ -365,8 +379,12 @@ pub fn provide_state() -> AppState
     provide_context(state);
     wire_editor(state);
     wire_font(state);
-    // A link opens its own AST view over the remembered one.
-    do_if!(let Some(link) = &linked, state.set_ast_mode.set(link.ast_mode));
+    // A link opens its own views over the remembered ones.
+    do_if!(
+        let Some(link) = &linked,
+        state.set_ast_mode.set(link.ast_mode),
+        state.set_lower_mode.set(link.lower_mode)
+    );
     wire_link(state, settled);
     state
 }
@@ -464,12 +482,14 @@ fn wire_link(state: AppState, settled: Signal<(String, Options)>)
 {
     Effect::new(move |_| {
         let (stage, ast_mode) = (state.stage.get(), state.ast_mode.get());
+        let lower_mode = state.lower_mode.get();
         settled.with(|(text, options)| {
             let link = Link::builder()
                 .source(text.clone())
                 .options(*options)
                 .stage(stage)
                 .ast_mode(ast_mode)
+                .lower_mode(lower_mode)
                 .build();
             url::write_hash(&permalink::encode(&link));
         })

@@ -11,6 +11,11 @@ use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Level;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
+use zakac_ir_builder::fold::fold;
+use zakac_ir_builder::ir::FoldOptions;
+use zakac_ir_builder::ir::LowerOptions;
+use zakac_ir_builder::ir::Module;
+use zakac_ir_builder::lower::lower;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_lexer::token::Kw;
@@ -36,11 +41,13 @@ use zakac_span::source_map::SourceMap;
 use zakac_span::span::Span;
 
 pub mod graph;
+pub mod ir_tree;
 pub mod s_expr;
 pub mod samples;
 pub mod spans;
 pub mod tree;
 
+use crate::compile::ir_tree::build_ir_tree;
 use crate::compile::spans::OffsetTable;
 use crate::compile::spans::Range;
 use crate::compile::spans::find_in;
@@ -61,6 +68,9 @@ pub struct Options
     /// Bit count of the platform-sized integer kinds.
     #[builder(default = 64)]
     pub platform_bits: u16,
+    /// Which foldings rewrite the IR.
+    #[builder(default)]
+    pub fold: FoldOptions,
 }
 
 impl Default for Options
@@ -98,6 +108,8 @@ pub enum Phase
     Parse,
     /// The kind check.
     Check,
+    /// Lowering to the IR and constant folding.
+    Lower,
 }
 
 impl Phase
@@ -115,6 +127,7 @@ impl Phase
             Phase::Lex => t!("explorer.phase.lex"),
             Phase::Parse => t!("explorer.phase.parse"),
             Phase::Check => t!("explorer.phase.check"),
+            Phase::Lower => t!("explorer.phase.lower"),
         }
     }
 
@@ -131,6 +144,7 @@ impl Phase
             Phase::Lex => t!("explorer.phase.lex_note"),
             Phase::Parse => t!("explorer.phase.parse_note"),
             Phase::Check => t!("explorer.phase.check_note"),
+            Phase::Lower => t!("explorer.phase.lower_note"),
         }
     }
 }
@@ -310,6 +324,69 @@ pub struct Compiled
     pub diagnostics: Vec<DiagRow>,
     /// Whether the check ran; it is left out after lexer or parser errors.
     pub checked: bool,
+    /// The tree view of the IR as lowered.
+    pub ir_plain: TreeNode,
+    /// The tree view of the IR after folding.
+    pub ir_folded: TreeNode,
+    /// The S-expression form of the IR as lowered.
+    pub ir_plain_sexpr: String,
+    /// The S-expression form of the IR after folding.
+    pub ir_folded_sexpr: String,
+    /// Whether lowering ran; it is left out after errors in earlier phases.
+    pub lowered: bool,
+}
+
+/// Which tree a view shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TreeSource
+{
+    /// The parser tree.
+    Ast,
+    /// The IR as lowered.
+    Plain,
+    /// The IR after folding.
+    Folded,
+}
+
+impl TreeSource
+{
+    /// The tree in a compile run.
+    ///
+    /// # Arguments
+    ///
+    /// * `c` - The run.
+    ///
+    /// # Returns
+    ///
+    /// The tree.
+    pub fn tree(self, c: &Compiled) -> &TreeNode
+    {
+        match self
+        {
+            TreeSource::Ast => &c.tree,
+            TreeSource::Plain => &c.ir_plain,
+            TreeSource::Folded => &c.ir_folded,
+        }
+    }
+
+    /// The S-expression form in a compile run.
+    ///
+    /// # Arguments
+    ///
+    /// * `c` - The run.
+    ///
+    /// # Returns
+    ///
+    /// The text.
+    pub fn sexpr(self, c: &Compiled) -> &str
+    {
+        match self
+        {
+            TreeSource::Ast => &c.sexpr,
+            TreeSource::Plain => &c.ir_plain_sexpr,
+            TreeSource::Folded => &c.ir_folded_sexpr,
+        }
+    }
 }
 
 impl Compiled
@@ -362,10 +439,12 @@ impl Compiled
     ///
     /// # Returns
     ///
-    /// The status; the check is skipped after lexer or parser errors.
+    /// The status; the check is skipped after lexer or parser errors, and
+    /// lowering after errors in an earlier phase.
     pub fn status(&self, phase: Phase) -> Status
     {
         ret_if!(phase == Phase::Check && !self.checked, Status::Skipped);
+        ret_if!(phase == Phase::Lower && !self.lowered, Status::Skipped);
         let own = self.diagnostics.iter().filter(|d| d.phase == phase);
         let levels: Vec<Level> = own.map(|d| d.level).collect();
         ret_if!(levels.contains(&Level::Error), Status::Failed);
@@ -464,11 +543,20 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         SemcheckOutput::default()
     );
     idiom.extend(out.diagnostics.iter().cloned());
+    let lowered = checked && !has_errors(&idiom);
+    let ir = lowered.then(|| lower_and_fold(&parsed.program, &out, options));
+    let (plain, folded, fold_diags) = ir.unwrap_or_default();
     let tagged = [
         (Phase::Lex, &lexed.diagnostics),
         (Phase::Parse, &parsed.diagnostics),
         (Phase::Check, &idiom),
+        (Phase::Lower, &fold_diags),
     ];
+    let ir_tree = |m: &Option<Module>| {
+        m.as_ref().map(|m| build_ir_tree(&file, source, m)).unwrap_or_default()
+    };
+    let ir_sexpr =
+        |m: &Option<Module>| m.as_ref().map(|m| m.to_sexpr()).unwrap_or_default();
     let diagnostics = tagged
         .iter()
         .flat_map(|(phase, diags)| diags.iter().map(|d| diag_row(&unit, *phase, d)))
@@ -485,7 +573,38 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .sexpr(parsed.program.to_sexpr())
         .diagnostics(diagnostics)
         .checked(checked)
+        .ir_plain(ir_tree(&plain))
+        .ir_folded(ir_tree(&folded))
+        .ir_plain_sexpr(ir_sexpr(&plain))
+        .ir_folded_sexpr(ir_sexpr(&folded))
+        .lowered(lowered)
         .build()
+}
+
+/// Lower a checked program and fold a copy.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+/// * `out` - The check output.
+/// * `options` - The options.
+///
+/// # Returns
+///
+/// The module as lowered, the folded module and the fold diagnostics.
+fn lower_and_fold(
+    program: &zakac_ast::stmt::Program, out: &SemcheckOutput, options: &Options,
+) -> (Option<Module>, Option<Module>, Vec<Diagnostic>)
+{
+    let bits = options.platform_bits;
+    let plain = lower(
+        program,
+        &out.kinds,
+        &LowerOptions::builder().platform_bits(bits).build(),
+    );
+    let mut folded = plain.clone();
+    let diags = fold(&mut folded, &options.fold, bits);
+    (Some(plain), Some(folded), diags)
 }
 
 /// Rows of the segments view.

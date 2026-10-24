@@ -1,17 +1,23 @@
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use bon::Builder;
+use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 use crate::compile::Options;
 use crate::compile::PLATFORM_BITS;
 use crate::compile::Phase;
 use crate::state::settings::AstMode;
+use crate::state::settings::LowerMode;
 
 /// Version of the link format.
-const FORMAT: &str = "3";
+const FORMAT: &str = "4";
 
-/// Version of the older format, without the stage and the AST view.
+/// Version of the older format, without the foldings and the lowering view.
+const FORMAT_3: &str = "3";
+
+/// Version of the oldest format, without the stage and the AST view.
 const FORMAT_2: &str = "2";
 
 /// What a link holds: the source, the options, and the view it opens.
@@ -29,13 +35,17 @@ pub struct Link
     /// How the AST view shows the tree.
     #[builder(default)]
     pub ast_mode: AstMode,
+    /// Which IR the lowering view shows.
+    #[builder(default)]
+    pub lower_mode: LowerMode,
 }
 
 /// Encode a link for the URL hash.
 ///
-/// The format is `3.<platform bits>.<stage>.<AST view>.<base64url of the
-/// UTF-8 source>`, with the stage and the view in lowercase, as in
-/// `3.64.parse.graph.…`.
+/// The format is `4.<platform bits>.<foldings>.<stage>.<AST view>.<lowering
+/// view>.<base64url of the UTF-8 source>`, with the stage and the views in
+/// lowercase, as in `4.64.7.lower.tree.folded.…`. The foldings are a digit
+/// from 0 to 7: 1 for expressions, 2 for constants, 4 for branches.
 ///
 /// # Arguments
 ///
@@ -49,11 +59,44 @@ pub fn encode(link: &Link) -> String
     let text = URL_SAFE_NO_PAD.encode(link.source.as_bytes());
     let stage = <&'static str>::from(link.stage).to_lowercase();
     let bits = link.options.platform_bits;
-    format!("{FORMAT}.{bits}.{stage}.{}.{text}", link.ast_mode)
+    let fold = fold_digit(link.options.fold);
+    let views = format!("{}.{}", link.ast_mode, link.lower_mode);
+    format!("{FORMAT}.{bits}.{fold}.{stage}.{views}.{text}")
 }
 
-/// Decode a URL hash made with [`encode`]; a link of the older `2.` format
-/// opens with the default stage and view.
+/// The digit of a set of foldings.
+///
+/// # Arguments
+///
+/// * `fold` - The foldings.
+///
+/// # Returns
+///
+/// The digit, from 0 to 7.
+fn fold_digit(fold: FoldOptions) -> u8
+{
+    let bit = |on: bool, value: u8| tern!(on, value, 0);
+    bit(fold.exprs, 1) | bit(fold.consts, 2) | bit(fold.branches, 4)
+}
+
+/// The foldings of a digit made with [`fold_digit`].
+///
+/// # Arguments
+///
+/// * `digit` - The digit.
+///
+/// # Returns
+///
+/// The foldings, or `None` for other text.
+fn read_fold(digit: &str) -> Option<FoldOptions>
+{
+    let n: u8 = digit.parse().ok().filter(|n| *n < 8)?;
+    let on = |value: u8| n & value != 0;
+    Some(FoldOptions::builder().exprs(on(1)).consts(on(2)).branches(on(4)).build())
+}
+
+/// Decode a URL hash made with [`encode`]; a link of an older format opens
+/// with the defaults for the parts it lacks.
 ///
 /// # Arguments
 ///
@@ -67,13 +110,37 @@ pub fn decode(hash: &str) -> Option<Link>
     let (format, rest) = hash.trim_start_matches('#').split_once('.')?;
     match format
     {
-        FORMAT => decode_view(rest),
+        FORMAT => decode_full(rest),
+        FORMAT_3 => decode_view(rest),
         FORMAT_2 =>
         {
             rest.split_once('.').and_then(|(bits, text)| decode_base(bits, text))
         }
         _ => None,
     }
+}
+
+/// Decode the part of a link after the format: bits, foldings, stage, AST
+/// view, lowering view, source.
+///
+/// # Arguments
+///
+/// * `rest` - The part.
+///
+/// # Returns
+///
+/// The link, or `None` when a part is not well formed.
+fn decode_full(rest: &str) -> Option<Link>
+{
+    let (bits, rest) = rest.split_once('.')?;
+    let (fold, rest) = rest.split_once('.')?;
+    let (stage, rest) = rest.split_once('.')?;
+    let (ast, rest) = rest.split_once('.')?;
+    let (lower, text) = rest.split_once('.')?;
+    let mut link = decode_view(&format!("{bits}.{stage}.{ast}.{text}"))?;
+    link.options.fold = read_fold(fold)?;
+    link.lower_mode = lower.parse().ok()?;
+    Some(link)
 }
 
 /// Decode the part of a link after the format: bits, stage, view, source.

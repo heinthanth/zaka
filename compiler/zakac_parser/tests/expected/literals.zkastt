@@ -146,6 +146,7 @@ program:
           float:
             id: 7
             value: 12.34
+            text: "12.34"
             kind: null
             span:
               lo: 586
@@ -164,6 +165,7 @@ program:
               float:
                 id: 8
                 value: 11.11
+                text: "11.11"
                 kind: null
                 span:
                   lo: 630
@@ -181,6 +183,7 @@ program:
           float:
             id: 10
             value: 1000000000000.0
+            text: "100e+10"
             kind: null
             span:
               lo: 673
@@ -195,6 +198,7 @@ program:
           float:
             id: 11
             value: 10.0
+            text: "10"
             kind:
               base: float
               bits: 32

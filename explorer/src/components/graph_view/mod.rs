@@ -18,6 +18,7 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::compile::TreeSource;
 use crate::compile::graph::CHAR_WIDTH;
 use crate::compile::graph::Graph;
 use crate::compile::graph::GraphNode;
@@ -120,15 +121,25 @@ impl Camera
 /// Cmd with a drag moves, the plain wheel pans, and the buttons, `+`, `-`
 /// and `0` zoom and fit.
 ///
+/// # Arguments
+///
+/// * `source` - Which tree to draw.
+///
 /// # Returns
 ///
 /// The view.
-pub fn graph_view() -> impl IntoView
+pub fn graph_view(
+    source: impl Fn() -> TreeSource + Copy + Send + Sync + 'static,
+) -> impl IntoView
 {
     let state = use_state();
+    let shape = Memo::new(move |_| {
+        let pick = source();
+        state.compiled.with(|c| graph(pick.tree(c)))
+    });
     let cam = Camera {
         port: NodeRef::new(),
-        shape: Memo::new(move |_| state.compiled.with(|c| graph(&c.tree))),
+        shape,
         view: RwSignal::new(View::default()),
         drag: RwSignal::new(None),
     };

@@ -10,6 +10,7 @@ use zakac_i18n::t;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::compile::TreeSource;
 use crate::compile::tree::TreeNode;
 use crate::components::scope::ScopedSheet;
 use crate::components::scope::scoped;
@@ -28,16 +29,21 @@ const OPEN_LEVELS: usize = 3;
 ///
 /// # Arguments
 ///
-/// * `kinds` - Show the kinds the check gave the expressions.
+/// * `source` - Which tree to show.
+/// * `kinds` - Show the kinds of the expressions.
 ///
 /// # Returns
 ///
 /// The view.
-pub fn tree_view(kinds: bool) -> impl IntoView
+pub fn tree_view(
+    source: impl Fn() -> TreeSource + Copy + Send + Sync + 'static, kinds: bool,
+) -> impl IntoView
 {
     let state = use_state();
-    let tree =
-        move || state.compiled.with(|c| node_view(state, c.tree.clone(), 0, kinds));
+    let tree = move || {
+        let pick = source();
+        state.compiled.with(|c| node_view(state, pick.tree(c).clone(), 0, kinds))
+    };
     let root = NodeRef::<html::Div>::new();
     scoped(&SHEET, root, div().class("tree").node_ref(root).child(tree))
 }

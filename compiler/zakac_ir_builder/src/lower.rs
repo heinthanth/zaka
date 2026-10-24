@@ -1,0 +1,940 @@
+use std::collections::HashMap;
+
+use bon::Builder;
+use zakac_ast::expr as ast;
+use zakac_ast::stmt as st;
+use zakac_ast::verb::Dir;
+use zakac_ast::verb::VerbOp;
+use zakac_ast::visit::Node;
+use zakac_rust_sugars::do_for;
+use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
+use zakac_semcheck::kind::DataKind;
+use zakac_semcheck::semcheck::KindTable;
+use zakac_semcheck::semcheck::RESULT_NAME;
+use zakac_span::span::Span;
+
+use crate::ir::Access;
+use crate::ir::CmpOp;
+use crate::ir::Expr;
+use crate::ir::ExprNode;
+use crate::ir::Func;
+use crate::ir::InfixOp;
+use crate::ir::LogicOp;
+use crate::ir::LowerOptions;
+use crate::ir::Module;
+use crate::ir::Place;
+use crate::ir::PrefixOp;
+use crate::ir::PrintValue;
+use crate::ir::Slot;
+use crate::ir::Stmt;
+use crate::value::Value;
+
+/// Lower a checked program to the IR. Names become slots, blocks are
+/// flattened, operators get one spelling, and widening conversions become
+/// explicit. A negated integer literal becomes a negative constant.
+///
+/// # Arguments
+///
+/// * `program` - The tree; the check must have reported no errors.
+/// * `kinds` - The kind of each expression, from the check.
+/// * `options` - The options.
+///
+/// # Returns
+///
+/// The module.
+///
+/// # Panics
+///
+/// When an expression has no kind, which a clean check rules out.
+pub fn lower(program: &st::Program, kinds: &KindTable, options: &LowerOptions)
+-> Module
+{
+    let sigs = collect_sigs(program);
+    #[rustfmt::skip]
+    let mut lowerer = Lowerer::builder().kinds(kinds).platform(options.platform_bits)
+        .sigs(sigs).build();
+    lowerer.scopes.push(HashMap::new());
+    let mut main = Vec::new();
+    do_for!(s in &program.stmts, lowerer.top_stmt(s, &mut main));
+    #[rustfmt::skip]
+    return Module::builder().globals(lowerer.globals).funcs(lowerer.funcs).main(main)
+        .span(program.span).build();
+}
+
+/// What a call needs to know about a function.
+#[derive(Debug, Clone)]
+struct Sig
+{
+    /// Index into the module functions.
+    index: u32,
+    /// The parameter kinds.
+    params: Vec<DataKind>,
+}
+
+/// The signatures of the top-level functions, in source order; the first
+/// of two with one name wins, as in the check.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+///
+/// # Returns
+///
+/// The signatures, one per name.
+fn collect_sigs(program: &st::Program) -> HashMap<String, Sig>
+{
+    let mut sigs = HashMap::new();
+    let decls = program
+        .stmts
+        .iter()
+        .filter_map(|s| tern!(let st::Stmt::Fn(f) = s, Some(f), None));
+    for (index, f) in decls.enumerate()
+    {
+        let params = f.params.iter().map(|p| DataKind::from_ast(&p.kind)).collect();
+        let sig = Sig { index: index as u32, params };
+        sigs.entry(f.name.name.clone()).or_insert(sig);
+    }
+    sigs
+}
+
+/// The function being lowered.
+#[derive(Debug, Default)]
+struct Frame
+{
+    /// Its slots so far.
+    locals: Vec<Slot>,
+    /// Its result kind.
+    ret: Option<DataKind>,
+}
+
+/// The lowering walk.
+#[derive(Builder)]
+struct Lowerer<'k>
+{
+    /// Kinds from the check.
+    kinds: &'k KindTable,
+    /// Bit count of the platform-sized kinds.
+    platform: u16,
+    /// The function signatures, one per name.
+    sigs: HashMap<String, Sig>,
+    /// Global slots so far.
+    #[builder(default)]
+    globals: Vec<Slot>,
+    /// Lowered functions so far.
+    #[builder(default)]
+    funcs: Vec<Func>,
+    /// The function being lowered; `None` at the top level.
+    frame: Option<Frame>,
+    /// Names in scope, innermost last.
+    #[builder(default)]
+    scopes: Vec<HashMap<String, Place>>,
+}
+
+impl Lowerer<'_>
+{
+    /// The kind the check recorded for an expression.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The expression.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    fn kind_of(&self, e: &ast::Expr) -> DataKind
+    {
+        let kind = self.kinds.get(&e.id()).copied();
+        kind.unwrap_or_else(|| panic!("expression {} has no kind", e.id().0))
+    }
+
+    /// Make a slot for a declared name and bring the name into scope.
+    ///
+    /// # Arguments
+    ///
+    /// * `ident` - The name.
+    /// * `kind` - Its kind.
+    /// * `access` - What it allows.
+    ///
+    /// # Returns
+    ///
+    /// The place of the slot.
+    fn declare(&mut self, ident: &ast::Ident, kind: DataKind, access: Access) -> Place
+    {
+        let slot = Slot::builder()
+            .name(&ident.name)
+            .kind(kind)
+            .access(access)
+            .span(ident.span)
+            .build();
+        let place = match &mut self.frame
+        {
+            Some(frame) =>
+            {
+                frame.locals.push(slot);
+                Place::Local(frame.locals.len() as u32 - 1)
+            }
+            None =>
+            {
+                self.globals.push(slot);
+                Place::Global(self.globals.len() as u32 - 1)
+            }
+        };
+        let scope = self.scopes.last_mut().expect("a scope is open");
+        scope.insert(ident.name.clone(), place);
+        place
+    }
+
+    /// The place a name refers to.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    ///
+    /// # Returns
+    ///
+    /// The place of the innermost declaration.
+    ///
+    /// # Panics
+    ///
+    /// When the name is not declared, which a clean check rules out.
+    fn lookup(&self, name: &str) -> Place
+    {
+        let found = self.scopes.iter().rev().find_map(|s| s.get(name).copied());
+        found.unwrap_or_else(|| panic!("name {name} is not declared"))
+    }
+
+    /// Run `f` inside a new scope.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The work.
+    fn scoped(&mut self, f: impl FnOnce(&mut Self))
+    {
+        self.scopes.push(HashMap::new());
+        f(self);
+        self.scopes.pop();
+    }
+
+    /// Lower a statement list into its own list, inside a new scope.
+    ///
+    /// # Arguments
+    ///
+    /// * `stmts` - The statements.
+    ///
+    /// # Returns
+    ///
+    /// The lowered statements.
+    fn block(&mut self, stmts: &[st::Stmt]) -> Vec<Stmt>
+    {
+        let mut out = Vec::new();
+        self.scoped(|l| do_for!(s in stmts, l.stmt(s, &mut out)));
+        out
+    }
+
+    /// Lower a top-level statement: a function goes to the module, the rest
+    /// to the main list.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The statement.
+    /// * `out` - The main list.
+    fn top_stmt(&mut self, s: &st::Stmt, out: &mut Vec<Stmt>)
+    {
+        let st::Stmt::Fn(f) = s
+        else
+        {
+            return self.stmt(s, out);
+        };
+        let func = self.func(f);
+        self.funcs.push(func);
+    }
+
+    /// Lower a statement and append it to `out`.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The statement.
+    /// * `out` - The list it goes to.
+    fn stmt(&mut self, s: &st::Stmt, out: &mut Vec<Stmt>)
+    {
+        match s
+        {
+            st::Stmt::Decl(n) => out.push(self.decl(n)),
+            st::Stmt::Assign(n) => out.push(self.assign(n)),
+            st::Stmt::Print(n) => out.push(self.print(n)),
+            st::Stmt::Block(n) =>
+            {
+                self.scoped(|l| do_for!(s in &n.stmts, l.stmt(s, out)))
+            }
+            st::Stmt::If(n) => out.push(self.if_stmt(n)),
+            st::Stmt::While(n) => out.push(self.while_stmt(n)),
+            st::Stmt::Counted(n) => out.push(self.counted(n)),
+            st::Stmt::Generic(n) => out.push(self.generic(n)),
+            st::Stmt::Break(n) => out.push(Stmt::Break { span: n.span }),
+            st::Stmt::Continue(n) => out.push(Stmt::Continue { span: n.span }),
+            st::Stmt::Fn(f) =>
+            {
+                let func = self.func(f);
+                self.funcs.push(func);
+            }
+            st::Stmt::Return(n) => out.push(self.return_stmt(n)),
+            st::Stmt::Call(n) =>
+            {
+                let (func, args) = self.call_parts(&n.callee, &n.args);
+                let name = n.callee.name.clone();
+                out.push(Stmt::Call { func, name, args, span: n.span });
+            }
+        }
+    }
+
+    /// Lower a declaration to a store of its initial value or its kind's
+    /// default. The name comes into scope after the value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The declaration.
+    ///
+    /// # Returns
+    ///
+    /// The store.
+    fn decl(&mut self, n: &st::DeclStmt) -> Stmt
+    {
+        let kind = DataKind::from_ast(&n.kind);
+        let value = self.initial(n.init.as_ref(), kind, n.name.span);
+        let access = tern!(n.is_const, Access::Const, Access::Var);
+        let place = self.declare(&n.name, kind, access);
+        Stmt::Set { place, value, span: n.span }
+    }
+
+    /// The initial value of a declaration.
+    ///
+    /// # Arguments
+    ///
+    /// * `init` - The written value, when there is one.
+    /// * `kind` - The declared kind.
+    /// * `span` - Where to place a default value.
+    ///
+    /// # Returns
+    ///
+    /// The value, of the declared kind.
+    fn initial(&mut self, init: Option<&ast::Expr>, kind: DataKind, span: Span)
+    -> Expr
+    {
+        ret_if!(let Some(init) = init, self.coerce(init, kind));
+        constant(Value::default_of(kind), span)
+    }
+
+    /// Lower an assignment.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The assignment.
+    ///
+    /// # Returns
+    ///
+    /// The store.
+    fn assign(&mut self, n: &st::AssignStmt) -> Stmt
+    {
+        let place = self.lookup(&n.target.name);
+        let value = self.coerce(&n.value, self.slot_kind(place));
+        Stmt::Set { place, value, span: n.span }
+    }
+
+    /// The kind of a slot.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The slot.
+    ///
+    /// # Returns
+    ///
+    /// Its kind.
+    fn slot_kind(&self, place: Place) -> DataKind
+    {
+        match place
+        {
+            Place::Global(n) => self.globals[n as usize].kind,
+            Place::Local(n) =>
+            {
+                let frame = self.frame.as_ref().expect("a local is inside a function");
+                frame.locals[n as usize].kind
+            }
+        }
+    }
+
+    /// Lower a print statement.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn print(&mut self, n: &st::PrintStmt) -> Stmt
+    {
+        let value = match &n.value
+        {
+            st::PrintArg::Expr(e) => PrintValue::Expr(self.expr(e)),
+            st::PrintArg::Str(s) => PrintValue::Text(s.lit.value.clone()),
+        };
+        Stmt::Print { value, span: n.span }
+    }
+
+    /// Lower an `if` chain; later arms nest in the `else` of earlier ones.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The outermost `if`.
+    fn if_stmt(&mut self, n: &st::IfStmt) -> Stmt
+    {
+        let arms: Vec<(Expr, Vec<Stmt>, Span)> =
+            n.arms.iter().map(|arm| self.if_arm(arm)).collect();
+        let els = n.else_block.as_ref().map_or_else(Vec::new, |b| self.block(&b.stmts));
+        let nest = |els, (i, (cond, then, span)): (usize, (Expr, Vec<Stmt>, Span))| {
+            let span = tern!(i == 0, n.span, span.to(&n.span));
+            vec![Stmt::If { cond, then, els, span }]
+        };
+        let mut chain = arms.into_iter().enumerate().rev().fold(els, nest);
+        chain.pop().expect("an if has at least one arm")
+    }
+
+    /// Lower one arm of an `if` chain.
+    ///
+    /// # Arguments
+    ///
+    /// * `arm` - The arm.
+    ///
+    /// # Returns
+    ///
+    /// The condition, the statements and the arm's source region.
+    fn if_arm(&mut self, arm: &st::IfArm) -> (Expr, Vec<Stmt>, Span)
+    {
+        let cond = self.coerce(&arm.cond, DataKind::Bool);
+        (cond, self.block(&arm.block.stmts), arm.span)
+    }
+
+    /// Lower a while loop.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    ///
+    /// # Returns
+    ///
+    /// A loop with no start or update statements.
+    fn while_stmt(&mut self, n: &st::WhileStmt) -> Stmt
+    {
+        let cond = self.coerce(&n.cond, DataKind::Bool);
+        let block = self.block(&n.block.stmts);
+        Stmt::Loop { init: Vec::new(), cond, update: Vec::new(), block, span: n.span }
+    }
+
+    /// Lower a counted loop. Its variable takes the common kind of the
+    /// bounds.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    ///
+    /// # Returns
+    ///
+    /// The loop.
+    fn counted(&mut self, n: &st::CountedStmt) -> Stmt
+    {
+        let kind = self.common(self.kind_of(&n.from), self.kind_of(&n.to));
+        let from = self.coerce(&n.from, kind);
+        let to = self.coerce(&n.to, kind);
+        let step = n.step.as_ref().map(|s| self.coerce(s, kind));
+        let mut var = Place::Local(0);
+        let mut block = Vec::new();
+        self.scoped(|l| {
+            var = l.declare(&n.var, kind, Access::LoopVar);
+            do_for!(s in &n.block.stmts, l.stmt(s, &mut block));
+        });
+        Stmt::Counted { var, from, to, step, mode: n.mode, block, span: n.span }
+    }
+
+    /// Lower a generic loop: its declaration becomes the start statement.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    ///
+    /// # Returns
+    ///
+    /// The loop.
+    fn generic(&mut self, n: &st::GenericStmt) -> Stmt
+    {
+        let kind = DataKind::from_ast(&n.kind);
+        let value = self.initial(n.init.as_ref(), kind, n.var.span);
+        let mut parts = None;
+        self.scoped(|l| {
+            let place = l.declare(&n.var, kind, Access::Var);
+            let set = Stmt::Set { place, value, span: n.var.span.to(&n.kind.span) };
+            let cond = l.coerce(&n.cond, DataKind::Bool);
+            let mut block = Vec::new();
+            do_for!(s in &n.block.stmts, l.stmt(s, &mut block));
+            let mut update = Vec::new();
+            do_if!(let Some(u) = &n.update, l.stmt(u, &mut update));
+            parts = Some((set, cond, block, update));
+        });
+        let (set, cond, block, update) = parts.expect("the scope ran");
+        Stmt::Loop { init: vec![set], cond, update, block, span: n.span }
+    }
+
+    /// Lower a function. Parameters come first among its slots, then the
+    /// result variable, set to its default. A function with a result that
+    /// does not end in a return returns the result variable.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The declaration.
+    ///
+    /// # Returns
+    ///
+    /// The function.
+    fn func(&mut self, f: &st::FnDecl) -> Func
+    {
+        let ret = f.ret.as_ref().map(DataKind::from_ast);
+        let outer = self.frame.replace(Frame { locals: Vec::new(), ret });
+        let mut block = Vec::new();
+        let mut result = None;
+        self.scoped(|l| {
+            do_for!(p in &f.params, l.declare_param(p));
+            result = ret.map(|k| l.result_slot(f, k, &mut block));
+            do_for!(s in &f.block.stmts, l.stmt(s, &mut block));
+        });
+        let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
+        let implicit = result.zip(ret).filter(|_| !ends_in_return);
+        let ret_stmt =
+            implicit.map(|(slot, kind)| read_return(slot, kind, f.block.span));
+        block.extend(ret_stmt);
+        let frame =
+            std::mem::replace(&mut self.frame, outer).expect("the frame is set");
+        #[rustfmt::skip]
+        return Func::builder().name(&f.name.name).params(f.params.len() as u32)
+            .maybe_result(result)
+            .maybe_ret(ret).locals(frame.locals).block(block).span(f.span).build();
+    }
+
+    /// Declare a function parameter.
+    ///
+    /// # Arguments
+    ///
+    /// * `p` - The parameter.
+    fn declare_param(&mut self, p: &st::Param)
+    {
+        self.declare(&p.name, DataKind::from_ast(&p.kind), Access::Var);
+    }
+
+    /// Declare the result variable of a function and set it to its default.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The function.
+    /// * `kind` - The result kind.
+    /// * `block` - The function statements, which get the store.
+    ///
+    /// # Returns
+    ///
+    /// The local slot index.
+    fn result_slot(
+        &mut self, f: &st::FnDecl, kind: DataKind, block: &mut Vec<Stmt>,
+    ) -> u32
+    {
+        let ident = ast::Ident::builder().name(RESULT_NAME).span(f.name.span).build();
+        let place = self.declare(&ident, kind, Access::Var);
+        let value = constant(Value::default_of(kind), f.name.span);
+        block.push(Stmt::Set { place, value, span: f.name.span });
+        tern!(let Place::Local(n) = place, n, 0)
+    }
+
+    /// Lower a return statement.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn return_stmt(&mut self, n: &st::ReturnStmt) -> Stmt
+    {
+        let ret = self.frame.as_ref().and_then(|f| f.ret);
+        let value = n.value.as_ref().zip(ret).map(|(v, k)| self.coerce(v, k));
+        Stmt::Return { value, span: n.span }
+    }
+
+    /// The function index and the arguments of a call, each converted to
+    /// its parameter's kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function name.
+    /// * `args` - The arguments.
+    ///
+    /// # Returns
+    ///
+    /// The index and the lowered arguments.
+    fn call_parts(
+        &mut self, callee: &ast::Ident, args: &[ast::Expr],
+    ) -> (u32, Vec<Expr>)
+    {
+        let sig = self.sigs.get(&callee.name).cloned();
+        let sig =
+            sig.unwrap_or_else(|| panic!("function {} is not declared", callee.name));
+        let args =
+            args.iter().zip(&sig.params).map(|(a, k)| self.coerce(a, *k)).collect();
+        (sig.index, args)
+    }
+
+    /// The common kind of two kinds: the one the other widens to.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - One kind.
+    /// * `b` - The other kind.
+    ///
+    /// # Returns
+    ///
+    /// The wider kind.
+    fn common(&self, a: DataKind, b: DataKind) -> DataKind
+    {
+        tern!(a.widens_to(b, self.platform), b, a)
+    }
+
+    /// Lower an expression and convert it to `want` when its kind differs.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The expression.
+    /// * `want` - The kind its place expects.
+    ///
+    /// # Returns
+    ///
+    /// The expression, of kind `want`.
+    fn coerce(&mut self, e: &ast::Expr, want: DataKind) -> Expr
+    {
+        let lowered = self.expr(e);
+        ret_if!(lowered.kind == want, lowered);
+        let span = lowered.span;
+        let node = ExprNode::Convert { operand: Box::new(lowered), implicit: true };
+        Expr::builder().kind(want).node(node).span(span).build()
+    }
+
+    /// Lower an expression with the kind the check recorded for it.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The expression.
+    ///
+    /// # Returns
+    ///
+    /// The expression.
+    fn expr(&mut self, e: &ast::Expr) -> Expr
+    {
+        let kind = self.kind_of(e);
+        let node = match e
+        {
+            ast::Expr::Int(n) => ExprNode::Const(self.int_lit(n, kind, false)),
+            ast::Expr::Float(n) => ExprNode::Const(float_lit(n, kind)),
+            ast::Expr::Char(n) => ExprNode::Const(Value::Char(n.value)),
+            ast::Expr::Bool(n) => ExprNode::Const(Value::Bool(n.value)),
+            ast::Expr::Name(n) => ExprNode::Read(self.lookup(&n.name)),
+            ast::Expr::Group(n) => return self.expr(&n.inner),
+            ast::Expr::Prefix(n) => self.prefix(n, kind),
+            ast::Expr::Infix(n) => self.infix(n.op, &n.lhs, &n.rhs, kind),
+            ast::Expr::Not(n) => prefix_node(PrefixOp::Not, self.expr(&n.inner)),
+            ast::Expr::Logic(n) => self.logic(n),
+            ast::Expr::Verb(n) => self.verb(n, kind),
+            ast::Expr::Call(n) =>
+            {
+                let (func, args) = self.call_parts(&n.callee, &n.args);
+                ExprNode::Call { func, name: n.callee.name.clone(), args }
+            }
+        };
+        Expr::builder().kind(kind).node(node).span(e.span()).build()
+    }
+
+    /// The value of an integer literal of the recorded kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The literal.
+    /// * `kind` - The recorded kind, an integer or a float.
+    /// * `negated` - Whether a negate operator stands before it.
+    ///
+    /// # Returns
+    ///
+    /// The value.
+    fn int_lit(&self, n: &ast::IntLit, kind: DataKind, negated: bool) -> Value
+    {
+        let DataKind::Int(k) = kind
+        else
+        {
+            let text = tern!(negated, format!("-{}", n.value), n.value.to_string());
+            let bits = kind.bits(self.platform);
+            return Value::float(&text, bits).unwrap_or(Value::default_of(kind));
+        };
+        let pattern = tern!(negated, n.value.wrapping_neg(), n.value);
+        Value::int(k, pattern, self.platform)
+    }
+
+    /// Lower a prefix operator. `-` before an integer literal without a
+    /// kind prefix becomes a negative constant.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The expression.
+    /// * `kind` - Its recorded kind.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn prefix(&mut self, n: &ast::PrefixExpr, kind: DataKind) -> ExprNode
+    {
+        let lit = match n.rhs.as_ref()
+        {
+            ast::Expr::Int(lit) if lit.kind.is_none() && n.op == ast::PrefixOp::Neg =>
+            {
+                Some(lit)
+            }
+            _ => None,
+        };
+        ret_if!(let Some(lit) = lit, ExprNode::Const(self.int_lit(lit, kind, true)));
+        let op = match n.op
+        {
+            ast::PrefixOp::Neg => PrefixOp::Neg,
+            ast::PrefixOp::BitNot => PrefixOp::BitNot,
+            ast::PrefixOp::Not => PrefixOp::Not,
+        };
+        prefix_node(op, self.expr(&n.rhs))
+    }
+
+    /// Lower a notation operator.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The operator.
+    /// * `lhs` - The left operand.
+    /// * `rhs` - The right operand.
+    /// * `kind` - The recorded kind of the operation.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn infix(
+        &mut self, op: ast::InfixOp, lhs: &ast::Expr, rhs: &ast::Expr, kind: DataKind,
+    ) -> ExprNode
+    {
+        let cmp = match op
+        {
+            ast::InfixOp::Eq => Some(CmpOp::Eq),
+            ast::InfixOp::Ne => Some(CmpOp::Ne),
+            ast::InfixOp::Lt => Some(CmpOp::Lt),
+            ast::InfixOp::Gt => Some(CmpOp::Gt),
+            ast::InfixOp::Le => Some(CmpOp::Le),
+            ast::InfixOp::Ge => Some(CmpOp::Ge),
+            _ => None,
+        };
+        ret_if!(let Some(cmp) = cmp, self.compare(cmp, lhs, rhs));
+        let op = match op
+        {
+            ast::InfixOp::Add => InfixOp::Add,
+            ast::InfixOp::Sub => InfixOp::Sub,
+            ast::InfixOp::Mul => InfixOp::Mul,
+            ast::InfixOp::Div => InfixOp::Div,
+            ast::InfixOp::Rem => InfixOp::Rem,
+            ast::InfixOp::BitAnd => InfixOp::BitAnd,
+            ast::InfixOp::BitOr => InfixOp::BitOr,
+            ast::InfixOp::BitXor => InfixOp::BitXor,
+            ast::InfixOp::Shl => InfixOp::Shl,
+            _ => InfixOp::Shr,
+        };
+        self.arith(op, lhs, rhs, kind)
+    }
+
+    /// Lower an arithmetic, bitwise or shift operation. Both operands take
+    /// the result kind, except a shift distance, which keeps its own.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The operator.
+    /// * `lhs` - The left operand.
+    /// * `rhs` - The right operand.
+    /// * `kind` - The result kind.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn arith(
+        &mut self, op: InfixOp, lhs: &ast::Expr, rhs: &ast::Expr, kind: DataKind,
+    ) -> ExprNode
+    {
+        let lhs = self.coerce(lhs, kind);
+        let shift = matches!(op, InfixOp::Shl | InfixOp::Shr);
+        let rhs = tern!(shift, self.expr(rhs), self.coerce(rhs, kind));
+        ExprNode::Infix { op, lhs: Box::new(lhs), rhs: Box::new(rhs) }
+    }
+
+    /// Lower a comparison; both operands take their common kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The operator.
+    /// * `lhs` - The left operand.
+    /// * `rhs` - The right operand.
+    ///
+    /// # Returns
+    ///
+    /// The comparison.
+    fn compare(&mut self, op: CmpOp, lhs: &ast::Expr, rhs: &ast::Expr) -> ExprNode
+    {
+        let common = self.common(self.kind_of(lhs), self.kind_of(rhs));
+        let lhs = Box::new(self.coerce(lhs, common));
+        let rhs = Box::new(self.coerce(rhs, common));
+        ExprNode::Compare { op, lhs, rhs }
+    }
+
+    /// Lower a logical operator.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The expression.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn logic(&mut self, n: &ast::LogicExpr) -> ExprNode
+    {
+        let op = tern!(n.op == ast::LogicOp::And, LogicOp::And, LogicOp::Or);
+        let lhs = Box::new(self.coerce(&n.lhs, DataKind::Bool));
+        let rhs = Box::new(self.coerce(&n.rhs, DataKind::Bool));
+        ExprNode::Logic { op, lhs, rhs }
+    }
+
+    /// Lower a verbal clause to the same operations as the notation.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The clause.
+    /// * `kind` - Its recorded kind.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn verb(&mut self, n: &ast::VerbExpr, kind: DataKind) -> ExprNode
+    {
+        let args = n.args.as_slice();
+        let op = match n.op
+        {
+            VerbOp::Add => Some(InfixOp::Add),
+            VerbOp::Sub => Some(InfixOp::Sub),
+            VerbOp::Mul => Some(InfixOp::Mul),
+            VerbOp::Div => Some(InfixOp::Div),
+            VerbOp::Rem => Some(InfixOp::Rem),
+            VerbOp::BitAnd => Some(InfixOp::BitAnd),
+            VerbOp::BitOr => Some(InfixOp::BitOr),
+            VerbOp::BitXor => Some(InfixOp::BitXor),
+            VerbOp::Shift =>
+            {
+                Some(tern!(n.dir == Some(Dir::Right), InfixOp::Shr, InfixOp::Shl))
+            }
+            _ => None,
+        };
+        ret_if!(let (Some(op), [l, r]) = (op, args), self.arith(op, l, r, kind));
+        let cmp = match n.op
+        {
+            VerbOp::Eq => Some(CmpOp::Eq),
+            VerbOp::Ne => Some(CmpOp::Ne),
+            VerbOp::Gt => Some(CmpOp::Gt),
+            VerbOp::Le => Some(CmpOp::Le),
+            VerbOp::Lt => Some(CmpOp::Lt),
+            VerbOp::Ge => Some(CmpOp::Ge),
+            _ => None,
+        };
+        ret_if!(let (Some(cmp), [l, r]) = (cmp, args), self.compare(cmp, l, r));
+        let [value] = args
+        else
+        {
+            panic!("verb {} has {} operands", n.op.as_ref(), args.len());
+        };
+        let operand = self.expr(value);
+        ret_if!(n.op == VerbOp::BitNot, prefix_node(PrefixOp::BitNot, operand));
+        ExprNode::Convert { operand: Box::new(operand), implicit: false }
+    }
+}
+
+/// A constant expression of the value's kind.
+///
+/// # Arguments
+///
+/// * `v` - The value.
+/// * `span` - Its source region.
+///
+/// # Returns
+///
+/// The expression.
+pub fn constant(v: Value, span: Span) -> Expr
+{
+    Expr::builder().kind(v.kind()).node(ExprNode::Const(v)).span(span).build()
+}
+
+/// A prefix operation node.
+///
+/// # Arguments
+///
+/// * `op` - The operator.
+/// * `operand` - The operand.
+///
+/// # Returns
+///
+/// The node.
+fn prefix_node(op: PrefixOp, operand: Expr) -> ExprNode
+{
+    ExprNode::Prefix { op, operand: Box::new(operand) }
+}
+
+/// The value of a float literal, read at the width of its recorded kind.
+///
+/// # Arguments
+///
+/// * `n` - The literal.
+/// * `kind` - The recorded kind, a float.
+///
+/// # Returns
+///
+/// The value.
+fn float_lit(n: &ast::FloatLit, kind: DataKind) -> Value
+{
+    let bits = kind.bits(64);
+    Value::float(&n.text, bits).unwrap_or(Value::default_of(kind))
+}
+
+/// `return result` at the end of a function with a result.
+///
+/// # Arguments
+///
+/// * `slot` - The local slot of the result variable.
+/// * `kind` - The result kind.
+/// * `span` - The function block.
+///
+/// # Returns
+///
+/// The statement.
+fn read_return(slot: u32, kind: DataKind, span: Span) -> Stmt
+{
+    let read = Expr::builder()
+        .kind(kind)
+        .node(ExprNode::Read(Place::Local(slot)))
+        .span(span)
+        .build();
+    Stmt::Return { value: Some(read), span }
+}

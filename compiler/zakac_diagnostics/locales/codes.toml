@@ -509,3 +509,19 @@ en = "\"%{v}%{p}\" as a value reads better as \"%{v}သည်\""
 en = "write \"... %{v}သည်\""
 [codes.ZK0508.explain]
 en = """A clause that gives a value, as an initial value, a returned value, a call argument or a loop bound, names a fact rather than stating a sentence, so its closing verb carries \"သည်\": \"အမှတ် သည် ၄၀ အောက် မငယ်သည် ဖြစ်ပါစေ။\". The \"ပါ\" forms belong to quoted sentences (\"... ဟု ပြသပါ\", \"... ဟု ထားပါ\") and before \"သို့မဟုတ်\"."""
+
+# -------------------------------------------------------------- folding ZK06xx
+
+[codes.ZK0601.title]
+en = "constant overflow"
+[codes.ZK0601.message]
+en = "%{op} on these constants does not fit %{kind}"
+[codes.ZK0601.explain]
+en = """An operation whose operands are all constants is worked out when the program is compiled. Here the result is outside the range of its kind, so it cannot be stored. Use a wider kind, or change the values. Conversions with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\" are exempt: theirs wrap or saturate as written."""
+
+[codes.ZK0602.title]
+en = "constant zero divisor"
+[codes.ZK0602.message]
+en = "%{op} with the constant zero as divisor"
+[codes.ZK0602.explain]
+en = """The right operand of an integer division or remainder is the constant zero. Integer division and remainder with a zero divisor have no result. Check the divisor, or put the division behind a condition. Float division with a zero divisor is allowed and gives an infinite or NaN value."""

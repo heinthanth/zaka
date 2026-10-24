@@ -111,6 +111,10 @@ pub struct FloatLit
     pub id: NodeId,
     /// The value.
     pub value: f64,
+    /// The decimal text in Western digits, fraction and exponent kept, so a
+    /// later pass can read it at the exact width of its kind.
+    #[builder(into)]
+    pub text: String,
     /// The kind prefix, when written.
     pub kind: Option<Kind>,
     /// Source region, prefix included.

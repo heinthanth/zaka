@@ -31,6 +31,7 @@ leptos-use-window = "0.20"
 num_enum = "0.7.6"
 postcard = { version = "1.1.3", features = ["alloc"] }
 rust-i18n = "4.2.2"
+rustc_apfloat = "0.2.3"
 serde = { version = "1.0.228", features = ["derive"] }
 serde-saphyr = "1.2.0"
 serde-wasm-bindgen = "0.6.5"
@@ -53,6 +54,7 @@ zakac_consts = { path = "compiler/zakac_consts" }
 zakac_diagnostics = { path = "compiler/zakac_diagnostics" }
 zakac_host_errors = { path = "compiler/zakac_host_errors" }
 zakac_i18n = { path = "compiler/zakac_i18n" }
+zakac_ir_builder = { path = "compiler/zakac_ir_builder" }
 zakac_lexer = { path = "compiler/zakac_lexer" }
 zakac_parser = { path = "compiler/zakac_parser" }
 zakac_reporter = { path = "compiler/zakac_reporter" }

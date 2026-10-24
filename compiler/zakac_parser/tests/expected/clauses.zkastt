@@ -642,6 +642,7 @@ program:
             - float:
                 id: 63
                 value: 11.11
+                text: "11.11"
                 kind: null
                 span:
                   lo: 1432

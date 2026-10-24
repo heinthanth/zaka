@@ -62,6 +62,7 @@ program:
         float:
           id: 2
           value: 3.14
+          text: "3.14"
           kind: null
           span:
             lo: 232

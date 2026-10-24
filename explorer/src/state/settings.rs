@@ -174,6 +174,35 @@ impl AstMode
     }
 }
 
+/// Which IR the lowering view shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumIter, Display, EnumString)]
+#[strum(serialize_all = "lowercase")]
+pub enum LowerMode
+{
+    /// The IR as lowered, before folding.
+    Plain,
+    /// The IR after folding.
+    #[default]
+    Folded,
+}
+
+impl LowerMode
+{
+    /// Label of the switch.
+    ///
+    /// # Returns
+    ///
+    /// The label.
+    pub fn label(self) -> Cow<'static, str>
+    {
+        match self
+        {
+            LowerMode::Plain => t!("explorer.lower.plain"),
+            LowerMode::Folded => t!("explorer.lower.folded"),
+        }
+    }
+}
+
 /// Clamp a stored font size to one the picker offers.
 ///
 /// # Arguments

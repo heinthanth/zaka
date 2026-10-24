@@ -5,6 +5,7 @@ pub mod dropdown;
 pub mod editor;
 pub mod graph_view;
 pub mod icon;
+pub mod lower_view;
 pub mod pipeline;
 pub mod scope;
 pub mod segments_view;

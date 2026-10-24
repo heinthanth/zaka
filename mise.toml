@@ -34,7 +34,7 @@ run = "cargo +nightly llvm-cov --workspace"
 description = "Generate coverage report"
 
 [tasks."explorer:serve"]
-run = "trunk serve --open"
+run = "trunk serve"
 dir = "explorer"
 description = "Serve the compiler explorer with live reload"
 
