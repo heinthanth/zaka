@@ -170,9 +170,8 @@ fn canonicalize_wanna(chars: &[char]) -> (String, usize)
         i += 2;
     }
 
-    #[rustfmt::skip]
-    do_while!(i < chars.len()
-        && push_cluster_trailing(chars[i], &mut medials, &mut dependents), i += 1);
+    let mut push = |ch| push_cluster_trailing(ch, &mut medials, &mut dependents);
+    do_while!(i < chars.len() && push(chars[i]), i += 1);
 
     medials.sort_by_key(|(r, _)| *r);
     sort_vowel_runs(&mut dependents);
@@ -330,8 +329,8 @@ pub(crate) mod tests
 
         let mut out = String::new();
         out.push(base);
-        do_for!((i, m) in MEDIALS.iter().enumerate(),
-            do_if!(mask & (1 << i) != 0, out.push(*m)));
+        let picked = MEDIALS.iter().enumerate().filter(|&(i, _)| mask & (1 << i) != 0);
+        do_for!((_, m) in picked, out.push(*m));
         do_if!(vowel < VOWELS.len(), out.push(VOWELS[vowel]));
         do_if!(asat, out.push('\u{103a}'));
         out

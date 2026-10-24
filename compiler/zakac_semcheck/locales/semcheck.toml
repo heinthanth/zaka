@@ -1,0 +1,28 @@
+_version = 2
+
+[semcheck.about]
+en = "Check names, scopes and data kinds of a parsed program."
+
+[semcheck.platform_bits]
+en = "Bit width of the platform-sized integer kinds."
+
+[semcheck.want.number]
+en = "a number"
+
+[semcheck.want.int]
+en = "an integer"
+
+[semcheck.want.unsigned]
+en = "an unsigned integer"
+
+[semcheck.want.signed]
+en = "a signed number"
+
+[semcheck.want.bool]
+en = "a boolean"
+
+[semcheck.want.ordered]
+en = "a number or a character"
+
+[semcheck.artifact.source_changed]
+en = "source text changed after re-ingest"

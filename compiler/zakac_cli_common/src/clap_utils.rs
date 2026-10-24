@@ -224,26 +224,17 @@ pub(crate) fn create_help_template(cmd: &clap::Command) -> String
 
     let header = create_version_string(name, version);
 
-    let subcmd_piece = tern!(
-        cmd.get_subcommands().count() > 0,
-        format!("\n\n{}\n{{subcommands}}", t!("cli.subcommands_header")),
-        "".into()
-    );
-    let option_piece = tern!(
-        cmd.get_opts().count() > 0,
-        format!("\n\n{}\n{{options}}", t!("cli.options_header")),
-        "".into()
-    );
-    let positional_piece = tern!(
-        cmd.get_positionals().count() > 0,
-        format!("\n\n{}\n{{positionals}}", t!("cli.positionals_header")),
-        "".into()
-    );
-    let about_piece = tern!(
-        let Some(about) = cmd.get_about(),
-        format!("{}\n{{tab}}{about}\n\n", t!("cli.about_header")),
-        "".into()
-    );
+    let has_subcmds = cmd.get_subcommands().count() > 0;
+    let has_options = cmd.get_opts().count() > 0;
+    let has_positionals = cmd.get_positionals().count() > 0;
+    let subcmd_header = t!("cli.subcommands_header");
+    let option_header = t!("cli.options_header");
+    let positional_header = t!("cli.positionals_header");
+    let subcmd_piece = section(has_subcmds, &subcmd_header, "subcommands");
+    let option_piece = section(has_options, &option_header, "options");
+    let positional_piece = section(has_positionals, &positional_header, "positionals");
+    let about = |a| format!("{}\n{{tab}}{a}\n\n", t!("cli.about_header"));
+    let about_piece = cmd.get_about().map(about).unwrap_or_default();
 
     let usage_header = t!("cli.usage_header");
     #[rustfmt::skip]
@@ -252,4 +243,20 @@ pub(crate) fn create_help_template(cmd: &clap::Command) -> String
 {{tab}}{{usage}}{subcmd_piece}{option_piece}{positional_piece}");
 
     help_output
+}
+
+/// One section of a help template.
+///
+/// # Arguments
+///
+/// * `shown` - Whether the command has entries for the section.
+/// * `header` - The section header.
+/// * `slot` - The template placeholder that lists the entries.
+///
+/// # Returns
+///
+/// The header and placeholder, or a blank string when `shown` is `false`.
+fn section(shown: bool, header: &str, slot: &str) -> String
+{
+    tern!(shown, format!("\n\n{header}\n{{{slot}}}"), String::new())
 }

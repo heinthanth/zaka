@@ -319,16 +319,12 @@ impl Parser<'_>
     {
         let tok = self.peek();
         let name = self.text_of(tok.span);
-        ret_if!(
-            verb.is_stmt && mode == Mode::Expr,
-            Err(diag::stmt_verb_in_expr(tok.span, name))
-        );
+        let in_expr = verb.is_stmt && mode == Mode::Expr;
+        ret_if!(in_expr, Err(diag::stmt_verb_in_expr(tok.span, name)));
         let need = verb.slots.len();
-        ret_if!(
-            stack.len() < need,
-            Err(diag::missing_operand(tok.span, name, need, stack.len()))
-        );
-        let args = stack.split_off(stack.len() - need);
+        let have = stack.len();
+        ret_if!(have < need, Err(diag::missing_operand(tok.span, name, need, have)));
+        let args = stack.split_off(have - need);
         self.check_slots(&args, verb, name)?;
         self.check_non_assoc(&args, verb, tok)?;
         self.bump();

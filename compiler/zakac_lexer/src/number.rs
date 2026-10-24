@@ -250,9 +250,8 @@ impl<'s> Scan<'_, 's>
     /// Consume `(+|-) digits` after a Western mantissa that ends in `e`/`E`.
     fn exponent(&mut self)
     {
-        ret_if!(
-            self.script != DigitScript::Western || !self.text.ends_with(['e', 'E'])
-        );
+        let western = self.script == DigitScript::Western;
+        ret_if!(!western || !self.text.ends_with(['e', 'E']));
         ret_if!(!self.joined_delim(self.end, &['+', '-']));
         let digits = self.joined_word(self.end + 1);
         ret_if!(!digits.is_some_and(is_ascii_digits));

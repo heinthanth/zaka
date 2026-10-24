@@ -177,9 +177,7 @@ fn class_of(tok: &PreLexicalToken<'_>) -> PreClass
     let single = chars.next().filter(|_| chars.next().is_none());
     ret_if!(let Some(ch) = single && is_whitespace(ch), PreClass::Space);
     ret_if!(let Some(ch) = single && is_self_delimiting(ch), PreClass::Word(WordKind::Delim(ch)));
-    ret_if!(
-        tok.kind == PreLexicalTokenKind::NonBurmeseChar,
-        PreClass::Word(WordKind::Foreign)
-    );
+    let foreign = tok.kind == PreLexicalTokenKind::NonBurmeseChar;
+    ret_if!(foreign, PreClass::Word(WordKind::Foreign));
     PreClass::Word(WordKind::Burmese)
 }

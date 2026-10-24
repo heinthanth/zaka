@@ -77,12 +77,14 @@ fn int_value(text: &str, base: u32, span: Span) -> Result<u128, Diagnostic>
 ///
 /// Unsigned kinds and literals with a base prefix (bit patterns) take the full
 /// width. Signed decimal literals take one more than the largest positive
-/// value, so that a negated minimum such as `-128` folds later.
+/// value, so that a negated minimum such as `-128` folds later. A literal
+/// without a kind prefix takes the kind of its place, which the semantic
+/// check finds, so it is not limited here.
 ///
 /// # Arguments
 ///
 /// * `value` - The value.
-/// * `kind` - The kind prefix; 64-bit signed when absent.
+/// * `kind` - The kind prefix.
 /// * `based` - Whether a base prefix is written.
 ///
 /// # Returns
@@ -90,8 +92,13 @@ fn int_value(text: &str, base: u32, span: Span) -> Result<u128, Diagnostic>
 /// `true` if it fits.
 fn fits(value: u128, kind: Option<Kind>, based: bool) -> bool
 {
-    let bits = kind.and_then(|k| k.bits).map_or(64, u32::from);
-    let signed = kind.is_none_or(|k| k.signed != Some(false));
+    let Some(kind) = kind
+    else
+    {
+        return true;
+    };
+    let bits = kind.bits.map_or(64, u32::from);
+    let signed = kind.signed != Some(false);
     ret_if!(signed && !based, value <= 1u128 << (bits - 1));
     bits >= 128 || value < 1u128 << bits
 }
@@ -165,15 +172,11 @@ impl Parser<'_>
         let fraction = shape.is_some_and(|s| s.has_fraction || s.has_exponent);
         let float = is_base(kind, BaseKind::Float);
         ret_if!(float && base.is_some(), self.based_float(text, base, kind, span));
-        ret_if!(
-            base.is_none() && (float || fraction),
-            self.float_lit(text, kind, span)
-        );
+        let is_float = base.is_none() && (float || fraction);
+        ret_if!(is_float, self.float_lit(text, kind, span));
         let value = int_value(text, base.unwrap_or(10), tok.span)?;
-        ret_if!(
-            !fits(value, kind, base.is_some()),
-            Err(diag::literal_out_of_range(span, text))
-        );
+        let out_of_range = !fits(value, kind, base.is_some());
+        ret_if!(out_of_range, Err(diag::literal_out_of_range(span, text)));
         let script = shape.map_or(DigitScript::Western, |s| s.script);
         let base = base.unwrap_or(10) as u8;
         let id = self.new_id();

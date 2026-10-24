@@ -92,3 +92,66 @@ fn parser_constructors_render_messages()
         assert!(diag.is_error());
     }
 }
+
+#[test]
+fn resolve_constructors_render_messages()
+{
+    use zakac_diagnostics::resolve as r;
+    use zakac_span::span::Span;
+
+    let span = Span::PLACEHOLDER;
+    assert!(r::redeclaration(span, "က").help.is_some());
+    assert!(r::missing_return_value(span, "f", "i8").message.contains("i8"));
+    assert!(r::arg_count_mismatch(span, "f", 2, 1).message.contains('2'));
+    for diag in [
+        r::undeclared_name(span, "က"),
+        r::redeclaration(span, "က"),
+        r::undeclared_function(span, "f"),
+        r::duplicate_function(span, "f"),
+        r::duplicate_param(span, "က"),
+        r::assign_to_const(span, "က"),
+        r::assign_to_loop_var(span, "က"),
+        r::const_without_init(span, "က"),
+        r::break_outside_loop(span),
+        r::continue_outside_loop(span),
+        r::return_outside_function(span),
+        r::value_returned_from_void(span, "f"),
+        r::missing_return_value(span, "f", "i8"),
+        r::arg_count_mismatch(span, "f", 2, 1),
+        r::value_from_void_function(span, "f"),
+    ]
+    {
+        assert!(!is_missing(&diag.message), "{}", diag.code);
+        assert!(!diag.message.contains("%{"), "{}", diag.code);
+        assert!(diag.is_error());
+        assert!(diag.code.id().starts_with("ZK03"), "{}", diag.code);
+    }
+}
+
+#[test]
+fn kinds_constructors_render_messages()
+{
+    use zakac_diagnostics::kinds as k;
+    use zakac_span::span::Span;
+
+    let span = Span::PLACEHOLDER;
+    assert!(k::kind_mismatch(span, "i8", "i16").help.is_some());
+    assert!(k::shift_too_far(span, "9", 8).message.contains('8'));
+    for diag in [
+        k::kind_mismatch(span, "i8", "i16"),
+        k::condition_not_bool(span, "i8"),
+        k::operand_kind(span, "+", "a number", "bool"),
+        k::incompatible_operands(span, "i8", "u8"),
+        k::loop_bound_not_int(span, "f64"),
+        k::literal_does_not_fit(span, "300", "u8"),
+        k::shift_too_far(span, "9", 8),
+        k::invalid_cast(span, "bool", "f64"),
+        k::step_not_positive(span),
+    ]
+    {
+        assert!(!is_missing(&diag.message), "{}", diag.code);
+        assert!(!diag.message.contains("%{"), "{}", diag.code);
+        assert!(diag.is_error());
+        assert!(diag.code.id().starts_with("ZK04"), "{}", diag.code);
+    }
+}

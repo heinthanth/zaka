@@ -2,7 +2,7 @@ pub mod artifact;
 mod clause;
 pub mod cli;
 mod cursor;
-mod describe;
+pub mod describe;
 mod kind;
 mod literal;
 mod logical;

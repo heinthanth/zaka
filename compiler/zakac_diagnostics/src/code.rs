@@ -121,7 +121,59 @@ AssignTarget = ("ZK0224", Level::Error),
 /// A generic loop is declared with the constant word.
 ConstLoop = ("ZK0225", Level::Error),
 /// A block closer has no open block.
-UnmatchedBlockClose = ("ZK0226", Level::Error) }
+UnmatchedBlockClose = ("ZK0226", Level::Error),
+
+// resolve: ZK03xx
+/// A name is used without a declaration in scope.
+UndeclaredName = ("ZK0301", Level::Error),
+/// A name is declared twice in one scope.
+Redeclaration = ("ZK0302", Level::Error),
+/// A call names a function that is not declared.
+UndeclaredFunction = ("ZK0303", Level::Error),
+/// Two functions share a name.
+DuplicateFunction = ("ZK0304", Level::Error),
+/// Two parameters of one function share a name.
+DuplicateParam = ("ZK0305", Level::Error),
+/// A constant is assigned.
+AssignToConst = ("ZK0306", Level::Error),
+/// A counted-loop variable is assigned.
+AssignToLoopVar = ("ZK0307", Level::Error),
+/// A constant is declared without an initial value.
+ConstWithoutInit = ("ZK0308", Level::Error),
+/// A break stands outside a loop.
+BreakOutsideLoop = ("ZK0309", Level::Error),
+/// A continue stands outside a loop.
+ContinueOutsideLoop = ("ZK0310", Level::Error),
+/// A return stands outside a function.
+ReturnOutsideFunction = ("ZK0311", Level::Error),
+/// A function without a result returns a value.
+ValueReturnedFromVoid = ("ZK0312", Level::Error),
+/// A function with a result returns no value.
+MissingReturnValue = ("ZK0313", Level::Error),
+/// A call passes the wrong number of arguments.
+ArgCountMismatch = ("ZK0314", Level::Error),
+/// A function without a result is used as a value.
+ValueFromVoidFunction = ("ZK0315", Level::Error),
+
+// kinds: ZK04xx
+/// A value does not convert to the kind its place expects.
+KindMismatch = ("ZK0401", Level::Error),
+/// A condition is not a boolean.
+ConditionNotBool = ("ZK0402", Level::Error),
+/// An operand has a kind its operator does not take.
+OperandKind = ("ZK0403", Level::Error),
+/// Two operands have no common kind.
+IncompatibleOperands = ("ZK0404", Level::Error),
+/// A counted-loop bound or step is not an integer.
+LoopBoundNotInt = ("ZK0405", Level::Error),
+/// An integer literal does not fit the kind its place expects.
+LiteralDoesNotFit = ("ZK0406", Level::Error),
+/// A constant shift distance is not below the bit width.
+ShiftTooFar = ("ZK0407", Level::Error),
+/// A conversion between two kinds is not allowed.
+InvalidCast = ("ZK0408", Level::Error),
+/// A counted-loop step is not positive.
+StepNotPositive = ("ZK0409", Level::Error) }
 
 impl Code
 {

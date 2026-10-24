@@ -1,0 +1,466 @@
+# zakac-semcheck-artifact v1
+name:
+  Custom: loops.zaka
+source: "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\n"
+program:
+  stmts:
+  - decl:
+      name:
+        name: ကိန်း
+        span:
+          lo: 28
+          hi: 43
+      kind:
+        base: int
+        bits: null
+        signed: null
+        span:
+          lo: 54
+          hi: 84
+      is_const: false
+      init: null
+      span:
+        lo: 0
+        hi: 112
+  - while:
+      cond:
+        verb:
+          id: 2
+          op: lt
+          args:
+          - name:
+              id: 0
+              name: ကိန်း
+              span:
+                lo: 113
+                hi: 128
+          - int:
+              id: 1
+              value: 5
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 139
+                hi: 142
+          kind_arg: null
+          dir: null
+          particle: none
+          next: while
+          is_cmp: true
+          span:
+            lo: 113
+            hi: 168
+      block:
+        stmts:
+        - print:
+            value:
+              expr:
+                name:
+                  id: 3
+                  name: ကိန်း
+                  span:
+                    lo: 270
+                    hi: 285
+            span:
+              lo: 270
+              hi: 314
+        - assign:
+            target:
+              name: ကိန်း
+              span:
+                lo: 315
+                hi: 330
+            value:
+              infix:
+                id: 7
+                op: add
+                lhs:
+                  name:
+                    id: 5
+                    name: ကိန်း
+                    span:
+                      lo: 341
+                      hi: 356
+                rhs:
+                  int:
+                    id: 6
+                    value: 1
+                    base: 10
+                    kind: null
+                    script: burmese
+                    span:
+                      lo: 359
+                      hi: 362
+                span:
+                  lo: 341
+                  hi: 362
+            span:
+              lo: 315
+              hi: 388
+        single: false
+        span:
+          lo: 190
+          hi: 471
+      span:
+        lo: 113
+        hi: 471
+  - counted:
+      var:
+        name: အမှတ်
+        span:
+          lo: 503
+          hi: 518
+      from:
+        int:
+          id: 8
+          value: 1
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 472
+            hi: 475
+      to:
+        int:
+          id: 9
+          value: 100
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 483
+            hi: 492
+      step: null
+      mode: count
+      block:
+        stmts:
+        - if:
+            arms:
+            - cond:
+                verb:
+                  id: 15
+                  op: eq
+                  args:
+                  - infix:
+                      id: 13
+                      op: rem
+                      lhs:
+                        name:
+                          id: 11
+                          name: အမှတ်
+                          span:
+                            lo: 662
+                            hi: 677
+                      rhs:
+                        int:
+                          id: 12
+                          value: 2
+                          base: 10
+                          kind: null
+                          script: burmese
+                          span:
+                            lo: 680
+                            hi: 683
+                      span:
+                        lo: 662
+                        hi: 683
+                  - int:
+                      id: 14
+                      value: 0
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 694
+                        hi: 697
+                  kind_arg: null
+                  dir: null
+                  particle: none
+                  next: then
+                  is_cmp: true
+                  span:
+                    lo: 662
+                    hi: 720
+              block:
+                stmts:
+                - continue:
+                    span:
+                      lo: 736
+                      hi: 818
+                single: true
+                span:
+                  lo: 736
+                  hi: 818
+              span:
+                lo: 646
+                hi: 818
+            else_block: null
+            span:
+              lo: 646
+              hi: 818
+        - if:
+            arms:
+            - cond:
+                verb:
+                  id: 18
+                  op: gt
+                  args:
+                  - name:
+                      id: 16
+                      name: အမှတ်
+                      span:
+                        lo: 835
+                        hi: 850
+                  - int:
+                      id: 17
+                      value: 10
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 861
+                        hi: 867
+                  kind_arg: null
+                  dir: null
+                  particle: none
+                  next: then
+                  is_cmp: true
+                  span:
+                    lo: 835
+                    hi: 890
+              block:
+                stmts:
+                - break:
+                    span:
+                      lo: 906
+                      hi: 959
+                single: true
+                span:
+                  lo: 906
+                  hi: 959
+              span:
+                lo: 819
+                hi: 959
+            else_block: null
+            span:
+              lo: 819
+              hi: 959
+        - print:
+            value:
+              expr:
+                name:
+                  id: 19
+                  name: အမှတ်
+                  span:
+                    lo: 960
+                    hi: 975
+            span:
+              lo: 960
+              hi: 1004
+        single: false
+        span:
+          lo: 566
+          hi: 1087
+      span:
+        lo: 472
+        hi: 1087
+  - counted:
+      var:
+        name: အမှတ်
+        span:
+          lo: 1127
+          hi: 1142
+      from:
+        int:
+          id: 20
+          value: 10
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 1088
+            hi: 1094
+      to:
+        int:
+          id: 21
+          value: 0
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 1102
+            hi: 1105
+      step:
+        int:
+          id: 22
+          value: 2
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 1116
+            hi: 1119
+      mode: decrease
+      block:
+        stmts:
+        - print:
+            value:
+              expr:
+                name:
+                  id: 23
+                  name: အမှတ်
+                  span:
+                    lo: 1190
+                    hi: 1205
+            span:
+              lo: 1190
+              hi: 1234
+        single: true
+        span:
+          lo: 1190
+          hi: 1234
+      span:
+        lo: 1088
+        hi: 1234
+  - generic:
+      var:
+        name: အဆင့်
+        span:
+          lo: 1263
+          hi: 1278
+      kind:
+        base: int
+        bits: 8
+        signed: false
+        span:
+          lo: 1289
+          hi: 1361
+      init:
+        int:
+          id: 24
+          value: 0
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 1362
+            hi: 1365
+      cond:
+        verb:
+          id: 27
+          op: lt
+          args:
+          - name:
+              id: 25
+              name: အဆင့်
+              span:
+                lo: 1391
+                hi: 1406
+          - int:
+              id: 26
+              value: 10
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 1417
+                hi: 1423
+          kind_arg: null
+          dir: null
+          particle: none
+          next: while
+          is_cmp: true
+          span:
+            lo: 1391
+            hi: 1449
+      update:
+        assign:
+          target:
+            name: အဆင့်
+            span:
+              lo: 1624
+              hi: 1639
+          value:
+            infix:
+              id: 32
+              op: add
+              lhs:
+                name:
+                  id: 30
+                  name: အဆင့်
+                  span:
+                    lo: 1650
+                    hi: 1665
+              rhs:
+                int:
+                  id: 31
+                  value: 1
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 1668
+                    hi: 1671
+              span:
+                lo: 1650
+                hi: 1671
+          span:
+            lo: 1624
+            hi: 1697
+      block:
+        stmts:
+        - print:
+            value:
+              expr:
+                name:
+                  id: 28
+                  name: အဆင့်
+                  span:
+                    lo: 1551
+                    hi: 1566
+            span:
+              lo: 1551
+              hi: 1595
+        single: false
+        span:
+          lo: 1471
+          hi: 1789
+      span:
+        lo: 1235
+        hi: 1789
+  span:
+    lo: 0
+    hi: 1790
+kinds:
+  0: isize
+  1: isize
+  2: bool
+  3: isize
+  5: isize
+  6: isize
+  7: isize
+  8: isize
+  9: isize
+  11: isize
+  12: isize
+  13: isize
+  14: isize
+  15: bool
+  16: isize
+  17: isize
+  18: bool
+  19: isize
+  20: isize
+  21: isize
+  22: isize
+  23: isize
+  24: u8
+  25: u8
+  26: u8
+  27: bool
+  28: u8
+  30: u8
+  31: u8
+  32: u8
+diagnostics: []

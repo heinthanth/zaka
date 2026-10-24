@@ -77,9 +77,8 @@ impl Parser<'_>
     pub(crate) fn starts_kind(&self) -> bool
     {
         let kw = kw_of(&self.peek());
-        ret_true!(
-            kw.is_some_and(|kw| base_kind(kw).is_some() || sign_of(kw).is_some())
-        );
+        let starts = |kw| base_kind(kw).is_some() || sign_of(kw).is_some();
+        ret_true!(kw.is_some_and(starts));
         self.at_sized_kind(0)
     }
 
@@ -133,10 +132,8 @@ impl Parser<'_>
         let bits = self.parse_bits();
         let base = self.parse_base_kind(bits.is_some())?;
         let span = start.to(&self.prev_span());
-        ret_if!(
-            signed.is_some() && base != BaseKind::Int,
-            Err(diag::signed_float(span))
-        );
+        let signed_float = signed.is_some() && base != BaseKind::Int;
+        ret_if!(signed_float, Err(diag::signed_float(span)));
         self.check_bits(bits, base)?;
         let bits = bits.map(|(count, _)| count);
         #[rustfmt::skip]

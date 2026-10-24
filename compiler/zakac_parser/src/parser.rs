@@ -88,10 +88,8 @@ pub fn parse_lone_expr(
     text: &str, base: Pos, lexed: &LexOutput,
 ) -> Result<Expr, Diagnostic>
 {
-    ret_if!(
-        lexed.tokens.is_empty(),
-        Err(diag::expected_operand(Span::new(base, base), ""))
-    );
+    let at_base = Span::new(base, base);
+    ret_if!(lexed.tokens.is_empty(), Err(diag::expected_operand(at_base, "")));
     let mut parser = Parser::new(text, base, lexed);
     let expr = parser.parse_expr()?;
     ret_if!(!parser.at_eof(), Err(parser.err_expected(&t!("parser.eof"))));
@@ -406,10 +404,8 @@ impl<'t> Parser<'t>
     {
         let tok = self.peek();
         let raw = tok.kind == TokenKind::RawIdent;
-        ret_if!(
-            tok.kind != TokenKind::Ident && !raw,
-            Err(self.err_expected(&t!("parser.name")))
-        );
+        let is_name = tok.kind == TokenKind::Ident || raw;
+        ret_if!(!is_name, Err(self.err_expected(&t!("parser.name"))));
         self.bump();
         let text = self.text_of(tok.span);
         let name = unquote_raw(raw, text);

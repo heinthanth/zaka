@@ -135,10 +135,8 @@ impl Parser<'_>
             ClauseOut::Expr(first) => first,
         };
         let cond = self.parse_logical_rest(first, 0)?;
-        ret_if!(
-            self.at(Kw::While) || self.at(Kw::WhileIs),
-            self.parse_while_tail(cond)
-        );
+        let is_while = self.at(Kw::While) || self.at(Kw::WhileIs);
+        ret_if!(is_while, self.parse_while_tail(cond));
         ret_if!(self.at(Kw::From), self.parse_counted_tail(cond));
         Err(diag::expected_stmt_verb(self.peek().span, &self.found()))
     }
@@ -301,10 +299,8 @@ impl Parser<'_>
     {
         ret_if!(self.at(Kw::BlockOpen), self.parse_block());
         let tok = self.peek();
-        ret_if!(
-            !allow_if && self.at(Kw::If),
-            Err(diag::nested_single_line_if(tok.span))
-        );
+        let nested_if = !allow_if && self.at(Kw::If);
+        ret_if!(nested_if, Err(diag::nested_single_line_if(tok.span)));
         self.depth += 1;
         let stmt = self.parse_stmt();
         self.depth -= 1;
@@ -478,10 +474,8 @@ impl Parser<'_>
     /// The statement, or a diagnostic.
     fn parse_fn_or_call(&mut self) -> PResult<Stmt>
     {
-        ret_if!(
-            self.peek_n(2).kind == TokenKind::Kw(Kw::DefinedAs),
-            self.parse_fn_decl()
-        );
+        let is_decl = self.peek_n(2).kind == TokenKind::Kw(Kw::DefinedAs);
+        ret_if!(is_decl, self.parse_fn_decl());
         let (start, callee, args) = self.parse_call_head()?;
         let end = self.expect_one_of(&[Kw::Call, Kw::CallResult])?;
         if end.kind == TokenKind::Kw(Kw::CallResult)
@@ -508,10 +502,8 @@ impl Parser<'_>
         self.expect(Kw::DefinedAs)?;
         let (params, ret) = self.parse_fn_header()?;
         let open = self.expect(Kw::FnOpen)?;
-        do_if!(
-            self.depth > 0,
-            self.diags.push(diag::nested_function(start.to(&open.span)))
-        );
+        let fn_span = start.to(&open.span);
+        do_if!(self.depth > 0, self.diags.push(diag::nested_function(fn_span)));
         self.expect_stop()?;
         let stmts = self.parse_stmts_to_close();
         let block_span = self.parse_block_close(open.span)?;

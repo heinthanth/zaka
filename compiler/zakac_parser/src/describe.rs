@@ -12,7 +12,7 @@ use zakac_lexer::token::Kw;
 /// # Returns
 ///
 /// The quoted text.
-pub(crate) fn quote(text: &str) -> String { format!("\"{text}\"") }
+pub fn quote(text: &str) -> String { format!("\"{text}\"") }
 
 /// Spelling of a reserved word or joined phrase.
 ///
@@ -24,7 +24,7 @@ pub(crate) fn quote(text: &str) -> String { format!("\"{text}\"") }
 ///
 /// The first spelling in the reserved table; a phrase is spelled as its
 /// pieces with spaces between them.
-pub(crate) fn kw_text(kw: Kw) -> String
+pub fn kw_text(kw: Kw) -> String
 {
     let word =
         RESERVED.iter().find(|(_, k)| *k == kw).map(|(text, _)| text.to_string());

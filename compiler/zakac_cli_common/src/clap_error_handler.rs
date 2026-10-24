@@ -210,9 +210,9 @@ where
         return generic(error, cmd_info, writer);
     };
     let prior = error.get(ContextKind::PriorArg).map(|v| v.to_string());
-    let message = tern!(let Some(ref c) = prior && c != &arg,
-        t!("cli_errors.arg_conflict", arg = arg, conflict = c),
-        t!("cli_errors.arg_no_multiple_times", arg = arg));
+    let twice = t!("cli_errors.arg_no_multiple_times", arg = arg);
+    let conflict = |c: String| t!("cli_errors.arg_conflict", arg = arg, conflict = c);
+    let message = prior.filter(|c| c != &arg).map_or(twice, conflict);
 
     write_cli_error(writer, cmd_info, message)
 }
@@ -391,9 +391,16 @@ where
         return generic(error, cmd_info, writer);
     };
     let v = value.escape_debug().to_string();
-    let message = tern!(let Some(reason) = error.source(),
-        t!("cli_errors.value_validation_with_reason", arg = arg, value = v, reason = reason),
-        t!("cli_errors.value_validation", arg = arg, value = v));
+    let plain = t!("cli_errors.value_validation", arg = arg, value = v);
+    let detailed = |reason| {
+        t!(
+            "cli_errors.value_validation_with_reason",
+            arg = arg,
+            value = v,
+            reason = reason
+        )
+    };
+    let message = error.source().map_or(plain, detailed);
 
     write_cli_error(writer, cmd_info, message)
 }

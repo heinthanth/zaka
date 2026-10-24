@@ -259,3 +259,179 @@ en = "unmatched block closer"
 en = "this block closer has no open block to close"
 [codes.ZK0226.explain]
 en = """\"လုပ်ဆောင်စရာများ ပြီးပါပြီ။\" closes the block opened with \"အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\" or with a function opener. Here no block is open. Remove the closer, or add the opener it belongs to."""
+
+# -------------------------------------------------------------- resolve ZK03xx
+
+[codes.ZK0301.title]
+en = "undeclared name"
+[codes.ZK0301.message]
+en = "\"%{n}\" is not declared"
+[codes.ZK0301.explain]
+en = """A name is used before a declaration of it is in scope. Declare the variable with \"ကိန်းရှင်\" or \"ကိန်းသေ\" first, in this block or in a block around it. Names declared inside a block are not visible after the block closer."""
+
+[codes.ZK0302.title]
+en = "name declared twice"
+[codes.ZK0302.message]
+en = "\"%{n}\" is declared before in this scope"
+[codes.ZK0302.help]
+en = "pick another name, or declare it in an inner block to shadow the outer one"
+[codes.ZK0302.explain]
+en = """A block cannot declare the same name twice. Shadowing is allowed: an inner block can declare a name that an outer block holds, and the inner declaration hides the outer one until the inner block ends. Rename one of the two declarations, or turn the second one into an assignment."""
+
+[codes.ZK0303.title]
+en = "undeclared function"
+[codes.ZK0303.message]
+en = "function \"%{n}\" is not declared"
+[codes.ZK0303.explain]
+en = """A call names a function that no top-level \"လုပ်ဆောင်ချက် ... ဆိုသည်မှာ\" declares. Functions can be called before their declaration in the file, but the declaration must exist somewhere at the top level. Check the spelling of the name."""
+
+[codes.ZK0304.title]
+en = "function declared twice"
+[codes.ZK0304.message]
+en = "function \"%{n}\" is declared twice"
+[codes.ZK0304.explain]
+en = """Two top-level declarations give a function the same name. Function names share one scope for the whole file, so each name can be declared once. Rename one of the two functions; calls use the first declaration."""
+
+[codes.ZK0305.title]
+en = "duplicate parameter"
+[codes.ZK0305.message]
+en = "parameter \"%{n}\" is listed twice"
+[codes.ZK0305.explain]
+en = """Two parameters of one function have the same name, so the second one would hide the first inside the function. Give each parameter its own name."""
+
+[codes.ZK0306.title]
+en = "assignment to a constant"
+[codes.ZK0306.message]
+en = "\"%{n}\" is a constant and cannot be assigned"
+[codes.ZK0306.explain]
+en = """A name declared with \"ကိန်းသေ\" keeps its initial value for its whole scope. To change the value later, declare it with \"ကိန်းရှင်\" instead."""
+
+[codes.ZK0307.title]
+en = "assignment to a counted-loop variable"
+[codes.ZK0307.message]
+en = "\"%{n}\" is a counted-loop variable and cannot be assigned"
+[codes.ZK0307.explain]
+en = """The variable of a counted loop (\"မှ ... အထိ ... အနေဖြင့်\") steps on its own from the first bound to the last. Assigning to it inside the loop would break that count. Use a generic loop when the variable must change in other steps, or put the value in another variable and change that one."""
+
+[codes.ZK0308.title]
+en = "constant without a value"
+[codes.ZK0308.message]
+en = "constant \"%{n}\" needs an initial value"
+[codes.ZK0308.explain]
+en = """A constant cannot be assigned later, so its declaration must give its value: write the value between the kind and \"ဖြစ်ပါစေ\". A variable declared with \"ကိန်းရှင်\" can leave the value out and starts at the kind's default."""
+
+[codes.ZK0309.title]
+en = "break outside a loop"
+[codes.ZK0309.message]
+en = "\"ကွင်းဆက် ကို ရပ်ပါ\" stands outside a loop"
+[codes.ZK0309.explain]
+en = """Breaking leaves the innermost while, counted, or generic loop. Here no loop encloses the statement. Remove it, or move it inside a loop."""
+
+[codes.ZK0310.title]
+en = "continue outside a loop"
+[codes.ZK0310.message]
+en = "\"နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ\" stands outside a loop"
+[codes.ZK0310.explain]
+en = """Continuing skips to the next iteration of the innermost while, counted, or generic loop. Here no loop encloses the statement. Remove it, or move it inside a loop."""
+
+[codes.ZK0311.title]
+en = "return outside a function"
+[codes.ZK0311.message]
+en = "a return statement stands outside a function"
+[codes.ZK0311.explain]
+en = """Returning ends the function that holds the statement. Top-level statements belong to no function, so a return there has nothing to end. Remove it, or move it into a function."""
+
+[codes.ZK0312.title]
+en = "value returned from a function without a result"
+[codes.ZK0312.message]
+en = "function \"%{n}\" returns nothing, but a value is returned"
+[codes.ZK0312.explain]
+en = """The function header has no \"<kind> ရလဒ် ကို ပြန်ပေးပြီး\" clause, so the function gives back no value. Write a bare \"ပြန်ပေးပါ။\" to leave the function, or add the result clause to the header."""
+
+[codes.ZK0313.title]
+en = "missing return value"
+[codes.ZK0313.message]
+en = "function \"%{n}\" returns %{k}, but no value is returned"
+[codes.ZK0313.explain]
+en = """The function header promises a result, so each return statement must give one: \"<value> ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\". To return the implicit result variable, write \"ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\"."""
+
+[codes.ZK0314.title]
+en = "wrong number of arguments"
+[codes.ZK0314.message]
+en = "function \"%{n}\" takes %{want} arguments, %{got} given"
+[codes.ZK0314.explain]
+en = """A call must pass one argument for each parameter of the function, in order. Add or remove arguments so the counts match the declaration."""
+
+[codes.ZK0315.title]
+en = "function without a result used as a value"
+[codes.ZK0315.message]
+en = "function \"%{n}\" returns nothing and cannot be used as a value"
+[codes.ZK0315.explain]
+en = """The call expression \"... လုပ်ဆောင်သော ရလဒ်\" needs the function to return a value, but its header has no result clause. Call it as a statement with \"လုပ်ဆောင်ပါ\", or add \"<kind> ရလဒ် ကို ပြန်ပေးပြီး\" to its header."""
+
+# ---------------------------------------------------------------- kinds ZK04xx
+
+[codes.ZK0401.title]
+en = "mismatched kinds"
+[codes.ZK0401.message]
+en = "expected %{want}, found %{got}"
+[codes.ZK0401.help]
+en = "convert the value with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\""
+[codes.ZK0401.explain]
+en = """A value must fit the kind its place expects without losing data. Conversions happen on their own when no data can be lost: a narrower integer to a wider one of the same sign, an unsigned integer to a wider signed one, an integer to a float with enough fraction bits, and a narrower float to a wider one. Characters and booleans never convert on their own. Use the conversion verb for the others."""
+
+[codes.ZK0402.title]
+en = "condition is not a boolean"
+[codes.ZK0402.message]
+en = "a condition must be a boolean, found %{got}"
+[codes.ZK0402.explain]
+en = """The condition of \"အကယ်၍\", of a while loop, and of a generic loop must be a boolean value. Numbers do not count as true or false. Compare the value instead, for example \"က သည် ၀ နှင့် မညီ\"."""
+
+[codes.ZK0403.title]
+en = "operand of the wrong kind"
+[codes.ZK0403.message]
+en = "%{op} needs %{want}, found %{got}"
+[codes.ZK0403.explain]
+en = """Each operator works on certain kinds: arithmetic and \"-\" on numbers, bitwise operators and shifts on integers, logical operators, \"မဟုတ်\" and \"!\" on booleans, and ordering comparisons on numbers and characters. \"-\" of an unsigned integer is not allowed. Convert the operand first, or use another operator."""
+
+[codes.ZK0404.title]
+en = "incompatible operands"
+[codes.ZK0404.message]
+en = "cannot combine %{l} and %{r} without a conversion"
+[codes.ZK0404.explain]
+en = """The two operands of an operator are brought to one common kind, the wider of the two. Here neither kind converts to the other without losing data, for example a signed and an unsigned integer of the same width, or a 64-bit integer and a 64-bit float. Convert one operand with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\"."""
+
+[codes.ZK0405.title]
+en = "loop bound is not an integer"
+[codes.ZK0405.message]
+en = "a loop bound or step must be an integer, found %{got}"
+[codes.ZK0405.explain]
+en = """The bounds and the step of a counted loop must be integers. The loop variable takes the common kind of the two bounds. Convert the bound with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\", or use a generic loop for a float counter."""
+
+[codes.ZK0406.title]
+en = "literal does not fit"
+[codes.ZK0406.message]
+en = "the literal %{v} does not fit %{k}"
+[codes.ZK0406.explain]
+en = """An integer literal without a kind prefix takes the kind its place expects. Here the value is outside the range of that kind. Use a value inside the range, or a wider kind."""
+
+[codes.ZK0407.title]
+en = "shift too far"
+[codes.ZK0407.message]
+en = "shift distance %{n} is not below the %{w}-bit width"
+[codes.ZK0407.explain]
+en = """A shift moves the bits of a value. A constant distance must be smaller than the bit width of the shifted value; shifting an 8-bit integer 8 or more bits is an error. A distance known at run time is not checked."""
+
+[codes.ZK0408.title]
+en = "invalid conversion"
+[codes.ZK0408.message]
+en = "cannot convert %{from} to %{to}"
+[codes.ZK0408.explain]
+en = """The conversion verb converts between numbers of all kinds, between characters and integers, and from booleans to integers. Floats and characters do not convert into each other, and nothing converts into a boolean: compare the value instead, for example \"က သည် ၀ နှင့် မညီ\"."""
+
+[codes.ZK0409.title]
+en = "loop step is not positive"
+[codes.ZK0409.message]
+en = "the step of a counted loop must be positive"
+[codes.ZK0409.explain]
+en = """The step gives the distance the loop variable moves in each round. The direction comes from \"ရေတွက်၍\", \"တိုး၍\", or \"လျှော့၍\", so the step itself must be greater than zero."""

@@ -37,5 +37,6 @@ zakac_lexer = { path = "compiler/zakac_lexer" }
 zakac_parser = { path = "compiler/zakac_parser" }
 zakac_reporter = { path = "compiler/zakac_reporter" }
 zakac_rust_sugars = { path = "compiler/zakac_rust_sugars" }
+zakac_semcheck = { path = "compiler/zakac_semcheck" }
 zakac_session = { path = "compiler/zakac_session" }
 zakac_span = { path = "compiler/zakac_span" }

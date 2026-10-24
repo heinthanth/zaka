@@ -1,0 +1,33 @@
+[package]
+name = "zakac_semcheck"
+version = "0.1.0"
+edition.workspace = true
+
+[[bin]]
+name = "zakac_semcheck"
+path = "src/main.rs"
+
+[dependencies]
+bon = { workspace = true }
+clap = { workspace = true }
+rust-i18n = { workspace = true }
+serde = { workspace = true }
+termcolor = { workspace = true }
+zakac_ast = { workspace = true }
+zakac_cli_common = { workspace = true }
+zakac_diagnostics = { workspace = true }
+zakac_host_errors = { workspace = true }
+zakac_i18n = { workspace = true }
+zakac_lexer = { workspace = true }
+zakac_parser = { workspace = true }
+zakac_reporter = { workspace = true }
+zakac_rust_sugars = { workspace = true }
+zakac_session = { workspace = true }
+zakac_span = { workspace = true }
+
+[dev-dependencies]
+postcard = { workspace = true }
+tempfile = { workspace = true }
+
+[build-dependencies]
+cargo-build = { workspace = true }

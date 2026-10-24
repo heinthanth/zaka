@@ -1,0 +1,302 @@
+# zakac-semcheck-artifact v1
+name:
+  Custom: invalid.zaka
+source: "က ကို ပြသပါ။\nကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် ၃၀၀ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nကိန်းသေ ဂ သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nဂ ကို ၁ ဟု ထားပါ။\nအကယ်၍ ခ ဖြစ်လျှင် ခ ကို ပြသပါ။\nမှန် + ၁ ကို ပြသပါ။\nကွင်းဆက် ကို ရပ်ပါ။\nပြန်ပေးပါ။\nမှန် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nခ ကို ပြသပါ။\n"
+program:
+  stmts:
+  - print:
+      value:
+        expr:
+          name:
+            id: 0
+            name: က
+            span:
+              lo: 0
+              hi: 3
+      span:
+        lo: 0
+        hi: 32
+  - decl:
+      name:
+        name: ခ
+        span:
+          lo: 61
+          hi: 64
+      kind:
+        base: int
+        bits: 8
+        signed: null
+        span:
+          lo: 75
+          hi: 119
+      is_const: false
+      init:
+        int:
+          id: 1
+          value: 300
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 120
+            hi: 129
+      span:
+        lo: 33
+        hi: 157
+  - decl:
+      name:
+        name: ခ
+        span:
+          lo: 186
+          hi: 189
+      kind:
+        base: int
+        bits: null
+        signed: null
+        span:
+          lo: 200
+          hi: 230
+      is_const: false
+      init: null
+      span:
+        lo: 158
+        hi: 258
+  - decl:
+      name:
+        name: ဂ
+        span:
+          lo: 281
+          hi: 284
+      kind:
+        base: int
+        bits: null
+        signed: null
+        span:
+          lo: 295
+          hi: 325
+      is_const: true
+      init: null
+      span:
+        lo: 259
+        hi: 353
+  - assign:
+      target:
+        name: ဂ
+        span:
+          lo: 354
+          hi: 357
+      value:
+        int:
+          id: 3
+          value: 1
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 368
+            hi: 371
+      span:
+        lo: 354
+        hi: 397
+  - if:
+      arms:
+      - cond:
+          name:
+            id: 4
+            name: ခ
+            span:
+              lo: 414
+              hi: 417
+        block:
+          stmts:
+          - print:
+              value:
+                expr:
+                  name:
+                    id: 5
+                    name: ခ
+                    span:
+                      lo: 446
+                      hi: 449
+              span:
+                lo: 446
+                hi: 478
+          single: true
+          span:
+            lo: 446
+            hi: 478
+        span:
+          lo: 398
+          hi: 478
+      else_block: null
+      span:
+        lo: 398
+        hi: 478
+  - print:
+      value:
+        expr:
+          infix:
+            id: 8
+            op: add
+            lhs:
+              bool:
+                id: 6
+                value: true
+                particle: none
+                next: other
+                span:
+                  lo: 479
+                  hi: 491
+            rhs:
+              int:
+                id: 7
+                value: 1
+                base: 10
+                kind: null
+                script: burmese
+                span:
+                  lo: 494
+                  hi: 497
+            span:
+              lo: 479
+              hi: 497
+      span:
+        lo: 479
+        hi: 526
+  - break:
+      span:
+        lo: 527
+        hi: 580
+  - return:
+      value: null
+      span:
+        lo: 581
+        hi: 611
+  - print:
+      value:
+        expr:
+          verb:
+            id: 10
+            op: cast
+            args:
+            - bool:
+                id: 9
+                value: true
+                particle: none
+                next: other
+                span:
+                  lo: 612
+                  hi: 624
+            kind_arg:
+              base: float
+              bits: null
+              signed: null
+              span:
+                lo: 635
+                hi: 659
+            dir: null
+            particle: none
+            next: other
+            is_cmp: false
+            span:
+              lo: 612
+              hi: 725
+      span:
+        lo: 612
+        hi: 754
+  - print:
+      value:
+        expr:
+          name:
+            id: 11
+            name: ခ
+            span:
+              lo: 755
+              hi: 758
+      span:
+        lo: 755
+        hi: 787
+  span:
+    lo: 0
+    hi: 788
+kinds:
+  1: i8
+  3: isize
+  4: i8
+  5: i8
+  6: bool
+  7: isize
+  9: bool
+  10: f64
+  11: i8
+diagnostics:
+- code: ZK0301
+  level: error
+  message: "\"က\" is not declared"
+  span:
+    lo: 0
+    hi: 3
+  help: null
+- code: ZK0406
+  level: error
+  message: the literal 300 does not fit i8
+  span:
+    lo: 120
+    hi: 129
+  help: null
+- code: ZK0302
+  level: error
+  message: "\"ခ\" is declared before in this scope"
+  span:
+    lo: 186
+    hi: 189
+  help: pick another name, or declare it in an inner block to shadow the outer one
+- code: ZK0308
+  level: error
+  message: constant "ဂ" needs an initial value
+  span:
+    lo: 281
+    hi: 284
+  help: null
+- code: ZK0306
+  level: error
+  message: "\"ဂ\" is a constant and cannot be assigned"
+  span:
+    lo: 354
+    hi: 357
+  help: null
+- code: ZK0402
+  level: error
+  message: a condition must be a boolean, found i8
+  span:
+    lo: 414
+    hi: 417
+  help: null
+- code: ZK0403
+  level: error
+  message: + needs a number, found bool
+  span:
+    lo: 479
+    hi: 491
+  help: null
+- code: ZK0309
+  level: error
+  message: "\"ကွင်းဆက် ကို ရပ်ပါ\" stands outside a loop"
+  span:
+    lo: 527
+    hi: 580
+  help: null
+- code: ZK0311
+  level: error
+  message: a return statement stands outside a function
+  span:
+    lo: 581
+    hi: 611
+  help: null
+- code: ZK0408
+  level: error
+  message: cannot convert bool to f64
+  span:
+    lo: 612
+    hi: 725
+  help: null

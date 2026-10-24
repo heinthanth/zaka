@@ -1912,6 +1912,7 @@ dependencies = [
  "zakac_lexer",
  "zakac_parser",
  "zakac_rust_sugars",
+ "zakac_semcheck",
 ]
 
 [[package]]
@@ -2077,6 +2078,31 @@ dependencies = [
 [[package]]
 name = "zakac_rust_sugars"
 version = "0.1.0"
+
+[[package]]
+name = "zakac_semcheck"
+version = "0.1.0"
+dependencies = [
+ "bon",
+ "cargo-build",
+ "clap",
+ "postcard",
+ "rust-i18n",
+ "serde",
+ "tempfile",
+ "termcolor",
+ "zakac_ast",
+ "zakac_cli_common",
+ "zakac_diagnostics",
+ "zakac_host_errors",
+ "zakac_i18n",
+ "zakac_lexer",
+ "zakac_parser",
+ "zakac_reporter",
+ "zakac_rust_sugars",
+ "zakac_session",
+ "zakac_span",
+]
 
 [[package]]
 name = "zakac_session"

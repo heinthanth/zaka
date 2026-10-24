@@ -217,29 +217,9 @@ fn tern_plain()
 fn tern_stmts_before_true_value()
 {
     let mut acc = 0;
-    assert_eq!(
-        tern!(
-            true,
-            {
-                acc += 1;
-            },
-            acc,
-            -1
-        ),
-        1
-    );
+    assert_eq!(tern!(true, acc += 1, acc, -1), 1);
     assert_eq!(acc, 1);
-    assert_eq!(
-        tern!(
-            false,
-            {
-                acc += 10;
-            },
-            acc,
-            -1
-        ),
-        -1
-    );
+    assert_eq!(tern!(false, acc += 10, acc, -1), -1);
     assert_eq!(acc, 1);
 }
 

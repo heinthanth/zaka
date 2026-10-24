@@ -113,11 +113,8 @@ impl ToSexpr for Stmt
 fn list(head: &str, parts: impl IntoIterator<Item = String>) -> String
 {
     let parts: Vec<String> = parts.into_iter().collect();
-    tern!(
-        parts.is_empty(),
-        format!("({head})"),
-        format!("({head} {})", parts.join(" "))
-    )
+    ret_if!(parts.is_empty(), format!("({head})"));
+    format!("({head} {})", parts.join(" "))
 }
 
 /// `{stmt stmt}`.
