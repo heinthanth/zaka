@@ -1,0 +1,62 @@
+// The four Catppuccin flavours (palette 1.8.0, catppuccin.com) and how their
+// colors map onto the explorer's color tokens.
+
+@use "sass:map"
+
+$latte: (base: #eff1f5, mantle: #e6e9ef, crust: #dce0e8, surface0: #ccd0da, surface2: #acb0be, overlay1: #8c8fa1, text: #4c4f69, subtext0: #6c6f85, mauve: #8839ef, red: #d20f39, peach: #fe640b, pink: #ea76cb, yellow: #df8e1d, green: #40a02b, teal: #179299, sky: #04a5e5, blue: #1e66f5, lavender: #7287fd, rosewater: #dc8a78)
+
+$frappe: (base: #303446, mantle: #292c3c, crust: #232634, surface0: #414559, surface2: #626880, overlay1: #838ba7, text: #c6d0f5, subtext0: #a5adce, mauve: #ca9ee6, red: #e78284, peach: #ef9f76, pink: #f4b8e4, yellow: #e5c890, green: #a6d189, teal: #81c8be, sky: #99d1db, blue: #8caaee, lavender: #babbf1, rosewater: #f2d5cf)
+
+$macchiato: (base: #24273a, mantle: #1e2030, crust: #181926, surface0: #363a4f, surface2: #5b6078, overlay1: #8087a2, text: #cad3f5, subtext0: #a5adcb, mauve: #c6a0f6, red: #ed8796, peach: #f5a97f, pink: #f5bde6, yellow: #eed49f, green: #a6da95, teal: #8bd5ca, sky: #91d7e3, blue: #8aadf4, lavender: #b7bdf8, rosewater: #f4dbd6)
+
+$mocha: (base: #1e1e2e, mantle: #181825, crust: #11111b, surface0: #313244, surface2: #585b70, overlay1: #7f849c, text: #cdd6f4, subtext0: #a6adc8, mauve: #cba6f7, red: #f38ba8, peach: #fab387, pink: #f5c2e7, yellow: #f9e2af, green: #a6e3a1, teal: #94e2d5, sky: #89dceb, blue: #89b4fa, lavender: #b4befe, rosewater: #f5e0dc)
+
+// Flavour name, as the color mode writes it to `data-theme`, to palette and
+// color scheme.
+$flavours: (latte: ($latte, light), frappe: ($frappe, dark), macchiato: ($macchiato, dark), mocha: ($mocha, dark))
+
+=flavour($p, $scheme)
+  --canvas: #{map.get($p, crust)}
+  --panel: #{map.get($p, base)}
+  --panel-border: #{map.get($p, surface0)}
+  --chip: #{rgba(map.get($p, surface0), 0.7)}
+  --code-bg: #{map.get($p, mantle)}
+  --field: #{map.get($p, mantle)}
+  --fg: #{map.get($p, text)}
+  --fg-muted: #{map.get($p, subtext0)}
+  --accent: #{map.get($p, mauve)}
+  --on-accent: #{map.get($p, crust)}
+  --accent-soft: #{rgba(map.get($p, mauve), 0.14)}
+  --ok: #{map.get($p, green)}
+  --scroll-thumb: #{rgba(map.get($p, overlay1), 0.35)}
+  --scroll-thumb-hover: #{rgba(map.get($p, overlay1), 0.6)}
+  @if $scheme == dark
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 20px rgba(0, 0, 0, 0.22)
+    --pop-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.45)
+  @else
+    --shadow: 0 1px 2px rgba(76, 79, 105, 0.06), 0 4px 16px rgba(76, 79, 105, 0.08)
+    --pop-shadow: 0 2px 6px rgba(76, 79, 105, 0.1), 0 14px 36px rgba(76, 79, 105, 0.2)
+  --mark-hover: #{rgba(map.get($p, yellow), 0.3)}
+  --diag-error: #{map.get($p, red)}
+  --diag-warning: #{map.get($p, yellow)}
+  --diag-note: #{map.get($p, blue)}
+  --tok-kw: #{map.get($p, mauve)}
+  --tok-ident: #{map.get($p, text)}
+  --tok-raw: #{map.get($p, teal)}
+  --tok-number: #{map.get($p, peach)}
+  --tok-char: #{map.get($p, green)}
+  --tok-str: #{map.get($p, green)}
+  --tok-verb: #{map.get($p, blue)}
+  --tok-op: #{map.get($p, pink)}
+  --tok-particle: #{map.get($p, lavender)}
+  --tok-kind: #{map.get($p, yellow)}
+  --tok-bool: #{map.get($p, peach)}
+  --tok-delim: #{map.get($p, subtext0)}
+  --tok-comment: #{map.get($p, overlay1)}
+  --editor-bg: #{map.get($p, base)}
+  --editor-gutter-fg: #{map.get($p, overlay1)}
+  --editor-gutter-active: #{map.get($p, lavender)}
+  --editor-cursor: #{map.get($p, rosewater)}
+  --editor-select: #{rgba(map.get($p, surface2), 0.5)}
+  --editor-line: #{rgba(map.get($p, surface0), 0.5)}
+  color-scheme: $scheme

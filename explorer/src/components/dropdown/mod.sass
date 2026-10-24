@@ -1,0 +1,108 @@
+// The dropdown: a trigger drawn as a field, and a list card that floats
+// under it or above it. The host sets `--dropdown-width` to size the trigger.
+
+@use "../table/mod" as table
+
+.dropdown
+  position: relative
+  display: inline-flex
+  width: var(--dropdown-width, auto)
+
+.dropdown-trigger
+  +table.field
+  display: flex
+  align-items: center
+  gap: 8px
+  width: 100%
+  min-width: 0
+  text-align: left
+  cursor: pointer
+
+  .icon
+    flex: none
+    width: 14px
+    height: 14px
+    margin-left: auto
+    color: var(--fg-muted)
+    transition: rotate 160ms ease-out
+
+.dropdown-trigger-open
+  border-color: var(--accent)
+  box-shadow: 0 0 0 3px var(--accent-soft)
+
+  .icon
+    rotate: 180deg
+
+.dropdown-value
+  flex: 1
+  min-width: 0
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
+
+.dropdown-placeholder
+  color: var(--fg-muted)
+
+// Fixed to the window, so the scroll box of a dialog does not clip it; the
+// script sets its edge, left, min-width and max-height.
+.dropdown-list
+  position: fixed
+  z-index: 2000
+  overflow: auto
+  max-width: calc(100vw - 24px)
+  padding: 4px
+  color: var(--fg)
+  background: var(--panel)
+  border: 1px solid var(--panel-border)
+  border-radius: 10px
+  box-shadow: var(--pop-shadow)
+  transform-origin: top center
+  animation: drop-in 140ms ease-out
+
+.dropdown-list-up
+  transform-origin: bottom center
+
+.dropdown-group
+  padding: 8px 10px 4px
+  font-size: 11px
+  font-weight: 600
+  letter-spacing: 0.06em
+  text-transform: uppercase
+  color: var(--fg-muted)
+
+  &:first-child
+    padding-top: 4px
+
+.dropdown-choice
+  display: flex
+  align-items: center
+  gap: 10px
+  padding: 6px 10px
+  border-radius: 6px
+  white-space: nowrap
+  cursor: pointer
+
+  .icon
+    flex: none
+    width: 14px
+    height: 14px
+    margin-left: auto
+    color: var(--accent)
+
+.dropdown-choice-active
+  background: var(--accent-soft)
+
+.dropdown-choice-picked
+  font-weight: 600
+  color: var(--accent)
+
+.dropdown-label
+  overflow: hidden
+  text-overflow: ellipsis
+
+@media (prefers-reduced-motion: reduce)
+  .dropdown-list
+    animation: none
+
+  .dropdown-trigger .icon
+    transition: none

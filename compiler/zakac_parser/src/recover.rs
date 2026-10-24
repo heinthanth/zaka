@@ -7,6 +7,7 @@ use zakac_lexer::reserved::lookup;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_span::pos::Pos;
 
@@ -80,8 +81,8 @@ impl Parser<'_>
 
     /// Skip to just past the full stop that ends the statement, or to a
     /// block closer or the end of the input, which are kept. Blocks inside the
-    /// statement are skipped whole, and so are the else arms of a
-    /// conditional.
+    /// statement are skipped whole, also one whose opener came before the
+    /// error, and so are the else arms of a conditional.
     ///
     /// # Arguments
     ///
@@ -89,7 +90,7 @@ impl Parser<'_>
     /// * `is_if` - Whether the statement is a conditional.
     fn skip_stmt(&mut self, start: usize, is_if: bool)
     {
-        let mut depth = 0u32;
+        let mut depth = self.open_blocks_since(start);
         let stuck = self.cur.pos() == start && !self.at_eof();
         ret_if!(stuck && self.skip_token(&mut depth, is_if));
         while !self.at_eof() && !(depth == 0 && self.at(Kw::BlockClose))
@@ -112,17 +113,44 @@ impl Parser<'_>
     fn skip_token(&mut self, depth: &mut u32, is_if: bool) -> bool
     {
         let kind = self.bump().kind;
-        match kind
-        {
-            TokenKind::Kw(Kw::BlockOpen | Kw::FnOpen) => *depth += 1,
-            TokenKind::Kw(Kw::BlockClose) => *depth = depth.saturating_sub(1),
-            TokenKind::Punct(Punct::FullStop) if *depth == 0 =>
-            {
-                return !is_if || !(self.at(Kw::ElseIf) || self.at(Kw::Else));
-            }
-            _ =>
-            {}
-        }
-        false
+        *depth = track_depth(*depth, kind);
+        ret_false!(*depth > 0 || kind != TokenKind::Punct(Punct::FullStop));
+        !is_if || !(self.at(Kw::ElseIf) || self.at(Kw::Else))
+    }
+
+    /// Blocks still open among the tokens of the statement that were moved
+    /// past before the error.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Index of the first token of the statement.
+    ///
+    /// # Returns
+    ///
+    /// The open block count.
+    fn open_blocks_since(&self, start: usize) -> u32
+    {
+        let seen = (1..=self.cur.pos() - start).rev().filter_map(|n| self.cur.back(n));
+        seen.fold(0, |depth, tok| track_depth(depth, tok.kind))
+    }
+}
+
+/// The block depth after a token.
+///
+/// # Arguments
+///
+/// * `depth` - The depth before the token.
+/// * `kind` - The token kind.
+///
+/// # Returns
+///
+/// One more after an opener, one less after a closer, else the same.
+fn track_depth(depth: u32, kind: TokenKind) -> u32
+{
+    match kind
+    {
+        TokenKind::Kw(Kw::BlockOpen | Kw::FnOpen | Kw::FnOpenRet) => depth + 1,
+        TokenKind::Kw(Kw::BlockClose) => depth.saturating_sub(1),
+        _ => depth,
     }
 }

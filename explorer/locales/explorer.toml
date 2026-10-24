@@ -1,0 +1,205 @@
+_version = 2
+
+# ---------------------------------------------------------------- page
+
+[explorer.toolbar.brand]
+en = "Zaka Explorer"
+
+[explorer.app.resize_editor]
+en = "Resize the editor"
+[explorer.app.resize_problems]
+en = "Resize the problems panel"
+
+[explorer.splitter.hint]
+en = "Drag to resize; double-click to reset"
+
+[explorer.editor.loading]
+en = "Loading the editor…"
+
+# ---------------------------------------------------------------- toolbar
+
+[explorer.toolbar.editor_hide]
+en = "Hide the editor"
+[explorer.toolbar.editor_show]
+en = "Show the editor"
+[explorer.toolbar.sample]
+en = "Sample"
+[explorer.toolbar.sample_pick]
+en = "Pick a sample…"
+
+# ---------------------------------------------------------------- settings
+
+[explorer.settings.title]
+en = "Settings"
+[explorer.settings.close]
+en = "Close"
+[explorer.settings.close_label]
+en = "Close settings"
+[explorer.settings.general]
+en = "General"
+[explorer.settings.language]
+en = "Language"
+[explorer.settings.language_note]
+en = "Language of the page and the compiler messages. The page reloads to switch."
+[explorer.settings.language_auto]
+en = "Auto (browser)"
+[explorer.settings.appearance]
+en = "Appearance"
+[explorer.settings.compiler]
+en = "Compiler"
+[explorer.settings.theme]
+en = "Theme"
+[explorer.settings.theme_note]
+en = "Colors of the page and the editor."
+[explorer.settings.ui_font]
+en = "UI font"
+[explorer.settings.ui_font_note]
+en = "Font of menus, labels and other interface text."
+[explorer.settings.code_font]
+en = "Code font"
+[explorer.settings.code_font_note]
+en = "Font of the editor, the tables and the trees."
+[explorer.settings.pda]
+en = "Use PDA10 Burmese Mono font for Burmese text"
+[explorer.settings.pda_note]
+en = "Draws Burmese text in PDA10 whatever the code font; it has no effect while PDA10 is the code font."
+[explorer.settings.code_size]
+en = "Code size"
+[explorer.settings.code_size_note]
+en = "Size of code text, in px."
+[explorer.settings.code_size_choice]
+en = "%{n} px"
+[explorer.settings.italic_comments]
+en = "Italic comments"
+[explorer.settings.italic_comments_note]
+en = "Draws comments in italics in the editor."
+[explorer.settings.platform_bits]
+en = "Platform bits"
+[explorer.settings.platform_bits_note]
+en = "Bit count of isize and usize."
+[explorer.settings.platform_bits_choice]
+en = "%{n}-bit"
+
+[explorer.theme.auto]
+en = "Auto (OS)"
+
+[explorer.face.native]
+en = "OS default"
+[explorer.face.group.interface]
+en = "Interface"
+[explorer.face.group.burmese]
+en = "Burmese"
+[explorer.face.group.latin]
+en = "Latin"
+
+# ---------------------------------------------------------------- problems
+
+[explorer.problems.title]
+en = "Problems"
+[explorer.problems.hide]
+en = "Hide problems"
+[explorer.problems.show]
+en = "Show problems"
+[explorer.problems.errors]
+en = "Errors"
+[explorer.problems.warnings]
+en = "Warnings"
+[explorer.problems.none]
+en = "No problems found."
+
+# ---------------------------------------------------------------- pipeline
+
+[explorer.pipeline.label]
+en = "Compiler pipeline"
+[explorer.pipeline.status]
+en = "%{phase}: %{status}"
+
+[explorer.phase.segment]
+en = "Segment"
+[explorer.phase.segment_note]
+en = "segments"
+[explorer.phase.lex]
+en = "Lex"
+[explorer.phase.lex_note]
+en = "tokens"
+[explorer.phase.parse]
+en = "Parse"
+[explorer.phase.parse_note]
+en = "AST"
+[explorer.phase.check]
+en = "Check"
+[explorer.phase.check_note]
+en = "kinds"
+
+[explorer.status.clean]
+en = "clean"
+[explorer.status.warned]
+en = "warned"
+[explorer.status.failed]
+en = "failed"
+[explorer.status.skipped]
+en = "skipped"
+
+# ---------------------------------------------------------------- phase views
+
+[explorer.col.index]
+en = "#"
+[explorer.col.kind]
+en = "Kind"
+[explorer.col.detail]
+en = "Detail"
+[explorer.col.text]
+en = "Text"
+[explorer.col.particle]
+en = "Particle"
+[explorer.col.joined]
+en = "Joined"
+[explorer.col.joined_note]
+en = "No whitespace before the token"
+[explorer.col.span]
+en = "Span"
+[explorer.col.line]
+en = "Line"
+[explorer.col.value]
+en = "Value"
+[explorer.col.value_note]
+en = "The text the program gets; escapes and {holes} show as chips"
+[explorer.col.source]
+en = "Source"
+[explorer.col.source_note]
+en = "The literal as written in the code"
+
+[explorer.tokens.comments]
+en = "Comments"
+[explorer.tokens.strings]
+en = "Strings"
+
+[explorer.ast.label]
+en = "AST view"
+[explorer.ast.tree]
+en = "Tree"
+[explorer.ast.sexpr]
+en = "S-expr"
+[explorer.ast.graph]
+en = "Graph"
+
+[explorer.tree.select]
+en = "Select in the editor"
+
+[explorer.graph.label]
+en = "Program tree as a graph"
+[explorer.graph.zoom_out]
+en = "Zoom out (-)"
+[explorer.graph.zoom_in]
+en = "Zoom in (+)"
+[explorer.graph.fit]
+en = "Fit"
+[explorer.graph.fit_note]
+en = "Show the whole graph (0)"
+
+[explorer.check.kinds_note]
+en = "Each expression carries the kind the check gave it."
+[explorer.check.skipped_title]
+en = "The check did not run"
+[explorer.check.skipped_note]
+en = "It runs once the lexer and parser report no errors. Fix the problems below to see the kinds."

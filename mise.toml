@@ -6,8 +6,12 @@ version = "nightly"
 components = ["rustfmt"]
 
 [tools]
+age = "latest"
 "cargo:cargo-nextest" = "latest"
 "cargo:cargo-llvm-cov" = "latest"
+
+[env]
+_.file = ".env"
 
 [tasks.format]
 run = "cargo +nightly fmt"
@@ -28,3 +32,30 @@ description = "Run benchmarks"
 [tasks.coverage]
 run = "cargo +nightly llvm-cov --workspace"
 description = "Generate coverage report"
+
+[tasks."explorer:serve"]
+run = "trunk serve --open"
+dir = "explorer"
+description = "Serve the compiler explorer with live reload"
+
+[tasks."explorer:build"]
+run = "trunk build --release --cargo-profile wasm-release"
+dir = "explorer"
+description = "Build the compiler explorer"
+
+[tasks."check:wasm"]
+run = "cargo check -p zakac_explorer --target wasm32-unknown-unknown"
+description = "Check the compiler explorer for the wasm target"
+
+[tasks."font:secret"]
+run = "age-keygen"
+description = "Print a new age secret for ZAKA_PDA_FONT_KEY"
+
+[tasks."font:seal"]
+dir = "explorer/assets/fonts"
+run = """
+: "${ZAKA_PDA_FONT_KEY:?set ZAKA_PDA_FONT_KEY in .env first}"
+recipient=$(printf '%s\n' "$ZAKA_PDA_FONT_KEY" | age-keygen -y)
+age -r "$recipient" -o PDA10BurmeseMono-Regular.ttf.age PDA10BurmeseMono-Regular.ttf
+"""
+description = "Seal the PDA10 font for the repo with ZAKA_PDA_FONT_KEY"

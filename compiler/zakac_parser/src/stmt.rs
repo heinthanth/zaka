@@ -467,14 +467,14 @@ impl Parser<'_>
     }
 
     /// Parse a function declaration, or a statement that starts with a call:
-    /// `လုပ်ဆောင်ချက် f ဆိုသည်မှာ` declares, `လုပ်ဆောင်ချက် f ကို` calls.
+    /// `လုပ်ဆောင်ချက် f သည်` declares, `လုပ်ဆောင်ချက် f ကို` calls.
     ///
     /// # Returns
     ///
     /// The statement, or a diagnostic.
     fn parse_fn_or_call(&mut self) -> PResult<Stmt>
     {
-        let is_decl = self.peek_n(2).kind == TokenKind::Kw(Kw::DefinedAs);
+        let is_decl = self.peek_n(2).kind == TokenKind::Kw(Kw::Thi);
         ret_if!(is_decl, self.parse_fn_decl());
         let (start, callee, args) = self.parse_call_head()?;
         let end = self.expect_one_of(&[Kw::Call, Kw::CallResult])?;
@@ -489,7 +489,9 @@ impl Parser<'_>
         Ok(Stmt::Call(CallStmt::builder().callee(callee).args(args).span(span).build()))
     }
 
-    /// Parse a function declaration.
+    /// Parse a function declaration:
+    /// `လုပ်ဆောင်ချက် f သည် <params>? အောက်ပါတို့ကို လုပ်ဆောင်မည်။`, or with a
+    /// result, `... အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်။`.
     ///
     /// # Returns
     ///
@@ -499,10 +501,11 @@ impl Parser<'_>
     {
         let start = self.bump().span;
         let name = self.parse_ident()?;
-        self.expect(Kw::DefinedAs)?;
-        let (params, ret) = self.parse_fn_header()?;
-        let open = self.expect(Kw::FnOpen)?;
-        let fn_span = start.to(&open.span);
+        self.expect(Kw::Thi)?;
+        let params = self.parse_params()?;
+        let open = self.expect_one_of(&[Kw::FnOpen, Kw::FnOpenRet])?;
+        let ret = self.parse_ret_clause(open.kind == TokenKind::Kw(Kw::FnOpenRet))?;
+        let fn_span = start.to(&self.prev_span());
         do_if!(self.depth > 0, self.diags.push(diag::nested_function(fn_span)));
         self.expect_stop()?;
         let stmts = self.parse_stmts_to_close();
@@ -515,73 +518,53 @@ impl Parser<'_>
         Ok(Stmt::Fn(node))
     }
 
-    /// Parse the optional parameter clause and the optional result clause.
-    /// Both start with a kind; `ရလဒ်` after the kind marks the result clause.
-    ///
-    /// # Returns
-    ///
-    /// The parameters and the result kind.
-    fn parse_fn_header(&mut self) -> PResult<(Vec<Param>, Option<Kind>)>
-    {
-        ret_if!(!self.starts_kind(), Ok((Vec::new(), None)));
-        let kind = self.parse_kind()?;
-        ret_if!(self.at(Kw::Result), Ok((Vec::new(), Some(self.finish_ret(kind)?))));
-        let params = self.parse_params(kind)?;
-        ret_if!(!self.starts_kind(), Ok((params, None)));
-        let kind = self.parse_kind()?;
-        Ok((params, Some(self.finish_ret(kind)?)))
-    }
-
-    /// Parse `ရလဒ် ကို ပြန်ပေးပြီး` after the result kind.
+    /// Parse `<kind> ရလဒ် ကို ပြန်ပေးမည်` after `အောက်ပါတို့ကို လုပ်ဆောင်ကာ`.
     ///
     /// # Arguments
     ///
-    /// * `kind` - The result kind.
+    /// * `has_ret` - Whether the opener announced a result.
     ///
     /// # Returns
     ///
-    /// The kind, or a diagnostic.
-    fn finish_ret(&mut self, kind: Kind) -> PResult<Kind>
+    /// The result kind, `None` without a result clause, or a diagnostic.
+    fn parse_ret_clause(&mut self, has_ret: bool) -> PResult<Option<Kind>>
     {
+        ret_if!(!has_ret, Ok(None));
+        let kind = self.parse_kind()?;
         self.expect(Kw::Result)?;
         self.expect(Kw::Ko)?;
-        self.expect(Kw::Returning)?;
-        Ok(kind)
+        self.expect(Kw::WillReturn)?;
+        Ok(Some(kind))
     }
 
-    /// Parse `kind name (၊ kind name)* (တို့ကို|ကို) လက်ခံပြီး`.
-    ///
-    /// # Arguments
-    ///
-    /// * `first` - The kind of the first parameter, parsed before.
+    /// Parse the optional parameter clause:
+    /// `kind name (၊ kind name)* (နှင့် kind name)? (တို့ကို|ကို) လက်ခံပြီး`.
     ///
     /// # Returns
     ///
-    /// The parameters, or a diagnostic.
-    fn parse_params(&mut self, first: Kind) -> PResult<Vec<Param>>
+    /// The parameters, none when no kind starts the clause, or a diagnostic.
+    fn parse_params(&mut self) -> PResult<Vec<Param>>
     {
-        let mut params = vec![self.parse_param(first)?];
+        ret_if!(!self.starts_kind(), Ok(Vec::new()));
+        let mut params = vec![self.parse_param()?];
         while self.eat_punct(Punct::ListSep)
         {
-            let kind = self.parse_kind()?;
-            params.push(self.parse_param(kind)?);
+            params.push(self.parse_param()?);
         }
+        do_if!(self.eat(Kw::Hnint), params.push(self.parse_param()?));
         self.expect_one_of(&[Kw::ListKo, Kw::Ko])?;
         self.expect(Kw::Accepting)?;
         Ok(params)
     }
 
-    /// Parse the name of a parameter.
-    ///
-    /// # Arguments
-    ///
-    /// * `kind` - Its kind, parsed before.
+    /// Parse one parameter: `kind name`.
     ///
     /// # Returns
     ///
     /// The parameter, or a diagnostic.
-    fn parse_param(&mut self, kind: Kind) -> PResult<Param>
+    fn parse_param(&mut self) -> PResult<Param>
     {
+        let kind = self.parse_kind()?;
         let name = self.parse_ident()?;
         let span = kind.span.to(&name.span);
         Ok(Param::builder().kind(kind).name(name).span(span).build())

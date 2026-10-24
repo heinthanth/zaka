@@ -283,7 +283,7 @@ en = "undeclared function"
 [codes.ZK0303.message]
 en = "function \"%{n}\" is not declared"
 [codes.ZK0303.explain]
-en = """A call names a function that no top-level \"လုပ်ဆောင်ချက် ... ဆိုသည်မှာ\" declares. Functions can be called before their declaration in the file, but the declaration must exist somewhere at the top level. Check the spelling of the name."""
+en = """A call names a function that no top-level \"လုပ်ဆောင်ချက် ... သည်\" declares. Functions can be called before their declaration in the file, but the declaration must exist somewhere at the top level. Check the spelling of the name."""
 
 [codes.ZK0304.title]
 en = "function declared twice"
@@ -346,7 +346,7 @@ en = "value returned from a function without a result"
 [codes.ZK0312.message]
 en = "function \"%{n}\" returns nothing, but a value is returned"
 [codes.ZK0312.explain]
-en = """The function header has no \"<kind> ရလဒ် ကို ပြန်ပေးပြီး\" clause, so the function gives back no value. Write a bare \"ပြန်ပေးပါ။\" to leave the function, or add the result clause to the header."""
+en = """The function header opens with \"အောက်ပါတို့ကို လုပ်ဆောင်မည်\", so the function gives back no value. Write a bare \"ပြန်ပေးပါ။\" to leave the function, or start the statements with \"အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်\"."""
 
 [codes.ZK0313.title]
 en = "missing return value"
@@ -367,7 +367,7 @@ en = "function without a result used as a value"
 [codes.ZK0315.message]
 en = "function \"%{n}\" returns nothing and cannot be used as a value"
 [codes.ZK0315.explain]
-en = """The call expression \"... လုပ်ဆောင်သော ရလဒ်\" needs the function to return a value, but its header has no result clause. Call it as a statement with \"လုပ်ဆောင်ပါ\", or add \"<kind> ရလဒ် ကို ပြန်ပေးပြီး\" to its header."""
+en = """The call expression \"... လုပ်ဆောင်သော ရလဒ်\" needs the function to return a value, but its header has no result clause. Call it as a statement with \"လုပ်ဆောင်ပါ\", or start its statements with \"အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်\"."""
 
 # ---------------------------------------------------------------- kinds ZK04xx
 

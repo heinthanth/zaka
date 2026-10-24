@@ -1,0 +1,136 @@
+// Shared rules for the views and controls. This file holds mixins alone, so
+// it emits no CSS; a component includes them in its own scoped sheet.
+
+=field
+  font: inherit
+  color: var(--fg)
+  background: var(--field)
+  border: 1px solid var(--panel-border)
+  border-radius: 8px
+  padding: 5px 10px
+  outline: none
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out
+
+  &:hover
+    border-color: var(--fg-muted)
+
+  &:focus-visible
+    border-color: var(--accent)
+    box-shadow: 0 0 0 3px var(--accent-soft)
+
+// A square button that holds a line icon; `-on` marks it as pressed.
+=icon-button
+  .icon-button
+    display: grid
+    place-items: center
+    width: 34px
+    height: 34px
+    padding: 0
+    color: var(--fg-muted)
+    background: var(--panel)
+    border: 1px solid var(--panel-border)
+    border-radius: 9px
+    cursor: pointer
+    outline: none
+    transition: color 120ms ease-out, border-color 120ms ease-out
+
+    .icon
+      width: 17px
+      height: 17px
+
+    &:hover
+      color: var(--fg)
+      border-color: var(--fg-muted)
+
+    &:focus-visible
+      border-color: var(--accent)
+      box-shadow: 0 0 0 3px var(--accent-soft)
+
+  .icon-button-on
+    color: var(--accent)
+
+=view-note
+  .view-note
+    margin: 0 0 12px
+    color: var(--fg-muted)
+    line-height: 1.5
+
+  .view-note-warn
+    color: var(--diag-warning)
+
+=table-title
+  .table-title
+    margin: 22px 0 8px
+    font-size: 11px
+    font-weight: 600
+    letter-spacing: 0.06em
+    text-transform: uppercase
+    color: var(--fg-muted)
+
+=phase-table
+  .phase-table
+    width: 100%
+    border-collapse: separate
+    border-spacing: 0
+    font-family: var(--mono-font)
+    font-size: calc(var(--code-size) - 2px)
+
+    th
+      position: sticky
+      top: -12px
+      z-index: 1
+      text-align: left
+      font-family: var(--ui-font)
+      font-size: 11px
+      font-weight: 600
+      letter-spacing: 0.06em
+      text-transform: uppercase
+      color: var(--fg-muted)
+      background: var(--panel)
+      border-bottom: 1px solid var(--panel-border)
+      padding: 8px 8px
+
+    td
+      padding: 3px 8px
+      border-bottom: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent)
+      vertical-align: middle
+
+    tbody tr
+      cursor: pointer
+      transition: background-color 100ms ease-out
+
+      &:hover,
+      &.row-active
+        background: var(--accent-soft)
+
+      &.row-active td:first-child
+        box-shadow: inset 3px 0 0 var(--accent)
+
+  // Number columns line up on the right, head included.
+  .cell-num,
+  .phase-table th.cell-num
+    color: var(--fg-muted)
+    text-align: right
+    width: 3em
+    font-variant-numeric: tabular-nums
+
+  .cell-kind
+    white-space: nowrap
+
+  .cell-detail
+    color: var(--fg-muted)
+
+  .cell-lexeme
+    font-size: var(--code-size)
+    white-space: pre-wrap
+    overflow-wrap: anywhere
+
+  .cell-span
+    white-space: nowrap
+    font-variant-numeric: tabular-nums
+
+  .span-pos
+    margin-right: 6px
+
+  .span-range
+    color: var(--fg-muted)

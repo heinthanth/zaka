@@ -1,7 +1,7 @@
 # zakac-lex-artifact v1
 name:
   Custom: functions.zaka
-source: "လုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ဆိုသည်မှာ\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး\nကိန်းပြည့် ရလဒ် ကို ပြန်ပေးပြီး\nထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို က * ၂ ဟု ထားပါ။\nခ ကို ခ * ၂ ဟု ထားပါ။\nဂ ကို ဂ * ၂ ဟု ထားပါ။\nက + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် ဆိုသည်မှာ\nထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် ထုတ်ပြ ကို အသက်၊ အမည် တို့ဖြင့် လုပ်ဆောင်ပါ။\n"
+source: "လုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ နှင့် ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nက ကို က * ၂ ဟု ထားပါ။\nခ ကို ခ * ၂ ဟု ထားပါ။\nဂ ကို ဂ * ၂ ဟု ထားပါ။\nက + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် ထုတ်ပြ ကို အသက်၊ အမည် တို့ဖြင့် လုပ်ဆောင်ပါ။\n"
 tokens:
 - kind:
     kw: function
@@ -17,145 +17,145 @@ tokens:
   particle: none
   joined: false
 - kind:
-    kw: defined_as
+    kw: thi
   span:
     lo: 98
-    hi: 125
+    hi: 107
   particle: none
   joined: false
 - kind:
     kw: int_kind
   span:
-    lo: 126
-    hi: 156
+    lo: 108
+    hi: 138
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 157
-    hi: 160
+    lo: 139
+    hi: 142
   particle: none
   joined: false
 - kind:
     punct: list_sep
   span:
-    lo: 160
-    hi: 163
+    lo: 142
+    hi: 145
   particle: none
   joined: true
 - kind:
     kw: int_kind
   span:
-    lo: 164
-    hi: 194
+    lo: 146
+    hi: 176
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 195
-    hi: 198
+    lo: 177
+    hi: 180
   particle: none
   joined: false
 - kind:
-    punct: list_sep
+    kw: hnint
   span:
-    lo: 198
-    hi: 201
+    lo: 181
+    hi: 196
   particle: none
-  joined: true
+  joined: false
 - kind:
     kw: int_kind
   span:
-    lo: 202
-    hi: 232
+    lo: 197
+    hi: 227
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 233
-    hi: 236
+    lo: 228
+    hi: 231
   particle: none
   joined: false
 - kind:
     kw: list_ko
   span:
-    lo: 237
-    hi: 258
+    lo: 232
+    hi: 253
   particle: none
   joined: false
 - kind:
     kw: accepting
   span:
-    lo: 259
-    hi: 286
+    lo: 254
+    hi: 281
+  particle: none
+  joined: false
+- kind:
+    kw: fn_open_ret
+  span:
+    lo: 282
+    hi: 358
   particle: none
   joined: false
 - kind:
     kw: int_kind
   span:
-    lo: 287
-    hi: 317
+    lo: 359
+    hi: 389
   particle: none
   joined: false
 - kind:
     kw: result
   span:
-    lo: 318
-    hi: 330
+    lo: 390
+    hi: 402
   particle: none
   joined: false
 - kind:
     kw: ko
   span:
-    lo: 331
-    hi: 340
+    lo: 403
+    hi: 412
   particle: none
   joined: false
 - kind:
-    kw: returning
+    kw: will_return
   span:
-    lo: 341
-    hi: 374
-  particle: none
-  joined: false
-- kind:
-    kw: fn_open
-  span:
-    lo: 375
-    hi: 512
+    lo: 413
+    hi: 443
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 512
-    hi: 515
+    lo: 443
+    hi: 446
   particle: none
   joined: true
 - kind: ident
   span:
-    lo: 516
-    hi: 519
+    lo: 447
+    hi: 450
   particle: none
   joined: false
 - kind:
     kw: ko
   span:
-    lo: 520
-    hi: 529
+    lo: 451
+    hi: 460
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 530
-    hi: 533
+    lo: 461
+    hi: 464
   particle: none
   joined: false
 - kind:
     punct: star
   span:
-    lo: 534
-    hi: 535
+    lo: 465
+    hi: 466
   particle: none
   joined: false
 - kind:
@@ -165,55 +165,113 @@ tokens:
       has_exponent: false
       has_letters: false
   span:
-    lo: 536
-    hi: 539
+    lo: 467
+    hi: 470
   particle: none
   joined: false
 - kind:
     kw: hu
   span:
-    lo: 540
+    lo: 471
+    hi: 477
+  particle: none
+  joined: false
+- kind:
+    kw: assign
+  span:
+    lo: 478
+    hi: 493
+  particle: none
+  joined: false
+- kind:
+    punct: full_stop
+  span:
+    lo: 493
+    hi: 496
+  particle: none
+  joined: true
+- kind: ident
+  span:
+    lo: 497
+    hi: 500
+  particle: none
+  joined: false
+- kind:
+    kw: ko
+  span:
+    lo: 501
+    hi: 510
+  particle: none
+  joined: false
+- kind: ident
+  span:
+    lo: 511
+    hi: 514
+  particle: none
+  joined: false
+- kind:
+    punct: star
+  span:
+    lo: 515
+    hi: 516
+  particle: none
+  joined: false
+- kind:
+    number:
+      script: burmese
+      has_fraction: false
+      has_exponent: false
+      has_letters: false
+  span:
+    lo: 517
+    hi: 520
+  particle: none
+  joined: false
+- kind:
+    kw: hu
+  span:
+    lo: 521
+    hi: 527
+  particle: none
+  joined: false
+- kind:
+    kw: assign
+  span:
+    lo: 528
+    hi: 543
+  particle: none
+  joined: false
+- kind:
+    punct: full_stop
+  span:
+    lo: 543
     hi: 546
   particle: none
-  joined: false
-- kind:
-    kw: assign
-  span:
-    lo: 547
-    hi: 562
-  particle: none
-  joined: false
-- kind:
-    punct: full_stop
-  span:
-    lo: 562
-    hi: 565
-  particle: none
   joined: true
 - kind: ident
   span:
-    lo: 566
-    hi: 569
+    lo: 547
+    hi: 550
   particle: none
   joined: false
 - kind:
     kw: ko
   span:
-    lo: 570
-    hi: 579
+    lo: 551
+    hi: 560
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 580
-    hi: 583
+    lo: 561
+    hi: 564
   particle: none
   joined: false
 - kind:
     punct: star
   span:
-    lo: 584
-    hi: 585
+    lo: 565
+    hi: 566
   particle: none
   joined: false
 - kind:
@@ -223,296 +281,238 @@ tokens:
       has_exponent: false
       has_letters: false
   span:
-    lo: 586
-    hi: 589
+    lo: 567
+    hi: 570
   particle: none
   joined: false
 - kind:
     kw: hu
   span:
-    lo: 590
-    hi: 596
+    lo: 571
+    hi: 577
   particle: none
   joined: false
 - kind:
     kw: assign
   span:
+    lo: 578
+    hi: 593
+  particle: none
+  joined: false
+- kind:
+    punct: full_stop
+  span:
+    lo: 593
+    hi: 596
+  particle: none
+  joined: true
+- kind: ident
+  span:
     lo: 597
+    hi: 600
+  particle: none
+  joined: false
+- kind:
+    punct: plus
+  span:
+    lo: 601
+    hi: 602
+  particle: none
+  joined: false
+- kind: ident
+  span:
+    lo: 603
+    hi: 606
+  particle: none
+  joined: false
+- kind:
+    punct: plus
+  span:
+    lo: 607
+    hi: 608
+  particle: none
+  joined: false
+- kind: ident
+  span:
+    lo: 609
     hi: 612
   particle: none
   joined: false
 - kind:
-    punct: full_stop
-  span:
-    lo: 612
-    hi: 615
-  particle: none
-  joined: true
-- kind: ident
-  span:
-    lo: 616
-    hi: 619
-  particle: none
-  joined: false
-- kind:
     kw: ko
   span:
-    lo: 620
-    hi: 629
-  particle: none
-  joined: false
-- kind: ident
-  span:
-    lo: 630
-    hi: 633
-  particle: none
-  joined: false
-- kind:
-    punct: star
-  span:
-    lo: 634
-    hi: 635
-  particle: none
-  joined: false
-- kind:
-    number:
-      script: burmese
-      has_fraction: false
-      has_exponent: false
-      has_letters: false
-  span:
-    lo: 636
-    hi: 639
-  particle: none
-  joined: false
-- kind:
-    kw: hu
-  span:
-    lo: 640
-    hi: 646
-  particle: none
-  joined: false
-- kind:
-    kw: assign
-  span:
-    lo: 647
-    hi: 662
-  particle: none
-  joined: false
-- kind:
-    punct: full_stop
-  span:
-    lo: 662
-    hi: 665
-  particle: none
-  joined: true
-- kind: ident
-  span:
-    lo: 666
-    hi: 669
-  particle: none
-  joined: false
-- kind:
-    punct: plus
-  span:
-    lo: 670
-    hi: 671
-  particle: none
-  joined: false
-- kind: ident
-  span:
-    lo: 672
-    hi: 675
-  particle: none
-  joined: false
-- kind:
-    punct: plus
-  span:
-    lo: 676
-    hi: 677
-  particle: none
-  joined: false
-- kind: ident
-  span:
-    lo: 678
-    hi: 681
-  particle: none
-  joined: false
-- kind:
-    kw: ko
-  span:
-    lo: 682
-    hi: 691
+    lo: 613
+    hi: 622
   particle: none
   joined: false
 - kind:
     kw: return_value
   span:
-    lo: 692
-    hi: 747
+    lo: 623
+    hi: 678
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 747
-    hi: 750
+    lo: 678
+    hi: 681
   particle: none
   joined: true
 - kind:
     kw: block_close
   span:
-    lo: 751
-    hi: 830
+    lo: 682
+    hi: 761
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 830
-    hi: 833
+    lo: 761
+    hi: 764
   particle: none
   joined: true
 - kind:
     kw: function
   span:
-    lo: 835
-    hi: 874
+    lo: 766
+    hi: 805
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 875
-    hi: 899
+    lo: 806
+    hi: 830
   particle: none
   joined: false
 - kind:
-    kw: defined_as
+    kw: thi
   span:
-    lo: 900
-    hi: 927
+    lo: 831
+    hi: 840
   particle: none
   joined: false
 - kind:
     kw: fn_open
   span:
-    lo: 928
-    hi: 1065
+    lo: 841
+    hi: 920
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 1065
-    hi: 1068
+    lo: 920
+    hi: 923
   particle: none
   joined: true
 - kind:
     str: 0
   span:
-    lo: 1069
-    hi: 1098
+    lo: 924
+    hi: 953
   particle: none
   joined: false
 - kind:
     kw: ko
   span:
-    lo: 1099
-    hi: 1108
+    lo: 954
+    hi: 963
   particle: none
   joined: false
 - kind:
     kw: print
   span:
-    lo: 1109
-    hi: 1124
+    lo: 964
+    hi: 979
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 1124
-    hi: 1127
+    lo: 979
+    hi: 982
   particle: none
   joined: true
 - kind:
     kw: block_close
   span:
-    lo: 1128
-    hi: 1207
+    lo: 983
+    hi: 1062
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 1207
-    hi: 1210
+    lo: 1062
+    hi: 1065
   particle: none
   joined: true
 - kind:
     kw: function
   span:
-    lo: 1212
-    hi: 1251
+    lo: 1067
+    hi: 1106
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 1252
-    hi: 1270
+    lo: 1107
+    hi: 1125
   particle: none
   joined: false
 - kind:
     kw: ko
   span:
-    lo: 1271
-    hi: 1280
+    lo: 1126
+    hi: 1135
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 1281
-    hi: 1293
+    lo: 1136
+    hi: 1148
   particle: none
   joined: false
 - kind:
     punct: list_sep
   span:
-    lo: 1293
-    hi: 1296
+    lo: 1148
+    hi: 1151
   particle: none
   joined: true
 - kind: ident
   span:
-    lo: 1297
-    hi: 1309
+    lo: 1152
+    hi: 1164
   particle: none
   joined: false
 - kind:
     kw: list_with
   span:
-    lo: 1310
-    hi: 1337
+    lo: 1165
+    hi: 1192
   particle: none
   joined: false
 - kind:
     kw: call
   span:
-    lo: 1338
-    hi: 1371
+    lo: 1193
+    hi: 1226
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 1371
-    hi: 1374
+    lo: 1226
+    hi: 1229
   particle: none
   joined: true
 - kind: eof
   span:
-    lo: 1375
-    hi: 1375
+    lo: 1230
+    hi: 1230
   particle: none
   joined: false
 comments: []

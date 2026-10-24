@@ -1,0 +1,114 @@
+// The graph view: node boxes on curved lines, labels in the accent and
+// literal values in the colors the editor gives them.
+
+// The viewport: it fills the pane, and the graph moves and zooms inside it
+// over a dot grid.
+.graph
+  position: relative
+  flex: 1
+  min-height: 320px
+  overflow: hidden
+  border: 1px solid var(--panel-border)
+  border-radius: 10px
+  background: radial-gradient(var(--panel-border) 1px, transparent 1px) 0 0 / 18px 18px, var(--code-bg)
+  touch-action: none
+  outline: none
+
+  &:focus-visible
+    box-shadow: 0 0 0 3px var(--accent-soft)
+
+.graph-dragging
+  cursor: grabbing
+
+  .graph-node
+    cursor: grabbing
+
+.graph-svg
+  display: block
+  width: 100%
+  height: 100%
+  font-family: var(--mono-font)
+  font-size: 12px
+
+.graph-controls
+  position: absolute
+  right: 10px
+  bottom: 10px
+  display: flex
+  align-items: center
+  gap: 2px
+  padding: 3px
+  background: var(--panel)
+  border: 1px solid var(--panel-border)
+  border-radius: 9px
+  box-shadow: var(--shadow)
+
+.graph-control
+  min-width: 28px
+  height: 26px
+  padding: 0 8px
+  font: inherit
+  font-size: 13px
+  color: var(--fg-muted)
+  background: none
+  border: 0
+  border-radius: 6px
+  cursor: pointer
+
+  &:hover
+    color: var(--fg)
+    background: var(--accent-soft)
+
+.graph-zoom
+  min-width: 46px
+  text-align: center
+  font-size: 12px
+  font-variant-numeric: tabular-nums
+  color: var(--fg-muted)
+
+.graph-hint
+  position: absolute
+  left: 12px
+  bottom: 14px
+  font-size: 11px
+  color: var(--fg-muted)
+  pointer-events: none
+
+.graph-lines path
+  fill: none
+  stroke: var(--panel-border)
+  stroke-width: 1.5
+
+.graph-node
+  cursor: pointer
+
+  rect
+    fill: var(--code-bg)
+    stroke: var(--panel-border)
+    transition: fill 120ms ease-out, stroke 120ms ease-out
+
+  &:hover rect
+    fill: var(--accent-soft)
+    stroke: var(--accent)
+
+.graph-label
+  fill: var(--accent)
+  font-weight: 600
+
+.graph-value
+  fill: var(--fg-muted)
+
+.graph-value-int,
+.graph-value-float
+  fill: var(--tok-number)
+
+.graph-value-char,
+.graph-value-str
+  fill: var(--tok-str)
+
+.graph-value-bool
+  fill: var(--tok-kw)
+
+@media (prefers-reduced-motion: reduce)
+  .graph-node rect
+    transition: none

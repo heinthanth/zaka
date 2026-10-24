@@ -32,12 +32,18 @@ pub trait ToSexpr
 
 impl ToSexpr for Program
 {
-    fn to_sexpr(&self) -> String { braces(&self.stmts) }
+    fn to_sexpr(&self) -> String
+    {
+        list("program", self.stmts.iter().map(ToSexpr::to_sexpr))
+    }
 }
 
 impl ToSexpr for BlockStmt
 {
-    fn to_sexpr(&self) -> String { braces(&self.stmts) }
+    fn to_sexpr(&self) -> String
+    {
+        list("block", self.stmts.iter().map(ToSexpr::to_sexpr))
+    }
 }
 
 impl ToSexpr for Kind
@@ -115,21 +121,6 @@ fn list(head: &str, parts: impl IntoIterator<Item = String>) -> String
     let parts: Vec<String> = parts.into_iter().collect();
     ret_if!(parts.is_empty(), format!("({head})"));
     format!("({head} {})", parts.join(" "))
-}
-
-/// `{stmt stmt}`.
-///
-/// # Arguments
-///
-/// * `stmts` - The statements.
-///
-/// # Returns
-///
-/// The block form.
-fn braces(stmts: &[Stmt]) -> String
-{
-    let parts: Vec<String> = stmts.iter().map(ToSexpr::to_sexpr).collect();
-    format!("{{{}}}", parts.join(" "))
 }
 
 /// An integer literal with its kind prefix as a suffix: `18u8`.

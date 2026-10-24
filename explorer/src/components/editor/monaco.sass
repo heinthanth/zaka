@@ -1,0 +1,101 @@
+// Token colors on Monaco's inline decoration spans. Monaco owns these nodes,
+// so the sheet is global; `!important` beats the color of Monaco's theme.
+
+=tok($name, $bold: false)
+  .tok-#{$name}
+    color: var(--tok-#{$name}) !important
+    @if $bold
+      font-weight: 600
+
+.monaco-editor
+  +tok(kw, $bold: true)
+  +tok(ident)
+  +tok(raw)
+  +tok(number)
+  +tok(char)
+  +tok(str)
+  +tok(verb, $bold: true)
+  +tok(op)
+  +tok(particle)
+  +tok(kind)
+  +tok(bool)
+  +tok(delim)
+
+  // Upright unless the italic comments setting is on.
+  .tok-comment
+    color: var(--tok-comment) !important
+    font-style: var(--comment-style, normal)
+
+  .mark-hover
+    background: var(--mark-hover)
+    border-radius: 2px
+
+  // The panel card frames the editor; the current line needs no box of its
+  // own.
+  .view-overlays .current-line
+    border: 0 !important
+
+// Monaco paints from `--vscode-*` variables; point them at the theme tokens so
+// every theme recolors the editor through CSS alone.
+.monaco-editor
+  --vscode-editor-background: var(--editor-bg) !important
+  --vscode-editor-foreground: var(--fg) !important
+  --vscode-editorGutter-background: var(--editor-bg) !important
+  --vscode-editorLineNumber-foreground: var(--editor-gutter-fg) !important
+  --vscode-editorLineNumber-activeForeground: var(--editor-gutter-active) !important
+  --vscode-editorCursor-foreground: var(--editor-cursor) !important
+  --vscode-editor-selectionBackground: var(--editor-select) !important
+  --vscode-editor-lineHighlightBackground: var(--editor-line) !important
+  --vscode-editor-lineHighlightBorder: transparent !important
+  --vscode-editorOverviewRuler-border: transparent !important
+  --vscode-scrollbar-shadow: transparent !important
+  --vscode-scrollbarSlider-background: var(--scroll-thumb) !important
+  --vscode-scrollbarSlider-hoverBackground: var(--scroll-thumb-hover) !important
+  --vscode-scrollbarSlider-activeBackground: var(--scroll-thumb-hover) !important
+  --vscode-editorWidget-background: var(--panel) !important
+  --vscode-editorHoverWidget-background: var(--panel) !important
+  --vscode-editorHoverWidget-border: var(--panel-border) !important
+  // The context menu draws in a shadow root under the editor; these
+  // variables still reach it, since custom properties cross into it.
+  --vscode-menu-background: var(--panel) !important
+  --vscode-menu-foreground: var(--fg) !important
+  --vscode-menu-selectionBackground: var(--accent-soft) !important
+  --vscode-menu-selectionForeground: var(--fg) !important
+  --vscode-menu-selectionBorder: transparent !important
+  --vscode-menu-separatorBackground: var(--panel-border) !important
+  --vscode-menu-border: var(--panel-border) !important
+  --vscode-disabledForeground: var(--fg-muted) !important
+  --vscode-cornerRadius-large: 10px !important
+  --vscode-cornerRadius-medium: 6px !important
+  --vscode-strokeThickness: 1px !important
+  --vscode-shadow-lg: var(--pop-shadow) !important
+  --vscode-widget-shadow: rgba(0, 0, 0, 0.18) !important
+  // The command palette, opened from the menu or with F1.
+  --vscode-quickInput-background: var(--panel) !important
+  --vscode-quickInput-foreground: var(--fg) !important
+  --vscode-quickInputList-focusBackground: var(--accent-soft) !important
+  --vscode-quickInputList-focusForeground: var(--fg) !important
+  --vscode-quickInputList-focusIconForeground: var(--fg) !important
+  --vscode-list-highlightForeground: var(--accent) !important
+  --vscode-list-focusHighlightForeground: var(--accent) !important
+  --vscode-pickerGroup-foreground: var(--accent) !important
+  --vscode-pickerGroup-border: var(--panel-border) !important
+  --vscode-input-background: var(--field) !important
+  --vscode-input-foreground: var(--fg) !important
+  --vscode-input-border: var(--panel-border) !important
+  --vscode-focusBorder: var(--accent) !important
+  --vscode-keybindingLabel-foreground: var(--fg-muted) !important
+  --vscode-keybindingLabel-background: var(--chip) !important
+  --vscode-keybindingLabel-border: var(--panel-border) !important
+  --vscode-keybindingLabel-bottomBorder: var(--panel-border) !important
+
+  // Menus and the palette use the interface font, not the code font.
+  .shadow-root-host,
+  .quick-input-widget
+    font-family: var(--ui-font)
+
+  // The palette floats over the code like the menu: a card with a shadow.
+  .quick-input-widget
+    border: 1px solid var(--panel-border)
+    border-radius: 10px
+    box-shadow: var(--pop-shadow) !important

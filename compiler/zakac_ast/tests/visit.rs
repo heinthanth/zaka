@@ -184,7 +184,7 @@ fn kind_builder_keeps_optional_fields()
 fn sexpr_prints_the_tree_compactly()
 {
     use zakac_ast::s_expr::ToSexpr;
-    assert_eq!(sample().to_sexpr(), "{(set x (add 1 2))}");
+    assert_eq!(sample().to_sexpr(), "(program (set x (add 1 2)))");
     let kind = Kind::builder().base(BaseKind::Int).bits(8).signed(false).span(sp(0, 1));
     assert_eq!(kind.build().to_sexpr(), "u8");
     let size = Kind::builder().base(BaseKind::Int).span(sp(0, 1)).build();

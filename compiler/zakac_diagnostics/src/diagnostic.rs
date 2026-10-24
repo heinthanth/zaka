@@ -2,12 +2,14 @@ use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
 use strum::AsRefStr;
+use strum::IntoStaticStr;
 use zakac_span::span::Span;
 
 use crate::code::Code;
 
 /// How serious a diagnostic is.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, AsRefStr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(AsRefStr, IntoStaticStr)]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum Level

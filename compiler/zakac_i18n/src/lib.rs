@@ -7,7 +7,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 /// Locale tags with bundled translations.
-const SUPPORTED_LOCALES: &[&str] = &["en"];
+pub const SUPPORTED_LOCALES: &[&str] = &["en"];
 
 /// The fallback (default) locale.
 /// When this is changed, don't forget to update the `fallback` argument of the
@@ -97,6 +97,15 @@ pub fn detect_supported_locale() -> String
         .unwrap_or_else(|| FALLBACK_LOCALE.into())
 }
 
+/// Set the locale to the detected one, once per process. Later calls do
+/// nothing, so a locale set on purpose after the first call holds for all
+/// crates.
+pub fn init_locale()
+{
+    static INIT: std::sync::Once = std::sync::Once::new();
+    INIT.call_once(|| set_locale(&detect_supported_locale()));
+}
+
 /// Translate a string against this crate's locale table, with per-crate fallback
 /// to the shared table when [`init!`] has been called in the consuming crate.
 #[rustfmt::skip]
@@ -129,9 +138,7 @@ pub fn _rust_i18n_try_translate<'r>(
     _locale: &str, k: impl AsRef<str>,
 ) -> Option<std::borrow::Cow<'r, str>>
 {
-    static __ZAKA_LOCALE_INIT: std::sync::Once = std::sync::Once::new();
-    __ZAKA_LOCALE_INIT.call_once(|| $crate::set_locale(&$crate::detect_supported_locale()));
-
+    $crate::init_locale();
     let locale = $crate::locale();
     __zaka_locales::_rust_i18n_try_translate(&locale, k.as_ref())
         .or_else(|| $crate::_rust_i18n_try_translate(&locale, k.as_ref()))

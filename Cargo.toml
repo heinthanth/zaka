@@ -1,23 +1,40 @@
 [workspace]
 resolver = "3"
-members = ["compiler/*"]
+members = ["compiler/*", "explorer"]
 default-members = ["compiler/zakac"]
 
 [workspace.package]
 edition = "2024"
 
 [workspace.dependencies]
+age = "0.12"
+base64 = "0.23.1"
 bon = "3.10.1"
 cargo-build = { version = "1.0.0", features = ["macros"] }
 chrono = "0.4.45"
 clap = { version = "4.6.7", features = ["cargo"] }
+codee = "0.3.5"
+console_error_panic_hook = "0.1.7"
 const_for = "0.1.6"
+js-sys = "0.3.105"
+leptos = { version = "0.8.22", features = ["csr"] }
+leptos-scoped-style = { version = "0.1.1", features = ["scss_file"] }
+leptos-use-color-mode = "0.20"
+leptos-use-css-var = "0.20"
+leptos-use-draggable = "0.20"
+leptos-use-element = "0.20"
+leptos-use-event-listener = "0.20"
+leptos-use-on-click-outside = "0.20"
+leptos-use-signal-debounce-throttle = "0.20"
+leptos-use-storage = "0.20"
+leptos-use-window = "0.20"
 num_enum = "0.7.6"
 postcard = { version = "1.1.3", features = ["alloc"] }
 rust-i18n = "4.2.2"
 serde = { version = "1.0.228", features = ["derive"] }
 serde-saphyr = "1.2.0"
-shadow-rs = "2.0.0"
+serde-wasm-bindgen = "0.6.5"
+shadow-rs = { version = "2.0.0", default-features = false }
 strum = { version = "0.28.0", features = ["derive"] }
 sys-locale = "0.3.2"
 tempfile = "3.27.0"
@@ -26,6 +43,9 @@ unicode-ident = "1.0.27"
 unicode-normalization = "0.1.25"
 unicode-properties = "0.1.4"
 unicode-width = "0.2.2"
+wasm-bindgen = "0.2.128"
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3.105"
 zakac_ast = { path = "compiler/zakac_ast" }
 zakac_burmese_segmenter = { path = "compiler/zakac_burmese_segmenter" }
 zakac_cli_common = { path = "compiler/zakac_cli_common" }
@@ -40,3 +60,10 @@ zakac_rust_sugars = { path = "compiler/zakac_rust_sugars" }
 zakac_semcheck = { path = "compiler/zakac_semcheck" }
 zakac_session = { path = "compiler/zakac_session" }
 zakac_span = { path = "compiler/zakac_span" }
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

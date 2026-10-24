@@ -1,0 +1,21 @@
+// The editor pane: Monaco's host fills it; the wait note floats on top.
+
+.editor-pane
+  position: relative
+  flex: 1
+  min-height: 0
+  display: flex
+  flex-direction: column
+
+.editor-host
+  position: relative
+  flex: 1
+  min-height: 0
+
+.editor-wait
+  position: absolute
+  top: 16px
+  left: 16px
+  margin: 0
+  color: var(--fg-muted)
+  pointer-events: none

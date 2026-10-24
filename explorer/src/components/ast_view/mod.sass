@@ -1,0 +1,79 @@
+// The AST view: a switch at the top right, then the tree, the S-expression
+// form in a code card, or the graph.
+
+@use "../table/mod" as table
+
+.ast-view
+  +table.table-title
+
+// The graph fills the pane under the switch; it pans and zooms on its own.
+.ast-view-graph
+  display: flex
+  flex-direction: column
+  height: 100%
+
+// The switch stays in the corner while the view scrolls under it.
+.ast-head
+  position: sticky
+  top: -12px
+  left: 0
+  z-index: 3
+  display: flex
+  justify-content: flex-end
+  margin: -4px 0 8px
+  padding: 4px 0
+  pointer-events: none
+
+.ast-modes
+  display: inline-flex
+  gap: 2px
+  padding: 3px
+  border-radius: 9px
+  border: 1px solid var(--panel-border)
+  background: var(--chip)
+  pointer-events: auto
+
+.ast-mode
+  padding: 3px 10px
+  font: inherit
+  font-size: 12px
+  color: var(--fg-muted)
+  background: none
+  border: 0
+  border-radius: 6px
+  cursor: pointer
+  outline: none
+  transition: color 120ms ease-out, background-color 120ms ease-out
+
+  &:hover
+    color: var(--fg)
+
+  &:focus-visible
+    box-shadow: 0 0 0 2px var(--accent-soft)
+
+.ast-mode-on
+  color: var(--fg)
+  background: var(--panel)
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12)
+
+.sexpr
+  margin: 0
+  padding: 12px 14px
+  border-radius: 8px
+  border: 1px solid var(--panel-border)
+  background: var(--code-bg)
+  font-family: var(--mono-font)
+  font-size: calc(var(--code-size) - 2px)
+  line-height: 1.8
+  white-space: pre
+  overflow-x: auto
+
+.ink-bracket
+  color: var(--fg-muted)
+
+.ink-head
+  color: var(--tok-kw)
+  font-weight: 600
+
+.ink-quote
+  color: var(--tok-str)

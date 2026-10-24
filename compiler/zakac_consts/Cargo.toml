@@ -8,4 +8,4 @@ shadow-rs = { workspace = true }
 zakac_rust_sugars = { workspace = true }
 
 [build-dependencies]
-shadow-rs = { workspace = true }
+shadow-rs = { workspace = true, features = ["git2", "build"] }

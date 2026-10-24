@@ -2,9 +2,15 @@
 .zed
 .DS_Store
 .codegraph
+.superpowers
+.playwright-mcp
+.env*
+!.env.example
 
 target
 CLAUDE.md
 docs/*.internal.md
-.superpowers
 
+explorer/dist
+explorer/assets/fonts/*.ttf
+!explorer/assets/fonts/SauceCodeProHTMMsCustom-Regular.ttf

@@ -1,4 +1,5 @@
 use bon::Builder;
+use strum::IntoStaticStr;
 use termcolor::Color;
 use termcolor::ColorSpec;
 use termcolor::WriteColor;
@@ -13,9 +14,11 @@ use crate::width::TAB_CELLS;
 use crate::width::str_cells;
 use crate::writer::write_text;
 
-/// How a piece of rendered text is painted on a color terminal.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Paint
+/// How a piece of rendered text is painted on a color terminal; its static
+/// name is the snake case variant name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoStaticStr)]
+#[strum(serialize_all = "snake_case")]
+pub enum Paint
 {
     /// No color.
     Plain,
@@ -30,14 +33,14 @@ enum Paint
 }
 
 /// A piece of rendered text with its paint.
-#[derive(Builder)]
-struct Piece
+#[derive(Debug, Clone, PartialEq, Eq, Builder)]
+pub struct Piece
 {
     /// How to paint the text.
-    paint: Paint,
+    pub paint: Paint,
     /// The text; it can end in a line break.
     #[builder(into)]
-    text: String,
+    pub text: String,
 }
 
 /// One source line split around the span, with tabs expanded.
@@ -71,6 +74,22 @@ struct Excerpt
 pub fn format_diagnostic(sm: &SourceMap, diag: &Diagnostic) -> String
 {
     pieces(sm, diag).into_iter().map(|piece| piece.text).collect()
+}
+
+/// Render a diagnostic to painted pieces, for a front end that does its own
+/// coloring.
+///
+/// # Arguments
+///
+/// * `sm` - The source map that holds the file of the diagnostic.
+/// * `diag` - The diagnostic to render.
+///
+/// # Returns
+///
+/// The pieces in output order; their texts joined give [`format_diagnostic`].
+pub fn diagnostic_pieces(sm: &SourceMap, diag: &Diagnostic) -> Vec<Piece>
+{
+    pieces(sm, diag)
 }
 
 /// Write a diagnostic, with color when the writer supports it.

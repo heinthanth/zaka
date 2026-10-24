@@ -1,0 +1,169 @@
+// The settings button and the modal it opens: a centered card with a title
+// bar, then sections of rows, each with a title and a note on the left and
+// its control on the right.
+
+@use "../table/mod" as table
+
+.settings
+  +table.icon-button
+
+.settings-button .icon
+  transition: rotate 300ms ease-out
+
+.settings-button-on
+  color: var(--accent)
+  border-color: var(--accent)
+
+  .icon
+    rotate: 60deg
+
+// The dialog takes no padding: the card fills it, so a click on the dialog
+// itself is a click on the backdrop.
+.settings-modal
+  width: min(640px, 100vw - 32px)
+  max-height: min(80vh, 720px)
+  padding: 0
+  overflow: hidden
+  color: var(--fg)
+  background: var(--panel)
+  border: 1px solid var(--panel-border)
+  border-radius: var(--radius)
+  box-shadow: var(--pop-shadow)
+
+  &[open]
+    animation: pop-in 160ms ease-out
+
+  &::backdrop
+    background: rgba(0, 0, 0, 0.45)
+    backdrop-filter: blur(2px)
+    animation: fade-in 160ms ease-out
+
+.settings-card
+  display: flex
+  flex-direction: column
+  max-height: inherit
+
+.settings-top
+  flex: none
+  display: flex
+  align-items: center
+  justify-content: space-between
+  padding: 14px 16px 14px 24px
+  border-bottom: 1px solid var(--panel-border)
+
+.settings-name
+  margin: 0
+  font-size: 16px
+  font-weight: 600
+
+.icon-button.settings-close
+  width: 30px
+  height: 30px
+  border-color: transparent
+
+.settings-scroll
+  min-height: 0
+  overflow: auto
+  padding: 4px 24px 20px
+
+.settings-head
+  margin: 20px 0 2px
+  font-size: 11px
+  font-weight: 600
+  letter-spacing: 0.06em
+  text-transform: uppercase
+  color: var(--fg-muted)
+
+// One width for all dropdowns, so the controls line up.
+.settings-row
+  --dropdown-width: 220px
+  display: grid
+  grid-template-columns: minmax(0, 1fr) auto
+  align-items: center
+  gap: 24px
+  padding: 14px 0
+  border-bottom: 1px solid var(--panel-border)
+  cursor: default
+
+  &:last-child
+    border-bottom: 0
+
+.settings-text
+  display: grid
+  gap: 3px
+
+.settings-title
+  font-size: 14px
+  font-weight: 500
+
+.settings-note
+  max-width: 46ch
+  font-size: 13px
+  line-height: 1.45
+  color: var(--fg-muted)
+
+// The PDA10 switch: the checkbox remains for focus and clicks, hidden under a
+// drawn track.
+.settings-switch
+  position: relative
+  display: flex
+  align-items: center
+  cursor: pointer
+
+  input
+    position: absolute
+    opacity: 0
+    width: 30px
+    height: 18px
+    margin: 0
+    cursor: pointer
+
+.switch-track
+  position: relative
+  width: 30px
+  height: 18px
+  border-radius: 999px
+  background: var(--panel-border)
+  transition: background-color 140ms ease-out
+  pointer-events: none
+
+  &::after
+    content: ""
+    position: absolute
+    top: 2px
+    left: 2px
+    width: 14px
+    height: 14px
+    border-radius: 50%
+    background: #ffffff
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25)
+    transition: translate 140ms ease-out
+
+.settings-switch input:checked + .switch-track
+  background: var(--accent)
+
+  &::after
+    translate: 12px 0
+
+.settings-switch input:focus-visible + .switch-track
+  box-shadow: 0 0 0 3px var(--accent-soft)
+
+.settings-switch input:disabled + .switch-track
+  opacity: 0.45
+
+// On narrow screens the control goes under its text.
+@media (max-width: 560px)
+  .settings-row
+    --dropdown-width: 100%
+    grid-template-columns: minmax(0, 1fr)
+    gap: 10px
+
+@media (prefers-reduced-motion: reduce)
+  .settings-modal[open],
+  .settings-modal::backdrop
+    animation: none
+
+  .settings-button .icon,
+  .switch-track,
+  .switch-track::after
+    transition: none

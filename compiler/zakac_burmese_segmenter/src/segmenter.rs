@@ -2,6 +2,7 @@ use bon::Builder;
 use const_for::const_for;
 use serde::Deserialize;
 use serde::Serialize;
+use strum::IntoStaticStr;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
@@ -10,8 +11,9 @@ use zakac_span::pos::Pos;
 use zakac_span::span::Span;
 
 /// Kind of pre-lexical token.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, IntoStaticStr)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum PreLexicalTokenKind
 {
     /// ဝဏ္ဏ in Burmese

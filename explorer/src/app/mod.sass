@@ -1,0 +1,67 @@
+// The page shell: the toolbar on top, then the panels as cards on the
+// canvas. The editor and the right column split the width; the stage view
+// and the problems panel split the column. The gaps between the cards hold
+// the splitters.
+
+.app-shell
+  display: grid
+  grid-template-rows: auto 1fr
+  height: 100vh
+  background: var(--canvas)
+
+.panes
+  display: grid
+  grid-template-columns: minmax(0, var(--first-share)) 10px minmax(0, var(--second-share))
+  min-height: 0
+  padding: 0 10px 10px
+
+// The editor hides without leaving the page, so Monaco keeps its state; the
+// items sit in fixed tracks, so the column keeps to the last one.
+.panes-shut
+  grid-template-columns: 0 0 minmax(0, 1fr)
+
+  .panel-editor
+    display: none
+
+.panel-editor
+  grid-column: 1
+
+.column
+  grid-column: 3
+  display: grid
+  grid-template-rows: minmax(0, var(--first-share)) 10px minmax(0, var(--second-share))
+  min-height: 0
+  min-width: 0
+
+.column-shut
+  grid-template-rows: minmax(0, 1fr) 10px auto
+
+.panel
+  min-height: 0
+  min-width: 0
+  display: flex
+  flex-direction: column
+  overflow: hidden
+  background: var(--panel)
+  border: 1px solid var(--panel-border)
+  border-radius: var(--radius)
+  box-shadow: var(--shadow)
+
+@media (max-width: 900px)
+  .panes,
+  .column
+    display: flex
+    flex-direction: column
+    gap: 10px
+
+  .panes
+    overflow: auto
+
+  .panel-editor
+    flex: 0 0 50vh
+
+  .column
+    flex: 0 0 auto
+
+  .panel-stage
+    flex: 0 0 70vh

@@ -1,0 +1,186 @@
+use std::collections::BTreeSet;
+use std::path::PathBuf;
+
+use zakac_diagnostics::Level;
+use zakac_explorer::compile::Options;
+use zakac_explorer::compile::PartKind;
+use zakac_explorer::compile::Phase;
+use zakac_explorer::compile::Status;
+use zakac_explorer::compile::compile;
+use zakac_explorer::compile::samples::DIAGNOSTICS;
+use zakac_explorer::compile::samples::GROUPS;
+use zakac_explorer::compile::samples::SAMPLES;
+use zakac_explorer::compile::samples::find_sample;
+use zakac_rust_sugars::tern;
+
+#[test]
+fn all_samples_compile()
+{
+    for sample in SAMPLES
+    {
+        let out = compile(sample.text, &Options::default());
+        assert!(!out.tokens.is_empty(), "{}", sample.name);
+        assert_eq!(out.source, sample.text);
+    }
+}
+
+#[test]
+fn clean_groups_have_no_diagnostics()
+{
+    let clean = SAMPLES.iter().filter(|s| s.group != DIAGNOSTICS);
+    for sample in clean
+    {
+        let out = compile(sample.text, &Options::default());
+        assert!(out.checked, "{}", sample.path());
+        assert!(out.diagnostics.is_empty(), "{}: {:?}", sample.path(), out.diagnostics);
+    }
+}
+
+#[test]
+fn diagnostics_group_reports_errors()
+{
+    for sample in SAMPLES.iter().filter(|s| s.group == DIAGNOSTICS)
+    {
+        // The platform sample is clean at 64 bits on purpose.
+        let bits = tern!(sample.name == "platform_bits", 32, 64);
+        let options = Options::builder().platform_bits(bits).build();
+        let out = compile(sample.text, &options);
+        assert!(out.count(Level::Error) > 0, "{}", sample.path());
+    }
+}
+
+#[test]
+fn all_sample_files_are_listed()
+{
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../samples");
+    let mut on_disk = BTreeSet::new();
+    for group in GROUPS
+    {
+        let dir = std::fs::read_dir(root.join(group)).unwrap();
+        for item in dir
+        {
+            let path = item.unwrap().path();
+            assert_eq!(path.extension().and_then(|e| e.to_str()), Some("zaka"));
+            let stem = path.file_stem().unwrap().to_str().unwrap();
+            on_disk.insert(format!("{group}/{stem}"));
+        }
+    }
+    let listed: BTreeSet<String> = SAMPLES.iter().map(|s| s.path()).collect();
+    assert_eq!(on_disk, listed);
+    assert_eq!(listed.len(), SAMPLES.len(), "a path is listed twice");
+}
+
+#[test]
+fn token_ranges_cover_their_lexemes()
+{
+    // The samples are in normalized form, so the original text under each
+    // range is the lexeme the lexer saw.
+    for sample in SAMPLES
+    {
+        let out = compile(sample.text, &Options::default());
+        for token in &out.tokens
+        {
+            let text = &sample.text[token.range.lo as usize..token.range.hi as usize];
+            assert_eq!(text, token.lexeme, "{}", sample.name);
+        }
+    }
+}
+
+#[test]
+fn token_ranges_are_sorted_and_apart()
+{
+    let out =
+        compile(find_sample("basics/variables").unwrap().text, &Options::default());
+    let ranges = out.token_ranges();
+    assert!(ranges.windows(2).all(|w| w[0].hi <= w[1].lo));
+}
+
+#[test]
+fn clean_program_is_checked()
+{
+    let out =
+        compile(find_sample("basics/variables").unwrap().text, &Options::default());
+    assert!(out.checked);
+    assert_eq!(out.count(Level::Error), 0);
+    assert!(out.sexpr.starts_with("(program "));
+}
+
+#[test]
+fn lexer_errors_skip_the_check()
+{
+    let out = compile("က ; ခ", &Options::default());
+    assert!(!out.checked);
+    assert!(out.count(Level::Error) > 0);
+    let diag = &out.diagnostics[0];
+    assert_eq!(diag.code, "ZK0101");
+    let joined: String = diag.pieces.iter().map(|p| p.text.as_str()).collect();
+    assert!(joined.starts_with("error[ZK0101]"));
+    assert!(joined.contains("explorer.zaka:1:3"));
+}
+
+#[test]
+fn check_errors_are_reported()
+{
+    let out = compile("က ကို ပြသပါ။", &Options::default());
+    assert!(out.checked);
+    assert_eq!(out.diagnostics[0].code, "ZK0301");
+    assert_eq!(out.diagnostics[0].range.map(|r| r.lo), Some(0));
+}
+
+#[test]
+fn diagnostics_hold_their_phase()
+{
+    let lexer = compile("က ; ခ", &Options::default());
+    assert_eq!(lexer.diagnostics[0].code, "ZK0101");
+    assert_eq!(lexer.diagnostics[0].phase, Phase::Lex);
+    let check = compile("က ကို ပြသပါ။", &Options::default());
+    assert!(check.diagnostics.iter().all(|d| d.phase == Phase::Check));
+    let parser = compile(
+        find_sample("diagnostics/parser_errors").unwrap().text,
+        &Options::default(),
+    );
+    assert!(parser.diagnostics.iter().any(|d| d.phase == Phase::Parse));
+}
+
+#[test]
+fn phase_status_follows_the_diagnostics()
+{
+    let out = compile("က ကို ပြသပါ။", &Options::default());
+    assert_eq!(out.status(Phase::Segment), Status::Clean);
+    assert_eq!(out.status(Phase::Lex), Status::Clean);
+    assert_eq!(out.status(Phase::Parse), Status::Clean);
+    assert_eq!(out.status(Phase::Check), Status::Failed);
+}
+
+#[test]
+fn check_status_is_skipped_after_lexer_errors()
+{
+    let out = compile("က ; ခ", &Options::default());
+    assert_eq!(out.status(Phase::Lex), Status::Failed);
+    assert_eq!(out.status(Phase::Check), Status::Skipped);
+}
+
+#[test]
+fn blank_source_compiles()
+{
+    let out = compile("", &Options::default());
+    assert!(out.tokens.is_empty());
+    assert!(out.diagnostics.is_empty());
+    assert_eq!(out.tree.label, "program");
+}
+
+#[test]
+fn strings_show_their_value_in_pieces_and_their_source()
+{
+    let out = compile("\"က\\nခ\" ကို ပြသပါ။", &Options::default());
+    let row = &out.strings[0];
+    let pieces: Vec<(PartKind, &str)> =
+        row.value.iter().map(|p| (p.kind, p.text.as_str())).collect();
+    assert_eq!(
+        pieces,
+        [(PartKind::Text, "က"), (PartKind::Escape, "\\n"), (PartKind::Text, "ခ")]
+    );
+    assert_eq!(row.source, "\"က\\nခ\"");
+    let span = &out.source[row.range.lo as usize..row.range.hi as usize];
+    assert_eq!(span, row.source);
+}

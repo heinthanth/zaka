@@ -1,0 +1,93 @@
+// The program tree: open and shut nodes with guide lines, a label, the node
+// number, a cut of the source text and the kind chip.
+
+.tree
+  font-family: var(--mono-font)
+  font-size: calc(var(--code-size) - 2px)
+  line-height: 1.9
+
+.tree-node > summary,
+.tree-leaf
+  border-radius: 6px
+  padding: 0 6px
+
+.tree-node > summary
+  cursor: pointer
+  list-style: none
+
+  &::-webkit-details-marker
+    display: none
+
+  // A triangle drawn with borders: a char here would make the compiled
+  // sheet start with a BOM, which breaks its first rule.
+  &::before
+    content: ""
+    display: inline-block
+    width: 0
+    height: 0
+    margin: 0 7px 1px 2px
+    border-left: 5px solid var(--fg-muted)
+    border-top: 4px solid transparent
+    border-bottom: 4px solid transparent
+    vertical-align: middle
+    transition: rotate 140ms ease-out
+
+.tree-node[open] > summary::before
+  rotate: 90deg
+
+.tree-node > summary:hover,
+.tree-leaf:hover
+  background: var(--accent-soft)
+
+.tree-leaf
+  padding-left: 20px
+
+.tree-children
+  margin-left: 12px
+  padding-left: 10px
+  border-left: 1px solid var(--panel-border)
+
+.tree-label
+  color: var(--accent)
+  font-weight: 600
+  cursor: pointer
+
+  &:hover
+    text-decoration: underline
+
+.tree-id
+  margin-left: 6px
+  color: var(--fg-muted)
+  font-size: calc(var(--code-size) - 4px)
+
+// The source text stands back so the labels lead; a literal keeps its value
+// in the color the editor gives it.
+.tree-detail
+  margin-left: 8px
+  color: var(--fg-muted)
+
+.tree-value
+  font-weight: 500
+
+.tree-value-int,
+.tree-value-float
+  color: var(--tok-number)
+
+.tree-value-char,
+.tree-value-str
+  color: var(--tok-str)
+
+.tree-value-bool
+  color: var(--tok-kw)
+
+.tree-kind
+  margin-left: 8px
+  padding: 1px 8px
+  border-radius: 999px
+  font-size: calc(var(--code-size) - 4px)
+  color: var(--tok-number)
+  background: var(--chip)
+
+@media (prefers-reduced-motion: reduce)
+  .tree-node > summary::before
+    transition: none

@@ -54,7 +54,7 @@ fn blocks_accept_each_closer_spelling()
     for closer in ["ပြီးပါပြီ", "ပြီးပါပြီး", "ပြီးဆုံးပါပြီ", "ပြီးဆုံးပါပြီး"]
     {
         let text = format!("အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nက ကို ပြသပါ။\nလုပ်ဆောင်စရာများ {closer}။");
-        assert_eq!(stmt(&text), "{(print က)}", "{closer}");
+        assert_eq!(stmt(&text), "(block (print က))", "{closer}");
     }
 }
 
@@ -68,30 +68,31 @@ fn conditionals()
 သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ဝင်ခွင့်ပြုမည် ကို မှန် ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    let want = "(if (lt အသက် 18) {(set ဝင်ခွင့်ပြုမည် false)} (gt အသက် 60) {(print \"ok\")} \
-                else {(set ဝင်ခွင့်ပြုမည် true)})";
+    let want = "(if (lt အသက် 18) (block (set ဝင်ခွင့်ပြုမည် false)) (gt အသက် 60) (block \
+                (print \"ok\")) else (block (set ဝင်ခွင့်ပြုမည် true)))";
     assert_eq!(stmt(text), want);
     let then_is = "အကယ်၍ အသက် သည် ၁၈ အောက် မငယ်သည် ဖြစ်လျှင် က ကို ပြသပါ။";
-    assert_eq!(stmt(then_is), "(if (ge အသက် 18) {(print က)})");
+    assert_eq!(stmt(then_is), "(if (ge အသက် 18) (block (print က)))");
     let not = "အကယ်၍ ဝင်ခွင့်ပြုမည် မဟုတ်လျှင် လုပ်ဆောင်ချက် ပရိုဂရမ်ပိတ် ကို လုပ်ဆောင်ပါ။";
-    assert_eq!(stmt(not), "(if (not ဝင်ခွင့်ပြုမည်) {(call ပရိုဂရမ်ပိတ်)})");
+    assert_eq!(stmt(not), "(if (not ဝင်ခွင့်ပြုမည်) (block (call ပရိုဂရမ်ပိတ်)))");
 }
 
 #[test]
 fn loops()
 {
     let while_loop = "ကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ ကိန်း ကို ပြသပါ။";
-    assert_eq!(stmt(while_loop), "(while (lt ကိန်း 5) {(print ကိန်း)})");
+    assert_eq!(stmt(while_loop), "(while (lt ကိန်း 5) (block (print ကိန်း)))");
     let counted = "၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။";
-    assert_eq!(stmt(counted), "(count ကိန်း 1 10 count {(print ကိန်း)})");
+    assert_eq!(stmt(counted), "(count ကိန်း 1 10 count (block (print ကိန်း)))");
     let stepped = "၁၀ မှ ၀ အထိ ၂ စီ ကိန်း အနေဖြင့် လျှော့၍ ကိန်း ကို ပြသပါ။";
-    assert_eq!(stmt(stepped), "(count ကိန်း 10 0 step 2 down {(print ကိန်း)})");
+    assert_eq!(stmt(stepped), "(count ကိန်း 10 0 step 2 down (block (print ကိန်း)))");
     let generic = "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို \
                    လုပ်ဆောင်ပါ။
 ကိန်း ကို ပြသပါ။
 ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    let want = "(for ကိန်း isize 0 (lt ကိန်း 10) {(print ကိန်း)} then (set ကိန်း (+ ကိန်း 1)))";
+    let want =
+        "(for ကိန်း isize 0 (lt ကိန်း 10) (block (print ကိန်း)) then (set ကိန်း (+ ကိန်း 1)))";
     assert_eq!(stmt(generic), want);
 }
 
@@ -103,34 +104,39 @@ fn break_continue_and_return()
 အကယ်၍ ကိန်း သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။
 ပြန်ပေးပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    let want = "(count ကိန်း 1 100 count {(if (eq (% ကိန်း 2) 0) {(continue)}) (if (gt \
-                ကိန်း 10) {(break)}) (return)})";
+    let want = "(count ကိန်း 1 100 count (block (if (eq (% ကိန်း 2) 0) (block \
+                (continue))) (if (gt ကိန်း 10) (block (break))) (return)))";
     assert_eq!(stmt(text), want);
 }
 
 #[test]
 fn functions_and_calls()
 {
-    let text = "လုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ဆိုသည်မှာ
+    let text = "လုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်
 ကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး
-ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးပြီး
-ထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
 က + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    let want =
-        "(fn နှစ်ဆတိုးပြီးပေါင်း [isize က, isize ခ, isize ဂ] isize {(return (+ (+ က ခ) ဂ))})";
+    let want = "(fn နှစ်ဆတိုးပြီးပေါင်း [isize က, isize ခ, isize ဂ] isize (block (return (+ \
+                (+ က ခ) ဂ))))";
     assert_eq!(stmt(text), want);
-    let bare = "လုပ်ဆောင်ချက် နှုတ်ဆက် ဆိုသည်မှာ
-ထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+    let bare = "လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 \"မင်္ဂလာပါ\" ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    assert_eq!(stmt(bare), "(fn နှုတ်ဆက် [] - {(print \"မင်္ဂလာပါ\")})");
-    let one = "လုပ်ဆောင်ချက် f ဆိုသည်မှာ ကိန်းပြည့် က ကို လက်ခံပြီး ထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
+    assert_eq!(stmt(bare), "(fn နှုတ်ဆက် [] - (block (print \"မင်္ဂလာပါ\")))");
+    let one =
+        "လုပ်ဆောင်ချက် f သည် ကိန်းပြည့် က ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    assert_eq!(stmt(one), "(fn f [isize က] - (block))");
+    let ret = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း ရလဒ် ကို ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ \
+               ပြီးပါပြီ။";
+    assert_eq!(stmt(ret), "(fn f [] f64 (block))");
+    let and = "လုပ်ဆောင်ချက် f သည် ကိန်းပြည့် က၊ ကိန်းပြည့် ခ နှင့် စာလုံး ဂ တို့ကို လက်ခံပြီး အောက်ပါတို့ကို \
+               လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    assert_eq!(stmt(and), "(fn f [isize က, isize ခ, char ဂ] bool (block))");
+    let two = "လုပ်ဆောင်ချက် f သည် ကိန်းပြည့် က နှင့် ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
                လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
-    assert_eq!(stmt(one), "(fn f [isize က] - {})");
-    let ret = "လုပ်ဆောင်ချက် f ဆိုသည်မှာ ဒဿမကိန်း ရလဒ် ကို ပြန်ပေးပြီး ထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို \
-               လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
-    assert_eq!(stmt(ret), "(fn f [] f64 {})");
+    assert_eq!(stmt(two), "(fn f [isize က, isize ခ] - (block))");
     assert_eq!(stmt("လုပ်ဆောင်ချက် ပရိုဂရမ်ပိတ် ကို လုပ်ဆောင်ပါ။"), "(call ပရိုဂရမ်ပိတ်)");
     let args = "လုပ်ဆောင်ချက် ထုတ်ပြ ကို အသက်၊ အမည် တို့ဖြင့် လုပ်ဆောင်ပါ။";
     assert_eq!(stmt(args), "(call ထုတ်ပြ အသက် အမည်)");
@@ -164,9 +170,11 @@ fn statement_errors()
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(late), [Code::UpdateNotLast]);
     let nested_fn = "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် f ဆိုသည်မှာ ထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(nested_fn), [Code::NestedFunction]);
+    let no_result = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    assert_eq!(codes(no_result), [Code::ExpectedToken]);
     assert_eq!(codes("\"x\" ကို က ဟု ထားပါ။"), [Code::StrOutsidePrint]);
     assert_eq!(codes("၁ မှ ၁၀ အထိ ၁ + ၁ အနေဖြင့် ရေတွက်၍ က ကို ပြသပါ။"), [Code::ExpectedToken]);
 }
@@ -208,7 +216,7 @@ fn block_errors_do_not_leak()
     let out = parse_text(text);
     assert_eq!(out.diagnostics.len(), 1);
     let shown: Vec<String> = out.program.stmts.iter().map(ToSexpr::to_sexpr).collect();
-    assert_eq!(shown, ["{(print ခ)}", "(print ဂ)"]);
+    assert_eq!(shown, ["(block (print ခ))", "(print ဂ)"]);
 }
 
 #[test]

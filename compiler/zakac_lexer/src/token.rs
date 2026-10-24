@@ -3,6 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::AsRefStr;
 use strum::EnumString;
+use strum::IntoStaticStr;
 use zakac_diagnostics::Diagnostic;
 use zakac_span::span::Span;
 
@@ -21,9 +22,10 @@ pub struct Token
     pub joined: bool,
 }
 
-/// Kind of a [`Token`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// Kind of a [`Token`]; its static name is the snake case variant name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, IntoStaticStr)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum TokenKind
 {
     /// Identifier; the text comes from the span.
@@ -225,12 +227,8 @@ pub enum Kw
     ListKo,
     /// `တို့ဖြင့်`
     ListWith,
-    /// `ဆိုသည်မှာ`
-    DefinedAs,
     /// `လက်ခံပြီး`
     Accepting,
-    /// `ပြန်ပေးပြီး`
-    Returning,
     /// `မှ`
     From,
     /// `အထိ`
@@ -303,8 +301,8 @@ pub enum Kw
     Following,
     /// `လုပ်ဆောင်မည်`
     WillDo,
-    /// `ထိုလုပ်ဆောင်ချက်သည်`
-    ThatFunction,
+    /// `လုပ်ဆောင်ကာ`
+    DoAnd,
     /// `လုပ်ဆောင်စရာများ`
     Tasks,
     /// `ပြီး(ဆုံး)?ပါပြီ(း)?`
@@ -333,8 +331,10 @@ pub enum Kw
     ReturnValue,
     /// `အောက်ပါ တို့ကို လုပ်ဆောင်ပါ`
     BlockOpen,
-    /// `ထိုလုပ်ဆောင်ချက်သည် အောက်ပါ တို့ကို လုပ်ဆောင်မည်`
+    /// `အောက်ပါ တို့ကို လုပ်ဆောင်မည်`
     FnOpen,
+    /// `အောက်ပါ တို့ကို လုပ်ဆောင်ကာ`; a result clause follows.
+    FnOpenRet,
     /// `လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?`
     BlockClose,
 
@@ -345,6 +345,8 @@ pub enum Kw
     Assign,
     /// `ပြန်ပေးပါ`
     Return,
+    /// `ပြန်ပေးမည်`
+    WillReturn,
     /// `လုပ်ဆောင်ပါ`
     Call,
     /// `ဖြစ်ပါစေ`
@@ -441,9 +443,7 @@ impl Kw
                 | Kw::Pa
                 | Kw::ListKo
                 | Kw::ListWith
-                | Kw::DefinedAs
                 | Kw::Accepting
-                | Kw::Returning
                 | Kw::From
                 | Kw::To
                 | Kw::Step
@@ -482,8 +482,9 @@ impl Kw
 }
 
 /// Kind of a comment marker.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, IntoStaticStr)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum CommentKind
 {
     /// `//`

@@ -2,6 +2,8 @@ use termcolor::Buffer;
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Level;
+use zakac_reporter::render::Paint;
+use zakac_reporter::render::diagnostic_pieces;
 use zakac_reporter::render::format_diagnostic;
 use zakac_reporter::render::write_diagnostic;
 use zakac_reporter::render::write_diagnostics;
@@ -152,4 +154,15 @@ fn cell_counts()
     assert_eq!(char_cells('春'), 2);
     assert_eq!(str_cells("ကိန်းရှင်"), 5);
     assert_eq!(str_cells("ကျောင်း"), 6);
+}
+
+#[test]
+fn pieces_join_to_the_plain_text()
+{
+    let (sm, diag) = setup("ကိန်းရှင် ကျောင်း ။\n", "ကျောင်း");
+    let pieces = diagnostic_pieces(&sm, &diag);
+    let joined: String = pieces.iter().map(|piece| piece.text.as_str()).collect();
+    assert_eq!(joined, format_diagnostic(&sm, &diag));
+    assert_eq!(pieces[0].paint, Paint::Tag(Level::Error));
+    assert!(pieces.iter().any(|piece| piece.paint == Paint::Marked(Level::Error)));
 }

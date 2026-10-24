@@ -1,7 +1,7 @@
 # zakac-semcheck-artifact v1
 name:
   Custom: functions.zaka
-source: "လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ကို ၁၊ ၂၊ ၃ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\n\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ဆိုသည်မှာ\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး\nကိန်းပြည့် ရလဒ် ကို ပြန်ပေးပြီး\nထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို က * ၂ ဟု ထားပါ။\nခ ကို ခ * ၂ ဟု ထားပါ။\nဂ ကို ဂ * ၂ ဟု ထားပါ။\nက + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် ပျမ်းမျှ ဆိုသည်မှာ\n၃၂ ဘစ် ဒဿမကိန်း က၊ ၈ ဘစ် ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး\nဒဿမကိန်း ရလဒ် ကို ပြန်ပေးပြီး\nထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nရလဒ် ကို (က + ခ) / ၂ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် ဆိုသည်မှာ\nထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ကို ပြသပါ။\nပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n"
+source: "လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ကို ၁၊ ၂၊ ၃ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\n\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nက ကို က * ၂ ဟု ထားပါ။\nခ ကို ခ * ၂ ဟု ထားပါ။\nဂ ကို ဂ * ၂ ဟု ထားပါ။\nက + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် ပျမ်းမျှ သည်\n၃၂ ဘစ် ဒဿမကိန်း က၊ ၈ ဘစ် ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း ရလဒ် ကို ပြန်ပေးမည်။\nရလဒ် ကို (က + ခ) / ၂ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ကို ပြသပါ။\nပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n"
 program:
   stmts:
   - call:
@@ -70,61 +70,61 @@ program:
           bits: null
           signed: null
           span:
-            lo: 472
-            hi: 502
+            lo: 454
+            hi: 484
         name:
           name: က
           span:
-            lo: 503
-            hi: 506
+            lo: 485
+            hi: 488
         span:
-          lo: 472
-          hi: 506
+          lo: 454
+          hi: 488
       - kind:
           base: int
           bits: null
           signed: null
           span:
-            lo: 510
-            hi: 540
+            lo: 492
+            hi: 522
         name:
           name: ခ
           span:
-            lo: 541
-            hi: 544
+            lo: 523
+            hi: 526
         span:
-          lo: 510
-          hi: 544
+          lo: 492
+          hi: 526
       - kind:
           base: int
           bits: null
           signed: null
           span:
-            lo: 548
-            hi: 578
+            lo: 530
+            hi: 560
         name:
           name: ဂ
           span:
-            lo: 579
-            hi: 582
+            lo: 561
+            hi: 564
         span:
-          lo: 548
-          hi: 582
+          lo: 530
+          hi: 564
       ret:
         base: int
         bits: null
         signed: null
         span:
-          lo: 633
-          hi: 663
+          lo: 692
+          hi: 722
       block:
         stmts:
         - assign:
             target:
               name: က
               span:
-                lo: 862
-                hi: 865
+                lo: 780
+                hi: 783
             value:
               infix:
                 id: 7
@@ -134,8 +134,8 @@ program:
                     id: 5
                     name: က
                     span:
-                      lo: 876
-                      hi: 879
+                      lo: 794
+                      hi: 797
                 rhs:
                   int:
                     id: 6
@@ -144,20 +144,20 @@ program:
                     kind: null
                     script: burmese
                     span:
-                      lo: 882
-                      hi: 885
+                      lo: 800
+                      hi: 803
                 span:
-                  lo: 876
-                  hi: 885
+                  lo: 794
+                  hi: 803
             span:
-              lo: 862
-              hi: 911
+              lo: 780
+              hi: 829
         - assign:
             target:
               name: ခ
               span:
-                lo: 912
-                hi: 915
+                lo: 830
+                hi: 833
             value:
               infix:
                 id: 11
@@ -167,8 +167,8 @@ program:
                     id: 9
                     name: ခ
                     span:
-                      lo: 926
-                      hi: 929
+                      lo: 844
+                      hi: 847
                 rhs:
                   int:
                     id: 10
@@ -177,20 +177,20 @@ program:
                     kind: null
                     script: burmese
                     span:
-                      lo: 932
-                      hi: 935
+                      lo: 850
+                      hi: 853
                 span:
-                  lo: 926
-                  hi: 935
+                  lo: 844
+                  hi: 853
             span:
-              lo: 912
-              hi: 961
+              lo: 830
+              hi: 879
         - assign:
             target:
               name: ဂ
               span:
-                lo: 962
-                hi: 965
+                lo: 880
+                hi: 883
             value:
               infix:
                 id: 15
@@ -200,8 +200,8 @@ program:
                     id: 13
                     name: ဂ
                     span:
-                      lo: 976
-                      hi: 979
+                      lo: 894
+                      hi: 897
                 rhs:
                   int:
                     id: 14
@@ -210,14 +210,14 @@ program:
                     kind: null
                     script: burmese
                     span:
-                      lo: 982
-                      hi: 985
+                      lo: 900
+                      hi: 903
                 span:
-                  lo: 976
-                  hi: 985
+                  lo: 894
+                  hi: 903
             span:
-              lo: 962
-              hi: 1011
+              lo: 880
+              hi: 929
         - return:
             value:
               infix:
@@ -232,90 +232,90 @@ program:
                         id: 16
                         name: က
                         span:
-                          lo: 1012
-                          hi: 1015
+                          lo: 930
+                          hi: 933
                     rhs:
                       name:
                         id: 17
                         name: ခ
                         span:
-                          lo: 1018
-                          hi: 1021
+                          lo: 936
+                          hi: 939
                     span:
-                      lo: 1012
-                      hi: 1021
+                      lo: 930
+                      hi: 939
                 rhs:
                   name:
                     id: 19
                     name: ဂ
                     span:
-                      lo: 1024
-                      hi: 1027
+                      lo: 942
+                      hi: 945
                 span:
-                  lo: 1012
-                  hi: 1027
+                  lo: 930
+                  hi: 945
             span:
-              lo: 1012
-              hi: 1096
+              lo: 930
+              hi: 1014
         single: false
         span:
-          lo: 721
-          hi: 1179
+          lo: 615
+          hi: 1097
       span:
         lo: 346
-        hi: 1179
+        hi: 1097
   - fn:
       name:
         name: ပျမ်းမျှ
         span:
-          lo: 1221
-          hi: 1245
+          lo: 1139
+          hi: 1163
       params:
       - kind:
           base: float
           bits: 32
           signed: null
           span:
-            lo: 1274
-            hi: 1315
+            lo: 1174
+            hi: 1215
         name:
           name: က
           span:
-            lo: 1316
-            hi: 1319
+            lo: 1216
+            hi: 1219
         span:
-          lo: 1274
-          hi: 1319
+          lo: 1174
+          hi: 1219
       - kind:
           base: int
           bits: 8
           signed: null
           span:
-            lo: 1323
-            hi: 1367
+            lo: 1223
+            hi: 1267
         name:
           name: ခ
           span:
-            lo: 1368
-            hi: 1371
+            lo: 1268
+            hi: 1271
         span:
-          lo: 1323
-          hi: 1371
+          lo: 1223
+          hi: 1271
       ret:
         base: float
         bits: null
         signed: null
         span:
-          lo: 1422
-          hi: 1446
+          lo: 1399
+          hi: 1423
       block:
         stmts:
         - assign:
             target:
               name: ရလဒ်
               span:
-                lo: 1645
-                hi: 1657
+                lo: 1481
+                hi: 1493
             value:
               infix:
                 id: 27
@@ -332,21 +332,21 @@ program:
                             id: 22
                             name: က
                             span:
-                              lo: 1669
-                              hi: 1672
+                              lo: 1505
+                              hi: 1508
                         rhs:
                           name:
                             id: 23
                             name: ခ
                             span:
-                              lo: 1675
-                              hi: 1678
+                              lo: 1511
+                              hi: 1514
                         span:
-                          lo: 1669
-                          hi: 1678
+                          lo: 1505
+                          hi: 1514
                     span:
-                      lo: 1668
-                      hi: 1679
+                      lo: 1504
+                      hi: 1515
                 rhs:
                   int:
                     id: 26
@@ -355,27 +355,27 @@ program:
                     kind: null
                     script: burmese
                     span:
-                      lo: 1682
-                      hi: 1685
+                      lo: 1518
+                      hi: 1521
                 span:
-                  lo: 1668
-                  hi: 1685
+                  lo: 1504
+                  hi: 1521
             span:
-              lo: 1645
-              hi: 1711
+              lo: 1481
+              hi: 1547
         single: false
         span:
-          lo: 1504
-          hi: 1794
+          lo: 1322
+          hi: 1630
       span:
-        lo: 1181
-        hi: 1794
+        lo: 1099
+        hi: 1630
   - fn:
       name:
         name: နှုတ်ဆက်
         span:
-          lo: 1836
-          hi: 1860
+          lo: 1672
+          hi: 1696
       params: []
       ret: null
       block:
@@ -388,26 +388,26 @@ program:
                   - text: မင်္ဂလာပါ
                   value: မင်္ဂလာပါ
                 span:
-                  lo: 2030
-                  hi: 2059
+                  lo: 1790
+                  hi: 1819
             span:
-              lo: 2030
-              hi: 2088
+              lo: 1790
+              hi: 1848
         - return:
             value: null
             span:
-              lo: 2089
-              hi: 2119
+              lo: 1849
+              hi: 1879
         single: false
         span:
-          lo: 1889
-          hi: 2202
+          lo: 1707
+          hi: 1962
       span:
-        lo: 1796
-        hi: 2202
+        lo: 1632
+        hi: 1962
   span:
     lo: 0
-    hi: 2203
+    hi: 1963
 kinds:
   0: isize
   1: isize

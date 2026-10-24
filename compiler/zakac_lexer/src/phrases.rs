@@ -8,8 +8,10 @@ use crate::token::TokenKind;
 /// the pieces does not matter.
 #[rustfmt::skip]
 pub static PHRASES: &[(&[Kw], Kw)] = &[
-    // ထိုလုပ်ဆောင်ချက်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-    (&[Kw::ThatFunction, Kw::Following, Kw::ListKo, Kw::WillDo], Kw::FnOpen),
+    // လုပ်ဆောင်ချက် ... သည် ... အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+    (&[Kw::Following, Kw::ListKo, Kw::WillDo], Kw::FnOpen),
+    // လုပ်ဆောင်ချက် ... သည် ... အောက်ပါတို့ကို လုပ်ဆောင်ကာ ... ရလဒ် ကို ပြန်ပေးမည်။
+    (&[Kw::Following, Kw::ListKo, Kw::DoAnd], Kw::FnOpenRet),
     // အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
     (&[Kw::Following, Kw::ListKo, Kw::Call], Kw::BlockOpen),
     // ... ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။

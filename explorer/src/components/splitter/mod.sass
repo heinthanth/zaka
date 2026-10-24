@@ -1,0 +1,59 @@
+// A bar between two panes: it fills the gap between the cards and shows a
+// small grip that lights up on hover, on focus and while it is dragged.
+
+.splitter
+  position: relative
+  z-index: 2
+  touch-action: none
+  outline: none
+
+  &::after
+    content: ""
+    position: absolute
+    top: 50%
+    left: 50%
+    translate: -50% -50%
+    border-radius: 999px
+    background: var(--panel-border)
+    transition: background-color 120ms ease-out, scale 160ms ease-out
+
+  &:hover::after,
+  &:focus-visible::after,
+  &.splitter-active::after
+    background: var(--accent)
+
+.splitter-vertical
+  cursor: col-resize
+
+  &::after
+    width: 4px
+    height: 36px
+
+  &:hover::after,
+  &.splitter-active::after
+    scale: 1 1.6
+
+.splitter-horizontal
+  cursor: row-resize
+
+  &::after
+    width: 36px
+    height: 4px
+
+  &:hover::after,
+  &.splitter-active::after
+    scale: 1.6 1
+
+// A splitter with nothing to resize, such as over a shut problems panel.
+.splitter-off
+  visibility: hidden
+  pointer-events: none
+
+// The panes stack on narrow screens and keep their own heights.
+@media (max-width: 900px)
+  .splitter
+    display: none
+
+@media (prefers-reduced-motion: reduce)
+  .splitter::after
+    transition: none
