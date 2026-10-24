@@ -3,3 +3,8 @@
 .zed
 .DS_Store
 target
+.env*
+!.env.example
+explorer/dist
+explorer/target
+explorer/assets/fonts/PDA10BurmeseMono-Regular.ttf

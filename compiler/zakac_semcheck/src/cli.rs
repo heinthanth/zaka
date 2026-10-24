@@ -5,6 +5,7 @@ use zakac_cli_common::artifact_output::output_format_from_matches;
 use zakac_cli_common::artifact_output::resolve_artifact_output;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::Arg;
+use zakac_cli_common::clap::ArgAction;
 use zakac_cli_common::clap::ArgMatches;
 use zakac_cli_common::clap::crate_name;
 use zakac_cli_common::clap_utils::CommandInfo;
@@ -35,6 +36,7 @@ use crate::semcheck::SemcheckOptions;
 const SEMCHECK_RAW_EXTENSION: &str = ".zksem";
 const SEMCHECK_TEXT_EXTENSION: &str = ".zksemt";
 const PLATFORM_BITS_ARG: &str = "platform_bits";
+const STRICT_PARTICLES_ARG: &str = "strict_particles";
 /// Bit counts the platform-sized integer kinds can have.
 const PLATFORM_WIDTHS: &[&str] = &["8", "16", "32", "64", "128"];
 
@@ -61,7 +63,12 @@ fn configure_semcheck_command(cmd: clap::Command) -> clap::Command
         .help(t!("semcheck.platform_bits"))
         .value_parser(PLATFORM_WIDTHS.to_vec())
         .default_value("64");
-    attach_common_io_args(cmd).arg(platform_bits).about(t!("semcheck.about"))
+    let strict = Arg::new(STRICT_PARTICLES_ARG)
+        .long("strict-particles")
+        .help(t!("semcheck.strict_particles"))
+        .action(ArgAction::SetTrue);
+    #[rustfmt::skip]
+    return attach_common_io_args(cmd).arg(platform_bits).arg(strict).about(t!("semcheck.about"));
 }
 
 /// The check options from the command line.
@@ -77,7 +84,8 @@ fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
 {
     let bits = matches.get_one::<String>(PLATFORM_BITS_ARG);
     let bits = bits.and_then(|b| b.parse().ok()).unwrap_or(64);
-    SemcheckOptions::builder().platform_bits(bits).build()
+    let strict = matches.get_flag(STRICT_PARTICLES_ARG);
+    SemcheckOptions::builder().platform_bits(bits).strict_particles(strict).build()
 }
 
 impl Command for ZakacSemcheck

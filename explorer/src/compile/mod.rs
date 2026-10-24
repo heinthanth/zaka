@@ -20,6 +20,8 @@ use zakac_lexer::token::Punct;
 use zakac_lexer::token::StrPart;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
+use zakac_naturalness::NaturalnessOptions;
+use zakac_naturalness::check;
 use zakac_parser::parser::parse;
 use zakac_reporter::render::Piece;
 use zakac_reporter::render::diagnostic_pieces;
@@ -34,8 +36,8 @@ use zakac_span::source_map::SourceMap;
 use zakac_span::span::Span;
 
 pub mod graph;
+pub mod s_expr;
 pub mod samples;
-pub mod sexpr;
 pub mod spans;
 pub mod tree;
 
@@ -454,15 +456,18 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     let checked = !has_errors(&lexed.diagnostics) && !has_errors(&parsed.diagnostics);
     let check_options =
         SemcheckOptions::builder().platform_bits(options.platform_bits).build();
+    let idiom = NaturalnessOptions::default();
+    let mut idiom = tern!(checked, check(&parsed.program, &idiom), Vec::new());
     let out = tern!(
         checked,
         semcheck(&parsed.program, &check_options),
         SemcheckOutput::default()
     );
+    idiom.extend(out.diagnostics.iter().cloned());
     let tagged = [
         (Phase::Lex, &lexed.diagnostics),
         (Phase::Parse, &parsed.diagnostics),
-        (Phase::Check, &out.diagnostics),
+        (Phase::Check, &idiom),
     ];
     let diagnostics = tagged
         .iter()

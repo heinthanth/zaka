@@ -1,7 +1,7 @@
 # zakac-lex-artifact v1
 name:
   Custom: invalid.zaka
-source: "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၈ဘစ် ဖြစ်ပါစေ။\nက၊ ခ, ဂ\n\"unterminated\n'ab' ကို ပြသပါ။\n\"{မသိ}\" ကို ပြသပါ။\n`raw\n၁၂.34 ; ?\n"
+source: "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၈ဘစ် ဖြစ်ပါစေ။\nက၊ ခ, ဂ\n\"unterminated\n'ab' ကို ပြသပါ။\n\"{မသိ}\" ဟု ပြသပါ။\n`raw\n၁၂.34 ; ?\n"
 tokens:
 - kind:
     kw: var
@@ -112,30 +112,30 @@ tokens:
   particle: none
   joined: false
 - kind:
-    kw: ko
+    kw: hu
   span:
     lo: 195
-    hi: 204
+    hi: 201
   particle: none
   joined: false
 - kind:
     kw: print
   span:
-    lo: 205
-    hi: 220
+    lo: 202
+    hi: 217
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 220
-    hi: 223
+    lo: 217
+    hi: 220
   particle: none
   joined: true
 - kind: raw_ident
   span:
-    lo: 224
-    hi: 228
+    lo: 221
+    hi: 225
   particle: none
   joined: false
 - kind:
@@ -145,14 +145,14 @@ tokens:
       has_exponent: false
       has_letters: false
   span:
-    lo: 229
-    hi: 238
+    lo: 226
+    hi: 235
   particle: none
   joined: false
 - kind: eof
   span:
-    lo: 243
-    hi: 243
+    lo: 240
+    hi: 240
   particle: none
   joined: false
 comments: []
@@ -203,27 +203,27 @@ diagnostics:
   level: error
   message: raw identifier is missing its closing backtick before the end of the line
   span:
-    lo: 224
-    hi: 228
+    lo: 221
+    hi: 225
   help: null
 - code: ZK0103
   level: error
   message: Burmese and Western digits cannot be mixed in one number
   span:
-    lo: 229
-    hi: 238
+    lo: 226
+    hi: 235
   help: null
 - code: ZK0101
   level: error
   message: invalid character in ";"
   span:
-    lo: 239
-    hi: 240
+    lo: 236
+    hi: 237
   help: null
 - code: ZK0101
   level: error
   message: invalid character in "?"
   span:
-    lo: 241
-    hi: 242
+    lo: 238
+    hi: 239
   help: null

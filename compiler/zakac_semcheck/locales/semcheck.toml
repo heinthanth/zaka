@@ -6,6 +6,9 @@ en = "Check names, scopes and data kinds of a parsed program."
 [semcheck.platform_bits]
 en = "Bit width of the platform-sized integer kinds."
 
+[semcheck.strict_particles]
+en = "Report particle idiom warnings as errors."
+
 [semcheck.want.number]
 en = "a number"
 

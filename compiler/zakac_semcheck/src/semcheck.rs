@@ -49,6 +49,9 @@ pub struct SemcheckOptions
     /// Bit count of the platform-sized integer kinds.
     #[builder(default = 64)]
     pub platform_bits: u16,
+    /// Report particle idiom warnings as errors.
+    #[builder(default)]
+    pub strict_particles: bool,
 }
 
 impl Default for SemcheckOptions

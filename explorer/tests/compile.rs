@@ -37,6 +37,19 @@ fn clean_groups_have_no_diagnostics()
 }
 
 #[test]
+fn particle_warnings_belong_to_the_check_stage()
+{
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
+    let out = compile(text, &Options::default());
+    assert!(out.checked);
+    assert_eq!(out.count(Level::Warning), 1);
+    let row = out.diagnostics.iter().find(|d| d.level == Level::Warning).unwrap();
+    assert_eq!(row.phase, Phase::Check);
+    assert_eq!(row.code, "ZK0505");
+    assert_eq!(out.status(Phase::Check), Status::Warned);
+}
+
+#[test]
 fn diagnostics_group_reports_errors()
 {
     for sample in SAMPLES.iter().filter(|s| s.group == DIAGNOSTICS)

@@ -1,7 +1,7 @@
 # zakac-parse-artifact v1
 name:
   Custom: literals.zaka
-source: "၁၀ ကို ပြသပါ။\n16 ကို ပြသပါ။\nကိန်းပြည့် ၁၀ ကို ပြသပါ။\nလက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၁၈ ကို ပြသပါ။\nအခြေ ၂ ဖြင့် ၁၀ ကို ပြသပါ။\nအခြေ ၂ ဖြင့် ၈ ဘစ် ကိန်းပြည့် ၁၁၁၁၁၁၁၀ ကို ပြသပါ။\nအခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF ကို ပြသပါ။\n၁၂.၃၄ ကို ပြသပါ။\n-၁၁.၁၁ ကို ပြသပါ။\n100e+10 ကို ပြသပါ။\n၃၂ ဘစ် ဒဿမကိန်း ၁၀ ကို ပြသပါ။\n'春' ကို ပြသပါ။\n\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ကို ပြသပါ။\nမှန်ပါသည် ကို ပြသပါ။\n`ကို ပြသပါ` ကို ပြသပါ။\n"
+source: "၁၀ ကို ပြသပါ။\n16 ကို ပြသပါ။\nကိန်းပြည့် ၁၀ ကို ပြသပါ။\nလက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၁၈ ကို ပြသပါ။\nအခြေ ၂ ဖြင့် ၁၀ ကို ပြသပါ။\nအခြေ ၂ ဖြင့် ၈ ဘစ် ကိန်းပြည့် ၁၁၁၁၁၁၁၀ ကို ပြသပါ။\nအခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF ကို ပြသပါ။\n၁၂.၃၄ ကို ပြသပါ။\n-၁၁.၁၁ ကို ပြသပါ။\n100e+10 ကို ပြသပါ။\n၃၂ ဘစ် ဒဿမကိန်း ၁၀ ကို ပြသပါ။\n'春' ကို ပြသပါ။\n\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ဟု ပြသပါ။\nမှန်ပါသည် ဟု ပြသပါ။\n`ကို ပြသပါ` ကို ပြသပါ။\n"
 program:
   stmts:
   - print:
@@ -16,6 +16,7 @@ program:
             span:
               lo: 0
               hi: 6
+      slot: ko
       span:
         lo: 0
         hi: 35
@@ -31,6 +32,7 @@ program:
             span:
               lo: 36
               hi: 38
+      slot: ko
       span:
         lo: 36
         hi: 67
@@ -52,6 +54,7 @@ program:
             span:
               lo: 68
               hi: 105
+      slot: ko
       span:
         lo: 68
         hi: 134
@@ -73,6 +76,7 @@ program:
             span:
               lo: 135
               hi: 214
+      slot: ko
       span:
         lo: 135
         hi: 243
@@ -88,6 +92,7 @@ program:
             span:
               lo: 244
               hi: 283
+      slot: ko
       span:
         lo: 244
         hi: 312
@@ -109,6 +114,7 @@ program:
             span:
               lo: 313
               hi: 415
+      slot: ko
       span:
         lo: 313
         hi: 444
@@ -130,6 +136,7 @@ program:
             span:
               lo: 445
               hi: 556
+      slot: ko
       span:
         lo: 445
         hi: 585
@@ -143,6 +150,7 @@ program:
             span:
               lo: 586
               hi: 599
+      slot: ko
       span:
         lo: 586
         hi: 628
@@ -163,6 +171,7 @@ program:
             span:
               lo: 629
               hi: 643
+      slot: ko
       span:
         lo: 629
         hi: 672
@@ -176,6 +185,7 @@ program:
             span:
               lo: 673
               hi: 680
+      slot: ko
       span:
         lo: 673
         hi: 709
@@ -195,6 +205,7 @@ program:
             span:
               lo: 710
               hi: 758
+      slot: ko
       span:
         lo: 710
         hi: 787
@@ -207,6 +218,7 @@ program:
             span:
               lo: 788
               hi: 793
+      slot: ko
       span:
         lo: 788
         hi: 822
@@ -220,9 +232,10 @@ program:
           span:
             lo: 823
             hi: 902
+      slot: hu
       span:
         lo: 823
-        hi: 931
+        hi: 928
   - print:
       value:
         expr:
@@ -232,11 +245,12 @@ program:
             particle: pa_thi
             next: other
             span:
-              lo: 932
-              hi: 959
+              lo: 929
+              hi: 956
+      slot: hu
       span:
-        lo: 932
-        hi: 988
+        lo: 929
+        hi: 982
   - print:
       value:
         expr:
@@ -244,12 +258,13 @@ program:
             id: 14
             name: ကို ပြသပါ
             span:
-              lo: 989
-              hi: 1016
+              lo: 983
+              hi: 1010
+      slot: ko
       span:
-        lo: 989
-        hi: 1045
+        lo: 983
+        hi: 1039
   span:
     lo: 0
-    hi: 1046
+    hi: 1040
 diagnostics: []

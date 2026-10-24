@@ -62,6 +62,7 @@ program:
                   span:
                     lo: 270
                     hi: 285
+            slot: ko
             span:
               lo: 270
               hi: 314
@@ -255,6 +256,7 @@ program:
                   span:
                     lo: 960
                     hi: 975
+            slot: ko
             span:
               lo: 960
               hi: 1004
@@ -313,6 +315,7 @@ program:
                   span:
                     lo: 1190
                     hi: 1205
+            slot: ko
             span:
               lo: 1190
               hi: 1234
@@ -419,6 +422,7 @@ program:
                   span:
                     lo: 1551
                     hi: 1566
+            slot: ko
             span:
               lo: 1551
               hi: 1595

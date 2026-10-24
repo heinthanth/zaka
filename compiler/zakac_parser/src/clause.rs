@@ -434,12 +434,13 @@ impl Parser<'_>
         ret_if!(!rest.is_empty(), Err(self.dangling(rest, tok)));
         let stop = self.expect_stop()?;
         let span = args[0].operand.span().to(&stop.span);
+        let slot = args[0].slot.map_or(Slot::Ko, |(slot, _)| slot);
         let mut args = args.into_iter().map(into_expr);
         let first = args.next().expect("statement verbs take operands");
         match verb.op
         {
             VerbOp::Assign => self.assign_stmt(first, args.next(), span),
-            VerbOp::Print => Ok(print_stmt(first, span)),
+            VerbOp::Print => Ok(print_stmt(first, slot, span)),
             _ =>
             {
                 Ok(Stmt::Return(ReturnStmt::builder().value(first).span(span).build()))
@@ -543,12 +544,14 @@ impl Parser<'_>
 /// # Arguments
 ///
 /// * `value` - The printed value.
+/// * `slot` - The particle written after it.
 /// * `span` - The statement.
 ///
 /// # Returns
 ///
 /// The statement.
-fn print_stmt(value: Expr, span: Span) -> Stmt
+fn print_stmt(value: Expr, slot: Slot, span: Span) -> Stmt
 {
-    Stmt::Print(PrintStmt::builder().value(PrintArg::Expr(value)).span(span).build())
+    let value = PrintArg::Expr(value);
+    Stmt::Print(PrintStmt::builder().value(value).slot(slot).span(span).build())
 }

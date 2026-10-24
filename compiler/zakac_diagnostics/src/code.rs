@@ -17,7 +17,7 @@ macro_rules! define_codes {
 /// artifacts as its id.
 ///
 /// Ids are `ZK` plus four digits; the first two give the phase:
-/// `01` lexer, `02` parser, `03` resolve, `04` kinds.
+/// `01` lexer, `02` parser, `03` resolve, `04` kinds, `05` naturalness.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Code { $($(#[$meta])* $name,)+ }
 
@@ -173,7 +173,23 @@ ShiftTooFar = ("ZK0407", Level::Error),
 /// A conversion between two kinds is not allowed.
 InvalidCast = ("ZK0408", Level::Error),
 /// A counted-loop step is not positive.
-StepNotPositive = ("ZK0409", Level::Error) }
+StepNotPositive = ("ZK0409", Level::Error),
+/// A negative verb before `သို့မဟုတ်` carries `သည်`.
+NegativeBeforeOr = ("ZK0501", Level::Warning),
+/// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.
+ParticleBeforeAttached = ("ZK0502", Level::Warning),
+/// `မဟုတ်` carries `သည်`.
+NotWithThi = ("ZK0503", Level::Warning),
+/// A verb before `ဖြစ်၍` carries `ပါ`.
+PaBeforeAnd = ("ZK0504", Level::Warning),
+/// A sentence or a string is printed with `ကို`.
+PrintSentenceWithKo = ("ZK0505", Level::Warning),
+/// A plain value is printed with `ဟု`.
+PrintValueWithHu = ("ZK0506", Level::Warning),
+/// Parentheses around an expression that stands alone in its place.
+RedundantGroup = ("ZK0507", Level::Warning),
+/// A clause used as a value ends in `ပါ`.
+PaInValue = ("ZK0508", Level::Warning) }
 
 impl Code
 {

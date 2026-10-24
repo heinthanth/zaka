@@ -435,3 +435,77 @@ en = "loop step is not positive"
 en = "the step of a counted loop must be positive"
 [codes.ZK0409.explain]
 en = """The step gives the distance the loop variable moves in each round. The direction comes from \"ရေတွက်၍\", \"တိုး၍\", or \"လျှော့၍\", so the step itself must be greater than zero."""
+
+# ---------------------------------------------------------- naturalness ZK05xx
+
+[codes.ZK0501.title]
+en = "negative verb before \"သို့မဟုတ်\" takes \"ပါ\""
+[codes.ZK0501.message]
+en = "\"%{v}သည်\" before \"သို့မဟုတ်\" reads better as \"%{v}ပါ\""
+[codes.ZK0501.help]
+en = "write \"%{v}ပါ သို့မဟုတ် ...\""
+[codes.ZK0501.explain]
+en = """A negative verb (\"မညီ\", \"မကြီး\", \"မငယ်\", \"မမှန်\", \"မဟုတ်\") that is followed with \"သို့မဟုတ်\" carries the particle \"ပါ\" in natural Burmese, not \"သည်\". The program still runs; this is a matter of idiom. The strict-particles flag turns it into an error."""
+
+[codes.ZK0502.title]
+en = "particle before an attached \"လျှင်\" or \"နေသရွေ့\""
+[codes.ZK0502.message]
+en = "\"%{v}%{p}\" before \"%{n}\" reads better without the particle"
+[codes.ZK0502.help]
+en = "write \"%{v}%{n}\", or keep the particle and write \"ဖြစ်%{n}\""
+[codes.ZK0502.explain]
+en = """The attached forms \"လျှင်\" and \"နေသရွေ့\" join straight onto the verb: \"မငယ်လျှင်\", \"ကြီးနေသရွေ့\". A sentence-final particle between them is unidiomatic. To keep the particle, use the \"ဖြစ်\" forms instead: \"မငယ်သည် ဖြစ်လျှင်\", \"ကြီးသည် ဖြစ်နေသရွေ့\"."""
+
+[codes.ZK0503.title]
+en = "\"မဟုတ်\" with \"သည်\""
+[codes.ZK0503.message]
+en = "\"မဟုတ်%{p}\" reads better as \"မဟုတ်ပါ\" or \"မဟုတ်\""
+[codes.ZK0503.help]
+en = "write \"မဟုတ်ပါ\" or \"မဟုတ်\""
+[codes.ZK0503.explain]
+en = """The postfix negation \"မဟုတ်\" takes \"ပါ\" or no particle at all. \"မဟုတ်သည်\" and \"မဟုတ်ပါသည်\" are grammatical but unidiomatic."""
+
+[codes.ZK0504.title]
+en = "\"ပါ\" before \"ဖြစ်၍\""
+[codes.ZK0504.message]
+en = "\"%{v}%{p}\" before \"ဖြစ်၍\" reads better as \"%{v}သည်\""
+[codes.ZK0504.help]
+en = "write \"%{v}သည် ဖြစ်၍ ...\""
+[codes.ZK0504.explain]
+en = """Before the conjunction \"ဖြစ်၍\" (logical and) a verb carries \"သည်\": \"အသက် သည် ၁၈ အောက် မငယ်သည် ဖြစ်၍ ...\". The \"ပါ\" forms belong before \"သို့မဟုတ်\" and at the end of a quoted sentence."""
+
+[codes.ZK0505.title]
+en = "sentence printed with \"ကို\""
+[codes.ZK0505.message]
+en = "a sentence or a string is quoted with \"ဟု\", not marked with \"ကို\""
+[codes.ZK0505.help]
+en = "write \"... ဟု ပြသပါ။\""
+[codes.ZK0505.explain]
+en = """\"ကို\" marks a thing: a name, a number, an arithmetic result. A whole sentence, such as a comparison that ends in \"သည်\" or \"ပါ\", and a string literal are quoted with \"ဟု\" instead: \"(အသက် သည် ၃၀ နှင့် မညီပါ) ဟု ပြသပါ။\", \"\\\"မင်္ဂလာပါ\\\" ဟု ပြသပါ။\". A bare clause with no particle keeps \"ကို\"."""
+
+[codes.ZK0506.title]
+en = "value printed with \"ဟု\""
+[codes.ZK0506.message]
+en = "a plain value is marked with \"ကို\", not quoted with \"ဟု\""
+[codes.ZK0506.help]
+en = "write \"... ကို ပြသပါ။\""
+[codes.ZK0506.explain]
+en = """\"ဟု\" quotes a sentence or a string. A name, a number, an arithmetic result or a bare clause with no sentence-final particle is a thing, and a thing is marked with \"ကို\": \"အသက် ကို ပြသပါ။\"."""
+
+[codes.ZK0507.title]
+en = "redundant parentheses"
+[codes.ZK0507.message]
+en = "these parentheses are not needed"
+[codes.ZK0507.help]
+en = "remove the parentheses"
+[codes.ZK0507.explain]
+en = """The parenthesized expression is the whole operand of its place: the printed value, the assigned value, the returned value, an initial value, a loop bound, a call argument, or a condition. Such an operand is read as far as it goes, so the parentheses change nothing. Parentheses are needed around a logical expression (\"ဖြစ်၍\", \"သို့မဟုတ်\", \"မဟုတ်\") in an operand place, and inside an operator chain or a clause with more operands; the check leaves those alone."""
+
+[codes.ZK0508.title]
+en = "\"ပါ\" on a clause used as a value"
+[codes.ZK0508.message]
+en = "\"%{v}%{p}\" as a value reads better as \"%{v}သည်\""
+[codes.ZK0508.help]
+en = "write \"... %{v}သည်\""
+[codes.ZK0508.explain]
+en = """A clause that gives a value, as an initial value, a returned value, a call argument or a loop bound, names a fact rather than stating a sentence, so its closing verb carries \"သည်\": \"အမှတ် သည် ၄၀ အောက် မငယ်သည် ဖြစ်ပါစေ။\". The \"ပါ\" forms belong to quoted sentences (\"... ဟု ပြသပါ\", \"... ဟု ထားပါ\") and before \"သို့မဟုတ်\"."""

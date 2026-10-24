@@ -10,9 +10,9 @@ use leptos_scoped_style::scss_file;
 use strum::IntoEnumIterator;
 use zakac_i18n::t;
 
-use crate::compile::sexpr::Chunk;
-use crate::compile::sexpr::SEXPR_WIDTH;
-use crate::compile::sexpr::arrange;
+use crate::compile::s_expr::Chunk;
+use crate::compile::s_expr::SEXPR_WIDTH;
+use crate::compile::s_expr::arrange;
 use crate::components::graph_view::graph_view;
 use crate::components::scope::ScopedSheet;
 use crate::components::scope::scoped;

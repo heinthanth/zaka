@@ -2,6 +2,7 @@ pub mod code;
 pub mod diagnostic;
 pub mod kinds;
 pub mod lexer;
+pub mod naturalness;
 pub mod parser;
 pub mod resolve;
 

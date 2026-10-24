@@ -13,6 +13,7 @@ program:
             span:
               lo: 480
               hi: 483
+      slot: ko
       span:
         lo: 480
         hi: 512
@@ -50,7 +51,7 @@ diagnostics:
   help: join the two comparisons with "ဖြစ်၍", or put the inner one in parentheses
 - code: ZK0206
   level: error
-  message: "\"ပြသပါ\" needs \"ကို\" after operand 1, found no particle"
+  message: "\"ပြသပါ\" needs \"ကို|ဟု\" after operand 1, found no particle"
   span:
     lo: 206
     hi: 227

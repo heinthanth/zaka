@@ -116,7 +116,7 @@ fn raw_identifiers()
 #[test]
 fn literals_in_the_token_stream()
 {
-    let kinds = kinds("\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ကို ပြသပါ။");
+    let kinds = kinds("\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ဟု ပြသပါ။");
     assert_eq!(kinds[0], TokenKind::Str(0));
     assert_eq!(kinds.len(), 4);
     assert_eq!(super_kind("`a b`"), TokenKind::RawIdent);
@@ -138,6 +138,6 @@ fn lexing_resumes_after_unterminated_string()
 #[test]
 fn quotes_inside_strings_do_not_open_literals()
 {
-    let kinds = kinds(r#""it's `x`" ကို ပြသပါ။"#);
+    let kinds = kinds(r#""it's `x`" ဟု ပြသပါ။"#);
     assert_eq!(kinds.len(), 4);
 }

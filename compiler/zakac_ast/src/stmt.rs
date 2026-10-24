@@ -8,6 +8,7 @@ use zakac_span::span::Span;
 use crate::expr::Expr;
 use crate::expr::Ident;
 use crate::kind::Kind;
+use crate::verb::Slot;
 
 /// A whole source file: its top-level statements in order.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
@@ -108,6 +109,8 @@ pub struct PrintStmt
 {
     /// The printed operand.
     pub value: PrintArg,
+    /// The particle written after the operand: `ကို` or `ဟု`.
+    pub slot: Slot,
     /// Source region.
     pub span: Span,
 }

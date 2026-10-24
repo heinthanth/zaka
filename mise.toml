@@ -49,13 +49,13 @@ description = "Check the compiler explorer for the wasm target"
 
 [tasks."font:secret"]
 run = "age-keygen"
-description = "Print a new age secret for ZAKA_PDA_FONT_KEY"
+description = "Print a new age secret for ZAKA_PDA_FONT_SECRET"
 
 [tasks."font:seal"]
 dir = "explorer/assets/fonts"
 run = """
-: "${ZAKA_PDA_FONT_KEY:?set ZAKA_PDA_FONT_KEY in .env first}"
-recipient=$(printf '%s\n' "$ZAKA_PDA_FONT_KEY" | age-keygen -y)
+: "${ZAKA_PDA_FONT_SECRET:?set ZAKA_PDA_FONT_SECRET in .env first}"
+recipient=$(printf '%s\n' "$ZAKA_PDA_FONT_SECRET" | age-keygen -y)
 age -r "$recipient" -o PDA10BurmeseMono-Regular.ttf.age PDA10BurmeseMono-Regular.ttf
 """
-description = "Seal the PDA10 font for the repo with ZAKA_PDA_FONT_KEY"
+description = "Seal the PDA10 font for the repo with ZAKA_PDA_FONT_SECRET"

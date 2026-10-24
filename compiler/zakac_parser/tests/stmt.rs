@@ -6,6 +6,7 @@ use common::stmt;
 use common::stmts;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::Stmt;
+use zakac_ast::verb::Slot;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::Code;
 
@@ -14,9 +15,26 @@ fn print_statements()
 {
     assert_eq!(stmt("အသက် ကို ပြသပါ။"), "(print အသက်)");
     assert_eq!(stmt("အသက် + ၁ ကို ပြသပါ။"), "(print (+ အသက် 1))");
-    assert_eq!(stmt("\"မင်္ဂလာပါ\" ကို ပြသပါ။"), "(print \"မင်္ဂလာပါ\")");
+    assert_eq!(stmt("\"မင်္ဂလာပါ\" ဟု ပြသပါ။"), "(print \"မင်္ဂလာပါ\")");
     let logical = "(အသက် သည် ၁၈ အောက် ငယ်သည် မဟုတ်) ကို ပြသပါ။";
     assert_eq!(stmt(logical), "(print [(not (lt အသက် 18))])");
+    let quoted = "(အသက် သည် ၁၈ အောက် ငယ်သည်) ဟု ပြသပါ။";
+    assert_eq!(stmt(quoted), "(print [(lt အသက် 18)])");
+    assert_eq!(stmt("\"x\" ကို ပြသပါ။"), "(print \"x\")");
+}
+
+#[test]
+fn print_records_its_particle()
+{
+    let slot = |text: &str| match stmts(text).remove(0)
+    {
+        Stmt::Print(p) => p.slot,
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(slot("အသက် ကို ပြသပါ။"), Slot::Ko);
+    assert_eq!(slot("အသက် ဟု ပြသပါ။"), Slot::Hu);
+    assert_eq!(slot("\"x\" ကို ပြသပါ။"), Slot::Ko);
+    assert_eq!(slot("\"x\" ဟု ပြသပါ။"), Slot::Hu);
 }
 
 #[test]
@@ -64,7 +82,7 @@ fn conditionals()
     let text = "အကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ဝင်ခွင့်ပြုမည် ကို မမှန် ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-ထိုသို့မဟုတ်ဘဲ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ကို ပြသပါ။
+ထိုသို့မဟုတ်ဘဲ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသပါ။
 သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ဝင်ခွင့်ပြုမည် ကို မှန် ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
@@ -122,7 +140,7 @@ fn functions_and_calls()
     assert_eq!(stmt(text), want);
     let bare = "လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-\"မင်္ဂလာပါ\" ကို ပြသပါ။
+\"မင်္ဂလာပါ\" ဟု ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     assert_eq!(stmt(bare), "(fn နှုတ်ဆက် [] - (block (print \"မင်္ဂလာပါ\")))");
     let one =
@@ -176,6 +194,7 @@ fn statement_errors()
     let no_result = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(no_result), [Code::ExpectedToken]);
     assert_eq!(codes("\"x\" ကို က ဟု ထားပါ။"), [Code::StrOutsidePrint]);
+    assert_eq!(codes("\"x\" ဟု ထားပါ။"), [Code::StrOutsidePrint]);
     assert_eq!(codes("၁ မှ ၁၀ အထိ ၁ + ၁ အနေဖြင့် ရေတွက်၍ က ကို ပြသပါ။"), [Code::ExpectedToken]);
 }
 

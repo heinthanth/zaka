@@ -7,7 +7,7 @@ use zakac_diagnostics::Code;
 /// A function without parameters or result.
 const GREET: &str = "လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-\"hi\" ကို ပြသပါ။
+\"hi\" ဟု ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 ";
 

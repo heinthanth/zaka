@@ -48,6 +48,10 @@ pub enum NextCtx
     While,
     /// `ဖြစ်နေသရွေ့`
     WhileIs,
+    /// `ဖြစ်၍` or `&&`
+    And,
+    /// `)`
+    Close,
 }
 
 /// An expression.

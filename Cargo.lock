@@ -4580,6 +4580,7 @@ dependencies = [
  "zakac_diagnostics",
  "zakac_i18n",
  "zakac_lexer",
+ "zakac_naturalness",
  "zakac_parser",
  "zakac_reporter",
  "zakac_rust_sugars",
@@ -4630,6 +4631,19 @@ dependencies = [
  "zakac_reporter",
  "zakac_rust_sugars",
  "zakac_session",
+ "zakac_span",
+]
+
+[[package]]
+name = "zakac_naturalness"
+version = "0.1.0"
+dependencies = [
+ "bon",
+ "zakac_ast",
+ "zakac_diagnostics",
+ "zakac_lexer",
+ "zakac_parser",
+ "zakac_rust_sugars",
  "zakac_span",
 ]
 
@@ -4695,6 +4709,7 @@ dependencies = [
  "zakac_host_errors",
  "zakac_i18n",
  "zakac_lexer",
+ "zakac_naturalness",
  "zakac_parser",
  "zakac_reporter",
  "zakac_rust_sugars",

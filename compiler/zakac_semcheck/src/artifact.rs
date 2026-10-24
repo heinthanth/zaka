@@ -14,6 +14,7 @@ use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
+use zakac_naturalness::NaturalnessOptions;
 use zakac_parser::parser::parse;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -65,7 +66,8 @@ pub struct Checked
 ///
 /// # Returns
 ///
-/// The tree, the kinds and the diagnostics.
+/// The tree, the kinds and the diagnostics, the particle idiom warnings
+/// included.
 pub fn run_phases(
     source: &SourceFile, lexer: &LexerOptions, options: &SemcheckOptions,
 ) -> Checked
@@ -75,6 +77,10 @@ pub fn run_phases(
     let mut diagnostics = lexed.diagnostics;
     diagnostics.extend(parsed.diagnostics);
     let failed = has_errors(&diagnostics);
+    let idiom = NaturalnessOptions::builder().strict(options.strict_particles).build();
+    let idiom =
+        tern!(failed, Vec::new(), zakac_naturalness::check(&parsed.program, &idiom));
+    diagnostics.extend(idiom);
     let out =
         tern!(failed, SemcheckOutput::default(), semcheck(&parsed.program, options));
     diagnostics.extend(out.diagnostics);

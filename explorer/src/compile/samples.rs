@@ -20,22 +20,15 @@ impl Sample
     pub fn path(&self) -> String { format!("{}/{}", self.group, self.name) }
 }
 
+/// The path of a sample file, relative to this source file.
+#[rustfmt::skip]
+macro_rules! sample_path { ($group:literal, $name:literal) => {
+concat!("../../../samples/", $group, "/", $name, ".zaka") }; }
+
 /// Embed a file of the `samples` folder at the repo root.
-macro_rules! sample {
-    ($group:literal, $name:literal) => {
-        Sample {
-            group: $group,
-            name: $name,
-            text: include_str!(concat!(
-                "../../../samples/",
-                $group,
-                "/",
-                $name,
-                ".zaka"
-            )),
-        }
-    };
-}
+#[rustfmt::skip]
+macro_rules! sample { ($group:literal, $name:literal) => {
+Sample { group: $group, name: $name, text: include_str!(sample_path!($group, $name)) } };}
 
 /// The group of the samples that are meant to report errors.
 pub const DIAGNOSTICS: &str = "diagnostics";
@@ -45,6 +38,7 @@ pub const GROUPS: &[&str] =
     &["basics", "control", "functions", "programs", DIAGNOSTICS];
 
 /// The samples, in picker order.
+#[rustfmt::skip]
 pub const SAMPLES: &[Sample] = &[
     sample!("basics", "hello"),
     sample!("basics", "variables"),
@@ -82,8 +76,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("diagnostics", "lexer_errors"),
     sample!("diagnostics", "parser_errors"),
     sample!("diagnostics", "check_errors"),
-    sample!("diagnostics", "platform_bits"),
-];
+    sample!("diagnostics", "platform_bits"),];
 
 /// The sample shown when the page opens without a link.
 ///

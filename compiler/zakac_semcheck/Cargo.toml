@@ -19,6 +19,7 @@ zakac_diagnostics = { workspace = true }
 zakac_host_errors = { workspace = true }
 zakac_i18n = { workspace = true }
 zakac_lexer = { workspace = true }
+zakac_naturalness = { workspace = true }
 zakac_parser = { workspace = true }
 zakac_reporter = { workspace = true }
 zakac_rust_sugars = { workspace = true }

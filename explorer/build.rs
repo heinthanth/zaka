@@ -6,7 +6,7 @@ use std::str::FromStr;
 const SEALED: &str = "assets/fonts/PDA10BurmeseMono-Regular.ttf.age";
 
 /// Env var with the age secret that opens [`SEALED`].
-const KEY_VAR: &str = "ZAKA_PDA_FONT_KEY";
+const SECRET_VAR: &str = "ZAKA_PDA_FONT_SECRET";
 
 /// Cfg set when the code font is part of the build.
 const FONT_CFG: &str = "pda10";
@@ -18,18 +18,18 @@ fn main()
 {
     cargo_build::rerun_if_changed!("{SEALED}");
     cargo_build::rerun_if_changed!("src/font/mask.rs");
-    cargo_build::rerun_if_env_changed!("{KEY_VAR}");
+    cargo_build::rerun_if_env_changed!("{SECRET_VAR}");
     // `scss_file!` reads the Sass sheets inside a macro, so cargo cannot see
     // them; a rerun here makes an edit to a sheet rebuild the crate.
     cargo_build::rerun_if_changed!("src");
     cargo_build::rerun_if_changed!("locales");
     cargo_build::rustc_check_cfg!(FONT_CFG);
-    let secret = std::env::var(KEY_VAR).ok().filter(|s| !s.trim().is_empty());
+    let secret = std::env::var(SECRET_VAR).ok().filter(|s| !s.trim().is_empty());
     let Some(secret) = secret
     else
     {
         cargo_build::warning!(
-            "{KEY_VAR} is not set; building without PDA10 Burmese Mono"
+            "{SECRET_VAR} is not set; building without PDA10 Burmese Mono"
         );
         return write_font(Vec::new());
     };
@@ -52,11 +52,11 @@ fn main()
 fn open_font(secret: &str) -> Vec<u8>
 {
     let opener = age::x25519::Identity::from_str(secret.trim())
-        .unwrap_or_else(|err| panic!("{KEY_VAR} is not an age secret: {err}"));
+        .unwrap_or_else(|err| panic!("{SECRET_VAR} is not an age secret: {err}"));
     let sealed = std::fs::read(SEALED)
         .unwrap_or_else(|err| panic!("cannot read {SEALED}: {err}"));
     age::decrypt(&opener, &sealed)
-        .unwrap_or_else(|err| panic!("{KEY_VAR} does not open {SEALED}: {err}"))
+        .unwrap_or_else(|err| panic!("{SECRET_VAR} does not open {SEALED}: {err}"))
 }
 
 /// Write the masked code font to `$OUT_DIR/code_font.bin`.

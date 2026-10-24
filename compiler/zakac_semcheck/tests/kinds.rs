@@ -103,9 +103,9 @@ fn platform_width_comes_from_the_options()
 #[test]
 fn conditions_are_booleans()
 {
-    assert_eq!(codes("အကယ်၍ ၁ ဖြစ်လျှင် \"x\" ကို ပြသပါ။"), [Code::ConditionNotBool]);
-    ok("အကယ်၍ ၁ သည် ၂ အောက် ငယ်လျှင် \"x\" ကို ပြသပါ။");
-    ok("အကယ်၍ မှန် မဟုတ်လျှင် \"x\" ကို ပြသပါ။");
+    assert_eq!(codes("အကယ်၍ ၁ ဖြစ်လျှင် \"x\" ဟု ပြသပါ။"), [Code::ConditionNotBool]);
+    ok("အကယ်၍ ၁ သည် ၂ အောက် ငယ်လျှင် \"x\" ဟု ပြသပါ။");
+    ok("အကယ်၍ မှန် မဟုတ်လျှင် \"x\" ဟု ပြသပါ။");
 }
 
 #[test]

@@ -19,6 +19,7 @@ use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StrArg;
 use zakac_ast::stmt::WhileStmt;
+use zakac_ast::verb::Slot;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
 use zakac_lexer::token::Kw;
@@ -141,7 +142,7 @@ impl Parser<'_>
         Err(diag::expected_stmt_verb(self.peek().span, &self.found()))
     }
 
-    /// Parse `"..." ကို ပြသပါ။`.
+    /// Parse `"..." (ကို|ဟု) ပြသပါ။`.
     ///
     /// # Returns
     ///
@@ -149,8 +150,13 @@ impl Parser<'_>
     fn parse_print_str(&mut self) -> PResult<Stmt>
     {
         let tok = self.peek();
-        let printed = self.peek_n(1).kind == TokenKind::Kw(Kw::Ko)
-            && self.peek_n(2).kind == TokenKind::Kw(Kw::Print);
+        let slot = match self.peek_n(1).kind
+        {
+            TokenKind::Kw(Kw::Ko) => Slot::Ko,
+            TokenKind::Kw(Kw::Hu) => Slot::Hu,
+            _ => return Err(diag::str_outside_print(tok.span)),
+        };
+        let printed = self.peek_n(2).kind == TokenKind::Kw(Kw::Print);
         ret_if!(!printed, Err(diag::str_outside_print(tok.span)));
         let TokenKind::Str(idx) = self.bump().kind
         else
@@ -163,7 +169,7 @@ impl Parser<'_>
         let lit = self.strings[idx as usize].clone();
         let arg = PrintArg::Str(StrArg::builder().lit(lit).span(tok.span).build());
         let span = tok.span.to(&stop.span);
-        Ok(Stmt::Print(PrintStmt::builder().value(arg).span(span).build()))
+        Ok(Stmt::Print(PrintStmt::builder().value(arg).slot(slot).span(span).build()))
     }
 
     /// Parse `နေသရွေ့ <block>` after the condition of a while loop.

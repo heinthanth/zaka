@@ -1,9 +1,9 @@
 use zakac_explorer::compile::Options;
 use zakac_explorer::compile::compile;
+use zakac_explorer::compile::s_expr::Ink;
+use zakac_explorer::compile::s_expr::SEXPR_WIDTH;
+use zakac_explorer::compile::s_expr::arrange;
 use zakac_explorer::compile::samples::SAMPLES;
-use zakac_explorer::compile::sexpr::Ink;
-use zakac_explorer::compile::sexpr::SEXPR_WIDTH;
-use zakac_explorer::compile::sexpr::arrange;
 
 /// The laid-out text.
 fn text(flat: &str, width: usize) -> String

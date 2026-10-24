@@ -2,6 +2,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::AsRefStr;
 use zakac_lexer::token::Kw;
+use zakac_rust_sugars::ret_true;
 
 /// Direction of a shift.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -48,6 +49,9 @@ pub enum Slot
     /// accepts both.
     #[strum(serialize = "ဘယ်သို့|ညာသို့ ... ဘစ်")]
     Bit(Dir),
+    /// `ကို` or `ဟု`; listed as a wanted slot, never carried.
+    #[strum(serialize = "ကို|ဟု")]
+    KoOrHu,
     /// `<kind> အဖြစ်`
     #[strum(serialize = "... အဖြစ်")]
     KindAhpjit,
@@ -64,10 +68,13 @@ impl Slot
     ///
     /// # Returns
     ///
-    /// `true` when the two match; shift slots match in either direction.
+    /// `true` when the two match; shift slots match in either direction, and
+    /// `ကို` or `ဟု` fills a slot that lists both.
     pub fn fills(self, want: Slot) -> bool
     {
-        matches!((self, want), (Slot::Bit(_), Slot::Bit(_))) || self == want
+        ret_true!(matches!((self, want), (Slot::Bit(_), Slot::Bit(_))));
+        ret_true!(matches!((self, want), (Slot::Ko | Slot::Hu, Slot::KoOrHu)));
+        self == want
     }
 }
 
@@ -172,7 +179,7 @@ pub static VERBS: &[Verb] = &[
     row(Kw::Less, VerbOp::Lt, LESS, false, true),
     row(Kw::NotLess, VerbOp::Ge, LESS, false, true),
     row(Kw::Convert, VerbOp::Cast, &[Slot::Ko, Slot::KindAhpjit], false, false),
-    row(Kw::Print, VerbOp::Print, &[Slot::Ko], true, false),
+    row(Kw::Print, VerbOp::Print, &[Slot::KoOrHu], true, false),
     row(Kw::Assign, VerbOp::Assign, &[Slot::Ko, Slot::Hu], true, false),
     row(Kw::ReturnValue, VerbOp::Return, &[Slot::Ko], true, false),
 ];

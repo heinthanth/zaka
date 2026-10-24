@@ -74,6 +74,26 @@ fn diagnostics_go_to_stderr_and_fail()
 }
 
 #[test]
+fn particle_warnings_do_not_fail()
+{
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
+    let (code, stdout, stderr) = run_cli(&[], text);
+    assert_eq!(code, ExitCode::Success);
+    assert!(stdout.starts_with(TEXT_HEADER));
+    assert!(stderr.starts_with("warning[ZK0505]"), "{stderr}");
+    assert!(!stderr.contains("error["), "{stderr}");
+}
+
+#[test]
+fn strict_particles_fail()
+{
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
+    let (code, _stdout, stderr) = run_cli(&["--strict-particles"], text);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stderr.starts_with("error[ZK0505]"), "{stderr}");
+}
+
+#[test]
 fn parser_errors_stop_the_check()
 {
     let (code, _stdout, stderr) = run_cli(&[], "က ကို ကို ပြသပါ။\nခ ကို ပြသပါ။");
