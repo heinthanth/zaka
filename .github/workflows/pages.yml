@@ -1,0 +1,78 @@
+name: Web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to main supersedes a build still in flight.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  pages:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://zaka-lang.org
+    env:
+      ZAKA_PDA_FONT_SECRET: ${{ secrets.ZAKA_PDA_FONT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      # The same pins as the Dockerfiles.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk@0.22.0,cargo-leptos@0.3.11
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/trunk
+            ~/.cache/cargo-leptos
+          key: web-tools-${{ hashFiles('Cargo.lock', '**/Trunk.toml') }}
+          restore-keys: web-tools-
+
+      - name: Fetch the motion libraries
+        working-directory: crates/zaka_website/vendor
+        run: trunk build --release
+
+      - name: Build the website
+        run: |
+          cargo leptos build --project zaka_website --release
+          LEPTOS_OUTPUT_NAME=zaka_website LEPTOS_SITE_ROOT=target/website \
+            LEPTOS_SITE_PKG_DIR=pkg LEPTOS_HASH_FILES=true ZAKA_WEBSITE_ONCE=1 \
+            target/release/zaka_website
+
+      - name: Build the explorer
+        working-directory: crates/zakac_explorer
+        run: >
+          trunk build --release --locked --cargo-profile wasm-release
+          --public-url /explorer/
+
+      - name: Join the site
+        run: |
+          mkdir -p dist
+          cp -R target/website/. dist/
+          cp -R crates/zakac_explorer/dist dist/explorer
+          cp -R target/vendor dist/vendor
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >
+            pages deploy dist --project-name=zaka --branch=main
+            --commit-dirty=true
