@@ -1,0 +1,163 @@
+// The parts the views share: notes and titles over the tables, the phase
+// tables and their cells, the ops of a function, and the card of a phase
+// that did not run. One sheet, its classes renamed after a hash; the views
+// take the names from `table::ClassName`.
+
+.view-note
+  margin: 0 0 12px
+  color: var(--fg-muted)
+  line-height: 1.5
+
+.view-note-warn
+  color: var(--diag-warning)
+
+.table-title
+  margin: 22px 0 8px
+  font-size: 11px
+  font-weight: 600
+  letter-spacing: 0.06em
+  text-transform: uppercase
+  color: var(--fg-muted)
+
+.phase-table
+  width: 100%
+  border-collapse: separate
+  border-spacing: 0
+  font-family: var(--mono-font)
+  font-size: calc(var(--code-size) - 2px)
+
+  th
+    position: sticky
+    top: -12px
+    z-index: 1
+    text-align: left
+    font-family: var(--ui-font)
+    font-size: 11px
+    font-weight: 600
+    letter-spacing: 0.06em
+    text-transform: uppercase
+    color: var(--fg-muted)
+    background: var(--panel)
+    border-bottom: 1px solid var(--panel-border)
+    padding: 8px 8px
+
+  td
+    padding: 3px 8px
+    border-bottom: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent)
+    vertical-align: middle
+
+  tbody tr
+    cursor: pointer
+    transition: background-color 100ms ease-out
+
+    &:hover,
+    &.row-active
+      background: var(--accent-soft)
+
+    &.row-active td:first-child
+      box-shadow: inset 3px 0 0 var(--accent)
+
+// Number columns line up on the right, head included.
+.cell-num,
+.phase-table th.cell-num
+  color: var(--fg-muted)
+  text-align: right
+  width: 3em
+  font-variant-numeric: tabular-nums
+
+.cell-kind
+  white-space: nowrap
+
+.cell-detail
+  color: var(--fg-muted)
+
+.cell-lexeme
+  font-size: var(--code-size)
+  white-space: pre-wrap
+  overflow-wrap: anywhere
+
+.cell-span
+  white-space: nowrap
+  font-variant-numeric: tabular-nums
+
+.span-pos
+  margin-right: 6px
+
+.span-range
+  color: var(--fg-muted)
+
+// The note of a phase that did not run: an icon, the reason and the fix.
+.skipped
+  display: grid
+  justify-items: center
+  gap: 6px
+  max-width: 340px
+  text-align: center
+
+.skipped-icon
+  --icon-size: 26px
+  display: grid
+  place-items: center
+  width: 52px
+  height: 52px
+  margin-bottom: 6px
+  border-radius: 50%
+  color: var(--diag-warning)
+  background: color-mix(in srgb, var(--diag-warning) 14%, transparent)
+
+.skipped-title
+  margin: 0
+  font-size: 15px
+  font-weight: 600
+  color: var(--fg)
+
+.skipped-note
+  margin: 0
+  font-size: 13px
+  line-height: 1.5
+  color: var(--fg-muted)
+
+// The ops of a function: the marked op (the next one to run) stands out in
+// the warning color, and the gutter holds a dot per break point. After the
+// phase table, so the marked row wins over hover.
+.asm-table
+  .cell-label
+    width: 4em
+    color: var(--accent)
+    white-space: nowrap
+
+  .cell-op
+    white-space: nowrap
+
+  tbody tr.row-pc
+    background: color-mix(in srgb, var(--diag-warning) 22%, transparent)
+
+    td:first-child
+      box-shadow: inset 3px 0 0 var(--diag-warning)
+
+  .cell-break,
+  th.cell-break
+    width: 26px
+    padding: 0 0 0 6px
+
+.break-dot
+  display: block
+  width: 12px
+  height: 12px
+  padding: 0
+  border-radius: 50%
+  border: 1px solid transparent
+  background: transparent
+  cursor: pointer
+  outline: none
+  transition: background-color 100ms ease-out, border-color 100ms ease-out
+
+  &:hover
+    border-color: color-mix(in srgb, var(--diag-error) 60%, transparent)
+
+  &:focus-visible
+    box-shadow: 0 0 0 3px var(--accent-soft)
+
+.break-on
+  background: var(--diag-error)
+  border-color: var(--diag-error)

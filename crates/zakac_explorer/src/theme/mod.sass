@@ -1,0 +1,27 @@
+// Page rules of the explorer. The color tokens, the font variables, the icon
+// size, the scroll bars and the entrance frames come from the shared sheet of
+// `zaka_web_ui_common`.
+
+html,
+body
+  margin: 0
+  height: 100%
+  background: var(--canvas)
+  color: var(--fg)
+  font-family: var(--ui-font)
+  font-size: 14px
+  -webkit-font-smoothing: antialiased
+
+// While a splitter is dragged the cursor holds over the whole page and no
+// text gets selected.
+html[data-resizing]
+  user-select: none
+
+  *
+    user-select: none
+
+html[data-resizing="vertical"] *
+  cursor: col-resize !important
+
+html[data-resizing="horizontal"] *
+  cursor: row-resize !important

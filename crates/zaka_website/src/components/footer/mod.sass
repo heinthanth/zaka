@@ -1,0 +1,59 @@
+// The footer: one gold field. Notes at the top, and a row of links and
+// rights at the foot.
+
+.footer
+  display: flex
+  flex-direction: column
+  gap: 64px
+  padding: 40px var(--margin) 32px
+  color: var(--on-gold)
+  background: var(--gold)
+
+  a
+    color: inherit
+
+  a:focus-visible
+    outline: 2px solid currentColor
+    outline-offset: 4px
+
+.footer-top
+  display: flex
+  justify-content: space-between
+  gap: 32px
+  font-size: var(--step-note)
+
+.footer-notes
+  display: grid
+  gap: 6px
+  max-width: 62ch
+
+  code
+    font-size: var(--step-note)
+
+.footer-back
+  flex: none
+
+.footer-meta
+  display: grid
+  grid-template-columns: auto auto
+  justify-content: space-between
+  align-items: start
+  gap: 32px
+  font-size: var(--step-note)
+
+.footer-links
+  display: flex
+  gap: 20px
+
+
+.footer-rights
+  white-space: nowrap
+
+@media (max-width: 760px)
+  .footer-top
+    flex-direction: column
+
+  .footer-meta
+    grid-template-columns: minmax(0, 1fr)
+    gap: 14px
+

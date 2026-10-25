@@ -1,0 +1,195 @@
+// The hero: plumeria blossoms on a clear sky under a veil of the page color, as tall
+// as the text on it and its padding, not the whole screen; over it, on the
+// left, a line of Zaka that writes itself out syllable after syllable, a
+// sentence and the link to the explorer. It takes the colors of the theme:
+// cream in a light one, dark in a dark one.
+
+.hero
+  // The backdrop: how far the photograph is blurred, and how thick the scrim
+  // over it is at the left edge, the middle and the right edge, and at the
+  // foot, from 0 (clear) to 1 (the ground alone). At the foot the scrim is
+  // the ground alone, so the hero runs into the section under it with no
+  // seam; it then thins out up to the fade height.
+  // The middle stop sits at its own place along the slant. A light theme
+  // veils the pale sky in cream, so its scrim is thinner past the text and
+  // on the right; the dark themes set their own in `dark-backdrop`.
+  --backdrop-blur: 0px
+  --backdrop-left: 1
+  --backdrop-middle: 0.9
+  --backdrop-middle-at: 30%
+  --backdrop-right: 0.15
+  --backdrop-bottom: 1
+  --backdrop-fade: 60%
+  // The slant of the scrim from left to right: 90deg is upright; past it the
+  // edge leans, so the photograph shows more at the foot than by the line of
+  // Zaka at the top.
+  --backdrop-angle: 50deg
+  // Where the photograph starts, from the left edge; it fades in from there,
+  // so the blossoms stand in the right part, clear of the scrim by the text.
+  --backdrop-start: 35%
+  // The room above and below the text, which sets the height of the hero.
+  // The top adds the height of the header bar, so the bar never covers the
+  // text; the foot adds a strip for the photo credit.
+  --hero-room: clamp(56px, 7.9vw, 150px)
+  // When the writing starts, and the time between two syllables.
+  --type-start: 600ms
+  --type-step: 85ms
+  position: relative
+  isolation: isolate
+  overflow: hidden
+  display: flex
+  flex-direction: column
+  justify-content: center
+  padding: calc(var(--bar-height) + var(--hero-room)) var(--margin) calc(var(--hero-room) + 24px)
+  color: var(--fg)
+  background: var(--panel)
+
+// The scrim of the dark themes: thicker past the text and on the right, so
+// the bright sky does not glare on the dark ground.
+=dark-backdrop
+  --backdrop-middle: 1
+  --backdrop-middle-at: 45%
+  --backdrop-right: 0.4
+
+// The dark themes, picked as the token sheet picks them.
+html[data-theme="dark"],
+html[data-theme="frappe"],
+html[data-theme="macchiato"],
+html[data-theme="mocha"]
+  .hero
+    +dark-backdrop
+
+@media (prefers-color-scheme: dark)
+  html:not([data-theme]) .hero
+    +dark-backdrop
+
+// The photograph settles into place, and a scrim, darkest on the side of the
+// text, holds it back.
+// It reaches past the edges by a few times the blur, so the blur leaves no
+// pale rim.
+.hero-backdrop
+  position: absolute
+  inset: calc(var(--backdrop-blur) * -4)
+  z-index: -1
+
+  img
+    width: calc(100% - var(--backdrop-start))
+    height: 100%
+    margin-left: var(--backdrop-start)
+    object-fit: cover
+    object-position: 50% 25%
+    mask-image: linear-gradient(90deg, transparent, #000 30%)
+    filter: blur(var(--backdrop-blur))
+    animation: hero-settle 2400ms cubic-bezier(0.2, 0.8, 0.2, 1) both
+
+  &::after
+    content: ""
+    position: absolute
+    inset: 0
+    background: linear-gradient(0deg, color-mix(in srgb, var(--panel) calc(var(--backdrop-bottom) * 100%), transparent) 0%, color-mix(in srgb, var(--panel) calc(var(--backdrop-bottom) * 100%), transparent) 6%, color-mix(in srgb, var(--panel) calc(var(--backdrop-bottom) * 50%), transparent) calc(var(--backdrop-fade) * 0.4), transparent var(--backdrop-fade)), linear-gradient(var(--backdrop-angle), color-mix(in srgb, var(--panel) calc(var(--backdrop-left) * 100%), transparent) 0%, color-mix(in srgb, var(--panel) calc(var(--backdrop-middle) * 100%), transparent) var(--backdrop-middle-at), color-mix(in srgb, var(--panel) calc(var(--backdrop-right) * 100%), transparent) 100%)
+
+@keyframes hero-settle
+  from
+    opacity: 0
+    scale: 1.08
+
+.hero-main
+  display: grid
+  justify-items: start
+  max-width: 960px
+
+// The line of Zaka, in the code face.
+.hero-line
+  margin: 0
+  font-family: var(--mono-font)
+  font-size: clamp(32px, 5.2vw, 76px)
+  font-weight: 500
+  line-height: 1.5
+  white-space: pre-wrap
+
+// The string in the accent of the theme, which a light theme darkens to read
+// on cream.
+.hero-string
+  color: var(--accent)
+
+// Each syllable stands hidden till its turn: the delay grows with its place
+// in the line. Where `display` cannot be animated, the whole line shows.
+.hero-key,
+.hero-string
+  animation: hero-typed 1ms steps(1, end) both
+  animation-delay: calc(var(--type-start) + var(--i) * var(--type-step))
+
+@keyframes hero-typed
+  from
+    display: none
+
+  to
+    display: inline
+
+.hero-caret
+  display: inline-block
+  width: 0.08em
+  height: 1em
+  margin-left: 0.08em
+  vertical-align: -0.12em
+  background: var(--accent)
+  animation: hero-blink 1050ms steps(1, end) infinite
+
+@keyframes hero-blink
+  50%
+    opacity: 0
+
+.hero-lede
+  max-width: 52ch
+  margin: 40px 0 0
+  font-size: 19px
+  line-height: 1.55
+  color: color-mix(in srgb, var(--fg) 82%, transparent)
+
+.hero-actions
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 16px 32px
+  margin-top: 36px
+
+.hero .hero-action
+  min-height: 56px
+  padding: 0 28px
+  color: var(--on-gold)
+  background: var(--gold)
+
+// Where the photograph comes from, small in the corner.
+.hero-credit
+  position: absolute
+  right: var(--margin)
+  bottom: 20px
+  margin: 0
+  font-size: 12px
+  color: var(--fg-muted)
+
+  a
+    color: inherit
+
+@media (max-width: 640px)
+  .hero-lede
+    margin-top: 32px
+    font-size: var(--step-note)
+
+  .hero-actions
+    flex-direction: column
+    align-items: stretch
+    width: 100%
+
+  .hero .hero-action
+    justify-content: center
+
+  .hero-credit
+    left: var(--margin)
+
+@media (prefers-reduced-motion: reduce)
+  .hero-backdrop img,
+  .hero-key,
+  .hero-string,
+  .hero-caret
+    animation: none

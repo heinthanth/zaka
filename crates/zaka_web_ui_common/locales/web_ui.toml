@@ -1,0 +1,51 @@
+_version = 2
+
+# ---------------------------------------------------------------- settings
+
+[web_ui.settings.title]
+en = "Settings"
+[web_ui.settings.close_label]
+en = "Close settings"
+[web_ui.modal.close]
+en = "Close"
+[web_ui.settings.appearance]
+en = "Appearance"
+[web_ui.settings.theme]
+en = "Theme"
+[web_ui.settings.theme_note]
+en = "Colors of the page and its code."
+[web_ui.settings.ui_font]
+en = "UI font"
+[web_ui.settings.ui_font_note]
+en = "Font of menus, labels and other interface text."
+[web_ui.settings.code_font]
+en = "Code font"
+[web_ui.settings.code_font_note]
+en = "Font of code: the editor, the tables and the trees."
+[web_ui.settings.code_size]
+en = "Code size"
+[web_ui.settings.code_size_note]
+en = "Size of code text, in px."
+[web_ui.settings.code_size_choice]
+en = "%{n} px"
+[web_ui.settings.italic_comments]
+en = "Italic comments"
+[web_ui.settings.italic_comments_note]
+en = "Draws comments in italics."
+
+[web_ui.lang.name]
+en = "Language"
+[web_ui.lang.auto]
+en = "Auto (browser)"
+
+[web_ui.theme.auto]
+en = "Auto (OS)"
+
+[web_ui.face.native]
+en = "OS default"
+[web_ui.face.group.interface]
+en = "Interface"
+[web_ui.face.group.burmese]
+en = "Burmese"
+[web_ui.face.group.latin]
+en = "Latin"

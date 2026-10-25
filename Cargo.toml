@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["compiler/*", "explorer"]
+members = ["compiler/*", "crates/*"]
 default-members = ["compiler/zakac"]
 
 [workspace.package]
@@ -8,6 +8,7 @@ edition = "2024"
 
 [workspace.dependencies]
 age = "0.12"
+axum = "0.8"
 base64 = "0.23.1"
 bon = "3.10.1"
 cargo-build = { version = "1.0.0", features = ["macros"] }
@@ -16,8 +17,12 @@ clap = { version = "4.6.7", features = ["cargo"] }
 codee = "0.3.5"
 console_error_panic_hook = "0.1.7"
 const_for = "0.1.6"
+grass = "0.13.4"
 js-sys = "0.3.105"
-leptos = { version = "0.8.22", features = ["csr"] }
+leptos = "0.8.22"
+leptos_axum = "0.8"
+leptos_meta = "0.8"
+leptos_router = "0.8"
 leptos-scoped-style = { version = "0.1.1", features = ["scss_file"] }
 leptos-use-color-mode = "0.20"
 leptos-use-css-var = "0.20"
@@ -45,6 +50,10 @@ strum = { version = "0.28.0", features = ["derive"] }
 sys-locale = "0.3.2"
 tempfile = "3.27.0"
 termcolor = "1.4.1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+toml = "1.1.6"
+tower-http = { version = "0.6", features = ["fs"] }
+turf = "0.10.1"
 unicode-ident = "1.0.27"
 unicode-normalization = "0.1.25"
 unicode-properties = "0.1.4"
@@ -52,6 +61,7 @@ unicode-width = "0.2.2"
 wasm-bindgen = "0.2.128"
 wasm-bindgen-futures = "0.4"
 web-sys = "0.3.105"
+xxhash-rust = { version = "0.8.19", features = ["xxh3"] }
 zakac_ast = { path = "compiler/zakac_ast" }
 zakac_burmese_segmenter = { path = "compiler/zakac_burmese_segmenter" }
 zakac_cli_common = { path = "compiler/zakac_cli_common" }
@@ -70,6 +80,8 @@ zakac_semcheck = { path = "compiler/zakac_semcheck" }
 zakac_session = { path = "compiler/zakac_session" }
 zakac_span = { path = "compiler/zakac_span" }
 zaka_vm = { path = "compiler/zaka_vm" }
+zaka_web_build = { path = "crates/zaka_web_build" }
+zaka_web_ui_common = { path = "crates/zaka_web_ui_common" }
 
 [profile.wasm-release]
 inherits = "release"
@@ -77,3 +89,11 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 panic = "abort"
+
+# The web pages, served in watch mode: the wasm and the server of the website.
+# Without debug info the wasm is a fraction of the size and both link fast, so
+# a change reaches the browser in seconds.
+[profile.web-dev]
+inherits = "dev"
+debug = false
+strip = "debuginfo"

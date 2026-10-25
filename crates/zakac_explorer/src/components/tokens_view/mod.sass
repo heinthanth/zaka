@@ -1,0 +1,45 @@
+// The tokens view: tokens, then the comments and strings tables.
+
+=chip($name)
+  .chip.tok-#{$name}
+    color: var(--tok-#{$name})
+
+.tokens-view
+
+  .chip
+    padding: 1px 8px
+    border-radius: 999px
+    font-size: calc(var(--code-size) - 3px)
+    background: color-mix(in srgb, currentColor 12%, transparent)
+
+  // A string value: its text as it is, with escapes and holes as chips in
+  // line, so a newline reads as a small `\n` chip.
+  .part
+    display: inline-block
+    margin: 0 2px
+    padding: 0 5px
+    border-radius: 6px
+    border: 1px solid var(--panel-border)
+    font-size: calc(var(--code-size) - 3px)
+    line-height: 1.5
+    vertical-align: 1px
+
+  .part-escape
+    color: var(--accent)
+    background: var(--accent-soft)
+
+  .part-hole
+    color: var(--tok-raw)
+
+  +chip(kw)
+  +chip(ident)
+  +chip(raw)
+  +chip(number)
+  +chip(char)
+  +chip(str)
+  +chip(verb)
+  +chip(op)
+  +chip(particle)
+  +chip(kind)
+  +chip(bool)
+  +chip(delim)

@@ -1,0 +1,160 @@
+// Color tokens of the Zaka web pages; the panels are cards on a canvas. Light
+// is the base; the settings menu picks another theme through `data-theme`
+// (dark or a Catppuccin flavour); before the page starts, and with the Auto
+// theme, the OS preference picks light or dark. The tokens sit on `html`, the
+// element the color mode marks.
+
+@use "catppuccin"
+
+// The Zaka themes take their colors from the plumeria logo: cream petals that
+// warm to an amber and gold heart, on a slate tile in light mode and an ink
+// tile in dark mode. Gold is the accent; the ink and slate of the logo are the
+// text and the canvas.
+=light
+  --canvas: #e6e9ef
+  --panel: #fdfcf9
+  --panel-border: #e2ddd1
+  --chip: #f5efe2
+  --code-bg: #faf6ec
+  --field: #ffffff
+  --fg: #1e1e2e
+  --fg-muted: #6c6f85
+  --accent: #9a5f0c
+  --on-accent: #ffffff
+  --accent-soft: rgba(242, 169, 59, 0.18)
+  --ok: #40a02b
+  --shadow: 0 1px 2px rgba(30, 30, 46, 0.05), 0 4px 16px rgba(30, 30, 46, 0.06)
+  --pop-shadow: 0 2px 6px rgba(30, 30, 46, 0.08), 0 14px 36px rgba(30, 30, 46, 0.16)
+  --scroll-thumb: rgba(30, 30, 46, 0.2)
+  --scroll-thumb-hover: rgba(30, 30, 46, 0.36)
+  --mark-hover: rgba(247, 197, 95, 0.45)
+  --diag-error: #d20f39
+  --diag-warning: #a15c00
+  --diag-note: #1e66f5
+  --tok-kw: #9a5f0c
+  --tok-ident: #1e1e2e
+  --tok-raw: #8a5a44
+  --tok-number: #2457c5
+  --tok-char: #2f7d24
+  --tok-str: #2f7d24
+  --tok-verb: #b4532a
+  --tok-op: #b8336a
+  --tok-particle: #6a55c9
+  --tok-kind: #137f86
+  --tok-bool: #2457c5
+  --tok-delim: #8c8fa1
+  --tok-comment: #7c7f93
+  --editor-bg: #fdfcf9
+  --editor-gutter-fg: #a2a5b6
+  --editor-gutter-active: #1e1e2e
+  --editor-cursor: #9a5f0c
+  --editor-select: rgba(247, 197, 95, 0.38)
+  --editor-line: transparent
+  color-scheme: light
+
+=dark
+  --canvas: #11111b
+  --panel: #1e1e2e
+  --panel-border: #313244
+  --chip: #2a2b3d
+  --code-bg: #181825
+  --field: #181825
+  --fg: #eff1f5
+  --fg-muted: #a6adc8
+  --accent: #f7c55f
+  --on-accent: #1e1e2e
+  --accent-soft: rgba(247, 197, 95, 0.14)
+  --ok: #a6e3a1
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.25)
+  --pop-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.5)
+  --scroll-thumb: rgba(239, 241, 245, 0.16)
+  --scroll-thumb-hover: rgba(239, 241, 245, 0.3)
+  --mark-hover: rgba(247, 197, 95, 0.24)
+  --diag-error: #f38ba8
+  --diag-warning: #f9e2af
+  --diag-note: #89b4fa
+  --tok-kw: #f7c55f
+  --tok-ident: #eff1f5
+  --tok-raw: #f5e0dc
+  --tok-number: #89b4fa
+  --tok-char: #a6e3a1
+  --tok-str: #a6e3a1
+  --tok-verb: #fab387
+  --tok-op: #f5c2e7
+  --tok-particle: #b4befe
+  --tok-kind: #94e2d5
+  --tok-bool: #89b4fa
+  --tok-delim: var(--fg-muted)
+  --tok-comment: #9399b2
+  --editor-bg: #1e1e2e
+  --editor-gutter-fg: #585b70
+  --editor-gutter-active: #d9b77a
+  --editor-cursor: #f7c55f
+  --editor-select: rgba(247, 197, 95, 0.2)
+  --editor-line: transparent
+  color-scheme: dark
+
+html
+  +light
+  --ui-font: "Space Mono", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif
+  --mono-font: "PDA10 Burmese Mono", "Padauk", "Noto Sans Myanmar", ui-monospace, monospace
+  --code-size: 15px
+  --radius: 12px
+
+html[data-theme="dark"]
+  +dark
+
+@media (prefers-color-scheme: dark)
+  html:not([data-theme])
+    +dark
+
+@each $name, $flavour in catppuccin.$flavours
+  html[data-theme="#{$name}"]
+    +catppuccin.flavour($flavour...)
+
+*
+  box-sizing: border-box
+
+// Scroll bars take the theme: a thin thumb on a clear track. Browsers with
+// `scrollbar-color` use it; the others fall back to the WebKit parts.
+*
+  scrollbar-width: thin
+  scrollbar-color: var(--scroll-thumb) transparent
+
+@supports not (scrollbar-color: auto)
+  ::-webkit-scrollbar
+    width: 10px
+    height: 10px
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner
+    background: transparent
+
+  ::-webkit-scrollbar-thumb
+    background: var(--scroll-thumb)
+    background-clip: padding-box
+    border: 2px solid transparent
+    border-radius: 999px
+
+    &:hover
+      background-color: var(--scroll-thumb-hover)
+
+// Entrances of modals, their backdrops and the lists of dropdowns; global,
+// since scoped sheets would rename the frames.
+@keyframes fade-in
+  from
+    opacity: 0
+
+// A short drop and fade, for the lists of dropdowns.
+@keyframes drop-in
+  from
+    opacity: 0
+    scale: 0.98
+    translate: 0 -2px
+
+// Scale and fade from a little below full size.
+@keyframes pop-in
+  from
+    opacity: 0
+    scale: 0.96
+    translate: 0 -4px

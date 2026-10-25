@@ -1,0 +1,218 @@
+// The header: a bar of frosted glass fixed over the page. It takes a tint of
+// the ground and the ink of the field under it, with a short fade as each
+// edge passes. The glass is a layer under the bar, not the bar itself: a
+// filter on the bar would hold its fixed children, the menu and the lists,
+// inside it.
+
+.header
+  --glass: var(--panel)
+  position: fixed
+  inset: 0 0 auto
+  z-index: 50
+  isolation: isolate
+  display: flex
+  align-items: center
+  gap: 32px
+  height: var(--bar-height)
+  padding: 0 var(--margin)
+  color: var(--fg)
+  transition: color 300ms ease
+
+  &::before
+    content: ""
+    position: absolute
+    inset: 0
+    z-index: -1
+    background: color-mix(in srgb, var(--glass) 72%, transparent)
+    backdrop-filter: blur(16px) saturate(1.5)
+    transition: background-color 300ms ease
+
+.header[data-chapter="canvas"]
+  --glass: var(--canvas)
+
+.header[data-chapter="gold"]
+  --glass: var(--gold)
+  color: var(--on-gold)
+
+  .header-action
+    color: var(--panel)
+    background: var(--fg)
+
+// The close is dark in each theme, and so is the bar over it.
+.header[data-chapter="night"]
+  --glass: #11111b
+  color: #eff1f5
+
+// At the top of the page the bar over the hero has no glass at all: the
+// photograph runs up under the words of the bar, which keep the ink of the
+// theme, as the hero does. Once the page scrolls, the glass comes back, so
+// the hero never slides under bare words.
+.header[data-chapter="hero"]:not([data-moved])
+  &::before
+    background: transparent
+    backdrop-filter: none
+
+.header-brand
+  display: flex
+  align-items: center
+  gap: 10px
+  font-size: 20px
+  font-weight: 700
+  text-decoration: none
+
+.header-logo
+  width: 34px
+  height: 34px
+
+// The name beside the logo, in the ink of the field under the bar, so it
+// reads where the pale logo alone would not.
+.header-name
+  font-size: 26px
+  line-height: 1
+
+.header-actions
+  display: flex
+  align-items: center
+  margin-left: auto
+  gap: 12px
+
+// The pickers sit in the bar as an icon and a chevron each, with no border.
+// The triggers belong to the shared controls, so the sheet reaches them as a
+// `button`.
+.header-pickers
+  --icon-size: 24px
+  display: flex
+  gap: 12px
+
+  button,
+  button:hover
+    color: inherit
+    background: transparent
+    border-color: transparent
+    box-shadow: none
+
+  button:focus-visible
+    outline: 2px solid currentColor
+    outline-offset: 2px
+
+// With no border, the icons grow a little under the pointer.
+.header-pickers button svg:first-child,
+.header-menu-button svg
+  transition: scale 160ms ease-out
+
+.header-pickers button:hover svg:first-child,
+.header-menu-button:hover svg
+  scale: 1.1
+
+// In the menu each picker runs across it, with an icon in front that tells
+// what it picks.
+.header-picker
+  display: flex
+  align-items: center
+  gap: 12px
+
+  > svg
+    opacity: 0.7
+
+// The menu of narrow screens: a button in the bar, and a panel with the
+// links, the pickers and the explorer over the page under the bar.
+.header-menu-button,
+.header-menu
+  display: none
+
+// While the menu is open, the bar takes the ground of the menu, whatever the
+// chapter under it, and the page holds still.
+.header.header-open[data-chapter]
+  --glass: var(--panel)
+  color: var(--fg)
+
+  &::before
+    background: var(--panel)
+
+html[data-menu="open"]
+  overflow: hidden
+
+@media (max-width: 860px)
+  // The pickers and the explorer button move into the menu.
+  .header-pickers,
+  .header .header-action
+    display: none
+
+  // The icon stands in the middle of a 44px target, and the target reaches
+  // past the margin by its padding, so the icon lines up with the page.
+  .header-menu-button
+    --icon-size: 26px
+    display: grid
+    place-items: center
+    width: 44px
+    height: 44px
+    margin-right: -9px
+    padding: 0
+    color: inherit
+    background: transparent
+    border: 0
+    border-radius: 50%
+    cursor: pointer
+    -webkit-tap-highlight-color: transparent
+
+    &:focus-visible
+      outline: 2px solid color-mix(in srgb, currentColor 50%, transparent)
+      outline-offset: -2px
+
+  .header-menu
+    position: fixed
+    inset: var(--bar-height) 0 0
+    display: flex
+    flex-direction: column
+    gap: 40px
+    padding: 24px var(--margin) 32px
+    overflow: auto
+    color: var(--fg)
+    background: var(--panel)
+    border-top: 1px solid var(--panel-border)
+    opacity: 0
+    visibility: hidden
+    translate: 0 -8px
+    transition: opacity 200ms ease, translate 200ms ease, visibility 200ms
+
+  .header-menu-open
+    opacity: 1
+    visibility: visible
+    translate: 0 0
+
+  .header-menu-links
+    display: grid
+
+    a
+      padding: 14px 0
+      font-size: var(--step-state)
+      font-weight: 700
+      text-decoration: none
+      border-bottom: 1px solid var(--panel-border)
+
+  // The pickers stack at the foot of the menu, each across it, with its icon
+  // in front.
+  .header-menu-pickers
+    --dropdown-width: 100%
+    display: grid
+    gap: 12px
+    margin-top: auto
+
+    button
+      padding: 10px 12px
+      font-size: 16px
+      color: var(--fg)
+      background: var(--field)
+      border-color: var(--panel-border)
+
+@media (max-width: 640px)
+  .header
+    gap: 12px
+
+@media (prefers-reduced-motion: reduce)
+  .header,
+  .header::before,
+  .header-menu,
+  .header-pickers button svg,
+  .header-menu-button svg
+    transition: none

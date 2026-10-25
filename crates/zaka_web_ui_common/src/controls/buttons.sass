@@ -1,0 +1,30 @@
+// A square button that holds a line icon; `-on` marks it as pressed.
+
+.icon-button
+  display: grid
+  place-items: center
+  width: 34px
+  height: 34px
+  padding: 0
+  color: var(--fg-muted)
+  background: var(--panel)
+  border: 1px solid var(--panel-border)
+  border-radius: 9px
+  cursor: pointer
+  outline: none
+  transition: color 120ms ease-out, border-color 120ms ease-out
+
+  .icon
+    width: 17px
+    height: 17px
+
+  &:hover
+    color: var(--fg)
+    border-color: var(--fg-muted)
+
+  &:focus-visible
+    border-color: var(--accent)
+    box-shadow: 0 0 0 3px var(--accent-soft)
+
+.icon-button-on
+  color: var(--accent)

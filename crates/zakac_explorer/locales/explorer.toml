@@ -1,0 +1,442 @@
+_version = 2
+
+# ---------------------------------------------------------------- page
+
+[explorer.toolbar.brand]
+en = "Zaka Explorer"
+
+[explorer.app.resize_editor]
+en = "Resize the editor"
+[explorer.app.resize_problems]
+en = "Resize the problems panel"
+
+[explorer.splitter.hint]
+en = "Drag to resize; double-click to reset"
+
+[explorer.editor.loading]
+en = "Loading the editor…"
+
+# ---------------------------------------------------------------- toolbar
+
+[explorer.toolbar.editor_hide]
+en = "Hide the editor"
+[explorer.toolbar.editor_show]
+en = "Show the editor"
+[explorer.toolbar.sample]
+en = "Sample"
+[explorer.toolbar.sample_pick]
+en = "Pick a sample…"
+
+# ---------------------------------------------------------------- settings
+
+[explorer.about.title]
+en = "About"
+[explorer.about.open]
+en = "About Zaka Explorer"
+[explorer.about.close_label]
+en = "Close the about panel"
+[explorer.about.version]
+en = "Version %{version}"
+[explorer.about.author]
+en = "Author"
+[explorer.about.license]
+en = "License"
+[explorer.about.rights]
+en = "© %{first} – %{last} %{author}."
+[explorer.about.terms]
+en = "Distributed under the %{license} license."
+[explorer.about.fonts]
+en = "Fonts"
+[explorer.about.credits]
+en = "Credits"
+[explorer.about.back]
+en = "About"
+[explorer.about.back_label]
+en = "Back to About"
+[explorer.about.web]
+en = "Web packages"
+[explorer.about.crates]
+en = "Rust crates"
+[explorer.about.thanks]
+en = "With thanks to all of these projects."
+[explorer.about.pda_note]
+en = "A Burmese monospace font from PhoenixDigitalArt. Portions © Adobe."
+[explorer.about.pda_page]
+en = "PhoenixDigitalArt on Facebook"
+[explorer.about.pda_post]
+en = "Release post"
+[explorer.about.source_note]
+en = "A modified version of the Source Code Pro font from Adobe."
+[explorer.about.source_repo]
+en = "Source Code Pro on GitHub"
+[explorer.about.others]
+en = "Other fonts"
+[explorer.about.others_note]
+en = "The other fonts of the font pickers come from Fontsource, most of them from Google Fonts. Each ships under its own open font license."
+[explorer.about.fontsource]
+en = "Fontsource"
+[explorer.about.google_fonts]
+en = "Google Fonts"
+[explorer.about.ofl]
+en = "SIL Open Font License 1.1"
+[explorer.about.tour]
+en = "Onboarding"
+
+[explorer.settings.general]
+en = "General"
+[explorer.settings.language]
+en = "Language"
+[explorer.settings.language_note]
+en = "Language of the page and the compiler messages. The page reloads to switch."
+[explorer.settings.compiler]
+en = "Compiler"
+[explorer.settings.pda]
+en = "Use PDA10 Burmese Mono font for Burmese text"
+[explorer.settings.pda_note]
+en = "Draws Burmese text in PDA10 whatever the code font; it has no effect while PDA10 is the code font."
+[explorer.settings.platform_bits]
+en = "Platform bits"
+[explorer.settings.platform_bits_note]
+en = "Bit count of isize and usize."
+[explorer.settings.platform_bits_choice]
+en = "%{n}-bit"
+[explorer.settings.fold_exprs]
+en = "Fold constant operations"
+[explorer.settings.fold_exprs_note]
+en = "Replaces an operation on constants with its value. Overflow and zero divisors are reported when it is off too."
+[explorer.settings.fold_consts]
+en = "Fold constant names"
+[explorer.settings.fold_consts_note]
+en = "Replaces a read of a ကိန်းသေ set to a constant with its value."
+[explorer.settings.fold_branches]
+en = "Fold constant branches"
+[explorer.settings.fold_branches_note]
+en = "Keeps the taken branch of an if on a constant, and drops a loop whose condition is false."
+
+# ---------------------------------------------------------------- problems
+
+[explorer.problems.title]
+en = "Problems"
+[explorer.problems.hide]
+en = "Hide problems"
+[explorer.problems.show]
+en = "Show problems"
+[explorer.problems.errors]
+en = "Errors"
+[explorer.problems.warnings]
+en = "Warnings"
+
+# ---------------------------------------------------------------- pipeline
+
+[explorer.pipeline.label]
+en = "Compiler pipeline"
+[explorer.pipeline.status]
+en = "%{phase}: %{status}"
+
+[explorer.phase.segment]
+en = "Segment"
+[explorer.phase.segment_note]
+en = "segments"
+[explorer.phase.lex]
+en = "Lex"
+[explorer.phase.lex_note]
+en = "tokens"
+[explorer.phase.parse]
+en = "Parse"
+[explorer.phase.parse_note]
+en = "AST"
+[explorer.phase.check]
+en = "Check"
+[explorer.phase.check_note]
+en = "kinds"
+[explorer.phase.lower]
+en = "Lower"
+[explorer.phase.lower_note]
+en = "IR"
+[explorer.phase.codegen]
+en = "Codegen"
+[explorer.phase.codegen_note]
+en = "ops"
+[explorer.phase.run]
+en = "Run"
+[explorer.phase.run_note]
+en = "VM"
+
+[explorer.status.clean]
+en = "clean"
+[explorer.status.warned]
+en = "warned"
+[explorer.status.failed]
+en = "failed"
+[explorer.status.skipped]
+en = "skipped"
+
+# ---------------------------------------------------------------- phase views
+
+[explorer.col.index]
+en = "#"
+[explorer.col.kind]
+en = "Kind"
+[explorer.col.detail]
+en = "Detail"
+[explorer.col.text]
+en = "Text"
+[explorer.col.particle]
+en = "Particle"
+[explorer.col.joined]
+en = "Joined"
+[explorer.col.joined_note]
+en = "No whitespace before the token"
+[explorer.col.span]
+en = "Span"
+[explorer.col.line]
+en = "Line"
+[explorer.col.value]
+en = "Value"
+[explorer.col.value_note]
+en = "The text the program gets; escapes and {holes} show as chips"
+[explorer.col.source]
+en = "Source"
+[explorer.col.source_note]
+en = "The literal as written in the code"
+[explorer.col.name]
+en = "Name"
+[explorer.col.slot]
+en = "Slot"
+[explorer.col.label]
+en = "Label"
+[explorer.col.op]
+en = "Op"
+[explorer.col.ref]
+en = "Names"
+[explorer.col.break]
+en = "BP"
+[explorer.col.break_note]
+en = "Set or clear a break point"
+[explorer.col.op_addr]
+en = "Addr"
+[explorer.col.op_addr_note]
+en = "The address of the op in the code: the functions sit one after another"
+[explorer.col.addr]
+en = "Addr"
+[explorer.col.addr_note]
+en = "The address of the slot on the stack, counted from the bottom"
+
+[explorer.tokens.comments]
+en = "Comments"
+[explorer.tokens.strings]
+en = "Strings"
+
+[explorer.ast.label]
+en = "AST view"
+[explorer.ast.tree]
+en = "Tree"
+[explorer.ast.sexpr]
+en = "S-expr"
+[explorer.ast.graph]
+en = "Graph"
+
+[explorer.tree.select]
+en = "Select in the editor"
+
+[explorer.graph.label]
+en = "Program tree as a graph"
+[explorer.graph.zoom_out]
+en = "Zoom out (-)"
+[explorer.graph.zoom_in]
+en = "Zoom in (+)"
+[explorer.graph.fit]
+en = "Fit"
+[explorer.graph.fit_note]
+en = "Show the whole graph (0)"
+
+[explorer.check.skipped_title]
+en = "The check did not run"
+[explorer.check.skipped_note]
+en = "It runs once the lexer and parser report no errors. Fix the problems below to see the kinds."
+
+[explorer.lower.label]
+en = "IR before or after folding"
+[explorer.lower.plain]
+en = "Lowered"
+[explorer.lower.folded]
+en = "Folded"
+[explorer.lower.skipped_title]
+en = "Lowering did not run"
+[explorer.lower.skipped_note]
+en = "It runs once the earlier phases report no errors. Fix the problems below to see the IR."
+
+[explorer.codegen.platform]
+en = "Ops for a %{bits}-bit platform. Hover an op to see its source."
+[explorer.codegen.globals]
+en = "Globals"
+[explorer.codegen.texts]
+en = "Texts"
+[explorer.codegen.locals]
+en = "Locals"
+[explorer.codegen.skipped_title]
+en = "Code generation did not run"
+[explorer.codegen.skipped_note]
+en = "It runs once the earlier phases report no errors. Fix the problems below to see the ops."
+
+[explorer.run.label]
+en = "Debugger controls"
+[explorer.run.go]
+en = "Run the program"
+[explorer.run.stop]
+en = "Stop the program"
+[explorer.run.debug]
+en = "Debug"
+[explorer.run.debug_note]
+en = "Debug mode: step through the ops and watch the registers, the stack frames and the globals"
+[explorer.run.reset]
+en = "Start again"
+[explorer.run.step]
+en = "Step: run one op (F11)"
+[explorer.run.step_over]
+en = "Step over: run one op, or a whole call (F10)"
+[explorer.run.step_out]
+en = "Step out: run to the end of this call (Shift+F11)"
+[explorer.run.resume]
+en = "Continue to the next break point (F5)"
+[explorer.run.auto_start]
+en = "Step on a timer"
+[explorer.run.auto_pause]
+en = "Pause the timer"
+[explorer.run.resize_code]
+en = "Resize the ops pane"
+[explorer.run.resize_output]
+en = "Resize the output pane"
+[explorer.run.speed]
+en = "Timer speed"
+[explorer.run.speed_one]
+en = "1 op/s"
+[explorer.run.speed_rate]
+en = "%{count} ops/s"
+[explorer.run.status_start]
+en = "At the start"
+[explorer.run.status_running]
+en = "Running"
+[explorer.run.status_stopped]
+en = "Stopped"
+[explorer.run.status_paused]
+en = "Paused"
+[explorer.run.status_finished]
+en = "Finished"
+[explorer.run.status_trapped]
+en = "Trapped"
+[explorer.run.steps]
+en = "%{count} ops run"
+[explorer.run.registers]
+en = "Registers"
+[explorer.run.pc_note]
+en = "Program counter: the address of the op that runs next"
+[explorer.run.sp_note]
+en = "Stack pointer: the free slot over the top of the stack, where the next value goes"
+[explorer.run.bp_note]
+en = "Base pointer: where the frame of the innermost call starts on the stack"
+[explorer.run.frames]
+en = "Stack frames"
+[explorer.run.frame_meta]
+en = "pc %{pc} · base %{base}"
+[explorer.run.no_frames]
+en = "No call is in progress."
+[explorer.run.view_call]
+en = "Show this call"
+[explorer.run.globals]
+en = "Globals"
+[explorer.run.output]
+en = "Output"
+[explorer.run.no_output]
+en = "The program wrote nothing so far."
+[explorer.run.trapped]
+en = "The program stopped: %{trap}"
+[explorer.run.skipped_title]
+en = "The run did not start"
+[explorer.run.skipped_note]
+en = "It starts once code generation runs. Fix the problems below to step through the ops."
+
+# ---------------------------------------------------------------- tour
+
+[explorer.tour.skip]
+en = "Skip tour"
+[explorer.tour.back]
+en = "Back"
+[explorer.tour.next]
+en = "Next"
+[explorer.tour.done]
+en = "Done"
+[explorer.tour.count]
+en = "Step %{at} of %{total}"
+[explorer.tour.welcome]
+en = "Welcome to Zaka Explorer"
+[explorer.tour.welcome_text]
+en = "Zaka Explorer shows how the Zaka compiler turns Burmese source into a running program. This short tour walks through each part of the page with a sample that finds the GCD and LCM of number pairs. Skip it at will; the code from before comes back."
+[explorer.tour.samples]
+en = "Samples"
+[explorer.tour.samples_text]
+en = "Pick a program here to load it into the editor. The tour has loaded programs/gcd for now."
+[explorer.tour.editor]
+en = "Editor"
+[explorer.tour.editor_text]
+en = "Write Zaka code here. After each edit the whole pipeline runs again and the views on the right follow along. Hover a token, or move the caret onto it, to light it up in the views."
+[explorer.tour.pipeline]
+en = "The pipeline"
+[explorer.tour.pipeline_text]
+en = "Seven phases turn the source into a running program. Click a phase, or press the left and right arrows, to open its view. Its dot tells whether it passed, warned, failed or was skipped. When the code has errors, a problems panel opens below with each one."
+[explorer.tour.segment]
+en = "1 · Segment"
+[explorer.tour.segment_text]
+en = "Burmese text puts no spaces between words, so the first phase cuts the source into segments: Burmese words, numbers, marks and the rest, each with its kind and its span in the source."
+[explorer.tour.lex]
+en = "2 · Lex"
+[explorer.tour.lex_text]
+en = "The lexer turns the segments into tokens: words of the language, names, numbers, operators and the particles that join them. Comments and strings get tables of their own."
+[explorer.tour.parse]
+en = "3 · Parse"
+[explorer.tour.parse_text]
+en = "The parser builds the abstract tree of the program. The switch at the top right shows it as a tree, an S-expression or a graph. Click a node to select its source in the editor."
+[explorer.tour.check]
+en = "4 · Check"
+[explorer.tour.check_text]
+en = "The checker works out the kind of each expression and makes sure the parts fit together, such as numbers in arithmetic and a result of the right kind from each function."
+[explorer.tour.lower]
+en = "5 · Lower"
+[explorer.tour.lower_text]
+en = "Lowering turns the tree into a simpler IR. Switch between the IR as lowered and after constant folding to see what the folding settles ahead of time."
+[explorer.tour.codegen]
+en = "6 · Codegen"
+[explorer.tour.codegen_text]
+en = "Code generation emits ops for the stack-based virtual machine: the global slots, the pooled texts, then each function with its locals and ops. Hover an op to see its source."
+[explorer.tour.run]
+en = "7 · Run"
+[explorer.tour.run_text]
+en = "The VM runs the ops and shows the output. The go button runs the program again from the start, and stop halts it."
+[explorer.tour.debug]
+en = "Debug mode"
+[explorer.tour.debug_text]
+en = "Turn on debug mode to step through the ops and watch the machine as it works. The tour turns it on now."
+[explorer.tour.controls]
+en = "Debugger controls"
+[explorer.tour.controls_text]
+en = "From the left: continue to the next break point, stop, and start again; then step, step over and step out; then step on a timer, at the speed beside it. The status and the count of ops run sit at the end. F5, F10, F11 and Shift+F11 work too."
+[explorer.tour.ops]
+en = "Ops"
+[explorer.tour.ops_text]
+en = "The timer is now stepping through the program. The marked row is the op that runs next, and the editor lights up its source. Click the gutter to set a break point."
+[explorer.tour.machine]
+en = "Machine state"
+[explorer.tour.machine_text]
+en = "The registers: PC points at the next op, SP at the free slot over the stack, BP at the frame of the innermost call. Under them, each call in progress has a frame with its locals; click one to show that call. Globals come last."
+[explorer.tour.output]
+en = "Output"
+[explorer.tour.output_text]
+en = "What the program prints shows up here as the run goes on. If the run stops on an error, the trap shows under it."
+[explorer.tour.settings]
+en = "Settings and more"
+[explorer.tour.settings_text]
+en = "Show or hide the editor, open About, or change the theme, the fonts, the language and the compiler options. To take this tour again, open About and pick Onboarding."
+[explorer.tour.finish]
+en = "That’s all"
+[explorer.tour.finish_text]
+en = "When the tour closes, the code from before comes back. Then pick a sample, or write something new, and watch it pass through each phase."

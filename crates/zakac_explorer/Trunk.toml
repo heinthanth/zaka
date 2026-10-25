@@ -1,0 +1,97 @@
+[build]
+target = "index.html"
+dist = "dist"
+
+[[node_packages]]
+name = "monaco-editor"
+version = "0.57.0"
+
+[[node_packages]]
+name = "@fontsource/inter"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/padauk"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/noto-sans-myanmar"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/source-code-pro"
+version = "5.3.1"
+
+[[node_packages]]
+name = "@fontsource/fira-code"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/jetbrains-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/ibm-plex-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/roboto-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/inconsolata"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/cascadia-code"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/ubuntu-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/victor-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/geist-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/commit-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/monaspace-neon"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/red-hat-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/space-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/iosevka"
+version = "5.3.0"
+
+# build.rs writes the logo and Sauce Code Pro under names made from a hash of
+# their content into target/assets; once the Rust build is done, the files
+# join the build under assets/.
+[[hooks]]
+stage = "post_build"
+command = "sh"
+command_arguments = [
+    "-c",
+    "mkdir -p \"$TRUNK_STAGING_DIR/assets\" && cp target/assets/* \"$TRUNK_STAGING_DIR/assets/\"",
+]
+
+[watch]
+watch = [".", "../../samples", "../../artwork"]
+ignore = ["dist", "target", "../../target"]
+
+[serve]
+port = 8080

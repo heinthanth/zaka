@@ -1,0 +1,180 @@
+// Page rules of the website: the frame, five text steps, the one button and
+// the entrances. Colors come from the shared tokens, so each theme of the
+// settings menu reaches the whole page.
+
+// The faces of the website are set in Rust (`assets::font_faces`), since
+// their files are named after a hash of their content.
+html:root
+  --ui-font: "Space Mono", "Myanmar Sabae", system-ui, sans-serif
+  --mono-font: "Myanmar Sabae (Burmese)", "Sauce Code Pro (HTMM's Custom)", ui-monospace, monospace
+
+
+html
+  // One pair of outer margins for the whole page.
+  --margin: clamp(20px, 3vw, 40px)
+  // Room between sections, larger than each gap inside one.
+  --section-gap: clamp(120px, 14vw, 220px)
+  // The five text steps: poster, section head, statement, text and note.
+  --step-poster: clamp(56px, 9.5vw, 150px)
+  --step-head: clamp(32px, 5.6vw, 88px)
+  --step-state: clamp(22px, 2.4vw, 34px)
+  --step-text: 18px
+  --step-note: 15px
+  // The height of the header bar; it shrinks on narrow screens.
+  --bar-height: 100px
+  scroll-padding-top: 88px
+  // The gold fields: the accent of the theme, with its ink.
+  --gold: var(--accent)
+  --on-gold: var(--on-accent)
+
+// Zaka Light darkens its accent to read as text on cream; as a whole field
+// the page takes the gold of the logo itself, with ink on it.
+html[data-theme="light"],
+html:not([data-theme])
+  --gold: #f4bf5a
+  --on-gold: #1e1e2e
+
+@media (prefers-color-scheme: dark)
+  html:not([data-theme])
+    --gold: var(--accent)
+    --on-gold: var(--on-accent)
+
+body
+  margin: 0
+  background: var(--panel)
+  color: var(--fg)
+  font-family: var(--ui-font)
+  font-size: var(--step-text)
+  line-height: 1.55
+  -webkit-font-smoothing: antialiased
+  text-rendering: optimizeLegibility
+
+a
+  color: inherit
+  text-underline-offset: 0.18em
+  text-decoration-thickness: 0.06em
+
+code,
+pre
+  font-family: var(--mono-font)
+
+// Burmese marks stack above and below the line, so Burmese text gets room.
+[lang="my"]
+  line-height: 1.6
+
+h1,
+h2,
+h3,
+p,
+figure,
+ol,
+ul
+  margin: 0
+
+ol,
+ul
+  padding: 0
+  list-style: none
+
+img,
+video
+  display: block
+  max-width: 100%
+
+// Text that a screen reader reads but the page need not show.
+.unseen
+  position: absolute
+  width: 1px
+  height: 1px
+  overflow: hidden
+  clip-path: inset(50%)
+  white-space: nowrap
+
+// The one button of the page: flat, square, in the accent.
+.button
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  min-height: 48px
+  padding: 0 22px
+  font-weight: 700
+  font-size: var(--step-note)
+  text-decoration: none
+  color: var(--on-accent)
+  background: var(--accent)
+  border: 0
+  border-radius: 0
+  cursor: pointer
+  transition: scale 140ms ease-out, background-color 160ms ease-out
+
+  &:hover
+    background: color-mix(in srgb, var(--accent) 86%, var(--fg))
+
+  &:active
+    scale: 0.97
+
+  &:focus-visible
+    outline: 3px solid var(--fg)
+    outline-offset: 3px
+
+// Lenis scrolls the window itself; these keep the browser out of its way.
+html.lenis,
+html.lenis body
+  height: auto
+
+.lenis.lenis-smooth
+  scroll-behavior: auto
+
+.lenis.lenis-stopped
+  overflow: hidden
+
+// A painted line of Zaka: each token in the color of its role.
+.painted
+  font-family: var(--mono-font)
+  white-space: pre-wrap
+
+  @each $role in kw, ident, raw, number, char, str, verb, op, particle, kind, bool, delim, comment
+    .tok-#{$role}
+      color: var(--tok-#{$role})
+
+  .tok-comment
+    font-style: var(--comment-style, normal)
+
+// The parts of a section rise into place as the section scrolls in, one
+// after the other; without scroll timelines the parts stand still.
+// With the motion code on, it moves the sections itself.
+@supports (animation-timeline: view())
+  html:not(.motion) .rise > *
+    animation: rise linear both
+    animation-timeline: view()
+    animation-range: entry calc(var(--i, 0) * 6%) entry calc(45% + var(--i, 0) * 6%)
+
+  html:not(.motion) .rise > :nth-child(2)
+    --i: 1
+
+  html:not(.motion) .rise > :nth-child(3)
+    --i: 2
+
+  html:not(.motion) .rise > :nth-child(4)
+    --i: 3
+
+// Travel alone, no fade: a part not reached on the scroll stands lower but
+// is never hidden.
+@keyframes rise
+  from
+    translate: 0 40px
+
+@media (max-width: 860px)
+  html
+    --bar-height: 72px
+
+@media (max-width: 640px)
+  html
+    --bar-height: 64px
+
+@media (prefers-reduced-motion: reduce)
+  .rise > *
+    animation: none
+
+  .button
+    transition: none

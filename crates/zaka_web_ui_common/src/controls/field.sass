@@ -1,0 +1,19 @@
+// The look of a form field: a light well with a soft ring on focus. This file
+// holds mixins alone, so it emits no CSS.
+
+=field
+  font: inherit
+  color: var(--fg)
+  background: var(--field)
+  border: 1px solid var(--panel-border)
+  border-radius: 8px
+  padding: 5px 10px
+  outline: none
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out
+
+  &:hover
+    border-color: var(--fg-muted)
+
+  &:focus-visible
+    border-color: var(--accent)
+    box-shadow: 0 0 0 3px var(--accent-soft)

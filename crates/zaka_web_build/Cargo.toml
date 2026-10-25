@@ -1,0 +1,8 @@
+[package]
+name = "zaka_web_build"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+cargo-build = { workspace = true }
+xxhash-rust = { workspace = true }

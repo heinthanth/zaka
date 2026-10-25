@@ -5,6 +5,7 @@
 target
 .env*
 !.env.example
-explorer/dist
-explorer/target
-explorer/assets/fonts/PDA10BurmeseMono-Regular.ttf
+crates/zakac_explorer/dist
+crates/zakac_explorer/target
+crates/zaka_website/vendor/target
+crates/zakac_explorer/assets/fonts/PDA10BurmeseMono-Regular.ttf
