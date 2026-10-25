@@ -2,7 +2,6 @@ use leptos::ev;
 use leptos::html;
 use leptos::html::button;
 use leptos::html::div;
-use leptos::html::p;
 use leptos::html::pre;
 use leptos::html::section;
 use leptos::html::span;
@@ -92,7 +91,7 @@ fn diag_head(state: AppState) -> impl IntoView
         ))
 }
 
-/// The list of diagnostics, or a note when there are none.
+/// The list of diagnostics.
 ///
 /// # Arguments
 ///
@@ -103,16 +102,12 @@ fn diag_head(state: AppState) -> impl IntoView
 /// The view.
 fn diag_list(state: AppState) -> impl IntoView
 {
-    let clean = move || {
-        let none = state.compiled.with(|c| c.diagnostics.is_empty());
-        none.then(|| p().class("diag-clean").child(t!("explorer.problems.none")))
-    };
     let items = move || {
         state.compiled.with(|c| {
             c.diagnostics.iter().map(|d| diag_item(state, d.clone())).collect_view()
         })
     };
-    div().class("diag-list").child((clean, items))
+    div().class("diag-list").child(items)
 }
 
 /// One diagnostic; hover points at its span and a click selects it.

@@ -211,7 +211,7 @@ fn do_map(module: Option<&mut Module>, f: &impl Fn(Span) -> Span)
 /// # Returns
 ///
 /// The relative span.
-fn relative(span: Span, base: Pos) -> Span
+pub fn relative(span: Span, base: Pos) -> Span
 {
     Span::new(Pos::new(span.lo - base), Pos::new(span.hi - base))
 }
@@ -226,7 +226,7 @@ fn relative(span: Span, base: Pos) -> Span
 /// # Returns
 ///
 /// The absolute span.
-fn absolute(span: Span, base: Pos) -> Span
+pub fn absolute(span: Span, base: Pos) -> Span
 {
     Span::new(base + span.lo.as_u32() as usize, base + span.hi.as_u32() as usize)
 }

@@ -58,6 +58,11 @@ pub enum Error
     {
         path: PathBuf, msg: String
     },
+    #[error("{}", t!("errors.runtime_trap", e = msg))]
+    RuntimeTrap
+    {
+        msg: String
+    },
 }
 
 /// An action performed on an IO resource.

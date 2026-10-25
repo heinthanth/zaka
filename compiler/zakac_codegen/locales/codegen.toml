@@ -1,0 +1,10 @@
+_version = 2
+
+[codegen.about]
+en = "Generate stack machine ops for the Zaka VM from a checked program."
+
+[codegen.asm]
+en = "Write the asm listing instead of the artifact."
+
+[codegen.artifact.source_changed]
+en = "source text changed after re-ingest"

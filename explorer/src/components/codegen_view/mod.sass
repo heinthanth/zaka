@@ -1,0 +1,28 @@
+// The code generation view: the globals, the pooled texts and each function
+// as tables; or, when code generation did not run, a note with an icon in
+// the middle of the pane.
+
+@use "../table/mod" as table
+
+.codegen-view
+  +table.table-title
+  +table.view-note
+  +table.phase-table
+  +table.asm-table
+
+.codegen-view-skipped
+  display: grid
+  place-items: center
+  height: 100%
+
++table.skipped-card
+
+.asm-func
+  margin-top: 26px
+
+.asm-head
+  margin: 0 0 4px
+  font-family: var(--mono-font)
+  font-size: var(--code-size)
+  font-weight: 600
+  color: var(--fg)

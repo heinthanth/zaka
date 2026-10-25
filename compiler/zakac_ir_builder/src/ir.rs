@@ -405,6 +405,24 @@ pub enum PrefixOp
     Not,
 }
 
+impl PrefixOp
+{
+    /// The short name of the operator, as asm would write it.
+    ///
+    /// # Returns
+    ///
+    /// `neg`, `bnot` or `not`.
+    pub const fn mnemonic(self) -> &'static str
+    {
+        match self
+        {
+            PrefixOp::Neg => "neg",
+            PrefixOp::BitNot => "bnot",
+            PrefixOp::Not => "not",
+        }
+    }
+}
+
 /// An arithmetic, bitwise or shift operator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[derive(IntoStaticStr)]
@@ -443,6 +461,31 @@ pub enum InfixOp
     Shr,
 }
 
+impl InfixOp
+{
+    /// The short name of the operator, as asm would write it.
+    ///
+    /// # Returns
+    ///
+    /// The name, such as `add` for `+` or `shl` for `<<`.
+    pub const fn mnemonic(self) -> &'static str
+    {
+        match self
+        {
+            InfixOp::Add => "add",
+            InfixOp::Sub => "sub",
+            InfixOp::Mul => "mul",
+            InfixOp::Div => "div",
+            InfixOp::Rem => "rem",
+            InfixOp::BitAnd => "band",
+            InfixOp::BitOr => "bor",
+            InfixOp::BitXor => "bxor",
+            InfixOp::Shl => "shl",
+            InfixOp::Shr => "shr",
+        }
+    }
+}
+
 /// A comparison operator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[derive(IntoStaticStr)]
@@ -467,6 +510,27 @@ pub enum CmpOp
     /// `>=`
     #[strum(serialize = ">=")]
     Ge,
+}
+
+impl CmpOp
+{
+    /// The short name of the operator, as asm would write it.
+    ///
+    /// # Returns
+    ///
+    /// The name, such as `eq` for `==` or `le` for `<=`.
+    pub const fn mnemonic(self) -> &'static str
+    {
+        match self
+        {
+            CmpOp::Eq => "eq",
+            CmpOp::Ne => "ne",
+            CmpOp::Lt => "lt",
+            CmpOp::Gt => "gt",
+            CmpOp::Le => "le",
+            CmpOp::Ge => "ge",
+        }
+    }
 }
 
 /// A logical operator.

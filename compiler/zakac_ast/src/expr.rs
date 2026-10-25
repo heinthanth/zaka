@@ -193,6 +193,24 @@ pub enum PrefixOp
     Not,
 }
 
+impl PrefixOp
+{
+    /// The short name of the operator, as asm would write it.
+    ///
+    /// # Returns
+    ///
+    /// `neg`, `bnot` or `not`.
+    pub const fn mnemonic(self) -> &'static str
+    {
+        match self
+        {
+            PrefixOp::Neg => "neg",
+            PrefixOp::BitNot => "bnot",
+            PrefixOp::Not => "not",
+        }
+    }
+}
+
 /// A prefix operator applied to an operand.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct PrefixExpr
@@ -266,6 +284,34 @@ pub enum InfixOp
 
 impl InfixOp
 {
+    /// The short name of the operator, as asm would write it.
+    ///
+    /// # Returns
+    ///
+    /// The name, such as `add` for `+` or `lt` for `<`.
+    pub const fn mnemonic(self) -> &'static str
+    {
+        match self
+        {
+            InfixOp::Add => "add",
+            InfixOp::Sub => "sub",
+            InfixOp::Mul => "mul",
+            InfixOp::Div => "div",
+            InfixOp::Rem => "rem",
+            InfixOp::BitAnd => "band",
+            InfixOp::BitOr => "bor",
+            InfixOp::BitXor => "bxor",
+            InfixOp::Shl => "shl",
+            InfixOp::Shr => "shr",
+            InfixOp::Eq => "eq",
+            InfixOp::Ne => "ne",
+            InfixOp::Lt => "lt",
+            InfixOp::Gt => "gt",
+            InfixOp::Le => "le",
+            InfixOp::Ge => "ge",
+        }
+    }
+
     /// Whether this operator is a comparison.
     ///
     /// # Returns

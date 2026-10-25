@@ -1,6 +1,5 @@
 use leptos::html;
 use leptos::html::div;
-use leptos::html::p;
 use leptos::html::table;
 use leptos::html::tbody;
 use leptos::prelude::*;
@@ -45,18 +44,10 @@ pub fn segments_view() -> impl IntoView
             rows.map(|(idx, row)| segment_row(state, idx, row.clone())).collect_view()
         })
     };
-    let note = p().class("view-note").child(
-        "Segments are the units the lexer reads: a Burmese vanna (a consonant with \
-         its marks), a Burmese digit or another char.",
-    );
     let grid =
         table().class("phase-table").child((table_head(&COLUMNS), tbody().child(rows)));
     let root = NodeRef::<html::Div>::new();
-    scoped(
-        &SHEET,
-        root,
-        div().class("segments-view").node_ref(root).child((note, grid)),
-    )
+    scoped(&SHEET, root, div().class("segments-view").node_ref(root).child(grid))
 }
 
 /// One row of the segments table.

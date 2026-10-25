@@ -36,6 +36,13 @@
 .column-shut
   grid-template-rows: minmax(0, 1fr) 10px auto
 
+// With no problems the stage view takes the whole column.
+.column-clean
+  grid-template-rows: minmax(0, 1fr) 0 0
+
+  .panel-problems
+    display: none
+
 .panel
   min-height: 0
   min-width: 0

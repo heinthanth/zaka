@@ -1,5 +1,7 @@
 // The pipeline: one stage per compiler phase on a line that fills in up to
-// the open stage, then the view of that stage.
+// the open stage, then the view of that stage. Each stage takes the width of
+// its name and the lines between them take the rest, so the timeline runs
+// from edge to edge.
 
 .stage-view
   flex: 1
@@ -9,12 +11,12 @@
 
 .pipeline
   display: flex
-  padding: 14px 12px 12px
+  padding: 14px 16px 12px
   border-bottom: 1px solid var(--panel-border)
 
 .stage
   position: relative
-  flex: 1
+  flex: none
   display: flex
   flex-direction: column
   align-items: center
@@ -28,26 +30,45 @@
   cursor: pointer
   outline: none
 
-  // The line from the stage before; it fills in once this stage is passed.
-  & + .stage::before
-    content: ""
-    position: absolute
-    top: 16px
-    right: calc(50% + 16px)
-    width: calc(100% - 32px)
-    height: 2px
-    border-radius: 2px
-    background: var(--panel-border)
-    transition: background-color 200ms ease-out
-
-  &.stage-passed + .stage.stage-passed::before
-    background: var(--accent)
-
   &:focus-visible .stage-node
     box-shadow: 0 0 0 3px var(--accent-soft)
 
   &:hover .stage-label
     color: var(--fg)
+
+// The number with half a line on each side, out to the edges of the stage.
+.stage-track
+  align-self: stretch
+  display: flex
+  align-items: center
+
+  &::before,
+  &::after
+    content: ""
+    flex: 1
+    height: 2px
+    background: var(--panel-border)
+    transition: background-color 200ms ease-out
+
+.stage:first-of-type .stage-track::before,
+.stage:last-of-type .stage-track::after
+  visibility: hidden
+
+.stage-passed .stage-track::before,
+.stage-passed:not(.stage-open) .stage-track::after
+  background: var(--accent)
+
+// The line between two stages, level with the middle of the numbers.
+.stage-link
+  flex: 1
+  min-width: 8px
+  height: 2px
+  margin-top: 16px
+  background: var(--panel-border)
+  transition: background-color 200ms ease-out
+
+.stage-link-passed
+  background: var(--accent)
 
 .stage-node
   position: relative
@@ -120,7 +141,9 @@
   padding: 12px 16px 16px
 
 @media (prefers-reduced-motion: reduce)
-  .stage::before,
+  .stage-track::before,
+  .stage-track::after,
+  .stage-link,
   .stage-node,
   .stage-label
     transition: none

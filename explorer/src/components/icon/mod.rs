@@ -34,6 +34,53 @@ const CROSS: [&str; 2] = ["M18 6 6 18", "m6 6 12 12"];
 /// A chevron that points down, on a 24 unit grid.
 const CHEVRON: [&str; 1] = ["m6 9 6 6 6-6"];
 
+/// A square, on a 24 unit grid.
+const STOP: [&str; 1] =
+    ["M7 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"];
+
+/// A triangle that points right with a small clock at its lower right, on
+/// a 24 unit grid.
+const TIMED_START: [&str; 3] = [
+    "M4 3v13l10.5-6.5z",
+    "M22.5 17.5a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0z",
+    "M18 15.5v2l1.4 1.2",
+];
+
+/// A bug, on a 24 unit grid.
+const BUG: [&str; 11] = [
+    "m8 2 1.88 1.88",
+    "M14.12 3.88 16 2",
+    "M9 7.13v-1a3 3 0 1 1 6 0v1",
+    "M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6",
+    "M12 20v-9",
+    "M6.53 9C4.6 8.8 3 7.1 3 5",
+    "M6 13H2",
+    "M3 21c0-2.1 1.7-3.9 3.8-4",
+    "M20.97 5c0 2.1-1.6 3.8-3.5 4",
+    "M22 13h-4",
+    "M17.2 17c2.1.1 3.8 1.9 3.8 4",
+];
+
+/// Two bars, on a 24 unit grid.
+const PAUSE: [&str; 2] = ["M8 5v14", "M16 5v14"];
+
+/// A triangle that points right, on a 24 unit grid.
+const START: [&str; 1] = ["M7 4v16l13-8z"];
+
+/// An arrow down onto a dot, on a 24 unit grid.
+const STEP: [&str; 3] = ["M12 3v11", "m7 9 5 5 5-5", "M12 20h.01"];
+
+/// An arc over a dot, on a 24 unit grid.
+const STEP_OVER: [&str; 3] =
+    ["M3 15a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7", "M21 5v6h-6", "M12 19h.01"];
+
+/// An arrow up from a line, on a 24 unit grid.
+const STEP_OUT: [&str; 3] = ["M12 16V4", "m7 9 5-5 5 5", "M5 20h14"];
+
+/// An arrow round a circle, back to its start, on a 24 unit grid.
+const RESTART: [&str; 2] =
+    ["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5"];
+
 /// A line icon drawn with the current text color.
 ///
 /// # Arguments
@@ -99,3 +146,66 @@ pub fn cross() -> impl IntoView { line_icon(&CROSS) }
 ///
 /// The view.
 pub fn chevron() -> impl IntoView { line_icon(&CHEVRON) }
+
+/// A square, to stop the program.
+///
+/// # Returns
+///
+/// The view.
+pub fn stop() -> impl IntoView { line_icon(&STOP) }
+
+/// A triangle with a small clock, to start the timed stepping.
+///
+/// # Returns
+///
+/// The view.
+pub fn timed_start() -> impl IntoView { line_icon(&TIMED_START) }
+
+/// A bug, for the debug mode switch.
+///
+/// # Returns
+///
+/// The view.
+pub fn bug() -> impl IntoView { line_icon(&BUG) }
+
+/// Two bars, to pause the timed stepping.
+///
+/// # Returns
+///
+/// The view.
+pub fn pause() -> impl IntoView { line_icon(&PAUSE) }
+
+/// A triangle that points right, to run on to the next break point.
+///
+/// # Returns
+///
+/// The view.
+pub fn start() -> impl IntoView { line_icon(&START) }
+
+/// An arrow down onto a dot, to run one op.
+///
+/// # Returns
+///
+/// The view.
+pub fn step() -> impl IntoView { line_icon(&STEP) }
+
+/// An arc over a dot, to run one op or a whole call.
+///
+/// # Returns
+///
+/// The view.
+pub fn step_over() -> impl IntoView { line_icon(&STEP_OVER) }
+
+/// An arrow up from a line, to run to the end of the call.
+///
+/// # Returns
+///
+/// The view.
+pub fn step_out() -> impl IntoView { line_icon(&STEP_OUT) }
+
+/// An arrow round a circle, to start again.
+///
+/// # Returns
+///
+/// The view.
+pub fn restart() -> impl IntoView { line_icon(&RESTART) }

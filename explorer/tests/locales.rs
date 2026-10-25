@@ -4,6 +4,8 @@ use std::path::Path;
 
 use zakac_explorer::compile::Phase;
 use zakac_explorer::compile::Status;
+use zakac_explorer::debug::RunStatus;
+use zakac_explorer::debug::Speed;
 use zakac_explorer::font::face::Face;
 use zakac_explorer::state::lang::AUTO_LANG;
 use zakac_explorer::state::lang::chosen_locale;
@@ -100,6 +102,12 @@ fn labels_come_from_the_table()
     assert_eq!(Phase::Parse.note(), "AST");
     assert_eq!(Phase::Lower.label(), "Lower");
     assert_eq!(Phase::Lower.note(), "IR");
+    assert_eq!(Phase::Codegen.label(), "Codegen");
+    assert_eq!(Phase::Codegen.note(), "ops");
+    assert_eq!(Phase::Run.label(), "Run");
+    assert_eq!(Phase::Run.note(), "VM");
+    assert_eq!(RunStatus::Trapped.label(), "Trapped");
+    assert_eq!(Speed::Slow.label(), "Slow");
     assert_eq!(LowerMode::Folded.label(), "Folded");
     assert_eq!(Status::Skipped.label(), "skipped");
     assert_eq!(AstMode::Sexpr.label(), "S-expr");

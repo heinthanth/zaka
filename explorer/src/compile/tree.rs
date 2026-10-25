@@ -1,10 +1,17 @@
 use bon::Builder;
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::InfixExpr;
+use zakac_ast::expr::LogicExpr;
+use zakac_ast::expr::LogicOp;
 use zakac_ast::expr::NodeId;
+use zakac_ast::expr::PrefixExpr;
 use zakac_ast::stmt::Program;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_expr;
+use zakac_ast::visit::walk_infix;
+use zakac_ast::visit::walk_logic;
+use zakac_ast::visit::walk_prefix;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -81,8 +88,14 @@ pub fn build_tree(
     file: &SourceFile, original: &str, program: &Program, kinds: &KindTable,
 ) -> TreeNode
 {
-    let mut builder =
-        TreeBuilder { file, original, kinds, stack: Vec::new(), pending_id: None };
+    let mut builder = TreeBuilder {
+        file,
+        original,
+        kinds,
+        stack: Vec::new(),
+        pending_id: None,
+        pending_label: None,
+    };
     builder.visit_program(program);
     builder.stack.pop().unwrap_or_default()
 }
@@ -100,6 +113,9 @@ struct TreeBuilder<'a>
     stack: Vec<TreeNode>,
     /// Node number of the expression whose node opens next.
     pending_id: Option<NodeId>,
+    /// Label of the node that opens next, in place of the label of its
+    /// type; an operator node goes by the short name of its operator.
+    pending_label: Option<&'static str>,
 }
 
 impl TreeBuilder<'_>
@@ -133,8 +149,9 @@ impl Visitor for TreeBuilder<'_>
         let id = self.pending_id.take();
         let kind = id.and_then(|i| self.kinds.get(&i)).map(|k| k.name());
         let span = n.span();
+        let label = self.pending_label.take().unwrap_or_else(|| n.label());
         let node = TreeNode::builder()
-            .label(n.label())
+            .label(label)
             .detail(self.detail(&span))
             .range(to_original(self.file, self.original, &span))
             .maybe_id(id.map(|i| i.0))
@@ -154,5 +171,23 @@ impl Visitor for TreeBuilder<'_>
     {
         self.pending_id = Some(n.id());
         walk_expr(self, n);
+    }
+
+    fn visit_prefix(&mut self, n: &PrefixExpr)
+    {
+        self.pending_label = Some(n.op.mnemonic());
+        walk_prefix(self, n);
+    }
+
+    fn visit_infix(&mut self, n: &InfixExpr)
+    {
+        self.pending_label = Some(n.op.mnemonic());
+        walk_infix(self, n);
+    }
+
+    fn visit_logic(&mut self, n: &LogicExpr)
+    {
+        self.pending_label = Some(tern!(n.op == LogicOp::And, "and", "or"));
+        walk_logic(self, n);
     }
 }

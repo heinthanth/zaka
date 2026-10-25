@@ -3,5 +3,5 @@ use shadow_rs::ShadowBuilder;
 
 fn main()
 {
-    ShadowBuilder::builder().build_pattern(BuildPattern::RealTime).build().unwrap();
+    ShadowBuilder::builder().build_pattern(BuildPattern::Lazy).build().unwrap();
 }

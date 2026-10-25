@@ -26,6 +26,7 @@ use crate::compile::Phase;
 use crate::compile::compile;
 use crate::compile::samples::default_sample;
 use crate::compile::spans::Range;
+use crate::debug::Session;
 use crate::font::face::Face;
 use crate::font::load_face;
 use crate::monaco::Editor;
@@ -98,6 +99,8 @@ pub struct AppState
     pub mouse_token: RwSignal<Option<usize>>,
     /// The open stage of the pipeline.
     pub stage: RwSignal<Phase>,
+    /// The debugger session over the generated ops.
+    pub debug: RwSignal<Session>,
     /// The editor, once Monaco has loaded.
     pub editor: StoredValue<Option<Editor>, LocalStorage>,
     /// Whether the editor has loaded.
@@ -348,6 +351,7 @@ pub fn provide_state() -> AppState
         .caret_token(RwSignal::new(None))
         .mouse_token(RwSignal::new(None))
         .stage(RwSignal::new(start.stage))
+        .debug(RwSignal::new(Session::default()))
         .editor(StoredValue::new_local(None))
         .mounted(RwSignal::new(false))
         .mode(mode)
@@ -377,6 +381,7 @@ pub fn provide_state() -> AppState
         .set_problems_open(set_problems_open)
         .build();
     provide_context(state);
+    wire_debug(state);
     wire_editor(state);
     wire_font(state);
     // A link opens its own views over the remembered ones.
@@ -387,6 +392,17 @@ pub fn provide_state() -> AppState
     );
     wire_link(state, settled);
     state
+}
+
+/// Start a new debugger session each time the generated ops change.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+fn wire_debug(state: AppState)
+{
+    let ops = Memo::new(move |_| state.compiled.with(|c| c.ops.clone()));
+    Effect::new(move |_| ops.with(|ops| state.debug.set(Session::new(ops.as_ref()))));
 }
 
 /// The shared state of the page.

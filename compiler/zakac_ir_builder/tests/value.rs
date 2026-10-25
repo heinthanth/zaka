@@ -6,9 +6,12 @@ use zakac_ir_builder::value::EvalError;
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::compare;
 use zakac_ir_builder::value::convert;
+use zakac_ir_builder::value::float_pattern_text;
 use zakac_ir_builder::value::infix;
+use zakac_ir_builder::value::infix_wrapping;
 use zakac_ir_builder::value::logic;
 use zakac_ir_builder::value::prefix;
+use zakac_ir_builder::value::prefix_wrapping;
 use zakac_semcheck::kind::DataKind;
 
 const P: u16 = 64;
@@ -225,4 +228,76 @@ fn wide_and_narrow_floats_print_like_f64()
     assert_eq!(v("-3:f16").to_string(), "-3.0:f16");
     assert_eq!(v("1e30:f128").to_string(), "1e30:f128");
     assert_eq!(v("0.5:f128").to_string(), "0.5:f128");
+}
+
+fn wrapping(o: InfixOp, l: &str, r: &str) -> Result<String, EvalError>
+{
+    infix_wrapping(o, v(l), v(r), P).map(|x| x.to_string())
+}
+
+#[test]
+fn wrapping_ops_wrap_to_the_width()
+{
+    let w = |o, l, r| wrapping(o, l, r).unwrap();
+    assert_eq!(w(InfixOp::Add, "255:u8", "1:u8"), "0:u8");
+    assert_eq!(w(InfixOp::Add, "127:i8", "1:i8"), "-128:i8");
+    assert_eq!(w(InfixOp::Sub, "0:u16", "1:u16"), "65535:u16");
+    assert_eq!(w(InfixOp::Mul, "200:u8", "2:u8"), "144:u8");
+    assert_eq!(w(InfixOp::Div, "-128:i8", "-1:i8"), "-128:i8");
+    assert_eq!(w(InfixOp::Rem, "-128:i8", "-1:i8"), "0:i8");
+    let max = "340282366920938463463374607431768211455:u128";
+    assert_eq!(w(InfixOp::Add, max, "1:u128"), "0:u128");
+    let min = "-170141183460469231731687303715884105728:i128";
+    assert_eq!(w(InfixOp::Div, min, "-1:i128"), min.to_string());
+    assert_eq!(w(InfixOp::Sub, min, "1:i128"), format!("{}:i128", i128::MAX));
+}
+
+#[test]
+fn wrapping_ops_keep_zero_divisor_and_shift_errors()
+{
+    assert_eq!(wrapping(InfixOp::Div, "1:i32", "0:i32"), Err(EvalError::ZeroDivisor));
+    assert_eq!(wrapping(InfixOp::Rem, "1:u8", "0:u8"), Err(EvalError::ZeroDivisor));
+    let far = Err(EvalError::ShiftTooFar { distance: 8, bits: 8 });
+    assert_eq!(wrapping(InfixOp::Shl, "1:u8", "8:u8"), far);
+}
+
+#[test]
+fn wrapping_ops_match_checked_ops_when_in_range()
+{
+    let cases = [
+        (InfixOp::Add, "3:i32", "4:i32"),
+        (InfixOp::Div, "-7:i32", "2:i32"),
+        (InfixOp::Rem, "-7:i32", "2:i32"),
+        (InfixOp::Shr, "-8:i8", "1:u8"),
+        (InfixOp::Shl, "3:u8", "2:u8"),
+        (InfixOp::BitXor, "12:u8", "10:u8"),
+        (InfixOp::Add, "1.5:f64", "2.25:f64"),
+        (InfixOp::Div, "1:f32", "0:f32"),
+        (InfixOp::Rem, "7.5:f64", "2:f64"),
+    ];
+    for (o, l, r) in cases
+    {
+        assert_eq!(wrapping(o, l, r), op(o, l, r), "{o:?} {l} {r}");
+    }
+}
+
+#[test]
+fn wrapping_negation()
+{
+    let neg = |t| prefix_wrapping(PrefixOp::Neg, v(t), P).unwrap().to_string();
+    assert_eq!(neg("-128:i8"), "-128:i8");
+    assert_eq!(neg("5:i8"), "-5:i8");
+    assert_eq!(neg("1:u8"), "255:u8");
+    assert_eq!(neg("1.5:f64"), "-1.5:f64");
+    let not = prefix_wrapping(PrefixOp::Not, v("true:bool"), P).unwrap();
+    assert_eq!(not, v("false:bool"));
+    let bit_not = prefix_wrapping(PrefixOp::BitNot, v("0:u8"), P).unwrap();
+    assert_eq!(bit_not, v("255:u8"));
+}
+
+#[test]
+fn float_text_is_public()
+{
+    assert_eq!(float_pattern_text(64, 0.1f64.to_bits() as u128), "0.1");
+    assert_eq!(float_pattern_text(32, 3.0f32.to_bits() as u128), "3.0");
 }

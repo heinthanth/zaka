@@ -340,6 +340,124 @@ pub fn infix(op: InfixOp, l: Value, r: Value, platform: u16)
     }
 }
 
+/// Work out a prefix operator at run time: integer negation wraps to the
+/// width of the kind instead of reporting an overflow.
+///
+/// # Arguments
+///
+/// * `op` - The operator.
+/// * `v` - The operand.
+/// * `platform` - The bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// The value, or the reason there is none.
+pub fn prefix_wrapping(
+    op: PrefixOp, v: Value, platform: u16,
+) -> Result<Value, EvalError>
+{
+    match (op, v)
+    {
+        (PrefixOp::Neg, Value::Int { kind, raw }) =>
+        {
+            Ok(Value::int(kind, raw.wrapping_neg(), platform))
+        }
+        _ => prefix(op, v, platform),
+    }
+}
+
+/// Work out an arithmetic, bitwise or shift operator at run time. Integer
+/// results wrap to the width of the kind; a zero divisor and a shift
+/// distance not below the width are still errors.
+///
+/// # Arguments
+///
+/// * `op` - The operator.
+/// * `l` - The left operand.
+/// * `r` - The right operand.
+/// * `platform` - The bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// The value, or the reason there is none.
+pub fn infix_wrapping(
+    op: InfixOp, l: Value, r: Value, platform: u16,
+) -> Result<Value, EvalError>
+{
+    let shift = matches!(op, InfixOp::Shl | InfixOp::Shr);
+    ret_if!(shift, shift_int(op, l, r, platform));
+    let (Value::Int { kind, raw: a }, Value::Int { kind: k, raw: b }) = (l, r)
+    else
+    {
+        return infix(op, l, r, platform);
+    };
+    ret_if!(kind != k, Err(EvalError::Mismatch));
+    let divides = matches!(op, InfixOp::Div | InfixOp::Rem);
+    ret_if!(divides && b == 0, Err(EvalError::ZeroDivisor));
+    let raw = tern!(
+        kind.signed,
+        signed_wrapping(op, a as i128, b as i128) as u128,
+        unsigned_wrapping(op, a, b)
+    );
+    Ok(Value::int(kind, raw, platform))
+}
+
+/// Work out a wrapping arithmetic or bitwise operator to 128-bit signed
+/// integers. The divisor is not zero.
+///
+/// # Arguments
+///
+/// * `op` - The operator.
+/// * `a` - The left operand.
+/// * `b` - The right operand.
+///
+/// # Returns
+///
+/// The result, to be cut to the width of the kind.
+fn signed_wrapping(op: InfixOp, a: i128, b: i128) -> i128
+{
+    match op
+    {
+        InfixOp::Add => a.wrapping_add(b),
+        InfixOp::Sub => a.wrapping_sub(b),
+        InfixOp::Mul => a.wrapping_mul(b),
+        InfixOp::Div => a.wrapping_div(b),
+        InfixOp::Rem => a.wrapping_rem(b),
+        InfixOp::BitAnd => a & b,
+        InfixOp::BitOr => a | b,
+        InfixOp::BitXor => a ^ b,
+        InfixOp::Shl | InfixOp::Shr => a,
+    }
+}
+
+/// Work out a wrapping arithmetic or bitwise operator to 128-bit unsigned
+/// integers. The divisor is not zero.
+///
+/// # Arguments
+///
+/// * `op` - The operator.
+/// * `a` - The left operand.
+/// * `b` - The right operand.
+///
+/// # Returns
+///
+/// The result, to be cut to the width of the kind.
+fn unsigned_wrapping(op: InfixOp, a: u128, b: u128) -> u128
+{
+    match op
+    {
+        InfixOp::Add => a.wrapping_add(b),
+        InfixOp::Sub => a.wrapping_sub(b),
+        InfixOp::Mul => a.wrapping_mul(b),
+        InfixOp::Div => a / b,
+        InfixOp::Rem => a % b,
+        InfixOp::BitAnd => a & b,
+        InfixOp::BitOr => a | b,
+        InfixOp::BitXor => a ^ b,
+        InfixOp::Shl | InfixOp::Shr => a,
+    }
+}
+
 /// Work out an arithmetic or bitwise operator to signed integers.
 ///
 /// # Arguments
@@ -733,7 +851,7 @@ fn float_text<F: Float>(v: F) -> String
 /// # Returns
 ///
 /// The text.
-fn float_pattern_text(bits: u16, raw: u128) -> String
+pub fn float_pattern_text(bits: u16, raw: u128) -> String
 {
     match bits
     {

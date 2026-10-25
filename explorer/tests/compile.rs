@@ -240,3 +240,83 @@ fn strings_show_their_value_in_pieces_and_their_source()
     let span = &out.source[row.range.lo as usize..row.range.hi as usize];
     assert_eq!(span, row.source);
 }
+
+#[test]
+fn clean_samples_generate_ops_that_run()
+{
+    for sample in SAMPLES.iter().filter(|s| s.group != DIAGNOSTICS)
+    {
+        let out = compile(sample.text, &Options::default());
+        assert!(out.emitted, "{}", sample.path());
+        assert_eq!(out.status(Phase::Codegen), Status::Clean, "{}", sample.path());
+        assert_eq!(out.status(Phase::Run), Status::Clean, "{}", sample.path());
+        assert_eq!(out.run_trap, None, "{}", sample.path());
+        let ops = out.ops.as_ref().expect("ops");
+        assert_eq!(out.asm.len(), ops.funcs.len(), "{}", sample.path());
+        for (func, asm) in ops.funcs.iter().zip(&out.asm)
+        {
+            assert_eq!(asm.rows.len(), func.code.len(), "{}", sample.path());
+            assert_eq!(asm.locals.len(), func.locals.len(), "{}", sample.path());
+        }
+        assert_eq!(out.globals.len(), ops.globals.len(), "{}", sample.path());
+    }
+}
+
+#[test]
+fn op_rows_point_at_their_source()
+{
+    let text = "\"က\" ဟု ပြသပါ။\n၁ + ၂ ကို ပြသပါ။";
+    let out = compile(text, &Options::default());
+    let main = out.asm.last().expect("main");
+    assert_eq!(main.head(), "f0 main (params 0)");
+    assert_eq!(out.texts, ["က"]);
+    let first = main.rows[0].range.expect("range");
+    assert_eq!(&text[first.lo as usize..first.hi as usize], "\"က\" ဟု ပြသပါ။");
+    assert_eq!(main.rows[0].line, Some(1));
+    assert_eq!(main.rows[1].line, Some(2));
+    let last = main.rows.last().expect("ret");
+    assert_eq!(last.text, "ret");
+    assert!(last.range.is_some_and(|r| r.is_blank()));
+}
+
+#[test]
+fn jump_targets_get_labels()
+{
+    let text = "ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး မှန် ဖြစ်ပါစေ။\nအကယ်၍ က ဖြစ်လျှင် \"ဟုတ်\" ဟု ပြသပါ။";
+    let out = compile(text, &Options::default());
+    let main = out.asm.last().expect("main");
+    let jump = main.rows.iter().find(|r| r.text.starts_with("jump_if_false"));
+    let jump = jump.expect("jump");
+    let target = main.rows.iter().find(|r| r.label.is_some()).expect("target");
+    assert_eq!(jump.text, format!("jump_if_false L{}", target.label.unwrap()));
+}
+
+#[test]
+fn codegen_skips_after_fold_errors()
+{
+    let text = find_sample("diagnostics/fold_errors").unwrap().text;
+    let out = compile(text, &Options::default());
+    assert!(!out.emitted);
+    assert_eq!(out.status(Phase::Codegen), Status::Skipped);
+    assert_eq!(out.status(Phase::Run), Status::Skipped);
+    assert!(out.ops.is_none() && out.asm.is_empty());
+}
+
+#[test]
+fn a_run_that_traps_warns()
+{
+    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
+    let out = compile(text, &Options::default());
+    assert_eq!(out.status(Phase::Codegen), Status::Clean);
+    assert_eq!(out.status(Phase::Run), Status::Warned);
+    let trap = out.run_trap.unwrap();
+    assert!(trap.starts_with("The program stopped: "), "{trap}");
+}
+
+#[test]
+fn endless_loops_stop_at_the_budget()
+{
+    let out = compile("မှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသပါ။", &Options::default());
+    let trap = out.run_trap.unwrap();
+    assert!(trap.contains("stopped after"), "{trap}");
+}

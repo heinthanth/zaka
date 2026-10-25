@@ -24,6 +24,7 @@ leptos-use-css-var = "0.20"
 leptos-use-draggable = "0.20"
 leptos-use-element = "0.20"
 leptos-use-event-listener = "0.20"
+leptos-use-interval-fn = "0.20"
 leptos-use-on-click-outside = "0.20"
 leptos-use-signal-debounce-throttle = "0.20"
 leptos-use-storage = "0.20"
@@ -50,6 +51,7 @@ web-sys = "0.3.105"
 zakac_ast = { path = "compiler/zakac_ast" }
 zakac_burmese_segmenter = { path = "compiler/zakac_burmese_segmenter" }
 zakac_cli_common = { path = "compiler/zakac_cli_common" }
+zakac_codegen = { path = "compiler/zakac_codegen" }
 zakac_consts = { path = "compiler/zakac_consts" }
 zakac_diagnostics = { path = "compiler/zakac_diagnostics" }
 zakac_host_errors = { path = "compiler/zakac_host_errors" }
@@ -63,6 +65,7 @@ zakac_naturalness = { path = "compiler/zakac_naturalness" }
 zakac_semcheck = { path = "compiler/zakac_semcheck" }
 zakac_session = { path = "compiler/zakac_session" }
 zakac_span = { path = "compiler/zakac_span" }
+zaka_vm = { path = "compiler/zaka_vm" }
 
 [profile.wasm-release]
 inherits = "release"

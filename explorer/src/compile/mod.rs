@@ -4,9 +4,14 @@ use bon::Builder;
 use strum::EnumIter;
 use strum::EnumString;
 use strum::IntoStaticStr;
+use zaka_vm::machine::RunOptions;
+use zaka_vm::machine::run_with;
+use zaka_vm::trap::Trap;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
+use zakac_codegen::bc;
+use zakac_codegen::emit::emit;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Level;
 use zakac_diagnostics::has_errors;
@@ -40,6 +45,7 @@ use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 use zakac_span::span::Span;
 
+pub mod asm;
 pub mod graph;
 pub mod ir_tree;
 pub mod s_expr;
@@ -47,6 +53,10 @@ pub mod samples;
 pub mod spans;
 pub mod tree;
 
+use crate::compile::asm::AsmFunc;
+use crate::compile::asm::SlotRow;
+use crate::compile::asm::asm_rows;
+use crate::compile::asm::slot_rows;
 use crate::compile::ir_tree::build_ir_tree;
 use crate::compile::spans::OffsetTable;
 use crate::compile::spans::Range;
@@ -110,6 +120,10 @@ pub enum Phase
     Check,
     /// Lowering to the IR and constant folding.
     Lower,
+    /// Code generation for the stack machine.
+    Codegen,
+    /// A run of the ops in the VM, one step at a time.
+    Run,
 }
 
 impl Phase
@@ -128,6 +142,8 @@ impl Phase
             Phase::Parse => t!("explorer.phase.parse"),
             Phase::Check => t!("explorer.phase.check"),
             Phase::Lower => t!("explorer.phase.lower"),
+            Phase::Codegen => t!("explorer.phase.codegen"),
+            Phase::Run => t!("explorer.phase.run"),
         }
     }
 
@@ -145,6 +161,8 @@ impl Phase
             Phase::Parse => t!("explorer.phase.parse_note"),
             Phase::Check => t!("explorer.phase.check_note"),
             Phase::Lower => t!("explorer.phase.lower_note"),
+            Phase::Codegen => t!("explorer.phase.codegen_note"),
+            Phase::Run => t!("explorer.phase.run_note"),
         }
     }
 }
@@ -334,6 +352,19 @@ pub struct Compiled
     pub ir_folded_sexpr: String,
     /// Whether lowering ran; it is left out after errors in earlier phases.
     pub lowered: bool,
+    /// The generated ops, which the run view steps through.
+    pub ops: Option<bc::Module>,
+    /// The functions of the ops, as the asm tables show them.
+    pub asm: Vec<AsmFunc>,
+    /// The global slots of the ops.
+    pub globals: Vec<SlotRow>,
+    /// The pooled print strings of the ops.
+    pub texts: Vec<String>,
+    /// The reason a trial run of the ops stopped before its end, if it did.
+    pub run_trap: Option<String>,
+    /// Whether code generation ran; it is left out after errors in earlier
+    /// phases, folding included.
+    pub emitted: bool,
 }
 
 /// Which tree a view shows.
@@ -440,11 +471,15 @@ impl Compiled
     /// # Returns
     ///
     /// The status; the check is skipped after lexer or parser errors, and
-    /// lowering after errors in an earlier phase.
+    /// lowering, code generation and the run after errors in an earlier
+    /// phase. A trial run that traps gives the run a warning.
     pub fn status(&self, phase: Phase) -> Status
     {
+        let emits = matches!(phase, Phase::Codegen | Phase::Run);
         ret_if!(phase == Phase::Check && !self.checked, Status::Skipped);
         ret_if!(phase == Phase::Lower && !self.lowered, Status::Skipped);
+        ret_if!(emits && !self.emitted, Status::Skipped);
+        ret_if!(phase == Phase::Run && self.run_trap.is_some(), Status::Warned);
         let own = self.diagnostics.iter().filter(|d| d.phase == phase);
         let levels: Vec<Level> = own.map(|d| d.level).collect();
         ret_if!(levels.contains(&Level::Error), Status::Failed);
@@ -561,6 +596,13 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .iter()
         .flat_map(|(phase, diags)| diags.iter().map(|d| diag_row(&unit, *phase, d)))
         .collect();
+    let emitted = lowered && !has_errors(&fold_diags);
+    let ops =
+        folded.as_ref().filter(|_| emitted).map(|m| emit(m, options.platform_bits));
+    let asm = ops.as_ref().map(|m| asm_rows(&unit, m)).unwrap_or_default();
+    let globals = ops.as_ref().map(|m| slot_rows(&m.globals)).unwrap_or_default();
+    let texts = ops.as_ref().map(|m| m.texts.clone()).unwrap_or_default();
+    let run_trap = ops.as_ref().and_then(trial_run);
 
     Compiled::builder()
         .source(source.to_string())
@@ -578,7 +620,47 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .ir_plain_sexpr(ir_sexpr(&plain))
         .ir_folded_sexpr(ir_sexpr(&folded))
         .lowered(lowered)
+        .maybe_ops(ops)
+        .asm(asm)
+        .globals(globals)
+        .texts(texts)
+        .maybe_run_trap(run_trap)
+        .emitted(emitted)
         .build()
+}
+
+/// The op budget of a run in the explorer, so a loop that never ends does
+/// not hang the page.
+pub const RUN_STEPS: u64 = 1_000_000;
+
+/// Run the ops to their end within the op budget.
+///
+/// # Arguments
+///
+/// * `ops` - The ops.
+///
+/// # Returns
+///
+/// The text of the trap that stopped the run, or `None` when it ran to
+/// its end.
+fn trial_run(ops: &bc::Module) -> Option<String>
+{
+    let limits = RunOptions::builder().max_steps(RUN_STEPS).build();
+    run_with(ops, &mut std::io::sink(), &limits).err().map(|t| trap_text(&t))
+}
+
+/// The text of a trap, as the views show it.
+///
+/// # Arguments
+///
+/// * `trap` - The trap.
+///
+/// # Returns
+///
+/// The text.
+pub fn trap_text(trap: &Trap) -> String
+{
+    t!("explorer.run.trapped", trap = trap).to_string()
 }
 
 /// Lower a checked program and fold a copy.

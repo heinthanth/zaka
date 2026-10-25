@@ -1,0 +1,219 @@
+# zakac-codegen-artifact v1
+name:
+  Custom: programs.zaka
+source: "ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။\nကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။\nကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး အသက် သည် ၁၈ ထက် ကြီးသည် ဖြစ်ပါစေ။\nကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် အခြေ ၁၆ ဖြင့် FF ဖြစ်ပါစေ။\nကိန်းရှင် စာ သည် စာလုံး 'က' ဖြစ်ပါစေ။\nအသက် ကို အသက် + ၁ ဟု ထားပါ။\nအသက် ကို အသက် နှင့် ဘိုက် ၏ ပေါင်းလဒ် ဟု ထားပါ။\nပိုင် * ၂ ကို ပြသပါ။\nဘိုက် ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ် ကို ပြသပါ။\nအသက် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nစာ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nအောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် အသက် သည် ၁၆ ဘစ် ကိန်းပြည့် -၅ ဖြစ်ပါစေ။\nအသက် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nအကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကြီးသူ ကို မမှန် ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nထိုသို့မဟုတ်ဘဲ ကြီးသူ ဖြစ်၍ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသပါ။\nသို့မဟုတ်ပါက (စာ < 'ခ' ဖြစ်၍ ကြီးသူ) ကို ပြသပါ။\n"
+module:
+  platform_bits: 64
+  globals:
+  - name: အသက်
+    kind: isize
+  - name: ပိုင်
+    kind: f64
+  - name: ကြီးသူ
+    kind: bool
+  - name: ဘိုက်
+    kind: u8
+  - name: စာ
+    kind: char
+  - name: အသက်
+    kind: i16
+  texts:
+  - ok
+  funcs:
+  - name: main
+    params: 0
+    ret: null
+    locals: []
+    code:
+    - push: 18:isize
+    - store_global: 0
+    - push: 3.14:f64
+    - store_global: 1
+    - load_global: 0
+    - push: 18:isize
+    - compare: gt
+    - store_global: 2
+    - push: 255:u8
+    - store_global: 3
+    - push: "'က':char"
+    - store_global: 4
+    - load_global: 0
+    - push: 1:isize
+    - infix: add
+    - store_global: 0
+    - load_global: 0
+    - load_global: 3
+    - convert: isize
+    - infix: add
+    - store_global: 0
+    - push: 6.28:f64
+    - print
+    - load_global: 3
+    - push: 2:usize
+    - infix: shr
+    - print
+    - load_global: 0
+    - convert: f64
+    - print
+    - load_global: 4
+    - convert: isize
+    - print
+    - push: -5:i16
+    - store_global: 5
+    - load_global: 5
+    - print
+    - load_global: 0
+    - push: 18:isize
+    - compare: lt
+    - jump_if_false: 44
+    - push: false:bool
+    - store_global: 2
+    - jump: 62
+    - load_global: 2
+    - jump_if_false: 50
+    - load_global: 0
+    - push: 60:isize
+    - compare: gt
+    - jump: 51
+    - push: false:bool
+    - jump_if_false: 54
+    - print_text: 0
+    - jump: 62
+    - load_global: 4
+    - push: "'ခ':char"
+    - compare: lt
+    - jump_if_false: 60
+    - load_global: 2
+    - jump: 61
+    - push: false:bool
+    - print
+    - ret
+    spans:
+    - lo: 82
+      hi: 88
+    - lo: 0
+      hi: 116
+    - lo: 190
+      hi: 200
+    - lo: 117
+      hi: 228
+    - lo: 332
+      hi: 344
+    - lo: 355
+      hi: 361
+    - lo: 332
+      hi: 393
+    - lo: 229
+      hi: 421
+    - lo: 549
+      hi: 587
+    - lo: 422
+      hi: 615
+    - lo: 680
+      hi: 685
+    - lo: 616
+      hi: 713
+    - lo: 737
+      hi: 749
+    - lo: 752
+      hi: 755
+    - lo: 737
+      hi: 755
+    - lo: 714
+      hi: 781
+    - lo: 805
+      hi: 817
+    - lo: 834
+      hi: 849
+    - lo: 834
+      hi: 849
+    - lo: 805
+      hi: 881
+    - lo: 782
+      hi: 907
+    - lo: 908
+      hi: 929
+    - lo: 908
+      hi: 958
+    - lo: 959
+      hi: 974
+    - lo: 1004
+      hi: 1007
+    - lo: 959
+      hi: 1051
+    - lo: 959
+      hi: 1080
+    - lo: 1081
+      hi: 1093
+    - lo: 1081
+      hi: 1194
+    - lo: 1081
+      hi: 1223
+    - lo: 1224
+      hi: 1230
+    - lo: 1224
+      hi: 1337
+    - lo: 1224
+      hi: 1366
+    - lo: 1546
+      hi: 1550
+    - lo: 1447
+      hi: 1578
+    - lo: 1579
+      hi: 1591
+    - lo: 1579
+      hi: 1620
+    - lo: 1720
+      hi: 1732
+    - lo: 1743
+      hi: 1749
+    - lo: 1720
+      hi: 1775
+    - lo: 1704
+      hi: 2319
+    - lo: 1900
+      hi: 1915
+    - lo: 1871
+      hi: 1941
+    - lo: 1704
+      hi: 2319
+    - lo: 2068
+      hi: 2086
+    - lo: 2068
+      hi: 2155
+    - lo: 2103
+      hi: 2115
+    - lo: 2126
+      hi: 2132
+    - lo: 2103
+      hi: 2155
+    - lo: 2068
+      hi: 2155
+    - lo: 2068
+      hi: 2155
+    - lo: 2025
+      hi: 2319
+    - lo: 2171
+      hi: 2201
+    - lo: 2025
+      hi: 2319
+    - lo: 2240
+      hi: 2246
+    - lo: 2249
+      hi: 2254
+    - lo: 2240
+      hi: 2254
+    - lo: 2240
+      hi: 2289
+    - lo: 2271
+      hi: 2289
+    - lo: 2240
+      hi: 2289
+    - lo: 2240
+      hi: 2289
+    - lo: 2239
+      hi: 2319
+    - lo: 2320
+      hi: 2320
+  main: 0
+diagnostics: []

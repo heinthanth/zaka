@@ -1,0 +1,82 @@
+; zakac asm listing v1, platform 64 bits
+globals
+  g0 အသက် isize
+  g1 ပိုင် f64
+  g2 ကြီးသူ bool
+  g3 ဘိုက် u8
+  g4 စာ char
+  g5 အသက် i16
+texts
+  t0 "ok"
+
+fn f0 main (params 0)
+     0  push 18:isize
+     1  store_global g0      ; အသက်
+     2  push 3.14:f64
+     3  store_global g1      ; ပိုင်
+     4  load_global g0       ; အသက်
+     5  push 18:isize
+     6  gt
+     7  store_global g2      ; ကြီးသူ
+     8  push 255:u8
+     9  store_global g3      ; ဘိုက်
+    10  push 'က':char
+    11  store_global g4      ; စာ
+    12  load_global g0       ; အသက်
+    13  push 1:isize
+    14  add
+    15  store_global g0      ; အသက်
+    16  load_global g0       ; အသက်
+    17  load_global g3       ; ဘိုက်
+    18  convert isize
+    19  add
+    20  store_global g0      ; အသက်
+    21  push 6.28:f64
+    22  print
+    23  load_global g3       ; ဘိုက်
+    24  push 2:usize
+    25  shr
+    26  print
+    27  load_global g0       ; အသက်
+    28  convert f64
+    29  print
+    30  load_global g4       ; စာ
+    31  convert isize
+    32  print
+    33  push -5:i16
+    34  store_global g5      ; အသက်
+    35  load_global g5       ; အသက်
+    36  print
+    37  load_global g0       ; အသက်
+    38  push 18:isize
+    39  lt
+    40  jump_if_false L0
+    41  push false:bool
+    42  store_global g2      ; ကြီးသူ
+    43  jump L6
+L0:
+    44  load_global g2       ; ကြီးသူ
+    45  jump_if_false L1
+    46  load_global g0       ; အသက်
+    47  push 60:isize
+    48  gt
+    49  jump L2
+L1:
+    50  push false:bool
+L2:
+    51  jump_if_false L3
+    52  print_text t0
+    53  jump L6
+L3:
+    54  load_global g4       ; စာ
+    55  push 'ခ':char
+    56  lt
+    57  jump_if_false L4
+    58  load_global g2       ; ကြီးသူ
+    59  jump L5
+L4:
+    60  push false:bool
+L5:
+    61  print
+L6:
+    62  ret

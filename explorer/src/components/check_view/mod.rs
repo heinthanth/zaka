@@ -33,10 +33,7 @@ pub fn check_view() -> impl IntoView
     let state = use_state();
     let checked = move || state.compiled.with(|c| c.checked);
     let content = move || {
-        let kinds = (
-            p().class("view-note").child(t!("explorer.check.kinds_note")),
-            tree_view(|| TreeSource::Ast, true),
-        );
+        let kinds = (tree_view(|| TreeSource::Ast, true),);
         let title = t!("explorer.check.skipped_title");
         let note = t!("explorer.check.skipped_note");
         tern!(checked(), kinds.into_any(), skipped(title, note).into_any())

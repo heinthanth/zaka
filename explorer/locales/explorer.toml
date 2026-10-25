@@ -116,8 +116,6 @@ en = "Show problems"
 en = "Errors"
 [explorer.problems.warnings]
 en = "Warnings"
-[explorer.problems.none]
-en = "No problems found."
 
 # ---------------------------------------------------------------- pipeline
 
@@ -146,6 +144,14 @@ en = "kinds"
 en = "Lower"
 [explorer.phase.lower_note]
 en = "IR"
+[explorer.phase.codegen]
+en = "Codegen"
+[explorer.phase.codegen_note]
+en = "ops"
+[explorer.phase.run]
+en = "Run"
+[explorer.phase.run_note]
+en = "VM"
 
 [explorer.status.clean]
 en = "clean"
@@ -184,6 +190,28 @@ en = "The text the program gets; escapes and {holes} show as chips"
 en = "Source"
 [explorer.col.source_note]
 en = "The literal as written in the code"
+[explorer.col.name]
+en = "Name"
+[explorer.col.slot]
+en = "Slot"
+[explorer.col.label]
+en = "Label"
+[explorer.col.op]
+en = "Op"
+[explorer.col.ref]
+en = "Names"
+[explorer.col.break]
+en = "BP"
+[explorer.col.break_note]
+en = "Set or clear a break point"
+[explorer.col.op_addr]
+en = "Addr"
+[explorer.col.op_addr_note]
+en = "The address of the op in the code: the functions sit one after another"
+[explorer.col.addr]
+en = "Addr"
+[explorer.col.addr_note]
+en = "The address of the slot on the stack, counted from the bottom"
 
 [explorer.tokens.comments]
 en = "Comments"
@@ -213,8 +241,6 @@ en = "Fit"
 [explorer.graph.fit_note]
 en = "Show the whole graph (0)"
 
-[explorer.check.kinds_note]
-en = "Each expression carries the kind the check gave it."
 [explorer.check.skipped_title]
 en = "The check did not run"
 [explorer.check.skipped_note]
@@ -230,3 +256,95 @@ en = "Folded"
 en = "Lowering did not run"
 [explorer.lower.skipped_note]
 en = "It runs once the earlier phases report no errors. Fix the problems below to see the IR."
+
+[explorer.codegen.platform]
+en = "Ops for a %{bits}-bit platform. Hover an op to see its source."
+[explorer.codegen.globals]
+en = "Globals"
+[explorer.codegen.texts]
+en = "Texts"
+[explorer.codegen.locals]
+en = "Locals"
+[explorer.codegen.skipped_title]
+en = "Code generation did not run"
+[explorer.codegen.skipped_note]
+en = "It runs once the earlier phases report no errors. Fix the problems below to see the ops."
+
+[explorer.run.label]
+en = "Debugger controls"
+[explorer.run.go]
+en = "Run the program"
+[explorer.run.stop]
+en = "Stop the program"
+[explorer.run.debug]
+en = "Debug"
+[explorer.run.debug_note]
+en = "Debug mode: step through the ops and watch the registers, the stack frames and the globals"
+[explorer.run.reset]
+en = "Start again"
+[explorer.run.step]
+en = "Step: run one op (F11)"
+[explorer.run.step_over]
+en = "Step over: run one op, or a whole call (F10)"
+[explorer.run.step_out]
+en = "Step out: run to the end of this call (Shift+F11)"
+[explorer.run.resume]
+en = "Continue to the next break point (F5)"
+[explorer.run.auto_start]
+en = "Step on a timer"
+[explorer.run.auto_pause]
+en = "Pause the timer"
+[explorer.run.resize_code]
+en = "Resize the ops pane"
+[explorer.run.resize_output]
+en = "Resize the output pane"
+[explorer.run.speed]
+en = "Timer speed"
+[explorer.run.speed_slow]
+en = "Slow"
+[explorer.run.speed_normal]
+en = "Normal"
+[explorer.run.speed_fast]
+en = "Fast"
+[explorer.run.status_start]
+en = "At the start"
+[explorer.run.status_running]
+en = "Running"
+[explorer.run.status_stopped]
+en = "Stopped"
+[explorer.run.status_paused]
+en = "Paused"
+[explorer.run.status_finished]
+en = "Finished"
+[explorer.run.status_trapped]
+en = "Trapped"
+[explorer.run.steps]
+en = "%{count} ops run"
+[explorer.run.registers]
+en = "Registers"
+[explorer.run.pc_note]
+en = "Program counter: the address of the op that runs next"
+[explorer.run.sp_note]
+en = "Stack pointer: the free slot over the top of the stack, where the next value goes"
+[explorer.run.bp_note]
+en = "Base pointer: where the frame of the innermost call starts on the stack"
+[explorer.run.frames]
+en = "Stack frames"
+[explorer.run.frame_meta]
+en = "pc %{pc} · base %{base}"
+[explorer.run.no_frames]
+en = "No call is in progress."
+[explorer.run.view_call]
+en = "Show this call"
+[explorer.run.globals]
+en = "Globals"
+[explorer.run.output]
+en = "Output"
+[explorer.run.no_output]
+en = "The program wrote nothing so far."
+[explorer.run.trapped]
+en = "The program stopped: %{trap}"
+[explorer.run.skipped_title]
+en = "The run did not start"
+[explorer.run.skipped_note]
+en = "It starts once code generation runs. Fix the problems below to step through the ops."

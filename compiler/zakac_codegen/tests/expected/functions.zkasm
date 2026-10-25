@@ -1,0 +1,61 @@
+; zakac asm listing v1, platform 64 bits
+texts
+  t0 "မင်္ဂလာပါ"
+
+fn f0 နှစ်ဆတိုးပြီးပေါင်း (params 3) -> isize
+locals
+  l0 က isize
+  l1 ခ isize
+  l2 ဂ isize
+  l3 ရလဒ် isize
+     0  push 0:isize
+     1  store_local l3       ; ရလဒ်
+     2  load_local l0        ; က
+     3  push 2:isize
+     4  mul
+     5  store_local l0       ; က
+     6  load_local l1        ; ခ
+     7  push 2:isize
+     8  mul
+     9  store_local l1       ; ခ
+    10  load_local l2        ; ဂ
+    11  push 2:isize
+    12  mul
+    13  store_local l2       ; ဂ
+    14  load_local l0        ; က
+    15  load_local l1        ; ခ
+    16  add
+    17  load_local l2        ; ဂ
+    18  add
+    19  ret
+
+fn f1 ပျမ်းမျှ (params 2) -> f64
+locals
+  l0 က f32
+  l1 ခ i8
+  l2 ရလဒ် f64
+     0  push 0.0:f64
+     1  store_local l2       ; ရလဒ်
+     2  load_local l0        ; က
+     3  load_local l1        ; ခ
+     4  convert f32
+     5  add
+     6  push 2.0:f32
+     7  div
+     8  convert f64
+     9  store_local l2       ; ရလဒ်
+    10  load_local l2        ; ရလဒ်
+    11  ret
+
+fn f2 နှုတ်ဆက် (params 0)
+     0  print_text t0
+     1  ret
+
+fn f3 main (params 0)
+     0  call f2              ; နှုတ်ဆက်
+     1  push 1:isize
+     2  push 2:isize
+     3  push 3:isize
+     4  call f0              ; နှစ်ဆတိုးပြီးပေါင်း
+     5  print
+     6  ret

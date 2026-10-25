@@ -29,3 +29,6 @@ en = "unsupported artifact format for %{p}"
 
 [errors.failed_to_decode_artifact]
 en = "failed to decode artifact from %{p}: %{e}"
+
+[errors.runtime_trap]
+en = "the program stopped: %{e}"

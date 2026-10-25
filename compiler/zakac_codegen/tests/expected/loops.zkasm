@@ -1,0 +1,98 @@
+; zakac asm listing v1, platform 64 bits
+globals
+  g0 ကိန်း isize
+  g1 အမှတ် isize
+  g2 အမှတ် isize
+  g3 အဆင့် u8
+
+fn f0 main (params 0)
+     0  push 0:isize
+     1  store_global g0      ; ကိန်း
+L0:
+     2  load_global g0       ; ကိန်း
+     3  push 5:isize
+     4  lt
+     5  jump_if_false L1
+     6  load_global g0       ; ကိန်း
+     7  print
+     8  load_global g0       ; ကိန်း
+     9  push 1:isize
+    10  add
+    11  store_global g0      ; ကိန်း
+    12  jump L0
+L1:
+    13  push 1:isize
+    14  store_global g1      ; အမှတ်
+    15  load_global g1       ; အမှတ်
+    16  push 100:isize
+    17  gt
+    18  jump_if_true L6
+L2:
+    19  load_global g1       ; အမှတ်
+    20  push 2:isize
+    21  rem
+    22  push 0:isize
+    23  eq
+    24  jump_if_false L3
+    25  jump L5
+L3:
+    26  load_global g1       ; အမှတ်
+    27  push 10:isize
+    28  gt
+    29  jump_if_false L4
+    30  jump L6
+L4:
+    31  load_global g1       ; အမှတ်
+    32  print
+L5:
+    33  push 100:usize
+    34  load_global g1       ; အမှတ်
+    35  convert usize
+    36  sub
+    37  push 1:usize
+    38  lt
+    39  jump_if_true L6
+    40  load_global g1       ; အမှတ်
+    41  push 1:isize
+    42  add
+    43  store_global g1      ; အမှတ်
+    44  jump L2
+L6:
+    45  push 10:isize
+    46  store_global g2      ; အမှတ်
+    47  load_global g2       ; အမှတ်
+    48  push 0:isize
+    49  lt
+    50  jump_if_true L8
+L7:
+    51  load_global g2       ; အမှတ်
+    52  print
+    53  load_global g2       ; အမှတ်
+    54  convert usize
+    55  push 0:usize
+    56  sub
+    57  push 2:usize
+    58  lt
+    59  jump_if_true L8
+    60  load_global g2       ; အမှတ်
+    61  push 2:isize
+    62  sub
+    63  store_global g2      ; အမှတ်
+    64  jump L7
+L8:
+    65  push 0:u8
+    66  store_global g3      ; အဆင့်
+L9:
+    67  load_global g3       ; အဆင့်
+    68  push 10:u8
+    69  lt
+    70  jump_if_false L10
+    71  load_global g3       ; အဆင့်
+    72  print
+    73  load_global g3       ; အဆင့်
+    74  push 1:u8
+    75  add
+    76  store_global g3      ; အဆင့်
+    77  jump L9
+L10:
+    78  ret

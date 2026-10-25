@@ -62,6 +62,21 @@ pub struct ZakacIrBuilder
 /// The configured command.
 fn configure_ir_command(cmd: clap::Command) -> clap::Command
 {
+    attach_compile_args(attach_common_io_args(cmd)).about(t!("ir.about"))
+}
+
+/// Add the flags that steer the front end and the folding: the platform
+/// width, strict particles and the foldings to run. Later phases share them.
+///
+/// # Arguments
+///
+/// * `cmd` - The command.
+///
+/// # Returns
+///
+/// The command with the flags.
+pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
+{
     let platform_bits = Arg::new(PLATFORM_BITS_ARG)
         .long("platform-bits")
         .value_name("BITS")
@@ -79,8 +94,7 @@ fn configure_ir_command(cmd: clap::Command) -> clap::Command
         .value_parser(FOLD_WORDS.to_vec())
         .value_delimiter(',')
         .default_value("all");
-    let cmd = attach_common_io_args(cmd).arg(platform_bits).arg(strict).arg(fold);
-    cmd.about(t!("ir.about"))
+    cmd.arg(platform_bits).arg(strict).arg(fold)
 }
 
 /// The check options from the command line.
@@ -92,7 +106,7 @@ fn configure_ir_command(cmd: clap::Command) -> clap::Command
 /// # Returns
 ///
 /// The options.
-fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
+pub fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
 {
     let bits = matches.get_one::<String>(PLATFORM_BITS_ARG);
     let bits = bits.and_then(|b| b.parse().ok()).unwrap_or(64);
@@ -110,7 +124,7 @@ fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
 /// # Returns
 ///
 /// The options.
-fn fold_options(matches: &ArgMatches) -> FoldOptions
+pub fn fold_options(matches: &ArgMatches) -> FoldOptions
 {
     let words: Vec<&str> = matches
         .get_many::<String>(FOLD_ARG)

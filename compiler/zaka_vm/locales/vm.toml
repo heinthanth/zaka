@@ -1,0 +1,34 @@
+_version = 2
+
+[vm.about]
+en = "Run a Zaka program on the stack machine: a source file, or a codegen artifact."
+
+[vm.max_depth]
+en = "The most nested calls before the program stops."
+
+[vm.max_steps]
+en = "The most ops to run before the program stops; no limit when absent."
+
+[vm.trap.at]
+en = "%{what} (in %{func}, op %{pc})"
+
+[vm.trap.zero_divisor]
+en = "integer division or remainder with zero as divisor"
+
+[vm.trap.shift_too_far]
+en = "shift distance %{distance} is not below the bit width %{bits}"
+
+[vm.trap.stack_overflow]
+en = "more than %{depth} nested calls"
+
+[vm.trap.step_limit]
+en = "stopped after %{steps} ops"
+
+[vm.trap.step_not_positive]
+en = "counted loop step is not positive"
+
+[vm.trap.malformed]
+en = "malformed ops: %{reason}"
+
+[vm.trap.write]
+en = "cannot write the output: %{msg}"

@@ -1,0 +1,118 @@
+use std::io::Cursor;
+
+use termcolor::Buffer;
+use zaka_vm::cli::ZakaVm;
+use zakac_cli_common::command::Command;
+use zakac_cli_common::command::CommandIO;
+use zakac_cli_common::command::ExitCode;
+use zakac_codegen::cli::ZakacCodegen;
+
+const SUM: &str = "(၂ + ၃) * ၄ ကို ပြသပါ။\n\"ပြီး\" ဟု ပြသပါ။";
+
+/// Run a command with arguments and stdin.
+fn run_cmd(
+    command: Box<dyn Command>, name: &str, args: &[&str], stdin: &[u8],
+) -> (ExitCode, String, String)
+{
+    let mut argv = vec![name.to_string()];
+    argv.extend(args.iter().map(|arg| (*arg).to_string()));
+    let mut stdin = Cursor::new(stdin.to_vec());
+    let mut stdout = Buffer::no_color();
+    let mut stderr = Buffer::no_color();
+    let mut io = CommandIO::builder()
+        .stdin(&mut stdin)
+        .stdout(&mut stdout)
+        .stderr(&mut stderr)
+        .build();
+    let code = command.execute(&argv, &mut io);
+    let stdout = String::from_utf8(stdout.into_inner()).unwrap();
+    let stderr = String::from_utf8(stderr.into_inner()).unwrap();
+    (code, stdout, stderr)
+}
+
+/// Run the VM command.
+fn run_vm(args: &[&str], stdin: &str) -> (ExitCode, String, String)
+{
+    run_cmd(
+        ZakaVm::create_as_standalone(),
+        ZakaVm::standalone_name(),
+        args,
+        stdin.as_bytes(),
+    )
+}
+
+#[test]
+fn source_on_stdin_runs()
+{
+    let (code, stdout, stderr) = run_vm(&[], SUM);
+    assert_eq!(code, ExitCode::Success, "{stderr}");
+    assert_eq!(stdout, "20\nပြီး\n");
+    assert!(stderr.is_empty(), "{stderr}");
+}
+
+#[test]
+fn codegen_artifacts_run_raw_or_text()
+{
+    let dir = tempfile::tempdir().unwrap();
+    for ext in ["zkbc", "zkbct"]
+    {
+        let path = dir.path().join(format!("sum.{ext}"));
+        let codegen = ZakacCodegen::create_as_standalone();
+        let name = ZakacCodegen::standalone_name();
+        let (code, _, _) =
+            run_cmd(codegen, name, &["-o", path.to_str().unwrap()], SUM.as_bytes());
+        assert_eq!(code, ExitCode::Success);
+        let (code, stdout, stderr) = run_vm(&[path.to_str().unwrap()], "");
+        assert_eq!(code, ExitCode::Success, "{ext}: {stderr}");
+        assert_eq!(stdout, "20\nပြီး\n", "{ext}");
+        let content = std::fs::read(&path).unwrap();
+        let vm = ZakaVm::create_as_standalone();
+        let (code, stdout, _) = run_cmd(vm, ZakaVm::standalone_name(), &[], &content);
+        assert_eq!(
+            (code, stdout.as_str()),
+            (ExitCode::Success, "20\nပြီး\n"),
+            "{ext} on stdin"
+        );
+    }
+}
+
+#[test]
+fn compile_errors_stop_before_running()
+{
+    let (code, stdout, stderr) = run_vm(&[], "\"အရင်\" ဟု ပြသပါ။\nက ကို ပြသပါ။");
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stdout.is_empty(), "{stdout}");
+    assert!(stderr.starts_with("error[ZK0301]"), "{stderr}");
+}
+
+#[test]
+fn traps_report_on_stderr_and_fail()
+{
+    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
+    let (code, stdout, stderr) = run_vm(&[], text);
+    assert_eq!(code, ExitCode::Failure);
+    assert_eq!(stdout, "အရင်\n");
+    assert!(stderr.contains("the program stopped"), "{stderr}");
+    assert!(stderr.contains("zero as divisor"), "{stderr}");
+}
+
+#[test]
+fn limits_come_from_flags()
+{
+    let text = "မှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသပါ။";
+    let (code, stdout, stderr) = run_vm(&["--max-steps", "40"], text);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stdout.lines().count() > 5, "{stdout}");
+    assert!(stderr.contains("stopped after 40 ops"), "{stderr}");
+    let (code, _, _) = run_vm(&["--max-steps", "0"], text);
+    assert_ne!(code, ExitCode::Success);
+}
+
+#[test]
+fn platform_bits_change_the_width()
+{
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၂၇ ဖြစ်ပါစေ။\nက + ၁ ကို ပြသပါ။";
+    let (code, stdout, _) = run_vm(&["--platform-bits", "8"], text);
+    assert_eq!(code, ExitCode::Success);
+    assert_eq!(stdout, "-128\n");
+}

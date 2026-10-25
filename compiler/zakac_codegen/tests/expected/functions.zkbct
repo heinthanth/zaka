@@ -1,0 +1,173 @@
+# zakac-codegen-artifact v1
+name:
+  Custom: functions.zaka
+source: "လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ကို ၁၊ ၂၊ ၃ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\n\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nက ကို က * ၂ ဟု ထားပါ။\nခ ကို ခ * ၂ ဟု ထားပါ။\nဂ ကို ဂ * ၂ ဟု ထားပါ။\nက + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် ပျမ်းမျှ သည်\n၃၂ ဘစ် ဒဿမကိန်း က၊ ၈ ဘစ် ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း ရလဒ် ကို ပြန်ပေးမည်။\nရလဒ် ကို (က + ခ) / ၂ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ဟု ပြသပါ။\nပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n"
+module:
+  platform_bits: 64
+  globals: []
+  texts:
+  - မင်္ဂလာပါ
+  funcs:
+  - name: နှစ်ဆတိုးပြီးပေါင်း
+    params: 3
+    ret: isize
+    locals:
+    - name: က
+      kind: isize
+    - name: ခ
+      kind: isize
+    - name: ဂ
+      kind: isize
+    - name: ရလဒ်
+      kind: isize
+    code:
+    - push: 0:isize
+    - store_local: 3
+    - load_local: 0
+    - push: 2:isize
+    - infix: mul
+    - store_local: 0
+    - load_local: 1
+    - push: 2:isize
+    - infix: mul
+    - store_local: 1
+    - load_local: 2
+    - push: 2:isize
+    - infix: mul
+    - store_local: 2
+    - load_local: 0
+    - load_local: 1
+    - infix: add
+    - load_local: 2
+    - infix: add
+    - ret
+    spans:
+    - lo: 386
+      hi: 443
+    - lo: 386
+      hi: 443
+    - lo: 794
+      hi: 797
+    - lo: 800
+      hi: 803
+    - lo: 794
+      hi: 803
+    - lo: 780
+      hi: 829
+    - lo: 844
+      hi: 847
+    - lo: 850
+      hi: 853
+    - lo: 844
+      hi: 853
+    - lo: 830
+      hi: 879
+    - lo: 894
+      hi: 897
+    - lo: 900
+      hi: 903
+    - lo: 894
+      hi: 903
+    - lo: 880
+      hi: 929
+    - lo: 930
+      hi: 933
+    - lo: 936
+      hi: 939
+    - lo: 930
+      hi: 939
+    - lo: 942
+      hi: 945
+    - lo: 930
+      hi: 945
+    - lo: 930
+      hi: 1014
+  - name: ပျမ်းမျှ
+    params: 2
+    ret: f64
+    locals:
+    - name: က
+      kind: f32
+    - name: ခ
+      kind: i8
+    - name: ရလဒ်
+      kind: f64
+    code:
+    - push: 0.0:f64
+    - store_local: 2
+    - load_local: 0
+    - load_local: 1
+    - convert: f32
+    - infix: add
+    - push: 2.0:f32
+    - infix: div
+    - convert: f64
+    - store_local: 2
+    - load_local: 2
+    - ret
+    spans:
+    - lo: 1139
+      hi: 1163
+    - lo: 1139
+      hi: 1163
+    - lo: 1505
+      hi: 1508
+    - lo: 1511
+      hi: 1514
+    - lo: 1511
+      hi: 1514
+    - lo: 1505
+      hi: 1514
+    - lo: 1518
+      hi: 1521
+    - lo: 1504
+      hi: 1521
+    - lo: 1504
+      hi: 1521
+    - lo: 1481
+      hi: 1547
+    - lo: 1322
+      hi: 1630
+    - lo: 1322
+      hi: 1630
+  - name: နှုတ်ဆက်
+    params: 0
+    ret: null
+    locals: []
+    code:
+    - print_text: 0
+    - ret
+    spans:
+    - lo: 1790
+      hi: 1845
+    - lo: 1846
+      hi: 1876
+  - name: main
+    params: 0
+    ret: null
+    locals: []
+    code:
+    - call: 2
+    - push: 1:isize
+    - push: 2:isize
+    - push: 3:isize
+    - call: 0
+    - print
+    - ret
+    spans:
+    - lo: 0
+      hi: 111
+    - lo: 220
+      hi: 223
+    - lo: 227
+      hi: 230
+    - lo: 234
+      hi: 237
+    - lo: 112
+      hi: 315
+    - lo: 112
+      hi: 344
+    - lo: 1960
+      hi: 1960
+  main: 3
+diagnostics: []

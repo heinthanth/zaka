@@ -23,6 +23,7 @@ leptos-use-css-var = { workspace = true }
 leptos-use-draggable = { workspace = true }
 leptos-use-element = { workspace = true }
 leptos-use-event-listener = { workspace = true }
+leptos-use-interval-fn = { workspace = true }
 leptos-use-on-click-outside = { workspace = true }
 leptos-use-signal-debounce-throttle = { workspace = true }
 leptos-use-storage = { workspace = true }
@@ -63,6 +64,7 @@ web-sys = { workspace = true, features = [
 ] }
 zakac_ast = { workspace = true }
 zakac_burmese_segmenter = { workspace = true }
+zakac_codegen = { workspace = true }
 zakac_diagnostics = { workspace = true }
 zakac_i18n = { workspace = true }
 zakac_ir_builder = { workspace = true }
@@ -73,6 +75,7 @@ zakac_reporter = { workspace = true }
 zakac_rust_sugars = { workspace = true }
 zakac_semcheck = { workspace = true }
 zakac_span = { workspace = true }
+zaka_vm = { workspace = true }
 
 [build-dependencies]
 age = { workspace = true }

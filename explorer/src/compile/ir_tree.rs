@@ -309,15 +309,15 @@ impl IrTree<'_>
             ExprNode::Read(place) => ("read", self.place_text(*place), Vec::new()),
             ExprNode::Prefix { op, operand } =>
             {
-                (op.into(), String::new(), vec![self.expr(operand)])
+                (op.mnemonic(), String::new(), vec![self.expr(operand)])
             }
             ExprNode::Infix { op, lhs, rhs } =>
             {
-                (op.into(), String::new(), self.pair(lhs, rhs))
+                (op.mnemonic(), String::new(), self.pair(lhs, rhs))
             }
             ExprNode::Compare { op, lhs, rhs } =>
             {
-                (op.into(), String::new(), self.pair(lhs, rhs))
+                (op.mnemonic(), String::new(), self.pair(lhs, rhs))
             }
             ExprNode::Logic { op, lhs, rhs } =>
             {

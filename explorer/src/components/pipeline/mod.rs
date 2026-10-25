@@ -15,7 +15,9 @@ use zakac_rust_sugars::tern;
 use crate::compile::Phase;
 use crate::components::ast_view::ast_view;
 use crate::components::check_view::check_view;
+use crate::components::codegen_view::codegen_view;
 use crate::components::lower_view::lower_view;
+use crate::components::run_view::run_view;
 use crate::components::scope::ScopedSheet;
 use crate::components::scope::scoped;
 use crate::components::segments_view::segments_view;
@@ -43,8 +45,14 @@ pub fn pipeline() -> impl IntoView
         Phase::Parse => ast_view().into_any(),
         Phase::Check => check_view().into_any(),
         Phase::Lower => lower_view().into_any(),
+        Phase::Codegen => codegen_view().into_any(),
+        Phase::Run => run_view().into_any(),
     };
-    let stages = Phase::iter().map(|phase| stage_button(state, phase)).collect_view();
+    let stage = move |phase: Phase| {
+        let link = (phase as usize > 0).then(|| stage_link(state, phase));
+        (link, stage_button(state, phase))
+    };
+    let stages = Phase::iter().map(stage).collect_view();
     let timeline = nav()
         .class("pipeline")
         .attr("role", "tablist")
@@ -61,7 +69,8 @@ pub fn pipeline() -> impl IntoView
 
 /// One stage of the timeline: its number, a status dot, its name and the
 /// output it shows. Stages up to the open one count as passed, so the line
-/// between them fills in.
+/// between them fills in; the halves of the line on both sides of the number
+/// join the lines between the stages.
 ///
 /// # Arguments
 ///
@@ -76,13 +85,14 @@ fn stage_button(state: AppState, phase: Phase) -> impl IntoView
     let status = move || state.compiled.with(|c| c.status(phase));
     let class = move || -> &'static str { status().into() };
     let is_open = move || state.stage.get() == phase;
-    let passed = move || phase as usize <= state.stage.get() as usize;
+    let passed = move || is_passed(state, phase);
     let dot =
         span().class(move || format!("stage-dot stage-{}", class())).title(move || {
             let word = status().label();
             t!("explorer.pipeline.status", phase = phase.label(), status = word)
         });
     let node = span().class("stage-node").child((phase as usize + 1, dot));
+    let track = span().class("stage-track").child(node);
     let text = span().class("stage-text").child((
         span().class("stage-label").child(phase.label()),
         span().class("stage-note").child(phase.note()),
@@ -96,7 +106,42 @@ fn stage_button(state: AppState, phase: Phase) -> impl IntoView
         .attr("aria-selected", move || is_open().to_string())
         .attr("tabindex", move || tern!(is_open(), "0", "-1"))
         .on(ev::click, move |_| state.stage.set(phase))
-        .child((node, text))
+        .child((track, text))
+}
+
+/// The line into a stage from the one before it; it fills in once the stage
+/// is passed. The lines take the width the stages leave, so the first and
+/// last stages sit at the edges of the timeline.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `phase` - The phase of the stage the line leads to.
+///
+/// # Returns
+///
+/// The view.
+fn stage_link(state: AppState, phase: Phase) -> impl IntoView
+{
+    span()
+        .class("stage-link")
+        .class(("stage-link-passed", move || is_passed(state, phase)))
+        .attr("aria-hidden", "true")
+}
+
+/// Whether a stage comes up to the open one.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `phase` - The phase of the stage.
+///
+/// # Returns
+///
+/// `true` for the open stage and those before it.
+fn is_passed(state: AppState, phase: Phase) -> bool
+{
+    phase as usize <= state.stage.get() as usize
 }
 
 /// Element id of a stage button.

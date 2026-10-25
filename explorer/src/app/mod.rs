@@ -21,7 +21,7 @@ use crate::state::permalink;
 use crate::state::provide_state;
 use crate::state::split::DEFAULT_EDITOR_SHARE;
 use crate::state::split::DEFAULT_STAGE_SHARE;
-use crate::state::split::clamp_split;
+use crate::state::split::share_fr;
 use crate::state::url;
 use crate::theme::theme_sheet;
 
@@ -30,7 +30,8 @@ static SHEET: ScopedSheet =
     ScopedSheet::new("zaka-app", scss_file!("src/app/mod.sass"));
 
 /// The whole page: toolbar, then the editor on the left and the pipeline
-/// over the problems on the right, with splitters between them.
+/// over the problems on the right, with splitters between them. The
+/// problems panel shows while there are problems.
 ///
 /// # Returns
 ///
@@ -43,6 +44,9 @@ pub fn app() -> impl IntoView
     let root = NodeRef::<html::Div>::new();
     let panes = NodeRef::<html::Div>::new();
     let column = NodeRef::<html::Div>::new();
+    let clean = Memo::new(move |_| state.compiled.with(|c| c.diagnostics.is_empty()));
+    let problems_shown =
+        Signal::derive(move || state.problems_open.get() && !clean.get());
     let between = Split::builder()
         .axis(Axis::Columns)
         .container(panes)
@@ -59,7 +63,7 @@ pub fn app() -> impl IntoView
         .set_share(state.set_stage_share)
         .initial(DEFAULT_STAGE_SHARE)
         .label("explorer.app.resize_problems")
-        .enabled(state.problems_open)
+        .enabled(problems_shown)
         .build();
     let left = section().class("panel panel-editor").child(editor_pane());
     let stage = section().class("panel panel-stage").child(pipeline());
@@ -67,32 +71,22 @@ pub fn app() -> impl IntoView
     let right = div()
         .class("column")
         .class(("column-shut", move || !state.problems_open.get()))
+        .class(("column-clean", move || clean.get()))
         .node_ref(column)
-        .style(("--first-share", move || fr(state.stage_share.get())))
-        .style(("--second-share", move || fr(1.0 - state.stage_share.get())))
+        .style(("--first-share", move || share_fr(state.stage_share.get())))
+        .style(("--second-share", move || share_fr(1.0 - state.stage_share.get())))
         .child((stage, splitter(above), problems));
     let main = div()
         .class("panes")
         .class(("panes-shut", move || !state.editor_open.get()))
         .attr("role", "main")
         .node_ref(panes)
-        .style(("--first-share", move || fr(state.editor_share.get())))
-        .style(("--second-share", move || fr(1.0 - state.editor_share.get())))
+        .style(("--first-share", move || share_fr(state.editor_share.get())))
+        .style(("--second-share", move || share_fr(1.0 - state.editor_share.get())))
         .child((left, splitter(between), right));
     let shell = div().class("app-shell").node_ref(root).child((toolbar(), main));
     (theme_sheet(), scoped(&SHEET, root, shell))
 }
-
-/// A split share as a grid track size.
-///
-/// # Arguments
-///
-/// * `share` - The share of a pane.
-///
-/// # Returns
-///
-/// The share, clamped, in `fr` units of a total of 1.
-fn fr(share: f64) -> String { format!("{}fr", clamp_split(share)) }
 
 /// Tag the page with the active locale, for screen readers and fonts.
 fn mark_lang()

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bon::Builder;
+use zaka_vm::cli::ZakaVm;
 use zakac_burmese_segmenter::cli::ZakacBurmeseSegmenter;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::ArgMatches;
@@ -12,6 +13,7 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_codegen::cli::ZakacCodegen;
 use zakac_ir_builder::cli::ZakacIrBuilder;
 use zakac_lexer::cli::ZakacLexer;
 use zakac_parser::cli::ZakacParser;
@@ -77,6 +79,8 @@ impl Command for Zakac
             .add_subcommand::<ZakacParser>(Some("parse"))
             .add_subcommand::<ZakacSemcheck>(Some("semcheck"))
             .add_subcommand::<ZakacIrBuilder>(Some("irgen"))
+            .add_subcommand::<ZakacCodegen>(Some("codegen"))
+            .add_subcommand::<ZakaVm>(Some("run"))
     }
 
     /// Construct this command wrapper from a finished [`CommandSetup`].

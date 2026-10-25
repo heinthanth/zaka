@@ -1,5 +1,7 @@
+pub mod asm_table;
 pub mod ast_view;
 pub mod check_view;
+pub mod codegen_view;
 pub mod diag_panel;
 pub mod dropdown;
 pub mod editor;
@@ -7,6 +9,7 @@ pub mod graph_view;
 pub mod icon;
 pub mod lower_view;
 pub mod pipeline;
+pub mod run_view;
 pub mod scope;
 pub mod segments_view;
 pub mod settings;

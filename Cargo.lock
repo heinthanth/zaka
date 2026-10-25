@@ -2248,6 +2248,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "leptos-use-interval-fn"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30da49a18b6db3eeb2ad3a7c0861599696d0a671a5b3d93e8f06a47a9f3e3e3e"
+dependencies = [
+ "default-struct-builder",
+ "leptos",
+ "leptos-use-filters",
+ "send_wrapper",
+ "sendwrap-fn",
+]
+
+[[package]]
 name = "leptos-use-maybe-rw-signal"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4467,12 +4480,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "zaka_vm"
+version = "0.1.0"
+dependencies = [
+ "bon",
+ "cargo-build",
+ "clap",
+ "rust-i18n",
+ "tempfile",
+ "termcolor",
+ "zakac_cli_common",
+ "zakac_codegen",
+ "zakac_diagnostics",
+ "zakac_host_errors",
+ "zakac_i18n",
+ "zakac_ir_builder",
+ "zakac_lexer",
+ "zakac_reporter",
+ "zakac_rust_sugars",
+ "zakac_semcheck",
+ "zakac_session",
+ "zakac_span",
+]
+
+[[package]]
 name = "zakac"
 version = "0.1.0"
 dependencies = [
  "bon",
+ "zaka_vm",
  "zakac_burmese_segmenter",
  "zakac_cli_common",
+ "zakac_codegen",
  "zakac_ir_builder",
  "zakac_lexer",
  "zakac_parser",
@@ -4534,6 +4573,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "zakac_codegen"
+version = "0.1.0"
+dependencies = [
+ "bon",
+ "cargo-build",
+ "clap",
+ "postcard",
+ "rust-i18n",
+ "serde",
+ "strum",
+ "tempfile",
+ "termcolor",
+ "zakac_ast",
+ "zakac_cli_common",
+ "zakac_diagnostics",
+ "zakac_host_errors",
+ "zakac_i18n",
+ "zakac_ir_builder",
+ "zakac_lexer",
+ "zakac_reporter",
+ "zakac_rust_sugars",
+ "zakac_semcheck",
+ "zakac_session",
+ "zakac_span",
+]
+
+[[package]]
 name = "zakac_consts"
 version = "0.1.0"
 dependencies = [
@@ -4574,6 +4640,7 @@ dependencies = [
  "leptos-use-draggable",
  "leptos-use-element",
  "leptos-use-event-listener",
+ "leptos-use-interval-fn",
  "leptos-use-on-click-outside",
  "leptos-use-signal-debounce-throttle",
  "leptos-use-storage",
@@ -4586,8 +4653,10 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+ "zaka_vm",
  "zakac_ast",
  "zakac_burmese_segmenter",
+ "zakac_codegen",
  "zakac_diagnostics",
  "zakac_i18n",
  "zakac_ir_builder",

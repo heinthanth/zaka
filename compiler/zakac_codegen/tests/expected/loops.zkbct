@@ -1,0 +1,262 @@
+# zakac-codegen-artifact v1
+name:
+  Custom: loops.zaka
+source: "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\n"
+module:
+  platform_bits: 64
+  globals:
+  - name: ကိန်း
+    kind: isize
+  - name: အမှတ်
+    kind: isize
+  - name: အမှတ်
+    kind: isize
+  - name: အဆင့်
+    kind: u8
+  texts: []
+  funcs:
+  - name: main
+    params: 0
+    ret: null
+    locals: []
+    code:
+    - push: 0:isize
+    - store_global: 0
+    - load_global: 0
+    - push: 5:isize
+    - compare: lt
+    - jump_if_false: 13
+    - load_global: 0
+    - print
+    - load_global: 0
+    - push: 1:isize
+    - infix: add
+    - store_global: 0
+    - jump: 2
+    - push: 1:isize
+    - store_global: 1
+    - load_global: 1
+    - push: 100:isize
+    - compare: gt
+    - jump_if_true: 45
+    - load_global: 1
+    - push: 2:isize
+    - infix: rem
+    - push: 0:isize
+    - compare: eq
+    - jump_if_false: 26
+    - jump: 33
+    - load_global: 1
+    - push: 10:isize
+    - compare: gt
+    - jump_if_false: 31
+    - jump: 45
+    - load_global: 1
+    - print
+    - push: 100:usize
+    - load_global: 1
+    - convert: usize
+    - infix: sub
+    - push: 1:usize
+    - compare: lt
+    - jump_if_true: 45
+    - load_global: 1
+    - push: 1:isize
+    - infix: add
+    - store_global: 1
+    - jump: 19
+    - push: 10:isize
+    - store_global: 2
+    - load_global: 2
+    - push: 0:isize
+    - compare: lt
+    - jump_if_true: 65
+    - load_global: 2
+    - print
+    - load_global: 2
+    - convert: usize
+    - push: 0:usize
+    - infix: sub
+    - push: 2:usize
+    - compare: lt
+    - jump_if_true: 65
+    - load_global: 2
+    - push: 2:isize
+    - infix: sub
+    - store_global: 2
+    - jump: 51
+    - push: 0:u8
+    - store_global: 3
+    - load_global: 3
+    - push: 10:u8
+    - compare: lt
+    - jump_if_false: 78
+    - load_global: 3
+    - print
+    - load_global: 3
+    - push: 1:u8
+    - infix: add
+    - store_global: 3
+    - jump: 67
+    - ret
+    spans:
+    - lo: 28
+      hi: 43
+    - lo: 0
+      hi: 112
+    - lo: 113
+      hi: 128
+    - lo: 139
+      hi: 142
+    - lo: 113
+      hi: 168
+    - lo: 113
+      hi: 471
+    - lo: 270
+      hi: 285
+    - lo: 270
+      hi: 314
+    - lo: 341
+      hi: 356
+    - lo: 359
+      hi: 362
+    - lo: 341
+      hi: 362
+    - lo: 315
+      hi: 388
+    - lo: 113
+      hi: 471
+    - lo: 472
+      hi: 475
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 662
+      hi: 677
+    - lo: 680
+      hi: 683
+    - lo: 662
+      hi: 683
+    - lo: 694
+      hi: 697
+    - lo: 662
+      hi: 720
+    - lo: 646
+      hi: 818
+    - lo: 736
+      hi: 818
+    - lo: 835
+      hi: 850
+    - lo: 861
+      hi: 867
+    - lo: 835
+      hi: 890
+    - lo: 819
+      hi: 959
+    - lo: 906
+      hi: 959
+    - lo: 960
+      hi: 975
+    - lo: 960
+      hi: 1004
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 472
+      hi: 1087
+    - lo: 1088
+      hi: 1094
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1190
+      hi: 1205
+    - lo: 1190
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1088
+      hi: 1234
+    - lo: 1362
+      hi: 1365
+    - lo: 1263
+      hi: 1361
+    - lo: 1391
+      hi: 1406
+    - lo: 1417
+      hi: 1423
+    - lo: 1391
+      hi: 1449
+    - lo: 1235
+      hi: 1789
+    - lo: 1551
+      hi: 1566
+    - lo: 1551
+      hi: 1595
+    - lo: 1650
+      hi: 1665
+    - lo: 1668
+      hi: 1671
+    - lo: 1650
+      hi: 1671
+    - lo: 1624
+      hi: 1697
+    - lo: 1235
+      hi: 1789
+    - lo: 1790
+      hi: 1790
+  main: 0
+diagnostics: []

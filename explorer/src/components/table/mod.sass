@@ -169,3 +169,49 @@
     font-size: 13px
     line-height: 1.5
     color: var(--fg-muted)
+
+// The ops of a function: the marked op (the next one to run) stands out in
+// the warning color, and the gutter holds a dot per break point. Include it
+// after phase-table so the marked row wins over hover.
+=asm-table
+  .asm-table
+    .cell-label
+      width: 4em
+      color: var(--accent)
+      white-space: nowrap
+
+    .cell-op
+      white-space: nowrap
+
+    tbody tr.row-pc
+      background: color-mix(in srgb, var(--diag-warning) 22%, transparent)
+
+      td:first-child
+        box-shadow: inset 3px 0 0 var(--diag-warning)
+
+    .cell-break,
+    th.cell-break
+      width: 26px
+      padding: 0 0 0 6px
+
+  .break-dot
+    display: block
+    width: 12px
+    height: 12px
+    padding: 0
+    border-radius: 50%
+    border: 1px solid transparent
+    background: transparent
+    cursor: pointer
+    outline: none
+    transition: background-color 100ms ease-out, border-color 100ms ease-out
+
+    &:hover
+      border-color: color-mix(in srgb, var(--diag-error) 60%, transparent)
+
+    &:focus-visible
+      box-shadow: 0 0 0 3px var(--accent-soft)
+
+  .break-on
+    background: var(--diag-error)
+    border-color: var(--diag-error)
