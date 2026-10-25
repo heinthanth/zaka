@@ -16,8 +16,8 @@ use crate::compile::PLATFORM_BITS;
 use crate::state::AppState;
 use crate::state::use_state;
 
-/// The settings button and the modal it opens: the language, the look of the
-/// page and the compile options.
+/// The settings button and the modal it opens: the language, auto run, the
+/// look of the page and the compile options.
 ///
 /// # Returns
 ///
@@ -25,12 +25,20 @@ use crate::state::use_state;
 pub fn settings_menu() -> impl IntoView
 {
     let state = use_state();
+    let auto_run = switch(state.auto_run, Signal::stored(false), state.set_auto_run);
     let general = section(
         t!("explorer.settings.general"),
-        row(
-            t!("explorer.settings.language"),
-            t!("explorer.settings.language_note"),
-            lang_picker(move || state.flush_link()),
+        (
+            row(
+                t!("explorer.settings.language"),
+                t!("explorer.settings.language_note"),
+                lang_picker(move || state.flush_link()),
+            ),
+            switch_row(
+                t!("explorer.settings.auto_run"),
+                t!("explorer.settings.auto_run_note"),
+                auto_run,
+            ),
         ),
     );
     let compiler = section(

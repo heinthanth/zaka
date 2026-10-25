@@ -47,6 +47,30 @@ fn debug_mode_turns_on_after_the_step_on_its_switch()
 }
 
 #[test]
+fn each_debugger_control_has_a_step_in_bar_order()
+{
+    let controls = [
+        "go",
+        "stop",
+        "reset",
+        "step",
+        "step-over",
+        "step-out",
+        "timer",
+        "speed",
+        "status",
+    ];
+    let targets: Vec<&str> = steps().iter().filter_map(|s| s.target).collect();
+    let at = |name: &str| {
+        let target = format!("[data-tour={name}]");
+        targets.iter().position(|t| *t == target).expect(name)
+    };
+    let order: Vec<usize> = controls.iter().map(|c| at(c)).collect();
+    assert!(order.is_sorted(), "{order:?}");
+    assert_eq!(order.last().unwrap() - order[0], controls.len() - 1);
+}
+
+#[test]
 fn the_tour_opens_and_ends_on_a_centered_card()
 {
     let all = steps();

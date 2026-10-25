@@ -87,7 +87,7 @@ pub fn pipeline() -> impl IntoView
 /// The view.
 fn stage_button(state: AppState, phase: Phase) -> impl IntoView
 {
-    let status = move || state.compiled.with(|c| c.status(phase));
+    let status = move || stage_status(state, phase);
     let is_open = move || state.stage.get() == phase;
     let passed = move || is_passed(state, phase);
     let dot = span()
@@ -132,6 +132,25 @@ fn stage_link(state: AppState, phase: Phase) -> impl IntoView
         .class(ClassName::STAGE_LINK)
         .class((ClassName::STAGE_LINK_PASSED, move || is_passed(state, phase)))
         .attr("aria-hidden", "true")
+}
+
+/// How the phase of a stage went: as compiled, and for the run a warning
+/// once the session traps. The ops run when go or auto run starts them,
+/// never to work out a status.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `phase` - The phase of the stage.
+///
+/// # Returns
+///
+/// The status.
+fn stage_status(state: AppState, phase: Phase) -> Status
+{
+    let status = state.compiled.with(|c| c.status(phase));
+    let trapped = phase == Phase::Run && state.debug.with(|s| s.trap().is_some());
+    tern!(trapped && status == Status::Clean, Status::Warned, status)
 }
 
 /// Whether a stage comes up to the open one.

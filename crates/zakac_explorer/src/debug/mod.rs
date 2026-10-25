@@ -211,9 +211,13 @@ pub struct Session
 {
     /// The machine, or `None` when code generation did not run.
     machine: Option<Machine>,
-    /// Function and op index pairs where a run stops.
+    /// Function and op index pairs where a run stops, set on the ops.
     #[builder(default)]
     breaks: BTreeSet<(u32, u32)>,
+    /// Function and op index pairs where a run stops for the break points
+    /// on source lines.
+    #[builder(default)]
+    line_stops: BTreeSet<(u32, u32)>,
     /// The index of the call the panels show.
     #[builder(default)]
     viewed: usize,
@@ -398,7 +402,7 @@ impl Session
     /// Run until a break point, the end, a trap or the op budget.
     pub fn resume(&mut self)
     {
-        let stops: Vec<(u32, u32)> = self.breaks.iter().copied().collect();
+        let stops: Vec<(u32, u32)> = self.all_breaks().collect();
         self.drive(|m| _ = m.run_until(&stops));
     }
 
@@ -440,7 +444,7 @@ impl Session
     {
         self.step();
         let at = self.position();
-        let at_break = breaks && at.is_some_and(|p| self.breaks.contains(&p));
+        let at_break = breaks && at.is_some_and(|p| self.is_break(p));
         self.status() == RunStatus::Paused && !at_break
     }
 
@@ -488,8 +492,67 @@ impl Session
     /// The op indices.
     pub fn breaks_in(&self, func: u32) -> Vec<u32>
     {
-        let within = self.breaks.iter().filter(|(f, _)| *f == func);
-        within.map(|(_, pc)| *pc).collect()
+        let within = self.all_breaks().filter(|(f, _)| *f == func);
+        within.map(|(_, pc)| pc).collect()
+    }
+
+    /// Replace the break points on ops.
+    ///
+    /// # Arguments
+    ///
+    /// * `stops` - Function and op index pairs.
+    pub fn set_op_stops(&mut self, stops: impl IntoIterator<Item = (u32, u32)>)
+    {
+        self.breaks = stops.into_iter().collect();
+    }
+
+    /// Replace the stops of the break points on source lines.
+    ///
+    /// # Arguments
+    ///
+    /// * `stops` - Function and op index pairs.
+    pub fn set_line_stops(&mut self, stops: impl IntoIterator<Item = (u32, u32)>)
+    {
+        self.line_stops = stops.into_iter().collect();
+    }
+
+    /// Whether a stop comes from a break point on a source line.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - The function index.
+    /// * `pc` - The op index.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a stop of a source line.
+    pub fn from_line(&self, func: u32, pc: u32) -> bool
+    {
+        self.line_stops.contains(&(func, pc))
+    }
+
+    /// Whether a run stops at an op, for a break point on it or on its line.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The function and op index.
+    ///
+    /// # Returns
+    ///
+    /// `true` at a stop.
+    fn is_break(&self, at: (u32, u32)) -> bool
+    {
+        self.breaks.contains(&at) || self.line_stops.contains(&at)
+    }
+
+    /// All stops: the break points on ops and on source lines.
+    ///
+    /// # Returns
+    ///
+    /// Function and op index pairs, in order, each once.
+    fn all_breaks(&self) -> impl Iterator<Item = (u32, u32)> + '_
+    {
+        self.breaks.union(&self.line_stops).copied()
     }
 
     /// Show the panels of another call.

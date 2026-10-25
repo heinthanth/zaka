@@ -262,7 +262,6 @@ fn clean_samples_generate_ops_that_run()
         assert!(out.emitted, "{}", sample.path());
         assert_eq!(out.status(Phase::Codegen), Status::Clean, "{}", sample.path());
         assert_eq!(out.status(Phase::Run), Status::Clean, "{}", sample.path());
-        assert_eq!(out.run_trap, None, "{}", sample.path());
         let ops = out.ops.as_ref().expect("ops");
         assert_eq!(out.asm.len(), ops.funcs.len(), "{}", sample.path());
         for (func, asm) in ops.funcs.iter().zip(&out.asm)
@@ -315,20 +314,10 @@ fn codegen_skips_after_fold_errors()
 }
 
 #[test]
-fn a_run_that_traps_warns()
+fn compiling_does_not_run_the_ops()
 {
     let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
     let out = compile(text, &Options::default());
     assert_eq!(out.status(Phase::Codegen), Status::Clean);
-    assert_eq!(out.status(Phase::Run), Status::Warned);
-    let trap = out.run_trap.unwrap();
-    assert!(trap.starts_with("The program stopped: "), "{trap}");
-}
-
-#[test]
-fn endless_loops_stop_at_the_budget()
-{
-    let out = compile("မှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသပါ။", &Options::default());
-    let trap = out.run_trap.unwrap();
-    assert!(trap.contains("stopped after"), "{trap}");
+    assert_eq!(out.status(Phase::Run), Status::Clean);
 }

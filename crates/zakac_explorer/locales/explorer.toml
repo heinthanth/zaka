@@ -15,6 +15,12 @@ en = "Drag to resize; double-click to reset"
 
 [explorer.editor.loading]
 en = "Loading the editor…"
+[explorer.editor.break]
+en = "Break point: the debugger pauses when the run reaches this line. Click to clear it."
+[explorer.editor.break_op]
+en = "Break point on an op of this line, set in the ops table. An edit of the code clears it."
+[explorer.editor.break_idle]
+en = "Break point on a line without ops: the run cannot pause here. Click to clear it."
 
 # ---------------------------------------------------------------- toolbar
 
@@ -74,9 +80,9 @@ en = "A modified version of the Source Code Pro font from Adobe."
 [explorer.about.source_repo]
 en = "Source Code Pro on GitHub"
 [explorer.about.sabae_note]
-en = "A Burmese font from Google; its designer is Danh Hong."
-[explorer.about.apache]
-en = "Apache License 2.0"
+en = "A Burmese font from Danh Hong."
+[explorer.about.sabae_repo]
+en = "Myanmar Sabae on GitHub"
 [explorer.about.others]
 en = "Other fonts"
 [explorer.about.others_note]
@@ -96,6 +102,10 @@ en = "General"
 en = "Language"
 [explorer.settings.language_note]
 en = "Language of the page and the compiler messages. The page reloads to switch."
+[explorer.settings.auto_run]
+en = "Auto run"
+[explorer.settings.auto_run_note]
+en = "Run the program each time the code compiles. Off, press the run button to start it."
 [explorer.settings.compiler]
 en = "Compiler"
 [explorer.settings.platform_bits]
@@ -417,11 +427,47 @@ en = "Turn on debug mode to see each phase of the compiler and to step through t
 [explorer.tour.controls]
 en = "Debugger controls"
 [explorer.tour.controls_text]
-en = "From the left: continue to the next break point, stop, and start again; then step, step over and step out; then step on a timer, at the speed beside it. The status and the count of ops run sit at the end. F5, F10, F11 and Shift+F11 work too."
+en = "This bar drives the debugger. The next steps go through it one control at a time, from the left."
+[explorer.tour.go]
+en = "Continue"
+[explorer.tour.go_text]
+en = "Runs the program to the next break point, or to its end when there is none. Once the run has ended, it starts again from the first op. F5 does the same."
+[explorer.tour.stop]
+en = "Stop"
+[explorer.tour.stop_text]
+en = "Ends a run before its end and goes back to the first op. What the program wrote remains until the next run starts."
+[explorer.tour.reset]
+en = "Start again"
+[explorer.tour.reset_text]
+en = "Goes back to the first op with a fresh machine, to run the program again from the top. The break points remain."
+[explorer.tour.step_in]
+en = "Step"
+[explorer.tour.step_in_text]
+en = "Runs one op, then pauses. When the op calls a function, the debugger follows it into that function. F11 does the same."
+[explorer.tour.step_over]
+en = "Step over"
+[explorer.tour.step_over_text]
+en = "Runs one op, like step, but a call runs whole and the debugger pauses after it returns, in the same function. F10 does the same."
+[explorer.tour.step_out]
+en = "Step out"
+[explorer.tour.step_out_text]
+en = "Runs on to the end of the current call and pauses back in the function that called it. Shift+F11 does the same."
+[explorer.tour.timer]
+en = "Step on a timer"
+[explorer.tour.timer_text]
+en = "Steps through the program on its own, one op at a time, so the run can be watched. It is on now; press it again to pause."
+[explorer.tour.speed]
+en = "Timer speed"
+[explorer.tour.speed_text]
+en = "The number of ops the timer runs each second, from 1 to 100."
+[explorer.tour.status]
+en = "Status"
+[explorer.tour.status_text]
+en = "Where the run stands: at the start, running, paused, stopped, finished or trapped. The count beside it is the number of ops run so far."
 [explorer.tour.ops]
 en = "Ops"
 [explorer.tour.ops_text]
-en = "The timer is now stepping through the program. The marked row is the op that runs next, and the editor lights up its source. Click the gutter to set a break point."
+en = "The timer is now stepping through the program. The marked row is the op that runs next, and the editor lights up its source. Click the gutter beside an op, or beside a line of the code, to set a break point."
 [explorer.tour.machine]
 en = "Machine state"
 [explorer.tour.machine_text]
@@ -429,11 +475,11 @@ en = "The registers: PC points at the next op, SP at the free slot over the stac
 [explorer.tour.output]
 en = "Run"
 [explorer.tour.output_text]
-en = "The program runs as soon as it compiles, and what it prints shows up here. Go runs it again from the start and stop halts it. If the run stops on an error, the trap shows under the output; problems in the code open a panel below."
+en = "The run button starts the program and stop halts it; what it prints shows up here. To run it each time the code compiles, turn on Auto run in the settings. If the run stops on an error, the trap shows under the output; problems in the code open a panel below."
 [explorer.tour.settings]
 en = "Settings and more"
 [explorer.tour.settings_text]
-en = "Turn debug mode on or off, show or hide the editor, open About, or change the theme, the fonts, the language and the compiler options. To take this tour again, open About and pick Onboarding."
+en = "Turn debug mode on or off, show or hide the editor, open About, or change the theme, the fonts, the language, auto run and the compiler options. To take this tour again, open About and pick Onboarding."
 [explorer.tour.finish]
 en = "That’s all"
 [explorer.tour.finish_text]

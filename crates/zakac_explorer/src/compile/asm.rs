@@ -44,6 +44,10 @@ pub struct OpRow
     pub range: Option<Range>,
     /// 1-based line of the start of the region.
     pub line: Option<usize>,
+    /// Whether the op is a jump with no condition, as the jump back at the
+    /// end of a loop is; a break point on its line skips it.
+    #[builder(default)]
+    pub plain_jump: bool,
 }
 
 /// One function of the ops, as the asm tables show it.
@@ -233,5 +237,122 @@ fn op_row(unit: &Unit, place: Place, marks: &BTreeMap<u32, usize>, at: OpAt) -> 
         .maybe_note(note)
         .maybe_range(span.map(|s| unit.range(s)))
         .maybe_line(span.map(|s| unit.line_col(s).0))
+        .plain_jump(matches!(op, Op::Jump(_)))
         .build()
 }
+
+/// The ops a break point on a source line stops at: the ops of the line where
+/// the run comes onto it, so the first op of each function on the line, an op
+/// after an op of another line, and the target of a jump, as the head of a
+/// loop is. A jump with no condition is left out: the jump back at the end of
+/// a loop carries the line of the loop, and the head stops the run next.
+///
+/// # Arguments
+///
+/// * `asm` - The functions.
+/// * `line` - The 1-based line.
+///
+/// # Returns
+///
+/// Function and op index pairs.
+pub fn line_stops(asm: &[AsmFunc], line: usize) -> Vec<(u32, u32)>
+{
+    asm.iter().flat_map(|f| entries(f, line)).collect()
+}
+
+/// The ops of one function where the run comes onto a source line.
+///
+/// # Arguments
+///
+/// * `func` - The function.
+/// * `line` - The 1-based line.
+///
+/// # Returns
+///
+/// Function and op index pairs.
+fn entries(func: &AsmFunc, line: usize) -> impl Iterator<Item = (u32, u32)> + '_
+{
+    let on = move |r: &OpRow| r.line == Some(line);
+    let rows = func.rows.iter().enumerate();
+    let comes_on = move |(i, r): &(usize, &OpRow)| {
+        let after_other = *i == 0 || !on(&func.rows[i - 1]);
+        on(r) && !r.plain_jump && (after_other || r.label.is_some())
+    };
+    rows.filter(comes_on).map(move |(_, r)| (func.index, r.pc))
+}
+
+/// Whether a source line has ops, so a break point there can stop a run.
+///
+/// # Arguments
+///
+/// * `asm` - The functions.
+/// * `line` - The 1-based line.
+///
+/// # Returns
+///
+/// `true` when an op comes from the line.
+pub fn has_ops(asm: &[AsmFunc], line: usize) -> bool
+{
+    asm.iter().flat_map(|f| &f.rows).any(|r| r.line == Some(line))
+}
+
+/// Where an op comes from in the source, so a break point on it finds the
+/// op again in new ops of the same text, as after a change of the compile
+/// options.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Builder)]
+pub struct OpSpot
+{
+    /// The function index.
+    pub func: u32,
+    /// The source region of the op, as UTF-8 offsets, if it has one.
+    pub range: Option<(u32, u32)>,
+    /// The number of ops of the function from the same region before it.
+    pub nth: usize,
+}
+
+/// The place in the source of an op.
+///
+/// # Arguments
+///
+/// * `asm` - The functions.
+/// * `func` - The function index.
+/// * `pc` - The op index.
+///
+/// # Returns
+///
+/// The place, or `None` for an op that is not there.
+pub fn op_spot(asm: &[AsmFunc], func: u32, pc: u32) -> Option<OpSpot>
+{
+    let rows = &asm.get(func as usize)?.rows;
+    let range = region(rows.get(pc as usize)?);
+    let nth = rows[..pc as usize].iter().filter(|r| region(r) == range).count();
+    Some(OpSpot::builder().func(func).maybe_range(range).nth(nth).build())
+}
+
+/// The op at a place in the source.
+///
+/// # Arguments
+///
+/// * `asm` - The functions.
+/// * `spot` - The place.
+///
+/// # Returns
+///
+/// The function and op index, or `None` when no op comes from the place.
+pub fn find_spot(asm: &[AsmFunc], spot: &OpSpot) -> Option<(u32, u32)>
+{
+    let rows = &asm.get(spot.func as usize)?.rows;
+    let same = rows.iter().filter(|r| region(r) == spot.range);
+    same.map(|r| (spot.func, r.pc)).nth(spot.nth)
+}
+
+/// The source region of an op as a pair of offsets.
+///
+/// # Arguments
+///
+/// * `row` - The op.
+///
+/// # Returns
+///
+/// The start and end, or `None` without a region.
+fn region(row: &OpRow) -> Option<(u32, u32)> { row.range.map(|r| (r.lo, r.hi)) }

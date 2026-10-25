@@ -5,8 +5,6 @@ use strum::EnumIter;
 use strum::EnumString;
 use strum::IntoEnumIterator;
 use strum::IntoStaticStr;
-use zaka_vm::machine::RunOptions;
-use zaka_vm::machine::run_with;
 use zaka_vm::trap::Trap;
 pub use zaka_web_ui_common::paint::token_class;
 use zakac_ast::s_expr::ToSexpr;
@@ -360,8 +358,6 @@ pub struct Compiled
     pub globals: Vec<SlotRow>,
     /// The pooled print strings of the ops.
     pub texts: Vec<String>,
-    /// The reason a trial run of the ops stopped before its end, if it did.
-    pub run_trap: Option<String>,
     /// Whether code generation ran; it is left out after errors in earlier
     /// phases, folding included.
     pub emitted: bool,
@@ -472,14 +468,14 @@ impl Compiled
     ///
     /// The status; the check is skipped after lexer or parser errors, and
     /// lowering, code generation and the run after errors in an earlier
-    /// phase. A trial run that traps gives the run a warning.
+    /// phase. The ops do not run here; the pipeline warns on the run once a
+    /// run of the debugger session traps.
     pub fn status(&self, phase: Phase) -> Status
     {
         let emits = matches!(phase, Phase::Codegen | Phase::Run);
         ret_if!(phase == Phase::Check && !self.checked, Status::Skipped);
         ret_if!(phase == Phase::Lower && !self.lowered, Status::Skipped);
         ret_if!(emits && !self.emitted, Status::Skipped);
-        ret_if!(phase == Phase::Run && self.run_trap.is_some(), Status::Warned);
         let own = self.diagnostics.iter().filter(|d| d.phase == phase);
         let levels: Vec<Level> = own.map(|d| d.level).collect();
         ret_if!(levels.contains(&Level::Error), Status::Failed);
@@ -616,7 +612,6 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     let asm = ops.as_ref().map(|m| asm_rows(&unit, m)).unwrap_or_default();
     let globals = ops.as_ref().map(|m| slot_rows(&m.globals)).unwrap_or_default();
     let texts = ops.as_ref().map(|m| m.texts.clone()).unwrap_or_default();
-    let run_trap = ops.as_ref().and_then(trial_run);
 
     Compiled::builder()
         .source(source.to_string())
@@ -638,7 +633,6 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .asm(asm)
         .globals(globals)
         .texts(texts)
-        .maybe_run_trap(run_trap)
         .emitted(emitted)
         .build()
 }
@@ -646,22 +640,6 @@ pub fn compile(source: &str, options: &Options) -> Compiled
 /// The op budget of a run in the explorer, so a loop that never ends does
 /// not hang the page.
 pub const RUN_STEPS: u64 = 1_000_000;
-
-/// Run the ops to their end within the op budget.
-///
-/// # Arguments
-///
-/// * `ops` - The ops.
-///
-/// # Returns
-///
-/// The text of the trap that stopped the run, or `None` when it ran to
-/// its end.
-fn trial_run(ops: &bc::Module) -> Option<String>
-{
-    let limits = RunOptions::builder().max_steps(RUN_STEPS).build();
-    run_with(ops, &mut std::io::sink(), &limits).err().map(|t| trap_text(&t))
-}
 
 /// The text of a trap, as the views show it.
 ///

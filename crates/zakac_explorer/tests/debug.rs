@@ -1,9 +1,14 @@
 use zakac_explorer::compile::Compiled;
 use zakac_explorer::compile::Options;
+use zakac_explorer::compile::asm::find_spot;
+use zakac_explorer::compile::asm::has_ops;
+use zakac_explorer::compile::asm::line_stops;
+use zakac_explorer::compile::asm::op_spot;
 use zakac_explorer::compile::compile;
 use zakac_explorer::compile::samples::find_sample;
 use zakac_explorer::debug::RunStatus;
 use zakac_explorer::debug::Session;
+use zakac_ir_builder::ir::FoldOptions;
 
 /// Compile a sample and start a session over its ops.
 fn session_of(path: &str) -> (Compiled, Session)
@@ -260,4 +265,93 @@ fn each_speed_steps_at_its_rate()
     assert_eq!(Speed::Ops1.millis(), 1000);
     assert_eq!(Speed::Ops100.millis(), 10);
     assert_eq!("20".parse::<Speed>(), Ok(Speed::Ops20));
+}
+
+#[test]
+fn endless_loops_stop_at_the_budget()
+{
+    let out = compile("မှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသပါ။", &Options::default());
+    let mut s = Session::new(out.ops.as_ref());
+    s.resume();
+    assert_eq!(s.status(), RunStatus::Trapped);
+    let trap = s.trap().expect("trap");
+    assert!(trap.contains("stopped after"), "{trap}");
+}
+
+#[test]
+fn a_line_stops_where_the_run_comes_onto_it()
+{
+    let (out, _) = session_of("programs/gcd");
+    let stops = line_stops(&out.asm, 7);
+    assert!(!stops.is_empty());
+    let head =
+        |&(f, pc): &(u32, u32)| out.asm[f as usize].rows[pc as usize].label.is_some();
+    assert!(stops.iter().any(head), "{stops:?}");
+    assert!(line_stops(&out.asm, 2).is_empty());
+    assert!(!has_ops(&out.asm, 1) && !has_ops(&out.asm, 2));
+    assert!(has_ops(&out.asm, 7));
+}
+
+#[test]
+fn a_break_on_a_loop_line_pauses_on_each_pass()
+{
+    let (out, mut s) = session_of("programs/gcd");
+    s.set_line_stops(line_stops(&out.asm, 7));
+    s.resume();
+    let first = s.position();
+    let mut steps = s.steps();
+    assert_eq!(s.status(), RunStatus::Paused);
+    for _ in 0..3
+    {
+        s.resume();
+        assert_eq!(s.position(), first);
+        assert!(s.steps() > steps);
+        steps = s.steps();
+    }
+}
+
+#[test]
+fn line_stops_join_the_op_breaks_and_replace_as_a_whole()
+{
+    let (out, mut s) = session_of("programs/gcd");
+    let stops = line_stops(&out.asm, 7);
+    let (f, pc) = stops[0];
+    s.toggle_break(f, 0);
+    s.set_line_stops(stops.clone());
+    assert!(s.from_line(f, pc) && !s.from_line(f, 0));
+    assert!(s.breaks_in(f).contains(&pc) && s.breaks_in(f).contains(&0));
+    s.set_line_stops([]);
+    assert_eq!(s.breaks_in(f), [0]);
+}
+
+#[test]
+fn each_op_has_a_spot_that_finds_it_again()
+{
+    let (out, _) = session_of("programs/gcd");
+    for func in &out.asm
+    {
+        for row in &func.rows
+        {
+            let spot = op_spot(&out.asm, func.index, row.pc).expect("spot");
+            assert_eq!(find_spot(&out.asm, &spot), Some((func.index, row.pc)));
+        }
+    }
+    assert_eq!(op_spot(&out.asm, 99, 0), None);
+}
+
+#[test]
+fn a_spot_finds_its_op_after_the_folding_changes()
+{
+    let text = "ကိန်းသေ က သည် ကိန်းပြည့် (၂ + ၃) * ၄ ဖြစ်ပါစေ။\nက ကို ပြသပါ။\n\"x\" ဟု ပြသပါ။";
+    let folded = compile(text, &Options::default());
+    let none = Options::builder().fold(FoldOptions::none()).build();
+    let plain = compile(text, &none);
+    let main = folded.asm.last().expect("main");
+    let print =
+        main.rows.iter().find(|r| r.text.starts_with("print_text")).expect("print");
+    let spot = op_spot(&folded.asm, main.index, print.pc).expect("spot");
+    let (f, pc) = find_spot(&plain.asm, &spot).expect("found");
+    let row = &plain.asm[f as usize].rows[pc as usize];
+    assert_eq!((row.text.as_str(), row.range), (print.text.as_str(), print.range));
+    assert_ne!(pc, print.pc, "the folding should move the op");
 }

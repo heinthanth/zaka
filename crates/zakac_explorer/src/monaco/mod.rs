@@ -4,11 +4,14 @@ use js_sys::Function;
 use js_sys::Promise;
 use serde::Serialize;
 use serde_wasm_bindgen::Serializer;
+use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::HtmlElement;
+use zakac_i18n::t;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
@@ -43,6 +46,18 @@ const POINTER_CLASS: &str = "mark-hover";
 const POINTER_LINE_CLASS: &str = "mark-hover-back";
 /// Mouse target kind of a spot on the text.
 const CONTENT_TEXT: u32 = 6;
+/// Mouse target kind of the gutter column left of the line numbers, where
+/// break points go.
+const GUTTER_MARK: u32 = 2;
+/// Class of the dot of a break point on a line with ops.
+const BREAK_CLASS: &str = "break-dot";
+/// Class of the dot of a break point on a line with no ops.
+const BREAK_IDLE_CLASS: &str = "break-dot-idle";
+/// Class of the mark of a line with a break point on one of its ops.
+const BREAK_OP_CLASS: &str = "break-dot-op";
+/// Decoration stickiness that never grows when text is written at its edges,
+/// so a break point remains on its line.
+const NEVER_GROWS: u32 = 1;
 
 #[wasm_bindgen]
 extern "C" {
@@ -84,6 +99,8 @@ extern "C" {
     fn on_mouse_move(this: &CodeEditor, cb: &Closure<dyn FnMut(MouseEvent)>);
     #[wasm_bindgen(method, js_name = onMouseLeave)]
     fn on_mouse_leave(this: &CodeEditor, cb: &Closure<dyn FnMut()>);
+    #[wasm_bindgen(method, js_name = onMouseDown)]
+    fn on_mouse_down(this: &CodeEditor, cb: &Closure<dyn FnMut(MouseEvent)>);
 
     /// The text of an editor.
     #[derive(Debug, Clone)]
@@ -104,6 +121,13 @@ extern "C" {
     fn set(this: &Decor, marks: &JsValue);
     #[wasm_bindgen(method)]
     fn clear(this: &Decor);
+    #[wasm_bindgen(method, js_name = getRanges)]
+    fn ranges(this: &Decor) -> Array;
+
+    /// A range of lines and columns, as Monaco returns it.
+    type LineRange;
+    #[wasm_bindgen(method, getter = startLineNumber)]
+    fn start_line(this: &LineRange) -> u32;
 
     /// A line and column, both from 1.
     type Pos;
@@ -225,6 +249,27 @@ struct EditorOpts<'a>
     /// the editor, which hides its overflow, does not cut them off.
     #[builder(default = true)]
     fixed_overflow_widgets: bool,
+    /// The gutter column for break points; debug mode turns it on.
+    #[serde(rename = "glyphMargin")]
+    #[builder(default = false)]
+    gutter_dots: bool,
+}
+
+/// Whether the gutter column for break points shows.
+#[derive(Debug, Serialize, Builder)]
+struct GutterOpts
+{
+    /// Show the column.
+    #[serde(rename = "glyphMargin")]
+    gutter_dots: bool,
+}
+
+/// A text Monaco shows on hover.
+#[derive(Debug, Serialize, Builder)]
+struct Note
+{
+    /// The text, as Markdown.
+    value: String,
 }
 
 /// The font settings of an editor.
@@ -258,10 +303,23 @@ struct Span16
 struct DecorOpts
 {
     /// Class of the text.
-    inline_class_name: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    inline_class_name: Option<&'static str>,
     /// Class of the whole line.
     #[serde(skip_serializing_if = "Option::is_none")]
     class_name: Option<&'static str>,
+    /// Class of a mark in the gutter column for break points.
+    #[serde(rename = "glyphMarginClassName", skip_serializing_if = "Option::is_none")]
+    dot_class: Option<&'static str>,
+    /// The text on hover over that mark.
+    #[serde(
+        rename = "glyphMarginHoverMessage",
+        skip_serializing_if = "Option::is_none"
+    )]
+    dot_note: Option<Note>,
+    /// How the decoration grows with text written at its edges.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stickiness: Option<u32>,
 }
 
 /// A decoration.
@@ -305,6 +363,10 @@ pub struct Editor
     marks: Decor,
     /// The highlight of the range a view points at.
     pointer: Decor,
+    /// The break points on source lines.
+    breaks: Decor,
+    /// The marks of the lines with a break point on one of their ops.
+    op_breaks: Decor,
 }
 
 impl Editor
@@ -358,6 +420,8 @@ impl Editor
             .model(code.model())
             .marks(code.new_decor())
             .pointer(code.new_decor())
+            .breaks(code.new_decor())
+            .op_breaks(code.new_decor())
             .code(code)
             .build())
     }
@@ -493,6 +557,72 @@ impl Editor
         on_leave.forget();
     }
 
+    /// Draw the break points on source lines in the gutter.
+    ///
+    /// # Arguments
+    ///
+    /// * `lines` - Each 1-based line, and whether it has ops to stop at.
+    pub fn show_breaks(&self, lines: &[(u32, bool)])
+    {
+        let marks: Vec<Mark> =
+            lines.iter().map(|&(l, live)| break_mark(l, live)).collect();
+        self.breaks.set(&to_js(&marks));
+    }
+
+    /// Mark the lines with a break point on one of their ops, apart from the
+    /// break points on lines, so an edit does not read them back as those.
+    ///
+    /// # Arguments
+    ///
+    /// * `lines` - The 1-based lines.
+    pub fn show_op_breaks(&self, lines: &[u32])
+    {
+        let note = t!("explorer.editor.break_op").to_string();
+        let mark = |&l: &u32| line_mark(l, BREAK_OP_CLASS, note.clone());
+        let marks: Vec<Mark> = lines.iter().map(mark).collect();
+        self.op_breaks.set(&to_js(&marks));
+    }
+
+    /// The lines of the break points, where Monaco has moved them with the
+    /// edits.
+    ///
+    /// # Returns
+    ///
+    /// The 1-based lines, as Monaco holds them.
+    pub fn break_lines(&self) -> Vec<u32>
+    {
+        let line = |r: JsValue| r.unchecked_into::<LineRange>().start_line();
+        self.breaks.ranges().into_iter().map(line).collect()
+    }
+
+    /// Show or hide the gutter column for break points.
+    ///
+    /// # Arguments
+    ///
+    /// * `on` - Show it.
+    pub fn show_gutter(&self, on: bool)
+    {
+        let opts = GutterOpts::builder().gutter_dots(on).build();
+        self.code.update_options(&to_js(&opts));
+    }
+
+    /// Call `f` with the 1-based line of a click in the gutter column for
+    /// break points.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The callback.
+    pub fn on_gutter_click(&self, f: impl Fn(u32) + 'static)
+    {
+        let cb = Closure::<dyn FnMut(MouseEvent)>::new(move |e: MouseEvent| {
+            let target = e.target();
+            ret_if!(target.kind() != GUTTER_MARK);
+            do_if!(let Some(pos) = target.spot(), f(pos.line()));
+        });
+        self.code.on_mouse_down(&cb);
+        cb.forget();
+    }
+
     /// The Monaco range between two UTF-16 offsets.
     ///
     /// # Arguments
@@ -548,6 +678,53 @@ impl Editor
             .source(OWNER)
             .build()
     }
+}
+
+/// The decoration of a break point on a source line.
+///
+/// # Arguments
+///
+/// * `line` - The 1-based line.
+/// * `live` - Whether the line has ops to stop at.
+///
+/// # Returns
+///
+/// The decoration.
+fn break_mark(line: u32, live: bool) -> Mark
+{
+    let (class, note) = tern!(
+        live,
+        (BREAK_CLASS, t!("explorer.editor.break")),
+        (BREAK_IDLE_CLASS, t!("explorer.editor.break_idle"))
+    );
+    line_mark(line, class, note.to_string())
+}
+
+/// A mark in the gutter column for break points.
+///
+/// # Arguments
+///
+/// * `line` - The 1-based line.
+/// * `class` - The class of the mark.
+/// * `note` - The text on hover.
+///
+/// # Returns
+///
+/// The decoration.
+fn line_mark(line: u32, class: &'static str, note: String) -> Mark
+{
+    let options = DecorOpts::builder()
+        .dot_class(class)
+        .dot_note(Note::builder().value(note).build())
+        .stickiness(NEVER_GROWS)
+        .build();
+    let range = Span16::builder()
+        .start_line_number(line)
+        .start_column(1)
+        .end_line_number(line)
+        .end_column(1)
+        .build();
+    Mark::builder().range(range).options(options).build()
 }
 
 /// Load Monaco with the AMD loader.

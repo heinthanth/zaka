@@ -30,6 +30,45 @@
     background: var(--mark-hover)
     border-radius: 2px
 
+  // Break points in the gutter column; Monaco sizes the box of each line, the
+  // dot sits in its middle.
+  .break-dot,
+  .break-dot-idle
+    display: flex
+    align-items: center
+    justify-content: center
+    cursor: pointer
+
+    &::before
+      content: ""
+      width: 10px
+      height: 10px
+      border-radius: 50%
+      border: 1.5px solid var(--diag-error)
+      box-sizing: border-box
+
+  .break-dot::before
+    background: var(--diag-error)
+
+  // A line with a break point on one of its ops, set in the ops table: a
+  // smaller dot.
+  .break-dot-op
+    display: flex
+    align-items: center
+    justify-content: center
+
+    &::before
+      content: ""
+      width: 6px
+      height: 6px
+      border-radius: 50%
+      background: var(--diag-error)
+
+  // A line without ops: the run cannot stop there.
+  .break-dot-idle::before
+    background: transparent
+    opacity: 0.7
+
   // The panel card frames the editor; the current line needs no box of its
   // own.
   .view-overlays .current-line

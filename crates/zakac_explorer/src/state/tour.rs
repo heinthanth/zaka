@@ -105,6 +105,34 @@ pub fn steps() -> Vec<Step>
             "[data-tour=controls]",
         )
         .build(),
+        pane("explorer.tour.go", "explorer.tour.go_text", "[data-tour=go]").build(),
+        pane("explorer.tour.stop", "explorer.tour.stop_text", "[data-tour=stop]")
+            .build(),
+        pane("explorer.tour.reset", "explorer.tour.reset_text", "[data-tour=reset]")
+            .build(),
+        pane("explorer.tour.step_in", "explorer.tour.step_in_text", "[data-tour=step]")
+            .build(),
+        pane(
+            "explorer.tour.step_over",
+            "explorer.tour.step_over_text",
+            "[data-tour=step-over]",
+        )
+        .build(),
+        pane(
+            "explorer.tour.step_out",
+            "explorer.tour.step_out_text",
+            "[data-tour=step-out]",
+        )
+        .build(),
+        pane("explorer.tour.timer", "explorer.tour.timer_text", "[data-tour=timer]")
+            .auto(true)
+            .build(),
+        pane("explorer.tour.speed", "explorer.tour.speed_text", "[data-tour=speed]")
+            .auto(true)
+            .build(),
+        pane("explorer.tour.status", "explorer.tour.status_text", "[data-tour=status]")
+            .auto(true)
+            .build(),
         pane("explorer.tour.ops", "explorer.tour.ops_text", "[data-tour=ops]")
             .auto(true)
             .build(),

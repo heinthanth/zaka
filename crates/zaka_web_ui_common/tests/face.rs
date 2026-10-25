@@ -35,7 +35,7 @@ fn fallbacks_round_trip_through_their_names()
 }
 
 #[test]
-fn the_defaults_are_sabae_with_space_mono_and_pda10_or_sabae_with_sauce()
+fn the_defaults_are_sabae_with_space_mono_and_sabae_with_sauce()
 {
     let ui = Pair::default_ui();
     assert_eq!(
@@ -43,12 +43,10 @@ fn the_defaults_are_sabae_with_space_mono_and_pda10_or_sabae_with_sauce()
         (Face::Sabae, Fallback::Face(Face::SpaceMono))
     );
     let code = Pair::default_code();
-    let want = tern!(
-        HAS_CODE_FONT,
-        (Face::Pda10, Fallback::Inherit),
+    assert_eq!(
+        (code.burmese, code.fallback),
         (Face::Sabae, Fallback::Face(Face::SauceHtmm))
     );
-    assert_eq!((code.burmese, code.fallback), want);
 }
 
 #[test]

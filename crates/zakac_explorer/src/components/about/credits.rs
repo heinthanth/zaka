@@ -35,11 +35,12 @@ const FONTSOURCE: &str = "https://fontsource.org";
 /// Google Fonts, where most of the other fonts come from.
 const GOOGLE_FONTS: &str = "https://fonts.google.com";
 
-/// The SIL Open Font License, under which PDA10 and Sauce Code Pro ship.
-const OFL: &str = "https://openfontlicense.org";
+/// The source of Myanmar Sabae, from its designer Danh Hong.
+const SABAE_REPO: &str = "https://github.com/khmertype/Sabae";
 
-/// The Apache License 2.0, under which Myanmar Sabae ships.
-const APACHE: &str = "https://www.apache.org/licenses/LICENSE-2.0";
+/// The SIL Open Font License, under which PDA10, Myanmar Sabae and Sauce Code
+/// Pro ship.
+const OFL: &str = "https://openfontlicense.org";
 
 /// Pixels the roll moves each tick.
 const STEP_PX: i32 = 1;
@@ -168,7 +169,10 @@ fn fonts() -> impl IntoView
     let sabae = credit(
         "Myanmar Sabae".into(),
         "explorer.about.sabae_note",
-        vec![link("explorer.about.apache", APACHE)],
+        vec![
+            link("explorer.about.sabae_repo", SABAE_REPO),
+            link("explorer.about.ofl", OFL),
+        ],
     );
     let source = credit(
         "Sauce Code Pro (HTMM's Custom Font)".into(),

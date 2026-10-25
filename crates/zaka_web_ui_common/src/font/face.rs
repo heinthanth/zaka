@@ -448,20 +448,19 @@ impl Pair
             .build()
     }
 
-    /// The code fonts when none are stored: PDA10 Burmese Mono for all text
-    /// when the build holds it, else Myanmar Sabae and Sauce Code Pro (HTMM's
-    /// Custom).
+    /// The code fonts when none are stored: Myanmar Sabae and Sauce Code Pro
+    /// (HTMM's Custom). PDA10 Burmese Mono remains in the picker when the build
+    /// holds it.
     ///
     /// # Returns
     ///
     /// The pair.
     pub fn default_code() -> Pair
     {
-        let pda = Pair::builder().burmese(Face::Pda10).fallback(Fallback::Inherit);
-        let sabae = Pair::builder()
+        Pair::builder()
             .burmese(Face::Sabae)
-            .fallback(Fallback::Face(Face::SauceHtmm));
-        tern!(HAS_CODE_FONT, pda.build(), sabae.build())
+            .fallback(Fallback::Face(Face::SauceHtmm))
+            .build()
     }
 
     /// The font of the text outside the Burmese range, when it is not the

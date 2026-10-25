@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use bon::Builder;
 use codee::string::FromToStringCodec;
 use leptos::prelude::*;
@@ -11,6 +13,7 @@ use zaka_web_ui_common::look::Look;
 use zaka_web_ui_common::look::provide_look;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 pub mod permalink;
 pub mod settings;
 pub mod split;
@@ -20,6 +23,11 @@ pub mod url;
 use crate::compile::Compiled;
 use crate::compile::Options;
 use crate::compile::Phase;
+use crate::compile::asm::OpSpot;
+use crate::compile::asm::find_spot;
+use crate::compile::asm::has_ops;
+use crate::compile::asm::line_stops;
+use crate::compile::asm::op_spot;
 use crate::compile::compile;
 use crate::compile::samples::default_sample;
 use crate::compile::spans::Range;
@@ -54,6 +62,9 @@ const PROBLEMS_STORE: &str = "zaka-explorer-problems-open";
 
 /// Local storage name of the debug mode switch.
 const DEBUG_STORE: &str = "zaka-explorer-debug-mode";
+
+/// Local storage name of the auto run switch.
+const AUTO_RUN_STORE: &str = "zaka-explorer-auto-run";
 
 /// State shared between the editor and the views.
 #[derive(Clone, Copy, Builder)]
@@ -112,6 +123,18 @@ pub struct AppState
     pub set_debug_mode: WriteSignal<bool>,
     /// Whether the debugger steps on a timer.
     pub auto_step: RwSignal<bool>,
+    /// The 1-based source lines with a break point. The editor moves them
+    /// with the edits; each compile turns them into stops of the debugger.
+    pub break_lines: RwSignal<BTreeSet<u32>>,
+    /// The break points set on ops, keyed on where each op comes from in the
+    /// source; a change of the compile options keeps them, an edit of the
+    /// text clears them.
+    pub op_breaks: RwSignal<BTreeSet<OpSpot>>,
+    /// Whether the program runs on its own each time the code compiles,
+    /// outside debug mode. Off, go starts each run.
+    pub auto_run: Signal<bool>,
+    /// Turn auto run on or off.
+    pub set_auto_run: WriteSignal<bool>,
     /// Whether the guided tour is open.
     pub tour: RwSignal<bool>,
 }
@@ -180,8 +203,120 @@ impl AppState
     /// * `text` - The new text.
     pub fn load(&self, text: String)
     {
+        let fresh = self.source.with_untracked(|s| *s != text);
+        do_if!(fresh, self.clear_breaks());
         self.with_editor(|editor| editor.set_text(&text));
         self.source.set(text);
+    }
+
+    /// Set or clear the break point on a source line; in debug mode alone,
+    /// where the gutter for them shows.
+    ///
+    /// # Arguments
+    ///
+    /// * `line` - The 1-based line.
+    pub fn toggle_line(&self, line: u32)
+    {
+        ret_if!(!self.debug_mode.get_untracked());
+        self.break_lines.update(|lines| {
+            tern!(lines.remove(&line), (), _ = lines.insert(line));
+        });
+    }
+
+    /// Set or clear the break point on an op. A stop of a break point on a
+    /// source line clears that line, so the editor and the ops agree.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - The function index.
+    /// * `pc` - The op index.
+    pub fn toggle_op(&self, func: u32, pc: u32)
+    {
+        let from_line = self.debug.with_untracked(|s| s.from_line(func, pc));
+        let (spot, line) = self
+            .compiled
+            .with_untracked(|c| {
+                let line = c.asm.get(func as usize)?.rows.get(pc as usize)?.line;
+                Some((op_spot(&c.asm, func, pc)?, line))
+            })
+            .unzip();
+        let line = line.flatten().filter(|_| from_line);
+        ret_if!(let Some(l) = line, self.toggle_line(l as u32));
+        let Some(spot) = spot
+        else
+        {
+            return;
+        };
+        self.op_breaks.update(|spots| {
+            tern!(spots.remove(&spot), (), _ = spots.insert(spot));
+        });
+    }
+
+    /// Follow an edit of the text: take the lines of the break points from
+    /// the editor, which moves them with the edits, two that land on one line
+    /// becoming one; and drop the break points on ops, whose ops the edit can
+    /// have changed.
+    pub fn read_break_lines(&self)
+    {
+        do_if!(
+            self.op_breaks.with_untracked(|s| !s.is_empty()),
+            self.op_breaks.set(BTreeSet::new())
+        );
+        let mut moved = BTreeSet::new();
+        self.with_editor(|editor| moved.extend(editor.break_lines()));
+        let changed = self.break_lines.with_untracked(|lines| *lines != moved);
+        do_if!(changed, self.break_lines.set(moved));
+    }
+
+    /// Drop all break points on source lines, from the editor first, so the
+    /// new text does not keep them.
+    fn clear_breaks(&self)
+    {
+        self.with_editor(|editor| editor.show_breaks(&[]));
+        self.break_lines.set(BTreeSet::new());
+        self.op_breaks.set(BTreeSet::new());
+    }
+
+    /// The ops of the break points on ops in the current ops; one whose op
+    /// is gone, as after a change of the folding, stops nothing.
+    ///
+    /// # Returns
+    ///
+    /// Function and op index pairs.
+    fn op_stops(&self) -> Vec<(u32, u32)>
+    {
+        self.op_breaks.with(|spots| {
+            self.compiled
+                .with(|c| spots.iter().filter_map(|s| find_spot(&c.asm, s)).collect())
+        })
+    }
+
+    /// The source lines of the break points on ops, as the editor marks
+    /// them.
+    ///
+    /// # Returns
+    ///
+    /// The 1-based lines.
+    fn op_lines(&self) -> BTreeSet<u32>
+    {
+        let line = |c: &Compiled, (f, pc): (u32, u32)| {
+            c.asm.get(f as usize)?.rows.get(pc as usize)?.line.map(|l| l as u32)
+        };
+        let stops = self.op_stops();
+        self.compiled.with(|c| stops.into_iter().filter_map(|s| line(c, s)).collect())
+    }
+
+    /// The stops of the break points on source lines in the current ops.
+    ///
+    /// # Returns
+    ///
+    /// Function and op index pairs.
+    fn line_stops(&self) -> Vec<(u32, u32)>
+    {
+        let stops = |c: &Compiled, l: &u32| line_stops(&c.asm, *l as usize);
+        self.break_lines.with(|lines| {
+            self.compiled.with(|c| lines.iter().flat_map(|l| stops(c, l)).collect())
+        })
     }
 
     /// Select a range in the editor.
@@ -280,6 +415,8 @@ pub fn provide_state() -> AppState
         );
     let (debug_mode, set_debug_mode, _) =
         use_local_storage::<bool, FromToStringCodec>(DEBUG_STORE);
+    let (auto_run, set_auto_run, _) =
+        use_local_storage::<bool, FromToStringCodec>(AUTO_RUN_STORE);
 
     let state = AppState::builder()
         .source(source)
@@ -308,6 +445,10 @@ pub fn provide_state() -> AppState
         .debug_mode(debug_mode)
         .set_debug_mode(set_debug_mode)
         .auto_step(RwSignal::new(false))
+        .break_lines(RwSignal::new(BTreeSet::new()))
+        .op_breaks(RwSignal::new(BTreeSet::new()))
+        .auto_run(auto_run)
+        .set_auto_run(set_auto_run)
         .tour(RwSignal::new(false))
         .build();
     provide_context(state);
@@ -324,7 +465,9 @@ pub fn provide_state() -> AppState
     state
 }
 
-/// Start a new debugger session each time the generated ops change. When
+/// Start a new debugger session each time the generated ops change, and keep
+/// the stops of the break points on source lines in step with the lines and
+/// the ops. When
 /// debug mode turns on, from the toolbar or the tour, open the last stage
 /// that passed and go back to the first op. When it turns off, the run view
 /// runs on to the end.
@@ -335,7 +478,22 @@ pub fn provide_state() -> AppState
 fn wire_debug(state: AppState)
 {
     let ops = Memo::new(move |_| state.compiled.with(|c| c.ops.clone()));
-    Effect::new(move |_| ops.with(|ops| state.debug.set(Session::new(ops.as_ref()))));
+    Effect::new(move |_| {
+        let mut session = ops.with(|ops| Session::new(ops.as_ref()));
+        session.set_line_stops(untrack(|| state.line_stops()));
+        session.set_op_stops(untrack(|| state.op_stops()));
+        state.debug.set(session);
+    });
+    // The new session above takes the stops too, so the order of these
+    // effects does not matter.
+    Effect::new(move |_| {
+        let stops = state.line_stops();
+        state.debug.update(|s| s.set_line_stops(stops));
+    });
+    Effect::new(move |_| {
+        let stops = state.op_stops();
+        state.debug.update(|s| s.set_op_stops(stops));
+    });
     Effect::new(move |was: Option<bool>| {
         let on = state.debug_mode.get();
         ret_if!(was.is_none_or(|w| w == on) || !on, on);
@@ -365,8 +523,8 @@ fn default_link() -> Link
     Link::builder().source(source).options(Options::default()).build()
 }
 
-/// Keep the editor colors, markers, highlight and theme in step with the
-/// state.
+/// Keep the editor colors, markers, highlight, theme and break points in
+/// step with the state; the gutter for break points shows in debug mode.
 ///
 /// # Arguments
 ///
@@ -389,6 +547,23 @@ fn wire_editor(state: AppState)
         let dark = state.is_dark();
         ret_if!(!state.mounted.get());
         state.with_editor(|editor| editor.set_dark(dark));
+    });
+    Effect::new(move |_| {
+        let on = state.debug_mode.get();
+        let live = |c: &Compiled, l: u32| (l, has_ops(&c.asm, l as usize));
+        let marks: Vec<(u32, bool)> = state.break_lines.with(|lines| {
+            state.compiled.with(|c| lines.iter().map(|l| live(c, *l)).collect())
+        });
+        // A line with a break point of its own shows that dot alone.
+        let lined = |l: &u32| marks.iter().any(|(m, _)| m == l);
+        let ops: Vec<u32> =
+            state.op_lines().into_iter().filter(|l| !lined(l)).collect();
+        ret_if!(!state.mounted.get());
+        state.with_editor(|editor| {
+            editor.show_gutter(on);
+            editor.show_breaks(&marks);
+            editor.show_op_breaks(&ops);
+        });
     });
 }
 

@@ -173,8 +173,9 @@ fn runner(state: AppState) -> impl IntoView
 
 /// Run the ops in batches while a run goes on, one batch a frame, so the
 /// page keeps responding and the run can be stopped. Outside debug mode a
-/// new session starts to run on its own, and so does a run the debugger left
-/// paused, so the output is whole; in debug mode new ops halt the run.
+/// new session starts to run on its own when auto run is on, and a run the
+/// debugger left paused goes on, so the output is whole; in debug mode new
+/// ops halt the run.
 ///
 /// # Arguments
 ///
@@ -193,9 +194,8 @@ fn wire_going(state: AppState, drive: Drive)
     let (resume, pause) = (timer.resume, timer.pause);
     Effect::new(move |_| tern!(drive.going.get(), resume(), pause()));
     Effect::new(move |_| {
-        let open = state.debug.with(|s| {
-            s.is_live() && matches!(s.status(), RunStatus::Start | RunStatus::Paused)
-        });
+        let auto = state.auto_run.get();
+        let open = state.debug.with(|s| s.is_live() && opens(s.status(), auto));
         let idle = !drive.debug.get_untracked() && !drive.going.get_untracked();
         do_if!(open && idle, drive.going.set(true));
     });
@@ -204,6 +204,22 @@ fn wire_going(state: AppState, drive: Drive)
         state.compiled.track();
         do_if!(was.is_some() && drive.debug.get_untracked(), drive.halt());
     });
+}
+
+/// Whether a session outside debug mode runs on without a press of go: a run
+/// the debugger left paused does, and a new one when auto run is on.
+///
+/// # Arguments
+///
+/// * `status` - Where the session stands.
+/// * `auto` - Whether auto run is on.
+///
+/// # Returns
+///
+/// `true` when the run goes on.
+fn opens(status: RunStatus, auto: bool) -> bool
+{
+    status == RunStatus::Paused || (auto && status == RunStatus::Start)
 }
 
 /// Run the program. Outside debug mode it runs again from the first op; in
@@ -254,6 +270,7 @@ fn go_button(state: AppState, drive: Drive) -> impl IntoView
     };
     button()
         .class(format!("{} {}", Controls::ICON_BUTTON, ClassName::RUN_GO))
+        .attr(TOUR, "go")
         .title(name)
         .attr("aria-label", name)
         .attr("disabled", move || going.get().then_some(""))
@@ -278,6 +295,7 @@ fn stop_button(state: AppState, drive: Drive) -> impl IntoView
     let name = t!("explorer.run.stop");
     button()
         .class(format!("{} {}", Controls::ICON_BUTTON, ClassName::RUN_STOP))
+        .attr(TOUR, "stop")
         .title(name.clone())
         .attr("aria-label", name)
         .attr("disabled", move || (!can_stop()).then_some(""))
@@ -303,7 +321,11 @@ fn status_chip(state: AppState, drive: Drive) -> impl IntoView
         tern!(on, RunStatus::Running, state.debug.with(Session::status))
     };
     let class = move || format!("{} {}", ClassName::RUN_STATUS, status_class(status()));
-    span().class(class).attr("role", "status").child(move || status().label())
+    span()
+        .class(class)
+        .attr(TOUR, "status")
+        .attr("role", "status")
+        .child(move || status().label())
 }
 
 /// The class of the status chip in a status.
@@ -477,21 +499,24 @@ fn controls(state: AppState, drive: Drive, speed: RwSignal<Speed>) -> impl IntoV
         stop_button(state, drive),
         control(
             "explorer.run.reset",
+            "reset",
             icon::restart(),
             Signal::stored(true),
             act(Session::reset),
         ),
     );
     let buttons = (
-        control("explorer.run.step", icon::step(), running, act(Session::step)),
+        control("explorer.run.step", "step", icon::step(), running, act(Session::step)),
         control(
             "explorer.run.step_over",
+            "step-over",
             icon::step_over(),
             running,
             act(Session::step_over),
         ),
         control(
             "explorer.run.step_out",
+            "step-out",
             icon::step_out(),
             running,
             act(Session::step_out),
@@ -531,6 +556,7 @@ fn rule() -> impl IntoView
 /// # Arguments
 ///
 /// * `id` - Locale id of its name, which shows as a tooltip.
+/// * `tour` - Its name for the tour.
 /// * `art` - The icon.
 /// * `enabled` - Whether it can be pressed.
 /// * `on_press` - What a press does.
@@ -539,12 +565,13 @@ fn rule() -> impl IntoView
 ///
 /// The view.
 fn control(
-    id: &'static str, art: impl IntoView + 'static, enabled: Signal<bool>,
-    on_press: impl Fn() + 'static,
+    id: &'static str, tour: &'static str, art: impl IntoView + 'static,
+    enabled: Signal<bool>, on_press: impl Fn() + 'static,
 ) -> impl IntoView
 {
     button()
         .class(Controls::ICON_BUTTON)
+        .attr(TOUR, tour)
         .title(t!(id.to_string()))
         .attr("aria-label", t!(id.to_string()))
         .attr("disabled", move || (!enabled.get()).then_some(""))
@@ -573,6 +600,7 @@ fn auto_button(auto: RwSignal<bool>, running: Signal<bool>) -> impl IntoView
     button()
         .class(Controls::ICON_BUTTON)
         .class((Controls::ICON_BUTTON_ON, move || auto.get()))
+        .attr(TOUR, "timer")
         .title(name)
         .attr("aria-label", name)
         .attr("aria-pressed", move || auto.get().to_string())
@@ -607,6 +635,7 @@ fn speed_picker(speed: RwSignal<Speed>) -> impl IntoView
         .build();
     div()
         .class(ClassName::RUN_SPEED)
+        .attr(TOUR, "speed")
         .title(t!("explorer.run.speed"))
         .child(dropdown(spec))
 }
@@ -784,7 +813,7 @@ fn func_ops(
     let shown = move || func.get() == Some(f);
     let mark = Signal::derive(move || shown().then(|| marked.get()).flatten());
     let breaks = Memo::new(move |_| state.debug.with(|s| s.breaks_in(f)));
-    let toggle = Callback::new(move |pc| state.debug.update(|s| s.toggle_break(f, pc)));
+    let toggle = Callback::new(move |pc| state.toggle_op(f, pc));
     let gutter = Gutter::builder().breaks(breaks.into()).toggle(toggle).build();
     let head = h3().class(ClassName::ASM_HEAD).child(asm.head());
     div()
