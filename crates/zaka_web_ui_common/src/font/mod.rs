@@ -16,6 +16,7 @@ pub mod face;
 pub mod mask;
 
 use crate::font::face::Face;
+use crate::font::face::Pair;
 use crate::font::face::Source;
 use crate::font::mask::SEED;
 use crate::font::mask::xor_mask;
@@ -47,7 +48,7 @@ static ROOT: OnceLock<&'static str> = OnceLock::new();
 
 thread_local! {
     /// The load of each sheet or font file the page has asked for, kept
-    /// under its URL; a second request waits on the first.
+    /// under its font name and URL; a second request waits on the first.
     static STARTED: RefCell<HashMap<String, Promise>> = RefCell::new(HashMap::new());
 
     /// The file of each [`Source::Shipped`] face, as the app names it.
@@ -165,18 +166,19 @@ pub async fn load_face(face: Face, size: u32)
         {
             let href =
                 |w: &u16| format!("{root}{}", face.sheet_path(*w).unwrap_or_default());
-            weights.iter().map(|w| once(&href(w), add_sheet)).collect()
+            weights.iter().map(|w| once("", &href(w), add_sheet)).collect()
         }
-        Source::Shipped =>
-        {
-            let file = SHIPPED.with(|map| map.borrow().get(&face).copied());
-            let add = |url: &str| once(url, |u| add_file(face.family(), 400, u));
-            file.map(add).into_iter().collect()
-        }
+        Source::Shipped => shipped_file(face)
+            .map(|url| {
+                once(face.family(), url, |u| add_file(face.family(), 400, u, None))
+            })
+            .into_iter()
+            .collect(),
         Source::Files(files) =>
         {
             let add = |(w, path): &(u16, &str)| {
-                once(&format!("{root}{path}"), |u| add_file(face.family(), *w, u))
+                let url = format!("{root}{path}");
+                once(face.family(), &url, |u| add_file(face.family(), *w, u, None))
             };
             files.iter().map(add).collect()
         }
@@ -185,10 +187,79 @@ pub async fn load_face(face: Face, size: u32)
     ready_font(face.family(), size).await;
 }
 
-/// Start a load once per URL.
+/// Prepare the face limited to the Burmese range, under
+/// [`Face::burmese_alias`]: add its files the first time it is picked, then
+/// wait until it is loaded at a size. The code font adds its own as the page
+/// starts. Failures are logged and the fallbacks take over.
 ///
 /// # Arguments
 ///
+/// * `face` - A face of the Burmese group.
+/// * `size` - The size in px.
+pub async fn load_burmese(face: Face, size: u32)
+{
+    let alias = face.burmese_alias();
+    let root = font_root();
+    let add = |w: u16, url: String| {
+        once(&alias, &url, |u| add_file(&alias, w, u, Some(BURMESE_RANGE)))
+    };
+    let loads: Vec<_> = match face.source()
+    {
+        Source::Shipped =>
+        {
+            shipped_file(face).map(|u| add(400, u.into())).into_iter().collect()
+        }
+        Source::Sheets { dir, version, weights } =>
+        {
+            let file = |w: u16| {
+                format!("{root}{dir}/{version}/files/{dir}-myanmar-{w}-normal.woff2")
+            };
+            weights.iter().map(|w| add(*w, file(*w))).collect()
+        }
+        Source::Embedded | Source::Native | Source::Files(_) => Vec::new(),
+    };
+    do_for!(load in loads, log_failure(wait(load).await));
+    ready_font(&alias, size).await;
+}
+
+/// Prepare a pair of fonts to draw: the Burmese font whole when it draws
+/// all text, else its Burmese range and the fallback.
+///
+/// # Arguments
+///
+/// * `pair` - The fonts.
+/// * `size` - The size in px.
+pub async fn load_pair(pair: Pair, size: u32)
+{
+    let Some(rest) = pair.rest()
+    else
+    {
+        return load_face(pair.burmese, size).await;
+    };
+    load_burmese(pair.burmese, size).await;
+    load_face(rest, size).await;
+}
+
+/// The file of a [`Source::Shipped`] face, as the app names it.
+///
+/// # Arguments
+///
+/// * `face` - The face.
+///
+/// # Returns
+///
+/// The address, or `None` when the app has named none.
+fn shipped_file(face: Face) -> Option<&'static str>
+{
+    SHIPPED.with(|map| map.borrow().get(&face).copied())
+}
+
+/// Start a load once per font name and URL; one file can back a whole face and
+/// a face limited to a range.
+///
+/// # Arguments
+///
+/// * `name` - The CSS font name, or blank for a sheet.
 /// * `url` - The URL of the sheet or file.
 /// * `start` - Start the load; it runs the first time alone.
 ///
@@ -196,13 +267,14 @@ pub async fn load_face(face: Face, size: u32)
 ///
 /// The load, or the error of the browser.
 fn once(
-    url: &str, start: impl FnOnce(&str) -> Result<Promise, JsValue>,
+    name: &str, url: &str, start: impl FnOnce(&str) -> Result<Promise, JsValue>,
 ) -> Result<Promise, JsValue>
 {
-    let known = STARTED.with(|map| map.borrow().get(url).cloned());
+    let tag = format!("{name}@{url}");
+    let known = STARTED.with(|map| map.borrow().get(&tag).cloned());
     ret_if!(let Some(load) = known, Ok(load));
     let load = start(url)?;
-    STARTED.with(|map| map.borrow_mut().insert(url.to_string(), load.clone()));
+    STARTED.with(|map| map.borrow_mut().insert(tag, load.clone()));
     Ok(load)
 }
 
@@ -238,14 +310,18 @@ fn add_sheet(href: &str) -> Result<Promise, JsValue>
 /// * `family` - The CSS font family.
 /// * `weight` - The weight of the file.
 /// * `url` - Its URL.
+/// * `range` - The characters it draws, or all of them.
 ///
 /// # Returns
 ///
 /// The load of the file, or the error of the browser.
-fn add_file(family: &str, weight: u16, url: &str) -> Result<Promise, JsValue>
+fn add_file(
+    family: &str, weight: u16, url: &str, range: Option<&str>,
+) -> Result<Promise, JsValue>
 {
     let descriptors = FontFaceDescriptors::new();
     descriptors.set_weight(&weight.to_string());
+    do_if!(let Some(r) = range, descriptors.set_unicode_range(r));
     let font = FontFace::new_with_str_and_descriptors(
         family,
         &format!("url({url})"),

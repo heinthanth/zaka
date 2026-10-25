@@ -1,4 +1,5 @@
 use leptos::ev;
+use leptos::html::div;
 use leptos::html::td;
 use leptos::html::th;
 use leptos::html::thead;
@@ -24,6 +25,22 @@ static SHEET: ComponentStyle = ComponentStyle::global_css("zaka-table", STYLE_SH
 ///
 /// The view; it renders no element of its own.
 pub fn table_sheet() -> impl IntoView { sheet(&SHEET) }
+
+/// A box around a phase table that scrolls left and right when the table is
+/// wider than the pane, so the titles and the other tables of a view remain
+/// in place.
+///
+/// # Arguments
+///
+/// * `table` - The table.
+///
+/// # Returns
+///
+/// The view.
+pub fn table_box(table: impl IntoView + 'static) -> impl IntoView
+{
+    div().class(ClassName::TABLE_BOX).child(table)
+}
 
 /// A column head: locale ids of the label and the tooltip around its CSS
 /// class; blank strings mean none.

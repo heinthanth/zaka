@@ -29,13 +29,21 @@ fn each_phase_has_one_stage_step_in_pipeline_order()
 }
 
 #[test]
-fn the_timer_runs_in_debug_mode_alone()
+fn the_phases_and_the_timer_need_debug_mode()
 {
     let all = steps();
     assert!(all.iter().any(|s| s.auto));
-    assert!(all.iter().filter(|s| s.auto).all(|s| s.debug));
-    let run = all.iter().position(|s| s.stage == Some(Phase::Run)).unwrap();
-    assert!(all[..=run].iter().all(|s| !s.debug));
+    assert!(all.iter().filter(|s| s.auto || s.stage.is_some()).all(|s| s.debug));
+}
+
+#[test]
+fn debug_mode_turns_on_after_the_step_on_its_switch()
+{
+    let all = steps();
+    let switch =
+        all.iter().position(|s| s.target == Some("[data-tour=debug]")).unwrap();
+    assert!(all[..=switch].iter().all(|s| !s.debug));
+    assert!(all[switch + 1..].iter().all(|s| s.debug));
 }
 
 #[test]

@@ -79,7 +79,7 @@ fn each_step_runs_one_op()
     assert_eq!(m.stack(), [v("7:i32")]);
     assert_eq!(m.position(), Some((0, 1)));
     m.step();
-    assert_eq!(m.output(), "7\n");
+    assert_eq!(m.output(), "၇\n");
     assert_eq!(m.step(), &State::Finished);
     assert_eq!(m.position(), None);
     assert!(m.frames().is_empty());
@@ -98,7 +98,7 @@ fn step_over_runs_a_call_to_its_return()
     assert_eq!(m.position(), Some((1, 3)));
     assert_eq!(m.stack(), [v("7:isize")]);
     m.step_over();
-    assert_eq!(m.output(), "7\n");
+    assert_eq!(m.output(), "၇\n");
 }
 
 #[test]
@@ -154,7 +154,7 @@ fn run_until_stops_at_a_break_point()
     assert!(m.running());
     m.run_until(&[(1, 3)]);
     assert_eq!(m.state(), &State::Finished);
-    assert_eq!(m.output(), "7\n");
+    assert_eq!(m.output(), "၇\n");
 }
 
 #[test]

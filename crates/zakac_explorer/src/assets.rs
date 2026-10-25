@@ -1,6 +1,7 @@
-//! The logo and the Sauce Code Pro file of the explorer. The build script
-//! writes each under a name made from a hash of its content and names its
-//! address here, so a replaced file never reaches a visitor from an old cache.
+//! The logo and the Sauce Code Pro and Myanmar Sabae files of the explorer. The
+//! build script writes each under a name made from a hash of its content and
+//! names its address here, so a replaced file never reaches a visitor from an
+//! old cache.
 
 use leptos::prelude::document;
 use wasm_bindgen::JsValue;
@@ -19,10 +20,11 @@ const ICONS: [(&str, &str); 2] = [
 ];
 
 /// Hand the hashed files to the page before it mounts: the tab icons, and the
-/// Sauce Code Pro file to the font loader.
+/// Sauce Code Pro and Myanmar Sabae files to the font loader.
 pub fn ship()
 {
     set_face_file(Face::SauceHtmm, SAUCE_FONT);
+    set_face_file(Face::Sabae, SABAE_FONT);
     ICONS.iter().for_each(|&(href, media)| {
         let added = add_icon(href, media);
         do_if!(let Err(err) = added, web_sys::console::error_1(&err));

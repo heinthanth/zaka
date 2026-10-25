@@ -35,8 +35,11 @@ const FONTSOURCE: &str = "https://fontsource.org";
 /// Google Fonts, where most of the other fonts come from.
 const GOOGLE_FONTS: &str = "https://fonts.google.com";
 
-/// The SIL Open Font License, under which both fonts ship.
+/// The SIL Open Font License, under which PDA10 and Sauce Code Pro ship.
 const OFL: &str = "https://openfontlicense.org";
+
+/// The Apache License 2.0, under which Myanmar Sabae ships.
+const APACHE: &str = "https://www.apache.org/licenses/LICENSE-2.0";
 
 /// Pixels the roll moves each tick.
 const STEP_PX: i32 = 1;
@@ -145,8 +148,8 @@ fn project_line(project: Project) -> impl IntoView
     ))
 }
 
-/// The credits of the fonts: PDA10 Burmese Mono, Sauce Code Pro (HTMM's
-/// Custom Font), and one row for the other fonts of the pickers.
+/// The credits of the fonts: PDA10 Burmese Mono, Myanmar Sabae, Sauce Code
+/// Pro (HTMM's Custom Font), and one row for the other fonts of the pickers.
 ///
 /// # Returns
 ///
@@ -161,6 +164,11 @@ fn fonts() -> impl IntoView
             link("explorer.about.pda_post", PDA_POST),
             link("explorer.about.ofl", OFL),
         ],
+    );
+    let sabae = credit(
+        "Myanmar Sabae".into(),
+        "explorer.about.sabae_note",
+        vec![link("explorer.about.apache", APACHE)],
     );
     let source = credit(
         "Sauce Code Pro (HTMM's Custom Font)".into(),
@@ -178,7 +186,7 @@ fn fonts() -> impl IntoView
             link("explorer.about.google_fonts", GOOGLE_FONTS),
         ],
     );
-    (head("explorer.about.fonts"), pda, source, others)
+    (head("explorer.about.fonts"), pda, sabae, source, others)
 }
 
 /// The credit of one font: its name, a note and its links.

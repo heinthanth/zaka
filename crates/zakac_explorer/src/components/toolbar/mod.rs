@@ -10,6 +10,7 @@ use zaka_web_ui_common::controls::ClassName as Controls;
 use zaka_web_ui_common::controls::dropdown::Choice;
 use zaka_web_ui_common::controls::dropdown::Dropdown;
 use zaka_web_ui_common::controls::dropdown::dropdown;
+use zaka_web_ui_common::icon::bug;
 use zaka_web_ui_common::icon::left_pane;
 use zaka_web_ui_common::sheet;
 use zakac_i18n::t;
@@ -31,8 +32,8 @@ turf::style_sheet!("src/components/toolbar/mod.sass");
 /// Sheet of the toolbar.
 static SHEET: ComponentStyle = ComponentStyle::global_css("zaka-toolbar", STYLE_SHEET);
 
-/// The bar above the panes: the brand on the left; samples, the editor
-/// switch, about and settings on the right.
+/// The bar above the panes: the brand on the left; samples, the debug mode
+/// switch, the editor switch, about and settings on the right.
 ///
 /// # Returns
 ///
@@ -54,12 +55,41 @@ pub fn toolbar() -> impl IntoView
         span().class(ClassName::TOOLBAR_GAP),
         sample_picker(),
         div().class(ClassName::TOOLBAR_ACTIONS).attr(TOUR, "settings").child((
+            debug_switch(),
             editor_switch(),
             about_menu(),
             settings_menu(),
         )),
     ));
     (sheet(&SHEET), view)
+}
+
+/// Button that turns debug mode on or off: on, the pane shows each phase of
+/// the pipeline and the run view is a debugger.
+///
+/// # Returns
+///
+/// The view.
+fn debug_switch() -> impl IntoView
+{
+    let state = use_state();
+    let on = state.debug_mode;
+    let title = move || {
+        tern!(
+            on.get(),
+            t!("explorer.toolbar.debug_off"),
+            t!("explorer.toolbar.debug_on")
+        )
+    };
+    button()
+        .class(Controls::ICON_BUTTON)
+        .class((Controls::ICON_BUTTON_ON, move || on.get()))
+        .attr(TOUR, "debug")
+        .attr("aria-pressed", move || on.get().to_string())
+        .attr("aria-label", title)
+        .title(title)
+        .on(ev::click, move |_| state.set_debug_mode.set(!on.get_untracked()))
+        .child(bug())
 }
 
 /// Button that shows or hides the editor pane.

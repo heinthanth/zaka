@@ -7,7 +7,7 @@ use leptos_scoped_style::ComponentStyle;
 use leptos_scoped_style::scss_file;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
-use zaka_web_ui_common::font::load_face;
+use zaka_web_ui_common::font::load_pair;
 use zaka_web_ui_common::sheet;
 use zaka_web_ui_common::theme::Theme;
 use zakac_i18n::t;
@@ -74,7 +74,7 @@ async fn mount(state: AppState, host: HtmlElement)
     let (stack, size) = state.font_untracked();
     // Monaco measures the font when it is created, so the fonts go first.
     do_if!(let Err(err) = load_code_font().await, web_sys::console::error_1(&err));
-    load_face(state.look.code_font.get_untracked(), size).await;
+    load_pair(untrack(|| state.look.code_pair()), size).await;
     let Some(editor) = Editor::create(&host, &text, dark, (&stack, size)).await
     else
     {

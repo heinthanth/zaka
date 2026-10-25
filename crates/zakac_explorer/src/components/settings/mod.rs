@@ -9,12 +9,10 @@ use zaka_web_ui_common::controls::settings::section;
 use zaka_web_ui_common::controls::settings::settings_menu as shared_menu;
 use zaka_web_ui_common::controls::settings::switch;
 use zaka_web_ui_common::controls::settings::switch_row;
-use zaka_web_ui_common::font::face::Face;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
 
 use crate::compile::PLATFORM_BITS;
-use crate::font::HAS_CODE_FONT;
 use crate::state::AppState;
 use crate::state::use_state;
 
@@ -35,14 +33,6 @@ pub fn settings_menu() -> impl IntoView
             lang_picker(move || state.flush_link()),
         ),
     );
-    let pda = HAS_CODE_FONT.then(|| {
-        switch_row(
-            t!("explorer.settings.pda"),
-            t!("explorer.settings.pda_note"),
-            pda_switch(state),
-        )
-        .into_any()
-    });
     let compiler = section(
         t!("explorer.settings.compiler"),
         (
@@ -56,25 +46,7 @@ pub fn settings_menu() -> impl IntoView
             fold_row(state, Fold::Branches),
         ),
     );
-    shared_menu((general, appearance(state.look, pda), compiler))
-}
-
-/// Switch that draws Burmese text in PDA10 Burmese Mono whatever the code
-/// font; it is off and dimmed while PDA10 is the code font.
-///
-/// # Arguments
-///
-/// * `state` - The state.
-///
-/// # Returns
-///
-/// The view.
-fn pda_switch(state: AppState) -> impl IntoView
-{
-    let look = state.look;
-    let is_pda = Signal::derive(move || look.code_font.get() == Face::Pda10);
-    let on = Signal::derive(move || look.pda_burmese.get() && !is_pda.get());
-    switch(on, is_pda, look.set_pda_burmese)
+    shared_menu((general, appearance(state.look), compiler))
 }
 
 /// One of the foldings the settings switch.

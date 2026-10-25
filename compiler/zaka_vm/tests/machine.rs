@@ -35,7 +35,7 @@ fn run(m: &Module) -> (String, Result<(), TrapKind>)
 fn push_and_print()
 {
     let m = module(vec![main_of(vec![Op::Push(v("7:i32")), Op::Print, Op::Ret])]);
-    assert_eq!(run(&m), ("7\n".to_string(), Ok(())));
+    assert_eq!(run(&m), ("၇\n".to_string(), Ok(())));
 }
 
 #[test]
@@ -63,7 +63,7 @@ fn calls_pass_arguments_and_return_a_result()
         Op::Print,
         Op::Ret,
     ]);
-    assert_eq!(run(&module(vec![sub, main])), ("7\n".to_string(), Ok(())));
+    assert_eq!(run(&module(vec![sub, main])), ("၇\n".to_string(), Ok(())));
 }
 
 #[test]
@@ -81,7 +81,7 @@ fn locals_and_globals_start_at_their_defaults()
         .funcs(vec![main])
         .main(0)
         .build();
-    assert_eq!(run(&m), ("မမှန်\n0.0\n".to_string(), Ok(())));
+    assert_eq!(run(&m), ("မမှန်\n၀.၀\n".to_string(), Ok(())));
 }
 
 #[test]

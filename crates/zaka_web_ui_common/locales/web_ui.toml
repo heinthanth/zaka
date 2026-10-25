@@ -14,14 +14,22 @@ en = "Appearance"
 en = "Theme"
 [web_ui.settings.theme_note]
 en = "Colors of the page and its code."
-[web_ui.settings.ui_font]
-en = "UI font"
-[web_ui.settings.ui_font_note]
-en = "Font of menus, labels and other interface text."
-[web_ui.settings.code_font]
-en = "Code font"
-[web_ui.settings.code_font_note]
-en = "Font of code: the editor, the tables and the trees."
+[web_ui.settings.ui_burmese]
+en = "UI Burmese font"
+[web_ui.settings.ui_burmese_note]
+en = "Font of Burmese text in menus, labels and the rest of the interface."
+[web_ui.settings.ui_fallback]
+en = "UI fallback font"
+[web_ui.settings.ui_fallback_note]
+en = "Font of the other interface text. Inherit draws it in the Burmese font."
+[web_ui.settings.code_burmese]
+en = "Code Burmese font"
+[web_ui.settings.code_burmese_note]
+en = "Font of Burmese code: the editor, the tables and the trees."
+[web_ui.settings.code_fallback]
+en = "Code fallback font"
+[web_ui.settings.code_fallback_note]
+en = "Font of the other code text. Inherit draws it in the Burmese font."
 [web_ui.settings.code_size]
 en = "Code size"
 [web_ui.settings.code_size_note]
@@ -41,6 +49,8 @@ en = "Auto (browser)"
 [web_ui.theme.auto]
 en = "Auto (OS)"
 
+[web_ui.face.inherit]
+en = "Inherit (Burmese font)"
 [web_ui.face.native]
 en = "OS default"
 [web_ui.face.group.interface]

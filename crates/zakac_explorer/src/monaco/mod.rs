@@ -221,6 +221,10 @@ struct EditorOpts<'a>
         .invisible_characters(false)
         .build())]
     unicode_highlight: UnicodeHighlight,
+    /// Place hovers and suggestions in fixed position, so the pane around
+    /// the editor, which hides its overflow, does not cut them off.
+    #[builder(default = true)]
+    fixed_overflow_widgets: bool,
 }
 
 /// The font settings of an editor.

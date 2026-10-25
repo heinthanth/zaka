@@ -70,9 +70,9 @@ description = "Fetch the motion libraries of the website from npm into target/ve
 # watch mode each later build would keep serving the old names, so the islands
 # would run stale code. Watch mode serves them under plain names.
 [tasks."website:serve"]
-depends = ["website:vendor"]
+depends = ["website:vendor", "explorer:build_for_site"]
 run = "LEPTOS_HASH_FILES=false cargo leptos watch --project zaka_website"
-description = "Serve the website with live reload; run explorer:build_for_site first for /explorer"
+description = "Serve the website with live reload, with the explorer under /explorer"
 
 [tasks."website:build"]
 depends = ["website:vendor"]
@@ -83,8 +83,10 @@ LEPTOS_OUTPUT_NAME=zaka_website LEPTOS_SITE_ROOT=target/website LEPTOS_SITE_PKG_
 """
 description = "Build the website and write its pages to target/website"
 
+# A folder of its own, so explorer:serve and explorer:build, which build for /,
+# never overwrite the build the website serves.
 [tasks."explorer:build_for_site"]
-run = "trunk build --release --cargo-profile wasm-release --public-url /explorer/"
+run = "trunk build --release --cargo-profile wasm-release --public-url /explorer/ --dist dist-site"
 dir = "crates/zakac_explorer"
 description = "Build the compiler explorer to sit under /explorer on the website"
 hide = true
@@ -95,7 +97,7 @@ run = """
 rm -rf dist
 mkdir -p dist
 cp -R target/website/. dist/
-cp -R crates/zakac_explorer/dist dist/explorer
+cp -R crates/zakac_explorer/dist-site dist/explorer
 cp -R target/vendor dist/vendor
 """
 description = "Put the website at / and the explorer at /explorer in dist"

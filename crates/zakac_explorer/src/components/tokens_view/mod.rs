@@ -23,6 +23,7 @@ use crate::components::table::Column;
 use crate::components::table::cell;
 use crate::components::table::linked_row;
 use crate::components::table::span_cell;
+use crate::components::table::table_box;
 use crate::components::table::table_head;
 use crate::state::AppState;
 use crate::state::use_state;
@@ -78,7 +79,7 @@ pub fn tokens_view() -> impl IntoView
         .class(Table::PHASE_TABLE)
         .child((table_head(&TOKEN_COLUMNS), tbody().child(rows)));
     let view = div().class(ClassName::TOKENS_VIEW).child((
-        tokens,
+        table_box(tokens),
         comments_table(state),
         strings_table(state),
     ));
@@ -166,7 +167,7 @@ fn comments_table(state: AppState) -> impl IntoView
                 (
                     h3().class(Table::TABLE_TITLE)
                         .child(t!("explorer.tokens.comments")),
-                    view,
+                    table_box(view),
                 )
             })
         })
@@ -215,7 +216,7 @@ fn strings_table(state: AppState) -> impl IntoView
             some.then(|| {
                 (
                     h3().class(Table::TABLE_TITLE).child(t!("explorer.tokens.strings")),
-                    view,
+                    table_box(view),
                 )
             })
         })

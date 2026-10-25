@@ -217,6 +217,18 @@ fn check_status_is_skipped_after_lexer_errors()
 }
 
 #[test]
+fn debug_mode_opens_the_last_phase_before_the_first_failure()
+{
+    let clean = find_sample("programs/gcd").expect("the sample");
+    assert_eq!(compile(clean.text, &Options::default()).last_passed(), Phase::Run);
+    let lex = compile("က ; ခ", &Options::default());
+    assert_eq!(lex.last_passed(), Phase::Segment);
+    let parse = compile("ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ\nက ကို ပြသပါ။", &Options::default());
+    assert_eq!(parse.status(Phase::Parse), Status::Failed);
+    assert_eq!(parse.last_passed(), Phase::Lex);
+}
+
+#[test]
 fn blank_source_compiles()
 {
     let out = compile("", &Options::default());

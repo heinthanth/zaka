@@ -12,10 +12,10 @@ CLAUDE.md
 docs/*.internal.md
 
 crates/zakac_explorer/dist
+crates/zakac_explorer/dist-site
 crates/zakac_explorer/assets/fonts/*.ttf
 crates/zaka_web_ui_common/assets/fonts/*.ttf
 !crates/zakac_explorer/assets/fonts/SauceCodeProHTMMsCustom-Regular.ttf
 
-# design-taste-frontend working files
-.taste-skill/
-/dist/
+.taste-skill
+dist

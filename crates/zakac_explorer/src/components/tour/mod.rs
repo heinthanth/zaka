@@ -170,7 +170,7 @@ fn begin(state: AppState, walk: Walk)
         .link(state.link())
         .editor_open(state.editor_open.get_untracked())
         .problems_open(state.problems_open.get_untracked())
-        .run_debug(state.run_debug.get_untracked())
+        .debug_mode(state.debug_mode.get_untracked())
         .build();
     walk.saved.set_value(Some(snapshot));
     state.set_editor_open.set(true);
@@ -196,7 +196,7 @@ fn end(state: AppState, walk: Walk)
         return;
     };
     walk.saved.set_value(None);
-    state.set_run_debug.set(saved.run_debug);
+    state.set_debug_mode.set(saved.debug_mode);
     state.set_editor_open.set(saved.editor_open);
     state.set_problems_open.set(saved.problems_open);
     state.debug.update(Session::reset);
@@ -216,8 +216,8 @@ fn follow_scene(state: AppState, walk: Walk)
         ret_if!(!walk.live.get());
         let step = walk.step();
         do_if!(let Some(phase) = step.stage, state.stage.set(phase));
-        let flip = state.run_debug.get_untracked() != step.debug;
-        do_if!(flip, state.set_run_debug.set(step.debug));
+        let flip = state.debug_mode.get_untracked() != step.debug;
+        do_if!(flip, state.set_debug_mode.set(step.debug));
         state.auto_step.set(step.auto);
     });
 }

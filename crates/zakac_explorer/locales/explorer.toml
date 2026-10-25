@@ -22,6 +22,10 @@ en = "Loading the editor…"
 en = "Hide the editor"
 [explorer.toolbar.editor_show]
 en = "Show the editor"
+[explorer.toolbar.debug_on]
+en = "Turn on debug mode: see each phase of the compiler and step through the ops"
+[explorer.toolbar.debug_off]
+en = "Turn off debug mode: show the run alone"
 [explorer.toolbar.sample]
 en = "Sample"
 [explorer.toolbar.sample_pick]
@@ -69,6 +73,10 @@ en = "Release post"
 en = "A modified version of the Source Code Pro font from Adobe."
 [explorer.about.source_repo]
 en = "Source Code Pro on GitHub"
+[explorer.about.sabae_note]
+en = "A Burmese font from Google; its designer is Danh Hong."
+[explorer.about.apache]
+en = "Apache License 2.0"
 [explorer.about.others]
 en = "Other fonts"
 [explorer.about.others_note]
@@ -90,10 +98,6 @@ en = "Language"
 en = "Language of the page and the compiler messages. The page reloads to switch."
 [explorer.settings.compiler]
 en = "Compiler"
-[explorer.settings.pda]
-en = "Use PDA10 Burmese Mono font for Burmese text"
-[explorer.settings.pda_note]
-en = "Draws Burmese text in PDA10 whatever the code font; it has no effect while PDA10 is the code font."
 [explorer.settings.platform_bits]
 en = "Platform bits"
 [explorer.settings.platform_bits_note]
@@ -266,8 +270,6 @@ en = "Lowering did not run"
 [explorer.lower.skipped_note]
 en = "It runs once the earlier phases report no errors. Fix the problems below to see the IR."
 
-[explorer.codegen.platform]
-en = "Ops for a %{bits}-bit platform. Hover an op to see its source."
 [explorer.codegen.globals]
 en = "Globals"
 [explorer.codegen.texts]
@@ -285,10 +287,6 @@ en = "Debugger controls"
 en = "Run the program"
 [explorer.run.stop]
 en = "Stop the program"
-[explorer.run.debug]
-en = "Debug"
-[explorer.run.debug_note]
-en = "Debug mode: step through the ops and watch the registers, the stack frames and the globals"
 [explorer.run.reset]
 en = "Start again"
 [explorer.run.step]
@@ -379,11 +377,11 @@ en = "Pick a program here to load it into the editor. The tour has loaded progra
 [explorer.tour.editor]
 en = "Editor"
 [explorer.tour.editor_text]
-en = "Write Zaka code here. After each edit the whole pipeline runs again and the views on the right follow along. Hover a token, or move the caret onto it, to light it up in the views."
+en = "Write Zaka code here. After each edit the program compiles and runs again, and the pane on the right follows along."
 [explorer.tour.pipeline]
 en = "The pipeline"
 [explorer.tour.pipeline_text]
-en = "Seven phases turn the source into a running program. Click a phase, or press the left and right arrows, to open its view. Its dot tells whether it passed, warned, failed or was skipped. When the code has errors, a problems panel opens below with each one."
+en = "Seven phases turn the source into a running program. Click a phase, or press the left and right arrows, to open its view. Its dot tells whether it passed, warned, failed or was skipped. Hover a token in the editor, or move the caret onto it, to light it up in the views."
 [explorer.tour.segment]
 en = "1 · Segment"
 [explorer.tour.segment_text]
@@ -411,11 +409,11 @@ en = "Code generation emits ops for the stack-based virtual machine: the global 
 [explorer.tour.run]
 en = "7 · Run"
 [explorer.tour.run_text]
-en = "The VM runs the ops and shows the output. The go button runs the program again from the start, and stop halts it."
+en = "In debug mode the run is a debugger: the ops on the left, the machine state and the output on the right."
 [explorer.tour.debug]
 en = "Debug mode"
 [explorer.tour.debug_text]
-en = "Turn on debug mode to step through the ops and watch the machine as it works. The tour turns it on now."
+en = "Turn on debug mode to see each phase of the compiler and to step through the program as it runs. The tour turns it on now."
 [explorer.tour.controls]
 en = "Debugger controls"
 [explorer.tour.controls_text]
@@ -429,14 +427,14 @@ en = "Machine state"
 [explorer.tour.machine_text]
 en = "The registers: PC points at the next op, SP at the free slot over the stack, BP at the frame of the innermost call. Under them, each call in progress has a frame with its locals; click one to show that call. Globals come last."
 [explorer.tour.output]
-en = "Output"
+en = "Run"
 [explorer.tour.output_text]
-en = "What the program prints shows up here as the run goes on. If the run stops on an error, the trap shows under it."
+en = "The program runs as soon as it compiles, and what it prints shows up here. Go runs it again from the start and stop halts it. If the run stops on an error, the trap shows under the output; problems in the code open a panel below."
 [explorer.tour.settings]
 en = "Settings and more"
 [explorer.tour.settings_text]
-en = "Show or hide the editor, open About, or change the theme, the fonts, the language and the compiler options. To take this tour again, open About and pick Onboarding."
+en = "Turn debug mode on or off, show or hide the editor, open About, or change the theme, the fonts, the language and the compiler options. To take this tour again, open About and pick Onboarding."
 [explorer.tour.finish]
 en = "That’s all"
 [explorer.tour.finish_text]
-en = "When the tour closes, the code from before comes back. Then pick a sample, or write something new, and watch it pass through each phase."
+en = "When the tour closes, the code from before comes back. Then pick a sample, or write something new; turn on debug mode to watch it pass through each phase."

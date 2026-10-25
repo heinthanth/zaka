@@ -1,6 +1,5 @@
 use leptos::html::div;
 use leptos::html::h3;
-use leptos::html::p;
 use leptos::html::table;
 use leptos::html::tbody;
 use leptos::html::tr;
@@ -18,6 +17,7 @@ use crate::components::check_view::skipped;
 use crate::components::table::ClassName as Table;
 use crate::components::table::Column;
 use crate::components::table::cell;
+use crate::components::table::table_box;
 use crate::components::table::table_head;
 use crate::state::AppState;
 use crate::state::use_state;
@@ -58,7 +58,7 @@ pub fn codegen_view() -> impl IntoView
     (sheet(&SHEET), view)
 }
 
-/// The platform, the globals, the texts and the functions.
+/// The globals, the texts and the functions.
 ///
 /// # Arguments
 ///
@@ -69,24 +69,19 @@ pub fn codegen_view() -> impl IntoView
 /// The view.
 fn ops_view(state: AppState) -> impl IntoView
 {
-    let bits = move || state.compiled.with(|c| c.ops.as_ref().map(|m| m.platform_bits));
-    let platform = move || {
-        let bits = bits().unwrap_or_default();
-        p().class(Table::VIEW_NOTE).child(t!("explorer.codegen.platform", bits = bits))
-    };
     let globals = move || {
         let rows = state.compiled.with(|c| c.globals.clone());
         (!rows.is_empty()).then(|| {
             let title =
                 h3().class(Table::TABLE_TITLE).child(t!("explorer.codegen.globals"));
-            (title, slot_table('g', rows))
+            (title, table_box(slot_table('g', rows)))
         })
     };
     let funcs = move || {
         let funcs = state.compiled.with(|c| c.asm.clone());
         funcs.into_iter().map(|f| func_view(state, f)).collect_view()
     };
-    (platform, globals, texts_view(state), funcs)
+    (globals, texts_view(state), funcs)
 }
 
 /// The pooled print texts, when there are some.
@@ -115,7 +110,7 @@ fn texts_view(state: AppState) -> impl IntoView
             let view = table()
                 .class(Table::PHASE_TABLE)
                 .child((table_head(&TEXT_COLUMNS), tbody().child(rows)));
-            (title, view)
+            (title, table_box(view))
         })
     }
 }
@@ -136,8 +131,8 @@ fn func_view(state: AppState, func: AsmFunc) -> impl IntoView
     let locals = func.locals.clone();
     let locals = (!locals.is_empty()).then(|| {
         let title = h3().class(Table::TABLE_TITLE).child(t!("explorer.codegen.locals"));
-        (title, slot_table('l', locals))
+        (title, table_box(slot_table('l', locals)))
     });
     let ops = asm_table(state, func, Signal::stored(None), None);
-    div().class(ClassName::ASM_FUNC).child((head, locals, ops))
+    div().class(ClassName::ASM_FUNC).child((head, locals, table_box(ops)))
 }

@@ -97,10 +97,10 @@ const VALUE_COLUMNS: [Column; 4] = [
     ("explorer.col.value", "", ""),
 ];
 
-/// The run of the generated ops: its output, or in debug mode a debugger
-/// with controls to step, step over, step out, go on to a break point,
-/// start again and step on a timer; the ops of the call it shows with the
-/// next op marked; and the machine state and the output. Or a note when
+/// The run of the generated ops: go, stop and its output, or in debug mode
+/// a debugger with controls to step, step over, step out, go on to a break
+/// point, start again and step on a timer; the ops of the call it shows with
+/// the next op marked; and the machine state and the output. Or a note when
 /// code generation did not run.
 ///
 /// # Returns
@@ -128,8 +128,6 @@ struct Drive
 {
     /// Whether debug mode is on.
     debug: Signal<bool>,
-    /// Turn debug mode on or off.
-    set_debug: WriteSignal<bool>,
     /// Whether ops run in batches, one batch a frame.
     going: RwSignal<bool>,
     /// Whether the timed stepping is on.
@@ -146,8 +144,7 @@ impl Drive
     }
 }
 
-/// The output alone, or the debugger in debug mode; the mode switch sits at
-/// the left of the bar in both, after go and stop outside debug mode.
+/// The output under go and stop, or the debugger in debug mode.
 ///
 /// # Arguments
 ///
@@ -158,30 +155,26 @@ impl Drive
 /// The view.
 fn runner(state: AppState) -> impl IntoView
 {
-    let debug = state.run_debug;
+    let debug = state.debug_mode;
     let drive = Drive::builder()
         .debug(debug)
-        .set_debug(state.set_run_debug)
         .going(RwSignal::new(false))
         .auto(state.auto_step)
         .build();
     wire_going(state, drive);
-    follow_mode(state, drive);
     move || {
-        let on = debug.get();
-        let switch = debug_switch(drive).into_any();
         tern!(
-            on,
-            debugger(state, drive, switch).into_any(),
-            plain_run(state, drive, switch).into_any()
+            debug.get(),
+            debugger(state, drive).into_any(),
+            plain_run(state, drive).into_any()
         )
     }
 }
 
 /// Run the ops in batches while a run goes on, one batch a frame, so the
 /// page keeps responding and the run can be stopped. Outside debug mode a
-/// new session starts to run on its own; in debug mode new ops halt the
-/// run.
+/// new session starts to run on its own, and so does a run the debugger left
+/// paused, so the output is whole; in debug mode new ops halt the run.
 ///
 /// # Arguments
 ///
@@ -200,35 +193,16 @@ fn wire_going(state: AppState, drive: Drive)
     let (resume, pause) = (timer.resume, timer.pause);
     Effect::new(move |_| tern!(drive.going.get(), resume(), pause()));
     Effect::new(move |_| {
-        let fresh = state.debug.with(|s| s.is_live() && s.status() == RunStatus::Start);
+        let open = state.debug.with(|s| {
+            s.is_live() && matches!(s.status(), RunStatus::Start | RunStatus::Paused)
+        });
         let idle = !drive.debug.get_untracked() && !drive.going.get_untracked();
-        do_if!(fresh && idle, drive.going.set(true));
+        do_if!(open && idle, drive.going.set(true));
     });
     // New ops halt the run, but the first pass is the mount, not new ops.
     Effect::new(move |was: Option<()>| {
         state.compiled.track();
         do_if!(was.is_some() && drive.debug.get_untracked(), drive.halt());
-    });
-}
-
-/// Act on a switch of debug mode, from the switch or the tour. Turning it
-/// on goes back to the first op; turning it off runs on to the end, so the
-/// output is whole.
-///
-/// # Arguments
-///
-/// * `state` - The state.
-/// * `drive` - What drives the run.
-fn follow_mode(state: AppState, drive: Drive)
-{
-    Effect::new(move |was: Option<bool>| {
-        let on = drive.debug.get();
-        ret_if!(was.is_none_or(|w| w == on), on);
-        drive.halt();
-        do_if!(on, state.debug.update(Session::reset));
-        let go_on = !on && state.debug.with_untracked(Session::running);
-        do_if!(go_on, drive.going.set(true));
-        on
     });
 }
 
@@ -311,30 +285,6 @@ fn stop_button(state: AppState, drive: Drive) -> impl IntoView
         .child(icon::stop())
 }
 
-/// The switch of debug mode; [`follow_mode`] acts on it.
-///
-/// # Arguments
-///
-/// * `state` - The state.
-/// * `drive` - What drives the run.
-///
-/// # Returns
-///
-/// The view.
-fn debug_switch(drive: Drive) -> impl IntoView
-{
-    let debug = drive.debug;
-    let flip = move |_| drive.set_debug.set(!debug.get_untracked());
-    button()
-        .class(ClassName::RUN_DEBUG)
-        .attr(TOUR, "debug")
-        .class((ClassName::RUN_DEBUG_ON, move || debug.get()))
-        .title(t!("explorer.run.debug_note"))
-        .attr("aria-pressed", move || debug.get().to_string())
-        .on(ev::click, flip)
-        .child((icon::bug(), span().child(t!("explorer.run.debug"))))
-}
-
 /// The status chip: running while ops run on a timer, else where the
 /// session stands.
 ///
@@ -378,21 +328,19 @@ fn status_class(status: RunStatus) -> &'static str
     }
 }
 
-/// The bar with go, stop, the mode switch and the status over the
-/// output.
+/// The bar with go, stop and the status over the output.
 ///
 /// # Arguments
 ///
 /// * `state` - The state.
 /// * `drive` - What drives the run.
-/// * `switch` - The mode switch.
 ///
 /// # Returns
 ///
 /// The view.
-fn plain_run(state: AppState, drive: Drive, switch: AnyView) -> impl IntoView
+fn plain_run(state: AppState, drive: Drive) -> impl IntoView
 {
-    let head = (go_button(state, drive), stop_button(state, drive), switch);
+    let head = (go_button(state, drive), stop_button(state, drive));
     let bar = nav()
         .class(ClassName::RUN_CONTROLS)
         .attr(TOUR, "controls")
@@ -408,12 +356,11 @@ fn plain_run(state: AppState, drive: Drive, switch: AnyView) -> impl IntoView
 ///
 /// * `state` - The state.
 /// * `drive` - What drives the run.
-/// * `switch` - The mode switch.
 ///
 /// # Returns
 ///
 /// The view.
-fn debugger(state: AppState, drive: Drive, switch: AnyView) -> impl IntoView
+fn debugger(state: AppState, drive: Drive) -> impl IntoView
 {
     let func = Memo::new(move |_| state.debug.with(Session::viewed_func));
     let marked = Memo::new(move |_| state.debug.with(Session::marked_pc));
@@ -421,7 +368,7 @@ fn debugger(state: AppState, drive: Drive, switch: AnyView) -> impl IntoView
     wire_auto(state, drive.auto, speed);
     wire_shortcuts(state, drive);
     follow_pc(state, func, marked);
-    (controls(state, drive, switch, speed), tiles(state, func, marked))
+    (controls(state, drive, speed), tiles(state, func, marked))
 }
 
 /// The panes as tiles: the ops on the left; the machine state over the
@@ -507,23 +454,20 @@ fn command(state: AppState, drive: Drive, act: fn(&mut Session))
     state.debug.update(act);
 }
 
-/// The bar of controls: the mode switch; go on to a break point, stop and
-/// start again; the step buttons; the timed stepping, the speed picker,
-/// the status and the op count.
+/// The bar of controls: go on to a break point, stop and start again; the
+/// step buttons; the timed stepping, the speed picker, the status and the op
+/// count.
 ///
 /// # Arguments
 ///
 /// * `state` - The state.
 /// * `drive` - What drives the run.
-/// * `switch` - The mode switch.
 /// * `speed` - The speed of the timed stepping.
 ///
 /// # Returns
 ///
 /// The view.
-fn controls(
-    state: AppState, drive: Drive, switch: AnyView, speed: RwSignal<Speed>,
-) -> impl IntoView
+fn controls(state: AppState, drive: Drive, speed: RwSignal<Speed>) -> impl IntoView
 {
     let running: Signal<bool> =
         Memo::new(move |_| state.debug.with(Session::running)).into();
@@ -563,8 +507,6 @@ fn controls(
         .attr("role", "toolbar")
         .attr("aria-label", t!("explorer.run.label"))
         .child((
-            switch,
-            rule(),
             ends,
             rule(),
             buttons,

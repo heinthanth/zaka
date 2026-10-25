@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use bon::Builder;
 use strum::EnumIter;
 use strum::EnumString;
+use strum::IntoEnumIterator;
 use strum::IntoStaticStr;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_with;
@@ -483,6 +484,20 @@ impl Compiled
         let levels: Vec<Level> = own.map(|d| d.level).collect();
         ret_if!(levels.contains(&Level::Error), Status::Failed);
         tern!(levels.contains(&Level::Warning), Status::Warned, Status::Clean)
+    }
+
+    /// The last phase of the run of phases from the first that passed, with
+    /// or without warnings; the stage debug mode opens on.
+    ///
+    /// # Returns
+    ///
+    /// The phase before the first that failed or was skipped, or the last
+    /// phase when all passed.
+    pub fn last_passed(&self) -> Phase
+    {
+        let passed =
+            |p: &Phase| matches!(self.status(*p), Status::Clean | Status::Warned);
+        Phase::iter().take_while(passed).last().unwrap_or(Phase::Segment)
     }
 }
 

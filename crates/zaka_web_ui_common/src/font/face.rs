@@ -1,10 +1,14 @@
 use std::borrow::Cow;
+use std::fmt;
+use std::str::FromStr;
 
+use bon::Builder;
 use strum::Display;
 use strum::EnumIter;
 use strum::EnumString;
 use strum::IntoEnumIterator;
 use zakac_i18n::t;
+use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::font::BURMESE_FONT;
@@ -17,16 +21,19 @@ pub const INTERFACE: &str = "Interface";
 /// Picker group of the fonts that hold Burmese.
 pub const BURMESE: &str = "Burmese";
 
-/// Picker group of the Latin monospace fonts; Burmese text falls back to
-/// Noto Sans Myanmar.
+/// Picker group of the Latin monospace fonts.
 pub const LATIN: &str = "Latin";
 
 /// Font name of Sauce Code Pro (HTMM's Custom); the app ships its file under
 /// a hashed name and passes it to [`crate::font::set_face_file`].
 pub const SAUCE_FONT: &str = "Sauce Code Pro (HTMM's Custom)";
 
-/// Burmese fallback after the chosen font.
-const BURMESE_FALLBACK: &str = "\"Noto Sans Myanmar\", ";
+/// Font name of Myanmar Sabae; the app ships its file under a hashed name
+/// and passes it to [`crate::font::set_face_file`].
+pub const SABAE_FONT: &str = "Myanmar Sabae";
+
+/// Stored name of the fallback that leaves all text to the Burmese font.
+const INHERIT: &str = "inherit";
 
 /// Last fallbacks of code text, for ASCII.
 const MONO_FALLBACK: &str = "ui-monospace, monospace";
@@ -78,9 +85,9 @@ pub enum Source
     Shipped,
 }
 
-/// A font the pickers offer; its string form is what is stored. The code
-/// picker offers all but the [`INTERFACE`] group; the interface picker
-/// offers all.
+/// A font the pickers offer; its string form is what is stored. The Burmese
+/// pickers offer the [`BURMESE`] group; the code fallback picker offers all
+/// but the [`INTERFACE`] group; the interface fallback picker offers all.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Display, EnumString)]
 #[strum(serialize_all = "kebab-case")]
 pub enum Face
@@ -92,6 +99,8 @@ pub enum Face
     /// PDA10 Burmese Mono, compiled into the pages when the build has the
     /// secret to open it.
     Pda10,
+    /// Myanmar Sabae, a file the app ships.
+    Sabae,
     /// Padauk, from @fontsource.
     Padauk,
     /// Noto Sans Myanmar, from @fontsource.
@@ -134,31 +143,16 @@ pub enum Face
 
 impl Default for Face
 {
-    /// The default code font.
+    /// The Burmese code font when none is stored.
     ///
     /// # Returns
     ///
     /// The face.
-    fn default() -> Self { Face::default_code() }
+    fn default() -> Self { Pair::default_code().burmese }
 }
 
 impl Face
 {
-    /// The code font when none is stored: PDA10 Burmese Mono when the build
-    /// holds it, else Sauce Code Pro (HTMM's Custom).
-    ///
-    /// # Returns
-    ///
-    /// The face.
-    pub fn default_code() -> Face { tern!(HAS_CODE_FONT, Face::Pda10, Face::SauceHtmm) }
-
-    /// The interface font when none is stored.
-    ///
-    /// # Returns
-    ///
-    /// The face.
-    pub fn default_ui() -> Face { Face::SpaceMono }
-
     /// Name in the pickers: the family, or a note for [`Face::Native`].
     ///
     /// # Returns
@@ -181,6 +175,7 @@ impl Face
             Face::Native => "",
             Face::Inter => "Inter",
             Face::Pda10 => CODE_FONT,
+            Face::Sabae => SABAE_FONT,
             Face::Padauk => "Padauk",
             Face::Noto => "Noto Sans Myanmar",
             Face::SauceHtmm => SAUCE_FONT,
@@ -212,7 +207,7 @@ impl Face
         match self
         {
             Face::Native | Face::Inter => INTERFACE,
-            Face::Pda10 | Face::Padauk | Face::Noto => BURMESE,
+            Face::Pda10 | Face::Sabae | Face::Padauk | Face::Noto => BURMESE,
             _ => LATIN,
         }
     }
@@ -245,7 +240,7 @@ impl Face
         {
             Face::Native => Source::Native,
             Face::Pda10 => Source::Embedded,
-            Face::SauceHtmm => Source::Shipped,
+            Face::Sabae | Face::SauceHtmm => Source::Shipped,
             Face::Iosevka => Source::Files(&[
                 (400, "iosevka/5.3.0/iosevka-latin-400-normal.woff2"),
                 (700, "iosevka/5.3.0/iosevka-latin-700-normal.woff2"),
@@ -328,63 +323,205 @@ impl Face
         Face::iter().filter(|f| f.usable())
     }
 
-    /// A stored code font, or the default when the picker lacks it.
+    /// The fonts of the Burmese pickers.
+    ///
+    /// # Returns
+    ///
+    /// The faces, in picker order.
+    pub fn burmese_faces() -> impl Iterator<Item = Face>
+    {
+        Face::iter().filter(|f| f.usable() && f.group() == BURMESE)
+    }
+
+    /// Font name of the face limited to the Burmese range; first in a stack,
+    /// it draws Burmese text and leaves the rest to the fallback. It needs a
+    /// name of its own: under the font name the whole face would win.
+    ///
+    /// # Returns
+    ///
+    /// The font name, then ` (Burmese)`.
+    pub fn burmese_alias(self) -> String
+    {
+        ret_if!(self == Face::Pda10, BURMESE_FONT.to_string());
+        format!("{} (Burmese)", self.family())
+    }
+
+    /// A stored Burmese font, or a default when the picker lacks it.
     ///
     /// # Arguments
     ///
     /// * `face` - The stored face.
+    /// * `default` - The face to use in its place.
     ///
     /// # Returns
     ///
     /// The face to use.
-    pub fn code_or_default(face: Face) -> Face
+    pub fn burmese_or(face: Face, default: Face) -> Face
     {
-        tern!(face.is_code(), face, Face::default_code())
+        tern!(Face::burmese_faces().any(|f| f == face), face, default)
     }
+}
 
-    /// A stored interface font, or the default when the picker lacks it.
+/// The font of the text outside the Burmese range; its string form is what
+/// is stored.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum Fallback
+{
+    /// The Burmese font draws all text.
+    #[default]
+    Inherit,
+    /// A font of its own.
+    Face(Face),
+}
+
+impl fmt::Display for Fallback
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+    {
+        match self
+        {
+            Fallback::Inherit => f.write_str(INHERIT),
+            Fallback::Face(face) => write!(f, "{face}"),
+        }
+    }
+}
+
+impl FromStr for Fallback
+{
+    type Err = strum::ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err>
+    {
+        ret_if!(s == INHERIT, Ok(Fallback::Inherit));
+        s.parse().map(Fallback::Face)
+    }
+}
+
+impl Fallback
+{
+    /// A stored fallback, or a default when the picker lacks its face.
     ///
     /// # Arguments
     ///
-    /// * `face` - The stored face.
+    /// * `faces` - The faces of the picker.
+    /// * `default` - The fallback to use in its place.
     ///
     /// # Returns
     ///
-    /// The face to use.
-    pub fn ui_or_default(face: Face) -> Face
+    /// The fallback to use.
+    pub fn or(
+        self, mut faces: impl Iterator<Item = Face>, default: Fallback,
+    ) -> Fallback
     {
-        tern!(face.usable(), face, Face::default_ui())
+        let Fallback::Face(face) = self
+        else
+        {
+            return self;
+        };
+        tern!(faces.any(|f| f == face), self, default)
+    }
+}
+
+/// A Burmese font and the font of the rest of the text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
+pub struct Pair
+{
+    /// The font of Burmese text.
+    pub burmese: Face,
+    /// The font of the rest.
+    pub fallback: Fallback,
+}
+
+impl Pair
+{
+    /// The interface fonts when none are stored: Myanmar Sabae and Space
+    /// Mono.
+    ///
+    /// # Returns
+    ///
+    /// The pair.
+    pub fn default_ui() -> Pair
+    {
+        Pair::builder()
+            .burmese(Face::Sabae)
+            .fallback(Fallback::Face(Face::SpaceMono))
+            .build()
     }
 
-    /// The CSS font stack of code text: the family, then fallbacks.
+    /// The code fonts when none are stored: PDA10 Burmese Mono for all text
+    /// when the build holds it, else Myanmar Sabae and Sauce Code Pro (HTMM's
+    /// Custom).
     ///
-    /// # Arguments
+    /// # Returns
     ///
-    /// * `pda_burmese` - Draw Burmese text in PDA10 Burmese Mono: its
-    ///   Burmese-range face goes first, so the chosen font keeps the rest.
+    /// The pair.
+    pub fn default_code() -> Pair
+    {
+        let pda = Pair::builder().burmese(Face::Pda10).fallback(Fallback::Inherit);
+        let sabae = Pair::builder()
+            .burmese(Face::Sabae)
+            .fallback(Fallback::Face(Face::SauceHtmm));
+        tern!(HAS_CODE_FONT, pda.build(), sabae.build())
+    }
+
+    /// The font of the text outside the Burmese range, when it is not the
+    /// Burmese font.
+    ///
+    /// # Returns
+    ///
+    /// The face, or `None` when the Burmese font draws all text.
+    pub fn rest(self) -> Option<Face>
+    {
+        let Fallback::Face(face) = self.fallback
+        else
+        {
+            return None;
+        };
+        (face != self.burmese).then_some(face)
+    }
+
+    /// The lead of a stack: the Burmese font whole, or limited to the
+    /// Burmese range when another font draws the rest.
+    ///
+    /// # Returns
+    ///
+    /// The quoted name, then a comma.
+    fn lead(self) -> String
+    {
+        let name = tern!(
+            self.rest().is_some(),
+            self.burmese.burmese_alias(),
+            self.burmese.family().to_string()
+        );
+        format!("\"{name}\", ")
+    }
+
+    /// The CSS font stack of code text: the Burmese font, the fallback, then
+    /// the OS monospace font.
     ///
     /// # Returns
     ///
     /// The stack.
-    pub fn code_stack(self, pda_burmese: bool) -> String
+    pub fn code_stack(self) -> String
     {
-        let merged = HAS_CODE_FONT && pda_burmese && self != Face::Pda10;
-        let lead = tern!(merged, format!("\"{BURMESE_FONT}\", "), String::new());
-        let burmese = tern!(self == Face::Noto, "", BURMESE_FALLBACK);
-        format!("{lead}\"{}\", {burmese}{MONO_FALLBACK}", self.family())
+        let rest = self.rest().map(|f| format!("\"{}\", ", f.family()));
+        format!("{}{}{MONO_FALLBACK}", self.lead(), rest.unwrap_or_default())
     }
 
-    /// The CSS font stack of interface text: the family, then Noto Sans
-    /// Myanmar for Burmese text, then the OS font.
+    /// The CSS font stack of interface text: the Burmese font, the fallback,
+    /// then the OS font.
     ///
     /// # Returns
     ///
     /// The stack.
     pub fn ui_stack(self) -> String
     {
-        let native = self == Face::Native;
-        let lead = tern!(native, String::new(), format!("\"{}\", ", self.family()));
-        let burmese = tern!(self == Face::Noto, "", BURMESE_FALLBACK);
-        format!("{lead}{burmese}{SYSTEM_UI}, {SANS_FALLBACK}")
+        let rest = self.rest().filter(|f| *f != Face::Native);
+        let rest = rest.map(|f| format!("\"{}\", ", f.family()));
+        format!(
+            "{}{}{SYSTEM_UI}, {SANS_FALLBACK}",
+            self.lead(),
+            rest.unwrap_or_default()
+        )
     }
 }

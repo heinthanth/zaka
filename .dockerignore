@@ -6,6 +6,7 @@ target
 .env*
 !.env.example
 crates/zakac_explorer/dist
+crates/zakac_explorer/dist-site
 crates/zakac_explorer/target
 crates/zaka_website/vendor/target
 crates/zakac_explorer/assets/fonts/PDA10BurmeseMono-Regular.ttf

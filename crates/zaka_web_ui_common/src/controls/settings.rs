@@ -7,6 +7,7 @@ use leptos::html::label;
 use leptos::html::span;
 use leptos::prelude::*;
 use zakac_i18n::t;
+use zakac_rust_sugars::do_if;
 
 use crate::controls::ClassName;
 use crate::controls::dropdown::Choice;
@@ -16,6 +17,7 @@ use crate::controls::modal::Modal;
 use crate::controls::modal::modal;
 use crate::controls::pickers::theme_picker;
 use crate::font::face::Face;
+use crate::font::face::Fallback;
 use crate::icon::gear;
 use crate::look::FONT_SIZES;
 use crate::look::Look;
@@ -55,19 +57,17 @@ pub fn settings_menu(content: impl IntoView + 'static) -> impl IntoView
     div().child((trigger, modal(spec, content)))
 }
 
-/// The appearance section: theme, interface font, code font, code size and
-/// italic comments.
+/// The appearance section: theme, the Burmese and fallback fonts of
+/// interface and code text, code size and italic comments.
 ///
 /// # Arguments
 ///
 /// * `look` - The look.
-/// * `extra` - A row that goes after the code font, such as the explorer's
-///   PDA10 switch.
 ///
 /// # Returns
 ///
 /// The view.
-pub fn appearance(look: Look, extra: Option<AnyView>) -> impl IntoView
+pub fn appearance(look: Look) -> impl IntoView
 {
     section(
         t!("web_ui.settings.appearance"),
@@ -78,16 +78,43 @@ pub fn appearance(look: Look, extra: Option<AnyView>) -> impl IntoView
                 theme_picker(look.theme(), true),
             ),
             row(
-                t!("web_ui.settings.ui_font"),
-                t!("web_ui.settings.ui_font_note"),
-                ui_font_picker(look),
+                t!("web_ui.settings.ui_burmese"),
+                t!("web_ui.settings.ui_burmese_note"),
+                burmese_picker(
+                    t!("web_ui.settings.ui_burmese"),
+                    look.ui_burmese,
+                    look.set_ui_burmese,
+                ),
             ),
             row(
-                t!("web_ui.settings.code_font"),
-                t!("web_ui.settings.code_font_note"),
-                code_font_picker(look),
+                t!("web_ui.settings.ui_fallback"),
+                t!("web_ui.settings.ui_fallback_note"),
+                fallback_picker(
+                    t!("web_ui.settings.ui_fallback"),
+                    Face::ui_faces(),
+                    look.ui_fallback,
+                    look.set_ui_fallback,
+                ),
             ),
-            extra,
+            row(
+                t!("web_ui.settings.code_burmese"),
+                t!("web_ui.settings.code_burmese_note"),
+                burmese_picker(
+                    t!("web_ui.settings.code_burmese"),
+                    look.code_burmese,
+                    look.set_code_burmese,
+                ),
+            ),
+            row(
+                t!("web_ui.settings.code_fallback"),
+                t!("web_ui.settings.code_fallback_note"),
+                fallback_picker(
+                    t!("web_ui.settings.code_fallback"),
+                    Face::code_faces(),
+                    look.code_fallback,
+                    look.set_code_fallback,
+                ),
+            ),
             row(
                 t!("web_ui.settings.code_size"),
                 t!("web_ui.settings.code_size_note"),
@@ -246,50 +273,56 @@ fn face_choices(faces: impl Iterator<Item = Face>) -> Vec<Choice>
     faces.map(choice).collect()
 }
 
-/// Picker of the interface font.
+/// Picker of a Burmese font.
 ///
 /// # Arguments
 ///
-/// * `look` - The look.
+/// * `name` - Accessible name of the picker.
+/// * `face` - The picked face.
+/// * `set` - Pick a face.
 ///
 /// # Returns
 ///
 /// The view.
-fn ui_font_picker(look: Look) -> impl IntoView
+fn burmese_picker(
+    name: impl Into<String>, face: Signal<Face>, set: WriteSignal<Face>,
+) -> impl IntoView
 {
-    let current = Signal::derive(move || look.ui_font.get().to_string());
+    let current = Signal::derive(move || face.get().to_string());
     let on_pick = move |v: String| {
-        look.set_ui_font.set(v.parse().unwrap_or(Face::default_ui()));
+        do_if!(let Ok(f) = v.parse::<Face>(), set.set(f));
     };
-    dropdown(picker(
-        t!("web_ui.settings.ui_font"),
-        face_choices(Face::ui_faces()),
-        current,
-        on_pick,
-    ))
+    dropdown(picker(name, face_choices(Face::burmese_faces()), current, on_pick))
 }
 
-/// Picker of the code font.
+/// Picker of a fallback font: Inherit first, then the faces.
 ///
 /// # Arguments
 ///
-/// * `look` - The look.
+/// * `name` - Accessible name of the picker.
+/// * `faces` - The faces it offers after Inherit.
+/// * `fallback` - The picked fallback.
+/// * `set` - Pick a fallback.
 ///
 /// # Returns
 ///
 /// The view.
-fn code_font_picker(look: Look) -> impl IntoView
+fn fallback_picker(
+    name: impl Into<String>, faces: impl Iterator<Item = Face>,
+    fallback: Signal<Fallback>, set: WriteSignal<Fallback>,
+) -> impl IntoView
 {
-    let current = Signal::derive(move || look.code_font.get().to_string());
+    let inherit = Choice::builder()
+        .value(Fallback::Inherit.to_string())
+        .label(t!("web_ui.face.inherit"))
+        .build();
+    let mut choices = vec![inherit];
+    choices.extend(face_choices(faces));
+    let current = Signal::derive(move || fallback.get().to_string());
     let on_pick = move |v: String| {
-        look.set_code_font.set(v.parse().unwrap_or(Face::default_code()));
+        do_if!(let Ok(f) = v.parse::<Fallback>(), set.set(f));
     };
-    dropdown(picker(
-        t!("web_ui.settings.code_font"),
-        face_choices(Face::code_faces()),
-        current,
-        on_pick,
-    ))
+    dropdown(picker(name, choices, current, on_pick))
 }
 
 /// Picker of the code font size.

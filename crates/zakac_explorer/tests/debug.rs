@@ -101,7 +101,7 @@ fn step_goes_into_a_call_and_step_out_comes_back()
     let names: Vec<String> = s.locals().into_iter().map(|v| v.name).collect();
     let want: Vec<String> = callee.locals.iter().map(|l| l.name.clone()).collect();
     assert_eq!(names, want);
-    assert_eq!(s.locals()[0].value, "3");
+    assert_eq!(s.locals()[0].value, "၃");
     s.view_frame(0);
     assert_eq!(s.viewed_func(), Some(main));
     assert_eq!(s.marked_pc(), Some(call));
@@ -173,7 +173,7 @@ fn globals_and_the_stack_show_their_values()
     s.step();
     assert_eq!(s.stack().len(), 1);
     s.step();
-    assert_eq!(s.globals()[0].value, "7");
+    assert_eq!(s.globals()[0].value, "၇");
     assert!(s.stack().is_empty());
 }
 
@@ -226,7 +226,7 @@ fn frames_stack_up_and_the_registers_point_into_them()
     let (inner, outer) = (&blocks[0], &blocks[1]);
     assert_eq!(outer.start, 0);
     assert_eq!(inner.start, outer.slots.len() + outer.temps.len());
-    assert_eq!(inner.slots[0].value, "3");
+    assert_eq!(inner.slots[0].value, "၃");
     assert_eq!(inner.temps.len(), 1);
     let regs = s.registers();
     assert_eq!(regs.bp, Some(inner.start));

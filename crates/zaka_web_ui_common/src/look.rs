@@ -9,19 +9,24 @@ use leptos_use_storage::use_local_storage_with_options;
 use zakac_rust_sugars::tern;
 
 use crate::font::face::Face;
-use crate::font::load_face;
+use crate::font::face::Fallback;
+use crate::font::face::Pair;
+use crate::font::load_pair;
 use crate::theme::Theme;
 use crate::theme::ThemeMode;
 use crate::theme::theme_mode;
 
-/// Local storage name of the interface font.
-pub const UI_FONT_STORE: &str = "zaka-ui-font";
+/// Local storage name of the Burmese font of interface text.
+pub const UI_BURMESE_STORE: &str = "zaka-ui-burmese";
 
-/// Local storage name of the code font.
-pub const CODE_FONT_STORE: &str = "zaka-code-font";
+/// Local storage name of the fallback font of interface text.
+pub const UI_FALLBACK_STORE: &str = "zaka-ui-fallback";
 
-/// Local storage name of the PDA10-for-Burmese switch.
-pub const PDA_STORE: &str = "zaka-pda-burmese";
+/// Local storage name of the Burmese font of code text.
+pub const CODE_BURMESE_STORE: &str = "zaka-code-burmese";
+
+/// Local storage name of the fallback font of code text.
+pub const CODE_FALLBACK_STORE: &str = "zaka-code-fallback";
 
 /// Local storage name of the italic comments switch.
 pub const ITALIC_STORE: &str = "zaka-italic-comments";
@@ -49,18 +54,22 @@ pub struct Look
     pub set_mode: WriteSignal<ColorMode>,
     /// The color mode on the page; never `Auto`.
     pub resolved: Signal<ColorMode>,
-    /// The font of interface text.
-    pub ui_font: Signal<Face>,
-    /// Choose the font of interface text.
-    pub set_ui_font: WriteSignal<Face>,
-    /// The font of code text.
-    pub code_font: Signal<Face>,
-    /// Choose the font of code text.
-    pub set_code_font: WriteSignal<Face>,
-    /// Draw Burmese text in PDA10 Burmese Mono whatever the code font.
-    pub pda_burmese: Signal<bool>,
-    /// Switch PDA10 for Burmese text on or off.
-    pub set_pda_burmese: WriteSignal<bool>,
+    /// The font of Burmese interface text.
+    pub ui_burmese: Signal<Face>,
+    /// Choose the font of Burmese interface text.
+    pub set_ui_burmese: WriteSignal<Face>,
+    /// The font of the rest of the interface text.
+    pub ui_fallback: Signal<Fallback>,
+    /// Choose the font of the rest of the interface text.
+    pub set_ui_fallback: WriteSignal<Fallback>,
+    /// The font of Burmese code text.
+    pub code_burmese: Signal<Face>,
+    /// Choose the font of Burmese code text.
+    pub set_code_burmese: WriteSignal<Face>,
+    /// The font of the rest of the code text.
+    pub code_fallback: Signal<Fallback>,
+    /// Choose the font of the rest of the code text.
+    pub set_code_fallback: WriteSignal<Fallback>,
     /// Draw comments in italics.
     pub italic_comments: Signal<bool>,
     /// Switch italic comments on or off.
@@ -94,15 +103,38 @@ impl Look
             .build()
     }
 
+    /// The fonts of interface text.
+    ///
+    /// # Returns
+    ///
+    /// The pair.
+    pub fn ui_pair(&self) -> Pair
+    {
+        Pair::builder()
+            .burmese(self.ui_burmese.get())
+            .fallback(self.ui_fallback.get())
+            .build()
+    }
+
+    /// The fonts of code text.
+    ///
+    /// # Returns
+    ///
+    /// The pair.
+    pub fn code_pair(&self) -> Pair
+    {
+        Pair::builder()
+            .burmese(self.code_burmese.get())
+            .fallback(self.code_fallback.get())
+            .build()
+    }
+
     /// The CSS font stack of code text.
     ///
     /// # Returns
     ///
     /// The stack.
-    pub fn code_stack(&self) -> String
-    {
-        self.code_font.get().code_stack(self.pda_burmese.get())
-    }
+    pub fn code_stack(&self) -> String { self.code_pair().code_stack() }
 
     /// The CSS font stack and size of code text, without tracking.
     ///
@@ -111,8 +143,7 @@ impl Look
     /// The stack and the size in px.
     pub fn font_untracked(&self) -> (String, u32)
     {
-        let stack =
-            self.code_font.get_untracked().code_stack(self.pda_burmese.get_untracked());
+        let stack = untrack(|| self.code_stack());
         (stack, self.font_size.get_untracked())
     }
 }
@@ -126,17 +157,14 @@ impl Look
 pub fn provide_look() -> Look
 {
     let ThemeMode { mode, set_mode, resolved } = theme_mode();
-    let (stored_ui, set_ui_font, _) =
-        use_local_storage_with_options::<Face, FromToStringCodec>(
-            UI_FONT_STORE,
-            UseStorageOptions::default().initial_value(Face::default_ui()),
-        );
-    let ui_font = Signal::derive(move || Face::ui_or_default(stored_ui.get()));
-    let (stored_code, set_code_font, _) =
-        use_local_storage::<Face, FromToStringCodec>(CODE_FONT_STORE);
-    let code_font = Signal::derive(move || Face::code_or_default(stored_code.get()));
-    let (pda_burmese, set_pda_burmese, _) =
-        use_local_storage::<bool, FromToStringCodec>(PDA_STORE);
+    let (ui, code) = (Pair::default_ui(), Pair::default_code());
+    let (ui_burmese, set_ui_burmese) = stored_burmese(UI_BURMESE_STORE, ui.burmese);
+    let (ui_fallback, set_ui_fallback) =
+        stored_fallback(UI_FALLBACK_STORE, ui.fallback, Face::ui_faces);
+    let (code_burmese, set_code_burmese) =
+        stored_burmese(CODE_BURMESE_STORE, code.burmese);
+    let (code_fallback, set_code_fallback) =
+        stored_fallback(CODE_FALLBACK_STORE, code.fallback, Face::code_faces);
     let (italic_comments, set_italic_comments, _) =
         use_local_storage::<bool, FromToStringCodec>(ITALIC_STORE);
     let (stored_size, set_font_size, _) =
@@ -146,12 +174,14 @@ pub fn provide_look() -> Look
         .mode(mode)
         .set_mode(set_mode)
         .resolved(resolved)
-        .ui_font(ui_font)
-        .set_ui_font(set_ui_font)
-        .code_font(code_font)
-        .set_code_font(set_code_font)
-        .pda_burmese(pda_burmese)
-        .set_pda_burmese(set_pda_burmese)
+        .ui_burmese(ui_burmese)
+        .set_ui_burmese(set_ui_burmese)
+        .ui_fallback(ui_fallback)
+        .set_ui_fallback(set_ui_fallback)
+        .code_burmese(code_burmese)
+        .set_code_burmese(set_code_burmese)
+        .code_fallback(code_fallback)
+        .set_code_fallback(set_code_fallback)
         .italic_comments(italic_comments)
         .set_italic_comments(set_italic_comments)
         .font_size(font_size)
@@ -169,6 +199,49 @@ pub fn provide_look() -> Look
 /// The look from context.
 pub fn use_look() -> Look { expect_context::<Look>() }
 
+/// A Burmese font kept in local storage; a stored face the picker lacks
+/// reads as the default.
+///
+/// # Arguments
+///
+/// * `store` - The local storage name.
+/// * `default` - The face before one is kept.
+///
+/// # Returns
+///
+/// The face and its setter.
+fn stored_burmese(
+    store: &'static str, default: Face,
+) -> (Signal<Face>, WriteSignal<Face>)
+{
+    let options = UseStorageOptions::default().initial_value(default);
+    let (stored, set, _) =
+        use_local_storage_with_options::<Face, FromToStringCodec>(store, options);
+    (Signal::derive(move || Face::burmese_or(stored.get(), default)), set)
+}
+
+/// A fallback font kept in local storage; a stored face the picker lacks
+/// reads as the default.
+///
+/// # Arguments
+///
+/// * `store` - The local storage name.
+/// * `default` - The fallback before one is kept.
+/// * `faces` - The faces of the picker.
+///
+/// # Returns
+///
+/// The fallback and its setter.
+fn stored_fallback<I: Iterator<Item = Face> + 'static>(
+    store: &'static str, default: Fallback, faces: fn() -> I,
+) -> (Signal<Fallback>, WriteSignal<Fallback>)
+{
+    let options = UseStorageOptions::default().initial_value(default);
+    let (stored, set, _) =
+        use_local_storage_with_options::<Fallback, FromToStringCodec>(store, options);
+    (Signal::derive(move || stored.get().or(faces(), default)), set)
+}
+
 /// Keep the CSS variables of interface and code text in step with the chosen
 /// fonts and size, and load each font when it is picked.
 ///
@@ -185,15 +258,15 @@ fn wire_fonts(look: Look)
         set_comment.set(tern!(look.italic_comments.get(), "italic", "normal").into());
     });
     Effect::new(move |_| {
-        let face = look.ui_font.get();
-        set_ui_stack.set(face.ui_stack());
-        leptos::task::spawn_local(load_face(face, UI_SIZE));
+        let pair = look.ui_pair();
+        set_ui_stack.set(pair.ui_stack());
+        leptos::task::spawn_local(load_pair(pair, UI_SIZE));
     });
     Effect::new(move |_| {
-        let (face, size) = (look.code_font.get(), look.font_size.get());
-        set_stack.set(look.code_stack());
+        let (pair, size) = (look.code_pair(), look.font_size.get());
+        set_stack.set(pair.code_stack());
         set_size.set(format!("{size}px"));
-        leptos::task::spawn_local(load_face(face, size));
+        leptos::task::spawn_local(load_pair(pair, size));
     });
 }
 

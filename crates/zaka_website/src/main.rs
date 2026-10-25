@@ -10,7 +10,7 @@ const ONCE_VAR: &str = "ZAKA_WEBSITE_ONCE";
 
 /// The explorer build, served under `/explorer` while the site runs on this
 /// machine.
-const EXPLORER_DIST: &str = "crates/zakac_explorer/dist";
+const EXPLORER_DIST: &str = "crates/zakac_explorer/dist-site";
 
 /// The pictures and fonts under hashed names, as the build script writes
 /// them; the server places them in the site root under `/assets`.

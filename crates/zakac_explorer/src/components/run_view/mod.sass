@@ -37,44 +37,7 @@
   .run-stop:not(:disabled)
     color: var(--diag-error)
 
-// The debug mode switch: a button with a bug and its name; it lights up
-// while debug mode is on.
-.run-debug
-  display: inline-flex
-  align-items: center
-  gap: 7px
-  height: 34px
-  padding: 0 12px 0 10px
-  font: inherit
-  font-size: 13px
-  font-weight: 600
-  color: var(--fg-muted)
-  background: var(--panel)
-  border: 1px solid var(--panel-border)
-  border-radius: 9px
-  cursor: pointer
-  outline: none
-  transition: color 120ms ease-out, border-color 120ms ease-out, background-color 120ms ease-out
-
-  svg
-    width: 16px
-    height: 16px
-
-  &:hover
-    color: var(--fg)
-    border-color: var(--fg-muted)
-
-  &:focus-visible
-    border-color: var(--accent)
-    box-shadow: 0 0 0 3px var(--accent-soft)
-
-.run-debug-on,
-.run-debug-on:hover
-  color: var(--accent)
-  border-color: var(--accent)
-  background: var(--accent-soft)
-
-// The rule between the mode switch and the step buttons.
+// The rule between groups of the bar.
 .run-rule
   width: 1px
   height: 22px

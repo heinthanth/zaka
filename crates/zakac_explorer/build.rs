@@ -2,10 +2,11 @@ use std::path::PathBuf;
 
 /// The files the explorer names under hashed names: the Rust name of each and
 /// its file, from the package.
-const ASSETS: [(&str, &str); 3] = [
+const ASSETS: [(&str, &str); 4] = [
     ("LOGO_LIGHT", "../../artwork/logo/bloom-white-light.svg"),
     ("LOGO_DARK", "../../artwork/logo/bloom-white-dark.svg"),
     ("SAUCE_FONT", "assets/fonts/SauceCodeProHTMMsCustom-Regular.ttf"),
+    ("SABAE_FONT", "../zaka_website/assets/fonts/MyanmarSabae.ttf"),
 ];
 
 /// Rebuild when a sheet or a locale table changes; the sheet macros read the

@@ -7,7 +7,7 @@ pub const TRUE_TEXT: &str = "မှန်";
 pub const FALSE_TEXT: &str = "မမှန်";
 
 /// The text a print op writes for a value, without the line break.
-/// Numbers use Western digits; floats use the shortest text that reads
+/// Numbers use Burmese digits; floats use the shortest text that reads
 /// back; a character is written as itself.
 ///
 /// # Arguments
@@ -21,10 +21,32 @@ pub fn text(v: Value) -> String
 {
     match v
     {
-        Value::Int { kind, raw } if kind.signed => (raw as i128).to_string(),
-        Value::Int { raw, .. } => raw.to_string(),
-        Value::Float { bits, raw } => float_pattern_text(bits, raw),
+        Value::Int { kind, raw } if kind.signed =>
+        {
+            burmese_digits(&(raw as i128).to_string())
+        }
+        Value::Int { raw, .. } => burmese_digits(&raw.to_string()),
+        Value::Float { bits, raw } => burmese_digits(&float_pattern_text(bits, raw)),
         Value::Char(c) => c.to_string(),
         Value::Bool(b) => (if b { TRUE_TEXT } else { FALSE_TEXT }).to_string(),
     }
+}
+
+/// Swap each Western digit for the Burmese digit of the same value; signs,
+/// points, exponent marks and words such as `inf` stand as written.
+///
+/// # Arguments
+///
+/// * `num` - The number text in Western digits.
+///
+/// # Returns
+///
+/// The text in Burmese digits.
+pub fn burmese_digits(num: &str) -> String
+{
+    num.chars()
+        .map(|c| {
+            c.to_digit(10).and_then(|d| char::from_u32('၀' as u32 + d)).unwrap_or(c)
+        })
+        .collect()
 }

@@ -46,7 +46,7 @@ fn source_on_stdin_runs()
 {
     let (code, stdout, stderr) = run_vm(&[], SUM);
     assert_eq!(code, ExitCode::Success, "{stderr}");
-    assert_eq!(stdout, "20\nပြီး\n");
+    assert_eq!(stdout, "၂၀\nပြီး\n");
     assert!(stderr.is_empty(), "{stderr}");
 }
 
@@ -64,13 +64,13 @@ fn codegen_artifacts_run_raw_or_text()
         assert_eq!(code, ExitCode::Success);
         let (code, stdout, stderr) = run_vm(&[path.to_str().unwrap()], "");
         assert_eq!(code, ExitCode::Success, "{ext}: {stderr}");
-        assert_eq!(stdout, "20\nပြီး\n", "{ext}");
+        assert_eq!(stdout, "၂၀\nပြီး\n", "{ext}");
         let content = std::fs::read(&path).unwrap();
         let vm = ZakaVm::create_as_standalone();
         let (code, stdout, _) = run_cmd(vm, ZakaVm::standalone_name(), &[], &content);
         assert_eq!(
             (code, stdout.as_str()),
-            (ExitCode::Success, "20\nပြီး\n"),
+            (ExitCode::Success, "၂၀\nပြီး\n"),
             "{ext} on stdin"
         );
     }
@@ -114,5 +114,5 @@ fn platform_bits_change_the_width()
     let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၂၇ ဖြစ်ပါစေ။\nက + ၁ ကို ပြသပါ။";
     let (code, stdout, _) = run_vm(&["--platform-bits", "8"], text);
     assert_eq!(code, ExitCode::Success);
-    assert_eq!(stdout, "-128\n");
+    assert_eq!(stdout, "-၁၂၈\n");
 }

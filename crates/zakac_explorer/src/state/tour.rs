@@ -26,7 +26,7 @@ pub struct Step
     pub target: Option<&'static str>,
     /// The stage it opens; `None` keeps the open one.
     pub stage: Option<Phase>,
-    /// Whether the run view is in debug mode.
+    /// Whether debug mode is on.
     #[builder(default)]
     pub debug: bool,
     /// Whether the debugger steps on a timer.
@@ -39,8 +39,9 @@ pub struct Step
 /// the hash of a sheet.
 pub const TOUR: &str = "data-tour";
 
-/// The steps of the tour, in order: the page, each phase, then the
-/// debugger with its panes while it steps on a timer.
+/// The steps of the tour, in order: the page and the run, the debug mode
+/// switch, each phase, then the debugger with its panes while it steps on a
+/// timer.
 ///
 /// # Returns
 ///
@@ -48,7 +49,12 @@ pub const TOUR: &str = "data-tour";
 pub fn steps() -> Vec<Step>
 {
     let stage = |title, text, phase| {
-        Step::builder().title(title).text(text).target("[data-tour=stage]").stage(phase)
+        Step::builder()
+            .title(title)
+            .text(text)
+            .target("[data-tour=stage]")
+            .stage(phase)
+            .debug(true)
     };
     let pane = |title, text, target| {
         Step::builder().title(title).text(text).target(target).debug(true)
@@ -69,10 +75,21 @@ pub fn steps() -> Vec<Step>
             .target("[data-tour=editor]")
             .build(),
         Step::builder()
-            .title("explorer.tour.pipeline")
-            .text("explorer.tour.pipeline_text")
-            .target("[data-tour=pipeline]")
+            .title("explorer.tour.output")
+            .text("explorer.tour.output_text")
+            .target("[data-tour=stage]")
             .build(),
+        Step::builder()
+            .title("explorer.tour.debug")
+            .text("explorer.tour.debug_text")
+            .target("[data-tour=debug]")
+            .build(),
+        pane(
+            "explorer.tour.pipeline",
+            "explorer.tour.pipeline_text",
+            "[data-tour=pipeline]",
+        )
+        .build(),
         stage("explorer.tour.segment", "explorer.tour.segment_text", Phase::Segment)
             .build(),
         stage("explorer.tour.lex", "explorer.tour.lex_text", Phase::Lex).build(),
@@ -82,8 +99,6 @@ pub fn steps() -> Vec<Step>
         stage("explorer.tour.codegen", "explorer.tour.codegen_text", Phase::Codegen)
             .build(),
         stage("explorer.tour.run", "explorer.tour.run_text", Phase::Run).build(),
-        pane("explorer.tour.debug", "explorer.tour.debug_text", "[data-tour=debug]")
-            .build(),
         pane(
             "explorer.tour.controls",
             "explorer.tour.controls_text",
@@ -100,9 +115,6 @@ pub fn steps() -> Vec<Step>
         )
         .auto(true)
         .build(),
-        pane("explorer.tour.output", "explorer.tour.output_text", "[data-tour=output]")
-            .auto(true)
-            .build(),
         pane(
             "explorer.tour.settings",
             "explorer.tour.settings_text",
@@ -228,6 +240,6 @@ pub struct Snapshot
     pub editor_open: bool,
     /// Whether the problems panel was open.
     pub problems_open: bool,
-    /// Whether the run view was in debug mode.
-    pub run_debug: bool,
+    /// Whether debug mode was on.
+    pub debug_mode: bool,
 }

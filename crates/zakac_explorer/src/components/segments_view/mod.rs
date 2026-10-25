@@ -11,6 +11,7 @@ use crate::components::table::Column;
 use crate::components::table::cell;
 use crate::components::table::linked_row;
 use crate::components::table::span_cell;
+use crate::components::table::table_box;
 use crate::components::table::table_head;
 use crate::state::AppState;
 use crate::state::use_state;
@@ -47,7 +48,7 @@ pub fn segments_view() -> impl IntoView
     let grid = table()
         .class(Table::PHASE_TABLE)
         .child((table_head(&COLUMNS), tbody().child(rows)));
-    (sheet(&SHEET), div().child(grid))
+    (sheet(&SHEET), div().child(table_box(grid)))
 }
 
 /// One row of the segments table.

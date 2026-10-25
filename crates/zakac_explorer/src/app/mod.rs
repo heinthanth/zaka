@@ -9,10 +9,12 @@ use zaka_web_ui_common::shared_sheets;
 use zaka_web_ui_common::sheet;
 use zakac_diagnostics::Level;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::tern;
 
 use crate::components::diag_panel::diag_panel;
 use crate::components::editor::editor_pane;
 use crate::components::pipeline::pipeline;
+use crate::components::run_view::run_view;
 use crate::components::splitter::Axis;
 use crate::components::splitter::Split;
 use crate::components::splitter::splitter;
@@ -36,10 +38,10 @@ turf::style_sheet!("src/app/mod.sass");
 /// Sheet of the page shell.
 static SHEET: ComponentStyle = ComponentStyle::global_css("zaka-app", STYLE_SHEET);
 
-/// The whole page: toolbar, then the editor on the left and the pipeline
-/// over the problems on the right, with splitters between them. The
-/// problems panel shows while there are problems. The guided tour sits over
-/// it all.
+/// The whole page: toolbar, then the editor on the left and the run over
+/// the problems on the right, with splitters between them; in debug mode the
+/// pipeline takes the place of the run. The problems panel shows while there
+/// are problems. The guided tour sits over it all.
 ///
 /// # Returns
 ///
@@ -80,7 +82,10 @@ pub fn app() -> impl IntoView
     let stage = section()
         .class(format!("{} {}", ClassName::PANEL, ClassName::PANEL_STAGE))
         .attr(TOUR, "stage")
-        .child(pipeline());
+        .child(move || {
+            let run = || div().class(ClassName::RUN_PANE).child(run_view());
+            tern!(state.debug_mode.get(), pipeline().into_any(), run().into_any())
+        });
     let problems = section()
         .class(format!("{} {}", ClassName::PANEL, ClassName::PANEL_PROBLEMS))
         .child(diag_panel());

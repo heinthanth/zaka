@@ -5,7 +5,7 @@ use leptos_use_signal_debounce_throttle::signal_debounced;
 use leptos_use_storage::UseStorageOptions;
 use leptos_use_storage::use_local_storage;
 use leptos_use_storage::use_local_storage_with_options;
-use zaka_web_ui_common::font::load_face;
+use zaka_web_ui_common::font::load_pair;
 pub use zaka_web_ui_common::lang;
 use zaka_web_ui_common::look::Look;
 use zaka_web_ui_common::look::provide_look;
@@ -52,8 +52,8 @@ const EDITOR_STORE: &str = "zaka-explorer-editor-open";
 /// Local storage name of the problems panel switch.
 const PROBLEMS_STORE: &str = "zaka-explorer-problems-open";
 
-/// Local storage name of the debug mode switch of the run view.
-const DEBUG_STORE: &str = "zaka-explorer-run-debug";
+/// Local storage name of the debug mode switch.
+const DEBUG_STORE: &str = "zaka-explorer-debug-mode";
 
 /// State shared between the editor and the views.
 #[derive(Clone, Copy, Builder)]
@@ -105,10 +105,11 @@ pub struct AppState
     pub problems_open: Signal<bool>,
     /// Open or close the problems panel.
     pub set_problems_open: WriteSignal<bool>,
-    /// Whether the run view is in debug mode.
-    pub run_debug: Signal<bool>,
-    /// Turn debug mode of the run view on or off.
-    pub set_run_debug: WriteSignal<bool>,
+    /// Whether debug mode is on: the pipeline shows each phase and the run
+    /// view is a debugger. Off, the pane shows the run alone.
+    pub debug_mode: Signal<bool>,
+    /// Turn debug mode on or off.
+    pub set_debug_mode: WriteSignal<bool>,
     /// Whether the debugger steps on a timer.
     pub auto_step: RwSignal<bool>,
     /// Whether the guided tour is open.
@@ -277,7 +278,7 @@ pub fn provide_state() -> AppState
             PROBLEMS_STORE,
             UseStorageOptions::default().initial_value(true),
         );
-    let (run_debug, set_run_debug, _) =
+    let (debug_mode, set_debug_mode, _) =
         use_local_storage::<bool, FromToStringCodec>(DEBUG_STORE);
 
     let state = AppState::builder()
@@ -304,8 +305,8 @@ pub fn provide_state() -> AppState
         .set_editor_open(set_editor_open)
         .problems_open(problems_open)
         .set_problems_open(set_problems_open)
-        .run_debug(run_debug)
-        .set_run_debug(set_run_debug)
+        .debug_mode(debug_mode)
+        .set_debug_mode(set_debug_mode)
         .auto_step(RwSignal::new(false))
         .tour(RwSignal::new(false))
         .build();
@@ -323,7 +324,10 @@ pub fn provide_state() -> AppState
     state
 }
 
-/// Start a new debugger session each time the generated ops change.
+/// Start a new debugger session each time the generated ops change. When
+/// debug mode turns on, from the toolbar or the tour, open the last stage
+/// that passed and go back to the first op. When it turns off, the run view
+/// runs on to the end.
 ///
 /// # Arguments
 ///
@@ -332,6 +336,14 @@ fn wire_debug(state: AppState)
 {
     let ops = Memo::new(move |_| state.compiled.with(|c| c.ops.clone()));
     Effect::new(move |_| ops.with(|ops| state.debug.set(Session::new(ops.as_ref()))));
+    Effect::new(move |was: Option<bool>| {
+        let on = state.debug_mode.get();
+        ret_if!(was.is_none_or(|w| w == on) || !on, on);
+        state.stage.set(state.compiled.with_untracked(Compiled::last_passed));
+        state.auto_step.set(false);
+        state.debug.update(Session::reset);
+        on
+    });
 }
 
 /// The shared state of the page.
@@ -380,7 +392,7 @@ fn wire_editor(state: AppState)
     });
 }
 
-/// Keep the editor font in step with the chosen code font and size; the
+/// Keep the editor font in step with the chosen code fonts and size; the
 /// shared look keeps the CSS variables.
 ///
 /// # Arguments
@@ -389,11 +401,11 @@ fn wire_editor(state: AppState)
 fn wire_font(state: AppState)
 {
     Effect::new(move |_| {
-        let (font, size) = (state.look.code_font.get(), state.look.font_size.get());
-        let stack = state.code_stack();
+        let (pair, size) = (state.look.code_pair(), state.look.font_size.get());
+        let stack = pair.code_stack();
         ret_if!(!state.mounted.get());
         leptos::task::spawn_local(async move {
-            load_face(font, size).await;
+            load_pair(pair, size).await;
             state.with_editor(|editor| editor.set_font(&stack, size));
         });
     });
