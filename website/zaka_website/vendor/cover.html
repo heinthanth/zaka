@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  The cover card of Zaka, 1200 x 630, for og:image. It follows the hero of the
+  website in a dark theme: the mark and the name on the mocha ground, the
+  blossoms against clear blue to the right, behind a slanted scrim. The look is
+  in cover.sass.
+
+  `mise run website:cover` builds it with Trunk and writes the picture to
+  assets/pictures/cover.png, which the build script names after its hash.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link data-trunk rel="sass" href="cover.sass" />
+    <link
+      data-trunk
+      rel="copy-file"
+      href="../../../target/fonts/space-mono/5.3.0/files/space-mono-latin-400-normal.woff2"
+      data-target-path="fonts"
+    />
+    <link
+      data-trunk
+      rel="copy-file"
+      href="../../zaka_web_ui_common/assets/fonts/MyanmarSabae.ttf"
+      data-target-path="fonts"
+    />
+    <link
+      data-trunk
+      rel="copy-file"
+      href="../assets/pictures/blossoms.jpg"
+      data-target-path="pictures"
+    />
+    <link
+      data-trunk
+      rel="copy-file"
+      href="../../../artwork/logo/bloom-white-dark.svg"
+      data-target-path="pictures"
+    />
+  </head>
+  <body>
+    <div class="card">
+      <div class="backdrop">
+        <img src="pictures/blossoms.jpg" alt="" />
+      </div>
+      <div class="main">
+        <div class="brand">
+          <img src="pictures/bloom-white-dark.svg" alt="" />
+          <span class="brand-name" lang="my">စံကား</span>
+        </div>
+        <p class="lede">A programming language based on<br />a subset of Burmese.</p>
+      </div>
+    </div>
+  </body>
+</html>

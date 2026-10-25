@@ -1,0 +1,18 @@
+# The npm packages of the website's motion code, fetched as the explorer
+# fetches its fonts and editor. No Rust here: cargo-leptos builds the site,
+# and the server hands out these libraries under /vendor from target/vendor.
+# `mise run website:cover` builds `cover.html` from here too, into
+# target/cover, with the shared web fonts of zaka_web_ui_common.
+
+[build]
+target = "index.html"
+dist = "../../../target/vendor"
+public_url = "/vendor/"
+
+[[node_packages]]
+name = "gsap"
+version = "3.12.5"
+
+[[node_packages]]
+name = "lenis"
+version = "1.1.13"

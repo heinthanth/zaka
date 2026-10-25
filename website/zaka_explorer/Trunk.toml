@@ -1,0 +1,42 @@
+[build]
+target = "index.html"
+dist = "dist"
+
+[[node_packages]]
+name = "monaco-editor"
+version = "0.57.0"
+
+# build.rs writes the logo, the fonts it ships and the cover card under names
+# made from a hash of their content into target/assets; once the Rust build is done, the files
+# join the build under assets/.
+[[hooks]]
+stage = "post_build"
+command = "sh"
+command_arguments = [
+    "-c",
+    "mkdir -p \"$TRUNK_STAGING_DIR/assets\" && cp target/assets/* \"$TRUNK_STAGING_DIR/assets/\"",
+]
+
+# The share tags of index.html get whole addresses: see share_tags.sh.
+[[hooks]]
+stage = "post_build"
+command = "sh"
+command_arguments = ["share_tags.sh"]
+
+# At the root of a site of its own (serve, or a build for /) the explorer
+# brings the shared web fonts of zaka_web_ui_common under fonts/; under the
+# website the site serves them, so a build for /explorer/ leaves them out.
+[[hooks]]
+stage = "post_build"
+command = "sh"
+command_arguments = [
+    "-c",
+    "[ \"$TRUNK_PUBLIC_URL\" != / ] || cp -R ../../target/fonts \"$TRUNK_STAGING_DIR/fonts\"",
+]
+
+[watch]
+watch = [".", "../../samples", "../../artwork"]
+ignore = ["dist", "dist-site", "target", "../../target"]
+
+[serve]
+port = 8080

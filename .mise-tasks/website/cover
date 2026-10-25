@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#MISE description="Draw the cover card (og:image) to website/zaka_website/assets/pictures/cover.png"
+#MISE depends=["font:fetch"]
+#MISE dir="{{config_root}}/website/zaka_website/vendor"
+set -euo pipefail
+
+# Trunk builds the card with the shared web fonts; zaka_html2png draws it in
+# headless Chrome once the fonts and the photo have loaded. The picture is
+# kept in the repo, so a site build needs no browser.
+trunk build --release=true --dist ../../../target/cover --public-url ./ cover.html
+cargo run -q -p zaka_html2png -- ../../../target/cover/index.html ../assets/pictures/cover.png

@@ -45,10 +45,18 @@ jobs:
           restore-keys: web-tools-
 
       - name: Fetch the motion libraries
-        working-directory: crates/zaka_website/vendor
+        working-directory: website/zaka_website/vendor
         run: trunk build --release
 
+      - name: Fetch the web fonts
+        working-directory: website/zaka_web_ui_common/fonts
+        run: trunk build --release
+
+      # The address the site is served from, from the variables of the
+      # production environment.
       - name: Build the website
+        env:
+          ZAKA_SITE_ORIGIN: ${{ vars.ZAKA_SITE_ORIGIN }}
         run: |
           cargo leptos build --project zaka_website --release
           LEPTOS_OUTPUT_NAME=zaka_website LEPTOS_SITE_ROOT=target/website \
@@ -56,7 +64,9 @@ jobs:
             target/release/zaka_website
 
       - name: Build the explorer
-        working-directory: crates/zakac_explorer
+        working-directory: website/zaka_explorer
+        env:
+          ZAKA_SITE_ORIGIN: ${{ vars.ZAKA_SITE_ORIGIN }}
         run: >
           trunk build --release --locked --cargo-profile wasm-release
           --public-url /explorer/
@@ -65,8 +75,9 @@ jobs:
         run: |
           mkdir -p dist
           cp -R target/website/. dist/
-          cp -R crates/zakac_explorer/dist dist/explorer
+          cp -R website/zaka_explorer/dist dist/explorer
           cp -R target/vendor dist/vendor
+          cp -R target/fonts dist/fonts
 
       - name: Publish to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

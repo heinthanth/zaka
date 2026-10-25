@@ -1,0 +1,116 @@
+[package]
+name = "zaka_explorer"
+version = "0.1.0"
+edition.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "zaka_explorer"
+path = "src/main.rs"
+
+[dependencies]
+base64 = { workspace = true }
+bon = { workspace = true }
+codee = { workspace = true }
+console_error_panic_hook = { workspace = true }
+js-sys = { workspace = true }
+leptos = { workspace = true, features = ["csr"] }
+leptos-scoped-style = { workspace = true }
+leptos-use-color-mode = { workspace = true }
+leptos-use-css-var = { workspace = true }
+leptos-use-draggable = { workspace = true }
+leptos-use-element-bounding = { workspace = true }
+leptos-use-event-listener = { workspace = true }
+leptos-use-interval-fn = { workspace = true }
+leptos-use-on-click-outside = { workspace = true }
+leptos-use-preferences = { workspace = true }
+leptos-use-signal-debounce-throttle = { workspace = true }
+leptos-use-storage = { workspace = true }
+leptos-use-window = { workspace = true }
+leptos-use-window-size = { workspace = true }
+rust-i18n = { workspace = true }
+serde = { workspace = true }
+serde-wasm-bindgen = { workspace = true }
+strum = { workspace = true }
+sys-locale = { workspace = true, features = ["js"] }
+turf = { workspace = true }
+wasm-bindgen = { workspace = true }
+wasm-bindgen-futures = { workspace = true }
+zakac_ast = { workspace = true }
+zakac_burmese_segmenter = { workspace = true }
+zakac_codegen = { workspace = true }
+zakac_consts = { workspace = true }
+zakac_diagnostics = { workspace = true }
+zakac_i18n = { workspace = true }
+zakac_ir_builder = { workspace = true }
+zakac_lexer = { workspace = true }
+zakac_naturalness = { workspace = true }
+zakac_parser = { workspace = true }
+zakac_reporter = { workspace = true }
+zakac_rust_sugars = { workspace = true }
+zakac_semcheck = { workspace = true }
+zakac_span = { workspace = true }
+zaka_vm = { workspace = true }
+zaka_web_ui_common = { workspace = true }
+
+[dependencies.web-sys]
+workspace = true
+features = [
+    "CssStyleDeclaration",
+    "Document",
+    "DomRect",
+    "Element",
+    "FontFace",
+    "FontFaceDescriptors",
+    "FontFaceSet",
+    "History",
+    "HtmlCollection",
+    "HtmlDialogElement",
+    "HtmlElement",
+    "HtmlHeadElement",
+    "KeyboardEvent",
+    "Location",
+    "MutationObserver",
+    "MutationRecord",
+    "Node",
+    "NodeList",
+    "PointerEvent",
+    "ScrollIntoViewOptions",
+    "ScrollLogicalPosition",
+    "Storage",
+    "WheelEvent",
+    "Window",
+    "console",
+]
+
+[dev-dependencies]
+grass = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+
+[build-dependencies]
+cargo-build = { workspace = true }
+zaka_web_builder = { workspace = true }
+
+# turf: the sheets of the components, built with their classes renamed after
+# a hash, so no class of one component reaches another. The names come from
+# the content of each sheet alone, never at random, so each build of the
+# same sheet agrees. The token colors of the lexer keep their names, as the
+# lexer and Monaco set them.
+[package.metadata.turf]
+minify = true
+
+[package.metadata.turf.class_names]
+template = "z<name_hash_short><style_sheet_hash_short>"
+excludes = ["^tok-"]
+
+# Debug builds keep the source name in front, so the classes read in the
+# browser tools.
+[package.metadata.turf-dev]
+minify = true
+
+[package.metadata.turf-dev.class_names]
+template = "<original_name>-<style_sheet_hash_short>"
+excludes = ["^tok-"]

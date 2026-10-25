@@ -34,70 +34,49 @@ description = "Run benchmarks"
 run = "cargo +nightly llvm-cov --workspace"
 description = "Generate coverage report"
 
+# The web fonts the website and the explorer share, served under /fonts.
+[tasks."font:fetch"]
+run = "trunk build --release"
+dir = "website/zaka_web_ui_common/fonts"
+description = "Fetch the shared web fonts from npm into target/fonts"
+
 [tasks."explorer:serve"]
+depends = ["font:fetch"]
 run = "trunk serve --cargo-profile web-dev"
-dir = "crates/zakac_explorer"
+dir = "website/zaka_explorer"
 description = "Serve the compiler explorer with live reload"
 
 [tasks."explorer:build"]
+depends = ["font:fetch"]
 run = "trunk build --release --cargo-profile wasm-release"
-dir = "crates/zakac_explorer"
+dir = "website/zaka_explorer"
 description = "Build the compiler explorer"
 
 [tasks."check:wasm"]
-run = "cargo check -p zakac_explorer --target wasm32-unknown-unknown"
+run = "cargo check -p zaka_explorer --target wasm32-unknown-unknown"
 description = "Check the compiler explorer for the wasm target"
 
 [tasks."font:secret"]
 run = "age-keygen"
 description = "Print a new age secret for ZAKA_PDA_FONT_SECRET"
 
-[tasks."font:seal"]
-dir = "crates/zaka_web_ui_common/assets/fonts"
-run = """
-: "${ZAKA_PDA_FONT_SECRET:?set ZAKA_PDA_FONT_SECRET in .env first}"
-recipient=$(printf '%s\n' "$ZAKA_PDA_FONT_SECRET" | age-keygen -y)
-age -r "$recipient" -o PDA10BurmeseMono-Regular.ttf.age PDA10BurmeseMono-Regular.ttf
-"""
-description = "Seal the PDA10 font for the repo with ZAKA_PDA_FONT_SECRET"
-
 [tasks."website:vendor"]
 run = "trunk build --release"
-dir = "crates/zaka_website/vendor"
+dir = "website/zaka_website/vendor"
 description = "Fetch the motion libraries of the website from npm into target/vendor"
 
 # cargo-leptos names the files after their hash on the first build alone; in
 # watch mode each later build would keep serving the old names, so the islands
 # would run stale code. Watch mode serves them under plain names.
 [tasks."website:serve"]
-depends = ["website:vendor", "explorer:build_for_site"]
+depends = ["website:vendor", "font:fetch", "explorer:build_for_site"]
 run = "LEPTOS_HASH_FILES=false cargo leptos watch --project zaka_website"
 description = "Serve the website with live reload, with the explorer under /explorer"
-
-[tasks."website:build"]
-depends = ["website:vendor"]
-run = """
-cargo leptos build --project zaka_website --release
-LEPTOS_OUTPUT_NAME=zaka_website LEPTOS_SITE_ROOT=target/website LEPTOS_SITE_PKG_DIR=pkg \
-  LEPTOS_HASH_FILES=true ZAKA_WEBSITE_ONCE=1 target/release/zaka_website
-"""
-description = "Build the website and write its pages to target/website"
 
 # A folder of its own, so explorer:serve and explorer:build, which build for /,
 # never overwrite the build the website serves.
 [tasks."explorer:build_for_site"]
 run = "trunk build --release --cargo-profile wasm-release --public-url /explorer/ --dist dist-site"
-dir = "crates/zakac_explorer"
+dir = "website/zaka_explorer"
 description = "Build the compiler explorer to sit under /explorer on the website"
 hide = true
-
-[tasks."web:build"]
-depends = ["website:build", "explorer:build_for_site"]
-run = """
-rm -rf dist
-mkdir -p dist
-cp -R target/website/. dist/
-cp -R crates/zakac_explorer/dist-site dist/explorer
-cp -R target/vendor dist/vendor
-"""
-description = "Put the website at / and the explorer at /explorer in dist"

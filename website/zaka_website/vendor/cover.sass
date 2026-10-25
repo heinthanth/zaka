@@ -1,0 +1,93 @@
+// The look of the cover card, 1200 x 630, after the dark hero of the website:
+// the mark and the name on the mocha ground, the blossoms to the right behind
+// a slanted scrim. Trunk copies the fonts and pictures next to the built
+// sheet, under fonts/ and pictures/.
+
+$width: 1200px
+$height: 630px
+$edge: 80px
+
+$panel: #1e1e2e
+$fg: #eff1f5
+
+// Space Mono and Myanmar Sabae, the shared fonts of zaka_web_ui_common.
+@font-face
+  font-family: "Space Mono"
+  font-weight: 400
+  src: url("fonts/space-mono-latin-400-normal.woff2") format("woff2")
+
+@font-face
+  font-family: "Sabae"
+  src: url("fonts/MyanmarSabae.ttf") format("truetype")
+
+*
+  box-sizing: border-box
+  margin: 0
+
+html,
+body
+  width: $width
+  height: $height
+  overflow: hidden
+  background: $panel
+
+.card
+  position: relative
+  isolation: isolate
+  width: $width
+  height: $height
+  overflow: hidden
+  color: $fg
+  font-family: "Space Mono", monospace
+  background: $panel
+
+// The blossoms on the right, fading in from the left.
+.backdrop
+  position: absolute
+  inset: 0
+  z-index: -1
+
+  img
+    position: absolute
+    right: -120px
+    top: -70px
+    height: 770px
+    mask-image: linear-gradient(90deg, transparent 18%, #000 52%)
+
+  // The scrim of the dark hero: the ground in full next to the text, thinner
+  // past it, and the ground again at the foot.
+  &::after
+    content: ""
+    position: absolute
+    inset: 0
+    background: linear-gradient(0deg, $panel 0%, rgba($panel, 0.5) 14%, transparent 36%), linear-gradient(62deg, $panel 0%, $panel 44%, rgba($panel, 0.45) 62%, rgba($panel, 0.12) 100%)
+
+.main
+  position: absolute
+  inset: 0
+  display: flex
+  flex-direction: column
+  justify-content: center
+  padding: 0 $edge 24px
+
+.brand
+  display: flex
+  align-items: center
+  gap: 28px
+
+  img
+    width: 128px
+    height: 128px
+
+.brand-name
+  font-family: "Sabae", serif
+  font-size: 96px
+  line-height: 1
+  transform: translateY(10px)
+
+.lede
+  margin-top: 40px
+  max-width: 38ch
+  font-size: 26px
+  line-height: 1.45
+  color: rgba($fg, 0.86)

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#MISE description="Put the website at /, the explorer at /explorer and the web fonts at /fonts in dist"
+#MISE depends=["website:build", "font:fetch", "explorer:build_for_site"]
+#MISE dir="{{config_root}}"
+set -euo pipefail
+
+rm -rf dist
+mkdir -p dist
+cp -R target/website/. dist/
+cp -R website/zaka_explorer/dist-site dist/explorer
+cp -R target/vendor dist/vendor
+cp -R target/fonts dist/fonts

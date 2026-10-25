@@ -1,0 +1,80 @@
+# The web fonts the website and the explorer share, from the @fontsource npm
+# packages, each in a folder named after its version. No Rust here: the build
+# writes them to target/fonts, which the site serves under /fonts.
+
+[build]
+target = "index.html"
+dist = "../../../target/fonts"
+public_url = "/fonts/"
+
+[[node_packages]]
+name = "@fontsource/inter"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/padauk"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/noto-sans-myanmar"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/source-code-pro"
+version = "5.3.1"
+
+[[node_packages]]
+name = "@fontsource/fira-code"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/jetbrains-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/ibm-plex-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/roboto-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/inconsolata"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/cascadia-code"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/ubuntu-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/victor-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/geist-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/commit-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/monaspace-neon"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/red-hat-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/space-mono"
+version = "5.3.0"
+
+[[node_packages]]
+name = "@fontsource/iosevka"
+version = "5.3.0"

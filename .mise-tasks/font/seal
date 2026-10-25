@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#MISE description="Seal the PDA10 font for the repo with ZAKA_PDA_FONT_SECRET"
+#MISE dir="{{config_root}}/website/zaka_web_ui_common/assets/fonts"
+set -euo pipefail
+
+: "${ZAKA_PDA_FONT_SECRET:?set ZAKA_PDA_FONT_SECRET in .env first}"
+recipient=$(printf '%s\n' "$ZAKA_PDA_FONT_SECRET" | age-keygen -y)
+age -r "$recipient" -o PDA10BurmeseMono-Regular.ttf.age PDA10BurmeseMono-Regular.ttf

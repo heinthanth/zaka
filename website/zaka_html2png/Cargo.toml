@@ -1,0 +1,8 @@
+[package]
+name = "zaka_html2png"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+headless_chrome = { workspace = true }
+url = { workspace = true }
