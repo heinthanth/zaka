@@ -107,7 +107,8 @@ fn labels_come_from_the_table()
     assert_eq!(Phase::Run.label(), "Run");
     assert_eq!(Phase::Run.note(), "VM");
     assert_eq!(RunStatus::Trapped.label(), "Trapped");
-    assert_eq!(Speed::Slow.label(), "Slow");
+    assert_eq!(Speed::Ops1.label(), "1 op/s");
+    assert_eq!(Speed::Ops20.label(), "20 ops/s");
     assert_eq!(LowerMode::Folded.label(), "Folded");
     assert_eq!(Status::Skipped.label(), "skipped");
     assert_eq!(AstMode::Sexpr.label(), "S-expr");

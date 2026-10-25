@@ -248,3 +248,16 @@ fn op_addresses_run_on_from_one_function_to_the_next()
         out.asm.iter().flat_map(|f| &f.rows).find(|r| r.text.starts_with("call "));
     assert!(call.unwrap().note.as_ref().unwrap().contains(" @ "));
 }
+
+#[test]
+fn each_speed_steps_at_its_rate()
+{
+    use strum::IntoEnumIterator;
+    use zakac_explorer::debug::Speed;
+    let rates: Vec<u64> = Speed::iter().map(Speed::rate).collect();
+    assert_eq!(rates, [1, 2, 5, 10, 20, 50, 100]);
+    assert_eq!(Speed::default(), Speed::Ops5);
+    assert_eq!(Speed::Ops1.millis(), 1000);
+    assert_eq!(Speed::Ops100.millis(), 10);
+    assert_eq!("20".parse::<Speed>(), Ok(Speed::Ops20));
+}

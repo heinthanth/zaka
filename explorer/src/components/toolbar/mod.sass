@@ -1,5 +1,5 @@
-// The toolbar: brand, sample picker, the editor switch and the settings
-// menu, straight on the canvas above the panels.
+// The toolbar: brand, sample picker, the editor switch, about and the
+// settings menu, straight on the canvas above the panels.
 
 @use "../table/mod" as table
 
@@ -42,3 +42,20 @@
   color: var(--fg-muted)
   font-size: 13px
   --dropdown-width: 220px
+
+// On small screens the brand and the buttons share the first row, and the
+// sample picker takes the whole second row.
+@media (max-width: 640px)
+  .toolbar
+    row-gap: 16px
+
+  .toolbar-actions
+    order: 1
+
+  // The label, then the picker over the rest of the row.
+  .control
+    order: 2
+    flex: 1 1 100%
+    display: grid
+    grid-template-columns: auto minmax(0, 1fr)
+    --dropdown-width: 100%

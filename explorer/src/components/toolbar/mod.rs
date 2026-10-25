@@ -13,6 +13,7 @@ use zakac_rust_sugars::tern;
 use crate::compile::samples::GROUPS;
 use crate::compile::samples::find_sample;
 use crate::compile::samples::in_group;
+use crate::components::about::about_menu;
 use crate::components::dropdown::Choice;
 use crate::components::dropdown::Dropdown;
 use crate::components::dropdown::dropdown;
@@ -27,13 +28,13 @@ static SHEET: ScopedSheet =
     ScopedSheet::new("zaka-toolbar", scss_file!("src/components/toolbar/mod.sass"));
 
 /// The logo for light themes, as `index.html` copies it.
-const LOGO_LIGHT: &str = "brand/bloom-white-light.svg";
+pub const LOGO_LIGHT: &str = "brand/bloom-white-light.svg";
 
 /// The logo for dark themes, with lighter outlines.
-const LOGO_DARK: &str = "brand/bloom-white-dark.svg";
+pub const LOGO_DARK: &str = "brand/bloom-white-dark.svg";
 
-/// The bar above the panes: the brand on the left; samples, the editor switch
-/// and settings on the right.
+/// The bar above the panes: the brand on the left; samples, the editor
+/// switch, about and settings on the right.
 ///
 /// # Returns
 ///
@@ -54,7 +55,11 @@ pub fn toolbar() -> impl IntoView
         brand,
         span().class("toolbar-gap"),
         sample_picker(),
-        div().class("toolbar-actions").child((editor_switch(), settings_menu())),
+        div().class("toolbar-actions").child((
+            editor_switch(),
+            about_menu(),
+            settings_menu(),
+        )),
     ));
     scoped(&SHEET, root, view)
 }

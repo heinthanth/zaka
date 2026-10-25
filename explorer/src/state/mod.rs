@@ -18,6 +18,7 @@ pub mod lang;
 pub mod permalink;
 pub mod settings;
 pub mod split;
+pub mod tour;
 pub mod url;
 
 use crate::compile::Compiled;
@@ -80,6 +81,9 @@ const EDITOR_STORE: &str = "zaka-explorer-editor-open";
 
 /// Local storage name of the problems panel switch.
 const PROBLEMS_STORE: &str = "zaka-explorer-problems-open";
+
+/// Local storage name of the debug mode switch of the run view.
+const DEBUG_STORE: &str = "zaka-explorer-run-debug";
 
 /// State shared between the editor and the views.
 #[derive(Clone, Copy, Builder)]
@@ -155,6 +159,14 @@ pub struct AppState
     pub problems_open: Signal<bool>,
     /// Open or close the problems panel.
     pub set_problems_open: WriteSignal<bool>,
+    /// Whether the run view is in debug mode.
+    pub run_debug: Signal<bool>,
+    /// Turn debug mode of the run view on or off.
+    pub set_run_debug: WriteSignal<bool>,
+    /// Whether the debugger steps on a timer.
+    pub auto_step: RwSignal<bool>,
+    /// Whether the guided tour is open.
+    pub tour: RwSignal<bool>,
 }
 
 impl AppState
@@ -244,19 +256,26 @@ impl AppState
         self.with_editor(|editor| editor.select(lo, hi));
     }
 
-    /// Write the link of the current text to the URL at once, ahead of the
-    /// debounce, so a reload right after keeps the latest edits.
-    pub fn flush_link(&self)
+    /// The link of the current text, options, stage and views, without
+    /// tracking.
+    ///
+    /// # Returns
+    ///
+    /// The link.
+    pub fn link(&self) -> Link
     {
-        let link = Link::builder()
+        Link::builder()
             .source(self.source.get_untracked())
             .options(self.options.get_untracked())
             .stage(self.stage.get_untracked())
             .ast_mode(self.ast_mode.get_untracked())
             .lower_mode(self.lower_mode.get_untracked())
-            .build();
-        url::write_hash(&permalink::encode(&link));
+            .build()
     }
+
+    /// Write the link of the current text to the URL at once, ahead of the
+    /// debounce, so a reload right after keeps the latest edits.
+    pub fn flush_link(&self) { url::write_hash(&permalink::encode(&self.link())) }
 
     /// Open a link: its source, options, stage and views.
     ///
@@ -342,6 +361,8 @@ pub fn provide_state() -> AppState
             PROBLEMS_STORE,
             UseStorageOptions::default().initial_value(true),
         );
+    let (run_debug, set_run_debug, _) =
+        use_local_storage::<bool, FromToStringCodec>(DEBUG_STORE);
 
     let state = AppState::builder()
         .source(source)
@@ -379,6 +400,10 @@ pub fn provide_state() -> AppState
         .set_editor_open(set_editor_open)
         .problems_open(problems_open)
         .set_problems_open(set_problems_open)
+        .run_debug(run_debug)
+        .set_run_debug(set_run_debug)
+        .auto_step(RwSignal::new(false))
+        .tour(RwSignal::new(false))
         .build();
     provide_context(state);
     wire_debug(state);
@@ -489,7 +514,8 @@ fn wire_font(state: AppState)
     });
 }
 
-/// Keep the URL hash in step with the settled text and options.
+/// Keep the URL hash in step with the settled text and options. It holds
+/// still while the tour runs, so a reload keeps the text from before.
 ///
 /// # Arguments
 ///
@@ -497,6 +523,7 @@ fn wire_font(state: AppState)
 fn wire_link(state: AppState, settled: Signal<(String, Options)>)
 {
     Effect::new(move |_| {
+        ret_if!(state.tour.get());
         let (stage, ast_mode) = (state.stage.get(), state.ast_mode.get());
         let lower_mode = state.lower_mode.get();
         settled.with(|(text, options)| {

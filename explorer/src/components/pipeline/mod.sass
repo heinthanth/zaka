@@ -9,8 +9,11 @@
   display: flex
   flex-direction: column
 
+// On a narrow pane the stages keep their size and the timeline scrolls.
 .pipeline
   display: flex
+  overflow-x: auto
+  scrollbar-width: thin
   padding: 14px 16px 12px
   border-bottom: 1px solid var(--panel-border)
 
@@ -61,7 +64,7 @@
 // The line between two stages, level with the middle of the numbers.
 .stage-link
   flex: 1
-  min-width: 8px
+  min-width: 20px
   height: 2px
   margin-top: 16px
   background: var(--panel-border)

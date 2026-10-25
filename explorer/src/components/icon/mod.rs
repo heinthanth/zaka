@@ -25,6 +25,10 @@ const LEFT_PANE: [&str; 2] = [
 const ALERT: [&str; 3] =
     ["M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z", "M12 8v4", "M12 16h.01"];
 
+/// A circle with the letter i, on a 24 unit grid.
+const INFO: [&str; 3] =
+    ["M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z", "M12 16v-4", "M12 8h.01"];
+
 /// A check mark, on a 24 unit grid.
 const CHECK: [&str; 1] = ["M20 6 9 17l-5-5"];
 
@@ -125,6 +129,13 @@ pub fn left_pane() -> impl IntoView { line_icon(&LEFT_PANE) }
 ///
 /// The view.
 pub fn alert() -> impl IntoView { line_icon(&ALERT) }
+
+/// A circle with the letter i, for the about button.
+///
+/// # Returns
+///
+/// The view.
+pub fn info() -> impl IntoView { line_icon(&INFO) }
 
 /// A check mark, for the picked choice of a list.
 ///

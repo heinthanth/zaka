@@ -1,3 +1,4 @@
+pub mod about;
 pub mod asm_table;
 pub mod ast_view;
 pub mod check_view;
@@ -8,6 +9,7 @@ pub mod editor;
 pub mod graph_view;
 pub mod icon;
 pub mod lower_view;
+pub mod modal;
 pub mod pipeline;
 pub mod run_view;
 pub mod scope;
@@ -17,4 +19,5 @@ pub mod splitter;
 pub mod table;
 pub mod tokens_view;
 pub mod toolbar;
+pub mod tour;
 pub mod tree_view;

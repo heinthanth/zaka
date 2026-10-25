@@ -2198,6 +2198,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "leptos-use-element-bounding"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2584e775671a63bd38bc6a5cca4dddc272e87d9479758d9e30fdfa567626cd8d"
+dependencies = [
+ "default-struct-builder",
+ "leptos",
+ "leptos-use-element",
+ "leptos-use-event-listener",
+ "leptos-use-resize-observer",
+ "leptos-use-window",
+ "send_wrapper",
+ "sendwrap-fn",
+ "web-sys",
+]
+
+[[package]]
 name = "leptos-use-event-listener"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2334,6 +2351,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "leptos-use-resize-observer"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3333f0424d36f59eabacf8ad218f2c8f0b62608afd71acdd3c2fe549e8205301"
+dependencies = [
+ "cfg-if",
+ "default-struct-builder",
+ "js-sys",
+ "leptos",
+ "leptos-use-element",
+ "leptos-use-supported",
+ "send_wrapper",
+ "sendwrap-fn",
+ "wasm-bindgen",
+ "wasm-js-macros",
+ "web-sys",
+]
+
+[[package]]
 name = "leptos-use-rw-signal"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2415,6 +2451,20 @@ dependencies = [
  "leptos-use-document",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "leptos-use-window-size"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06a303049d8956168a7cf7b966c39fcb0291f8a1ca6e89646407a226a7991467"
+dependencies = [
+ "default-struct-builder",
+ "leptos",
+ "leptos-use-core",
+ "leptos-use-event-listener",
+ "leptos-use-media-query",
+ "leptos-use-window",
 ]
 
 [[package]]
@@ -3515,9 +3565,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.151"
+version = "1.0.154"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14"
+checksum = "e7e9cc8b1b85264074fbcc02a88680c4096b1e47df8f739dceb03bf482f04bd6"
 dependencies = [
  "itoa",
  "memchr",
@@ -4639,15 +4689,19 @@ dependencies = [
  "leptos-use-css-var",
  "leptos-use-draggable",
  "leptos-use-element",
+ "leptos-use-element-bounding",
  "leptos-use-event-listener",
  "leptos-use-interval-fn",
  "leptos-use-on-click-outside",
+ "leptos-use-preferences",
  "leptos-use-signal-debounce-throttle",
  "leptos-use-storage",
  "leptos-use-window",
+ "leptos-use-window-size",
  "rust-i18n",
  "serde",
  "serde-wasm-bindgen",
+ "serde_json",
  "strum",
  "sys-locale",
  "wasm-bindgen",
@@ -4657,6 +4711,7 @@ dependencies = [
  "zakac_ast",
  "zakac_burmese_segmenter",
  "zakac_codegen",
+ "zakac_consts",
  "zakac_diagnostics",
  "zakac_i18n",
  "zakac_ir_builder",

@@ -29,9 +29,62 @@ en = "Pick a sample…"
 
 # ---------------------------------------------------------------- settings
 
+[explorer.about.title]
+en = "About"
+[explorer.about.open]
+en = "About Zaka Explorer"
+[explorer.about.close_label]
+en = "Close the about panel"
+[explorer.about.version]
+en = "Version %{version}"
+[explorer.about.author]
+en = "Author"
+[explorer.about.license]
+en = "License"
+[explorer.about.rights]
+en = "© %{first} – %{last} %{author}."
+[explorer.about.terms]
+en = "Distributed under the %{license} license."
+[explorer.about.fonts]
+en = "Fonts"
+[explorer.about.credits]
+en = "Credits"
+[explorer.about.back]
+en = "About"
+[explorer.about.back_label]
+en = "Back to About"
+[explorer.about.web]
+en = "Web packages"
+[explorer.about.crates]
+en = "Rust crates"
+[explorer.about.thanks]
+en = "With thanks to all of these projects."
+[explorer.about.pda_note]
+en = "A Burmese monospace font from PhoenixDigitalArt. Portions © Adobe."
+[explorer.about.pda_page]
+en = "PhoenixDigitalArt on Facebook"
+[explorer.about.pda_post]
+en = "Release post"
+[explorer.about.source_note]
+en = "A modified version of the Source Code Pro font from Adobe."
+[explorer.about.source_repo]
+en = "Source Code Pro on GitHub"
+[explorer.about.others]
+en = "Other fonts"
+[explorer.about.others_note]
+en = "The other fonts of the font pickers come from Fontsource, most of them from Google Fonts. Each ships under its own open font license."
+[explorer.about.fontsource]
+en = "Fontsource"
+[explorer.about.google_fonts]
+en = "Google Fonts"
+[explorer.about.ofl]
+en = "SIL Open Font License 1.1"
+[explorer.about.tour]
+en = "Onboarding"
+
 [explorer.settings.title]
 en = "Settings"
-[explorer.settings.close]
+[explorer.modal.close]
 en = "Close"
 [explorer.settings.close_label]
 en = "Close settings"
@@ -300,12 +353,10 @@ en = "Resize the ops pane"
 en = "Resize the output pane"
 [explorer.run.speed]
 en = "Timer speed"
-[explorer.run.speed_slow]
-en = "Slow"
-[explorer.run.speed_normal]
-en = "Normal"
-[explorer.run.speed_fast]
-en = "Fast"
+[explorer.run.speed_one]
+en = "1 op/s"
+[explorer.run.speed_rate]
+en = "%{count} ops/s"
 [explorer.run.status_start]
 en = "At the start"
 [explorer.run.status_running]
@@ -348,3 +399,88 @@ en = "The program stopped: %{trap}"
 en = "The run did not start"
 [explorer.run.skipped_note]
 en = "It starts once code generation runs. Fix the problems below to step through the ops."
+
+# ---------------------------------------------------------------- tour
+
+[explorer.tour.skip]
+en = "Skip tour"
+[explorer.tour.back]
+en = "Back"
+[explorer.tour.next]
+en = "Next"
+[explorer.tour.done]
+en = "Done"
+[explorer.tour.count]
+en = "Step %{at} of %{total}"
+[explorer.tour.welcome]
+en = "Welcome to Zaka Explorer"
+[explorer.tour.welcome_text]
+en = "Zaka Explorer shows how the Zaka compiler turns Burmese source into a running program. This short tour walks through each part of the page with a sample that finds the GCD and LCM of number pairs. Skip it at will; the code from before comes back."
+[explorer.tour.samples]
+en = "Samples"
+[explorer.tour.samples_text]
+en = "Pick a program here to load it into the editor. The tour has loaded programs/gcd for now."
+[explorer.tour.editor]
+en = "Editor"
+[explorer.tour.editor_text]
+en = "Write Zaka code here. After each edit the whole pipeline runs again and the views on the right follow along. Hover a token, or move the caret onto it, to light it up in the views."
+[explorer.tour.pipeline]
+en = "The pipeline"
+[explorer.tour.pipeline_text]
+en = "Seven phases turn the source into a running program. Click a phase, or press the left and right arrows, to open its view. Its dot tells whether it passed, warned, failed or was skipped. When the code has errors, a problems panel opens below with each one."
+[explorer.tour.segment]
+en = "1 · Segment"
+[explorer.tour.segment_text]
+en = "Burmese text puts no spaces between words, so the first phase cuts the source into segments: Burmese words, numbers, marks and the rest, each with its kind and its span in the source."
+[explorer.tour.lex]
+en = "2 · Lex"
+[explorer.tour.lex_text]
+en = "The lexer turns the segments into tokens: words of the language, names, numbers, operators and the particles that join them. Comments and strings get tables of their own."
+[explorer.tour.parse]
+en = "3 · Parse"
+[explorer.tour.parse_text]
+en = "The parser builds the abstract tree of the program. The switch at the top right shows it as a tree, an S-expression or a graph. Click a node to select its source in the editor."
+[explorer.tour.check]
+en = "4 · Check"
+[explorer.tour.check_text]
+en = "The checker works out the kind of each expression and makes sure the parts fit together, such as numbers in arithmetic and a result of the right kind from each function."
+[explorer.tour.lower]
+en = "5 · Lower"
+[explorer.tour.lower_text]
+en = "Lowering turns the tree into a simpler IR. Switch between the IR as lowered and after constant folding to see what the folding settles ahead of time."
+[explorer.tour.codegen]
+en = "6 · Codegen"
+[explorer.tour.codegen_text]
+en = "Code generation emits ops for the stack machine: the global slots, the pooled texts, then each function with its locals and ops. Hover an op to see its source."
+[explorer.tour.run]
+en = "7 · Run"
+[explorer.tour.run_text]
+en = "The VM runs the ops and shows the output. The go button runs the program again from the start, and stop halts it."
+[explorer.tour.debug]
+en = "Debug mode"
+[explorer.tour.debug_text]
+en = "Turn on debug mode to step through the ops and watch the machine as it works. The tour turns it on now."
+[explorer.tour.controls]
+en = "Debugger controls"
+[explorer.tour.controls_text]
+en = "From the left: continue to the next break point, stop, and start again; then step, step over and step out; then step on a timer, at the speed beside it. The status and the count of ops run sit at the end. F5, F10, F11 and Shift+F11 work too."
+[explorer.tour.ops]
+en = "Ops"
+[explorer.tour.ops_text]
+en = "The timer is now stepping through the program. The marked row is the op that runs next, and the editor lights up its source. Click the gutter to set a break point."
+[explorer.tour.machine]
+en = "Machine state"
+[explorer.tour.machine_text]
+en = "The registers: PC points at the next op, SP at the free slot over the stack, BP at the frame of the innermost call. Under them, each call in progress has a frame with its locals; click one to show that call. Globals come last."
+[explorer.tour.output]
+en = "Output"
+[explorer.tour.output_text]
+en = "What the program prints shows up here as the run goes on. If the run stops on an error, the trap shows under it."
+[explorer.tour.settings]
+en = "Settings and more"
+[explorer.tour.settings_text]
+en = "Show or hide the editor, open About, or change the theme, the fonts, the language and the compiler options. To take this tour again, open About and pick Onboarding."
+[explorer.tour.finish]
+en = "That’s all"
+[explorer.tour.finish_text]
+en = "When the tour closes, the code from before comes back. Then pick a sample, or write something new, and watch it pass through each phase."

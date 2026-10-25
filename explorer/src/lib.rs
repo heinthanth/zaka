@@ -1,6 +1,7 @@
 pub mod app;
 pub mod compile;
 mod components;
+pub mod credits;
 pub mod debug;
 pub mod font;
 pub mod monaco;

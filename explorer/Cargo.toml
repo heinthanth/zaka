@@ -22,12 +22,15 @@ leptos-use-color-mode = { workspace = true }
 leptos-use-css-var = { workspace = true }
 leptos-use-draggable = { workspace = true }
 leptos-use-element = { workspace = true }
+leptos-use-element-bounding = { workspace = true }
 leptos-use-event-listener = { workspace = true }
 leptos-use-interval-fn = { workspace = true }
 leptos-use-on-click-outside = { workspace = true }
+leptos-use-preferences = { workspace = true }
 leptos-use-signal-debounce-throttle = { workspace = true }
 leptos-use-storage = { workspace = true }
 leptos-use-window = { workspace = true }
+leptos-use-window-size = { workspace = true }
 rust-i18n = { workspace = true }
 serde = { workspace = true }
 serde-wasm-bindgen = { workspace = true }
@@ -65,6 +68,7 @@ web-sys = { workspace = true, features = [
 zakac_ast = { workspace = true }
 zakac_burmese_segmenter = { workspace = true }
 zakac_codegen = { workspace = true }
+zakac_consts = { workspace = true }
 zakac_diagnostics = { workspace = true }
 zakac_i18n = { workspace = true }
 zakac_ir_builder = { workspace = true }
@@ -76,6 +80,9 @@ zakac_rust_sugars = { workspace = true }
 zakac_semcheck = { workspace = true }
 zakac_span = { workspace = true }
 zaka_vm = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
 
 [build-dependencies]
 age = { workspace = true }

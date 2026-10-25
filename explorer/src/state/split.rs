@@ -12,6 +12,10 @@ pub const DEFAULT_EDITOR_SHARE: f64 = 0.5;
 /// Share of the right column the stage view takes at first.
 pub const DEFAULT_STAGE_SHARE: f64 = 0.65;
 
+/// Most of the right column the stage view keeps when errors show up, so
+/// the problems panel gets at least the rest.
+pub const ERROR_STAGE_SHARE: f64 = 0.5;
+
 /// Share of the run view width the ops take at first.
 pub const DEFAULT_RUN_CODE_SHARE: f64 = 0.55;
 

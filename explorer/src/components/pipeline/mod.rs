@@ -9,6 +9,8 @@ use leptos_scoped_style::scss_file;
 use strum::IntoEnumIterator;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
+use web_sys::ScrollIntoViewOptions;
+use web_sys::ScrollLogicalPosition;
 use zakac_i18n::t;
 use zakac_rust_sugars::tern;
 
@@ -53,6 +55,7 @@ pub fn pipeline() -> impl IntoView
         (link, stage_button(state, phase))
     };
     let stages = Phase::iter().map(stage).collect_view();
+    follow_stage(state);
     let timeline = nav()
         .class("pipeline")
         .attr("role", "tablist")
@@ -142,6 +145,27 @@ fn stage_link(state: AppState, phase: Phase) -> impl IntoView
 fn is_passed(state: AppState, phase: Phase) -> bool
 {
     phase as usize <= state.stage.get() as usize
+}
+
+/// Keep the open stage in view when the timeline scrolls on a narrow pane.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+fn follow_stage(state: AppState)
+{
+    Effect::new(move |_| {
+        let id = stage_id(state.stage.get());
+        let Some(el) = document().get_element_by_id(&id)
+        else
+        {
+            return;
+        };
+        let options = ScrollIntoViewOptions::new();
+        options.set_block(ScrollLogicalPosition::Nearest);
+        options.set_inline(ScrollLogicalPosition::Nearest);
+        el.scroll_into_view_with_scroll_into_view_options(&options);
+    });
 }
 
 /// Element id of a stage button.

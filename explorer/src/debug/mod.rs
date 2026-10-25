@@ -61,8 +61,8 @@ impl RunStatus
     }
 }
 
-/// How fast the debugger steps on its own; its static name is the value of
-/// the speed picker.
+/// How fast the debugger steps on its own, in ops a second; its static name
+/// is the value of the speed picker.
 #[derive(
     Debug,
     Clone,
@@ -74,33 +74,58 @@ impl RunStatus
     EnumString,
     IntoStaticStr
 )]
-#[strum(serialize_all = "lowercase")]
 pub enum Speed
 {
+    /// One op a second.
+    #[strum(serialize = "1")]
+    Ops1,
     /// Two ops a second.
-    Slow,
-    /// Six ops a second.
+    #[strum(serialize = "2")]
+    Ops2,
+    /// Five ops a second.
     #[default]
-    Normal,
+    #[strum(serialize = "5")]
+    Ops5,
+    /// Ten ops a second.
+    #[strum(serialize = "10")]
+    Ops10,
     /// 20 ops a second.
-    Fast,
+    #[strum(serialize = "20")]
+    Ops20,
+    /// 50 ops a second.
+    #[strum(serialize = "50")]
+    Ops50,
+    /// 100 ops a second.
+    #[strum(serialize = "100")]
+    Ops100,
 }
 
 impl Speed
 {
-    /// Name in the speed picker.
+    /// The number of ops a second.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    pub fn rate(self) -> u64
+    {
+        let name: &'static str = self.into();
+        name.parse().unwrap_or(1)
+    }
+
+    /// Name in the speed picker, such as `5 ops/s`.
     ///
     /// # Returns
     ///
     /// The name.
     pub fn label(self) -> Cow<'static, str>
     {
-        match self
-        {
-            Speed::Slow => t!("explorer.run.speed_slow"),
-            Speed::Normal => t!("explorer.run.speed_normal"),
-            Speed::Fast => t!("explorer.run.speed_fast"),
-        }
+        let rate = self.rate();
+        tern!(
+            rate == 1,
+            t!("explorer.run.speed_one"),
+            t!("explorer.run.speed_rate", count = rate)
+        )
     }
 
     /// The time between two ops.
@@ -108,15 +133,7 @@ impl Speed
     /// # Returns
     ///
     /// The time in ms.
-    pub fn millis(self) -> u64
-    {
-        match self
-        {
-            Speed::Slow => 500,
-            Speed::Normal => 160,
-            Speed::Fast => 50,
-        }
-    }
+    pub fn millis(self) -> u64 { 1000 / self.rate() }
 }
 
 /// A call in progress, as the call stack panel shows it.

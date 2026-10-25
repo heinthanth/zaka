@@ -2,10 +2,12 @@
 // bar, then sections of rows, each with a title and a note on the left and
 // its control on the right.
 
+@use "../modal/mod" as modal
 @use "../table/mod" as table
 
 .settings
   +table.icon-button
+  +modal.modal(640px)
 
 .settings-button .icon
   transition: rotate 300ms ease-out
@@ -16,55 +18,6 @@
 
   .icon
     rotate: 60deg
-
-// The dialog takes no padding: the card fills it, so a click on the dialog
-// itself is a click on the backdrop.
-.settings-modal
-  width: min(640px, 100vw - 32px)
-  max-height: min(80vh, 720px)
-  padding: 0
-  overflow: hidden
-  color: var(--fg)
-  background: var(--panel)
-  border: 1px solid var(--panel-border)
-  border-radius: var(--radius)
-  box-shadow: var(--pop-shadow)
-
-  &[open]
-    animation: pop-in 160ms ease-out
-
-  &::backdrop
-    background: rgba(0, 0, 0, 0.45)
-    backdrop-filter: blur(2px)
-    animation: fade-in 160ms ease-out
-
-.settings-card
-  display: flex
-  flex-direction: column
-  max-height: inherit
-
-.settings-top
-  flex: none
-  display: flex
-  align-items: center
-  justify-content: space-between
-  padding: 14px 16px 14px 24px
-  border-bottom: 1px solid var(--panel-border)
-
-.settings-name
-  margin: 0
-  font-size: 16px
-  font-weight: 600
-
-.icon-button.settings-close
-  width: 30px
-  height: 30px
-  border-color: transparent
-
-.settings-scroll
-  min-height: 0
-  overflow: auto
-  padding: 4px 24px 20px
 
 .settings-head
   margin: 20px 0 2px

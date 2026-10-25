@@ -3,9 +3,7 @@ use std::iter::once;
 use leptos::ev;
 use leptos::html;
 use leptos::html::button;
-use leptos::html::dialog;
 use leptos::html::div;
-use leptos::html::h2;
 use leptos::html::h3;
 use leptos::html::input;
 use leptos::html::label;
@@ -16,15 +14,15 @@ use strum::IntoEnumIterator;
 use zakac_i18n::SUPPORTED_LOCALES;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
-use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
 use crate::compile::PLATFORM_BITS;
 use crate::components::dropdown::Choice;
 use crate::components::dropdown::Dropdown;
 use crate::components::dropdown::dropdown;
-use crate::components::icon::cross;
 use crate::components::icon::gear;
+use crate::components::modal::Modal;
+use crate::components::modal::modal;
 use crate::components::scope::ScopedSheet;
 use crate::components::scope::scoped;
 use crate::font::HAS_CODE_FONT;
@@ -46,9 +44,7 @@ static SHEET: ScopedSheet =
 const TITLE_ID: &str = "settings-modal-title";
 
 /// The settings button and the modal it opens: the look of the page and the
-/// compile options. The modal is a native dialog, so the browser centers it,
-/// dims the page and keeps the focus inside; it closes on Escape, on the
-/// close button and on a click on the backdrop.
+/// compile options.
 ///
 /// # Returns
 ///
@@ -67,12 +63,14 @@ pub fn settings_menu() -> impl IntoView
         .title(t!("explorer.settings.title"))
         .on(ev::click, move |_| open.set(true))
         .child(gear());
-    let view =
-        div().class("settings").node_ref(root).child((trigger, modal(state, open)));
+    let view = div()
+        .class("settings")
+        .node_ref(root)
+        .child((trigger, settings_modal(state, open)));
     scoped(&SHEET, root, view)
 }
 
-/// The dialog; it follows `open` and reports back when the browser closes it.
+/// The modal: the general, appearance and compiler sections.
 ///
 /// # Arguments
 ///
@@ -82,58 +80,15 @@ pub fn settings_menu() -> impl IntoView
 /// # Returns
 ///
 /// The view.
-fn modal(state: AppState, open: RwSignal<bool>) -> impl IntoView
+fn settings_modal(state: AppState, open: RwSignal<bool>) -> impl IntoView
 {
-    let host = NodeRef::<html::Dialog>::new();
-    Effect::new(move |_| {
-        let on = open.get();
-        let Some(el) = host.get()
-        else
-        {
-            return;
-        };
-        ret_if!(on == el.open());
-        do_if!(on, {
-            let _ = el.show_modal();
-        });
-        do_if!(!on, el.close());
-    });
-    // The card fills the dialog, so a click that lands on the dialog itself
-    // is a click on the backdrop.
-    let on_click = move |e: ev::MouseEvent| {
-        do_if!(e.target() == e.current_target(), open.set(false))
-    };
-    dialog()
+    let spec = Modal::builder()
+        .open(open)
         .class("settings-modal")
-        .node_ref(host)
-        .attr("aria-labelledby", TITLE_ID)
-        .on(ev::close, move |_| open.set(false))
-        .on(ev::click, on_click)
-        .child(card(state, open))
-}
-
-/// The card inside the dialog: a title bar, then the sections.
-///
-/// # Arguments
-///
-/// * `state` - The state.
-/// * `open` - Whether the modal shows.
-///
-/// # Returns
-///
-/// The view.
-fn card(state: AppState, open: RwSignal<bool>) -> impl IntoView
-{
-    let shut = button()
-        .class("icon-button settings-close")
-        .attr("aria-label", t!("explorer.settings.close_label"))
-        .title(t!("explorer.settings.close"))
-        .on(ev::click, move |_| open.set(false))
-        .child(cross());
-    let top = div().class("settings-top").child((
-        h2().id(TITLE_ID).class("settings-name").child(t!("explorer.settings.title")),
-        shut,
-    ));
+        .title_id(TITLE_ID)
+        .title("explorer.settings.title")
+        .close_label("explorer.settings.close_label")
+        .build();
     let general = section(
         "explorer.settings.general",
         row("explorer.settings.language", lang_picker(state)),
@@ -165,8 +120,7 @@ fn card(state: AppState, open: RwSignal<bool>) -> impl IntoView
             ),
         ),
     );
-    let scroll = div().class("settings-scroll").child((general, appearance, compiler));
-    div().class("settings-card").child((top, scroll))
+    modal(spec, (general, appearance, compiler))
 }
 
 /// A titled group of rows.

@@ -20,7 +20,6 @@ use leptos_use_event_listener::use_event_listener;
 use leptos_use_interval_fn::UseIntervalFnOptions;
 use leptos_use_interval_fn::use_interval_fn_with_options;
 use leptos_use_storage::UseStorageOptions;
-use leptos_use_storage::use_local_storage;
 use leptos_use_storage::use_local_storage_with_options;
 use leptos_use_window::use_window;
 use strum::IntoEnumIterator;
@@ -70,9 +69,6 @@ const BATCH: u32 = 50_000;
 
 /// The time between two batches of a run, in ms.
 const BATCH_MS: u64 = 16;
-
-/// Local storage name of the debug mode switch.
-const DEBUG_STORE: &str = "zaka-explorer-run-debug";
 
 /// Local storage name of the ops share of the run view width.
 const CODE_SHARE_STORE: &str = "zaka-explorer-run-code-share";
@@ -160,18 +156,18 @@ impl Drive
 /// The view.
 fn runner(state: AppState) -> impl IntoView
 {
-    let (debug, set_debug, _) =
-        use_local_storage::<bool, FromToStringCodec>(DEBUG_STORE);
+    let debug = state.run_debug;
     let drive = Drive::builder()
         .debug(debug)
-        .set_debug(set_debug)
+        .set_debug(state.set_run_debug)
         .going(RwSignal::new(false))
-        .auto(RwSignal::new(false))
+        .auto(state.auto_step)
         .build();
     wire_going(state, drive);
+    follow_mode(state, drive);
     move || {
         let on = debug.get();
-        let switch = debug_switch(state, drive).into_any();
+        let switch = debug_switch(drive).into_any();
         tern!(
             on,
             debugger(state, drive, switch).into_any(),
@@ -206,9 +202,31 @@ fn wire_going(state: AppState, drive: Drive)
         let idle = !drive.debug.get_untracked() && !drive.going.get_untracked();
         do_if!(fresh && idle, drive.going.set(true));
     });
-    Effect::new(move |_| {
+    // New ops halt the run, but the first pass is the mount, not new ops.
+    Effect::new(move |was: Option<()>| {
         state.compiled.track();
-        do_if!(drive.debug.get_untracked(), drive.halt());
+        do_if!(was.is_some() && drive.debug.get_untracked(), drive.halt());
+    });
+}
+
+/// Act on a switch of debug mode, from the switch or the tour. Turning it
+/// on goes back to the first op; turning it off runs on to the end, so the
+/// output is whole.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `drive` - What drives the run.
+fn follow_mode(state: AppState, drive: Drive)
+{
+    Effect::new(move |was: Option<bool>| {
+        let on = drive.debug.get();
+        ret_if!(was.is_none_or(|w| w == on), on);
+        drive.halt();
+        do_if!(on, state.debug.update(Session::reset));
+        let go_on = !on && state.debug.with_untracked(Session::running);
+        do_if!(go_on, drive.going.set(true));
+        on
     });
 }
 
@@ -291,8 +309,7 @@ fn stop_button(state: AppState, drive: Drive) -> impl IntoView
         .child(icon::stop())
 }
 
-/// The switch of debug mode. Turning it on goes back to the first op;
-/// turning it off runs on to the end, so the output is whole.
+/// The switch of debug mode; [`follow_mode`] acts on it.
 ///
 /// # Arguments
 ///
@@ -302,17 +319,10 @@ fn stop_button(state: AppState, drive: Drive) -> impl IntoView
 /// # Returns
 ///
 /// The view.
-fn debug_switch(state: AppState, drive: Drive) -> impl IntoView
+fn debug_switch(drive: Drive) -> impl IntoView
 {
     let debug = drive.debug;
-    let flip = move |_| {
-        let on = !debug.get_untracked();
-        drive.halt();
-        drive.set_debug.set(on);
-        do_if!(on, state.debug.update(Session::reset));
-        let go_on = !on && state.debug.with_untracked(Session::running);
-        do_if!(go_on, drive.going.set(true));
-    };
+    let flip = move |_| drive.set_debug.set(!debug.get_untracked());
     button()
         .class("run-debug")
         .class(("run-debug-on", move || debug.get()))
@@ -630,7 +640,8 @@ fn speed_picker(speed: RwSignal<Speed>) -> impl IntoView
 }
 
 /// Step on a timer while the timed stepping is on; it turns off at the end
-/// of the run, at a break point, and when the ops change.
+/// of the run, at a break point, when the ops change and when the debugger
+/// closes. It can be on before the debugger opens, as the tour sets it.
 ///
 /// # Arguments
 ///
@@ -648,10 +659,11 @@ fn wire_auto(state: AppState, auto: RwSignal<bool>, speed: RwSignal<Speed>)
     let timer = use_interval_fn_with_options(tick, pace, options);
     let (resume, pause) = (timer.resume, timer.pause);
     Effect::new(move |_| tern!(auto.get(), resume(), pause()));
-    Effect::new(move |_| {
+    Effect::new(move |was: Option<()>| {
         state.compiled.track();
-        auto.set(false);
+        do_if!(was.is_some(), auto.set(false));
     });
+    on_cleanup(move || auto.set(false));
 }
 
 /// Debugger shortcuts while the view is open: F5 goes on to a break point,

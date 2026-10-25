@@ -5,6 +5,7 @@ use leptos::prelude::*;
 use leptos_scoped_style::scss_file;
 use leptos_use_event_listener::use_event_listener;
 use leptos_use_window::use_window;
+use zakac_diagnostics::Level;
 use zakac_rust_sugars::do_if;
 
 use crate::components::diag_panel::diag_panel;
@@ -16,11 +17,13 @@ use crate::components::splitter::Axis;
 use crate::components::splitter::Split;
 use crate::components::splitter::splitter;
 use crate::components::toolbar::toolbar;
+use crate::components::tour::tour;
 use crate::state::AppState;
 use crate::state::permalink;
 use crate::state::provide_state;
 use crate::state::split::DEFAULT_EDITOR_SHARE;
 use crate::state::split::DEFAULT_STAGE_SHARE;
+use crate::state::split::ERROR_STAGE_SHARE;
 use crate::state::split::share_fr;
 use crate::state::url;
 use crate::theme::theme_sheet;
@@ -31,7 +34,8 @@ static SHEET: ScopedSheet =
 
 /// The whole page: toolbar, then the editor on the left and the pipeline
 /// over the problems on the right, with splitters between them. The
-/// problems panel shows while there are problems.
+/// problems panel shows while there are problems. The guided tour sits over
+/// it all.
 ///
 /// # Returns
 ///
@@ -40,6 +44,7 @@ pub fn app() -> impl IntoView
 {
     let state = provide_state();
     follow_hash(state);
+    follow_errors(state);
     mark_lang();
     let root = NodeRef::<html::Div>::new();
     let panes = NodeRef::<html::Div>::new();
@@ -84,8 +89,38 @@ pub fn app() -> impl IntoView
         .style(("--first-share", move || share_fr(state.editor_share.get())))
         .style(("--second-share", move || share_fr(1.0 - state.editor_share.get())))
         .child((left, splitter(between), right));
-    let shell = div().class("app-shell").node_ref(root).child((toolbar(), main));
+    let shell =
+        div().class("app-shell").node_ref(root).child((toolbar(), main, tour()));
     (theme_sheet(), scoped(&SHEET, root, shell))
+}
+
+/// Open the problems panel when errors show up, at half the column or more.
+/// It acts as the errors come, not while they stand, so the panel can still
+/// be shut or resized.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+fn follow_errors(state: AppState)
+{
+    let failed = Memo::new(move |_| state.compiled.with(|c| c.count(Level::Error) > 0));
+    Effect::new(move |was: Option<bool>| {
+        let now = failed.get();
+        do_if!(now && was != Some(true), show_problems(state));
+        now
+    });
+}
+
+/// Open the problems panel and give it at least half the column.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+fn show_problems(state: AppState)
+{
+    state.set_problems_open.set(true);
+    let share = state.stage_share.get_untracked();
+    do_if!(share > ERROR_STAGE_SHARE, state.set_stage_share.set(ERROR_STAGE_SHARE));
 }
 
 /// Tag the page with the active locale, for screen readers and fonts.

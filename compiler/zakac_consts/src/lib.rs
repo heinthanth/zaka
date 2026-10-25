@@ -16,3 +16,9 @@ pub const ZAKA_BUILD_NUMBER: &str = concatcp!(COMMIT_TO_USE, LOCAL_CHANGES_SUFFI
 
 /// The standard license for all components in the Zaka workspace.
 pub const ZAKA_LICENSE: &str = "MIT";
+
+/// The author of the Zaka workspace.
+pub const ZAKA_AUTHOR: &str = "Hein Thant Maung Maung";
+
+/// When work on the Zaka workspace began, for the rights notice.
+pub const ZAKA_FIRST_YEAR: u32 = 2023;
