@@ -70,7 +70,7 @@ description = "Fetch the motion libraries of the website from npm into target/ve
 # would run stale code. Watch mode serves them under plain names.
 [tasks."website:serve"]
 depends = ["website:vendor", "font:fetch", "explorer:build_for_site"]
-run = "LEPTOS_HASH_FILES=false cargo leptos watch --project zaka_website"
+run = "LEPTOS_HASH_FILES=false cargo leptos watch --project zaka_website --split"
 description = "Serve the website with live reload, with the explorer under /explorer"
 
 # A folder of its own, so explorer:serve and explorer:build, which build for /,

@@ -76,6 +76,25 @@
   margin-left: auto
   gap: 12px
 
+// The link to the manual: a word in the ink of the bar, underlined in gold
+// on the pages of the manual.
+.header-link
+  padding: 10px 8px
+  font-size: var(--step-note)
+  font-weight: 700
+  text-decoration: none
+  text-underline-offset: 0.35em
+  text-decoration-thickness: 2px
+
+  &:hover,
+  &[aria-current]
+    text-decoration-line: underline
+    text-decoration-color: var(--gold)
+
+  &:focus-visible
+    outline: 2px solid currentColor
+    outline-offset: 2px
+
 // The pickers sit in the bar as an icon and a chevron each, with no border.
 // The triggers belong to the shared controls, so the sheet reaches them as a
 // `button`.
@@ -135,7 +154,8 @@ html[data-menu="open"]
 @media (max-width: 860px)
   // The pickers and the explorer button move into the menu.
   .header-pickers,
-  .header .header-action
+  .header .header-action,
+  .header .header-link
     display: none
 
   // The icon stands in the middle of a 44px target, and the target reaches

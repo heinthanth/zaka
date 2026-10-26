@@ -14,6 +14,7 @@ use zakac_span::continues_cluster;
 
 use crate::assets::BLOSSOMS_PHOTO;
 use crate::components::header::EXPLORER_URL;
+use crate::manual::LEARN_URL;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/hero/mod.sass");
@@ -58,11 +59,18 @@ pub fn hero() -> impl IntoView
     let main = div().class(ClassName::HERO_MAIN).child((
         code_line(),
         p().class(ClassName::HERO_LEDE).child(t!("website.hero.lede")),
-        div().class(ClassName::HERO_ACTIONS).child(
+        div().class(ClassName::HERO_ACTIONS).child((
             a().class(format!("button {}", ClassName::HERO_ACTION))
                 .href(EXPLORER_URL)
                 .child(t!("website.header.explorer")),
-        ),
+            a().class(format!(
+                "button {} {}",
+                ClassName::HERO_ACTION,
+                ClassName::HERO_QUIET
+            ))
+            .href(LEARN_URL)
+            .child(t!("website.hero.learn")),
+        )),
     ));
     let credit = p().class(ClassName::HERO_CREDIT).child(
         a().href(PHOTO_PAGE).child(t!("website.hero.credit", author = PHOTO_AUTHOR)),

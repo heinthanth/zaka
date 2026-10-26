@@ -1,6 +1,10 @@
 pub mod bands;
 pub mod close;
+pub mod contents;
 pub mod footer;
 pub mod header;
 pub mod hero;
+pub mod learn;
 pub mod name;
+pub mod pager;
+pub mod sandbox;

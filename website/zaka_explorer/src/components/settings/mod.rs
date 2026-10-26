@@ -6,7 +6,7 @@ use zaka_web_ui_common::controls::settings::appearance;
 use zaka_web_ui_common::controls::settings::picker;
 use zaka_web_ui_common::controls::settings::row;
 use zaka_web_ui_common::controls::settings::section;
-use zaka_web_ui_common::controls::settings::settings_menu as shared_menu;
+use zaka_web_ui_common::controls::settings::settings_modal as shared_modal;
 use zaka_web_ui_common::controls::settings::switch;
 use zaka_web_ui_common::controls::settings::switch_row;
 use zakac_i18n::t;
@@ -16,13 +16,18 @@ use crate::compile::PLATFORM_BITS;
 use crate::state::AppState;
 use crate::state::use_state;
 
-/// The settings button and the modal it opens: the language, auto run, the
-/// look of the page and the compile options.
+/// The settings modal: the language, auto run, the look of the page and the
+/// compile options. The toolbar button and the menu of narrow screens both
+/// open it.
+///
+/// # Arguments
+///
+/// * `open` - Whether the modal shows.
 ///
 /// # Returns
 ///
 /// The view.
-pub fn settings_menu() -> impl IntoView
+pub fn settings_modal(open: RwSignal<bool>) -> impl IntoView
 {
     let state = use_state();
     let auto_run = switch(state.auto_run, Signal::stored(false), state.set_auto_run);
@@ -54,7 +59,7 @@ pub fn settings_menu() -> impl IntoView
             fold_row(state, Fold::Branches),
         ),
     );
-    shared_menu((general, appearance(state.look), compiler))
+    shared_modal(open, (general, appearance(state.look), compiler))
 }
 
 /// One of the foldings the settings switch.

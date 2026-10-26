@@ -1,8 +1,32 @@
 use bon::Builder;
+use leptos::prelude::*;
+use leptos_scoped_style::ComponentStyle;
 
-/// The open source projects the explorer and the compiler build on, as
-/// `tests/credits.rs` writes them: one per line, tabs between the fields.
+use crate::sheet;
+
+mod roll;
+
+pub use roll::credits_roll;
+
+// The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
+turf::style_sheet!("src/credits/mod.sass");
+
+/// Rules of the credits roll.
+static CREDITS: ComponentStyle =
+    ComponentStyle::global_css("zaka-credits", STYLE_SHEET);
+
+/// The open source projects the website, the explorer and the compiler build
+/// on, as `tests/credits.rs` writes them: one per line, tabs between the
+/// fields.
 const LIST: &str = include_str!("projects.tsv");
+
+/// Mount the sheet of the credits roll. A page rendered on a server mounts it
+/// outside its islands, as a global sheet renders on the server alone.
+///
+/// # Returns
+///
+/// The view; it renders no element of its own.
+pub fn credits_sheet() -> impl IntoView { sheet(&CREDITS) }
 
 /// Where a project comes from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

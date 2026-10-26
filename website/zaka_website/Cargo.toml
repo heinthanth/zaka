@@ -13,6 +13,7 @@ required-features = ["server"]
 
 [dependencies]
 axum = { workspace = true, optional = true }
+bon = { workspace = true }
 console_error_panic_hook = { workspace = true }
 js-sys = { workspace = true }
 leptos = { workspace = true, features = ["islands"] }
@@ -22,15 +23,25 @@ leptos-use-window = { workspace = true }
 leptos_axum = { workspace = true, optional = true }
 leptos_meta = { workspace = true }
 leptos_router = { workspace = true }
+pulldown-cmark = { workspace = true }
+pulldown-cmark-escape = { workspace = true }
 rust-i18n = { workspace = true }
+serde = { workspace = true }
 tokio = { workspace = true, optional = true }
 tower-http = { workspace = true, optional = true }
 turf = { workspace = true }
 wasm-bindgen = { workspace = true }
+zaka_vm = { workspace = true }
 zaka_web_ui_common = { workspace = true }
+zakac_codegen = { workspace = true }
 zakac_consts = { workspace = true }
+zakac_diagnostics = { workspace = true }
 zakac_i18n = { workspace = true }
+zakac_ir_builder = { workspace = true }
+zakac_lexer = { workspace = true }
+zakac_reporter = { workspace = true }
 zakac_rust_sugars = { workspace = true }
+zakac_semcheck = { workspace = true }
 zakac_span = { workspace = true }
 
 [dependencies.web-sys]
@@ -52,11 +63,6 @@ features = [
 
 [dev-dependencies]
 toml = { workspace = true }
-zaka_vm = { workspace = true }
-zakac_codegen = { workspace = true }
-zakac_ir_builder = { workspace = true }
-zakac_lexer = { workspace = true }
-zakac_semcheck = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }
@@ -106,6 +112,7 @@ watch-additional-files = [
     "website/zaka_website/assets",
     "website/zaka_web_ui_common/src",
     "website/zaka_web_ui_common/locales",
+    "docs/manual",
 ]
 
 # turf: the sheets of the components, built with their classes renamed after

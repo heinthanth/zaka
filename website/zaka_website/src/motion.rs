@@ -55,11 +55,12 @@ extern "C" {
 /// Globals the page loads for the motion code.
 const LIBRARIES: [&str; 3] = ["gsap", "ScrollTrigger", "Lenis"];
 
-/// Start the motion code, when its libraries are on the page and the
-/// visitor has not asked for less motion.
+/// Start the motion code, when its libraries are on the page, the page is
+/// the landing page and the visitor has not asked for less motion. The pages
+/// of the manual scroll as the browser scrolls.
 pub fn start()
 {
-    ret_if!(!loaded() || prefers("(prefers-reduced-motion: reduce)"));
+    ret_if!(!loaded() || !landing() || prefers("(prefers-reduced-motion: reduce)"));
     SCROLL_TRIGGER.with(register_plugin);
     let _ = document().document_element().map(|root| root.class_list().add_1("motion"));
     let lenis = smooth();
@@ -69,6 +70,16 @@ pub fn start()
     bands();
     close();
     remeasure();
+}
+
+/// Whether the page is the landing page, which holds the hero.
+///
+/// # Returns
+///
+/// `true` on the landing page.
+fn landing() -> bool
+{
+    document().query_selector("[data-field=\"hero\"]").ok().flatten().is_some()
 }
 
 /// Whether the libraries of the motion code are on the page.

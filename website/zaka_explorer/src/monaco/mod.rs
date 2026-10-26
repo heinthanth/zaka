@@ -53,6 +53,9 @@ const GUTTER_MARK: u32 = 2;
 const BREAK_CLASS: &str = "break-dot";
 /// Class of the dot of a break point on a line with no ops.
 const BREAK_IDLE_CLASS: &str = "break-dot-idle";
+/// Class of the dim dot under the mouse in the gutter column, where a click
+/// would set a break point.
+const BREAK_GHOST_CLASS: &str = "break-dot-ghost";
 /// Class of the mark of a line with a break point on one of its ops.
 const BREAK_OP_CLASS: &str = "break-dot-op";
 /// Decoration stickiness that never grows when text is written at its edges,
@@ -367,6 +370,8 @@ pub struct Editor
     breaks: Decor,
     /// The marks of the lines with a break point on one of their ops.
     op_breaks: Decor,
+    /// The dim dot under the mouse in the gutter column.
+    ghost: Decor,
 }
 
 impl Editor
@@ -422,6 +427,7 @@ impl Editor
             .pointer(code.new_decor())
             .breaks(code.new_decor())
             .op_breaks(code.new_decor())
+            .ghost(code.new_decor())
             .code(code)
             .build())
     }
@@ -589,11 +595,7 @@ impl Editor
     /// # Returns
     ///
     /// The 1-based lines, as Monaco holds them.
-    pub fn break_lines(&self) -> Vec<u32>
-    {
-        let line = |r: JsValue| r.unchecked_into::<LineRange>().start_line();
-        self.breaks.ranges().into_iter().map(line).collect()
-    }
+    pub fn break_lines(&self) -> Vec<u32> { break_lines_of(&self.breaks) }
 
     /// Show or hide the gutter column for break points.
     ///
@@ -607,20 +609,53 @@ impl Editor
     }
 
     /// Call `f` with the 1-based line of a click in the gutter column for
-    /// break points.
+    /// break points; the dim dot under the mouse goes, as the click sets or
+    /// clears a real one.
     ///
     /// # Arguments
     ///
     /// * `f` - The callback.
     pub fn on_gutter_click(&self, f: impl Fn(u32) + 'static)
     {
+        let ghost = self.ghost.clone();
         let cb = Closure::<dyn FnMut(MouseEvent)>::new(move |e: MouseEvent| {
             let target = e.target();
             ret_if!(target.kind() != GUTTER_MARK);
+            ghost.clear();
             do_if!(let Some(pos) = target.spot(), f(pos.line()));
         });
         self.code.on_mouse_down(&cb);
         cb.forget();
+    }
+
+    /// Show a dim dot on the line under the mouse in the gutter column for
+    /// break points, where a click would set one; none on a line that has
+    /// one, nor off the column.
+    pub fn follow_gutter(&self)
+    {
+        let ghost = self.ghost.clone();
+        let breaks = self.breaks.clone();
+        let note = t!("explorer.editor.break_add").to_string();
+        let on_move = Closure::<dyn FnMut(MouseEvent)>::new(move |e: MouseEvent| {
+            let target = e.target();
+            let line = target
+                .spot()
+                .map(|p| p.line())
+                .filter(|_| target.kind() == GUTTER_MARK);
+            let taken = |l: &u32| break_lines_of(&breaks).contains(l);
+            let Some(line) = line.filter(|l| !taken(l))
+            else
+            {
+                return ghost.clear();
+            };
+            ghost.set(&to_js(&[line_mark(line, BREAK_GHOST_CLASS, note.clone())]));
+        });
+        let gone = self.ghost.clone();
+        let on_leave = Closure::<dyn FnMut()>::new(move || gone.clear());
+        self.code.on_mouse_move(&on_move);
+        self.code.on_mouse_leave(&on_leave);
+        on_move.forget();
+        on_leave.forget();
     }
 
     /// The Monaco range between two UTF-16 offsets.
@@ -698,6 +733,21 @@ fn break_mark(line: u32, live: bool) -> Mark
         (BREAK_IDLE_CLASS, t!("explorer.editor.break_idle"))
     );
     line_mark(line, class, note.to_string())
+}
+
+/// The lines of a set of break point marks.
+///
+/// # Arguments
+///
+/// * `breaks` - The marks.
+///
+/// # Returns
+///
+/// The 1-based lines, as Monaco holds them.
+fn break_lines_of(breaks: &Decor) -> Vec<u32>
+{
+    let line = |r: JsValue| r.unchecked_into::<LineRange>().start_line();
+    breaks.ranges().into_iter().map(line).collect()
 }
 
 /// A mark in the gutter column for break points.

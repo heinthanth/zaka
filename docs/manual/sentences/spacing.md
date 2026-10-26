@@ -1,0 +1,65 @@
+---
+title: Spaces between words
+description: Where Zaka needs a space, and where it does not.
+---
+
+# Spaces between words
+
+Written Burmese has no spaces between words, and readers know where each word ends. The
+compiler has no dictionary, so it cannot know. In Zaka, **a space separates two words**.
+
+The rule that matters most: put a space between a **name you made up** and the particle
+after it.
+
+```zaka
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၂၀ ဖြစ်ပါစေ။   // make a number named အသက် (age)
+အသက် ကို ပြသပါ။                          // space between အသက် and ကို
+```
+
+```text
+၂၀
+```
+
+Without the space, `အသက်ကို` is read as one long name. No such name exists, so the
+compiler complains, and it suggests the fix:
+
+```zaka-error ZK0206
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၂၀ ဖြစ်ပါစေ။
+အသက်ကို ပြသပါ။
+```
+
+```text
+error[ZK0206]: "ပြသပါ" needs "ကို|ဟု" after operand 1, found no particle
+help: write "အသက် ကို" with a space: a name joined to a particle is read as one word
+```
+
+## Where spaces are optional
+
+- **Between Zaka's own words.** A run made only of reserved words is split for you.
+  `ထက်ကြီးသည်` is `ထက်` + `ကြီး` + `သည်`.
+- **Around symbols.** `။`, `၊`, `၏`, `(`, `)`, quotes, and maths symbols such as `+` and
+  `<` are always words on their own. `၁+၂`, `ပြသပါ။` and `၏ပေါင်းလဒ်` are fine.
+- **How many spaces.** One space, several spaces, a tab, or a line break all count the
+  same.
+
+```zaka
+၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသပါ။      // reserved words joined
+၁+၂ ကို ပြသပါ။                     // no spaces around +
+၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသပါ။      // ၏ needs no space
+```
+
+```text
+မှန်
+၃
+၃
+```
+
+On the macOS Burmese keyboard, `Shift` + `Space` types an invisible "zero width space".
+Zaka counts it as a space too.
+
+## Try it
+
+- Remove the space between `အသက်` and `ကို` in the first example and read the message.
+- Write `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` with as few spaces as you can while it still runs.
+
+Next: [Values and kinds](../values/README.md).

@@ -1,0 +1,318 @@
+// The pages of the manual: three columns under the bar, the contents, the
+// page and what is on it, on the ground of the page. The title page opens on
+// a gold field, as the footer closes on one. The text of a page comes from
+// Markdown, so its rules reach the plain elements under the prose.
+
+.learn
+  background: var(--panel)
+
+// The gold field of the title page, from under the bar.
+.learn-intro
+  display: grid
+  gap: 24px
+  padding: calc(var(--bar-height) + 12vh) var(--margin) 72px
+  color: var(--on-gold)
+  background: var(--gold)
+
+.learn-intro-mark
+  font-family: var(--mono-font)
+  font-size: var(--step-note)
+  font-weight: 700
+  letter-spacing: 0.08em
+  text-transform: uppercase
+
+.learn-intro-head
+  max-width: 12ch
+  font-size: var(--step-poster)
+  font-weight: 700
+  line-height: 0.95
+  letter-spacing: -0.04em
+
+.learn-intro-text
+  max-width: 40ch
+  font-size: var(--step-state)
+  line-height: 1.35
+
+.learn-frame
+  display: grid
+  grid-template-columns: 250px minmax(0, 1fr) 200px
+  column-gap: 56px
+  max-width: 1440px
+  margin: 0 auto
+  padding: 0 var(--margin)
+
+  &:first-child
+    padding-top: var(--bar-height)
+
+.learn-article
+  min-width: 0
+  max-width: 760px
+  padding: 56px 0 var(--section-gap)
+
+.learn-head
+  display: grid
+  gap: 16px
+  margin-bottom: 40px
+  padding-bottom: 32px
+  border-bottom: 1px solid var(--panel-border)
+
+.learn-kicker
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 12px
+  font-family: var(--mono-font)
+  font-size: 13px
+  letter-spacing: 0.08em
+  text-transform: uppercase
+  color: var(--fg-muted)
+
+  span:first-child
+    padding: 2px 8px
+    font-weight: 700
+    color: var(--on-gold)
+    background: var(--gold)
+
+.learn-title
+  font-size: var(--step-head)
+  font-weight: 700
+  line-height: 1.04
+  letter-spacing: -0.03em
+
+.learn-lede
+  max-width: 46ch
+  font-size: 20px
+  line-height: 1.45
+  color: var(--fg-muted)
+
+// The text of a page, as Markdown writes it.
+.learn-prose
+  line-height: 1.7
+
+  > * + *
+    margin-top: 1.1em
+
+  h2
+    display: flex
+    gap: 14px
+    margin-top: 72px
+    font-size: var(--step-state)
+    line-height: 1.2
+    letter-spacing: -0.02em
+
+    &::before
+      content: ""
+      flex: none
+      width: 0.42em
+      height: 0.42em
+      margin-top: 0.36em
+      background: var(--gold)
+
+  h3
+    margin-top: 40px
+    font-size: 20px
+
+  &:first-child > h2:first-child
+    margin-top: 0
+
+  ul,
+  ol
+    padding-left: 1.4em
+
+  ul
+    list-style: square
+
+  ol
+    list-style: decimal
+
+  li + li
+    margin-top: 0.35em
+
+  li::marker
+    color: var(--fg-muted)
+
+  a
+    text-decoration-color: var(--gold)
+    text-decoration-thickness: 2px
+
+    &:hover
+      text-decoration-color: currentColor
+
+  code
+    padding: 0.08em 0.36em
+    font-size: 0.92em
+    background: var(--chip)
+
+  pre
+    padding: 16px 20px
+    overflow: auto
+    font-size: var(--code-size)
+    line-height: 1.6
+    background: var(--canvas)
+    border-left: 3px solid var(--panel-border)
+
+    code
+      padding: 0
+      font-size: inherit
+      background: transparent
+
+  table
+    width: 100%
+    border-collapse: collapse
+    font-size: var(--step-note)
+    line-height: 1.5
+
+  th
+    padding: 0 16px 10px 0
+    font-size: 12px
+    letter-spacing: 0.08em
+    text-align: left
+    text-transform: uppercase
+    color: var(--fg-muted)
+    border-bottom: 2px solid var(--fg)
+
+  td
+    padding: 12px 16px 12px 0
+    vertical-align: top
+    border-bottom: 1px solid var(--panel-border)
+
+  td:first-child
+    white-space: nowrap
+
+  blockquote
+    margin: 0
+    padding: 4px 0 4px 20px
+    border-left: 3px solid var(--gold)
+
+// The chapters on the title page.
+.learn-chapters
+  margin-top: 72px
+
+  h2
+    margin-bottom: 24px
+    font-size: var(--step-state)
+    letter-spacing: -0.02em
+
+.learn-chapter-grid
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))
+  gap: 12px
+
+.learn-chapter
+  display: grid
+  align-content: start
+  gap: 10px
+  height: 100%
+  padding: 22px
+  text-decoration: none
+  background: var(--canvas)
+  transition: background-color 160ms ease-out
+
+  &:hover
+    background: color-mix(in srgb, var(--canvas) 80%, var(--fg))
+
+  &:focus-visible
+    outline: 3px solid var(--fg)
+    outline-offset: 3px
+
+// The reference block holds a link for each page, so it does not light up as
+// a whole; its links do.
+.learn-reference
+  &:hover
+    background: var(--canvas)
+
+  a
+    font-size: 14px
+    color: var(--fg)
+    text-decoration-color: var(--gold)
+    text-decoration-thickness: 2px
+
+    &:hover
+      text-decoration-color: currentColor
+
+.learn-chapter-mark
+  font-family: var(--mono-font)
+  font-size: 36px
+  line-height: 1
+  color: var(--accent)
+
+.learn-chapter-name
+  font-size: 20px
+  font-weight: 700
+  line-height: 1.2
+
+.learn-chapter-pages
+  display: grid
+  gap: 2px
+  font-size: 13px
+  line-height: 1.4
+  color: var(--fg-muted)
+
+// What is on the page, in the right margin.
+.learn-on-page
+  position: sticky
+  top: var(--bar-height)
+  align-self: start
+  padding-top: 56px
+  font-size: 14px
+  line-height: 1.4
+
+  ol
+    display: grid
+    gap: 2px
+    border-left: 1px solid var(--panel-border)
+
+  a
+    display: block
+    margin-left: -1px
+    padding: 5px 0 5px 14px
+    color: var(--fg-muted)
+    text-decoration: none
+    border-left: 1px solid transparent
+
+    &:hover
+      color: var(--fg)
+      border-left-color: var(--fg)
+
+.learn-on-page-head
+  margin-bottom: 12px
+  font-size: 12px
+  font-weight: 700
+  letter-spacing: 0.08em
+  text-transform: uppercase
+  color: var(--fg-muted)
+
+@media (max-width: 1240px)
+  .learn-frame
+    grid-template-columns: 230px minmax(0, 1fr)
+    column-gap: 48px
+
+  .learn-on-page
+    display: none
+
+@media (max-width: 960px)
+  .learn-frame
+    grid-template-columns: minmax(0, 1fr)
+
+  .learn-article
+    max-width: none
+    padding-top: 36px
+
+  .learn-intro
+    padding-top: calc(var(--bar-height) + 64px)
+
+@media (max-width: 640px)
+  .learn-intro-head
+    font-size: 15vw
+
+  .learn-lede
+    font-size: 17px
+
+  .learn-prose
+    table
+      display: block
+      overflow-x: auto
+
+@media (prefers-reduced-motion: reduce)
+  .learn-chapter
+    transition: none

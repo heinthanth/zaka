@@ -1,9 +1,11 @@
 pub mod controls;
+pub mod credits;
 pub mod font;
 pub mod icon;
 pub mod lang;
 pub mod look;
 pub mod paint;
+pub mod site;
 pub mod theme;
 
 use leptos::prelude::*;

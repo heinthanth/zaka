@@ -15,9 +15,9 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use super::ClassName;
-use crate::credits::Project;
-use crate::credits::Source;
-use crate::credits::projects;
+use super::Project;
+use super::Source;
+use super::projects;
 
 /// The Facebook page of PhoenixDigitalArt, who made PDA10 Burmese Mono.
 const PDA_PAGE: &str = "https://www.facebook.com/PhoenixDigitalArt";
@@ -66,13 +66,13 @@ pub fn credits_roll() -> impl IntoView
     let npm = group(Source::Npm);
     let crates = group(Source::Crate);
     let reel = div().class(ClassName::CREDITS_REEL).child((
-        h2().class(ClassName::CREDITS_TITLE).child(t!("explorer.about.credits")),
+        h2().class(ClassName::CREDITS_TITLE).child(t!("web_ui.credits.title")),
         fonts(),
-        head("explorer.about.web"),
+        head("web_ui.credits.web"),
         npm,
-        head("explorer.about.crates"),
+        head("web_ui.credits.crates"),
         crates,
-        p().class(ClassName::CREDITS_THANKS).child(t!("explorer.about.thanks")),
+        p().class(ClassName::CREDITS_THANKS).child(t!("web_ui.credits.thanks")),
     ));
     let host = NodeRef::<html::Div>::new();
     roll_on(host);
@@ -80,7 +80,7 @@ pub fn credits_roll() -> impl IntoView
         .class(ClassName::CREDITS_ROLL)
         .node_ref(host)
         .attr("tabindex", "0")
-        .attr("aria-label", t!("explorer.about.credits"))
+        .attr("aria-label", t!("web_ui.credits.title"))
         .child(reel)
 }
 
@@ -159,38 +159,38 @@ fn fonts() -> impl IntoView
 {
     let pda = credit(
         "PDA10 Burmese Mono".into(),
-        "explorer.about.pda_note",
+        "web_ui.credits.pda_note",
         vec![
-            link("explorer.about.pda_page", PDA_PAGE),
-            link("explorer.about.pda_post", PDA_POST),
-            link("explorer.about.ofl", OFL),
+            link("web_ui.credits.pda_page", PDA_PAGE),
+            link("web_ui.credits.pda_post", PDA_POST),
+            link("web_ui.credits.ofl", OFL),
         ],
     );
     let sabae = credit(
         "Myanmar Sabae".into(),
-        "explorer.about.sabae_note",
+        "web_ui.credits.sabae_note",
         vec![
-            link("explorer.about.sabae_repo", SABAE_REPO),
-            link("explorer.about.ofl", OFL),
+            link("web_ui.credits.sabae_repo", SABAE_REPO),
+            link("web_ui.credits.ofl", OFL),
         ],
     );
     let source = credit(
         "Sauce Code Pro (HTMM's Custom Font)".into(),
-        "explorer.about.source_note",
+        "web_ui.credits.source_note",
         vec![
-            link("explorer.about.source_repo", SOURCE_REPO),
-            link("explorer.about.ofl", OFL),
+            link("web_ui.credits.source_repo", SOURCE_REPO),
+            link("web_ui.credits.ofl", OFL),
         ],
     );
     let others = credit(
-        t!("explorer.about.others"),
-        "explorer.about.others_note",
+        t!("web_ui.credits.others"),
+        "web_ui.credits.others_note",
         vec![
-            link("explorer.about.fontsource", FONTSOURCE),
-            link("explorer.about.google_fonts", GOOGLE_FONTS),
+            link("web_ui.credits.fontsource", FONTSOURCE),
+            link("web_ui.credits.google_fonts", GOOGLE_FONTS),
         ],
     );
-    (head("explorer.about.fonts"), pda, sabae, source, others)
+    (head("web_ui.credits.fonts"), pda, sabae, source, others)
 }
 
 /// The credit of one font: its name, a note and its links.

@@ -85,6 +85,7 @@ async fn mount(state: AppState, host: HtmlElement)
         state.read_break_lines();
     });
     editor.on_gutter_click(move |line| state.toggle_line(line));
+    editor.follow_gutter();
     editor.on_caret(move |off16| state.caret_token.set(state.token_at(off16)));
     editor.on_point(move |off16| {
         state.mouse_token.set(off16.and_then(|off16| state.token_at(off16)));

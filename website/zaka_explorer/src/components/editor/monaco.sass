@@ -50,6 +50,26 @@
   .break-dot::before
     background: var(--diag-error)
 
+  // The dot a click would set, dim, on the line under the mouse.
+  .break-dot-ghost
+    display: flex
+    align-items: center
+    justify-content: center
+    cursor: pointer
+
+    &::before
+      content: ""
+      width: 10px
+      height: 10px
+      border-radius: 50%
+      background: var(--diag-error)
+      opacity: 0.35
+
+  // The whole column takes clicks, so it shows the hand.
+  .glyph-margin,
+  .glyph-margin-widgets
+    cursor: pointer
+
   // A line with a break point on one of its ops, set in the ops table: a
   // smaller dot.
   .break-dot-op

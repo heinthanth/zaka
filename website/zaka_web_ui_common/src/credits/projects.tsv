@@ -28,6 +28,8 @@ crate	leptos_meta	0.8.7	MIT	https://github.com/leptos-rs/leptos
 crate	leptos_router	0.8.17	MIT	https://github.com/leptos-rs/leptos
 crate	num_enum	0.7.6	BSD-3-Clause OR MIT OR Apache-2.0	https://github.com/illicitonion/num_enum
 crate	postcard	1.1.3	MIT OR Apache-2.0	https://github.com/jamesmunns/postcard
+crate	pulldown-cmark	0.13.5	MIT	https://github.com/raphlinus/pulldown-cmark
+crate	pulldown-cmark-escape	0.11.0	MIT	https://github.com/raphlinus/pulldown-cmark
 crate	rust-i18n	4.2.2	MIT	https://github.com/longbridge/rust-i18n
 crate	rustc_apfloat	0.2.3+llvm-462a31f5a5ab	Apache-2.0 WITH LLVM-exception	https://github.com/rust-lang/rustc_apfloat
 crate	serde	1.0.229	MIT OR Apache-2.0	https://github.com/serde-rs/serde
@@ -69,3 +71,5 @@ npm	@fontsource/monaspace-neon	5.3.0	OFL-1.1	https://fontsource.org/fonts/monasp
 npm	@fontsource/red-hat-mono	5.3.0	OFL-1.1	https://fontsource.org/fonts/red-hat-mono
 npm	@fontsource/space-mono	5.3.0	OFL-1.1	https://fontsource.org/fonts/space-mono
 npm	@fontsource/iosevka	5.3.0	OFL-1.1	https://fontsource.org/fonts/iosevka
+npm	gsap	3.12.5	Standard 'no charge' license: https://gsap.com/standard-license. Club GSAP members get more: https://gsap.com/licensing/. Why GreenSock doesn't employ an MIT license: https://gsap.com/why-license/	https://gsap.com
+npm	lenis	1.1.13	MIT	https://github.com/darkroomengineering/lenis

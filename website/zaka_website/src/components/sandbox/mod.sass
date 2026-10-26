@@ -1,0 +1,171 @@
+// The sandbox: a square frame on the page with a bar, the program and what
+// it prints, one under the next. The frame and the buttons are flat, as the
+// rest of the site; a gold rule runs down its left edge while a run goes on.
+
+.sandbox
+  --pad: 20px
+  position: relative
+  margin: 28px 0 36px
+  background: var(--code-bg)
+  border: 1px solid var(--panel-border)
+
+  &::before
+    content: ""
+    position: absolute
+    inset: -1px auto -1px -1px
+    width: 4px
+    background: var(--gold)
+    scale: 1 0
+    transform-origin: top
+    transition: scale 240ms ease-out
+
+.sandbox[data-running]::before
+  scale: 1 1
+
+.sandbox-bar
+  display: flex
+  align-items: center
+  gap: 10px
+  min-height: 48px
+  padding: 6px 6px 6px var(--pad)
+  border-bottom: 1px solid var(--panel-border)
+
+.sandbox-name
+  font-family: var(--mono-font)
+  font-size: 16px
+  line-height: 1
+  color: var(--fg-muted)
+
+// The codes a program shows, as the manual promises them.
+.sandbox-code
+  padding: 3px 8px
+  font-family: var(--mono-font)
+  font-size: 13px
+  line-height: 1.4
+  background: var(--chip)
+
+.sandbox-actions
+  display: flex
+  align-items: center
+  gap: 6px
+  margin-left: auto
+
+.sandbox-reset
+  min-height: 36px
+  padding: 0 12px
+  font: inherit
+  font-size: var(--step-note)
+  color: var(--fg-muted)
+  background: transparent
+  border: 0
+  cursor: pointer
+  text-decoration: underline
+  text-underline-offset: 0.2em
+
+  &:hover
+    color: var(--fg)
+
+  &:focus-visible
+    outline: 2px solid var(--fg)
+    outline-offset: 2px
+
+.sandbox-run
+  min-width: 84px
+  min-height: 36px
+  padding: 0 16px
+
+  &:disabled
+    opacity: 0.5
+    cursor: default
+
+// While a run goes on, the button reads Stop, in the ink of the page.
+.sandbox[data-running] .sandbox-run
+  color: var(--panel)
+  background: var(--fg)
+
+// The painted program and the text field share one cell, and with it each
+// metric, so the letters of the field land on the painted ones.
+.sandbox-editor
+  display: grid
+
+.sandbox-paint,
+.sandbox-input
+  grid-area: 1 / 1
+  margin: 0
+  padding: 18px var(--pad)
+  font-family: var(--mono-font)
+  font-size: var(--code-size)
+  line-height: 1.75
+  letter-spacing: 0
+  white-space: pre-wrap
+  overflow-wrap: anywhere
+  tab-size: 4
+
+.sandbox-input
+  width: 100%
+  height: 100%
+  min-height: 0
+  color: transparent
+  caret-color: var(--editor-cursor)
+  background: transparent
+  border: 0
+  outline: 0
+  resize: none
+  overflow: hidden
+
+  &::selection
+    color: transparent
+    background: var(--editor-select)
+
+  &:focus-visible
+    box-shadow: inset 0 0 0 2px var(--accent)
+
+.sandbox-output
+  padding: 14px var(--pad) 18px
+  border-top: 1px solid var(--panel-border)
+  background: var(--panel)
+
+.sandbox-label
+  margin-bottom: 6px
+  font-size: 12px
+  font-weight: 700
+  letter-spacing: 0.08em
+  text-transform: uppercase
+  color: var(--fg-muted)
+
+.sandbox-text
+  max-height: 22em
+  margin: 0
+  overflow: auto
+  font-family: var(--mono-font)
+  font-size: var(--code-size)
+  line-height: 1.6
+  white-space: pre-wrap
+  overflow-wrap: anywhere
+
+// Before the first run the output is what the manual promises, a step back.
+.sandbox-promised .sandbox-text
+  color: var(--fg-muted)
+
+.sandbox-quiet,
+.sandbox-gutter
+  color: var(--fg-muted)
+
+.sandbox-error
+  color: var(--diag-error)
+
+.sandbox-warning
+  color: var(--diag-warning)
+
+.sandbox-note
+  color: var(--diag-note)
+
+@media (max-width: 640px)
+  .sandbox
+    --pad: 14px
+    margin-inline: calc(var(--margin) * -1)
+    border-inline: 0
+
+@media (prefers-reduced-motion: reduce)
+  .sandbox::before
+    transition: none

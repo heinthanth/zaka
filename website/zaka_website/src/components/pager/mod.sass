@@ -1,0 +1,68 @@
+// The pager: the page before and the page after, two flat blocks next to
+// each other at the foot of a page. The page after takes the gold, as the one
+// button of the site does.
+
+.pager
+  display: grid
+  grid-template-columns: repeat(2, minmax(0, 1fr))
+  gap: 12px
+  margin-top: 72px
+
+.pager-link
+  display: grid
+  align-content: start
+  gap: 6px
+  min-height: 112px
+  padding: 20px 22px
+  text-decoration: none
+  background: var(--canvas)
+  transition: background-color 160ms ease-out
+
+  &:hover
+    background: color-mix(in srgb, var(--canvas) 80%, var(--fg))
+
+  &:focus-visible
+    outline: 3px solid var(--fg)
+    outline-offset: 3px
+
+.pager-label
+  font-size: 12px
+  font-weight: 700
+  letter-spacing: 0.08em
+  text-transform: uppercase
+  opacity: 0.7
+
+.pager-title
+  font-size: var(--step-state)
+  font-weight: 700
+  line-height: 1.2
+
+.pager-before
+  .pager-label::before
+    content: "← "
+
+.pager-after
+  grid-column: 2
+  text-align: right
+  color: var(--on-gold)
+  background: var(--gold)
+
+  &:hover
+    background: color-mix(in srgb, var(--gold) 86%, var(--fg))
+
+  .pager-label::after
+    content: " →"
+
+@media (max-width: 640px)
+  .pager
+    grid-template-columns: minmax(0, 1fr)
+
+  .pager-after
+    grid-column: 1
+
+  .pager-title
+    font-size: 20px
+
+@media (prefers-reduced-motion: reduce)
+  .pager-link
+    transition: none

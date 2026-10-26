@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use serde_json::Value;
-use zaka_explorer::credits::Source;
-use zaka_explorer::credits::projects;
+use zaka_web_ui_common::credits::Source;
+use zaka_web_ui_common::credits::projects;
 
 /// The list of projects the credits roll reads, from the crate root.
 const LIST: &str = "src/credits/projects.tsv";
@@ -14,7 +14,7 @@ const LIST: &str = "src/credits/projects.tsv";
 /// The first line of the list.
 const HEADER: &str = "# source\tname\tversion\tlicense\turl";
 
-/// The root of the explorer crate.
+/// The root of the shared crate.
 fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 
 /// One line of the list.
@@ -72,9 +72,16 @@ fn crate_lines() -> BTreeSet<String>
     published.map(|p| crate_line(p)).collect()
 }
 
-/// The Trunk projects whose npm packages the explorer ships: its own, and the
-/// web fonts it shares with the website.
-fn trunk_dirs() -> [PathBuf; 2] { [root(), root().join("../zaka_web_ui_common/fonts")] }
+/// The Trunk projects whose npm packages the pages ship: the explorer, the
+/// web fonts both share, and the motion libraries of the website.
+fn trunk_dirs() -> [PathBuf; 3]
+{
+    [
+        root().join("../zaka_explorer"),
+        root().join("fonts"),
+        root().join("../zaka_website/vendor"),
+    ]
+}
 
 /// The npm packages Trunk fetches, as name and version pairs, each with the
 /// folder of the Trunk project that fetches it.

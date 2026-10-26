@@ -25,7 +25,6 @@ leptos-use-element-bounding = { workspace = true }
 leptos-use-event-listener = { workspace = true }
 leptos-use-interval-fn = { workspace = true }
 leptos-use-on-click-outside = { workspace = true }
-leptos-use-preferences = { workspace = true }
 leptos-use-signal-debounce-throttle = { workspace = true }
 leptos-use-storage = { workspace = true }
 leptos-use-window = { workspace = true }

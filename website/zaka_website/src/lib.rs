@@ -4,6 +4,7 @@
 pub mod app;
 pub mod assets;
 pub mod components;
+pub mod manual;
 #[cfg(feature = "client")]
 mod motion;
 

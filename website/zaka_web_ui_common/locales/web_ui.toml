@@ -59,3 +59,40 @@ en = "Interface"
 en = "Burmese"
 [web_ui.face.group.latin]
 en = "Latin"
+
+# ---------------------------------------------------------------- credits
+
+[web_ui.credits.title]
+en = "Credits"
+[web_ui.credits.fonts]
+en = "Fonts"
+[web_ui.credits.web]
+en = "Web packages"
+[web_ui.credits.crates]
+en = "Rust crates"
+[web_ui.credits.thanks]
+en = "With thanks to all of these projects."
+[web_ui.credits.pda_note]
+en = "A Burmese monospace font from PhoenixDigitalArt. Portions © Adobe."
+[web_ui.credits.pda_page]
+en = "PhoenixDigitalArt on Facebook"
+[web_ui.credits.pda_post]
+en = "Release post"
+[web_ui.credits.source_note]
+en = "A modified version of the Source Code Pro font from Adobe."
+[web_ui.credits.source_repo]
+en = "Source Code Pro on GitHub"
+[web_ui.credits.sabae_note]
+en = "A Burmese font from Danh Hong."
+[web_ui.credits.sabae_repo]
+en = "Myanmar Sabae on GitHub"
+[web_ui.credits.others]
+en = "Other fonts"
+[web_ui.credits.others_note]
+en = "The other fonts of the font pickers come from Fontsource, most of them from Google Fonts. Each ships under its own open font license."
+[web_ui.credits.fontsource]
+en = "Fontsource"
+[web_ui.credits.google_fonts]
+en = "Google Fonts"
+[web_ui.credits.ofl]
+en = "SIL Open Font License 1.1"

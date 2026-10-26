@@ -23,11 +23,15 @@ en = "Close the menu"
 en = "Open the explorer"
 [website.header.explorer_link]
 en = "Explorer"
+[website.header.learn]
+en = "Learn"
 
 # ---------------------------------------------------------------- hero
 
 [website.hero.credit]
 en = "Photo: %{author} on Unsplash."
+[website.hero.learn]
+en = "Learn Zaka"
 [website.hero.lede]
 en = "Zaka is a programming language based on a subset of Burmese. Burmese sentences are compiled down to instructions for Zaka Virtual Machine."
 
@@ -36,7 +40,7 @@ en = "Zaka is a programming language based on a subset of Burmese. Burmese sente
 [website.name.head]
 en = "What does Zaka mean?"
 [website.name.text]
-en = "စံကား in Burmese means the plumeria flower, also known as the frangipani. Take the mark ံ off its first letter and the word reads စကား, which in Burmese means speech."
+en = "Zaka sounds similar to စံကား, which in Burmese means the plumeria flower, also known as the frangipani. Take the mark ံ off its first letter and the word reads စကား, which in Burmese means speech."
 [website.name.plumeria]
 en = "plumeria"
 [website.name.mark]
@@ -88,7 +92,65 @@ en = "စံကား · Zaka, a programming language based on a subset of Burme
 en = "Licensed under the %{license} license."
 [website.footer.top]
 en = "Back to top"
+[website.footer.learn]
+en = "Learn Zaka"
+[website.footer.credits]
+en = "Credits"
+[website.footer.credits_title]
+en = "Built on open source"
+[website.footer.credits_close]
+en = "Close the credits"
 [website.footer.explorer]
 en = "Explorer"
 [website.footer.rights]
 en = "%{author} · %{first} - %{last}"
+
+# ---------------------------------------------------------------- learn
+
+[website.learn.page_title]
+en = "%{page} - Zaka"
+[website.learn.mark]
+en = "The manual"
+[website.learn.contents]
+en = "Contents"
+[website.learn.reference]
+en = "Reference"
+[website.learn.chapters]
+en = "Chapters"
+[website.learn.on_page]
+en = "On this page"
+[website.learn.pager]
+en = "Pages before and after"
+[website.learn.before]
+en = "Previous"
+[website.learn.after]
+en = "Next"
+
+# ---------------------------------------------------------------- sandbox
+
+[website.sandbox.editor]
+en = "Program in Zaka, which can be edited"
+[website.sandbox.run]
+en = "Run"
+[website.sandbox.run_hint]
+en = "Run (Ctrl or ⌘ + Enter)"
+[website.sandbox.stop]
+en = "Stop"
+[website.sandbox.reset]
+en = "Reset"
+[website.sandbox.expected]
+en = "Expected output"
+[website.sandbox.expected_error]
+en = "Expected error"
+[website.sandbox.expected_warning]
+en = "Expected warning"
+[website.sandbox.running]
+en = "Running"
+[website.sandbox.output]
+en = "Output"
+[website.sandbox.nothing]
+en = "The program printed nothing."
+[website.sandbox.halted]
+en = "Run stopped."
+[website.sandbox.stopped]
+en = "the program stopped: %{e}"

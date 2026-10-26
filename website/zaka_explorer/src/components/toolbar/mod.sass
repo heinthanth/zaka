@@ -2,6 +2,7 @@
 // settings menu, straight on the canvas above the panels.
 
 .toolbar
+  position: relative
   display: flex
   flex-wrap: wrap
   align-items: center
@@ -24,8 +25,48 @@
   font-size: 15px
   letter-spacing: -0.01em
 
+// The links to the website and the manual: quiet words beside the brand,
+// set off from it with a rule.
+.toolbar-links
+  display: flex
+  align-items: center
+  gap: 4px
+  padding-left: 14px
+  border-left: 1px solid var(--panel-border)
+
+  a
+    padding: 6px 8px
+    font-size: 13px
+    font-weight: 600
+    color: var(--fg-muted)
+    text-decoration: none
+    border-radius: 6px
+
+    &:hover
+      color: var(--fg)
+      background: var(--chip)
+
+    &:focus-visible
+      outline: 2px solid var(--accent)
+      outline-offset: 1px
+
 .toolbar-gap
   flex: 1
+
+// About and settings, in the bar on wide screens; the menu holds them on
+// narrow ones.
+.toolbar-wide
+  display: flex
+  align-items: center
+  gap: 8px
+
+// The menu of narrow screens: its button in the bar, and a card under the
+// bar with the links and the rows that open about and settings. The button
+// is an icon button of the shared controls too, so the rule names the bar
+// to outrank them.
+.toolbar .menu-button,
+.menu
+  display: none
 
 .toolbar-actions
   display: flex
@@ -56,3 +97,73 @@
     display: grid
     grid-template-columns: auto minmax(0, 1fr)
     --dropdown-width: 100%
+
+  .toolbar-links,
+  .toolbar-wide
+    display: none
+
+  // Back to the grid of the icon buttons, which centers the icon.
+  .toolbar .menu-button
+    display: grid
+
+  .menu
+    position: absolute
+    top: calc(100% - 4px)
+    right: 10px
+    left: 10px
+    z-index: 40
+    display: grid
+    gap: 6px
+    padding: 8px
+    background: var(--panel)
+    border: 1px solid var(--panel-border)
+    border-radius: var(--radius)
+    box-shadow: var(--pop-shadow)
+    opacity: 0
+    visibility: hidden
+    translate: 0 -6px
+    transition: opacity 160ms ease, translate 160ms ease, visibility 160ms
+
+  .menu-open
+    opacity: 1
+    visibility: visible
+    translate: 0 0
+
+  .menu-links,
+  .menu-rows
+    display: grid
+
+  .menu-links
+    padding-bottom: 6px
+    border-bottom: 1px solid var(--panel-border)
+
+  .menu-links a,
+  .menu-rows button
+    --icon-size: 18px
+    display: flex
+    align-items: center
+    gap: 12px
+    min-height: 44px
+    padding: 0 12px
+    font: inherit
+    font-size: 15px
+    font-weight: 600
+    color: var(--fg)
+    text-align: left
+    text-decoration: none
+    background: transparent
+    border: 0
+    border-radius: 8px
+    cursor: pointer
+
+    &:hover,
+    &:focus-visible
+      background: var(--chip)
+      outline: 0
+
+  .menu-rows svg
+    color: var(--fg-muted)
+
+@media (max-width: 640px) and (prefers-reduced-motion: reduce)
+  .menu
+    transition: none

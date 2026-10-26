@@ -1,0 +1,109 @@
+// The contents of the manual. On wide screens a column that stands still
+// under the bar and scrolls on its own; on narrow ones a fold at the top of
+// the page. The page the reader is on takes a gold bar at its left.
+
+.contents-box
+  min-width: 0
+
+.contents
+  position: sticky
+  top: var(--bar-height)
+  max-height: calc(100svh - var(--bar-height))
+  overflow: auto
+  padding: 40px 8px 48px 0
+  overscroll-behavior: contain
+
+.contents-title
+  display: block
+  margin-bottom: 20px
+  font-size: var(--step-note)
+  font-weight: 700
+  text-decoration: none
+
+.contents-chapters
+  display: grid
+  gap: 2px
+
+.contents-chapter
+  display: flex
+  gap: 12px
+  padding: 7px 10px 7px 12px
+  font-size: var(--step-note)
+  line-height: 1.35
+  text-decoration: none
+  border-left: 3px solid transparent
+
+  &:hover
+    background: var(--canvas)
+
+.contents-number
+  flex: none
+  width: 2ch
+  font-family: var(--mono-font)
+  color: var(--fg-muted)
+
+.contents-here > .contents-chapter
+  font-weight: 700
+
+.contents-pages
+  display: grid
+  margin: 2px 0 10px
+
+  a
+    display: block
+    padding: 5px 10px 5px calc(12px + 2ch + 12px)
+    font-size: 14px
+    line-height: 1.35
+    color: var(--fg-muted)
+    text-decoration: none
+    border-left: 3px solid transparent
+
+    &:hover
+      color: var(--fg)
+      background: var(--canvas)
+
+.contents a[aria-current="page"],
+.contents-fold a[aria-current="page"]
+  color: var(--fg)
+  font-weight: 700
+  background: var(--accent-soft)
+  border-left-color: var(--gold)
+
+// The fold of narrow screens; wide screens show the column.
+.contents-fold
+  display: none
+
+@media (max-width: 960px)
+  .contents
+    display: none
+
+  .contents-fold
+    display: block
+    margin: 0 calc(var(--margin) * -1)
+    border-bottom: 1px solid var(--panel-border)
+    background: var(--canvas)
+
+    nav
+      padding: 4px var(--margin) 24px
+
+  .contents-fold-head
+    display: flex
+    align-items: center
+    justify-content: space-between
+    min-height: 52px
+    padding: 0 var(--margin)
+    font-size: var(--step-note)
+    font-weight: 700
+    cursor: pointer
+    list-style: none
+
+    &::-webkit-details-marker
+      display: none
+
+    &::after
+      content: "+"
+      font-family: var(--mono-font)
+      font-size: 20px
+
+  .contents-fold[open] .contents-fold-head::after
+    content: "−"

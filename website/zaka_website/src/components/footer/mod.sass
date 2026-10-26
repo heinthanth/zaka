@@ -43,7 +43,28 @@
 
 .footer-links
   display: flex
+  flex-wrap: wrap
   gap: 20px
+
+// The credits open a modal, so the link is a button, drawn as the links beside
+// them.
+.footer-credits
+  padding: 0
+  font: inherit
+  color: inherit
+  text-decoration: underline
+  text-underline-offset: 0.18em
+  text-decoration-thickness: 0.06em
+  background: none
+  border: 0
+  cursor: pointer
+
+  &:focus-visible
+    outline: 2px solid currentColor
+    outline-offset: 4px
+
+.footer-credits-modal
+  --modal-width: 480px
 
 
 .footer-rights

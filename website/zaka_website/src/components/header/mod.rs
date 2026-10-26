@@ -29,6 +29,7 @@ use zakac_rust_sugars::tern;
 
 use crate::assets::LOGO_DARK;
 use crate::assets::LOGO_LIGHT;
+use crate::manual::LEARN_URL;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/header/mod.sass");
@@ -37,7 +38,7 @@ turf::style_sheet!("src/components/header/mod.sass");
 static SHEET: ComponentStyle = ComponentStyle::global_css("site-header", STYLE_SHEET);
 
 /// Where the explorer lives on the site.
-pub const EXPLORER_URL: &str = "/explorer/";
+pub const EXPLORER_URL: &str = zaka_web_ui_common::site::EXPLORER_URL;
 
 /// The name of the language in Burmese, written beside the logo.
 const NAME: &str = "စံကား";
@@ -65,16 +66,21 @@ const PAPER: &str = "paper";
 /// The view; it renders no element of its own.
 pub fn header_sheet() -> impl IntoView { sheet(&SHEET) }
 
-/// The header: the wordmark, the theme and language pickers and
+/// The header: the wordmark, the theme and language pickers, the manual and
 /// the explorer. It sits over the page and takes the ground and ink of the
 /// chapter under it. An island: the pickers and the chapter colors run in
 /// the browser.
+///
+/// # Arguments
+///
+/// * `home` - Whether the page is the landing page, where the wordmark leads to
+///   the top; on other pages it leads home.
 ///
 /// # Returns
 ///
 /// The view.
 #[island]
-pub fn SiteHeader() -> impl IntoView
+pub fn SiteHeader(home: bool) -> impl IntoView
 {
     let theme = theme_mode();
     let chapter = RwSignal::new(PAPER.to_string());
@@ -83,7 +89,7 @@ pub fn SiteHeader() -> impl IntoView
     let mark = move || tern!(theme.is_dark(), LOGO_DARK, LOGO_LIGHT);
     let brand = a()
         .class(ClassName::HEADER_BRAND)
-        .href("#top")
+        .href(tern!(home, "#top", "/"))
         .attr("aria-label", t!("website.header.home"))
         .child((
             img()
@@ -97,13 +103,22 @@ pub fn SiteHeader() -> impl IntoView
         .class(format!("button {}", ClassName::HEADER_ACTION))
         .href(EXPLORER_URL)
         .child(t!("website.header.explorer"));
+    let learn = a()
+        .class(ClassName::HEADER_LINK)
+        .href(LEARN_URL)
+        .attr("aria-current", (!home).then_some("page"))
+        .child(t!("website.header.learn"));
     let pickers = div()
         .class(ClassName::HEADER_PICKERS)
         .child((theme_icon_picker(theme), lang_icon_picker(|| ())));
     let open = RwSignal::new(false);
     follow_menu(open);
-    let actions =
-        div().class(ClassName::HEADER_ACTIONS).child((pickers, action, toggle(open)));
+    let actions = div().class(ClassName::HEADER_ACTIONS).child((
+        pickers,
+        learn,
+        action,
+        toggle(open),
+    ));
     header()
         .class(ClassName::HEADER)
         .class((ClassName::HEADER_OPEN, move || open.get()))
@@ -181,9 +196,10 @@ fn menu_panel(theme: ThemeMode, open: RwSignal<bool>) -> impl IntoView
         .attr("data-lenis-prevent", "")
         .attr("inert", move || !open.get())
         .child((
-            nav()
-                .class(ClassName::HEADER_MENU_LINKS)
-                .child(link((EXPLORER_URL, "website.header.explorer_link"))),
+            nav().class(ClassName::HEADER_MENU_LINKS).child((
+                link((LEARN_URL, "website.header.learn")),
+                link((EXPLORER_URL, "website.header.explorer_link")),
+            )),
             div().class(ClassName::HEADER_MENU_PICKERS).child(menu_pickers(theme)),
         ))
 }

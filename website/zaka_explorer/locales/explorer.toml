@@ -4,6 +4,20 @@ _version = 2
 
 [explorer.toolbar.brand]
 en = "Zaka Explorer"
+[explorer.toolbar.site]
+en = "Zaka website"
+[explorer.toolbar.website]
+en = "Website"
+[explorer.toolbar.manual]
+en = "Manual"
+[explorer.toolbar.menu]
+en = "Open the menu"
+[explorer.toolbar.menu_shut]
+en = "Close the menu"
+[explorer.toolbar.about]
+en = "About"
+[explorer.toolbar.settings]
+en = "Settings"
 
 [explorer.app.resize_editor]
 en = "Resize the editor"
@@ -17,6 +31,8 @@ en = "Drag to resize; double-click to reset"
 en = "Loading the editor…"
 [explorer.editor.break]
 en = "Break point: the debugger pauses when the run reaches this line. Click to clear it."
+[explorer.editor.break_add]
+en = "Click to set a break point"
 [explorer.editor.break_op]
 en = "Break point on an op of this line, set in the ops table. An edit of the code clears it."
 [explorer.editor.break_idle]
@@ -55,44 +71,12 @@ en = "License"
 en = "© %{first} – %{last} %{author}."
 [explorer.about.terms]
 en = "Distributed under the %{license} license."
-[explorer.about.fonts]
-en = "Fonts"
 [explorer.about.credits]
 en = "Credits"
 [explorer.about.back]
 en = "About"
 [explorer.about.back_label]
 en = "Back to About"
-[explorer.about.web]
-en = "Web packages"
-[explorer.about.crates]
-en = "Rust crates"
-[explorer.about.thanks]
-en = "With thanks to all of these projects."
-[explorer.about.pda_note]
-en = "A Burmese monospace font from PhoenixDigitalArt. Portions © Adobe."
-[explorer.about.pda_page]
-en = "PhoenixDigitalArt on Facebook"
-[explorer.about.pda_post]
-en = "Release post"
-[explorer.about.source_note]
-en = "A modified version of the Source Code Pro font from Adobe."
-[explorer.about.source_repo]
-en = "Source Code Pro on GitHub"
-[explorer.about.sabae_note]
-en = "A Burmese font from Danh Hong."
-[explorer.about.sabae_repo]
-en = "Myanmar Sabae on GitHub"
-[explorer.about.others]
-en = "Other fonts"
-[explorer.about.others_note]
-en = "The other fonts of the font pickers come from Fontsource, most of them from Google Fonts. Each ships under its own open font license."
-[explorer.about.fontsource]
-en = "Fontsource"
-[explorer.about.google_fonts]
-en = "Google Fonts"
-[explorer.about.ofl]
-en = "SIL Open Font License 1.1"
 [explorer.about.tour]
 en = "Onboarding"
 

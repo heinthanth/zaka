@@ -25,36 +25,52 @@ use crate::look::Look;
 /// Element id of the modal title, which names the dialog.
 const TITLE_ID: &str = "settings-modal-title";
 
-/// The settings button and the modal it opens.
+/// The settings button, which opens the modal.
 ///
 /// # Arguments
 ///
-/// * `content` - The sections of the modal.
+/// * `open` - Whether the modal shows.
 ///
 /// # Returns
 ///
 /// The view.
-pub fn settings_menu(content: impl IntoView + 'static) -> impl IntoView
+pub fn settings_button(open: RwSignal<bool>) -> impl IntoView
 {
-    let open = RwSignal::new(false);
     let title = t!("web_ui.settings.title").to_string();
-    let trigger = button()
+    button()
         .class(format!("{} {}", ClassName::ICON_BUTTON, ClassName::SETTINGS_BUTTON))
         .class((ClassName::SETTINGS_BUTTON_ON, move || open.get()))
         .attr("aria-haspopup", "dialog")
         .attr("aria-expanded", move || open.get().to_string())
         .attr("aria-label", title.clone())
-        .title(title.clone())
+        .title(title)
         .on(ev::click, move |_| open.set(true))
-        .child(gear());
+        .child(gear())
+}
+
+/// The settings modal. It stands apart from its button, so a menu can open
+/// it as well.
+///
+/// # Arguments
+///
+/// * `open` - Whether the modal shows.
+/// * `content` - The sections of the modal.
+///
+/// # Returns
+///
+/// The view.
+pub fn settings_modal(
+    open: RwSignal<bool>, content: impl IntoView + 'static,
+) -> impl IntoView
+{
     let spec = Modal::builder()
         .open(open)
         .class(ClassName::SETTINGS_MODAL)
         .title_id(TITLE_ID)
-        .title(title)
+        .title(t!("web_ui.settings.title"))
         .close_label(t!("web_ui.settings.close_label"))
         .build();
-    div().child((trigger, modal(spec, content)))
+    modal(spec, content)
 }
 
 /// The appearance section: theme, the Burmese and fallback fonts of

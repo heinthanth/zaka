@@ -5,10 +5,15 @@ use leptos::html::img;
 use leptos::html::p;
 use leptos::html::span;
 use leptos::prelude::*;
+use leptos_scoped_style::ComponentStyle;
+use zaka_web_ui_common::controls::ClassName as Controls;
 use zaka_web_ui_common::controls::modal::Modal;
 use zaka_web_ui_common::controls::modal::modal;
+use zaka_web_ui_common::credits::credits_roll;
+use zaka_web_ui_common::credits::credits_sheet;
 use zaka_web_ui_common::icon::chevron;
 use zaka_web_ui_common::icon::info;
+use zaka_web_ui_common::sheet;
 use zakac_consts::ZAKA_AUTHOR;
 use zakac_consts::ZAKA_BUILD_NUMBER;
 use zakac_consts::ZAKA_FIRST_YEAR;
@@ -21,13 +26,6 @@ use crate::assets::LOGO_DARK;
 use crate::assets::LOGO_LIGHT;
 use crate::state::use_state;
 
-mod credits;
-
-use credits::credits_roll;
-use leptos_scoped_style::ComponentStyle;
-use zaka_web_ui_common::controls::ClassName as Controls;
-use zaka_web_ui_common::sheet;
-
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/about/mod.sass");
 
@@ -37,20 +35,18 @@ static SHEET: ComponentStyle = ComponentStyle::global_css("zaka-about", STYLE_SH
 /// Element id of the modal title, which names the dialog.
 const TITLE_ID: &str = "about-modal-title";
 
-/// The about button and the modal it opens: the version, the author and
-/// the license, with a slide of credits behind a button and a button that
-/// starts the guided tour.
+/// The about button, which opens the modal.
+///
+/// # Arguments
+///
+/// * `open` - Whether the modal shows.
 ///
 /// # Returns
 ///
 /// The view.
-pub fn about_menu() -> impl IntoView
+pub fn about_button(open: RwSignal<bool>) -> impl IntoView
 {
-    let open = RwSignal::new(false);
-    let credits = RwSignal::new(false);
-    // The modal opens on the about slide.
-    Effect::new(move |_| do_if!(open.get(), credits.set(false)));
-    let trigger = button()
+    button()
         .class(Controls::ICON_BUTTON)
         .class((ClassName::ABOUT_BUTTON_ON, move || open.get()))
         .attr("aria-haspopup", "dialog")
@@ -58,7 +54,25 @@ pub fn about_menu() -> impl IntoView
         .attr("aria-label", t!("explorer.about.open"))
         .title(t!("explorer.about.open"))
         .on(ev::click, move |_| open.set(true))
-        .child(info());
+        .child(info())
+}
+
+/// The about modal: the version, the author and the license, with a slide of
+/// credits behind a button and a button that starts the guided tour. The
+/// toolbar button and the menu of narrow screens both open it.
+///
+/// # Arguments
+///
+/// * `open` - Whether the modal shows.
+///
+/// # Returns
+///
+/// The view.
+pub fn about_modal(open: RwSignal<bool>) -> impl IntoView
+{
+    let credits = RwSignal::new(false);
+    // The modal opens on the about slide.
+    Effect::new(move |_| do_if!(open.get(), credits.set(false)));
     let spec = Modal::builder()
         .open(open)
         .class(ClassName::ABOUT_MODAL)
@@ -66,8 +80,7 @@ pub fn about_menu() -> impl IntoView
         .title(t!("explorer.about.title"))
         .close_label(t!("explorer.about.close_label"))
         .build();
-    let view = div().child((trigger, modal(spec, slides(open, credits))));
-    (sheet(&SHEET), view)
+    (sheet(&SHEET), credits_sheet(), modal(spec, slides(open, credits)))
 }
 
 /// The two slides next to each other: about, then credits. The one out of view
