@@ -66,10 +66,10 @@ const PAPER: &str = "paper";
 /// The view; it renders no element of its own.
 pub fn header_sheet() -> impl IntoView { sheet(&SHEET) }
 
-/// The header: the wordmark, the theme and language pickers, the manual and
-/// the explorer. It sits over the page and takes the ground and ink of the
-/// chapter under it. An island: the pickers and the chapter colors run in
-/// the browser.
+/// The header: the wordmark, the link to the manual, the theme and language
+/// pickers, and the explorer. It sits over the page and takes the ground and
+/// ink of the chapter under it. An island: the pickers and the chapter colors
+/// run in the browser.
 ///
 /// # Arguments
 ///
@@ -113,9 +113,11 @@ pub fn SiteHeader(home: bool) -> impl IntoView
         .child((theme_icon_picker(theme), lang_icon_picker(|| ())));
     let open = RwSignal::new(false);
     follow_menu(open);
+    // The links come first, then the pickers, then the explorer, the one
+    // call to action, at the end.
     let actions = div().class(ClassName::HEADER_ACTIONS).child((
-        pickers,
         learn,
+        pickers,
         action,
         toggle(open),
     ));
