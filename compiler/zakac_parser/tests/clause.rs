@@ -106,7 +106,7 @@ fn statement_level_clause_errors()
 {
     assert_eq!(codes("ဂ နှင့် က ကို ပြသပါ။"), [Code::DanglingOperands]);
     assert_eq!(codes("(က ကို ပြသပါ) ကို ပြသပါ။"), [Code::StmtVerbInExpr]);
-    assert_eq!(codes("၁ ကို ၂ ဟု ထားပါ။"), [Code::AssignTarget]);
+    assert_eq!(stmt("၁ ကို ၂ ဟု ထားပါ။"), "(set 1 2)");
     assert_eq!(codes("က + ၁ ။"), [Code::ExpectedStmtVerb]);
 }
 

@@ -14,9 +14,12 @@ use crate::expr::IntLit;
 use crate::expr::LogicExpr;
 use crate::expr::NameExpr;
 use crate::expr::NotExpr;
+use crate::expr::NullLit;
 use crate::expr::PrefixExpr;
+use crate::expr::SizeOfExpr;
 use crate::expr::VerbExpr;
 use crate::kind::Kind;
+use crate::stmt::AllocStmt;
 use crate::stmt::AssignStmt;
 use crate::stmt::BlockStmt;
 use crate::stmt::BreakStmt;
@@ -25,6 +28,7 @@ use crate::stmt::ContinueStmt;
 use crate::stmt::CountedStmt;
 use crate::stmt::DeclStmt;
 use crate::stmt::FnDecl;
+use crate::stmt::FreeStmt;
 use crate::stmt::GenericStmt;
 use crate::stmt::IfArm;
 use crate::stmt::IfStmt;
@@ -32,7 +36,9 @@ use crate::stmt::Param;
 use crate::stmt::PrintArg;
 use crate::stmt::PrintStmt;
 use crate::stmt::Program;
+use crate::stmt::ResizeStmt;
 use crate::stmt::ReturnStmt;
+use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
 use crate::stmt::StrArg;
 use crate::stmt::WhileStmt;
@@ -94,6 +100,9 @@ FnDecl => "fn", visit_fn;
 Param => "param", visit_param;
 ReturnStmt => "return", visit_return;
 CallStmt => "call_stmt", visit_call_stmt;
+AllocStmt => "alloc", visit_alloc;
+ResizeStmt => "resize", visit_resize;
+FreeStmt => "free", visit_free;
 IntLit => "int", visit_int;
 FloatLit => "float", visit_float;
 CharLit => "char", visit_char;
@@ -106,6 +115,8 @@ NotExpr => "not", visit_not;
 LogicExpr => "logic", visit_logic;
 VerbExpr => "verb", visit_verb;
 CallExpr => "call", visit_call_expr;
+NullLit => "null", visit_null;
+SizeOfExpr => "sizeof", visit_size_of;
 Ident => "ident", visit_ident;
 Kind => "kind", visit_kind; }
 
@@ -135,6 +146,9 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Fn(s) => s,
         Stmt::Return(s) => s,
         Stmt::Call(s) => s,
+        Stmt::Alloc(s) => s,
+        Stmt::Resize(s) => s,
+        Stmt::Free(s) => s,
     }
 }
 
@@ -163,6 +177,8 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::Logic(e) => e,
         Expr::Verb(e) => e,
         Expr::Call(e) => e,
+        Expr::Null(e) => e,
+        Expr::SizeOf(e) => e,
     }
 }
 
@@ -253,6 +269,12 @@ pub trait Visitor
     fn visit_return(&mut self, n: &ReturnStmt) { walk_return(self, n) }
     /// Visit a call statement.
     fn visit_call_stmt(&mut self, n: &CallStmt) { walk_call_stmt(self, n) }
+    /// Visit a heap allocation.
+    fn visit_alloc(&mut self, n: &AllocStmt) { walk_alloc(self, n) }
+    /// Visit a heap reallocation.
+    fn visit_resize(&mut self, n: &ResizeStmt) { walk_resize(self, n) }
+    /// Visit a heap release.
+    fn visit_free(&mut self, n: &FreeStmt) { walk_free(self, n) }
 
     /// Visit an expression.
     fn visit_expr(&mut self, n: &Expr) { walk_expr(self, n) }
@@ -280,6 +302,10 @@ pub trait Visitor
     fn visit_verb(&mut self, n: &VerbExpr) { walk_verb(self, n) }
     /// Visit a call expression.
     fn visit_call_expr(&mut self, n: &CallExpr) { walk_call_expr(self, n) }
+    /// Visit a null address.
+    fn visit_null(&mut self, n: &NullLit) { walk_null(self, n) }
+    /// Visit a size expression.
+    fn visit_size_of(&mut self, n: &SizeOfExpr) { walk_size_of(self, n) }
     /// Visit a name in a declaration, parameter, loop header or call.
     fn visit_ident(&mut self, n: &Ident) { walk_ident(self, n) }
     /// Visit a kind.
@@ -312,6 +338,9 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Fn(s) => v.visit_fn(s),
         Stmt::Return(s) => v.visit_return(s),
         Stmt::Call(s) => v.visit_call_stmt(s),
+        Stmt::Alloc(s) => v.visit_alloc(s),
+        Stmt::Resize(s) => v.visit_resize(s),
+        Stmt::Free(s) => v.visit_free(s),
     }
 }
 
@@ -329,7 +358,7 @@ pub fn walk_decl<V: Visitor + ?Sized>(v: &mut V, n: &DeclStmt)
 pub fn walk_assign<V: Visitor + ?Sized>(v: &mut V, n: &AssignStmt)
 {
     v.enter(n);
-    v.visit_ident(&n.target);
+    v.visit_expr(&n.target);
     v.visit_expr(&n.value);
     v.leave(n);
 }
@@ -470,6 +499,40 @@ pub fn walk_call_stmt<V: Visitor + ?Sized>(v: &mut V, n: &CallStmt)
     v.leave(n);
 }
 
+/// Visit the size, then the target, of a heap allocation.
+pub fn walk_alloc<V: Visitor + ?Sized>(v: &mut V, n: &AllocStmt)
+{
+    v.enter(n);
+    walk_size_arg(v, &n.size);
+    v.visit_expr(&n.target);
+    v.leave(n);
+}
+
+/// Visit the target, then the new size, of a heap reallocation.
+pub fn walk_resize<V: Visitor + ?Sized>(v: &mut V, n: &ResizeStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.target);
+    walk_size_arg(v, &n.size);
+    v.leave(n);
+}
+
+/// Visit the target of a heap release.
+pub fn walk_free<V: Visitor + ?Sized>(v: &mut V, n: &FreeStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.target);
+    v.leave(n);
+}
+
+/// Visit the count, then the unit kind, of a size operand. The operand is
+/// no node of its own, so `enter` and `leave` do not run for it.
+fn walk_size_arg<V: Visitor + ?Sized>(v: &mut V, n: &SizeArg)
+{
+    v.visit_expr(&n.count);
+    do_if!(let Some(unit) = &n.unit, v.visit_kind(unit));
+}
+
 /// Visit the wrapped expression.
 pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
 {
@@ -487,6 +550,8 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::Logic(e) => v.visit_logic(e),
         Expr::Verb(e) => v.visit_verb(e),
         Expr::Call(e) => v.visit_call_expr(e),
+        Expr::Null(e) => v.visit_null(e),
+        Expr::SizeOf(e) => v.visit_size_of(e),
     }
 }
 
@@ -587,6 +652,21 @@ pub fn walk_call_expr<V: Visitor + ?Sized>(v: &mut V, n: &CallExpr)
     v.leave(n);
 }
 
+/// Visit a null address; it has no children.
+pub fn walk_null<V: Visitor + ?Sized>(v: &mut V, n: &NullLit)
+{
+    v.enter(n);
+    v.leave(n);
+}
+
+/// Visit the kind of a size expression.
+pub fn walk_size_of<V: Visitor + ?Sized>(v: &mut V, n: &SizeOfExpr)
+{
+    v.enter(n);
+    v.visit_kind(&n.kind);
+    v.leave(n);
+}
+
 /// Visit a name; it has no children.
 pub fn walk_ident<V: Visitor + ?Sized>(v: &mut V, n: &Ident)
 {
@@ -622,6 +702,16 @@ pub trait VisitorMut
     fn visit_ident_mut(&mut self, n: &mut Ident) { self.visit_span_mut(&mut n.span) }
     /// Visit a kind.
     fn visit_kind_mut(&mut self, n: &mut Kind) { self.visit_span_mut(&mut n.span) }
+    /// Visit a heap allocation.
+    fn visit_alloc_mut(&mut self, n: &mut AllocStmt) { walk_alloc_mut(self, n) }
+    /// Visit a heap reallocation.
+    fn visit_resize_mut(&mut self, n: &mut ResizeStmt) { walk_resize_mut(self, n) }
+    /// Visit a heap release.
+    fn visit_free_mut(&mut self, n: &mut FreeStmt) { walk_free_mut(self, n) }
+    /// Visit a null address.
+    fn visit_null_mut(&mut self, n: &mut NullLit) { self.visit_span_mut(&mut n.span) }
+    /// Visit a size expression.
+    fn visit_size_of_mut(&mut self, n: &mut SizeOfExpr) { walk_size_of_mut(self, n) }
 }
 
 /// Visit the statements of a program.
@@ -668,6 +758,9 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::Fn(s) => walk_fn_mut(v, s),
         Stmt::Return(s) => walk_return_mut(v, s),
         Stmt::Call(s) => walk_call_stmt_mut(v, s),
+        Stmt::Alloc(s) => v.visit_alloc_mut(s),
+        Stmt::Resize(s) => v.visit_resize_mut(s),
+        Stmt::Free(s) => v.visit_free_mut(s),
     }
 }
 
@@ -684,7 +777,7 @@ pub fn walk_decl_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut DeclStmt)
 pub fn walk_assign_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut AssignStmt)
 {
     v.visit_span_mut(&mut n.span);
-    v.visit_ident_mut(&mut n.target);
+    v.visit_expr_mut(&mut n.target);
     v.visit_expr_mut(&mut n.value);
 }
 
@@ -773,6 +866,37 @@ pub fn walk_call_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallStmt)
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
 }
 
+/// Visit the size, then the target, of a heap allocation.
+pub fn walk_alloc_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut AllocStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    walk_size_arg_mut(v, &mut n.size);
+    v.visit_expr_mut(&mut n.target);
+}
+
+/// Visit the target, then the new size, of a heap reallocation.
+pub fn walk_resize_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut ResizeStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_expr_mut(&mut n.target);
+    walk_size_arg_mut(v, &mut n.size);
+}
+
+/// Visit the target of a heap release.
+pub fn walk_free_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FreeStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_expr_mut(&mut n.target);
+}
+
+/// Visit the span, the count, then the unit kind of a size operand.
+fn walk_size_arg_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut SizeArg)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_expr_mut(&mut n.count);
+    opt_kind_mut(v, &mut n.unit);
+}
+
 /// Visit the children of an expression.
 pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
 {
@@ -790,6 +914,8 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         Expr::Logic(e) => walk_pair_mut(v, &mut e.span, &mut e.lhs, &mut e.rhs),
         Expr::Verb(e) => walk_verb_mut(v, e),
         Expr::Call(e) => walk_call_expr_mut(v, e),
+        Expr::Null(e) => v.visit_null_mut(e),
+        Expr::SizeOf(e) => v.visit_size_of_mut(e),
     }
 }
 
@@ -833,4 +959,11 @@ pub fn walk_call_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallExpr)
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.callee);
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
+}
+
+/// Visit the kind of a size expression.
+pub fn walk_size_of_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut SizeOfExpr)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_kind_mut(&mut n.kind);
 }

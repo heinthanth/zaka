@@ -100,6 +100,7 @@ impl Parser<'_>
             Kw::Loop => self.parse_break(),
             Kw::NextIteration => self.parse_continue(),
             Kw::Return => self.parse_bare_return(),
+            Kw::Mem => self.parse_alloc(),
             Kw::WhenDone => Err(diag::update_outside_loop(tok.span)),
             Kw::BlockClose => Err(diag::unmatched_block_close(tok.span)),
             _ => self.parse_expr_headed(),
@@ -107,7 +108,8 @@ impl Parser<'_>
     }
 
     /// Parse a statement that starts with an expression: a clause closed
-    /// with a statement verb, a while loop or a counted loop.
+    /// with a statement verb, a heap resize or release, a while loop or a
+    /// counted loop.
     ///
     /// # Returns
     ///
@@ -119,7 +121,8 @@ impl Parser<'_>
         self.finish_expr_headed(clause)
     }
 
-    /// Finish a statement that starts with a parsed clause.
+    /// Finish a statement that starts with a parsed clause: a resize or
+    /// release of the address it names, a while loop or a counted loop.
     ///
     /// # Arguments
     ///
@@ -135,6 +138,8 @@ impl Parser<'_>
             ClauseOut::Stmt(stmt) => return Ok(*stmt),
             ClauseOut::Expr(first) => first,
         };
+        ret_if!(self.at(Kw::ResizeHead), self.parse_resize_tail(first));
+        ret_if!(self.at(Kw::FreeHead), self.parse_free_tail(first));
         let cond = self.parse_logical_rest(first, 0)?;
         let is_while = self.at(Kw::While) || self.at(Kw::WhileIs);
         ret_if!(is_while, self.parse_while_tail(cond));
@@ -363,7 +368,8 @@ impl Parser<'_>
     }
 
     /// Parse a declaration or a generic loop; both start with
-    /// `(ကိန်းရှင်|ကိန်းသေ) <name> သည် <kind> <init>?`.
+    /// `(ကိန်းရှင်|ကိန်းသေ) <name> သည် <kind> <init>?`, where the value is
+    /// written `ဖြစ်၍ တန်ဖိုးသည် <expr>` or right after the kind.
     ///
     /// # Returns
     ///
@@ -398,10 +404,24 @@ impl Parser<'_>
     fn parse_init(&mut self) -> PResult<Option<Expr>>
     {
         ret_if!(self.at(Kw::Let) || self.at(Kw::Being), Ok(None));
+        ret_if!(self.at(Kw::And), self.parse_value_clause().map(Some));
         self.parse_clause_expr().map(Some)
     }
 
-    /// Parse `ဖြစ်ပြီး <cond> နေသရွေ့ <block>` after the header of a generic
+    /// Parse `ဖြစ်၍ တန်ဖိုးသည် <expr>`; `ဖြစ်၍` is the current token.
+    ///
+    /// # Returns
+    ///
+    /// The value, or a diagnostic.
+    fn parse_value_clause(&mut self) -> PResult<Expr>
+    {
+        self.advance();
+        self.expect(Kw::Value)?;
+        self.expect(Kw::Thi)?;
+        self.parse_clause_expr()
+    }
+
+    /// Parse `ဖြစ်ပြီး|ဖြစ်ကာ <cond> နေသရွေ့ <block>` after the header of a generic
     /// loop. The block can end with a `ပြီးလျှင်` update.
     ///
     /// # Arguments

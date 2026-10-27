@@ -9,8 +9,10 @@ use zakac_ast::expr::Ident;
 use zakac_ast::expr::InfixExpr;
 use zakac_ast::expr::InfixOp;
 use zakac_ast::expr::NameExpr;
+use zakac_ast::expr::NullLit;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp;
+use zakac_ast::expr::SizeOfExpr;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
 use zakac_lexer::token::Kw;
@@ -18,6 +20,7 @@ use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::parser::PResult;
@@ -92,6 +95,8 @@ fn prefix_of(tok: &Token) -> Option<PrefixOp>
         }
         TokenKind::Punct(Punct::Tilde) => Some(PrefixOp::BitNot),
         TokenKind::Punct(Punct::Bang) => Some(PrefixOp::Not),
+        TokenKind::Punct(Punct::Star) => Some(PrefixOp::Deref),
+        TokenKind::Punct(Punct::Amp) => Some(PrefixOp::AddrOf),
         _ => None,
     }
 }
@@ -170,7 +175,8 @@ impl Parser<'_>
         Ok(Expr::Prefix(node))
     }
 
-    /// Parse an atom: a literal, a name, `( expr )` or a call expression.
+    /// Parse an atom: a literal, a name, `( expr )`, a call expression,
+    /// `ဗလာ` or `<kind> ၏ အရွယ်အစား`.
     ///
     /// # Returns
     ///
@@ -187,10 +193,17 @@ impl Parser<'_>
             }
             TokenKind::Kw(Kw::Function) => self.parse_call_expr(),
             TokenKind::Kw(Kw::True | Kw::False) => Ok(self.parse_bool()),
+            TokenKind::Kw(Kw::Null) => Ok(self.parse_null()),
             TokenKind::Char(value) => Ok(self.parse_char(value)),
-            TokenKind::Number(_) | TokenKind::Kw(Kw::Base) => self.parse_literal(),
+            TokenKind::Number(_) | TokenKind::Kw(Kw::Base) if !self.at_size_of() =>
+            {
+                self.parse_literal()
+            }
             TokenKind::Str(_) => Err(diag::str_outside_print(tok.span)),
-            _ if self.starts_kind() => self.parse_literal(),
+            _ if self.starts_kind() =>
+            {
+                tern!(self.at_size_of(), self.parse_size_of(), self.parse_literal())
+            }
             _ => Err(diag::expected_operand(tok.span, &self.found())),
         }
     }
@@ -237,6 +250,33 @@ impl Parser<'_>
         #[rustfmt::skip]
         let lit = BoolLit::builder().id(id).value(value).particle(tok.particle).span(tok.span).build();
         Expr::Bool(lit)
+    }
+
+    /// Parse `ဗလာ`, which is the current token.
+    ///
+    /// # Returns
+    ///
+    /// The null literal.
+    fn parse_null(&mut self) -> Expr
+    {
+        let tok = self.bump();
+        let id = self.new_id();
+        Expr::Null(NullLit::builder().id(id).span(tok.span).build())
+    }
+
+    /// Parse `<kind> ၏ အရွယ်အစား`; [`Parser::at_size_of`] has passed.
+    ///
+    /// # Returns
+    ///
+    /// The size expression, or a diagnostic from the kind.
+    fn parse_size_of(&mut self) -> PResult<Expr>
+    {
+        let kind = self.parse_kind()?;
+        self.expect_punct(Punct::Ei)?;
+        let end = self.expect(Kw::SizeOf)?;
+        let span = kind.span.to(&end.span);
+        let id = self.new_id();
+        Ok(Expr::SizeOf(SizeOfExpr::builder().id(id).kind(kind).span(span).build()))
     }
 
     /// Parse a character literal.

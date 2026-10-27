@@ -5927,6 +5927,7 @@ dependencies = [
  "cargo-build",
  "clap",
  "rust-i18n",
+ "strum",
  "tempfile",
  "termcolor",
  "zakac_cli_common",

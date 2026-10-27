@@ -12,10 +12,10 @@ A name may use Burmese letters, other scripts, digits (not first), `_`, and even
 Upper and lower case are different: `Age` and `age` are two names.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။          // Burmese
-ကိန်းရှင် age သည် ကိန်းပြည့် ၂၀ ဖြစ်ပါစေ။            // English
-ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် ၇၅ ဖြစ်ပါစေ။        // with _ and a digit
-ကိန်းရှင် 🍎 သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။               // emoji
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။          // Burmese
+ကိန်းရှင် age သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။            // English
+ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၅ ဖြစ်ပါစေ။        // with _ and a digit
+ကိန်းရှင် 🍎 သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။               // emoji
 အသက် + age + အမှတ်_၁ + 🍎 ကို ပြသပါ။
 ```
 
@@ -56,8 +56,8 @@ Backtick names work, but they are hard to read. Use them only when you must.
 In one place, a name can be declared only once:
 
 ```zaka-error ZK0302
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 ```
 
 ```text
@@ -70,6 +70,6 @@ The help line suggests declaring the name again "in an inner block". The next pa
 ## Try it
 
 - Declare a variable named with your favourite emoji and print it.
-- Try `ကိန်းရှင် ၂အသက် သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။`. Why does a name not start with a digit?
+- Try `ကိန်းရှင် ၂အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။`. Why does a name not start with a digit?
 
 Next: [Blocks and scope](scope.md).

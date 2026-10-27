@@ -27,6 +27,7 @@ program:
         base: int
         bits: 8
         signed: null
+        depth: 0
         span:
           lo: 75
           hi: 119
@@ -54,6 +55,7 @@ program:
         base: int
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 200
           hi: 230
@@ -72,6 +74,7 @@ program:
         base: int
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 295
           hi: 325
@@ -82,10 +85,12 @@ program:
         hi: 353
   - assign:
       target:
-        name: ဂ
-        span:
-          lo: 354
-          hi: 357
+        name:
+          id: 2
+          name: ဂ
+          span:
+            lo: 354
+            hi: 357
       value:
         int:
           id: 3
@@ -194,6 +199,7 @@ program:
               base: float
               bits: null
               signed: null
+              depth: 0
               span:
                 lo: 635
                 hi: 659
@@ -226,6 +232,7 @@ program:
     hi: 788
 kinds:
   1: i8
+  2: isize
   3: isize
   4: i8
   5: i8

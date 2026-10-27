@@ -9,14 +9,14 @@ A *variable* is a named box that holds a value. You create it once, then use its
 wherever you need the value. Creating a variable is called *declaring* it.
 
 ```zaka
-// "Let the variable age be the integer 18."
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
+// "Let the variable age be an integer, and its value be 18."
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 
-// "Let the variable price be the decimal number 2.5."
-ကိန်းရှင် ဈေး သည် ဒဿမကိန်း ၂.၅ ဖြစ်ပါစေ။
+// "Let the variable price be a decimal number, and its value be 2.5."
+ကိန်းရှင် ဈေး သည် ဒဿမကိန်း ဖြစ်၍ တန်ဖိုးသည် ၂.၅ ဖြစ်ပါစေ။
 
 // The initial value can be worked out from other variables.
-ကိန်းရှင် နှစ်ဆ သည် ကိန်းပြည့် အသက် * ၂ ဖြစ်ပါစေ။
+ကိန်းရှင် နှစ်ဆ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် အသက် * ၂ ဖြစ်ပါစေ။
 
 အသက် ကို ပြသပါ။
 ဈေး ကို ပြသပါ။
@@ -37,6 +37,8 @@ A declaration reads like a Burmese sentence:
 | `အသက်` | "age" | the name you choose |
 | `သည်` | (subject) | |
 | `ကိန်းပြည့်` | "integer" | the kind of value it holds |
+| `ဖြစ်၍` | "is, and" | joins the kind and the value |
+| `တန်ဖိုးသည်` | "its value" | |
 | `၁၈` | 18 | the initial value (optional) |
 | `ဖြစ်ပါစေ` | "let it be" | the verb that declares |
 | `။` | full stop | |
@@ -46,7 +48,8 @@ variable always holds an integer.
 
 ## Starting values
 
-If you leave out the initial value, the variable starts at its kind's *default*:
+If you leave out `ဖြစ်၍ တန်ဖိုးသည်` and the initial value, the variable starts at its
+kind's *default*:
 
 | Kind | Default |
 | --- | --- |
@@ -69,13 +72,34 @@ If you leave out the initial value, the variable starts at its kind's *default*:
 ၀.၀
 ```
 
+## The short form
+
+The value can also come straight after the kind, without `ဖြစ်၍ တန်ဖိုးသည်`. These two
+lines declare the same kind of variable with the same value:
+
+```zaka
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
+ကိန်းရှင် အရွယ် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
+အသက် ကို ပြသပါ။
+အရွယ် ကို ပြသပါ။
+```
+
+```text
+၁၈
+၁၈
+```
+
+The short form is quicker to write. The long form keeps the kind and the value apart,
+which reads better when the value is long or starts with a kind word of its own. This
+manual uses the long form.
+
 ## The value must fit the kind
 
 The initial value must suit the variable's kind. A decimal number cannot go into an
 integer variable:
 
 ```zaka-error ZK0401
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈.၅ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈.၅ ဖြစ်ပါစေ။
 ```
 
 ```text

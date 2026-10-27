@@ -1,0 +1,97 @@
+---
+title: Changing the caller's variables
+description: Pass addresses to a function so it can change the variables you give it.
+---
+
+# Changing the caller's variables
+
+A [parameter](../functions/parameters.md) is a copy, so a function cannot change the
+variable you pass in. Pass the variable's *address* instead. The function then writes
+through the pointer, and the change reaches your variable.
+
+```zaka
+// swap: exchange the values of two integers
+လုပ်ဆောင်ချက် လဲလှယ် သည်
+ကိန်းပြည့် လိပ်စာ က နှင့် ကိန်းပြည့် လိပ်စာ ခ တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ယာယီ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုး ဖြစ်ပါစေ။     // keep the first value
+က ၏ တန်ဖိုး ကို ခ ၏ တန်ဖိုး ဟု ထားပါ။                  // first = second
+ခ ၏ တန်ဖိုး ကို ယာယီ ဟု ထားပါ။                         // second = the kept value
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+ကိန်းရှင် ပထမ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ဒုတိယ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် လဲလှယ် ကို ပထမ ၏ လိပ်စာ၊ ဒုတိယ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပထမ ကို ပြသပါ။
+ဒုတိယ ကို ပြသပါ။
+```
+
+```text
+၂
+၁
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `ကိန်းပြည့် လိပ်စာ က` | a parameter `က` that holds the address of an integer |
+| `ပထမ ၏ လိပ်စာ` | "the address of the first", passed as an argument |
+| `ယာယီ` | "temporary" |
+
+## Several results
+
+A function returns at most one result. Pointers let it hand back more: the caller
+passes the addresses of the variables that should receive them.
+
+```zaka
+// divide: write the quotient and the remainder into the caller's variables
+လုပ်ဆောင်ချက် ခွဲဝေ သည်
+ကိန်းပြည့် တည်ကိန်း၊ ကိန်းပြည့် စားကိန်း၊ ကိန်းပြည့် လိပ်စာ အဖြေ နှင့် ကိန်းပြည့် လိပ်စာ အကြွင်း တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အဖြေ ၏ တန်ဖိုး ကို တည်ကိန်း / စားကိန်း ဟု ထားပါ။
+အကြွင်း ၏ တန်ဖိုး ကို တည်ကိန်း % စားကိန်း ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+ကိန်းရှင် ရ သည် ကိန်းပြည့် ဖြစ်ပါစေ။
+ကိန်းရှင် ကျန် သည် ကိန်းပြည့် ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ခွဲဝေ ကို ၁၇၊ ၅၊ ရ ၏ လိပ်စာ၊ ကျန် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ရ ကို ပြသပါ။
+ကျန် ကို ပြသပါ။
+```
+
+```text
+၃
+၂
+```
+
+17 divided by 5 is 3, with 2 left over.
+
+## How long an address lasts
+
+The variables of a function exist only while the function runs. When it returns, their
+memory is given back, and any pointer to them now points at memory that is no longer
+theirs. Zaka warns when a function returns the address of its own variable:
+
+```zaka-warning ZK0418
+လုပ်ဆောင်ချက် မှား သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
+ကိန်းရှင် x သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+x ၏ လိပ်စာ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+```
+
+```text
+warning[ZK0418]: returns the address of the local "x", which is released when the function returns
+```
+
+Pointing *into* a function at the caller's variables, as `လဲလှယ်` does, is always fine:
+the caller's variables outlive the call. Memory that must outlive the function that
+creates it comes from the [heap](heap.md).
+
+## Try it
+
+- Write a function that takes the addresses of three integers and sorts their values
+  from smallest to largest, using `လဲလှယ်`.
+- Call `လဲလှယ်` with the same address twice: `ပထမ ၏ လိပ်စာ၊ ပထမ ၏ လိပ်စာ`. What
+  happens, and why?
+
+Next: [Heap memory](heap.md).

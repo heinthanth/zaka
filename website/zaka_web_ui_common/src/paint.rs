@@ -180,7 +180,15 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::WhenDone
         | Kw::Function
         | Kw::Const
-        | Kw::Var => "tok-kw",
+        | Kw::Var
+        | Kw::Mem
+        | Kw::TakeSpace
+        | Kw::At
+        | Kw::AtAddress
+        | Kw::SoThat
+        | Kw::AllocTarget
+        | Kw::ResizeHead
+        | Kw::FreeHead => "tok-kw",
         Kw::Print
         | Kw::Assign
         | Kw::Return
@@ -189,7 +197,10 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Let
         | Kw::Stop
         | Kw::Skip
-        | Kw::ReturnValue => "tok-verb",
+        | Kw::ReturnValue
+        | Kw::WillKeep
+        | Kw::WillResize
+        | Kw::WillRelease => "tok-verb",
         Kw::Sum
         | Kw::Difference
         | Kw::Product
@@ -224,7 +235,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::BitNot
         | Kw::Shift
         | Kw::Convert
-        | Kw::CallResult => "tok-op",
+        | Kw::CallResult
+        | Kw::SizeOf => "tok-op",
         Kw::Thi
         | Kw::Ko
         | Kw::Hnint
@@ -251,8 +263,11 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Base
         | Kw::Value
         | Kw::Result
-        | Kw::Note => "tok-kind",
-        Kw::True | Kw::False => "tok-bool",
+        | Kw::Note
+        | Kw::Address
+        | Kw::Octets
+        | Kw::Items => "tok-kind",
+        Kw::True | Kw::False | Kw::Null => "tok-bool",
     }
 }
 

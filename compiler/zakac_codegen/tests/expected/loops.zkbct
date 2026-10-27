@@ -7,12 +7,16 @@ module:
   globals:
   - name: ကိန်း
     kind: isize
+    addressed: false
   - name: အမှတ်
     kind: isize
+    addressed: false
   - name: အမှတ်
     kind: isize
+    addressed: false
   - name: အဆင့်
     kind: u8
+    addressed: false
   texts: []
   funcs:
   - name: main

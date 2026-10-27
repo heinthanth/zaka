@@ -117,8 +117,6 @@ FloatForIntKind = ("ZK0221", Level::Error),
 BadLiteralKind = ("ZK0222", Level::Error),
 /// A string literal is used as a value.
 StrOutsidePrint = ("ZK0223", Level::Error),
-/// The target of an assignment is not a name.
-AssignTarget = ("ZK0224", Level::Error),
 /// A generic loop is declared with the constant word.
 ConstLoop = ("ZK0225", Level::Error),
 /// A block closer has no open block.
@@ -175,6 +173,24 @@ ShiftTooFar = ("ZK0407", Level::Error),
 InvalidCast = ("ZK0408", Level::Error),
 /// A counted-loop step is not positive.
 StepNotPositive = ("ZK0409", Level::Error),
+/// An assignment target is neither a variable nor a dereference.
+NotAPlace = ("ZK0410", Level::Error),
+/// The address of a value that has no address is taken.
+NoAddress = ("ZK0411", Level::Error),
+/// The address of a constant or a counted-loop variable is taken.
+FixedAddress = ("ZK0412", Level::Error),
+/// A value that is not a pointer is dereferenced.
+NotAPointer = ("ZK0413", Level::Error),
+/// An opaque pointer is dereferenced or offset.
+OpaquePointer = ("ZK0414", Level::Error),
+/// An operator that pointers do not take is used on a pointer.
+PointerOperator = ("ZK0415", Level::Error),
+/// Pointers to different kinds are compared or subtracted.
+PointerKindsDiffer = ("ZK0416", Level::Error),
+/// A heap statement is given a value that is not a pointer.
+HeapNeedsPointer = ("ZK0417", Level::Error),
+/// A function returns the address of one of its locals.
+LocalAddressReturned = ("ZK0418", Level::Warning),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

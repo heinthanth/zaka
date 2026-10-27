@@ -19,6 +19,9 @@ pub enum BaseKind
     Char,
     /// `မှန်မှားတန်ဖိုး` or `ဘူလီယန်`
     Bool,
+    /// A bare `လိပ်စာ`: an address whose target kind is not known.
+    #[strum(serialize = "ptr")]
+    Opaque,
 }
 
 /// A data kind as written in the source, such as
@@ -33,6 +36,12 @@ pub struct Kind
     /// `Some(true)` for `လက္ခဏာရှိ`, `Some(false)` for `လက္ခဏာမဲ့`, `None`
     /// when no sign word is written.
     pub signed: Option<bool>,
+    /// The number of pointer levels; zero for a plain value. After a base
+    /// word, a bare `လိပ်စာ` and each `၏ လိပ်စာ` add one. The opaque kind's
+    /// own `လိပ်စာ` counts too, so an [`BaseKind::Opaque`] kind has at least
+    /// one.
+    #[builder(default)]
+    pub depth: u8,
     /// Source region of the whole kind phrase.
     pub span: Span,
 }

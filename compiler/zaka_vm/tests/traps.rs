@@ -1,9 +1,13 @@
 mod common;
 
+use std::mem::discriminant;
+use std::path::PathBuf;
+
 use common::output;
 use common::run_source;
 use common::run_source_with;
 use zaka_vm::machine::RunOptions;
+use zaka_vm::trap::Trap;
 use zaka_vm::trap::TrapKind;
 
 /// The trap kind and function of a source text that must trap.
@@ -93,4 +97,72 @@ fn logic_short_circuits_at_run_time()
                 ဖြစ်ပါစေ။\n(ပိတ် && ၁ / သုည သည် ၁ နှင့် ညီသည်) ကို ပြသပါ။\n(ပိတ် မဟုတ် || ၁ / သုည သည် ၁ \
                 နှင့် ညီသည်) ကို ပြသပါ။";
     assert_eq!(output(text), "မမှန်\nမှန်\n");
+}
+
+/// The dir of the heap trap inputs.
+fn heap_inputs() -> PathBuf
+{
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/inputs/heap")
+}
+
+/// Run a heap trap input and take its trap.
+fn heap_trap(stem: &str) -> Trap
+{
+    let text =
+        std::fs::read_to_string(heap_inputs().join(format!("{stem}.zaka"))).unwrap();
+    let options = match stem
+    {
+        "out_of_mem" => RunOptions::builder().max_heap(64).build(),
+        _ => RunOptions::default(),
+    };
+    let (out, result) = run_source_with(&text, &options);
+    let Err(trap) = result
+    else
+    {
+        panic!("{stem} should trap; it printed:\n{out}");
+    };
+    trap
+}
+
+#[test]
+fn each_heap_mistake_traps_with_its_kind()
+{
+    let table = [
+        ("null_deref", TrapKind::NullDeref { addr: 0 }),
+        ("out_of_bounds", TrapKind::OutOfBounds { addr: 0, size: 0 }),
+        ("use_after_free", TrapKind::UseAfterFree { addr: 0 }),
+        ("double_free", TrapKind::DoubleFree { addr: 0 }),
+        ("bad_free", TrapKind::BadFree { addr: 0 }),
+        ("misaligned", TrapKind::Misaligned { addr: 0, align: 0 }),
+        ("bad_value", TrapKind::BadValue { addr: 0, kind: String::new() }),
+        ("out_of_mem", TrapKind::OutOfMem { size: 0 }),
+        ("mixed_blocks", TrapKind::MixedBlocks),
+        ("local_escape", TrapKind::UseAfterFree { addr: 0 }),
+    ];
+    let inputs = std::fs::read_dir(heap_inputs()).unwrap().count();
+    assert_eq!(inputs, table.len(), "each input needs a row");
+    for (stem, want) in table
+    {
+        let trap = heap_trap(stem);
+        assert_eq!(discriminant(&trap.kind), discriminant(&want), "{stem}: {trap}");
+    }
+}
+
+#[test]
+fn a_local_address_that_escapes_names_its_function()
+{
+    let trap = heap_trap("local_escape");
+    let block = trap.block.clone().expect("a block");
+    assert!(block.contains("cell of ဂဏန်း"), "{block}");
+    assert!(trap.to_string().ends_with(&format!("; {block}")), "{trap}");
+}
+
+#[test]
+fn heap_traps_name_their_block()
+{
+    let trap = heap_trap("out_of_bounds");
+    let block = trap.block.clone().expect("a block");
+    assert!(block.contains("32 octets, heap"), "{block}");
+    assert_eq!(heap_trap("null_deref").block, None);
+    assert_eq!(heap_trap("mixed_blocks").block, None);
 }

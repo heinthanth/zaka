@@ -54,7 +54,7 @@ macro_rules! per_width {
 }
 
 /// A constant. Artifacts store it as text with its kind, such as `-5:i8`,
-/// `1.5:f32`, `'က':char` or `true:bool`.
+/// `1.5:f32`, `'က':char`, `true:bool` or `0x1000:ptr`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[derive(Serialize, Deserialize)]
 #[serde(into = "String", try_from = "String")]
@@ -82,6 +82,20 @@ pub enum Value
     Char(char),
     /// A boolean.
     Bool(bool),
+    /// An address. Its kind is `ptr`; the checker alone knows what it
+    /// points at.
+    Ptr(u64),
+}
+
+/// The reason raw octets do not read back as a value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RawError
+{
+    /// The octet count differs from the size of the kind.
+    WrongLen,
+    /// The octets hold no value of the kind: a boolean other than 0 or 1,
+    /// or a character that is no Unicode scalar value.
+    BadValue,
 }
 
 /// The reason an operation on constants has no value.
@@ -106,6 +120,9 @@ pub enum EvalError
 
 impl Value
 {
+    /// The null address.
+    pub const NULL: Value = Value::Ptr(0);
+
     /// Make an integer from a bit pattern, cut to the width of its kind.
     ///
     /// # Arguments
@@ -139,7 +156,7 @@ impl Value
         Some(Value::Float { bits, raw })
     }
 
-    /// The default value of a kind: zero, `'\0'` or false.
+    /// The default value of a kind: zero, `'\0'`, false or the null address.
     ///
     /// # Arguments
     ///
@@ -156,6 +173,7 @@ impl Value
             DataKind::Float(bits) => Value::Float { bits, raw: 0 },
             DataKind::Char => Value::Char('\0'),
             DataKind::Bool => Value::Bool(false),
+            DataKind::Ptr(_) | DataKind::Null => Value::NULL,
         }
     }
 
@@ -172,6 +190,7 @@ impl Value
             Value::Float { bits, .. } => DataKind::Float(bits),
             Value::Char(_) => DataKind::Char,
             Value::Bool(_) => DataKind::Bool,
+            Value::Ptr(_) => DataKind::OPAQUE,
         }
     }
 
@@ -183,6 +202,34 @@ impl Value
     pub fn as_bool(self) -> Option<bool>
     {
         tern!(let Value::Bool(b) = self, Some(b), None)
+    }
+
+    /// The address, for an address value.
+    ///
+    /// # Returns
+    ///
+    /// The address, or `None`.
+    pub fn as_ptr(self) -> Option<u64>
+    {
+        tern!(let Value::Ptr(a) = self, Some(a), None)
+    }
+
+    /// The bit pattern of the value.
+    ///
+    /// # Returns
+    ///
+    /// The bits: an integer's two's complement, a float's pattern, a
+    /// character's scalar value, 0 or 1 for a boolean, the address for a
+    /// pointer.
+    fn pattern(self) -> u128
+    {
+        match self
+        {
+            Value::Int { raw, .. } | Value::Float { raw, .. } => raw,
+            Value::Char(c) => u128::from(c),
+            Value::Bool(b) => u128::from(b),
+            Value::Ptr(a) => u128::from(a),
+        }
     }
 }
 
@@ -589,7 +636,8 @@ fn float_op<F: Float>(op: InfixOp, a: u128, b: u128) -> Result<u128, EvalError>
 ///
 /// # Returns
 ///
-/// The result; a NaN operand is unordered, so `!=` alone holds.
+/// The result; a NaN operand is unordered, so `!=` alone holds. Addresses
+/// compare as unsigned numbers.
 pub fn compare(op: CmpOp, l: Value, r: Value) -> Result<bool, EvalError>
 {
     ret_if!(l.kind() != r.kind(), Err(EvalError::Mismatch));
@@ -605,6 +653,7 @@ pub fn compare(op: CmpOp, l: Value, r: Value) -> Result<bool, EvalError>
         }
         (Value::Char(a), Value::Char(b)) => Some(a.cmp(&b)),
         (Value::Bool(a), Value::Bool(b)) => Some(a.cmp(&b)),
+        (Value::Ptr(a), Value::Ptr(b)) => Some(a.cmp(&b)),
         _ => None,
     };
     Ok(holds(op, order))
@@ -662,7 +711,9 @@ pub fn logic(op: LogicOp, l: Value, r: Value) -> Result<bool, EvalError>
 /// Convert a constant to another kind. Integers wrap to the target width;
 /// floats round to nearest; a float loses its fraction to become an
 /// integer, saturating at the range ends, with NaN as zero; an integer that
-/// is no Unicode scalar value becomes U+FFFD.
+/// is no Unicode scalar value becomes U+FFFD. An address becomes an integer
+/// wrapped to the target width; an integer becomes the address of its low
+/// `platform` bits; an address keeps its value under each pointer kind.
 ///
 /// # Arguments
 ///
@@ -707,7 +758,85 @@ pub fn convert(v: Value, to: DataKind, platform: u16) -> Result<Value, EvalError
         {
             Ok(Value::Int { kind: k, raw: u128::from(b) })
         }
+        (Value::Ptr(a), DataKind::Int(k)) => Ok(Value::int(k, u128::from(a), platform)),
+        (Value::Int { raw, .. }, DataKind::Ptr(_) | DataKind::Null) =>
+        {
+            Ok(Value::Ptr(address(raw, platform)))
+        }
+        (Value::Ptr(_), DataKind::Ptr(_) | DataKind::Null) => Ok(v),
         _ => Err(EvalError::Mismatch),
+    }
+}
+
+/// The address an integer bit pattern names: its low `platform` bits.
+///
+/// # Arguments
+///
+/// * `pattern` - The two's-complement bits.
+/// * `platform` - Bit count of an address.
+///
+/// # Returns
+///
+/// The address.
+fn address(pattern: u128, platform: u16) -> u64
+{
+    let low = pattern as u64;
+    ret_if!(platform >= 64, low);
+    low & ((1u64 << platform) - 1)
+}
+
+/// Encode a value as little-endian octets.
+///
+/// # Arguments
+///
+/// * `v` - The value.
+/// * `platform` - Bit count of the platform-sized kinds and addresses.
+///
+/// # Returns
+///
+/// The octets, one per 8 bits of the value's kind: a character as its
+/// `u32` scalar value, a boolean as one octet 0 or 1, an address as
+/// `platform / 8` octets.
+pub fn to_raw(v: Value, platform: u16) -> Vec<u8>
+{
+    let len = v.kind().size(platform) as usize;
+    let all = v.pattern().to_le_bytes();
+    all.get(..len).unwrap_or(&all).to_vec()
+}
+
+/// Decode little-endian octets as a value of a kind.
+///
+/// # Arguments
+///
+/// * `kind` - The kind; `null` reads like a pointer.
+/// * `raw` - The octets, one per 8 bits of the kind.
+/// * `platform` - Bit count of the platform-sized kinds and addresses.
+///
+/// # Returns
+///
+/// The value, an integer sign or zero extended per its kind, or the reason
+/// the octets hold none.
+pub fn from_raw(kind: DataKind, raw: &[u8], platform: u16) -> Result<Value, RawError>
+{
+    let len = kind.size(platform) as usize;
+    ret_if!(raw.len() != len || len > 16, Err(RawError::WrongLen));
+    let mut wide = [0u8; 16];
+    wide[..len].copy_from_slice(raw);
+    let pattern = u128::from_le_bytes(wide);
+    match kind
+    {
+        DataKind::Int(k) => Ok(Value::int(k, pattern, platform)),
+        DataKind::Float(bits) => Ok(Value::Float { bits, raw: pattern }),
+        DataKind::Char => u32::try_from(pattern)
+            .ok()
+            .and_then(char::from_u32)
+            .map(Value::Char)
+            .ok_or(RawError::BadValue),
+        DataKind::Bool =>
+        {
+            tern!(pattern <= 1, Ok(Value::Bool(pattern == 1)), Err(RawError::BadValue))
+        }
+        DataKind::Ptr(_) | DataKind::Null => Ok(Value::Ptr(pattern as u64)),
     }
 }
 
@@ -879,6 +1008,7 @@ impl fmt::Display for Value
             }
             Value::Char(c) => write!(f, "{c:?}:{kind}"),
             Value::Bool(b) => write!(f, "{b}:{kind}"),
+            Value::Ptr(a) => write!(f, "{a:#x}:{kind}"),
         }
     }
 }
@@ -887,7 +1017,7 @@ impl FromStr for Value
 {
     type Err = String;
 
-    /// Read the text form, such as `-5:i8`.
+    /// Read the text form, such as `-5:i8` or `0x10:*i32`.
     ///
     /// # Arguments
     ///
@@ -914,6 +1044,7 @@ impl FromStr for Value
             DataKind::Float(bits) => Value::float(head, bits),
             DataKind::Char => read_char(head).map(Value::Char),
             DataKind::Bool => head.parse::<bool>().ok().map(Value::Bool),
+            DataKind::Ptr(_) | DataKind::Null => read_address(head).map(Value::Ptr),
         };
         value.ok_or_else(bad)
     }
@@ -947,6 +1078,22 @@ fn read_char(text: &str) -> Option<char>
         "\"" => Some('"'),
         _ => read_unicode_escape(&rest),
     }
+}
+
+/// Read an address written as `0x` and hex digits.
+///
+/// # Arguments
+///
+/// * `text` - The text, such as `0x1000`.
+///
+/// # Returns
+///
+/// The address, or `None`.
+fn read_address(text: &str) -> Option<u64>
+{
+    let hex = text.strip_prefix("0x")?;
+    ret_if!(!hex.chars().all(|c| c.is_ascii_hexdigit()), None);
+    u64::from_str_radix(hex, 16).ok()
 }
 
 /// Read the `u{HHHH}` part of a `\u{HHHH}` escape.

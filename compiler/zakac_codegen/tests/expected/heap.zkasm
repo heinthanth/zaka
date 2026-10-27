@@ -1,0 +1,158 @@
+; zakac asm listing v1, platform 64 bits
+globals
+  g0 ပထမ isize
+  g1 ဒုတိယ isize
+  g2 ဆံ့နိုင်ရေ usize
+  g3 အရေအတွက် usize
+  g4 စာရင်း *isize
+  g5 ကိန်း isize
+  g6 နံပါတ် usize
+  g7 ပစ္စည်း *u8
+  g8 ဈေးနှုန်း *i32
+texts
+  t0 "နေရာ မရပါ"
+
+fn f0 လဲလှယ် (params 2)
+locals
+  l0 က *isize
+  l1 ခ *isize
+  l2 ယာယီ isize
+     0  load_local l0        ; က
+     1  load isize
+     2  store_local l2       ; ယာယီ
+     3  load_local l0        ; က
+     4  load_local l1        ; ခ
+     5  load isize
+     6  store isize
+     7  load_local l1        ; ခ
+     8  load_local l2        ; ယာယီ
+     9  store isize
+    10  ret
+
+fn f1 main (params 0)
+     0  cell 8 8
+     1  store_global g0      ; ပထမ
+     2  cell 8 8
+     3  store_global g1      ; ဒုတိယ
+     4  load_global g0       ; ပထမ
+     5  push 1:isize
+     6  store isize
+     7  load_global g1       ; ဒုတိယ
+     8  push 2:isize
+     9  store isize
+    10  load_global g0       ; ပထမ
+    11  load_global g1       ; ဒုတိယ
+    12  call f0              ; လဲလှယ်
+    13  load_global g0       ; ပထမ
+    14  load isize
+    15  print
+    16  load_global g1       ; ဒုတိယ
+    17  load isize
+    18  print
+    19  push 4:usize
+    20  store_global g2      ; ဆံ့နိုင်ရေ
+    21  push 0:usize
+    22  store_global g3      ; အရေအတွက်
+    23  push 0x0:ptr
+    24  store_global g4      ; စာရင်း
+    25  load_global g2       ; ဆံ့နိုင်ရေ
+    26  alloc 8
+    27  store_global g4      ; စာရင်း
+    28  load_global g4       ; စာရင်း
+    29  push 0x0:ptr
+    30  eq
+    31  jump_if_false L0
+    32  print_text t0
+L0:
+    33  push 1:isize
+    34  store_global g5      ; ကိန်း
+    35  load_global g5       ; ကိန်း
+    36  push 10:isize
+    37  gt
+    38  jump_if_true L3
+L1:
+    39  load_global g3       ; အရေအတွက်
+    40  load_global g2       ; ဆံ့နိုင်ရေ
+    41  eq
+    42  jump_if_false L2
+    43  load_global g2       ; ဆံ့နိုင်ရေ
+    44  push 2:usize
+    45  mul
+    46  store_global g2      ; ဆံ့နိုင်ရေ
+    47  load_global g4       ; စာရင်း
+    48  load_global g2       ; ဆံ့နိုင်ရေ
+    49  realloc 8
+    50  store_global g4      ; စာရင်း
+L2:
+    51  load_global g4       ; စာရင်း
+    52  load_global g3       ; အရေအတွက်
+    53  ptr_add 8
+    54  load_global g5       ; ကိန်း
+    55  load_global g5       ; ကိန်း
+    56  mul
+    57  store isize
+    58  load_global g3       ; အရေအတွက်
+    59  push 1:usize
+    60  add
+    61  store_global g3      ; အရေအတွက်
+    62  push 10:usize
+    63  load_global g5       ; ကိန်း
+    64  convert usize
+    65  sub
+    66  push 1:usize
+    67  lt
+    68  jump_if_true L3
+    69  load_global g5       ; ကိန်း
+    70  push 1:isize
+    71  add
+    72  store_global g5      ; ကိန်း
+    73  jump L1
+L3:
+    74  push 0:usize
+    75  store_global g6      ; နံပါတ်
+L4:
+    76  load_global g6       ; နံပါတ်
+    77  load_global g3       ; အရေအတွက်
+    78  lt
+    79  jump_if_false L5
+    80  load_global g4       ; စာရင်း
+    81  load_global g6       ; နံပါတ်
+    82  ptr_add 8
+    83  load isize
+    84  print
+    85  load_global g6       ; နံပါတ်
+    86  push 1:usize
+    87  add
+    88  store_global g6      ; နံပါတ်
+    89  jump L4
+L5:
+    90  load_global g4       ; စာရင်း
+    91  free
+    92  push 0x0:ptr
+    93  store_global g4      ; စာရင်း
+    94  push 0x0:ptr
+    95  store_global g7      ; ပစ္စည်း
+    96  push 8:usize
+    97  alloc 1
+    98  store_global g7      ; ပစ္စည်း
+    99  load_global g7       ; ပစ္စည်း
+   100  push 7:u8
+   101  store u8
+   102  push 0x0:ptr
+   103  store_global g8      ; ဈေးနှုန်း
+   104  load_global g7       ; ပစ္စည်း
+   105  push 4:isize
+   106  ptr_add 1
+   107  convert *i32
+   108  store_global g8      ; ဈေးနှုန်း
+   109  load_global g8       ; ဈေးနှုန်း
+   110  push 1500:i32
+   111  store i32
+   112  load_global g8       ; ဈေးနှုန်း
+   113  load i32
+   114  print
+   115  load_global g7       ; ပစ္စည်း
+   116  free
+   117  push 0x0:ptr
+   118  store_global g7      ; ပစ္စည်း
+   119  ret

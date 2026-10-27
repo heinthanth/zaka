@@ -1,16 +1,32 @@
 mod common;
 
+use common::folded;
 use common::plain;
 use common::run;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ir_builder::ir::Access;
+use zakac_ir_builder::ir::Expr;
+use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_ir_builder::ir::Module;
+use zakac_ir_builder::ir::PrintValue;
+use zakac_ir_builder::ir::Stmt;
+use zakac_semcheck::kind::DataKind;
 
 fn module(text: &str) -> Module
 {
     let lowered = run(text, &FoldOptions::default());
     lowered.plain.unwrap_or_else(|| panic!("{text}: {:?}", lowered.diagnostics))
+}
+
+fn printed(s: &Stmt) -> &Expr
+{
+    let Stmt::Print { value: PrintValue::Expr(e), .. } = s
+    else
+    {
+        panic!("not a printed expression: {s:?}");
+    };
+    e
 }
 
 #[test]
@@ -222,4 +238,135 @@ fn nothing_is_lowered_after_a_check_error()
     let lowered = run("က ကို ပြသပါ။", &FoldOptions::default());
     assert!(lowered.plain.is_none() && lowered.folded.is_none());
     assert!(!lowered.diagnostics.is_empty());
+}
+
+#[test]
+fn pointers_lower_to_mem_nodes()
+{
+    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
+p ၏ တန်ဖိုး ကို ၆ ဟု ထားပါ။
+*p + ၁ ကို ပြသပါ။
+p + ၂ ၏ တန်ဖိုး ကို ပြသပါ။
+(p - p) ကို ပြသပါ။
+p ကို ဗလာ ဟု ထားပါ။";
+    let expected = [
+        "(set g0 5:isize)",
+        "(set g1 (addr g0))",
+        "(store g1 6:isize)",
+        "(print (+ (load g1) 1:isize))",
+        "(print (load (ptr+ g1 2:isize)))",
+        "(print (ptr- g1 g1))",
+        "(set g1 0x0:ptr)",
+    ];
+    assert_eq!(plain(text), expected);
+    let m = module(text);
+    assert!(m.globals[0].addressed);
+    assert!(!m.globals[1].addressed);
+}
+
+#[test]
+fn heap_statements_lower_with_their_unit()
+{
+    let text = "ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။
+မင်မိုရီ ကိန်းပြည့် ၁၀ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
+p လိပ်စာရှိကို မင်မိုရီ ၆၄ ဘိုက်စာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
+p လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။";
+    let found = plain(text);
+    assert_eq!(found[1], "(alloc g0 10:usize isize)");
+    assert_eq!(found[2], "(resize g0 64:usize)");
+    assert_eq!(found[3], "(free g0)");
+    assert_eq!(found[4], "(print (sizeof isize))");
+    assert_eq!(folded(text)[4], "(print 8:usize)");
+}
+
+#[test]
+fn a_deref_destination_lowers_to_its_address()
+{
+    let text = "ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။
+မင်မိုရီ ၈ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို pp ၏ တန်ဖိုး တွင် သိမ်းထားမည်။
+pp ၏ တန်ဖိုး လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
+    assert_eq!(plain(text)[1..], ["(alloc (mem g0) 8:usize)", "(free (mem g0))"]);
+}
+
+#[test]
+fn a_bare_null_is_an_opaque_pointer()
+{
+    let text = "ဗလာ ကို ပြသပါ။\nဗလာ == ဗလာ ကို ပြသပါ။";
+    let m = module(text);
+    assert_eq!(printed(&m.main[0]).kind, DataKind::OPAQUE);
+    let ExprNode::Compare { lhs, rhs, .. } = &printed(&m.main[1]).node
+    else
+    {
+        panic!("not a comparison: {:?}", m.main[1]);
+    };
+    assert_eq!((lhs.kind, rhs.kind), (DataKind::OPAQUE, DataKind::OPAQUE));
+    let folded = run(text, &FoldOptions::default()).folded.expect("folded");
+    assert_eq!(printed(&folded.main[0]).kind, DataKind::OPAQUE);
+    let none = run(text, &FoldOptions::none()).folded.expect("folded");
+    assert_eq!(printed(&none.main[0]).kind, DataKind::OPAQUE);
+}
+
+const OFFSETS: &str = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် q သည် လိပ်စာ p + ၁ ဖြစ်ပါစေ။
+q ကို p + ၁ ဟု ထားပါ။
+q == p + ၁ ကို ပြသပါ။
+လုပ်ဆောင်ချက် ယူ ကို p + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ယူ သည် လိပ်စာ o ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+o ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်ချက် ရှေ့ သည် ကိန်းပြည့် ၏ လိပ်စာ r ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
+r + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+
+#[test]
+fn an_offset_to_an_opaque_place_keeps_its_kind_under_a_widen()
+{
+    let found = plain(OFFSETS);
+    let expected = [
+        "(set g2 (widen ptr (ptr+ g1 1:isize)))",
+        "(set g2 (widen ptr (ptr+ g1 1:isize)))",
+        "(print (== (widen *isize g2) (ptr+ g1 1:isize)))",
+        "(call ယူ (widen ptr (ptr+ g1 1:isize)))",
+    ];
+    assert_eq!(found[2..], expected);
+    let m = module(OFFSETS);
+    let Stmt::Set { value, .. } = &m.main[2]
+    else
+    {
+        panic!("not a store: {:?}", m.main[2]);
+    };
+    let ExprNode::Convert { operand, implicit: true } = &value.node
+    else
+    {
+        panic!("not an implicit conversion: {value:?}");
+    };
+    assert_eq!(value.kind, DataKind::OPAQUE);
+    assert!(operand.kind.is_ptr() && operand.kind != DataKind::OPAQUE);
+    let ret = m.funcs[1].to_sexpr();
+    assert!(ret.contains("(return (widen ptr (ptr+ l0 1:isize)))"), "{ret}");
+}
+
+#[test]
+fn a_pointer_default_takes_the_declared_kind()
+{
+    let text = "ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ဗလာပေး သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ၏ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    let m = module(text);
+    let to_isize = DataKind::parse("*isize").expect("a pointer kind");
+    let Stmt::Set { value, .. } = &m.main[0]
+    else
+    {
+        panic!("not a store: {:?}", m.main[0]);
+    };
+    assert_eq!(value.kind, to_isize);
+    let Stmt::Set { value, .. } = &m.funcs[0].block[0]
+    else
+    {
+        panic!("not a store: {:?}", m.funcs[0].block[0]);
+    };
+    assert_eq!(value.kind, to_isize);
 }

@@ -10,7 +10,7 @@ condition is true. In Zaka: "as long as *condition*, do the following":
 `<condition> နေသရွေ့ <body>`.
 
 ```zaka
-ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 
 // as long as the number is less than 100, ...
 ကိန်း သည် ၁၀၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
@@ -51,7 +51,7 @@ is false, so the loop ends and 128 is never printed.
 The body can be a single statement:
 
 ```zaka
-ကိန်းရှင် ကျန် သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။          // remaining
+ကိန်းရှင် ကျန် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။          // remaining
 ကျန် သည် ၀ ထက် ကြီးနေသရွေ့ ကျန် ကို ကျန် - ၁ ဟု ထားပါ။
 ကျန် ကို ပြသပါ။
 ```
@@ -63,8 +63,8 @@ The body can be a single statement:
 ## A boolean as the condition
 
 ```zaka
-ကိန်းရှင် ဆက်ရှာ သည် မှန်မှားတန်ဖိုး မှန် ဖြစ်ပါစေ။     // keep searching
-ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။            // round
+ကိန်းရှင် ဆက်ရှာ သည် မှန်မှားတန်ဖိုး ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။     // keep searching
+ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။            // round
 ဆက်ရှာ ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 အကြိမ် ကို အကြိမ် + ၁ ဟု ထားပါ။
 // keep going while round × round is below 50

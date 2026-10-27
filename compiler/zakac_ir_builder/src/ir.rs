@@ -83,6 +83,11 @@ pub struct Slot
     pub access: Access,
     /// Source region of the name.
     pub span: Span,
+    /// Whether the program takes the address of the slot, so it needs a
+    /// fixed address.
+    #[serde(default)]
+    #[builder(default)]
+    pub addressed: bool,
 }
 
 /// Where a slot lives. Written `g0` for a global and `l0` for a local of the
@@ -147,6 +152,17 @@ impl TryFrom<String> for Place
     type Error = String;
 
     fn try_from(text: String) -> Result<Self, Self::Error> { text.parse() }
+}
+
+/// Where a heap statement keeps the address it works on.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Dest
+{
+    /// A slot of a pointer kind.
+    Slot(Place),
+    /// The cell at an address, which holds a pointer.
+    Mem(Expr),
 }
 
 /// What a print statement writes.
@@ -263,6 +279,49 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Write a value at an address.
+    Store
+    {
+        /// The address, a pointer.
+        addr: Expr,
+        /// The value, of the kind the address points at.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
+    /// Take a new heap block and keep its address in `dest`.
+    Alloc
+    {
+        /// Where the address goes.
+        dest: Dest,
+        /// The element count, `usize`; the size in octets without a unit.
+        count: Expr,
+        /// The element kind, when written.
+        unit: Option<DataKind>,
+        /// Source region.
+        span: Span,
+    },
+    /// Give the heap block at `dest` a new size and keep its new address
+    /// there.
+    Resize
+    {
+        /// Where the address lives.
+        dest: Dest,
+        /// The element count, `usize`; the size in octets without a unit.
+        count: Expr,
+        /// The element kind, when written.
+        unit: Option<DataKind>,
+        /// Source region.
+        span: Span,
+    },
+    /// Release the heap block at `dest`.
+    Free
+    {
+        /// Where the address lives.
+        dest: Dest,
+        /// Source region.
+        span: Span,
+    },
 }
 
 impl Stmt
@@ -284,7 +343,11 @@ impl Stmt
             | Stmt::Break { span }
             | Stmt::Continue { span }
             | Stmt::Return { span, .. }
-            | Stmt::Call { span, .. } => *span,
+            | Stmt::Call { span, .. }
+            | Stmt::Store { span, .. }
+            | Stmt::Alloc { span, .. }
+            | Stmt::Resize { span, .. }
+            | Stmt::Free { span, .. } => *span,
         }
     }
 }
@@ -386,6 +449,33 @@ pub enum ExprNode
         /// The arguments, each of its parameter's kind.
         args: Vec<Expr>,
     },
+    /// The address of a slot, which is marked `addressed`.
+    AddrOf(Place),
+    /// The value at an address; the expression kind is the pointee.
+    Load
+    {
+        /// The address, a pointer.
+        addr: Box<Expr>,
+    },
+    /// An address moved `offset` elements forward; the expression kind is
+    /// the kind of `base`.
+    PtrAdd
+    {
+        /// The address, a pointer.
+        base: Box<Expr>,
+        /// The element count, an integer of its own kind.
+        offset: Box<Expr>,
+    },
+    /// The element count between two addresses of one kind, an `isize`.
+    PtrSub
+    {
+        /// The later address.
+        lhs: Box<Expr>,
+        /// The earlier address.
+        rhs: Box<Expr>,
+    },
+    /// The size of a kind in octets, a `usize`.
+    SizeOf(DataKind),
 }
 
 /// A prefix operator.

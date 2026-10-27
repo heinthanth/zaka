@@ -1,5 +1,6 @@
 use bon::Builder;
 use zakac_ir_builder::ir::Access;
+use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::Func;
@@ -266,7 +267,51 @@ impl IrTree<'_>
                 let children = args.iter().map(|a| self.expr(a)).collect();
                 self.node("call", name.clone(), span, children)
             }
+            Stmt::Store { addr, value, .. } =>
+            {
+                self.node("store", blank, span, self.pair(addr, value))
+            }
+            Stmt::Alloc { dest, count, unit, .. } =>
+            {
+                let unit = unit.map(|k| k.name());
+                self.heap("alloc", dest, Some(count), unit, span)
+            }
+            Stmt::Resize { dest, count, unit, .. } =>
+            {
+                let unit = unit.map(|k| k.name());
+                self.heap("resize", dest, Some(count), unit, span)
+            }
+            Stmt::Free { dest, .. } => self.heap("free", dest, None, None, span),
         }
+    }
+
+    /// The node of a heap statement: the slot text and the unit kind as
+    /// detail, then the address and the count as children.
+    ///
+    /// # Arguments
+    ///
+    /// * `label` - The statement form.
+    /// * `dest` - Where the address lives.
+    /// * `count` - The element count, if the statement has one.
+    /// * `unit` - The name of the element kind, when written.
+    /// * `span` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The node.
+    fn heap(
+        &self, label: &'static str, dest: &Dest, count: Option<&Expr>,
+        unit: Option<String>, span: Span,
+    ) -> TreeNode
+    {
+        let (slot, addr) = match dest
+        {
+            Dest::Slot(place) => (Some(self.place_text(*place)), None),
+            Dest::Mem(e) => (None, Some(self.expr(e))),
+        };
+        let words: Vec<String> = slot.into_iter().chain(unit).collect();
+        let children = addr.into_iter().chain(count.map(|c| self.expr(c))).collect();
+        self.node(label, words.join(" "), span, children)
     }
 
     /// The node of what a print statement writes.
@@ -332,6 +377,17 @@ impl IrTree<'_>
             {
                 ("call", name.clone(), args.iter().map(|a| self.expr(a)).collect())
             }
+            ExprNode::AddrOf(place) => ("addr", self.place_text(*place), Vec::new()),
+            ExprNode::Load { addr } => ("load", String::new(), vec![self.expr(addr)]),
+            ExprNode::PtrAdd { base, offset } =>
+            {
+                ("ptr+", String::new(), self.pair(base, offset))
+            }
+            ExprNode::PtrSub { lhs, rhs } =>
+            {
+                ("ptr-", String::new(), self.pair(lhs, rhs))
+            }
+            ExprNode::SizeOf(k) => ("sizeof", k.name(), Vec::new()),
         };
         let mut node = self.node(label, detail, e.span, children);
         node.kind = Some(e.kind.name());

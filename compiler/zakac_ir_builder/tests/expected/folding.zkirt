@@ -10,18 +10,21 @@ module:
     span:
       lo: 195
       hi: 210
+    addressed: false
   - name: အနံ
     kind: isize
     access: const
     span:
       lo: 309
       hi: 318
+    addressed: false
   - name: ဧရိယာ
     kind: isize
     access: var
     span:
       lo: 438
       hi: 453
+    addressed: false
   funcs: []
   main:
   - set:

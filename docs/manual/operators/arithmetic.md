@@ -6,8 +6,8 @@ description: Add, subtract, multiply, divide, take the remainder, and negate.
 # Arithmetic
 
 ```zaka
-ကိန်းရှင် က သည် ကိန်းပြည့် ၁၇ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၇ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 
 // Symbols
 က + ခ ကို ပြသပါ။          // add
@@ -85,7 +85,7 @@ error[ZK0602]: / with the constant zero as divisor
 If the zero only appears while the program runs, the program stops at that point:
 
 ```zaka-stop
-ကိန်းရှင် ခ သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 "အစ" ဟု ပြသပါ။
 ၁၀ / ခ ကို ပြသပါ။
 "ဤနေရာ မရောက်ပါ" ဟု ပြသပါ။
@@ -104,8 +104,8 @@ integer and a decimal number need an explicit [conversion](conversion.md), becau
 large integer could lose digits as a decimal:
 
 ```zaka-error ZK0404
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၂၀ ဖြစ်ပါစေ။
-ကိန်းရှင် ဈေး သည် ဒဿမကိန်း ၁.၅ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် ဈေး သည် ဒဿမကိန်း ဖြစ်၍ တန်ဖိုးသည် ၁.၅ ဖြစ်ပါစေ။
 အသက် * ဈေး ကို ပြသပါ။
 ```
 
@@ -122,9 +122,9 @@ If a result goes past the edge while the program runs, it *wraps around* to the 
 end, like a car's odometer rolling over:
 
 ```zaka
-ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် ၁၂၇ ဖြစ်ပါစေ။               // the largest 8-bit integer
+ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။               // the largest 8-bit integer
 ခ + ၁ ကို ပြသပါ။                                        // wraps to the smallest
-ကိန်းရှင် လ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။
+ကိန်းရှင် လ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 လ - ၁ ကို ပြသပါ။                                        // wraps to 255
 ```
 

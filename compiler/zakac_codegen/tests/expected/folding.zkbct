@@ -7,10 +7,13 @@ module:
   globals:
   - name: အလျား
     kind: isize
+    addressed: false
   - name: အနံ
     kind: isize
+    addressed: false
   - name: ဧရိယာ
     kind: isize
+    addressed: false
   texts:
   - ကြီးသည်
   funcs:

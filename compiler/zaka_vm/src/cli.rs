@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::Arg;
+use zakac_cli_common::clap::ArgAction;
 use zakac_cli_common::clap::ArgMatches;
 use zakac_cli_common::clap::crate_name;
 use zakac_cli_common::clap::value_parser;
@@ -26,6 +27,8 @@ use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_reporter::render::write_diagnostics;
+use zakac_rust_sugars::do_for;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
@@ -35,12 +38,17 @@ use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 
 use crate::machine::RunOptions;
-use crate::machine::run_with;
+use crate::machine::run_and_keep;
+use crate::trap::hex;
 
 /// The flag for the call depth limit.
 const MAX_DEPTH_ARG: &str = "max_depth";
 /// The flag for the op budget.
 const MAX_STEPS_ARG: &str = "max_steps";
+/// The flag for the cap on live heap octets.
+const MAX_HEAP_ARG: &str = "max_heap";
+/// The flag that lists the heap blocks left unfreed.
+const LEAKS_ARG: &str = "leaks";
 
 /// The `zaka_vm` command, `zakac run` as a subcommand.
 pub struct ZakaVm
@@ -72,7 +80,18 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .value_name("OPS")
         .help(t!("vm.max_steps"))
         .value_parser(value_parser!(u64).range(1..));
-    attach_compile_args(cmd.arg(input)).arg(depth).arg(steps).about(t!("vm.about"))
+    let heap = Arg::new(MAX_HEAP_ARG)
+        .long("max-heap")
+        .value_name("OCTETS")
+        .help(t!("vm.max_heap"))
+        .value_parser(value_parser!(u64))
+        .default_value("268435456");
+    let leaks = Arg::new(LEAKS_ARG)
+        .long("leaks")
+        .help(t!("vm.leaks"))
+        .action(ArgAction::SetTrue);
+    let cmd = attach_compile_args(cmd.arg(input));
+    cmd.arg(depth).arg(steps).arg(heap).arg(leaks).about(t!("vm.about"))
 }
 
 impl Command for ZakaVm
@@ -195,10 +214,11 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     };
 
     let options = run_options(matches);
-    let result = run_with(&module, &mut *io.stdout, &options);
+    let (machine, result) = run_and_keep(&module, &mut *io.stdout, &options);
     let Err(trap) = result
     else
     {
+        do_if!(options.leaks, write_leaks(io, &machine.leaks()));
         return ExitCode::Success;
     };
     let _ = report_command_error(
@@ -222,7 +242,25 @@ fn run_options(matches: &ArgMatches) -> RunOptions
 {
     let depth = matches.get_one::<u32>(MAX_DEPTH_ARG).copied().unwrap_or(4096);
     let steps = matches.get_one::<u64>(MAX_STEPS_ARG).copied();
-    RunOptions::builder().max_depth(depth).maybe_max_steps(steps).build()
+    let heap = matches.get_one::<u64>(MAX_HEAP_ARG).copied().unwrap_or(256 << 20);
+    let leaks = matches.get_flag(LEAKS_ARG);
+    #[rustfmt::skip]
+    let options = RunOptions::builder().max_depth(depth).maybe_max_steps(steps)
+        .max_heap(heap).leaks(leaks).build();
+    options
+}
+
+/// Write one line on standard error for each heap block left unfreed.
+///
+/// # Arguments
+///
+/// * `io` - The standard streams.
+/// * `leaks` - The start and length of each block.
+fn write_leaks(io: &mut CommandIO<'_>, leaks: &[(u64, u64)])
+{
+    let line =
+        |(addr, size): &(u64, u64)| t!("vm.leak", addr = hex(*addr), size = size);
+    do_for!(leak in leaks, drop(writeln!(io.stderr, "{}", line(leak))));
 }
 
 /// Read the input and turn it into ops: decode a codegen artifact, or

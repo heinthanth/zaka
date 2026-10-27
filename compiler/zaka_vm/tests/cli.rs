@@ -116,3 +116,30 @@ fn platform_bits_change_the_width()
     assert_eq!(code, ExitCode::Success);
     assert_eq!(stdout, "-၁၂၈\n");
 }
+
+#[test]
+fn the_leaks_flag_lists_unfreed_blocks_and_keeps_success()
+{
+    let text = "ကိန်းရှင် p သည် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ၁၆ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။";
+    let (code, stdout, stderr) = run_vm(&["--leaks"], text);
+    assert_eq!(code, ExitCode::Success, "{stderr}");
+    assert!(stdout.is_empty(), "{stdout}");
+    let leaks: Vec<&str> = stderr.lines().filter(|l| l.starts_with("leak:")).collect();
+    assert_eq!(leaks.len(), 1, "{stderr}");
+    assert!(leaks[0].ends_with("16 octets"), "{stderr}");
+    let (code, _, stderr) = run_vm(&[], text);
+    assert_eq!(code, ExitCode::Success);
+    assert!(stderr.is_empty(), "{stderr}");
+}
+
+#[test]
+fn the_max_heap_flag_caps_allocation()
+{
+    let text = "ကိန်းရှင် p သည် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ၆၄ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။\np \
+                ကို ပြသပါ။";
+    let (code, stdout, stderr) = run_vm(&["--max-heap", "16"], text);
+    assert_eq!(code, ExitCode::Success, "{stderr}");
+    assert_eq!(stdout, "ဗလာ\n");
+    let (_, stdout, _) = run_vm(&[], text);
+    assert!(stdout.starts_with("0x"), "{stdout}");
+}

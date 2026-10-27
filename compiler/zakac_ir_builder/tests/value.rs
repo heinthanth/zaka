@@ -301,3 +301,59 @@ fn float_text_is_public()
     assert_eq!(float_pattern_text(64, 0.1f64.to_bits() as u128), "0.1");
     assert_eq!(float_pattern_text(32, 3.0f32.to_bits() as u128), "3.0");
 }
+
+#[test]
+fn pointers_round_trip_and_convert()
+{
+    for text in ["0x0:ptr", "0x1000:ptr", "0xffffffffffffffff:ptr"]
+    {
+        assert_eq!(v(text).to_string(), text);
+    }
+    assert_eq!(v("0x10:*i32"), Value::Ptr(16));
+    assert_eq!(convert(v("0x1000:ptr"), kind("usize"), P), Ok(v("4096:usize")));
+    assert_eq!(convert(v("4096:isize"), kind("*i8"), P), Ok(v("0x1000:ptr")));
+    assert_eq!(convert(v("0x1000:ptr"), kind("f64"), P), Err(EvalError::Mismatch));
+    assert_eq!(compare(CmpOp::Lt, v("0x10:ptr"), v("0x20:ptr")), Ok(true));
+    assert_eq!(
+        compare(CmpOp::Eq, v("0x0:ptr"), v("0:isize")),
+        Err(EvalError::Mismatch)
+    );
+    assert_eq!(Value::default_of(kind("*isize")), Value::NULL);
+}
+
+#[test]
+fn pointer_conversions_wrap_to_the_platform()
+{
+    let big = v("4294967296:u64"); // 2^32
+    assert_eq!(convert(big, kind("ptr"), 32), Ok(Value::NULL));
+    assert_eq!(convert(v("0x100000001:ptr"), kind("u32"), 32), Ok(v("1:u32")));
+}
+
+#[test]
+fn raw_encoding_round_trips()
+{
+    use zakac_ir_builder::value::RawError;
+    use zakac_ir_builder::value::from_raw;
+    use zakac_ir_builder::value::to_raw;
+    for (text, len) in [
+        ("-2:i16", 2),
+        ("258:u32", 4),
+        ("1.5:f32", 4),
+        ("'က':char", 4),
+        ("true:bool", 1),
+        ("0x1000:ptr", 8),
+    ]
+    {
+        let raw = to_raw(v(text), P);
+        assert_eq!(raw.len(), len, "{text}");
+        assert_eq!(from_raw(v(text).kind(), &raw, P), Ok(v(text)), "{text}");
+    }
+    assert_eq!(to_raw(v("258:u32"), P), vec![2, 1, 0, 0]);
+    assert_eq!(to_raw(v("0x1000:ptr"), 32).len(), 4);
+    assert_eq!(from_raw(kind("bool"), &[2], P), Err(RawError::BadValue));
+    assert_eq!(
+        from_raw(kind("char"), &0xD800u32.to_le_bytes(), P),
+        Err(RawError::BadValue)
+    );
+    assert_eq!(from_raw(kind("i32"), &[1, 2], P), Err(RawError::WrongLen));
+}

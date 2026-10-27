@@ -14,6 +14,7 @@ program:
         base: int
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 51
           hi: 81
@@ -41,6 +42,7 @@ program:
         base: float
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 165
           hi: 189
@@ -67,6 +69,7 @@ program:
         base: bool
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 286
           hi: 331
@@ -112,6 +115,7 @@ program:
         base: int
         bits: 8
         signed: false
+        depth: 0
         span:
           lo: 476
           hi: 548
@@ -139,6 +143,7 @@ program:
         base: char
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 661
           hi: 679
@@ -155,10 +160,12 @@ program:
         hi: 713
   - assign:
       target:
-        name: အသက်
-        span:
-          lo: 714
-          hi: 726
+        name:
+          id: 7
+          name: အသက်
+          span:
+            lo: 714
+            hi: 726
       value:
         infix:
           id: 10
@@ -188,10 +195,12 @@ program:
         hi: 781
   - assign:
       target:
-        name: အသက်
-        span:
-          lo: 782
-          hi: 794
+        name:
+          id: 11
+          name: အသက်
+          span:
+            lo: 782
+            hi: 794
       value:
         verb:
           id: 14
@@ -301,6 +310,7 @@ program:
               base: float
               bits: null
               signed: null
+              depth: 0
               span:
                 lo: 1104
                 hi: 1128
@@ -332,6 +342,7 @@ program:
               base: int
               bits: null
               signed: null
+              depth: 0
               span:
                 lo: 1241
                 hi: 1271
@@ -358,6 +369,7 @@ program:
             base: int
             bits: 16
             signed: null
+            depth: 0
             span:
               lo: 1498
               hi: 1545
@@ -433,10 +445,12 @@ program:
           stmts:
           - assign:
               target:
-                name: ကြီးသူ
-                span:
-                  lo: 1871
-                  hi: 1889
+                name:
+                  id: 31
+                  name: ကြီးသူ
+                  span:
+                    lo: 1871
+                    hi: 1889
               value:
                 bool:
                   id: 32
@@ -588,9 +602,11 @@ kinds:
   4: bool
   5: u8
   6: char
+  7: isize
   8: isize
   9: isize
   10: isize
+  11: isize
   12: isize
   13: u8
   14: isize
@@ -610,6 +626,7 @@ kinds:
   28: isize
   29: isize
   30: bool
+  31: bool
   32: bool
   33: bool
   34: isize

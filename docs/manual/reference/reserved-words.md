@@ -27,7 +27,7 @@ a name in backticks (`` `ကြီး` ``) if you really need one of these
 | `တို့ကို`, `တို့ဖြင့်` | close a list of parameters / arguments | [Parameters](../functions/parameters.md) |
 | `လက်ခံပြီး` | "accepting ... and" | [Parameters](../functions/parameters.md) |
 | `မှ`, `အထိ`, `စီ`, `အနေဖြင့်` | "from", "up to", "each", "as" | [Counted loops](../control-flow/counted-loops.md) |
-| `ဖြစ်ပြီး` | "being ... and" | [Generic loops](../control-flow/generic-loops.md) |
+| `ဖြစ်ကာ`, `ဖြစ်ပြီး` | "being ... and" | [Generic loops](../control-flow/generic-loops.md) |
 | `ပြီးလျှင်` | "when done" | [Generic loops](../control-flow/generic-loops.md) |
 | `ဘယ်သို့`, `ညာသို့` | "to the left", "to the right" | [Bitwise operators](../operators/bitwise.md) |
 | `ဘစ်` | "bit" | [Integers](../values/integers.md), [Bitwise operators](../operators/bitwise.md) |
@@ -51,7 +51,7 @@ a name in backticks (`` `ကြီး` ``) if you really need one of these
 | `ငယ်`, `မငယ်` | "less", "not less" | `<`, `>=` | [Comparison](../operators/comparison.md) |
 | `ပြောင်းလဲသော ရလဒ်` | "changed result" | | [Converting between kinds](../operators/conversion.md) |
 | `လုပ်ဆောင်သော ရလဒ်` | "result of running" | | [Results](../functions/results.md) |
-| `ဖြစ်၍` | "and" | `&&` | [Logic](../operators/logic.md) |
+| `ဖြစ်၍` | "and"; also joins the kind and the value in a declaration | `&&` | [Logic](../operators/logic.md), [Variables](../variables/README.md) |
 | `သို့မဟုတ်` | "or" | `\|\|` | [Logic](../operators/logic.md) |
 | `မဟုတ်` | "not" | `!` | [Logic](../operators/logic.md) |
 | `အနုတ်` | "minus" | `-` (in front) | [Arithmetic](../operators/arithmetic.md) |
@@ -103,4 +103,29 @@ a name in backticks (`` `ကြီး` ``) if you really need one of these
 | `ရလဒ်` | "result" | [Results](../functions/results.md) |
 | `မှန်`, `မမှန်` | "true", "false" | [True and false](../values/booleans.md) |
 | `မှတ်ချက်` | "note" (comment) | [Comments](../hello/comments.md) |
-| `တန်ဖိုး` | "value" (kept for later versions) | |
+
+## Pointers and memory
+
+| Word | Reads as | Page |
+| --- | --- | --- |
+| `လိပ်စာ` | "address": after `<kind>` it makes a pointer kind (`<kind> လိပ်စာ`, then `၏ လိပ်စာ` for each further level); on its own it is the opaque pointer kind; after a name (`x ၏ လိပ်စာ`, or `&x`) it takes the address | [Pointers and memory](../pointers/README.md) |
+| `တန်ဖိုး` | "value": dereference, as in `p ၏ တန်ဖိုး` (or `*p`); also `တန်ဖိုးသည်` in a declaration | [Pointers and memory](../pointers/README.md), [Variables](../variables/README.md) |
+| `ဗလာ` | "empty": the null pointer | [Pointers and memory](../pointers/README.md#the-empty-address) |
+| `အရွယ်အစား` | "size": the size of a kind in octets, as in `<kind> ၏ အရွယ်အစား` | [Heap memory](../pointers/heap.md#how-much-to-ask-for) |
+| `မင်မိုရီ`, `မှတ်ဉာဏ်` | "memory" (two interchangeable spellings) | [Heap memory](../pointers/heap.md) |
+| `ဘိုက်စာ` | "octets' worth", as in `n ဘိုက်စာ` | [Heap memory](../pointers/heap.md#how-much-to-ask-for) |
+| `ခုစာ` | "items' worth", as in `<kind> n ခုစာ` | [Heap memory](../pointers/heap.md#how-much-to-ask-for) |
+| `မင်မိုရီ … နေရာယူ၍ လိပ်စာကို … တွင် သိမ်းထားမည်` | "taking … of memory, keep the address in …" (allocate) | [Heap memory](../pointers/heap.md) |
+| `… လိပ်စာရှိကို မင်မိုရီ … ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်` | "grow or shrink the space at … so that it is …" (resize) | [Growing and shrinking](../pointers/resizing.md) |
+| `… လိပ်စာရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်` | "release the memory at …" (free) | [Heap memory](../pointers/heap.md#giving-memory-back) |
+
+The words inside the three statements (`နေရာယူ၍`, `တွင်`, `သိမ်းထားမည်`, `လိပ်စာရှိ`,
+`ဖြစ်အောင်`, `နေရာအချဲ့အချုံ့လုပ်မည်`, `ပြန်လည်စွန့်လွှတ်မည်`) are reserved on their own
+as well.
+
+## Written and spoken endings
+
+Every reserved word that ends in the written `…မည်` also accepts the spoken `…မယ်`, and
+the two spellings mean the same. This covers the three memory statements above and the
+older `လုပ်ဆောင်မည်` (in `အောက်ပါတို့ကို လုပ်ဆောင်မည်`) and `ပြန်ပေးမည်`:
+`အောက်ပါတို့ကို လုပ်ဆောင်မယ်` and `ပြန်ပေးမယ်` work too.

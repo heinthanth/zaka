@@ -53,6 +53,11 @@ pub struct Slot
     pub name: String,
     /// The data kind.
     pub kind: DataKind,
+    /// Whether the program takes the address of the slot; the slot then
+    /// holds the address of a cell that keeps its value.
+    #[serde(default)]
+    #[builder(default)]
+    pub addressed: bool,
 }
 
 /// A function.
@@ -133,6 +138,30 @@ pub enum Op
     Pop,
     /// Stop the program with an error.
     Trap(TrapCode),
+    /// Pop an address, push the value of this kind at it.
+    Load(DataKind),
+    /// Pop a value of this kind, then an address; write the value there.
+    Store(DataKind),
+    /// Push the address of a new cell of this size and alignment; the cell
+    /// lives as long as the frame.
+    Cell(u32, u32),
+    /// Pop an integer count, then an address; push the address moved that
+    /// count of elements of this stride forward.
+    PtrAdd(u32),
+    /// Pop two addresses; push the element count between them, an `isize`,
+    /// for elements of this stride.
+    PtrSub(u32),
+    /// Pop an element count; push the address of a new heap block for that
+    /// count of elements of this stride, or null when none is left.
+    Alloc(u32),
+    /// Pop an element count, then the address of a heap block; push the
+    /// address of the block resized to hold that count of elements of this
+    /// stride.
+    Realloc(u32),
+    /// Pop the address of a heap block and release it.
+    Free,
+    /// Push the top value a second time.
+    Dup,
 }
 
 impl Op
@@ -205,7 +234,13 @@ impl Op
             Op::Call(f) => format!("f{f}"),
             Op::PrintText(t) => format!("t{t}"),
             Op::Trap(code) => <&str>::from(code).to_string(),
-            Op::Ret | Op::Print | Op::Pop => return None,
+            Op::Load(kind) | Op::Store(kind) => kind.name(),
+            Op::Cell(size, align) => format!("{size} {align}"),
+            Op::PtrAdd(s) | Op::PtrSub(s) | Op::Alloc(s) | Op::Realloc(s) =>
+            {
+                s.to_string()
+            }
+            Op::Ret | Op::Print | Op::Pop | Op::Free | Op::Dup => return None,
             Op::Prefix(_) | Op::Infix(_) | Op::Compare(_) => return None,
         };
         Some(text)

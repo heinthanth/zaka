@@ -10,8 +10,8 @@ belongs to the loop, the test, and the update to run after each round. Other lan
 call this a `for` loop.
 
 ```zaka
-// "variable i being integer 0, as long as i < 5, do the following"
-ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+// "variable i, an integer whose value is 0; as long as i < 5, do the following"
+ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်း * ၁၀ ကို ပြသပါ။
 ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။      // when done: add 1
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
@@ -25,15 +25,19 @@ call this a `for` loop.
 ၄၀
 ```
 
-The first line starts like a [declaration](../variables/README.md). `ဖြစ်ပြီး` ("being
+The first line starts like a [declaration](../variables/README.md). `ဖြစ်ကာ` ("being
 ... and") takes the place of `ဖြစ်ပါစေ` and turns it into a loop.
 
 | Part | Zaka | Runs |
 | --- | --- | --- |
-| setup | `ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး` | once, before the loop |
+| setup | `ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ` | once, before the loop |
 | test | `ကိန်း သည် ၅ အောက် ငယ်နေသရွေ့` | before every round |
 | body | the statements in the block | every round |
 | update | `ပြီးလျှင် ...` ("when done, ...") | after every round |
+
+`ဖြစ်ပြီး` works in place of `ဖြစ်ကာ`, and the setup can use the [short
+form](../variables/README.md#the-short-form) of a declaration:
+`ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ...`.
 
 The update must be the **last** statement in the block. It is optional; without it, the
 loop is a [while loop](while.md) with its own variable.
@@ -44,7 +48,7 @@ The update can be any statement, not only "add one". Here the counter doubles, a
 is an 8-bit unsigned integer:
 
 ```zaka
-ကိန်းရှင် နှစ်ထပ် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၁ ဖြစ်ပြီး နှစ်ထပ် သည် ၁၂၈ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+ကိန်းရှင် နှစ်ထပ် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ကာ နှစ်ထပ် သည် ၁၂၈ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 နှစ်ထပ် ကို ပြသပါ။
 ပြီးလျှင် နှစ်ထပ် ကို နှစ်ထပ် * ၂ ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
@@ -65,7 +69,7 @@ is an 8-bit unsigned integer:
 The loop's variable exists only inside the loop:
 
 ```zaka-error ZK0301
-ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 ကိန်း ကို ပြသပါ။
@@ -78,7 +82,7 @@ error[ZK0301]: "ကိန်း" is not declared
 ## The update goes last
 
 ```zaka-error ZK0213
-ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။
 ကိန်း ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။

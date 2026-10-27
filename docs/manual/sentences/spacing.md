@@ -12,7 +12,7 @@ The rule that matters most: put a space between a **name you made up** and the p
 after it.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၂၀ ဖြစ်ပါစေ။   // make a number named အသက် (age)
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။   // make a number named အသက် (age)
 အသက် ကို ပြသပါ။                          // space between အသက် and ကို
 ```
 
@@ -24,7 +24,7 @@ Without the space, `အသက်ကို` is read as one long name. No such nam
 compiler complains, and it suggests the fix:
 
 ```zaka-error ZK0206
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသပါ။
 ```
 

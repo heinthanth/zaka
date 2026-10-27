@@ -256,3 +256,120 @@ fn jumps_of_an_if_take_the_if_span()
     assert!(main.spans[branch].contains(&main.spans[branch - 1]));
     assert!(main.spans[branch].contains(&main.spans[branch + 1]));
 }
+
+#[test]
+fn addressed_locals_live_in_cells()
+{
+    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ \
+                ဖြစ်ပါစေ။\np ၏ တန်ဖိုး ကို ပြသပါ။";
+    let found = main_ops(text);
+    let want = [
+        "cell 8 8",
+        "store_global g0", // prologue: x gets a cell
+        "load_global g0",
+        "push 5:isize",
+        "store isize", // x = 5 through the cell
+        "load_global g0",
+        "store_global g1", // p = &x
+        "load_global g1",
+        "load isize",
+        "print", // *p
+        "ret",
+    ];
+    assert_eq!(found, want);
+    let module = emit_text(text);
+    assert!(module.globals[0].addressed && !module.globals[1].addressed);
+}
+
+#[test]
+fn addressed_parameters_go_into_their_cell()
+{
+    let text = "လုပ်ဆောင်ချက် ပြ သည်\nကိန်းပြည့် က ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ၏ လိပ်စာ ၏ \
+                တန်ဖိုး ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    let module = emit_text(text);
+    let found = ops(&module.funcs[0]);
+    assert_eq!(
+        found[..5],
+        ["cell 8 8", "dup", "load_local l0", "store isize", "store_local l0"]
+    );
+}
+
+#[test]
+fn heap_statements_and_pointer_arithmetic_emit_heap_ops()
+{
+    let text = "ကိန်းရှင် p သည် ၃၂ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။
+မင်မိုရီ ၃၂ ဘစ် ကိန်းပြည့် ၁၀ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
+p + ၁ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
+p လိပ်စာရှိကို မင်မိုရီ ၆၄ ဘိုက်စာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
+p လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
+    let found = main_ops(text);
+    let want = [
+        "push 0x0:ptr",
+        "store_global g0",
+        "push 10:usize",
+        "alloc 4",
+        "store_global g0",
+        "load_global g0",
+        "push 1:isize",
+        "ptr_add 4",
+        "push 7:i32",
+        "store i32",
+        "load_global g0",
+        "push 64:usize",
+        "realloc 1",
+        "store_global g0",
+        "load_global g0",
+        "free",
+        "push 0x0:ptr",
+        "store_global g0",
+        "ret",
+    ];
+    assert_eq!(found, want);
+}
+
+#[test]
+fn a_deref_destination_uses_dup()
+{
+    let text =
+        "ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။\npp ၏ တန်ဖိုး လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
+    let found = main_ops(text);
+    assert_eq!(
+        found[2..],
+        [
+            "load_global g0",
+            "dup",
+            "load *isize",
+            "free",
+            "push 0x0:ptr",
+            "store *isize",
+            "ret"
+        ]
+    );
+}
+
+#[test]
+fn an_offset_to_an_opaque_place_steps_then_converts()
+{
+    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် q သည် လိပ်စာ p + ၁ ဖြစ်ပါစေ။
+q ကို p + ၁ ဟု ထားပါ။
+q == p + ၁ ကို ပြသပါ။
+လုပ်ဆောင်ချက် ယူ ကို p + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ယူ သည် လိပ်စာ o ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+o ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်ချက် ရှေ့ သည် ကိန်းပြည့် ၏ လိပ်စာ r ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
+r + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    let module = emit_text(text);
+    let found = ops(main_func(&module));
+    let at = found.iter().position(|op| op == "ptr_add 8").expect("a ptr_add 8");
+    assert_eq!(found[at + 1], "convert ptr");
+    assert_eq!(found[at + 2], "store_global g2");
+    let steps = found.iter().filter(|op| *op == "ptr_add 8").count();
+    assert_eq!(steps, 4);
+    let ret = ops(&module.funcs[1]);
+    let at = ret.iter().position(|op| op == "ptr_add 8").expect("a ptr_add 8");
+    assert_eq!(ret[at + 1], "convert ptr");
+}

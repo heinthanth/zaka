@@ -145,3 +145,22 @@ fn the_word_after_a_verb_is_recorded()
     };
     assert_eq!(rhs.next, NextCtx::Other);
 }
+
+#[test]
+fn pointer_expressions()
+{
+    assert_eq!(expr("x ၏ လိပ်စာ"), "(addr x)");
+    assert_eq!(expr("p ၏ တန်ဖိုး"), "(deref p)");
+    assert_eq!(expr("pp ၏ တန်ဖိုး ၏ တန်ဖိုး"), "(deref (deref pp))");
+    assert_eq!(expr("p + i ၏ တန်ဖိုး"), "(deref (+ p i))");
+    assert_eq!(expr("*p + i"), "(+ (deref p) i)");
+    assert_eq!(expr("&x"), "(addr x)");
+    assert_eq!(expr("p * ၂"), "(* p 2)");
+    assert_eq!(expr("ဗလာ"), "null");
+    assert_eq!(expr("ကိန်းပြည့် ၏ အရွယ်အစား * ၁၀"), "(* (sizeof isize) 10)");
+    assert_eq!(expr("၃၂ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ၏ အရွယ်အစား"), "(sizeof *i32)");
+    assert_eq!(expr("p ကို ၃၂ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast p *i32)");
+    assert_eq!(expr("၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ ၏ အရွယ်အစား"), "(sizeof *i32)");
+    assert_eq!(expr("ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ၏ အရွယ်အစား"), "(sizeof **isize)");
+    assert_eq!(expr("p ကို ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast p *i32)");
+}

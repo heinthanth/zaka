@@ -8,7 +8,9 @@ use strum::IntoStaticStr;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::State;
+use zaka_vm::mem::Mem;
 use zaka_vm::print::text;
+use zaka_vm::trap::hex;
 use zakac_codegen::bc;
 use zakac_i18n::t;
 use zakac_ir_builder::value::Value;
@@ -297,7 +299,8 @@ fn temp_rows(values: &[Value]) -> Vec<ValueRow>
     values.iter().enumerate().map(row).collect()
 }
 
-/// A machine at the start of the ops, with the op budget of the explorer.
+/// A machine at the start of the ops, with the op and heap budgets of the
+/// explorer.
 ///
 /// # Arguments
 ///
@@ -308,27 +311,55 @@ fn temp_rows(values: &[Value]) -> Vec<ValueRow>
 /// The machine.
 fn machine_for(ops: &bc::Module) -> Machine
 {
-    Machine::new(ops.clone(), RunOptions::builder().max_steps(RUN_STEPS).build())
+    let options = RunOptions::builder().max_steps(RUN_STEPS).max_heap(16 << 20).build();
+    Machine::new(ops.clone(), options)
+}
+
+/// The text of a slot value. An addressed slot holds the address of its
+/// cell, so it shows the value in the cell, then ` @` and the address; a
+/// cell that no longer holds a value shows the address alone.
+///
+/// # Arguments
+///
+/// * `mem` - The address space of the machine.
+/// * `slot` - The slot.
+/// * `v` - Its value.
+///
+/// # Returns
+///
+/// The text.
+fn slot_text(mem: &Mem, slot: &bc::Slot, v: Value) -> String
+{
+    let cell = v.as_ptr().filter(|_| slot.addressed);
+    let Some(addr) = cell
+    else
+    {
+        return text(v);
+    };
+    let held = mem.load(addr, slot.kind).ok();
+    held.map_or_else(|| hex(addr), |held| format!("{} @{}", text(held), hex(addr)))
 }
 
 /// Rows of slots and their values.
 ///
 /// # Arguments
 ///
+/// * `mem` - The address space of the machine, which holds the values of
+///   addressed slots.
 /// * `slots` - The slots.
 /// * `values` - The values, in slot order.
 ///
 /// # Returns
 ///
 /// The rows.
-fn value_rows(slots: &[bc::Slot], values: &[Value]) -> Vec<ValueRow>
+fn value_rows(mem: &Mem, slots: &[bc::Slot], values: &[Value]) -> Vec<ValueRow>
 {
     let row = |(i, (s, v)): (usize, (&bc::Slot, &Value))| {
         ValueRow::builder()
             .index(i as u32)
             .name(s.name.as_str())
             .kind(s.kind.name())
-            .value(text(*v))
+            .value(slot_text(mem, s, *v))
             .build()
     };
     slots.iter().zip(values).enumerate().map(row).collect()
@@ -689,7 +720,7 @@ impl Session
             let slots = &m.module().funcs[call.func as usize].locals;
             FrameBlock::builder()
                 .start(starts[i])
-                .slots(value_rows(slots, m.locals(i)))
+                .slots(value_rows(m.mem(), slots, m.locals(i)))
                 .temps(temp_rows(temps_of(m, i)))
                 .call(call)
                 .build()
@@ -733,7 +764,7 @@ impl Session
             return Vec::new();
         };
         let slots = &m.module().funcs[frame.func as usize].locals;
-        value_rows(slots, m.locals(self.viewed))
+        value_rows(m.mem(), slots, m.locals(self.viewed))
     }
 
     /// The global slots.
@@ -748,7 +779,7 @@ impl Session
         {
             return Vec::new();
         };
-        value_rows(&m.module().globals, m.globals())
+        value_rows(m.mem(), &m.module().globals, m.globals())
     }
 
     /// The operand stack, top first, each value with its kind.

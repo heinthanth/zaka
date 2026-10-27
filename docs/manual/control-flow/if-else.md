@@ -9,7 +9,7 @@ An `if` statement runs its body only when a condition is true. In Zaka: "if *con
 then *do this*": `အကယ်၍ <condition> လျှင် <body>`.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၅ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၅ ဖြစ်ပါစေ။
 
 // if age is less than 18, then ...
 အကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် "ကလေး" ဟု ပြသပါ။
@@ -39,7 +39,7 @@ expression, or a boolean variable. With a boolean variable, use `ဖြစ်လ
 `သို့မဟုတ်ပါက` ("otherwise") gives a body to run when the condition is false:
 
 ```zaka
-ကိန်းရှင် အောင် သည် မှန်မှားတန်ဖိုး မမှန် ဖြစ်ပါစေ။     // passed?
+ကိန်းရှင် အောင် သည် မှန်မှားတန်ဖိုး ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။     // passed?
 အကယ်၍ အောင် ဖြစ်လျှင် "အောင်ပါသည်" ဟု ပြသပါ။
 သို့မဟုတ်ပါက "ကျပါသည်" ဟု ပြသပါ။
 ```
@@ -54,7 +54,7 @@ expression, or a boolean variable. With a boolean variable, use `ဖြစ်လ
 from top to bottom and runs the **first** body whose condition is true:
 
 ```zaka
-ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ၇၃ ဖြစ်ပါစေ။
+ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 အကယ်၍ အမှတ် သည် ၈၀ အောက် မငယ်လျှင် "အဆင့် က" ဟု ပြသပါ။
 ထိုသို့မဟုတ်ဘဲ အမှတ် သည် ၆၀ အောက် မငယ်လျှင် "အဆင့် ခ" ဟု ပြသပါ။
 ထိုသို့မဟုတ်ဘဲ အမှတ် သည် ၄၀ အောက် မငယ်လျှင် "အဆင့် ဂ" ဟု ပြသပါ။
@@ -72,7 +72,7 @@ from top to bottom and runs the **first** body whose condition is true:
 To run several statements, make the body a block:
 
 ```zaka
-ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ၇၃ ဖြစ်ပါစေ။
+ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 အကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 "စုံကိန်း" ဟု ပြသပါ။
 အမှတ် / ၂ ကို ပြသပါ။
@@ -106,7 +106,7 @@ error[ZK0215]: a single-statement block cannot be another conditional
 Put the inner `if` in a block instead:
 
 ```zaka
-ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ၉၅ ဖြစ်ပါစေ။
+ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၉၅ ဖြစ်ပါစေ။
 အကယ်၍ အမှတ် သည် ၄၀ အောက် မငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 "အောင်" ဟု ပြသပါ။
 အကယ်၍ အမှတ် သည် ၉၀ ထက် ကြီးလျှင် "ဂုဏ်ထူး" ဟု ပြသပါ။     // distinction

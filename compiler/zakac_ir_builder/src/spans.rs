@@ -2,6 +2,7 @@ use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_span::span::Span;
 
+use crate::ir::Dest;
 use crate::ir::Expr;
 use crate::ir::ExprNode;
 use crate::ir::Module;
@@ -101,7 +102,36 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             do_for!(a in args, expr(a, f));
             *span = f(*span);
         }
+        Stmt::Store { addr, value, span } =>
+        {
+            expr(addr, f);
+            expr(value, f);
+            *span = f(*span);
+        }
+        Stmt::Alloc { dest: d, count, span, .. }
+        | Stmt::Resize { dest: d, count, span, .. } =>
+        {
+            dest(d, f);
+            expr(count, f);
+            *span = f(*span);
+        }
+        Stmt::Free { dest: d, span } =>
+        {
+            dest(d, f);
+            *span = f(*span);
+        }
     }
+}
+
+/// Move the spans of a heap destination.
+///
+/// # Arguments
+///
+/// * `d` - The destination.
+/// * `f` - Maps one span.
+fn dest(d: &mut Dest, f: &impl Fn(Span) -> Span)
+{
+    do_if!(let Dest::Mem(addr) = d, expr(addr, f));
 }
 
 /// Move the spans of an expression.
@@ -115,14 +145,18 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
     e.span = f(e.span);
     match &mut e.node
     {
-        ExprNode::Const(_) | ExprNode::Read(_) => (),
-        ExprNode::Prefix { operand, .. } | ExprNode::Convert { operand, .. } =>
-        {
-            expr(operand, f)
-        }
+        ExprNode::Const(_)
+        | ExprNode::Read(_)
+        | ExprNode::AddrOf(_)
+        | ExprNode::SizeOf(_) => (),
+        ExprNode::Prefix { operand, .. }
+        | ExprNode::Convert { operand, .. }
+        | ExprNode::Load { addr: operand } => expr(operand, f),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
-        | ExprNode::Logic { lhs, rhs, .. } =>
+        | ExprNode::Logic { lhs, rhs, .. }
+        | ExprNode::PtrAdd { base: lhs, offset: rhs }
+        | ExprNode::PtrSub { lhs, rhs } =>
         {
             expr(lhs, f);
             expr(rhs, f);

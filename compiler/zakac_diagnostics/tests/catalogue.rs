@@ -82,7 +82,6 @@ fn parser_constructors_render_messages()
         p::float_for_int_kind(span),
         p::bad_literal_kind(span),
         p::str_outside_print(span),
-        p::assign_target(span),
         p::const_loop(span),
         p::unmatched_block_close(span),
     ]
@@ -173,4 +172,26 @@ fn fold_constructors_render_messages()
         assert!(diag.is_error());
         assert!(diag.code.id().starts_with("ZK06"), "{}", diag.code);
     }
+}
+
+#[test]
+fn pointer_constructors_render_messages()
+{
+    use zakac_diagnostics::kinds as k;
+    use zakac_span::span::Span;
+
+    let span = Span::PLACEHOLDER;
+    assert_eq!(k::not_a_place(span).code, Code::NotAPlace);
+    assert!(k::no_address(span, "a literal").message.contains("a literal"));
+    assert!(k::fixed_address(span, "က").message.contains("က"));
+    assert!(k::not_a_pointer(span, "isize").message.contains("isize"));
+    assert!(k::opaque_pointer(span).help.is_some());
+    assert!(k::pointer_operator(span, "*").message.contains("\"*\""));
+    assert!(k::pointer_kinds_differ(span, "*i8", "*isize").message.contains("*i8"));
+    assert!(k::heap_needs_pointer(span, "bool").message.contains("bool"));
+    let warned = k::local_address_returned(span, "x");
+    assert_eq!(warned.code, Code::LocalAddressReturned);
+    assert!(!warned.is_error());
+    assert!(k::condition_not_bool(span, "*isize").help.is_some());
+    assert!(k::condition_not_bool(span, "isize").help.is_none());
 }

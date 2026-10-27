@@ -237,7 +237,7 @@ pub enum Kw
     Step,
     /// `အနေဖြင့်`
     CountAs,
-    /// `ဖြစ်ပြီး`
+    /// `ဖြစ်ပြီး`, `ဖြစ်ကာ`
     Being,
     /// `ပြီးလျှင်`
     WhenDone,
@@ -299,7 +299,7 @@ pub enum Kw
     CallHead,
     /// `အောက်ပါ`
     Following,
-    /// `လုပ်ဆောင်မည်`
+    /// `လုပ်ဆောင်မည်` or `လုပ်ဆောင်မယ်`
     WillDo,
     /// `လုပ်ဆောင်ကာ`
     DoAnd,
@@ -333,6 +333,12 @@ pub enum Kw
     BlockOpen,
     /// `အောက်ပါ တို့ကို လုပ်ဆောင်မည်`
     FnOpen,
+    /// `နေရာယူ၍ လိပ်စာ ကို`
+    AllocTarget,
+    /// `လိပ်စာရှိ ကို`
+    ResizeHead,
+    /// `လိပ်စာရှိ မင်မိုရီ ကို`
+    FreeHead,
     /// `အောက်ပါ တို့ကို လုပ်ဆောင်ကာ`; a result clause follows.
     FnOpenRet,
     /// `လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?`
@@ -345,7 +351,7 @@ pub enum Kw
     Assign,
     /// `ပြန်ပေးပါ`
     Return,
-    /// `ပြန်ပေးမည်`
+    /// `ပြန်ပေးမည်` or `ပြန်ပေးမယ်`
     WillReturn,
     /// `လုပ်ဆောင်ပါ`
     Call,
@@ -417,6 +423,34 @@ pub enum Kw
     Negate,
     /// `မှတ်ချက်`, when it is part of a longer word made of reserved words.
     Note,
+
+    // pointers and the heap
+    /// `လိပ်စာ`
+    Address,
+    /// `ဗလာ`
+    Null,
+    /// `အရွယ်အစား`
+    SizeOf,
+    /// `မင်မိုရီ` or `မှတ်ဉာဏ်`
+    Mem,
+    /// `ဘိုက်စာ`
+    Octets,
+    /// `ခုစာ`
+    Items,
+    /// `နေရာယူ၍`
+    TakeSpace,
+    /// `တွင်`
+    At,
+    /// `သိမ်းထားမည်` or `သိမ်းထားမယ်`
+    WillKeep,
+    /// `လိပ်စာရှိ`
+    AtAddress,
+    /// `ဖြစ်အောင်`
+    SoThat,
+    /// `နေရာအချဲ့အချုံ့လုပ်မည်` or `နေရာအချဲ့အချုံ့လုပ်မယ်`
+    WillResize,
+    /// `ပြန်လည်စွန့်လွှတ်မည်` or `ပြန်လည်စွန့်လွှတ်မယ်`
+    WillRelease,
 }
 
 impl Kw

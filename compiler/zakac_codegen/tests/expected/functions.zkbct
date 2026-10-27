@@ -14,12 +14,16 @@ module:
     locals:
     - name: က
       kind: isize
+      addressed: false
     - name: ခ
       kind: isize
+      addressed: false
     - name: ဂ
       kind: isize
+      addressed: false
     - name: ရလဒ်
       kind: isize
+      addressed: false
     code:
     - push: 0:isize
     - store_local: 3
@@ -88,10 +92,13 @@ module:
     locals:
     - name: က
       kind: f32
+      addressed: false
     - name: ခ
       kind: i8
+      addressed: false
     - name: ရလဒ်
       kind: f64
+      addressed: false
     code:
     - push: 0.0:f64
     - store_local: 2

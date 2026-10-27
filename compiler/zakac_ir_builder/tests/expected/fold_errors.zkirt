@@ -10,12 +10,14 @@ module:
     span:
       lo: 124
       hi: 127
+    addressed: false
   - name: န
     kind: usize
     access: const
     span:
       lo: 335
       hi: 338
+    addressed: false
   funcs: []
   main:
   - set:

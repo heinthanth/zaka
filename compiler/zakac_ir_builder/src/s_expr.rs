@@ -1,8 +1,10 @@
 use zakac_ast::s_expr::ToSexpr;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::kind::DataKind;
 
 use crate::ir::Access;
+use crate::ir::Dest;
 use crate::ir::Expr;
 use crate::ir::ExprNode;
 use crate::ir::Func;
@@ -74,6 +76,19 @@ impl ToSexpr for Stmt
                 list("return", value.iter().map(ToSexpr::to_sexpr))
             }
             Stmt::Call { name, args, .. } => call_sexpr(name, args),
+            Stmt::Store { addr, value, .. } =>
+            {
+                list("store", [addr.to_sexpr(), value.to_sexpr()])
+            }
+            Stmt::Alloc { dest, count, unit, .. } =>
+            {
+                heap_sexpr("alloc", dest, count, *unit)
+            }
+            Stmt::Resize { dest, count, unit, .. } =>
+            {
+                heap_sexpr("resize", dest, count, *unit)
+            }
+            Stmt::Free { dest, .. } => list("free", [dest_sexpr(dest)]),
         }
     }
 }
@@ -112,6 +127,17 @@ impl ToSexpr for Expr
                 list(head, [self.kind.name(), operand.to_sexpr()])
             }
             ExprNode::Call { name, args, .. } => call_sexpr(name, args),
+            ExprNode::AddrOf(place) => list("addr", [place.to_string()]),
+            ExprNode::Load { addr } => list("load", [addr.to_sexpr()]),
+            ExprNode::PtrAdd { base, offset } =>
+            {
+                list("ptr+", [base.to_sexpr(), offset.to_sexpr()])
+            }
+            ExprNode::PtrSub { lhs, rhs } =>
+            {
+                list("ptr-", [lhs.to_sexpr(), rhs.to_sexpr()])
+            }
+            ExprNode::SizeOf(kind) => list("sizeof", [kind.name()]),
         }
     }
 }
@@ -255,6 +281,42 @@ fn loop_sexpr(init: &[Stmt], cond: &Expr, update: &[Stmt], block: &[Stmt]) -> St
     let update = (!update.is_empty()).then(|| stmt_list("update", update));
     let parts = init.into_iter().chain([cond.to_sexpr()]).chain(update);
     list("loop", parts.chain([stmt_list("block", block)]))
+}
+
+/// `(head dest count unit)`, without the unit when none is written.
+///
+/// # Arguments
+///
+/// * `head` - `alloc` or `resize`.
+/// * `dest` - Where the address lives.
+/// * `count` - The element count.
+/// * `unit` - The element kind, when written.
+///
+/// # Returns
+///
+/// The form.
+fn heap_sexpr(head: &str, dest: &Dest, count: &Expr, unit: Option<DataKind>) -> String
+{
+    let parts = [dest_sexpr(dest), count.to_sexpr()];
+    list(head, parts.into_iter().chain(unit.map(DataKind::name)))
+}
+
+/// A slot as its place, or `(mem addr)` for the cell at an address.
+///
+/// # Arguments
+///
+/// * `dest` - The destination.
+///
+/// # Returns
+///
+/// The form.
+fn dest_sexpr(dest: &Dest) -> String
+{
+    match dest
+    {
+        Dest::Slot(place) => place.to_string(),
+        Dest::Mem(addr) => list("mem", [addr.to_sexpr()]),
+    }
 }
 
 /// `(call name arg…)`

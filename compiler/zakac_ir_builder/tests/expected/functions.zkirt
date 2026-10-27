@@ -16,24 +16,28 @@ module:
       span:
         lo: 485
         hi: 488
+      addressed: false
     - name: ခ
       kind: isize
       access: var
       span:
         lo: 523
         hi: 526
+      addressed: false
     - name: ဂ
       kind: isize
       access: var
       span:
         lo: 561
         hi: 564
+      addressed: false
     - name: ရလဒ်
       kind: isize
       access: var
       span:
         lo: 386
         hi: 443
+      addressed: false
     block:
     - set:
         place: l3
@@ -183,18 +187,21 @@ module:
       span:
         lo: 1216
         hi: 1219
+      addressed: false
     - name: ခ
       kind: i8
       access: var
       span:
         lo: 1268
         hi: 1271
+      addressed: false
     - name: ရလဒ်
       kind: f64
       access: var
       span:
         lo: 1139
         hi: 1163
+      addressed: false
     block:
     - set:
         place: l2

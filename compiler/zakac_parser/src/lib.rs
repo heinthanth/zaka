@@ -3,6 +3,7 @@ mod clause;
 pub mod cli;
 mod cursor;
 pub mod describe;
+mod heap;
 mod kind;
 mod literal;
 mod logical;

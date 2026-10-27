@@ -56,6 +56,21 @@ fn declarations()
 }
 
 #[test]
+fn declarations_with_a_value_clause()
+{
+    let age = "ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။";
+    assert_eq!(stmt(age), "(var အသက် isize 18)");
+    let spaced = "ကိန်းသေ ပိုင် သည် ဒဿမကိန်း ဖြစ်၍ တန်ဖိုး သည် ၃.၁၄ ဖြစ်ပါစေ။";
+    assert_eq!(stmt(spaced), "(const ပိုင် f64 3.14)");
+    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ဖြစ်ပါစေ။";
+    assert_eq!(stmt(clause), "(var က isize (add ခ ဂ))");
+    let adult = "ကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီး ဖြစ်ပါစေ။";
+    assert_eq!(stmt(adult), "(var ကြီးသူ bool (gt အသက် 18))");
+    let bare = "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ ၅ ဖြစ်ပါစေ။";
+    assert_eq!(codes(bare), [Code::ExpectedToken]);
+}
+
+#[test]
 fn assignments()
 {
     assert_eq!(stmt("အသက် ကို ၂၄ ဟု ထားပါ။"), "(set အသက် 24)");
@@ -112,6 +127,12 @@ fn loops()
     let want =
         "(for ကိန်း isize 0 (lt ကိန်း 10) (block (print ကိန်း)) then (set ကိန်း (+ ကိန်း 1)))";
     assert_eq!(stmt(generic), want);
+    let clause = "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ \
+                  အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+ကိန်း ကို ပြသပါ။
+ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    assert_eq!(stmt(clause), want);
 }
 
 #[test]
@@ -242,4 +263,36 @@ fn block_errors_do_not_leak()
 fn unclosed_block_reports_the_end_of_input()
 {
     assert_eq!(codes("အောက်ပါတို့ကို လုပ်ဆောင်ပါ။ က ကို ပြသပါ။"), [Code::ExpectedToken]);
+}
+
+#[test]
+fn pointer_declarations_and_places()
+{
+    assert_eq!(stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။"), "(var p *isize)");
+    assert_eq!(stmt("ကိန်းရှင် pp သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။"), "(var pp **isize)");
+    assert_eq!(stmt("ကိန်းရှင် b သည် ၈ ဘစ် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။"), "(var b *i8)");
+    assert_eq!(stmt("ကိန်းရှင် q သည် လိပ်စာ ဖြစ်ပါစေ။"), "(var q ptr)");
+    assert_eq!(stmt("ကိန်းရှင် qq သည် လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။"), "(var qq *ptr)");
+    assert_eq!(
+        stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
+        "(var p *isize (addr x))"
+    );
+    assert_eq!(
+        stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
+        "(var p *isize (addr x))"
+    );
+    assert_eq!(stmt("p ၏ တန်ဖိုး ကို ၅ ဟု ထားပါ။"), "(set (deref p) 5)");
+    assert_eq!(stmt("*p ကို *p + ၁ ဟု ထားပါ။"), "(set (deref p) (+ (deref p) 1))");
+    assert_eq!(stmt("၅ ကို ၆ ဟု ထားပါ။"), "(set 5 6)"); // the checker rejects it, not the parser
+}
+
+#[test]
+fn pointer_kinds_keep_the_older_spelling()
+{
+    assert_eq!(stmt("ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။"), "(var p *isize)");
+    assert_eq!(stmt("ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။"), "(var pp **isize)");
+    assert_eq!(
+        stmt("ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
+        "(var p *isize (addr x))"
+    );
 }

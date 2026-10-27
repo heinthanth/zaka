@@ -7,16 +7,22 @@ module:
   globals:
   - name: အသက်
     kind: isize
+    addressed: false
   - name: ပိုင်
     kind: f64
+    addressed: false
   - name: ကြီးသူ
     kind: bool
+    addressed: false
   - name: ဘိုက်
     kind: u8
+    addressed: false
   - name: စာ
     kind: char
+    addressed: false
   - name: အသက်
     kind: i16
+    addressed: false
   texts:
   - ok
   funcs:

@@ -126,6 +126,12 @@ pub enum VerbOp
     Assign,
     /// `ရလဒ်အဖြစ် ပြန်ပေးပါ`
     Return,
+    /// `၏ လိပ်စာ`: the address of a place.
+    #[strum(serialize = "addr")]
+    AddrOf,
+    /// `၏ တန်ဖိုး`: the value an address points at.
+    #[strum(serialize = "deref")]
+    Deref,
 }
 
 /// One row of the valence table: a verb, the particles its operands hold,
@@ -182,6 +188,8 @@ pub static VERBS: &[Verb] = &[
     row(Kw::Print, VerbOp::Print, &[Slot::KoOrHu], true, false),
     row(Kw::Assign, VerbOp::Assign, &[Slot::Ko, Slot::Hu], true, false),
     row(Kw::ReturnValue, VerbOp::Return, &[Slot::Ko], true, false),
+    row(Kw::Address, VerbOp::AddrOf, &[Slot::Ei], false, false),
+    row(Kw::Value, VerbOp::Deref, &[Slot::Ei], false, false),
 ];
 
 /// Find the valence table row of a verb token.

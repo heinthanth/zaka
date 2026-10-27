@@ -43,3 +43,15 @@ fn quotes_escape_control_characters()
     assert_eq!(quote("a\"b\\c\nd\te\u{7}"), "\"a\\\"b\\\\c\\nd\\te\\u{7}\"");
     assert_eq!(quote("မင်္ဂလာ"), "\"မင်္ဂလာ\"");
 }
+
+#[test]
+fn heap_ops_list_their_operands()
+{
+    let out = listing(&emit_text(
+        "ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် \
+         သိမ်းထားမည်။\np ၏ တန်ဖိုး ကို ပြသပါ။",
+    ));
+    assert!(out.contains("globals\n  g0 p *isize\n"), "{out}");
+    assert!(out.contains("alloc 8"), "{out}");
+    assert!(out.contains("load isize"), "{out}");
+}

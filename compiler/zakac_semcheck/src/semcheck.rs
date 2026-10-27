@@ -3,8 +3,10 @@ use std::collections::BTreeMap;
 use bon::Builder;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::NodeId;
 use zakac_ast::expr::PrefixOp;
+use zakac_ast::stmt::AllocStmt;
 use zakac_ast::stmt::AssignStmt;
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::BreakStmt;
@@ -13,15 +15,19 @@ use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
 use zakac_ast::stmt::FnDecl;
+use zakac_ast::stmt::FreeStmt;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::PrintArg;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::Program;
+use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::ReturnStmt;
+use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::WhileStmt;
+use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
 use zakac_diagnostics::Diagnostic;
@@ -34,6 +40,7 @@ use zakac_rust_sugars::tern;
 
 use crate::collect::collect_fns;
 use crate::kind::DataKind;
+use crate::place::place_of;
 use crate::scope::Access;
 use crate::scope::Binding;
 use crate::scope::FnSigs;
@@ -131,6 +138,10 @@ pub(crate) struct Checker
     pub loop_depth: u32,
     /// The function around the current statement.
     pub func: Option<FnCtx>,
+    /// The index of the scope the current function opens; names in it or
+    /// deeper are locals of the function.
+    #[builder(default)]
+    pub fn_scope: usize,
     /// Bit count of the platform-sized integer kinds.
     pub platform: u16,
 }
@@ -334,6 +345,97 @@ impl Checker
         self.report(kd::kind_mismatch(step.span(), &kind.name(), &found.name()));
     }
 
+    /// Resolve the target of an assignment or a heap statement.
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - The target.
+    ///
+    /// # Returns
+    ///
+    /// The kind of the place, or `None` after an error or for an unknown
+    /// kind.
+    fn place_kind(&mut self, target: &Expr) -> Option<DataKind>
+    {
+        let Some(place) = place_of(target)
+        else
+        {
+            self.report(kd::not_a_place(target.span()));
+            return None;
+        };
+        let writable = tern!(let Expr::Name(n) = place, self.check_writable(n), true);
+        ret_if!(!writable, None);
+        self.infer(target, None)
+    }
+
+    /// Report a name that cannot be assigned: undeclared, a constant or a
+    /// counted-loop variable.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The name.
+    ///
+    /// # Returns
+    ///
+    /// `false` when the name is not declared.
+    fn check_writable(&mut self, n: &NameExpr) -> bool
+    {
+        let Some(binding) = self.scopes.lookup(&n.name)
+        else
+        {
+            self.report(rd::undeclared_name(n.span, &n.name));
+            return false;
+        };
+        do_if!(let Some(diag) = access_error(binding.access, n), self.report(diag));
+        true
+    }
+
+    /// Check the target of a heap statement: a place of a pointer kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - The target.
+    fn heap_target(&mut self, target: &Expr)
+    {
+        let Some(kind) = self.place_kind(target)
+        else
+        {
+            return;
+        };
+        ret_if!(kind.is_ptr());
+        self.report(kd::heap_needs_pointer(target.span(), &kind.name()));
+    }
+
+    /// Check the size operand of a heap statement.
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - The size.
+    fn heap_size(&mut self, size: &SizeArg)
+    {
+        self.expect_kind(&size.count, Some(DataKind::USIZE));
+    }
+
+    /// Warn when a returned value is the address of a local of the function.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The returned value.
+    fn check_local_address(&mut self, value: &Expr)
+    {
+        let Some(name) = addressed_name(value)
+        else
+        {
+            return;
+        };
+        let local =
+            self.scopes.depth_of(&name.name).is_some_and(|d| d >= self.fn_scope);
+        do_if!(
+            local,
+            self.report(kd::local_address_returned(value.span(), &name.name))
+        );
+    }
+
     /// Run `f` with one more loop around it.
     ///
     /// # Arguments
@@ -370,6 +472,27 @@ fn non_positive_literal(e: &Expr) -> bool
     }
 }
 
+/// The variable whose address an expression takes.
+///
+/// # Arguments
+///
+/// * `e` - The expression.
+///
+/// # Returns
+///
+/// The variable of an address-of whose place is a variable, else `None`.
+fn addressed_name(e: &Expr) -> Option<&NameExpr>
+{
+    let operand = match e
+    {
+        Expr::Group(n) => return addressed_name(&n.inner),
+        Expr::Prefix(n) if n.op == PrefixOp::AddrOf => n.rhs.as_ref(),
+        Expr::Verb(n) if n.op == VerbOp::AddrOf => n.args.first()?,
+        _ => return None,
+    };
+    tern!(let Some(Expr::Name(n)) = place_of(operand), Some(n), None)
+}
+
 /// The diagnostic for assigning to a name that does not allow it.
 ///
 /// # Arguments
@@ -380,7 +503,7 @@ fn non_positive_literal(e: &Expr) -> bool
 /// # Returns
 ///
 /// The diagnostic, or `None` for a variable.
-fn access_error(access: Access, target: &Ident) -> Option<Diagnostic>
+fn access_error(access: Access, target: &NameExpr) -> Option<Diagnostic>
 {
     match access
     {
@@ -404,16 +527,23 @@ impl Visitor for Checker
 
     fn visit_assign(&mut self, n: &AssignStmt)
     {
-        let Some(binding) = self.scopes.lookup(&n.target.name)
-        else
-        {
-            self.report(rd::undeclared_name(n.target.span, &n.target.name));
-            self.infer(&n.value, None);
-            return;
-        };
-        do_if!(let Some(diag) = access_error(binding.access, &n.target), self.report(diag));
-        self.expect_kind(&n.value, binding.kind);
+        let want = self.place_kind(&n.target);
+        self.expect_kind(&n.value, want);
     }
+
+    fn visit_alloc(&mut self, n: &AllocStmt)
+    {
+        self.heap_size(&n.size);
+        self.heap_target(&n.target);
+    }
+
+    fn visit_resize(&mut self, n: &ResizeStmt)
+    {
+        self.heap_target(&n.target);
+        self.heap_size(&n.size);
+    }
+
+    fn visit_free(&mut self, n: &FreeStmt) { self.heap_target(&n.target) }
 
     fn visit_print(&mut self, n: &PrintStmt)
     {
@@ -479,11 +609,13 @@ impl Visitor for Checker
         let ctx = FnCtx::builder().name(n.name.name.clone()).maybe_ret(ret).build();
         self.func = Some(ctx);
         self.scopes.push();
+        let outer = std::mem::replace(&mut self.fn_scope, self.scopes.count() - 1);
         do_for!(p in &n.params, self.declare_param(p));
         let result = Ident::builder().name(RESULT_NAME).span(n.name.span).build();
         do_if!(ret.is_some(), let _ = self.declare_quiet(&result, ret, Access::Var));
         self.visit_stmts(&n.block.stmts);
         self.scopes.pop();
+        self.fn_scope = outer;
         self.func = None;
         self.loop_depth = depth;
     }
@@ -508,7 +640,11 @@ impl Visitor for Checker
             {
                 self.report(rd::missing_return_value(n.span, &func.name, &k.name()))
             }
-            (Some(k), Some(v)) => self.expect_kind(v, Some(k)),
+            (Some(k), Some(v)) =>
+            {
+                self.expect_kind(v, Some(k));
+                self.check_local_address(v);
+            }
             (None, None) => (),
         }
     }

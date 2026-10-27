@@ -651,6 +651,7 @@ program:
               base: int
               bits: null
               signed: null
+              depth: 0
               span:
                 lo: 1456
                 hi: 1486
@@ -667,10 +668,12 @@ program:
         hi: 1581
   - assign:
       target:
-        name: အသက်
-        span:
-          lo: 1582
-          hi: 1594
+        name:
+          id: 65
+          name: အသက်
+          span:
+            lo: 1582
+            hi: 1594
       value:
         verb:
           id: 68
@@ -717,6 +720,7 @@ program:
                   base: int
                   bits: 8
                   signed: false
+                  depth: 0
                   span:
                     lo: 1732
                     hi: 1804
@@ -728,6 +732,7 @@ program:
               base: float
               bits: null
               signed: null
+              depth: 0
               span:
                 lo: 1818
                 hi: 1842

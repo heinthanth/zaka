@@ -13,7 +13,7 @@ three ways to start a comment. Each runs to the end of its line.
 /// Or with three slashes, often used to describe what comes next.
 မှတ်ချက် Or with the Burmese word for "note".
 
-ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။ // after a statement
+ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။ // after a statement
 အရေအတွက် ကို ပြသပါ။ မှတ်ချက် also after a statement
 
 // A comment can switch a line off without deleting it:

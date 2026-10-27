@@ -17,6 +17,7 @@ use zakac_span::span::Span;
 
 use crate::ir::Access;
 use crate::ir::CmpOp;
+use crate::ir::Dest;
 use crate::ir::Expr;
 use crate::ir::ExprNode;
 use crate::ir::Func;
@@ -286,6 +287,12 @@ impl Lowerer<'_>
                 let name = n.callee.name.clone();
                 out.push(Stmt::Call { func, name, args, span: n.span });
             }
+            st::Stmt::Alloc(n) => out.push(self.alloc(n)),
+            st::Stmt::Resize(n) => out.push(self.resize(n)),
+            st::Stmt::Free(n) =>
+            {
+                out.push(Stmt::Free { dest: self.dest(&n.target), span: n.span })
+            }
         }
     }
 
@@ -323,10 +330,11 @@ impl Lowerer<'_>
     -> Expr
     {
         ret_if!(let Some(init) = init, self.coerce(init, kind));
-        constant(Value::default_of(kind), span)
+        default_constant(kind, span)
     }
 
-    /// Lower an assignment.
+    /// Lower an assignment: a store to a slot, or a store at an address
+    /// for a dereference target.
     ///
     /// # Arguments
     ///
@@ -337,9 +345,94 @@ impl Lowerer<'_>
     /// The store.
     fn assign(&mut self, n: &st::AssignStmt) -> Stmt
     {
-        let place = self.lookup(&n.target.name);
-        let value = self.coerce(&n.value, self.slot_kind(place));
-        Stmt::Set { place, value, span: n.span }
+        let span = n.span;
+        match self.dest(&n.target)
+        {
+            Dest::Slot(place) =>
+            {
+                let want = self.slot_kind(place);
+                let value = self.coerce(&n.value, want);
+                Stmt::Set { place, value, span }
+            }
+            Dest::Mem(addr) =>
+            {
+                let value = self.coerce(&n.value, self.kind_of(&n.target));
+                Stmt::Store { addr, value, span }
+            }
+        }
+    }
+
+    /// Lower a place: a name to its slot, a dereference to the address it
+    /// reads.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The place.
+    ///
+    /// # Returns
+    ///
+    /// The slot or the address.
+    ///
+    /// # Panics
+    ///
+    /// When the expression is not a place, which a clean check rules out.
+    fn dest(&mut self, e: &ast::Expr) -> Dest
+    {
+        ret_if!(let ast::Expr::Group(n) = e, self.dest(&n.inner));
+        ret_if!(let Some(ptr) = deref_operand(e), Dest::Mem(self.expr(ptr)));
+        let ast::Expr::Name(n) = e
+        else
+        {
+            panic!("expression {} is not a place", e.id().0);
+        };
+        Dest::Slot(self.lookup(&n.name))
+    }
+
+    /// Lower a heap allocation.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn alloc(&mut self, n: &st::AllocStmt) -> Stmt
+    {
+        let (count, unit) = self.size(&n.size);
+        let dest = self.dest(&n.target);
+        Stmt::Alloc { dest, count, unit, span: n.span }
+    }
+
+    /// Lower a heap reallocation.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn resize(&mut self, n: &st::ResizeStmt) -> Stmt
+    {
+        let dest = self.dest(&n.target);
+        let (count, unit) = self.size(&n.size);
+        Stmt::Resize { dest, count, unit, span: n.span }
+    }
+
+    /// Lower the size operand of a heap statement.
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - The operand.
+    ///
+    /// # Returns
+    ///
+    /// The count, as a `usize`, and the element kind when written.
+    fn size(&mut self, size: &st::SizeArg) -> (Expr, Option<DataKind>)
+    {
+        let count = self.coerce(&size.count, DataKind::USIZE);
+        (count, size.unit.as_ref().map(DataKind::from_ast))
     }
 
     /// The kind of a slot.
@@ -351,15 +444,26 @@ impl Lowerer<'_>
     /// # Returns
     ///
     /// Its kind.
-    fn slot_kind(&self, place: Place) -> DataKind
+    fn slot_kind(&mut self, place: Place) -> DataKind { self.slot(place).kind }
+
+    /// The slot at a place.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The place.
+    ///
+    /// # Returns
+    ///
+    /// The slot.
+    fn slot(&mut self, place: Place) -> &mut Slot
     {
         match place
         {
-            Place::Global(n) => self.globals[n as usize].kind,
+            Place::Global(n) => &mut self.globals[n as usize],
             Place::Local(n) =>
             {
-                let frame = self.frame.as_ref().expect("a local is inside a function");
-                frame.locals[n as usize].kind
+                let frame = self.frame.as_mut().expect("a local is inside a function");
+                &mut frame.locals[n as usize]
             }
         }
     }
@@ -551,7 +655,7 @@ impl Lowerer<'_>
     {
         let ident = ast::Ident::builder().name(RESULT_NAME).span(f.name.span).build();
         let place = self.declare(&ident, kind, Access::Var);
-        let value = constant(Value::default_of(kind), f.name.span);
+        let value = default_constant(kind, f.name.span);
         block.push(Stmt::Set { place, value, span: f.name.span });
         tern!(let Place::Local(n) = place, n, 0)
     }
@@ -611,6 +715,9 @@ impl Lowerer<'_>
     }
 
     /// Lower an expression and convert it to `want` when its kind differs.
+    /// A `ဗလာ` constant headed for a pointer kind takes `want` as its label
+    /// with no conversion; other addresses keep their own kind, which pointer
+    /// math reads its stride from, under an implicit conversion.
     ///
     /// # Arguments
     ///
@@ -625,11 +732,18 @@ impl Lowerer<'_>
         let lowered = self.expr(e);
         ret_if!(lowered.kind == want, lowered);
         let span = lowered.span;
+        let literal = matches!(lowered.node, ExprNode::Const(_));
+        let relabel = literal && lowered.kind.is_ptr() && want.is_ptr();
+        ret_if!(
+            relabel,
+            Expr::builder().kind(want).node(lowered.node).span(span).build()
+        );
         let node = ExprNode::Convert { operand: Box::new(lowered), implicit: true };
         Expr::builder().kind(want).node(node).span(span).build()
     }
 
-    /// Lower an expression with the kind the check recorded for it.
+    /// Lower an expression with the kind the check recorded for it; a
+    /// `ဗလာ` with no pointer kind around it is a `ptr`.
     ///
     /// # Arguments
     ///
@@ -640,7 +754,7 @@ impl Lowerer<'_>
     /// The expression.
     fn expr(&mut self, e: &ast::Expr) -> Expr
     {
-        let kind = self.kind_of(e);
+        let kind = concrete(self.kind_of(e));
         let node = match e
         {
             ast::Expr::Int(n) => ExprNode::Const(self.int_lit(n, kind, false)),
@@ -659,6 +773,8 @@ impl Lowerer<'_>
                 let (func, args) = self.call_parts(&n.callee, &n.args);
                 ExprNode::Call { func, name: n.callee.name.clone(), args }
             }
+            ast::Expr::Null(_) => ExprNode::Const(Value::NULL),
+            ast::Expr::SizeOf(n) => ExprNode::SizeOf(DataKind::from_ast(&n.kind)),
         };
         Expr::builder().kind(kind).node(node).span(e.span()).build()
     }
@@ -688,7 +804,8 @@ impl Lowerer<'_>
     }
 
     /// Lower a prefix operator. `-` before an integer literal without a
-    /// kind prefix becomes a negative constant.
+    /// kind prefix becomes a negative constant; `&` and `*` become address and
+    /// load nodes.
     ///
     /// # Arguments
     ///
@@ -714,6 +831,8 @@ impl Lowerer<'_>
             ast::PrefixOp::Neg => PrefixOp::Neg,
             ast::PrefixOp::BitNot => PrefixOp::BitNot,
             ast::PrefixOp::Not => PrefixOp::Not,
+            ast::PrefixOp::AddrOf => return self.addr_of(&n.rhs),
+            ast::PrefixOp::Deref => return self.load(&n.rhs),
         };
         prefix_node(op, self.expr(&n.rhs))
     }
@@ -762,7 +881,8 @@ impl Lowerer<'_>
     }
 
     /// Lower an arithmetic, bitwise or shift operation. Both operands take
-    /// the result kind, except a shift distance, which keeps its own.
+    /// the result kind, except a shift distance, which keeps its own. With
+    /// a pointer operand it is pointer arithmetic.
     ///
     /// # Arguments
     ///
@@ -778,13 +898,94 @@ impl Lowerer<'_>
         &mut self, op: InfixOp, lhs: &ast::Expr, rhs: &ast::Expr, kind: DataKind,
     ) -> ExprNode
     {
+        let ptr = self.kind_of(lhs).is_ptr() || self.kind_of(rhs).is_ptr();
+        ret_if!(ptr, self.ptr_arith(op, lhs, rhs));
         let lhs = self.coerce(lhs, kind);
         let shift = matches!(op, InfixOp::Shl | InfixOp::Shr);
         let rhs = tern!(shift, self.expr(rhs), self.coerce(rhs, kind));
         ExprNode::Infix { op, lhs: Box::new(lhs), rhs: Box::new(rhs) }
     }
 
-    /// Lower a comparison; both operands take their common kind.
+    /// Lower pointer arithmetic: a pointer and an integer move the pointer,
+    /// two pointers give their distance. The integer keeps its own kind,
+    /// except when it is subtracted, where it is negated as an `isize`.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The operator, `+` or `-`.
+    /// * `lhs` - The left operand.
+    /// * `rhs` - The right operand.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn ptr_arith(&mut self, op: InfixOp, lhs: &ast::Expr, rhs: &ast::Expr) -> ExprNode
+    {
+        let both = self.kind_of(lhs).is_ptr() && self.kind_of(rhs).is_ptr();
+        ret_if!(both, ptr_sub(self.expr(lhs), self.expr(rhs)));
+        let (base, offset) = tern!(self.kind_of(lhs).is_ptr(), (lhs, rhs), (rhs, lhs));
+        let base = Box::new(self.expr(base));
+        let forward = op == InfixOp::Add;
+        let offset = tern!(forward, self.expr(offset), self.negated(offset));
+        ExprNode::PtrAdd { base, offset: Box::new(offset) }
+    }
+
+    /// An integer converted to `isize` and negated.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The integer.
+    ///
+    /// # Returns
+    ///
+    /// The negation.
+    fn negated(&mut self, e: &ast::Expr) -> Expr
+    {
+        let operand = self.coerce(e, DataKind::ISIZE);
+        let span = operand.span;
+        let node = prefix_node(PrefixOp::Neg, operand);
+        Expr::builder().kind(DataKind::ISIZE).node(node).span(span).build()
+    }
+
+    /// Lower an address-of. The address of a name marks its slot
+    /// `addressed`; the address of a dereference is the pointer itself.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The place.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn addr_of(&mut self, place: &ast::Expr) -> ExprNode
+    {
+        match self.dest(place)
+        {
+            Dest::Slot(at) =>
+            {
+                self.slot(at).addressed = true;
+                ExprNode::AddrOf(at)
+            }
+            Dest::Mem(addr) => addr.node,
+        }
+    }
+
+    /// Lower a dereference read.
+    ///
+    /// # Arguments
+    ///
+    /// * `ptr` - The pointer.
+    ///
+    /// # Returns
+    ///
+    /// The load.
+    fn load(&mut self, ptr: &ast::Expr) -> ExprNode
+    {
+        ExprNode::Load { addr: Box::new(self.expr(ptr)) }
+    }
+
+    /// Lower a comparison; both operands take their common kind, which is
+    /// `ptr` for two `ဗလာ`.
     ///
     /// # Arguments
     ///
@@ -797,7 +998,7 @@ impl Lowerer<'_>
     /// The comparison.
     fn compare(&mut self, op: CmpOp, lhs: &ast::Expr, rhs: &ast::Expr) -> ExprNode
     {
-        let common = self.common(self.kind_of(lhs), self.kind_of(rhs));
+        let common = concrete(self.common(self.kind_of(lhs), self.kind_of(rhs)));
         let lhs = Box::new(self.coerce(lhs, common));
         let rhs = Box::new(self.coerce(rhs, common));
         ExprNode::Compare { op, lhs, rhs }
@@ -866,6 +1067,8 @@ impl Lowerer<'_>
         {
             panic!("verb {} has {} operands", n.op.as_ref(), args.len());
         };
+        ret_if!(n.op == VerbOp::AddrOf, self.addr_of(value));
+        ret_if!(n.op == VerbOp::Deref, self.load(value));
         let operand = self.expr(value);
         ret_if!(n.op == VerbOp::BitNot, prefix_node(PrefixOp::BitNot, operand));
         ExprNode::Convert { operand: Box::new(operand), implicit: false }
@@ -887,6 +1090,23 @@ pub fn constant(v: Value, span: Span) -> Expr
     Expr::builder().kind(v.kind()).node(ExprNode::Const(v)).span(span).build()
 }
 
+/// The default value of a kind as a constant labelled with that kind, so a
+/// pointer slot starts at a `ဗလာ` of its own pointer kind.
+///
+/// # Arguments
+///
+/// * `kind` - The kind of the slot.
+/// * `span` - Its source region.
+///
+/// # Returns
+///
+/// The expression.
+fn default_constant(kind: DataKind, span: Span) -> Expr
+{
+    let node = ExprNode::Const(Value::default_of(kind));
+    Expr::builder().kind(kind).node(node).span(span).build()
+}
+
 /// A prefix operation node.
 ///
 /// # Arguments
@@ -900,6 +1120,55 @@ pub fn constant(v: Value, span: Span) -> Expr
 fn prefix_node(op: PrefixOp, operand: Expr) -> ExprNode
 {
     ExprNode::Prefix { op, operand: Box::new(operand) }
+}
+
+/// The kind an IR expression carries for a recorded kind: `null` becomes
+/// `ptr`, the kind of [`Value::NULL`]; other kinds are kept.
+///
+/// # Arguments
+///
+/// * `kind` - The recorded kind.
+///
+/// # Returns
+///
+/// The kind.
+fn concrete(kind: DataKind) -> DataKind
+{
+    tern!(kind == DataKind::Null, DataKind::OPAQUE, kind)
+}
+
+/// The distance between two pointers.
+///
+/// # Arguments
+///
+/// * `lhs` - The later pointer.
+/// * `rhs` - The earlier pointer.
+///
+/// # Returns
+///
+/// The node.
+fn ptr_sub(lhs: Expr, rhs: Expr) -> ExprNode
+{
+    ExprNode::PtrSub { lhs: Box::new(lhs), rhs: Box::new(rhs) }
+}
+
+/// The pointer operand of a dereference.
+///
+/// # Arguments
+///
+/// * `e` - The expression.
+///
+/// # Returns
+///
+/// The operand, or `None` when the expression is no dereference.
+fn deref_operand(e: &ast::Expr) -> Option<&ast::Expr>
+{
+    match e
+    {
+        ast::Expr::Prefix(n) if n.op == ast::PrefixOp::Deref => Some(&n.rhs),
+        ast::Expr::Verb(n) if n.op == VerbOp::Deref => n.args.first(),
+        _ => None,
+    }
 }
 
 /// The value of a float literal, read at the width of its recorded kind.

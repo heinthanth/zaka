@@ -10,9 +10,9 @@ week, the pass mark of a test. Declare these as *constants* with `ကိန်�
 number") instead of `ကိန်းရှင်` ("living number", a variable).
 
 ```zaka
-ကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄၁၅၉ ဖြစ်ပါစေ။         // pi
-ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။              // days in a week
-ကိန်းသေ နှစ်ပတ် သည် ကိန်းပြည့် တစ်ပတ် * ၂ ဖြစ်ပါစေ။     // built from another constant
+ကိန်းသေ ပိုင် သည် ဒဿမကိန်း ဖြစ်၍ တန်ဖိုးသည် ၃.၁၄၁၅၉ ဖြစ်ပါစေ။         // pi
+ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။              // days in a week
+ကိန်းသေ နှစ်ပတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် တစ်ပတ် * ၂ ဖြစ်ပါစေ။     // built from another constant
 
 ပိုင် ကို ပြသပါ။
 နှစ်ပတ် ကို ပြသပါ။
@@ -47,7 +47,7 @@ After that, it can never be given a new value. The next page shows how to change
 variable; trying the same on a constant fails:
 
 ```zaka-error ZK0306
-ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။
+ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
 တစ်ပတ် ကို ၈ ဟု ထားပါ။
 ```
 

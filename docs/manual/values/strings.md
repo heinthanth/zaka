@@ -30,7 +30,7 @@ Print a string with `ဟု`, which quotes it, rather than `ကို`.
 Using a string anywhere else is an error:
 
 ```zaka-error ZK0223
-ကိန်းရှင် နာမည် သည် စာလုံး "မောင်မောင်" ဖြစ်ပါစေ။
+ကိန်းရှင် နာမည် သည် စာလုံး ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
 ```
 
 ```text

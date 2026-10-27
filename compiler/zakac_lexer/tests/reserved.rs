@@ -77,6 +77,7 @@ fn spec_compounds_split()
 {
     let cases: &[(&str, &[Kw])] = &[
         ("တန်ဖိုးကို", &[Kw::Value, Kw::Ko]),
+        ("တန်ဖိုးသည်", &[Kw::Value, Kw::Thi]),
         ("ထက်ကြီးသည်", &[Kw::Htet, Kw::Greater, Kw::Thi]),
         ("အောက်ငယ်လျှင်", &[Kw::Auk, Kw::Less, Kw::Then]),
         ("အောက်ပါတို့ကို", &[Kw::Following, Kw::ListKo]),
@@ -84,6 +85,10 @@ fn spec_compounds_split()
         ("ရွေ့သောရလဒ်", &[Kw::ShiftHead, Kw::Result]),
         ("မငယ်ပါ", &[Kw::NotLess, Kw::Pa]),
         ("မှတ်ချက်ကို", &[Kw::Note, Kw::Ko]),
+        ("လိပ်စာကို", &[Kw::Address, Kw::Ko]),
+        ("လိပ်စာရှိကို", &[Kw::AtAddress, Kw::Ko]),
+        ("လိပ်စာရှိမင်မိုရီကို", &[Kw::AtAddress, Kw::Mem, Kw::Ko]),
+        ("လိပ်စာရှိမှတ်ဉာဏ်ကို", &[Kw::AtAddress, Kw::Mem, Kw::Ko]),
     ];
     for (text, expected) in cases
     {
@@ -91,6 +96,31 @@ fn spec_compounds_split()
             split(text).expect(text).into_iter().map(|(kw, _)| kw).collect();
         assert_eq!(&kws, expected, "{text}");
     }
+}
+
+#[test]
+fn spoken_endings_lex_as_the_written_word()
+{
+    let triples = [
+        ("လုပ်ဆောင်မည်", "လုပ်ဆောင်မယ်", Kw::WillDo),
+        ("ပြန်ပေးမည်", "ပြန်ပေးမယ်", Kw::WillReturn),
+        ("သိမ်းထားမည်", "သိမ်းထားမယ်", Kw::WillKeep),
+        ("နေရာအချဲ့အချုံ့လုပ်မည်", "နေရာအချဲ့အချုံ့လုပ်မယ်", Kw::WillResize),
+        ("ပြန်လည်စွန့်လွှတ်မည်", "ပြန်လည်စွန့်လွှတ်မယ်", Kw::WillRelease),
+    ];
+    do_for!((written, spoken, kw) in triples, {
+        assert_eq!(lookup(written), Some(kw), "{written}");
+        assert_eq!(lookup(spoken), Some(kw), "{spoken}");
+    });
+    assert_eq!(lookup("မင်မိုရီ"), Some(Kw::Mem));
+    assert_eq!(lookup("မှတ်ဉာဏ်"), Some(Kw::Mem));
+}
+
+#[test]
+fn both_loop_links_lex_as_one_word()
+{
+    assert_eq!(lookup("ဖြစ်ပြီး"), Some(Kw::Being));
+    assert_eq!(lookup("ဖြစ်ကာ"), Some(Kw::Being));
 }
 
 #[test]

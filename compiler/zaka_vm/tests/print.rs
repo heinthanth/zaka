@@ -28,6 +28,8 @@ fn values_print_as_the_spec_tells()
         ("NaN:f64", "NaN"),
         ("'က':char", "က"),
         ("'A':char", "A"),
+        ("0x0:ptr", "ဗလာ"),
+        ("0x1000:ptr", "0x1000"),
     ];
     for (value, want) in cases
     {

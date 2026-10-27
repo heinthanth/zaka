@@ -15,6 +15,7 @@ program:
           base: int
           bits: null
           signed: null
+          depth: 0
           span:
             lo: 108
             hi: 138
@@ -30,6 +31,7 @@ program:
           base: int
           bits: null
           signed: null
+          depth: 0
           span:
             lo: 146
             hi: 176
@@ -45,6 +47,7 @@ program:
           base: int
           bits: null
           signed: null
+          depth: 0
           span:
             lo: 197
             hi: 227
@@ -60,6 +63,7 @@ program:
         base: int
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 359
           hi: 389
@@ -67,10 +71,12 @@ program:
         stmts:
         - assign:
             target:
-              name: က
-              span:
-                lo: 447
-                hi: 450
+              name:
+                id: 0
+                name: က
+                span:
+                  lo: 447
+                  hi: 450
             value:
               infix:
                 id: 3
@@ -100,10 +106,12 @@ program:
               hi: 496
         - assign:
             target:
-              name: ခ
-              span:
-                lo: 497
-                hi: 500
+              name:
+                id: 4
+                name: ခ
+                span:
+                  lo: 497
+                  hi: 500
             value:
               infix:
                 id: 7
@@ -133,10 +141,12 @@ program:
               hi: 546
         - assign:
             target:
-              name: ဂ
-              span:
-                lo: 547
-                hi: 550
+              name:
+                id: 8
+                name: ဂ
+                span:
+                  lo: 547
+                  hi: 550
             value:
               infix:
                 id: 11

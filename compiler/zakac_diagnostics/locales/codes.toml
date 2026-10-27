@@ -160,7 +160,7 @@ en = "update outside a generic loop"
 [codes.ZK0212.message]
 en = "\"ပြီးလျှင်\" can appear as the last statement of a generic loop and nowhere else"
 [codes.ZK0212.explain]
-en = """\"ပြီးလျှင်\" (when done) marks the update of a generic loop, the statement that runs after each iteration. It is allowed as the last statement in the block of a loop that starts with \"ကိန်းရှင် ... ဖြစ်ပြီး\", and nowhere else."""
+en = """\"ပြီးလျှင်\" (when done) marks the update of a generic loop, the statement that runs after each iteration. It is allowed as the last statement in the block of a loop that starts with \"ကိန်းရှင် ... ဖြစ်ကာ\" or \"ကိန်းရှင် ... ဖြစ်ပြီး\", and nowhere else."""
 
 [codes.ZK0213.title]
 en = "update is not last"
@@ -239,13 +239,6 @@ en = "a string literal is allowed as the operand of \"ပြသပါ\" and nowh
 [codes.ZK0223.explain]
 en = """This version of the language has no string kind. A string literal can be printed with \"ပြသပါ\" but cannot be stored, compared or passed to a function."""
 
-[codes.ZK0224.title]
-en = "invalid assignment target"
-[codes.ZK0224.message]
-en = "the target of \"ထားပါ\" must be a variable name"
-[codes.ZK0224.explain]
-en = """An assignment \"x ကို v ဟု ထားပါ။\" stores v in the variable x. The operand before \"ကို\" must be a plain name, not a literal or a computed value."""
-
 [codes.ZK0225.title]
 en = "constant loop variable"
 [codes.ZK0225.message]
@@ -318,7 +311,7 @@ en = "constant without a value"
 [codes.ZK0308.message]
 en = "constant \"%{n}\" needs an initial value"
 [codes.ZK0308.explain]
-en = """A constant cannot be assigned later, so its declaration must give its value: write the value between the kind and \"ဖြစ်ပါစေ\". A variable declared with \"ကိန်းရှင်\" can leave the value out and starts at the kind's default."""
+en = """A constant cannot be assigned later, so its declaration must give its value: write \"ဖြစ်၍ တန်ဖိုးသည်\" and the value between the kind and \"ဖြစ်ပါစေ\". A variable declared with \"ကိန်းရှင်\" can leave the value out and starts at the kind's default."""
 
 [codes.ZK0309.title]
 en = "break outside a loop"
@@ -384,6 +377,8 @@ en = """A value must fit the kind its place expects without losing data. Convers
 en = "condition is not a boolean"
 [codes.ZK0402.message]
 en = "a condition must be a boolean, found %{got}"
+[codes.ZK0402.help]
+en = "compare the pointer with \"ဗလာ\""
 [codes.ZK0402.explain]
 en = """The condition of \"အကယ်၍\", of a while loop, and of a generic loop must be a boolean value. Numbers do not count as true or false. Compare the value instead, for example \"က သည် ၀ နှင့် မညီ\"."""
 
@@ -435,6 +430,71 @@ en = "loop step is not positive"
 en = "the step of a counted loop must be positive"
 [codes.ZK0409.explain]
 en = """The step gives the distance the loop variable moves in each round. The direction comes from \"ရေတွက်၍\", \"တိုး၍\", or \"လျှော့၍\", so the step itself must be greater than zero."""
+
+[codes.ZK0410.title]
+en = "invalid assignment target"
+[codes.ZK0410.message]
+en = "this cannot be assigned to; a target must be a variable or a dereference"
+[codes.ZK0410.explain]
+en = """An assignment \"x ကို v ဟု ထားပါ။\" stores v in a place. The target before \"ကို\" must be a variable, a parameter, \"ရလဒ်\" or a dereference such as \"p ၏ တန်ဖိုး\"; a literal or a computed value has no place to store into. Assign to a variable, or dereference a pointer to store through it."""
+
+[codes.ZK0411.title]
+en = "no address"
+[codes.ZK0411.message]
+en = "the address of %{what} cannot be taken; variables and dereferences alone have an address"
+[codes.ZK0411.explain]
+en = """\"x ၏ လိပ်စာ\" and \"&x\" give the address of a place: a variable, a parameter, \"ရလဒ်\" or a dereference. A literal, the result of a call or a computed value is not stored at an address of its own. Store the value in a variable first and take the address of the variable."""
+
+[codes.ZK0412.title]
+en = "address of a fixed name"
+[codes.ZK0412.message]
+en = "\"%{name}\" cannot be changed, so its address cannot be taken"
+[codes.ZK0412.explain]
+en = """Writing through the address of a name would change the name. Constants and counted-loop variables cannot be changed, so their address cannot be taken. Store the value in a separate variable and take the address of that variable instead."""
+
+[codes.ZK0413.title]
+en = "not a pointer"
+[codes.ZK0413.message]
+en = "%{kind} is not a pointer and cannot be dereferenced"
+[codes.ZK0413.explain]
+en = """A dereference, \"p ၏ တန်ဖိုး\" or \"*p\", reads the value a pointer points at. The operand must have a pointer kind, written \"<kind> လိပ်စာ\"; numbers, characters and booleans are not pointers. Check that the operand is the pointer and not the value it points at."""
+
+[codes.ZK0414.title]
+en = "opaque pointer"
+[codes.ZK0414.message]
+en = "an opaque \"လိပ်စာ\" cannot be dereferenced or offset"
+[codes.ZK0414.help]
+en = "convert it to a pointer kind first with \"ကို <kind> လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်\""
+[codes.ZK0414.explain]
+en = """The opaque pointer kind \"လိပ်စာ\" holds an address but no kind for the value there, so the compiler cannot tell what to read or how far to move. Convert it to a pointer kind such as \"ကိန်းပြည့် လိပ်စာ\" with the conversion verb, then dereference or offset the result."""
+
+[codes.ZK0415.title]
+en = "operator not for pointers"
+[codes.ZK0415.message]
+en = "the operator \"%{op}\" cannot be used on pointers"
+[codes.ZK0415.explain]
+en = """A pointer takes few operators: \"+\" and \"-\" with an integer to move it, \"-\" between two pointers of the same kind for the distance, and comparisons. Other operators, such as \"*\", \"/\", \"%\", the bitwise operators, shifts and negation, have no meaning on an address. Convert the pointer to \"လက္ခဏာမဲ့ ကိန်းပြည့်\" to compute with the address as a number."""
+
+[codes.ZK0416.title]
+en = "pointer kinds differ"
+[codes.ZK0416.message]
+en = "pointers to different kinds, %{a} and %{b}, cannot be compared or subtracted"
+[codes.ZK0416.explain]
+en = """Two pointers can be compared or subtracted when the kinds the two point at are the same. \"==\" and \"!=\" also accept \"ဗလာ\" or the opaque \"လိပ်စာ\" on one side. Convert one pointer to the kind of the other first."""
+
+[codes.ZK0417.title]
+en = "heap statement needs a pointer"
+[codes.ZK0417.message]
+en = "the heap statement needs a pointer, found %{kind}"
+[codes.ZK0417.explain]
+en = """The heap statements allocate space, resize it and free it through a variable that holds its address. That variable must have a pointer kind, written \"<kind> လိပ်စာ\", or the opaque \"လိပ်စာ\". Declare the variable with a pointer kind."""
+
+[codes.ZK0418.title]
+en = "address of a local returned"
+[codes.ZK0418.message]
+en = "returns the address of the local \"%{name}\", which is released when the function returns"
+[codes.ZK0418.explain]
+en = """The locals and parameters of a function are released when it returns, so an address that points at one of them is no longer valid in the caller. Reading or writing through it is caught at run time. Return the value itself, or allocate heap space with the heap statements and return its address."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 

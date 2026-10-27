@@ -9,6 +9,7 @@ use zaka_explorer::compile::samples::find_sample;
 use zaka_explorer::debug::RunStatus;
 use zaka_explorer::debug::Session;
 use zakac_ir_builder::ir::FoldOptions;
+use zakac_rust_sugars::do_while;
 
 /// Compile a sample and start a session over its ops.
 fn session_of(path: &str) -> (Compiled, Session)
@@ -354,4 +355,20 @@ fn a_spot_finds_its_op_after_the_folding_changes()
     let row = &plain.asm[f as usize].rows[pc as usize];
     assert_eq!((row.text.as_str(), row.range), (print.text.as_str(), print.range));
     assert_ne!(pc, print.pc, "the folding should move the op");
+}
+
+#[test]
+fn an_addressed_variable_shows_its_value_then_its_cell()
+{
+    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။";
+    let out = compile(text, &Options::default());
+    let mut s = Session::new(out.ops.as_ref());
+    let set =
+        |s: &Session| s.globals().get(1).is_some_and(|r| r.value.starts_with("0x"));
+    do_while!(!set(&s) && s.steps() < 64, s.step());
+    let rows = s.globals();
+    let (x, p) = (&rows[0], &rows[1]);
+    assert_eq!(x.name, "x");
+    assert_eq!(x.value, format!("၇ @{}", p.value));
 }

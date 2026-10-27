@@ -15,6 +15,7 @@ use crate::stmt::IfStmt;
 use crate::stmt::Param;
 use crate::stmt::PrintArg;
 use crate::stmt::Program;
+use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
 use crate::verb::Dir;
 use crate::verb::VerbOp;
@@ -50,14 +51,10 @@ impl ToSexpr for Kind
 {
     fn to_sexpr(&self) -> String
     {
-        let bits = self.bits.map_or("size".to_string(), |b| b.to_string());
-        let sign = tern!(self.signed == Some(false), 'u', 'i');
-        match self.base
-        {
-            BaseKind::Int => format!("{sign}{bits}"),
-            BaseKind::Float => format!("f{}", self.bits.unwrap_or(64)),
-            BaseKind::Char | BaseKind::Bool => self.base.as_ref().to_string(),
-        }
+        let stars = usize::from(self.depth);
+        let stars =
+            tern!(self.base == BaseKind::Opaque, stars.saturating_sub(1), stars);
+        format!("{}{}", "*".repeat(stars), base_name(self))
     }
 }
 
@@ -79,6 +76,8 @@ impl ToSexpr for Expr
             Expr::Logic(n) => list(n.op.as_ref(), [n.lhs.to_sexpr(), n.rhs.to_sexpr()]),
             Expr::Verb(n) => verb_sexpr(n),
             Expr::Call(n) => list("call", call_parts(&n.callee.name, &n.args)),
+            Expr::Null(_) => "null".into(),
+            Expr::SizeOf(n) => list("sizeof", [n.kind.to_sexpr()]),
         }
     }
 }
@@ -90,7 +89,7 @@ impl ToSexpr for Stmt
         match self
         {
             Stmt::Decl(s) => decl_sexpr(s),
-            Stmt::Assign(s) => list("set", [s.target.name.clone(), s.value.to_sexpr()]),
+            Stmt::Assign(s) => list("set", [s.target.to_sexpr(), s.value.to_sexpr()]),
             Stmt::Print(s) => list("print", [print_arg(&s.value)]),
             Stmt::Block(s) => s.to_sexpr(),
             Stmt::If(s) => if_sexpr(s),
@@ -102,6 +101,9 @@ impl ToSexpr for Stmt
             Stmt::Fn(s) => fn_sexpr(s),
             Stmt::Return(s) => list("return", s.value.iter().map(ToSexpr::to_sexpr)),
             Stmt::Call(s) => list("call", call_parts(&s.callee.name, &s.args)),
+            Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
+            Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
+            Stmt::Free(s) => list("free", [s.target.to_sexpr()]),
         }
     }
 }
@@ -121,6 +123,31 @@ fn list(head: &str, parts: impl IntoIterator<Item = String>) -> String
     let parts: Vec<String> = parts.into_iter().collect();
     ret_if!(parts.is_empty(), format!("({head})"));
     format!("({head} {})", parts.join(" "))
+}
+
+/// The name of a kind without its pointer stars: `u8`, `isize`, `f64`,
+/// `bool` or `ptr`.
+///
+/// # Arguments
+///
+/// * `k` - The kind.
+///
+/// # Returns
+///
+/// The name.
+fn base_name(k: &Kind) -> String
+{
+    let bits = k.bits.map_or("size".to_string(), |b| b.to_string());
+    let sign = tern!(k.signed == Some(false), 'u', 'i');
+    match k.base
+    {
+        BaseKind::Int => format!("{sign}{bits}"),
+        BaseKind::Float => format!("f{}", k.bits.unwrap_or(64)),
+        BaseKind::Char | BaseKind::Bool | BaseKind::Opaque =>
+        {
+            k.base.as_ref().to_string()
+        }
+    }
 }
 
 /// An integer literal with its kind prefix as a suffix: `18u8`.
@@ -168,6 +195,22 @@ fn call_parts(callee: &str, args: &[Expr]) -> Vec<String>
     std::iter::once(callee.to_string())
         .chain(args.iter().map(ToSexpr::to_sexpr))
         .collect()
+}
+
+/// The target, count and optional unit of a heap statement.
+///
+/// # Arguments
+///
+/// * `target` - The place that holds the address.
+/// * `size` - The size operand.
+///
+/// # Returns
+///
+/// The parts of a heap list.
+fn heap_parts(target: &Expr, size: &SizeArg) -> Vec<String>
+{
+    let head = [target.to_sexpr(), size.count.to_sexpr()];
+    head.into_iter().chain(size.unit.iter().map(ToSexpr::to_sexpr)).collect()
 }
 
 /// The operand of a print statement; a string literal is quoted.

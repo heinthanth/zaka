@@ -40,7 +40,7 @@ pub enum Stmt
     While(WhileStmt),
     /// `a မှ b အထိ i အနေဖြင့် ရေတွက်၍ ...`
     Counted(CountedStmt),
-    /// `ကိန်းရှင် i သည် kind v ဖြစ်ပြီး cond နေသရွေ့ ...`
+    /// `ကိန်းရှင် i သည် kind ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ကာ cond နေသရွေ့ ...`
     Generic(GenericStmt),
     /// `ကွင်းဆက် ကို ရပ်ပါ။`
     Break(BreakStmt),
@@ -52,6 +52,12 @@ pub enum Stmt
     Return(ReturnStmt),
     /// `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်ပါ။`
     Call(CallStmt),
+    /// Heap allocation into a place.
+    Alloc(AllocStmt),
+    /// Heap reallocation of the block a place points at.
+    Resize(ResizeStmt),
+    /// Release of the heap block a place points at.
+    Free(FreeStmt),
 }
 
 /// Variable or constant declaration.
@@ -74,8 +80,8 @@ pub struct DeclStmt
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct AssignStmt
 {
-    /// The assigned variable.
-    pub target: Ident,
+    /// The assigned place: a variable or a dereference.
+    pub target: Expr,
     /// The new value.
     pub value: Expr,
     /// Source region.
@@ -289,6 +295,53 @@ pub struct CallStmt
     /// The arguments.
     #[builder(default)]
     pub args: Vec<Expr>,
+    /// Source region.
+    pub span: Span,
+}
+
+/// The size operand of a heap statement: a count, and the kind of each
+/// element when one is written.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct SizeArg
+{
+    /// The element count, or the size in octets when no kind is written.
+    pub count: Expr,
+    /// The element kind, when written.
+    pub unit: Option<Kind>,
+    /// Source region.
+    pub span: Span,
+}
+
+/// Heap allocation: the new address is stored in `target`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct AllocStmt
+{
+    /// The requested size.
+    pub size: SizeArg,
+    /// The place that receives the address.
+    pub target: Expr,
+    /// Source region.
+    pub span: Span,
+}
+
+/// Heap reallocation: the block at `target` gets a new size.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct ResizeStmt
+{
+    /// The place that holds the address, updated in place.
+    pub target: Expr,
+    /// The new size.
+    pub size: SizeArg,
+    /// Source region.
+    pub span: Span,
+}
+
+/// Heap release of the block at `target`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct FreeStmt
+{
+    /// The address to release.
+    pub target: Expr,
     /// Source region.
     pub span: Span,
 }

@@ -9,8 +9,10 @@ use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp;
 use zakac_ast::expr::VerbExpr;
+use zakac_ast::visit::Node;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
+use zakac_i18n::t;
 use zakac_lexer::token::Kw;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -24,6 +26,8 @@ use crate::ops::int_expect;
 use crate::ops::kw_label;
 use crate::ops::verb_class;
 use crate::ops::verb_label;
+use crate::place::place_of;
+use crate::scope::Access;
 use crate::semcheck::Checker;
 
 impl Checker
@@ -72,6 +76,11 @@ impl Checker
             Expr::Logic(n) => self.infer_logic(n),
             Expr::Verb(n) => self.infer_verb(n, expect),
             Expr::Call(n) => self.infer_call(n),
+            Expr::Null(_) =>
+            {
+                Some(expect.filter(|k| k.is_ptr()).unwrap_or(DataKind::Null))
+            }
+            Expr::SizeOf(_) => Some(DataKind::USIZE),
         }
     }
 
@@ -139,7 +148,74 @@ impl Checker
                 self.need(kind, Want::Int, n.op.as_ref(), &n.rhs)
             }
             PrefixOp::Not => self.infer_bool(&n.rhs, n.op.as_ref()),
+            PrefixOp::AddrOf => self.infer_addr_of(&n.rhs),
+            PrefixOp::Deref => self.infer_deref(&n.rhs),
         }
+    }
+
+    /// Infer the address of a place.
+    ///
+    /// # Arguments
+    ///
+    /// * `operand` - The place.
+    ///
+    /// # Returns
+    ///
+    /// A pointer to the kind of the place, or `None` after an error.
+    fn infer_addr_of(&mut self, operand: &Expr) -> Option<DataKind>
+    {
+        let kind = self.infer(operand, None);
+        let Some(place) = place_of(operand)
+        else
+        {
+            self.report(kd::no_address(operand.span(), &what_of(operand)));
+            return None;
+        };
+        let fixed = self.fixed_name(place);
+        let diag = fixed.map(|name| kd::fixed_address(operand.span(), name));
+        do_if!(let Some(d) = diag, self.report(d));
+        kind.map(DataKind::pointer_to)
+    }
+
+    /// The name of a place that cannot be changed.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The place.
+    ///
+    /// # Returns
+    ///
+    /// The name of a constant or a counted-loop variable, else `None`.
+    fn fixed_name<'a>(&self, place: &'a Expr) -> Option<&'a str>
+    {
+        let Expr::Name(n) = place
+        else
+        {
+            return None;
+        };
+        let access = self.scopes.lookup(&n.name)?.access;
+        tern!(access == Access::Var, None, Some(&n.name))
+    }
+
+    /// Infer a dereference.
+    ///
+    /// # Arguments
+    ///
+    /// * `operand` - The pointer.
+    ///
+    /// # Returns
+    ///
+    /// The kind the pointer points at, or `None` after an error.
+    fn infer_deref(&mut self, operand: &Expr) -> Option<DataKind>
+    {
+        let kind = self.infer(operand, None)?;
+        let pointee = kind.pointee();
+        ret_if!(pointee.is_some(), pointee);
+        let span = operand.span();
+        let opaque = kd::opaque_pointer(span);
+        let plain = || kd::not_a_pointer(span, &kind.name());
+        self.report(tern!(kind.is_address(), opaque, plain()));
+        None
     }
 
     /// Infer a negation; a literal operand is range-checked as negative.
@@ -257,6 +333,8 @@ impl Checker
         match (class, n.args.as_slice())
         {
             (OpClass::Cast, [value]) => self.infer_cast(n, value),
+            (OpClass::AddrOf, [value]) => self.infer_addr_of(value),
+            (OpClass::Deref, [value]) => self.infer_deref(value),
             (OpClass::BitNot, [value]) =>
             {
                 let kind = self.infer(value, int_expect(expect))?;
@@ -310,6 +388,34 @@ impl Checker
         ret_if!(ret.is_none(), self.report(void), None);
         ret
     }
+}
+
+/// What an operand without an address is, for a message.
+///
+/// # Arguments
+///
+/// * `e` - The operand.
+///
+/// # Returns
+///
+/// The localized words for a literal, a call result or a computed value.
+fn what_of(e: &Expr) -> String
+{
+    let words = match e
+    {
+        Expr::Group(n) => return what_of(&n.inner),
+        Expr::Int(_)
+        | Expr::Float(_)
+        | Expr::Char(_)
+        | Expr::Bool(_)
+        | Expr::Null(_) =>
+        {
+            t!("semcheck.what.literal")
+        }
+        Expr::Call(_) => t!("semcheck.what.call"),
+        _ => t!("semcheck.what.value"),
+    };
+    words.to_string()
 }
 
 /// The kind of a floating-point literal.

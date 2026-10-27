@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
-use zakac_diagnostics::Level;
 use zaka_explorer::compile::Options;
 use zaka_explorer::compile::PartKind;
 use zaka_explorer::compile::Phase;
@@ -11,6 +10,7 @@ use zaka_explorer::compile::samples::DIAGNOSTICS;
 use zaka_explorer::compile::samples::GROUPS;
 use zaka_explorer::compile::samples::SAMPLES;
 use zaka_explorer::compile::samples::find_sample;
+use zakac_diagnostics::Level;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::tern;
 

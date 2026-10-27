@@ -27,6 +27,7 @@ program:
         base: int
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 93
           hi: 123
@@ -54,6 +55,7 @@ program:
         base: float
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 207
           hi: 231
@@ -72,10 +74,12 @@ program:
         hi: 270
   - assign:
       target:
-        name: အသက်
-        span:
-          lo: 271
-          hi: 283
+        name:
+          id: 3
+          name: အသက်
+          span:
+            lo: 271
+            hi: 283
       value:
         infix:
           id: 6
@@ -156,10 +160,12 @@ program:
           stmts:
           - assign:
               target:
-                name: ဝင်ခွင့်ပြုမည်
-                span:
-                  lo: 729
-                  hi: 771
+                name:
+                  id: 11
+                  name: ဝင်ခွင့်ပြုမည်
+                  span:
+                    lo: 729
+                    hi: 771
               value:
                 bool:
                   id: 12
@@ -373,6 +379,7 @@ program:
         base: int
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 1474
           hi: 1504
@@ -417,10 +424,12 @@ program:
       update:
         assign:
           target:
-            name: ကိန်း
-            span:
-              lo: 1722
-              hi: 1737
+            name:
+              id: 28
+              name: ကိန်း
+              span:
+                lo: 1722
+                hi: 1737
           value:
             infix:
               id: 31

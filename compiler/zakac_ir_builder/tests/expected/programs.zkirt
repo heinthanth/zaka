@@ -10,36 +10,42 @@ module:
     span:
       lo: 28
       hi: 40
+    addressed: false
   - name: ပိုင်
     kind: f64
     access: const
     span:
       lo: 139
       hi: 154
+    addressed: false
   - name: ကြီးသူ
     kind: bool
     access: var
     span:
       lo: 257
       hi: 275
+    addressed: false
   - name: ဘိုက်
     kind: u8
     access: var
     span:
       lo: 450
       hi: 465
+    addressed: false
   - name: စာ
     kind: char
     access: var
     span:
       lo: 644
       hi: 650
+    addressed: false
   - name: အသက်
     kind: i16
     access: var
     span:
       lo: 1475
       hi: 1487
+    addressed: false
   funcs: []
   main:
   - set:

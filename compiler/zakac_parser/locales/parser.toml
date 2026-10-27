@@ -23,3 +23,6 @@ en = " or "
 
 [parser.artifact.source_changed]
 en = "source text changed after re-ingest"
+
+[parser.size_parens]
+en = "put a kind-prefixed literal that counts octets in parentheses: (<kind> n) ဘိုက်စာ"

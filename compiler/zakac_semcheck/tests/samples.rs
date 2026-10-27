@@ -14,7 +14,7 @@ use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
 /// Inputs that must check without diagnostics.
-const CLEAN_INPUTS: &[&str] = &["functions", "loops", "programs"];
+const CLEAN_INPUTS: &[&str] = &["functions", "heap", "loops", "programs"];
 
 /// Check `tests/inputs/{name}.zaka` and compare its text artifact with
 /// `tests/expected/{name}.zksemt`. With `ZAKA_BLESS=1` the expected file is

@@ -1,6 +1,5 @@
 use bon::Builder;
 use zakac_ast::expr::Expr;
-use zakac_ast::expr::Ident;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AssignStmt;
@@ -439,40 +438,13 @@ impl Parser<'_>
         let first = args.next().expect("statement verbs take operands");
         match verb.op
         {
-            VerbOp::Assign => self.assign_stmt(first, args.next(), span),
+            VerbOp::Assign => Ok(assign_stmt(first, args.next(), span)),
             VerbOp::Print => Ok(print_stmt(first, slot, span)),
             _ =>
             {
                 Ok(Stmt::Return(ReturnStmt::builder().value(first).span(span).build()))
             }
         }
-    }
-
-    /// Build an assignment.
-    ///
-    /// # Arguments
-    ///
-    /// * `target` - The operand before `ကို`; must be a name.
-    /// * `value` - The operand before `ဟု`.
-    /// * `span` - The statement.
-    ///
-    /// # Returns
-    ///
-    /// The statement, or an `assign-target` diagnostic.
-    fn assign_stmt(
-        &self, target: Expr, value: Option<Expr>, span: Span,
-    ) -> PResult<Stmt>
-    {
-        let Expr::Name(name) = target
-        else
-        {
-            return Err(diag::assign_target(target.span()));
-        };
-        let target = Ident::builder().name(name.name).span(name.span).build();
-        let value = value.expect("assignment takes two operands");
-        Ok(Stmt::Assign(
-            AssignStmt::builder().target(target).value(value).span(span).build(),
-        ))
     }
 
     /// A `dangling-operands` diagnostic for operands left before a
@@ -554,4 +526,22 @@ fn print_stmt(value: Expr, slot: Slot, span: Span) -> Stmt
 {
     let value = PrintArg::Expr(value);
     Stmt::Print(PrintStmt::builder().value(value).slot(slot).span(span).build())
+}
+
+/// Build an assignment. The parser takes each operand as a target; the
+/// checker tells places from other values.
+///
+/// # Arguments
+///
+/// * `target` - The operand before `ကို`.
+/// * `value` - The operand before `ဟု`.
+/// * `span` - The statement.
+///
+/// # Returns
+///
+/// The statement.
+fn assign_stmt(target: Expr, value: Option<Expr>, span: Span) -> Stmt
+{
+    let value = value.expect("assignment takes two operands");
+    Stmt::Assign(AssignStmt::builder().target(target).value(value).span(span).build())
 }

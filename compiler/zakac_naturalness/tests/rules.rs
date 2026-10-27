@@ -172,6 +172,14 @@ fn parentheses_inside_chains_are_left_alone()
 }
 
 #[test]
+fn address_and_value_verbs_follow_the_particle_rules()
+{
+    assert!(warns("p ၏ တန်ဖိုး ကို ပြသပါ။").is_empty());
+    assert!(warns("x ၏ လိပ်စာ ကို ပြသပါ။").is_empty());
+    assert_eq!(warns("(p ၏ တန်ဖိုး) ကို ပြသပါ။"), [Code::RedundantGroup]);
+}
+
+#[test]
 fn a_clause_used_as_a_value_wants_thi()
 {
     let init = "ကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး က သည် ၄၀ အောက် မငယ်ပါ ဖြစ်ပါစေ။";

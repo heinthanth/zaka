@@ -380,20 +380,6 @@ pub fn str_outside_print(span: Span) -> Diagnostic
     Diagnostic::new(Code::StrOutsidePrint, t!("codes.ZK0223.message"), span)
 }
 
-/// The target of an assignment is not a name.
-///
-/// # Arguments
-///
-/// * `span` - The target operand.
-///
-/// # Returns
-///
-/// The `ZK0224` diagnostic.
-pub fn assign_target(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::AssignTarget, t!("codes.ZK0224.message"), span)
-}
-
 /// A generic loop is declared with the constant word.
 ///
 /// # Arguments

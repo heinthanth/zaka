@@ -9,8 +9,8 @@ Real questions often have parts: "Is it raining **and** have I no umbrella?" The
 *logical operators* join or flip booleans.
 
 ```zaka
-ကိန်းရှင် မိုးရွာ သည် မှန်မှားတန်ဖိုး မှန် ဖြစ်ပါစေ။       // it is raining
-ကိန်းရှင် ထီးပါ သည် မှန်မှားတန်ဖိုး မမှန် ဖြစ်ပါစေ။       // I have an umbrella
+ကိန်းရှင် မိုးရွာ သည် မှန်မှားတန်ဖိုး ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။       // it is raining
+ကိန်းရှင် ထီးပါ သည် မှန်မှားတန်ဖိုး ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။       // I have an umbrella
 
 (မိုးရွာ ဖြစ်၍ ထီးပါ) ကို ပြသပါ။                     // and
 (မိုးရွာ သို့မဟုတ် ထီးပါ) ကို ပြသပါ။                  // or
@@ -44,7 +44,7 @@ A logical expression must be wrapped in parentheses before `ကို` or `ဟ�
 Zaka cannot tell where the expression ends and the print statement begins:
 
 ```zaka-error ZK0204
-ကိန်းရှင် မိုးရွာ သည် မှန်မှားတန်ဖိုး မှန် ဖြစ်ပါစေ။
+ကိန်းရှင် မိုးရွာ သည် မှန်မှားတန်ဖိုး ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။
 မိုးရွာ ဖြစ်၍ မှန် ကို ပြသပါ။
 ```
 
@@ -57,7 +57,7 @@ error[ZK0204]: statement verb "ပြသပါ" cannot stand inside an expressio
 The most common use is to join comparisons. Is the age between 18 and 60?
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၃၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃၀ ဖြစ်ပါစေ။
 (အသက် သည် ၁၈ အောက် မငယ်သည် ဖြစ်၍ အသက် သည် ၆၀ အောက် ငယ်သည်) ဟု ပြသပါ။
 (အသက် >= ၁၈ && အသက် < ၆၀) ကို ပြသပါ။
 
@@ -65,7 +65,7 @@ The most common use is to join comparisons. Is the age between 18 and 60?
 (အသက် သည် ၃၀ နှင့် ညီသည် မဟုတ်) ကို ပြသပါ။
 
 // a logical expression can also be stored
-ကိန်းရှင် ထွက်သင့် သည် မှန်မှားတန်ဖိုး (အသက် > ၁၈ ဖြစ်၍ အသက် < ၆၀) ဖြစ်ပါစေ။
+ကိန်းရှင် ထွက်သင့် သည် မှန်မှားတန်ဖိုး ဖြစ်၍ တန်ဖိုးသည် (အသက် > ၁၈ ဖြစ်၍ အသက် < ၆၀) ဖြစ်ပါစေ။
 ထွက်သင့် ကို ပြသပါ။
 ```
 

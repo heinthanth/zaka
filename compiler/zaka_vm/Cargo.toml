@@ -11,6 +11,7 @@ path = "src/main.rs"
 bon = { workspace = true }
 clap = { workspace = true }
 rust-i18n = { workspace = true }
+strum = { workspace = true }
 termcolor = { workspace = true }
 zakac_cli_common = { workspace = true }
 zakac_codegen = { workspace = true }

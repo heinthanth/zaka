@@ -10,24 +10,28 @@ module:
     span:
       lo: 28
       hi: 43
+    addressed: false
   - name: အမှတ်
     kind: isize
     access: loop_var
     span:
       lo: 503
       hi: 518
+    addressed: false
   - name: အမှတ်
     kind: isize
     access: loop_var
     span:
       lo: 1127
       hi: 1142
+    addressed: false
   - name: အဆင့်
     kind: u8
     access: var
     span:
       lo: 1263
       hi: 1278
+    addressed: false
   funcs: []
   main:
   - set:

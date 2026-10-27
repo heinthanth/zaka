@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use zakac_diagnostics::Code;
 use zakac_ir_builder::artifact::IrArtifact;
+use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::FoldOptions;
@@ -17,7 +18,7 @@ use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
 /// Inputs that must lower without diagnostics.
-const CLEAN_INPUTS: &[&str] = &["folding", "functions", "loops", "programs"];
+const CLEAN_INPUTS: &[&str] = &["folding", "functions", "heap", "loops", "programs"];
 
 /// Lower `tests/inputs/{name}.zaka` with `folding`.
 fn lower_input(name: &str, folding: &FoldOptions) -> IrArtifact
@@ -63,6 +64,7 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 expr_places(value, out);
             }
             Stmt::Print { value: PrintValue::Expr(e), .. } => expr_places(e, out),
+            Stmt::Print { value: PrintValue::Text(_), .. } => (),
             Stmt::If { cond, then, els, .. } =>
             {
                 expr_places(cond, out);
@@ -84,10 +86,34 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 step.iter().for_each(|s| expr_places(s, out));
                 places(block, out);
             }
-            Stmt::Return { value: Some(v), .. } => expr_places(v, out),
+            Stmt::Return { value, .. } =>
+            {
+                value.iter().for_each(|v| expr_places(v, out))
+            }
             Stmt::Call { args, .. } => args.iter().for_each(|a| expr_places(a, out)),
-            _ => (),
+            Stmt::Break { .. } | Stmt::Continue { .. } => (),
+            Stmt::Store { addr, value, .. } =>
+            {
+                expr_places(addr, out);
+                expr_places(value, out);
+            }
+            Stmt::Alloc { dest, count, .. } | Stmt::Resize { dest, count, .. } =>
+            {
+                dest_places(dest, out);
+                expr_places(count, out);
+            }
+            Stmt::Free { dest, .. } => dest_places(dest, out),
         }
+    }
+}
+
+/// The places a heap statement writes through.
+fn dest_places(dest: &Dest, out: &mut Vec<Place>)
+{
+    match dest
+    {
+        Dest::Slot(place) => out.push(*place),
+        Dest::Mem(addr) => expr_places(addr, out),
     }
 }
 
@@ -97,14 +123,16 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
     match &e.node
     {
         ExprNode::Read(place) => out.push(*place),
-        ExprNode::Const(_) => (),
-        ExprNode::Prefix { operand, .. } | ExprNode::Convert { operand, .. } =>
-        {
-            expr_places(operand, out)
-        }
+        ExprNode::AddrOf(place) => out.push(*place),
+        ExprNode::Const(_) | ExprNode::SizeOf(_) => (),
+        ExprNode::Prefix { operand, .. }
+        | ExprNode::Convert { operand, .. }
+        | ExprNode::Load { addr: operand } => expr_places(operand, out),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
-        | ExprNode::Logic { lhs, rhs, .. } =>
+        | ExprNode::Logic { lhs, rhs, .. }
+        | ExprNode::PtrAdd { base: lhs, offset: rhs }
+        | ExprNode::PtrSub { lhs, rhs } =>
         {
             expr_places(lhs, out);
             expr_places(rhs, out);

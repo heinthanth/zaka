@@ -4,6 +4,7 @@ mod collect;
 mod infer;
 pub mod kind;
 mod ops;
+mod place;
 mod scope;
 pub mod semcheck;
 

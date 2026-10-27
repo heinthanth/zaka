@@ -9,6 +9,15 @@ en = "The most nested calls before the program stops."
 [vm.max_steps]
 en = "The most ops to run before the program stops; no limit when absent."
 
+[vm.max_heap]
+en = "The most live heap octets before an allocation fails."
+
+[vm.leaks]
+en = "List the heap blocks left unfreed when the program ends."
+
+[vm.leak]
+en = "leak: block at %{addr}, %{size} octets"
+
 [vm.trap.at]
 en = "%{what} (in %{func}, op %{pc})"
 
@@ -32,3 +41,36 @@ en = "malformed ops: %{reason}"
 
 [vm.trap.write]
 en = "cannot write the output: %{msg}"
+
+[vm.trap.null_deref]
+en = "access through a null address at %{addr}"
+
+[vm.trap.out_of_bounds]
+en = "access of %{size} octets at %{addr} lands outside each live block"
+
+[vm.trap.use_after_free]
+en = "access at %{addr} inside a freed block"
+
+[vm.trap.double_free]
+en = "the block at %{addr} was freed before"
+
+[vm.trap.bad_free]
+en = "%{addr} is not the start of a live heap block"
+
+[vm.trap.misaligned]
+en = "address %{addr} is not a multiple of %{align}"
+
+[vm.trap.bad_value]
+en = "the octets at %{addr} do not form a %{kind}"
+
+[vm.trap.out_of_mem]
+en = "no heap room for %{size} octets"
+
+[vm.trap.mixed_blocks]
+en = "pointers into different blocks cannot be subtracted"
+
+[vm.trap.block]
+en = "block at %{start}, %{size} octets, %{origin}"
+
+[vm.trap.cell_of]
+en = "cell of %{func}"

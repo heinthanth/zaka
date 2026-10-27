@@ -9,7 +9,7 @@ A *comparison* asks a yes-or-no question about two values: are they equal? Is on
 bigger? The answer is a [boolean](../values/booleans.md), `မှန်` or `မမှန်`.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၂၅ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၅ ဖြစ်ပါစေ။
 
 // Words: the subject takes သည်, then ထက်, အောက် or နှင့်, then the verb
 အသက် သည် ၁၈ ထက် ကြီးသည် ဟု ပြသပါ။        // age is greater than 18
@@ -46,7 +46,7 @@ The `မ` in front of a verb means "not": `မညီ` is "not equal", `မကြ
 Equals uses `=` twice: `==`. A single `=` is not an operator in Zaka.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၂၅ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၅ ဖြစ်ပါစေ။
 အသက် သည် ၃၀ နှင့် မညီပါ ဟု ပြသပါ။
 အသက် သည် ၆၀ ထက် မကြီးပါ ဟု ပြသပါ။
 အသက် သည် ၁၈ အောက် မငယ်ပါ ဟု ပြသပါ။
@@ -76,8 +76,8 @@ comes before `'ခ'`, and `'A'` (65) comes before `'a'` (97):
 A comparison is a value, so it can be stored in a boolean variable:
 
 ```zaka
-ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ၇၃ ဖြစ်ပါစေ။
-ကိန်းရှင် အောင် သည် မှန်မှားတန်ဖိုး အမှတ် သည် ၄၀ အောက် မငယ်သည် ဖြစ်ပါစေ။   // passed
+ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
+ကိန်းရှင် အောင် သည် မှန်မှားတန်ဖိုး ဖြစ်၍ တန်ဖိုးသည် အမှတ် သည် ၄၀ အောက် မငယ်သည် ဖြစ်ပါစေ။   // passed
 အောင် ကို ပြသပါ။
 ```
 

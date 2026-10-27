@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use zakac_ast::stmt::CountMode;
 use zakac_ir_builder::ir;
 use zakac_ir_builder::ir::CmpOp;
+use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::InfixOp;
@@ -47,30 +48,31 @@ pub const MAIN_NAME: &str = "main";
 pub fn emit(module: &ir::Module, platform_bits: u16) -> Module
 {
     let rets = module.funcs.iter().map(|f| f.ret).collect();
-    let mut shared = Shared::builder().platform(platform_bits).rets(rets).build();
+    let globals = module.globals.iter().map(slot).collect();
+    #[rustfmt::skip]
+    let mut shared = Shared::builder().platform(platform_bits).rets(rets)
+        .globals(globals).build();
     let mut funcs: Vec<Func> =
         module.funcs.iter().map(|f| func(&mut shared, f)).collect();
     funcs.push(main_func(&mut shared, module));
-    let globals = module.globals.iter().map(|s| slot(&s.name, s.kind)).collect();
     let main = funcs.len() as u32 - 1;
     #[rustfmt::skip]
-    return Module::builder().platform_bits(platform_bits).globals(globals)
+    return Module::builder().platform_bits(platform_bits).globals(shared.globals)
         .texts(shared.texts).funcs(funcs).main(main).build();
 }
 
-/// Make a slot.
+/// Make the slot of an IR slot.
 ///
 /// # Arguments
 ///
-/// * `name` - The name.
-/// * `kind` - The data kind.
+/// * `s` - The IR slot.
 ///
 /// # Returns
 ///
 /// The slot.
-fn slot(name: &str, kind: DataKind) -> Slot
+fn slot(s: &ir::Slot) -> Slot
 {
-    Slot::builder().name(name).kind(kind).build()
+    Slot::builder().name(&s.name).kind(s.kind).addressed(s.addressed).build()
 }
 
 /// Generate one IR function.
@@ -85,8 +87,9 @@ fn slot(name: &str, kind: DataKind) -> Slot
 /// The op function.
 fn func(shared: &mut Shared, f: &ir::Func) -> Func
 {
-    let locals = f.locals.iter().map(|s| slot(&s.name, s.kind)).collect();
+    let locals = f.locals.iter().map(slot).collect();
     let mut g = FuncGen::new(shared, locals, f.span.shrink_to_hi());
+    g.cells(&f.locals, Place::Local, f.params);
     g.block(&f.block);
     let returns = matches!(f.block.last(), Some(Stmt::Return { .. }));
     do_if!(!returns, g.op(Op::Ret));
@@ -106,6 +109,7 @@ fn func(shared: &mut Shared, f: &ir::Func) -> Func
 fn main_func(shared: &mut Shared, module: &ir::Module) -> Func
 {
     let mut g = FuncGen::new(shared, Vec::new(), module.span.shrink_to_hi());
+    g.cells(&module.globals, Place::Global, 0);
     g.block(&module.main);
     g.op(Op::Ret);
     g.finish(MAIN_NAME, 0, None)
@@ -119,6 +123,8 @@ struct Shared
     platform: u16,
     /// The result kind of each IR function.
     rets: Vec<Option<DataKind>>,
+    /// The global slots.
+    globals: Vec<Slot>,
     /// Pooled print strings.
     #[builder(default)]
     texts: Vec<String>,
@@ -257,16 +263,85 @@ impl<'s> FuncGen<'s>
     /// The slot index.
     fn temp(&mut self, name: &str, kind: DataKind) -> u32
     {
-        self.locals.push(slot(name, kind));
+        self.locals.push(Slot::builder().name(name).kind(kind).build());
         self.locals.len() as u32 - 1
     }
 
-    /// Push the value of a slot.
+    /// Give each addressed slot a cell, in index order. A parameter's cell
+    /// gets the argument value.
+    ///
+    /// # Arguments
+    ///
+    /// * `slots` - The IR slots.
+    /// * `place` - Makes the place of a slot index.
+    /// * `params` - The number of parameters at the front of `slots`.
+    fn cells(&mut self, slots: &[ir::Slot], place: fn(u32) -> Place, params: u32)
+    {
+        let addressed = slots.iter().enumerate().filter(|(_, s)| s.addressed);
+        do_for!((n, s) in addressed, self.cell(s, place(n as u32), (n as u32) < params));
+    }
+
+    /// Give an addressed slot a cell; the slot keeps the cell address.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The IR slot.
+    /// * `place` - Where it lives.
+    /// * `param` - Whether it is a parameter, whose value goes in the cell.
+    fn cell(&mut self, s: &ir::Slot, place: Place, param: bool)
+    {
+        let outer = self.code.at(s.span);
+        let platform = self.shared.platform;
+        self.op(Op::Cell(s.kind.size(platform), s.kind.align(platform)));
+        do_if!(param, {
+            self.op(Op::Dup);
+            self.load_slot(place);
+            self.op(Op::Store(s.kind));
+        });
+        self.store_slot(place);
+        self.code.at(outer);
+    }
+
+    /// The slot at a place.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The place.
+    ///
+    /// # Returns
+    ///
+    /// The slot.
+    fn slot_at(&self, place: Place) -> &Slot
+    {
+        match place
+        {
+            Place::Global(n) => &self.shared.globals[n as usize],
+            Place::Local(n) => &self.locals[n as usize],
+        }
+    }
+
+    /// The kind of the cell that keeps the value of a slot.
     ///
     /// # Arguments
     ///
     /// * `place` - The slot.
-    fn load(&mut self, place: Place)
+    ///
+    /// # Returns
+    ///
+    /// The slot kind for an addressed slot, `None` for one that keeps its
+    /// value itself.
+    fn cell_kind(&self, place: Place) -> Option<DataKind>
+    {
+        let s = self.slot_at(place);
+        tern!(s.addressed, Some(s.kind), None)
+    }
+
+    /// Push what a slot holds: its value, or the address of its cell.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The slot.
+    fn load_slot(&mut self, place: Place)
     {
         let op = match place
         {
@@ -276,12 +351,12 @@ impl<'s> FuncGen<'s>
         self.op(op);
     }
 
-    /// Pop a value into a slot.
+    /// Pop what a slot holds into it: its value, or the address of its cell.
     ///
     /// # Arguments
     ///
     /// * `place` - The slot.
-    fn store(&mut self, place: Place)
+    fn store_slot(&mut self, place: Place)
     {
         let op = match place
         {
@@ -289,6 +364,111 @@ impl<'s> FuncGen<'s>
             Place::Local(n) => Op::StoreLocal(n),
         };
         self.op(op);
+    }
+
+    /// Push the value of a slot, read from its cell when it is addressed.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The slot.
+    fn load(&mut self, place: Place)
+    {
+        self.load_slot(place);
+        do_if!(let Some(kind) = self.cell_kind(place), self.op(Op::Load(kind)));
+    }
+
+    /// Set the value of a slot, written to its cell when it is addressed.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The slot.
+    /// * `value` - Pushes the value.
+    fn store(&mut self, place: Place, value: impl FnOnce(&mut Self))
+    {
+        let Some(kind) = self.cell_kind(place)
+        else
+        {
+            value(self);
+            return self.store_slot(place);
+        };
+        self.load_slot(place);
+        value(self);
+        self.op(Op::Store(kind));
+    }
+
+    /// Set the address a heap statement keeps.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - Where the address goes.
+    /// * `value` - Pushes the address.
+    fn store_dest(&mut self, dest: &Dest, value: impl FnOnce(&mut Self))
+    {
+        match dest
+        {
+            Dest::Slot(place) => self.store(*place, value),
+            Dest::Mem(at) => self.store_mem(at, value),
+        }
+    }
+
+    /// Replace the address a heap statement keeps with one worked out from
+    /// it.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - Where the address lives.
+    /// * `then` - Turns the address on the stack into the new one.
+    fn update_dest(&mut self, dest: &Dest, then: impl FnOnce(&mut Self))
+    {
+        match dest
+        {
+            Dest::Slot(place) => self.update_slot(*place, then),
+            Dest::Mem(at) => self.update_mem(at, then),
+        }
+    }
+
+    /// Replace the value of a slot with one worked out from it.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The slot.
+    /// * `then` - Turns the value on the stack into the new one.
+    fn update_slot(&mut self, place: Place, then: impl FnOnce(&mut Self))
+    {
+        self.store(place, |g| {
+            g.load(place);
+            then(g);
+        });
+    }
+
+    /// Replace the pointer at an address with one worked out from it. The
+    /// address is worked out once.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address, of a pointer to a pointer.
+    /// * `then` - Turns the pointer on the stack into the new one.
+    fn update_mem(&mut self, at: &Expr, then: impl FnOnce(&mut Self))
+    {
+        let kind = held_kind(at);
+        self.store_mem(at, |g| {
+            g.op(Op::Dup);
+            g.op(Op::Load(kind));
+            then(g);
+        });
+    }
+
+    /// Write a pointer at an address.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address, of a pointer to a pointer.
+    /// * `value` - Pushes the pointer.
+    fn store_mem(&mut self, at: &Expr, value: impl FnOnce(&mut Self))
+    {
+        self.expr(at);
+        value(self);
+        self.op(Op::Store(held_kind(at)));
     }
 
     /// Generate statements in order.
@@ -322,11 +502,7 @@ impl<'s> FuncGen<'s>
     {
         match s
         {
-            Stmt::Set { place, value, .. } =>
-            {
-                self.expr(value);
-                self.store(*place);
-            }
+            Stmt::Set { place, value, .. } => self.store(*place, |g| g.expr(value)),
             Stmt::Print { value: PrintValue::Expr(e), .. } =>
             {
                 self.expr(e);
@@ -359,7 +535,73 @@ impl<'s> FuncGen<'s>
                 let has_result = self.shared.rets[*func as usize].is_some();
                 do_if!(has_result, self.op(Op::Pop));
             }
+            Stmt::Store { addr, value, .. } =>
+            {
+                self.expr(addr);
+                self.expr(value);
+                self.op(Op::Store(value.kind));
+            }
+            Stmt::Alloc { dest, count, unit, .. } =>
+            {
+                let stride = self.unit_size(*unit);
+                self.store_dest(dest, |g| g.count(count, Op::Alloc(stride)));
+            }
+            Stmt::Resize { dest, count, unit, .. } =>
+            {
+                let stride = self.unit_size(*unit);
+                self.update_dest(dest, |g| g.count(count, Op::Realloc(stride)));
+            }
+            Stmt::Free { dest, .. } => self.update_dest(dest, |g| g.free()),
         }
+    }
+
+    /// Push an element count, then add a heap op that takes it.
+    ///
+    /// # Arguments
+    ///
+    /// * `count` - The count.
+    /// * `op` - The heap op.
+    fn count(&mut self, count: &Expr, op: Op)
+    {
+        self.expr(count);
+        self.op(op);
+    }
+
+    /// Release the heap block whose address is on the stack and push null in
+    /// its place.
+    fn free(&mut self)
+    {
+        self.op(Op::Free);
+        self.op(Op::Push(Value::NULL));
+    }
+
+    /// The stride of a heap statement.
+    ///
+    /// # Arguments
+    ///
+    /// * `unit` - The element kind; none for a count in octets.
+    ///
+    /// # Returns
+    ///
+    /// The element size, or 1.
+    fn unit_size(&self, unit: Option<DataKind>) -> u32
+    {
+        unit.map_or(1, |k| k.size(self.shared.platform))
+    }
+
+    /// The element size of a pointer kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `ptr` - The pointer kind, not the opaque one.
+    ///
+    /// # Returns
+    ///
+    /// The size of the pointee.
+    fn stride(&self, ptr: DataKind) -> u32
+    {
+        extract!(Some(pointee) = ptr.pointee(), "pointer math needs a pointee");
+        pointee.size(self.shared.platform)
     }
 
     /// Jump out of the innermost loop.
@@ -450,8 +692,7 @@ impl<'s> FuncGen<'s>
     )
     {
         let kind = from.kind;
-        self.expr(from);
-        self.store(var);
+        self.store(var, |g| g.expr(from));
         let to_op = self.operand("%to", to);
         let one = Value::int(int_kind(kind), 1, self.shared.platform);
         let step_op = step.map_or(Operand::Const(one), |s| self.operand("%step", s));
@@ -600,10 +841,10 @@ impl<'s> FuncGen<'s>
         self.push_unsigned(c.step, c);
         self.op(Op::Compare(CmpOp::Lt));
         self.code.jump_if_true(exit);
-        self.load(c.var);
-        self.push(c.step);
-        self.op(Op::Infix(tern!(up, InfixOp::Add, InfixOp::Sub)));
-        self.store(c.var);
+        self.update_slot(c.var, |g| {
+            g.push(c.step);
+            g.op(Op::Infix(tern!(up, InfixOp::Add, InfixOp::Sub)));
+        });
         self.code.jump(head);
     }
 
@@ -709,7 +950,38 @@ impl<'s> FuncGen<'s>
                 do_if!(operand.kind != e.kind, self.op(Op::Convert(e.kind)));
             }
             ExprNode::Call { func, args, .. } => self.call(*func, args),
+            ExprNode::AddrOf(place) => self.load_slot(*place),
+            ExprNode::Load { addr } =>
+            {
+                self.expr(addr);
+                self.op(Op::Load(e.kind));
+            }
+            ExprNode::PtrAdd { base, offset } =>
+            {
+                self.expr(base);
+                self.expr(offset);
+                self.op(Op::PtrAdd(self.stride(base.kind)));
+            }
+            ExprNode::PtrSub { lhs, rhs } =>
+            {
+                self.expr(lhs);
+                self.expr(rhs);
+                self.op(Op::PtrSub(self.stride(lhs.kind)));
+            }
+            ExprNode::SizeOf(kind) => self.size_of(*kind),
         }
+    }
+
+    /// Push the size of a kind in octets, a `usize`.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind.
+    fn size_of(&mut self, kind: DataKind)
+    {
+        let platform = self.shared.platform;
+        let size = u128::from(kind.size(platform));
+        self.op(Op::Push(Value::int(int_kind(DataKind::USIZE), size, platform)));
     }
 
     /// Generate `and` or `or`; the right operand runs just when needed.
@@ -764,7 +1036,22 @@ fn ends_in_jump(stmts: &[Stmt]) -> bool
     )
 }
 
-/// The integer kind of a loop variable.
+/// The kind of the pointer kept at an address.
+///
+/// # Arguments
+///
+/// * `at` - The address, of a pointer to a pointer.
+///
+/// # Returns
+///
+/// The pointer kind.
+fn held_kind(at: &Expr) -> DataKind
+{
+    extract!(Some(kind) = at.kind.pointee(), "a heap destination holds a pointer");
+    kind
+}
+
+/// The integer kind of an integer data kind.
 ///
 /// # Arguments
 ///
@@ -775,7 +1062,7 @@ fn ends_in_jump(stmts: &[Stmt]) -> bool
 /// The integer kind.
 fn int_kind(kind: DataKind) -> IntKind
 {
-    extract!(Some(int) = kind.int_kind(), "counted loops count integers");
+    extract!(Some(int) = kind.int_kind(), "the kind is an integer kind");
     int
 }
 

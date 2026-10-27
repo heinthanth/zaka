@@ -14,6 +14,7 @@ program:
         base: int
         bits: null
         signed: null
+        depth: 0
         span:
           lo: 54
           hi: 84
@@ -68,10 +69,12 @@ program:
               hi: 314
         - assign:
             target:
-              name: ကိန်း
-              span:
-                lo: 315
-                hi: 330
+              name:
+                id: 4
+                name: ကိန်း
+                span:
+                  lo: 315
+                  hi: 330
             value:
               infix:
                 id: 7
@@ -336,6 +339,7 @@ program:
         base: int
         bits: 8
         signed: false
+        depth: 0
         span:
           lo: 1289
           hi: 1361
@@ -380,10 +384,12 @@ program:
       update:
         assign:
           target:
-            name: အဆင့်
-            span:
-              lo: 1624
-              hi: 1639
+            name:
+              id: 29
+              name: အဆင့်
+              span:
+                lo: 1624
+                hi: 1639
           value:
             infix:
               id: 32
@@ -441,6 +447,7 @@ kinds:
   1: isize
   2: bool
   3: isize
+  4: isize
   5: isize
   6: isize
   7: isize
@@ -464,6 +471,7 @@ kinds:
   26: u8
   27: bool
   28: u8
+  29: u8
   30: u8
   31: u8
   32: u8

@@ -4,6 +4,7 @@ use zakac_ast::expr::PrefixOp;
 use zakac_ast::verb::VERBS;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
+use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
 use zakac_i18n::t;
 use zakac_lexer::token::Kw;
@@ -12,6 +13,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::kind::Base;
 use crate::kind::DataKind;
 use crate::semcheck::Checker;
 
@@ -33,6 +35,10 @@ pub(crate) enum OpClass
     BitNot,
     /// The conversion verb.
     Cast,
+    /// The address-of verb.
+    AddrOf,
+    /// The dereference verb.
+    Deref,
     /// A statement verb, which never stands inside an expression.
     Stmt,
 }
@@ -58,7 +64,11 @@ impl OpClass
             OpClass::Arith => Some(Want::Number),
             OpClass::Bit | OpClass::BitNot | OpClass::Shift => Some(Want::Int),
             OpClass::Order => Some(Want::Ordered),
-            OpClass::Equal | OpClass::Cast | OpClass::Stmt => None,
+            OpClass::Equal
+            | OpClass::Cast
+            | OpClass::AddrOf
+            | OpClass::Deref
+            | OpClass::Stmt => None,
         }
     }
 }
@@ -172,6 +182,8 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         VerbOp::Eq | VerbOp::Ne => OpClass::Equal,
         VerbOp::Gt | VerbOp::Le | VerbOp::Lt | VerbOp::Ge => OpClass::Order,
         VerbOp::Cast => OpClass::Cast,
+        VerbOp::AddrOf => OpClass::AddrOf,
+        VerbOp::Deref => OpClass::Deref,
         VerbOp::Print | VerbOp::Assign | VerbOp::Return => OpClass::Stmt,
     }
 }
@@ -219,7 +231,10 @@ pub(crate) fn is_flexible(e: &Expr) -> bool
         Expr::Int(n) => n.kind.is_none(),
         Expr::Float(n) => n.kind.is_none(),
         Expr::Group(n) => is_flexible(&n.inner),
-        Expr::Prefix(n) => n.op != PrefixOp::Not && is_flexible(&n.rhs),
+        Expr::Prefix(n) =>
+        {
+            matches!(n.op, PrefixOp::Neg | PrefixOp::BitNot) && is_flexible(&n.rhs)
+        }
         Expr::Infix(n) => infix_flexible(infix_class(n.op), &n.lhs, &n.rhs),
         Expr::Verb(n) => verb_flexible(verb_class(n.op), &n.args),
         _ => false,
@@ -285,6 +300,45 @@ pub(crate) fn int_expect(expect: Option<DataKind>) -> Option<DataKind>
     expect.filter(|k| k.is_int())
 }
 
+/// Whether an operator spelling is the given notation operator or verb.
+///
+/// # Arguments
+///
+/// * `op` - The operator spelling.
+/// * `infix` - The notation operator.
+/// * `verb` - The verb of the same operation.
+///
+/// # Returns
+///
+/// `true` when `op` spells one of the two.
+fn is_op(op: &str, infix: InfixOp, verb: VerbOp) -> bool
+{
+    op == infix.as_ref() || op == verb_label(verb)
+}
+
+/// The diagnostic for two operands an address operation does not join.
+///
+/// # Arguments
+///
+/// * `l` - The left kind.
+/// * `r` - The right kind.
+/// * `op` - The operator spelling.
+/// * `span` - The operation.
+///
+/// # Returns
+///
+/// `ZK0416` for two addresses of differing kinds, else `ZK0415`.
+fn ptr_misuse(l: DataKind, r: DataKind, op: &str, span: Span) -> Diagnostic
+{
+    let differ = l.is_address() && r.is_address() && l != r;
+    let (a, b) = (l.name(), r.name());
+    tern!(
+        differ,
+        kd::pointer_kinds_differ(span, &a, &b),
+        kd::pointer_operator(span, op)
+    )
+}
+
 /// Whether a flexible expression holds a floating-point literal.
 ///
 /// # Arguments
@@ -346,7 +400,8 @@ impl Checker
         None
     }
 
-    /// Report an operand that does not meet its operator's demand.
+    /// Report an operand that does not meet its operator's demand; an
+    /// address gets the pointer-operator error.
     ///
     /// # Arguments
     ///
@@ -363,8 +418,10 @@ impl Checker
     ) -> Option<DataKind>
     {
         ret_if!(want.accepts(kind), Some(kind));
-        let diag = kd::operand_kind(operand.span(), op, &want.text(), &kind.name());
-        self.report(diag);
+        let span = operand.span();
+        let ptr = kind.is_address();
+        let other = || kd::operand_kind(span, op, &want.text(), &kind.name());
+        self.report(tern!(ptr, kd::pointer_operator(span, op), other()));
         None
     }
 
@@ -429,15 +486,105 @@ impl Checker
         {
             OpClass::Equal | OpClass::Order => None,
             OpClass::Bit => int_expect(expect),
-            _ => expect,
+            _ => expect.filter(|k| !k.is_address()),
         };
         let (l, r) = self.infer_sides(lhs, rhs, side);
         let (l, r) = (l?, r?);
+        let ptr = l.is_address() || r.is_address();
+        ret_if!(ptr, self.infer_ptr_pair(class, op, (l, lhs), (r, rhs), span));
         let want = class.want();
         let l = want.map_or(Some(l), |w| self.need(l, w, op, lhs))?;
         let r = want.map_or(Some(r), |w| self.need(r, w, op, rhs))?;
         let common = self.common_or_report(l, r, span)?;
         Some(tern!(class.is_cmp(), DataKind::Bool, common))
+    }
+
+    /// Infer a two-operand operation where at least one side is an address.
+    ///
+    /// # Arguments
+    ///
+    /// * `class` - The operator class.
+    /// * `op` - The operator spelling.
+    /// * `lhs` - The kind and the expression of the left operand.
+    /// * `rhs` - The kind and the expression of the right operand.
+    /// * `span` - The operation.
+    ///
+    /// # Returns
+    ///
+    /// The result kind, or `None` after an error.
+    pub fn infer_ptr_pair(
+        &mut self, class: OpClass, op: &str, lhs: (DataKind, &Expr),
+        rhs: (DataKind, &Expr), span: Span,
+    ) -> Option<DataKind>
+    {
+        match class
+        {
+            OpClass::Equal => self.ptr_compare(op, lhs.0, rhs.0, true, span),
+            OpClass::Order => self.ptr_compare(op, lhs.0, rhs.0, false, span),
+            OpClass::Arith => self.ptr_arith(op, lhs, rhs, span),
+            _ =>
+            {
+                self.report(kd::pointer_operator(span, op));
+                None
+            }
+        }
+    }
+
+    /// Infer a comparison of addresses.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The operator spelling.
+    /// * `l` - The left kind.
+    /// * `r` - The right kind.
+    /// * `loose` - `true` for `== !=`, which also join a pointer with `null` or
+    ///   `ptr`.
+    /// * `span` - The operation.
+    ///
+    /// # Returns
+    ///
+    /// `bool`, or `None` after an error.
+    fn ptr_compare(
+        &mut self, op: &str, l: DataKind, r: DataKind, loose: bool, span: Span,
+    ) -> Option<DataKind>
+    {
+        let same = l == r && (loose || l.is_ptr());
+        let joined = self.wider(l, r).is_some_and(|k| loose && k.is_address());
+        ret_if!(same || joined, Some(DataKind::Bool));
+        self.report(ptr_misuse(l, r, op, span));
+        None
+    }
+
+    /// Infer pointer arithmetic: a pointer moved forward or back, or the
+    /// distance between two pointers of one kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The operator spelling.
+    /// * `lhs` - The kind and the expression of the left operand.
+    /// * `rhs` - The kind and the expression of the right operand.
+    /// * `span` - The operation.
+    ///
+    /// # Returns
+    ///
+    /// The pointer kind, `isize` for a distance, or `None` after an error.
+    fn ptr_arith(
+        &mut self, op: &str, lhs: (DataKind, &Expr), rhs: (DataKind, &Expr), span: Span,
+    ) -> Option<DataKind>
+    {
+        let add = is_op(op, InfixOp::Add, VerbOp::Add);
+        let sub = is_op(op, InfixOp::Sub, VerbOp::Sub);
+        ret_if!(!add && !sub, self.report(kd::pointer_operator(span, op)), None);
+        let blank =
+            [lhs, rhs].into_iter().find(|(k, _)| k.levels() == (1, Base::Opaque));
+        let opaque = blank.map(|(_, e)| kd::opaque_pointer(e.span()));
+        ret_if!(let Some(d) = opaque, self.report(d), None);
+        let (l, r) = (lhs.0, rhs.0);
+        ret_if!(l.is_ptr() && r.is_int(), Some(l));
+        ret_if!(add && l.is_int() && r.is_ptr(), Some(r));
+        ret_if!(sub && l.is_ptr() && l == r, Some(DataKind::ISIZE));
+        self.report(ptr_misuse(l, r, op, span));
+        None
     }
 
     /// Infer a shift: the value keeps its kind, the distance is unsigned.

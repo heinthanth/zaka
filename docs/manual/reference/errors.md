@@ -46,6 +46,9 @@ Messages use short names for kinds:
 | `f16`, `f32`, `f64`, `f128` | `၁၆ ဘစ် ဒဿမကိန်း` ... ; `f64` is plain `ဒဿမကိန်း` |
 | `char` | `စာလုံး` |
 | `bool` | `မှန်မှားတန်ဖိုး` |
+| `*isize`, `*u8`, `**isize`, ... | `ကိန်းပြည့် လိပ်စာ`, ... ; one more `*` for each `၏ လိပ်စာ` after it |
+| `ptr` | `လိပ်စာ` (the opaque pointer) |
+| `null` | the kind of `ဗလာ` |
 
 ## Codes
 
@@ -110,6 +113,15 @@ The first two digits tell you which stage found the problem.
 | ZK0406 | a number too big for the variable's kind | [Integers](../values/integers.md) |
 | ZK0407 | a shift by too many bits | [Bitwise operators](../operators/bitwise.md) |
 | ZK0408 | a conversion that is not allowed | [Converting between kinds](../operators/conversion.md) |
+| ZK0410 | an invalid assignment target: not a variable or a dereference | [Changing a variable](../variables/assignment.md) |
+| ZK0411 | no address: taking the address of something that is not a variable or a dereference | [Pointers and memory](../pointers/README.md#what-has-an-address) |
+| ZK0412 | taking the address of a fixed name: a constant or a counted-loop variable | [Pointers and memory](../pointers/README.md#what-has-an-address) |
+| ZK0413 | not a pointer: dereferencing a value that has no pointer kind | [Memory mistakes](../pointers/mistakes.md) |
+| ZK0414 | an opaque pointer (`လိပ်စာ`) dereferenced or offset before a conversion | [Pointer arithmetic](../pointers/arithmetic.md#looking-at-the-same-bytes-another-way) |
+| ZK0415 | an operator not for pointers, such as `*` or `/` on an address | [Pointer arithmetic](../pointers/arithmetic.md#walking-with-a-pointer) |
+| ZK0416 | pointer kinds differ: comparing or subtracting pointers to different kinds | [Pointer arithmetic](../pointers/arithmetic.md#walking-with-a-pointer) |
+| ZK0417 | a heap statement that needs a pointer but was given another kind | [Heap memory](../pointers/heap.md) |
+| ZK0418 | (warning) the address of a local returned from its function | [Changing the caller's variables](../pointers/out-parameters.md#how-long-an-address-lasts) |
 
 ### ZK05: natural Zaka (warnings)
 

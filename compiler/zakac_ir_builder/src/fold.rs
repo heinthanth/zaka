@@ -8,9 +8,12 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
+use zakac_semcheck::kind::IntKind;
+use zakac_semcheck::kind::Width;
 use zakac_span::span::Span;
 
 use crate::ir::Access;
+use crate::ir::Dest;
 use crate::ir::Expr;
 use crate::ir::ExprNode;
 use crate::ir::FoldOptions;
@@ -24,6 +27,9 @@ use crate::ir::Stmt;
 use crate::value;
 use crate::value::EvalError;
 use crate::value::Value;
+
+/// The integer kind of `usize`, the kind of a size.
+const USIZE: IntKind = IntKind::new(false, Width::Platform);
 
 /// Fold the constants of a module in place. Each operation whose operands
 /// are constants is worked out, and its errors are reported, whatever the
@@ -173,8 +179,29 @@ impl Folder
                 do_if!(let Some(v) = value, self.drop_value(v))
             }
             Stmt::Call { args, .. } => do_for!(a in args, self.drop_value(a)),
+            Stmt::Store { addr, value, .. } =>
+            {
+                self.drop_value(addr);
+                self.drop_value(value);
+            }
+            Stmt::Alloc { dest, count, .. } | Stmt::Resize { dest, count, .. } =>
+            {
+                self.dest(dest);
+                self.drop_value(count);
+            }
+            Stmt::Free { dest, .. } => self.dest(dest),
         }
         out.push(s);
+    }
+
+    /// Fold the address of a heap destination.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - The destination.
+    fn dest(&mut self, dest: &mut Dest)
+    {
+        do_if!(let Dest::Mem(addr) = dest, self.drop_value(addr));
     }
 
     /// Fold an expression whose value is not needed here.
@@ -238,6 +265,24 @@ impl Folder
             {
                 do_for!(a in args.iter_mut(), self.drop_value(a));
                 (None, None)
+            }
+            ExprNode::AddrOf(_) => (None, None),
+            ExprNode::Load { addr } =>
+            {
+                self.drop_value(addr);
+                (None, None)
+            }
+            ExprNode::PtrAdd { base: lhs, offset: rhs }
+            | ExprNode::PtrSub { lhs, rhs } =>
+            {
+                self.drop_value(lhs);
+                self.drop_value(rhs);
+                (None, None)
+            }
+            ExprNode::SizeOf(kind) =>
+            {
+                let octets = u128::from(kind.size(self.platform));
+                (Some(Value::int(USIZE, octets, self.platform)), None)
             }
         };
         ret_if!(!self.options.exprs, value);

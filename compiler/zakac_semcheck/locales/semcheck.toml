@@ -29,3 +29,12 @@ en = "a number or a character"
 
 [semcheck.artifact.source_changed]
 en = "source text changed after re-ingest"
+
+[semcheck.what.literal]
+en = "a literal"
+
+[semcheck.what.call]
+en = "the result of a call"
+
+[semcheck.what.value]
+en = "a computed value"

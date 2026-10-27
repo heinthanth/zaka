@@ -83,6 +83,10 @@ pub enum Expr
     Verb(VerbExpr),
     /// `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်သော ရလဒ်`
     Call(CallExpr),
+    /// `ဗလာ`, the address that points nowhere.
+    Null(NullLit),
+    /// `kind ၏ အရွယ်အစား`
+    SizeOf(SizeOfExpr),
 }
 
 /// Integer literal; the digits are converted with the base.
@@ -150,6 +154,28 @@ pub struct BoolLit
     pub span: Span,
 }
 
+/// `ဗလာ`, the null address.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct NullLit
+{
+    /// Node number.
+    pub id: NodeId,
+    /// Source region.
+    pub span: Span,
+}
+
+/// `kind ၏ အရွယ်အစား`: the size of a kind, in octets.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct SizeOfExpr
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The measured kind.
+    pub kind: Kind,
+    /// Source region.
+    pub span: Span,
+}
+
 /// A variable, or the implicit result variable `ရလဒ်`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct NameExpr
@@ -191,6 +217,12 @@ pub enum PrefixOp
     /// `!`
     #[strum(serialize = "!")]
     Not,
+    /// `&`
+    #[strum(serialize = "addr")]
+    AddrOf,
+    /// `*`
+    #[strum(serialize = "deref")]
+    Deref,
 }
 
 impl PrefixOp
@@ -199,7 +231,7 @@ impl PrefixOp
     ///
     /// # Returns
     ///
-    /// `neg`, `bnot` or `not`.
+    /// `neg`, `bnot`, `not`, `addr` or `deref`.
     pub const fn mnemonic(self) -> &'static str
     {
         match self
@@ -207,6 +239,8 @@ impl PrefixOp
             PrefixOp::Neg => "neg",
             PrefixOp::BitNot => "bnot",
             PrefixOp::Not => "not",
+            PrefixOp::AddrOf => "addr",
+            PrefixOp::Deref => "deref",
         }
     }
 }
@@ -463,6 +497,8 @@ impl Expr
             Expr::Logic(n) => n.id,
             Expr::Verb(n) => n.id,
             Expr::Call(n) => n.id,
+            Expr::Null(n) => n.id,
+            Expr::SizeOf(n) => n.id,
         }
     }
 
@@ -478,6 +514,25 @@ impl Expr
         {
             Expr::Infix(n) => n.op.is_cmp(),
             Expr::Verb(n) => n.is_cmp,
+            _ => false,
+        }
+    }
+
+    /// Whether this expression is a place that can be written or have its
+    /// address taken: a variable, a dereference, or either one in
+    /// parentheses.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a place.
+    pub fn is_place(&self) -> bool
+    {
+        match self
+        {
+            Expr::Name(_) => true,
+            Expr::Group(n) => n.inner.is_place(),
+            Expr::Prefix(n) => n.op == PrefixOp::Deref,
+            Expr::Verb(n) => n.op == VerbOp::Deref,
             _ => false,
         }
     }
