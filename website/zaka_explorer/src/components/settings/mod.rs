@@ -1,6 +1,10 @@
 use leptos::prelude::*;
+use strum::IntoEnumIterator;
+use zaka_web_ui_common::controls::ClassName as Controls;
 use zaka_web_ui_common::controls::dropdown::Choice;
 use zaka_web_ui_common::controls::dropdown::dropdown;
+use zaka_web_ui_common::controls::modal::Modal;
+use zaka_web_ui_common::controls::modal::modal;
 use zaka_web_ui_common::controls::pickers::lang_picker;
 use zaka_web_ui_common::controls::settings::appearance;
 use zaka_web_ui_common::controls::settings::picker;
@@ -14,7 +18,11 @@ use zakac_ir_builder::ir::FoldOptions;
 
 use crate::compile::PLATFORM_BITS;
 use crate::state::AppState;
+use crate::state::settings::HeapCap;
 use crate::state::use_state;
+
+/// Element id of the title of the compiler options modal.
+const COMPILER_TITLE_ID: &str = "compiler-modal-title";
 
 /// The settings modal: the language, auto run, the look of the page and the
 /// compile options. The toolbar button and the menu of narrow screens both
@@ -46,7 +54,22 @@ pub fn settings_modal(open: RwSignal<bool>) -> impl IntoView
             ),
         ),
     );
-    let compiler = section(
+    shared_modal(open, (general, appearance(state.look), compiler_section(state)))
+}
+
+/// The compiler options: the platform bits, the foldings of the IR and the
+/// heap limit of a run.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn compiler_section(state: AppState) -> impl IntoView
+{
+    section(
         t!("explorer.settings.compiler"),
         (
             row(
@@ -57,9 +80,36 @@ pub fn settings_modal(open: RwSignal<bool>) -> impl IntoView
             fold_row(state, Fold::Exprs),
             fold_row(state, Fold::Consts),
             fold_row(state, Fold::Branches),
+            row(
+                t!("explorer.settings.heap_cap"),
+                t!("explorer.settings.heap_cap_note"),
+                heap_picker(state),
+            ),
         ),
-    );
-    shared_modal(open, (general, appearance(state.look), compiler))
+    )
+}
+
+/// The modal of the compiler options, which the debugger bar opens; the
+/// settings hold the same options.
+///
+/// # Arguments
+///
+/// * `open` - Whether the modal shows.
+///
+/// # Returns
+///
+/// The view.
+pub fn compiler_modal(open: RwSignal<bool>) -> impl IntoView
+{
+    let state = use_state();
+    let spec = Modal::builder()
+        .open(open)
+        .class(Controls::SETTINGS_MODAL)
+        .title_id(COMPILER_TITLE_ID)
+        .title(t!("explorer.run.options"))
+        .close_label(t!("explorer.run.options_close"))
+        .build();
+    modal(spec, compiler_section(state))
 }
 
 /// One of the foldings the settings switch.
@@ -119,6 +169,31 @@ impl Fold
         };
         (name.into(), note.into())
     }
+
+    /// Whether the folding is on.
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - The state.
+    ///
+    /// # Returns
+    ///
+    /// The switch.
+    fn on(self, state: AppState) -> Signal<bool>
+    {
+        Signal::derive(move || *self.flag(&mut state.options.get().fold))
+    }
+
+    /// Turn the folding on or off.
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - The state.
+    /// * `on` - Whether it is on.
+    fn set(self, state: AppState, on: bool)
+    {
+        state.options.update(|o| *self.flag(&mut o.fold) = on);
+    }
 }
 
 /// The row of one folding of the IR, with its switch.
@@ -133,10 +208,8 @@ impl Fold
 /// The view.
 fn fold_row(state: AppState, fold: Fold) -> impl IntoView
 {
-    let on = Signal::derive(move || *fold.flag(&mut state.options.get().fold));
-    let set = SignalSetter::map(move |b| {
-        state.options.update(|o| *fold.flag(&mut o.fold) = b)
-    });
+    let on = fold.on(state);
+    let set = SignalSetter::map(move |b| fold.set(state, b));
     let (name, note) = fold.text();
     switch_row(name, note, switch(on, Signal::stored(false), set))
 }
@@ -164,6 +237,30 @@ fn platform_picker(state: AppState) -> impl IntoView
     dropdown(picker(
         t!("explorer.settings.platform_bits"),
         PLATFORM_BITS.iter().map(choice).collect(),
+        current,
+        on_pick,
+    ))
+}
+
+/// Picker of the cap on live heap octets of a run.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn heap_picker(state: AppState) -> impl IntoView
+{
+    let choice =
+        |c: HeapCap| Choice::builder().value(c.to_string()).label(c.label()).build();
+    let current = Signal::derive(move || state.heap_cap.get().to_string());
+    let on_pick =
+        move |v: String| state.set_heap_cap.set(v.parse().unwrap_or_default());
+    dropdown(picker(
+        t!("explorer.settings.heap_cap"),
+        HeapCap::iter().map(choice).collect(),
         current,
         on_pick,
     ))

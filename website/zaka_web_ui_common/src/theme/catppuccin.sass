@@ -33,9 +33,13 @@ $flavours: (latte: ($latte, light), frappe: ($frappe, dark), macchiato: ($macchi
   @if $scheme == dark
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 20px rgba(0, 0, 0, 0.22)
     --pop-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.45)
+    --photo-opacity: 0.35
+    --photo-veil: 45%
   @else
     --shadow: 0 1px 2px rgba(76, 79, 105, 0.06), 0 4px 16px rgba(76, 79, 105, 0.08)
     --pop-shadow: 0 2px 6px rgba(76, 79, 105, 0.1), 0 14px 36px rgba(76, 79, 105, 0.2)
+    --photo-opacity: 0.85
+    --photo-veil: 0%
   --mark-hover: #{rgba(map.get($p, yellow), 0.3)}
   --diag-error: #{map.get($p, red)}
   --diag-warning: #{map.get($p, yellow)}

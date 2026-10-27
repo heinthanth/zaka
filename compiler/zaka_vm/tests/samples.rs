@@ -7,8 +7,9 @@ use common::compile;
 use common::run_module;
 use zaka_vm::machine::RunOptions;
 
-/// Sample groups that hold programs with errors on purpose.
-const SKIPPED_GROUPS: &[&str] = &["diagnostics"];
+/// Sample groups that hold programs with errors on purpose: those that do
+/// not compile and those that go wrong at run time.
+const SKIPPED_GROUPS: &[&str] = &["diagnostics", "mistakes"];
 
 /// The crate dir.
 fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }

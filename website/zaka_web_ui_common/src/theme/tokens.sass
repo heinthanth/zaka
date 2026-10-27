@@ -50,6 +50,10 @@
   --editor-cursor: #9a5f0c
   --editor-select: rgba(247, 197, 95, 0.38)
   --editor-line: transparent
+  // How strong a backdrop photo shows, and how much of the panel color
+  // veils it; dark themes dim it so it does not glare.
+  --photo-opacity: 0.85
+  --photo-veil: 0%
   color-scheme: light
 
 =dark
@@ -92,6 +96,8 @@
   --editor-cursor: #f7c55f
   --editor-select: rgba(247, 197, 95, 0.2)
   --editor-line: transparent
+  --photo-opacity: 0.35
+  --photo-veil: 45%
   color-scheme: dark
 
 html

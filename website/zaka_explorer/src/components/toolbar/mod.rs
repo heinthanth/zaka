@@ -1,3 +1,4 @@
+use bon::Builder;
 use leptos::ev;
 use leptos::html::a;
 use leptos::html::button;
@@ -15,12 +16,15 @@ use zaka_web_ui_common::controls::dropdown::Choice;
 use zaka_web_ui_common::controls::dropdown::Dropdown;
 use zaka_web_ui_common::controls::dropdown::dropdown;
 use zaka_web_ui_common::controls::settings::settings_button;
+use zaka_web_ui_common::icon::bottom_pane;
 use zaka_web_ui_common::icon::bug;
 use zaka_web_ui_common::icon::cross;
 use zaka_web_ui_common::icon::gear;
 use zaka_web_ui_common::icon::info;
 use zaka_web_ui_common::icon::left_pane;
 use zaka_web_ui_common::icon::menu;
+use zaka_web_ui_common::icon::middle_pane;
+use zaka_web_ui_common::icon::right_pane;
 use zaka_web_ui_common::sheet;
 use zaka_web_ui_common::site::HOME_URL;
 use zaka_web_ui_common::site::MANUAL_URL;
@@ -81,10 +85,10 @@ pub fn toolbar() -> impl IntoView
         sample_picker(),
         div().class(ClassName::TOOLBAR_ACTIONS).attr(TOUR, "settings").child((
             debug_switch(),
-            editor_switch(),
+            pane_switches(),
             wide,
-            menu_button(open),
         )),
+        menu_button(open),
         menu_panel(open, about, settings),
     ));
     (sheet(&SHEET), view, about_modal(about), settings_modal(settings))
@@ -206,30 +210,93 @@ fn debug_switch() -> impl IntoView
         .child(bug())
 }
 
-/// Button that shows or hides the editor pane.
+/// The switches of the panes, as in an editor: the editor on the left, the
+/// stage view in the middle and the dock on the right in debug mode, and
+/// the bottom panel. Outside debug mode there is no middle pane: the run
+/// is the right pane.
 ///
 /// # Returns
 ///
 /// The view.
-fn editor_switch() -> impl IntoView
+fn pane_switches() -> impl IntoView
 {
     let state = use_state();
-    let open = state.editor_open;
-    let title = move || {
-        tern!(
-            open.get(),
-            t!("explorer.toolbar.editor_hide"),
-            t!("explorer.toolbar.editor_show")
-        )
-    };
+    let debug = state.debug_mode;
+    let editor = Switch::builder()
+        .on(state.editor_open)
+        .set(state.set_editor_open)
+        .hide("explorer.toolbar.editor_hide")
+        .show("explorer.toolbar.editor_show")
+        .build();
+    let stage = Switch::builder()
+        .on(state.stage_open)
+        .set(state.set_stage_open)
+        .hide("explorer.toolbar.stage_hide")
+        .show("explorer.toolbar.stage_show")
+        .build();
+    let dock = Switch::builder()
+        .on(state.dock_open)
+        .set(state.set_dock_open)
+        .hide("explorer.toolbar.dock_hide")
+        .show("explorer.toolbar.dock_show")
+        .build();
+    let run = Switch::builder()
+        .on(state.dock_open)
+        .set(state.set_dock_open)
+        .hide("explorer.toolbar.run_hide")
+        .show("explorer.toolbar.run_show")
+        .build();
+    let panel = Switch::builder()
+        .on(state.problems_open)
+        .set(state.set_problems_open)
+        .hide("explorer.panel.hide")
+        .show("explorer.panel.show")
+        .build();
+    div().class(ClassName::PANE_SWITCHES).attr("role", "group").child((
+        pane_switch(editor, left_pane()),
+        move || debug.get().then(|| pane_switch(stage, middle_pane())),
+        move || pane_switch(tern!(debug.get(), dock, run), right_pane()),
+        pane_switch(panel, bottom_pane()),
+    ))
+}
+
+/// What a pane switch turns on and off.
+#[derive(Clone, Copy, Builder)]
+struct Switch
+{
+    /// Whether the pane shows.
+    on: Signal<bool>,
+    /// Show or hide the pane.
+    set: WriteSignal<bool>,
+    /// Locale id of its name while the pane shows.
+    hide: &'static str,
+    /// Locale id of its name while the pane is hidden.
+    show: &'static str,
+}
+
+/// A button that shows or hides a pane.
+///
+/// # Arguments
+///
+/// * `switch` - What it turns on and off.
+/// * `art` - The icon.
+///
+/// # Returns
+///
+/// The view.
+fn pane_switch(switch: Switch, art: impl IntoView + 'static) -> impl IntoView
+{
+    let on = switch.on;
+    let lit = move || on.get();
+    let title = move || t!(tern!(on.get(), switch.hide, switch.show).to_string());
     button()
         .class(Controls::ICON_BUTTON)
-        .class((Controls::ICON_BUTTON_ON, move || open.get()))
-        .attr("aria-pressed", move || open.get().to_string())
+        .class((Controls::ICON_BUTTON_ON, lit))
+        .attr("aria-pressed", move || lit().to_string())
         .attr("aria-label", title)
         .title(title)
-        .on(ev::click, move |_| state.set_editor_open.set(!open.get_untracked()))
-        .child(left_pane())
+        .on(ev::click, move |_| switch.set.set(!on.get_untracked()))
+        .child(art)
 }
 
 /// Picker that loads a sample program.

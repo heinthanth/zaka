@@ -84,16 +84,30 @@
 .dropdown-list-up
   transform-origin: bottom center
 
+// A group header: a band in the accent color with a rule over it, which
+// sticks to the top of the list while its choices scroll under it.
 .dropdown-group
-  padding: 8px 10px 4px
-  font-size: 11px
-  font-weight: 600
-  letter-spacing: 0.06em
+  position: sticky
+  top: -4px
+  z-index: 1
+  margin: 6px -4px 2px
+  padding: 8px 14px 6px
+  font-size: 10px
+  font-weight: 700
+  letter-spacing: 0.1em
   text-transform: uppercase
-  color: var(--fg-muted)
+  color: var(--accent)
+  background: var(--panel)
+  border-top: 1px solid var(--panel-border)
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border) 50%, transparent)
 
   &:first-child
-    padding-top: 4px
+    margin-top: -4px
+    border-top: 0
+
+// The choices under a header sit in from it.
+.dropdown-group ~ .dropdown-choice
+  padding-left: 18px
 
 .dropdown-choice
   display: flex

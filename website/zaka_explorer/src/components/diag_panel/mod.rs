@@ -1,21 +1,20 @@
 use leptos::ev;
-use leptos::html::button;
 use leptos::html::div;
+use leptos::html::p;
 use leptos::html::pre;
-use leptos::html::section;
 use leptos::html::span;
 use leptos::prelude::*;
 use leptos_scoped_style::ComponentStyle;
-use zaka_web_ui_common::icon::chevron;
 use zaka_web_ui_common::sheet;
 use zakac_diagnostics::Level;
 use zakac_i18n::t;
 use zakac_reporter::render::Paint;
 use zakac_reporter::render::Piece;
-use zakac_rust_sugars::tern;
+use zakac_rust_sugars::ret_if;
 
 use crate::compile::DiagRow;
 use crate::compile::spans::Range;
+use crate::components::table::ClassName as Table;
 use crate::state::AppState;
 use crate::state::use_state;
 
@@ -26,36 +25,14 @@ turf::style_sheet!("src/components/diag_panel/mod.sass");
 static SHEET: ComponentStyle =
     ComponentStyle::global_css("zaka-diag-panel", STYLE_SHEET);
 
-/// The problems panel: the diagnostics of all phases, as the CLI prints
-/// them. Its header opens and shuts it and counts the errors and warnings.
+/// The error and warning counts of the problems tab.
 ///
 /// # Returns
 ///
 /// The view.
-pub fn diag_panel() -> impl IntoView
+pub fn diag_counts() -> impl IntoView
 {
     let state = use_state();
-    let open = state.problems_open;
-    let list = move || open.get().then(|| diag_list(state));
-    let view = section()
-        .class(ClassName::DIAG_PANEL)
-        .class((ClassName::DIAG_PANEL_SHUT, move || !open.get()))
-        .child((diag_head(state), list));
-    (sheet(&SHEET), view)
-}
-
-/// The header: a button with a chevron, the title and the counts.
-///
-/// # Arguments
-///
-/// * `state` - The state.
-///
-/// # Returns
-///
-/// The view.
-fn diag_head(state: AppState) -> impl IntoView
-{
-    let open = state.problems_open;
     let errors = move || state.compiled.with(|c| c.count(Level::Error));
     let warnings = move || state.compiled.with(|c| c.count(Level::Warning));
     let counts = (
@@ -70,25 +47,17 @@ fn diag_head(state: AppState) -> impl IntoView
             .title(t!("explorer.problems.warnings"))
             .child(warnings),
     );
-    button()
-        .class(ClassName::DIAG_HEAD)
-        .attr("aria-expanded", move || open.get().to_string())
-        .title(move || {
-            tern!(
-                open.get(),
-                t!("explorer.problems.hide"),
-                t!("explorer.problems.show")
-            )
-        })
-        .on(ev::click, move |_| state.set_problems_open.set(!open.get_untracked()))
-        .child((
-            chevron(),
-            span().class(ClassName::DIAG_TITLE).child(t!("explorer.problems.title")),
-            counts,
-        ))
+    (sheet(&SHEET), counts)
 }
 
-/// The list of diagnostics.
+/// The diagnostics of all phases, as the CLI prints them.
+///
+/// # Returns
+///
+/// The view.
+pub fn diag_view() -> impl IntoView { (sheet(&SHEET), diag_list(use_state())) }
+
+/// The list of diagnostics, or a note when there are none.
 ///
 /// # Arguments
 ///
@@ -100,9 +69,10 @@ fn diag_head(state: AppState) -> impl IntoView
 fn diag_list(state: AppState) -> impl IntoView
 {
     let items = move || {
-        state.compiled.with(|c| {
-            c.diagnostics.iter().map(|d| diag_item(state, d.clone())).collect_view()
-        })
+        let rows = state.compiled.with(|c| c.diagnostics.clone());
+        let note = p().class(Table::VIEW_NOTE).child(t!("explorer.problems.none"));
+        ret_if!(rows.is_empty(), note.into_any());
+        rows.into_iter().map(|d| diag_item(state, d)).collect_view().into_any()
     };
     div().class(ClassName::DIAG_LIST).child(items)
 }

@@ -20,7 +20,7 @@ use crate::components::ast_view::ast_view;
 use crate::components::check_view::check_view;
 use crate::components::codegen_view::codegen_view;
 use crate::components::lower_view::lower_view;
-use crate::components::run_view::run_view;
+use crate::components::run_view::ops_view;
 use crate::components::segments_view::segments_view;
 use crate::components::tokens_view::tokens_view;
 use crate::state::AppState;
@@ -50,7 +50,7 @@ pub fn pipeline() -> impl IntoView
         Phase::Check => check_view().into_any(),
         Phase::Lower => lower_view().into_any(),
         Phase::Codegen => codegen_view().into_any(),
-        Phase::Run => run_view().into_any(),
+        Phase::Run => ops_view().into_any(),
     };
     let stage = move |phase: Phase| {
         let link = (phase as usize > 0).then(|| stage_link(state, phase));

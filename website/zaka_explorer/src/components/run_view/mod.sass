@@ -1,8 +1,6 @@
-// The run view: a bar of debugger controls over three tiles: the ops of the
-// call it shows on the left; the call stack, the locals, the operand stack
-// and the globals over the output on the right. Each tile scrolls on its own
-// and the gaps between them hold the splitters. When code generation did not
-// run, a note with an icon sits in the middle of the pane instead.
+// The run view: outside debug mode the run bar over the output; in debug
+// mode the ops of each function. When code generation did not run, a note
+// with an icon sits in the middle of the pane instead.
 
 .run-view
   display: flex
@@ -14,182 +12,19 @@
   display: grid
   place-items: center
 
+.run-code
+  min-height: 0
 
-.run-controls
-  display: flex
-  flex-wrap: wrap
-  align-items: center
-  gap: 6px
-
-  button:disabled
-    opacity: 0.4
-    cursor: default
-
-    &:hover
-      color: var(--fg-muted)
-      border-color: var(--panel-border)
-
-// Go and stop take the colors of go and halt while each can be pressed.
-.run-controls
-  .run-go:not(:disabled)
-    color: var(--ok)
-
-  .run-stop:not(:disabled)
-    color: var(--diag-error)
-
-// The rule between groups of the bar.
-.run-rule
-  width: 1px
-  height: 22px
-  margin: 0 4px
-  background: var(--panel-border)
-
-.run-speed
-  min-width: 130px
-  margin-left: 6px
-
-.run-status
-  margin-left: auto
-  padding: 3px 10px
-  border-radius: 999px
-  border: 1px solid var(--panel-border)
-  background: var(--panel)
-  font-size: 12px
-  font-weight: 600
-  color: var(--fg-muted)
-  white-space: nowrap
-
-.run-status-paused
-  color: var(--diag-warning)
-
-.run-status-running
-  color: var(--ok)
-
-.run-status-stopped
-  color: var(--diag-error)
-
-.run-status-finished
-  color: var(--accent)
-
-.run-status-trapped
-  color: var(--diag-error)
-
-.run-steps
-  font-size: 12px
-  color: var(--fg-muted)
-  font-variant-numeric: tabular-nums
-  white-space: nowrap
-
-.run-tiles
+// The title holds still; the text under it scrolls. Outside debug mode the
+// output fills the view.
+.run-out
   flex: 1
   min-height: 0
-  display: grid
-  grid-template-columns: minmax(0, var(--first-share)) 10px minmax(0, var(--second-share))
-
-.run-column
-  display: grid
-  grid-template-rows: minmax(0, var(--first-share)) 10px minmax(0, var(--second-share))
-  min-height: 0
-  min-width: 0
-
-.run-tile
-  min-height: 0
-  min-width: 0
-  overflow: auto
-  padding: 10px 12px
-  border: 1px solid var(--panel-border)
-  border-radius: 8px
-
-  // The heads stick to the top edge of the tile, over its padding.
-  table th
-    top: -10px
-
-.run-tile > h3:first-child
-  margin-top: 0
-
-// The title holds still; the text under it scrolls.
-.run-out
   display: flex
   flex-direction: column
-  overflow: hidden
 
-// Outside debug mode the output fills the view.
-.run-solo
-  flex: 1
-
-// The registers: a strip of name and value cells.
-.run-regs
-  display: flex
-  flex-wrap: wrap
-  gap: 8px
-
-.run-reg
-  display: flex
-  align-items: baseline
-  gap: 10px
-  min-width: 92px
-  padding: 6px 12px
-  border: 1px solid var(--panel-border)
-  border-radius: 8px
-  background: var(--code-bg)
-  font-family: var(--mono-font)
-  cursor: help
-
-.run-reg-name
-  font-family: var(--ui-font)
-  font-size: 11px
-  font-weight: 600
-  letter-spacing: 0.06em
-  color: var(--fg-muted)
-
-.run-reg-value
-  font-size: calc(var(--code-size) - 1px)
-  font-variant-numeric: tabular-nums
-  color: var(--fg)
-
-// A register name on the slot it points at.
-.reg-tag
-  display: inline-block
-  margin-left: 8px
-  padding: 0 7px
-  border-radius: 999px
-  font-family: var(--ui-font)
-  font-size: 10px
-  font-weight: 700
-  letter-spacing: 0.04em
-  line-height: 17px
-  text-transform: uppercase
-  color: var(--on-accent)
-  background: var(--accent)
-
-// The head row of a call on the frame store; its slots follow it.
-.run-tile tr.frame-row td
-  padding: 6px 8px
-  font-family: var(--ui-font)
-  font-size: 12px
-  background: var(--chip)
-
-  .reg-tag
-    margin: 0 8px 0 0
-
-.frame-name
-  font-family: var(--mono-font)
-  font-weight: 600
-  color: var(--fg)
-  margin-right: 8px
-
-.frame-meta
-  color: var(--fg-muted)
-
-.run-tile table tbody tr.row-viewed
-  background: color-mix(in srgb, var(--accent) 7%, transparent)
-
-// The free slot over the top of the operand stack.
-.run-tile tr.stack-free td
-  color: var(--fg-muted)
-
-  .reg-tag
-    margin-left: 0
+  > h3:first-child
+    margin-top: 0
 
 .asm-head
   margin: 0 0 6px
@@ -198,7 +33,7 @@
   font-weight: 600
   color: var(--fg-muted)
 
-// Each function of the ops in turn; the head of the one the panels show
+// Each function of the ops in turn; the head of the one the dock shows
 // stands out.
 .asm-func + .asm-func
   margin-top: 22px
@@ -228,24 +63,3 @@
 .run-trap
   margin: 8px 0 0
   color: var(--diag-error)
-
-// The splitters hide on narrow screens, so the tiles stack with their own
-// heights and the stage pane scrolls.
-@media (max-width: 900px)
-  .run-tiles,
-  .run-column
-    display: flex
-    flex-direction: column
-    gap: 10px
-
-  .run-tiles
-    flex: none
-
-  .run-code
-    flex: 0 0 50vh
-
-  .run-state
-    flex: none
-
-  .run-column .run-out
-    flex: 0 0 30vh

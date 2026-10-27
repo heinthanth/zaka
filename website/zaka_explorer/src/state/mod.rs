@@ -32,10 +32,13 @@ use crate::compile::compile;
 use crate::compile::samples::default_sample;
 use crate::compile::spans::Range;
 use crate::debug::Session;
+use crate::debug::Speed;
 use crate::monaco::Editor;
 use crate::state::permalink::Link;
 use crate::state::settings::AstMode;
+use crate::state::settings::HeapCap;
 use crate::state::settings::LowerMode;
+use crate::state::split::DEFAULT_DOCK_SHARE;
 use crate::state::split::DEFAULT_EDITOR_SHARE;
 use crate::state::split::DEFAULT_STAGE_SHARE;
 
@@ -54,8 +57,20 @@ const EDITOR_SHARE_STORE: &str = "zaka-explorer-editor-share";
 /// Local storage name of the stage view share of the right column.
 const STAGE_SHARE_STORE: &str = "zaka-explorer-stage-share";
 
+/// Local storage name of the stage view share of the debug row.
+const DOCK_SHARE_STORE: &str = "zaka-explorer-dock-share";
+
 /// Local storage name of the editor pane switch.
 const EDITOR_STORE: &str = "zaka-explorer-editor-open";
+
+/// Local storage name of the heap cap.
+const HEAP_CAP_STORE: &str = "zaka-explorer-heap-cap";
+
+/// Local storage name of the stage view switch.
+const STAGE_STORE: &str = "zaka-explorer-stage-open";
+
+/// Local storage name of the dock switch.
+const DOCK_STORE: &str = "zaka-explorer-dock-open";
 
 /// Local storage name of the problems panel switch.
 const PROBLEMS_STORE: &str = "zaka-explorer-problems-open";
@@ -65,6 +80,17 @@ const DEBUG_STORE: &str = "zaka-explorer-debug-mode";
 
 /// Local storage name of the auto run switch.
 const AUTO_RUN_STORE: &str = "zaka-explorer-auto-run";
+
+/// The tab of the bottom panel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PanelTab
+{
+    /// What the program wrote; in debug mode alone.
+    #[default]
+    Output,
+    /// The diagnostics.
+    Problems,
+}
 
 /// State shared between the editor and the views.
 #[derive(Clone, Copy, Builder)]
@@ -108,10 +134,22 @@ pub struct AppState
     pub stage_share: Signal<f64>,
     /// Set the stage view share of the right column.
     pub set_stage_share: WriteSignal<f64>,
+    /// Share of the debug row the stage view takes; the dock takes the rest.
+    pub dock_share: Signal<f64>,
+    /// Set the stage view share of the debug row.
+    pub set_dock_share: WriteSignal<f64>,
     /// Whether the editor pane shows.
     pub editor_open: Signal<bool>,
     /// Show or hide the editor pane.
     pub set_editor_open: WriteSignal<bool>,
+    /// Whether the stage view shows.
+    pub stage_open: Signal<bool>,
+    /// Show or hide the stage view.
+    pub set_stage_open: WriteSignal<bool>,
+    /// Whether the dock shows in debug mode.
+    pub dock_open: Signal<bool>,
+    /// Show or hide the dock.
+    pub set_dock_open: WriteSignal<bool>,
     /// Whether the problems panel is open.
     pub problems_open: Signal<bool>,
     /// Open or close the problems panel.
@@ -123,6 +161,18 @@ pub struct AppState
     pub set_debug_mode: WriteSignal<bool>,
     /// Whether the debugger steps on a timer.
     pub auto_step: RwSignal<bool>,
+    /// The cap on live heap octets of a run.
+    pub heap_cap: Signal<HeapCap>,
+    /// Choose the cap on live heap octets.
+    pub set_heap_cap: WriteSignal<HeapCap>,
+    /// Whether ops run in batches, one batch a frame.
+    pub going: RwSignal<bool>,
+    /// The speed of the timed stepping.
+    pub speed: RwSignal<Speed>,
+    /// The open tab of the bottom panel.
+    pub panel_tab: RwSignal<PanelTab>,
+    /// The address a click on a pointer asks the heap panel to show.
+    pub heap_focus: RwSignal<Option<u64>>,
     /// The 1-based source lines with a break point. The editor moves them
     /// with the edits; each compile turns them into stops of the debugger.
     pub break_lines: RwSignal<BTreeSet<u32>>,
@@ -403,9 +453,26 @@ pub fn provide_state() -> AppState
             STAGE_SHARE_STORE,
             UseStorageOptions::default().initial_value(DEFAULT_STAGE_SHARE),
         );
+    let (dock_share, set_dock_share, _) =
+        use_local_storage_with_options::<f64, FromToStringCodec>(
+            DOCK_SHARE_STORE,
+            UseStorageOptions::default().initial_value(DEFAULT_DOCK_SHARE),
+        );
     let (editor_open, set_editor_open, _) =
         use_local_storage_with_options::<bool, FromToStringCodec>(
             EDITOR_STORE,
+            UseStorageOptions::default().initial_value(true),
+        );
+    let (heap_cap, set_heap_cap, _) =
+        use_local_storage::<HeapCap, FromToStringCodec>(HEAP_CAP_STORE);
+    let (stage_open, set_stage_open, _) =
+        use_local_storage_with_options::<bool, FromToStringCodec>(
+            STAGE_STORE,
+            UseStorageOptions::default().initial_value(true),
+        );
+    let (dock_open, set_dock_open, _) =
+        use_local_storage_with_options::<bool, FromToStringCodec>(
+            DOCK_STORE,
             UseStorageOptions::default().initial_value(true),
         );
     let (problems_open, set_problems_open, _) =
@@ -438,13 +505,25 @@ pub fn provide_state() -> AppState
         .set_editor_share(set_editor_share)
         .stage_share(stage_share)
         .set_stage_share(set_stage_share)
+        .dock_share(dock_share)
+        .set_dock_share(set_dock_share)
         .editor_open(editor_open)
         .set_editor_open(set_editor_open)
+        .stage_open(stage_open)
+        .set_stage_open(set_stage_open)
+        .dock_open(dock_open)
+        .set_dock_open(set_dock_open)
         .problems_open(problems_open)
         .set_problems_open(set_problems_open)
         .debug_mode(debug_mode)
         .set_debug_mode(set_debug_mode)
         .auto_step(RwSignal::new(false))
+        .heap_cap(heap_cap)
+        .set_heap_cap(set_heap_cap)
+        .going(RwSignal::new(false))
+        .speed(RwSignal::new(Speed::default()))
+        .panel_tab(RwSignal::new(PanelTab::default()))
+        .heap_focus(RwSignal::new(None))
         .break_lines(RwSignal::new(BTreeSet::new()))
         .op_breaks(RwSignal::new(BTreeSet::new()))
         .auto_run(auto_run)
@@ -480,6 +559,7 @@ fn wire_debug(state: AppState)
     let ops = Memo::new(move |_| state.compiled.with(|c| c.ops.clone()));
     Effect::new(move |_| {
         let mut session = ops.with(|ops| Session::new(ops.as_ref()));
+        session.set_max_heap(untrack(|| state.heap_cap.get().octets()));
         session.set_line_stops(untrack(|| state.line_stops()));
         session.set_op_stops(untrack(|| state.op_stops()));
         state.debug.set(session);
@@ -489,6 +569,10 @@ fn wire_debug(state: AppState)
     Effect::new(move |_| {
         let stops = state.line_stops();
         state.debug.update(|s| s.set_line_stops(stops));
+    });
+    Effect::new(move |_| {
+        let cap = state.heap_cap.get().octets();
+        state.debug.update(|s| s.set_max_heap(cap));
     });
     Effect::new(move |_| {
         let stops = state.op_stops();

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 /// The files the explorer names under hashed names: the Rust name of each and
 /// its file, from the package.
-const ASSETS: [(&str, &str); 5] = [
+const ASSETS: [(&str, &str); 6] = [
     ("LOGO_LIGHT", "../../artwork/logo/bloom-white-light.svg"),
     ("LOGO_DARK", "../../artwork/logo/bloom-white-dark.svg"),
     (
@@ -11,6 +11,7 @@ const ASSETS: [(&str, &str); 5] = [
     ),
     ("SABAE_FONT", "../zaka_web_ui_common/assets/fonts/MyanmarSabae.ttf"),
     ("COVER_CARD", "../zaka_website/assets/pictures/cover.png"),
+    ("BLOSSOMS_PHOTO", "../zaka_website/assets/pictures/blossoms.jpg"),
 ];
 
 /// Rebuild when a sheet or a locale table changes; the sheet macros read the

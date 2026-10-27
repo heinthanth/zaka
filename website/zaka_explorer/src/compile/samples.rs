@@ -33,9 +33,13 @@ Sample { group: $group, name: $name, text: include_str!(sample_path!($group, $na
 /// The group of the samples that are meant to report errors.
 pub const DIAGNOSTICS: &str = "diagnostics";
 
+/// The group of the samples that compile clean and go wrong at run time:
+/// each traps, or leaves heap room behind.
+pub const MISTAKES: &str = "mistakes";
+
 /// The groups, in picker order.
 pub const GROUPS: &[&str] =
-    &["basics", "control", "functions", "heap", "programs", DIAGNOSTICS];
+    &["basics", "control", "functions", "heap", "programs", MISTAKES, DIAGNOSTICS];
 
 /// The samples, in picker order.
 #[rustfmt::skip]
@@ -79,6 +83,15 @@ pub const SAMPLES: &[Sample] = &[
     sample!("programs", "leap"),
     sample!("programs", "max_of_three"),
     sample!("programs", "triangle"),
+    sample!("mistakes", "leak"),
+    sample!("mistakes", "null_read"),
+    sample!("mistakes", "past_the_end"),
+    sample!("mistakes", "use_after_free"),
+    sample!("mistakes", "double_free"),
+    sample!("mistakes", "bad_free"),
+    sample!("mistakes", "zero_divide"),
+    sample!("mistakes", "endless_recursion"),
+    sample!("mistakes", "endless_loop"),
     sample!("diagnostics", "lexer_errors"),
     sample!("diagnostics", "parser_errors"),
     sample!("diagnostics", "check_errors"),

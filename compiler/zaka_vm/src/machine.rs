@@ -504,6 +504,27 @@ impl Machine
     /// The module.
     pub fn module(&self) -> &Module { &self.module }
 
+    /// The limits of the run.
+    ///
+    /// # Returns
+    ///
+    /// The limits.
+    pub fn options(&self) -> RunOptions { self.options }
+
+    /// The name of the function that made a cell.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the cell.
+    ///
+    /// # Returns
+    ///
+    /// The name, or `None` when no cell ever started there.
+    pub fn cell_maker(&self, start: u64) -> Option<&str>
+    {
+        self.cells.get(&start).map(|f| self.func_name(*f))
+    }
+
     /// Place a trap at the op that ran last.
     ///
     /// # Arguments
@@ -550,7 +571,7 @@ impl Machine
     fn block_text(&self, addr: u64) -> Option<String>
     {
         let block = self.mem.block_near(addr)?;
-        let maker = || self.cells.get(&block.start).map_or("?", |f| self.func_name(*f));
+        let maker = || self.cell_maker(block.start).unwrap_or("?");
         let origin = match block.origin
         {
             Origin::Cell => t!("vm.trap.cell_of", func = maker()).into_owned(),

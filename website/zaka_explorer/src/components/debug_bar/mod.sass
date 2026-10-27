@@ -1,0 +1,96 @@
+// The run controls: go, stop and the status outside debug mode; in debug
+// mode the whole debugger bar, as a card over the panes.
+
+.debug-bar
+  margin: 0 10px 10px
+  padding: 6px 10px
+  background: var(--panel)
+  border: 1px solid var(--panel-border)
+  border-radius: var(--radius)
+  box-shadow: var(--shadow)
+
+.run-controls
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 6px
+
+  button:disabled
+    opacity: 0.4
+    cursor: default
+
+    &:hover
+      color: var(--fg-muted)
+      border-color: var(--panel-border)
+
+// Go and stop take the colors of go and halt while each can be pressed.
+.run-controls
+  .run-go:not(:disabled)
+    color: var(--ok)
+
+  .run-stop:not(:disabled)
+    color: var(--diag-error)
+
+// The rule between groups of the bar.
+.run-rule
+  width: 1px
+  height: 22px
+  margin: 0 4px
+  background: var(--panel-border)
+
+.run-speed
+  --dropdown-width: auto
+
+.run-status
+  margin-left: auto
+  padding: 3px 10px
+  border-radius: 999px
+  border: 1px solid var(--panel-border)
+  background: var(--panel)
+  font-size: 12px
+  font-weight: 600
+  color: var(--fg-muted)
+  white-space: nowrap
+
+.run-status-paused
+  color: var(--diag-warning)
+
+.run-status-running
+  color: var(--ok)
+
+.run-status-stopped
+  color: var(--diag-error)
+
+.run-status-finished
+  color: var(--accent)
+
+.run-status-trapped
+  color: var(--diag-error)
+
+// The button of the compiler options shows its name beside the icon on
+// wide screens; on narrow ones it is the square icon button.
+.run-controls .run-options
+  display: flex
+  gap: 8px
+  width: auto
+  padding: 0 12px
+  font: inherit
+  font-size: 13px
+
+.run-options-name
+  white-space: nowrap
+
+@media (max-width: 640px)
+  .run-controls .run-options
+    width: 34px
+    padding: 0
+    justify-content: center
+
+  .run-options-name
+    display: none
+
+.run-steps
+  font-size: 12px
+  color: var(--fg-muted)
+  font-variant-numeric: tabular-nums
+  white-space: nowrap

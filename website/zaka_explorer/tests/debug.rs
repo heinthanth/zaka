@@ -5,9 +5,13 @@ use zaka_explorer::compile::asm::has_ops;
 use zaka_explorer::compile::asm::line_stops;
 use zaka_explorer::compile::asm::op_spot;
 use zaka_explorer::compile::compile;
+use zaka_explorer::compile::samples::MISTAKES;
+use zaka_explorer::compile::samples::SAMPLES;
 use zaka_explorer::compile::samples::find_sample;
+use zaka_explorer::debug::BlockState;
 use zaka_explorer::debug::RunStatus;
 use zaka_explorer::debug::Session;
+use zaka_vm::mem::Origin;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::do_while;
 
@@ -371,4 +375,89 @@ fn an_addressed_variable_shows_its_value_then_its_cell()
     let (x, p) = (&rows[0], &rows[1]);
     assert_eq!(x.name, "x");
     assert_eq!(x.value, format!("၇ @{}", p.value));
+}
+
+#[test]
+fn the_heap_lists_blocks_as_the_program_asks_for_them_and_frees_them()
+{
+    let (_, mut s) = session_of("heap/growable");
+    assert!(s.heap().blocks.is_empty());
+    while s.heap().blocks.is_empty()
+    {
+        s.step();
+    }
+    let first = s.heap().blocks[0].clone();
+    assert_eq!(
+        (first.origin, first.state, first.len),
+        (Origin::Heap, BlockState::Live, 32)
+    );
+    assert_eq!(first.data.len(), 32);
+    while s.heap().freed == 0
+    {
+        s.step();
+    }
+    let heap = s.heap();
+    assert_eq!(heap.blocks[0].state, BlockState::Freed);
+    assert_eq!((heap.blocks[1].state, heap.blocks[1].len), (BlockState::Live, 64));
+    assert_eq!((heap.live, heap.live_heap), (1, 64));
+}
+
+#[test]
+fn a_finished_run_keeps_its_last_heap_until_the_next_run()
+{
+    let (_, mut s) = session_of("heap/growable");
+    while s.run_for(100, false)
+    {}
+    assert_eq!(s.status(), RunStatus::Finished);
+    let states: Vec<BlockState> = s.heap().blocks.iter().map(|b| b.state).collect();
+    assert_eq!(states, [BlockState::Freed; 3]);
+    s.reset();
+    assert!(s.heap().blocks.is_empty());
+}
+
+#[test]
+fn heap_room_never_freed_shows_as_leaked_once_the_run_finishes()
+{
+    let text = "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် \
+                သိမ်းထားမည်။\nပ ၏ တန်ဖိုး ကို ၄၂ ဟု ထားပါ။";
+    let out = compile(text, &Options::default());
+    let mut s = Session::new(out.ops.as_ref());
+    s.resume();
+    assert_eq!(s.status(), RunStatus::Finished);
+    let heap = s.heap();
+    let leaked: Vec<_> =
+        heap.blocks.iter().filter(|b| b.origin == Origin::Heap).collect();
+    assert_eq!(leaked.len(), 1);
+    assert_eq!((leaked[0].state, leaked[0].len), (BlockState::Leaked, 8));
+    assert!(leaked[0].data.contains(&42));
+}
+
+#[test]
+fn a_pointer_leads_into_a_cell_that_names_its_maker()
+{
+    let (_, mut s) = session_of("heap/swap");
+    s.step();
+    let frames = s.frame_blocks();
+    let values = frames.iter().flat_map(|f| f.slots.iter().chain(&f.temps));
+    let addr = values.filter_map(|v| v.points_at).next().expect("a pointer");
+    let heap = s.heap();
+    let start = heap.block_of(addr).expect("its block");
+    let block = heap.blocks.iter().find(|b| b.start == start).unwrap();
+    assert_eq!((block.origin, block.maker.as_deref()), (Origin::Cell, Some("main")));
+}
+
+#[test]
+fn each_mistake_traps_or_leaks()
+{
+    let mistakes: Vec<_> = SAMPLES.iter().filter(|s| s.group == MISTAKES).collect();
+    assert!(mistakes.len() >= 8);
+    for sample in mistakes
+    {
+        let (_, mut s) = session_of(&sample.path());
+        while s.run_for(10_000, false)
+        {}
+        let leaked = s.heap().blocks.iter().any(|b| b.state == BlockState::Leaked);
+        let trapped = s.status() == RunStatus::Trapped;
+        assert!(trapped != leaked, "{}: {:?}", sample.path(), s.status());
+    }
 }

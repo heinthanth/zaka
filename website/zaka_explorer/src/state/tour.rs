@@ -143,6 +143,11 @@ pub fn steps() -> Vec<Step>
         )
         .auto(true)
         .build(),
+        pane("explorer.tour.heap", "explorer.tour.heap_text", "[data-tour=heap]")
+            .auto(true)
+            .build(),
+        pane("explorer.tour.panel", "explorer.tour.panel_text", "[data-tour=panel]")
+            .build(),
         pane(
             "explorer.tour.settings",
             "explorer.tour.settings_text",

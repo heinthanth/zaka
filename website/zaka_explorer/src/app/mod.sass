@@ -1,15 +1,17 @@
-// The page shell: the toolbar on top, then the panels as cards on the
-// canvas. The editor and the right column split the width; the stage view
-// and the problems panel split the column. The gaps between the cards hold
-// the splitters.
+// The page shell: the toolbar on top, in debug mode the debugger bar, then
+// the panels as cards on the canvas. The editor and the right column split
+// the width; the stage row and the bottom panel split the column; in debug
+// mode the stage view and the dock split the stage row. The gaps between
+// the cards hold the splitters.
 
 .app-shell
-  display: grid
-  grid-template-rows: auto 1fr
+  display: flex
+  flex-direction: column
   height: 100vh
   background: var(--canvas)
 
 .panes
+  flex: 1
   display: grid
   grid-template-columns: minmax(0, var(--first-share)) 10px minmax(0, var(--second-share))
   min-height: 0
@@ -33,15 +35,142 @@
   min-height: 0
   min-width: 0
 
-.column-shut
-  grid-template-rows: minmax(0, 1fr) 10px auto
+// The stage row and the bottom panel keep their rows when the other one
+// hides, so the splitter alone moves into the free track.
+.stage-row
+  grid-row: 1
 
-// With no problems the stage view takes the whole column.
-.column-clean
+.panel-problems
+  grid-row: 3
+
+// The stage row alone takes the whole column; the bottom panel is off.
+.column-top
   grid-template-rows: minmax(0, 1fr) 0 0
 
   .panel-problems
     display: none
+
+// The bottom panel alone takes the whole column; the stage view and the
+// dock are off.
+.column-low
+  grid-template-rows: 0 0 minmax(0, 1fr)
+
+  .stage-row
+    display: none
+
+// The blank canvas shows when the switches hide each pane.
+.blank-canvas
+  display: none
+
+.panes-blank
+  grid-template-columns: minmax(0, 1fr)
+  grid-template-rows: minmax(0, 1fr)
+
+  > :not(.blank-canvas)
+    display: none
+
+  .blank-canvas
+    grid-column: 1 / -1
+    position: relative
+    isolation: isolate
+    display: grid
+    align-items: center
+    justify-items: start
+    min-height: 0
+    overflow: hidden
+    border: 1px solid var(--panel-border)
+    border-radius: var(--radius)
+    background: var(--panel)
+
+    // A veil of the panel color, heavier at the left, so the flowers
+    // stand on the right and the note keeps its contrast.
+    &::after
+      content: ""
+      position: absolute
+      inset: 0
+      z-index: -1
+      background: linear-gradient(90deg, color-mix(in srgb, var(--panel) 92%, transparent) 0%, color-mix(in srgb, var(--panel) calc(70% + var(--photo-veil) * 0.5), transparent) 45%, color-mix(in srgb, var(--panel) calc(35% + var(--photo-veil)), transparent) 100%)
+
+// The photo, set in from the left, so its flowers stand to the right; its
+// left edge fades out into the panel, as on the website.
+.blank-photo
+  position: absolute
+  inset: 0 0 0 auto
+  z-index: -2
+  width: 82%
+  height: 100%
+  object-fit: cover
+  mask-image: linear-gradient(90deg, transparent, #000 30%)
+  object-position: 50% 25%
+  opacity: var(--photo-opacity)
+
+// The note stands on the left, over the heavier veil, clear of the
+// flowers.
+.blank-note
+  max-width: 420px
+  padding: 24px 24px 24px clamp(24px, 8%, 96px)
+
+.blank-title
+  margin: 0 0 8px
+  font-size: 18px
+  font-weight: 600
+  color: var(--fg)
+
+.blank-text
+  margin: 0
+  line-height: 1.6
+  color: var(--fg-muted)
+
+.blank-credit
+  position: absolute
+  right: 16px
+  bottom: 12px
+  margin: 0
+  padding: 3px 10px
+  font-size: 12px
+  border-radius: 999px
+  background: color-mix(in srgb, var(--panel) 80%, transparent)
+
+  a
+    color: var(--fg-muted)
+    text-decoration: none
+
+    &:hover
+      color: var(--fg)
+      text-decoration: underline
+
+// With the right column blank, the editor takes the whole width.
+.panes-solo
+  grid-template-columns: minmax(0, 1fr) 0 0
+
+  .column
+    display: none
+
+// The stage view takes the whole row, outside debug mode or with the dock
+// off; in debug mode the dock takes its share, or the whole row with the
+// stage view off.
+.stage-row
+  display: grid
+  grid-template-columns: minmax(0, 1fr) 0 0
+  min-height: 0
+  min-width: 0
+
+.stage-row-split
+  grid-template-columns: minmax(0, var(--first-share)) 10px minmax(0, var(--second-share))
+
+.stage-row-dock
+  grid-template-columns: 0 0 minmax(0, 1fr)
+
+// Each pane keeps its own track, so one its switch hides never moves the
+// other into its place.
+.panel-stage
+  grid-column: 1
+
+.panel-dock
+  grid-column: 3
+
+.stage-row .panel-off
+  display: none
 
 .panel
   min-height: 0
@@ -72,6 +201,11 @@
   .panes
     overflow: auto
 
+  .stage-row
+    display: flex
+    flex-direction: column
+    gap: 10px
+
   .panel-editor
     flex: 0 0 50vh
 
@@ -80,3 +214,9 @@
 
   .panel-stage
     flex: 0 0 70vh
+
+  .panel-dock
+    flex: 0 0 60vh
+
+  .panel-problems
+    flex: 0 0 40vh

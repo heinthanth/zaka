@@ -73,6 +73,16 @@
   align-items: center
   gap: 8px
 
+// The pane switches sit close together, set off from the other buttons
+// with a rule on each side.
+.pane-switches
+  display: flex
+  align-items: center
+  gap: 2px
+  padding: 0 6px
+  border-left: 1px solid var(--panel-border)
+  border-right: 1px solid var(--panel-border)
+
 .control
   display: flex
   align-items: center
@@ -81,14 +91,28 @@
   font-size: 13px
   --dropdown-width: 220px
 
-// On small screens the brand and the buttons share the first row, and the
-// sample picker takes the whole second row.
+// On small screens the brand and the menu button share the first row, the
+// other buttons sit on the right of the second row, and the sample picker
+// takes the whole third row.
 @media (max-width: 640px)
   .toolbar
     row-gap: 16px
 
+  .brand
+    flex: 1
+
+  .toolbar-gap
+    display: none
+
+  // The about and settings buttons it set off from are in the menu.
+  .pane-switches
+    padding-right: 0
+    border-right: 0
+
   .toolbar-actions
     order: 1
+    flex: 1 1 100%
+    justify-content: flex-end
 
   // The label, then the picker over the rest of the row.
   .control

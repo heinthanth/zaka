@@ -1,11 +1,15 @@
 pub mod about;
 pub mod asm_table;
 pub mod ast_view;
+pub mod bottom_panel;
 pub mod check_view;
 pub mod codegen_view;
+pub mod debug_bar;
+pub mod debug_dock;
 pub mod diag_panel;
 pub mod editor;
 pub mod graph_view;
+pub mod heap_view;
 pub mod lower_view;
 pub mod pipeline;
 pub mod run_view;

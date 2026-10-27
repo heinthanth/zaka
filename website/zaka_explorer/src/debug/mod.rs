@@ -8,7 +8,9 @@ use strum::IntoStaticStr;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::State;
+use zaka_vm::mem::Block;
 use zaka_vm::mem::Mem;
+use zaka_vm::mem::Origin;
 use zaka_vm::print::text;
 use zaka_vm::trap::hex;
 use zakac_codegen::bc;
@@ -21,6 +23,24 @@ use zakac_rust_sugars::tern;
 use crate::compile::RUN_STEPS;
 use crate::compile::asm::code_starts;
 use crate::compile::trap_text;
+
+/// The cap on live heap octets of a session until one is set.
+pub const MAX_HEAP: u64 = 16 << 20;
+
+/// Octets in a KiB.
+const KIB: u64 = 1 << 10;
+
+/// Octets in a MiB.
+const MIB: u64 = 1 << 20;
+
+/// Octets in a GiB.
+const GIB: u64 = 1 << 30;
+
+/// The most octets of a block the heap panel keeps for its dump.
+pub const DUMP_CAP: usize = 256;
+
+/// The most blocks the heap panel lists; the rest are counted.
+pub const MAX_BLOCKS: usize = 500;
 
 /// Where a run in the debugger stands; its static name is a CSS class
 /// suffix.
@@ -171,6 +191,126 @@ pub struct ValueRow
     /// The value as the program would print it.
     #[builder(into)]
     pub value: String,
+    /// The address the value leads to: a pointer that is not null, or the
+    /// cell of an addressed slot.
+    pub points_at: Option<u64>,
+}
+
+/// Whether a block is in use, as the heap panel shows it; its static name
+/// is a CSS class suffix.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoStaticStr)]
+#[strum(serialize_all = "lowercase")]
+pub enum BlockState
+{
+    /// In use.
+    Live,
+    /// Freed and in quarantine.
+    Freed,
+    /// A heap block still in use when the run finished.
+    Leaked,
+}
+
+impl BlockState
+{
+    /// Name in the badge of the block.
+    ///
+    /// # Returns
+    ///
+    /// The name.
+    pub fn label(self) -> Cow<'static, str>
+    {
+        match self
+        {
+            BlockState::Live => t!("explorer.heap.live"),
+            BlockState::Freed => t!("explorer.heap.freed"),
+            BlockState::Leaked => t!("explorer.heap.leaked"),
+        }
+    }
+}
+
+/// A block of the address space, as the heap panel shows it.
+#[derive(Debug, Clone, PartialEq, Eq, Builder)]
+pub struct BlockRow
+{
+    /// The address of the first octet.
+    pub start: u64,
+    /// The octet count.
+    pub len: u64,
+    /// Where the block came from.
+    pub origin: Origin,
+    /// Whether the block is in use.
+    pub state: BlockState,
+    /// The function that made a cell; `None` for heap and static blocks.
+    pub maker: Option<String>,
+    /// The first octets of the contents, at most [`DUMP_CAP`]; none once
+    /// the block is freed.
+    #[builder(default)]
+    pub data: Vec<u8>,
+}
+
+impl BlockRow
+{
+    /// Whether an address lies inside the block or just past its end.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address.
+    ///
+    /// # Returns
+    ///
+    /// `true` when `start <= addr <= start + len`.
+    pub fn reaches(&self, addr: u64) -> bool
+    {
+        addr >= self.start && addr <= self.start.saturating_add(self.len)
+    }
+}
+
+/// The blocks of the address space at one point of a run, with the counts
+/// the heap panel shows over them.
+#[derive(Debug, Clone, PartialEq, Eq, Builder)]
+pub struct HeapShot
+{
+    /// The blocks in address order, at most [`MAX_BLOCKS`].
+    #[builder(default)]
+    pub blocks: Vec<BlockRow>,
+    /// The blocks left out of the list.
+    #[builder(default)]
+    pub omitted: usize,
+    /// The live heap octets.
+    #[builder(default)]
+    pub live_heap: u64,
+    /// The cap on live heap octets.
+    #[builder(default = MAX_HEAP)]
+    pub cap: u64,
+    /// The blocks in use.
+    #[builder(default)]
+    pub live: usize,
+    /// The blocks in quarantine.
+    #[builder(default)]
+    pub freed: usize,
+}
+
+impl Default for HeapShot
+{
+    fn default() -> Self { HeapShot::builder().build() }
+}
+
+impl HeapShot
+{
+    /// The block an address leads into.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address.
+    ///
+    /// # Returns
+    ///
+    /// The start of the block, or `None` when the address is outside each
+    /// listed block.
+    pub fn block_of(&self, addr: u64) -> Option<u64>
+    {
+        self.blocks.iter().rev().find(|b| b.reaches(addr)).map(|b| b.start)
+    }
 }
 
 /// The registers of the machine, as the register strip shows them.
@@ -208,7 +348,7 @@ pub struct FrameBlock
 
 /// A debugger session: a machine over the generated ops, the break points
 /// and the call the panels show.
-#[derive(Debug, Clone, Default, Builder)]
+#[derive(Debug, Clone, Builder)]
 pub struct Session
 {
     /// The machine, or `None` when code generation did not run.
@@ -232,6 +372,17 @@ pub struct Session
     /// The number of ops the ended run ran.
     #[builder(default)]
     kept_steps: u64,
+    /// The blocks the ended run left.
+    #[builder(default)]
+    kept_heap: HeapShot,
+    /// The cap on live heap octets of each run.
+    #[builder(default = MAX_HEAP)]
+    max_heap: u64,
+}
+
+impl Default for Session
+{
+    fn default() -> Self { Session::builder().build() }
 }
 
 /// The values of the operand stack that belong to a call: those pushed since
@@ -294,25 +445,44 @@ fn temp_rows(values: &[Value]) -> Vec<ValueRow>
             .name("")
             .kind(v.kind().name())
             .value(text(*v))
+            .maybe_points_at(pointee(*v))
             .build()
     };
     values.iter().enumerate().map(row).collect()
 }
 
-/// A machine at the start of the ops, with the op and heap budgets of the
-/// explorer.
+/// A machine at the start of the ops, with the op budget of the explorer.
 ///
 /// # Arguments
 ///
 /// * `ops` - The ops.
+/// * `max_heap` - The cap on live heap octets.
 ///
 /// # Returns
 ///
 /// The machine.
-fn machine_for(ops: &bc::Module) -> Machine
+fn machine_for(ops: &bc::Module, max_heap: u64) -> Machine
 {
-    let options = RunOptions::builder().max_steps(RUN_STEPS).max_heap(16 << 20).build();
+    let options = RunOptions::builder().max_steps(RUN_STEPS).max_heap(max_heap).build();
     Machine::new(ops.clone(), options)
+}
+
+/// An octet count with a unit.
+///
+/// # Arguments
+///
+/// * `n` - The count.
+///
+/// # Returns
+///
+/// The text, such as `48 B`, `1.5 KiB`, `16 MiB` or `4 GiB`.
+pub fn octets(n: u64) -> String
+{
+    ret_if!(n >= GIB && n.is_multiple_of(GIB), format!("{} GiB", n / GIB));
+    ret_if!(n >= MIB && n.is_multiple_of(MIB), format!("{} MiB", n / MIB));
+    ret_if!(n >= MIB, format!("{:.1} MiB", n as f64 / MIB as f64));
+    ret_if!(n >= KIB, format!("{:.1} KiB", n as f64 / KIB as f64));
+    format!("{n} B")
 }
 
 /// The text of a slot value. An addressed slot holds the address of its
@@ -340,6 +510,75 @@ fn slot_text(mem: &Mem, slot: &bc::Slot, v: Value) -> String
     held.map_or_else(|| hex(addr), |held| format!("{} @{}", text(held), hex(addr)))
 }
 
+/// The address a value leads to.
+///
+/// # Arguments
+///
+/// * `v` - The value; an addressed slot holds the address of its cell.
+///
+/// # Returns
+///
+/// The address, or `None` for a value that is not a pointer or is null.
+fn pointee(v: Value) -> Option<u64> { v.as_ptr().filter(|a| *a != 0) }
+
+/// A row of the heap panel for a block.
+///
+/// # Arguments
+///
+/// * `m` - The machine.
+/// * `b` - The block.
+/// * `finished` - Whether the run finished, so a live heap block leaked.
+///
+/// # Returns
+///
+/// The row.
+fn block_row(m: &Machine, b: &Block, finished: bool) -> BlockRow
+{
+    let leaked = finished && b.origin == Origin::Heap;
+    let state = match (b.live, leaked)
+    {
+        (false, _) => BlockState::Freed,
+        (true, true) => BlockState::Leaked,
+        (true, false) => BlockState::Live,
+    };
+    let maker = tern!(b.origin == Origin::Cell, m.cell_maker(b.start), None);
+    let data = b.data.iter().take(DUMP_CAP).copied().collect();
+    BlockRow::builder()
+        .start(b.start)
+        .len(b.len)
+        .origin(b.origin)
+        .state(state)
+        .maybe_maker(maker.map(str::to_string))
+        .data(data)
+        .build()
+}
+
+/// The blocks of a machine for the heap panel.
+///
+/// # Arguments
+///
+/// * `m` - The machine.
+/// * `finished` - Whether the run finished, so the live heap blocks leaked.
+///
+/// # Returns
+///
+/// The blocks and their counts.
+fn heap_shot(m: &Machine, finished: bool) -> HeapShot
+{
+    let mem = m.mem();
+    let live = mem.blocks().filter(|b| b.live).count();
+    let total = mem.blocks().count();
+    let rows = mem.blocks().take(MAX_BLOCKS).map(|b| block_row(m, b, finished));
+    HeapShot::builder()
+        .blocks(rows.collect())
+        .omitted(total.saturating_sub(MAX_BLOCKS))
+        .live_heap(mem.live_heap())
+        .cap(m.options().max_heap)
+        .live(live)
+        .freed(total - live)
+        .build()
+}
+
 /// Rows of slots and their values.
 ///
 /// # Arguments
@@ -360,6 +599,7 @@ fn value_rows(mem: &Mem, slots: &[bc::Slot], values: &[Value]) -> Vec<ValueRow>
             .name(s.name.as_str())
             .kind(s.kind.name())
             .value(slot_text(mem, s, *v))
+            .maybe_points_at(pointee(*v))
             .build()
     };
     slots.iter().zip(values).enumerate().map(row).collect()
@@ -378,7 +618,20 @@ impl Session
     /// The session, at the first op.
     pub fn new(ops: Option<&bc::Module>) -> Self
     {
-        Session::builder().maybe_machine(ops.map(machine_for)).build()
+        let machine = ops.map(|o| machine_for(o, MAX_HEAP));
+        Session::builder().maybe_machine(machine).build()
+    }
+
+    /// Set the cap on live heap octets; a new cap starts the run again.
+    ///
+    /// # Arguments
+    ///
+    /// * `cap` - The cap.
+    pub fn set_max_heap(&mut self, cap: u64)
+    {
+        ret_if!(cap == self.max_heap);
+        self.max_heap = cap;
+        self.reset();
     }
 
     /// Whether there are ops to run.
@@ -391,11 +644,13 @@ impl Session
     /// Go back to the first op; the break points remain.
     pub fn reset(&mut self)
     {
-        self.machine = self.machine.as_ref().map(|m| machine_for(m.module()));
+        let cap = self.max_heap;
+        self.machine = self.machine.as_ref().map(|m| machine_for(m.module(), cap));
         self.viewed = 0;
         self.ended = None;
         self.kept.clear();
         self.kept_steps = 0;
+        self.kept_heap = HeapShot::default();
     }
 
     /// End a run that has started and not ended, and go back to the first
@@ -415,10 +670,13 @@ impl Session
     fn rewind(&mut self, how: RunStatus)
     {
         let (kept, steps) = (self.output(), self.steps());
+        let finished = how == RunStatus::Finished;
+        let heap = self.machine.as_ref().map(|m| heap_shot(m, finished));
         self.reset();
         self.ended = Some(how);
         self.kept = kept;
         self.kept_steps = steps;
+        self.kept_heap = heap.unwrap_or_default();
     }
 
     /// Run one op.
@@ -489,6 +747,7 @@ impl Session
         self.ended = None;
         self.kept.clear();
         self.kept_steps = 0;
+        self.kept_heap = HeapShot::default();
         let Some(m) = self.machine.as_mut()
         else
         {
@@ -823,5 +1082,18 @@ impl Session
     {
         ret_if!(self.ended.is_some(), self.kept_steps);
         self.machine.as_ref().map_or(0, Machine::steps)
+    }
+
+    /// The blocks of the address space: those of the machine, or those the
+    /// ended run left.
+    ///
+    /// # Returns
+    ///
+    /// The blocks and their counts.
+    pub fn heap(&self) -> HeapShot
+    {
+        ret_if!(self.ended.is_some(), self.kept_heap.clone());
+        let shot = self.machine.as_ref().map(|m| heap_shot(m, false));
+        shot.unwrap_or_else(|| HeapShot::builder().cap(self.max_heap).build())
     }
 }

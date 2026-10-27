@@ -1,58 +1,11 @@
-// The problems panel: a header that opens and shuts it, with the counts, and
-// one card per diagnostic, painted like the CLI.
+// The problems: the counts on the tab, and one card per diagnostic, painted
+// like the CLI.
 
 =paint-level($level)
   .paint-tag.paint-#{$level},
   .paint-carets.paint-#{$level},
   .paint-marked.paint-#{$level}
     color: var(--diag-#{$level})
-
-.diag-panel
-  height: 100%
-  min-height: 0
-  display: flex
-  flex-direction: column
-
-.diag-head
-  flex: 0 0 auto
-  display: flex
-  align-items: center
-  gap: 8px
-  width: 100%
-  height: 40px
-  padding: 0 14px
-  font: inherit
-  font-size: 12px
-  font-weight: 600
-  letter-spacing: 0.06em
-  text-transform: uppercase
-  color: var(--fg-muted)
-  background: none
-  border: 0
-  border-bottom: 1px solid var(--panel-border)
-  cursor: pointer
-  outline: none
-
-  &:hover,
-  &:focus-visible
-    color: var(--fg)
-
-  &:focus-visible
-    box-shadow: inset 0 0 0 2px var(--accent-soft)
-
-  svg
-    width: 15px
-    height: 15px
-    transition: rotate 160ms ease-out
-
-.diag-panel-shut .diag-head
-  border-bottom-color: transparent
-
-  svg
-    rotate: -90deg
-
-.diag-title
-  margin-right: 4px
 
 .count
   min-width: 22px
@@ -140,6 +93,5 @@
 +paint-level(note)
 
 @media (prefers-reduced-motion: reduce)
-  .diag-head svg,
   .diag-item
     transition: none

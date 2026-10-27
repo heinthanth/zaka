@@ -17,10 +17,39 @@ const GEAR: [&str; 2] = [
     "M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
 ];
 
-/// A window with its left pane marked off, on a 24 unit grid.
-const LEFT_PANE: [&str; 2] = [
+/// A window with its left pane marked off and shaded, on a 24 unit grid.
+const LEFT_PANE: [&str; 3] = [
     "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
     "M9 3v18",
+    "M6 7v10",
+];
+
+/// A window with its middle pane marked off and shaded, on a 24 unit grid.
+const MIDDLE_PANE: [&str; 4] = [
+    "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+    "M9 3v18",
+    "M15 3v18",
+    "M12 7v10",
+];
+
+/// A window with its right pane marked off and shaded, on a 24 unit grid.
+const RIGHT_PANE: [&str; 3] = [
+    "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+    "M15 3v18",
+    "M18 7v10",
+];
+
+/// A window with its bottom pane marked off and shaded, on a 24 unit grid.
+const BOTTOM_PANE: [&str; 3] = [
+    "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+    "M3 15h18",
+    "M7 18h10",
+];
+
+/// Three sliders on their tracks, on a 24 unit grid.
+const SLIDERS: [&str; 9] = [
+    "M4 6h9", "M17 6h3", "M15 4v4", "M4 12h3", "M11 12h9", "M9 10v4", "M4 18h7",
+    "M15 18h5", "M13 16v4",
 ];
 
 /// A circle with an exclamation mark, on a 24 unit grid.
@@ -143,6 +172,34 @@ pub fn gear() -> impl IntoView { line_icon(&GEAR) }
 ///
 /// The view.
 pub fn left_pane() -> impl IntoView { line_icon(&LEFT_PANE) }
+
+/// Three sliders, for the compiler options.
+///
+/// # Returns
+///
+/// The view.
+pub fn sliders() -> impl IntoView { line_icon(&SLIDERS) }
+
+/// A window with its middle pane marked off, for the stage pane switch.
+///
+/// # Returns
+///
+/// The view.
+pub fn middle_pane() -> impl IntoView { line_icon(&MIDDLE_PANE) }
+
+/// A window with its right pane marked off, for the dock switch.
+///
+/// # Returns
+///
+/// The view.
+pub fn right_pane() -> impl IntoView { line_icon(&RIGHT_PANE) }
+
+/// A window with its bottom pane marked off, for the bottom panel switch.
+///
+/// # Returns
+///
+/// The view.
+pub fn bottom_pane() -> impl IntoView { line_icon(&BOTTOM_PANE) }
 
 /// A circle with an exclamation mark, for a stage that did not run.
 ///

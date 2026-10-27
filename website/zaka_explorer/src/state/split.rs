@@ -16,12 +16,17 @@ pub const DEFAULT_STAGE_SHARE: f64 = 0.65;
 /// the problems panel gets at least the rest.
 pub const ERROR_STAGE_SHARE: f64 = 0.5;
 
-/// Share of the run view width the ops take at first.
-pub const DEFAULT_RUN_CODE_SHARE: f64 = 0.55;
+/// Share of the debug row the stage view takes at first; the dock takes
+/// the rest.
+pub const DEFAULT_DOCK_SHARE: f64 = 0.6;
 
-/// Share of the run view side column the machine state takes at first; the
-/// output takes the rest.
-pub const DEFAULT_RUN_STATE_SHARE: f64 = 0.6;
+/// Share of the dock panes the stack takes at first; the globals and the
+/// heap take the rest.
+pub const DEFAULT_STACK_SHARE: f64 = 0.45;
+
+/// Share of the panes under the stack the globals take at first; the heap
+/// takes the rest.
+pub const DEFAULT_GLOBALS_SHARE: f64 = 0.3;
 
 /// Step of a splitter moved with the arrows.
 pub const SPLIT_STEP: f64 = 0.02;

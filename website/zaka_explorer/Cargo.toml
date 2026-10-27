@@ -73,6 +73,7 @@ features = [
     "Location",
     "MutationObserver",
     "MutationRecord",
+    "Navigator",
     "Node",
     "NodeList",
     "PointerEvent",

@@ -1,0 +1,140 @@
+// The heap view: a line of counts, the legend of the colors, a map of the
+// blocks in address order, then the list of blocks with the dump of the
+// open one.
+
+.heap-view
+  display: flex
+  flex-direction: column
+  gap: 10px
+
+.heap-stats
+  margin: 0
+  font-size: 12px
+  color: var(--fg-muted)
+  font-variant-numeric: tabular-nums
+
+.heap-omitted
+  margin-left: 8px
+  color: var(--diag-warning)
+
+.heap-legend
+  display: flex
+  flex-wrap: wrap
+  gap: 4px 12px
+  font-size: 11px
+  color: var(--fg-muted)
+
+.legend-entry
+  display: inline-flex
+  align-items: center
+  gap: 5px
+  cursor: help
+
+.legend-swatch
+  display: inline-block
+  flex: none
+  width: 10px
+  height: 10px
+  margin-right: 6px
+  border-radius: 3px
+  background: var(--swatch)
+
+  .legend-entry &
+    margin-right: 0
+
+// Each origin and state sets the color the swatches and the bars take.
+.origin-heap
+  --swatch: var(--accent)
+
+.origin-cell
+  --swatch: var(--ok)
+
+.origin-static
+  --swatch: var(--fg-muted)
+
+.state-freed
+  --swatch: var(--panel-border)
+
+.state-leaked
+  --swatch: var(--diag-error)
+
+.heap-map
+  display: flex
+  gap: 2px
+  height: 22px
+  padding: 3px
+  border: 1px solid var(--panel-border)
+  border-radius: 8px
+  background: var(--code-bg)
+  overflow: hidden
+
+.map-bar
+  flex-basis: 0
+  min-width: 4px
+  border-radius: 3px
+  background: var(--swatch)
+  cursor: pointer
+  transition: opacity 120ms ease-out
+
+  &:hover
+    opacity: 0.75
+
+// A freed block keeps its place in quarantine, hatched and dim.
+.map-bar.state-freed
+  background: repeating-linear-gradient(135deg, var(--panel-border) 0 3px, transparent 3px 6px)
+
+.map-bar-open
+  box-shadow: 0 0 0 2px var(--fg)
+
+.block-table td
+  white-space: nowrap
+
+.state-badge
+  display: inline-block
+  padding: 0 8px
+  border-radius: 999px
+  font-family: var(--ui-font)
+  font-size: 11px
+  font-weight: 600
+  line-height: 18px
+  color: var(--fg-muted)
+  background: var(--chip)
+
+  &.state-live
+    color: var(--ok)
+    background: color-mix(in srgb, var(--ok) 14%, transparent)
+
+  &.state-leaked
+    color: var(--diag-error)
+    background: color-mix(in srgb, var(--diag-error) 14%, transparent)
+
+.block-table tbody tr.dump-row
+  cursor: default
+
+  &:hover
+    background: none
+
+  td
+    padding: 6px 8px 10px
+
+.dump
+  margin: 0
+  padding: 8px 10px
+  border-radius: 6px
+  background: var(--code-bg)
+  font-family: var(--mono-font)
+  font-size: calc(var(--code-size) - 3px)
+  line-height: 1.6
+  white-space: pre
+  overflow-x: auto
+
+.dump-note
+  margin: 6px 0 0
+  font-family: var(--ui-font)
+  font-size: 12px
+  color: var(--fg-muted)
+  white-space: normal
+
+@media (prefers-reduced-motion: reduce)
+  .map-bar
+    transition: none

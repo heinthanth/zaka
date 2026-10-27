@@ -23,6 +23,25 @@ const BLOCK_ALIGN: u64 = 16;
 /// never lands in the next one.
 const RED_ZONE: u64 = 16;
 
+/// A run of zero octets, when the host has room for it.
+///
+/// # Arguments
+///
+/// * `size` - The octet count.
+///
+/// # Returns
+///
+/// The octets, or `None` when the host refuses the room, so the program
+/// traps for want of heap rather than the host aborting.
+fn zeros(size: u64) -> Option<Vec<u8>>
+{
+    let len = usize::try_from(size).ok()?;
+    let mut data = Vec::new();
+    data.try_reserve_exact(len).ok()?;
+    data.resize(len, 0);
+    Some(data)
+}
+
 /// Where a block came from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, IntoStaticStr)]
 #[strum(serialize_all = "snake_case")]
@@ -176,12 +195,12 @@ impl Mem
     fn place(&mut self, size: u64, origin: Origin, owner: usize) -> Option<u64>
     {
         let heap = origin == Origin::Heap;
-        let len = usize::try_from(size).ok()?;
+        let data = zeros(size)?;
         let start = self.fresh_start(size).or_else(|| self.reuse(size))?;
         let block = Block::builder()
             .start(start)
             .len(size)
-            .data(vec![0; len])
+            .data(data)
             .origin(origin)
             .live(true)
             .owner(owner)
