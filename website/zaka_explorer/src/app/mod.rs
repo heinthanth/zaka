@@ -110,8 +110,8 @@ pub fn app() -> impl IntoView
 }
 
 /// Open the problems panel when errors show up, at half the column or more.
-/// It acts as the errors come, not while they stand, so the panel can still
-/// be shut or resized.
+/// It acts as the errors come, not while the errors stand, so the panel can
+/// still be shut or resized.
 ///
 /// # Arguments
 ///

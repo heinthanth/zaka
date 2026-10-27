@@ -5,10 +5,10 @@ description: Choose the sentence endings and particles a Burmese reader expects.
 
 # Natural Zaka
 
-Zaka accepts any of the endings `သည်`, `ပါ`, `ပါသည်`, or none at all, on a verb. Your
-program runs either way. But a Burmese speaker picks the ending from what comes next,
-and some choices sound wrong. Zaka's *naturalness check* points these out as
-**warnings**. A warning never stops your program. It suggests a more natural spelling.
+Zaka accepts each of the endings `သည်`, `ပါ`, `ပါသည်`, or none at all, on a verb. The
+program runs in all these cases. But a Burmese speaker picks the ending from what comes
+next, and some choices sound wrong. Zaka's *naturalness check* points these out as
+**warnings**. A warning never stops the program. It suggests a more natural spelling.
 
 ```zaka-warning ZK0502
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
@@ -20,7 +20,7 @@ warning[ZK0502]: "ကြီးသည်" before "လျှင်" reads better w
 help: write "ကြီးလျှင်", or keep the particle and write "ဖြစ်လျှင်"
 ```
 
-Follow the `help` line and the warning goes away:
+Follow the `help` line and the warning disappears:
 
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
@@ -46,7 +46,7 @@ Follow the `help` line and the warning goes away:
 | ZK0507 | parentheses that change nothing | `က + ၁ ကို ပြသပါ` | `(က + ၁) ကို ပြသပါ` |
 | ZK0508 | a sentence used as a value (stored, returned, passed) | `... ကြီးသည် ဖြစ်ပါစေ` | `... ကြီးပါ ဖြစ်ပါစေ` |
 
-The "Not" column is still valid Zaka. It just reads less naturally.
+The "Not" column is still valid Zaka. It just sounds less natural.
 
 ## More examples
 
@@ -74,7 +74,7 @@ warning[ZK0504]: "ကြီးပါ" before "ဖြစ်၍" reads better as "
 warning[ZK0508]: "ကြီးပါ" as a value reads better as "ကြီးသည်"
 ```
 
-The same program, written naturally:
+The same program, in its natural form:
 
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
@@ -92,19 +92,18 @@ The same program, written naturally:
 
 ## Strict mode
 
-To treat these warnings as errors, so that a program with any of them does not run,
-pass `--strict-particles`:
+To treat these warnings as errors, so that a program with one or more of them does not
+run, pass `--strict-particles`:
 
 ```sh
 zakac run --strict-particles program.zaka
 ```
 
-This is useful once you are comfortable with the rules and want every program you write
-to read naturally.
+This is useful once the rules feel familiar and each new program should sound natural.
 
-## Try it
+## Hands on
 
-- Take any program from earlier chapters and change the endings until it warns. Then
+- Take a program from an earlier chapter and change the endings until it warns. Then
   follow the `help` lines back.
 
 Next: [Example programs](../programs/README.md).

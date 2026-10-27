@@ -7,14 +7,14 @@ description: Work on the individual bits of an integer.
 
 Inside the computer, an integer is a row of bits, each `0` or `1`. The number 202 in 8
 bits is `11001010`. *Bitwise operators* work on these bits one position at a time.
-Beginners rarely need them. They are useful for flags, colours, and low-level data.
+Beginners seldom need them. These are useful for flags, colours, and low-level data.
 Feel free to skip this page and come back later.
 
 ```zaka
 ကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် အခြေ ၂ ဖြင့် ၁၁၀၀၁၀၁၀ ဖြစ်ပါစေ။   // 202
 ကိန်းရှင် ခ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် အခြေ ၂ ဖြင့် ၁၀၁၀၁၀၁၀ ဖြစ်ပါစေ။   // 170
 
-// Symbols
+// Signs
 က & ခ ကို ပြသပါ။          // and:  10001010 = 138
 က | ခ ကို ပြသပါ။          // or:   11101010 = 234
 က ^ ခ ကို ပြသပါ။          // xor:  01100000 = 96
@@ -46,16 +46,16 @@ Feel free to skip this page and come back later.
 ၁၂
 ```
 
-| Symbol | Words | Reads as | Each result bit is 1 when |
+| Sign | Words | Reads as | Each result bit is 1 when |
 | --- | --- | --- | --- |
 | `a & b` | `a နှင့် b ၏ ဘစ်အလိုက် ဆုံလဒ်` | "bitwise meeting" | both bits are 1 |
 | `a \| b` | `a နှင့် b ၏ ဘစ်အလိုက် ပေါင်းစုလဒ်` | "bitwise union" | either bit is 1 |
 | `a ^ b` | `a နှင့် b ၏ ဘစ်အလိုက် ခြားနားလဒ်` | "bitwise difference" | the bits differ |
 | `~a` | `a ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်` | "bitwise flip" | the bit was 0 |
-| `a << n` | `a ကို ဘယ်သို့ n ဘစ် ရွေ့သောရလဒ်` | "a moved left by n bits" | (bits move left) |
-| `a >> n` | `a ကို ညာသို့ n ဘစ် ရွေ့သောရလဒ်` | "a moved right by n bits" | (bits move right) |
+| `a << n` | `a ကို ဘယ်သို့ n ဘစ် ရွေ့သောရလဒ်` | "a moved n bits to the left" | (bits move left) |
+| `a >> n` | `a ကို ညာသို့ n ဘစ် ရွေ့သောရလဒ်` | "a moved n bits to the right" | (bits move right) |
 
-`ဘစ်အလိုက်` means "bit by bit". `ဘယ်သို့` is "to the left", and `ညာသို့` is "to the right".
+`ဘစ်အလိုက်` means "bit after bit". `ဘယ်သို့` is "to the left", and `ညာသို့` is "to the right".
 
 ## Rules
 
@@ -85,9 +85,9 @@ A *mask* keeps some bits and clears the rest. `& F0` (11110000) keeps the top fo
 ၁၉၂
 ```
 
-## Try it
+## Hands on
 
-- `၁ << n` is 2 to the power n. Print 2⁵ that way.
+- `၁ << n` is 2 to the power n. Print 2⁵ with a shift.
 - Print whether bit 0 of 202 is set: `(က & ၁) != ၀`.
 
 Next: [Converting between kinds](conversion.md).

@@ -5,12 +5,12 @@ description: A classic counting game, built from functions, booleans and if/else
 
 # FizzBuzz
 
-FizzBuzz is a counting game. Count up from 1. Say **Fizz** for numbers that divide by
-3, **Buzz** for numbers that divide by 5, **FizzBuzz** for numbers that divide by both,
-and the number itself otherwise.
+FizzBuzz is a counting game. Count up from 1. Call out **Fizz** for multiples of 3,
+**Buzz** for multiples of 5, **FizzBuzz** for multiples of both, and the number itself
+for all the rest.
 
 ```zaka
-/// Does n divide by d with nothing left over?
+/// Does d divide n with nothing left over?
 လုပ်ဆောင်ချက် ပြတ်သလား သည်
 ကိန်းပြည့် န၊ ကိန်းပြည့် ဆခွဲ တို့ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။
@@ -56,16 +56,16 @@ FizzBuzz
 
 - **`ပြတ်သလား`** ("does it divide?") returns a [boolean](../values/booleans.md): whether
   `န % ဆခွဲ` is zero. Its name is a question, which keeps the code readable.
-- **`FizzBuzz`** stores the two answers in variables `သုံးပြတ်` ("divides by 3") and
-  `ငါးပြတ်` ("divides by 5"), then picks one of four outputs with an
+- **`FizzBuzz`** stores the two answers in variables `သုံးပြတ်` ("3 divides it") and
+  `ငါးပြတ်` ("5 divides it"), then picks one of four outputs with an
   [if / else-if / else](../control-flow/if-else.md) chain.
-- The **test order matters**. "Both" must come first. 15 divides by 3, so if the Fizz
-  test came first, 15 would print Fizz.
+- The **test order matters**. "Both" must come first. 3 divides 15, so if the Fizz test
+  came first, 15 would print Fizz.
 - The **main program** is two lines: a [constant](../variables/constants.md) for where to
   stop, and a [counted loop](../control-flow/counted-loops.md) that calls `FizzBuzz` once
   per number.
 
-## Try it
+## Hands on
 
 - Change `အဆုံး` to 100.
-- Add a rule: say **Bazz** for numbers that divide by 7.
+- Add a rule: print **Bazz** for multiples of 7.

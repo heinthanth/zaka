@@ -60,7 +60,7 @@ impl GraphNode
     pub fn center(&self) -> f64 { self.x + self.width / 2.0 }
 }
 
-/// The placed nodes of a tree and the room they take.
+/// The placed nodes of a tree and the room the nodes take.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Graph
 {
@@ -85,7 +85,7 @@ struct Measure
 }
 
 /// Place the nodes of a tree top-down: each row a level deeper, the children
-/// of a node side by side under it, and each node centered over its
+/// of a node in a row under it, and each node centered over its
 /// children.
 ///
 /// # Arguments
@@ -158,7 +158,7 @@ fn measure(node: &TreeNode) -> Measure
     Measure { width, room, children }
 }
 
-/// Width of subtrees side by side.
+/// Width of subtrees set in a row.
 ///
 /// # Arguments
 ///

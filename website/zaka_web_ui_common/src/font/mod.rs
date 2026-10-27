@@ -114,13 +114,13 @@ pub fn set_face_file(face: Face, url: &'static str)
     SHIPPED.with(|map| map.borrow_mut().insert(face, url));
 }
 
-/// Wait until a font family is loaded at a size, so that a measure of the
-/// text sees the real glyphs. A failure is logged and the fallbacks take
+/// Wait until a font face is loaded at a size, so that a measure of the
+/// text sees the real letterforms. A failure is logged and the fallbacks take
 /// over.
 ///
 /// # Arguments
 ///
-/// * `family` - The CSS font family.
+/// * `family` - The CSS name of the font.
 /// * `size` - The size in px.
 pub async fn ready_font(family: &str, size: u32)
 {
@@ -260,7 +260,7 @@ fn once(
     Ok(load)
 }
 
-/// Add a stylesheet to the page.
+/// Add a sheet of CSS to the page.
 ///
 /// # Arguments
 ///
@@ -285,11 +285,11 @@ fn add_sheet(href: &str) -> Result<Promise, JsValue>
     Ok(loaded)
 }
 
-/// Add a font file to the page as one weight of a family.
+/// Add a font file to the page as one weight of a named font.
 ///
 /// # Arguments
 ///
-/// * `family` - The CSS font family.
+/// * `family` - The CSS name of the font.
 /// * `weight` - The weight of the file.
 /// * `url` - Its URL.
 /// * `range` - The characters it draws, or all of them.

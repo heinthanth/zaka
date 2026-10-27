@@ -50,7 +50,7 @@ const TICK_MS: u64 = 30;
 
 /// The credits roll: the fonts, the npm packages and the Rust crates. It
 /// scrolls on its own and starts over at its end; the reader can scroll it
-/// back or on whenever, and it goes on from where they stop. Without
+/// back or on at will, and it goes on from where the reader stops. Without
 /// motion it is a plain list.
 ///
 /// # Returns
@@ -85,7 +85,7 @@ pub fn credits_roll() -> impl IntoView
 }
 
 /// Move the roll on a timer; at its end it starts over. A tick that finds
-/// the roll away from where the last tick left it knows the reader is
+/// the roll off from where the last tick left it knows the reader is
 /// scrolling: it takes up their place and moves on from there at the next
 /// still tick. A step of one pixel is not a scroll, so rounding of the
 /// browser does not hold the roll.

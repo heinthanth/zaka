@@ -1,6 +1,6 @@
 ---
 title: Blocks and scope
-description: Group statements into a block; names declared inside stay inside.
+description: Group statements into a block; names declared inside remain inside.
 ---
 
 # Blocks and scope
@@ -28,19 +28,19 @@ closes with "the tasks are done":
 | `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။` | "please do the following" | opens a block |
 | `လုပ်ဆောင်စရာများ ပြီးပါပြီး။` | "the tasks are done" | closes the block |
 
-On its own, a block is not very useful. Its real job is to hold the many statements of
+On its own, a block does little. Its real job is to hold the statements of
 an [if](../control-flow/if-else.md), a [loop](../control-flow/while.md) or a
 [function](../functions/README.md). But it has one effect worth learning first: **scope**.
 
 ## Scope
 
 The *scope* of a name is the part of the program where the name can be used. A name
-declared inside a block can be used only inside that block. After the closer, it is
-gone:
+declared inside a block can be used inside that block and nowhere else. After the
+closer, it is gone:
 
 ```zaka-error ZK0301
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ကိန်းရှင် ယာယီ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။     // temporary
+ကိန်းရှင် ယာယီ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။     // short-lived
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 ယာယီ ကို ပြသပါ။
 ```
@@ -68,7 +68,7 @@ Names from outside **are** visible inside, and blocks can sit inside other block
 
 ## Shadowing
 
-An inner block may declare a name that already exists outside. The inner one *shadows*
+An inner block can declare a name that exists outside as well. The inner one *shadows*
 the outer one: inside the block, the name means the new variable. When the block ends,
 the outer variable is back, unchanged.
 
@@ -86,9 +86,9 @@ the outer variable is back, unchanged.
 ၁
 ```
 
-## Four ways to close
+## Four closing forms
 
-The closer has four spellings that mean the same thing. Use whichever reads best to you:
+The closer has four spellings that mean the same thing. Pick whichever reads best:
 
 - `လုပ်ဆောင်စရာများ ပြီးပါပြီ။`
 - `လုပ်ဆောင်စရာများ ပြီးပါပြီး။`
@@ -97,9 +97,10 @@ The closer has four spellings that mean the same thing. Use whichever reads best
 
 This manual uses `ပြီးပါပြီး`.
 
-## Try it
+## Hands on
 
-- Declare a variable inside a block and try to print it after the block. Read the error.
+- Declare a variable inside a block and attempt to print it after the block. Read the
+  error.
 - Nest three blocks, each shadowing the same name with a different value, and print it
   in each.
 

@@ -36,7 +36,7 @@ const PHOTO_PAGE: &str = "https://unsplash.com/photos/FIN5CJoBJmI";
 /// Who took the backdrop photo.
 const PHOTO_AUTHOR: &str = "Antonio Gabriel";
 
-/// The hero: plumeria blossoms on a clear sky behind, mirrored so the flowers
+/// The hero: plumeria blossoms against clear blue, mirrored so the flowers
 /// stand on the right, and over it the line of Zaka writing itself out, a
 /// sentence and the link to the explorer.
 /// The writing is a CSS animation, so it needs no script, and with less
@@ -83,7 +83,7 @@ pub fn hero() -> impl IntoView
     ))
 }
 
-/// The line of Zaka, one span per syllable, each set to appear in turn, and
+/// The line of Zaka, one span per cluster, each set to appear in turn, and
 /// the caret after them.
 ///
 /// # Returns
@@ -109,9 +109,9 @@ fn code_line() -> impl IntoView
     h1().class(ClassName::HERO_LINE).lang("my").child((keys, caret))
 }
 
-/// Split a line into the pieces it is written in: a Burmese syllable stands
+/// Split a line into the pieces it is written in: a Burmese cluster stands
 /// whole, with its medials, vowels, asat and stacked consonants, so no half
-/// drawn glyph ever shows.
+/// drawn letter is ever shown.
 ///
 /// # Arguments
 ///

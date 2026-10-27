@@ -34,7 +34,7 @@ const PHOTO_PAGE: &str =
     "https://commons.wikimedia.org/wiki/File:Frangipani_flowers.jpg";
 
 /// The name: the heading, the name taken apart into the word for speech and
-/// the story of the name, beside one photograph of the flower.
+/// the tale of the name, beside one photograph of the flower.
 ///
 /// # Returns
 ///

@@ -1,14 +1,14 @@
 ---
 title: Reserved words
-description: Every word Zaka gives a meaning to, with an English reading.
+description: Each word Zaka gives a meaning to, with an English reading.
 ---
 
 # Reserved words
 
-These words have a fixed meaning in Zaka, so they cannot be used as names. A word made
-only of reserved words, such as `ထက်ကြီးသည်` or `တန်ဖိုးကို`, is split into them. Wrap
-a name in backticks (`` `ကြီး` ``) if you really need one of these
-([Names](../variables/names.md)).
+These words have a fixed meaning in Zaka, so a program cannot use them as names. A word
+made of nothing but reserved words, such as `ထက်ကြီးသည်` or `တန်ဖိုးကို`, is split into
+them. To use one of these as a name all the same, wrap it in backticks (`` `ကြီး` ``);
+see [Names](../variables/names.md).
 
 ## Particles
 
@@ -18,7 +18,7 @@ a name in backticks (`` `ကြီး` ``) if you really need one of these
 | `ကို` | (object) | [Particles](../sentences/particles.md) |
 | `နှင့်` | "and", "with" | [Arithmetic](../operators/arithmetic.md), [Comparison](../operators/comparison.md) |
 | `၏` | "of" | [Arithmetic](../operators/arithmetic.md) |
-| `ဖြင့်` | "by" | [Arithmetic](../operators/arithmetic.md), [Writing integers](../values/literals.md) |
+| `ဖြင့်` | "with", "through" | [Arithmetic](../operators/arithmetic.md), [Writing integers](../values/literals.md) |
 | `ထက်` | "than" | [Comparison](../operators/comparison.md) |
 | `အောက်` | "below" | [Comparison](../operators/comparison.md) |
 | `ဟု` | "so" (quoting) | [Printing](../hello/printing.md), [Changing a variable](../variables/assignment.md) |
@@ -34,7 +34,7 @@ a name in backticks (`` `ကြီး` ``) if you really need one of these
 
 ## Verbs that make a value
 
-| Word | Reads as | Symbol | Page |
+| Word | Reads as | Operator | Page |
 | --- | --- | --- | --- |
 | `ပေါင်းလဒ်` | "sum" | `+` | [Arithmetic](../operators/arithmetic.md) |
 | `နုတ်လဒ်` | "difference" | `-` | [Arithmetic](../operators/arithmetic.md) |
@@ -104,20 +104,20 @@ a name in backticks (`` `ကြီး` ``) if you really need one of these
 | `မှန်`, `မမှန်` | "true", "false" | [True and false](../values/booleans.md) |
 | `မှတ်ချက်` | "note" (comment) | [Comments](../hello/comments.md) |
 
-## Pointers and memory
+## Pointers and the heap
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `လိပ်စာ` | "address": after `<kind>` it makes a pointer kind (`<kind> လိပ်စာ`, then `၏ လိပ်စာ` for each further level); on its own it is the opaque pointer kind; after a name (`x ၏ လိပ်စာ`, or `&x`) it takes the address | [Pointers and memory](../pointers/README.md) |
-| `တန်ဖိုး` | "value": dereference, as in `p ၏ တန်ဖိုး` (or `*p`); also `တန်ဖိုးသည်` in a declaration | [Pointers and memory](../pointers/README.md), [Variables](../variables/README.md) |
-| `ဗလာ` | "empty": the null pointer | [Pointers and memory](../pointers/README.md#the-empty-address) |
-| `အရွယ်အစား` | "size": the size of a kind in octets, as in `<kind> ၏ အရွယ်အစား` | [Heap memory](../pointers/heap.md#how-much-to-ask-for) |
-| `မင်မိုရီ`, `မှတ်ဉာဏ်` | "memory" (two interchangeable spellings) | [Heap memory](../pointers/heap.md) |
-| `ဘိုက်စာ` | "octets' worth", as in `n ဘိုက်စာ` | [Heap memory](../pointers/heap.md#how-much-to-ask-for) |
-| `ခုစာ` | "items' worth", as in `<kind> n ခုစာ` | [Heap memory](../pointers/heap.md#how-much-to-ask-for) |
-| `မင်မိုရီ … နေရာယူ၍ လိပ်စာကို … တွင် သိမ်းထားမည်` | "taking … of memory, keep the address in …" (allocate) | [Heap memory](../pointers/heap.md) |
+| `လိပ်စာ` | "address": after `<kind>` it makes a pointer kind (`<kind> လိပ်စာ`, then `၏ လိပ်စာ` for each further level); on its own it is the opaque pointer kind; after a name (`x ၏ လိပ်စာ`, or `&x`) it takes the address | [Pointers and the heap](../pointers/README.md) |
+| `တန်ဖိုး` | "value": dereference, as in `p ၏ တန်ဖိုး` (or `*p`); also `တန်ဖိုးသည်` in a declaration | [Pointers and the heap](../pointers/README.md), [Variables](../variables/README.md) |
+| `ဗလာ` | "blank": the null pointer | [Pointers and the heap](../pointers/README.md#the-null-address) |
+| `အရွယ်အစား` | "size": the size of a kind in octets, as in `<kind> ၏ အရွယ်အစား` | [The heap](../pointers/heap.md#how-much-to-ask-for) |
+| `မင်မိုရီ`, `မှတ်ဉာဏ်` | "RAM" (two interchangeable spellings) | [The heap](../pointers/heap.md) |
+| `ဘိုက်စာ` | "octets' worth", as in `n ဘိုက်စာ` | [The heap](../pointers/heap.md#how-much-to-ask-for) |
+| `ခုစာ` | "items' worth", as in `<kind> n ခုစာ` | [The heap](../pointers/heap.md#how-much-to-ask-for) |
+| `မင်မိုရီ … နေရာယူ၍ လိပ်စာကို … တွင် သိမ်းထားမည်` | "taking … of heap room, keep the address in …" (allocate) | [The heap](../pointers/heap.md) |
 | `… လိပ်စာရှိကို မင်မိုရီ … ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်` | "grow or shrink the space at … so that it is …" (resize) | [Growing and shrinking](../pointers/resizing.md) |
-| `… လိပ်စာရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်` | "release the memory at …" (free) | [Heap memory](../pointers/heap.md#giving-memory-back) |
+| `… လိပ်စာရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်` | "release the block at …" (free) | [The heap](../pointers/heap.md#giving-a-block-back) |
 
 The words inside the three statements (`နေရာယူ၍`, `တွင်`, `သိမ်းထားမည်`, `လိပ်စာရှိ`,
 `ဖြစ်အောင်`, `နေရာအချဲ့အချုံ့လုပ်မည်`, `ပြန်လည်စွန့်လွှတ်မည်`) are reserved on their own
@@ -125,7 +125,7 @@ as well.
 
 ## Written and spoken endings
 
-Every reserved word that ends in the written `…မည်` also accepts the spoken `…မယ်`, and
-the two spellings mean the same. This covers the three memory statements above and the
+Each reserved word that ends in the written `…မည်` also accepts the spoken `…မယ်`, and
+the two spellings mean the same. This covers the three heap statements above and the
 older `လုပ်ဆောင်မည်` (in `အောက်ပါတို့ကို လုပ်ဆောင်မည်`) and `ပြန်ပေးမည်`:
 `အောက်ပါတို့ကို လုပ်ဆောင်မယ်` and `ပြန်ပေးမယ်` work too.

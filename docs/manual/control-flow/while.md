@@ -1,13 +1,13 @@
 ---
 title: While loops
-description: Repeat a body as long as a condition stays true.
+description: Repeat statements as long as a condition holds.
 ---
 
 # While loops
 
-A *loop* runs its body again and again. A *while loop* keeps going as long as a
+A *loop* runs its inner part again and again. A *while loop* keeps going as long as a
 condition is true. In Zaka: "as long as *condition*, do the following":
-`<condition> နေသရွေ့ <body>`.
+`<condition> နေသရွေ့ <action>`.
 
 ```zaka
 ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
@@ -35,7 +35,7 @@ condition is true. In Zaka: "as long as *condition*, do the following":
 Each round goes like this:
 
 1. Test the condition. If it is false, the loop ends, and the program goes on after it.
-2. Run the body.
+2. Run the inner part.
 3. Go back to step 1.
 
 After 64 is printed, the number is doubled to 128. Then the test "128 is less than 100"
@@ -46,9 +46,9 @@ is false, so the loop ends and 128 is never printed.
 | `နေသရွေ့` | "as long as"; joined to the condition's last verb (`ငယ်နေသရွေ့`) |
 | `ဖြစ်နေသရွေ့` | "as long as it is so"; a separate word, used after a variable or a full sentence |
 
-## One-statement bodies
+## One-statement loops
 
-The body can be a single statement:
+The inner part can be a single statement:
 
 ```zaka
 ကိန်းရှင် ကျန် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။          // remaining
@@ -81,14 +81,14 @@ The loop stops in the round where `အကြိမ် * အကြိမ်` firs
 
 ## Loops that never end
 
-If the condition never becomes false, the loop runs forever. Make sure the body changes
-something the condition depends on. In the Explorer, press **Stop** to end a runaway
-program. In a terminal, press `Ctrl`+`C`.
+If the condition never becomes false, the loop runs forever. Make sure the inner part
+changes something the condition depends on. In the Explorer, press **Stop** to end a
+program that will not stop. In a terminal, press `Ctrl`+`C`.
 
-## Try it
+## Hands on
 
 - Print the numbers 10 down to 1 with a while loop.
-- Starting from 1000, keep halving the number while it is greater than 1. How many
-  halvings does it take?
+- Starting from 1000, keep halving the number while it is greater than 1. How often
+  does it get halved?
 
 Next: [Counted loops](counted-loops.md).

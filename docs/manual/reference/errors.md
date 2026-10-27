@@ -6,7 +6,7 @@ description: How to read a compiler message, and what the common codes mean.
 # Error messages
 
 When something is wrong, `zakac` prints a message instead of running the program. Here
-is a typical one:
+is one such message:
 
 ```console
 $ zakac run program.zaka
@@ -25,13 +25,13 @@ error[ZK0401]: expected isize, found f64
 | `expected isize, found f64` | what went wrong |
 | `program.zaka:2:10` | file, line 2, character 10 |
 | `^^^` | points at the problem in the line |
-| `help:` | a suggestion for fixing it (not every message has one) |
+| `help:` | a suggestion for fixing it (some messages have none) |
 
 Fix the first error first. A single mistake can confuse the compiler into reporting
 more errors after it.
 
-When a program stops *while running* (for example, dividing by a zero that only appears
-at run time), the message starts with `the program stopped:` and has no code.
+When a program stops *while running* (for example, on a division whose zero appears at
+run time), the message starts with `the program stopped:` and has no code.
 
 ## Short names for kinds
 
@@ -52,7 +52,7 @@ Messages use short names for kinds:
 
 ## Codes
 
-The first two digits tell you which stage found the problem.
+The first two digits tell which stage found the problem.
 
 ### ZK01: reading the characters
 
@@ -79,7 +79,7 @@ The first two digits tell you which stage found the problem.
 | ZK0211 | `သို့မဟုတ်ပါက` without an `အကယ်၍` before it | [If and else](../control-flow/if-else.md) |
 | ZK0213 | the `ပြီးလျှင်` update is not last | [Generic loops](../control-flow/generic-loops.md) |
 | ZK0214 | a function declared inside a block or function | [Functions](../functions/README.md) |
-| ZK0215 | an `if` as the one-statement body of an `if` | [If and else](../control-flow/if-else.md) |
+| ZK0215 | an `if` as the one-statement inner block of an `if` | [If and else](../control-flow/if-else.md) |
 | ZK0219 | a digit too big for the number base | [Writing integers](../values/literals.md) |
 | ZK0220 | a number too big for its kind | [Integers](../values/integers.md) |
 | ZK0223 | text in quotes used somewhere other than printing | [Text in quotes](../values/strings.md) |
@@ -111,16 +111,16 @@ The first two digits tell you which stage found the problem.
 | ZK0403 | an operator used on the wrong kind, such as `မှန် + ၁` | [Arithmetic](../operators/arithmetic.md) |
 | ZK0404 | two kinds that cannot be combined without a conversion | [Arithmetic](../operators/arithmetic.md#mixing-kinds) |
 | ZK0406 | a number too big for the variable's kind | [Integers](../values/integers.md) |
-| ZK0407 | a shift by too many bits | [Bitwise operators](../operators/bitwise.md) |
+| ZK0407 | a shift wider than the kind's bit count | [Bitwise operators](../operators/bitwise.md) |
 | ZK0408 | a conversion that is not allowed | [Converting between kinds](../operators/conversion.md) |
 | ZK0410 | an invalid assignment target: not a variable or a dereference | [Changing a variable](../variables/assignment.md) |
-| ZK0411 | no address: taking the address of something that is not a variable or a dereference | [Pointers and memory](../pointers/README.md#what-has-an-address) |
-| ZK0412 | taking the address of a fixed name: a constant or a counted-loop variable | [Pointers and memory](../pointers/README.md#what-has-an-address) |
-| ZK0413 | not a pointer: dereferencing a value that has no pointer kind | [Memory mistakes](../pointers/mistakes.md) |
-| ZK0414 | an opaque pointer (`လိပ်စာ`) dereferenced or offset before a conversion | [Pointer arithmetic](../pointers/arithmetic.md#looking-at-the-same-bytes-another-way) |
+| ZK0411 | no address: taking the address of something that is not a variable or a dereference | [Pointers and the heap](../pointers/README.md#what-has-an-address) |
+| ZK0412 | taking the address of a fixed name: a constant or a counted-loop variable | [Pointers and the heap](../pointers/README.md#what-has-an-address) |
+| ZK0413 | not a pointer: dereferencing a value that has no pointer kind | [Pointer mistakes](../pointers/mistakes.md) |
+| ZK0414 | an opaque pointer (`လိပ်စာ`) dereferenced or offset before a conversion | [Pointer arithmetic](../pointers/arithmetic.md#reading-the-same-octets-as-another-kind) |
 | ZK0415 | an operator not for pointers, such as `*` or `/` on an address | [Pointer arithmetic](../pointers/arithmetic.md#walking-with-a-pointer) |
 | ZK0416 | pointer kinds differ: comparing or subtracting pointers to different kinds | [Pointer arithmetic](../pointers/arithmetic.md#walking-with-a-pointer) |
-| ZK0417 | a heap statement that needs a pointer but was given another kind | [Heap memory](../pointers/heap.md) |
+| ZK0417 | a heap statement that needs a pointer but was given another kind | [The heap](../pointers/heap.md) |
 | ZK0418 | (warning) the address of a local returned from its function | [Changing the caller's variables](../pointers/out-parameters.md#how-long-an-address-lasts) |
 
 ### ZK05: natural Zaka (warnings)
@@ -133,4 +133,4 @@ Zaka](../natural-zaka/README.md).
 | Code | Problem | See |
 | --- | --- | --- |
 | ZK0601 | a sum of constants that does not fit its kind | [Arithmetic](../operators/arithmetic.md) |
-| ZK0602 | dividing by a constant zero | [Arithmetic](../operators/arithmetic.md#dividing-integers) |
+| ZK0602 | a constant zero as the divisor | [Arithmetic](../operators/arithmetic.md#dividing-integers) |

@@ -1,13 +1,13 @@
 ---
 title: Changing the caller's variables
-description: Pass addresses to a function so it can change the variables you give it.
+description: Pass addresses to a function so it can change the caller's variables.
 ---
 
 # Changing the caller's variables
 
-A [parameter](../functions/parameters.md) is a copy, so a function cannot change the
-variable you pass in. Pass the variable's *address* instead. The function then writes
-through the pointer, and the change reaches your variable.
+A [parameter](../functions/parameters.md) is a duplicate, so a function cannot change
+the variable passed in. Pass the variable's *address* instead. The function then writes
+through the pointer, and the change reaches the caller's variable.
 
 ```zaka
 // swap: exchange the values of two integers
@@ -35,7 +35,7 @@ through the pointer, and the change reaches your variable.
 | --- | --- |
 | `ကိန်းပြည့် လိပ်စာ က` | a parameter `က` that holds the address of an integer |
 | `ပထမ ၏ လိပ်စာ` | "the address of the first", passed as an argument |
-| `ယာယီ` | "temporary" |
+| `ယာယီ` | "short-lived" |
 
 ## Several results
 
@@ -63,13 +63,13 @@ passes the addresses of the variables that should receive them.
 ၂
 ```
 
-17 divided by 5 is 3, with 2 left over.
+5 goes into 17 three times, with 2 left over.
 
 ## How long an address lasts
 
-The variables of a function exist only while the function runs. When it returns, their
-memory is given back, and any pointer to them now points at memory that is no longer
-theirs. Zaka warns when a function returns the address of its own variable:
+The variables of a function exist just while the function runs. When it returns, their
+RAM is given back, and each pointer to them now points at RAM that is no longer theirs.
+Zaka warns when a function returns the address of its own variable:
 
 ```zaka-warning ZK0418
 လုပ်ဆောင်ချက် မှား သည်
@@ -83,15 +83,15 @@ x ၏ လိပ်စာ ကို ရလဒ်အဖြစ် ပြန်ပ�
 warning[ZK0418]: returns the address of the local "x", which is released when the function returns
 ```
 
-Pointing *into* a function at the caller's variables, as `လဲလှယ်` does, is always fine:
-the caller's variables outlive the call. Memory that must outlive the function that
+Pointing *into* a function at the caller's variables, as `လဲလှယ်` does, is fine in all
+cases: the caller's variables outlive the call. RAM that must outlive the function that
 creates it comes from the [heap](heap.md).
 
-## Try it
+## Hands on
 
 - Write a function that takes the addresses of three integers and sorts their values
   from smallest to largest, using `လဲလှယ်`.
 - Call `လဲလှယ်` with the same address twice: `ပထမ ၏ လိပ်စာ၊ ပထမ ၏ လိပ်စာ`. What
-  happens, and why?
+  happens, and what is the reason?
 
-Next: [Heap memory](heap.md).
+Next: [The heap](heap.md).

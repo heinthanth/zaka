@@ -6,7 +6,7 @@ description: Which operators bind tighter, in one table.
 # Operator precedence
 
 When an expression has several operators, the ones that bind tighter are worked out
-first. Parentheses always come first of all. From **tightest** to **loosest**:
+first. Parentheses come before all else. From **tightest** to **loosest**:
 
 | Order | Operators | Groups | Notes |
 | --- | --- | --- | --- |
@@ -20,7 +20,7 @@ first. Parentheses always come first of all. From **tightest** to **loosest**:
 | 8 | `\|` | left to right | |
 | 9 | `<` `>` `<=` `>=` | not chainable | `က < ခ < ဂ` is an error |
 | 10 | `==` `!=` | not chainable | |
-| 11 | word phrases: `... ၏ ပေါင်းလဒ်`, `... ထက် ကြီး`, `... အဖြစ် ပြောင်းလဲသော ရလဒ်`, ... | by particles | each part is a whole symbol expression |
+| 11 | word phrases: `... ၏ ပေါင်းလဒ်`, `... ထက် ကြီး`, `... အဖြစ် ပြောင်းလဲသော ရလဒ်`, ... | with particles | each part is a whole operator expression |
 | 12 | `မဟုတ်` after a value | | `က == ခ မဟုတ်ပါ` is `!(က == ခ)` |
 | 13 | `ဖြစ်၍` `&&` | left to right | |
 | 14 | `သို့မဟုတ်` `\|\|` | left to right | |
@@ -38,7 +38,7 @@ first. Parentheses always come first of all. From **tightest** to **loosest**:
 
 ## Moving between levels
 
-- A word phrase inside a symbol expression needs parentheses:
+- A word phrase inside an operator expression needs parentheses:
   `(က နှင့် ခ ၏ ပေါင်းလဒ်) * ဂ`.
 - A logical expression (`ဖြစ်၍`, `သို့မဟုတ်`, `&&`, `||`, `မဟုတ်`) used as a value to print
   needs parentheses: `(က ဖြစ်၍ ခ) ကို ပြသပါ။`

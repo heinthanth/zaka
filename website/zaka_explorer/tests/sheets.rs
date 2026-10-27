@@ -34,7 +34,7 @@ fn sheets_are_plain_ascii()
     }
 }
 
-/// The selectors of the style rules in compiled CSS; those inside
+/// The selectors of the rules in compiled CSS; those inside
 /// `@keyframes` name the steps of an animation and are left out.
 fn selectors(css: &str) -> Vec<String>
 {

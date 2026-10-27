@@ -27,14 +27,14 @@ A *decimal number* has a fraction part: `၃.၁၄`, `၀.၅`, `-၂.၅`. Its
 ၃.၅
 ```
 
-A decimal number always prints with a decimal point, even when it is a whole number
+A decimal number prints with a decimal point each time, even when it is a whole number
 (`၁၀.၀`).
 
 ## Sizes
 
 Like integers, decimal numbers come in sizes. More bits mean more correct digits.
 
-| Kind | Bits | About how many correct digits |
+| Kind | Bits | Correct digits (about) |
 | --- | --- | --- |
 | `၁၆ ဘစ် ဒဿမကိန်း` | 16 | 3 |
 | `၃၂ ဘစ် ဒဿမကိန်း` | 32 | 7 |
@@ -43,9 +43,9 @@ Like integers, decimal numbers come in sizes. More bits mean more correct digits
 
 ## Close, not exact
 
-Decimal numbers are stored in binary, so most fractions are stored as a very close
-neighbour, not exactly. Usually you will not notice, but sometimes the last digits show
-it:
+Decimal numbers are stored in base 2, so most fractions are stored as a close neighbour
+and not as the true value. Most of the time this goes unnoticed, but now and then the
+last digits show it:
 
 ```zaka
 ၀.၁ + ၀.၂ ကို ပြသပါ။
@@ -57,14 +57,14 @@ it:
 ၀.၀၉၉၉၇၆
 ```
 
-This is true of decimal numbers in almost every programming language, not only Zaka.
+This is true of decimal numbers in almost all programming languages, not just Zaka.
 
 ## Rules
 
-- Decimal numbers are always written in base 10.
+- Decimal numbers are written in base 10 and no other base.
 - Scientific notation (`e3`, `E-3`) needs Western digits: `1.5e3`, not `၁.၅e3`.
 
-## Try it
+## Hands on
 
 - Print `၁ / ၃` and then `၁.၀ / ၃`. What is different?
 - Print `၃၂ ဘစ် ဒဿမကိန်း ၀.၁`. Is it closer to 0.1 than the 16-bit one?

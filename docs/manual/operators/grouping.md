@@ -5,8 +5,9 @@ description: Which operator goes first, how word phrases nest, and when to use p
 
 # Grouping and order
 
-In `၂ + ၃ * ၄`, do you add first or multiply first? As in school maths, Zaka multiplies
-first, so the answer is 14. Parentheses change the order: `(၂ + ၃) * ၄` is 20.
+In `၂ + ၃ * ၄`, which comes first, the addition or the multiplication? As in school
+maths, Zaka does the multiplication first, so the answer is 14. Parentheses change the
+order: `(၂ + ၃) * ၄` is 20.
 
 ```zaka
 ၂ + ၃ * ၄ ကို ပြသပါ။         // * before +
@@ -18,7 +19,7 @@ first, so the answer is 14. Parentheses change the order: `(၂ + ၃) * ၄` is
 ၂၀
 ```
 
-## Order of symbols
+## Order of operators
 
 From first to last (tightest to loosest):
 
@@ -39,10 +40,10 @@ From first to last (tightest to loosest):
 Operators on the same line go left to right: `၁၀ - ၃ - ၂` is `(၁၀ - ၃) - ၂`. The
 [Operator precedence](../reference/precedence.md) page has the full table.
 
-## Word phrases take whole symbol sums
+## Word phrases take whole sums
 
-A part of a word phrase can be a whole symbol sum. In `က + ခ နှင့် ဂ ၏ မြှောက်လဒ်`, the
-first part is `က + ခ`. It reads "the product of (k + kh) and g":
+A part of a word phrase can be a whole sum written with signs. In
+`က + ခ နှင့် ဂ ၏ မြှောက်လဒ်`, the first part is `က + ခ`. It reads "the product of (k + kh) and g":
 
 ```zaka
 ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
@@ -58,7 +59,7 @@ first part is `က + ခ`. It reads "the product of (k + kh) and g":
 ## Word phrases inside word phrases
 
 Word phrases can nest. Read from left to right. Each verb takes the parts just before it
-that carry the particles it needs, and its result joins the sentence:
+that hold the particles it needs, and its result joins the sentence:
 
 ```zaka
 ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
@@ -77,13 +78,13 @@ that carry the particles it needs, and its result joins the sentence:
 ၂၀
 ```
 
-In the first line, `မြှောက်လဒ်` takes `ခ နှင့်` and `ဂ ၏`, the two parts just before it. Its
-result is followed by `၏`, so `ပေါင်းလဒ်` then takes `က နှင့်` and that result.
+In the first line, `မြှောက်လဒ်` takes `ခ နှင့်` and `ဂ ၏`, the two parts just before it.
+A `၏` follows its result, so `ပေါင်းလဒ်` then takes `က နှင့်` and that result.
 
 ## Parentheses move a phrase into a sum
 
-A word phrase cannot sit directly inside a symbol sum. To use one there, put it in
-parentheses:
+A word phrase cannot sit straight inside a sum written with signs. To use one there,
+put it in parentheses:
 
 ```zaka-error ZK0203
 ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
@@ -108,10 +109,10 @@ error[ZK0203]: this statement does not end in a statement verb, found "*"
 Parentheses also wrap a [logical expression](logic.md) used as a value, as in
 `(က ဖြစ်၍ ခ) ကို ပြသပါ။`
 
-## Parentheses you do not need
+## Needless parentheses
 
-Parentheses around a whole printed or stored value change nothing. Zaka warns you about
-them, the way an editor flags a double space:
+Parentheses around a whole printed or stored value change nothing. Zaka warns about
+them, much as an editor flags a double space:
 
 ```zaka-warning ZK0507
 ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
@@ -122,9 +123,9 @@ them, the way an editor flags a double space:
 warning[ZK0507]: these parentheses are not needed
 ```
 
-## Try it
+## Hands on
 
-- Write `(၂ + ၃) * ၄` using only words.
-- Print `၁၀ - ၃ - ၂` and `၁၀ - (၃ - ၂)`. Are they the same?
+- Write `(၂ + ၃) * ၄` using words alone.
+- Print `၁၀ - ၃ - ၂` and `၁၀ - (၃ - ၂)`. Do the two match?
 
 Next: [Control flow](../control-flow/README.md).

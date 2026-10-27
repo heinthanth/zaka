@@ -93,11 +93,11 @@ fn loaded() -> bool
     LIBRARIES.iter().all(|name| Reflect::has(&global, &(*name).into()).unwrap_or(false))
 }
 
-/// Whether a media query holds.
+/// Whether a CSS media condition holds.
 ///
 /// # Arguments
 ///
-/// * `query` - The query.
+/// * `query` - The condition.
 ///
 /// # Returns
 ///

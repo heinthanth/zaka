@@ -5,9 +5,8 @@ description: Pass values into a function.
 
 # Parameters
 
-A function becomes far more useful when you can give it values to work with. The values
-a function accepts are its *parameters*. The values you pass when calling it are the
-*arguments*.
+A function becomes far more useful when it receives values to work with. The values a
+function accepts are its *parameters*. The values passed in a call are the *arguments*.
 
 ```zaka
 // "Function count-up, accepting an integer amount, will do the following"
@@ -63,7 +62,7 @@ list of two or more with `တို့ကို`, and pass the arguments in the 
 ၅၀
 ```
 
-As in Burmese, `နှင့်` ("and") may replace the last `၊`: `ကိန်းပြည့် က၊ ကိန်းပြည့် ခ နှင့်
+As in Burmese, `နှင့်` ("and") can replace the last `၊`: `ကိန်းပြည့် က၊ ကိန်းပြည့် ခ နှင့်
 ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး`.
 
 | Number of parameters | Closer | Example |
@@ -71,7 +70,8 @@ As in Burmese, `နှင့်` ("and") may replace the last `၊`: `ကိန�
 | one | `ကို` | `ကိန်းပြည့် က ကို လက်ခံပြီး` |
 | two or more | `တို့ကို` | `ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး` |
 
-Arguments always close with `တို့ဖြင့်` ("with these"), even when there is only one.
+Arguments close with `တို့ဖြင့်` ("with these") in all cases, even when there is just
+one.
 
 ## Parameters are local copies
 
@@ -98,8 +98,8 @@ variable that was passed in:
 
 ## Matching the call to the function
 
-The call must pass exactly as many arguments as the function has parameters, and each
-must fit its parameter's kind:
+The call must pass the same number of arguments as the function has parameters, and
+each must fit its parameter's kind:
 
 ```zaka-error ZK0314
 လုပ်ဆောင်ချက် ပြ သည်
@@ -114,7 +114,7 @@ must fit its parameter's kind:
 error[ZK0314]: function "ပြ" takes 1 arguments, 2 given
 ```
 
-## Try it
+## Hands on
 
 - Write a function that takes a number and prints its times table from 1 to 10.
 - Give `ရေတွက်ပြ` a guard: `အကယ်၍ အရေအတွက် သည် ၁ အောက် ငယ်လျှင် ပြန်ပေးပါ။`, then call it

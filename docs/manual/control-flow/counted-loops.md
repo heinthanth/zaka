@@ -1,12 +1,12 @@
 ---
 title: Counted loops
-description: Repeat a body once for each number in a range.
+description: Run statements once for each number in a range.
 ---
 
 # Counted loops
 
-Very often you want to repeat something for each number from one value to another:
-"for each number from 1 to 5, print it". A *counted loop* does exactly that. It reads
+A common task is to repeat something for each number from one value to another:
+"for each number from 1 to 5, print it". A *counted loop* does just that. It reads
 "from 1 to 5, counting as *n*, do ...":
 
 ```zaka
@@ -27,20 +27,20 @@ Very often you want to repeat something for each number from one value to anothe
 | `၅ အထိ` | "up to 5" | the last value; it is included |
 | `ကိန်း အနေဖြင့်` | "as ကိန်း" | the name of the counter variable |
 | `ရေတွက်၍` | "counting" | the loop verb |
-| `ကိန်း ကို ပြသပါ။` | | the body |
+| `ကိန်း ကို ပြသပါ။` | | the inner part |
 
 The loop creates the counter variable `ကိန်း` itself. Each round, it holds the next
-number. You can use it in the body, but you cannot change it there.
+number. The inner part can read it but cannot change it.
 
 ## Counting down, and steps
 
-`ရေတွက်၍` counts in whichever direction reaches the last value. Add `<n> စီ` ("by n
-each") to move by more than one:
+`ရေတွက်၍` counts in whichever direction reaches the last value. Add `<n> စီ` ("n at a
+time") to take bigger steps:
 
 ```zaka
 ၅ မှ ၁ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။          // counts down
 "---" ဟု ပြသပါ။
-၀ မှ ၁၀၀ အထိ ၂၅ စီ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။    // by 25 each
+၀ မှ ၁၀၀ အထိ ၂၅ စီ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။    // 25 at a time
 ```
 
 ```text
@@ -62,10 +62,10 @@ Two other verbs fix the direction:
 | Verb | Reads as | Direction |
 | --- | --- | --- |
 | `ရေတွက်၍` | "counting" | toward the last value, up or down |
-| `တိုး၍` | "increasing" | always up |
-| `လျှော့၍` | "decreasing" | always down |
+| `တိုး၍` | "increasing" | never down |
+| `လျှော့၍` | "decreasing" | never up |
 
-With `တိုး၍` or `လျှော့၍`, the loop runs zero times if the first value is already past the
+With `တိုး၍` or `လျှော့၍`, the loop runs zero times if the first value starts past the
 last one:
 
 ```zaka
@@ -100,7 +100,7 @@ A loop often builds a total, one round at a time:
 
 ## Loops inside loops
 
-A body can hold another loop. This one prints a small times table. For each row, the
+A loop can hold another loop. This one prints a small times table. For each row, the
 inner loop runs once for each column:
 
 ```zaka
@@ -127,12 +127,12 @@ inner loop runs once for each column:
 
 ## Rules
 
-- The first value, last value and step must be integers. They can be variables or sums:
+- The first value, last value and step must be integers. These can be variables or sums:
   `အစ မှ အဆုံး - ၁ အထိ ...`.
 - The step must be greater than zero. A zero step written as a variable stops the
   program when the loop starts.
 - Put a space before `အနေဖြင့်`. `ကိန်းအနေဖြင့်` is read as one name.
-- The counter cannot be changed in the body, and it does not exist after the loop:
+- The counter cannot be changed in the inner part, and it does not exist after the loop:
 
 ```zaka-error ZK0307
 ၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ၀ ဟု ထားပါ။
@@ -142,7 +142,7 @@ inner loop runs once for each column:
 error[ZK0307]: "ကိန်း" is a counted-loop variable and cannot be assigned
 ```
 
-## Try it
+## Hands on
 
 - Print the even numbers from 2 to 20.
 - Work out 1 × 2 × 3 × ... × 10 with a counted loop.

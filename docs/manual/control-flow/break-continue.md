@@ -1,11 +1,11 @@
 ---
 title: Break and continue
-description: Leave a loop early, or skip the rest of one round.
+description: Leave a loop at once, or skip the rest of one round.
 ---
 
 # Break and continue
 
-Two statements change how a loop runs from inside its body:
+Two statements change how a loop runs from inside the loop itself:
 
 | Zaka | Reads as | Does |
 | --- | --- | --- |
@@ -34,7 +34,7 @@ Two statements change how a loop runs from inside its body:
 ## Searching with break
 
 A loop that runs "forever" with `မှန်` (true) as its condition, plus a `break` when the
-answer is found, is a common way to search:
+answer is found, is a common search pattern:
 
 ```zaka
 // find the first power of 2 above 100
@@ -85,7 +85,7 @@ the counter keeps moving:
 error[ZK0309]: "ကွင်းဆက် ကို ရပ်ပါ" stands outside a loop
 ```
 
-## Try it
+## Hands on
 
 - Print the first number above 1 that divides 91 with no remainder.
 - In the times table from [Counted loops](counted-loops.md), add a `break` to the inner

@@ -6,9 +6,9 @@ description: Where Zaka needs a space, and where it does not.
 # Spaces between words
 
 Written Burmese has no spaces between words, and readers know where each word ends. The
-compiler has no dictionary, so it cannot know. In Zaka, **a space separates two words**.
+compiler has no word list, so it cannot know. In Zaka, **a space separates two words**.
 
-The rule that matters most: put a space between a **name you made up** and the particle
+The rule that matters most: put a space between a **made-up name** and the particle
 after it.
 
 ```zaka
@@ -35,11 +35,11 @@ help: write "အသက် ကို" with a space: a name joined to a particle i
 
 ## Where spaces are optional
 
-- **Between Zaka's own words.** A run made only of reserved words is split for you.
+- **Between Zaka's own words.** The compiler splits a run made of reserved words alone.
   `ထက်ကြီးသည်` is `ထက်` + `ကြီး` + `သည်`.
-- **Around symbols.** `။`, `၊`, `၏`, `(`, `)`, quotes, and maths symbols such as `+` and
-  `<` are always words on their own. `၁+၂`, `ပြသပါ။` and `၏ပေါင်းလဒ်` are fine.
-- **How many spaces.** One space, several spaces, a tab, or a line break all count the
+- **Around signs.** `။`, `၊`, `၏`, `(`, `)`, quotes, and maths signs such as `+` and
+  `<` are words on their own in all cases. `၁+၂`, `ပြသပါ။` and `၏ပေါင်းလဒ်` are fine.
+- **How much space.** One space, several spaces, a tab, or a line break all count the
   same.
 
 ```zaka
@@ -54,12 +54,12 @@ help: write "အသက် ကို" with a space: a name joined to a particle i
 ၃
 ```
 
-On the macOS Burmese keyboard, `Shift` + `Space` types an invisible "zero width space".
-Zaka counts it as a space too.
+With the macOS Burmese input source, `Shift` + `Space` enters an invisible "zero width
+space". Zaka counts it as a space too.
 
-## Try it
+## Hands on
 
 - Remove the space between `အသက်` and `ကို` in the first example and read the message.
-- Write `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` with as few spaces as you can while it still runs.
+- Write `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` with as few spaces as possible while it still runs.
 
 Next: [Values and kinds](../values/README.md).

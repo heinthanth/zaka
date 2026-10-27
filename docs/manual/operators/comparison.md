@@ -5,8 +5,8 @@ description: Ask whether values are equal, greater or less.
 
 # Comparison
 
-A *comparison* asks a yes-or-no question about two values: are they equal? Is one
-bigger? The answer is a [boolean](../values/booleans.md), `မှန်` or `မမှန်`.
+A *comparison* asks a true-or-false question about two values: are the two equal? Is
+one bigger? The answer is a [boolean](../values/booleans.md), `မှန်` or `မမှန်`.
 
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၅ ဖြစ်ပါစေ။
@@ -16,7 +16,7 @@ bigger? The answer is a [boolean](../values/booleans.md), `မှန်` or `မ
 အသက် သည် ၁၈ အောက် ငယ်သည် ဟု ပြသပါ။       // age is less than 18
 အသက် သည် ၂၅ နှင့် ညီသည် ဟု ပြသပါ။        // age equals 25
 
-// Symbols
+// Signs
 အသက် > ၁၈ ကို ပြသပါ။
 အသက် < ၁၈ ကို ပြသပါ။
 အသက် == ၂၅ ကို ပြသပါ။
@@ -33,7 +33,7 @@ bigger? The answer is a [boolean](../values/booleans.md), `မှန်` or `မ
 
 ## All six comparisons
 
-| Symbol | Words | Reads as |
+| Sign | Words | Reads as |
 | --- | --- | --- |
 | `a == b` | `a သည် b နှင့် ညီသည်` | a is equal to b |
 | `a != b` | `a သည် b နှင့် မညီပါ` | a is not equal to b |
@@ -58,7 +58,7 @@ Equals uses `=` twice: `==`. A single `=` is not an operator in Zaka.
 မှန်
 ```
 
-Characters can be compared too. They are ordered by their Unicode number, so `'က'`
+Characters can be compared too. Their order follows the Unicode number, so `'က'`
 comes before `'ခ'`, and `'A'` (65) comes before `'a'` (97):
 
 ```zaka
@@ -87,7 +87,7 @@ A comparison is a value, so it can be stored in a boolean variable:
 
 ## One comparison at a time
 
-In maths you may write 1 < 2 < 3. Zaka does not allow a comparison inside another
+Maths allows 1 < 2 < 3. Zaka does not allow a comparison inside another
 comparison:
 
 ```zaka-error ZK0210
@@ -101,9 +101,9 @@ error[ZK0210]: a comparison cannot be the operand of another comparison
 Ask two questions and join them with "and" instead: `၁ < ၂ ဖြစ်၍ ၂ < ၃`. The next page,
 [Logic](logic.md), shows how.
 
-## Try it
+## Hands on
 
-- Print whether 7 is not equal to 7, in words and in symbols.
-- Store whether your age is at least 18 in a variable, then print it.
+- Print whether 7 is not equal to 7, in words and in signs.
+- Store whether an age is at least 18 in a variable, then print it.
 
 Next: [Logic](logic.md).

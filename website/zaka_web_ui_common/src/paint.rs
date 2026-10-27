@@ -66,7 +66,7 @@ pub fn paint(source: &str) -> Vec<Piece>
 ///
 /// # Arguments
 ///
-/// * `pieces` - Where they go.
+/// * `pieces` - Where the pieces go.
 /// * `text` - The text the lexer saw.
 /// * `at` - Where the last mark ended.
 /// * `(lo, hi)` - The range of the mark in `text`.

@@ -5,8 +5,8 @@ description: Step a pointer through a block of values, measure distances, and co
 
 # Pointer arithmetic
 
-A block from the heap holds its values side by side, like a row of boxes. Adding a number
-to a pointer moves it along the row: `စာရင်း + ၁` is the next box, `စာရင်း + ၂` the one
+A block from the heap holds its values next to each other, like a row of boxes. Adding a
+number to a pointer moves it along the row: `စာရင်း + ၁` is the next box, `စာရင်း + ၂` the one
 after. The boxes are numbered from 0, so the first box is `စာရင်း + ၀`, which is just
 `စာရင်း`.
 
@@ -26,12 +26,12 @@ after. The boxes are numbered from 0, so the first box is `စာရင်း + 
 ၃၀
 ```
 
-`+ ၁` moves by one *integer*, not by one byte. The pointer's kind says how big a box is,
-and Zaka steps over that many bytes for you.
+`+ ၁` moves one *integer* along, not one octet. The pointer's kind tells how big a box
+is, and Zaka steps over that number of octets on its own.
 
 ## Which value does `၏ တန်ဖိုး` read?
 
-`၏ တန်ဖိုး` reads the value at everything written before it, so `စာရင်း + ၁ ၏ တန်ဖိုး`
+`၏ တန်ဖိုး` reads the value at the whole expression written before it, so `စာရင်း + ၁ ၏ တန်ဖိုး`
 is "the value at (list + 1)". The short form `*` binds to the name right after it, so
 `*စာရင်း + ၁` is "(the value at list) + 1":
 
@@ -70,7 +70,7 @@ loop compares against it but never reads it.
 ပြီးလျှင် ညွှန်း ကို ညွှန်း + ၁ ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
-(စာရင်း + ၃) - စာရင်း ကို ပြသပါ။       // how many boxes apart
+(စာရင်း + ၃) - စာရင်း ကို ပြသပါ။       // the distance in boxes
 စာရင်း လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ```
 
@@ -89,9 +89,9 @@ Subtracting two pointers gives the number of boxes between them, as a `ကိန
 | `ပ - ၂`, `ပ နှင့် ၂ ၏ နုတ်လဒ်` | a pointer two boxes back |
 | `ပ - မ` | the number of boxes from `မ` to `ပ` |
 | `ပ သည် မ အောက် ငယ်` | whether `ပ` comes before `မ` |
-| `ပ သည် ဗလာ နှင့် ညီ` | whether `ပ` is empty |
+| `ပ သည် ဗလာ နှင့် ညီ` | whether `ပ` is null |
 
-Nothing else works on pointers. Multiplying a pointer, for example, makes no sense:
+Nothing else works on pointers. A pointer times a number, for example, makes no sense:
 
 ```zaka-error ZK0415
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
@@ -102,19 +102,19 @@ Nothing else works on pointers. Multiplying a pointer, for example, makes no sen
 error[ZK0415]: the operator "*" cannot be used on pointers
 ```
 
-## Looking at the same bytes another way
+## Reading the same octets as another kind
 
 A [conversion](../operators/conversion.md) turns a pointer of one kind into another. This
-program asks for 8 bytes, stores a 1-byte code in the first one, and a 32-bit price in
-bytes 4 to 7:
+program asks for 8 octets, stores a 1-octet code in the first one, and a 32-bit price in
+octets 4 to 7:
 
 ```zaka
-ကိန်းရှင် ပစ္စည်း သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။     // item: one byte each step
+ကိန်းရှင် ပစ္စည်း သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။     // item: one octet each step
 မင်မိုရီ ၈ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို ပစ္စည်း တွင် သိမ်းထားမည်။
-ပစ္စည်း ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။                                       // code, at byte 0
+ပစ္စည်း ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။                                       // code, at octet 0
 ကိန်းရှင် ဈေးနှုန်း သည် ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။              // price
 ဈေးနှုန်း ကို ပစ္စည်း + ၄ ကို ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။
-ဈေးနှုန်း ၏ တန်ဖိုး ကို ၁၅၀၀ ဟု ထားပါ။                                   // price, at byte 4
+ဈေးနှုန်း ၏ တန်ဖိုး ကို ၁၅၀၀ ဟု ထားပါ။                                   // price, at octet 4
 ဈေးနှုန်း ၏ တန်ဖိုး ကို ပြသပါ။
 ပစ္စည်း လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ```
@@ -123,17 +123,17 @@ bytes 4 to 7:
 ၁၅၀၀
 ```
 
-Laying out a record by counting bytes like this is easy to get wrong. A later version of
-Zaka adds records that do the counting for you.
+Building a record from hand-counted octets like this invites mistakes. A later version
+of Zaka adds records, which do the counting on their own.
 
-An opaque `လိပ်စာ` converts to and from any pointer kind on its own, but it has no box
-size, so you cannot add to it or read through it until you convert it.
+An opaque `လိပ်စာ` converts to and from each pointer kind on its own, but it has no box
+size, so a program cannot add to it or read through it until it is converted.
 
-## Try it
+## Hands on
 
 - Fill a block of 10 integers with the numbers 1 to 10, then print their sum.
 - Walk a pointer backwards, from the last box to the first.
-- Read one box past the end of the block. [Memory mistakes](mistakes.md) explains what
+- Read one box past the end of the block. [Pointer mistakes](mistakes.md) explains what
   happens.
 
 Next: [Growing and shrinking](resizing.md).

@@ -655,7 +655,7 @@ pub fn trap_text(trap: &Trap) -> String
     t!("explorer.run.trapped", trap = trap).to_string()
 }
 
-/// Lower a checked program and fold a copy.
+/// Lower a checked program and fold a clone.
 ///
 /// # Arguments
 ///
@@ -861,7 +861,7 @@ fn string_rows(unit: &Unit, lexed: &LexOutput) -> Vec<StrRow>
     lexed.strings.iter().enumerate().map(row).collect()
 }
 
-/// A string piece as the table shows it. Text keeps its chars as they are;
+/// A string piece as the table shows it. Text keeps its chars unchanged;
 /// Rust debug quoting would spell the Burmese marks as `\u{...}`.
 ///
 /// # Arguments
@@ -891,7 +891,7 @@ fn str_part(part: &StrPart) -> StrPiece
 ///
 /// # Returns
 ///
-/// The text; other chars, Burmese marks included, stand as they are.
+/// The text; other chars, Burmese marks included, stand unchanged.
 pub fn escape_controls(text: &str) -> String
 {
     let shown = |c: char| match c

@@ -1,15 +1,15 @@
 ---
 title: Hello, world
-description: Your first Zaka program, and how to run it.
+description: A first Zaka program, and how to run it.
 ---
 
 # Hello, world
 
-A *program* is a list of instructions for the computer. By tradition, the first program
-in a new language prints a greeting. Here it is in Zaka:
+A *program* is a list of instructions for the computer. Tradition holds that the first
+program in a new language prints a greeting. Here it is in Zaka:
 
 ```zaka
-// Everything after "//" is a comment for people. The computer skips it.
+// The rest of a line after "//" is a comment for people. The computer skips it.
 
 // Print the text inside the quotes.
 "မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသပါ။
@@ -19,17 +19,18 @@ in a new language prints a greeting. Here it is in Zaka:
 မင်္ဂလာပါ ကမ္ဘာကြီး
 ```
 
-The line reads as a Burmese sentence: *"Hello, world" — so say.* Each part has a job:
+The line reads as a Burmese sentence: *"Hello, world" — thus, please show.* Each part
+has a job:
 
 | Zaka | Reads as | Job |
 | --- | --- | --- |
 | `"မင်္ဂလာပါ ကမ္ဘာကြီး"` | "Hello, world" | the text to print, in double quotes |
-| `ဟု` | "so" (quoting) | marks the words before it as something to say |
+| `ဟု` | "so" (quoting) | marks the words before it as a quote |
 | `ပြသပါ` | "please show" | the command: print a line |
 | `။` | full stop | ends the sentence |
 
-Every Zaka statement ends with `။`, the Burmese full stop. A line break does **not** end
-a statement; only `။` does.
+Each Zaka statement ends with `။`, the Burmese full stop. A line break does **not** end
+a statement; `။` alone does.
 
 ## Running it
 
@@ -79,9 +80,9 @@ error[ZK0201]: expected "။", found end of input
 Each message has a code such as `ZK0201`. The [error messages](../reference/errors.md)
 page lists the common ones.
 
-## Try it
+## Hands on
 
-- Change the greeting to your own name.
+- Change the greeting so that it greets a friend instead of the world.
 - Add a line that prints `၁၀၀ + ၂၃`.
 - Put two statements on the same line. Does it still run?
 

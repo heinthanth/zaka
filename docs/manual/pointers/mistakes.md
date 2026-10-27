@@ -1,16 +1,16 @@
 ---
-title: Memory mistakes
+title: Pointer mistakes
 description: The mistakes pointers make possible, and how Zaka catches each one.
 ---
 
-# Memory mistakes
+# Pointer mistakes
 
-Pointers are powerful because they reach memory directly, and that also makes them easy
-to misuse. In many languages a memory mistake quietly corrupts the program. The Zaka
-machine checks every read and write through a pointer and stops the program at the
-first mistake, saying what went wrong.
+Pointers are powerful because each one reaches straight into RAM, and that same power
+makes them simple to misuse. In a lot of other languages, a RAM mistake corrupts the
+program without warning. The Zaka machine checks each read and write through a pointer,
+stops the program at the first mistake, and tells what went wrong.
 
-## Reading through an empty pointer
+## Reading through a null pointer
 
 ```zaka-stop
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။     // never given an address
@@ -41,17 +41,18 @@ A block of 4 integers has boxes 0 to 3. Box 4 is outside it:
 the program stopped: access of 8 octets at 0x1020 lands outside each live block
 ```
 
-A new block is filled with zeros, which is why box 3 prints `၀`. Count from 0 and stop
+A new block starts out filled with zeros, so box 3 prints `၀`. Count from 0 and stop
 one before the size.
 
-## Using memory after giving it back
+## Using a block after giving it back
 
-Giving a block back empties the pointer you name, but not other copies of the address:
+Giving a block back clears the named pointer, but not other pointers that hold the same
+address:
 
 ```zaka-stop
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
 မင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ကိန်းရှင် မိတ္တူ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ပ ဖြစ်ပါစေ။      // a second copy of the address
+ကိန်းရှင် မိတ္တူ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ပ ဖြစ်ပါစေ။      // a duplicate of the address
 ပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
 ```
@@ -64,7 +65,7 @@ The same happens when a function returns the address of its own variable and the
 reads through it. Zaka also [warns about that](out-parameters.md#how-long-an-address-lasts)
 before the program runs.
 
-## Giving memory back twice
+## Giving a block back twice
 
 ```zaka-stop
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
@@ -78,12 +79,12 @@ before the program runs.
 the program stopped: the block at 0x1000 was freed before
 ```
 
-Giving back `ပ` a second time would be harmless, because the first time emptied it. The
-mistake is giving back the same block through another pointer.
+Giving back `ပ` a second time would be harmless, because the first time set it to
+null. The mistake is giving back the same block through another pointer.
 
-## Giving back memory that was not asked for
+## Giving back a block that was not asked for
 
-Only blocks from `နေရာယူ၍` can be given back. A variable's own memory cannot:
+Blocks from `နေရာယူ၍` can be given back; a variable's own storage cannot:
 
 ```zaka-stop
 ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။
@@ -120,12 +121,12 @@ Some mistakes are visible before the program runs, and the compiler reports them
 error[ZK0413]: isize is not a pointer and cannot be dereferenced
 ```
 
-## Try it
+## Hands on
 
-- Break each program on this page in a new way, and read the message.
+- Introduce a new fault into each program on this page, and read the message.
 - Fix the "past the end" program so it prints all four boxes and nothing more.
 - Write a function that asks for a block and returns its address. Is that a mistake?
-  (No: heap memory lasts until it is given back. Only a function's own variables end
-  with it.)
+  (No: a heap block lasts until it is given back. It is the function's own variables that
+  end with it.)
 
 Next: [Natural Zaka](../natural-zaka/README.md).

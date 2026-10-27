@@ -25,7 +25,7 @@ use crate::components::sandbox::run::Fence;
 const SITE: &str = "https://zaka-lang.org/";
 
 /// The contents file, which a page can link to.
-const CONTENTS_FILE: &str = "SUMMARY.md";
+const CONTENTS_FILE: &str = "CONTENTS.md";
 
 /// Element id of the contents on each page of the manual.
 pub const CONTENTS_ID: &str = "contents";

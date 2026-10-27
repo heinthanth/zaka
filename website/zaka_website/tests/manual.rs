@@ -112,7 +112,7 @@ fn links_point_at_the_pages_of_the_site()
         "https://www.rust-lang.org/"
     );
     let title = page_at("").expect("the title page is there");
-    assert_eq!(link_target(&title, "SUMMARY.md"), "/learn/#contents");
+    assert_eq!(link_target(&title, "CONTENTS.md"), "/learn/#contents");
 }
 
 #[test]

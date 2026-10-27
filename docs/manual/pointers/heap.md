@@ -1,14 +1,14 @@
 ---
-title: Heap memory
-description: Ask for memory while the program runs, use it through a pointer, and give it back.
+title: The heap
+description: Ask for heap room while the program runs, use it through a pointer, and give it back.
 ---
 
-# Heap memory
+# The heap
 
-A variable lasts as long as its block or function. Sometimes you need memory that stays
-until *you* decide it is no longer needed, or memory whose size you only know while the
-program runs. That memory comes from the *heap*: you ask for a block of it, use it
-through a pointer, and give it back when you are done.
+A variable lasts as long as its block or function. Sometimes a program needs room that
+remains until *the programmer* decides to let it go, or room whose size is not known
+before the program runs. That room comes from the *heap*: ask for a block of it, use it
+through a pointer, and give it back when done.
 
 ```zaka
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
@@ -16,7 +16,7 @@ through a pointer, and give it back when you are done.
 ပ ၏ တန်ဖိုး ကို ၄၂ ဟု ထားပါ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
 ပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။                      // give it back
-ပ ကို ပြသပါ။                                                  // the pointer is now empty
+ပ ကို ပြသပါ။                                                  // the pointer is now null
 ```
 
 ```text
@@ -24,16 +24,17 @@ through a pointer, and give it back when you are done.
 ဗလာ
 ```
 
-Asking for memory and giving it back are statements of their own:
+Asking for heap room and giving it back are statements of their own:
 
 | Zaka | Reads as |
 | --- | --- |
-| `မင်မိုရီ ... ခုစာ နေရာယူ၍` | "taking memory room worth ... items" |
+| `မင်မိုရီ ... ခုစာ နေရာယူ၍` | "taking room worth ... items" |
 | `လိပ်စာကို ပ တွင် သိမ်းထားမည်။` | "and will keep the address in ပ" |
-| `ပ လိပ်စာရှိမင်မိုရီကို` | "the memory at the address in ပ" |
+| `ပ လိပ်စာရှိမင်မိုရီကို` | "the block at the address in ပ" |
 | `ပြန်လည်စွန့်လွှတ်မည်။` | "will give back" |
 
-`မင်မိုရီ` is the loanword for memory; the Burmese word `မှတ်ဉာဏ်` works the same.
+`မင်မိုရီ` is borrowed from English and means RAM; the native Burmese word `မှတ်ဉာဏ်`
+works the same.
 Statements written with `…မည်` also accept the spoken `…မယ်`:
 
 ```zaka
@@ -50,16 +51,16 @@ Statements written with `…မည်` also accept the spoken `…မယ်`:
 
 ## How much to ask for
 
-Give the size in one of two ways:
+Give the size in one of two forms:
 
 | Size | Means |
 | --- | --- |
 | `ကိန်းပြည့် ၁၀ ခုစာ` | room for 10 integers |
-| `၈၀ ဘိုက်စာ` | room for 80 bytes |
+| `၈၀ ဘိုက်စာ` | room for 80 octets |
 
-The first form is usually what you want. The second counts bytes, the smallest unit of
-memory. `<kind> ၏ အရွယ်အစား` ("the size of the kind") tells you how many bytes one value
-of a kind takes:
+Most of the time the first form is the one to use. The second counts octets, the
+smallest unit of storage. `<kind> ၏ အရွယ်အစား` ("the size of the kind") tells how much room,
+in octets, one value of a kind takes:
 
 ```zaka
 ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
@@ -98,25 +99,27 @@ program checks:
 ```
 
 The Zaka machine gives each program 256 MiB of heap; the Explorer gives 16 MiB. `zakac
-run --max-heap <bytes>` sets another limit.
+run --max-heap <octets>` sets another limit.
 
-## Giving memory back
+## Giving a block back
 
-Each block you ask for should be given back exactly once. Giving it back:
+Each block from the heap should be given back one time, no more and no less. Giving it
+back:
 
-- empties the pointer you name, so using it again finds `ဗလာ` instead of old memory;
-- does nothing when the pointer is already `ဗလာ`;
-- does not empty *other* pointers to the same block. Using one of those is a mistake the
-  machine catches: see [Memory mistakes](mistakes.md).
+- sets the named pointer to `ဗလာ`, so using it again finds null instead of a freed block;
+- does nothing when the pointer is `ဗလာ` to begin with;
+- does not clear *other* pointers to the same block. Using one of those is a mistake the
+  machine catches: see [Pointer mistakes](mistakes.md).
 
 To find blocks that were never given back, run the program with `zakac run --leaks`. It
 lists each forgotten block when the program ends.
 
-## Try it
+## Hands on
 
-- Ask for room for three integers, store 1, 2 and 3 in the first one only, and print it.
+- Ask for room for three integers, store 1, 2 and 3 in the first one and nowhere else,
+  and print it.
   (The next page shows how to reach the other two.)
-- Ask for the same room with the byte form and `ကိန်းပြည့် ၏ အရွယ်အစား`.
+- Ask for the same room with the octet form and `ကိန်းပြည့် ၏ အရွယ်အစား`.
 - Run a program that never gives its block back with `zakac run --leaks`.
 
 Next: [Pointer arithmetic](arithmetic.md).

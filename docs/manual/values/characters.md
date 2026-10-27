@@ -5,8 +5,8 @@ description: Single characters in single quotes, and escape sequences.
 
 # Characters
 
-A *character* is one letter, digit, sign or symbol, written in single quotes: `'က'`,
-`'A'`, `'?'`. Its kind is `စာလုံး` ("letter"). Any Unicode character works, emoji
+A *character* is one letter, digit, sign or mark, written in single quotes: `'က'`,
+`'A'`, `'?'`. Its kind is `စာလုံး` ("letter"). All Unicode characters work, emoji
 included.
 
 ```zaka
@@ -23,12 +23,12 @@ A
 🔥
 ```
 
-A character literal holds exactly one character. `'ab'` is an error.
+A character literal holds one character, no more and no less. `'ab'` is an error.
 
 ## Escape sequences
 
-Some characters are hard to type, or have a special meaning inside quotes. You write
-these with an *escape sequence*. Escape sequences work in characters and in
+Some characters are hard to enter, or have a special meaning inside quotes. These are
+written as an *escape sequence*. Escape sequences work in characters and in
 [text](strings.md).
 
 ```zaka
@@ -69,7 +69,7 @@ that Zaka does not know is an error:
 error[ZK0106]: unknown escape sequence "{မသိ}"
 ```
 
-## Try it
+## Hands on
 
 - Print the character with Unicode number `1015`.
 - Print one piece of text that comes out on three lines.

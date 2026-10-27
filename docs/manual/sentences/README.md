@@ -1,15 +1,15 @@
 ---
 title: Zaka sentences
-description: Verb last, particles after each part, and two ways to write a sum.
+description: Verb last, particles after each part, and two forms for writing a sum.
 ---
 
 # Zaka sentences
 
-Zaka follows Burmese word order: first the things you talk about, **then the verb**.
-In English you say "show 42"; in Zaka you say "42 show": `၄၂ ကို ပြသပါ။`
+Zaka follows Burmese word order: first the things the sentence talks about, **then the
+verb**. English puts it as "show 42"; Zaka puts it as "42 show": `၄၂ ကို ပြသပါ။`
 
 The verb comes last and decides what the sentence means. A small word called a
-*particle* follows each part and tells which role that part plays.
+*particle* follows each part and tells the role of that part.
 
 ```zaka
 // "the sum of 3 and 4" — then show it
@@ -18,7 +18,7 @@ The verb comes last and decides what the sentence means. A small word called a
 // "the product of 3 and 4"
 ၃ နှင့် ၄ ၏ မြှောက်လဒ် ကို ပြသပါ။
 
-// "10 divided by 2: the quotient"
+// "10 over 2: the quotient"
 ၁၀ ကို ၂ ဖြင့် စားသော စားလဒ် ကို ပြသပါ။
 
 // "3 is greater than 2"
@@ -32,7 +32,7 @@ The verb comes last and decides what the sentence means. A small word called a
 မှန်
 ```
 
-Read the first line word by word:
+Read the first line one word at a time:
 
 | Zaka | Reads as | Role |
 | --- | --- | --- |
@@ -55,13 +55,13 @@ Read the first line word by word:
 An expression can sit inside a statement. In `၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။`, the sum is
 worked out first. Then its value, `၇`, takes the particle `ကို` and is shown.
 
-## Words or symbols
+## Words or signs
 
-Most operations can also be written with the symbols you know from school maths. Both
-forms give the same result, and you can mix them:
+Most operations can also be written with the signs from school maths. Both forms give
+the same result, and the two can be mixed:
 
 ```zaka
-၃ + ၄ ကို ပြသပါ။                        // symbols
+၃ + ၄ ကို ပြသပါ။                        // signs
 ၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။           // words
 ၁ + ၂ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။       // both: the sum of (1 + 2) and 4
 ```
@@ -72,9 +72,9 @@ forms give the same result, and you can mix them:
 ၇
 ```
 
-The [Operators](../operators/README.md) chapter lists every word and symbol.
+The [Operators](../operators/README.md) chapter lists each word and sign.
 
-## Try it
+## Hands on
 
 - Print the sum of 100 and 23 with words, then with `+`.
 - Print the product of 6 and 7 with `မြှောက်လဒ်`.

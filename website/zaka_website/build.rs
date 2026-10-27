@@ -21,7 +21,7 @@ const ASSETS: [(&str, &str); 8] = [
 const MANUAL: &str = "../../docs/manual";
 
 /// The contents file of the manual, in its folder.
-const CONTENTS: &str = "SUMMARY.md";
+const CONTENTS: &str = "CONTENTS.md";
 
 /// Rebuild when a sheet, a locale table or the manual changes; the sheet and
 /// `include_str!` macros read them. Then write the files in [`ASSETS`] to

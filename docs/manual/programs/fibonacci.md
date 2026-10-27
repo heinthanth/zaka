@@ -6,12 +6,12 @@ description: A fast Fibonacci with a generic loop, and the golden ratio with dec
 # Fibonacci numbers
 
 Each Fibonacci number is the sum of the two before it: 0, 1, 1, 2, 3, 5, 8, ... The
-[Recursion](../functions/recursion.md) page computed them by calling itself twice, which
-gets slow quickly. This version walks forward with a loop and keeps only the last two
-numbers.
+[Recursion](../functions/recursion.md) page computed them with a function that calls
+itself twice, which soon gets slow. This version walks forward with a loop and keeps
+just the last two numbers.
 
-Divide a Fibonacci number by the one before it, and the answer gets closer and closer to
-the *golden ratio*, about 1.618.
+Take the ratio of a Fibonacci number to the one before it, and the answer gets closer
+and closer to the *golden ratio*, about 1.618.
 
 ```zaka
 /// The n-th Fibonacci number, worked out with a loop.
@@ -66,16 +66,16 @@ the *golden ratio*, about 1.618.
 - **`ဖီဘိုနာချီ`** keeps two numbers: `ရလဒ်` (the current one, starting at the default 0)
   and `နောက်` (the next one, starting at 1). Each round of the
   [generic loop](../control-flow/generic-loops.md) moves both one step forward. After n
-  rounds, `ရလဒ်` holds the n-th number and is returned
-  [implicitly](../functions/results.md#returning-the-result).
-- `လာမည့်` ("coming") is declared inside the loop body, so it is a fresh variable each
-  round.
+  rounds, `ရလဒ်` holds the n-th number and becomes the result
+  [with no return statement](../functions/results.md#returning-the-result).
+- `လာမည့်` ("coming") is declared inside the loop's block, so it is a fresh variable
+  each round.
 - **`အချိုး`** ("ratio") [converts](../operators/conversion.md) both numbers to decimals
   before dividing. Integer division would drop the fraction and print `၁`.
-- The 50th number, 12,586,269,025, is far too big for a 32-bit integer, but fits easily
-  in a plain `ကိန်းပြည့်`.
+- The 50th number, 12,586,269,025, is far too big for a 32-bit integer, but fits with
+  room to spare in a plain `ကိန်းပြည့်`.
 
-## Try it
+## Hands on
 
-- Print the 90th Fibonacci number. Then try the 93rd: what happens, and why? (See
-  [Too big for the kind](../operators/arithmetic.md#too-big-for-the-kind).)
+- Print the 90th Fibonacci number. Then print the 93rd. What happens, and what is the
+  reason? (See [Too big for the kind](../operators/arithmetic.md#too-big-for-the-kind).)

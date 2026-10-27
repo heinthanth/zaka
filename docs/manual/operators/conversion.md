@@ -5,9 +5,9 @@ description: Turn a value of one kind into another with ပြောင်းလ
 
 # Converting between kinds
 
-Sometimes you have a value of one kind but need another: an integer count to divide as
-a decimal, a decimal score to round down to a whole number, or a character's Unicode
-number. *Converting* gives you the value in the new kind.
+Sometimes a value comes in one kind but the program needs another: an integer count to
+divide as a decimal, a decimal score to round down to a whole number, or a character's
+Unicode number. *Converting* gives the value in the new kind.
 
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃၇ ဖြစ်ပါစေ။
@@ -41,7 +41,7 @@ The phrase reads "the result of changing *x* into *kind*":
 
 ## Converting can lose data
 
-You ask for a conversion explicitly because it can change the value:
+Each conversion has to be written out, because it can change the value:
 
 - Decimal to integer drops the fraction, toward zero: `၉.၇၅` becomes `၉`, `-၂.၇` becomes `-၂`.
 - A number too big for a smaller kind wraps around: 300 as `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` is 44.
@@ -71,12 +71,12 @@ error[ZK0408]: cannot convert isize to bool
 
 ## Automatic conversion
 
-When nothing can be lost, Zaka converts for you. A smaller kind goes into a bigger kind
-of the same family: an `၈ ဘစ် ကိန်းပြည့်` into a `ကိန်းပြည့်`, or into a decimal
+When nothing can be lost, Zaka converts on its own. A smaller kind goes into a bigger
+one: an `၈ ဘစ် ကိန်းပြည့်` into a `ကိန်းပြည့်`, or into a decimal
 number. These are called *widening* conversions.
 
 ```zaka
-ကိန်းရှင် ဘိုက် သည် ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၀ ဖြစ်ပါစေ။        // byte
+ကိန်းရှင် ဘိုက် သည် ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၀ ဖြစ်ပါစေ။        // octet
 ကိန်းရှင် ကျယ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ဘိုက် ဖြစ်ပါစေ။           // 8-bit into 64-bit: automatic
 ကိန်းရှင် ဒဿမ သည် ဒဿမကိန်း ဖြစ်၍ တန်ဖိုးသည် ဘိုက် ဖြစ်ပါစေ။          // 8-bit into a decimal: automatic
 ကျယ် ကို ပြသပါ။
@@ -88,8 +88,8 @@ number. These are called *widening* conversions.
 ၁၀.၀
 ```
 
-A plain `ကိန်းပြည့်` does **not** go into a decimal automatically. It has 64 bits, and a
-decimal cannot hold every 64-bit integer exactly:
+A plain `ကိန်းပြည့်` does **not** go into a decimal on its own. It has 64 bits, and a
+decimal cannot hold all 64-bit integers without loss:
 
 ```zaka-error ZK0401
 ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၀ ဖြစ်ပါစေ။
@@ -100,7 +100,7 @@ decimal cannot hold every 64-bit integer exactly:
 error[ZK0401]: expected f64, found isize
 ```
 
-Convert it yourself. Here is an average that keeps its fraction:
+Write the conversion out. Here is an average that keeps its fraction:
 
 ```zaka
 ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၀ ဖြစ်ပါစေ။     // total
@@ -119,9 +119,9 @@ Convert it yourself. Here is an average that keeps its fraction:
 ```
 
 The parentheses let a conversion phrase sit inside a `/` sum. The next page explains
-why.
+the reason.
 
-## Try it
+## Hands on
 
 - Print the Unicode number of `'က'`.
 - Print the character whose number is 4160.

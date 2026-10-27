@@ -1,21 +1,20 @@
 ---
 title: Values and kinds
-description: Every value has a kind - integer, decimal number, character or true/false.
+description: Each value has a kind - integer, decimal number, character or true/false.
 ---
 
 # Values and kinds
 
 A *value* is a piece of data: the number `၄၂`, the letter `'က'`, the answer "true".
-Every value has a **kind** (in other languages: a *type*). The kind says what sort of
-data the value is and what you can do with it. You can add two numbers, but you cannot
-add two answers of "true".
+Each value has a **kind**. The kind tells what sort of data the value is and what a
+program can do with it. Two numbers can be added, but two answers of "true" cannot.
 
 ```zaka
 ၄၂ ကို ပြသပါ။          // an integer (a whole number)
 ၃.၁၄ ကို ပြသပါ။        // a decimal number
 'က' ကို ပြသပါ။         // a character
 မှန် ကို ပြသပါ။         // a true/false value: true
-"စာ" ဟု ပြသပါ။         // text in quotes, for printing only
+"စာ" ဟု ပြသပါ။         // text in quotes, just for printing
 ```
 
 ```text
@@ -35,13 +34,13 @@ add two answers of "true".
 | `စာလုံး` | "letter" | one character: `'က'`, `'A'` | [Characters](characters.md) |
 | `မှန်မှားတန်ဖိုး` | "true/false value" | `မှန်` (true) or `မမှန်` (false) | [True and false](booleans.md) |
 
-Text in quotes, such as `"စာ"`, has no kind of its own yet. It can only be printed (see
-[Text in quotes](strings.md)).
+Text in quotes, such as `"စာ"`, has no kind of its own so far. A program can do nothing
+with it but print it (see [Text in quotes](strings.md)).
 
-The kind matters as soon as you store values. The next chapter,
-[Variables](../variables/README.md), shows how. Every variable is declared with its kind.
+The kind matters as soon as a program stores values. The next chapter,
+[Variables](../variables/README.md), shows how. Each variable is declared with its kind.
 
-## Try it
+## Hands on
 
 - Print one value of each kind.
 - Print `၃ + ၀.၅`. Then print `'က' + ၁` and read the error message.

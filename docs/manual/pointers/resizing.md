@@ -5,7 +5,7 @@ description: Change the size of a heap block while keeping what it holds.
 
 # Growing and shrinking
 
-A block from the heap can change size. Growing keeps everything already in it; shrinking
+A block from the heap can change size. Growing keeps all that is in it so far; shrinking
 keeps what still fits. This program builds a list that grows as numbers arrive. It starts
 with room for 4 and doubles the room each time the list is full:
 
@@ -51,25 +51,25 @@ kind.
 
 | Zaka | Reads as |
 | --- | --- |
-| `စာရင်း လိပ်စာရှိကို` | "the memory at the address in list" |
-| `မင်မိုရီ ကိန်းပြည့် ဆံ့နိုင်ရေ ခုစာ ဖြစ်အောင်` | "so that it becomes memory worth *room* integers" |
+| `စာရင်း လိပ်စာရှိကို` | "the block at the address in list" |
+| `မင်မိုရီ ကိန်းပြည့် ဆံ့နိုင်ရေ ခုစာ ဖြစ်အောင်` | "so that it becomes big enough for *room* integers" |
 | `နေရာအချဲ့အချုံ့လုပ်မည်။` | "will enlarge or shrink the room" |
 
 ## What resizing does
 
-- It may move the block to a new address. The pointer you name gets the new address, so
-  keep using that pointer. Any *other* pointer into the old block is now out of date.
-- Growing keeps every value and adds new room after them. Shrinking keeps the values that
-  still fit.
-- Resizing an empty pointer (`ဗလာ`) is the same as asking for a new block.
+- It can move the block to a new address. The named pointer gets the new address, so
+  keep using that pointer. Each *other* pointer into the old block is now out of date.
+- Growing keeps each value and adds new room after the last one. Shrinking keeps the
+  values that still fit.
+- Resizing a null pointer (`ဗလာ`) is the same as asking for a new block.
 - If the heap has no room for the new size, the program stops with "no heap room". It
-  stops rather than empty the pointer, because emptying it would lose the block you
-  already have.
+  stops rather than set the pointer to null, because that would lose the block the
+  pointer still holds.
 
-## Try it
+## Hands on
 
 - Start the list with room for 1 instead of 4. Does it still work?
-- After the loop, shrink the block to exactly `အရေအတွက်` integers.
-- Change the program to keep only the even squares.
+- After the loop, shrink the block to fit `အရေအတွက်` integers and no more.
+- Change the program to keep just the even squares.
 
-Next: [Memory mistakes](mistakes.md).
+Next: [Pointer mistakes](mistakes.md).

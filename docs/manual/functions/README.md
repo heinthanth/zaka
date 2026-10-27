@@ -1,13 +1,14 @@
 ---
 title: Functions
-description: Name a group of statements and run it whenever you need it.
+description: Name a group of statements and run it whenever it is needed.
 ---
 
 # Functions
 
-A *function* is a named group of statements. You write it once, then run it by name as
-often as you like. Running a function is called *calling* it. Functions keep programs
-short (no copying the same lines) and readable (the name says what the lines do).
+A *function* is a named group of statements. Write it once, then run it through its
+name as often as needed. Running a function is called *calling* it. Functions keep
+programs short (no copies of the same lines) and readable (the name tells what the
+lines do).
 
 ```zaka
 // Declare a function named နှုတ်ဆက် (greet)
@@ -29,8 +30,8 @@ short (no copying the same lines) and readable (the name says what the lines do)
 နေကောင်းလား
 ```
 
-Declaring a function does not run it. The statements inside run only when the function
-is called.
+Declaring a function does not run it. The statements inside run when the function is
+called, and not before.
 
 ## Declaring
 
@@ -44,13 +45,13 @@ is called.
 | Zaka | Reads as |
 | --- | --- |
 | `လုပ်ဆောင်ချက်` | "function" |
-| `နှုတ်ဆက်` | the name you choose |
+| `နှုတ်ဆက်` | the chosen name |
 | `သည်` | (subject) |
 | `အောက်ပါတို့ကို လုပ်ဆောင်မည်။` | "will do the following" |
 | `လုပ်ဆောင်စရာများ ပြီးပါပြီး။` | "the tasks are done" |
 
-The line breaks in the header are only for readability. The header can also sit on one
-line.
+The line breaks in the header are there to help the reader. The header can also sit on
+one line.
 
 ## Calling
 
@@ -58,14 +59,14 @@ line.
 လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်ပါ။
 ```
 
-"Please run the function *name*." `လုပ်ဆောင်ပါ` means "please carry out".
+"Please run the function *name*." `လုပ်ဆောင်ပါ` means "please perform".
 
 ## Where functions go
 
 - Declare functions at the top level of the program, not inside a block or another
   function.
-- A function can be called before its declaration appears. Many programs put the main
-  work at the top and the functions below it.
+- A function can be called before its declaration appears. A lot of programs put the
+  main work at the top and the functions below it.
 
 ```zaka
 လုပ်ဆောင်ချက် မျဉ်းဆွဲ ကို လုပ်ဆောင်ပါ။        // called before it is declared: fine
@@ -98,7 +99,7 @@ line.
 error[ZK0214]: functions can be declared at the top level and nowhere else
 ```
 
-## Leaving early
+## Leaving before the end
 
 `ပြန်ပေးပါ။` ("please return") leaves the function at once. The program goes back to
 where the function was called:
@@ -120,10 +121,10 @@ where the function was called:
 ပြီး
 ```
 
-On its own this is not very useful. Together with [if](../control-flow/if-else.md) and
-[parameters](parameters.md), it lets a function stop when there is nothing to do.
+On its own this does little. Together with [if](../control-flow/if-else.md) and
+[parameters](parameters.md), it lets a function stop when there is nothing left to do.
 
-## Try it
+## Hands on
 
 - Write a function that prints a box made of three lines of `#`, and call it twice.
 - Call a function whose name was never declared. Read the message.

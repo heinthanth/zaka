@@ -6,15 +6,15 @@ description: Euclid's method, with a while loop and functions that call function
 # Greatest common divisor
 
 The *greatest common divisor* (GCD) of two numbers is the largest number that divides
-both. The GCD of 48 and 18 is 6. More than 2,000 years ago, Euclid found a fast way to
-compute it: replace the pair (a, b) with (b, a mod b) until b is zero, and a is the
-answer.
+both. The GCD of 48 and 18 is 6. Long ago, in ancient Greece, Euclid found a fast
+method to compute it: replace the pair (a, b) with (b, a mod b) until b is zero, and a
+is the answer.
 
 The *least common multiple* (LCM), the smallest number both divide into, follows from
 it: LCM = a / GCD × b.
 
 ```zaka
-/// The greatest common divisor of k and kh, by Euclid's method.
+/// The greatest common divisor of k and kh, with Euclid's method.
 လုပ်ဆောင်ချက် ဘုံဆခွဲကိန်း သည်
 ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
@@ -79,7 +79,7 @@ Tracing GCD(48, 18):
 | 3 | 12 | 6 | 0 |
 | end | 6 | 0 | |
 
-## Try it
+## Hands on
 
 - Print the GCD of 1071 and 462.
 - Rewrite `ဘုံဆခွဲကိန်း` with [recursion](../functions/recursion.md): GCD(a, 0) = a, and

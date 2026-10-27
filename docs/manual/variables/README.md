@@ -5,8 +5,8 @@ description: Give a value a name with ကိန်းရှင် ... ဖြစ�
 
 # Variables
 
-A *variable* is a named box that holds a value. You create it once, then use its name
-wherever you need the value. Creating a variable is called *declaring* it.
+A *variable* is a named box that holds a value. Create it once, then use its name
+wherever the value is needed. Creating a variable is called *declaring* it.
 
 ```zaka
 // "Let the variable age be an integer, and its value be 18."
@@ -33,8 +33,8 @@ A declaration reads like a Burmese sentence:
 
 | Zaka | Reads as | Part |
 | --- | --- | --- |
-| `ကိန်းရှင်` | "variable" | says a variable is being made |
-| `အသက်` | "age" | the name you choose |
+| `ကိန်းရှင်` | "variable" | announces a new variable |
+| `အသက်` | "age" | the chosen name |
 | `သည်` | (subject) | |
 | `ကိန်းပြည့်` | "integer" | the kind of value it holds |
 | `ဖြစ်၍` | "is, and" | joins the kind and the value |
@@ -43,12 +43,12 @@ A declaration reads like a Burmese sentence:
 | `ဖြစ်ပါစေ` | "let it be" | the verb that declares |
 | `။` | full stop | |
 
-Every variable has a kind, and it keeps that kind for its whole life. A `ကိန်းပြည့်`
-variable always holds an integer.
+Each variable has a kind, and it keeps that kind for its whole life. A `ကိန်းပြည့်`
+variable holds an integer, and nothing else.
 
 ## Starting values
 
-If you leave out `ဖြစ်၍ တန်ဖိုးသည်` and the initial value, the variable starts at its
+Leave out `ဖြစ်၍ တန်ဖိုးသည်` and the initial value, and the variable starts at its
 kind's *default*:
 
 | Kind | Default |
@@ -111,8 +111,8 @@ The [Error messages](../reference/errors.md) page lists all these short names.
 
 ## Using a name before declaring it
 
-A variable exists only from its declaration onward. Using a name that was never
-declared is an error:
+A variable exists from its declaration onward, and not before. Using a name that was
+never declared is an error:
 
 ```zaka-error ZK0301
 အသက် ကို ပြသပါ။
@@ -122,9 +122,9 @@ declared is an error:
 error[ZK0301]: "အသက်" is not declared
 ```
 
-## Try it
+## Hands on
 
-- Declare a variable for your height in centimetres and print it.
+- Declare a variable for a height in centimetres and print it.
 - Declare a `မှန်မှားတန်ဖိုး` variable with the value `၅ သည် ၃ ထက် ကြီးသည်` and print it.
 
 Next: [Constants](constants.md).

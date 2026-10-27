@@ -1,13 +1,13 @@
 ---
-title: Pointers and memory
+title: Pointers and the heap
 description: Hold the address of a variable, then read and change the variable through it.
 ---
 
-# Pointers and memory
+# Pointers and the heap
 
-Every variable lives somewhere in the computer's memory, at a numbered place called its
-*address*. A *pointer* is a value that holds an address. With a pointer you can read or
-change a variable without using its name: from inside another function, or in memory
+Each variable lives somewhere in the computer's RAM, at a numbered place called its
+*address*. A *pointer* is a value that holds an address. A pointer lets a program read
+or change a variable without using its name: from inside another function, or in RAM
 that has no name at all.
 
 ```zaka
@@ -23,7 +23,7 @@ that has no name at all.
 ၂၀
 ```
 
-The program never assigns to `အသက်` by name after the first line. It changes the
+After the first line, the program never assigns to `အသက်` with its name. It changes the
 variable through the pointer `ညွှန်း` ("the pointer").
 
 | Zaka | Reads as |
@@ -36,20 +36,20 @@ variable through the pointer `ညွှန်း` ("the pointer").
 
 ## Pointer kinds
 
-A pointer kind is the kind of the value it points to, followed by `လိပ်စာ`. A pointer to
-a pointer adds `၏ လိပ်စာ` ("address of") for each further level:
+A pointer kind is the kind of the value it points to, with `လိပ်စာ` after it. A pointer
+to a pointer adds `၏ လိပ်စာ` ("address of") for each further level:
 
 | Kind | Holds the address of |
 | --- | --- |
 | `ကိန်းပြည့် လိပ်စာ` | an integer |
 | `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ` | an unsigned 8-bit integer |
 | `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | a pointer to an integer |
-| `လိပ်စာ` | anything (an *opaque* address) |
+| `လိပ်စာ` | a value of whatever kind (an *opaque* address) |
 
 The older spelling with `၏` at the first level, `ကိန်းပြည့် ၏ လိပ်စာ`, still works and
 means the same as `ကိန်းပြည့် လိပ်စာ`.
 
-A pointer holds addresses of its own kind only. The address of a `ကိန်းပြည့်` does not fit
+A pointer holds just the addresses of its own kind. The address of a `ကိန်းပြည့်` does not fit
 a pointer to an 8-bit integer:
 
 ```zaka-error ZK0401
@@ -61,16 +61,18 @@ a pointer to an 8-bit integer:
 error[ZK0401]: expected *i8, found *isize
 ```
 
-A bare `လိပ်စာ` holds any address, but you cannot read through it until you say what is
-there. The page on [pointer arithmetic](arithmetic.md) shows how.
+A bare `လိပ်စာ` holds whatever address it is given, but the program cannot read through
+it until it states what kind of value is there. The page on [pointer
+arithmetic](arithmetic.md) shows how.
 
-## The empty address
+## The null address
 
-A pointer that points nowhere holds `ဗလာ` ("empty"). A new pointer variable starts out
-empty. A pointer is not true or false, so compare it with `ဗလာ` to test it:
+A pointer that points nowhere holds `ဗလာ` ("blank"), the null address. A new pointer
+variable starts out null. A pointer is not true or false, so compare it with `ဗလာ` to
+test it:
 
 ```zaka
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။     // no address yet
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။     // no address so far
 ပ ကို ပြသပါ။
 အကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် "ဘာမှ မညွှန်ပါ" ဟု ပြသပါ။
 ```
@@ -80,7 +82,7 @@ empty. A pointer is not true or false, so compare it with `ဗလာ` to test it
 ဘာမှ မညွှန်ပါ
 ```
 
-Reading or writing through an empty pointer stops the program. See [Memory
+Reading or writing through a null pointer stops the program. See [Pointer
 mistakes](mistakes.md).
 
 ## Short forms
@@ -98,14 +100,15 @@ Programmers who know C can write `&` for "the address of" and `*` for "the value
 ၆
 ```
 
-Both spellings mean the same thing. They group differently, which the page on [pointer
-arithmetic](arithmetic.md) explains.
+Both spellings mean the same thing, but the word forms and the short forms group in a
+different order. The page on [pointer arithmetic](arithmetic.md) explains the
+difference.
 
 ## What has an address
 
-Variables, parameters, `ရလဒ်` and anything reached through a pointer have addresses. A
-number such as `၅` does not, and neither does the result of a sum. A constant has an
-address in memory, but Zaka will not give it out, because writing through it would change
+Variables, parameters, `ရလဒ်` and each value reached through a pointer have addresses.
+A number such as `၅` does not, and neither does the result of a sum. A constant has an
+address in RAM, but Zaka will not give it out, because writing through it would change
 the constant. The same holds for the variable of a counted loop:
 
 ```zaka-error ZK0412
@@ -117,7 +120,7 @@ the constant. The same holds for the variable of a counted loop:
 error[ZK0412]: "ကြီးဆုံး" cannot be changed, so its address cannot be taken
 ```
 
-## Try it
+## Hands on
 
 - Declare two integers and one pointer. Point at the first, change it through the
   pointer, then point at the second and change that one.

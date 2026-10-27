@@ -5,7 +5,7 @@ description: A loop with its own counter, a test, and an update step.
 
 # Generic loops
 
-A *generic loop* puts the three parts of many loops in one place: a variable that
+A *generic loop* gathers the three parts most loops share in one place: a variable that
 belongs to the loop, the test, and the update to run after each round. Other languages
 call this a `for` loop.
 
@@ -31,9 +31,9 @@ The first line starts like a [declaration](../variables/README.md). `ဖြစ�
 | Part | Zaka | Runs |
 | --- | --- | --- |
 | setup | `ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ` | once, before the loop |
-| test | `ကိန်း သည် ၅ အောက် ငယ်နေသရွေ့` | before every round |
-| body | the statements in the block | every round |
-| update | `ပြီးလျှင် ...` ("when done, ...") | after every round |
+| test | `ကိန်း သည် ၅ အောက် ငယ်နေသရွေ့` | before each round |
+| inner part | the statements in the block | each round |
+| update | `ပြီးလျှင် ...` ("when done, ...") | after each round |
 
 `ဖြစ်ပြီး` works in place of `ဖြစ်ကာ`, and the setup can use the [short
 form](../variables/README.md#the-short-form) of a declaration:
@@ -42,10 +42,10 @@ form](../variables/README.md#the-short-form) of a declaration:
 The update must be the **last** statement in the block. It is optional; without it, the
 loop is a [while loop](while.md) with its own variable.
 
-## Any update, any kind
+## Other updates, other kinds
 
-The update can be any statement, not only "add one". Here the counter doubles, and it
-is an 8-bit unsigned integer:
+The update can be whatever statement fits, not just "add one". Here the counter doubles,
+and it is an 8-bit unsigned integer:
 
 ```zaka
 ကိန်းရှင် နှစ်ထပ် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ကာ နှစ်ထပ် သည် ၁၂၈ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
@@ -66,7 +66,7 @@ is an 8-bit unsigned integer:
 
 ## The variable belongs to the loop
 
-The loop's variable exists only inside the loop:
+The loop's variable does not exist outside the loop:
 
 ```zaka-error ZK0301
 ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
@@ -98,9 +98,9 @@ error[ZK0213]: the "ပြီးလျှင်" update must be the last stateme
 | --- | --- |
 | each number in a range | [counted loop](counted-loops.md) |
 | until something happens | [while loop](while.md) |
-| a counter that changes in an unusual way | generic loop |
+| a counter that changes in an unusual pattern | generic loop |
 
-## Try it
+## Hands on
 
 - Print 100, 90, 80, ... 0 with a generic loop.
 - Print the powers of 3 below 1000.

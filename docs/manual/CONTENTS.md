@@ -1,6 +1,6 @@
-# Summary
+# Contents
 
-[Zaka by Example](README.md)
+[Zaka through Examples](README.md)
 
 - [Hello, world](hello/README.md)
   - [Comments](hello/comments.md)
@@ -37,12 +37,12 @@
   - [Parameters](functions/parameters.md)
   - [Results](functions/results.md)
   - [Recursion](functions/recursion.md)
-- [Pointers and memory](pointers/README.md)
+- [Pointers and the heap](pointers/README.md)
   - [Changing the caller's variables](pointers/out-parameters.md)
-  - [Heap memory](pointers/heap.md)
+  - [The heap](pointers/heap.md)
   - [Pointer arithmetic](pointers/arithmetic.md)
   - [Growing and shrinking](pointers/resizing.md)
-  - [Memory mistakes](pointers/mistakes.md)
+  - [Pointer mistakes](pointers/mistakes.md)
 - [Natural Zaka](natural-zaka/README.md)
 - [Example programs](programs/README.md)
   - [FizzBuzz](programs/fizzbuzz.md)

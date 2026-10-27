@@ -1,6 +1,6 @@
 ---
 title: Arithmetic
-description: Add, subtract, multiply, divide, take the remainder, and negate.
+description: Addition, subtraction, multiplication, division, remainder and negation.
 ---
 
 # Arithmetic
@@ -9,10 +9,10 @@ description: Add, subtract, multiply, divide, take the remainder, and negate.
 ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၇ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 
-// Symbols
+// Signs
 က + ခ ကို ပြသပါ။          // add
 က - ခ ကို ပြသပါ။          // subtract
-က * ခ ကို ပြသပါ။          // multiply
+က * ခ ကို ပြသပါ။          // times
 က / ခ ကို ပြသပါ။          // divide
 က % ခ ကို ပြသပါ။          // remainder
 -က ကို ပြသပါ။             // negate
@@ -41,14 +41,14 @@ description: Add, subtract, multiply, divide, take the remainder, and negate.
 -၁၇
 ```
 
-| Symbol | Words | Reads as | Does |
+| Sign | Words | Reads as | Operation |
 | --- | --- | --- | --- |
-| `a + b` | `a နှင့် b ၏ ပေါင်းလဒ်` | "the sum of a and b" | add |
-| `a - b` | `a နှင့် b ၏ နုတ်လဒ်` | "the difference of a and b" | subtract |
-| `a * b` | `a နှင့် b ၏ မြှောက်လဒ်` | "the product of a and b" | multiply |
-| `a / b` | `a ကို b ဖြင့် စားသော စားလဒ်` | "a divided by b: the quotient" | divide |
-| `a % b` | `a ကို b ဖြင့် စားသော စားကြွင်း` | "a divided by b: the remainder" | remainder |
-| `-a` | `အနုတ် a` | "minus a" | negate |
+| `a + b` | `a နှင့် b ၏ ပေါင်းလဒ်` | "the sum of a and b" | addition |
+| `a - b` | `a နှင့် b ၏ နုတ်လဒ်` | "the difference of a and b" | subtraction |
+| `a * b` | `a နှင့် b ၏ မြှောက်လဒ်` | "the product of a and b" | multiplication |
+| `a / b` | `a ကို b ဖြင့် စားသော စားလဒ်` | "a over b: the quotient" | division |
+| `a % b` | `a ကို b ဖြင့် စားသော စားကြွင်း` | "a over b: the remainder" | remainder |
+| `-a` | `အနုတ် a` | "minus a" | negation |
 
 ## Dividing integers
 
@@ -71,8 +71,8 @@ To keep the fraction, divide decimal numbers: `၁၇.၀ / ၅` is `၃.၄`.
 -၁
 ```
 
-Dividing by zero has no answer. If the compiler can see the zero, the program does not
-run:
+Division with zero as the divisor has no answer. If the compiler can see the zero, the
+program does not run:
 
 ```zaka-error ZK0602
 ၁ / ၀ ကို ပြသပါ။
@@ -82,7 +82,7 @@ run:
 error[ZK0602]: / with the constant zero as divisor
 ```
 
-If the zero only appears while the program runs, the program stops at that point:
+If the zero first appears while the program runs, the program stops at that point:
 
 ```zaka-stop
 ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
@@ -98,8 +98,8 @@ the program stopped: integer division or remainder with zero as divisor
 
 ## Mixing kinds
 
-Two numbers of the same family combine freely. The smaller kind is widened to the
-larger one. An `၈ ဘစ် ကိန်းပြည့်` plus a `ကိန်းပြည့်` gives a `ကိန်းပြည့်`. But a plain
+Two integers, or two decimal numbers, combine with no extra step. The smaller kind
+is widened to the larger one. An `၈ ဘစ် ကိန်းပြည့်` plus a `ကိန်းပြည့်` gives a `ကိန်းပြည့်`. But a plain
 integer and a decimal number need an explicit [conversion](conversion.md), because a
 large integer could lose digits as a decimal:
 
@@ -133,11 +133,11 @@ end, like a car's odometer rolling over:
 ၂၅၅
 ```
 
-Pick a kind big enough for your numbers. Plain `ကိန်းပြည့်` is a safe choice.
+Pick a kind big enough for the numbers at hand. Plain `ကိန်းပြည့်` is a safe choice.
 
-## Try it
+## Hands on
 
 - Work out the average of 4, 7 and 10 as a decimal number.
-- Use `%` to print whether 2026 divided by 4 leaves a remainder.
+- Use `%` to print whether 2026 over 4 leaves a remainder.
 
 Next: [Comparison](comparison.md).

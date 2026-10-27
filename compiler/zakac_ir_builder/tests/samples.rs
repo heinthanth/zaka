@@ -51,7 +51,7 @@ fn check_expected(name: &str) -> IrArtifact
     artifact
 }
 
-/// The places read or written anywhere in a statement list.
+/// The places read or written throughout a statement list.
 fn places(stmts: &[Stmt], out: &mut Vec<Place>)
 {
     for s in stmts
@@ -141,7 +141,7 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
     }
 }
 
-/// Assert that every place names a slot and every call a function.
+/// Assert that each place names a slot and each call a function.
 fn assert_well_formed(name: &str, module: &Module)
 {
     let mut found = Vec::new();

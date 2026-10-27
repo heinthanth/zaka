@@ -16,7 +16,7 @@ Real questions often have parts: "Is it raining **and** have I no umbrella?" The
 (မိုးရွာ သို့မဟုတ် ထီးပါ) ကို ပြသပါ။                  // or
 (ထီးပါ မဟုတ်) ကို ပြသပါ။                            // not
 
-(မိုးရွာ && ထီးပါ) ကို ပြသပါ။                        // the same with symbols
+(မိုးရွာ && ထီးပါ) ကို ပြသပါ။                        // the same with signs
 (မိုးရွာ || ထီးပါ) ကို ပြသပါ။
 !ထီးပါ ကို ပြသပါ။
 ```
@@ -30,7 +30,7 @@ Real questions often have parts: "Is it raining **and** have I no umbrella?" The
 မှန်
 ```
 
-| Symbol | Words | Reads as | True when |
+| Sign | Words | Reads as | True when |
 | --- | --- | --- | --- |
 | `a && b` | `a ဖြစ်၍ b` | "a, and b" | both are true |
 | `a \|\| b` | `a သို့မဟုတ် b` | "a or b" | at least one is true |
@@ -79,20 +79,20 @@ The most common use is to join comparisons. Is the age between 18 and 60?
 ## Which goes first
 
 "Not" binds tightest, then "and", then "or", just as × goes before + in maths.
-`က သို့မဟုတ် ခ ဖြစ်၍ ဂ` means `က သို့မဟုတ် (ခ ဖြစ်၍ ဂ)`. Add parentheses when you mean
-something else, or when it helps the reader.
+`က သို့မဟုတ် ခ ဖြစ်၍ ဂ` means `က သို့မဟုတ် (ခ ဖြစ်၍ ဂ)`. Add parentheses when a
+different grouping is meant, or when it helps the reader.
 
-## Stopping early
+## Skipping the right side
 
-`ဖြစ်၍` and `သို့မဟုတ်` stop as soon as they know the answer. If the left side of
+`ဖြစ်၍` and `သို့မဟုတ်` stop as soon as the answer is known. If the left side of
 "and" is false, the whole thing is false, so the right side is never worked out. If the
 left side of "or" is true, the right side is skipped. This is called *short-circuit*
 evaluation. It matters once the right side does work, such as calling a
 [function](../functions/README.md).
 
-## Try it
+## Hands on
 
-- Print whether 15 is divisible by both 3 and 5 (`%` gives `၀` when it divides).
+- Print whether both 3 and 5 divide 15 (`%` gives `၀` when the division is clean).
 - Print whether a character `'ခ'` is between `'က'` and `'င'`.
 
 Next: [Bitwise operators](bitwise.md).

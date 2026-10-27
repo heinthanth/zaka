@@ -16,13 +16,13 @@ first, then a small word that marks it, then `ပြသပါ`. That small word 
 'က' ကို ပြသပါ။
 ၁၀ + ၅ ကို ပြသပါ။
 
-// ဟု: "say these words", for text in quotes
+// ဟု: "quote these words", for text in quotes
 "မင်္ဂလာပါ" ဟု ပြသပါ။
 
 // ဟု also quotes a whole sentence, such as "3 is greater than 2"
 ၃ သည် ၂ ထက် ကြီးသည် ဟု ပြသပါ။
 
-// An empty pair of quotes prints an empty line
+// A pair of quotes with nothing inside prints a blank line
 "" ဟု ပြသပါ။
 "ပြီးပါပြီ" ဟု ပြသပါ။
 ```
@@ -49,16 +49,16 @@ The sentence `၃ သည် ၂ ထက် ကြီးသည်` is either true 
 
 ## How values look when printed
 
-- Numbers print with Burmese digits, even if you wrote `123`.
-- Decimal numbers always show a decimal point: `၁၀.၀`.
+- Numbers print with Burmese digits, even when the program writes `123`.
+- Decimal numbers keep their decimal point, even when whole: `၁၀.၀`.
 - True and false print as `မှန်` and `မမှန်`.
-- Characters and text print as they are, without quotes.
+- Characters and text print as is, without quotes.
 
 ## Picking the wrong word
 
-Both words work, so the program still runs. But the compiler warns you when the other
-word reads more naturally. A warning starts with `warning`; the program still runs and
-prints `၅`:
+Both words work, so the program still runs. But when the other word sounds more
+natural, the compiler gives a warning. A warning starts with `warning`; the program
+still runs and prints `၅`:
 
 ```zaka-warning ZK0506
 ၅ ဟု ပြသပါ။
@@ -76,12 +76,12 @@ warning[ZK0506]: a plain value is marked with "ကို", not quoted with "ဟ�
 warning[ZK0505]: a sentence or a string is quoted with "ဟု", not marked with "ကို"
 ```
 
-The [Natural Zaka](../natural-zaka/README.md) chapter lists every warning of this kind.
+The [Natural Zaka](../natural-zaka/README.md) chapter lists each warning of this kind.
 
-## Try it
+## Hands on
 
-- Print your age with `ကို`, then print a sentence about it in quotes with `ဟု`.
-- Print `၇ / ၂` and `၇.၀ / ၂`. Why do you think the results differ? (The answer is in
+- Print an age with `ကို`, then print a sentence about that age in quotes with `ဟု`.
+- Print `၇ / ၂` and `၇.၀ / ၂`. What makes the results differ? (The answer is in
   [Arithmetic](../operators/arithmetic.md).)
 
 Next: [Zaka sentences](../sentences/README.md).

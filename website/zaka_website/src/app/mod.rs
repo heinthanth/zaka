@@ -82,7 +82,7 @@ const START_WEIGHTS: [u16; 2] = [400, 700];
 /// The libraries of the motion code, in order: GSAP, its scroll plugin and
 /// Lenis, from npm through `vendor/Trunk.toml`, each in a folder named after
 /// its version. Deferred, so the page paints first; the islands set the
-/// scenes once they start.
+/// scenes once started.
 pub const MOTION: [&str; 3] = [
     "/vendor/gsap/3.12.5/gsap.min.js",
     "/vendor/gsap/3.12.5/ScrollTrigger.min.js",

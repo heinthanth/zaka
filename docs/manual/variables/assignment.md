@@ -5,8 +5,8 @@ description: Give a variable a new value with ... ကို ... ဟု ထား
 
 # Changing a variable
 
-A variable can be given a new value at any time. This is called *assignment*. In Zaka
-you say "set x to v": `x ကို v ဟု ထားပါ။`
+A variable can be given a new value later on. This is called *assignment*. In Zaka the
+sentence reads "set x to v": `x ကို v ဟု ထားပါ။`
 
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
@@ -72,9 +72,9 @@ The new value must suit the variable's kind, just as the initial value did:
 error[ZK0401]: expected isize, found f64
 ```
 
-## Try it
+## Hands on
 
 - Start a variable at `၁` and double it four times, printing it after each change.
-- Make a variable `ကျန်` (remaining) of `၁၀၀`, then take away `၃၅` from it.
+- Make a variable `ကျန်` (remaining) of `၁၀၀`, then subtract `၃၅` from it.
 
 Next: [Names](names.md).

@@ -5,9 +5,9 @@ description: A simple rule, an unsolved puzzle, and two functions that share a h
 
 # The Collatz sequence
 
-Pick any whole number. If it is even, halve it. If it is odd, triple it and add 1.
-Repeat. Every number anyone has tried eventually reaches 1, but no one has proved this
-always happens. It is one of the most famous unsolved problems in mathematics.
+Pick a whole number. If it is even, halve it. If it is odd, triple it and add 1.
+Repeat. Each number ever tried has reached 1 in the end, but no one has proved that this
+holds for all numbers. It is one of the most famous unsolved problems in mathematics.
 
 Starting from 27, the sequence takes 111 steps and climbs as high as 9,232 before it
 falls to 1.
@@ -21,7 +21,7 @@ falls to 1.
 န * ၃ + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
-/// How many steps from n down to 1.
+/// The number of steps from n down to 1.
 လုပ်ဆောင်ချက် အဆင့်အရေအတွက် သည်
 ကိန်းပြည့် န ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
@@ -31,7 +31,7 @@ falls to 1.
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
-/// The highest number reached on the way down to 1.
+/// The highest number reached on the path down to 1.
 လုပ်ဆောင်ချက် အမြင့်ဆုံး သည်
 ကိန်းပြည့် န ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
@@ -59,15 +59,15 @@ falls to 1.
 
 ## How it works
 
-- **`နောက်တစ်ဆင့်`** ("next step") holds the rule in one place. It
-  [returns early](../functions/results.md#returning-the-result) for even numbers.
+- **`နောက်တစ်ဆင့်`** ("next step") holds the rule in one place. For even numbers, it
+  [returns before the end](../functions/results.md#returning-the-result).
 - **`အဆင့်အရေအတွက်`** ("number of steps") and **`အမြင့်ဆုံး`** ("highest") both loop
   until `န` reaches 1, and both call `နောက်တစ်ဆင့်`. Sharing the helper means the rule is
   written once.
 - `အဆင့်အရေအတွက်` counts in `ရလဒ်`, which starts at 0. `အမြင့်ဆုံး` starts `ရလဒ်` at `န`
   and raises it whenever a bigger number shows up.
 
-## Try it
+## Hands on
 
 - Find the number below 100 that takes the most steps. (Use a counted loop and keep the
   best so far in two variables.)

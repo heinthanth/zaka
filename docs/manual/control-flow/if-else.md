@@ -1,12 +1,12 @@
 ---
 title: If and else
-description: Run statements only when a condition is true.
+description: Run statements when a condition is true.
 ---
 
 # If and else
 
-An `if` statement runs its body only when a condition is true. In Zaka: "if *condition*,
-then *do this*": `အကယ်၍ <condition> လျှင် <body>`.
+An `if` statement runs its inner part when a condition is true, and skips it otherwise.
+In Zaka: "if *condition*, then *do this*": `အကယ်၍ <condition> လျှင် <action>`.
 
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၅ ဖြစ်ပါစေ။
@@ -36,7 +36,7 @@ expression, or a boolean variable. With a boolean variable, use `ဖြစ်လ
 
 ## Otherwise
 
-`သို့မဟုတ်ပါက` ("otherwise") gives a body to run when the condition is false:
+`သို့မဟုတ်ပါက` ("otherwise") names what to run when the condition is false:
 
 ```zaka
 ကိန်းရှင် အောင် သည် မှန်မှားတန်ဖိုး ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။     // passed?
@@ -51,7 +51,7 @@ expression, or a boolean variable. With a boolean variable, use `ဖြစ်လ
 ## More than two choices
 
 `ထိုသို့မဟုတ်ဘဲ` ("if not so, but ...") adds another condition. Zaka tests the conditions
-from top to bottom and runs the **first** body whose condition is true:
+from top to bottom and runs the **first** branch whose condition is true:
 
 ```zaka
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
@@ -65,11 +65,11 @@ from top to bottom and runs the **first** body whose condition is true:
 အဆင့် ခ
 ```
 
-73 is also at least 40, but only the first matching body runs.
+73 is also at least 40, but Zaka stops at the first branch that matches.
 
-## Bodies with many statements
+## Branches with several statements
 
-To run several statements, make the body a block:
+To run several statements, make the branch a block:
 
 ```zaka
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
@@ -92,7 +92,7 @@ To run several statements, make the body a block:
 
 ## An if inside an if
 
-A one-statement body cannot be another `if`. That would make it unclear which `if` an
+A one-statement branch cannot be another `if`. That would make it unclear which `if` an
 `otherwise` belongs to:
 
 ```zaka-error ZK0215
@@ -118,11 +118,11 @@ Put the inner `if` in a block instead:
 ဂုဏ်ထူး
 ```
 
-## Try it
+## Hands on
 
 - Print whether a number is positive, negative, or zero.
-- Print `"FizzBuzz"` if a number divides by 15, `"Fizz"` if it divides by 3, `"Buzz"` if
-  by 5, and the number otherwise. Try 9, 10, 15 and 7. Does the order of the tests
-  matter?
+- Print `"FizzBuzz"` if 15 divides a number, `"Fizz"` if 3 divides it, `"Buzz"` if 5
+  does, and the number itself otherwise. Check 9, 10, 15 and 7. Does the order of the
+  tests matter?
 
 Next: [While loops](while.md).
