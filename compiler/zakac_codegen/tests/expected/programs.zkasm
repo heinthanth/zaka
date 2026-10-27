@@ -10,73 +10,95 @@ texts
   t0 "ok"
 
 fn f0 main (params 0)
-     0  push 18:isize
-     1  store_global g0      ; အသက်
-     2  push 3.14:f64
-     3  store_global g1      ; ပိုင်
-     4  load_global g0       ; အသက်
-     5  push 18:isize
-     6  gt
-     7  store_global g2      ; ကြီးသူ
-     8  push 255:u8
-     9  store_global g3      ; ဘိုက်
-    10  push 'က':char
-    11  store_global g4      ; စာ
-    12  load_global g0       ; အသက်
-    13  push 1:isize
-    14  add
-    15  store_global g0      ; အသက်
-    16  load_global g0       ; အသက်
-    17  load_global g3       ; ဘိုက်
-    18  convert isize
-    19  add
-    20  store_global g0      ; အသက်
-    21  push 6.28:f64
-    22  print
-    23  load_global g3       ; ဘိုက်
-    24  push 2:usize
-    25  shr
-    26  print
-    27  load_global g0       ; အသက်
-    28  convert f64
-    29  print
-    30  load_global g4       ; စာ
-    31  convert isize
-    32  print
-    33  push -5:i16
-    34  store_global g5      ; အသက်
-    35  load_global g5       ; အသက်
-    36  print
-    37  load_global g0       ; အသက်
-    38  push 18:isize
-    39  lt
-    40  jump_if_false L0
-    41  push false:bool
-    42  store_global g2      ; ကြီးသူ
-    43  jump L6
-L0:
-    44  load_global g2       ; ကြီးသူ
-    45  jump_if_false L1
-    46  load_global g0       ; အသက်
-    47  push 60:isize
-    48  gt
-    49  jump L2
-L1:
-    50  push false:bool
-L2:
-    51  jump_if_false L3
-    52  print_text t0
-    53  jump L6
-L3:
-    54  load_global g4       ; စာ
-    55  push 'ခ':char
+     0  global_addr g0       ; အသက်
+     1  push 18:isize
+     2  store isize
+     3  global_addr g1       ; ပိုင်
+     4  push 3.14:f64
+     5  store f64
+     6  global_addr g2       ; ကြီးသူ
+     7  global_addr g0       ; အသက်
+     8  load isize
+     9  push 18:isize
+    10  gt
+    11  store bool
+    12  global_addr g3       ; ဘိုက်
+    13  push 255:u8
+    14  store u8
+    15  global_addr g4       ; စာ
+    16  push 'က':char
+    17  store char
+    18  global_addr g0       ; အသက်
+    19  global_addr g0       ; အသက်
+    20  load isize
+    21  push 1:isize
+    22  add
+    23  store isize
+    24  global_addr g0       ; အသက်
+    25  global_addr g0       ; အသက်
+    26  load isize
+    27  global_addr g3       ; ဘိုက်
+    28  load u8
+    29  convert isize
+    30  add
+    31  store isize
+    32  push 6.28:f64
+    33  print
+    34  global_addr g3       ; ဘိုက်
+    35  load u8
+    36  push 2:usize
+    37  shr
+    38  print
+    39  global_addr g0       ; အသက်
+    40  load isize
+    41  convert f64
+    42  print
+    43  global_addr g4       ; စာ
+    44  load char
+    45  convert isize
+    46  print
+    47  global_addr g5       ; အသက်
+    48  push -5:i16
+    49  store i16
+    50  global_addr g5       ; အသက်
+    51  load i16
+    52  print
+    53  global_addr g0       ; အသက်
+    54  load isize
+    55  push 18:isize
     56  lt
-    57  jump_if_false L4
-    58  load_global g2       ; ကြီးသူ
-    59  jump L5
+    57  jump_if_false L0
+    58  global_addr g2       ; ကြီးသူ
+    59  push false:bool
+    60  store bool
+    61  jump L6
+L0:
+    62  global_addr g2       ; ကြီးသူ
+    63  load bool
+    64  jump_if_false L1
+    65  global_addr g0       ; အသက်
+    66  load isize
+    67  push 60:isize
+    68  gt
+    69  jump L2
+L1:
+    70  push false:bool
+L2:
+    71  jump_if_false L3
+    72  print_text t0
+    73  jump L6
+L3:
+    74  global_addr g4       ; စာ
+    75  load char
+    76  push 'ခ':char
+    77  lt
+    78  jump_if_false L4
+    79  global_addr g2       ; ကြီးသူ
+    80  load bool
+    81  jump L5
 L4:
-    60  push false:bool
+    82  push false:bool
 L5:
-    61  print
+    83  print
 L6:
-    62  ret
+    84  ret

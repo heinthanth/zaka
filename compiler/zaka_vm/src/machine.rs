@@ -2,8 +2,12 @@ use std::collections::BTreeMap;
 use std::io::Write;
 
 use bon::Builder;
+use strum::Display;
+use strum::EnumIter;
+use strum::EnumString;
 use zakac_codegen::bc::Module;
 use zakac_codegen::bc::Op;
+use zakac_codegen::bc::Slot;
 use zakac_codegen::bc::TrapCode;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::CmpOp;
@@ -15,6 +19,7 @@ use zakac_ir_builder::value::compare;
 use zakac_ir_builder::value::convert;
 use zakac_ir_builder::value::infix_wrapping;
 use zakac_ir_builder::value::prefix_wrapping;
+use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_if;
@@ -33,6 +38,21 @@ use crate::trap::hex;
 /// The kind of a pointer difference.
 const ISIZE: IntKind = IntKind::new(true, Width::Platform);
 
+/// How the variables of a run sit in the address space.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumIter, Display, EnumString)]
+#[strum(serialize_all = "lowercase")]
+pub enum FrameMode
+{
+    /// Each variable in a block of its own with a red zone after it, so a
+    /// read or write past a variable traps.
+    #[default]
+    Checked,
+    /// The locals of a call next to each other in one block at C offsets,
+    /// and the globals next to each other in one more, so a read or write past
+    /// a variable reaches the next one, as in C.
+    Packed,
+}
+
 /// Limits for a run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
 pub struct RunOptions
@@ -45,6 +65,13 @@ pub struct RunOptions
     /// The most live heap octets; an allocation past it fails.
     #[builder(default = 256 << 20)]
     pub max_heap: u64,
+    /// The most octets of the stack region; a call with no room for its
+    /// locals traps.
+    #[builder(default = 1 << 20)]
+    pub max_stack: u64,
+    /// How the variables sit in the address space.
+    #[builder(default)]
+    pub frames: FrameMode,
     /// Whether the command line lists the heap blocks left unfreed when
     /// the run ends; the machine itself keeps no list.
     #[builder(default)]
@@ -157,14 +184,110 @@ pub struct Frame
     pub func: u32,
     /// The index of the next op.
     pub pc: u32,
-    /// Where the locals of the call start in the store.
-    pub base: usize,
     /// The depth of the operand stack when the call began, after its
     /// arguments were taken; the values over it belong to the call.
     pub depth: usize,
-    /// The start of each cell the call made, freed when it returns.
+    /// The address of each local of the call, parameters first.
     #[builder(default)]
-    pub cells: Vec<u64>,
+    pub locals: Vec<u64>,
+    /// The blocks the call took in the stack region, freed when it
+    /// returns: one per local, or one for all of them when packed.
+    #[builder(default)]
+    pub blocks: Vec<u64>,
+    /// The top of the stack region before the call took its blocks.
+    #[builder(default)]
+    pub sp: u64,
+}
+
+/// The variables a stack or static block holds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
+pub struct Owner
+{
+    /// The function of a local or a frame; `None` for globals.
+    pub func: Option<u32>,
+    /// The slot index in the locals of the function, or in the globals;
+    /// `None` for a block that holds them all.
+    pub slot: Option<u32>,
+}
+
+/// What a stack or static block holds, named.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Held<'m>
+{
+    /// One local of a call.
+    Local
+    {
+        /// The name of the local.
+        name: &'m str,
+        /// The name of the function.
+        func: &'m str,
+    },
+    /// One global.
+    Global
+    {
+        /// The name of the global.
+        name: &'m str,
+    },
+    /// Each local of a call, packed.
+    Frame
+    {
+        /// The name of the function.
+        func: &'m str,
+    },
+    /// Each global, packed.
+    Globals,
+}
+
+/// A variable of a packed block.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
+pub struct PackedVar<'m>
+{
+    /// Its offset from the start of the block.
+    pub offset: u64,
+    /// Its octet count.
+    pub len: u64,
+    /// Its name.
+    pub name: &'m str,
+}
+
+/// A slot as a variable of a packed block.
+///
+/// # Arguments
+///
+/// * `s` - The slot.
+/// * `offset` - Its offset in the block.
+/// * `platform` - The platform bits.
+///
+/// # Returns
+///
+/// The variable.
+fn packed_var(s: &Slot, offset: u64, platform: u16) -> PackedVar<'_>
+{
+    let len = u64::from(s.kind.size(platform));
+    PackedVar::builder().offset(offset).len(len).name(s.name.as_str()).build()
+}
+
+/// Where each slot sits in a packed block, set out as C sets out the
+/// fields of a struct, and the octet count of the block.
+///
+/// # Arguments
+///
+/// * `slots` - The slots.
+/// * `platform` - The platform bits.
+///
+/// # Returns
+///
+/// The offset of each slot, and the size.
+fn packed(slots: &[Slot], platform: u16) -> (Vec<u64>, u64)
+{
+    let mut end = 0u64;
+    let mut place = |s: &Slot| {
+        let at = end.next_multiple_of(u64::from(s.kind.align(platform).max(1)));
+        end = at + u64::from(s.kind.size(platform));
+        at
+    };
+    let offsets = slots.iter().map(&mut place).collect();
+    (offsets, end)
 }
 
 /// Where a run stands. A trap is final: further steps change nothing.
@@ -210,14 +333,15 @@ pub struct Machine
     module: Module,
     /// The limits.
     options: RunOptions,
-    /// The global slots.
-    globals: Vec<Value>,
+    /// The static block of each global slot.
+    #[builder(default)]
+    globals: Vec<u64>,
     /// The operand stack.
     #[builder(default)]
     stack: Vec<Value>,
-    /// The locals of each call, one after the other.
+    /// The locals of the calls in progress.
     #[builder(default)]
-    store: Vec<Value>,
+    slots: usize,
     /// The calls in progress, innermost last.
     #[builder(default)]
     frames: Vec<Frame>,
@@ -233,15 +357,40 @@ pub struct Machine
     /// What print ops wrote and no one took.
     #[builder(default)]
     out: String,
-    /// The heap, the cells and the static data.
+    /// The static data, the stack region and the heap.
     mem: Mem,
-    /// The index of the function that made each cell, at the cell start.
-    /// It outlives the cell, so a trap can still name the function.
+    /// The variable of each stack and static block, at the block start.
+    /// It outlives the block, so a trap can still name the variable.
     #[builder(default)]
-    cells: BTreeMap<u64, u32>,
+    owners: BTreeMap<u64, Owner>,
     /// Where the run stands.
     #[builder(default = State::Running)]
     state: State,
+}
+
+/// The addresses of the locals of a new call and the blocks those take, or
+/// the trap.
+type Taken = Result<(Vec<u64>, Vec<u64>), TrapKind>;
+
+/// What a block holds, as the text of a trap.
+///
+/// # Arguments
+///
+/// * `held` - What the block holds.
+///
+/// # Returns
+///
+/// The text.
+fn held_text(held: Held) -> String
+{
+    let text = match held
+    {
+        Held::Local { name, func } => t!("vm.trap.stack_of", name = name, func = func),
+        Held::Global { name } => t!("vm.trap.global", name = name),
+        Held::Frame { func } => t!("vm.trap.frame_of", func = func),
+        Held::Globals => t!("vm.trap.globals"),
+    };
+    text.into_owned()
 }
 
 /// A malformed-ops trap.
@@ -308,23 +457,76 @@ impl Machine
     /// The machine.
     pub fn new(module: Module, options: RunOptions) -> Self
     {
-        let globals =
-            module.globals.iter().map(|s| Value::default_of(s.kind)).collect();
         let main = module.main;
         let mem = Mem::new(module.platform_bits, options.max_heap);
         #[rustfmt::skip]
         let mut machine = Machine::builder().module(module).options(options)
-            .globals(globals).at((main, 0)).mem(mem).build();
-        let entered = machine.enter(main);
+            .at((main, 0)).mem(mem).build();
+        let placed = machine.place_globals();
+        machine.mem.open_stack(options.max_stack);
+        let entered = placed.and_then(|()| machine.enter(main));
         do_if!(let Err(kind) = entered, machine.state = State::Trapped(machine.trap(kind)));
         machine.raise_peak();
         machine
     }
 
+    /// Give the globals their static room, before the stack region opens.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `StaticFull` when the address space has no room.
+    fn place_globals(&mut self) -> Step
+    {
+        let platform = self.module.platform_bits;
+        ret_if!(self.options.frames == FrameMode::Packed, self.pack_globals());
+        let sizes: Vec<u64> = self
+            .module
+            .globals
+            .iter()
+            .map(|s| u64::from(s.kind.size(platform)))
+            .collect();
+        (0..).zip(sizes).try_for_each(|(n, size)| self.place_global(n, size))
+    }
+
+    /// Give one global a static block.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The slot index.
+    /// * `size` - The octet count.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `StaticFull` when the address space has no room.
+    fn place_global(&mut self, n: u32, size: u64) -> Step
+    {
+        let made = self.mem.alloc(size, Origin::Static, 0);
+        let addr = made.ok_or(TrapKind::StaticFull { size })?;
+        self.owners.insert(addr, Owner::builder().slot(n).build());
+        self.globals.push(addr);
+        Ok(())
+    }
+
+    /// Give each global its place in one static block.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `StaticFull` when the address space has no room.
+    fn pack_globals(&mut self) -> Step
+    {
+        let (offsets, size) = packed(&self.module.globals, self.module.platform_bits);
+        ret_if!(offsets.is_empty(), Ok(()));
+        let made = self.mem.alloc(size, Origin::Static, 0);
+        let base = made.ok_or(TrapKind::StaticFull { size })?;
+        self.owners.insert(base, Owner::builder().build());
+        self.globals = offsets.iter().map(|o| base + o).collect();
+        Ok(())
+    }
+
     /// Raise the peak of the stack to the slots in use now.
     fn raise_peak(&mut self)
     {
-        let slots = self.store.len() + self.stack.len();
+        let slots = self.slots + self.stack.len();
         self.peak_stack = self.peak_stack.max(slots);
     }
 
@@ -448,7 +650,7 @@ impl Machine
     /// The values.
     pub fn stack(&self) -> &[Value] { &self.stack }
 
-    /// The locals of one call, parameters first.
+    /// The blocks of the locals of one call, parameters first.
     ///
     /// # Arguments
     ///
@@ -456,24 +658,18 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// The values; none for a frame that is not there.
-    pub fn locals(&self, frame: usize) -> &[Value]
+    /// The block starts; none for a frame that is not there.
+    pub fn locals(&self, frame: usize) -> &[u64]
     {
-        let Some(f) = self.frames.get(frame)
-        else
-        {
-            return &[];
-        };
-        let end = self.frames.get(frame + 1).map_or(self.store.len(), |n| n.base);
-        &self.store[f.base..end]
+        self.frames.get(frame).map_or(&[], |f| &f.locals)
     }
 
-    /// The global slots.
+    /// The blocks of the global slots.
     ///
     /// # Returns
     ///
-    /// The values.
-    pub fn globals(&self) -> &[Value] { &self.globals }
+    /// The block starts.
+    pub fn globals(&self) -> &[u64] { &self.globals }
 
     /// What print ops wrote and no one took.
     ///
@@ -504,7 +700,7 @@ impl Machine
     /// The slots.
     pub fn peak_stack(&self) -> usize { self.peak_stack }
 
-    /// The heap, the cells and the static data.
+    /// The static data, the stack region and the heap.
     ///
     /// # Returns
     ///
@@ -532,18 +728,51 @@ impl Machine
     /// The limits.
     pub fn options(&self) -> RunOptions { self.options }
 
-    /// The name of the function that made a cell.
+    /// What a stack or static block holds, or held last.
     ///
     /// # Arguments
     ///
-    /// * `start` - The start of the cell.
+    /// * `start` - The start of the block.
     ///
     /// # Returns
     ///
-    /// The name, or `None` when no cell ever started there.
-    pub fn cell_maker(&self, start: u64) -> Option<&str>
+    /// The variables, named; `None` when no variable ever started there.
+    pub fn owner(&self, start: u64) -> Option<Held<'_>>
     {
-        self.cells.get(&start).map(|f| self.func_name(*f))
+        let owner = self.owners.get(&start)?;
+        let func = owner.func.and_then(|f| self.module.funcs.get(f as usize));
+        let slots = func.map_or(&self.module.globals, |f| &f.locals);
+        let named = |n: u32| slots.get(n as usize).map_or("?", |s| s.name.as_str());
+        let name = owner.slot.map(named);
+        let held = match (func, name)
+        {
+            (Some(f), Some(name)) => Held::Local { name, func: &f.name },
+            (None, Some(name)) => Held::Global { name },
+            (Some(f), None) => Held::Frame { func: &f.name },
+            (None, None) => Held::Globals,
+        };
+        Some(held)
+    }
+
+    /// The variables a packed block holds, or held last, in offset order.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the block.
+    ///
+    /// # Returns
+    ///
+    /// The variables; `None` for a block that holds one variable or none,
+    /// such as each block of a checked run.
+    pub fn packed_vars(&self, start: u64) -> Option<Vec<PackedVar<'_>>>
+    {
+        let owner = self.owners.get(&start).filter(|o| o.slot.is_none())?;
+        let func = owner.func.and_then(|f| self.module.funcs.get(f as usize));
+        let slots = func.map_or(&self.module.globals, |f| &f.locals);
+        let platform = self.module.platform_bits;
+        let (offsets, _) = packed(slots, platform);
+        let vars = slots.iter().zip(offsets).map(|(s, o)| packed_var(s, o, platform));
+        Some(vars.collect())
     }
 
     /// Place a trap at the op that ran last.
@@ -592,12 +821,8 @@ impl Machine
     fn block_text(&self, addr: u64) -> Option<String>
     {
         let block = self.mem.block_near(addr)?;
-        let maker = || self.cell_maker(block.start).unwrap_or("?");
-        let origin = match block.origin
-        {
-            Origin::Cell => t!("vm.trap.cell_of", func = maker()).into_owned(),
-            Origin::Heap | Origin::Static => <&str>::from(block.origin).to_string(),
-        };
+        let named = self.owner(block.start).map(held_text);
+        let origin = named.unwrap_or_else(|| <&str>::from(block.origin).to_string());
         let (start, size) = (hex(block.start), block.len);
         Some(
             t!("vm.trap.block", start = start, size = size, origin = origin)
@@ -637,10 +862,8 @@ impl Machine
         match op
         {
             Op::Push(v) => self.push(v),
-            Op::LoadLocal(n) => self.load_local(n),
-            Op::StoreLocal(n) => self.store_local(n),
-            Op::LoadGlobal(n) => self.load_global(n),
-            Op::StoreGlobal(n) => self.store_global(n),
+            Op::LocalAddr(n) => self.local_addr(n),
+            Op::GlobalAddr(n) => self.global_addr(n),
             Op::Prefix(op) => self.prefix(op),
             Op::Infix(op) => self.infix(op),
             Op::Compare(op) => self.compare(op),
@@ -656,7 +879,6 @@ impl Machine
             Op::Trap(TrapCode::StepNotPositive) => Err(TrapKind::StepNotPositive),
             Op::Load(kind) => self.load(kind),
             Op::Store(_) => self.store(),
-            Op::Cell(size, _) => self.cell(size),
             Op::PtrAdd(stride) => self.ptr_add(stride),
             Op::PtrSub(stride) => self.ptr_sub(stride),
             Op::Alloc(stride) => self.alloc(stride),
@@ -750,7 +972,7 @@ impl Machine
         self.pop()?.as_bool().ok_or_else(|| malformed("a jump needs a boolean"))
     }
 
-    /// The store index of a local slot of the innermost call.
+    /// Push the address of the block of a local of the innermost call.
     ///
     /// # Arguments
     ///
@@ -758,16 +980,16 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// The store index, or a trap when the slot is out of range.
-    fn local(&self, n: u32) -> Result<usize, TrapKind>
+    /// `Ok`, or a trap when the slot is out of range.
+    fn local_addr(&mut self, n: u32) -> Step
     {
-        let base = self.frames.last().map_or(0, |f| f.base);
-        let at = base + n as usize;
-        ret_if!(at >= self.store.len(), Err(malformed("local slot out of range")));
-        Ok(at)
+        let frame = self.frames.last().ok_or_else(|| malformed("no call"))?;
+        let addr = frame.locals.get(n as usize).copied();
+        let addr = addr.ok_or_else(|| malformed("local slot out of range"))?;
+        self.push(Value::Ptr(addr))
     }
 
-    /// Check a global slot index.
+    /// Push the address of the block of a global.
     ///
     /// # Arguments
     ///
@@ -775,74 +997,12 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// The index, or a trap when it is out of range.
-    fn global(&self, n: u32) -> Result<usize, TrapKind>
+    /// `Ok`, or a trap when the slot is out of range.
+    fn global_addr(&mut self, n: u32) -> Step
     {
-        let at = n as usize;
-        ret_if!(at >= self.globals.len(), Err(malformed("global slot out of range")));
-        Ok(at)
-    }
-
-    /// Push a local slot.
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The slot index.
-    ///
-    /// # Returns
-    ///
-    /// `Ok`, or a trap.
-    fn load_local(&mut self, n: u32) -> Step
-    {
-        let at = self.local(n)?;
-        self.push(self.store[at])
-    }
-
-    /// Pop into a local slot.
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The slot index.
-    ///
-    /// # Returns
-    ///
-    /// `Ok`, or a trap.
-    fn store_local(&mut self, n: u32) -> Step
-    {
-        let at = self.local(n)?;
-        self.store[at] = self.pop()?;
-        Ok(())
-    }
-
-    /// Push a global slot.
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The slot index.
-    ///
-    /// # Returns
-    ///
-    /// `Ok`, or a trap.
-    fn load_global(&mut self, n: u32) -> Step
-    {
-        let at = self.global(n)?;
-        self.push(self.globals[at])
-    }
-
-    /// Pop into a global slot.
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The slot index.
-    ///
-    /// # Returns
-    ///
-    /// `Ok`, or a trap.
-    fn store_global(&mut self, n: u32) -> Step
-    {
-        let at = self.global(n)?;
-        self.globals[at] = self.pop()?;
-        Ok(())
+        let addr = self.globals.get(n as usize).copied();
+        let addr = addr.ok_or_else(|| malformed("global slot out of range"))?;
+        self.push(Value::Ptr(addr))
     }
 
     /// Work out a prefix operator on the top value.
@@ -941,8 +1101,8 @@ impl Machine
         Ok(())
     }
 
-    /// Start a call: its locals take their defaults, then the arguments
-    /// move from the stack into the parameters.
+    /// Start a call: each local takes a block of zeros in the stack region,
+    /// then the arguments move from the stack into the parameters.
     ///
     /// # Arguments
     ///
@@ -966,18 +1126,85 @@ impl Machine
         let params = func.params as usize;
         let short = self.stack.len() < params || func.locals.len() < params;
         ret_if!(short, Err(malformed("missing arguments")));
-        let base = self.store.len();
-        self.store.extend(func.locals.iter().map(|s| Value::default_of(s.kind)));
+        let platform = self.module.platform_bits;
+        let packed = tern!(
+            self.options.frames == FrameMode::Packed,
+            Some(packed(&func.locals, platform)),
+            None
+        );
+        let sizes: Vec<u64> =
+            func.locals.iter().map(|s| u64::from(s.kind.size(platform))).collect();
+        let sp = self.mem.stack_top();
+        let (locals, blocks) = match packed
+        {
+            Some((offsets, size)) => self.take_frame(f, &offsets, size)?,
+            None => self.take_blocks(f, &sizes)?,
+        };
         let args = self.stack.split_off(self.stack.len() - params);
-        self.store[base..base + params].copy_from_slice(&args);
+        locals.iter().zip(args).try_for_each(|(a, v)| self.mem.store(*a, v))?;
         let depth = self.stack.len();
-        self.frames
-            .push(Frame::builder().func(f).pc(0).base(base).depth(depth).build());
+        self.slots += locals.len();
+        #[rustfmt::skip]
+        self.frames.push(Frame::builder().func(f).pc(0).depth(depth).locals(locals)
+            .blocks(blocks).sp(sp).build());
         Ok(())
     }
 
-    /// End the innermost call and free its cells; a result remains on the
-    /// stack.
+    /// Take one block of the stack region for each local of a new call,
+    /// packed at their offsets.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The function index.
+    /// * `offsets` - The offset of each local.
+    /// * `size` - The octet count of the block.
+    ///
+    /// # Returns
+    ///
+    /// The address of each local and the block, or `StackFull`.
+    fn take_frame(&mut self, f: u32, offsets: &[u64], size: u64) -> Taken
+    {
+        ret_if!(offsets.is_empty(), Ok((Vec::new(), Vec::new())));
+        let made = self.mem.push_stack(size, self.frames.len() + 1);
+        let base = made.ok_or(TrapKind::StackFull { size })?;
+        self.owners.insert(base, Owner::builder().func(f).build());
+        Ok((offsets.iter().map(|o| base + o).collect(), vec![base]))
+    }
+
+    /// Take a block of the stack region for each local of a new call. When
+    /// one does not fit, the blocks taken so far go back.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The function index.
+    /// * `sizes` - The octet count of each local.
+    ///
+    /// # Returns
+    ///
+    /// The address of each local and the blocks, the same starts, or
+    /// `StackFull`.
+    fn take_blocks(&mut self, f: u32, sizes: &[u64]) -> Taken
+    {
+        let sp = self.mem.stack_top();
+        let owner = self.frames.len() + 1;
+        let mut made = Vec::with_capacity(sizes.len());
+        for size in sizes
+        {
+            let Some(addr) = self.mem.push_stack(*size, owner)
+            else
+            {
+                self.mem.pop_stack(&made, sp);
+                return Err(TrapKind::StackFull { size: *size });
+            };
+            made.push(addr);
+        }
+        let owner = |slot| Owner::builder().func(f).slot(slot).build();
+        do_for!((slot, a) in (0..).zip(&made), _ = self.owners.insert(*a, owner(slot)));
+        Ok((made.clone(), made))
+    }
+
+    /// End the innermost call and give back its stack blocks; a result
+    /// remains on the stack.
     ///
     /// # Returns
     ///
@@ -985,8 +1212,8 @@ impl Machine
     fn leave(&mut self) -> Step
     {
         let frame = self.frames.pop().ok_or_else(|| malformed("no call"))?;
-        self.mem.release(&frame.cells);
-        self.store.truncate(frame.base);
+        self.mem.pop_stack(&frame.blocks, frame.sp);
+        self.slots -= frame.locals.len();
         Ok(())
     }
 
@@ -1045,28 +1272,6 @@ impl Machine
         let v = self.pop()?;
         let addr = self.pop_ptr("store")?;
         self.mem.store(addr, v)
-    }
-
-    /// Make a cell for an addressed local of the innermost call and push
-    /// its address. Blocks start at a multiple of 16, which covers each
-    /// alignment.
-    ///
-    /// # Arguments
-    ///
-    /// * `size` - The octet count.
-    ///
-    /// # Returns
-    ///
-    /// `Ok`, or `OutOfMem` when the address space is full.
-    fn cell(&mut self, size: u32) -> Step
-    {
-        let size = u64::from(size);
-        let made = self.mem.alloc(size, Origin::Cell, self.frames.len());
-        let addr = made.ok_or(TrapKind::OutOfMem { size })?;
-        let frame = self.frames.last_mut().ok_or_else(|| malformed("no call"))?;
-        frame.cells.push(addr);
-        self.cells.insert(addr, self.at.0);
-        self.push(Value::Ptr(addr))
     }
 
     /// Pop an element offset and an address, and push the address moved

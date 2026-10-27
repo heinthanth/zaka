@@ -90,8 +90,8 @@
     white-space: nowrap
     text-overflow: ellipsis
 
-// The grip on the right edge of a column head; a line shows on hover and
-// while it drags.
+// The grip on the right edge of a column head: a faint line that lights up
+// on hover and while it drags.
 .col-grip
   position: absolute
   top: 0
@@ -109,7 +109,7 @@
     bottom: 20%
     left: 3px
     width: 2px
-    background: transparent
+    background: var(--panel-border)
     transition: background-color 120ms ease-out
 
   &:hover::after,

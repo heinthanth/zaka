@@ -42,14 +42,18 @@ fn and_runs_the_right_side_just_when_needed()
 {
     let found = with_flags("(က && ခ) ကို ပြသပါ။");
     let want = [
+        "global_addr g0",
         "push true:bool",
-        "store_global g0",
+        "store bool",
+        "global_addr g1",
         "push false:bool",
-        "store_global g1",
-        "load_global g0",
-        "jump_if_false @8",
-        "load_global g1",
-        "jump @9",
+        "store bool",
+        "global_addr g0",
+        "load bool",
+        "jump_if_false @12",
+        "global_addr g1",
+        "load bool",
+        "jump @13",
         "push false:bool",
         "print",
         "ret",
@@ -61,28 +65,31 @@ fn and_runs_the_right_side_just_when_needed()
 fn or_runs_the_right_side_just_when_needed()
 {
     let found = with_flags("(က || ခ) ကို ပြသပါ။");
-    assert_eq!(found[5], "jump_if_true @8");
-    assert_eq!(found[8], "push true:bool");
+    assert_eq!(found[8], "jump_if_true @12");
+    assert_eq!(found[12], "push true:bool");
 }
 
 #[test]
 fn if_without_else_has_no_jump_over_it()
 {
     let found = with_flags("အကယ်၍ က ဖြစ်လျှင် \"ဟုတ်\" ဟု ပြသပါ။");
-    let tail = &found[4..];
-    assert_eq!(tail, ["load_global g0", "jump_if_false @7", "print_text t0", "ret"]);
+    let tail = &found[6..];
+    let want =
+        ["global_addr g0", "load bool", "jump_if_false @10", "print_text t0", "ret"];
+    assert_eq!(tail, want);
 }
 
 #[test]
 fn if_with_else_jumps_over_the_else_branch()
 {
     let found = with_flags("အကယ်၍ က ဖြစ်လျှင် \"ဟုတ်\" ဟု ပြသပါ။\nသို့မဟုတ်ပါက \"မဟုတ်\" ဟု ပြသပါ။");
-    let tail = &found[4..];
+    let tail = &found[6..];
     let want = [
-        "load_global g0",
-        "jump_if_false @8",
+        "global_addr g0",
+        "load bool",
+        "jump_if_false @11",
         "print_text t0",
-        "jump @9",
+        "jump @12",
         "print_text t1",
         "ret",
     ];
@@ -97,12 +104,15 @@ fn break_and_continue_go_to_the_exit_and_the_update()
                 ၇ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု \
                 ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let found = main_ops(text);
-    let update = found.iter().rposition(|op| op == "push 1:isize").unwrap() - 1;
+    let update = found.iter().rposition(|op| op == "push 1:isize").unwrap() - 3;
     let exit = found.len() - 1;
-    assert_eq!(found[update], "load_global g0");
+    assert_eq!(
+        found[update..update + 3],
+        ["global_addr g0", "global_addr g0", "load isize"]
+    );
     assert!(found.contains(&format!("jump @{update}")), "{found:?}");
     assert!(found.contains(&format!("jump @{exit}")), "{found:?}");
-    assert_eq!(found[exit - 1], "jump @2");
+    assert_eq!(found[exit - 1], "jump @3");
 }
 
 #[test]
@@ -139,7 +149,8 @@ fn runtime_bounds_pick_the_direction_once()
         main_func(&module).locals.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(names, ["%to", "%dir"], "a top-level loop variable is a global");
     let found = ops(main_func(&module));
-    assert_eq!(found.iter().filter(|o| *o == "load_local l1").count(), 2);
+    let dir = found.iter().filter(|o| *o == "local_addr l1").count();
+    assert_eq!(dir, 3, "the direction is set once and read twice");
 }
 
 #[test]
@@ -258,40 +269,35 @@ fn jumps_of_an_if_take_the_if_span()
 }
 
 #[test]
-fn addressed_locals_live_in_cells()
+fn each_variable_is_read_and_written_through_its_block()
 {
     let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ \
                 ဖြစ်ပါစေ။\np ၏ တန်ဖိုး ကို ပြသပါ။";
     let found = main_ops(text);
     let want = [
-        "cell 8 8",
-        "store_global g0", // prologue: x gets a cell
-        "load_global g0",
+        "global_addr g0",
         "push 5:isize",
-        "store isize", // x = 5 through the cell
-        "load_global g0",
-        "store_global g1", // p = &x
-        "load_global g1",
+        "store isize", // x = 5
+        "global_addr g1",
+        "global_addr g0",
+        "store *isize", // p = &x
+        "global_addr g1",
+        "load *isize",
         "load isize",
         "print", // *p
         "ret",
     ];
     assert_eq!(found, want);
-    let module = emit_text(text);
-    assert!(module.globals[0].addressed && !module.globals[1].addressed);
 }
 
 #[test]
-fn addressed_parameters_go_into_their_cell()
+fn a_parameter_is_read_from_its_block()
 {
-    let text = "လုပ်ဆောင်ချက် ပြ သည်\nကိန်းပြည့် က ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ၏ လိပ်စာ ၏ \
-                တန်ဖိုး ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    let text = "လုပ်ဆောင်ချက် ပြ သည်\nကိန်းပြည့် က ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို \
+                ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let module = emit_text(text);
     let found = ops(&module.funcs[0]);
-    assert_eq!(
-        found[..5],
-        ["cell 8 8", "dup", "load_local l0", "store isize", "store_local l0"]
-    );
+    assert_eq!(found[..3], ["local_addr l0", "load isize", "print"]);
 }
 
 #[test]
@@ -304,24 +310,31 @@ p လိပ်စာရှိကို မင်မိုရီ ၆၄ ဘို
 p လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
     let found = main_ops(text);
     let want = [
+        "global_addr g0",
         "push 0x0:ptr",
-        "store_global g0",
+        "store *i32",
+        "global_addr g0",
         "push 10:usize",
         "alloc 4",
-        "store_global g0",
-        "load_global g0",
+        "store *i32",
+        "global_addr g0",
+        "load *i32",
         "push 1:isize",
         "ptr_add 4",
         "push 7:i32",
         "store i32",
-        "load_global g0",
+        "global_addr g0",
+        "global_addr g0",
+        "load *i32",
         "push 64:usize",
         "realloc 1",
-        "store_global g0",
-        "load_global g0",
+        "store *i32",
+        "global_addr g0",
+        "global_addr g0",
+        "load *i32",
         "free",
         "push 0x0:ptr",
-        "store_global g0",
+        "store *i32",
         "ret",
     ];
     assert_eq!(found, want);
@@ -334,9 +347,10 @@ fn a_deref_destination_uses_dup()
         "ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။\npp ၏ တန်ဖိုး လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
     let found = main_ops(text);
     assert_eq!(
-        found[2..],
+        found[3..],
         [
-            "load_global g0",
+            "global_addr g0",
+            "load **isize",
             "dup",
             "load *isize",
             "free",
@@ -366,7 +380,7 @@ r + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
     let found = ops(main_func(&module));
     let at = found.iter().position(|op| op == "ptr_add 8").expect("a ptr_add 8");
     assert_eq!(found[at + 1], "convert ptr");
-    assert_eq!(found[at + 2], "store_global g2");
+    assert_eq!(found[at + 2], "store ptr");
     let steps = found.iter().filter(|op| *op == "ptr_add 8").count();
     assert_eq!(steps, 4);
     let ret = ops(&module.funcs[1]);

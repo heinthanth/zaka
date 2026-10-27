@@ -21,7 +21,7 @@ const MAX_RESERVED: u64 = 4096;
 const BLOCK_ALIGN: u64 = 16;
 /// The gap kept free after each block, so an access just past a block
 /// never lands in the next one.
-const RED_ZONE: u64 = 16;
+pub const RED_ZONE: u64 = 16;
 
 /// A run of zero octets, when the host has room for it.
 ///
@@ -49,9 +49,9 @@ pub enum Origin
 {
     /// An allocation of the program.
     Heap,
-    /// An addressed local of a call.
-    Cell,
-    /// Data that lives for the whole run.
+    /// A local or parameter of a call, in the stack region.
+    Stack,
+    /// Data that lives for the whole run, such as a global.
     Static,
 }
 
@@ -69,7 +69,8 @@ pub struct Block
     pub origin: Origin,
     /// Whether the block is in use; a freed block stands in quarantine.
     pub live: bool,
-    /// The call depth that made a cell; 0 for heap and static blocks.
+    /// The call depth that made a stack block; 0 for heap and static
+    /// blocks.
     pub owner: usize,
 }
 
@@ -105,9 +106,10 @@ impl Block
     fn holds(&self, addr: u64) -> bool { addr >= self.start && addr < self.end() }
 }
 
-/// The checked heap, cells and static data of the machine: blocks in a
-/// flat address space, a reserved region at the bottom, red zones between
-/// blocks and a quarantine of freed blocks.
+/// The checked address space of the machine: blocks in a flat space, a
+/// reserved region at the bottom, static data, a stack region that calls
+/// take and give back in order, then the heap. Red zones keep blocks apart
+/// and freed heap blocks wait in a quarantine.
 #[derive(Debug, Clone, Builder)]
 #[builder(start_fn(vis = ""))]
 pub struct Mem
@@ -131,9 +133,18 @@ pub struct Mem
     /// Each block, live or freed, at its start.
     #[builder(default)]
     table: BTreeMap<u64, Block>,
-    /// The starts of freed blocks, the oldest first.
+    /// The starts of freed heap blocks, the oldest first.
     #[builder(default)]
     freed: VecDeque<u64>,
+    /// The start of the stack region; 0 until it opens.
+    #[builder(default)]
+    stack_lo: u64,
+    /// The end of the stack region.
+    #[builder(default)]
+    stack_hi: u64,
+    /// The lowest address the next stack block can take.
+    #[builder(default)]
+    top: u64,
 }
 
 impl Mem
@@ -162,14 +173,15 @@ impl Mem
             .build()
     }
 
-    /// Make a block of zeros. A heap block counts against the cap; cells
-    /// and static blocks do not. A zero-size block is a real block.
+    /// Make a block of zeros out of the stack region. A heap block counts
+    /// against the cap; static blocks do not. A zero-size block is a real
+    /// block.
     ///
     /// # Arguments
     ///
     /// * `size` - The octet count.
     /// * `origin` - Where the block comes from.
-    /// * `owner` - The call depth that makes a cell; 0 otherwise.
+    /// * `owner` - 0; the call depth for a stack block.
     ///
     /// # Returns
     ///
@@ -189,7 +201,7 @@ impl Mem
     ///
     /// * `size` - The octet count.
     /// * `origin` - Where the block comes from.
-    /// * `owner` - The call depth that makes a cell; 0 otherwise.
+    /// * `owner` - 0; the call depth for a stack block.
     ///
     /// # Returns
     ///
@@ -260,15 +272,101 @@ impl Mem
         Ok(())
     }
 
-    /// Free the cells a call made, at the end of the call, and put them in
-    /// quarantine.
+    /// Open the stack region over the blocks made so far: at most `max`
+    /// octets, and at most half of the room left, so the heap keeps the
+    /// other half. The heap starts past its end.
     ///
     /// # Arguments
     ///
-    /// * `starts` - The start of each cell.
-    pub fn release(&mut self, starts: &[u64])
+    /// * `max` - The most octets of the region.
+    pub fn open_stack(&mut self, max: u64)
     {
-        do_for!(s in starts, self.retire(*s));
+        let lo = self.next.max(self.reserved).next_multiple_of(BLOCK_ALIGN);
+        let half = self.space.saturating_sub(lo) / 2;
+        self.stack_lo = lo;
+        self.stack_hi = lo.saturating_add(max.min(half));
+        self.top = lo;
+        self.next = self.stack_hi;
+    }
+
+    /// The lowest address the next stack block can take; a call keeps it
+    /// to give its blocks back on return.
+    ///
+    /// # Returns
+    ///
+    /// The address.
+    pub fn stack_top(&self) -> u64 { self.top }
+
+    /// The octets of the stack region the calls in progress take, red zones
+    /// included.
+    ///
+    /// # Returns
+    ///
+    /// The octets.
+    pub fn stack_used(&self) -> u64 { self.top.saturating_sub(self.stack_lo) }
+
+    /// The octets of the stack region.
+    ///
+    /// # Returns
+    ///
+    /// The octets; 0 until the region opens.
+    pub fn stack_cap(&self) -> u64 { self.stack_hi.saturating_sub(self.stack_lo) }
+
+    /// Make a stack block of zeros at the top of the stack. Freed stack
+    /// blocks the new one covers leave the table.
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - The octet count.
+    /// * `owner` - The call depth that makes it.
+    ///
+    /// # Returns
+    ///
+    /// The start of the block, or `None` when the stack region is full.
+    pub fn push_stack(&mut self, size: u64, owner: usize) -> Option<u64>
+    {
+        let start = self.top.next_multiple_of(BLOCK_ALIGN);
+        let end = start.checked_add(size).filter(|e| *e <= self.stack_hi)?;
+        let reach = end.saturating_add(RED_ZONE);
+        let stale: Vec<u64> = self.table.range(start..reach).map(|(s, _)| *s).collect();
+        do_for!(s in stale, _ = self.table.remove(&s));
+        let data = zeros(size)?;
+        #[rustfmt::skip]
+        let block = Block::builder().start(start).len(size).data(data)
+            .origin(Origin::Stack).live(true).owner(owner).build();
+        self.table.insert(start, block);
+        self.top = reach;
+        Some(start)
+    }
+
+    /// Give back the stack blocks of a call: the blocks stand freed until a
+    /// later call takes their room, and the top of the stack goes back.
+    ///
+    /// # Arguments
+    ///
+    /// * `starts` - The start of each block.
+    /// * `top` - The top of the stack before the call took them.
+    pub fn pop_stack(&mut self, starts: &[u64], top: u64)
+    {
+        do_for!(s in starts, self.give_back(*s));
+        self.top = top;
+    }
+
+    /// Mark a stack block freed and drop its contents, without the
+    /// quarantine of the heap.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the block.
+    fn give_back(&mut self, start: u64)
+    {
+        let Some(block) = self.table.get_mut(&start)
+        else
+        {
+            return;
+        };
+        block.live = false;
+        block.data = Vec::new();
     }
 
     /// Read a value.

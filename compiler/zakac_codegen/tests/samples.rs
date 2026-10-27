@@ -68,8 +68,8 @@ fn fits(op: Op, module: &Module, func: &Func) -> bool
     let below = |n: u32, len: usize| (n as usize) < len;
     match op
     {
-        Op::LoadLocal(n) | Op::StoreLocal(n) => below(n, func.locals.len()),
-        Op::LoadGlobal(n) | Op::StoreGlobal(n) => below(n, module.globals.len()),
+        Op::LocalAddr(n) => below(n, func.locals.len()),
+        Op::GlobalAddr(n) => below(n, module.globals.len()),
         Op::Jump(t) | Op::JumpIfFalse(t) | Op::JumpIfTrue(t) =>
         {
             below(t, func.code.len())

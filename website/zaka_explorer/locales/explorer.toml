@@ -116,12 +116,20 @@ en = "Compiler"
 en = "Heap limit"
 [explorer.settings.heap_cap_note]
 en = "The most heap a run can hold at once; past it, an allocation traps. Auto uses the RAM the browser reports, up to the 4 GiB a WebAssembly page can address."
+[explorer.settings.frames]
+en = "Variables"
+[explorer.settings.frames_note]
+en = "Checked gives each variable a block of its own, so reading or writing past one stops the program. Packed puts the locals of a call next to each other, as C does, so a read past one finds the next."
+[explorer.settings.frames_checked]
+en = "Checked"
+[explorer.settings.frames_packed]
+en = "Packed, as C"
 [explorer.settings.heap_auto]
 en = "Auto (%{size})"
 [explorer.settings.platform_bits]
 en = "Platform bits"
 [explorer.settings.platform_bits_note]
-en = "Bit count of isize and usize."
+en = "Bit count of isize, usize and addresses. At 8 bits the address space holds 256 octets, room for about seven variables."
 [explorer.settings.platform_bits_choice]
 en = "%{n}-bit"
 [explorer.settings.fold_exprs]
@@ -269,6 +277,10 @@ en = "The address of the op in the code: the functions sit one after another"
 en = "Addr"
 [explorer.col.addr_note]
 en = "The address of the slot on the stack, counted from the bottom"
+[explorer.col.block]
+en = "Block"
+[explorer.col.block_note]
+en = "The address of the block that holds the variable; click it to see that block in the heap pane"
 
 [explorer.tokens.comments]
 en = "Comments"
@@ -402,11 +414,11 @@ en = "Resize the stack pane"
 [explorer.dock.resize_globals]
 en = "Resize the globals pane"
 [explorer.heap.title]
-en = "Heap"
+en = "RAM"
 [explorer.heap.blank]
-en = "No blocks so far. A block shows up here once the program asks for heap room, takes the address of a local or uses static data."
+en = "No blocks so far. Each variable gets a block once its call starts, and heap room shows up here once the program asks for it."
 [explorer.heap.stats]
-en = "%{used} of %{cap} heap in use · %{live} live · %{freed} freed"
+en = "%{used} of %{cap} heap · %{stack} of %{stack_cap} stack · %{live} live · %{freed} freed"
 [explorer.heap.omitted]
 en = "%{count} more blocks not listed"
 [explorer.heap.size]
@@ -419,18 +431,24 @@ en = "Origin"
 en = "State"
 [explorer.heap.origin_heap]
 en = "Heap"
-[explorer.heap.origin_cell]
-en = "Cell"
+[explorer.heap.origin_stack]
+en = "Stack"
 [explorer.heap.origin_static]
 en = "Static"
-[explorer.heap.cell_of]
-en = "Cell of %{func}"
+[explorer.heap.stack_of]
+en = "%{name} of %{func}"
+[explorer.heap.global]
+en = "Global %{name}"
+[explorer.heap.frame_of]
+en = "Frame of %{func}"
+[explorer.heap.globals]
+en = "Globals"
 [explorer.heap.heap_note]
 en = "Heap room the program asked for"
-[explorer.heap.cell_note]
-en = "Room for a local whose address the program takes; it goes back when the call ends"
+[explorer.heap.stack_note]
+en = "Room for a local or parameter of a call; it goes back when the call ends"
 [explorer.heap.static_note]
-en = "Data that lasts the whole run, such as text"
+en = "Globals and other data that last the whole run"
 [explorer.heap.live]
 en = "Live"
 [explorer.heap.freed]
@@ -441,6 +459,32 @@ en = "Leaked"
 en = "Given back and held in quarantine, so a use after the free traps"
 [explorer.heap.leaked_note]
 en = "Heap room still in use when the run finished"
+[explorer.heap.lane_data]
+en = "Static and heap · %{count}"
+[explorer.heap.lane_stack]
+en = "Stack · %{count}"
+[explorer.heap.gaps]
+en = "Gaps"
+[explorer.heap.gaps_note]
+en = "List the gaps between blocks, where an access traps, with the blocks; the map shows them each time"
+[explorer.heap.gap_state]
+en = "Traps"
+[explorer.heap.size_small]
+en = "Small"
+[explorer.heap.size_large]
+en = "Large"
+[explorer.heap.size_scale_note]
+en = "The wider a cell, the larger its block: one cell for up to 8 octets, and one more each time the size doubles"
+[explorer.heap.gap]
+en = "Gap"
+[explorer.heap.gap_note]
+en = "Octets between blocks: the red zone after a block and room no block uses. An access here stops the program, so a step past a block never reaches the next one."
+[explorer.heap.gap_tip]
+en = "%{start} · %{size} between blocks: an access here stops the program"
+[explorer.heap.fault]
+en = "Trap"
+[explorer.heap.fault_note]
+en = "Where the access or free that stopped the program landed"
 [explorer.heap.show_block]
 en = "Show the block it points into"
 [explorer.heap.dump_freed]
@@ -567,11 +611,11 @@ en = "The timer is now stepping through the program. The marked row is the op th
 [explorer.tour.machine]
 en = "Machine state"
 [explorer.tour.machine_text]
-en = "The dock holds the machine state, each part in a pane of its own. The registers: PC points at the next op, SP at the free slot over the stack, BP at the frame of the innermost call. Under them, each call in progress has a frame with its locals; click one to show that call. Globals come next."
+en = "The dock holds the machine state, each part in a pane of its own. The registers: PC points at the next op, SP at the free slot over the stack, BP at the frame of the innermost call. Under them, each call in progress has a frame with its locals, and the Block column gives the address of the block each one lives in; click a frame to show that call. Globals come next."
 [explorer.tour.heap]
-en = "Heap"
+en = "RAM"
 [explorer.tour.heap_text]
-en = "Each block the program uses shows here: heap room it asked for, cells of locals whose address it takes, and static data. The map sets them out in address order; a freed block stands hatched in quarantine, and once the run finishes a block never freed shows as leaked. Click a block to see its octets, or click a pointer in the stack to find its block."
+en = "Each block the program uses shows here: the globals, a block for each local of each call in progress, and the heap room it asked for. The map sets them out in address order; a freed block stands hatched in quarantine, and once the run finishes a block never freed shows as leaked. Click a block to see its octets, or click a pointer in the stack to find its block. The map marks each gap between blocks, where an access traps, with a hatched red seam; the Gaps switch at the end of the line of counts lists the gaps with the blocks too."
 [explorer.tour.panel]
 en = "Output and problems"
 [explorer.tour.panel_text]

@@ -17,7 +17,7 @@ fn listing_names_labels_slots_and_calls()
     assert!(out.contains("globals\n  g0 ကိန်း isize\n"), "{out}");
     assert!(out.contains("texts\n  t0 \"ပြီး\"\n"), "{out}");
     assert!(out.contains("fn f0 main (params 0)\n"), "{out}");
-    assert!(out.contains("L0:\n     2  load_global g0       ; ကိန်း\n"), "{out}");
+    assert!(out.contains("L0:\n     3  global_addr g0       ; ကိန်း\n"), "{out}");
     assert!(out.contains("jump_if_false L1"), "{out}");
     assert!(out.contains("jump L0"), "{out}");
     assert!(out.contains("L1:\n"), "{out}");

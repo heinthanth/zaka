@@ -7,14 +7,17 @@ use strum::EnumIter;
 use strum::EnumString;
 use strum::IntoStaticStr;
 use web_time::Instant;
+use zaka_vm::machine::FrameMode;
+use zaka_vm::machine::Held;
 use zaka_vm::machine::Machine;
+use zaka_vm::machine::PackedVar;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::State;
 use zaka_vm::mem::Block;
 use zaka_vm::mem::Mem;
 use zaka_vm::mem::Origin;
+use zaka_vm::mem::RED_ZONE;
 use zaka_vm::print::text;
-use zaka_vm::trap::hex;
 use zakac_codegen::bc;
 use zakac_i18n::t;
 use zakac_ir_builder::value::Value;
@@ -193,9 +196,11 @@ pub struct ValueRow
     /// The value as the program would print it.
     #[builder(into)]
     pub value: String,
-    /// The address the value leads to: a pointer that is not null, or the
-    /// cell of an addressed slot.
+    /// The address the value leads to: a pointer that is not null.
     pub points_at: Option<u64>,
+    /// The address of the block that holds a variable; `None` for a value
+    /// on the operand stack.
+    pub home: Option<u64>,
 }
 
 /// Whether a block is in use, as the heap panel shows it; its static name
@@ -242,12 +247,33 @@ pub struct BlockRow
     pub origin: Origin,
     /// Whether the block is in use.
     pub state: BlockState,
-    /// The function that made a cell; `None` for heap and static blocks.
-    pub maker: Option<String>,
+    /// What a stack or static block holds, as text, such as `က of ပြ`;
+    /// `None` for a heap block.
+    pub owner: Option<String>,
     /// The first octets of the contents, at most [`DUMP_CAP`]; none once
     /// the block is freed.
     #[builder(default)]
     pub data: Vec<u8>,
+    /// The variables of a packed block, in offset order; none for a block
+    /// that holds one variable or none.
+    #[builder(default)]
+    pub vars: Vec<VarRow>,
+}
+
+/// A variable of a packed block, as the map shows it.
+#[derive(Debug, Clone, PartialEq, Eq, Builder)]
+pub struct VarRow
+{
+    /// Its offset from the start of the block.
+    pub offset: u64,
+    /// Its octet count.
+    pub len: u64,
+    /// Its name.
+    #[builder(into)]
+    pub name: String,
+    /// What it is, as text, such as `က of ပြ` or `Global x`.
+    #[builder(into)]
+    pub owner: String,
 }
 
 impl BlockRow
@@ -264,6 +290,42 @@ impl BlockRow
     pub fn reaches(&self, addr: u64) -> bool
     {
         addr >= self.start && addr <= self.start.saturating_add(self.len)
+    }
+
+    /// The rows the heap panel shows for the block: one for each variable
+    /// of a packed block, at its own address, as a checked run shows them;
+    /// the block itself otherwise.
+    ///
+    /// # Returns
+    ///
+    /// The rows, in address order.
+    pub fn rows(&self) -> Vec<BlockRow>
+    {
+        ret_if!(self.vars.is_empty(), vec![self.clone()]);
+        self.vars.iter().map(|v| self.var_row(v)).collect()
+    }
+
+    /// The row of a variable of a packed block, with its own octets.
+    ///
+    /// # Arguments
+    ///
+    /// * `v` - The variable.
+    ///
+    /// # Returns
+    ///
+    /// The row.
+    fn var_row(&self, v: &VarRow) -> BlockRow
+    {
+        let at = v.offset as usize;
+        let data = self.data.get(at..at + v.len as usize).unwrap_or_default();
+        BlockRow::builder()
+            .start(self.start + v.offset)
+            .len(v.len)
+            .origin(self.origin)
+            .state(self.state)
+            .owner(v.owner.clone())
+            .data(data.to_vec())
+            .build()
     }
 }
 
@@ -284,12 +346,89 @@ pub struct HeapShot
     /// The cap on live heap octets.
     #[builder(default = MAX_HEAP)]
     pub cap: u64,
+    /// The octets of the stack region the calls in progress take.
+    #[builder(default)]
+    pub stack_used: u64,
+    /// The octets of the stack region.
+    #[builder(default)]
+    pub stack_cap: u64,
     /// The blocks in use.
     #[builder(default)]
     pub live: usize,
     /// The blocks in quarantine.
     #[builder(default)]
     pub freed: usize,
+    /// The address an access or free of the run trapped at.
+    pub fault: Option<u64>,
+}
+
+/// The width and height in px of the cell of a small block in the map.
+pub const CELL: u64 = 12;
+
+/// The most cells wide the cell of a large block grows.
+pub const MAX_CELLS: u64 = 10;
+
+/// The width in px of the cell of a block: one cell of [`CELL`] px for up to
+/// 8 octets, and one more for each doubling past that, up to [`MAX_CELLS`]
+/// cells, so a larger block stands out while a huge one does not crowd the
+/// lane.
+///
+/// # Arguments
+///
+/// * `len` - The octet count.
+///
+/// # Returns
+///
+/// The width.
+pub fn cell_width(len: u64) -> u64
+{
+    let doublings = u64::from((len.max(8) / 8).ilog2());
+    CELL * (1 + doublings).min(MAX_CELLS)
+}
+
+/// A lane of the heap map.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Lane
+{
+    /// The static data and the heap.
+    Data,
+    /// The stack.
+    Stack,
+}
+
+impl Lane
+{
+    /// The lane of the blocks of an origin.
+    ///
+    /// # Arguments
+    ///
+    /// * `origin` - Where the blocks came from.
+    ///
+    /// # Returns
+    ///
+    /// The lane.
+    pub fn of(origin: Origin) -> Lane
+    {
+        tern!(origin == Origin::Stack, Lane::Stack, Lane::Data)
+    }
+}
+
+/// A part of the heap map, in address order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MapPart
+{
+    /// The block at this index of [`HeapShot::blocks`].
+    Block(usize),
+    /// The octets between two blocks, where each access traps: the red zone
+    /// after a block, the room left to align the next one, and room no block
+    /// uses.
+    Gap
+    {
+        /// The first octet.
+        start: u64,
+        /// The octet count.
+        len: u64,
+    },
 }
 
 impl Default for HeapShot
@@ -312,6 +451,101 @@ impl HeapShot
     pub fn block_of(&self, addr: u64) -> Option<u64>
     {
         self.blocks.iter().rev().find(|b| b.reaches(addr)).map(|b| b.start)
+    }
+
+    /// The row an address leads into: a variable of a packed block, or a
+    /// block.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address.
+    ///
+    /// # Returns
+    ///
+    /// The start of the row, or `None` when the address is outside each
+    /// listed block.
+    pub fn row_of(&self, addr: u64) -> Option<u64>
+    {
+        let start = self.block_of(addr)?;
+        let block = self.blocks.iter().find(|b| b.start == start)?;
+        let held = block.rows().into_iter().rev().find(|r| r.reaches(addr));
+        Some(held.map_or(start, |r| r.start))
+    }
+
+    /// The parts of the map: each block, with the gap before the next one.
+    /// The last block has its red zone after it, grown to reach a trap past
+    /// it.
+    ///
+    /// # Returns
+    ///
+    /// The parts, in address order.
+    pub fn parts(&self) -> Vec<MapPart>
+    {
+        let tail = |end: u64| {
+            let past = self.fault.filter(|f| *f >= end).map_or(0, |f| f - end + 1);
+            end.saturating_add(RED_ZONE.max(past))
+        };
+        let gap = |i: usize| {
+            let a = &self.blocks[i];
+            let end = a.start.saturating_add(a.len);
+            let next = self.blocks.get(i + 1).map_or_else(|| tail(end), |b| b.start);
+            (next > end).then(|| MapPart::Gap { start: end, len: next - end })
+        };
+        let around = |i| std::iter::once(MapPart::Block(i)).chain(gap(i));
+        (0..self.blocks.len()).flat_map(around).collect()
+    }
+
+    /// The parts of the map in lanes: the static data and the heap share
+    /// one, the stack has its own. Each lane keeps address order, and a gap
+    /// goes in the lane of the block before it.
+    ///
+    /// # Returns
+    ///
+    /// Each lane with its parts, in the order the lanes first show up.
+    pub fn lanes(&self) -> Vec<(Lane, Vec<MapPart>)>
+    {
+        let mut lanes: Vec<(Lane, Vec<MapPart>)> = Vec::new();
+        let mut current = Lane::Data;
+        for part in self.parts()
+        {
+            do_if!(let MapPart::Block(i) = part, current = Lane::of(self.blocks[i].origin));
+            let found = lanes.iter().position(|(l, _)| *l == current);
+            let at = found.unwrap_or_else(|| {
+                lanes.push((current, Vec::new()));
+                lanes.len() - 1
+            });
+            lanes[at].1.push(part);
+        }
+        lanes
+    }
+
+    /// The hex digits of the highest address the panel shows: the end of
+    /// the last block with its red zone, or the trap past it. Each address
+    /// is padded to it, so the addresses line up.
+    ///
+    /// # Returns
+    ///
+    /// The digit count, at least 4.
+    pub fn addr_digits(&self) -> usize
+    {
+        let end = |b: &BlockRow| b.start.saturating_add(b.len).saturating_add(RED_ZONE);
+        let top = self.blocks.last().map_or(0, end).max(self.fault.unwrap_or(0));
+        (top.max(1).ilog2() / 4 + 1).max(4) as usize
+    }
+
+    /// Whether the run trapped inside a range of octets.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The first octet.
+    /// * `len` - The octet count.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the trap address lies in `[start, start + len)`.
+    pub fn faults_in(&self, start: u64, len: u64) -> bool
+    {
+        self.fault.is_some_and(|f| f >= start && f < start.saturating_add(len))
     }
 }
 
@@ -380,6 +614,9 @@ pub struct Session
     /// The cap on live heap octets of each run.
     #[builder(default = MAX_HEAP)]
     max_heap: u64,
+    /// How the variables of each run sit in the address space.
+    #[builder(default)]
+    frames: FrameMode,
     /// How long the run has taken so far.
     #[builder(default)]
     spent: Duration,
@@ -468,13 +705,16 @@ fn temp_rows(values: &[Value]) -> Vec<ValueRow>
 ///
 /// * `ops` - The ops.
 /// * `max_heap` - The cap on live heap octets.
+/// * `frames` - How the variables sit in the address space.
 ///
 /// # Returns
 ///
 /// The machine.
-fn machine_for(ops: &bc::Module, max_heap: u64) -> Machine
+fn machine_for(ops: &bc::Module, max_heap: u64, frames: FrameMode) -> Machine
 {
-    let options = RunOptions::builder().max_steps(RUN_STEPS).max_heap(max_heap).build();
+    #[rustfmt::skip]
+    let options = RunOptions::builder().max_steps(RUN_STEPS).max_heap(max_heap)
+        .frames(frames).build();
     Machine::new(ops.clone(), options)
 }
 
@@ -496,36 +736,11 @@ pub fn octets(n: u64) -> String
     format!("{n} B")
 }
 
-/// The text of a slot value. An addressed slot holds the address of its
-/// cell, so it shows the value in the cell, then ` @` and the address; a
-/// cell that no longer holds a value shows the address alone.
-///
-/// # Arguments
-///
-/// * `mem` - The address space of the machine.
-/// * `slot` - The slot.
-/// * `v` - Its value.
-///
-/// # Returns
-///
-/// The text.
-fn slot_text(mem: &Mem, slot: &bc::Slot, v: Value) -> String
-{
-    let cell = v.as_ptr().filter(|_| slot.addressed);
-    let Some(addr) = cell
-    else
-    {
-        return text(v);
-    };
-    let held = mem.load(addr, slot.kind).ok();
-    held.map_or_else(|| hex(addr), |held| format!("{} @{}", text(held), hex(addr)))
-}
-
 /// The address a value leads to.
 ///
 /// # Arguments
 ///
-/// * `v` - The value; an addressed slot holds the address of its cell.
+/// * `v` - The value.
 ///
 /// # Returns
 ///
@@ -552,16 +767,56 @@ fn block_row(m: &Machine, b: &Block, finished: bool) -> BlockRow
         (true, true) => BlockState::Leaked,
         (true, false) => BlockState::Live,
     };
-    let maker = tern!(b.origin == Origin::Cell, m.cell_maker(b.start), None);
+    let held = m.owner(b.start);
+    let owner = held.map(held_text);
+    let var_owner = |name: &str| match held
+    {
+        Some(Held::Frame { func }) =>
+        {
+            t!("explorer.heap.stack_of", name = name, func = func)
+        }
+        _ => t!("explorer.heap.global", name = name),
+    };
+    let var = |v: PackedVar| {
+        let owner = var_owner(v.name).into_owned();
+        VarRow::builder().offset(v.offset).len(v.len).name(v.name).owner(owner).build()
+    };
+    let vars =
+        m.packed_vars(b.start).unwrap_or_default().into_iter().map(var).collect();
     let data = b.data.iter().take(DUMP_CAP).copied().collect();
     BlockRow::builder()
         .start(b.start)
         .len(b.len)
         .origin(b.origin)
         .state(state)
-        .maybe_maker(maker.map(str::to_string))
+        .maybe_owner(owner)
+        .vars(vars)
         .data(data)
         .build()
+}
+
+/// What a block holds, as the heap panel names it.
+///
+/// # Arguments
+///
+/// * `held` - What the block holds.
+///
+/// # Returns
+///
+/// The text.
+fn held_text(held: Held) -> String
+{
+    let text = match held
+    {
+        Held::Local { name, func } =>
+        {
+            t!("explorer.heap.stack_of", name = name, func = func)
+        }
+        Held::Global { name } => t!("explorer.heap.global", name = name),
+        Held::Frame { func } => t!("explorer.heap.frame_of", func = func),
+        Held::Globals => t!("explorer.heap.globals"),
+    };
+    text.into_owned()
 }
 
 /// The blocks of a machine for the heap panel.
@@ -580,40 +835,45 @@ fn heap_shot(m: &Machine, finished: bool) -> HeapShot
     let live = mem.blocks().filter(|b| b.live).count();
     let total = mem.blocks().count();
     let rows = mem.blocks().take(MAX_BLOCKS).map(|b| block_row(m, b, finished));
+    let fault = m.state().trap().and_then(|t| t.kind.addr());
     HeapShot::builder()
+        .maybe_fault(fault)
         .blocks(rows.collect())
         .omitted(total.saturating_sub(MAX_BLOCKS))
         .live_heap(mem.live_heap())
         .cap(m.options().max_heap)
+        .stack_used(mem.stack_used())
+        .stack_cap(mem.stack_cap())
         .live(live)
         .freed(total - live)
         .build()
 }
 
-/// Rows of slots and their values.
+/// Rows of slots and the values their blocks hold.
 ///
 /// # Arguments
 ///
-/// * `mem` - The address space of the machine, which holds the values of
-///   addressed slots.
+/// * `mem` - The address space of the machine, which holds the values.
 /// * `slots` - The slots.
-/// * `values` - The values, in slot order.
+/// * `homes` - The block of each slot, in slot order.
 ///
 /// # Returns
 ///
-/// The rows.
-fn value_rows(mem: &Mem, slots: &[bc::Slot], values: &[Value]) -> Vec<ValueRow>
+/// The rows; a value the block does not hold shows as `?`.
+fn value_rows(mem: &Mem, slots: &[bc::Slot], homes: &[u64]) -> Vec<ValueRow>
 {
-    let row = |(i, (s, v)): (usize, (&bc::Slot, &Value))| {
+    let row = |(i, (s, home)): (usize, (&bc::Slot, &u64))| {
+        let held = mem.load(*home, s.kind).ok();
         ValueRow::builder()
             .index(i as u32)
             .name(s.name.as_str())
             .kind(s.kind.name())
-            .value(slot_text(mem, s, *v))
-            .maybe_points_at(pointee(*v))
+            .value(held.map_or_else(|| "?".to_string(), text))
+            .maybe_points_at(held.and_then(pointee))
+            .home(*home)
             .build()
     };
-    slots.iter().zip(values).enumerate().map(row).collect()
+    slots.iter().zip(homes).enumerate().map(row).collect()
 }
 
 impl Session
@@ -629,7 +889,7 @@ impl Session
     /// The session, at the first op.
     pub fn new(ops: Option<&bc::Module>) -> Self
     {
-        let machine = ops.map(|o| machine_for(o, MAX_HEAP));
+        let machine = ops.map(|o| machine_for(o, MAX_HEAP, FrameMode::default()));
         Session::builder().maybe_machine(machine).build()
     }
 
@@ -645,6 +905,19 @@ impl Session
         self.reset();
     }
 
+    /// Set how the variables sit in the address space; a new form
+    /// starts the run again.
+    ///
+    /// # Arguments
+    ///
+    /// * `frames` - The form.
+    pub fn set_frames(&mut self, frames: FrameMode)
+    {
+        ret_if!(frames == self.frames);
+        self.frames = frames;
+        self.reset();
+    }
+
     /// Whether there are ops to run.
     ///
     /// # Returns
@@ -655,8 +928,9 @@ impl Session
     /// Go back to the first op; the break points remain.
     pub fn reset(&mut self)
     {
-        let cap = self.max_heap;
-        self.machine = self.machine.as_ref().map(|m| machine_for(m.module(), cap));
+        let (cap, frames) = (self.max_heap, self.frames);
+        let fresh = |m: &Machine| machine_for(m.module(), cap, frames);
+        self.machine = self.machine.as_ref().map(fresh);
         self.viewed = 0;
         self.ended = None;
         self.kept.clear();

@@ -93,6 +93,18 @@ pub enum TrapKind
         /// The name of the kind.
         kind: String,
     },
+    /// The address space had no room for the block of a global.
+    StaticFull
+    {
+        /// The octet count of the global.
+        size: u64,
+    },
+    /// A call found no room in the stack region for a local.
+    StackFull
+    {
+        /// The octet count of the local.
+        size: u64,
+    },
     /// A resize found no heap room.
     OutOfMem
     {
@@ -147,6 +159,8 @@ impl fmt::Display for TrapKind
             {
                 t!("vm.trap.bad_value", addr = hex(*addr), kind = kind)
             }
+            TrapKind::StaticFull { size } => t!("vm.trap.static_full", size = size),
+            TrapKind::StackFull { size } => t!("vm.trap.stack_full", size = size),
             TrapKind::OutOfMem { size } => t!("vm.trap.out_of_mem", size = size),
             TrapKind::MixedBlocks => t!("vm.trap.mixed_blocks"),
         };
@@ -179,6 +193,8 @@ impl TrapKind
             | TrapKind::StepNotPositive
             | TrapKind::Malformed { .. }
             | TrapKind::Write { .. }
+            | TrapKind::StaticFull { .. }
+            | TrapKind::StackFull { .. }
             | TrapKind::OutOfMem { .. }
             | TrapKind::MixedBlocks => None,
         }

@@ -49,13 +49,32 @@ fn loads_and_stores_check_each_access()
 }
 
 #[test]
-fn cells_are_released_with_their_call()
+fn stack_blocks_go_back_with_their_call_and_their_room_is_taken_again()
 {
     let mut m = mem();
-    let c = m.alloc(8, Origin::Cell, 2).unwrap();
+    m.open_stack(1 << 10);
+    let top = m.stack_top();
+    let c = m.push_stack(8, 2).unwrap();
     assert_eq!(m.free(c), Err(TrapKind::BadFree { addr: c }));
-    m.release(&[c]);
+    m.store(c, v("7:i64")).unwrap();
+    m.pop_stack(&[c], top);
     assert_eq!(m.load(c, k("i64")), Err(TrapKind::UseAfterFree { addr: c }));
+    assert_eq!(m.stack_top(), top);
+    assert_eq!(m.push_stack(8, 2), Some(c), "the next call takes the same room");
+    assert_eq!(m.load(c, k("i64")), Ok(v("0:i64")), "a new block starts at zero");
+    assert_eq!(m.blocks().count(), 1, "the freed block left the table");
+}
+
+#[test]
+fn the_stack_region_holds_blocks_up_to_its_cap_and_the_heap_starts_past_it()
+{
+    let mut m = mem();
+    m.open_stack(64);
+    let first = m.push_stack(8, 1).unwrap();
+    assert!(m.push_stack(8, 1).is_some());
+    assert_eq!(m.push_stack(8, 1), None, "two blocks with their red zones fill 64");
+    let h = m.alloc(8, Origin::Heap, 0).unwrap();
+    assert!(h >= first + 64, "the heap starts past the stack region");
 }
 
 #[test]

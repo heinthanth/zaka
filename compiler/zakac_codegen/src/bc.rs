@@ -53,11 +53,6 @@ pub struct Slot
     pub name: String,
     /// The data kind.
     pub kind: DataKind,
-    /// Whether the program takes the address of the slot; the slot then
-    /// holds the address of a cell that keeps its value.
-    #[serde(default)]
-    #[builder(default)]
-    pub addressed: bool,
 }
 
 /// A function.
@@ -103,14 +98,10 @@ pub enum Op
 {
     /// Push a constant.
     Push(Value),
-    /// Push the value of a local slot.
-    LoadLocal(u32),
-    /// Pop a value into a local slot.
-    StoreLocal(u32),
-    /// Push the value of a global slot.
-    LoadGlobal(u32),
-    /// Pop a value into a global slot.
-    StoreGlobal(u32),
+    /// Push the address of the block of a local slot of the running call.
+    LocalAddr(u32),
+    /// Push the address of the block of a global slot.
+    GlobalAddr(u32),
     /// Pop one value, push the result of a prefix operator.
     Prefix(PrefixOp),
     /// Pop the right then the left operand, push the result.
@@ -142,9 +133,6 @@ pub enum Op
     Load(DataKind),
     /// Pop a value of this kind, then an address; write the value there.
     Store(DataKind),
-    /// Push the address of a new cell of this size and alignment; the cell
-    /// lives as long as the frame.
-    Cell(u32, u32),
     /// Pop an integer count, then an address; push the address moved that
     /// count of elements of this stride forward.
     PtrAdd(u32),
@@ -227,15 +215,14 @@ impl Op
         let text = match self
         {
             Op::Push(v) => v.to_string(),
-            Op::LoadLocal(n) | Op::StoreLocal(n) => format!("l{n}"),
-            Op::LoadGlobal(n) | Op::StoreGlobal(n) => format!("g{n}"),
+            Op::LocalAddr(n) => format!("l{n}"),
+            Op::GlobalAddr(n) => format!("g{n}"),
             Op::Convert(kind) => kind.name(),
             Op::Jump(t) | Op::JumpIfFalse(t) | Op::JumpIfTrue(t) => format!("@{t}"),
             Op::Call(f) => format!("f{f}"),
             Op::PrintText(t) => format!("t{t}"),
             Op::Trap(code) => <&str>::from(code).to_string(),
             Op::Load(kind) | Op::Store(kind) => kind.name(),
-            Op::Cell(size, align) => format!("{size} {align}"),
             Op::PtrAdd(s) | Op::PtrSub(s) | Op::Alloc(s) | Op::Realloc(s) =>
             {
                 s.to_string()

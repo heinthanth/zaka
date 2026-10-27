@@ -70,10 +70,7 @@ pub fn emit(module: &ir::Module, platform_bits: u16) -> Module
 /// # Returns
 ///
 /// The slot.
-fn slot(s: &ir::Slot) -> Slot
-{
-    Slot::builder().name(&s.name).kind(s.kind).addressed(s.addressed).build()
-}
+fn slot(s: &ir::Slot) -> Slot { Slot::builder().name(&s.name).kind(s.kind).build() }
 
 /// Generate one IR function.
 ///
@@ -89,7 +86,6 @@ fn func(shared: &mut Shared, f: &ir::Func) -> Func
 {
     let locals = f.locals.iter().map(slot).collect();
     let mut g = FuncGen::new(shared, locals, f.span.shrink_to_hi());
-    g.cells(&f.locals, Place::Local, f.params);
     g.block(&f.block);
     let returns = matches!(f.block.last(), Some(Stmt::Return { .. }));
     do_if!(!returns, g.op(Op::Ret));
@@ -109,7 +105,6 @@ fn func(shared: &mut Shared, f: &ir::Func) -> Func
 fn main_func(shared: &mut Shared, module: &ir::Module) -> Func
 {
     let mut g = FuncGen::new(shared, Vec::new(), module.span.shrink_to_hi());
-    g.cells(&module.globals, Place::Global, 0);
     g.block(&module.main);
     g.op(Op::Ret);
     g.finish(MAIN_NAME, 0, None)
@@ -267,41 +262,6 @@ impl<'s> FuncGen<'s>
         self.locals.len() as u32 - 1
     }
 
-    /// Give each addressed slot a cell, in index order. A parameter's cell
-    /// gets the argument value.
-    ///
-    /// # Arguments
-    ///
-    /// * `slots` - The IR slots.
-    /// * `place` - Makes the place of a slot index.
-    /// * `params` - The number of parameters at the front of `slots`.
-    fn cells(&mut self, slots: &[ir::Slot], place: fn(u32) -> Place, params: u32)
-    {
-        let addressed = slots.iter().enumerate().filter(|(_, s)| s.addressed);
-        do_for!((n, s) in addressed, self.cell(s, place(n as u32), (n as u32) < params));
-    }
-
-    /// Give an addressed slot a cell; the slot keeps the cell address.
-    ///
-    /// # Arguments
-    ///
-    /// * `s` - The IR slot.
-    /// * `place` - Where it lives.
-    /// * `param` - Whether it is a parameter, whose value goes in the cell.
-    fn cell(&mut self, s: &ir::Slot, place: Place, param: bool)
-    {
-        let outer = self.code.at(s.span);
-        let platform = self.shared.platform;
-        self.op(Op::Cell(s.kind.size(platform), s.kind.align(platform)));
-        do_if!(param, {
-            self.op(Op::Dup);
-            self.load_slot(place);
-            self.op(Op::Store(s.kind));
-        });
-        self.store_slot(place);
-        self.code.at(outer);
-    }
-
     /// The slot at a place.
     ///
     /// # Arguments
@@ -320,64 +280,34 @@ impl<'s> FuncGen<'s>
         }
     }
 
-    /// The kind of the cell that keeps the value of a slot.
+    /// Push the address of the block that holds a slot.
     ///
     /// # Arguments
     ///
     /// * `place` - The slot.
-    ///
-    /// # Returns
-    ///
-    /// The slot kind for an addressed slot, `None` for one that keeps its
-    /// value itself.
-    fn cell_kind(&self, place: Place) -> Option<DataKind>
-    {
-        let s = self.slot_at(place);
-        tern!(s.addressed, Some(s.kind), None)
-    }
-
-    /// Push what a slot holds: its value, or the address of its cell.
-    ///
-    /// # Arguments
-    ///
-    /// * `place` - The slot.
-    fn load_slot(&mut self, place: Place)
+    fn addr_of(&mut self, place: Place)
     {
         let op = match place
         {
-            Place::Global(n) => Op::LoadGlobal(n),
-            Place::Local(n) => Op::LoadLocal(n),
+            Place::Global(n) => Op::GlobalAddr(n),
+            Place::Local(n) => Op::LocalAddr(n),
         };
         self.op(op);
     }
 
-    /// Pop what a slot holds into it: its value, or the address of its cell.
-    ///
-    /// # Arguments
-    ///
-    /// * `place` - The slot.
-    fn store_slot(&mut self, place: Place)
-    {
-        let op = match place
-        {
-            Place::Global(n) => Op::StoreGlobal(n),
-            Place::Local(n) => Op::StoreLocal(n),
-        };
-        self.op(op);
-    }
-
-    /// Push the value of a slot, read from its cell when it is addressed.
+    /// Push the value of a slot, read from its block.
     ///
     /// # Arguments
     ///
     /// * `place` - The slot.
     fn load(&mut self, place: Place)
     {
-        self.load_slot(place);
-        do_if!(let Some(kind) = self.cell_kind(place), self.op(Op::Load(kind)));
+        let kind = self.slot_at(place).kind;
+        self.addr_of(place);
+        self.op(Op::Load(kind));
     }
 
-    /// Set the value of a slot, written to its cell when it is addressed.
+    /// Set the value of a slot, written to its block.
     ///
     /// # Arguments
     ///
@@ -385,13 +315,8 @@ impl<'s> FuncGen<'s>
     /// * `value` - Pushes the value.
     fn store(&mut self, place: Place, value: impl FnOnce(&mut Self))
     {
-        let Some(kind) = self.cell_kind(place)
-        else
-        {
-            value(self);
-            return self.store_slot(place);
-        };
-        self.load_slot(place);
+        let kind = self.slot_at(place).kind;
+        self.addr_of(place);
         value(self);
         self.op(Op::Store(kind));
     }
@@ -743,8 +668,7 @@ impl<'s> FuncGen<'s>
     {
         ret_if!(let Some(v) = e.as_const(), Operand::Const(v));
         let n = self.temp(name, e.kind);
-        self.expr(e);
-        self.op(Op::StoreLocal(n));
+        self.store(Place::Local(n), |g| g.expr(e));
         Operand::Local(n)
     }
 
@@ -755,12 +679,11 @@ impl<'s> FuncGen<'s>
     /// * `operand` - The operand.
     fn push(&mut self, operand: Operand)
     {
-        let op = match operand
+        match operand
         {
-            Operand::Const(v) => Op::Push(v),
-            Operand::Local(n) => Op::LoadLocal(n),
-        };
-        self.op(op);
+            Operand::Const(v) => self.op(Op::Push(v)),
+            Operand::Local(n) => self.load(Place::Local(n)),
+        }
     }
 
     /// Push a counted-loop operand converted to an unsigned kind.
@@ -877,15 +800,16 @@ impl<'s> FuncGen<'s>
     /// * `block` - The loop statements.
     fn runtime_direction(&mut self, c: Counter, block: &[Stmt])
     {
-        let dir = self.temp("%dir", DataKind::Bool);
-        self.load(c.var);
-        self.push(c.to);
-        self.op(Op::Compare(CmpOp::Le));
-        self.op(Op::StoreLocal(dir));
+        let dir = Place::Local(self.temp("%dir", DataKind::Bool));
+        self.store(dir, |g| {
+            g.load(c.var);
+            g.push(c.to);
+            g.op(Op::Compare(CmpOp::Le));
+        });
         let (head, next, exit) =
             (self.code.label(), self.code.label(), self.code.label());
         let (down_test, down_next) = (self.code.label(), self.code.label());
-        self.op(Op::LoadLocal(dir));
+        self.load(dir);
         self.code.jump_if_false(down_test);
         self.skip_if_past(c, true, exit);
         self.code.jump(head);
@@ -894,7 +818,7 @@ impl<'s> FuncGen<'s>
         self.code.bind(head);
         self.in_loop(LoopLabels { next, exit }, block);
         self.code.bind(next);
-        self.op(Op::LoadLocal(dir));
+        self.load(dir);
         self.code.jump_if_false(down_next);
         self.step_on(c, true, head, exit);
         self.code.bind(down_next);
@@ -950,7 +874,7 @@ impl<'s> FuncGen<'s>
                 do_if!(operand.kind != e.kind, self.op(Op::Convert(e.kind)));
             }
             ExprNode::Call { func, args, .. } => self.call(*func, args),
-            ExprNode::AddrOf(place) => self.load_slot(*place),
+            ExprNode::AddrOf(place) => self.addr_of(*place),
             ExprNode::Load { addr } =>
             {
                 self.expr(addr);

@@ -14,35 +14,41 @@ module:
     locals:
     - name: က
       kind: isize
-      addressed: false
     - name: ခ
       kind: isize
-      addressed: false
     - name: ဂ
       kind: isize
-      addressed: false
     - name: ရလဒ်
       kind: isize
-      addressed: false
     code:
+    - local_addr: 3
     - push: 0:isize
-    - store_local: 3
-    - load_local: 0
+    - store: isize
+    - local_addr: 0
+    - local_addr: 0
+    - load: isize
     - push: 2:isize
     - infix: mul
-    - store_local: 0
-    - load_local: 1
+    - store: isize
+    - local_addr: 1
+    - local_addr: 1
+    - load: isize
     - push: 2:isize
     - infix: mul
-    - store_local: 1
-    - load_local: 2
+    - store: isize
+    - local_addr: 2
+    - local_addr: 2
+    - load: isize
     - push: 2:isize
     - infix: mul
-    - store_local: 2
-    - load_local: 0
-    - load_local: 1
+    - store: isize
+    - local_addr: 0
+    - load: isize
+    - local_addr: 1
+    - load: isize
     - infix: add
-    - load_local: 2
+    - local_addr: 2
+    - load: isize
     - infix: add
     - ret
     spans:
@@ -50,6 +56,12 @@ module:
       hi: 443
     - lo: 386
       hi: 443
+    - lo: 386
+      hi: 443
+    - lo: 780
+      hi: 829
+    - lo: 794
+      hi: 797
     - lo: 794
       hi: 797
     - lo: 800
@@ -58,6 +70,10 @@ module:
       hi: 803
     - lo: 780
       hi: 829
+    - lo: 830
+      hi: 879
+    - lo: 844
+      hi: 847
     - lo: 844
       hi: 847
     - lo: 850
@@ -66,6 +82,10 @@ module:
       hi: 853
     - lo: 830
       hi: 879
+    - lo: 880
+      hi: 929
+    - lo: 894
+      hi: 897
     - lo: 894
       hi: 897
     - lo: 900
@@ -76,10 +96,16 @@ module:
       hi: 929
     - lo: 930
       hi: 933
+    - lo: 930
+      hi: 933
+    - lo: 936
+      hi: 939
     - lo: 936
       hi: 939
     - lo: 930
       hi: 939
+    - lo: 942
+      hi: 945
     - lo: 942
       hi: 945
     - lo: 930
@@ -92,33 +118,43 @@ module:
     locals:
     - name: က
       kind: f32
-      addressed: false
     - name: ခ
       kind: i8
-      addressed: false
     - name: ရလဒ်
       kind: f64
-      addressed: false
     code:
+    - local_addr: 2
     - push: 0.0:f64
-    - store_local: 2
-    - load_local: 0
-    - load_local: 1
+    - store: f64
+    - local_addr: 2
+    - local_addr: 0
+    - load: f32
+    - local_addr: 1
+    - load: i8
     - convert: f32
     - infix: add
     - push: 2.0:f32
     - infix: div
     - convert: f64
-    - store_local: 2
-    - load_local: 2
+    - store: f64
+    - local_addr: 2
+    - load: f64
     - ret
     spans:
     - lo: 1139
       hi: 1163
     - lo: 1139
       hi: 1163
+    - lo: 1139
+      hi: 1163
+    - lo: 1481
+      hi: 1547
     - lo: 1505
       hi: 1508
+    - lo: 1505
+      hi: 1508
+    - lo: 1511
+      hi: 1514
     - lo: 1511
       hi: 1514
     - lo: 1511
@@ -133,6 +169,8 @@ module:
       hi: 1521
     - lo: 1481
       hi: 1547
+    - lo: 1322
+      hi: 1630
     - lo: 1322
       hi: 1630
     - lo: 1322

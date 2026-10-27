@@ -7,13 +7,10 @@ module:
   globals:
   - name: အလျား
     kind: isize
-    addressed: false
   - name: အနံ
     kind: isize
-    addressed: false
   - name: ဧရိယာ
     kind: isize
-    addressed: false
   texts:
   - ကြီးသည်
   funcs:
@@ -22,13 +19,17 @@ module:
     ret: null
     locals: []
     code:
+    - global_addr: 0
     - push: 12:isize
-    - store_global: 0
+    - store: isize
+    - global_addr: 1
     - push: 8:isize
-    - store_global: 1
+    - store: isize
+    - global_addr: 2
     - push: 96:isize
-    - store_global: 2
-    - load_global: 2
+    - store: isize
+    - global_addr: 2
+    - load: isize
     - print
     - push: 20:isize
     - print
@@ -45,18 +46,26 @@ module:
     - print_text: 0
     - ret
     spans:
+    - lo: 173
+      hi: 286
     - lo: 252
       hi: 258
     - lo: 173
       hi: 286
+    - lo: 287
+      hi: 409
     - lo: 360
       hi: 381
     - lo: 287
       hi: 409
+    - lo: 410
+      hi: 550
     - lo: 495
       hi: 522
     - lo: 410
       hi: 550
+    - lo: 551
+      hi: 566
     - lo: 551
       hi: 566
     - lo: 551

@@ -7,25 +7,29 @@ texts
   t0 "ကြီးသည်"
 
 fn f0 main (params 0)
-     0  push 12:isize
-     1  store_global g0      ; အလျား
-     2  push 8:isize
-     3  store_global g1      ; အနံ
-     4  push 96:isize
-     5  store_global g2      ; ဧရိယာ
-     6  load_global g2       ; ဧရိယာ
-     7  print
-     8  push 20:isize
-     9  print
-    10  push -128:isize
+     0  global_addr g0       ; အလျား
+     1  push 12:isize
+     2  store isize
+     3  global_addr g1       ; အနံ
+     4  push 8:isize
+     5  store isize
+     6  global_addr g2       ; ဧရိယာ
+     7  push 96:isize
+     8  store isize
+     9  global_addr g2       ; ဧရိယာ
+    10  load isize
     11  print
-    12  push 0:isize
+    12  push 20:isize
     13  print
-    14  push 0.33325:f16
+    14  push -128:isize
     15  print
-    16  push 16:isize
+    16  push 0:isize
     17  print
-    18  push 4096:isize
+    18  push 0.33325:f16
     19  print
-    20  print_text t0
-    21  ret
+    20  push 16:isize
+    21  print
+    22  push 4096:isize
+    23  print
+    24  print_text t0
+    25  ret

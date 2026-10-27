@@ -31,7 +31,7 @@ static SHEET: ComponentStyle =
 
 /// Columns of the texts table.
 const TEXT_COLUMNS: [Column; 2] =
-    [("explorer.col.slot", Table::CELL_NUM, ""), ("explorer.col.value", "", "")];
+    [("explorer.col.slot", "", ""), ("explorer.col.value", "", "")];
 
 /// The generated ops: the global slots, the pooled texts and each function
 /// with its locals and ops; or a note when code generation did not run.
@@ -100,7 +100,7 @@ fn texts_view(state: AppState) -> impl IntoView
         (!texts.is_empty()).then(|| {
             let row = |(i, text): (usize, String)| {
                 tr().child((
-                    cell(Table::CELL_NUM, format!("t{i}")),
+                    cell(Table::CELL_DETAIL, format!("t{i}")),
                     cell(Table::CELL_LEXEME, quote(&text)),
                 ))
             };

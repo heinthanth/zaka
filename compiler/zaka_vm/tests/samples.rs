@@ -5,7 +5,10 @@ use std::path::PathBuf;
 
 use common::compile;
 use common::run_module;
+use strum::IntoEnumIterator;
+use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::RunOptions;
+use zakac_rust_sugars::do_for;
 
 /// Sample groups that hold programs with errors on purpose: those that do
 /// not compile and those that go wrong at run time.
@@ -15,15 +18,16 @@ const SKIPPED_GROUPS: &[&str] = &["diagnostics", "mistakes"];
 fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 
 /// Run a source file and compare its output with an expected file;
-/// `ZAKA_BLESS=1` rewrites the file.
-fn check_run(source: &Path, expected: &Path)
+/// `ZAKA_BLESS=1` rewrites the file from a checked run.
+fn check_run(source: &Path, expected: &Path, frames: FrameMode)
 {
     let text = std::fs::read_to_string(source).unwrap();
-    let options = RunOptions::builder().max_steps(10_000_000).build();
+    let options = RunOptions::builder().max_steps(10_000_000).frames(frames).build();
     let (out, result) = run_module(&compile(&text), &options);
-    let name = source.display();
+    let name = format!("{} ({frames})", source.display());
     assert_eq!(result, Ok(()), "{name} trapped after:\n{out}");
-    if std::env::var("ZAKA_BLESS").is_ok_and(|v| v == "1")
+    let bless = std::env::var("ZAKA_BLESS").is_ok_and(|v| v == "1");
+    if bless && frames == FrameMode::Checked
     {
         std::fs::create_dir_all(expected.parent().unwrap()).unwrap();
         std::fs::write(expected, &out).unwrap();
@@ -46,6 +50,8 @@ fn group_files(dir: &Path) -> Vec<PathBuf>
     files
 }
 
+/// Each repo sample prints its expected output, with its variables
+/// checked or packed: a sound program cannot tell the two apart.
 #[test]
 fn repo_samples_print_their_expected_output()
 {
@@ -70,7 +76,7 @@ fn repo_samples_print_their_expected_output()
                 .join("tests/expected")
                 .join(&group_name)
                 .join(format!("{stem}.out"));
-            check_run(&file, &expected);
+            do_for!(frames in FrameMode::iter(), check_run(&file, &expected, frames));
             count += 1;
         }
     }
@@ -81,5 +87,9 @@ fn repo_samples_print_their_expected_output()
 fn counted_loop_edges()
 {
     let source = root().join("tests/inputs/counted_edges.zaka");
-    check_run(&source, &root().join("tests/expected/counted_edges.out"));
+    check_run(
+        &source,
+        &root().join("tests/expected/counted_edges.out"),
+        FrameMode::Checked,
+    );
 }

@@ -17,6 +17,7 @@ use leptos_scoped_style::ComponentStyle;
 use leptos_use_storage::UseStorageOptions;
 use leptos_use_storage::use_local_storage_with_options;
 use strum::IntoStaticStr;
+use zaka_vm::trap::hex;
 use zaka_web_ui_common::icon::chevron;
 use zaka_web_ui_common::sheet;
 use zakac_i18n::t;
@@ -51,20 +52,22 @@ static SHEET: ComponentStyle =
     ComponentStyle::global_css("zaka-debug-dock", STYLE_SHEET);
 
 /// Columns of the stack.
-const STORE_COLUMNS: [Column; 5] = [
+const STORE_COLUMNS: [Column; 6] = [
     ("explorer.col.addr", Table::CELL_NUM, "explorer.col.addr_note"),
-    ("explorer.col.slot", Table::CELL_NUM, ""),
+    ("explorer.col.slot", "", ""),
     ("explorer.col.name", "", ""),
     ("explorer.col.kind", "", ""),
     ("explorer.col.value", "", ""),
+    ("explorer.col.block", "", "explorer.col.block_note"),
 ];
 
 /// Columns of the globals.
-const VALUE_COLUMNS: [Column; 4] = [
-    ("explorer.col.slot", Table::CELL_NUM, ""),
+const VALUE_COLUMNS: [Column; 5] = [
+    ("explorer.col.slot", "", ""),
     ("explorer.col.name", "", ""),
     ("explorer.col.kind", "", ""),
     ("explorer.col.value", "", ""),
+    ("explorer.col.block", "", "explorer.col.block_note"),
 ];
 
 /// Local storage name of the stack share of the dock.
@@ -444,10 +447,11 @@ fn frame_rows(state: AppState, block: FrameBlock, top: bool) -> impl IntoView
     let slot = move |at: usize, label: String, v: ValueRow| {
         tr().class((ClassName::ROW_VIEWED, viewed)).on(ev::click, view).child((
             cell(Table::CELL_NUM, at),
-            cell(Table::CELL_NUM, label),
+            cell(Table::CELL_DETAIL, label),
             cell(Table::CELL_LEXEME, v.name.clone()),
             cell(Table::CELL_KIND, v.kind.clone()),
-            value_cell(state, v),
+            value_cell(state, v.value, v.points_at),
+            value_cell(state, v.home.map(hex).unwrap_or_default(), v.home),
         ))
     };
     let over = start + block.slots.len();
@@ -464,29 +468,31 @@ fn frame_rows(state: AppState, block: FrameBlock, top: bool) -> impl IntoView
     (head, temps, locals)
 }
 
-/// The cell of a value. A value that leads to an address is a link that
-/// shows its block in the heap.
+/// The cell of a text that can lead to an address, such as a pointer
+/// value or the block of a variable: with an address, a link that shows
+/// its block in the heap.
 ///
 /// # Arguments
 ///
 /// * `state` - The state.
-/// * `v` - The value.
+/// * `text` - The text.
+/// * `addr` - The address it leads to, if one.
 ///
 /// # Returns
 ///
 /// The view.
-fn value_cell(state: AppState, v: ValueRow) -> impl IntoView
+fn value_cell(state: AppState, text: String, addr: Option<u64>) -> impl IntoView
 {
-    let Some(addr) = v.points_at
+    let Some(addr) = addr
     else
     {
-        return cell(Table::CELL_LEXEME, v.value).into_any();
+        return cell(Table::CELL_LEXEME, text).into_any();
     };
     let link = button()
         .class(ClassName::POINTER_LINK)
         .title(t!("explorer.heap.show_block"))
         .on(ev::click, move |_| state.heap_focus.set(Some(addr)))
-        .child(v.value);
+        .child(text);
     cell(Table::CELL_LEXEME, link).into_any()
 }
 
@@ -506,10 +512,11 @@ fn globals_view(state: AppState) -> impl IntoView
         ret_if!(rows.is_empty(), note("explorer.run.no_globals").into_any());
         let row = move |v: ValueRow| {
             tr().child((
-                cell(Table::CELL_NUM, format!("g{}", v.index)),
+                cell(Table::CELL_DETAIL, format!("g{}", v.index)),
                 cell(Table::CELL_LEXEME, v.name.clone()),
                 cell(Table::CELL_KIND, v.kind.clone()),
-                value_cell(state, v),
+                value_cell(state, v.value, v.points_at),
+                value_cell(state, v.home.map(hex).unwrap_or_default(), v.home),
             ))
         };
         let rows = rows.into_iter().map(row).collect_view();

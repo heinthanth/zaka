@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 use strum::IntoEnumIterator;
+use zaka_vm::machine::FrameMode;
 use zaka_web_ui_common::controls::ClassName as Controls;
 use zaka_web_ui_common::controls::dropdown::Choice;
 use zaka_web_ui_common::controls::dropdown::dropdown;
@@ -84,6 +85,11 @@ fn compiler_section(state: AppState) -> impl IntoView
                 t!("explorer.settings.heap_cap"),
                 t!("explorer.settings.heap_cap_note"),
                 heap_picker(state),
+            ),
+            row(
+                t!("explorer.settings.frames"),
+                t!("explorer.settings.frames_note"),
+                frames_picker(state),
             ),
         ),
     )
@@ -237,6 +243,35 @@ fn platform_picker(state: AppState) -> impl IntoView
     dropdown(picker(
         t!("explorer.settings.platform_bits"),
         PLATFORM_BITS.iter().map(choice).collect(),
+        current,
+        on_pick,
+    ))
+}
+
+/// Picker of how the variables of a run sit in the address space.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn frames_picker(state: AppState) -> impl IntoView
+{
+    let label = |f: FrameMode| match f
+    {
+        FrameMode::Checked => t!("explorer.settings.frames_checked"),
+        FrameMode::Packed => t!("explorer.settings.frames_packed"),
+    };
+    let choice = move |f: FrameMode| {
+        Choice::builder().value(f.to_string()).label(label(f)).build()
+    };
+    let current = Signal::derive(move || state.frames.get().to_string());
+    let on_pick = move |v: String| state.set_frames.set(v.parse().unwrap_or_default());
+    dropdown(picker(
+        t!("explorer.settings.frames"),
+        FrameMode::iter().map(choice).collect(),
         current,
         on_pick,
     ))

@@ -7,31 +7,22 @@ module:
   globals:
   - name: ပထမ
     kind: isize
-    addressed: true
   - name: ဒုတိယ
     kind: isize
-    addressed: true
   - name: ဆံ့နိုင်ရေ
     kind: usize
-    addressed: false
   - name: အရေအတွက်
     kind: usize
-    addressed: false
   - name: စာရင်း
     kind: "*isize"
-    addressed: false
   - name: ကိန်း
     kind: isize
-    addressed: false
   - name: နံပါတ်
     kind: usize
-    addressed: false
   - name: ပစ္စည်း
     kind: "*u8"
-    addressed: false
   - name: ဈေးနှုန်း
     kind: "*i32"
-    addressed: false
   texts:
   - နေရာ မရပါ
   funcs:
@@ -41,26 +32,33 @@ module:
     locals:
     - name: က
       kind: "*isize"
-      addressed: false
     - name: ခ
       kind: "*isize"
-      addressed: false
     - name: ယာယီ
       kind: isize
-      addressed: false
     code:
-    - load_local: 0
-    - load: isize
-    - store_local: 2
-    - load_local: 0
-    - load_local: 1
+    - local_addr: 2
+    - local_addr: 0
+    - load: "*isize"
     - load: isize
     - store: isize
-    - load_local: 1
-    - load_local: 2
+    - local_addr: 0
+    - load: "*isize"
+    - local_addr: 1
+    - load: "*isize"
+    - load: isize
+    - store: isize
+    - local_addr: 1
+    - load: "*isize"
+    - local_addr: 2
+    - load: isize
     - store: isize
     - ret
     spans:
+    - lo: 479
+      hi: 618
+    - lo: 561
+      hi: 564
     - lo: 561
       hi: 564
     - lo: 561
@@ -69,6 +67,10 @@ module:
       hi: 618
     - lo: 619
       hi: 622
+    - lo: 619
+      hi: 622
+    - lo: 659
+      hi: 662
     - lo: 659
       hi: 662
     - lo: 659
@@ -77,6 +79,10 @@ module:
       hi: 714
     - lo: 715
       hi: 718
+    - lo: 715
+      hi: 718
+    - lo: 755
+      hi: 767
     - lo: 755
       hi: 767
     - lo: 715
@@ -88,139 +94,166 @@ module:
     ret: null
     locals: []
     code:
-    - cell:
-        - 8
-        - 8
-    - store_global: 0
-    - cell:
-        - 8
-        - 8
-    - store_global: 1
-    - load_global: 0
+    - global_addr: 0
     - push: 1:isize
     - store: isize
-    - load_global: 1
+    - global_addr: 1
     - push: 2:isize
     - store: isize
-    - load_global: 0
-    - load_global: 1
+    - global_addr: 0
+    - global_addr: 1
     - call: 0
-    - load_global: 0
+    - global_addr: 0
     - load: isize
     - print
-    - load_global: 1
+    - global_addr: 1
     - load: isize
     - print
+    - global_addr: 2
     - push: 4:usize
-    - store_global: 2
+    - store: usize
+    - global_addr: 3
     - push: 0:usize
-    - store_global: 3
+    - store: usize
+    - global_addr: 4
     - push: 0x0:ptr
-    - store_global: 4
-    - load_global: 2
+    - store: "*isize"
+    - global_addr: 4
+    - global_addr: 2
+    - load: usize
     - alloc: 8
-    - store_global: 4
-    - load_global: 4
+    - store: "*isize"
+    - global_addr: 4
+    - load: "*isize"
     - push: 0x0:ptr
     - compare: eq
-    - jump_if_false: 33
+    - jump_if_false: 35
     - print_text: 0
+    - global_addr: 5
     - push: 1:isize
-    - store_global: 5
-    - load_global: 5
+    - store: isize
+    - global_addr: 5
+    - load: isize
     - push: 10:isize
     - compare: gt
-    - jump_if_true: 74
-    - load_global: 3
-    - load_global: 2
+    - jump_if_true: 94
+    - global_addr: 3
+    - load: usize
+    - global_addr: 2
+    - load: usize
     - compare: eq
-    - jump_if_false: 51
-    - load_global: 2
+    - jump_if_false: 62
+    - global_addr: 2
+    - global_addr: 2
+    - load: usize
     - push: 2:usize
     - infix: mul
-    - store_global: 2
-    - load_global: 4
-    - load_global: 2
+    - store: usize
+    - global_addr: 4
+    - global_addr: 4
+    - load: "*isize"
+    - global_addr: 2
+    - load: usize
     - realloc: 8
-    - store_global: 4
-    - load_global: 4
-    - load_global: 3
+    - store: "*isize"
+    - global_addr: 4
+    - load: "*isize"
+    - global_addr: 3
+    - load: usize
     - ptr_add: 8
-    - load_global: 5
-    - load_global: 5
+    - global_addr: 5
+    - load: isize
+    - global_addr: 5
+    - load: isize
     - infix: mul
     - store: isize
-    - load_global: 3
+    - global_addr: 3
+    - global_addr: 3
+    - load: usize
     - push: 1:usize
     - infix: add
-    - store_global: 3
+    - store: usize
     - push: 10:usize
-    - load_global: 5
+    - global_addr: 5
+    - load: isize
     - convert: usize
     - infix: sub
     - push: 1:usize
     - compare: lt
-    - jump_if_true: 74
-    - load_global: 5
+    - jump_if_true: 94
+    - global_addr: 5
+    - global_addr: 5
+    - load: isize
     - push: 1:isize
     - infix: add
-    - store_global: 5
-    - jump: 39
+    - store: isize
+    - jump: 43
+    - global_addr: 6
     - push: 0:usize
-    - store_global: 6
-    - load_global: 6
-    - load_global: 3
+    - store: usize
+    - global_addr: 6
+    - load: usize
+    - global_addr: 3
+    - load: usize
     - compare: lt
-    - jump_if_false: 90
-    - load_global: 4
-    - load_global: 6
+    - jump_if_false: 117
+    - global_addr: 4
+    - load: "*isize"
+    - global_addr: 6
+    - load: usize
     - ptr_add: 8
     - load: isize
     - print
-    - load_global: 6
+    - global_addr: 6
+    - global_addr: 6
+    - load: usize
     - push: 1:usize
     - infix: add
-    - store_global: 6
-    - jump: 76
-    - load_global: 4
+    - store: usize
+    - jump: 97
+    - global_addr: 4
+    - global_addr: 4
+    - load: "*isize"
     - free
     - push: 0x0:ptr
-    - store_global: 4
+    - store: "*isize"
+    - global_addr: 7
     - push: 0x0:ptr
-    - store_global: 7
+    - store: "*u8"
+    - global_addr: 7
     - push: 8:usize
     - alloc: 1
-    - store_global: 7
-    - load_global: 7
+    - store: "*u8"
+    - global_addr: 7
+    - load: "*u8"
     - push: 7:u8
     - store: u8
+    - global_addr: 8
     - push: 0x0:ptr
-    - store_global: 8
-    - load_global: 7
+    - store: "*i32"
+    - global_addr: 8
+    - global_addr: 7
+    - load: "*u8"
     - push: 4:isize
     - ptr_add: 1
     - convert: "*i32"
-    - store_global: 8
-    - load_global: 8
+    - store: "*i32"
+    - global_addr: 8
+    - load: "*i32"
     - push: 1500:i32
     - store: i32
-    - load_global: 8
+    - global_addr: 8
+    - load: "*i32"
     - load: i32
     - print
-    - load_global: 7
+    - global_addr: 7
+    - global_addr: 7
+    - load: "*u8"
     - free
     - push: 0x0:ptr
-    - store_global: 7
+    - store: "*u8"
     - ret
     spans:
-    - lo: 906
-      hi: 915
-    - lo: 906
-      hi: 915
-    - lo: 1017
-      hi: 1032
-    - lo: 1017
-      hi: 1032
     - lo: 878
       hi: 988
     - lo: 957
@@ -251,24 +284,36 @@ module:
       hi: 1369
     - lo: 1354
       hi: 1398
+    - lo: 1481
+      hi: 1640
     - lo: 1609
       hi: 1612
     - lo: 1481
       hi: 1640
+    - lo: 1641
+      hi: 1794
     - lo: 1763
       hi: 1766
     - lo: 1641
       hi: 1794
+    - lo: 1795
+      hi: 1933
     - lo: 1823
       hi: 1841
     - lo: 1795
       hi: 1933
+    - lo: 1934
+      hi: 2152
+    - lo: 1990
+      hi: 2020
     - lo: 1990
       hi: 2020
     - lo: 1934
       hi: 2152
     - lo: 1934
       hi: 2152
+    - lo: 2169
+      hi: 2187
     - lo: 2169
       hi: 2187
     - lo: 2198
@@ -279,6 +324,8 @@ module:
       hi: 2299
     - lo: 2246
       hi: 2299
+    - lo: 2301
+      hi: 3429
     - lo: 2301
       hi: 2304
     - lo: 2301
@@ -291,14 +338,24 @@ module:
       hi: 3429
     - lo: 2301
       hi: 3429
+    - lo: 2301
+      hi: 3429
     - lo: 2488
       hi: 2512
+    - lo: 2488
+      hi: 2512
+    - lo: 2523
+      hi: 2553
     - lo: 2523
       hi: 2553
     - lo: 2488
       hi: 2576
     - lo: 2472
       hi: 3112
+    - lo: 2672
+      hi: 2775
+    - lo: 2713
+      hi: 2743
     - lo: 2713
       hi: 2743
     - lo: 2746
@@ -309,6 +366,12 @@ module:
       hi: 2775
     - lo: 2776
       hi: 3029
+    - lo: 2776
+      hi: 3029
+    - lo: 2776
+      hi: 3029
+    - lo: 2888
+      hi: 2918
     - lo: 2888
       hi: 2918
     - lo: 2776
@@ -317,18 +380,30 @@ module:
       hi: 3029
     - lo: 3113
       hi: 3131
+    - lo: 3113
+      hi: 3131
+    - lo: 3134
+      hi: 3158
     - lo: 3134
       hi: 3158
     - lo: 3113
       hi: 3158
     - lo: 3195
       hi: 3210
+    - lo: 3195
+      hi: 3210
+    - lo: 3213
+      hi: 3228
     - lo: 3213
       hi: 3228
     - lo: 3195
       hi: 3228
     - lo: 3113
       hi: 3254
+    - lo: 3255
+      hi: 3346
+    - lo: 3290
+      hi: 3314
     - lo: 3290
       hi: 3314
     - lo: 3317
@@ -361,12 +436,24 @@ module:
       hi: 3429
     - lo: 2301
       hi: 3429
+    - lo: 2301
+      hi: 3429
+    - lo: 2301
+      hi: 3429
+    - lo: 2301
+      hi: 3429
+    - lo: 3459
+      hi: 3546
     - lo: 3547
       hi: 3550
     - lo: 3459
       hi: 3546
     - lo: 3576
       hi: 3594
+    - lo: 3576
+      hi: 3594
+    - lo: 3605
+      hi: 3629
     - lo: 3605
       hi: 3629
     - lo: 3576
@@ -375,6 +462,10 @@ module:
       hi: 4042
     - lo: 3757
       hi: 3775
+    - lo: 3757
+      hi: 3775
+    - lo: 3778
+      hi: 3796
     - lo: 3778
       hi: 3796
     - lo: 3757
@@ -383,6 +474,10 @@ module:
       hi: 3822
     - lo: 3757
       hi: 3851
+    - lo: 3880
+      hi: 3959
+    - lo: 3909
+      hi: 3927
     - lo: 3909
       hi: 3927
     - lo: 3930
@@ -401,10 +496,18 @@ module:
       hi: 4187
     - lo: 4044
       hi: 4187
+    - lo: 4044
+      hi: 4187
+    - lo: 4044
+      hi: 4187
+    - lo: 4350
+      hi: 4533
     - lo: 4378
       hi: 4399
     - lo: 4350
       hi: 4533
+    - lo: 4534
+      hi: 4706
     - lo: 4559
       hi: 4562
     - lo: 4534
@@ -413,14 +516,22 @@ module:
       hi: 4706
     - lo: 4707
       hi: 4728
+    - lo: 4707
+      hi: 4728
     - lo: 4765
       hi: 4768
     - lo: 4707
       hi: 4794
+    - lo: 4795
+      hi: 4959
     - lo: 4823
       hi: 4850
     - lo: 4795
       hi: 4959
+    - lo: 4960
+      hi: 5198
+    - lo: 4998
+      hi: 5019
     - lo: 4998
       hi: 5019
     - lo: 5022
@@ -433,6 +544,8 @@ module:
       hi: 5198
     - lo: 5199
       hi: 5226
+    - lo: 5199
+      hi: 5226
     - lo: 5263
       hi: 5275
     - lo: 5199
@@ -440,9 +553,15 @@ module:
     - lo: 5302
       hi: 5329
     - lo: 5302
+      hi: 5329
+    - lo: 5302
       hi: 5355
     - lo: 5302
       hi: 5384
+    - lo: 5385
+      hi: 5531
+    - lo: 5385
+      hi: 5531
     - lo: 5385
       hi: 5531
     - lo: 5385

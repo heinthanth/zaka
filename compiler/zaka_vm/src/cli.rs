@@ -47,6 +47,10 @@ const MAX_DEPTH_ARG: &str = "max_depth";
 const MAX_STEPS_ARG: &str = "max_steps";
 /// The flag for the cap on live heap octets.
 const MAX_HEAP_ARG: &str = "max_heap";
+/// The flag for the cap on the octets of the stack region.
+const MAX_STACK_ARG: &str = "max_stack";
+/// The flag for how variables sit in the address space.
+const FRAMES_ARG: &str = "frames";
 /// The flag that lists the heap blocks left unfreed.
 const LEAKS_ARG: &str = "leaks";
 
@@ -86,12 +90,25 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .help(t!("vm.max_heap"))
         .value_parser(value_parser!(u64))
         .default_value("268435456");
+    let stack = Arg::new(MAX_STACK_ARG)
+        .long("max-stack")
+        .value_name("OCTETS")
+        .help(t!("vm.max_stack"))
+        .value_parser(value_parser!(u64))
+        .default_value("1048576");
+    let frames = Arg::new(FRAMES_ARG)
+        .long("frames")
+        .value_name("MODE")
+        .help(t!("vm.frames"))
+        .value_parser(["checked", "packed"])
+        .default_value("checked");
     let leaks = Arg::new(LEAKS_ARG)
         .long("leaks")
         .help(t!("vm.leaks"))
         .action(ArgAction::SetTrue);
     let cmd = attach_compile_args(cmd.arg(input));
-    cmd.arg(depth).arg(steps).arg(heap).arg(leaks).about(t!("vm.about"))
+    let cmd = cmd.arg(depth).arg(steps).arg(heap).arg(stack).arg(frames);
+    cmd.arg(leaks).about(t!("vm.about"))
 }
 
 impl Command for ZakaVm
@@ -243,10 +260,13 @@ fn run_options(matches: &ArgMatches) -> RunOptions
     let depth = matches.get_one::<u32>(MAX_DEPTH_ARG).copied().unwrap_or(4096);
     let steps = matches.get_one::<u64>(MAX_STEPS_ARG).copied();
     let heap = matches.get_one::<u64>(MAX_HEAP_ARG).copied().unwrap_or(256 << 20);
+    let stack = matches.get_one::<u64>(MAX_STACK_ARG).copied().unwrap_or(1 << 20);
+    let frames = matches.get_one::<String>(FRAMES_ARG);
+    let frames = frames.and_then(|f| f.parse().ok()).unwrap_or_default();
     let leaks = matches.get_flag(LEAKS_ARG);
     #[rustfmt::skip]
     let options = RunOptions::builder().max_depth(depth).maybe_max_steps(steps)
-        .max_heap(heap).leaks(leaks).build();
+        .max_heap(heap).max_stack(stack).frames(frames).leaks(leaks).build();
     options
 }
 

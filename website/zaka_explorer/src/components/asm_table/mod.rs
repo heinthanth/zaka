@@ -40,7 +40,7 @@ const GUTTER_COLUMNS: [Column; 6] = [
 
 /// Columns of a slot table.
 const SLOT_COLUMNS: [Column; 3] = [
-    ("explorer.col.slot", Table::CELL_NUM, ""),
+    ("explorer.col.slot", "", ""),
     ("explorer.col.name", "", ""),
     ("explorer.col.kind", "", ""),
 ];
@@ -175,7 +175,7 @@ pub fn slot_table(prefix: char, slots: Vec<SlotRow>) -> impl IntoView
 {
     let row = move |s: SlotRow| {
         tr().child((
-            cell(Table::CELL_NUM, format!("{prefix}{}", s.index)),
+            cell(Table::CELL_DETAIL, format!("{prefix}{}", s.index)),
             cell(Table::CELL_LEXEME, s.name),
             cell(Table::CELL_KIND, s.kind),
         ))

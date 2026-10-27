@@ -8,44 +8,59 @@ locals
   l1 ခ isize
   l2 ဂ isize
   l3 ရလဒ် isize
-     0  push 0:isize
-     1  store_local l3       ; ရလဒ်
-     2  load_local l0        ; က
-     3  push 2:isize
-     4  mul
-     5  store_local l0       ; က
-     6  load_local l1        ; ခ
-     7  push 2:isize
-     8  mul
-     9  store_local l1       ; ခ
-    10  load_local l2        ; ဂ
-    11  push 2:isize
-    12  mul
-    13  store_local l2       ; ဂ
-    14  load_local l0        ; က
-    15  load_local l1        ; ခ
-    16  add
-    17  load_local l2        ; ဂ
-    18  add
-    19  ret
+     0  local_addr l3        ; ရလဒ်
+     1  push 0:isize
+     2  store isize
+     3  local_addr l0        ; က
+     4  local_addr l0        ; က
+     5  load isize
+     6  push 2:isize
+     7  mul
+     8  store isize
+     9  local_addr l1        ; ခ
+    10  local_addr l1        ; ခ
+    11  load isize
+    12  push 2:isize
+    13  mul
+    14  store isize
+    15  local_addr l2        ; ဂ
+    16  local_addr l2        ; ဂ
+    17  load isize
+    18  push 2:isize
+    19  mul
+    20  store isize
+    21  local_addr l0        ; က
+    22  load isize
+    23  local_addr l1        ; ခ
+    24  load isize
+    25  add
+    26  local_addr l2        ; ဂ
+    27  load isize
+    28  add
+    29  ret
 
 fn f1 ပျမ်းမျှ (params 2) -> f64
 locals
   l0 က f32
   l1 ခ i8
   l2 ရလဒ် f64
-     0  push 0.0:f64
-     1  store_local l2       ; ရလဒ်
-     2  load_local l0        ; က
-     3  load_local l1        ; ခ
-     4  convert f32
-     5  add
-     6  push 2.0:f32
-     7  div
-     8  convert f64
-     9  store_local l2       ; ရလဒ်
-    10  load_local l2        ; ရလဒ်
-    11  ret
+     0  local_addr l2        ; ရလဒ်
+     1  push 0.0:f64
+     2  store f64
+     3  local_addr l2        ; ရလဒ်
+     4  local_addr l0        ; က
+     5  load f32
+     6  local_addr l1        ; ခ
+     7  load i8
+     8  convert f32
+     9  add
+    10  push 2.0:f32
+    11  div
+    12  convert f64
+    13  store f64
+    14  local_addr l2        ; ရလဒ်
+    15  load f64
+    16  ret
 
 fn f2 နှုတ်ဆက် (params 0)
      0  print_text t0

@@ -120,6 +120,10 @@ the constant. The same holds for the variable of a counted loop:
 error[ZK0412]: "ကြီးဆုံး" cannot be changed, so its address cannot be taken
 ```
 
+To see these addresses, run a program in the Explorer with debug mode on. Its heap
+pane shows a block for each global and for each local of each call in progress, and
+the Block column next to each variable gives the address of its block.
+
 ## Hands on
 
 - Declare two integers and one pointer. Point at the first, change it through the

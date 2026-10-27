@@ -7,22 +7,16 @@ module:
   globals:
   - name: အသက်
     kind: isize
-    addressed: false
   - name: ပိုင်
     kind: f64
-    addressed: false
   - name: ကြီးသူ
     kind: bool
-    addressed: false
   - name: ဘိုက်
     kind: u8
-    addressed: false
   - name: စာ
     kind: char
-    addressed: false
   - name: အသက်
     kind: i16
-    addressed: false
   texts:
   - ok
   funcs:
@@ -31,78 +25,108 @@ module:
     ret: null
     locals: []
     code:
+    - global_addr: 0
     - push: 18:isize
-    - store_global: 0
+    - store: isize
+    - global_addr: 1
     - push: 3.14:f64
-    - store_global: 1
-    - load_global: 0
+    - store: f64
+    - global_addr: 2
+    - global_addr: 0
+    - load: isize
     - push: 18:isize
     - compare: gt
-    - store_global: 2
+    - store: bool
+    - global_addr: 3
     - push: 255:u8
-    - store_global: 3
+    - store: u8
+    - global_addr: 4
     - push: "'က':char"
-    - store_global: 4
-    - load_global: 0
+    - store: char
+    - global_addr: 0
+    - global_addr: 0
+    - load: isize
     - push: 1:isize
     - infix: add
-    - store_global: 0
-    - load_global: 0
-    - load_global: 3
+    - store: isize
+    - global_addr: 0
+    - global_addr: 0
+    - load: isize
+    - global_addr: 3
+    - load: u8
     - convert: isize
     - infix: add
-    - store_global: 0
+    - store: isize
     - push: 6.28:f64
     - print
-    - load_global: 3
+    - global_addr: 3
+    - load: u8
     - push: 2:usize
     - infix: shr
     - print
-    - load_global: 0
+    - global_addr: 0
+    - load: isize
     - convert: f64
     - print
-    - load_global: 4
+    - global_addr: 4
+    - load: char
     - convert: isize
     - print
+    - global_addr: 5
     - push: -5:i16
-    - store_global: 5
-    - load_global: 5
+    - store: i16
+    - global_addr: 5
+    - load: i16
     - print
-    - load_global: 0
+    - global_addr: 0
+    - load: isize
     - push: 18:isize
     - compare: lt
-    - jump_if_false: 44
+    - jump_if_false: 62
+    - global_addr: 2
     - push: false:bool
-    - store_global: 2
-    - jump: 62
-    - load_global: 2
-    - jump_if_false: 50
-    - load_global: 0
+    - store: bool
+    - jump: 84
+    - global_addr: 2
+    - load: bool
+    - jump_if_false: 70
+    - global_addr: 0
+    - load: isize
     - push: 60:isize
     - compare: gt
-    - jump: 51
+    - jump: 71
     - push: false:bool
-    - jump_if_false: 54
+    - jump_if_false: 74
     - print_text: 0
-    - jump: 62
-    - load_global: 4
+    - jump: 84
+    - global_addr: 4
+    - load: char
     - push: "'ခ':char"
     - compare: lt
-    - jump_if_false: 60
-    - load_global: 2
-    - jump: 61
+    - jump_if_false: 82
+    - global_addr: 2
+    - load: bool
+    - jump: 83
     - push: false:bool
     - print
     - ret
     spans:
+    - lo: 0
+      hi: 116
     - lo: 82
       hi: 88
     - lo: 0
       hi: 116
+    - lo: 117
+      hi: 228
     - lo: 190
       hi: 200
     - lo: 117
       hi: 228
+    - lo: 229
+      hi: 421
+    - lo: 332
+      hi: 344
     - lo: 332
       hi: 344
     - lo: 355
@@ -111,14 +135,22 @@ module:
       hi: 393
     - lo: 229
       hi: 421
+    - lo: 422
+      hi: 615
     - lo: 549
       hi: 587
     - lo: 422
       hi: 615
+    - lo: 616
+      hi: 713
     - lo: 680
       hi: 685
     - lo: 616
       hi: 713
+    - lo: 714
+      hi: 781
+    - lo: 737
+      hi: 749
     - lo: 737
       hi: 749
     - lo: 752
@@ -127,8 +159,14 @@ module:
       hi: 755
     - lo: 714
       hi: 781
+    - lo: 782
+      hi: 907
     - lo: 805
       hi: 817
+    - lo: 805
+      hi: 817
+    - lo: 834
+      hi: 849
     - lo: 834
       hi: 849
     - lo: 834
@@ -143,6 +181,8 @@ module:
       hi: 958
     - lo: 959
       hi: 974
+    - lo: 959
+      hi: 974
     - lo: 1004
       hi: 1007
     - lo: 959
@@ -152,15 +192,21 @@ module:
     - lo: 1081
       hi: 1093
     - lo: 1081
+      hi: 1093
+    - lo: 1081
       hi: 1194
     - lo: 1081
       hi: 1223
     - lo: 1224
       hi: 1230
     - lo: 1224
+      hi: 1230
+    - lo: 1224
       hi: 1337
     - lo: 1224
       hi: 1366
+    - lo: 1447
+      hi: 1578
     - lo: 1546
       hi: 1550
     - lo: 1447
@@ -168,7 +214,11 @@ module:
     - lo: 1579
       hi: 1591
     - lo: 1579
+      hi: 1591
+    - lo: 1579
       hi: 1620
+    - lo: 1720
+      hi: 1732
     - lo: 1720
       hi: 1732
     - lo: 1743
@@ -177,6 +227,8 @@ module:
       hi: 1775
     - lo: 1704
       hi: 2319
+    - lo: 1871
+      hi: 1941
     - lo: 1900
       hi: 1915
     - lo: 1871
@@ -186,7 +238,11 @@ module:
     - lo: 2068
       hi: 2086
     - lo: 2068
+      hi: 2086
+    - lo: 2068
       hi: 2155
+    - lo: 2103
+      hi: 2115
     - lo: 2103
       hi: 2115
     - lo: 2126
@@ -205,11 +261,15 @@ module:
       hi: 2319
     - lo: 2240
       hi: 2246
+    - lo: 2240
+      hi: 2246
     - lo: 2249
       hi: 2254
     - lo: 2240
       hi: 2254
     - lo: 2240
+      hi: 2289
+    - lo: 2271
       hi: 2289
     - lo: 2271
       hi: 2289

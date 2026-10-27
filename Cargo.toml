@@ -88,6 +88,15 @@ zaka_vm = { path = "compiler/zaka_vm" }
 zaka_web_builder = { path = "website/zaka_web_builder" }
 zaka_web_ui_common = { path = "website/zaka_web_ui_common" }
 
+# On macOS the debug info remains in the object files under target/debug, one set
+# per build, and soon fills the disk. Workspace crates keep line tables for
+# backtraces; dependencies get none.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
 [profile.wasm-release]
 inherits = "release"
 opt-level = "z"

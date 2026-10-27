@@ -4,6 +4,7 @@ use std::io;
 use std::io::Write;
 
 use common::compile;
+use zaka_vm::machine::Held;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::State;
@@ -40,8 +41,10 @@ fn with_call() -> Module
         .ret(DataKind::ISIZE)
         .locals(vec![isize("a"), isize("b")])
         .code(vec![
-            Op::LoadLocal(0),
-            Op::LoadLocal(1),
+            Op::LocalAddr(0),
+            Op::Load(DataKind::ISIZE),
+            Op::LocalAddr(1),
+            Op::Load(DataKind::ISIZE),
             Op::Infix(InfixOp::Sub),
             Op::Ret,
         ])
@@ -119,7 +122,9 @@ fn locals_follow_each_frame()
 {
     let mut m = machine(with_call());
     do_steps(&mut m, 3);
-    assert_eq!(m.locals(1), [v("10:isize"), v("3:isize")]);
+    let read = |a: &u64| m.mem().load(*a, DataKind::ISIZE).unwrap();
+    let values: Vec<Value> = m.locals(1).iter().map(read).collect();
+    assert_eq!(values, [v("10:isize"), v("3:isize")]);
     assert!(m.locals(0).is_empty());
     assert!(m.locals(9).is_empty());
     let g = Slot::builder().name("g").kind(DataKind::Bool).build();
@@ -132,7 +137,9 @@ fn locals_follow_each_frame()
             .build(),
         RunOptions::default(),
     );
-    assert_eq!(m.globals(), [Value::Bool(false)]);
+    let g = m.globals()[0];
+    assert_eq!(m.mem().load(g, DataKind::Bool), Ok(Value::Bool(false)));
+    assert_eq!(m.owner(g), Some(Held::Global { name: "g" }));
 }
 
 #[test]
@@ -140,9 +147,9 @@ fn a_frame_keeps_the_stack_depth_of_its_start()
 {
     let mut m = machine(with_call());
     assert_eq!(m.frames()[0].depth, 0);
-    do_steps(&mut m, 4);
+    do_steps(&mut m, 5);
     assert_eq!(m.frames()[1].depth, 0);
-    assert_eq!(m.stack(), [v("10:isize")]);
+    assert_eq!(m.stack(), [v("10:isize")], "the address of a, then its value");
 }
 
 #[test]

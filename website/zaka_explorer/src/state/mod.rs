@@ -7,6 +7,7 @@ use leptos_use_signal_debounce_throttle::signal_debounced;
 use leptos_use_storage::UseStorageOptions;
 use leptos_use_storage::use_local_storage;
 use leptos_use_storage::use_local_storage_with_options;
+use zaka_vm::machine::FrameMode;
 use zaka_web_ui_common::font::load_pair;
 pub use zaka_web_ui_common::lang;
 use zaka_web_ui_common::look::Look;
@@ -66,6 +67,10 @@ const EDITOR_STORE: &str = "zaka-explorer-editor-open";
 
 /// Local storage name of the heap cap.
 const HEAP_CAP_STORE: &str = "zaka-explorer-heap-cap";
+
+/// Local storage name of how the variables of a run sit in the address
+/// space.
+const FRAMES_STORE: &str = "zaka-explorer-frames";
 
 /// Local storage name of the stage view switch.
 const STAGE_STORE: &str = "zaka-explorer-stage-open";
@@ -166,6 +171,10 @@ pub struct AppState
     pub heap_cap: Signal<HeapCap>,
     /// Choose the cap on live heap octets.
     pub set_heap_cap: WriteSignal<HeapCap>,
+    /// How the variables of a run sit in the address space.
+    pub frames: Signal<FrameMode>,
+    /// Choose how the variables of a run sit in the address space.
+    pub set_frames: WriteSignal<FrameMode>,
     /// Whether ops run in batches, one batch a frame.
     pub going: RwSignal<bool>,
     /// The speed of the timed stepping.
@@ -466,6 +475,8 @@ pub fn provide_state() -> AppState
         );
     let (heap_cap, set_heap_cap, _) =
         use_local_storage::<HeapCap, FromToStringCodec>(HEAP_CAP_STORE);
+    let (frames, set_frames, _) =
+        use_local_storage::<FrameMode, FromToStringCodec>(FRAMES_STORE);
     let (stage_open, set_stage_open, _) =
         use_local_storage_with_options::<bool, FromToStringCodec>(
             STAGE_STORE,
@@ -521,6 +532,8 @@ pub fn provide_state() -> AppState
         .auto_step(RwSignal::new(false))
         .heap_cap(heap_cap)
         .set_heap_cap(set_heap_cap)
+        .frames(frames)
+        .set_frames(set_frames)
         .going(RwSignal::new(false))
         .speed(RwSignal::new(Speed::default()))
         .panel_tab(RwSignal::new(PanelTab::default()))
@@ -561,6 +574,7 @@ fn wire_debug(state: AppState)
     Effect::new(move |_| {
         let mut session = ops.with(|ops| Session::new(ops.as_ref()));
         session.set_max_heap(untrack(|| state.heap_cap.get().octets()));
+        session.set_frames(untrack(|| state.frames.get()));
         session.set_line_stops(untrack(|| state.line_stops()));
         session.set_op_stops(untrack(|| state.op_stops()));
         state.debug.set(session);
@@ -574,6 +588,10 @@ fn wire_debug(state: AppState)
     Effect::new(move |_| {
         let cap = state.heap_cap.get().octets();
         state.debug.update(|s| s.set_max_heap(cap));
+    });
+    Effect::new(move |_| {
+        let frames = state.frames.get();
+        state.debug.update(|s| s.set_frames(frames));
     });
     Effect::new(move |_| {
         let stops = state.op_stops();

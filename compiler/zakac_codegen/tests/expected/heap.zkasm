@@ -17,142 +17,187 @@ locals
   l0 က *isize
   l1 ခ *isize
   l2 ယာယီ isize
-     0  load_local l0        ; က
-     1  load isize
-     2  store_local l2       ; ယာယီ
-     3  load_local l0        ; က
-     4  load_local l1        ; ခ
-     5  load isize
-     6  store isize
-     7  load_local l1        ; ခ
-     8  load_local l2        ; ယာယီ
-     9  store isize
-    10  ret
+     0  local_addr l2        ; ယာယီ
+     1  local_addr l0        ; က
+     2  load *isize
+     3  load isize
+     4  store isize
+     5  local_addr l0        ; က
+     6  load *isize
+     7  local_addr l1        ; ခ
+     8  load *isize
+     9  load isize
+    10  store isize
+    11  local_addr l1        ; ခ
+    12  load *isize
+    13  local_addr l2        ; ယာယီ
+    14  load isize
+    15  store isize
+    16  ret
 
 fn f1 main (params 0)
-     0  cell 8 8
-     1  store_global g0      ; ပထမ
-     2  cell 8 8
-     3  store_global g1      ; ဒုတိယ
-     4  load_global g0       ; ပထမ
-     5  push 1:isize
-     6  store isize
-     7  load_global g1       ; ဒုတိယ
-     8  push 2:isize
-     9  store isize
-    10  load_global g0       ; ပထမ
-    11  load_global g1       ; ဒုတိယ
-    12  call f0              ; လဲလှယ်
-    13  load_global g0       ; ပထမ
-    14  load isize
-    15  print
-    16  load_global g1       ; ဒုတိယ
-    17  load isize
-    18  print
-    19  push 4:usize
-    20  store_global g2      ; ဆံ့နိုင်ရေ
-    21  push 0:usize
-    22  store_global g3      ; အရေအတွက်
-    23  push 0x0:ptr
-    24  store_global g4      ; စာရင်း
-    25  load_global g2       ; ဆံ့နိုင်ရေ
-    26  alloc 8
-    27  store_global g4      ; စာရင်း
-    28  load_global g4       ; စာရင်း
-    29  push 0x0:ptr
-    30  eq
-    31  jump_if_false L0
-    32  print_text t0
+     0  global_addr g0       ; ပထမ
+     1  push 1:isize
+     2  store isize
+     3  global_addr g1       ; ဒုတိယ
+     4  push 2:isize
+     5  store isize
+     6  global_addr g0       ; ပထမ
+     7  global_addr g1       ; ဒုတိယ
+     8  call f0              ; လဲလှယ်
+     9  global_addr g0       ; ပထမ
+    10  load isize
+    11  print
+    12  global_addr g1       ; ဒုတိယ
+    13  load isize
+    14  print
+    15  global_addr g2       ; ဆံ့နိုင်ရေ
+    16  push 4:usize
+    17  store usize
+    18  global_addr g3       ; အရေအတွက်
+    19  push 0:usize
+    20  store usize
+    21  global_addr g4       ; စာရင်း
+    22  push 0x0:ptr
+    23  store *isize
+    24  global_addr g4       ; စာရင်း
+    25  global_addr g2       ; ဆံ့နိုင်ရေ
+    26  load usize
+    27  alloc 8
+    28  store *isize
+    29  global_addr g4       ; စာရင်း
+    30  load *isize
+    31  push 0x0:ptr
+    32  eq
+    33  jump_if_false L0
+    34  print_text t0
 L0:
-    33  push 1:isize
-    34  store_global g5      ; ကိန်း
-    35  load_global g5       ; ကိန်း
-    36  push 10:isize
-    37  gt
-    38  jump_if_true L3
+    35  global_addr g5       ; ကိန်း
+    36  push 1:isize
+    37  store isize
+    38  global_addr g5       ; ကိန်း
+    39  load isize
+    40  push 10:isize
+    41  gt
+    42  jump_if_true L3
 L1:
-    39  load_global g3       ; အရေအတွက်
-    40  load_global g2       ; ဆံ့နိုင်ရေ
-    41  eq
-    42  jump_if_false L2
-    43  load_global g2       ; ဆံ့နိုင်ရေ
-    44  push 2:usize
-    45  mul
-    46  store_global g2      ; ဆံ့နိုင်ရေ
-    47  load_global g4       ; စာရင်း
-    48  load_global g2       ; ဆံ့နိုင်ရေ
-    49  realloc 8
-    50  store_global g4      ; စာရင်း
+    43  global_addr g3       ; အရေအတွက်
+    44  load usize
+    45  global_addr g2       ; ဆံ့နိုင်ရေ
+    46  load usize
+    47  eq
+    48  jump_if_false L2
+    49  global_addr g2       ; ဆံ့နိုင်ရေ
+    50  global_addr g2       ; ဆံ့နိုင်ရေ
+    51  load usize
+    52  push 2:usize
+    53  mul
+    54  store usize
+    55  global_addr g4       ; စာရင်း
+    56  global_addr g4       ; စာရင်း
+    57  load *isize
+    58  global_addr g2       ; ဆံ့နိုင်ရေ
+    59  load usize
+    60  realloc 8
+    61  store *isize
 L2:
-    51  load_global g4       ; စာရင်း
-    52  load_global g3       ; အရေအတွက်
-    53  ptr_add 8
-    54  load_global g5       ; ကိန်း
-    55  load_global g5       ; ကိန်း
-    56  mul
-    57  store isize
-    58  load_global g3       ; အရေအတွက်
-    59  push 1:usize
-    60  add
-    61  store_global g3      ; အရေအတွက်
-    62  push 10:usize
-    63  load_global g5       ; ကိန်း
-    64  convert usize
-    65  sub
-    66  push 1:usize
-    67  lt
-    68  jump_if_true L3
-    69  load_global g5       ; ကိန်း
-    70  push 1:isize
-    71  add
-    72  store_global g5      ; ကိန်း
-    73  jump L1
+    62  global_addr g4       ; စာရင်း
+    63  load *isize
+    64  global_addr g3       ; အရေအတွက်
+    65  load usize
+    66  ptr_add 8
+    67  global_addr g5       ; ကိန်း
+    68  load isize
+    69  global_addr g5       ; ကိန်း
+    70  load isize
+    71  mul
+    72  store isize
+    73  global_addr g3       ; အရေအတွက်
+    74  global_addr g3       ; အရေအတွက်
+    75  load usize
+    76  push 1:usize
+    77  add
+    78  store usize
+    79  push 10:usize
+    80  global_addr g5       ; ကိန်း
+    81  load isize
+    82  convert usize
+    83  sub
+    84  push 1:usize
+    85  lt
+    86  jump_if_true L3
+    87  global_addr g5       ; ကိန်း
+    88  global_addr g5       ; ကိန်း
+    89  load isize
+    90  push 1:isize
+    91  add
+    92  store isize
+    93  jump L1
 L3:
-    74  push 0:usize
-    75  store_global g6      ; နံပါတ်
+    94  global_addr g6       ; နံပါတ်
+    95  push 0:usize
+    96  store usize
 L4:
-    76  load_global g6       ; နံပါတ်
-    77  load_global g3       ; အရေအတွက်
-    78  lt
-    79  jump_if_false L5
-    80  load_global g4       ; စာရင်း
-    81  load_global g6       ; နံပါတ်
-    82  ptr_add 8
-    83  load isize
-    84  print
-    85  load_global g6       ; နံပါတ်
-    86  push 1:usize
-    87  add
-    88  store_global g6      ; နံပါတ်
-    89  jump L4
+    97  global_addr g6       ; နံပါတ်
+    98  load usize
+    99  global_addr g3       ; အရေအတွက်
+   100  load usize
+   101  lt
+   102  jump_if_false L5
+   103  global_addr g4       ; စာရင်း
+   104  load *isize
+   105  global_addr g6       ; နံပါတ်
+   106  load usize
+   107  ptr_add 8
+   108  load isize
+   109  print
+   110  global_addr g6       ; နံပါတ်
+   111  global_addr g6       ; နံပါတ်
+   112  load usize
+   113  push 1:usize
+   114  add
+   115  store usize
+   116  jump L4
 L5:
-    90  load_global g4       ; စာရင်း
-    91  free
-    92  push 0x0:ptr
-    93  store_global g4      ; စာရင်း
-    94  push 0x0:ptr
-    95  store_global g7      ; ပစ္စည်း
-    96  push 8:usize
-    97  alloc 1
-    98  store_global g7      ; ပစ္စည်း
-    99  load_global g7       ; ပစ္စည်း
-   100  push 7:u8
-   101  store u8
-   102  push 0x0:ptr
-   103  store_global g8      ; ဈေးနှုန်း
-   104  load_global g7       ; ပစ္စည်း
-   105  push 4:isize
-   106  ptr_add 1
-   107  convert *i32
-   108  store_global g8      ; ဈေးနှုန်း
-   109  load_global g8       ; ဈေးနှုန်း
-   110  push 1500:i32
-   111  store i32
-   112  load_global g8       ; ဈေးနှုန်း
-   113  load i32
-   114  print
-   115  load_global g7       ; ပစ္စည်း
-   116  free
-   117  push 0x0:ptr
-   118  store_global g7      ; ပစ္စည်း
-   119  ret
+   117  global_addr g4       ; စာရင်း
+   118  global_addr g4       ; စာရင်း
+   119  load *isize
+   120  free
+   121  push 0x0:ptr
+   122  store *isize
+   123  global_addr g7       ; ပစ္စည်း
+   124  push 0x0:ptr
+   125  store *u8
+   126  global_addr g7       ; ပစ္စည်း
+   127  push 8:usize
+   128  alloc 1
+   129  store *u8
+   130  global_addr g7       ; ပစ္စည်း
+   131  load *u8
+   132  push 7:u8
+   133  store u8
+   134  global_addr g8       ; ဈေးနှုန်း
+   135  push 0x0:ptr
+   136  store *i32
+   137  global_addr g8       ; ဈေးနှုန်း
+   138  global_addr g7       ; ပစ္စည်း
+   139  load *u8
+   140  push 4:isize
+   141  ptr_add 1
+   142  convert *i32
+   143  store *i32
+   144  global_addr g8       ; ဈေးနှုန်း
+   145  load *i32
+   146  push 1500:i32
+   147  store i32
+   148  global_addr g8       ; ဈေးနှုန်း
+   149  load *i32
+   150  load i32
+   151  print
+   152  global_addr g7       ; ပစ္စည်း
+   153  global_addr g7       ; ပစ္စည်း
+   154  load *u8
+   155  free
+   156  push 0x0:ptr
+   157  store *u8
+   158  ret

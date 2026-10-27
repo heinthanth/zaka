@@ -149,11 +149,11 @@ fn each_heap_mistake_traps_with_its_kind()
 }
 
 #[test]
-fn a_local_address_that_escapes_names_its_function()
+fn a_local_address_that_escapes_names_its_variable_and_function()
 {
     let trap = heap_trap("local_escape");
     let block = trap.block.clone().expect("a block");
-    assert!(block.contains("cell of ဂဏန်း"), "{block}");
+    assert!(block.contains("x of ဂဏန်း"), "{block}");
     assert!(trap.to_string().ends_with(&format!("; {block}")), "{trap}");
 }
 

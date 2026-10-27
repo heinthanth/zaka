@@ -10,9 +10,14 @@ use zaka_explorer::compile::compile;
 use zaka_explorer::compile::samples::MISTAKES;
 use zaka_explorer::compile::samples::SAMPLES;
 use zaka_explorer::compile::samples::find_sample;
+use zaka_explorer::debug::BlockRow;
 use zaka_explorer::debug::BlockState;
+use zaka_explorer::debug::Lane;
+use zaka_explorer::debug::MapPart;
 use zaka_explorer::debug::RunStatus;
 use zaka_explorer::debug::Session;
+use zaka_explorer::debug::cell_width;
+use zaka_vm::machine::FrameMode;
 use zaka_vm::mem::Origin;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::do_while;
@@ -26,6 +31,12 @@ fn session_of(path: &str) -> (Compiled, Session)
 }
 
 /// The main function index and the op indices of its calls.
+/// The heap blocks of a session, without the blocks of its variables.
+fn heap_blocks(s: &Session) -> Vec<BlockRow>
+{
+    s.heap().blocks.into_iter().filter(|b| b.origin == Origin::Heap).collect()
+}
+
 fn main_calls(out: &Compiled) -> (u32, Vec<u32>)
 {
     let main = out.asm.last().expect("main");
@@ -183,7 +194,9 @@ fn globals_and_the_stack_show_their_values()
     assert_eq!(globals.len(), 1);
     assert_eq!((globals[0].name.as_str(), globals[0].kind.as_str()), ("က", "isize"));
     s.step();
-    assert_eq!(s.stack().len(), 1);
+    assert_eq!(s.stack().len(), 1, "the address of က");
+    s.step();
+    assert_eq!(s.stack().len(), 2, "then the value");
     s.step();
     assert_eq!(s.globals()[0].value, "၇");
     assert!(s.stack().is_empty());
@@ -364,7 +377,7 @@ fn a_spot_finds_its_op_after_the_folding_changes()
 }
 
 #[test]
-fn an_addressed_variable_shows_its_value_then_its_cell()
+fn each_variable_shows_its_value_and_the_block_it_lives_in()
 {
     let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။
 ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။";
@@ -375,20 +388,28 @@ fn an_addressed_variable_shows_its_value_then_its_cell()
     do_while!(!set(&s) && s.steps() < 64, s.step());
     let rows = s.globals();
     let (x, p) = (&rows[0], &rows[1]);
-    assert_eq!(x.name, "x");
-    assert_eq!(x.value, format!("၇ @{}", p.value));
+    assert_eq!((x.name.as_str(), x.value.as_str()), ("x", "၇"));
+    let home = x.home.expect("x lives in a block");
+    assert_eq!(p.value, format!("{home:#x}"));
+    assert_eq!(p.points_at, Some(home));
+    let heap = s.heap();
+    let block = heap.blocks.iter().find(|b| b.start == home).expect("its block");
+    assert_eq!(
+        (block.origin, block.owner.as_deref()),
+        (Origin::Static, Some("Global x"))
+    );
 }
 
 #[test]
 fn the_heap_lists_blocks_as_the_program_asks_for_them_and_frees_them()
 {
     let (_, mut s) = session_of("heap/growable");
-    assert!(s.heap().blocks.is_empty());
-    while s.heap().blocks.is_empty()
+    assert!(heap_blocks(&s).is_empty());
+    while heap_blocks(&s).is_empty()
     {
         s.step();
     }
-    let first = s.heap().blocks[0].clone();
+    let first = heap_blocks(&s)[0].clone();
     assert_eq!(
         (first.origin, first.state, first.len),
         (Origin::Heap, BlockState::Live, 32)
@@ -398,10 +419,10 @@ fn the_heap_lists_blocks_as_the_program_asks_for_them_and_frees_them()
     {
         s.step();
     }
-    let heap = s.heap();
-    assert_eq!(heap.blocks[0].state, BlockState::Freed);
-    assert_eq!((heap.blocks[1].state, heap.blocks[1].len), (BlockState::Live, 64));
-    assert_eq!((heap.live, heap.live_heap), (1, 64));
+    let blocks = heap_blocks(&s);
+    assert_eq!(blocks[0].state, BlockState::Freed);
+    assert_eq!((blocks[1].state, blocks[1].len), (BlockState::Live, 64));
+    assert_eq!(s.heap().live_heap, 64);
 }
 
 #[test]
@@ -411,10 +432,10 @@ fn a_finished_run_keeps_its_last_heap_until_the_next_run()
     while s.run_for(100, false)
     {}
     assert_eq!(s.status(), RunStatus::Finished);
-    let states: Vec<BlockState> = s.heap().blocks.iter().map(|b| b.state).collect();
+    let states: Vec<BlockState> = heap_blocks(&s).iter().map(|b| b.state).collect();
     assert_eq!(states, [BlockState::Freed; 3]);
     s.reset();
-    assert!(s.heap().blocks.is_empty());
+    assert!(heap_blocks(&s).is_empty());
 }
 
 #[test]
@@ -435,17 +456,49 @@ fn heap_room_never_freed_shows_as_leaked_once_the_run_finishes()
 }
 
 #[test]
-fn a_pointer_leads_into_a_cell_that_names_its_maker()
+fn a_local_lives_in_a_stack_block_that_names_it_and_its_call()
 {
     let (_, mut s) = session_of("heap/swap");
-    s.step();
+    do_while!(s.frame_blocks().len() < 2, s.step());
     let frames = s.frame_blocks();
-    let values = frames.iter().flat_map(|f| f.slots.iter().chain(&f.temps));
-    let addr = values.filter_map(|v| v.points_at).next().expect("a pointer");
+    let first = &frames[0].slots[0];
     let heap = s.heap();
-    let start = heap.block_of(addr).expect("its block");
+    let named = |addr: u64| {
+        let start = heap.block_of(addr).expect("a block");
+        let b = heap.blocks.iter().find(|b| b.start == start).unwrap();
+        (b.origin, b.owner.clone().unwrap_or_default())
+    };
+    let home = first.home.expect("a home");
+    assert_eq!(named(home), (Origin::Stack, "က of လဲလှယ်".to_string()));
+    let target = first.points_at.expect("a pointer");
+    assert_eq!(named(target), (Origin::Static, "Global ပထမ".to_string()));
+}
+
+#[test]
+fn packed_frames_put_the_locals_of_a_call_in_one_block()
+{
+    let (_, mut s) = session_of("heap/swap");
+    s.set_frames(FrameMode::Packed);
+    do_while!(s.frame_blocks().len() < 2, s.step());
+    let frames = s.frame_blocks();
+    let homes: Vec<u64> = frames[0].slots.iter().filter_map(|v| v.home).collect();
+    let heap = s.heap();
+    let blocks: Vec<Option<u64>> = homes.iter().map(|h| heap.block_of(*h)).collect();
+    assert_eq!(homes.len(), 3, "က, ခ and ယာယီ");
+    assert!(blocks.iter().all(|b| b.is_some() && *b == blocks[0]), "{blocks:?}");
+    let start = blocks[0].unwrap();
     let block = heap.blocks.iter().find(|b| b.start == start).unwrap();
-    assert_eq!((block.origin, block.maker.as_deref()), (Origin::Cell, Some("main")));
+    assert_eq!(block.owner.as_deref(), Some("Frame of လဲလှယ်"));
+    let names: Vec<&str> = block.vars.iter().map(|v| v.name.as_str()).collect();
+    assert_eq!(names, ["က", "ခ", "ယာယီ"], "the map shows each variable of the frame");
+    let rows = block.rows();
+    let owners: Vec<&str> = rows.iter().filter_map(|r| r.owner.as_deref()).collect();
+    assert_eq!(owners, ["က of လဲလှယ်", "ခ of လဲလှယ်", "ယာယီ of လဲလှယ်"]);
+    assert_eq!(rows.iter().map(|r| r.len).collect::<Vec<_>>(), [8, 8, 8]);
+    assert_eq!(rows[1].start, start + 8, "a row of its own at the variable");
+    assert_eq!(heap.row_of(homes[1]), Some(homes[1]), "a pointer finds its variable");
+    s.set_frames(FrameMode::Checked);
+    assert_eq!(s.steps(), 0, "a new form starts the run again");
 }
 
 #[test]
@@ -490,4 +543,104 @@ fn batches_add_up_their_time()
     assert!(s.run_for(5, false));
     assert!(s.run_time() > first);
     assert_eq!(s.steps(), 10);
+}
+
+#[test]
+fn the_map_shows_the_gap_after_each_variable_and_none_inside_a_packed_frame()
+{
+    let (_, mut s) = session_of("heap/swap");
+    do_while!(s.frame_blocks().len() < 2, s.step());
+    let gaps = |s: &Session| {
+        let shot = s.heap();
+        let lens = shot.parts().into_iter().filter_map(|p| match p
+        {
+            MapPart::Gap { len, .. } => Some(len),
+            MapPart::Block(_) => None,
+        });
+        lens.collect::<Vec<u64>>()
+    };
+    let checked = gaps(&s);
+    assert!(checked.contains(&24), "an 8-octet local, then 24 octets: {checked:?}");
+    s.set_frames(FrameMode::Packed);
+    do_while!(s.frame_blocks().len() < 2, s.step());
+    let blocks = s.heap().blocks.len();
+    assert_eq!(gaps(&s).len(), blocks, "a gap after each block, none within one");
+}
+
+#[test]
+fn a_trap_in_a_gap_is_found_in_the_map()
+{
+    let (_, mut s) = session_of("mistakes/past_the_end");
+    while s.run_for(10_000, false)
+    {}
+    assert_eq!(s.status(), RunStatus::Trapped);
+    let shot = s.heap();
+    let fault = shot.fault.expect("the address of the trap");
+    let found = shot.parts().into_iter().find(|p| match *p
+    {
+        MapPart::Gap { start, len } => shot.faults_in(start, len),
+        MapPart::Block(_) => false,
+    });
+    assert!(found.is_some(), "{fault:#x} lies in a gap");
+}
+
+#[test]
+fn the_map_shares_a_lane_for_static_and_heap()
+{
+    let text = "ကိန်းရှင် စာရင်း သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် လိပ်စာ ၃၀၀ ခုစာ \
+                နေရာယူ၍ လိပ်စာကို စာရင်း တွင် သိမ်းထားမည်။\nကိန်းရှင် အရွယ် သည် လက္ခဏာမဲ့ ကိန်းပြည့် \
+                ဖြစ်ပါစေ။\n၀ မှ ၂၉၉ အထိ နံပါတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအရွယ် ကို \
+                (နံပါတ် % ၈ + ၁) ကို လက္ခဏာမဲ့ ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။\nကိန်းရှင် ပ \
+                သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် အရွယ် ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် \
+                သိမ်းထားမည်။\nပ ၏ တန်ဖိုး ကို နံပါတ် ဟု ထားပါ။\nစာရင်း + နံပါတ် ၏ တန်ဖိုး ကို ပ ဟု \
+                ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n၀ မှ ၂၉၉ အထိ ၃ စီ နံပါတ် အနေဖြင့် တိုး၍ \
+                အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် စာရင်း + နံပါတ် ၏ \
+                တန်ဖိုး ဖြစ်ပါစေ။\nပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nစာရင်း + နံပါတ် ၏ တန်ဖိုး ကို ဗလာ ဟု \
+                ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\"ပြီးပါပြီ\" ဟု ပြသပါ။";
+    let out = compile(text, &Options::default());
+    let mut s = Session::new(out.ops.as_ref());
+    s.resume();
+    assert_eq!(s.status(), RunStatus::Finished);
+    let shot = s.heap();
+    let lanes = shot.lanes();
+    assert_eq!(lanes.len(), 1, "top-level variables are globals, so no stack lane");
+    let (lane, heap) = &lanes[0];
+    assert_eq!(*lane, Lane::Data);
+    let blocks = heap.iter().filter(|p| matches!(p, MapPart::Block(_))).count();
+    assert_eq!(blocks, 307, "six globals, the list and its 300 blocks");
+    let gaps = heap.len() - blocks;
+    assert_eq!(gaps, blocks, "each block has a gap after it");
+}
+
+#[test]
+fn a_cell_grows_one_step_for_each_doubling_of_its_block()
+{
+    let widths: Vec<u64> = [0, 8, 16, 24, 64, 2400, 1 << 30].map(cell_width).to_vec();
+    assert_eq!(widths, [12, 12, 24, 24, 48, 108, 120]);
+}
+
+#[test]
+fn the_stack_has_a_lane_of_its_own_after_the_static_and_heap_lane()
+{
+    let (_, mut s) = session_of("programs/gradebook");
+    do_while!(s.heap().blocks.iter().all(|b| b.origin != Origin::Heap), s.step());
+    do_while!(s.frame_blocks().len() < 2, s.step());
+    let shot = s.heap();
+    let lanes: Vec<Lane> = shot.lanes().into_iter().map(|(l, _)| l).collect();
+    assert_eq!(lanes, [Lane::Data, Lane::Stack]);
+    assert_eq!(shot.stack_cap, 1 << 20, "the stack region of a run");
+    assert!(shot.stack_used > 0, "a call in progress takes stack room");
+}
+
+#[test]
+fn each_address_is_padded_to_the_width_of_the_highest_one()
+{
+    let (_, mut s) = session_of("heap/growable");
+    assert_eq!(s.heap().addr_digits(), 4, "globals alone sit under 0x10000");
+    do_while!(heap_blocks(&s).is_empty(), s.step());
+    assert_eq!(
+        s.heap().addr_digits(),
+        6,
+        "the heap starts past the 1 MiB stack region"
+    );
 }

@@ -7,11 +7,25 @@
   flex-direction: column
   gap: 10px
 
+// The counts, with the switch that shows the gaps on the right.
 .heap-stats
-  margin: 0
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  justify-content: space-between
+  gap: 4px 12px
   font-size: 12px
   color: var(--fg-muted)
+
+.heap-counts
+  margin: 0
   font-variant-numeric: tabular-nums
+
+.gap-switch
+  display: inline-flex
+  align-items: center
+  gap: 6px
+  cursor: pointer
 
 .heap-omitted
   margin-left: 8px
@@ -45,7 +59,7 @@
 .origin-heap
   --swatch: var(--accent)
 
-.origin-cell
+.origin-stack
   --swatch: var(--ok)
 
 .origin-static
@@ -57,19 +71,54 @@
 .state-leaked
   --swatch: var(--diag-error)
 
+// The map: a lane per origin, its name on the left and its cells wrapping
+// on the right, as in a contribution graph. A long run of blocks scrolls.
 .heap-map
-  display: flex
-  gap: 2px
-  height: 22px
-  padding: 3px
+  display: grid
+  grid-template-columns: max-content 1fr
+  gap: 6px 10px
+  align-items: start
+  max-height: 260px
+  padding: 8px
   border: 1px solid var(--panel-border)
   background: var(--code-bg)
-  overflow: hidden
+  overflow-y: auto
 
-.map-bar
-  flex-basis: 0
-  min-width: 4px
+.lane-name
+  font-family: var(--ui-font)
+  font-size: 11px
+  line-height: 12px
+  color: var(--fg-muted)
+  white-space: nowrap
+
+.lane-cells
+  display: flex
+  flex-wrap: wrap
+  gap: 3px
+
+// The cells of the variables of a packed block, next to each other with no gap,
+// as nothing between them traps.
+.map-pack
+  display: inline-flex
+  flex-wrap: wrap
+  gap: 1px
+
+// A block with the seam after it, so the two wrap together; the seam keeps
+// the same space on each side.
+.map-unit
+  display: inline-flex
+  gap: 3px
+
+// Each origin sets the color of a cell; its width, set inline, grows with
+// the size of its block.
+.map-cell,
+.scale-cell
+  flex: none
+  height: 12px
+  border-radius: 2px
   background: var(--swatch)
+
+.map-cell
   cursor: pointer
   transition: opacity 120ms ease-out
 
@@ -77,14 +126,53 @@
     opacity: 0.75
 
 // A freed block keeps its place in quarantine, hatched and dim.
-.map-bar.state-freed
-  background: repeating-linear-gradient(135deg, var(--panel-border) 0 3px, transparent 3px 6px)
+.map-cell.state-freed
+  background: repeating-linear-gradient(135deg, var(--panel-border) 0 2px, transparent 2px 4px)
 
-.map-bar-open
+.map-cell-open
   box-shadow: 0 0 0 2px var(--fg)
+
+// The gap after a block, where each access traps: a hatched seam in the
+// error color.
+.map-gap
+  width: 3px
+  height: 12px
+  background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--diag-error) 70%, transparent) 0 2px, transparent 2px 4px)
+  cursor: help
+
+.legend-swatch.swatch-gap
+  background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--diag-error) 60%, transparent) 0 2px, transparent 2px 4px)
+
+// The part the run trapped in.
+.map-fault
+  outline: 2px solid var(--diag-error)
+  outline-offset: 1px
+
+.legend-swatch.swatch-fault
+  background: transparent
+  outline: 2px solid var(--diag-error)
+  outline-offset: -2px
+
+// The scale of the widths in the legend.
+.scale-cell
+  display: inline-block
+  height: 10px
+  margin: 0 1px
 
 .block-table td
   white-space: nowrap
+
+// A gap in the list: not a block to open, dim, ringed when the run
+// trapped in it.
+.block-table tbody tr.gap-row
+  cursor: default
+  color: var(--fg-muted)
+
+  &:hover
+    background: none
+
+.block-table tbody tr.gap-row-fault td
+  background: color-mix(in srgb, var(--diag-error) 14%, transparent)
 
 .state-badge
   display: inline-block
@@ -100,7 +188,8 @@
     color: var(--ok)
     background: color-mix(in srgb, var(--ok) 14%, transparent)
 
-  &.state-leaked
+  &.state-leaked,
+  &.state-traps
     color: var(--diag-error)
     background: color-mix(in srgb, var(--diag-error) 14%, transparent)
 
@@ -131,5 +220,5 @@
   white-space: normal
 
 @media (prefers-reduced-motion: reduce)
-  .map-bar
+  .map-cell
     transition: none

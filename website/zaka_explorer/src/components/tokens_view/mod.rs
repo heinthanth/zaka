@@ -42,7 +42,7 @@ const TOKEN_COLUMNS: [Column; 7] = [
     ("explorer.col.detail", "", ""),
     ("explorer.col.text", "", ""),
     ("explorer.col.particle", "", ""),
-    ("explorer.col.joined", "", "explorer.col.joined_note"),
+    ("explorer.col.joined", Table::CELL_NUM, "explorer.col.joined_note"),
     ("explorer.col.span", "", ""),
 ];
 
@@ -50,7 +50,7 @@ const TOKEN_COLUMNS: [Column; 7] = [
 const COMMENT_COLUMNS: [Column; 3] = [
     ("explorer.col.kind", "", ""),
     ("explorer.col.text", "", ""),
-    ("explorer.col.line", "", ""),
+    ("explorer.col.line", Table::CELL_NUM, ""),
 ];
 
 /// Columns of the strings table.

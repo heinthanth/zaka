@@ -38,11 +38,46 @@ A block of 4 integers has boxes 0 to 3. Box 4 is outside it:
 
 ```text
 ၀
-the program stopped: access of 8 octets at 0x1020 lands outside each live block
+the program stopped: access of 8 octets at 0x101040 lands outside each live block
 ```
 
 A new block starts out filled with zeros, so box 3 prints `၀`. Count from 0 and stop
 one before the size.
+
+## Reading past a variable
+
+Each variable has a block of its own, with a gap after it, just like the heap blocks
+above. A step past a variable lands in the gap and stops the program:
+
+```zaka-stop
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။     // points at က
+ပ + ၁ ၏ တန်ဖိုး ကို ပြသပါ။                                      // one past က
+```
+
+```text
+the program stopped: access of 8 octets at 0x1008 lands outside each live block
+```
+
+### Checked and packed variables
+
+The Zaka machine can set out variables in two forms:
+
+| Mode | Where the variables go | A step past a variable |
+| --- | --- | --- |
+| checked, the default | each in a block of its own, with a gap after it | stops the program |
+| packed | the locals of a call next to each other in one block, as C does, and the globals in one more | reads or changes the next variable |
+
+Run a program with `zakac run --frames packed`, or pick **Packed, as C** for
+**Variables** in the Explorer's settings. The program above then prints `၂`, the value
+of `ခ`, and goes on as if nothing were wrong.
+
+Packed is how C sets out variables, and how native Zaka programs will. There, a step
+past a variable changes its neighbour with no warning, and the program goes wrong far
+from the line at fault. Heap blocks keep their checks in both modes, and so does a step
+past the whole block of a call. Keep the checked mode while learning; switch to packed
+to see what the checks catch.
 
 ## Using a block after giving it back
 
@@ -58,7 +93,7 @@ address:
 ```
 
 ```text
-the program stopped: access at 0x1000 inside a freed block
+the program stopped: access at 0x101040 inside a freed block
 ```
 
 The same happens when a function returns the address of its own variable and the caller
@@ -76,7 +111,7 @@ before the program runs.
 ```
 
 ```text
-the program stopped: the block at 0x1000 was freed before
+the program stopped: the block at 0x101040 was freed before
 ```
 
 Giving back `ပ` a second time would be harmless, because the first time set it to
@@ -125,6 +160,8 @@ error[ZK0413]: isize is not a pointer and cannot be dereferenced
 
 - Introduce a new fault into each program on this page, and read the message.
 - Fix the "past the end" program so it prints all four boxes and nothing more.
+- Run the "past a variable" program with `--frames packed`. Then write `၉` through
+  `ပ + ၁` and print `ခ`. Which variable changed?
 - Write a function that asks for a block and returns its address. Is that a mistake?
   (No: a heap block lasts until it is given back. It is the function's own variables that
   end with it.)

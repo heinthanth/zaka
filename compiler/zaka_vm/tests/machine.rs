@@ -50,8 +50,10 @@ fn calls_pass_arguments_and_return_a_result()
             Slot::builder().name("b").kind(DataKind::ISIZE).build(),
         ])
         .code(vec![
-            Op::LoadLocal(0),
-            Op::LoadLocal(1),
+            Op::LocalAddr(0),
+            Op::Load(DataKind::ISIZE),
+            Op::LocalAddr(1),
+            Op::Load(DataKind::ISIZE),
             Op::Infix(InfixOp::Sub),
             Op::Ret,
         ])
@@ -73,7 +75,15 @@ fn locals_and_globals_start_at_their_defaults()
         .name("main")
         .params(0)
         .locals(vec![Slot::builder().name("x").kind(DataKind::Bool).build()])
-        .code(vec![Op::LoadLocal(0), Op::Print, Op::LoadGlobal(0), Op::Print, Op::Ret])
+        .code(vec![
+            Op::LocalAddr(0),
+            Op::Load(DataKind::Bool),
+            Op::Print,
+            Op::GlobalAddr(0),
+            Op::Load(DataKind::F64),
+            Op::Print,
+            Op::Ret,
+        ])
         .build();
     let m = Module::builder()
         .platform_bits(64)
@@ -106,8 +116,8 @@ fn malformed_ops_trap_instead_of_panicking()
 {
     let cases = [
         vec![Op::Pop, Op::Ret],
-        vec![Op::LoadLocal(3), Op::Ret],
-        vec![Op::LoadGlobal(0), Op::Ret],
+        vec![Op::LocalAddr(3), Op::Ret],
+        vec![Op::GlobalAddr(0), Op::Ret],
         vec![Op::Call(9), Op::Ret],
         vec![Op::PrintText(0), Op::Ret],
         vec![Op::Push(v("1:i32")), Op::JumpIfTrue(0), Op::Ret],

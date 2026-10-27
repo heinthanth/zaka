@@ -12,6 +12,12 @@ en = "The most ops to run before the program stops; no limit when absent."
 [vm.max_heap]
 en = "The most live heap octets before an allocation fails."
 
+[vm.frames]
+en = "Where variables sit: checked gives each its own block, so a read past one traps; packed puts the locals of a call next to each other, as C does."
+
+[vm.max_stack]
+en = "The most octets of the stack region, where the locals of each call live."
+
 [vm.leaks]
 en = "List the heap blocks left unfreed when the program ends."
 
@@ -63,6 +69,12 @@ en = "address %{addr} is not a multiple of %{align}"
 [vm.trap.bad_value]
 en = "the octets at %{addr} do not form a %{kind}"
 
+[vm.trap.static_full]
+en = "no room in the address space for a global of %{size} octets"
+
+[vm.trap.stack_full]
+en = "no stack room for %{size} more octets"
+
 [vm.trap.out_of_mem]
 en = "no heap room for %{size} octets"
 
@@ -72,5 +84,14 @@ en = "pointers into different blocks cannot be subtracted"
 [vm.trap.block]
 en = "block at %{start}, %{size} octets, %{origin}"
 
-[vm.trap.cell_of]
-en = "cell of %{func}"
+[vm.trap.stack_of]
+en = "%{name} of %{func}"
+
+[vm.trap.global]
+en = "global %{name}"
+
+[vm.trap.frame_of]
+en = "frame of %{func}"
+
+[vm.trap.globals]
+en = "globals"
