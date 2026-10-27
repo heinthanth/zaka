@@ -130,3 +130,20 @@ gp ၏ တန်ဖိုး ကို ပြသပါ။
     assert_eq!(m.output(), "၁\n");
     assert_eq!(m.mem().blocks().filter(|b| b.live).count(), 0);
 }
+
+#[test]
+fn the_peak_heap_outlasts_the_frees()
+{
+    let text = include_str!("../../../samples/heap/growable.zaka");
+    let mut m = Machine::new(common::compile(text), RunOptions::default());
+    let mut most = 0;
+    do_while!(m.state() == &State::Running, {
+        m.step();
+        most = most.max(m.mem().live_heap());
+    });
+    assert_eq!(m.state(), &State::Finished);
+    assert!(most > 0, "the list takes heap");
+    // A resize holds the old block and the new one at once, inside one op.
+    assert!(m.mem().peak_heap() >= most);
+    assert!(m.mem().peak_heap() > m.mem().live_heap(), "the frees leave the peak");
+}

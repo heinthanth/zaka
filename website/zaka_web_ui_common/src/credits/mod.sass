@@ -11,12 +11,11 @@
   overflow-y: auto
   scrollbar-width: thin
   overscroll-behavior: contain
-  border-radius: 8px
   outline: none
   mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent)
 
   &:focus-visible
-    box-shadow: inset 0 0 0 2px var(--accent-soft)
+    box-shadow: inset 0 0 0 2px var(--accent)
 
 .credits-reel
   padding: calc(var(--roll-window) / 2) 0 var(--roll-window)
@@ -76,14 +75,14 @@
 .credits-roll a
   color: var(--accent)
   text-decoration: none
-  border-radius: 4px
   outline: none
 
   &:hover
     text-decoration: underline
 
   &:focus-visible
-    box-shadow: 0 0 0 3px var(--accent-soft)
+    outline: 2px solid var(--accent)
+    outline-offset: 2px
 
 .credits-thanks
   margin: 26px 0 0

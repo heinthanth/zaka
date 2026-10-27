@@ -236,3 +236,23 @@ fn run_with_writes_as_it_goes_and_places_write_traps()
 
 /// Run `n` single steps.
 fn do_steps(m: &mut Machine, n: usize) { (0..n).for_each(|_| _ = m.step()); }
+
+#[test]
+fn the_peak_stack_outlasts_the_returns()
+{
+    let text = include_str!("../../../samples/functions/recursion.zaka");
+    let mut m = Machine::new(compile(text), RunOptions::default());
+    let slots = |m: &Machine| {
+        let locals: usize = (0..m.frames().len()).map(|i| m.locals(i).len()).sum();
+        locals + m.stack().len()
+    };
+    let mut most = slots(&m);
+    while m.state() == &State::Running
+    {
+        m.step();
+        most = most.max(slots(&m));
+    }
+    assert!(most > 0);
+    assert_eq!(m.peak_stack(), most);
+    assert!(m.peak_stack() > slots(&m), "the returns leave the peak");
+}

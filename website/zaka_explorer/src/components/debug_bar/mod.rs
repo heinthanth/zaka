@@ -23,10 +23,12 @@ use zakac_rust_sugars::tern;
 
 use crate::compile::Phase;
 use crate::compile::spans::Range;
+use crate::compile::timing::time_text;
 use crate::components::settings::compiler_modal;
 use crate::debug::RunStatus;
 use crate::debug::Session;
 use crate::debug::Speed;
+use crate::debug::octets;
 use crate::state::AppState;
 use crate::state::PanelTab;
 use crate::state::tour::TOUR;
@@ -83,7 +85,7 @@ pub fn run_bar(state: AppState) -> impl IntoView
         .attr(TOUR, "controls")
         .attr("role", "toolbar")
         .attr("aria-label", t!("explorer.run.label"))
-        .child((head, status_chip(state)));
+        .child((head, status_chip(state), run_chips(state)));
     (sheet(&SHEET), bar, compiler_modal(options))
 }
 
@@ -263,6 +265,43 @@ fn status_chip(state: AppState) -> impl IntoView
         .child(move || status().label())
 }
 
+/// The chips after the status: the ops run, the times of the compile and of
+/// the run, and the most heap and stack the run held at once.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn run_chips(state: AppState) -> impl IntoView
+{
+    let ops =
+        move || t!("explorer.run.steps", count = state.debug.with(Session::steps));
+    let compile_time = Memo::new(move |_| state.compiled.with(|c| c.times.total()));
+    let run_time = Memo::new(move |_| state.debug.with(Session::run_time));
+    let (compile_text, run_text) =
+        (move || time_text(compile_time.get()), move || time_text(run_time.get()));
+    let times = move || format!("{} / {}", compile_text(), run_text());
+    let times_note = move || {
+        t!("explorer.run.times_note", compile = compile_text(), run = run_text())
+    };
+    let usage = Memo::new(move |_| state.debug.with(Session::usage));
+    let usage_text = move || {
+        let (heap, stack) = usage.get();
+        t!("explorer.run.usage", heap = octets(heap), stack = stack)
+    };
+    (
+        span().class(ClassName::RUN_CHIP).child(ops),
+        span().class(ClassName::RUN_CHIP).title(times_note).child(times),
+        span()
+            .class(format!("{} {}", ClassName::RUN_CHIP, ClassName::RUN_CHIP_USAGE))
+            .title(t!("explorer.run.usage_note"))
+            .child(usage_text),
+    )
+}
+
 /// The class of the status chip in a status.
 ///
 /// # Arguments
@@ -343,8 +382,6 @@ fn controls(state: AppState, options: RwSignal<bool>) -> impl IntoView
         rule(),
         auto_button(state.auto_step, running),
     );
-    let count =
-        move || t!("explorer.run.steps", count = state.debug.with(Session::steps));
     nav()
         .class(ClassName::RUN_CONTROLS)
         .attr(TOUR, "controls")
@@ -358,7 +395,7 @@ fn controls(state: AppState, options: RwSignal<bool>) -> impl IntoView
             rule(),
             options_button(options),
             status_chip(state),
-            span().class(ClassName::RUN_STEPS).child(count),
+            run_chips(state),
         ))
 }
 

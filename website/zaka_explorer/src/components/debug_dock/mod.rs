@@ -17,6 +17,7 @@ use leptos_scoped_style::ComponentStyle;
 use leptos_use_storage::UseStorageOptions;
 use leptos_use_storage::use_local_storage_with_options;
 use strum::IntoStaticStr;
+use zaka_web_ui_common::icon::chevron;
 use zaka_web_ui_common::sheet;
 use zakac_i18n::t;
 use zakac_rust_sugars::ret_if;
@@ -71,6 +72,21 @@ const STACK_SHARE_STORE: &str = "zaka-explorer-dock-stack-share";
 
 /// Local storage name of the globals share of the panes under the stack.
 const GLOBALS_SHARE_STORE: &str = "zaka-explorer-dock-globals-share";
+
+/// Local storage name of whether a pane of the dock is open; the name of the
+/// pane follows it.
+const OPEN_STORE: &str = "zaka-explorer-dock-open";
+
+/// Whether a pane of the dock is open, kept in local storage, and how to
+/// open or shut it.
+#[derive(Clone, Copy)]
+struct PaneOpen
+{
+    /// Whether the pane is open.
+    open: Signal<bool>,
+    /// Opens or shuts the pane.
+    set_open: WriteSignal<bool>,
+}
 
 /// A pane of the dock; its static name is its name for the tour.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, IntoStaticStr)]
@@ -154,19 +170,24 @@ fn panes(state: AppState) -> impl IntoView
         DEFAULT_GLOBALS_SHARE,
         "explorer.dock.resize_globals",
     );
+    let (stack, globals, heap) =
+        (pane_open(Pane::Stack), pane_open(Pane::Globals), pane_open(Pane::Heap));
     let lower = stacked(
         inner,
         between,
+        (globals.open, heap.open),
         (
-            pane(Pane::Globals, globals_view(state)),
+            pane(Pane::Globals, globals, move || globals_view(state)),
             splitter(between),
-            pane(Pane::Heap, heap_view(state)),
+            pane(Pane::Heap, heap, move || heap_view(state)),
         ),
     );
+    let lower_open = Signal::derive(move || globals.open.get() || heap.open.get());
     let upper = stacked(
         outer,
         under,
-        (pane(Pane::Stack, frames_view(state)), splitter(under), lower),
+        (stack.open, lower_open),
+        (pane(Pane::Stack, stack, move || frames_view(state)), splitter(under), lower),
     );
     let regs = div()
         .class(ClassName::DOCK_REGS)
@@ -206,25 +227,52 @@ fn split_of(
         .build()
 }
 
+/// Whether a pane of the dock is open, kept in local storage; a pane starts
+/// open.
+///
+/// # Arguments
+///
+/// * `pane` - The pane.
+///
+/// # Returns
+///
+/// Whether it is open, and how to open or shut it.
+fn pane_open(pane: Pane) -> PaneOpen
+{
+    let name: &'static str = pane.into();
+    let options = UseStorageOptions::default().initial_value(true);
+    let (open, set_open, _) = use_local_storage_with_options::<bool, FromToStringCodec>(
+        format!("{OPEN_STORE}-{name}"),
+        options,
+    );
+    PaneOpen { open, set_open }
+}
+
 /// The box of two stacked panes and the splitter between them, sized after
-/// the share of the split.
+/// the share of the split. A shut pane takes the height of its title, and
+/// the open one the rest.
 ///
 /// # Arguments
 ///
 /// * `container` - Its element.
 /// * `split` - The split.
+/// * `open` - Whether the first and the second pane are open.
 /// * `children` - The panes and the splitter.
 ///
 /// # Returns
 ///
 /// The view.
 fn stacked(
-    container: NodeRef<html::Div>, split: Split, children: impl IntoView + 'static,
+    container: NodeRef<html::Div>, split: Split, open: (Signal<bool>, Signal<bool>),
+    children: impl IntoView + 'static,
 ) -> impl IntoView
 {
     let share = split.share;
+    let (first, second) = open;
     div()
         .class(ClassName::DOCK_STACK)
+        .class((ClassName::DOCK_STACK_FIRST_SHUT, move || !first.get()))
+        .class((ClassName::DOCK_STACK_SECOND_SHUT, move || !second.get()))
         .node_ref(container)
         .style(("--first-share", move || share_fr(share.get())))
         .style(("--second-share", move || share_fr(1.0 - share.get())))
@@ -236,18 +284,34 @@ fn stacked(
 /// # Arguments
 ///
 /// * `pane` - The pane.
-/// * `content` - The content.
+/// * `fold` - Whether it is open, and how to open or shut it.
+/// * `content` - Makes the content; a shut pane leaves it out, so its tables do
+///   not follow the run.
 ///
 /// # Returns
 ///
 /// The view.
-fn pane(pane: Pane, content: impl IntoView + 'static) -> impl IntoView
+fn pane<V>(
+    pane: Pane, fold: PaneOpen, content: impl Fn() -> V + Send + Sync + 'static,
+) -> impl IntoView
+where
+    V: IntoView + 'static,
 {
-    let title = h3().class(ClassName::PANE_TITLE).child(t!(pane.title().to_string()));
+    let open = fold.open;
+    let toggle = button()
+        .class(ClassName::PANE_TOGGLE)
+        .r#type("button")
+        .attr("aria-expanded", move || open.get().to_string())
+        .on(ev::click, move |_| fold.set_open.set(!open.get_untracked()))
+        .child((chevron(), span().child(t!(pane.title().to_string()))));
+    let inside = move || {
+        open.get().then(|| div().class(ClassName::PANE_CONTENT).child(content()))
+    };
     section()
         .class(ClassName::DOCK_PANE)
+        .class((ClassName::DOCK_PANE_SHUT, move || !open.get()))
         .attr(TOUR, <&'static str>::from(pane))
-        .child((title, div().class(ClassName::PANE_CONTENT).child(content)))
+        .child((h3().class(ClassName::PANE_TITLE).child(toggle), inside))
 }
 
 /// The registers: the program counter, the stack pointer and the base
@@ -337,7 +401,7 @@ fn frames_view(state: AppState) -> impl IntoView
         ));
         let groups = blocks.into_iter().enumerate();
         let rows = groups.map(|(i, b)| frame_rows(state, b, i == 0)).collect_view();
-        let head = table_head(&STORE_COLUMNS);
+        let head = table_head("stack", &STORE_COLUMNS);
         let rows = tbody().child((free, rows));
         table().class(Table::PHASE_TABLE).child((head, rows)).into_any()
     }
@@ -449,7 +513,7 @@ fn globals_view(state: AppState) -> impl IntoView
             ))
         };
         let rows = rows.into_iter().map(row).collect_view();
-        let head = table_head(&VALUE_COLUMNS);
+        let head = table_head("globals", &VALUE_COLUMNS);
         table().class(Table::PHASE_TABLE).child((head, tbody().child(rows))).into_any()
     }
 }

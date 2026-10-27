@@ -51,6 +51,7 @@ crate	url	2.5.8	MIT OR Apache-2.0	https://github.com/servo/rust-url
 crate	wasm-bindgen	0.2.128	MIT OR Apache-2.0	https://github.com/wasm-bindgen/wasm-bindgen
 crate	wasm-bindgen-futures	0.4.78	MIT OR Apache-2.0	https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/futures
 crate	web-sys	0.3.105	MIT OR Apache-2.0	https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/web-sys
+crate	web-time	1.1.0	MIT OR Apache-2.0	https://github.com/daxpedda/web-time
 crate	xxhash-rust	0.8.19	BSL-1.0	https://github.com/DoumanAsh/xxhash-rust
 npm	monaco-editor	0.57.0	MIT	https://github.com/microsoft/monaco-editor
 npm	@fontsource/inter	5.3.0	OFL-1.1	https://fontsource.org/fonts/inter

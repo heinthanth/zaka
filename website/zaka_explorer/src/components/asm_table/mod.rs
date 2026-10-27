@@ -74,12 +74,18 @@ pub fn asm_table(
 ) -> impl IntoView
 {
     let index = func.index;
+    let store = tern!(gutter.is_some(), "asm-break", "asm");
     let columns: &[Column] = tern!(gutter.is_some(), &GUTTER_COLUMNS, &OP_COLUMNS);
-    let rows =
-        func.rows.into_iter().map(|row| op_row(state, index, row, marked, gutter));
+    // The mark follows the run; a selector wakes the two rows it leaves and
+    // reaches, not each row of the table.
+    let marked = Selector::new(move || marked.get());
+    let rows = func
+        .rows
+        .into_iter()
+        .map(|row| op_row(state, index, row, marked.clone(), gutter));
     table()
         .class(format!("{} {}", Table::PHASE_TABLE, Table::ASM_TABLE))
-        .child((table_head(columns), tbody().child(rows.collect_view())))
+        .child((table_head(store, columns), tbody().child(rows.collect_view())))
 }
 
 /// One row of an asm table.
@@ -96,7 +102,7 @@ pub fn asm_table(
 ///
 /// The view.
 fn op_row(
-    state: AppState, func: u32, row: OpRow, marked: Signal<Option<u32>>,
+    state: AppState, func: u32, row: OpRow, marked: Selector<Option<u32>>,
     gutter: Option<Gutter>,
 ) -> impl IntoView
 {
@@ -111,7 +117,7 @@ fn op_row(
         cell(Table::CELL_NUM, row.line),
     );
     tr().id(op_row_id(func, pc))
-        .class((Table::ROW_PC, move || marked.get() == Some(pc)))
+        .class((Table::ROW_PC, move || marked.selected(&Some(pc))))
         .on(ev::mouseenter, move |_| state.point(range))
         .on(ev::mouseleave, move |_| state.point(None))
         .on(ev::click, move |_| do_if!(let Some(r) = range, state.select(r)))
@@ -177,5 +183,5 @@ pub fn slot_table(prefix: char, slots: Vec<SlotRow>) -> impl IntoView
     let rows = slots.into_iter().map(row).collect_view();
     table()
         .class(Table::PHASE_TABLE)
-        .child((table_head(&SLOT_COLUMNS), tbody().child(rows)))
+        .child((table_head("slots", &SLOT_COLUMNS), tbody().child(rows)))
 }

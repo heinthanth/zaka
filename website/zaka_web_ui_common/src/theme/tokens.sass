@@ -1,8 +1,8 @@
-// Color tokens of the Zaka web pages; the panels are cards on a canvas. Light
-// is the base; the settings menu picks another theme through `data-theme`
-// (dark or a Catppuccin flavour); before the page starts, and with the Auto
-// theme, the OS preference picks light or dark. The tokens sit on `html`, the
-// element the color mode marks.
+// Color tokens of the Zaka web pages; the panels are flat, square cards on a
+// canvas. Light is the base; the settings menu picks another theme through
+// `data-theme` (dark or a Catppuccin flavour); before the page starts, and
+// with the Auto theme, the OS preference picks light or dark. The tokens sit
+// on `html`, the element the color mode marks.
 
 @use "catppuccin"
 
@@ -13,7 +13,7 @@
 =light
   --canvas: #e6e9ef
   --panel: #fdfcf9
-  --panel-border: #e2ddd1
+  --panel-border: #d4ccba
   --chip: #f5efe2
   --code-bg: #faf6ec
   --field: #ffffff
@@ -23,7 +23,6 @@
   --on-accent: #ffffff
   --accent-soft: rgba(242, 169, 59, 0.18)
   --ok: #40a02b
-  --shadow: 0 1px 2px rgba(30, 30, 46, 0.05), 0 4px 16px rgba(30, 30, 46, 0.06)
   --pop-shadow: 0 2px 6px rgba(30, 30, 46, 0.08), 0 14px 36px rgba(30, 30, 46, 0.16)
   --scroll-thumb: rgba(30, 30, 46, 0.2)
   --scroll-thumb-hover: rgba(30, 30, 46, 0.36)
@@ -59,7 +58,7 @@
 =dark
   --canvas: #11111b
   --panel: #1e1e2e
-  --panel-border: #313244
+  --panel-border: #45475a
   --chip: #2a2b3d
   --code-bg: #181825
   --field: #181825
@@ -69,7 +68,6 @@
   --on-accent: #1e1e2e
   --accent-soft: rgba(247, 197, 95, 0.14)
   --ok: #a6e3a1
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.25)
   --pop-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.5)
   --scroll-thumb: rgba(239, 241, 245, 0.16)
   --scroll-thumb-hover: rgba(239, 241, 245, 0.3)
@@ -105,7 +103,6 @@ html
   --ui-font: "Space Mono", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif
   --mono-font: "Myanmar Sabae (Burmese)", "Sauce Code Pro (HTMM's Custom)", "Padauk", "Noto Sans Myanmar", ui-monospace, monospace
   --code-size: 15px
-  --radius: 12px
 
 html[data-theme="dark"]
   +dark
@@ -140,7 +137,6 @@ html[data-theme="dark"]
     background: var(--scroll-thumb)
     background-clip: padding-box
     border: 2px solid transparent
-    border-radius: 999px
 
     &:hover
       background-color: var(--scroll-thumb-hover)

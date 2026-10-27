@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use leptos::ev;
 use leptos::html::button;
 use leptos::html::div;
@@ -12,10 +14,12 @@ use web_sys::ScrollIntoViewOptions;
 use web_sys::ScrollLogicalPosition;
 use zaka_web_ui_common::sheet;
 use zakac_i18n::t;
+use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::compile::Phase;
 use crate::compile::Status;
+use crate::compile::timing::time_text;
 use crate::components::ast_view::ast_view;
 use crate::components::check_view::check_view;
 use crate::components::codegen_view::codegen_view;
@@ -23,6 +27,7 @@ use crate::components::lower_view::lower_view;
 use crate::components::run_view::ops_view;
 use crate::components::segments_view::segments_view;
 use crate::components::tokens_view::tokens_view;
+use crate::debug::Session;
 use crate::state::AppState;
 use crate::state::tour::TOUR;
 use crate::state::use_state;
@@ -72,10 +77,11 @@ pub fn pipeline() -> impl IntoView
     (sheet(&SHEET), view)
 }
 
-/// One stage of the timeline: its number, a status dot, its name and the
-/// output it shows. Stages up to the open one count as passed, so the line
-/// between them fills in; the halves of the line on both sides of the number
-/// join the lines between the stages.
+/// One stage of the timeline: its number, a status dot, the part of the
+/// compiler that runs it and the time it took; the name of the phase and the
+/// output it shows are in its tooltip. Stages up to the open one count as
+/// passed, so the line between them fills in; the halves of the line on both
+/// sides of the number join the lines between the stages.
 ///
 /// # Arguments
 ///
@@ -99,12 +105,17 @@ fn stage_button(state: AppState, phase: Phase) -> impl IntoView
     let node = span().class(ClassName::STAGE_NODE).child((phase as usize + 1, dot));
     let track = span().class(ClassName::STAGE_TRACK).child(node);
     let text = span().class(ClassName::STAGE_TEXT).child((
-        span().class(ClassName::STAGE_LABEL).child(phase.label()),
-        span().class(ClassName::STAGE_NOTE).child(phase.note()),
+        span().class(ClassName::STAGE_LABEL).child(phase.component()),
+        span().class(ClassName::STAGE_NOTE).child(move || stage_time(state, phase)),
     ));
     button()
         .id(stage_id(phase))
         .class(ClassName::STAGE)
+        .title(t!(
+            "explorer.pipeline.stage",
+            phase = phase.label(),
+            note = phase.note()
+        ))
         .class((ClassName::STAGE_OPEN, is_open))
         .class((ClassName::STAGE_PASSED, passed))
         .attr("role", "tab")
@@ -151,6 +162,42 @@ fn stage_status(state: AppState, phase: Phase) -> Status
     let status = state.compiled.with(|c| c.status(phase));
     let trapped = phase == Phase::Run && state.debug.with(|s| s.trap().is_some());
     tern!(trapped && status == Status::Clean, Status::Warned, status)
+}
+
+/// The time a phase took: the compile phases from the compile, the run from
+/// the debugger session, which adds to it as the run goes on.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `phase` - The phase of the stage.
+///
+/// # Returns
+///
+/// The time as text, or the skipped status for a phase that did not run.
+fn stage_time(state: AppState, phase: Phase) -> String
+{
+    let skipped = state.compiled.with(|c| c.status(phase)) == Status::Skipped;
+    ret_if!(skipped, Status::Skipped.label().into_owned());
+    ret_if!(phase == Phase::Run, time_text(state.debug.with(Session::run_time)));
+    let time = state.compiled.with(|c| c.times.of(phase));
+    time.map(shown_time).unwrap_or_default()
+}
+
+/// A phase time as the stage shows it. The browser clock steps in tenths of
+/// a millisecond, so a phase faster than a step reads as under one, not as
+/// none.
+///
+/// # Arguments
+///
+/// * `time` - The time.
+///
+/// # Returns
+///
+/// The text.
+fn shown_time(time: Duration) -> String
+{
+    tern!(time.is_zero(), "< 0.1 ms".to_string(), time_text(time))
 }
 
 /// Whether a stage comes up to the open one.

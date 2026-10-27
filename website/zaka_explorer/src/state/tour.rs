@@ -4,7 +4,7 @@ use crate::compile::Phase;
 use crate::state::permalink::Link;
 
 /// Path of the sample the tour walks through.
-pub const TOUR_SAMPLE: &str = "programs/gcd";
+pub const TOUR_SAMPLE: &str = "programs/gradebook";
 
 /// Space in px between the card and the part it points at, and between the
 /// card and the edges of the window.
@@ -39,9 +39,9 @@ pub struct Step
 /// the hash of a sheet.
 pub const TOUR: &str = "data-tour";
 
-/// The steps of the tour, in order: the page and the run, the debug mode
-/// switch, each phase, then the debugger with its panes while it steps on a
-/// timer.
+/// The steps of the tour, in order: the page, the run and the compiler
+/// options, the debug mode switch, each phase, then the debugger with its
+/// panes while it steps on a timer.
 ///
 /// # Returns
 ///
@@ -78,6 +78,11 @@ pub fn steps() -> Vec<Step>
             .title("explorer.tour.output")
             .text("explorer.tour.output_text")
             .target("[data-tour=stage]")
+            .build(),
+        Step::builder()
+            .title("explorer.tour.options")
+            .text("explorer.tour.options_text")
+            .target("[data-tour=options]")
             .build(),
         Step::builder()
             .title("explorer.tour.debug")

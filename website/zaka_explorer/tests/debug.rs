@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use zaka_explorer::compile::Compiled;
 use zaka_explorer::compile::Options;
 use zaka_explorer::compile::asm::find_spot;
@@ -460,4 +462,32 @@ fn each_mistake_traps_or_leaks()
         let trapped = s.status() == RunStatus::Trapped;
         assert!(trapped != leaked, "{}: {:?}", sample.path(), s.status());
     }
+}
+
+#[test]
+fn a_finished_run_keeps_its_time_and_usage_until_a_reset()
+{
+    let (_, mut s) = session_of("heap/growable");
+    assert_eq!(s.run_time(), Duration::ZERO);
+    s.resume();
+    assert_eq!(s.status(), RunStatus::Finished);
+    let (heap, stack) = s.usage();
+    assert!(heap > 0, "the list takes heap");
+    assert!(stack > 0);
+    assert!(s.run_time() > Duration::ZERO);
+    s.reset();
+    assert_eq!(s.run_time(), Duration::ZERO);
+    assert_eq!(s.usage().0, 0);
+}
+
+#[test]
+fn batches_add_up_their_time()
+{
+    let (_, mut s) = session_of("heap/growable");
+    assert!(s.run_for(5, false));
+    let first = s.run_time();
+    assert!(first > Duration::ZERO);
+    assert!(s.run_for(5, false));
+    assert!(s.run_time() > first);
+    assert_eq!(s.steps(), 10);
 }

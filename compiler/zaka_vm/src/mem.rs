@@ -125,6 +125,9 @@ pub struct Mem
     /// The live heap octets.
     #[builder(default)]
     live_heap: u64,
+    /// The most live heap octets at once so far.
+    #[builder(default)]
+    peak_heap: u64,
     /// Each block, live or freed, at its start.
     #[builder(default)]
     table: BTreeMap<u64, Block>,
@@ -207,6 +210,7 @@ impl Mem
             .build();
         self.table.insert(start, block);
         do_if!(heap, self.live_heap += size);
+        self.peak_heap = self.peak_heap.max(self.live_heap);
         Some(start)
     }
 
@@ -374,6 +378,13 @@ impl Mem
     ///
     /// The sum of the lengths of the live heap blocks.
     pub fn live_heap(&self) -> u64 { self.live_heap }
+
+    /// The most live heap octets at once so far; frees leave it.
+    ///
+    /// # Returns
+    ///
+    /// The octets.
+    pub fn peak_heap(&self) -> u64 { self.peak_heap }
 
     /// Place a new block above each block made so far.
     ///

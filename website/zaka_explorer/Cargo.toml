@@ -37,6 +37,7 @@ sys-locale = { workspace = true, features = ["js"] }
 turf = { workspace = true }
 wasm-bindgen = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
+web-time = { workspace = true }
 zakac_ast = { workspace = true }
 zakac_burmese_segmenter = { workspace = true }
 zakac_codegen = { workspace = true }

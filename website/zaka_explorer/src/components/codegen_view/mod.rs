@@ -109,7 +109,7 @@ fn texts_view(state: AppState) -> impl IntoView
                 h3().class(Table::TABLE_TITLE).child(t!("explorer.codegen.texts"));
             let view = table()
                 .class(Table::PHASE_TABLE)
-                .child((table_head(&TEXT_COLUMNS), tbody().child(rows)));
+                .child((table_head("texts", &TEXT_COLUMNS), tbody().child(rows)));
             (title, table_box(view))
         })
     }

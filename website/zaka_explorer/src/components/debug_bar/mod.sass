@@ -6,8 +6,6 @@
   padding: 6px 10px
   background: var(--panel)
   border: 1px solid var(--panel-border)
-  border-radius: var(--radius)
-  box-shadow: var(--shadow)
 
 .run-controls
   display: flex
@@ -44,7 +42,6 @@
 .run-status
   margin-left: auto
   padding: 3px 10px
-  border-radius: 999px
   border: 1px solid var(--panel-border)
   background: var(--panel)
   font-size: 12px
@@ -89,8 +86,18 @@
   .run-options-name
     display: none
 
-.run-steps
+// The chips after the status: the ops run, the compile and run times, and
+// the peaks of the run; boxes as the status is, in the muted ink.
+.run-chip
+  padding: 3px 10px
+  border: 1px solid var(--panel-border)
+  background: var(--panel)
   font-size: 12px
   color: var(--fg-muted)
   font-variant-numeric: tabular-nums
   white-space: nowrap
+
+// A narrow bar keeps the ops and the times, not the peaks.
+@media (max-width: 900px)
+  .run-chip-usage
+    display: none

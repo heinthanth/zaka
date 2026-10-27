@@ -224,6 +224,10 @@ pub struct Machine
     /// The number of ops run.
     #[builder(default)]
     steps: u64,
+    /// The most stack slots in use at once so far: the locals of the calls
+    /// and the operand stack.
+    #[builder(default)]
+    peak_stack: usize,
     /// The function and op index of the op that ran last.
     at: (u32, u32),
     /// What print ops wrote and no one took.
@@ -313,7 +317,15 @@ impl Machine
             .globals(globals).at((main, 0)).mem(mem).build();
         let entered = machine.enter(main);
         do_if!(let Err(kind) = entered, machine.state = State::Trapped(machine.trap(kind)));
+        machine.raise_peak();
         machine
+    }
+
+    /// Raise the peak of the stack to the slots in use now.
+    fn raise_peak(&mut self)
+    {
+        let slots = self.store.len() + self.stack.len();
+        self.peak_stack = self.peak_stack.max(slots);
     }
 
     /// Run one op. Once the run is finished or trapped, this does nothing.
@@ -331,6 +343,7 @@ impl Machine
             Ok(()) if self.frames.is_empty() => State::Finished,
             Ok(()) => State::Running,
         };
+        self.raise_peak();
         &self.state
     }
 
@@ -482,6 +495,14 @@ impl Machine
     ///
     /// The count.
     pub fn steps(&self) -> u64 { self.steps }
+
+    /// The most stack slots in use at once so far: the locals of the calls
+    /// and the operand stack; returns leave it.
+    ///
+    /// # Returns
+    ///
+    /// The slots.
+    pub fn peak_stack(&self) -> usize { self.peak_stack }
 
     /// The heap, the cells and the static data.
     ///

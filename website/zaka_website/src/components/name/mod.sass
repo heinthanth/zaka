@@ -96,13 +96,15 @@
   color: var(--fg-muted)
 
 // The text grows with the window, as the photograph does. Under the
-// photograph it has the room to take three quarters of the width.
+// photograph it has the room to take close to the whole width, so its last
+// word does not sit alone on a line.
 .name-text
-  grid-column: 1 / 10
+  grid-column: 1 / 12
   grid-row: 3
   align-self: start
   margin-top: 56px
-  max-width: 64ch
+  max-width: 72ch
+  text-wrap: pretty
   font-size: clamp(20px, 2.2vw, 30px)
   line-height: 1.5
 

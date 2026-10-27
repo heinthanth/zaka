@@ -47,7 +47,7 @@ pub fn segments_view() -> impl IntoView
     };
     let grid = table()
         .class(Table::PHASE_TABLE)
-        .child((table_head(&COLUMNS), tbody().child(rows)));
+        .child((table_head("segments", &COLUMNS), tbody().child(rows)));
     (sheet(&SHEET), div().child(table_box(grid)))
 }
 

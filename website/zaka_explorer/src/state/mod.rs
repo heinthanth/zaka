@@ -14,6 +14,7 @@ use zaka_web_ui_common::look::provide_look;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+pub mod columns;
 pub mod permalink;
 pub mod settings;
 pub mod split;

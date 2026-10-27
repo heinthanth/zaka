@@ -8,6 +8,7 @@ use strum::IntoStaticStr;
 use zaka_vm::trap::Trap;
 pub use zaka_web_ui_common::paint::token_class;
 use zakac_ast::s_expr::ToSexpr;
+use zakac_burmese_segmenter::segmenter::PreLexicalToken;
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
 use zakac_codegen::bc;
@@ -49,6 +50,7 @@ pub mod ir_tree;
 pub mod s_expr;
 pub mod samples;
 pub mod spans;
+pub mod timing;
 pub mod tree;
 
 use crate::compile::asm::AsmFunc;
@@ -60,6 +62,8 @@ use crate::compile::spans::OffsetTable;
 use crate::compile::spans::Range;
 use crate::compile::spans::find_in;
 use crate::compile::spans::to_original;
+use crate::compile::timing::PhaseTimes;
+use crate::compile::timing::timed;
 use crate::compile::tree::TreeNode;
 use crate::compile::tree::build_tree;
 
@@ -142,6 +146,26 @@ impl Phase
             Phase::Lower => t!("explorer.phase.lower"),
             Phase::Codegen => t!("explorer.phase.codegen"),
             Phase::Run => t!("explorer.phase.run"),
+        }
+    }
+
+    /// The part of the compiler that runs the phase, as the pipeline names
+    /// its stage.
+    ///
+    /// # Returns
+    ///
+    /// The name.
+    pub fn component(self) -> Cow<'static, str>
+    {
+        match self
+        {
+            Phase::Segment => t!("explorer.phase.segment_component"),
+            Phase::Lex => t!("explorer.phase.lex_component"),
+            Phase::Parse => t!("explorer.phase.parse_component"),
+            Phase::Check => t!("explorer.phase.check_component"),
+            Phase::Lower => t!("explorer.phase.lower_component"),
+            Phase::Codegen => t!("explorer.phase.codegen_component"),
+            Phase::Run => t!("explorer.phase.run_component"),
         }
     }
 
@@ -361,6 +385,9 @@ pub struct Compiled
     /// Whether code generation ran; it is left out after errors in earlier
     /// phases, folding included.
     pub emitted: bool,
+    /// How long each phase took.
+    #[builder(default)]
+    pub times: PhaseTimes,
 }
 
 /// Which tree a view shows.
@@ -575,21 +602,20 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     let file = sm.new_source_file(name, source.to_string());
     let unit = Unit::builder().sm(&sm).file(&file).original(source).build();
 
-    let lexed = lex(&file, &LexerOptions::default());
-    let parsed = parse(&file, &lexed);
+    let segment_options =
+        SegmenterOptions::builder().coalesce_non_burmese_chars(false).build();
+    let (segments, segment_time) =
+        timed(|| segment_at(&file.src, file.start_pos, &segment_options));
+    let (lexed, lex_time) = timed(|| lex(&file, &LexerOptions::default()));
+    let (parsed, parse_time) = timed(|| parse(&file, &lexed));
     let checked = !has_errors(&lexed.diagnostics) && !has_errors(&parsed.diagnostics);
-    let check_options =
-        SemcheckOptions::builder().platform_bits(options.platform_bits).build();
-    let idiom = NaturalnessOptions::default();
-    let mut idiom = tern!(checked, check(&parsed.program, &idiom), Vec::new());
-    let out = tern!(
-        checked,
-        semcheck(&parsed.program, &check_options),
-        SemcheckOutput::default()
-    );
+    let ((mut idiom, out), check_time) = timed(|| {
+        tern!(checked, check_program(&parsed.program, options), Default::default())
+    });
     idiom.extend(out.diagnostics.iter().cloned());
     let lowered = checked && !has_errors(&idiom);
-    let ir = lowered.then(|| lower_and_fold(&parsed.program, &out, options));
+    let (ir, lower_time) =
+        timed(|| lowered.then(|| lower_and_fold(&parsed.program, &out, options)));
     let (plain, folded, fold_diags) = ir.unwrap_or_default();
     let tagged = [
         (Phase::Lex, &lexed.diagnostics),
@@ -607,8 +633,17 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .flat_map(|(phase, diags)| diags.iter().map(|d| diag_row(&unit, *phase, d)))
         .collect();
     let emitted = lowered && !has_errors(&fold_diags);
-    let ops =
-        folded.as_ref().filter(|_| emitted).map(|m| emit(m, options.platform_bits));
+    let (ops, codegen_time) = timed(|| {
+        folded.as_ref().filter(|_| emitted).map(|m| emit(m, options.platform_bits))
+    });
+    let times = PhaseTimes::builder()
+        .segment(segment_time)
+        .lex(lex_time)
+        .parse(parse_time)
+        .maybe_check(checked.then_some(check_time))
+        .maybe_lower(lowered.then_some(lower_time))
+        .maybe_codegen(emitted.then_some(codegen_time))
+        .build();
     let asm = ops.as_ref().map(|m| asm_rows(&unit, m)).unwrap_or_default();
     let globals = ops.as_ref().map(|m| slot_rows(&m.globals)).unwrap_or_default();
     let texts = ops.as_ref().map(|m| m.texts.clone()).unwrap_or_default();
@@ -616,7 +651,7 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     Compiled::builder()
         .source(source.to_string())
         .table(OffsetTable::new(source))
-        .segments(segment_rows(&unit))
+        .segments(segment_rows(&unit, &segments))
         .tokens(token_rows(&unit, &lexed.tokens))
         .comments(comment_rows(&unit, &lexed))
         .strings(string_rows(&unit, &lexed))
@@ -634,7 +669,28 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .globals(globals)
         .texts(texts)
         .emitted(emitted)
+        .times(times)
         .build()
+}
+
+/// Run the naturalness and the semantic checks over a parsed program.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+/// * `options` - The options.
+///
+/// # Returns
+///
+/// The naturalness diagnostics, and the semantic check output.
+fn check_program(
+    program: &zakac_ast::stmt::Program, options: &Options,
+) -> (Vec<Diagnostic>, SemcheckOutput)
+{
+    let check_options =
+        SemcheckOptions::builder().platform_bits(options.platform_bits).build();
+    let idiom = check(program, &NaturalnessOptions::default());
+    (idiom, semcheck(program, &check_options))
 }
 
 /// The op budget of a run in the explorer, so a loop that never ends does
@@ -686,15 +742,14 @@ fn lower_and_fold(
 /// # Arguments
 ///
 /// * `unit` - The compile unit.
+/// * `segments` - The segments.
 ///
 /// # Returns
 ///
 /// The rows.
-fn segment_rows(unit: &Unit) -> Vec<SegmentRow>
+fn segment_rows(unit: &Unit, segments: &[PreLexicalToken]) -> Vec<SegmentRow>
 {
-    let options = SegmenterOptions::builder().coalesce_non_burmese_chars(false).build();
-    let segments = segment_at(&unit.file.src, unit.file.start_pos, &options);
-    let row = |seg: &zakac_burmese_segmenter::segmenter::PreLexicalToken| {
+    let row = |seg: &PreLexicalToken| {
         let (line, col) = unit.line_col(&seg.span);
         SegmentRow::builder()
             .kind(seg.kind.into())

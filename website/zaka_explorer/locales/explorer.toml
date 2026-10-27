@@ -160,33 +160,49 @@ en = "Show the panel"
 en = "Compiler pipeline"
 [explorer.pipeline.status]
 en = "%{phase}: %{status}"
+[explorer.pipeline.stage]
+en = "%{phase}: %{note}"
 
 [explorer.phase.segment]
 en = "Segment"
+[explorer.phase.segment_component]
+en = "Segmenter"
 [explorer.phase.segment_note]
 en = "segments"
 [explorer.phase.lex]
 en = "Lex"
+[explorer.phase.lex_component]
+en = "Lexer"
 [explorer.phase.lex_note]
 en = "tokens"
 [explorer.phase.parse]
 en = "Parse"
+[explorer.phase.parse_component]
+en = "Parser"
 [explorer.phase.parse_note]
 en = "AST"
 [explorer.phase.check]
 en = "Check"
+[explorer.phase.check_component]
+en = "Sem checker"
 [explorer.phase.check_note]
 en = "kinds"
 [explorer.phase.lower]
 en = "Lower"
+[explorer.phase.lower_component]
+en = "IR builder"
 [explorer.phase.lower_note]
 en = "IR"
 [explorer.phase.codegen]
+en = "Codegen"
+[explorer.phase.codegen_component]
 en = "Codegen"
 [explorer.phase.codegen_note]
 en = "ops"
 [explorer.phase.run]
 en = "Run"
+[explorer.phase.run_component]
+en = "VM"
 [explorer.phase.run_note]
 en = "VM"
 
@@ -201,6 +217,10 @@ en = "skipped"
 
 # ---------------------------------------------------------------- phase views
 
+[explorer.col.pick]
+en = "Right-click the head row to show or hide columns"
+[explorer.col.reset_widths]
+en = "Reset column widths"
 [explorer.col.index]
 en = "#"
 [explorer.col.kind]
@@ -348,7 +368,13 @@ en = "Finished"
 [explorer.run.status_trapped]
 en = "Trapped"
 [explorer.run.steps]
-en = "%{count} ops run"
+en = "%{count} ops"
+[explorer.run.times_note]
+en = "Compile time %{compile}, run time %{run}"
+[explorer.run.usage]
+en = "heap %{heap} · stack %{stack}"
+[explorer.run.usage_note]
+en = "The most heap the run held at once, and the most stack slots"
 [explorer.run.registers]
 en = "Registers"
 [explorer.run.pc_note]
@@ -449,11 +475,11 @@ en = "Step %{at} of %{total}"
 [explorer.tour.welcome]
 en = "Welcome to Zaka Explorer"
 [explorer.tour.welcome_text]
-en = "Zaka Explorer shows how the Zaka compiler turns Burmese source into a running program. This short tour walks through each part of the page with a sample that finds the GCD and LCM of number pairs. Skip it at will; the code from before comes back."
+en = "Zaka Explorer shows how the Zaka compiler turns Burmese source into a running program. This short tour walks through each part of the page with a sample that builds a list of exam scores on the heap, sorts it and reports on it. Skip it at will; the code from before comes back."
 [explorer.tour.samples]
 en = "Samples"
 [explorer.tour.samples_text]
-en = "Pick a program here to load it into the editor. The tour has loaded programs/gcd for now."
+en = "Pick a program here to load it into the editor. The tour has loaded programs/gradebook for now."
 [explorer.tour.editor]
 en = "Editor"
 [explorer.tour.editor_text]
@@ -461,11 +487,11 @@ en = "Write Zaka code here. After each edit the program compiles and runs again,
 [explorer.tour.pipeline]
 en = "The pipeline"
 [explorer.tour.pipeline_text]
-en = "Seven phases turn the source into a running program. Click a phase, or press the left and right arrows, to open its view. Its dot tells whether it passed, warned, failed or was skipped. Hover a token in the editor, or move the caret onto it, to light it up in the views."
+en = "Seven phases turn the source into a running program. Each stage names the part of the compiler that runs it, and the time it took. Click a phase, or press the left and right arrows, to open its view. Its dot tells whether it passed, warned, failed or was skipped. Hover a token in the editor, or move the caret onto it, to light it up in the views."
 [explorer.tour.segment]
 en = "1 · Segment"
 [explorer.tour.segment_text]
-en = "Burmese text puts no spaces between words, so the first phase cuts the source into segments: Burmese words, numbers, marks and the rest, each with its kind and its span in the source."
+en = "Burmese text puts no spaces between words, so the first phase cuts the source into segments: Burmese words, numbers, marks and the rest, each with its kind and its span in the source. A right-click on the head row of a table shows or hides its columns, and each table keeps the choice."
 [explorer.tour.lex]
 en = "2 · Lex"
 [explorer.tour.lex_text]
@@ -533,7 +559,7 @@ en = "The number of ops the timer runs each second, from 1 to 100."
 [explorer.tour.status]
 en = "Status"
 [explorer.tour.status_text]
-en = "Where the run stands: at the start, running, paused, stopped, finished or trapped. The count beside it is the number of ops run so far."
+en = "Where the run stands: at the start, running, paused, stopped, finished or trapped. The chips beside it give the ops run so far, the compile time over the run time, and the most heap and stack the run held at once."
 [explorer.tour.ops]
 en = "Ops"
 [explorer.tour.ops_text]
@@ -554,6 +580,10 @@ en = "In debug mode the output and the problems share the panel under the stage.
 en = "Run"
 [explorer.tour.output_text]
 en = "The run button starts the program and stop halts it; what it prints shows up here. To run it each time the code compiles, turn on Auto run in the settings. If the run stops on an error, the trap shows under the output; problems in the code open a panel below."
+[explorer.tour.options]
+en = "Compiler options"
+[explorer.tour.options_text]
+en = "This button opens the compiler options: the platform bits, the foldings of constant operations, names and branches in the IR, and the heap limit of a run. A change takes effect at once, so the Lower and Codegen views show what each folding does. The settings hold the same options."
 [explorer.tour.settings]
 en = "Settings and more"
 [explorer.tour.settings_text]

@@ -322,7 +322,7 @@ fn block_list(shot: Memo<HeapShot>, open: RwSignal<Option<u64>>) -> impl IntoVie
     };
     table()
         .class(format!("{} {}", Table::PHASE_TABLE, ClassName::BLOCK_TABLE))
-        .child((table_head(&BLOCK_COLUMNS), tbody().child(rows)))
+        .child((table_head("heap-blocks", &BLOCK_COLUMNS), tbody().child(rows)))
 }
 
 /// The row of a block, and its dump when it is open.

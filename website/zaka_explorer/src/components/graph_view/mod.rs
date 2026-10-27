@@ -359,8 +359,7 @@ fn node_view(state: AppState, node: GraphNode) -> impl IntoView
         .attr("x", node.x)
         .attr("y", node.y)
         .attr("width", node.width)
-        .attr("height", NODE_HEIGHT)
-        .attr("rx", 7);
+        .attr("height", NODE_HEIGHT);
     g().attr("class", ClassName::GRAPH_NODE)
         .on(ev::mouseenter, move |_| state.point(Some(range)))
         .on(ev::mouseleave, move |_| state.point(None))

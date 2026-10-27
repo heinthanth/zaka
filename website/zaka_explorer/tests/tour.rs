@@ -47,6 +47,16 @@ fn debug_mode_turns_on_after_the_step_on_its_switch()
 }
 
 #[test]
+fn the_compiler_options_come_before_debug_mode()
+{
+    let all = steps();
+    let at = |target| all.iter().position(|s| s.target == Some(target)).unwrap();
+    let options = at("[data-tour=options]");
+    assert!(options < at("[data-tour=debug]"));
+    assert!(!all[options].debug);
+}
+
+#[test]
 fn each_debugger_control_has_a_step_in_bar_order()
 {
     let controls = [

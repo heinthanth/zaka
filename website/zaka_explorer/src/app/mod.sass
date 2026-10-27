@@ -1,8 +1,8 @@
 // The page shell: the toolbar on top, in debug mode the debugger bar, then
-// the panels as cards on the canvas. The editor and the right column split
-// the width; the stage row and the bottom panel split the column; in debug
-// mode the stage view and the dock split the stage row. The gaps between
-// the cards hold the splitters.
+// the panels as flat, square cards on the canvas, as on the website. The
+// editor and the right column split the width; the stage row and the bottom
+// panel split the column; in debug mode the stage view and the dock split the
+// stage row. The gaps between the cards hold the splitters.
 
 .app-shell
   display: flex
@@ -79,7 +79,6 @@
     min-height: 0
     overflow: hidden
     border: 1px solid var(--panel-border)
-    border-radius: var(--radius)
     background: var(--panel)
 
     // A veil of the panel color, heavier at the left, so the flowers
@@ -128,7 +127,6 @@
   margin: 0
   padding: 3px 10px
   font-size: 12px
-  border-radius: 999px
   background: color-mix(in srgb, var(--panel) 80%, transparent)
 
   a
@@ -180,8 +178,6 @@
   overflow: hidden
   background: var(--panel)
   border: 1px solid var(--panel-border)
-  border-radius: var(--radius)
-  box-shadow: var(--shadow)
 
 // The run alone, outside debug mode, with the padding the stage pane of the
 // pipeline gives it in debug mode.

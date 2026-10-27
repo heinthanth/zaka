@@ -69,6 +69,8 @@ pub const SAMPLES: &[Sample] = &[
     sample!("heap", "walk"),
     sample!("heap", "growable"),
     sample!("heap", "record"),
+    sample!("heap", "pascal"),
+    sample!("programs", "gradebook"),
     sample!("programs", "fizzbuzz"),
     sample!("programs", "gcd"),
     sample!("programs", "primes"),

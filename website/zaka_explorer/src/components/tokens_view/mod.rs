@@ -77,7 +77,7 @@ pub fn tokens_view() -> impl IntoView
     };
     let tokens = table()
         .class(Table::PHASE_TABLE)
-        .child((table_head(&TOKEN_COLUMNS), tbody().child(rows)));
+        .child((table_head("tokens", &TOKEN_COLUMNS), tbody().child(rows)));
     let view = div().class(ClassName::TOKENS_VIEW).child((
         table_box(tokens),
         comments_table(state),
@@ -162,7 +162,7 @@ fn comments_table(state: AppState) -> impl IntoView
             let listing = tbody().child(rows.collect_view());
             let view = table()
                 .class(Table::PHASE_TABLE)
-                .child((table_head(&COMMENT_COLUMNS), listing));
+                .child((table_head("comments", &COMMENT_COLUMNS), listing));
             some.then(|| {
                 (
                     h3().class(Table::TABLE_TITLE)
@@ -212,7 +212,7 @@ fn strings_table(state: AppState) -> impl IntoView
             let listing = tbody().child(rows.collect_view());
             let view = table()
                 .class(Table::PHASE_TABLE)
-                .child((table_head(&STRING_COLUMNS), listing));
+                .child((table_head("strings", &STRING_COLUMNS), listing));
             some.then(|| {
                 (
                     h3().class(Table::TABLE_TITLE).child(t!("explorer.tokens.strings")),

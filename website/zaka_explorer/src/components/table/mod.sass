@@ -63,6 +63,97 @@
     &.row-active td:first-child
       box-shadow: inset 3px 0 0 var(--accent)
 
+// A column the picker hides: its head and its cells, in each row that does
+// not span columns.
+@for $n from 1 through 12
+  .phase-table:has(> thead[data-hide~="#{$n}"]) > * > tr:not(:has(> td[colspan])) > :nth-child(#{$n})
+    display: none
+
+// The column list sits in a cell of no width at the end of the head row;
+// no hidden column takes it along, and the rows under it leave the cell out.
+.phase-table th.col-pick
+  width: 0
+  padding: 0
+
+// Once an edge is dragged, the widths of the head hold, scaled to fill the
+// box, and a cell wraps or cuts what does not fit.
+.phase-table:has(> thead[data-sized])
+  table-layout: fixed
+
+  th,
+  td
+    overflow: hidden
+    overflow-wrap: anywhere
+
+  // A narrow head cuts its label short, not across its letters.
+  th
+    white-space: nowrap
+    text-overflow: ellipsis
+
+// The grip on the right edge of a column head; a line shows on hover and
+// while it drags.
+.col-grip
+  position: absolute
+  top: 0
+  right: -4px
+  bottom: 0
+  z-index: 1
+  width: 8px
+  cursor: col-resize
+  touch-action: none
+
+  &::after
+    content: ""
+    position: absolute
+    top: 20%
+    bottom: 20%
+    left: 3px
+    width: 2px
+    background: transparent
+    transition: background-color 120ms ease-out
+
+  &:hover::after,
+  &.col-grip-on::after
+    background: var(--accent)
+
+// The last shown column has no edge to its right to drag.
+.col-grip-off
+  display: none
+
+// The rule over the reset of the widths in the column list.
+.col-rule
+  margin: 4px -4px
+  border-top: 1px solid var(--panel-border)
+
+// The list sits in the head cell, so it sets the text back from the look of
+// the column heads.
+.col-list
+  min-width: 180px
+  font-family: var(--ui-font)
+  font-size: 13px
+  font-weight: 400
+  letter-spacing: normal
+  text-transform: none
+  text-align: left
+  color: var(--fg)
+
+.col-choice
+  width: 100%
+  font: inherit
+  color: inherit
+  text-align: left
+  background: none
+  border: 0
+  outline: none
+
+  &:hover:not(:disabled),
+  &:focus-visible
+    background: var(--accent-soft)
+
+  &:disabled
+    cursor: default
+    opacity: 0.5
+
 // Number columns line up on the right, head included.
 .cell-num,
 .phase-table th.cell-num
@@ -107,7 +198,6 @@
   width: 52px
   height: 52px
   margin-bottom: 6px
-  border-radius: 50%
   color: var(--diag-warning)
   background: color-mix(in srgb, var(--diag-warning) 14%, transparent)
 
@@ -135,6 +225,12 @@
   .cell-op
     white-space: nowrap
 
+  // The row of the op the run is at moves at the pace of the run; a fade
+  // would trail the rule on its left edge, so the rows of an asm table
+  // change at once.
+  tbody tr
+    transition: none
+
   tbody tr.row-pc
     background: color-mix(in srgb, var(--diag-warning) 22%, transparent)
 
@@ -151,7 +247,6 @@
   width: 12px
   height: 12px
   padding: 0
-  border-radius: 50%
   border: 1px solid transparent
   background: transparent
   cursor: pointer
@@ -162,7 +257,8 @@
     border-color: color-mix(in srgb, var(--diag-error) 60%, transparent)
 
   &:focus-visible
-    box-shadow: 0 0 0 3px var(--accent-soft)
+    outline: 2px solid var(--accent)
+    outline-offset: 2px
 
 .break-on
   background: var(--diag-error)

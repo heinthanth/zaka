@@ -1,10 +1,12 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
+use std::time::Duration;
 
 use bon::Builder;
 use strum::EnumIter;
 use strum::EnumString;
 use strum::IntoStaticStr;
+use web_time::Instant;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::State;
@@ -378,6 +380,15 @@ pub struct Session
     /// The cap on live heap octets of each run.
     #[builder(default = MAX_HEAP)]
     max_heap: u64,
+    /// How long the run has taken so far.
+    #[builder(default)]
+    spent: Duration,
+    /// How long the ended run took.
+    #[builder(default)]
+    kept_spent: Duration,
+    /// The peak heap octets and stack slots of the ended run.
+    #[builder(default)]
+    kept_usage: (u64, usize),
 }
 
 impl Default for Session
@@ -651,6 +662,9 @@ impl Session
         self.kept.clear();
         self.kept_steps = 0;
         self.kept_heap = HeapShot::default();
+        self.spent = Duration::ZERO;
+        self.kept_spent = Duration::ZERO;
+        self.kept_usage = (0, 0);
     }
 
     /// End a run that has started and not ended, and go back to the first
@@ -670,6 +684,7 @@ impl Session
     fn rewind(&mut self, how: RunStatus)
     {
         let (kept, steps) = (self.output(), self.steps());
+        let (spent, usage) = (self.run_time(), self.usage());
         let finished = how == RunStatus::Finished;
         let heap = self.machine.as_ref().map(|m| heap_shot(m, finished));
         self.reset();
@@ -677,22 +692,24 @@ impl Session
         self.kept = kept;
         self.kept_steps = steps;
         self.kept_heap = heap.unwrap_or_default();
+        self.kept_spent = spent;
+        self.kept_usage = usage;
     }
 
     /// Run one op.
-    pub fn step(&mut self) { self.drive(|m| _ = m.step()); }
+    pub fn step(&mut self) { self.clocked(|s| s.drive(|m| _ = m.step())) }
 
     /// Run one op; a call runs to its return.
-    pub fn step_over(&mut self) { self.drive(|m| _ = m.step_over()); }
+    pub fn step_over(&mut self) { self.clocked(|s| s.drive(|m| _ = m.step_over())) }
 
     /// Run until the innermost call returns.
-    pub fn step_out(&mut self) { self.drive(|m| _ = m.step_out()); }
+    pub fn step_out(&mut self) { self.clocked(|s| s.drive(|m| _ = m.step_out())) }
 
     /// Run until a break point, the end, a trap or the op budget.
     pub fn resume(&mut self)
     {
         let stops: Vec<(u32, u32)> = self.all_breaks().collect();
-        self.drive(|m| _ = m.run_until(&stops));
+        self.clocked(|s| s.drive(|m| _ = m.run_until(&stops)));
     }
 
     /// Run one op for the timed stepping.
@@ -701,7 +718,12 @@ impl Session
     ///
     /// Whether the stepping goes on: the run has not ended and the next op
     /// is not a break point.
-    pub fn tick(&mut self) -> bool { self.advance(true) }
+    pub fn tick(&mut self) -> bool
+    {
+        let mut going = false;
+        self.clocked(|s| going = s.advance(true));
+        going
+    }
 
     /// Run a batch of ops, so a long run can go on over a number of frames and
     /// stop between them.
@@ -717,7 +739,24 @@ impl Session
     /// next op is not a break point.
     pub fn run_for(&mut self, count: u32, breaks: bool) -> bool
     {
-        (0..count).all(|_| self.advance(breaks))
+        let mut going = false;
+        self.clocked(|s| going = (0..count).all(|_| s.advance(breaks)));
+        going
+    }
+
+    /// Run a command and add the time it took to the run, or to the ended
+    /// run when the command ended it. The clock wraps whole commands and
+    /// batches, not each op, so a fast run does not lose speed to it.
+    ///
+    /// # Arguments
+    ///
+    /// * `command` - The command.
+    fn clocked(&mut self, command: impl FnOnce(&mut Self))
+    {
+        let start = Instant::now();
+        command(self);
+        let spent = start.elapsed();
+        tern!(self.ended.is_some(), self.kept_spent += spent, self.spent += spent);
     }
 
     /// Run one op.
@@ -731,7 +770,7 @@ impl Session
     /// Whether the run goes on.
     fn advance(&mut self, breaks: bool) -> bool
     {
-        self.step();
+        self.drive(|m| _ = m.step());
         let at = self.position();
         let at_break = breaks && at.is_some_and(|p| self.is_break(p));
         self.status() == RunStatus::Paused && !at_break
@@ -748,6 +787,8 @@ impl Session
         self.kept.clear();
         self.kept_steps = 0;
         self.kept_heap = HeapShot::default();
+        self.kept_spent = Duration::ZERO;
+        self.kept_usage = (0, 0);
         let Some(m) = self.machine.as_mut()
         else
         {
@@ -1082,6 +1123,29 @@ impl Session
     {
         ret_if!(self.ended.is_some(), self.kept_steps);
         self.machine.as_ref().map_or(0, Machine::steps)
+    }
+
+    /// How long the run took: the ops, not the pauses between them.
+    ///
+    /// # Returns
+    ///
+    /// The time of the run so far, or of the ended run.
+    pub fn run_time(&self) -> Duration
+    {
+        tern!(self.ended.is_some(), self.kept_spent, self.spent)
+    }
+
+    /// The most heap and stack the run held at once.
+    ///
+    /// # Returns
+    ///
+    /// The peak heap octets and the peak stack slots, of the run so far or
+    /// of the ended run.
+    pub fn usage(&self) -> (u64, usize)
+    {
+        ret_if!(self.ended.is_some(), self.kept_usage);
+        let peaks = |m: &Machine| (m.mem().peak_heap(), m.peak_stack());
+        self.machine.as_ref().map_or((0, 0), peaks)
     }
 
     /// The blocks of the address space: those of the machine, or those the
