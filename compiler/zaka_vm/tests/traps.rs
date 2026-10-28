@@ -21,7 +21,7 @@ fn trapped(text: &str, options: &RunOptions) -> (String, TrapKind, String)
 #[test]
 fn zero_divisor_at_run_time_traps_after_earlier_output()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို \
+    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို \
                 ပြသပါ။\n\"နောက်\" ဟု ပြသပါ။";
     let (out, kind, func) = trapped(text, &RunOptions::default());
     assert_eq!(out, "အရင်\n");
@@ -45,7 +45,7 @@ fn endless_recursion_hits_the_depth_limit()
 #[test]
 fn endless_loops_hit_the_step_limit()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nမှန် ဖြစ်နေသရွေ့ က ကို က + ၁ ဟု ထားပါ။";
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nမှန် ဖြစ်နေသရွေ့ က ကို က + ၁ ဟု ထားပါ။";
     let options = RunOptions::builder().max_steps(1000).build();
     let (_, kind, _) = trapped(text, &options);
     assert_eq!(kind, TrapKind::StepLimit { steps: 1000 });
@@ -54,17 +54,17 @@ fn endless_loops_hit_the_step_limit()
 #[test]
 fn integer_arithmetic_wraps()
 {
-    let text = "ကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၂၅၅ ဖြစ်ပါစေ။\nက + ၁ ကို ပြသပါ။\nကိန်းရှင် ခ \
-                သည် ၈ ဘစ် ကိန်းပြည့် -၁၂၈ ဖြစ်ပါစေ။\n-ခ ကို ပြသပါ။\nခ / -၁ ကို ပြသပါ။\nခ - ၁ ကို \
-                ပြသပါ။\nကိန်းရှင် ဂ သည် ၈ ဘစ် ကိန်းပြည့် ၁၀၀ ဖြစ်ပါစေ။\nဂ * ၃ ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၂၅၅ ဖြစ်ပါစေ။\nက + ၁ ကို ပြသပါ။\nကိန်းရှင် ခ \
+                သည် ၈ ဘစ် ကိန်းပြည့် -၁၂၈ ဖြစ်ပါစေ။\n-ခ ကို ပြသပါ။\nခ / -၁ ကို ပြသပါ။\nခ - ၁ ကို \
+                ပြသပါ။\nကိန်းရှင် ဂ သည် ၈ ဘစ် ကိန်းပြည့် ၁၀၀ ဖြစ်ပါစေ။\nဂ * ၃ ကို ပြသပါ။";
     assert_eq!(output(text), "၀\n-၁၂၈\n-၁၂၈\n၁၂၇\n၄၄\n");
 }
 
 #[test]
 fn shifting_past_the_width_traps()
 {
-    let text = "ကိန်းရှင် ရွေ့ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၈ ဖြစ်ပါစေ။\nကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် \
-                ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\nက << ရွေ့ ကို ပြသပါ။";
+    let text = "ကိန်းရှင် ရွေ့ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၈ ဖြစ်ပါစေ။\nကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် \
+                ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\nက << ရွေ့ ကို ပြသပါ။";
     let (_, kind, _) = trapped(text, &RunOptions::default());
     assert_eq!(kind, TrapKind::ShiftTooFar { distance: 8, bits: 8 });
 }
@@ -73,7 +73,7 @@ fn shifting_past_the_width_traps()
 fn a_step_that_is_not_positive_traps()
 {
     let text =
-        "ကိန်းရှင် ခြား သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n၁ မှ ၃ အထိ ခြား စီ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။";
+        "ကိန်းရှင် ခြား သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n၁ မှ ၃ အထိ ခြား စီ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။";
     let (out, kind, _) = trapped(text, &RunOptions::default());
     assert_eq!(out, "");
     assert_eq!(kind, TrapKind::StepNotPositive);
@@ -82,7 +82,7 @@ fn a_step_that_is_not_positive_traps()
 #[test]
 fn traps_name_their_place()
 {
-    let (_, result) = run_source("ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n၁ / သုည ကို ပြသပါ။");
+    let (_, result) = run_source("ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n၁ / သုည ကို ပြသပါ။");
     let trap = result.unwrap_err();
     let shown = trap.to_string();
     assert!(shown.contains("zero as divisor"), "{shown}");
@@ -93,9 +93,9 @@ fn traps_name_their_place()
 #[test]
 fn logic_short_circuits_at_run_time()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nကိန်းရှင် ပိတ် သည် မှန်မှားတန်ဖိုး မမှန် \
-                ဖြစ်ပါစေ။\n(ပိတ် && ၁ / သုည သည် ၁ နှင့် ညီသည်) ကို ပြသပါ။\n(ပိတ် မဟုတ် || ၁ / သုည သည် ၁ \
-                နှင့် ညီသည်) ကို ပြသပါ။";
+    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nကိန်းရှင် ပိတ် သည် မှန်မှားတန်ဖိုး မမှန် \
+                ဖြစ်ပါစေ။\n(ပိတ် && ၁ / သုည သည် ၁ နှင့် ညီသည်) ကို ပြသပါ။\n(ပိတ် မဟုတ် || ၁ / သုည သည် ၁ \
+                နှင့် ညီသည်) ကို ပြသပါ။";
     assert_eq!(output(text), "မမှန်\nမှန်\n");
 }
 

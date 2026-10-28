@@ -76,15 +76,15 @@ fn pa_before_and_wants_thi()
 #[test]
 fn sentences_and_strings_are_quoted()
 {
-    assert_eq!(warns("က သည် ၁ နှင့် မညီပါ ကို ပြသပါ။"), [Code::PrintSentenceWithKo]);
-    assert_eq!(warns("က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။"), [Code::PrintSentenceWithKo]);
+    assert_eq!(warns("က သည် ၁ နှင့် မညီပါ ကို ပြသပါ။"), [Code::PrintSentenceWithKo]);
+    assert_eq!(warns("က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။"), [Code::PrintSentenceWithKo]);
     assert_eq!(warns("\"x\" ကို ပြသပါ။"), [Code::PrintSentenceWithKo]);
     assert_eq!(warns("မှန်ပါသည် ကို ပြသပါ။"), [Code::PrintSentenceWithKo]);
-    clean("က သည် ၁ နှင့် မညီပါ ဟု ပြသပါ။");
-    clean("က သည် ၁ နှင့် ညီသည် ဟု ပြသပါ။");
+    clean("က သည် ၁ နှင့် မညီပါ ဟု ပြသပါ။");
+    clean("က သည် ၁ နှင့် ညီသည် ဟု ပြသပါ။");
     clean("\"x\" ဟု ပြသပါ။");
-    clean("(က သည် ၁ နှင့် ညီသည် မဟုတ်) ကို ပြသပါ။");
-    clean("က သည် ၁ နှင့် ညီ ကို ပြသပါ။");
+    clean("(က သည် ၁ နှင့် ညီသည် မဟုတ်) ကို ပြသပါ။");
+    clean("က သည် ၁ နှင့် ညီ ကို ပြသပါ။");
 }
 
 #[test]
@@ -126,17 +126,17 @@ fn redundant_parentheses_around_a_whole_operand()
 {
     assert_eq!(warns("(က) ကို ပြသပါ။"), [Code::RedundantGroup]);
     assert_eq!(warns("(က + ၁) ကို ပြသပါ။"), [Code::RedundantGroup]);
-    assert_eq!(warns("(က သည် ၁ နှင့် မညီပါ) ဟု ပြသပါ။"), [Code::RedundantGroup]);
+    assert_eq!(warns("(က သည် ၁ နှင့် မညီပါ) ဟု ပြသပါ။"), [Code::RedundantGroup]);
     assert_eq!(warns("က ကို (ခ + ၁) ဟု ထားပါ။"), [Code::RedundantGroup]);
     assert_eq!(warns("(က + ၁) ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။"), [Code::RedundantGroup]);
-    let init = "ကိန်းရှင် က သည် ကိန်းပြည့် (ခ + ၁) ဖြစ်ပါစေ။";
+    let init = "ကိန်းရှင် က သည် ကိန်းပြည့် (ခ + ၁) ဖြစ်ပါစေ။";
     assert_eq!(warns(init), [Code::RedundantGroup]);
-    let bound = "(က + ၁) မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။";
+    let bound = "(က + ၁) မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။";
     assert_eq!(warns(bound), [Code::RedundantGroup]);
-    let arg = "လုပ်ဆောင်ချက် f ကို (က + ၁) တို့ဖြင့် လုပ်ဆောင်ပါ။";
+    let arg = "လုပ်ဆောင်ချက် f ကို (က + ၁) တို့ဖြင့် လုပ်ဆောင်ပါ။";
     assert_eq!(warns(arg), [Code::RedundantGroup]);
     clean("(က ဖြစ်၍ ခ) ကို ပြသပါ။");
-    clean("(က သည် ၁ နှင့် ညီသည် မဟုတ်) ကို ပြသပါ။");
+    clean("(က သည် ၁ နှင့် ညီသည် မဟုတ်) ကို ပြသပါ။");
     clean("က ကို (ခ သို့မဟုတ် ဂ) ဟု ထားပါ။");
 }
 
@@ -165,8 +165,8 @@ fn parentheses_inside_chains_are_left_alone()
 {
     clean("(က + ၁) * ၂ ကို ပြသပါ။");
     clean("က + (ခ + ၁) ကို ပြသပါ။");
-    clean("(က + ၁) နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသပါ။");
-    clean("(က သည် ၁ ထက် ကြီးသည်) သည် မှန် နှင့် ညီသည် ဟု ပြသပါ။");
+    clean("(က + ၁) နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသပါ။");
+    clean("(က သည် ၁ ထက် ကြီးသည်) သည် မှန် နှင့် ညီသည် ဟု ပြသပါ။");
     clean("!(က > ၁ && ခ < ၂) ကို ပြသပါ။");
     clean("အကယ်၍ (က သို့မဟုတ် ခ) ဖြစ်၍ ဂ လျှင် က ကို ပြသပါ။");
 }
@@ -186,12 +186,12 @@ fn a_clause_used_as_a_value_wants_thi()
     assert_eq!(warns(init), [Code::PaInValue]);
     clean("ကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး က သည် ၄၀ အောက် မငယ်သည် ဖြစ်ပါစေ။");
     clean("ကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး က သည် ၄၀ အောက် မငယ် ဖြစ်ပါစေ။");
-    let ret = "က သည် ၁ နှင့် မညီပါသည် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။";
+    let ret = "က သည် ၁ နှင့် မညီပါသည် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။";
     assert_eq!(warns(ret), [Code::PaInValue]);
-    clean("က သည် ၁ နှင့် မညီသည် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။");
-    let arg = "လုပ်ဆောင်ချက် f ကို က သည် ၁ နှင့် မညီပါ တို့ဖြင့် လုပ်ဆောင်ပါ။";
+    clean("က သည် ၁ နှင့် မညီသည် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။");
+    let arg = "လုပ်ဆောင်ချက် f ကို က သည် ၁ နှင့် မညီပါ တို့ဖြင့် လုပ်ဆောင်ပါ။";
     assert_eq!(warns(arg), [Code::PaInValue]);
-    let logical = "ကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး (က မဟုတ် သို့မဟုတ် က သည် ၁ နှင့် မညီပါ) ဖြစ်ပါစေ။";
+    let logical = "ကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး (က မဟုတ် သို့မဟုတ် က သည် ၁ နှင့် မညီပါ) ဖြစ်ပါစေ။";
     assert_eq!(warns(logical), [Code::PaInValue]);
     clean("ခ ကို က သည် ၄၀ အောက် မငယ်ပါ ဟု ထားပါ။");
     clean("က သည် ၄၀ အောက် မငယ်ပါ ဟု ပြသပါ။");

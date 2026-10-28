@@ -11,8 +11,8 @@ use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 const TEXT_HEADER: &str = "# zakac-semcheck-artifact v1\n";
 
 /// An `i32` value stored in a platform-sized integer.
-const PLATFORM_WIDENING: &str = "ကိန်းရှင် က သည် ၃၂ ဘစ် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် က ဖြစ်ပါစေ။";
+const PLATFORM_WIDENING: &str = "ကိန်းရှင် က သည် ၃၂ ဘစ် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် က ဖြစ်ပါစေ။";
 
 /// Run the standalone check command.
 fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
@@ -47,7 +47,7 @@ fn sample(name: &str) -> String
 #[test]
 fn check_stdin_without_input()
 {
-    let (code, stdout, stderr) = run_cli(&[], "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။");
+    let (code, stdout, stderr) = run_cli(&[], "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။");
     assert_eq!(code, ExitCode::Success);
     assert!(stdout.starts_with(TEXT_HEADER));
     assert!(stdout.contains("isize"));
@@ -76,7 +76,7 @@ fn diagnostics_go_to_stderr_and_fail()
 #[test]
 fn particle_warnings_do_not_fail()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
     let (code, stdout, stderr) = run_cli(&[], text);
     assert_eq!(code, ExitCode::Success);
     assert!(stdout.starts_with(TEXT_HEADER));
@@ -87,7 +87,7 @@ fn particle_warnings_do_not_fail()
 #[test]
 fn strict_particles_fail()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
     let (code, _stdout, stderr) = run_cli(&["--strict-particles"], text);
     assert_eq!(code, ExitCode::Failure);
     assert!(stderr.starts_with("error[ZK0505]"), "{stderr}");

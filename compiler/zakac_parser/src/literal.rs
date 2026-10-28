@@ -186,7 +186,7 @@ impl Parser<'_>
         Ok(Expr::Int(lit))
     }
 
-    /// Parse `အခြေ N ဖြင့်` when it comes next.
+    /// Parse `အခြေ N ဖြင့်` when it comes next.
     ///
     /// # Returns
     ///

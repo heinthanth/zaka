@@ -488,7 +488,7 @@ impl Parser<'_>
         Err(diag::unclosed_clause(span, &self.describe_stack(&stack)))
     }
 
-    /// List stack operands with their particles, such as `က (နှင့်), ခ (၏)`.
+    /// List stack operands with their particles, such as `က (နှင့်), ခ (၏)`.
     ///
     /// # Arguments
     ///

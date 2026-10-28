@@ -194,7 +194,7 @@ impl Parser<'_>
         Ok(Stmt::While(WhileStmt::builder().cond(cond).block(block).span(span).build()))
     }
 
-    /// Parse `မှ <to> အထိ (<step> စီ)? <name> အနေဖြင့် <mode> <block>` after
+    /// Parse `မှ <to> အထိ (<step> စီ)? <name> အနေဖြင့် <mode> <block>` after
     /// the first bound of a counted loop.
     ///
     /// # Arguments
@@ -564,7 +564,7 @@ impl Parser<'_>
     }
 
     /// Parse the optional parameter clause:
-    /// `kind name (၊ kind name)* (နှင့် kind name)? (တို့ကို|ကို) လက်ခံပြီး`.
+    /// `kind name (၊ kind name)* (နှင့် kind name)? (တို့ကို|ကို) လက်ခံပြီး`.
     ///
     /// # Returns
     ///

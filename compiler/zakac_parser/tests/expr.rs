@@ -28,7 +28,7 @@ fn prefix_operators_bind_to_the_atom()
     assert_eq!(expr("အနုတ် ၅"), "(neg 5)");
     assert_eq!(expr("!က == ခ"), "(== (! က) ခ)");
     assert_eq!(expr("~ ~ က"), "(~ (~ က))");
-    assert_eq!(expr("၁၀ နှင့် အနုတ် ၅ ၏ နုတ်လဒ်"), "(sub 10 (neg 5))");
+    assert_eq!(expr("၁၀ နှင့် အနုတ် ၅ ၏ နုတ်လဒ်"), "(sub 10 (neg 5))");
 }
 
 #[test]
@@ -40,7 +40,7 @@ fn atoms()
     assert_eq!(expr("`a b`"), "a b");
     assert_eq!(expr("ရလဒ်"), "ရလဒ်");
     assert_eq!(expr("လုပ်ဆောင်ချက် အမြဲတမ်းသုည ကို လုပ်ဆောင်သော ရလဒ်"), "(call အမြဲတမ်းသုည)");
-    let args = "လုပ်ဆောင်ချက် ပေါင်း ကို ၁၊ က နှင့် ခ ၏ ပေါင်းလဒ်၊ ဂ + ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်";
+    let args = "လုပ်ဆောင်ချက် ပေါင်း ကို ၁၊ က နှင့် ခ ၏ ပေါင်းလဒ်၊ ဂ + ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်";
     assert_eq!(expr(args), "(call ပေါင်း 1 (add က ခ) (+ ဂ 1))");
 }
 
@@ -49,13 +49,13 @@ fn integer_literals()
 {
     assert_eq!(expr("၁၀"), "10");
     assert_eq!(expr("16"), "16");
-    assert_eq!(expr("ကိန်းပြည့် ၁၀"), "10isize");
-    assert_eq!(expr("လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၁၈"), "18u8");
-    assert_eq!(expr("အခြေ ၂ ဖြင့် ၁၀"), "2");
-    assert_eq!(expr("အခြေ ၂ ဖြင့် ၈ ဘစ် ကိန်းပြည့် ၁၁၁၁၁၁၁၀"), "254i8");
-    assert_eq!(expr("အခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF"), "255u8");
-    assert_eq!(expr("အခြေ ၁၆ ဖြင့် ff"), "255");
-    assert_eq!(expr("အခြေ ၁၆ ဖြင့် 1e5"), "485");
+    assert_eq!(expr("ကိန်းပြည့် ၁၀"), "10isize");
+    assert_eq!(expr("လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၁၈"), "18u8");
+    assert_eq!(expr("အခြေ ၂ ဖြင့် ၁၀"), "2");
+    assert_eq!(expr("အခြေ ၂ ဖြင့် ၈ ဘစ် ကိန်းပြည့် ၁၁၁၁၁၁၁၀"), "254i8");
+    assert_eq!(expr("အခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF"), "255u8");
+    assert_eq!(expr("အခြေ ၁၆ ဖြင့် ff"), "255");
+    assert_eq!(expr("အခြေ ၁၆ ဖြင့် 1e5"), "485");
     let Ok(Expr::Int(lit)) = parse_expr("၁၂၃")
     else
     {
@@ -79,14 +79,14 @@ fn float_literals()
 #[test]
 fn literal_errors()
 {
-    assert_eq!(expr_err("အခြေ ၂ ဖြင့် ၁၂"), Code::InvalidDigit);
-    assert_eq!(expr_err("အခြေ ၁ ဖြင့် ၀"), Code::InvalidBase);
-    assert_eq!(expr_err("အခြေ ၃၇ ဖြင့် ၀"), Code::InvalidBase);
-    assert_eq!(expr_err("လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၂၅၆"), Code::LiteralOutOfRange);
-    assert_eq!(expr_err("၈ ဘစ် ကိန်းပြည့် ၁၂၉"), Code::LiteralOutOfRange);
-    assert_eq!(expr_err("ကိန်းပြည့် ၃.၁၄"), Code::FloatForIntKind);
+    assert_eq!(expr_err("အခြေ ၂ ဖြင့် ၁၂"), Code::InvalidDigit);
+    assert_eq!(expr_err("အခြေ ၁ ဖြင့် ၀"), Code::InvalidBase);
+    assert_eq!(expr_err("အခြေ ၃၇ ဖြင့် ၀"), Code::InvalidBase);
+    assert_eq!(expr_err("လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၂၅၆"), Code::LiteralOutOfRange);
+    assert_eq!(expr_err("၈ ဘစ် ကိန်းပြည့် ၁၂၉"), Code::LiteralOutOfRange);
+    assert_eq!(expr_err("ကိန်းပြည့် ၃.၁၄"), Code::FloatForIntKind);
     assert_eq!(expr_err("စာလုံး ၁"), Code::BadLiteralKind);
-    assert_eq!(expr_err("အခြေ ၁၀ ဖြင့် FF"), Code::ExpectedToken);
+    assert_eq!(expr_err("အခြေ ၁၀ ဖြင့် FF"), Code::ExpectedToken);
     assert_eq!(expr_err("\"text\""), Code::StrOutsidePrint);
     assert_eq!(expr_err("12ab"), Code::InvalidDigit);
 }
@@ -94,9 +94,9 @@ fn literal_errors()
 #[test]
 fn signed_decimal_literal_allows_the_negated_minimum()
 {
-    assert_eq!(expr("အနုတ် ၈ ဘစ် ကိန်းပြည့် ၁၂၈"), "(neg 128i8)");
+    assert_eq!(expr("အနုတ် ၈ ဘစ် ကိန်းပြည့် ၁၂၈"), "(neg 128i8)");
     assert_eq!(
-        expr("လက္ခဏာမဲ့ ၁၂၈ ဘစ် ကိန်းပြည့် 340282366920938463463374607431768211455"),
+        expr("လက္ခဏာမဲ့ ၁၂၈ ဘစ် ကိန်းပြည့် 340282366920938463463374607431768211455"),
         "340282366920938463463374607431768211455u128"
     );
 }
@@ -104,7 +104,7 @@ fn signed_decimal_literal_allows_the_negated_minimum()
 #[test]
 fn kind_errors()
 {
-    assert_eq!(expr_err("၇ ဘစ် ကိန်းပြည့် ၁"), Code::InvalidBitCount);
+    assert_eq!(expr_err("၇ ဘစ် ကိန်းပြည့် ၁"), Code::InvalidBitCount);
     assert_eq!(expr_err("၈ ဘစ် ဒဿမကိန်း ၁"), Code::InvalidBitCount);
     assert_eq!(expr_err("လက္ခဏာရှိ ဒဿမကိန်း ၁"), Code::SignedFloat);
 }
@@ -157,10 +157,10 @@ fn pointer_expressions()
     assert_eq!(expr("&x"), "(addr x)");
     assert_eq!(expr("p * ၂"), "(* p 2)");
     assert_eq!(expr("ဗလာ"), "null");
-    assert_eq!(expr("ကိန်းပြည့် ၏ အရွယ်အစား * ၁၀"), "(* (sizeof isize) 10)");
-    assert_eq!(expr("၃၂ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ၏ အရွယ်အစား"), "(sizeof *i32)");
-    assert_eq!(expr("p ကို ၃၂ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast p *i32)");
-    assert_eq!(expr("၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ ၏ အရွယ်အစား"), "(sizeof *i32)");
-    assert_eq!(expr("ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ၏ အရွယ်အစား"), "(sizeof **isize)");
-    assert_eq!(expr("p ကို ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast p *i32)");
+    assert_eq!(expr("ကိန်းပြည့် ၏ အရွယ်အစား * ၁၀"), "(* (sizeof isize) 10)");
+    assert_eq!(expr("၃၂ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ၏ အရွယ်အစား"), "(sizeof *i32)");
+    assert_eq!(expr("p ကို ၃၂ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast p *i32)");
+    assert_eq!(expr("၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ ၏ အရွယ်အစား"), "(sizeof *i32)");
+    assert_eq!(expr("ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ၏ အရွယ်အစား"), "(sizeof **isize)");
+    assert_eq!(expr("p ကို ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast p *i32)");
 }

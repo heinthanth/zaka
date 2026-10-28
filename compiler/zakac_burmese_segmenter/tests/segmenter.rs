@@ -146,6 +146,6 @@ fn aw_vowel_starts_new_vanna()
     assert_eq!(lexemes("သည်ကျော်ပါ"), ["သည်", "ကျော်", "ပါ"]);
     assert_eq!(lexemes("ပြောင်းရွှေ့ကျော်"), ["ပြောင်း", "ရွှေ့", "ကျော်"]);
     // the dot below can still sit between a killed consonant and its asat
-    assert_eq!(lexemes("နှင့်"), ["နှင့်"]);
-    assert_eq!(lexemes("ကိန့်"), ["ကိန့်"]);
+    assert_eq!(lexemes("နှင့်"), ["နှင့်"]);
+    assert_eq!(lexemes("ကိန့်"), ["ကိန့်"]);
 }

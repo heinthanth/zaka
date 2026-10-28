@@ -61,7 +61,7 @@ impl Parser<'_>
         Ok(Stmt::Resize(node))
     }
 
-    /// Parse `လိပ်စာရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။` after the place;
+    /// Parse `လိပ်စာရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။` after the place;
     /// the current token is `လိပ်စာရှိ မင်မိုရီကို`.
     ///
     /// # Arguments

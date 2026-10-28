@@ -21,8 +21,8 @@ pub enum Dir
 #[serde(rename_all = "snake_case")]
 pub enum Slot
 {
-    /// `နှင့်`
-    #[strum(serialize = "နှင့်")]
+    /// `နှင့်`
+    #[strum(serialize = "နှင့်")]
     Hnint,
     /// `၏`
     #[strum(serialize = "၏")]
@@ -30,8 +30,8 @@ pub enum Slot
     /// `ကို`
     #[strum(serialize = "ကို")]
     Ko,
-    /// `ဖြင့်`
-    #[strum(serialize = "ဖြင့်")]
+    /// `ဖြင့်`
+    #[strum(serialize = "ဖြင့်")]
     Hpjint,
     /// `သည်`
     #[strum(serialize = "သည်")]

@@ -11,8 +11,8 @@ or change a variable without using its name: from inside another function, or in
 that has no name at all.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။                       // age = 18
-ကိန်းရှင် ညွှန်း သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် အသက် ၏ လိပ်စာ ဖြစ်ပါစေ။    // a pointer to age
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။                       // age = 18
+ကိန်းရှင် ညွှန်း သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် အသက် ၏ လိပ်စာ ဖြစ်ပါစေ။    // a pointer to age
 ညွှန်း ၏ တန်ဖိုး ကို ပြသပါ။                                 // read through it
 ညွှန်း ၏ တန်ဖိုး ကို ၂၀ ဟု ထားပါ။                              // write through it
 အသက် ကို ပြသပါ။                                            // age has changed
@@ -28,7 +28,7 @@ variable through the pointer `ညွှန်း` ("the pointer").
 
 | Zaka | Reads as |
 | --- | --- |
-| `ကိန်းပြည့် လိပ်စာ` | "integer address": the kind of a pointer to an integer |
+| `ကိန်းပြည့် လိပ်စာ` | "integer address": the kind of a pointer to an integer |
 | `အသက် ၏ လိပ်စာ` | "the address of age" |
 | `ညွှန်း ၏ တန်ဖိုး` | "the value at the pointer" |
 | `လိပ်စာ` | "address" |
@@ -41,20 +41,20 @@ to a pointer adds `၏ လိပ်စာ` ("address of") for each further level
 
 | Kind | Holds the address of |
 | --- | --- |
-| `ကိန်းပြည့် လိပ်စာ` | an integer |
-| `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ` | an unsigned 8-bit integer |
-| `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | a pointer to an integer |
+| `ကိန်းပြည့် လိပ်စာ` | an integer |
+| `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ` | an unsigned 8-bit integer |
+| `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | a pointer to an integer |
 | `လိပ်စာ` | a value of whatever kind (an *opaque* address) |
 
-The older spelling with `၏` at the first level, `ကိန်းပြည့် ၏ လိပ်စာ`, still works and
-means the same as `ကိန်းပြည့် လိပ်စာ`.
+The older spelling with `၏` at the first level, `ကိန်းပြည့် ၏ လိပ်စာ`, still works and
+means the same as `ကိန်းပြည့် လိပ်စာ`.
 
-A pointer holds just the addresses of its own kind. The address of a `ကိန်းပြည့်` does not fit
+A pointer holds just the addresses of its own kind. The address of a `ကိန်းပြည့်` does not fit
 a pointer to an 8-bit integer:
 
 ```zaka-error ZK0401
-ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ၈ ဘစ် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ၈ ဘစ် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
 ```
 
 ```text
@@ -72,9 +72,9 @@ variable starts out null. A pointer is not true or false, so compare it with `�
 test it:
 
 ```zaka
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။     // no address so far
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။     // no address so far
 ပ ကို ပြသပါ။
-အကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် "ဘာမှ မညွှန်ပါ" ဟု ပြသပါ။
+အကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် "ဘာမှ မညွှန်ပါ" ဟု ပြသပါ။
 ```
 
 ```text
@@ -90,8 +90,8 @@ mistakes](mistakes.md).
 Programmers who know C can write `&` for "the address of" and `*` for "the value at":
 
 ```zaka
-ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် &က ဖြစ်ပါစေ။     // the same as က ၏ လိပ်စာ
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် &က ဖြစ်ပါစေ။     // the same as က ၏ လိပ်စာ
 *ပ ကို *ပ + ၁ ဟု ထားပါ။                              // the same as ပ ၏ တန်ဖိုး
 က ကို ပြသပါ။
 ```
@@ -112,7 +112,7 @@ address in RAM, but Zaka will not give it out, because writing through it would 
 the constant. The same holds for the variable of a counted loop:
 
 ```zaka-error ZK0412
-ကိန်းသေ ကြီးဆုံး သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။
+ကိန်းသေ ကြီးဆုံး သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။
 ကြီးဆုံး ၏ လိပ်စာ ကို ပြသပါ။
 ```
 
@@ -129,7 +129,7 @@ the Block column next to each variable gives the address of its block.
 - Declare two integers and one pointer. Point at the first, change it through the
   pointer, then point at the second and change that one.
 - Take the address of `၅`. Read the message.
-- Declare a pointer to a pointer, `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ`, and reach an integer
+- Declare a pointer to a pointer, `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ`, and reach an integer
   through it with `၏ တန်ဖိုး ၏ တန်ဖိုး`.
 
 Next: [Changing the caller's variables](out-parameters.md).

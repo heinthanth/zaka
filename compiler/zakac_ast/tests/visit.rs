@@ -83,7 +83,7 @@ fn ten_isize() -> SizeArg
     SizeArg::builder().count(int(2, 10, 0)).unit(unit).span(sp(0, 4)).build()
 }
 
-/// `x ကို 1 နှင့် 2 ၏ ပေါင်းလဒ် ဟု ထားပါ။` written out in full.
+/// `x ကို 1 နှင့် 2 ၏ ပေါင်းလဒ် ဟု ထားပါ။` written out in full.
 fn sample() -> Program
 {
     let sum = VerbExpr::builder()

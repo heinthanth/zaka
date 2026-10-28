@@ -106,7 +106,7 @@ fn spoken_endings_lex_as_the_written_word()
         ("ပြန်ပေးမည်", "ပြန်ပေးမယ်", Kw::WillReturn),
         ("သိမ်းထားမည်", "သိမ်းထားမယ်", Kw::WillKeep),
         ("နေရာအချဲ့အချုံ့လုပ်မည်", "နေရာအချဲ့အချုံ့လုပ်မယ်", Kw::WillResize),
-        ("ပြန်လည်စွန့်လွှတ်မည်", "ပြန်လည်စွန့်လွှတ်မယ်", Kw::WillRelease),
+        ("ပြန်လည်စွန့်လွှတ်မည်", "ပြန်လည်စွန့်လွှတ်မယ်", Kw::WillRelease),
     ];
     do_for!((written, spoken, kw) in triples, {
         assert_eq!(lookup(written), Some(kw), "{written}");
@@ -134,7 +134,7 @@ fn particles_alone_do_not_split()
 fn non_reserved_words_do_not_split()
 {
     assert_eq!(split("အသက်သည်"), None);
-    assert_eq!(split("ကိန်းအနေဖြင့်"), None);
+    assert_eq!(split("ကိန်းအနေဖြင့်"), None);
     assert_eq!(split("သည်"), None);
 }
 

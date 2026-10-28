@@ -10,14 +10,14 @@ need to **choose** ("if the score is 40 or more, print *pass*") and to **repeat*
 ("print the numbers 1 to 100"). The order in which statements run is called *control flow*.
 
 ```zaka
-ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
+ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 
 // choose: if ... then ... otherwise ...
 အကယ်၍ အမှတ် သည် ၄၀ အောက် မငယ်လျှင် "အောင်" ဟု ပြသပါ။
 သို့မဟုတ်ပါက "ကျ" ဟု ပြသပါ။
 
 // repeat: count from 1 to 3
-၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။
+၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။
 ```
 
 ```text

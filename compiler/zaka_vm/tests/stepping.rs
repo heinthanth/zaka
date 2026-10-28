@@ -167,7 +167,7 @@ fn run_until_stops_at_a_break_point()
 #[test]
 fn a_trap_is_final()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
+    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
     let mut m = machine(compile(text));
     m.run_until(&[]);
     let trap = m.state().trap().cloned().expect("trapped");

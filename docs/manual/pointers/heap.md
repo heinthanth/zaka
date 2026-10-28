@@ -11,11 +11,11 @@ before the program runs. That room comes from the *heap*: ask for a block of it,
 through a pointer, and give it back when done.
 
 ```zaka
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
-မင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။    // room for one integer
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+မင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။    // room for one integer
 ပ ၏ တန်ဖိုး ကို ၄၂ ဟု ထားပါ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
-ပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။                      // give it back
+ပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။                      // give it back
 ပ ကို ပြသပါ။                                                  // the pointer is now null
 ```
 
@@ -31,18 +31,18 @@ Asking for heap room and giving it back are statements of their own:
 | `မင်မိုရီ ... ခုစာ နေရာယူ၍` | "taking room worth ... items" |
 | `လိပ်စာကို ပ တွင် သိမ်းထားမည်။` | "and will keep the address in ပ" |
 | `ပ လိပ်စာရှိမင်မိုရီကို` | "the block at the address in ပ" |
-| `ပြန်လည်စွန့်လွှတ်မည်။` | "will give back" |
+| `ပြန်လည်စွန့်လွှတ်မည်။` | "will give back" |
 
 `မင်မိုရီ` is borrowed from English and means RAM; the native Burmese word `မှတ်ဉာဏ်`
 works the same.
 Statements written with `…မည်` also accept the spoken `…မယ်`:
 
 ```zaka
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
-မှတ်ဉာဏ် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမယ်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+မှတ်ဉာဏ် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမယ်။
 ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
-ပ လိပ်စာရှိ မှတ်ဉာဏ်ကို ပြန်လည်စွန့်လွှတ်မယ်။
+ပ လိပ်စာရှိ မှတ်ဉာဏ်ကို ပြန်လည်စွန့်လွှတ်မယ်။
 ```
 
 ```text
@@ -55,7 +55,7 @@ Give the size in one of two forms:
 
 | Size | Means |
 | --- | --- |
-| `ကိန်းပြည့် ၁၀ ခုစာ` | room for 10 integers |
+| `ကိန်းပြည့် ၁၀ ခုစာ` | room for 10 integers |
 | `၈၀ ဘိုက်စာ` | room for 80 octets |
 
 Most of the time the first form is the one to use. The second counts octets, the
@@ -63,10 +63,10 @@ smallest unit of storage. `<kind> ၏ အရွယ်အစား` ("the size of
 in octets, one value of a kind takes:
 
 ```zaka
-ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
-၃၂ ဘစ် ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
+ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
+၃၂ ဘစ် ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
 မှန်မှားတန်ဖိုး ၏ အရွယ်အစား ကို ပြသပါ။
-ကိန်းပြည့် လိပ်စာ ၏ အရွယ်အစား ကို ပြသပါ။
+ကိန်းပြည့် လိပ်စာ ၏ အရွယ်အစား ကို ပြသပါ။
 ```
 
 ```text
@@ -76,9 +76,9 @@ in octets, one value of a kind takes:
 ၈
 ```
 
-So `ကိန်းပြည့် ၁၀ ခုစာ` and `ကိန်းပြည့် ၏ အရွယ်အစား * ၁၀ ဘိုက်စာ` ask for the same room.
+So `ကိန်းပြည့် ၁၀ ခုစာ` and `ကိန်းပြည့် ၏ အရွယ်အစား * ၁၀ ဘိုက်စာ` ask for the same room.
 
-The count is a `လက္ခဏာမဲ့ ကိန်းပြည့်` (an unsigned integer). A literal such as `၁၀` fits
+The count is a `လက္ခဏာမဲ့ ကိန်းပြည့်` (an unsigned integer). A literal such as `၁၀` fits
 on its own. A variable used as a count must have that kind.
 
 ## When there is no room
@@ -87,11 +87,11 @@ If the heap has no room left, the pointer gets `ဗလာ` instead of an address
 program checks:
 
 ```zaka
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
-မင်မိုရီ ကိန်းပြည့် ၁၀ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-အကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် "နေရာ မရပါ" ဟု ပြသပါ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+မင်မိုရီ ကိန်းပြည့် ၁၀ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+အကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် "နေရာ မရပါ" ဟု ပြသပါ။
 သို့မဟုတ်ပါက "နေရာ ရပါပြီ" ဟု ပြသပါ။
-ပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ```
 
 ```text
@@ -119,7 +119,7 @@ lists each forgotten block when the program ends.
 - Ask for room for three integers, store 1, 2 and 3 in the first one and nowhere else,
   and print it.
   (The next page shows how to reach the other two.)
-- Ask for the same room with the octet form and `ကိန်းပြည့် ၏ အရွယ်အစား`.
+- Ask for the same room with the octet form and `ကိန်းပြည့် ၏ အရွယ်အစား`.
 - Run a program that never gives its block back with `zakac run --leaks`.
 
 Next: [Pointer arithmetic](arithmetic.md).

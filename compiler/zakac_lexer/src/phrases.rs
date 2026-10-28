@@ -18,21 +18,21 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Result, Kw::As, Kw::Return], Kw::ReturnValue),
     // မင်မိုရီ ... ဘိုက်စာ|ခုစာ နေရာယူ၍ လိပ်စာကို ... တွင် သိမ်းထားမည်။
     (&[Kw::TakeSpace, Kw::Address, Kw::Ko], Kw::AllocTarget),
-    // ... လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+    // ... လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
     (&[Kw::AtAddress, Kw::Mem, Kw::Ko], Kw::FreeHead),
     // ... လိပ်စာရှိကို မင်မိုရီ ... ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
     (&[Kw::AtAddress, Kw::Ko], Kw::ResizeHead),
     // လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?။
     (&[Kw::Tasks, Kw::Done], Kw::BlockClose),
-    // ... ကို ... ဖြင့် စားသော စားလဒ်
+    // ... ကို ... ဖြင့် စားသော စားလဒ်
     (&[Kw::DivideHead, Kw::QuotientTail], Kw::Divide),
-    // ... ကို ... ဖြင့် စားသော စားကြွင်း
+    // ... ကို ... ဖြင့် စားသော စားကြွင်း
     (&[Kw::DivideHead, Kw::RemainderTail], Kw::Remainder),
-    // ... နှင့် ... ၏ ဘစ်အလိုက် ဆုံလဒ်
+    // ... နှင့် ... ၏ ဘစ်အလိုက် ဆုံလဒ်
     (&[Kw::BitwiseHead, Kw::MeetTail], Kw::BitAnd),
-    // ... နှင့် ... ၏ ဘစ်အလိုက် ပေါင်းစုလဒ်
+    // ... နှင့် ... ၏ ဘစ်အလိုက် ပေါင်းစုလဒ်
     (&[Kw::BitwiseHead, Kw::UnionTail], Kw::BitOr),
-    // ... နှင့် ... ၏ ဘစ်အလိုက် ခြားနားလဒ်
+    // ... နှင့် ... ၏ ဘစ်အလိုက် ခြားနားလဒ်
     (&[Kw::BitwiseHead, Kw::DifferTail], Kw::BitXor),
     // ... ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်
     (&[Kw::BitwiseHead, Kw::InvertTail], Kw::BitNot),
@@ -40,7 +40,7 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::ShiftHead, Kw::Result], Kw::Shift),
     // ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်
     (&[Kw::ConvertHead, Kw::Result], Kw::Convert),
-    // လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်
+    // လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်
     (&[Kw::CallHead, Kw::Result], Kw::CallResult), ];
 
 /// Replace each run of tokens that spells a phrase with one token.

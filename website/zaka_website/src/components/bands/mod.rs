@@ -61,7 +61,7 @@ const BANDS: [Band; 5] = [
     Band {
         id: "website.bands.space",
         color: "--tok-kind",
-        zaka: "ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃၀ ဖြစ်ပါစေ။",
+        zaka: "ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃၀ ဖြစ်ပါစေ။",
         rust: "let mut age: isize = 30;",
     },
 ];

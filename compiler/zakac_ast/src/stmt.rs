@@ -38,7 +38,7 @@ pub enum Stmt
     If(IfStmt),
     /// `cond နေသရွေ့ ...`
     While(WhileStmt),
-    /// `a မှ b အထိ i အနေဖြင့် ရေတွက်၍ ...`
+    /// `a မှ b အထိ i အနေဖြင့် ရေတွက်၍ ...`
     Counted(CountedStmt),
     /// `ကိန်းရှင် i သည် kind ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ကာ cond နေသရွေ့ ...`
     Generic(GenericStmt),
@@ -247,7 +247,7 @@ pub struct ContinueStmt
     pub span: Span,
 }
 
-/// A function parameter: `ကိန်းပြည့် က`.
+/// A function parameter: `ကိန်းပြည့် က`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct Param
 {

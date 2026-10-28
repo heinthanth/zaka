@@ -10,7 +10,7 @@ A common task is to repeat something for each number from one value to another:
 "from 1 to 5, counting as *n*, do ...":
 
 ```zaka
-၁ မှ ၅ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။
+၁ မှ ၅ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။
 ```
 
 ```text
@@ -25,7 +25,7 @@ A common task is to repeat something for each number from one value to another:
 | --- | --- | --- |
 | `၁ မှ` | "from 1" | the first value |
 | `၅ အထိ` | "up to 5" | the last value; it is included |
-| `ကိန်း အနေဖြင့်` | "as ကိန်း" | the name of the counter variable |
+| `ကိန်း အနေဖြင့်` | "as ကိန်း" | the name of the counter variable |
 | `ရေတွက်၍` | "counting" | the loop verb |
 | `ကိန်း ကို ပြသပါ။` | | the inner part |
 
@@ -38,9 +38,9 @@ number. The inner part can read it but cannot change it.
 time") to take bigger steps:
 
 ```zaka
-၅ မှ ၁ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။          // counts down
+၅ မှ ၁ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။          // counts down
 "---" ဟု ပြသပါ။
-၀ မှ ၁၀၀ အထိ ၂၅ စီ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။    // 25 at a time
+၀ မှ ၁၀၀ အထိ ၂၅ စီ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။    // 25 at a time
 ```
 
 ```text
@@ -69,8 +69,8 @@ With `တိုး၍` or `လျှော့၍`, the loop runs zero times if t
 last one:
 
 ```zaka
-၁၀ မှ ၀ အထိ ၂ စီ ကိန်း အနေဖြင့် လျှော့၍ ကိန်း ကို ပြသပါ။   // 10, 8, 6, 4, 2, 0
-၅ မှ ၁ အထိ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။           // never runs
+၁၀ မှ ၀ အထိ ၂ စီ ကိန်း အနေဖြင့် လျှော့၍ ကိန်း ကို ပြသပါ။   // 10, 8, 6, 4, 2, 0
+၅ မှ ၁ အထိ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။           // never runs
 "ပြီး" ဟု ပြသပါ။
 ```
 
@@ -89,8 +89,8 @@ last one:
 A loop often builds a total, one round at a time:
 
 ```zaka
-ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။           // total
-၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ စုစုပေါင်း ကို စုစုပေါင်း + ကိန်း ဟု ထားပါ။
+ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။           // total
+၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ စုစုပေါင်း ကို စုစုပေါင်း + ကိန်း ဟု ထားပါ။
 စုစုပေါင်း ကို ပြသပါ။
 ```
 
@@ -104,8 +104,8 @@ A loop can hold another loop. This one prints a small times table. For each row,
 inner loop runs once for each column:
 
 ```zaka
-၁ မှ ၃ အထိ အတန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။     // row
-၁ မှ ၃ အထိ အတိုင် အနေဖြင့် ရေတွက်၍ အတန်း * အတိုင် ကို ပြသပါ။      // column
+၁ မှ ၃ အထိ အတန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။     // row
+၁ မှ ၃ အထိ အတိုင် အနေဖြင့် ရေတွက်၍ အတန်း * အတိုင် ကို ပြသပါ။      // column
 "---" ဟု ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 ```
@@ -131,11 +131,11 @@ inner loop runs once for each column:
   `အစ မှ အဆုံး - ၁ အထိ ...`.
 - The step must be greater than zero. A zero step written as a variable stops the
   program when the loop starts.
-- Put a space before `အနေဖြင့်`. `ကိန်းအနေဖြင့်` is read as one name.
+- Put a space before `အနေဖြင့်`. `ကိန်းအနေဖြင့်` is read as one name.
 - The counter cannot be changed in the inner part, and it does not exist after the loop:
 
 ```zaka-error ZK0307
-၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ၀ ဟု ထားပါ။
+၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ၀ ဟု ထားပါ။
 ```
 
 ```text

@@ -31,7 +31,7 @@ first. Parentheses come before all else. From **tightest** to **loosest**:
 | --- | --- |
 | `၂ + ၃ * ၄` | `၂ + (၃ * ၄)` = 14 |
 | `၁၀ - ၃ - ၂` | `(၁၀ - ၃) - ၂` = 5 |
-| `က + ခ နှင့် ဂ ၏ မြှောက်လဒ်` | `(က + ခ) * ဂ` |
+| `က + ခ နှင့် ဂ ၏ မြှောက်လဒ်` | `(က + ခ) * ဂ` |
 | `!က == ခ` | `(!က) == ခ` |
 | `က == ခ မဟုတ်ပါ` | `!(က == ခ)` |
 | `က သို့မဟုတ် ခ ဖြစ်၍ ဂ` | `က သို့မဟုတ် (ခ ဖြစ်၍ ဂ)` |
@@ -39,7 +39,7 @@ first. Parentheses come before all else. From **tightest** to **loosest**:
 ## Moving between levels
 
 - A word phrase inside an operator expression needs parentheses:
-  `(က နှင့် ခ ၏ ပေါင်းလဒ်) * ဂ`.
+  `(က နှင့် ခ ၏ ပေါင်းလဒ်) * ဂ`.
 - A logical expression (`ဖြစ်၍`, `သို့မဟုတ်`, `&&`, `||`, `မဟုတ်`) used as a value to print
   needs parentheses: `(က ဖြစ်၍ ခ) ကို ပြသပါ။`
 

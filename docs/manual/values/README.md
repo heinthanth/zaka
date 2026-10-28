@@ -29,7 +29,7 @@ program can do with it. Two numbers can be added, but two answers of "true" cann
 
 | Kind | Reads as | Holds | Page |
 | --- | --- | --- | --- |
-| `ကိန်းပြည့်` | "whole number" | integers: `၀`, `၁၈`, `-၅` | [Integers](integers.md) |
+| `ကိန်းပြည့်` | "whole number" | integers: `၀`, `၁၈`, `-၅` | [Integers](integers.md) |
 | `ဒဿမကိန်း` | "decimal number" | numbers with a fraction: `၃.၁၄` | [Decimal numbers](floats.md) |
 | `စာလုံး` | "letter" | one character: `'က'`, `'A'` | [Characters](characters.md) |
 | `မှန်မှားတန်ဖိုး` | "true/false value" | `မှန်` (true) or `မမှန်` (false) | [True and false](booleans.md) |

@@ -88,7 +88,7 @@ fn compile_errors_stop_before_running()
 #[test]
 fn traps_report_on_stderr_and_fail()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
+    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
     let (code, stdout, stderr) = run_vm(&[], text);
     assert_eq!(code, ExitCode::Failure);
     assert_eq!(stdout, "အရင်\n");
@@ -111,7 +111,7 @@ fn limits_come_from_flags()
 #[test]
 fn platform_bits_change_the_width()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၂၇ ဖြစ်ပါစေ။\nက + ၁ ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၂၇ ဖြစ်ပါစေ။\nက + ၁ ကို ပြသပါ။";
     let (code, stdout, _) = run_vm(&["--platform-bits", "8"], text);
     assert_eq!(code, ExitCode::Success);
     assert_eq!(stdout, "-၁၂၈\n");

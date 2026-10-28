@@ -86,7 +86,7 @@ impl Parser<'_>
         self.at_sized_kind(0)
     }
 
-    /// Whether `N ဘစ် (ကိန်းပြည့်|ဒဿမကိန်း)` starts `n` tokens ahead.
+    /// Whether `N ဘစ် (ကိန်းပြည့်|ဒဿမကိန်း)` starts `n` tokens ahead.
     ///
     /// # Arguments
     ///
@@ -183,7 +183,7 @@ impl Parser<'_>
     }
 
     /// Parse a kind phrase with its pointer levels: one bare `လိပ်စာ` after
-    /// the base word, then `၏ လိပ်စာ` pairs, as in `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ`.
+    /// the base word, then `၏ လိပ်စာ` pairs, as in `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ`.
     /// The pairs can also start right after the base word.
     ///
     /// # Returns
@@ -259,7 +259,7 @@ impl Parser<'_>
     /// # Arguments
     ///
     /// * `sized` - Whether a bit count came before; then the word must be
-    ///   `ကိန်းပြည့်` or `ဒဿမကိန်း`.
+    ///   `ကိန်းပြည့်` or `ဒဿမကိန်း`.
     ///
     /// # Returns
     ///
@@ -283,7 +283,7 @@ impl Parser<'_>
     /// # Arguments
     ///
     /// * `bits` - The bit count and its span, when written.
-    /// * `base` - The base kind; `ကိန်းပြည့်` or `ဒဿမကိန်း` when `bits` is set.
+    /// * `base` - The base kind; `ကိန်းပြည့်` or `ဒဿမကိန်း` when `bits` is set.
     ///
     /// # Returns
     ///
@@ -306,7 +306,7 @@ impl Parser<'_>
 ///
 /// # Returns
 ///
-/// `"ကိန်းပြည့်" or "ဒဿမကိန်း"`.
+/// `"ကိန်းပြည့်" or "ဒဿမကိန်း"`.
 fn sized_kind_words() -> String
 {
     one_of(&[quote(&kw_text(Kw::IntKind)), quote(&kw_text(Kw::FloatKind))])

@@ -43,13 +43,13 @@ Operators on the same line go left to right: `၁၀ - ၃ - ၂` is `(၁၀ - 
 ## Word phrases take whole sums
 
 A part of a word phrase can be a whole sum written with signs. In
-`က + ခ နှင့် ဂ ၏ မြှောက်လဒ်`, the first part is `က + ခ`. It reads "the product of (k + kh) and g":
+`က + ခ နှင့် ဂ ၏ မြှောက်လဒ်`, the first part is `က + ခ`. It reads "the product of (k + kh) and g":
 
 ```zaka
-ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-ကိန်းရှင် ဂ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
-က + ခ နှင့် ဂ ၏ မြှောက်လဒ် ကို ပြသပါ။         // (2 + 3) × 4
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
+က + ခ နှင့် ဂ ၏ မြှောက်လဒ် ကို ပြသပါ။         // (2 + 3) × 4
 ```
 
 ```text
@@ -62,15 +62,15 @@ Word phrases can nest. Read from left to right. Each verb takes the parts just b
 that hold the particles it needs, and its result joins the sentence:
 
 ```zaka
-ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-ကိန်းရှင် ဂ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
 
 // k and (the product of kh and g): the sum      → 2 + (3 × 4)
-က နှင့် ခ နှင့် ဂ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ် ကို ပြသပါ။
+က နှင့် ခ နှင့် ဂ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ် ကို ပြသပါ။
 
 // (the sum of k and kh) and g: the product      → (2 + 3) × 4
-က နှင့် ခ ၏ ပေါင်းလဒ် နှင့် ဂ ၏ မြှောက်လဒ် ကို ပြသပါ။
+က နှင့် ခ ၏ ပေါင်းလဒ် နှင့် ဂ ၏ မြှောက်လဒ် ကို ပြသပါ။
 ```
 
 ```text
@@ -78,8 +78,8 @@ that hold the particles it needs, and its result joins the sentence:
 ၂၀
 ```
 
-In the first line, `မြှောက်လဒ်` takes `ခ နှင့်` and `ဂ ၏`, the two parts just before it.
-A `၏` follows its result, so `ပေါင်းလဒ်` then takes `က နှင့်` and that result.
+In the first line, `မြှောက်လဒ်` takes `ခ နှင့်` and `ဂ ၏`, the two parts just before it.
+A `၏` follows its result, so `ပေါင်းလဒ်` then takes `က နှင့်` and that result.
 
 ## Parentheses move a phrase into a sum
 
@@ -87,9 +87,9 @@ A word phrase cannot sit straight inside a sum written with signs. To use one th
 put it in parentheses:
 
 ```zaka-error ZK0203
-ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-က နှင့် ခ ၏ ပေါင်းလဒ် * ၂ ကို ပြသပါ။
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
+က နှင့် ခ ၏ ပေါင်းလဒ် * ၂ ကို ပြသပါ။
 ```
 
 ```text
@@ -97,9 +97,9 @@ error[ZK0203]: this statement does not end in a statement verb, found "*"
 ```
 
 ```zaka
-ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-(က နှင့် ခ ၏ ပေါင်းလဒ်) * ၂ ကို ပြသပါ။
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
+(က နှင့် ခ ၏ ပေါင်းလဒ်) * ၂ ကို ပြသပါ။
 ```
 
 ```text
@@ -115,7 +115,7 @@ Parentheses around a whole printed or stored value change nothing. Zaka warns ab
 them, much as an editor flags a double space:
 
 ```zaka-warning ZK0507
-ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 (က + ၁) ကို ပြသပါ။
 ```
 

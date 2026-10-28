@@ -90,7 +90,7 @@ fn the_graph_holds_all_its_nodes()
 #[test]
 fn a_lone_parent_is_centered_over_its_child()
 {
-    let out = compile("ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။", &Options::default());
+    let out = compile("ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။", &Options::default());
     let g = graph(&out.tree);
     let root = &g.nodes[0];
     let decl = &g.nodes[1];

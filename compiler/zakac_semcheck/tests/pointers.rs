@@ -7,10 +7,10 @@ use common::ok;
 use zakac_diagnostics::Code;
 
 /// `x` an integer, `p` its address, `q` an opaque address, `b` an `*i8`.
-const PTRS: &str = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
+const PTRS: &str = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
 ကိန်းရှင် q သည် လိပ်စာ ဖြစ်ပါစေ။
-ကိန်းရှင် b သည် ၈ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် b သည် ၈ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။
 ";
 
 /// Join program lines.
@@ -37,9 +37,9 @@ fn dereference_and_places()
     assert_eq!(codes(&lines(&[PTRS, "q ၏ တန်ဖိုး ကို ပြသပါ။"])), [Code::OpaquePointer]);
     assert_eq!(codes("၅ ကို ၆ ဟု ထားပါ။"), [Code::NotAPlace]);
     assert_eq!(codes("၅ ၏ လိပ်စာ ကို ပြသပါ။"), [Code::NoAddress]);
-    let fixed = "ကိန်းသေ က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\nက ၏ လိပ်စာ ကို ပြသပါ။";
+    let fixed = "ကိန်းသေ က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\nက ၏ လိပ်စာ ကို ပြသပါ။";
     assert_eq!(codes(fixed), [Code::FixedAddress]);
-    let loop_var = "၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ၏ လိပ်စာ ကို ပြသပါ။";
+    let loop_var = "၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ၏ လိပ်စာ ကို ပြသပါ။";
     assert_eq!(codes(loop_var), [Code::FixedAddress]);
 }
 
@@ -61,7 +61,7 @@ fn pointer_arithmetic_and_comparison()
     assert_eq!(codes(&lines(&[PTRS, "(p + b) ကို ပြသပါ။"])), [Code::PointerKindsDiffer]);
     assert_eq!(codes(&lines(&[PTRS, "(p + p) ကို ပြသပါ။"])), [Code::PointerOperator]);
     assert_eq!(codes(&lines(&[PTRS, "(p == x) ကို ပြသပါ။"])), [Code::PointerOperator]);
-    ok(&lines(&[PTRS, "အကယ်၍ p သည် ဗလာ နှင့် မညီလျှင် x ကို ပြသပါ။"]));
+    ok(&lines(&[PTRS, "အကယ်၍ p သည် ဗလာ နှင့် မညီလျှင် x ကို ပြသပါ။"]));
     ok(&lines(&[PTRS, "(p == q) ကို ပြသပါ။", "(p < p) ကို ပြသပါ။"]));
     assert_eq!(codes(&lines(&[PTRS, "(p < b) ကို ပြသပါ။"])), [Code::PointerKindsDiffer]);
     let cond = lines(&[PTRS, "အကယ်၍ p ဖြစ်လျှင် x ကို ပြသပါ။"]);
@@ -71,11 +71,11 @@ fn pointer_arithmetic_and_comparison()
 #[test]
 fn casts_and_size_of()
 {
-    let checked = check(&lines(&[PTRS, "ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။"]));
-    assert_eq!(kind_at(&checked, "ကိန်းပြည့် ၏ အရွယ်အစား"), "usize");
-    ok(&lines(&[PTRS, "p ကို ၈ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]));
-    ok(&lines(&[PTRS, "p ကို လက္ခဏာမဲ့ ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]));
-    ok(&lines(&[PTRS, "၄၀၉၆ ကို ကိန်းပြည့် ၏ လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]));
+    let checked = check(&lines(&[PTRS, "ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။"]));
+    assert_eq!(kind_at(&checked, "ကိန်းပြည့် ၏ အရွယ်အစား"), "usize");
+    ok(&lines(&[PTRS, "p ကို ၈ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]));
+    ok(&lines(&[PTRS, "p ကို လက္ခဏာမဲ့ ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]));
+    ok(&lines(&[PTRS, "၄၀၉၆ ကို ကိန်းပြည့် ၏ လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]));
     let float = lines(&[PTRS, "p ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]);
     assert_eq!(codes(&float), [Code::InvalidCast]);
 }
@@ -83,10 +83,10 @@ fn casts_and_size_of()
 #[test]
 fn heap_statements_take_pointer_places()
 {
-    ok(&lines(&[PTRS, "မင်မိုရီ ကိန်းပြည့် ၁၀ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။"]));
+    ok(&lines(&[PTRS, "မင်မိုရီ ကိန်းပြည့် ၁၀ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။"]));
     ok(&lines(&[PTRS, "မင်မိုရီ ၆၄ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို q တွင် သိမ်းထားမည်။"]));
     ok(&lines(&[PTRS, "p လိပ်စာရှိကို မင်မိုရီ ၁၂၈ ဘိုက်စာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။"]));
-    ok(&lines(&[PTRS, "p လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။"]));
+    ok(&lines(&[PTRS, "p လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။"]));
     let int = lines(&[PTRS, "မင်မိုရီ ၆၄ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို x တွင် သိမ်းထားမည်။"]);
     assert_eq!(codes(&int), [Code::HeapNeedsPointer]);
     let null = lines(&[PTRS, "မင်မိုရီ ၆၄ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို ဗလာ တွင် သိမ်းထားမည်။"]);
@@ -99,8 +99,8 @@ fn heap_statements_take_pointer_places()
 fn returning_a_local_address_warns()
 {
     let text = "လုပ်ဆောင်ချက် မှား သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ၏ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
-ကိန်းရှင် x သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ၏ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
+ကိန်းရှင် x သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
 x ၏ လိပ်စာ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let out = check(text).out;
@@ -108,7 +108,7 @@ x ၏ လိပ်စာ ကို ရလဒ်အဖြစ် ပြန်ပ�
     assert_eq!(found, [Code::LocalAddressReturned]);
     assert!(!out.diagnostics[0].is_error());
     let global =
-        "ကိန်းရှင် g သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\n".to_string() + &text.replace("x ၏", "g ၏");
+        "ကိန်းရှင် g သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\n".to_string() + &text.replace("x ၏", "g ၏");
     let diagnostics = check(&global).out.diagnostics;
     assert!(diagnostics.is_empty(), "{diagnostics:?}");
     let warned: Vec<_> =

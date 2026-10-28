@@ -220,6 +220,34 @@ pub fn canonicalize(text: &str) -> String
     out
 }
 
+/// Put each asat back in front of the dot below that NFC moved ahead of it.
+///
+/// NFC sorts the dot below (ccc 7) before the asat (ccc 9), but Burmese
+/// spelling writes the asat first. In each run of these two
+/// marks, the asats move to the front. Both marks are 3 u8s, so the move keeps
+/// each offset.
+///
+/// # Arguments
+///
+/// * `text` - NFC text.
+///
+/// # Returns
+///
+/// The text with the asats of each run ahead of its dots below.
+pub fn asat_first(text: &str) -> String
+{
+    let is_mark = |ch: char| ch == '\u{1037}' || ch == '\u{103a}';
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = String::with_capacity(text.len());
+    for run in chars.chunk_by(|a, b| is_mark(*a) && is_mark(*b))
+    {
+        let asats = run.iter().filter(|ch| **ch == '\u{103a}');
+        let others = run.iter().filter(|ch| **ch != '\u{103a}');
+        out.extend(asats.chain(others));
+    }
+    out
+}
+
 /// Return `true` if `ch` extends the Burmese cluster that `prev` ends.
 ///
 /// # Arguments
@@ -264,7 +292,7 @@ pub(crate) mod tests
     #[test]
     fn preserves_compound_vowel_and_asat_order()
     {
-        let words = ["လုပ်ဆောင်ချက်", "ပေါင်းလဒ်", "ဖြင့်"];
+        let words = ["လုပ်ဆောင်ချက်", "ပေါင်းလဒ်", "ဖြင့်"];
         do_for!(w in words, assert_eq!(normalize_word(w), w, "normalize changed {w}"));
     }
 
@@ -290,7 +318,7 @@ pub(crate) mod tests
         "\u{1000}\u{1031}\u{102c}\u{103a}",
         // ကို
         "\u{1000}\u{102d}\u{102f}",
-        // ဖြင့်
+        // ဖြင့်
         "\u{1016}\u{103c}\u{1004}\u{1037}\u{103a}",
         // ကျွန်ုပ်
         "\u{1000}\u{103b}\u{103d}\u{1014}\u{103a}\u{102f}\u{1015}\u{103a}",

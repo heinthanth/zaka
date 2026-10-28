@@ -97,7 +97,7 @@ pub struct IntLit
     pub id: NodeId,
     /// The value, as an unsigned bit pattern.
     pub value: u128,
-    /// The number base, 10 unless a `အခြေ N ဖြင့်` prefix is written.
+    /// The number base, 10 unless a `အခြေ N ဖြင့်` prefix is written.
     pub base: u8,
     /// The kind prefix, when written.
     pub kind: Option<Kind>,
@@ -433,7 +433,7 @@ pub struct LogicExpr
 }
 
 /// A clause closed with a verb-noun or a comparison verb, such as
-/// `က နှင့် ခ ၏ ပေါင်းလဒ်`.
+/// `က နှင့် ခ ၏ ပေါင်းလဒ်`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct VerbExpr
 {
@@ -459,7 +459,7 @@ pub struct VerbExpr
     pub span: Span,
 }
 
-/// `လုပ်ဆောင်ချက် f ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`
+/// `လုပ်ဆောင်ချက် f ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct CallExpr
 {

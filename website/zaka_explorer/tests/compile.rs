@@ -40,7 +40,7 @@ fn clean_groups_have_no_diagnostics()
 #[test]
 fn particle_warnings_belong_to_the_check_stage()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
     let out = compile(text, &Options::default());
     assert!(out.checked);
     assert_eq!(out.count(Level::Warning), 1);
@@ -316,7 +316,7 @@ fn codegen_skips_after_fold_errors()
 #[test]
 fn compiling_does_not_run_the_ops()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
+    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
     let out = compile(text, &Options::default());
     assert_eq!(out.status(Phase::Codegen), Status::Clean);
     assert_eq!(out.status(Phase::Run), Status::Clean);

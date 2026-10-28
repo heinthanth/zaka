@@ -99,8 +99,8 @@ fn if_with_else_jumps_over_the_else_branch()
 #[test]
 fn break_and_continue_go_to_the_exit_and_the_update()
 {
-    let text = "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို \
-                လုပ်ဆောင်ပါ။\nအကယ်၍ ကိန်း % ၂ သည် ၁ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ ကိန်း သည် \
+    let text = "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို \
+                လုပ်ဆောင်ပါ။\nအကယ်၍ ကိန်း % ၂ သည် ၁ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ ကိန်း သည် \
                 ၇ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု \
                 ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let found = main_ops(text);
@@ -118,7 +118,7 @@ fn break_and_continue_go_to_the_exit_and_the_update()
 #[test]
 fn call_statements_drop_a_result()
 {
-    let text = "လုပ်ဆောင်ချက် တစ် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် တစ် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် \
+    let text = "လုပ်ဆောင်ချက် တစ် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် တစ် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် \
                 ရလဒ် ကို ပြန်ပေးမည်။\n၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let module = emit_text(text);
     assert_eq!(ops(main_func(&module)), ["call f0", "pop", "ret"]);
@@ -130,10 +130,10 @@ fn call_statements_drop_a_result()
 #[test]
 fn constant_bounds_fix_the_direction()
 {
-    let up = main_ops("၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။");
+    let up = main_ops("၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။");
     let count = |list: &[String], op: &str| list.iter().filter(|o| *o == op).count();
     assert_eq!((count(&up, "add"), count(&up, "sub")), (1, 1), "{up:?}");
-    let module = emit_text("၃ မှ ၁ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။");
+    let module = emit_text("၃ မှ ၁ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။");
     let main = main_func(&module);
     assert!(main.locals.is_empty(), "{:?}", main.locals);
     assert_eq!(ops(main).iter().filter(|o| *o == "sub").count(), 2);
@@ -143,7 +143,7 @@ fn constant_bounds_fix_the_direction()
 fn runtime_bounds_pick_the_direction_once()
 {
     let text =
-        "ကိန်းရှင် အဆုံး သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။\n၁ မှ အဆုံး အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။";
+        "ကိန်းရှင် အဆုံး သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။\n၁ မှ အဆုံး အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။";
     let module = emit_text(text);
     let names: Vec<&str> =
         main_func(&module).locals.iter().map(|s| s.name.as_str()).collect();
@@ -157,25 +157,25 @@ fn runtime_bounds_pick_the_direction_once()
 fn a_runtime_step_is_checked()
 {
     let text =
-        "ကိန်းရှင် ခြား သည် ကိန်းပြည့် ၂ ဖြစ်ပါစေ။\n၀ မှ ၁၀ အထိ ခြား စီ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။";
+        "ကိန်းရှင် ခြား သည် ကိန်းပြည့် ၂ ဖြစ်ပါစေ။\n၀ မှ ၁၀ အထိ ခြား စီ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။";
     let module = emit_text(text);
     let main = main_func(&module);
     assert!(main.code.contains(&Op::Trap(TrapCode::StepNotPositive)));
     let names: Vec<&str> = main.locals.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(names, ["%step"]);
-    let constant = emit_text("၀ မှ ၁၀ အထိ ၂ စီ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။");
+    let constant = emit_text("၀ မှ ၁၀ အထိ ၂ စီ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။");
     assert!(!main_func(&constant).code.iter().any(|op| matches!(op, Op::Trap(_))));
 }
 
 #[test]
 fn signed_loops_measure_the_distance_unsigned()
 {
-    let found = main_ops("၁ မှ ၃ အထိ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။");
+    let found = main_ops("၁ မှ ၃ အထိ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။");
     assert!(found.contains(&"convert usize".to_string()), "{found:?}");
     assert!(found.contains(&"push 3:usize".to_string()), "{found:?}");
     let unsigned = main_ops(
-        "၁ မှ ၃ အထိ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။"
-            .replace("၁ မှ", "လက္ခဏာမဲ့ ကိန်းပြည့် ၁ မှ")
+        "၁ မှ ၃ အထိ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။"
+            .replace("၁ မှ", "လက္ခဏာမဲ့ ကိန်းပြည့် ၁ မှ")
             .as_str(),
     );
     assert!(!unsigned.iter().any(|o| o.starts_with("convert")), "{unsigned:?}");
@@ -210,7 +210,7 @@ fn text_of(src: &str, base: u32, span: zakac_span::span::Span) -> &str
 #[test]
 fn each_op_has_a_span()
 {
-    let text = "လုပ်ဆောင်ချက် တစ် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် တစ် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် \
+    let text = "လုပ်ဆောင်ချက် တစ် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် တစ် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် \
                 ရလဒ် ကို ပြန်ပေးမည်။\n၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ \
                 ပြီးပါပြီး။\n\"က\" ဟု ပြသပါ။";
     let module = emit_text(text);
@@ -271,7 +271,7 @@ fn jumps_of_an_if_take_the_if_span()
 #[test]
 fn each_variable_is_read_and_written_through_its_block()
 {
-    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ \
+    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ \
                 ဖြစ်ပါစေ။\np ၏ တန်ဖိုး ကို ပြသပါ။";
     let found = main_ops(text);
     let want = [
@@ -293,7 +293,7 @@ fn each_variable_is_read_and_written_through_its_block()
 #[test]
 fn a_parameter_is_read_from_its_block()
 {
-    let text = "လုပ်ဆောင်ချက် ပြ သည်\nကိန်းပြည့် က ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို \
+    let text = "လုပ်ဆောင်ချက် ပြ သည်\nကိန်းပြည့် က ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို \
                 ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let module = emit_text(text);
     let found = ops(&module.funcs[0]);
@@ -303,11 +303,11 @@ fn a_parameter_is_read_from_its_block()
 #[test]
 fn heap_statements_and_pointer_arithmetic_emit_heap_ops()
 {
-    let text = "ကိန်းရှင် p သည် ၃၂ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။
-မင်မိုရီ ၃၂ ဘစ် ကိန်းပြည့် ၁၀ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
+    let text = "ကိန်းရှင် p သည် ၃၂ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။
+မင်မိုရီ ၃၂ ဘစ် ကိန်းပြည့် ၁၀ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
 p + ၁ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
 p လိပ်စာရှိကို မင်မိုရီ ၆၄ ဘိုက်စာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
-p လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
+p လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
     let found = main_ops(text);
     let want = [
         "global_addr g0",
@@ -344,7 +344,7 @@ p လိပ်စာရှိမင်မိုရီကို ပြန်လ�
 fn a_deref_destination_uses_dup()
 {
     let text =
-        "ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။\npp ၏ တန်ဖိုး လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
+        "ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။\npp ၏ တန်ဖိုး လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
     let found = main_ops(text);
     assert_eq!(
         found[3..],
@@ -364,16 +364,16 @@ fn a_deref_destination_uses_dup()
 #[test]
 fn an_offset_to_an_opaque_place_steps_then_converts()
 {
-    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
+    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
 ကိန်းရှင် q သည် လိပ်စာ p + ၁ ဖြစ်ပါစေ။
 q ကို p + ၁ ဟု ထားပါ။
 q == p + ၁ ကို ပြသပါ။
-လုပ်ဆောင်ချက် ယူ ကို p + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ယူ ကို p + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
 လုပ်ဆောင်ချက် ယူ သည် လိပ်စာ o ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 o ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-လုပ်ဆောင်ချက် ရှေ့ သည် ကိန်းပြည့် ၏ လိပ်စာ r ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် ရှေ့ သည် ကိန်းပြည့် ၏ လိပ်စာ r ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
 r + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let module = emit_text(text);

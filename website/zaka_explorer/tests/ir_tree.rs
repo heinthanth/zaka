@@ -8,7 +8,7 @@ fn flatten(node: &TreeNode) -> Vec<&TreeNode>
     std::iter::once(node).chain(node.children.iter().flat_map(flatten)).collect()
 }
 
-const TEXT: &str = "ကိန်းသေ အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
+const TEXT: &str = "ကိန်းသေ အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
 အသက် + ၂ ကို ပြသပါ။";
 
 #[test]

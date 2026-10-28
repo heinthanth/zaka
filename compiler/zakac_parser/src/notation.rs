@@ -295,7 +295,7 @@ impl Parser<'_>
         Expr::Char(CharLit::builder().id(id).value(value).span(tok.span).build())
     }
 
-    /// Parse `လုပ်ဆောင်ချက် f ကို (args တို့ဖြင့်)? လုပ်ဆောင်သော ရလဒ်`.
+    /// Parse `လုပ်ဆောင်ချက် f ကို (args တို့ဖြင့်)? လုပ်ဆောင်သော ရလဒ်`.
     ///
     /// # Returns
     ///
@@ -328,7 +328,7 @@ impl Parser<'_>
         Expr::Call(node)
     }
 
-    /// Parse `လုပ်ဆောင်ချက် f ကို (args တို့ဖြင့်)?`, shared between call
+    /// Parse `လုပ်ဆောင်ချက် f ကို (args တို့ဖြင့်)?`, shared between call
     /// expressions and call statements.
     ///
     /// # Returns
@@ -343,7 +343,7 @@ impl Parser<'_>
         Ok((start, callee, args))
     }
 
-    /// Parse `expr (၊ expr)* တို့ဖြင့်`, or nothing when the call word comes
+    /// Parse `expr (၊ expr)* တို့ဖြင့်`, or nothing when the call word comes
     /// next.
     ///
     /// # Returns

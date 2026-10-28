@@ -135,9 +135,9 @@ pub enum DataKind
 
 impl DataKind
 {
-    /// `ကိန်းပြည့်`, the default integer kind.
+    /// `ကိန်းပြည့်`, the default integer kind.
     pub const ISIZE: DataKind = DataKind::Int(IntKind::new(true, Width::Platform));
-    /// `လက္ခဏာမဲ့ ကိန်းပြည့်`
+    /// `လက္ခဏာမဲ့ ကိန်းပြည့်`
     pub const USIZE: DataKind = DataKind::Int(IntKind::new(false, Width::Platform));
     /// `ဒဿမကိန်း`, the default floating-point kind.
     pub const F64: DataKind = DataKind::Float(64);

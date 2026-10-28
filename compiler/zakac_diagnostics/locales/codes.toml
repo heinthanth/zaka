@@ -86,7 +86,7 @@ en = "missing operand"
 [codes.ZK0202.message]
 en = "expected an operand, found %{f}"
 [codes.ZK0202.explain]
-en = """An operand is a literal, a name, a call expression, or an expression in parentheses. A particle such as \"ကို\" or \"နှင့်\" is followed with an operand or with the verb that closes the clause, and an operator such as \"+\" is followed with an operand. Here neither comes next."""
+en = """An operand is a literal, a name, a call expression, or an expression in parentheses. A particle such as \"ကို\" or \"နှင့်\" is followed with an operand or with the verb that closes the clause, and an operator such as \"+\" is followed with an operand. Here neither comes next."""
 
 [codes.ZK0203.title]
 en = "statement verb missing"
@@ -109,14 +109,14 @@ en = "too few operands"
 [codes.ZK0205.message]
 en = "\"%{v}\" needs %{n} operands, found %{m}"
 [codes.ZK0205.explain]
-en = """Each verb takes a fixed number of operands, each followed with its particle: \"ပေါင်းလဒ်\" takes two (\"a နှင့် b ၏\"), \"ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်\" takes one (\"a ၏\"), and \"ထားပါ\" takes two (\"x ကို v ဟု\"). The clause before this verb holds fewer operands than the verb needs."""
+en = """Each verb takes a fixed number of operands, each followed with its particle: \"ပေါင်းလဒ်\" takes two (\"a နှင့် b ၏\"), \"ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်\" takes one (\"a ၏\"), and \"ထားပါ\" takes two (\"x ကို v ဟု\"). The clause before this verb holds fewer operands than the verb needs."""
 
 [codes.ZK0206.title]
 en = "wrong particle for the verb"
 [codes.ZK0206.message]
 en = "\"%{v}\" needs \"%{e}\" after operand %{i}, found %{f}"
 [codes.ZK0206.explain]
-en = """A verb checks the particle that follows each of its operands. \"ပေါင်းလဒ်\" wants \"a နှင့် b ၏\", \"စားသော စားလဒ်\" wants \"a ကို b ဖြင့်\", the comparisons want \"a သည် b\" then \"နှင့်\", \"ထက်\" or \"အောက်\", and \"ထားပါ\" wants \"x ကို v ဟု\". The operand named in the message carries a different particle, or none."""
+en = """A verb checks the particle that follows each of its operands. \"ပေါင်းလဒ်\" wants \"a နှင့် b ၏\", \"စားသော စားလဒ်\" wants \"a ကို b ဖြင့်\", the comparisons want \"a သည် b\" then \"နှင့်\", \"ထက်\" or \"အောက်\", and \"ထားပါ\" wants \"x ကို v ဟု\". The operand named in the message carries a different particle, or none."""
 
 [codes.ZK0207.title]
 en = "two particles on one operand"
@@ -146,7 +146,7 @@ en = "a comparison cannot be the operand of another comparison"
 [codes.ZK0210.help]
 en = "join the two comparisons with \"ဖြစ်၍\", or put the inner one in parentheses"
 [codes.ZK0210.explain]
-en = """Comparisons do not chain: \"a < b < c\" and \"a သည် b နှင့် ညီ သည် c နှင့် ညီသည်\" are errors. Write \"a < b ဖြစ်၍ b < c\" to test both. A comparison in parentheses is a plain boolean operand and can be compared again."""
+en = """Comparisons do not chain: \"a < b < c\" and \"a သည် b နှင့် ညီ သည် c နှင့် ညီသည်\" are errors. Write \"a < b ဖြစ်၍ b < c\" to test both. A comparison in parentheses is a plain boolean operand and can be compared again."""
 
 [codes.ZK0211.title]
 en = "else without if"
@@ -193,7 +193,7 @@ en = """Integer kinds come in 8, 16, 32, 64 and 128 bits, floating-point kinds i
 [codes.ZK0217.title]
 en = "sign word on a kind that is not an integer"
 [codes.ZK0217.message]
-en = "a sign word can stand before \"ကိန်းပြည့်\" and no other kind"
+en = "a sign word can stand before \"ကိန်းပြည့်\" and no other kind"
 [codes.ZK0217.explain]
 en = """Floating-point numbers are signed, and characters and booleans have no sign, so the sign words \"လက္ခဏာရှိ\" and \"လက္ခဏာမဲ့\" are allowed in integer kinds and nowhere else."""
 
@@ -202,7 +202,7 @@ en = "invalid number base"
 [codes.ZK0218.message]
 en = "%{b} is not a number base; use a decimal integer from 2 to 36"
 [codes.ZK0218.explain]
-en = """The base prefix \"အခြေ N ဖြင့်\" takes a decimal integer from 2 to 36. Digits above 9 are written as the letters A to Z."""
+en = """The base prefix \"အခြေ N ဖြင့်\" takes a decimal integer from 2 to 36. Digits above 9 are written as the letters A to Z."""
 
 [codes.ZK0219.title]
 en = "invalid digit"
@@ -223,14 +223,14 @@ en = "fraction in an integer literal"
 [codes.ZK0221.message]
 en = "an integer kind cannot hold a literal with a fraction or exponent"
 [codes.ZK0221.explain]
-en = """The kind prefix \"ကိန်းပြည့်\" makes the literal an integer, but this literal is written with a fraction or an exponent. Use \"ဒဿမကိန်း\" for a floating-point literal, or remove the fraction."""
+en = """The kind prefix \"ကိန်းပြည့်\" makes the literal an integer, but this literal is written with a fraction or an exponent. Use \"ဒဿမကိန်း\" for a floating-point literal, or remove the fraction."""
 
 [codes.ZK0222.title]
 en = "invalid literal kind"
 [codes.ZK0222.message]
 en = "a literal kind prefix must be an integer or floating-point kind"
 [codes.ZK0222.explain]
-en = """A kind prefix such as \"လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်\" fixes the kind of the number that follows. Characters and booleans have literals of their own ('က', \"မှန်\"), so \"စာလုံး\" and \"မှန်မှားတန်ဖိုး\" cannot prefix a number."""
+en = """A kind prefix such as \"လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်\" fixes the kind of the number that follows. Characters and booleans have literals of their own ('က', \"မှန်\"), so \"စာလုံး\" and \"မှန်မှားတန်ဖိုး\" cannot prefix a number."""
 
 [codes.ZK0223.title]
 en = "string literal outside a print statement"
@@ -304,7 +304,7 @@ en = "assignment to a counted-loop variable"
 [codes.ZK0307.message]
 en = "\"%{n}\" is a counted-loop variable and cannot be assigned"
 [codes.ZK0307.explain]
-en = """The variable of a counted loop (\"မှ ... အထိ ... အနေဖြင့်\") steps on its own from the first bound to the last. Assigning to it inside the loop would break that count. Use a generic loop when the variable must change in other steps, or put the value in another variable and change that one."""
+en = """The variable of a counted loop (\"မှ ... အထိ ... အနေဖြင့်\") steps on its own from the first bound to the last. Assigning to it inside the loop would break that count. Use a generic loop when the variable must change in other steps, or put the value in another variable and change that one."""
 
 [codes.ZK0308.title]
 en = "constant without a value"
@@ -380,7 +380,7 @@ en = "a condition must be a boolean, found %{got}"
 [codes.ZK0402.help]
 en = "compare the pointer with \"ဗလာ\""
 [codes.ZK0402.explain]
-en = """The condition of \"အကယ်၍\", of a while loop, and of a generic loop must be a boolean value. Numbers do not count as true or false. Compare the value instead, for example \"က သည် ၀ နှင့် မညီ\"."""
+en = """The condition of \"အကယ်၍\", of a while loop, and of a generic loop must be a boolean value. Numbers do not count as true or false. Compare the value instead, for example \"က သည် ၀ နှင့် မညီ\"."""
 
 [codes.ZK0403.title]
 en = "operand of the wrong kind"
@@ -422,7 +422,7 @@ en = "invalid conversion"
 [codes.ZK0408.message]
 en = "cannot convert %{from} to %{to}"
 [codes.ZK0408.explain]
-en = """The conversion verb converts between numbers of all kinds, between characters and integers, and from booleans to integers. Floats and characters do not convert into each other, and nothing converts into a boolean: compare the value instead, for example \"က သည် ၀ နှင့် မညီ\"."""
+en = """The conversion verb converts between numbers of all kinds, between characters and integers, and from booleans to integers. Floats and characters do not convert into each other, and nothing converts into a boolean: compare the value instead, for example \"က သည် ၀ နှင့် မညီ\"."""
 
 [codes.ZK0409.title]
 en = "loop step is not positive"
@@ -466,14 +466,14 @@ en = "an opaque \"လိပ်စာ\" cannot be dereferenced or offset"
 [codes.ZK0414.help]
 en = "convert it to a pointer kind first with \"ကို <kind> လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်\""
 [codes.ZK0414.explain]
-en = """The opaque pointer kind \"လိပ်စာ\" holds an address but no kind for the value there, so the compiler cannot tell what to read or how far to move. Convert it to a pointer kind such as \"ကိန်းပြည့် လိပ်စာ\" with the conversion verb, then dereference or offset the result."""
+en = """The opaque pointer kind \"လိပ်စာ\" holds an address but no kind for the value there, so the compiler cannot tell what to read or how far to move. Convert it to a pointer kind such as \"ကိန်းပြည့် လိပ်စာ\" with the conversion verb, then dereference or offset the result."""
 
 [codes.ZK0415.title]
 en = "operator not for pointers"
 [codes.ZK0415.message]
 en = "the operator \"%{op}\" cannot be used on pointers"
 [codes.ZK0415.explain]
-en = """A pointer takes few operators: \"+\" and \"-\" with an integer to move it, \"-\" between two pointers of the same kind for the distance, and comparisons. Other operators, such as \"*\", \"/\", \"%\", the bitwise operators, shifts and negation, have no meaning on an address. Convert the pointer to \"လက္ခဏာမဲ့ ကိန်းပြည့်\" to compute with the address as a number."""
+en = """A pointer takes few operators: \"+\" and \"-\" with an integer to move it, \"-\" between two pointers of the same kind for the distance, and comparisons. Other operators, such as \"*\", \"/\", \"%\", the bitwise operators, shifts and negation, have no meaning on an address. Convert the pointer to \"လက္ခဏာမဲ့ ကိန်းပြည့်\" to compute with the address as a number."""
 
 [codes.ZK0416.title]
 en = "pointer kinds differ"
@@ -541,7 +541,7 @@ en = "a sentence or a string is quoted with \"ဟု\", not marked with \"ကိ
 [codes.ZK0505.help]
 en = "write \"... ဟု ပြသပါ။\""
 [codes.ZK0505.explain]
-en = """\"ကို\" marks a thing: a name, a number, an arithmetic result. A whole sentence, such as a comparison that ends in \"သည်\" or \"ပါ\", and a string literal are quoted with \"ဟု\" instead: \"(အသက် သည် ၃၀ နှင့် မညီပါ) ဟု ပြသပါ။\", \"\\\"မင်္ဂလာပါ\\\" ဟု ပြသပါ။\". A bare clause with no particle keeps \"ကို\"."""
+en = """\"ကို\" marks a thing: a name, a number, an arithmetic result. A whole sentence, such as a comparison that ends in \"သည်\" or \"ပါ\", and a string literal are quoted with \"ဟု\" instead: \"(အသက် သည် ၃၀ နှင့် မညီပါ) ဟု ပြသပါ။\", \"\\\"မင်္ဂလာပါ\\\" ဟု ပြသပါ။\". A bare clause with no particle keeps \"ကို\"."""
 
 [codes.ZK0506.title]
 en = "value printed with \"ဟု\""

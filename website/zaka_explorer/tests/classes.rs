@@ -42,9 +42,9 @@ fn operators_stand_apart_from_brackets()
 #[test]
 fn word_operators_kinds_and_truth_values_get_their_own_classes()
 {
-    let found = classes("က သည် ကိန်းပြည့် ဖြစ်ပါစေ။ ခ ကို မှန် ဟု ထားပါ။");
+    let found = classes("က သည် ကိန်းပြည့် ဖြစ်ပါစေ။ ခ ကို မှန် ဟု ထားပါ။");
     assert!(found.contains(&"tok-kind"));
     assert!(found.contains(&"tok-bool"));
-    let sum = classes("က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသပါ။");
+    let sum = classes("က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသပါ။");
     assert!(sum.contains(&"tok-op"));
 }

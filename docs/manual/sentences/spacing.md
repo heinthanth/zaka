@@ -12,7 +12,7 @@ The rule that matters most: put a space between a **made-up name** and the parti
 after it.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။   // make a number named အသက် (age)
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။   // make a number named အသက် (age)
 အသက် ကို ပြသပါ။                          // space between အသက် and ကို
 ```
 
@@ -24,7 +24,7 @@ Without the space, `အသက်ကို` is read as one long name. No such nam
 compiler complains, and it suggests the fix:
 
 ```zaka-error ZK0206
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသပါ။
 ```
 
@@ -45,7 +45,7 @@ help: write "အသက် ကို" with a space: a name joined to a particle i
 ```zaka
 ၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသပါ။      // reserved words joined
 ၁+၂ ကို ပြသပါ။                     // no spaces around +
-၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသပါ။      // ၏ needs no space
+၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသပါ။      // ၏ needs no space
 ```
 
 ```text
@@ -60,6 +60,6 @@ space". Zaka counts it as a space too.
 ## Hands on
 
 - Remove the space between `အသက်` and `ကို` in the first example and read the message.
-- Write `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` with as few spaces as possible while it still runs.
+- Write `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` with as few spaces as possible while it still runs.
 
 Next: [Values and kinds](../values/README.md).

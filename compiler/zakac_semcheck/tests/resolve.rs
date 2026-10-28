@@ -13,8 +13,8 @@ const GREET: &str = "လုပ်ဆောင်ချက် နှုတ်ဆ�
 
 /// A function with one integer parameter and an integer result.
 const TWICE: &str = "လုပ်ဆောင်ချက် နှစ်ဆ သည်
-ကိန်းပြည့် က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+ကိန်းပြည့် က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
 က * ၂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 ";
@@ -25,7 +25,7 @@ fn lines(parts: &[&str]) -> String { parts.join("\n") }
 #[test]
 fn declared_names_resolve()
 {
-    ok(&lines(&["ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။", "က ကို ပြသပါ။"]));
+    ok(&lines(&["ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။", "က ကို ပြသပါ။"]));
 }
 
 #[test]
@@ -42,13 +42,13 @@ fn undeclared_names_are_reported()
 #[test]
 fn an_initial_value_cannot_see_its_own_name()
 {
-    assert_eq!(codes("ကိန်းရှင် က သည် ကိန်းပြည့် က ဖြစ်ပါစေ။"), [Code::UndeclaredName]);
+    assert_eq!(codes("ကိန်းရှင် က သည် ကိန်းပြည့် က ဖြစ်ပါစေ။"), [Code::UndeclaredName]);
 }
 
 #[test]
 fn a_name_is_declared_once_per_scope()
 {
-    let text = lines(&["ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။", "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။"]);
+    let text = lines(&["ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။", "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။"]);
     assert_eq!(codes(&text), [Code::Redeclaration]);
 }
 
@@ -56,7 +56,7 @@ fn a_name_is_declared_once_per_scope()
 fn inner_blocks_shadow_outer_names()
 {
     ok(&lines(&[
-        "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။",
+        "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။",
         "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။",
         "ကိန်းရှင် က သည် စာလုံး 'ခ' ဖြစ်ပါစေ။",
         "က ကို ပြသပါ။",
@@ -69,7 +69,7 @@ fn block_names_end_with_the_block()
 {
     let text = lines(&[
         "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။",
-        "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။",
+        "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။",
         "လုပ်ဆောင်စရာများ ပြီးပါပြီ။",
         "က ကို ပြသပါ။",
     ]);
@@ -80,7 +80,7 @@ fn block_names_end_with_the_block()
 fn functions_can_be_called_before_their_declaration()
 {
     ok(&lines(&["လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။", GREET]));
-    ok(&lines(&["လုပ်ဆောင်ချက် နှစ်ဆ ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။", TWICE]));
+    ok(&lines(&["လုပ်ဆောင်ချက် နှစ်ဆ ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။", TWICE]));
 }
 
 #[test]
@@ -100,7 +100,7 @@ fn parameter_names_are_distinct()
 {
     let text = lines(&[
         "လုပ်ဆောင်ချက် စုစု သည်",
-        "ကိန်းပြည့် က၊ ကိန်းပြည့် က တို့ကို လက်ခံပြီး",
+        "ကိန်းပြည့် က၊ ကိန်းပြည့် က တို့ကို လက်ခံပြီး",
         "အောက်ပါတို့ကို လုပ်ဆောင်မည်။",
         "လုပ်ဆောင်စရာများ ပြီးပါပြီ။",
     ]);
@@ -116,28 +116,28 @@ fn parameters_are_visible_inside_the_function_alone()
 #[test]
 fn constants_cannot_be_assigned()
 {
-    let text = lines(&["ကိန်းသေ က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။", "က ကို ၂ ဟု ထားပါ။"]);
+    let text = lines(&["ကိန်းသေ က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။", "က ကို ၂ ဟု ထားပါ။"]);
     assert_eq!(codes(&text), [Code::AssignToConst]);
 }
 
 #[test]
 fn constants_need_a_value()
 {
-    let text = lines(&["ကိန်းသေ က သည် ကိန်းပြည့် ဖြစ်ပါစေ။", "က ကို ပြသပါ။"]);
+    let text = lines(&["ကိန်းသေ က သည် ကိန်းပြည့် ဖြစ်ပါစေ။", "က ကို ပြသပါ။"]);
     assert_eq!(codes(&text), [Code::ConstWithoutInit]);
 }
 
 #[test]
 fn counted_loop_variables_cannot_be_assigned()
 {
-    let text = "၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ၁ ဟု ထားပါ။";
+    let text = "၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ၁ ဟု ထားပါ။";
     assert_eq!(codes(text), [Code::AssignToLoopVar]);
 }
 
 #[test]
 fn loop_variables_end_with_the_loop()
 {
-    let text = lines(&["၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။", "ကိန်း ကို ပြသပါ။"]);
+    let text = lines(&["၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။", "ကိန်း ကို ပြသပါ။"]);
     assert_eq!(codes(&text), [Code::UndeclaredName]);
 }
 
@@ -145,7 +145,7 @@ fn loop_variables_end_with_the_loop()
 fn generic_loop_update_sees_the_loop_variable()
 {
     ok(&lines(&[
-        "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။",
+        "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။",
         "ကိန်း ကို ပြသပါ။",
         "ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။",
         "လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။",
@@ -158,9 +158,9 @@ fn break_and_continue_need_a_loop()
     assert_eq!(codes("ကွင်းဆက် ကို ရပ်ပါ။"), [Code::BreakOutsideLoop]);
     assert_eq!(codes("နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။"), [Code::ContinueOutsideLoop]);
     ok(&lines(&[
-        "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်ပါစေ။",
+        "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်ပါစေ။",
         "ကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ ကွင်းဆက် ကို ရပ်ပါ။",
-        "၁ မှ ၁၀ အထိ ခ အနေဖြင့် ရေတွက်၍ နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။",
+        "၁ မှ ၁၀ အထိ ခ အနေဖြင့် ရေတွက်၍ နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။",
     ]));
 }
 
@@ -195,7 +195,7 @@ fn return_values_match_the_header()
     assert_eq!(codes(&void_value), [Code::ValueReturnedFromVoid]);
     let bare = lines(&[
         "လုပ်ဆောင်ချက် ဂဏန်း သည်",
-        "အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။",
+        "အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။",
         "ပြန်ပေးပါ။",
         "လုပ်ဆောင်စရာများ ပြီးပါပြီ။",
     ]);
@@ -207,7 +207,7 @@ fn the_result_variable_exists_in_valued_functions()
 {
     ok(&lines(&[
         "လုပ်ဆောင်ချက် ဂဏန်း သည်",
-        "အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။",
+        "အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။",
         "ရလဒ် ကို ၁ ဟု ထားပါ။",
         "လုပ်ဆောင်စရာများ ပြီးပါပြီ။",
     ]));
@@ -225,7 +225,7 @@ fn calls_pass_one_argument_per_parameter()
 {
     let text = lines(&[TWICE, "လုပ်ဆောင်ချက် နှစ်ဆ ကို လုပ်ဆောင်ပါ။"]);
     assert_eq!(codes(&text), [Code::ArgCountMismatch]);
-    let text = lines(&[TWICE, "လုပ်ဆောင်ချက် နှစ်ဆ ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်ပါ။"]);
+    let text = lines(&[TWICE, "လုပ်ဆောင်ချက် နှစ်ဆ ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်ပါ။"]);
     assert_eq!(codes(&text), [Code::ArgCountMismatch]);
 }
 

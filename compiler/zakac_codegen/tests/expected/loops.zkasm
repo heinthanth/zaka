@@ -3,7 +3,7 @@ globals
   g0 ကိန်း isize
   g1 အမှတ် isize
   g2 အမှတ် isize
-  g3 အဆင့် u8
+  g3 အဆင့် u8
 
 fn f0 main (params 0)
      0  global_addr g0       ; ကိန်း
@@ -99,20 +99,20 @@ L7:
     82  store isize
     83  jump L7
 L8:
-    84  global_addr g3       ; အဆင့်
+    84  global_addr g3       ; အဆင့်
     85  push 0:u8
     86  store u8
 L9:
-    87  global_addr g3       ; အဆင့်
+    87  global_addr g3       ; အဆင့်
     88  load u8
     89  push 10:u8
     90  lt
     91  jump_if_false L10
-    92  global_addr g3       ; အဆင့်
+    92  global_addr g3       ; အဆင့်
     93  load u8
     94  print
-    95  global_addr g3       ; အဆင့်
-    96  global_addr g3       ; အဆင့်
+    95  global_addr g3       ; အဆင့်
+    96  global_addr g3       ; အဆင့်
     97  load u8
     98  push 1:u8
     99  add

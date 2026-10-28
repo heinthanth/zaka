@@ -13,13 +13,13 @@ The verb comes last and decides what the sentence means. A small word called a
 
 ```zaka
 // "the sum of 3 and 4" — then show it
-၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။
+၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။
 
 // "the product of 3 and 4"
-၃ နှင့် ၄ ၏ မြှောက်လဒ် ကို ပြသပါ။
+၃ နှင့် ၄ ၏ မြှောက်လဒ် ကို ပြသပါ။
 
 // "10 over 2: the quotient"
-၁၀ ကို ၂ ဖြင့် စားသော စားလဒ် ကို ပြသပါ။
+၁၀ ကို ၂ ဖြင့် စားသော စားလဒ် ကို ပြသပါ။
 
 // "3 is greater than 2"
 ၃ သည် ၂ ထက် ကြီးသည် ဟု ပြသပါ။
@@ -37,7 +37,7 @@ Read the first line one word at a time:
 | Zaka | Reads as | Role |
 | --- | --- | --- |
 | `၃` | 3 | a number |
-| `နှင့်` | "and", "with" | marks the first of two things |
+| `နှင့်` | "and", "with" | marks the first of two things |
 | `၄` | 4 | a number |
 | `၏` | "of" | marks the last of the things |
 | `ပေါင်းလဒ်` | "sum" | the verb: adds the two numbers |
@@ -52,7 +52,7 @@ Read the first line one word at a time:
 - A verb that **gives a command** forms a *statement*. `ပြသပါ` (show) is one. A statement
   does something and ends with `။`.
 
-An expression can sit inside a statement. In `၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။`, the sum is
+An expression can sit inside a statement. In `၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။`, the sum is
 worked out first. Then its value, `၇`, takes the particle `ကို` and is shown.
 
 ## Words or signs
@@ -62,8 +62,8 @@ the same result, and the two can be mixed:
 
 ```zaka
 ၃ + ၄ ကို ပြသပါ။                        // signs
-၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။           // words
-၁ + ၂ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။       // both: the sum of (1 + 2) and 4
+၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။           // words
+၁ + ၂ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။       // both: the sum of (1 + 2) and 4
 ```
 
 ```text

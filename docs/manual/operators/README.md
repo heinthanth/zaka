@@ -9,14 +9,14 @@ An *operator* works on values and gives a new value: `+` adds, `<` compares. Zak
 two forms for most operators:
 
 - with **signs**, as in school maths: `က + ခ`
-- with **words**, as a Burmese phrase: `က နှင့် ခ ၏ ပေါင်းလဒ်` ("the sum of k and kh")
+- with **words**, as a Burmese phrase: `က နှင့် ခ ၏ ပေါင်းလဒ်` ("the sum of k and kh")
 
 ```zaka
-ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၇ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၇ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 
 က + ခ ကို ပြသပါ။                       // sign
-က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသပါ။          // words: the same sum
+က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသပါ။          // words: the same sum
 
 က > ခ ကို ပြသပါ။                       // sign
 က သည် ခ ထက် ကြီးသည် ဟု ပြသပါ။            // words: k is greater than kh

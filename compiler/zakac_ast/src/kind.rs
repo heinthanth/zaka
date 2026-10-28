@@ -11,7 +11,7 @@ use zakac_span::span::Span;
 #[strum(serialize_all = "lowercase")]
 pub enum BaseKind
 {
-    /// `ကိန်းပြည့်`
+    /// `ကိန်းပြည့်`
     Int,
     /// `ဒဿမကိန်း`
     Float,
@@ -25,7 +25,7 @@ pub enum BaseKind
 }
 
 /// A data kind as written in the source, such as
-/// `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်`.
+/// `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct Kind
 {

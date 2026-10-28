@@ -10,13 +10,13 @@ wherever the value is needed. Creating a variable is called *declaring* it.
 
 ```zaka
 // "Let the variable age be an integer, and its value be 18."
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 
 // "Let the variable price be a decimal number, and its value be 2.5."
 ကိန်းရှင် ဈေး သည် ဒဿမကိန်း ဖြစ်၍ တန်ဖိုးသည် ၂.၅ ဖြစ်ပါစေ။
 
 // The initial value can be worked out from other variables.
-ကိန်းရှင် နှစ်ဆ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် အသက် * ၂ ဖြစ်ပါစေ။
+ကိန်းရှင် နှစ်ဆ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် အသက် * ၂ ဖြစ်ပါစေ။
 
 အသက် ကို ပြသပါ။
 ဈေး ကို ပြသပါ။
@@ -36,14 +36,14 @@ A declaration reads like a Burmese sentence:
 | `ကိန်းရှင်` | "variable" | announces a new variable |
 | `အသက်` | "age" | the chosen name |
 | `သည်` | (subject) | |
-| `ကိန်းပြည့်` | "integer" | the kind of value it holds |
+| `ကိန်းပြည့်` | "integer" | the kind of value it holds |
 | `ဖြစ်၍` | "is, and" | joins the kind and the value |
 | `တန်ဖိုးသည်` | "its value" | |
 | `၁၈` | 18 | the initial value (optional) |
 | `ဖြစ်ပါစေ` | "let it be" | the verb that declares |
 | `။` | full stop | |
 
-Each variable has a kind, and it keeps that kind for its whole life. A `ကိန်းပြည့်`
+Each variable has a kind, and it keeps that kind for its whole life. A `ကိန်းပြည့်`
 variable holds an integer, and nothing else.
 
 ## Starting values
@@ -58,7 +58,7 @@ kind's *default*:
 | `စာလုံး` | the null character `'\0'` |
 
 ```zaka
-ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် ဖြစ်ပါစေ။          // count, starts at 0
+ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် ဖြစ်ပါစေ။          // count, starts at 0
 ကိန်းရှင် ပြီးပြီ သည် မှန်မှားတန်ဖိုး ဖြစ်ပါစေ။          // done, starts as false
 ကိန်းရှင် ပျမ်းမျှ သည် ဒဿမကိန်း ဖြစ်ပါစေ။             // average, starts at 0.0
 အရေအတွက် ကို ပြသပါ။
@@ -78,8 +78,8 @@ The value can also come straight after the kind, without `ဖြစ်၍ တန
 lines declare the same kind of variable with the same value:
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
-ကိန်းရှင် အရွယ် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
+ကိန်းရှင် အရွယ် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
 အသက် ကို ပြသပါ။
 အရွယ် ကို ပြသပါ။
 ```
@@ -99,14 +99,14 @@ The initial value must suit the variable's kind. A decimal number cannot go into
 integer variable:
 
 ```zaka-error ZK0401
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈.၅ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈.၅ ဖြစ်ပါစေ။
 ```
 
 ```text
 error[ZK0401]: expected isize, found f64
 ```
 
-`isize` is the compiler's short name for plain `ကိန်းပြည့်`, and `f64` for `ဒဿမကိန်း`.
+`isize` is the compiler's short name for plain `ကိန်းပြည့်`, and `f64` for `ဒဿမကိန်း`.
 The [Error messages](../reference/errors.md) page lists all these short names.
 
 ## Using a name before declaring it

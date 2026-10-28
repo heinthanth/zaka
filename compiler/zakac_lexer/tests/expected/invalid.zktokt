@@ -1,7 +1,7 @@
 # zakac-lex-artifact v1
 name:
   Custom: invalid.zaka
-source: "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၈ဘစ် ဖြစ်ပါစေ။\nက၊ ခ, ဂ\n\"unterminated\n'ab' ကို ပြသပါ။\n\"{မသိ}\" ဟု ပြသပါ။\n`raw\n၁၂.34 ; ?\n"
+source: "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၈ဘစ် ဖြစ်ပါစေ။\nက၊ ခ, ဂ\n\"unterminated\n'ab' ကို ပြသပါ။\n\"{မသိ}\" ဟု ပြသပါ။\n`raw\n၁၂.34 ; ?\n"
 tokens:
 - kind:
     kw: var

@@ -152,7 +152,8 @@ fn chunk_len(rest: &str) -> usize
 ///
 /// NFC first folds canonical equivalents together, the Burmese pass then
 /// sorts medials and vowels, and a second NFC composes what the sort brought
-/// together.
+/// together. Last, the asat goes back in front of the dot below; NFC puts it
+/// after.
 ///
 /// # Arguments
 ///
@@ -166,7 +167,8 @@ fn push_normalized_chunk(out: &mut String, chunk: &str)
 {
     ret_if!(chunk.is_ascii(), out.push_str(chunk));
     let composed: String = chunk.nfc().collect();
-    out.extend(burmese_normalizer::canonicalize(&composed).nfc());
+    let sorted: String = burmese_normalizer::canonicalize(&composed).nfc().collect();
+    out.push_str(&burmese_normalizer::asat_first(&sorted));
 }
 
 /// Record how much a chunk changed the text length.
@@ -330,25 +332,26 @@ mod tests
     /// The normalized text.
     fn normalize(input: &str) -> String { normalize_source(input).src }
 
-    /// Canonical equivalents collapse to one NFC form, in and out of Burmese.
+    /// Canonical equivalents collapse to one form, in and out of Burmese: NFC,
+    /// with the asat written ahead of the dot below.
     #[test]
     fn applies_nfc()
     {
-        let a = concat!(
+        let written = concat!(
             "\u{1000}\u{102d}\u{1014}\u{103a}\u{1038}\u{1015}\u{103c}",
             "\u{100a}\u{103a}\u{1037}"
         );
-        let b = concat!(
+        let nfc = concat!(
             "\u{1000}\u{102d}\u{1014}\u{103a}\u{1038}\u{1015}\u{103c}",
             "\u{100a}\u{1037}\u{103a}"
         );
         let cases = [
             // ဥ + လုံးကြီးတင် -> ဦ
             ("\u{1025}\u{102e}", "\u{1026}"),
-            // င ် ့ -> င ့ ် (ccc 7 sorts before ccc 9)
-            ("\u{1004}\u{103a}\u{1037}", "\u{1004}\u{1037}\u{103a}"),
-            // ကိန်းပြည့် as written (asat then dot below) -> NFC order
-            (a, b),
+            // င ့ ် (the NFC order, ccc 7 before ccc 9) -> င ် ့
+            ("\u{1004}\u{1037}\u{103a}", "\u{1004}\u{103a}\u{1037}"),
+            // ကိန်းပြည့် in NFC order (dot below then asat) -> asat then dot below
+            (nfc, written),
             // The vowel sort brings U+102E next to ဥ; the second NFC composes.
             ("\u{1025}\u{102f}\u{102e}", "\u{1026}\u{102f}"),
             // Latin e + combining acute -> é
@@ -358,12 +361,13 @@ mod tests
         ];
         for (input, expected) in cases
         {
-            assert_eq!(normalize(input), expected, "wrong NFC for {input:?}");
+            assert_eq!(normalize(input), expected, "wrong form for {input:?}");
             assert_eq!(normalize(expected), expected, "{expected:?} not stable");
         }
     }
 
-    /// Normalized output is NFC, and a second pass leaves it alone.
+    /// Normalized output is NFC but for the asat ahead of the dot below, and a
+    /// second pass leaves it alone.
     ///
     /// Covers generated clusters, real words, and each base + four-sign
     /// tail drawn from the vowels and asat, which mixes the Burmese sort with
@@ -391,7 +395,16 @@ mod tests
         for word in &words
         {
             let first = normalize(word);
-            assert!(unicode_normalization::is_nfc(&first), "not NFC for {word:?}");
+            assert!(
+                !first.contains("\u{1037}\u{103a}"),
+                "dot below first for {word:?}"
+            );
+            let nfc: String = first.nfc().collect();
+            assert_eq!(
+                burmese_normalizer::asat_first(&nfc),
+                first,
+                "not NFC for {word:?}"
+            );
             assert_eq!(normalize(&first), first, "not idempotent for {word:?}");
         }
     }

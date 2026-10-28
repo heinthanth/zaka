@@ -116,7 +116,7 @@ fn raw_identifiers()
 #[test]
 fn literals_in_the_token_stream()
 {
-    let kinds = kinds("\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ဟု ပြသပါ။");
+    let kinds = kinds("\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ဟု ပြသပါ။");
     assert_eq!(kinds[0], TokenKind::Str(0));
     assert_eq!(kinds.len(), 4);
     assert_eq!(super_kind("`a b`"), TokenKind::RawIdent);

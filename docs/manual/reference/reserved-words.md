@@ -16,17 +16,17 @@ see [Names](../variables/names.md).
 | --- | --- | --- |
 | `သည်` | (subject); also a polite ending | [Particles](../sentences/particles.md) |
 | `ကို` | (object) | [Particles](../sentences/particles.md) |
-| `နှင့်` | "and", "with" | [Arithmetic](../operators/arithmetic.md), [Comparison](../operators/comparison.md) |
+| `နှင့်` | "and", "with" | [Arithmetic](../operators/arithmetic.md), [Comparison](../operators/comparison.md) |
 | `၏` | "of" | [Arithmetic](../operators/arithmetic.md) |
-| `ဖြင့်` | "with", "through" | [Arithmetic](../operators/arithmetic.md), [Writing integers](../values/literals.md) |
+| `ဖြင့်` | "with", "through" | [Arithmetic](../operators/arithmetic.md), [Writing integers](../values/literals.md) |
 | `ထက်` | "than" | [Comparison](../operators/comparison.md) |
 | `အောက်` | "below" | [Comparison](../operators/comparison.md) |
 | `ဟု` | "so" (quoting) | [Printing](../hello/printing.md), [Changing a variable](../variables/assignment.md) |
 | `အဖြစ်` | "as", "into" | [Converting between kinds](../operators/conversion.md) |
 | `ပါ`, `ပါသည်` | polite endings | [Particles](../sentences/particles.md) |
-| `တို့ကို`, `တို့ဖြင့်` | close a list of parameters / arguments | [Parameters](../functions/parameters.md) |
+| `တို့ကို`, `တို့ဖြင့်` | close a list of parameters / arguments | [Parameters](../functions/parameters.md) |
 | `လက်ခံပြီး` | "accepting ... and" | [Parameters](../functions/parameters.md) |
-| `မှ`, `အထိ`, `စီ`, `အနေဖြင့်` | "from", "up to", "each", "as" | [Counted loops](../control-flow/counted-loops.md) |
+| `မှ`, `အထိ`, `စီ`, `အနေဖြင့်` | "from", "up to", "each", "as" | [Counted loops](../control-flow/counted-loops.md) |
 | `ဖြစ်ကာ`, `ဖြစ်ပြီး` | "being ... and" | [Generic loops](../control-flow/generic-loops.md) |
 | `ပြီးလျှင်` | "when done" | [Generic loops](../control-flow/generic-loops.md) |
 | `ဘယ်သို့`, `ညာသို့` | "to the left", "to the right" | [Bitwise operators](../operators/bitwise.md) |
@@ -91,7 +91,7 @@ see [Names](../variables/names.md).
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `ကိန်းပြည့်` | "integer" | [Integers](../values/integers.md) |
+| `ကိန်းပြည့်` | "integer" | [Integers](../values/integers.md) |
 | `ဒဿမကိန်း` | "decimal number" | [Decimal numbers](../values/floats.md) |
 | `စာလုံး` | "character" | [Characters](../values/characters.md) |
 | `မှန်မှားတန်ဖိုး`, `ဘူလီယန်` | "true/false value", "boolean" | [True and false](../values/booleans.md) |
@@ -117,10 +117,10 @@ see [Names](../variables/names.md).
 | `ခုစာ` | "items' worth", as in `<kind> n ခုစာ` | [The heap](../pointers/heap.md#how-much-to-ask-for) |
 | `မင်မိုရီ … နေရာယူ၍ လိပ်စာကို … တွင် သိမ်းထားမည်` | "taking … of heap room, keep the address in …" (allocate) | [The heap](../pointers/heap.md) |
 | `… လိပ်စာရှိကို မင်မိုရီ … ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်` | "grow or shrink the space at … so that it is …" (resize) | [Growing and shrinking](../pointers/resizing.md) |
-| `… လိပ်စာရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်` | "release the block at …" (free) | [The heap](../pointers/heap.md#giving-a-block-back) |
+| `… လိပ်စာရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်` | "release the block at …" (free) | [The heap](../pointers/heap.md#giving-a-block-back) |
 
 The words inside the three statements (`နေရာယူ၍`, `တွင်`, `သိမ်းထားမည်`, `လိပ်စာရှိ`,
-`ဖြစ်အောင်`, `နေရာအချဲ့အချုံ့လုပ်မည်`, `ပြန်လည်စွန့်လွှတ်မည်`) are reserved on their own
+`ဖြစ်အောင်`, `နေရာအချဲ့အချုံ့လုပ်မည်`, `ပြန်လည်စွန့်လွှတ်မည်`) are reserved on their own
 as well.
 
 ## Written and spoken endings
