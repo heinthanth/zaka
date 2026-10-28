@@ -1,5 +1,7 @@
 use bon::Builder;
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::IndexExpr;
+use zakac_ast::expr::ListLit;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AssignStmt;
@@ -122,6 +124,7 @@ fn as_slot(tok: &Token) -> Option<Slot>
         TokenKind::Kw(Kw::Htet) => Some(Slot::Htet),
         TokenKind::Kw(Kw::Auk) => Some(Slot::Auk),
         TokenKind::Kw(Kw::Hu) => Some(Slot::Hu),
+        TokenKind::Kw(Kw::Ordinal) => Some(Slot::Ordinal),
         _ => None,
     }
 }
@@ -184,7 +187,7 @@ impl Parser<'_>
     /// A value or a statement, or a diagnostic.
     pub(crate) fn parse_clause(&mut self, mode: Mode) -> PResult<ClauseOut>
     {
-        let first = self.parse_notation()?;
+        let first = self.parse_operand()?;
         self.parse_clause_from(first, mode)
     }
 
@@ -214,6 +217,11 @@ impl Parser<'_>
             if let Some(dir) = as_shift_dir(&tok)
             {
                 self.push_shift(&mut stack, dir)?;
+                continue;
+            }
+            if tok.kind == TokenKind::Kw(Kw::Cell) && holds_ei(&stack)
+            {
+                self.push_index(&mut stack)?;
                 continue;
             }
             let Some(verb) = as_verb(&tok)
@@ -275,9 +283,127 @@ impl Parser<'_>
         ret_if!(as_verb(&tok).is_some() || as_shift_dir(&tok).is_some(), Ok(()));
         let first = self.text_of(self.prev_span());
         ret_if!(as_slot(&tok).is_some(), Err(diag::double_particle(tok.span, first)));
-        let expr = self.parse_notation()?;
+        let expr = self.parse_operand()?;
         stack.push(Item::expr(expr));
         Ok(())
+    }
+
+    /// Parse an operand of a clause: a notation expression, or a list
+    /// literal that starts with one.
+    ///
+    /// # Returns
+    ///
+    /// The operand, or a diagnostic.
+    fn parse_operand(&mut self) -> PResult<Expr>
+    {
+        let first = self.parse_notation()?;
+        ret_if!(!self.at_list_rest(), Ok(first));
+        self.parse_list(first)
+    }
+
+    /// Whether the rest of a list literal comes next: `တို့ပါသော`, or `၊` with
+    /// `တို့ပါသော` ahead of the next `တို့ဖြင့်`, `တို့ကို`, `)` or `။` outside
+    /// parentheses.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_list_rest(&self) -> bool
+    {
+        ret_if!(self.at_list_close(0), true);
+        ret_if!(!self.at_punct(Punct::ListSep), false);
+        let mut parens = 0usize;
+        for n in 1..
+        {
+            let kind = self.peek_n(n).kind;
+            ret_if!(parens == 0 && self.at_list_close(n), true);
+            ret_if!(parens == 0 && ends_list_scan(kind), false);
+            match kind
+            {
+                TokenKind::Punct(Punct::LParen) => parens += 1,
+                TokenKind::Punct(Punct::RParen) => parens -= 1,
+                _ => (),
+            }
+        }
+        false
+    }
+
+    /// Whether `တို့ပါသော` is the token `n` ahead.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_list_close(&self, n: usize) -> bool
+    {
+        self.peek_n(n).kind == TokenKind::Kw(Kw::ListOf)
+    }
+
+    /// Parse the rest of a list literal after its first cell:
+    /// `(၊ cell)* တို့ပါသော စာရင်း`.
+    ///
+    /// # Arguments
+    ///
+    /// * `first` - The first cell.
+    ///
+    /// # Returns
+    ///
+    /// The literal, or a diagnostic.
+    fn parse_list(&mut self, first: Expr) -> PResult<Expr>
+    {
+        let mut cells = vec![first];
+        while self.eat_punct(Punct::ListSep)
+        {
+            cells.push(self.parse_notation()?);
+        }
+        self.expect(Kw::ListOf)?;
+        let end = self.expect(Kw::List)?;
+        let span = cells[0].span().to(&end.span);
+        let id = self.new_id();
+        Ok(Expr::List(ListLit::builder().id(id).cells(cells).span(span).build()))
+    }
+
+    /// Replace the top operand, which holds `၏`, with its cell
+    /// `အကွက် <index>`, counted from 0. The cell word is current.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic from the index.
+    fn push_index(&mut self, stack: &mut Vec<Item>) -> PResult<()>
+    {
+        self.bump();
+        let index = self.parse_notation()?;
+        let list = into_expr(stack.pop().expect("the top operand holds ၏"));
+        let span = list.span().to(&index.span());
+        stack.push(Item::expr(self.index_expr(list, index, 0, span)));
+        Ok(())
+    }
+
+    /// Build a list cell node.
+    ///
+    /// # Arguments
+    ///
+    /// * `list` - The list, or a pointer to one.
+    /// * `index` - The cell number.
+    /// * `first` - The number of the first cell: 0 or 1.
+    /// * `span` - The whole cell expression.
+    ///
+    /// # Returns
+    ///
+    /// The expression.
+    fn index_expr(&mut self, list: Expr, index: Expr, first: u8, span: Span) -> Expr
+    {
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = IndexExpr::builder().id(id).list(list).index(index).first(first).span(span).build();
+        Expr::Index(node)
     }
 
     /// Push `ဘယ်သို့|ညာသို့ <distance> ဘစ်`; the direction word is current.
@@ -393,6 +519,11 @@ impl Parser<'_>
     fn build_verb_expr(&mut self, args: Vec<Item>, verb: &Verb, tok: Token) -> Expr
     {
         let span = args[0].operand.span().to(&tok.span);
+        if verb.op == VerbOp::Cell
+        {
+            let [list, index] = <[Item; 2]>::try_from(args).expect("slots are checked");
+            return self.index_expr(into_expr(list), into_expr(index), 1, span);
+        }
         let dir = args.iter().find_map(|e| match e.slot
         {
             Some((Slot::Bit(dir), _)) => Some(dir),
@@ -509,6 +640,40 @@ impl Parser<'_>
         };
         stack.iter().map(describe).collect::<Vec<_>>().join(", ")
     }
+}
+
+/// Whether the top operand holds `၏`, so a cell word after it opens an index
+/// counted from 0.
+///
+/// # Arguments
+///
+/// * `stack` - The operand stack.
+///
+/// # Returns
+///
+/// `true` if it does.
+fn holds_ei(stack: &[Item]) -> bool
+{
+    matches!(stack.last().and_then(|item| item.slot), Some((Slot::Ei, _)))
+}
+
+/// Whether a token ends the scan for the rest of a list literal.
+///
+/// # Arguments
+///
+/// * `kind` - The token kind.
+///
+/// # Returns
+///
+/// `true` for `တို့ဖြင့်`, `တို့ကို`, `)`, `။` and the end of the file.
+fn ends_list_scan(kind: TokenKind) -> bool
+{
+    matches!(
+        kind,
+        TokenKind::Kw(Kw::ListWith | Kw::ListKo)
+            | TokenKind::Punct(Punct::RParen | Punct::FullStop)
+            | TokenKind::Eof
+    )
 }
 
 /// Build a print statement.

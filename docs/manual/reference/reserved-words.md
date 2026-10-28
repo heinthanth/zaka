@@ -129,3 +129,15 @@ Each reserved word that ends in the written `…မည်` also accepts the spok
 the two spellings mean the same. This covers the three heap statements above and the
 older `လုပ်ဆောင်မည်` (in `အောက်ပါတို့ကို လုပ်ဆောင်မည်`) and `ပြန်ပေးမည်`:
 `အောက်ပါတို့ကို လုပ်ဆောင်မယ်` and `ပြန်ပေးမယ်` work too.
+
+## Lists
+
+| Word | Reads as | Page |
+| --- | --- | --- |
+| `စာရင်း` | "list": after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`); `တို့ပါသော စာရင်း` closes a list literal | [Lists](../lists/README.md) |
+| `အကွက်` | "cell": `x ၏ အကွက် i` is cell `i`, counted from 0; `အကွက် n ခုရှိသော` gives the count of a list kind | [Lists](../lists/README.md) |
+| `ခုမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1 | [Lists](../lists/README.md#cell-numbers) |
+| `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Lists](../lists/README.md#list-kinds) |
+| `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../lists/README.md#cell-numbers) |
+| `စာရင်းအလွတ်` | "blank list": each cell at its default | [Lists](../lists/README.md) |
+| `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../lists/README.md#list-kinds) |

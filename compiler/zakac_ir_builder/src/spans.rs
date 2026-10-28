@@ -148,7 +148,8 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
         ExprNode::Const(_)
         | ExprNode::Read(_)
         | ExprNode::AddrOf(_)
-        | ExprNode::SizeOf(_) => (),
+        | ExprNode::SizeOf(_)
+        | ExprNode::BlankList => (),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand } => expr(operand, f),
@@ -161,6 +162,14 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
             expr(lhs, f);
             expr(rhs, f);
         }
-        ExprNode::Call { args, .. } => do_for!(a in args, expr(a, f)),
+        ExprNode::Call { args, .. } | ExprNode::List(args) =>
+        {
+            do_for!(a in args, expr(a, f))
+        }
+        ExprNode::CellAddr { list, index, .. } =>
+        {
+            expr(list, f);
+            expr(index, f);
+        }
     }
 }

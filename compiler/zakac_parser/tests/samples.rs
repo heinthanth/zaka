@@ -10,7 +10,7 @@ use zakac_span::source_map::SourceMap;
 
 /// Inputs that must parse without diagnostics.
 const CLEAN_INPUTS: &[&str] =
-    &["clauses", "functions", "heap", "literals", "statements"];
+    &["clauses", "functions", "heap", "lists", "literals", "statements"];
 
 /// Parse `tests/inputs/{name}.zaka` and compare its text artifact with
 /// `tests/expected/{name}.zkastt`. With `ZAKA_BLESS=1` the expected file is

@@ -1,0 +1,478 @@
+# zakac-codegen-artifact v1
+name:
+  Custom: lists.zaka
+source: "// စာရင်းများ - ကြေညာခြင်း၊ အကွက်များ၊ ကူးယူခြင်း နှင့် နှိုင်းယှဉ်ခြင်း\nကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။\nကိန်းရှင် ဂ သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။\nဂ ၏ အကွက် ၀ ကို ၁၀ ဟု ထားပါ။\nဂ ၏ ၂ ခုမြောက်အကွက် ကို ပြသပါ။\nဂ ၏ အကွက်အရေအတွက် ကို ပြသပါ။\nဂ ကို ပြသပါ။\nက ကို ဂ ဟု ထားပါ။\nက သည် ဂ နှင့် ညီသည် ဟု ပြသပါ။\nခ != က ကို ပြသပါ။\n\n// အကွက် ၂ x ၃ ဇယား\nကိန်းရှင် ဇယား သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း ဖြစ်ပါစေ။\nဇယား ၏ အကွက် ၁ ၏ အကွက် ၂ ကို ၉ ဟု ထားပါ။\nဇယား ၏ အကွက် ၀ ကို ဂ ဟု ထားပါ။\nဇယား ကို ပြသပါ။\n\n// လိပ်စာမှတစ်ဆင့် စာရင်းကို ငှားခြင်း\nကိန်းရှင် ညွှန်း သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ဂ ၏ လိပ်စာ ဖြစ်ပါစေ။\nညွှန်း ၏ အကွက် ၁ ကို ၂၀ ဟု ထားပါ။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ဂ ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။\nပ + ၂ ၏ တန်ဖိုး ကို ပြသပါ။\n\n/// အကွက်များ၏ ပေါင်းလဒ်ကို ပြန်ပေးသည်\nလုပ်ဆောင်ချက် ပေါင်း သည်\nအကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ကိန်းများ ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\n၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ကို ရလဒ် + (ကိန်းများ ၏ အကွက် န) ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် ပေါင်း ကို ဂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\nလုပ်ဆောင်ချက် ပေါင်း ကို ၄၊ ၅၊ ၆ တို့ပါသော စာရင်း တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\n"
+module:
+  platform_bits: 64
+  globals:
+  - name: က
+    kind: "[3]isize"
+  - name: ခ
+    kind: "[3]isize"
+  - name: ဂ
+    kind: "[3]isize"
+  - name: ဇယား
+    kind: "[2][3]isize"
+  - name: ညွှန်း
+    kind: "*[3]isize"
+  - name: ပ
+    kind: "*isize"
+  texts: []
+  funcs:
+  - name: ပေါင်း
+    params: 1
+    ret: isize
+    locals:
+    - name: ကိန်းများ
+      kind: "[3]isize"
+    - name: ရလဒ်
+      kind: isize
+    - name: န
+      kind: isize
+    code:
+    - local_addr: 1
+    - push: 0:isize
+    - store: isize
+    - local_addr: 2
+    - push: 0:isize
+    - store: isize
+    - local_addr: 2
+    - load: isize
+    - push: 2:isize
+    - compare: gt
+    - jump_if_true: 37
+    - local_addr: 1
+    - local_addr: 1
+    - load: isize
+    - local_addr: 0
+    - local_addr: 2
+    - load: isize
+    - index:
+        len: 3
+        first: 0
+    - ptr_add: 8
+    - load: isize
+    - infix: add
+    - store: isize
+    - push: 2:usize
+    - local_addr: 2
+    - load: isize
+    - convert: usize
+    - infix: sub
+    - push: 1:usize
+    - compare: lt
+    - jump_if_true: 37
+    - local_addr: 2
+    - local_addr: 2
+    - load: isize
+    - push: 1:isize
+    - infix: add
+    - store: isize
+    - jump: 11
+    - local_addr: 1
+    - load: isize
+    - ret
+    spans:
+    - lo: 2653
+      hi: 2671
+    - lo: 2653
+      hi: 2671
+    - lo: 2653
+      hi: 2671
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3011
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3084
+      hi: 3201
+    - lo: 3107
+      hi: 3119
+    - lo: 3107
+      hi: 3119
+    - lo: 3123
+      hi: 3150
+    - lo: 3171
+      hi: 3174
+    - lo: 3171
+      hi: 3174
+    - lo: 3123
+      hi: 3174
+    - lo: 3123
+      hi: 3174
+    - lo: 3123
+      hi: 3174
+    - lo: 3107
+      hi: 3175
+    - lo: 3084
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 3008
+      hi: 3201
+    - lo: 2843
+      hi: 3284
+    - lo: 2843
+      hi: 3284
+    - lo: 2843
+      hi: 3284
+  - name: main
+    params: 0
+    ret: null
+    locals:
+    - name: "%list"
+      kind: "[3]isize"
+    - name: "%list"
+      kind: "[3]isize"
+    code:
+    - global_addr: 0
+    - zero: "[3]isize"
+    - global_addr: 1
+    - zero: "[3]isize"
+    - global_addr: 2
+    - local_addr: 0
+    - push: 1:isize
+    - store: isize
+    - local_addr: 0
+    - push: 1:usize
+    - ptr_add: 8
+    - push: 2:isize
+    - store: isize
+    - local_addr: 0
+    - push: 2:usize
+    - ptr_add: 8
+    - push: 3:isize
+    - store: isize
+    - local_addr: 0
+    - blit: "[3]isize"
+    - global_addr: 2
+    - push: 0:usize
+    - ptr_add: 8
+    - push: 10:isize
+    - store: isize
+    - global_addr: 2
+    - push: 2:usize
+    - index:
+        len: 3
+        first: 1
+    - ptr_add: 8
+    - load: isize
+    - print
+    - push: 3:usize
+    - print
+    - global_addr: 2
+    - print_list: "[3]isize"
+    - global_addr: 0
+    - global_addr: 2
+    - blit: "[3]isize"
+    - global_addr: 0
+    - global_addr: 2
+    - list_eq: "[3]isize"
+    - print
+    - global_addr: 1
+    - global_addr: 0
+    - list_eq: "[3]isize"
+    - prefix: not
+    - print
+    - global_addr: 3
+    - zero: "[2][3]isize"
+    - global_addr: 3
+    - push: 1:usize
+    - ptr_add: 24
+    - push: 2:usize
+    - ptr_add: 8
+    - push: 9:isize
+    - store: isize
+    - global_addr: 3
+    - push: 0:usize
+    - ptr_add: 24
+    - global_addr: 2
+    - blit: "[3]isize"
+    - global_addr: 3
+    - print_list: "[2][3]isize"
+    - global_addr: 4
+    - global_addr: 2
+    - store: "*[3]isize"
+    - global_addr: 4
+    - load: "*[3]isize"
+    - push: 1:usize
+    - ptr_add: 8
+    - push: 20:isize
+    - store: isize
+    - global_addr: 5
+    - global_addr: 2
+    - push: 0:usize
+    - ptr_add: 8
+    - store: "*isize"
+    - global_addr: 5
+    - load: "*isize"
+    - push: 2:isize
+    - ptr_add: 8
+    - load: isize
+    - print
+    - global_addr: 2
+    - call: 0
+    - print
+    - local_addr: 1
+    - push: 4:isize
+    - store: isize
+    - local_addr: 1
+    - push: 1:usize
+    - ptr_add: 8
+    - push: 5:isize
+    - store: isize
+    - local_addr: 1
+    - push: 2:usize
+    - ptr_add: 8
+    - push: 6:isize
+    - store: isize
+    - local_addr: 1
+    - call: 0
+    - print
+    - ret
+    spans:
+    - lo: 197
+      hi: 361
+    - lo: 197
+      hi: 361
+    - lo: 362
+      hi: 605
+    - lo: 362
+      hi: 605
+    - lo: 606
+      hi: 837
+    - lo: 745
+      hi: 809
+    - lo: 745
+      hi: 748
+    - lo: 745
+      hi: 809
+    - lo: 745
+      hi: 809
+    - lo: 745
+      hi: 809
+    - lo: 745
+      hi: 809
+    - lo: 752
+      hi: 755
+    - lo: 745
+      hi: 809
+    - lo: 745
+      hi: 809
+    - lo: 745
+      hi: 809
+    - lo: 745
+      hi: 809
+    - lo: 759
+      hi: 762
+    - lo: 745
+      hi: 809
+    - lo: 745
+      hi: 809
+    - lo: 606
+      hi: 837
+    - lo: 838
+      hi: 841
+    - lo: 862
+      hi: 865
+    - lo: 838
+      hi: 865
+    - lo: 876
+      hi: 882
+    - lo: 838
+      hi: 908
+    - lo: 909
+      hi: 912
+    - lo: 917
+      hi: 920
+    - lo: 909
+      hi: 960
+    - lo: 909
+      hi: 960
+    - lo: 909
+      hi: 960
+    - lo: 909
+      hi: 989
+    - lo: 990
+      hi: 1037
+    - lo: 990
+      hi: 1066
+    - lo: 1067
+      hi: 1070
+    - lo: 1067
+      hi: 1099
+    - lo: 1100
+      hi: 1143
+    - lo: 1114
+      hi: 1117
+    - lo: 1100
+      hi: 1143
+    - lo: 1144
+      hi: 1147
+    - lo: 1158
+      hi: 1161
+    - lo: 1144
+      hi: 1193
+    - lo: 1144
+      hi: 1219
+    - lo: 1220
+      hi: 1223
+    - lo: 1227
+      hi: 1230
+    - lo: 1220
+      hi: 1230
+    - lo: 1220
+      hi: 1230
+    - lo: 1220
+      hi: 1259
+    - lo: 1303
+      hi: 1540
+    - lo: 1303
+      hi: 1540
+    - lo: 1541
+      hi: 1553
+    - lo: 1574
+      hi: 1577
+    - lo: 1541
+      hi: 1577
+    - lo: 1598
+      hi: 1601
+    - lo: 1541
+      hi: 1601
+    - lo: 1612
+      hi: 1615
+    - lo: 1541
+      hi: 1641
+    - lo: 1642
+      hi: 1654
+    - lo: 1675
+      hi: 1678
+    - lo: 1642
+      hi: 1678
+    - lo: 1689
+      hi: 1692
+    - lo: 1642
+      hi: 1718
+    - lo: 1719
+      hi: 1731
+    - lo: 1719
+      hi: 1760
+    - lo: 1867
+      hi: 2139
+    - lo: 2085
+      hi: 2111
+    - lo: 1867
+      hi: 2139
+    - lo: 2140
+      hi: 2158
+    - lo: 2140
+      hi: 2158
+    - lo: 2179
+      hi: 2182
+    - lo: 2140
+      hi: 2182
+    - lo: 2193
+      hi: 2199
+    - lo: 2140
+      hi: 2225
+    - lo: 2226
+      hi: 2443
+    - lo: 2365
+      hi: 2368
+    - lo: 2389
+      hi: 2392
+    - lo: 2365
+      hi: 2415
+    - lo: 2226
+      hi: 2443
+    - lo: 2444
+      hi: 2447
+    - lo: 2444
+      hi: 2447
+    - lo: 2450
+      hi: 2453
+    - lo: 2444
+      hi: 2453
+    - lo: 2444
+      hi: 2479
+    - lo: 2444
+      hi: 2508
+    - lo: 3355
+      hi: 3358
+    - lo: 3286
+      hi: 3436
+    - lo: 3286
+      hi: 3465
+    - lo: 3535
+      hi: 3599
+    - lo: 3535
+      hi: 3538
+    - lo: 3535
+      hi: 3599
+    - lo: 3535
+      hi: 3599
+    - lo: 3535
+      hi: 3599
+    - lo: 3535
+      hi: 3599
+    - lo: 3542
+      hi: 3545
+    - lo: 3535
+      hi: 3599
+    - lo: 3535
+      hi: 3599
+    - lo: 3535
+      hi: 3599
+    - lo: 3535
+      hi: 3599
+    - lo: 3549
+      hi: 3552
+    - lo: 3535
+      hi: 3599
+    - lo: 3535
+      hi: 3599
+    - lo: 3466
+      hi: 3677
+    - lo: 3466
+      hi: 3706
+    - lo: 3707
+      hi: 3707
+  main: 1
+diagnostics: []

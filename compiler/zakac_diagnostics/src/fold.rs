@@ -39,3 +39,21 @@ pub fn constant_zero_divisor(span: Span, op: &str) -> Diagnostic
         span,
     )
 }
+
+/// A constant cell number is outside its list.
+///
+/// # Arguments
+///
+/// * `span` - The cell number.
+/// * `index` - The cell number, as text.
+/// * `first` - The number of the first cell: 0 or 1.
+/// * `last` - The number of the last cell.
+///
+/// # Returns
+///
+/// The `ZK0603` diagnostic.
+pub fn cell_out_of_range(span: Span, index: &str, first: u8, last: u64) -> Diagnostic
+{
+    let msg = t!("codes.ZK0603.message", i = index, lo = first, hi = last);
+    Diagnostic::new(Code::CellOutOfRange, msg, span)
+}

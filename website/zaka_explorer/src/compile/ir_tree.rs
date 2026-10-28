@@ -388,6 +388,16 @@ impl IrTree<'_>
                 ("ptr-", String::new(), self.pair(lhs, rhs))
             }
             ExprNode::SizeOf(k) => ("sizeof", k.name(), Vec::new()),
+            ExprNode::List(cells) =>
+            {
+                ("list", String::new(), cells.iter().map(|c| self.expr(c)).collect())
+            }
+            ExprNode::BlankList => ("blank_list", String::new(), Vec::new()),
+            ExprNode::CellAddr { list, index, len, first, .. } =>
+            {
+                let label = tern!(*first == 0, "cell@", "cell1@");
+                (label, len.to_string(), self.pair(list, index))
+            }
         };
         let mut node = self.node(label, detail, e.span, children);
         node.kind = Some(e.kind.name());

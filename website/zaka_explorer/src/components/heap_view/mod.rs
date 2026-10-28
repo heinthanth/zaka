@@ -32,7 +32,6 @@ use crate::debug::BlockRow;
 use crate::debug::BlockState;
 use crate::debug::CELL;
 use crate::debug::HeapShot;
-use crate::debug::Lane;
 use crate::debug::MapPart;
 use crate::debug::Session;
 use crate::debug::cell_width;
@@ -349,14 +348,14 @@ fn block_tip(b: &BlockRow, digits: usize) -> String
     format!("{} · {size} · {origin} · {state}", addr_text(b.start, digits))
 }
 
-/// The map, in the style of a contribution graph: a lane for the static
-/// data, the stack and the heap, each a run of cells, one per block in
-/// address order, that wraps to the width of the pane. A cell takes the
-/// color of its origin and state, and a width that grows with the size of
-/// its block (see [`cell_width`]).
-/// The gap after a block, where an access traps, is a hatched seam that
-/// wraps with its block. The part the run trapped in is ringed. A click on
-/// a cell opens the block in the list.
+/// The map, in the style of a contribution graph: one run of cells in
+/// address order, as the machine places blocks in RAM: the static data, the
+/// stack, then the heap. A cell stands for a block, or a variable of a packed
+/// block, and wraps to the width of the pane. A cell takes the color of its
+/// origin and state, and a width that grows with the size of its block (see
+/// [`cell_width`]). The gap after a block, where an access traps, is a
+/// hatched seam that wraps with its block. The part the run trapped in is
+/// ringed. A click on a cell opens the block in the list.
 ///
 /// # Arguments
 ///
@@ -368,53 +367,18 @@ fn block_tip(b: &BlockRow, digits: usize) -> String
 /// The view.
 fn heap_map(shot: Memo<HeapShot>, open: RwSignal<Option<u64>>) -> impl IntoView
 {
-    let lanes = move || {
-        shot.with(|s| {
-            let lane =
-                |(lane, parts): (Lane, Vec<MapPart>)| lane_view(s, lane, parts, open);
-            s.lanes().into_iter().map(lane).collect_view()
-        })
-    };
-    div().class(ClassName::HEAP_MAP).attr("aria-hidden", "true").child(lanes)
+    let cells = move || shot.with(|s| unit_views(s, &s.parts(), open));
+    div().class(ClassName::HEAP_MAP).attr("aria-hidden", "true").child(cells)
 }
 
-/// One lane of the map: its name with its count of blocks, then its cells.
-///
-/// # Arguments
-///
-/// * `s` - The blocks.
-/// * `lane` - The lane.
-/// * `parts` - The parts of the lane.
-/// * `open` - The start of the open block.
-///
-/// # Returns
-///
-/// The view.
-fn lane_view(
-    s: &HeapShot, lane: Lane, parts: Vec<MapPart>, open: RwSignal<Option<u64>>,
-) -> impl IntoView + use<>
-{
-    let count = parts.iter().filter(|p| matches!(p, MapPart::Block(_))).count();
-    let name = match lane
-    {
-        Lane::Data => t!("explorer.heap.lane_data", count = count),
-        Lane::Stack => t!("explorer.heap.lane_stack", count = count),
-    };
-    let units = unit_views(s, &parts, open);
-    (
-        span().class(ClassName::LANE_NAME).child(name.into_owned()),
-        div().class(ClassName::LANE_CELLS).child(units),
-    )
-}
-
-/// The cells of a lane, each block with the seam of the gap after it, so the
+/// The cells of the map, each block with the seam of the gap after it, so the
 /// two wrap as one. A block has no seam when the next one follows with no
 /// gap, as nothing between them traps.
 ///
 /// # Arguments
 ///
 /// * `s` - The blocks.
-/// * `parts` - The parts of the lane.
+/// * `parts` - The parts of the map.
 /// * `open` - The start of the open block.
 ///
 /// # Returns
@@ -686,15 +650,52 @@ fn gap_row(start: u64, len: u64, fault: bool, digits: usize) -> impl IntoView
 fn dump_view(b: BlockRow, digits: usize) -> impl IntoView
 {
     let line = |(i, chunk): (usize, &[u8])| {
-        let at = addr_text(b.start + (i * DUMP_WIDTH) as u64, digits);
-        let pairs: Vec<String> = chunk.iter().map(|o| format!("{o:02x}")).collect();
-        format!("{at}  {}", pairs.join(" "))
+        let first = (i * DUMP_WIDTH) as u64;
+        let at = span()
+            .class(ClassName::DUMP_ADDR)
+            .child(addr_text(b.start + first, digits));
+        let octet = |(j, o): (usize, &u8)| octet_view(&b, first + j as u64, *o);
+        let octets: Vec<AnyView> = chunk.iter().enumerate().map(octet).collect();
+        div().class(ClassName::DUMP_LINE).child((at, octets))
     };
-    let lines: Vec<String> = b.data.chunks(DUMP_WIDTH).enumerate().map(line).collect();
+    let lines: Vec<_> = b.data.chunks(DUMP_WIDTH).enumerate().map(line).collect();
     let note = dump_note(&b).map(|n| p().class(ClassName::DUMP_NOTE).child(n));
-    let text = (!lines.is_empty())
-        .then(|| pre().class(ClassName::DUMP).child(lines.join("\n")));
+    let text = (!lines.is_empty()).then(|| pre().class(ClassName::DUMP).child(lines));
     (text, note)
+}
+
+/// One octet of a dump. In a list, each cell of a primitive kind is a box of
+/// its own, the boxes take two shades in turn, and the path of the cell,
+/// such as `[1][2]`, shows on hover.
+///
+/// # Arguments
+///
+/// * `b` - The block.
+/// * `at` - The offset of the octet from the start of the block.
+/// * `o` - The octet.
+///
+/// # Returns
+///
+/// The view.
+fn octet_view(b: &BlockRow, at: u64, o: u8) -> AnyView
+{
+    let hex = format!("{o:02x}");
+    let Some(inner) = b.cells.last()
+    else
+    {
+        return span().class(ClassName::OCTET).child(hex).into_any();
+    };
+    let odd = (at / inner) % 2 == 1;
+    let classes = [
+        (true, ClassName::OCTET),
+        (at.is_multiple_of(*inner), ClassName::CELL_START),
+        (odd, ClassName::CELL_ODD),
+        (!odd, ClassName::CELL_EVEN),
+    ];
+    let class: Vec<&str> =
+        classes.iter().filter(|(on, _)| *on).map(|(_, c)| *c).collect();
+    let path: String = b.cell_path(at).iter().map(|n| format!("[{n}]")).collect();
+    span().class(class.join(" ")).attr("title", path).child(hex).into_any()
 }
 
 /// The note under a dump.

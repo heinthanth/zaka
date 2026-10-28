@@ -4,7 +4,7 @@ globals
   g1 ဒုတိယ isize
   g2 ဆံ့နိုင်ရေ usize
   g3 အရေအတွက် usize
-  g4 စာရင်း *isize
+  g4 ကိန်းများ *isize
   g5 ကိန်း isize
   g6 နံပါတ် usize
   g7 ပစ္စည်း *u8
@@ -57,15 +57,15 @@ fn f1 main (params 0)
     18  global_addr g3       ; အရေအတွက်
     19  push 0:usize
     20  store usize
-    21  global_addr g4       ; စာရင်း
+    21  global_addr g4       ; ကိန်းများ
     22  push 0x0:ptr
     23  store *isize
-    24  global_addr g4       ; စာရင်း
+    24  global_addr g4       ; ကိန်းများ
     25  global_addr g2       ; ဆံ့နိုင်ရေ
     26  load usize
     27  alloc 8
     28  store *isize
-    29  global_addr g4       ; စာရင်း
+    29  global_addr g4       ; ကိန်းများ
     30  load *isize
     31  push 0x0:ptr
     32  eq
@@ -93,15 +93,15 @@ L1:
     52  push 2:usize
     53  mul
     54  store usize
-    55  global_addr g4       ; စာရင်း
-    56  global_addr g4       ; စာရင်း
+    55  global_addr g4       ; ကိန်းများ
+    56  global_addr g4       ; ကိန်းများ
     57  load *isize
     58  global_addr g2       ; ဆံ့နိုင်ရေ
     59  load usize
     60  realloc 8
     61  store *isize
 L2:
-    62  global_addr g4       ; စာရင်း
+    62  global_addr g4       ; ကိန်းများ
     63  load *isize
     64  global_addr g3       ; အရေအတွက်
     65  load usize
@@ -144,7 +144,7 @@ L4:
    100  load usize
    101  lt
    102  jump_if_false L5
-   103  global_addr g4       ; စာရင်း
+   103  global_addr g4       ; ကိန်းများ
    104  load *isize
    105  global_addr g6       ; နံပါတ်
    106  load usize
@@ -159,8 +159,8 @@ L4:
    115  store usize
    116  jump L4
 L5:
-   117  global_addr g4       ; စာရင်း
-   118  global_addr g4       ; စာရင်း
+   117  global_addr g4       ; ကိန်းများ
+   118  global_addr g4       ; ကိန်းများ
    119  load *isize
    120  free
    121  push 0x0:ptr

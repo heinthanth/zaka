@@ -138,6 +138,15 @@ impl ToSexpr for Expr
                 list("ptr-", [lhs.to_sexpr(), rhs.to_sexpr()])
             }
             ExprNode::SizeOf(kind) => list("sizeof", [kind.name()]),
+            ExprNode::List(cells) => list("list", cells.iter().map(ToSexpr::to_sexpr)),
+            ExprNode::BlankList => "blank_list".to_string(),
+            ExprNode::CellAddr { list: base, index, len, first, checked } =>
+            {
+                let head = tern!(*first == 0, "cell@", "cell1@");
+                let parts = [base.to_sexpr(), index.to_sexpr(), len.to_string()];
+                let mark = checked.then(|| "checked".to_string());
+                list(head, parts.into_iter().chain(mark))
+            }
         }
     }
 }

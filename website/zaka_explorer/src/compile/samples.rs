@@ -38,8 +38,16 @@ pub const DIAGNOSTICS: &str = "diagnostics";
 pub const MISTAKES: &str = "mistakes";
 
 /// The groups, in picker order.
-pub const GROUPS: &[&str] =
-    &["basics", "control", "functions", "heap", "programs", MISTAKES, DIAGNOSTICS];
+pub const GROUPS: &[&str] = &[
+    "basics",
+    "control",
+    "functions",
+    "heap",
+    "lists",
+    "programs",
+    MISTAKES,
+    DIAGNOSTICS,
+];
 
 /// The samples, in picker order.
 #[rustfmt::skip]
@@ -70,6 +78,12 @@ pub const SAMPLES: &[Sample] = &[
     sample!("heap", "growable"),
     sample!("heap", "record"),
     sample!("heap", "pascal"),
+    sample!("lists", "basics"),
+    sample!("lists", "copies"),
+    sample!("lists", "equal"),
+    sample!("lists", "grid"),
+    sample!("lists", "borrow"),
+    sample!("lists", "sort"),
     sample!("programs", "gradebook"),
     sample!("programs", "fizzbuzz"),
     sample!("programs", "gcd"),

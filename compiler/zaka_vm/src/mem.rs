@@ -408,6 +408,67 @@ impl Mem
         Ok(())
     }
 
+    /// Duplicate a value of a kind, such as a whole list, from one address to
+    /// another. Both accesses are checked as a load and a store of the kind
+    /// would be.
+    ///
+    /// # Arguments
+    ///
+    /// * `to` - The destination.
+    /// * `from` - The source.
+    /// * `kind` - The kind of the value.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap either access hits.
+    pub fn blit(&mut self, to: u64, from: u64, kind: DataKind) -> Result<(), TrapKind>
+    {
+        let (source, at) = self.check(from, kind)?;
+        let raw =
+            self.table.get(&source).and_then(|b| b.data.get(at)).map(<[u8]>::to_vec);
+        self.write_raw(to, kind, &raw.unwrap_or_default())
+    }
+
+    /// Set the octets of a value of a kind to zero, the default of each
+    /// cell of a list.
+    ///
+    /// # Arguments
+    ///
+    /// * `to` - The address.
+    /// * `kind` - The kind of the value.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap the access hits.
+    pub fn zero(&mut self, to: u64, kind: DataKind) -> Result<(), TrapKind>
+    {
+        let size = kind.size(self.platform) as usize;
+        self.write_raw(to, kind, &vec![0; size])
+    }
+
+    /// Write the octets of a value of a kind, checked as a store of it.
+    ///
+    /// # Arguments
+    ///
+    /// * `to` - The address.
+    /// * `kind` - The kind of the value.
+    /// * `raw` - The octets of a value of the kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap the access hits.
+    fn write_raw(&mut self, to: u64, kind: DataKind, raw: &[u8])
+    -> Result<(), TrapKind>
+    {
+        let (start, span) = self.check(to, kind)?;
+        let size = span.len() as u32;
+        let slot = self.table.get_mut(&start).and_then(|b| b.data.get_mut(span));
+        let slot = slot.filter(|s| s.len() == raw.len());
+        let slot = slot.ok_or(TrapKind::OutOfBounds { addr: to, size })?;
+        slot.copy_from_slice(raw);
+        Ok(())
+    }
+
     /// Whether two addresses lie in `[start, start + len]` of one live
     /// block, the one-past-the-end address included, so a pointer formed at
     /// the end of a block can be subtracted from its start and `p - p` on a
@@ -448,6 +509,13 @@ impl Mem
         let (_, block) = self.table.range(..=addr).next_back()?;
         tern!(block.reaches(addr), Some(block), None)
     }
+
+    /// Bit count of the platform-sized kinds and addresses.
+    ///
+    /// # Returns
+    ///
+    /// The bit count.
+    pub fn platform(&self) -> u16 { self.platform }
 
     /// Each block, live or freed, in address order.
     ///

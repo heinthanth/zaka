@@ -284,11 +284,55 @@ impl Folder
                 let octets = u128::from(kind.size(self.platform));
                 (Some(Value::int(USIZE, octets, self.platform)), None)
             }
+            ExprNode::List(cells) =>
+            {
+                do_for!(c in cells.iter_mut(), self.drop_value(c));
+                (None, None)
+            }
+            ExprNode::BlankList => (None, None),
+            ExprNode::CellAddr { list, index, len, first, checked } =>
+            {
+                self.drop_value(list);
+                let at = self.expr(index);
+                *checked = self.cell_in_range(at, *len, *first, index.span);
+                (None, None)
+            }
         };
         ret_if!(!self.options.exprs, value);
         do_if!(let Some(v) = value, e.node = ExprNode::Const(v));
         do_if!(value.is_none() && rest.is_some(), *e = rest.expect("checked above"));
         value
+    }
+
+    /// Whether a known cell number names a cell of its list; a known one
+    /// outside the list is reported.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The cell number, when it is known.
+    /// * `len` - The number of cells.
+    /// * `first` - The number of the first cell: 0 or 1.
+    /// * `span` - The cell number.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the number is known and in range.
+    fn cell_in_range(
+        &mut self, at: Option<Value>, len: u32, first: u8, span: Span,
+    ) -> bool
+    {
+        let Some(Value::Int { kind, raw }) = at
+        else
+        {
+            return false;
+        };
+        let wide = i128::try_from(raw).unwrap_or(i128::MAX);
+        let index = tern!(kind.signed, raw as i128, wide);
+        let lo = i128::from(first);
+        ret_if!(index >= lo && index < lo + i128::from(len), true);
+        let last = u64::from(len) + u64::from(first) - 1;
+        self.diags.push(fd::cell_out_of_range(span, &index.to_string(), first, last));
+        false
     }
 
     /// Fold a read of a slot: a constant slot set to a known value reads

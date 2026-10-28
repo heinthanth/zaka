@@ -9,6 +9,7 @@ use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::LogicOp;
 use zakac_ir_builder::ir::Place;
+use zakac_ir_builder::ir::PrefixOp;
 use zakac_ir_builder::ir::PrintValue;
 use zakac_ir_builder::ir::Stmt;
 use zakac_ir_builder::value::Value;
@@ -304,7 +305,7 @@ impl<'s> FuncGen<'s>
     {
         let kind = self.slot_at(place).kind;
         self.addr_of(place);
-        self.op(Op::Load(kind));
+        do_if!(!kind.is_list(), self.op(Op::Load(kind)));
     }
 
     /// Set the value of a slot, written to its block.
@@ -319,6 +320,84 @@ impl<'s> FuncGen<'s>
         self.addr_of(place);
         value(self);
         self.op(Op::Store(kind));
+    }
+
+    /// Fill the list at the address on the stack with a list value: zero
+    /// octets for a blank list, else a duplicate of its cells.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The list value.
+    fn fill_list(&mut self, value: &Expr)
+    {
+        ret_if!(value.node == ExprNode::BlankList, self.op(Op::Zero(value.kind)));
+        self.expr(value);
+        self.op(Op::Blit(value.kind));
+    }
+
+    /// Write a value at the address on the stack: a list is copied, each
+    /// other value stored.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value.
+    fn put(&mut self, value: &Expr)
+    {
+        ret_if!(value.kind.is_list(), self.fill_list(value));
+        self.expr(value);
+        self.op(Op::Store(value.kind));
+    }
+
+    /// Build a list value in a slot of its own and push its address.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The list kind.
+    /// * `cells` - The cells; none for a blank list.
+    fn spill_list(&mut self, kind: DataKind, cells: Option<&[Expr]>)
+    {
+        let slot = self.temp("%list", kind);
+        self.op(Op::LocalAddr(slot));
+        let Some(cells) = cells
+        else
+        {
+            self.op(Op::Zero(kind));
+            return self.op(Op::LocalAddr(slot));
+        };
+        let platform = self.shared.platform;
+        let stride = kind.as_list().map_or(0, |l| l.cell.size(platform));
+        for (i, cell) in cells.iter().enumerate()
+        {
+            do_if!(i > 0, {
+                self.op(Op::LocalAddr(slot));
+                self.op(Op::Push(usize_value(i as u128, platform)));
+                self.op(Op::PtrAdd(stride));
+            });
+            self.put(cell);
+        }
+        self.op(Op::LocalAddr(slot));
+    }
+
+    /// Push the address of a list cell. A cell number not proved in range is
+    /// checked first.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The address expression, a pointer to the cell kind.
+    /// * `list` - The list, or a pointer to it.
+    /// * `index` - The cell number.
+    /// * `bounds` - The number of cells, and of the first cell.
+    /// * `checked` - Whether the number is known to be in range.
+    fn cell_addr(
+        &mut self, e: &Expr, list: &Expr, index: &Expr, bounds: (u32, u8),
+        checked: bool,
+    )
+    {
+        let (len, first) = bounds;
+        self.expr(list);
+        self.expr(index);
+        do_if!(!checked || first != 0, self.op(Op::Index { len, first }));
+        self.op(Op::PtrAdd(self.stride(e.kind)));
     }
 
     /// Set the address a heap statement keeps.
@@ -427,11 +506,16 @@ impl<'s> FuncGen<'s>
     {
         match s
         {
+            Stmt::Set { place, value, .. } if value.kind.is_list() =>
+            {
+                self.addr_of(*place);
+                self.fill_list(value);
+            }
             Stmt::Set { place, value, .. } => self.store(*place, |g| g.expr(value)),
             Stmt::Print { value: PrintValue::Expr(e), .. } =>
             {
                 self.expr(e);
-                self.op(Op::Print);
+                self.op(tern!(e.kind.is_list(), Op::PrintList(e.kind), Op::Print));
             }
             Stmt::Print { value: PrintValue::Text(text), .. } =>
             {
@@ -463,8 +547,7 @@ impl<'s> FuncGen<'s>
             Stmt::Store { addr, value, .. } =>
             {
                 self.expr(addr);
-                self.expr(value);
-                self.op(Op::Store(value.kind));
+                self.put(value);
             }
             Stmt::Alloc { dest, count, unit, .. } =>
             {
@@ -861,6 +944,13 @@ impl<'s> FuncGen<'s>
                 self.expr(rhs);
                 self.op(Op::Infix(*op));
             }
+            ExprNode::Compare { op, lhs, rhs } if lhs.kind.is_list() =>
+            {
+                self.expr(lhs);
+                self.expr(rhs);
+                self.op(Op::ListEq(lhs.kind));
+                do_if!(*op == CmpOp::Ne, self.op(Op::Prefix(PrefixOp::Not)));
+            }
             ExprNode::Compare { op, lhs, rhs } =>
             {
                 self.expr(lhs);
@@ -878,7 +968,7 @@ impl<'s> FuncGen<'s>
             ExprNode::Load { addr } =>
             {
                 self.expr(addr);
-                self.op(Op::Load(e.kind));
+                do_if!(!e.kind.is_list(), self.op(Op::Load(e.kind)));
             }
             ExprNode::PtrAdd { base, offset } =>
             {
@@ -893,6 +983,12 @@ impl<'s> FuncGen<'s>
                 self.op(Op::PtrSub(self.stride(lhs.kind)));
             }
             ExprNode::SizeOf(kind) => self.size_of(*kind),
+            ExprNode::List(cells) => self.spill_list(e.kind, Some(cells)),
+            ExprNode::BlankList => self.spill_list(e.kind, None),
+            ExprNode::CellAddr { list, index, len, first, checked } =>
+            {
+                self.cell_addr(e, list, index, (*len, *first), *checked)
+            }
         }
     }
 
@@ -973,6 +1069,21 @@ fn held_kind(at: &Expr) -> DataKind
 {
     extract!(Some(kind) = at.kind.pointee(), "a heap destination holds a pointer");
     kind
+}
+
+/// A `usize` constant.
+///
+/// # Arguments
+///
+/// * `n` - The number.
+/// * `platform` - Bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// The value.
+fn usize_value(n: u128, platform: u16) -> Value
+{
+    Value::int(int_kind(DataKind::USIZE), n, platform)
 }
 
 /// The integer kind of an integer data kind.

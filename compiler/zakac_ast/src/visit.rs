@@ -2,6 +2,7 @@ use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_span::span::Span;
 
+use crate::expr::BlankListLit;
 use crate::expr::BoolLit;
 use crate::expr::CallExpr;
 use crate::expr::CharLit;
@@ -9,8 +10,10 @@ use crate::expr::Expr;
 use crate::expr::FloatLit;
 use crate::expr::GroupExpr;
 use crate::expr::Ident;
+use crate::expr::IndexExpr;
 use crate::expr::InfixExpr;
 use crate::expr::IntLit;
+use crate::expr::ListLit;
 use crate::expr::LogicExpr;
 use crate::expr::NameExpr;
 use crate::expr::NotExpr;
@@ -117,6 +120,9 @@ VerbExpr => "verb", visit_verb;
 CallExpr => "call", visit_call_expr;
 NullLit => "null", visit_null;
 SizeOfExpr => "sizeof", visit_size_of;
+IndexExpr => "index", visit_index;
+ListLit => "list", visit_list;
+BlankListLit => "blank_list", visit_blank_list;
 Ident => "ident", visit_ident;
 Kind => "kind", visit_kind; }
 
@@ -179,6 +185,9 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::Call(e) => e,
         Expr::Null(e) => e,
         Expr::SizeOf(e) => e,
+        Expr::Index(e) => e,
+        Expr::List(e) => e,
+        Expr::BlankList(e) => e,
     }
 }
 
@@ -306,6 +315,12 @@ pub trait Visitor
     fn visit_null(&mut self, n: &NullLit) { walk_null(self, n) }
     /// Visit a size expression.
     fn visit_size_of(&mut self, n: &SizeOfExpr) { walk_size_of(self, n) }
+    /// Visit a list cell.
+    fn visit_index(&mut self, n: &IndexExpr) { walk_index(self, n) }
+    /// Visit a list literal.
+    fn visit_list(&mut self, n: &ListLit) { walk_list(self, n) }
+    /// Visit a blank list.
+    fn visit_blank_list(&mut self, n: &BlankListLit) { walk_blank_list(self, n) }
     /// Visit a name in a declaration, parameter, loop header or call.
     fn visit_ident(&mut self, n: &Ident) { walk_ident(self, n) }
     /// Visit a kind.
@@ -552,6 +567,9 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::Call(e) => v.visit_call_expr(e),
         Expr::Null(e) => v.visit_null(e),
         Expr::SizeOf(e) => v.visit_size_of(e),
+        Expr::Index(e) => v.visit_index(e),
+        Expr::List(e) => v.visit_list(e),
+        Expr::BlankList(e) => v.visit_blank_list(e),
     }
 }
 
@@ -664,6 +682,30 @@ pub fn walk_size_of<V: Visitor + ?Sized>(v: &mut V, n: &SizeOfExpr)
 {
     v.enter(n);
     v.visit_kind(&n.kind);
+    v.leave(n);
+}
+
+/// Visit the list and the cell number of a list cell.
+pub fn walk_index<V: Visitor + ?Sized>(v: &mut V, n: &IndexExpr)
+{
+    v.enter(n);
+    v.visit_expr(&n.list);
+    v.visit_expr(&n.index);
+    v.leave(n);
+}
+
+/// Visit the cells of a list literal.
+pub fn walk_list<V: Visitor + ?Sized>(v: &mut V, n: &ListLit)
+{
+    v.enter(n);
+    do_for!(c in &n.cells, v.visit_expr(c));
+    v.leave(n);
+}
+
+/// Visit a blank list; it has no children.
+pub fn walk_blank_list<V: Visitor + ?Sized>(v: &mut V, n: &BlankListLit)
+{
+    v.enter(n);
     v.leave(n);
 }
 
@@ -916,6 +958,9 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         Expr::Call(e) => walk_call_expr_mut(v, e),
         Expr::Null(e) => v.visit_null_mut(e),
         Expr::SizeOf(e) => v.visit_size_of_mut(e),
+        Expr::Index(e) => walk_pair_mut(v, &mut e.span, &mut e.list, &mut e.index),
+        Expr::List(e) => walk_list_mut(v, e),
+        Expr::BlankList(e) => v.visit_span_mut(&mut e.span),
     }
 }
 
@@ -959,6 +1004,13 @@ pub fn walk_call_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallExpr)
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.callee);
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
+}
+
+/// Visit the cells of a list literal.
+pub fn walk_list_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut ListLit)
+{
+    v.visit_span_mut(&mut n.span);
+    do_for!(c in &mut n.cells, v.visit_expr_mut(c));
 }
 
 /// Visit the kind of a size expression.

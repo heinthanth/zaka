@@ -19,6 +19,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::kind::DataKind;
+use crate::list::KindUse;
 use crate::ops::OpClass;
 use crate::ops::Want;
 use crate::ops::infix_class;
@@ -80,7 +81,14 @@ impl Checker
             {
                 Some(expect.filter(|k| k.is_ptr()).unwrap_or(DataKind::Null))
             }
-            Expr::SizeOf(_) => Some(DataKind::USIZE),
+            Expr::SizeOf(n) =>
+            {
+                self.written_kind(&n.kind, KindUse::Other);
+                Some(DataKind::USIZE)
+            }
+            Expr::Index(n) => self.infer_index(n),
+            Expr::List(n) => self.infer_list(n, expect),
+            Expr::BlankList(n) => self.infer_blank(n, expect),
         }
     }
 
@@ -165,7 +173,8 @@ impl Checker
     fn infer_addr_of(&mut self, operand: &Expr) -> Option<DataKind>
     {
         let kind = self.infer(operand, None);
-        let Some(place) = place_of(operand)
+        let place = place_of(operand).filter(|p| !self.in_temp_list(p));
+        let Some(place) = place
         else
         {
             self.report(kd::no_address(operand.span(), &what_of(operand)));
@@ -188,11 +197,7 @@ impl Checker
     /// The name of a constant or a counted-loop variable, else `None`.
     fn fixed_name<'a>(&self, place: &'a Expr) -> Option<&'a str>
     {
-        let Expr::Name(n) = place
-        else
-        {
-            return None;
-        };
+        let n = self.owner_name(place)?;
         let access = self.scopes.lookup(&n.name)?.access;
         tern!(access == Access::Var, None, Some(&n.name))
     }
@@ -335,6 +340,7 @@ impl Checker
             (OpClass::Cast, [value]) => self.infer_cast(n, value),
             (OpClass::AddrOf, [value]) => self.infer_addr_of(value),
             (OpClass::Deref, [value]) => self.infer_deref(value),
+            (OpClass::CellCount, [value]) => self.infer_cell_count(value),
             (OpClass::BitNot, [value]) =>
             {
                 let kind = self.infer(value, int_expect(expect))?;
@@ -365,7 +371,7 @@ impl Checker
     fn infer_cast(&mut self, n: &VerbExpr, value: &Expr) -> Option<DataKind>
     {
         let from = self.infer(value, None);
-        let target = n.kind_arg.as_ref().map(DataKind::from_ast)?;
+        let target = self.written_kind(n.kind_arg.as_ref()?, KindUse::Other);
         let bad = from.filter(|f| !f.cast_allowed(target));
         let report = |f: DataKind| kd::invalid_cast(n.span, &f.name(), &target.name());
         do_if!(let Some(f) = bad, self.report(report(f)));

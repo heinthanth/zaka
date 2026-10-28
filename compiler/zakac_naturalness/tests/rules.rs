@@ -136,6 +136,7 @@ fn redundant_parentheses_around_a_whole_operand()
     let arg = "လုပ်ဆောင်ချက် f ကို (က + ၁) တို့ဖြင့် လုပ်ဆောင်ပါ။";
     assert_eq!(warns(arg), [Code::RedundantGroup]);
     clean("(က ဖြစ်၍ ခ) ကို ပြသပါ။");
+    clean("လုပ်ဆောင်ချက် f ကို က၊ (၁၊ ၂ တို့ပါသော စာရင်း) တို့ဖြင့် လုပ်ဆောင်ပါ။");
     clean("(က သည် ၁ နှင့် ညီသည် မဟုတ်) ကို ပြသပါ။");
     clean("က ကို (ခ သို့မဟုတ် ဂ) ဟု ထားပါ။");
 }

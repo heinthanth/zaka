@@ -87,6 +87,12 @@ pub enum Expr
     Null(NullLit),
     /// `kind ၏ အရွယ်အစား`
     SizeOf(SizeOfExpr),
+    /// `x ၏ အကွက် i` or `x ၏ n ခုမြောက်အကွက်`: one cell of a list.
+    Index(IndexExpr),
+    /// `a၊ b၊ c တို့ပါသော စာရင်း`
+    List(ListLit),
+    /// `စာရင်းအလွတ်`, a list with each cell at its default.
+    BlankList(BlankListLit),
 }
 
 /// Integer literal; the digits are converted with the base.
@@ -172,6 +178,50 @@ pub struct SizeOfExpr
     pub id: NodeId,
     /// The measured kind.
     pub kind: Kind,
+    /// Source region.
+    pub span: Span,
+}
+
+/// One cell of a list: `x ၏ အကွက် i` counts from 0, `x ၏ n ခုမြောက်အကွက်`
+/// counts from 1.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct IndexExpr
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The list, or a pointer to one.
+    #[builder(into)]
+    pub list: Box<Expr>,
+    /// The cell number.
+    #[builder(into)]
+    pub index: Box<Expr>,
+    /// The number of the first cell: 0 for `အကွက် i`, 1 for
+    /// `n ခုမြောက်အကွက်`.
+    pub first: u8,
+    /// Source region, from the list to the index or the verb.
+    pub span: Span,
+}
+
+/// `a၊ b၊ c တို့ပါသော စာရင်း`: a list written out one cell at a time.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct ListLit
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The cells, in order.
+    #[builder(default)]
+    pub cells: Vec<Expr>,
+    /// Source region, from the first cell to `စာရင်း`.
+    pub span: Span,
+}
+
+/// `စာရင်းအလွတ်`: a list whose cells all hold their default; the kind comes
+/// from the context.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct BlankListLit
+{
+    /// Node number.
+    pub id: NodeId,
     /// Source region.
     pub span: Span,
 }
@@ -499,6 +549,9 @@ impl Expr
             Expr::Call(n) => n.id,
             Expr::Null(n) => n.id,
             Expr::SizeOf(n) => n.id,
+            Expr::Index(n) => n.id,
+            Expr::List(n) => n.id,
+            Expr::BlankList(n) => n.id,
         }
     }
 
@@ -519,8 +572,8 @@ impl Expr
     }
 
     /// Whether this expression is a place that can be written or have its
-    /// address taken: a variable, a dereference, or either one in
-    /// parentheses.
+    /// address taken: a variable, a dereference, a list cell, or one of
+    /// these in parentheses.
     ///
     /// # Returns
     ///
@@ -533,6 +586,7 @@ impl Expr
             Expr::Group(n) => n.inner.is_place(),
             Expr::Prefix(n) => n.op == PrefixOp::Deref,
             Expr::Verb(n) => n.op == VerbOp::Deref,
+            Expr::Index(_) => true,
             _ => false,
         }
     }

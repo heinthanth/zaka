@@ -459,10 +459,6 @@ en = "Leaked"
 en = "Given back and held in quarantine, so a use after the free traps"
 [explorer.heap.leaked_note]
 en = "Heap room still in use when the run finished"
-[explorer.heap.lane_data]
-en = "Static and heap · %{count}"
-[explorer.heap.lane_stack]
-en = "Stack · %{count}"
 [explorer.heap.gaps]
 en = "Gaps"
 [explorer.heap.gaps_note]

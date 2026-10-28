@@ -5,7 +5,9 @@ use crate::expr::Expr;
 use crate::expr::IntLit;
 use crate::expr::VerbExpr;
 use crate::kind::BaseKind;
+use crate::kind::Cells;
 use crate::kind::Kind;
+use crate::kind::Wrap;
 use crate::stmt::BlockStmt;
 use crate::stmt::CountedStmt;
 use crate::stmt::DeclStmt;
@@ -51,10 +53,10 @@ impl ToSexpr for Kind
 {
     fn to_sexpr(&self) -> String
     {
-        let stars = usize::from(self.depth);
-        let stars =
-            tern!(self.base == BaseKind::Opaque, stars.saturating_sub(1), stars);
-        format!("{}{}", "*".repeat(stars), base_name(self))
+        // The opaque kind's own `လိပ်စာ` is its name, not a star.
+        let skip = usize::from(self.base == BaseKind::Opaque);
+        let wraps = self.wraps.iter().skip(skip);
+        wraps.fold(base_name(self), |inner, w| format!("{}{inner}", wrap_mark(*w)))
     }
 }
 
@@ -78,6 +80,13 @@ impl ToSexpr for Expr
             Expr::Call(n) => list("call", call_parts(&n.callee.name, &n.args)),
             Expr::Null(_) => "null".into(),
             Expr::SizeOf(n) => list("sizeof", [n.kind.to_sexpr()]),
+            Expr::Index(n) =>
+            {
+                let head = tern!(n.first == 0, "cell", "cell1");
+                list(head, [n.list.to_sexpr(), n.index.to_sexpr()])
+            }
+            Expr::List(n) => list("list", n.cells.iter().map(ToSexpr::to_sexpr)),
+            Expr::BlankList(_) => "blank_list".into(),
         }
     }
 }
@@ -125,6 +134,25 @@ fn list(head: &str, parts: impl IntoIterator<Item = String>) -> String
     format!("({head} {})", parts.join(" "))
 }
 
+/// The mark a wrap puts in front of the kind inside it: `*`, `[3]` or `[]`.
+///
+/// # Arguments
+///
+/// * `w` - The wrap.
+///
+/// # Returns
+///
+/// The mark.
+fn wrap_mark(w: Wrap) -> String
+{
+    match w
+    {
+        Wrap::Ptr => "*".into(),
+        Wrap::List(Cells::Fixed(n)) => format!("[{n}]"),
+        Wrap::List(Cells::Inferred) => "[]".into(),
+    }
+}
+
 /// The name of a kind without its pointer stars: `u8`, `isize`, `f64`,
 /// `bool` or `ptr`.
 ///
@@ -161,7 +189,7 @@ fn base_name(k: &Kind) -> String
 /// The text.
 fn int_sexpr(n: &IntLit) -> String
 {
-    let kind = n.kind.map_or(String::new(), |k| k.to_sexpr());
+    let kind = n.kind.as_ref().map_or(String::new(), ToSexpr::to_sexpr);
     format!("{}{kind}", n.value)
 }
 
@@ -312,7 +340,7 @@ fn generic_sexpr(s: &GenericStmt) -> String
 fn fn_sexpr(s: &FnDecl) -> String
 {
     let params: Vec<String> = s.params.iter().map(param_sexpr).collect();
-    let ret = s.ret.map_or("-".to_string(), |k| k.to_sexpr());
+    let ret = s.ret.as_ref().map_or("-".to_string(), ToSexpr::to_sexpr);
     let parts = [s.name.name.clone(), format!("[{}]", params.join(", ")), ret];
     list("fn", parts.into_iter().chain([s.block.to_sexpr()]))
 }

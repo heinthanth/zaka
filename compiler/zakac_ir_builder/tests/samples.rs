@@ -18,7 +18,8 @@ use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
 /// Inputs that must lower without diagnostics.
-const CLEAN_INPUTS: &[&str] = &["folding", "functions", "heap", "loops", "programs"];
+const CLEAN_INPUTS: &[&str] =
+    &["folding", "functions", "heap", "lists", "loops", "programs"];
 
 /// Lower `tests/inputs/{name}.zaka` with `folding`.
 fn lower_input(name: &str, folding: &FoldOptions) -> IrArtifact
@@ -124,7 +125,7 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
     {
         ExprNode::Read(place) => out.push(*place),
         ExprNode::AddrOf(place) => out.push(*place),
-        ExprNode::Const(_) | ExprNode::SizeOf(_) => (),
+        ExprNode::Const(_) | ExprNode::SizeOf(_) | ExprNode::BlankList => (),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand } => expr_places(operand, out),
@@ -132,12 +133,16 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         | ExprNode::Compare { lhs, rhs, .. }
         | ExprNode::Logic { lhs, rhs, .. }
         | ExprNode::PtrAdd { base: lhs, offset: rhs }
-        | ExprNode::PtrSub { lhs, rhs } =>
+        | ExprNode::PtrSub { lhs, rhs }
+        | ExprNode::CellAddr { list: lhs, index: rhs, .. } =>
         {
             expr_places(lhs, out);
             expr_places(rhs, out);
         }
-        ExprNode::Call { args, .. } => args.iter().for_each(|a| expr_places(a, out)),
+        ExprNode::Call { args, .. } | ExprNode::List(args) =>
+        {
+            args.iter().for_each(|a| expr_places(a, out))
+        }
     }
 }
 

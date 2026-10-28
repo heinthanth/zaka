@@ -48,6 +48,8 @@ Messages use short names for kinds:
 | `bool` | `မှန်မှားတန်ဖိုး` |
 | `*isize`, `*u8`, `**isize`, ... | `ကိန်းပြည့် လိပ်စာ`, ... ; one more `*` for each `၏ လိပ်စာ` after it |
 | `ptr` | `လိပ်စာ` (the opaque pointer) |
+| `[3]isize`, `[2][3]isize` | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း`, ... ; one `[n]` for each `စာရင်း`, outermost first; `[]` while the count is not known |
+| `*[3]isize` | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, the address of a whole list |
 | `null` | the kind of `ဗလာ` |
 
 ## Codes
@@ -84,6 +86,7 @@ The first two digits tell which stage found the problem.
 | ZK0220 | a number too big for its kind | [Integers](../values/integers.md) |
 | ZK0223 | text in quotes used somewhere other than printing | [Text in quotes](../values/strings.md) |
 | ZK0226 | a block closer with no block to close | [Blocks and scope](../variables/scope.md) |
+| ZK0227 | a list count that is not a whole number above zero | [Lists](../lists/README.md#list-kinds) |
 
 ### ZK03: names
 
@@ -122,6 +125,13 @@ The first two digits tell which stage found the problem.
 | ZK0416 | pointer kinds differ: comparing or subtracting pointers to different kinds | [Pointer arithmetic](../pointers/arithmetic.md#walking-with-a-pointer) |
 | ZK0417 | a heap statement that needs a pointer but was given another kind | [The heap](../pointers/heap.md) |
 | ZK0418 | (warning) the address of a local returned from its function | [Changing the caller's variables](../pointers/out-parameters.md#how-long-an-address-lasts) |
+| ZK0419 | a list literal with more or fewer cells than its kind | [List mistakes](../lists/mistakes.md#a-literal-with-the-wrong-count) |
+| ZK0420 | `စာရင်းအလွတ်` where no list kind is known | [List mistakes](../lists/mistakes.md#a-blank-list-with-no-kind) |
+| ZK0421 | a list kind with no count where nothing gives one | [List mistakes](../lists/mistakes.md#a-list-kind-with-no-count) |
+| ZK0422 | cells of a value that is no list | [List mistakes](../lists/mistakes.md#cells-of-a-value-that-is-no-list) |
+| ZK0423 | a cell number that is not an integer | [Lists](../lists/README.md#cell-numbers) |
+| ZK0424 | a list as a function result | [Passing and comparing lists](../lists/passing.md#lists-as-parameters) |
+| ZK0425 | a list kind too large for the machine | [Lists of lists](../lists/grids.md#the-size-of-a-list) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -134,3 +144,4 @@ Zaka](../natural-zaka/README.md).
 | --- | --- | --- |
 | ZK0601 | a sum of constants that does not fit its kind | [Arithmetic](../operators/arithmetic.md) |
 | ZK0602 | a constant zero as the divisor | [Arithmetic](../operators/arithmetic.md#dividing-integers) |
+| ZK0603 | a constant cell number outside its list | [List mistakes](../lists/mistakes.md#a-cell-number-outside-the-list) |

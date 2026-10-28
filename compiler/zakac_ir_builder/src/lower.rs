@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bon::Builder;
 use zakac_ast::expr as ast;
+use zakac_ast::kind::Kind;
 use zakac_ast::stmt as st;
 use zakac_ast::verb::Dir;
 use zakac_ast::verb::VerbOp;
@@ -11,6 +12,7 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
+use zakac_semcheck::kind::ListKind;
 use zakac_semcheck::semcheck::KindTable;
 use zakac_semcheck::semcheck::RESULT_NAME;
 use zakac_span::span::Span;
@@ -308,11 +310,29 @@ impl Lowerer<'_>
     /// The store.
     fn decl(&mut self, n: &st::DeclStmt) -> Stmt
     {
-        let kind = DataKind::from_ast(&n.kind);
+        let kind = self.declared_kind(&n.kind, n.init.as_ref());
         let value = self.initial(n.init.as_ref(), kind, n.name.span);
         let access = tern!(n.is_const, Access::Const, Access::Var);
         let place = self.declare(&n.name, kind, access);
         Stmt::Set { place, value, span: n.span }
+    }
+
+    /// The kind of a declared name: the written kind, or the kind of its
+    /// value when the written kind leaves list counts out.
+    ///
+    /// # Arguments
+    ///
+    /// * `written` - The kind phrase.
+    /// * `init` - The value, when one is written.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    fn declared_kind(&self, written: &Kind, init: Option<&ast::Expr>) -> DataKind
+    {
+        let kind = DataKind::from_ast(written);
+        let open = init.filter(|_| kind.has_open_count());
+        open.map_or(kind, |e| self.kind_of(e))
     }
 
     /// The initial value of a declaration.
@@ -380,6 +400,7 @@ impl Lowerer<'_>
     {
         ret_if!(let ast::Expr::Group(n) = e, self.dest(&n.inner));
         ret_if!(let Some(ptr) = deref_operand(e), Dest::Mem(self.expr(ptr)));
+        ret_if!(let ast::Expr::Index(n) = e, Dest::Mem(self.cell_addr(n)));
         let ast::Expr::Name(n) = e
         else
         {
@@ -576,7 +597,7 @@ impl Lowerer<'_>
     /// The loop.
     fn generic(&mut self, n: &st::GenericStmt) -> Stmt
     {
-        let kind = DataKind::from_ast(&n.kind);
+        let kind = self.declared_kind(&n.kind, n.init.as_ref());
         let value = self.initial(n.init.as_ref(), kind, n.var.span);
         let mut parts = None;
         self.scoped(|l| {
@@ -775,6 +796,9 @@ impl Lowerer<'_>
             }
             ast::Expr::Null(_) => ExprNode::Const(Value::NULL),
             ast::Expr::SizeOf(n) => ExprNode::SizeOf(DataKind::from_ast(&n.kind)),
+            ast::Expr::Index(n) => ExprNode::Load { addr: Box::new(self.cell_addr(n)) },
+            ast::Expr::List(n) => self.list(n, kind),
+            ast::Expr::BlankList(_) => ExprNode::BlankList,
         };
         Expr::builder().kind(kind).node(node).span(e.span()).build()
     }
@@ -984,6 +1008,59 @@ impl Lowerer<'_>
         ExprNode::Load { addr: Box::new(self.expr(ptr)) }
     }
 
+    /// Lower a list literal; each cell takes the cell kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The literal.
+    /// * `kind` - Its recorded list kind.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn list(&mut self, n: &ast::ListLit, kind: DataKind) -> ExprNode
+    {
+        let cell = kind.as_list().expect("a list literal has a list kind").cell;
+        ExprNode::List(n.cells.iter().map(|c| self.coerce(c, cell)).collect())
+    }
+
+    /// The address of one cell of a list, or of the list a pointer points
+    /// at.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The cell expression.
+    ///
+    /// # Returns
+    ///
+    /// The address, a pointer to the cell kind.
+    fn cell_addr(&mut self, n: &ast::IndexExpr) -> Expr
+    {
+        let shape = list_shape(self.kind_of(&n.list));
+        let list = Box::new(self.expr(&n.list));
+        let index = Box::new(self.expr(&n.index));
+        let kind = shape.cell.pointer_to();
+        #[rustfmt::skip]
+        let node = ExprNode::CellAddr { list, index, len: shape.len, first: n.first, checked: false };
+        Expr::builder().kind(kind).node(node).span(n.span).build()
+    }
+
+    /// The cell count of a list, or of the list a pointer points at.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The list.
+    ///
+    /// # Returns
+    ///
+    /// A `usize` constant.
+    fn cell_count(&self, value: &ast::Expr) -> ExprNode
+    {
+        let len = list_shape(self.kind_of(value)).len;
+        let usize = DataKind::USIZE.int_kind().expect("usize is an integer");
+        ExprNode::Const(Value::int(usize, u128::from(len), self.platform))
+    }
+
     /// Lower a comparison; both operands take their common kind, which is
     /// `ptr` for two `ဗလာ`.
     ///
@@ -1069,6 +1146,7 @@ impl Lowerer<'_>
         };
         ret_if!(n.op == VerbOp::AddrOf, self.addr_of(value));
         ret_if!(n.op == VerbOp::Deref, self.load(value));
+        ret_if!(n.op == VerbOp::CellCount, self.cell_count(value));
         let operand = self.expr(value);
         ret_if!(n.op == VerbOp::BitNot, prefix_node(PrefixOp::BitNot, operand));
         ExprNode::Convert { operand: Box::new(operand), implicit: false }
@@ -1103,7 +1181,11 @@ pub fn constant(v: Value, span: Span) -> Expr
 /// The expression.
 fn default_constant(kind: DataKind, span: Span) -> Expr
 {
-    let node = ExprNode::Const(Value::default_of(kind));
+    let node = tern!(
+        kind.is_list(),
+        ExprNode::BlankList,
+        ExprNode::Const(Value::default_of(kind))
+    );
     Expr::builder().kind(kind).node(node).span(span).build()
 }
 
@@ -1135,6 +1217,25 @@ fn prefix_node(op: PrefixOp, operand: Expr) -> ExprNode
 fn concrete(kind: DataKind) -> DataKind
 {
     tern!(kind == DataKind::Null, DataKind::OPAQUE, kind)
+}
+
+/// The list a list operand gives its cells from.
+///
+/// # Arguments
+///
+/// * `kind` - The kind of the operand: a list or a pointer to one.
+///
+/// # Returns
+///
+/// The list kind.
+///
+/// # Panics
+///
+/// When the kind is neither, which a clean check rules out.
+fn list_shape(kind: DataKind) -> &'static ListKind
+{
+    let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
+    list.expect("a list operand is a list or a pointer to one")
 }
 
 /// The distance between two pointers.

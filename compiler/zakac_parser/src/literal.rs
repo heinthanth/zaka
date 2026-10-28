@@ -90,7 +90,7 @@ fn int_value(text: &str, base: u32, span: Span) -> Result<u128, Diagnostic>
 /// # Returns
 ///
 /// `true` if it fits.
-fn fits(value: u128, kind: Option<Kind>, based: bool) -> bool
+fn fits(value: u128, kind: Option<&Kind>, based: bool) -> bool
 {
     let Some(kind) = kind
     else
@@ -148,7 +148,7 @@ fn shape_of(tok: &Token) -> Option<NumberShape>
 /// # Returns
 ///
 /// `true` if it is.
-fn is_base(kind: Option<Kind>, base: BaseKind) -> bool
+fn is_base(kind: Option<&Kind>, base: BaseKind) -> bool
 {
     kind.is_some_and(|k| k.base == base)
 }
@@ -170,12 +170,12 @@ impl Parser<'_>
         let text = self.text_of(tok.span);
         let shape = shape_of(&tok);
         let fraction = shape.is_some_and(|s| s.has_fraction || s.has_exponent);
-        let float = is_base(kind, BaseKind::Float);
+        let float = is_base(kind.as_ref(), BaseKind::Float);
         ret_if!(float && base.is_some(), self.based_float(text, base, kind, span));
         let is_float = base.is_none() && (float || fraction);
         ret_if!(is_float, self.float_lit(text, kind, span));
         let value = int_value(text, base.unwrap_or(10), tok.span)?;
-        let out_of_range = !fits(value, kind, base.is_some());
+        let out_of_range = !fits(value, kind.as_ref(), base.is_some());
         ret_if!(out_of_range, Err(diag::literal_out_of_range(span, text)));
         let script = shape.map_or(DigitScript::Western, |s| s.script);
         let base = base.unwrap_or(10) as u8;
@@ -215,7 +215,7 @@ impl Parser<'_>
         ret_if!(!self.starts_kind(), Ok(None));
         let kind = self.parse_kind()?;
         let numeric = matches!(kind.base, BaseKind::Int | BaseKind::Float);
-        let numeric = numeric && kind.depth == 0;
+        let numeric = numeric && kind.is_plain();
         ret_if!(!numeric, Err(diag::bad_literal_kind(kind.span)));
         Ok(Some(kind))
     }
@@ -255,7 +255,10 @@ impl Parser<'_>
     fn float_lit(&mut self, text: &str, kind: Option<Kind>, span: Span)
     -> PResult<Expr>
     {
-        ret_if!(is_base(kind, BaseKind::Int), Err(diag::float_for_int_kind(span)));
+        ret_if!(
+            is_base(kind.as_ref(), BaseKind::Int),
+            Err(diag::float_for_int_kind(span))
+        );
         let text = western(text);
         let value = text.parse::<f64>();
         let value = value.map_err(|_| diag::invalid_digit(span, '.', 10))?;

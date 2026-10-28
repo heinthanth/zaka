@@ -30,6 +30,7 @@ use zakac_semcheck::kind::Width;
 
 use crate::mem::Mem;
 use crate::mem::Origin;
+use crate::print::list_text;
 use crate::print::text;
 use crate::trap::Trap;
 use crate::trap::TrapKind;
@@ -248,6 +249,8 @@ pub struct PackedVar<'m>
     pub len: u64,
     /// Its name.
     pub name: &'m str,
+    /// Its kind.
+    pub kind: DataKind,
 }
 
 /// A slot as a variable of a packed block.
@@ -264,7 +267,12 @@ pub struct PackedVar<'m>
 fn packed_var(s: &Slot, offset: u64, platform: u16) -> PackedVar<'_>
 {
     let len = u64::from(s.kind.size(platform));
-    PackedVar::builder().offset(offset).len(len).name(s.name.as_str()).build()
+    PackedVar::builder()
+        .offset(offset)
+        .len(len)
+        .name(s.name.as_str())
+        .kind(s.kind)
+        .build()
 }
 
 /// Where each slot sits in a packed block, set out as C sets out the
@@ -754,6 +762,24 @@ impl Machine
         Some(held)
     }
 
+    /// The kind of the variable a block holds, or held last.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the block.
+    ///
+    /// # Returns
+    ///
+    /// The kind; `None` for a heap block, or a packed block that holds
+    /// several variables.
+    pub fn held_kind(&self, start: u64) -> Option<DataKind>
+    {
+        let owner = self.owners.get(&start)?;
+        let func = owner.func.and_then(|f| self.module.funcs.get(f as usize));
+        let slots = func.map_or(&self.module.globals, |f| &f.locals);
+        slots.get(owner.slot? as usize).map(|s| s.kind)
+    }
+
     /// The variables a packed block holds, or held last, in offset order.
     ///
     /// # Arguments
@@ -885,6 +911,21 @@ impl Machine
             Op::Realloc(stride) => self.realloc(stride),
             Op::Free => self.free(),
             Op::Dup => self.dup(),
+            Op::Index { len, first } => self.index(len, first),
+            Op::Blit(kind) => self.blit(kind),
+            Op::Zero(kind) =>
+            {
+                let addr = self.pop_ptr("zero")?;
+                self.mem.zero(addr, kind)
+            }
+            Op::ListEq(kind) => self.list_eq(kind),
+            Op::PrintList(kind) =>
+            {
+                let addr = self.pop_ptr("print_list")?;
+                let line = list_text(&self.mem, addr, kind)?;
+                write_line(&mut self.out, &line);
+                Ok(())
+            }
         }
     }
 
@@ -1134,6 +1175,7 @@ impl Machine
         );
         let sizes: Vec<u64> =
             func.locals.iter().map(|s| u64::from(s.kind.size(platform))).collect();
+        let kinds: Vec<DataKind> = func.locals.iter().map(|s| s.kind).collect();
         let sp = self.mem.stack_top();
         let (locals, blocks) = match packed
         {
@@ -1141,7 +1183,8 @@ impl Machine
             None => self.take_blocks(f, &sizes)?,
         };
         let args = self.stack.split_off(self.stack.len() - params);
-        locals.iter().zip(args).try_for_each(|(a, v)| self.mem.store(*a, v))?;
+        let mut passed = locals.iter().zip(args).zip(kinds);
+        passed.try_for_each(|((a, v), kind)| self.pass(*a, v, kind))?;
         let depth = self.stack.len();
         self.slots += locals.len();
         #[rustfmt::skip]
@@ -1272,6 +1315,117 @@ impl Machine
         let v = self.pop()?;
         let addr = self.pop_ptr("store")?;
         self.mem.store(addr, v)
+    }
+
+    /// Write an argument into the slot of its parameter. A list argument is
+    /// the address of the list, and its cells are copied.
+    ///
+    /// # Arguments
+    ///
+    /// * `to` - The address of the parameter slot.
+    /// * `v` - The argument.
+    /// * `kind` - The kind of the parameter.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap the write hits.
+    fn pass(&mut self, to: u64, v: Value, kind: DataKind) -> Step
+    {
+        ret_if!(!kind.is_list(), self.mem.store(to, v));
+        let from =
+            v.as_ptr().ok_or_else(|| malformed("a list argument is an address"))?;
+        self.mem.blit(to, from, kind)
+    }
+
+    /// Pop a cell number and push it counted from 0, or stop the program
+    /// when it is outside the list.
+    ///
+    /// # Arguments
+    ///
+    /// * `len` - The number of cells.
+    /// * `first` - The number of the first cell: 0 or 1.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `IndexOutOfRange`.
+    fn index(&mut self, len: u32, first: u8) -> Step
+    {
+        let Value::Int { kind, raw } = self.pop()?
+        else
+        {
+            return Err(malformed("index needs an integer"));
+        };
+        let wide = i128::try_from(raw).unwrap_or(i128::MAX);
+        let index = tern!(kind.signed, raw as i128, wide);
+        let lo = i128::from(first);
+        let outside = index < lo || index >= lo + i128::from(len);
+        ret_if!(outside, Err(TrapKind::IndexOutOfRange { index, first, len }));
+        let usize = IntKind::new(false, Width::Platform);
+        let platform = self.module.platform_bits;
+        self.push(Value::int(usize, (index - lo) as u128, platform))
+    }
+
+    /// Pop a source address and a destination address, and duplicate a value
+    /// of a kind from one to the other.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the value, such as a list.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap either access hits.
+    fn blit(&mut self, kind: DataKind) -> Step
+    {
+        let from = self.pop_ptr("blit")?;
+        let to = self.pop_ptr("blit")?;
+        self.mem.blit(to, from, kind)
+    }
+
+    /// Pop the addresses of two lists and push whether their cells are
+    /// equal, one cell at a time.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The list kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a read of a cell hits.
+    fn list_eq(&mut self, kind: DataKind) -> Step
+    {
+        let r = self.pop_ptr("list_eq")?;
+        let l = self.pop_ptr("list_eq")?;
+        let same = self.cells_equal(l, r, kind)?;
+        self.push(Value::Bool(same))
+    }
+
+    /// Whether the values of a kind at two addresses are equal; for a list,
+    /// whether each cell equals the cell at the same place.
+    ///
+    /// # Arguments
+    ///
+    /// * `l` - The first address.
+    /// * `r` - The second address.
+    /// * `kind` - The kind.
+    ///
+    /// # Returns
+    ///
+    /// Whether the two are equal, or the trap a read hits.
+    fn cells_equal(&self, l: u64, r: u64, kind: DataKind) -> Result<bool, TrapKind>
+    {
+        let Some(list) = kind.as_list()
+        else
+        {
+            let (a, b) = (self.mem.load(l, kind)?, self.mem.load(r, kind)?);
+            return compare(CmpOp::Eq, a, b).map_err(eval_trap);
+        };
+        let stride = u64::from(list.cell.size(self.module.platform_bits));
+        for at in (0..u64::from(list.len)).map(|i| i * stride)
+        {
+            ret_if!(!self.cells_equal(l + at, r + at, list.cell)?, Ok(false));
+        }
+        Ok(true)
     }
 
     /// Pop an element offset and an address, and push the address moved

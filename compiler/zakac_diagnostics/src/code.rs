@@ -121,6 +121,8 @@ StrOutsidePrint = ("ZK0223", Level::Error),
 ConstLoop = ("ZK0225", Level::Error),
 /// A block closer has no open block.
 UnmatchedBlockClose = ("ZK0226", Level::Error),
+/// The cell count of a list kind is not a whole number above zero.
+BadListCount = ("ZK0227", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -191,6 +193,20 @@ PointerKindsDiffer = ("ZK0416", Level::Error),
 HeapNeedsPointer = ("ZK0417", Level::Error),
 /// A function returns the address of one of its locals.
 LocalAddressReturned = ("ZK0418", Level::Warning),
+/// A list literal has more or fewer cells than its kind.
+ListCountMismatch = ("ZK0419", Level::Error),
+/// A blank list stands where no list kind is known.
+BlankListKind = ("ZK0420", Level::Error),
+/// A list kind has no cell count and nothing gives one.
+ListCountMissing = ("ZK0421", Level::Error),
+/// Cells are read from a value that is no list.
+NotAList = ("ZK0422", Level::Error),
+/// A cell number is no integer.
+CellNumberNotInt = ("ZK0423", Level::Error),
+/// A function gives back a list as its result.
+ListResult = ("ZK0424", Level::Error),
+/// A list kind is too large for the machine.
+ListTooLarge = ("ZK0425", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.
@@ -211,7 +227,9 @@ PaInValue = ("ZK0508", Level::Warning),
 /// An operation on constants gives a value outside its kind.
 ConstantOverflow = ("ZK0601", Level::Error),
 /// An integer division or remainder has the constant zero as divisor.
-ConstantZeroDivisor = ("ZK0602", Level::Error) }
+ConstantZeroDivisor = ("ZK0602", Level::Error),
+/// A constant cell number is outside its list.
+CellOutOfRange = ("ZK0603", Level::Error) }
 
 impl Code
 {

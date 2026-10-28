@@ -166,4 +166,4 @@ error[ZK0413]: isize is not a pointer and cannot be dereferenced
   (No: a heap block lasts until it is given back. It is the function's own variables that
   end with it.)
 
-Next: [Natural Zaka](../natural-zaka/README.md).
+Next: [Lists](../lists/README.md).

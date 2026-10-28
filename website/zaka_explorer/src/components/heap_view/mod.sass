@@ -71,30 +71,18 @@
 .state-leaked
   --swatch: var(--diag-error)
 
-// The map: a lane per origin, its name on the left and its cells wrapping
-// on the right, as in a contribution graph. A long run of blocks scrolls.
+// The map: one run of cells in address order, wrapping as in a contribution
+// graph. A long run of blocks scrolls.
 .heap-map
-  display: grid
-  grid-template-columns: max-content 1fr
-  gap: 6px 10px
-  align-items: start
+  display: flex
+  flex-wrap: wrap
+  align-content: flex-start
+  gap: 3px
   max-height: 260px
   padding: 8px
   border: 1px solid var(--panel-border)
   background: var(--code-bg)
   overflow-y: auto
-
-.lane-name
-  font-family: var(--ui-font)
-  font-size: 11px
-  line-height: 12px
-  color: var(--fg-muted)
-  white-space: nowrap
-
-.lane-cells
-  display: flex
-  flex-wrap: wrap
-  gap: 3px
 
 // The cells of the variables of a packed block, next to each other with no gap,
 // as nothing between them traps.
@@ -211,6 +199,28 @@
   line-height: 1.6
   white-space: pre
   overflow-x: auto
+
+// A line of a dump: the address, then its octets. In a list, each cell of a
+// primitive kind is one box of shade, and the shade changes from cell to
+// cell.
+.dump-line
+  display: block
+
+.dump-addr
+  margin-right: 1.5ch
+  color: var(--fg-muted)
+
+.octet
+  padding: 0 0.5ch
+
+.cell-start
+  margin-left: 0.5ch
+
+.cell-even
+  background: color-mix(in srgb, var(--fg) 8%, transparent)
+
+.cell-odd
+  background: color-mix(in srgb, var(--accent) 16%, transparent)
 
 .dump-note
   margin: 6px 0 0

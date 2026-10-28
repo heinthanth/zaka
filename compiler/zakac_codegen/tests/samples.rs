@@ -14,7 +14,8 @@ use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
 /// Inputs that must give no diagnostics.
-const CLEAN_INPUTS: &[&str] = &["folding", "functions", "heap", "loops", "programs"];
+const CLEAN_INPUTS: &[&str] =
+    &["folding", "functions", "heap", "lists", "loops", "programs"];
 
 /// The crate dir.
 fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }

@@ -1,5 +1,9 @@
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::float_pattern_text;
+use zakac_semcheck::kind::DataKind;
+
+use crate::mem::Mem;
+use crate::trap::TrapKind;
 
 /// The text a print op writes for `true`.
 pub const TRUE_TEXT: &str = "မှန်";
@@ -54,4 +58,30 @@ pub fn burmese_digits(num: &str) -> String
             c.to_digit(10).and_then(|d| char::from_u32('၀' as u32 + d)).unwrap_or(c)
         })
         .collect()
+}
+
+/// The text a print op writes for a list, without the line break: its cells
+/// between `[` and `]`, joined with `၊ `; a nested list is written the same.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the list.
+/// * `addr` - The address of the list.
+/// * `kind` - The list kind; another kind gives the text of one value.
+///
+/// # Returns
+///
+/// The text, or the trap a read of a cell hits.
+pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKind>
+{
+    let Some(list) = kind.as_list()
+    else
+    {
+        return mem.load(addr, kind).map(text);
+    };
+    let stride = u64::from(list.cell.size(mem.platform()));
+    let cell = |i: u64| list_text(mem, addr + i * stride, list.cell);
+    let cells: Vec<String> =
+        (0..u64::from(list.len)).map(cell).collect::<Result<_, _>>()?;
+    Ok(format!("[{}]", cells.join("၊ ")))
 }

@@ -40,6 +40,7 @@ use zakac_rust_sugars::tern;
 
 use crate::collect::collect_fns;
 use crate::kind::DataKind;
+use crate::list::KindUse;
 use crate::place::place_of;
 use crate::scope::Access;
 use crate::scope::Binding;
@@ -195,7 +196,7 @@ impl Checker
     /// * `param` - The parameter.
     fn declare_param(&mut self, param: &Param)
     {
-        let kind = DataKind::from_ast(&param.kind);
+        let kind = self.written_kind(&param.kind, KindUse::Other);
         let fresh = self.declare_quiet(&param.name, Some(kind), Access::Var);
         let name = &param.name;
         do_if!(!fresh, self.report(rd::duplicate_param(name.span, &name.name)));
@@ -284,7 +285,9 @@ impl Checker
         let bad_count = rd::arg_count_mismatch(span, &callee.name, want, got);
         let ret = Some(sig.ret);
         ret_if!(want != got, self.report(bad_count), self.infer_all(args), ret);
-        do_for!((arg, kind) in args.iter().zip(&sig.params), self.expect_kind(arg, Some(*kind)));
+        // A parameter whose list count is open was reported at its function.
+        let known = |kind: &DataKind| Some(*kind).filter(|k| !k.has_open_count());
+        do_for!((arg, kind) in args.iter().zip(&sig.params), self.expect_kind(arg, known(kind)));
         ret
     }
 
@@ -363,9 +366,22 @@ impl Checker
             self.report(kd::not_a_place(target.span()));
             return None;
         };
-        let writable = tern!(let Expr::Name(n) = place, self.check_writable(n), true);
-        ret_if!(!writable, None);
-        self.infer(target, None)
+        if let Expr::Name(n) = place
+        {
+            ret_if!(!self.check_writable(n), None);
+            return self.infer(target, None);
+        }
+        let kind = self.infer(target, None);
+        ret_if!(
+            self.in_temp_list(place),
+            self.report(kd::not_a_place(target.span())),
+            None
+        );
+        let owner = self.owner_name(place);
+        let access = owner.and_then(|n| Some((self.scopes.lookup(&n.name)?.access, n)));
+        let diag = access.and_then(|(access, n)| access_error(access, n));
+        do_if!(let Some(d) = diag, self.report(d));
+        kind
     }
 
     /// Report a name that cannot be assigned: undeclared, a constant or a
@@ -414,6 +430,7 @@ impl Checker
     fn heap_size(&mut self, size: &SizeArg)
     {
         self.expect_kind(&size.count, Some(DataKind::USIZE));
+        do_if!(let Some(unit) = &size.unit, let _ = self.written_kind(unit, KindUse::Other));
     }
 
     /// Warn when a returned value is the address of a local of the function.
@@ -423,7 +440,7 @@ impl Checker
     /// * `value` - The returned value.
     fn check_local_address(&mut self, value: &Expr)
     {
-        let Some(name) = addressed_name(value)
+        let Some(name) = addressed_place(value).and_then(|p| self.owner_name(p))
         else
         {
             return;
@@ -472,7 +489,7 @@ fn non_positive_literal(e: &Expr) -> bool
     }
 }
 
-/// The variable whose address an expression takes.
+/// The place whose address an expression takes.
 ///
 /// # Arguments
 ///
@@ -480,17 +497,17 @@ fn non_positive_literal(e: &Expr) -> bool
 ///
 /// # Returns
 ///
-/// The variable of an address-of whose place is a variable, else `None`.
-fn addressed_name(e: &Expr) -> Option<&NameExpr>
+/// The place of an address-of, else `None`.
+fn addressed_place(e: &Expr) -> Option<&Expr>
 {
     let operand = match e
     {
-        Expr::Group(n) => return addressed_name(&n.inner),
+        Expr::Group(n) => return addressed_place(&n.inner),
         Expr::Prefix(n) if n.op == PrefixOp::AddrOf => n.rhs.as_ref(),
         Expr::Verb(n) if n.op == VerbOp::AddrOf => n.args.first()?,
         _ => return None,
     };
-    tern!(let Some(Expr::Name(n)) = place_of(operand), Some(n), None)
+    place_of(operand)
 }
 
 /// The diagnostic for assigning to a name that does not allow it.
@@ -517,12 +534,11 @@ impl Visitor for Checker
 {
     fn visit_decl(&mut self, n: &DeclStmt)
     {
-        let kind = DataKind::from_ast(&n.kind);
-        do_if!(let Some(init) = &n.init, self.expect_kind(init, Some(kind)));
+        let kind = self.decl_kind(&n.kind, n.init.as_ref());
         let missing = n.is_const && n.init.is_none();
         do_if!(missing, self.report(rd::const_without_init(n.name.span, &n.name.name)));
         let access = tern!(n.is_const, Access::Const, Access::Var);
-        self.declare(&n.name, Some(kind), access);
+        self.declare(&n.name, kind, access);
     }
 
     fn visit_assign(&mut self, n: &AssignStmt)
@@ -580,10 +596,9 @@ impl Visitor for Checker
 
     fn visit_generic(&mut self, n: &GenericStmt)
     {
-        let kind = DataKind::from_ast(&n.kind);
-        do_if!(let Some(init) = &n.init, self.expect_kind(init, Some(kind)));
+        let kind = self.decl_kind(&n.kind, n.init.as_ref());
         self.scopes.push();
-        self.declare(&n.var, Some(kind), Access::Var);
+        self.declare(&n.var, kind, Access::Var);
         self.expect_bool(&n.cond);
         self.in_loop(|c| {
             c.visit_stmts(&n.block.stmts);
@@ -605,7 +620,7 @@ impl Visitor for Checker
     fn visit_fn(&mut self, n: &FnDecl)
     {
         let depth = std::mem::take(&mut self.loop_depth);
-        let ret = n.ret.as_ref().map(DataKind::from_ast);
+        let ret = n.ret.as_ref().map(|k| self.written_kind(k, KindUse::Result));
         let ctx = FnCtx::builder().name(n.name.name.clone()).maybe_ret(ret).build();
         self.func = Some(ctx);
         self.scopes.push();

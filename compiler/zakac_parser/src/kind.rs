@@ -1,5 +1,7 @@
 use zakac_ast::kind::BaseKind;
+use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
+use zakac_ast::kind::Wrap;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
 use zakac_lexer::token::Kw;
@@ -20,6 +22,16 @@ use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::is_number;
 use crate::parser::kw_of;
+
+/// A level after the base of a kind, before a count is matched to it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Suffix
+{
+    /// `လိပ်စာ`
+    Ptr,
+    /// `စာရင်း`
+    List,
+}
 
 /// Bit counts of integer kinds.
 const INT_BITS: &[u16] = &[8, 16, 32, 64, 128];
@@ -72,7 +84,8 @@ impl Parser<'_>
     ///
     /// A number starts one when `ဘစ်` and an integer or float kind word
     /// follow it, so the distance in `ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ်` is not read
-    /// as a kind. A bare `လိပ်စာ` starts one too.
+    /// as a kind. A bare `လိပ်စာ` starts one too, and so does a count prefix
+    /// such as `အကွက် ၃ ခုရှိသော`.
     ///
     /// # Returns
     ///
@@ -83,7 +96,7 @@ impl Parser<'_>
         let starts =
             |kw| base_kind(kw).is_some() || sign_of(kw).is_some() || kw == Kw::Address;
         ret_true!(kw.is_some_and(starts));
-        self.at_sized_kind(0)
+        self.at_sized_kind(0) || self.at_count_prefix(0)
     }
 
     /// Whether `N ဘစ် (ကိန်းပြည့်|ဒဿမကိန်း)` starts `n` tokens ahead.
@@ -103,26 +116,27 @@ impl Parser<'_>
             && matches!(base, Some(Kw::IntKind | Kw::FloatKind))
     }
 
-    /// The number of tokens in the kind phrase at the cursor, its pointer
-    /// levels included. Nothing is consumed.
+    /// The number of tokens in the kind phrase at the cursor, its count
+    /// prefixes, pointer levels and list levels included. Nothing is consumed.
     ///
     /// # Returns
     ///
     /// The token count, or `None` when no kind starts here.
     pub(crate) fn kind_len(&self) -> Option<usize>
     {
-        let signed = kw_of(&self.peek()).and_then(sign_of).is_some();
-        let sign = usize::from(signed);
-        let n = sign + tern!(self.at_sized_kind(sign), 2, 0);
+        let pre = 3 * self.count_prefixes();
+        let signed = kw_of(&self.peek_n(pre)).and_then(sign_of).is_some();
+        let n = pre + usize::from(signed);
+        let n = n + tern!(self.at_sized_kind(n), 2, 0);
         let word = kw_of(&self.peek_n(n));
         let is_base = word.and_then(base_kind).is_some();
-        let bare = n == 0 && word == Some(Kw::Address);
+        let bare = n == pre && word == Some(Kw::Address);
         ret_if!(!is_base && !bare, None);
-        let lead = usize::from(is_base && self.at_address(n + 1));
-        Some(n + 1 + lead + 2 * self.suffix_count(n + 1 + lead))
+        let (len, _) = self.scan_suffixes(n + 1, is_base);
+        Some(n + 1 + len)
     }
 
-    /// Whether `လိပ်စာ` is the token `n` ahead.
+    /// Whether `အကွက် <number> ခုရှိသော|ရှိသော` starts `n` tokens ahead.
     ///
     /// # Arguments
     ///
@@ -130,28 +144,71 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// `true` if it is.
-    fn at_address(&self, n: usize) -> bool
+    /// `true` if it does.
+    fn at_count_prefix(&self, n: usize) -> bool
     {
-        kw_of(&self.peek_n(n)) == Some(Kw::Address)
+        kw_of(&self.peek_n(n)) == Some(Kw::Cell)
+            && is_number(&self.peek_n(n + 1))
+            && kw_of(&self.peek_n(n + 2)) == Some(Kw::Having)
     }
 
-    /// The number of `၏ လိပ်စာ` pairs that start `n` tokens ahead.
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - How far ahead the first pair would start.
+    /// The number of count prefixes at the cursor; each takes three tokens.
     ///
     /// # Returns
     ///
-    /// The count of pairs.
-    fn suffix_count(&self, n: usize) -> usize
+    /// The count of prefixes.
+    fn count_prefixes(&self) -> usize
     {
-        let at_pair = |i: usize| {
-            self.peek_n(n + 2 * i).kind == TokenKind::Punct(Punct::Ei)
-                && self.at_address(n + 2 * i + 1)
+        (0..).take_while(|i| self.at_count_prefix(3 * i)).count()
+    }
+
+    /// The suffix that starts `n` tokens ahead, and its token count:
+    /// `၏ လိပ်စာ`, `၏ စာရင်း`, a bare `စာရင်း`, or a bare `လိပ်စာ` when
+    /// `bare_ptr` allows one.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    /// * `bare_ptr` - Whether a `လိပ်စာ` without `၏` is a suffix here: right
+    ///   after the base word or a list level.
+    ///
+    /// # Returns
+    ///
+    /// The suffix and its length, or `None` when no suffix starts there.
+    fn suffix_at(&self, n: usize, bare_ptr: bool) -> Option<(Suffix, usize)>
+    {
+        let ei = usize::from(self.peek_n(n).kind == TokenKind::Punct(Punct::Ei));
+        let suffix = match kw_of(&self.peek_n(n + ei))?
+        {
+            Kw::Address if ei == 1 || bare_ptr => Suffix::Ptr,
+            Kw::List => Suffix::List,
+            _ => return None,
         };
-        (0..).take_while(|i| at_pair(*i)).count()
+        Some((suffix, ei + 1))
+    }
+
+    /// The suffixes that start `n` tokens ahead. A `၏` before another word
+    /// ends them.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead the first suffix would start.
+    /// * `after_base` - Whether the base word comes right before, so a bare
+    ///   `လိပ်စာ` is a suffix.
+    ///
+    /// # Returns
+    ///
+    /// The token count of the suffixes, and the suffixes, innermost first.
+    fn scan_suffixes(&self, n: usize, after_base: bool) -> (usize, Vec<Suffix>)
+    {
+        let (mut len, mut found, mut bare_ptr) = (0, Vec::new(), after_base);
+        while let Some((suffix, more)) = self.suffix_at(n + len, bare_ptr)
+        {
+            len += more;
+            found.push(suffix);
+            bare_ptr = suffix == Suffix::List;
+        }
+        (len, found)
     }
 
     /// Whether a kind phrase starts here and the reserved word `kw` follows
@@ -182,18 +239,76 @@ impl Parser<'_>
         })
     }
 
-    /// Parse a kind phrase with its pointer levels: one bare `လိပ်စာ` after
-    /// the base word, then `၏ လိပ်စာ` pairs, as in `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ`.
-    /// The pairs can also start right after the base word.
+    /// Parse a kind phrase: count prefixes such as `အကွက် ၃ ခုရှိသော`, the
+    /// base, then pointer and list levels. A bare `လိပ်စာ` can follow the base
+    /// word or a list level; `၏ လိပ်စာ` and `[၏] စာရင်း` can follow each level.
+    /// Each `စာရင်း` takes the innermost count prefix left, or none.
     ///
     /// # Returns
     ///
-    /// The kind, or a diagnostic for a missing word, a sign word on a kind
-    /// that is not an integer, or a bad bit count.
+    /// The kind, or a diagnostic for a missing word, a bad count, a sign word
+    /// on a kind that is not an integer, or a bad bit count.
     pub(crate) fn parse_kind(&mut self) -> PResult<Kind>
     {
-        ret_if!(self.at(Kw::Address), Ok(self.parse_opaque_kind()));
         let start = self.peek().span;
+        let mut counts = self.parse_counts()?;
+        let mut kind = self.parse_core()?;
+        let (len, suffixes) = self.scan_suffixes(0, kind.base != BaseKind::Opaque);
+        do_for!(_ in 0..len, self.advance());
+        let wrap = |suffix| match suffix
+        {
+            Suffix::Ptr => Wrap::Ptr,
+            Suffix::List =>
+            {
+                Wrap::List(counts.pop().map_or(Cells::Inferred, Cells::Fixed))
+            }
+        };
+        kind.wraps.extend(suffixes.into_iter().map(wrap));
+        ret_if!(!counts.is_empty(), Err(self.err_expected(&quote(&kw_text(Kw::List)))));
+        kind.span = start.to(&self.prev_span());
+        Ok(kind)
+    }
+
+    /// Parse the count prefixes `အကွက် <n> ခုရှိသော` that come next.
+    ///
+    /// # Returns
+    ///
+    /// The counts, outermost first, or a diagnostic for a count that is not
+    /// a whole number above zero.
+    fn parse_counts(&mut self) -> PResult<Vec<u32>>
+    {
+        let mut counts = Vec::new();
+        while self.eat(Kw::Cell)
+        {
+            let tok = self.bump();
+            let text = self.text_of(tok.span);
+            let count = decimal_value(text).and_then(|v| u32::try_from(v).ok());
+            let Some(count) = count.filter(|c| *c > 0)
+            else
+            {
+                return Err(diag::bad_list_count(tok.span, text));
+            };
+            counts.push(count);
+            self.expect(Kw::Having)?;
+        }
+        Ok(counts)
+    }
+
+    /// Parse the core of a kind: a bare `လိပ်စာ`, or a base word with its
+    /// sign and bit count.
+    ///
+    /// # Returns
+    ///
+    /// The kind without its suffixes, or a diagnostic.
+    fn parse_core(&mut self) -> PResult<Kind>
+    {
+        let start = self.peek().span;
+        if self.at(Kw::Address)
+        {
+            self.advance();
+            let kind = Kind::builder().base(BaseKind::Opaque).wraps(vec![Wrap::Ptr]);
+            return Ok(kind.span(start).build());
+        }
         let signed = kw_of(&self.peek()).and_then(sign_of);
         do_if!(signed.is_some(), self.advance());
         let bits = self.parse_bits();
@@ -203,39 +318,12 @@ impl Parser<'_>
         ret_if!(signed_float, Err(diag::signed_float(span)));
         self.check_bits(bits, base)?;
         let bits = bits.map(|(count, _)| count);
-        let bare = self.at(Kw::Address);
-        do_if!(bare, self.advance());
-        let depth = self.parse_suffixes().saturating_add(u8::from(bare));
-        let span = start.to(&self.prev_span());
-        #[rustfmt::skip]
-        return Ok(Kind::builder().base(base).maybe_bits(bits).maybe_signed(signed).depth(depth)
-            .span(span).build());
-    }
-
-    /// Parse a bare `လိပ်စာ`, which is the current token, and its suffixes.
-    ///
-    /// # Returns
-    ///
-    /// The opaque kind; the bare word counts as one level.
-    fn parse_opaque_kind(&mut self) -> Kind
-    {
-        let start = self.bump().span;
-        let depth = self.parse_suffixes().saturating_add(1);
-        let span = start.to(&self.prev_span());
-        Kind::builder().base(BaseKind::Opaque).depth(depth).span(span).build()
-    }
-
-    /// Move past the `၏ လိပ်စာ` pairs that come next. A `၏` before another
-    /// word ends the kind and is left in place.
-    ///
-    /// # Returns
-    ///
-    /// The number of pairs.
-    fn parse_suffixes(&mut self) -> u8
-    {
-        let count = self.suffix_count(0);
-        do_for!(_ in 0..2 * count, self.advance());
-        u8::try_from(count).unwrap_or(u8::MAX)
+        Ok(Kind::builder()
+            .base(base)
+            .maybe_bits(bits)
+            .maybe_signed(signed)
+            .span(span)
+            .build())
     }
 
     /// Parse `N ဘစ်` when it comes next.

@@ -15,7 +15,7 @@ program:
           base: int
           bits: null
           signed: null
-          depth: 0
+          wraps: []
           span:
             lo: 108
             hi: 138
@@ -31,7 +31,7 @@ program:
           base: int
           bits: null
           signed: null
-          depth: 0
+          wraps: []
           span:
             lo: 146
             hi: 176
@@ -47,7 +47,7 @@ program:
           base: int
           bits: null
           signed: null
-          depth: 0
+          wraps: []
           span:
             lo: 197
             hi: 227
@@ -63,7 +63,7 @@ program:
         base: int
         bits: null
         signed: null
-        depth: 0
+        wraps: []
         span:
           lo: 359
           hi: 389

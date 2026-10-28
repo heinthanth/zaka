@@ -150,6 +150,27 @@ pub enum Op
     Free,
     /// Push the top value a second time.
     Dup,
+    /// Pop a cell number; stop the program when it is outside the list,
+    /// else push it counted from 0.
+    Index
+    {
+        /// The number of cells.
+        len: u32,
+        /// The number of the first cell: 0 or 1.
+        first: u8,
+    },
+    /// Pop a source address, then a destination address; duplicate a value of
+    /// this kind, such as a whole list, from the source to the destination.
+    Blit(DataKind),
+    /// Pop an address; set the octets of a value of this kind there to
+    /// zero.
+    Zero(DataKind),
+    /// Pop the addresses of two lists of this kind, the right one first;
+    /// push whether each cell of one equals the cell of the other.
+    ListEq(DataKind),
+    /// Pop the address of a list of this kind; write its cells and a line
+    /// break.
+    PrintList(DataKind),
 }
 
 impl Op
@@ -222,7 +243,14 @@ impl Op
             Op::Call(f) => format!("f{f}"),
             Op::PrintText(t) => format!("t{t}"),
             Op::Trap(code) => <&str>::from(code).to_string(),
-            Op::Load(kind) | Op::Store(kind) => kind.name(),
+            Op::Load(kind)
+            | Op::Store(kind)
+            | Op::Blit(kind)
+            | Op::Zero(kind)
+            | Op::ListEq(kind)
+            | Op::PrintList(kind) => kind.name(),
+            Op::Index { len, first: 0 } => len.to_string(),
+            Op::Index { len, first } => format!("{len} from {first}"),
             Op::PtrAdd(s) | Op::PtrSub(s) | Op::Alloc(s) | Op::Realloc(s) =>
             {
                 s.to_string()

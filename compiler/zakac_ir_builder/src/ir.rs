@@ -476,6 +476,27 @@ pub enum ExprNode
     },
     /// The size of a kind in octets, a `usize`.
     SizeOf(DataKind),
+    /// A list written out one cell at a time; each cell has the cell kind of
+    /// the expression kind.
+    List(Vec<Expr>),
+    /// A list of the expression kind with each cell at its default.
+    BlankList,
+    /// The address of one cell of a list; the expression kind is a pointer
+    /// to the cell kind.
+    CellAddr
+    {
+        /// The list, or a pointer to it.
+        list: Box<Expr>,
+        /// The cell number, an integer of its own kind.
+        index: Box<Expr>,
+        /// The number of cells.
+        len: u32,
+        /// The number of the first cell: 0 or 1.
+        first: u8,
+        /// Whether the cell number is known to be in range, so no check is
+        /// needed when the program runs.
+        checked: bool,
+    },
 }
 
 /// A prefix operator.

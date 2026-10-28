@@ -113,6 +113,16 @@ pub enum TrapKind
     },
     /// A subtraction of pointers into different blocks.
     MixedBlocks,
+    /// A cell number outside its list.
+    IndexOutOfRange
+    {
+        /// The cell number.
+        index: i128,
+        /// The number of the first cell: 0 or 1.
+        first: u8,
+        /// The number of cells.
+        len: u32,
+    },
 }
 
 impl fmt::Display for TrapKind
@@ -163,6 +173,11 @@ impl fmt::Display for TrapKind
             TrapKind::StackFull { size } => t!("vm.trap.stack_full", size = size),
             TrapKind::OutOfMem { size } => t!("vm.trap.out_of_mem", size = size),
             TrapKind::MixedBlocks => t!("vm.trap.mixed_blocks"),
+            TrapKind::IndexOutOfRange { index, first, len } =>
+            {
+                let last = i64::from(*len) + i64::from(*first) - 1;
+                t!("vm.trap.index_out_of_range", index = index, lo = first, hi = last)
+            }
         };
         f.write_str(&text)
     }
@@ -196,7 +211,8 @@ impl TrapKind
             | TrapKind::StaticFull { .. }
             | TrapKind::StackFull { .. }
             | TrapKind::OutOfMem { .. }
-            | TrapKind::MixedBlocks => None,
+            | TrapKind::MixedBlocks
+            | TrapKind::IndexOutOfRange { .. } => None,
         }
     }
 }

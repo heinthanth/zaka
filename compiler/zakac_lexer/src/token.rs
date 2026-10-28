@@ -451,6 +451,22 @@ pub enum Kw
     WillResize,
     /// `ပြန်လည်စွန့်လွှတ်မည်` or `ပြန်လည်စွန့်လွှတ်မယ်`
     WillRelease,
+
+    // lists
+    /// `စာရင်း`
+    List,
+    /// `စာရင်းအလွတ်`
+    BlankList,
+    /// `အကွက်`
+    Cell,
+    /// `အကွက်အရေအတွက်`
+    CellCount,
+    /// `ခုမြောက်`
+    Ordinal,
+    /// `ခုရှိသော` or `ရှိသော`
+    Having,
+    /// `တို့ပါသော`, before `စာရင်း` in a list literal
+    ListOf,
 }
 
 impl Kw
@@ -487,6 +503,7 @@ impl Kw
                 | Kw::ShiftLeft
                 | Kw::ShiftRight
                 | Kw::Bit
+                | Kw::ListOf
         )
     }
 

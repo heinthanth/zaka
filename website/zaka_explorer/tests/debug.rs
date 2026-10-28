@@ -12,7 +12,6 @@ use zaka_explorer::compile::samples::SAMPLES;
 use zaka_explorer::compile::samples::find_sample;
 use zaka_explorer::debug::BlockRow;
 use zaka_explorer::debug::BlockState;
-use zaka_explorer::debug::Lane;
 use zaka_explorer::debug::MapPart;
 use zaka_explorer::debug::RunStatus;
 use zaka_explorer::debug::Session;
@@ -21,6 +20,7 @@ use zaka_vm::machine::FrameMode;
 use zaka_vm::mem::Origin;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::do_while;
+use zakac_rust_sugars::tern;
 
 /// Compile a sample and start a session over its ops.
 fn session_of(path: &str) -> (Compiled, Session)
@@ -585,31 +585,36 @@ fn a_trap_in_a_gap_is_found_in_the_map()
 }
 
 #[test]
-fn the_map_shares_a_lane_for_static_and_heap()
+fn the_map_holds_each_block_in_address_order()
 {
-    let text = "ကိန်းရှင် စာရင်း သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် လိပ်စာ ၃၀၀ ခုစာ \
-                နေရာယူ၍ လိပ်စာကို စာရင်း တွင် သိမ်းထားမည်။\nကိန်းရှင် အရွယ် သည် လက္ခဏာမဲ့ ကိန်းပြည့် \
+    let text = "ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် လိပ်စာ ၃၀၀ \
+                ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် သိမ်းထားမည်။\nကိန်းရှင် အရွယ် သည် လက္ခဏာမဲ့ ကိန်းပြည့် \
                 ဖြစ်ပါစေ။\n၀ မှ ၂၉၉ အထိ နံပါတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအရွယ် ကို \
                 (နံပါတ် % ၈ + ၁) ကို လက္ခဏာမဲ့ ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။\nကိန်းရှင် ပ \
                 သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် အရွယ် ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် \
-                သိမ်းထားမည်။\nပ ၏ တန်ဖိုး ကို နံပါတ် ဟု ထားပါ။\nစာရင်း + နံပါတ် ၏ တန်ဖိုး ကို ပ ဟု \
+                သိမ်းထားမည်။\nပ ၏ တန်ဖိုး ကို နံပါတ် ဟု ထားပါ။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို ပ ဟု \
                 ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n၀ မှ ၂၉၉ အထိ ၃ စီ နံပါတ် အနေဖြင့် တိုး၍ \
-                အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် စာရင်း + နံပါတ် ၏ \
-                တန်ဖိုး ဖြစ်ပါစေ။\nပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nစာရင်း + နံပါတ် ၏ တန်ဖိုး ကို ဗလာ ဟု \
-                ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\"ပြီးပါပြီ\" ဟု ပြသပါ။";
+                အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ကိန်းများ + နံပါတ် \
+                ၏ တန်ဖိုး ဖြစ်ပါစေ။\nပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို \
+                ဗလာ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\"ပြီးပါပြီ\" ဟု ပြသပါ။";
     let out = compile(text, &Options::default());
     let mut s = Session::new(out.ops.as_ref());
     s.resume();
     assert_eq!(s.status(), RunStatus::Finished);
     let shot = s.heap();
-    let lanes = shot.lanes();
-    assert_eq!(lanes.len(), 1, "top-level variables are globals, so no stack lane");
-    let (lane, heap) = &lanes[0];
-    assert_eq!(*lane, Lane::Data);
-    let blocks = heap.iter().filter(|p| matches!(p, MapPart::Block(_))).count();
-    assert_eq!(blocks, 307, "six globals, the list and its 300 blocks");
-    let gaps = heap.len() - blocks;
-    assert_eq!(gaps, blocks, "each block has a gap after it");
+    let parts = shot.parts();
+    let blocks: Vec<usize> = parts
+        .iter()
+        .filter_map(|p| tern!(let MapPart::Block(i) = p, Some(*i), None))
+        .collect();
+    assert_eq!(blocks.len(), 307, "six globals, the list and its 300 blocks");
+    assert_eq!(
+        parts.len() - blocks.len(),
+        blocks.len(),
+        "each block has a gap after it"
+    );
+    let starts: Vec<u64> = blocks.iter().map(|i| shot.blocks[*i].start).collect();
+    assert!(starts.is_sorted(), "the map follows the addresses");
 }
 
 #[test]
@@ -620,14 +625,22 @@ fn a_cell_grows_one_step_for_each_doubling_of_its_block()
 }
 
 #[test]
-fn the_stack_has_a_lane_of_its_own_after_the_static_and_heap_lane()
+fn the_stack_sits_between_the_static_data_and_the_heap_on_the_map()
 {
     let (_, mut s) = session_of("programs/gradebook");
     do_while!(s.heap().blocks.iter().all(|b| b.origin != Origin::Heap), s.step());
     do_while!(s.frame_blocks().len() < 2, s.step());
     let shot = s.heap();
-    let lanes: Vec<Lane> = shot.lanes().into_iter().map(|(l, _)| l).collect();
-    assert_eq!(lanes, [Lane::Data, Lane::Stack]);
+    let rank = |o: Origin| {
+        [Origin::Static, Origin::Stack, Origin::Heap].iter().position(|r| *r == o)
+    };
+    let order: Vec<Option<usize>> = shot
+        .parts()
+        .iter()
+        .filter_map(|p| tern!(let MapPart::Block(i) = p, Some(rank(shot.blocks[*i].origin)), None))
+        .collect();
+    assert!(order.is_sorted(), "static, then stack, then heap: {order:?}");
+    assert!(order.contains(&Some(1)) && order.contains(&Some(2)));
     assert_eq!(shot.stack_cap, 1 << 20, "the stack region of a run");
     assert!(shot.stack_used > 0, "a call in progress takes stack room");
 }
@@ -643,4 +656,30 @@ fn each_address_is_padded_to_the_width_of_the_highest_one()
         6,
         "the heap starts past the 1 MiB stack region"
     );
+}
+
+#[test]
+fn a_list_block_knows_its_cells_in_both_frame_forms()
+{
+    let (_, mut s) = session_of("lists/grid");
+    s.step();
+    let heap = s.heap();
+    let grid = heap.blocks.iter().find(|b| b.owner.as_deref() == Some("Global ဇယား"));
+    let grid = grid.expect("the grid global");
+    assert_eq!(grid.cells, [32, 8], "rows of 4 integers, cells of 8 octets");
+    assert_eq!(grid.cell_path(0), [0, 0]);
+    assert_eq!(grid.cell_path(40), [1, 1], "octet 40 sits in row 1, cell 1");
+    assert_eq!(grid.cell_path(95), [2, 3]);
+
+    let (_, mut s) = session_of("lists/copies");
+    s.set_frames(FrameMode::Packed);
+    do_while!(s.frame_blocks().len() < 2, s.step());
+    let heap = s.heap();
+    let frame =
+        heap.blocks.iter().find(|b| !b.vars.is_empty()).expect("a packed frame");
+    let rows = frame.rows();
+    assert_eq!(rows[0].cells, [8], "the list parameter of the call");
+    let rows: Vec<BlockRow> = heap.blocks.iter().flat_map(BlockRow::rows).collect();
+    let global = rows.iter().find(|r| r.owner.as_deref() == Some("Global မူရင်း"));
+    assert_eq!(global.map(|r| r.cells.clone()), Some(vec![8]), "a packed global too");
 }

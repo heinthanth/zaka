@@ -36,3 +36,24 @@ fn values_print_as_the_spec_tells()
         assert_eq!(text(v(value)), want, "{value}");
     }
 }
+
+#[test]
+fn lists_print_their_cells_between_brackets()
+{
+    use zaka_vm::mem::Mem;
+    use zaka_vm::mem::Origin;
+    use zaka_vm::print::list_text;
+    use zakac_semcheck::kind::DataKind;
+
+    let mut m = Mem::new(64, 1 << 20);
+    let a = m.alloc(32, Origin::Heap, 0).unwrap();
+    m.store(a, v("1:isize")).unwrap();
+    m.store(a + 24, v("-4:isize")).unwrap();
+    let kind = |n: &str| DataKind::parse(n).unwrap();
+    assert_eq!(list_text(&m, a, kind("[4]isize")), Ok("[၁၊ ၀၊ ၀၊ -၄]".to_string()));
+    assert_eq!(
+        list_text(&m, a, kind("[2][2]isize")),
+        Ok("[[၁၊ ၀]၊ [၀၊ -၄]]".to_string())
+    );
+    assert_eq!(list_text(&m, a, kind("isize")), Ok("၁".to_string()));
+}

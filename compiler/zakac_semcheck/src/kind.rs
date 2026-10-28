@@ -1,7 +1,14 @@
+use std::collections::HashSet;
+use std::sync::Mutex;
+use std::sync::OnceLock;
+use std::sync::PoisonError;
+
 use serde::Deserialize;
 use serde::Serialize;
 use zakac_ast::kind::BaseKind;
+use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
+use zakac_ast::kind::Wrap;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
@@ -79,6 +86,8 @@ pub enum Base
     Bool,
     /// A bare `လိပ်စာ`, whose target kind is not known.
     Opaque,
+    /// A list, for a pointer to a whole list.
+    List(&'static ListKind),
 }
 
 impl Base
@@ -97,9 +106,23 @@ impl Base
             Base::Char => Some(DataKind::Char),
             Base::Bool => Some(DataKind::Bool),
             Base::Opaque => None,
+            Base::List(l) => Some(DataKind::List(l)),
         }
     }
 }
+
+/// A list kind: `len` cells of one kind, next to each other.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ListKind
+{
+    /// The kind of each cell.
+    pub cell: DataKind,
+    /// The number of cells; 0 while the initializer has not given it.
+    pub len: u32,
+}
+
+/// Each list kind made so far, so a kind is made once and remains `Copy`.
+static LISTS: OnceLock<Mutex<HashSet<&'static ListKind>>> = OnceLock::new();
 
 /// A pointer kind: `depth` levels of address over a base.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -131,6 +154,8 @@ pub enum DataKind
     Ptr(PtrKind),
     /// The kind of `ဗလာ`, which converts to each pointer kind.
     Null,
+    /// A list of cells.
+    List(&'static ListKind),
 }
 
 impl DataKind
@@ -170,7 +195,84 @@ impl DataKind
             BaseKind::Bool => Base::Bool,
             BaseKind::Opaque => Base::Opaque,
         };
-        DataKind::over(base, kind.depth)
+        let skip = usize::from(kind.base == BaseKind::Opaque);
+        let plain = DataKind::over(base, u8::try_from(skip).unwrap_or(1));
+        kind.wraps.iter().skip(skip).fold(plain, |inner, w| match w
+        {
+            Wrap::Ptr => inner.pointer_to(),
+            Wrap::List(Cells::Fixed(n)) => DataKind::list_of(inner, *n),
+            Wrap::List(Cells::Inferred) => DataKind::list_of(inner, 0),
+        })
+    }
+
+    /// The list kind of `len` cells of `cell`. Each list kind is made once
+    /// and kept for the rest of the run.
+    ///
+    /// # Arguments
+    ///
+    /// * `cell` - The kind of each cell.
+    /// * `len` - The number of cells; 0 while the initializer has not given it.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn list_of(cell: DataKind, len: u32) -> DataKind
+    {
+        let wanted = ListKind { cell, len };
+        let lists = LISTS.get_or_init(Mutex::default);
+        let mut lists = lists.lock().unwrap_or_else(PoisonError::into_inner);
+        ret_if!(let Some(found) = lists.get(&wanted), DataKind::List(found));
+        let made: &'static ListKind = Box::leak(Box::new(wanted));
+        lists.insert(made);
+        DataKind::List(made)
+    }
+
+    /// The list part of the kind.
+    ///
+    /// # Returns
+    ///
+    /// The cell kind and count, or `None` for a kind that is no list.
+    pub fn as_list(self) -> Option<&'static ListKind>
+    {
+        tern!(let DataKind::List(l) = self, Some(l), None)
+    }
+
+    /// Whether the kind is a list.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a list kind.
+    pub fn is_list(self) -> bool { matches!(self, DataKind::List(_)) }
+
+    /// Whether some list level of the kind has no cell count so far.
+    ///
+    /// # Returns
+    ///
+    /// `true` when a count is still 0.
+    pub fn has_open_count(self) -> bool
+    {
+        self.as_list().is_some_and(|l| l.len == 0 || l.cell.has_open_count())
+    }
+
+    /// Fill the open counts of this list kind from `found`, a kind with the
+    /// same shape.
+    ///
+    /// # Arguments
+    ///
+    /// * `found` - The kind that gives the counts.
+    ///
+    /// # Returns
+    ///
+    /// The kind with its counts filled, or `None` when the shapes differ.
+    pub fn fill_counts(self, found: DataKind) -> Option<DataKind>
+    {
+        let (Some(want), Some(have)) = (self.as_list(), found.as_list())
+        else
+        {
+            return tern!(self.has_open_count(), None, Some(self));
+        };
+        ret_if!(want.len != 0 && want.len != have.len, None);
+        Some(DataKind::list_of(want.cell.fill_counts(have.cell)?, have.len))
     }
 
     /// The kind `depth` address levels over `base`.
@@ -205,6 +307,13 @@ impl DataKind
         ret_if!(name == "null", Some(DataKind::Null));
         let rest = name.trim_start_matches('*');
         let stars = u8::try_from(name.len() - rest.len()).ok()?;
+        if let Some(inner) = rest.strip_prefix('[')
+        {
+            let (count, cell) = inner.split_once(']')?;
+            let len = tern!(count.is_empty(), 0, count.parse().ok()?);
+            let list = DataKind::list_of(DataKind::parse(cell)?, len);
+            return Some(DataKind::over(list.levels().1, stars));
+        }
         ret_if!(
             rest == "ptr",
             Some(DataKind::over(Base::Opaque, stars.checked_add(1)?))
@@ -229,6 +338,7 @@ impl DataKind
             DataKind::Bool => "bool".to_string(),
             DataKind::Ptr(p) => ptr_name(p),
             DataKind::Null => "null".to_string(),
+            DataKind::List(l) => list_name(l),
         }
     }
 
@@ -248,6 +358,7 @@ impl DataKind
             DataKind::Bool => (0, Base::Bool),
             DataKind::Ptr(p) => (p.depth, p.base),
             DataKind::Null => (1, Base::Opaque),
+            DataKind::List(l) => (0, Base::List(l)),
         }
     }
 
@@ -309,8 +420,32 @@ impl DataKind
     /// # Returns
     ///
     /// The bit count over 8: 4 for a character, 1 for a boolean, the
-    /// platform size for an address.
-    pub fn size(self, platform: u16) -> u32 { u32::from(self.bits(platform)) / 8 }
+    /// platform size for an address, and the sum of the cells for a list. A
+    /// list too large for a `u32` gives `u32::MAX`; see
+    /// [`DataKind::checked_size`].
+    pub fn size(self, platform: u16) -> u32
+    {
+        self.checked_size(platform).unwrap_or(u32::MAX)
+    }
+
+    /// The size of a value of the kind, in octets, when it fits a `u32`.
+    ///
+    /// # Arguments
+    ///
+    /// * `platform` - Bit count of the platform-sized kinds.
+    ///
+    /// # Returns
+    ///
+    /// The size, or `None` for a list too large for the machine.
+    pub fn checked_size(self, platform: u16) -> Option<u32>
+    {
+        let Some(l) = self.as_list()
+        else
+        {
+            return Some(u32::from(self.bits(platform)) / 8);
+        };
+        l.cell.checked_size(platform)?.checked_mul(l.len)
+    }
 
     /// The alignment of a value of the kind, in octets.
     ///
@@ -320,8 +455,12 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// The size, at most 16.
-    pub fn align(self, platform: u16) -> u32 { self.size(platform).min(16) }
+    /// The size, at most 16; for a list, the alignment of its cells.
+    pub fn align(self, platform: u16) -> u32
+    {
+        ret_if!(let Some(l) = self.as_list(), l.cell.align(platform));
+        self.size(platform).min(16)
+    }
 
     /// The integer part of the kind.
     ///
@@ -370,7 +509,8 @@ impl DataKind
     /// # Returns
     ///
     /// The bit count; 32 for a character, 8 for a boolean, the platform
-    /// size for an address.
+    /// size for an address. A list counts the bits of its cells, at most
+    /// `u16::MAX`; use [`DataKind::size`] for lists.
     pub fn bits(self, platform: u16) -> u16
     {
         match self
@@ -380,6 +520,11 @@ impl DataKind
             DataKind::Char => 32,
             DataKind::Bool => 8,
             DataKind::Ptr(_) | DataKind::Null => platform,
+            DataKind::List(_) =>
+            {
+                let bits = u64::from(self.size(platform)) * 8;
+                u16::try_from(bits).unwrap_or(u16::MAX)
+            }
         }
     }
 
@@ -452,6 +597,7 @@ impl DataKind
     /// integers, and for the same kind.
     pub fn cast_allowed(self, to: DataKind) -> bool
     {
+        ret_false!(self.is_list() || to.is_list());
         ret_true!(self == to);
         ret_true!(self.is_numeric() && to.is_numeric());
         ret_true!(self.is_address() && (to.is_address() || to.is_int()));
@@ -513,6 +659,22 @@ fn ptr_name(p: PtrKind) -> String
         return format!("{}ptr", "*".repeat(usize::from(p.depth.saturating_sub(1))));
     };
     format!("{}{}", "*".repeat(usize::from(p.depth)), plain.name())
+}
+
+/// The short name of a list kind.
+///
+/// # Arguments
+///
+/// * `l` - The kind.
+///
+/// # Returns
+///
+/// `[n]` then the cell name, such as `[3]isize`; `[]` while the count is
+/// open.
+fn list_name(l: &ListKind) -> String
+{
+    let count = tern!(l.len == 0, String::new(), l.len.to_string());
+    format!("[{count}]{}", l.cell.name())
 }
 
 /// The short name of an integer kind.

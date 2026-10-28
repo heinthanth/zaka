@@ -10,6 +10,7 @@ use zakac_ast::expr::SizeOfExpr;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
+use zakac_ast::kind::Wrap;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::AllocStmt;
 use zakac_ast::stmt::AssignStmt;
@@ -58,7 +59,8 @@ fn name(id: u32, text: &str, lo: u32) -> Expr
 /// A pointer kind: `depth` pointer levels over `base`.
 fn ptr_kind(base: BaseKind, bits: Option<u16>, depth: u8) -> Kind
 {
-    Kind::builder().base(base).maybe_bits(bits).depth(depth).span(sp(0, 1)).build()
+    let wraps = vec![Wrap::Ptr; usize::from(depth)];
+    Kind::builder().base(base).maybe_bits(bits).wraps(wraps).span(sp(0, 1)).build()
 }
 
 /// `p ၏ တန်ဖိုး` over the variable `p`.

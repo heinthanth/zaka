@@ -10,8 +10,8 @@ use zakac_ast::verb::VerbOp;
 ///
 /// # Returns
 ///
-/// The variable itself, the dereference node itself (a place of the
-/// pointee kind), the place inside parentheses, or `None` for an
+/// The variable itself, the dereference or cell node itself (a place of the
+/// pointee or cell kind), the place inside parentheses, or `None` for an
 /// expression that is no place.
 pub(crate) fn place_of(e: &Expr) -> Option<&Expr>
 {
@@ -21,6 +21,7 @@ pub(crate) fn place_of(e: &Expr) -> Option<&Expr>
         Expr::Group(n) => place_of(&n.inner),
         Expr::Prefix(n) if n.op == PrefixOp::Deref => Some(e),
         Expr::Verb(n) if n.op == VerbOp::Deref => Some(e),
+        Expr::Index(_) => Some(e),
         _ => None,
     }
 }

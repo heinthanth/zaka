@@ -17,6 +17,7 @@ use zaka_vm::mem::Block;
 use zaka_vm::mem::Mem;
 use zaka_vm::mem::Origin;
 use zaka_vm::mem::RED_ZONE;
+use zaka_vm::print::list_text;
 use zaka_vm::print::text;
 use zakac_codegen::bc;
 use zakac_i18n::t;
@@ -24,6 +25,7 @@ use zakac_ir_builder::value::Value;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::kind::DataKind;
 
 use crate::compile::RUN_STEPS;
 use crate::compile::asm::code_starts;
@@ -258,6 +260,10 @@ pub struct BlockRow
     /// that holds one variable or none.
     #[builder(default)]
     pub vars: Vec<VarRow>,
+    /// The cell sizes of the list the block holds, outermost first, such as
+    /// `[24, 8]` for a `[2][3]isize`; none for a block that holds no list.
+    #[builder(default)]
+    pub cells: Vec<u64>,
 }
 
 /// A variable of a packed block, as the map shows it.
@@ -274,6 +280,10 @@ pub struct VarRow
     /// What it is, as text, such as `က of ပြ` or `Global x`.
     #[builder(into)]
     pub owner: String,
+    /// The cell sizes of the list it is, outermost first; none for a
+    /// variable that is no list.
+    #[builder(default)]
+    pub cells: Vec<u64>,
 }
 
 impl BlockRow
@@ -325,8 +335,47 @@ impl BlockRow
             .state(self.state)
             .owner(v.owner.clone())
             .data(data.to_vec())
+            .cells(v.cells.clone())
             .build()
     }
+
+    /// The cell an octet of the block sits in, as a path of cell numbers
+    /// counted from 0, outermost first, such as `[1][2]`.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The offset of the octet from the start of the block.
+    ///
+    /// # Returns
+    ///
+    /// The cell numbers; none for a block that holds no list.
+    pub fn cell_path(&self, at: u64) -> Vec<u64>
+    {
+        let mut rest = at;
+        let step = |size: &u64| {
+            let n = rest / size;
+            rest %= size;
+            n
+        };
+        self.cells.iter().map(step).collect()
+    }
+}
+
+/// The cell sizes of a list kind, outermost first.
+///
+/// # Arguments
+///
+/// * `kind` - The kind.
+/// * `platform` - Bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// The size of a cell at each list level; none for a kind that is no list.
+pub fn cell_sizes(kind: DataKind, platform: u16) -> Vec<u64>
+{
+    let level = |k: &DataKind| k.as_list().map(|l| l.cell);
+    let cells: Vec<DataKind> = std::iter::successors(level(&kind), level).collect();
+    cells.iter().map(|c| u64::from(c.size(platform))).collect()
 }
 
 /// The blocks of the address space at one point of a run, with the counts
@@ -384,33 +433,6 @@ pub fn cell_width(len: u64) -> u64
 {
     let doublings = u64::from((len.max(8) / 8).ilog2());
     CELL * (1 + doublings).min(MAX_CELLS)
-}
-
-/// A lane of the heap map.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Lane
-{
-    /// The static data and the heap.
-    Data,
-    /// The stack.
-    Stack,
-}
-
-impl Lane
-{
-    /// The lane of the blocks of an origin.
-    ///
-    /// # Arguments
-    ///
-    /// * `origin` - Where the blocks came from.
-    ///
-    /// # Returns
-    ///
-    /// The lane.
-    pub fn of(origin: Origin) -> Lane
-    {
-        tern!(origin == Origin::Stack, Lane::Stack, Lane::Data)
-    }
 }
 
 /// A part of the heap map, in address order.
@@ -472,9 +494,10 @@ impl HeapShot
         Some(held.map_or(start, |r| r.start))
     }
 
-    /// The parts of the map: each block, with the gap before the next one.
-    /// The last block has its red zone after it, grown to reach a trap past
-    /// it.
+    /// The parts of the map: each block, with the gap before the next one,
+    /// so the static data, the stack and the heap follow one another as the
+    /// machine places them in RAM. The last block has its red zone after it,
+    /// grown to reach a trap past it.
     ///
     /// # Returns
     ///
@@ -493,30 +516,6 @@ impl HeapShot
         };
         let around = |i| std::iter::once(MapPart::Block(i)).chain(gap(i));
         (0..self.blocks.len()).flat_map(around).collect()
-    }
-
-    /// The parts of the map in lanes: the static data and the heap share
-    /// one, the stack has its own. Each lane keeps address order, and a gap
-    /// goes in the lane of the block before it.
-    ///
-    /// # Returns
-    ///
-    /// Each lane with its parts, in the order the lanes first show up.
-    pub fn lanes(&self) -> Vec<(Lane, Vec<MapPart>)>
-    {
-        let mut lanes: Vec<(Lane, Vec<MapPart>)> = Vec::new();
-        let mut current = Lane::Data;
-        for part in self.parts()
-        {
-            do_if!(let MapPart::Block(i) = part, current = Lane::of(self.blocks[i].origin));
-            let found = lanes.iter().position(|(l, _)| *l == current);
-            let at = found.unwrap_or_else(|| {
-                lanes.push((current, Vec::new()));
-                lanes.len() - 1
-            });
-            lanes[at].1.push(part);
-        }
-        lanes
     }
 
     /// The hex digits of the highest address the panel shows: the end of
@@ -777,9 +776,13 @@ fn block_row(m: &Machine, b: &Block, finished: bool) -> BlockRow
         }
         _ => t!("explorer.heap.global", name = name),
     };
+    let platform = m.module().platform_bits;
     let var = |v: PackedVar| {
         let owner = var_owner(v.name).into_owned();
-        VarRow::builder().offset(v.offset).len(v.len).name(v.name).owner(owner).build()
+        let cells = cell_sizes(v.kind, platform);
+        #[rustfmt::skip]
+        return VarRow::builder().offset(v.offset).len(v.len).name(v.name).owner(owner)
+            .cells(cells).build();
     };
     let vars =
         m.packed_vars(b.start).unwrap_or_default().into_iter().map(var).collect();
@@ -792,6 +795,7 @@ fn block_row(m: &Machine, b: &Block, finished: bool) -> BlockRow
         .maybe_owner(owner)
         .vars(vars)
         .data(data)
+        .cells(m.held_kind(b.start).map_or_else(Vec::new, |k| cell_sizes(k, platform)))
         .build()
 }
 
@@ -864,11 +868,12 @@ fn value_rows(mem: &Mem, slots: &[bc::Slot], homes: &[u64]) -> Vec<ValueRow>
 {
     let row = |(i, (s, home)): (usize, (&bc::Slot, &u64))| {
         let held = mem.load(*home, s.kind).ok();
+        let shown = list_text(mem, *home, s.kind).ok();
         ValueRow::builder()
             .index(i as u32)
             .name(s.name.as_str())
             .kind(s.kind.name())
-            .value(held.map_or_else(|| "?".to_string(), text))
+            .value(shown.unwrap_or_else(|| "?".to_string()))
             .maybe_points_at(held.and_then(pointee))
             .home(*home)
             .build()

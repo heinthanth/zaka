@@ -55,6 +55,9 @@ pub enum Slot
     /// `<kind> အဖြစ်`
     #[strum(serialize = "... အဖြစ်")]
     KindAhpjit,
+    /// `ခုမြောက်`, after the number of a cell counted from 1.
+    #[strum(serialize = "ခုမြောက်")]
+    Ordinal,
 }
 
 impl Slot
@@ -132,6 +135,13 @@ pub enum VerbOp
     /// `၏ တန်ဖိုး`: the value an address points at.
     #[strum(serialize = "deref")]
     Deref,
+    /// `၏ n ခုမြောက်အကွက်`: a list cell counted from 1. The parser turns
+    /// it into an index expression.
+    #[strum(serialize = "cell1")]
+    Cell,
+    /// `၏ အကွက်အရေအတွက်`: the number of cells of a list.
+    #[strum(serialize = "cell_count")]
+    CellCount,
 }
 
 /// One row of the valence table: a verb, the particles its operands hold,
@@ -190,6 +200,8 @@ pub static VERBS: &[Verb] = &[
     row(Kw::ReturnValue, VerbOp::Return, &[Slot::Ko], true, false),
     row(Kw::Address, VerbOp::AddrOf, &[Slot::Ei], false, false),
     row(Kw::Value, VerbOp::Deref, &[Slot::Ei], false, false),
+    row(Kw::Cell, VerbOp::Cell, &[Slot::Ei, Slot::Ordinal], false, false),
+    row(Kw::CellCount, VerbOp::CellCount, &[Slot::Ei], false, false),
 ];
 
 /// Find the valence table row of a verb token.

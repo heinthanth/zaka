@@ -173,7 +173,9 @@ impl Value
             DataKind::Float(bits) => Value::Float { bits, raw: 0 },
             DataKind::Char => Value::Char('\0'),
             DataKind::Bool => Value::Bool(false),
-            DataKind::Ptr(_) | DataKind::Null => Value::NULL,
+            // A list is no single value; its slot is cleared to zero
+            // octets instead, the default of each cell.
+            DataKind::Ptr(_) | DataKind::Null | DataKind::List(_) => Value::NULL,
         }
     }
 
@@ -837,6 +839,7 @@ pub fn from_raw(kind: DataKind, raw: &[u8], platform: u16) -> Result<Value, RawE
             tern!(pattern <= 1, Ok(Value::Bool(pattern == 1)), Err(RawError::BadValue))
         }
         DataKind::Ptr(_) | DataKind::Null => Ok(Value::Ptr(pattern as u64)),
+        DataKind::List(_) => Err(RawError::WrongLen),
     }
 }
 
@@ -1045,6 +1048,7 @@ impl FromStr for Value
             DataKind::Char => read_char(head).map(Value::Char),
             DataKind::Bool => head.parse::<bool>().ok().map(Value::Bool),
             DataKind::Ptr(_) | DataKind::Null => read_address(head).map(Value::Ptr),
+            DataKind::List(_) => None,
         };
         value.ok_or_else(bad)
     }

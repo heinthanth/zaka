@@ -190,3 +190,25 @@ fn sampled_triples_split_back()
         check_join(&parts);
     }
 }
+
+#[test]
+fn list_words_lex_and_split()
+{
+    assert_eq!(lookup("စာရင်း"), Some(Kw::List));
+    assert_eq!(lookup("စာရင်းအလွတ်"), Some(Kw::BlankList));
+    assert_eq!(lookup("အကွက်အရေအတွက်"), Some(Kw::CellCount));
+    assert_eq!(lookup("ခုရှိသော"), Some(Kw::Having));
+    assert_eq!(lookup("ရှိသော"), Some(Kw::Having));
+    assert_eq!(lookup("တို့ပါသော"), Some(Kw::ListOf));
+    let ordinal = split("ခုမြောက်အကွက်").expect("splits");
+    let kws: Vec<Kw> = ordinal.iter().map(|(kw, _)| *kw).collect();
+    assert_eq!(kws, [Kw::Ordinal, Kw::Cell]);
+}
+
+#[test]
+fn names_that_start_with_list_words_remain_names()
+{
+    assert_eq!(split("စာရင်းအင်း"), None);
+    assert_eq!(split("သူတို့"), None);
+    assert_eq!(lookup("အရေအတွက်"), None);
+}

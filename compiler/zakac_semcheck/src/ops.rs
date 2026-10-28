@@ -39,6 +39,8 @@ pub(crate) enum OpClass
     AddrOf,
     /// The dereference verb.
     Deref,
+    /// The list cell verbs.
+    CellCount,
     /// A statement verb, which never stands inside an expression.
     Stmt,
 }
@@ -68,6 +70,7 @@ impl OpClass
             | OpClass::Cast
             | OpClass::AddrOf
             | OpClass::Deref
+            | OpClass::CellCount
             | OpClass::Stmt => None,
         }
     }
@@ -184,6 +187,7 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         VerbOp::Cast => OpClass::Cast,
         VerbOp::AddrOf => OpClass::AddrOf,
         VerbOp::Deref => OpClass::Deref,
+        VerbOp::Cell | VerbOp::CellCount => OpClass::CellCount,
         VerbOp::Print | VerbOp::Assign | VerbOp::Return => OpClass::Stmt,
     }
 }
@@ -237,6 +241,7 @@ pub(crate) fn is_flexible(e: &Expr) -> bool
         }
         Expr::Infix(n) => infix_flexible(infix_class(n.op), &n.lhs, &n.rhs),
         Expr::Verb(n) => verb_flexible(verb_class(n.op), &n.args),
+        Expr::List(_) | Expr::BlankList(_) => true,
         _ => false,
     }
 }
@@ -490,6 +495,8 @@ impl Checker
         };
         let (l, r) = self.infer_sides(lhs, rhs, side);
         let (l, r) = (l?, r?);
+        let list = l.is_list() || r.is_list();
+        ret_if!(list, self.infer_list_pair(class, op, (l, lhs), (r, rhs), span));
         let ptr = l.is_address() || r.is_address();
         ret_if!(ptr, self.infer_ptr_pair(class, op, (l, lhs), (r, rhs), span));
         let want = class.want();
@@ -528,6 +535,34 @@ impl Checker
                 None
             }
         }
+    }
+
+    /// Infer a two-operand operation where at least one side is a list:
+    /// `==` and `!=` compare two lists of one kind, one cell at a time, and
+    /// other operators take no lists.
+    ///
+    /// # Arguments
+    ///
+    /// * `class` - The operator class.
+    /// * `op` - The operator spelling.
+    /// * `lhs` - The kind and the expression of the left operand.
+    /// * `rhs` - The kind and the expression of the right operand.
+    /// * `span` - The operation.
+    ///
+    /// # Returns
+    ///
+    /// `bool` for a comparison, or `None` after an error.
+    fn infer_list_pair(
+        &mut self, class: OpClass, op: &str, lhs: (DataKind, &Expr),
+        rhs: (DataKind, &Expr), span: Span,
+    ) -> Option<DataKind>
+    {
+        let same = lhs.0 == rhs.0;
+        ret_if!(class == OpClass::Equal && same, Some(DataKind::Bool));
+        let mismatch = kd::incompatible_operands(span, &lhs.0.name(), &rhs.0.name());
+        ret_if!(class == OpClass::Equal, self.report(mismatch), None);
+        let (kind, e) = tern!(lhs.0.is_list(), lhs, rhs);
+        self.need(kind, class.want().unwrap_or(Want::Number), op, e)
     }
 
     /// Infer a comparison of addresses.

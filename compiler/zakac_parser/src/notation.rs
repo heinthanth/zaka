@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use zakac_ast::expr::BlankListLit;
 use zakac_ast::expr::BoolLit;
 use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::CharLit;
@@ -194,6 +195,7 @@ impl Parser<'_>
             TokenKind::Kw(Kw::Function) => self.parse_call_expr(),
             TokenKind::Kw(Kw::True | Kw::False) => Ok(self.parse_bool()),
             TokenKind::Kw(Kw::Null) => Ok(self.parse_null()),
+            TokenKind::Kw(Kw::BlankList) => Ok(self.parse_blank_list()),
             TokenKind::Char(value) => Ok(self.parse_char(value)),
             TokenKind::Number(_) | TokenKind::Kw(Kw::Base) if !self.at_size_of() =>
             {
@@ -262,6 +264,18 @@ impl Parser<'_>
         let tok = self.bump();
         let id = self.new_id();
         Expr::Null(NullLit::builder().id(id).span(tok.span).build())
+    }
+
+    /// Parse `စာရင်းအလွတ်`, which is the current token.
+    ///
+    /// # Returns
+    ///
+    /// The blank list.
+    fn parse_blank_list(&mut self) -> Expr
+    {
+        let tok = self.bump();
+        let id = self.new_id();
+        Expr::BlankList(BlankListLit::builder().id(id).span(tok.span).build())
     }
 
     /// Parse `<kind> ၏ အရွယ်အစား`; [`Parser::at_size_of`] has passed.

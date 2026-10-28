@@ -407,3 +407,18 @@ pub fn unmatched_block_close(span: Span) -> Diagnostic
 {
     Diagnostic::new(Code::UnmatchedBlockClose, t!("codes.ZK0226.message"), span)
 }
+
+/// The cell count of a list kind is not a whole number above zero.
+///
+/// # Arguments
+///
+/// * `span` - The count.
+/// * `count` - The count as written.
+///
+/// # Returns
+///
+/// The `ZK0227` diagnostic.
+pub fn bad_list_count(span: Span, count: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::BadListCount, t!("codes.ZK0227.message", n = count), span)
+}

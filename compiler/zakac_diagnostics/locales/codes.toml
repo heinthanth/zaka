@@ -253,6 +253,13 @@ en = "this block closer has no open block to close"
 [codes.ZK0226.explain]
 en = """\"လုပ်ဆောင်စရာများ ပြီးပါပြီ။\" closes the block opened with \"အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\" or with a function opener. Here no block is open. Remove the closer, or add the opener it belongs to."""
 
+[codes.ZK0227.title]
+en = "bad list count"
+[codes.ZK0227.message]
+en = "\"%{n}\" is not a cell count; write a whole number above zero"
+[codes.ZK0227.explain]
+en = """A list kind with a count, \"အကွက် <n> ခုရှိသော <kind> စာရင်း\", takes a decimal number above zero, such as ၃ or 10. A list with no cells holds nothing, and the count cannot come from a variable: the kind must be known before the program runs."""
+
 # -------------------------------------------------------------- resolve ZK03xx
 
 [codes.ZK0301.title]
@@ -496,6 +503,61 @@ en = "returns the address of the local \"%{name}\", which is released when the f
 [codes.ZK0418.explain]
 en = """The locals and parameters of a function are released when it returns, so an address that points at one of them is no longer valid in the caller. Reading or writing through it is caught at run time. Return the value itself, or allocate heap space with the heap statements and return its address."""
 
+[codes.ZK0419.title]
+en = "list count mismatch"
+[codes.ZK0419.message]
+en = "the kind holds %{want} cells, but the list has %{found}"
+[codes.ZK0419.explain]
+en = """A list literal \"a၊ b၊ c တို့ပါသော စာရင်း\" must have the same number of cells as the list kind it fills. Add or remove cells, or change the count in \"အကွက် <n> ခုရှိသော\". A kind written with no count, such as \"ကိန်းပြည့် စာရင်း\", takes its count from the literal."""
+
+[codes.ZK0420.title]
+en = "blank list with no kind"
+[codes.ZK0420.message]
+en = "a blank list needs a list kind from its place"
+[codes.ZK0420.help]
+en = "declare the variable with a list kind and a count first, or write the cells out"
+[codes.ZK0420.explain]
+en = """\"စာရင်းအလွတ်\" sets each cell of a list to its default, but the list kind, and with it the number of cells, comes from where it stands: a declared variable, a parameter, or the other side of a comparison. Here nothing gives that kind."""
+
+[codes.ZK0421.title]
+en = "list count missing"
+[codes.ZK0421.message]
+en = "this list kind has no cell count, and nothing here gives one"
+[codes.ZK0421.help]
+en = "write the count: \"အကွက် <n> ခုရှိသော <kind> စာရင်း\""
+[codes.ZK0421.explain]
+en = """A list kind with no count, such as \"ကိန်းပြည့် စာရင်း\", is allowed in a declaration with a list as its value: the count comes from that value. Parameters, size questions, heap statements, and declarations with no value or a blank list need the count written out."""
+
+[codes.ZK0422.title]
+en = "not a list"
+[codes.ZK0422.message]
+en = "%{k} is not a list, so it has no cells"
+[codes.ZK0422.explain]
+en = """\"x ၏ အကွက် i\", \"x ၏ n ခုမြောက်အကွက်\" and \"x ၏ အကွက်အရေအတွက်\" need a list, or the address of a list. To reach the values behind a pointer to the first of several values, use pointer arithmetic: \"p + i ၏ တန်ဖိုး\"."""
+
+[codes.ZK0423.title]
+en = "cell number not an integer"
+[codes.ZK0423.message]
+en = "a cell number must be an integer, not %{k}"
+[codes.ZK0423.explain]
+en = """The number in \"x ၏ အကွက် i\" or \"x ၏ n ခုမြောက်အကွက်\" counts cells, so it must be an integer of a signed or unsigned kind. Convert it with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\"."""
+
+[codes.ZK0424.title]
+en = "list as a function result"
+[codes.ZK0424.message]
+en = "a function cannot give back a list as its result"
+[codes.ZK0424.help]
+en = "take the address of a list as a parameter, and fill the list through it"
+[codes.ZK0424.explain]
+en = """A function result is one value, and a list holds several cells. Pass the address of the list to fill, with a parameter of kind \"... စာရင်း လိပ်စာ\", and write the cells through it."""
+
+[codes.ZK0425.title]
+en = "list too large"
+[codes.ZK0425.message]
+en = "%{k} needs more octets than the machine can address"
+[codes.ZK0425.explain]
+en = """The cells of a list sit next to each other, so the list takes its count times the size of one cell. Here that size does not fit the machine. Use a smaller count, or ask for heap room."""
+
 # ---------------------------------------------------------- naturalness ZK05xx
 
 [codes.ZK0501.title]
@@ -585,3 +647,10 @@ en = "constant zero divisor"
 en = "%{op} with the constant zero as divisor"
 [codes.ZK0602.explain]
 en = """The right operand of an integer division or remainder is the constant zero. Integer division and remainder with a zero divisor have no result. Check the divisor, or put the division behind a condition. Float division with a zero divisor is allowed and gives an infinite or NaN value."""
+
+[codes.ZK0603.title]
+en = "cell outside the list"
+[codes.ZK0603.message]
+en = "cell %{i} is outside the list, whose cells run from %{lo} to %{hi}"
+[codes.ZK0603.explain]
+en = """The cell number is a constant, and it does not name a cell of the list. \"x ၏ အကွက် i\" counts from 0, so the last cell of a list of n cells is n - 1. \"x ၏ n ခုမြောက်အကွက်\" counts from 1, up to n."""

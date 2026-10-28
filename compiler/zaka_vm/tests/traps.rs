@@ -138,6 +138,10 @@ fn each_heap_mistake_traps_with_its_kind()
         ("out_of_mem", TrapKind::OutOfMem { size: 0 }),
         ("mixed_blocks", TrapKind::MixedBlocks),
         ("local_escape", TrapKind::UseAfterFree { addr: 0 }),
+        (
+            "index_out_of_range",
+            TrapKind::IndexOutOfRange { index: 0, first: 0, len: 0 },
+        ),
     ];
     let inputs = std::fs::read_dir(heap_inputs()).unwrap().count();
     assert_eq!(inputs, table.len(), "each input needs a row");
@@ -165,4 +169,14 @@ fn heap_traps_name_their_block()
     assert!(block.contains("32 octets, heap"), "{block}");
     assert_eq!(heap_trap("null_deref").block, None);
     assert_eq!(heap_trap("mixed_blocks").block, None);
+}
+
+#[test]
+fn a_cell_outside_its_list_traps_with_the_range()
+{
+    let trap = heap_trap("index_out_of_range");
+    assert_eq!(trap.kind, TrapKind::IndexOutOfRange { index: 3, first: 0, len: 3 });
+    assert_eq!(trap.block, None);
+    let text = trap.to_string();
+    assert!(text.contains("cell 3") && text.contains("0 to 2"), "{text}");
 }

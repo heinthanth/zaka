@@ -84,6 +84,7 @@ fn parser_constructors_render_messages()
         p::str_outside_print(span),
         p::const_loop(span),
         p::unmatched_block_close(span),
+        p::bad_list_count(span, "၀"),
     ]
     {
         assert!(!is_missing(&diag.message), "{}", diag.code);
@@ -194,4 +195,24 @@ fn pointer_constructors_render_messages()
     assert!(!warned.is_error());
     assert!(k::condition_not_bool(span, "*isize").help.is_some());
     assert!(k::condition_not_bool(span, "isize").help.is_none());
+}
+
+#[test]
+fn list_constructors_render_messages()
+{
+    use zakac_diagnostics::fold as f;
+    use zakac_diagnostics::kinds as k;
+    use zakac_span::span::Span;
+
+    let span = Span::PLACEHOLDER;
+    assert!(k::list_count_mismatch(span, 3, 2).message.contains('3'));
+    assert!(k::blank_list_kind(span).help.is_some());
+    assert!(k::list_count_missing(span).help.is_some());
+    assert!(k::not_a_list(span, "isize").message.contains("isize"));
+    assert!(k::cell_number_not_int(span, "f64").message.contains("f64"));
+    assert!(k::list_result(span).help.is_some());
+    assert!(k::list_too_large(span, "[9]u8").message.contains("[9]u8"));
+    let out = f::cell_out_of_range(span, "3", 0, 2);
+    assert_eq!(out.code, Code::CellOutOfRange);
+    assert!(out.message.contains('3') && out.message.contains('2'));
 }

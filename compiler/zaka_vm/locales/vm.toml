@@ -42,6 +42,9 @@ en = "stopped after %{steps} ops"
 [vm.trap.step_not_positive]
 en = "counted loop step is not positive"
 
+[vm.trap.index_out_of_range]
+en = "cell %{index} is outside the list, whose cells run from %{lo} to %{hi}"
+
 [vm.trap.malformed]
 en = "malformed ops: %{reason}"
 

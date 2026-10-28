@@ -296,3 +296,111 @@ pub fn local_address_returned(span: Span, name: &str) -> Diagnostic
     let msg = t!("codes.ZK0418.message", name = name);
     Diagnostic::new(Code::LocalAddressReturned, msg, span)
 }
+
+/// A list literal has more or fewer cells than its kind.
+///
+/// # Arguments
+///
+/// * `span` - The literal.
+/// * `want` - The cell count of the kind.
+/// * `found` - The cell count of the literal.
+///
+/// # Returns
+///
+/// The `ZK0419` diagnostic.
+pub fn list_count_mismatch(span: Span, want: u32, found: usize) -> Diagnostic
+{
+    let msg = t!("codes.ZK0419.message", want = want, found = found);
+    Diagnostic::new(Code::ListCountMismatch, msg, span)
+}
+
+/// A blank list stands where no list kind is known.
+///
+/// # Arguments
+///
+/// * `span` - The blank list.
+///
+/// # Returns
+///
+/// The `ZK0420` diagnostic.
+pub fn blank_list_kind(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::BlankListKind, t!("codes.ZK0420.message"), span)
+        .with_help(t!("codes.ZK0420.help"))
+}
+
+/// A list kind has no cell count and nothing gives one.
+///
+/// # Arguments
+///
+/// * `span` - The kind.
+///
+/// # Returns
+///
+/// The `ZK0421` diagnostic.
+pub fn list_count_missing(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::ListCountMissing, t!("codes.ZK0421.message"), span)
+        .with_help(t!("codes.ZK0421.help"))
+}
+
+/// Cells are read from a value that is no list.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `kind` - Its kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0422` diagnostic.
+pub fn not_a_list(span: Span, kind: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::NotAList, t!("codes.ZK0422.message", k = kind), span)
+}
+
+/// A cell number is no integer.
+///
+/// # Arguments
+///
+/// * `span` - The cell number.
+/// * `kind` - Its kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0423` diagnostic.
+pub fn cell_number_not_int(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0423.message", k = kind);
+    Diagnostic::new(Code::CellNumberNotInt, msg, span)
+}
+
+/// A function gives back a list as its result.
+///
+/// # Arguments
+///
+/// * `span` - The result kind.
+///
+/// # Returns
+///
+/// The `ZK0424` diagnostic.
+pub fn list_result(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::ListResult, t!("codes.ZK0424.message"), span)
+        .with_help(t!("codes.ZK0424.help"))
+}
+
+/// A list kind is too large for the machine.
+///
+/// # Arguments
+///
+/// * `span` - The kind.
+/// * `kind` - The kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0425` diagnostic.
+pub fn list_too_large(span: Span, kind: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::ListTooLarge, t!("codes.ZK0425.message", k = kind), span)
+}
