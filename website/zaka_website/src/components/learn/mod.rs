@@ -18,6 +18,14 @@ use zaka_web_ui_common::sheet;
 use zakac_i18n::t;
 use zakac_rust_sugars::ret_if;
 
+use crate::book::Book;
+use crate::book::Chapter;
+use crate::book::Page;
+use crate::book::chapter_of;
+use crate::book::chapters;
+use crate::book::render::Block;
+use crate::book::render::Head;
+use crate::book::render::Rendered;
 use crate::components::contents::contents;
 use crate::components::contents::contents_sheet;
 use crate::components::contents::number;
@@ -29,24 +37,17 @@ use crate::components::pager::pager;
 use crate::components::sandbox::Sandbox;
 use crate::components::sandbox::SandboxProps;
 use crate::components::sandbox::sandbox_sheet;
-use crate::learn::Chapter;
-use crate::learn::Page;
-use crate::learn::chapter_of;
-use crate::learn::chapters;
-use crate::learn::render::Block;
-use crate::learn::render::Head;
-use crate::learn::render::Rendered;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/learn/mod.sass");
 
-/// Rules of the Learn pages.
+/// Rules of the pages of a book.
 static SHEET: ComponentStyle = ComponentStyle::global_css("site-learn", STYLE_SHEET);
 
-/// A Learn page: the header, the contents on the left, the page in
+/// A page of a book: the header, the contents on the left, the page in
 /// the middle with its programs to run, what is on the page on the right, and
-/// the footer. The title page opens on a gold field with the Learn mark and
-/// the title, and lists the chapters after its text.
+/// the footer. The title page opens on a gold field with the mark of its book
+/// and the title, and lists the chapters after its text.
 ///
 /// # Arguments
 ///
@@ -56,9 +57,9 @@ static SHEET: ComponentStyle = ComponentStyle::global_css("site-learn", STYLE_SH
 /// # Returns
 ///
 /// The view.
-pub fn learn_page(page: Page, rendered: Rendered) -> impl IntoView
+pub fn book_page(page: Page, rendered: Rendered) -> impl IntoView
 {
-    let intro = page.is_title().then(|| intro(&rendered));
+    let intro = page.is_title().then(|| intro(page.book, &rendered));
     let frame = div().class(ClassName::LEARN_FRAME).child((
         contents(&page),
         article_view(&page, &rendered),
@@ -66,7 +67,10 @@ pub fn learn_page(page: Page, rendered: Rendered) -> impl IntoView
     ));
     (
         (header_sheet(), contents_sheet(), sandbox_sheet(), sheet(&SHEET)),
-        SiteHeader(SiteHeaderProps::builder().home(false).build()).into_any(),
+        SiteHeader(
+            SiteHeaderProps::builder().here(page.book.root_url().to_string()).build(),
+        )
+        .into_any(),
         main()
             .id("top")
             .class(ClassName::LEARN)
@@ -76,20 +80,26 @@ pub fn learn_page(page: Page, rendered: Rendered) -> impl IntoView
     )
 }
 
-/// The gold field of the title page: the Learn mark, the title and the
-/// description.
+/// The gold field of the title page: the mark of the book, the title and
+/// the description.
 ///
 /// # Arguments
 ///
+/// * `book` - The book.
 /// * `rendered` - The title page, rendered.
 ///
 /// # Returns
 ///
 /// The view.
-fn intro(rendered: &Rendered) -> impl IntoView + use<>
+fn intro(book: Book, rendered: &Rendered) -> impl IntoView + use<>
 {
+    let mark = match book
+    {
+        Book::Learn => t!("website.learn.mark"),
+        Book::Manual => t!("website.docs.mark"),
+    };
     section().class(ClassName::LEARN_INTRO).attr("data-field", "gold").child((
-        p().class(ClassName::LEARN_INTRO_MARK).child(t!("website.learn.mark")),
+        p().class(ClassName::LEARN_INTRO_MARK).child(mark),
         h1().class(ClassName::LEARN_INTRO_HEAD).child(rendered.title.clone()),
         p().class(ClassName::LEARN_INTRO_TEXT).child(rendered.description.clone()),
     ))
@@ -110,7 +120,8 @@ fn article_view(page: &Page, rendered: &Rendered) -> impl IntoView + use<>
 {
     let head = (!page.is_title()).then(|| page_head(page, rendered));
     let blocks: Vec<_> = rendered.blocks.iter().cloned().map(block).collect();
-    let grid = page.is_title().then(chapter_grid);
+    let book = page.book;
+    let grid = page.is_title().then(|| chapter_grid(book));
     article().class(ClassName::LEARN_ARTICLE).child((head, blocks, grid, pager(page)))
 }
 
@@ -174,13 +185,17 @@ fn block(block: Block) -> AnyView
 /// The chapters on the title page, one block each: its number, its title and
 /// its pages; then one block for the reference pages, each a link.
 ///
+/// # Arguments
+///
+/// * `book` - The book of the title page.
+///
 /// # Returns
 ///
 /// The view.
-fn chapter_grid() -> impl IntoView
+fn chapter_grid(book: Book) -> impl IntoView
 {
     let (numbered, appendix): (Vec<Chapter>, Vec<Chapter>) =
-        chapters().into_iter().partition(|c| c.number.is_some());
+        chapters(book).into_iter().partition(|c| c.number.is_some());
     let item = |c: Chapter| {
         let pages: Vec<_> = c.pages.iter().map(|p| li().child(p.title)).collect();
         li().child(a().class(ClassName::LEARN_CHAPTER).href(c.head.url()).child((

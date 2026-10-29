@@ -1,9 +1,9 @@
 ---
-title: Owners and borrows
+title: Ownership and borrowing
 description: Each heap block has one owner; lend it with တန်ဖိုးအငှား, and the compiler finds the pointer mistakes before the program runs.
 ---
 
-# Owners and borrows
+# Ownership and borrowing
 
 Each block from the heap should be given back once, and no pointer should use it after
 that. Zaka keeps track of who is in charge of each block: one pointer *owns* it, and the

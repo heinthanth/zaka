@@ -77,7 +77,7 @@ it expected:
 error[ZK0201]: expected "။", found end of input
 ```
 
-Each message has a code such as `ZK0201`. The [error messages](../reference/errors.md)
+Each message has a code such as `ZK0201`. The [error messages](../../manual/reference/errors.md)
 page lists the common ones.
 
 ## Hands on

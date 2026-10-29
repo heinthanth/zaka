@@ -16,25 +16,25 @@ use zaka_web_ui_common::paint::paint;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
-use super::LEARN_URL;
+use super::Book;
 use super::Page;
 use super::page_of;
 use crate::components::sandbox::run::Fence;
 use crate::components::sandbox::run::FenceOptions;
 
-/// The address of the site the Learn pages name in full, for the explorer.
+/// The address of the site the pages name in full, for the explorer.
 const SITE: &str = "https://zaka-lang.org/";
 
 /// The contents file, which a page can link to.
 const CONTENTS_FILE: &str = "CONTENTS.md";
 
-/// Element id of the contents on each Learn page.
+/// Element id of the contents on each page of a book.
 pub const CONTENTS_ID: &str = "contents";
 
 /// The info string of a fence that holds what the program before it prints.
 const OUTPUT_FENCE: &str = "text";
 
-/// A Learn page, set for the site.
+/// A page of a book, set for the site.
 #[derive(Debug, Clone, PartialEq, Builder)]
 pub struct Rendered
 {
@@ -58,7 +58,7 @@ pub enum Block
     Zaka(Sample),
 }
 
-/// A program of a Learn page.
+/// A program of a page.
 #[derive(Debug, Clone, PartialEq, Builder)]
 pub struct Sample
 {
@@ -113,7 +113,7 @@ impl Built
     }
 }
 
-/// Set a Learn page for the site: its front matter read, its
+/// Set a page of a book for the site: its front matter read, its
 /// first head left to the page, its programs taken out to run, its links
 /// pointed at the pages of the site and the Burmese code in it painted.
 ///
@@ -335,9 +335,11 @@ pub fn anchor(text: &str, taken: &[Head]) -> String
     (2..).map(|n| format!("{base}-{n}")).find(|id| !used(id)).unwrap_or(base)
 }
 
-/// Where a link of a page points on the site: a Learn page at its
-/// address, the contents at the list on each page, and the explorer at its
-/// place on this site.
+/// Where a link of a page points on the site: a page of either book at its
+/// address, the contents of a book at the list on each of its pages, and the
+/// explorer at its place on this site. A link names a file from the folder of
+/// its page, so `../../manual/reference/errors.md` on a Learn page reaches
+/// the manual.
 ///
 /// # Arguments
 ///
@@ -354,12 +356,22 @@ pub fn link_target(page: &Page, dest: &str) -> String
     let (file, mark) = dest.split_once('#').unwrap_or((dest, ""));
     ret_if!(!local || !file.ends_with(".md"), dest.to_string());
     let mark = tern!(mark.is_empty(), String::new(), format!("#{mark}"));
-    let path = joined(page.path, file);
-    ret_if!(path == CONTENTS_FILE, format!("{LEARN_URL}#{CONTENTS_ID}"));
-    page_of(&path).map_or_else(|| dest.to_string(), |p| format!("{}{mark}", p.url()))
+    let from = format!("{}/{}", page.book.folder(), page.path);
+    let path = joined(&from, file);
+    let found = path.split_once('/').and_then(|(folder, rest)| {
+        Book::in_folder(folder).map(|book| (book, rest.to_string()))
+    });
+    let Some((book, rest)) = found
+    else
+    {
+        return dest.to_string();
+    };
+    ret_if!(rest == CONTENTS_FILE, format!("{}#{CONTENTS_ID}", book.root_url()));
+    page_of(book, &rest)
+        .map_or_else(|| dest.to_string(), |p| format!("{}{mark}", p.url()))
 }
 
-/// A file named from a page, as a path from the Learn folder.
+/// A file named from a page, as a path from the `docs/` folder.
 ///
 /// # Arguments
 ///

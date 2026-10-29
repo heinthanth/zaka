@@ -11,12 +11,11 @@ use leptos_scoped_style::ComponentStyle;
 use zaka_web_ui_common::sheet;
 use zakac_i18n::t;
 
-use crate::learn::Chapter;
-use crate::learn::LEARN_URL;
-use crate::learn::Page;
-use crate::learn::chapters;
-use crate::learn::page_at;
-use crate::learn::render::CONTENTS_ID;
+use crate::book::Chapter;
+use crate::book::Page;
+use crate::book::chapters;
+use crate::book::page_at;
+use crate::book::render::CONTENTS_ID;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/contents/mod.sass");
@@ -42,7 +41,7 @@ pub fn contents_sheet() -> impl IntoView { sheet(&SHEET) }
 /// The text.
 pub fn number(n: usize) -> String { format!("{n:02}") }
 
-/// The contents of the Learn pages: a column on wide screens that stands still
+/// The contents of a book: a column on wide screens that stands still
 /// as the page scrolls, and a fold at the top of the page on narrow ones. The
 /// chapter of the page shows its pages; the others show their titles alone.
 ///
@@ -67,7 +66,8 @@ pub fn contents(page: &Page) -> impl IntoView + use<>
     div().id(CONTENTS_ID).class(ClassName::CONTENTS_BOX).child((column, fold))
 }
 
-/// The list of the contents: the title page, then each chapter.
+/// The list of the contents of the book of a page: its title page, then
+/// each chapter.
 ///
 /// # Arguments
 ///
@@ -81,11 +81,11 @@ fn contents_list(page: &Page) -> impl IntoView + use<>
     let page = *page;
     let title = a()
         .class(ClassName::CONTENTS_TITLE)
-        .href(LEARN_URL)
+        .href(page.book.root_url())
         .attr("aria-current", page.is_title().then_some("page"))
-        .child(page_at("").map(|p| p.title).unwrap_or_default());
+        .child(page_at(page.book, "").map(|p| p.title).unwrap_or_default());
     let items: Vec<_> =
-        chapters().into_iter().map(|c| chapter_item(&page, c)).collect();
+        chapters(page.book).into_iter().map(|c| chapter_item(&page, c)).collect();
     (title, ol().class(ClassName::CONTENTS_CHAPTERS).child(items))
 }
 

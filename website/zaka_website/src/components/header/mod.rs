@@ -21,6 +21,7 @@ use zaka_web_ui_common::icon::globe;
 use zaka_web_ui_common::icon::menu;
 use zaka_web_ui_common::icon::swatches;
 use zaka_web_ui_common::sheet;
+use zaka_web_ui_common::site::HOME_URL;
 use zaka_web_ui_common::theme::ThemeMode;
 use zaka_web_ui_common::theme::theme_mode;
 use zakac_i18n::t;
@@ -29,7 +30,8 @@ use zakac_rust_sugars::tern;
 
 use crate::assets::LOGO_DARK;
 use crate::assets::LOGO_LIGHT;
-use crate::learn::LEARN_URL;
+use crate::book::DOCS_URL;
+use crate::book::LEARN_URL;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/header/mod.sass");
@@ -66,22 +68,25 @@ const PAPER: &str = "paper";
 /// The view; it renders no element of its own.
 pub fn header_sheet() -> impl IntoView { sheet(&SHEET) }
 
-/// The header: the wordmark, the link to the Learn pages, the theme and
+/// The header: the wordmark, the links to Learn and the Docs, the theme and
 /// language pickers, and the explorer. It sits over the page and takes the
 /// ground and ink of the chapter under it. An island: the pickers and the
 /// chapter colors run in the browser.
 ///
 /// # Arguments
 ///
-/// * `home` - Whether the page is the landing page, where the wordmark leads to
-///   the top; on other pages it leads home.
+/// * `here` - The address of the part of the site the page is in: `/` on the
+///   landing page, where the wordmark leads to the top, or the root of a book,
+///   whose link the header marks as current; on other pages the wordmark leads
+///   home.
 ///
 /// # Returns
 ///
 /// The view.
 #[island]
-pub fn SiteHeader(home: bool) -> impl IntoView
+pub fn SiteHeader(here: String) -> impl IntoView
 {
+    let home = here == HOME_URL;
     let theme = theme_mode();
     let chapter = RwSignal::new(PAPER.to_string());
     let moved = RwSignal::new(false);
@@ -103,11 +108,14 @@ pub fn SiteHeader(home: bool) -> impl IntoView
         .class(format!("button {}", ClassName::HEADER_ACTION))
         .href(EXPLORER_URL)
         .child(t!("website.header.explorer"));
-    let learn = a()
-        .class(ClassName::HEADER_LINK)
-        .href(LEARN_URL)
-        .attr("aria-current", (!home).then_some("page"))
-        .child(t!("website.header.learn"));
+    let section = |url: &'static str, label: &str| {
+        a().class(ClassName::HEADER_LINK)
+            .href(url)
+            .attr("aria-current", (here == url).then_some("page"))
+            .child(t!(label.to_string()))
+    };
+    let learn = section(LEARN_URL, "website.header.learn");
+    let docs = section(DOCS_URL, "website.header.docs");
     let pickers = div()
         .class(ClassName::HEADER_PICKERS)
         .child((theme_icon_picker(theme), lang_icon_picker(|| ())));
@@ -117,6 +125,7 @@ pub fn SiteHeader(home: bool) -> impl IntoView
     // call to action, at the end.
     let actions = div().class(ClassName::HEADER_ACTIONS).child((
         learn,
+        docs,
         pickers,
         action,
         toggle(open),
@@ -200,6 +209,7 @@ fn menu_panel(theme: ThemeMode, open: RwSignal<bool>) -> impl IntoView
         .child((
             nav().class(ClassName::HEADER_MENU_LINKS).child((
                 link((LEARN_URL, "website.header.learn")),
+                link((DOCS_URL, "website.header.docs")),
                 link((EXPLORER_URL, "website.header.explorer_link")),
             )),
             div().class(ClassName::HEADER_MENU_PICKERS).child(menu_pickers(theme)),

@@ -25,6 +25,8 @@ en = "Open the explorer"
 en = "Explorer"
 [website.header.learn]
 en = "Learn"
+[website.header.docs]
+en = "Docs"
 
 # ---------------------------------------------------------------- hero
 
@@ -32,6 +34,8 @@ en = "Learn"
 en = "Photo: %{author} on Unsplash."
 [website.hero.learn]
 en = "Learn Zaka"
+[website.hero.docs]
+en = "Read the Docs"
 [website.hero.lede]
 en = "Zaka is a programming language based on a subset of Burmese. Burmese sentences are compiled down to instructions for Zaka Virtual Machine."
 
@@ -94,6 +98,8 @@ en = "Licensed under the %{license} license."
 en = "Back to top"
 [website.footer.learn]
 en = "Learn Zaka"
+[website.footer.docs]
+en = "Docs"
 [website.footer.credits]
 en = "Credits"
 [website.footer.credits_title]
@@ -111,6 +117,8 @@ en = "%{author} · %{first} - %{last}"
 en = "%{page} - Zaka"
 [website.learn.mark]
 en = "Learn"
+[website.docs.mark]
+en = "Docs"
 [website.learn.contents]
 en = "Contents"
 [website.learn.reference]

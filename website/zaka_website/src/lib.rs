@@ -3,8 +3,8 @@
 
 pub mod app;
 pub mod assets;
+pub mod book;
 pub mod components;
-pub mod learn;
 #[cfg(feature = "client")]
 mod motion;
 

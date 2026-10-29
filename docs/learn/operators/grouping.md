@@ -38,7 +38,7 @@ From first to last (tightest to loosest):
 13. `သို့မဟုတ်`, `||` (or)
 
 Operators on the same line go left to right: `၁၀ - ၃ - ၂` is `(၁၀ - ၃) - ၂`. The
-[Operator precedence](../reference/precedence.md) page has the full table.
+[Operator precedence](../../manual/reference/precedence.md) page has the full table.
 
 ## Word phrases take whole sums
 

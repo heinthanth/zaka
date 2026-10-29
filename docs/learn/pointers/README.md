@@ -27,8 +27,8 @@ After the first line, the program never assigns to `အသက်` with its name.
 variable through the pointer `ညွှန်း` ("the pointer").
 
 The pointer *borrows* `အသက်`: the variable keeps its own storage, and the pointer just
-looks at it. A kind that borrows starts with `ငှားထားသော` ("lent"). The page on [owners
-and borrows](ownership.md) tells the rest; until then, each pointer at a variable is
+looks at it. A kind that borrows starts with `ငှားထားသော` ("lent"). The page on [ownership
+and borrowing](ownership.md) tells the rest; until then, each pointer at a variable is
 written like this.
 
 | Zaka | Reads as |

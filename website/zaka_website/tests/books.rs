@@ -1,32 +1,46 @@
+use zaka_website::book::Book;
+use zaka_website::book::Page;
+use zaka_website::book::chapters;
+use zaka_website::book::neighbours;
+use zaka_website::book::page_at;
+use zaka_website::book::render::Block;
+use zaka_website::book::render::Head;
+use zaka_website::book::render::Sample;
+use zaka_website::book::render::anchor;
+use zaka_website::book::render::link_target;
+use zaka_website::book::render::render;
+use zaka_website::book::slugs;
 use zaka_website::components::sandbox::run::Fence;
 use zaka_website::components::sandbox::run::FenceOptions;
 use zaka_website::components::sandbox::run::run_to_end;
-use zaka_website::learn::PAGES;
-use zaka_website::learn::chapters;
-use zaka_website::learn::neighbours;
-use zaka_website::learn::page_at;
-use zaka_website::learn::render::Block;
-use zaka_website::learn::render::Head;
-use zaka_website::learn::render::Sample;
-use zaka_website::learn::render::anchor;
-use zaka_website::learn::render::link_target;
-use zaka_website::learn::render::render;
-use zaka_website::learn::slugs;
 use zakac_borrow_checker::options::MemCheck;
+use zakac_diagnostics::Code;
 
-/// Each program of the Learn pages with the page it is on.
-fn samples() -> Vec<(&'static str, Sample)>
+/// Each page of each book.
+fn all_pages() -> impl Iterator<Item = &'static Page>
+{
+    Book::ALL.into_iter().flat_map(Book::pages)
+}
+
+/// Each program of the pages of a book with the page it is on.
+fn samples_of(book: Book) -> Vec<(&'static str, Sample)>
 {
     let zaka = |b: Block| match b
     {
         Block::Zaka(s) => Some(s),
         Block::Prose(_) => None,
     };
-    let page_samples = |p: &zaka_website::learn::Page| {
+    let page_samples = |p: &Page| {
         let path = p.path;
         render(p).blocks.into_iter().filter_map(zaka).map(move |s| (path, s))
     };
-    PAGES.iter().flat_map(page_samples).collect()
+    book.pages().iter().flat_map(page_samples).collect()
+}
+
+/// Each program of the pages of each book with the page it is on.
+fn samples() -> Vec<(&'static str, Sample)>
+{
+    Book::ALL.into_iter().flat_map(samples_of).collect()
 }
 
 /// What is wrong with one program, measured against what its page promises.
@@ -51,10 +65,11 @@ fn mismatch(path: &str, sample: &Sample) -> Option<String>
 }
 
 #[test]
-fn each_program_of_the_learn_pages_does_what_its_page_promises()
+fn each_program_of_the_books_does_what_its_page_promises()
 {
+    let learn = samples_of(Book::Learn).len();
+    assert!(learn > 100, "the Learn pages hold their programs: {learn}");
     let all = samples();
-    assert!(all.len() > 100, "the Learn pages hold their programs: {}", all.len());
     let wrong: Vec<String> = all.iter().filter_map(|(p, s)| mismatch(p, s)).collect();
     assert!(
         wrong.is_empty(),
@@ -79,10 +94,9 @@ fn the_runs_and_stops_promise_an_output()
 }
 
 #[test]
-fn each_link_to_a_learn_page_reaches_one()
+fn each_link_to_a_page_of_a_book_reaches_one()
 {
-    let stale: Vec<String> = PAGES
-        .iter()
+    let stale: Vec<String> = all_pages()
         .flat_map(|p| {
             let prose = render(p).blocks.into_iter().filter_map(|b| match b
             {
@@ -98,10 +112,69 @@ fn each_link_to_a_learn_page_reaches_one()
     assert!(stale.is_empty(), "links to Markdown files remain on {stale:?}");
 }
 
+/// The ids each page holds besides the ids of its heads.
+const PAGE_IDS: [&str; 2] = ["top", "contents"];
+
+/// The targets of the links in a piece of HTML.
+fn hrefs(html: &str) -> Vec<String>
+{
+    html.split("href=\"")
+        .skip(1)
+        .filter_map(|rest| rest.split_once('"').map(|(href, _)| href.to_string()))
+        .collect()
+}
+
+/// The page of the site at an address, such as `/docs/language/kinds/`.
+fn page_at_url(url: &str) -> Option<Page>
+{
+    Book::ALL.into_iter().find_map(|book| {
+        url.strip_prefix(book.root_url()).and_then(|slug| page_at(book, slug))
+    })
+}
+
+/// What is wrong with one link to a mark on a page.
+fn broken_mark(from: &Page, href: &str) -> Option<String>
+{
+    let (url, mark) = href.split_once('#')?;
+    let target = match url
+    {
+        "" => Some(*from),
+        url => page_at_url(url),
+    };
+    let Some(target) = target
+    else
+    {
+        return (url.starts_with("/learn/") || url.starts_with("/docs/"))
+            .then(|| format!("{}: {href} names no page", from.path));
+    };
+    let heads = render(&target).heads;
+    let found = PAGE_IDS.contains(&mark) || heads.iter().any(|h| h.id == mark);
+    (!found).then(|| format!("{}: {href} names no head", from.path))
+}
+
+#[test]
+fn each_link_to_a_mark_reaches_a_head()
+{
+    let broken: Vec<String> = all_pages()
+        .flat_map(|p| {
+            let prose = render(p).blocks.into_iter().filter_map(|b| match b
+            {
+                Block::Prose(html) => Some(html),
+                Block::Zaka(_) => None,
+            });
+            prose
+                .flat_map(|h| hrefs(&h))
+                .filter_map(|href| broken_mark(p, &href))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    assert!(broken.is_empty(), "links to marks that are not there: {broken:#?}");
+}
+
 #[test]
 fn links_point_at_the_pages_of_the_site()
 {
-    let page = page_at("control-flow/while").expect("the page is there");
+    let page = page_at(Book::Learn, "control-flow/while").expect("the page is there");
     assert_eq!(
         link_target(&page, "counted-loops.md"),
         "/learn/control-flow/counted-loops/"
@@ -113,8 +186,25 @@ fn links_point_at_the_pages_of_the_site()
         link_target(&page, "https://www.rust-lang.org/"),
         "https://www.rust-lang.org/"
     );
-    let title = page_at("").expect("the title page is there");
+    let title = page_at(Book::Learn, "").expect("the title page is there");
     assert_eq!(link_target(&title, "CONTENTS.md"), "/learn/#contents");
+}
+
+#[test]
+fn links_cross_from_one_book_to_the_other()
+{
+    let learn = page_at(Book::Learn, "hello").expect("the page is there");
+    assert_eq!(
+        link_target(&learn, "../../manual/reference/errors.md"),
+        "/docs/reference/errors/"
+    );
+    let errors = page_at(Book::Manual, "reference/errors").expect("the page is there");
+    assert_eq!(
+        link_target(&errors, "../../learn/values/literals.md#top"),
+        "/learn/values/literals/#top"
+    );
+    assert_eq!(link_target(&errors, "precedence.md"), "/docs/reference/precedence/");
+    assert_eq!(link_target(&errors, "../CONTENTS.md"), "/docs/#contents");
 }
 
 #[test]
@@ -129,25 +219,46 @@ fn heads_get_ids_of_their_own()
 #[test]
 fn the_addresses_of_the_pages_differ()
 {
-    let mut all = slugs();
-    let count = all.len();
-    all.sort();
-    all.dedup();
-    assert_eq!(all.len(), count);
-    assert_eq!(count, PAGES.len());
-    assert!(all.contains(&String::new()), "the title page is at the root");
+    Book::ALL.into_iter().for_each(|book| {
+        let mut all = slugs(book);
+        let count = all.len();
+        all.sort();
+        all.dedup();
+        assert_eq!(all.len(), count, "{book:?}");
+        assert_eq!(count, book.pages().len(), "{book:?}");
+        assert!(all.contains(&String::new()), "the title page is at the root");
+    });
 }
 
 #[test]
 fn the_contents_hold_each_page_once()
 {
-    let listed: usize = chapters().iter().map(|c| 1 + c.pages.len()).sum();
-    assert_eq!(listed + 1, PAGES.len(), "each page but the title page is in a chapter");
-    let numbered = chapters().iter().filter(|c| c.number.is_some()).count();
+    Book::ALL.into_iter().for_each(|book| {
+        let listed: usize = chapters(book).iter().map(|c| 1 + c.pages.len()).sum();
+        assert_eq!(
+            listed + 1,
+            book.pages().len(),
+            "{book:?}: a page outside a chapter"
+        );
+        let first = page_at(book, "").expect("the title page is there");
+        assert_eq!(neighbours(&first).0, None);
+    });
+    let numbered = chapters(Book::Learn).iter().filter(|c| c.number.is_some()).count();
     assert!(numbered >= 9, "{numbered}");
-    let first = page_at("").expect("the title page is there");
-    assert_eq!(neighbours(&first).0, None);
+    let first = page_at(Book::Learn, "").expect("the title page is there");
     assert_eq!(neighbours(&first).1.map(|p| p.slug), Some("hello"));
+}
+
+#[test]
+fn the_error_page_lists_each_code()
+{
+    let page = page_at(Book::Manual, "reference/errors").expect("the page is there");
+    let missing: Vec<&str> = Code::ALL
+        .iter()
+        .map(|c| c.id())
+        .filter(|id| !page.text.contains(&format!("| {id} |")))
+        .collect();
+    assert!(missing.is_empty(), "codes the error page does not list: {missing:?}");
 }
 
 #[test]
@@ -197,7 +308,7 @@ fn a_warn_fence_runs_a_program_the_check_refuses()
 #[test]
 fn the_pointer_chapter_teaches_owners_borrows_and_raw_addresses()
 {
-    let page = page_at("pointers/ownership").expect("the page is there");
+    let page = page_at(Book::Learn, "pointers/ownership").expect("the page is there");
     let zaka = |b: Block| match b
     {
         Block::Zaka(s) => Some(s),
@@ -219,10 +330,9 @@ fn the_pointer_chapter_teaches_owners_borrows_and_raw_addresses()
 }
 
 #[test]
-fn each_zaka_fence_of_the_learn_pages_parses()
+fn each_zaka_fence_of_the_books_parses()
 {
-    let offenders: Vec<String> = PAGES
-        .iter()
+    let offenders: Vec<String> = all_pages()
         .flat_map(|p| {
             p.text
                 .lines()

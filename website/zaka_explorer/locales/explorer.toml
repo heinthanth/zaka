@@ -115,7 +115,7 @@ en = "Compiler"
 [explorer.settings.heap_cap]
 en = "Heap limit"
 [explorer.settings.heap_cap_note]
-en = "The most heap a run can hold at once; past it, an allocation traps. Auto uses the RAM the browser reports, up to the 4 GiB a WebAssembly page can address."
+en = "The most heap a run can hold at once; past it, a new block comes back as null (ဗလာ) and a resize traps. Auto uses the RAM the browser reports, up to the 4 GiB a WebAssembly page can address."
 [explorer.settings.frames]
 en = "Variables"
 [explorer.settings.frames_note]

@@ -109,7 +109,7 @@ that receives the block *owns* it, and it alone gives the block back. Giving it 
 - sets the owner to `ဗလာ`, so using it again finds null instead of a freed block;
 - does nothing when the owner is `ဗလာ` to begin with;
 - is an error the compiler reports while a borrow of the block is still in use; see
-  [owners and borrows](ownership.md) and [Pointer mistakes](mistakes.md).
+  [ownership and borrowing](ownership.md) and [Pointer mistakes](mistakes.md).
 
 The compiler reports a block that a function loses before it returns (ZK0708). For the
 blocks that remain when the program ends, run it with `zakac run --leaks`; it lists each

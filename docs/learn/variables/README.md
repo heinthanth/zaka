@@ -107,7 +107,7 @@ error[ZK0401]: expected isize, found f64
 ```
 
 `isize` is the compiler's short name for plain `ကိန်းပြည့်`, and `f64` for `ဒဿမကိန်း`.
-The [Error messages](../reference/errors.md) page lists all these short names.
+The [Error messages](../../manual/reference/errors.md) page lists all these short names.
 
 ## Using a name before declaring it
 

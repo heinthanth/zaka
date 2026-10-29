@@ -84,8 +84,8 @@ loop compares against it but never reads it.
 Subtracting two pointers gives the number of boxes between them, as a `ကိန်းပြည့်`.
 
 `ကိန်းများ ၏ တန်ဖိုးအငှား` lends the block: `ညွှန်း` borrows it and `ကိန်းများ` keeps it.
-An address made with `+` or `-` is a borrow as well, so it never needs the word. [Owners
-and borrows](ownership.md) has the rules.
+An address made with `+` or `-` is a borrow as well, so it never needs the word. [Ownership
+and borrowing](ownership.md) has the rules.
 
 | Form | Gives |
 | --- | --- |

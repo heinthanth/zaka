@@ -49,3 +49,8 @@ Save a program in a file whose name ends in `.zaka` (or `.zk`), then run it:
 
 Start with [Hello, world](hello/README.md), or browse the [table of
 contents](CONTENTS.md).
+
+These pages teach through examples and leave some details out. The
+[Docs](../manual/README.md) give the full rules of the language, explain how the
+compiler and the virtual machine work, and list the reserved words, the operator
+precedence and each error code.

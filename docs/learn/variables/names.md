@@ -25,17 +25,41 @@ Upper and lower case are different: `Age` and `age` are two names.
 
 ## Where a name ends
 
-A name ends at a space, at a sign such as `+` or `။`, or where the script changes
-(Burmese to English, or back). That is the reason a name needs a space before a
-particle:
-`အသက် ကို`, not `အသက်ကို` (see [Spaces between words](../sentences/spacing.md)).
+A name ends at a space, or at a sign such as `+` or `။`. A change of script does not end
+it: `အသက်age` and `age၂` are names too, one word each.
+
+```zaka
+ကိန်းရှင် အသက်age သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။      // Burmese, then English
+ကိန်းရှင် age၂ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။           // English, then a digit
+အသက်age + age၂ ကို ပြသပါ။
+```
+
+```text
+၂၀
+```
+
+That is the reason a name needs a space before a particle. `ageကို` is one long name, not
+the name `age` and the particle `ကို`, so the verb finds no particle:
+
+```zaka-error ZK0206
+ကိန်းရှင် age သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
+ageကို ပြသပါ။
+```
+
+```text
+error[ZK0206]: "ပြသပါ" needs "ကို|ဟု" after operand 1, found no particle
+  = help: write "age ကို" with a space: a name joined to a particle is read as one word
+```
+
+Write `age ကို` and `အသက် ကို`, with a space (see [Spaces between
+words](../sentences/spacing.md)).
 
 ## Names that look like Zaka words
 
 A name cannot be made of Zaka's reserved words alone. Short words such as `ကြီး`
 (greater), `ငယ်` (less) and `ညီ` (equal) are reserved verbs, so `ကြီး` alone cannot be a
 name; `ကြီးသူ` can. `တန်ဖိုးကို` reads as the two reserved words `တန်ဖိုး` + `ကို`. The
-[Reserved words](../reference/reserved-words.md) page lists them all. To use such a
+[Reserved words](../../manual/reference/reserved-words.md) page lists them all. To use such a
 name, or a name with spaces in it, wrap it in backticks:
 
 ```zaka

@@ -354,8 +354,8 @@ leak: block at 0x101060, 16 octets
 ## Mistakes the compiler catches
 
 Some mistakes are visible before the program runs, and the compiler reports them. The
-ZK04 codes are about kinds; the ZK07 codes come from the check of [owners and
-borrows](ownership.md):
+ZK04 codes are about kinds; the ZK07 codes come from the check of [ownership and
+borrowing](ownership.md):
 
 | Code | Mistake |
 | --- | --- |

@@ -13,8 +13,8 @@ use zakac_rust_sugars::tern;
 use zakac_span::continues_cluster;
 
 use crate::assets::BLOSSOMS_PHOTO;
-use crate::components::header::EXPLORER_URL;
-use crate::learn::LEARN_URL;
+use crate::book::DOCS_URL;
+use crate::book::LEARN_URL;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/hero/mod.sass");
@@ -38,7 +38,8 @@ const PHOTO_AUTHOR: &str = "Antonio Gabriel";
 
 /// The hero: plumeria blossoms against clear blue, mirrored so the flowers
 /// stand on the right, and over it the line of Zaka writing itself out, a
-/// sentence and the link to the explorer.
+/// sentence, the way into Learn in gold and the link to the Docs beside it.
+/// The explorer waits in the header.
 /// The writing is a CSS animation, so it needs no script, and with less
 /// motion asked for, the whole line stands from the start.
 ///
@@ -61,15 +62,15 @@ pub fn hero() -> impl IntoView
         p().class(ClassName::HERO_LEDE).child(t!("website.hero.lede")),
         div().class(ClassName::HERO_ACTIONS).child((
             a().class(format!("button {}", ClassName::HERO_ACTION))
-                .href(EXPLORER_URL)
-                .child(t!("website.header.explorer")),
+                .href(LEARN_URL)
+                .child(t!("website.hero.learn")),
             a().class(format!(
                 "button {} {}",
                 ClassName::HERO_ACTION,
                 ClassName::HERO_QUIET
             ))
-            .href(LEARN_URL)
-            .child(t!("website.hero.learn")),
+            .href(DOCS_URL)
+            .child(t!("website.hero.docs")),
         )),
     ));
     let credit = p().class(ClassName::HERO_CREDIT).child(

@@ -16,8 +16,9 @@ use zakac_consts::ZAKA_FIRST_YEAR;
 use zakac_consts::ZAKA_LICENSE;
 use zakac_i18n::t;
 
+use crate::book::DOCS_URL;
+use crate::book::LEARN_URL;
 use crate::components::header::EXPLORER_URL;
-use crate::learn::LEARN_URL;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/footer/mod.sass");
@@ -49,6 +50,7 @@ pub fn footer() -> impl IntoView
     ));
     let links = div().class(ClassName::FOOTER_LINKS).child((
         a().href(LEARN_URL).child(t!("website.footer.learn")),
+        a().href(DOCS_URL).child(t!("website.footer.docs")),
         a().href(EXPLORER_URL).child(t!("website.footer.explorer")),
         CreditsLink(),
     ));

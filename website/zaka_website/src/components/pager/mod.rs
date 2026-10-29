@@ -6,8 +6,8 @@ use leptos_scoped_style::ComponentStyle;
 use zaka_web_ui_common::sheet;
 use zakac_i18n::t;
 
-use crate::learn::Page;
-use crate::learn::neighbours;
+use crate::book::Page;
+use crate::book::neighbours;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/pager/mod.sass");

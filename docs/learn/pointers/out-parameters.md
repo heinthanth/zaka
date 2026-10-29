@@ -86,7 +86,7 @@ error[ZK0706]: returns a borrow of the local "x", which ends when the function r
 Pointing *into* a function at the caller's variables, as `လဲလှယ်` does, is fine in all
 cases: the caller's variables outlive the call. RAM that must outlive the function that
 creates it is a block from the [heap](heap.md), and the function hands its caller the
-owner of that block; see [owners and borrows](ownership.md#a-new-block-from-a-function).
+owner of that block; see [ownership and borrowing](ownership.md#a-new-block-from-a-function).
 
 ## Hands on
 

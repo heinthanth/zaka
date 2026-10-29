@@ -36,12 +36,17 @@ use zaka_web_ui_common::font::FONT_ROOT;
 use zaka_web_ui_common::font::face::Face;
 use zaka_web_ui_common::shared_sheets;
 use zaka_web_ui_common::sheet;
+use zaka_web_ui_common::site::HOME_URL;
 use zakac_i18n::t;
 
 use crate::ORIGIN_VAR;
 use crate::assets::COVER_CARD;
 use crate::assets::LOGO_LIGHT;
 use crate::assets::font_faces;
+use crate::book::Book;
+use crate::book::page_at;
+use crate::book::render::render;
+use crate::book::slugs;
 use crate::components::bands::bands;
 use crate::components::close::close;
 use crate::components::footer::footer;
@@ -49,13 +54,10 @@ use crate::components::header::SiteHeader;
 use crate::components::header::SiteHeaderProps;
 use crate::components::header::header_sheet;
 use crate::components::hero::hero;
-use crate::components::learn::learn_page;
+use crate::components::learn::book_page;
 use crate::components::name::name;
-use crate::learn::page_at;
-use crate::learn::render::render;
-use crate::learn::slugs;
 
-/// Name of the route parameter that holds the address of a Learn page.
+/// Name of the route parameter that holds the address of a page of a book.
 const PAGE_PARAM: &str = "page";
 
 /// The address the site is served from, which the pages read to name
@@ -228,7 +230,7 @@ fn twitter_tags(title: String, description: String, cover: String) -> impl IntoV
     )
 }
 
-/// The site: the landing page and the Learn pages, each written to
+/// The site: the landing page and the pages of each book, each written to
 /// its own `index.html` when the site is built.
 ///
 /// # Returns
@@ -246,19 +248,34 @@ pub fn app() -> impl IntoView
                 .build(),
         )
     };
-    // One route for all the Learn pages; the build writes a page for each
-    // address the contents list.
-    let learn_route = || {
-        let pages = || async {
+    // One route for all the pages of each book; the build writes a page for
+    // each address its contents list.
+    let pages = |book: Book| {
+        move || async move {
             let mut params = StaticParamsMap::new();
-            params.insert(PAGE_PARAM, slugs());
+            params.insert(PAGE_PARAM, slugs(book));
             params
-        };
+        }
+    };
+    let learn_route = move || {
         Route(
             RouteProps::builder()
                 .path(path!("/learn/*page"))
-                .view(learn)
-                .ssr(SsrMode::Static(StaticRoute::new().prerender_params(pages)))
+                .view(|| book_view(Book::Learn))
+                .ssr(SsrMode::Static(
+                    StaticRoute::new().prerender_params(pages(Book::Learn)),
+                ))
+                .build(),
+        )
+    };
+    let docs_route = move || {
+        Route(
+            RouteProps::builder()
+                .path(path!("/docs/*page"))
+                .view(|| book_view(Book::Manual))
+                .ssr(SsrMode::Static(
+                    StaticRoute::new().prerender_params(pages(Book::Manual)),
+                ))
                 .build(),
         )
     };
@@ -268,7 +285,7 @@ pub fn app() -> impl IntoView
             RoutesProps::builder()
                 .fallback(|| "Not found.")
                 .children(RouteChildren::to_children(move || {
-                    (home_route(), learn_route())
+                    (home_route(), learn_route(), docs_route())
                 }))
                 .build(),
         )
@@ -294,22 +311,27 @@ fn home() -> impl IntoView
     (
         page_tags("/", title, t!("website.page.description").to_string()),
         header_sheet(),
-        SiteHeader(SiteHeaderProps::builder().home(true).build()).into_any(),
+        SiteHeader(SiteHeaderProps::builder().here(HOME_URL.to_string()).build())
+            .into_any(),
         main().id("top").child(sections),
         footer().into_any(),
     )
 }
 
-/// A Learn page, from the address in the route.
+/// A page of a book, from the address in the route.
+///
+/// # Arguments
+///
+/// * `book` - The book the route serves.
 ///
 /// # Returns
 ///
 /// The view; a short note for an address with no page.
-fn learn() -> impl IntoView
+fn book_view(book: Book) -> impl IntoView
 {
     let slug =
         use_params_map().with_untracked(|p| p.get(PAGE_PARAM).unwrap_or_default());
-    let Some(page) = page_at(&slug)
+    let Some(page) = page_at(book, &slug)
     else
     {
         return "Not found.".into_any();
@@ -317,5 +339,5 @@ fn learn() -> impl IntoView
     let rendered = render(&page);
     let title = t!("website.learn.page_title", page = rendered.title).to_string();
     let tags = page_tags(&page.url(), title, rendered.description.clone());
-    (tags, learn_page(page, rendered)).into_any()
+    (tags, book_page(page, rendered)).into_any()
 }

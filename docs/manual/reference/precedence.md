@@ -43,4 +43,4 @@ first. Parentheses come before all else. From **tightest** to **loosest**:
 - A logical expression (`ဖြစ်၍`, `သို့မဟုတ်`, `&&`, `||`, `မဟုတ်`) used as a value to print
   needs parentheses: `(က ဖြစ်၍ ခ) ကို ပြသပါ။`
 
-See [Grouping and order](../operators/grouping.md) for worked examples.
+See [Grouping and order](../../learn/operators/grouping.md) for worked examples.

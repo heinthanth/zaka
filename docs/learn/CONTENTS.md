@@ -42,7 +42,7 @@
   - [The heap](pointers/heap.md)
   - [Pointer arithmetic](pointers/arithmetic.md)
   - [Growing and shrinking](pointers/resizing.md)
-  - [Owners and borrows](pointers/ownership.md)
+  - [Ownership and borrowing](pointers/ownership.md)
   - [Pointer mistakes](pointers/mistakes.md)
 - [Lists](lists/README.md)
   - [Passing and comparing lists](lists/passing.md)
@@ -54,9 +54,3 @@
   - [Greatest common divisor](programs/gcd.md)
   - [Fibonacci numbers](programs/fibonacci.md)
   - [The Collatz sequence](programs/collatz.md)
-
----
-
-- [Reserved words](reference/reserved-words.md)
-- [Operator precedence](reference/precedence.md)
-- [Error messages](reference/errors.md)
