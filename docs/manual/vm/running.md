@@ -1,17 +1,17 @@
 ---
 title: Running a program
-description: How zakac runs a program on the machine: loading, printing, exit codes and the limits of a run.
+description: How zakac runs a program on the VM: loading, printing, exit codes and the limits of a run.
 ---
 
 # Running a program
 
-`zakac run` compiles a program and runs it on the machine in one step. This page tells
+`zakac run` compiles a program and runs it on the VM in one step. This page tells
 what the command does, what it prints, how it ends, and which limits it puts on a run.
 
 ## From source to a run
 
 ```text
- program.zaka ──▶ lex ──▶ parse ──▶ check ──▶ borrow check ──▶ code ──▶ machine
+ program.zaka ──▶ lex ──▶ parse ──▶ check ──▶ borrow check ──▶ code ──▶ VM
                                                                   ▲
  program.zkbc  ──────────────── decode ───────────────────────────┘
 ```
@@ -23,7 +23,7 @@ what the command does, what it prints, how it ends, and which limits it puts on 
 2. **Compile.** Source goes through each stage of the [compiler](../compiler/stages.md).
    A diagnostic of error level stops here: the messages go to standard error, nothing
    runs, and the exit code is 1.
-3. **Run.** The machine starts at the first instruction of `main`, takes one instruction
+3. **Run.** The VM starts at the first instruction of `main`, takes one instruction
    at a time, and writes what the program prints to standard output as it goes.
 
 To keep the instructions and run them later:
@@ -40,7 +40,7 @@ warnings as a run from source.
 
 `zakac run` takes the [compile options](../compiler/commands.md) (`--platform-bits`,
 `--fold`, `--strict-particles`, `--mem-check`, `--mem-strict`, `--no-raw`) and these
-options of the machine:
+options of the VM:
 
 | Option | Default | Effect |
 | --- | --- | --- |

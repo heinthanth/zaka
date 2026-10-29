@@ -1,13 +1,13 @@
 ---
 title: Zaka Docs
-description: The full rules of the Zaka language, how the compiler and the virtual machine work, and the ideas behind them.
+description: The full rules of the Zaka language, how the compiler and the VM work, and the ideas behind them.
 ---
 
 # Zaka Docs
 
 These pages are the manual of Zaka (စံကား). Where [Learn](../learn/README.md) teaches the
 language one small example at a time, the manual states the rules in full: what each
-sentence means, what the compiler checks, what the virtual machine does while a program
+sentence means, what the compiler checks, what the VM does while a program
 runs, and the reasons behind each choice.
 
 ## How the manual is laid out
@@ -16,7 +16,7 @@ runs, and the reasons behind each choice.
 | --- | --- | --- |
 | [The language](language/README.md) | programmers | the exact rules of words, kinds, sentences, functions, pointers, ownership and lists |
 | [The compiler](compiler/README.md) | programmers | the `zakac` commands, the stages a program passes through, and its messages |
-| [The machine](vm/README.md) | programmers | how the Zaka VM runs a program, holds its data, and stops on a mistake |
+| [The VM](vm/README.md) | programmers | how the Zaka VM runs a program, holds its data, and stops on a mistake |
 | [Concepts](concepts/README.md) | the curious | the ideas behind the design, explained with scenarios |
 | [Inside the compiler](internals/README.md) | contributors | how the code of the compiler is built, crate after crate |
 
@@ -46,7 +46,7 @@ Each chapter looks at one part of this road:
  ┌────────────────┐   instructions   ┌──────────────┐
  │ code generator │ ───────────────▶ │   Zaka VM    │
  └────────────────┘                  └──────────────┘
-                                       The machine: how it runs
+                                       The VM: how it runs
 ```
 
 A mistake the compiler finds stops the program before it runs, with a

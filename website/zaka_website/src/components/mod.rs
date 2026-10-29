@@ -1,7 +1,7 @@
-pub mod bands;
 pub mod close;
 pub mod contents;
 pub mod footer;
+pub mod glance;
 pub mod header;
 pub mod hero;
 pub mod learn;
@@ -9,3 +9,4 @@ pub mod missing;
 pub mod name;
 pub mod pager;
 pub mod sandbox;
+pub mod traits;

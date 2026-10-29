@@ -8,7 +8,7 @@ description: A tour of the crates, how to build, test and format the workspace, 
 This chapter is for contributors. It describes the code as it stands now and changes with
 it: when a crate is reworked, its page is rewritten, so a page here is a map of the code
 as it is now and not a promise. Users of the language find what is needed in
-[The compiler](../compiler/README.md) and [The machine](../vm/README.md); the stages are
+[The compiler](../compiler/README.md) and [The VM](../vm/README.md); the stages are
 named there, and the pages of this chapter open them up.
 
 ## The pipeline in crates
@@ -56,8 +56,8 @@ web pages. One `Cargo.toml` at the root lists them with `members = ["compiler/*"
 | `zakac_semcheck` | name resolution, scopes, kinds, literal fitting, owner and borrow kinds |
 | `zakac_ir_builder` | the IR, lowering from the tree, constant folding |
 | `zakac_borrow_checker` | the ownership check over the IR (ZK07) |
-| `zakac_codegen` | the ops of the machine, and the asm listing |
-| `zaka_vm` | the machine: stack of values, storage blocks, traps; the `run` subcommand |
+| `zakac_codegen` | the ops of the VM, and the asm listing |
+| `zaka_vm` | the VM: stack of values, storage blocks, traps; the `run` subcommand |
 | `zakac_diagnostics` | `Diagnostic`, the `Code` catalogue, one constructor per message, texts in `locales/codes.toml` |
 | `zakac_reporter` | draws a diagnostic with its source line and carets |
 | `zakac_session` | the artifact envelope (text and raw forms), command input and output |
@@ -106,7 +106,7 @@ rest; the arrows to them are left out of the picture.
 Two facts about the picture help when a build fails to link. `zakac_ast` sits above the
 lexer because the tree holds lexer words (`Kw`, `Particle`), and the parser, the
 naturalness check and each later stage read the tree. And `zaka_vm` sits above
-`zakac_codegen`, so the code generator never needs the machine; another backend could read
+`zakac_codegen`, so the code generator never needs the VM; another backend could read
 the same IR.
 
 ## Build, test and format

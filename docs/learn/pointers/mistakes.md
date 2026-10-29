@@ -9,11 +9,11 @@ Pointers are powerful because each one reaches straight into RAM, and that same 
 makes them simple to misuse. In a lot of other languages, a RAM mistake corrupts the
 program without warning. Zaka catches these mistakes twice. The compiler finds each one
 it can prove from the text of the program, and does not run the program. The Zaka
-machine checks each read and write through a pointer while the program runs, stops the
+VM checks each read and write through a pointer while the program runs, stops the
 program at the first mistake, and tells what went wrong.
 
 Each section below shows both. With `--mem-check warn`, the compiler reports the
-mistake as a warning and the program runs, so the machine's own check shows.
+mistake as a warning and the program runs, so the VM's own check shows.
 
 ## Reading through a null pointer
 
@@ -27,7 +27,7 @@ mistake as a warning and the program runs, so the machine's own check shows.
 error[ZK0709]: "ပ" is ဗလာ here, so it cannot be dereferenced
 ```
 
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the machine
+With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
 stops it:
 
 ```zaka-stop mem-check=warn
@@ -58,7 +58,7 @@ A block of 4 integers has boxes 0 to 3. Box 4 is outside it:
 error[ZK0710]: offset 4 is past the end of a block of 4 elements
 ```
 
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the machine
+With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
 stops it:
 
 ```zaka-stop mem-check=warn
@@ -75,7 +75,7 @@ the program stopped: access of 8 octets at 0x101040 lands outside each live bloc
 
 A new block starts out filled with zeros, so box 3 prints `၀`. Count from 0 and stop
 one before the size. The compiler sees this mistake because the size and the box number
-are both written in the program. When one of them comes from input, the machine's check
+are both written in the program. When one of them comes from input, the VM's check
 is the one that catches it.
 
 ## Reading past a variable
@@ -95,7 +95,7 @@ the gap:
 error[ZK0710]: offset 1 is past the end of a block of 1 elements
 ```
 
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the machine
+With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
 stops it:
 
 ```zaka-stop mem-check=warn
@@ -111,7 +111,7 @@ the program stopped: access of 8 octets at 0x1008 lands outside each live block
 
 ### Checked and packed variables
 
-The Zaka machine can set out variables in two forms:
+The Zaka VM can set out variables in two forms:
 
 | Mode | Where the variables go | A step past a variable |
 | --- | --- | --- |
@@ -148,7 +148,7 @@ error[ZK0704]: the block of "ပ" is freed here, but "မိတ္တူ" still 
 ```
 
 The message points at the give-back, and at the later read of `မိတ္တူ` as well. With
-`--mem-check warn`, or **Warn** in the Explorer, the program runs and the machine stops
+`--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM stops
 it:
 
 ```zaka-stop mem-check=warn
@@ -194,7 +194,7 @@ error[ZK0702]: a borrowed address cannot be freed or resized; free its owner ins
 The last line gives the block back through a borrow, which is never allowed: the owner
 alone gives a block back (ZK0702). The line before it is wrong as well, because the last
 line still uses `မိတ္တူ` (ZK0704). With `--mem-check warn`, or **Warn** in the Explorer,
-the program runs and the machine stops it:
+the program runs and the VM stops it:
 
 ```zaka-stop mem-check=warn
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
@@ -226,7 +226,7 @@ variable is a borrow, and a borrow never gives a block back:
 error[ZK0702]: a borrowed address cannot be freed or resized; free its owner instead
 ```
 
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the machine
+With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
 stops it:
 
 ```zaka-stop mem-check=warn
@@ -264,7 +264,7 @@ call, the caller's variable holds `ဗလာ`:
 error[ZK0701]: "ပ" was moved to another owner and now holds ဗလာ
 ```
 
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the machine
+With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
 stops it at the read of `ဗလာ`:
 
 ```zaka-stop mem-check=warn
@@ -401,7 +401,7 @@ error[ZK0413]: isize is not a pointer and cannot be dereferenced
 - Run the "past a variable" program with `--mem-check warn --frames packed`. Then write
   `၉` through `ပ + ၁` and print `ခ`. Which variable changed?
 - Set **Ownership check** to **Warn** in the Explorer's settings, and step through each
-  program on this page to the line where the machine stops it.
+  program on this page to the line where the VM stops it.
 - Write a function that asks for a block and returns its address. Is that a mistake?
   (No: the caller owns the block from then on.)
 

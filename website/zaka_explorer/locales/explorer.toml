@@ -61,9 +61,9 @@ en = "Hide the run"
 [explorer.toolbar.run_show]
 en = "Show the run"
 [explorer.toolbar.dock_hide]
-en = "Hide the machine state"
+en = "Hide the VM state"
 [explorer.toolbar.dock_show]
-en = "Show the machine state"
+en = "Show the VM state"
 [explorer.toolbar.debug_on]
 en = "Turn on debug mode: see each phase of the compiler and step through the ops"
 [explorer.toolbar.debug_off]
@@ -127,7 +127,7 @@ en = "Packed, as C"
 [explorer.settings.mem_check]
 en = "Ownership check"
 [explorer.settings.mem_check_note]
-en = "What a proven pointer mistake does. Error stops the build on the line at fault; warn still builds, so the machine shows the trap; off reports nothing. A move leaves ဗလာ behind in each mode."
+en = "What a proven pointer mistake does. Error stops the build on the line at fault; warn still builds, so the VM shows the trap; off reports nothing. A move leaves ဗလာ behind in each mode."
 [explorer.settings.mem_check_error]
 en = "Error"
 [explorer.settings.mem_check_warn]
@@ -439,7 +439,7 @@ en = "Globals"
 [explorer.run.no_globals]
 en = "This program has no globals."
 [explorer.dock.label]
-en = "Machine state"
+en = "VM state"
 [explorer.dock.resize_stack]
 en = "Resize the stack pane"
 [explorer.dock.resize_globals]
@@ -586,11 +586,11 @@ en = "The borrow checker follows each owner pointer and each loan through the IR
 [explorer.tour.codegen]
 en = "7 · Codegen"
 [explorer.tour.codegen_text]
-en = "Code generation emits ops for the stack-based virtual machine: the global slots, the pooled texts, then each function with its locals and ops. Hover an op to see its source."
+en = "Code generation emits ops for the stack-based VM: the global slots, the pooled texts, then each function with its locals and ops. Hover an op to see its source."
 [explorer.tour.run]
 en = "8 · Run"
 [explorer.tour.run_text]
-en = "In debug mode the run is a debugger: the ops show here, the bar over the panes drives them, the dock beside them holds the machine state and the heap, and the panel below holds the output."
+en = "In debug mode the run is a debugger: the ops show here, the bar over the panes drives them, the dock beside them holds the VM state and the heap, and the panel below holds the output."
 [explorer.tour.debug]
 en = "Debug mode"
 [explorer.tour.debug_text]
@@ -610,7 +610,7 @@ en = "Ends a run before its end and goes back to the first op. What the program 
 [explorer.tour.reset]
 en = "Start again"
 [explorer.tour.reset_text]
-en = "Goes back to the first op with a fresh machine, to run the program again from the top. The break points remain."
+en = "Goes back to the first op with a fresh VM, to run the program again from the top. The break points remain."
 [explorer.tour.step_in]
 en = "Step"
 [explorer.tour.step_in_text]
@@ -640,9 +640,9 @@ en = "Ops"
 [explorer.tour.ops_text]
 en = "The timer is now stepping through the program. The marked row is the op that runs next, and the editor lights up its source. Click the gutter beside an op, or beside a line of the code, to set a break point."
 [explorer.tour.machine]
-en = "Machine state"
+en = "VM state"
 [explorer.tour.machine_text]
-en = "The dock holds the machine state, each part in a pane of its own. The registers: PC points at the next op, SP at the free slot over the stack, BP at the frame of the innermost call. Under them, each call in progress has a frame with its locals, and the Block column gives the address of the block each one lives in; click a frame to show that call. Globals come next."
+en = "The dock holds the VM state, each part in a pane of its own. The registers: PC points at the next op, SP at the free slot over the stack, BP at the frame of the innermost call. Under them, each call in progress has a frame with its locals, and the Block column gives the address of the block each one lives in; click a frame to show that call. Globals come next."
 [explorer.tour.heap]
 en = "RAM"
 [explorer.tour.heap_text]

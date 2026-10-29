@@ -1,11 +1,11 @@
 ---
 title: When a program stops
-description: Each reason the machine stops a program, what causes it, and the message it prints.
+description: Each reason the VM stops a program, what causes it, and the message it prints.
 ---
 
 # When a program stops
 
-A *trap* is the machine stopping a run because the next step would go wrong. Nothing
+A *trap* is the VM stopping a run because the next step would go wrong. Nothing
 after it runs, and all that was printed before it remains printed. A trap is not a compiler
 diagnostic: it has no `ZK` code, because it belongs to one run of a program and not to
 the program text.
@@ -26,10 +26,10 @@ an address, it also adds the block that holds the address or ends just before it
 `block at 0x101040, 16 octets, heap`, or the variable the block belongs to.
 
 Numerous traps have a twin in the compiler. The [pointer checks](../compiler/checks.md)
-report a mistake that can be proved from the text, as an error; the machine reports the same
+report a mistake that can be proved from the text, as an error; the VM reports the same
 mistake when it happens in a run, which covers the paths and the numbers the compiler
 cannot see. The examples below ask the compiler for warnings with `--mem-check warn`
-(the Explorer calls it **Warn**) so that the program runs and the machine's own check
+(the Explorer calls it **Warn**) so that the program runs and the VM's own check
 shows. Without it, the compiler would refuse numerous programs of this page.
 
 ## All the traps
@@ -251,7 +251,7 @@ the program stopped: access at 0x101040 inside a freed block
 
 A function that hands back the address of its own variable leaves the caller with the
 same fault. The compiler refuses such a function (ZK0706); with `--mem-check warn` the
-machine shows the fault, and its long form names the variable:
+VM shows the fault, and its long form names the variable:
 
 ```zaka-stop mem-check=warn
 လုပ်ဆောင်ချက် ဒေသ သည်
@@ -307,7 +307,7 @@ the program stopped: 0x1000 is not the start of a live heap block
 
 ### Pointers into two blocks
 
-The distance between two pointers means something just inside one block. The machine
+The distance between two pointers means something just inside one block. The VM
 checks that a live block reaches both addresses, its end included:
 
 ```zaka-stop mem-check=warn
@@ -402,7 +402,7 @@ zaka_vm: the program stopped: no room in the address space for a global of 1 oct
 
 **Malformed** and **write**. A module read from a damaged artifact can hold instructions
 that break the rules of the code generator, such as a slot that does not exist. The
-machine traps with `malformed ops: ...` and does not crash. A `write` trap happens when
+VM traps with `malformed ops: ...` and does not crash. A `write` trap happens when
 the output cannot be written, such as a pipe that has been closed.
 
 ## What to do with a trap

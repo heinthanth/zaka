@@ -1,13 +1,13 @@
 ---
 title: Checked and packed blocks
-description: How the machine sets out its storage in blocks, how it checks each access, and the two forms of placing variables.
+description: How the VM sets out its storage in blocks, how it checks each access, and the two forms of placing variables.
 ---
 
 # Checked and packed blocks
 
-The storage of the machine is a flat run of addresses, and each part of it belongs to a
+The storage of the VM is a flat run of addresses, and each part of it belongs to a
 *block*: a run of octets with a start, a length and a state. A global, a local, and
-each piece of heap is a block. The machine keeps a table of the blocks, and each read or
+each piece of heap is a block. The VM keeps a table of the blocks, and each read or
 write through an address looks the address up in that table before it touches an octet.
 This page tells how the addresses are laid out, how a block lives and dies, and how the
 two *frame modes* differ.
@@ -75,7 +75,7 @@ The reason is in [the life of a heap block](#the-life-of-a-heap-block).
 | live | whether the block is in use; a freed block stands in the table as a record |
 | owner | the call depth that made a stack block; 0 for heap and static blocks |
 
-The table is kept in order of start. To check an access of `n` octets at `a`, the machine takes
+The table is kept in order of start. To check an access of `n` octets at `a`, the VM takes
 the last block that starts at or below `a` and asks whether `a + n` remains inside it.
 
 **Red zones.** A gap of at least 16 addresses, which belong to no block, follows each
@@ -102,7 +102,7 @@ the first failure is the trap:
 
 [When a program stops](traps.md) gives each message with an example.
 
-**Forming an address is free.** Moving a pointer does not read an octet, so the machine
+**Forming an address is free.** Moving a pointer does not read an octet, so the VM
 checks just that a step remains inside the block the pointer started in, one past its end
 included. A step that leaves the block traps at once, since no offset leads from one
 block into another. A subtraction of two pointers needs both in one live block, again
@@ -128,7 +128,7 @@ counting the end.
    length remain in the table, and its start joins a queue of freed blocks, oldest first.
    This is the *quarantine*. An access that lands in a freed block is a use after free,
    and freeing it again is a double free.
-3. **Reuse.** The machine takes fresh addresses first. When the space is full, and not before, it
+3. **Reuse.** The VM takes fresh addresses first. When the space is full, and not before, it
    takes the oldest freed block that is long enough. On a 64-bit platform that does not
    happen in practice, so a stale pointer keeps pointing at a record of a freed block,
    and the mistake is caught however late the pointer is used. On a small platform the
@@ -137,7 +137,7 @@ counting the end.
    fits, zeroes the rest, and frees the old block. The new block can sit at another
    address, so a borrow made before the resize points into a freed block afterwards.
 
-The cap counts live heap octets. A free lowers the count, and the machine remembers the
+The cap counts live heap octets. A free lowers the count, and the VM remembers the
 peak, which the Explorer shows.
 
 ## Blocks of the stack region
@@ -169,7 +169,7 @@ A call whose locals do not fit in what is left of the region traps with `stack f
 
 ## Checked and packed variables
 
-The machine can set out the variables of a run in two forms, picked with `--frames`:
+The VM can set out the variables of a run in two forms, picked with `--frames`:
 
 | | checked, the default | packed |
 | --- | --- | --- |

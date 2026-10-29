@@ -1,0 +1,62 @@
+// The traits: Zaka in three words, on the gold field right under the hero.
+// The head stands over a short bar of ink; under it three columns, each a
+// word, what backs it and a link to the Docs page that proves it.
+
+.traits
+  padding: calc(var(--section-gap) / 2) var(--margin)
+  color: var(--on-gold)
+  background: var(--gold)
+
+.traits-head
+  display: inline-block
+  padding-bottom: 14px
+  font-size: var(--step-head)
+  font-weight: 700
+  line-height: 1.04
+  letter-spacing: -0.03em
+  border-bottom: 8px solid currentColor
+
+// The columns, next to each other; the motion code starts their entrance from it.
+.traits-list
+  display: grid
+  grid-template-columns: repeat(3, minmax(0, 1fr))
+  gap: 48px 24px
+  margin-top: 72px
+
+.trait
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+  gap: 18px
+
+.trait-word
+  display: flex
+  align-items: center
+  gap: 16px
+  font-size: var(--step-state)
+  font-weight: 700
+  line-height: 1.2
+
+  &::before
+    content: ""
+    flex: none
+    width: 0.5em
+    height: 0.5em
+    background: currentColor
+
+.trait-text
+  max-width: 36ch
+
+.trait-link
+  margin-top: auto
+  font-size: var(--step-note)
+  font-weight: 700
+
+  &:focus-visible
+    outline: 3px solid currentColor
+    outline-offset: 3px
+
+@media (max-width: 760px)
+  .traits-list
+    grid-template-columns: minmax(0, 1fr)
+    margin-top: 48px

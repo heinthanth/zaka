@@ -373,7 +373,7 @@ as recursive; the call is a plain call. Each call has its own parameters and its
 မမှန်
 ```
 
-The machine allows 4096 calls that wait to return at one time; the next call stops the
+The VM allows 4096 calls that wait to return at one time; the next call stops the
 program. `zakac run --max-depth <calls>` sets another limit. A recursion without a base
 case meets this limit:
 

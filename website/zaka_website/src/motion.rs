@@ -11,11 +11,12 @@ use web_sys::Element;
 use web_sys::MouseEvent;
 use zakac_rust_sugars::ret_if;
 
-use crate::components::bands::ClassName as Bands;
 use crate::components::close::ClassName as Close;
+use crate::components::glance::ClassName as Glance;
 use crate::components::header::ClassName as Header;
 use crate::components::hero::ClassName as Hero;
 use crate::components::name::ClassName as Name;
+use crate::components::traits::ClassName as Traits;
 
 #[wasm_bindgen]
 extern "C" {
@@ -66,8 +67,9 @@ pub fn start()
     let lenis = smooth();
     follow_links(lenis);
     hero();
+    traits();
     name();
-    bands();
+    glance();
     close();
     remeasure();
 }
@@ -246,6 +248,17 @@ fn hero()
     tween_to(&format!(".{}", Hero::HERO_MAIN), &drift(-12));
 }
 
+/// The traits: the head rises, then the columns, one after the other.
+fn traits()
+{
+    rise(&format!(".{}", Traits::TRAITS_HEAD), &format!(".{}", Traits::TRAITS), &[]);
+    rise(
+        &format!(".{}", Traits::TRAIT),
+        &format!(".{}", Traits::TRAITS_LIST),
+        &[("stagger", 0.1.into())],
+    );
+}
+
 /// The name: the plumeria drifts in its frame; the name comes apart term
 /// after term.
 fn name()
@@ -268,14 +281,21 @@ fn name()
     rise(&format!(".{}", Name::NAME_TEXT), &format!(".{}", Name::NAME_TEXT), &[]);
 }
 
-/// The bands slide in from the left, one after the other.
-fn bands()
+/// The glance: the head rises, then the lines of the program, one after the
+/// other, then the run, then the note under it.
+fn glance()
 {
-    rise(&format!(".{}", Bands::BANDS_HEAD), &format!(".{}", Bands::BANDS), &[]);
+    rise(&format!(".{}", Glance::GLANCE_HEAD), &format!(".{}", Glance::GLANCE), &[]);
     rise(
-        &format!(".{}", Bands::BAND),
-        &format!(".{}", Bands::BANDS_LIST),
-        &[("y", 0.into()), ("xPercent", (-8).into()), ("stagger", 0.1.into())],
+        &format!(".{}", Glance::GLANCE_LINE),
+        &format!(".{}", Glance::GLANCE_CODE),
+        &[("stagger", 0.07.into())],
+    );
+    rise(&format!(".{}", Glance::GLANCE_RUN), &format!(".{}", Glance::GLANCE_RUN), &[]);
+    rise(
+        &format!(".{} > *", Glance::GLANCE_ABOUT),
+        &format!(".{}", Glance::GLANCE_ABOUT),
+        &[],
     );
 }
 

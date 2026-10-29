@@ -37,7 +37,30 @@ en = "Learn Zaka"
 [website.hero.docs]
 en = "Read the Docs"
 [website.hero.lede]
-en = "Zaka is a programming language based on a subset of Burmese. Burmese sentences are compiled down to instructions for Zaka Virtual Machine."
+en = "Zaka is a programming language based on a subset of Burmese. Burmese sentences are compiled down to instructions for the Zaka VM."
+
+# ---------------------------------------------------------------- traits
+
+[website.traits.head]
+en = "Zaka in three words"
+[website.traits.natural]
+en = "Natural"
+[website.traits.natural_text]
+en = "Programs read as Burmese sentences: the verb comes last and particles mark each word. A check warns when the wording reads unnatural."
+[website.traits.natural_link]
+en = "Natural wording"
+[website.traits.safe]
+en = "Safe"
+[website.traits.safe_text]
+en = "The borrow checker catches ownership mistakes before the program runs, and the VM checks each read and write while it runs."
+[website.traits.safe_link]
+en = "Ownership and borrowing"
+[website.traits.portable]
+en = "Portable"
+[website.traits.portable_text]
+en = "Programs compile to instructions for the Zaka VM, which runs in the terminal and in the browser. C, LLVM and JavaScript targets are planned."
+[website.traits.portable_link]
+en = "The Zaka VM"
 
 # ---------------------------------------------------------------- name
 
@@ -54,32 +77,28 @@ en = "speech"
 [website.name.photo]
 en = "Frangipani flowers, cream with a gold heart."
 
-# ---------------------------------------------------------------- bands
+# ---------------------------------------------------------------- glance
 
-[website.bands.rust]
-en = "In Rust"
-[website.bands.head]
-en = "Almost like a natural Burmese sentence"
-[website.bands.verb]
-en = "The verb comes last, as in Burmese."
-[website.bands.verb_more]
-en = "အသက် (age), then ကို to mark it as the object, then the verb ပြသပါ (show) to close the clause."
-[website.bands.particle]
-en = "Particles mark what each word does."
-[website.bands.particle_more]
-en = "သည် marks the subject and ထက် the thing it is compared with, as a Burmese sentence would."
-[website.bands.digit]
-en = "Numbers are written in Burmese digits."
-[website.bands.digit_more]
-en = "Burmese digits from ၀ to ၉, with plain integer arithmetic underneath; this line prints 42."
-[website.bands.stop]
-en = "A statement ends at ။, not at the line break."
-[website.bands.stop_more]
-en = "Two statements on one line: ။ ends each, and a line break between them would change nothing."
-[website.bands.space]
-en = "A space is the one word break."
-[website.bands.space_more]
-en = "Burmese runs its words together and the compiler can't guess where the words end without a proper wordlist or NLP, so a space is used to mark the end of each word when needed."
+[website.glance.head]
+en = "Zaka at a glance"
+[website.glance.variable]
+en = "ကိန်းရှင် makes a variable: a name, a kind and a first value."
+[website.glance.count]
+en = "Count from ၁ to ၁၀ and add each number to the total."
+[website.glance.verb]
+en = "The verb comes last. ဟု quotes a sentence, so the compiler warns: a plain value takes ကို."
+[website.glance.particles]
+en = "Particles mark each role: သည် the subject, ထက် what it is compared with."
+[website.glance.stop]
+en = "Otherwise. Each statement ends at ။, not at the end of the line."
+[website.glance.warning]
+en = "Warning"
+[website.glance.edit]
+en = "Edit in the explorer"
+[website.glance.about]
+en = "Zaka turns plain Burmese into real programs. Write a sentence, and it runs."
+[website.glance.about_run]
+en = "Behind it, a careful compiler checks each line, catches mistakes before the program runs, and explains each one in plain words."
 
 # ---------------------------------------------------------------- close
 
@@ -91,7 +110,7 @@ en = "The explorer lets users explore Zaka in the browser and shows each compile
 # ---------------------------------------------------------------- footer
 
 [website.footer.what]
-en = "စံကား · Zaka, a programming language based on a subset of Burmese."
+en = "Zaka - a programming language based on a subset of Burmese."
 [website.footer.license]
 en = "Licensed under the %{license} license."
 [website.footer.top]

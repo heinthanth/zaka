@@ -6,7 +6,7 @@ description: What each stage of the compiler takes in and gives out, which codes
 # Stages
 
 The compiler is a chain of stages. Each takes what the one before it made and gives
-out something nearer to a program the machine can run: pieces, tokens, a tree, the IR,
+out something nearer to a program the VM can run: pieces, tokens, a tree, the IR,
 and at last ops.
 
 ## The chain
@@ -36,10 +36,10 @@ folding       works out the constants              ZK06
 borrow check  follows owners and borrows           ZK07          zkbck
     │
     ▼
-codegen       writes the ops of the machine                      zkbc
+codegen       writes the ops of the VM                           zkbc
     │
     ▼
-the machine   runs the ops                         (traps)
+the VM        runs the ops                         (traps)
 ```
 
 The two digits after `ZK` tell which stage found a problem. The page of [error
@@ -55,7 +55,7 @@ A stage runs when the stages before it found no *error*. A warning never stops t
 | the lexer or the parser | naturalness, names, kinds, and all the stages after |
 | names and kinds (and a warning under `--strict-particles`) | the IR builder and all after |
 | constant folding | the borrow check and all after |
-| the borrow check | the code generator and the machine |
+| the borrow check | the code generator and the VM |
 
 This keeps one broken sentence from making a chain of errors in the stages that depend
 on it. Inside a stage, the first problem does not end the stage: the lexer reports each
@@ -207,10 +207,10 @@ fn main
 The ops are listed in [Instructions](../vm/instructions.md); see [IR and
 code](../internals/codegen.md) for how these are made.
 
-### The machine
+### The VM
 
-`zakac run` hands the ops to the machine. It pushes `3`, prints it as `၃`, and returns.
-The machine reports no code: when a program does something it must not, the machine
+`zakac run` hands the ops to the VM. It pushes `3`, prints it as `၃`, and returns.
+The VM reports no code: when a program does something it must not, the VM
 stops it and tells so ([When a program stops](../vm/traps.md)).
 
 ## Artifacts

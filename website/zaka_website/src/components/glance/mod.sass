@@ -1,0 +1,156 @@
+// The glance: on the violet field, one short program on a panel, each line
+// with a label in the margin, tied to the words it explains by a short rule.
+// Under it the run button, then what the program printed and what the
+// compiler warned, side by side.
+
+.glance
+  padding: calc(var(--section-gap) / 2) var(--margin)
+  background: var(--violet)
+
+.glance-head
+  margin-bottom: 56px
+  font-size: var(--step-head)
+  font-weight: 700
+  line-height: 1.04
+  letter-spacing: -0.03em
+
+// The program: one row a line, a counter in front of each. The code takes
+// the room it needs up to a share of the row; the rule runs from its end to
+// the label.
+.glance-code
+  counter-reset: line
+  display: grid
+  gap: 6px
+  padding: 28px 0
+  background: var(--panel)
+  border: 1px solid var(--panel-border)
+
+.glance-line
+  counter-increment: line
+  display: grid
+  grid-template-columns: 3.2em fit-content(60%) minmax(24px, 1fr) minmax(0, 17rem)
+  align-items: start
+  padding-right: 28px
+
+  &::before
+    content: counter(line)
+    padding-top: 0.35em
+    font-family: var(--mono-font)
+    font-size: var(--step-note)
+    text-align: center
+    color: var(--fg-muted)
+
+.glance-text
+  font-size: clamp(17px, 1.5vw, 21px)
+  line-height: 1.6
+
+// The words a label points at: a wash of the accent under them.
+.glance-pin
+  padding: 0.05em 0.15em
+  background: var(--accent-soft)
+  box-shadow: inset 0 -2px 0 var(--accent)
+
+.glance-tie
+  height: 1px
+  margin: 0.95em 12px 0
+  background: var(--accent)
+
+.glance-label
+  padding-top: 0.3em
+  font-size: var(--step-note)
+  line-height: 1.45
+  color: var(--fg-muted)
+
+// The run: the bar, then the panels.
+.glance-run
+  display: grid
+
+// The run button and the link into the explorer.
+.glance-bar
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 24px
+  margin: 24px 0
+
+.glance-edit
+  font-size: var(--step-note)
+  font-weight: 700
+
+.glance-panels
+  display: grid
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)
+  gap: 24px
+
+.glance-panel
+  display: grid
+  grid-template-rows: auto 1fr
+  background: var(--panel)
+  border: 1px solid var(--panel-border)
+
+.glance-panel-name
+  padding: 10px 16px
+  font-size: var(--step-note)
+  font-weight: 700
+  border-bottom: 1px solid var(--panel-border)
+
+.glance-panel-text
+  min-height: 6.5em
+  margin: 0
+  padding: 14px 16px
+  overflow-x: auto
+  font-size: var(--step-note)
+  line-height: 1.6
+
+// The language and the compiler in two short paragraphs, under the panels;
+// three quarters of the row on a wide screen, the whole row on a narrow one.
+.glance-about
+  display: grid
+  gap: 12px
+  max-width: 75%
+  margin-top: 56px
+  color: var(--fg-muted)
+
+  // The first line leads, a step larger and in the ink of the page.
+  p:first-child
+    font-size: var(--step-state)
+    font-weight: 700
+    line-height: 1.3
+    color: var(--fg)
+
+.glance-gutter
+  color: var(--fg-muted)
+
+.glance-error
+  color: var(--diag-error)
+
+.glance-warning
+  color: var(--diag-warning)
+
+.glance-note
+  color: var(--diag-note)
+
+// On a narrow screen each label goes under its line, behind a small mark,
+// and the panels stack.
+@media (max-width: 860px)
+  .glance-line
+    grid-template-columns: 2.4em minmax(0, 1fr)
+    row-gap: 4px
+    padding-right: 16px
+
+  .glance-tie
+    display: none
+
+  .glance-label
+    grid-column: 2
+    padding-top: 0
+
+    &::before
+      content: "↑ "
+      color: var(--accent)
+
+  .glance-panels
+    grid-template-columns: minmax(0, 1fr)
+
+  .glance-about
+    max-width: none

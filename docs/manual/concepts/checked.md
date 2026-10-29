@@ -1,16 +1,16 @@
 ---
 title: Checks in the VM and in native code
-description: Which mistakes the compiler finds, which the machine stops, and which checks a planned native build would keep.
+description: Which mistakes the compiler finds, which the VM stops, and which checks a planned native build would keep.
 ---
 
 # Checks in the VM and in native code
 
 A mistake with storage can be found in three places: in the compiler, before the program
-runs; in the machine, while it runs; or in neither, when the program runs as native code
+runs; in the VM, while it runs; or in neither, when the program runs as native code
 with no checks, as a C program does. This page sorts each mistake into those places and
 tells the reason for the split.
 
-One part of this is not built. Now Zaka has one means to run a program: the machine.
+One part of this is not built. Now Zaka has one means to run a program: the VM.
 Native backends, first a translation to C and then LLVM, are planned. Each statement below
 about native code is the plan and the reasoning behind it, not a feature to use.
 
@@ -27,7 +27,7 @@ about native code is the plan and the reasoning behind it, not a feature to use.
           │ the program that remains
           ▼
    ┌─────────────┐   checks each read, write and free on the path
-   │ the machine  │   that this run takes; stops with a trap
+   │   the VM    │   that this run takes; stops with a trap
    └──────┬──────┘
           │ the same program, built as native code  (planned)
           ▼
@@ -36,13 +36,13 @@ about native code is the plan and the reasoning behind it, not a feature to use.
    └─────────────┘
 ```
 
-The compiler sees each path, but just what the text shows. The machine sees the numbers
+The compiler sees each path, but just what the text shows. The VM sees the numbers
 of one run, but just the paths that run takes. Native code sees neither: it keeps what
 the compiler proved, and loses the rest.
 
 ## Which mistake is found where
 
-| Mistake | Before the run | In the machine | In native code (planned) |
+| Mistake | Before the run | In the VM | In native code (planned) |
 | --- | --- | --- | --- |
 | use after free, through an owner or a borrow | error ZK0704 | `use after free` | kept: proved before the run |
 | double free | error ZK0701, ZK0702 | `double free` | kept |
@@ -59,9 +59,9 @@ the compiler proved, and loses the rest.
 | the heap running out | nothing | allocate leaves `ဗလာ`; resize: `out of mem` | allocate leaves `ဗလာ`; a resize stops the program |
 
 "Kept" means the compiler found the mistake, so the program that remains has none of it,
-however it is run. The other rows depend on a check that the machine alone makes.
+however it is run. The other rows depend on a check that the VM alone makes.
 
-## A mistake that the machine alone sees
+## A mistake that the VM alone sees
 
 The compiler gives this function a borrowed block and a count. It cannot know that the
 block holds 4 boxes while the loop goes to box 4:
@@ -87,7 +87,7 @@ the program stopped: access of 8 octets at 0x101040 lands outside each live bloc
 ```
 
 A counted loop includes its last number, so the loop writes boxes 0 to 4: five boxes into
-a block of four. The machine stops at the fifth write, which lands in the gap after the
+a block of four. The VM stops at the fifth write, which lands in the gap after the
 block. The program is correct in each respect the compiler can follow, since the owner, the
 borrow and the free are all in order.
 
@@ -95,7 +95,7 @@ In C the same loop writes 8 octets past the block. Nothing stops it, and it chan
 comes next in the heap: the header of the next block, or the next variable. The program
 goes wrong somewhere else, much later.
 
-The machine can show this difference now. `--frames packed` sets the variables of a run
+The VM can show this difference now. `--frames packed` sets the variables of a run
 next to each other, as a C compiler does, so that a write past one variable changes the next
 ([Checked and packed blocks](../vm/blocks.md#checked-and-packed-variables)). It is a view
 of what the same program does without the red zones. Heap blocks remain checked in both
@@ -108,7 +108,7 @@ not, for two reasons:
 
 - A size or an offset can come from input or from a loop. To prove it safe, the compiler
   would have to prove a fact about numbers, and it would often have to give up. When it
-  cannot know, it reports nothing and leaves the check to the machine, instead of guessing.
+  cannot know, it reports nothing and leaves the check to the VM, instead of guessing.
   A check that guessed wrong in the other direction would refuse good programs.
 - A raw address is the exit for code that shares storage in its own fashion, such as an
   arena. The compiler does not follow raw addresses, on purpose, and `--no-raw` forbids
@@ -121,37 +121,37 @@ free, a double free or a bad free, and the address of a local never outlives its
 
 ## Native code, as planned
 
-The plan keeps the machine as it is and adds other means to run the same program:
+The plan keeps the VM as it is and adds other means to run the same program:
 
-- **The machine remains the reference.** It runs programs for the Explorer and for the
+- **The VM remains the reference.** It runs programs for the Explorer and for the
   tests, and it is the place where a mistake is shown rather than suffered.
 - **Native backends come after.** The first is a translation to C, which each C compiler
-  can build, and the next is LLVM. Both read the same intermediate form the machine's
+  can build, and the next is LLVM. Both read the same intermediate form the VM's
   instructions come from, so the arrangements agree: the size of each kind, the offset of each
   field, and the arithmetic on pointers are the same on each backend.
 - **A native build has no run-time checks of its own.** It behaves like C. A pointer
   becomes a plain `T *`, a read becomes a plain load, and an owner that moves costs one
   store of `ဗလာ`. All that the compiler proved still holds. A mistake that the
-  machine alone would have caught does what it does in C.
+  VM alone would have caught does what it does in C.
 - **A debug flag could add cheap checks later**, such as a null check, or the sanitizer
   flags of the C compiler. That is an idea, not a promise.
 
 For this reason the order matters. Ownership came before the native backends: it moves
 the checks that matter most to the compiler, where such checks cost nothing at run time, before
-the machine's checks are gone.
+the VM's checks are gone.
 
 ## Turning the checks up and down
 
 | Option | What changes |
 | --- | --- |
 | `--mem-check error` | the compiler refuses programs with a proved mistake; the default |
-| `--mem-check warn` | the same mistakes are warnings; the program runs, and the machine stops it |
+| `--mem-check warn` | the same mistakes are warnings; the program runs, and the VM stops it |
 | `--mem-check off` | the compiler reports none of them |
 | `--mem-strict` | also warn about a pointer that can be `ဗလာ`, which the compiler cannot prove safe |
 | `--no-raw` | refuse each raw address kind |
-| `--frames packed` | the machine places variables next to each other, as C does |
+| `--frames packed` | the VM places variables next to each other, as C does |
 
-The Explorer has the same settings. Use `warn` to watch the machine catch what the
+The Explorer has the same settings. Use `warn` to watch the VM catch what the
 compiler would have caught, and `packed` to see what a mistake does when nothing watches.
-The compile-time side is in [pointer checks](../compiler/checks.md), and the machine's
+The compile-time side is in [pointer checks](../compiler/checks.md), and the VM's
 side in [When a program stops](../vm/traps.md).

@@ -12,7 +12,7 @@ used while it is `ဗလာ`. The rules, as a user meets them, are in
 [Ownership, explained](../concepts/ownership.md). This page is about the code in
 `compiler/zakac_borrow_checker`.
 
-The check is the first line of defence. The machine is the second: it checks each read and
+The check is the first line of defence. The VM is the second: it checks each read and
 write while the program runs (see [When a program stops](../vm/traps.md)), so a mistake
 the check cannot prove still stops the program at the bad access. A test keeps the two
 in step: each sample that passes the check, with no raw address in it, must run with no
@@ -96,7 +96,7 @@ sets are joined, so after an `if` that moves the owner on one branch alone the s
 The reports read the joined state with care. ZK0701 (a read of a moved owner) fires when
 the state is `MOVED` and nothing else, that is, on each path to the read. ZK0709 (a
 dereference of `ဗလာ`) fires when the state is `NULL` and nothing else. A mistake that
-happens on some paths alone is left to the machine. This is the rule that keeps the check
+happens on some paths alone is left to the VM. This is the rule that keeps the check
 free of false alarms on a correct program: the checker reports "is" and not "can be".
 The strict mode (below) adds the "can be".
 
@@ -301,7 +301,7 @@ frees and reads; this costs a few false alarms and closes a group of holes in re
 | Option | Effect |
 | --- | --- |
 | `MemCheck::Error` (default) | each finding is an error and stops code generation |
-| `MemCheck::Warn` | each finding is made a warning (`downgrade`); code generation goes on and the machine stops the program at the bad access |
+| `MemCheck::Warn` | each finding is made a warning (`downgrade`); code generation goes on and the VM stops the program at the bad access |
 | `MemCheck::Off` | the findings are dropped; the flow still runs |
 | `strict` | also reports what cannot be proven safe: ZK0711, a dereference of a new allocation never compared with `ဗလာ`, and a leak of a list of owners |
 | `--no-raw` | not an option of this crate: `SemcheckOptions::no_raw` refuses each raw kind (ZK0717) before the IR exists |
@@ -328,7 +328,7 @@ thing whichever mode compiled it.
 `nullness.rs`, `bounds.rs`, `lists.rs`, `escape.rs`, `free_rules.rs`, `modes.rs`), golden
 `.zkbckt` files for clean inputs, `still_works.rs` for programs that look unsafe and are
 correct (two pointers writing into one block, an out-parameter, a walking borrow), and
-`oracle.rs`, which runs each program that passes the check in the machine and asks for no
+`oracle.rs`, which runs each program that passes the check in the VM and asks for no
 use after free, double free or bad free.
 
 - **A new mistake**: a check in `checks/`, called from the right place in `Flow::stmt` or

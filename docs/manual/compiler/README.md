@@ -1,11 +1,11 @@
 ---
 title: The compiler
-description: An overview of zakac, the compiler that turns Zaka sentences into ops for the Zaka machine.
+description: An overview of zakac, the compiler that turns Zaka sentences into ops for the Zaka VM.
 ---
 
 # The compiler
 
-`zakac` reads a Zaka program, checks it, and turns it into the ops that the Zaka machine
+`zakac` reads a Zaka program, checks it, and turns it into the ops that the Zaka VM
 runs. It is built as a chain of small stages. Each stage takes what the one before it
 made, adds its own checks, and passes the result on; a stage that finds an error ends the
 chain, and the program does not run.
@@ -20,7 +20,7 @@ segmenter ──► lexer ──► parser ──► naturalness ──► names
                                                         │
     ┌───────────────────────────────────────────────────┘
     ▼
-IR builder ──► constant folding ──► borrow check ──► codegen ──► the machine
+IR builder ──► constant folding ──► borrow check ──► codegen ──► the VM
  the IR         ZK06                 ZK07             the ops      runs the ops
 ```
 

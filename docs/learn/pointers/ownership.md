@@ -16,7 +16,7 @@ before the program runs, and points at the line at fault.
 | --- | --- |
 | `ကိန်းပြည့် လိပ်စာ` | an *owner*: it holds a block of the heap, and it alone gives the block back |
 | `ငှားထားသော ကိန်းပြည့် လိပ်စာ` | a *borrow*: it points at a variable, or at a block that another pointer owns |
-| `ကိန်းပြည့် လိပ်စာအကြမ်း` | a *raw* address: the compiler does not follow it, but the machine still checks each use |
+| `ကိန်းပြည့် လိပ်စာအကြမ်း` | a *raw* address: the compiler does not follow it, but the VM still checks each use |
 
 `ငှားထားသော` ("lent") stands once, at the front of the kind, and marks the outer level
 alone. `ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` borrows a variable that owns a block:
@@ -326,7 +326,7 @@ raw addresses, written with `လိပ်စာအကြမ်း`:
 
 The arena itself, `အခင်း`, is a plain owner, and the compiler checks it like each other
 owner. The conversion inside `ယူ` is where the program takes over from the compiler. The
-machine still checks each read and write through `က` and `ခ`: a piece used past the end
+VM still checks each read and write through `က` and `ခ`: a piece used past the end
 of the arena, or after the arena is given back, stops the program. Each raw kind is
 spelled with `အကြမ်း`, so a search for that word finds each place the compiler does not
 check.
@@ -346,7 +346,7 @@ error[ZK0717]: raw addresses are not allowed here (--no-raw)
 | Option | In the Explorer's settings | Effect |
 | --- | --- | --- |
 | `--mem-check error` | **Ownership check**: **Error** | the default: each pointer mistake the compiler proves is an error, and nothing runs |
-| `--mem-check warn` | **Ownership check**: **Warn** | the same mistakes are warnings; the program runs, and the machine stops it at a bad access |
+| `--mem-check warn` | **Ownership check**: **Warn** | the same mistakes are warnings; the program runs, and the VM stops it at a bad access |
 | `--mem-check off` | **Ownership check**: **Off** | the compiler reports none of those mistakes |
 | `--mem-strict` | **Strict ownership check** | also warns about a pointer that can be `ဗလာ` |
 | `--no-raw` | **Forbid raw addresses** | refuses each raw kind (ZK0717) |
@@ -370,7 +370,7 @@ warning[ZK0711]: "ပ" can be ဗလာ here; compare it with ဗလာ first
 ```
 
 The page on [pointer mistakes](mistakes.md) shows each mistake twice: as the compiler
-reports it, and as the machine stops it under `warn`.
+reports it, and as the VM stops it under `warn`.
 
 ## Hands on
 

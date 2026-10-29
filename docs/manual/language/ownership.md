@@ -7,7 +7,7 @@ description: The complete rules the compiler enforces for owners, borrows and ra
 
 Each block of the heap has to be given back once, and no pointer can use it after that.
 Zaka keeps track of this through the kind of each pointer: one pointer *owns* a block, other
-pointers *borrow* it, and a few pointers are *raw* and left to the machine. The borrow
+pointers *borrow* it, and a few pointers are *raw* and left to the VM. The borrow
 checker reads the whole program before it runs and reports each place where the rules
 break. This page states the rules in full. The reasons for them are in [Ownership, explained](../concepts/ownership.md), and a slow tour with small programs is in
 [Ownership and borrowing](../../learn/pointers/ownership.md) in the Learn book. How the checker
@@ -109,7 +109,7 @@ error[ZK0701]: "ပ" was moved to another owner and now holds ဗလာ
 ```
 
 The compiler reports ZK0701 when the owner has been moved on **each** path that reaches the
-read. When it was moved on a single branch, the compiler is quiet, and the machine
+read. When it was moved on a single branch, the compiler is quiet, and the VM
 stops the program if the read finds `ဗလာ`. A move inside a loop reaches the next
 round through the back edge, so a read at the start of the loop is reported.
 
@@ -322,7 +322,7 @@ another local is caught as well. A borrow of a block the caller lent, or of a to
 variable, is a fine result. The other routes through which an address could escape, a heap
 block, a pointer and a top-level variable, are closed through ZK0703 above. A local address
 that gets out in a manner the compiler cannot follow, through a raw address, is found
-when it is used: the machine stops the program, since the stack of the call
+when it is used: the VM stops the program, since the stack of the call
 that ended no longer holds that variable.
 
 ## Ownership through function calls
@@ -573,7 +573,7 @@ error[ZK0710]: offset 4 is past the end of a block of 4 elements
 ```
 
 When a size or an index comes from input, the compiler proves nothing and reports nothing;
-the machine's own check stops the program at the bad access. A proof is also given up
+the VM's own check stops the program at the bad access. A proof is also given up
 when the number could be changed in a manner the compiler cannot follow: a counter whose
 address is taken somewhere, or a program that uses a raw kind.
 
@@ -618,7 +618,7 @@ The arena `အခင်း` is a plain owner, and the compiler checks it like ea
 conversion inside `ယူ` is where the program takes over from the compiler. What remains true
 of a raw address:
 
-- The machine checks each read and write through it: a piece used past the end of the
+- The VM checks each read and write through it: a piece used past the end of the
   arena, or after the arena is given back, stops the program.
 - A raw address is duplicated on assignment, never moved, and can be given back with the
   heap statement, unchecked.
@@ -658,7 +658,7 @@ The rules of this page are errors to start with. The first line of the table is 
 | Option | In the Explorer's settings | Effect |
 | --- | --- | --- |
 | `--mem-check error` | **Ownership check**: **Error** | each mistake the compiler proves is an error, and nothing runs |
-| `--mem-check warn` | **Ownership check**: **Warn** | the same mistakes are warnings; the program runs, and the machine stops it at a bad access |
+| `--mem-check warn` | **Ownership check**: **Warn** | the same mistakes are warnings; the program runs, and the VM stops it at a bad access |
 | `--mem-check off` | **Ownership check**: **Off** | the compiler reports none of them |
 | `--mem-strict` | **Strict ownership check** | also warns about a pointer that can be `ဗလာ` (ZK0711) |
 | `--no-raw` | **Forbid raw addresses** | refuses each raw kind (ZK0717) |
@@ -667,10 +667,10 @@ The rules of this page are errors to start with. The first line of the table is 
 and ZK0713 to ZK0717, are errors in each mode. A move leaves `ဗလာ` behind in each mode
 too, so a program does the same thing whichever mode compiles it.
 
-### When the machine is the one that stops it
+### When the VM is the one that stops it
 
 The compiler proves just what the text of the program shows. When it is told to let a
-mistake through, or when the mistake depends on input, the machine checks each access
+mistake through, or when the mistake depends on input, the VM checks each access
 while the program runs and stops at the first bad one. With `--mem-check warn`, each of
 these programs compiles with a warning and stops at run time:
 

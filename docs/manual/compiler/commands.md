@@ -25,8 +25,8 @@ stage made, the *artifact*. The `run` command goes to the end and runs the progr
 | `semantic-check` | names, kinds and natural wording | the tree and the kind of each expression | `.zksem` / `.zksemt` |
 | `irgen` | the IR builder and constant folding | the IR | `.zkir` / `.zkirt` |
 | `borrow-check` | the ownership check | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
-| `codegen` | the code generator | the ops for the machine | `.zkbc` / `.zkbct` |
-| `run` | the machine | nothing: the program runs | |
+| `codegen` | the code generator | the ops for the VM | `.zkbc` / `.zkbct` |
+| `run` | the VM | nothing: the program runs | |
 
 Each stage also builds as a program of its own (`zakac_lexer`, `zakac_parser`,
 `zakac_semcheck`, `zakac_ir_builder`, `zakac_borrow_checker`, `zakac_codegen`,
@@ -59,7 +59,7 @@ fn f0 main (params 0)
      2  ret
 ```
 
-The sum was worked out at compile time, so the machine just pushes `၃`.
+The sum was worked out at compile time, so the VM just pushes `၃`.
 [Stages](stages.md) follows this sentence through each stage.
 
 ## Input and output
@@ -227,7 +227,7 @@ The ops are listed in [Instructions](../vm/instructions.md).
 $ zakac run [options] [INPUT]
 ```
 
-`run` takes the compile options and the two checks above. It adds limits on the machine,
+`run` takes the compile options and the two checks above. It adds limits on the VM,
 which stop a program that goes too far, and two options to look at the use of the heap and the stack:
 
 | Option | Default | Meaning |
@@ -239,7 +239,7 @@ which stop a program that goes too far, and two options to look at the use of th
 | `--frames <MODE>` | `checked` | `checked` gives each variable a block of its own; `packed` puts the locals of a call next to each other, as C does |
 | `--leaks` | off | list the heap blocks left unfreed when the program ends |
 
-A program that passes a limit stops with a message from the machine, listed in [When a
+A program that passes a limit stops with a message from the VM, listed in [When a
 program stops](../vm/traps.md). `--frames` is explained in [Checked and packed
 blocks](../vm/blocks.md).
 
@@ -256,7 +256,7 @@ leak: block at 0x101020, 16 octets
 | Code | Meaning |
 | --- | --- |
 | 0 | the stage finished, with warnings at most; for `run`, the program ended |
-| 1 | an error in the program, or the machine stopped the program |
+| 1 | an error in the program, or the VM stopped the program |
 
 Messages go to standard error and the artifact or the program output to standard output,
 so `zakac codegen age.zaka -o -` can be piped while the messages still show.

@@ -6,7 +6,7 @@ description: What a Zaka program is, and a map of the chapter that states the ru
 # The language
 
 A Zaka program is a **list of sentences**, and each sentence ends with the Burmese full
-stop `။`. The machine runs the sentences from the first to the last. A sentence follows
+stop `။`. The VM runs the sentences from the first to the last. A sentence follows
 Burmese word order: first the things it talks about, each with a small word
 (a *particle*) after it that marks its role, and **last the verb**, which decides what the
 sentence means.

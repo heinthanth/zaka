@@ -1,11 +1,11 @@
 ---
-title: The machine
-description: What the Zaka machine is made of: its instructions, its calls, its values and its checked storage.
+title: The VM
+description: What the Zaka VM is made of: its instructions, its calls, its values and its checked storage.
 ---
 
-# The machine
+# The VM
 
-The Zaka machine, or VM, runs a program that `zakac` has turned into instructions. It is
+The Zaka VM, or VM, runs a program that `zakac` has turned into instructions. It is
 small on purpose. A loop takes one instruction at a time. A stack of values holds the
 working steps of each sentence. A stack of calls remembers where each function is up to.
 And a storage of *blocks* holds each variable, so each variable has an address.
@@ -16,7 +16,7 @@ that names the instruction and the block, and does not damage the program.
 ## The parts
 
 ```text
- module (from the compiler)            machine (what runs)
+ module (from the compiler)            VM (what runs)
  ┌────────────────────────────┐        ┌───────────────────────────────────────────┐
  │ platform bits              │        │ calls, innermost last                     │
  │ globals    g0 g1 ...       │        │  ┌─────────────────────────────────────┐  │
@@ -40,7 +40,7 @@ that names the instruction and the block, and does not damage the program.
 | output | the text that print instructions wrote and the command has not taken so far |
 
 The last function of a module is `main`, which runs the sentences outside each function.
-The machine starts there, and the run ends when `main` returns or a [trap](traps.md)
+The VM starts there, and the run ends when `main` returns or a [trap](traps.md)
 stops it.
 
 ## Values

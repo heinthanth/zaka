@@ -98,7 +98,7 @@ program checks:
 နေရာ ရပါပြီ
 ```
 
-The Zaka machine gives each program 256 MiB of heap; the Explorer gives 16 MiB. `zakac
+The Zaka VM gives each program 256 MiB of heap; the Explorer gives 16 MiB. `zakac
 run --max-heap <octets>` sets another limit.
 
 ## Giving a block back

@@ -28,7 +28,7 @@ Nothing in C ties the copies to the block, and three mistakes follow:
 | double free | a block is given back twice | in the allocator, as a crash or worse |
 | leak | the last pointer to a block is lost before the block is given back | never at once; the program grows |
 
-The checks of the machine find the first two when a run reaches them
+The checks of the VM find the first two when a run reaches them
 ([When a program stops](../vm/traps.md)). A run reaches just the paths it takes. A
 mistake on a path no one walked this time remains hidden until a run takes it. Ownership
 moves the search to the compiler, which reads each path before the program runs.
@@ -43,7 +43,7 @@ moves the search to the compiler, which reads each path before the program runs.
 | double free | possible | impossible | an error before the run (ZK0702, ZK0701) |
 | leak | silent | rare: a block still reachable is kept | a warning or error for a local (ZK0708); `--leaks` lists the rest |
 | cost at run time | none | the collector's work, and blocks kept longer | one store of `ဗလာ` when an owner moves |
-| runtime support | none | a collector | none; the machine checks as a second line |
+| runtime support | none | a collector | none; the VM checks as a second line |
 | cost to the writer | remembers each rule | little | writes `ငှားထားသော`, learns moves, cannot keep a borrow in the heap |
 
 Garbage collection takes the whole question off the programmer, at the price of a runtime and of not
@@ -60,7 +60,7 @@ The rule has three parts.
 - A pointer of the kind `ငှားထားသော ကိန်းပြည့် လိပ်စာ` is a **borrow**. It reads and writes
   the block, and never gives it back. Several borrows of one block can live at once.
 - A pointer of the kind `ကိန်းပြည့် လိပ်စာအကြမ်း` is **raw**: the compiler does not follow
-  it, and the machine still checks each use.
+  it, and the VM still checks each use.
 
 The compiler follows each owner and each borrow through each path of the program. It
 refuses to let the owner give the block back, move it, or resize it while a borrow of it
@@ -145,7 +145,7 @@ error[ZK0701]: "ကိန်းများ" was moved to another owner and now 
 
 The message points at the line that reads, and the header of `ရှင်း` is where the fault
 comes from. Had the owner been checked while the program ran alone, the mistake would show
-just when this line was reached, and the machine would stop it with `access through a
+just when this line was reached, and the VM would stop it with `access through a
 null address`.
 
 ### A borrow that outlives its block
@@ -176,7 +176,7 @@ error[ZK0704]: the block of "ပ" is resized here, but "ကြည့်" still b
 
 This one is simple to write and hard to see in C: the code works until the allocator picks a
 new place for the block. The compiler reports it each time, however the allocator
-chooses. With the check turned down to a warning, the program runs, and the machine's
+chooses. With the check turned down to a warning, the program runs, and the VM's
 quarantine of freed blocks stops it:
 
 ```zaka-stop mem-check=warn
@@ -211,20 +211,20 @@ the program stopped: access at 0x101040 inside a freed block
   program has no threads, so no two things run at once.
 - **Some code needs to step outside.** A hand-made allocator hands out pieces of one
   block. No owner or borrow describes a piece, so the pieces are raw addresses. The
-  compiler does not follow them and the machine still checks them; `--no-raw` refuses
+  compiler does not follow them and the VM still checks them; `--no-raw` refuses
   them for a lesson that must not step around the check.
 
 ## What it promises
 
 A program with no raw kinds, compiled with `--mem-check error` (the default), never
 reaches a use after free, a double free or a bad free, and the address of a local never
-outlives its call. That holds in the machine and would hold in native code alike, since
+outlives its call. That holds in the VM and would hold in native code alike, since
 the compiler proved it from the text.
 
 It does not promise freedom from a null access on a path where a pointer can be `ဗလာ`,
 an access past the end of a block when the offset is not known before the run, octets
 that hold no value, running out of heap, or a leak through the heap. Those remain checks of
-the machine. [Checks in the VM and in native code](checked.md) sorts all of them.
+the VM. [Checks in the VM and in native code](checked.md) sorts all of them.
 
 ## Where to go next
 
@@ -232,4 +232,4 @@ the machine. [Checks in the VM and in native code](checked.md) sorts all of them
 - [The borrow checker](../internals/borrow-checker.md) tells how the compiler follows an
   owner.
 - [Pointer mistakes](../../learn/pointers/mistakes.md) shows each mistake with the
-  message of the compiler and the message of the machine.
+  message of the compiler and the message of the VM.

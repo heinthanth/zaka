@@ -52,5 +52,5 @@ contents](CONTENTS.md).
 
 These pages teach through examples and leave some details out. The
 [Docs](../manual/README.md) give the full rules of the language, explain how the
-compiler and the virtual machine work, and list the reserved words, the operator
+compiler and the VM work, and list the reserved words, the operator
 precedence and each error code.

@@ -1,5 +1,6 @@
-// The close: one field in the ink of the page, at least a screen tall, with
-// the headline high and the sentence and the button on one line at the foot.
+// The close: one field in the ink of the page, as wide and as deep as the
+// sections before it, with the headline on top and the sentence and the
+// button on one line under it.
 
 // Dark in every theme: the explorer behind it is the dark explorer.
 .close
@@ -8,11 +9,7 @@
   position: relative
   isolation: isolate
   overflow: hidden
-  display: flex
-  flex-direction: column
-  justify-content: space-between
-  min-height: 90svh
-  padding: 18vh var(--margin) 40px
+  padding: calc(var(--section-gap) / 2) var(--margin)
   color: var(--night-ink)
   background: var(--night)
 
@@ -40,18 +37,18 @@
   position: relative
 
 .close-head
-  max-width: 14ch
-  font-size: var(--step-poster)
+  max-width: 18ch
+  font-size: var(--step-head)
   font-weight: 700
-  line-height: 0.95
-  letter-spacing: -0.04em
+  line-height: 1.04
+  letter-spacing: -0.03em
 
 .close-foot
   display: flex
   align-items: flex-end
   justify-content: space-between
   gap: 32px
-  margin-top: 96px
+  margin-top: 48px
 
 .close-text
   max-width: 40ch
@@ -62,17 +59,13 @@
   min-height: 56px
   padding: 0 28px
 
-@media (max-width: 640px)
-  .close
-    min-height: 80svh
-    padding-top: 96px
-
-  .close-head
-    font-size: 10vw
-
+// Where the header turns to its menu, the button goes under the sentence and
+// runs across the field.
+@media (max-width: 860px)
   .close-foot
     flex-direction: column
     align-items: stretch
 
+@media (max-width: 640px)
   .close-text
     font-size: 17px

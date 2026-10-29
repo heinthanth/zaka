@@ -403,7 +403,7 @@ error[ZK0603]: cell 3 is outside the list, whose cells run from 0 to 2
 ```
 
 **At run time.** When the number comes from input, or from a value the compiler cannot
-follow, the machine checks each access and stops the program with the range the list
+follow, the VM checks each access and stops the program with the range the list
 allows. This is what `--mem-check warn` shows for the program above:
 
 ```zaka-stop mem-check=warn
@@ -416,10 +416,10 @@ allows. This is what `--mem-check warn` shows for the program above:
 the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
 ```
 
-When the compiler proves that a cell number is inside the list, the machine does not
+When the compiler proves that a cell number is inside the list, the VM does not
 repeat the check for that access. A proof is given up whenever something the compiler
 cannot follow could change the number, for example a counter whose address is taken or a
-program that uses a raw kind; then the machine checks as before.
+program that uses a raw kind; then the VM checks as before.
 
 The other mistakes with lists, in one table:
 

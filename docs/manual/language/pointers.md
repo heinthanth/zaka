@@ -5,7 +5,7 @@ description: The kinds of pointer, taking an address and reading through it, the
 
 # Pointers
 
-A pointer is a value that holds an address in the RAM of the machine. Reading through a
+A pointer is a value that holds an address in the RAM of the VM. Reading through a
 pointer gives the value stored at that address, and writing through it changes that value.
 This page states the whole rules for pointers and for the heap statements. Who is allowed
 to give a block back, and when a pointer can be used, is the subject of [Ownership and
@@ -48,7 +48,7 @@ pointer to a pointer adds `၏ လိပ်စာ` for each further level.
 | --- | --- | --- |
 | `ကိန်းပြည့် လိပ်စာ` | an *owner*: it holds a heap block and alone gives it back | `*isize` |
 | `ငှားထားသော ကိန်းပြည့် လိပ်စာ` | a *borrow*: it points at a variable, or into a block that another pointer owns | `&*isize` |
-| `ကိန်းပြည့် လိပ်စာအကြမ်း` | a *raw* address: the compiler does not follow it, and the machine checks each use | `~isize` |
+| `ကိန်းပြည့် လိပ်စာအကြမ်း` | a *raw* address: the compiler does not follow it, and the VM checks each use | `~isize` |
 | `ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | a borrow of a variable that owns a block | `&**isize` |
 | `လိပ်စာ` | an *opaque* address: it points at a value of no known kind | `ptr` |
 
@@ -245,7 +245,7 @@ end:
 ၃
 ```
 
-The machine allows the address `ပ + n` likewise: a subtraction of two pointers
+The VM allows the address `ပ + n` likewise: a subtraction of two pointers
 counts the end of the block as inside it. A read at that address stops the program with
 an access outside each live block.
 
@@ -282,7 +282,7 @@ kind takes. It is a constant, a `လက္ခဏာမဲ့ ကိန်းပ�
 ```
 
 The numbers are those of the target the program is built for. Each value sits at an
-address that is a multiple of its size, up to 16; the machine stops a program that
+address that is a multiple of its size, up to 16; the VM stops a program that
 reads or writes at another address.
 
 ## Heap statements
@@ -313,7 +313,7 @@ The statement reserves a new block and stores its address in the place, which mu
 pointer kind. The VM fills a new block with zeros, but the language promises nothing about
 what a new block holds, so a program writes before it reads. A size of 0 gives a block
 that is not `ဗလာ` and holds nothing. When the heap has no room left, the place gets
-`ဗလာ`; a careful program compares with `ဗလာ` before it uses the block. The machine has
+`ဗလာ`; a careful program compares with `ဗလာ` before it uses the block. The VM has
 256 MiB of heap to start with, and `zakac run --max-heap <octets>` sets another limit.
 
 ### Resizing a block
@@ -337,7 +337,7 @@ lose the block still held.
 
 The statement gives the block back and sets the place to `ဗလာ`. Giving back a place that
 holds `ဗလာ` does nothing. The place alone is cleared; another pointer to the block would
-point at a block that is gone. The machine stops a program that uses such a pointer, and
+point at a block that is gone. The VM stops a program that uses such a pointer, and
 the compiler finds the mistake before the program runs when it can. The rules are in
 [Ownership and borrowing](ownership.md).
 

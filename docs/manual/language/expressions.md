@@ -378,6 +378,6 @@ error[ZK0203]: this statement does not end in a statement verb, found "*"
 ## Constants are worked out first
 
 An operation whose operands are all constants is worked out in the compiler, so
-`၂ + ၃ * ၄` reaches the machine as `၁၄`. This is the reason overflow and a zero divisor in a
+`၂ + ၃ * ၄` reaches the VM as `၁၄`. This is the reason overflow and a zero divisor in a
 constant operation are compile errors. `zakac run --fold none` turns the folding off,
 and errors in constant operations are still reported.

@@ -20,7 +20,7 @@ number sits in a variable, and the compiler still works out that it is 3:
 error[ZK0710]: offset 3 is past the end of a block of 3 elements
 ```
 
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the machine
+With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
 stops it, with the range the list allows:
 
 ```zaka-stop mem-check=warn
@@ -33,7 +33,7 @@ stops it, with the range the list allows:
 the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
 ```
 
-When the number comes from input, the machine's check is the one that catches it. When
+When the number comes from input, the VM's check is the one that catches it. When
 the number is written in place, as a constant, Zaka reports it with another code, in each
 mode. Counting from 1 starts at 1, not 0:
 

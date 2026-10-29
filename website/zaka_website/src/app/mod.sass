@@ -26,6 +26,11 @@ html
   // The gold fields: the accent of the theme, with its ink.
   --gold: var(--accent)
   --on-gold: var(--on-accent)
+  // The violet fields: the panel washed with the particle color of the
+  // theme, so they stay light in a light theme and dark in a dark one, and
+  // stand apart from the panel and the ink of the sections around them.
+  --violet: color-mix(in srgb, var(--tok-particle) 9%, var(--panel))
+  --violet-deep: color-mix(in srgb, var(--tok-particle) 15%, var(--panel))
 
 // Zaka Light darkens its accent to read as text on cream; as a whole field
 // the page takes the gold of the logo itself, with ink on it.

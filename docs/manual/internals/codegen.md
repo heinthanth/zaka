@@ -1,6 +1,6 @@
 ---
 title: IR and code
-description: How the checked tree is lowered to the IR, how constants are folded, how the IR becomes ops, and how the machine runs them, followed through one program.
+description: How the checked tree is lowered to the IR, how constants are folded, how the IR becomes ops, and how the VM runs them, followed through one program.
 ---
 
 # IR and code
@@ -8,7 +8,7 @@ description: How the checked tree is lowered to the IR, how constants are folded
 After the names and kinds are checked, the compiler stops working on the tree. It lowers
 the tree to an *IR*, a small program of slots, statements and kinded expressions; folds the
 constants in it; lets [the borrow checker](borrow-checker.md) read it; and then turns it
-into *ops*, the instructions of a stack machine. The machine, `zaka_vm`, runs the ops.
+into *ops*, the instructions of a stack machine. The VM, `zaka_vm`, runs the ops.
 Two crates hold this: `zakac_ir_builder` (the IR, lowering and folding) and
 `zakac_codegen` (the ops and the listing).
 
@@ -105,7 +105,7 @@ rules out). Its rules:
 
 The errors of constant operations are reported whatever `--fold` holds: an overflow
 (ZK0601), a zero divisor (ZK0602) and a cell number outside its list (ZK0603), found
-with the same `value` functions that the machine uses at run time, so the two cannot
+with the same `value` functions that the VM uses at run time, so the two cannot
 differ. Folding does not remove the `set` of a constant; it just rewrites its reads.
 
 Take this program (the file `sq.zaka`):
@@ -247,11 +247,11 @@ Func   { name, params, ret, locals: Vec<Slot>, code: Vec<Op>, spans: Vec<Span> }
 
 `funcs` holds the IR functions at their IR numbers, then one more function, `main`, for the
 top-level statements; `main` is its number. `texts` is the pool of print strings. `spans`
-runs parallel to `code` and tells the source region of each op, which is how the machine
+runs parallel to `code` and tells the source region of each op, which is how the VM
 and the explorer point at the line being run. The generator can add locals of its own,
 named with a `%`, such as `%to`, `%step` and `%dir` for a counted loop.
 
-The machine is a stack machine. Ops that work on values take the kind from the values on
+The VM is a stack machine. Ops that work on values take the kind from the values on
 the stack, so most ops name no kind. The ones that need a kind name it: `convert`, `load`,
 `store`, `take`, and the list ops. The groups:
 
@@ -389,7 +389,7 @@ the listing (`.zkasm`). Text artifacts start with a header line such as
 `ZKAR` envelope with Postcard inside. `zakac run` takes Zaka source, which it compiles,
 or a codegen artifact in either form, which it knows from the first octets.
 
-## The machine
+## The VM
 
 `zaka_vm::machine::Machine` owns a `bc::Module` and runs it one op at a time: `step()`
 fetches the op at the program counter of the innermost call, executes it with `exec`, and
@@ -417,7 +417,7 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
 
 The pages [Running a program](../vm/running.md), [Instructions](../vm/instructions.md),
 [Checked and packed blocks](../vm/blocks.md) and [When a program stops](../vm/traps.md)
-tell the machine from the side of its user.
+tell the VM from the side of its user.
 
 ## Tests and extending
 
@@ -433,6 +433,6 @@ tell the machine from the side of its user.
   with `tests/expected/<group>/<name>.out`.
 
 To add an IR form: a variant in `ir.rs`, a rule in `lower.rs`, a case in `fold.rs` and in
-`walk.rs` of the borrow checker, a rule in `emit.rs`, and an op if the machine needs one
+`walk.rs` of the borrow checker, a rule in `emit.rs`, and an op if the VM needs one
 (`bc.rs`, `listing.rs`, `machine.rs`). To add an op: `bc::Op`, its operand text in
 `Op::operand`, the arm of `Machine::exec`, and a test of the op on a hand-built module.

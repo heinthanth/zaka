@@ -149,7 +149,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0422 | cells of a value that is no list | [List mistakes](../../learn/lists/mistakes.md#cells-of-a-value-that-is-no-list) |
 | ZK0423 | a cell number that is not an integer | [Lists](../../learn/lists/README.md#cell-numbers) |
 | ZK0424 | a list as a function result | [Passing and comparing lists](../../learn/lists/passing.md#lists-as-parameters) |
-| ZK0425 | a list kind too large for the machine | [Lists of lists](../../learn/lists/grids.md#the-size-of-a-list) |
+| ZK0425 | a list kind too large for the VM | [Lists of lists](../../learn/lists/grids.md#the-size-of-a-list) |
 
 ### ZK05: natural Zaka (warnings)
 

@@ -1,15 +1,15 @@
 ---
 title: Instructions
-description: The instructions of the Zaka machine in groups, with a program shown beside its code.
+description: The instructions of the Zaka VM in groups, with a program shown beside its code.
 ---
 
 # Instructions
 
 The code generator turns a program into a list of instructions for each function, and
-the machine runs them one at a time. This page lists the instruction set and shows a
+the VM runs them one at a time. This page lists the instruction set and shows a
 small program next to its instructions.
 
-The instruction set belongs to the compiler and the machine as a pair, and it can change
+The instruction set belongs to the compiler and the VM as a pair, and it can change
 between versions. A listing made with one version of `zakac` is for that version. The
 rules of the language do not depend on it: what a program means is set in
 [the language](../language/README.md), and the instructions are one means to run it.
@@ -257,7 +257,7 @@ fn f0 main (params 0)
 The comments after `;` in this listing were added to explain it; `zakac` prints the
 variable names alone. Two instructions name a kind that the others leave out: `load` and
 `store` name the kind read or written, and `alloc` names the octet size of one
-element, so the machine can check the access and the cap.
+element, so the VM can check the access and the cap.
 
 ## Where to look next
 

@@ -46,9 +46,9 @@ use crate::book::Book;
 use crate::book::page_at;
 use crate::book::render::render;
 use crate::book::slugs;
-use crate::components::bands::bands;
 use crate::components::close::close;
 use crate::components::footer::footer;
+use crate::components::glance::glance;
 use crate::components::header::SiteHeader;
 use crate::components::header::SiteHeaderProps;
 use crate::components::header::header_sheet;
@@ -56,6 +56,7 @@ use crate::components::hero::hero;
 use crate::components::learn::book_page;
 use crate::components::missing::missing;
 use crate::components::name::name;
+use crate::components::traits::traits;
 use crate::set_origin;
 
 /// Name of the route parameter that holds the address of a page of a book.
@@ -316,8 +317,13 @@ fn home() -> impl IntoView
 {
     // Each section is erased to one kind of view, which keeps the page small
     // enough for the compiler.
-    let sections =
-        [hero().into_any(), name().into_any(), bands().into_any(), close().into_any()];
+    let sections = [
+        hero().into_any(),
+        traits().into_any(),
+        glance().into_any(),
+        name().into_any(),
+        close().into_any(),
+    ];
     let title = t!("website.page.title").to_string();
     (
         page_tags("/", title, t!("website.page.description").to_string()),

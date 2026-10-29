@@ -154,7 +154,7 @@ saved `codegen` artifact shows its warnings again, in the same form.
 ### Stopping at run time
 
 A message about the *running* program is another thing. It has no code, because it is
-not about the text. The machine writes `the program stopped:` and what it met, and the
+not about the text. The VM writes `the program stopped:` and what it met, and the
 exit code is 1:
 
 ```console
@@ -167,7 +167,7 @@ warning[ZK0709]: "ပ" is ဗလာ here, so it cannot be dereferenced
 zaka_vm: the program stopped: access through a null address at 0x0 (in main, op 5)
 ```
 
-Here the compiler warned (ZK0709) and the machine stopped the program at the same place.
+Here the compiler warned (ZK0709) and the VM stopped the program at the same place.
 The stops are listed in [When a program stops](../vm/traps.md).
 
 ## The language of messages

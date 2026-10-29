@@ -19,7 +19,7 @@
   - [Stages](compiler/stages.md)
   - [Diagnostics](compiler/diagnostics.md)
   - [Pointer checks](compiler/checks.md)
-- [The machine](vm/README.md)
+- [The VM](vm/README.md)
   - [Running a program](vm/running.md)
   - [Checked and packed blocks](vm/blocks.md)
   - [When a program stops](vm/traps.md)

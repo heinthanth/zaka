@@ -27,7 +27,7 @@ scenario, and names the cost.
 
 The pages can be read in a free order. The last two go together: ownership is what lets the
 compiler find a mistake before the run, and the checks page tells what is left for the
-machine.
+VM.
 
-For the rules themselves, see [the language](../language/README.md); for the machine
-that runs a program, see [the machine](../vm/README.md).
+For the rules themselves, see [the language](../language/README.md); for the VM
+that runs a program, see [the VM](../vm/README.md).
