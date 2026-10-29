@@ -5,6 +5,7 @@ pub mod footer;
 pub mod header;
 pub mod hero;
 pub mod learn;
+pub mod missing;
 pub mod name;
 pub mod pager;
 pub mod sandbox;

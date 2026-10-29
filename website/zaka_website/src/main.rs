@@ -3,6 +3,7 @@ use leptos::prelude::*;
 use leptos_axum::LeptosRoutes;
 use leptos_axum::generate_route_list_with_ssg;
 use tower_http::services::ServeDir;
+use tower_http::services::ServeFile;
 use zaka_website::ORIGIN_VAR;
 use zaka_website::app::shell;
 use zaka_website::set_origin;
@@ -27,9 +28,17 @@ const ASSETS: &str = concat!(env!("OUT_DIR"), "/assets");
 /// the site runs on this machine.
 const VENDOR_DIST: &str = "target/vendor";
 
-/// Write the static pages into the site root; then, unless [`ONCE_VAR`] is
-/// set, serve the site with the explorer, the motion libraries and the web
-/// fonts beside it.
+/// The page the build writes for an address with no page, in the site root.
+const MISSING_PAGE: &str = "404.html";
+
+/// The rules for crawlers, written to `robots.txt` in the site root: each
+/// crawler can read each page.
+const ROBOTS: &str = "User-agent: *\nAllow: /\n";
+
+/// Write the static pages and `robots.txt` into the site root; then, unless
+/// [`ONCE_VAR`] is set, serve the site with the explorer, the motion
+/// libraries and the web fonts beside it, and [`MISSING_PAGE`] with the code
+/// 404 for an address with no page, as the host does.
 /// A build with [`ONCE_VAR`] is for the web, so it needs [`ORIGIN_VAR`].
 #[tokio::main]
 async fn main()
@@ -45,12 +54,15 @@ async fn main()
     let page = options.clone();
     let (routes, pages) = generate_route_list_with_ssg(move || shell(page.clone()));
     pages.generate(&options).await;
-    place_assets(options.site_root.as_ref());
+    let root: &str = options.site_root.as_ref();
+    place_assets(root);
+    place_robots(root);
     if once
     {
         return;
     }
-    let site = ServeDir::new(options.site_root.as_ref());
+    let missing = ServeFile::new(std::path::Path::new(root).join(MISSING_PAGE));
+    let site = ServeDir::new(root).not_found_service(missing);
     let page = options.clone();
     let app = Router::new()
         .leptos_routes(&options, routes, move || shell(page.clone()))
@@ -82,4 +94,15 @@ fn place_assets(site_root: &str)
         std::fs::copy(f.path(), dir.join(f.file_name()))
             .expect("the site root can be written");
     });
+}
+
+/// Write [`ROBOTS`] to `<site root>/robots.txt`.
+///
+/// # Arguments
+///
+/// * `site_root` - The site root.
+fn place_robots(site_root: &str)
+{
+    let path = std::path::Path::new(site_root).join("robots.txt");
+    std::fs::write(path, ROBOTS).expect("the site root can be written");
 }

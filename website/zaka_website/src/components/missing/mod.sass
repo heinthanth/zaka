@@ -1,0 +1,46 @@
+// The page for a missing address: one gold field, a screen tall, with the
+// code of the error, the headline, a sentence and the link home.
+
+.missing
+  display: grid
+  align-content: center
+  gap: 24px
+  min-height: 100svh
+  padding: calc(var(--bar-height) + 8vh) var(--margin) 12vh
+  color: var(--on-gold)
+  background: var(--gold)
+
+.missing-mark
+  font-family: var(--mono-font)
+  font-size: var(--step-note)
+  font-weight: 700
+  letter-spacing: 0.08em
+  text-transform: uppercase
+
+.missing-head
+  max-width: 12ch
+  font-size: var(--step-poster)
+  font-weight: 700
+  line-height: 0.95
+  letter-spacing: -0.04em
+
+.missing-text
+  max-width: 40ch
+  font-size: var(--step-state)
+  line-height: 1.35
+
+// The link home: the ink of the field as ground, the gold as ink.
+.missing .missing-action
+  justify-self: start
+  min-height: 56px
+  margin-top: 16px
+  padding: 0 28px
+  color: var(--gold)
+  background: var(--on-gold)
+
+  &:hover
+    background: color-mix(in srgb, var(--on-gold) 86%, var(--gold))
+
+@media (max-width: 640px)
+  .missing .missing-action
+    justify-self: stretch

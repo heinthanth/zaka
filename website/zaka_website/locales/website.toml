@@ -111,6 +111,21 @@ en = "Explorer"
 [website.footer.rights]
 en = "%{author} · %{first} - %{last}"
 
+# ---------------------------------------------------------------- missing
+
+[website.missing.title]
+en = "Page not found - Zaka"
+[website.missing.description]
+en = "No page lives at this address on the Zaka site."
+[website.missing.mark]
+en = "Error 404"
+[website.missing.head]
+en = "Page not found."
+[website.missing.text]
+en = "Nothing lives at this address. The page has moved, or the link is wrong."
+[website.missing.home]
+en = "Back to the home page"
+
 # ---------------------------------------------------------------- learn
 
 [website.learn.page_title]

@@ -54,6 +54,7 @@ use crate::components::header::SiteHeaderProps;
 use crate::components::header::header_sheet;
 use crate::components::hero::hero;
 use crate::components::learn::book_page;
+use crate::components::missing::missing;
 use crate::components::name::name;
 use crate::set_origin;
 
@@ -278,13 +279,24 @@ pub fn app() -> impl IntoView
                 .build(),
         )
     };
+    // The page for an address with no page, written as `404.html` at the root
+    // of the site, which the host serves for each such address.
+    let missing_route = || {
+        Route(
+            RouteProps::builder()
+                .path(path!("/404"))
+                .view(not_found)
+                .ssr(SsrMode::Static(StaticRoute::new()))
+                .build(),
+        )
+    };
     // The routes read the router from context, so the router makes them.
     let routes = move || {
         Routes(
             RoutesProps::builder()
-                .fallback(|| "Not found.")
+                .fallback(not_found)
                 .children(RouteChildren::to_children(move || {
-                    (home_route(), learn_route(), docs_route())
+                    (home_route(), learn_route(), docs_route(), missing_route())
                 }))
                 .build(),
         )
@@ -317,6 +329,40 @@ fn home() -> impl IntoView
     )
 }
 
+/// The page for an address with no page: its title and description, and a
+/// tag that keeps it out of the index of a search engine.
+///
+/// # Returns
+///
+/// The view.
+fn not_found() -> impl IntoView
+{
+    let name = |name: &'static str, content: String| {
+        Meta(MetaProps::builder().name(name).content(content).build())
+    };
+    (
+        Title(
+            TitleProps::builder().text(t!("website.missing.title").to_string()).build(),
+        ),
+        name("description", t!("website.missing.description").to_string()),
+        name("robots", "noindex".to_string()),
+        missing(),
+    )
+}
+
+/// Answer the request with the code 404, so the server sends it and writes
+/// no file for the address, as the host does for an address the build left
+/// out. The page at `/404` itself must not call this, or the build would not
+/// write it. The browser build has no response to mark.
+fn mark_missing()
+{
+    #[cfg(feature = "server")]
+    if let Some(response) = use_context::<leptos_axum::ResponseOptions>()
+    {
+        response.set_status(axum::http::StatusCode::NOT_FOUND);
+    }
+}
+
 /// A page of a book, from the address in the route.
 ///
 /// # Arguments
@@ -325,7 +371,7 @@ fn home() -> impl IntoView
 ///
 /// # Returns
 ///
-/// The view; a short note for an address with no page.
+/// The view; the page for a missing address when the book has no page there.
 fn book_view(book: Book) -> impl IntoView
 {
     let slug =
@@ -333,7 +379,8 @@ fn book_view(book: Book) -> impl IntoView
     let Some(page) = page_at(book, &slug)
     else
     {
-        return "Not found.".into_any();
+        mark_missing();
+        return not_found().into_any();
     };
     let rendered = render(&page);
     let title = t!("website.learn.page_title", page = rendered.title).to_string();
