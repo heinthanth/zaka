@@ -4,6 +4,7 @@
 .claude
 .codegraph
 .superpowers
+.wrangler
 .playwright-mcp
 .env*
 !.env.example

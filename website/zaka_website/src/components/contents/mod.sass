@@ -13,12 +13,20 @@
   padding: 40px 8px 48px 0
   overscroll-behavior: contain
 
+// The same box as a chapter link, so the mark of the title page lines up with
+// the chapters under it.
 .contents-title
   display: block
   margin-bottom: 20px
+  padding: 7px 10px 7px 12px
   font-size: var(--step-note)
   font-weight: 700
+  line-height: 1.35
   text-decoration: none
+  border-left: 3px solid transparent
+
+  &:hover
+    background: var(--canvas)
 
 .contents-chapters
   display: grid
