@@ -145,7 +145,7 @@ impl IrArtifact
         let shift = |span: Span| relative(span, base);
         let Lowered { folded: mut module, mut diagnostics, .. } = lowered;
         do_map(module.as_mut(), &shift);
-        diagnostics.iter_mut().for_each(|d| d.span = shift(d.span));
+        diagnostics.iter_mut().for_each(|d| d.map_spans(&shift));
         #[rustfmt::skip]
         return IrArtifact::builder().name(source.name.clone())
             .source(source.src.clone())
@@ -185,7 +185,7 @@ impl IrArtifact
         let mut module = self.module.clone();
         do_map(module.as_mut(), &shift);
         let mut diagnostics = self.diagnostics.clone();
-        diagnostics.iter_mut().for_each(|d| d.span = shift(d.span));
+        diagnostics.iter_mut().for_each(|d| d.map_spans(&shift));
         (module, diagnostics)
     }
 }

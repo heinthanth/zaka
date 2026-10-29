@@ -6,11 +6,12 @@ use std::sync::Arc;
 use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
+use zakac_borrow_checker::artifact::Borrowchecked;
+use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::has_errors;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
-use zakac_ir_builder::artifact::Lowered;
 use zakac_ir_builder::artifact::absolute;
 use zakac_ir_builder::artifact::relative;
 use zakac_ir_builder::ir::FoldOptions;
@@ -44,8 +45,8 @@ pub const ARTIFACT_VERSION: u32 = 1;
 #[derive(Debug, Clone, PartialEq, Builder)]
 pub struct Emitted
 {
-    /// The output of the phases up to lowering.
-    pub lowered: Lowered,
+    /// The output of the phases up to the ownership check.
+    pub borrowchecked: Borrowchecked,
     /// The ops, or `None` when an earlier phase reported an error.
     pub module: Option<Module>,
 }
@@ -57,7 +58,7 @@ impl Emitted
     /// # Returns
     ///
     /// The diagnostics.
-    pub fn diagnostics(&self) -> &[Diagnostic] { &self.lowered.diagnostics }
+    pub fn diagnostics(&self) -> &[Diagnostic] { &self.borrowchecked.diagnostics }
 }
 
 /// Run each phase from lexing to code generation. Code generation runs
@@ -69,21 +70,24 @@ impl Emitted
 /// * `lexer` - The lexer options.
 /// * `options` - The check options.
 /// * `folding` - The foldings to run.
+/// * `mem` - How the ownership check reports.
 ///
 /// # Returns
 ///
 /// The output of each phase.
 pub fn run_phases(
     source: &SourceFile, lexer: &LexerOptions, options: &SemcheckOptions,
-    folding: &FoldOptions,
+    folding: &FoldOptions, mem: &BorrowCheckOptions,
 ) -> Emitted
 {
-    let lowered =
-        zakac_ir_builder::artifact::run_phases(source, lexer, options, folding);
-    let clean = !has_errors(&lowered.diagnostics);
+    let checked = zakac_borrow_checker::artifact::run_phases(
+        source, lexer, options, folding, mem,
+    );
+    let clean = !has_errors(&checked.diagnostics);
     let bits = options.platform_bits;
-    let module = lowered.folded.as_ref().filter(|_| clean).map(|m| emit(m, bits));
-    Emitted::builder().lowered(lowered).maybe_module(module).build()
+    let folded = checked.lowered.folded.as_ref();
+    let module = folded.filter(|_| clean).map(|m| emit(m, bits));
+    Emitted::builder().borrowchecked(checked).maybe_module(module).build()
 }
 
 /// The code generation artifact: the source, the ops and the diagnostics.
@@ -111,16 +115,18 @@ impl CodegenArtifact
     /// * `lexer` - The lexer options.
     /// * `options` - The check options.
     /// * `folding` - The foldings to run.
+    /// * `mem` - How the ownership check reports.
     ///
     /// # Returns
     ///
     /// The artifact.
     pub fn from_source(
         source: &SourceFile, lexer: &LexerOptions, options: &SemcheckOptions,
-        folding: &FoldOptions,
+        folding: &FoldOptions, mem: &BorrowCheckOptions,
     ) -> Self
     {
-        Self::from_emitted(source, run_phases(source, lexer, options, folding))
+        let emitted = run_phases(source, lexer, options, folding, mem);
+        Self::from_emitted(source, emitted)
     }
 
     /// Keep the output of the phases, with spans made relative to the file.
@@ -136,9 +142,9 @@ impl CodegenArtifact
     pub fn from_emitted(source: &SourceFile, emitted: Emitted) -> Self
     {
         let base = source.start_pos;
-        let Emitted { lowered, mut module } = emitted;
-        let mut diagnostics = lowered.diagnostics;
-        diagnostics.iter_mut().for_each(|d| d.span = relative(d.span, base));
+        let Emitted { borrowchecked, mut module } = emitted;
+        let mut diagnostics = borrowchecked.diagnostics;
+        diagnostics.iter_mut().for_each(|d| d.map_spans(&|s| relative(s, base)));
         module.iter_mut().for_each(|m| m.map_spans(&|s| relative(s, base)));
         #[rustfmt::skip]
         return CodegenArtifact::builder().name(source.name.clone())
@@ -174,7 +180,7 @@ impl CodegenArtifact
         let base = source.start_pos;
         let shift = |span: Span| absolute(span, base);
         let mut diagnostics = self.diagnostics.clone();
-        diagnostics.iter_mut().for_each(|d| d.span = shift(d.span));
+        diagnostics.iter_mut().for_each(|d| d.map_spans(&shift));
         diagnostics
     }
 

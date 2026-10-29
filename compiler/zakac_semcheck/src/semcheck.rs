@@ -27,21 +27,23 @@ use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::WhileStmt;
-use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
+use zakac_diagnostics::ownership as od;
 use zakac_diagnostics::resolve as rd;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_span::span::Span;
 
 use crate::collect::collect_fns;
 use crate::kind::DataKind;
 use crate::list::KindUse;
 use crate::place::place_of;
+use crate::place::var_name;
 use crate::scope::Access;
 use crate::scope::Binding;
 use crate::scope::FnSigs;
@@ -60,6 +62,9 @@ pub struct SemcheckOptions
     /// Report particle idiom warnings as errors.
     #[builder(default)]
     pub strict_particles: bool,
+    /// Refuse each kind with a raw address level.
+    #[builder(default)]
+    pub no_raw: bool,
 }
 
 impl Default for SemcheckOptions
@@ -102,7 +107,7 @@ pub fn semcheck(program: &Program, options: &SemcheckOptions) -> SemcheckOutput
     let mut diags = Vec::new();
     let fns = collect_fns(program, &mut diags);
     #[rustfmt::skip]
-    let mut checker = Checker::builder().fns(fns).diags(diags).platform(options.platform_bits).build();
+    let mut checker = Checker::builder().fns(fns).diags(diags).platform(options.platform_bits).no_raw(options.no_raw).build();
     checker.scopes.push();
     checker.visit_program(program);
     checker.diags.sort_by_key(|d| d.span.lo);
@@ -139,12 +144,11 @@ pub(crate) struct Checker
     pub loop_depth: u32,
     /// The function around the current statement.
     pub func: Option<FnCtx>,
-    /// The index of the scope the current function opens; names in it or
-    /// deeper are locals of the function.
-    #[builder(default)]
-    pub fn_scope: usize,
     /// Bit count of the platform-sized integer kinds.
     pub platform: u16,
+    /// Whether kinds with a raw address level are refused.
+    #[builder(default)]
+    pub no_raw: bool,
 }
 
 impl Checker
@@ -217,8 +221,54 @@ impl Checker
         {
             return;
         };
+        self.expect_fit(e, found, want);
+    }
+
+    /// Report a value whose inferred kind does not convert to the kind its
+    /// place expects.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The value.
+    /// * `found` - Its kind.
+    /// * `want` - The kind its place expects.
+    pub fn expect_fit(&mut self, e: &Expr, found: DataKind, want: DataKind)
+    {
         ret_if!(found.widens_to(want, self.platform));
-        self.report(kd::kind_mismatch(e.span(), &want.name(), &found.name()));
+        ret_if!(self.report_flavour(e, found, want));
+        self.report(mismatch_report(e.span(), want, found));
+    }
+
+    /// Report a value whose kind differs from the wanted one in its flavour
+    /// alone: a borrow given for an owner, or an owner given for a borrow.
+    /// A raw address never matches a checked one here; that mismatch is left
+    /// to the caller. The shapes are compared as [`DataKind::meets_pointer`]
+    /// does, so a borrow of a block of addresses given for an owner `ptr` is
+    /// named as a flavour mistake, not as a block read as other data.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The value.
+    /// * `found` - Its kind.
+    /// * `want` - The kind its place expects.
+    ///
+    /// # Returns
+    ///
+    /// `true` when a flavour diagnostic was reported.
+    pub fn report_flavour(&mut self, e: &Expr, found: DataKind, want: DataKind)
+    -> bool
+    {
+        let fits = |k: DataKind| k.meets_pointer(want);
+        let borrow_for_owner = found.is_borrow() && want.is_owner_ptr();
+        ret_if!(
+            borrow_for_owner && fits(found.as_owner()),
+            self.report(od::borrow_for_owner(e.span())),
+            true
+        );
+        let owner_for_borrow = found.is_owner_ptr() && want.is_borrow();
+        ret_if!(!owner_for_borrow || !fits(found.as_borrowed()), false);
+        self.report(od::owner_for_borrow(e.span(), var_name(e)));
+        true
     }
 
     /// Infer a condition and report one that is not a boolean.
@@ -271,7 +321,7 @@ impl Checker
     /// The result kind of the function (`Some(None)` when it has none), or
     /// `None` when the function is not declared.
     pub fn check_call(
-        &mut self, callee: &Ident, args: &[Expr], span: zakac_span::span::Span,
+        &mut self, callee: &Ident, args: &[Expr], span: Span,
     ) -> Option<Option<DataKind>>
     {
         let Some(sig) = self.fns.get(&callee.name).cloned()
@@ -433,26 +483,6 @@ impl Checker
         do_if!(let Some(unit) = &size.unit, let _ = self.written_kind(unit, KindUse::Other));
     }
 
-    /// Warn when a returned value is the address of a local of the function.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The returned value.
-    fn check_local_address(&mut self, value: &Expr)
-    {
-        let Some(name) = addressed_place(value).and_then(|p| self.owner_name(p))
-        else
-        {
-            return;
-        };
-        let local =
-            self.scopes.depth_of(&name.name).is_some_and(|d| d >= self.fn_scope);
-        do_if!(
-            local,
-            self.report(kd::local_address_returned(value.span(), &name.name))
-        );
-    }
-
     /// Run `f` with one more loop around it.
     ///
     /// # Arguments
@@ -489,25 +519,45 @@ fn non_positive_literal(e: &Expr) -> bool
     }
 }
 
-/// The place whose address an expression takes.
+/// The report of a value that does not fit its place. No conversion
+/// turns a borrow into an owner or back, so a mismatch of flavours gets
+/// no help. When the two kinds are owners or borrows whose blocks hold
+/// addresses in different places, the conversion verb cannot bridge them
+/// either, so the help names the raw address to go through. Each other
+/// mismatch names the conversion verb when it can turn the value into the
+/// wanted kind, and gets no help when it cannot, as for a list.
 ///
 /// # Arguments
 ///
-/// * `e` - The expression.
+/// * `span` - The value.
+/// * `want` - The kind its place expects.
+/// * `found` - Its kind.
 ///
 /// # Returns
 ///
-/// The place of an address-of, else `None`.
-fn addressed_place(e: &Expr) -> Option<&Expr>
+/// The `ZK0401` diagnostic.
+pub(crate) fn mismatch_report(span: Span, want: DataKind, found: DataKind)
+-> Diagnostic
 {
-    let operand = match e
-    {
-        Expr::Group(n) => return addressed_place(&n.inner),
-        Expr::Prefix(n) if n.op == PrefixOp::AddrOf => n.rhs.as_ref(),
-        Expr::Verb(n) if n.op == VerbOp::AddrOf => n.args.first()?,
-        _ => return None,
-    };
-    place_of(operand)
+    let (want_name, found_name) = (want.name(), found.name());
+    let flavours = want.is_checked_ptr() && found.is_checked_ptr();
+    let flavours = flavours && want.is_borrow() != found.is_borrow();
+    let unbridged = kd::kind_mismatch_unbridged(span, &want_name, &found_name);
+    ret_if!(flavours, unbridged);
+    ret_if!(
+        found.reads_addresses_as(want),
+        kd::address_block_mismatch(
+            span,
+            &want_name,
+            &found_name,
+            &want.with_outer_raw().name()
+        )
+    );
+    tern!(
+        found.cast_allowed(want),
+        kd::kind_mismatch(span, &want_name, &found_name),
+        unbridged
+    )
 }
 
 /// The diagnostic for assigning to a name that does not allow it.
@@ -624,13 +674,11 @@ impl Visitor for Checker
         let ctx = FnCtx::builder().name(n.name.name.clone()).maybe_ret(ret).build();
         self.func = Some(ctx);
         self.scopes.push();
-        let outer = std::mem::replace(&mut self.fn_scope, self.scopes.count() - 1);
         do_for!(p in &n.params, self.declare_param(p));
         let result = Ident::builder().name(RESULT_NAME).span(n.name.span).build();
         do_if!(ret.is_some(), let _ = self.declare_quiet(&result, ret, Access::Var));
         self.visit_stmts(&n.block.stmts);
         self.scopes.pop();
-        self.fn_scope = outer;
         self.func = None;
         self.loop_depth = depth;
     }
@@ -655,11 +703,7 @@ impl Visitor for Checker
             {
                 self.report(rd::missing_return_value(n.span, &func.name, &k.name()))
             }
-            (Some(k), Some(v)) =>
-            {
-                self.expect_kind(v, Some(k));
-                self.check_local_address(v);
-            }
+            (Some(k), Some(v)) => self.expect_kind(v, Some(k)),
             (None, None) => (),
         }
     }

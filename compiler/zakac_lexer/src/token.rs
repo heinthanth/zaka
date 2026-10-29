@@ -427,6 +427,12 @@ pub enum Kw
     // pointers and the heap
     /// `လိပ်စာ`
     Address,
+    /// `လိပ်စာအကြမ်း`
+    RawAddress,
+    /// `ငှားထားသော`
+    Borrowed,
+    /// `တန်ဖိုးအငှား`
+    Lend,
     /// `ဗလာ`
     Null,
     /// `အရွယ်အစား`

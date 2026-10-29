@@ -13,6 +13,7 @@ clap = { workspace = true }
 rust-i18n = { workspace = true }
 strum = { workspace = true }
 termcolor = { workspace = true }
+zakac_borrow_checker = { workspace = true }
 zakac_cli_common = { workspace = true }
 zakac_codegen = { workspace = true }
 zakac_diagnostics = { workspace = true }

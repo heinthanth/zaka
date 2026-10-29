@@ -51,12 +51,11 @@ use crate::components::header::header_sheet;
 use crate::components::hero::hero;
 use crate::components::learn::learn_page;
 use crate::components::name::name;
-use crate::manual::page_at;
-use crate::manual::render::render;
-use crate::manual::slugs;
+use crate::learn::page_at;
+use crate::learn::render::render;
+use crate::learn::slugs;
 
-/// Name of the route parameter that holds the address of a page of the
-/// manual.
+/// Name of the route parameter that holds the address of a Learn page.
 const PAGE_PARAM: &str = "page";
 
 /// The address the site is served from, which the pages read to name
@@ -229,7 +228,7 @@ fn twitter_tags(title: String, description: String, cover: String) -> impl IntoV
     )
 }
 
-/// The site: the landing page and the pages of the manual, each written to
+/// The site: the landing page and the Learn pages, each written to
 /// its own `index.html` when the site is built.
 ///
 /// # Returns
@@ -247,7 +246,7 @@ pub fn app() -> impl IntoView
                 .build(),
         )
     };
-    // One route for the whole manual; the build writes a page for each
+    // One route for all the Learn pages; the build writes a page for each
     // address the contents list.
     let learn_route = || {
         let pages = || async {
@@ -301,7 +300,7 @@ fn home() -> impl IntoView
     )
 }
 
-/// A page of the manual, from the address in the route.
+/// A Learn page, from the address in the route.
 ///
 /// # Returns
 ///

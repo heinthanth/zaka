@@ -57,6 +57,9 @@ en = "access through a null address at %{addr}"
 [vm.trap.out_of_bounds]
 en = "access of %{size} octets at %{addr} lands outside each live block"
 
+[vm.trap.step_out_of_bounds]
+en = "a pointer step to %{addr} leaves the block it started in"
+
 [vm.trap.use_after_free]
 en = "access at %{addr} inside a freed block"
 

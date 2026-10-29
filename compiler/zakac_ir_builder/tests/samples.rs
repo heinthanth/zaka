@@ -128,7 +128,9 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         ExprNode::Const(_) | ExprNode::SizeOf(_) | ExprNode::BlankList => (),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
-        | ExprNode::Load { addr: operand } => expr_places(operand, out),
+        | ExprNode::Load { addr: operand }
+        | ExprNode::Lend { operand }
+        | ExprNode::Take { addr: operand } => expr_places(operand, out),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
         | ExprNode::Logic { lhs, rhs, .. }

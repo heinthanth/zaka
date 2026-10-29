@@ -17,39 +17,39 @@ const ASSETS: [(&str, &str); 8] = [
     ("COVER_CARD", "assets/pictures/cover.png"),
 ];
 
-/// The folder of the manual, from the package.
-const MANUAL: &str = "../../docs/manual";
+/// The Learn folder, from the package.
+const LEARN: &str = "../../docs/learn";
 
-/// The contents file of the manual, in its folder.
+/// The contents file of the Learn pages, in their folder.
 const CONTENTS: &str = "CONTENTS.md";
 
-/// Rebuild when a sheet, a locale table or the manual changes; the sheet and
+/// Rebuild when a sheet, a locale table or a Learn page changes; the sheet and
 /// `include_str!` macros read them. Then write the files in [`ASSETS`] to
 /// `OUT_DIR/assets` under hashed names, with their addresses under `/assets/`
-/// in `OUT_DIR/assets.rs`, and the pages of the manual to
-/// `OUT_DIR/manual.rs`.
+/// in `OUT_DIR/assets.rs`, and the Learn pages to
+/// `OUT_DIR/learn.rs`.
 fn main()
 {
     cargo_build::rerun_if_changed!("src");
     cargo_build::rerun_if_changed!("locales");
-    cargo_build::rerun_if_changed([MANUAL]);
+    cargo_build::rerun_if_changed([LEARN]);
     let out = PathBuf::from(std::env::var("OUT_DIR").expect("cargo sets OUT_DIR"));
     let names =
         zaka_web_builder::hash_files(&ASSETS, "/assets/", &[&out.join("assets")]);
     std::fs::write(out.join("assets.rs"), names).expect("OUT_DIR can be written");
-    std::fs::write(out.join("manual.rs"), manual_pages())
+    std::fs::write(out.join("learn.rs"), learn_pages())
         .expect("OUT_DIR can be written");
 }
 
-/// The pages of the manual, in the order of its contents file, as Rust code:
+/// The Learn pages, in the order of their contents file, as Rust code:
 /// one `Page` each in `PAGES`, its text read in with `include_str!`.
 ///
 /// # Returns
 ///
 /// The Rust code.
-fn manual_pages() -> String
+fn learn_pages() -> String
 {
-    let root = Path::new(MANUAL).canonicalize().expect("the manual is there");
+    let root = Path::new(LEARN).canonicalize().expect("the Learn folder is there");
     let contents = std::fs::read_to_string(root.join(CONTENTS))
         .unwrap_or_else(|e| panic!("{CONTENTS}: {e}"));
     let mut appendix = false;
@@ -63,8 +63,7 @@ fn manual_pages() -> String
         })
         .collect();
     format!(
-        "/// The pages of the manual, in order.\npub const PAGES: [Page; {}] = \
-         [\n{}];\n",
+        "/// The Learn pages, in order.\npub const PAGES: [Page; {}] = [\n{}];\n",
         pages.len(),
         pages.concat()
     )
@@ -92,10 +91,10 @@ fn contents_line(line: &str) -> Option<(usize, &str, &str)>
 ///
 /// # Arguments
 ///
-/// * `root` - The folder of the manual.
+/// * `root` - The Learn folder.
 /// * `depth` - How deep the page sits in the contents; 0 for a chapter.
 /// * `title` - Its title in the contents.
-/// * `path` - Its file, from the folder of the manual.
+/// * `path` - Its file, from the Learn folder.
 /// * `appendix` - Whether it comes after the rule of the contents.
 ///
 /// # Returns
@@ -115,12 +114,12 @@ fn page_code(
     )
 }
 
-/// The address of a page under the manual: its path with no `.md`, and a
+/// The address of a Learn page: its path with no `.md`, and a
 /// chapter's `README.md` named after its folder.
 ///
 /// # Arguments
 ///
-/// * `path` - The file, from the folder of the manual.
+/// * `path` - The file, from the Learn folder.
 ///
 /// # Returns
 ///

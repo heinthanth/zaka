@@ -68,6 +68,7 @@ web-sys = "0.3.105"
 web-time = "1.1.0"
 xxhash-rust = { version = "0.8.19", features = ["xxh3"] }
 zakac_ast = { path = "compiler/zakac_ast" }
+zakac_borrow_checker = { path = "compiler/zakac_borrow_checker" }
 zakac_burmese_segmenter = { path = "compiler/zakac_burmese_segmenter" }
 zakac_cli_common = { path = "compiler/zakac_cli_common" }
 zakac_codegen = { path = "compiler/zakac_codegen" }

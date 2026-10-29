@@ -8,11 +8,21 @@ use zaka_explorer::compile::Status;
 use zaka_explorer::compile::compile;
 use zaka_explorer::compile::samples::DIAGNOSTICS;
 use zaka_explorer::compile::samples::GROUPS;
+use zaka_explorer::compile::samples::MISTAKES;
 use zaka_explorer::compile::samples::SAMPLES;
+use zaka_explorer::compile::samples::Sample;
 use zaka_explorer::compile::samples::find_sample;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_diagnostics::Level;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::tern;
+
+/// The samples meant to compile clean: neither the diagnostics nor the
+/// mistakes.
+fn clean() -> impl Iterator<Item = &'static Sample>
+{
+    SAMPLES.iter().filter(|s| s.group != DIAGNOSTICS && s.group != MISTAKES)
+}
 
 #[test]
 fn all_samples_compile()
@@ -28,8 +38,7 @@ fn all_samples_compile()
 #[test]
 fn clean_groups_have_no_diagnostics()
 {
-    let clean = SAMPLES.iter().filter(|s| s.group != DIAGNOSTICS);
-    for sample in clean
+    for sample in clean()
     {
         let out = compile(sample.text, &Options::default());
         assert!(out.checked, "{}", sample.path());
@@ -165,12 +174,13 @@ fn phase_status_follows_the_diagnostics()
     assert_eq!(out.status(Phase::Parse), Status::Clean);
     assert_eq!(out.status(Phase::Check), Status::Failed);
     assert_eq!(out.status(Phase::Lower), Status::Skipped);
+    assert_eq!(out.status(Phase::BorrowCheck), Status::Skipped);
 }
 
 #[test]
 fn clean_samples_lower_without_diagnostics()
 {
-    for sample in SAMPLES.iter().filter(|s| s.group != DIAGNOSTICS)
+    for sample in clean()
     {
         let out = compile(sample.text, &Options::default());
         assert!(out.lowered, "{}", sample.path());
@@ -256,7 +266,7 @@ fn strings_show_their_value_in_pieces_and_their_source()
 #[test]
 fn clean_samples_generate_ops_that_run()
 {
-    for sample in SAMPLES.iter().filter(|s| s.group != DIAGNOSTICS)
+    for sample in clean()
     {
         let out = compile(sample.text, &Options::default());
         assert!(out.emitted, "{}", sample.path());
@@ -307,7 +317,8 @@ fn codegen_skips_after_fold_errors()
 {
     let text = find_sample("diagnostics/fold_errors").unwrap().text;
     let out = compile(text, &Options::default());
-    assert!(!out.emitted);
+    assert!(!out.emitted && !out.borrowchecked);
+    assert_eq!(out.status(Phase::BorrowCheck), Status::Skipped);
     assert_eq!(out.status(Phase::Codegen), Status::Skipped);
     assert_eq!(out.status(Phase::Run), Status::Skipped);
     assert!(out.ops.is_none() && out.asm.is_empty());
@@ -320,4 +331,105 @@ fn compiling_does_not_run_the_ops()
     let out = compile(text, &Options::default());
     assert_eq!(out.status(Phase::Codegen), Status::Clean);
     assert_eq!(out.status(Phase::Run), Status::Clean);
+}
+
+#[test]
+fn pointer_mistakes_fail_the_borrow_check()
+{
+    let table: [(&str, &[&str]); 6] = [
+        ("bad_free", &["ZK0702"]),
+        ("double_free", &["ZK0704", "ZK0702"]),
+        ("use_after_free", &["ZK0704"]),
+        ("leak", &["ZK0708"]),
+        ("null_read", &["ZK0709"]),
+        ("past_the_end", &["ZK0710"]),
+    ];
+    for (name, want) in table
+    {
+        let path = format!("{MISTAKES}/{name}");
+        let out = compile(find_sample(&path).unwrap().text, &Options::default());
+        let codes: Vec<&str> =
+            out.diagnostics.iter().map(|d| d.code.as_str()).collect();
+        assert_eq!(codes, want, "{path}");
+        assert!(
+            out.diagnostics.iter().all(|d| d.phase == Phase::BorrowCheck),
+            "{path}"
+        );
+        assert!(out.borrowchecked, "{path}");
+        assert_eq!(out.status(Phase::Lower), Status::Clean, "{path}");
+        assert_eq!(out.status(Phase::BorrowCheck), Status::Failed, "{path}");
+        assert_eq!(out.status(Phase::Codegen), Status::Skipped, "{path}");
+        assert!(!out.emitted, "{path}");
+    }
+}
+
+#[test]
+fn warn_builds_each_mistake_and_off_reports_nothing()
+{
+    let warn = Options::builder().check(MemCheck::Warn).build();
+    let off = Options::builder().check(MemCheck::Off).build();
+    for sample in SAMPLES.iter().filter(|s| s.group == MISTAKES)
+    {
+        let warned = compile(sample.text, &warn);
+        assert!(warned.emitted, "{}", sample.path());
+        assert_eq!(warned.count(Level::Error), 0, "{}", sample.path());
+        assert_ne!(
+            warned.status(Phase::BorrowCheck),
+            Status::Failed,
+            "{}",
+            sample.path()
+        );
+        let quiet = compile(sample.text, &off);
+        assert!(quiet.emitted, "{}", sample.path());
+        assert!(quiet.diagnostics.is_empty(), "{}", sample.path());
+        assert_eq!(
+            quiet.status(Phase::BorrowCheck),
+            Status::Clean,
+            "{}",
+            sample.path()
+        );
+    }
+    let leak = compile(find_sample("mistakes/leak").unwrap().text, &warn);
+    assert_eq!(leak.status(Phase::BorrowCheck), Status::Warned);
+    assert_eq!(leak.diagnostics[0].code, "ZK0708");
+}
+
+#[test]
+fn no_raw_rejects_a_raw_kind_in_the_check_phase()
+{
+    let text = "ကိန်းရှင် r သည် ကိန်းပြည့် လိပ်စာအကြမ်း ဖြစ်ပါစေ။";
+    assert!(compile(text, &Options::default()).diagnostics.is_empty());
+    let out = compile(text, &Options::builder().no_raw(true).build());
+    let codes: Vec<(&str, Phase)> =
+        out.diagnostics.iter().map(|d| (d.code.as_str(), d.phase)).collect();
+    assert_eq!(codes, [("ZK0717", Phase::Check)]);
+    assert_eq!(out.status(Phase::BorrowCheck), Status::Skipped);
+}
+
+#[test]
+fn clean_samples_pass_the_borrow_check_with_a_digest_for_each_function()
+{
+    for sample in clean()
+    {
+        let out = compile(sample.text, &Options::default());
+        assert!(out.borrowchecked, "{}", sample.path());
+        assert_eq!(out.status(Phase::BorrowCheck), Status::Clean, "{}", sample.path());
+        let funcs = out.ops.as_ref().map(|m| m.funcs.len()).unwrap_or_default();
+        assert_eq!(out.digests.len() + 1, funcs, "{}", sample.path());
+    }
+    let swap = compile(find_sample("heap/swap").unwrap().text, &Options::default());
+    assert!(swap.digests[0].starts_with("လဲလှယ်: params "), "{:?}", swap.digests);
+}
+
+#[test]
+fn the_borrow_check_labels_the_later_use()
+{
+    let text = find_sample("mistakes/use_after_free").unwrap().text;
+    let out = compile(text, &Options::default());
+    let row = out.diagnostics.iter().find(|d| d.code == "ZK0704").expect("ZK0704");
+    assert_eq!(row.labels.len(), 1, "{:?}", row.labels);
+    let (range, label) = &row.labels[0];
+    let line = text[..range.lo as usize].matches('\n').count() + 1;
+    assert_eq!(line, 7);
+    assert!(label.contains("used here"), "{label}");
 }

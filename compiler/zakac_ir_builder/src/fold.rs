@@ -267,7 +267,9 @@ impl Folder
                 (None, None)
             }
             ExprNode::AddrOf(_) => (None, None),
-            ExprNode::Load { addr } =>
+            ExprNode::Load { addr }
+            | ExprNode::Lend { operand: addr }
+            | ExprNode::Take { addr } =>
             {
                 self.drop_value(addr);
                 (None, None)
@@ -330,7 +332,7 @@ impl Folder
         let index = tern!(kind.signed, raw as i128, wide);
         let lo = i128::from(first);
         ret_if!(index >= lo && index < lo + i128::from(len), true);
-        let last = u64::from(len) + u64::from(first) - 1;
+        let last = (u64::from(len) + u64::from(first)).saturating_sub(1);
         self.diags.push(fd::cell_out_of_range(span, &index.to_string(), first, last));
         false
     }

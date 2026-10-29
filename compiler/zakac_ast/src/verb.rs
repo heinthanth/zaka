@@ -135,6 +135,9 @@ pub enum VerbOp
     /// `၏ တန်ဖိုး`: the value an address points at.
     #[strum(serialize = "deref")]
     Deref,
+    /// `၏ တန်ဖိုးအငှား`: a borrow of the value an address points at.
+    #[strum(serialize = "lend")]
+    Lend,
     /// `၏ n ခုမြောက်အကွက်`: a list cell counted from 1. The parser turns
     /// it into an index expression.
     #[strum(serialize = "cell1")]
@@ -200,6 +203,7 @@ pub static VERBS: &[Verb] = &[
     row(Kw::ReturnValue, VerbOp::Return, &[Slot::Ko], true, false),
     row(Kw::Address, VerbOp::AddrOf, &[Slot::Ei], false, false),
     row(Kw::Value, VerbOp::Deref, &[Slot::Ei], false, false),
+    row(Kw::Lend, VerbOp::Lend, &[Slot::Ei], false, false),
     row(Kw::Cell, VerbOp::Cell, &[Slot::Ei, Slot::Ordinal], false, false),
     row(Kw::CellCount, VerbOp::CellCount, &[Slot::Ei], false, false),
 ];

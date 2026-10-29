@@ -8,8 +8,8 @@ en = "Zaka Explorer"
 en = "Zaka website"
 [explorer.toolbar.website]
 en = "Website"
-[explorer.toolbar.manual]
-en = "Manual"
+[explorer.toolbar.learn]
+en = "Learn"
 [explorer.toolbar.menu]
 en = "Open the menu"
 [explorer.toolbar.menu_shut]
@@ -124,6 +124,24 @@ en = "Checked gives each variable a block of its own, so reading or writing past
 en = "Checked"
 [explorer.settings.frames_packed]
 en = "Packed, as C"
+[explorer.settings.mem_check]
+en = "Ownership check"
+[explorer.settings.mem_check_note]
+en = "What a proven pointer mistake does. Error stops the build on the line at fault; warn still builds, so the machine shows the trap; off reports nothing. A move leaves ဗလာ behind in each mode."
+[explorer.settings.mem_check_error]
+en = "Error"
+[explorer.settings.mem_check_warn]
+en = "Warn"
+[explorer.settings.mem_check_off]
+en = "Off"
+[explorer.settings.mem_strict]
+en = "Strict ownership check"
+[explorer.settings.mem_strict_note]
+en = "Also warn about a pointer that can be ဗလာ, such as a fresh allocation never compared with ဗလာ."
+[explorer.settings.no_raw]
+en = "Forbid raw addresses"
+[explorer.settings.no_raw_note]
+en = "Reject each kind written with လိပ်စာအကြမ်း, so a lesson cannot step around the check."
 [explorer.settings.heap_auto]
 en = "Auto (%{size})"
 [explorer.settings.platform_bits]
@@ -201,6 +219,12 @@ en = "Lower"
 en = "IR builder"
 [explorer.phase.lower_note]
 en = "IR"
+[explorer.phase.borrow_check]
+en = "Borrow check"
+[explorer.phase.borrow_check_component]
+en = "Borrow checker"
+[explorer.phase.borrow_check_note]
+en = "owners"
 [explorer.phase.codegen]
 en = "Codegen"
 [explorer.phase.codegen_component]
@@ -325,6 +349,13 @@ en = "Folded"
 en = "Lowering did not run"
 [explorer.lower.skipped_note]
 en = "It runs once the earlier phases report no errors. Fix the problems below to see the IR."
+
+[explorer.borrow_check.skipped_title]
+en = "The borrow check did not run"
+[explorer.borrow_check.skipped_note]
+en = "Fix the errors of the earlier phases first."
+[explorer.borrow_check.digests]
+en = "What each function frees, resizes or moves through"
 
 [explorer.codegen.globals]
 en = "Globals"
@@ -527,7 +558,7 @@ en = "Write Zaka code here. After each edit the program compiles and runs again,
 [explorer.tour.pipeline]
 en = "The pipeline"
 [explorer.tour.pipeline_text]
-en = "Seven phases turn the source into a running program. Each stage names the part of the compiler that runs it, and the time it took. Click a phase, or press the left and right arrows, to open its view. Its dot tells whether it passed, warned, failed or was skipped. Hover a token in the editor, or move the caret onto it, to light it up in the views."
+en = "Eight phases turn the source into a running program. Each stage names the part of the compiler that runs it, and the time it took. Click a phase, or press the left and right arrows, to open its view. Its dot tells whether it passed, warned, failed or was skipped. Hover a token in the editor, or move the caret onto it, to light it up in the views."
 [explorer.tour.segment]
 en = "1 · Segment"
 [explorer.tour.segment_text]
@@ -548,12 +579,16 @@ en = "The checker works out the kind of each expression and makes sure the parts
 en = "5 · Lower"
 [explorer.tour.lower_text]
 en = "Lowering turns the tree into a simpler IR. Switch between the IR as lowered and after constant folding to see what the folding settles ahead of time."
+[explorer.tour.borrow_check]
+en = "6 · Borrow check"
+[explorer.tour.borrow_check_text]
+en = "The borrow checker follows each owner pointer and each loan through the IR. It stops a free of a borrowed address, a use after a free, a block never freed and a read past the end before the program runs."
 [explorer.tour.codegen]
-en = "6 · Codegen"
+en = "7 · Codegen"
 [explorer.tour.codegen_text]
 en = "Code generation emits ops for the stack-based virtual machine: the global slots, the pooled texts, then each function with its locals and ops. Hover an op to see its source."
 [explorer.tour.run]
-en = "7 · Run"
+en = "8 · Run"
 [explorer.tour.run_text]
 en = "In debug mode the run is a debugger: the ops show here, the bar over the panes drives them, the dock beside them holds the machine state and the heap, and the panel below holds the output."
 [explorer.tour.debug]

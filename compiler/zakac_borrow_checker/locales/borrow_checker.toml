@@ -1,0 +1,13 @@
+_version = 2
+
+[borrow_check.about]
+en = "Check the ownership and the loans of a folded program."
+
+[borrow_check.mem_check]
+en = "How the ownership check reports: error, warn or off."
+
+[borrow_check.mem_strict]
+en = "Also report the accesses that the check cannot prove safe."
+
+[borrow_check.artifact.source_changed]
+en = "source text changed after re-ingest"

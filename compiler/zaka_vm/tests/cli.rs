@@ -117,17 +117,43 @@ fn platform_bits_change_the_width()
     assert_eq!(stdout, "-၁၂၈\n");
 }
 
+/// The mistake sample that reads a block through a borrow after its owner
+/// frees it.
+const USE_AFTER_FREE: &str =
+    include_str!("../../../samples/mistakes/use_after_free.zaka");
+
+/// The trap text of a read inside a freed block.
+const FREED_TRAP: &str = "inside a freed block";
+
+#[test]
+fn the_mem_check_flag_picks_error_warn_or_off()
+{
+    let (code, stdout, stderr) = run_vm(&[], USE_AFTER_FREE);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stdout.is_empty(), "{stdout}");
+    assert!(stderr.contains("error[ZK0704]"), "{stderr}");
+    assert!(!stderr.contains(FREED_TRAP), "{stderr}");
+    let (code, _, stderr) = run_vm(&["--mem-check", "warn"], USE_AFTER_FREE);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stderr.contains("warning[ZK0704]"), "{stderr}");
+    assert!(stderr.contains(FREED_TRAP), "{stderr}");
+    let (code, _, stderr) = run_vm(&["--mem-check", "off"], USE_AFTER_FREE);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(!stderr.contains("ZK07"), "{stderr}");
+    assert!(stderr.contains(FREED_TRAP), "{stderr}");
+}
+
 #[test]
 fn the_leaks_flag_lists_unfreed_blocks_and_keeps_success()
 {
     let text = "ကိန်းရှင် p သည် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ၁၆ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။";
-    let (code, stdout, stderr) = run_vm(&["--leaks"], text);
+    let (code, stdout, stderr) = run_vm(&["--mem-check", "off", "--leaks"], text);
     assert_eq!(code, ExitCode::Success, "{stderr}");
     assert!(stdout.is_empty(), "{stdout}");
     let leaks: Vec<&str> = stderr.lines().filter(|l| l.starts_with("leak:")).collect();
     assert_eq!(leaks.len(), 1, "{stderr}");
     assert!(leaks[0].ends_with("16 octets"), "{stderr}");
-    let (code, _, stderr) = run_vm(&[], text);
+    let (code, _, stderr) = run_vm(&["--mem-check", "off"], text);
     assert_eq!(code, ExitCode::Success);
     assert!(stderr.is_empty(), "{stderr}");
 }
@@ -137,9 +163,10 @@ fn the_max_heap_flag_caps_allocation()
 {
     let text = "ကိန်းရှင် p သည် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ၆၄ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။\np \
                 ကို ပြသပါ။";
-    let (code, stdout, stderr) = run_vm(&["--max-heap", "16"], text);
+    let (code, stdout, stderr) =
+        run_vm(&["--mem-check", "off", "--max-heap", "16"], text);
     assert_eq!(code, ExitCode::Success, "{stderr}");
     assert_eq!(stdout, "ဗလာ\n");
-    let (_, stdout, _) = run_vm(&[], text);
+    let (_, stdout, _) = run_vm(&["--mem-check", "off"], text);
     assert!(stdout.starts_with("0x"), "{stdout}");
 }

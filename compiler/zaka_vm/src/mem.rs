@@ -494,6 +494,23 @@ impl Mem
         block.live && block.reaches(a) && block.reaches(b)
     }
 
+    /// Whether a step from an address lands in the block that address lies
+    /// in, live or freed, one past its end included. An address in no
+    /// block, such as a raw one made from a number, is not checked.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - The address the step starts at.
+    /// * `to` - The address it lands at.
+    ///
+    /// # Returns
+    ///
+    /// `false` when the start lies in a block and the end does not.
+    pub fn steps_within(&self, from: u64, to: u64) -> bool
+    {
+        self.block_near(from).is_none_or(|block| block.reaches(to))
+    }
+
     /// The block, live or freed, whose range holds an address or ends just
     /// before it, so an access one past the end still names its block.
     ///

@@ -134,3 +134,27 @@ fn logic_short_circuits_on_a_constant_left_side()
         assert_eq!(folded(&format!("{head}{expr} ကို ပြသပါ။"))[1], expected, "{expr}");
     }
 }
+
+#[test]
+fn a_cell_of_a_list_with_no_cells_is_out_of_range_without_a_panic()
+{
+    use zakac_ir_builder::ir::ExprNode;
+    use zakac_ir_builder::ir::Stmt;
+
+    let text = "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်ပါစေ။\nl ၏ အကွက် ၁ ကို ၉ ဟု ထားပါ။";
+    let mut module = run(text, &FoldOptions::default()).plain.expect("lowered");
+    let Some(Stmt::Store { addr, .. }) = module.main.last_mut()
+    else
+    {
+        panic!("the last statement is a store");
+    };
+    let ExprNode::CellAddr { len, .. } = &mut addr.node
+    else
+    {
+        panic!("the store writes a cell");
+    };
+    *len = 0;
+    let found = zakac_ir_builder::fold::fold(&mut module, &FoldOptions::default(), 64);
+    let codes: Vec<Code> = found.iter().map(|d| d.code).collect();
+    assert_eq!(codes, [Code::CellOutOfRange]);
+}

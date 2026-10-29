@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_codegen::artifact::Emitted;
 use zakac_codegen::artifact::run_phases;
 use zakac_codegen::bc::Func;
@@ -17,7 +18,9 @@ pub fn run(text: &str) -> Emitted
     let mut sm = SourceMap::new();
     let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
     let options = SemcheckOptions::default();
-    run_phases(&file, &LexerOptions::default(), &options, &FoldOptions::default())
+    let folding = FoldOptions::default();
+    let mem = BorrowCheckOptions::default();
+    run_phases(&file, &LexerOptions::default(), &options, &folding, &mem)
 }
 
 /// The ops of a clean source text.

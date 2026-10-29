@@ -117,3 +117,14 @@ fn output_extensions_pick_the_format()
     assert_eq!(code, ExitCode::Success);
     assert!(std::fs::read_to_string(&text).unwrap().starts_with(TEXT_HEADER));
 }
+
+#[test]
+fn no_raw_rejects_raw_pointer_kinds()
+{
+    let source = "ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာအကြမ်း ဖြစ်ပါစေ။";
+    let (code, _, stderr) = run_cli(&["--no-raw"], source);
+    assert_ne!(code, ExitCode::Success);
+    assert!(stderr.contains("ZK0717"), "{stderr}");
+    let (code, _, stderr) = run_cli(&[], source);
+    assert_eq!(code, ExitCode::Success, "{stderr}");
+}

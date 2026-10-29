@@ -8,6 +8,7 @@ use zaka_explorer::state::permalink::decode;
 use zaka_explorer::state::permalink::encode;
 use zaka_explorer::state::settings::AstMode;
 use zaka_explorer::state::settings::LowerMode;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_ir_builder::ir::FoldOptions;
 
 /// A link to a source with the default options.
@@ -50,7 +51,7 @@ fn links_keep_the_stage_and_the_ast_view()
         }
     }
     let shown = encode(&link_at(Phase::Parse, AstMode::Graph));
-    assert!(shown.starts_with("4.64.7.parse.graph.folded."), "{shown}");
+    assert!(shown.starts_with("5.64.7.error.0.parse.graph.folded."), "{shown}");
 }
 
 #[test]
@@ -68,10 +69,43 @@ fn links_keep_the_foldings_and_the_lowering_view()
             let link = Link::builder().source("x").options(options).stage(Phase::Lower)
                 .lower_mode(lower_mode).build();
             let hash = encode(&link);
-            assert!(hash.starts_with(&format!("4.64.{n}.lower.")), "{hash}");
+            assert!(hash.starts_with(&format!("5.64.{n}.error.0.lower.")), "{hash}");
             assert_eq!(decode(&hash), Some(link));
         }
     }
+}
+
+#[test]
+fn links_keep_the_ownership_checks()
+{
+    for check in MemCheck::iter()
+    {
+        for mem in 0..4u8
+        {
+            let (strict, no_raw) = (mem & 1 != 0, mem & 2 != 0);
+            #[rustfmt::skip]
+            let options = Options::builder().check(check).strict(strict).no_raw(no_raw)
+                .build();
+            let link = Link::builder().source("x").options(options).build();
+            let hash = encode(&link);
+            let word: &'static str = check.into();
+            assert!(hash.starts_with(&format!("5.64.7.{word}.{mem}.")), "{hash}");
+            assert_eq!(decode(&hash), Some(link));
+        }
+    }
+}
+
+#[test]
+fn version_4_links_open_with_the_default_checks()
+{
+    let decoded = decode("4.64.7.lower.tree.folded.eA").unwrap();
+    assert_eq!(decoded.source, "x");
+    assert_eq!((decoded.stage, decoded.lower_mode), (Phase::Lower, LowerMode::Folded));
+    let options = decoded.options;
+    assert_eq!(
+        (options.check, options.strict, options.no_raw),
+        (MemCheck::Error, false, false)
+    );
 }
 
 #[test]
@@ -112,6 +146,9 @@ fn malformed_links_decode_to_none()
         "",
         "#",
         "1.0.64.eA",
+        "5.64.7.strict.0.lex.tree.folded.eA",
+        "5.64.7.error.4.lex.tree.folded.eA",
+        "5.64.7.error.0.lex.tree.eA",
         "4.64.lex.tree.eA",
         "4.64.8.lex.tree.folded.eA",
         "4.64.x.lex.tree.folded.eA",

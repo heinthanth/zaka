@@ -18,7 +18,7 @@ macro_rules! define_codes {
 ///
 /// Ids are `ZK` plus four digits; the first two give the phase:
 /// `01` lexer, `02` parser, `03` resolve, `04` kinds, `05` naturalness,
-/// `06` constant folding.
+/// `06` constant folding, `07` ownership.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Code { $($(#[$meta])* $name,)+ }
 
@@ -191,8 +191,6 @@ PointerOperator = ("ZK0415", Level::Error),
 PointerKindsDiffer = ("ZK0416", Level::Error),
 /// A heap statement is given a value that is not a pointer.
 HeapNeedsPointer = ("ZK0417", Level::Error),
-/// A function returns the address of one of its locals.
-LocalAddressReturned = ("ZK0418", Level::Warning),
 /// A list literal has more or fewer cells than its kind.
 ListCountMismatch = ("ZK0419", Level::Error),
 /// A blank list stands where no list kind is known.
@@ -229,7 +227,42 @@ ConstantOverflow = ("ZK0601", Level::Error),
 /// An integer division or remainder has the constant zero as divisor.
 ConstantZeroDivisor = ("ZK0602", Level::Error),
 /// A constant cell number is outside its list.
-CellOutOfRange = ("ZK0603", Level::Error) }
+CellOutOfRange = ("ZK0603", Level::Error),
+// ownership: ZK07xx
+/// A name is used after its block moved to another owner.
+MovedOut = ("ZK0701", Level::Error),
+/// A borrowed address is freed or resized.
+FreedBorrow = ("ZK0702", Level::Error),
+/// A borrowed address is stored where it could outlast its owner.
+BorrowStored = ("ZK0703", Level::Error),
+/// An owner changes its block while a borrow of it is still used.
+InvalidatedLoan = ("ZK0704", Level::Error),
+/// The address of a borrowed address is taken.
+BorrowOfBorrow = ("ZK0705", Level::Error),
+/// A function returns a borrow of one of its locals.
+LocalBorrowReturned = ("ZK0706", Level::Error),
+/// A call frees through one argument while another reaches the same block.
+AliasedArgument = ("ZK0707", Level::Error),
+/// An owner goes out of scope without its block freed or moved.
+BlockLeaked = ("ZK0708", Level::Error),
+/// A name known to hold ဗလာ is dereferenced.
+NullDeref = ("ZK0709", Level::Error),
+/// A constant offset is past the end of its block.
+OffsetPastEnd = ("ZK0710", Level::Error),
+/// A name that can hold ဗလာ is dereferenced without a check.
+NullDerefPossible = ("ZK0711", Level::Warning),
+/// Pointers into different blocks are subtracted.
+MixedBlocks = ("ZK0712", Level::Error),
+/// A borrow marker sits where none is allowed.
+BadBorrowMarker = ("ZK0713", Level::Error),
+/// A borrowed address is given where an owner is wanted.
+BorrowForOwner = ("ZK0714", Level::Error),
+/// An owner is given where a borrow is wanted and would move.
+OwnerForBorrow = ("ZK0715", Level::Error),
+/// A raw address is lent.
+LendOfRaw = ("ZK0716", Level::Error),
+/// A raw address is used though raw addresses are turned off.
+RawNotAllowed = ("ZK0717", Level::Error) }
 
 impl Code
 {

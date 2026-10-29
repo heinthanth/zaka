@@ -349,7 +349,7 @@ impl Lowerer<'_>
     fn initial(&mut self, init: Option<&ast::Expr>, kind: DataKind, span: Span)
     -> Expr
     {
-        ret_if!(let Some(init) = init, self.coerce(init, kind));
+        ret_if!(let Some(init) = init, self.owned(init, kind));
         default_constant(kind, span)
     }
 
@@ -371,12 +371,12 @@ impl Lowerer<'_>
             Dest::Slot(place) =>
             {
                 let want = self.slot_kind(place);
-                let value = self.coerce(&n.value, want);
+                let value = self.owned(&n.value, want);
                 Stmt::Set { place, value, span }
             }
             Dest::Mem(addr) =>
             {
-                let value = self.coerce(&n.value, self.kind_of(&n.target));
+                let value = self.owned(&n.value, self.kind_of(&n.target));
                 Stmt::Store { addr, value, span }
             }
         }
@@ -693,7 +693,7 @@ impl Lowerer<'_>
     fn return_stmt(&mut self, n: &st::ReturnStmt) -> Stmt
     {
         let ret = self.frame.as_ref().and_then(|f| f.ret);
-        let value = n.value.as_ref().zip(ret).map(|(v, k)| self.coerce(v, k));
+        let value = n.value.as_ref().zip(ret).map(|(v, k)| self.owned(v, k));
         Stmt::Return { value, span: n.span }
     }
 
@@ -716,11 +716,13 @@ impl Lowerer<'_>
         let sig =
             sig.unwrap_or_else(|| panic!("function {} is not declared", callee.name));
         let args =
-            args.iter().zip(&sig.params).map(|(a, k)| self.coerce(a, *k)).collect();
+            args.iter().zip(&sig.params).map(|(a, k)| self.owned(a, *k)).collect();
         (sig.index, args)
     }
 
-    /// The common kind of two kinds: the one the other widens to.
+    /// The common kind of two kinds: the one the other widens to. Two
+    /// addresses of one shape keep the first kind, whatever their borrow
+    /// marks.
     ///
     /// # Arguments
     ///
@@ -732,13 +734,11 @@ impl Lowerer<'_>
     /// The wider kind.
     fn common(&self, a: DataKind, b: DataKind) -> DataKind
     {
+        ret_if!(a.same_shape(b), a);
         tern!(a.widens_to(b, self.platform), b, a)
     }
 
     /// Lower an expression and convert it to `want` when its kind differs.
-    /// A `ဗလာ` constant headed for a pointer kind takes `want` as its label
-    /// with no conversion; other addresses keep their own kind, which pointer
-    /// math reads its stride from, under an implicit conversion.
     ///
     /// # Arguments
     ///
@@ -751,16 +751,26 @@ impl Lowerer<'_>
     fn coerce(&mut self, e: &ast::Expr, want: DataKind) -> Expr
     {
         let lowered = self.expr(e);
-        ret_if!(lowered.kind == want, lowered);
-        let span = lowered.span;
-        let literal = matches!(lowered.node, ExprNode::Const(_));
-        let relabel = literal && lowered.kind.is_ptr() && want.is_ptr();
-        ret_if!(
-            relabel,
-            Expr::builder().kind(want).node(lowered.node).span(span).build()
-        );
-        let node = ExprNode::Convert { operand: Box::new(lowered), implicit: true };
-        Expr::builder().kind(want).node(node).span(span).build()
+        coerce_lowered(lowered, want)
+    }
+
+    /// Lower a value headed for a place of kind `want`. A value of a move
+    /// kind headed for a place of a move kind is taken out of its own
+    /// place, which is left at its default; other values are read.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The value.
+    /// * `want` - The kind of the place.
+    ///
+    /// # Returns
+    ///
+    /// The expression, of kind `want`.
+    fn owned(&mut self, e: &ast::Expr, want: DataKind) -> Expr
+    {
+        let lowered = self.expr(e);
+        let moved = lowered.kind.is_move_kind() && want.is_move_kind();
+        coerce_lowered(tern!(moved, take(lowered), lowered), want)
     }
 
     /// Lower an expression with the kind the check recorded for it; a
@@ -1021,7 +1031,7 @@ impl Lowerer<'_>
     fn list(&mut self, n: &ast::ListLit, kind: DataKind) -> ExprNode
     {
         let cell = kind.as_list().expect("a list literal has a list kind").cell;
-        ExprNode::List(n.cells.iter().map(|c| self.coerce(c, cell)).collect())
+        ExprNode::List(n.cells.iter().map(|c| self.owned(c, cell)).collect())
     }
 
     /// The address of one cell of a list, or of the list a pointer points
@@ -1144,13 +1154,97 @@ impl Lowerer<'_>
         {
             panic!("verb {} has {} operands", n.op.as_ref(), args.len());
         };
-        ret_if!(n.op == VerbOp::AddrOf, self.addr_of(value));
-        ret_if!(n.op == VerbOp::Deref, self.load(value));
-        ret_if!(n.op == VerbOp::CellCount, self.cell_count(value));
-        let operand = self.expr(value);
-        ret_if!(n.op == VerbOp::BitNot, prefix_node(PrefixOp::BitNot, operand));
-        ExprNode::Convert { operand: Box::new(operand), implicit: false }
+        match n.op
+        {
+            VerbOp::AddrOf => self.addr_of(value),
+            VerbOp::Deref => self.load(value),
+            VerbOp::CellCount => self.cell_count(value),
+            VerbOp::BitNot => prefix_node(PrefixOp::BitNot, self.expr(value)),
+            VerbOp::Lend => ExprNode::Lend { operand: Box::new(self.expr(value)) },
+            VerbOp::Cast => ExprNode::Convert {
+                operand: Box::new(self.expr(value)),
+                implicit: false,
+            },
+            VerbOp::Add
+            | VerbOp::Sub
+            | VerbOp::Mul
+            | VerbOp::Div
+            | VerbOp::Rem
+            | VerbOp::BitAnd
+            | VerbOp::BitOr
+            | VerbOp::BitXor
+            | VerbOp::Shift
+            | VerbOp::Eq
+            | VerbOp::Ne
+            | VerbOp::Gt
+            | VerbOp::Le
+            | VerbOp::Lt
+            | VerbOp::Ge
+            | VerbOp::Print
+            | VerbOp::Assign
+            | VerbOp::Return
+            | VerbOp::Cell =>
+            {
+                panic!("verb {} is no one-operand value", n.op.as_ref())
+            }
+        }
     }
+}
+
+/// Convert a lowered expression to `want` when its kind differs. A `ဗလာ`
+/// constant headed for a pointer kind, and an address headed for a kind of
+/// its own shape with another borrow mark, take `want` as their label with
+/// no conversion; other addresses keep their own kind, which pointer math
+/// reads its stride from, under an implicit conversion.
+///
+/// # Arguments
+///
+/// * `lowered` - The expression.
+/// * `want` - The kind its place expects.
+///
+/// # Returns
+///
+/// The expression, of kind `want`.
+fn coerce_lowered(lowered: Expr, want: DataKind) -> Expr
+{
+    ret_if!(lowered.kind == want, lowered);
+    let span = lowered.span;
+    let literal = matches!(lowered.node, ExprNode::Const(_));
+    let null = literal && lowered.kind.is_ptr() && want.is_ptr();
+    let relabel = null || lowered.kind.same_shape(want);
+    ret_if!(relabel, Expr::builder().kind(want).node(lowered.node).span(span).build());
+    let node = ExprNode::Convert { operand: Box::new(lowered), implicit: true };
+    Expr::builder().kind(want).node(node).span(span).build()
+}
+
+/// Move a value out of the place it is read from: a slot through its
+/// address, a value in mem through the address it is loaded from. A
+/// constant or a computed value has no place and is kept as it is. The
+/// slot is not marked `addressed`.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// The value, of its own kind.
+fn take(e: Expr) -> Expr
+{
+    let (kind, span) = (e.kind, e.span);
+    let node = match e.node
+    {
+        ExprNode::Read(place) =>
+        {
+            let at = ExprNode::AddrOf(place);
+            let addr =
+                Expr::builder().kind(kind.pointer_to()).node(at).span(span).build();
+            ExprNode::Take { addr: Box::new(addr) }
+        }
+        ExprNode::Load { addr } => ExprNode::Take { addr },
+        other => other,
+    };
+    Expr::builder().kind(kind).node(node).span(span).build()
 }
 
 /// A constant expression of the value's kind.

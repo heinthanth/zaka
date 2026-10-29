@@ -29,7 +29,7 @@ use zakac_rust_sugars::tern;
 
 use crate::assets::LOGO_DARK;
 use crate::assets::LOGO_LIGHT;
-use crate::manual::LEARN_URL;
+use crate::learn::LEARN_URL;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/header/mod.sass");
@@ -66,10 +66,10 @@ const PAPER: &str = "paper";
 /// The view; it renders no element of its own.
 pub fn header_sheet() -> impl IntoView { sheet(&SHEET) }
 
-/// The header: the wordmark, the link to the manual, the theme and language
-/// pickers, and the explorer. It sits over the page and takes the ground and
-/// ink of the chapter under it. An island: the pickers and the chapter colors
-/// run in the browser.
+/// The header: the wordmark, the link to the Learn pages, the theme and
+/// language pickers, and the explorer. It sits over the page and takes the
+/// ground and ink of the chapter under it. An island: the pickers and the
+/// chapter colors run in the browser.
 ///
 /// # Arguments
 ///

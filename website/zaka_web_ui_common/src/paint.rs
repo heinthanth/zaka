@@ -270,6 +270,9 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Result
         | Kw::Note
         | Kw::Address
+        | Kw::RawAddress
+        | Kw::Borrowed
+        | Kw::Lend
         | Kw::Octets
         | Kw::Items
         | Kw::List => "tok-kind",

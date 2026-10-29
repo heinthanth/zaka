@@ -22,6 +22,48 @@ pub fn kind_mismatch(span: Span, want: &str, got: &str) -> Diagnostic
     Diagnostic::new(Code::KindMismatch, msg, span).with_help(t!("codes.ZK0401.help"))
 }
 
+/// A value does not convert to the kind its place expects, and no
+/// conversion can bridge the two: a list never converts, and none turns a
+/// borrow into an owner or back.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `want` - The expected kind, as text.
+/// * `got` - The found kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0401` diagnostic, with no help.
+pub fn kind_mismatch_unbridged(span: Span, want: &str, got: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0401.message", want = want, got = got);
+    Diagnostic::new(Code::KindMismatch, msg, span)
+}
+
+/// A value does not fit its place, and its block holds addresses in other
+/// places than the block the place expects, which takes a raw address in
+/// between.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `want` - The expected kind, as text.
+/// * `got` - The found kind, as text.
+/// * `raw` - The raw address kind of the expected shape, as text.
+///
+/// # Returns
+///
+/// The `ZK0401` diagnostic, with help naming the raw step.
+pub fn address_block_mismatch(
+    span: Span, want: &str, got: &str, raw: &str,
+) -> Diagnostic
+{
+    let msg = t!("codes.ZK0401.message", want = want, got = got);
+    let help = t!("codes.ZK0401.help_raw", raw = raw, want = want);
+    Diagnostic::new(Code::KindMismatch, msg, span).with_help(help)
+}
+
 /// A condition is not a boolean.
 ///
 /// # Arguments
@@ -142,6 +184,50 @@ pub fn invalid_cast(span: Span, from: &str, to: &str) -> Diagnostic
     Diagnostic::new(Code::InvalidCast, msg, span)
 }
 
+/// An integer is converted straight to an owner or a borrow, which takes
+/// a raw address in between.
+///
+/// # Arguments
+///
+/// * `span` - The conversion.
+/// * `from` - The integer kind, as text.
+/// * `to` - The target kind, as text.
+/// * `raw` - The raw address kind of the same shape, as text.
+///
+/// # Returns
+///
+/// The `ZK0408` diagnostic, with help.
+pub fn checked_from_int(span: Span, from: &str, to: &str, raw: &str) -> Diagnostic
+{
+    invalid_cast(span, from, to).with_help(t!(
+        "codes.ZK0408.help_raw",
+        raw = raw,
+        to = to
+    ))
+}
+
+/// A cast between owners or borrows reads stored addresses as another
+/// kind, which takes a raw address in between.
+///
+/// # Arguments
+///
+/// * `span` - The conversion.
+/// * `from` - The source kind, as text.
+/// * `to` - The target kind, as text.
+/// * `raw` - The raw address kind of the target's shape, as text.
+///
+/// # Returns
+///
+/// The `ZK0408` diagnostic, with help.
+pub fn pointer_pun(span: Span, from: &str, to: &str, raw: &str) -> Diagnostic
+{
+    invalid_cast(span, from, to).with_help(t!(
+        "codes.ZK0408.help_pun",
+        raw = raw,
+        to = to
+    ))
+}
+
 /// A counted-loop step is not positive.
 ///
 /// # Arguments
@@ -215,6 +301,22 @@ pub fn not_a_pointer(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::NotAPointer, t!("codes.ZK0413.message", kind = kind), span)
 }
 
+/// A value that is no pointer is lent where a pointer to it is wanted.
+///
+/// # Arguments
+///
+/// * `span` - The lent operand.
+/// * `kind` - The found kind, as text.
+/// * `name` - The operand name, for the help text.
+///
+/// # Returns
+///
+/// The `ZK0413` diagnostic with a help that shows the address spelling.
+pub fn lend_of_value(span: Span, kind: &str, name: &str) -> Diagnostic
+{
+    not_a_pointer(span, kind).with_help(t!("codes.ZK0413.help", name = name))
+}
+
 /// An opaque pointer is dereferenced or offset.
 ///
 /// # Arguments
@@ -279,22 +381,6 @@ pub fn heap_needs_pointer(span: Span, kind: &str) -> Diagnostic
         t!("codes.ZK0417.message", kind = kind),
         span,
     )
-}
-
-/// A function returns the address of one of its locals.
-///
-/// # Arguments
-///
-/// * `span` - The returned value.
-/// * `name` - The local whose address is returned.
-///
-/// # Returns
-///
-/// The `ZK0418` warning.
-pub fn local_address_returned(span: Span, name: &str) -> Diagnostic
-{
-    let msg = t!("codes.ZK0418.message", name = name);
-    Diagnostic::new(Code::LocalAddressReturned, msg, span)
 }
 
 /// A list literal has more or fewer cells than its kind.

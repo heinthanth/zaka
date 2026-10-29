@@ -3,17 +3,22 @@ use zakac_ast::expr::Expr;
 use zakac_ast::expr::IndexExpr;
 use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
+use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
+use zakac_ast::kind::Wrap;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::kinds as kd;
+use zakac_diagnostics::ownership as od;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 
 use crate::kind::DataKind;
 use crate::place::place_of;
 use crate::semcheck::Checker;
+use crate::semcheck::mismatch_report;
 
 /// Where a written kind stands, which decides whether its list counts can
 /// be left out.
@@ -89,6 +94,45 @@ fn is_blank(e: &Expr) -> bool
     }
 }
 
+/// Whether the borrow markers of a written kind sit where none is allowed:
+/// more than one, or one whose pointer level is raw or missing. The marker
+/// marks the outer pointer level, so a list of borrows keeps it.
+///
+/// # Arguments
+///
+/// * `written` - The kind phrase.
+///
+/// # Returns
+///
+/// `true` for a misplaced marker.
+fn bad_marker(written: &Kind) -> bool
+{
+    ret_true!(written.extra_borrows > 0);
+    let is_level = |w: &&Wrap| matches!(w, Wrap::Ptr | Wrap::RawPtr);
+    let marked = written.wraps.iter().rev().find(is_level);
+    written.borrowed && marked != Some(&Wrap::Ptr)
+}
+
+/// Whether a written kind leaves a list count out behind an address level,
+/// as `ကိန်းပြည့် စာရင်း လိပ်စာ` does: the value of a declaration fills
+/// the counts of its own list levels alone, never those of a list it
+/// points at.
+///
+/// # Arguments
+///
+/// * `written` - The kind phrase.
+///
+/// # Returns
+///
+/// `true` when an open list level has an address level outside it.
+fn open_behind_address(written: &Kind) -> bool
+{
+    let open = written.wraps.iter().position(|w| *w == Wrap::List(Cells::Inferred));
+    let is_level = |w: &Wrap| matches!(w, Wrap::Ptr | Wrap::RawPtr);
+    let address = written.wraps.iter().rposition(is_level);
+    matches!((open, address), (Some(o), Some(a)) if o < a)
+}
+
 impl Checker
 {
     /// The data kind of a written kind, reporting a list too large for the
@@ -113,11 +157,15 @@ impl Checker
         do_if!(open, self.report(kd::list_count_missing(span)));
         let result = at == KindUse::Result && kind.is_list();
         do_if!(result, self.report(kd::list_result(span)));
+        do_if!(bad_marker(written), self.report(od::bad_borrow_marker(span)));
+        let raw = self.no_raw && written.has_raw();
+        do_if!(raw, self.report(od::raw_not_allowed(span)));
         kind
     }
 
     /// Check the value of a declaration against its written kind, filling
-    /// list counts the kind leaves out from the value.
+    /// list counts the kind leaves out from the value. A count left out
+    /// behind an address level is refused: no value fills it.
     ///
     /// # Arguments
     ///
@@ -132,6 +180,12 @@ impl Checker
     ) -> Option<DataKind>
     {
         let kind = self.written_kind(written, KindUse::Decl);
+        if open_behind_address(written)
+        {
+            self.report(kd::list_count_missing(written.span));
+            do_if!(let Some(init) = init, { self.infer(init, None); });
+            return None;
+        }
         if !kind.has_open_count()
         {
             do_if!(let Some(init) = init, self.expect_kind(init, Some(kind)));
@@ -146,7 +200,8 @@ impl Checker
         self.fill_counts(kind, init)
     }
 
-    /// Fill the open counts of a declared kind from its value.
+    /// Fill the open counts of a declared kind from its value, then check
+    /// the value against the filled kind like each other initializer.
     ///
     /// # Arguments
     ///
@@ -165,8 +220,9 @@ impl Checker
         }
         let found = self.infer(init, None)?;
         let filled = kind.fill_counts(found);
-        let mismatch = kd::kind_mismatch(init.span(), &kind.name(), &found.name());
+        let mismatch = mismatch_report(init.span(), kind, found);
         do_if!(filled.is_none(), self.report(mismatch));
+        do_if!(let Some(filled) = filled, self.expect_fit(init, found, filled));
         filled
     }
 

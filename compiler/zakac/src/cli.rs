@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bon::Builder;
 use zaka_vm::cli::ZakaVm;
+use zakac_borrow_checker::cli::ZakacBorrowChecker;
 use zakac_burmese_segmenter::cli::ZakacBurmeseSegmenter;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::ArgMatches;
@@ -77,8 +78,9 @@ impl Command for Zakac
             .add_subcommand::<ZakacBurmeseSegmenter>(Some("segment"))
             .add_subcommand::<ZakacLexer>(Some("lex"))
             .add_subcommand::<ZakacParser>(Some("parse"))
-            .add_subcommand::<ZakacSemcheck>(Some("semcheck"))
+            .add_subcommand::<ZakacSemcheck>(Some("semantic-check"))
             .add_subcommand::<ZakacIrBuilder>(Some("irgen"))
+            .add_subcommand::<ZakacBorrowChecker>(Some("borrow-check"))
             .add_subcommand::<ZakacCodegen>(Some("codegen"))
             .add_subcommand::<ZakaVm>(Some("run"))
     }

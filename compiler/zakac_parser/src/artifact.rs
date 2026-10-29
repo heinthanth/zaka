@@ -95,7 +95,7 @@ impl ParseArtifact
         let base = source.start_pos;
         let shift = |span: Span| relative(span, base);
         MapSpans(shift).visit_program_mut(&mut program);
-        diagnostics.iter_mut().for_each(|d| d.span = shift(d.span));
+        diagnostics.iter_mut().for_each(|d| d.map_spans(&shift));
         #[rustfmt::skip]
         return ParseArtifact::builder().name(source.name.clone()).source(source.src.clone())
             .program(program).diagnostics(diagnostics).build();
@@ -131,7 +131,7 @@ impl ParseArtifact
         let mut program = self.program.clone();
         MapSpans(shift).visit_program_mut(&mut program);
         let mut diagnostics = self.diagnostics.clone();
-        diagnostics.iter_mut().for_each(|d| d.span = shift(d.span));
+        diagnostics.iter_mut().for_each(|d| d.map_spans(&shift));
         (program, diagnostics)
     }
 }

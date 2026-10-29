@@ -129,6 +129,8 @@ impl ToSexpr for Expr
             ExprNode::Call { name, args, .. } => call_sexpr(name, args),
             ExprNode::AddrOf(place) => list("addr", [place.to_string()]),
             ExprNode::Load { addr } => list("load", [addr.to_sexpr()]),
+            ExprNode::Lend { operand } => list("lend", [operand.to_sexpr()]),
+            ExprNode::Take { addr } => list("take", [addr.to_sexpr()]),
             ExprNode::PtrAdd { base, offset } =>
             {
                 list("ptr+", [base.to_sexpr(), offset.to_sexpr()])

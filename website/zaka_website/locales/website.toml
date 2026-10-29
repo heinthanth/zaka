@@ -110,7 +110,7 @@ en = "%{author} · %{first} - %{last}"
 [website.learn.page_title]
 en = "%{page} - Zaka"
 [website.learn.mark]
-en = "The manual"
+en = "Learn"
 [website.learn.contents]
 en = "Contents"
 [website.learn.reference]

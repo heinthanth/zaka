@@ -970,6 +970,13 @@ impl<'s> FuncGen<'s>
                 self.expr(addr);
                 do_if!(!e.kind.is_list(), self.op(Op::Load(e.kind)));
             }
+            ExprNode::Take { addr } if e.kind.is_list() => self.take_list(e.kind, addr),
+            ExprNode::Take { addr } =>
+            {
+                self.expr(addr);
+                self.op(Op::Take(e.kind));
+            }
+            ExprNode::Lend { operand } => self.expr(operand),
             ExprNode::PtrAdd { base, offset } =>
             {
                 self.expr(base);
@@ -990,6 +997,29 @@ impl<'s> FuncGen<'s>
                 self.cell_addr(e, list, index, (*len, *first), *checked)
             }
         }
+    }
+
+    /// Move a list out of the place at an address: its cells go to a slot
+    /// of their own, the place is zeroed, which leaves `ဗလာ` in each owner
+    /// cell, and the address of the new slot is pushed. The address is
+    /// worked out once and kept in a slot of its own, so the source is read
+    /// once.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The list kind.
+    /// * `addr` - The address of the place.
+    fn take_list(&mut self, kind: DataKind, addr: &Expr)
+    {
+        let at = Place::Local(self.temp("%at", addr.kind));
+        self.store(at, |g| g.expr(addr));
+        let slot = self.temp("%list", kind);
+        self.op(Op::LocalAddr(slot));
+        self.load(at);
+        self.op(Op::Blit(kind));
+        self.load(at);
+        self.op(Op::Zero(kind));
+        self.op(Op::LocalAddr(slot));
     }
 
     /// Push the size of a kind in octets, a `usize`.

@@ -13,6 +13,7 @@ zakac_rust_sugars = { workspace = true }
 zakac_span = { workspace = true }
 
 [dev-dependencies]
+postcard = { workspace = true }
 serde-saphyr = { workspace = true }
 
 [build-dependencies]

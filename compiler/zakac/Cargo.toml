@@ -5,6 +5,7 @@ edition.workspace = true
 
 [dependencies]
 bon = { workspace = true }
+zakac_borrow_checker = { workspace = true }
 zakac_burmese_segmenter = { workspace = true }
 zakac_cli_common = { workspace = true }
 zakac_codegen = { workspace = true }

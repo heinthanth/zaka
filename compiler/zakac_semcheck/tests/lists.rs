@@ -6,10 +6,10 @@ use common::kind_at;
 use common::ok;
 use zakac_diagnostics::Code;
 
-/// `l` a list of three integers, `g` a 2 x 3 grid, `p` the address of `l`.
+/// `l` a list of three integers, `g` a 2 x 3 grid, `p` a borrow of `l`.
 const LISTS: &str = "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် g သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် l ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် l ၏ လိပ်စာ ဖြစ်ပါစေ။
 ";
 
 /// Join program lines.
@@ -22,7 +22,7 @@ fn cells_take_the_cell_kind()
     assert!(checked.out.diagnostics.is_empty());
     assert_eq!(kind_at(&checked, "l ၏ အကွက် ၀"), "isize");
     assert_eq!(kind_at(&checked, "g ၏ အကွက် ၁"), "[3]isize");
-    assert_eq!(kind_at(&checked, "l ၏ လိပ်စာ"), "*[3]isize");
+    assert_eq!(kind_at(&checked, "l ၏ လိပ်စာ"), "&*[3]isize");
     ok(&lines(&[LISTS, "p ၏ အကွက် ၂ ကို ၅ ဟု ထားပါ။", "p ၏ အကွက်အရေအတွက် ကို ပြသပါ။"]));
     ok(&lines(&[LISTS, "g ၏ အကွက် ၀ ကို l ဟု ထားပါ။", "l ၏ ၃ ခုမြောက်အကွက် ကို ၁ ဟု ထားပါ။"]));
 }
@@ -128,4 +128,82 @@ fn lists_do_not_convert()
 {
     let cast = "l ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။";
     assert_eq!(codes(&lines(&[LISTS, cast])), [Code::InvalidCast]);
+}
+
+#[test]
+fn an_open_count_keeps_the_cell_kind_of_its_value()
+{
+    let ints = "ကိန်းရှင် ns သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်ပါစေ။";
+    let owners = "ကိန်းရှင် ps သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်ပါစေ။";
+    let floats = "ကိန်းရှင် fs သည် အကွက် ၂ ခုရှိသော ဒဿမကိန်း စာရင်း ဖြစ်ပါစေ။";
+    let refused = [
+        (ints, "ငှားထားသော ကိန်းပြည့် လိပ်စာ စာရင်း", "ns"),
+        (ints, "ကိန်းပြည့် လိပ်စာ စာရင်း", "ns"),
+        (ints, "ကိန်းပြည့် လိပ်စာ စာရင်း စာရင်း", "ns တို့ပါသော စာရင်း"),
+        (owners, "ကိန်းပြည့် စာရင်း", "ps"),
+        (floats, "မှန်မှားတန်ဖိုး စာရင်း", "fs"),
+        (owners, "ငှားထားသော ကိန်းပြည့် လိပ်စာ စာရင်း", "ps"),
+        (ints, "၈ ဘစ် ကိန်းပြည့် စာရင်း", "ns"),
+    ];
+    for (first, kind, value) in refused
+    {
+        let text = format!("{first}\nကိန်းရှင် b သည် {kind} ဖြစ်၍ တန်ဖိုးသည် {value} ဖြစ်ပါစေ။");
+        assert_eq!(codes(&text), [Code::KindMismatch], "{text}");
+    }
+    let callee = "လုပ်ဆောင်ချက် လွှတ် သည်
+ငှားထားသော အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ps သည် ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုး ဖြစ်ပါစေ။
+ps ၏ အကွက် ၀ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    assert_eq!(codes(callee), [Code::KindMismatch]);
+    let same = [
+        (ints, "ကိန်းပြည့် စာရင်း", "ns"),
+        (owners, "ကိန်းပြည့် လိပ်စာ စာရင်း", "ps"),
+        (ints, "ကိန်းပြည့် စာရင်း စာရင်း", "ns တို့ပါသော စာရင်း"),
+    ];
+    for (first, kind, value) in same
+    {
+        ok(&format!("{first}\nကိန်းရှင် b သည် {kind} ဖြစ်၍ တန်ဖိုးသည် {value} ဖြစ်ပါစေ။"));
+    }
+}
+
+/// The help texts of the diagnostics of `text`, each with its code.
+fn helps(text: &str) -> Vec<(Code, Option<String>)>
+{
+    let out = check(text).out;
+    out.diagnostics.iter().map(|d| (d.code, d.help.clone())).collect()
+}
+
+#[test]
+fn a_list_mismatch_does_not_offer_a_conversion()
+{
+    let ints = "ကိန်းရှင် ns သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်ပါစေ။";
+    let refused = [
+        "ကိန်းရှင် b သည် ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်၍ တန်ဖိုးသည် ns ဖြစ်ပါစေ။",
+        "ကိန်းရှင် b သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်၍ တန်ဖိုးသည် ns ဖြစ်ပါစေ။",
+        "ကိန်းရှင် b သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ns ဖြစ်ပါစေ။",
+        "ns ကို ၅ ဟု ထားပါ။",
+        "ကိန်းရှင် b သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။",
+    ];
+    for line in refused
+    {
+        let text = lines(&[ints, line]);
+        assert_eq!(helps(&text), [(Code::KindMismatch, None)], "{text}");
+    }
+}
+
+#[test]
+fn an_open_count_behind_an_address_is_refused()
+{
+    let declared = "ကိန်းရှင် ns သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်ပါစေ။
+ကိန်းရှင် q သည် ငှားထားသော ကိန်းပြည့် စာရင်း လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ns ၏ လိပ်စာ ဖြစ်ပါစေ။
+q ၏ အကွက် ၂ ကို ပြသပါ။";
+    assert_eq!(codes(declared), [Code::ListCountMissing]);
+    let blank = "ကိန်းရှင် q သည် ကိန်းပြည့် စာရင်း လိပ်စာ ဖြစ်ပါစေ။
+မင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို q တွင် သိမ်းထားမည်။
+q ၏ အကွက် ၅ ကို ၉ ဟု ထားပါ။";
+    assert_eq!(codes(blank), [Code::ListCountMissing]);
+    let cells = "ကိန်းရှင် q သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ စာရင်း ဖြစ်ပါစေ။";
+    assert_eq!(codes(cells), [Code::ListCountMissing]);
 }

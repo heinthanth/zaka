@@ -8,12 +8,16 @@ use strum::IntoStaticStr;
 use zaka_vm::trap::Trap;
 pub use zaka_web_ui_common::paint::token_class;
 use zakac_ast::s_expr::ToSexpr;
+use zakac_borrow_checker::borrow_check;
+use zakac_borrow_checker::options::BorrowCheckOptions;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_burmese_segmenter::segmenter::PreLexicalToken;
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
 use zakac_codegen::bc;
 use zakac_codegen::emit::emit;
 use zakac_diagnostics::Diagnostic;
+use zakac_diagnostics::Label;
 use zakac_diagnostics::Level;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
@@ -83,6 +87,15 @@ pub struct Options
     /// Which foldings rewrite the IR.
     #[builder(default)]
     pub fold: FoldOptions,
+    /// What a pointer mistake the ownership check proves does.
+    #[builder(default)]
+    pub check: MemCheck,
+    /// Also warn about a pointer that can be blank.
+    #[builder(default)]
+    pub strict: bool,
+    /// Reject each kind written with a raw address.
+    #[builder(default)]
+    pub no_raw: bool,
 }
 
 impl Default for Options
@@ -122,6 +135,8 @@ pub enum Phase
     Check,
     /// Lowering to the IR and constant folding.
     Lower,
+    /// The ownership and loan check of the folded IR.
+    BorrowCheck,
     /// Code generation for the stack-based virtual machine.
     Codegen,
     /// A run of the ops in the VM, one step at a time.
@@ -144,6 +159,7 @@ impl Phase
             Phase::Parse => t!("explorer.phase.parse"),
             Phase::Check => t!("explorer.phase.check"),
             Phase::Lower => t!("explorer.phase.lower"),
+            Phase::BorrowCheck => t!("explorer.phase.borrow_check"),
             Phase::Codegen => t!("explorer.phase.codegen"),
             Phase::Run => t!("explorer.phase.run"),
         }
@@ -164,6 +180,7 @@ impl Phase
             Phase::Parse => t!("explorer.phase.parse_component"),
             Phase::Check => t!("explorer.phase.check_component"),
             Phase::Lower => t!("explorer.phase.lower_component"),
+            Phase::BorrowCheck => t!("explorer.phase.borrow_check_component"),
             Phase::Codegen => t!("explorer.phase.codegen_component"),
             Phase::Run => t!("explorer.phase.run_component"),
         }
@@ -183,6 +200,7 @@ impl Phase
             Phase::Parse => t!("explorer.phase.parse_note"),
             Phase::Check => t!("explorer.phase.check_note"),
             Phase::Lower => t!("explorer.phase.lower_note"),
+            Phase::BorrowCheck => t!("explorer.phase.borrow_check_note"),
             Phase::Codegen => t!("explorer.phase.codegen_note"),
             Phase::Run => t!("explorer.phase.run_note"),
         }
@@ -336,6 +354,10 @@ pub struct DiagRow
     pub help: Option<String>,
     /// The source region; `None` for a placeholder span.
     pub range: Option<Range>,
+    /// The other regions it points at, each with its note, such as the later
+    /// use of a freed block; placeholder spans are left out.
+    #[builder(default)]
+    pub labels: Vec<(Range, String)>,
     /// The CLI rendering, in painted pieces.
     pub pieces: Vec<Piece>,
 }
@@ -374,6 +396,11 @@ pub struct Compiled
     pub ir_folded_sexpr: String,
     /// Whether lowering ran; it is left out after errors in earlier phases.
     pub lowered: bool,
+    /// Whether the ownership check ran; it is left out after errors in
+    /// earlier phases, folding included.
+    pub borrowchecked: bool,
+    /// What each function frees, resizes or moves through, one line each.
+    pub digests: Vec<String>,
     /// The generated ops, which the run view steps through.
     pub ops: Option<bc::Module>,
     /// The functions of the ops, as the asm tables show them.
@@ -494,14 +521,15 @@ impl Compiled
     /// # Returns
     ///
     /// The status; the check is skipped after lexer or parser errors, and
-    /// lowering, code generation and the run after errors in an earlier
-    /// phase. The ops do not run here; the pipeline warns on the run once a
-    /// run of the debugger session traps.
+    /// lowering, the ownership check, code generation and the run after
+    /// errors in an earlier phase. The ops do not run here; the pipeline warns
+    /// on the run once a run of the debugger session traps.
     pub fn status(&self, phase: Phase) -> Status
     {
         let emits = matches!(phase, Phase::Codegen | Phase::Run);
         ret_if!(phase == Phase::Check && !self.checked, Status::Skipped);
         ret_if!(phase == Phase::Lower && !self.lowered, Status::Skipped);
+        ret_if!(phase == Phase::BorrowCheck && !self.borrowchecked, Status::Skipped);
         ret_if!(emits && !self.emitted, Status::Skipped);
         let own = self.diagnostics.iter().filter(|d| d.phase == phase);
         let levels: Vec<Level> = own.map(|d| d.level).collect();
@@ -616,12 +644,18 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     let lowered = checked && !has_errors(&idiom);
     let (ir, lower_time) =
         timed(|| lowered.then(|| lower_and_fold(&parsed.program, &out, options)));
-    let (plain, folded, fold_diags) = ir.unwrap_or_default();
+    let (plain, mut folded, fold_diags) = ir.unwrap_or_default();
+    let borrowchecked = lowered && !has_errors(&fold_diags);
+    let ((owner_diags, digests), borrow_check_time) = timed(|| {
+        let module = folded.as_mut().filter(|_| borrowchecked);
+        module.map(|m| check_owners(m, options)).unwrap_or_default()
+    });
     let tagged = [
         (Phase::Lex, &lexed.diagnostics),
         (Phase::Parse, &parsed.diagnostics),
         (Phase::Check, &idiom),
         (Phase::Lower, &fold_diags),
+        (Phase::BorrowCheck, &owner_diags),
     ];
     let ir_tree = |m: &Option<Module>| {
         m.as_ref().map(|m| build_ir_tree(&file, source, m)).unwrap_or_default()
@@ -632,7 +666,7 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .iter()
         .flat_map(|(phase, diags)| diags.iter().map(|d| diag_row(&unit, *phase, d)))
         .collect();
-    let emitted = lowered && !has_errors(&fold_diags);
+    let emitted = borrowchecked && !has_errors(&owner_diags);
     let (ops, codegen_time) = timed(|| {
         folded.as_ref().filter(|_| emitted).map(|m| emit(m, options.platform_bits))
     });
@@ -642,6 +676,7 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .parse(parse_time)
         .maybe_check(checked.then_some(check_time))
         .maybe_lower(lowered.then_some(lower_time))
+        .maybe_borrow_check(borrowchecked.then_some(borrow_check_time))
         .maybe_codegen(emitted.then_some(codegen_time))
         .build();
     let asm = ops.as_ref().map(|m| asm_rows(&unit, m)).unwrap_or_default();
@@ -664,6 +699,8 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .ir_plain_sexpr(ir_sexpr(&plain))
         .ir_folded_sexpr(ir_sexpr(&folded))
         .lowered(lowered)
+        .borrowchecked(borrowchecked)
+        .digests(digests)
         .maybe_ops(ops)
         .asm(asm)
         .globals(globals)
@@ -687,8 +724,10 @@ fn check_program(
     program: &zakac_ast::stmt::Program, options: &Options,
 ) -> (Vec<Diagnostic>, SemcheckOutput)
 {
-    let check_options =
-        SemcheckOptions::builder().platform_bits(options.platform_bits).build();
+    let check_options = SemcheckOptions::builder()
+        .platform_bits(options.platform_bits)
+        .no_raw(options.no_raw)
+        .build();
     let idiom = check(program, &NaturalnessOptions::default());
     (idiom, semcheck(program, &check_options))
 }
@@ -735,6 +774,26 @@ fn lower_and_fold(
     let mut folded = plain.clone();
     let diags = fold(&mut folded, &options.fold, bits);
     (Some(plain), Some(folded), diags)
+}
+
+/// Run the ownership check over a folded module, which marks the list cells
+/// it proves in bounds.
+///
+/// # Arguments
+///
+/// * `module` - The folded module.
+/// * `options` - The options.
+///
+/// # Returns
+///
+/// The diagnostics, and the digest of each function as one line.
+fn check_owners(
+    module: &mut Module, options: &Options,
+) -> (Vec<Diagnostic>, Vec<String>)
+{
+    let mem = BorrowCheckOptions::builder().check(options.check).strict(options.strict);
+    let out = borrow_check(module, &mem.build(), options.platform_bits);
+    (out.diagnostics, out.digests.iter().map(ToString::to_string).collect())
 }
 
 /// Rows of the segments view.
@@ -975,6 +1034,9 @@ pub fn escape_controls(text: &str) -> String
 fn diag_row(unit: &Unit, phase: Phase, diag: &Diagnostic) -> DiagRow
 {
     let range = (!diag.span.is_placeholder()).then(|| unit.range(&diag.span));
+    let label = |l: &Label| {
+        (!l.span.is_placeholder()).then(|| (unit.range(&l.span), l.text.clone()))
+    };
     DiagRow::builder()
         .phase(phase)
         .level(diag.level)
@@ -982,6 +1044,7 @@ fn diag_row(unit: &Unit, phase: Phase, diag: &Diagnostic) -> DiagRow
         .message(diag.message.clone())
         .maybe_help(diag.help.clone())
         .maybe_range(range)
+        .labels(diag.labels.iter().filter_map(label).collect())
         .pieces(diagnostic_pieces(unit.sm, diag))
         .build()
 }

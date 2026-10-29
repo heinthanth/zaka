@@ -1,6 +1,7 @@
 pub mod about;
 pub mod asm_table;
 pub mod ast_view;
+pub mod borrow_check_view;
 pub mod bottom_panel;
 pub mod check_view;
 pub mod codegen_view;

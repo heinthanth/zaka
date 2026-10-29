@@ -25,6 +25,7 @@ fn skipped_phases_take_no_time()
     assert!(times.of(Phase::Lex).is_some());
     assert_eq!(times.of(Phase::Check), None);
     assert_eq!(times.of(Phase::Lower), None);
+    assert_eq!(times.of(Phase::BorrowCheck), None);
     assert_eq!(times.of(Phase::Codegen), None);
 }
 

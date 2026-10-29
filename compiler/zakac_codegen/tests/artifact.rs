@@ -1,6 +1,7 @@
 use std::io::Cursor;
 use std::path::PathBuf;
 
+use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_codegen::artifact::CodegenArtifact;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
@@ -29,6 +30,7 @@ fn sample(name: &str) -> (CodegenArtifact, u32)
         &LexerOptions::default(),
         &options,
         &FoldOptions::default(),
+        &BorrowCheckOptions::default(),
     );
     (artifact, file.start_pos.as_u32())
 }
@@ -75,6 +77,7 @@ fn errors_leave_no_module_and_keep_relative_spans()
         &LexerOptions::default(),
         &options,
         &folding,
+        &BorrowCheckOptions::default(),
     );
     assert!(artifact.module.is_none());
     assert_eq!(artifact.diagnostics[0].span.lo.as_u32(), 0);

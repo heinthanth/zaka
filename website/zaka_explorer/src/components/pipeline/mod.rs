@@ -21,6 +21,7 @@ use crate::compile::Phase;
 use crate::compile::Status;
 use crate::compile::timing::time_text;
 use crate::components::ast_view::ast_view;
+use crate::components::borrow_check_view::borrow_check_view;
 use crate::components::check_view::check_view;
 use crate::components::codegen_view::codegen_view;
 use crate::components::lower_view::lower_view;
@@ -54,6 +55,7 @@ pub fn pipeline() -> impl IntoView
         Phase::Parse => ast_view().into_any(),
         Phase::Check => check_view().into_any(),
         Phase::Lower => lower_view().into_any(),
+        Phase::BorrowCheck => borrow_check_view().into_any(),
         Phase::Codegen => codegen_view().into_any(),
         Phase::Run => ops_view().into_any(),
     };

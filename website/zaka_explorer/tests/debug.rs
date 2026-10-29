@@ -18,6 +18,7 @@ use zaka_explorer::debug::Session;
 use zaka_explorer::debug::cell_width;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::mem::Origin;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::tern;
@@ -25,10 +26,19 @@ use zakac_rust_sugars::tern;
 /// Compile a sample and start a session over its ops.
 fn session_of(path: &str) -> (Compiled, Session)
 {
-    let out = compile(find_sample(path).unwrap().text, &Options::default());
+    session_with(path, &Options::default())
+}
+
+/// Compile a sample with some options and start a session over its ops.
+fn session_with(path: &str, options: &Options) -> (Compiled, Session)
+{
+    let out = compile(find_sample(path).unwrap().text, options);
     let session = Session::new(out.ops.as_ref());
     (out, session)
 }
+
+/// Options that build a program the ownership check finds fault with.
+fn unchecked() -> Options { Options::builder().check(MemCheck::Off).build() }
 
 /// The main function index and the op indices of its calls.
 /// The heap blocks of a session, without the blocks of its variables.
@@ -380,7 +390,7 @@ fn a_spot_finds_its_op_after_the_folding_changes()
 fn each_variable_shows_its_value_and_the_block_it_lives_in()
 {
     let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။";
+ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။";
     let out = compile(text, &Options::default());
     let mut s = Session::new(out.ops.as_ref());
     let set =
@@ -443,7 +453,7 @@ fn heap_room_never_freed_shows_as_leaked_once_the_run_finishes()
 {
     let text = "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် \
                 သိမ်းထားမည်။\nပ ၏ တန်ဖိုး ကို ၄၂ ဟု ထားပါ။";
-    let out = compile(text, &Options::default());
+    let out = compile(text, &unchecked());
     let mut s = Session::new(out.ops.as_ref());
     s.resume();
     assert_eq!(s.status(), RunStatus::Finished);
@@ -506,9 +516,10 @@ fn each_mistake_traps_or_leaks()
 {
     let mistakes: Vec<_> = SAMPLES.iter().filter(|s| s.group == MISTAKES).collect();
     assert!(mistakes.len() >= 8);
+    let warn = Options::builder().check(MemCheck::Warn).build();
     for sample in mistakes
     {
-        let (_, mut s) = session_of(&sample.path());
+        let (_, mut s) = session_with(&sample.path(), &warn);
         while s.run_for(10_000, false)
         {}
         let leaked = s.heap().blocks.iter().any(|b| b.state == BlockState::Leaked);
@@ -570,7 +581,7 @@ fn the_map_shows_the_gap_after_each_variable_and_none_inside_a_packed_frame()
 #[test]
 fn a_trap_in_a_gap_is_found_in_the_map()
 {
-    let (_, mut s) = session_of("mistakes/past_the_end");
+    let (_, mut s) = session_with("mistakes/past_the_end", &unchecked());
     while s.run_for(10_000, false)
     {}
     assert_eq!(s.status(), RunStatus::Trapped);
@@ -597,7 +608,7 @@ fn the_map_holds_each_block_in_address_order()
                 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ကိန်းများ + နံပါတ် \
                 ၏ တန်ဖိုး ဖြစ်ပါစေ။\nပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို \
                 ဗလာ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\"ပြီးပါပြီ\" ဟု ပြသပါ။";
-    let out = compile(text, &Options::default());
+    let out = compile(text, &unchecked());
     let mut s = Session::new(out.ops.as_ref());
     s.resume();
     assert_eq!(s.status(), RunStatus::Finished);

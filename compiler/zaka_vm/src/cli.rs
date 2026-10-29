@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use zakac_borrow_checker::cli::attach_borrow_check_args;
+use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::Arg;
 use zakac_cli_common::clap::ArgAction;
@@ -106,7 +108,7 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .long("leaks")
         .help(t!("vm.leaks"))
         .action(ArgAction::SetTrue);
-    let cmd = attach_compile_args(cmd.arg(input));
+    let cmd = attach_borrow_check_args(attach_compile_args(cmd.arg(input)));
     let cmd = cmd.arg(depth).arg(steps).arg(heap).arg(stack).arg(frames);
     cmd.arg(leaks).about(t!("vm.about"))
 }
@@ -357,7 +359,9 @@ fn compiled(matches: &ArgMatches, source: &SourceFile) -> Loaded
 {
     let options = semcheck_options(matches);
     let folding = fold_options(matches);
-    let emitted = run_phases(source, &LexerOptions::default(), &options, &folding);
+    let mem = borrow_check_options(matches);
+    let lexer = LexerOptions::default();
+    let emitted = run_phases(source, &lexer, &options, &folding, &mem);
     let diagnostics = emitted.diagnostics().to_vec();
     Loaded { module: emitted.module, diagnostics }
 }

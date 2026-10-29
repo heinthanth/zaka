@@ -187,3 +187,18 @@ fn a_list_copies_and_clears_as_one_checked_access()
         Err(TrapKind::Misaligned { addr: b + 4, align: 8 })
     );
 }
+
+#[test]
+fn a_step_lands_in_the_block_of_its_base()
+{
+    let mut m = mem();
+    let a = m.alloc(8, Origin::Heap, 0).unwrap();
+    let b = m.alloc(8, Origin::Heap, 0).unwrap();
+    assert!(m.steps_within(a, a + 8), "one past the end counts");
+    assert!(m.steps_within(a + 8, a), "back from one past the end");
+    assert!(!m.steps_within(a, a + 9), "into the red zone");
+    assert!(!m.steps_within(a, b), "into the next block");
+    assert!(m.steps_within(a - 64, b), "a base in no block is not checked");
+    m.free(a).unwrap();
+    assert!(!m.steps_within(a, b), "a freed block still has its bounds");
+}

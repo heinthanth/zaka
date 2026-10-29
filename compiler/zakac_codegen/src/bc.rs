@@ -133,6 +133,9 @@ pub enum Op
     Load(DataKind),
     /// Pop a value of this kind, then an address; write the value there.
     Store(DataKind),
+    /// Pop an address; push the value of this kind at it and leave the
+    /// default of the kind there, `ဗလာ` for an owner.
+    Take(DataKind),
     /// Pop an integer count, then an address; push the address moved that
     /// count of elements of this stride forward.
     PtrAdd(u32),
@@ -245,6 +248,7 @@ impl Op
             Op::Trap(code) => <&str>::from(code).to_string(),
             Op::Load(kind)
             | Op::Store(kind)
+            | Op::Take(kind)
             | Op::Blit(kind)
             | Op::Zero(kind)
             | Op::ListEq(kind)

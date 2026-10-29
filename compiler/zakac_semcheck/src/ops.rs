@@ -39,6 +39,8 @@ pub(crate) enum OpClass
     AddrOf,
     /// The dereference verb.
     Deref,
+    /// The lend verb.
+    Lend,
     /// The list cell verbs.
     CellCount,
     /// A statement verb, which never stands inside an expression.
@@ -70,6 +72,7 @@ impl OpClass
             | OpClass::Cast
             | OpClass::AddrOf
             | OpClass::Deref
+            | OpClass::Lend
             | OpClass::CellCount
             | OpClass::Stmt => None,
         }
@@ -187,6 +190,7 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         VerbOp::Cast => OpClass::Cast,
         VerbOp::AddrOf => OpClass::AddrOf,
         VerbOp::Deref => OpClass::Deref,
+        VerbOp::Lend => OpClass::Lend,
         VerbOp::Cell | VerbOp::CellCount => OpClass::CellCount,
         VerbOp::Print | VerbOp::Assign | VerbOp::Return => OpClass::Stmt,
     }
@@ -335,7 +339,7 @@ fn is_op(op: &str, infix: InfixOp, verb: VerbOp) -> bool
 /// `ZK0416` for two addresses of differing kinds, else `ZK0415`.
 fn ptr_misuse(l: DataKind, r: DataKind, op: &str, span: Span) -> Diagnostic
 {
-    let differ = l.is_address() && r.is_address() && l != r;
+    let differ = l.is_address() && r.is_address() && !l.same_shape(r);
     let (a, b) = (l.name(), r.name());
     tern!(
         differ,
@@ -583,8 +587,10 @@ impl Checker
         &mut self, op: &str, l: DataKind, r: DataKind, loose: bool, span: Span,
     ) -> Option<DataKind>
     {
-        let same = l == r && (loose || l.is_ptr());
-        let joined = self.wider(l, r).is_some_and(|k| loose && k.is_address());
+        let same = l.same_shape(r) && (loose || l.is_ptr());
+        let (l_owner, r_owner) = (l.as_owner(), r.as_owner());
+        let joined = self.wider(l_owner, r_owner).is_some_and(DataKind::is_address);
+        let joined = loose && (joined || l_owner.meets_pointer(r_owner));
         ret_if!(same || joined, Some(DataKind::Bool));
         self.report(ptr_misuse(l, r, op, span));
         None
@@ -602,7 +608,8 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// The pointer kind, `isize` for a distance, or `None` after an error.
+    /// The pointer kind as a borrow, since an address inside a block cannot
+    /// own it; `isize` for a distance, or `None` after an error.
     fn ptr_arith(
         &mut self, op: &str, lhs: (DataKind, &Expr), rhs: (DataKind, &Expr), span: Span,
     ) -> Option<DataKind>
@@ -615,9 +622,9 @@ impl Checker
         let opaque = blank.map(|(_, e)| kd::opaque_pointer(e.span()));
         ret_if!(let Some(d) = opaque, self.report(d), None);
         let (l, r) = (lhs.0, rhs.0);
-        ret_if!(l.is_ptr() && r.is_int(), Some(l));
-        ret_if!(add && l.is_int() && r.is_ptr(), Some(r));
-        ret_if!(sub && l.is_ptr() && l == r, Some(DataKind::ISIZE));
+        ret_if!(l.is_ptr() && r.is_int(), Some(l.as_borrowed()));
+        ret_if!(add && l.is_int() && r.is_ptr(), Some(r.as_borrowed()));
+        ret_if!(sub && l.is_ptr() && l.same_shape(r), Some(DataKind::ISIZE));
         self.report(ptr_misuse(l, r, op, span));
         None
     }

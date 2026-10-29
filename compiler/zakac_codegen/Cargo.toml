@@ -15,6 +15,7 @@ serde = { workspace = true }
 strum = { workspace = true }
 termcolor = { workspace = true }
 zakac_ast = { workspace = true }
+zakac_borrow_checker = { workspace = true }
 zakac_cli_common = { workspace = true }
 zakac_diagnostics = { workspace = true }
 zakac_host_errors = { workspace = true }

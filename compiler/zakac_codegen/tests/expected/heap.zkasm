@@ -8,28 +8,28 @@ globals
   g5 ကိန်း isize
   g6 နံပါတ် usize
   g7 ပစ္စည်း *u8
-  g8 ဈေးနှုန်း *i32
+  g8 ဈေးနှုန်း &*i32
 texts
   t0 "နေရာ မရပါ"
 
 fn f0 လဲလှယ် (params 2)
 locals
-  l0 က *isize
-  l1 ခ *isize
+  l0 က &*isize
+  l1 ခ &*isize
   l2 ယာယီ isize
      0  local_addr l2        ; ယာယီ
      1  local_addr l0        ; က
-     2  load *isize
+     2  load &*isize
      3  load isize
      4  store isize
      5  local_addr l0        ; က
-     6  load *isize
+     6  load &*isize
      7  local_addr l1        ; ခ
-     8  load *isize
+     8  load &*isize
      9  load isize
     10  store isize
     11  local_addr l1        ; ခ
-    12  load *isize
+    12  load &*isize
     13  local_addr l2        ; ယာယီ
     14  load isize
     15  store isize
@@ -178,20 +178,20 @@ L5:
    133  store u8
    134  global_addr g8       ; ဈေးနှုန်း
    135  push 0x0:ptr
-   136  store *i32
+   136  store &*i32
    137  global_addr g8       ; ဈေးနှုန်း
    138  global_addr g7       ; ပစ္စည်း
    139  load *u8
    140  push 4:isize
    141  ptr_add 1
-   142  convert *i32
-   143  store *i32
+   142  convert &*i32
+   143  store &*i32
    144  global_addr g8       ; ဈေးနှုန်း
-   145  load *i32
+   145  load &*i32
    146  push 1500:i32
    147  store i32
    148  global_addr g8       ; ဈေးနှုန်း
-   149  load *i32
+   149  load &*i32
    150  load i32
    151  print
    152  global_addr g7       ; ပစ္စည်း

@@ -136,6 +136,10 @@ fn kinds_constructors_render_messages()
 
     let span = Span::PLACEHOLDER;
     assert!(k::kind_mismatch(span, "i8", "i16").help.is_some());
+    let unbridged = k::kind_mismatch_unbridged(span, "[2]isize", "isize");
+    assert!(unbridged.help.is_none() && unbridged.message.contains("[2]isize"));
+    let pun = k::address_block_mismatch(span, "&**isize", "&ptr", "~*isize");
+    assert!(pun.help.is_some_and(|h| h.contains("~*isize") && h.contains("&**isize")));
     assert!(k::shift_too_far(span, "9", 8).message.contains('8'));
     for diag in [
         k::kind_mismatch(span, "i8", "i16"),
@@ -190,9 +194,6 @@ fn pointer_constructors_render_messages()
     assert!(k::pointer_operator(span, "*").message.contains("\"*\""));
     assert!(k::pointer_kinds_differ(span, "*i8", "*isize").message.contains("*i8"));
     assert!(k::heap_needs_pointer(span, "bool").message.contains("bool"));
-    let warned = k::local_address_returned(span, "x");
-    assert_eq!(warned.code, Code::LocalAddressReturned);
-    assert!(!warned.is_error());
     assert!(k::condition_not_bool(span, "*isize").help.is_some());
     assert!(k::condition_not_bool(span, "isize").help.is_none());
 }
@@ -215,4 +216,58 @@ fn list_constructors_render_messages()
     let out = f::cell_out_of_range(span, "3", 0, 2);
     assert_eq!(out.code, Code::CellOutOfRange);
     assert!(out.message.contains('3') && out.message.contains('2'));
+}
+
+#[test]
+fn ownership_constructors_render_messages()
+{
+    use zakac_diagnostics::kinds as k;
+    use zakac_diagnostics::ownership as o;
+    use zakac_diagnostics::ownership::Invalidation;
+    use zakac_span::span::Span;
+
+    let span = Span::PLACEHOLDER;
+    let moved = o::moved_out(span, "ပ");
+    assert_eq!(moved.code, Code::MovedOut);
+    assert!(moved.message.contains("\"ပ\""));
+    assert_eq!(o::freed_borrow(span).code, Code::FreedBorrow);
+    assert_eq!(o::borrow_stored(span).code, Code::BorrowStored);
+    let loan = o::invalidated_loan(span, "ပ", &Invalidation::Freed.text(), "မိတ္တူ", span);
+    assert_eq!(loan.code, Code::InvalidatedLoan);
+    assert!(loan.message.contains("freed"));
+    assert!(loan.message.contains("\"မိတ္တူ\""));
+    assert_eq!(loan.labels.len(), 1);
+    assert!(loan.labels[0].text.contains("မိတ္တူ"));
+    assert_eq!(Invalidation::Resized.text(), "resized");
+    assert_eq!(Invalidation::Moved.text(), "moved");
+    assert_eq!(o::borrow_of_borrow(span).code, Code::BorrowOfBorrow);
+    let local = o::local_borrow_returned(span, "ပ");
+    assert_eq!(local.code, Code::LocalBorrowReturned);
+    assert!(local.message.contains("\"ပ\""));
+    let alias = o::aliased_argument(span, "ရှင်း", 1, 2);
+    assert_eq!(alias.code, Code::AliasedArgument);
+    assert!(alias.message.contains("argument 2"));
+    assert_eq!(o::block_leaked(span, "ပ").code, Code::BlockLeaked);
+    assert_eq!(o::null_deref(span, "ပ").code, Code::NullDeref);
+    let past = o::offset_past_end(span, 4, 4);
+    assert_eq!(past.code, Code::OffsetPastEnd);
+    assert!(past.message.contains("offset 4"));
+    let possible = o::null_deref_possible(span, "ပ");
+    assert_eq!(possible.code, Code::NullDerefPossible);
+    assert!(!possible.is_error());
+    assert_eq!(o::mixed_blocks(span).code, Code::MixedBlocks);
+    assert_eq!(o::bad_borrow_marker(span).code, Code::BadBorrowMarker);
+    assert_eq!(o::borrow_for_owner(span).code, Code::BorrowForOwner);
+    let owner = o::owner_for_borrow(span, Some("ပ"));
+    assert_eq!(owner.code, Code::OwnerForBorrow);
+    assert!(owner.help.unwrap().contains("ပ ၏ တန်ဖိုးအငှား"));
+    let nameless = o::owner_for_borrow(span, None);
+    assert_eq!(nameless.code, Code::OwnerForBorrow);
+    assert!(nameless.help.is_none());
+    assert_eq!(o::lend_of_raw(span).code, Code::LendOfRaw);
+    assert_eq!(o::raw_not_allowed(span).code, Code::RawNotAllowed);
+
+    let lend = k::lend_of_value(span, "isize", "x");
+    assert_eq!(lend.code, Code::NotAPointer);
+    assert!(lend.help.unwrap().contains("x ၏ လိပ်စာ"));
 }

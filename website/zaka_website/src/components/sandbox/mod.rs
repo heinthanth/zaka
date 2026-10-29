@@ -20,6 +20,7 @@ use zakac_rust_sugars::tern;
 
 use self::run::BATCH;
 use self::run::Fence;
+use self::run::FenceOptions;
 use self::run::Stroke;
 use self::run::Tone;
 use self::run::advance;
@@ -58,11 +59,13 @@ struct Live
     running: RwSignal<bool>,
     /// The machine of the run that goes on.
     machine: StoredValue<Option<Machine>>,
+    /// What the fence of the program asks of the compiler.
+    options: FenceOptions,
 }
 
-/// A program of the manual that the reader can edit and run: a bar with the
+/// A program of a Learn page that the reader can edit and run: a bar with the
 /// run button, the program painted with the lexer under a clear text field,
-/// and what it prints. Until the first run, the output is what the manual
+/// and what it prints. Until the first run, the output is what its page
 /// shows as its output.
 /// The island loads late, on its own, so the compiler reaches the pages that
 /// run code and no other.
@@ -70,20 +73,24 @@ struct Live
 /// # Arguments
 ///
 /// * `source` - The program.
-/// * `fence` - What the manual promises the program does.
-/// * `expected` - What the manual shows as its output.
+/// * `fence` - What its page promises the program does.
+/// * `options` - What its fence asks of the compiler.
+/// * `expected` - What its page shows as its output.
 ///
 /// # Returns
 ///
 /// The view.
 #[island(lazy)]
-pub fn Sandbox(source: String, fence: Fence, expected: String) -> impl IntoView
+pub fn Sandbox(
+    source: String, fence: Fence, options: FenceOptions, expected: String,
+) -> impl IntoView
 {
     let live = Live::builder()
         .code(RwSignal::new(source.clone()))
         .shown(RwSignal::new(None))
         .running(RwSignal::new(false))
         .machine(StoredValue::new(None))
+        .options(options)
         .build();
     // The page is read before the island starts; until then the field cannot
     // be edited and the buttons are off.
@@ -106,8 +113,8 @@ pub fn Sandbox(source: String, fence: Fence, expected: String) -> impl IntoView
 /// # Arguments
 ///
 /// * `live` - What the sandbox shows and runs.
-/// * `source` - The program as the manual writes it.
-/// * `fence` - What the manual promises the program does.
+/// * `source` - The program as its page writes it.
+/// * `fence` - What its page promises the program does.
 /// * `started` - Whether the island has started.
 /// * `field` - The text field.
 ///
@@ -158,7 +165,7 @@ fn bar(
 /// # Arguments
 ///
 /// * `live` - What the sandbox shows and runs.
-/// * `source` - The program as the manual writes it.
+/// * `source` - The program as its page writes it.
 /// * `started` - Whether the island has started.
 /// * `field` - The text field.
 ///
@@ -190,14 +197,14 @@ fn editor(
     div().class(ClassName::SANDBOX_EDITOR).child((paint, input))
 }
 
-/// The output: what the last run gave, or what the manual shows as the output
+/// The output: what the last run gave, or what its page shows as the output
 /// of the program, until the first run.
 ///
 /// # Arguments
 ///
 /// * `live` - What the sandbox shows and runs.
-/// * `fence` - What the manual promises the program does.
-/// * `expected` - What the manual shows as its output.
+/// * `fence` - What its page promises the program does.
+/// * `expected` - What its page shows as its output.
 ///
 /// # Returns
 ///
@@ -294,12 +301,12 @@ fn toggle(live: Live)
     push(live, Stroke::builder().tone(Tone::Note).text(note).build());
 }
 
-/// Put the program back as the manual writes it, with no output.
+/// Put the program back as its page writes it, with no output.
 ///
 /// # Arguments
 ///
 /// * `live` - What the sandbox shows and runs.
-/// * `source` - The program as the manual writes it.
+/// * `source` - The program as its page writes it.
 /// * `field` - The text field.
 fn reset(live: Live, source: &str, field: NodeRef<leptos::html::Textarea>)
 {
@@ -317,7 +324,7 @@ fn reset(live: Live, source: &str, field: NodeRef<leptos::html::Textarea>)
 /// * `live` - What the sandbox shows and runs.
 fn start(live: Live)
 {
-    let compiled = live.code.with_untracked(|c| compile(c));
+    let compiled = live.code.with_untracked(|c| compile(c, &live.options));
     live.shown.set(Some(compiled.report));
     let Some(machine) = compiled.machine
     else

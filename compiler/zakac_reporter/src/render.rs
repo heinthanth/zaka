@@ -4,7 +4,9 @@ use termcolor::Color;
 use termcolor::ColorSpec;
 use termcolor::WriteColor;
 use zakac_diagnostics::Diagnostic;
+use zakac_diagnostics::Label;
 use zakac_diagnostics::Level;
+use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::source_map::SourceMap;
@@ -283,10 +285,24 @@ fn pieces(sm: &SourceMap, diag: &Diagnostic) -> Vec<Piece>
     }
 
     let excerpt = excerpt(sm, &diag.span);
-    let pad = " ".repeat(excerpt.line.to_string().len());
+    let labelled: Vec<(&Label, Excerpt)> = diag
+        .labels
+        .iter()
+        .filter(|label| !label.span.is_placeholder())
+        .map(|label| (label, self::excerpt(sm, &label.span)))
+        .collect();
+    let width = labelled
+        .iter()
+        .map(|(_, each)| each.line)
+        .chain([excerpt.line])
+        .map(|line| line.to_string().len())
+        .max()
+        .unwrap_or(1);
+    let pad = " ".repeat(width);
     out.extend(location_pieces(&excerpt, &pad));
-    out.extend(source_pieces(&excerpt, diag.level));
+    out.extend(source_pieces(&excerpt, &pad, diag.level));
     out.extend(caret_pieces(&excerpt, &pad, diag.level));
+    do_for!((label, each) in &labelled, out.extend(label_pieces(each, &pad, &label.text)));
     out.extend(help_pieces(diag, &pad));
     out
 }
@@ -334,15 +350,16 @@ fn location_pieces(excerpt: &Excerpt, pad: &str) -> Vec<Piece>
 /// # Arguments
 ///
 /// * `excerpt` - The source excerpt.
+/// * `pad` - Spaces as wide as the widest line number.
 /// * `level` - The diagnostic level, for the mark color.
 ///
 /// # Returns
 ///
 /// The source line pieces.
-fn source_pieces(excerpt: &Excerpt, level: Level) -> Vec<Piece>
+fn source_pieces(excerpt: &Excerpt, pad: &str, level: Level) -> Vec<Piece>
 {
     vec![
-        piece(Paint::Gutter, format!("{} | ", excerpt.line)),
+        piece(Paint::Gutter, format!("{:>1$} | ", excerpt.line, pad.len())),
         piece(Paint::Plain, excerpt.before.clone()),
         piece(Paint::Marked(level), excerpt.marked.clone()),
         piece(Paint::Plain, format!("{}\n", excerpt.after)),
@@ -373,6 +390,31 @@ fn caret_pieces(excerpt: &Excerpt, pad: &str, level: Level) -> Vec<Piece>
         piece(Paint::Carets(level), carets),
         piece(Paint::Plain, "\n"),
     ]
+}
+
+/// Pieces of one label: a blank gutter line, the numbered source line, and a
+/// dash row under the labelled region that ends in the label text.
+///
+/// # Arguments
+///
+/// * `excerpt` - The source excerpt of the label's span.
+/// * `pad` - Spaces as wide as the widest line number.
+/// * `text` - The label text.
+///
+/// # Returns
+///
+/// The label pieces.
+fn label_pieces(excerpt: &Excerpt, pad: &str, text: &str) -> Vec<Piece>
+{
+    let indent = " ".repeat(str_cells(&excerpt.before));
+    let dashes = "-".repeat(str_cells(&excerpt.marked).max(1));
+    let mut out = vec![piece(Paint::Gutter, format!("{pad} |\n"))];
+    out.extend(source_pieces(excerpt, pad, Level::Note));
+    out.push(piece(Paint::Gutter, format!("{pad} | ")));
+    out.push(piece(Paint::Plain, indent));
+    out.push(piece(Paint::Carets(Level::Note), dashes));
+    out.push(piece(Paint::Plain, format!(" {text}\n")));
+    out
 }
 
 /// Pieces of the `= help: ...` line, when the diagnostic has help text.

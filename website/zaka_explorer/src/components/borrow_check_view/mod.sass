@@ -1,0 +1,21 @@
+// The borrow check view: one line for each function, with what it frees,
+// resizes or moves through; or, when the check did not run, a note with an
+// icon in the middle of the pane.
+
+.borrow-check-view-skipped
+  display: grid
+  place-items: center
+  height: 100%
+
+.digest-list
+  margin: 0
+  padding: 0
+  list-style: none
+
+.digest
+  padding: 3px 0
+  font-family: var(--mono-font)
+  font-size: var(--code-size)
+  color: var(--fg)
+  white-space: pre-wrap
+  overflow-wrap: anywhere

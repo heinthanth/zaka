@@ -27,7 +27,7 @@ use zaka_web_ui_common::icon::middle_pane;
 use zaka_web_ui_common::icon::right_pane;
 use zaka_web_ui_common::sheet;
 use zaka_web_ui_common::site::HOME_URL;
-use zaka_web_ui_common::site::MANUAL_URL;
+use zaka_web_ui_common::site::LEARN_URL;
 use zakac_i18n::t;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
@@ -53,7 +53,7 @@ static SHEET: ComponentStyle = ComponentStyle::global_css("zaka-toolbar", STYLE_
 const MENU_ID: &str = "toolbar-menu";
 
 /// The bar above the panes: the brand and the links to the website and the
-/// manual on the left; samples, the debug mode switch, the editor switch,
+/// Learn pages on the left; samples, the debug mode switch, the editor switch,
 /// about and settings on the right. On narrow screens the links, about and
 /// settings move into a menu behind a button at the end of the bar.
 ///
@@ -95,7 +95,7 @@ pub fn toolbar() -> impl IntoView
 }
 
 /// The links back to the website the explorer sits in: its landing page and
-/// the manual.
+/// the Learn pages.
 ///
 /// # Returns
 ///
@@ -107,7 +107,7 @@ fn site_links() -> impl IntoView
         .attr("aria-label", t!("explorer.toolbar.site"))
         .child((
             a().href(HOME_URL).child(t!("explorer.toolbar.website")),
-            a().href(MANUAL_URL).child(t!("explorer.toolbar.manual")),
+            a().href(LEARN_URL).child(t!("explorer.toolbar.learn")),
         ))
 }
 
@@ -137,8 +137,8 @@ fn menu_button(open: RwSignal<bool>) -> impl IntoView
         .child(move || tern!(open.get(), cross().into_any(), menu().into_any()))
 }
 
-/// The menu of narrow screens: the links to the website and the manual, then
-/// rows that open about and settings. A pick shuts it, and so does Escape.
+/// The menu of narrow screens: the links to the website and the Learn pages,
+/// then rows that open about and settings. A pick shuts it, and so does Escape.
 ///
 /// # Arguments
 ///
@@ -168,7 +168,7 @@ fn menu_panel(
     };
     let links = nav().class(ClassName::MENU_LINKS).child((
         link(HOME_URL, t!("explorer.toolbar.website").to_string()),
-        link(MANUAL_URL, t!("explorer.toolbar.manual").to_string()),
+        link(LEARN_URL, t!("explorer.toolbar.learn").to_string()),
     ));
     let rows = div().class(ClassName::MENU_ROWS).child((
         row(about, info().into_any(), t!("explorer.toolbar.about").to_string()),

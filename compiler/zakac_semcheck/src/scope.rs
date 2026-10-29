@@ -77,28 +77,6 @@ impl Scopes
     {
         self.0.iter().rev().find_map(|scope| scope.get(name)).copied()
     }
-
-    /// The number of open scopes.
-    ///
-    /// # Returns
-    ///
-    /// The count; the next scope pushed gets this index.
-    pub fn count(&self) -> usize { self.0.len() }
-
-    /// Find the scope that declares a name, innermost scope first.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The name.
-    ///
-    /// # Returns
-    ///
-    /// The index of the scope, the outermost being 0, or `None` when the name
-    /// is not declared.
-    pub fn depth_of(&self, name: &str) -> Option<usize>
-    {
-        self.0.iter().rposition(|scope| scope.contains_key(name))
-    }
 }
 
 /// Parameter and result kinds of a function.

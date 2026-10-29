@@ -33,6 +33,7 @@ turf = { workspace = true }
 wasm-bindgen = { workspace = true }
 zaka_vm = { workspace = true }
 zaka_web_ui_common = { workspace = true }
+zakac_borrow_checker = { workspace = true }
 zakac_codegen = { workspace = true }
 zakac_consts = { workspace = true }
 zakac_diagnostics = { workspace = true }
@@ -112,7 +113,7 @@ watch-additional-files = [
     "website/zaka_website/assets",
     "website/zaka_web_ui_common/src",
     "website/zaka_web_ui_common/locales",
-    "docs/manual",
+    "docs/learn",
 ]
 
 # turf: the sheets of the components, built with their classes renamed after

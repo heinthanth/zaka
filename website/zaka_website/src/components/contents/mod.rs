@@ -11,12 +11,12 @@ use leptos_scoped_style::ComponentStyle;
 use zaka_web_ui_common::sheet;
 use zakac_i18n::t;
 
-use crate::manual::Chapter;
-use crate::manual::LEARN_URL;
-use crate::manual::Page;
-use crate::manual::chapters;
-use crate::manual::page_at;
-use crate::manual::render::CONTENTS_ID;
+use crate::learn::Chapter;
+use crate::learn::LEARN_URL;
+use crate::learn::Page;
+use crate::learn::chapters;
+use crate::learn::page_at;
+use crate::learn::render::CONTENTS_ID;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/contents/mod.sass");
@@ -42,8 +42,8 @@ pub fn contents_sheet() -> impl IntoView { sheet(&SHEET) }
 /// The text.
 pub fn number(n: usize) -> String { format!("{n:02}") }
 
-/// The contents of the manual: a column on wide screens that stands still as
-/// the page scrolls, and a fold at the top of the page on narrow ones. The
+/// The contents of the Learn pages: a column on wide screens that stands still
+/// as the page scrolls, and a fold at the top of the page on narrow ones. The
 /// chapter of the page shows its pages; the others show their titles alone.
 ///
 /// # Arguments

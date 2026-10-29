@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use zakac_borrow_checker::cli::attach_borrow_check_args;
+use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_cli_common::artifact_output::PhaseArtifactOutput;
 use zakac_cli_common::artifact_output::ResolvedArtifactOutput;
 use zakac_cli_common::artifact_output::output_format_from_matches;
@@ -70,7 +72,8 @@ fn configure_codegen_command(cmd: clap::Command) -> clap::Command
         .long("asm")
         .help(t!("codegen.asm"))
         .action(ArgAction::SetTrue);
-    attach_compile_args(attach_common_io_args(cmd)).arg(asm).about(t!("codegen.about"))
+    let cmd = attach_borrow_check_args(attach_compile_args(attach_common_io_args(cmd)));
+    cmd.arg(asm).about(t!("codegen.about"))
 }
 
 impl Command for ZakacCodegen
@@ -209,7 +212,9 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 
     let options = semcheck_options(matches);
     let folding = fold_options(matches);
-    let emitted = run_phases(&source, &LexerOptions::default(), &options, &folding);
+    let mem = borrow_check_options(matches);
+    let lexer = LexerOptions::default();
+    let emitted = run_phases(&source, &lexer, &options, &folding, &mem);
     let failed = has_errors(emitted.diagnostics());
     let _ = write_diagnostics(io.stderr, &source_map, emitted.diagnostics());
 

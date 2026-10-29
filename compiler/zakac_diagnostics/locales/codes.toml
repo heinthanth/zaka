@@ -377,8 +377,10 @@ en = "mismatched kinds"
 en = "expected %{want}, found %{got}"
 [codes.ZK0401.help]
 en = "convert the value with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\""
+[codes.ZK0401.help_raw]
+en = "a block that holds addresses changes its kind through a raw address alone; convert the value to %{raw} first, then convert that to %{want}"
 [codes.ZK0401.explain]
-en = """A value must fit the kind its place expects without losing data. Conversions happen on their own when no data can be lost: a narrower integer to a wider one of the same sign, an unsigned integer to a wider signed one, an integer to a float with enough fraction bits, and a narrower float to a wider one. Characters and booleans never convert on their own. Use the conversion verb for the others."""
+en = """A value must fit the kind its place expects without losing data. Conversions happen on their own when no data can be lost: a narrower integer to a wider one of the same sign, an unsigned integer to a wider signed one, an integer to a float with enough fraction bits, and a narrower float to a wider one. Characters and booleans never convert on their own. Use the conversion verb for the others. A pointer also converts on its own to and from the opaque \"လိပ်စာ\" of its flavour, but an owner or a borrow does so just when no level of its block holds an address: the opaque address hides what the block holds, so reading stored addresses as other data, or other data as addresses, goes through a raw address, \"<kind> လိပ်စာအကြမ်း\", in two conversions."""
 
 [codes.ZK0402.title]
 en = "condition is not a boolean"
@@ -429,7 +431,11 @@ en = "invalid conversion"
 [codes.ZK0408.message]
 en = "cannot convert %{from} to %{to}"
 [codes.ZK0408.explain]
-en = """The conversion verb converts between numbers of all kinds, between characters and integers, and from booleans to integers. Floats and characters do not convert into each other, and nothing converts into a boolean: compare the value instead, for example \"က သည် ၀ နှင့် မညီ\"."""
+en = """The conversion verb converts between numbers of all kinds, between characters and integers, and from booleans to integers. Floats and characters do not convert into each other, and nothing converts into a boolean: compare the value instead, for example \"က သည် ၀ နှင့် မညီ\". An integer becomes an address through a raw address, \"<kind> လိပ်စာအကြမ်း\", first; the raw address then converts to an owner or a borrow, and that step is the one a reader searches for. Likewise, a cast between owners or borrows whose blocks hold addresses keeps the kind of what the block holds: reading an address as a number, or a number as an address, also goes through a raw address. The opaque \"လိပ်စာ\" follows the same rule: an owner or a borrow whose block holds addresses does not pass through it, with the verb or on its own, without the raw step."""
+[codes.ZK0408.help_raw]
+en = "convert the integer to %{raw} first, then convert that to %{to}"
+[codes.ZK0408.help_pun]
+en = "this cast reads stored addresses as other data, or other data as addresses; convert to %{raw} first, then convert that to %{to}"
 
 [codes.ZK0409.title]
 en = "loop step is not positive"
@@ -466,6 +472,9 @@ en = "%{kind} is not a pointer and cannot be dereferenced"
 [codes.ZK0413.explain]
 en = """A dereference, \"p ၏ တန်ဖိုး\" or \"*p\", reads the value a pointer points at. The operand must have a pointer kind, written \"<kind> လိပ်စာ\"; numbers, characters and booleans are not pointers. Check that the operand is the pointer and not the value it points at."""
 
+[codes.ZK0413.help]
+en = "to point at \"%{name}\" itself, write \"%{name} ၏ လိပ်စာ\""
+
 [codes.ZK0414.title]
 en = "opaque pointer"
 [codes.ZK0414.message]
@@ -495,13 +504,6 @@ en = "heap statement needs a pointer"
 en = "the heap statement needs a pointer, found %{kind}"
 [codes.ZK0417.explain]
 en = """The heap statements allocate space, resize it and free it through a variable that holds its address. That variable must have a pointer kind, written \"<kind> လိပ်စာ\", or the opaque \"လိပ်စာ\". Declare the variable with a pointer kind."""
-
-[codes.ZK0418.title]
-en = "address of a local returned"
-[codes.ZK0418.message]
-en = "returns the address of the local \"%{name}\", which is released when the function returns"
-[codes.ZK0418.explain]
-en = """The locals and parameters of a function are released when it returns, so an address that points at one of them is no longer valid in the caller. Reading or writing through it is caught at run time. Return the value itself, or allocate heap space with the heap statements and return its address."""
 
 [codes.ZK0419.title]
 en = "list count mismatch"
@@ -654,3 +656,134 @@ en = "cell outside the list"
 en = "cell %{i} is outside the list, whose cells run from %{lo} to %{hi}"
 [codes.ZK0603.explain]
 en = """The cell number is a constant, and it does not name a cell of the list. \"x ၏ အကွက် i\" counts from 0, so the last cell of a list of n cells is n - 1. \"x ၏ n ခုမြောက်အကွက်\" counts from 1, up to n."""
+
+[codes.ZK0701.title]
+en = "use after move"
+[codes.ZK0701.message]
+en = "\"%{name}\" was moved to another owner and now holds ဗလာ"
+[codes.ZK0701.explain]
+en = """A move gives the block of an owner to another owner, and the old owner is left holding ဗလာ. Reading the old name after the move would use a block it no longer owns. Use the new owner, or lend the value with တန်ဖိုးအငှား when the old name is to keep the block."""
+
+[codes.ZK0702.title]
+en = "free of a borrowed address"
+[codes.ZK0702.message]
+en = "a borrowed address cannot be freed or resized; free its owner instead"
+[codes.ZK0702.explain]
+en = """A borrowed address is a loan from an owner, so it has no right to free or resize the block. Free or resize the block through its owner, once the loan is no longer in use."""
+
+[codes.ZK0703.title]
+en = "borrowed address stored"
+[codes.ZK0703.message]
+en = "a borrowed address cannot be stored in a heap block, through a pointer, or in a top-level variable from a function"
+[codes.ZK0703.explain]
+en = """A borrow lasts as long as the owner that lent it remains valid. Storing it in a heap block, through a pointer or in a top-level variable would let it outlast that owner. Keep borrows in locals and parameters, or store an owner or a raw address instead."""
+
+[codes.ZK0704.title]
+en = "loan still in use"
+[codes.ZK0704.message]
+en = "the block of \"%{name}\" is %{what} here, but \"%{other}\" still borrows it and is used later"
+[codes.ZK0704.label]
+en = "\"%{other}\" is used here"
+[codes.ZK0704.freed]
+en = "freed"
+[codes.ZK0704.resized]
+en = "resized"
+[codes.ZK0704.moved]
+en = "moved"
+[codes.ZK0704.explain]
+en = """While a borrow of a block is in use later on, its owner must not free, resize or move that block. The label points at the later use. Finish with the borrow before the owner changes the block, or take a new borrow after the change."""
+
+[codes.ZK0705.title]
+en = "address of a borrowed address"
+[codes.ZK0705.message]
+en = "the address of a borrowed address cannot be taken"
+[codes.ZK0705.explain]
+en = """A borrowed address stands for a loan, and a loan cannot be pointed at in turn. Pass the borrow itself, or take the address of the owner."""
+
+[codes.ZK0706.title]
+en = "borrow of a local returned"
+[codes.ZK0706.message]
+en = "returns a borrow of the local \"%{name}\", which ends when the function returns"
+[codes.ZK0706.explain]
+en = """The locals and parameters of a function are released when it returns, so a borrow of one of them would point at released space in the caller. Return the value itself, or return an owner of a heap block."""
+
+[codes.ZK0707.title]
+en = "aliased arguments"
+[codes.ZK0707.message]
+en = "\"%{func}\" can free through argument %{n}, but argument %{m} reaches the same block"
+[codes.ZK0707.explain]
+en = """A function that frees through one argument must be the one route into that block during the call. When another argument reaches the same block, that argument would be left pointing at freed space. Give the function different blocks, or pass the block once."""
+
+[codes.ZK0708.title]
+en = "block not freed"
+[codes.ZK0708.message]
+en = "the block that \"%{name}\" owns is never freed or moved on this path"
+[codes.ZK0708.explain]
+en = """A block that an owner holds must be freed, or moved to another owner, before the owner goes out of scope. Otherwise the block is leaked. Free it with the heap statements, return it, or pass it to a function that takes ownership."""
+
+[codes.ZK0709.title]
+en = "dereference of ဗလာ"
+[codes.ZK0709.message]
+en = "\"%{name}\" is ဗလာ here, so it cannot be dereferenced"
+[codes.ZK0709.explain]
+en = """At this point the name holds ဗလာ, for example after a move, so it points at no block. Give it a block first, or leave the dereference out of the path where it holds ဗလာ."""
+
+[codes.ZK0710.title]
+en = "offset past the end"
+[codes.ZK0710.message]
+en = "offset %{off} is past the end of a block of %{len} elements"
+[codes.ZK0710.explain]
+en = """The offset is a constant, and it lies past the cells of the block. Offsets count from 0, so the last cell of a block of n elements is n - 1. Use a smaller offset or a larger block."""
+
+[codes.ZK0711.title]
+en = "possible dereference of ဗလာ"
+[codes.ZK0711.message]
+en = "\"%{name}\" can be ဗလာ here; compare it with ဗလာ first"
+[codes.ZK0711.explain]
+en = """The name is not compared with ဗလာ on this path, and the strict check wants one before a dereference. Compare it with ဗလာ and dereference it in the branch where it is not ဗလာ."""
+
+[codes.ZK0712.title]
+en = "pointers into different blocks"
+[codes.ZK0712.message]
+en = "these pointers point into different blocks and cannot be subtracted"
+[codes.ZK0712.explain]
+en = """Subtracting two pointers gives a distance, and a distance exists inside one block. Pointers into different blocks have none. Subtract pointers that were taken from the same block."""
+
+[codes.ZK0713.title]
+en = "misplaced borrow marker"
+[codes.ZK0713.message]
+en = "a pointer kind takes one ငှားထားသော, at its front; a borrow never sits in a heap block or a slot, and a raw address cannot be borrowed"
+[codes.ZK0713.explain]
+en = """A pointer kind takes one ငှားထားသော, written at its front. A borrow is a loan, so it cannot live in a heap block or a slot, and a raw address cannot be loaned. Remove the extra mark, or move it to the front of the kind."""
+
+[codes.ZK0714.title]
+en = "borrowed address given for an owner"
+[codes.ZK0714.message]
+en = "a borrowed address cannot be given where an owner is wanted"
+[codes.ZK0714.explain]
+en = """A place that wants an owner takes the block over. A borrow lends the block but does not own it, so it has nothing to hand over. Pass an owner, or change the place to take a borrow."""
+
+[codes.ZK0715.title]
+en = "owner given for a borrow"
+[codes.ZK0715.message]
+en = "\"%{name}\" owns its block and would move here; write \"%{name} ၏ တန်ဖိုးအငှား\" to lend it"
+[codes.ZK0715.help]
+en = "write \"%{name} ၏ တန်ဖိုးအငှား\""
+[codes.ZK0715.unnamed]
+en = "this value owns its block and would move here, where a borrow is wanted"
+[codes.ZK0715.explain]
+en = """A place that wants a borrow was given an owner as it is, and that would take the block from the owner. Lend the owner with တန်ဖိုးအငှား instead, which keeps the block with the owner."""
+
+[codes.ZK0716.title]
+en = "lend of a raw address"
+[codes.ZK0716.message]
+en = "a raw address cannot be lent with တန်ဖိုးအငှား; convert it with a cast first"
+[codes.ZK0716.explain]
+en = """တန်ဖိုးအငှား lends the block of an owner. A raw address is not tracked, so there is no block to lend. Cast the raw address to a pointer kind first, or use the raw address as it is."""
+
+[codes.ZK0717.title]
+en = "raw address not allowed"
+[codes.ZK0717.message]
+en = "raw addresses are not allowed here (--no-raw)"
+[codes.ZK0717.explain]
+en = """The program was compiled with --no-raw, which turns raw addresses off. Use an owner or a borrow instead, or compile without that flag."""

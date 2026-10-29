@@ -3,6 +3,7 @@ use zaka_vm::machine::run_with;
 use zaka_website::components::hero::LINE;
 use zaka_website::components::hero::PRINTED;
 use zaka_website::components::hero::syllables;
+use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_codegen::artifact::run_phases;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
@@ -21,6 +22,7 @@ fn the_hero_line_prints_what_the_hero_shows()
         &LexerOptions::default(),
         &SemcheckOptions::default(),
         &FoldOptions::default(),
+        &BorrowCheckOptions::default(),
     );
     let module = emitted.module.expect("the hero line compiles");
     let mut out = Vec::new();

@@ -3,6 +3,8 @@ use serde::Deserialize;
 use serde::Serialize;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
+use zakac_borrow_checker::options::BorrowCheckOptions;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::artifact::run_phases;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Level;
@@ -12,6 +14,7 @@ use zakac_lexer::lexer::LexerOptions;
 use zakac_reporter::render::Paint;
 use zakac_reporter::render::diagnostic_pieces;
 use zakac_rust_sugars::do_while;
+use zakac_rust_sugars::ret_if;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
@@ -25,7 +28,7 @@ pub const STEP_CAP: u64 = 20_000_000;
 /// The most ops a run takes in one batch; one batch runs a frame.
 pub const BATCH: u64 = 100_000;
 
-/// What a fence of the manual promises its program does.
+/// What a fence of a Learn page promises its program does.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Fence
 {
@@ -39,30 +42,80 @@ pub enum Fence
     Stop,
 }
 
+/// What a fence of a Learn page asks of the compiler besides its promise:
+/// `mem-check=warn`, `mem-strict=on`, `no-raw=on`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Builder, Serialize, Deserialize)]
+pub struct FenceOptions
+{
+    /// How the ownership check reports what it finds.
+    #[builder(default)]
+    pub check: MemCheck,
+    /// Whether the check also reports the accesses it cannot prove safe.
+    #[builder(default)]
+    pub strict: bool,
+    /// Whether raw addresses are refused.
+    #[builder(default)]
+    pub no_raw: bool,
+}
+
+impl FenceOptions
+{
+    /// Take one word of a fence, such as `mem-check=warn`.
+    ///
+    /// # Arguments
+    ///
+    /// * `word` - The word, with its equals sign.
+    ///
+    /// # Returns
+    ///
+    /// The options with the word taken in, or `None` for a word that names no
+    /// option or gives it a value it does not take.
+    fn with_word(mut self, word: &str) -> Option<Self>
+    {
+        let (name, value) = word.split_once('=')?;
+        match (name, value)
+        {
+            ("mem-check", _) => self.check = value.parse().ok()?,
+            ("mem-strict", "on") => self.strict = true,
+            ("no-raw", "on") => self.no_raw = true,
+            _ => return None,
+        }
+        Some(self)
+    }
+}
+
 impl Fence
 {
     /// Read the info string of a fence.
     ///
     /// # Arguments
     ///
-    /// * `info` - The info string, such as `zaka-error ZK0103`.
+    /// * `info` - The info string, such as `zaka-error ZK0103`; its words with
+    ///   an equals sign are options, the others codes.
     ///
     /// # Returns
     ///
-    /// The fence, or `None` for a fence that holds no Zaka.
-    pub fn parse(info: &str) -> Option<Fence>
+    /// The fence and its options, or `None` for a fence that holds no Zaka or
+    /// names an option it does not have.
+    pub fn parse(info: &str) -> Option<(Fence, FenceOptions)>
     {
         let mut words = info.split_whitespace();
-        let codes =
-            |words: std::str::SplitWhitespace| words.map(String::from).collect();
-        match words.next()?
+        let head = words.next()?;
+        let (settings, codes): (Vec<&str>, Vec<&str>) =
+            words.partition(|w| w.contains('='));
+        ret_if!(!codes.iter().all(|w| is_code(w)), None);
+        let codes = || codes.iter().map(|c| c.to_string()).collect();
+        let fence = match head
         {
-            "zaka" => Some(Fence::Run),
-            "zaka-error" => Some(Fence::Error(codes(words))),
-            "zaka-warning" => Some(Fence::Warning(codes(words))),
-            "zaka-stop" => Some(Fence::Stop),
-            _ => None,
-        }
+            "zaka" => Fence::Run,
+            "zaka-error" => Fence::Error(codes()),
+            "zaka-warning" => Fence::Warning(codes()),
+            "zaka-stop" => Fence::Stop,
+            _ => return None,
+        };
+        let none = FenceOptions::default();
+        let options = settings.into_iter().try_fold(none, FenceOptions::with_word)?;
+        Some((fence, options))
     }
 
     /// The codes the fence names.
@@ -78,6 +131,21 @@ impl Fence
             Fence::Run | Fence::Stop => &[],
         }
     }
+}
+
+/// Whether a fence word is a diagnostic code: `ZK` and four digits.
+///
+/// # Arguments
+///
+/// * `word` - The word.
+///
+/// # Returns
+///
+/// Whether it is a code.
+fn is_code(word: &str) -> bool
+{
+    let digits = word.strip_prefix("ZK").unwrap_or_default();
+    digits.len() == 4 && digits.chars().all(|c| c.is_ascii_digit())
 }
 
 /// A run of rendered text and how to color it.
@@ -125,11 +193,12 @@ pub struct Compiled
 /// # Arguments
 ///
 /// * `source` - The program.
+/// * `options` - What its fence asks of the compiler.
 ///
 /// # Returns
 ///
 /// The diagnostics and the machine.
-pub fn compile(source: &str) -> Compiled
+pub fn compile(source: &str, options: &FenceOptions) -> Compiled
 {
     let mut sm = SourceMap::new();
     let file =
@@ -137,8 +206,12 @@ pub fn compile(source: &str) -> Compiled
     let emitted = run_phases(
         &file,
         &LexerOptions::default(),
-        &SemcheckOptions::default(),
+        &SemcheckOptions::builder().no_raw(options.no_raw).build(),
         &FoldOptions::default(),
+        &BorrowCheckOptions::builder()
+            .check(options.check)
+            .strict(options.strict)
+            .build(),
     );
     let diags = emitted.diagnostics();
     let report = diags.iter().flat_map(|d| strokes(&sm, d)).collect();
@@ -172,14 +245,15 @@ pub fn advance(machine: &mut Machine, ops: u64) -> (String, Option<String>)
 /// # Arguments
 ///
 /// * `source` - The program.
+/// * `options` - What its fence asks of the compiler.
 ///
 /// # Returns
 ///
-/// The codes of its diagnostics, and its output as the manual writes it: what
+/// The codes of its diagnostics, and its output as its page writes it: what
 /// it printed, then the reason it stopped when it stopped with an error.
-pub fn run_to_end(source: &str) -> (Vec<String>, String)
+pub fn run_to_end(source: &str, options: &FenceOptions) -> (Vec<String>, String)
 {
-    let compiled = compile(source);
+    let compiled = compile(source, options);
     let Some(mut machine) = compiled.machine
     else
     {

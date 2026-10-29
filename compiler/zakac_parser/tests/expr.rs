@@ -164,3 +164,13 @@ fn pointer_expressions()
     assert_eq!(expr("ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ၏ အရွယ်အစား"), "(sizeof **isize)");
     assert_eq!(expr("p ကို ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast p *i32)");
 }
+
+#[test]
+fn lend_and_borrowed_kinds_in_expressions()
+{
+    assert_eq!(expr("p ၏ တန်ဖိုးအငှား"), "(lend p)");
+    assert_eq!(expr("pp ၏ တန်ဖိုး ၏ တန်ဖိုးအငှား"), "(lend (deref pp))");
+    let cast = "p ကို ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်";
+    assert_eq!(expr(cast), "(cast p &*i32)");
+    assert_eq!(expr("ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ အရွယ်အစား"), "(sizeof &*isize)");
+}

@@ -1,0 +1,1974 @@
+# zakac-borrow-check-artifact v1
+name:
+  Custom: lists.zaka
+source: "// စာရင်းများ နှင့် ငှားခြင်း\nကိန်းရှင် ကိန်းများ သည် အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် ၃၊ ၁၊ ၄၊ ၁ တို့ပါသော စာရင်း ဖြစ်ပါစေ။\nကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။\n၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ စုစုပေါင်း ကို စုစုပေါင်း + (ကိန်းများ ၏ အကွက် န) ဟု ထားပါ။\nစုစုပေါင်း ကို ပြသပါ။\n\n// ပိုင်ရှင်များ၏ စာရင်း: အကွက်တစ်ခုစီ၏ ဘူး\nလုပ်ဆောင်ချက် အကွက်ပိုင် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် တန်း သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို တန်း ၏ အကွက် ၀ တွင် သိမ်းထားမည်။\nမင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို တန်း ၏ အကွက် ၁ တွင် သိမ်းထားမည်။\nတန်း ၏ အကွက် ၀ ၏ တန်ဖိုး ကို ၁၁ ဟု ထားပါ။\nကိန်းရှင် ကြည့် သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် တန်း ၏ အကွက် ၀ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။\nကိန်းရှင် ယူ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် တန်း ၏ အကွက် ၁ ဖြစ်ပါစေ။\nယူ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nကြည့် ၏ တန်ဖိုး ကို ပြသပါ။\nတန်း ၏ အကွက် ၀ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// ငှားထားသော စာရင်း: တစ်ခုတည်းသော ကိန်းရှင်\nလုပ်ဆောင်ချက် အကွက်ငှား သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။\nကိန်းရှင် တန်း သည် ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်ပါစေ။\n၀ မှ ၁ အထိ န အနေဖြင့် ရေတွက်၍ တန်း ၏ အကွက် န ကို ပ + န ဟု ထားပါ။\n၀ မှ ၁ အထိ န အနေဖြင့် ရေတွက်၍ တန်း ၏ အကွက် န ၏ တန်ဖိုး ကို န + ၂၀ ဟု ထားပါ။\nတန်း ၏ အကွက် ၁ ၏ တန်ဖိုး ကို ပြသပါ။\nပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// စာရင်းတစ်ခုလုံး ရွှေ့ခြင်း\nလုပ်ဆောင်ချက် တစ်ခုလုံးရွှေ့ သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ဟောင်း သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ဟောင်း ၏ အကွက် ၀ တွင် သိမ်းထားမည်။\nမင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ဟောင်း ၏ အကွက် ၁ တွင် သိမ်းထားမည်။\nဟောင်း ၏ အကွက် ၁ ၏ တန်ဖိုး ကို ၃၃ ဟု ထားပါ။\nကိန်းရှင် သစ် သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်၍ တန်ဖိုးသည် ဟောင်း ဖြစ်ပါစေ။\nသစ် ၏ အကွက် ၁ ၏ တန်ဖိုး ကို ပြသပါ။\n၀ မှ ၁ အထိ န အနေဖြင့် ရေတွက်၍ သစ် ၏ အကွက် န လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// ချိတ်ထားသော ဘူးကို ချဲ့ပြီး အသစ်ကို ငှားပေးသည်\nလုပ်ဆောင်ချက် ချဲ့ သည်\nငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ချိတ် ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော ကိန်းပြည့် လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။\nချိတ် ၏ တန်ဖိုး လိပ်စာရှိကို မင်မိုရီ ကိန်းပြည့် ၈ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။\nချိတ် ၏ တန်ဖိုး ၏ တန်ဖိုးအငှား ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// ငှားထားသော စာရင်း၏ ပထမအကွက်\nလုပ်ဆောင်ချက် ပထမ သည်\nငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တန်း ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော ကိန်းပြည့် လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။\nတန်း ၏ အကွက် ၀ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// ခေါ်ပြီး ပြန်ရသော ငှားခြင်းကို အကွက်ထဲ ထားခြင်း\nလုပ်ဆောင်ချက် ပြန်ငှား သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။\nကိန်းရှင် တန်း သည် ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်ပါစေ။\nတန်း ၏ အကွက် ၀ ကို လုပ်ဆောင်ချက် ချဲ့ ကို ပ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဟု ထားပါ။\nတန်း ၏ အကွက် ၁ ကို (တန်း ၏ အကွက် ၀) + ၇ ဟု ထားပါ။\nတန်း ၏ အကွက် ၁ ၏ တန်ဖိုး ကို ၄၄ ဟု ထားပါ။\nကိန်းရှင် ရ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် ပထမ ကို တန်း တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။\n(ရ + ၇) ၏ တန်ဖိုး ကို ပြသပါ။\nပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// ပိုင်ရှင်များ၏ စာရင်းထဲမှ စာရင်း\nလုပ်ဆောင်ချက် အဆင့်နှစ်ဆင့် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ဇယား သည် အကွက် ၂ ခုရှိသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း စာရင်း ဖြစ်ပါစေ။\n၀ မှ ၁ အထိ တန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\n၀ မှ ၁ အထိ တိုင် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nမင်မိုရီ ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ဇယား ၏ အကွက် တန်း ၏ အကွက် တိုင် တွင် သိမ်းထားမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nဇယား ၏ အကွက် ၁ ၏ အကွက် ၀ ၏ တန်ဖိုး ကို ၁၀ ဟု ထားပါ။\nကိန်းရှင် ကြည့် သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ဇယား ၏ အကွက် ၁ ၏ အကွက် ၀ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။\nကြည့် ၏ တန်ဖိုး ကို ပြသပါ။\n၀ မှ ၁ အထိ တန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\n၀ မှ ၁ အထိ တိုင် အနေဖြင့် ရေတွက်၍ ဇယား ၏ အကွက် တန်း ၏ အကွက် တိုင် လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် အကွက်ပိုင် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် အကွက်ငှား ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် တစ်ခုလုံးရွှေ့ ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် ပြန်ငှား ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် အဆင့်နှစ်ဆင့် ကို လုပ်ဆောင်ပါ။\n"
+module:
+  globals:
+  - name: ကိန်းများ
+    kind: "[4]isize"
+    access: var
+    span:
+      lo: 106
+      hi: 133
+    addressed: false
+  - name: စုစုပေါင်း
+    kind: isize
+    access: var
+    span:
+      lo: 414
+      hi: 444
+    addressed: false
+  - name: န
+    kind: isize
+    access: loop_var
+    span:
+      lo: 590
+      hi: 593
+    addressed: false
+  funcs:
+  - name: အကွက်ပိုင်
+    params: 0
+    result: null
+    ret: null
+    locals:
+    - name: တန်း
+      kind: "[2]*isize"
+      access: var
+      span:
+        lo: 1164
+        hi: 1176
+      addressed: false
+    - name: ကြည့်
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 1883
+        hi: 1898
+      addressed: false
+    - name: ယူ
+      kind: "*isize"
+      access: var
+      span:
+        lo: 2171
+        hi: 2177
+      addressed: false
+    block:
+    - set:
+        place: l0
+        value:
+          kind: "[2]*isize"
+          node: blank_list
+          span:
+            lo: 1164
+            hi: 1176
+        span:
+          lo: 1136
+          hi: 1328
+    - alloc:
+        dest:
+          mem:
+            kind: "**isize"
+            node:
+              cell_addr:
+                list:
+                  kind: "[2]*isize"
+                  node:
+                    read: l0
+                  span:
+                    lo: 1452
+                    hi: 1464
+                index:
+                  kind: usize
+                  node:
+                    const: 0:usize
+                  span:
+                    lo: 1485
+                    hi: 1488
+                len: 2
+                first: 0
+                checked: true
+            span:
+              lo: 1452
+              hi: 1488
+        count:
+          kind: usize
+          node:
+            const: 1:usize
+          span:
+            lo: 1385
+            hi: 1388
+        unit: isize
+        span:
+          lo: 1329
+          hi: 1538
+    - alloc:
+        dest:
+          mem:
+            kind: "**isize"
+            node:
+              cell_addr:
+                list:
+                  kind: "[2]*isize"
+                  node:
+                    read: l0
+                  span:
+                    lo: 1662
+                    hi: 1674
+                index:
+                  kind: usize
+                  node:
+                    const: 1:usize
+                  span:
+                    lo: 1695
+                    hi: 1698
+                len: 2
+                first: 0
+                checked: true
+            span:
+              lo: 1662
+              hi: 1698
+        count:
+          kind: usize
+          node:
+            const: 1:usize
+          span:
+            lo: 1595
+            hi: 1598
+        unit: isize
+        span:
+          lo: 1539
+          hi: 1748
+    - store:
+        addr:
+          kind: "*isize"
+          node:
+            load:
+              addr:
+                kind: "**isize"
+                node:
+                  cell_addr:
+                    list:
+                      kind: "[2]*isize"
+                      node:
+                        read: l0
+                      span:
+                        lo: 1749
+                        hi: 1761
+                    index:
+                      kind: usize
+                      node:
+                        const: 0:usize
+                      span:
+                        lo: 1782
+                        hi: 1785
+                    len: 2
+                    first: 0
+                    checked: true
+                span:
+                  lo: 1749
+                  hi: 1785
+          span:
+            lo: 1749
+            hi: 1785
+        value:
+          kind: isize
+          node:
+            const: 11:isize
+          span:
+            lo: 1822
+            hi: 1828
+        span:
+          lo: 1749
+          hi: 1854
+    - set:
+        place: l1
+        value:
+          kind: "&*isize"
+          node:
+            lend:
+              operand:
+                kind: "*isize"
+                node:
+                  load:
+                    addr:
+                      kind: "**isize"
+                      node:
+                        cell_addr:
+                          list:
+                            kind: "[2]*isize"
+                            node:
+                              read: l0
+                            span:
+                              lo: 2037
+                              hi: 2049
+                          index:
+                            kind: usize
+                            node:
+                              const: 0:usize
+                            span:
+                              lo: 2070
+                              hi: 2073
+                          len: 2
+                          first: 0
+                          checked: true
+                      span:
+                        lo: 2037
+                        hi: 2073
+                span:
+                  lo: 2037
+                  hi: 2073
+          span:
+            lo: 2037
+            hi: 2114
+        span:
+          lo: 1855
+          hi: 2142
+    - set:
+        place: l2
+        value:
+          kind: "*isize"
+          node:
+            take:
+              addr:
+                kind: "**isize"
+                node:
+                  cell_addr:
+                    list:
+                      kind: "[2]*isize"
+                      node:
+                        read: l0
+                      span:
+                        lo: 2285
+                        hi: 2297
+                    index:
+                      kind: usize
+                      node:
+                        const: 1:usize
+                      span:
+                        lo: 2318
+                        hi: 2321
+                    len: 2
+                    first: 0
+                    checked: true
+                span:
+                  lo: 2285
+                  hi: 2321
+          span:
+            lo: 2285
+            hi: 2321
+        span:
+          lo: 2143
+          hi: 2349
+    - free:
+        dest:
+          slot: l2
+        span:
+          lo: 2350
+          hi: 2481
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              load:
+                addr:
+                  kind: "&*isize"
+                  node:
+                    read: l1
+                  span:
+                    lo: 2482
+                    hi: 2497
+            span:
+              lo: 2482
+              hi: 2523
+        span:
+          lo: 2482
+          hi: 2552
+    - free:
+        dest:
+          mem:
+            kind: "**isize"
+            node:
+              cell_addr:
+                list:
+                  kind: "[2]*isize"
+                  node:
+                    read: l0
+                  span:
+                    lo: 2553
+                    hi: 2565
+                index:
+                  kind: usize
+                  node:
+                    const: 0:usize
+                  span:
+                    lo: 2586
+                    hi: 2589
+                len: 2
+                first: 0
+                checked: true
+            span:
+              lo: 2553
+              hi: 2589
+        span:
+          lo: 2553
+          hi: 2714
+    span:
+      lo: 972
+      hi: 2797
+  - name: အကွက်ငှား
+    params: 0
+    result: null
+    ret: null
+    locals:
+    - name: ပ
+      kind: "*isize"
+      access: var
+      span:
+        lo: 3107
+        hi: 3110
+      addressed: false
+    - name: တန်း
+      kind: "[2]&*isize"
+      access: var
+      span:
+        lo: 3404
+        hi: 3416
+      addressed: false
+    - name: န
+      kind: isize
+      access: loop_var
+      span:
+        lo: 3625
+        hi: 3628
+      addressed: false
+    - name: န
+      kind: isize
+      access: loop_var
+      span:
+        lo: 3784
+        hi: 3787
+      addressed: false
+    block:
+    - set:
+        place: l0
+        value:
+          kind: "*isize"
+          node:
+            const: 0x0:ptr
+          span:
+            lo: 3107
+            hi: 3110
+        span:
+          lo: 3079
+          hi: 3198
+    - alloc:
+        dest:
+          slot: l0
+        count:
+          kind: usize
+          node:
+            const: 2:usize
+          span:
+            lo: 3255
+            hi: 3258
+        unit: isize
+        span:
+          lo: 3199
+          hi: 3375
+    - set:
+        place: l1
+        value:
+          kind: "[2]&*isize"
+          node: blank_list
+          span:
+            lo: 3404
+            hi: 3416
+        span:
+          lo: 3376
+          hi: 3599
+    - counted:
+        var: l2
+        from:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 3600
+            hi: 3603
+        to:
+          kind: isize
+          node:
+            const: 1:isize
+          span:
+            lo: 3611
+            hi: 3614
+        step: null
+        mode: count
+        block:
+        - store:
+            addr:
+              kind: "**isize"
+              node:
+                cell_addr:
+                  list:
+                    kind: "[2]&*isize"
+                    node:
+                      read: l1
+                    span:
+                      lo: 3676
+                      hi: 3688
+                  index:
+                    kind: isize
+                    node:
+                      read: l2
+                    span:
+                      lo: 3709
+                      hi: 3712
+                  len: 2
+                  first: 0
+                  checked: true
+              span:
+                lo: 3676
+                hi: 3712
+            value:
+              kind: "&*isize"
+              node:
+                ptr_add:
+                  base:
+                    kind: "*isize"
+                    node:
+                      read: l0
+                    span:
+                      lo: 3723
+                      hi: 3726
+                  offset:
+                    kind: isize
+                    node:
+                      read: l2
+                    span:
+                      lo: 3729
+                      hi: 3732
+              span:
+                lo: 3723
+                hi: 3732
+            span:
+              lo: 3676
+              hi: 3758
+        span:
+          lo: 3600
+          hi: 3758
+    - counted:
+        var: l3
+        from:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 3759
+            hi: 3762
+        to:
+          kind: isize
+          node:
+            const: 1:isize
+          span:
+            lo: 3770
+            hi: 3773
+        step: null
+        mode: count
+        block:
+        - store:
+            addr:
+              kind: "&*isize"
+              node:
+                load:
+                  addr:
+                    kind: "**isize"
+                    node:
+                      cell_addr:
+                        list:
+                          kind: "[2]&*isize"
+                          node:
+                            read: l1
+                          span:
+                            lo: 3835
+                            hi: 3847
+                        index:
+                          kind: isize
+                          node:
+                            read: l3
+                          span:
+                            lo: 3868
+                            hi: 3871
+                        len: 2
+                        first: 0
+                        checked: true
+                    span:
+                      lo: 3835
+                      hi: 3871
+              span:
+                lo: 3835
+                hi: 3871
+            value:
+              kind: isize
+              node:
+                infix:
+                  op: add
+                  lhs:
+                    kind: isize
+                    node:
+                      read: l3
+                    span:
+                      lo: 3908
+                      hi: 3911
+                  rhs:
+                    kind: isize
+                    node:
+                      const: 20:isize
+                    span:
+                      lo: 3914
+                      hi: 3920
+              span:
+                lo: 3908
+                hi: 3920
+            span:
+              lo: 3835
+              hi: 3946
+        span:
+          lo: 3759
+          hi: 3946
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              load:
+                addr:
+                  kind: "&*isize"
+                  node:
+                    load:
+                      addr:
+                        kind: "**isize"
+                        node:
+                          cell_addr:
+                            list:
+                              kind: "[2]&*isize"
+                              node:
+                                read: l1
+                              span:
+                                lo: 3947
+                                hi: 3959
+                            index:
+                              kind: usize
+                              node:
+                                const: 1:usize
+                              span:
+                                lo: 3980
+                                hi: 3983
+                            len: 2
+                            first: 0
+                            checked: true
+                        span:
+                          lo: 3947
+                          hi: 3983
+                  span:
+                    lo: 3947
+                    hi: 3983
+            span:
+              lo: 3947
+              hi: 4009
+        span:
+          lo: 3947
+          hi: 4038
+    - free:
+        dest:
+          slot: l0
+        span:
+          lo: 4039
+          hi: 4167
+    span:
+      lo: 2918
+      hi: 4250
+  - name: တစ်ခုလုံးရွှေ့
+    params: 0
+    result: null
+    ret: null
+    locals:
+    - name: ဟောင်း
+      kind: "[2]*isize"
+      access: var
+      span:
+        lo: 4536
+        hi: 4554
+      addressed: false
+    - name: သစ်
+      kind: "[2]*isize"
+      access: var
+      span:
+        lo: 5279
+        hi: 5288
+      addressed: false
+    - name: န
+      kind: isize
+      access: loop_var
+      span:
+        lo: 5621
+        hi: 5624
+      addressed: false
+    block:
+    - set:
+        place: l0
+        value:
+          kind: "[2]*isize"
+          node: blank_list
+          span:
+            lo: 4536
+            hi: 4554
+        span:
+          lo: 4508
+          hi: 4706
+    - alloc:
+        dest:
+          mem:
+            kind: "**isize"
+            node:
+              cell_addr:
+                list:
+                  kind: "[2]*isize"
+                  node:
+                    read: l0
+                  span:
+                    lo: 4830
+                    hi: 4848
+                index:
+                  kind: usize
+                  node:
+                    const: 0:usize
+                  span:
+                    lo: 4869
+                    hi: 4872
+                len: 2
+                first: 0
+                checked: true
+            span:
+              lo: 4830
+              hi: 4872
+        count:
+          kind: usize
+          node:
+            const: 1:usize
+          span:
+            lo: 4763
+            hi: 4766
+        unit: isize
+        span:
+          lo: 4707
+          hi: 4922
+    - alloc:
+        dest:
+          mem:
+            kind: "**isize"
+            node:
+              cell_addr:
+                list:
+                  kind: "[2]*isize"
+                  node:
+                    read: l0
+                  span:
+                    lo: 5046
+                    hi: 5064
+                index:
+                  kind: usize
+                  node:
+                    const: 1:usize
+                  span:
+                    lo: 5085
+                    hi: 5088
+                len: 2
+                first: 0
+                checked: true
+            span:
+              lo: 5046
+              hi: 5088
+        count:
+          kind: usize
+          node:
+            const: 1:usize
+          span:
+            lo: 4979
+            hi: 4982
+        unit: isize
+        span:
+          lo: 4923
+          hi: 5138
+    - store:
+        addr:
+          kind: "*isize"
+          node:
+            load:
+              addr:
+                kind: "**isize"
+                node:
+                  cell_addr:
+                    list:
+                      kind: "[2]*isize"
+                      node:
+                        read: l0
+                      span:
+                        lo: 5139
+                        hi: 5157
+                    index:
+                      kind: usize
+                      node:
+                        const: 1:usize
+                      span:
+                        lo: 5178
+                        hi: 5181
+                    len: 2
+                    first: 0
+                    checked: true
+                span:
+                  lo: 5139
+                  hi: 5181
+          span:
+            lo: 5139
+            hi: 5181
+        value:
+          kind: isize
+          node:
+            const: 33:isize
+          span:
+            lo: 5218
+            hi: 5224
+        span:
+          lo: 5139
+          hi: 5250
+    - set:
+        place: l1
+        value:
+          kind: "[2]*isize"
+          node:
+            take:
+              addr:
+                kind: "*[2]*isize"
+                node:
+                  addr_of: l0
+                span:
+                  lo: 5460
+                  hi: 5478
+          span:
+            lo: 5460
+            hi: 5478
+        span:
+          lo: 5251
+          hi: 5506
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              load:
+                addr:
+                  kind: "*isize"
+                  node:
+                    load:
+                      addr:
+                        kind: "**isize"
+                        node:
+                          cell_addr:
+                            list:
+                              kind: "[2]*isize"
+                              node:
+                                read: l1
+                              span:
+                                lo: 5507
+                                hi: 5516
+                            index:
+                              kind: usize
+                              node:
+                                const: 1:usize
+                              span:
+                                lo: 5537
+                                hi: 5540
+                            len: 2
+                            first: 0
+                            checked: true
+                        span:
+                          lo: 5507
+                          hi: 5540
+                  span:
+                    lo: 5507
+                    hi: 5540
+            span:
+              lo: 5507
+              hi: 5566
+        span:
+          lo: 5507
+          hi: 5595
+    - counted:
+        var: l2
+        from:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 5596
+            hi: 5599
+        to:
+          kind: isize
+          node:
+            const: 1:isize
+          span:
+            lo: 5607
+            hi: 5610
+        step: null
+        mode: count
+        block:
+        - free:
+            dest:
+              mem:
+                kind: "**isize"
+                node:
+                  cell_addr:
+                    list:
+                      kind: "[2]*isize"
+                      node:
+                        read: l1
+                      span:
+                        lo: 5672
+                        hi: 5681
+                    index:
+                      kind: isize
+                      node:
+                        read: l2
+                      span:
+                        lo: 5702
+                        hi: 5705
+                    len: 2
+                    first: 0
+                    checked: true
+                span:
+                  lo: 5672
+                  hi: 5705
+            span:
+              lo: 5672
+              hi: 5830
+        span:
+          lo: 5596
+          hi: 5830
+    span:
+      lo: 4332
+      hi: 5913
+  - name: ချဲ့
+    params: 1
+    result: 1
+    ret: "&*isize"
+    locals:
+    - name: ချိတ်
+      kind: "&**isize"
+      access: var
+      span:
+        lo: 6216
+        hi: 6231
+      addressed: false
+    - name: ရလဒ်
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 6089
+        hi: 6101
+      addressed: false
+    block:
+    - set:
+        place: l1
+        value:
+          kind: "&*isize"
+          node:
+            const: 0x0:ptr
+          span:
+            lo: 6089
+            hi: 6101
+        span:
+          lo: 6089
+          hi: 6101
+    - resize:
+        dest:
+          mem:
+            kind: "&**isize"
+            node:
+              read: l0
+            span:
+              lo: 6485
+              hi: 6500
+        count:
+          kind: usize
+          node:
+            const: 8:usize
+          span:
+            lo: 6620
+            hi: 6623
+        unit: isize
+        span:
+          lo: 6485
+          hi: 6734
+    - return:
+        value:
+          kind: "&*isize"
+          node:
+            lend:
+              operand:
+                kind: "*isize"
+                node:
+                  load:
+                    addr:
+                      kind: "&**isize"
+                      node:
+                        read: l0
+                      span:
+                        lo: 6735
+                        hi: 6750
+                span:
+                  lo: 6735
+                  hi: 6776
+          span:
+            lo: 6735
+            hi: 6817
+        span:
+          lo: 6735
+          hi: 6886
+    span:
+      lo: 6049
+      hi: 6969
+  - name: ပထမ
+    params: 1
+    result: 1
+    ret: "&*isize"
+    locals:
+    - name: တန်း
+      kind: "[2]&*isize"
+      access: var
+      span:
+        lo: 7257
+        hi: 7269
+      addressed: false
+    - name: ရလဒ်
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 7092
+        hi: 7101
+      addressed: false
+    block:
+    - set:
+        place: l1
+        value:
+          kind: "&*isize"
+          node:
+            const: 0x0:ptr
+          span:
+            lo: 7092
+            hi: 7101
+        span:
+          lo: 7092
+          hi: 7101
+    - return:
+        value:
+          kind: "&*isize"
+          node:
+            load:
+              addr:
+                kind: "**isize"
+                node:
+                  cell_addr:
+                    list:
+                      kind: "[2]&*isize"
+                      node:
+                        read: l0
+                      span:
+                        lo: 7523
+                        hi: 7535
+                    index:
+                      kind: usize
+                      node:
+                        const: 0:usize
+                      span:
+                        lo: 7556
+                        hi: 7559
+                    len: 2
+                    first: 0
+                    checked: true
+                span:
+                  lo: 7523
+                  hi: 7559
+          span:
+            lo: 7523
+            hi: 7559
+        span:
+          lo: 7523
+          hi: 7628
+    span:
+      lo: 7052
+      hi: 7711
+  - name: ပြန်ငှား
+    params: 0
+    result: null
+    ret: null
+    locals:
+    - name: ပ
+      kind: "*isize"
+      access: var
+      span:
+        lo: 8036
+        hi: 8039
+      addressed: true
+    - name: တန်း
+      kind: "[2]&*isize"
+      access: var
+      span:
+        lo: 8333
+        hi: 8345
+      addressed: false
+    - name: ရ
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 9022
+        hi: 9025
+      addressed: false
+    block:
+    - set:
+        place: l0
+        value:
+          kind: "*isize"
+          node:
+            const: 0x0:ptr
+          span:
+            lo: 8036
+            hi: 8039
+        span:
+          lo: 8008
+          hi: 8127
+    - alloc:
+        dest:
+          slot: l0
+        count:
+          kind: usize
+          node:
+            const: 1:usize
+          span:
+            lo: 8184
+            hi: 8187
+        unit: isize
+        span:
+          lo: 8128
+          hi: 8304
+    - set:
+        place: l1
+        value:
+          kind: "[2]&*isize"
+          node: blank_list
+          span:
+            lo: 8333
+            hi: 8345
+        span:
+          lo: 8305
+          hi: 8528
+    - store:
+        addr:
+          kind: "**isize"
+          node:
+            cell_addr:
+              list:
+                kind: "[2]&*isize"
+                node:
+                  read: l1
+                span:
+                  lo: 8529
+                  hi: 8541
+              index:
+                kind: usize
+                node:
+                  const: 0:usize
+                span:
+                  lo: 8562
+                  hi: 8565
+              len: 2
+              first: 0
+              checked: true
+          span:
+            lo: 8529
+            hi: 8565
+        value:
+          kind: "&*isize"
+          node:
+            call:
+              func: 3
+              name: ချဲ့
+              args:
+              - kind: "&**isize"
+                node:
+                  addr_of: l0
+                span:
+                  lo: 8639
+                  hi: 8665
+          span:
+            lo: 8576
+            hi: 8743
+        span:
+          lo: 8529
+          hi: 8769
+    - store:
+        addr:
+          kind: "**isize"
+          node:
+            cell_addr:
+              list:
+                kind: "[2]&*isize"
+                node:
+                  read: l1
+                span:
+                  lo: 8770
+                  hi: 8782
+              index:
+                kind: usize
+                node:
+                  const: 1:usize
+                span:
+                  lo: 8803
+                  hi: 8806
+              len: 2
+              first: 0
+              checked: true
+          span:
+            lo: 8770
+            hi: 8806
+        value:
+          kind: "&*isize"
+          node:
+            ptr_add:
+              base:
+                kind: "&*isize"
+                node:
+                  load:
+                    addr:
+                      kind: "**isize"
+                      node:
+                        cell_addr:
+                          list:
+                            kind: "[2]&*isize"
+                            node:
+                              read: l1
+                            span:
+                              lo: 8818
+                              hi: 8830
+                          index:
+                            kind: usize
+                            node:
+                              const: 0:usize
+                            span:
+                              lo: 8851
+                              hi: 8854
+                          len: 2
+                          first: 0
+                          checked: true
+                      span:
+                        lo: 8818
+                        hi: 8854
+                span:
+                  lo: 8818
+                  hi: 8854
+              offset:
+                kind: isize
+                node:
+                  const: 7:isize
+                span:
+                  lo: 8858
+                  hi: 8861
+          span:
+            lo: 8817
+            hi: 8861
+        span:
+          lo: 8770
+          hi: 8887
+    - store:
+        addr:
+          kind: "&*isize"
+          node:
+            load:
+              addr:
+                kind: "**isize"
+                node:
+                  cell_addr:
+                    list:
+                      kind: "[2]&*isize"
+                      node:
+                        read: l1
+                      span:
+                        lo: 8888
+                        hi: 8900
+                    index:
+                      kind: usize
+                      node:
+                        const: 1:usize
+                      span:
+                        lo: 8921
+                        hi: 8924
+                    len: 2
+                    first: 0
+                    checked: true
+                span:
+                  lo: 8888
+                  hi: 8924
+          span:
+            lo: 8888
+            hi: 8924
+        value:
+          kind: isize
+          node:
+            const: 44:isize
+          span:
+            lo: 8961
+            hi: 8967
+        span:
+          lo: 8888
+          hi: 8993
+    - set:
+        place: l2
+        value:
+          kind: "&*isize"
+          node:
+            call:
+              func: 4
+              name: ပထမ
+              args:
+              - kind: "[2]&*isize"
+                node:
+                  read: l1
+                span:
+                  lo: 9224
+                  hi: 9236
+          span:
+            lo: 9164
+            hi: 9314
+        span:
+          lo: 8994
+          hi: 9342
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              load:
+                addr:
+                  kind: "&*isize"
+                  node:
+                    ptr_add:
+                      base:
+                        kind: "&*isize"
+                        node:
+                          read: l2
+                        span:
+                          lo: 9344
+                          hi: 9347
+                      offset:
+                        kind: isize
+                        node:
+                          const: 7:isize
+                        span:
+                          lo: 9350
+                          hi: 9353
+                  span:
+                    lo: 9344
+                    hi: 9353
+            span:
+              lo: 9343
+              hi: 9380
+        span:
+          lo: 9343
+          hi: 9409
+    - free:
+        dest:
+          slot: l0
+        span:
+          lo: 9410
+          hi: 9538
+    span:
+      lo: 7850
+      hi: 9621
+  - name: အဆင့်နှစ်ဆင့်
+    params: 0
+    result: null
+    ret: null
+    locals:
+    - name: ဇယား
+      kind: "[2][2]*isize"
+      access: var
+      span:
+        lo: 9920
+        hi: 9932
+      addressed: false
+    - name: တန်း
+      kind: isize
+      access: loop_var
+      span:
+        lo: 10174
+        hi: 10186
+      addressed: false
+    - name: တိုင်
+      kind: isize
+      access: loop_var
+      span:
+        lo: 10339
+        hi: 10354
+      addressed: false
+    - name: ကြည့်
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 11061
+        hi: 11076
+      addressed: false
+    - name: တန်း
+      kind: isize
+      access: loop_var
+      span:
+        lo: 11441
+        hi: 11453
+      addressed: false
+    - name: တိုင်
+      kind: isize
+      access: loop_var
+      span:
+        lo: 11606
+        hi: 11621
+      addressed: false
+    block:
+    - set:
+        place: l0
+        value:
+          kind: "[2][2]*isize"
+          node: blank_list
+          span:
+            lo: 9920
+            hi: 9932
+        span:
+          lo: 9892
+          hi: 10148
+    - counted:
+        var: l1
+        from:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 10149
+            hi: 10152
+        to:
+          kind: isize
+          node:
+            const: 1:isize
+          span:
+            lo: 10160
+            hi: 10163
+        step: null
+        mode: count
+        block:
+        - counted:
+            var: l2
+            from:
+              kind: isize
+              node:
+                const: 0:isize
+              span:
+                lo: 10314
+                hi: 10317
+            to:
+              kind: isize
+              node:
+                const: 1:isize
+              span:
+                lo: 10325
+                hi: 10328
+            step: null
+            mode: count
+            block:
+            - alloc:
+                dest:
+                  mem:
+                    kind: "**isize"
+                    node:
+                      cell_addr:
+                        list:
+                          kind: "[2]*isize"
+                          node:
+                            load:
+                              addr:
+                                kind: "*[2]*isize"
+                                node:
+                                  cell_addr:
+                                    list:
+                                      kind: "[2][2]*isize"
+                                      node:
+                                        read: l0
+                                      span:
+                                        lo: 10605
+                                        hi: 10617
+                                    index:
+                                      kind: isize
+                                      node:
+                                        read: l1
+                                      span:
+                                        lo: 10638
+                                        hi: 10650
+                                    len: 2
+                                    first: 0
+                                    checked: true
+                                span:
+                                  lo: 10605
+                                  hi: 10650
+                          span:
+                            lo: 10605
+                            hi: 10650
+                        index:
+                          kind: isize
+                          node:
+                            read: l2
+                          span:
+                            lo: 10671
+                            hi: 10686
+                        len: 2
+                        first: 0
+                        checked: true
+                    span:
+                      lo: 10605
+                      hi: 10686
+                count:
+                  kind: usize
+                  node:
+                    const: 1:usize
+                  span:
+                    lo: 10538
+                    hi: 10541
+                unit: isize
+                span:
+                  lo: 10482
+                  hi: 10736
+            span:
+              lo: 10314
+              hi: 10819
+        span:
+          lo: 10149
+          hi: 10902
+    - store:
+        addr:
+          kind: "*isize"
+          node:
+            load:
+              addr:
+                kind: "**isize"
+                node:
+                  cell_addr:
+                    list:
+                      kind: "[2]*isize"
+                      node:
+                        load:
+                          addr:
+                            kind: "*[2]*isize"
+                            node:
+                              cell_addr:
+                                list:
+                                  kind: "[2][2]*isize"
+                                  node:
+                                    read: l0
+                                  span:
+                                    lo: 10903
+                                    hi: 10915
+                                index:
+                                  kind: usize
+                                  node:
+                                    const: 1:usize
+                                  span:
+                                    lo: 10936
+                                    hi: 10939
+                                len: 2
+                                first: 0
+                                checked: true
+                            span:
+                              lo: 10903
+                              hi: 10939
+                      span:
+                        lo: 10903
+                        hi: 10939
+                    index:
+                      kind: usize
+                      node:
+                        const: 0:usize
+                      span:
+                        lo: 10960
+                        hi: 10963
+                    len: 2
+                    first: 0
+                    checked: true
+                span:
+                  lo: 10903
+                  hi: 10963
+          span:
+            lo: 10903
+            hi: 10963
+        value:
+          kind: isize
+          node:
+            const: 10:isize
+          span:
+            lo: 11000
+            hi: 11006
+        span:
+          lo: 10903
+          hi: 11032
+    - set:
+        place: l3
+        value:
+          kind: "&*isize"
+          node:
+            lend:
+              operand:
+                kind: "*isize"
+                node:
+                  load:
+                    addr:
+                      kind: "**isize"
+                      node:
+                        cell_addr:
+                          list:
+                            kind: "[2]*isize"
+                            node:
+                              load:
+                                addr:
+                                  kind: "*[2]*isize"
+                                  node:
+                                    cell_addr:
+                                      list:
+                                        kind: "[2][2]*isize"
+                                        node:
+                                          read: l0
+                                        span:
+                                          lo: 11215
+                                          hi: 11227
+                                      index:
+                                        kind: usize
+                                        node:
+                                          const: 1:usize
+                                        span:
+                                          lo: 11248
+                                          hi: 11251
+                                      len: 2
+                                      first: 0
+                                      checked: true
+                                  span:
+                                    lo: 11215
+                                    hi: 11251
+                            span:
+                              lo: 11215
+                              hi: 11251
+                          index:
+                            kind: usize
+                            node:
+                              const: 0:usize
+                            span:
+                              lo: 11272
+                              hi: 11275
+                          len: 2
+                          first: 0
+                          checked: true
+                      span:
+                        lo: 11215
+                        hi: 11275
+                span:
+                  lo: 11215
+                  hi: 11275
+          span:
+            lo: 11215
+            hi: 11316
+        span:
+          lo: 11033
+          hi: 11344
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              load:
+                addr:
+                  kind: "&*isize"
+                  node:
+                    read: l3
+                  span:
+                    lo: 11345
+                    hi: 11360
+            span:
+              lo: 11345
+              hi: 11386
+        span:
+          lo: 11345
+          hi: 11415
+    - counted:
+        var: l4
+        from:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 11416
+            hi: 11419
+        to:
+          kind: isize
+          node:
+            const: 1:isize
+          span:
+            lo: 11427
+            hi: 11430
+        step: null
+        mode: count
+        block:
+        - counted:
+            var: l5
+            from:
+              kind: isize
+              node:
+                const: 0:isize
+              span:
+                lo: 11581
+                hi: 11584
+            to:
+              kind: isize
+              node:
+                const: 1:isize
+              span:
+                lo: 11592
+                hi: 11595
+            step: null
+            mode: count
+            block:
+            - free:
+                dest:
+                  mem:
+                    kind: "**isize"
+                    node:
+                      cell_addr:
+                        list:
+                          kind: "[2]*isize"
+                          node:
+                            load:
+                              addr:
+                                kind: "*[2]*isize"
+                                node:
+                                  cell_addr:
+                                    list:
+                                      kind: "[2][2]*isize"
+                                      node:
+                                        read: l0
+                                      span:
+                                        lo: 11669
+                                        hi: 11681
+                                    index:
+                                      kind: isize
+                                      node:
+                                        read: l4
+                                      span:
+                                        lo: 11702
+                                        hi: 11714
+                                    len: 2
+                                    first: 0
+                                    checked: true
+                                span:
+                                  lo: 11669
+                                  hi: 11714
+                          span:
+                            lo: 11669
+                            hi: 11714
+                        index:
+                          kind: isize
+                          node:
+                            read: l5
+                          span:
+                            lo: 11735
+                            hi: 11750
+                        len: 2
+                        first: 0
+                        checked: true
+                    span:
+                      lo: 11669
+                      hi: 11750
+                span:
+                  lo: 11669
+                  hi: 11875
+            span:
+              lo: 11581
+              hi: 11875
+        span:
+          lo: 11416
+          hi: 11958
+    span:
+      lo: 9719
+      hi: 12041
+  main:
+  - set:
+      place: g0
+      value:
+        kind: "[4]isize"
+        node:
+          list:
+          - kind: isize
+            node:
+              const: 3:isize
+            span:
+              lo: 286
+              hi: 289
+          - kind: isize
+            node:
+              const: 1:isize
+            span:
+              lo: 293
+              hi: 296
+          - kind: isize
+            node:
+              const: 4:isize
+            span:
+              lo: 300
+              hi: 303
+          - kind: isize
+            node:
+              const: 1:isize
+            span:
+              lo: 307
+              hi: 310
+        span:
+          lo: 286
+          hi: 357
+      span:
+        lo: 78
+        hi: 385
+  - set:
+      place: g1
+      value:
+        kind: isize
+        node:
+          const: 0:isize
+        span:
+          lo: 533
+          hi: 536
+      span:
+        lo: 386
+        hi: 564
+  - counted:
+      var: g2
+      from:
+        kind: isize
+        node:
+          const: 0:isize
+        span:
+          lo: 565
+          hi: 568
+      to:
+        kind: isize
+        node:
+          const: 3:isize
+        span:
+          lo: 576
+          hi: 579
+      step: null
+      mode: count
+      block:
+      - set:
+          place: g1
+          value:
+            kind: isize
+            node:
+              infix:
+                op: add
+                lhs:
+                  kind: isize
+                  node:
+                    read: g1
+                  span:
+                    lo: 682
+                    hi: 712
+                rhs:
+                  kind: isize
+                  node:
+                    load:
+                      addr:
+                        kind: "*isize"
+                        node:
+                          cell_addr:
+                            list:
+                              kind: "[4]isize"
+                              node:
+                                read: g0
+                              span:
+                                lo: 716
+                                hi: 743
+                            index:
+                              kind: isize
+                              node:
+                                read: g2
+                              span:
+                                lo: 764
+                                hi: 767
+                            len: 4
+                            first: 0
+                            checked: true
+                        span:
+                          lo: 716
+                          hi: 767
+                  span:
+                    lo: 716
+                    hi: 767
+            span:
+              lo: 682
+              hi: 768
+          span:
+            lo: 641
+            hi: 794
+      span:
+        lo: 565
+        hi: 794
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            read: g1
+          span:
+            lo: 795
+            hi: 825
+      span:
+        lo: 795
+        hi: 854
+  - call:
+      func: 0
+      name: အကွက်ပိုင်
+      args: []
+      span:
+        lo: 12043
+        hi: 12160
+  - call:
+      func: 1
+      name: အကွက်ငှား
+      args: []
+      span:
+        lo: 12161
+        hi: 12275
+  - call:
+      func: 2
+      name: တစ်ခုလုံးရွှေ့
+      args: []
+      span:
+        lo: 12276
+        hi: 12405
+  - call:
+      func: 5
+      name: ပြန်ငှား
+      args: []
+      span:
+        lo: 12406
+        hi: 12517
+  - call:
+      func: 6
+      name: အဆင့်နှစ်ဆင့်
+      args: []
+      span:
+        lo: 12518
+        hi: 12644
+  span:
+    lo: 0
+    hi: 12645
+digests:
+- name: အကွက်ပိုင်
+  params: 0
+  frees: []
+  result_from: []
+  result_roots: []
+  renewed: []
+  unfilled: []
+  reads: []
+  result_roots_ok: true
+- name: အကွက်ငှား
+  params: 0
+  frees: []
+  result_from: []
+  result_roots: []
+  renewed: []
+  unfilled: []
+  reads: []
+  result_roots_ok: true
+- name: တစ်ခုလုံးရွှေ့
+  params: 0
+  frees: []
+  result_from: []
+  result_roots: []
+  renewed: []
+  unfilled: []
+  reads: []
+  result_roots_ok: true
+- name: ချဲ့
+  params: 1
+  frees:
+  - place: l0
+    path:
+    - Block
+    - Block
+  result_from:
+  - 0
+  result_roots:
+  - place: l0
+    path:
+    - Block
+    - Block
+  renewed:
+  - place: l0
+    path:
+    - Block
+    - Block
+  unfilled: []
+  reads:
+  - place: l0
+    path:
+    - Block
+  result_roots_ok: true
+- name: ပထမ
+  params: 1
+  frees: []
+  result_from:
+  - 0
+  result_roots:
+  - place: l0
+    path:
+    - Cell: null
+    - Block
+  renewed: []
+  unfilled: []
+  reads:
+  - place: l0
+    path:
+    - Cell: 0
+  result_roots_ok: true
+- name: ပြန်ငှား
+  params: 0
+  frees: []
+  result_from: []
+  result_roots: []
+  renewed: []
+  unfilled: []
+  reads: []
+  result_roots_ok: true
+- name: အဆင့်နှစ်ဆင့်
+  params: 0
+  frees: []
+  result_from: []
+  result_roots: []
+  renewed: []
+  unfilled: []
+  reads: []
+  result_roots_ok: true
+diagnostics: []

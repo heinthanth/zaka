@@ -143,7 +143,7 @@ fn map_spans(mut out: LexOutput, map: impl Fn(Span) -> Span) -> LexOutput
 {
     out.tokens.iter_mut().for_each(|tok| tok.span = map(tok.span));
     out.comments.iter_mut().for_each(|c| c.span = map(c.span));
-    out.diagnostics.iter_mut().for_each(|d| d.span = map(d.span));
+    out.diagnostics.iter_mut().for_each(|d| d.map_spans(&map));
     out
 }
 

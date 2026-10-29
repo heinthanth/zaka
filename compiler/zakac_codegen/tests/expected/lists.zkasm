@@ -4,8 +4,8 @@ globals
   g1 ခ [3]isize
   g2 ဂ [3]isize
   g3 ဇယား [2][3]isize
-  g4 ညွှန်း *[3]isize
-  g5 ပ *isize
+  g4 ညွှန်း &*[3]isize
+  g5 ပ &*isize
 
 fn f0 ပေါင်း (params 1) -> isize
 locals
@@ -30,30 +30,29 @@ L0:
     14  local_addr l0        ; ကိန်းများ
     15  local_addr l2        ; န
     16  load isize
-    17  index 3
-    18  ptr_add 8
-    19  load isize
-    20  add
-    21  store isize
-    22  push 2:usize
-    23  local_addr l2        ; န
-    24  load isize
-    25  convert usize
-    26  sub
-    27  push 1:usize
-    28  lt
-    29  jump_if_true L1
+    17  ptr_add 8
+    18  load isize
+    19  add
+    20  store isize
+    21  push 2:usize
+    22  local_addr l2        ; န
+    23  load isize
+    24  convert usize
+    25  sub
+    26  push 1:usize
+    27  lt
+    28  jump_if_true L1
+    29  local_addr l2        ; န
     30  local_addr l2        ; န
-    31  local_addr l2        ; န
-    32  load isize
-    33  push 1:isize
-    34  add
-    35  store isize
-    36  jump L0
+    31  load isize
+    32  push 1:isize
+    33  add
+    34  store isize
+    35  jump L0
 L1:
-    37  local_addr l1        ; ရလဒ်
-    38  load isize
-    39  ret
+    36  local_addr l1        ; ရလဒ်
+    37  load isize
+    38  ret
 
 fn f1 main (params 0)
 locals
@@ -124,9 +123,9 @@ locals
     62  print_list [2][3]isize
     63  global_addr g4       ; ညွှန်း
     64  global_addr g2       ; ဂ
-    65  store *[3]isize
+    65  store &*[3]isize
     66  global_addr g4       ; ညွှန်း
-    67  load *[3]isize
+    67  load &*[3]isize
     68  push 1:usize
     69  ptr_add 8
     70  push 20:isize
@@ -135,9 +134,9 @@ locals
     73  global_addr g2       ; ဂ
     74  push 0:usize
     75  ptr_add 8
-    76  store *isize
+    76  store &*isize
     77  global_addr g5       ; ပ
-    78  load *isize
+    78  load &*isize
     79  push 2:isize
     80  ptr_add 8
     81  load isize

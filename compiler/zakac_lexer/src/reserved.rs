@@ -117,6 +117,9 @@ pub static RESERVED: &[(&str, Kw)] = &[
     (NOTE_MARKER, Kw::Note),
     // pointers and the heap
     ("လိပ်စာ", Kw::Address),
+    ("လိပ်စာအကြမ်း", Kw::RawAddress),
+    ("ငှားထားသော", Kw::Borrowed),
+    ("တန်ဖိုးအငှား", Kw::Lend),
     ("ဗလာ", Kw::Null),
     ("အရွယ်အစား", Kw::SizeOf),
     ("မင်မိုရီ", Kw::Mem),

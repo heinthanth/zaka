@@ -29,24 +29,24 @@ use crate::components::pager::pager;
 use crate::components::sandbox::Sandbox;
 use crate::components::sandbox::SandboxProps;
 use crate::components::sandbox::sandbox_sheet;
-use crate::manual::Chapter;
-use crate::manual::Page;
-use crate::manual::chapter_of;
-use crate::manual::chapters;
-use crate::manual::render::Block;
-use crate::manual::render::Head;
-use crate::manual::render::Rendered;
+use crate::learn::Chapter;
+use crate::learn::Page;
+use crate::learn::chapter_of;
+use crate::learn::chapters;
+use crate::learn::render::Block;
+use crate::learn::render::Head;
+use crate::learn::render::Rendered;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/learn/mod.sass");
 
-/// Rules of the pages of the manual.
+/// Rules of the Learn pages.
 static SHEET: ComponentStyle = ComponentStyle::global_css("site-learn", STYLE_SHEET);
 
-/// A page of the manual: the header, the contents on the left, the page in
+/// A Learn page: the header, the contents on the left, the page in
 /// the middle with its programs to run, what is on the page on the right, and
-/// the footer. The title page opens on a gold field with the name of the
-/// manual, and lists the chapters after its text.
+/// the footer. The title page opens on a gold field with the Learn mark and
+/// the title, and lists the chapters after its text.
 ///
 /// # Arguments
 ///
@@ -76,7 +76,8 @@ pub fn learn_page(page: Page, rendered: Rendered) -> impl IntoView
     )
 }
 
-/// The gold field of the title page: the name of the manual and what it is.
+/// The gold field of the title page: the Learn mark, the title and the
+/// description.
 ///
 /// # Arguments
 ///
@@ -162,6 +163,7 @@ fn block(block: Block) -> AnyView
             SandboxProps::builder()
                 .source(sample.source)
                 .fence(sample.fence)
+                .options(sample.options)
                 .expected(sample.expected)
                 .build(),
         )

@@ -905,6 +905,7 @@ impl Machine
             Op::Trap(TrapCode::StepNotPositive) => Err(TrapKind::StepNotPositive),
             Op::Load(kind) => self.load(kind),
             Op::Store(_) => self.store(),
+            Op::Take(kind) => self.take(kind),
             Op::PtrAdd(stride) => self.ptr_add(stride),
             Op::PtrSub(stride) => self.ptr_sub(stride),
             Op::Alloc(stride) => self.alloc(stride),
@@ -1305,6 +1306,26 @@ impl Machine
         self.push(v)
     }
 
+    /// Pop an address, push the value of a kind at it and leave the default
+    /// of the kind there, `ဗလာ` for an owner.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind; never a list, which moves through a blit and a
+    ///   zero.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap the access hits.
+    fn take(&mut self, kind: DataKind) -> Step
+    {
+        debug_assert!(!kind.is_list(), "a list moves through blit and zero");
+        let addr = self.pop_ptr("take")?;
+        let v = self.mem.load(addr, kind)?;
+        self.mem.store(addr, Value::default_of(kind))?;
+        self.push(v)
+    }
+
     /// Pop a value, then an address, and write the value there.
     ///
     /// # Returns
@@ -1429,7 +1450,12 @@ impl Machine
     }
 
     /// Pop an element offset and an address, and push the address moved
-    /// `offset` elements, wrapped at the platform width.
+    /// `offset` elements, wrapped at the platform width. A step off
+    /// null traps as a null access: no offset turns null into the address
+    /// of a block, whatever number it adds. A step from an address in a
+    /// block must land in that block, one past its end included, or it
+    /// traps as out of bounds with no octets, since the step accesses
+    /// nothing: no offset leads from one block into another.
     ///
     /// # Arguments
     ///
@@ -1442,8 +1468,12 @@ impl Machine
     {
         let offset = self.pop_int("ptr_add")? as i128;
         let addr = self.pop_ptr("ptr_add")?;
+        ret_if!(addr == 0 && offset != 0, Err(TrapKind::NullDeref { addr }));
         let moved = offset.wrapping_mul(i128::from(stride)) as u64;
-        self.push(Value::Ptr(self.wrap_addr(addr.wrapping_add(moved))))
+        let to = self.wrap_addr(addr.wrapping_add(moved));
+        let outside = TrapKind::OutOfBounds { addr: to, size: 0 };
+        ret_if!(!self.mem.steps_within(addr, to), Err(outside));
+        self.push(Value::Ptr(to))
     }
 
     /// Pop two addresses in one block and push their distance in elements,

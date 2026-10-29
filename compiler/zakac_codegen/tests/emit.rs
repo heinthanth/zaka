@@ -185,6 +185,7 @@ fn signed_loops_measure_the_distance_unsigned()
 /// constant expressions keep their ops.
 fn unfolded(text: &str) -> (zakac_codegen::bc::Module, String, u32)
 {
+    use zakac_borrow_checker::options::BorrowCheckOptions;
     use zakac_codegen::artifact::run_phases;
     use zakac_ir_builder::ir::FoldOptions;
     use zakac_lexer::lexer::LexerOptions;
@@ -195,8 +196,9 @@ fn unfolded(text: &str) -> (zakac_codegen::bc::Module, String, u32)
     let mut sm = SourceMap::new();
     let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
     let options = SemcheckOptions::default();
-    let emitted =
-        run_phases(&file, &LexerOptions::default(), &options, &FoldOptions::none());
+    let mem = BorrowCheckOptions::default();
+    let lexer = LexerOptions::default();
+    let emitted = run_phases(&file, &lexer, &options, &FoldOptions::none(), &mem);
     let base = file.start_pos.as_u32();
     (emitted.module.expect("emitted"), file.src.to_string(), base)
 }
@@ -271,8 +273,8 @@ fn jumps_of_an_if_take_the_if_span()
 #[test]
 fn each_variable_is_read_and_written_through_its_block()
 {
-    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ \
-                ဖြစ်ပါစေ။\np ၏ တန်ဖိုး ကို ပြသပါ။";
+    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ x ၏ \
+                လိပ်စာ ဖြစ်ပါစေ။\np ၏ တန်ဖိုး ကို ပြသပါ။";
     let found = main_ops(text);
     let want = [
         "global_addr g0",
@@ -280,9 +282,9 @@ fn each_variable_is_read_and_written_through_its_block()
         "store isize", // x = 5
         "global_addr g1",
         "global_addr g0",
-        "store *isize", // p = &x
+        "store &*isize", // p = &x
         "global_addr g1",
-        "load *isize",
+        "load &*isize",
         "load isize",
         "print", // *p
         "ret",
@@ -343,11 +345,12 @@ p လိပ်စာရှိမင်မိုရီကို ပြန်လ�
 #[test]
 fn a_deref_destination_uses_dup()
 {
-    let text =
-        "ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။\npp ၏ တန်ဖိုး လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
+    let text = "ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။
+မင်မိုရီ ကိန်းပြည့် လိပ်စာ ၁ ခုစာ နေရာယူ၍ လိပ်စာကို pp တွင် သိမ်းထားမည်။
+pp ၏ တန်ဖိုး လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
     let found = main_ops(text);
     assert_eq!(
-        found[3..],
+        found[found.len() - 8..],
         [
             "global_addr g0",
             "load **isize",
@@ -365,25 +368,89 @@ fn a_deref_destination_uses_dup()
 fn an_offset_to_an_opaque_place_steps_then_converts()
 {
     let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
-ကိန်းရှင် q သည် လိပ်စာ p + ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် q သည် ငှားထားသော လိပ်စာ p + ၁ ဖြစ်ပါစေ။
 q ကို p + ၁ ဟု ထားပါ။
 q == p + ၁ ကို ပြသပါ။
 လုပ်ဆောင်ချက် ယူ ကို p + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် ယူ သည် လိပ်စာ o ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ယူ သည် ငှားထားသော လိပ်စာ o ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 o ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-လုပ်ဆောင်ချက် ရှေ့ သည် ကိန်းပြည့် ၏ လိပ်စာ r ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် ရှေ့ သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ r ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော လိပ်စာ \
+                ရလဒ် ကို ပြန်ပေးမည်။
 r + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let module = emit_text(text);
     let found = ops(main_func(&module));
     let at = found.iter().position(|op| op == "ptr_add 8").expect("a ptr_add 8");
-    assert_eq!(found[at + 1], "convert ptr");
-    assert_eq!(found[at + 2], "store ptr");
+    assert_eq!(found[at + 1], "convert &ptr");
+    assert_eq!(found[at + 2], "store &ptr");
     let steps = found.iter().filter(|op| *op == "ptr_add 8").count();
     assert_eq!(steps, 4);
     let ret = ops(&module.funcs[1]);
     let at = ret.iter().position(|op| op == "ptr_add 8").expect("a ptr_add 8");
-    assert_eq!(ret[at + 1], "convert ptr");
+    assert_eq!(ret[at + 1], "convert &ptr");
+}
+
+/// Whether `found` holds the ops of `run` one after another.
+fn holds_run(found: &[String], run: &[&str]) -> bool
+{
+    found.windows(run.len()).any(|w| w.iter().zip(run).all(|(a, b)| a == b))
+}
+
+#[test]
+fn a_move_takes_the_owner_and_a_lend_reads_it()
+{
+    let text = "ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် q သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် r သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+q ကို p ဟု ထားပါ။
+r ကို q ၏ တန်ဖိုးအငှား ဟု ထားပါ။";
+    let found = main_ops(text);
+    let moved = ["global_addr g1", "global_addr g0", "take *isize", "store *isize"];
+    assert!(holds_run(&found, &moved), "{found:?}");
+    let lent = ["global_addr g2", "global_addr g1", "load *isize", "store &*isize"];
+    assert!(holds_run(&found, &lent), "{found:?}");
+    assert_eq!(found.iter().filter(|op| op.starts_with("take")).count(), 1);
+}
+
+#[test]
+fn a_list_of_owners_is_blitted_out_and_zeroed()
+{
+    let text = "ကိန်းရှင် l သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်ပါစေ။
+ကိန်းရှင် m သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်၍ တန်ဖိုးသည် l ဖြစ်ပါစေ။";
+    let found = main_ops(text);
+    let moved = [
+        "local_addr l0",
+        "global_addr g0",
+        "store *[2]*isize",
+        "local_addr l1",
+        "local_addr l0",
+        "load *[2]*isize",
+        "blit [2]*isize",
+        "local_addr l0",
+        "load *[2]*isize",
+        "zero [2]*isize",
+        "local_addr l1",
+    ];
+    assert!(holds_run(&found, &moved), "{found:?}");
+    let reads = found.iter().filter(|op| *op == "global_addr g0").count();
+    assert_eq!(reads, 2, "one to set l, one to move it: {found:?}");
+    assert!(!found.iter().any(|op| op.starts_with("take")), "{found:?}");
+}
+
+#[test]
+fn goldens_without_moves_have_no_take()
+{
+    let inputs =
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/inputs");
+    for name in ["folding", "functions", "heap", "lists", "loops", "programs"]
+    {
+        let text =
+            std::fs::read_to_string(inputs.join(format!("{name}.zaka"))).unwrap();
+        let module = emit_text(&text);
+        let takes = module.funcs.iter().flat_map(|f| &f.code);
+        let found: Vec<&Op> = takes.filter(|op| matches!(op, Op::Take(_))).collect();
+        assert!(found.is_empty(), "{name}: {found:?}");
+    }
 }

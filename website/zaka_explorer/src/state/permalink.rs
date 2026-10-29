@@ -1,6 +1,7 @@
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use bon::Builder;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -12,7 +13,10 @@ use crate::state::settings::AstMode;
 use crate::state::settings::LowerMode;
 
 /// Version of the link format.
-const FORMAT: &str = "4";
+const FORMAT: &str = "5";
+
+/// Version of the format before the ownership checks.
+const FORMAT_4: &str = "4";
 
 /// Version of the older format, without the foldings and the lowering view.
 const FORMAT_3: &str = "3";
@@ -42,10 +46,12 @@ pub struct Link
 
 /// Encode a link for the URL hash.
 ///
-/// The format is `4.<platform bits>.<foldings>.<stage>.<AST view>.<lowering
-/// view>.<base64url of the UTF-8 source>`, with the stage and the views in
-/// lowercase, as in `4.64.7.lower.tree.folded.…`. The foldings are a digit
-/// from 0 to 7: 1 for expressions, 2 for constants, 4 for branches.
+/// The format is `5.<platform bits>.<foldings>.<ownership check>.<mem
+/// flags>.<stage>.<AST view>.<lowering view>.<base64url of the UTF-8
+/// source>`, with the check, the stage and the views in lowercase, as in
+/// `5.64.7.error.0.lower.tree.folded.…`. The foldings are a digit from 0 to
+/// 7: 1 for expressions, 2 for constants, 4 for branches. The mem flags are
+/// a digit from 0 to 3: 1 for the strict check, 2 to forbid raw addresses.
 ///
 /// # Arguments
 ///
@@ -61,7 +67,23 @@ pub fn encode(link: &Link) -> String
     let bits = link.options.platform_bits;
     let fold = fold_digit(link.options.fold);
     let views = format!("{}.{}", link.ast_mode, link.lower_mode);
-    format!("{FORMAT}.{bits}.{fold}.{stage}.{views}.{text}")
+    let check: &'static str = link.options.check.into();
+    let mem = mem_digit(&link.options);
+    format!("{FORMAT}.{bits}.{fold}.{check}.{mem}.{stage}.{views}.{text}")
+}
+
+/// The digit of the flags of the ownership check.
+///
+/// # Arguments
+///
+/// * `options` - The compile options.
+///
+/// # Returns
+///
+/// The digit, from 0 to 3.
+fn mem_digit(options: &Options) -> u8
+{
+    u8::from(options.strict) | u8::from(options.no_raw) << 1
 }
 
 /// The digit of a set of foldings.
@@ -110,7 +132,8 @@ pub fn decode(hash: &str) -> Option<Link>
     let (format, rest) = hash.trim_start_matches('#').split_once('.')?;
     match format
     {
-        FORMAT => decode_full(rest),
+        FORMAT => decode_5(rest),
+        FORMAT_4 => decode_4(rest),
         FORMAT_3 => decode_view(rest),
         FORMAT_2 =>
         {
@@ -118,6 +141,30 @@ pub fn decode(hash: &str) -> Option<Link>
         }
         _ => None,
     }
+}
+
+/// Decode the part of a link after the format: bits, foldings, ownership
+/// check, mem flags, stage, AST view, lowering view, source.
+///
+/// # Arguments
+///
+/// * `rest` - The part.
+///
+/// # Returns
+///
+/// The link, or `None` when a part is not well formed.
+fn decode_5(rest: &str) -> Option<Link>
+{
+    let (bits, rest) = rest.split_once('.')?;
+    let (fold, rest) = rest.split_once('.')?;
+    let (check, rest) = rest.split_once('.')?;
+    let (mem, rest) = rest.split_once('.')?;
+    let mem: u8 = mem.parse().ok().filter(|n| *n < 4)?;
+    let mut link = decode_4(&format!("{bits}.{fold}.{rest}"))?;
+    link.options.check = check.parse::<MemCheck>().ok()?;
+    link.options.strict = mem & 1 != 0;
+    link.options.no_raw = mem & 2 != 0;
+    Some(link)
 }
 
 /// Decode the part of a link after the format: bits, foldings, stage, AST
@@ -129,8 +176,9 @@ pub fn decode(hash: &str) -> Option<Link>
 ///
 /// # Returns
 ///
-/// The link, or `None` when a part is not well formed.
-fn decode_full(rest: &str) -> Option<Link>
+/// The link with the default ownership checks, or `None` when a part is not
+/// well formed.
+fn decode_4(rest: &str) -> Option<Link>
 {
     let (bits, rest) = rest.split_once('.')?;
     let (fold, rest) = rest.split_once('.')?;

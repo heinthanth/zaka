@@ -50,12 +50,14 @@ pub enum TrapKind
         /// The address.
         addr: u64,
     },
-    /// An access outside each block, or across the end of one.
+    /// An access outside each block, or across the end of one, or a
+    /// pointer step out of the block it starts in.
     OutOfBounds
     {
         /// The address.
         addr: u64,
-        /// The octet count of the access.
+        /// The octet count of the access; 0 for a step, which accesses
+        /// nothing.
         size: u32,
     },
     /// An access inside a freed block.
@@ -147,6 +149,10 @@ impl fmt::Display for TrapKind
             TrapKind::NullDeref { addr } =>
             {
                 t!("vm.trap.null_deref", addr = hex(*addr))
+            }
+            TrapKind::OutOfBounds { addr, size: 0 } =>
+            {
+                t!("vm.trap.step_out_of_bounds", addr = hex(*addr))
             }
             TrapKind::OutOfBounds { addr, size } =>
             {

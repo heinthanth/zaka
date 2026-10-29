@@ -39,6 +39,7 @@ const IR_TEXT_EXTENSION: &str = ".zkirt";
 const PLATFORM_BITS_ARG: &str = "platform_bits";
 const STRICT_PARTICLES_ARG: &str = "strict_particles";
 const FOLD_ARG: &str = "fold";
+const NO_RAW_ARG: &str = "no-raw";
 /// Words the fold flag takes.
 const FOLD_WORDS: &[&str] = &["all", "none", "exprs", "consts", "branches"];
 /// Bit counts the platform-sized integer kinds can have.
@@ -94,7 +95,11 @@ pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
         .value_parser(FOLD_WORDS.to_vec())
         .value_delimiter(',')
         .default_value("all");
-    cmd.arg(platform_bits).arg(strict).arg(fold)
+    let no_raw = Arg::new(NO_RAW_ARG)
+        .long("no-raw")
+        .help(t!("ir.no_raw"))
+        .action(ArgAction::SetTrue);
+    cmd.arg(platform_bits).arg(strict).arg(fold).arg(no_raw)
 }
 
 /// The check options from the command line.
@@ -111,7 +116,12 @@ pub fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
     let bits = matches.get_one::<String>(PLATFORM_BITS_ARG);
     let bits = bits.and_then(|b| b.parse().ok()).unwrap_or(64);
     let strict = matches.get_flag(STRICT_PARTICLES_ARG);
-    SemcheckOptions::builder().platform_bits(bits).strict_particles(strict).build()
+    let no_raw = matches.get_flag(NO_RAW_ARG);
+    SemcheckOptions::builder()
+        .platform_bits(bits)
+        .strict_particles(strict)
+        .no_raw(no_raw)
+        .build()
 }
 
 /// The fold options from the command line: `all`, `none`, or a list of

@@ -3,7 +3,7 @@ mod common;
 use std::path::Path;
 use std::path::PathBuf;
 
-use common::compile;
+use common::compile_checked;
 use common::run_module;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
@@ -17,13 +17,14 @@ const SKIPPED_GROUPS: &[&str] = &["diagnostics", "mistakes"];
 /// The crate dir.
 fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 
-/// Run a source file and compare its output with an expected file;
+/// Run a source file, which must pass the ownership check with no
+/// diagnostic, and compare its output with an expected file;
 /// `ZAKA_BLESS=1` rewrites the file from a checked run.
 fn check_run(source: &Path, expected: &Path, frames: FrameMode)
 {
     let text = std::fs::read_to_string(source).unwrap();
     let options = RunOptions::builder().max_steps(10_000_000).frames(frames).build();
-    let (out, result) = run_module(&compile(&text), &options);
+    let (out, result) = run_module(&compile_checked(&text), &options);
     let name = format!("{} ({frames})", source.display());
     assert_eq!(result, Ok(()), "{name} trapped after:\n{out}");
     let bless = std::env::var("ZAKA_BLESS").is_ok_and(|v| v == "1");

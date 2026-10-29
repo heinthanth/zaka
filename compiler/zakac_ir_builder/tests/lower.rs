@@ -244,7 +244,7 @@ fn nothing_is_lowered_after_a_check_error()
 fn pointers_lower_to_mem_nodes()
 {
     let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
 p ၏ တန်ဖိုး ကို ၆ ဟု ထားပါ။
 *p + ၁ ကို ပြသပါ။
 p + ၂ ၏ တန်ဖိုး ကို ပြသပါ။
@@ -309,15 +309,16 @@ fn a_bare_null_is_an_opaque_pointer()
 }
 
 const OFFSETS: &str = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
-ကိန်းရှင် q သည် လိပ်စာ p + ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် q သည် ငှားထားသော လိပ်စာ p + ၁ ဖြစ်ပါစေ။
 q ကို p + ၁ ဟု ထားပါ။
 q == p + ၁ ကို ပြသပါ။
 လုပ်ဆောင်ချက် ယူ ကို p + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် ယူ သည် လိပ်စာ o ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ယူ သည် ငှားထားသော လိပ်စာ o ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 o ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-လုပ်ဆောင်ချက် ရှေ့ သည် ကိန်းပြည့် ၏ လိပ်စာ r ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် ရှေ့ သည် ကိန်းပြည့် ၏ လိပ်စာ r ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော လိပ်စာ ရလဒ် ကို \
+                       ပြန်ပေးမည်။
 r + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
 
@@ -326,10 +327,10 @@ fn an_offset_to_an_opaque_place_keeps_its_kind_under_a_widen()
 {
     let found = plain(OFFSETS);
     let expected = [
-        "(set g2 (widen ptr (ptr+ g1 1:isize)))",
-        "(set g2 (widen ptr (ptr+ g1 1:isize)))",
-        "(print (== (widen *isize g2) (ptr+ g1 1:isize)))",
-        "(call ယူ (widen ptr (ptr+ g1 1:isize)))",
+        "(set g2 (widen &ptr (ptr+ g1 1:isize)))",
+        "(set g2 (widen &ptr (ptr+ g1 1:isize)))",
+        "(print (== (widen &*isize g2) (ptr+ g1 1:isize)))",
+        "(call ယူ (widen &ptr (ptr+ g1 1:isize)))",
     ];
     assert_eq!(found[2..], expected);
     let m = module(OFFSETS);
@@ -343,10 +344,10 @@ fn an_offset_to_an_opaque_place_keeps_its_kind_under_a_widen()
     {
         panic!("not an implicit conversion: {value:?}");
     };
-    assert_eq!(value.kind, DataKind::OPAQUE);
-    assert!(operand.kind.is_ptr() && operand.kind != DataKind::OPAQUE);
+    assert_eq!(value.kind, DataKind::OPAQUE.as_borrowed());
+    assert!(operand.kind.is_ptr() && !operand.kind.is_opaque());
     let ret = m.funcs[1].to_sexpr();
-    assert!(ret.contains("(return (widen ptr (ptr+ l0 1:isize)))"), "{ret}");
+    assert!(ret.contains("(return (widen &ptr (ptr+ l0 1:isize)))"), "{ret}");
 }
 
 #[test]

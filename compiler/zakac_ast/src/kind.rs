@@ -1,7 +1,10 @@
 use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
+use serde::Serializer;
+use serde::ser::SerializeStruct;
 use strum::AsRefStr;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 /// The base of a kind, without its size or sign.
@@ -43,13 +46,15 @@ pub enum Wrap
 {
     /// A pointer level: a bare `လိပ်စာ` or `၏ လိပ်စာ`.
     Ptr,
+    /// A raw pointer level: `လိပ်စာအကြမ်း` or `၏ လိပ်စာအကြမ်း`.
+    RawPtr,
     /// A list level: `စာရင်း` or `၏ စာရင်း`.
     List(Cells),
 }
 
 /// A data kind as written in the source, such as
 /// `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Builder)]
 pub struct Kind
 {
     /// The base kind.
@@ -65,8 +70,50 @@ pub struct Kind
     #[builder(default)]
     #[serde(default)]
     pub wraps: Vec<Wrap>,
+    /// Whether the kind starts with the `ငှားထားသော` marker.
+    #[builder(default)]
+    #[serde(default)]
+    pub borrowed: bool,
+    /// The count of `ငှားထားသော` markers after the first one; a kind
+    /// with more than one is a misplaced borrow that a later phase rejects.
+    #[builder(default)]
+    #[serde(default)]
+    pub extra_borrows: u8,
     /// Source region of the whole kind phrase.
     pub span: Span,
+}
+
+impl Serialize for Kind
+{
+    /// Write each field. The text artifacts leave out a borrow field that
+    /// holds its default, so older goldens are unchanged. The raw artifacts
+    /// are not self-describing: all fields are written.
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    {
+        let skip = serializer.is_human_readable();
+        let skip_borrowed = skip && !self.borrowed;
+        let skip_extra = skip && self.extra_borrows == 0;
+        /// The number of fields, the borrow fields included.
+        const FIELDS: usize = 7;
+        let n = FIELDS - usize::from(skip_borrowed) - usize::from(skip_extra);
+        let mut state = serializer.serialize_struct("Kind", n)?;
+        state.serialize_field("base", &self.base)?;
+        state.serialize_field("bits", &self.bits)?;
+        state.serialize_field("signed", &self.signed)?;
+        state.serialize_field("wraps", &self.wraps)?;
+        tern!(
+            skip_borrowed,
+            state.skip_field("borrowed")?,
+            state.serialize_field("borrowed", &self.borrowed)?
+        );
+        tern!(
+            skip_extra,
+            state.skip_field("extra_borrows")?,
+            state.serialize_field("extra_borrows", &self.extra_borrows)?
+        );
+        state.serialize_field("span", &self.span)?;
+        state.end()
+    }
 }
 
 impl Kind
@@ -86,5 +133,23 @@ impl Kind
     pub fn has_inferred_cells(&self) -> bool
     {
         self.wraps.contains(&Wrap::List(Cells::Inferred))
+    }
+
+    /// Whether some wrap of the kind is a raw pointer level.
+    ///
+    /// # Returns
+    ///
+    /// `true` when a `လိပ်စာအကြမ်း` level is present.
+    pub fn has_raw(&self) -> bool { self.wraps.contains(&Wrap::RawPtr) }
+
+    /// The outermost wrap of the kind when it is a pointer level.
+    ///
+    /// # Returns
+    ///
+    /// `Wrap::Ptr` or `Wrap::RawPtr` for the outer level, `None` when the
+    /// kind is plain or its outer wrap is a list.
+    pub fn outer_ptr_wrap(&self) -> Option<Wrap>
+    {
+        self.wraps.last().copied().filter(|w| matches!(w, Wrap::Ptr | Wrap::RawPtr))
     }
 }

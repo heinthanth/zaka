@@ -56,8 +56,8 @@ extern "C" {
 const LIBRARIES: [&str; 3] = ["gsap", "ScrollTrigger", "Lenis"];
 
 /// Start the motion code, when its libraries are on the page, the page is
-/// the landing page and the visitor has not asked for less motion. The pages
-/// of the manual scroll as the browser scrolls.
+/// the landing page and the visitor has not asked for less motion. The Learn
+/// pages scroll as the browser scrolls.
 pub fn start()
 {
     ret_if!(!loaded() || !landing() || prefers("(prefers-reduced-motion: reduce)"));

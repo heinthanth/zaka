@@ -17,7 +17,7 @@ use zakac_consts::ZAKA_LICENSE;
 use zakac_i18n::t;
 
 use crate::components::header::EXPLORER_URL;
-use crate::manual::LEARN_URL;
+use crate::learn::LEARN_URL;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/footer/mod.sass");

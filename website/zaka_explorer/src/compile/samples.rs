@@ -33,8 +33,9 @@ Sample { group: $group, name: $name, text: include_str!(sample_path!($group, $na
 /// The group of the samples that are meant to report errors.
 pub const DIAGNOSTICS: &str = "diagnostics";
 
-/// The group of the samples that compile clean and go wrong at run time:
-/// each traps, or leaves heap room behind.
+/// The group of the samples that go wrong: the ownership check rejects the
+/// pointer mistakes, and with the check on warn or off each sample traps at
+/// run time or leaves heap room behind.
 pub const MISTAKES: &str = "mistakes";
 
 /// The groups, in picker order.
@@ -78,6 +79,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("heap", "growable"),
     sample!("heap", "record"),
     sample!("heap", "pascal"),
+    sample!("heap", "arena"),
     sample!("lists", "basics"),
     sample!("lists", "copies"),
     sample!("lists", "equal"),

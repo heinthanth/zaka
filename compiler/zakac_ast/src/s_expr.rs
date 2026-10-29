@@ -56,7 +56,10 @@ impl ToSexpr for Kind
         // The opaque kind's own `လိပ်စာ` is its name, not a star.
         let skip = usize::from(self.base == BaseKind::Opaque);
         let wraps = self.wraps.iter().skip(skip);
-        wraps.fold(base_name(self), |inner, w| format!("{}{inner}", wrap_mark(*w)))
+        let inner =
+            wraps.fold(base_name(self), |inner, w| format!("{}{inner}", wrap_mark(*w)));
+        let borrows = usize::from(self.borrowed) + usize::from(self.extra_borrows);
+        format!("{}{inner}", "&".repeat(borrows))
     }
 }
 
@@ -148,6 +151,7 @@ fn wrap_mark(w: Wrap) -> String
     match w
     {
         Wrap::Ptr => "*".into(),
+        Wrap::RawPtr => "~".into(),
         Wrap::List(Cells::Fixed(n)) => format!("[{n}]"),
         Wrap::List(Cells::Inferred) => "[]".into(),
     }
@@ -171,6 +175,7 @@ fn base_name(k: &Kind) -> String
     {
         BaseKind::Int => format!("{sign}{bits}"),
         BaseKind::Float => format!("f{}", k.bits.unwrap_or(64)),
+        BaseKind::Opaque if k.wraps.first() == Some(&Wrap::RawPtr) => "rawptr".into(),
         BaseKind::Char | BaseKind::Bool | BaseKind::Opaque =>
         {
             k.base.as_ref().to_string()

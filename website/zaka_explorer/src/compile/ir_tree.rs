@@ -379,6 +379,11 @@ impl IrTree<'_>
             }
             ExprNode::AddrOf(place) => ("addr", self.place_text(*place), Vec::new()),
             ExprNode::Load { addr } => ("load", String::new(), vec![self.expr(addr)]),
+            ExprNode::Lend { operand } =>
+            {
+                ("lend", String::new(), vec![self.expr(operand)])
+            }
+            ExprNode::Take { addr } => ("take", String::new(), vec![self.expr(addr)]),
             ExprNode::PtrAdd { base, offset } =>
             {
                 ("ptr+", String::new(), self.pair(base, offset))

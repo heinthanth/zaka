@@ -222,3 +222,14 @@ fn unprefixed_literals_reach_the_full_range_of_their_kind()
     ok("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ကိန်းပြည့် 1180591620717411303424 ဖြစ်ပါစေ။");
     assert_eq!(codes("18446744073709551615 ကို ပြသပါ။"), [Code::LiteralDoesNotFit]);
 }
+
+#[test]
+fn a_mismatch_names_the_conversion_verb_when_it_can_convert()
+{
+    let out = common::check("ကိန်းရှင် အ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။").out;
+    let found: Vec<(Code, Option<String>)> =
+        out.diagnostics.iter().map(|d| (d.code, d.help.clone())).collect();
+    assert_eq!(found, [(Code::KindMismatch, None)]);
+    let out = common::check("ကိန်းရှင် အ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂.၅ ဖြစ်ပါစေ။").out;
+    assert!(out.diagnostics[0].help.as_ref().is_some_and(|h| h.contains("ပြောင်းလဲသော")));
+}

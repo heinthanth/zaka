@@ -35,6 +35,7 @@ fn parse_round_trips()
         assert_eq!(Code::parse(code.id()), Some(*code));
     }
     assert_eq!(Code::parse("ZK9999"), None);
+    assert_eq!(Code::parse("ZK0418"), None);
     assert_eq!(Code::parse("invalid-character"), None);
 }
 

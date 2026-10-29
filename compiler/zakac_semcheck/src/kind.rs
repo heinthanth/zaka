@@ -133,6 +133,98 @@ pub struct PtrKind
     pub depth: u8,
     /// The kind at the bottom.
     pub base: Base,
+    /// Whether the outer level is a borrow: it reads a block that an owner
+    /// holds.
+    pub borrowed: bool,
+    /// The raw levels as a bitmask: bit 0 is the level nearest the base and
+    /// bit `depth - 1` the outer one. A level without its bit is an owner.
+    pub raw: u8,
+}
+
+impl PtrKind
+{
+    /// The owner kind `depth` levels over `base`.
+    ///
+    /// # Arguments
+    ///
+    /// * `depth` - The number of address levels, at least 1.
+    /// * `base` - The kind at the bottom.
+    ///
+    /// # Returns
+    ///
+    /// The kind with no borrow mark and no raw level.
+    pub const fn owner(depth: u8, base: Base) -> PtrKind
+    {
+        PtrKind { depth, base, borrowed: false, raw: 0 }
+    }
+
+    /// The mask of the outer level in [`PtrKind::raw`].
+    ///
+    /// # Returns
+    ///
+    /// The bit, or 0 when the depth is past the mask width.
+    fn outer_bit(self) -> u8
+    {
+        let shift = u32::from(self.depth.saturating_sub(1));
+        1u8.checked_shl(shift).unwrap_or(0)
+    }
+
+    /// Whether the outer level is a borrow.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a borrow.
+    pub fn is_borrowed(self) -> bool { self.borrowed }
+
+    /// Whether the outer level is a raw address.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a raw outer level.
+    pub fn is_raw_outer(self) -> bool { self.raw & self.outer_bit() != 0 }
+
+    /// Whether the outer level is an owner.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the level is neither a borrow nor raw.
+    pub fn is_owner(self) -> bool { !self.borrowed && !self.is_raw_outer() }
+
+    /// The kind with its outer level turned into a borrow.
+    ///
+    /// # Returns
+    ///
+    /// The borrowed kind; a raw outer level cannot be borrowed, so it is
+    /// returned as it is.
+    pub fn as_borrowed(self) -> PtrKind
+    {
+        PtrKind { borrowed: !self.is_raw_outer(), ..self }
+    }
+
+    /// The kind with its outer level turned into an owner.
+    ///
+    /// # Returns
+    ///
+    /// The kind without a borrow mark.
+    pub fn as_owner(self) -> PtrKind { PtrKind { borrowed: false, ..self } }
+
+    /// The kind with its outer level turned into a raw address.
+    ///
+    /// # Returns
+    ///
+    /// The kind with the outer raw bit set and no borrow mark.
+    pub fn with_outer_raw(self) -> PtrKind
+    {
+        PtrKind { borrowed: false, raw: self.raw | self.outer_bit(), ..self }
+    }
+
+    /// The kind without the borrow mark, which the shape of the block
+    /// does not depend on.
+    ///
+    /// # Returns
+    ///
+    /// The owner flavour of the outer level, each raw level kept.
+    pub fn shape(self) -> PtrKind { self.as_owner() }
 }
 
 /// A data kind as the checker sees it: a written kind with its defaults
@@ -167,8 +259,7 @@ impl DataKind
     /// `ဒဿမကိန်း`, the default floating-point kind.
     pub const F64: DataKind = DataKind::Float(64);
     /// `လိပ်စာ`, the opaque pointer.
-    pub const OPAQUE: DataKind =
-        DataKind::Ptr(PtrKind { depth: 1, base: Base::Opaque });
+    pub const OPAQUE: DataKind = DataKind::Ptr(PtrKind::owner(1, Base::Opaque));
 
     /// The data kind a written kind phrase names.
     ///
@@ -197,12 +288,43 @@ impl DataKind
         };
         let skip = usize::from(kind.base == BaseKind::Opaque);
         let plain = DataKind::over(base, u8::try_from(skip).unwrap_or(1));
-        kind.wraps.iter().skip(skip).fold(plain, |inner, w| match w
+        let first_raw = skip == 1 && kind.wraps.first() == Some(&Wrap::RawPtr);
+        let plain = tern!(first_raw, plain.with_outer_raw(), plain);
+        let marked = tern!(
+            kind.borrowed,
+            kind.wraps.iter().rposition(|w| matches!(w, Wrap::Ptr | Wrap::RawPtr)),
+            None
+        );
+        let plain = tern!(marked.is_some_and(|i| i < skip), plain.as_borrowed(), plain);
+        let wraps = kind.wraps.iter().enumerate().skip(skip);
+        wraps.fold(plain, |inner, (at, w)| match w
         {
-            Wrap::Ptr => inner.pointer_to(),
+            Wrap::Ptr => inner.pointer_to().marked_if(marked == Some(at)),
+            Wrap::RawPtr => inner.raw_pointer_to(),
             Wrap::List(Cells::Fixed(n)) => DataKind::list_of(inner, *n),
             Wrap::List(Cells::Inferred) => DataKind::list_of(inner, 0),
         })
+    }
+
+    /// The kind as a borrow when `mark` holds.
+    ///
+    /// # Arguments
+    ///
+    /// * `mark` - Whether the borrow mark applies.
+    ///
+    /// # Returns
+    ///
+    /// [`DataKind::as_borrowed`] of the kind, or the kind itself.
+    fn marked_if(self, mark: bool) -> DataKind { tern!(mark, self.as_borrowed(), self) }
+
+    /// The kind with its outer address level turned into a raw one.
+    ///
+    /// # Returns
+    ///
+    /// The kind for a pointer, the kind itself for each other kind.
+    pub(crate) fn with_outer_raw(self) -> DataKind
+    {
+        tern!(let DataKind::Ptr(p) = self, DataKind::Ptr(p.with_outer_raw()), self)
     }
 
     /// The list kind of `len` cells of `cell`. Each list kind is made once
@@ -289,11 +411,11 @@ impl DataKind
     pub fn over(base: Base, depth: u8) -> DataKind
     {
         let plain = base.scalar().filter(|_| depth == 0);
-        plain.unwrap_or(DataKind::Ptr(PtrKind { depth: depth.max(1), base }))
+        plain.unwrap_or(DataKind::Ptr(PtrKind::owner(depth.max(1), base)))
     }
 
-    /// Read a short name such as `i8`, `usize`, `f32`, `char`, `*i32`, `ptr`
-    /// or `null`.
+    /// Read a short name such as `i8`, `usize`, `f32`, `char`, `*i32`, `ptr`,
+    /// `&*i32`, `~i32`, `rawptr` or `null`.
     ///
     /// # Arguments
     ///
@@ -301,25 +423,33 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// The kind, or `None` for an unknown name.
+    /// The kind, or `None` for an unknown name, for a borrow mark on a kind
+    /// with no address level and for a borrowed raw level.
     pub fn parse(name: &str) -> Option<DataKind>
     {
         ret_if!(name == "null", Some(DataKind::Null));
-        let rest = name.trim_start_matches('*');
-        let stars = u8::try_from(name.len() - rest.len()).ok()?;
-        if let Some(inner) = rest.strip_prefix('[')
-        {
-            let (count, cell) = inner.split_once(']')?;
-            let len = tern!(count.is_empty(), 0, count.parse().ok()?);
-            let list = DataKind::list_of(DataKind::parse(cell)?, len);
-            return Some(DataKind::over(list.levels().1, stars));
-        }
-        ret_if!(
-            rest == "ptr",
-            Some(DataKind::over(Base::Opaque, stars.checked_add(1)?))
+        let (borrowed, name) = tern!(
+            let Some(rest) = name.strip_prefix('&'),
+            (true, rest),
+            (false, name)
         );
-        let (_, base) = parse_plain(rest)?.levels();
-        Some(DataKind::over(base, stars))
+        let rest = name.trim_start_matches(['*', '~']);
+        let marks = &name[..name.len() - rest.len()];
+        let (base, base_raw) = parse_base(rest)?;
+        let opaque = base == Base::Opaque;
+        let depth = u8::try_from(marks.len() + usize::from(opaque)).ok()?;
+        ret_if!(depth == 0, tern!(borrowed, None, base.scalar()));
+        let mut ptr = PtrKind::owner(depth, base);
+        ptr.raw = u8::from(base_raw);
+        for (at, mark) in marks.chars().enumerate()
+        {
+            let level =
+                u8::try_from(marks.len() - 1 - at + usize::from(opaque)).ok()?;
+            let bit = 1u8.checked_shl(u32::from(level));
+            ptr.raw |= tern!(mark == '~', bit?, 0);
+        }
+        ret_if!(borrowed && ptr.is_raw_outer(), None);
+        Some(DataKind::Ptr(PtrKind { borrowed, ..ptr }))
     }
 
     /// The short name, for messages and artifacts.
@@ -370,15 +500,24 @@ impl DataKind
     pub fn pointer_to(self) -> DataKind
     {
         let (depth, base) = self.levels();
-        DataKind::over(base, depth.saturating_add(1))
+        let raw = self.ptr_kind().map_or(0, |p| p.raw);
+        let depth = depth.saturating_add(1);
+        DataKind::Ptr(PtrKind { raw, ..PtrKind::owner(depth, base) })
     }
+
+    /// The kind of a raw address of a value of this kind.
+    ///
+    /// # Returns
+    ///
+    /// The pointer kind one level deeper, with the new level raw.
+    pub fn raw_pointer_to(self) -> DataKind { self.pointer_to().with_outer_raw() }
 
     /// The kind a pointer of this kind points at.
     ///
     /// # Returns
     ///
-    /// The kind one level shallower, or `None` for a kind that is no
-    /// pointer, for `ptr` and for `null`.
+    /// The kind one level shallower, without a borrow mark, or `None` for a
+    /// kind that is no pointer, for `ptr` and for `null`.
     pub fn pointee(self) -> Option<DataKind>
     {
         let DataKind::Ptr(p) = self
@@ -387,7 +526,11 @@ impl DataKind
             return None;
         };
         ret_if!(self.is_opaque(), None);
-        Some(DataKind::over(p.base, p.depth.saturating_sub(1)))
+        let depth = p.depth.saturating_sub(1);
+        ret_if!(depth == 0, DataKind::over(p.base, 0).into());
+        let inner =
+            PtrKind { raw: p.raw & !p.outer_bit(), ..PtrKind::owner(depth, p.base) };
+        Some(DataKind::Ptr(inner))
     }
 
     /// Whether the kind is a pointer.
@@ -401,8 +544,130 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// `true` for `ptr`.
-    pub fn is_opaque(self) -> bool { self == DataKind::OPAQUE }
+    /// `true` for `ptr` in each flavour: `ptr`, `&ptr` and `rawptr`.
+    pub fn is_opaque(self) -> bool
+    {
+        matches!(self, DataKind::Ptr(p) if p.depth == 1 && p.base == Base::Opaque)
+    }
+
+    /// The pointer part of the kind.
+    ///
+    /// # Returns
+    ///
+    /// The levels, flavours and base, or `None` for a kind that is no
+    /// pointer.
+    pub fn ptr_kind(self) -> Option<PtrKind>
+    {
+        tern!(let DataKind::Ptr(p) = self, Some(p), None)
+    }
+
+    /// Whether the kind is a pointer whose outer level is an owner.
+    ///
+    /// # Returns
+    ///
+    /// `true` for `*i32` and `ptr`, but not for a borrow or a raw address.
+    pub fn is_owner_ptr(self) -> bool { self.ptr_kind().is_some_and(PtrKind::is_owner) }
+
+    /// Whether the kind is a pointer whose outer level is a borrow.
+    ///
+    /// # Returns
+    ///
+    /// `true` for `&*i32` and `&ptr`.
+    pub fn is_borrow(self) -> bool { self.ptr_kind().is_some_and(PtrKind::is_borrowed) }
+
+    /// Whether the kind is a pointer whose outer level is a raw address.
+    ///
+    /// # Returns
+    ///
+    /// `true` for `~i32` and `rawptr`.
+    pub fn is_raw_ptr(self) -> bool
+    {
+        self.ptr_kind().is_some_and(PtrKind::is_raw_outer)
+    }
+
+    /// Whether the kind is a pointer the checker follows: an owner or a
+    /// borrow at its outer level.
+    ///
+    /// # Returns
+    ///
+    /// `true` for `*i32`, `&*i32` and `ptr`, but not for `~i32`.
+    pub fn is_checked_ptr(self) -> bool { self.is_ptr() && !self.is_raw_ptr() }
+
+    /// Whether a value of the kind is moved, not copied, when it goes into
+    /// another place.
+    ///
+    /// # Returns
+    ///
+    /// `true` for an owner and for a list whose cells are moved.
+    pub fn is_move_kind(self) -> bool
+    {
+        ret_if!(let Some(l) = self.as_list(), l.cell.is_move_kind());
+        self.is_owner_ptr()
+    }
+
+    /// Whether a value of the kind is duplicated when it goes into another
+    /// place.
+    ///
+    /// # Returns
+    ///
+    /// `true` for each kind that is not a move kind.
+    pub fn is_dup_kind(self) -> bool { !self.is_move_kind() }
+
+    /// Whether a value of the kind is a borrow or has a borrow in it.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a borrow and for a list whose cells hold one.
+    pub fn holds_borrow(self) -> bool
+    {
+        ret_if!(let Some(l) = self.as_list(), l.cell.holds_borrow());
+        self.is_borrow()
+    }
+
+    /// The kind with its outer address level turned into a borrow.
+    ///
+    /// # Returns
+    ///
+    /// The borrow of an owner; a raw address and each kind that is no
+    /// pointer come back unchanged.
+    pub fn as_borrowed(self) -> DataKind
+    {
+        tern!(let DataKind::Ptr(p) = self, DataKind::Ptr(p.as_borrowed()), self)
+    }
+
+    /// The kind with its outer address level turned into an owner.
+    ///
+    /// # Returns
+    ///
+    /// The kind without a borrow mark.
+    pub fn as_owner(self) -> DataKind
+    {
+        tern!(let DataKind::Ptr(p) = self, DataKind::Ptr(p.as_owner()), self)
+    }
+
+    /// Whether two kinds describe blocks of the same shape, whether or not
+    /// the borrow mark of their outer pointer level sets them apart.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The kind to compare with.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the kinds are equal up to the borrow mark of their
+    /// outer pointer level; a raw level is part of the shape. A list, as a
+    /// kind or as the base of a pointer, compares whole, the flavour of its
+    /// cells included, so a list of borrows never has the shape of a list
+    /// of owners.
+    pub fn same_shape(self, other: DataKind) -> bool
+    {
+        let (Some(a), Some(b)) = (self.ptr_kind(), other.ptr_kind())
+        else
+        {
+            return self == other;
+        };
+        a.shape() == b.shape()
+    }
 
     /// Whether a value of the kind is an address.
     ///
@@ -541,7 +806,9 @@ impl DataKind
     /// `true` for the same kind, a wider integer of the same sign, a wider
     /// signed integer from an unsigned one, a float whose fraction holds the
     /// integer, a wider float, `null` to a pointer, and a pointer to or from
-    /// `ptr`.
+    /// `ptr` of the same flavour: owner, borrow or raw. An owner or a borrow
+    /// whose pointee holds an address needs a raw step to pass through
+    /// `ptr`, as a cast does, see [`DataKind::reads_addresses_as`].
     pub fn widens_to(self, target: DataKind, platform: u16) -> bool
     {
         ret_true!(self == target);
@@ -553,10 +820,35 @@ impl DataKind
             (DataKind::Null, DataKind::Ptr(_)) => true,
             (DataKind::Ptr(_), DataKind::Ptr(_)) =>
             {
-                self.is_opaque() || target.is_opaque()
+                self.meets_pointer(target) && !self.reads_addresses_as(target)
             }
             _ => false,
         }
+    }
+
+    /// Whether two pointers of one flavour address blocks of one shape, or
+    /// one of them is `ptr`. This is enough to compare the two addresses;
+    /// a value that goes into a place also needs
+    /// [`DataKind::reads_addresses_as`] to be false.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other kind.
+    ///
+    /// # Returns
+    ///
+    /// `true` for two such pointer kinds.
+    pub fn meets_pointer(self, other: DataKind) -> bool
+    {
+        let (Some(a), Some(b)) = (self.ptr_kind(), other.ptr_kind())
+        else
+        {
+            return false;
+        };
+        let same_flavour =
+            a.is_borrowed() == b.is_borrowed() && a.is_raw_outer() == b.is_raw_outer();
+        let opaque = self.is_opaque() || other.is_opaque();
+        same_flavour && (opaque || a.shape() == b.shape())
     }
 
     /// Whether an integer literal value fits this kind.
@@ -584,6 +876,48 @@ impl DataKind
         tern!(negated, value <= half, value < half)
     }
 
+    /// Whether a cast between two owners or borrows reads what the block
+    /// holds as another kind, when one side holds an address there: it
+    /// would read stored addresses as other data, or data as addresses,
+    /// which the checker cannot follow. Such a cast goes through a raw
+    /// address.
+    ///
+    /// # Arguments
+    ///
+    /// * `to` - The target kind.
+    ///
+    /// # Returns
+    ///
+    /// `true` when both kinds are owners or borrows, a pointee holds an
+    /// address at some level, and the pointees differ in shape; an opaque
+    /// pointee differs from each other one.
+    pub fn reads_addresses_as(self, to: DataKind) -> bool
+    {
+        ret_false!(!self.is_checked_ptr() || !to.is_checked_ptr());
+        let (a, b) = (self.pointee(), to.pointee());
+        let holds = |k: Option<DataKind>| k.is_some_and(DataKind::holds_address);
+        ret_false!(!holds(a) && !holds(b));
+        let same = match (a, b)
+        {
+            (Some(a), Some(b)) => a.same_shape(b),
+            (None, None) => true,
+            _ => false,
+        };
+        !same
+    }
+
+    /// Whether a value of the kind holds an address at some level: a
+    /// pointer, or a list whose cells hold one.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn holds_address(self) -> bool
+    {
+        ret_if!(let Some(list) = self.as_list(), list.cell.holds_address());
+        self.is_ptr()
+    }
+
     /// Whether the conversion verb can turn this kind into `to`.
     ///
     /// # Arguments
@@ -593,15 +927,20 @@ impl DataKind
     /// # Returns
     ///
     /// `true` between numbers, between characters and integers, from a
-    /// boolean to an integer, between addresses, between addresses and
-    /// integers, and for the same kind.
+    /// boolean to an integer, between addresses, from an address to an
+    /// integer, from an integer to a raw address, and for the same kind.
+    /// An integer never becomes an owner or a borrow straight off: the
+    /// raw address in between is the step a reader can search for. For the
+    /// same reason a cast between owners and borrows keeps the shape of a
+    /// pointee that holds an address, see [`DataKind::reads_addresses_as`].
     pub fn cast_allowed(self, to: DataKind) -> bool
     {
         ret_false!(self.is_list() || to.is_list());
         ret_true!(self == to);
         ret_true!(self.is_numeric() && to.is_numeric());
+        ret_false!(self.reads_addresses_as(to));
         ret_true!(self.is_address() && (to.is_address() || to.is_int()));
-        ret_true!(to.is_address() && self.is_int());
+        ret_true!(self.is_int() && to.is_address() && !to.is_checked_ptr());
         ret_false!(!to.is_int() && !self.is_int());
         matches!(
             (self, to),
@@ -649,16 +988,50 @@ fn parse_plain(name: &str) -> Option<DataKind>
 ///
 /// # Returns
 ///
-/// One `*` per address level, then the base name; `ptr` counts as one
-/// level itself.
+/// A leading `&` for a borrow, then one mark per address level from the
+/// outer one in, `*` for an owner and `~` for a raw level, then the base
+/// name; `ptr` counts as one level itself and reads `rawptr` when raw.
 fn ptr_name(p: PtrKind) -> String
 {
-    let Some(plain) = p.base.scalar()
+    let plain = p.base.scalar();
+    let marked = usize::from(p.depth) - usize::from(plain.is_none());
+    let mark = |at: usize| {
+        let level = usize::from(p.depth) - 1 - at;
+        tern!(p.raw.checked_shr(level as u32).unwrap_or(0) & 1 == 1, '~', '*')
+    };
+    let marks: String = (0..marked).map(mark).collect();
+    let borrow = tern!(p.borrowed, "&", "");
+    let Some(plain) = plain
     else
     {
-        return format!("{}ptr", "*".repeat(usize::from(p.depth.saturating_sub(1))));
+        return format!("{borrow}{marks}{}", tern!(p.raw & 1 == 1, "rawptr", "ptr"));
     };
-    format!("{}{}", "*".repeat(usize::from(p.depth)), plain.name())
+    format!("{borrow}{marks}{}", plain.name())
+}
+
+/// Read the base part of a short name, past its address marks.
+///
+/// # Arguments
+///
+/// * `name` - The name with the leading `&`, `*` and `~` taken off.
+///
+/// # Returns
+///
+/// The base and whether it is a raw opaque address, or `None` for an unknown
+/// name.
+fn parse_base(name: &str) -> Option<(Base, bool)>
+{
+    ret_if!(name == "ptr", Some((Base::Opaque, false)));
+    ret_if!(name == "rawptr", Some((Base::Opaque, true)));
+    let Some(inner) = name.strip_prefix('[')
+    else
+    {
+        return Some((parse_plain(name)?.levels().1, false));
+    };
+    let (count, cell) = inner.split_once(']')?;
+    let len = tern!(count.is_empty(), 0, count.parse().ok()?);
+    let list = DataKind::list_of(DataKind::parse(cell)?, len);
+    Some((list.levels().1, false))
 }
 
 /// The short name of a list kind.

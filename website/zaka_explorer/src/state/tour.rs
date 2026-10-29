@@ -101,6 +101,12 @@ pub fn steps() -> Vec<Step>
         stage("explorer.tour.parse", "explorer.tour.parse_text", Phase::Parse).build(),
         stage("explorer.tour.check", "explorer.tour.check_text", Phase::Check).build(),
         stage("explorer.tour.lower", "explorer.tour.lower_text", Phase::Lower).build(),
+        stage(
+            "explorer.tour.borrow_check",
+            "explorer.tour.borrow_check_text",
+            Phase::BorrowCheck,
+        )
+        .build(),
         stage("explorer.tour.codegen", "explorer.tour.codegen_text", Phase::Codegen)
             .build(),
         stage("explorer.tour.run", "explorer.tour.run_text", Phase::Run).build(),

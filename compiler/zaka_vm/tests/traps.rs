@@ -129,6 +129,7 @@ fn each_heap_mistake_traps_with_its_kind()
 {
     let table = [
         ("null_deref", TrapKind::NullDeref { addr: 0 }),
+        ("null_step", TrapKind::NullDeref { addr: 0 }),
         ("out_of_bounds", TrapKind::OutOfBounds { addr: 0, size: 0 }),
         ("use_after_free", TrapKind::UseAfterFree { addr: 0 }),
         ("double_free", TrapKind::DoubleFree { addr: 0 }),
@@ -159,6 +160,16 @@ fn a_local_address_that_escapes_names_its_variable_and_function()
     let block = trap.block.clone().expect("a block");
     assert!(block.contains("x of ဂဏန်း"), "{block}");
     assert!(trap.to_string().ends_with(&format!("; {block}")), "{trap}");
+}
+
+/// A step off `ဗလာ` makes no address of a block, even when the
+/// number it adds is the address of a freed one.
+#[test]
+fn a_step_from_null_traps_as_a_null_access()
+{
+    let trap = heap_trap("null_step");
+    assert_eq!(trap.kind, TrapKind::NullDeref { addr: 0 }, "{trap}");
+    assert_eq!(trap.block, None);
 }
 
 #[test]

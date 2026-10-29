@@ -14,7 +14,7 @@ use zakac_span::continues_cluster;
 
 use crate::assets::BLOSSOMS_PHOTO;
 use crate::components::header::EXPLORER_URL;
-use crate::manual::LEARN_URL;
+use crate::learn::LEARN_URL;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/hero/mod.sass");

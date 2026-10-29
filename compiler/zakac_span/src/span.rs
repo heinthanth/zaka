@@ -4,7 +4,7 @@ use serde::Serialize;
 use crate::pos::Pos;
 
 /// A region of source code between `lo` and `hi` offsets.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize)]
 pub struct Span
 {
     /// Inclusive start offset.

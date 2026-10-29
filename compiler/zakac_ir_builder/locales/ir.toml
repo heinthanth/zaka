@@ -14,3 +14,6 @@ en = "Report particle idiom warnings as errors."
 
 [ir.fold]
 en = "Foldings to run: all, none, or a comma list of exprs, consts and branches. Errors in constant operations are reported whatever this holds."
+
+[ir.no_raw]
+en = "Reject each raw pointer kind (လိပ်စာအကြမ်း), for lessons that must not step around the ownership check."

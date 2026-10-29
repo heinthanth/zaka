@@ -6,9 +6,9 @@ use common::kind_at;
 use common::ok;
 use zakac_diagnostics::Code;
 
-/// `x` an integer, `p` its address, `q` an opaque address, `b` an `*i8`.
+/// `x` an integer, `p` a borrow of it, `q` an opaque address, `b` an `*i8`.
 const PTRS: &str = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။
 ကိန်းရှင် q သည် လိပ်စာ ဖြစ်ပါစေ။
 ကိန်းရှင် b သည် ၈ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။
 ";
@@ -21,10 +21,11 @@ fn pointer_kinds_and_null()
 {
     let checked = check(PTRS);
     assert!(checked.out.diagnostics.is_empty());
-    assert_eq!(kind_at(&checked, "x ၏ လိပ်စာ"), "*isize");
-    ok(&lines(&[PTRS, "q ကို p ဟု ထားပါ။", "p ကို q ဟု ထားပါ။", "p ကို ဗလာ ဟု ထားပါ။"]));
+    assert_eq!(kind_at(&checked, "x ၏ လိပ်စာ"), "&*isize");
+    let opaque = "ကိန်းရှင် o သည် ငှားထားသော လိပ်စာ ဖြစ်ပါစေ။";
+    ok(&lines(&[PTRS, opaque, "o ကို p ဟု ထားပါ။", "p ကို o ဟု ထားပါ။", "p ကို ဗလာ ဟု ထားပါ။"]));
     assert_eq!(codes(&lines(&[PTRS, "p ကို b ဟု ထားပါ။"])), [Code::KindMismatch]);
-    assert_eq!(kind_at(&check(&lines(&[PTRS, "p ကို ဗလာ ဟု ထားပါ။"])), "ဗလာ"), "*isize");
+    assert_eq!(kind_at(&check(&lines(&[PTRS, "p ကို ဗလာ ဟု ထားပါ။"])), "ဗလာ"), "&*isize");
 }
 
 #[test]
@@ -53,7 +54,7 @@ fn pointer_arithmetic_and_comparison()
         "p + ၁ ၏ တန်ဖိုး ကို ပြသပါ။",
     ]));
     assert!(checked.out.diagnostics.is_empty());
-    assert_eq!(kind_at(&checked, "p + ၁"), "*isize");
+    assert_eq!(kind_at(&checked, "p + ၁"), "&*isize");
     assert_eq!(kind_at(&checked, "p - p"), "isize");
     assert_eq!(codes(&lines(&[PTRS, "(p * ၂) ကို ပြသပါ။"])), [Code::PointerOperator]);
     assert_eq!(codes(&lines(&[PTRS, "(q + ၁) ကို ပြသပါ။"])), [Code::OpaquePointer]);
@@ -75,7 +76,9 @@ fn casts_and_size_of()
     assert_eq!(kind_at(&checked, "ကိန်းပြည့် ၏ အရွယ်အစား"), "usize");
     ok(&lines(&[PTRS, "p ကို ၈ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]));
     ok(&lines(&[PTRS, "p ကို လက္ခဏာမဲ့ ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]));
-    ok(&lines(&[PTRS, "၄၀၉၆ ကို ကိန်းပြည့် ၏ လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]));
+    ok(&lines(&[PTRS, "၄၀၉၆ ကို ကိန်းပြည့် လိပ်စာအကြမ်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]));
+    let checked = lines(&[PTRS, "၄၀၉၆ ကို ကိန်းပြည့် ၏ လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]);
+    assert_eq!(codes(&checked), [Code::InvalidCast]);
     let float = lines(&[PTRS, "p ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"]);
     assert_eq!(codes(&float), [Code::InvalidCast]);
 }
@@ -93,25 +96,4 @@ fn heap_statements_take_pointer_places()
     assert_eq!(codes(&null), [Code::NotAPlace]);
     let float = lines(&[PTRS, "မင်မိုရီ ၁.၅ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။"]);
     assert_eq!(codes(&float), [Code::KindMismatch]);
-}
-
-#[test]
-fn returning_a_local_address_warns()
-{
-    let text = "လုပ်ဆောင်ချက် မှား သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ၏ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
-ကိန်းရှင် x သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
-x ၏ လိပ်စာ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    let out = check(text).out;
-    let found: Vec<Code> = out.diagnostics.iter().map(|d| d.code).collect();
-    assert_eq!(found, [Code::LocalAddressReturned]);
-    assert!(!out.diagnostics[0].is_error());
-    let global =
-        "ကိန်းရှင် g သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\n".to_string() + &text.replace("x ၏", "g ၏");
-    let diagnostics = check(&global).out.diagnostics;
-    assert!(diagnostics.is_empty(), "{diagnostics:?}");
-    let warned: Vec<_> =
-        diagnostics.iter().filter(|d| d.code == Code::LocalAddressReturned).collect();
-    assert!(warned.is_empty());
 }

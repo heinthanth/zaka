@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use leptos::prelude::*;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
@@ -14,9 +16,11 @@ use zaka_web_ui_common::controls::settings::section;
 use zaka_web_ui_common::controls::settings::settings_modal as shared_modal;
 use zaka_web_ui_common::controls::settings::switch;
 use zaka_web_ui_common::controls::settings::switch_row;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
 
+use crate::compile::Options;
 use crate::compile::PLATFORM_BITS;
 use crate::state::AppState;
 use crate::state::settings::HeapCap;
@@ -58,8 +62,9 @@ pub fn settings_modal(open: RwSignal<bool>) -> impl IntoView
     shared_modal(open, (general, appearance(state.look), compiler_section(state)))
 }
 
-/// The compiler options: the platform bits, the foldings of the IR and the
-/// heap limit of a run.
+/// The compiler options: the platform bits, the foldings of the IR, the
+/// heap limit and the frames of a run, and the ownership checks. The checks
+/// are not stored on the device; the link carries them.
 ///
 /// # Arguments
 ///
@@ -91,8 +96,50 @@ fn compiler_section(state: AppState) -> impl IntoView
                 t!("explorer.settings.frames_note"),
                 frames_picker(state),
             ),
+            row(
+                t!("explorer.settings.mem_check"),
+                t!("explorer.settings.mem_check_note"),
+                mem_check_picker(state),
+            ),
+            option_row(
+                state,
+                (
+                    t!("explorer.settings.mem_strict"),
+                    t!("explorer.settings.mem_strict_note"),
+                ),
+                |o| o.strict,
+                |o, on| o.strict = on,
+            ),
+            option_row(
+                state,
+                (t!("explorer.settings.no_raw"), t!("explorer.settings.no_raw_note")),
+                |o| o.no_raw,
+                |o, on| o.no_raw = on,
+            ),
         ),
     )
+}
+
+/// The row of a compile option with a switch.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `text` - The name of the option and the note under it.
+/// * `read` - Whether the option is on.
+/// * `write` - Turn the option on or off.
+///
+/// # Returns
+///
+/// The view.
+fn option_row(
+    state: AppState, text: (Cow<'static, str>, Cow<'static, str>),
+    read: fn(&Options) -> bool, write: fn(&mut Options, bool),
+) -> impl IntoView
+{
+    let on = Signal::derive(move || state.options.with(read));
+    let set = SignalSetter::map(move |b| state.options.update(|o| write(o, b)));
+    switch_row(text.0, text.1, switch(on, Signal::stored(false), set))
 }
 
 /// The modal of the compiler options, which the debugger bar opens; the
@@ -272,6 +319,39 @@ fn frames_picker(state: AppState) -> impl IntoView
     dropdown(picker(
         t!("explorer.settings.frames"),
         FrameMode::iter().map(choice).collect(),
+        current,
+        on_pick,
+    ))
+}
+
+/// Picker of what a pointer mistake the ownership check proves does.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn mem_check_picker(state: AppState) -> impl IntoView
+{
+    let label = |m: MemCheck| match m
+    {
+        MemCheck::Error => t!("explorer.settings.mem_check_error"),
+        MemCheck::Warn => t!("explorer.settings.mem_check_warn"),
+        MemCheck::Off => t!("explorer.settings.mem_check_off"),
+    };
+    let choice = move |m: MemCheck| {
+        Choice::builder().value(m.to_string()).label(label(m)).build()
+    };
+    let current = Signal::derive(move || state.options.get().check.to_string());
+    let on_pick = move |v: String| {
+        let check = v.parse().unwrap_or_default();
+        state.options.update(|o| o.check = check);
+    };
+    dropdown(picker(
+        t!("explorer.settings.mem_check"),
+        MemCheck::iter().map(choice).collect(),
         current,
         on_pick,
     ))

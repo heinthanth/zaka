@@ -40,7 +40,7 @@ const STRICT_PARTICLES_ARG: &str = "strict_particles";
 /// Bit counts the platform-sized integer kinds can have.
 const PLATFORM_WIDTHS: &[&str] = &["8", "16", "32", "64", "128"];
 
-/// The `zakac-semcheck` command.
+/// The `zakac-semcheck` command, `zakac semantic-check` as a subcommand.
 pub struct ZakacSemcheck
 {
     cmd_instance: clap::Command,

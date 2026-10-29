@@ -10,13 +10,16 @@ use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::visit::Node;
+use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
+use zakac_diagnostics::ownership as od;
 use zakac_diagnostics::resolve as rd;
 use zakac_i18n::t;
 use zakac_lexer::token::Kw;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_span::span::Span;
 
 use crate::kind::DataKind;
 use crate::list::KindUse;
@@ -28,6 +31,7 @@ use crate::ops::kw_label;
 use crate::ops::verb_class;
 use crate::ops::verb_label;
 use crate::place::place_of;
+use crate::place::var_name;
 use crate::scope::Access;
 use crate::semcheck::Checker;
 
@@ -183,7 +187,34 @@ impl Checker
         let fixed = self.fixed_name(place);
         let diag = fixed.map(|name| kd::fixed_address(operand.span(), name));
         do_if!(let Some(d) = diag, self.report(d));
-        kind.map(DataKind::pointer_to)
+        let kind = kind?;
+        let span = operand.span();
+        ret_if!(kind.holds_borrow(), self.report(od::borrow_of_borrow(span)), None);
+        Some(kind.pointer_to().as_borrowed())
+    }
+
+    /// Infer a lend: a borrow of the block a pointer holds.
+    ///
+    /// # Arguments
+    ///
+    /// * `operand` - The pointer.
+    ///
+    /// # Returns
+    ///
+    /// The pointer kind as a borrow, or `None` after an error.
+    pub fn infer_lend(&mut self, operand: &Expr) -> Option<DataKind>
+    {
+        let kind = self.infer(operand, None)?;
+        let span = operand.span();
+        ret_if!(kind.is_raw_ptr(), self.report(od::lend_of_raw(span)), None);
+        ret_if!(kind.is_ptr(), Some(kind.as_borrowed()));
+        let found = kind.name();
+        let diag = var_name(operand).map_or_else(
+            || kd::not_a_pointer(span, &found),
+            |name| kd::lend_of_value(span, &found, name),
+        );
+        self.report(diag);
+        None
     }
 
     /// The name of a place that cannot be changed.
@@ -340,6 +371,7 @@ impl Checker
             (OpClass::Cast, [value]) => self.infer_cast(n, value),
             (OpClass::AddrOf, [value]) => self.infer_addr_of(value),
             (OpClass::Deref, [value]) => self.infer_deref(value),
+            (OpClass::Lend, [value]) => self.infer_lend(value),
             (OpClass::CellCount, [value]) => self.infer_cell_count(value),
             (OpClass::BitNot, [value]) =>
             {
@@ -373,9 +405,10 @@ impl Checker
         let from = self.infer(value, None);
         let target = self.written_kind(n.kind_arg.as_ref()?, KindUse::Other);
         let bad = from.filter(|f| !f.cast_allowed(target));
-        let report = |f: DataKind| kd::invalid_cast(n.span, &f.name(), &target.name());
-        do_if!(let Some(f) = bad, self.report(report(f)));
-        Some(target)
+        do_if!(let Some(f) = bad, self.report(cast_report(n.span, f, target)));
+        let keeps_borrow =
+            from.is_some_and(DataKind::is_borrow) && !target.is_raw_ptr();
+        Some(tern!(keeps_borrow, target.as_borrowed(), target))
     }
 
     /// Infer a call expression.
@@ -396,6 +429,32 @@ impl Checker
     }
 }
 
+/// The report of a conversion the verb cannot make. An integer headed for
+/// an owner or a borrow, and a cast that reads stored addresses as another
+/// kind, get help naming the raw address to go through.
+///
+/// # Arguments
+///
+/// * `span` - The conversion.
+/// * `from` - The source kind.
+/// * `to` - The target kind.
+///
+/// # Returns
+///
+/// The `ZK0408` diagnostic.
+fn cast_report(span: Span, from: DataKind, to: DataKind) -> Diagnostic
+{
+    let (from_name, to_name) = (from.name(), to.name());
+    let raw = to.with_outer_raw().name();
+    ret_if!(
+        from.reads_addresses_as(to),
+        kd::pointer_pun(span, &from_name, &to_name, &raw)
+    );
+    let checked = from.is_int() && to.is_checked_ptr();
+    ret_if!(!checked, kd::invalid_cast(span, &from_name, &to_name));
+    kd::checked_from_int(span, &from_name, &to_name, &raw)
+}
+
 /// What an operand without an address is, for a message.
 ///
 /// # Arguments
@@ -405,7 +464,7 @@ impl Checker
 /// # Returns
 ///
 /// The localized words for a literal, a call result or a computed value.
-fn what_of(e: &Expr) -> String
+pub(crate) fn what_of(e: &Expr) -> String
 {
     let words = match e
     {

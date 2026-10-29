@@ -25,3 +25,22 @@ pub(crate) fn place_of(e: &Expr) -> Option<&Expr>
         _ => None,
     }
 }
+
+/// The variable an expression names, perhaps in parentheses.
+///
+/// # Arguments
+///
+/// * `e` - The expression.
+///
+/// # Returns
+///
+/// The variable name, or `None` for each other expression.
+pub(crate) fn var_name(e: &Expr) -> Option<&str>
+{
+    match e
+    {
+        Expr::Name(n) => Some(&n.name),
+        Expr::Group(n) => var_name(&n.inner),
+        _ => None,
+    }
+}

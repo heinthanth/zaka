@@ -209,13 +209,13 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The kind, or a `bad-literal-kind` diagnostic for a character,
-    /// boolean or address kind.
+    /// boolean, address or borrowed kind.
     fn parse_literal_kind(&mut self) -> PResult<Option<Kind>>
     {
         ret_if!(!self.starts_kind(), Ok(None));
         let kind = self.parse_kind()?;
         let numeric = matches!(kind.base, BaseKind::Int | BaseKind::Float);
-        let numeric = numeric && kind.is_plain();
+        let numeric = numeric && kind.is_plain() && !kind.borrowed;
         ret_if!(!numeric, Err(diag::bad_literal_kind(kind.span)));
         Ok(Some(kind))
     }

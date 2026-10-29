@@ -23,6 +23,8 @@ pub struct PhaseTimes
     pub check: Option<Duration>,
     /// Lowering to the IR and folding it.
     pub lower: Option<Duration>,
+    /// The ownership check.
+    pub borrow_check: Option<Duration>,
     /// Code generation.
     pub codegen: Option<Duration>,
 }
@@ -47,6 +49,7 @@ impl PhaseTimes
             Phase::Parse => self.parse,
             Phase::Check => self.check,
             Phase::Lower => self.lower,
+            Phase::BorrowCheck => self.borrow_check,
             Phase::Codegen => self.codegen,
             Phase::Run => None,
         }
@@ -60,7 +63,7 @@ impl PhaseTimes
     pub fn total(&self) -> Duration
     {
         let phases = [self.segment, self.lex, self.parse, self.check, self.lower];
-        phases.into_iter().chain([self.codegen]).flatten().sum()
+        phases.into_iter().chain([self.borrow_check, self.codegen]).flatten().sum()
     }
 }
 

@@ -1,5 +1,7 @@
 use zakac_ast::kind::BaseKind;
+use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
+use zakac_ast::kind::Wrap;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
 use zakac_semcheck::kind::Width;
@@ -41,9 +43,39 @@ fn ast_kinds_get_their_defaults()
 fn names_round_trip()
 {
     let names = [
-        "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128",
-        "usize", "f16", "f32", "f64", "f128", "char", "bool", "*i32", "**isize", "ptr",
-        "*ptr", "null",
+        "i8",
+        "i16",
+        "i32",
+        "i64",
+        "i128",
+        "isize",
+        "u8",
+        "u16",
+        "u32",
+        "u64",
+        "u128",
+        "usize",
+        "f16",
+        "f32",
+        "f64",
+        "f128",
+        "char",
+        "bool",
+        "*i32",
+        "**isize",
+        "ptr",
+        "*ptr",
+        "null",
+        "&*isize",
+        "&**isize",
+        "*~isize",
+        "~*isize",
+        "~isize",
+        "rawptr",
+        "*rawptr",
+        "&ptr",
+        "[3]&*isize",
+        "&*[3]isize",
     ];
     for name in names
     {
@@ -142,4 +174,183 @@ fn casts_follow_the_conversion_table()
     assert!(!k("f64").cast_allowed(k("char")));
     assert!(!k("char").cast_allowed(k("f64")));
     assert!(!k("bool").cast_allowed(k("f32")));
+}
+
+#[test]
+fn flavour_helpers()
+{
+    assert_eq!(k("&*isize").pointee(), Some(k("isize")));
+    assert_eq!(k("&**isize").pointee(), Some(k("*isize")));
+    assert_eq!(k("*~isize").pointee(), Some(k("~isize")));
+    assert_eq!(k("~*isize").pointee(), Some(k("*isize")));
+    assert_eq!(k("&*isize").pointer_to(), k("**isize"));
+    assert_eq!(k("~isize").pointer_to(), k("*~isize"));
+    assert_eq!(k("*isize").as_borrowed(), k("&*isize"));
+    assert_eq!(k("&*isize").as_owner(), k("*isize"));
+    assert_eq!(k("~isize").as_borrowed(), k("~isize"));
+    assert_eq!(k("isize").as_borrowed(), k("isize"));
+    assert_eq!(k("isize").raw_pointer_to(), k("~isize"));
+    assert_eq!(k("*isize").raw_pointer_to(), k("~*isize"));
+    assert!(k("&*isize").same_shape(k("*isize")));
+    assert!(!k("~isize").same_shape(k("*isize")));
+    assert!(k("&ptr").is_opaque());
+    assert!(k("rawptr").is_opaque());
+    assert!(!k("*rawptr").is_opaque());
+    assert_eq!(k("&ptr").pointee(), None);
+    assert!(k("*isize").is_owner_ptr() && k("ptr").is_owner_ptr());
+    assert!(k("&*isize").is_borrow() && !k("*isize").is_borrow());
+    assert!(k("~isize").is_raw_ptr() && k("rawptr").is_raw_ptr());
+    assert!(k("~*isize").is_raw_ptr());
+    assert!(!k("*~isize").is_raw_ptr());
+    assert!(k("*~isize").is_owner_ptr() && !k("*~isize").is_raw_ptr());
+    assert_eq!(k("&*isize").ptr_kind().map(|p| p.depth), Some(1));
+    assert_eq!(k("isize").ptr_kind(), None);
+    assert_eq!(DataKind::parse("&~isize"), None);
+    assert_eq!(DataKind::parse("&isize"), None);
+    assert_eq!(DataKind::parse("&null"), None);
+}
+
+#[test]
+fn move_and_dup_kinds()
+{
+    for name in ["*isize", "[3]*isize", "[2][3]*isize", "ptr", "**isize"]
+    {
+        assert!(k(name).is_move_kind(), "{name}");
+        assert!(!k(name).is_dup_kind(), "{name}");
+    }
+    for name in ["&*isize", "~isize", "isize", "[3]&*isize", "null", "[3]isize", "&ptr"]
+    {
+        assert!(k(name).is_dup_kind(), "{name}");
+    }
+    assert!(k("[3]&*isize").holds_borrow());
+    assert!(k("&*isize").holds_borrow());
+    assert!(!k("[3]*isize").holds_borrow());
+    assert!(!k("*isize").holds_borrow());
+}
+
+#[test]
+fn flavours_widen_within_themselves()
+{
+    assert!(widens("&*isize", "&*isize"));
+    assert!(widens("~isize", "~isize"));
+    assert!(widens("null", "&*isize"));
+    assert!(widens("&*isize", "&ptr"));
+    assert!(widens("*isize", "ptr"));
+    assert!(widens("~isize", "rawptr"));
+    assert!(widens("rawptr", "~isize"));
+    assert!(!widens("*isize", "&*isize"));
+    assert!(!widens("&*isize", "*isize"));
+    assert!(!widens("~isize", "*isize"));
+    assert!(!widens("*isize", "~isize"));
+    assert!(!widens("&*isize", "ptr"));
+    assert!(!widens("*isize", "rawptr"));
+    assert!(!widens("*~isize", "**isize"));
+}
+
+#[test]
+fn casts_cross_flavours()
+{
+    assert!(k("*isize").cast_allowed(k("~isize")));
+    assert!(k("~isize").cast_allowed(k("*isize")));
+    assert!(k("&*isize").cast_allowed(k("~isize")));
+    assert!(k("rawptr").cast_allowed(k("usize")));
+    assert!(k("usize").cast_allowed(k("~isize")));
+    assert!(k("usize").cast_allowed(k("rawptr")));
+    assert!(!k("usize").cast_allowed(k("&*isize")));
+    assert!(!k("usize").cast_allowed(k("*isize")));
+    assert!(!k("usize").cast_allowed(k("ptr")));
+}
+
+#[test]
+fn ast_kinds_hold_their_marks()
+{
+    let made = |wraps: Vec<Wrap>, borrowed: bool| {
+        let base = ast(BaseKind::Int, None, None);
+        Kind { wraps, borrowed, ..base }
+    };
+    let ptr = || Wrap::Ptr;
+    let raw = || Wrap::RawPtr;
+    let list = || Wrap::List(Cells::Fixed(3));
+    let from = |wraps, borrowed| DataKind::from_ast(&made(wraps, borrowed));
+    assert_eq!(from(vec![ptr()], false), k("*isize"));
+    assert_eq!(from(vec![ptr()], true), k("&*isize"));
+    assert_eq!(from(vec![ptr(), ptr()], true), k("&**isize"));
+    assert_eq!(from(vec![raw()], false), k("~isize"));
+    assert_eq!(from(vec![raw(), ptr()], false), k("*~isize"));
+    assert_eq!(from(vec![raw(), ptr()], true), k("&*~isize"));
+    assert_eq!(from(vec![ptr(), raw()], false), k("~*isize"));
+    assert_eq!(from(vec![ptr(), list()], true), k("[3]&*isize"));
+    assert_eq!(from(vec![list(), ptr()], true), k("&*[3]isize"));
+    let opaque = |wraps, borrowed| {
+        let base = ast(BaseKind::Opaque, None, None);
+        DataKind::from_ast(&Kind { wraps, borrowed, ..base })
+    };
+    assert_eq!(opaque(vec![ptr()], true), k("&ptr"));
+    assert_eq!(opaque(vec![raw()], false), k("rawptr"));
+    assert_eq!(opaque(vec![ptr(), ptr()], false), k("*ptr"));
+}
+
+#[test]
+fn checked_casts_keep_stored_addresses_in_place()
+{
+    let refused = [
+        ("&*isize", "&**isize"),
+        ("*isize", "&**isize"),
+        ("&**isize", "&*isize"),
+        ("&**isize", "&**i64"),
+        ("&**isize", "&ptr"),
+        ("&ptr", "&**isize"),
+        ("&*[2]*isize", "&*[2]isize"),
+    ];
+    for (from, to) in refused
+    {
+        assert!(!k(from).cast_allowed(k(to)), "{from} to {to}");
+    }
+    let allowed = [
+        ("&*u8", "&*i32"),
+        ("*u8", "&*i32"),
+        ("&*isize", "&ptr"),
+        ("&**isize", "**isize"),
+        ("**isize", "&**isize"),
+        ("&*isize", "~*isize"),
+        ("~*isize", "&**isize"),
+    ];
+    for (from, to) in allowed
+    {
+        assert!(k(from).cast_allowed(k(to)), "{from} to {to}");
+    }
+}
+
+#[test]
+fn opaque_pointers_pass_address_free_blocks_alone()
+{
+    let refused = [
+        ("&**isize", "&ptr"),
+        ("&ptr", "&**isize"),
+        ("**isize", "ptr"),
+        ("ptr", "**isize"),
+        ("&*[2]*isize", "&ptr"),
+        ("&ptr", "&*[2]&*isize"),
+        ("*~isize", "ptr"),
+        ("*ptr", "ptr"),
+        ("ptr", "*ptr"),
+    ];
+    for (from, to) in refused
+    {
+        assert!(!widens(from, to), "{from} to {to}");
+    }
+    let allowed = [
+        ("&*isize", "&ptr"),
+        ("&ptr", "&*isize"),
+        ("*isize", "ptr"),
+        ("ptr", "*[3]isize"),
+        ("&*[1]isize", "&ptr"),
+        ("**isize", "**isize"),
+        ("~*isize", "rawptr"),
+        ("rawptr", "~*isize"),
+    ];
+    for (from, to) in allowed
+    {
+        assert!(widens(from, to), "{from} to {to}");
+    }
 }

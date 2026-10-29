@@ -3,8 +3,11 @@
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_with;
 use zaka_vm::trap::Trap;
+use zakac_borrow_checker::options::BorrowCheckOptions;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::artifact::run_phases;
 use zakac_codegen::bc::Module;
+use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
@@ -12,26 +15,53 @@ use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
-/// Compile a clean source text.
-pub fn compile(text: &str) -> Module { compile_with(text, &SemcheckOptions::default()) }
-
-/// Compile a clean source text for a platform width.
-pub fn compile_on(text: &str, platform_bits: u16) -> Module
+/// The ownership check turned off, as for programs that go wrong on
+/// purpose.
+fn mem_off() -> BorrowCheckOptions
 {
-    compile_with(text, &SemcheckOptions::builder().platform_bits(platform_bits).build())
+    BorrowCheckOptions::builder().check(MemCheck::Off).build()
 }
 
-/// Compile a clean source text with checker options.
-fn compile_with(text: &str, options: &SemcheckOptions) -> Module
+/// Compile a clean source text with the ownership check off.
+pub fn compile(text: &str) -> Module
+{
+    compile_with(text, &SemcheckOptions::default(), &mem_off()).0
+}
+
+/// Compile a source text with the ownership check on, which must report
+/// nothing at all, not even a warning.
+pub fn compile_checked(text: &str) -> Module
+{
+    let (module, diagnostics) =
+        compile_with(text, &SemcheckOptions::default(), &BorrowCheckOptions::default());
+    let msgs: Vec<&str> = diagnostics.iter().map(|d| d.message.as_str()).collect();
+    assert!(diagnostics.is_empty(), "{text}: {msgs:?}");
+    module
+}
+
+/// Compile a clean source text for a platform width, with the ownership
+/// check off.
+pub fn compile_on(text: &str, platform_bits: u16) -> Module
+{
+    let options = SemcheckOptions::builder().platform_bits(platform_bits).build();
+    compile_with(text, &options, &mem_off()).0
+}
+
+/// Compile a source text that must have no error, with checker and
+/// ownership options.
+fn compile_with(
+    text: &str, options: &SemcheckOptions, mem: &BorrowCheckOptions,
+) -> (Module, Vec<Diagnostic>)
 {
     let mut sm = SourceMap::new();
     let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
-    let emitted =
-        run_phases(&file, &LexerOptions::default(), options, &FoldOptions::default());
+    let folding = FoldOptions::default();
+    let emitted = run_phases(&file, &LexerOptions::default(), options, &folding, mem);
     let msgs: Vec<&str> =
         emitted.diagnostics().iter().map(|d| d.message.as_str()).collect();
     assert!(!has_errors(emitted.diagnostics()), "{text}: {msgs:?}");
-    emitted.module.expect("emitted")
+    let diagnostics = emitted.diagnostics().to_vec();
+    (emitted.module.expect("emitted"), diagnostics)
 }
 
 /// Run a module and collect its output.

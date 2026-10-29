@@ -1,0 +1,1252 @@
+# zakac-borrow-check-artifact v1
+name:
+  Custom: calls.zaka
+source: "// လုပ်ဆောင်ချက်များ နှင့် ငှားခြင်း\nလုပ်ဆောင်ချက် ခွဲဝေ သည်\nကိန်းပြည့် တည်ကိန်း၊ ကိန်းပြည့် စားကိန်း၊ ငှားထားသော ကိန်းပြည့် လိပ်စာ အဖြေ နှင့် ငှားထားသော ကိန်းပြည့် လိပ်စာ အကြွင်း တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအဖြေ ၏ တန်ဖိုး ကို တည်ကိန်း / စားကိန်း ဟု ထားပါ။\nအကြွင်း ၏ တန်ဖိုး ကို တည်ကိန်း % စားကိန်း ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် လဲလှယ် သည်\nငှားထားသော ကိန်းပြည့် လိပ်စာ က နှင့် ငှားထားသော ကိန်းပြည့် လိပ်စာ ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ယာယီ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုး ဖြစ်ပါစေ။\nက ၏ တန်ဖိုး ကို ခ ၏ တန်ဖိုး ဟု ထားပါ။\nခ ၏ တန်ဖိုး ကို ယာယီ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// ဘူးအသစ်တစ်ခု ပြန်ပေးသည်; ခေါ်သူက စွန့်လွှတ်ရမည်\nလုပ်ဆောင်ချက် ဘူးသစ် သည်\nကိန်းပြည့် စ ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။\nမင်မိုရီ ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ရလဒ် တွင် သိမ်းထားမည်။\nအကယ်၍ ရလဒ် သည် ဗလာ နှင့် ညီလျှင် ဗလာ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nရလဒ် ၏ တန်ဖိုး ကို စ ဟု ထားပါ။\nရလဒ် + ၁ ၏ တန်ဖိုး ကို စ * ၂ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// ဘူးကို လက်ခံ၍ စွန့်လွှတ်သည်\nလုပ်ဆောင်ချက် ရှင်းပစ် သည်\nကိန်းပြည့် လိပ်စာ က ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// ချိတ်ထားသော ဘူးကို ချဲ့ပြီး အသစ်ကို ငှားပေးသည်\nလုပ်ဆောင်ချက် ချဲ့ သည်\nငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ချိတ် ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော ကိန်းပြည့် လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။\nချိတ် ၏ တန်ဖိုး လိပ်စာရှိကို မင်မိုရီ ကိန်းပြည့် ၄ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။\nချိတ် ၏ တန်ဖိုး ၏ တန်ဖိုးအငှား ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// ငှားထားသော ဘူး၏ နောက်ဆုံးအကွက်\nလုပ်ဆောင်ချက် နောက်ဆုံး သည်\nငှားထားသော ကိန်းပြည့် လိပ်စာ ဘူး နှင့် လက္ခဏာမဲ့ ကိန်းပြည့် အရေ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော ကိန်းပြည့် လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။\nဘူး + (အရေ - ၁) ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n// ငှားထားသော ဘူးကို ပြန်ခေါ်၍ ပေါင်းသည်\nလုပ်ဆောင်ချက် ပေါင်း သည်\nငှားထားသော ကိန်းပြည့် လိပ်စာ ဘူး နှင့် လက္ခဏာမဲ့ ကိန်းပြည့် အရေ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nအကယ်၍ အရေ သည် ၀ နှင့် ညီလျှင် ၀ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\n(ဘူး ၏ တန်ဖိုး) + လုပ်ဆောင်ချက် ပေါင်း ကို ဘူး + ၁၊ အရေ - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nကိန်းရှင် ရ သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nကိန်းရှင် ကျန် သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် ခွဲဝေ ကို ၁၇၊ ၅၊ ရ ၏ လိပ်စာ၊ ကျန် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။\nရ ကို ပြသပါ။\nကျန် ကို ပြသပါ။\nလုပ်ဆောင်ချက် လဲလှယ် ကို ရ ၏ လိပ်စာ၊ ကျန် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် လဲလှယ် ကို ရ ၏ လိပ်စာ၊ ရ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။\nရ ကို ပြသပါ။\n\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် ဘူးသစ် ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် လဲလှယ် ကို ပ ၏ တန်ဖိုးအငှား၊ ပ + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။\nပ ၏ တန်ဖိုး ကို ပြသပါ။\nလုပ်ဆောင်ချက် ပေါင်း ကို ပ ၏ တန်ဖိုးအငှား၊ ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\n\nကိန်းရှင် အသစ် သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် ချဲ့ ကို ပ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။\nအသစ် + ၃ ၏ တန်ဖိုး ကို ၉ ဟု ထားပါ။\nကိန်းရှင် ဆုံး သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် နောက်ဆုံး ကို အသစ်၊ ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။\nဆုံး ၏ တန်ဖိုး ကို ပြသပါ။\n\nလုပ်ဆောင်ချက် ရှင်းပစ် ကို ပ တို့ဖြင့် လုပ်ဆောင်ပါ။\nအကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် \"ပေးပြီး\" ဟု ပြသပါ။\n"
+module:
+  globals:
+  - name: ရ
+    kind: isize
+    access: var
+    span:
+      lo: 6394
+      hi: 6397
+    addressed: true
+  - name: ကျန်
+    kind: isize
+    access: var
+    span:
+      lo: 6495
+      hi: 6507
+    addressed: true
+  - name: ပ
+    kind: "*isize"
+    access: var
+    span:
+      lo: 7319
+      hi: 7322
+    addressed: true
+  - name: အသစ်
+    kind: "&*isize"
+    access: var
+    span:
+      lo: 8117
+      hi: 8129
+    addressed: false
+  - name: ဆုံး
+    kind: "&*isize"
+    access: var
+    span:
+      lo: 8577
+      hi: 8589
+    addressed: false
+  funcs:
+  - name: ခွဲဝေ
+    params: 4
+    result: null
+    ret: null
+    locals:
+    - name: တည်ကိန်း
+      kind: isize
+      access: var
+      span:
+        lo: 196
+        hi: 220
+      addressed: false
+    - name: စားကိန်း
+      kind: isize
+      access: var
+      span:
+        lo: 255
+        hi: 279
+      addressed: false
+    - name: အဖြေ
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 364
+        hi: 376
+      addressed: false
+    - name: အကြွင်း
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 474
+        hi: 495
+      addressed: false
+    block:
+    - store:
+        addr:
+          kind: "&*isize"
+          node:
+            read: l2
+          span:
+            lo: 629
+            hi: 641
+        value:
+          kind: isize
+          node:
+            infix:
+              op: div
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 678
+                  hi: 702
+              rhs:
+                kind: isize
+                node:
+                  read: l1
+                span:
+                  lo: 705
+                  hi: 729
+          span:
+            lo: 678
+            hi: 729
+        span:
+          lo: 629
+          hi: 755
+    - store:
+        addr:
+          kind: "&*isize"
+          node:
+            read: l3
+          span:
+            lo: 756
+            hi: 777
+        value:
+          kind: isize
+          node:
+            infix:
+              op: rem
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 814
+                  hi: 838
+              rhs:
+                kind: isize
+                node:
+                  read: l1
+                span:
+                  lo: 841
+                  hi: 865
+          span:
+            lo: 814
+            hi: 865
+        span:
+          lo: 756
+          hi: 891
+    span:
+      lo: 99
+      hi: 974
+  - name: လဲလှယ်
+    params: 2
+    result: null
+    ret: null
+    locals:
+    - name: က
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 1126
+        hi: 1129
+      addressed: false
+    - name: ခ
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 1227
+        hi: 1230
+      addressed: false
+    - name: ယာယီ
+      kind: isize
+      access: var
+      span:
+        lo: 1392
+        hi: 1404
+      addressed: false
+    block:
+    - set:
+        place: l2
+        value:
+          kind: isize
+          node:
+            load:
+              addr:
+                kind: "&*isize"
+                node:
+                  read: l0
+                span:
+                  lo: 1493
+                  hi: 1496
+          span:
+            lo: 1493
+            hi: 1522
+        span:
+          lo: 1364
+          hi: 1550
+    - store:
+        addr:
+          kind: "&*isize"
+          node:
+            read: l0
+          span:
+            lo: 1551
+            hi: 1554
+        value:
+          kind: isize
+          node:
+            load:
+              addr:
+                kind: "&*isize"
+                node:
+                  read: l1
+                span:
+                  lo: 1591
+                  hi: 1594
+          span:
+            lo: 1591
+            hi: 1620
+        span:
+          lo: 1551
+          hi: 1646
+    - store:
+        addr:
+          kind: "&*isize"
+          node:
+            read: l1
+          span:
+            lo: 1647
+            hi: 1650
+        value:
+          kind: isize
+          node:
+            read: l2
+          span:
+            lo: 1687
+            hi: 1699
+        span:
+          lo: 1647
+          hi: 1725
+    span:
+      lo: 976
+      hi: 1808
+  - name: ဘူးသစ်
+    params: 1
+    result: 1
+    ret: "*isize"
+    locals:
+    - name: စ
+      kind: isize
+      access: var
+      span:
+        lo: 2047
+        hi: 2050
+      addressed: false
+    - name: ရလဒ်
+      kind: "*isize"
+      access: var
+      span:
+        lo: 1987
+        hi: 2005
+      addressed: false
+    block:
+    - set:
+        place: l1
+        value:
+          kind: "*isize"
+          node:
+            const: 0x0:ptr
+          span:
+            lo: 1987
+            hi: 2005
+        span:
+          lo: 1987
+          hi: 2005
+    - alloc:
+        dest:
+          slot: l1
+        count:
+          kind: usize
+          node:
+            const: 2:usize
+          span:
+            lo: 2329
+            hi: 2332
+        unit: isize
+        span:
+          lo: 2273
+          hi: 2458
+    - if:
+        cond:
+          kind: bool
+          node:
+            compare:
+              op: eq
+              lhs:
+                kind: "*isize"
+                node:
+                  read: l1
+                span:
+                  lo: 2475
+                  hi: 2487
+              rhs:
+                kind: "*isize"
+                node:
+                  const: 0x0:ptr
+                span:
+                  lo: 2498
+                  hi: 2507
+          span:
+            lo: 2475
+            hi: 2530
+        then:
+        - return:
+            value:
+              kind: "*isize"
+              node:
+                const: 0x0:ptr
+              span:
+                lo: 2546
+                hi: 2555
+            span:
+              lo: 2546
+              hi: 2624
+        els:
+        []
+        span:
+          lo: 2459
+          hi: 2624
+    - store:
+        addr:
+          kind: "*isize"
+          node:
+            read: l1
+          span:
+            lo: 2625
+            hi: 2637
+        value:
+          kind: isize
+          node:
+            read: l0
+          span:
+            lo: 2674
+            hi: 2677
+        span:
+          lo: 2625
+          hi: 2703
+    - store:
+        addr:
+          kind: "&*isize"
+          node:
+            ptr_add:
+              base:
+                kind: "*isize"
+                node:
+                  read: l1
+                span:
+                  lo: 2704
+                  hi: 2716
+              offset:
+                kind: isize
+                node:
+                  const: 1:isize
+                span:
+                  lo: 2719
+                  hi: 2722
+          span:
+            lo: 2704
+            hi: 2722
+        value:
+          kind: isize
+          node:
+            infix:
+              op: mul
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 2759
+                  hi: 2762
+              rhs:
+                kind: isize
+                node:
+                  const: 2:isize
+                span:
+                  lo: 2765
+                  hi: 2768
+          span:
+            lo: 2759
+            hi: 2768
+        span:
+          lo: 2704
+          hi: 2794
+    - return:
+        value:
+          kind: "*isize"
+          node:
+            read: l1
+          span:
+            lo: 2089
+            hi: 2877
+        span:
+          lo: 2089
+          hi: 2877
+    span:
+      lo: 1947
+      hi: 2877
+  - name: ရှင်းပစ်
+    params: 1
+    result: null
+    ret: null
+    locals:
+    - name: က
+      kind: "*isize"
+      access: var
+      span:
+        lo: 3085
+        hi: 3088
+      addressed: false
+    block:
+    - free:
+        dest:
+          slot: l0
+        span:
+          lo: 3210
+          hi: 3338
+    span:
+      lo: 2960
+      hi: 3421
+  - name: ချဲ့
+    params: 1
+    result: 1
+    ret: "&*isize"
+    locals:
+    - name: ချိတ်
+      kind: "&**isize"
+      access: var
+      span:
+        lo: 3724
+        hi: 3739
+      addressed: false
+    - name: ရလဒ်
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 3597
+        hi: 3609
+      addressed: false
+    block:
+    - set:
+        place: l1
+        value:
+          kind: "&*isize"
+          node:
+            const: 0x0:ptr
+          span:
+            lo: 3597
+            hi: 3609
+        span:
+          lo: 3597
+          hi: 3609
+    - resize:
+        dest:
+          mem:
+            kind: "&**isize"
+            node:
+              read: l0
+            span:
+              lo: 3993
+              hi: 4008
+        count:
+          kind: usize
+          node:
+            const: 4:usize
+          span:
+            lo: 4128
+            hi: 4131
+        unit: isize
+        span:
+          lo: 3993
+          hi: 4242
+    - return:
+        value:
+          kind: "&*isize"
+          node:
+            lend:
+              operand:
+                kind: "*isize"
+                node:
+                  load:
+                    addr:
+                      kind: "&**isize"
+                      node:
+                        read: l0
+                      span:
+                        lo: 4243
+                        hi: 4258
+                span:
+                  lo: 4243
+                  hi: 4284
+          span:
+            lo: 4243
+            hi: 4325
+        span:
+          lo: 4243
+          hi: 4394
+    span:
+      lo: 3557
+      hi: 4477
+  - name: နောက်ဆုံး
+    params: 2
+    result: 2
+    ret: "&*isize"
+    locals:
+    - name: ဘူး
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 4728
+        hi: 4737
+      addressed: false
+    - name: အရေ
+      kind: usize
+      access: var
+      span:
+        lo: 4813
+        hi: 4822
+      addressed: false
+    - name: ရလဒ်
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 4609
+        hi: 4636
+      addressed: false
+    block:
+    - set:
+        place: l2
+        value:
+          kind: "&*isize"
+          node:
+            const: 0x0:ptr
+          span:
+            lo: 4609
+            hi: 4636
+        span:
+          lo: 4609
+          hi: 4636
+    - return:
+        value:
+          kind: "&*isize"
+          node:
+            ptr_add:
+              base:
+                kind: "&*isize"
+                node:
+                  read: l0
+                span:
+                  lo: 5088
+                  hi: 5097
+              offset:
+                kind: usize
+                node:
+                  infix:
+                    op: sub
+                    lhs:
+                      kind: usize
+                      node:
+                        read: l1
+                      span:
+                        lo: 5101
+                        hi: 5110
+                    rhs:
+                      kind: usize
+                      node:
+                        const: 1:usize
+                      span:
+                        lo: 5113
+                        hi: 5116
+                span:
+                  lo: 5101
+                  hi: 5116
+          span:
+            lo: 5088
+            hi: 5117
+        span:
+          lo: 5088
+          hi: 5186
+    span:
+      lo: 4569
+      hi: 5269
+  - name: ပေါင်း
+    params: 2
+    result: 2
+    ret: isize
+    locals:
+    - name: ဘူး
+      kind: "&*isize"
+      access: var
+      span:
+        lo: 5530
+        hi: 5539
+      addressed: false
+    - name: အရေ
+      kind: usize
+      access: var
+      span:
+        lo: 5615
+        hi: 5624
+      addressed: false
+    - name: ရလဒ်
+      kind: isize
+      access: var
+      span:
+        lo: 5420
+        hi: 5438
+      addressed: false
+    block:
+    - set:
+        place: l2
+        value:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 5420
+            hi: 5438
+        span:
+          lo: 5420
+          hi: 5438
+    - if:
+        cond:
+          kind: bool
+          node:
+            compare:
+              op: eq
+              lhs:
+                kind: usize
+                node:
+                  read: l1
+                span:
+                  lo: 5856
+                  hi: 5865
+              rhs:
+                kind: usize
+                node:
+                  const: 0:usize
+                span:
+                  lo: 5876
+                  hi: 5879
+          span:
+            lo: 5856
+            hi: 5902
+        then:
+        - return:
+            value:
+              kind: isize
+              node:
+                const: 0:isize
+              span:
+                lo: 5918
+                hi: 5921
+            span:
+              lo: 5918
+              hi: 5990
+        els:
+        []
+        span:
+          lo: 5840
+          hi: 5990
+    - return:
+        value:
+          kind: isize
+          node:
+            infix:
+              op: add
+              lhs:
+                kind: isize
+                node:
+                  load:
+                    addr:
+                      kind: "&*isize"
+                      node:
+                        read: l0
+                      span:
+                        lo: 5992
+                        hi: 6001
+                span:
+                  lo: 5992
+                  hi: 6027
+              rhs:
+                kind: isize
+                node:
+                  call:
+                    func: 6
+                    name: ပေါင်း
+                    args:
+                    - kind: "&*isize"
+                      node:
+                        ptr_add:
+                          base:
+                            kind: "&*isize"
+                            node:
+                              read: l0
+                            span:
+                              lo: 6100
+                              hi: 6109
+                          offset:
+                            kind: isize
+                            node:
+                              const: 1:isize
+                            span:
+                              lo: 6112
+                              hi: 6115
+                      span:
+                        lo: 6100
+                        hi: 6115
+                    - kind: usize
+                      node:
+                        infix:
+                          op: sub
+                          lhs:
+                            kind: usize
+                            node:
+                              read: l1
+                            span:
+                              lo: 6119
+                              hi: 6128
+                          rhs:
+                            kind: usize
+                            node:
+                              const: 1:usize
+                            span:
+                              lo: 6131
+                              hi: 6134
+                      span:
+                        lo: 6119
+                        hi: 6134
+                span:
+                  lo: 6031
+                  hi: 6212
+          span:
+            lo: 5991
+            hi: 6212
+        span:
+          lo: 5991
+          hi: 6281
+    span:
+      lo: 5380
+      hi: 6364
+  main:
+  - set:
+      place: g0
+      value:
+        kind: isize
+        node:
+          const: 0:isize
+        span:
+          lo: 6394
+          hi: 6397
+      span:
+        lo: 6366
+        hi: 6466
+  - set:
+      place: g1
+      value:
+        kind: isize
+        node:
+          const: 0:isize
+        span:
+          lo: 6495
+          hi: 6507
+      span:
+        lo: 6467
+        hi: 6576
+  - call:
+      func: 0
+      name: ခွဲဝေ
+      args:
+      - kind: isize
+        node:
+          const: 17:isize
+        span:
+          lo: 6643
+          hi: 6649
+      - kind: isize
+        node:
+          const: 5:isize
+        span:
+          lo: 6653
+          hi: 6656
+      - kind: "&*isize"
+        node:
+          addr_of: g0
+        span:
+          lo: 6660
+          hi: 6686
+      - kind: "&*isize"
+        node:
+          addr_of: g1
+        span:
+          lo: 6690
+          hi: 6725
+      span:
+        lo: 6577
+        hi: 6790
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            read: g0
+          span:
+            lo: 6791
+            hi: 6794
+      span:
+        lo: 6791
+        hi: 6823
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            read: g1
+          span:
+            lo: 6824
+            hi: 6836
+      span:
+        lo: 6824
+        hi: 6865
+  - call:
+      func: 1
+      name: လဲလှယ်
+      args:
+      - kind: "&*isize"
+        node:
+          addr_of: g0
+        span:
+          lo: 6935
+          hi: 6961
+      - kind: "&*isize"
+        node:
+          addr_of: g1
+        span:
+          lo: 6965
+          hi: 7000
+      span:
+        lo: 6866
+        hi: 7065
+  - call:
+      func: 1
+      name: လဲလှယ်
+      args:
+      - kind: "&*isize"
+        node:
+          addr_of: g0
+        span:
+          lo: 7135
+          hi: 7161
+      - kind: "&*isize"
+        node:
+          addr_of: g0
+        span:
+          lo: 7165
+          hi: 7191
+      span:
+        lo: 7066
+        hi: 7256
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            read: g0
+          span:
+            lo: 7257
+            hi: 7260
+      span:
+        lo: 7257
+        hi: 7289
+  - set:
+      place: g2
+      value:
+        kind: "*isize"
+        node:
+          call:
+            func: 2
+            name: ဘူးသစ်
+            args:
+            - kind: isize
+              node:
+                const: 7:isize
+              span:
+                lo: 7499
+                hi: 7502
+        span:
+          lo: 7430
+          hi: 7580
+      span:
+        lo: 7291
+        hi: 7608
+  - call:
+      func: 1
+      name: လဲလှယ်
+      args:
+      - kind: "&*isize"
+        node:
+          lend:
+            operand:
+              kind: "*isize"
+              node:
+                read: g2
+              span:
+                lo: 7678
+                hi: 7681
+        span:
+          lo: 7678
+          hi: 7722
+      - kind: "&*isize"
+        node:
+          ptr_add:
+            base:
+              kind: "*isize"
+              node:
+                read: g2
+              span:
+                lo: 7726
+                hi: 7729
+            offset:
+              kind: isize
+              node:
+                const: 1:isize
+              span:
+                lo: 7732
+                hi: 7735
+        span:
+          lo: 7726
+          hi: 7735
+      span:
+        lo: 7609
+        hi: 7800
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            load:
+              addr:
+                kind: "*isize"
+                node:
+                  read: g2
+                span:
+                  lo: 7801
+                  hi: 7804
+          span:
+            lo: 7801
+            hi: 7830
+      span:
+        lo: 7801
+        hi: 7859
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            call:
+              func: 6
+              name: ပေါင်း
+              args:
+              - kind: "&*isize"
+                node:
+                  lend:
+                    operand:
+                      kind: "*isize"
+                      node:
+                        read: g2
+                      span:
+                        lo: 7929
+                        hi: 7932
+                span:
+                  lo: 7929
+                  hi: 7973
+              - kind: usize
+                node:
+                  const: 2:usize
+                span:
+                  lo: 7977
+                  hi: 7980
+          span:
+            lo: 7860
+            hi: 8058
+      span:
+        lo: 7860
+        hi: 8087
+  - set:
+      place: g3
+      value:
+        kind: "&*isize"
+        node:
+          call:
+            func: 4
+            name: ချဲ့
+            args:
+            - kind: "&**isize"
+              node:
+                addr_of: g2
+              span:
+                lo: 8331
+                hi: 8357
+        span:
+          lo: 8268
+          hi: 8435
+      span:
+        lo: 8089
+        hi: 8463
+  - store:
+      addr:
+        kind: "&*isize"
+        node:
+          ptr_add:
+            base:
+              kind: "&*isize"
+              node:
+                read: g3
+              span:
+                lo: 8464
+                hi: 8476
+            offset:
+              kind: isize
+              node:
+                const: 3:isize
+              span:
+                lo: 8479
+                hi: 8482
+        span:
+          lo: 8464
+          hi: 8482
+      value:
+        kind: isize
+        node:
+          const: 9:isize
+        span:
+          lo: 8519
+          hi: 8522
+      span:
+        lo: 8464
+        hi: 8548
+  - set:
+      place: g4
+      value:
+        kind: "&*isize"
+        node:
+          call:
+            func: 5
+            name: နောက်ဆုံး
+            args:
+            - kind: "&*isize"
+              node:
+                read: g3
+              span:
+                lo: 8806
+                hi: 8818
+            - kind: usize
+              node:
+                const: 4:usize
+              span:
+                lo: 8822
+                hi: 8825
+        span:
+          lo: 8728
+          hi: 8903
+      span:
+        lo: 8549
+        hi: 8931
+  - print:
+      value:
+        expr:
+          kind: isize
+          node:
+            load:
+              addr:
+                kind: "&*isize"
+                node:
+                  read: g4
+                span:
+                  lo: 8932
+                  hi: 8944
+          span:
+            lo: 8932
+            hi: 8970
+      span:
+        lo: 8932
+        hi: 8999
+  - call:
+      func: 3
+      name: ရှင်းပစ်
+      args:
+      - kind: "*isize"
+        node:
+          take:
+            addr:
+              kind: "**isize"
+              node:
+                addr_of: g2
+              span:
+                lo: 9076
+                hi: 9079
+        span:
+          lo: 9076
+          hi: 9079
+      span:
+        lo: 9001
+        hi: 9144
+  - if:
+      cond:
+        kind: bool
+        node:
+          compare:
+            op: eq
+            lhs:
+              kind: "*isize"
+              node:
+                read: g2
+              span:
+                lo: 9161
+                hi: 9164
+            rhs:
+              kind: "*isize"
+              node:
+                const: 0x0:ptr
+              span:
+                lo: 9175
+                hi: 9184
+        span:
+          lo: 9161
+          hi: 9207
+      then:
+      - print:
+          value:
+            text: ပေးပြီး
+          span:
+            lo: 9223
+            hi: 9272
+      els:
+      []
+      span:
+        lo: 9145
+        hi: 9272
+  span:
+    lo: 0
+    hi: 9273
+digests:
+- name: ခွဲဝေ
+  params: 4
+  frees: []
+  result_from: []
+  result_roots: []
+  renewed: []
+  unfilled: []
+  reads:
+  - place: l2
+    path:
+    - Block
+  - place: l3
+    path:
+    - Block
+  result_roots_ok: true
+- name: လဲလှယ်
+  params: 2
+  frees: []
+  result_from: []
+  result_roots: []
+  renewed: []
+  unfilled: []
+  reads:
+  - place: l0
+    path:
+    - Block
+  - place: l1
+    path:
+    - Block
+  result_roots_ok: true
+- name: ဘူးသစ်
+  params: 1
+  frees: []
+  result_from: []
+  result_roots: []
+  renewed: []
+  unfilled: []
+  reads: []
+  result_roots_ok: true
+- name: ရှင်းပစ်
+  params: 1
+  frees:
+  - place: l0
+    path:
+    - Block
+  result_from: []
+  result_roots: []
+  renewed: []
+  unfilled:
+  - place: l0
+    path:
+    - Block
+  reads: []
+  result_roots_ok: true
+- name: ချဲ့
+  params: 1
+  frees:
+  - place: l0
+    path:
+    - Block
+    - Block
+  result_from:
+  - 0
+  result_roots:
+  - place: l0
+    path:
+    - Block
+    - Block
+  renewed:
+  - place: l0
+    path:
+    - Block
+    - Block
+  unfilled: []
+  reads:
+  - place: l0
+    path:
+    - Block
+  result_roots_ok: true
+- name: နောက်ဆုံး
+  params: 2
+  frees: []
+  result_from:
+  - 0
+  result_roots:
+  - place: l0
+    path:
+    - Block
+  renewed: []
+  unfilled: []
+  reads: []
+  result_roots_ok: true
+- name: ပေါင်း
+  params: 2
+  frees: []
+  result_from: []
+  result_roots: []
+  renewed: []
+  unfilled: []
+  reads:
+  - place: l0
+    path:
+    - Block
+  result_roots_ok: true
+diagnostics: []

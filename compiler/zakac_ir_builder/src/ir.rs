@@ -449,12 +449,28 @@ pub enum ExprNode
         /// The arguments, each of its parameter's kind.
         args: Vec<Expr>,
     },
-    /// The address of a slot, which is marked `addressed`.
+    /// The address of a slot. A slot whose address the program takes is
+    /// marked `addressed`; the address a [`ExprNode::Take`] moves through
+    /// leaves the mark alone.
     AddrOf(Place),
     /// The value at an address; the expression kind is the pointee.
     Load
     {
         /// The address, a pointer.
+        addr: Box<Expr>,
+    },
+    /// A borrow of an address: the value of `operand` under a borrow mark.
+    Lend
+    {
+        /// The address lent, a pointer.
+        operand: Box<Expr>,
+    },
+    /// The value at an address, moved out: the place is left at the
+    /// default of its kind, `ဗလာ` for an owner. The expression kind is the
+    /// kind of the place.
+    Take
+    {
+        /// The address of the place, a pointer.
         addr: Box<Expr>,
     },
     /// An address moved `offset` elements forward; the expression kind is

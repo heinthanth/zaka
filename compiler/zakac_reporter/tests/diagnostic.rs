@@ -166,3 +166,79 @@ fn pieces_join_to_the_plain_text()
     assert_eq!(pieces[0].paint, Paint::Tag(Level::Error));
     assert!(pieces.iter().any(|piece| piece.paint == Paint::Marked(Level::Error)));
 }
+
+/// Register `src` and build a diagnostic over the line `main`, labelled on
+/// `other`.
+fn setup_labelled(
+    src: &str, main: &str, other: &str, text: &str,
+) -> (SourceMap, Diagnostic)
+{
+    let (sm, diag) = setup(src, main);
+    let file = sm.files()[0].clone();
+    let lo = file.src.find(other).expect("label text not in source");
+    let span = Span::new(file.start_pos + lo, file.start_pos + lo + other.len());
+    (sm, diag.with_label(span, text))
+}
+
+#[test]
+fn labels_render_under_the_main_snippet()
+{
+    let (sm, diag) =
+        setup_labelled("free p\nuse q\n", "free p", "use q", "\"q\" is used here");
+    let expected = "\
+error[ZK0101]: it is wrong
+ --> t.zaka:1:1
+  |
+1 | free p
+  | ^^^^^^
+  |
+2 | use q
+  | ----- \"q\" is used here
+";
+    assert_eq!(format_diagnostic(&sm, &diag), expected);
+}
+
+#[test]
+fn a_label_on_a_wider_line_number_widens_the_gutter()
+{
+    let src = "1\n2\n3\n4\n5\n6\n7\n8\nfree p\nuse q\n";
+    let (sm, diag) = setup_labelled(src, "free p", "use q", "here");
+    let expected = "\
+error[ZK0101]: it is wrong
+  --> t.zaka:9:1
+   |
+ 9 | free p
+   | ^^^^^^
+   |
+10 | use q
+   | ----- here
+";
+    assert_eq!(format_diagnostic(&sm, &diag), expected);
+}
+
+#[test]
+fn a_label_with_a_placeholder_span_is_left_out()
+{
+    let (sm, diag) = setup_labelled("free p\nuse q\n", "free p", "use q", "here");
+    let mut diag = diag.with_label(Span::PLACEHOLDER, "lost");
+    diag.labels.reverse();
+    let expected = "\
+error[ZK0101]: it is wrong
+ --> t.zaka:1:1
+  |
+1 | free p
+  | ^^^^^^
+  |
+2 | use q
+  | ----- here
+";
+    assert_eq!(format_diagnostic(&sm, &diag), expected);
+}
+
+#[test]
+fn help_comes_after_the_labels()
+{
+    let (sm, diag) = setup_labelled("free p\nuse q\n", "free p", "use q", "here");
+    let rendered = format_diagnostic(&sm, &diag.with_help("h"));
+    assert!(rendered.ends_with("----- here\n  = help: h\n"), "{rendered}");
+}

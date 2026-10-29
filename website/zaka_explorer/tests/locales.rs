@@ -100,6 +100,9 @@ fn labels_come_from_the_table()
     assert_eq!(Phase::Parse.note(), "AST");
     assert_eq!(Phase::Lower.label(), "Lower");
     assert_eq!(Phase::Lower.note(), "IR");
+    assert_eq!(Phase::BorrowCheck.label(), "Borrow check");
+    assert_eq!(Phase::BorrowCheck.component(), "Borrow checker");
+    assert_eq!(Phase::BorrowCheck.note(), "owners");
     assert_eq!(Phase::Codegen.label(), "Codegen");
     assert_eq!(Phase::Codegen.note(), "ops");
     assert_eq!(Phase::Run.label(), "Run");

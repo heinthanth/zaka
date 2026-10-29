@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use zakac_borrow_checker::options::BorrowCheckOptions;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::artifact::CodegenArtifact;
 use zakac_codegen::bc::Func;
 use zakac_codegen::bc::Module;
@@ -7,6 +9,7 @@ use zakac_codegen::bc::Op;
 use zakac_codegen::listing::listing;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::PhaseArtifact;
@@ -28,7 +31,9 @@ fn emit_input(name: &str, folding: &FoldOptions) -> CodegenArtifact
     let mut sm = SourceMap::new();
     let file = sm.new_source_file(FileName::Custom(format!("{name}.zaka")), text);
     let options = SemcheckOptions::default();
-    CodegenArtifact::from_source(&file, &LexerOptions::default(), &options, folding)
+    let mem = BorrowCheckOptions::default();
+    let lexer = LexerOptions::default();
+    CodegenArtifact::from_source(&file, &lexer, &options, folding, &mem)
 }
 
 /// Compare text with an expected file; `ZAKA_BLESS=1` rewrites the file.
@@ -125,11 +130,15 @@ fn repo_samples_are_well_formed()
             let source = sm.load_file(&file.path()).unwrap();
             let options = SemcheckOptions::default();
             let folding = FoldOptions::default();
+            let mistake = group.file_name() == "mistakes";
+            let check = tern!(mistake, MemCheck::Off, MemCheck::Error);
+            let mem = BorrowCheckOptions::builder().check(check).build();
             let artifact = CodegenArtifact::from_source(
                 &source,
                 &LexerOptions::default(),
                 &options,
                 &folding,
+                &mem,
             );
             let name = file.path().display().to_string();
             let module = artifact.module.as_ref().unwrap_or_else(|| panic!("{name}"));

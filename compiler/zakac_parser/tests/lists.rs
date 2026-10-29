@@ -94,3 +94,10 @@ fn a_list_literal_in_call_arguments()
         "(call f (list 1 2) န)"
     );
 }
+
+#[test]
+fn a_borrowed_literal_prefix_is_a_bad_literal_kind()
+{
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ငှားထားသော ကိန်းပြည့် ၅ ဖြစ်ပါစေ။";
+    assert_eq!(codes(text), [Code::BadLiteralKind]);
+}

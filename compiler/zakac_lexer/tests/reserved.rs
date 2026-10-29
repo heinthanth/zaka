@@ -73,6 +73,16 @@ fn table_rows_are_one_word_each()
 }
 
 #[test]
+fn borrow_words_are_whole_words()
+{
+    assert_eq!(lookup("ငှားထားသော"), Some(Kw::Borrowed));
+    assert_eq!(lookup("တန်ဖိုးအငှား"), Some(Kw::Lend));
+    assert_eq!(lookup("လိပ်စာအကြမ်း"), Some(Kw::RawAddress));
+    assert_eq!(split("တန်ဖိုးအငှား"), None);
+    assert_eq!(split("လိပ်စာအကြမ်း"), None);
+}
+
+#[test]
 fn spec_compounds_split()
 {
     let cases: &[(&str, &[Kw])] = &[
@@ -89,6 +99,8 @@ fn spec_compounds_split()
         ("လိပ်စာရှိကို", &[Kw::AtAddress, Kw::Ko]),
         ("လိပ်စာရှိမင်မိုရီကို", &[Kw::AtAddress, Kw::Mem, Kw::Ko]),
         ("လိပ်စာရှိမှတ်ဉာဏ်ကို", &[Kw::AtAddress, Kw::Mem, Kw::Ko]),
+        ("တန်ဖိုးအငှားကို", &[Kw::Lend, Kw::Ko]),
+        ("လိပ်စာအကြမ်းကို", &[Kw::RawAddress, Kw::Ko]),
     ];
     for (text, expected) in cases
     {
