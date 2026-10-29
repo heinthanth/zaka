@@ -15,6 +15,19 @@ zakac_i18n::init!();
 /// chat app or a feed fetches, start with it. A build for the web must set it.
 pub const ORIGIN_VAR: &str = "ZAKA_SITE_ORIGIN";
 
+/// The address in [`ORIGIN_VAR`], with no trailing slash; a blank value counts
+/// as unset, as CI passes one when the variable is missing.
+///
+/// # Returns
+///
+/// The address, or `None` when the variable is unset or blank.
+pub fn set_origin() -> Option<String>
+{
+    let origin = std::env::var(ORIGIN_VAR).ok()?;
+    let origin = origin.trim().trim_end_matches('/');
+    (!origin.is_empty()).then(|| origin.to_string())
+}
+
 /// Start the islands in the browser, then the motion code.
 #[cfg(feature = "client")]
 #[wasm_bindgen::prelude::wasm_bindgen]

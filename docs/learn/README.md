@@ -22,7 +22,7 @@ shown.
 
 ## How to run the examples
 
-The fastest route is the online **[Zaka Explorer](https://zaka-lang.org/explorer/)**.
+The fastest route is the online **[Zaka Explorer](/explorer/)**.
 Paste a program into the editor and press **Run**.
 
 To run programs on a local computer, build the compiler `zakac` from the Zaka source

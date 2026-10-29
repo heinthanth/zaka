@@ -5,6 +5,7 @@ use leptos_axum::generate_route_list_with_ssg;
 use tower_http::services::ServeDir;
 use zaka_website::ORIGIN_VAR;
 use zaka_website::app::shell;
+use zaka_website::set_origin;
 
 /// Env var that makes the server write the pages and stop, for a build.
 const ONCE_VAR: &str = "ZAKA_WEBSITE_ONCE";
@@ -34,8 +35,11 @@ const VENDOR_DIST: &str = "target/vendor";
 async fn main()
 {
     let once = std::env::var_os(ONCE_VAR).is_some();
-    let origin = std::env::var_os(ORIGIN_VAR).is_some();
-    assert!(!once || origin, "set {ORIGIN_VAR} to the address the site is served from");
+    let origin = set_origin().is_some_and(|o| o.contains("://"));
+    assert!(
+        !once || origin,
+        "set {ORIGIN_VAR} to the address the site is served from, as https://zaka-lang.org"
+    );
     let conf = get_configuration(None).expect("cargo-leptos sets the site options");
     let options = conf.leptos_options;
     let page = options.clone();

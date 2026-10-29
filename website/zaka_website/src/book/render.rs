@@ -22,9 +22,6 @@ use super::page_of;
 use crate::components::sandbox::run::Fence;
 use crate::components::sandbox::run::FenceOptions;
 
-/// The address of the site the pages name in full, for the explorer.
-const SITE: &str = "https://zaka-lang.org/";
-
 /// The contents file, which a page can link to.
 const CONTENTS_FILE: &str = "CONTENTS.md";
 
@@ -336,10 +333,10 @@ pub fn anchor(text: &str, taken: &[Head]) -> String
 }
 
 /// Where a link of a page points on the site: a page of either book at its
-/// address, the contents of a book at the list on each of its pages, and the
-/// explorer at its place on this site. A link names a file from the folder of
-/// its page, so `../../manual/reference/errors.md` on a Learn page reaches
-/// the manual.
+/// address and the contents of a book at the list on each of its pages; a
+/// path from the site root, as `/explorer/`, stands as written. A link names a
+/// file from the folder of its page, so `../../manual/reference/errors.md` on
+/// a Learn page reaches the manual.
 ///
 /// # Arguments
 ///
@@ -351,7 +348,6 @@ pub fn anchor(text: &str, taken: &[Head]) -> String
 /// The target on the site; the same target when it is not a page.
 pub fn link_target(page: &Page, dest: &str) -> String
 {
-    ret_if!(let Some(rest) = dest.strip_prefix(SITE), format!("/{rest}"));
     let local = !dest.contains("://") && !dest.starts_with(['#', '/']);
     let (file, mark) = dest.split_once('#').unwrap_or((dest, ""));
     ret_if!(!local || !file.ends_with(".md"), dest.to_string());

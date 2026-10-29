@@ -7,7 +7,7 @@ description: Complete programs that combine all the parts from the earlier chapt
 
 All parts of the language are now covered. The programs in this chapter put the parts
 together. Each one is a complete program: paste it into the
-[Explorer](https://zaka-lang.org/explorer/) and run it. After each program, a short
+[Explorer](/explorer/) and run it. After each program, a short
 walk-through explains how it is built.
 
 | Program | Uses |

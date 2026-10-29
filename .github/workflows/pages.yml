@@ -19,9 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://zaka-lang.org
+      url: ${{ vars.ZAKA_SITE_ORIGIN }}
     env:
       ZAKA_PDA_FONT_SECRET: ${{ secrets.ZAKA_PDA_FONT_SECRET }}
+      ZAKA_SITE_ORIGIN: ${{ vars.ZAKA_SITE_ORIGIN }}
+      CLOUDFLARE_PAGES_PROJECT: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -29,7 +31,6 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      # The same pins as the Dockerfiles.
       - uses: taiki-e/install-action@v2
         with:
           tool: trunk@0.22.0,cargo-leptos@0.3.11
@@ -52,11 +53,7 @@ jobs:
         working-directory: website/zaka_web_ui_common/fonts
         run: trunk build --release
 
-      # The address the site is served from, from the variables of the
-      # production environment.
       - name: Build the website
-        env:
-          ZAKA_SITE_ORIGIN: ${{ vars.ZAKA_SITE_ORIGIN }}
         run: |
           cargo leptos build --project zaka_website --release --split
           LEPTOS_OUTPUT_NAME=zaka_website LEPTOS_SITE_ROOT=target/website \
@@ -65,8 +62,6 @@ jobs:
 
       - name: Build the explorer
         working-directory: website/zaka_explorer
-        env:
-          ZAKA_SITE_ORIGIN: ${{ vars.ZAKA_SITE_ORIGIN }}
         run: >
           trunk build --release --locked --cargo-profile wasm-release
           --public-url /explorer/
@@ -85,5 +80,5 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: >
-            pages deploy dist --project-name=zaka --branch=main
-            --commit-dirty=true
+            pages deploy dist --project-name=${{ env.CLOUDFLARE_PAGES_PROJECT }}
+            --branch=main --commit-dirty=true

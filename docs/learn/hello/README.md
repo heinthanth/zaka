@@ -34,7 +34,7 @@ a statement; `။` alone does.
 
 ## Running it
 
-1. Open the [Zaka Explorer](https://zaka-lang.org/explorer/), paste the program, and
+1. Open the [Zaka Explorer](/explorer/), paste the program, and
    press **Run**. Or:
 2. Save the program as `hello.zaka` and run it with the compiler:
 

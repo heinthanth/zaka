@@ -39,7 +39,6 @@ use zaka_web_ui_common::sheet;
 use zaka_web_ui_common::site::HOME_URL;
 use zakac_i18n::t;
 
-use crate::ORIGIN_VAR;
 use crate::assets::COVER_CARD;
 use crate::assets::LOGO_LIGHT;
 use crate::assets::font_faces;
@@ -56,6 +55,7 @@ use crate::components::header::header_sheet;
 use crate::components::hero::hero;
 use crate::components::learn::book_page;
 use crate::components::name::name;
+use crate::set_origin;
 
 /// Name of the route parameter that holds the address of a page of a book.
 const PAGE_PARAM: &str = "page";
@@ -122,8 +122,8 @@ pub fn shell(options: LeptosOptions) -> impl IntoView
     (doctype("html"), html().lang("en").child((head, body().child(app()))))
 }
 
-/// The address the site is served from: [`ORIGIN_VAR`], else the address the
-/// server listens on, for a run on this machine.
+/// The address the site is served from: [`crate::ORIGIN_VAR`], else the address
+/// the server listens on, for a run on this machine.
 ///
 /// # Arguments
 ///
@@ -134,8 +134,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView
 /// The address, with no trailing slash.
 pub fn site_origin(options: &LeptosOptions) -> String
 {
-    let set = std::env::var(ORIGIN_VAR).map(|o| o.trim_end_matches('/').to_string());
-    set.unwrap_or_else(|_| format!("http://{}", options.site_addr))
+    set_origin().unwrap_or_else(|| format!("http://{}", options.site_addr))
 }
 
 /// The tags of the head that name a page: its title and description, its

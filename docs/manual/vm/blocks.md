@@ -235,7 +235,7 @@ walks through the program in Learn.
 
 ## Looking at the blocks
 
-The [Explorer](https://zaka-lang.org/explorer/) draws the table of blocks while a
+The [Explorer](/explorer/) draws the table of blocks while a
 program steps, with each block's start, length, origin and state. `zakac run --leaks`
 lists the live heap blocks at the end of a run: a block that is still live then was never
 given back.

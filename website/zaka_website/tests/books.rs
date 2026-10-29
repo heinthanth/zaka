@@ -181,7 +181,7 @@ fn links_point_at_the_pages_of_the_site()
     );
     assert_eq!(link_target(&page, "../hello/README.md"), "/learn/hello/");
     assert_eq!(link_target(&page, "README.md#top"), "/learn/control-flow/#top");
-    assert_eq!(link_target(&page, "https://zaka-lang.org/explorer/"), "/explorer/");
+    assert_eq!(link_target(&page, "/explorer/"), "/explorer/");
     assert_eq!(
         link_target(&page, "https://www.rust-lang.org/"),
         "https://www.rust-lang.org/"

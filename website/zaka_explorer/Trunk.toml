@@ -17,11 +17,11 @@ command_arguments = [
     "mkdir -p \"$TRUNK_STAGING_DIR/assets\" && cp target/assets/* \"$TRUNK_STAGING_DIR/assets/\"",
 ]
 
-# The share tags of index.html get whole addresses: see share_tags.sh.
+# The share tags of index.html get whole addresses: see scripts/share_tags.sh.
 [[hooks]]
 stage = "post_build"
 command = "sh"
-command_arguments = ["share_tags.sh"]
+command_arguments = ["scripts/share_tags.sh"]
 
 # At the root of a site of its own (serve, or a build for /) the explorer
 # brings the shared web fonts of zaka_web_ui_common under fonts/; under the
