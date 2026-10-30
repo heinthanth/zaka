@@ -32,5 +32,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      # The credits test reads cargo metadata offline, and that needs the
+      # crates of each platform, not just the ones this runner builds.
+      - name: Fetch the crates
+        run: cargo fetch --locked
+
       - name: Run the tests
         run: cargo nextest run --workspace --locked

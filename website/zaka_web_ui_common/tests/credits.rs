@@ -63,7 +63,8 @@ fn crate_lines() -> BTreeSet<String>
     let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
     let args = ["metadata", "--format-version", "1", "--offline"];
     let out = Command::new(cargo).args(args).current_dir(root()).output().unwrap();
-    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    let hint = "run cargo fetch to download the crates of each platform";
+    assert!(out.status.success(), "{hint}\n{}", String::from_utf8_lossy(&out.stderr));
     let meta: Value = serde_json::from_slice(&out.stdout).unwrap();
     let packages = meta["packages"].as_array().unwrap();
     let with_id: BTreeMap<&str, &Value> =
