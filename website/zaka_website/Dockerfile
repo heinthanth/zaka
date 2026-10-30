@@ -16,7 +16,7 @@ ARG ZAKA_SITE_ORIGIN
 
 # The website writes its pages once and stops, so the site is plain files.
 # The motion libraries, the web fonts and the explorer join it under /vendor,
-# /fonts and /explorer, placed as `mise run web:build` places them.
+# /fonts and /explorer, placed as `mise run docs:build` places them.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
     --mount=type=cache,target=/root/.cache \

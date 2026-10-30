@@ -27,6 +27,13 @@ cargo build --release -p zakac
 ./target/release/zakac run program.zaka
 ```
 
+## AI disclosure
+
+Much of the code, tests and docs here were written with the help of different AI models such as Claude Fable 5.1, Claude Opus 5.5, Qwen 3.8 Max, Gemini 3 Pro, etc. I designed the language, wrote the initial code directed the work and reviewed the changes, and
+the tests cover each compiler stage and each runnable example in Learn and Docs. Even so,
+AI-written code can hold mistakes that look correct. Treat Zaka as an experimental
+project, and please report what seems wrong as an issue.
+
 ## Credits
 
 Zaka stands on the work of others. Fonts, crates and packages in [CREDITS.md](CREDITS.md). Special thanks to [PhoenixDigitalArt](https://www.facebook.com/PhoenixDigitalArt)

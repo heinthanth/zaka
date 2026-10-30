@@ -1,0 +1,2 @@
+# Keep LF on every OS: the tests compare output to expected files byte for byte.
+* text=auto eol=lf
