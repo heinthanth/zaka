@@ -10,7 +10,6 @@
 !.env.example
 
 target
-CLAUDE.md
 docs/*.internal.md
 
 website/zaka_explorer/dist
