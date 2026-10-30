@@ -226,7 +226,7 @@ end:
 
 ```zaka
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
-မင်မိုရီ ကိန်းပြည့် ၃ ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် သိမ်းထားမည်။
+မင်မိုရီတွင် ကိန်းပြည့် ၃ ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် သိမ်းထားမည်။
 ၀ မှ ၂ အထိ နံပါတ် အနေဖြင့် ရေတွက်၍ ကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို နံပါတ် * နံပါတ် ဟု ထားပါ။
 
 ကိန်းရှင် ညွှန်း သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ကိန်းများ ၏ တန်ဖိုးအငှား ဖြစ်ကာ ညွှန်း သည် ကိန်းများ + ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
@@ -235,7 +235,7 @@ end:
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
 (ကိန်းများ + ၃) - ကိန်းများ ကို ပြသပါ။       // the distance in boxes
-ကိန်းများ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လိပ်စာ ကိန်းများ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ```
 
 ```text
@@ -288,25 +288,27 @@ reads or writes at another address.
 ## Heap statements
 
 Three statements work with blocks of the heap. In all three, `မင်မိုရီ` can be replaced
-with `မှတ်ဉာဏ်`, and each ending `…မည်` can be written `…မယ်`.
+with `မှတ်ဉာဏ်`. Resizing and giving back start alike, with `လိပ်စာ <place> ရှိ မင်မိုရီကို`
+("the RAM at the address in the place"); the words after it tell the two apart.
 
 ### Sizes
 
-A request names its size in one of two forms:
+A request names its size in one of three forms:
 
 | Form | Asks for |
 | --- | --- |
 | `<kind> <count> ခုစာ` | room for `count` values of the kind |
+| `<struct> <count> <classifier>စာ` | room for `count` values of a struct that names a [classifier](structs.md#the-classifier) |
 | `<count> ဘိုက်စာ` | `count` octets |
 
 The count is a `လက္ခဏာမဲ့ ကိန်းပြည့်`: a literal fits as it stands, and a variable used as a
-count has that kind. The first form multiplies the count with the size of the kind, and a
-product that does not fit counts as running out of room.
+count has that kind. Each form with a kind multiplies the count with the size of the kind,
+and a product that does not fit counts as running out of room.
 
 ### Asking for a block
 
 ```text
-မင်မိုရီ <size> နေရာယူ၍ လိပ်စာကို <place> တွင် သိမ်းထားမည်။
+မင်မိုရီတွင် <size> နေရာယူ၍ လိပ်စာကို <place> တွင် သိမ်းထားမည်။
 ```
 
 The statement reserves a new block and stores its address in the place, which must have a
@@ -319,7 +321,7 @@ that is not `ဗလာ` and holds nothing. When the heap has no room left, the p
 ### Resizing a block
 
 ```text
-<place> လိပ်စာရှိကို မင်မိုရီ <size> ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
+လိပ်စာ <place> ရှိ မင်မိုရီကို <size> ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
 ```
 
 The statement grows or shrinks the block whose address is in the place, and stores the
@@ -332,7 +334,7 @@ lose the block still held.
 ### Giving a block back
 
 ```text
-<place> လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လိပ်စာ <place> ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ```
 
 The statement gives the block back and sets the place to `ဗလာ`. Giving back a place that
@@ -346,14 +348,14 @@ This program asks for a block of two integers, grows it to three, gives it back 
 
 ```zaka
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
-မင်မိုရီ ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ၏ တန်ဖိုး ကို ၁၀ ဟု ထားပါ။
 ပ + ၁ ၏ တန်ဖိုး ကို ၂၀ ဟု ထားပါ။
-ပ လိပ်စာရှိကို မင်မိုရီ ကိန်းပြည့် ၃ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
+လိပ်စာ ပ ရှိ မင်မိုရီကို ကိန်းပြည့် ၃ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
 ပ + ၂ ၏ တန်ဖိုး ကို ၃၀ ဟု ထားပါ။
 ၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ ပ + န ၏ တန်ဖိုး ကို ပြသပါ။
-ပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-ပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ပ ကို ပြသပါ။
 ```
 
@@ -368,7 +370,7 @@ A heap statement whose place is not a pointer is ZK0417:
 
 ```zaka-error ZK0417
 ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။
-မင်မိုရီ ၈ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို က တွင် သိမ်းထားမည်။
+မင်မိုရီတွင် ၈ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို က တွင် သိမ်းထားမည်။
 ```
 
 ```text

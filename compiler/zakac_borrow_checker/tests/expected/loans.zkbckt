@@ -1,7 +1,7 @@
 # zakac-borrow-check-artifact v1
 name:
   Custom: loans.zaka
-source: "// ငှားခြင်းများ\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။\n၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ ပ + န ၏ တန်ဖိုး ကို န * ၁၀ ဟု ထားပါ။\nကိန်းရှင် ကြည့် သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။\nကြည့် + ၁ ၏ တန်ဖိုး ကို ပြသပါ။\n\n// ချဲ့ပြီးမှ ပြန်ငှားခြင်း\nပ လိပ်စာရှိကို မင်မိုရီ ကိန်းပြည့် ၈ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။\nကြည့် ကို ပ ၏ တန်ဖိုးအငှား ဟု ထားပါ။\nကြည့် + ၂ ၏ တန်ဖိုး ကို ပြသပါ။\n\n// ရေးသော ငှားခြင်း နှစ်ခု\nကိန်းရှင် ရှေ့ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။\nကိန်းရှင် နောက် သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ပ + ၃ ဖြစ်ပါစေ။\nရှေ့ သည် နောက် အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် ယာယီ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ရှေ့ ၏ တန်ဖိုး ဖြစ်ပါစေ။\nရှေ့ ၏ တန်ဖိုး ကို နောက် ၏ တန်ဖိုး ဟု ထားပါ။\nနောက် ၏ တန်ဖိုး ကို ယာယီ ဟု ထားပါ။\nရှေ့ ကို ရှေ့ + ၁ ဟု ထားပါ။\nနောက် ကို နောက် - ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ ပ + န ၏ တန်ဖိုး ကို ပြသပါ။\n\n// ကိန်းရှင်တစ်ခု၏ လိပ်စာ\nကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် ညွှန် သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။\nညွှန် ၏ တန်ဖိုး ကို (ညွှန် ၏ တန်ဖိုး) + ၁ ဟု ထားပါ။\nက ကို ပြသပါ။\n\n// ရွှေ့ပြီးနောက် ပ သည် ဗလာ\nကိန်းရှင် သစ် သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ပ ဖြစ်ပါစေ။\nအကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် \"ဗလာ\" ဟု ပြသပါ။\nသစ် ၏ တန်ဖိုး ကို ပြသပါ။\nသစ် လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n\n// လုပ်ဆောင်ချက်အတွင်း ငှားခြင်း\nလုပ်ဆောင်ချက် စုပေါင်း သည်\nလက္ခဏာမဲ့ ကိန်းပြည့် အရေ ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ လက္ခဏာမဲ့ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nကိန်းရှင် ဘူး သည် လက္ခဏာမဲ့ ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ လက္ခဏာမဲ့ ကိန်းပြည့် အရေ ခုစာ နေရာယူ၍ လိပ်စာကို ဘူး တွင် သိမ်းထားမည်။\nအကယ်၍ ဘူး သည် ဗလာ နှင့် ညီလျှင် ၀ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\n၀ မှ အရေ - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ဘူး + န ၏ တန်ဖိုး ကို န ဟု ထားပါ။\nရလဒ် ကို ၀ ဟု ထားပါ။\nကိန်းရှင် လျှောက် သည် ငှားထားသော လက္ခဏာမဲ့ ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ဘူး ၏ တန်ဖိုးအငှား ဖြစ်ကာ လျှောက် သည် ဘူး + အရေ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nရလဒ် ကို ရလဒ် + (လျှောက် ၏ တန်ဖိုး) ဟု ထားပါ။\nပြီးလျှင် လျှောက် ကို လျှောက် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nဘူး လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် စုပေါင်း ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\n"
+source: "// ငှားခြင်းများ\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။\n၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ ပ + န ၏ တန်ဖိုး ကို န * ၁၀ ဟု ထားပါ။\nကိန်းရှင် ကြည့် သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။\nကြည့် + ၁ ၏ တန်ဖိုး ကို ပြသပါ။\n\n// ချဲ့ပြီးမှ ပြန်ငှားခြင်း\nလိပ်စာ ပ ရှိ မင်မိုရီကို ကိန်းပြည့် ၈ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။\nကြည့် ကို ပ ၏ တန်ဖိုးအငှား ဟု ထားပါ။\nကြည့် + ၂ ၏ တန်ဖိုး ကို ပြသပါ။\n\n// ရေးသော ငှားခြင်း နှစ်ခု\nကိန်းရှင် ရှေ့ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။\nကိန်းရှင် နောက် သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ပ + ၃ ဖြစ်ပါစေ။\nရှေ့ သည် နောက် အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် ယာယီ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ရှေ့ ၏ တန်ဖိုး ဖြစ်ပါစေ။\nရှေ့ ၏ တန်ဖိုး ကို နောက် ၏ တန်ဖိုး ဟု ထားပါ။\nနောက် ၏ တန်ဖိုး ကို ယာယီ ဟု ထားပါ။\nရှေ့ ကို ရှေ့ + ၁ ဟု ထားပါ။\nနောက် ကို နောက် - ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ ပ + န ၏ တန်ဖိုး ကို ပြသပါ။\n\n// ကိန်းရှင်တစ်ခု၏ လိပ်စာ\nကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် ညွှန် သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။\nညွှန် ၏ တန်ဖိုး ကို (ညွှန် ၏ တန်ဖိုး) + ၁ ဟု ထားပါ။\nက ကို ပြသပါ။\n\n// ရွှေ့ပြီးနောက် ပ သည် ဗလာ\nကိန်းရှင် သစ် သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ပ ဖြစ်ပါစေ။\nအကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် \"ဗလာ\" ဟု ပြသပါ။\nသစ် ၏ တန်ဖိုး ကို ပြသပါ။\nလိပ်စာ သစ် ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n\n// လုပ်ဆောင်ချက်အတွင်း ငှားခြင်း\nလုပ်ဆောင်ချက် စုပေါင်း သည်\nလက္ခဏာမဲ့ ကိန်းပြည့် အရေ ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ လက္ခဏာမဲ့ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nကိန်းရှင် ဘူး သည် လက္ခဏာမဲ့ ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီတွင် လက္ခဏာမဲ့ ကိန်းပြည့် အရေ ခုစာ နေရာယူ၍ လိပ်စာကို ဘူး တွင် သိမ်းထားမည်။\nအကယ်၍ ဘူး သည် ဗလာ နှင့် ညီလျှင် ၀ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\n၀ မှ အရေ - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ဘူး + န ၏ တန်ဖိုး ကို န ဟု ထားပါ။\nရလဒ် ကို ၀ ဟု ထားပါ။\nကိန်းရှင် လျှောက် သည် ငှားထားသော လက္ခဏာမဲ့ ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ဘူး ၏ တန်ဖိုးအငှား ဖြစ်ကာ လျှောက် သည် ဘူး + အရေ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nရလဒ် ကို ရလဒ် + (လျှောက် ၏ တန်ဖိုး) ဟု ထားပါ။\nပြီးလျှင် လျှောက် ကို လျှောက် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nလိပ်စာ ဘူး ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် စုပေါင်း ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\n"
 module:
   globals:
   - name: ပ
@@ -15,64 +15,64 @@ module:
     kind: isize
     access: loop_var
     span:
-      lo: 365
-      hi: 368
+      lo: 377
+      hi: 380
     addressed: false
   - name: ကြည့်
     kind: "&*isize"
     access: var
     span:
-      lo: 529
-      hi: 544
+      lo: 541
+      hi: 556
     addressed: false
   - name: ရှေ့
     kind: "&*isize"
     access: var
     span:
-      lo: 1392
-      hi: 1404
+      lo: 1405
+      hi: 1417
     addressed: false
   - name: နောက်
     kind: "&*isize"
     access: var
     span:
-      lo: 1644
-      hi: 1659
+      lo: 1657
+      hi: 1672
     addressed: false
   - name: ယာယီ
     kind: isize
     access: var
     span:
-      lo: 2030
-      hi: 2042
+      lo: 2043
+      hi: 2055
     addressed: false
   - name: န
     kind: isize
     access: loop_var
     span:
-      lo: 2656
-      hi: 2659
+      lo: 2669
+      hi: 2672
     addressed: false
   - name: က
     kind: isize
     access: var
     span:
-      lo: 2869
-      hi: 2872
+      lo: 2882
+      hi: 2885
     addressed: true
   - name: ညွှန်
     kind: "&*isize"
     access: var
     span:
-      lo: 3021
-      hi: 3036
+      lo: 3034
+      hi: 3049
     addressed: false
   - name: သစ်
     kind: "*isize"
     access: var
     span:
-      lo: 3490
-      hi: 3499
+      lo: 3503
+      hi: 3512
     addressed: false
   funcs:
   - name: စုပေါင်း
@@ -84,36 +84,36 @@ module:
       kind: usize
       access: var
       span:
-        lo: 4179
-        hi: 4188
+        lo: 4194
+        hi: 4203
       addressed: false
     - name: ရလဒ်
       kind: usize
       access: var
       span:
-        lo: 4085
-        hi: 4109
+        lo: 4100
+        hi: 4124
       addressed: false
     - name: ဘူး
       kind: "*usize"
       access: var
       span:
-        lo: 4448
-        hi: 4457
+        lo: 4463
+        hi: 4472
       addressed: false
     - name: န
       kind: usize
       access: loop_var
       span:
-        lo: 4985
-        hi: 4988
+        lo: 5012
+        hi: 5015
       addressed: false
     - name: လျှောက်
       kind: "&*usize"
       access: var
       span:
-        lo: 5199
-        hi: 5220
+        lo: 5226
+        hi: 5247
       addressed: false
     block:
     - set:
@@ -123,11 +123,11 @@ module:
           node:
             const: 0:usize
           span:
-            lo: 4085
-            hi: 4109
+            lo: 4100
+            hi: 4124
         span:
-          lo: 4085
-          hi: 4109
+          lo: 4100
+          hi: 4124
     - set:
         place: l2
         value:
@@ -135,11 +135,11 @@ module:
           node:
             const: 0x0:ptr
           span:
-            lo: 4448
-            hi: 4457
+            lo: 4463
+            hi: 4472
         span:
-          lo: 4420
-          hi: 4573
+          lo: 4435
+          hi: 4588
     - alloc:
         dest:
           slot: l2
@@ -148,12 +148,12 @@ module:
           node:
             read: l0
           span:
-            lo: 4658
-            hi: 4667
+            lo: 4685
+            hi: 4694
         unit: usize
         span:
-          lo: 4574
-          hi: 4790
+          lo: 4589
+          hi: 4817
     - if:
         cond:
           kind: bool
@@ -165,18 +165,18 @@ module:
                 node:
                   read: l2
                 span:
-                  lo: 4807
-                  hi: 4816
+                  lo: 4834
+                  hi: 4843
               rhs:
                 kind: "*usize"
                 node:
                   const: 0x0:ptr
                 span:
-                  lo: 4827
-                  hi: 4836
+                  lo: 4854
+                  hi: 4863
           span:
-            lo: 4807
-            hi: 4859
+            lo: 4834
+            hi: 4886
         then:
         - return:
             value:
@@ -184,16 +184,16 @@ module:
               node:
                 const: 0:usize
               span:
-                lo: 4875
-                hi: 4878
+                lo: 4902
+                hi: 4905
             span:
-              lo: 4875
-              hi: 4947
+              lo: 4902
+              hi: 4974
         els:
         []
         span:
-          lo: 4791
-          hi: 4947
+          lo: 4818
+          hi: 4974
     - counted:
         var: l3
         from:
@@ -201,8 +201,8 @@ module:
           node:
             const: 0:usize
           span:
-            lo: 4948
-            hi: 4951
+            lo: 4975
+            hi: 4978
         to:
           kind: usize
           node:
@@ -213,18 +213,18 @@ module:
                 node:
                   read: l0
                 span:
-                  lo: 4959
-                  hi: 4968
+                  lo: 4986
+                  hi: 4995
               rhs:
                 kind: usize
                 node:
                   const: 1:usize
                 span:
-                  lo: 4971
-                  hi: 4974
+                  lo: 4998
+                  hi: 5001
           span:
-            lo: 4959
-            hi: 4974
+            lo: 4986
+            hi: 5001
         step: null
         mode: count
         block:
@@ -238,31 +238,31 @@ module:
                     node:
                       read: l2
                     span:
-                      lo: 5036
-                      hi: 5045
+                      lo: 5063
+                      hi: 5072
                   offset:
                     kind: usize
                     node:
                       read: l3
                     span:
-                      lo: 5048
-                      hi: 5051
+                      lo: 5075
+                      hi: 5078
               span:
-                lo: 5036
-                hi: 5051
+                lo: 5063
+                hi: 5078
             value:
               kind: usize
               node:
                 read: l3
               span:
-                lo: 5088
-                hi: 5091
+                lo: 5115
+                hi: 5118
             span:
-              lo: 5036
-              hi: 5117
+              lo: 5063
+              hi: 5144
         span:
-          lo: 4948
-          hi: 5117
+          lo: 4975
+          hi: 5144
     - set:
         place: l1
         value:
@@ -270,11 +270,11 @@ module:
           node:
             const: 0:usize
           span:
-            lo: 5141
-            hi: 5144
+            lo: 5168
+            hi: 5171
         span:
-          lo: 5118
-          hi: 5170
+          lo: 5145
+          hi: 5197
     - loop:
         init:
         - set:
@@ -288,14 +288,14 @@ module:
                     node:
                       read: l2
                     span:
-                      lo: 5387
-                      hi: 5396
+                      lo: 5414
+                      hi: 5423
               span:
-                lo: 5387
-                hi: 5437
+                lo: 5414
+                hi: 5464
             span:
-              lo: 5199
-              hi: 5339
+              lo: 5226
+              hi: 5366
         cond:
           kind: bool
           node:
@@ -306,8 +306,8 @@ module:
                 node:
                   read: l4
                 span:
-                  lo: 5457
-                  hi: 5478
+                  lo: 5484
+                  hi: 5505
               rhs:
                 kind: "&*usize"
                 node:
@@ -317,21 +317,21 @@ module:
                       node:
                         read: l2
                       span:
-                        lo: 5489
-                        hi: 5498
+                        lo: 5516
+                        hi: 5525
                     offset:
                       kind: usize
                       node:
                         read: l0
                       span:
-                        lo: 5501
-                        hi: 5510
+                        lo: 5528
+                        hi: 5537
                 span:
-                  lo: 5489
-                  hi: 5510
+                  lo: 5516
+                  hi: 5537
           span:
-            lo: 5457
-            hi: 5536
+            lo: 5484
+            hi: 5563
         update:
         - set:
             place: l4
@@ -344,21 +344,21 @@ module:
                     node:
                       read: l4
                     span:
-                      lo: 5812
-                      hi: 5833
+                      lo: 5839
+                      hi: 5860
                   offset:
                     kind: isize
                     node:
                       const: 1:isize
                     span:
-                      lo: 5836
-                      hi: 5839
+                      lo: 5863
+                      hi: 5866
               span:
-                lo: 5812
-                hi: 5839
+                lo: 5839
+                hi: 5866
             span:
-              lo: 5780
-              hi: 5865
+              lo: 5807
+              hi: 5892
         block:
         - set:
             place: l1
@@ -372,8 +372,8 @@ module:
                     node:
                       read: l1
                     span:
-                      lo: 5661
-                      hi: 5673
+                      lo: 5688
+                      hi: 5700
                   rhs:
                     kind: usize
                     node:
@@ -383,40 +383,40 @@ module:
                           node:
                             read: l4
                           span:
-                            lo: 5677
-                            hi: 5698
+                            lo: 5704
+                            hi: 5725
                     span:
-                      lo: 5677
-                      hi: 5724
+                      lo: 5704
+                      hi: 5751
               span:
-                lo: 5661
-                hi: 5725
+                lo: 5688
+                hi: 5752
             span:
-              lo: 5638
-              hi: 5751
+              lo: 5665
+              hi: 5778
         span:
-          lo: 5171
-          hi: 5948
+          lo: 5198
+          hi: 5975
     - free:
         dest:
           slot: l2
         span:
-          lo: 5949
-          hi: 6083
+          lo: 5976
+          hi: 6112
     - return:
         value:
           kind: usize
           node:
             read: l1
           span:
-            lo: 4227
-            hi: 6166
+            lo: 4242
+            hi: 6195
         span:
-          lo: 4227
-          hi: 6166
+          lo: 4242
+          hi: 6195
     span:
-      lo: 4045
-      hi: 6166
+      lo: 4060
+      hi: 6195
   main:
   - set:
       place: g0
@@ -438,12 +438,12 @@ module:
         node:
           const: 4:usize
         span:
-          lo: 219
-          hi: 222
+          lo: 231
+          hi: 234
       unit: isize
       span:
         lo: 163
-        hi: 339
+        hi: 351
   - counted:
       var: g1
       from:
@@ -451,15 +451,15 @@ module:
         node:
           const: 0:isize
         span:
-          lo: 340
-          hi: 343
+          lo: 352
+          hi: 355
       to:
         kind: isize
         node:
           const: 3:isize
         span:
-          lo: 351
-          hi: 354
+          lo: 363
+          hi: 366
       step: null
       mode: count
       block:
@@ -473,18 +473,18 @@ module:
                   node:
                     read: g0
                   span:
-                    lo: 416
-                    hi: 419
+                    lo: 428
+                    hi: 431
                 offset:
                   kind: isize
                   node:
                     read: g1
                   span:
-                    lo: 422
-                    hi: 425
+                    lo: 434
+                    hi: 437
             span:
-              lo: 416
-              hi: 425
+              lo: 428
+              hi: 437
           value:
             kind: isize
             node:
@@ -495,24 +495,24 @@ module:
                   node:
                     read: g1
                   span:
-                    lo: 462
-                    hi: 465
+                    lo: 474
+                    hi: 477
                 rhs:
                   kind: isize
                   node:
                     const: 10:isize
                   span:
-                    lo: 468
-                    hi: 474
+                    lo: 480
+                    hi: 486
             span:
-              lo: 462
-              hi: 474
+              lo: 474
+              hi: 486
           span:
-            lo: 416
-            hi: 500
+            lo: 428
+            hi: 512
       span:
-        lo: 340
-        hi: 500
+        lo: 352
+        hi: 512
   - set:
       place: g2
       value:
@@ -524,14 +524,14 @@ module:
               node:
                 read: g0
               span:
-                lo: 683
-                hi: 686
+                lo: 695
+                hi: 698
         span:
-          lo: 683
-          hi: 727
+          lo: 695
+          hi: 739
       span:
-        lo: 501
-        hi: 755
+        lo: 513
+        hi: 767
   - print:
       value:
         expr:
@@ -547,24 +547,24 @@ module:
                       node:
                         read: g2
                       span:
-                        lo: 756
-                        hi: 771
+                        lo: 768
+                        hi: 783
                     offset:
                       kind: isize
                       node:
                         const: 1:isize
                       span:
-                        lo: 774
-                        hi: 777
+                        lo: 786
+                        hi: 789
                 span:
-                  lo: 756
-                  hi: 777
+                  lo: 768
+                  hi: 789
           span:
-            lo: 756
-            hi: 803
+            lo: 768
+            hi: 815
       span:
-        lo: 756
-        hi: 832
+        lo: 768
+        hi: 844
   - resize:
       dest:
         slot: g0
@@ -573,12 +573,12 @@ module:
         node:
           const: 8:usize
         span:
-          lo: 1005
-          hi: 1008
+          lo: 1018
+          hi: 1021
       unit: isize
       span:
-        lo: 908
-        hi: 1119
+        lo: 920
+        hi: 1132
   - set:
       place: g2
       value:
@@ -590,14 +590,14 @@ module:
               node:
                 read: g0
               span:
-                lo: 1146
-                hi: 1149
+                lo: 1159
+                hi: 1162
         span:
-          lo: 1146
-          hi: 1190
+          lo: 1159
+          hi: 1203
       span:
-        lo: 1120
-        hi: 1216
+        lo: 1133
+        hi: 1229
   - print:
       value:
         expr:
@@ -613,24 +613,24 @@ module:
                       node:
                         read: g2
                       span:
-                        lo: 1217
-                        hi: 1232
+                        lo: 1230
+                        hi: 1245
                     offset:
                       kind: isize
                       node:
                         const: 2:isize
                       span:
-                        lo: 1235
-                        hi: 1238
+                        lo: 1248
+                        hi: 1251
                 span:
-                  lo: 1217
-                  hi: 1238
+                  lo: 1230
+                  hi: 1251
           span:
-            lo: 1217
-            hi: 1264
+            lo: 1230
+            hi: 1277
       span:
-        lo: 1217
-        hi: 1293
+        lo: 1230
+        hi: 1306
   - set:
       place: g3
       value:
@@ -642,14 +642,14 @@ module:
               node:
                 read: g0
               span:
-                lo: 1543
-                hi: 1546
+                lo: 1556
+                hi: 1559
         span:
-          lo: 1543
-          hi: 1587
+          lo: 1556
+          hi: 1600
       span:
-        lo: 1364
-        hi: 1615
+        lo: 1377
+        hi: 1628
   - set:
       place: g4
       value:
@@ -661,21 +661,21 @@ module:
               node:
                 read: g0
               span:
-                lo: 1798
-                hi: 1801
+                lo: 1811
+                hi: 1814
             offset:
               kind: isize
               node:
                 const: 3:isize
               span:
-                lo: 1804
-                hi: 1807
+                lo: 1817
+                hi: 1820
         span:
-          lo: 1798
-          hi: 1807
+          lo: 1811
+          hi: 1820
       span:
-        lo: 1616
-        hi: 1835
+        lo: 1629
+        hi: 1848
   - loop:
       init: []
       cond:
@@ -688,18 +688,18 @@ module:
               node:
                 read: g3
               span:
-                lo: 1836
-                hi: 1848
+                lo: 1849
+                hi: 1861
             rhs:
               kind: "&*isize"
               node:
                 read: g4
               span:
-                lo: 1859
-                hi: 1874
+                lo: 1872
+                hi: 1887
         span:
-          lo: 1836
-          hi: 1900
+          lo: 1849
+          hi: 1913
       update:
       []
       block:
@@ -714,22 +714,22 @@ module:
                   node:
                     read: g3
                   span:
-                    lo: 2131
-                    hi: 2143
+                    lo: 2144
+                    hi: 2156
             span:
-              lo: 2131
-              hi: 2169
+              lo: 2144
+              hi: 2182
           span:
-            lo: 2002
-            hi: 2197
+            lo: 2015
+            hi: 2210
       - store:
           addr:
             kind: "&*isize"
             node:
               read: g3
             span:
-              lo: 2198
-              hi: 2210
+              lo: 2211
+              hi: 2223
           value:
             kind: isize
             node:
@@ -739,32 +739,32 @@ module:
                   node:
                     read: g4
                   span:
-                    lo: 2247
-                    hi: 2262
+                    lo: 2260
+                    hi: 2275
             span:
-              lo: 2247
-              hi: 2288
+              lo: 2260
+              hi: 2301
           span:
-            lo: 2198
-            hi: 2314
+            lo: 2211
+            hi: 2327
       - store:
           addr:
             kind: "&*isize"
             node:
               read: g4
             span:
-              lo: 2315
-              hi: 2330
+              lo: 2328
+              hi: 2343
           value:
             kind: isize
             node:
               read: g5
             span:
-              lo: 2367
-              hi: 2379
+              lo: 2380
+              hi: 2392
           span:
-            lo: 2315
-            hi: 2405
+            lo: 2328
+            hi: 2418
       - set:
           place: g3
           value:
@@ -776,21 +776,21 @@ module:
                   node:
                     read: g3
                   span:
-                    lo: 2429
-                    hi: 2441
+                    lo: 2442
+                    hi: 2454
                 offset:
                   kind: isize
                   node:
                     const: 1:isize
                   span:
-                    lo: 2444
-                    hi: 2447
+                    lo: 2457
+                    hi: 2460
             span:
-              lo: 2429
-              hi: 2447
+              lo: 2442
+              hi: 2460
           span:
-            lo: 2406
-            hi: 2473
+            lo: 2419
+            hi: 2486
       - set:
           place: g4
           value:
@@ -802,24 +802,24 @@ module:
                   node:
                     read: g4
                   span:
-                    lo: 2500
-                    hi: 2515
+                    lo: 2513
+                    hi: 2528
                 offset:
                   kind: isize
                   node:
                     const: -1:isize
                   span:
-                    lo: 2518
-                    hi: 2521
+                    lo: 2531
+                    hi: 2534
             span:
-              lo: 2500
-              hi: 2521
+              lo: 2513
+              hi: 2534
           span:
-            lo: 2474
-            hi: 2547
+            lo: 2487
+            hi: 2560
       span:
-        lo: 1836
-        hi: 2630
+        lo: 1849
+        hi: 2643
   - counted:
       var: g6
       from:
@@ -827,15 +827,15 @@ module:
         node:
           const: 0:isize
         span:
-          lo: 2631
-          hi: 2634
+          lo: 2644
+          hi: 2647
       to:
         kind: isize
         node:
           const: 3:isize
         span:
-          lo: 2642
-          hi: 2645
+          lo: 2655
+          hi: 2658
       step: null
       mode: count
       block:
@@ -854,27 +854,27 @@ module:
                           node:
                             read: g0
                           span:
-                            lo: 2707
-                            hi: 2710
+                            lo: 2720
+                            hi: 2723
                         offset:
                           kind: isize
                           node:
                             read: g6
                           span:
-                            lo: 2713
-                            hi: 2716
+                            lo: 2726
+                            hi: 2729
                     span:
-                      lo: 2707
-                      hi: 2716
+                      lo: 2720
+                      hi: 2729
               span:
-                lo: 2707
-                hi: 2742
+                lo: 2720
+                hi: 2755
           span:
-            lo: 2707
-            hi: 2771
+            lo: 2720
+            hi: 2784
       span:
-        lo: 2631
-        hi: 2771
+        lo: 2644
+        hi: 2784
   - set:
       place: g7
       value:
@@ -882,11 +882,11 @@ module:
         node:
           const: 5:isize
         span:
-          lo: 2961
-          hi: 2964
+          lo: 2974
+          hi: 2977
       span:
-        lo: 2841
-        hi: 2992
+        lo: 2854
+        hi: 3005
   - set:
       place: g8
       value:
@@ -894,19 +894,19 @@ module:
         node:
           addr_of: g7
         span:
-          lo: 3175
-          hi: 3201
+          lo: 3188
+          hi: 3214
       span:
-        lo: 2993
-        hi: 3229
+        lo: 3006
+        hi: 3242
   - store:
       addr:
         kind: "&*isize"
         node:
           read: g8
         span:
-          lo: 3230
-          hi: 3245
+          lo: 3243
+          hi: 3258
       value:
         kind: isize
         node:
@@ -921,24 +921,24 @@ module:
                     node:
                       read: g8
                     span:
-                      lo: 3283
-                      hi: 3298
+                      lo: 3296
+                      hi: 3311
               span:
-                lo: 3283
-                hi: 3324
+                lo: 3296
+                hi: 3337
             rhs:
               kind: isize
               node:
                 const: 1:isize
               span:
-                lo: 3328
-                hi: 3331
+                lo: 3341
+                hi: 3344
         span:
-          lo: 3282
-          hi: 3331
+          lo: 3295
+          hi: 3344
       span:
-        lo: 3230
-        hi: 3357
+        lo: 3243
+        hi: 3370
   - print:
       value:
         expr:
@@ -946,11 +946,11 @@ module:
           node:
             read: g7
           span:
-            lo: 3358
-            hi: 3361
+            lo: 3371
+            hi: 3374
       span:
-        lo: 3358
-        hi: 3390
+        lo: 3371
+        hi: 3403
   - set:
       place: g9
       value:
@@ -962,14 +962,14 @@ module:
               node:
                 addr_of: g0
               span:
-                lo: 3607
-                hi: 3610
+                lo: 3620
+                hi: 3623
         span:
-          lo: 3607
-          hi: 3610
+          lo: 3620
+          hi: 3623
       span:
-        lo: 3462
-        hi: 3638
+        lo: 3475
+        hi: 3651
   - if:
       cond:
         kind: bool
@@ -981,30 +981,30 @@ module:
               node:
                 read: g0
               span:
-                lo: 3655
-                hi: 3658
+                lo: 3668
+                hi: 3671
             rhs:
               kind: "*isize"
               node:
                 const: 0x0:ptr
               span:
-                lo: 3669
-                hi: 3678
+                lo: 3682
+                hi: 3691
         span:
-          lo: 3655
-          hi: 3701
+          lo: 3668
+          hi: 3714
       then:
       - print:
           value:
             text: ဗလာ
           span:
-            lo: 3717
-            hi: 3754
+            lo: 3730
+            hi: 3767
       els:
       []
       span:
-        lo: 3639
-        hi: 3754
+        lo: 3652
+        hi: 3767
   - print:
       value:
         expr:
@@ -1016,20 +1016,20 @@ module:
                 node:
                   read: g9
                 span:
-                  lo: 3755
-                  hi: 3764
+                  lo: 3768
+                  hi: 3777
           span:
-            lo: 3755
-            hi: 3790
+            lo: 3768
+            hi: 3803
       span:
-        lo: 3755
-        hi: 3819
+        lo: 3768
+        hi: 3832
   - free:
       dest:
         slot: g9
       span:
-        lo: 3820
-        hi: 3954
+        lo: 3833
+        hi: 3969
   - print:
       value:
         expr:
@@ -1043,17 +1043,17 @@ module:
                 node:
                   const: 5:usize
                 span:
-                  lo: 6243
-                  hi: 6246
+                  lo: 6272
+                  hi: 6275
           span:
-            lo: 6168
-            hi: 6324
+            lo: 6197
+            hi: 6353
       span:
-        lo: 6168
-        hi: 6353
+        lo: 6197
+        hi: 6382
   span:
     lo: 0
-    hi: 6354
+    hi: 6383
 digests:
 - name: စုပေါင်း
   params: 1

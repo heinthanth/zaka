@@ -293,9 +293,8 @@ error[ZK0107]: a character literal must hold one character, found 2
 ## Reserved words
 
 The words that Zaka gives a meaning to cannot be used as names. [Reserved
-words](../reference/reserved-words.md) lists each of them. A reserved word that ends in
-the written `မည်` also takes the spoken `မယ်`: `ပြန်ပေးမည်` and `ပြန်ပေးမယ်` are the
-same word. To use a reserved word as a name, put it between backticks.
+words](../reference/reserved-words.md) lists each of them. To use a reserved word as a
+name, put it between backticks.
 
 Each diagnostic of this page has a code from `ZK0101` to `ZK0109`. [Error
 messages](../reference/errors.md) lists them with the others.

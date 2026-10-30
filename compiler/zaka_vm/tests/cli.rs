@@ -146,7 +146,7 @@ fn the_mem_check_flag_picks_error_warn_or_off()
 #[test]
 fn the_leaks_flag_lists_unfreed_blocks_and_keeps_success()
 {
-    let text = "ကိန်းရှင် p သည် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ၁၆ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။";
+    let text = "ကိန်းရှင် p သည် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီတွင် ၁၆ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။";
     let (code, stdout, stderr) = run_vm(&["--mem-check", "off", "--leaks"], text);
     assert_eq!(code, ExitCode::Success, "{stderr}");
     assert!(stdout.is_empty(), "{stdout}");
@@ -161,8 +161,8 @@ fn the_leaks_flag_lists_unfreed_blocks_and_keeps_success()
 #[test]
 fn the_max_heap_flag_caps_allocation()
 {
-    let text = "ကိန်းရှင် p သည် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ၆၄ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။\np \
-                ကို ပြသပါ။";
+    let text = "ကိန်းရှင် p သည် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီတွင် ၆၄ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် \
+                သိမ်းထားမည်။\np ကို ပြသပါ။";
     let (code, stdout, stderr) =
         run_vm(&["--mem-check", "off", "--max-heap", "16"], text);
     assert_eq!(code, ExitCode::Success, "{stderr}");

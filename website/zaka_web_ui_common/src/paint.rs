@@ -184,11 +184,11 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Mem
         | Kw::TakeSpace
         | Kw::At
-        | Kw::AtAddress
+        | Kw::Located
         | Kw::SoThat
         | Kw::AllocTarget
-        | Kw::ResizeHead
-        | Kw::FreeHead
+        | Kw::AllocHead
+        | Kw::HeapHead
         | Kw::StructOpen
         | Kw::Plural
         | Kw::FieldsClose

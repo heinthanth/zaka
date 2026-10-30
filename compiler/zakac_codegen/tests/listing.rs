@@ -48,7 +48,7 @@ fn quotes_escape_control_characters()
 fn heap_ops_list_their_operands()
 {
     let out = listing(&emit_text(
-        "ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် \
+        "ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် \
          သိမ်းထားမည်။\np ၏ တန်ဖိုး ကို ပြသပါ။",
     ));
     assert!(out.contains("globals\n  g0 p *isize\n"), "{out}");

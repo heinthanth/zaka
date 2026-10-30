@@ -257,15 +257,15 @@ token:
 | a block opener | `parse_block` | opener, `။`, statements until the closer, closer, `။` |
 | `ကွင်းဆက်`, `နောက်တစ်ကြိမ်ဆီသို့` | break, continue | |
 | `ပြန်ပေးပါ` | a bare return | |
-| `မင်မိုရီ` | `parse_alloc` | the allocation sentence |
+| `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
+| `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ မင်မိုရီကို`, then `ပြန်လည်စွန့်လွှတ်မည်` for a release or a size for a resize |
 | a string | `parse_print_str` | `STR ကို ပြသပါ။` or `ဟု`; a string in another place is ZK0223 |
 | an `else`, an update, a closer with no opener | an error | ZK0211, ZK0212, ZK0226 |
 | all other tokens | `parse_expr_headed` | a clause; see below |
 
 `parse_expr_headed` runs the clause engine in statement mode. If a statement verb closed
 the clause, the statement is built. Otherwise the clause is a value, and the next token
-decides: a resize or release head (`လိပ်စာရှိ ...`) makes a heap sentence about that address; `နေသရွေ့`
-makes a while loop; `မှ` makes a counted loop (`from မှ to အထိ (step စီ)? NAME အနေဖြင့်
+decides: `နေသရွေ့` makes a while loop; `မှ` makes a counted loop (`from မှ to အထိ (step စီ)? NAME အနေဖြင့်
 mode block`); all else is ZK0203, which lists the endings a statement can have.
 
 Blocks and branches share `parse_branch`: with no opener, it reads one sentence into a

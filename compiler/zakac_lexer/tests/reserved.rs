@@ -96,9 +96,8 @@ fn spec_compounds_split()
         ("မငယ်ပါ", &[Kw::NotLess, Kw::Pa]),
         ("မှတ်ချက်ကို", &[Kw::Note, Kw::Ko]),
         ("လိပ်စာကို", &[Kw::Address, Kw::Ko]),
-        ("လိပ်စာရှိကို", &[Kw::AtAddress, Kw::Ko]),
-        ("လိပ်စာရှိမင်မိုရီကို", &[Kw::AtAddress, Kw::Mem, Kw::Ko]),
-        ("လိပ်စာရှိမှတ်ဉာဏ်ကို", &[Kw::AtAddress, Kw::Mem, Kw::Ko]),
+        ("ရှိမင်မိုရီကို", &[Kw::Located, Kw::Mem, Kw::Ko]),
+        ("ရှိမှတ်ဉာဏ်ကို", &[Kw::Located, Kw::Mem, Kw::Ko]),
         ("တန်ဖိုးအငှားကို", &[Kw::Lend, Kw::Ko]),
         ("လိပ်စာအကြမ်းကို", &[Kw::RawAddress, Kw::Ko]),
     ];
@@ -111,7 +110,7 @@ fn spec_compounds_split()
 }
 
 #[test]
-fn spoken_endings_lex_as_the_written_word()
+fn spoken_endings_are_not_reserved()
 {
     let triples = [
         ("လုပ်ဆောင်မည်", "လုပ်ဆောင်မယ်", Kw::WillDo),
@@ -122,7 +121,7 @@ fn spoken_endings_lex_as_the_written_word()
     ];
     do_for!((written, spoken, kw) in triples, {
         assert_eq!(lookup(written), Some(kw), "{written}");
-        assert_eq!(lookup(spoken), Some(kw), "{spoken}");
+        assert_eq!(lookup(spoken), None, "{spoken}");
     });
     assert_eq!(lookup("မင်မိုရီ"), Some(Kw::Mem));
     assert_eq!(lookup("မှတ်ဉာဏ်"), Some(Kw::Mem));

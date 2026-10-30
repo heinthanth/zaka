@@ -5,7 +5,6 @@ use zakac_ast::stmt::FreeStmt;
 use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
-use zakac_ast::visit::Node;
 use zakac_diagnostics::Diagnostic;
 use zakac_i18n::t;
 use zakac_lexer::classifiers::COUNT_ENDING;
@@ -20,8 +19,8 @@ use crate::parser::Parser;
 
 impl Parser<'_>
 {
-    /// Parse `မင်မိုရီ <size> နေရာယူ၍ လိပ်စာကို <place> တွင် သိမ်းထားမည်။`;
-    /// the current token is `မင်မိုရီ`.
+    /// Parse `မင်မိုရီတွင် <size> နေရာယူ၍ လိပ်စာကို <place> တွင် သိမ်းထားမည်။`;
+    /// the current token is `မင်မိုရီတွင်`.
     ///
     /// # Returns
     ///
@@ -40,45 +39,56 @@ impl Parser<'_>
         Ok(Stmt::Alloc(node))
     }
 
-    /// Parse `လိပ်စာရှိကို မင်မိုရီ <size> ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။`
-    /// after the place; the current token is `လိပ်စာရှိကို`.
+    /// Parse `လိပ်စာ <place> ရှိ မင်မိုရီကို` and the rest of a resize or a
+    /// release; the current token is `လိပ်စာ`. `ပြန်လည်စွန့်လွှတ်မည်` after the
+    /// head makes a release, and a size makes a resize.
+    ///
+    /// # Returns
+    ///
+    /// The resize or the release, or a diagnostic.
+    pub(crate) fn parse_heap(&mut self) -> PResult<Stmt>
+    {
+        let start = self.bump().span;
+        let target = self.parse_clause_expr()?;
+        self.expect(Kw::HeapHead)?;
+        ret_if!(self.at(Kw::WillRelease), self.parse_free_end(start, target));
+        self.parse_resize_end(start, target)
+    }
+
+    /// Parse `<size> ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။` after the head.
     ///
     /// # Arguments
     ///
+    /// * `start` - The span of `လိပ်စာ`.
     /// * `target` - The place that holds the address.
     ///
     /// # Returns
     ///
     /// The reallocation, or a diagnostic.
-    pub(crate) fn parse_resize_tail(&mut self, target: Expr) -> PResult<Stmt>
+    fn parse_resize_end(&mut self, start: Span, target: Expr) -> PResult<Stmt>
     {
-        self.bump();
-        self.expect(Kw::Mem)?;
         let size = self.parse_size_arg()?;
         self.expect(Kw::SoThat)?;
         self.expect(Kw::WillResize)?;
-        let stop = self.expect_stop()?;
-        let span = target.span().to(&stop.span);
+        let span = start.to(&self.expect_stop()?.span);
         let node = ResizeStmt::builder().target(target).size(size).span(span).build();
         Ok(Stmt::Resize(node))
     }
 
-    /// Parse `လိပ်စာရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။` after the place;
-    /// the current token is `လိပ်စာရှိ မင်မိုရီကို`.
+    /// Parse `ပြန်လည်စွန့်လွှတ်မည်။` after the head.
     ///
     /// # Arguments
     ///
+    /// * `start` - The span of `လိပ်စာ`.
     /// * `target` - The address to release.
     ///
     /// # Returns
     ///
     /// The release, or a diagnostic.
-    pub(crate) fn parse_free_tail(&mut self, target: Expr) -> PResult<Stmt>
+    fn parse_free_end(&mut self, start: Span, target: Expr) -> PResult<Stmt>
     {
         self.bump();
-        self.expect(Kw::WillRelease)?;
-        let stop = self.expect_stop()?;
-        let span = target.span().to(&stop.span);
+        let span = start.to(&self.expect_stop()?.span);
         Ok(Stmt::Free(FreeStmt::builder().target(target).span(span).build()))
     }
 

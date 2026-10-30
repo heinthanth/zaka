@@ -16,12 +16,12 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Following, Kw::ListKo, Kw::Call], Kw::BlockOpen),
     // ... ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
     (&[Kw::Result, Kw::As, Kw::Return], Kw::ReturnValue),
-    // မင်မိုရီ ... ဘိုက်စာ|ခုစာ နေရာယူ၍ လိပ်စာကို ... တွင် သိမ်းထားမည်။
+    // မင်မိုရီတွင် ... ဘိုက်စာ|ခုစာ နေရာယူ၍ လိပ်စာကို ... တွင် သိမ်းထားမည်။
     (&[Kw::TakeSpace, Kw::Address, Kw::Ko], Kw::AllocTarget),
-    // ... လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-    (&[Kw::AtAddress, Kw::Mem, Kw::Ko], Kw::FreeHead),
-    // ... လိပ်စာရှိကို မင်မိုရီ ... ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
-    (&[Kw::AtAddress, Kw::Ko], Kw::ResizeHead),
+    (&[Kw::Mem, Kw::At], Kw::AllocHead),
+    // လိပ်စာ ... ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+    // လိပ်စာ ... ရှိ မင်မိုရီကို ... ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
+    (&[Kw::Located, Kw::Mem, Kw::Ko], Kw::HeapHead),
     // လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?။
     (&[Kw::Tasks, Kw::Done], Kw::BlockClose),
     // ... ကို ... ဖြင့် စားသော စားလဒ်

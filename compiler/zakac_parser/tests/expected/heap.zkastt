@@ -1,7 +1,7 @@
 # zakac-parse-artifact v1
 name:
   Custom: heap.zaka
-source: "// လိပ်စာများမှတစ်ဆင့် တန်ဖိုး နှစ်ခုကို လဲလှယ်ခြင်း\nလုပ်ဆောင်ချက် လဲလှယ် သည်\nငှားထားသော ကိန်းပြည့် လိပ်စာ က နှင့် ငှားထားသော ကိန်းပြည့် လိပ်စာ ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ယာယီ သည် ကိန်းပြည့် က ၏ တန်ဖိုး ဖြစ်ပါစေ။\nက ၏ တန်ဖိုး ကို ခ ၏ တန်ဖိုး ဟု ထားပါ။\nခ ၏ တန်ဖိုး ကို ယာယီ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nကိန်းရှင် ပထမ သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\nကိန်းရှင် ဒုတိယ သည် ကိန်းပြည့် ၂ ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် လဲလှယ် ကို ပထမ ၏ လိပ်စာ၊ ဒုတိယ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။\nပထမ ကို ပြသပါ။\nဒုတိယ ကို ပြသပါ။\n\n// လိုသလို ချဲ့နိုင်သော စာရင်း\nကိန်းရှင် ဆံ့နိုင်ရေ သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၄ ဖြစ်ပါစေ။\nကိန်းရှင် အရေအတွက် သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ကိန်းပြည့် ဆံ့နိုင်ရေ ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် သိမ်းထားမည်။\nအကယ်၍ ကိန်းများ သည် ဗလာ နှင့် ညီလျှင် \"နေရာ မရပါ\" ဟု ပြသပါ။\n\n၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အရေအတွက် သည် ဆံ့နိုင်ရေ နှင့် ညီလျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nဆံ့နိုင်ရေ ကို ဆံ့နိုင်ရေ * ၂ ဟု ထားပါ။\nကိန်းများ လိပ်စာရှိကို မင်မိုရီ ကိန်းပြည့် ဆံ့နိုင်ရေ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nကိန်းများ + အရေအတွက် ၏ တန်ဖိုး ကို ကိန်း * ကိန်း ဟု ထားပါ။\nအရေအတွက် ကို အရေအတွက် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nကိန်းရှင် နံပါတ် သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၀ ဖြစ်ပြီး နံပါတ် သည် အရေအတွက် အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို ပြသပါ။\nပြီးလျှင် နံပါတ် ကို နံပါတ် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nကိန်းများ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n\n// ဘိုက် အကွာအဝေးများဖြင့် ကိုယ်တိုင် ဖွဲ့စည်းသော မှတ်တမ်း\nကိန်းရှင် ပစ္စည်း သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီ ၈ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို ပစ္စည်း တွင် သိမ်းထားမည်။\nပစ္စည်း ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။\nကိန်းရှင် ဈေးနှုန်း သည် ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nဈေးနှုန်း ကို ပစ္စည်း + ၄ ကို ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။\nဈေးနှုန်း ၏ တန်ဖိုး ကို ၁၅၀၀ ဟု ထားပါ။\nဈေးနှုန်း ၏ တန်ဖိုး ကို ပြသပါ။\nပစ္စည်း လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n"
+source: "// လိပ်စာများမှတစ်ဆင့် တန်ဖိုး နှစ်ခုကို လဲလှယ်ခြင်း\nလုပ်ဆောင်ချက် လဲလှယ် သည်\nငှားထားသော ကိန်းပြည့် လိပ်စာ က နှင့် ငှားထားသော ကိန်းပြည့် လိပ်စာ ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ယာယီ သည် ကိန်းပြည့် က ၏ တန်ဖိုး ဖြစ်ပါစေ။\nက ၏ တန်ဖိုး ကို ခ ၏ တန်ဖိုး ဟု ထားပါ။\nခ ၏ တန်ဖိုး ကို ယာယီ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nကိန်းရှင် ပထမ သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\nကိန်းရှင် ဒုတိယ သည် ကိန်းပြည့် ၂ ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် လဲလှယ် ကို ပထမ ၏ လိပ်စာ၊ ဒုတိယ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။\nပထမ ကို ပြသပါ။\nဒုတိယ ကို ပြသပါ။\n\n// လိုသလို ချဲ့နိုင်သော စာရင်း\nကိန်းရှင် ဆံ့နိုင်ရေ သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၄ ဖြစ်ပါစေ။\nကိန်းရှင် အရေအတွက် သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် ဆံ့နိုင်ရေ ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် သိမ်းထားမည်။\nအကယ်၍ ကိန်းများ သည် ဗလာ နှင့် ညီလျှင် \"နေရာ မရပါ\" ဟု ပြသပါ။\n\n၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အရေအတွက် သည် ဆံ့နိုင်ရေ နှင့် ညီလျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nဆံ့နိုင်ရေ ကို ဆံ့နိုင်ရေ * ၂ ဟု ထားပါ။\nလိပ်စာ ကိန်းများ ရှိ မင်မိုရီကို ကိန်းပြည့် ဆံ့နိုင်ရေ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nကိန်းများ + အရေအတွက် ၏ တန်ဖိုး ကို ကိန်း * ကိန်း ဟု ထားပါ။\nအရေအတွက် ကို အရေအတွက် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nကိန်းရှင် နံပါတ် သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၀ ဖြစ်ပြီး နံပါတ် သည် အရေအတွက် အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို ပြသပါ။\nပြီးလျှင် နံပါတ် ကို နံပါတ် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလိပ်စာ ကိန်းများ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n\n// ဘိုက် အကွာအဝေးများဖြင့် ကိုယ်တိုင် ဖွဲ့စည်းသော မှတ်တမ်း\nကိန်းရှင် ပစ္စည်း သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီတွင် ၈ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို ပစ္စည်း တွင် သိမ်းထားမည်။\nပစ္စည်း ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။\nကိန်းရှင် ဈေးနှုန်း သည် ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။\nဈေးနှုန်း ကို ပစ္စည်း + ၄ ကို ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။\nဈေးနှုန်း ၏ တန်ဖိုး ကို ၁၅၀၀ ဟု ထားပါ။\nဈေးနှုန်း ၏ တန်ဖိုး ကို ပြသပါ။\nလိပ်စာ ပစ္စည်း ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n"
 program:
   stmts:
   - fn:
@@ -377,34 +377,34 @@ program:
             id: 19
             name: ဆံ့နိုင်ရေ
             span:
-              lo: 2053
-              hi: 2083
+              lo: 2065
+              hi: 2095
         unit:
           base: int
           bits: null
           signed: null
           wraps: []
           span:
-            lo: 2022
-            hi: 2052
+            lo: 2034
+            hi: 2064
         classifier:
           name: ခု
           span:
-            lo: 2084
-            hi: 2096
+            lo: 2096
+            hi: 2108
         span:
-          lo: 2022
-          hi: 2096
+          lo: 2034
+          hi: 2108
       target:
         name:
           id: 20
           name: ကိန်းများ
           span:
-            lo: 2147
-            hi: 2174
+            lo: 2159
+            hi: 2186
       span:
         lo: 1997
-        hi: 2224
+        hi: 2236
   - if:
       arms:
       - cond:
@@ -416,21 +416,21 @@ program:
                 id: 21
                 name: ကိန်းများ
                 span:
-                  lo: 2241
-                  hi: 2268
+                  lo: 2253
+                  hi: 2280
             - "null":
                 id: 22
                 span:
-                  lo: 2279
-                  hi: 2288
+                  lo: 2291
+                  hi: 2300
             kind_arg: null
             dir: null
             particle: none
             next: then
             is_cmp: true
             span:
-              lo: 2241
-              hi: 2311
+              lo: 2253
+              hi: 2323
         block:
           stmts:
           - print:
@@ -441,29 +441,29 @@ program:
                     - text: နေရာ မရပါ
                     value: နေရာ မရပါ
                   span:
-                    lo: 2327
-                    hi: 2354
+                    lo: 2339
+                    hi: 2366
               slot: hu
               span:
-                lo: 2327
-                hi: 2380
+                lo: 2339
+                hi: 2392
           single: true
           span:
-            lo: 2327
-            hi: 2380
+            lo: 2339
+            hi: 2392
         span:
-          lo: 2225
-          hi: 2380
+          lo: 2237
+          hi: 2392
       else_block: null
       span:
-        lo: 2225
-        hi: 2380
+        lo: 2237
+        hi: 2392
   - counted:
       var:
         name: ကိန်း
         span:
-          lo: 2410
-          hi: 2425
+          lo: 2422
+          hi: 2437
       from:
         int:
           id: 24
@@ -472,8 +472,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 2382
-            hi: 2385
+            lo: 2394
+            hi: 2397
       to:
         int:
           id: 25
@@ -482,8 +482,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 2393
-            hi: 2399
+            lo: 2405
+            hi: 2411
       step: null
       mode: count
       block:
@@ -499,22 +499,22 @@ program:
                       id: 27
                       name: အရေအတွက်
                       span:
-                        lo: 2569
-                        hi: 2593
+                        lo: 2581
+                        hi: 2605
                   - name:
                       id: 28
                       name: ဆံ့နိုင်ရေ
                       span:
-                        lo: 2604
-                        hi: 2634
+                        lo: 2616
+                        hi: 2646
                   kind_arg: null
                   dir: null
                   particle: none
                   next: then
                   is_cmp: true
                   span:
-                    lo: 2569
-                    hi: 2657
+                    lo: 2581
+                    hi: 2669
               block:
                 stmts:
                 - assign:
@@ -523,8 +523,8 @@ program:
                         id: 30
                         name: ဆံ့နိုင်ရေ
                         span:
-                          lo: 2753
-                          hi: 2783
+                          lo: 2765
+                          hi: 2795
                     value:
                       infix:
                         id: 33
@@ -534,8 +534,8 @@ program:
                             id: 31
                             name: ဆံ့နိုင်ရေ
                             span:
-                              lo: 2794
-                              hi: 2824
+                              lo: 2806
+                              hi: 2836
                         rhs:
                           int:
                             id: 32
@@ -544,60 +544,60 @@ program:
                             kind: null
                             script: burmese
                             span:
-                              lo: 2827
-                              hi: 2830
+                              lo: 2839
+                              hi: 2842
                         span:
-                          lo: 2794
-                          hi: 2830
+                          lo: 2806
+                          hi: 2842
                     span:
-                      lo: 2753
-                      hi: 2856
+                      lo: 2765
+                      hi: 2868
                 - resize:
                     target:
                       name:
                         id: 34
                         name: ကိန်းများ
                         span:
-                          lo: 2857
-                          hi: 2884
+                          lo: 2888
+                          hi: 2915
                     size:
                       count:
                         name:
                           id: 35
                           name: ဆံ့နိုင်ရေ
                           span:
-                            lo: 2978
-                            hi: 3008
+                            lo: 2991
+                            hi: 3021
                       unit:
                         base: int
                         bits: null
                         signed: null
                         wraps: []
                         span:
-                          lo: 2947
-                          hi: 2977
+                          lo: 2960
+                          hi: 2990
                       classifier:
                         name: ခု
                         span:
-                          lo: 3009
-                          hi: 3021
+                          lo: 3022
+                          hi: 3034
                       span:
-                        lo: 2947
-                        hi: 3021
+                        lo: 2960
+                        hi: 3034
                     span:
-                      lo: 2857
-                      hi: 3119
+                      lo: 2869
+                      hi: 3132
                 single: false
                 span:
-                  lo: 2673
-                  hi: 3202
+                  lo: 2685
+                  hi: 3215
               span:
-                lo: 2553
-                hi: 3202
+                lo: 2565
+                hi: 3215
             else_block: null
             span:
-              lo: 2553
-              hi: 3202
+              lo: 2565
+              hi: 3215
         - assign:
             target:
               verb:
@@ -612,26 +612,26 @@ program:
                         id: 36
                         name: ကိန်းများ
                         span:
-                          lo: 3203
-                          hi: 3230
+                          lo: 3216
+                          hi: 3243
                     rhs:
                       name:
                         id: 37
                         name: အရေအတွက်
                         span:
-                          lo: 3233
-                          hi: 3257
+                          lo: 3246
+                          hi: 3270
                     span:
-                      lo: 3203
-                      hi: 3257
+                      lo: 3216
+                      hi: 3270
                 kind_arg: null
                 dir: null
                 particle: none
                 next: other
                 is_cmp: false
                 span:
-                  lo: 3203
-                  hi: 3283
+                  lo: 3216
+                  hi: 3296
             value:
               infix:
                 id: 42
@@ -641,29 +641,29 @@ program:
                     id: 40
                     name: ကိန်း
                     span:
-                      lo: 3294
-                      hi: 3309
+                      lo: 3307
+                      hi: 3322
                 rhs:
                   name:
                     id: 41
                     name: ကိန်း
                     span:
-                      lo: 3312
-                      hi: 3327
+                      lo: 3325
+                      hi: 3340
                 span:
-                  lo: 3294
-                  hi: 3327
+                  lo: 3307
+                  hi: 3340
             span:
-              lo: 3203
-              hi: 3353
+              lo: 3216
+              hi: 3366
         - assign:
             target:
               name:
                 id: 43
                 name: အရေအတွက်
                 span:
-                  lo: 3354
-                  hi: 3378
+                  lo: 3367
+                  hi: 3391
             value:
               infix:
                 id: 46
@@ -673,8 +673,8 @@ program:
                     id: 44
                     name: အရေအတွက်
                     span:
-                      lo: 3389
-                      hi: 3413
+                      lo: 3402
+                      hi: 3426
                 rhs:
                   int:
                     id: 45
@@ -683,35 +683,35 @@ program:
                     kind: null
                     script: burmese
                     span:
-                      lo: 3416
-                      hi: 3419
+                      lo: 3429
+                      hi: 3432
                 span:
-                  lo: 3389
-                  hi: 3419
+                  lo: 3402
+                  hi: 3432
             span:
-              lo: 3354
-              hi: 3445
+              lo: 3367
+              hi: 3458
         single: false
         span:
-          lo: 2473
-          hi: 3528
+          lo: 2485
+          hi: 3541
       span:
-        lo: 2382
-        hi: 3528
+        lo: 2394
+        hi: 3541
   - generic:
       var:
         name: နံပါတ်
         span:
-          lo: 3558
-          hi: 3576
+          lo: 3571
+          hi: 3589
       kind:
         base: int
         bits: null
         signed: false
         wraps: []
         span:
-          lo: 3587
-          hi: 3645
+          lo: 3600
+          hi: 3658
       init:
         int:
           id: 47
@@ -720,8 +720,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 3646
-            hi: 3649
+            lo: 3659
+            hi: 3662
       cond:
         verb:
           id: 50
@@ -731,22 +731,22 @@ program:
               id: 48
               name: နံပါတ်
               span:
-                lo: 3675
-                hi: 3693
+                lo: 3688
+                hi: 3706
           - name:
               id: 49
               name: အရေအတွက်
               span:
-                lo: 3704
-                hi: 3728
+                lo: 3717
+                hi: 3741
           kind_arg: null
           dir: null
           particle: none
           next: while
           is_cmp: true
           span:
-            lo: 3675
-            hi: 3754
+            lo: 3688
+            hi: 3767
       update:
         assign:
           target:
@@ -754,8 +754,8 @@ program:
               id: 55
               name: နံပါတ်
               span:
-                lo: 3988
-                hi: 4006
+                lo: 4001
+                hi: 4019
           value:
             infix:
               id: 58
@@ -765,8 +765,8 @@ program:
                   id: 56
                   name: နံပါတ်
                   span:
-                    lo: 4017
-                    hi: 4035
+                    lo: 4030
+                    hi: 4048
               rhs:
                 int:
                   id: 57
@@ -775,14 +775,14 @@ program:
                   kind: null
                   script: burmese
                   span:
-                    lo: 4038
-                    hi: 4041
+                    lo: 4051
+                    hi: 4054
               span:
-                lo: 4017
-                hi: 4041
+                lo: 4030
+                hi: 4054
           span:
-            lo: 3988
-            hi: 4067
+            lo: 4001
+            hi: 4080
       block:
         stmts:
         - print:
@@ -800,54 +800,54 @@ program:
                           id: 51
                           name: ကိန်းများ
                           span:
-                            lo: 3856
-                            hi: 3883
+                            lo: 3869
+                            hi: 3896
                       rhs:
                         name:
                           id: 52
                           name: နံပါတ်
                           span:
-                            lo: 3886
-                            hi: 3904
+                            lo: 3899
+                            hi: 3917
                       span:
-                        lo: 3856
-                        hi: 3904
+                        lo: 3869
+                        hi: 3917
                   kind_arg: null
                   dir: null
                   particle: none
                   next: other
                   is_cmp: false
                   span:
-                    lo: 3856
-                    hi: 3930
+                    lo: 3869
+                    hi: 3943
             slot: ko
             span:
-              lo: 3856
-              hi: 3959
+              lo: 3869
+              hi: 3972
         single: false
         span:
-          lo: 3776
-          hi: 4150
+          lo: 3789
+          hi: 4163
       span:
-        lo: 3530
-        hi: 4150
+        lo: 3543
+        hi: 4163
   - free:
       target:
         name:
           id: 59
           name: ကိန်းများ
           span:
-            lo: 4152
-            hi: 4179
+            lo: 4184
+            hi: 4211
       span:
-        lo: 4152
-        hi: 4304
+        lo: 4165
+        hi: 4319
   - decl:
       name:
         name: ပစ္စည်း
         span:
-          lo: 4495
-          hi: 4516
+          lo: 4510
+          hi: 4531
       kind:
         base: int
         bits: 8
@@ -855,13 +855,13 @@ program:
         wraps:
         - ptr
         span:
-          lo: 4527
-          hi: 4622
+          lo: 4542
+          hi: 4637
       is_const: false
       init: null
       span:
-        lo: 4467
-        hi: 4650
+        lo: 4482
+        hi: 4665
   - alloc:
       size:
         count:
@@ -872,23 +872,23 @@ program:
             kind: null
             script: burmese
             span:
-              lo: 4676
-              hi: 4679
+              lo: 4703
+              hi: 4706
         unit: null
         classifier: null
         span:
-          lo: 4676
-          hi: 4701
+          lo: 4703
+          hi: 4728
       target:
         name:
           id: 61
           name: ပစ္စည်း
           span:
-            lo: 4752
-            hi: 4773
+            lo: 4779
+            hi: 4800
       span:
-        lo: 4651
-        hi: 4823
+        lo: 4666
+        hi: 4850
   - assign:
       target:
         verb:
@@ -899,16 +899,16 @@ program:
               id: 62
               name: ပစ္စည်း
               span:
-                lo: 4824
-                hi: 4845
+                lo: 4851
+                hi: 4872
           kind_arg: null
           dir: null
           particle: none
           next: other
           is_cmp: false
           span:
-            lo: 4824
-            hi: 4871
+            lo: 4851
+            hi: 4898
       value:
         int:
           id: 64
@@ -917,17 +917,17 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 4882
-            hi: 4885
+            lo: 4909
+            hi: 4912
       span:
-        lo: 4824
-        hi: 4911
+        lo: 4851
+        hi: 4938
   - decl:
       name:
         name: ဈေးနှုန်း
         span:
-          lo: 4940
-          hi: 4967
+          lo: 4967
+          hi: 4994
       kind:
         base: int
         bits: 32
@@ -936,21 +936,21 @@ program:
         - ptr
         borrowed: true
         span:
-          lo: 4978
-          hi: 5075
+          lo: 5005
+          hi: 5102
       is_const: false
       init: null
       span:
-        lo: 4912
-        hi: 5103
+        lo: 4939
+        hi: 5130
   - assign:
       target:
         name:
           id: 65
           name: ဈေးနှုန်း
           span:
-            lo: 5104
-            hi: 5131
+            lo: 5131
+            hi: 5158
       value:
         verb:
           id: 69
@@ -964,8 +964,8 @@ program:
                   id: 66
                   name: ပစ္စည်း
                   span:
-                    lo: 5142
-                    hi: 5163
+                    lo: 5169
+                    hi: 5190
               rhs:
                 int:
                   id: 67
@@ -974,11 +974,11 @@ program:
                   kind: null
                   script: burmese
                   span:
-                    lo: 5166
-                    hi: 5169
+                    lo: 5193
+                    hi: 5196
               span:
-                lo: 5142
-                hi: 5169
+                lo: 5169
+                hi: 5196
           kind_arg:
             base: int
             bits: 32
@@ -987,18 +987,18 @@ program:
             - ptr
             borrowed: true
             span:
-              lo: 5180
-              hi: 5277
+              lo: 5207
+              hi: 5304
           dir: null
           particle: none
           next: other
           is_cmp: false
           span:
-            lo: 5142
-            hi: 5343
+            lo: 5169
+            hi: 5370
       span:
-        lo: 5104
-        hi: 5369
+        lo: 5131
+        hi: 5396
   - assign:
       target:
         verb:
@@ -1009,16 +1009,16 @@ program:
               id: 70
               name: ဈေးနှုန်း
               span:
-                lo: 5370
-                hi: 5397
+                lo: 5397
+                hi: 5424
           kind_arg: null
           dir: null
           particle: none
           next: other
           is_cmp: false
           span:
-            lo: 5370
-            hi: 5423
+            lo: 5397
+            hi: 5450
       value:
         int:
           id: 72
@@ -1027,11 +1027,11 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 5434
-            hi: 5446
+            lo: 5461
+            hi: 5473
       span:
-        lo: 5370
-        hi: 5472
+        lo: 5397
+        hi: 5499
   - print:
       value:
         expr:
@@ -1043,32 +1043,32 @@ program:
                 id: 73
                 name: ဈေးနှုန်း
                 span:
-                  lo: 5473
-                  hi: 5500
+                  lo: 5500
+                  hi: 5527
             kind_arg: null
             dir: null
             particle: none
             next: other
             is_cmp: false
             span:
-              lo: 5473
-              hi: 5526
+              lo: 5500
+              hi: 5553
       slot: ko
       span:
-        lo: 5473
-        hi: 5555
+        lo: 5500
+        hi: 5582
   - free:
       target:
         name:
           id: 75
           name: ပစ္စည်း
           span:
-            lo: 5556
-            hi: 5577
+            lo: 5602
+            hi: 5623
       span:
-        lo: 5556
-        hi: 5702
+        lo: 5583
+        hi: 5731
   span:
     lo: 0
-    hi: 5703
+    hi: 5732
 diagnostics: []

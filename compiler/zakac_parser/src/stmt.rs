@@ -103,7 +103,8 @@ impl Parser<'_>
             Kw::Loop => self.parse_break(),
             Kw::NextIteration => self.parse_continue(),
             Kw::Return => self.parse_bare_return(),
-            Kw::Mem => self.parse_alloc(),
+            Kw::AllocHead => self.parse_alloc(),
+            Kw::Address => self.parse_heap(),
             Kw::WhenDone => Err(diag::update_outside_loop(tok.span)),
             Kw::BlockClose => Err(diag::unmatched_block_close(tok.span)),
             _ => self.parse_expr_headed(),
@@ -111,8 +112,7 @@ impl Parser<'_>
     }
 
     /// Parse a statement that starts with an expression: a clause closed
-    /// with a statement verb, a heap resize or release, a while loop or a
-    /// counted loop.
+    /// with a statement verb, a while loop or a counted loop.
     ///
     /// # Returns
     ///
@@ -124,8 +124,8 @@ impl Parser<'_>
         self.finish_expr_headed(clause)
     }
 
-    /// Finish a statement that starts with a parsed clause: a resize or
-    /// release of the address it names, a while loop or a counted loop.
+    /// Finish a statement that starts with a parsed clause: a while loop or
+    /// a counted loop.
     ///
     /// # Arguments
     ///
@@ -141,8 +141,6 @@ impl Parser<'_>
             ClauseOut::Stmt(stmt) => return Ok(*stmt),
             ClauseOut::Expr(first) => first,
         };
-        ret_if!(self.at(Kw::ResizeHead), self.parse_resize_tail(first));
-        ret_if!(self.at(Kw::FreeHead), self.parse_free_tail(first));
         let cond = self.parse_logical_rest(first, 0)?;
         let is_while = self.at(Kw::While) || self.at(Kw::WhileIs);
         ret_if!(is_while, self.parse_while_tail(cond));

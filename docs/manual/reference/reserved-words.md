@@ -117,21 +117,14 @@ see [Names](../../learn/variables/names.md).
 | `အရွယ်အစား` | "size": the size of a kind in octets, as in `<kind> ၏ အရွယ်အစား` | [The heap](../../learn/pointers/heap.md#how-much-to-ask-for) |
 | `မင်မိုရီ`, `မှတ်ဉာဏ်` | "RAM" (two interchangeable spellings) | [The heap](../../learn/pointers/heap.md) |
 | `ဘိုက်စာ` | "octets' worth", as in `n ဘိုက်စာ` | [The heap](../../learn/pointers/heap.md#how-much-to-ask-for) |
-| `ခုစာ` | "items' worth", as in `<kind> n ခုစာ` | [The heap](../../learn/pointers/heap.md#how-much-to-ask-for) |
-| `မင်မိုရီ … နေရာယူ၍ လိပ်စာကို … တွင် သိမ်းထားမည်` | "taking … of heap room, keep the address in …" (allocate) | [The heap](../../learn/pointers/heap.md) |
-| `… လိပ်စာရှိကို မင်မိုရီ … ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်` | "grow or shrink the space at … so that it is …" (resize) | [Growing and shrinking](../../learn/pointers/resizing.md) |
-| `… လိပ်စာရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်` | "release the block at …" (free) | [The heap](../../learn/pointers/heap.md#giving-a-block-back) |
+| `ခုစာ` | "items' worth", as in `<kind> n ခုစာ`; a struct that names a classifier takes `<classifier>စာ` | [The heap](../../learn/pointers/heap.md#how-much-to-ask-for) |
+| `မင်မိုရီတွင် … နေရာယူ၍ လိပ်စာကို … တွင် သိမ်းထားမည်` | "in RAM, taking … of room, keep the address in …" (allocate) | [The heap](../../learn/pointers/heap.md) |
+| `လိပ်စာ … ရှိ မင်မိုရီကို … ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်` | "make the RAM at … grow or shrink so that it is …" (resize) | [Growing and shrinking](../../learn/pointers/resizing.md) |
+| `လိပ်စာ … ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်` | "give back the RAM at …" (free) | [The heap](../../learn/pointers/heap.md#giving-a-block-back) |
 
-The words inside the three statements (`နေရာယူ၍`, `တွင်`, `သိမ်းထားမည်`, `လိပ်စာရှိ`,
+The words inside the three statements (`နေရာယူ၍`, `တွင်`, `သိမ်းထားမည်`, `ရှိ`,
 `ဖြစ်အောင်`, `နေရာအချဲ့အချုံ့လုပ်မည်`, `ပြန်လည်စွန့်လွှတ်မည်`) are reserved on their own
 as well.
-
-## Written and spoken endings
-
-Each reserved word that ends in the written `…မည်` also accepts the spoken `…မယ်`, and
-the two spellings mean the same. This covers the three heap statements above and the
-older `လုပ်ဆောင်မည်` (in `အောက်ပါတို့ကို လုပ်ဆောင်မည်`) and `ပြန်ပေးမည်`:
-`အောက်ပါတို့ကို လုပ်ဆောင်မယ်` and `ပြန်ပေးမယ်` work too.
 
 ## Lists
 

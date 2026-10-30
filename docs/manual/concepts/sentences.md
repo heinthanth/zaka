@@ -45,8 +45,8 @@ gives an expression. A verb that commands gives a statement, which ends with `�
 | `အကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် ...` | `if (age < 18) ...` | if age is smaller than 18, then |
 | `လုပ်ဆောင်ချက် နှစ်ဆ ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်` | `twice(k)` | the result of doing the function with k |
 | `ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။` | `*p = 7;` | the value of p, as the object, set to 7 |
-| `မင်မိုရီ ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။` | `p = malloc(2 * sizeof(int));` | taking room worth 2 integers, will keep the address in p |
-| `ပ လိပ်စာရှိမင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။` | `free(p);` | the block at the address in p, will give back |
+| `မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။` | `p = malloc(2 * sizeof(int));` | taking room worth 2 integers, will keep the address in p |
+| `လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။` | `free(p);` | the block at the address in p, will give back |
 
 Where C-like code uses punctuation, a Zaka sentence uses a word that tells what the
 punctuation would mean. The signs are still there for arithmetic: `၃ + ၄` and
