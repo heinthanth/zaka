@@ -79,8 +79,9 @@ fn component_rules_start_from_a_class()
     let mut seen = 0;
     for path in sheets(&root)
     {
-        let name = path.to_string_lossy();
-        do_if!(global.iter().any(|g| name.ends_with(g)), continue);
+        // Match whole path parts, not text: Windows joins them with `\`.
+        do_if!(global.iter().any(|g| path.ends_with(g)), continue);
+        let name = path.display();
         let css = grass::from_path(&path, &options).unwrap();
         for list in selectors(&css)
         {
