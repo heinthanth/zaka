@@ -19,6 +19,7 @@ use crate::stmt::PrintArg;
 use crate::stmt::Program;
 use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
+use crate::stmt::StructDecl;
 use crate::verb::Dir;
 use crate::verb::VerbOp;
 
@@ -88,6 +89,7 @@ impl ToSexpr for Expr
                 let head = tern!(n.first == 0, "cell", "cell1");
                 list(head, [n.list.to_sexpr(), n.index.to_sexpr()])
             }
+            Expr::Field(n) => list("field", [n.base.to_sexpr(), n.field.name.clone()]),
             Expr::List(n) => list("list", n.cells.iter().map(ToSexpr::to_sexpr)),
             Expr::BlankList(_) => "blank_list".into(),
         }
@@ -116,6 +118,7 @@ impl ToSexpr for Stmt
             Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
             Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
             Stmt::Free(s) => list("free", [s.target.to_sexpr()]),
+            Stmt::Struct(s) => struct_sexpr(s),
         }
     }
 }
@@ -176,6 +179,7 @@ fn base_name(k: &Kind) -> String
         BaseKind::Int => format!("{sign}{bits}"),
         BaseKind::Float => format!("f{}", k.bits.unwrap_or(64)),
         BaseKind::Opaque if k.wraps.first() == Some(&Wrap::RawPtr) => "rawptr".into(),
+        BaseKind::Named => k.name.as_ref().map_or(String::new(), |n| n.name.clone()),
         BaseKind::Char | BaseKind::Bool | BaseKind::Opaque =>
         {
             k.base.as_ref().to_string()
@@ -348,6 +352,22 @@ fn fn_sexpr(s: &FnDecl) -> String
     let ret = s.ret.as_ref().map_or("-".to_string(), ToSexpr::to_sexpr);
     let parts = [s.name.name.clone(), format!("[{}]", params.join(", ")), ret];
     list("fn", parts.into_iter().chain([s.block.to_sexpr()]))
+}
+
+/// `(struct name [kind field, ...] classifier)` for a struct declaration.
+///
+/// # Arguments
+///
+/// * `s` - The declaration.
+///
+/// # Returns
+///
+/// The text.
+fn struct_sexpr(s: &StructDecl) -> String
+{
+    let fields: Vec<String> = s.fields.iter().map(param_sexpr).collect();
+    let parts = [s.name.name.clone(), format!("[{}]", fields.join(", "))];
+    list("struct", parts.into_iter().chain(s.classifier.iter().map(|c| c.name.clone())))
 }
 
 /// `kind name` for a parameter.

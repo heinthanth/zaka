@@ -35,6 +35,7 @@ use crate::semcheck::KindTable;
 use crate::semcheck::SemcheckOptions;
 use crate::semcheck::SemcheckOutput;
 use crate::semcheck::semcheck;
+use crate::structs::StructTable;
 
 const TEXT_HEADER: &str = "# zakac-semcheck-artifact v1";
 const RAW_PHASE: &str = "semcheck";
@@ -49,6 +50,9 @@ pub struct Checked
     /// The kind of each expression.
     #[builder(default)]
     pub kinds: KindTable,
+    /// The kind of each declared struct.
+    #[builder(default)]
+    pub structs: StructTable,
     /// Lexer, parser and check diagnostics.
     #[builder(default)]
     pub diagnostics: Vec<Diagnostic>,
@@ -85,7 +89,7 @@ pub fn run_phases(
         tern!(failed, SemcheckOutput::default(), semcheck(&parsed.program, options));
     diagnostics.extend(out.diagnostics);
     #[rustfmt::skip]
-    return Checked::builder().program(parsed.program).kinds(out.kinds).diagnostics(diagnostics).build();
+    return Checked::builder().program(parsed.program).kinds(out.kinds).structs(out.structs).diagnostics(diagnostics).build();
 }
 
 /// Reloadable output of the check phase. Spans are relative to the file
@@ -101,6 +105,8 @@ pub struct SemcheckArtifact
     pub program: Program,
     /// The kind of each expression.
     pub kinds: KindTable,
+    /// The kind of each declared struct.
+    pub structs: StructTable,
     /// Lexer, parser and check diagnostics.
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -147,12 +153,12 @@ impl SemcheckArtifact
     {
         let base = source.start_pos;
         let shift = |span: Span| relative(span, base);
-        let Checked { mut program, kinds, mut diagnostics } = checked;
+        let Checked { mut program, kinds, structs, mut diagnostics } = checked;
         MapSpans(shift).visit_program_mut(&mut program);
         diagnostics.iter_mut().for_each(|d| d.map_spans(&shift));
         #[rustfmt::skip]
         return SemcheckArtifact::builder().name(source.name.clone()).source(source.src.clone())
-            .program(program).kinds(kinds).diagnostics(diagnostics).build();
+            .program(program).kinds(kinds).structs(structs).diagnostics(diagnostics).build();
     }
 
     /// Register the embedded source in `source_map` and return the file.

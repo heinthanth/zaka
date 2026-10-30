@@ -639,4 +639,5 @@ kinds:
   41: bool
   42: bool
   43: bool
+structs: {}
 diagnostics: []

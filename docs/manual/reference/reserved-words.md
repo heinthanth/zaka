@@ -144,3 +144,16 @@ older `လုပ်ဆောင်မည်` (in `အောက်ပါတို
 | `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `စာရင်းအလွတ်` | "blank list": each cell at its default | [Lists](../../learn/lists/README.md) |
 | `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../../learn/lists/README.md#list-kinds) |
+
+## Structs
+
+| Word | Reads as | Page |
+| --- | --- | --- |
+| `ဒေတာအမျိုးအစား`, `အချက်အလက်အမျိုးအစား` | "data kind": starts a struct declaration (two interchangeable spellings) | [Structs](../../learn/structs/README.md) |
+| `တို့ ပါဝင်သည်` | "these are included": closes the field list of a struct | [Structs](../../learn/structs/README.md) |
+| `တို့ ပါဝင်ပြီး` | "these are included, and": closes the field list when a classifier follows | [Structs](../../learn/structs/README.md#pointers-and-the-heap) |
+| `မျိုးပြပစ္စည်းမှာ` | "the count word is": names the classifier of a struct | [Structs](../../learn/structs/README.md#pointers-and-the-heap) |
+| `ဖြစ်သည်` | "is": ends a struct declaration that names a classifier | [Structs](../../learn/structs/README.md#pointers-and-the-heap) |
+
+`တို့` on its own is reserved as well, so it cannot be used as a name. The words inside
+the two closing phrases (`တို့`, `ပါဝင်သည်`, `ပါဝင်ပြီး`) are reserved on their own.

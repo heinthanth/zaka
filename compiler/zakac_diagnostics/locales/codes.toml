@@ -260,6 +260,13 @@ en = "\"%{n}\" is not a cell count; write a whole number above zero"
 [codes.ZK0227.explain]
 en = """A list kind with a count, \"အကွက် <n> ခုရှိသော <kind> စာရင်း\", takes a decimal number above zero, such as ၃ or 10. A list with no cells holds nothing, and the count cannot come from a variable: the kind must be known before the program runs."""
 
+[codes.ZK0228.title]
+en = "nested struct"
+[codes.ZK0228.message]
+en = "structs can be declared at the top level and nowhere else"
+[codes.ZK0228.explain]
+en = """A struct declaration, \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; a struct can be used before its declaration."""
+
 # -------------------------------------------------------------- resolve ZK03xx
 
 [codes.ZK0301.title]
@@ -368,6 +375,41 @@ en = "function without a result used as a value"
 en = "function \"%{n}\" returns nothing and cannot be used as a value"
 [codes.ZK0315.explain]
 en = """The call expression \"... လုပ်ဆောင်သော ရလဒ်\" needs the function to return a value, but its header has no result clause. Call it as a statement with \"လုပ်ဆောင်ပါ\", or start its statements with \"အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်\"."""
+
+[codes.ZK0316.title]
+en = "duplicate struct"
+[codes.ZK0316.message]
+en = "\"%{n}\" names a struct declared before"
+[codes.ZK0316.explain]
+en = """Each struct name names one struct in the whole program. Rename one of the two declarations."""
+
+[codes.ZK0317.title]
+en = "duplicate field"
+[codes.ZK0317.message]
+en = "\"%{s}\" names the field \"%{n}\" twice"
+[codes.ZK0317.explain]
+en = """A field access \"x ၏ <field>\" finds a field on its name, so two fields of one struct need two names. Rename one of them."""
+
+[codes.ZK0318.title]
+en = "unknown kind name"
+[codes.ZK0318.message]
+en = "no struct named \"%{n}\" is declared"
+[codes.ZK0318.explain]
+en = """A name in a kind phrase, as in \"ကိန်းရှင် x သည် လူ ဖြစ်ပါစေ။\", names a struct. Declare it at the top level with \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\", or check the spelling."""
+
+[codes.ZK0319.title]
+en = "name of a struct reused"
+[codes.ZK0319.message]
+en = "\"%{n}\" names a struct, so it cannot name a value or a function too"
+[codes.ZK0319.explain]
+en = """A struct name can start a kind wherever a value can stand, as in \"လူ ၏ အရွယ်အစား\", so the compiler reads a struct name as a kind each time. A variable, constant, parameter, field or function with that name could never be read. Pick another name for one of the two."""
+
+[codes.ZK0320.title]
+en = "unknown field"
+[codes.ZK0320.message]
+en = "\"%{s}\" has no field named \"%{n}\""
+[codes.ZK0320.explain]
+en = """After \"၏\", a name reads a field of the struct before it. The struct declaration lists the fields it has; check the spelling, or add the field to the declaration."""
 
 # ---------------------------------------------------------------- kinds ZK04xx
 
@@ -560,6 +602,31 @@ en = "%{k} needs more octets than the machine can address"
 [codes.ZK0425.explain]
 en = """The cells of a list sit next to each other, so the list takes its count times the size of one cell. Here that size does not fit the machine. Use a smaller count, or ask for heap room."""
 
+[codes.ZK0426.title]
+en = "field of a value that is no struct"
+[codes.ZK0426.message]
+en = "\"%{n}\" is read as a field, but the value before \"၏\" is %{k}, not a struct"
+[codes.ZK0426.explain]
+en = """After \"၏\", a name reads a field, and fields belong to structs. To read a field of a struct a pointer points at, dereference the pointer first: \"p ၏ တန်ဖိုး ၏ <field>\"."""
+
+[codes.ZK0427.title]
+en = "struct holds itself"
+[codes.ZK0427.message]
+en = "\"%{n}\" holds itself, so it would have no end"
+[codes.ZK0427.help]
+en = "hold the address of the struct instead: \"%{n} လိပ်စာ\""
+[codes.ZK0427.explain]
+en = """A field of a struct sits inside the struct, so a struct that holds itself, at once or through other structs, would need to be larger than itself. Hold an address of it instead, as a linked list does with \"နောက်\" fields of kind \"<name> လိပ်စာ\"."""
+
+[codes.ZK0428.title]
+en = "struct as a function result"
+[codes.ZK0428.message]
+en = "a function cannot give back a struct as its result"
+[codes.ZK0428.help]
+en = "take the address of a struct as a parameter, and fill its fields through it"
+[codes.ZK0428.explain]
+en = """A function result is one value, and a struct holds several fields. Pass the address of the struct to fill, with a parameter of kind \"<name> လိပ်စာ\", and write the fields through it."""
+
 # ---------------------------------------------------------- naturalness ZK05xx
 
 [codes.ZK0501.title]
@@ -633,6 +700,15 @@ en = "\"%{v}%{p}\" as a value reads better as \"%{v}သည်\""
 en = "write \"... %{v}သည်\""
 [codes.ZK0508.explain]
 en = """A clause that gives a value, as an initial value, a returned value, a call argument or a loop bound, names a fact rather than stating a sentence, so its closing verb carries \"သည်\": \"အမှတ် သည် ၄၀ အောက် မငယ်သည် ဖြစ်ပါစေ။\". The \"ပါ\" forms belong to quoted sentences (\"... ဟု ပြသပါ\", \"... ဟု ထားပါ\") and before \"သို့မဟုတ်\"."""
+
+[codes.ZK0509.title]
+en = "count word with another classifier"
+[codes.ZK0509.message]
+en = "%{k} is counted with \"%{w}\", not \"%{f}\""
+[codes.ZK0509.help]
+en = "write \"%{w}စာ\""
+[codes.ZK0509.explain]
+en = """Burmese counts things with a classifier that fits them: people with \"ယောက်\", most other things with \"ခု\". A struct names its classifier with \"... တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\"; the other kinds are counted with \"ခု\". The size is the same whichever word is written, so the program still compiles."""
 
 # -------------------------------------------------------------- folding ZK06xx
 
@@ -787,3 +863,10 @@ en = "raw address not allowed"
 en = "raw addresses are not allowed here (--no-raw)"
 [codes.ZK0717.explain]
 en = """The program was compiled with --no-raw, which turns raw addresses off. Use an owner or a borrow instead, or compile without that flag."""
+
+[codes.ZK0718.title]
+en = "borrow in a field"
+[codes.ZK0718.message]
+en = "the field \"%{n}\" holds a borrow, and borrows live in variables and parameters alone"
+[codes.ZK0718.explain]
+en = """A borrow lasts as long as the owner it borrows from, and the checker follows that through variables and parameters, not through mem. A struct can sit in mem, so its fields hold owners or raw addresses: \"<kind> လိပ်စာ\" or \"<kind> လိပ်စာအကြမ်း\"."""

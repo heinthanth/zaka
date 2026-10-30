@@ -387,6 +387,11 @@ program:
           span:
             lo: 2022
             hi: 2052
+        classifier:
+          name: ခု
+          span:
+            lo: 2084
+            hi: 2096
         span:
           lo: 2022
           hi: 2096
@@ -571,6 +576,11 @@ program:
                         span:
                           lo: 2947
                           hi: 2977
+                      classifier:
+                        name: ခု
+                        span:
+                          lo: 3009
+                          hi: 3021
                       span:
                         lo: 2947
                         hi: 3021
@@ -865,6 +875,7 @@ program:
               lo: 4676
               hi: 4679
         unit: null
+        classifier: null
         span:
           lo: 4676
           hi: 4701

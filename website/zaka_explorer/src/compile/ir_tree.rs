@@ -403,6 +403,13 @@ impl IrTree<'_>
                 let label = tern!(*first == 0, "cell@", "cell1@");
                 (label, len.to_string(), self.pair(list, index))
             }
+            ExprNode::FieldAddr { base, field, .. } =>
+            {
+                let fields =
+                    base.kind.as_struct().map(|s| s.fields()).unwrap_or_default();
+                let name = fields.get(*field as usize).map(|(n, _)| n.clone());
+                ("field@", name.unwrap_or_default(), vec![self.expr(base)])
+            }
         };
         let mut node = self.node(label, detail, e.span, children);
         node.kind = Some(e.kind.name());

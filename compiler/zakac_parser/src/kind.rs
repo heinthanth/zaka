@@ -100,7 +100,7 @@ impl Parser<'_>
                 || sign_of(kw).is_some()
                 || matches!(kw, Kw::Address | Kw::RawAddress | Kw::Borrowed)
         };
-        ret_true!(kw.is_some_and(starts));
+        ret_true!(kw.is_some_and(starts) || self.is_struct_at(0));
         self.at_sized_kind(0) || self.at_count_prefix(0)
     }
 
@@ -136,7 +136,8 @@ impl Parser<'_>
         let n = pre + usize::from(signed);
         let n = n + tern!(self.at_sized_kind(n), 2, 0);
         let word = kw_of(&self.peek_n(n));
-        let is_base = word.and_then(base_kind).is_some();
+        let named = n == pre && self.is_struct_at(n);
+        let is_base = word.and_then(base_kind).is_some() || named;
         let bare = n == pre && matches!(word, Some(Kw::Address | Kw::RawAddress));
         ret_if!(!is_base && !bare, None);
         let (len, _) = self.scan_suffixes(n + 1, is_base);
@@ -348,6 +349,14 @@ impl Parser<'_>
             self.advance();
             let kind = Kind::builder().base(BaseKind::Opaque).wraps(vec![wrap]);
             return Ok(kind.span(start).build());
+        }
+        // Where a kind must stand, each name is read as a struct name; the
+        // check reports one that no struct declares.
+        if self.peek().kind == TokenKind::Ident
+        {
+            let name = self.parse_ident()?;
+            let kind = Kind::builder().base(BaseKind::Named).span(start);
+            return Ok(kind.name(name).build());
         }
         let signed = kw_of(&self.peek()).and_then(sign_of);
         do_if!(signed.is_some(), self.advance());

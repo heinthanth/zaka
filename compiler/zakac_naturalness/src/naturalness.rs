@@ -41,6 +41,7 @@ use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
 
+use crate::classifiers::check_classifiers;
 use crate::rules::first_match;
 use crate::site::FinalSite;
 use crate::site::FinalWord;
@@ -63,7 +64,7 @@ pub struct NaturalnessOptions
     pub strict: bool,
 }
 
-/// Check the particles of a program.
+/// Check the particles and the classifiers of a program.
 ///
 /// # Arguments
 ///
@@ -77,6 +78,7 @@ pub fn check(program: &Program, options: &NaturalnessOptions) -> Vec<Diagnostic>
 {
     let mut checker = Checker::default();
     checker.visit_program(program);
+    checker.diags.extend(check_classifiers(program));
     checker.diags.sort_by_key(|d| d.span.lo);
     let level = tern!(options.strict, Level::Error, Level::Warning);
     checker.diags.into_iter().map(|d| d.with_level(level)).collect()

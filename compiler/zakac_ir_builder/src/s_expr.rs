@@ -149,6 +149,10 @@ impl ToSexpr for Expr
                 let mark = checked.then(|| "checked".to_string());
                 list(head, parts.into_iter().chain(mark))
             }
+            ExprNode::FieldAddr { base, field, offset } =>
+            {
+                list("field@", [base.to_sexpr(), field.to_string(), offset.to_string()])
+            }
         }
     }
 }

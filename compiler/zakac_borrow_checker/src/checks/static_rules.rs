@@ -13,6 +13,7 @@ use zakac_span::span::Span;
 
 use crate::checks::report;
 use crate::flow::Flow;
+use crate::roots::field_kind;
 use crate::roots::list_slot;
 
 /// Report a free, a resize or an allocation whose destination holds a
@@ -111,7 +112,7 @@ pub(crate) fn kind_holds_borrow(kind: DataKind) -> bool { kind.holds_borrow() }
 
 /// The kind of the value an address names. The kind of a cell address
 /// drops the borrow mark of the cell, so a cell gets the cell kind of its
-/// list.
+/// list; a field address gets the field kind of its struct.
 ///
 /// # Arguments
 ///
@@ -122,6 +123,7 @@ pub(crate) fn kind_holds_borrow(kind: DataKind) -> bool { kind.holds_borrow() }
 /// The kind, or `None` for an address of an opaque value.
 fn value_kind_at(addr: &Expr) -> Option<DataKind>
 {
+    ret_if!(let ExprNode::FieldAddr { base, field, .. } = &addr.node, field_kind(base.kind, *field));
     let ExprNode::CellAddr { list, .. } = &addr.node
     else
     {

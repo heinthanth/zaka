@@ -123,6 +123,8 @@ ConstLoop = ("ZK0225", Level::Error),
 UnmatchedBlockClose = ("ZK0226", Level::Error),
 /// The cell count of a list kind is not a whole number above zero.
 BadListCount = ("ZK0227", Level::Error),
+/// A struct is declared inside a block.
+NestedStruct = ("ZK0228", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -155,6 +157,16 @@ MissingReturnValue = ("ZK0313", Level::Error),
 ArgCountMismatch = ("ZK0314", Level::Error),
 /// A function without a result is used as a value.
 ValueFromVoidFunction = ("ZK0315", Level::Error),
+/// Two structs share a name.
+DuplicateStruct = ("ZK0316", Level::Error),
+/// Two fields of one struct share a name.
+DuplicateField = ("ZK0317", Level::Error),
+/// A kind names a struct that is not declared.
+UnknownKindName = ("ZK0318", Level::Error),
+/// A variable, parameter, field or function takes the name of a struct.
+StructNameClash = ("ZK0319", Level::Error),
+/// A field access names a field the struct does not have.
+UnknownField = ("ZK0320", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.
@@ -205,6 +217,12 @@ CellNumberNotInt = ("ZK0423", Level::Error),
 ListResult = ("ZK0424", Level::Error),
 /// A list kind is too large for the machine.
 ListTooLarge = ("ZK0425", Level::Error),
+/// A field is read from a value that is no struct.
+NotAStruct = ("ZK0426", Level::Error),
+/// A struct holds itself, other than through an address.
+StructHoldsItself = ("ZK0427", Level::Error),
+/// A function gives back a struct as its result.
+StructResult = ("ZK0428", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.
@@ -221,6 +239,8 @@ PrintValueWithHu = ("ZK0506", Level::Warning),
 RedundantGroup = ("ZK0507", Level::Warning),
 /// A clause used as a value ends in `ပါ`.
 PaInValue = ("ZK0508", Level::Warning),
+/// A count word uses a classifier other than the kind's own.
+ClassifierMismatch = ("ZK0509", Level::Warning),
 // constant folding: ZK06xx
 /// An operation on constants gives a value outside its kind.
 ConstantOverflow = ("ZK0601", Level::Error),
@@ -262,7 +282,9 @@ OwnerForBorrow = ("ZK0715", Level::Error),
 /// A raw address is lent.
 LendOfRaw = ("ZK0716", Level::Error),
 /// A raw address is used though raw addresses are turned off.
-RawNotAllowed = ("ZK0717", Level::Error) }
+RawNotAllowed = ("ZK0717", Level::Error),
+/// A struct field holds a borrow.
+BorrowField = ("ZK0718", Level::Error) }
 
 impl Code
 {

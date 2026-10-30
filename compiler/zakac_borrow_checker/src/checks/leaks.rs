@@ -100,7 +100,7 @@ fn check_held(
         return;
     };
     let owner = kind.is_owner_ptr();
-    let list = kind.is_list() && kind.is_move_kind() && flow.options.strict;
+    let list = kind.is_aggregate() && kind.is_move_kind() && flow.options.strict;
     ret_if!(!owner && !list);
     ret_if!(!state.ptr(place).is_some_and(|info| lost(info.state)));
     let found = block_leaked(span, slot_name(flow, place));

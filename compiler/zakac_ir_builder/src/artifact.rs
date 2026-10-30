@@ -84,7 +84,8 @@ pub fn run_phases(
     );
     let lower_options =
         LowerOptions::builder().platform_bits(options.platform_bits).build();
-    let plain = lower(&checked.program, &checked.kinds, &lower_options);
+    let plain =
+        lower(&checked.program, &checked.kinds, &checked.structs, &lower_options);
     let mut folded = plain.clone();
     diagnostics.extend(fold(&mut folded, folding, options.platform_bits));
     #[rustfmt::skip]

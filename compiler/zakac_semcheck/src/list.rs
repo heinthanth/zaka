@@ -1,5 +1,6 @@
 use zakac_ast::expr::BlankListLit;
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::FieldExpr;
 use zakac_ast::expr::IndexExpr;
 use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
@@ -9,6 +10,7 @@ use zakac_ast::kind::Wrap;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::ownership as od;
+use zakac_diagnostics::resolve as rd;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -19,6 +21,7 @@ use crate::kind::DataKind;
 use crate::place::place_of;
 use crate::semcheck::Checker;
 use crate::semcheck::mismatch_report;
+use crate::struct_check::unknown_name;
 
 /// Where a written kind stands, which decides whether its list counts can
 /// be left out.
@@ -149,14 +152,18 @@ impl Checker
     /// The kind; it still has open counts for a declaration.
     pub(crate) fn written_kind(&mut self, written: &Kind, at: KindUse) -> DataKind
     {
-        let kind = DataKind::from_ast(written);
+        let kind = DataKind::from_ast(written, &self.structs);
         let span = written.span;
+        let names = self.structs.keys().map(String::as_str).collect();
+        do_if!(let Some(d) = unknown_name(written, &names), self.report(d));
         let large = kind.checked_size(self.platform).is_none();
         do_if!(large, self.report(kd::list_too_large(span, &kind.name())));
         let open = at != KindUse::Decl && written.has_inferred_cells();
         do_if!(open, self.report(kd::list_count_missing(span)));
         let result = at == KindUse::Result && kind.is_list();
         do_if!(result, self.report(kd::list_result(span)));
+        let result = at == KindUse::Result && kind.is_struct();
+        do_if!(result, self.report(kd::struct_result(span)));
         do_if!(bad_marker(written), self.report(od::bad_borrow_marker(span)));
         let raw = self.no_raw && written.has_raw();
         do_if!(raw, self.report(od::raw_not_allowed(span)));
@@ -316,6 +323,33 @@ impl Checker
         tern!(bad.is_some(), None, Some(cell))
     }
 
+    /// Infer a field of a struct.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The field expression.
+    ///
+    /// # Returns
+    ///
+    /// The field kind, or `None` after an error.
+    pub(crate) fn infer_field(&mut self, n: &FieldExpr) -> Option<DataKind>
+    {
+        let base = self.infer(&n.base, None)?;
+        let field = &n.field;
+        let Some(s) = base.as_struct()
+        else
+        {
+            self.report(kd::not_a_struct(field.span, &field.name, &base.name()));
+            return None;
+        };
+        let found = s.field(&field.name).map(|(_, kind)| kind);
+        do_if!(
+            found.is_none(),
+            self.report(rd::unknown_field(field.span, &s.name, &field.name))
+        );
+        found
+    }
+
     /// Infer the cell count of a list.
     ///
     /// # Arguments
@@ -371,6 +405,7 @@ impl Checker
             Expr::Name(n) => Some(n),
             Expr::Group(n) => self.owner_name(&n.inner),
             Expr::Index(n) if self.holds_list(&n.list) => self.owner_name(&n.list),
+            Expr::Field(n) => self.owner_name(&n.base),
             _ => None,
         }
     }
@@ -393,6 +428,10 @@ impl Checker
             Expr::Index(n) if self.holds_list(&n.list) =>
             {
                 place_of(&n.list).is_none_or(|inner| self.in_temp_list(inner))
+            }
+            Expr::Field(n) =>
+            {
+                place_of(&n.base).is_none_or(|inner| self.in_temp_list(inner))
             }
             _ => false,
         }

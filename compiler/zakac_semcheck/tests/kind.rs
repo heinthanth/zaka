@@ -5,6 +5,7 @@ use zakac_ast::kind::Wrap;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
 use zakac_semcheck::kind::Width;
+use zakac_semcheck::structs::StructTable;
 use zakac_span::span::Span;
 
 /// A kind parsed from its short name; panics on a bad name.
@@ -26,17 +27,41 @@ fn ast(base: BaseKind, bits: Option<u16>, signed: Option<bool>) -> Kind
 #[test]
 fn ast_kinds_get_their_defaults()
 {
-    assert_eq!(DataKind::from_ast(&ast(BaseKind::Int, None, None)), k("isize"));
-    assert_eq!(DataKind::from_ast(&ast(BaseKind::Int, None, Some(false))), k("usize"));
-    assert_eq!(DataKind::from_ast(&ast(BaseKind::Int, Some(8), None)), k("i8"));
     assert_eq!(
-        DataKind::from_ast(&ast(BaseKind::Int, Some(16), Some(false))),
+        DataKind::from_ast(&ast(BaseKind::Int, None, None), &StructTable::new()),
+        k("isize")
+    );
+    assert_eq!(
+        DataKind::from_ast(&ast(BaseKind::Int, None, Some(false)), &StructTable::new()),
+        k("usize")
+    );
+    assert_eq!(
+        DataKind::from_ast(&ast(BaseKind::Int, Some(8), None), &StructTable::new()),
+        k("i8")
+    );
+    assert_eq!(
+        DataKind::from_ast(
+            &ast(BaseKind::Int, Some(16), Some(false)),
+            &StructTable::new()
+        ),
         k("u16")
     );
-    assert_eq!(DataKind::from_ast(&ast(BaseKind::Float, None, None)), k("f64"));
-    assert_eq!(DataKind::from_ast(&ast(BaseKind::Float, Some(32), None)), k("f32"));
-    assert_eq!(DataKind::from_ast(&ast(BaseKind::Char, None, None)), DataKind::Char);
-    assert_eq!(DataKind::from_ast(&ast(BaseKind::Bool, None, None)), DataKind::Bool);
+    assert_eq!(
+        DataKind::from_ast(&ast(BaseKind::Float, None, None), &StructTable::new()),
+        k("f64")
+    );
+    assert_eq!(
+        DataKind::from_ast(&ast(BaseKind::Float, Some(32), None), &StructTable::new()),
+        k("f32")
+    );
+    assert_eq!(
+        DataKind::from_ast(&ast(BaseKind::Char, None, None), &StructTable::new()),
+        DataKind::Char
+    );
+    assert_eq!(
+        DataKind::from_ast(&ast(BaseKind::Bool, None, None), &StructTable::new()),
+        DataKind::Bool
+    );
 }
 
 #[test]
@@ -271,7 +296,9 @@ fn ast_kinds_hold_their_marks()
     let ptr = || Wrap::Ptr;
     let raw = || Wrap::RawPtr;
     let list = || Wrap::List(Cells::Fixed(3));
-    let from = |wraps, borrowed| DataKind::from_ast(&made(wraps, borrowed));
+    let from = |wraps, borrowed| {
+        DataKind::from_ast(&made(wraps, borrowed), &StructTable::new())
+    };
     assert_eq!(from(vec![ptr()], false), k("*isize"));
     assert_eq!(from(vec![ptr()], true), k("&*isize"));
     assert_eq!(from(vec![ptr(), ptr()], true), k("&**isize"));
@@ -283,7 +310,7 @@ fn ast_kinds_hold_their_marks()
     assert_eq!(from(vec![list(), ptr()], true), k("&*[3]isize"));
     let opaque = |wraps, borrowed| {
         let base = ast(BaseKind::Opaque, None, None);
-        DataKind::from_ast(&Kind { wraps, borrowed, ..base })
+        DataKind::from_ast(&Kind { wraps, borrowed, ..base }, &StructTable::new())
     };
     assert_eq!(opaque(vec![ptr()], true), k("&ptr"));
     assert_eq!(opaque(vec![raw()], false), k("rawptr"));

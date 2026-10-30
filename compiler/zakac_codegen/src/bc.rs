@@ -171,8 +171,8 @@ pub enum Op
     /// Pop the addresses of two lists of this kind, the right one first;
     /// push whether each cell of one equals the cell of the other.
     ListEq(DataKind),
-    /// Pop the address of a list of this kind; write its cells and a line
-    /// break.
+    /// Pop the address of a list or a struct of this kind; write its cells or
+    /// fields and a line break.
     PrintList(DataKind),
 }
 

@@ -1,3 +1,4 @@
+mod classifiers;
 pub mod naturalness;
 pub mod rules;
 pub mod site;

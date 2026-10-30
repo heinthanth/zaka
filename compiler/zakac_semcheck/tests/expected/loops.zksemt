@@ -475,4 +475,5 @@ kinds:
   30: u8
   31: u8
   32: u8
+structs: {}
 diagnostics: []

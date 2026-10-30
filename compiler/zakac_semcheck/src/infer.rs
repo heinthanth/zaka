@@ -34,6 +34,7 @@ use crate::place::place_of;
 use crate::place::var_name;
 use crate::scope::Access;
 use crate::semcheck::Checker;
+use crate::structs::StructTable;
 
 impl Checker
 {
@@ -91,6 +92,7 @@ impl Checker
                 Some(DataKind::USIZE)
             }
             Expr::Index(n) => self.infer_index(n),
+            Expr::Field(n) => self.infer_field(n),
             Expr::List(n) => self.infer_list(n, expect),
             Expr::BlankList(n) => self.infer_blank(n, expect),
         }
@@ -112,7 +114,7 @@ impl Checker
         &mut self, n: &IntLit, expect: Option<DataKind>, negated: bool,
     ) -> Option<DataKind>
     {
-        ret_if!(let Some(kind) = &n.kind, Some(DataKind::from_ast(kind)));
+        ret_if!(let Some(kind) = &n.kind, Some(DataKind::from_ast(kind, &self.structs)));
         let want = expect.filter(|k| k.is_numeric()).unwrap_or(DataKind::ISIZE);
         let fits = want.is_float() || want.fits_int(n.value, negated, self.platform);
         ret_if!(fits, Some(want));
@@ -492,9 +494,10 @@ pub(crate) fn what_of(e: &Expr) -> String
 ///
 /// # Returns
 ///
-/// The prefix kind, else the expected float kind, else `f64`.
+/// The prefix kind, else the expected float kind, else `f64`. A prefix is
+/// a number kind, so it names no struct.
 fn float_kind(n: &FloatLit, expect: Option<DataKind>) -> DataKind
 {
-    let prefix = n.kind.as_ref().map(DataKind::from_ast);
+    let prefix = n.kind.as_ref().map(|k| DataKind::from_ast(k, &StructTable::new()));
     prefix.or(expect.filter(|k| k.is_float())).unwrap_or(DataKind::F64)
 }

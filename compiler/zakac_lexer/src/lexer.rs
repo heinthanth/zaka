@@ -13,6 +13,7 @@ use zakac_span::pos::Pos;
 use zakac_span::source_file::SourceFile;
 use zakac_span::span::Span;
 
+use crate::classifiers::mark_classifiers;
 use crate::ident::is_ident;
 use crate::number::lex_number;
 use crate::number::word_script;
@@ -114,7 +115,8 @@ impl Driver<'_, '_>
         do_while!(idx < self.words.len(), idx = self.step(idx));
     }
 
-    /// Join phrases and append the end-of-input token.
+    /// Join phrases, mark the count words of declared classifiers, and append
+    /// the end-of-input token.
     ///
     /// # Returns
     ///
@@ -122,6 +124,7 @@ impl Driver<'_, '_>
     fn finish(mut self) -> LexOutput
     {
         self.out.tokens = join_phrases(std::mem::take(&mut self.out.tokens));
+        mark_classifiers(&mut self.out.tokens, self.text, self.base);
         let end = self.base + self.text.len();
         self.push(TokenKind::Eof, Span::new(end, end), false);
         self.out

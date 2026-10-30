@@ -1,4 +1,5 @@
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::Ident;
 use zakac_ast::stmt::AllocStmt;
 use zakac_ast::stmt::FreeStmt;
 use zakac_ast::stmt::ResizeStmt;
@@ -7,6 +8,7 @@ use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::Diagnostic;
 use zakac_i18n::t;
+use zakac_lexer::classifiers::COUNT_ENDING;
 use zakac_lexer::token::Kw;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
@@ -96,8 +98,12 @@ impl Parser<'_>
         let count = self.parse_clause_expr()?;
         ret_if!(!self.at(Kw::Items), Err(self.err_items()));
         let end = self.bump().span;
+        let word = self.text_of(end);
+        let classifier = word.strip_suffix(COUNT_ENDING).unwrap_or(word);
+        let classifier = Ident::builder().name(classifier).span(end).build();
         let span = start.to(&end);
-        Ok(SizeArg::builder().count(count).unit(unit).span(span).build())
+        #[rustfmt::skip]
+        return Ok(SizeArg::builder().count(count).unit(unit).classifier(classifier).span(span).build());
     }
 
     /// Parse `<count> ဘိုက်စာ`.

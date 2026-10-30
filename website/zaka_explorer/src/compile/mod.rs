@@ -769,6 +769,7 @@ fn lower_and_fold(
     let plain = lower(
         program,
         &out.kinds,
+        &out.structs,
         &LowerOptions::builder().platform_bits(bits).build(),
     );
     let mut folded = plain.clone();

@@ -1,4 +1,5 @@
 pub mod artifact;
+pub mod classifiers;
 pub mod cli;
 pub mod ident;
 pub mod lexer;

@@ -92,7 +92,8 @@ pub(crate) fn uses_raw(module: &Module) -> bool
     found
 }
 
-/// Whether a kind has a raw address level, at whatever depth or cell.
+/// Whether a kind has a raw address level, at whatever depth, cell or
+/// field.
 ///
 /// # Arguments
 ///
@@ -104,6 +105,7 @@ pub(crate) fn uses_raw(module: &Module) -> bool
 fn has_raw(kind: DataKind) -> bool
 {
     ret_if!(let Some(list) = kind.as_list(), has_raw(list.cell));
+    ret_if!(let Some(s) = kind.as_struct(), s.fields().iter().any(|(_, k)| has_raw(*k)));
     kind.ptr_kind().is_some_and(|p| p.raw != 0)
 }
 

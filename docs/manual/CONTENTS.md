@@ -13,6 +13,7 @@
   - [Pointers](language/pointers.md)
   - [Ownership and borrowing](language/ownership.md)
   - [Lists](language/lists.md)
+  - [Structs](language/structs.md)
   - [Natural wording](language/naturalness.md)
 - [The compiler](compiler/README.md)
   - [Commands](compiler/commands.md)

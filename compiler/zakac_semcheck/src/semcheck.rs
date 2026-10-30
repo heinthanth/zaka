@@ -26,6 +26,7 @@ use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
+use zakac_ast::stmt::StructDecl;
 use zakac_ast::stmt::WhileStmt;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
@@ -48,6 +49,8 @@ use crate::scope::Access;
 use crate::scope::Binding;
 use crate::scope::FnSigs;
 use crate::scope::Scopes;
+use crate::struct_check::collect_structs;
+use crate::structs::StructTable;
 
 /// The implicit result variable of a function with a result.
 pub const RESULT_NAME: &str = "ရလဒ်";
@@ -87,6 +90,9 @@ pub struct SemcheckOutput
     /// The kind of each expression whose kind is known.
     #[builder(default)]
     pub kinds: KindTable,
+    /// The kind of each declared struct.
+    #[builder(default)]
+    pub structs: StructTable,
     /// The diagnostics, in source order.
     #[builder(default)]
     pub diagnostics: Vec<Diagnostic>,
@@ -105,13 +111,15 @@ pub struct SemcheckOutput
 pub fn semcheck(program: &Program, options: &SemcheckOptions) -> SemcheckOutput
 {
     let mut diags = Vec::new();
-    let fns = collect_fns(program, &mut diags);
+    let structs = collect_structs(program, &mut diags);
+    let fns = collect_fns(program, &structs, &mut diags);
     #[rustfmt::skip]
-    let mut checker = Checker::builder().fns(fns).diags(diags).platform(options.platform_bits).no_raw(options.no_raw).build();
+    let mut checker = Checker::builder().fns(fns).structs(structs).diags(diags).platform(options.platform_bits).no_raw(options.no_raw).build();
     checker.scopes.push();
     checker.visit_program(program);
     checker.diags.sort_by_key(|d| d.span.lo);
-    SemcheckOutput::builder().kinds(checker.kinds).diagnostics(checker.diags).build()
+    #[rustfmt::skip]
+    return SemcheckOutput::builder().kinds(checker.kinds).structs(checker.structs).diagnostics(checker.diags).build();
 }
 
 /// The function whose block is being checked.
@@ -133,6 +141,9 @@ pub(crate) struct Checker
     pub scopes: Scopes,
     /// The top-level functions.
     pub fns: FnSigs,
+    /// The kind of each declared struct.
+    #[builder(default)]
+    pub structs: StructTable,
     /// Kinds found so far.
     #[builder(default)]
     pub kinds: KindTable,
@@ -189,8 +200,20 @@ impl Checker
     /// * `access` - What it allows.
     fn declare(&mut self, ident: &Ident, kind: Option<DataKind>, access: Access)
     {
+        self.report_struct_name(ident);
         let fresh = self.declare_quiet(ident, kind, access);
         do_if!(!fresh, self.report(rd::redeclaration(ident.span, &ident.name)));
+    }
+
+    /// Report a value name that a struct has.
+    ///
+    /// # Arguments
+    ///
+    /// * `ident` - The name.
+    fn report_struct_name(&mut self, ident: &Ident)
+    {
+        ret_if!(!self.structs.contains_key(&ident.name));
+        self.report(rd::struct_name_clash(ident.span, &ident.name));
     }
 
     /// Declare a function parameter.
@@ -201,6 +224,7 @@ impl Checker
     fn declare_param(&mut self, param: &Param)
     {
         let kind = self.written_kind(&param.kind, KindUse::Other);
+        self.report_struct_name(&param.name);
         let fresh = self.declare_quiet(&param.name, Some(kind), Access::Var);
         let name = &param.name;
         do_if!(!fresh, self.report(rd::duplicate_param(name.span, &name.name)));
@@ -712,4 +736,6 @@ impl Visitor for Checker
     {
         self.check_call(&n.callee, &n.args, n.span);
     }
+
+    fn visit_struct(&mut self, _: &StructDecl) {}
 }

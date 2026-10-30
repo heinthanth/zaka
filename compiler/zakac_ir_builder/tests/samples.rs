@@ -130,7 +130,8 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }
         | ExprNode::Lend { operand }
-        | ExprNode::Take { addr: operand } => expr_places(operand, out),
+        | ExprNode::Take { addr: operand }
+        | ExprNode::FieldAddr { base: operand, .. } => expr_places(operand, out),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
         | ExprNode::Logic { lhs, rhs, .. }

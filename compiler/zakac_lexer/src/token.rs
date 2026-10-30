@@ -473,6 +473,24 @@ pub enum Kw
     Having,
     /// `တို့ပါသော`, before `စာရင်း` in a list literal
     ListOf,
+
+    // structs
+    /// `အချက်အလက်အမျိုးအစား` or `ဒေတာအမျိုးအစား`
+    StructOpen,
+    /// `တို့`, a piece of the field list closers
+    Plural,
+    /// `ပါဝင်သည်`
+    Contains,
+    /// `ပါဝင်ပြီး`
+    ContainsAnd,
+    /// `မျိုးပြပစ္စည်းမှာ`
+    ClassifierIs,
+    /// `ဖြစ်သည်`
+    Is,
+    /// `တို့ ပါဝင်သည်`
+    FieldsClose,
+    /// `တို့ ပါဝင်ပြီး`; a classifier clause follows.
+    FieldsCloseAnd,
 }
 
 impl Kw

@@ -454,4 +454,5 @@ kinds:
   25: f32
   26: f32
   27: f32
+structs: {}
 diagnostics: []

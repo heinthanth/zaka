@@ -305,7 +305,7 @@ impl<'s> FuncGen<'s>
     {
         let kind = self.slot_at(place).kind;
         self.addr_of(place);
-        do_if!(!kind.is_list(), self.op(Op::Load(kind)));
+        do_if!(!kind.is_aggregate(), self.op(Op::Load(kind)));
     }
 
     /// Set the value of a slot, written to its block.
@@ -322,8 +322,8 @@ impl<'s> FuncGen<'s>
         self.op(Op::Store(kind));
     }
 
-    /// Fill the list at the address on the stack with a list value: zero
-    /// octets for a blank list, else a duplicate of its cells.
+    /// Fill the list or struct at the address on the stack with a value of
+    /// its kind: zero octets for a blank one, else a duplicate of the value.
     ///
     /// # Arguments
     ///
@@ -335,15 +335,15 @@ impl<'s> FuncGen<'s>
         self.op(Op::Blit(value.kind));
     }
 
-    /// Write a value at the address on the stack: a list is copied, each
-    /// other value stored.
+    /// Write a value at the address on the stack: a list or a struct is
+    /// copied, each other value stored.
     ///
     /// # Arguments
     ///
     /// * `value` - The value.
     fn put(&mut self, value: &Expr)
     {
-        ret_if!(value.kind.is_list(), self.fill_list(value));
+        ret_if!(value.kind.is_aggregate(), self.fill_list(value));
         self.expr(value);
         self.op(Op::Store(value.kind));
     }
@@ -506,7 +506,7 @@ impl<'s> FuncGen<'s>
     {
         match s
         {
-            Stmt::Set { place, value, .. } if value.kind.is_list() =>
+            Stmt::Set { place, value, .. } if value.kind.is_aggregate() =>
             {
                 self.addr_of(*place);
                 self.fill_list(value);
@@ -515,7 +515,7 @@ impl<'s> FuncGen<'s>
             Stmt::Print { value: PrintValue::Expr(e), .. } =>
             {
                 self.expr(e);
-                self.op(tern!(e.kind.is_list(), Op::PrintList(e.kind), Op::Print));
+                self.op(tern!(e.kind.is_aggregate(), Op::PrintList(e.kind), Op::Print));
             }
             Stmt::Print { value: PrintValue::Text(text), .. } =>
             {
@@ -968,9 +968,12 @@ impl<'s> FuncGen<'s>
             ExprNode::Load { addr } =>
             {
                 self.expr(addr);
-                do_if!(!e.kind.is_list(), self.op(Op::Load(e.kind)));
+                do_if!(!e.kind.is_aggregate(), self.op(Op::Load(e.kind)));
             }
-            ExprNode::Take { addr } if e.kind.is_list() => self.take_list(e.kind, addr),
+            ExprNode::Take { addr } if e.kind.is_aggregate() =>
+            {
+                self.take_list(e.kind, addr)
+            }
             ExprNode::Take { addr } =>
             {
                 self.expr(addr);
@@ -996,18 +999,27 @@ impl<'s> FuncGen<'s>
             {
                 self.cell_addr(e, list, index, (*len, *first), *checked)
             }
+            ExprNode::FieldAddr { base, offset, .. } =>
+            {
+                self.expr(base);
+                self.op(Op::Push(usize_value(
+                    u128::from(*offset),
+                    self.shared.platform,
+                )));
+                self.op(Op::PtrAdd(1));
+            }
         }
     }
 
-    /// Move a list out of the place at an address: its cells go to a slot
-    /// of their own, the place is zeroed, which leaves `ဗလာ` in each owner
-    /// cell, and the address of the new slot is pushed. The address is
-    /// worked out once and kept in a slot of its own, so the source is read
-    /// once.
+    /// Move a list or a struct out of the place at an address: its octets go
+    /// to a slot of their own, the place is zeroed, which leaves `ဗလာ` in each
+    /// owner cell or field, and the address of the new slot is pushed. The
+    /// address is worked out once and kept in a slot of its own, so the
+    /// source is read once.
     ///
     /// # Arguments
     ///
-    /// * `kind` - The list kind.
+    /// * `kind` - The list or struct kind.
     /// * `addr` - The address of the place.
     fn take_list(&mut self, kind: DataKind, addr: &Expr)
     {

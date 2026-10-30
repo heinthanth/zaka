@@ -499,8 +499,8 @@ impl Checker
         };
         let (l, r) = self.infer_sides(lhs, rhs, side);
         let (l, r) = (l?, r?);
-        let list = l.is_list() || r.is_list();
-        ret_if!(list, self.infer_list_pair(class, op, (l, lhs), (r, rhs), span));
+        let block = l.is_aggregate() || r.is_aggregate();
+        ret_if!(block, self.infer_list_pair(class, op, (l, lhs), (r, rhs), span));
         let ptr = l.is_address() || r.is_address();
         ret_if!(ptr, self.infer_ptr_pair(class, op, (l, lhs), (r, rhs), span));
         let want = class.want();
@@ -541,9 +541,9 @@ impl Checker
         }
     }
 
-    /// Infer a two-operand operation where at least one side is a list:
-    /// `==` and `!=` compare two lists of one kind, one cell at a time, and
-    /// other operators take no lists.
+    /// Infer a two-operand operation where at least one side is a list or a
+    /// struct: `==` and `!=` compare two lists of one kind, one cell at a
+    /// time, and other operators take no lists. No operator takes a struct.
     ///
     /// # Arguments
     ///
@@ -561,11 +561,12 @@ impl Checker
         rhs: (DataKind, &Expr), span: Span,
     ) -> Option<DataKind>
     {
-        let same = lhs.0 == rhs.0;
-        ret_if!(class == OpClass::Equal && same, Some(DataKind::Bool));
+        let structs = lhs.0.is_struct() || rhs.0.is_struct();
+        let equal = class == OpClass::Equal && !structs;
+        ret_if!(equal && lhs.0 == rhs.0, Some(DataKind::Bool));
         let mismatch = kd::incompatible_operands(span, &lhs.0.name(), &rhs.0.name());
-        ret_if!(class == OpClass::Equal, self.report(mismatch), None);
-        let (kind, e) = tern!(lhs.0.is_list(), lhs, rhs);
+        ret_if!(equal, self.report(mismatch), None);
+        let (kind, e) = tern!(lhs.0.is_aggregate(), lhs, rhs);
         self.need(kind, class.want().unwrap_or(Want::Number), op, e)
     }
 

@@ -1,6 +1,8 @@
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::float_pattern_text;
+use zakac_rust_sugars::ret_if;
 use zakac_semcheck::kind::DataKind;
+use zakac_semcheck::structs::StructKind;
 
 use crate::mem::Mem;
 use crate::trap::TrapKind;
@@ -60,20 +62,24 @@ pub fn burmese_digits(num: &str) -> String
         .collect()
 }
 
-/// The text a print op writes for a list, without the line break: its cells
-/// between `[` and `]`, joined with `၊ `; a nested list is written the same.
+/// The text a print op writes for a list or a struct, without the line
+/// break: the cells of a list between `[` and `]`, the fields of a struct as
+/// `name: value` between `{` and `}`, each joined with `၊ `; a list or struct
+/// inside is written the same.
 ///
 /// # Arguments
 ///
-/// * `mem` - The RAM that holds the list.
-/// * `addr` - The address of the list.
-/// * `kind` - The list kind; another kind gives the text of one value.
+/// * `mem` - The RAM that holds the value.
+/// * `addr` - The address of the value.
+/// * `kind` - The list or struct kind; another kind gives the text of one
+///   value.
 ///
 /// # Returns
 ///
-/// The text, or the trap a read of a cell hits.
+/// The text, or the trap a read of a cell or field hits.
 pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKind>
 {
+    ret_if!(let Some(s) = kind.as_struct(), struct_text(mem, addr, s));
     let Some(list) = kind.as_list()
     else
     {
@@ -84,4 +90,27 @@ pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKin
     let cells: Vec<String> =
         (0..u64::from(list.len)).map(cell).collect::<Result<_, _>>()?;
     Ok(format!("[{}]", cells.join("၊ ")))
+}
+
+/// The text of a struct: `{name: value၊ ...}`.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the struct.
+/// * `addr` - The address of the struct.
+/// * `s` - The struct kind.
+///
+/// # Returns
+///
+/// The text, or the trap a read of a field hits.
+fn struct_text(mem: &Mem, addr: u64, s: &StructKind) -> Result<String, TrapKind>
+{
+    let platform = mem.platform();
+    let field = |(at, (name, kind)): (usize, &(String, DataKind))| {
+        let offset = u64::from(s.offset(at, platform));
+        Ok(format!("{name}: {}", list_text(mem, addr + offset, *kind)?))
+    };
+    let fields: Vec<String> =
+        s.fields().iter().enumerate().map(field).collect::<Result<_, _>>()?;
+    Ok(format!("{{{}}}", fields.join("၊ ")))
 }

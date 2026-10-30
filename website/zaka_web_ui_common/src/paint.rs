@@ -188,7 +188,12 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::SoThat
         | Kw::AllocTarget
         | Kw::ResizeHead
-        | Kw::FreeHead => "tok-kw",
+        | Kw::FreeHead
+        | Kw::StructOpen
+        | Kw::Plural
+        | Kw::FieldsClose
+        | Kw::FieldsCloseAnd
+        | Kw::ClassifierIs => "tok-kw",
         Kw::Print
         | Kw::Assign
         | Kw::Return
@@ -200,7 +205,10 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::ReturnValue
         | Kw::WillKeep
         | Kw::WillResize
-        | Kw::WillRelease => "tok-verb",
+        | Kw::WillRelease
+        | Kw::Contains
+        | Kw::ContainsAnd
+        | Kw::Is => "tok-verb",
         Kw::Sum
         | Kw::Difference
         | Kw::Product

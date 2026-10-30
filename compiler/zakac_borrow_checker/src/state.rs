@@ -598,7 +598,7 @@ fn param_roots(n: u32, kind: DataKind) -> Roots
 {
     let slot = Root::slot(Place::Local(n));
     ret_if!(!kind.holds_borrow(), Roots::new());
-    ret_if!(kind.is_list(), Roots::from([slot.cell(None).block()]));
+    ret_if!(kind.is_aggregate(), Roots::from([slot.cell(None).block()]));
     Roots::from([slot.block()])
 }
 
@@ -754,14 +754,14 @@ impl SlotState
     pub(crate) fn of_kind(kind: DataKind, info: PtrInfo, int: Interval) -> SlotState
     {
         ret_if!(kind.is_int(), SlotState::Int(int));
-        ret_if!(kind.is_list() && holds_ptr(kind), SlotState::List(info));
+        ret_if!(kind.is_aggregate() && holds_ptr(kind), SlotState::List(info));
         tern!(holds_ptr(kind), SlotState::Ptr(info), SlotState::None)
     }
 }
 
 /// Whether the check follows the pointers of a kind: an owner or a borrow,
-/// or a list whose cells hold one at some depth. Raw addresses are not
-/// followed.
+/// or a list or a struct whose cells or fields hold one at some depth. Raw
+/// addresses are not followed.
 ///
 /// # Arguments
 ///
@@ -773,6 +773,7 @@ impl SlotState
 pub(crate) fn holds_ptr(kind: DataKind) -> bool
 {
     ret_if!(let Some(list) = kind.as_list(), holds_ptr(list.cell));
+    ret_if!(let Some(s) = kind.as_struct(), s.fields().iter().any(|(_, k)| holds_ptr(*k)));
     kind.is_ptr() && !kind.is_raw_ptr()
 }
 

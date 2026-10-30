@@ -495,7 +495,8 @@ pub enum ExprNode
     /// A list written out one cell at a time; each cell has the cell kind of
     /// the expression kind.
     List(Vec<Expr>),
-    /// A list of the expression kind with each cell at its default.
+    /// A list or a struct of the expression kind with each cell or field at
+    /// its default.
     BlankList,
     /// The address of one cell of a list; the expression kind is a pointer
     /// to the cell kind.
@@ -512,6 +513,17 @@ pub enum ExprNode
         /// Whether the cell number is known to be in range, so no check is
         /// needed when the program runs.
         checked: bool,
+    },
+    /// The address of one field of a struct; the expression kind is a
+    /// pointer to the field kind.
+    FieldAddr
+    {
+        /// The struct.
+        base: Box<Expr>,
+        /// The position of the field in the struct.
+        field: u32,
+        /// The offset of the field in the struct, in octets.
+        offset: u32,
     },
 }
 

@@ -269,7 +269,8 @@ impl Folder
             ExprNode::AddrOf(_) => (None, None),
             ExprNode::Load { addr }
             | ExprNode::Lend { operand: addr }
-            | ExprNode::Take { addr } =>
+            | ExprNode::Take { addr }
+            | ExprNode::FieldAddr { base: addr, .. } =>
             {
                 self.drop_value(addr);
                 (None, None)

@@ -65,7 +65,13 @@ const CASES: &[(&[&str], Kw)] = &[
         "လိပ်စာရှိ မှတ်ဉာဏ်ကို"],
         Kw::FreeHead),
     (&["အောက်ပါတို့ကို လုပ်ဆောင်မယ်"],
-        Kw::FnOpen), ];
+        Kw::FnOpen),
+    (&["တို့ ပါဝင်သည်",
+        "တို့ပါဝင်သည်"],
+        Kw::FieldsClose),
+    (&["တို့ ပါဝင်ပြီး",
+        "တို့ပါဝင်ပြီး"],
+        Kw::FieldsCloseAnd), ];
 
 #[test]
 fn phrases_join_attached_and_spaced()

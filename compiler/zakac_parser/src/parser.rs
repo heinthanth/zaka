@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use bon::Builder;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
@@ -163,6 +165,9 @@ pub(crate) struct Parser<'t>
     /// The number of blocks that enclose the current statement.
     #[builder(default)]
     pub(crate) depth: u32,
+    /// The struct names the program declares, so a name can start a kind.
+    #[builder(default)]
+    pub(crate) structs: HashSet<&'t str>,
 }
 
 impl<'t> Parser<'t>
@@ -182,7 +187,30 @@ impl<'t> Parser<'t>
     {
         let cur = Cursor::builder().tokens(&lexed.tokens).build();
         #[rustfmt::skip]
-        return Parser::builder().cur(cur).text(text).base(base).strings(&lexed.strings).build();
+        let mut parser = Parser::builder().cur(cur).text(text).base(base).strings(&lexed.strings).build();
+        let declared = |pair: &[Token]| {
+            let named = pair[0].kind == TokenKind::Kw(Kw::StructOpen)
+                && pair[1].kind == TokenKind::Ident;
+            named.then(|| parser.text_of(pair[1].span))
+        };
+        let names = lexed.tokens.windows(2).filter_map(declared).collect();
+        parser.structs = names;
+        parser
+    }
+
+    /// Whether the token `n` places ahead is a declared struct name.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far to look ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a struct name.
+    pub(crate) fn is_struct_at(&self, n: usize) -> bool
+    {
+        let tok = self.peek_n(n);
+        tok.kind == TokenKind::Ident && self.structs.contains(self.text_of(tok.span))
     }
 
     /// The current token.

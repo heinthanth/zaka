@@ -15,6 +15,7 @@ use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::ListKind;
 use zakac_semcheck::semcheck::KindTable;
 use zakac_semcheck::semcheck::RESULT_NAME;
+use zakac_semcheck::structs::StructTable;
 use zakac_span::span::Span;
 
 use crate::ir::Access;
@@ -42,6 +43,7 @@ use crate::value::Value;
 ///
 /// * `program` - The tree; the check must have reported no errors.
 /// * `kinds` - The kind of each expression, from the check.
+/// * `structs` - The kind of each declared struct, from the check.
 /// * `options` - The options.
 ///
 /// # Returns
@@ -51,13 +53,15 @@ use crate::value::Value;
 /// # Panics
 ///
 /// When an expression has no kind, which a clean check rules out.
-pub fn lower(program: &st::Program, kinds: &KindTable, options: &LowerOptions)
--> Module
+pub fn lower(
+    program: &st::Program, kinds: &KindTable, structs: &StructTable,
+    options: &LowerOptions,
+) -> Module
 {
-    let sigs = collect_sigs(program);
+    let sigs = collect_sigs(program, structs);
     #[rustfmt::skip]
-    let mut lowerer = Lowerer::builder().kinds(kinds).platform(options.platform_bits)
-        .sigs(sigs).build();
+    let mut lowerer = Lowerer::builder().kinds(kinds).structs(structs)
+        .platform(options.platform_bits).sigs(sigs).build();
     lowerer.scopes.push(HashMap::new());
     let mut main = Vec::new();
     do_for!(s in &program.stmts, lowerer.top_stmt(s, &mut main));
@@ -82,11 +86,12 @@ struct Sig
 /// # Arguments
 ///
 /// * `program` - The tree.
+/// * `structs` - The kind of each declared struct.
 ///
 /// # Returns
 ///
 /// The signatures, one per name.
-fn collect_sigs(program: &st::Program) -> HashMap<String, Sig>
+fn collect_sigs(program: &st::Program, structs: &StructTable) -> HashMap<String, Sig>
 {
     let mut sigs = HashMap::new();
     let decls = program
@@ -95,7 +100,8 @@ fn collect_sigs(program: &st::Program) -> HashMap<String, Sig>
         .filter_map(|s| tern!(let st::Stmt::Fn(f) = s, Some(f), None));
     for (index, f) in decls.enumerate()
     {
-        let params = f.params.iter().map(|p| DataKind::from_ast(&p.kind)).collect();
+        let params =
+            f.params.iter().map(|p| DataKind::from_ast(&p.kind, structs)).collect();
         let sig = Sig { index: index as u32, params };
         sigs.entry(f.name.name.clone()).or_insert(sig);
     }
@@ -118,6 +124,8 @@ struct Lowerer<'k>
 {
     /// Kinds from the check.
     kinds: &'k KindTable,
+    /// The kind of each declared struct, from the check.
+    structs: &'k StructTable,
     /// Bit count of the platform-sized kinds.
     platform: u16,
     /// The function signatures, one per name.
@@ -295,6 +303,7 @@ impl Lowerer<'_>
             {
                 out.push(Stmt::Free { dest: self.dest(&n.target), span: n.span })
             }
+            st::Stmt::Struct(_) => (),
         }
     }
 
@@ -330,7 +339,7 @@ impl Lowerer<'_>
     /// The kind.
     fn declared_kind(&self, written: &Kind, init: Option<&ast::Expr>) -> DataKind
     {
-        let kind = DataKind::from_ast(written);
+        let kind = DataKind::from_ast(written, self.structs);
         let open = init.filter(|_| kind.has_open_count());
         open.map_or(kind, |e| self.kind_of(e))
     }
@@ -401,6 +410,7 @@ impl Lowerer<'_>
         ret_if!(let ast::Expr::Group(n) = e, self.dest(&n.inner));
         ret_if!(let Some(ptr) = deref_operand(e), Dest::Mem(self.expr(ptr)));
         ret_if!(let ast::Expr::Index(n) = e, Dest::Mem(self.cell_addr(n)));
+        ret_if!(let ast::Expr::Field(n) = e, Dest::Mem(self.field_addr(n)));
         let ast::Expr::Name(n) = e
         else
         {
@@ -453,7 +463,7 @@ impl Lowerer<'_>
     fn size(&mut self, size: &st::SizeArg) -> (Expr, Option<DataKind>)
     {
         let count = self.coerce(&size.count, DataKind::USIZE);
-        (count, size.unit.as_ref().map(DataKind::from_ast))
+        (count, size.unit.as_ref().map(|k| DataKind::from_ast(k, self.structs)))
     }
 
     /// The kind of a slot.
@@ -627,7 +637,7 @@ impl Lowerer<'_>
     /// The function.
     fn func(&mut self, f: &st::FnDecl) -> Func
     {
-        let ret = f.ret.as_ref().map(DataKind::from_ast);
+        let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
         let outer = self.frame.replace(Frame { locals: Vec::new(), ret });
         let mut block = Vec::new();
         let mut result = None;
@@ -656,7 +666,7 @@ impl Lowerer<'_>
     /// * `p` - The parameter.
     fn declare_param(&mut self, p: &st::Param)
     {
-        self.declare(&p.name, DataKind::from_ast(&p.kind), Access::Var);
+        self.declare(&p.name, DataKind::from_ast(&p.kind, self.structs), Access::Var);
     }
 
     /// Declare the result variable of a function and set it to its default.
@@ -805,8 +815,15 @@ impl Lowerer<'_>
                 ExprNode::Call { func, name: n.callee.name.clone(), args }
             }
             ast::Expr::Null(_) => ExprNode::Const(Value::NULL),
-            ast::Expr::SizeOf(n) => ExprNode::SizeOf(DataKind::from_ast(&n.kind)),
+            ast::Expr::SizeOf(n) =>
+            {
+                ExprNode::SizeOf(DataKind::from_ast(&n.kind, self.structs))
+            }
             ast::Expr::Index(n) => ExprNode::Load { addr: Box::new(self.cell_addr(n)) },
+            ast::Expr::Field(n) =>
+            {
+                ExprNode::Load { addr: Box::new(self.field_addr(n)) }
+            }
             ast::Expr::List(n) => self.list(n, kind),
             ast::Expr::BlankList(_) => ExprNode::BlankList,
         };
@@ -1055,6 +1072,31 @@ impl Lowerer<'_>
         Expr::builder().kind(kind).node(node).span(n.span).build()
     }
 
+    /// The address of one field of a struct.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The field expression.
+    ///
+    /// # Returns
+    ///
+    /// The address, a pointer to the field kind.
+    ///
+    /// # Panics
+    ///
+    /// When the struct has no such field, which a clean check rules out.
+    fn field_addr(&mut self, n: &ast::FieldExpr) -> Expr
+    {
+        let shape =
+            self.kind_of(&n.base).as_struct().expect("a field is read from a struct");
+        let (at, kind) = shape.field(&n.field.name).expect("the check found the field");
+        let offset = shape.offset(at, self.platform);
+        let base = Box::new(self.expr(&n.base));
+        let field = u32::try_from(at).expect("a struct has fewer than 2^32 fields");
+        let node = ExprNode::FieldAddr { base, field, offset };
+        Expr::builder().kind(kind.pointer_to()).node(node).span(n.span).build()
+    }
+
     /// The cell count of a list, or of the list a pointer points at.
     ///
     /// # Arguments
@@ -1276,7 +1318,7 @@ pub fn constant(v: Value, span: Span) -> Expr
 fn default_constant(kind: DataKind, span: Span) -> Expr
 {
     let node = tern!(
-        kind.is_list(),
+        kind.is_aggregate(),
         ExprNode::BlankList,
         ExprNode::Const(Value::default_of(kind))
     );

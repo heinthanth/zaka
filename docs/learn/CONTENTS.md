@@ -48,6 +48,8 @@
   - [Passing and comparing lists](lists/passing.md)
   - [Lists of lists](lists/grids.md)
   - [List mistakes](lists/mistakes.md)
+- [Structs](structs/README.md)
+  - [Struct mistakes](structs/mistakes.md)
 - [Natural Zaka](natural-zaka/README.md)
 - [Example programs](programs/README.md)
   - [FizzBuzz](programs/fizzbuzz.md)

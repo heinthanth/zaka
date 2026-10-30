@@ -89,6 +89,8 @@ pub enum Expr
     SizeOf(SizeOfExpr),
     /// `x ၏ အကွက် i` or `x ၏ n ခုမြောက်အကွက်`: one cell of a list.
     Index(IndexExpr),
+    /// `x ၏ <field>`: one field of a struct.
+    Field(FieldExpr),
     /// `a၊ b၊ c တို့ပါသော စာရင်း`
     List(ListLit),
     /// `စာရင်းအလွတ်`, a list with each cell at its default.
@@ -199,6 +201,21 @@ pub struct IndexExpr
     /// `n ခုမြောက်အကွက်`.
     pub first: u8,
     /// Source region, from the list to the index or the verb.
+    pub span: Span,
+}
+
+/// One field of a struct: `x ၏ <field>`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct FieldExpr
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The struct.
+    #[builder(into)]
+    pub base: Box<Expr>,
+    /// The field name.
+    pub field: Ident,
+    /// Source region, from the struct to the field name.
     pub span: Span,
 }
 
@@ -550,6 +567,7 @@ impl Expr
             Expr::Null(n) => n.id,
             Expr::SizeOf(n) => n.id,
             Expr::Index(n) => n.id,
+            Expr::Field(n) => n.id,
             Expr::List(n) => n.id,
             Expr::BlankList(n) => n.id,
         }

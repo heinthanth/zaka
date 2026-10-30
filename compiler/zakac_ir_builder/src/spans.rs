@@ -173,5 +173,6 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
             expr(list, f);
             expr(index, f);
         }
+        ExprNode::FieldAddr { base, .. } => expr(base, f),
     }
 }

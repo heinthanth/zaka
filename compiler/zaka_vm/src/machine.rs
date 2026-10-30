@@ -1311,15 +1311,18 @@ impl Machine
     ///
     /// # Arguments
     ///
-    /// * `kind` - The kind; never a list, which moves through a blit and a
-    ///   zero.
+    /// * `kind` - The kind; never a list or a struct, which moves through a
+    ///   blit and a zero.
     ///
     /// # Returns
     ///
     /// `Ok`, or the trap the access hits.
     fn take(&mut self, kind: DataKind) -> Step
     {
-        debug_assert!(!kind.is_list(), "a list moves through blit and zero");
+        debug_assert!(
+            !kind.is_aggregate(),
+            "a list or struct moves through blit and zero"
+        );
         let addr = self.pop_ptr("take")?;
         let v = self.mem.load(addr, kind)?;
         self.mem.store(addr, Value::default_of(kind))?;
@@ -1338,8 +1341,8 @@ impl Machine
         self.mem.store(addr, v)
     }
 
-    /// Write an argument into the slot of its parameter. A list argument is
-    /// the address of the list, and its cells are copied.
+    /// Write an argument into the slot of its parameter. A list or struct
+    /// argument is the address of the value, and its octets are copied.
     ///
     /// # Arguments
     ///
@@ -1352,9 +1355,10 @@ impl Machine
     /// `Ok`, or the trap the write hits.
     fn pass(&mut self, to: u64, v: Value, kind: DataKind) -> Step
     {
-        ret_if!(!kind.is_list(), self.mem.store(to, v));
-        let from =
-            v.as_ptr().ok_or_else(|| malformed("a list argument is an address"))?;
+        ret_if!(!kind.is_aggregate(), self.mem.store(to, v));
+        let from = v
+            .as_ptr()
+            .ok_or_else(|| malformed("a list or struct argument is an address"))?;
         self.mem.blit(to, from, kind)
     }
 

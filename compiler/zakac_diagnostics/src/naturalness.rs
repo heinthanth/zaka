@@ -140,3 +140,24 @@ pub fn pa_in_value(span: Span, verb: &str, particle: &str) -> Diagnostic
     let help = t!("codes.ZK0508.help", v = verb);
     Diagnostic::new(Code::PaInValue, msg, span).with_help(help)
 }
+
+/// A count word uses a classifier other than the kind's own.
+///
+/// # Arguments
+///
+/// * `span` - The count word.
+/// * `kind` - The counted kind, as text.
+/// * `want` - The classifier of the kind.
+/// * `found` - The classifier written.
+///
+/// # Returns
+///
+/// The `ZK0509` diagnostic, with the right count word as a hint.
+pub fn classifier_mismatch(
+    span: Span, kind: &str, want: &str, found: &str,
+) -> Diagnostic
+{
+    let msg = t!("codes.ZK0509.message", k = kind, w = want, f = found);
+    let help = t!("codes.ZK0509.help", w = want);
+    Diagnostic::new(Code::ClassifierMismatch, msg, span).with_help(help)
+}

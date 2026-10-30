@@ -7,6 +7,7 @@ use crate::expr::BoolLit;
 use crate::expr::CallExpr;
 use crate::expr::CharLit;
 use crate::expr::Expr;
+use crate::expr::FieldExpr;
 use crate::expr::FloatLit;
 use crate::expr::GroupExpr;
 use crate::expr::Ident;
@@ -44,6 +45,7 @@ use crate::stmt::ReturnStmt;
 use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
 use crate::stmt::StrArg;
+use crate::stmt::StructDecl;
 use crate::stmt::WhileStmt;
 
 /// A tree node with a source span.
@@ -106,6 +108,7 @@ CallStmt => "call_stmt", visit_call_stmt;
 AllocStmt => "alloc", visit_alloc;
 ResizeStmt => "resize", visit_resize;
 FreeStmt => "free", visit_free;
+StructDecl => "struct", visit_struct;
 IntLit => "int", visit_int;
 FloatLit => "float", visit_float;
 CharLit => "char", visit_char;
@@ -121,6 +124,7 @@ CallExpr => "call", visit_call_expr;
 NullLit => "null", visit_null;
 SizeOfExpr => "sizeof", visit_size_of;
 IndexExpr => "index", visit_index;
+FieldExpr => "field", visit_field;
 ListLit => "list", visit_list;
 BlankListLit => "blank_list", visit_blank_list;
 Ident => "ident", visit_ident;
@@ -155,6 +159,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Alloc(s) => s,
         Stmt::Resize(s) => s,
         Stmt::Free(s) => s,
+        Stmt::Struct(s) => s,
     }
 }
 
@@ -186,6 +191,7 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::Null(e) => e,
         Expr::SizeOf(e) => e,
         Expr::Index(e) => e,
+        Expr::Field(e) => e,
         Expr::List(e) => e,
         Expr::BlankList(e) => e,
     }
@@ -285,6 +291,8 @@ pub trait Visitor
     /// Visit a heap release.
     fn visit_free(&mut self, n: &FreeStmt) { walk_free(self, n) }
 
+    fn visit_struct(&mut self, n: &StructDecl) { walk_struct(self, n) }
+
     /// Visit an expression.
     fn visit_expr(&mut self, n: &Expr) { walk_expr(self, n) }
     /// Visit an integer literal.
@@ -317,6 +325,8 @@ pub trait Visitor
     fn visit_size_of(&mut self, n: &SizeOfExpr) { walk_size_of(self, n) }
     /// Visit a list cell.
     fn visit_index(&mut self, n: &IndexExpr) { walk_index(self, n) }
+
+    fn visit_field(&mut self, n: &FieldExpr) { walk_field(self, n) }
     /// Visit a list literal.
     fn visit_list(&mut self, n: &ListLit) { walk_list(self, n) }
     /// Visit a blank list.
@@ -356,6 +366,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Alloc(s) => v.visit_alloc(s),
         Stmt::Resize(s) => v.visit_resize(s),
         Stmt::Free(s) => v.visit_free(s),
+        Stmt::Struct(s) => v.visit_struct(s),
     }
 }
 
@@ -540,6 +551,16 @@ pub fn walk_free<V: Visitor + ?Sized>(v: &mut V, n: &FreeStmt)
     v.leave(n);
 }
 
+/// Visit the name, fields and classifier of a struct declaration.
+pub fn walk_struct<V: Visitor + ?Sized>(v: &mut V, n: &StructDecl)
+{
+    v.enter(n);
+    v.visit_ident(&n.name);
+    do_for!(f in &n.fields, v.visit_param(f));
+    do_if!(let Some(word) = &n.classifier, v.visit_ident(word));
+    v.leave(n);
+}
+
 /// Visit the count, then the unit kind, of a size operand. The operand is
 /// no node of its own, so `enter` and `leave` do not run for it.
 fn walk_size_arg<V: Visitor + ?Sized>(v: &mut V, n: &SizeArg)
@@ -568,6 +589,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::Null(e) => v.visit_null(e),
         Expr::SizeOf(e) => v.visit_size_of(e),
         Expr::Index(e) => v.visit_index(e),
+        Expr::Field(e) => v.visit_field(e),
         Expr::List(e) => v.visit_list(e),
         Expr::BlankList(e) => v.visit_blank_list(e),
     }
@@ -694,6 +716,15 @@ pub fn walk_index<V: Visitor + ?Sized>(v: &mut V, n: &IndexExpr)
     v.leave(n);
 }
 
+/// Visit the struct, then the field name, of a field access.
+pub fn walk_field<V: Visitor + ?Sized>(v: &mut V, n: &FieldExpr)
+{
+    v.enter(n);
+    v.visit_expr(&n.base);
+    v.visit_ident(&n.field);
+    v.leave(n);
+}
+
 /// Visit the cells of a list literal.
 pub fn walk_list<V: Visitor + ?Sized>(v: &mut V, n: &ListLit)
 {
@@ -742,8 +773,12 @@ pub trait VisitorMut
     fn visit_expr_mut(&mut self, n: &mut Expr) { walk_expr_mut(self, n) }
     /// Visit a name in a declaration, parameter, loop header or call.
     fn visit_ident_mut(&mut self, n: &mut Ident) { self.visit_span_mut(&mut n.span) }
-    /// Visit a kind.
-    fn visit_kind_mut(&mut self, n: &mut Kind) { self.visit_span_mut(&mut n.span) }
+    /// Visit a kind and the struct name in it.
+    fn visit_kind_mut(&mut self, n: &mut Kind)
+    {
+        self.visit_span_mut(&mut n.span);
+        do_if!(let Some(name) = &mut n.name, self.visit_ident_mut(name));
+    }
     /// Visit a heap allocation.
     fn visit_alloc_mut(&mut self, n: &mut AllocStmt) { walk_alloc_mut(self, n) }
     /// Visit a heap reallocation.
@@ -803,6 +838,7 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::Alloc(s) => v.visit_alloc_mut(s),
         Stmt::Resize(s) => v.visit_resize_mut(s),
         Stmt::Free(s) => v.visit_free_mut(s),
+        Stmt::Struct(s) => walk_struct_mut(v, s),
     }
 }
 
@@ -893,6 +929,20 @@ pub fn walk_fn_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FnDecl)
     v.visit_block_mut(&mut n.block);
 }
 
+/// Visit the name, fields and classifier of a struct declaration.
+pub fn walk_struct_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut StructDecl)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_ident_mut(&mut n.name);
+    for f in &mut n.fields
+    {
+        v.visit_span_mut(&mut f.span);
+        v.visit_kind_mut(&mut f.kind);
+        v.visit_ident_mut(&mut f.name);
+    }
+    do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
+}
+
 /// Visit the value of a return statement.
 pub fn walk_return_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut ReturnStmt)
 {
@@ -937,6 +987,7 @@ fn walk_size_arg_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut SizeArg)
     v.visit_span_mut(&mut n.span);
     v.visit_expr_mut(&mut n.count);
     opt_kind_mut(v, &mut n.unit);
+    do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
 }
 
 /// Visit the children of an expression.
@@ -959,6 +1010,11 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         Expr::Null(e) => v.visit_null_mut(e),
         Expr::SizeOf(e) => v.visit_size_of_mut(e),
         Expr::Index(e) => walk_pair_mut(v, &mut e.span, &mut e.list, &mut e.index),
+        Expr::Field(e) =>
+        {
+            walk_one_mut(v, &mut e.span, &mut e.base);
+            v.visit_ident_mut(&mut e.field);
+        }
         Expr::List(e) => walk_list_mut(v, e),
         Expr::BlankList(e) => v.visit_span_mut(&mut e.span),
     }

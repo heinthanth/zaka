@@ -937,6 +937,11 @@ impl<'m> Flow<'m>
                 let l = self.value(list, state);
                 self.cell_addr(e, &l, state)
             }
+            ExprNode::FieldAddr { base, .. } =>
+            {
+                let b = self.value(base, state);
+                cell_value(base, &b, Interval::point(0), 1)
+            }
             ExprNode::Lend { operand } | ExprNode::Convert { operand, .. } =>
             {
                 let v = self.value(operand, state);
@@ -1009,9 +1014,10 @@ impl<'m> Flow<'m>
         cell_value(list, l, cell, *len)
     }
 
-    /// Run a load of a list cell tested against `ဗလာ`. The list slot is
-    /// read without the moved-out check, as the test does not use the
-    /// value: the cells of a list moved out read as `ဗလာ`.
+    /// Run a load of a list cell or a struct field tested against `ဗလာ`.
+    /// The slot is read without the moved-out check, as the test does not
+    /// use the value: the cells of a list moved out read as `ဗလာ`, as do the
+    /// fields of a struct.
     ///
     /// # Arguments
     ///
@@ -1024,10 +1030,11 @@ impl<'m> Flow<'m>
         {
             return;
         };
-        let ExprNode::CellAddr { list, .. } = &addr.node
-        else
+        let list = match &addr.node
         {
-            return;
+            ExprNode::CellAddr { list, .. }
+            | ExprNode::FieldAddr { base: list, .. } => list,
+            _ => return,
         };
         let ExprNode::Read(place) = list.node
         else
@@ -1035,7 +1042,11 @@ impl<'m> Flow<'m>
             return;
         };
         let l = read_value(place, list.kind, state);
-        let at = self.cell_addr(addr, &l, state);
+        let at = tern!(
+            matches!(addr.node, ExprNode::CellAddr { .. }),
+            self.cell_addr(addr, &l, state),
+            cell_value(list, &l, Interval::point(0), 1)
+        );
         self.load(e, addr, &at, state);
     }
 
@@ -1559,7 +1570,7 @@ fn cell_value(list: &Expr, l: &SlotState, cell: Interval, len: u32) -> SlotState
     let slot = matches!(list.node, ExprNode::Read(_));
     let (state, offset, count) = match ptr_info(l)
     {
-        _ if list.kind.is_list() =>
+        _ if list.kind.is_aggregate() =>
         {
             (OwnerState::HELD, tern!(slot, cell, Interval::TOP), slot.then_some(1))
         }

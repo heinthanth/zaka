@@ -245,3 +245,82 @@ pub fn value_from_void_function(span: Span, name: &str) -> Diagnostic
         span,
     )
 }
+
+/// Two structs share a name.
+///
+/// # Arguments
+///
+/// * `span` - The name in the second declaration.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0316` diagnostic.
+pub fn duplicate_struct(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::DuplicateStruct, t!("codes.ZK0316.message", n = name), span)
+}
+
+/// Two fields of one struct share a name.
+///
+/// # Arguments
+///
+/// * `span` - The second field name.
+/// * `owner` - The struct name.
+/// * `name` - The field name.
+///
+/// # Returns
+///
+/// The `ZK0317` diagnostic.
+pub fn duplicate_field(span: Span, owner: &str, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0317.message", s = owner, n = name);
+    Diagnostic::new(Code::DuplicateField, msg, span)
+}
+
+/// A kind names a struct that is not declared.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0318` diagnostic.
+pub fn unknown_kind_name(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::UnknownKindName, t!("codes.ZK0318.message", n = name), span)
+}
+
+/// A variable, parameter, field or function takes the name of a struct.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0319` diagnostic.
+pub fn struct_name_clash(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::StructNameClash, t!("codes.ZK0319.message", n = name), span)
+}
+
+/// A field access names a field the struct does not have.
+///
+/// # Arguments
+///
+/// * `span` - The field name.
+/// * `owner` - The struct name.
+/// * `name` - The field name.
+///
+/// # Returns
+///
+/// The `ZK0320` diagnostic.
+pub fn unknown_field(span: Span, owner: &str, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0320.message", s = owner, n = name);
+    Diagnostic::new(Code::UnknownField, msg, span)
+}

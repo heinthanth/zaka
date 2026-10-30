@@ -117,4 +117,4 @@ numbered with a variable named `အရေအတွက်`.
 - Read cell 5 of a list of 5 cells through a variable, and read the message.
 - Read the same cell with a constant number, and compare the two messages.
 
-Next: [Natural Zaka](../natural-zaka/README.md).
+Next: [Structs](../structs/README.md).

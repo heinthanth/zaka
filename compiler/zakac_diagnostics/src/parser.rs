@@ -245,6 +245,20 @@ pub fn nested_function(span: Span) -> Diagnostic
     Diagnostic::new(Code::NestedFunction, t!("codes.ZK0214.message"), span)
 }
 
+/// A struct is declared inside a block.
+///
+/// # Arguments
+///
+/// * `span` - The declaration.
+///
+/// # Returns
+///
+/// The `ZK0228` diagnostic.
+pub fn nested_struct(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::NestedStruct, t!("codes.ZK0228.message"), span)
+}
+
 /// A single-statement block is a conditional.
 ///
 /// # Arguments

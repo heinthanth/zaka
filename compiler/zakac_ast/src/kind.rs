@@ -7,6 +7,8 @@ use strum::AsRefStr;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::expr::Ident;
+
 /// The base of a kind, without its size or sign.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[derive(AsRefStr)]
@@ -25,6 +27,8 @@ pub enum BaseKind
     /// A bare `လိပ်စာ`: an address whose target kind is not known.
     #[strum(serialize = "ptr")]
     Opaque,
+    /// A struct, named in [`Kind::name`].
+    Named,
 }
 
 /// The cell count of a list kind.
@@ -59,6 +63,9 @@ pub struct Kind
 {
     /// The base kind.
     pub base: BaseKind,
+    /// The struct name of a [`BaseKind::Named`] base.
+    #[serde(default)]
+    pub name: Option<Ident>,
     /// The bit count, when one is written.
     pub bits: Option<u16>,
     /// `Some(true)` for `လက္ခဏာရှိ`, `Some(false)` for `လက္ခဏာမဲ့`, `None`
@@ -85,19 +92,26 @@ pub struct Kind
 
 impl Serialize for Kind
 {
-    /// Write each field. The text artifacts leave out a borrow field that
-    /// holds its default, so older goldens are unchanged. The raw artifacts
-    /// are not self-describing: all fields are written.
+    /// Write each field. The text artifacts leave out a name or borrow field
+    /// that holds its default, so older goldens are unchanged. The raw
+    /// artifacts are not self-describing: all fields are written.
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error>
     {
         let skip = serializer.is_human_readable();
+        let skip_name = skip && self.name.is_none();
         let skip_borrowed = skip && !self.borrowed;
         let skip_extra = skip && self.extra_borrows == 0;
-        /// The number of fields, the borrow fields included.
-        const FIELDS: usize = 7;
-        let n = FIELDS - usize::from(skip_borrowed) - usize::from(skip_extra);
+        /// The number of fields, the name and borrow fields included.
+        const FIELDS: usize = 8;
+        let skipped = [skip_name, skip_borrowed, skip_extra].map(usize::from);
+        let n = FIELDS - skipped.iter().sum::<usize>();
         let mut state = serializer.serialize_struct("Kind", n)?;
         state.serialize_field("base", &self.base)?;
+        tern!(
+            skip_name,
+            state.skip_field("name")?,
+            state.serialize_field("name", &self.name)?
+        );
         state.serialize_field("bits", &self.bits)?;
         state.serialize_field("signed", &self.signed)?;
         state.serialize_field("wraps", &self.wraps)?;

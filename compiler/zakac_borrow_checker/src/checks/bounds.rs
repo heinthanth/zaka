@@ -163,6 +163,15 @@ fn blocks_of(flow: &Flow, e: &Expr, state: &State) -> Option<Roots>
             Some(Roots::from([Root::slot(place)]))
         }
         ExprNode::CellAddr { list, .. } => blocks_of(flow, list, state),
+        ExprNode::FieldAddr { base, .. } =>
+        {
+            let ExprNode::Read(place) = base.node
+            else
+            {
+                return None;
+            };
+            Some(Roots::from([Root::slot(place)]))
+        }
         _ => None,
     }
 }

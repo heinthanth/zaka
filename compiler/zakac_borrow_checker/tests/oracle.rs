@@ -28,10 +28,11 @@ use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
 /// Whether a kind has a raw address level, at whatever depth, or is a
-/// list whose cells have one.
+/// list or a struct whose cells or fields have one.
 fn raw_kind(kind: DataKind) -> bool
 {
     ret_if!(let Some(list) = kind.as_list(), raw_kind(list.cell));
+    ret_if!(let Some(s) = kind.as_struct(), s.fields().iter().any(|(_, k)| raw_kind(*k)));
     kind.ptr_kind().is_some_and(|p| p.raw != 0)
 }
 
@@ -50,7 +51,8 @@ fn raw_expr(e: &Expr) -> bool
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }
         | ExprNode::Lend { operand }
-        | ExprNode::Take { addr: operand } => raw_expr(operand),
+        | ExprNode::Take { addr: operand }
+        | ExprNode::FieldAddr { base: operand, .. } => raw_expr(operand),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
         | ExprNode::Logic { lhs, rhs, .. }

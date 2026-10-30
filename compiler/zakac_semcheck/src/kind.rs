@@ -14,6 +14,10 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 
+use crate::structs::StructKind;
+use crate::structs::StructTable;
+use crate::structs::parse_sig;
+
 /// Bit counts an integer kind can have.
 const INT_BITS: &[u16] = &[8, 16, 32, 64, 128];
 /// Bit counts a floating-point kind can have.
@@ -88,6 +92,8 @@ pub enum Base
     Opaque,
     /// A list, for a pointer to a whole list.
     List(&'static ListKind),
+    /// A struct, for a pointer to a whole struct.
+    Struct(&'static StructKind),
 }
 
 impl Base
@@ -107,6 +113,7 @@ impl Base
             Base::Bool => Some(DataKind::Bool),
             Base::Opaque => None,
             Base::List(l) => Some(DataKind::List(l)),
+            Base::Struct(s) => Some(DataKind::Struct(s)),
         }
     }
 }
@@ -248,6 +255,8 @@ pub enum DataKind
     Null,
     /// A list of cells.
     List(&'static ListKind),
+    /// A struct of named fields.
+    Struct(&'static StructKind),
 }
 
 impl DataKind
@@ -266,13 +275,15 @@ impl DataKind
     /// # Arguments
     ///
     /// * `kind` - The kind phrase.
+    /// * `structs` - The kind of each declared struct.
     ///
     /// # Returns
     ///
     /// The kind; a missing sign means signed, a missing bit count means
     /// platform size for integers and 64 for floats. Each pointer level of
-    /// the phrase adds one address level.
-    pub fn from_ast(kind: &Kind) -> DataKind
+    /// the phrase adds one address level. A struct name that is not declared
+    /// stands for `isize`; the check reports it.
+    pub fn from_ast(kind: &Kind, structs: &StructTable) -> DataKind
     {
         let width = kind.bits.map_or(Width::Platform, Width::Bits);
         let base = match kind.base
@@ -285,6 +296,7 @@ impl DataKind
             BaseKind::Char => Base::Char,
             BaseKind::Bool => Base::Bool,
             BaseKind::Opaque => Base::Opaque,
+            BaseKind::Named => named_base(kind, structs),
         };
         let skip = usize::from(kind.base == BaseKind::Opaque);
         let plain = DataKind::over(base, u8::try_from(skip).unwrap_or(1));
@@ -365,6 +377,32 @@ impl DataKind
     ///
     /// `true` for a list kind.
     pub fn is_list(self) -> bool { matches!(self, DataKind::List(_)) }
+
+    /// The struct part of the kind.
+    ///
+    /// # Returns
+    ///
+    /// The struct, or `None` for a kind that is no struct.
+    pub fn as_struct(self) -> Option<&'static StructKind>
+    {
+        tern!(let DataKind::Struct(s) = self, Some(s), None)
+    }
+
+    /// Whether the kind is a struct.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a struct kind.
+    pub fn is_struct(self) -> bool { matches!(self, DataKind::Struct(_)) }
+
+    /// Whether a value of the kind is a block of other values: a list or a
+    /// struct. Such a value lives in mem, and a duplicate takes the whole
+    /// block.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a list or a struct kind.
+    pub fn is_aggregate(self) -> bool { self.is_list() || self.is_struct() }
 
     /// Whether some list level of the kind has no cell count so far.
     ///
@@ -452,13 +490,31 @@ impl DataKind
         Some(DataKind::Ptr(PtrKind { borrowed, ..ptr }))
     }
 
-    /// The short name, for messages and artifacts.
+    /// The short name, for messages.
     ///
     /// # Returns
     ///
     /// The name, such as `i8`, `usize`, `f64`, `char`, `bool`, `*i32`,
-    /// `ptr` or `null`.
-    pub fn name(self) -> String
+    /// `ptr` or `null`; a struct is its name alone.
+    pub fn name(self) -> String { self.spell(false) }
+
+    /// The name that reads back with [`DataKind::parse`], for artifacts.
+    ///
+    /// # Returns
+    ///
+    /// The short name, with each struct written as its signature.
+    pub fn sig_name(self) -> String { self.spell(true) }
+
+    /// The name of the kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `full` - Whether a struct is written as its signature.
+    ///
+    /// # Returns
+    ///
+    /// The name.
+    fn spell(self, full: bool) -> String
     {
         match self
         {
@@ -466,9 +522,10 @@ impl DataKind
             DataKind::Float(bits) => format!("f{bits}"),
             DataKind::Char => "char".to_string(),
             DataKind::Bool => "bool".to_string(),
-            DataKind::Ptr(p) => ptr_name(p),
+            DataKind::Ptr(p) => ptr_name(p, full),
             DataKind::Null => "null".to_string(),
-            DataKind::List(l) => list_name(l),
+            DataKind::List(l) => list_name(l, full),
+            DataKind::Struct(s) => tern!(full, s.sig(), &s.name).to_string(),
         }
     }
 
@@ -489,6 +546,7 @@ impl DataKind
             DataKind::Ptr(p) => (p.depth, p.base),
             DataKind::Null => (1, Base::Opaque),
             DataKind::List(l) => (0, Base::List(l)),
+            DataKind::Struct(s) => (0, Base::Struct(s)),
         }
     }
 
@@ -602,6 +660,7 @@ impl DataKind
     pub fn is_move_kind(self) -> bool
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.is_move_kind());
+        ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.is_move_kind()));
         self.is_owner_ptr()
     }
 
@@ -621,6 +680,7 @@ impl DataKind
     pub fn holds_borrow(self) -> bool
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_borrow());
+        ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_borrow()));
         self.is_borrow()
     }
 
@@ -704,6 +764,7 @@ impl DataKind
     /// The size, or `None` for a list too large for the machine.
     pub fn checked_size(self, platform: u16) -> Option<u32>
     {
+        ret_if!(let Some(s) = self.as_struct(), s.size(platform));
         let Some(l) = self.as_list()
         else
         {
@@ -724,6 +785,7 @@ impl DataKind
     pub fn align(self, platform: u16) -> u32
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.align(platform));
+        ret_if!(let Some(s) = self.as_struct(), s.align(platform));
         self.size(platform).min(16)
     }
 
@@ -785,7 +847,7 @@ impl DataKind
             DataKind::Char => 32,
             DataKind::Bool => 8,
             DataKind::Ptr(_) | DataKind::Null => platform,
-            DataKind::List(_) =>
+            DataKind::List(_) | DataKind::Struct(_) =>
             {
                 let bits = u64::from(self.size(platform)) * 8;
                 u16::try_from(bits).unwrap_or(u16::MAX)
@@ -915,6 +977,7 @@ impl DataKind
     pub fn holds_address(self) -> bool
     {
         ret_if!(let Some(list) = self.as_list(), list.cell.holds_address());
+        ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_address()));
         self.is_ptr()
     }
 
@@ -935,7 +998,7 @@ impl DataKind
     /// pointee that holds an address, see [`DataKind::reads_addresses_as`].
     pub fn cast_allowed(self, to: DataKind) -> bool
     {
-        ret_false!(self.is_list() || to.is_list());
+        ret_false!(self.is_aggregate() || to.is_aggregate());
         ret_true!(self == to);
         ret_true!(self.is_numeric() && to.is_numeric());
         ret_false!(self.reads_addresses_as(to));
@@ -949,6 +1012,22 @@ impl DataKind
                 | (DataKind::Bool, DataKind::Int(_))
         )
     }
+}
+
+/// The base a struct name stands for.
+///
+/// # Arguments
+///
+/// * `kind` - The kind phrase, with a [`BaseKind::Named`] base.
+/// * `structs` - The kind of each declared struct.
+///
+/// # Returns
+///
+/// The struct, or `isize` for a name that is not declared.
+fn named_base(kind: &Kind, structs: &StructTable) -> Base
+{
+    let found = kind.name.as_ref().and_then(|n| structs.get(&n.name)).copied();
+    found.map_or(Base::Int(IntKind::new(true, Width::Platform)), |k| k.levels().1)
 }
 
 /// Read the short name of a plain kind such as `i8`, `usize`, `f32`,
@@ -985,13 +1064,14 @@ fn parse_plain(name: &str) -> Option<DataKind>
 /// # Arguments
 ///
 /// * `p` - The kind.
+/// * `full` - Whether a struct base is written as its signature.
 ///
 /// # Returns
 ///
 /// A leading `&` for a borrow, then one mark per address level from the
 /// outer one in, `*` for an owner and `~` for a raw level, then the base
 /// name; `ptr` counts as one level itself and reads `rawptr` when raw.
-fn ptr_name(p: PtrKind) -> String
+fn ptr_name(p: PtrKind, full: bool) -> String
 {
     let plain = p.base.scalar();
     let marked = usize::from(p.depth) - usize::from(plain.is_none());
@@ -1006,7 +1086,7 @@ fn ptr_name(p: PtrKind) -> String
     {
         return format!("{borrow}{marks}{}", tern!(p.raw & 1 == 1, "rawptr", "ptr"));
     };
-    format!("{borrow}{marks}{}", plain.name())
+    format!("{borrow}{marks}{}", plain.spell(full))
 }
 
 /// Read the base part of a short name, past its address marks.
@@ -1022,6 +1102,7 @@ fn ptr_name(p: PtrKind) -> String
 fn parse_base(name: &str) -> Option<(Base, bool)>
 {
     ret_if!(name == "ptr", Some((Base::Opaque, false)));
+    ret_if!(name.ends_with('}'), parse_sig(name).map(|s| (Base::Struct(s), false)));
     ret_if!(name == "rawptr", Some((Base::Opaque, true)));
     let Some(inner) = name.strip_prefix('[')
     else
@@ -1039,15 +1120,16 @@ fn parse_base(name: &str) -> Option<(Base, bool)>
 /// # Arguments
 ///
 /// * `l` - The kind.
+/// * `full` - Whether a struct cell is written as its signature.
 ///
 /// # Returns
 ///
 /// `[n]` then the cell name, such as `[3]isize`; `[]` while the count is
 /// open.
-fn list_name(l: &ListKind) -> String
+fn list_name(l: &ListKind, full: bool) -> String
 {
     let count = tern!(l.len == 0, String::new(), l.len.to_string());
-    format!("[{count}]{}", l.cell.name())
+    format!("[{count}]{}", l.cell.spell(full))
 }
 
 /// The short name of an integer kind.
@@ -1118,7 +1200,7 @@ impl From<DataKind> for String
     /// # Returns
     ///
     /// The name.
-    fn from(kind: DataKind) -> String { kind.name() }
+    fn from(kind: DataKind) -> String { kind.sig_name() }
 }
 
 impl TryFrom<String> for DataKind

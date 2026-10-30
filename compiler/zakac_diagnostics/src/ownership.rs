@@ -301,3 +301,18 @@ pub fn raw_not_allowed(span: Span) -> Diagnostic
 {
     Diagnostic::new(Code::RawNotAllowed, t!("codes.ZK0717.message"), span)
 }
+
+/// A struct field holds a borrow.
+///
+/// # Arguments
+///
+/// * `span` - The field.
+/// * `name` - The field name.
+///
+/// # Returns
+///
+/// The `ZK0718` diagnostic.
+pub fn borrow_field(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::BorrowField, t!("codes.ZK0718.message", n = name), span)
+}

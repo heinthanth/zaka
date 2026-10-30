@@ -269,7 +269,8 @@ pub(crate) fn null_compared_cell<'e>(lhs: &'e Expr, rhs: &'e Expr) -> Option<&'e
     None
 }
 
-/// The load of a cell of a list slot an expression reads.
+/// The load of a cell of a list slot, or of a field of a struct slot, an
+/// expression reads.
 ///
 /// # Arguments
 ///
@@ -286,12 +287,14 @@ fn cell_load(e: &Expr) -> Option<&Expr>
     {
         return None;
     };
-    let ExprNode::CellAddr { list, .. } = &addr.node
-    else
-    {
-        return None;
-    };
-    let slot = list.kind.is_list() && matches!(list.node, ExprNode::Read(_));
+    let list =
+        match &addr.node
+        {
+            ExprNode::CellAddr { list, .. }
+            | ExprNode::FieldAddr { base: list, .. } => list,
+            _ => return None,
+        };
+    let slot = list.kind.is_aggregate() && matches!(list.node, ExprNode::Read(_));
     slot.then_some(load)
 }
 

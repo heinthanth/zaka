@@ -145,6 +145,14 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ခုရှိသော", Kw::Having),
     ("ရှိသော", Kw::Having),
     ("တို့ပါသော", Kw::ListOf),
+    // structs
+    ("အချက်အလက်အမျိုးအစား", Kw::StructOpen),
+    ("ဒေတာအမျိုးအစား", Kw::StructOpen),
+    ("တို့", Kw::Plural),
+    ("ပါဝင်သည်", Kw::Contains),
+    ("ပါဝင်ပြီး", Kw::ContainsAnd),
+    ("မျိုးပြပစ္စည်းမှာ", Kw::ClassifierIs),
+    ("ဖြစ်သည်", Kw::Is),
 ];
 
 /// [`RESERVED`] as a map, built on first use.

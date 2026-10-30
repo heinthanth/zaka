@@ -188,6 +188,10 @@ impl Parser<'_>
         match tok.kind
         {
             TokenKind::Punct(Punct::LParen) => self.parse_group(),
+            TokenKind::Ident if self.is_struct_at(0) && self.at_size_of() =>
+            {
+                self.parse_size_of()
+            }
             TokenKind::Ident | TokenKind::RawIdent | TokenKind::Kw(Kw::Result) =>
             {
                 Ok(self.parse_name())

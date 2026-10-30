@@ -101,6 +101,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0225 | a generic loop that starts with `ကိန်းသေ` | [Generic loops](../../learn/control-flow/generic-loops.md#the-variable-belongs-to-the-loop) |
 | ZK0226 | a block closer with no block to close | [Blocks and scope](../../learn/variables/scope.md) |
 | ZK0227 | a list count that is not a whole number above zero | [Lists](../../learn/lists/README.md#list-kinds) |
+| ZK0228 | a struct declared inside a block | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-declared-inside-a-block) |
 
 ### ZK03: names
 
@@ -121,6 +122,11 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0313 | returning without a value from a function with a result | [Results](../../learn/functions/results.md) |
 | ZK0314 | the wrong number of arguments | [Parameters](../../learn/functions/parameters.md) |
 | ZK0315 | using a function without a result as a value | [Results](../../learn/functions/results.md) |
+| ZK0316 | a struct name declared twice | [Struct mistakes](../../learn/structs/mistakes.md#one-name-for-two-structs) |
+| ZK0317 | a field name used twice in one struct | [Struct mistakes](../../learn/structs/mistakes.md#one-name-for-two-fields) |
+| ZK0318 | a name in a kind that no struct declaration gives | [Struct mistakes](../../learn/structs/mistakes.md#a-name-that-is-no-struct) |
+| ZK0319 | a struct name used for a variable, parameter, field or function | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-name-that-is-also-a-value-name) |
+| ZK0320 | a field the struct does not have | [Struct mistakes](../../learn/structs/mistakes.md#a-field-the-struct-does-not-have) |
 
 ### ZK04: kinds
 
@@ -150,6 +156,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0423 | a cell number that is not an integer | [Lists](../../learn/lists/README.md#cell-numbers) |
 | ZK0424 | a list as a function result | [Passing and comparing lists](../../learn/lists/passing.md#lists-as-parameters) |
 | ZK0425 | a list kind too large for the VM | [Lists of lists](../../learn/lists/grids.md#the-size-of-a-list) |
+| ZK0426 | a field of a value that is no struct | [Struct mistakes](../../learn/structs/mistakes.md#a-field-of-a-value-that-is-no-struct) |
+| ZK0427 | a struct that holds itself | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-that-holds-itself) |
+| ZK0428 | a struct as a function result | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-as-a-function-result) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -166,6 +175,7 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | ZK0506 | a plain value printed with `ဟု` instead of `ကို` | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 | ZK0507 | parentheses that change nothing | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 | ZK0508 | a sentence used as a value that ends in `ပါ` | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
+| ZK0509 | a warning: a heap size counted with a word that is not the classifier of its kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
 
 ### ZK06: working out constants
 
@@ -201,3 +211,4 @@ ZK0701 to ZK0704 and ZK0706 to ZK0712 are warnings and the program runs; with
 | ZK0715 | an owner given where a borrow is wanted | [Ownership and borrowing](../../learn/pointers/ownership.md#lending-a-block) |
 | ZK0716 | a raw address lent with `တန်ဖိုးအငှား` | [Ownership and borrowing](../../learn/pointers/ownership.md#raw-addresses) |
 | ZK0717 | a raw address kind under `--no-raw` | [Ownership and borrowing](../../learn/pointers/ownership.md#raw-addresses) |
+| ZK0718 | a field that holds a borrow | [Struct mistakes](../../learn/structs/mistakes.md#a-borrow-in-a-field) |

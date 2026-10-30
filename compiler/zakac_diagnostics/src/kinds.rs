@@ -490,3 +490,51 @@ pub fn list_too_large(span: Span, kind: &str) -> Diagnostic
 {
     Diagnostic::new(Code::ListTooLarge, t!("codes.ZK0425.message", k = kind), span)
 }
+
+/// A field is read from a value that is no struct.
+///
+/// # Arguments
+///
+/// * `span` - The field name.
+/// * `name` - The field name.
+/// * `kind` - The kind of the value before `၏`, as text.
+///
+/// # Returns
+///
+/// The `ZK0426` diagnostic.
+pub fn not_a_struct(span: Span, name: &str, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0426.message", n = name, k = kind);
+    Diagnostic::new(Code::NotAStruct, msg, span)
+}
+
+/// A struct holds itself, other than through an address.
+///
+/// # Arguments
+///
+/// * `span` - The struct name in its declaration.
+/// * `name` - The struct name.
+///
+/// # Returns
+///
+/// The `ZK0427` diagnostic.
+pub fn struct_holds_itself(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::StructHoldsItself, t!("codes.ZK0427.message", n = name), span)
+        .with_help(t!("codes.ZK0427.help", n = name))
+}
+
+/// A function gives back a struct as its result.
+///
+/// # Arguments
+///
+/// * `span` - The result kind.
+///
+/// # Returns
+///
+/// The `ZK0428` diagnostic.
+pub fn struct_result(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::StructResult, t!("codes.ZK0428.message"), span)
+        .with_help(t!("codes.ZK0428.help"))
+}

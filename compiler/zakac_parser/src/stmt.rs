@@ -18,6 +18,7 @@ use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StrArg;
+use zakac_ast::stmt::StructDecl;
 use zakac_ast::stmt::WhileStmt;
 use zakac_ast::verb::Slot;
 use zakac_ast::visit::Node;
@@ -27,6 +28,7 @@ use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::clause::ClauseOut;
@@ -96,6 +98,7 @@ impl Parser<'_>
             }
             Kw::Var | Kw::Const => self.parse_decl_or_loop(),
             Kw::Function => self.parse_fn_or_call(),
+            Kw::StructOpen => self.parse_struct_decl(),
             Kw::BlockOpen => self.parse_block().map(Stmt::Block),
             Kw::Loop => self.parse_break(),
             Kw::NextIteration => self.parse_continue(),
@@ -542,6 +545,49 @@ impl Parser<'_>
         let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
             .span(span).build();
         Ok(Stmt::Fn(node))
+    }
+
+    /// Parse a struct declaration:
+    /// `ဒေတာအမျိုးအစား <name> တွင် <kind> <field> (၊ <kind> <field>)* တို့ ပါဝင်သည်။`,
+    /// or `တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်။` at the end.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic. A declaration inside a block is
+    /// parsed and reported.
+    fn parse_struct_decl(&mut self) -> PResult<Stmt>
+    {
+        let start = self.bump().span;
+        let name = self.parse_ident()?;
+        self.expect(Kw::At)?;
+        let mut fields = vec![self.parse_param()?];
+        while self.eat_punct(Punct::ListSep)
+        {
+            fields.push(self.parse_param()?);
+        }
+        let close = self.expect_one_of(&[Kw::FieldsClose, Kw::FieldsCloseAnd])?;
+        let named = close.kind == TokenKind::Kw(Kw::FieldsCloseAnd);
+        let classifier = tern!(named, Some(self.parse_classifier()?), None);
+        let stop = self.expect_stop()?;
+        let span = start.to(&stop.span);
+        do_if!(self.depth > 0, self.diags.push(diag::nested_struct(span)));
+        #[rustfmt::skip]
+        let node = StructDecl::builder().name(name).fields(fields).maybe_classifier(classifier)
+            .span(span).build();
+        Ok(Stmt::Struct(node))
+    }
+
+    /// Parse `မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်`.
+    ///
+    /// # Returns
+    ///
+    /// The classifier, or a diagnostic.
+    fn parse_classifier(&mut self) -> PResult<Ident>
+    {
+        self.expect(Kw::ClassifierIs)?;
+        let word = self.parse_ident()?;
+        self.expect(Kw::Is)?;
+        Ok(word)
     }
 
     /// Parse `<kind> ရလဒ် ကို ပြန်ပေးမည်` after `အောက်ပါတို့ကို လုပ်ဆောင်ကာ`.

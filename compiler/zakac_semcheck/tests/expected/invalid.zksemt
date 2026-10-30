@@ -241,6 +241,7 @@ kinds:
   9: bool
   10: f64
   11: i8
+structs: {}
 diagnostics:
 - code: ZK0301
   level: error

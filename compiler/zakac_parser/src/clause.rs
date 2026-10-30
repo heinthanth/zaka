@@ -1,7 +1,10 @@
 use bon::Builder;
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::FieldExpr;
+use zakac_ast::expr::Ident;
 use zakac_ast::expr::IndexExpr;
 use zakac_ast::expr::ListLit;
+use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AssignStmt;
@@ -284,8 +287,34 @@ impl Parser<'_>
         let first = self.text_of(self.prev_span());
         ret_if!(as_slot(&tok).is_some(), Err(diag::double_particle(tok.span, first)));
         let expr = self.parse_operand()?;
-        stack.push(Item::expr(expr));
+        let is_field = slot == Slot::Ei && !self.at(Kw::Ordinal);
+        let item = match expr
+        {
+            Expr::Name(n) if is_field => self.field_of(stack, n),
+            expr => expr,
+        };
+        stack.push(Item::expr(item));
         Ok(())
+    }
+
+    /// Take the top operand, which holds `၏`, as the struct of a field.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack.
+    /// * `name` - The field name, read as a variable.
+    ///
+    /// # Returns
+    ///
+    /// The field access.
+    fn field_of(&mut self, stack: &mut Vec<Item>, name: NameExpr) -> Expr
+    {
+        let base = into_expr(stack.pop().expect("the top operand holds ၏"));
+        let span = base.span().to(&name.span);
+        let field = Ident::builder().name(name.name).span(name.span).build();
+        let id = self.new_id();
+        let node = FieldExpr::builder().id(id).base(base).field(field).span(span);
+        Expr::Field(node.build())
     }
 
     /// Parse an operand of a clause: a notation expression, or a list

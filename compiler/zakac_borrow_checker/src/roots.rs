@@ -92,6 +92,10 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
             let n = cell_number(index, *first);
             list_roots(list, state, ctx).iter().map(|r| r.cell(n)).collect()
         }
+        ExprNode::FieldAddr { base, field, .. } =>
+        {
+            list_roots(base, state, ctx).iter().map(|r| r.cell(Some(*field))).collect()
+        }
         ExprNode::List(cells) => cells.iter().flat_map(deeper).collect(),
         ExprNode::Call { func, args, .. } => call_roots(*func, args, state, ctx),
         _ => Roots::new(),
@@ -144,7 +148,7 @@ fn load_roots(addr: &Expr, kind: DataKind, state: &State, ctx: &RootCtx) -> Root
     roots_of(addr, state, ctx).iter().map(Root::block).collect()
 }
 
-/// The kind of the cell a cell address names.
+/// The kind of the cell a cell or field address names.
 ///
 /// # Arguments
 ///
@@ -152,15 +156,31 @@ fn load_roots(addr: &Expr, kind: DataKind, state: &State, ctx: &RootCtx) -> Root
 ///
 /// # Returns
 ///
-/// The cell kind, or `None` for an address that is no cell of a list.
+/// The cell or field kind, or `None` for an address that is no cell of a
+/// list and no field of a struct.
 fn cell_kind(addr: &Expr) -> Option<DataKind>
 {
-    let ExprNode::CellAddr { list, .. } = &addr.node
-    else
+    match &addr.node
     {
-        return None;
-    };
-    list.kind.as_list().map(|l| l.cell)
+        ExprNode::CellAddr { list, .. } => list.kind.as_list().map(|l| l.cell),
+        ExprNode::FieldAddr { base, field, .. } => field_kind(base.kind, *field),
+        _ => None,
+    }
+}
+
+/// The kind of a field of a struct.
+///
+/// # Arguments
+///
+/// * `kind` - The struct kind.
+/// * `field` - The position of the field.
+///
+/// # Returns
+///
+/// The field kind, or `None` for a kind that is no struct.
+pub(crate) fn field_kind(kind: DataKind, field: u32) -> Option<DataKind>
+{
+    kind.as_struct()?.fields().get(field as usize).map(|(_, k)| *k)
 }
 
 /// The list slot a cell address reads, through the cells of nested lists.
@@ -198,11 +218,11 @@ pub(crate) fn list_slot(addr: &Expr) -> Option<Place>
 ///
 /// # Returns
 ///
-/// The slot of a list read from a slot, the roots of the address of a
-/// list read from mem, the roots of a pointer to a list.
+/// The slot of a list or struct read from a slot, the roots of the address
+/// of one read from mem, the roots of a pointer to a list.
 fn list_roots(list: &Expr, state: &State, ctx: &RootCtx) -> Roots
 {
-    ret_if!(!list.kind.is_list(), roots_of(list, state, ctx));
+    ret_if!(!list.kind.is_aggregate(), roots_of(list, state, ctx));
     match &list.node
     {
         ExprNode::Read(place) => Roots::from([Root::slot(*place)]),
@@ -321,8 +341,9 @@ pub(crate) fn past_cells(path: &[Seg]) -> &[Seg]
     &path[cells..]
 }
 
-/// The steps from a slot of `kind` to the blocks its owners hold: one
-/// step into each cell of each level of a list, then the block.
+/// The paths from a slot of `kind` to the blocks its owners hold: one
+/// step into each cell of each level of a list, or into each field of a
+/// struct that holds an owner, then the block.
 ///
 /// # Arguments
 ///
@@ -330,15 +351,21 @@ pub(crate) fn past_cells(path: &[Seg]) -> &[Seg]
 ///
 /// # Returns
 ///
-/// The steps; a block step alone for a kind that is no list.
-fn owner_steps(kind: DataKind) -> Vec<Seg>
+/// The paths; a block step alone for a kind that is neither a list nor a
+/// struct.
+fn owner_steps(kind: DataKind) -> Vec<Vec<Seg>>
 {
-    let Some(list) = kind.as_list()
+    let into = |seg: Seg, inner: DataKind| {
+        owner_steps(inner).into_iter().map(move |rest| [vec![seg], rest].concat())
+    };
+    ret_if!(let Some(list) = kind.as_list(), into(Seg::Cell(None), list.cell).collect());
+    let Some(fields) = kind.as_struct().map(|s| s.fields())
     else
     {
-        return vec![Seg::Block];
+        return vec![vec![Seg::Block]];
     };
-    [vec![Seg::Cell(None)], owner_steps(list.cell)].concat()
+    let moved = fields.iter().enumerate().filter(|(_, (_, k))| k.is_move_kind());
+    moved.flat_map(|(at, (_, k))| into(Seg::Cell(u32::try_from(at).ok()), *k)).collect()
 }
 
 /// The paths a free or a resize of `dest` gives back.
@@ -405,8 +432,8 @@ pub(crate) fn known_cells(root: &Root) -> bool { !root.path.contains(&Seg::Cell(
 /// # Returns
 ///
 /// The block of the owner moved out, or the blocks of each cell of a list
-/// moved out, through each level of nested lists; none for another
-/// expression.
+/// or each owner field of a struct moved out, through each level of nested
+/// lists and structs; none for another expression.
 pub(crate) fn take_paths(take: &Expr, state: &State, ctx: &RootCtx) -> Roots
 {
     let ExprNode::Take { addr } = &take.node
@@ -414,8 +441,9 @@ pub(crate) fn take_paths(take: &Expr, state: &State, ctx: &RootCtx) -> Roots
     {
         return Roots::new();
     };
-    let steps = owner_steps(take.kind);
-    roots_of(addr, state, ctx).iter().map(|r| r.then(&steps)).collect()
+    let paths = owner_steps(take.kind);
+    let roots = roots_of(addr, state, ctx);
+    roots.iter().flat_map(|r| paths.iter().map(|steps| r.then(steps))).collect()
 }
 
 /// The roots top-level code gives each global: the union over each set of

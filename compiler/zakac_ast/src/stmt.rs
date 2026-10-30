@@ -58,6 +58,8 @@ pub enum Stmt
     Resize(ResizeStmt),
     /// Release of the heap block a place points at.
     Free(FreeStmt),
+    /// `ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။`
+    Struct(StructDecl),
 }
 
 /// Variable or constant declaration.
@@ -308,6 +310,9 @@ pub struct SizeArg
     pub count: Expr,
     /// The element kind, when written.
     pub unit: Option<Kind>,
+    /// The classifier of the count word, the text before its `စာ`: `ခု` in
+    /// `ခုစာ`, `ယောက်` in `ယောက်စာ`. Written with each unit kind.
+    pub classifier: Option<Ident>,
     /// Source region.
     pub span: Span,
 }
@@ -343,5 +348,21 @@ pub struct FreeStmt
     /// The address to release.
     pub target: Expr,
     /// Source region.
+    pub span: Span,
+}
+
+/// Struct declaration:
+/// `ဒေတာအမျိုးအစား <name> တွင် <kind> <field>၊ ... တို့ ပါဝင်သည်။`, with an
+/// optional classifier clause `ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct StructDecl
+{
+    /// The struct name.
+    pub name: Ident,
+    /// The fields in order, each a kind and a name.
+    pub fields: Vec<Param>,
+    /// The classifier that counts values of the struct, when written.
+    pub classifier: Option<Ident>,
+    /// Source region, the full stop included.
     pub span: Span,
 }
