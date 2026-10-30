@@ -89,7 +89,7 @@ en = "Myanmar Sabae on GitHub"
 [web_ui.credits.others]
 en = "Other fonts"
 [web_ui.credits.others_note]
-en = "The other fonts of the font pickers come from Fontsource, most of them from Google Fonts. Each ships under its own open font license."
+en = "The other fonts used in the font pickers come from Fontsource, most of them from Google Fonts. Each ships under its own open font license."
 [web_ui.credits.fontsource]
 en = "Fontsource"
 [web_ui.credits.google_fonts]

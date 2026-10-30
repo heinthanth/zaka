@@ -8,7 +8,6 @@ on:
 permissions:
   contents: read
 
-# A newer push to main supersedes a build still in flight.
 concurrency:
   group: pages
   cancel-in-progress: true

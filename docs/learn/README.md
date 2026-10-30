@@ -5,7 +5,7 @@ description: Learn the Zaka programming language one small, runnable example at 
 
 # Zaka through Examples
 
-Zaka (စံကား) is a programming language written in Burmese. A Zaka program is a list of
+Zaka (စံကား) is a programming language based on a subset of Burmese. A Zaka program is a list of
 Burmese sentences such as `"မင်္ဂလာပါ" ဟု ပြသပါ။` ("show: hello"). The computer carries
 them out one after another.
 

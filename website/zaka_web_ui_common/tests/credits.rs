@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use serde_json::Value;
+use zaka_web_ui_common::credits::Project;
 use zaka_web_ui_common::credits::Source;
 use zaka_web_ui_common::credits::projects;
 
@@ -13,6 +14,15 @@ const LIST: &str = "src/credits/projects.tsv";
 
 /// The first line of the list.
 const HEADER: &str = "# source\tname\tversion\tlicense\turl";
+
+/// The credits page of the repo, from the crate root.
+const CREDITS_MD: &str = "../../CREDITS.md";
+
+/// The mark before the part of `CREDITS.md` that the list writes.
+const MD_OPEN: &str = "<!-- begin: projects -->";
+
+/// The mark after the part of `CREDITS.md` that the list writes.
+const MD_CLOSE: &str = "<!-- end: projects -->";
 
 /// The root of the shared crate.
 fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
@@ -140,6 +150,27 @@ fn known_npm(list: &str) -> BTreeMap<String, String>
     npm.map(|l| (pair(l), l.to_string())).collect()
 }
 
+/// One group of the list as a Markdown table under its head.
+///
+/// # Arguments
+///
+/// * `head` - The head of the group.
+/// * `source` - Where the projects of the group come from.
+///
+/// # Returns
+///
+/// The Markdown.
+fn md_group(head: &str, source: Source) -> String
+{
+    let picked = projects().into_iter().filter(|p| p.source == source);
+    let row = |p: Project| {
+        format!("| [{}]({}) | {} | {} |\n", p.name, p.url, p.version, p.license)
+    };
+    let top =
+        format!("## {head}\n\n| Name | Version | License |\n| --- | --- | --- |\n");
+    std::iter::once(top).chain(picked.map(row)).collect()
+}
+
 #[test]
 fn the_credits_list_the_direct_deps()
 {
@@ -157,6 +188,26 @@ fn the_credits_list_the_direct_deps()
         return;
     }
     assert_eq!(held, text, "the credits are stale; run with ZAKA_BLESS=1");
+}
+
+#[test]
+fn the_credits_page_holds_the_list()
+{
+    let path = root().join(CREDITS_MD);
+    let held = std::fs::read_to_string(&path).unwrap();
+    let (before, rest) =
+        held.split_once(MD_OPEN).expect("CREDITS.md lacks its open mark");
+    let (_, after) =
+        rest.split_once(MD_CLOSE).expect("CREDITS.md lacks its close mark");
+    let groups =
+        [md_group("Web packages", Source::Npm), md_group("Rust crates", Source::Crate)];
+    let text = format!("{before}{MD_OPEN}\n\n{}\n{MD_CLOSE}{after}", groups.join("\n"));
+    if std::env::var("ZAKA_BLESS").is_ok_and(|v| v == "1")
+    {
+        std::fs::write(&path, &text).unwrap();
+        return;
+    }
+    assert_eq!(held, text, "CREDITS.md is stale; run with ZAKA_BLESS=1");
 }
 
 #[test]
