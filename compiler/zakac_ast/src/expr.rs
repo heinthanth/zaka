@@ -91,9 +91,10 @@ pub enum Expr
     Index(IndexExpr),
     /// `x ၏ <field>`: one field of a struct.
     Field(FieldExpr),
-    /// `a၊ b၊ c တို့ပါသော စာရင်း`
+    /// `a၊ b၊ c တို့ပါသော စာရင်း` or `[a၊ b၊ c]`
     List(ListLit),
-    /// `<field> <value>၊ … ရှိသော <struct>တစ်<classifier>`
+    /// `<field> <value>၊ … ရှိသော <struct>တစ်<classifier>` or
+    /// `<struct>(<field>: <value>၊ …)`
     Struct(StructLit),
     /// `စာရင်းအလွတ်`, a list with each cell at its default.
     BlankList(BlankListLit),
@@ -221,7 +222,8 @@ pub struct FieldExpr
     pub span: Span,
 }
 
-/// `a၊ b၊ c တို့ပါသော စာရင်း`: a list written out one cell at a time.
+/// `a၊ b၊ c တို့ပါသော စာရင်း` or `[a၊ b၊ c]`: a list written out one cell at a
+/// time.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct ListLit
 {
@@ -230,29 +232,30 @@ pub struct ListLit
     /// The cells, in order.
     #[builder(default)]
     pub cells: Vec<Expr>,
-    /// Source region, from the first cell to `စာရင်း`.
+    /// Source region of the whole literal.
     pub span: Span,
 }
 
-/// `<field> <value>၊ … ရှိသော <struct>တစ်<classifier>`: a struct written out one
-/// field at a time. Each field left out holds its default.
+/// `<field> <value>၊ … ရှိသော <struct>တစ်<classifier>` or
+/// `<struct>(<field>: <value>၊ …)`: a struct written out one field at a time.
+/// Each field left out holds its default.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct StructLit
 {
     /// Node number.
     pub id: NodeId,
-    /// The struct name after `ရှိသော`.
+    /// The struct name.
     pub name: Ident,
-    /// The classifier after `တစ်`, such as `ယောက်`.
-    pub classifier: Ident,
+    /// The classifier after `တစ်`, such as `ယောက်`; the notation form has none.
+    pub classifier: Option<Ident>,
     /// The fields, as written.
     #[builder(default)]
     pub fields: Vec<FieldInit>,
-    /// Source region, from the first field name to the struct name.
+    /// Source region of the whole literal.
     pub span: Span,
 }
 
-/// `<field> <value>`: one field of a struct literal.
+/// `<field> <value>` or `<field>: <value>`: one field of a struct literal.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct FieldInit
 {

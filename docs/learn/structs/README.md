@@ -111,6 +111,25 @@ shows how a struct names a count word of its own.
 A struct literal stands wherever a struct value can: the value of a declaration, the
 right side of `ထားပါ`, an argument, or `ပြသပါ`.
 
+A struct literal can also take the form a struct prints in: the struct name, then each
+field as `<field>: <value>` in parentheses, with `၊` between the pairs. This form needs no
+count word, and it nests inside a bracket list as it stands. With no pairs, `လူ()` is a
+struct with each field at its default.
+
+```zaka
+ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ဒဿမကိန်း အမြင့်၊ မှန်မှားတန်ဖိုး လုပ်သား တို့ ပါဝင်သည်။
+ကိန်းရှင် ကျော် သည် လူ ဖြစ်၍ တန်ဖိုးသည် လူ(အသက်: ၂၀၊ အမြင့်: ၁.၇၅) ဖြစ်ပါစေ။
+ကျော် ကို ပြသပါ။
+[လူ(အသက်: ၁)၊ လူ(လုပ်သား: မှန်)] ကို ပြသပါ။
+လူ() ကို ပြသပါ။
+```
+
+```text
+လူ(အသက်: ၂၀၊ အမြင့်: ၁.၇၅၊ လုပ်သား: မမှန်)
+[လူ(အသက်: ၁၊ အမြင့်: ၀.၀၊ လုပ်သား: မမှန်)၊ လူ(အသက်: ၀၊ အမြင့်: ၀.၀၊ လုပ်သား: မှန်)]
+လူ(အသက်: ၀၊ အမြင့်: ၀.၀၊ လုပ်သား: မမှန်)
+```
+
 ## Duplicating a struct
 
 Setting one struct to another duplicates each field, and the two stand apart afterwards.

@@ -115,6 +115,20 @@ fn comment_marker_inside_a_word_is_not_a_comment()
 }
 
 #[test]
+fn brackets_and_colon_are_punctuation()
+{
+    assert_eq!(
+        kinds("[က:]"),
+        [
+            TokenKind::Punct(Punct::LBracket),
+            TokenKind::Ident,
+            TokenKind::Punct(Punct::Colon),
+            TokenKind::Punct(Punct::RBracket),
+        ]
+    );
+}
+
+#[test]
 fn two_character_operators()
 {
     let cases = [

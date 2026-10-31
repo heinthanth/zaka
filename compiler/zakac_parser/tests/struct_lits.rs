@@ -30,7 +30,8 @@ fn count_of(value: &str) -> (String, String)
     {
         panic!("{value}: no struct literal");
     };
-    (lit.name.name.clone(), lit.classifier.name.clone())
+    let classifier = lit.classifier.as_ref().expect("a classifier");
+    (lit.name.name.clone(), classifier.name.clone())
 }
 
 #[test]
@@ -69,6 +70,62 @@ fn a_literal_inside_a_literal_takes_parentheses()
         shown(&program),
         "(print (struct မျဉ်း (စ [(struct လူ (အသက် 1))]) (ဆုံး [(struct လူ (အတန်း 2))])))"
     );
+}
+
+#[test]
+fn a_struct_literal_takes_the_notation_form()
+{
+    assert_eq!(
+        shown("လူ(အသက်: ၂၀၊ အတန်း: ၁ + ၂)"),
+        "(print (struct လူ (အသက် 20) (အတန်း (+ 1 2))))"
+    );
+    assert_eq!(shown("လူ(အတန်း: -၃)"), "(print (struct လူ (အတန်း (neg 3))))");
+    assert_eq!(shown("လူ()"), "(print (struct လူ))");
+    // An undeclared name is left for the checker to report.
+    assert_eq!(shown("ကျား(အသက်: ၁)"), "(print (struct ကျား (အသက် 1)))");
+    assert_eq!(shown("ကျား()"), "(print (struct ကျား))");
+    assert_eq!(
+        shown("[လူ(အသက်: ၁)၊ လူ(အသက်: ၂)]"),
+        "(print (list (struct လူ (အသက် 1)) (struct လူ (အသက် 2))))"
+    );
+}
+
+#[test]
+fn a_notation_literal_needs_no_parentheses_inside_another()
+{
+    let text = "ဒေတာအမျိုးအစား မျဉ်း တွင် လူ စ၊ လူ ဆုံး တို့ ပါဝင်သည်။\n";
+    assert_eq!(
+        shown(&format!("{text}စ လူ(အသက်: ၁) ရှိသော မျဉ်းတစ်ခု")),
+        "(print (struct မျဉ်း (စ (struct လူ (အသက် 1)))))"
+    );
+    assert_eq!(
+        shown(&format!("{text}မျဉ်း(စ: လူ(အသက်: ၁)၊ ဆုံး: (အတန်း ၂ ရှိသော လူတစ်ခု))")),
+        "(print (struct မျဉ်း (စ (struct လူ (အသက် 1))) (ဆုံး [(struct လူ (အတန်း 2))])))"
+    );
+}
+
+#[test]
+fn a_notation_literal_writes_no_classifier()
+{
+    let list = stmts(&format!("{DECL}လူ(အသက်: ၁) ကို ပြသပါ။"));
+    let Some(Stmt::Print(print)) = list.last()
+    else
+    {
+        panic!("no print statement");
+    };
+    let zakac_ast::stmt::PrintArg::Expr(Expr::Struct(lit)) = &print.value
+    else
+    {
+        panic!("no struct literal");
+    };
+    assert_eq!(lit.classifier, None);
+}
+
+#[test]
+fn a_notation_literal_pairs_each_field_with_a_colon()
+{
+    assert_eq!(codes(&format!("{DECL}လူ(အသက် ၁) ကို ပြသပါ။")), [Code::ExpectedToken]);
+    assert_eq!(codes(&format!("{DECL}လူ(အသက်: ၁ ကို ပြသပါ။")), [Code::ExpectedToken]);
 }
 
 #[test]

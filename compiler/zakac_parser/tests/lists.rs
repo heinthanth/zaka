@@ -78,6 +78,25 @@ fn list_literals_close_with_a_list_word()
 }
 
 #[test]
+fn list_literals_take_brackets()
+{
+    assert_eq!(expr("[၁၊ ၂၊ ၃]"), "(list 1 2 3)");
+    assert_eq!(expr("[၁]"), "(list 1)");
+    assert_eq!(expr("[]"), "blank_list");
+    assert_eq!(expr("[[၁၊ ၂]၊ [၃၊ ၄]]"), "(list (list 1 2) (list 3 4))");
+    assert_eq!(expr("[၁ + ၂၊ -က]"), "(list (+ 1 2) (neg က))");
+    assert_eq!(expr("[၁၊ ၂]၊ [၃] တို့ပါသော စာရင်း"), "(list (list 1 2) (list 3))");
+    assert_eq!(stmt("[၁၊ ၂] ကို ပြသပါ။"), "(print (list 1 2))");
+    assert_eq!(stmt("လုပ်ဆောင်ချက် f ကို [၁၊ ၂]၊ န တို့ဖြင့် လုပ်ဆောင်ပါ။"), "(call f (list 1 2) န)");
+}
+
+#[test]
+fn a_bracket_list_closes()
+{
+    assert_eq!(codes("[၁၊ ၂ ကို ပြသပါ။"), [Code::ExpectedToken]);
+}
+
+#[test]
 fn a_list_literal_in_call_arguments()
 {
     assert_eq!(stmt("လုပ်ဆောင်ချက် f ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်ပါ။"), "(call f 1 2)");

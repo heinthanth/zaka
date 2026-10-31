@@ -65,19 +65,26 @@ and a `၏` in front of `စာရင်း` are optional, so these four kinds a
 
 ## Literals
 
-A list value is written with its cells between `၊` and a closing `တို့ပါသော စာရင်း` ("the
-list that holds these"). `စာရင်းအလွတ်` ("blank list") is a list of the expected kind with
-each cell at its default.
+A list value is written in one of two forms: its cells between `၊` and a closing
+`တို့ပါသော စာရင်း` ("the list that holds these"), or its cells between `၊` inside `[` and
+`]`, the form a list prints in. The two forms mean the same. `စာရင်းအလွတ်` ("blank list"),
+or `[]`, is a list of the expected kind with each cell at its default.
 
 ```text
 ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း
+[၇၀၊ ၈၅၊ ၉၀]
 စာရင်းအလွတ်
+[]
 ```
 
 - The number of cells in a literal must equal the count of the kind it fills (ZK0419).
-- `စာရင်းအလွတ်` needs a list kind from the place it stands in. Standing alone it has none
-  (ZK0420).
-- A literal that is a cell of another literal goes in parentheses.
+- `စာရင်းအလွတ်` and `[]` each need a list kind from the place it stands in. Standing
+  alone, neither has one (ZK0420). A list has a fixed count, so `[]` fills each cell of that
+  count with its default; it is not a list of no cells.
+- A cell is a notation expression. A bracket list and a struct literal in the notation
+  form are notation expressions, so each nests as written, as in `[[၁၊ ၂]၊ [၃၊ ၄]]`. A
+  clause, or a literal in the `တို့ပါသော စာရင်း` form, goes in parentheses when it is a
+  cell of another literal.
 
 ```zaka-error ZK0419
 ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅ တို့ပါသော စာရင်း ဖြစ်ပါစေ။

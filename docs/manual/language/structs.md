@@ -126,23 +126,28 @@ same kind, or a struct literal.
 ```text
 <field> <value>၊ <field> <value> ရှိသော <name>တစ်<word>
 <field> <value>၊ <field> <value> ရှိသော <name> တစ်<word>
+<name>(<field>: <value>၊ <field>: <value>)
 ```
 
 A struct literal is a value of the struct `<name>`, with the fields it names set to the
 values after them, as in `အသက် ၂၀၊ အမြင့် ၁.၇၅ ရှိသော လူတစ်ယောက်`, "a person who has
-age 20 and height 1.75".
+age 20 and height 1.75". The last line is the notation form, the one a struct prints in:
+`လူ(အသက်: ၂၀၊ အမြင့်: ၁.၇၅)` means the same, and writes no classifier.
 
-- The pairs stand in each order, with `၊` between them. At least one pair is written; a
-  struct with each field at its default is a declaration with no value.
+- The pairs stand in each order, with `၊` between them. The `ရှိသော` form writes at
+  least one pair; the notation form can write none, as in `လူ()`, a struct with each
+  field at its default.
 - A field left out holds its default, as in a declaration with no value.
 - Each field name is one the struct has (ZK0320), and each is set once (ZK0321).
 - Each value converts to the kind of its field, as the value of an assignment does
   (ZK0401).
-- A value is a notation expression, such as `x + ၁` or `(က ၏ အသက်)`. A clause, or a
-  list or struct literal, goes in parentheses.
+- A value is a notation expression, such as `x + ၁`, `(က ၏ အသက်)`, `[၁၊ ၂]` or
+  `လူ(အသက်: ၁)`. A clause, or a literal in the `ရှိသော` or `တို့ပါသော စာရင်း` form, goes
+  in parentheses.
 - `<name>` is a declared struct (ZK0318). `<word>` is its classifier, `ခု` when the
   declaration names none; another word is the warning ZK0509. The name and `တစ်` can be
-  written as one word or with a space between them.
+  written as one word or with a space between them. In the notation form, the name and
+  `(` stand together, and a `:` follows each field name.
 - A struct literal stands wherever a value of the struct can: the value of a
   declaration, the value of an assignment, an argument, or the value of `ပြသပါ`.
 - An owner given to a field moves into the struct, and the variable it came from holds
@@ -162,7 +167,18 @@ age 20 and height 1.75".
 
 The compiler tells a struct literal from other values at its start: a field name with a
 value right after it, before the next `ရှိသော`. Nowhere else in a value does a name stand
-next to another value without an operator or a particle between them.
+next to another value without an operator or a particle between them. The notation form
+starts with a struct name and `(`, or with a name, `(`, a field name and `:`.
+
+```zaka
+ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ဒဿမကိန်း အမြင့် တို့ ပါဝင်သည်။
+ဒေတာအမျိုးအစား အသင်း တွင် လူ ခေါင်းဆောင်၊ အကွက် ၂ ခုရှိသော လူ စာရင်း အဖွဲ့ဝင် တို့ ပါဝင်သည်။
+အသင်း(ခေါင်းဆောင်: လူ(အသက်: ၄၀)၊ အဖွဲ့ဝင်: [လူ(အသက်: ၂၀)၊ လူ(အမြင့်: ၁.၈)]) ကို ပြသပါ။
+```
+
+```text
+အသင်း(ခေါင်းဆောင်: လူ(အသက်: ၄၀၊ အမြင့်: ၀.၀)၊ အဖွဲ့ဝင်: [လူ(အသက်: ၂၀၊ အမြင့်: ၀.၀)၊ လူ(အသက်: ၀၊ အမြင့်: ၁.၈)])
+```
 
 ## Fields
 

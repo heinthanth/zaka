@@ -38,7 +38,11 @@ fn starts_value(kind: TokenKind) -> bool
             | TokenKind::Number(_)
             | TokenKind::Char(_)
             | TokenKind::Punct(
-                Punct::LParen | Punct::Minus | Punct::Tilde | Punct::Bang
+                Punct::LParen
+                    | Punct::LBracket
+                    | Punct::Minus
+                    | Punct::Tilde
+                    | Punct::Bang
             )
             | TokenKind::Kw(
                 Kw::True
@@ -107,6 +111,69 @@ impl Parser<'_>
         let lit = StructLit::builder().id(id).name(name).classifier(classifier).fields(fields)
             .span(span).build();
         Ok(Expr::Struct(lit))
+    }
+
+    /// Whether a notation struct literal starts here: a struct name and `(`,
+    /// or another name and `(<field>:` or `()`. The checker reports a name
+    /// that no struct declaration gives.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn at_call_struct_lit(&self) -> bool
+    {
+        let open = self.peek_n(1).kind == TokenKind::Punct(Punct::LParen);
+        let named = self.peek_n(3).kind == TokenKind::Punct(Punct::Colon)
+            || self.peek_n(2).kind == TokenKind::Punct(Punct::RParen);
+        self.peek().kind == TokenKind::Ident && open && (named || self.is_struct_at(0))
+    }
+
+    /// Parse `<struct>(<field>: <value> (၊ <field>: <value>)*)`, or
+    /// `<struct>()` with each field at its default;
+    /// [`Parser::at_call_struct_lit`] has passed.
+    ///
+    /// # Returns
+    ///
+    /// The literal, or a diagnostic.
+    pub(crate) fn parse_call_struct_lit(&mut self) -> PResult<Expr>
+    {
+        let name = self.parse_ident()?;
+        self.bump();
+        let bare = self.at_punct(Punct::RParen);
+        let fields = tern!(bare, Vec::new(), self.parse_named_fields()?);
+        let close = self.expect_punct(Punct::RParen)?;
+        let span = name.span.to(&close.span);
+        let id = self.new_id();
+        let lit = StructLit::builder().id(id).name(name).fields(fields).span(span);
+        Ok(Expr::Struct(lit.build()))
+    }
+
+    /// Parse `<field>: <value>` pairs with `၊` between them.
+    ///
+    /// # Returns
+    ///
+    /// The pairs, or a diagnostic.
+    fn parse_named_fields(&mut self) -> PResult<Vec<FieldInit>>
+    {
+        let mut fields = vec![self.parse_named_field()?];
+        while self.eat_punct(Punct::ListSep)
+        {
+            fields.push(self.parse_named_field()?);
+        }
+        Ok(fields)
+    }
+
+    /// Parse one `<field>: <value>` pair.
+    ///
+    /// # Returns
+    ///
+    /// The pair, or a diagnostic.
+    fn parse_named_field(&mut self) -> PResult<FieldInit>
+    {
+        let field = self.parse_ident()?;
+        self.expect_punct(Punct::Colon)?;
+        let value = self.parse_notation()?;
+        Ok(FieldInit::builder().field(field).value(value).build())
     }
 
     /// Parse one `<field> <value>` pair.

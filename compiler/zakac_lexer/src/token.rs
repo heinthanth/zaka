@@ -134,6 +134,15 @@ pub enum Punct
     /// `)`
     #[strum(serialize = ")")]
     RParen,
+    /// `[`
+    #[strum(serialize = "[")]
+    LBracket,
+    /// `]`
+    #[strum(serialize = "]")]
+    RBracket,
+    /// `:`
+    #[strum(serialize = ":")]
+    Colon,
     /// `+`
     #[strum(serialize = "+")]
     Plus,

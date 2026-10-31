@@ -29,8 +29,8 @@ sits in a *cell*, and a cell is reached through its number.
 | `အကွက်` | "cell" |
 
 A list declared with no value starts with each cell at its default: `၀` for a number,
-`မမှန်` for a true/false value, `ဗလာ` for an address. `စာရင်းအလွတ်` ("blank list")
-writes the same start out in full.
+`မမှန်` for a true/false value, `ဗလာ` for an address. `စာရင်းအလွတ်` ("blank list"), or
+`[]`, writes the same start out in full.
 
 ## List kinds
 
@@ -65,6 +65,38 @@ tells it:
 
 The value `၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း` is a *list literal*: the cells, with `၊` between them,
 then `တို့ပါသော စာရင်း` ("the list that holds these").
+
+The same list can also be written in brackets, `[၇၀၊ ၈၅၊ ၉၀]`, the form a list prints in.
+The two forms mean the same. A bracket list can hold other bracket lists as written:
+
+```zaka
+ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၇၀၊ ၈၅၊ ၉၀] ဖြစ်ပါစေ။
+အမှတ်များ ကို ပြသပါ။
+[[၁၊ ၂]၊ [၃၊ ၄]] ကို ပြသပါ။
+```
+
+```text
+[၇၀၊ ၈၅၊ ၉၀]
+[[၁၊ ၂]၊ [၃၊ ၄]]
+```
+
+`[]` is not a list with no cells. A list kind fixes its count, so `[]`, like
+`စာရင်းအလွတ်`, fills each cell of that count with its default:
+
+```zaka
+ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈၊ ၉] ဖြစ်ပါစေ။
+က ကို [] ဟု ထားပါ။
+က ကို ပြသပါ။
+က ၏ အကွက်အရေအတွက် ကို ပြသပါ။
+```
+
+```text
+[၀၊ ၀၊ ၀]
+၃
+```
+
+Setting `က` to `[]` resets each cell to `၀`; the count is still 3. With no list kind from
+its place, as in `[] ကို ပြသပါ။`, `[]` has no count to fill and is an error.
 
 ## Cell numbers
 

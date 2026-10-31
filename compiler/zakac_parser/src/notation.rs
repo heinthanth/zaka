@@ -9,6 +9,7 @@ use zakac_ast::expr::GroupExpr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::InfixExpr;
 use zakac_ast::expr::InfixOp;
+use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::NullLit;
 use zakac_ast::expr::PrefixExpr;
@@ -176,8 +177,9 @@ impl Parser<'_>
         Ok(Expr::Prefix(node))
     }
 
-    /// Parse an atom: a literal, a name, `( expr )`, a call expression,
-    /// `ဗလာ` or `<kind> ၏ အရွယ်အစား`.
+    /// Parse an atom: a literal, a name, `( expr )`, `[a၊ b]`,
+    /// `<struct>(<field>: <value>)`, a call expression, `ဗလာ` or
+    /// `<kind> ၏ အရွယ်အစား`.
     ///
     /// # Returns
     ///
@@ -188,6 +190,11 @@ impl Parser<'_>
         match tok.kind
         {
             TokenKind::Punct(Punct::LParen) => self.parse_group(),
+            TokenKind::Punct(Punct::LBracket) => self.parse_bracket_list(),
+            TokenKind::Ident if self.at_call_struct_lit() =>
+            {
+                self.parse_call_struct_lit()
+            }
             TokenKind::Ident if self.is_struct_at(0) && self.at_size_of() =>
             {
                 self.parse_size_of()
@@ -227,6 +234,33 @@ impl Parser<'_>
         let span = open.span.to(&close.span);
         let id = self.new_id();
         Ok(Expr::Group(GroupExpr::builder().id(id).inner(inner).span(span).build()))
+    }
+
+    /// Parse `[a၊ b၊ c]`: a list with at least one cell.
+    ///
+    /// # Returns
+    ///
+    /// The literal, or a diagnostic.
+    fn parse_bracket_list(&mut self) -> PResult<Expr>
+    {
+        let open = self.bump();
+        if self.at_punct(Punct::RBracket)
+        {
+            let span = open.span.to(&self.bump().span);
+            let id = self.new_id();
+            return Ok(Expr::BlankList(
+                BlankListLit::builder().id(id).span(span).build(),
+            ));
+        }
+        let mut cells = vec![self.parse_notation()?];
+        while self.eat_punct(Punct::ListSep)
+        {
+            cells.push(self.parse_notation()?);
+        }
+        let close = self.expect_punct(Punct::RBracket)?;
+        let span = open.span.to(&close.span);
+        let id = self.new_id();
+        Ok(Expr::List(ListLit::builder().id(id).cells(cells).span(span).build()))
     }
 
     /// Parse a variable, including the result variable `ရလဒ်`.

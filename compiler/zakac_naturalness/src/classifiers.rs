@@ -105,8 +105,13 @@ impl Visitor for Sizes<'_>
     fn visit_struct_lit(&mut self, n: &StructLit)
     {
         // The checker reports a name that no struct declaration gives.
+        // The notation form `<struct>(…)` writes no classifier to check.
         let name = n.name.name.as_str();
-        let found = &n.classifier;
+        let Some(found) = &n.classifier
+        else
+        {
+            return walk_struct_lit(self, n);
+        };
         let want = self.words.get(name).copied().filter(|w| *w != found.name);
         self.diags.extend(want.map(|want| {
             diag::literal_classifier_mismatch(found.span, name, want, &found.name)

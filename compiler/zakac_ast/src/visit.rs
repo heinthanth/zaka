@@ -749,7 +749,7 @@ pub fn walk_struct_lit<V: Visitor + ?Sized>(v: &mut V, n: &StructLit)
         v.visit_expr(&f.value);
     }
     v.visit_ident(&n.name);
-    v.visit_ident(&n.classifier);
+    do_if!(let Some(word) = &n.classifier, v.visit_ident(word));
     v.leave(n);
 }
 
@@ -1100,7 +1100,7 @@ pub fn walk_struct_lit_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut StructLit)
         v.visit_expr_mut(&mut f.value);
     }
     v.visit_ident_mut(&mut n.name);
-    v.visit_ident_mut(&mut n.classifier);
+    do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
 }
 
 /// Visit the kind of a size expression.
