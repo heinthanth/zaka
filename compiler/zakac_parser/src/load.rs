@@ -203,7 +203,8 @@ impl Loader<'_>
     }
 
     /// A file name as messages show it: relative to the folder of the file
-    /// that is run, when it is inside that folder.
+    /// that is run, when it is inside that folder, with `/` between its
+    /// parts on each host, as the imports of a program write them.
     ///
     /// # Arguments
     ///
@@ -214,7 +215,9 @@ impl Loader<'_>
     /// The name.
     fn shown(&self, path: &Path) -> String
     {
-        path.strip_prefix(&self.folder).unwrap_or(path).display().to_string()
+        let name =
+            path.strip_prefix(&self.folder).unwrap_or(path).display().to_string();
+        name.replace(std::path::MAIN_SEPARATOR, "/")
     }
 
     /// Read the file an import names, unless it was read before or it is

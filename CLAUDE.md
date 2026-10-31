@@ -143,6 +143,20 @@ macro makes the code harder to read, plain Rust is fine.
 `rustfmt.toml` sets the format: 4 spaces, max width 88, braces on the next line. Run
 `cargo +nightly fmt` after editing.
 
+### Paths on each host
+
+The compiler and its tests run on Windows as well as macOS and Linux.
+
+- A path that becomes text a reader or a test sees (diagnostics, artifacts, unit names,
+  expected output) uses `/`. `Path::display()` writes `\` on Windows, so turn
+  `std::path::MAIN_SEPARATOR` into `/` before a path becomes text.
+- Build paths with `Path::join` and walk them with `components()`; never split or join
+  path strings on `/` or `\`.
+- Compare paths as `Path` or `PathBuf`, not as strings: Windows treats `/` and `\` as one
+  separator, and its absolute paths start with a drive (`C:`).
+- A test that spells a path as text, such as `"lib/c.zaka"`, must pass on Windows too:
+  compare it with the `/` form, not the host form.
+
 ## Diagnostics
 
 Each source diagnostic has a code in `compiler/zakac_diagnostics`: one `define_codes!` row
