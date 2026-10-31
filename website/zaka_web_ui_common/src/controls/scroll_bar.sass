@@ -1,0 +1,52 @@
+// Scroll bars drawn over what scrolls, as macOS draws its own: each takes no
+// room, so a box keeps its width and a field of color runs to its edge. The
+// thumb shows while its box moves or the pointer rests on the edge, then
+// fades, and a drag moves it. A box that draws its own bar takes
+// `.scroll-own`, which hides the bar of the browser. Touch screens keep the
+// bars of the browser, which take no room there.
+
+.scroll-track
+  display: none
+
+@media (hover: hover) and (pointer: fine)
+  .scroll-own
+    scrollbar-width: none
+
+    &::-webkit-scrollbar
+      display: none
+
+  // Over the page it runs down the right edge of the window; over a box, the
+  // code sets its place from the box.
+  .scroll-track
+    position: fixed
+    inset: 0 0 0 auto
+    z-index: 60
+    display: block
+    width: 14px
+
+  .scroll-track.scroll-none
+    display: none
+
+  .scroll-thumb
+    position: absolute
+    top: 0
+    right: 3px
+    width: 6px
+    border-radius: 4px
+    background: var(--scroll-thumb)
+    opacity: 0
+    transition: opacity 400ms ease, width 120ms ease, background-color 120ms ease
+
+  .scroll-awake .scroll-thumb
+    opacity: 1
+    transition: opacity 120ms ease, width 120ms ease, background-color 120ms ease
+
+  .scroll-track:hover .scroll-thumb,
+  .scroll-drag .scroll-thumb
+    width: 8px
+    background: var(--scroll-thumb-hover)
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce)
+  .scroll-thumb,
+  .scroll-awake .scroll-thumb
+    transition: none

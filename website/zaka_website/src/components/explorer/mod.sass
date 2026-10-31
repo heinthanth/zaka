@@ -1,0 +1,17 @@
+// The explorer page: the frame fills the window under the fixed header, and
+// the explorer fills the frame, its toolbar on top, its sides on the
+// margins of the header; a little room stays at the foot.
+
+.explorer
+  box-sizing: border-box
+  height: 100dvh
+  padding-top: var(--bar-height)
+  padding-bottom: 10px
+  background: var(--canvas)
+  --shell-edge: var(--margin)
+
+// Full screen, which the toolbar turns on: the header hides and the
+// explorer runs to the edges of the window, with its own 10px margins.
+html[data-explorer-full] .explorer
+  padding-top: 0
+  --shell-edge: 10px

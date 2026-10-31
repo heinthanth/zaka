@@ -79,20 +79,24 @@ pub fn settings_modal(
 /// # Arguments
 ///
 /// * `look` - The look.
+/// * `with_theme` - Whether the section holds the theme; a page whose header
+///   picks the theme leaves it out.
 ///
 /// # Returns
 ///
 /// The view.
-pub fn appearance(look: Look) -> impl IntoView
+pub fn appearance(look: Look, with_theme: bool) -> impl IntoView
 {
     section(
         t!("web_ui.settings.appearance"),
         (
-            row(
-                t!("web_ui.settings.theme"),
-                t!("web_ui.settings.theme_note"),
-                theme_picker(look.theme(), true),
-            ),
+            with_theme.then(|| {
+                row(
+                    t!("web_ui.settings.theme"),
+                    t!("web_ui.settings.theme_note"),
+                    theme_picker(look.theme(), true),
+                )
+            }),
             row(
                 t!("web_ui.settings.ui_burmese"),
                 t!("web_ui.settings.ui_burmese_note"),

@@ -8,6 +8,8 @@ en = "Zaka"
 en = "Zaka - a programming language based on a subset of Burmese"
 [website.page.description]
 en = "A programming language based on a subset of Burmese."
+[website.page.explorer_title]
+en = "Zaka Explorer"
 [website.page.cover]
 en = "The Zaka flower mark and the name စံကား, beside white plumeria blossoms."
 
@@ -23,6 +25,8 @@ en = "Close the menu"
 en = "Open the explorer"
 [website.header.explorer_link]
 en = "Explorer"
+[website.header.settings]
+en = "Settings"
 [website.header.learn]
 en = "Learn"
 [website.header.docs]

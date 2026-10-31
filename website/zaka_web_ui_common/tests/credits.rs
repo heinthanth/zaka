@@ -95,10 +95,13 @@ fn trunk_dirs() -> [PathBuf; 3]
 }
 
 /// The npm packages Trunk fetches, as name and version pairs, each with the
-/// folder of the Trunk project that fetches it.
+/// folder of the first Trunk project that fetches it; a package two projects
+/// fetch counts once.
 fn trunk_packages() -> Vec<(PathBuf, String, String)>
 {
-    trunk_dirs().into_iter().flat_map(packages_of).collect()
+    let mut seen = BTreeSet::new();
+    let all = trunk_dirs().into_iter().flat_map(packages_of);
+    all.filter(|(_, n, v)| seen.insert((n.clone(), v.clone()))).collect()
 }
 
 /// The npm packages one Trunk project fetches.

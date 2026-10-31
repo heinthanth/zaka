@@ -32,27 +32,31 @@ const COMPILER_TITLE_ID: &str = "compiler-modal-title";
 
 /// The settings modal: the language, auto run, the look of the page and the
 /// compile options. The toolbar button and the menu of narrow screens both
-/// open it.
+/// open it, or the header of the website page. There the header picks the
+/// language and the theme, so the modal leaves them out.
 ///
 /// # Arguments
 ///
 /// * `open` - Whether the modal shows.
+/// * `on_site` - Whether the explorer sits in a page of the website.
 ///
 /// # Returns
 ///
 /// The view.
-pub fn settings_modal(open: RwSignal<bool>) -> impl IntoView
+pub fn settings_modal(open: RwSignal<bool>, on_site: bool) -> impl IntoView
 {
     let state = use_state();
     let auto_run = switch(state.auto_run, Signal::stored(false), state.set_auto_run);
     let general = section(
         t!("explorer.settings.general"),
         (
-            row(
-                t!("explorer.settings.language"),
-                t!("explorer.settings.language_note"),
-                lang_picker(move || state.flush_link()),
-            ),
+            (!on_site).then(|| {
+                row(
+                    t!("explorer.settings.language"),
+                    t!("explorer.settings.language_note"),
+                    lang_picker(move || state.flush_link()),
+                )
+            }),
             switch_row(
                 t!("explorer.settings.auto_run"),
                 t!("explorer.settings.auto_run_note"),
@@ -60,7 +64,10 @@ pub fn settings_modal(open: RwSignal<bool>) -> impl IntoView
             ),
         ),
     );
-    shared_modal(open, (general, appearance(state.look), compiler_section(state)))
+    shared_modal(
+        open,
+        (general, appearance(state.look, !on_site), compiler_section(state)),
+    )
 }
 
 /// The compiler options: the platform bits, the foldings of the IR, the

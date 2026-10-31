@@ -1,6 +1,7 @@
-# The npm packages of the website's motion code, fetched as the explorer
-# fetches its fonts and editor. No Rust here: cargo-leptos builds the site,
-# and the server hands out these libraries under /vendor from target/vendor.
+# The npm packages of the website's motion code and of the explorer page,
+# fetched as the explorer fetches its fonts and editor. No Rust here:
+# cargo-leptos builds the site, and the server hands out these libraries
+# under /vendor from target/vendor, and Monaco under /explorer/monaco.
 # `mise run website:cover` builds `cover.html` from here too, into
 # target/cover, with the shared web fonts of zaka_web_ui_common.
 
@@ -16,3 +17,10 @@ version = "3.12.5"
 [[node_packages]]
 name = "lenis"
 version = "1.1.13"
+
+# The editor of the explorer page, which names it from beside the page, under
+# /explorer/monaco: the server and the site builds place it there. Keep the
+# version in step with `zaka_explorer/Trunk.toml`.
+[[node_packages]]
+name = "monaco-editor"
+version = "0.57.0"

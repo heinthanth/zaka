@@ -7,7 +7,7 @@
 .app-shell
   display: flex
   flex-direction: column
-  height: 100vh
+  height: 100%
   background: var(--canvas)
 
 .panes
@@ -15,7 +15,7 @@
   display: grid
   grid-template-columns: minmax(0, var(--first-share)) 10px minmax(0, var(--second-share))
   min-height: 0
-  padding: 0 10px 10px
+  padding: 0 var(--shell-edge, 10px) 10px
 
 // The editor hides without leaving the page, so Monaco keeps its state; the
 // items sit in fixed tracks, so the column keeps to the last one.

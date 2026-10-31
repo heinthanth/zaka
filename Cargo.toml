@@ -86,6 +86,7 @@ zakac_semcheck = { path = "compiler/zakac_semcheck" }
 zakac_session = { path = "compiler/zakac_session" }
 zakac_span = { path = "compiler/zakac_span" }
 zaka_vm = { path = "compiler/zaka_vm" }
+zaka_explorer = { path = "website/zaka_explorer" }
 zaka_web_builder = { path = "website/zaka_web_builder" }
 zaka_web_ui_common = { path = "website/zaka_web_ui_common" }
 

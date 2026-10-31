@@ -13,7 +13,6 @@ target
 docs/*.internal.md
 
 website/zaka_explorer/dist
-website/zaka_explorer/dist-site
 website/zaka_web_ui_common/assets/fonts/*.ttf
 !website/zaka_web_ui_common/assets/fonts/MyanmarSabae.ttf
 !website/zaka_web_ui_common/assets/fonts/SauceCodeProHTMMsCustom-Regular.ttf

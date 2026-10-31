@@ -1,0 +1,10 @@
+// The page draws its own scroll bar over it, from the shared controls, so
+// the bar of the browser hides on screens with a fine pointer; touch screens
+// keep it, as it takes no room there.
+
+@media (hover: hover) and (pointer: fine)
+  html
+    scrollbar-width: none
+
+  html::-webkit-scrollbar
+    display: none

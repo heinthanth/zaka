@@ -36,7 +36,7 @@ command_arguments = [
 
 [watch]
 watch = [".", "../../samples", "../../artwork"]
-ignore = ["dist", "dist-site", "target", "../../target"]
+ignore = ["dist", "target", "../../target"]
 
 [serve]
 port = 8080

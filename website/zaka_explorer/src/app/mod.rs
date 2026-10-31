@@ -8,8 +8,12 @@ use leptos::prelude::*;
 use leptos_scoped_style::ComponentStyle;
 use leptos_use_event_listener::use_event_listener;
 use leptos_use_window::use_window;
+use zaka_web_ui_common::controls::ClassName as Controls;
+use zaka_web_ui_common::controls::scroll_bar::Scroller;
+use zaka_web_ui_common::controls::scroll_bar::scroll_bar;
 use zaka_web_ui_common::shared_sheets;
 use zaka_web_ui_common::sheet;
+use zaka_web_ui_common::site::EXPLORER_FLUSH_EVENT;
 use zakac_diagnostics::Level;
 use zakac_i18n::t;
 use zakac_rust_sugars::do_if;
@@ -54,21 +58,48 @@ turf::style_sheet!("src/app/mod.sass");
 /// Sheet of the page shell.
 static SHEET: ComponentStyle = ComponentStyle::global_css("zaka-app", STYLE_SHEET);
 
-/// The whole page: toolbar, then the editor on the left and the stage view
-/// over the bottom panel on the right, with splitters between them; the
-/// pane switches show and hide each of them. Outside debug mode the stage
-/// view holds the run and the bottom panel the problems. In debug mode the
-/// debugger bar sits under the toolbar, the pipeline takes the place of the run
-/// with the dock of the machine state next to it, and the bottom panel holds
-/// the output too. The guided tour sits over it all.
+/// The whole page: the page-wide sheets, then the app.
 ///
 /// # Returns
 ///
 /// The view.
-pub fn app() -> impl IntoView
+pub fn app() -> impl IntoView { (app_sheets(), app_shell(false)) }
+
+/// The page-wide sheets: the shared tokens and controls, the theme, the
+/// tables and the page shell. A host that renders the page ahead of time
+/// mounts them outside its island, as a global sheet renders on the server
+/// alone.
+///
+/// # Returns
+///
+/// The view; it renders no element of its own.
+pub fn app_sheets() -> impl IntoView
+{
+    (shared_sheets(), theme_sheet(), table_sheet(), sheet(&SHEET))
+}
+
+/// The app: toolbar, then the editor on the left and the stage view over the
+/// bottom panel on the right, with splitters between them; the pane switches
+/// show and hide each of them. Outside debug mode the stage view holds the
+/// run and the bottom panel the problems. In debug mode the debugger bar sits
+/// under the toolbar, the pipeline takes the place of the run with the dock
+/// of the VM state next to it, and the bottom panel holds the output too. The
+/// guided tour sits over it all.
+///
+/// # Arguments
+///
+/// * `on_site` - Whether the explorer sits in a page of the website, under its
+///   header, which then names the site and links to its pages in place of the
+///   toolbar.
+///
+/// # Returns
+///
+/// The view.
+pub fn app_shell(on_site: bool) -> impl IntoView
 {
     let state = provide_state();
     follow_hash(state);
+    follow_flush(state);
     follow_errors(state);
     wire_going(state);
     mark_lang();
@@ -119,8 +150,10 @@ pub fn app() -> impl IntoView
         .style(("--first-share", move || share_fr(state.stage_share.get())))
         .style(("--second-share", move || share_fr(1.0 - state.stage_share.get())))
         .child((stage_row(state, stage_shown, dock_shown), splitter(above), problems));
+    // On narrow screens the panes stack and scroll, under a bar of their own
+    // that takes no room.
     let main = div()
-        .class(ClassName::PANES)
+        .class(format!("{} {}", ClassName::PANES, Controls::SCROLL_OWN))
         .class((ClassName::PANES_SHUT, move || !state.editor_open.get()))
         .class((ClassName::PANES_SOLO, move || !column_shown.get()))
         .class((ClassName::PANES_BLANK, move || {
@@ -132,8 +165,14 @@ pub fn app() -> impl IntoView
         .style(("--second-share", move || share_fr(1.0 - state.editor_share.get())))
         .child((left, splitter(between), right, blank_canvas()));
     let bar = move || debug.get().then(debug_bar);
-    let shell = div().class(ClassName::APP_SHELL).child((toolbar(), bar, main, tour()));
-    (shared_sheets(), theme_sheet(), table_sheet(), sheet(&SHEET), shell)
+    let scroll = scroll_bar(Scroller::Element(panes));
+    div().class(ClassName::APP_SHELL).child((
+        toolbar(on_site),
+        bar,
+        main,
+        scroll,
+        tour(),
+    ))
 }
 
 /// The stage view, and in debug mode the dock next to it with a splitter
@@ -253,6 +292,18 @@ fn mark_lang()
     do_if!(let Some(page) = page, {
         let _ = page.set_attribute("lang", &zakac_i18n::locale());
     });
+}
+
+/// Write the link of the latest edits to the URL when the header of the
+/// website page asks, right before it reloads the page for a new language.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+fn follow_flush(state: AppState)
+{
+    let asks = leptos::ev::Custom::<web_sys::Event>::new(EXPLORER_FLUSH_EVENT);
+    let _ = use_event_listener(use_window(), asks, move |_| state.flush_link());
 }
 
 /// Load a link that is pasted or edited in the address bar.

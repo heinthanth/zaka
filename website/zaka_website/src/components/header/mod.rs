@@ -21,6 +21,8 @@ use zaka_web_ui_common::icon::globe;
 use zaka_web_ui_common::icon::menu;
 use zaka_web_ui_common::icon::swatches;
 use zaka_web_ui_common::sheet;
+use zaka_web_ui_common::site::EXPLORER_FLUSH_EVENT;
+use zaka_web_ui_common::site::EXPLORER_SETTINGS_EVENT;
 use zaka_web_ui_common::site::HOME_URL;
 use zaka_web_ui_common::theme::ThemeMode;
 use zaka_web_ui_common::theme::theme_mode;
@@ -69,9 +71,10 @@ const PAPER: &str = "paper";
 pub fn header_sheet() -> impl IntoView { sheet(&SHEET) }
 
 /// The header: the wordmark, the links to Learn and the Docs, the theme and
-/// language pickers, and the explorer. It sits over the page and takes the
-/// ground and ink of the chapter under it. An island: the pickers and the
-/// chapter colors run in the browser.
+/// language pickers, and the explorer; on the explorer page, the settings of
+/// the explorer in its place. It sits over the page and takes the ground and
+/// ink of the chapter under it. An island: the pickers and the chapter
+/// colors run in the browser.
 ///
 /// # Arguments
 ///
@@ -87,6 +90,7 @@ pub fn header_sheet() -> impl IntoView { sheet(&SHEET) }
 pub fn SiteHeader(here: String) -> impl IntoView
 {
     let home = here == HOME_URL;
+    let on_explorer = here == EXPLORER_URL;
     let theme = theme_mode();
     let chapter = RwSignal::new(PAPER.to_string());
     let moved = RwSignal::new(false);
@@ -104,10 +108,8 @@ pub fn SiteHeader(here: String) -> impl IntoView
                 .attr("aria-hidden", "true"),
             span().class(ClassName::HEADER_NAME).lang("my").child(NAME),
         ));
-    let action = a()
-        .class(format!("button {}", ClassName::HEADER_ACTION))
-        .href(EXPLORER_URL)
-        .child(t!("website.header.explorer"));
+    let action =
+        tern!(on_explorer, settings_action().into_any(), explorer_action().into_any());
     let section = |url: &'static str, label: &str| {
         a().class(ClassName::HEADER_LINK)
             .href(url)
@@ -116,9 +118,10 @@ pub fn SiteHeader(here: String) -> impl IntoView
     };
     let learn = section(LEARN_URL, "website.header.learn");
     let docs = section(DOCS_URL, "website.header.docs");
-    let pickers = div()
-        .class(ClassName::HEADER_PICKERS)
-        .child((theme_icon_picker(theme), lang_icon_picker(|| ())));
+    let pickers = div().class(ClassName::HEADER_PICKERS).child((
+        theme_icon_picker(theme),
+        lang_icon_picker(|| send(EXPLORER_FLUSH_EVENT)),
+    ));
     let open = RwSignal::new(false);
     follow_menu(open);
     // The links come first, then the pickers, then the explorer, the one
@@ -135,7 +138,36 @@ pub fn SiteHeader(here: String) -> impl IntoView
         .class((ClassName::HEADER_OPEN, move || open.get()))
         .attr("data-chapter", move || chapter.get())
         .attr("data-moved", move || moved.get().then_some(""))
-        .child((brand, actions, menu_panel(theme, open)))
+        .class((ClassName::HEADER_TOOL, on_explorer))
+        .child((brand, actions, menu_panel(theme, open, on_explorer)))
+}
+
+/// The call to action: the link to the explorer.
+///
+/// # Returns
+///
+/// The view.
+fn explorer_action() -> impl IntoView
+{
+    a().class(format!("button {}", ClassName::HEADER_ACTION))
+        .href(EXPLORER_URL)
+        .child(t!("website.header.explorer"))
+}
+
+/// The call to action on the explorer page: the button that opens the
+/// settings of the explorer, through [`EXPLORER_SETTINGS_EVENT`].
+///
+/// # Returns
+///
+/// The view.
+fn settings_action() -> impl IntoView
+{
+    button()
+        .class(format!("button {}", ClassName::HEADER_ACTION))
+        .r#type("button")
+        .attr("aria-haspopup", "dialog")
+        .on(ev::click, |_| send(EXPLORER_SETTINGS_EVENT))
+        .child(t!("website.header.settings"))
 }
 
 /// The theme and language pickers of the menu, each across it, with an icon
@@ -154,7 +186,9 @@ fn menu_pickers(theme: ThemeMode) -> impl IntoView
         span()
             .class(ClassName::HEADER_PICKER)
             .child((swatches(), theme_picker(theme, false))),
-        span().class(ClassName::HEADER_PICKER).child((globe(), lang_picker(|| ()))),
+        span()
+            .class(ClassName::HEADER_PICKER)
+            .child((globe(), lang_picker(|| send(EXPLORER_FLUSH_EVENT)))),
     )
 }
 
@@ -182,18 +216,35 @@ fn toggle(open: RwSignal<bool>) -> impl IntoView
         .child(move || tern!(open.get(), cross().into_any(), menu().into_any()))
 }
 
+/// Send a window event to the explorer, the other island of its page; on
+/// other pages nothing hears it.
+///
+/// # Arguments
+///
+/// * `name` - The name of the event.
+fn send(name: &str)
+{
+    let sent = web_sys::Event::new(name).and_then(|e| window().dispatch_event(&e));
+    do_if!(let Err(err) = sent, web_sys::console::error_1(&err));
+}
+
 /// The menu on narrow screens: the explorer and the links, then the pickers
-/// at its foot, over the whole page under the bar. A link shuts it.
+/// at its foot, over the whole page under the bar. A link shuts it. On the
+/// explorer page it leaves out the link to the explorer; the menu of the
+/// explorer holds its settings.
 ///
 /// # Arguments
 ///
 /// * `theme` - The theme mode.
 /// * `open` - Whether the menu is open.
+/// * `on_explorer` - Whether the page is the explorer.
 ///
 /// # Returns
 ///
 /// The view.
-fn menu_panel(theme: ThemeMode, open: RwSignal<bool>) -> impl IntoView
+fn menu_panel(
+    theme: ThemeMode, open: RwSignal<bool>, on_explorer: bool,
+) -> impl IntoView
 {
     let shut = move |_| open.set(false);
     let link = move |(href, id): (&'static str, &str)| {
@@ -210,7 +261,8 @@ fn menu_panel(theme: ThemeMode, open: RwSignal<bool>) -> impl IntoView
             nav().class(ClassName::HEADER_MENU_LINKS).child((
                 link((LEARN_URL, "website.header.learn")),
                 link((DOCS_URL, "website.header.docs")),
-                link((EXPLORER_URL, "website.header.explorer_link")),
+                (!on_explorer)
+                    .then(|| link((EXPLORER_URL, "website.header.explorer_link"))),
             )),
             div().class(ClassName::HEADER_MENU_PICKERS).child(menu_pickers(theme)),
         ))

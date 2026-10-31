@@ -11,9 +11,15 @@ use zaka_website::set_origin;
 /// Env var that makes the server write the pages and stop, for a build.
 const ONCE_VAR: &str = "ZAKA_WEBSITE_ONCE";
 
-/// The explorer build, served under `/explorer` while the site runs on this
-/// machine.
-const EXPLORER_DIST: &str = "website/zaka_explorer/dist-site";
+/// The Monaco editor, as the build of `vendor` writes it, served under
+/// `/explorer/monaco` while the site runs on this machine: the explorer
+/// names it from beside its page.
+const MONACO_DIST: &str = "target/vendor/monaco";
+
+/// The folders of the site root the hashed pictures and fonts go to: the
+/// pages name them under `/assets`, and the explorer from beside its page,
+/// under `/explorer/assets`.
+const ASSET_DIRS: [&str; 2] = ["assets", "explorer/assets"];
 
 /// The web fonts the website and the explorer share, as the build of
 /// `zaka_web_ui_common/fonts` writes them, served under `/fonts` while the
@@ -36,8 +42,8 @@ const MISSING_PAGE: &str = "404.html";
 const ROBOTS: &str = "User-agent: *\nAllow: /\n";
 
 /// Write the static pages and `robots.txt` into the site root; then, unless
-/// [`ONCE_VAR`] is set, serve the site with the explorer, the motion
-/// libraries and the web fonts beside it, and [`MISSING_PAGE`] with the code
+/// [`ONCE_VAR`] is set, serve the site with Monaco, the motion libraries and
+/// the web fonts beside it, and [`MISSING_PAGE`] with the code
 /// 404 for an address with no page, as the host does.
 /// A build with [`ONCE_VAR`] is for the web, so it needs [`ORIGIN_VAR`].
 #[tokio::main]
@@ -66,7 +72,7 @@ async fn main()
     let page = options.clone();
     let app = Router::new()
         .leptos_routes(&options, routes, move || shell(page.clone()))
-        .nest_service("/explorer", ServeDir::new(EXPLORER_DIST))
+        .nest_service("/explorer/monaco", ServeDir::new(MONACO_DIST))
         .nest_service("/vendor", ServeDir::new(VENDOR_DIST))
         .nest_service("/fonts", ServeDir::new(FONTS_DIST))
         .fallback_service(site)
@@ -78,17 +84,29 @@ async fn main()
     axum::serve(listener, app).await.expect("the server runs");
 }
 
-/// Put the hashed pictures and fonts in `<site root>/assets`, in place of
-/// the ones an earlier build left there.
+/// Put the hashed pictures and fonts in each of [`ASSET_DIRS`] in the site
+/// root, in place of the ones an earlier build left there.
 ///
 /// # Arguments
 ///
 /// * `site_root` - The site root.
 fn place_assets(site_root: &str)
 {
-    let dir = std::path::Path::new(site_root).join("assets");
-    _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("the site root can be written");
+    ASSET_DIRS
+        .iter()
+        .for_each(|d| place_assets_in(&std::path::Path::new(site_root).join(d)));
+}
+
+/// Put the hashed pictures and fonts in a folder, in place of the ones an
+/// earlier build left there.
+///
+/// # Arguments
+///
+/// * `dir` - The folder.
+fn place_assets_in(dir: &std::path::Path)
+{
+    _ = std::fs::remove_dir_all(dir);
+    std::fs::create_dir_all(dir).expect("the site root can be written");
     let files = std::fs::read_dir(ASSETS).expect("the build script wrote the assets");
     files.flatten().for_each(|f| {
         std::fs::copy(f.path(), dir.join(f.file_name()))

@@ -150,6 +150,22 @@
   &::before
     background: var(--panel)
 
+// On the explorer page the bar is clear, so the canvas of the explorer runs
+// up under it, and the margins of the explorer follow the bar's. Its call
+// to action is a button, which takes no font from the page on its own.
+.header.header-tool
+  &::before
+    background: transparent
+    backdrop-filter: none
+
+  .header-action
+    font-family: inherit
+
+// While the explorer fills the window, which its toolbar turns on, the bar
+// hides.
+html[data-explorer-full] .header
+  display: none
+
 html[data-menu="open"]
   overflow: hidden
 

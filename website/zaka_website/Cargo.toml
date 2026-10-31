@@ -32,6 +32,7 @@ tokio = { workspace = true, optional = true }
 tower-http = { workspace = true, optional = true }
 turf = { workspace = true }
 wasm-bindgen = { workspace = true }
+zaka_explorer = { workspace = true }
 zaka_vm = { workspace = true }
 zaka_web_ui_common = { workspace = true }
 zakac_borrow_checker = { workspace = true }
@@ -60,6 +61,7 @@ features = [
     "MediaQueryList",
     "MouseEvent",
     "NodeList",
+    "PointerEvent",
     "Window",
 ]
 
@@ -105,15 +107,17 @@ lib-profile-release = "wasm-release"
 hash-files = true
 # The sheets and the locale tables reach the Rust code through macros, and
 # the build script names the pictures and fonts in assets/ after a hash of
-# their content, so cargo-leptos does not see them on its own; a change to
-# one rebuilds both the server and the islands. The paths are from the
-# workspace root.
+# their content, so cargo-leptos does not see them on its own, nor the
+# explorer, a crate of its own; a change to one rebuilds both the server and
+# the islands. The paths are from the workspace root.
 watch-additional-files = [
     "website/zaka_website/src",
     "website/zaka_website/locales",
     "website/zaka_website/assets",
     "website/zaka_web_ui_common/src",
     "website/zaka_web_ui_common/locales",
+    "website/zaka_explorer/src",
+    "website/zaka_explorer/locales",
     "docs/learn",
 ]
 

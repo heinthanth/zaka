@@ -6,6 +6,7 @@ use crate::sheet;
 pub mod dropdown;
 pub mod modal;
 pub mod pickers;
+pub mod scroll_bar;
 pub mod settings;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.

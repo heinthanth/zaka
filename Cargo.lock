@@ -6026,6 +6026,7 @@ dependencies = [
  "turf",
  "wasm-bindgen",
  "web-sys",
+ "zaka_explorer",
  "zaka_vm",
  "zaka_web_builder",
  "zaka_web_ui_common",

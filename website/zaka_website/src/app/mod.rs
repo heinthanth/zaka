@@ -36,6 +36,7 @@ use zaka_web_ui_common::font::FONT_ROOT;
 use zaka_web_ui_common::font::face::Face;
 use zaka_web_ui_common::shared_sheets;
 use zaka_web_ui_common::sheet;
+use zaka_web_ui_common::site::EXPLORER_URL;
 use zaka_web_ui_common::site::HOME_URL;
 use zakac_i18n::t;
 
@@ -47,6 +48,8 @@ use crate::book::page_at;
 use crate::book::render::render;
 use crate::book::slugs;
 use crate::components::close::close;
+use crate::components::explorer::Explorer;
+use crate::components::explorer::explorer_sheets;
 use crate::components::footer::footer;
 use crate::components::glance::glance;
 use crate::components::header::SiteHeader;
@@ -56,6 +59,8 @@ use crate::components::hero::hero;
 use crate::components::learn::book_page;
 use crate::components::missing::missing;
 use crate::components::name::name;
+use crate::components::scroll_bar::PageScrollBar;
+use crate::components::scroll_bar::scroll_bar_sheet;
 use crate::components::traits::traits;
 use crate::set_origin;
 
@@ -81,6 +86,10 @@ const PREPAINT: &str = "try{var m=localStorage.getItem('zaka-theme');if(m&&m!=='
 /// first, so the first paint is set in it; the Burmese and code faces come
 /// from the page sheet.
 const START_WEIGHTS: [u16; 2] = [400, 700];
+
+/// Weights of Noto Sans Myanmar, the Burmese face of the explorer, whose
+/// sheets load with the explorer page, as its own `index.html` loads them.
+const EXPLORER_WEIGHTS: [u16; 2] = [400, 600];
 
 /// The libraries of the motion code, in order: GSAP, its scroll plugin and
 /// Lenis, from npm through `vendor/Trunk.toml`, each in a folder named after
@@ -280,6 +289,17 @@ pub fn app() -> impl IntoView
                 .build(),
         )
     };
+    // The slash at the end makes the build write `explorer/index.html`, which
+    // the explorer needs, as it names its files from beside its page.
+    let explorer_route = || {
+        Route(
+            RouteProps::builder()
+                .path(path!("/explorer/"))
+                .view(explorer_page)
+                .ssr(SsrMode::Static(StaticRoute::new()))
+                .build(),
+        )
+    };
     // The page for an address with no page, written as `404.html` at the root
     // of the site, which the host serves for each such address.
     let missing_route = || {
@@ -297,7 +317,13 @@ pub fn app() -> impl IntoView
             RoutesProps::builder()
                 .fallback(not_found)
                 .children(RouteChildren::to_children(move || {
-                    (home_route(), learn_route(), docs_route(), missing_route())
+                    (
+                        home_route(),
+                        learn_route(),
+                        docs_route(),
+                        explorer_route(),
+                        missing_route(),
+                    )
                 }))
                 .build(),
         )
@@ -305,7 +331,7 @@ pub fn app() -> impl IntoView
     let router = Router(
         RouterProps::builder().children(TypedChildren::to_children(routes)).build(),
     );
-    (shared_sheets(), sheet(&PAGE), router)
+    (shared_sheets(), sheet(&PAGE), scroll_bar_sheet(), PageScrollBar(), router)
 }
 
 /// The landing page, as a run of sentences with their proof.
@@ -332,6 +358,35 @@ fn home() -> impl IntoView
             .into_any(),
         main().id("top").child(sections),
         footer().into_any(),
+    )
+}
+
+/// The explorer page: the header, then the compiler explorer under it, which
+/// fills the rest of the window and starts in the browser.
+///
+/// # Returns
+///
+/// The view.
+fn explorer_page() -> impl IntoView
+{
+    let title = t!("website.page.explorer_title").to_string();
+    let sheet = |w| Face::Noto.sheet_path(w).unwrap_or_default();
+    let fonts = EXPLORER_WEIGHTS.map(|w| {
+        Link(
+            LinkProps::builder()
+                .rel("stylesheet")
+                .href(format!("{FONT_ROOT}{}", sheet(w)))
+                .build(),
+        )
+    });
+    (
+        page_tags(EXPLORER_URL, title, t!("website.page.description").to_string()),
+        fonts,
+        header_sheet(),
+        explorer_sheets(),
+        SiteHeader(SiteHeaderProps::builder().here(EXPLORER_URL.to_string()).build())
+            .into_any(),
+        Explorer().into_any(),
     )
 }
 

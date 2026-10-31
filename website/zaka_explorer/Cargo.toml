@@ -9,6 +9,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "zaka_explorer"
 path = "src/main.rs"
+required-features = ["csr"]
 
 [dependencies]
 base64 = { workspace = true }
@@ -16,7 +17,7 @@ bon = { workspace = true }
 codee = { workspace = true }
 console_error_panic_hook = { workspace = true }
 js-sys = { workspace = true }
-leptos = { workspace = true, features = ["csr"] }
+leptos = { workspace = true }
 leptos-scoped-style = { workspace = true }
 leptos-use-color-mode = { workspace = true }
 leptos-use-css-var = { workspace = true }
@@ -63,6 +64,7 @@ features = [
     "Document",
     "DomRect",
     "Element",
+    "EventTarget",
     "FontFace",
     "FontFaceDescriptors",
     "FontFaceSet",
@@ -91,6 +93,11 @@ features = [
 grass = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }
+
+[features]
+# The app of its own, which Trunk builds for the page in index.html; the
+# website mounts the library in an island and brings its own mode.
+csr = ["leptos/csr"]
 
 [build-dependencies]
 cargo-build = { workspace = true }

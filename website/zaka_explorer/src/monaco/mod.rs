@@ -182,6 +182,17 @@ struct Toggle
     enabled: bool,
 }
 
+/// How the scroll bars of the editor treat the mouse wheel.
+#[derive(Debug, Serialize, Builder)]
+struct ScrollOpts
+{
+    /// Keep each turn of the wheel, even when the text cannot move further.
+    /// Off, a turn the editor has no use for scrolls the page around it, as
+    /// the stacked panes of narrow screens need.
+    #[serde(rename = "alwaysConsumeMouseWheel")]
+    hold_wheel: bool,
+}
+
 /// Which Unicode text Monaco calls out.
 #[derive(Debug, Serialize, Builder)]
 #[serde(rename_all = "camelCase")]
@@ -242,6 +253,8 @@ struct EditorOpts<'a>
     render_line_highlight: &'static str,
     #[builder(default = Inset::builder().top(12).bottom(12).build())]
     padding: Inset,
+    #[builder(default = ScrollOpts::builder().hold_wheel(false).build())]
+    scrollbar: ScrollOpts,
     #[builder(default = UnicodeHighlight::builder()
         .non_basic_ascii(false)
         .ambiguous_characters(false)
@@ -784,10 +797,34 @@ fn line_mark(line: u32, class: &'static str, note: String) -> Mark
 /// The error of the loader when it fails.
 async fn load() -> Result<(), JsValue>
 {
+    add_loader().await?;
     let cfg = AmdConfig::builder().paths(AmdPaths::builder().build()).build();
     amd_config(&to_js(&cfg));
     let names = Array::of1(&JsValue::from_str(MAIN));
     let wait = Promise::new(&mut |done, fail| amd_load(&names, &done, &fail));
+    JsFuture::from(wait).await.map(drop)
+}
+
+/// Add the AMD loader to the page and wait for it, unless the page holds it
+/// from the start, as `index.html` does. A host page with UMD scripts adds it
+/// late, once those have run, so its `define` does not catch them.
+///
+/// # Returns
+///
+/// The error of the browser when the script fails to load.
+async fn add_loader() -> Result<(), JsValue>
+{
+    let has = js_sys::Reflect::has(&js_sys::global(), &JsValue::from_str("require"))?;
+    ret_if!(has, Ok(()));
+    let doc = leptos::prelude::document();
+    let script = doc.create_element("script")?;
+    script.set_attribute("src", &format!("{VS_DIR}/loader.js"))?;
+    let wait = Promise::new(&mut |done, fail| {
+        script.add_event_listener_with_callback("load", &done).ok();
+        script.add_event_listener_with_callback("error", &fail).ok();
+    });
+    let head = doc.head().ok_or_else(|| JsValue::from_str("the page has no head"))?;
+    head.append_child(&script)?;
     JsFuture::from(wait).await.map(drop)
 }
 

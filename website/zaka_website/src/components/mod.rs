@@ -1,5 +1,6 @@
 pub mod close;
 pub mod contents;
+pub mod explorer;
 pub mod footer;
 pub mod glance;
 pub mod header;
@@ -9,4 +10,5 @@ pub mod missing;
 pub mod name;
 pub mod pager;
 pub mod sandbox;
+pub mod scroll_bar;
 pub mod traits;

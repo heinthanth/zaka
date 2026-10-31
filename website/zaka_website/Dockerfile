@@ -15,26 +15,24 @@ COPY . .
 ARG ZAKA_SITE_ORIGIN
 
 # The website writes its pages once and stops, so the site is plain files.
-# The motion libraries, the web fonts and the explorer join it under /vendor,
-# /fonts and /explorer, placed as `mise run docs:build` places them.
+# The motion libraries and the web fonts join it under /vendor and /fonts,
+# and Monaco under /explorer, beside the explorer page, placed as
+# `mise run docs:build` places them.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
     --mount=type=cache,target=/root/.cache \
     --mount=type=secret,id=zaka_pda_font_secret,env=ZAKA_PDA_FONT_SECRET \
     (cd website/zaka_website/vendor && trunk build --release) \
     && (cd website/zaka_web_ui_common/fonts && trunk build --release) \
-    && cargo leptos build --project zaka_website --release \
+    && cargo leptos build --project zaka_website --release --split \
     && LEPTOS_OUTPUT_NAME=zaka_website LEPTOS_SITE_ROOT=target/website \
         LEPTOS_SITE_PKG_DIR=pkg LEPTOS_HASH_FILES=true ZAKA_WEBSITE_ONCE=1 \
         target/release/zaka_website \
-    && (cd website/zaka_explorer \
-        && trunk build --release --locked --cargo-profile wasm-release \
-            --public-url /explorer/) \
     && mkdir -p /srv/site \
     && cp -R target/website/. /srv/site/ \
     && cp -R target/vendor /srv/site/vendor \
-    && cp -R target/fonts /srv/site/fonts \
-    && cp -R website/zaka_explorer/dist /srv/site/explorer
+    && mv /srv/site/vendor/monaco /srv/site/explorer/monaco \
+    && cp -R target/fonts /srv/site/fonts
 
 FROM joseluisq/static-web-server:2 AS run
 

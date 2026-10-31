@@ -1,5 +1,6 @@
 // The toolbar: brand, sample picker, the editor switch, about and the
-// settings menu, straight on the canvas above the panels.
+// settings menu, straight on the canvas above the panels. A host page can set
+// `--shell-edge` to put the sides of the explorer on its own margins.
 
 .toolbar
   position: relative
@@ -7,7 +8,7 @@
   flex-wrap: wrap
   align-items: center
   gap: 10px 18px
-  padding: 10px 14px 10px 18px
+  padding: 10px var(--shell-edge, 10px) 10px var(--shell-edge, 18px)
 
 
 .brand
@@ -52,15 +53,29 @@
 .toolbar-gap
   flex: 1
 
-// About and settings, in the bar on wide screens; the menu holds them on
-// narrow ones.
+// About and settings, in the bar on each screen, after the pane switches.
 .toolbar-wide
   display: flex
   align-items: center
   gap: 8px
 
+// The wrapper of the settings button adds no box of its own. In a page of
+// the website it hides while the header shows its own settings button, on
+// screens wider than the 860px the header folds at.
+.site-gear
+  display: contents
+
+@media (min-width: 861px)
+  .site-gear
+    display: none
+
+  // While the explorer fills the window the header hides, and its settings
+  // button with it.
+  html[data-explorer-full] .site-gear
+    display: contents
+
 // The menu of narrow screens: its button in the bar, and a card under the
-// bar with the links and the rows that open about and settings. The button
+// bar with the links to the home page and the Learn pages. The button
 // is an icon button of the shared controls too, so the rule names the bar
 // to outrank them.
 .toolbar .menu-button,
@@ -94,19 +109,26 @@
 // other buttons sit on the right of the second row, and the sample picker
 // takes the whole third row.
 @media (max-width: 640px)
+  // The brand row takes the sizes of the header of the website on narrow
+  // screens: a 72px row with a 34px logo, and a plain menu button, a 26px
+  // icon in a 44px target that reaches past the edge by its padding.
   .toolbar
     row-gap: 16px
+    padding-top: 0
 
   .brand
     flex: 1
+    min-height: 72px
+
+  .brand-logo
+    width: 34px
+    height: 34px
+
+  .brand-name
+    font-size: 18px
 
   .toolbar-gap
     display: none
-
-  // The about and settings buttons it set off from are in the menu.
-  .pane-switches
-    padding-right: 0
-    border-right: 0
 
   .toolbar-actions
     order: 1
@@ -121,69 +143,69 @@
     grid-template-columns: auto minmax(0, 1fr)
     --dropdown-width: 100%
 
-  .toolbar-links,
-  .toolbar-wide
+  .toolbar-links
     display: none
 
   // Back to the grid of the icon buttons, which centers the icon.
   .toolbar .menu-button
     display: grid
+    width: 44px
+    height: 44px
+    margin-right: -9px
+    padding: 0
+    color: inherit
+    background: transparent
+    border: 0
 
+    // The icon buttons set their icons to 17px; this one is the larger icon
+    // of the header.
+    svg
+      width: 26px
+      height: 26px
+
+  // As the menu of the website on narrow screens: the whole window under the
+  // brand row, with the links in large type, each over a rule. It stands
+  // over the scroll bar of the panes.
   .menu
-    position: absolute
-    top: calc(100% - 4px)
-    right: 10px
-    left: 10px
-    z-index: 40
-    display: grid
-    gap: 6px
-    padding: 8px
+    position: fixed
+    inset: 72px 0 0
+    z-index: 70
+    display: flex
+    flex-direction: column
+    padding: 24px 16px 32px
+    overflow: auto
     background: var(--panel)
-    border: 1px solid var(--panel-border)
-    box-shadow: var(--pop-shadow)
+    border-top: 1px solid var(--panel-border)
     opacity: 0
     visibility: hidden
-    translate: 0 -6px
-    transition: opacity 160ms ease, translate 160ms ease, visibility 160ms
+    translate: 0 -8px
+    transition: opacity 200ms ease, translate 200ms ease, visibility 200ms
 
   .menu-open
     opacity: 1
     visibility: visible
     translate: 0 0
 
-  .menu-links,
-  .menu-rows
-    display: grid
+  // While the menu is open, the brand row over it takes its ground, as the
+  // header of the website does.
+  .toolbar:has(.menu-open)
+    background: var(--panel)
 
   .menu-links
-    padding-bottom: 6px
-    border-bottom: 1px solid var(--panel-border)
+    display: grid
 
-  .menu-links a,
-  .menu-rows button
-    --icon-size: 18px
-    display: flex
-    align-items: center
-    gap: 12px
-    min-height: 44px
-    padding: 0 12px
-    font: inherit
-    font-size: 15px
-    font-weight: 600
+  .menu-links a
+    padding: 14px 0
+    font-size: 22px
+    font-weight: 700
     color: var(--fg)
-    text-align: left
     text-decoration: none
-    background: transparent
-    border: 0
-    cursor: pointer
+    border-bottom: 1px solid var(--panel-border)
 
     &:hover,
     &:focus-visible
-      background: var(--chip)
+      color: var(--accent)
       outline: 0
-
-  .menu-rows svg
-    color: var(--fg-muted)
 
 @media (max-width: 640px) and (prefers-reduced-motion: reduce)
   .menu

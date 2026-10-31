@@ -10,8 +10,9 @@ html:root
 
 
 html
-  // One pair of outer margins for the whole page.
-  --margin: clamp(20px, 3vw, 40px)
+  // One pair of outer margins for the whole page; 16px on narrow screens,
+  // in px, as the explorer page sets a root font size of its own.
+  --margin: 24px
   // Room between sections, larger than each gap inside one.
   --section-gap: clamp(120px, 14vw, 220px)
   // The five text steps: poster, section head, statement, text and note.
@@ -20,7 +21,7 @@ html
   --step-state: clamp(22px, 2.4vw, 34px)
   --step-text: 18px
   --step-note: 15px
-  // The height of the header bar; it shrinks on narrow screens.
+  // The height of the header bar; narrow screens take a lower one.
   --bar-height: 100px
   scroll-padding-top: 88px
   // The gold fields: the accent of the theme, with its ink.
@@ -169,13 +170,15 @@ html.lenis body
   from
     translate: 0 40px
 
+// Narrow screens take one height of the header bar, with room around the
+// logo and the menu button.
 @media (max-width: 860px)
   html
     --bar-height: 72px
 
 @media (max-width: 640px)
   html
-    --bar-height: 64px
+    --margin: 16px
 
 @media (prefers-reduced-motion: reduce)
   .rise > *

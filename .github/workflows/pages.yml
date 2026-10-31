@@ -59,18 +59,12 @@ jobs:
             LEPTOS_SITE_PKG_DIR=pkg LEPTOS_HASH_FILES=true ZAKA_WEBSITE_ONCE=1 \
             target/release/zaka_website
 
-      - name: Build the explorer
-        working-directory: website/zaka_explorer
-        run: >
-          trunk build --release --locked --cargo-profile wasm-release
-          --public-url /explorer/
-
       - name: Join the site
         run: |
           mkdir -p dist
           cp -R target/website/. dist/
-          cp -R website/zaka_explorer/dist dist/explorer
           cp -R target/vendor dist/vendor
+          mv dist/vendor/monaco dist/explorer/monaco
           cp -R target/fonts dist/fonts
 
       - name: Publish to Cloudflare Pages

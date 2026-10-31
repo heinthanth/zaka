@@ -7,17 +7,17 @@ en = "Zaka Explorer"
 [explorer.toolbar.site]
 en = "Zaka website"
 [explorer.toolbar.website]
-en = "Website"
+en = "Home"
 [explorer.toolbar.learn]
 en = "Learn"
 [explorer.toolbar.menu]
 en = "Open the menu"
 [explorer.toolbar.menu_shut]
 en = "Close the menu"
-[explorer.toolbar.about]
-en = "About"
-[explorer.toolbar.settings]
-en = "Settings"
+[explorer.toolbar.full_on]
+en = "Full screen"
+[explorer.toolbar.full_off]
+en = "Leave full screen"
 
 [explorer.app.resize_editor]
 en = "Resize the editor"

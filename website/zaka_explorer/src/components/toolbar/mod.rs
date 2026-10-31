@@ -19,13 +19,14 @@ use zaka_web_ui_common::controls::settings::settings_button;
 use zaka_web_ui_common::icon::bottom_pane;
 use zaka_web_ui_common::icon::bug;
 use zaka_web_ui_common::icon::cross;
-use zaka_web_ui_common::icon::gear;
-use zaka_web_ui_common::icon::info;
+use zaka_web_ui_common::icon::expand;
 use zaka_web_ui_common::icon::left_pane;
 use zaka_web_ui_common::icon::menu;
 use zaka_web_ui_common::icon::middle_pane;
 use zaka_web_ui_common::icon::right_pane;
+use zaka_web_ui_common::icon::shrink;
 use zaka_web_ui_common::sheet;
+use zaka_web_ui_common::site::EXPLORER_SETTINGS_EVENT;
 use zaka_web_ui_common::site::HOME_URL;
 use zaka_web_ui_common::site::LEARN_URL;
 use zakac_i18n::t;
@@ -55,12 +56,20 @@ const MENU_ID: &str = "toolbar-menu";
 /// The bar above the panes: the brand and the links to the website and the
 /// Learn pages on the left; samples, the debug mode switch, the editor switch,
 /// about and settings on the right. On narrow screens the links, about and
-/// settings move into a menu behind a button at the end of the bar.
+/// settings move into a menu behind a button at the end of the bar. In a
+/// page of the website the header names the site and links to its pages, so
+/// the bar leaves out the brand, the links and the menu, and keeps about and
+/// settings in the bar on each screen; settings shows there alone while the
+/// header hides its own button.
+///
+/// # Arguments
+///
+/// * `on_site` - Whether the explorer sits in a page of the website.
 ///
 /// # Returns
 ///
 /// The view.
-pub fn toolbar() -> impl IntoView
+pub fn toolbar(on_site: bool) -> impl IntoView
 {
     let state = use_state();
     let logo = img()
@@ -72,15 +81,20 @@ pub fn toolbar() -> impl IntoView
         logo,
         span().class(ClassName::BRAND_NAME).child(t!("explorer.toolbar.brand")),
     ));
+    let brand = (!on_site).then(|| (brand, site_links()));
     let about = RwSignal::new(false);
     let settings = RwSignal::new(false);
     let open = RwSignal::new(false);
-    let wide = div()
-        .class(ClassName::TOOLBAR_WIDE)
-        .child((about_button(about), settings_button(settings)));
+    let gear =
+        span().class((ClassName::SITE_GEAR, on_site)).child(settings_button(settings));
+    let full = on_site.then(full_switch);
+    let wide =
+        div().class(ClassName::TOOLBAR_WIDE).child((about_button(about), gear, full));
+    let header_asks = ev::Custom::<web_sys::Event>::new(EXPLORER_SETTINGS_EVENT);
+    let _ = use_event_listener(use_window(), header_asks, move |_| settings.set(true));
+    let menu = (!on_site).then(|| (menu_button(open), menu_panel(open)));
     let view = header().class(ClassName::TOOLBAR).child((
         brand,
-        site_links(),
         span().class(ClassName::TOOLBAR_GAP),
         sample_picker(),
         div().class(ClassName::TOOLBAR_ACTIONS).attr(TOUR, "settings").child((
@@ -88,10 +102,9 @@ pub fn toolbar() -> impl IntoView
             pane_switches(),
             wide,
         )),
-        menu_button(open),
-        menu_panel(open, about, settings),
+        menu,
     ));
-    (sheet(&SHEET), view, about_modal(about), settings_modal(settings))
+    (sheet(&SHEET), view, about_modal(about), settings_modal(settings, on_site))
 }
 
 /// The links back to the website the explorer sits in: its landing page and
@@ -137,21 +150,17 @@ fn menu_button(open: RwSignal<bool>) -> impl IntoView
         .child(move || tern!(open.get(), cross().into_any(), menu().into_any()))
 }
 
-/// The menu of narrow screens: the links to the website and the Learn pages,
-/// then rows that open about and settings. A pick shuts it, and so does Escape.
+/// The menu of narrow screens: the links to the home page and the Learn
+/// pages. A pick shuts it, and so does Escape.
 ///
 /// # Arguments
 ///
 /// * `open` - Whether the menu is open.
-/// * `about` - Whether the about modal shows.
-/// * `settings` - Whether the settings modal shows.
 ///
 /// # Returns
 ///
 /// The view.
-fn menu_panel(
-    open: RwSignal<bool>, about: RwSignal<bool>, settings: RwSignal<bool>,
-) -> impl IntoView
+fn menu_panel(open: RwSignal<bool>) -> impl IntoView
 {
     let _ = use_event_listener(use_window(), ev::keydown, move |e| {
         do_if!(e.key() == "Escape", open.set(false));
@@ -159,27 +168,52 @@ fn menu_panel(
     let link = move |href: &'static str, label: String| {
         a().href(href).on(ev::click, move |_| open.set(false)).child(label)
     };
-    let row = move |modal: RwSignal<bool>, icon: AnyView, label: String| {
-        let show = move |_| {
-            open.set(false);
-            modal.set(true);
-        };
-        button().r#type("button").on(ev::click, show).child((icon, span().child(label)))
-    };
     let links = nav().class(ClassName::MENU_LINKS).child((
         link(HOME_URL, t!("explorer.toolbar.website").to_string()),
         link(LEARN_URL, t!("explorer.toolbar.learn").to_string()),
-    ));
-    let rows = div().class(ClassName::MENU_ROWS).child((
-        row(about, info().into_any(), t!("explorer.toolbar.about").to_string()),
-        row(settings, gear().into_any(), t!("explorer.toolbar.settings").to_string()),
     ));
     div()
         .id(MENU_ID)
         .class(ClassName::MENU)
         .class((ClassName::MENU_OPEN, move || open.get()))
         .attr("inert", move || (!open.get()).then_some(""))
-        .child((links, rows))
+        .child(links)
+}
+
+/// Mark on the root of the page while the explorer fills the window; the
+/// sheets of the website hide the header and draw the explorer to its edges.
+const FULL_MARK: &str = "data-explorer-full";
+
+/// Button that makes the explorer fill the window, in a page of the website:
+/// the header hides and the margins shrink. A second press brings them back.
+///
+/// # Returns
+///
+/// The view.
+fn full_switch() -> impl IntoView
+{
+    let on = RwSignal::new(false);
+    Effect::new(move |_| {
+        let root = document().document_element();
+        do_if!(let Some(root) = root, {
+            let _ = tern!(
+                on.get(),
+                root.set_attribute(FULL_MARK, ""),
+                root.remove_attribute(FULL_MARK)
+            );
+        });
+    });
+    let title = move || {
+        tern!(on.get(), t!("explorer.toolbar.full_off"), t!("explorer.toolbar.full_on"))
+    };
+    button()
+        .class(Controls::ICON_BUTTON)
+        .class((Controls::ICON_BUTTON_ON, move || on.get()))
+        .attr("aria-pressed", move || on.get().to_string())
+        .attr("aria-label", title)
+        .title(title)
+        .on(ev::click, move |_| on.update(|o| *o = !*o))
+        .child(move || tern!(on.get(), shrink().into_any(), expand().into_any()))
 }
 
 /// Button that turns debug mode on or off: on, the pane shows each phase of

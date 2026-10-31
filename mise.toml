@@ -53,7 +53,7 @@ dir = "website/zaka_explorer"
 description = "Build the compiler explorer"
 
 [tasks."check:wasm"]
-run = "cargo check -p zaka_explorer --target wasm32-unknown-unknown"
+run = "cargo check -p zaka_explorer --features csr --target wasm32-unknown-unknown"
 description = "Check the compiler explorer for the wasm target"
 
 [tasks."font:secret"]
@@ -69,14 +69,6 @@ description = "Fetch the motion libraries of the website from npm into target/ve
 # watch mode each later build would keep serving the old names, so the islands
 # would run stale code. Watch mode serves them under plain names.
 [tasks."website:serve"]
-depends = ["website:vendor", "font:fetch", "explorer:build_for_site"]
+depends = ["website:vendor", "font:fetch"]
 run = "LEPTOS_HASH_FILES=false cargo leptos watch --project zaka_website --split"
-description = "Serve the website with live reload, with the explorer under /explorer"
-
-# A folder of its own, so explorer:serve and explorer:build, which build for /,
-# never overwrite the build the website serves.
-[tasks."explorer:build_for_site"]
-run = "trunk build --release --cargo-profile wasm-release --public-url /explorer/ --dist dist-site"
-dir = "website/zaka_explorer"
-description = "Build the compiler explorer to sit under /explorer on the website"
-hide = true
+description = "Serve the website with live reload, the explorer page with it"
