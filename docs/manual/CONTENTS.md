@@ -14,6 +14,7 @@
   - [Ownership and borrowing](language/ownership.md)
   - [Lists](language/lists.md)
   - [Structs](language/structs.md)
+  - [Modules](language/modules.md)
   - [Natural wording](language/naturalness.md)
 - [The compiler](compiler/README.md)
   - [Commands](compiler/commands.md)

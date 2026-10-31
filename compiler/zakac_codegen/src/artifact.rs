@@ -16,15 +16,18 @@ use zakac_ir_builder::artifact::absolute;
 use zakac_ir_builder::artifact::relative;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_parser::load::Loaded;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_session::artifact::ArtifactFormat;
+use zakac_session::artifact::EmbeddedFile;
 use zakac_session::artifact::PhaseArtifact;
 use zakac_session::artifact::decode_raw;
 use zakac_session::artifact::decode_text;
 use zakac_session::artifact::encode_raw;
 use zakac_session::artifact::encode_text;
+use zakac_session::artifact::register_embedded;
 use zakac_session::config::Input;
 use zakac_span::filename::FileName;
 use zakac_span::source_file::SourceFile;
@@ -82,9 +85,31 @@ pub fn run_phases(
     folding: &FoldOptions, mem: &BorrowCheckOptions, results: ResultMode,
 ) -> Emitted
 {
-    let checked = zakac_borrow_checker::artifact::run_phases(
-        source, lexer, options, folding, mem,
-    );
+    run_loaded(Loaded::single(source, lexer), options, folding, mem, results)
+}
+
+/// Run each phase from the check to code generation on a program read with
+/// its imports. Code generation runs when no earlier phase reported an
+/// error.
+///
+/// # Arguments
+///
+/// * `loaded` - The program and the lexer and parser diagnostics.
+/// * `options` - The check options.
+/// * `folding` - The foldings to run.
+/// * `mem` - How the ownership check reports.
+/// * `results` - How a list or struct result reaches the caller.
+///
+/// # Returns
+///
+/// The output of each phase.
+pub fn run_loaded(
+    loaded: Loaded, options: &SemcheckOptions, folding: &FoldOptions,
+    mem: &BorrowCheckOptions, results: ResultMode,
+) -> Emitted
+{
+    let checked =
+        zakac_borrow_checker::artifact::run_loaded(loaded, options, folding, mem);
     let clean = !has_errors(&checked.diagnostics);
     let bits = options.platform_bits;
     let folded = checked.lowered.folded.as_ref();
@@ -101,6 +126,10 @@ pub struct CodegenArtifact
     pub name: FileName,
     /// The normalized source text the spans refer to.
     pub source: String,
+    /// The imported files, in reading order.
+    #[builder(default)]
+    #[serde(default)]
+    pub imports: Vec<EmbeddedFile>,
     /// The ops, or `None` when an earlier phase reported an error.
     pub module: Option<Module>,
     /// The diagnostics of each phase.
@@ -146,16 +175,17 @@ impl CodegenArtifact
     {
         let base = source.start_pos;
         let Emitted { borrowchecked, mut module } = emitted;
+        let imports = borrowchecked.lowered.checked.imports;
         let mut diagnostics = borrowchecked.diagnostics;
         diagnostics.iter_mut().for_each(|d| d.map_spans(&|s| relative(s, base)));
         module.iter_mut().for_each(|m| m.map_spans(&|s| relative(s, base)));
         #[rustfmt::skip]
         return CodegenArtifact::builder().name(source.name.clone())
-            .source(source.src.clone())
+            .source(source.src.clone()).imports(imports)
             .maybe_module(module).diagnostics(diagnostics).build();
     }
 
-    /// Add the embedded source to a source map.
+    /// Add the embedded source, then the imported files, to a source map.
     ///
     /// # Arguments
     ///
@@ -166,7 +196,7 @@ impl CodegenArtifact
     /// The registered file.
     pub fn register_source(&self, source_map: &mut SourceMap) -> Arc<SourceFile>
     {
-        source_map.new_source_file(self.name.clone(), self.source.clone())
+        register_embedded(source_map, &self.name, &self.source, &self.imports)
     }
 
     /// The diagnostics with spans made absolute for a registered file.

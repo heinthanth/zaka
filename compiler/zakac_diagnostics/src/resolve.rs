@@ -341,3 +341,77 @@ pub fn field_set_twice(span: Span, owner: &str, name: &str) -> Diagnostic
     let msg = t!("codes.ZK0321.message", s = owner, n = name);
     Diagnostic::new(Code::FieldSetTwice, msg, span)
 }
+
+/// An import names something the imported file does not export.
+///
+/// # Arguments
+///
+/// * `span` - The imported name.
+/// * `file` - The imported file, as written.
+/// * `name` - The name.
+/// * `private` - Whether the file declares the name without exporting it.
+///
+/// # Returns
+///
+/// The `ZK0322` diagnostic, with help when the name is private.
+pub fn import_not_found(span: Span, file: &str, name: &str, private: bool)
+-> Diagnostic
+{
+    let msg = t!("codes.ZK0322.message", f = file, n = name);
+    let diag = Diagnostic::new(Code::ImportNotFound, msg, span);
+    match private
+    {
+        true => diag.with_help(t!("codes.ZK0322.help_private", n = name)),
+        false => diag,
+    }
+}
+
+/// The help for a name that another file declares but this file cannot
+/// see.
+///
+/// # Arguments
+///
+/// * `name` - The name.
+/// * `file` - The file that declares it.
+///
+/// # Returns
+///
+/// The help text.
+pub fn hidden_help(name: &str, file: &str) -> String
+{
+    t!("codes.ZK0322.help_hidden", n = name, f = file).to_string()
+}
+
+/// An imported file holds a statement that would run.
+///
+/// # Arguments
+///
+/// * `span` - The statement.
+/// * `file` - The imported file.
+///
+/// # Returns
+///
+/// The `ZK0323` diagnostic.
+pub fn stmt_in_imported_file(span: Span, file: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0323.message", f = file);
+    Diagnostic::new(Code::StmtInImportedFile, msg, span)
+}
+
+/// An exported declaration names a private struct of its file in a kind.
+///
+/// # Arguments
+///
+/// * `span` - The kind.
+/// * `name` - The exported declaration.
+/// * `private` - The private struct.
+///
+/// # Returns
+///
+/// The `ZK0324` diagnostic, with help to export the struct.
+pub fn private_in_export(span: Span, name: &str, private: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0324.message", n = name, s = private);
+    let help = t!("codes.ZK0324.help", n = name, s = private);
+    Diagnostic::new(Code::PrivateInExport, msg, span).with_help(help)
+}

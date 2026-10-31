@@ -10,5 +10,6 @@ mod scope;
 pub mod semcheck;
 mod struct_check;
 pub mod structs;
+mod units;
 
 zakac_i18n::init!();

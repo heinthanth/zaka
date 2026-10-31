@@ -15,11 +15,13 @@ use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_rust_sugars::ret_if;
 use zakac_session::artifact::ArtifactFormat;
+use zakac_session::artifact::EmbeddedFile;
 use zakac_session::artifact::PhaseArtifact;
 use zakac_session::artifact::decode_raw;
 use zakac_session::artifact::decode_text;
 use zakac_session::artifact::encode_raw;
 use zakac_session::artifact::encode_text;
+use zakac_session::artifact::register_embedded;
 use zakac_session::config::Input;
 use zakac_span::filename::FileName;
 use zakac_span::pos::Pos;
@@ -27,6 +29,7 @@ use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 use zakac_span::span::Span;
 
+use crate::load::Loaded;
 use crate::parser::parse;
 
 const TEXT_HEADER: &str = "# zakac-parse-artifact v1";
@@ -42,6 +45,10 @@ pub struct ParseArtifact
     pub name: FileName,
     /// Normalized source text the spans refer to.
     pub source: String,
+    /// The imported files, in reading order.
+    #[builder(default)]
+    #[serde(default)]
+    pub imports: Vec<EmbeddedFile>,
     /// The tree.
     pub program: Program,
     /// Lexer then parser diagnostics.
@@ -77,6 +84,23 @@ impl ParseArtifact
         Self::from_output(source, parsed.program, diagnostics)
     }
 
+    /// Build an artifact from a program read with its imports, with
+    /// absolute spans.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The file that is run.
+    /// * `loaded` - The program, the imported files and the diagnostics.
+    ///
+    /// # Returns
+    ///
+    /// The artifact, with spans made relative.
+    pub fn from_loaded(source: &SourceFile, loaded: Loaded) -> Self
+    {
+        let artifact = Self::from_output(source, loaded.program, loaded.diagnostics);
+        Self { imports: loaded.imports, ..artifact }
+    }
+
     /// Build an artifact from a tree and diagnostics with absolute spans.
     ///
     /// # Arguments
@@ -101,7 +125,8 @@ impl ParseArtifact
             .program(program).diagnostics(diagnostics).build();
     }
 
-    /// Register the embedded source in `source_map` and return the file.
+    /// Register the embedded source, then the imported files, in
+    /// `source_map`, and return the file of the embedded source.
     ///
     /// # Arguments
     ///
@@ -112,7 +137,7 @@ impl ParseArtifact
     /// The registered source file.
     pub fn register_source(&self, source_map: &mut SourceMap) -> Arc<SourceFile>
     {
-        source_map.new_source_file(self.name.clone(), self.source.clone())
+        register_embedded(source_map, &self.name, &self.source, &self.imports)
     }
 
     /// The tree and diagnostics with spans made absolute against `source`.

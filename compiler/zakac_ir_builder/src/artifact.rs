@@ -11,16 +11,19 @@ use zakac_diagnostics::has_errors;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_parser::load::Loaded;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_semcheck::artifact::Checked;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_session::artifact::ArtifactFormat;
+use zakac_session::artifact::EmbeddedFile;
 use zakac_session::artifact::PhaseArtifact;
 use zakac_session::artifact::decode_raw;
 use zakac_session::artifact::decode_text;
 use zakac_session::artifact::encode_raw;
 use zakac_session::artifact::encode_text;
+use zakac_session::artifact::register_embedded;
 use zakac_session::config::Input;
 use zakac_span::filename::FileName;
 use zakac_span::pos::Pos;
@@ -75,7 +78,27 @@ pub fn run_phases(
     folding: &FoldOptions,
 ) -> Lowered
 {
-    let checked = zakac_semcheck::artifact::run_phases(source, lexer, options);
+    run_loaded(Loaded::single(source, lexer), options, folding)
+}
+
+/// Check, lower and fold a program read with its imports. Lowering is left
+/// out when an earlier phase reports an error.
+///
+/// # Arguments
+///
+/// * `loaded` - The program and the lexer and parser diagnostics.
+/// * `options` - The check options; their platform width also drives lowering
+///   and folding.
+/// * `folding` - Which foldings rewrite the module.
+///
+/// # Returns
+///
+/// The output of all phases.
+pub fn run_loaded(
+    loaded: Loaded, options: &SemcheckOptions, folding: &FoldOptions,
+) -> Lowered
+{
+    let checked = zakac_semcheck::artifact::check_loaded(loaded, options);
     let mut diagnostics = checked.diagnostics.clone();
     let builder = Lowered::builder();
     ret_if!(
@@ -102,6 +125,10 @@ pub struct IrArtifact
     pub name: FileName,
     /// Normalized source text the spans refer to.
     pub source: String,
+    /// The imported files, in reading order.
+    #[builder(default)]
+    #[serde(default)]
+    pub imports: Vec<EmbeddedFile>,
     /// The folded module, when the earlier phases reported no error.
     pub module: Option<Module>,
     /// All diagnostics.
@@ -144,16 +171,17 @@ impl IrArtifact
     {
         let base = source.start_pos;
         let shift = |span: Span| relative(span, base);
-        let Lowered { folded: mut module, mut diagnostics, .. } = lowered;
+        let Lowered { folded: mut module, mut diagnostics, checked, .. } = lowered;
         do_map(module.as_mut(), &shift);
         diagnostics.iter_mut().for_each(|d| d.map_spans(&shift));
         #[rustfmt::skip]
         return IrArtifact::builder().name(source.name.clone())
-            .source(source.src.clone())
+            .source(source.src.clone()).imports(checked.imports)
             .maybe_module(module).diagnostics(diagnostics).build();
     }
 
-    /// Register the embedded source in `source_map` and return the file.
+    /// Register the embedded source, then the imported files, in
+    /// `source_map`, and return the file of the embedded source.
     ///
     /// # Arguments
     ///
@@ -164,7 +192,7 @@ impl IrArtifact
     /// The registered source file.
     pub fn register_source(&self, source_map: &mut SourceMap) -> Arc<SourceFile>
     {
-        source_map.new_source_file(self.name.clone(), self.source.clone())
+        register_embedded(source_map, &self.name, &self.source, &self.imports)
     }
 
     /// The module and diagnostics with spans made absolute against

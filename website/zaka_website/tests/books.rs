@@ -4,6 +4,7 @@ use zaka_website::book::chapters;
 use zaka_website::book::neighbours;
 use zaka_website::book::page_at;
 use zaka_website::book::render::Block;
+use zaka_website::book::render::FILE_FENCE;
 use zaka_website::book::render::Head;
 use zaka_website::book::render::Sample;
 use zaka_website::book::render::anchor;
@@ -15,6 +16,10 @@ use zaka_website::components::sandbox::run::FenceOptions;
 use zaka_website::components::sandbox::run::run_to_end;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_diagnostics::Code;
+use zakac_lexer::lexer::LexerOptions;
+use zakac_lexer::lexer::lex;
+use zakac_span::filename::FileName;
+use zakac_span::source_map::SourceMap;
 
 /// Each page of each book.
 fn all_pages() -> impl Iterator<Item = &'static Page>
@@ -337,10 +342,59 @@ fn each_zaka_fence_of_the_books_parses()
             p.text
                 .lines()
                 .filter_map(|l| l.strip_prefix("```"))
-                .filter(|info| info.starts_with("zaka") && Fence::parse(info).is_none())
+                .filter(|info| info.starts_with("zaka") && *info != FILE_FENCE)
+                .filter(|info| Fence::parse(info).is_none())
                 .map(|info| format!("{}: {info}", p.path))
                 .collect::<Vec<_>>()
         })
         .collect();
     assert!(offenders.is_empty(), "fences that do not parse: {offenders:#?}");
+}
+
+/// The text of each fence of a page that shows one file of a longer
+/// program.
+fn shown_files(text: &str) -> Vec<String>
+{
+    let open = format!("```{FILE_FENCE}\n");
+    let starts = text.match_indices(&open).map(|(at, _)| at + open.len());
+    let texts = starts.filter_map(|at| text[at..].split_once("```").map(|(t, _)| t));
+    texts.map(str::to_string).collect()
+}
+
+#[test]
+fn each_shown_file_of_the_books_lexes_without_errors()
+{
+    let mut sm = SourceMap::new();
+    let mut count = 0;
+    for page in all_pages()
+    {
+        for shown in shown_files(page.text)
+        {
+            let name = FileName::Custom(page.path.to_string());
+            let file = sm.new_source_file(name, shown.clone());
+            let lexed = lex(&file, &LexerOptions::default());
+            assert!(lexed.diagnostics.is_empty(), "{}:\n{shown}", page.path);
+            count += 1;
+        }
+    }
+    assert!(count >= 10, "the module pages show their files: {count}");
+}
+
+#[test]
+fn a_shown_file_is_painted_in_the_prose()
+{
+    let page = all_pages().find(|p| p.path.ends_with("modules/README.md"));
+    let rendered = render(page.expect("the modules page"));
+    let prose: String = rendered
+        .blocks
+        .iter()
+        .filter_map(|b| match b
+        {
+            Block::Prose(html) => Some(html.as_str()),
+            Block::Zaka(_) => None,
+        })
+        .collect();
+    assert!(prose.contains("<pre><code class=\"painted\" lang=\"my\">"), "{prose}");
+    assert!(prose.contains("tok-kw"));
+    assert!(!prose.contains("zaka-file"));
 }

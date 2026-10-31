@@ -267,6 +267,36 @@ en = "structs can be declared at the top level and nowhere else"
 [codes.ZK0228.explain]
 en = """A struct declaration, \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; a struct can be used before its declaration."""
 
+[codes.ZK0229.title]
+en = "misplaced export mark"
+[codes.ZK0229.message]
+en = "\"အများသုံး\" marks a top-level function, struct, variable or constant, and nothing else"
+[codes.ZK0229.explain]
+en = """The export mark \"အများသုံး\" stands right before \"လုပ်ဆောင်ချက်\", \"ဒေတာအမျိုးအစား\", \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. It cannot mark a statement, a loop, or a declaration inside a block."""
+
+[codes.ZK0230.title]
+en = "misplaced import"
+[codes.ZK0230.message]
+en = "imports go at the top of the file"
+[codes.ZK0230.help]
+en = "move it above the first declaration or statement"
+[codes.ZK0230.explain]
+en = """An import, \"\"<file>\" မှ <name> ကို ထည့်သွင်းပါ။\", names what a file takes from another file. The imports of a file come first, ahead of each declaration and statement, and never inside a block."""
+
+[codes.ZK0231.title]
+en = "circular import"
+[codes.ZK0231.message]
+en = "this import goes in a circle: %{chain}"
+[codes.ZK0231.explain]
+en = """Files that import each other, at once or through other files, cannot be read one after the other. Move what both files need to a third file, and import it from both."""
+
+[codes.ZK0232.title]
+en = "import without a file"
+[codes.ZK0232.message]
+en = "this program was not read from a file, so it cannot import \"%{f}\""
+[codes.ZK0232.explain]
+en = """An import names a file relative to the file that holds the import. A program written in the compiler explorer, on a Learn page or on standard input has no folder, so its imports cannot be found. Save the program in a file and run it with \"zakac run\"."""
+
 # -------------------------------------------------------------- resolve ZK03xx
 
 [codes.ZK0301.title]
@@ -417,6 +447,33 @@ en = "field set twice"
 en = "the \"%{s}\" literal sets the field \"%{n}\" twice"
 [codes.ZK0321.explain]
 en = """A struct literal, as in \"အသက် ၂၀ ရှိသော လူတစ်ယောက်\", gives each field one value. Remove one of the two, or name the other field."""
+
+[codes.ZK0322.title]
+en = "nothing to import"
+[codes.ZK0322.message]
+en = "\"%{f}\" exports nothing named \"%{n}\""
+[codes.ZK0322.help_private]
+en = "\"%{n}\" is declared there without \"အများသုံး\"; add the mark to share it"
+[codes.ZK0322.help_hidden]
+en = "\"%{n}\" is declared in \"%{f}\"; mark it \"အများသုံး\" there and import it here"
+[codes.ZK0322.explain]
+en = """An import takes names that the other file exports. A declaration is exported when \"အများသုံး\" stands before it; without the mark it is private to its file."""
+
+[codes.ZK0323.title]
+en = "statement in an imported file"
+[codes.ZK0323.message]
+en = "\"%{f}\" is imported, so it holds declarations and no statements"
+[codes.ZK0323.explain]
+en = """A file that another file imports declares functions, structs, variables and constants for other files to use. Statements that print, loop, call or assign belong in the file that is run, the one given to \"zakac run\"."""
+
+[codes.ZK0324.title]
+en = "private struct in an export"
+[codes.ZK0324.message]
+en = "\"%{n}\" is exported, but its kind names the private struct \"%{s}\""
+[codes.ZK0324.help]
+en = "mark \"%{s}\" with \"အများသုံး\" as well, or keep \"%{n}\" private"
+[codes.ZK0324.explain]
+en = """An exported function, struct, variable or constant can be used from other files, so each struct its kinds name must be usable there too. A struct that the file declares without \"အများသုံး\" is private to the file. Export the struct as well, or remove the mark from the declaration that uses it."""
 
 # ---------------------------------------------------------------- kinds ZK04xx
 
@@ -732,6 +789,15 @@ en = "cell outside the list"
 en = "cell %{i} is outside the list, whose cells run from %{lo} to %{hi}"
 [codes.ZK0603.explain]
 en = """The cell number is a constant, and it does not name a cell of the list. \"x ၏ အကွက် i\" counts from 0, so the last cell of a list of n cells is n - 1. \"x ၏ n ခုမြောက်အကွက်\" counts from 1, up to n."""
+
+[codes.ZK0604.title]
+en = "imported value not known at compile time"
+[codes.ZK0604.message]
+en = "the starting value of \"%{n}\" must be known at compile time, since its file is imported"
+[codes.ZK0604.help]
+en = "literals, constants and operators on them are known; a function call is not, for now"
+[codes.ZK0604.explain]
+en = """The variables and constants of an imported file get their starting value before the program runs, so the value must come from literals, constants and operators on them. A function call cannot give that value for now. Give the variable no value and set it from the file that is run, or write the value out."""
 
 [codes.ZK0701.title]
 en = "use after move"

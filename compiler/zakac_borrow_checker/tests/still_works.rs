@@ -4,6 +4,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use common::codes;
+use common::file_codes;
 use common::lines;
 use common::ok;
 use common::repo_root;
@@ -143,7 +144,7 @@ fn repo_samples_are_clean()
     assert!(files.len() > 40, "{} samples", files.len());
     let found: Vec<(String, Vec<Code>)> = files
         .iter()
-        .map(|f| (f.display().to_string(), codes(&std::fs::read_to_string(f).unwrap())))
+        .map(|f| (f.display().to_string(), file_codes(f)))
         .filter(|(_, c)| !c.is_empty())
         .collect();
     assert!(found.is_empty(), "{found:#?}");

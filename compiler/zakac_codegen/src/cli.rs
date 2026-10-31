@@ -28,6 +28,7 @@ use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_parser::load::load;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -41,7 +42,7 @@ use zakac_span::source_map::SourceMap;
 
 use crate::artifact::CodegenArtifact;
 use crate::artifact::Emitted;
-use crate::artifact::run_phases;
+use crate::artifact::run_loaded;
 use crate::listing::listing;
 use crate::options::ResultMode;
 
@@ -250,13 +251,15 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     );
     ret_if!(let Err(error) = source, report_command_error(io, &cmd_info, error));
     let source = source.unwrap();
+    let loaded = load(&source, &mut source_map, &LexerOptions::default());
+    ret_if!(let Err(error) = loaded, report_command_error(io, &cmd_info, error));
+    let loaded = loaded.unwrap();
 
     let options = semcheck_options(matches);
     let folding = fold_options(matches);
     let mem = borrow_check_options(matches);
-    let lexer = LexerOptions::default();
     let results = result_mode(matches);
-    let emitted = run_phases(&source, &lexer, &options, &folding, &mem, results);
+    let emitted = run_loaded(loaded, &options, &folding, &mem, results);
     let failed = has_errors(emitted.diagnostics());
     let _ = write_diagnostics(io.stderr, &source_map, emitted.diagnostics());
 

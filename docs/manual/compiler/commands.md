@@ -192,6 +192,10 @@ their stage (`lex` and `parse` have none), and nothing else. `lex` segments the 
 first, `parse` lexes first, and so on, so a command never needs the artifact of the stage
 before it: it starts from the source.
 
+From `parse` on, a command reads the files its input imports as well, and its artifact
+holds them under `imports` ([Modules](../language/modules.md)). `segment` and
+`lex` work on the one file given to them.
+
 ## codegen
 
 ```console
@@ -236,7 +240,8 @@ The ops are listed in [Instructions](../vm/instructions.md).
 $ zakac run [options] [INPUT]
 ```
 
-`run` takes the compile options and the two checks above. It adds limits on the VM,
+`run` takes the compile options and the two checks above, and it reads the files a
+source file imports, as `parse` and the stages after it do. It adds limits on the VM,
 which stop a program that goes too far, and two options to look at the use of the heap and the stack:
 
 | Option | Default | Meaning |

@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use zakac_ast::s_expr::ToSexpr;
 use zakac_borrow_checker::artifact::Borrowchecked;
+use zakac_borrow_checker::artifact::run_loaded;
 use zakac_borrow_checker::artifact::run_phases;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
@@ -13,6 +14,7 @@ use zakac_diagnostics::Code;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_ir_builder::ir::Module;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_parser::load::load;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
@@ -68,6 +70,19 @@ pub fn run(text: &str) -> Run { run_with(text, &BorrowCheckOptions::default()) }
 pub fn codes_with(text: &str, options: &BorrowCheckOptions) -> Vec<Code>
 {
     run_with(text, options).out.diagnostics.iter().map(|d| d.code).collect()
+}
+
+/// The diagnostic codes of a source file and the files it imports, with the
+/// default options.
+pub fn file_codes(path: &Path) -> Vec<Code>
+{
+    let mut sm = SourceMap::new();
+    let file = sm.load_file(path).unwrap();
+    let loaded = load(&file, &mut sm, &LexerOptions::default()).unwrap();
+    let options = SemcheckOptions::default();
+    let mem = BorrowCheckOptions::default();
+    let out = run_loaded(loaded, &options, &FoldOptions::default(), &mem);
+    out.diagnostics.iter().map(|d| d.code).collect()
 }
 
 /// The diagnostic codes of `text` with the default options.

@@ -125,6 +125,15 @@ UnmatchedBlockClose = ("ZK0226", Level::Error),
 BadListCount = ("ZK0227", Level::Error),
 /// A struct is declared inside a block.
 NestedStruct = ("ZK0228", Level::Error),
+/// The export mark stands before something other than a top-level
+/// declaration.
+ExportNotOnDecl = ("ZK0229", Level::Error),
+/// An import comes after a declaration or statement, or inside a block.
+ImportNotFirst = ("ZK0230", Level::Error),
+/// A file imports itself through a chain of imports.
+CircularImport = ("ZK0231", Level::Error),
+/// A program that was not read from a file has an import.
+ImportNeedsFile = ("ZK0232", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -169,6 +178,12 @@ StructNameClash = ("ZK0319", Level::Error),
 UnknownField = ("ZK0320", Level::Error),
 /// A struct literal sets one field twice.
 FieldSetTwice = ("ZK0321", Level::Error),
+/// An import names something the imported file does not export.
+ImportNotFound = ("ZK0322", Level::Error),
+/// An imported file holds a statement that would run.
+StmtInImportedFile = ("ZK0323", Level::Error),
+/// An exported declaration names a private struct of its file in a kind.
+PrivateInExport = ("ZK0324", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.
@@ -248,6 +263,9 @@ ConstantOverflow = ("ZK0601", Level::Error),
 ConstantZeroDivisor = ("ZK0602", Level::Error),
 /// A constant cell number is outside its list.
 CellOutOfRange = ("ZK0603", Level::Error),
+/// A variable or constant of an imported file starts with a value that is
+/// not known at compile time.
+GlobalInitNotConstant = ("ZK0604", Level::Error),
 // ownership: ZK07xx
 /// A name is used after its block moved to another owner.
 MovedOut = ("ZK0701", Level::Error),

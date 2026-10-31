@@ -41,7 +41,7 @@ what is not needed: names become numbers, blocks are flattened, operators have o
 spelling, and each conversion is written out.
 
 ```text
-Module { globals: Vec<Slot>, funcs: Vec<Func>, main: Vec<Stmt>, span }
+Module { globals: Vec<Slot>, funcs: Vec<Func>, main: Vec<Stmt>, imported_inits, span }
 Func   { name, params, result, ret, locals: Vec<Slot>, block: Vec<Stmt>, span }
 Slot   { name, kind: DataKind, access: Var | Const | LoopVar, addressed, span }
 Place  = Global(n) | Local(n)                   written g0, l0
@@ -91,6 +91,13 @@ rules out). Its rules:
 - `ကိန်းသေ` becomes a slot with `access: const`; the folder uses the flag.
 - A pointer read through a place becomes `Load`; an owner moved out becomes `Take`; a
   lend becomes `Lend`.
+- A program of several files gives one module. As in the check, each file has its own
+  top-level scope and its own function map, and an import brings the places and
+  functions it names from the file it reads. Functions are numbered across all the
+  files in the order of the tree, and a function of an imported file is named
+  `<name>@<file>`, so two private functions of one name differ in the listing.
+- The declarations of the imported files come first in the tree, so the `set`s of their
+  variables are the first statements of `main`; `imported_inits` counts them.
 
 ### Folding
 
@@ -107,6 +114,11 @@ The errors of constant operations are reported whatever `--fold` holds: an overf
 (ZK0601), a zero divisor (ZK0602) and a cell number outside its list (ZK0603), found
 with the same `value` functions that the VM uses at run time, so the two cannot
 differ. Folding does not remove the `set` of a constant; it just rewrites its reads.
+
+The first `imported_inits` statements of `main` get one more check: a duplicate of them is
+folded with each folding on, and each one whose value is then not known (not a constant,
+a size, a blank list or a list of known values) is ZK0604. The check uses its own
+duplicate, so `--fold` changes the IR but not which programs compile.
 
 Take this program (the file `sq.zaka`):
 

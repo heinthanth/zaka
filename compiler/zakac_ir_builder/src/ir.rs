@@ -25,6 +25,12 @@ pub struct Module
     /// The top-level statements.
     #[builder(default)]
     pub main: Vec<Stmt>,
+    /// The number of statements at the start of `main` that set the
+    /// variables and constants of imported files. Imported files hold no
+    /// other statements, and the file that is run comes after them.
+    #[builder(default)]
+    #[serde(default)]
+    pub imported_inits: u32,
     /// Source region of the whole program.
     pub span: Span,
 }

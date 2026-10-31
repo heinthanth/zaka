@@ -48,6 +48,8 @@ and one set of tests serve both books.
   - `zaka-error ZK0701` must fail to compile with that code.
   - `zaka-warning ZK0501` must compile with that warning.
   - `zaka-stop` must stop at run time, with its output in the `text` fence after it.
+  - `zaka-file` shows one file of a program in several files: painted, never run, and
+    it must lex with no error. Start it with a `// <file>.zaka` line.
   - Options can follow the fence word: `mem-check=warn|off`, `mem-strict=on`, `no-raw=on`.
 - The tests also check that each link reaches a page, each `#mark` reaches a `##` head,
   and each code in `zakac_diagnostics` has a row on `manual/reference/errors.md`.

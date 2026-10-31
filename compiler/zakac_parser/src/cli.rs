@@ -17,7 +17,6 @@ use zakac_cli_common::command::ExitCode;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_lexer::lexer::lex;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -29,7 +28,7 @@ use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 
 use crate::artifact::ParseArtifact;
-use crate::parser::parse;
+use crate::load::load;
 
 const PARSE_RAW_EXTENSION: &str = ".zkast";
 const PARSE_TEXT_EXTENSION: &str = ".zkastt";
@@ -186,14 +185,13 @@ fn command_main(
     );
     ret_if!(let Err(error) = source, report_command_error(io, &cmd_info, error));
     let source = source.unwrap();
+    let loaded = load(&source, &mut source_map, &LexerOptions::default());
+    ret_if!(let Err(error) = loaded, report_command_error(io, &cmd_info, error));
+    let loaded = loaded.unwrap();
 
-    let lexed = lex(&source, &LexerOptions::default());
-    let parsed = parse(&source, &lexed);
-    let mut diagnostics = lexed.diagnostics;
-    diagnostics.extend(parsed.diagnostics);
-    let failed = has_errors(&diagnostics);
-    let _ = write_diagnostics(io.stderr, &source_map, &diagnostics);
-    let artifact = ParseArtifact::from_output(&source, parsed.program, diagnostics);
+    let failed = has_errors(&loaded.diagnostics);
+    let _ = write_diagnostics(io.stderr, &source_map, &loaded.diagnostics);
+    let artifact = ParseArtifact::from_loaded(&source, loaded);
 
     let mut output = resolved.output;
     let result = dump_artifact(&mut output, io.stdout, &artifact, resolved.format);

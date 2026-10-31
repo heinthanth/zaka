@@ -48,14 +48,9 @@ pub fn fold(
     module: &mut Module, options: &FoldOptions, platform_bits: u16,
 ) -> Vec<Diagnostic>
 {
-    let mut folder = Folder {
-        options: *options,
-        platform: platform_bits,
-        consts: HashMap::new(),
-        global_consts: const_flags(&module.globals),
-        local_consts: Vec::new(),
-        diags: Vec::new(),
-    };
+    let unknown = unknown_inits(module, platform_bits);
+    let mut folder = Folder::new(*options, platform_bits, &module.globals);
+    folder.diags.extend(unknown);
     folder.stmts(&mut module.main);
     for func in &mut module.funcs
     {
@@ -65,6 +60,69 @@ pub fn fold(
     }
     folder.diags.sort_by_key(|d| d.span.lo);
     folder.diags
+}
+
+/// Report each variable or constant of an imported file whose starting
+/// value is not known at compile time. A duplicate of the statements that set
+/// them is folded with each folding on, so the options of the build do not
+/// change which programs compile.
+///
+/// # Arguments
+///
+/// * `module` - The module, before folding.
+/// * `platform_bits` - Bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// One `ZK0604` diagnostic per such starting value.
+fn unknown_inits(module: &Module, platform_bits: u16) -> Vec<Diagnostic>
+{
+    let mut inits = module.main[..module.imported_inits as usize].to_vec();
+    let mut probe = Folder::new(FoldOptions::default(), platform_bits, &module.globals);
+    probe.stmts(&mut inits);
+    inits.iter().filter_map(|s| unknown_init(s, &module.globals)).collect()
+}
+
+/// Report a variable or constant of an imported file whose starting value
+/// did not fold to a value known at compile time.
+///
+/// # Arguments
+///
+/// * `stmt` - The folded statement that sets it.
+/// * `globals` - The global slots.
+///
+/// # Returns
+///
+/// The `ZK0604` diagnostic, or `None` for a known value.
+fn unknown_init(stmt: &Stmt, globals: &[Slot]) -> Option<Diagnostic>
+{
+    let Stmt::Set { place: Place::Global(g), value, span } = stmt
+    else
+    {
+        return None;
+    };
+    ret_if!(is_known(value), None);
+    Some(fd::global_init_not_constant(*span, &globals[*g as usize].name))
+}
+
+/// Whether a folded value is known at compile time: a constant, a size, a
+/// list or struct at its defaults, or one written out from known values.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// `true` when it is known.
+fn is_known(e: &Expr) -> bool
+{
+    match &e.node
+    {
+        ExprNode::Const(_) | ExprNode::SizeOf(_) | ExprNode::BlankList => true,
+        ExprNode::List(items) => items.iter().all(is_known),
+        _ => false,
+    }
 }
 
 /// Which slots are constants.
@@ -101,6 +159,29 @@ struct Folder
 
 impl Folder
 {
+    /// A folder at the start of the top-level statements.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Which foldings rewrite the module.
+    /// * `platform` - Bit count of the platform-sized kinds.
+    /// * `globals` - The global slots.
+    ///
+    /// # Returns
+    ///
+    /// The folder.
+    fn new(options: FoldOptions, platform: u16, globals: &[Slot]) -> Self
+    {
+        Folder {
+            options,
+            platform,
+            consts: HashMap::new(),
+            global_consts: const_flags(globals),
+            local_consts: Vec::new(),
+            diags: Vec::new(),
+        }
+    }
+
     /// Whether a slot is a constant.
     ///
     /// # Arguments

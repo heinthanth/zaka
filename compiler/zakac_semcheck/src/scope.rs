@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bon::Builder;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
@@ -28,6 +29,9 @@ pub(crate) struct Binding
     pub access: Access,
     /// The declared name.
     pub span: Span,
+    /// `true` for a top-level declaration that other files can import.
+    #[builder(default)]
+    pub exported: bool,
 }
 
 /// Block scopes from the outermost to the innermost.
@@ -77,6 +81,30 @@ impl Scopes
     {
         self.0.iter().rev().find_map(|scope| scope.get(name)).copied()
     }
+
+    /// Mark a name of the innermost scope as exported.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    pub fn mark_exported(&mut self, name: &str)
+    {
+        let found = self.0.last_mut().and_then(|scope| scope.get_mut(name));
+        do_if!(let Some(binding) = found, binding.exported = true);
+    }
+
+    /// Close each scope and open one blank top-level scope, as a new file
+    /// begins.
+    ///
+    /// # Returns
+    ///
+    /// The top-level names of the file that ended.
+    pub fn restart(&mut self) -> HashMap<String, Binding>
+    {
+        let top = std::mem::take(&mut self.0).into_iter().next();
+        self.push();
+        top.unwrap_or_default()
+    }
 }
 
 /// Parameter and result kinds of a function.
@@ -88,6 +116,9 @@ pub(crate) struct FnSig
     pub params: Vec<DataKind>,
     /// The result kind; `None` for a function without a result.
     pub ret: Option<DataKind>,
+    /// `true` when other files can import the function.
+    #[builder(default)]
+    pub exported: bool,
 }
 
 /// Functions, indexed on name.

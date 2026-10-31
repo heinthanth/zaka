@@ -17,8 +17,13 @@ The functions are in `compiler/zakac_parser/src/parser.rs`:
 | `parse(&SourceFile, &LexOutput) -> ParseOutput` | the normal path |
 | `parse_at(text, base, &LexOutput) -> ParseOutput` | the same for a bare `&str` at a position |
 | `parse_lone_expr(text, base, &LexOutput) -> Result<Expr, Diagnostic>` | one expression that must use all the tokens; used in tests |
+| `parse_with(&SourceFile, &LexOutput, first_id, &structs) -> ParseOutput` | one file of a program with imports: node numbers start at `first_id`, and the struct names the file imports start a kind |
 
-`ParseOutput` is `{ program, diagnostics }`. Spans are absolute, as in the lexer.
+`ParseOutput` is `{ program, diagnostics, next_id }`; `next_id` is the number the next
+expression node would take. Spans are absolute, as in the lexer.
+
+A program of several files goes through `load` in `src/load.rs`, which calls the
+functions above once or twice for each file; see [Reading the imports](#reading-the-imports).
 
 ## The approach
 
@@ -259,7 +264,9 @@ token:
 | `ပြန်ပေးပါ` | a bare return | |
 | `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
 | `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ မင်မိုရီကို`, then `ပြန်လည်စွန့်လွှတ်မည်` for a release or a size for a resize |
+| a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းပါ။`; after another statement or inside a block it is parsed and reported (ZK0230) |
 | a string | `parse_print_str` | `STR ကို ပြသပါ။` or `ဟု`; a string in another place is ZK0223 |
+| `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, struct or top-level declaration; on another statement it is ZK0229 |
 | an `else`, an update, a closer with no opener | an error | ZK0211, ZK0212, ZK0226 |
 | all other tokens | `parse_expr_headed` | a clause; see below |
 
@@ -279,6 +286,49 @@ base`, and checks the bit counts (8, 16, 32, 64, 128 for integers; 16 and up for
 base, checks the range of the kind (ZK0220) and the digits against the base (ZK0219).
 A literal with no kind prefix is limited to 128 bits here; the kind check gives it the
 kind of its place and checks the range there.
+
+## Reading the imports
+
+`load(root, &mut SourceMap, &LexerOptions) -> Result<Loaded>` reads a file and the files it
+imports, and gives one tree for all of them:
+
+```text
+Loaded  { program, imports: Vec<EmbeddedFile>, diagnostics }
+Program { stmts, units: Vec<Unit>, span }
+Unit    { name, first_stmt }
+```
+
+For each file, from the file that is run:
+
+1. Lex it, and parse it a first time to find its import sentences. The imports do not
+   depend on struct names, so this parse finds them all; its tree is dropped.
+2. For each import, join the path to the folder of the file and drop the `.` and `..`
+   parts, so two spellings of one file meet. A file read before gives its unit again; a
+   file on the chain of files being read is a circle (ZK0231); each other file is read
+   through the source map and visited in turn, so its own imports come first. A file
+   that cannot be read ends the load with a host error, which has no code.
+3. Parse the file a second time with `parse_with`: its node numbers go on from the file
+   before, so each expression of the program has a number of its own, and the struct
+   names it imports from exported structs start a kind.
+4. Set `unit` on each import to the unit it reads, append a `Unit` and the statements
+   of the file to the program, and note the structs the file exports.
+
+So the units come in post-order: each imported file ahead of the files that import it,
+and the file that is run last. `Program::unit_of(i)` gives the unit of statement `i`
+and `Program::is_root(unit)` tells the file that is run. A program of one file has no
+units, and both functions treat each statement as part of the file that is run.
+
+A root whose name is not a real file, such as standard input or the text of the
+explorer, is parsed once with `Loaded::single`, and `refuse_imports` reports each import
+in it (ZK0232). `Loaded::single` is also what the `run_phases` function of each later
+stage uses, so a test that compiles a bare string needs no file at all; the stage
+commands and `zakac run` call `load` and then `check_loaded` or `run_loaded`.
+
+The imported files go into each later artifact under `imports`, in reading order. That
+order matches the order the source map holds them in after the file that is
+run, so a decoded artifact registers the files again in that order and its spans,
+relative to the start of the first file, remain valid. The parser owns the codes of this
+step: ZK0229 to ZK0232.
 
 ## Skipping a bad sentence
 
@@ -330,8 +380,8 @@ a statement verb), `ZK0210` (a chained comparison). The full list is in
 
 ## Artifacts, tests and extending
 
-`ParseArtifact` holds the source, the tree and the diagnostics (the lexer's first, then
-the parser's), with spans relative to the file start; its text form starts with
+`ParseArtifact` holds the source, the imported files, the tree and the diagnostics (the
+lexer's first, then the parser's), with spans relative to the start of the file that is run; its text form starts with
 `# zakac-parse-artifact v1`. The golden files are `tests/inputs/*.zaka` against
 `tests/expected/*.zkastt`, rewritten with `ZAKA_BLESS=1`. `tests/clause.rs` holds a trace
 for each shape of clause, `tests/stmt.rs` a case for each statement form and error.

@@ -37,6 +37,7 @@ use crate::stmt::FreeStmt;
 use crate::stmt::GenericStmt;
 use crate::stmt::IfArm;
 use crate::stmt::IfStmt;
+use crate::stmt::ImportStmt;
 use crate::stmt::Param;
 use crate::stmt::PrintArg;
 use crate::stmt::PrintStmt;
@@ -110,6 +111,7 @@ AllocStmt => "alloc", visit_alloc;
 ResizeStmt => "resize", visit_resize;
 FreeStmt => "free", visit_free;
 StructDecl => "struct", visit_struct;
+ImportStmt => "import", visit_import;
 IntLit => "int", visit_int;
 FloatLit => "float", visit_float;
 CharLit => "char", visit_char;
@@ -162,6 +164,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Resize(s) => s,
         Stmt::Free(s) => s,
         Stmt::Struct(s) => s,
+        Stmt::Import(s) => s,
     }
 }
 
@@ -296,6 +299,9 @@ pub trait Visitor
 
     fn visit_struct(&mut self, n: &StructDecl) { walk_struct(self, n) }
 
+    /// Visit an import.
+    fn visit_import(&mut self, n: &ImportStmt) { walk_import(self, n) }
+
     /// Visit an expression.
     fn visit_expr(&mut self, n: &Expr) { walk_expr(self, n) }
     /// Visit an integer literal.
@@ -372,6 +378,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Resize(s) => v.visit_resize(s),
         Stmt::Free(s) => v.visit_free(s),
         Stmt::Struct(s) => v.visit_struct(s),
+        Stmt::Import(s) => v.visit_import(s),
     }
 }
 
@@ -563,6 +570,15 @@ pub fn walk_struct<V: Visitor + ?Sized>(v: &mut V, n: &StructDecl)
     v.visit_ident(&n.name);
     do_for!(f in &n.fields, v.visit_param(f));
     do_if!(let Some(word) = &n.classifier, v.visit_ident(word));
+    v.leave(n);
+}
+
+/// Visit the path and the names of an import.
+pub fn walk_import<V: Visitor + ?Sized>(v: &mut V, n: &ImportStmt)
+{
+    v.enter(n);
+    v.visit_str(&n.path);
+    do_for!(name in &n.names, v.visit_ident(name));
     v.leave(n);
 }
 
@@ -859,6 +875,7 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::Resize(s) => v.visit_resize_mut(s),
         Stmt::Free(s) => v.visit_free_mut(s),
         Stmt::Struct(s) => walk_struct_mut(v, s),
+        Stmt::Import(s) => walk_import_mut(v, s),
     }
 }
 
@@ -947,6 +964,14 @@ pub fn walk_fn_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FnDecl)
     }
     opt_kind_mut(v, &mut n.ret);
     v.visit_block_mut(&mut n.block);
+}
+
+/// Visit the path and the names of an import.
+pub fn walk_import_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut ImportStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_span_mut(&mut n.path.span);
+    do_for!(name in &mut n.names, v.visit_ident_mut(name));
 }
 
 /// Visit the name, fields and classifier of a struct declaration.

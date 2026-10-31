@@ -221,3 +221,21 @@ fn a_run_that_is_no_identifier_is_lexed_per_word()
     assert_eq!(codes(text), [Code::InvalidCharacter]);
     assert_eq!(common::lexemes(text), ["က", "ခ"]);
 }
+
+#[test]
+fn import_and_export_words()
+{
+    let import = "\"က.zaka\" မှ ခ၊ ဂ တို့ကို ထည့်သွင်းပါ။";
+    let want = [
+        TokenKind::Str(0),
+        TokenKind::Kw(Kw::From),
+        TokenKind::Ident,
+        TokenKind::Punct(Punct::ListSep),
+        TokenKind::Ident,
+        TokenKind::Kw(Kw::ListKo),
+        TokenKind::Kw(Kw::Import),
+        TokenKind::Punct(Punct::FullStop),
+    ];
+    assert_eq!(kinds(import), want);
+    assert_eq!(kws("အများသုံး လုပ်ဆောင်ချက်"), [Kw::Export, Kw::Function]);
+}

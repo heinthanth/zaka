@@ -3,6 +3,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use serde::Deserialize;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use termcolor::WriteColor;
@@ -18,6 +19,59 @@ use zakac_span::source_map::SourceMap;
 
 use crate::config::Input;
 use crate::config::Output;
+
+/// A file an artifact carries besides the file that is run: a file the
+/// program imports.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EmbeddedFile
+{
+    /// Diagnostic file name.
+    pub name: FileName,
+    /// Normalized source text.
+    pub source: String,
+}
+
+impl EmbeddedFile
+{
+    /// The name and the text of a source file.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - The file.
+    ///
+    /// # Returns
+    ///
+    /// The embedded file.
+    pub fn of(file: &SourceFile) -> Self
+    {
+        Self { name: file.name.clone(), source: file.src.clone() }
+    }
+}
+
+/// Register the file that is run, then the files it imports in the order
+/// reading order, so spans made relative to the first file remain valid for
+/// each of them.
+///
+/// # Arguments
+///
+/// * `sm` - The source map.
+/// * `name` - The name of the file that is run.
+/// * `source` - Its text.
+/// * `imports` - The imported files.
+///
+/// # Returns
+///
+/// The registered file that is run.
+pub fn register_embedded(
+    sm: &mut SourceMap, name: &FileName, source: &str, imports: &[EmbeddedFile],
+) -> Arc<SourceFile>
+{
+    let root = sm.new_source_file(name.clone(), source.to_string());
+    imports
+        .iter()
+        .for_each(|f| _ = sm.new_source_file(f.name.clone(), f.source.clone()));
+    root
+}
 
 /// Magic prefix shared across all raw phase artifacts.
 pub const RAW_ARTIFACT_MAGIC: &[u8; 4] = b"ZKAR";

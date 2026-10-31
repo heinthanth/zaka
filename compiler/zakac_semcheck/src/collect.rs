@@ -12,27 +12,28 @@ use crate::scope::FnSig;
 use crate::scope::FnSigs;
 use crate::structs::StructTable;
 
-/// Record the top-level functions, so calls can come before declarations.
+/// Record the top-level functions of each file, so calls can come before
+/// declarations. Two files can each declare a function of one name.
 ///
 /// # Arguments
 ///
 /// * `program` - The tree.
 /// * `structs` - The kind of each declared struct.
-/// * `diags` - Where to report a name declared twice.
+/// * `diags` - Where to report a name declared twice in one file.
 ///
 /// # Returns
 ///
-/// The functions, indexed on name; the first declaration of a name wins.
+/// The functions of each unit, indexed on name; the first declaration of a
+/// name in a file wins.
 pub(crate) fn collect_fns(
     program: &Program, structs: &StructTable, diags: &mut Vec<Diagnostic>,
-) -> FnSigs
+) -> Vec<FnSigs>
 {
-    let mut fns = FnSigs::new();
-    let decls = program
-        .stmts
-        .iter()
-        .filter_map(|s| tern!(let Stmt::Fn(decl) = s, Some(decl), None));
-    do_for!(decl in decls, add_fn(&mut fns, decl, structs, diags));
+    let mut fns = vec![FnSigs::new(); program.units.len().max(1)];
+    let decls = program.stmts.iter().enumerate().filter_map(|(i, s)| {
+        tern!(let Stmt::Fn(decl) = s, Some((program.unit_of(i) as usize, decl)), None)
+    });
+    do_for!((unit, decl) in decls, add_fn(&mut fns[unit], decl, structs, diags));
     fns
 }
 
@@ -68,5 +69,5 @@ fn sig_of(decl: &FnDecl, structs: &StructTable) -> FnSig
     let kind = |k| DataKind::from_ast(k, structs);
     let params = decl.params.iter().map(|p| kind(&p.kind)).collect();
     let ret = decl.ret.as_ref().map(kind);
-    FnSig::builder().params(params).maybe_ret(ret).build()
+    FnSig::builder().params(params).maybe_ret(ret).exported(decl.exported).build()
 }

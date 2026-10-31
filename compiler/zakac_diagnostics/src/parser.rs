@@ -436,3 +436,65 @@ pub fn bad_list_count(span: Span, count: &str) -> Diagnostic
 {
     Diagnostic::new(Code::BadListCount, t!("codes.ZK0227.message", n = count), span)
 }
+
+/// The export mark stands before something other than a top-level
+/// declaration.
+///
+/// # Arguments
+///
+/// * `span` - The export mark.
+///
+/// # Returns
+///
+/// The `ZK0229` diagnostic.
+pub fn export_not_on_decl(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::ExportNotOnDecl, t!("codes.ZK0229.message"), span)
+}
+
+/// An import comes after a declaration or statement, or inside a block.
+///
+/// # Arguments
+///
+/// * `span` - The import.
+///
+/// # Returns
+///
+/// The `ZK0230` diagnostic, with help to move it up.
+pub fn import_not_first(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0230.message");
+    Diagnostic::new(Code::ImportNotFirst, msg, span).with_help(t!("codes.ZK0230.help"))
+}
+
+/// A file imports itself through a chain of imports.
+///
+/// # Arguments
+///
+/// * `span` - The import that closes the circle.
+/// * `chain` - The file names along the circle, joined with arrows.
+///
+/// # Returns
+///
+/// The `ZK0231` diagnostic.
+pub fn circular_import(span: Span, chain: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0231.message", chain = chain);
+    Diagnostic::new(Code::CircularImport, msg, span)
+}
+
+/// A program that was not read from a file has an import.
+///
+/// # Arguments
+///
+/// * `span` - The import.
+/// * `file` - The imported file, as written.
+///
+/// # Returns
+///
+/// The `ZK0232` diagnostic.
+pub fn import_needs_file(span: Span, file: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0232.message", f = file);
+    Diagnostic::new(Code::ImportNeedsFile, msg, span)
+}

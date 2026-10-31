@@ -31,6 +31,10 @@ pub const CONTENTS_ID: &str = "contents";
 /// The info string of a fence that holds what the program before it prints.
 const OUTPUT_FENCE: &str = "text";
 
+/// The info string of a fence that shows one file of a program in several
+/// files: it is painted as Zaka, but a page cannot run it on its own.
+pub const FILE_FENCE: &str = "zaka-file";
+
 /// A page of a book, set for the site.
 #[derive(Debug, Clone, PartialEq, Builder)]
 pub struct Rendered
@@ -219,7 +223,8 @@ fn heading(
 }
 
 /// Take a fenced block: a program of Zaka becomes a block of its own, with
-/// what it prints from the `text` fence after it; others stand as text.
+/// what it prints from the `text` fence after it; a file of a longer
+/// program is painted in place; others stand as text.
 ///
 /// # Arguments
 ///
@@ -228,6 +233,7 @@ fn heading(
 /// * `info` - The info string of the fence.
 fn code_block(rest: &mut Rest, built: &mut Built, info: CowStr<'static>)
 {
+    ret_if!(&*info == FILE_FENCE, shown_file(rest, built));
     let Some((fence, options)) = Fence::parse(&info)
     else
     {
@@ -255,6 +261,20 @@ fn code_block(rest: &mut Rest, built: &mut Built, info: CowStr<'static>)
         .expected(expected)
         .build();
     built.blocks.push(Block::Zaka(sample));
+}
+
+/// Take a fenced block that shows one file of a program: painted, in the
+/// prose, with no run button.
+///
+/// # Arguments
+///
+/// * `rest` - The events after its start.
+/// * `built` - What the reading has built so far.
+fn shown_file(rest: &mut Rest, built: &mut Built)
+{
+    let source = block_text(rest);
+    let html = format!("<pre>{}</pre>\n", painted_code(source.trim_end()));
+    built.prose.push(Event::Html(html.into()));
 }
 
 /// The text of a code block, up to its end.

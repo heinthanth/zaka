@@ -370,6 +370,8 @@ pub enum Kw
     Stop,
     /// `ကျော်ပါ`
     Skip,
+    /// `ထည့်သွင်းပါ`, which ends an import sentence
+    Import,
 
     // control
     /// `အကယ်၍`
@@ -432,6 +434,8 @@ pub enum Kw
     Negate,
     /// `မှတ်ချက်`, when it is part of a longer word made of reserved words.
     Note,
+    /// `အများသုံး`, which marks a top-level declaration as exported
+    Export,
 
     // pointers and the heap
     /// `လိပ်စာ`

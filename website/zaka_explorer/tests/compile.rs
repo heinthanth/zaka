@@ -433,3 +433,13 @@ fn the_borrow_check_labels_the_later_use()
     assert_eq!(line, 7);
     assert!(label.contains("used here"), "{label}");
 }
+
+#[test]
+fn an_import_is_refused_since_the_explorer_holds_one_file()
+{
+    let text = "\"က.zaka\" မှ ခ ကို ထည့်သွင်းပါ။\n၁ ကို ပြသပါ။";
+    let out = compile(text, &Options::default());
+    assert!(!out.checked);
+    let row = out.diagnostics.iter().find(|d| d.code == "ZK0232").expect("ZK0232");
+    assert_eq!(row.phase, Phase::Parse);
+}

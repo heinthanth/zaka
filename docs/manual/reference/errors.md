@@ -102,6 +102,10 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0226 | a block closer with no block to close | [Blocks and scope](../../learn/variables/scope.md) |
 | ZK0227 | a list count that is not a whole number above zero | [Lists](../../learn/lists/README.md#list-kinds) |
 | ZK0228 | a struct declared inside a block | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-declared-inside-a-block) |
+| ZK0229 | `အများသုံး` before something other than a top-level declaration | [Module mistakes](../../learn/modules/mistakes.md#the-export-mark-in-the-wrong-place) |
+| ZK0230 | an import after a declaration or statement, or inside a block | [Module mistakes](../../learn/modules/mistakes.md#an-import-below-a-statement) |
+| ZK0231 | files that import each other | [Module mistakes](../../learn/modules/mistakes.md#files-that-import-each-other) |
+| ZK0232 | an import in a program that was not read from a file | [Module mistakes](../../learn/modules/mistakes.md#imports-outside-a-file) |
 
 ### ZK03: names
 
@@ -128,6 +132,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0319 | a struct name used for a variable, parameter, field or function | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-name-that-is-also-a-value-name) |
 | ZK0320 | a field the struct does not have | [Struct mistakes](../../learn/structs/mistakes.md#a-field-the-struct-does-not-have) |
 | ZK0321 | a field set twice in a struct literal | [Struct mistakes](../../learn/structs/mistakes.md#one-field-set-twice) |
+| ZK0322 | an import of a name the other file does not export | [Module mistakes](../../learn/modules/mistakes.md#a-name-the-file-does-not-export) |
+| ZK0323 | a statement in an imported file | [Module mistakes](../../learn/modules/mistakes.md#a-statement-in-an-imported-file) |
+| ZK0324 | an exported declaration whose kind names a private struct | [Module mistakes](../../learn/modules/mistakes.md#a-private-struct-in-an-export) |
 
 ### ZK04: kinds
 
@@ -184,6 +191,7 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | ZK0601 | a sum of constants that does not fit its kind | [Arithmetic](../../learn/operators/arithmetic.md) |
 | ZK0602 | a constant zero as the divisor | [Arithmetic](../../learn/operators/arithmetic.md#dividing-integers) |
 | ZK0603 | a constant cell number outside its list | [List mistakes](../../learn/lists/mistakes.md#a-cell-number-outside-the-list) |
+| ZK0604 | a variable of an imported file whose starting value is not known at compile time | [Module mistakes](../../learn/modules/mistakes.md#a-starting-value-that-needs-a-call) |
 
 ### ZK07: ownership and borrowing
 

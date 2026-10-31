@@ -19,6 +19,7 @@ use zakac_cli_common::command::ExitCode;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_parser::load::load;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -30,7 +31,7 @@ use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 
 use crate::artifact::SemcheckArtifact;
-use crate::artifact::run_phases;
+use crate::artifact::check_loaded;
 use crate::semcheck::SemcheckOptions;
 
 const SEMCHECK_RAW_EXTENSION: &str = ".zksem";
@@ -220,9 +221,12 @@ fn command_main(
     );
     ret_if!(let Err(error) = source, report_command_error(io, &cmd_info, error));
     let source = source.unwrap();
+    let loaded = load(&source, &mut source_map, &LexerOptions::default());
+    ret_if!(let Err(error) = loaded, report_command_error(io, &cmd_info, error));
+    let loaded = loaded.unwrap();
 
     let options = semcheck_options(matches);
-    let checked = run_phases(&source, &LexerOptions::default(), &options);
+    let checked = check_loaded(loaded, &options);
     let failed = has_errors(&checked.diagnostics);
     let _ = write_diagnostics(io.stderr, &source_map, &checked.diagnostics);
     let artifact = SemcheckArtifact::from_checked(&source, checked);

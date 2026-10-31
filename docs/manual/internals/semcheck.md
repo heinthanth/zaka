@@ -70,8 +70,14 @@ A run of `"မင်္ဂလာပါ" ကို ပြသပါ။` gives `war
 ### 2. Function signatures (`collect_fns`)
 
 A first walk over the top-level statements records the signature of each function (the
-kinds of its parameters and of its result), so a call can come before the declaration. The
-first declaration of a name wins; a second is ZK0304.
+kinds of its parameters and of its result, and its export mark), so a call can come before
+the declaration. The table holds one map for each file of the program: the first
+declaration of a name in a file wins, and a second in the same file is ZK0304. Two files
+can each hold a function of one name.
+
+The same first step finds the file of each struct (`struct_homes`) and checks each
+exported declaration with `private_in_exports`: a kind of an exported function,
+variable, constant or struct that names a struct its file keeps private is ZK0324.
 
 ### 3. The walk (`Checker`)
 
@@ -106,6 +112,27 @@ error[ZK0401]: expected bool, found isize
 ```
 
 At the end the diagnostics are sorted in source order.
+
+### Modules
+
+The walk goes over the statements of each file in turn, in the order the loader put
+them, and `visit_top` moves to the file of each top-level statement first. Moving to a
+new file keeps the top-level scope of the file that ended in `saved`, opens a blank one,
+and sets `fns` to the functions of the new file. A statement of an imported file that is
+not an import, a function, a struct or a declaration is ZK0323.
+
+An import runs at its place, at the top of the file. For each name it looks in the file
+it reads for an exported function (from that file's function map), an exported variable
+or constant (from its saved scope, where the declaration recorded the mark), and an
+exported struct. Each one found joins the current file: the function goes into `fns` and
+the variable into the top-level scope, without the mark, so it is not exported again.
+A name found nowhere is ZK0322, with help when the file declares it without the mark. A
+name the file declares as well is the usual ZK0302 or ZK0304, since the import declares it.
+
+Struct names form one table for the whole program, so two files with a struct of one
+name are ZK0316. The parser keeps a struct name of another file from starting a kind
+unless the file imports it. When a name is unknown (ZK0301, ZK0303), `with_hidden`
+looks for it in the other files and adds help that names the file that declares it.
 
 ## The data it builds
 
@@ -225,6 +252,9 @@ initializer), a cell number that is an integer, and a short-lived list that is n
 
 Each code has a constructor in `zakac_diagnostics` (`resolve.rs`, `kinds.rs`,
 `naturalness.rs`, `ownership.rs`). See [Error messages](../reference/errors.md) for the list.
+
+`tests/modules.rs` checks the rules across files, with programs held in a
+`MemFileLoader`.
 
 ## Tests and extending
 

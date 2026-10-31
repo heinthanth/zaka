@@ -14,6 +14,7 @@ use crate::stmt::DeclStmt;
 use crate::stmt::FnDecl;
 use crate::stmt::GenericStmt;
 use crate::stmt::IfStmt;
+use crate::stmt::ImportStmt;
 use crate::stmt::Param;
 use crate::stmt::PrintArg;
 use crate::stmt::Program;
@@ -108,7 +109,7 @@ impl ToSexpr for Stmt
     {
         match self
         {
-            Stmt::Decl(s) => decl_sexpr(s),
+            Stmt::Decl(s) => exported(s.exported, decl_sexpr(s)),
             Stmt::Assign(s) => list("set", [s.target.to_sexpr(), s.value.to_sexpr()]),
             Stmt::Print(s) => list("print", [print_arg(&s.value)]),
             Stmt::Block(s) => s.to_sexpr(),
@@ -118,15 +119,47 @@ impl ToSexpr for Stmt
             Stmt::Generic(s) => generic_sexpr(s),
             Stmt::Break(_) => "(break)".into(),
             Stmt::Continue(_) => "(continue)".into(),
-            Stmt::Fn(s) => fn_sexpr(s),
+            Stmt::Fn(s) => exported(s.exported, fn_sexpr(s)),
             Stmt::Return(s) => list("return", s.value.iter().map(ToSexpr::to_sexpr)),
             Stmt::Call(s) => list("call", call_parts(&s.callee.name, &s.args)),
             Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
             Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
             Stmt::Free(s) => list("free", [s.target.to_sexpr()]),
-            Stmt::Struct(s) => struct_sexpr(s),
+            Stmt::Struct(s) => exported(s.exported, struct_sexpr(s)),
+            Stmt::Import(s) => import_sexpr(s),
         }
     }
+}
+
+/// `(export <decl>)` for an exported declaration; the declaration alone
+/// otherwise.
+///
+/// # Arguments
+///
+/// * `flag` - Whether the declaration is exported.
+/// * `decl` - The declaration in S-expression form.
+///
+/// # Returns
+///
+/// The text.
+fn exported(flag: bool, decl: String) -> String
+{
+    tern!(flag, list("export", [decl]), decl)
+}
+
+/// `(import "file" name name)`.
+///
+/// # Arguments
+///
+/// * `s` - The import.
+///
+/// # Returns
+///
+/// The text.
+fn import_sexpr(s: &ImportStmt) -> String
+{
+    let path = format!("\"{}\"", s.path.lit.value);
+    list("import", std::iter::once(path).chain(s.names.iter().map(|n| n.name.clone())))
 }
 
 /// `(head part part)`; just `(head)` without parts.

@@ -82,6 +82,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ဖြစ်ပါစေ", Kw::Let),
     ("ရပ်ပါ", Kw::Stop),
     ("ကျော်ပါ", Kw::Skip),
+    ("ထည့်သွင်းပါ", Kw::Import),
     // control
     ("အကယ်၍", Kw::If),
     ("လျှင်", Kw::Then),
@@ -113,6 +114,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("မမှန်", Kw::False),
     ("အနုတ်", Kw::Negate),
     (NOTE_MARKER, Kw::Note),
+    ("အများသုံး", Kw::Export),
     // pointers and the heap
     ("လိပ်စာ", Kw::Address),
     ("လိပ်စာအကြမ်း", Kw::RawAddress),

@@ -58,16 +58,45 @@ pub fn lower(
     options: &LowerOptions,
 ) -> Module
 {
-    let sigs = collect_sigs(program, structs);
+    let unit_sigs = collect_sigs(program, structs);
     #[rustfmt::skip]
     let mut lowerer = Lowerer::builder().kinds(kinds).structs(structs)
-        .platform(options.platform_bits).sigs(sigs).build();
+        .platform(options.platform_bits).sigs(unit_sigs[0].clone()).unit_sigs(unit_sigs)
+        .build();
     lowerer.scopes.push(HashMap::new());
     let mut main = Vec::new();
-    do_for!(s in &program.stmts, lowerer.top_stmt(s, &mut main));
+    let mut imported_inits = 0;
+    for (i, s) in program.stmts.iter().enumerate()
+    {
+        let unit = program.unit_of(i);
+        lowerer.enter_unit(unit);
+        lowerer.suffix = unit_suffix(program, unit);
+        lowerer.top_stmt(s, &mut main);
+        do_if!(!program.is_root(unit), imported_inits = main.len() as u32);
+    }
     #[rustfmt::skip]
     return Module::builder().globals(lowerer.globals).funcs(lowerer.funcs).main(main)
-        .span(program.span).build();
+        .imported_inits(imported_inits).span(program.span).build();
+}
+
+/// What the function names of a unit end with: nothing for the file that
+/// is run, and `@` with the file stem for an imported file, so two files
+/// can each have a private function of one name.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+/// * `unit` - The unit.
+///
+/// # Returns
+///
+/// The suffix.
+fn unit_suffix(program: &st::Program, unit: u32) -> String
+{
+    ret_if!(program.is_root(unit), String::new());
+    let name = &program.units[unit as usize].name;
+    let stem = std::path::Path::new(name).file_stem().and_then(|s| s.to_str());
+    format!("@{}", stem.unwrap_or(name))
 }
 
 /// What a call needs to know about a function.
@@ -80,8 +109,9 @@ struct Sig
     params: Vec<DataKind>,
 }
 
-/// The signatures of the top-level functions, in source order; the first
-/// of two with one name wins, as in the check.
+/// The signatures of the top-level functions of each file, numbered in
+/// source order across the files; the first of two with one name in a file
+/// wins, as in the check.
 ///
 /// # Arguments
 ///
@@ -90,20 +120,21 @@ struct Sig
 ///
 /// # Returns
 ///
-/// The signatures, one per name.
-fn collect_sigs(program: &st::Program, structs: &StructTable) -> HashMap<String, Sig>
+/// The signatures of each unit, one per name.
+fn collect_sigs(
+    program: &st::Program, structs: &StructTable,
+) -> Vec<HashMap<String, Sig>>
 {
-    let mut sigs = HashMap::new();
-    let decls = program
-        .stmts
-        .iter()
-        .filter_map(|s| tern!(let st::Stmt::Fn(f) = s, Some(f), None));
-    for (index, f) in decls.enumerate()
+    let mut sigs = vec![HashMap::new(); program.units.len().max(1)];
+    let decls = program.stmts.iter().enumerate().filter_map(|(i, s)| {
+        tern!(let st::Stmt::Fn(f) = s, Some((program.unit_of(i) as usize, f)), None)
+    });
+    for (index, (unit, f)) in decls.enumerate()
     {
         let params =
             f.params.iter().map(|p| DataKind::from_ast(&p.kind, structs)).collect();
         let sig = Sig { index: index as u32, params };
-        sigs.entry(f.name.name.clone()).or_insert(sig);
+        sigs[unit].entry(f.name.name.clone()).or_insert(sig);
     }
     sigs
 }
@@ -128,8 +159,20 @@ struct Lowerer<'k>
     structs: &'k StructTable,
     /// Bit count of the platform-sized kinds.
     platform: u16,
-    /// The function signatures, one per name.
+    /// The signatures of the functions the current file declares or
+    /// imports, one per name.
     sigs: HashMap<String, Sig>,
+    /// The signatures of the functions each file declares.
+    unit_sigs: Vec<HashMap<String, Sig>>,
+    /// The top-level places of each file lowered so far.
+    #[builder(default)]
+    saved: Vec<HashMap<String, Place>>,
+    /// The unit of the file being lowered.
+    #[builder(default)]
+    unit: u32,
+    /// What the names of the functions of the current file end with.
+    #[builder(default)]
+    suffix: String,
     /// Global slots so far.
     #[builder(default)]
     globals: Vec<Slot>,
@@ -244,6 +287,48 @@ impl Lowerer<'_>
         out
     }
 
+    /// Move to a file: keep the top-level places of the files that ended,
+    /// and start with a blank scope and the functions of the new file.
+    ///
+    /// # Arguments
+    ///
+    /// * `unit` - The unit of the new file.
+    fn enter_unit(&mut self, unit: u32)
+    {
+        ret_if!(unit == self.unit);
+        while self.saved.len() < unit as usize
+        {
+            let top = std::mem::take(&mut self.scopes).into_iter().next();
+            self.saved.push(top.unwrap_or_default());
+            self.scopes.push(HashMap::new());
+        }
+        self.sigs = self.unit_sigs[unit as usize].clone();
+        self.unit = unit;
+    }
+
+    /// Bring the names of an import into scope: the functions and the
+    /// places of the imported file that the import names.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The import.
+    fn import(&mut self, n: &st::ImportStmt)
+    {
+        let Some(target) = n.unit.map(|u| u as usize)
+        else
+        {
+            return;
+        };
+        for name in n.names.iter().map(|n| &n.name)
+        {
+            let sig = self.unit_sigs[target].get(name).cloned();
+            do_if!(let Some(sig) = sig, _ = self.sigs.insert(name.clone(), sig));
+            let place = self.saved.get(target).and_then(|s| s.get(name)).copied();
+            let scope = self.scopes.last_mut().expect("a scope is open");
+            do_if!(let Some(place) = place, _ = scope.insert(name.clone(), place));
+        }
+    }
+
     /// Lower a top-level statement: a function goes to the module, the rest
     /// to the main list.
     ///
@@ -304,6 +389,7 @@ impl Lowerer<'_>
                 out.push(Stmt::Free { dest: self.dest(&n.target), span: n.span })
             }
             st::Stmt::Struct(_) => (),
+            st::Stmt::Import(n) => self.import(n),
         }
     }
 
@@ -654,7 +740,8 @@ impl Lowerer<'_>
         let frame =
             std::mem::replace(&mut self.frame, outer).expect("the frame is set");
         #[rustfmt::skip]
-        return Func::builder().name(&f.name.name).params(f.params.len() as u32)
+        return Func::builder().name(format!("{}{}", f.name.name, self.suffix))
+            .params(f.params.len() as u32)
             .maybe_result(result)
             .maybe_ret(ret).locals(frame.locals).block(block).span(f.span).build();
     }

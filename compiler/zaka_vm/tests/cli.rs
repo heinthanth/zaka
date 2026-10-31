@@ -1,4 +1,5 @@
 use std::io::Cursor;
+use std::path::PathBuf;
 
 use termcolor::Buffer;
 use zaka_vm::cli::ZakaVm;
@@ -169,4 +170,48 @@ fn the_max_heap_flag_caps_allocation()
     assert_eq!(stdout, "ဗလာ\n");
     let (_, stdout, _) = run_vm(&["--mem-check", "off"], text);
     assert!(stdout.starts_with("0x"), "{stdout}");
+}
+
+/// A program in the samples folder.
+fn sample(path: &str) -> String
+{
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../samples");
+    root.join(path).display().to_string()
+}
+
+#[test]
+fn a_program_runs_with_the_files_it_imports()
+{
+    let (code, stdout, stderr) = run_vm(&[&sample("modules/shared.zaka")], "");
+    assert_eq!(code, ExitCode::Success, "{stderr}");
+    assert_eq!(stdout, "၁၂\n");
+}
+
+#[test]
+fn a_codegen_artifact_keeps_the_imported_files()
+{
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("points.zkbct");
+    let codegen = ZakacCodegen::create_as_standalone();
+    let name = ZakacCodegen::standalone_name();
+    let args = ["-o", path.to_str().unwrap(), &sample("modules/points.zaka")];
+    let (code, _, stderr) = run_cmd(codegen, name, &args, b"");
+    assert_eq!(code, ExitCode::Success, "{stderr}");
+    let text = std::fs::read_to_string(&path).unwrap();
+    assert!(text.contains("point.zaka"), "the artifact names the imported file");
+    let (code, stdout, stderr) = run_vm(&[path.to_str().unwrap()], "");
+    assert_eq!(code, ExitCode::Success, "{stderr}");
+    assert!(stdout.starts_with("နေရာ(x: ၆၊ y: ၈)\n"), "{stdout}");
+}
+
+#[test]
+fn a_missing_import_stops_with_a_host_error()
+{
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("main.zaka");
+    std::fs::write(&path, "\"nope.zaka\" မှ က ကို ထည့်သွင်းပါ။\n").unwrap();
+    let (code, stdout, stderr) = run_vm(&[path.to_str().unwrap()], "");
+    assert_ne!(code, ExitCode::Success);
+    assert!(stdout.is_empty());
+    assert!(stderr.contains("nope.zaka"), "{stderr}");
 }

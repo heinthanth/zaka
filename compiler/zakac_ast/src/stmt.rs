@@ -10,15 +10,62 @@ use crate::expr::Ident;
 use crate::kind::Kind;
 use crate::verb::Slot;
 
-/// A whole source file: its top-level statements in order.
+/// A whole program: the top-level statements of each of its files in order.
+///
+/// A program read from one file has no units. A program read with its
+/// imports lists one unit per file, each imported file ahead of the files
+/// that import it, so the file that is run comes last.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct Program
 {
     /// The top-level statements.
     #[builder(default)]
     pub stmts: Vec<Stmt>,
-    /// Source region of the file.
+    /// The files, in the order their statements appear in `stmts`.
+    #[builder(default)]
+    pub units: Vec<Unit>,
+    /// Source region of the file that is run.
     pub span: Span,
+}
+
+/// One file of a program read with its imports.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+pub struct Unit
+{
+    /// The file name, as diagnostics print it.
+    pub name: String,
+    /// The index in `Program::stmts` of the first statement of the file.
+    pub first_stmt: u32,
+}
+
+impl Program
+{
+    /// The unit that holds a top-level statement.
+    ///
+    /// # Arguments
+    ///
+    /// * `stmt` - The index of the statement in `stmts`.
+    ///
+    /// # Returns
+    ///
+    /// The index of its unit; `0` in a program with no units.
+    pub fn unit_of(&self, stmt: usize) -> u32
+    {
+        let after = self.units.partition_point(|u| u.first_stmt as usize <= stmt);
+        after.saturating_sub(1) as u32
+    }
+
+    /// Whether a unit is the file that is run.
+    ///
+    /// # Arguments
+    ///
+    /// * `unit` - The unit index.
+    ///
+    /// # Returns
+    ///
+    /// `true` for the last unit, and for each statement of a program with no
+    /// units.
+    pub fn is_root(&self, unit: u32) -> bool { unit as usize + 1 >= self.units.len() }
 }
 
 /// A statement.
@@ -60,6 +107,8 @@ pub enum Stmt
     Free(FreeStmt),
     /// `ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။`
     Struct(StructDecl),
+    /// `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းပါ။`
+    Import(ImportStmt),
 }
 
 /// Variable or constant declaration.
@@ -74,6 +123,9 @@ pub struct DeclStmt
     pub is_const: bool,
     /// The initial value, when written.
     pub init: Option<Expr>,
+    /// `true` when `အများသုံး` marks it, so other files can import it.
+    #[builder(default)]
+    pub exported: bool,
     /// Source region, the full stop included.
     pub span: Span,
 }
@@ -274,6 +326,9 @@ pub struct FnDecl
     pub ret: Option<Kind>,
     /// The function block.
     pub block: BlockStmt,
+    /// `true` when `အများသုံး` marks it, so other files can import it.
+    #[builder(default)]
+    pub exported: bool,
     /// Source region.
     pub span: Span,
 }
@@ -363,6 +418,24 @@ pub struct StructDecl
     pub fields: Vec<Param>,
     /// The classifier that counts values of the struct, when written.
     pub classifier: Option<Ident>,
+    /// `true` when `အများသုံး` marks it, so other files can import it.
+    #[builder(default)]
+    pub exported: bool,
+    /// Source region, the full stop included.
+    pub span: Span,
+}
+
+/// Import: `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းပါ။`, or with one name,
+/// `"<file>" မှ <name> ကို ထည့်သွင်းပါ။`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+pub struct ImportStmt
+{
+    /// The file path, relative to the importing file.
+    pub path: StrArg,
+    /// The imported names.
+    pub names: Vec<Ident>,
+    /// The unit of the imported file, once the loader has read it.
+    pub unit: Option<u32>,
     /// Source region, the full stop included.
     pub span: Span,
 }

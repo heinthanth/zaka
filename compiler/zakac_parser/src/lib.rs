@@ -6,6 +6,7 @@ pub mod describe;
 mod heap;
 mod kind;
 mod literal;
+pub mod load;
 mod logical;
 mod notation;
 pub mod parser;

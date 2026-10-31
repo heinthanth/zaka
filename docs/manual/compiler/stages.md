@@ -141,6 +141,12 @@ and it knows nothing so far about what a name means. It owns **ZK02**: a missing
 missing operand, a particle in the wrong place, a statement with no verb, a number too
 big for its kind. See [The parser](../internals/parser.md).
 
+When the file imports other files, this stage reads them too: each imported file is
+lexed and parsed before the file that imports it, and the statements of all the files go
+into one tree, imported files first. The later stages see that one tree. The errors of
+the import sentence and the export mark, ZK0229 to ZK0232, belong to this stage; see
+[Modules](../language/modules.md).
+
 ### Natural wording
 
 When the lexer and the parser found no error, the naturalness check reads the tree for

@@ -2,6 +2,7 @@
 name:
   Custom: invalid.zaka
 source: "က ကို ပြသပါ။\nကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် ၃၀၀ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nကိန်းသေ ဂ သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nဂ ကို ၁ ဟု ထားပါ။\nအကယ်၍ ခ ဖြစ်လျှင် ခ ကို ပြသပါ။\nမှန် + ၁ ကို ပြသပါ။\nကွင်းဆက် ကို ရပ်ပါ။\nပြန်ပေးပါ။\nမှန် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nခ ကို ပြသပါ။\n"
+imports: []
 program:
   stmts:
   - print:
@@ -42,6 +43,7 @@ program:
           span:
             lo: 120
             hi: 129
+      exported: false
       span:
         lo: 33
         hi: 157
@@ -61,6 +63,7 @@ program:
           hi: 230
       is_const: false
       init: null
+      exported: false
       span:
         lo: 158
         hi: 258
@@ -80,6 +83,7 @@ program:
           hi: 325
       is_const: true
       init: null
+      exported: false
       span:
         lo: 259
         hi: 353
@@ -227,6 +231,7 @@ program:
       span:
         lo: 755
         hi: 787
+  units: []
   span:
     lo: 0
     hi: 788

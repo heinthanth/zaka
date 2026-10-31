@@ -193,7 +193,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Plural
         | Kw::FieldsClose
         | Kw::FieldsCloseAnd
-        | Kw::ClassifierIs => "tok-kw",
+        | Kw::ClassifierIs
+        | Kw::Export => "tok-kw",
         Kw::Print
         | Kw::Assign
         | Kw::Return
@@ -208,7 +209,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::WillRelease
         | Kw::Contains
         | Kw::ContainsAnd
-        | Kw::Is => "tok-verb",
+        | Kw::Is
+        | Kw::Import => "tok-verb",
         Kw::Sum
         | Kw::Difference
         | Kw::Product

@@ -19,6 +19,7 @@ use zakac_cli_common::command::ExitCode;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_parser::load::load;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -31,7 +32,7 @@ use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 
 use crate::artifact::IrArtifact;
-use crate::artifact::run_phases;
+use crate::artifact::run_loaded;
 use crate::ir::FoldOptions;
 
 const IR_RAW_EXTENSION: &str = ".zkir";
@@ -283,10 +284,13 @@ fn command_main(
     );
     ret_if!(let Err(error) = source, report_command_error(io, &cmd_info, error));
     let source = source.unwrap();
+    let loaded = load(&source, &mut source_map, &LexerOptions::default());
+    ret_if!(let Err(error) = loaded, report_command_error(io, &cmd_info, error));
+    let loaded = loaded.unwrap();
 
     let options = semcheck_options(matches);
     let folding = fold_options(matches);
-    let lowered = run_phases(&source, &LexerOptions::default(), &options, &folding);
+    let lowered = run_loaded(loaded, &options, &folding);
     let failed = has_errors(&lowered.diagnostics);
     let _ = write_diagnostics(io.stderr, &source_map, &lowered.diagnostics);
     let artifact = IrArtifact::from_lowered(&source, lowered);

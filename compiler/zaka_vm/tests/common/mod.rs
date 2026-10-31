@@ -1,10 +1,13 @@
 #![allow(dead_code)]
 
+use std::path::Path;
+
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_with;
 use zaka_vm::trap::Trap;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
+use zakac_codegen::artifact::run_loaded;
 use zakac_codegen::artifact::run_phases;
 use zakac_codegen::bc::Module;
 use zakac_codegen::options::ResultMode;
@@ -12,6 +15,7 @@ use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_parser::load::load;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
@@ -34,6 +38,22 @@ pub fn compile(text: &str) -> Module
 pub fn compile_checked(text: &str) -> Module
 {
     compile_results(text, ResultMode::default())
+}
+
+/// Compile a source file and the files it imports with the ownership check
+/// on, which must report nothing at all, and a result mode.
+pub fn compile_file(path: &Path, results: ResultMode) -> Module
+{
+    let mut sm = SourceMap::new();
+    let file = sm.load_file(path).unwrap();
+    let loaded = load(&file, &mut sm, &LexerOptions::default()).unwrap();
+    let options = SemcheckOptions::default();
+    let mem = BorrowCheckOptions::default();
+    let emitted = run_loaded(loaded, &options, &FoldOptions::default(), &mem, results);
+    let msgs: Vec<&str> =
+        emitted.diagnostics().iter().map(|d| d.message.as_str()).collect();
+    assert!(emitted.diagnostics().is_empty(), "{}: {msgs:?}", path.display());
+    emitted.module.expect("emitted")
 }
 
 /// Compile a source text with the ownership check on, which must report

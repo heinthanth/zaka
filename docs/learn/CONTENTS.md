@@ -50,6 +50,8 @@
   - [List mistakes](lists/mistakes.md)
 - [Structs](structs/README.md)
   - [Struct mistakes](structs/mistakes.md)
+- [Modules](modules/README.md)
+  - [Module mistakes](modules/mistakes.md)
 - [Natural Zaka](natural-zaka/README.md)
 - [Example programs](programs/README.md)
   - [FizzBuzz](programs/fizzbuzz.md)

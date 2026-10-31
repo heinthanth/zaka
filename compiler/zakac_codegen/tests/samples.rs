@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::artifact::CodegenArtifact;
+use zakac_codegen::artifact::run_loaded;
 use zakac_codegen::bc::Func;
 use zakac_codegen::bc::Module;
 use zakac_codegen::bc::Op;
@@ -10,6 +11,7 @@ use zakac_codegen::listing::listing;
 use zakac_codegen::options::ResultMode;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_parser::load::load;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_session::artifact::ArtifactFormat;
@@ -132,23 +134,21 @@ fn repo_samples_are_well_formed()
         {
             continue;
         }
-        for file in std::fs::read_dir(group.path()).unwrap().flatten()
+        let files = std::fs::read_dir(group.path()).unwrap().flatten();
+        // The files a sample imports sit in a folder below.
+        for file in files.filter(|f| f.path().extension().is_some_and(|e| e == "zaka"))
         {
             let mut sm = SourceMap::new();
             let source = sm.load_file(&file.path()).unwrap();
+            let loaded = load(&source, &mut sm, &LexerOptions::default()).unwrap();
             let options = SemcheckOptions::default();
             let folding = FoldOptions::default();
             let mistake = group.file_name() == "mistakes";
             let check = tern!(mistake, MemCheck::Off, MemCheck::Error);
             let mem = BorrowCheckOptions::builder().check(check).build();
-            let artifact = CodegenArtifact::from_source(
-                &source,
-                &LexerOptions::default(),
-                &options,
-                &folding,
-                &mem,
-                ResultMode::default(),
-            );
+            let results = ResultMode::default();
+            let emitted = run_loaded(loaded, &options, &folding, &mem, results);
+            let artifact = CodegenArtifact::from_emitted(&source, emitted);
             let name = file.path().display().to_string();
             let module = artifact.module.as_ref().unwrap_or_else(|| panic!("{name}"));
             assert_well_formed(&name, module);

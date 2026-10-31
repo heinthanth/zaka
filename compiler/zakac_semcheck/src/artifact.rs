@@ -13,17 +13,18 @@ use zakac_diagnostics::has_errors;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_lexer::lexer::lex;
 use zakac_naturalness::NaturalnessOptions;
-use zakac_parser::parser::parse;
+use zakac_parser::load::Loaded;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_session::artifact::ArtifactFormat;
+use zakac_session::artifact::EmbeddedFile;
 use zakac_session::artifact::PhaseArtifact;
 use zakac_session::artifact::decode_raw;
 use zakac_session::artifact::decode_text;
 use zakac_session::artifact::encode_raw;
 use zakac_session::artifact::encode_text;
+use zakac_session::artifact::register_embedded;
 use zakac_session::config::Input;
 use zakac_span::filename::FileName;
 use zakac_span::pos::Pos;
@@ -56,6 +57,9 @@ pub struct Checked
     /// Lexer, parser and check diagnostics.
     #[builder(default)]
     pub diagnostics: Vec<Diagnostic>,
+    /// The imported files, in reading order.
+    #[builder(default)]
+    pub imports: Vec<EmbeddedFile>,
 }
 
 /// Lex, parse and check a source file. The check is left out when the lexer
@@ -76,20 +80,33 @@ pub fn run_phases(
     source: &SourceFile, lexer: &LexerOptions, options: &SemcheckOptions,
 ) -> Checked
 {
-    let lexed = lex(source, lexer);
-    let parsed = parse(source, &lexed);
-    let mut diagnostics = lexed.diagnostics;
-    diagnostics.extend(parsed.diagnostics);
+    check_loaded(Loaded::single(source, lexer), options)
+}
+
+/// Check a program read with its imports. The check is left out when the
+/// lexer or parser reports an error.
+///
+/// # Arguments
+///
+/// * `loaded` - The program and the lexer and parser diagnostics.
+/// * `options` - The check options.
+///
+/// # Returns
+///
+/// The tree, the kinds and the diagnostics, the particle idiom warnings
+/// included.
+pub fn check_loaded(loaded: Loaded, options: &SemcheckOptions) -> Checked
+{
+    let Loaded { program, imports, mut diagnostics } = loaded;
     let failed = has_errors(&diagnostics);
     let idiom = NaturalnessOptions::builder().strict(options.strict_particles).build();
-    let idiom =
-        tern!(failed, Vec::new(), zakac_naturalness::check(&parsed.program, &idiom));
+    let idiom = tern!(failed, Vec::new(), zakac_naturalness::check(&program, &idiom));
     diagnostics.extend(idiom);
-    let out =
-        tern!(failed, SemcheckOutput::default(), semcheck(&parsed.program, options));
+    let out = tern!(failed, SemcheckOutput::default(), semcheck(&program, options));
     diagnostics.extend(out.diagnostics);
     #[rustfmt::skip]
-    return Checked::builder().program(parsed.program).kinds(out.kinds).structs(out.structs).diagnostics(diagnostics).build();
+    return Checked::builder().program(program).kinds(out.kinds).structs(out.structs)
+        .diagnostics(diagnostics).imports(imports).build();
 }
 
 /// Reloadable output of the check phase. Spans are relative to the file
@@ -101,6 +118,10 @@ pub struct SemcheckArtifact
     pub name: FileName,
     /// Normalized source text the spans refer to.
     pub source: String,
+    /// The imported files, in reading order.
+    #[builder(default)]
+    #[serde(default)]
+    pub imports: Vec<EmbeddedFile>,
     /// The tree.
     pub program: Program,
     /// The kind of each expression.
@@ -153,15 +174,17 @@ impl SemcheckArtifact
     {
         let base = source.start_pos;
         let shift = |span: Span| relative(span, base);
-        let Checked { mut program, kinds, structs, mut diagnostics } = checked;
+        let Checked { mut program, kinds, structs, mut diagnostics, imports } = checked;
         MapSpans(shift).visit_program_mut(&mut program);
         diagnostics.iter_mut().for_each(|d| d.map_spans(&shift));
         #[rustfmt::skip]
         return SemcheckArtifact::builder().name(source.name.clone()).source(source.src.clone())
-            .program(program).kinds(kinds).structs(structs).diagnostics(diagnostics).build();
+            .imports(imports).program(program).kinds(kinds).structs(structs)
+            .diagnostics(diagnostics).build();
     }
 
-    /// Register the embedded source in `source_map` and return the file.
+    /// Register the embedded source, then the imported files, in
+    /// `source_map`, and return the file of the embedded source.
     ///
     /// # Arguments
     ///
@@ -172,7 +195,7 @@ impl SemcheckArtifact
     /// The registered source file.
     pub fn register_source(&self, source_map: &mut SourceMap) -> Arc<SourceFile>
     {
-        source_map.new_source_file(self.name.clone(), self.source.clone())
+        register_embedded(source_map, &self.name, &self.source, &self.imports)
     }
 
     /// The tree and diagnostics with spans made absolute against `source`.

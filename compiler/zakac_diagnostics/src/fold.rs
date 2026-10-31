@@ -57,3 +57,21 @@ pub fn cell_out_of_range(span: Span, index: &str, first: u8, last: u64) -> Diagn
     let msg = t!("codes.ZK0603.message", i = index, lo = first, hi = last);
     Diagnostic::new(Code::CellOutOfRange, msg, span)
 }
+
+/// A variable or constant of an imported file starts with a value that is
+/// not known at compile time.
+///
+/// # Arguments
+///
+/// * `span` - The declaration.
+/// * `name` - The declared name.
+///
+/// # Returns
+///
+/// The `ZK0604` diagnostic, with help on what is known.
+pub fn global_init_not_constant(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0604.message", n = name);
+    let diag = Diagnostic::new(Code::GlobalInitNotConstant, msg, span);
+    diag.with_help(t!("codes.ZK0604.help"))
+}

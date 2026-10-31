@@ -37,6 +37,10 @@ pub struct ParseOutput
     /// Parser diagnostics, in source order.
     #[builder(default)]
     pub diagnostics: Vec<Diagnostic>,
+    /// The number the next expression node would take, so the parse of
+    /// another file can go on from it.
+    #[builder(default)]
+    pub next_id: u32,
 }
 
 /// Parse the tokens of a source file.
@@ -54,6 +58,52 @@ pub fn parse(source: &SourceFile, lexed: &LexOutput) -> ParseOutput
     parse_at(&source.src, source.start_pos, lexed)
 }
 
+/// Parse the tokens of one file of a program read with its imports.
+///
+/// # Arguments
+///
+/// * `source` - The source file the tokens come from.
+/// * `lexed` - The lexer output for it, with absolute spans.
+/// * `first_id` - The number for the first expression node, so the nodes of
+///   each file of the program get different numbers.
+/// * `structs` - The struct names the file imports, so each of them can start a
+///   kind as the names it declares do.
+///
+/// # Returns
+///
+/// The program and the parser diagnostics, with absolute spans.
+pub fn parse_with(
+    source: &SourceFile, lexed: &LexOutput, first_id: u32, structs: &HashSet<String>,
+) -> ParseOutput
+{
+    let (text, base) = (source.src.as_str(), source.start_pos);
+    let span = Span::new(base, base + text.len());
+    ret_if!(lexed.tokens.is_empty(), blank_output(span));
+    let mut parser = Parser::new(text, base, lexed);
+    parser.next_id = first_id;
+    parser.structs.extend(structs.iter().map(String::as_str));
+    finish(parser, span)
+}
+
+/// Parse the program of a parser and collect its output.
+///
+/// # Arguments
+///
+/// * `parser` - The parser at the first token.
+/// * `span` - The file span.
+///
+/// # Returns
+///
+/// The program, the parser diagnostics and the next node number.
+fn finish(mut parser: Parser<'_>, span: Span) -> ParseOutput
+{
+    let stmts = parser.parse_program();
+    let program = Program::builder().stmts(stmts).span(span).build();
+    #[rustfmt::skip]
+    return ParseOutput::builder().program(program).diagnostics(parser.diags)
+        .next_id(parser.next_id).build();
+}
+
 /// Parse the tokens of `text`, which starts at the absolute position `base`.
 ///
 /// # Arguments
@@ -69,10 +119,7 @@ pub fn parse_at(text: &str, base: Pos, lexed: &LexOutput) -> ParseOutput
 {
     let span = Span::new(base, base + text.len());
     ret_if!(lexed.tokens.is_empty(), blank_output(span));
-    let mut parser = Parser::new(text, base, lexed);
-    let stmts = parser.parse_program();
-    let program = Program::builder().stmts(stmts).span(span).build();
-    ParseOutput::builder().program(program).diagnostics(parser.diags).build()
+    finish(Parser::new(text, base, lexed), span)
 }
 
 /// Parse `text` as one expression that takes all of its tokens.
@@ -165,9 +212,14 @@ pub(crate) struct Parser<'t>
     /// The number of blocks that enclose the current statement.
     #[builder(default)]
     pub(crate) depth: u32,
-    /// The struct names the program declares, so a name can start a kind.
+    /// The struct names the program declares or imports, so a name can
+    /// start a kind.
     #[builder(default)]
     pub(crate) structs: HashSet<&'t str>,
+    /// Whether a statement other than an import has been parsed at the top
+    /// level, so a later import is out of place.
+    #[builder(default)]
+    pub(crate) imports_closed: bool,
 }
 
 impl<'t> Parser<'t>

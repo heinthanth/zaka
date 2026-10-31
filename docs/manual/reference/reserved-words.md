@@ -150,3 +150,10 @@ as well.
 
 `တို့` on its own is reserved as well, so it cannot be used as a name. The words inside
 the two closing phrases (`တို့`, `ပါဝင်သည်`, `ပါဝင်ပြီး`) are reserved on their own.
+
+## Modules
+
+| Word | Reads as | Page |
+| --- | --- | --- |
+| `အများသုံး` | "for common use": exports a top-level declaration | [Modules](../../learn/modules/README.md#sharing-names) |
+| `ထည့်သွင်းပါ` | "please bring in": ends an import, after `"<file>" မှ <name> ကို` | [Modules](../../learn/modules/README.md#importing-names) |

@@ -18,7 +18,7 @@ use zakac_cli_common::command::ExitCode;
 use zakac_codegen::artifact::CodegenArtifact;
 use zakac_codegen::artifact::TEXT_HEADER;
 use zakac_codegen::artifact::decode_artifact;
-use zakac_codegen::artifact::run_phases;
+use zakac_codegen::artifact::run_loaded;
 use zakac_codegen::bc::Module;
 use zakac_codegen::cli::attach_codegen_args;
 use zakac_codegen::cli::result_mode;
@@ -30,6 +30,7 @@ use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_parser::load::load as load_program;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
@@ -322,7 +323,7 @@ fn load(
         io.stdin,
         source_map,
     )?;
-    Ok(compiled(matches, &source))
+    compiled(matches, &source, source_map)
 }
 
 /// Decode a codegen artifact and register its source for diagnostics.
@@ -348,24 +349,28 @@ fn decoded(
     Ok(Loaded { module: artifact.module, diagnostics })
 }
 
-/// Compile source text to ops.
+/// Compile a source file and the files it imports to ops.
 ///
 /// # Arguments
 ///
 /// * `matches` - The matches of the CLI arguments.
 /// * `source` - The source file.
+/// * `source_map` - The source map; imported files are added to it.
 ///
 /// # Returns
 ///
-/// The ops and diagnostics.
-fn compiled(matches: &ArgMatches, source: &SourceFile) -> Loaded
+/// The ops and diagnostics, or the error of an import that could not be
+/// read.
+fn compiled(
+    matches: &ArgMatches, source: &Arc<SourceFile>, source_map: &mut SourceMap,
+) -> zakac_host_errors::Result<Loaded>
 {
     let options = semcheck_options(matches);
     let folding = fold_options(matches);
     let mem = borrow_check_options(matches);
-    let lexer = LexerOptions::default();
     let results = result_mode(matches);
-    let emitted = run_phases(source, &lexer, &options, &folding, &mem, results);
+    let program = load_program(source, source_map, &LexerOptions::default())?;
+    let emitted = run_loaded(program, &options, &folding, &mem, results);
     let diagnostics = emitted.diagnostics().to_vec();
-    Loaded { module: emitted.module, diagnostics }
+    Ok(Loaded { module: emitted.module, diagnostics })
 }

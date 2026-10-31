@@ -36,6 +36,7 @@ use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_naturalness::NaturalnessOptions;
 use zakac_naturalness::check;
+use zakac_parser::load::refuse_imports;
 use zakac_parser::parser::parse;
 use zakac_reporter::render::Piece;
 use zakac_reporter::render::diagnostic_pieces;
@@ -639,7 +640,9 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     let (segments, segment_time) =
         timed(|| segment_at(&file.src, file.start_pos, &segment_options));
     let (lexed, lex_time) = timed(|| lex(&file, &LexerOptions::default()));
-    let (parsed, parse_time) = timed(|| parse(&file, &lexed));
+    let (mut parsed, parse_time) = timed(|| parse(&file, &lexed));
+    // The explorer holds one file, so it has no folder to import from.
+    parsed.diagnostics.extend(refuse_imports(&parsed.program));
     let checked = !has_errors(&lexed.diagnostics) && !has_errors(&parsed.diagnostics);
     let ((mut idiom, out), check_time) = timed(|| {
         tern!(checked, check_program(&parsed.program, options), Default::default())

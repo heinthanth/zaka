@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use bon::Builder;
 use zakac_ast::expr::Expr;
@@ -18,6 +19,7 @@ use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::FreeStmt;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
+use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::PrintArg;
 use zakac_ast::stmt::PrintStmt;
@@ -51,6 +53,10 @@ use crate::scope::FnSigs;
 use crate::scope::Scopes;
 use crate::struct_check::collect_structs;
 use crate::structs::StructTable;
+use crate::units::StructHomes;
+use crate::units::private_in_exports;
+use crate::units::struct_homes;
+use crate::units::unit_names;
 
 /// The implicit result variable of a function with a result.
 pub const RESULT_NAME: &str = "ရလဒ်";
@@ -112,9 +118,13 @@ pub fn semcheck(program: &Program, options: &SemcheckOptions) -> SemcheckOutput
 {
     let mut diags = Vec::new();
     let structs = collect_structs(program, &mut diags);
-    let fns = collect_fns(program, &structs, &mut diags);
+    let unit_fns = collect_fns(program, &structs, &mut diags);
+    let homes = struct_homes(program);
+    diags.extend(private_in_exports(program, &homes));
     #[rustfmt::skip]
-    let mut checker = Checker::builder().fns(fns).structs(structs).diags(diags).platform(options.platform_bits).no_raw(options.no_raw).build();
+    let mut checker = Checker::builder().fns(unit_fns[0].clone()).unit_fns(unit_fns)
+        .homes(homes).unit_names(unit_names(program)).structs(structs)
+        .diags(diags).platform(options.platform_bits).no_raw(options.no_raw).build();
     checker.scopes.push();
     checker.visit_program(program);
     checker.diags.sort_by_key(|d| d.span.lo);
@@ -139,8 +149,22 @@ pub(crate) struct Checker
     /// Names in scope.
     #[builder(default)]
     pub scopes: Scopes,
-    /// The top-level functions.
+    /// The functions the current file declares or imports.
     pub fns: FnSigs,
+    /// The functions each file declares.
+    pub unit_fns: Vec<FnSigs>,
+    /// The top-level names of each file checked so far.
+    #[builder(default)]
+    pub saved: Vec<HashMap<String, Binding>>,
+    /// The file of each struct.
+    #[builder(default)]
+    pub homes: StructHomes,
+    /// The name of each file, for messages.
+    #[builder(default)]
+    pub unit_names: Vec<String>,
+    /// The unit of the file being checked.
+    #[builder(default)]
+    pub unit: u32,
     /// The kind of each declared struct.
     #[builder(default)]
     pub structs: StructTable,
@@ -351,7 +375,8 @@ impl Checker
         let Some(sig) = self.fns.get(&callee.name).cloned()
         else
         {
-            self.report(rd::undeclared_function(callee.span, &callee.name));
+            let diag = rd::undeclared_function(callee.span, &callee.name);
+            self.report(self.with_hidden(diag, &callee.name));
             self.infer_all(args);
             return None;
         };
@@ -473,7 +498,9 @@ impl Checker
         let Some(binding) = self.scopes.lookup(&n.name)
         else
         {
-            self.report(rd::undeclared_name(n.span, &n.name));
+            self.report(
+                self.with_hidden(rd::undeclared_name(n.span, &n.name), &n.name),
+            );
             return false;
         };
         do_if!(let Some(diag) = access_error(binding.access, n), self.report(diag));
@@ -613,7 +640,15 @@ impl Visitor for Checker
         do_if!(missing, self.report(rd::const_without_init(n.name.span, &n.name.name)));
         let access = tern!(n.is_const, Access::Const, Access::Var);
         self.declare(&n.name, kind, access);
+        do_if!(n.exported, self.scopes.mark_exported(&n.name.name));
     }
+
+    fn visit_program(&mut self, n: &Program)
+    {
+        do_for!((i, s) in n.stmts.iter().enumerate(), self.visit_top(n, i, s));
+    }
+
+    fn visit_import(&mut self, n: &ImportStmt) { self.import(n) }
 
     fn visit_assign(&mut self, n: &AssignStmt)
     {

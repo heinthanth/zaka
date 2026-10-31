@@ -12,6 +12,7 @@ use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
 use zakac_ast::stmt::IfStmt;
+use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::PrintArg;
 use zakac_ast::stmt::PrintStmt;
@@ -71,7 +72,9 @@ impl Parser<'_>
         let mut stmts = Vec::new();
         while !self.at_eof()
         {
-            do_if!(let Some(stmt) = self.parse_stmt_recover(), stmts.push(stmt));
+            let stmt = self.parse_stmt_recover();
+            self.imports_closed |= !matches!(stmt, Some(Stmt::Import(_)));
+            do_if!(let Some(stmt) = stmt, stmts.push(stmt));
         }
         stmts
     }
@@ -99,6 +102,7 @@ impl Parser<'_>
             Kw::Var | Kw::Const => self.parse_decl_or_loop(),
             Kw::Function => self.parse_fn_or_call(),
             Kw::StructOpen => self.parse_struct_decl(),
+            Kw::Export => self.parse_exported(),
             Kw::BlockOpen => self.parse_block().map(Stmt::Block),
             Kw::Loop => self.parse_break(),
             Kw::NextIteration => self.parse_continue(),
@@ -119,7 +123,12 @@ impl Parser<'_>
     /// The statement, or a diagnostic.
     fn parse_expr_headed(&mut self) -> PResult<Stmt>
     {
-        ret_if!(matches!(self.peek().kind, TokenKind::Str(_)), self.parse_print_str());
+        let is_str = matches!(self.peek().kind, TokenKind::Str(_));
+        ret_if!(
+            is_str && self.peek_n(1).kind == TokenKind::Kw(Kw::From),
+            self.parse_import()
+        );
+        ret_if!(is_str, self.parse_print_str());
         let clause = self.parse_clause(Mode::Stmt)?;
         self.finish_expr_headed(clause)
     }
@@ -176,6 +185,69 @@ impl Parser<'_>
         let arg = PrintArg::Str(StrArg::builder().lit(lit).span(tok.span).build());
         let span = tok.span.to(&stop.span);
         Ok(Stmt::Print(PrintStmt::builder().value(arg).slot(slot).span(span).build()))
+    }
+
+    /// Parse `"<file>" မှ <name> (၊ <name>)* (တို့ကို|ကို) ထည့်သွင်းပါ။`. An
+    /// import after another statement or inside a block is parsed and
+    /// reported.
+    ///
+    /// # Returns
+    ///
+    /// The import, or a diagnostic.
+    fn parse_import(&mut self) -> PResult<Stmt>
+    {
+        let tok = self.bump();
+        let TokenKind::Str(idx) = tok.kind
+        else
+        {
+            unreachable!("the current token is a string");
+        };
+        self.bump();
+        let mut names = vec![self.parse_ident()?];
+        while self.eat_punct(Punct::ListSep)
+        {
+            names.push(self.parse_ident()?);
+        }
+        self.expect_one_of(&[Kw::ListKo, Kw::Ko])?;
+        self.expect(Kw::Import)?;
+        let stop = self.expect_stop()?;
+        let span = tok.span.to(&stop.span);
+        let late = self.depth > 0 || self.imports_closed;
+        do_if!(late, self.diags.push(diag::import_not_first(span)));
+        let lit = self.strings[idx as usize].clone();
+        let path = StrArg::builder().lit(lit).span(tok.span).build();
+        Ok(Stmt::Import(
+            ImportStmt::builder().path(path).names(names).span(span).build(),
+        ))
+    }
+
+    /// Parse a declaration after the export mark `အများသုံး` and mark it
+    /// exported. The mark before another statement, or before a declaration
+    /// inside a block, is reported.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    fn parse_exported(&mut self) -> PResult<Stmt>
+    {
+        let mark = self.bump().span;
+        let mut stmt = self.parse_stmt()?;
+        let flag = match &mut stmt
+        {
+            Stmt::Fn(n) => Some((&mut n.exported, &mut n.span)),
+            Stmt::Struct(n) => Some((&mut n.exported, &mut n.span)),
+            Stmt::Decl(n) => Some((&mut n.exported, &mut n.span)),
+            _ => None,
+        };
+        let top = self.depth == 0;
+        let Some((exported, span)) = flag.filter(|_| top)
+        else
+        {
+            return Err(diag::export_not_on_decl(mark));
+        };
+        *exported = true;
+        *span = mark.to(span);
+        Ok(stmt)
     }
 
     /// Parse `နေသရွေ့ <block>` after the condition of a while loop.

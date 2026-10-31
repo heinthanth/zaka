@@ -136,7 +136,7 @@ impl Checker
     fn infer_name(&mut self, n: &NameExpr) -> Option<DataKind>
     {
         ret_if!(let Some(binding) = self.scopes.lookup(&n.name), binding.kind);
-        self.report(rd::undeclared_name(n.span, &n.name));
+        self.report(self.with_hidden(rd::undeclared_name(n.span, &n.name), &n.name));
         None
     }
 

@@ -3,7 +3,7 @@ mod common;
 use std::path::Path;
 use std::path::PathBuf;
 
-use common::compile_results;
+use common::compile_file;
 use common::run_module;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
@@ -23,9 +23,8 @@ fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 /// `ZAKA_BLESS=1` rewrites the file from a checked, copied run.
 fn check_run(source: &Path, expected: &Path, frames: FrameMode, results: ResultMode)
 {
-    let text = std::fs::read_to_string(source).unwrap();
     let options = RunOptions::builder().max_steps(10_000_000).frames(frames).build();
-    let (out, result) = run_module(&compile_results(&text, results), &options);
+    let (out, result) = run_module(&compile_file(source, results), &options);
     let name = format!("{} ({frames}, {results})", source.display());
     assert_eq!(result, Ok(()), "{name} trapped after:\n{out}");
     let bless = std::env::var("ZAKA_BLESS").is_ok_and(|v| v == "1");
@@ -39,7 +38,8 @@ fn check_run(source: &Path, expected: &Path, frames: FrameMode, results: ResultM
     assert_eq!(out, want, "output differs for {name}");
 }
 
-/// The sample files of one group dir, sorted.
+/// The sample files of one group dir, sorted. The files a sample imports
+/// sit in a folder below and are not programs of their own.
 fn group_files(dir: &Path) -> Vec<PathBuf>
 {
     let mut files: Vec<PathBuf> = std::fs::read_dir(dir)
