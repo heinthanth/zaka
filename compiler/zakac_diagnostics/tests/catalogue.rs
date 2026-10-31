@@ -211,7 +211,7 @@ fn list_constructors_render_messages()
     assert!(k::list_count_missing(span).help.is_some());
     assert!(k::not_a_list(span, "isize").message.contains("isize"));
     assert!(k::cell_number_not_int(span, "f64").message.contains("f64"));
-    assert!(k::list_result(span).help.is_some());
+    assert!(k::borrow_list_result(span).help.is_some());
     assert!(k::list_too_large(span, "[9]u8").message.contains("[9]u8"));
     let out = f::cell_out_of_range(span, "3", 0, 2);
     assert_eq!(out.code, Code::CellOutOfRange);

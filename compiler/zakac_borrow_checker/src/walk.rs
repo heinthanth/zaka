@@ -133,7 +133,7 @@ pub(crate) fn each_expr<'m>(e: &'m Expr, f: &mut impl FnMut(&'m Expr))
 ///
 /// * `stmts` - The statements.
 /// * `f` - The callback.
-pub(crate) fn each_stmt<'m>(stmts: &'m [Stmt], f: &mut impl FnMut(&'m Stmt))
+pub fn each_stmt<'m>(stmts: &'m [Stmt], f: &mut impl FnMut(&'m Stmt))
 {
     for s in stmts
     {

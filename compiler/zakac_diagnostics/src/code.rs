@@ -215,16 +215,14 @@ ListCountMissing = ("ZK0421", Level::Error),
 NotAList = ("ZK0422", Level::Error),
 /// A cell number is no integer.
 CellNumberNotInt = ("ZK0423", Level::Error),
-/// A function gives back a list as its result.
-ListResult = ("ZK0424", Level::Error),
+/// A function gives back a list of borrows as its result.
+BorrowListResult = ("ZK0424", Level::Error),
 /// A list kind is too large for the machine.
 ListTooLarge = ("ZK0425", Level::Error),
 /// A field is read from a value that is no struct.
 NotAStruct = ("ZK0426", Level::Error),
 /// A struct holds itself, other than through an address.
 StructHoldsItself = ("ZK0427", Level::Error),
-/// A function gives back a struct as its result.
-StructResult = ("ZK0428", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

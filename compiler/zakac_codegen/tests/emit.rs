@@ -1,5 +1,6 @@
 mod common;
 
+use common::emit_mode;
 use common::emit_text;
 use common::main_func;
 use common::main_ops;
@@ -7,6 +8,7 @@ use common::ops;
 use zakac_codegen::bc::Op;
 use zakac_codegen::bc::TrapCode;
 use zakac_codegen::emit::MAIN_NAME;
+use zakac_codegen::options::ResultMode;
 
 const FLAGS: &str =
     "ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး မှန် ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး မမှန် ဖြစ်ပါစေ။\n";
@@ -187,6 +189,7 @@ fn unfolded(text: &str) -> (zakac_codegen::bc::Module, String, u32)
 {
     use zakac_borrow_checker::options::BorrowCheckOptions;
     use zakac_codegen::artifact::run_phases;
+    use zakac_codegen::options::ResultMode;
     use zakac_ir_builder::ir::FoldOptions;
     use zakac_lexer::lexer::LexerOptions;
     use zakac_semcheck::semcheck::SemcheckOptions;
@@ -198,7 +201,14 @@ fn unfolded(text: &str) -> (zakac_codegen::bc::Module, String, u32)
     let options = SemcheckOptions::default();
     let mem = BorrowCheckOptions::default();
     let lexer = LexerOptions::default();
-    let emitted = run_phases(&file, &lexer, &options, &FoldOptions::none(), &mem);
+    let emitted = run_phases(
+        &file,
+        &lexer,
+        &options,
+        &FoldOptions::none(),
+        &mem,
+        ResultMode::default(),
+    );
     let base = file.start_pos.as_u32();
     (emitted.module.expect("emitted"), file.src.to_string(), base)
 }
@@ -452,5 +462,43 @@ fn goldens_without_moves_have_no_take()
         let takes = module.funcs.iter().flat_map(|f| &f.code);
         let found: Vec<&Op> = takes.filter(|op| matches!(op, Op::Take(_))).collect();
         assert!(found.is_empty(), "{name}: {found:?}");
+    }
+}
+
+const FILLS: &str = "လုပ်ဆောင်ချက် ဖြည့် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် \
+                     ကို ပြန်ပေးမည်။\nရလဒ် ၏ အကွက် ၀ ကို ၇ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ \
+                     ပြီးပါပြီး။\nလုပ်ဆောင်ချက် ဖြည့် ကို လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။";
+
+#[test]
+fn a_list_result_goes_to_a_slot_under_the_arguments()
+{
+    let module = emit_mode(FILLS, ResultMode::Duplicate);
+    let main = ops(main_func(&module));
+    assert_eq!(main[..2], ["local_addr l0", "call f0"]);
+    assert_eq!(main_func(&module).locals[0].name, "%ret");
+}
+
+#[test]
+fn the_result_variable_lives_in_the_callers_slot_just_in_place()
+{
+    let built = emit_mode(FILLS, ResultMode::InPlace);
+    assert_eq!(ops(&built.funcs[0])[..2], ["result_addr", "zero [2]isize"]);
+    assert_eq!(ops(&built.funcs[0]).last().map(String::as_str), Some("ret"));
+    let duplicated = emit_mode(FILLS, ResultMode::Duplicate);
+    assert!(!duplicated.funcs.iter().any(|f| f.code.contains(&Op::ResultAddr)));
+}
+
+#[test]
+fn a_returned_owner_struct_is_not_moved_out_first()
+{
+    let text = "ဒေတာအမျိုးအစား ဘူး တွင် ကိန်းပြည့် လိပ်စာ ပ တို့ ပါဝင်သည်။\nလုပ်ဆောင်ချက် ဖန်တီး \
+                သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ဘူး ရလဒ် ကို ပြန်ပေးမည်။\nကိန်းရှင် ခ သည် ဘူး ဖြစ်ပါစေ။\nခ ကို \
+                ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    for results in [ResultMode::Duplicate, ResultMode::InPlace]
+    {
+        let module = emit_mode(text, results);
+        let code = &module.funcs[0].code;
+        assert!(!code.iter().any(|op| matches!(op, Op::Blit(_))), "{results}");
+        assert_eq!(code.last(), Some(&Op::Ret), "{results}");
     }
 }

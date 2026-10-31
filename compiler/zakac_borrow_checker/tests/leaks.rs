@@ -282,3 +282,29 @@ fn return_inside_a_loop_leaks_is_zk0708()
 ";
     assert_eq!(lines(text), [(Code::BlockLeaked, 7)]);
 }
+
+/// A function that gives back a struct with an owner field, which holds a
+/// block.
+const MAKES_BOX: &str = "\
+ဒေတာအမျိုးအစား ဘူး တွင် ကိန်းပြည့် လိပ်စာ ပ တို့ ပါဝင်သည်။
+လုပ်ဆောင်ချက် ဖန်တီး သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ဘူး ရလဒ် ကို ပြန်ပေးမည်။
+ကိန်းရှင် ခ သည် ဘူး ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ခ ၏ ပ တွင် သိမ်းထားမည်။
+ခ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+";
+
+#[test]
+fn a_struct_result_moves_its_owner_to_the_caller()
+{
+    assert_eq!(codes_with(MAKES_BOX, &strict()), []);
+    let kept = format!(
+        "{MAKES_BOX}လုပ်ဆောင်ချက် သုံး သည်
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဃ သည် ဘူး ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် ဖန်တီး ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+"
+    );
+    assert_eq!(codes_with(&kept, &strict()), [Code::BlockLeaked]);
+}

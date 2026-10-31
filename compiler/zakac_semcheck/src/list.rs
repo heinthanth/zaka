@@ -33,7 +33,7 @@ pub(crate) enum KindUse
 {
     /// A declaration; the value can give the counts.
     Decl,
-    /// A function result, which cannot be a list.
+    /// A function result, which cannot be a list of borrows.
     Result,
     /// Each other place: a parameter, a size, a heap unit or a conversion.
     Other,
@@ -142,8 +142,8 @@ fn open_behind_address(written: &Kind) -> bool
 impl Checker
 {
     /// The data kind of a written kind, reporting a list too large for the
-    /// machine, a count left out where nothing gives it, and a list as a
-    /// function result.
+    /// machine, a count left out where nothing gives it, and a list of
+    /// borrows as a function result.
     ///
     /// # Arguments
     ///
@@ -163,10 +163,8 @@ impl Checker
         do_if!(large, self.report(kd::list_too_large(span, &kind.name())));
         let open = at != KindUse::Decl && written.has_inferred_cells();
         do_if!(open, self.report(kd::list_count_missing(span)));
-        let result = at == KindUse::Result && kind.is_list();
-        do_if!(result, self.report(kd::list_result(span)));
-        let result = at == KindUse::Result && kind.is_struct();
-        do_if!(result, self.report(kd::struct_result(span)));
+        let result = at == KindUse::Result && kind.is_list() && kind.holds_borrow();
+        do_if!(result, self.report(kd::borrow_list_result(span)));
         do_if!(bad_marker(written), self.report(od::bad_borrow_marker(span)));
         let raw = self.no_raw && written.has_raw();
         do_if!(raw, self.report(od::raw_not_allowed(span)));

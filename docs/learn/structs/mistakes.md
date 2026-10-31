@@ -145,22 +145,6 @@ error[ZK0427]: "လူ" holds itself, so it would have no end
 
 Hold its address instead, as `လူ လိပ်စာ သူ`: see [A linked list](README.md#a-linked-list).
 
-## A struct as a function result
-
-```zaka-error ZK0428
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
-လုပ်ဆောင်ချက် ဖန်တီး သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ လူ ရလဒ် ကို ပြန်ပေးမည်။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-```
-
-```text
-error[ZK0428]: a function cannot give back a struct as its result
-```
-
-Take a borrowed address as a parameter, and fill the fields through it. See [Passing to
-a function](README.md#passing-to-a-function).
-
 ## A borrow in a field
 
 A borrow lasts as long as the owner it borrows from, and the checker follows that through

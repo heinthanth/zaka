@@ -238,7 +238,8 @@ condition `12 > 10` is true, so the `if` is gone and its branch stands in its pl
 
 ## The ops
 
-`zakac_codegen::emit(module, platform_bits)` turns the folded IR into a `bc::Module`:
+`zakac_codegen::emit(module, platform_bits, results)` turns the folded IR into a
+`bc::Module`:
 
 ```text
 Module { platform_bits, globals: Vec<Slot>, texts: Vec<String>, funcs: Vec<Func>, main: u32 }
@@ -260,7 +261,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | values | `push v`, `pop`, `dup` |
 | storage | `local_addr n`, `global_addr n`, `load k`, `store k`, `take k` |
 | arithmetic | `prefix op`, `infix op`, `compare op`, `convert k` (the ops print as `add`, `lt`, ...) |
-| control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `ret`, `trap code` |
+| control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `ret`, `result_addr`, `trap code` |
 | output | `print`, `print_text t`, `print_list k` |
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k` |
@@ -284,6 +285,21 @@ bound).
 | while, generic loop | `<init>; Head: <cond>; jump_if_false Exit; <block>; Next: <update>; jump Head; Exit:`; `continue` goes to `Next`, `break` to `Exit` |
 | call statement | `<args>; call f`, then `pop` if the callee has a result |
 | function | its block, then `ret` unless the block ends in one |
+
+A list or struct result travels through a slot of the caller. Each call of such a
+function gets a `%ret` local: the caller pushes `local_addr` of it before the arguments,
+and the call leaves that address on the stack as its value. Inside the function,
+`result_addr` pushes the same address. `ret` takes the address the function gives back
+and, unless it is the slot itself, duplicates the value into the slot before the frame
+goes. A list or struct local given back is not moved out first (no `take`), since its
+frame ends with the return.
+
+`results` (`ResultMode`, the `--results` option) picks what lives in the slot:
+
+| Mode | Ops |
+| --- | --- |
+| `in-place` (default) | the local that each `return` gives back, often the result variable, is read and written through `result_addr`; a returned literal is built at `result_addr`, and a returned call passes `result_addr` on as its slot, so `ret` duplicates nothing |
+| `duplicate` | the function keeps the value in its own frame, and `ret` duplicates it into the slot |
 
 A counted loop evaluates `from`, `to` and `step` once, in that order. A constant bound
 or step is pushed again where needed; a value that is not constant goes into a `%to` or
@@ -402,7 +418,8 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
 - **A call.** `call f` takes one block of the stack region for each local of `f`
   (`FrameMode::Checked`), or one block for all of them at C offsets (`Packed`), moves the
   arguments from the operand stack into the first locals, and pushes a `Frame`. `ret`
-  pops the frame and gives the blocks back. A depth past `max_depth` is the trap
+  pops the frame and gives the blocks back; for a list or struct result it first
+  duplicates the value into the caller's slot, the value under the arguments. A depth past `max_depth` is the trap
   `StackOverflow`.
 - **Storage.** `Mem` is the address space: blocks of three origins (`Heap`, `Stack`,
   `Static`), each with a red zone after it, so an access just past a block never lands in

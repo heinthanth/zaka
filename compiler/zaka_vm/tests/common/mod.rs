@@ -7,6 +7,7 @@ use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::artifact::run_phases;
 use zakac_codegen::bc::Module;
+use zakac_codegen::options::ResultMode;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::FoldOptions;
@@ -25,15 +26,26 @@ fn mem_off() -> BorrowCheckOptions
 /// Compile a clean source text with the ownership check off.
 pub fn compile(text: &str) -> Module
 {
-    compile_with(text, &SemcheckOptions::default(), &mem_off()).0
+    compile_with(text, &SemcheckOptions::default(), &mem_off(), ResultMode::default()).0
 }
 
 /// Compile a source text with the ownership check on, which must report
 /// nothing at all, not even a warning.
 pub fn compile_checked(text: &str) -> Module
 {
-    let (module, diagnostics) =
-        compile_with(text, &SemcheckOptions::default(), &BorrowCheckOptions::default());
+    compile_results(text, ResultMode::default())
+}
+
+/// Compile a source text with the ownership check on, which must report
+/// nothing at all, and a result mode.
+pub fn compile_results(text: &str, results: ResultMode) -> Module
+{
+    let (module, diagnostics) = compile_with(
+        text,
+        &SemcheckOptions::default(),
+        &BorrowCheckOptions::default(),
+        results,
+    );
     let msgs: Vec<&str> = diagnostics.iter().map(|d| d.message.as_str()).collect();
     assert!(diagnostics.is_empty(), "{text}: {msgs:?}");
     module
@@ -44,19 +56,21 @@ pub fn compile_checked(text: &str) -> Module
 pub fn compile_on(text: &str, platform_bits: u16) -> Module
 {
     let options = SemcheckOptions::builder().platform_bits(platform_bits).build();
-    compile_with(text, &options, &mem_off()).0
+    compile_with(text, &options, &mem_off(), ResultMode::default()).0
 }
 
-/// Compile a source text that must have no error, with checker and
-/// ownership options.
+/// Compile a source text that must have no error, with checker, ownership
+/// and result options.
 fn compile_with(
     text: &str, options: &SemcheckOptions, mem: &BorrowCheckOptions,
+    results: ResultMode,
 ) -> (Module, Vec<Diagnostic>)
 {
     let mut sm = SourceMap::new();
     let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
     let folding = FoldOptions::default();
-    let emitted = run_phases(&file, &LexerOptions::default(), options, &folding, mem);
+    let lexer = LexerOptions::default();
+    let emitted = run_phases(&file, &lexer, options, &folding, mem, results);
     let msgs: Vec<&str> =
         emitted.diagnostics().iter().map(|d| d.message.as_str()).collect();
     assert!(!has_errors(emitted.diagnostics()), "{text}: {msgs:?}");

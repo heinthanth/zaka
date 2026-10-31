@@ -150,6 +150,15 @@ in [Pointer checks](checks.md).
 | `--mem-check <MODE>` | `error` | how the ownership check reports: `error`, `warn` or `off` |
 | `--mem-strict` | off | also report the accesses that the check cannot prove safe |
 
+These belong to `codegen` and to `run`:
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--results <MODE>` | `in-place` | how a list or struct result reaches the caller: `in-place` builds it in the caller's slot, `duplicate` keeps it in the function's frame and duplicates it on return |
+
+The program prints the same in both modes; `duplicate` costs one more pass over each
+list or struct result. See [Lists and structs as results](../language/functions.md#lists-and-structs-as-results).
+
 ## segment
 
 ```console

@@ -142,6 +142,14 @@ en = "Also warn about a pointer that can be ဗလာ, such as a fresh allocatio
 en = "Forbid raw addresses"
 [explorer.settings.no_raw_note]
 en = "Reject each kind written with လိပ်စာအကြမ်း, so a lesson cannot step around the check."
+[explorer.settings.results]
+en = "List and struct results"
+[explorer.settings.results_note]
+en = "In place builds a list or struct result in the caller's slot. Duplicate keeps it in the function's frame and duplicates it on return, one more pass over its cells. The output is the same."
+[explorer.settings.results_in_place]
+en = "In place"
+[explorer.settings.results_duplicate]
+en = "Duplicate"
 [explorer.settings.heap_auto]
 en = "Auto (%{size})"
 [explorer.settings.platform_bits]

@@ -106,7 +106,9 @@ To discard a result, call the function as a statement with `လုပ်ဆေ�
 
 ## Results of other kinds
 
-A result can be of whatever kind the function needs. This one gives back true or false:
+A result can be of whatever kind the function needs, lists and structs included (see
+[Lists as results](../lists/passing.md#lists-as-results)). This one gives back true or
+false:
 
 ```zaka
 // divides: does d divide n with nothing left over?

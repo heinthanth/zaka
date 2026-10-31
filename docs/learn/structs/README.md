@@ -276,8 +276,29 @@ call gives `ကျော် ၏ လိပ်စာ`.
 ၂၁
 ```
 
-A function cannot give back a struct as its result. Pass a borrowed address and fill the
-fields through it instead; see [Struct mistakes](mistakes.md#a-struct-as-a-function-result).
+## A function that builds a struct
+
+A function can give back a struct, such as one it writes out as a literal:
+
+```zaka
+// a function that builds a struct and gives it back
+ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ကိန်းပြည့် အတန်း တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+လုပ်ဆောင်ချက် ကျောင်းသား သည်
+ကိန်းပြည့် နှစ် ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ လူ ရလဒ် ကို ပြန်ပေးမည်။
+အသက် နှစ်၊ အတန်း နှစ် - ၅ ရှိသော လူတစ်ယောက် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+ကိန်းရှင် ကျော် သည် လူ ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် ကျောင်းသား ကို ၁၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကျော် ကို ပြသပါ။
+```
+
+```text
+လူ(အသက်: ၁၂၊ အတန်း: ၇)
+```
+
+The caller gets the struct as with an assignment: duplicated, or moved when it holds an
+owner, as the next sections show.
 
 ## A linked list
 
@@ -326,7 +347,6 @@ borrows.
 ## What a struct cannot do
 
 - `==` and `!=` do not take structs: compare the fields.
-- A function cannot give back a struct.
 - A field cannot hold a borrow (`ငှားထားသော ... လိပ်စာ`), just an owner or a raw address.
 
 ## Hands on

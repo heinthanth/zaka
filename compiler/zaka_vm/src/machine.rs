@@ -889,6 +889,7 @@ impl Machine
         {
             Op::Push(v) => self.push(v),
             Op::LocalAddr(n) => self.local_addr(n),
+            Op::ResultAddr => self.result_addr(),
             Op::GlobalAddr(n) => self.global_addr(n),
             Op::Prefix(op) => self.prefix(op),
             Op::Infix(op) => self.infix(op),
@@ -1029,6 +1030,21 @@ impl Machine
         let addr = frame.locals.get(n as usize).copied();
         let addr = addr.ok_or_else(|| malformed("local slot out of range"))?;
         self.push(Value::Ptr(addr))
+    }
+
+    /// Push the address of the caller's slot for the list or struct result
+    /// of the running call: the value just under its arguments.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap when the call has no such slot.
+    fn result_addr(&mut self) -> Step
+    {
+        let frame = self.frames.last().ok_or_else(|| malformed("no call"))?;
+        let below = frame.depth.checked_sub(1).and_then(|at| self.stack.get(at));
+        let slot = below.and_then(|v| v.as_ptr());
+        let slot = slot.ok_or_else(|| malformed("no slot for the result"))?;
+        self.push(Value::Ptr(slot))
     }
 
     /// Push the address of the block of a global.
@@ -1248,7 +1264,9 @@ impl Machine
     }
 
     /// End the innermost call and give back its stack blocks; a result
-    /// remains on the stack.
+    /// remains on the stack. A list or struct result is first copied to the
+    /// caller's slot under it, unless it is built there, and the
+    /// address of the slot remains.
     ///
     /// # Returns
     ///
@@ -1256,9 +1274,30 @@ impl Machine
     fn leave(&mut self) -> Step
     {
         let frame = self.frames.pop().ok_or_else(|| malformed("no call"))?;
+        let ret = self.module.funcs.get(frame.func as usize).and_then(|f| f.ret);
+        do_if!(let Some(kind) = ret.filter(|k| k.is_aggregate()), self.dup_result(kind)?);
         self.mem.pop_stack(&frame.blocks, frame.sp);
         self.slots -= frame.locals.len();
         Ok(())
+    }
+
+    /// Duplicate a list or struct result into the caller's slot, the address
+    /// under it on the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The result kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap either access hits.
+    fn dup_result(&mut self, kind: DataKind) -> Step
+    {
+        let from = self.pop_ptr("ret")?;
+        let to = self.stack.last().and_then(|v| v.as_ptr());
+        let to = to.ok_or_else(|| malformed("ret needs the slot for the result"))?;
+        ret_if!(from == to, Ok(()));
+        self.mem.blit(to, from, kind)
     }
 
     /// Pop a value and write it.

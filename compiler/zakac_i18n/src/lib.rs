@@ -91,6 +91,7 @@ fn detect_locale_from_env() -> Option<String>
 /// The detected locale or the fallback locale if the locale is not detected.
 pub fn detect_supported_locale() -> String
 {
+    ret_if!(SUPPORTED_LOCALES.len() == 1, FALLBACK_LOCALE.into());
     detect_locale_from_env()
         .or_else(|| sys_locale::get_locale().and_then(|raw| normalize_locale(&raw)))
         .map(|tag| resolve_supported_locale(&tag, SUPPORTED_LOCALES, FALLBACK_LOCALE))

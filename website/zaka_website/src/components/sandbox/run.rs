@@ -6,6 +6,7 @@ use zaka_vm::machine::RunOptions;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::artifact::run_phases;
+use zakac_codegen::options::ResultMode;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Level;
 use zakac_i18n::t;
@@ -212,6 +213,7 @@ pub fn compile(source: &str, options: &FenceOptions) -> Compiled
             .check(options.check)
             .strict(options.strict)
             .build(),
+        ResultMode::default(),
     );
     let diags = emitted.diagnostics();
     let report = diags.iter().flat_map(|d| strokes(&sm, d)).collect();

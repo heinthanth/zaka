@@ -137,7 +137,7 @@ What the compiler does check:
 | a value returned from a function without a result | ZK0312 |
 | `ပြန်ပေးပါ။` with no value in a function with a result | ZK0313 |
 | a return statement outside each function | ZK0311 |
-| a result that is a list | ZK0424 |
+| a result that is a list of borrows | ZK0424 |
 | a value that does not fit the result kind | ZK0401 |
 
 ```zaka-error ZK0312
@@ -162,17 +162,53 @@ error[ZK0312]: function "ပြ" returns nothing, but a value is returned
 error[ZK0313]: function "တစ်" returns isize, but no value is returned
 ```
 
-A list cannot be a result. The fix is a parameter that holds the address of the list
-to fill; see [Lists](lists.md#passing-and-comparing).
+## Lists and structs as results
+
+A function can give back a list or a struct. The result follows the rules of an
+assignment: the caller gets the whole value, and a list or struct that holds an owner
+moves to the caller, which then frees the blocks it owns. See [Duplicating and
+moving](structs.md#duplicating-and-moving).
+
+```zaka
+ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။
+လုပ်ဆောင်ချက် နေရာသစ် သည်
+ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ နေရာ ရလဒ် ကို ပြန်ပေးမည်။
+x က၊ y ခ ရှိသော နေရာတစ်ခု ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+လုပ်ဆောင်ချက် အစဉ် သည်
+ကိန်းပြည့် စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
+၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ၏ အကွက် န ကို စ + န ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+လုပ်ဆောင်ချက် နေရာသစ် ကို ၃၊ ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+လုပ်ဆောင်ချက် အစဉ် ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+```
+
+```text
+နေရာ(x: ၃၊ y: ၄)
+[၅၊ ၆၊ ၇]
+```
+
+- The result kind gives each cell count; a list kind with the count left out is ZK0421.
+- A list whose cells are borrows cannot be a result (ZK0424). A borrow lives in a local or
+  a parameter, so it cannot leave the function inside a list.
+- The caller keeps a slot for the result of each call. With the default,
+  `--results in-place`, the function builds a returned literal, or the local that each
+  return gives back, straight in that slot. With `--results duplicate`, the function keeps
+  the value in its own frame and the return duplicates it into the slot. The program prints the same in
+  both modes; see [Commands](../compiler/commands.md#options-of-the-compile-stages).
 
 ```zaka-error ZK0424
-လုပ်ဆောင်ချက် ဖန်တီး သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် ငှား သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 ```
 
 ```text
-error[ZK0424]: a function cannot give back a list as its result
+error[ZK0424]: a function cannot give back a list whose cells are borrows
 ```
 
 ## Calls
@@ -407,6 +443,6 @@ See [When a program stops](../vm/traps.md) for the other stops.
 | ZK0314 | a wrong number of arguments |
 | ZK0315 | the result of a function that has none, used as a value |
 | ZK0401 | an argument or a returned value that does not fit its kind |
-| ZK0424 | a list as a result |
+| ZK0424 | a list of borrows as a result |
 
 The text of each message is in [Error messages](../reference/errors.md).

@@ -7,6 +7,7 @@ use zakac_codegen::bc::Func;
 use zakac_codegen::bc::Module;
 use zakac_codegen::bc::Op;
 use zakac_codegen::listing::listing;
+use zakac_codegen::options::ResultMode;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_rust_sugars::tern;
@@ -33,7 +34,14 @@ fn emit_input(name: &str, folding: &FoldOptions) -> CodegenArtifact
     let options = SemcheckOptions::default();
     let mem = BorrowCheckOptions::default();
     let lexer = LexerOptions::default();
-    CodegenArtifact::from_source(&file, &lexer, &options, folding, &mem)
+    CodegenArtifact::from_source(
+        &file,
+        &lexer,
+        &options,
+        folding,
+        &mem,
+        ResultMode::default(),
+    )
 }
 
 /// Compare text with an expected file; `ZAKA_BLESS=1` rewrites the file.
@@ -139,6 +147,7 @@ fn repo_samples_are_well_formed()
                 &options,
                 &folding,
                 &mem,
+                ResultMode::default(),
             );
             let name = file.path().display().to_string();
             let module = artifact.module.as_ref().unwrap_or_else(|| panic!("{name}"));

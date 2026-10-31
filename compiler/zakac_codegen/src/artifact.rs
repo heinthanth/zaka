@@ -33,6 +33,7 @@ use zakac_span::span::Span;
 
 use crate::bc::Module;
 use crate::emit::emit;
+use crate::options::ResultMode;
 
 /// The first line of a text artifact.
 pub const TEXT_HEADER: &str = "# zakac-codegen-artifact v1";
@@ -71,13 +72,14 @@ impl Emitted
 /// * `options` - The check options.
 /// * `folding` - The foldings to run.
 /// * `mem` - How the ownership check reports.
+/// * `results` - How a list or struct result reaches the caller.
 ///
 /// # Returns
 ///
 /// The output of each phase.
 pub fn run_phases(
     source: &SourceFile, lexer: &LexerOptions, options: &SemcheckOptions,
-    folding: &FoldOptions, mem: &BorrowCheckOptions,
+    folding: &FoldOptions, mem: &BorrowCheckOptions, results: ResultMode,
 ) -> Emitted
 {
     let checked = zakac_borrow_checker::artifact::run_phases(
@@ -86,7 +88,7 @@ pub fn run_phases(
     let clean = !has_errors(&checked.diagnostics);
     let bits = options.platform_bits;
     let folded = checked.lowered.folded.as_ref();
-    let module = folded.filter(|_| clean).map(|m| emit(m, bits));
+    let module = folded.filter(|_| clean).map(|m| emit(m, bits, results));
     Emitted::builder().borrowchecked(checked).maybe_module(module).build()
 }
 
@@ -116,16 +118,17 @@ impl CodegenArtifact
     /// * `options` - The check options.
     /// * `folding` - The foldings to run.
     /// * `mem` - How the ownership check reports.
+    /// * `results` - How a list or struct result reaches the caller.
     ///
     /// # Returns
     ///
     /// The artifact.
     pub fn from_source(
         source: &SourceFile, lexer: &LexerOptions, options: &SemcheckOptions,
-        folding: &FoldOptions, mem: &BorrowCheckOptions,
+        folding: &FoldOptions, mem: &BorrowCheckOptions, results: ResultMode,
     ) -> Self
     {
-        let emitted = run_phases(source, lexer, options, folding, mem);
+        let emitted = run_phases(source, lexer, options, folding, mem, results);
         Self::from_emitted(source, emitted)
     }
 

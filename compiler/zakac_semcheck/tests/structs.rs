@@ -77,5 +77,5 @@ fn struct_mistakes_have_their_codes()
     assert_eq!(codes(&lines(&[STRUCTS, twice])), [Code::DuplicateStruct]);
     let result =
         "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ လူ ရလဒ် ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။";
-    assert_eq!(codes(&lines(&[STRUCTS, result])), [Code::StructResult]);
+    ok(&lines(&[STRUCTS, result]));
 }

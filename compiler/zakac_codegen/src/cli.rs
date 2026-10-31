@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use strum::IntoEnumIterator;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_cli_common::artifact_output::PhaseArtifactOutput;
@@ -11,6 +12,7 @@ use zakac_cli_common::clap;
 use zakac_cli_common::clap::Arg;
 use zakac_cli_common::clap::ArgAction;
 use zakac_cli_common::clap::ArgMatches;
+use zakac_cli_common::clap::builder::PossibleValuesParser;
 use zakac_cli_common::clap::crate_name;
 use zakac_cli_common::clap_utils::CommandInfo;
 use zakac_cli_common::clap_utils::attach_common_io_args;
@@ -41,6 +43,7 @@ use crate::artifact::CodegenArtifact;
 use crate::artifact::Emitted;
 use crate::artifact::run_phases;
 use crate::listing::listing;
+use crate::options::ResultMode;
 
 /// Extension of a raw artifact.
 pub const CODEGEN_RAW_EXTENSION: &str = ".zkbc";
@@ -48,6 +51,8 @@ pub const CODEGEN_RAW_EXTENSION: &str = ".zkbc";
 pub const CODEGEN_TEXT_EXTENSION: &str = ".zkbct";
 /// The flag that writes the listing.
 const ASM_ARG: &str = "asm";
+/// The flag that picks how a list or struct result reaches the caller.
+const RESULTS_ARG: &str = "results";
 
 /// The `zakac_codegen` command, `zakac codegen` (or `zakac mkbc`) as a
 /// subcommand.
@@ -73,7 +78,43 @@ fn configure_codegen_command(cmd: clap::Command) -> clap::Command
         .help(t!("codegen.asm"))
         .action(ArgAction::SetTrue);
     let cmd = attach_borrow_check_args(attach_compile_args(attach_common_io_args(cmd)));
-    cmd.arg(asm).about(t!("codegen.about"))
+    attach_codegen_args(cmd).arg(asm).about(t!("codegen.about"))
+}
+
+/// Add the flags that steer code generation. Later phases share them.
+///
+/// # Arguments
+///
+/// * `cmd` - The command.
+///
+/// # Returns
+///
+/// The command with the flags.
+pub fn attach_codegen_args(cmd: clap::Command) -> clap::Command
+{
+    let words: Vec<&'static str> = ResultMode::iter().map(Into::into).collect();
+    let results = Arg::new(RESULTS_ARG)
+        .long("results")
+        .value_name("MODE")
+        .help(t!("codegen.results"))
+        .value_parser(PossibleValuesParser::new(words))
+        .default_value(<&'static str>::from(ResultMode::default()));
+    cmd.arg(results)
+}
+
+/// The result mode from the command line.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+///
+/// # Returns
+///
+/// The mode.
+pub fn result_mode(matches: &ArgMatches) -> ResultMode
+{
+    let word = matches.get_one::<String>(RESULTS_ARG);
+    word.and_then(|w| w.parse().ok()).unwrap_or_default()
 }
 
 impl Command for ZakacCodegen
@@ -214,7 +255,8 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let folding = fold_options(matches);
     let mem = borrow_check_options(matches);
     let lexer = LexerOptions::default();
-    let emitted = run_phases(&source, &lexer, &options, &folding, &mem);
+    let results = result_mode(matches);
+    let emitted = run_phases(&source, &lexer, &options, &folding, &mem, results);
     let failed = has_errors(emitted.diagnostics());
     let _ = write_diagnostics(io.stderr, &source_map, emitted.diagnostics());
 

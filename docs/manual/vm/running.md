@@ -39,7 +39,7 @@ warnings as a run from source.
 ## The options
 
 `zakac run` takes the [compile options](../compiler/commands.md) (`--platform-bits`,
-`--fold`, `--strict-particles`, `--mem-check`, `--mem-strict`, `--no-raw`) and these
+`--fold`, `--strict-particles`, `--mem-check`, `--mem-strict`, `--no-raw`, `--results`) and these
 options of the VM:
 
 | Option | Default | Effect |

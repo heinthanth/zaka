@@ -34,6 +34,8 @@ mod state;
 mod testing;
 mod walk;
 
+pub use walk::each_stmt;
+
 zakac_i18n::init!();
 
 /// What the check found: the diagnostics and one digest per function.

@@ -20,6 +20,8 @@ use zakac_codegen::artifact::TEXT_HEADER;
 use zakac_codegen::artifact::decode_artifact;
 use zakac_codegen::artifact::run_phases;
 use zakac_codegen::bc::Module;
+use zakac_codegen::cli::attach_codegen_args;
+use zakac_codegen::cli::result_mode;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::has_errors;
 use zakac_host_errors::Error;
@@ -109,6 +111,7 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .help(t!("vm.leaks"))
         .action(ArgAction::SetTrue);
     let cmd = attach_borrow_check_args(attach_compile_args(cmd.arg(input)));
+    let cmd = attach_codegen_args(cmd);
     let cmd = cmd.arg(depth).arg(steps).arg(heap).arg(stack).arg(frames);
     cmd.arg(leaks).about(t!("vm.about"))
 }
@@ -361,7 +364,8 @@ fn compiled(matches: &ArgMatches, source: &SourceFile) -> Loaded
     let folding = fold_options(matches);
     let mem = borrow_check_options(matches);
     let lexer = LexerOptions::default();
-    let emitted = run_phases(source, &lexer, &options, &folding, &mem);
+    let results = result_mode(matches);
+    let emitted = run_phases(source, &lexer, &options, &folding, &mem, results);
     let diagnostics = emitted.diagnostics().to_vec();
     Loaded { module: emitted.module, diagnostics }
 }

@@ -233,7 +233,9 @@ borrowed address: the parameter kind is `ငှားထားသော <struct>
 A struct with a field that is an owner pointer (`<kind> လိပ်စာ`), at once or inside a field
 that is a struct or a list, moves instead of being duplicated, as an owner does. The new
 struct takes the address, the old one is left with `ဗလာ` in that field, and a later use of
-the old struct is ZK0701. See [Ownership and borrowing](ownership.md#one-owner).
+the old struct is ZK0701. See [Ownership and borrowing](ownership.md#one-owner). A struct
+given back from a function follows the same rules; see [Lists and structs as
+results](functions.md#lists-and-structs-as-results).
 
 ```zaka
 ဒေတာအမျိုးအစား အဆစ် တွင် ကိန်းပြည့် တန်ဖိုးရင်း၊ အဆစ် လိပ်စာ နောက် တို့ ပါဝင်သည်။
@@ -299,7 +301,6 @@ a heap block of `n` structs holds `n` times the size. See [Pointers](pointers.md
 | Not allowed | Instead |
 | --- | --- |
 | `==`, `!=`, `<` and the like on structs (ZK0403) | compare the fields |
-| a struct as a function result (ZK0428) | pass a borrowed address and fill the fields through it |
 | a field that is a borrow (ZK0718) | hold an owner or a raw address |
 | a struct that holds itself, except through an address (ZK0427) | hold `<name> လိပ်စာ` |
 | a struct with no fields | declare the field the struct needs |
@@ -318,6 +319,5 @@ a heap block of `n` structs holds `n` times the size. See [Pointers](pointers.md
 | ZK0321 | a field set twice in a struct literal | [Struct mistakes](../../learn/structs/mistakes.md#one-field-set-twice) |
 | ZK0426 | a field of a value that is no struct | [Struct mistakes](../../learn/structs/mistakes.md#a-field-of-a-value-that-is-no-struct) |
 | ZK0427 | a struct that holds itself | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-that-holds-itself) |
-| ZK0428 | a struct as a function result | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-as-a-function-result) |
 | ZK0509 | a heap size or a struct literal counted with a word that is not the classifier of the kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
 | ZK0718 | a field that holds a borrow | [Struct mistakes](../../learn/structs/mistakes.md#a-borrow-in-a-field) |

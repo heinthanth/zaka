@@ -16,6 +16,7 @@ use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
 use zakac_codegen::bc;
 use zakac_codegen::emit::emit;
+use zakac_codegen::options::ResultMode;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Label;
 use zakac_diagnostics::Level;
@@ -96,6 +97,9 @@ pub struct Options
     /// Reject each kind written with a raw address.
     #[builder(default)]
     pub no_raw: bool,
+    /// How a list or struct result reaches the caller.
+    #[builder(default)]
+    pub results: ResultMode,
 }
 
 impl Default for Options
@@ -668,7 +672,10 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .collect();
     let emitted = borrowchecked && !has_errors(&owner_diags);
     let (ops, codegen_time) = timed(|| {
-        folded.as_ref().filter(|_| emitted).map(|m| emit(m, options.platform_bits))
+        folded
+            .as_ref()
+            .filter(|_| emitted)
+            .map(|m| emit(m, options.platform_bits, options.results))
     });
     let times = PhaseTimes::builder()
         .segment(segment_time)

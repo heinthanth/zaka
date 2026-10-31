@@ -268,8 +268,9 @@ since a parameter is a new variable:
 - A change to a list parameter remains in the function. To let a function change the
   caller's list, or to spare it a duplicate of a large list, pass the address of the list.
   The parameter kind is the list kind with `လိပ်စာ` after it and `ငှားထားသော` in front.
-- A function cannot give back a list as its result (ZK0424). Pass the address of a list
-  to fill instead.
+- A function can give back a list. The result kind gives the cell count, and its cells
+  cannot be borrows (ZK0424); see [Lists and structs as
+  results](functions.md#lists-and-structs-as-results).
 - A list literal as an argument takes each value back to the last `၊` that starts the
   argument list. When another argument comes before it, put the literal in parentheses.
 - A list whose cells hold owners moves when it is assigned or passed; see [Ownership and
@@ -433,7 +434,7 @@ The other mistakes with lists, in one table:
 | ZK0421 | a list kind with no cell count and no value to give one |
 | ZK0422 | cells of a value that is not a list |
 | ZK0423 | a cell number that is not an integer |
-| ZK0424 | a list as the result of a function |
+| ZK0424 | a list of borrows as the result of a function |
 | ZK0603 | a constant cell number outside the list |
 | ZK0710 | a cell number proven past the end |
 

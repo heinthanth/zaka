@@ -70,8 +70,28 @@ list. The cells are reached through it with `အကွက်` as before:
 
 Passing the address also saves duplicating a large list.
 
-A function cannot give back a list as its result. Pass the address of a list to fill
-instead.
+## Lists as results
+
+A function can also give back a list. The result kind gives the cell count, and the
+function fills `ရလဒ်` or returns a list:
+
+```zaka
+// a function that builds a list and gives it back
+လုပ်ဆောင်ချက် နှစ်ထပ်များ သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
+၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ၏ အကွက် န ကို န * န ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+ကိန်းရှင် ကိန်းများ သည် အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် နှစ်ထပ်များ ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းများ ကို ပြသပါ။
+```
+
+```text
+[၀၊ ၁၊ ၄၊ ၉]
+```
+
+The caller gets a list of its own, as with an assignment. See [Lists and structs as
+results](../../manual/language/functions.md#lists-and-structs-as-results) for the full rules.
 
 ## List literals as arguments
 

@@ -461,7 +461,7 @@ pub fn cell_number_not_int(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::CellNumberNotInt, msg, span)
 }
 
-/// A function gives back a list as its result.
+/// A function gives back a list of borrows as its result.
 ///
 /// # Arguments
 ///
@@ -470,9 +470,9 @@ pub fn cell_number_not_int(span: Span, kind: &str) -> Diagnostic
 /// # Returns
 ///
 /// The `ZK0424` diagnostic.
-pub fn list_result(span: Span) -> Diagnostic
+pub fn borrow_list_result(span: Span) -> Diagnostic
 {
-    Diagnostic::new(Code::ListResult, t!("codes.ZK0424.message"), span)
+    Diagnostic::new(Code::BorrowListResult, t!("codes.ZK0424.message"), span)
         .with_help(t!("codes.ZK0424.help"))
 }
 
@@ -522,19 +522,4 @@ pub fn struct_holds_itself(span: Span, name: &str) -> Diagnostic
 {
     Diagnostic::new(Code::StructHoldsItself, t!("codes.ZK0427.message", n = name), span)
         .with_help(t!("codes.ZK0427.help", n = name))
-}
-
-/// A function gives back a struct as its result.
-///
-/// # Arguments
-///
-/// * `span` - The result kind.
-///
-/// # Returns
-///
-/// The `ZK0428` diagnostic.
-pub fn struct_result(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::StructResult, t!("codes.ZK0428.message"), span)
-        .with_help(t!("codes.ZK0428.help"))
 }

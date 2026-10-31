@@ -155,11 +155,10 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0421 | a list kind with no count where nothing gives one | [List mistakes](../../learn/lists/mistakes.md#a-list-kind-with-no-count) |
 | ZK0422 | cells of a value that is no list | [List mistakes](../../learn/lists/mistakes.md#cells-of-a-value-that-is-no-list) |
 | ZK0423 | a cell number that is not an integer | [Lists](../../learn/lists/README.md#cell-numbers) |
-| ZK0424 | a list as a function result | [Passing and comparing lists](../../learn/lists/passing.md#lists-as-parameters) |
+| ZK0424 | a list of borrows as a function result | [Lists and structs as results](../language/functions.md#lists-and-structs-as-results) |
 | ZK0425 | a list kind too large for the VM | [Lists of lists](../../learn/lists/grids.md#the-size-of-a-list) |
 | ZK0426 | a field of a value that is no struct | [Struct mistakes](../../learn/structs/mistakes.md#a-field-of-a-value-that-is-no-struct) |
 | ZK0427 | a struct that holds itself | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-that-holds-itself) |
-| ZK0428 | a struct as a function result | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-as-a-function-result) |
 
 ### ZK05: natural Zaka (warnings)
 

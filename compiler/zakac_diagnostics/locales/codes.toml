@@ -594,13 +594,13 @@ en = "a cell number must be an integer, not %{k}"
 en = """The number in \"x ၏ အကွက် i\" or \"x ၏ n ခုမြောက်အကွက်\" counts cells, so it must be an integer of a signed or unsigned kind. Convert it with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\"."""
 
 [codes.ZK0424.title]
-en = "list as a function result"
+en = "list of borrows as a function result"
 [codes.ZK0424.message]
-en = "a function cannot give back a list as its result"
+en = "a function cannot give back a list whose cells are borrows"
 [codes.ZK0424.help]
-en = "take the address of a list as a parameter, and fill the list through it"
+en = "give back a list of owners or raw addresses, or take the list to fill as a parameter"
 [codes.ZK0424.explain]
-en = """A function result is one value, and a list holds several cells. Pass the address of the list to fill, with a parameter of kind \"... စာရင်း လိပ်စာ\", and write the cells through it."""
+en = """A borrow lives in a local or a parameter, never in a list that leaves a function, since the compiler could not tell how long each cell remains good. Give back owners or raw addresses instead, or pass the list to fill as a borrowed address, \"ငှားထားသော ... စာရင်း လိပ်စာ\"."""
 
 [codes.ZK0425.title]
 en = "list too large"
@@ -624,15 +624,6 @@ en = "\"%{n}\" holds itself, so it would have no end"
 en = "hold the address of the struct instead: \"%{n} လိပ်စာ\""
 [codes.ZK0427.explain]
 en = """A field of a struct sits inside the struct, so a struct that holds itself, at once or through other structs, would need to be larger than itself. Hold an address of it instead, as a linked list does with \"နောက်\" fields of kind \"<name> လိပ်စာ\"."""
-
-[codes.ZK0428.title]
-en = "struct as a function result"
-[codes.ZK0428.message]
-en = "a function cannot give back a struct as its result"
-[codes.ZK0428.help]
-en = "take the address of a struct as a parameter, and fill its fields through it"
-[codes.ZK0428.explain]
-en = """A function result is one value, and a struct holds several fields. Pass the address of the struct to fill, with a parameter of kind \"<name> လိပ်စာ\", and write the fields through it."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 

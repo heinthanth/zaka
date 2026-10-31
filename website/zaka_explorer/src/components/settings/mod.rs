@@ -17,6 +17,7 @@ use zaka_web_ui_common::controls::settings::settings_modal as shared_modal;
 use zaka_web_ui_common::controls::settings::switch;
 use zaka_web_ui_common::controls::settings::switch_row;
 use zakac_borrow_checker::options::MemCheck;
+use zakac_codegen::options::ResultMode;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
 
@@ -115,6 +116,11 @@ fn compiler_section(state: AppState) -> impl IntoView
                 (t!("explorer.settings.no_raw"), t!("explorer.settings.no_raw_note")),
                 |o| o.no_raw,
                 |o, on| o.no_raw = on,
+            ),
+            row(
+                t!("explorer.settings.results"),
+                t!("explorer.settings.results_note"),
+                results_picker(state),
             ),
         ),
     )
@@ -352,6 +358,38 @@ fn mem_check_picker(state: AppState) -> impl IntoView
     dropdown(picker(
         t!("explorer.settings.mem_check"),
         MemCheck::iter().map(choice).collect(),
+        current,
+        on_pick,
+    ))
+}
+
+/// Picker of how a list or struct result reaches the caller.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn results_picker(state: AppState) -> impl IntoView
+{
+    let label = |m: ResultMode| match m
+    {
+        ResultMode::InPlace => t!("explorer.settings.results_in_place"),
+        ResultMode::Duplicate => t!("explorer.settings.results_duplicate"),
+    };
+    let choice = move |m: ResultMode| {
+        Choice::builder().value(m.to_string()).label(label(m)).build()
+    };
+    let current = Signal::derive(move || state.options.get().results.to_string());
+    let on_pick = move |v: String| {
+        let results = v.parse().unwrap_or_default();
+        state.options.update(|o| o.results = results);
+    };
+    dropdown(picker(
+        t!("explorer.settings.results"),
+        ResultMode::iter().map(choice).collect(),
         current,
         on_pick,
     ))

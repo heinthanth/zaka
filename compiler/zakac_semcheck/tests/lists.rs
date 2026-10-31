@@ -109,7 +109,7 @@ fn whole_lists_compare_and_duplicate()
 }
 
 #[test]
-fn a_function_takes_a_list_but_gives_none_back()
+fn a_function_takes_and_gives_back_a_list()
 {
     let takes = "လုပ်ဆောင်ချက် f သည်\nအကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း a ကို လက်ခံပြီး\nအောက်ပါတို့ကို \
                  လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
@@ -120,7 +120,10 @@ fn a_function_takes_a_list_but_gives_none_back()
     );
     let gives = "လုပ်ဆောင်ချက် f သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် ကို \
                  ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    assert_eq!(codes(gives), [Code::ListResult]);
+    ok(gives);
+    let borrows = "လုပ်ဆောင်ချက် f သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် \
+                   လိပ်စာ စာရင်း ရလဒ် ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    assert_eq!(codes(borrows), [Code::BorrowListResult]);
 }
 
 #[test]

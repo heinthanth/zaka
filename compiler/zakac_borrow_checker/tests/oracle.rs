@@ -11,6 +11,7 @@ use zaka_vm::machine::run_with;
 use zaka_vm::trap::TrapKind;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_codegen::artifact::run_phases;
+use zakac_codegen::options::ResultMode;
 use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
@@ -153,6 +154,7 @@ fn outcome(path: &Path) -> Outcome
         &SemcheckOptions::default(),
         &FoldOptions::default(),
         &BorrowCheckOptions::default(),
+        ResultMode::default(),
     );
     ret_if!(has_errors(emitted.diagnostics()), Outcome::Skipped);
     let lowered = emitted.borrowchecked.lowered.plain.as_ref().unwrap();

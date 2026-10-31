@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use zakac_ast::stmt::CountMode;
+use zakac_borrow_checker::each_stmt;
 use zakac_ir_builder::ir;
 use zakac_ir_builder::ir::CmpOp;
 use zakac_ir_builder::ir::Dest;
@@ -31,6 +32,7 @@ use crate::bc::Slot;
 use crate::bc::TrapCode;
 use crate::code::CodeBuilder;
 use crate::code::Label;
+use crate::options::ResultMode;
 
 /// The name of the main function.
 pub const MAIN_NAME: &str = "main";
@@ -41,18 +43,19 @@ pub const MAIN_NAME: &str = "main";
 ///
 /// * `module` - The IR module.
 /// * `platform_bits` - Bit count of the platform-sized integer kinds.
+/// * `results` - How a list or struct result reaches the caller.
 ///
 /// # Returns
 ///
 /// The op module. Its functions keep their IR indices; the main function
 /// comes last.
-pub fn emit(module: &ir::Module, platform_bits: u16) -> Module
+pub fn emit(module: &ir::Module, platform_bits: u16, results: ResultMode) -> Module
 {
     let rets = module.funcs.iter().map(|f| f.ret).collect();
     let globals = module.globals.iter().map(slot).collect();
     #[rustfmt::skip]
     let mut shared = Shared::builder().platform(platform_bits).rets(rets)
-        .globals(globals).build();
+        .globals(globals).results(results).build();
     let mut funcs: Vec<Func> =
         module.funcs.iter().map(|f| func(&mut shared, f)).collect();
     funcs.push(main_func(&mut shared, module));
@@ -86,7 +89,9 @@ fn slot(s: &ir::Slot) -> Slot { Slot::builder().name(&s.name).kind(s.kind).build
 fn func(shared: &mut Shared, f: &ir::Func) -> Func
 {
     let locals = f.locals.iter().map(slot).collect();
+    let in_place = shared.results == ResultMode::InPlace;
     let mut g = FuncGen::new(shared, locals, f.span.shrink_to_hi());
+    g.in_slot = in_place.then(|| given_back(f)).flatten();
     g.block(&f.block);
     let returns = matches!(f.block.last(), Some(Stmt::Return { .. }));
     do_if!(!returns, g.op(Op::Ret));
@@ -119,6 +124,8 @@ struct Shared
     platform: u16,
     /// The result kind of each IR function.
     rets: Vec<Option<DataKind>>,
+    /// How a list or struct result reaches the caller.
+    results: ResultMode,
     /// The global slots.
     globals: Vec<Slot>,
     /// Pooled print strings.
@@ -198,6 +205,8 @@ struct FuncGen<'s>
     locals: Vec<Slot>,
     /// The enclosing loops, innermost last.
     loops: Vec<LoopLabels>,
+    /// The local that lives in the caller's slot for the result.
+    in_slot: Option<u32>,
 }
 
 impl<'s> FuncGen<'s>
@@ -218,7 +227,7 @@ impl<'s> FuncGen<'s>
     {
         let mut code = CodeBuilder::new();
         code.at(end);
-        Self { shared, code, locals, loops: Vec::new() }
+        Self { shared, code, locals, loops: Vec::new(), in_slot: None }
     }
 
     /// Finish the function.
@@ -291,6 +300,7 @@ impl<'s> FuncGen<'s>
         let op = match place
         {
             Place::Global(n) => Op::GlobalAddr(n),
+            Place::Local(n) if self.in_slot == Some(n) => Op::ResultAddr,
             Place::Local(n) => Op::LocalAddr(n),
         };
         self.op(op);
@@ -357,12 +367,24 @@ impl<'s> FuncGen<'s>
     fn spill_list(&mut self, kind: DataKind, cells: Option<&[Expr]>)
     {
         let slot = self.temp("%list", kind);
-        self.op(Op::LocalAddr(slot));
+        self.build_list(Op::LocalAddr(slot), kind, cells);
+    }
+
+    /// Build a list or struct value at an address and push the address.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The op that pushes the address.
+    /// * `kind` - The list kind.
+    /// * `cells` - The cells; none for a blank list.
+    fn build_list(&mut self, base: Op, kind: DataKind, cells: Option<&[Expr]>)
+    {
+        self.op(base);
         let Some(cells) = cells
         else
         {
             self.op(Op::Zero(kind));
-            return self.op(Op::LocalAddr(slot));
+            return self.op(base);
         };
         let platform = self.shared.platform;
         let stride = kind.as_list().map_or(0, |l| l.cell.size(platform));
@@ -373,14 +395,14 @@ impl<'s> FuncGen<'s>
         for (i, cell) in cells.iter().enumerate()
         {
             do_if!(i > 0, {
-                self.op(Op::LocalAddr(slot));
+                self.op(base);
                 let (count, scale) = step(i);
                 self.op(Op::Push(usize_value(u128::from(count), platform)));
                 self.op(Op::PtrAdd(scale));
             });
             self.put(cell);
         }
-        self.op(Op::LocalAddr(slot));
+        self.op(base);
     }
 
     /// Push the address of a list cell. A cell number not proved in range is
@@ -540,7 +562,7 @@ impl<'s> FuncGen<'s>
             Stmt::Continue { .. } => self.leave(|l| l.next),
             Stmt::Return { value, .. } =>
             {
-                do_if!(let Some(e) = value, self.expr(e));
+                do_if!(let Some(e) = value, self.result(e));
                 self.op(Op::Ret);
             }
             Stmt::Call { func, args, .. } =>
@@ -1072,7 +1094,8 @@ impl<'s> FuncGen<'s>
         self.code.bind(end);
     }
 
-    /// Generate a call: the arguments in order, then the call.
+    /// Generate a call: the arguments in order, then the call. A list or
+    /// struct result gets a slot of its own in the caller.
     ///
     /// # Arguments
     ///
@@ -1080,9 +1103,100 @@ impl<'s> FuncGen<'s>
     /// * `args` - The arguments.
     fn call(&mut self, func: u32, args: &[Expr])
     {
+        let ret = self.shared.rets[func as usize].filter(|k| k.is_aggregate());
+        let slot = ret.map(|kind| Op::LocalAddr(self.temp("%ret", kind)));
+        self.call_into(slot, func, args);
+    }
+
+    /// Generate a call whose list or struct result goes to a slot.
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - The op that pushes the address of the slot, for a list or
+    ///   struct result.
+    /// * `func` - The function index.
+    /// * `args` - The arguments.
+    fn call_into(&mut self, slot: Option<Op>, func: u32, args: &[Expr])
+    {
+        do_if!(let Some(op) = slot, self.op(op));
         do_for!(a in args, self.expr(a));
         self.op(Op::Call(func));
     }
+
+    /// Push the value a function gives back. A list or struct local is not
+    /// moved out first, since its frame ends with the return. In place, a
+    /// literal or the result of a call is built in the caller's slot.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The value.
+    fn result(&mut self, e: &Expr)
+    {
+        ret_if!(!e.kind.is_aggregate(), self.expr(e));
+        ret_if!(let Some(n) = local_given(e), self.addr_of(Place::Local(n)));
+        let in_place = self.shared.results == ResultMode::InPlace;
+        match &e.node
+        {
+            ExprNode::List(cells) if in_place =>
+            {
+                self.build_list(Op::ResultAddr, e.kind, Some(cells))
+            }
+            ExprNode::BlankList if in_place =>
+            {
+                self.build_list(Op::ResultAddr, e.kind, None)
+            }
+            ExprNode::Call { func, args, .. } if in_place =>
+            {
+                self.call_into(Some(Op::ResultAddr), *func, args)
+            }
+            _ => self.expr(e),
+        }
+    }
+}
+
+/// The local a value reads or moves out of.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// The local slot, or `None` for each other value.
+fn local_given(e: &Expr) -> Option<u32>
+{
+    match &e.node
+    {
+        ExprNode::Read(Place::Local(n)) => Some(*n),
+        ExprNode::Take { addr } =>
+        {
+            tern!(let ExprNode::AddrOf(Place::Local(n)) = addr.node, Some(n), None)
+        }
+        _ => None,
+    }
+}
+
+/// The local that each return of a function with a list or struct result
+/// gives back, so it can live in the caller's slot. A parameter does not
+/// count: the caller fills it.
+///
+/// # Arguments
+///
+/// * `f` - The function.
+///
+/// # Returns
+///
+/// The local slot, or `None`.
+fn given_back(f: &ir::Func) -> Option<u32>
+{
+    ret_if!(!f.ret.is_some_and(DataKind::is_aggregate), None);
+    let mut given = Vec::new();
+    each_stmt(&f.block, &mut |s| {
+        do_if!(let Stmt::Return { value, .. } = s, given.push(value.as_ref().and_then(local_given)));
+    });
+    let first = given.first().copied().flatten()?;
+    let same = given.iter().all(|g| *g == Some(first));
+    (same && first >= f.params).then_some(first)
 }
 
 /// Whether statements end in a jump, so no op after them runs.

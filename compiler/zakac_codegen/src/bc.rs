@@ -117,9 +117,13 @@ pub enum Op
     /// Pop a boolean; go to the op at this index when it is true.
     JumpIfTrue(u32),
     /// Call the function at this index of [`Module::funcs`]; the arguments
-    /// are on the stack, the last one on top.
+    /// are on the stack, the last one on top. For a list or struct result,
+    /// the address of the caller's slot for it sits under the arguments.
     Call(u32),
     /// Leave the function. A function with a result leaves it on the stack.
+    /// A list or struct result is the address of a value: unless it is
+    /// the caller's slot itself, it is duplicated there, and the address of
+    /// the slot remains.
     Ret,
     /// Pop a value and write it with a line break.
     Print,
@@ -174,6 +178,9 @@ pub enum Op
     /// Pop the address of a list or a struct of this kind; write its cells or
     /// fields and a line break.
     PrintList(DataKind),
+    /// Push the address of the caller's slot for the list or struct result
+    /// of the running call.
+    ResultAddr,
 }
 
 impl Op
@@ -259,7 +266,10 @@ impl Op
             {
                 s.to_string()
             }
-            Op::Ret | Op::Print | Op::Pop | Op::Free | Op::Dup => return None,
+            Op::Ret | Op::Print | Op::Pop | Op::Free | Op::Dup | Op::ResultAddr =>
+            {
+                return None;
+            }
             Op::Prefix(_) | Op::Infix(_) | Op::Compare(_) => return None,
         };
         Some(text)
