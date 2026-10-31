@@ -64,8 +64,8 @@ pub fn burmese_digits(num: &str) -> String
 
 /// The text a print op writes for a list or a struct, without the line
 /// break: the cells of a list between `[` and `]`, the fields of a struct as
-/// `name: value` between `{` and `}`, each joined with `၊ `; a list or struct
-/// inside is written the same.
+/// `name: value` between `(` and `)` after the struct name, each joined with
+/// `၊ `; a list or struct inside is written the same.
 ///
 /// # Arguments
 ///
@@ -92,7 +92,7 @@ pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKin
     Ok(format!("[{}]", cells.join("၊ ")))
 }
 
-/// The text of a struct: `{name: value၊ ...}`.
+/// The text of a struct: `<struct>(name: value၊ ...)`.
 ///
 /// # Arguments
 ///
@@ -112,5 +112,5 @@ fn struct_text(mem: &Mem, addr: u64, s: &StructKind) -> Result<String, TrapKind>
     };
     let fields: Vec<String> =
         s.fields().iter().enumerate().map(field).collect::<Result<_, _>>()?;
-    Ok(format!("{{{}}}", fields.join("၊ ")))
+    Ok(format!("{}({})", s.name, fields.join("၊ ")))
 }

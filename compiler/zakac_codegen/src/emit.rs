@@ -348,7 +348,7 @@ impl<'s> FuncGen<'s>
         self.op(Op::Store(value.kind));
     }
 
-    /// Build a list value in a slot of its own and push its address.
+    /// Build a list or struct value in a slot of its own and push its address.
     ///
     /// # Arguments
     ///
@@ -366,12 +366,17 @@ impl<'s> FuncGen<'s>
         };
         let platform = self.shared.platform;
         let stride = kind.as_list().map_or(0, |l| l.cell.size(platform));
+        // A cell steps `i` strides; a field steps its offset in octets.
+        let step = |i: usize| {
+            kind.as_struct().map_or((i as u32, stride), |s| (s.offset(i, platform), 1))
+        };
         for (i, cell) in cells.iter().enumerate()
         {
             do_if!(i > 0, {
                 self.op(Op::LocalAddr(slot));
-                self.op(Op::Push(usize_value(i as u128, platform)));
-                self.op(Op::PtrAdd(stride));
+                let (count, scale) = step(i);
+                self.op(Op::Push(usize_value(u128::from(count), platform)));
+                self.op(Op::PtrAdd(scale));
             });
             self.put(cell);
         }

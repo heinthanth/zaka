@@ -161,3 +161,25 @@ pub fn classifier_mismatch(
     let help = t!("codes.ZK0509.help", w = want);
     Diagnostic::new(Code::ClassifierMismatch, msg, span).with_help(help)
 }
+
+/// The count of a struct literal uses a classifier other than the struct's
+/// own.
+///
+/// # Arguments
+///
+/// * `span` - The classifier after `တစ်`.
+/// * `kind` - The struct name.
+/// * `want` - The classifier of the struct.
+/// * `found` - The classifier written.
+///
+/// # Returns
+///
+/// The `ZK0509` diagnostic, with the right count as a hint.
+pub fn literal_classifier_mismatch(
+    span: Span, kind: &str, want: &str, found: &str,
+) -> Diagnostic
+{
+    let msg = t!("codes.ZK0509.message", k = kind, w = want, f = found);
+    let help = t!("codes.ZK0509.help_literal", k = kind, w = want);
+    Diagnostic::new(Code::ClassifierMismatch, msg, span).with_help(help)
+}

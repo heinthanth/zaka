@@ -16,7 +16,7 @@ of one kind; a struct holds a few values of different kinds.
 ```
 
 ```text
-{အသက်: ၀၊ အမြင့်: ၀.၀၊ လုပ်သား: မမှန်}
+လူ(အသက်: ၀၊ အမြင့်: ၀.၀၊ လုပ်သား: မမှန်)
 ```
 
 | Zaka | Reads as |
@@ -54,14 +54,14 @@ and have its address taken.
 ```text
 ၂၀
 ၂၁
-{အသက်: ၂၀၊ အမြင့်: ၁.၇၅၊ လုပ်သား: မမှန်}
+လူ(အသက်: ၂၀၊ အမြင့်: ၁.၇၅၊ လုပ်သား: မမှန်)
 ```
 
 As with a list cell, a field inside an operator expression goes in parentheses:
 `(ကျော် ၏ အသက်) + ၁`.
 
-Printing a whole struct shows `{`, each field as `name: value` with `၊` between them,
-and `}`.
+Printing a whole struct shows the struct name, then each field as `name: value` with `၊`
+between them, in parentheses.
 
 The address of a field is a pointer to a value of the field's kind, so it can be lent
 or written through:
@@ -77,6 +77,39 @@ or written through:
 ```text
 ၂၅
 ```
+
+## Writing a struct out
+
+A *struct literal* gives the fields of a struct at once: each field name with its value
+after it, `၊` between the pairs, then `ရှိသော`, the struct name, `တစ်` ("one") and the
+count word of the struct, `ခု` for now.
+
+```zaka
+ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ဒဿမကိန်း အမြင့်၊ မှန်မှားတန်ဖိုး လုပ်သား တို့ ပါဝင်သည်။
+ကိန်းရှင် ကျော် သည် လူ ဖြစ်၍ တန်ဖိုးသည် အသက် ၂၀၊ အမြင့် ၁.၇၅ ရှိသော လူတစ်ခု ဖြစ်ပါစေ။
+ကျော် ကို ပြသပါ။
+ကျော် ကို လုပ်သား မှန်၊ အသက် ၃၀ ရှိသော လူ တစ်ခု ဟု ထားပါ။
+ကျော် ကို ပြသပါ။
+```
+
+```text
+လူ(အသက်: ၂၀၊ အမြင့်: ၁.၇၅၊ လုပ်သား: မမှန်)
+လူ(အသက်: ၃၀၊ အမြင့်: ၀.၀၊ လုပ်သား: မှန်)
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `အသက် ၂၀၊ အမြင့် ၁.၇၅` | "age 20, height 1.75" |
+| `ရှိသော` | "that has" |
+| `လူတစ်ခု` | "one person" |
+
+The fields can come in another order than in the declaration, and a field left out holds
+its default, as `လုပ်သား` does in the first line of the output. `လူတစ်ခု` can also be
+written with a space, as `လူ တစ်ခု`. [Pointers and the heap](#pointers-and-the-heap)
+shows how a struct names a count word of its own.
+
+A struct literal stands wherever a struct value can: the value of a declaration, the
+right side of `ထားပါ`, an argument, or `ပြသပါ`.
 
 ## Duplicating a struct
 
@@ -96,9 +129,9 @@ The same holds for a struct given as a function argument.
 ```
 
 ```text
-{အသက်: ၂၀၊ အမြင့်: ၀.၀}
-{အသက်: ၃၀၊ အမြင့်: ၀.၀}
-{အသက်: ၂၀၊ အမြင့်: ၀.၀}
+လူ(အသက်: ၂၀၊ အမြင့်: ၀.၀)
+လူ(အသက်: ၃၀၊ အမြင့်: ၀.၀)
+လူ(အသက်: ၂၀၊ အမြင့်: ၀.၀)
 ```
 
 A struct that holds an owner address moves instead of being duplicated, as an owner
@@ -123,9 +156,23 @@ reached with a second `၏`, and a field of a cell with the cell first:
 ```
 
 ```text
-{စ: {x: ၀၊ y: ၀}၊ ဆုံး: {x: ၃၊ y: ၀}}
-[{x: ၀၊ y: ၀}၊ {x: ၀၊ y: ၇}၊ {x: ၀၊ y: ၀}]
-{x: ၀၊ y: ၇}
+မျဉ်း(စ: အမှတ်(x: ၀၊ y: ၀)၊ ဆုံး: အမှတ်(x: ၃၊ y: ၀))
+[အမှတ်(x: ၀၊ y: ၀)၊ အမှတ်(x: ၀၊ y: ၇)၊ အမှတ်(x: ၀၊ y: ၀)]
+အမှတ်(x: ၀၊ y: ၇)
+```
+
+In a struct literal, the value of a field that is itself a literal goes in parentheses, so
+that its `၊` and `ရှိသော` stand apart from the outer ones:
+
+```zaka
+ဒေတာအမျိုးအစား အမှတ် တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။
+ဒေတာအမျိုးအစား မျဉ်း တွင် အမှတ် စ၊ အမှတ် ဆုံး တို့ ပါဝင်သည်။
+ကိန်းရှင် က သည် မျဉ်း ဖြစ်၍ တန်ဖိုးသည် စ (x ၁၊ y ၂ ရှိသော အမှတ်တစ်ခု)၊ ဆုံး (x ၄ ရှိသော အမှတ်တစ်ခု) ရှိသော မျဉ်းတစ်ခု ဖြစ်ပါစေ။
+က ကို ပြသပါ။
+```
+
+```text
+မျဉ်း(စ: အမှတ်(x: ၁၊ y: ၂)၊ ဆုံး: အမှတ်(x: ၄၊ y: ၀))
 ```
 
 A field can hold a list too, and a struct cannot hold itself, because it would need to be
@@ -182,10 +229,12 @@ p ၏ တန်ဖိုး ကို ပြသပါ။
 ```
 
 ```text
-{အသက်: ၁၀၊ အတန်း: ၀}
-{အသက်: ၁၁၊ အတန်း: ၀}
+လူ(အသက်: ၁၀၊ အတန်း: ၀)
+လူ(အသက်: ၁၁၊ အတန်း: ၀)
 ၁၆
 ```
+
+The same word follows `တစ်` in a struct literal: `အသက် ၁၀ ရှိသော လူတစ်ယောက်`.
 
 Adding 1 to the address of a struct moves one whole struct, here 16 octets. A struct with
 no classifier line is counted with `ခု`, like each other kind. Another word is not a
@@ -222,7 +271,7 @@ call gives `ကျော် ၏ လိပ်စာ`.
 ```
 
 ```text
-{အသက်: ၉၉၊ အတန်း: ၀}
+လူ(အသက်: ၉၉၊ အတန်း: ၀)
 ၂၀
 ၂၁
 ```
@@ -276,7 +325,6 @@ borrows.
 
 ## What a struct cannot do
 
-- There is no struct literal: set each field in turn.
 - `==` and `!=` do not take structs: compare the fields.
 - A function cannot give back a struct.
 - A field cannot hold a borrow (`ငှားထားသော ... လိပ်စာ`), just an owner or a raw address.
@@ -286,6 +334,7 @@ borrows.
 - Declare a struct with three fields of three kinds, and print it before and after setting
   each field.
 - Declare a struct of two structs, and set a field of the inner one.
+- Write the same struct out with a struct literal, leaving one field out, and print it.
 - Print the size of a struct, then swap two of its fields in the declaration and print the
   size again.
 - Add a function to the linked list that sums the `တန်ဖိုးရင်း` of each node.

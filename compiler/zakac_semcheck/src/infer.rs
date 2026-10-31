@@ -94,6 +94,7 @@ impl Checker
             Expr::Index(n) => self.infer_index(n),
             Expr::Field(n) => self.infer_field(n),
             Expr::List(n) => self.infer_list(n, expect),
+            Expr::Struct(n) => self.infer_struct_lit(n),
             Expr::BlankList(n) => self.infer_blank(n, expect),
         }
     }

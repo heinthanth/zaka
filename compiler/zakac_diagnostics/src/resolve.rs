@@ -324,3 +324,20 @@ pub fn unknown_field(span: Span, owner: &str, name: &str) -> Diagnostic
     let msg = t!("codes.ZK0320.message", s = owner, n = name);
     Diagnostic::new(Code::UnknownField, msg, span)
 }
+
+/// A struct literal sets one field twice.
+///
+/// # Arguments
+///
+/// * `span` - The second field name.
+/// * `owner` - The struct name.
+/// * `name` - The field name.
+///
+/// # Returns
+///
+/// The `ZK0321` diagnostic.
+pub fn field_set_twice(span: Span, owner: &str, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0321.message", s = owner, n = name);
+    Diagnostic::new(Code::FieldSetTwice, msg, span)
+}

@@ -411,6 +411,13 @@ en = "\"%{s}\" has no field named \"%{n}\""
 [codes.ZK0320.explain]
 en = """After \"၏\", a name reads a field of the struct before it. The struct declaration lists the fields it has; check the spelling, or add the field to the declaration."""
 
+[codes.ZK0321.title]
+en = "field set twice"
+[codes.ZK0321.message]
+en = "the \"%{s}\" literal sets the field \"%{n}\" twice"
+[codes.ZK0321.explain]
+en = """A struct literal, as in \"အသက် ၂၀ ရှိသော လူတစ်ယောက်\", gives each field one value. Remove one of the two, or name the other field."""
+
 # ---------------------------------------------------------------- kinds ZK04xx
 
 [codes.ZK0401.title]
@@ -707,8 +714,10 @@ en = "count word with another classifier"
 en = "%{k} is counted with \"%{w}\", not \"%{f}\""
 [codes.ZK0509.help]
 en = "write \"%{w}စာ\""
+[codes.ZK0509.help_literal]
+en = "write \"%{k}တစ်%{w}\""
 [codes.ZK0509.explain]
-en = """Burmese counts things with a classifier that fits them: people with \"ယောက်\", most other things with \"ခု\". A struct names its classifier with \"... တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\"; the other kinds are counted with \"ခု\". The size is the same whichever word is written, so the program still compiles."""
+en = """Burmese counts things with a classifier that fits them: people with \"ယောက်\", most other things with \"ခု\". A struct names its classifier with \"... တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\"; the other kinds are counted with \"ခု\". The same word follows \"တစ်\" at the end of a struct literal. The size and the value are the same whichever word is written, so the program still compiles."""
 
 # -------------------------------------------------------------- folding ZK06xx
 

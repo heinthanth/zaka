@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use zakac_ast::expr::StructLit;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::AllocStmt;
@@ -10,6 +11,7 @@ use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_alloc;
 use zakac_ast::visit::walk_resize;
+use zakac_ast::visit::walk_struct_lit;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::naturalness as diag;
 use zakac_rust_sugars::ret_if;
@@ -48,7 +50,8 @@ pub(crate) fn check_classifiers(program: &Program) -> Vec<Diagnostic>
     sizes.diags
 }
 
-/// The walker over the sizes of heap statements.
+/// The walker over the sizes of heap statements and the counts of struct
+/// literals.
 struct Sizes<'p>
 {
     /// The classifier of each struct.
@@ -97,5 +100,17 @@ impl Visitor for Sizes<'_>
     {
         self.check(&n.size);
         walk_resize(self, n);
+    }
+
+    fn visit_struct_lit(&mut self, n: &StructLit)
+    {
+        // The checker reports a name that no struct declaration gives.
+        let name = n.name.name.as_str();
+        let found = &n.classifier;
+        let want = self.words.get(name).copied().filter(|w| *w != found.name);
+        self.diags.extend(want.map(|want| {
+            diag::literal_classifier_mismatch(found.span, name, want, &found.name)
+        }));
+        walk_struct_lit(self, n);
     }
 }

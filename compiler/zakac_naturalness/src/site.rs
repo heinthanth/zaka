@@ -89,8 +89,8 @@ pub enum Inner
 {
     /// A logical expression: `ဖြစ်၍`, `သို့မဟုတ်` or postfix `မဟုတ်`.
     Logical,
-    /// A list literal, whose `၊` would join the values around it without
-    /// the parentheses.
+    /// A list or struct literal, whose `၊` would join the values around it
+    /// without the parentheses.
     List,
     /// An operand that stands on its own: a value, a notation or a clause.
     Plain,
@@ -113,7 +113,7 @@ impl Inner
         {
             Expr::Group(n) => Inner::of(&n.inner),
             Expr::Logic(_) | Expr::Not(_) => Inner::Logical,
-            Expr::List(_) => Inner::List,
+            Expr::List(_) | Expr::Struct(_) => Inner::List,
             _ => Inner::Plain,
         }
     }

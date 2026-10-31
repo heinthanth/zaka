@@ -492,8 +492,8 @@ pub enum ExprNode
     },
     /// The size of a kind in octets, a `usize`.
     SizeOf(DataKind),
-    /// A list written out one cell at a time; each cell has the cell kind of
-    /// the expression kind.
+    /// A list or a struct written out one cell or field at a time, in order;
+    /// each one has its cell or field kind in the expression kind.
     List(Vec<Expr>),
     /// A list or a struct of the expression kind with each cell or field at
     /// its default.

@@ -84,6 +84,21 @@ error[ZK0319]: "လူ" names a struct, so it cannot name a value or a function 
 error[ZK0320]: "လူ" has no field named "အရပ်"
 ```
 
+## One field set twice
+
+A struct literal gives each field one value:
+
+```zaka-error ZK0321
+ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
+ကိန်းရှင် ကျော် သည် လူ ဖြစ်၍ တန်ဖိုးသည် အသက် ၂၀၊ အသက် ၃၀ ရှိသော လူတစ်ခု ဖြစ်ပါစေ။
+```
+
+```text
+error[ZK0321]: the "လူ" literal sets the field "အသက်" twice
+```
+
+A struct literal that names a field the struct does not have is ZK0320, as above.
+
 ## A field of a value that is no struct
 
 ```zaka-error ZK0426
@@ -222,6 +237,17 @@ program has named `ယောက်` as its classifier:
 
 ```text
 warning[ZK0509]: isize is counted with "ခု", not "ယောက်"
+```
+
+A struct literal counts its struct with the same word, after `တစ်`:
+
+```zaka-warning ZK0509
+ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+ကိန်းရှင် ကျော် သည် လူ ဖြစ်၍ တန်ဖိုးသည် အသက် ၂၀ ရှိသော လူတစ်ခု ဖြစ်ပါစေ။
+```
+
+```text
+warning[ZK0509]: လူ is counted with "ယောက်", not "ခု"
 ```
 
 ## Hands on

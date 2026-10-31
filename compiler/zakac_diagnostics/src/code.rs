@@ -167,6 +167,8 @@ UnknownKindName = ("ZK0318", Level::Error),
 StructNameClash = ("ZK0319", Level::Error),
 /// A field access names a field the struct does not have.
 UnknownField = ("ZK0320", Level::Error),
+/// A struct literal sets one field twice.
+FieldSetTwice = ("ZK0321", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

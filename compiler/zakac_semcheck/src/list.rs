@@ -1,9 +1,12 @@
+use std::collections::HashSet;
+
 use zakac_ast::expr::BlankListLit;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::FieldExpr;
 use zakac_ast::expr::IndexExpr;
 use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
+use zakac_ast::expr::StructLit;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::Wrap;
@@ -348,6 +351,44 @@ impl Checker
             self.report(rd::unknown_field(field.span, &s.name, &field.name))
         );
         found
+    }
+
+    /// Infer a struct literal: each field it sets takes the kind of that
+    /// field.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The literal.
+    ///
+    /// # Returns
+    ///
+    /// The struct kind, or `None` after an error.
+    pub(crate) fn infer_struct_lit(&mut self, n: &StructLit) -> Option<DataKind>
+    {
+        let name = &n.name;
+        let kind = self.structs.get(&name.name).copied();
+        do_if!(
+            kind.is_none(),
+            self.report(rd::unknown_kind_name(name.span, &name.name))
+        );
+        let s = kind.and_then(DataKind::as_struct);
+        let mut seen = HashSet::new();
+        for init in &n.fields
+        {
+            let field = &init.field;
+            let twice = !seen.insert(field.name.as_str());
+            do_if!(
+                twice,
+                self.report(rd::field_set_twice(field.span, &name.name, &field.name))
+            );
+            let want = s.and_then(|s| s.field(&field.name)).map(|(_, k)| k);
+            let unknown = s.filter(|_| want.is_none());
+            let unknown =
+                unknown.map(|s| rd::unknown_field(field.span, &s.name, &field.name));
+            do_if!(let Some(d) = unknown, self.report(d));
+            self.expect_kind(&init.value, want);
+        }
+        kind
     }
 
     /// Infer the cell count of a list.

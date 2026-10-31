@@ -91,6 +91,12 @@ impl ToSexpr for Expr
             }
             Expr::Field(n) => list("field", [n.base.to_sexpr(), n.field.name.clone()]),
             Expr::List(n) => list("list", n.cells.iter().map(ToSexpr::to_sexpr)),
+            Expr::Struct(n) =>
+            {
+                let fields =
+                    n.fields.iter().map(|f| list(&f.field.name, [f.value.to_sexpr()]));
+                list("struct", std::iter::once(n.name.name.clone()).chain(fields))
+            }
             Expr::BlankList(_) => "blank_list".into(),
         }
     }

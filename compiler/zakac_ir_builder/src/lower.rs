@@ -825,6 +825,7 @@ impl Lowerer<'_>
                 ExprNode::Load { addr: Box::new(self.field_addr(n)) }
             }
             ast::Expr::List(n) => self.list(n, kind),
+            ast::Expr::Struct(n) => self.struct_lit(n, kind),
             ast::Expr::BlankList(_) => ExprNode::BlankList,
         };
         Expr::builder().kind(kind).node(node).span(e.span()).build()
@@ -1049,6 +1050,30 @@ impl Lowerer<'_>
     {
         let cell = kind.as_list().expect("a list literal has a list kind").cell;
         ExprNode::List(n.cells.iter().map(|c| self.owned(c, cell)).collect())
+    }
+
+    /// Lower a struct literal to its fields in order; each field it leaves
+    /// out holds its default.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The literal.
+    /// * `kind` - Its struct kind.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn struct_lit(&mut self, n: &ast::StructLit, kind: DataKind) -> ExprNode
+    {
+        let s = kind.as_struct().expect("a struct literal has a struct kind");
+        let init = |name: &str| n.fields.iter().find(|f| f.field.name == name);
+        let fields = s.fields().iter().map(|(name, k)| {
+            init(name).map_or_else(
+                || default_constant(*k, n.span),
+                |f| self.owned(&f.value, *k),
+            )
+        });
+        ExprNode::List(fields.collect())
     }
 
     /// The address of one cell of a list, or of the list a pointer points

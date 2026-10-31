@@ -317,14 +317,15 @@ impl Parser<'_>
         Expr::Field(node.build())
     }
 
-    /// Parse an operand of a clause: a notation expression, or a list
-    /// literal that starts with one.
+    /// Parse an operand of a clause: a struct literal, a notation
+    /// expression, or a list literal that starts with one.
     ///
     /// # Returns
     ///
     /// The operand, or a diagnostic.
     fn parse_operand(&mut self) -> PResult<Expr>
     {
+        ret_if!(self.at_struct_lit(), self.parse_struct_lit());
         let first = self.parse_notation()?;
         ret_if!(!self.at_list_rest(), Ok(first));
         self.parse_list(first)
@@ -341,11 +342,29 @@ impl Parser<'_>
     {
         ret_if!(self.at_list_close(0), true);
         ret_if!(!self.at_punct(Punct::ListSep), false);
+        self.close_ahead(1, Self::at_list_close)
+    }
+
+    /// Whether `close` holds for a token from `from` on, outside parentheses,
+    /// before the next `တို့ဖြင့်`, `တို့ကို`, `)` or `။`.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - How far ahead the scan starts.
+    /// * `close` - The test, given the parser and how far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it holds.
+    pub(crate) fn close_ahead(
+        &self, from: usize, close: fn(&Self, usize) -> bool,
+    ) -> bool
+    {
         let mut parens = 0usize;
-        for n in 1..
+        for n in from..
         {
             let kind = self.peek_n(n).kind;
-            ret_if!(parens == 0 && self.at_list_close(n), true);
+            ret_if!(parens == 0 && close(self, n), true);
             ret_if!(parens == 0 && ends_list_scan(kind), false);
             match kind
             {

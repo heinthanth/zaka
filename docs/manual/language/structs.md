@@ -1,6 +1,6 @@
 ---
 title: Structs
-description: The struct declaration, its classifier, field access, duplicating and moving, how a struct is stored, and what a struct cannot do.
+description: The struct declaration, its classifier, struct literals, field access, duplicating and moving, how a struct is stored, and what a struct cannot do.
 ---
 
 # Structs
@@ -17,7 +17,7 @@ does. The Learn book starts in small steps with [Structs](../../learn/structs/RE
 ```
 
 ```text
-{အသက်: ၂၀၊ အမြင့်: ၀.၀}
+လူ(အသက်: ၂၀၊ အမြင့်: ၀.၀)
 ```
 
 ## Declaring a struct
@@ -58,7 +58,8 @@ with `ခု`. A struct names its own counting word, its *classifier*, at the en
 declaration, with `မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`. A struct that names none is counted
 with `ခု`, like each other kind.
 
-The classifier is the word in a heap size, `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...`:
+The classifier is the word in a heap size, `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...`, and
+the word after `တစ်` in a [struct literal](#struct-literals), `လူတစ်ယောက်`:
 
 | Kind | Counted with |
 | --- | --- |
@@ -66,7 +67,7 @@ The classifier is the word in a heap size, `မင်မိုရီတွင်
 | a struct that names none | `ခု` |
 | each other kind, such as `ကိန်းပြည့်` | `ခု` |
 
-A heap size that uses another word, such as `ခု` for a struct that names `ယောက်`, or
+A heap size or a struct literal that uses another word, such as `ခု` for a struct that names `ယောက်`, or
 `ယောက်` for `ကိန်းပြည့်`, is the warning ZK0509. The size does not change with the word,
 and the program runs. The help line of the message gives the word to write. A classifier
 word other than `ခု` is read in a heap size once a struct of the program names it:
@@ -86,7 +87,7 @@ p ၏ တန်ဖိုး ကို ပြသပါ။
 ```
 
 ```text
-{အသက်: ၁၀၊ အတန်း: ၀}
+လူ(အသက်: ၁၀၊ အတန်း: ၀)
 ```
 
 ```zaka-warning ZK0509
@@ -117,8 +118,51 @@ A struct name stands wherever a kind does:
 
 A variable of a struct kind declared with no value starts with each field at its default:
 `၀` for a number, `မမှန်` for a true/false value, `ဗလာ` for an address, and the default of
-its kind for a list or another struct. A declaration cannot give a struct a value other
-than another struct of the same kind: there is no struct literal.
+its kind for a list or another struct. A declaration can also take another struct of the
+same kind, or a struct literal.
+
+## Struct literals
+
+```text
+<field> <value>၊ <field> <value> ရှိသော <name>တစ်<word>
+<field> <value>၊ <field> <value> ရှိသော <name> တစ်<word>
+```
+
+A struct literal is a value of the struct `<name>`, with the fields it names set to the
+values after them, as in `အသက် ၂၀၊ အမြင့် ၁.၇၅ ရှိသော လူတစ်ယောက်`, "a person who has
+age 20 and height 1.75".
+
+- The pairs stand in each order, with `၊` between them. At least one pair is written; a
+  struct with each field at its default is a declaration with no value.
+- A field left out holds its default, as in a declaration with no value.
+- Each field name is one the struct has (ZK0320), and each is set once (ZK0321).
+- Each value converts to the kind of its field, as the value of an assignment does
+  (ZK0401).
+- A value is a notation expression, such as `x + ၁` or `(က ၏ အသက်)`. A clause, or a
+  list or struct literal, goes in parentheses.
+- `<name>` is a declared struct (ZK0318). `<word>` is its classifier, `ခု` when the
+  declaration names none; another word is the warning ZK0509. The name and `တစ်` can be
+  written as one word or with a space between them.
+- A struct literal stands wherever a value of the struct can: the value of a
+  declaration, the value of an assignment, an argument, or the value of `ပြသပါ`.
+- An owner given to a field moves into the struct, and the variable it came from holds
+  `ဗလာ` afterwards, as in an assignment.
+
+```zaka
+ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ဒဿမကိန်း အမြင့် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+ကိန်းရှင် ကျော် သည် လူ ဖြစ်၍ တန်ဖိုးသည် အမြင့် ၁.၇၅၊ အသက် ၂၀ ရှိသော လူတစ်ယောက် ဖြစ်ပါစေ။
+ကျော် ကို ပြသပါ။
+အသက် ၃၀ ရှိသော လူ တစ်ယောက် ကို ပြသပါ။
+```
+
+```text
+လူ(အသက်: ၂၀၊ အမြင့်: ၁.၇၅)
+လူ(အသက်: ၃၀၊ အမြင့်: ၀.၀)
+```
+
+The compiler tells a struct literal from other values at its start: a field name with a
+value right after it, before the next `ရှိသော`. Nowhere else in a value does a name stand
+next to another value without an operator or a particle between them.
 
 ## Fields
 
@@ -155,14 +199,15 @@ have its address taken.
 ```
 
 ```text
-{စ: {x: ၀၊ y: ၉}၊ ဆုံး: {x: ၃၊ y: ၀}}
-[{x: ၀၊ y: ၀}၊ {x: ၀၊ y: ၇}၊ {x: ၀၊ y: ၀}]
+မျဉ်း(စ: အမှတ်(x: ၀၊ y: ၉)၊ ဆုံး: အမှတ်(x: ၃၊ y: ၀))
+[အမှတ်(x: ၀၊ y: ၀)၊ အမှတ်(x: ၀၊ y: ၇)၊ အမှတ်(x: ၀၊ y: ၀)]
 ```
 
 ## Printing
 
-A struct prints as `{`, each field as `<name>: <value>` with `၊` between them, and `}`. A
-struct in a field and a list in a field print alike, nested.
+A struct prints as its name, then `(`, each field as `<name>: <value>` with `၊` between
+them, and `)`, as in `လူ(အသက်: ၂၀၊ အမြင့်: ၁.၇၅)`. A struct in a field and a list in a
+field print alike, nested.
 
 ```zaka
 ဒေတာအမျိုးအစား ရမှတ်များ တွင် လက္ခဏာမဲ့ ကိန်းပြည့် အကြိမ်၊ အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရမှတ် တို့ ပါဝင်သည်။
@@ -173,7 +218,7 @@ struct in a field and a list in a field print alike, nested.
 ```
 
 ```text
-{အကြိမ်: ၃၊ ရမှတ်: [၅၊ ၇၊ ၉]}
+ရမှတ်များ(အကြိမ်: ၃၊ ရမှတ်: [၅၊ ၇၊ ၉])
 ```
 
 ## Duplicating and moving
@@ -204,7 +249,7 @@ the old struct is ZK0701. See [Ownership and borrowing](ownership.md#one-owner).
 
 ```text
 ၇
-{တန်ဖိုးရင်း: ၀၊ နောက်: ဗလာ}
+အဆစ်(တန်ဖိုးရင်း: ၀၊ နောက်: ဗလာ)
 ```
 
 ## How a struct is stored
@@ -253,7 +298,6 @@ a heap block of `n` structs holds `n` times the size. See [Pointers](pointers.md
 
 | Not allowed | Instead |
 | --- | --- |
-| a struct literal | set each field in turn |
 | `==`, `!=`, `<` and the like on structs (ZK0403) | compare the fields |
 | a struct as a function result (ZK0428) | pass a borrowed address and fill the fields through it |
 | a field that is a borrow (ZK0718) | hold an owner or a raw address |
@@ -271,8 +315,9 @@ a heap block of `n` structs holds `n` times the size. See [Pointers](pointers.md
 | ZK0318 | a name in a kind that no struct declaration gives | [Struct mistakes](../../learn/structs/mistakes.md#a-name-that-is-no-struct) |
 | ZK0319 | a struct name used for a value or a function | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-name-that-is-also-a-value-name) |
 | ZK0320 | a field the struct does not have | [Struct mistakes](../../learn/structs/mistakes.md#a-field-the-struct-does-not-have) |
+| ZK0321 | a field set twice in a struct literal | [Struct mistakes](../../learn/structs/mistakes.md#one-field-set-twice) |
 | ZK0426 | a field of a value that is no struct | [Struct mistakes](../../learn/structs/mistakes.md#a-field-of-a-value-that-is-no-struct) |
 | ZK0427 | a struct that holds itself | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-that-holds-itself) |
 | ZK0428 | a struct as a function result | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-as-a-function-result) |
-| ZK0509 | a heap size counted with a word that is not the classifier of the kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
+| ZK0509 | a heap size or a struct literal counted with a word that is not the classifier of the kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
 | ZK0718 | a field that holds a borrow | [Struct mistakes](../../learn/structs/mistakes.md#a-borrow-in-a-field) |

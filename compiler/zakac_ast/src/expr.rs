@@ -93,6 +93,8 @@ pub enum Expr
     Field(FieldExpr),
     /// `a၊ b၊ c တို့ပါသော စာရင်း`
     List(ListLit),
+    /// `<field> <value>၊ … ရှိသော <struct>တစ်<classifier>`
+    Struct(StructLit),
     /// `စာရင်းအလွတ်`, a list with each cell at its default.
     BlankList(BlankListLit),
 }
@@ -230,6 +232,34 @@ pub struct ListLit
     pub cells: Vec<Expr>,
     /// Source region, from the first cell to `စာရင်း`.
     pub span: Span,
+}
+
+/// `<field> <value>၊ … ရှိသော <struct>တစ်<classifier>`: a struct written out one
+/// field at a time. Each field left out holds its default.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct StructLit
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The struct name after `ရှိသော`.
+    pub name: Ident,
+    /// The classifier after `တစ်`, such as `ယောက်`.
+    pub classifier: Ident,
+    /// The fields, as written.
+    #[builder(default)]
+    pub fields: Vec<FieldInit>,
+    /// Source region, from the first field name to the struct name.
+    pub span: Span,
+}
+
+/// `<field> <value>`: one field of a struct literal.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct FieldInit
+{
+    /// The field name.
+    pub field: Ident,
+    /// The value.
+    pub value: Expr,
 }
 
 /// `စာရင်းအလွတ်`: a list whose cells all hold their default; the kind comes
@@ -569,6 +599,7 @@ impl Expr
             Expr::Index(n) => n.id,
             Expr::Field(n) => n.id,
             Expr::List(n) => n.id,
+            Expr::Struct(n) => n.id,
             Expr::BlankList(n) => n.id,
         }
     }

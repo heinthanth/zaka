@@ -21,6 +21,7 @@ use crate::expr::NotExpr;
 use crate::expr::NullLit;
 use crate::expr::PrefixExpr;
 use crate::expr::SizeOfExpr;
+use crate::expr::StructLit;
 use crate::expr::VerbExpr;
 use crate::kind::Kind;
 use crate::stmt::AllocStmt;
@@ -126,6 +127,7 @@ SizeOfExpr => "sizeof", visit_size_of;
 IndexExpr => "index", visit_index;
 FieldExpr => "field", visit_field;
 ListLit => "list", visit_list;
+StructLit => "struct_lit", visit_struct_lit;
 BlankListLit => "blank_list", visit_blank_list;
 Ident => "ident", visit_ident;
 Kind => "kind", visit_kind; }
@@ -193,6 +195,7 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::Index(e) => e,
         Expr::Field(e) => e,
         Expr::List(e) => e,
+        Expr::Struct(e) => e,
         Expr::BlankList(e) => e,
     }
 }
@@ -329,6 +332,8 @@ pub trait Visitor
     fn visit_field(&mut self, n: &FieldExpr) { walk_field(self, n) }
     /// Visit a list literal.
     fn visit_list(&mut self, n: &ListLit) { walk_list(self, n) }
+    /// Visit a struct literal.
+    fn visit_struct_lit(&mut self, n: &StructLit) { walk_struct_lit(self, n) }
     /// Visit a blank list.
     fn visit_blank_list(&mut self, n: &BlankListLit) { walk_blank_list(self, n) }
     /// Visit a name in a declaration, parameter, loop header or call.
@@ -591,6 +596,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::Index(e) => v.visit_index(e),
         Expr::Field(e) => v.visit_field(e),
         Expr::List(e) => v.visit_list(e),
+        Expr::Struct(e) => v.visit_struct_lit(e),
         Expr::BlankList(e) => v.visit_blank_list(e),
     }
 }
@@ -730,6 +736,20 @@ pub fn walk_list<V: Visitor + ?Sized>(v: &mut V, n: &ListLit)
 {
     v.enter(n);
     do_for!(c in &n.cells, v.visit_expr(c));
+    v.leave(n);
+}
+
+/// Visit the field names and values of a struct literal, then its name.
+pub fn walk_struct_lit<V: Visitor + ?Sized>(v: &mut V, n: &StructLit)
+{
+    v.enter(n);
+    for f in &n.fields
+    {
+        v.visit_ident(&f.field);
+        v.visit_expr(&f.value);
+    }
+    v.visit_ident(&n.name);
+    v.visit_ident(&n.classifier);
     v.leave(n);
 }
 
@@ -1016,6 +1036,7 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
             v.visit_ident_mut(&mut e.field);
         }
         Expr::List(e) => walk_list_mut(v, e),
+        Expr::Struct(e) => walk_struct_lit_mut(v, e),
         Expr::BlankList(e) => v.visit_span_mut(&mut e.span),
     }
 }
@@ -1067,6 +1088,19 @@ pub fn walk_list_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut ListLit)
 {
     v.visit_span_mut(&mut n.span);
     do_for!(c in &mut n.cells, v.visit_expr_mut(c));
+}
+
+/// Visit the fields and the name of a struct literal.
+pub fn walk_struct_lit_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut StructLit)
+{
+    v.visit_span_mut(&mut n.span);
+    for f in &mut n.fields
+    {
+        v.visit_ident_mut(&mut f.field);
+        v.visit_expr_mut(&mut f.value);
+    }
+    v.visit_ident_mut(&mut n.name);
+    v.visit_ident_mut(&mut n.classifier);
 }
 
 /// Visit the kind of a size expression.

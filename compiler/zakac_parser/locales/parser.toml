@@ -26,3 +26,6 @@ en = "source text changed after re-ingest"
 
 [parser.size_parens]
 en = "put a kind-prefixed literal that counts octets in parentheses: (<kind> n) ဘိုက်စာ"
+
+[parser.struct_count]
+en = "a struct name and its count, as in \"လူတစ်ယောက်\""
