@@ -142,7 +142,7 @@ pub struct AssignStmt
     pub span: Span,
 }
 
-/// String literal operand of a print statement.
+/// The file path of an import.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct StrArg
 {
@@ -152,23 +152,12 @@ pub struct StrArg
     pub span: Span,
 }
 
-/// What a print statement prints.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum PrintArg
-{
-    /// A value.
-    Expr(Expr),
-    /// A string literal.
-    Str(StrArg),
-}
-
 /// Print statement.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct PrintStmt
 {
     /// The printed operand.
-    pub value: PrintArg,
+    pub value: Expr,
     /// The particle written after the operand: `ကို` or `ဟု`.
     pub slot: Slot,
     /// Source region.

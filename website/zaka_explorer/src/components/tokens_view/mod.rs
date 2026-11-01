@@ -245,8 +245,8 @@ fn string_row(state: AppState, row: StrRow) -> impl IntoView
     linked_row(state, row.range, cells)
 }
 
-/// One piece of a string value: text as it is, an escape or a hole as a chip
-/// named after its kind.
+/// One piece of a string value: text as it is, an escape or a template slot as
+/// a chip named after its kind.
 ///
 /// # Arguments
 ///
@@ -263,7 +263,10 @@ fn piece_view(piece: StrPiece) -> impl IntoView
     {
         PartKind::Text => String::new(),
         PartKind::Escape => format!("{} {}", ClassName::PART, ClassName::PART_ESCAPE),
-        PartKind::Hole => format!("{} {}", ClassName::PART, ClassName::PART_HOLE),
+        PartKind::TemplateSlot =>
+        {
+            format!("{} {}", ClassName::PART, ClassName::PART_TEMPLATE_SLOT)
+        }
     };
     span().class(class).title(tern!(chip, kind, "")).child(piece.text)
 }

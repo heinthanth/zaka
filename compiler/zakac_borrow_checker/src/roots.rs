@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use bon::Builder;
+use zakac_ir_builder::ir::Access;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
@@ -62,6 +63,26 @@ impl RootCtx<'_>
         };
         slot.map(|s| s.kind)
     }
+
+    /// Whether a slot is a constant, whose text is static, so a read of it
+    /// is a duplicate and never a move.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The slot.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a `ကိန်းသေ`.
+    pub(crate) fn is_const(&self, place: Place) -> bool
+    {
+        let slot = match place
+        {
+            Place::Global(n) => self.module.globals.get(n as usize),
+            Place::Local(n) => self.locals.get(n as usize),
+        };
+        slot.is_some_and(|s| s.access == Access::Const)
+    }
 }
 
 /// The places the pointer an expression gives can point into.
@@ -111,7 +132,8 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
 
 /// The roots of a slot read. The slot decides: an owner slot read as the
 /// address of what it holds (`ပ ၏ တန်ဖိုး ၏ လိပ်စာ`) still points into
-/// its block, though the read is of a borrow kind.
+/// its block, though the read is of a borrow kind; so does a text slot,
+/// whose u8s sit in the block it owns.
 ///
 /// # Arguments
 ///
@@ -125,7 +147,8 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
 /// The block of an owner, the roots the state holds for a borrow.
 fn read_roots(place: Place, kind: DataKind, state: &State, ctx: &RootCtx) -> Roots
 {
-    let owner = ctx.kind_of(place).unwrap_or(kind).is_owner_ptr();
+    let held = ctx.kind_of(place).unwrap_or(kind);
+    let owner = held.is_owner_ptr() || held == DataKind::Text;
     ret_if!(owner, Roots::from([Root::slot(place).block()]));
     state.ptr(place).map(|info| info.roots.clone()).unwrap_or_default()
 }

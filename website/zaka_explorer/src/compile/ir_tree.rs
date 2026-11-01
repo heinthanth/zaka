@@ -3,6 +3,7 @@ use zakac_ir_builder::ir::Access;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
+use zakac_ir_builder::ir::FmtPiece;
 use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
@@ -282,6 +283,7 @@ impl IrTree<'_>
                 self.heap("resize", dest, Some(count), unit, span)
             }
             Stmt::Free { dest, .. } => self.heap("free", dest, None, None, span),
+            Stmt::Drop { dest, .. } => self.heap("drop", dest, None, None, span),
         }
     }
 
@@ -415,6 +417,30 @@ impl IrTree<'_>
                     base.kind.as_struct().map(|s| s.fields()).unwrap_or_default();
                 let name = fields.get(*field as usize).map(|(n, _)| n.clone());
                 ("field@", name.unwrap_or_default(), vec![self.expr(base)])
+            }
+            ExprNode::Text(text) => ("text", format!("\"{text}\""), Vec::new()),
+            ExprNode::Chars { text, index, first } =>
+            {
+                let label = match (index.is_some(), *first)
+                {
+                    (false, _) => "chars",
+                    (true, 0) => "char@",
+                    (true, _) => "char1@",
+                };
+                let parts = std::iter::once(text.as_ref()).chain(index.as_deref());
+                (label, String::new(), parts.map(|e| self.expr(e)).collect())
+            }
+            ExprNode::Format(pieces) =>
+            {
+                let piece = |p: &FmtPiece| match p
+                {
+                    FmtPiece::Text(text) =>
+                    {
+                        self.node("str", format!("\"{text}\""), e.span, Vec::new())
+                    }
+                    FmtPiece::Value(v) => self.expr(v),
+                };
+                ("format", String::new(), pieces.iter().map(piece).collect())
             }
         };
         let mut node = self.node(label, detail, e.span, children);

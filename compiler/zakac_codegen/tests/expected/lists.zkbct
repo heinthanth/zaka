@@ -19,6 +19,7 @@ module:
   - name: ပ
     kind: "&*isize"
   texts: []
+  formats: []
   funcs:
   - name: ပေါင်း
     params: 1

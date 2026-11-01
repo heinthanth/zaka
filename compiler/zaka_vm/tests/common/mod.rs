@@ -100,6 +100,23 @@ fn compile_with(
     (emitted.module.expect("emitted"), diagnostics)
 }
 
+/// Compile a source text with the ownership check on, which must report
+/// nothing at all, with fold and code generation choices.
+pub fn compile_text(
+    text: &str, folding: &FoldOptions, emit_options: impl Into<EmitOptions>,
+) -> Module
+{
+    let mut sm = SourceMap::new();
+    let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
+    let (lexer, options) = (LexerOptions::default(), SemcheckOptions::default());
+    let mem = BorrowCheckOptions::default();
+    let emitted = run_phases(&file, &lexer, &options, folding, &mem, emit_options);
+    let msgs: Vec<&str> =
+        emitted.diagnostics().iter().map(|d| d.message.as_str()).collect();
+    assert!(emitted.diagnostics().is_empty(), "{text}: {msgs:?}");
+    emitted.module.expect("emitted")
+}
+
 /// Run a module and collect its output.
 pub fn run_module(module: &Module, options: &RunOptions) -> (String, Result<(), Trap>)
 {

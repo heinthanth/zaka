@@ -232,13 +232,6 @@ en = "a literal kind prefix must be an integer or floating-point kind"
 [codes.ZK0222.explain]
 en = """A kind prefix such as \"လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်\" fixes the kind of the number that follows. Characters and booleans have literals of their own ('က', \"မှန်\"), so \"စာလုံး\" and \"မှန်မှားတန်ဖိုး\" cannot prefix a number."""
 
-[codes.ZK0223.title]
-en = "string literal outside a print statement"
-[codes.ZK0223.message]
-en = "a string literal is allowed as the operand of \"ပြသပါ\" and nowhere else"
-[codes.ZK0223.explain]
-en = """This version of the language has no string kind. A string literal can be printed with \"ပြသပါ\" but cannot be stored, compared or passed to a function."""
-
 [codes.ZK0225.title]
 en = "constant loop variable"
 [codes.ZK0225.message]
@@ -696,6 +689,13 @@ en = "the cells of a slice cannot hold borrows, as %{k} does"
 [codes.ZK0428.explain]
 en = """A slice points at cells outside the frame of its function, and the checker follows a borrow in locals and parameters alone. A slice whose cells are slices or borrowed addresses would hide those borrows from it. Use a list of borrows, which lives in the frame, or a slice of raw addresses."""
 
+[codes.ZK0429.title]
+en = "write to a cell of text"
+[codes.ZK0429.message]
+en = "the cells of %{k} cannot be written"
+[codes.ZK0429.explain]
+en = """Text holds UTF-8, and one u8 written on its own can break a character in two. A text written in quotes also shares its storage with each other literal of the same text. Build new text instead: join pieces with \"+\", or write the value in a template slot of a literal, as in \"{က}\"."""
+
 # ---------------------------------------------------------- naturalness ZK05xx
 
 [codes.ZK0501.title]
@@ -819,6 +819,22 @@ en = "range outside its list"
 en = "%{len} cells from cell %{s} pass the end of a list of %{n} cells"
 [codes.ZK0605.explain]
 en = """A range \"<list> ၏ အကွက် <start> မှစ၍ <length> ကွက်\" takes the cells from the start on. The start and the length here are known, so the compiler can tell that the last cell is past the end of the list. Shorten the length or move the start."""
+
+[codes.ZK0606.title]
+en = "text constant not known at compile time"
+[codes.ZK0606.message]
+en = "a text constant must be known at compile time"
+[codes.ZK0606.help]
+en = "declare it with \"ကိန်းရှင်\" to build the text when the program runs"
+[codes.ZK0606.explain]
+en = """A \"ကိန်းသေ\" of kind \"စာသား\" is text in static storage, the same for each run: each read shares it, and nothing frees it. Its value must fold at compile time: literals, other constants, template slots that hold constants, and joins of these with \"+\". A variable, a call, a cell or a field needs the program to run. Declare such text with \"ကိန်းရှင်\"."""
+
+[codes.ZK0607.title]
+en = "range cuts a character"
+[codes.ZK0607.message]
+en = "%{len} u8s from u8 %{s} start or end inside a character of the text"
+[codes.ZK0607.explain]
+en = """Text holds whole characters of UTF-8, and a Burmese character takes three u8s. A range \"<text> ၏ အကွက် <start> မှစ၍ <length> ကွက်\" counts u8s, so its start and its end must each fall between two characters. The text, the start and the length here are known, so the compiler can tell that an edge falls inside a character. Move the edge; \"၏ စာလုံးအရေအတွက်\" and \"၏ စာလုံး\" count characters instead."""
 
 [codes.ZK0701.title]
 en = "use after move"

@@ -43,7 +43,7 @@ a command, such as `ပြသပါ`, forms a *statement*. The compiler reads bo
 | Page | What it states |
 | --- | --- |
 | [Source text and words](words.md) | the encoding, `။` and `၊`, spaces, comments, names, number, character and string literals, reserved words |
-| [Kinds and values](kinds.md) | the integer, decimal, character and true/false kinds with their ranges, sizes and defaults, and the short names that messages use |
+| [Kinds and values](kinds.md) | the integer, decimal, character, true/false and text kinds with their ranges, sizes and defaults, and the short names that messages use |
 | [Conversions](conversions.md) | the conversion expression, which pairs convert and what happens to the value, and the widening that needs no words |
 | [Expressions](expressions.md) | literals, names and the operators: arithmetic, comparison, logic and bitwise, with precedence, division, overflow and grouping |
 | [Statements](statements.md) | each form of statement with its shape, the statement verbs and the error of a missing verb |
@@ -52,6 +52,8 @@ a command, such as `ပြသပါ`, forms a *statement*. The compiler reads bo
 | [Pointers](pointers.md) | addresses, the heap and pointer arithmetic |
 | [Ownership and borrowing](ownership.md) | the rules that keep a pointer from outliving its block |
 | [Lists](lists.md) | fixed lists, their cells and kinds |
+| [Slices](slices.md) | borrowed runs of cells with their count |
+| [Text](text.md) | owned text and views of text, template literals, joining, cells and drops |
 | [Natural wording](naturalness.md) | which particle and which ending read well, and the warnings for the others |
 
 The pages go from the smallest unit to the largest: words, then the kinds of value, then

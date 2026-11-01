@@ -5,6 +5,7 @@ use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
+use crate::bc::FmtArg;
 use crate::bc::Func;
 use crate::bc::Module;
 use crate::bc::Op;
@@ -34,6 +35,7 @@ pub fn listing(module: &Module) -> String
         slots(&mut out, "globals", 'g', &module.globals)
     );
     do_if!(!module.texts.is_empty(), texts(&mut out, &module.texts));
+    do_if!(!module.formats.is_empty(), formats(&mut out, &module.formats));
     for (i, func) in module.funcs.iter().enumerate()
     {
         out.push('\n');
@@ -72,6 +74,42 @@ fn texts(out: &mut String, list: &[String])
     {
         let _ = writeln!(out, "  t{i} {}", quote(t));
     }
+}
+
+/// Write the formats: each piece, a static text as `t0` and a value as the
+/// name of its kind.
+///
+/// # Arguments
+///
+/// * `out` - The listing.
+/// * `list` - The formats.
+fn formats(out: &mut String, list: &[Vec<FmtArg>])
+{
+    let _ = writeln!(out, "formats");
+    for (i, args) in list.iter().enumerate()
+    {
+        let _ = writeln!(out, "  fmt{i} {}", format_text(args));
+    }
+}
+
+/// The pieces of a format as listing text: a static text as `t0`, a value
+/// as the name of its kind, joined with spaces.
+///
+/// # Arguments
+///
+/// * `args` - The pieces.
+///
+/// # Returns
+///
+/// The text.
+pub fn format_text(args: &[FmtArg]) -> String
+{
+    let arg = |a: &FmtArg| match a
+    {
+        FmtArg::Text(t) => format!("t{t}"),
+        FmtArg::Value(kind) => kind.name(),
+    };
+    args.iter().map(arg).collect::<Vec<_>>().join(" ")
 }
 
 /// Quote a text, escaping quotes, backslashes and control characters.

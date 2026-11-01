@@ -7,6 +7,7 @@ use zakac_ast::expr::Ident;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::NodeId;
 use zakac_ast::expr::PrefixOp;
+use zakac_ast::name::Name;
 use zakac_ast::stmt::AllocStmt;
 use zakac_ast::stmt::AssignStmt;
 use zakac_ast::stmt::BlockStmt;
@@ -21,7 +22,6 @@ use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
 use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::Param;
-use zakac_ast::stmt::PrintArg;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::ResizeStmt;
@@ -155,7 +155,7 @@ pub(crate) struct Checker
     pub unit_fns: Vec<FnSigs>,
     /// The top-level names of each file checked so far.
     #[builder(default)]
-    pub saved: Vec<HashMap<String, Binding>>,
+    pub saved: Vec<HashMap<Name, Binding>>,
     /// The file of each struct.
     #[builder(default)]
     pub homes: StructHomes,
@@ -212,7 +212,7 @@ impl Checker
     {
         #[rustfmt::skip]
         let binding = Binding::builder().maybe_kind(kind).access(access).span(ident.span).build();
-        self.scopes.declare(&ident.name, binding).is_ok()
+        self.scopes.declare(ident.name, binding).is_ok()
     }
 
     /// Declare a name, reporting a second declaration in one scope.
@@ -471,6 +471,14 @@ impl Checker
             return self.infer(target, None);
         }
         let kind = self.infer(target, None);
+        let text =
+            tern!(let Expr::Index(cell) = place, self.kinds.get(&cell.list.id()), None);
+        let text = text.copied().filter(|k| k.is_textual());
+        ret_if!(
+            let Some(k) = text,
+            self.report(kd::text_cell_write(target.span(), &k.name())),
+            None
+        );
         ret_if!(
             self.in_temp_list(place),
             self.report(kd::not_a_place(target.span())),
@@ -670,10 +678,7 @@ impl Visitor for Checker
 
     fn visit_free(&mut self, n: &FreeStmt) { self.heap_target(&n.target) }
 
-    fn visit_print(&mut self, n: &PrintStmt)
-    {
-        do_if!(let PrintArg::Expr(e) = &n.value, let _ = self.infer(e, None));
-    }
+    fn visit_print(&mut self, n: &PrintStmt) { _ = self.infer(&n.value, None); }
 
     fn visit_block(&mut self, n: &BlockStmt)
     {
@@ -730,7 +735,7 @@ impl Visitor for Checker
     {
         let depth = std::mem::take(&mut self.loop_depth);
         let ret = n.ret.as_ref().map(|k| self.written_kind(k, KindUse::Result));
-        let ctx = FnCtx::builder().name(n.name.name.clone()).maybe_ret(ret).build();
+        let ctx = FnCtx::builder().name(n.name.name.to_string()).maybe_ret(ret).build();
         self.func = Some(ctx);
         self.scopes.push();
         do_for!(p in &n.params, self.declare_param(p));

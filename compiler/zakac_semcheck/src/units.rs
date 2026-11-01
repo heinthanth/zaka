@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use zakac_ast::expr::Ident;
 use zakac_ast::kind::Kind;
+use zakac_ast::name::Name;
 use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
@@ -19,7 +20,7 @@ use crate::semcheck::Checker;
 
 /// The file of each top-level struct and whether it is exported, indexed on
 /// the struct name; the first declaration of a name wins.
-pub(crate) type StructHomes = HashMap<String, (u32, bool)>;
+pub(crate) type StructHomes = HashMap<Name, (u32, bool)>;
 
 /// Where each top-level struct is declared.
 ///
@@ -41,7 +42,7 @@ pub(crate) fn struct_homes(program: &Program) -> StructHomes
             continue;
         };
         let home = (program.unit_of(i), decl.exported);
-        homes.entry(decl.name.name.clone()).or_insert(home);
+        homes.entry(decl.name.name).or_insert(home);
     }
     homes
 }
@@ -235,7 +236,7 @@ impl Checker
         let diag = rd::duplicate_function(name.span, &name.name);
         ret_if!(taken, self.report(diag));
         let sig = FnSig { exported: false, ..sig };
-        self.fns.insert(name.name.clone(), sig);
+        self.fns.insert(name.name, sig);
     }
 
     /// Bring an imported variable or constant into scope.
@@ -247,7 +248,7 @@ impl Checker
     fn import_binding(&mut self, name: &Ident, binding: Binding)
     {
         let binding = Binding { span: name.span, exported: false, ..binding };
-        let fresh = self.scopes.declare(&name.name, binding).is_ok();
+        let fresh = self.scopes.declare(name.name, binding).is_ok();
         do_if!(!fresh, self.report(rd::redeclaration(name.span, &name.name)));
     }
 

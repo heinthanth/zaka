@@ -81,10 +81,42 @@ fn ops_view(state: AppState) -> impl IntoView
         let funcs = state.compiled.with(|c| c.asm.clone());
         funcs.into_iter().map(|f| func_view(state, f)).collect_view()
     };
-    (globals, texts_view(state), funcs)
+    (globals, texts_view(state), formats_view(state), funcs)
 }
 
-/// The pooled print texts, when there are some.
+/// The formats: the pieces of each text the ops build when the program
+/// runs, when there are some.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn formats_view(state: AppState) -> impl IntoView
+{
+    move || {
+        let formats = state.compiled.with(|c| c.formats.clone());
+        (!formats.is_empty()).then(|| {
+            let row = |(i, pieces): (usize, String)| {
+                tr().child((
+                    cell(Table::CELL_DETAIL, format!("fmt{i}")),
+                    cell(Table::CELL_LEXEME, pieces),
+                ))
+            };
+            let rows = formats.into_iter().enumerate().map(row).collect_view();
+            let title =
+                h3().class(Table::TABLE_TITLE).child(t!("explorer.codegen.formats"));
+            let view = table()
+                .class(Table::PHASE_TABLE)
+                .child((table_head("formats", &TEXT_COLUMNS), tbody().child(rows)));
+            (title, table_box(view))
+        })
+    }
+}
+
+/// The static texts, when there are some.
 ///
 /// # Arguments
 ///

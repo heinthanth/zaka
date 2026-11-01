@@ -249,6 +249,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::SizeOf
         | Kw::Cell
         | Kw::CellCount
+        | Kw::CharCount
+        | Kw::Joined
         | Kw::CellWord
         | Kw::Ordinal => "tok-op",
         Kw::Thi
@@ -272,6 +274,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         Kw::IntKind
         | Kw::FloatKind
         | Kw::CharKind
+        | Kw::TextKind
         | Kw::BoolKind
         | Kw::BoolKindLoan
         | Kw::Signed

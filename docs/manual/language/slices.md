@@ -42,6 +42,9 @@ in the Learn book shows the same rules in small steps.
 | `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း` | `&[]u8` |
 | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်စိတ်တစ်ပိုင်း` | `&[][3]isize`, a slice of rows of three |
 
+A view of text, `စာသား တစ်စိတ်တစ်ပိုင်း` (`&text`), is a slice of u8 cells too, with no
+`စာရင်း` in its kind; [Text](text.md#views) has its rules.
+
 - `တစ်စိတ်တစ်ပိုင်း` ("a part") follows a `စာရင်း` with no count. The `&` in the short name
   marks a borrow: a slice borrows its cells from their owner.
 - The `စာရင်း` before it takes no `အကွက် <n> ခုရှိသော` prefix, since the count of a slice

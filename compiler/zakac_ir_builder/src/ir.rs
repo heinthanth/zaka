@@ -328,6 +328,19 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Free each text the value at `dest` owns on the heap and leave it
+    /// blank: a place whose kind holds text, as its scope ends or before a
+    /// new value replaces it. A text in static storage, or one moved out,
+    /// is left as it is.
+    Drop
+    {
+        /// The place.
+        dest: Dest,
+        /// Its kind, which holds text.
+        kind: DataKind,
+        /// Source region.
+        span: Span,
+    },
 }
 
 impl Stmt
@@ -353,7 +366,8 @@ impl Stmt
             | Stmt::Store { span, .. }
             | Stmt::Alloc { span, .. }
             | Stmt::Resize { span, .. }
-            | Stmt::Free { span, .. } => *span,
+            | Stmt::Free { span, .. }
+            | Stmt::Drop { span, .. } => *span,
         }
     }
 }
@@ -538,6 +552,24 @@ pub enum ExprNode
         /// needed when the program runs.
         checked: bool,
     },
+    /// Text in static storage, the same for each run: a literal, or a
+    /// template whose template slots folded.
+    Text(String),
+    /// Text built when the program runs, on the heap: the text of each
+    /// piece, in order.
+    Format(Vec<FmtPiece>),
+    /// The characters of text: their count, a `usize`, or the character at
+    /// a number counted from 0, a `စာလုံး`.
+    Chars
+    {
+        /// The text, owned or a view.
+        text: Box<Expr>,
+        /// The number of the character, an integer of its own kind; `None`
+        /// for the count.
+        index: Option<Box<Expr>>,
+        /// The number of the first character: 0 or 1.
+        first: u8,
+    },
     /// The address of one field of a struct; the expression kind is a
     /// pointer to the field kind.
     FieldAddr
@@ -549,6 +581,71 @@ pub enum ExprNode
         /// The offset of the field in the struct, in octets.
         offset: u32,
     },
+}
+
+impl ExprNode
+{
+    /// The text of static text.
+    ///
+    /// # Returns
+    ///
+    /// The text, or `None` for another node.
+    pub fn text(&self) -> Option<&str>
+    {
+        match self
+        {
+            ExprNode::Text(text) => Some(text),
+            _ => None,
+        }
+    }
+}
+
+/// A piece of text built when the program runs.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FmtPiece
+{
+    /// Text as written.
+    Text(String),
+    /// A value, written as a print writes it; text is written as itself.
+    Value(Expr),
+}
+
+/// The value of each value piece of text built when the program runs.
+///
+/// # Arguments
+///
+/// * `pieces` - The pieces.
+///
+/// # Returns
+///
+/// The values, in order.
+pub fn fmt_values(pieces: &[FmtPiece]) -> impl Iterator<Item = &Expr>
+{
+    pieces.iter().filter_map(|p| match p
+    {
+        FmtPiece::Value(e) => Some(e),
+        FmtPiece::Text(_) => None,
+    })
+}
+
+/// The value of each value piece of text built when the program runs, to
+/// change.
+///
+/// # Arguments
+///
+/// * `pieces` - The pieces.
+///
+/// # Returns
+///
+/// The values, in order.
+pub fn fmt_values_mut(pieces: &mut [FmtPiece]) -> impl Iterator<Item = &mut Expr>
+{
+    pieces.iter_mut().filter_map(|p| match p
+    {
+        FmtPiece::Value(e) => Some(e),
+        FmtPiece::Text(_) => None,
+    })
 }
 
 /// A prefix operator.

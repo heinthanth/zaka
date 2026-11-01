@@ -1,6 +1,6 @@
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::InfixOp;
 use zakac_ast::expr::NextCtx;
-use zakac_ast::stmt::PrintArg;
 use zakac_ast::verb::Slot;
 use zakac_ast::verb::VERBS;
 use zakac_ast::verb::VerbOp;
@@ -8,6 +8,7 @@ use zakac_ast::visit::Node;
 use zakac_lexer::reserved::RESERVED;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Particle;
+use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
 /// A place where a particle rule applies.
@@ -211,18 +212,14 @@ impl Shape
     ///
     /// # Arguments
     ///
-    /// * `arg` - The operand.
+    /// * `expr` - The operand.
     ///
     /// # Returns
     ///
     /// The shape.
-    pub fn of(arg: &PrintArg) -> Shape
+    pub fn of(expr: &Expr) -> Shape
     {
-        let PrintArg::Expr(expr) = arg
-        else
-        {
-            return Shape::Str;
-        };
+        ret_if!(is_text(expr), Shape::Str);
         let tail = clause_tail(expr);
         tail.is_some_and(|p| p != Particle::None)
             .then_some(Shape::Sentence)
@@ -305,5 +302,26 @@ pub fn particle_text(particle: Particle) -> &'static str
         Particle::Thi => "သည်",
         Particle::Pa => "ပါ",
         Particle::PaThi => "ပါသည်",
+    }
+}
+
+/// Whether an expression reads as text: a string literal, or a join with
+/// `+` that has one on a side.
+///
+/// # Arguments
+///
+/// * `expr` - The expression.
+///
+/// # Returns
+///
+/// `true` for such an expression.
+fn is_text(expr: &Expr) -> bool
+{
+    match expr
+    {
+        Expr::Str(_) => true,
+        Expr::Group(n) => is_text(&n.inner),
+        Expr::Infix(n) if n.op == InfixOp::Add => is_text(&n.lhs) || is_text(&n.rhs),
+        _ => false,
     }
 }

@@ -12,7 +12,6 @@ use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
-use zakac_ast::stmt::PrintArg;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::ReturnStmt;
@@ -187,7 +186,7 @@ impl Visitor for Checker
         let shape = Shape::of(&n.value);
         let span = n.value.span();
         self.report(Site::Print(PrintSite { shape, written: n.slot, span }));
-        do_if!(let PrintArg::Expr(e) = &n.value, self.report_group(e, Place::Operand));
+        self.report_group(&n.value, Place::Operand);
         walk_print(self, n);
     }
 

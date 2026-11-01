@@ -21,7 +21,8 @@ laid out upward from address 0:
  0x0000 ┌──────────────────────────────┐
         │ reserved: never handed out   │  4096 addresses (16 on an 8-bit platform)
  0x1000 ├──────────────────────────────┤
-        │ static blocks: the globals   │  one block each, for the whole run
+        │ static blocks: the globals,  │  one block each, for the whole run
+        │   then the static texts      │
         ├──────────────────────────────┤
         │ stack region                 │  the locals of the calls in progress,
         │   (up to --max-stack octets) │  last in, first out
@@ -35,13 +36,17 @@ laid out upward from address 0:
 - **Reserved.** An address below 4096 is never part of a block. `ဗလာ`, and each small
   offset from it, falls here, so a read through a null pointer cannot find a block
   through luck. On a platform of 8 bits the reserved part is 1/16 of the space, 16 addresses.
-- **Static.** Before `main` starts, each global gets a block of zeros. Static blocks last until
-  the end.
+- **Static.** Before `main` starts, each global gets a block of zeros, and then each
+  static text of the module gets a block that holds its UTF-8. Static blocks last until
+  the end. A static text block is *frozen*: a read works, and a write traps with
+  `write at ADDR inside static text, which cannot change`. Each literal of the same text
+  points into the one block, so a write would change them all. The compiler forbids such a
+  write ([Text](../language/text.md#cells)); a raw address alone can reach one.
 - **Stack region.** It opens right after the statics. Its size is `--max-stack` or half
   of the room left, whichever is smaller; the heap starts at its end.
 - **Heap.** New blocks go above all the blocks made so far.
 
-With two integer globals and the default limits, the stack region runs from `0x1040` to
+With two integer globals, no text and the default limits, the stack region runs from `0x1040` to
 `0x101040`, and the first heap block starts at `0x101040`. A pointer prints as its
 address, so the arrangement can be seen:
 
@@ -71,8 +76,9 @@ The reason is in [the life of a heap block](#the-life-of-a-heap-block).
 | start | the address of the first octet; a multiple of 16 |
 | length | the octet count; kept after the block is freed |
 | contents | the octets; dropped when the block is freed |
-| origin | `heap`, `stack` (a local or parameter of a call), or `static` (a global) |
+| origin | `heap`, `stack` (a local or parameter of a call), or `static` (a global or a static text) |
 | live | whether the block is in use; a freed block stands in the table as a record |
+| frozen | whether a write inside the block traps; set for static text |
 | owner | the call depth that made a stack block; 0 for heap and static blocks |
 
 The table is kept in order of start. To check an access of `n` octets at `a`, the VM takes

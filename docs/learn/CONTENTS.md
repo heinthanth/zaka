@@ -14,7 +14,7 @@
   - [Decimal numbers](values/floats.md)
   - [Characters](values/characters.md)
   - [True and false](values/booleans.md)
-  - [Text in quotes](values/strings.md)
+  - [Text](values/strings.md)
 - [Variables](variables/README.md)
   - [Constants](variables/constants.md)
   - [Changing a variable](variables/assignment.md)

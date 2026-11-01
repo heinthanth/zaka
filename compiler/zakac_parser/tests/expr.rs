@@ -8,6 +8,7 @@ use zakac_ast::expr::NextCtx;
 use zakac_diagnostics::Code;
 use zakac_lexer::token::DigitScript;
 use zakac_lexer::token::Particle;
+use zakac_span::pos::Pos;
 
 #[test]
 fn notation_precedence_follows_c()
@@ -87,8 +88,30 @@ fn literal_errors()
     assert_eq!(expr_err("ကိန်းပြည့် ၃.၁၄"), Code::FloatForIntKind);
     assert_eq!(expr_err("စာလုံး ၁"), Code::BadLiteralKind);
     assert_eq!(expr_err("အခြေ ၁၀ ဖြင့် FF"), Code::ExpectedToken);
-    assert_eq!(expr_err("\"text\""), Code::StrOutsidePrint);
     assert_eq!(expr_err("12ab"), Code::InvalidDigit);
+}
+
+#[test]
+fn template_literals_hold_expressions_in_their_template_slots()
+{
+    assert_eq!(expr("\"text\""), "\"text\"");
+    assert_eq!(expr("\"က {က + ၁} ခ\""), "\"က {(+ က 1)} ခ\"");
+    assert_eq!(expr("\"{က}{ခ}\""), "\"{က}{ခ}\"");
+    assert_eq!(expr("\"\" + \"က\""), "(+ \"\" \"က\")");
+    assert_eq!(expr("\"a {\"b {က}\"} c\""), "\"a {\"b {က}\"} c\"");
+    assert_eq!(expr_err("\"{}\""), Code::ExpectedOperand);
+    assert_eq!(expr_err("\"{က ခ}\""), Code::ExpectedToken);
+}
+
+#[test]
+fn an_error_in_a_template_slot_points_inside_the_literal()
+{
+    let text = "\"က {ခ +} ဂ\"";
+    let err = parse_expr(text).expect_err(text);
+    let lo = text.find('{').unwrap();
+    let hi = text.find('}').unwrap();
+    let at = (err.span.lo - Pos::ONE) as usize;
+    assert!((lo..=hi).contains(&at), "{at} not in {lo}..={hi}");
 }
 
 #[test]
@@ -173,4 +196,10 @@ fn lend_and_borrowed_kinds_in_expressions()
     let cast = "p ကို ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်";
     assert_eq!(expr(cast), "(cast p &*i32)");
     assert_eq!(expr("ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ အရွယ်အစား"), "(sizeof &*isize)");
+}
+
+#[test]
+fn a_verbal_join_lists_its_pieces()
+{
+    assert_eq!(expr("\"a\"၊ က၊ \"b\" တို့ကို ဆက်ထားသည့် စာသား"), "(join \"a\" က \"b\")");
 }

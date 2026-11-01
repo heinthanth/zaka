@@ -64,6 +64,8 @@ pub const SAMPLES: &[Sample] = &[
     sample!("basics", "conversion"),
     sample!("basics", "comments"),
     sample!("basics", "folding"),
+    sample!("basics", "text"),
+    sample!("basics", "interpolation"),
     sample!("control", "branches"),
     sample!("control", "scopes"),
     sample!("control", "while"),

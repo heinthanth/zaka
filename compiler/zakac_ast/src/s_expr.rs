@@ -3,6 +3,8 @@ use zakac_rust_sugars::tern;
 
 use crate::expr::Expr;
 use crate::expr::IntLit;
+use crate::expr::StrExpr;
+use crate::expr::StrPiece;
 use crate::expr::VerbExpr;
 use crate::kind::BaseKind;
 use crate::kind::Cells;
@@ -16,7 +18,6 @@ use crate::stmt::GenericStmt;
 use crate::stmt::IfStmt;
 use crate::stmt::ImportStmt;
 use crate::stmt::Param;
-use crate::stmt::PrintArg;
 use crate::stmt::Program;
 use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
@@ -75,7 +76,7 @@ impl ToSexpr for Expr
             Expr::Float(n) => format!("{:?}", n.value),
             Expr::Char(n) => format!("'{}'", n.value),
             Expr::Bool(n) => n.value.to_string(),
-            Expr::Name(n) => n.name.clone(),
+            Expr::Name(n) => n.name.to_string(),
             Expr::Group(n) => format!("[{}]", n.inner.to_sexpr()),
             Expr::Prefix(n) => list(n.op.as_ref(), [n.rhs.to_sexpr()]),
             Expr::Infix(n) => list(n.op.as_ref(), [n.lhs.to_sexpr(), n.rhs.to_sexpr()]),
@@ -90,7 +91,10 @@ impl ToSexpr for Expr
                 let head = tern!(n.first == 0, "cell", "cell1");
                 list(head, [n.list.to_sexpr(), n.index.to_sexpr()])
             }
-            Expr::Field(n) => list("field", [n.base.to_sexpr(), n.field.name.clone()]),
+            Expr::Field(n) =>
+            {
+                list("field", [n.base.to_sexpr(), n.field.name.to_string()])
+            }
             Expr::Range(n) => list(
                 "range",
                 [n.source.to_sexpr(), n.start.to_sexpr(), n.len.to_sexpr()],
@@ -100,9 +104,10 @@ impl ToSexpr for Expr
             {
                 let fields =
                     n.fields.iter().map(|f| list(&f.field.name, [f.value.to_sexpr()]));
-                list("struct", std::iter::once(n.name.name.clone()).chain(fields))
+                list("struct", std::iter::once(n.name.name.to_string()).chain(fields))
             }
             Expr::BlankList(_) => "blank_list".into(),
+            Expr::Str(n) => str_sexpr(n),
         }
     }
 }
@@ -115,7 +120,7 @@ impl ToSexpr for Stmt
         {
             Stmt::Decl(s) => exported(s.exported, decl_sexpr(s)),
             Stmt::Assign(s) => list("set", [s.target.to_sexpr(), s.value.to_sexpr()]),
-            Stmt::Print(s) => list("print", [print_arg(&s.value)]),
+            Stmt::Print(s) => list("print", [s.value.to_sexpr()]),
             Stmt::Block(s) => s.to_sexpr(),
             Stmt::If(s) => if_sexpr(s),
             Stmt::While(s) => list("while", [s.cond.to_sexpr(), s.block.to_sexpr()]),
@@ -163,7 +168,10 @@ fn exported(flag: bool, decl: String) -> String
 fn import_sexpr(s: &ImportStmt) -> String
 {
     let path = format!("\"{}\"", s.path.lit.value);
-    list("import", std::iter::once(path).chain(s.names.iter().map(|n| n.name.clone())))
+    list(
+        "import",
+        std::iter::once(path).chain(s.names.iter().map(|n| n.name.to_string())),
+    )
 }
 
 /// `(head part part)`; just `(head)` without parts.
@@ -202,6 +210,7 @@ fn wrap_mark(w: Wrap) -> String
         Wrap::List(Cells::Fixed(n)) => format!("[{n}]"),
         Wrap::List(Cells::Inferred) => "[]".into(),
         Wrap::Slice => "&[]".into(),
+        Wrap::View => "&".into(),
     }
 }
 
@@ -224,8 +233,11 @@ fn base_name(k: &Kind) -> String
         BaseKind::Int => format!("{sign}{bits}"),
         BaseKind::Float => format!("f{}", k.bits.unwrap_or(64)),
         BaseKind::Opaque if k.wraps.first() == Some(&Wrap::RawPtr) => "rawptr".into(),
-        BaseKind::Named => k.name.as_ref().map_or(String::new(), |n| n.name.clone()),
-        BaseKind::Char | BaseKind::Bool | BaseKind::Opaque =>
+        BaseKind::Named =>
+        {
+            k.name.as_ref().map_or(String::new(), |n| n.name.to_string())
+        }
+        BaseKind::Char | BaseKind::Bool | BaseKind::Text | BaseKind::Opaque =>
         {
             k.base.as_ref().to_string()
         }
@@ -295,22 +307,23 @@ fn heap_parts(target: &Expr, size: &SizeArg) -> Vec<String>
     head.into_iter().chain(size.unit.iter().map(ToSexpr::to_sexpr)).collect()
 }
 
-/// The operand of a print statement; a string literal is quoted.
+/// A string literal in quotes, each template slot as `{<expression>}`.
 ///
 /// # Arguments
 ///
-/// * `arg` - The operand.
+/// * `n` - The literal.
 ///
 /// # Returns
 ///
 /// The text.
-fn print_arg(arg: &PrintArg) -> String
+fn str_sexpr(n: &StrExpr) -> String
 {
-    match arg
+    let piece = |p: &StrPiece| match p
     {
-        PrintArg::Expr(e) => e.to_sexpr(),
-        PrintArg::Str(s) => format!("\"{}\"", s.lit.value),
-    }
+        StrPiece::Text(text) => text.clone(),
+        StrPiece::TemplateSlot(e) => format!("{{{}}}", e.to_sexpr()),
+    };
+    format!("\"{}\"", n.pieces.iter().map(piece).collect::<String>())
 }
 
 /// `(var name kind init)` or `(const name kind init)`.
@@ -325,7 +338,7 @@ fn print_arg(arg: &PrintArg) -> String
 fn decl_sexpr(s: &DeclStmt) -> String
 {
     let head = tern!(s.is_const, "const", "var");
-    let header = [s.name.name.clone(), s.kind.to_sexpr()];
+    let header = [s.name.name.to_string(), s.kind.to_sexpr()];
     list(head, header.into_iter().chain(s.init.iter().map(ToSexpr::to_sexpr)))
 }
 
@@ -358,7 +371,7 @@ fn if_sexpr(s: &IfStmt) -> String
 /// The text.
 fn counted_sexpr(s: &CountedStmt) -> String
 {
-    let bounds = [s.var.name.clone(), s.from.to_sexpr(), s.to.to_sexpr()];
+    let bounds = [s.var.name.to_string(), s.from.to_sexpr(), s.to.to_sexpr()];
     let step = s.step.iter().flat_map(|e| ["step".to_string(), e.to_sexpr()]);
     let tail = [s.mode.as_ref().to_string(), s.block.to_sexpr()];
     list("count", bounds.into_iter().chain(step).chain(tail))
@@ -375,7 +388,7 @@ fn counted_sexpr(s: &CountedStmt) -> String
 /// The text.
 fn generic_sexpr(s: &GenericStmt) -> String
 {
-    let header = [s.var.name.clone(), s.kind.to_sexpr()];
+    let header = [s.var.name.to_string(), s.kind.to_sexpr()];
     let init = s.init.iter().map(ToSexpr::to_sexpr);
     let loop_part = [s.cond.to_sexpr(), s.block.to_sexpr()];
     let update = s.update.iter().flat_map(|u| ["then".to_string(), u.to_sexpr()]);
@@ -395,7 +408,7 @@ fn fn_sexpr(s: &FnDecl) -> String
 {
     let params: Vec<String> = s.params.iter().map(param_sexpr).collect();
     let ret = s.ret.as_ref().map_or("-".to_string(), ToSexpr::to_sexpr);
-    let parts = [s.name.name.clone(), format!("[{}]", params.join(", ")), ret];
+    let parts = [s.name.name.to_string(), format!("[{}]", params.join(", ")), ret];
     list("fn", parts.into_iter().chain([s.block.to_sexpr()]))
 }
 
@@ -411,8 +424,11 @@ fn fn_sexpr(s: &FnDecl) -> String
 fn struct_sexpr(s: &StructDecl) -> String
 {
     let fields: Vec<String> = s.fields.iter().map(param_sexpr).collect();
-    let parts = [s.name.name.clone(), format!("[{}]", fields.join(", "))];
-    list("struct", parts.into_iter().chain(s.classifier.iter().map(|c| c.name.clone())))
+    let parts = [s.name.name.to_string(), format!("[{}]", fields.join(", "))];
+    list(
+        "struct",
+        parts.into_iter().chain(s.classifier.iter().map(|c| c.name.to_string())),
+    )
 }
 
 /// `kind name` for a parameter.

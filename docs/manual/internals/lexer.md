@@ -297,8 +297,15 @@ span again as digits.
 A quoted literal can hold white space, which the word builder dropped, so the scanners in
 `text.rs` read the source text from the opening quote. Each returns `Scan { value, end,
 diags }`; the driver then skips each word that starts before `end`. A string goes to
-`LexOutput::strings` (the token holds the index) as a list of parts: `Text`,
-`Escape(char)` and `Hole(String)`, plus the joined `value`.
+`LexOutput::strings` (the token holds the index) as a list of parts, plus the joined
+`value`, where a template slot stands as `{text}` and a bad escape as written:
+
+| Part | Holds |
+| --- | --- |
+| `Text(String)` | literal text, with `{{` and `}}` folded |
+| `Escape(char)` | a decoded escape |
+| `TemplateSlot { text, span }` | the text between the braces of a template slot, and its region in the file |
+| `Bad(String)` | an escape that does not decode, as written; its ZK0106 is in `diags` |
 
 | Written | Decoded |
 | --- | --- |
@@ -307,7 +314,13 @@ diags }`; the driver then skips each word that starts before `end`. A string goe
 | `{{` and `}}` | a literal `{` and `}` |
 | `{နောက်တစ်ကြောင်း}` | a line feed (`NAMED_ESCAPES`) |
 | `{ယူနီကုဒ် HHHH}` | that code point |
-| other `{...}`, a lone `{` or `}` | ZK0106; the text is kept as a `Hole` |
+| other `{...}` in a string | a `TemplateSlot`; the lexer reports nothing, and the parser reads it |
+| other `{...}` in a char, a lone `{` or `}` | ZK0106; the text is kept as `Bad` |
+
+A template slot ends at the `}` that matches its `{` on the same line (`open_brace`, through
+`template_slot_end`): `quoted_end` skips a string or character literal inside the template slot whole,
+with its escapes, `{{`, `}}` and its own template slots, and a nested `{` is matched in turn. So `"a {"b {x}"} c"` is one literal whose template slot holds the literal `"b {x}"`; the
+parser lexes that template slot again and reads the nested literal with its own template slot.
 
 A char literal must decode to one scalar value alone (ZK0107), so a Burmese vanna
 with signs does not fit. A raw identifier is the text up to the next backtick on the same

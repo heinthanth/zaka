@@ -16,6 +16,7 @@ use crate::ir::Access;
 use crate::ir::Dest;
 use crate::ir::Expr;
 use crate::ir::ExprNode;
+use crate::ir::FmtPiece;
 use crate::ir::FoldOptions;
 use crate::ir::InfixOp;
 use crate::ir::LogicOp;
@@ -25,6 +26,8 @@ use crate::ir::PrintValue;
 use crate::ir::SliceFrom;
 use crate::ir::Slot;
 use crate::ir::Stmt;
+use crate::ir::fmt_values;
+use crate::ir::fmt_values_mut;
 use crate::value;
 use crate::value::EvalError;
 use crate::value::Value;
@@ -52,15 +55,33 @@ pub fn fold(
     let unknown = unknown_inits(module, platform_bits);
     let mut folder = Folder::new(*options, platform_bits, &module.globals);
     folder.diags.extend(unknown);
-    folder.stmts(&mut module.main);
-    for func in &mut module.funcs
-    {
-        folder.local_consts = const_flags(&func.locals);
-        folder.consts.retain(|place, _| matches!(place, Place::Global(_)));
-        folder.stmts(&mut func.block);
-    }
+    do_if!(has_text_consts(module), {
+        let mut probe =
+            Folder::new(FoldOptions::default(), platform_bits, &module.globals);
+        probe.probing = true;
+        probe.run(&mut module.clone());
+        folder.diags.extend(probe.blocked);
+        folder.text_consts = probe.text_consts;
+    });
+    folder.run(module);
     folder.diags.sort_by_key(|d| d.span.lo);
     folder.diags
+}
+
+/// Whether a module has a constant whose kind holds text.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+///
+/// # Returns
+///
+/// `true` when it has one.
+fn has_text_consts(module: &Module) -> bool
+{
+    let slots =
+        module.globals.iter().chain(module.funcs.iter().flat_map(|f| &f.locals));
+    slots.into_iter().any(|s| s.access == Access::Const && s.kind.holds_text())
 }
 
 /// Report each variable or constant of an imported file whose starting
@@ -120,7 +141,10 @@ fn is_known(e: &Expr) -> bool
 {
     match &e.node
     {
-        ExprNode::Const(_) | ExprNode::SizeOf(_) | ExprNode::BlankList => true,
+        ExprNode::Const(_)
+        | ExprNode::SizeOf(_)
+        | ExprNode::BlankList
+        | ExprNode::Text(_) => true,
         ExprNode::List(items) => items.iter().all(is_known),
         _ => false,
     }
@@ -156,6 +180,20 @@ struct Folder
     local_consts: Vec<bool>,
     /// Diagnostics so far.
     diags: Vec<Diagnostic>,
+    /// The text of constant slots set to static text so far, which a read
+    /// takes in its place.
+    texts: HashMap<Place, String>,
+    /// The function being folded; `None` for the top-level statements.
+    func: Option<u32>,
+    /// The folded value of each constant whose kind holds text, with each
+    /// folding on, at its function and slot. Such a constant holds it
+    /// whatever the options, so each read of it is a free duplicate.
+    text_consts: HashMap<(Option<u32>, Place), Expr>,
+    /// Whether this is the pass with each folding on that finds the values
+    /// of text constants.
+    probing: bool,
+    /// The `ZK0606` diagnostics of that pass.
+    blocked: Vec<Diagnostic>,
 }
 
 impl Folder
@@ -180,7 +218,50 @@ impl Folder
             global_consts: const_flags(globals),
             local_consts: Vec::new(),
             diags: Vec::new(),
+            texts: HashMap::new(),
+            func: None,
+            text_consts: HashMap::new(),
+            probing: false,
+            blocked: Vec::new(),
         }
+    }
+
+    /// Fold the top-level statements, then each function.
+    ///
+    /// # Arguments
+    ///
+    /// * `module` - The module.
+    fn run(&mut self, module: &mut Module)
+    {
+        self.stmts(&mut module.main);
+        for (i, func) in module.funcs.iter_mut().enumerate()
+        {
+            self.func = Some(i as u32);
+            self.local_consts = const_flags(&func.locals);
+            self.consts.retain(|place, _| matches!(place, Place::Global(_)));
+            self.texts.retain(|place, _| matches!(place, Place::Global(_)));
+            self.stmts(&mut func.block);
+        }
+    }
+
+    /// Give a constant whose kind holds text its static value, or, in the
+    /// pass that finds those values, keep the value or report what blocks it.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The constant.
+    /// * `value` - Its value: before folding in the pass that keeps values,
+    ///   after folding in the pass that finds them.
+    fn text_const(&mut self, place: Place, value: &mut Expr)
+    {
+        let at = (self.func, place);
+        if !self.probing
+        {
+            do_if!(let Some(v) = self.text_consts.get(&at), *value = v.clone());
+            return;
+        }
+        ret_if!(is_known(value), _ = self.text_consts.insert(at, value.clone()));
+        self.blocked.push(fd::text_const_not_known(blocker(value)));
     }
 
     /// Whether a slot is a constant.
@@ -226,12 +307,24 @@ impl Folder
         {
             Stmt::Set { place, value, .. } =>
             {
+                let constant = self.is_const(*place);
+                let held = constant && value.kind.holds_text();
+                do_if!(held && !self.probing, self.text_const(*place, value));
                 let v = self.expr(value);
-                let known = v.filter(|_| self.is_const(*place));
+                do_if!(held && self.probing, self.text_const(*place, value));
+                let known = v.filter(|_| constant);
                 do_if!(let Some(v) = known, let _ = self.consts.insert(*place, v));
+                let text = value.node.text().filter(|_| constant);
+                do_if!(let Some(t) = text, _ = self.texts.insert(*place, t.to_string()));
             }
-            Stmt::Print { value: PrintValue::Expr(e), .. } => self.drop_value(e),
-            Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => (),
+            Stmt::Print { value, .. } =>
+            {
+                do_if!(let PrintValue::Expr(e) = value, self.drop_value(e));
+                let folded =
+                    tern!(let PrintValue::Expr(e) = value, e.node.text(), None);
+                do_if!(let Some(text) = folded, *value = PrintValue::Text(text.to_string()));
+            }
+            Stmt::Break { .. } | Stmt::Continue { .. } => (),
             Stmt::If { cond, then, els, .. } =>
             {
                 let taken = self.expr(cond).and_then(Value::as_bool);
@@ -271,7 +364,7 @@ impl Folder
                 self.dest(dest);
                 self.drop_value(count);
             }
-            Stmt::Free { dest, .. } => self.dest(dest),
+            Stmt::Free { dest, .. } | Stmt::Drop { dest, .. } => self.dest(dest),
         }
         out.push(s);
     }
@@ -306,6 +399,7 @@ impl Folder
     {
         let span = e.span;
         ret_if!(let ExprNode::Read(place) = e.node, self.read(e, place));
+        ret_if!(matches!(e.node, ExprNode::Format(_)), self.format(e));
         let (value, rest) = match &mut e.node
         {
             ExprNode::Const(v) => return Some(*v),
@@ -374,7 +468,14 @@ impl Folder
                 do_for!(c in cells.iter_mut(), self.drop_value(c));
                 (None, None)
             }
-            ExprNode::BlankList => (None, None),
+            ExprNode::BlankList | ExprNode::Text(_) => (None, None),
+            ExprNode::Chars { text, index, .. } =>
+            {
+                self.drop_value(text);
+                do_if!(let Some(i) = index, self.drop_value(i));
+                (None, None)
+            }
+            ExprNode::Format(_) => unreachable!("a format is folded above"),
             ExprNode::CellAddr { list, index, len, first, checked } =>
             {
                 self.drop_value(list);
@@ -391,6 +492,7 @@ impl Folder
                 let count = tern!(let SliceFrom::List(c) = from, Some(*c), None);
                 let fits = count.and_then(|c| self.range_in_list(lo, n, c, e.span));
                 *checked = *checked || fits == Some(true);
+                do_if!(e.kind.is_text_view(), self.text_edges(source, lo, n, e.span));
                 (None, None)
             }
         };
@@ -398,6 +500,39 @@ impl Folder
         do_if!(let Some(v) = value, e.node = ExprNode::Const(v));
         do_if!(value.is_none() && rest.is_some(), *e = rest.expect("checked above"));
         value
+    }
+
+    /// Fold the pieces of text built when the program runs. With
+    /// expression folding on, a constant takes the text a print writes for
+    /// it, text from a nested piece is spliced in, and text next to text is
+    /// joined; a format left with no value becomes static text.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The format.
+    ///
+    /// # Returns
+    ///
+    /// `None`: text is no single value.
+    fn format(&mut self, e: &mut Expr) -> Option<Value>
+    {
+        let ExprNode::Format(pieces) = &mut e.node
+        else
+        {
+            return None;
+        };
+        do_for!(e in fmt_values_mut(pieces), self.drop_value(e));
+        ret_if!(!self.options.exprs, None);
+        let mut joined: Vec<FmtPiece> = Vec::with_capacity(pieces.len());
+        do_for!(piece in std::mem::take(pieces), splice_piece(&mut joined, piece));
+        let text = match joined.as_slice()
+        {
+            [] => Some(String::new()),
+            [FmtPiece::Text(text)] => Some(text.clone()),
+            _ => None,
+        };
+        e.node = text.map_or(ExprNode::Format(joined), ExprNode::Text);
+        None
     }
 
     /// Whether a known cell number names a cell of its list; a known one
@@ -461,6 +596,41 @@ impl Folder
         Some(fits)
     }
 
+    /// Report a range of known text whose start or end falls inside a
+    /// character.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The text, after folding.
+    /// * `start` - The first u8, when known.
+    /// * `len` - The u8 count, when known.
+    /// * `span` - The range.
+    fn text_edges(
+        &mut self, source: &Expr, start: Option<Value>, len: Option<Value>, span: Span,
+    )
+    {
+        let known = match &source.node
+        {
+            ExprNode::Text(text) => Some(text.clone()),
+            ExprNode::Read(place) => self.texts.get(place).cloned(),
+            _ => None,
+        };
+        let (
+            Some(text),
+            Some(Value::Int { raw: lo, .. }),
+            Some(Value::Int { raw: n, .. }),
+        ) = (known, start, len)
+        else
+        {
+            return;
+        };
+        let edge =
+            |at: u128| usize::try_from(at).is_ok_and(|at| text.is_char_boundary(at));
+        let inside = lo.checked_add(n).is_some_and(|end| end <= text.len() as u128);
+        ret_if!(!inside || (edge(lo) && edge(lo + n)));
+        self.diags.push(fd::range_cuts_char(span, &lo.to_string(), &n.to_string()));
+    }
+
     /// Fold a read of a slot: a constant slot set to a known value reads
     /// as that value.
     ///
@@ -475,6 +645,8 @@ impl Folder
     fn read(&mut self, e: &mut Expr, place: Place) -> Option<Value>
     {
         ret_if!(!self.options.consts, None);
+        let text = self.texts.get(&place).cloned();
+        ret_if!(let Some(t) = text, e.node = ExprNode::Text(t), None);
         let v = self.consts.get(&place).copied()?;
         e.node = ExprNode::Const(v);
         Some(v)
@@ -579,4 +751,72 @@ fn short_circuit(op: LogicOp, l: Option<Value>, rhs: &mut Expr) -> Option<Expr>
     let l = l.and_then(Value::as_bool)?;
     let keeps_rhs = tern!(op == LogicOp::And, l, !l);
     keeps_rhs.then(|| rhs.clone())
+}
+
+/// Add a folded piece to a list of pieces: a constant as its text, the
+/// pieces of nested text in its place, and text joined to text before it.
+///
+/// # Arguments
+///
+/// * `out` - The pieces so far.
+/// * `piece` - The next piece.
+fn splice_piece(out: &mut Vec<FmtPiece>, piece: FmtPiece)
+{
+    let text = match piece
+    {
+        FmtPiece::Text(text) => text,
+        FmtPiece::Value(e) => match e.node
+        {
+            ExprNode::Const(v) => value::value_text(v),
+            ExprNode::Text(text) => text,
+            ExprNode::Format(inner) => return do_for!(p in inner, splice_piece(out, p)),
+            node => return out.push(FmtPiece::Value(rebuilt(e.kind, node, e.span))),
+        },
+    };
+    let Some(FmtPiece::Text(last)) = out.last_mut()
+    else
+    {
+        out.push(FmtPiece::Text(text));
+        return;
+    };
+    last.push_str(&text);
+}
+
+/// An expression with a node of its own, its kind and region kept.
+///
+/// # Arguments
+///
+/// * `kind` - The kind.
+/// * `node` - The node.
+/// * `span` - The source region.
+///
+/// # Returns
+///
+/// The expression.
+fn rebuilt(kind: DataKind, node: ExprNode, span: Span) -> Expr
+{
+    Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// The first part of a folded value that is not static: the first value of
+/// a format that did not fold, or the first such cell of a list.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// The region of that part.
+fn blocker(e: &Expr) -> Span
+{
+    match &e.node
+    {
+        ExprNode::Format(pieces) => fmt_values(pieces).next().map_or(e.span, blocker),
+        ExprNode::List(cells) =>
+        {
+            cells.iter().find(|c| !is_known(c)).map_or(e.span, blocker)
+        }
+        _ => e.span,
+    }
 }

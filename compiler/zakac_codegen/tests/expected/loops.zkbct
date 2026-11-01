@@ -15,6 +15,7 @@ module:
   - name: အဆင့်
     kind: u8
   texts: []
+  formats: []
   funcs:
   - name: main
     params: 0

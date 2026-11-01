@@ -237,128 +237,124 @@ program:
         hi: 907
   - print:
       value:
-        expr:
-          infix:
-            id: 17
-            op: mul
-            lhs:
-              name:
-                id: 15
-                name: ပိုင်
-                span:
-                  lo: 908
-                  hi: 923
-            rhs:
-              int:
-                id: 16
-                value: 2
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 926
-                  hi: 929
-            span:
-              lo: 908
-              hi: 929
+        infix:
+          id: 17
+          op: mul
+          lhs:
+            name:
+              id: 15
+              name: ပိုင်
+              span:
+                lo: 908
+                hi: 923
+          rhs:
+            int:
+              id: 16
+              value: 2
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 926
+                hi: 929
+          span:
+            lo: 908
+            hi: 929
       slot: ko
       span:
         lo: 908
         hi: 958
   - print:
       value:
-        expr:
-          verb:
-            id: 20
-            op: shift
-            args:
-            - name:
-                id: 18
-                name: ဘိုက်
-                span:
-                  lo: 959
-                  hi: 974
-            - int:
-                id: 19
-                value: 2
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 1004
-                  hi: 1007
-            kind_arg: null
-            dir: right
-            particle: none
-            next: other
-            is_cmp: false
-            span:
-              lo: 959
-              hi: 1051
+        verb:
+          id: 20
+          op: shift
+          args:
+          - name:
+              id: 18
+              name: ဘိုက်
+              span:
+                lo: 959
+                hi: 974
+          - int:
+              id: 19
+              value: 2
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 1004
+                hi: 1007
+          kind_arg: null
+          dir: right
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 959
+            hi: 1051
       slot: ko
       span:
         lo: 959
         hi: 1080
   - print:
       value:
-        expr:
-          verb:
-            id: 22
-            op: cast
-            args:
-            - name:
-                id: 21
-                name: အသက်
-                span:
-                  lo: 1081
-                  hi: 1093
-            kind_arg:
-              base: float
-              bits: null
-              signed: null
-              wraps: []
+        verb:
+          id: 22
+          op: cast
+          args:
+          - name:
+              id: 21
+              name: အသက်
               span:
-                lo: 1104
-                hi: 1128
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
+                lo: 1081
+                hi: 1093
+          kind_arg:
+            base: float
+            bits: null
+            signed: null
+            wraps: []
             span:
-              lo: 1081
-              hi: 1194
+              lo: 1104
+              hi: 1128
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 1081
+            hi: 1194
       slot: ko
       span:
         lo: 1081
         hi: 1223
   - print:
       value:
-        expr:
-          verb:
-            id: 24
-            op: cast
-            args:
-            - name:
-                id: 23
-                name: စာ
-                span:
-                  lo: 1224
-                  hi: 1230
-            kind_arg:
-              base: int
-              bits: null
-              signed: null
-              wraps: []
+        verb:
+          id: 24
+          op: cast
+          args:
+          - name:
+              id: 23
+              name: စာ
               span:
-                lo: 1241
-                hi: 1271
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
+                lo: 1224
+                hi: 1230
+          kind_arg:
+            base: int
+            bits: null
+            signed: null
+            wraps: []
             span:
-              lo: 1224
-              hi: 1337
+              lo: 1241
+              hi: 1271
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 1224
+            hi: 1337
       slot: ko
       span:
         lo: 1224
@@ -403,13 +399,12 @@ program:
             hi: 1578
       - print:
           value:
-            expr:
-              name:
-                id: 27
-                name: အသက်
-                span:
-                  lo: 1579
-                  hi: 1591
+            name:
+              id: 27
+              name: အသက်
+              span:
+                lo: 1579
+                hi: 1591
           slot: ko
           span:
             lo: 1579
@@ -524,10 +519,9 @@ program:
           - print:
               value:
                 str:
-                  lit:
-                    parts:
-                    - text: ok
-                    value: ok
+                  id: 38
+                  pieces:
+                  - text: ok
                   span:
                     lo: 2171
                     hi: 2175
@@ -546,47 +540,46 @@ program:
         stmts:
         - print:
             value:
-              expr:
-                group:
-                  id: 43
-                  inner:
-                    logic:
-                      id: 42
-                      op: and
-                      lhs:
-                        infix:
-                          id: 40
-                          op: lt
-                          lhs:
-                            name:
-                              id: 38
-                              name: စာ
-                              span:
-                                lo: 2240
-                                hi: 2246
-                          rhs:
-                            char:
-                              id: 39
-                              value: ခ
-                              span:
-                                lo: 2249
-                                hi: 2254
-                          span:
-                            lo: 2240
-                            hi: 2254
-                      rhs:
-                        name:
-                          id: 41
-                          name: ကြီးသူ
-                          span:
-                            lo: 2271
-                            hi: 2289
-                      span:
-                        lo: 2240
-                        hi: 2289
-                  span:
-                    lo: 2239
-                    hi: 2290
+              group:
+                id: 44
+                inner:
+                  logic:
+                    id: 43
+                    op: and
+                    lhs:
+                      infix:
+                        id: 41
+                        op: lt
+                        lhs:
+                          name:
+                            id: 39
+                            name: စာ
+                            span:
+                              lo: 2240
+                              hi: 2246
+                        rhs:
+                          char:
+                            id: 40
+                            value: ခ
+                            span:
+                              lo: 2249
+                              hi: 2254
+                        span:
+                          lo: 2240
+                          hi: 2254
+                    rhs:
+                      name:
+                        id: 42
+                        name: ကြီးသူ
+                        span:
+                          lo: 2271
+                          hi: 2289
+                    span:
+                      lo: 2240
+                      hi: 2289
+                span:
+                  lo: 2239
+                  hi: 2290
             slot: ko
             span:
               lo: 2239
@@ -641,11 +634,12 @@ kinds:
   35: isize
   36: bool
   37: bool
-  38: char
+  38: text
   39: char
-  40: bool
+  40: char
   41: bool
   42: bool
   43: bool
+  44: bool
 structs: {}
 diagnostics: []

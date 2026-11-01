@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use bon::Builder;
 use zakac_ast::expr as ast;
 use zakac_ast::kind::Kind;
+use zakac_ast::name::Name;
 use zakac_ast::stmt as st;
 use zakac_ast::verb::Dir;
 use zakac_ast::verb::VerbOp;
@@ -22,6 +23,7 @@ use crate::ir::CmpOp;
 use crate::ir::Dest;
 use crate::ir::Expr;
 use crate::ir::ExprNode;
+use crate::ir::FmtPiece;
 use crate::ir::Func;
 use crate::ir::InfixOp;
 use crate::ir::LogicOp;
@@ -64,6 +66,7 @@ pub fn lower(
         .platform(options.platform_bits).sigs(unit_sigs[0].clone()).unit_sigs(unit_sigs)
         .build();
     lowerer.scopes.push(HashMap::new());
+    lowerer.drops.push(Vec::new());
     let mut main = Vec::new();
     let mut imported_inits = 0;
     for (i, s) in program.stmts.iter().enumerate()
@@ -74,6 +77,8 @@ pub fn lower(
         lowerer.top_stmt(s, &mut main);
         do_if!(!program.is_root(unit), imported_inits = main.len() as u32);
     }
+    let ends_in_return = matches!(main.last(), Some(Stmt::Return { .. }));
+    do_if!(!ends_in_return, main.extend(lowerer.global_drops(program.span)));
     #[rustfmt::skip]
     return Module::builder().globals(lowerer.globals).funcs(lowerer.funcs).main(main)
         .imported_inits(imported_inits).span(program.span).build();
@@ -121,9 +126,8 @@ struct Sig
 /// # Returns
 ///
 /// The signatures of each unit, one per name.
-fn collect_sigs(
-    program: &st::Program, structs: &StructTable,
-) -> Vec<HashMap<String, Sig>>
+fn collect_sigs(program: &st::Program, structs: &StructTable)
+-> Vec<HashMap<Name, Sig>>
 {
     let mut sigs = vec![HashMap::new(); program.units.len().max(1)];
     let decls = program.stmts.iter().enumerate().filter_map(|(i, s)| {
@@ -134,7 +138,7 @@ fn collect_sigs(
         let params =
             f.params.iter().map(|p| DataKind::from_ast(&p.kind, structs)).collect();
         let sig = Sig { index: index as u32, params };
-        sigs[unit].entry(f.name.name.clone()).or_insert(sig);
+        sigs[unit].entry(f.name.name).or_insert(sig);
     }
     sigs
 }
@@ -147,6 +151,9 @@ struct Frame
     locals: Vec<Slot>,
     /// Its result kind.
     ret: Option<DataKind>,
+    /// The number of scopes open outside it, so its own scopes start at
+    /// this index.
+    depth: usize,
 }
 
 /// The lowering walk.
@@ -161,12 +168,12 @@ struct Lowerer<'k>
     platform: u16,
     /// The signatures of the functions the current file declares or
     /// imports, one per name.
-    sigs: HashMap<String, Sig>,
+    sigs: HashMap<Name, Sig>,
     /// The signatures of the functions each file declares.
-    unit_sigs: Vec<HashMap<String, Sig>>,
+    unit_sigs: Vec<HashMap<Name, Sig>>,
     /// The top-level places of each file lowered so far.
     #[builder(default)]
-    saved: Vec<HashMap<String, Place>>,
+    saved: Vec<HashMap<Name, Place>>,
     /// The unit of the file being lowered.
     #[builder(default)]
     unit: u32,
@@ -183,7 +190,16 @@ struct Lowerer<'k>
     frame: Option<Frame>,
     /// Names in scope, innermost last.
     #[builder(default)]
-    scopes: Vec<HashMap<String, Place>>,
+    scopes: Vec<HashMap<Name, Place>>,
+    /// The places of each open scope whose kind holds text, in the order
+    /// of their declarations, innermost scope last; each is dropped as its
+    /// scope ends.
+    #[builder(default)]
+    drops: Vec<Vec<(Place, DataKind)>>,
+    /// The index of the scope of the block of each open loop, innermost
+    /// last; `break` and `continue` leave the scopes from there on.
+    #[builder(default)]
+    loops: Vec<usize>,
 }
 
 impl Lowerer<'_>
@@ -217,7 +233,7 @@ impl Lowerer<'_>
     fn declare(&mut self, ident: &ast::Ident, kind: DataKind, access: Access) -> Place
     {
         let slot = Slot::builder()
-            .name(&ident.name)
+            .name(ident.name.as_str())
             .kind(kind)
             .access(access)
             .span(ident.span)
@@ -236,8 +252,71 @@ impl Lowerer<'_>
             }
         };
         let scope = self.scopes.last_mut().expect("a scope is open");
-        scope.insert(ident.name.clone(), place);
+        scope.insert(ident.name, place);
+        let dropped = kind.holds_text() && ident.name != RESULT_NAME;
+        let drops = self.drops.last_mut().expect("a scope is open");
+        do_if!(dropped, drops.push((place, kind)));
         place
+    }
+
+    /// Make a slot that no name refers to, for a value headed into a
+    /// place.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - Its kind.
+    /// * `span` - The source region it stands for.
+    ///
+    /// # Returns
+    ///
+    /// The place of the slot.
+    fn hidden(&mut self, kind: DataKind, span: Span) -> Place
+    {
+        #[rustfmt::skip]
+        let slot = Slot::builder().name("%new").kind(kind).access(Access::Var).span(span).build();
+        let Some(frame) = &mut self.frame
+        else
+        {
+            self.globals.push(slot);
+            return Place::Global(self.globals.len() as u32 - 1);
+        };
+        frame.locals.push(slot);
+        Place::Local(frame.locals.len() as u32 - 1)
+    }
+
+    /// The drops of the places of the open scopes from `depth` on, the
+    /// innermost scope first and the latest place of each scope first.
+    ///
+    /// # Arguments
+    ///
+    /// * `depth` - The index of the outermost scope to leave.
+    /// * `span` - The source region of the exit.
+    ///
+    /// # Returns
+    ///
+    /// The drop statements.
+    fn drops_from(&self, depth: usize, span: Span) -> Vec<Stmt>
+    {
+        let places = self.drops.iter().skip(depth).rev().flat_map(|s| s.iter().rev());
+        places.map(|&(place, kind)| drop_stmt(Dest::Slot(place), kind, span)).collect()
+    }
+
+    /// The drops of each global whose kind holds text, the latest first, for
+    /// the end of the program.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The source region of the end.
+    ///
+    /// # Returns
+    ///
+    /// The drop statements.
+    fn global_drops(&self, span: Span) -> Vec<Stmt>
+    {
+        let globals = self.globals.iter().enumerate().rev();
+        let held = globals.filter(|(_, s)| s.kind.holds_text() && s.name != "%new");
+        held.map(|(i, s)| drop_stmt(Dest::Slot(Place::Global(i as u32)), s.kind, span))
+            .collect()
     }
 
     /// The place a name refers to.
@@ -267,8 +346,45 @@ impl Lowerer<'_>
     fn scoped(&mut self, f: impl FnOnce(&mut Self))
     {
         self.scopes.push(HashMap::new());
+        self.drops.push(Vec::new());
         f(self);
+        self.drops.pop();
         self.scopes.pop();
+    }
+
+    /// Lower statements into `out` inside a new scope, then drop the places
+    /// of that scope unless the last statement leaves it.
+    ///
+    /// # Arguments
+    ///
+    /// * `stmts` - The statements.
+    /// * `out` - The list the statements go to.
+    fn scoped_stmts(&mut self, stmts: &[st::Stmt], out: &mut Vec<Stmt>)
+    {
+        self.scoped(|l| {
+            let start = out.len();
+            do_for!(s in stmts, l.stmt(s, out));
+            let leaves = out.len() > start && out.last().is_some_and(leaves_scope);
+            let end = stmts.last().map_or(Span::default(), |s| s.span());
+            do_if!(!leaves, out.extend(l.drops_from(l.drops.len() - 1, end)));
+        });
+    }
+
+    /// Lower the block of a loop in its own scope.
+    ///
+    /// # Arguments
+    ///
+    /// * `stmts` - The statements.
+    ///
+    /// # Returns
+    ///
+    /// The lowered statements.
+    fn loop_block(&mut self, stmts: &[st::Stmt]) -> Vec<Stmt>
+    {
+        self.loops.push(self.scopes.len());
+        let block = self.block(stmts);
+        self.loops.pop();
+        block
     }
 
     /// Lower a statement list into its own list, inside a new scope.
@@ -283,7 +399,7 @@ impl Lowerer<'_>
     fn block(&mut self, stmts: &[st::Stmt]) -> Vec<Stmt>
     {
         let mut out = Vec::new();
-        self.scoped(|l| do_for!(s in stmts, l.stmt(s, &mut out)));
+        self.scoped_stmts(stmts, &mut out);
         out
     }
 
@@ -301,6 +417,7 @@ impl Lowerer<'_>
             let top = std::mem::take(&mut self.scopes).into_iter().next();
             self.saved.push(top.unwrap_or_default());
             self.scopes.push(HashMap::new());
+            self.drops = vec![Vec::new()];
         }
         self.sigs = self.unit_sigs[unit as usize].clone();
         self.unit = unit;
@@ -319,13 +436,13 @@ impl Lowerer<'_>
         {
             return;
         };
-        for name in n.names.iter().map(|n| &n.name)
+        for name in n.names.iter().map(|n| n.name)
         {
-            let sig = self.unit_sigs[target].get(name).cloned();
-            do_if!(let Some(sig) = sig, _ = self.sigs.insert(name.clone(), sig));
-            let place = self.saved.get(target).and_then(|s| s.get(name)).copied();
+            let sig = self.unit_sigs[target].get(&name).cloned();
+            do_if!(let Some(sig) = sig, _ = self.sigs.insert(name, sig));
+            let place = self.saved.get(target).and_then(|s| s.get(&name)).copied();
             let scope = self.scopes.last_mut().expect("a scope is open");
-            do_if!(let Some(place) = place, _ = scope.insert(name.clone(), place));
+            do_if!(let Some(place) = place, _ = scope.insert(name, place));
         }
     }
 
@@ -358,28 +475,33 @@ impl Lowerer<'_>
         match s
         {
             st::Stmt::Decl(n) => out.push(self.decl(n)),
-            st::Stmt::Assign(n) => out.push(self.assign(n)),
+            st::Stmt::Assign(n) => self.assign(n, out),
             st::Stmt::Print(n) => out.push(self.print(n)),
-            st::Stmt::Block(n) =>
-            {
-                self.scoped(|l| do_for!(s in &n.stmts, l.stmt(s, out)))
-            }
+            st::Stmt::Block(n) => self.scoped_stmts(&n.stmts, out),
             st::Stmt::If(n) => out.push(self.if_stmt(n)),
             st::Stmt::While(n) => out.push(self.while_stmt(n)),
             st::Stmt::Counted(n) => out.push(self.counted(n)),
-            st::Stmt::Generic(n) => out.push(self.generic(n)),
-            st::Stmt::Break(n) => out.push(Stmt::Break { span: n.span }),
-            st::Stmt::Continue(n) => out.push(Stmt::Continue { span: n.span }),
+            st::Stmt::Generic(n) => self.generic(n, out),
+            st::Stmt::Break(n) =>
+            {
+                out.extend(self.loop_drops(n.span));
+                out.push(Stmt::Break { span: n.span });
+            }
+            st::Stmt::Continue(n) =>
+            {
+                out.extend(self.loop_drops(n.span));
+                out.push(Stmt::Continue { span: n.span });
+            }
             st::Stmt::Fn(f) =>
             {
                 let func = self.func(f);
                 self.funcs.push(func);
             }
-            st::Stmt::Return(n) => out.push(self.return_stmt(n)),
+            st::Stmt::Return(n) => self.return_stmt(n, out),
             st::Stmt::Call(n) =>
             {
                 let (func, args) = self.call_parts(&n.callee, &n.args);
-                let name = n.callee.name.clone();
+                let name = n.callee.name.to_string();
                 out.push(Stmt::Call { func, name, args, span: n.span });
             }
             st::Stmt::Alloc(n) => out.push(self.alloc(n)),
@@ -449,32 +571,52 @@ impl Lowerer<'_>
     }
 
     /// Lower an assignment: a store to a slot, or a store at an address
-    /// for a dereference target.
+    /// for a dereference target. A place whose kind holds text gets the new
+    /// value in a hidden slot first, which can read the old value; then the
+    /// old value is dropped and the new one moves in.
     ///
     /// # Arguments
     ///
     /// * `n` - The assignment.
+    /// * `out` - The list the statements go to.
+    fn assign(&mut self, n: &st::AssignStmt, out: &mut Vec<Stmt>)
+    {
+        let span = n.span;
+        let dest = self.dest(&n.target);
+        let want = match &dest
+        {
+            Dest::Slot(place) => self.slot_kind(*place),
+            Dest::Mem(_) => self.kind_of(&n.target),
+        };
+        let value = self.owned(&n.value, want);
+        let value = tern!(want.holds_text(), self.replace(&dest, value, out), value);
+        out.push(match dest
+        {
+            Dest::Slot(place) => Stmt::Set { place, value, span },
+            Dest::Mem(addr) => Stmt::Store { addr, value, span },
+        });
+    }
+
+    /// Keep a new value in a hidden slot and drop the old value of a place.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - The place.
+    /// * `value` - The new value, of a kind that holds text.
+    /// * `out` - The list the statements go to.
     ///
     /// # Returns
     ///
-    /// The store.
-    fn assign(&mut self, n: &st::AssignStmt) -> Stmt
+    /// The new value, moved out of the hidden slot.
+    fn replace(&mut self, dest: &Dest, value: Expr, out: &mut Vec<Stmt>) -> Expr
     {
-        let span = n.span;
-        match self.dest(&n.target)
-        {
-            Dest::Slot(place) =>
-            {
-                let want = self.slot_kind(place);
-                let value = self.owned(&n.value, want);
-                Stmt::Set { place, value, span }
-            }
-            Dest::Mem(addr) =>
-            {
-                let value = self.owned(&n.value, self.kind_of(&n.target));
-                Stmt::Store { addr, value, span }
-            }
-        }
+        let (kind, span) = (value.kind, value.span);
+        let new = self.hidden(kind, span);
+        out.push(Stmt::Set { place: new, value, span });
+        out.push(drop_stmt(dest.clone(), kind, span));
+        let read =
+            Expr::builder().kind(kind).node(ExprNode::Read(new)).span(span).build();
+        take(read)
     }
 
     /// Lower a place: a name to its slot, a dereference to the address it
@@ -596,11 +738,11 @@ impl Lowerer<'_>
     /// The statement.
     fn print(&mut self, n: &st::PrintStmt) -> Stmt
     {
-        let value = match &n.value
-        {
-            st::PrintArg::Expr(e) => PrintValue::Expr(self.expr(e)),
-            st::PrintArg::Str(s) => PrintValue::Text(s.lit.value.clone()),
-        };
+        let plain = tern!(let ast::Expr::Str(s) = &n.value, s.plain(), None);
+        let value = plain.map_or_else(
+            || PrintValue::Expr(self.expr(&n.value)),
+            |text| PrintValue::Text(text.to_string()),
+        );
         Stmt::Print { value, span: n.span }
     }
 
@@ -653,7 +795,7 @@ impl Lowerer<'_>
     fn while_stmt(&mut self, n: &st::WhileStmt) -> Stmt
     {
         let cond = self.coerce(&n.cond, DataKind::Bool);
-        let block = self.block(&n.block.stmts);
+        let block = self.loop_block(&n.block.stmts);
         Stmt::Loop { init: Vec::new(), cond, update: Vec::new(), block, span: n.span }
     }
 
@@ -677,21 +819,19 @@ impl Lowerer<'_>
         let mut block = Vec::new();
         self.scoped(|l| {
             var = l.declare(&n.var, kind, Access::LoopVar);
-            do_for!(s in &n.block.stmts, l.stmt(s, &mut block));
+            block = l.loop_block(&n.block.stmts);
         });
         Stmt::Counted { var, from, to, step, mode: n.mode, block, span: n.span }
     }
 
     /// Lower a generic loop: its declaration becomes the start statement.
+    /// A loop variable that holds text is dropped after the loop.
     ///
     /// # Arguments
     ///
     /// * `n` - The loop.
-    ///
-    /// # Returns
-    ///
-    /// The loop.
-    fn generic(&mut self, n: &st::GenericStmt) -> Stmt
+    /// * `out` - The list the statements go to.
+    fn generic(&mut self, n: &st::GenericStmt, out: &mut Vec<Stmt>)
     {
         let kind = self.declared_kind(&n.kind, n.init.as_ref());
         let value = self.initial(n.init.as_ref(), kind, n.var.span);
@@ -700,14 +840,15 @@ impl Lowerer<'_>
             let place = l.declare(&n.var, kind, Access::Var);
             let set = Stmt::Set { place, value, span: n.var.span.to(&n.kind.span) };
             let cond = l.coerce(&n.cond, DataKind::Bool);
-            let mut block = Vec::new();
-            do_for!(s in &n.block.stmts, l.stmt(s, &mut block));
+            let block = l.loop_block(&n.block.stmts);
             let mut update = Vec::new();
             do_if!(let Some(u) = &n.update, l.stmt(u, &mut update));
-            parts = Some((set, cond, block, update));
+            let after = l.drops_from(l.drops.len() - 1, n.span);
+            parts = Some((set, cond, block, update, after));
         });
-        let (set, cond, block, update) = parts.expect("the scope ran");
-        Stmt::Loop { init: vec![set], cond, update, block, span: n.span }
+        let (set, cond, block, update, after) = parts.expect("the scope ran");
+        out.push(Stmt::Loop { init: vec![set], cond, update, block, span: n.span });
+        out.extend(after);
     }
 
     /// Lower a function. Parameters come first among its slots, then the
@@ -724,13 +865,16 @@ impl Lowerer<'_>
     fn func(&mut self, f: &st::FnDecl) -> Func
     {
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
-        let outer = self.frame.replace(Frame { locals: Vec::new(), ret });
+        let depth = self.scopes.len();
+        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, depth });
         let mut block = Vec::new();
         let mut result = None;
         self.scoped(|l| {
             do_for!(p in &f.params, l.declare_param(p));
             result = ret.map(|k| l.result_slot(f, k, &mut block));
             do_for!(s in &f.block.stmts, l.stmt(s, &mut block));
+            let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
+            do_if!(!ends_in_return, block.extend(l.drops_from(depth, f.block.span)));
         });
         let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
         let implicit = result.zip(ret).filter(|_| !ends_in_return);
@@ -778,20 +922,46 @@ impl Lowerer<'_>
         tern!(let Place::Local(n) = place, n, 0)
     }
 
-    /// Lower a return statement.
+    /// Lower a return statement. With places that hold text in scope, the
+    /// value goes to the result variable first, since it can read them; then
+    /// those are dropped and the result variable is returned.
     ///
     /// # Arguments
     ///
     /// * `n` - The statement.
+    /// * `out` - The list the statements go to.
+    fn return_stmt(&mut self, n: &st::ReturnStmt, out: &mut Vec<Stmt>)
+    {
+        let span = n.span;
+        let ret = self.frame.as_ref().and_then(|f| f.ret);
+        let value = n.value.as_ref().zip(ret).map(|(v, k)| self.owned(v, k));
+        let depth = self.frame.as_ref().map(|f| f.depth);
+        let drops =
+            depth.map_or_else(|| self.global_drops(span), |d| self.drops_from(d, span));
+        ret_if!(drops.is_empty(), out.push(Stmt::Return { value, span }));
+        let result = value.map(|value| {
+            let place = self.lookup(RESULT_NAME);
+            let kind = value.kind;
+            let value = tern!(kind.holds_text(), self.replace(&Dest::Slot(place), value, out), value);
+            out.push(Stmt::Set { place, value, span });
+            tern!(let Place::Local(slot) = place, read_return(slot, kind, span), Stmt::Return { value: None, span })
+        });
+        out.extend(drops);
+        out.push(result.unwrap_or(Stmt::Return { value: None, span }));
+    }
+
+    /// The drops of the scopes a `break` or `continue` leaves.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The source region of the jump.
     ///
     /// # Returns
     ///
-    /// The statement.
-    fn return_stmt(&mut self, n: &st::ReturnStmt) -> Stmt
+    /// The drop statements.
+    fn loop_drops(&self, span: Span) -> Vec<Stmt>
     {
-        let ret = self.frame.as_ref().and_then(|f| f.ret);
-        let value = n.value.as_ref().zip(ret).map(|(v, k)| self.owned(v, k));
-        Stmt::Return { value, span: n.span }
+        self.loops.last().map_or_else(Vec::new, |&depth| self.drops_from(depth, span))
     }
 
     /// The function index and the arguments of a call, each converted to
@@ -853,7 +1023,8 @@ impl Lowerer<'_>
 
     /// Lower a value headed for a place of kind `want`. A value of a move
     /// kind headed for a place of a move kind is taken out of its own
-    /// place, which is left at its default; other values are read.
+    /// place, which is left at its default; other values are read. A
+    /// constant is never taken: its text is static, so a read is a duplicate.
     ///
     /// # Arguments
     ///
@@ -867,7 +1038,30 @@ impl Lowerer<'_>
     {
         let lowered = self.expr(e);
         let moved = lowered.kind.is_move_kind() && want.is_move_kind();
+        let moved = moved && !self.reads_const(&lowered);
         coerce_lowered(tern!(moved, take(lowered), lowered), want)
+    }
+
+    /// Whether a value is read out of a constant: the constant itself, or a
+    /// field or a cell of one.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The value.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a read.
+    fn reads_const(&mut self, e: &Expr) -> bool
+    {
+        match &e.node
+        {
+            ExprNode::Read(place) => self.slot(*place).access == Access::Const,
+            ExprNode::Load { addr } => self.reads_const(addr),
+            ExprNode::FieldAddr { base, .. }
+            | ExprNode::CellAddr { list: base, .. } => self.reads_const(base),
+            _ => false,
+        }
     }
 
     /// Lower an expression with the kind the check recorded for it; a
@@ -899,7 +1093,7 @@ impl Lowerer<'_>
             ast::Expr::Call(n) =>
             {
                 let (func, args) = self.call_parts(&n.callee, &n.args);
-                ExprNode::Call { func, name: n.callee.name.clone(), args }
+                ExprNode::Call { func, name: n.callee.name.to_string(), args }
             }
             ast::Expr::Null(_) => ExprNode::Const(Value::NULL),
             ast::Expr::SizeOf(n) =>
@@ -915,6 +1109,7 @@ impl Lowerer<'_>
             ast::Expr::List(n) => self.list(n, kind),
             ast::Expr::Struct(n) => self.struct_lit(n, kind),
             ast::Expr::BlankList(_) => ExprNode::BlankList,
+            ast::Expr::Str(n) => self.str_node(n),
         };
         Expr::builder().kind(kind).node(node).span(e.span()).build()
     }
@@ -1040,6 +1235,8 @@ impl Lowerer<'_>
     {
         let ptr = self.kind_of(lhs).is_ptr() || self.kind_of(rhs).is_ptr();
         ret_if!(ptr, self.ptr_arith(op, lhs, rhs));
+        let pieces = |l: &mut Self| [lhs, rhs].map(|e| FmtPiece::Value(l.expr(e)));
+        ret_if!(kind == DataKind::Text, ExprNode::Format(pieces(self).to_vec()));
         let lhs = self.coerce(lhs, kind);
         let shift = matches!(op, InfixOp::Shl | InfixOp::Shr);
         let rhs = tern!(shift, self.expr(rhs), self.coerce(rhs, kind));
@@ -1227,6 +1424,58 @@ impl Lowerer<'_>
         ExprNode::MakeSlice { source, start, len, from, checked: true }
     }
 
+    /// The view of each u8 of a text: the lend of a text. A text starts
+    /// with the two words of a slice, so the view is a slice of all of it.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The text.
+    ///
+    /// # Returns
+    ///
+    /// The view.
+    fn lend_text(&mut self, value: &ast::Expr) -> ExprNode
+    {
+        let span = value.span();
+        let source = Box::new(self.expr(value));
+        let start = Box::new(self.usize_const(0, span));
+        let count = self.cell_count(value);
+        let len = Box::new(
+            Expr::builder().kind(DataKind::USIZE).node(count).span(span).build(),
+        );
+        ExprNode::MakeSlice {
+            source,
+            start,
+            len,
+            from: SliceFrom::Slice,
+            checked: true,
+        }
+    }
+
+    /// A string literal: static text, or text built from its template slots.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The literal.
+    ///
+    /// # Returns
+    ///
+    /// The node.
+    fn str_node(&mut self, n: &ast::StrExpr) -> ExprNode
+    {
+        ret_if!(let Some(text) = n.plain(), ExprNode::Text(text.to_string()));
+        let mut pieces = Vec::with_capacity(n.pieces.len());
+        for piece in &n.pieces
+        {
+            pieces.push(match piece
+            {
+                ast::StrPiece::Text(text) => FmtPiece::Text(text.clone()),
+                ast::StrPiece::TemplateSlot(e) => FmtPiece::Value(self.expr(e)),
+            });
+        }
+        ExprNode::Format(pieces)
+    }
+
     /// A `usize` constant.
     ///
     /// # Arguments
@@ -1373,6 +1622,21 @@ impl Lowerer<'_>
             _ => None,
         };
         ret_if!(let (Some(cmp), [l, r]) = (cmp, args), self.compare(cmp, l, r));
+        if n.op == VerbOp::Join
+        {
+            let pieces = args.iter().map(|a| FmtPiece::Value(self.expr(a))).collect();
+            return ExprNode::Format(pieces);
+        }
+        if let (VerbOp::CharAt | VerbOp::CharNth, [text, index]) = (n.op, args)
+        {
+            let (text, index) = (self.expr(text), self.expr(index));
+            let first = u8::from(n.op == VerbOp::CharNth);
+            return ExprNode::Chars {
+                text: Box::new(text),
+                index: Some(Box::new(index)),
+                first,
+            };
+        }
         let [value] = args
         else
         {
@@ -1383,8 +1647,17 @@ impl Lowerer<'_>
             VerbOp::AddrOf => self.addr_of(value),
             VerbOp::Deref => self.load(value),
             VerbOp::CellCount => self.cell_count(value),
+            VerbOp::CharCount => ExprNode::Chars {
+                text: Box::new(self.expr(value)),
+                index: None,
+                first: 0,
+            },
             VerbOp::BitNot => prefix_node(PrefixOp::BitNot, self.expr(value)),
             VerbOp::Lend if self.kind_of(value).is_list() => self.lend_list(value),
+            VerbOp::Lend if self.kind_of(value) == DataKind::Text =>
+            {
+                self.lend_text(value)
+            }
             VerbOp::Lend => ExprNode::Lend { operand: Box::new(self.expr(value)) },
             VerbOp::Cast => ExprNode::Convert {
                 operand: Box::new(self.expr(value)),
@@ -1408,7 +1681,10 @@ impl Lowerer<'_>
             | VerbOp::Print
             | VerbOp::Assign
             | VerbOp::Return
-            | VerbOp::Cell =>
+            | VerbOp::Cell
+            | VerbOp::CharAt
+            | VerbOp::CharNth
+            | VerbOp::Join =>
             {
                 panic!("verb {} is no one-operand value", n.op.as_ref())
             }
@@ -1554,6 +1830,7 @@ fn concrete(kind: DataKind) -> DataKind
 fn cells_of(kind: DataKind) -> (DataKind, Option<u32>)
 {
     ret_if!(let Some(s) = kind.as_slice(), (s.cell, None));
+    ret_if!(kind == DataKind::Text, (DataKind::U8, None));
     let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
     let list = list.expect("a cell operand is a list, a pointer to one, or a slice");
     (list.cell, Some(list.len))
@@ -1571,7 +1848,7 @@ fn cells_of(kind: DataKind) -> (DataKind, Option<u32>)
 /// block.
 fn slice_from(kind: DataKind) -> SliceFrom
 {
-    ret_if!(kind.is_slice(), SliceFrom::Slice);
+    ret_if!(kind.is_slice() || kind == DataKind::Text, SliceFrom::Slice);
     let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
     list.map_or(SliceFrom::Block, |l| SliceFrom::List(l.len))
 }
@@ -1645,4 +1922,35 @@ fn read_return(slot: u32, kind: DataKind, span: Span) -> Stmt
         .span(span)
         .build();
     Stmt::Return { value: Some(read), span }
+}
+
+/// A drop of the value at a place.
+///
+/// # Arguments
+///
+/// * `dest` - The place.
+/// * `kind` - Its kind, which holds text.
+/// * `span` - The source region.
+///
+/// # Returns
+///
+/// The statement.
+fn drop_stmt(dest: Dest, kind: DataKind, span: Span) -> Stmt
+{
+    Stmt::Drop { dest, kind, span }
+}
+
+/// Whether a statement leaves the scope it stands in, so nothing after it
+/// in that scope runs.
+///
+/// # Arguments
+///
+/// * `s` - The statement.
+///
+/// # Returns
+///
+/// `true` for a return, a break or a continue.
+fn leaves_scope(s: &Stmt) -> bool
+{
+    matches!(s, Stmt::Return { .. } | Stmt::Break { .. } | Stmt::Continue { .. })
 }

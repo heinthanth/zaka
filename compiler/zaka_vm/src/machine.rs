@@ -6,6 +6,7 @@ use strum::Display;
 use strum::EnumIter;
 use strum::EnumString;
 use zakac_borrow_checker::options::OverflowMode;
+use zakac_codegen::bc::FmtArg;
 use zakac_codegen::bc::Module;
 use zakac_codegen::bc::Op;
 use zakac_codegen::bc::SliceSource;
@@ -37,6 +38,7 @@ use crate::mem::Origin;
 use crate::print::list_text;
 use crate::print::slice_parts;
 use crate::print::text;
+use crate::print::text_at;
 use crate::trap::Trap;
 use crate::trap::TrapKind;
 use crate::trap::hex;
@@ -242,6 +244,8 @@ pub enum Held<'m>
     },
     /// Each global, packed.
     Globals,
+    /// A static text, with its index in the module.
+    Text(u32),
 }
 
 /// A variable of a packed block.
@@ -349,6 +353,9 @@ pub struct Machine
     /// The static block of each global slot.
     #[builder(default)]
     globals: Vec<u64>,
+    /// The frozen static block of each static text of the module.
+    #[builder(default)]
+    texts: Vec<u64>,
     /// The operand stack.
     #[builder(default)]
     stack: Vec<Value>,
@@ -402,6 +409,7 @@ fn held_text(held: Held) -> String
         Held::Global { name } => t!("vm.trap.global", name = name),
         Held::Frame { func } => t!("vm.trap.frame_of", func = func),
         Held::Globals => t!("vm.trap.globals"),
+        Held::Text(n) => t!("vm.trap.static_text", n = n),
     };
     text.into_owned()
 }
@@ -493,7 +501,7 @@ impl Machine
         #[rustfmt::skip]
         let mut machine = Machine::builder().module(module).options(options)
             .at((main, 0)).mem(mem).build();
-        let placed = machine.place_globals();
+        let placed = machine.place_globals().and_then(|()| machine.place_texts());
         machine.mem.open_stack(options.max_stack);
         let entered = placed.and_then(|()| machine.enter(main));
         do_if!(let Err(kind) = entered, machine.state = State::Trapped(machine.trap(kind)));
@@ -517,6 +525,23 @@ impl Machine
             .map(|s| u64::from(s.kind.size(platform)))
             .collect();
         (0..).zip(sizes).try_for_each(|(n, size)| self.place_global(n, size))
+    }
+
+    /// Give each static text a frozen static block, before the stack region
+    /// opens. Each literal of one text shares its block.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `StaticFull` when the address space has no room.
+    fn place_texts(&mut self) -> Step
+    {
+        for text in &self.module.texts
+        {
+            let size = text.len() as u64;
+            let made = self.mem.place_frozen(text.as_bytes());
+            self.texts.push(made.ok_or(TrapKind::StaticFull { size })?);
+        }
+        Ok(())
     }
 
     /// Give one global a static block.
@@ -770,6 +795,8 @@ impl Machine
     /// The variables, named; `None` when no variable ever started there.
     pub fn owner(&self, start: u64) -> Option<Held<'_>>
     {
+        let text = self.texts.iter().position(|a| *a == start);
+        ret_if!(let Some(n) = text, Some(Held::Text(n as u32)));
         let owner = self.owners.get(&start)?;
         let func = owner.func.and_then(|f| self.module.funcs.get(f as usize));
         let slots = func.map_or(&self.module.globals, |f| &f.locals);
@@ -959,6 +986,17 @@ impl Machine
             }
             Op::MakeSlice { stride, from } => self.make_slice(stride, from),
             Op::SliceCell { stride, first } => self.slice_cell(stride, first),
+            Op::Text(t) => self.static_text(t),
+            Op::Format(f) => self.format(f),
+            Op::Drop(kind) =>
+            {
+                let addr = self.pop_ptr("drop")?;
+                self.drop_value(addr, kind)
+            }
+            Op::CharCount => self.char_count(),
+            Op::CharAt { first } => self.char_at(first),
+            Op::TextEdges => self.text_edges(),
+            Op::CheckUtf8 => self.check_utf8(),
         }
     }
 
@@ -1534,6 +1572,239 @@ impl Machine
         let count = Value::int(usize, u128::from(len), self.module.platform_bits);
         self.mem.store(slot + word, count)?;
         self.push(Value::Ptr(slot))
+    }
+
+    /// Pop the address of a text slot, write a static text there with room
+    /// 0, and push the address.
+    ///
+    /// # Arguments
+    ///
+    /// * `t` - The index of the text.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap.
+    fn static_text(&mut self, t: u32) -> Step
+    {
+        let slot = self.pop_ptr("text")?;
+        let at =
+            self.texts.get(t as usize).copied().ok_or_else(|| malformed("no text"))?;
+        let len = self.module.texts[t as usize].len() as u64;
+        self.write_text(slot, at, len, 0)?;
+        self.push(Value::Ptr(slot))
+    }
+
+    /// Pop the values of the pieces of a format, then the address of a text
+    /// slot; write the text of each piece in a new heap block, keep it in
+    /// the slot, and push the address.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The index of the format.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap: `OutOfMem` when the heap has no room.
+    fn format(&mut self, f: u32) -> Step
+    {
+        let args = self.module.formats.get(f as usize).cloned();
+        let args = args.ok_or_else(|| malformed("no format"))?;
+        let count = args.iter().filter(|a| matches!(a, FmtArg::Value(_))).count();
+        let at = self.stack.len().checked_sub(count);
+        let values =
+            self.stack.split_off(at.ok_or_else(|| malformed("too few pieces"))?);
+        let slot = self.pop_ptr("format")?;
+        let mut values = values.into_iter();
+        let mut out = String::new();
+        for arg in args
+        {
+            let piece = match arg
+            {
+                FmtArg::Text(t) => self.module.texts.get(t as usize).cloned(),
+                FmtArg::Value(kind) =>
+                {
+                    values.next().map(|v| self.piece_text(v, kind)).transpose()?
+                }
+            };
+            out.push_str(&piece.ok_or_else(|| malformed("a piece is missing"))?);
+        }
+        let size = out.len() as u64;
+        let block = self.mem.alloc(size, Origin::Heap, 0);
+        let block = block.ok_or(TrapKind::OutOfMem { size })?;
+        self.mem.fill_block(block, out.as_bytes())?;
+        self.write_text(slot, block, size, size)?;
+        self.push(Value::Ptr(slot))
+    }
+
+    /// The text a print writes for a piece of a format.
+    ///
+    /// # Arguments
+    ///
+    /// * `v` - The value, or the address of a list, a struct or text.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// The text, or the trap a read hits.
+    fn piece_text(&self, v: Value, kind: DataKind) -> Result<String, TrapKind>
+    {
+        ret_if!(!kind.is_aggregate(), Ok(text(v)));
+        let addr = v.as_ptr().ok_or_else(|| malformed("a piece is no address"))?;
+        list_text(&self.mem, addr, kind)
+    }
+
+    /// Pop the address of text and push the number of its characters.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a read hits.
+    fn char_count(&mut self) -> Step
+    {
+        let addr = self.pop_ptr("char_count")?;
+        let count = text_at(&self.mem, addr)?.chars().count();
+        let (usize, platform) =
+            (IntKind::new(false, Width::Platform), self.module.platform_bits);
+        self.push(Value::int(usize, count as u128, platform))
+    }
+
+    /// Pop a character number, then the address of text, and push the
+    /// character at that number.
+    ///
+    /// # Arguments
+    ///
+    /// * `first` - The number of the first character: 0 or 1.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap for a number outside the text.
+    fn char_at(&mut self, first: u8) -> Step
+    {
+        let index = self.pop()?;
+        let addr = self.pop_ptr("char_at")?;
+        let text = text_at(&self.mem, addr)?;
+        self.push(index)?;
+        let at =
+            self.pop_cell(text.chars().count() as u64, first).map_err(|e| match e
+            {
+                TrapKind::IndexOutOfRange { index, first, len } =>
+                {
+                    TrapKind::CharOutOfRange { index, first, len }
+                }
+                other => other,
+            })?;
+        let found =
+            text.chars().nth(at as usize).ok_or_else(|| malformed("no character"))?;
+        self.push(Value::Char(found))
+    }
+
+    /// The view of text on the stack, which remains there: its first u8 and
+    /// its count.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The name of the op, for the trap text.
+    ///
+    /// # Returns
+    ///
+    /// The address of the first u8 and the count, or a trap.
+    fn top_view(&self, op: &str) -> Result<(u64, u64), TrapKind>
+    {
+        let addr = self.stack.last().and_then(|v| v.as_ptr());
+        let addr = addr.ok_or_else(|| malformed(&format!("{op} needs a view")))?;
+        slice_parts(&self.mem, addr)
+    }
+
+    /// Stop the program when the view of text on the stack starts or ends
+    /// inside a character: the u8 at an edge continues a character.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `TextCut`.
+    fn text_edges(&mut self) -> Step
+    {
+        let (base, count) = self.top_view("text_edges")?;
+        ret_if!(base == 0 && count == 0, Ok(()));
+        let cut = [base, base + count]
+            .into_iter()
+            .find(|at| self.mem.octet_at(*at).is_some_and(|b| b & 0xC0 == 0x80));
+        cut.map_or(Ok(()), |addr| Err(TrapKind::TextCut { addr }))
+    }
+
+    /// Stop the program when the u8s of the slice on the stack are not
+    /// UTF-8.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `BadUtf8` at the first u8 that is not.
+    fn check_utf8(&mut self) -> Step
+    {
+        let (base, count) = self.top_view("check_utf8")?;
+        let raw = self.mem.octets(base, count)?;
+        std::str::from_utf8(&raw)
+            .map(drop)
+            .map_err(|e| TrapKind::BadUtf8 { addr: base + e.valid_up_to() as u64 })
+    }
+
+    /// Write the three words of a text.
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - The address of the text.
+    /// * `at` - The address of its u8s.
+    /// * `len` - Their count.
+    /// * `room` - The size of its heap block; 0 for static text.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a write hits.
+    fn write_text(&mut self, slot: u64, at: u64, len: u64, room: u64) -> Step
+    {
+        let platform = self.module.platform_bits;
+        let word = u64::from(platform / 8);
+        let usize = IntKind::new(false, Width::Platform);
+        self.mem.store(slot, Value::Ptr(at))?;
+        self.mem.store(slot + word, Value::int(usize, u128::from(len), platform))?;
+        self.mem.store(slot + 2 * word, Value::int(usize, u128::from(room), platform))
+    }
+
+    /// Free each heap text in a value and leave each text blank: a text
+    /// with room 0 sits in static storage or was moved out, so its u8s
+    /// remain.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the value.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a read or the free hits.
+    fn drop_value(&mut self, addr: u64, kind: DataKind) -> Step
+    {
+        let platform = self.module.platform_bits;
+        if let Some(s) = kind.as_struct()
+        {
+            let fields =
+                s.fields().iter().enumerate().filter(|(_, (_, k))| k.holds_text());
+            let fields: Vec<_> =
+                fields.map(|(i, (_, k))| (s.offset(i, platform), *k)).collect();
+            return fields
+                .into_iter()
+                .try_for_each(|(o, k)| self.drop_value(addr + u64::from(o), k));
+        }
+        if let Some(l) = kind.as_list().filter(|l| l.cell.holds_text())
+        {
+            let stride = u64::from(l.cell.size(platform));
+            return (0..u64::from(l.len))
+                .try_for_each(|i| self.drop_value(addr + i * stride, l.cell));
+        }
+        ret_if!(kind != DataKind::Text, Ok(()));
+        let word = u64::from(platform / 8);
+        let room = self.mem.load(addr + 2 * word, DataKind::USIZE)?;
+        let held = matches!(room, Value::Int { raw, .. } if raw > 0);
+        let at = self.mem.load(addr, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
+        do_if!(held, self.mem.free(at)?);
+        self.mem.zero(addr, kind)
     }
 
     /// Pop a cell number, then the address of a slice, and push the address

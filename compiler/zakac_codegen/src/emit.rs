@@ -7,6 +7,7 @@ use zakac_ir_builder::ir::CmpOp;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
+use zakac_ir_builder::ir::FmtPiece;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::LogicOp;
 use zakac_ir_builder::ir::Place;
@@ -26,6 +27,7 @@ use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
 use zakac_span::span::Span;
 
+use crate::bc::FmtArg;
 use crate::bc::Func;
 use crate::bc::Module;
 use crate::bc::Op;
@@ -44,7 +46,7 @@ pub const MAIN_NAME: &str = "main";
 /// The names of the slots that hold scratch values: values a statement
 /// builds and uses before it ends. The slots of a counted loop live across
 /// its block and are not among them.
-const SCRATCH: &[&str] = &["%list", "%slice", "%ret", "%at"];
+const SCRATCH: &[&str] = &["%list", "%slice", "%ret", "%at", "%text"];
 
 /// Generate stack machine ops for a checked, folded module.
 ///
@@ -71,7 +73,7 @@ pub fn emit(module: &ir::Module, platform_bits: u16, options: EmitOptions) -> Mo
     let main = funcs.len() as u32 - 1;
     #[rustfmt::skip]
     return Module::builder().platform_bits(platform_bits).globals(shared.globals)
-        .texts(shared.texts).funcs(funcs).main(main).build();
+        .texts(shared.texts).formats(shared.formats).funcs(funcs).main(main).build();
 }
 
 /// Make the slot of an IR slot.
@@ -145,6 +147,9 @@ struct Shared
     /// The pool index of each string.
     #[builder(default)]
     text_index: HashMap<String, u32>,
+    /// The pieces of each text built when the program runs.
+    #[builder(default)]
+    formats: Vec<Vec<FmtArg>>,
 }
 
 impl Shared
@@ -165,6 +170,21 @@ impl Shared
         self.texts.push(text.to_string());
         self.text_index.insert(text.to_string(), i);
         i
+    }
+
+    /// The index of a format, added as a new one.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The pieces.
+    ///
+    /// # Returns
+    ///
+    /// The index.
+    fn format(&mut self, args: Vec<FmtArg>) -> u32
+    {
+        self.formats.push(args);
+        self.formats.len() as u32 - 1
     }
 }
 
@@ -376,6 +396,11 @@ impl<'s> FuncGen<'s>
                 self.make_slice(base, value);
                 self.op(Op::Pop);
             }
+            ExprNode::Text(_) | ExprNode::Format(_) =>
+            {
+                self.text_at(base, value);
+                self.op(Op::Pop);
+            }
             _ =>
             {
                 self.op(base);
@@ -413,6 +438,92 @@ impl<'s> FuncGen<'s>
             SliceFrom::Block => SliceSource::Block,
         };
         self.op(Op::MakeSlice { stride, from });
+        // A range of text keeps whole characters; the whole text keeps them
+        // too.
+        do_if!(e.kind.is_text_view() && !checked, self.op(Op::TextEdges));
+    }
+
+    /// Write text in a slot and push the address of the slot: static text,
+    /// or text built from its pieces. A piece that is a fresh text of its
+    /// own is dropped once its text is written.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - The op that pushes the address of the slot.
+    /// * `e` - The [`ExprNode::Text`] or [`ExprNode::Format`] expression.
+    fn text_at(&mut self, dest: Op, e: &Expr)
+    {
+        self.op(dest);
+        ret_if!(let ExprNode::Text(text) = &e.node, {
+            let t = self.shared.text(text);
+            self.op(Op::Text(t));
+        });
+        let ExprNode::Format(pieces) = &e.node
+        else
+        {
+            panic!("text_at takes text");
+        };
+        let mut args = Vec::with_capacity(pieces.len());
+        let mut fresh = Vec::new();
+        for piece in pieces
+        {
+            args.push(match piece
+            {
+                FmtPiece::Text(text) => FmtArg::Text(self.shared.text(text)),
+                FmtPiece::Value(v) =>
+                {
+                    fresh.extend(self.read_operand(v));
+                    FmtArg::Value(v.kind)
+                }
+            });
+        }
+        let f = self.shared.format(args);
+        self.op(Op::Format(f));
+        do_for!((slot, kind) in fresh, self.drop_local(slot, kind));
+    }
+
+    /// Push a value that is read and not kept: a value that holds text and
+    /// is made for the read alone, as a format, a call or a list literal
+    /// makes it, goes to a slot the caller drops after the read.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The value.
+    ///
+    /// # Returns
+    ///
+    /// The slot to drop and its kind, for a fresh value that holds text.
+    fn read_operand(&mut self, e: &Expr) -> Option<(u32, DataKind)>
+    {
+        let name = match &e.node
+        {
+            ExprNode::Format(_) => "%text",
+            ExprNode::Call { .. } => "%ret",
+            ExprNode::List(_) => "%list",
+            _ => "",
+        };
+        ret_if!(name.is_empty() || !e.kind.holds_text(), self.expr(e), None);
+        let slot = self.temp(name, e.kind);
+        let at = Op::LocalAddr(slot);
+        match &e.node
+        {
+            ExprNode::Call { func, args, .. } => self.call_into(Some(at), *func, args),
+            ExprNode::List(cells) => self.build_list(at, e.kind, Some(cells)),
+            _ => self.text_at(at, e),
+        }
+        Some((slot, e.kind))
+    }
+
+    /// Drop the value in a local slot.
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - The slot.
+    /// * `kind` - Its kind, which holds text.
+    fn drop_local(&mut self, slot: u32, kind: DataKind)
+    {
+        self.op(Op::LocalAddr(slot));
+        self.op(Op::Drop(kind));
     }
 
     /// Push the value of a slot, read from its block.
@@ -663,8 +774,9 @@ impl<'s> FuncGen<'s>
             Stmt::Set { place, value, .. } => self.store(*place, |g| g.expr(value)),
             Stmt::Print { value: PrintValue::Expr(e), .. } =>
             {
-                self.expr(e);
+                let fresh = self.read_operand(e);
                 self.op(tern!(e.kind.is_aggregate(), Op::PrintList(e.kind), Op::Print));
+                do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
             }
             Stmt::Print { value: PrintValue::Text(text), .. } =>
             {
@@ -689,9 +801,17 @@ impl<'s> FuncGen<'s>
             }
             Stmt::Call { func, args, .. } =>
             {
-                self.call(*func, args);
-                let has_result = self.shared.rets[*func as usize].is_some();
-                do_if!(has_result, self.op(Op::Pop));
+                let ret = self.shared.rets[*func as usize];
+                let held = ret.filter(|k| k.holds_text());
+                let slot = held.map(|kind| (self.temp("%ret", kind), kind));
+                let into = slot.map(|(n, _)| Op::LocalAddr(n));
+                tern!(
+                    slot.is_some(),
+                    self.call_into(into, *func, args),
+                    self.call(*func, args)
+                );
+                do_if!(ret.is_some(), self.op(Op::Pop));
+                do_if!(let Some((n, kind)) = slot, self.drop_local(n, kind));
             }
             Stmt::Store { addr, value, .. } =>
             {
@@ -709,6 +829,15 @@ impl<'s> FuncGen<'s>
                 self.update_dest(dest, |g| g.count(count, Op::Realloc(stride)));
             }
             Stmt::Free { dest, .. } => self.update_dest(dest, |g| g.free()),
+            Stmt::Drop { dest, kind, .. } =>
+            {
+                match dest
+                {
+                    Dest::Slot(place) => self.addr_of(*place),
+                    Dest::Mem(at) => self.expr(at),
+                }
+                self.op(Op::Drop(*kind));
+            }
         }
     }
 
@@ -1112,7 +1241,12 @@ impl<'s> FuncGen<'s>
             ExprNode::Convert { operand, .. } =>
             {
                 self.expr(operand);
-                do_if!(operand.kind != e.kind, self.op(Op::Convert(e.kind)));
+                // A view of text widens to a slice of u8s with the same two
+                // words.
+                let same = operand.kind == e.kind || e.kind.is_aggregate();
+                do_if!(!same, self.op(Op::Convert(e.kind)));
+                let checked = e.kind.is_text_view() && !operand.kind.is_text_view();
+                do_if!(checked, self.op(Op::CheckUtf8));
             }
             ExprNode::Call { func, args, .. } => self.call(*func, args),
             ExprNode::AddrOf(place) => self.addr_of(*place),
@@ -1169,6 +1303,22 @@ impl<'s> FuncGen<'s>
             {
                 let slot = self.temp("%slice", e.kind);
                 self.make_slice(Op::LocalAddr(slot), e)
+            }
+            ExprNode::Text(_) | ExprNode::Format(_) =>
+            {
+                let slot = self.temp("%text", e.kind);
+                self.text_at(Op::LocalAddr(slot), e)
+            }
+            ExprNode::Chars { text, index, first } =>
+            {
+                let fresh = self.read_operand(text);
+                do_if!(let Some(i) = index, self.expr(i));
+                self.op(tern!(
+                    index.is_some(),
+                    Op::CharAt { first: *first },
+                    Op::CharCount
+                ));
+                do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
             }
             ExprNode::FieldAddr { base, offset, .. } =>
             {

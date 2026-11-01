@@ -235,10 +235,9 @@ program:
         - print:
             value:
               str:
-                lit:
-                  parts:
-                  - text: မင်္ဂလာပါ
-                  value: မင်္ဂလာပါ
+                id: 17
+                pieces:
+                - text: မင်္ဂလာပါ
                 span:
                   lo: 924
                   hi: 953
@@ -262,13 +261,13 @@ program:
           hi: 1122
       args:
       - name:
-          id: 17
+          id: 18
           name: အသက်
           span:
             lo: 1133
             hi: 1145
       - name:
-          id: 18
+          id: 19
           name: အမည်
           span:
             lo: 1149

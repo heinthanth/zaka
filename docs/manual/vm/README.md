@@ -33,10 +33,10 @@ that names the instruction and the block, and does not damage the program.
 
 | Part | What it holds |
 | --- | --- |
-| module | the functions as lists of [instructions](instructions.md), the globals, a pool of print texts, and the platform bits |
+| module | the functions as lists of [instructions](instructions.md), the globals, the static texts, the formats of text built when the program runs, and the platform bits |
 | call | one function in progress: the index of its next instruction and the address of each of its locals |
 | operand stack | the values a sentence is working on; an instruction pops its inputs and pushes its result |
-| storage | the blocks where globals, locals and the heap live; see [blocks](blocks.md) |
+| storage | the blocks where globals, static texts, locals and the heap live; see [blocks](blocks.md) |
 | output | the text that print instructions wrote and the command has not taken so far |
 
 The last function of a module is `main`, which runs the sentences outside each function.

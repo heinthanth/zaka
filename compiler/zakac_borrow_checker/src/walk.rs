@@ -3,6 +3,8 @@ use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::PrintValue;
 use zakac_ir_builder::ir::Stmt;
+use zakac_ir_builder::ir::fmt_values;
+use zakac_ir_builder::ir::fmt_values_mut;
 use zakac_rust_sugars::do_for;
 
 /// The direct operands of an expression.
@@ -22,6 +24,7 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         | ExprNode::Read(_)
         | ExprNode::AddrOf(_)
         | ExprNode::SizeOf(_)
+        | ExprNode::Text(_)
         | ExprNode::BlankList => Vec::new(),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
@@ -39,6 +42,11 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
             vec![lhs.as_ref(), rhs.as_ref()]
         }
         ExprNode::Call { args, .. } | ExprNode::List(args) => args.iter().collect(),
+        ExprNode::Format(pieces) => fmt_values(pieces).collect(),
+        ExprNode::Chars { text, index, .. } =>
+        {
+            std::iter::once(text.as_ref()).chain(index.as_deref()).collect()
+        }
         ExprNode::MakeSlice { source, start, len, .. } =>
         {
             vec![source.as_ref(), start.as_ref(), len.as_ref()]
@@ -74,7 +82,10 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
         {
             dest_expr(dest).into_iter().chain([count]).collect()
         }
-        Stmt::Free { dest, .. } => dest_expr(dest).into_iter().collect(),
+        Stmt::Free { dest, .. } | Stmt::Drop { dest, .. } =>
+        {
+            dest_expr(dest).into_iter().collect()
+        }
         Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => Vec::new(),
     }
 }
@@ -163,6 +174,7 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         | ExprNode::Read(_)
         | ExprNode::AddrOf(_)
         | ExprNode::SizeOf(_)
+        | ExprNode::Text(_)
         | ExprNode::BlankList => Vec::new(),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
@@ -180,6 +192,11 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
             vec![lhs.as_mut(), rhs.as_mut()]
         }
         ExprNode::Call { args, .. } | ExprNode::List(args) => args.iter_mut().collect(),
+        ExprNode::Format(pieces) => fmt_values_mut(pieces).collect(),
+        ExprNode::Chars { text, index, .. } =>
+        {
+            std::iter::once(text.as_mut()).chain(index.as_deref_mut()).collect()
+        }
         ExprNode::MakeSlice { source, start, len, .. } =>
         {
             vec![source.as_mut(), start.as_mut(), len.as_mut()]
@@ -214,7 +231,10 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
         {
             dest_expr_mut(d).into_iter().chain([count]).collect()
         }
-        Stmt::Free { dest: d, .. } => dest_expr_mut(d).into_iter().collect(),
+        Stmt::Free { dest: d, .. } | Stmt::Drop { dest: d, .. } =>
+        {
+            dest_expr_mut(d).into_iter().collect()
+        }
         Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => Vec::new(),
     }
 }

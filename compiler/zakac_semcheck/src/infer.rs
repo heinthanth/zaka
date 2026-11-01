@@ -8,7 +8,9 @@ use zakac_ast::expr::LogicOp;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp;
+use zakac_ast::expr::StrExpr;
 use zakac_ast::expr::VerbExpr;
+use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
@@ -97,7 +99,24 @@ impl Checker
             Expr::List(n) => self.infer_list(n, expect),
             Expr::Struct(n) => self.infer_struct_lit(n),
             Expr::BlankList(n) => self.infer_blank(n, expect),
+            Expr::Str(n) => self.infer_str(n),
         }
+    }
+
+    /// Infer a string literal: owned text, whatever the kind of each template
+    /// slot.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The literal.
+    ///
+    /// # Returns
+    ///
+    /// `စာသား`, or `None` after an error in a template slot.
+    fn infer_str(&mut self, n: &StrExpr) -> Option<DataKind>
+    {
+        let slots: Vec<_> = n.template_slots().map(|h| self.infer(h, None)).collect();
+        tern!(slots.iter().all(Option::is_some), Some(DataKind::Text), None)
     }
 
     /// Infer an integer literal.
@@ -214,6 +233,25 @@ impl Checker
         true
     }
 
+    /// Whether an operand is a place whose text can be viewed: a variable,
+    /// a field, a cell or a dereference. A constant counts, since a view of
+    /// text never writes it.
+    ///
+    /// # Arguments
+    ///
+    /// * `operand` - The operand.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a place; `false` after reporting another operand.
+    pub(crate) fn viewable(&mut self, operand: &Expr) -> bool
+    {
+        let place = place_of(operand).filter(|p| !self.in_temp_list(p));
+        ret_if!(place.is_some(), true);
+        self.report(kd::no_address(operand.span(), &what_of(operand)));
+        false
+    }
+
     /// Infer a lend: a borrow of the block a pointer holds, or a slice of
     /// each cell of a list.
     ///
@@ -232,6 +270,8 @@ impl Checker
         ret_if!(kind.is_raw_ptr(), self.report(od::lend_of_raw(span)), None);
         ret_if!(kind.is_ptr(), Some(kind.as_borrowed()));
         ret_if!(let Some(l) = kind.as_list(), self.lend_list(operand, l.cell));
+        let text = kind == DataKind::Text;
+        ret_if!(text, tern!(self.viewable(operand), Some(DataKind::text_view()), None));
         let found = kind.name();
         let diag = var_name(operand).map_or_else(
             || kd::not_a_pointer(span, &found),
@@ -390,6 +430,16 @@ impl Checker
     {
         let op = verb_label(n.op);
         let class = verb_class(n.op);
+        match (n.op, n.args.as_slice())
+        {
+            (VerbOp::CharCount, [text]) => return self.infer_chars(text, None),
+            (VerbOp::Join, pieces) => return self.infer_join(pieces),
+            (VerbOp::CharAt | VerbOp::CharNth, [text, index]) =>
+            {
+                return self.infer_chars(text, Some(index));
+            }
+            _ => (),
+        }
         match (class, n.args.as_slice())
         {
             (OpClass::Cast, [value]) => self.infer_cast(n, value),
@@ -412,6 +462,55 @@ impl Checker
             ) => self.infer_pair(class, &op, l, r, expect, n.span),
             _ => self.infer_all(&n.args),
         }
+    }
+
+    /// Infer a verbal join: each piece must be text, owned or a view.
+    ///
+    /// # Arguments
+    ///
+    /// * `pieces` - The pieces.
+    ///
+    /// # Returns
+    ///
+    /// `စာသား`, or `None` after an error.
+    fn infer_join(&mut self, pieces: &[Expr]) -> Option<DataKind>
+    {
+        let label = kw_label(Kw::Joined);
+        let mut fine = true;
+        for piece in pieces
+        {
+            let kind = self.infer(piece, None);
+            fine &=
+                kind.is_some_and(|k| self.need(k, Want::Text, &label, piece).is_some());
+        }
+        tern!(fine, Some(DataKind::Text), None)
+    }
+
+    /// Infer the character count of text, or the character at a number.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The text, owned or a view.
+    /// * `index` - The number, counted from 0; `None` for the count.
+    ///
+    /// # Returns
+    ///
+    /// `usize` for the count, `စာလုံး` for a character, or `None` after an
+    /// error.
+    fn infer_chars(&mut self, text: &Expr, index: Option<&Expr>) -> Option<DataKind>
+    {
+        let kind = self.infer(text, None);
+        let at = index.map(|i| (i, self.infer(i, Some(DataKind::USIZE))));
+        let bad = at.and_then(|(i, k)| Some((i, k?))).filter(|(_, k)| !k.is_int());
+        do_if!(let Some((i, k)) = bad, self.report(kd::cell_number_not_int(i.span(), &k.name())));
+        let label = tern!(
+            index.is_some(),
+            kw_label(Kw::CharKind),
+            verb_label(VerbOp::CharCount)
+        );
+        self.need(kind?, Want::Text, &label, text)?;
+        ret_if!(bad.is_some() || at.is_some_and(|(_, k)| k.is_none()), None);
+        Some(tern!(index.is_some(), DataKind::Char, DataKind::USIZE))
     }
 
     /// Infer a conversion.

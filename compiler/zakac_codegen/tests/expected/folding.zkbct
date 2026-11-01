@@ -14,6 +14,7 @@ module:
     kind: isize
   texts:
   - ကြီးသည်
+  formats: []
   funcs:
   - name: main
     params: 0

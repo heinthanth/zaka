@@ -7,227 +7,215 @@ program:
   stmts:
   - print:
       value:
-        expr:
-          int:
-            id: 0
-            value: 10
-            base: 10
-            kind: null
-            script: burmese
-            span:
-              lo: 0
-              hi: 6
+        int:
+          id: 0
+          value: 10
+          base: 10
+          kind: null
+          script: burmese
+          span:
+            lo: 0
+            hi: 6
       slot: ko
       span:
         lo: 0
         hi: 35
   - print:
       value:
-        expr:
-          int:
-            id: 1
-            value: 16
-            base: 10
-            kind: null
-            script: western
-            span:
-              lo: 36
-              hi: 38
+        int:
+          id: 1
+          value: 16
+          base: 10
+          kind: null
+          script: western
+          span:
+            lo: 36
+            hi: 38
       slot: ko
       span:
         lo: 36
         hi: 67
   - print:
       value:
-        expr:
-          int:
-            id: 2
-            value: 10
-            base: 10
-            kind:
-              base: int
-              bits: null
-              signed: null
-              wraps: []
-              span:
-                lo: 68
-                hi: 98
-            script: burmese
+        int:
+          id: 2
+          value: 10
+          base: 10
+          kind:
+            base: int
+            bits: null
+            signed: null
+            wraps: []
             span:
               lo: 68
-              hi: 105
+              hi: 98
+          script: burmese
+          span:
+            lo: 68
+            hi: 105
       slot: ko
       span:
         lo: 68
         hi: 134
   - print:
       value:
-        expr:
-          int:
-            id: 3
-            value: 18
-            base: 10
-            kind:
-              base: int
-              bits: 8
-              signed: false
-              wraps: []
-              span:
-                lo: 135
-                hi: 207
-            script: burmese
+        int:
+          id: 3
+          value: 18
+          base: 10
+          kind:
+            base: int
+            bits: 8
+            signed: false
+            wraps: []
             span:
               lo: 135
-              hi: 214
+              hi: 207
+          script: burmese
+          span:
+            lo: 135
+            hi: 214
       slot: ko
       span:
         lo: 135
         hi: 243
   - print:
       value:
-        expr:
-          int:
-            id: 4
-            value: 2
-            base: 2
-            kind: null
-            script: burmese
-            span:
-              lo: 244
-              hi: 283
+        int:
+          id: 4
+          value: 2
+          base: 2
+          kind: null
+          script: burmese
+          span:
+            lo: 244
+            hi: 283
       slot: ko
       span:
         lo: 244
         hi: 312
   - print:
       value:
-        expr:
-          int:
-            id: 5
-            value: 254
-            base: 2
-            kind:
-              base: int
-              bits: 8
-              signed: null
-              wraps: []
-              span:
-                lo: 346
-                hi: 390
-            script: burmese
+        int:
+          id: 5
+          value: 254
+          base: 2
+          kind:
+            base: int
+            bits: 8
+            signed: null
+            wraps: []
             span:
-              lo: 313
-              hi: 415
+              lo: 346
+              hi: 390
+          script: burmese
+          span:
+            lo: 313
+            hi: 415
       slot: ko
       span:
         lo: 313
         hi: 444
   - print:
       value:
-        expr:
-          int:
-            id: 6
-            value: 255
-            base: 16
-            kind:
-              base: int
-              bits: 8
-              signed: false
-              wraps: []
-              span:
-                lo: 481
-                hi: 553
-            script: western
+        int:
+          id: 6
+          value: 255
+          base: 16
+          kind:
+            base: int
+            bits: 8
+            signed: false
+            wraps: []
             span:
-              lo: 445
-              hi: 556
+              lo: 481
+              hi: 553
+          script: western
+          span:
+            lo: 445
+            hi: 556
       slot: ko
       span:
         lo: 445
         hi: 585
   - print:
       value:
-        expr:
-          float:
-            id: 7
-            value: 12.34
-            text: "12.34"
-            kind: null
-            span:
-              lo: 586
-              hi: 599
+        float:
+          id: 7
+          value: 12.34
+          text: "12.34"
+          kind: null
+          span:
+            lo: 586
+            hi: 599
       slot: ko
       span:
         lo: 586
         hi: 628
   - print:
       value:
-        expr:
-          prefix:
-            id: 9
-            op: neg
-            rhs:
-              float:
-                id: 8
-                value: 11.11
-                text: "11.11"
-                kind: null
-                span:
-                  lo: 630
-                  hi: 643
-            span:
-              lo: 629
-              hi: 643
+        prefix:
+          id: 9
+          op: neg
+          rhs:
+            float:
+              id: 8
+              value: 11.11
+              text: "11.11"
+              kind: null
+              span:
+                lo: 630
+                hi: 643
+          span:
+            lo: 629
+            hi: 643
       slot: ko
       span:
         lo: 629
         hi: 672
   - print:
       value:
-        expr:
-          float:
-            id: 10
-            value: 1000000000000.0
-            text: "100e+10"
-            kind: null
-            span:
-              lo: 673
-              hi: 680
+        float:
+          id: 10
+          value: 1000000000000.0
+          text: "100e+10"
+          kind: null
+          span:
+            lo: 673
+            hi: 680
       slot: ko
       span:
         lo: 673
         hi: 709
   - print:
       value:
-        expr:
-          float:
-            id: 11
-            value: 10.0
-            text: "10"
-            kind:
-              base: float
-              bits: 32
-              signed: null
-              wraps: []
-              span:
-                lo: 710
-                hi: 751
+        float:
+          id: 11
+          value: 10.0
+          text: "10"
+          kind:
+            base: float
+            bits: 32
+            signed: null
+            wraps: []
             span:
               lo: 710
-              hi: 758
+              hi: 751
+          span:
+            lo: 710
+            hi: 758
       slot: ko
       span:
         lo: 710
         hi: 787
   - print:
       value:
-        expr:
-          char:
-            id: 12
-            value: 春
-            span:
-              lo: 788
-              hi: 793
+        char:
+          id: 12
+          value: 春
+          span:
+            lo: 788
+            hi: 793
       slot: ko
       span:
         lo: 788
@@ -235,10 +223,9 @@ program:
   - print:
       value:
         str:
-          lit:
-            parts:
-            - text: ၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ
-            value: ၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ
+          id: 13
+          pieces:
+          - text: ၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ
           span:
             lo: 823
             hi: 902
@@ -248,28 +235,26 @@ program:
         hi: 928
   - print:
       value:
-        expr:
-          bool:
-            id: 13
-            value: true
-            particle: pa_thi
-            next: other
-            span:
-              lo: 929
-              hi: 956
+        bool:
+          id: 14
+          value: true
+          particle: pa_thi
+          next: other
+          span:
+            lo: 929
+            hi: 956
       slot: hu
       span:
         lo: 929
         hi: 982
   - print:
       value:
-        expr:
-          name:
-            id: 14
-            name: ကို ပြသပါ
-            span:
-              lo: 983
-              hi: 1010
+        name:
+          id: 15
+          name: ကို ပြသပါ
+          span:
+            lo: 983
+            hi: 1010
       slot: ko
       span:
         lo: 983

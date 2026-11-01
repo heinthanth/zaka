@@ -294,7 +294,7 @@ en = "Line"
 [explorer.col.value]
 en = "Value"
 [explorer.col.value_note]
-en = "The text the program gets; escapes and {holes} show as chips"
+en = "The text the program gets; escapes and {template slots} show as chips"
 [explorer.col.source]
 en = "Source"
 [explorer.col.source_note]
@@ -381,6 +381,8 @@ en = "What each function frees, resizes or moves through"
 en = "Globals"
 [explorer.codegen.texts]
 en = "Texts"
+[explorer.codegen.formats]
+en = "Formats"
 [explorer.codegen.locals]
 en = "Locals"
 [explorer.codegen.skipped_title]
@@ -494,6 +496,8 @@ en = "Global %{name}"
 en = "Frame of %{func}"
 [explorer.heap.globals]
 en = "Globals"
+[explorer.heap.static_text]
+en = "Static text t%{n}"
 [explorer.heap.heap_note]
 en = "Heap room the program asked for"
 [explorer.heap.stack_note]

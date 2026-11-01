@@ -1,6 +1,6 @@
 ---
 title: Kinds and values
-description: The kinds of value in Zaka - integers, decimal numbers, characters, true/false values, addresses and lists - with ranges, sizes and default values.
+description: The kinds of value in Zaka - integers, decimal numbers, characters, true/false values, text, addresses and lists - with ranges, sizes and default values.
 ---
 
 # Kinds and values
@@ -117,6 +117,12 @@ back. Arithmetic does not take them.
 which holds 1 or 0. A condition must be of this kind (ZK0402): an integer is not true or
 false. It prints as `မှန်` or `မမှန်`.
 
+## Text
+
+`စာသား` (`text`) owns UTF-8 text: the address of its u8s, their count and the size of
+its heap block, three words in all. `စာသား တစ်စိတ်တစ်ပိုင်း` (`&text`) is a view of text,
+two words. String literals are of the first kind. [Text](text.md) states their rules.
+
 ## Addresses and lists
 
 Two more families of kind are built from the scalar kinds. Their rules have pages of
@@ -132,6 +138,8 @@ their own.
 | `ဗလာ` (the null address) | `null` | [Pointers](pointers.md) |
 | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` | `[3]isize` | [Lists](lists.md) |
 | `အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း` | `[2][3]isize` | [Lists](lists.md) |
+| `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း` | `&[]isize` | [Slices](slices.md) |
+| `စာသား တစ်စိတ်တစ်ပိုင်း` | `&text` | [Text](text.md) |
 
 A short name reads left to right as the kind is built: `*` for each level of owner
 address, `&` in front for a borrow, `~` for a raw level, `[n]` for each list level.
@@ -172,6 +180,7 @@ default: it must be given a value (ZK0308).
 | decimal numbers | `၀.၀` |
 | `စာလုံး` | the null character, `'\0'` |
 | `မှန်မှားတန်ဖိုး` | `မမှန်` |
+| `စာသား` | blank text, with no u8s |
 | an address | `ဗလာ` |
 | a list | each cell at the default of its kind |
 

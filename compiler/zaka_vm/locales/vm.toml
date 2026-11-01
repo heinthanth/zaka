@@ -45,6 +45,9 @@ en = "counted loop step is not positive"
 [vm.trap.index_out_of_range]
 en = "cell %{index} is outside the list, whose cells run from %{lo} to %{hi}"
 
+[vm.trap.char_out_of_range]
+en = "character %{index} is outside the text, whose characters run from %{lo} to %{hi}"
+
 [vm.trap.overflow]
 en = "the result of %{op} does not fit %{kind}"
 
@@ -68,6 +71,15 @@ en = "a pointer step to %{addr} leaves the block it started in"
 
 [vm.trap.use_after_free]
 en = "access at %{addr} inside a freed block"
+
+[vm.trap.frozen_write]
+en = "write at %{addr} inside static text, which cannot change"
+
+[vm.trap.text_cut]
+en = "a range of text at %{addr} starts or ends inside a character"
+
+[vm.trap.bad_utf8]
+en = "the u8s at %{addr} are not UTF-8 text"
 
 [vm.trap.double_free]
 en = "the block at %{addr} was freed before"
@@ -107,3 +119,6 @@ en = "frame of %{func}"
 
 [vm.trap.globals]
 en = "globals"
+
+[vm.trap.static_text]
+en = "static text t%{n}"

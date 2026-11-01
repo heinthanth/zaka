@@ -7,13 +7,12 @@ program:
   stmts:
   - print:
       value:
-        expr:
-          name:
-            id: 0
-            name: က
-            span:
-              lo: 0
-              hi: 3
+        name:
+          id: 0
+          name: က
+          span:
+            lo: 0
+            hi: 3
       slot: ko
       span:
         lo: 0
@@ -121,13 +120,12 @@ program:
           stmts:
           - print:
               value:
-                expr:
-                  name:
-                    id: 5
-                    name: ခ
-                    span:
-                      lo: 446
-                      hi: 449
+                name:
+                  id: 5
+                  name: ခ
+                  span:
+                    lo: 446
+                    hi: 449
               slot: ko
               span:
                 lo: 446
@@ -145,32 +143,31 @@ program:
         hi: 478
   - print:
       value:
-        expr:
-          infix:
-            id: 8
-            op: add
-            lhs:
-              bool:
-                id: 6
-                value: true
-                particle: none
-                next: other
-                span:
-                  lo: 479
-                  hi: 491
-            rhs:
-              int:
-                id: 7
-                value: 1
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 494
-                  hi: 497
-            span:
-              lo: 479
-              hi: 497
+        infix:
+          id: 8
+          op: add
+          lhs:
+            bool:
+              id: 6
+              value: true
+              particle: none
+              next: other
+              span:
+                lo: 479
+                hi: 491
+          rhs:
+            int:
+              id: 7
+              value: 1
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 494
+                hi: 497
+          span:
+            lo: 479
+            hi: 497
       slot: ko
       span:
         lo: 479
@@ -186,47 +183,45 @@ program:
         hi: 611
   - print:
       value:
-        expr:
-          verb:
-            id: 10
-            op: cast
-            args:
-            - bool:
-                id: 9
-                value: true
-                particle: none
-                next: other
-                span:
-                  lo: 612
-                  hi: 624
-            kind_arg:
-              base: float
-              bits: null
-              signed: null
-              wraps: []
+        verb:
+          id: 10
+          op: cast
+          args:
+          - bool:
+              id: 9
+              value: true
+              particle: none
+              next: other
               span:
-                lo: 635
-                hi: 659
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
+                lo: 612
+                hi: 624
+          kind_arg:
+            base: float
+            bits: null
+            signed: null
+            wraps: []
             span:
-              lo: 612
-              hi: 725
+              lo: 635
+              hi: 659
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 612
+            hi: 725
       slot: ko
       span:
         lo: 612
         hi: 754
   - print:
       value:
-        expr:
-          name:
-            id: 11
-            name: ခ
-            span:
-              lo: 755
-              hi: 758
+        name:
+          id: 11
+          name: ခ
+          span:
+            lo: 755
+            hi: 758
       slot: ko
       span:
         lo: 755

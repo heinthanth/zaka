@@ -12,6 +12,7 @@ mod notation;
 pub mod parser;
 mod recover;
 mod stmt;
+mod str_lit;
 mod struct_lit;
 
 zakac_i18n::init!();

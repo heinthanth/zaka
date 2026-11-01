@@ -65,9 +65,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0101 | a character Zaka does not use, such as `;` or `?` | |
 | ZK0102 | a malformed number, such as `၂.၅e3` or `၁၈ဘစ်` | [Writing integers](../../learn/values/literals.md) |
 | ZK0103 | Burmese and Western digits in one number | [Writing integers](../../learn/values/literals.md) |
-| ZK0104 | text with no closing `"` | [Text in quotes](../../learn/values/strings.md) |
+| ZK0104 | text with no closing `"` | [Text](../../learn/values/strings.md) |
 | ZK0105 | a character literal with no closing `'` on its line | [Characters](../../learn/values/characters.md) |
-| ZK0106 | unknown `{...}` or `\` escape | [Characters](../../learn/values/characters.md) |
+| ZK0106 | unknown `\` escape, a lone brace, or an unknown `{...}` in a character | [Characters](../../learn/values/characters.md) |
 | ZK0107 | a character literal with more than one character | [Characters](../../learn/values/characters.md) |
 | ZK0108 | a name in backticks with no closing backtick on its line | [Names](../../learn/variables/names.md) |
 | ZK0109 | a name in backticks with nothing between them | [Names](../../learn/variables/names.md) |
@@ -98,7 +98,6 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0220 | a number too big for its kind | [Integers](../../learn/values/integers.md) |
 | ZK0221 | a fraction or exponent in a literal that is given an integer kind | [Writing integers](../../learn/values/literals.md#the-order-of-the-parts) |
 | ZK0222 | a character or true/false kind written before a number | [Writing integers](../../learn/values/literals.md#the-order-of-the-parts) |
-| ZK0223 | text in quotes used somewhere other than printing | [Text in quotes](../../learn/values/strings.md) |
 | ZK0225 | a generic loop that starts with `ကိန်းသေ` | [Generic loops](../../learn/control-flow/generic-loops.md#the-variable-belongs-to-the-loop) |
 | ZK0226 | a block closer with no block to close | [Blocks and scope](../../learn/variables/scope.md) |
 | ZK0227 | a list count that is not a whole number above zero | [Lists](../../learn/lists/README.md#list-kinds) |
@@ -169,6 +168,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0426 | a field of a value that is no struct | [Struct mistakes](../../learn/structs/mistakes.md#a-field-of-a-value-that-is-no-struct) |
 | ZK0427 | a struct that holds itself | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-that-holds-itself) |
 | ZK0428 | a slice whose cells hold borrows | [Slices](../language/slices.md#ownership) |
+| ZK0429 | a write to a cell of text | [Text](../language/text.md#cells) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -196,6 +196,8 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | ZK0603 | a constant cell number outside its list | [List mistakes](../../learn/lists/mistakes.md#a-cell-number-outside-the-list) |
 | ZK0604 | a variable of an imported file whose starting value is not known at compile time | [Module mistakes](../../learn/modules/mistakes.md#a-starting-value-that-needs-a-call) |
 | ZK0605 | a constant range past the end of its list | [Slices](../language/slices.md#making-a-slice) |
+| ZK0606 | a text constant whose value needs the program to run | [Text](../language/text.md#folding) |
+| ZK0607 | a range of known text that cuts a character | [Text](../language/text.md#cells) |
 
 ### ZK07: ownership and borrowing
 

@@ -161,7 +161,11 @@ strings:
   - text: unterminated
   value: unterminated
 - parts:
-  - hole: မသိ
+  - template_slot:
+      text: မသိ
+      span:
+        lo: 184
+        hi: 193
   value: "{မသိ}"
 diagnostics:
 - code: ZK0102
@@ -192,13 +196,6 @@ diagnostics:
     lo: 147
     hi: 151
   help: null
-- code: ZK0106
-  level: error
-  message: unknown escape sequence "{မသိ}"
-  span:
-    lo: 182
-    hi: 193
-  help: write "{{" or "}}" for a literal brace
 - code: ZK0108
   level: error
   message: raw identifier is missing its closing backtick before the end of the line

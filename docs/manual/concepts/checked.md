@@ -83,7 +83,7 @@ block holds 4 boxes while the loop goes to box 4:
 
 ```text
 အစ
-the program stopped: access of 8 octets at 0x101040 lands outside each live block
+the program stopped: access of 8 octets at 0x101060 lands outside each live block
 ```
 
 A counted loop includes its last number, so the loop writes boxes 0 to 4: five boxes into

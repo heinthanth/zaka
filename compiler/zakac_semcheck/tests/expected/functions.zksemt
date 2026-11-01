@@ -17,45 +17,44 @@ program:
         hi: 111
   - print:
       value:
-        expr:
-          call:
-            id: 3
-            callee:
-              name: နှစ်ဆတိုးပြီးပေါင်း
-              span:
-                lo: 152
-                hi: 209
-            args:
-            - int:
-                id: 0
-                value: 1
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 220
-                  hi: 223
-            - int:
-                id: 1
-                value: 2
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 227
-                  hi: 230
-            - int:
-                id: 2
-                value: 3
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 234
-                  hi: 237
+        call:
+          id: 3
+          callee:
+            name: နှစ်ဆတိုးပြီးပေါင်း
             span:
-              lo: 112
-              hi: 315
+              lo: 152
+              hi: 209
+          args:
+          - int:
+              id: 0
+              value: 1
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 220
+                hi: 223
+          - int:
+              id: 1
+              value: 2
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 227
+                hi: 230
+          - int:
+              id: 2
+              value: 3
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 234
+                hi: 237
+          span:
+            lo: 112
+            hi: 315
       slot: ko
       span:
         lo: 112
@@ -402,10 +401,9 @@ program:
         - print:
             value:
               str:
-                lit:
-                  parts:
-                  - text: မင်္ဂလာပါ
-                  value: မင်္ဂလာပါ
+                id: 28
+                pieces:
+                - text: မင်္ဂလာပါ
                 span:
                   lo: 1790
                   hi: 1819
@@ -459,5 +457,6 @@ kinds:
   25: f32
   26: f32
   27: f32
+  28: text
 structs: {}
 diagnostics: []

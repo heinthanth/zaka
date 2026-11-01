@@ -66,6 +66,25 @@ pub enum TrapKind
         /// The address.
         addr: u64,
     },
+    /// A write inside a frozen block: static text, which each literal of
+    /// the same text shares.
+    FrozenWrite
+    {
+        /// The address.
+        addr: u64,
+    },
+    /// A range of text starts or ends inside a character.
+    TextCut
+    {
+        /// The address of the edge.
+        addr: u64,
+    },
+    /// U8s that become text are not UTF-8.
+    BadUtf8
+    {
+        /// The address of the first u8 that is not.
+        addr: u64,
+    },
     /// A free of a heap block that was freed before.
     DoubleFree
     {
@@ -125,6 +144,16 @@ pub enum TrapKind
         /// The number of cells.
         len: u64,
     },
+    /// A character number lies outside its text.
+    CharOutOfRange
+    {
+        /// The character number.
+        index: i128,
+        /// The number of the first character: 0 or 1.
+        first: u8,
+        /// The number of characters.
+        len: u64,
+    },
     /// With `--overflow stop`, an integer operation whose result does not fit
     /// its kind.
     Overflow
@@ -181,6 +210,12 @@ impl fmt::Display for TrapKind
             {
                 t!("vm.trap.use_after_free", addr = hex(*addr))
             }
+            TrapKind::FrozenWrite { addr } =>
+            {
+                t!("vm.trap.frozen_write", addr = hex(*addr))
+            }
+            TrapKind::TextCut { addr } => t!("vm.trap.text_cut", addr = hex(*addr)),
+            TrapKind::BadUtf8 { addr } => t!("vm.trap.bad_utf8", addr = hex(*addr)),
             TrapKind::DoubleFree { addr } =>
             {
                 t!("vm.trap.double_free", addr = hex(*addr))
@@ -202,6 +237,11 @@ impl fmt::Display for TrapKind
             {
                 let last = i128::from(*len) + i128::from(*first) - 1;
                 t!("vm.trap.index_out_of_range", index = index, lo = first, hi = last)
+            }
+            TrapKind::CharOutOfRange { index, first, len } =>
+            {
+                let last = i128::from(*len) + i128::from(*first) - 1;
+                t!("vm.trap.char_out_of_range", index = index, lo = first, hi = last)
             }
             TrapKind::Overflow { op, kind } =>
             {
@@ -235,6 +275,9 @@ impl TrapKind
             TrapKind::NullDeref { addr }
             | TrapKind::OutOfBounds { addr, .. }
             | TrapKind::UseAfterFree { addr }
+            | TrapKind::FrozenWrite { addr }
+            | TrapKind::TextCut { addr }
+            | TrapKind::BadUtf8 { addr }
             | TrapKind::DoubleFree { addr }
             | TrapKind::BadFree { addr }
             | TrapKind::Misaligned { addr, .. }
@@ -251,6 +294,7 @@ impl TrapKind
             | TrapKind::OutOfMem { .. }
             | TrapKind::MixedBlocks
             | TrapKind::IndexOutOfRange { .. }
+            | TrapKind::CharOutOfRange { .. }
             | TrapKind::SliceOutOfRange { .. }
             | TrapKind::Overflow { .. } => None,
         }

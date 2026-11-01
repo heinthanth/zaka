@@ -7,662 +7,650 @@ program:
   stmts:
   - print:
       value:
-        expr:
-          verb:
-            id: 4
-            op: add
-            args:
-            - name:
-                id: 0
-                name: က
-                span:
-                  lo: 0
-                  hi: 3
-            - verb:
-                id: 3
-                op: mul
-                args:
-                - name:
-                    id: 1
-                    name: ခ
-                    span:
-                      lo: 20
-                      hi: 23
-                - name:
-                    id: 2
-                    name: ဂ
-                    span:
-                      lo: 40
-                      hi: 43
-                kind_arg: null
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
-                span:
-                  lo: 20
-                  hi: 78
-            kind_arg: null
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
-            span:
-              lo: 0
-              hi: 110
+        verb:
+          id: 4
+          op: add
+          args:
+          - name:
+              id: 0
+              name: က
+              span:
+                lo: 0
+                hi: 3
+          - verb:
+              id: 3
+              op: mul
+              args:
+              - name:
+                  id: 1
+                  name: ခ
+                  span:
+                    lo: 20
+                    hi: 23
+              - name:
+                  id: 2
+                  name: ဂ
+                  span:
+                    lo: 40
+                    hi: 43
+              kind_arg: null
+              dir: null
+              particle: none
+              next: other
+              is_cmp: false
+              span:
+                lo: 20
+                hi: 78
+          kind_arg: null
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 0
+            hi: 110
       slot: ko
       span:
         lo: 0
         hi: 139
   - print:
       value:
-        expr:
-          verb:
-            id: 9
-            op: mul
-            args:
-            - verb:
-                id: 7
-                op: add
-                args:
-                - name:
-                    id: 5
-                    name: က
-                    span:
-                      lo: 140
-                      hi: 143
-                - name:
-                    id: 6
-                    name: ခ
-                    span:
-                      lo: 160
-                      hi: 163
-                kind_arg: null
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
-                span:
-                  lo: 140
-                  hi: 195
-            - name:
-                id: 8
-                name: ဂ
-                span:
-                  lo: 212
-                  hi: 215
-            kind_arg: null
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
-            span:
-              lo: 140
-              hi: 250
+        verb:
+          id: 9
+          op: mul
+          args:
+          - verb:
+              id: 7
+              op: add
+              args:
+              - name:
+                  id: 5
+                  name: က
+                  span:
+                    lo: 140
+                    hi: 143
+              - name:
+                  id: 6
+                  name: ခ
+                  span:
+                    lo: 160
+                    hi: 163
+              kind_arg: null
+              dir: null
+              particle: none
+              next: other
+              is_cmp: false
+              span:
+                lo: 140
+                hi: 195
+          - name:
+              id: 8
+              name: ဂ
+              span:
+                lo: 212
+                hi: 215
+          kind_arg: null
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 140
+            hi: 250
       slot: ko
       span:
         lo: 140
         hi: 279
   - print:
       value:
-        expr:
-          verb:
-            id: 16
-            op: gt
-            args:
-            - infix:
-                id: 12
-                op: add
-                lhs:
-                  name:
-                    id: 10
-                    name: က
-                    span:
-                      lo: 280
-                      hi: 283
-                rhs:
-                  int:
-                    id: 11
-                    value: 1
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 286
-                      hi: 289
-                span:
-                  lo: 280
-                  hi: 289
-            - verb:
-                id: 15
-                op: add
-                args:
-                - name:
-                    id: 13
-                    name: ခ
-                    span:
-                      lo: 300
-                      hi: 303
-                - name:
-                    id: 14
-                    name: ဂ
-                    span:
-                      lo: 320
-                      hi: 323
-                kind_arg: null
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
-                span:
-                  lo: 300
-                  hi: 355
-            kind_arg: null
-            dir: null
-            particle: thi
-            next: other
-            is_cmp: true
-            span:
-              lo: 280
-              hi: 387
+        verb:
+          id: 16
+          op: gt
+          args:
+          - infix:
+              id: 12
+              op: add
+              lhs:
+                name:
+                  id: 10
+                  name: က
+                  span:
+                    lo: 280
+                    hi: 283
+              rhs:
+                int:
+                  id: 11
+                  value: 1
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 286
+                    hi: 289
+              span:
+                lo: 280
+                hi: 289
+          - verb:
+              id: 15
+              op: add
+              args:
+              - name:
+                  id: 13
+                  name: ခ
+                  span:
+                    lo: 300
+                    hi: 303
+              - name:
+                  id: 14
+                  name: ဂ
+                  span:
+                    lo: 320
+                    hi: 323
+              kind_arg: null
+              dir: null
+              particle: none
+              next: other
+              is_cmp: false
+              span:
+                lo: 300
+                hi: 355
+          kind_arg: null
+          dir: null
+          particle: thi
+          next: other
+          is_cmp: true
+          span:
+            lo: 280
+            hi: 387
       slot: hu
       span:
         lo: 280
         hi: 413
   - print:
       value:
-        expr:
-          verb:
-            id: 23
-            op: add
-            args:
-            - verb:
-                id: 19
-                op: div
-                args:
-                - int:
-                    id: 17
-                    value: 16
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 414
-                      hi: 420
-                - int:
-                    id: 18
-                    value: 4
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 431
-                      hi: 434
-                kind_arg: null
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
-                span:
-                  lo: 414
-                  hi: 488
-            - verb:
-                id: 22
-                op: rem
-                args:
-                - int:
-                    id: 20
-                    value: 10
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 505
-                      hi: 511
-                - int:
-                    id: 21
-                    value: 3
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 522
-                      hi: 525
-                kind_arg: null
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
-                span:
-                  lo: 505
-                  hi: 588
-            kind_arg: null
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
-            span:
-              lo: 414
-              hi: 620
+        verb:
+          id: 23
+          op: add
+          args:
+          - verb:
+              id: 19
+              op: div
+              args:
+              - int:
+                  id: 17
+                  value: 16
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 414
+                    hi: 420
+              - int:
+                  id: 18
+                  value: 4
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 431
+                    hi: 434
+              kind_arg: null
+              dir: null
+              particle: none
+              next: other
+              is_cmp: false
+              span:
+                lo: 414
+                hi: 488
+          - verb:
+              id: 22
+              op: rem
+              args:
+              - int:
+                  id: 20
+                  value: 10
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 505
+                    hi: 511
+              - int:
+                  id: 21
+                  value: 3
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 522
+                    hi: 525
+              kind_arg: null
+              dir: null
+              particle: none
+              next: other
+              is_cmp: false
+              span:
+                lo: 505
+                hi: 588
+          kind_arg: null
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 414
+            hi: 620
       slot: ko
       span:
         lo: 414
         hi: 649
   - print:
       value:
-        expr:
-          verb:
-            id: 26
-            op: shift
-            args:
-            - int:
-                id: 24
-                value: 4
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 650
-                  hi: 653
-            - int:
-                id: 25
-                value: 2
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 683
-                  hi: 686
-            kind_arg: null
-            dir: right
-            particle: none
-            next: other
-            is_cmp: false
-            span:
-              lo: 650
-              hi: 730
+        verb:
+          id: 26
+          op: shift
+          args:
+          - int:
+              id: 24
+              value: 4
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 650
+                hi: 653
+          - int:
+              id: 25
+              value: 2
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 683
+                hi: 686
+          kind_arg: null
+          dir: right
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 650
+            hi: 730
       slot: ko
       span:
         lo: 650
         hi: 759
   - print:
       value:
-        expr:
-          verb:
-            id: 28
-            op: bit_not
-            args:
-            - int:
-                id: 27
-                value: 16
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 760
-                  hi: 766
-            kind_arg: null
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
-            span:
-              lo: 760
-              hi: 862
+        verb:
+          id: 28
+          op: bit_not
+          args:
+          - int:
+              id: 27
+              value: 16
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 760
+                hi: 766
+          kind_arg: null
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 760
+            hi: 862
       slot: ko
       span:
         lo: 760
         hi: 891
   - print:
       value:
-        expr:
-          infix:
-            id: 32
-            op: bit_and
-            lhs:
-              int:
-                id: 29
-                value: 255
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 892
-                  hi: 901
-            rhs:
-              prefix:
-                id: 31
-                op: bit_not
-                rhs:
-                  int:
-                    id: 30
-                    value: 4
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 905
-                      hi: 908
-                span:
-                  lo: 904
-                  hi: 908
-            span:
-              lo: 892
-              hi: 908
+        infix:
+          id: 32
+          op: bit_and
+          lhs:
+            int:
+              id: 29
+              value: 255
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 892
+                hi: 901
+          rhs:
+            prefix:
+              id: 31
+              op: bit_not
+              rhs:
+                int:
+                  id: 30
+                  value: 4
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 905
+                    hi: 908
+              span:
+                lo: 904
+                hi: 908
+          span:
+            lo: 892
+            hi: 908
       slot: ko
       span:
         lo: 892
         hi: 937
   - print:
       value:
-        expr:
-          group:
-            id: 40
-            inner:
-              logic:
-                id: 39
-                op: and
-                lhs:
-                  verb:
-                    id: 35
-                    op: gt
-                    args:
-                    - int:
-                        id: 33
-                        value: 1
-                        base: 10
-                        kind: null
-                        script: burmese
-                        span:
-                          lo: 939
-                          hi: 942
-                    - int:
-                        id: 34
-                        value: 0
-                        base: 10
-                        kind: null
-                        script: burmese
-                        span:
-                          lo: 953
-                          hi: 956
-                    kind_arg: null
-                    dir: null
-                    particle: thi
-                    next: and
-                    is_cmp: true
-                    span:
-                      lo: 939
-                      hi: 988
-                rhs:
-                  verb:
-                    id: 38
-                    op: lt
-                    args:
-                    - int:
-                        id: 36
-                        value: 1
-                        base: 10
-                        kind: null
-                        script: burmese
-                        span:
-                          lo: 1005
-                          hi: 1008
-                    - int:
-                        id: 37
-                        value: 2
-                        base: 10
-                        kind: null
-                        script: burmese
-                        span:
-                          lo: 1019
-                          hi: 1022
-                    kind_arg: null
-                    dir: null
-                    particle: thi
-                    next: close
-                    is_cmp: true
-                    span:
-                      lo: 1005
-                      hi: 1057
-                span:
-                  lo: 939
-                  hi: 1057
-            span:
-              lo: 938
-              hi: 1058
+        group:
+          id: 40
+          inner:
+            logic:
+              id: 39
+              op: and
+              lhs:
+                verb:
+                  id: 35
+                  op: gt
+                  args:
+                  - int:
+                      id: 33
+                      value: 1
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 939
+                        hi: 942
+                  - int:
+                      id: 34
+                      value: 0
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 953
+                        hi: 956
+                  kind_arg: null
+                  dir: null
+                  particle: thi
+                  next: and
+                  is_cmp: true
+                  span:
+                    lo: 939
+                    hi: 988
+              rhs:
+                verb:
+                  id: 38
+                  op: lt
+                  args:
+                  - int:
+                      id: 36
+                      value: 1
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 1005
+                        hi: 1008
+                  - int:
+                      id: 37
+                      value: 2
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 1019
+                        hi: 1022
+                  kind_arg: null
+                  dir: null
+                  particle: thi
+                  next: close
+                  is_cmp: true
+                  span:
+                    lo: 1005
+                    hi: 1057
+              span:
+                lo: 939
+                hi: 1057
+          span:
+            lo: 938
+            hi: 1058
       slot: hu
       span:
         lo: 938
         hi: 1084
   - print:
       value:
-        expr:
-          group:
-            id: 48
-            inner:
-              logic:
-                id: 47
-                op: or
-                lhs:
-                  verb:
-                    id: 43
-                    op: ge
-                    args:
-                    - name:
-                        id: 41
-                        name: အသက်
-                        span:
-                          lo: 1086
-                          hi: 1098
-                    - int:
-                        id: 42
-                        value: 18
-                        base: 10
-                        kind: null
-                        script: burmese
-                        span:
-                          lo: 1109
-                          hi: 1115
-                    kind_arg: null
-                    dir: null
-                    particle: pa
-                    next: or
-                    is_cmp: true
-                    span:
-                      lo: 1086
-                      hi: 1150
-                rhs:
-                  verb:
-                    id: 46
-                    op: le
-                    args:
-                    - name:
-                        id: 44
-                        name: အသက်
-                        span:
-                          lo: 1179
-                          hi: 1191
-                    - int:
-                        id: 45
-                        value: 60
-                        base: 10
-                        kind: null
-                        script: burmese
-                        span:
-                          lo: 1202
-                          hi: 1208
-                    kind_arg: null
-                    dir: null
-                    particle: thi
-                    next: close
-                    is_cmp: true
-                    span:
-                      lo: 1179
-                      hi: 1243
-                span:
-                  lo: 1086
-                  hi: 1243
-            span:
-              lo: 1085
-              hi: 1244
+        group:
+          id: 48
+          inner:
+            logic:
+              id: 47
+              op: or
+              lhs:
+                verb:
+                  id: 43
+                  op: ge
+                  args:
+                  - name:
+                      id: 41
+                      name: အသက်
+                      span:
+                        lo: 1086
+                        hi: 1098
+                  - int:
+                      id: 42
+                      value: 18
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 1109
+                        hi: 1115
+                  kind_arg: null
+                  dir: null
+                  particle: pa
+                  next: or
+                  is_cmp: true
+                  span:
+                    lo: 1086
+                    hi: 1150
+              rhs:
+                verb:
+                  id: 46
+                  op: le
+                  args:
+                  - name:
+                      id: 44
+                      name: အသက်
+                      span:
+                        lo: 1179
+                        hi: 1191
+                  - int:
+                      id: 45
+                      value: 60
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 1202
+                        hi: 1208
+                  kind_arg: null
+                  dir: null
+                  particle: thi
+                  next: close
+                  is_cmp: true
+                  span:
+                    lo: 1179
+                    hi: 1243
+              span:
+                lo: 1086
+                hi: 1243
+          span:
+            lo: 1085
+            hi: 1244
       slot: hu
       span:
         lo: 1085
         hi: 1270
   - print:
       value:
-        expr:
-          prefix:
-            id: 57
-            op: not
-            rhs:
-              group:
-                id: 56
-                inner:
-                  logic:
-                    id: 55
-                    op: and
-                    lhs:
-                      infix:
-                        id: 51
-                        op: gt
-                        lhs:
-                          int:
-                            id: 49
-                            value: 1
-                            base: 10
-                            kind: null
-                            script: burmese
-                            span:
-                              lo: 1273
-                              hi: 1276
-                        rhs:
-                          int:
-                            id: 50
-                            value: 10
-                            base: 10
-                            kind: null
-                            script: burmese
-                            span:
-                              lo: 1279
-                              hi: 1285
-                        span:
-                          lo: 1273
-                          hi: 1285
-                    rhs:
-                      infix:
-                        id: 54
-                        op: lt
-                        lhs:
-                          int:
-                            id: 52
-                            value: 1
-                            base: 10
-                            kind: null
-                            script: burmese
-                            span:
-                              lo: 1289
-                              hi: 1292
-                        rhs:
-                          int:
-                            id: 53
-                            value: 2
-                            base: 10
-                            kind: null
-                            script: burmese
-                            span:
-                              lo: 1295
-                              hi: 1298
-                        span:
-                          lo: 1289
-                          hi: 1298
-                    span:
-                      lo: 1273
-                      hi: 1298
-                span:
-                  lo: 1272
-                  hi: 1299
-            span:
-              lo: 1271
-              hi: 1299
+        prefix:
+          id: 57
+          op: not
+          rhs:
+            group:
+              id: 56
+              inner:
+                logic:
+                  id: 55
+                  op: and
+                  lhs:
+                    infix:
+                      id: 51
+                      op: gt
+                      lhs:
+                        int:
+                          id: 49
+                          value: 1
+                          base: 10
+                          kind: null
+                          script: burmese
+                          span:
+                            lo: 1273
+                            hi: 1276
+                      rhs:
+                        int:
+                          id: 50
+                          value: 10
+                          base: 10
+                          kind: null
+                          script: burmese
+                          span:
+                            lo: 1279
+                            hi: 1285
+                      span:
+                        lo: 1273
+                        hi: 1285
+                  rhs:
+                    infix:
+                      id: 54
+                      op: lt
+                      lhs:
+                        int:
+                          id: 52
+                          value: 1
+                          base: 10
+                          kind: null
+                          script: burmese
+                          span:
+                            lo: 1289
+                            hi: 1292
+                      rhs:
+                        int:
+                          id: 53
+                          value: 2
+                          base: 10
+                          kind: null
+                          script: burmese
+                          span:
+                            lo: 1295
+                            hi: 1298
+                      span:
+                        lo: 1289
+                        hi: 1298
+                  span:
+                    lo: 1273
+                    hi: 1298
+              span:
+                lo: 1272
+                hi: 1299
+          span:
+            lo: 1271
+            hi: 1299
       slot: ko
       span:
         lo: 1271
         hi: 1328
   - print:
       value:
-        expr:
-          prefix:
-            id: 62
-            op: neg
-            rhs:
-              group:
-                id: 61
-                inner:
-                  verb:
-                    id: 60
-                    op: add
-                    args:
-                    - name:
-                        id: 58
-                        name: က
-                        span:
-                          lo: 1346
-                          hi: 1349
-                    - name:
-                        id: 59
-                        name: ခ
-                        span:
-                          lo: 1366
-                          hi: 1369
-                    kind_arg: null
-                    dir: null
-                    particle: none
-                    next: close
-                    is_cmp: false
-                    span:
-                      lo: 1346
-                      hi: 1401
-                span:
-                  lo: 1345
-                  hi: 1402
-            span:
-              lo: 1329
-              hi: 1402
+        prefix:
+          id: 62
+          op: neg
+          rhs:
+            group:
+              id: 61
+              inner:
+                verb:
+                  id: 60
+                  op: add
+                  args:
+                  - name:
+                      id: 58
+                      name: က
+                      span:
+                        lo: 1346
+                        hi: 1349
+                  - name:
+                      id: 59
+                      name: ခ
+                      span:
+                        lo: 1366
+                        hi: 1369
+                  kind_arg: null
+                  dir: null
+                  particle: none
+                  next: close
+                  is_cmp: false
+                  span:
+                    lo: 1346
+                    hi: 1401
+              span:
+                lo: 1345
+                hi: 1402
+          span:
+            lo: 1329
+            hi: 1402
       slot: ko
       span:
         lo: 1329
         hi: 1431
   - print:
       value:
-        expr:
-          verb:
-            id: 64
-            op: cast
-            args:
-            - float:
-                id: 63
-                value: 11.11
-                text: "11.11"
-                kind: null
-                span:
-                  lo: 1432
-                  hi: 1445
-            kind_arg:
-              base: int
-              bits: null
-              signed: null
-              wraps: []
+        verb:
+          id: 64
+          op: cast
+          args:
+          - float:
+              id: 63
+              value: 11.11
+              text: "11.11"
+              kind: null
               span:
-                lo: 1456
-                hi: 1486
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
+                lo: 1432
+                hi: 1445
+          kind_arg:
+            base: int
+            bits: null
+            signed: null
+            wraps: []
             span:
-              lo: 1432
-              hi: 1552
+              lo: 1456
+              hi: 1486
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 1432
+            hi: 1552
       slot: ko
       span:
         lo: 1432
@@ -708,83 +696,81 @@ program:
         hi: 1695
   - print:
       value:
-        expr:
-          verb:
-            id: 70
-            op: cast
-            args:
-            - int:
-                id: 69
-                value: 255
-                base: 16
-                kind:
-                  base: int
-                  bits: 8
-                  signed: false
-                  wraps: []
-                  span:
-                    lo: 1732
-                    hi: 1804
-                script: western
+        verb:
+          id: 70
+          op: cast
+          args:
+          - int:
+              id: 69
+              value: 255
+              base: 16
+              kind:
+                base: int
+                bits: 8
+                signed: false
+                wraps: []
                 span:
-                  lo: 1696
-                  hi: 1807
-            kind_arg:
-              base: float
-              bits: null
-              signed: null
-              wraps: []
+                  lo: 1732
+                  hi: 1804
+              script: western
               span:
-                lo: 1818
-                hi: 1842
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
+                lo: 1696
+                hi: 1807
+          kind_arg:
+            base: float
+            bits: null
+            signed: null
+            wraps: []
             span:
-              lo: 1696
-              hi: 1908
+              lo: 1818
+              hi: 1842
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 1696
+            hi: 1908
       slot: ko
       span:
         lo: 1696
         hi: 1937
   - print:
       value:
-        expr:
-          call:
-            id: 74
-            callee:
-              name: နှစ်ဆ
-              span:
-                lo: 1978
-                hi: 1993
-            args:
-            - infix:
-                id: 73
-                op: add
-                lhs:
-                  name:
-                    id: 71
-                    name: အသက်
-                    span:
-                      lo: 2004
-                      hi: 2016
-                rhs:
-                  int:
-                    id: 72
-                    value: 1
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 2019
-                      hi: 2022
-                span:
-                  lo: 2004
-                  hi: 2022
+        call:
+          id: 74
+          callee:
+            name: နှစ်ဆ
             span:
-              lo: 1938
-              hi: 2100
+              lo: 1978
+              hi: 1993
+          args:
+          - infix:
+              id: 73
+              op: add
+              lhs:
+                name:
+                  id: 71
+                  name: အသက်
+                  span:
+                    lo: 2004
+                    hi: 2016
+              rhs:
+                int:
+                  id: 72
+                  value: 1
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 2019
+                    hi: 2022
+              span:
+                lo: 2004
+                hi: 2022
+          span:
+            lo: 1938
+            hi: 2100
       slot: ko
       span:
         lo: 1938

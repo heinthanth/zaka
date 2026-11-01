@@ -112,7 +112,7 @@ impl Visitor for Sizes<'_>
         {
             return walk_struct_lit(self, n);
         };
-        let want = self.words.get(name).copied().filter(|w| *w != found.name);
+        let want = self.words.get(name).copied().filter(|w| found.name != *w);
         self.diags.extend(want.map(|want| {
             diag::literal_classifier_mismatch(found.span, name, want, &found.name)
         }));

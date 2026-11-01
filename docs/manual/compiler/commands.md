@@ -132,7 +132,9 @@ These belong to `irgen` and the stages after it, and to `run`:
 `--fold` changes the IR, not what the program does. `exprs` replaces an operation on
 constants with its value, `consts` replaces a read of a `ကိန်းသေ` that was set to a
 constant, and `branches` keeps the branch of an `if` that is taken and drops a loop whose
-condition is false. Errors in constant operations, such as a division with the constant
+condition is false. Under `exprs`, a string literal whose template slots each hold a constant
+becomes static text, and so does a `+` of constant text; with `--fold none` the program
+builds that text when it runs, with the same output. Errors in constant operations, such as a division with the constant
 zero as divisor (ZK0602), are reported with `--fold none` too.
 
 ```console
@@ -261,7 +263,8 @@ A program that passes a limit stops with a message from the VM, listed in [When 
 program stops](../vm/traps.md). `--frames` is explained in [Checked and packed
 blocks](../vm/blocks.md).
 
-`--leaks` writes one line to standard error for each block that was never given back:
+`--leaks` writes one line to standard error for each block that was never given back.
+Text is freed on its own, so its blocks never show here:
 
 ```console
 $ zakac run --mem-check warn --leaks leak.zaka

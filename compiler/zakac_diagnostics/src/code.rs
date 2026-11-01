@@ -116,7 +116,6 @@ FloatForIntKind = ("ZK0221", Level::Error),
 /// A character or boolean kind prefixes a number.
 BadLiteralKind = ("ZK0222", Level::Error),
 /// A string literal is used as a value.
-StrOutsidePrint = ("ZK0223", Level::Error),
 /// A generic loop is declared with the constant word.
 ConstLoop = ("ZK0225", Level::Error),
 /// A block closer has no open block.
@@ -242,6 +241,8 @@ NotAStruct = ("ZK0426", Level::Error),
 StructHoldsItself = ("ZK0427", Level::Error),
 /// The cells of a slice kind hold borrows.
 SliceOfBorrows = ("ZK0428", Level::Error),
+/// A cell of text is written.
+TextCellWrite = ("ZK0429", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.
@@ -272,6 +273,10 @@ CellOutOfRange = ("ZK0603", Level::Error),
 GlobalInitNotConstant = ("ZK0604", Level::Error),
 /// A constant range passes the end of a list of known count.
 RangeOutOfList = ("ZK0605", Level::Error),
+/// A text constant holds a value that needs the program to run.
+TextConstNotKnown = ("ZK0606", Level::Error),
+/// A range of known text starts or ends inside a character.
+RangeCutsChar = ("ZK0607", Level::Error),
 // ownership: ZK07xx
 /// A name is used after its block moved to another owner.
 MovedOut = ("ZK0701", Level::Error),

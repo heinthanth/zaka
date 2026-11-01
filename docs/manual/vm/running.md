@@ -65,8 +65,8 @@ the kind of the value:
 | character | itself |
 | boolean | `မှန်` or `မမှန်` |
 | address | `0x` and lowercase hex digits; the null address as `ဗလာ` |
-| text in quotes | itself |
-| list | its cells between `[` and `]`, joined with `၊ ` |
+| text | itself |
+| list | its cells between `[` and `]`, joined with `၊ `; text in a cell prints in quotes |
 
 ```zaka
 ၄၂ ကို ပြသပါ။

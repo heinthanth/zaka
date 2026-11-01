@@ -618,7 +618,11 @@ fn the_map_holds_each_block_in_address_order()
         .iter()
         .filter_map(|p| tern!(let MapPart::Block(i) = p, Some(*i), None))
         .collect();
-    assert_eq!(blocks.len(), 307, "six globals, the list and its 300 blocks");
+    assert_eq!(
+        blocks.len(),
+        308,
+        "six globals, the static text, the list and its 300 blocks"
+    );
     assert_eq!(
         parts.len() - blocks.len(),
         blocks.len(),

@@ -10,6 +10,7 @@ use zakac_lexer::text::scan_str;
 use zakac_lexer::token::StrPart;
 use zakac_lexer::token::TokenKind;
 use zakac_span::pos::Pos;
+use zakac_span::span::Span;
 
 /// Decoded value and diagnostic codes of the string literal at the start of
 /// `text`.
@@ -49,11 +50,58 @@ fn brace_escapes()
 }
 
 #[test]
-fn unknown_escapes_keep_a_hole()
+fn template_slots_keep_their_text_and_region()
 {
-    let scan = scan_str(r#""အသက် {အသက်} နှစ်""#, 0, Pos::ZERO);
-    assert!(scan.value.parts.contains(&StrPart::Hole("အသက်".into())));
+    let text = r#""အသက် {အသက်} နှစ်""#;
+    let scan = scan_str(text, 0, Pos::ZERO);
+    let lo = text.find('{').unwrap() + 1;
+    let hi = text.find('}').unwrap();
+    let span = Span::new(Pos::ZERO + lo, Pos::ZERO + hi);
+    let slot = StrPart::TemplateSlot { text: "အသက်".into(), span };
+    assert!(scan.value.parts.contains(&slot));
     assert_eq!(scan.value.value, "အသက် {အသက်} နှစ်");
+    assert!(scan.diags.is_empty());
+}
+
+#[test]
+fn a_template_slot_ends_at_its_matching_brace()
+{
+    let text = r#""a {"b {x}" + '}}'} c""#;
+    let scan = scan_str(text, 0, Pos::ZERO);
+    assert!(scan.diags.is_empty(), "{:?}", scan.diags);
+    assert_eq!(scan.end, text.len());
+    let slots: Vec<&str> = scan
+        .value
+        .parts
+        .iter()
+        .filter_map(|p| match p
+        {
+            StrPart::TemplateSlot { text, .. } => Some(text.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(slots, [r#""b {x}" + '}}'"#]);
+    assert_eq!(decode(r#""a {"b {x" c""#).1[0], Code::UnknownEscape);
+}
+
+#[test]
+fn braces_in_a_character_literal_are_escaped()
+{
+    let value = |text: &str| scan_char(text, 0, Pos::ZERO).value;
+    assert_eq!(value("'{{'"), '{');
+    assert_eq!(value("'}}'"), '}');
+    assert_eq!(value("'{နောက်တစ်ကြောင်း}'"), '\n');
+    let codes = |text: &str| {
+        scan_char(text, 0, Pos::ZERO).diags.iter().map(|d| d.code).collect::<Vec<_>>()
+    };
+    assert_eq!(codes("'{က}'"), [Code::UnknownEscape]);
+    assert_eq!(codes("'}'"), [Code::UnknownEscape]);
+}
+
+#[test]
+fn unknown_escapes_are_reported()
+{
+    let scan = scan_char("'{က}'", 0, Pos::ZERO);
     assert_eq!(scan.diags.len(), 1);
     assert!(scan.diags[0].help.is_some());
 

@@ -234,9 +234,9 @@ error[ZK0219]: "၂" is not a digit in base 2
 
 A *character literal* holds one Unicode scalar value in single quotes: `'က'`, `'A'`,
 `'🔥'`. A Burmese vanna with signs, such as `ကို`, is several scalar values, so
-`'ကို'` is ZK0107. A *string literal* is text in double quotes. It has no kind of its
-own: it can be printed and nothing else (ZK0223). A literal must close on the line where
-it opens (ZK0104 for a string, ZK0105 for a character).
+`'ကို'` is ZK0107. A *string literal* is text in double quotes, of the kind `စာသား`
+([Text](text.md)). A literal must close on the line where it opens (ZK0104 for a string,
+ZK0105 for a character).
 
 Escapes work in both. The backslash forms are for readers who know C, and the brace
 forms are the Burmese spelling. A brace is reserved inside a literal, so a plain `{` or
@@ -252,8 +252,11 @@ forms are the Burmese spelling. A brace is reserved inside a literal, so a plain
 | `{ယူနီကုဒ် HHHH}` or `{ယူနီကုဒ် HHHHHHHH}` | the same, in Burmese |
 
 A code point must be a scalar value: a surrogate, a value above `10FFFF` and a digit
-count other than 4 or 8 are errors. Another `{...}` is ZK0106; braces are kept free so
-that a later version can give them a use.
+count other than 4 or 8 are errors. In a string, another `{...}` is a *template slot* that holds
+an expression ([Template literals](text.md#template-literals)); it ends at the `}` that matches its `{` on the
+same line. A character literal has no template slots, but its braces follow the same rule: `'{{'`
+and `'}}'` are the brace characters, and another `{...}` is ZK0106, as are a lone `}` and
+a `{` with no `}` after it on the line.
 
 ```zaka
 "တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသပါ။
@@ -275,7 +278,7 @@ xAy
 ```
 
 ```zaka-error ZK0106
-"{မသိ}" ဟု ပြသပါ။
+'{မသိ}' ကို ပြသပါ။
 ```
 
 ```zaka-error ZK0107

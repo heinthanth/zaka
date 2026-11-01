@@ -585,6 +585,12 @@ impl<'m> Flow<'m>
                 self.forget_freed(dest, state);
                 self.write_dest(dest, SlotState::Ptr(PtrInfo::null()), state)
             }
+            Stmt::Drop { dest, kind, span } =>
+            {
+                self.give_back(dest, Invalidation::Freed, *span, state);
+                self.forget_freed(dest, state);
+                self.write_dest(dest, SlotState::blank(*kind), state)
+            }
             _ => (),
         }
     }
@@ -855,7 +861,10 @@ impl<'m> Flow<'m>
         {
             return self.value(e, state);
         };
-        ret_if!(!e.kind.is_move_kind(), self.value(e, state));
+        ret_if!(
+            !e.kind.is_move_kind() || self.ctx.is_const(place),
+            self.value(e, state)
+        );
         check_read(self, place, e.span, state, false);
         let value = held_value(place, e.kind, state);
         leave_moved(place, e.kind, state);
@@ -1297,7 +1306,8 @@ impl<'m> Flow<'m>
     {
         let roots: Vec<Roots> =
             args.iter().map(|a| value_roots(a, state, &self.ctx)).collect();
-        let taken = moved_slots(args);
+        let mut taken = moved_slots(args);
+        taken.retain(|p| !self.ctx.is_const(*p));
         do_for!(a in args, { self.moved(a, state); });
         check_call(self, func, &roots, span, state);
         note_unfilled(self, func, &roots, state);

@@ -4,6 +4,7 @@ use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::artifact::CodegenArtifact;
 use zakac_codegen::artifact::run_loaded;
+use zakac_codegen::bc::FmtArg;
 use zakac_codegen::bc::Func;
 use zakac_codegen::bc::Module;
 use zakac_codegen::bc::Op;
@@ -91,7 +92,12 @@ fn fits(op: Op, module: &Module, func: &Func) -> bool
             below(t, func.code.len())
         }
         Op::Call(f) => below(f, module.funcs.len()),
-        Op::PrintText(t) => below(t, module.texts.len()),
+        Op::PrintText(t) | Op::Text(t) => below(t, module.texts.len()),
+        Op::Format(f) => module.formats.get(f as usize).is_some_and(|args| {
+            args.iter().all(
+                |a| !matches!(a, FmtArg::Text(t) if !below(*t, module.texts.len())),
+            )
+        }),
         _ => true,
     }
 }

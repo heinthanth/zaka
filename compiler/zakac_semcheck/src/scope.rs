@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bon::Builder;
+use zakac_ast::name::Name;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
@@ -36,7 +37,7 @@ pub(crate) struct Binding
 
 /// Block scopes from the outermost to the innermost.
 #[derive(Debug, Default)]
-pub(crate) struct Scopes(Vec<HashMap<String, Binding>>);
+pub(crate) struct Scopes(Vec<HashMap<Name, Binding>>);
 
 impl Scopes
 {
@@ -56,15 +57,15 @@ impl Scopes
     /// # Returns
     ///
     /// `Ok`, or the earlier binding when the scope holds the name.
-    pub fn declare(&mut self, name: &str, binding: Binding) -> Result<(), Binding>
+    pub fn declare(&mut self, name: Name, binding: Binding) -> Result<(), Binding>
     {
         let Some(inner) = self.0.last_mut()
         else
         {
             return Ok(());
         };
-        ret_if!(let Some(prior) = inner.get(name), Err(*prior));
-        inner.insert(name.to_string(), binding);
+        ret_if!(let Some(prior) = inner.get(&name), Err(*prior));
+        inner.insert(name, binding);
         Ok(())
     }
 
@@ -99,7 +100,7 @@ impl Scopes
     /// # Returns
     ///
     /// The top-level names of the file that ended.
-    pub fn restart(&mut self) -> HashMap<String, Binding>
+    pub fn restart(&mut self) -> HashMap<Name, Binding>
     {
         let top = std::mem::take(&mut self.0).into_iter().next();
         self.push();
@@ -122,4 +123,4 @@ pub(crate) struct FnSig
 }
 
 /// Functions, indexed on name.
-pub(crate) type FnSigs = HashMap<String, FnSig>;
+pub(crate) type FnSigs = HashMap<Name, FnSig>;

@@ -95,6 +95,7 @@ see [Names](../../learn/variables/names.md).
 | `ဒဿမကိန်း` | "decimal number" | [Decimal numbers](../../learn/values/floats.md) |
 | `စာလုံး` | "character" | [Characters](../../learn/values/characters.md) |
 | `မှန်မှားတန်ဖိုး`, `ဘူလီယန်` | "true/false value", "boolean" | [True and false](../../learn/values/booleans.md) |
+| `စာသား` | "text" | [Text](../../learn/values/strings.md) |
 | `လက္ခဏာရှိ`, `လက္ခဏာမဲ့` | "signed", "unsigned" | [Integers](../../learn/values/integers.md) |
 | `အခြေ` | "base" | [Writing integers](../../learn/values/literals.md) |
 | `ကိန်းရှင်` | "variable" | [Variables](../../learn/variables/README.md) |
@@ -132,9 +133,11 @@ as well.
 | --- | --- | --- |
 | `စာရင်း` | "list": after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`); `တို့ပါသော စာရင်း` closes a list literal | [Lists](../../learn/lists/README.md) |
 | `အကွက်` | "cell": `x ၏ အကွက် i` is cell `i`, counted from 0; `အကွက် n ခုရှိသော` gives the count of a list kind | [Lists](../../learn/lists/README.md) |
-| `ခုမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1 | [Lists](../../learn/lists/README.md#cell-numbers) |
+| `ခုမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1, and `t ၏ n ခုမြောက်စာလုံး` character `n` of text | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Lists](../../learn/lists/README.md#list-kinds) |
 | `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
+| `ဆက်ထားသည့်` | "that joins", in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/values/strings.md#joining-text) |
+| `စာလုံးအရေအတွက်` | "character count", in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/values/strings.md#characters) |
 | `စာရင်းအလွတ်` | "blank list": each cell at its default | [Lists](../../learn/lists/README.md) |
 | `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../../learn/lists/README.md#list-kinds) |
 | `တစ်စိတ်တစ်ပိုင်း` | "a part": after a `စာရင်း` with no count it makes a slice kind | [Slices](../../learn/lists/slices.md) |

@@ -97,6 +97,7 @@ that implements `Visitor`. It has one method for each statement form and calls
 | return | in a function; a value just when the function has a result, and it converts to the result kind |
 | call | the function exists; one argument for each parameter; each converts |
 | heap sentences | the target is a place of a pointer kind (ZK0417); the size is `usize` |
+| assignment to a cell of text | ZK0429, for owned text and a view alike |
 
 Each subtree is inferred once, so a diagnostic is never repeated. When an operand has an
 error, its operation returns `None` and reports nothing more; an operation with two bad
@@ -136,18 +137,19 @@ looks for it in the other files and adds help that names the file that declares 
 
 ## The data it builds
 
-**`DataKind`** is `Copy` and has nine forms:
+**`DataKind`** is `Copy` and has ten forms:
 
 | Form | Holds |
 | --- | --- |
 | `Int(IntKind)` | a sign and a `Width`, which is `Platform` or `Bits(n)` |
 | `Float(bits)` | 16, 32, 64 or 128 |
 | `Char`, `Bool` | |
+| `Text` | owned UTF-8 text, `စာသား`; a move kind, and `holds_text` holds for it and for each list or struct with text in it |
 | `Ptr(PtrKind)` | levels of address over a base, with the outer level an owner, a borrow or raw |
 | `Null` | the kind of `ဗလာ`, which converts to each pointer kind |
 | `List(&'static ListKind)` | a count of cells of one kind; list kinds are interned so the form remains `Copy` |
 | `Struct(&'static StructKind)` | a struct with its named fields, interned as list kinds are |
-| `Slice(&'static SliceKind)` | a borrowed run of cells of one kind, with its count known at run time; `is_borrow` holds for it |
+| `Slice(&'static SliceKind)` | a borrowed run of cells of one kind, with its count known at run time; `is_borrow` holds for it. `SliceKind { cell, text }`: `text` marks the view of text, `&text`, whose cells are `u8` |
 
 A written kind becomes a `DataKind` with defaults filled in: no sign word is signed, no
 bit count is platform size for an integer and 64 for a float. So the plain
@@ -201,7 +203,8 @@ An implicit conversion (`widens_to`) never loses data:
 | float | float | the target is wider |
 | `ဗလာ` | pointer | in each case |
 | pointer | pointer | the same flavour (owner, borrow or raw) and the same shape, or one is the opaque `လိပ်စာ`; a block of addresses read as other data needs a raw step |
-| char, bool, list | other kinds | never |
+| `&text` | `&[]u8` | in each case; the reverse never, since a slice of u8s is not known to hold UTF-8 |
+| char, bool, list, text | other kinds | never; owned text does not become a view without a lend |
 
 The conversion verb (`cast_allowed`) is wider: number to number, char to integer and back,
 bool to integer, address to address, address to integer, and integer to a raw address.
@@ -242,6 +245,21 @@ program belong to [the borrow checker](borrow-checker.md).
 
 Lists are checked in `list.rs`: the cell kind, the count (written or taken from the
 initializer), a cell number that is an integer, and a short-lived list that is not a place.
+The count, a cell, a range and the lend also take text, owned or a view: a cell of text
+is a `u8`, and a range or a lend of text is a `&text`. The assignment check in
+`semcheck.rs` reports a write to a cell of text as ZK0429. A range or a lend of text needs
+a place but not a variable (`viewable`): a view never writes, so a text constant can be
+viewed, where a list constant cannot (ZK0412). `infer_chars` gives the character count of
+text a `usize` and a character of it (`CharAt`, `CharNth`) a `char`; an operand that is no
+text is ZK0403 (`Want::Text`). `cast_allowed` lets a slice of `u8` convert to `&text`, the
+one conversion between slices; the VM checks that its u8s are UTF-8. `infer_join` checks
+that each piece of a verbal join is text and gives the join `text`.
+
+A string literal (`infer_str`) is `text`, whatever the kinds of its template slots; each template slot is
+inferred with no expected kind, and an error in a template slot leaves the literal unknown. In
+`ops.rs`, `+` with a textual operand on each side (`is_textual`: `text` or `&text`) is a
+join, of kind `text`; each other operator on text, and `+` of text with a number, is
+ZK0403.
 
 ## Codes
 

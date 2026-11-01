@@ -58,6 +58,7 @@ fn base_kind(kw: Kw) -> Option<BaseKind>
         Kw::IntKind => Some(BaseKind::Int),
         Kw::FloatKind => Some(BaseKind::Float),
         Kw::CharKind => Some(BaseKind::Char),
+        Kw::TextKind => Some(BaseKind::Text),
         Kw::BoolKind | Kw::BoolKindLoan => Some(BaseKind::Bool),
         _ => None,
     }
@@ -142,7 +143,8 @@ impl Parser<'_>
         let is_base = word.and_then(base_kind).is_some() || named;
         let bare = n == pre && matches!(word, Some(Kw::Address | Kw::RawAddress));
         ret_if!(!is_base && !bare, None);
-        let (len, _) = self.scan_suffixes(n + 1, is_base);
+        let text = word == Some(Kw::TextKind);
+        let (len, _) = self.scan_suffixes(n + 1, is_base, text);
         Some(n + 1 + len)
     }
 
@@ -232,14 +234,18 @@ impl Parser<'_>
     /// * `n` - How far ahead the first suffix would start.
     /// * `after_base` - Whether the base word comes right before, so a bare
     ///   `လိပ်စာ` is a suffix.
+    /// * `after_text` - Whether that base word is `စာသား`, so a bare
+    ///   `တစ်စိတ်တစ်ပိုင်း` is a suffix: the view of text.
     ///
     /// # Returns
     ///
     /// The token count of the suffixes, and the suffixes, innermost first.
-    fn scan_suffixes(&self, n: usize, after_base: bool) -> (usize, Vec<Suffix>)
+    fn scan_suffixes(
+        &self, n: usize, after_base: bool, after_text: bool,
+    ) -> (usize, Vec<Suffix>)
     {
         let (mut len, mut found, mut bare_ptr) = (0, Vec::new(), after_base);
-        let mut after_list = false;
+        let mut after_list = after_text;
         while let Some((suffix, more)) = self.suffix_at(n + len, bare_ptr, after_list)
         {
             len += more;
@@ -298,10 +304,15 @@ impl Parser<'_>
         let mut kind = self.parse_core()?;
         kind.borrowed = marks > 0;
         kind.extra_borrows = u8::try_from(marks.saturating_sub(1)).unwrap_or(u8::MAX);
-        let (len, suffixes) = self.scan_suffixes(0, kind.base != BaseKind::Opaque);
+        let text = kind.base == BaseKind::Text;
+        let (len, suffixes) =
+            self.scan_suffixes(0, kind.base != BaseKind::Opaque, text);
         do_for!(_ in 0..len, self.advance());
-        let sliced = suffixes.contains(&Suffix::Part);
+        let view = suffixes.first() == Some(&Suffix::Part);
+        let sliced =
+            suffixes.iter().skip(usize::from(view)).any(|s| *s == Suffix::Part);
         let mut rest = suffixes.into_iter().peekable();
+        do_if!(view, _ = rest.next(), kind.wraps.push(Wrap::View));
         while let Some(suffix) = rest.next()
         {
             let part =

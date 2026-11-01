@@ -214,8 +214,7 @@ fn statement_errors()
     assert_eq!(codes(nested_fn), [Code::NestedFunction]);
     let no_result = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(no_result), [Code::ExpectedToken]);
-    assert_eq!(codes("\"x\" ကို က ဟု ထားပါ။"), [Code::StrOutsidePrint]);
-    assert_eq!(codes("\"x\" ဟု ထားပါ။"), [Code::StrOutsidePrint]);
+    assert_eq!(codes("\"x\" ဟု ထားပါ။"), [Code::MissingOperand]);
     assert_eq!(codes("၁ မှ ၁၀ အထိ ၁ + ၁ အနေဖြင့် ရေတွက်၍ က ကို ပြသပါ။"), [Code::ExpectedToken]);
 }
 

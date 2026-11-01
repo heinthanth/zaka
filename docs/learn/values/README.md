@@ -1,6 +1,6 @@
 ---
 title: Values and kinds
-description: Each value has a kind - integer, decimal number, character or true/false.
+description: Each value has a kind - integer, decimal number, character, true/false or text.
 ---
 
 # Values and kinds
@@ -14,7 +14,7 @@ program can do with it. Two numbers can be added, but two answers of "true" cann
 ၃.၁၄ ကို ပြသပါ။        // a decimal number
 'က' ကို ပြသပါ။         // a character
 မှန် ကို ပြသပါ။         // a true/false value: true
-"စာ" ဟု ပြသပါ။         // text in quotes, just for printing
+"စာ" ဟု ပြသပါ။         // text in quotes
 ```
 
 ```text
@@ -33,9 +33,7 @@ program can do with it. Two numbers can be added, but two answers of "true" cann
 | `ဒဿမကိန်း` | "decimal number" | numbers with a fraction: `၃.၁၄` | [Decimal numbers](floats.md) |
 | `စာလုံး` | "letter" | one character: `'က'`, `'A'` | [Characters](characters.md) |
 | `မှန်မှားတန်ဖိုး` | "true/false value" | `မှန်` (true) or `မမှန်` (false) | [True and false](booleans.md) |
-
-Text in quotes, such as `"စာ"`, has no kind of its own so far. A program can do nothing
-with it but print it (see [Text in quotes](strings.md)).
+| `စာသား` | "text" | text in double quotes: `"စာ"` | [Text](strings.md) |
 
 The kind matters as soon as a program stores values. The next chapter,
 [Variables](../variables/README.md), shows how. Each variable is declared with its kind.

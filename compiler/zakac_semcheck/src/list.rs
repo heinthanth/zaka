@@ -53,6 +53,7 @@ pub(crate) enum KindUse
 pub(crate) fn list_through(kind: DataKind) -> Option<DataKind>
 {
     ret_if!(kind.is_list() || kind.is_slice(), Some(kind));
+    ret_if!(kind == DataKind::Text, Some(DataKind::text_view()));
     kind.pointee().filter(|k| k.is_list())
 }
 
@@ -174,7 +175,7 @@ impl Checker
     {
         let kind = DataKind::from_ast(written, &self.structs);
         let span = written.span;
-        let names = self.structs.keys().map(String::as_str).collect();
+        let names = self.structs.keys().map(|n| n.as_str()).collect();
         do_if!(let Some(d) = unknown_name(written, &names), self.report(d));
         let large = kind.checked_size(self.platform).is_none();
         do_if!(large, self.report(kd::list_too_large(span, &kind.name())));
@@ -366,8 +367,10 @@ impl Checker
             let found = k.map(DataKind::name).unwrap_or_default();
             self.report(kd::cell_number_not_int(e.span(), &found));
         }
-        let cell = self.range_cells(&n.source, source?)?;
-        let slice = DataKind::slice_of(cell);
+        let source = source?;
+        let cell = self.range_cells(&n.source, source)?;
+        let text = list_through(source).is_some_and(DataKind::is_text_view);
+        let slice = tern!(text, DataKind::text_view(), DataKind::slice_of(cell));
         let span = n.span;
         ret_if!(
             cell.holds_borrow(),
@@ -398,6 +401,7 @@ impl Checker
         if let Some(cells) = list_through(kind)
         {
             ret_if!(kind.is_list() && !self.addressable(source), None);
+            ret_if!(kind == DataKind::Text && !self.viewable(source), None);
             return cells.cell_kind();
         }
         let span = source.span();

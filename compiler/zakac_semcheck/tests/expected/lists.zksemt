@@ -148,68 +148,65 @@ program:
         hi: 908
   - print:
       value:
-        expr:
+        index:
+          id: 11
+          list:
+            name:
+              id: 9
+              name: ဂ
+              span:
+                lo: 909
+                hi: 912
           index:
-            id: 11
-            list:
-              name:
-                id: 9
-                name: ဂ
-                span:
-                  lo: 909
-                  hi: 912
-            index:
-              int:
-                id: 10
-                value: 2
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 917
-                  hi: 920
-            first: 1
-            span:
-              lo: 909
-              hi: 960
+            int:
+              id: 10
+              value: 2
+              base: 10
+              kind: null
+              script: burmese
+              span:
+                lo: 917
+                hi: 920
+          first: 1
+          span:
+            lo: 909
+            hi: 960
       slot: ko
       span:
         lo: 909
         hi: 989
   - print:
       value:
-        expr:
-          verb:
-            id: 13
-            op: cell_count
-            args:
-            - name:
-                id: 12
-                name: ဂ
-                span:
-                  lo: 990
-                  hi: 993
-            kind_arg: null
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
-            span:
-              lo: 990
-              hi: 1037
+        verb:
+          id: 13
+          op: cell_count
+          args:
+          - name:
+              id: 12
+              name: ဂ
+              span:
+                lo: 990
+                hi: 993
+          kind_arg: null
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 990
+            hi: 1037
       slot: ko
       span:
         lo: 990
         hi: 1066
   - print:
       value:
-        expr:
-          name:
-            id: 14
-            name: ဂ
-            span:
-              lo: 1067
-              hi: 1070
+        name:
+          id: 14
+          name: ဂ
+          span:
+            lo: 1067
+            hi: 1070
       slot: ko
       span:
         lo: 1067
@@ -234,58 +231,56 @@ program:
         hi: 1143
   - print:
       value:
-        expr:
-          verb:
-            id: 19
-            op: eq
-            args:
-            - name:
-                id: 17
-                name: က
-                span:
-                  lo: 1144
-                  hi: 1147
-            - name:
-                id: 18
-                name: ဂ
-                span:
-                  lo: 1158
-                  hi: 1161
-            kind_arg: null
-            dir: null
-            particle: thi
-            next: other
-            is_cmp: true
-            span:
-              lo: 1144
-              hi: 1193
+        verb:
+          id: 19
+          op: eq
+          args:
+          - name:
+              id: 17
+              name: က
+              span:
+                lo: 1144
+                hi: 1147
+          - name:
+              id: 18
+              name: ဂ
+              span:
+                lo: 1158
+                hi: 1161
+          kind_arg: null
+          dir: null
+          particle: thi
+          next: other
+          is_cmp: true
+          span:
+            lo: 1144
+            hi: 1193
       slot: hu
       span:
         lo: 1144
         hi: 1219
   - print:
       value:
-        expr:
-          infix:
-            id: 22
-            op: ne
-            lhs:
-              name:
-                id: 20
-                name: ခ
-                span:
-                  lo: 1220
-                  hi: 1223
-            rhs:
-              name:
-                id: 21
-                name: က
-                span:
-                  lo: 1227
-                  hi: 1230
-            span:
-              lo: 1220
-              hi: 1230
+        infix:
+          id: 22
+          op: ne
+          lhs:
+            name:
+              id: 20
+              name: ခ
+              span:
+                lo: 1220
+                hi: 1223
+          rhs:
+            name:
+              id: 21
+              name: က
+              span:
+                lo: 1227
+                hi: 1230
+          span:
+            lo: 1220
+            hi: 1230
       slot: ko
       span:
         lo: 1220
@@ -406,13 +401,12 @@ program:
         hi: 1718
   - print:
       value:
-        expr:
-          name:
-            id: 33
-            name: ဇယား
-            span:
-              lo: 1719
-              hi: 1731
+        name:
+          id: 33
+          name: ဇယား
+          span:
+            lo: 1719
+            hi: 1731
       slot: ko
       span:
         lo: 1719
@@ -556,42 +550,41 @@ program:
         hi: 2505
   - print:
       value:
-        expr:
-          verb:
-            id: 47
-            op: deref
-            args:
-            - infix:
-                id: 46
-                op: add
-                lhs:
-                  name:
-                    id: 44
-                    name: ပ
-                    span:
-                      lo: 2506
-                      hi: 2509
-                rhs:
-                  int:
-                    id: 45
-                    value: 2
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 2512
-                      hi: 2515
-                span:
-                  lo: 2506
-                  hi: 2515
-            kind_arg: null
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
-            span:
-              lo: 2506
-              hi: 2541
+        verb:
+          id: 47
+          op: deref
+          args:
+          - infix:
+              id: 46
+              op: add
+              lhs:
+                name:
+                  id: 44
+                  name: ပ
+                  span:
+                    lo: 2506
+                    hi: 2509
+              rhs:
+                int:
+                  id: 45
+                  value: 2
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 2512
+                    hi: 2515
+              span:
+                lo: 2506
+                hi: 2515
+          kind_arg: null
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 2506
+            hi: 2541
       slot: ko
       span:
         lo: 2506
@@ -730,75 +723,73 @@ program:
         hi: 3346
   - print:
       value:
-        expr:
-          call:
-            id: 59
-            callee:
-              name: ပေါင်း
-              span:
-                lo: 3388
-                hi: 3406
-            args:
-            - name:
-                id: 58
-                name: ဂ
-                span:
-                  lo: 3417
-                  hi: 3420
+        call:
+          id: 59
+          callee:
+            name: ပေါင်း
             span:
-              lo: 3348
-              hi: 3498
+              lo: 3388
+              hi: 3406
+          args:
+          - name:
+              id: 58
+              name: ဂ
+              span:
+                lo: 3417
+                hi: 3420
+          span:
+            lo: 3348
+            hi: 3498
       slot: ko
       span:
         lo: 3348
         hi: 3527
   - print:
       value:
-        expr:
-          call:
-            id: 64
-            callee:
-              name: ပေါင်း
-              span:
-                lo: 3568
-                hi: 3586
-            args:
-            - list:
-                id: 63
-                cells:
-                - int:
-                    id: 60
-                    value: 4
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 3597
-                      hi: 3600
-                - int:
-                    id: 61
-                    value: 5
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 3604
-                      hi: 3607
-                - int:
-                    id: 62
-                    value: 6
-                    base: 10
-                    kind: null
-                    script: burmese
-                    span:
-                      lo: 3611
-                      hi: 3614
-                span:
-                  lo: 3597
-                  hi: 3661
+        call:
+          id: 64
+          callee:
+            name: ပေါင်း
             span:
-              lo: 3528
-              hi: 3739
+              lo: 3568
+              hi: 3586
+          args:
+          - list:
+              id: 63
+              cells:
+              - int:
+                  id: 60
+                  value: 4
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 3597
+                    hi: 3600
+              - int:
+                  id: 61
+                  value: 5
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 3604
+                    hi: 3607
+              - int:
+                  id: 62
+                  value: 6
+                  base: 10
+                  kind: null
+                  script: burmese
+                  span:
+                    lo: 3611
+                    hi: 3614
+              span:
+                lo: 3597
+                hi: 3661
+          span:
+            lo: 3528
+            hi: 3739
       slot: ko
       span:
         lo: 3528

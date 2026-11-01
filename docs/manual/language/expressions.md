@@ -67,9 +67,8 @@ inside parentheses.
 - **Calls**, `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်သော ရလဒ်` ([Functions](functions.md)).
 - **Places and addresses**: `p ၏ တန်ဖိုး` ([Pointers](pointers.md)), `x ၏ အကွက် i` and
   list literals ([Lists](lists.md)).
-
-A string literal is not an expression: it is allowed as the operand of `ပြသပါ` and
-nowhere else (ZK0223).
+- **String literals**, of the kind `စာသား`, with template slots that hold expressions
+  ([Text](text.md)).
 
 ## Arithmetic
 
@@ -85,7 +84,9 @@ nowhere else (ZK0223).
 The operands are numbers (integers or decimal numbers) of one common kind, which is the
 kind of the result; [Conversions](conversions.md) tells how two kinds are joined. Negation
 needs a signed integer or a decimal number: `-က` for an unsigned `က` is ZK0403. A
-boolean or a character takes no arithmetic (ZK0403).
+boolean or a character takes no arithmetic (ZK0403). `+`, in either spelling, also joins
+two pieces of text into new text ([Joining](text.md#joining)); text takes no other
+operator.
 
 ### Integer division and remainder
 

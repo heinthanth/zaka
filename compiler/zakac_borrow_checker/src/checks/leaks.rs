@@ -80,7 +80,8 @@ pub(crate) fn return_span(flow: &Flow, value: Option<&Expr>, span: Span) -> Span
 /// Report an owner slot whose state loses a block, as `lost` tells. A
 /// list of owners is
 /// reported under strict alone, as a warning: its cell numbers are not
-/// followed, so the check cannot tell which cells still hold a block.
+/// followed, so the check cannot tell which cells still hold a block. A
+/// kind that holds text is dropped as its scope ends, so it is never lost.
 ///
 /// # Arguments
 ///
@@ -101,6 +102,7 @@ fn check_held(
     };
     let owner = kind.is_owner_ptr();
     let list = kind.is_aggregate() && kind.is_move_kind() && flow.options.strict;
+    ret_if!(kind.holds_text());
     ret_if!(!owner && !list);
     ret_if!(!state.ptr(place).is_some_and(|info| lost(info.state)));
     let found = block_leaked(span, slot_name(flow, place));

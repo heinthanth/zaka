@@ -31,8 +31,9 @@ use after free, double free or bad free.
 
 The IR is the right input because it has made explicit, before this stage, what the checker needs.
 Names are slots (`g0` for a global, `l1` for a local), blocks are flattened, widening is a
-`Convert`, a move out of a place is a `Take`, a borrow is a `Lend`, and a heap sentence is
-an `Alloc`, `Resize` or `Free` with a destination. For this program:
+`Convert`, a move out of a place is a `Take`, a borrow is a `Lend`, a heap sentence is
+an `Alloc`, `Resize` or `Free` with a destination, and the end of a text place is a
+`Drop`. For this program:
 
 ```text
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
@@ -57,7 +58,7 @@ routine the checker keeps a `State`: one fact for each global and each local, a
 | Fact | Holds |
 | --- | --- |
 | `Int(Interval)` | an integer slot, as a range `lo..=hi` of the values it can have |
-| `Ptr(PtrInfo)` | an owner or a borrow; a slice is a borrow with no offset or extent known |
+| `Ptr(PtrInfo)` | an owner or a borrow; a slice is a borrow with no offset or extent known; a text slot is followed as an owner is |
 | `List(PtrInfo)` | a list of pointers, one fact for all its cells |
 | `None` | a slot the check does not follow |
 
@@ -195,6 +196,16 @@ error[ZK0704]: the block of "ပ" is freed here, but "မိတ္တူ" still 
 Swap the last two lines and the program is correct: `မိတ္တူ` is no longer live at the
 free.
 
+Text works through the same paths. A `text` slot owns the block of its u8s, so a read of a
+text place roots at that block, as a read of an owner does, and a lend or a range of the
+text is a borrow of it. A `Drop` of a text place gives the block back as a `Free` does,
+and then leaves the slot blank. A view of text that is still live at the drop is ZK0704,
+and a function that returns a view of its own local text is ZK0706.
+
+A text constant holds static text, so a read of it is a duplicate, never a move:
+`RootCtx::is_const` keeps `moved` and the moved arguments of a call from marking a
+constant moved, and a read of the constant after a duplicate is no ZK0701.
+
 ## The checks
 
 Each file of `checks/` owns some codes. All of them work on a `Flow` and the `State`.
@@ -206,7 +217,7 @@ Each file of `checks/` owns some codes. All of them work on a `Flow` and the `St
 | `loans.rs` | ZK0704 | a block lost while a live borrow can point into it |
 | `escape.rs` | ZK0706 | a function that returns a borrow of its own local or parameter |
 | `calls.rs` | ZK0704, ZK0707 | the effect of a call (below); one block freed through one argument and reachable through another |
-| `leaks.rs` | ZK0708 | an owner that holds a block when it is overwritten, or when its function ends |
+| `leaks.rs` | ZK0708 | an owner that holds a block when it is overwritten, or when its function ends; a kind that holds text is skipped, since the compiler drops it |
 | `nullness.rs` | ZK0709, ZK0711 | a dereference of an owner that is `NULL` (or `FRESH`, in strict mode) |
 | `bounds.rs` | ZK0710, ZK0712 | an offset or cell number proven outside its block; a pointer difference between different blocks |
 | `lists.rs` | | the facts of a list of pointers, one fact for all its cells |

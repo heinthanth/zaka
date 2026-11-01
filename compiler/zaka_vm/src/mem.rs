@@ -72,6 +72,10 @@ pub struct Block
     /// The call depth that made a stack block; 0 for heap and static
     /// blocks.
     pub owner: usize,
+    /// Whether a write inside the block traps: static text, which each
+    /// literal of the same text shares.
+    #[builder(default)]
+    pub frozen: bool,
 }
 
 impl Block
@@ -224,6 +228,85 @@ impl Mem
         do_if!(heap, self.live_heap += size);
         self.peak_heap = self.peak_heap.max(self.live_heap);
         Some(start)
+    }
+
+    /// Make a frozen static block that holds these octets.
+    ///
+    /// # Arguments
+    ///
+    /// * `raw` - The octets.
+    ///
+    /// # Returns
+    ///
+    /// The start of the block, or `None` when the address space has no room
+    /// for it.
+    pub fn place_frozen(&mut self, raw: &[u8]) -> Option<u64>
+    {
+        let start = self.place(raw.len() as u64, Origin::Static, 0)?;
+        let block = self.table.get_mut(&start)?;
+        block.data.copy_from_slice(raw);
+        block.frozen = true;
+        Some(start)
+    }
+
+    /// Write the whole contents of a live block.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the block.
+    /// * `raw` - The octets, one for each octet of the block.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `OutOfBounds` when no live block of that length starts
+    /// there.
+    pub fn fill_block(&mut self, start: u64, raw: &[u8]) -> Result<(), TrapKind>
+    {
+        let size = raw.len() as u32;
+        let block =
+            self.table.get_mut(&start).filter(|b| b.live && b.data.len() == raw.len());
+        let block = block.ok_or(TrapKind::OutOfBounds { addr: start, size })?;
+        block.data.copy_from_slice(raw);
+        Ok(())
+    }
+
+    /// The octet at an address, when it lies inside a live block.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address.
+    ///
+    /// # Returns
+    ///
+    /// The octet, or `None` for an address outside each live block, such as
+    /// the end of one.
+    pub fn octet_at(&self, addr: u64) -> Option<u8>
+    {
+        let block = self.block_at(addr).filter(|b| b.live)?;
+        block.data.get((addr - block.start) as usize).copied()
+    }
+
+    /// Read a run of octets.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the first octet.
+    /// * `len` - The octet count; 0 reads nothing, whatever the address.
+    ///
+    /// # Returns
+    ///
+    /// The octets, or the trap the read hits.
+    pub fn octets(&self, addr: u64, len: u64) -> Result<Vec<u8>, TrapKind>
+    {
+        ret_if!(len == 0, Ok(Vec::new()));
+        ret_if!(addr < self.reserved, Err(TrapKind::NullDeref { addr }));
+        let size = u32::try_from(len).unwrap_or(u32::MAX);
+        let outside = TrapKind::OutOfBounds { addr, size };
+        let block = self.block_at(addr).ok_or_else(|| outside.clone())?;
+        ret_if!(addr.saturating_add(len) > block.end(), Err(outside));
+        ret_if!(!block.live, Err(TrapKind::UseAfterFree { addr }));
+        let from = (addr - block.start) as usize;
+        Ok(block.data[from..from + len as usize].to_vec())
     }
 
     /// Resize a heap block: make a new block, keep the shorter of the two
@@ -399,7 +482,7 @@ impl Mem
     /// `Ok`, or the trap the access hits.
     pub fn store(&mut self, addr: u64, v: Value) -> Result<(), TrapKind>
     {
-        let (start, span) = self.check(addr, v.kind())?;
+        let (start, span) = self.check_write(addr, v.kind())?;
         let size = span.len() as u32;
         let raw = to_raw(v, self.platform);
         let slot = self.table.get_mut(&start).and_then(|b| b.data.get_mut(span));
@@ -460,7 +543,7 @@ impl Mem
     fn write_raw(&mut self, to: u64, kind: DataKind, raw: &[u8])
     -> Result<(), TrapKind>
     {
-        let (start, span) = self.check(to, kind)?;
+        let (start, span) = self.check_write(to, kind)?;
         let size = span.len() as u32;
         let slot = self.table.get_mut(&start).and_then(|b| b.data.get_mut(span));
         let slot = slot.filter(|s| s.len() == raw.len());
@@ -670,6 +753,28 @@ impl Mem
     {
         let (_, block) = self.table.range(..=addr).next_back()?;
         tern!(block.holds(addr), Some(block), None)
+    }
+
+    /// Check a write of a kind at an address, as [`Mem::check`] checks an
+    /// access; a write inside a frozen block traps.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address.
+    /// * `kind` - The kind of the write.
+    ///
+    /// # Returns
+    ///
+    /// The start of the block and the range of its contents the write
+    /// covers, or the trap it hits.
+    fn check_write(
+        &self, addr: u64, kind: DataKind,
+    ) -> Result<(u64, Range<usize>), TrapKind>
+    {
+        let (start, span) = self.check(addr, kind)?;
+        let frozen = self.table.get(&start).is_some_and(|b| b.frozen);
+        ret_if!(frozen, Err(TrapKind::FrozenWrite { addr }));
+        Ok((start, span))
     }
 
     /// Check an access of a kind at an address: the reserved region, the

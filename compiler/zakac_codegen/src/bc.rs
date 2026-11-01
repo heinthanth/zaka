@@ -21,9 +21,16 @@ pub struct Module
     /// The global slots.
     #[builder(default)]
     pub globals: Vec<Slot>,
-    /// Pooled print strings, indexed with [`Op::PrintText`].
+    /// The static texts, each once: string literals, templates whose template
+    /// slots folded, and printed text. [`Op::PrintText`] and [`Op::Text`]
+    /// name them with an index; the VM puts each in a frozen static block.
     #[builder(default)]
     pub texts: Vec<String>,
+    /// The pieces of each text built when the program runs; [`Op::Format`]
+    /// names one with its index.
+    #[builder(default)]
+    #[serde(default)]
+    pub formats: Vec<Vec<FmtArg>>,
     /// The functions in source order, then the main function.
     #[builder(default)]
     pub funcs: Vec<Func>,
@@ -110,6 +117,18 @@ pub enum SliceSource
     /// A pointer into a heap block; the VM checks the range against the
     /// block.
     Block,
+}
+
+/// A piece of text built when the program runs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FmtArg
+{
+    /// A static text, with its index.
+    Text(u32),
+    /// A value of this kind from the stack, written as a print writes it: a
+    /// list, a struct or text as its address, each other kind as itself.
+    Value(DataKind),
 }
 
 /// A stack machine op. Ops that work on values read the kind from their
@@ -228,6 +247,32 @@ pub enum Op
         /// The number of the first cell: 0 or 1.
         first: u8,
     },
+    /// Pop the address of a text slot; write the static text of this index
+    /// there, with room 0, and push the address.
+    Text(u32),
+    /// Pop one value for each value piece of this format, the last piece on
+    /// top, then the address of a text slot; write the text of each piece
+    /// in a new heap block, keep it in the slot, and push the address.
+    Format(u32),
+    /// Pop the address of a value of this kind; free each text in it whose
+    /// room is above 0, and leave each text blank.
+    Drop(DataKind),
+    /// Pop the address of text; push the number of its characters, a
+    /// `usize`.
+    CharCount,
+    /// Pop a character number, then the address of text; stop the program
+    /// when the number is outside the text, else push the character.
+    CharAt
+    {
+        /// The number of the first character: 0 or 1.
+        first: u8,
+    },
+    /// Look at the address of a view of text on the stack, leaving it there;
+    /// stop the program when the view starts or ends inside a character.
+    TextEdges,
+    /// Look at the address of a slice of u8s on the stack, leaving it there;
+    /// stop the program when the u8s are not UTF-8.
+    CheckUtf8,
 }
 
 impl Op
@@ -298,7 +343,8 @@ impl Op
             Op::Convert(kind) => kind.name(),
             Op::Jump(t) | Op::JumpIfFalse(t) | Op::JumpIfTrue(t) => format!("@{t}"),
             Op::Call(f) => format!("f{f}"),
-            Op::PrintText(t) => format!("t{t}"),
+            Op::PrintText(t) | Op::Text(t) => format!("t{t}"),
+            Op::Format(f) => format!("fmt{f}"),
             Op::Trap(code) => <&str>::from(code).to_string(),
             Op::Wrap(op) => op.mnemonic().to_string(),
             Op::Load(kind)
@@ -307,6 +353,7 @@ impl Op
             | Op::Blit(kind)
             | Op::Zero(kind)
             | Op::ListEq(kind)
+            | Op::Drop(kind)
             | Op::PrintList(kind) => kind.name(),
             Op::MakeSlice { stride, from } =>
             {
@@ -316,11 +363,21 @@ impl Op
             Op::SliceCell { stride, first } => format!("{stride} from {first}"),
             Op::Index { len, first: 0 } => len.to_string(),
             Op::Index { len, first } => format!("{len} from {first}"),
+            Op::CharAt { first: 1 } => "from 1".to_string(),
             Op::PtrAdd(s) | Op::PtrSub(s) | Op::Alloc(s) | Op::Realloc(s) =>
             {
                 s.to_string()
             }
-            Op::Ret | Op::Print | Op::Pop | Op::Free | Op::Dup | Op::ResultAddr =>
+            Op::Ret
+            | Op::Print
+            | Op::Pop
+            | Op::Free
+            | Op::Dup
+            | Op::ResultAddr
+            | Op::CharCount
+            | Op::CharAt { .. }
+            | Op::TextEdges
+            | Op::CheckUtf8 =>
             {
                 return None;
             }

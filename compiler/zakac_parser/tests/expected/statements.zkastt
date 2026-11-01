@@ -7,13 +7,12 @@ program:
   stmts:
   - print:
       value:
-        expr:
-          name:
-            id: 0
-            name: အသက်
-            span:
-              lo: 0
-              hi: 12
+        name:
+          id: 0
+          name: အသက်
+          span:
+            lo: 0
+            hi: 12
       slot: ko
       span:
         lo: 0
@@ -114,13 +113,12 @@ program:
       stmts:
       - print:
           value:
-            expr:
-              name:
-                id: 7
-                name: လူအရေအတွက်
-                span:
-                  lo: 419
-                  hi: 449
+            name:
+              id: 7
+              name: လူအရေအတွက်
+              span:
+                lo: 419
+                hi: 449
           slot: ko
           span:
             lo: 419
@@ -221,10 +219,9 @@ program:
           - print:
               value:
                 str:
-                  lit:
-                    parts:
-                    - text: ok
-                    value: ok
+                  id: 16
+                  pieces:
+                  - text: ok
                   span:
                     lo: 1018
                     hi: 1022
@@ -244,10 +241,9 @@ program:
         - print:
             value:
               str:
-                lit:
-                  parts:
-                  - text: ကြိုဆိုပါသည်
-                  value: ကြိုဆိုပါသည်
+                id: 17
+                pieces:
+                - text: ကြိုဆိုပါသည်
                 span:
                   lo: 1086
                   hi: 1124
@@ -265,17 +261,17 @@ program:
   - while:
       cond:
         verb:
-          id: 18
+          id: 20
           op: lt
           args:
           - name:
-              id: 16
+              id: 18
               name: ကိန်း
               span:
                 lo: 1151
                 hi: 1166
           - int:
-              id: 17
+              id: 19
               value: 5
               base: 10
               kind: null
@@ -295,13 +291,12 @@ program:
         stmts:
         - print:
             value:
-              expr:
-                name:
-                  id: 19
-                  name: ကိန်း
-                  span:
-                    lo: 1228
-                    hi: 1243
+              name:
+                id: 21
+                name: ကိန်း
+                span:
+                  lo: 1228
+                  hi: 1243
             slot: ko
             span:
               lo: 1228
@@ -321,7 +316,7 @@ program:
           hi: 1327
       from:
         int:
-          id: 20
+          id: 22
           value: 10
           base: 10
           kind: null
@@ -331,7 +326,7 @@ program:
             hi: 1279
       to:
         int:
-          id: 21
+          id: 23
           value: 0
           base: 10
           kind: null
@@ -341,7 +336,7 @@ program:
             hi: 1290
       step:
         int:
-          id: 22
+          id: 24
           value: 2
           base: 10
           kind: null
@@ -354,13 +349,12 @@ program:
         stmts:
         - print:
             value:
-              expr:
-                name:
-                  id: 23
-                  name: ကိန်း
-                  span:
-                    lo: 1375
-                    hi: 1390
+              name:
+                id: 25
+                name: ကိန်း
+                span:
+                  lo: 1375
+                  hi: 1390
             slot: ko
             span:
               lo: 1375
@@ -388,7 +382,7 @@ program:
           hi: 1504
       init:
         int:
-          id: 24
+          id: 26
           value: 0
           base: 10
           kind: null
@@ -398,17 +392,17 @@ program:
             hi: 1508
       cond:
         verb:
-          id: 27
+          id: 29
           op: lt
           args:
           - name:
-              id: 25
+              id: 27
               name: ကိန်း
               span:
                 lo: 1534
                 hi: 1549
           - int:
-              id: 26
+              id: 28
               value: 10
               base: 10
               kind: null
@@ -428,25 +422,25 @@ program:
         assign:
           target:
             name:
-              id: 28
+              id: 30
               name: ကိန်း
               span:
                 lo: 1722
                 hi: 1737
           value:
             infix:
-              id: 31
+              id: 33
               op: add
               lhs:
                 name:
-                  id: 29
+                  id: 31
                   name: ကိန်း
                   span:
                     lo: 1748
                     hi: 1763
               rhs:
                 int:
-                  id: 30
+                  id: 32
                   value: 1
                   base: 10
                   kind: null

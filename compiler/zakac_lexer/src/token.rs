@@ -406,6 +406,12 @@ pub enum Kw
     FloatKind,
     /// `စာလုံး`
     CharKind,
+    /// `စာသား`
+    TextKind,
+    /// `စာလုံးအရေအတွက်`
+    CharCount,
+    /// `ဆက်ထားသည့်`, in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`
+    Joined,
     /// `မှန်မှားတန်ဖိုး`
     BoolKind,
     /// `ဘူလီယန်`
@@ -610,8 +616,18 @@ pub enum StrPart
     Text(String),
     /// A decoded escape sequence.
     Escape(char),
-    /// Content of an unknown `{...}`, kept for future variable substitution.
-    Hole(String),
+    /// A `{...}` in a string literal: the text of an expression whose value
+    /// takes its place.
+    TemplateSlot
+    {
+        /// The text between the braces.
+        text: String,
+        /// The source region of that text.
+        span: Span,
+    },
+    /// An escape that does not decode, kept as written; the lexer reports
+    /// it.
+    Bad(String),
 }
 
 /// A decoded string literal.
@@ -620,7 +636,7 @@ pub struct StrLit
 {
     /// The decoded pieces in source order.
     pub parts: Vec<StrPart>,
-    /// The pieces joined; a hole is kept as `{content}`.
+    /// The pieces joined; a template slot is kept as `{content}`.
     pub value: String,
 }
 

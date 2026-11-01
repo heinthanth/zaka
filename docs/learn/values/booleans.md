@@ -52,4 +52,4 @@ Like a verb, `မှန်` and `မမှန်` can take a polite ending. `မ
 - Print whether 10 equals 10, using `==`.
 - Add `၁` to `မှန်`. Read the message: booleans are not numbers.
 
-Next: [Text in quotes](strings.md).
+Next: [Text](strings.md).

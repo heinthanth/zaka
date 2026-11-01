@@ -120,11 +120,13 @@ place is a variable, a cell of a list (`x ၏ အကွက် i`) or the value a
 ## Printing
 
 `ပြသပါ` prints its operand and then a line break. A number prints in Burmese digits, a
-true/false value as `မှန်` or `မမှန်`, a character as itself, and a list as its cells
-between `[` and `]`. A string literal can be printed and nothing else (ZK0223).
+true/false value as `မှန်` or `မမှန်`, a character and text as themselves, a list as its
+cells between `[` and `]`, and a struct as its name and fields. Text inside a list or a
+struct prints in quotes. A template slot in a string literal writes its value with the same rules
+([Text](text.md#the-text-of-a-value)).
 
-The operand takes `ကို` when it is a plain value, and `ဟု` when it is a string or a whole
-sentence (a clause that ends in a verb with a polite ending). The other choice still runs
+The operand takes `ကို` when it is a plain value (a text variable included), and `ဟု` when
+it is a string literal, a `+` join that holds one, or a whole sentence (a clause that ends in a verb with a polite ending). The other choice still runs
 and gets a warning, ZK0505 or ZK0506; [Natural wording](naturalness.md) has the rules.
 A logical expression needs parentheses (ZK0204).
 

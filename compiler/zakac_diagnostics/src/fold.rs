@@ -76,6 +76,39 @@ pub fn range_out_of_list(span: Span, start: &str, len: &str, count: u32) -> Diag
     Diagnostic::new(Code::RangeOutOfList, msg, span)
 }
 
+/// A range of known text starts or ends inside a character.
+///
+/// # Arguments
+///
+/// * `span` - The range.
+/// * `start` - The first u8, as written.
+/// * `len` - The u8 count, as written.
+///
+/// # Returns
+///
+/// The `ZK0607` diagnostic.
+pub fn range_cuts_char(span: Span, start: &str, len: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0607.message", s = start, len = len);
+    Diagnostic::new(Code::RangeCutsChar, msg, span)
+}
+
+/// A text constant holds a value that needs the program to run.
+///
+/// # Arguments
+///
+/// * `span` - The first part of the value that does not fold.
+///
+/// # Returns
+///
+/// The `ZK0606` diagnostic, with help on what to declare instead.
+pub fn text_const_not_known(span: Span) -> Diagnostic
+{
+    let diag =
+        Diagnostic::new(Code::TextConstNotKnown, t!("codes.ZK0606.message"), span);
+    diag.with_help(t!("codes.ZK0606.help"))
+}
+
 /// A variable or constant of an imported file starts with a value that is
 /// not known at compile time.
 ///

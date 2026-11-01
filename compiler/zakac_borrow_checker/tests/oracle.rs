@@ -20,6 +20,7 @@ use zakac_ir_builder::ir::FoldOptions;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::PrintValue;
 use zakac_ir_builder::ir::Stmt;
+use zakac_ir_builder::ir::fmt_values;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -47,7 +48,13 @@ fn raw_expr(e: &Expr) -> bool
         | ExprNode::Read(_)
         | ExprNode::AddrOf(_)
         | ExprNode::SizeOf(_)
+        | ExprNode::Text(_)
         | ExprNode::BlankList => false,
+        ExprNode::Format(pieces) => fmt_values(pieces).any(raw_expr),
+        ExprNode::Chars { text, index, .. } =>
+        {
+            raw_expr(text) || index.as_deref().is_some_and(raw_expr)
+        }
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }
@@ -103,7 +110,7 @@ fn raw_stmt(s: &Stmt) -> bool
         {
             raw_dest(dest) || raw_expr(count)
         }
-        Stmt::Free { dest, .. } => raw_dest(dest),
+        Stmt::Free { dest, .. } | Stmt::Drop { dest, .. } => raw_dest(dest),
         Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => false,
     }
 }

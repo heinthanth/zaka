@@ -51,9 +51,13 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | double free | a heap block is freed after it was freed | `the block at A was freed before` |
 | bad free | a free of an address that starts no live heap block | `A is not the start of a live heap block` |
 | mixed blocks | a subtraction of pointers into different blocks | `pointers into different blocks cannot be subtracted` |
-| out of mem | a resize finds no heap room | `no heap room for N octets` |
+| frozen write | a write lands inside a static text block | `write at A inside static text, which cannot change` |
+| text cut | a range of text starts or ends inside a character | `a range of text at A starts or ends inside a character` |
+| character out of range | a character number lies outside its text | `character N is outside the text, whose characters run from L to H` |
+| not UTF-8 | u8s converted to text are not UTF-8 | `the u8s at A are not UTF-8 text` |
+| out of mem | a resize, or text built when the program runs, finds no heap room | `no heap room for N octets` |
 | stack full | a call finds no room in the stack region | `no stack room for N more octets` |
-| static full | the space has no room for a global | `no room in the address space for a global of N octets` |
+| static full | the space has no room for a global or a static text | `no room in the address space for a global of N octets` |
 | stack overflow | calls nest deeper than `--max-depth` | `more than N nested calls` |
 | step limit | more instructions ran than `--max-steps` | `stopped after N ops` |
 | malformed | the instructions break a rule the code generator keeps | `malformed ops: R` |
@@ -325,6 +329,29 @@ checks that a live block reaches both addresses, its end included:
 the program stopped: pointers into different blocks cannot be subtracted
 ```
 
+### A write into static text
+
+Each static text sits in a frozen block, which each literal of the same text shares
+([Checked and packed blocks](blocks.md#the-address-space)). The compiler refuses a write
+to a cell of text (ZK0429), so a raw address is the one road to such a write. The long
+form names the block as `static text t0`, the index in the `texts` table of the
+listing:
+
+```zaka-stop
+ကိန်းရှင် t သည် စာသား ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း ၏ လိပ်စာအကြမ်း ဖြစ်၍ တန်ဖိုးသည် t ၏ လိပ်စာ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း ၏ လိပ်စာအကြမ်း အဖြစ် ပြောင်းလဲသော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် q သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း ဖြစ်၍ တန်ဖိုးသည် p ၏ တန်ဖိုး ဖြစ်ပါစေ။
+q ၏ တန်ဖိုး ကို ၁၂၀ ဟု ထားပါ။
+```
+
+```text
+the program stopped: write at 0x1070 inside static text, which cannot change
+```
+
+```console
+zaka_vm: the program stopped: write at 0x1070 inside static text, which cannot change (in main, op 15); block at 0x1070, 3 octets, static text t0
+```
+
 ## Room
 
 ### A resize with no room
@@ -342,6 +369,9 @@ would lose the old block, so it traps. The size below is far over the heap cap:
 ```text
 the program stopped: no heap room for 8000000000 octets
 ```
+
+Text that a program builds when it runs, from a template literal or a join, needs a
+heap block too, and traps in the same manner when the heap has no room for it.
 
 ### Locals too big for the stack
 
@@ -395,8 +425,8 @@ $ zakac run --max-steps 50 samples/mistakes/endless_loop.zaka
 zaka_vm: the program stopped: stopped after 50 ops (in main, op 13)
 ```
 
-**Static full.** On a platform with few addresses, the globals can fill the space before
-`main` starts:
+**Static full.** On a platform with few addresses, the globals and the static texts can
+fill the space before `main` starts. The message reads `global` for a static text too:
 
 ```console
 $ zakac run --platform-bits 8 nine-globals.zaka

@@ -95,6 +95,8 @@ pub(crate) enum Want
     Bool,
     /// A number or a character.
     Ordered,
+    /// Text: owned, or a view.
+    Text,
 }
 
 impl Want
@@ -118,6 +120,7 @@ impl Want
             Want::Signed => kind.is_float() || (kind.is_int() && !kind.is_unsigned()),
             Want::Bool => kind == DataKind::Bool,
             Want::Ordered => kind.is_numeric() || kind == DataKind::Char,
+            Want::Text => kind.is_textual(),
         }
     }
 
@@ -136,6 +139,7 @@ impl Want
             Want::Signed => t!("semcheck.want.signed"),
             Want::Bool => t!("semcheck.want.bool"),
             Want::Ordered => t!("semcheck.want.ordered"),
+            Want::Text => t!("semcheck.want.text"),
         };
         text.to_string()
     }
@@ -191,7 +195,12 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         VerbOp::AddrOf => OpClass::AddrOf,
         VerbOp::Deref => OpClass::Deref,
         VerbOp::Lend => OpClass::Lend,
-        VerbOp::Cell | VerbOp::CellCount => OpClass::CellCount,
+        VerbOp::Cell
+        | VerbOp::CellCount
+        | VerbOp::CharCount
+        | VerbOp::CharAt
+        | VerbOp::CharNth
+        | VerbOp::Join => OpClass::CellCount,
         VerbOp::Print | VerbOp::Assign | VerbOp::Return => OpClass::Stmt,
     }
 }
@@ -562,7 +571,10 @@ impl Checker
         rhs: (DataKind, &Expr), span: Span,
     ) -> Option<DataKind>
     {
-        let structs = [lhs.0, rhs.0].iter().any(|k| k.is_struct() || k.is_slice());
+        let joined = is_op(op, InfixOp::Add, VerbOp::Add) && lhs.0.is_textual();
+        ret_if!(joined && rhs.0.is_textual(), Some(DataKind::Text));
+        let blocks = |k: &DataKind| k.is_struct() || k.is_slice() || k.is_textual();
+        let structs = [lhs.0, rhs.0].iter().any(blocks);
         let equal = class == OpClass::Equal && !structs;
         ret_if!(equal && lhs.0 == rhs.0, Some(DataKind::Bool));
         let mismatch = kd::incompatible_operands(span, &lhs.0.name(), &rhs.0.name());

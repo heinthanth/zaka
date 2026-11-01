@@ -145,6 +145,21 @@ pub enum VerbOp
     /// `၏ အကွက်အရေအတွက်`: the number of cells of a list.
     #[strum(serialize = "cell_count")]
     CellCount,
+    /// `၏ စာလုံးအရေအတွက်`: the number of characters of text.
+    #[strum(serialize = "char_count")]
+    CharCount,
+    /// `၏ စာလုံး i`: the character of text at a number, counted from 0.
+    /// The parser builds it; no verb word stands for it.
+    #[strum(serialize = "char_at")]
+    CharAt,
+    /// `၏ n ခုမြောက်စာလုံး`: the character of text at a number, counted
+    /// from 1. The parser builds it; no verb word stands for it.
+    #[strum(serialize = "char1")]
+    CharNth,
+    /// `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins each piece of
+    /// text in order. The parser builds it from the list of pieces.
+    #[strum(serialize = "join")]
+    Join,
 }
 
 /// One row of the valence table: a verb, the particles its operands hold,
@@ -206,6 +221,7 @@ pub static VERBS: &[Verb] = &[
     row(Kw::Lend, VerbOp::Lend, &[Slot::Ei], false, false),
     row(Kw::Cell, VerbOp::Cell, &[Slot::Ei, Slot::Ordinal], false, false),
     row(Kw::CellCount, VerbOp::CellCount, &[Slot::Ei], false, false),
+    row(Kw::CharCount, VerbOp::CharCount, &[Slot::Ei], false, false),
 ];
 
 /// Find the valence table row of a verb token.

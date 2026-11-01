@@ -9,6 +9,7 @@ use crate::ir::Module;
 use crate::ir::PrintValue;
 use crate::ir::Slot;
 use crate::ir::Stmt;
+use crate::ir::fmt_values_mut;
 
 /// Move each span of a module with a fixed function.
 ///
@@ -115,7 +116,7 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             expr(count, f);
             *span = f(*span);
         }
-        Stmt::Free { dest: d, span } =>
+        Stmt::Free { dest: d, span } | Stmt::Drop { dest: d, span, .. } =>
         {
             dest(d, f);
             *span = f(*span);
@@ -149,7 +150,14 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
         | ExprNode::Read(_)
         | ExprNode::AddrOf(_)
         | ExprNode::SizeOf(_)
+        | ExprNode::Text(_)
         | ExprNode::BlankList => (),
+        ExprNode::Format(pieces) => do_for!(e in fmt_values_mut(pieces), expr(e, f)),
+        ExprNode::Chars { text, index, .. } =>
+        {
+            expr(text, f);
+            do_if!(let Some(i) = index, expr(i, f));
+        }
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }

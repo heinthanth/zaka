@@ -22,6 +22,7 @@ use crate::expr::NullLit;
 use crate::expr::PrefixExpr;
 use crate::expr::RangeExpr;
 use crate::expr::SizeOfExpr;
+use crate::expr::StrExpr;
 use crate::expr::StructLit;
 use crate::expr::VerbExpr;
 use crate::kind::Kind;
@@ -40,7 +41,6 @@ use crate::stmt::IfArm;
 use crate::stmt::IfStmt;
 use crate::stmt::ImportStmt;
 use crate::stmt::Param;
-use crate::stmt::PrintArg;
 use crate::stmt::PrintStmt;
 use crate::stmt::Program;
 use crate::stmt::ResizeStmt;
@@ -133,6 +133,7 @@ RangeExpr => "range", visit_range;
 ListLit => "list", visit_list;
 StructLit => "struct_lit", visit_struct_lit;
 BlankListLit => "blank_list", visit_blank_list;
+StrExpr => "str_lit", visit_str_expr;
 Ident => "ident", visit_ident;
 Kind => "kind", visit_kind; }
 
@@ -203,6 +204,7 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::List(e) => e,
         Expr::Struct(e) => e,
         Expr::BlankList(e) => e,
+        Expr::Str(e) => e,
     }
 }
 
@@ -222,29 +224,6 @@ impl Node for Expr
     fn label(&self) -> &'static str { expr_node(self).label() }
 
     fn accept<V: Visitor + ?Sized>(&self, v: &mut V) { v.visit_expr(self) }
-}
-
-impl Node for PrintArg
-{
-    fn span(&self) -> Span
-    {
-        match self
-        {
-            PrintArg::Expr(e) => e.span(),
-            PrintArg::Str(s) => s.span,
-        }
-    }
-
-    fn label(&self) -> &'static str
-    {
-        match self
-        {
-            PrintArg::Expr(e) => e.label(),
-            PrintArg::Str(_) => "str",
-        }
-    }
-
-    fn accept<V: Visitor + ?Sized>(&self, v: &mut V) { walk_print_arg(v, self) }
 }
 
 /// Traversal that reads the tree. `enter` and `leave` run around each struct
@@ -347,6 +326,8 @@ pub trait Visitor
     fn visit_struct_lit(&mut self, n: &StructLit) { walk_struct_lit(self, n) }
     /// Visit a blank list.
     fn visit_blank_list(&mut self, n: &BlankListLit) { walk_blank_list(self, n) }
+    /// Visit a string literal.
+    fn visit_str_expr(&mut self, n: &StrExpr) { walk_str_expr(self, n) }
     /// Visit a name in a declaration, parameter, loop header or call.
     fn visit_ident(&mut self, n: &Ident) { walk_ident(self, n) }
     /// Visit a kind.
@@ -410,18 +391,8 @@ pub fn walk_assign<V: Visitor + ?Sized>(v: &mut V, n: &AssignStmt)
 pub fn walk_print<V: Visitor + ?Sized>(v: &mut V, n: &PrintStmt)
 {
     v.enter(n);
-    walk_print_arg(v, &n.value);
+    v.visit_expr(&n.value);
     v.leave(n);
-}
-
-/// Visit a print operand.
-pub fn walk_print_arg<V: Visitor + ?Sized>(v: &mut V, n: &PrintArg)
-{
-    match n
-    {
-        PrintArg::Expr(e) => v.visit_expr(e),
-        PrintArg::Str(s) => v.visit_str(s),
-    }
 }
 
 /// Visit a string operand; it has no children.
@@ -620,6 +591,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::List(e) => v.visit_list(e),
         Expr::Struct(e) => v.visit_struct_lit(e),
         Expr::BlankList(e) => v.visit_blank_list(e),
+        Expr::Str(e) => v.visit_str_expr(e),
     }
 }
 
@@ -792,6 +764,14 @@ pub fn walk_blank_list<V: Visitor + ?Sized>(v: &mut V, n: &BlankListLit)
     v.leave(n);
 }
 
+/// Visit the expression in each template slot of a string literal.
+pub fn walk_str_expr<V: Visitor + ?Sized>(v: &mut V, n: &StrExpr)
+{
+    v.enter(n);
+    do_for!(e in n.template_slots(), v.visit_expr(e));
+    v.leave(n);
+}
+
 /// Visit a name; it has no children.
 pub fn walk_ident<V: Visitor + ?Sized>(v: &mut V, n: &Ident)
 {
@@ -916,11 +896,7 @@ pub fn walk_assign_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut AssignStmt)
 pub fn walk_print_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut PrintStmt)
 {
     v.visit_span_mut(&mut n.span);
-    match &mut n.value
-    {
-        PrintArg::Expr(e) => v.visit_expr_mut(e),
-        PrintArg::Str(s) => v.visit_span_mut(&mut s.span),
-    }
+    v.visit_expr_mut(&mut n.value);
 }
 
 /// Visit the arms and the else block of a conditional.
@@ -1084,6 +1060,11 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         Expr::List(e) => walk_list_mut(v, e),
         Expr::Struct(e) => walk_struct_lit_mut(v, e),
         Expr::BlankList(e) => v.visit_span_mut(&mut e.span),
+        Expr::Str(e) =>
+        {
+            v.visit_span_mut(&mut e.span);
+            do_for!(h in e.template_slots_mut(), v.visit_expr_mut(h));
+        }
     }
 }
 

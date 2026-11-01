@@ -88,6 +88,8 @@ pub enum Base
     Char,
     /// A boolean.
     Bool,
+    /// Owned text.
+    Text,
     /// A bare `လိပ်စာ`, whose target kind is not known.
     Opaque,
     /// A list, for a pointer to a whole list.
@@ -113,6 +115,7 @@ impl Base
             Base::Float(bits) => Some(DataKind::Float(bits)),
             Base::Char => Some(DataKind::Char),
             Base::Bool => Some(DataKind::Bool),
+            Base::Text => Some(DataKind::Text),
             Base::Opaque => None,
             Base::List(l) => Some(DataKind::List(l)),
             Base::Struct(s) => Some(DataKind::Struct(s)),
@@ -142,6 +145,9 @@ pub struct SliceKind
 {
     /// The kind of each cell.
     pub cell: DataKind,
+    /// Whether the cells are u8s that hold UTF-8 text: the view
+    /// `စာသား တစ်စိတ်တစ်ပိုင်း`, which prints as text.
+    pub text: bool,
 }
 
 /// Each slice kind made so far, so a kind is made once and remains `Copy`.
@@ -275,6 +281,11 @@ pub enum DataKind
     Struct(&'static StructKind),
     /// A slice: the address of a run of cells and their count.
     Slice(&'static SliceKind),
+    /// `စာသား`: owned UTF-8 text, three words: the address of its u8s,
+    /// their count, and the room of its heap block. Room 0 means the u8s
+    /// sit in static storage, so nothing frees them. The first two words
+    /// are laid out as a slice's.
+    Text,
 }
 
 impl DataKind
@@ -287,6 +298,8 @@ impl DataKind
     pub const F64: DataKind = DataKind::Float(64);
     /// `လိပ်စာ`, the opaque pointer.
     pub const OPAQUE: DataKind = DataKind::Ptr(PtrKind::owner(1, Base::Opaque));
+    /// `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်`, the cell of a text.
+    pub const U8: DataKind = DataKind::Int(IntKind::new(false, Width::Bits(8)));
 
     /// The data kind a written kind phrase names.
     ///
@@ -313,6 +326,7 @@ impl DataKind
             BaseKind::Float => Base::Float(kind.bits.unwrap_or(64)),
             BaseKind::Char => Base::Char,
             BaseKind::Bool => Base::Bool,
+            BaseKind::Text => Base::Text,
             BaseKind::Opaque => Base::Opaque,
             BaseKind::Named => named_base(kind, structs),
         };
@@ -334,6 +348,7 @@ impl DataKind
             Wrap::List(Cells::Fixed(n)) => DataKind::list_of(inner, *n),
             Wrap::List(Cells::Inferred) => DataKind::list_of(inner, 0),
             Wrap::Slice => DataKind::slice_of(inner),
+            Wrap::View => DataKind::text_view(),
         })
     }
 
@@ -392,7 +407,32 @@ impl DataKind
     /// The kind.
     pub fn slice_of(cell: DataKind) -> DataKind
     {
-        let wanted = SliceKind { cell };
+        DataKind::slice_kind(SliceKind { cell, text: false })
+    }
+
+    /// The view of text, `စာသား တစ်စိတ်တစ်ပိုင်း`: a slice of u8s that hold
+    /// UTF-8.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn text_view() -> DataKind
+    {
+        DataKind::slice_kind(SliceKind { cell: DataKind::U8, text: true })
+    }
+
+    /// The slice kind with these parts, made once and kept for the rest of
+    /// the run.
+    ///
+    /// # Arguments
+    ///
+    /// * `wanted` - The parts.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    fn slice_kind(wanted: SliceKind) -> DataKind
+    {
         let slices = SLICES.get_or_init(Mutex::default);
         let mut slices = slices.lock().unwrap_or_else(PoisonError::into_inner);
         ret_if!(let Some(found) = slices.get(&wanted), DataKind::Slice(found));
@@ -417,6 +457,33 @@ impl DataKind
     ///
     /// `true` for a slice kind.
     pub fn is_slice(self) -> bool { matches!(self, DataKind::Slice(_)) }
+
+    /// Whether the kind is the view of text.
+    ///
+    /// # Returns
+    ///
+    /// `true` for `စာသား တစ်စိတ်တစ်ပိုင်း`.
+    pub fn is_text_view(self) -> bool { self.as_slice().is_some_and(|s| s.text) }
+
+    /// Whether the kind is text: owned, or a view.
+    ///
+    /// # Returns
+    ///
+    /// `true` for `စာသား` and `စာသား တစ်စိတ်တစ်ပိုင်း`.
+    pub fn is_textual(self) -> bool { self == DataKind::Text || self.is_text_view() }
+
+    /// Whether a value of the kind holds owned text, which is dropped when
+    /// its place ends: text itself, or a list or struct with text in it.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn holds_text(self) -> bool
+    {
+        ret_if!(let Some(l) = self.as_list(), l.cell.holds_text());
+        ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_text()));
+        self == DataKind::Text
+    }
 
     /// The kind of each cell a value of the kind holds or views: the cells of
     /// a list or of a slice.
@@ -472,7 +539,7 @@ impl DataKind
     /// `true` for a list, a struct or a slice kind.
     pub fn is_aggregate(self) -> bool
     {
-        self.is_list() || self.is_struct() || self.is_slice()
+        self.is_list() || self.is_struct() || self.is_slice() || self == DataKind::Text
     }
 
     /// Whether some list level of the kind has no cell count so far.
@@ -542,7 +609,10 @@ impl DataKind
     pub fn parse(name: &str) -> Option<DataKind>
     {
         ret_if!(name == "null", Some(DataKind::Null));
-        ret_if!(name.starts_with("&["), parse_base(name)?.0.scalar());
+        ret_if!(
+            name.starts_with("&[") || name == "&text",
+            parse_base(name)?.0.scalar()
+        );
         let (borrowed, name) = tern!(
             let Some(rest) = name.strip_prefix('&'),
             (true, rest),
@@ -603,7 +673,9 @@ impl DataKind
             DataKind::Null => "null".to_string(),
             DataKind::List(l) => list_name(l, full),
             DataKind::Struct(s) => tern!(full, s.sig(), &s.name).to_string(),
+            DataKind::Slice(s) if s.text => "&text".to_string(),
             DataKind::Slice(s) => format!("&[]{}", s.cell.spell(full)),
+            DataKind::Text => "text".to_string(),
         }
     }
 
@@ -626,6 +698,7 @@ impl DataKind
             DataKind::List(l) => (0, Base::List(l)),
             DataKind::Struct(s) => (0, Base::Struct(s)),
             DataKind::Slice(s) => (0, Base::Slice(s)),
+            DataKind::Text => (0, Base::Text),
         }
     }
 
@@ -744,7 +817,7 @@ impl DataKind
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.is_move_kind());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.is_move_kind()));
-        self.is_owner_ptr()
+        self.is_owner_ptr() || self == DataKind::Text
     }
 
     /// Whether a value of the kind is duplicated when it goes into another
@@ -850,6 +923,7 @@ impl DataKind
     {
         ret_if!(let Some(s) = self.as_struct(), s.size(platform));
         ret_if!(self.is_slice(), Some(u32::from(platform) / 4));
+        ret_if!(self == DataKind::Text, Some(u32::from(platform) / 8 * 3));
         let Some(l) = self.as_list()
         else
         {
@@ -871,7 +945,10 @@ impl DataKind
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.align(platform));
         ret_if!(let Some(s) = self.as_struct(), s.align(platform));
-        ret_if!(self.is_slice(), (u32::from(platform) / 8).min(16));
+        ret_if!(
+            self.is_slice() || self == DataKind::Text,
+            (u32::from(platform) / 8).min(16)
+        );
         self.size(platform).min(16)
     }
 
@@ -933,7 +1010,10 @@ impl DataKind
             DataKind::Char => 32,
             DataKind::Bool => 8,
             DataKind::Ptr(_) | DataKind::Null => platform,
-            DataKind::List(_) | DataKind::Struct(_) | DataKind::Slice(_) =>
+            DataKind::List(_)
+            | DataKind::Struct(_)
+            | DataKind::Slice(_)
+            | DataKind::Text =>
             {
                 let bits = u64::from(self.size(platform)) * 8;
                 u16::try_from(bits).unwrap_or(u16::MAX)
@@ -966,6 +1046,10 @@ impl DataKind
             (DataKind::Int(a), DataKind::Float(b)) => a.bits(platform) <= precision(b),
             (DataKind::Float(a), DataKind::Float(b)) => a < b,
             (DataKind::Null, DataKind::Ptr(_)) => true,
+            (DataKind::Slice(a), DataKind::Slice(b)) =>
+            {
+                a.text && !b.text && a.cell == b.cell
+            }
             (DataKind::Ptr(_), DataKind::Ptr(_)) =>
             {
                 self.meets_pointer(target) && !self.reads_addresses_as(target)
@@ -1062,7 +1146,7 @@ impl DataKind
     /// `true` for such a kind.
     pub fn holds_address(self) -> bool
     {
-        ret_true!(self.is_slice());
+        ret_true!(self.is_slice() || self == DataKind::Text);
         ret_if!(let Some(list) = self.as_list(), list.cell.holds_address());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_address()));
         self.is_ptr()
@@ -1085,6 +1169,8 @@ impl DataKind
     /// pointee that holds an address, see [`DataKind::reads_addresses_as`].
     pub fn cast_allowed(self, to: DataKind) -> bool
     {
+        let bytes = self.as_slice().is_some_and(|s| !s.text && s.cell == DataKind::U8);
+        ret_true!(bytes && to.is_text_view());
         ret_false!(self.is_aggregate() || to.is_aggregate());
         ret_true!(self == to);
         ret_true!(self.is_numeric() && to.is_numeric());
@@ -1130,8 +1216,11 @@ fn named_base(kind: &Kind, structs: &StructTable) -> Base
 fn parse_plain(name: &str) -> Option<DataKind>
 {
     let named = [("isize", DataKind::ISIZE), ("usize", DataKind::USIZE)];
-    let named =
-        named.into_iter().chain([("char", DataKind::Char), ("bool", DataKind::Bool)]);
+    let named = named.into_iter().chain([
+        ("char", DataKind::Char),
+        ("bool", DataKind::Bool),
+        ("text", DataKind::Text),
+    ]);
     let found = named.into_iter().find(|(n, _)| *n == name).map(|(_, k)| k);
     ret_if!(found.is_some(), found);
     let (head, digits) = name.split_at_checked(1)?;
@@ -1189,6 +1278,7 @@ fn ptr_name(p: PtrKind, full: bool) -> String
 fn parse_base(name: &str) -> Option<(Base, bool)>
 {
     ret_if!(name == "ptr", Some((Base::Opaque, false)));
+    ret_if!(name == "&text", Some((DataKind::text_view().levels().1, false)));
     if let Some(cell) = name.strip_prefix("&[]")
     {
         return Some((DataKind::slice_of(DataKind::parse(cell)?).levels().1, false));

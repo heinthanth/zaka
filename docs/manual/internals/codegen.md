@@ -53,12 +53,12 @@ parameters of a function are its first locals, then the result variable `ရလ�
 other locals. `addressed` marks a slot whose address the program takes, so it needs an address
 that remains fixed.
 
-A statement is one of thirteen forms:
+A statement is one of fourteen forms:
 
 | Form | Meaning |
 | --- | --- |
 | `Set { place, value }` | a declaration with its first value, or an assignment |
-| `Print { value }` | a value or a decoded string, then a line break |
+| `Print { value }` | a value (`PrintValue::Expr`) or static text (`PrintValue::Text`), then a line break |
 | `If { cond, then, els }` | an `else if` chain nests in `els` |
 | `Loop { init, cond, update, block }` | a while loop has a blank `init` and `update` |
 | `Counted { var, from, to, step, mode, block }` | `var` runs from `from` to `to`, both included |
@@ -66,12 +66,18 @@ A statement is one of thirteen forms:
 | `Call { func, name, args }` | a call whose result is dropped |
 | `Store { addr, value }` | write at an address |
 | `Alloc`, `Resize`, `Free` | a heap sentence, with a `Dest`: a slot, or a cell in storage that holds an address |
+| `Drop { dest, kind }` | free each text on the heap inside the value at `dest`, of a kind that holds text, and leave it blank; written `(drop l0)` |
 
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
 `Convert { implicit }`, `Call`, the pointer forms `AddrOf`, `Load`, `Lend`, `Take`,
 `PtrAdd`, `PtrSub`, `SizeOf`, the list forms `List`, `BlankList`, `CellAddr`, `FieldAddr`,
-and `MakeSlice`. A `CellAddr` names the count of its list, or none for a cell of a slice,
+and `MakeSlice`, and the text forms `Text(String)` (static text, written `"..."` in the
+s-expression form) and `Format(Vec<FmtPiece>)` (text built when the program runs, written
+`(format "a" g0)`), whose pieces are `FmtPiece::Text(String)` or `FmtPiece::Value(Expr)`,
+and `Chars { text, index, first }`: the character count of text (`(chars g0)`, no index)
+or the character at a number (`(char@ g0 i)` from 0, `(char1@ g0 i)` from 1).
+A `CellAddr` names the count of its list, or none for a cell of a slice,
 whose count is read when the program runs. A `Value`
 is an integer (kind and bits), a float (width and bit pattern), a char, a boolean or an
 address.
@@ -97,6 +103,15 @@ rules out). Its rules:
   where `from` tells whether the source is a list of a known count, a slice, or a heap
   block. The lend of a list is a `MakeSlice` of each cell, marked `checked`. The count of
   a slice is a `Load` of its second word, through a `FieldAddr`.
+- A string literal with no template slots becomes `Text`; one with template slots, a verbal join, and a `+` of two texts,
+  become a `Format`.
+- A place whose kind holds text gets a `Drop` at each exit of its scope: the end of its
+  block, the end of a loop round, before a `break`, a `continue` or a return, and, for a
+  global, at the end of `main`. A short-lived text that is printed or used in a template slot is
+  dropped right after its use.
+- An assignment to a text place goes through a hidden slot `%new`: `(set l1 <value>)`,
+  then `(drop l0)`, then `(set l0 (take (addr l1)))`, so the value is worked out from the
+  old text before the old text is freed.
 - A program of several files gives one module. As in the check, each file has its own
   top-level scope and its own function map, and an import brings the places and
   functions it names from the file it reads. Functions are numbered across all the
@@ -112,8 +127,8 @@ rules out). Its rules:
 
 | Folding | Effect |
 | --- | --- |
-| `exprs` | an operation on constants is replaced with its value |
-| `consts` | a read of a `ကိန်းသေ` set to a constant is replaced with the value |
+| `exprs` | an operation on constants is replaced with its value; a `Format` whose values are each constant becomes `Text`, and a print of such text becomes a print of static text |
+| `consts` | a read of a `ကိန်းသေ` set to a constant is replaced with the value, and a read of a text constant with its static `Text` |
 | `branches` | an `if` on a constant keeps the taken branch; a loop whose condition is the constant false is dropped |
 
 The errors of constant operations are reported whatever `--fold` holds: an overflow
@@ -125,6 +140,15 @@ The first `imported_inits` statements of `main` get one more check: a duplicate 
 folded with each folding on, and each one whose value is then not known (not a constant,
 a size, a blank list or a list of known values) is ZK0604. The check uses its own
 duplicate, so `--fold` changes the IR but not which programs compile.
+
+A text constant (a `ကိန်းသေ` whose kind holds text) gets the same kind of check: when the
+module has one, a duplicate of it is folded with each folding on first. Each text
+constant whose value then is static is kept, and the fold proper puts that value in its
+`set` whatever `--fold` holds, so the constant holds static text with room 0; one
+whose value is not static is ZK0606, at the first value of a format that did not fold.
+Lowering never takes a constant (`owned` sees a read of the constant, or of a field or
+cell of one), and the borrow checker treats such a read as a duplicate, so a read
+after one is no ZK0701.
 
 Take this program (the file `sq.zaka`):
 
@@ -260,16 +284,21 @@ condition `12 > 10` is true, so the `if` is gone and its branch stands in its pl
 `bc::Module`:
 
 ```text
-Module { platform_bits, globals: Vec<Slot>, texts: Vec<String>, funcs: Vec<Func>, main: u32, overflow }
+Module { platform_bits, globals: Vec<Slot>, texts: Vec<String>, formats: Vec<Vec<FmtArg>>, funcs: Vec<Func>, main: u32, overflow }
 Func   { name, params, ret, locals: Vec<Slot>, code: Vec<Op>, spans: Vec<Span> }
 ```
 
 `funcs` holds the IR functions at their IR numbers, then one more function, `main`, for the
-top-level statements; `main` is its number. `texts` is the pool of print strings. `spans`
+top-level statements; `main` is its number. `texts` is the table of static texts, each
+distinct text once: string literals, folded formats and printed text; `print_text` and
+`text` name them through their index. `formats` lists the pieces of each format, `FmtArg::Text(t)` for
+a static text or `FmtArg::Value(kind)` for a value from the stack; `format` names one through
+its index, and the listing shows them in a `formats` section (`fmt0 t0 isize t1`). `spans`
 runs parallel to `code` and tells the source region of each op, which is how the VM
 and the explorer point at the line being run. The generator can add locals of its own,
-named with a `%`: `%to`, `%step` and `%dir` for a counted loop, and `%list`, `%slice`,
-`%ret` and `%at` for the lists, structs and slices a statement builds. `EmitOptions`
+named with a `%`: `%to`, `%step` and `%dir` for a counted loop, `%list`, `%slice`,
+`%ret` and `%at` for the lists, structs and slices a statement builds, and `%text` for
+text with no slot to go to, such as a printed format. `EmitOptions`
 holds the two choices of the generator: `results` (`--results`) and `scratch`
 (`--scratch`), both below.
 
@@ -292,6 +321,14 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k` |
 | slices | `make_slice stride source`, `slice_cell stride from` |
+| text | `text t`, `format fmt`, `drop k`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
+
+A range of text that is not the whole text gets `text_edges` after its `make_slice`, which
+stops the program when an edge falls inside a character; when the fold knows the text, the
+start and the length, it reports such a range as ZK0607 first. A conversion from a slice of
+u8s to a view of text emits `check_utf8`, and a widening of a view to a slice of u8s emits
+nothing, since both are the same two words. `char_count` and `char_at` take their text
+through `read_operand`, so a fresh text is dropped after the read.
 
 Each variable lives in storage. A read is `local_addr n` or `global_addr n`, then `load`;
 a write is the address, the value, then `store`. That is the reason each access of a
@@ -451,8 +488,9 @@ fetches the op at the program counter of the innermost call, executes it with `e
 returns a `State`: `Running`, `Finished` or `Trapped`. `run` and `run_with` loop `step`;
 the explorer calls `step`, `step_over` and `step_out` to show a program running.
 
-- **Start.** `Machine::new` gives each global a static block, opens the stack region and
-  enters `main`. Globals start at the default of their kind, and the `Set` statements that
+- **Start.** `Machine::new` gives each global a static block, then each static text a
+  frozen static block that holds its UTF-8, opens the stack region and enters `main`. A
+  write inside a frozen block is the trap `FrozenWrite`. Globals start at the default of their kind, and the `Set` statements that
   the IR keeps run in source order.
 - **A call.** `call f` takes one block of the stack region for each local of `f`
   (`FrameMode::Checked`), or one block for all of them at C offsets (`Packed`), moves the

@@ -166,7 +166,7 @@ fn field_texts(decl: &StructDecl, names: &BTreeSet<&str>) -> Vec<(String, String
         };
         format!("{}{name}", split_base(&plain).0)
     };
-    decl.fields.iter().map(|f| (f.name.name.clone(), text(&f.kind))).collect()
+    decl.fields.iter().map(|f| (f.name.name.to_string(), text(&f.kind))).collect()
 }
 
 /// The struct a field holds inline, not through an address.

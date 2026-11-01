@@ -81,7 +81,6 @@ fn parser_constructors_render_messages()
         p::literal_out_of_range(span, "300"),
         p::float_for_int_kind(span),
         p::bad_literal_kind(span),
-        p::str_outside_print(span),
         p::const_loop(span),
         p::unmatched_block_close(span),
         p::bad_list_count(span, "၀"),
@@ -218,6 +217,7 @@ fn list_constructors_render_messages()
     assert_eq!(out.code, Code::CellOutOfRange);
     assert!(out.message.contains('3') && out.message.contains('2'));
     assert!(k::slice_of_borrows(span, "&[]&[]isize").message.contains("&[]&[]isize"));
+    assert!(k::text_cell_write(span, "text").message.contains("text"));
     let past = f::range_out_of_list(span, "2", "3", 4);
     assert_eq!(past.code, Code::RangeOutOfList);
     assert!(past.message.contains('3') && past.message.contains('4'));

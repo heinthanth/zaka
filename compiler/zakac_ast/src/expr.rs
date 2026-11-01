@@ -5,9 +5,11 @@ use strum::AsRefStr;
 use strum::EnumString;
 use zakac_lexer::token::DigitScript;
 use zakac_lexer::token::Particle;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::kind::Kind;
+use crate::name::Name;
 use crate::verb::Dir;
 use crate::verb::VerbOp;
 
@@ -24,7 +26,7 @@ pub struct Ident
 {
     /// The name text, without backticks for a raw identifier.
     #[builder(into)]
-    pub name: String,
+    pub name: Name,
     /// Source region of the name.
     pub span: Span,
 }
@@ -100,6 +102,9 @@ pub enum Expr
     Struct(StructLit),
     /// `စာရင်းအလွတ်`, a list with each cell at its default.
     BlankList(BlankListLit),
+    /// Text in double quotes, with a value in place of each `{...}` template
+    /// slot.
+    Str(StrExpr),
 }
 
 /// Integer literal; the digits are converted with the base.
@@ -148,6 +153,72 @@ pub struct CharLit
     pub value: char,
     /// Source region, quotes included.
     pub span: Span,
+}
+
+/// Text in double quotes: decoded text, with an expression in each template
+/// slot.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct StrExpr
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The pieces in source order; no text piece follows another.
+    pub pieces: Vec<StrPiece>,
+    /// Source region, quotes included.
+    pub span: Span,
+}
+
+impl StrExpr
+{
+    /// The text, when the literal has no template slot.
+    ///
+    /// # Returns
+    ///
+    /// The text, or `None` for a literal with a template slot.
+    pub fn plain(&self) -> Option<&str>
+    {
+        match self.pieces.as_slice()
+        {
+            [] => Some(""),
+            [StrPiece::Text(text)] => Some(text),
+            _ => None,
+        }
+    }
+
+    /// The expression of each template slot, in source order.
+    ///
+    /// # Returns
+    ///
+    /// The expressions.
+    pub fn template_slots(&self) -> impl Iterator<Item = &Expr>
+    {
+        self.pieces
+            .iter()
+            .filter_map(|p| tern!(let StrPiece::TemplateSlot(e) = p, Some(e), None))
+    }
+
+    /// The expression of each template slot, in source order, to change.
+    ///
+    /// # Returns
+    ///
+    /// The expressions.
+    pub fn template_slots_mut(&mut self) -> impl Iterator<Item = &mut Expr>
+    {
+        self.pieces
+            .iter_mut()
+            .filter_map(|p| tern!(let StrPiece::TemplateSlot(e) = p, Some(e), None))
+    }
+}
+
+/// A piece of a string literal.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StrPiece
+{
+    /// Decoded text.
+    Text(String),
+    /// A `{...}` template slot: its value, as text, takes its place.
+    TemplateSlot(Expr),
 }
 
 /// Boolean literal.
@@ -306,7 +377,7 @@ pub struct NameExpr
     pub id: NodeId,
     /// The name text.
     #[builder(into)]
-    pub name: String,
+    pub name: Name,
     /// Source region.
     pub span: Span,
 }
@@ -627,6 +698,7 @@ impl Expr
             Expr::List(n) => n.id,
             Expr::Struct(n) => n.id,
             Expr::BlankList(n) => n.id,
+            Expr::Str(n) => n.id,
         }
     }
 

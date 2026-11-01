@@ -17,6 +17,7 @@ use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
 use zakac_codegen::bc;
 use zakac_codegen::emit::emit;
+use zakac_codegen::listing::format_text;
 use zakac_codegen::options::EmitOptions;
 use zakac_codegen::options::ResultMode;
 use zakac_codegen::options::ScratchMode;
@@ -335,8 +336,8 @@ pub enum PartKind
     Text,
     /// An escape such as `\n`.
     Escape,
-    /// A `{...}` hole, kept for later substitution.
-    Hole,
+    /// A `{...}` template slot: an expression whose value takes its place.
+    TemplateSlot,
 }
 
 /// A piece of a decoded string literal, as the strings table shows it.
@@ -345,8 +346,8 @@ pub struct StrPiece
 {
     /// What the piece is.
     pub kind: PartKind,
-    /// The piece as it reads: the text, the escape as written, or the hole in
-    /// braces.
+    /// The piece as it reads: the text, the escape as written, or the template
+    /// slot in braces.
     #[builder(into)]
     pub text: String,
 }
@@ -357,8 +358,8 @@ pub struct StrRow
 {
     /// Index in the string table.
     pub idx: usize,
-    /// The decoded value in pieces; the view draws escapes and holes as
-    /// chips, so a newline reads `\n`.
+    /// The decoded value in pieces; the view draws escapes and template slots
+    /// as chips, so a newline reads `\n`.
     pub value: Vec<StrPiece>,
     /// The literal as written in the source, quotes included.
     pub source: String,
@@ -435,8 +436,11 @@ pub struct Compiled
     pub asm: Vec<AsmFunc>,
     /// The global slots of the ops.
     pub globals: Vec<SlotRow>,
-    /// The pooled print strings of the ops.
+    /// The static texts of the ops.
     pub texts: Vec<String>,
+    /// The pieces of each text the ops build when the program runs, as
+    /// listing text.
+    pub formats: Vec<String>,
     /// Whether code generation ran; it is left out after errors in earlier
     /// phases, folding included.
     pub emitted: bool,
@@ -715,6 +719,8 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     let asm = ops.as_ref().map(|m| asm_rows(&unit, m)).unwrap_or_default();
     let globals = ops.as_ref().map(|m| slot_rows(&m.globals)).unwrap_or_default();
     let texts = ops.as_ref().map(|m| m.texts.clone()).unwrap_or_default();
+    let formats =
+        ops.as_ref().map(|m| m.formats.iter().map(|f| format_text(f)).collect());
 
     Compiled::builder()
         .source(source.to_string())
@@ -738,6 +744,7 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .asm(asm)
         .globals(globals)
         .texts(texts)
+        .formats(formats.unwrap_or_default())
         .emitted(emitted)
         .times(times)
         .build()
@@ -1027,7 +1034,11 @@ fn str_part(part: &StrPart) -> StrPiece
     {
         StrPart::Text(text) => (PartKind::Text, text.clone()),
         StrPart::Escape(ch) => (PartKind::Escape, escape_controls(&ch.to_string())),
-        StrPart::Hole(text) => (PartKind::Hole, format!("{{{text}}}")),
+        StrPart::TemplateSlot { text, .. } =>
+        {
+            (PartKind::TemplateSlot, format!("{{{text}}}"))
+        }
+        StrPart::Bad(text) => (PartKind::Escape, text.clone()),
     };
     StrPiece::builder().kind(kind).text(text).build()
 }

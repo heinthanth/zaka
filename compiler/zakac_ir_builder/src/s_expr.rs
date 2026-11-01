@@ -7,6 +7,7 @@ use crate::ir::Access;
 use crate::ir::Dest;
 use crate::ir::Expr;
 use crate::ir::ExprNode;
+use crate::ir::FmtPiece;
 use crate::ir::Func;
 use crate::ir::Module;
 use crate::ir::Place;
@@ -90,6 +91,7 @@ impl ToSexpr for Stmt
                 heap_sexpr("resize", dest, count, *unit)
             }
             Stmt::Free { dest, .. } => list("free", [dest_sexpr(dest)]),
+            Stmt::Drop { dest, .. } => list("drop", [dest_sexpr(dest)]),
         }
     }
 }
@@ -166,6 +168,25 @@ impl ToSexpr for Expr
             ExprNode::FieldAddr { base, field, offset } =>
             {
                 list("field@", [base.to_sexpr(), field.to_string(), offset.to_string()])
+            }
+            ExprNode::Text(text) => format!("\"{text}\""),
+            ExprNode::Chars { text, index: None, .. } =>
+            {
+                list("chars", [text.to_sexpr()])
+            }
+            ExprNode::Chars { text, index: Some(i), first } =>
+            {
+                let head = tern!(*first == 0, "char@", "char1@");
+                list(head, [text.to_sexpr(), i.to_sexpr()])
+            }
+            ExprNode::Format(pieces) =>
+            {
+                let piece = |p: &FmtPiece| match p
+                {
+                    FmtPiece::Text(text) => format!("\"{text}\""),
+                    FmtPiece::Value(e) => e.to_sexpr(),
+                };
+                list("format", pieces.iter().map(piece))
             }
         }
     }

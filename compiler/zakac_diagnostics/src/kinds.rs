@@ -538,3 +538,18 @@ pub fn slice_of_borrows(span: Span, kind: &str) -> Diagnostic
 {
     Diagnostic::new(Code::SliceOfBorrows, t!("codes.ZK0428.message", k = kind), span)
 }
+
+/// A cell of text is the target of an assignment.
+///
+/// # Arguments
+///
+/// * `span` - The cell.
+/// * `kind` - The name of the text kind.
+///
+/// # Returns
+///
+/// The `ZK0429` diagnostic.
+pub fn text_cell_write(span: Span, kind: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::TextCellWrite, t!("codes.ZK0429.message", k = kind), span)
+}

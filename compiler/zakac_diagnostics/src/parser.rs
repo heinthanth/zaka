@@ -380,20 +380,6 @@ pub fn bad_literal_kind(span: Span) -> Diagnostic
     Diagnostic::new(Code::BadLiteralKind, t!("codes.ZK0222.message"), span)
 }
 
-/// A string literal is used as a value.
-///
-/// # Arguments
-///
-/// * `span` - The string literal.
-///
-/// # Returns
-///
-/// The `ZK0223` diagnostic.
-pub fn str_outside_print(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::StrOutsidePrint, t!("codes.ZK0223.message"), span)
-}
-
 /// A generic loop is declared with the constant word.
 ///
 /// # Arguments

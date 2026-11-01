@@ -9,7 +9,6 @@ use zakac_ast::expr::RangeExpr;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AssignStmt;
-use zakac_ast::stmt::PrintArg;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::Stmt;
@@ -22,9 +21,11 @@ use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
 use zakac_lexer::token::Kw;
+use zakac_lexer::token::Particle;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
@@ -228,6 +229,16 @@ impl Parser<'_>
                 self.push_index(&mut stack)?;
                 continue;
             }
+            if tok.kind == TokenKind::Kw(Kw::CharKind) && holds_ei(&stack)
+            {
+                self.push_char_at(&mut stack)?;
+                continue;
+            }
+            if tok.kind == TokenKind::Kw(Kw::CharKind) && holds_ordinal(&stack)
+            {
+                self.push_char_nth(&mut stack);
+                continue;
+            }
             let Some(verb) = as_verb(&tok)
             else
             {
@@ -285,6 +296,8 @@ impl Parser<'_>
         }
         let tok = self.peek();
         ret_if!(as_verb(&tok).is_some() || as_shift_dir(&tok).is_some(), Ok(()));
+        let char_word = tok.kind == TokenKind::Kw(Kw::CharKind);
+        ret_if!(char_word && matches!(slot, Slot::Ei | Slot::Ordinal), Ok(()));
         let first = self.text_of(self.prev_span());
         ret_if!(as_slot(&tok).is_some(), Err(diag::double_particle(tok.span, first)));
         let expr = self.parse_operand()?;
@@ -328,6 +341,7 @@ impl Parser<'_>
     {
         ret_if!(self.at_struct_lit(), self.parse_struct_lit());
         let first = self.parse_notation()?;
+        ret_if!(self.at_join_rest(), self.parse_join(first));
         ret_if!(!self.at_list_rest(), Ok(first));
         self.parse_list(first)
     }
@@ -375,6 +389,58 @@ impl Parser<'_>
             }
         }
         false
+    }
+
+    /// Whether the rest of a verbal join comes next: `၊` with
+    /// `တို့ကို ဆက်ထားသည့်` ahead of the next `တို့ဖြင့်`, `)` or `။` outside
+    /// parentheses.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_join_rest(&self) -> bool
+    {
+        self.at_punct(Punct::ListSep) && self.close_ahead(1, Self::at_join_close)
+    }
+
+    /// Whether `တို့ကို ဆက်ထားသည့်` starts `n` tokens ahead.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_join_close(&self, n: usize) -> bool
+    {
+        let joined = self.peek_n(n + 1).kind == TokenKind::Kw(Kw::Joined);
+        self.peek_n(n).kind == TokenKind::Kw(Kw::ListKo) && joined
+    }
+
+    /// Parse the rest of a verbal join after its first piece:
+    /// `(၊ <text>)+ တို့ကို ဆက်ထားသည့် စာသား`.
+    ///
+    /// # Arguments
+    ///
+    /// * `first` - The first piece.
+    ///
+    /// # Returns
+    ///
+    /// The join, or a diagnostic.
+    fn parse_join(&mut self, first: Expr) -> PResult<Expr>
+    {
+        let mut pieces = vec![first];
+        do_while!(self.eat_punct(Punct::ListSep), pieces.push(self.parse_notation()?));
+        self.expect(Kw::ListKo)?;
+        self.expect(Kw::Joined)?;
+        let end = self.expect(Kw::TextKind)?;
+        let span = pieces[0].span().to(&end.span);
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = VerbExpr::builder().id(id).op(VerbOp::Join).args(pieces)
+            .particle(Particle::None).is_cmp(false).span(span).build();
+        Ok(Expr::Verb(node))
     }
 
     /// Whether `တို့ပါသော` is the token `n` ahead.
@@ -444,6 +510,65 @@ impl Parser<'_>
         let span = list.span().to(&index.span());
         stack.push(Item::expr(self.index_expr(list, index, 0, span)));
         Ok(())
+    }
+
+    /// Push `စာလုံး <number>` after an operand that holds `၏`: the character
+    /// of text at that number, counted from 0.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack; its top holds `၏`.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic from the number.
+    fn push_char_at(&mut self, stack: &mut Vec<Item>) -> PResult<()>
+    {
+        self.bump();
+        let index = self.parse_notation()?;
+        let text = into_expr(stack.pop().expect("the top operand holds ၏"));
+        let span = text.span().to(&index.span());
+        let node = self.char_verb(VerbOp::CharAt, text, index, span);
+        stack.push(Item::expr(node));
+        Ok(())
+    }
+
+    /// Push `စာလုံး` after `<text> ၏ <number> ခုမြောက်`: the character of
+    /// the text at that number, counted from 1.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack; its top holds `ခုမြောက်`, the operand under
+    ///   it `၏`.
+    fn push_char_nth(&mut self, stack: &mut Vec<Item>)
+    {
+        let word = self.bump();
+        let index = into_expr(stack.pop().expect("the top operand holds ခုမြောက်"));
+        let text = into_expr(stack.pop().expect("the operand under it holds ၏"));
+        let span = text.span().to(&word.span);
+        let node = self.char_verb(VerbOp::CharNth, text, index, span);
+        stack.push(Item::expr(node));
+    }
+
+    /// Build a character read of text.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - `CharAt` or `CharNth`.
+    /// * `text` - The text.
+    /// * `index` - The character number.
+    /// * `span` - The whole read.
+    ///
+    /// # Returns
+    ///
+    /// The expression.
+    fn char_verb(&mut self, op: VerbOp, text: Expr, index: Expr, span: Span) -> Expr
+    {
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = VerbExpr::builder().id(id).op(op).args(vec![text, index])
+            .particle(Particle::None).is_cmp(false).span(span).build();
+        Expr::Verb(node)
     }
 
     /// Build a list cell node.
@@ -717,6 +842,26 @@ fn holds_ei(stack: &[Item]) -> bool
     matches!(stack.last().and_then(|item| item.slot), Some((Slot::Ei, _)))
 }
 
+/// Whether the top operand holds `ခုမြောက်` and the operand under it `၏`,
+/// so a character word reads the character at that number.
+///
+/// # Arguments
+///
+/// * `stack` - The operand stack.
+///
+/// # Returns
+///
+/// `true` when they do.
+fn holds_ordinal(stack: &[Item]) -> bool
+{
+    let [.., under, top] = stack
+    else
+    {
+        return false;
+    };
+    matches!((under.slot, top.slot), (Some((Slot::Ei, _)), Some((Slot::Ordinal, _))))
+}
+
 /// Whether a token ends the scan for the rest of a list literal.
 ///
 /// # Arguments
@@ -749,7 +894,6 @@ fn ends_list_scan(kind: TokenKind) -> bool
 /// The statement.
 fn print_stmt(value: Expr, slot: Slot, span: Span) -> Stmt
 {
-    let value = PrintArg::Expr(value);
     Stmt::Print(PrintStmt::builder().value(value).slot(slot).span(span).build())
 }
 

@@ -58,13 +58,12 @@ program:
         stmts:
         - print:
             value:
-              expr:
-                name:
-                  id: 3
-                  name: ကိန်း
-                  span:
-                    lo: 270
-                    hi: 285
+              name:
+                id: 3
+                name: ကိန်း
+                span:
+                  lo: 270
+                  hi: 285
             slot: ko
             span:
               lo: 270
@@ -254,13 +253,12 @@ program:
               hi: 959
         - print:
             value:
-              expr:
-                name:
-                  id: 19
-                  name: အမှတ်
-                  span:
-                    lo: 960
-                    hi: 975
+              name:
+                id: 19
+                name: အမှတ်
+                span:
+                  lo: 960
+                  hi: 975
             slot: ko
             span:
               lo: 960
@@ -313,13 +311,12 @@ program:
         stmts:
         - print:
             value:
-              expr:
-                name:
-                  id: 23
-                  name: အမှတ်
-                  span:
-                    lo: 1190
-                    hi: 1205
+              name:
+                id: 23
+                name: အမှတ်
+                span:
+                  lo: 1190
+                  hi: 1205
             slot: ko
             span:
               lo: 1190
@@ -423,13 +420,12 @@ program:
         stmts:
         - print:
             value:
-              expr:
-                name:
-                  id: 28
-                  name: အဆင့်
-                  span:
-                    lo: 1551
-                    hi: 1566
+              name:
+                id: 28
+                name: အဆင့်
+                span:
+                  lo: 1551
+                  hi: 1566
             slot: ko
             span:
               lo: 1551

@@ -291,9 +291,9 @@ fn imported_structs(
     let pairs = imports.iter().zip(targets);
     let pairs = pairs.filter_map(|(n, t)| Some((n, &exports[(*t)? as usize])));
     let names = pairs.flat_map(|(n, set)| {
-        n.names.iter().map(|i| &i.name).filter(|name| set.contains(*name))
+        n.names.iter().map(|i| i.name).filter(|name| set.contains(name.as_str()))
     });
-    names.cloned().collect()
+    names.map(String::from).collect()
 }
 
 /// The struct names a file exports.
@@ -309,7 +309,7 @@ fn exported_structs(program: &Program) -> HashSet<String>
 {
     let decls = program.stmts.iter().filter_map(|s| match s
     {
-        Stmt::Struct(d) if d.exported => Some(d.name.name.clone()),
+        Stmt::Struct(d) if d.exported => Some(d.name.name.to_string()),
         _ => None,
     });
     decls.collect()

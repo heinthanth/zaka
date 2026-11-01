@@ -819,6 +819,7 @@ fn held_text(held: Held) -> String
         Held::Global { name } => t!("explorer.heap.global", name = name),
         Held::Frame { func } => t!("explorer.heap.frame_of", func = func),
         Held::Globals => t!("explorer.heap.globals"),
+        Held::Text(n) => t!("explorer.heap.static_text", n = n),
     };
     text.into_owned()
 }

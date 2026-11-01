@@ -36,6 +36,7 @@ written as an *escape sequence*. Escape sequences work in characters and in
 '{ယူနီကုဒ် 1000}' ကို ပြသပါ။            // the character with Unicode number 1000 (hex): က
 "တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသပါ။    // a line break inside text
 "{{ }}" ဟု ပြသပါ။                     // literal braces
+'{{' ကို ပြသပါ။                       // a brace character
 ```
 
 ```text
@@ -44,6 +45,7 @@ written as an *escape sequence*. Escape sequences work in characters and in
 တစ်
 နှစ်
 { }
+{
 ```
 
 | Escape | Means |
@@ -58,16 +60,19 @@ written as an *escape sequence*. Escape sequences work in characters and in
 | `{{` and `}}` | a brace `{` or `}` |
 | `{ယူနီကုဒ် HHHH}` or `\uHHHH` | the character with Unicode number `HHHH` (4 or 8 hex digits) |
 
-A brace starts a Burmese escape name, so a single `{` or `}` must be doubled. A name
-that Zaka does not know is an error:
+A brace starts a Burmese escape name, so a single `{` or `}` must be doubled, in a
+character as in text: `'{{'` is the character `{`. In a character, a name that Zaka does
+not know is an error:
 
 ```zaka-error ZK0106
-"{မသိ}" ဟု ပြသပါ။
+'{မသိ}' ကို ပြသပါ။
 ```
 
 ```text
 error[ZK0106]: unknown escape sequence "{မသိ}"
 ```
+
+In text, the same braces make a *template slot*, which holds a value (see [Text](strings.md#template-literals)).
 
 ## Hands on
 

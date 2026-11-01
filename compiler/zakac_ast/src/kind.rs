@@ -24,6 +24,8 @@ pub enum BaseKind
     Char,
     /// `မှန်မှားတန်ဖိုး` or `ဘူလီယန်`
     Bool,
+    /// `စာသား`: owned UTF-8 text.
+    Text,
     /// A bare `လိပ်စာ`: an address whose target kind is not known.
     #[strum(serialize = "ptr")]
     Opaque,
@@ -56,6 +58,8 @@ pub enum Wrap
     List(Cells),
     /// A slice level: a count-less `စာရင်း` followed with `တစ်စိတ်တစ်ပိုင်း`.
     Slice,
+    /// The view of text: `တစ်စိတ်တစ်ပိုင်း` straight after `စာသား`.
+    View,
 }
 
 /// A data kind as written in the source, such as

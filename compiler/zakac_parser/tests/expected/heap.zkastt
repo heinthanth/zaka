@@ -275,26 +275,24 @@ program:
         hi: 1368
   - print:
       value:
-        expr:
-          name:
-            id: 15
-            name: ပထမ
-            span:
-              lo: 1369
-              hi: 1378
+        name:
+          id: 15
+          name: ပထမ
+          span:
+            lo: 1369
+            hi: 1378
       slot: ko
       span:
         lo: 1369
         hi: 1407
   - print:
       value:
-        expr:
-          name:
-            id: 16
-            name: ဒုတိယ
-            span:
-              lo: 1408
-              hi: 1423
+        name:
+          id: 16
+          name: ဒုတိယ
+          span:
+            lo: 1408
+            hi: 1423
       slot: ko
       span:
         lo: 1408
@@ -444,10 +442,9 @@ program:
           - print:
               value:
                 str:
-                  lit:
-                    parts:
-                    - text: နေရာ မရပါ
-                    value: နေရာ မရပါ
+                  id: 24
+                  pieces:
+                  - text: နေရာ မရပါ
                   span:
                     lo: 2339
                     hi: 2366
@@ -474,7 +471,7 @@ program:
           hi: 2437
       from:
         int:
-          id: 24
+          id: 25
           value: 1
           base: 10
           kind: null
@@ -484,7 +481,7 @@ program:
             hi: 2397
       to:
         int:
-          id: 25
+          id: 26
           value: 10
           base: 10
           kind: null
@@ -500,17 +497,17 @@ program:
             arms:
             - cond:
                 verb:
-                  id: 29
+                  id: 30
                   op: eq
                   args:
                   - name:
-                      id: 27
+                      id: 28
                       name: အရေအတွက်
                       span:
                         lo: 2581
                         hi: 2605
                   - name:
-                      id: 28
+                      id: 29
                       name: ဆံ့နိုင်ရေ
                       span:
                         lo: 2616
@@ -528,25 +525,25 @@ program:
                 - assign:
                     target:
                       name:
-                        id: 30
+                        id: 31
                         name: ဆံ့နိုင်ရေ
                         span:
                           lo: 2765
                           hi: 2795
                     value:
                       infix:
-                        id: 33
+                        id: 34
                         op: mul
                         lhs:
                           name:
-                            id: 31
+                            id: 32
                             name: ဆံ့နိုင်ရေ
                             span:
                               lo: 2806
                               hi: 2836
                         rhs:
                           int:
-                            id: 32
+                            id: 33
                             value: 2
                             base: 10
                             kind: null
@@ -563,7 +560,7 @@ program:
                 - resize:
                     target:
                       name:
-                        id: 34
+                        id: 35
                         name: ကိန်းများ
                         span:
                           lo: 2888
@@ -571,7 +568,7 @@ program:
                     size:
                       count:
                         name:
-                          id: 35
+                          id: 36
                           name: ဆံ့နိုင်ရေ
                           span:
                             lo: 2991
@@ -609,22 +606,22 @@ program:
         - assign:
             target:
               verb:
-                id: 39
+                id: 40
                 op: deref
                 args:
                 - infix:
-                    id: 38
+                    id: 39
                     op: add
                     lhs:
                       name:
-                        id: 36
+                        id: 37
                         name: ကိန်းများ
                         span:
                           lo: 3216
                           hi: 3243
                     rhs:
                       name:
-                        id: 37
+                        id: 38
                         name: အရေအတွက်
                         span:
                           lo: 3246
@@ -642,18 +639,18 @@ program:
                   hi: 3296
             value:
               infix:
-                id: 42
+                id: 43
                 op: mul
                 lhs:
                   name:
-                    id: 40
+                    id: 41
                     name: ကိန်း
                     span:
                       lo: 3307
                       hi: 3322
                 rhs:
                   name:
-                    id: 41
+                    id: 42
                     name: ကိန်း
                     span:
                       lo: 3325
@@ -667,25 +664,25 @@ program:
         - assign:
             target:
               name:
-                id: 43
+                id: 44
                 name: အရေအတွက်
                 span:
                   lo: 3367
                   hi: 3391
             value:
               infix:
-                id: 46
+                id: 47
                 op: add
                 lhs:
                   name:
-                    id: 44
+                    id: 45
                     name: အရေအတွက်
                     span:
                       lo: 3402
                       hi: 3426
                 rhs:
                   int:
-                    id: 45
+                    id: 46
                     value: 1
                     base: 10
                     kind: null
@@ -722,7 +719,7 @@ program:
           hi: 3658
       init:
         int:
-          id: 47
+          id: 48
           value: 0
           base: 10
           kind: null
@@ -732,17 +729,17 @@ program:
             hi: 3662
       cond:
         verb:
-          id: 50
+          id: 51
           op: lt
           args:
           - name:
-              id: 48
+              id: 49
               name: နံပါတ်
               span:
                 lo: 3688
                 hi: 3706
           - name:
-              id: 49
+              id: 50
               name: အရေအတွက်
               span:
                 lo: 3717
@@ -759,25 +756,25 @@ program:
         assign:
           target:
             name:
-              id: 55
+              id: 56
               name: နံပါတ်
               span:
                 lo: 4001
                 hi: 4019
           value:
             infix:
-              id: 58
+              id: 59
               op: add
               lhs:
                 name:
-                  id: 56
+                  id: 57
                   name: နံပါတ်
                   span:
                     lo: 4030
                     hi: 4048
               rhs:
                 int:
-                  id: 57
+                  id: 58
                   value: 1
                   base: 10
                   kind: null
@@ -795,39 +792,38 @@ program:
         stmts:
         - print:
             value:
-              expr:
-                verb:
-                  id: 54
-                  op: deref
-                  args:
-                  - infix:
-                      id: 53
-                      op: add
-                      lhs:
-                        name:
-                          id: 51
-                          name: ကိန်းများ
-                          span:
-                            lo: 3869
-                            hi: 3896
-                      rhs:
-                        name:
-                          id: 52
-                          name: နံပါတ်
-                          span:
-                            lo: 3899
-                            hi: 3917
-                      span:
-                        lo: 3869
-                        hi: 3917
-                  kind_arg: null
-                  dir: null
-                  particle: none
-                  next: other
-                  is_cmp: false
-                  span:
-                    lo: 3869
-                    hi: 3943
+              verb:
+                id: 55
+                op: deref
+                args:
+                - infix:
+                    id: 54
+                    op: add
+                    lhs:
+                      name:
+                        id: 52
+                        name: ကိန်းများ
+                        span:
+                          lo: 3869
+                          hi: 3896
+                    rhs:
+                      name:
+                        id: 53
+                        name: နံပါတ်
+                        span:
+                          lo: 3899
+                          hi: 3917
+                    span:
+                      lo: 3869
+                      hi: 3917
+                kind_arg: null
+                dir: null
+                particle: none
+                next: other
+                is_cmp: false
+                span:
+                  lo: 3869
+                  hi: 3943
             slot: ko
             span:
               lo: 3869
@@ -842,7 +838,7 @@ program:
   - free:
       target:
         name:
-          id: 59
+          id: 60
           name: ကိန်းများ
           span:
             lo: 4184
@@ -875,7 +871,7 @@ program:
       size:
         count:
           int:
-            id: 60
+            id: 61
             value: 8
             base: 10
             kind: null
@@ -890,7 +886,7 @@ program:
           hi: 4728
       target:
         name:
-          id: 61
+          id: 62
           name: ပစ္စည်း
           span:
             lo: 4779
@@ -901,11 +897,11 @@ program:
   - assign:
       target:
         verb:
-          id: 63
+          id: 64
           op: deref
           args:
           - name:
-              id: 62
+              id: 63
               name: ပစ္စည်း
               span:
                 lo: 4851
@@ -920,7 +916,7 @@ program:
             hi: 4898
       value:
         int:
-          id: 64
+          id: 65
           value: 7
           base: 10
           kind: null
@@ -956,29 +952,29 @@ program:
   - assign:
       target:
         name:
-          id: 65
+          id: 66
           name: ဈေးနှုန်း
           span:
             lo: 5131
             hi: 5158
       value:
         verb:
-          id: 69
+          id: 70
           op: cast
           args:
           - infix:
-              id: 68
+              id: 69
               op: add
               lhs:
                 name:
-                  id: 66
+                  id: 67
                   name: ပစ္စည်း
                   span:
                     lo: 5169
                     hi: 5190
               rhs:
                 int:
-                  id: 67
+                  id: 68
                   value: 4
                   base: 10
                   kind: null
@@ -1012,11 +1008,11 @@ program:
   - assign:
       target:
         verb:
-          id: 71
+          id: 72
           op: deref
           args:
           - name:
-              id: 70
+              id: 71
               name: ဈေးနှုန်း
               span:
                 lo: 5397
@@ -1031,7 +1027,7 @@ program:
             hi: 5450
       value:
         int:
-          id: 72
+          id: 73
           value: 1500
           base: 10
           kind: null
@@ -1044,25 +1040,24 @@ program:
         hi: 5499
   - print:
       value:
-        expr:
-          verb:
-            id: 74
-            op: deref
-            args:
-            - name:
-                id: 73
-                name: ဈေးနှုန်း
-                span:
-                  lo: 5500
-                  hi: 5527
-            kind_arg: null
-            dir: null
-            particle: none
-            next: other
-            is_cmp: false
-            span:
-              lo: 5500
-              hi: 5553
+        verb:
+          id: 75
+          op: deref
+          args:
+          - name:
+              id: 74
+              name: ဈေးနှုန်း
+              span:
+                lo: 5500
+                hi: 5527
+          kind_arg: null
+          dir: null
+          particle: none
+          next: other
+          is_cmp: false
+          span:
+            lo: 5500
+            hi: 5553
       slot: ko
       span:
         lo: 5500
@@ -1070,7 +1065,7 @@ program:
   - free:
       target:
         name:
-          id: 75
+          id: 76
           name: ပစ္စည်း
           span:
             lo: 5602

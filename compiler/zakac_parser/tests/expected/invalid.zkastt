@@ -7,13 +7,12 @@ program:
   stmts:
   - print:
       value:
-        expr:
-          name:
-            id: 12
-            name: ခ
-            span:
-              lo: 480
-              hi: 483
+        name:
+          id: 12
+          name: ခ
+          span:
+            lo: 480
+            hi: 483
       slot: ko
       span:
         lo: 480

@@ -212,7 +212,7 @@ impl Parser<'_>
             {
                 self.parse_literal()
             }
-            TokenKind::Str(_) => Err(diag::str_outside_print(tok.span)),
+            TokenKind::Str(idx) => self.parse_str(idx),
             _ if self.starts_kind() =>
             {
                 tern!(self.at_size_of(), self.parse_size_of(), self.parse_literal())

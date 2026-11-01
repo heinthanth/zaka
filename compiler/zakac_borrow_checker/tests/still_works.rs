@@ -3,7 +3,6 @@ mod common;
 use std::path::Path;
 use std::path::PathBuf;
 
-use common::codes;
 use common::file_codes;
 use common::lines;
 use common::ok;

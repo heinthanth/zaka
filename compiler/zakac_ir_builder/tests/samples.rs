@@ -10,6 +10,7 @@ use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::PrintValue;
 use zakac_ir_builder::ir::Stmt;
+use zakac_ir_builder::ir::fmt_values;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_session::artifact::ArtifactFormat;
@@ -103,7 +104,7 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 dest_places(dest, out);
                 expr_places(count, out);
             }
-            Stmt::Free { dest, .. } => dest_places(dest, out),
+            Stmt::Free { dest, .. } | Stmt::Drop { dest, .. } => dest_places(dest, out),
         }
     }
 }
@@ -125,7 +126,17 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
     {
         ExprNode::Read(place) => out.push(*place),
         ExprNode::AddrOf(place) => out.push(*place),
-        ExprNode::Const(_) | ExprNode::SizeOf(_) | ExprNode::BlankList => (),
+        ExprNode::Const(_)
+        | ExprNode::SizeOf(_)
+        | ExprNode::BlankList
+        | ExprNode::Text(_) => (),
+        ExprNode::Format(pieces) =>
+        {
+            fmt_values(pieces).for_each(|e| expr_places(e, out))
+        }
+        ExprNode::Chars { text, index, .. } => std::iter::once(text.as_ref())
+            .chain(index.as_deref())
+            .for_each(|e| expr_places(e, out)),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }

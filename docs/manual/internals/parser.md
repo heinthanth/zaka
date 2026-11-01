@@ -265,7 +265,6 @@ token:
 | `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
 | `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ မင်မိုရီကို`, then `ပြန်လည်စွန့်လွှတ်မည်` for a release or a size for a resize |
 | a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းပါ။`; after another statement or inside a block it is parsed and reported (ZK0230) |
-| a string | `parse_print_str` | `STR ကို ပြသပါ။` or `ဟု`; a string in another place is ZK0223 |
 | `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, struct or top-level declaration; on another statement it is ZK0229 |
 | an `else`, an update, a closer with no opener | an error | ZK0211, ZK0212, ZK0226 |
 | all other tokens | `parse_expr_headed` | a clause; see below |
@@ -285,7 +284,33 @@ base`, and checks the bit counts (8, 16, 32, 64, 128 for integers; 16 and up for
 `literal.rs` reads `(အခြေ N ဖြင့်)? kind? digits`: it converts one digit after the other in the given
 base, checks the range of the kind (ZK0220) and the digits against the base (ZK0219).
 A literal with no kind prefix is limited to 128 bits here; the kind check gives it the
-kind of its place and checks the range there.
+kind of its place and checks the range there. In `kind.rs`, the base word `စာသား` gives
+the base `text`, and a bare `တစ်စိတ်တစ်ပိုင်း` straight after it, with no `စာရင်း`, is the
+view of text (`Wrap::View`).
+
+A string literal is an expression, read in `str_lit.rs` wherever an operand starts, a
+print included: a print of a literal goes through the clause engine as each other print
+does, and `PrintStmt.value` is an `Expr`. `parse_str` turns the parts of the lexer into
+an `Expr::Str(StrExpr)` whose pieces are `StrPiece::Text(String)` or
+`StrPiece::TemplateSlot(Expr)`; text next to text is joined into one piece. `parse_template_slot` lexes the
+text of each template slot with `lex_at` at its own offset, so spans point inside the literal, and
+parses it as one expression with an inner `Parser` that continues the node numbers of the
+file. A template slot with nothing in it is ZK0202, and text left after the expression is the
+"expected `}`" error. The lexer ends a template slot at its matching `}`, so the template slot can hold a
+template literal of its own; `parse_template_slot` reads that literal as each other one,
+and the nesting needs nothing more.
+
+The characters of text are read in the clause engine. After an operand that holds `၏`,
+the kind word `စာလုံး` and a number build `VerbOp::CharAt` (`push_char_at`, counted from
+0); after `<text> ၏ <number> ခုမြောက်`, the word `စာလုံး` builds `VerbOp::CharNth`
+(`push_char_nth`, counted from 1). Neither has a verb word, so both are built in place as a
+`VerbExpr` (`char_verb`). The count `စာလုံးအရေအတွက်` is a verb of the valence table, as
+`အကွက်အရေအတွက်` is.
+
+The verbal join `a၊ b တို့ကို ဆက်ထားသည့် စာသား` is read in `parse_operand`, as a list literal
+is: after the first piece, a `၊` with `တို့ကို ဆက်ထားသည့်` ahead (`at_join_rest`) starts it,
+and `parse_join` reads the pieces, then `တို့ကို`, `ဆက်ထားသည့်` and `စာသား`, into a `VerbExpr`
+with `VerbOp::Join`.
 
 ## Reading the imports
 

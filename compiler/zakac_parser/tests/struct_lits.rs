@@ -25,13 +25,13 @@ fn count_of(value: &str) -> (String, String)
     {
         panic!("{value}: no print statement");
     };
-    let zakac_ast::stmt::PrintArg::Expr(Expr::Struct(lit)) = &print.value
+    let Expr::Struct(lit) = &print.value
     else
     {
         panic!("{value}: no struct literal");
     };
     let classifier = lit.classifier.as_ref().expect("a classifier");
-    (lit.name.name.clone(), classifier.name.clone())
+    (lit.name.name.to_string(), classifier.name.to_string())
 }
 
 #[test]
@@ -113,7 +113,7 @@ fn a_notation_literal_writes_no_classifier()
     {
         panic!("no print statement");
     };
-    let zakac_ast::stmt::PrintArg::Expr(Expr::Struct(lit)) = &print.value
+    let Expr::Struct(lit) = &print.value
     else
     {
         panic!("no struct literal");

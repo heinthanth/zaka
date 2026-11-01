@@ -6,12 +6,13 @@ use std::sync::Mutex;
 use std::sync::OnceLock;
 use std::sync::PoisonError;
 
+use zakac_ast::name::Name;
 use zakac_rust_sugars::ret_if;
 
 use crate::kind::DataKind;
 
 /// The struct kind of each declared name.
-pub type StructTable = BTreeMap<String, DataKind>;
+pub type StructTable = BTreeMap<Name, DataKind>;
 
 /// The fields of each struct, as written: each field name with its kind in
 /// text form, where a struct base is its bare name, such as `*လူ`.
@@ -212,7 +213,7 @@ pub fn make_all(defs: &StructDefs) -> StructTable
     let table: StructTable = defs
         .keys()
         .filter_map(|name| {
-            Some((name.clone(), DataKind::Struct(resolve(name, defs, &mut memo)?)))
+            Some((Name::new(name), DataKind::Struct(resolve(name, defs, &mut memo)?)))
         })
         .collect();
     keep(memo.into_values());

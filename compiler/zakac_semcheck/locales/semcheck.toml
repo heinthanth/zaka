@@ -27,6 +27,9 @@ en = "a boolean"
 [semcheck.want.ordered]
 en = "a number or a character"
 
+[semcheck.want.text]
+en = "text"
+
 [semcheck.artifact.source_changed]
 en = "source text changed after re-ingest"
 

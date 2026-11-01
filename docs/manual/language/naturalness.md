@@ -121,8 +121,9 @@ warning[ZK0504]: "ကြီးပါ" before "ဖြစ်၍" reads better as "
 ### ZK0505 and ZK0506: "ဟု" and "ကို" in a print
 
 `ကို` marks a *thing*: a name, a number, the result of a sum. `ဟု` quotes a *sentence* or
-a string: a comparison that ends in `သည်` or `ပါ`, or a string literal. A bare clause with
-no ending is a thing and keeps `ကို`.
+a string: a comparison that ends in `သည်` or `ပါ`, a string literal (with template slots or not), or
+a `+` join that holds a string literal. A bare clause with no ending is a thing and keeps
+`ကို`, and so is a text variable: `အမည် ကို ပြသပါ`.
 
 ```zaka-warning ZK0505
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။

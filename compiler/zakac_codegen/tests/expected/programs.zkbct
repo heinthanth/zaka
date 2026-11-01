@@ -20,6 +20,7 @@ module:
     kind: i16
   texts:
   - ok
+  formats: []
   funcs:
   - name: main
     params: 0

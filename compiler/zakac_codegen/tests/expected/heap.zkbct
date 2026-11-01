@@ -26,6 +26,7 @@ module:
     kind: "&*i32"
   texts:
   - နေရာ မရပါ
+  formats: []
   funcs:
   - name: လဲလှယ်
     params: 2

@@ -85,11 +85,11 @@ pub fn scan_char(text: &str, open: usize, base: Pos) -> Scan<char>
     let scan = decoder.finish();
 
     let count = scan.value.value.chars().count();
-    let has_hole = scan.value.parts.iter().any(|p| matches!(p, StrPart::Hole(_)));
-    let single = scan.value.value.chars().next().filter(|_| count == 1 && !has_hole);
+    let has_bad = scan.value.parts.iter().any(|p| matches!(p, StrPart::Bad(_)));
+    let single = scan.value.value.chars().next().filter(|_| count == 1 && !has_bad);
     let mut diags = scan.diags;
     let span = Span::new(base + open, base + scan.end);
-    let report = single.is_none() && closed && !has_hole;
+    let report = single.is_none() && closed && !has_bad;
     do_if!(report, diags.push(diag::bad_char_length(span, count)));
     Scan::builder()
         .value(single.unwrap_or('\u{FFFD}'))
@@ -277,19 +277,32 @@ impl<'t> Decoder<'t>
         self.pos += len;
     }
 
-    /// Report an unknown escape, keep its text as a hole, and move past it.
+    /// Report an unknown escape, keep its text as written, and move past it.
     ///
     /// # Arguments
     ///
     /// * `len` - Length of the escape in u8s.
-    /// * `hole` - Content to keep.
-    fn push_unknown(&mut self, len: usize, hole: String)
+    fn push_unknown(&mut self, len: usize)
     {
         let raw = &self.text[self.pos..self.pos + len];
         self.diags.push(diag::unknown_escape(self.span(self.pos, self.pos + len), raw));
         self.flush_text();
-        self.parts.push(StrPart::Hole(hole));
+        self.parts.push(StrPart::Bad(raw.to_string()));
         self.pos += len;
+    }
+
+    /// Keep a `{...}` of a string literal as a template slot and move past it.
+    ///
+    /// # Arguments
+    ///
+    /// * `close` - Offset of the closing `}`.
+    fn push_template_slot(&mut self, close: usize)
+    {
+        let text = self.text[self.pos + 1..close].to_string();
+        let span = self.span(self.pos + 1, close);
+        self.flush_text();
+        self.parts.push(StrPart::TemplateSlot { text, span });
+        self.pos = close + 1;
     }
 
     /// Decode a backslash escape.
@@ -299,8 +312,7 @@ impl<'t> Decoder<'t>
         ret_if!(let Some(ch) = next.and_then(simple_escape), self.push_escape(ch, 2));
         ret_if!(next == Some('u'), self.unicode_escape());
         let len = 1 + next.filter(|ch| *ch != '\n').map_or(0, char::len_utf8);
-        let raw = self.text[self.pos..self.pos + len].to_string();
-        self.push_unknown(len, raw);
+        self.push_unknown(len);
     }
 
     /// Decode `\u` with 4 or 8 hex digits after it.
@@ -314,34 +326,37 @@ impl<'t> Decoder<'t>
         let len = 2 + digits.len();
         let decoded = code_point(&digits);
         ret_if!(let Some(ch) = decoded, self.push_escape(ch, len));
-        let raw = self.text[self.pos..self.pos + len].to_string();
-        self.push_unknown(len, raw);
+        self.push_unknown(len);
     }
 
-    /// Decode `{{` or a `{name}` escape.
+    /// Decode `{{`, a `{name}` escape, or a template slot. A template slot ends
+    /// at the `}` that matches its `{` on the same line, so it can hold a
+    /// string literal with template slots of its own; in a character
+    /// literal it is an unknown escape.
     fn open_brace(&mut self)
     {
         ret_if!(self.peek(1) == Some('{'), self.buf.push('{'), self.pos += 2);
         let eol = scan_to_eol(self.text, self.pos);
-        let close = self.text[self.pos..eol].find('}').map(|off| self.pos + off);
+        let close = template_slot_end(&self.text[..eol], self.pos + 1);
         let Some(close) = close
         else
         {
-            self.push_unknown(1, "{".to_string());
+            self.push_unknown(1);
             return;
         };
 
         let content = &self.text[self.pos + 1..close];
         let len = close + 1 - self.pos;
         ret_if!(let Some(ch) = named_escape(content), self.push_escape(ch, len));
-        self.push_unknown(len, content.to_string());
+        ret_if!(self.quote == '"', self.push_template_slot(close));
+        self.push_unknown(len);
     }
 
     /// Decode `}}`; a lone `}` is an unknown escape.
     fn close_brace(&mut self)
     {
         ret_if!(self.peek(1) == Some('}'), self.buf.push('}'), self.pos += 2);
-        self.push_unknown(1, "}".to_string());
+        self.push_unknown(1);
     }
 
     /// Build the scan result.
@@ -356,6 +371,65 @@ impl<'t> Decoder<'t>
         let lit = StrLit::builder().parts(self.parts).value(value).build();
         Scan::builder().value(lit).end(self.pos).diags(self.diags).build()
     }
+}
+
+/// The offset of the `}` that closes a template slot: string and character
+/// literals inside it are skipped whole, and a nested `{...}` is matched in
+/// turn.
+///
+/// # Arguments
+///
+/// * `text` - The source text up to the end of the line.
+/// * `from` - The offset just after the `{` of the template slot.
+///
+/// # Returns
+///
+/// The offset of the closing `}`, or `None` when the line ends first.
+fn template_slot_end(text: &str, from: usize) -> Option<usize>
+{
+    let mut at = from;
+    while let Some(ch) = text[at..].chars().next()
+    {
+        at = match ch
+        {
+            '}' => return Some(at),
+            '{' => template_slot_end(text, at + 1)? + 1,
+            '"' | '\'' => quoted_end(text, at + 1, ch)?,
+            _ => at + ch.len_utf8(),
+        };
+    }
+    None
+}
+
+/// The offset just past the closing quote of a literal inside a template slot:
+/// a backslash escape, `{{` and `}}` are skipped, and each `{...}` of the
+/// literal is matched with [`template_slot_end`].
+///
+/// # Arguments
+///
+/// * `text` - The source text up to the end of the line.
+/// * `from` - The offset just after the opening quote.
+/// * `quote` - The quote that closes the literal.
+///
+/// # Returns
+///
+/// The offset after the closing quote, or `None` when the line ends first.
+fn quoted_end(text: &str, from: usize, quote: char) -> Option<usize>
+{
+    let mut at = from;
+    while let Some(ch) = text[at..].chars().next()
+    {
+        let next = text[at + ch.len_utf8()..].chars().next();
+        at = match ch
+        {
+            _ if ch == quote => return Some(at + 1),
+            '\\' => at + 1 + next.map_or(0, char::len_utf8),
+            '{' | '}' if next == Some(ch) => at + 2,
+            '{' => template_slot_end(text, at + 1)? + 1,
+            _ => at + ch.len_utf8(),
+        };
+    }
+    None
 }
 
 /// Decode a one-character backslash escape.
@@ -421,14 +495,13 @@ fn named_escape(content: &str) -> Option<char>
 ///
 /// # Returns
 ///
-/// The text; a hole is kept as `{content}`.
+/// The text; a template slot is kept as `{content}`, a bad escape as written.
 fn part_text(part: &StrPart) -> String
 {
     match part
     {
-        StrPart::Text(text) => text.clone(),
+        StrPart::Text(text) | StrPart::Bad(text) => text.clone(),
         StrPart::Escape(ch) => ch.to_string(),
-        StrPart::Hole(content) if content == "{" || content == "}" => content.clone(),
-        StrPart::Hole(content) => format!("{{{content}}}"),
+        StrPart::TemplateSlot { text, .. } => format!("{{{text}}}"),
     }
 }
