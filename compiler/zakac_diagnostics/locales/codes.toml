@@ -297,6 +297,13 @@ en = "this program was not read from a file, so it cannot import \"%{f}\""
 [codes.ZK0232.explain]
 en = """An import names a file relative to the file that holds the import. A program written in the compiler explorer, on a Learn page or on standard input has no folder, so its imports cannot be found. Save the program in a file and run it with \"zakac run\"."""
 
+[codes.ZK0233.title]
+en = "count on a slice"
+[codes.ZK0233.message]
+en = "a slice takes no cell count; its count comes when the program runs"
+[codes.ZK0233.explain]
+en = """A slice kind, \"<kind> စာရင်း တစ်စိတ်တစ်ပိုင်း\", views cells whose number is known at run time, so the \"စာရင်း\" before \"တစ်စိတ်တစ်ပိုင်း\" takes no \"အကွက် <n> ခုရှိသော\" prefix. Remove the count, or drop \"တစ်စိတ်တစ်ပိုင်း\" for a list of that count."""
+
 # -------------------------------------------------------------- resolve ZK03xx
 
 [codes.ZK0301.title]
@@ -682,6 +689,13 @@ en = "hold the address of the struct instead: \"%{n} လိပ်စာ\""
 [codes.ZK0427.explain]
 en = """A field of a struct sits inside the struct, so a struct that holds itself, at once or through other structs, would need to be larger than itself. Hold an address of it instead, as a linked list does with \"နောက်\" fields of kind \"<name> လိပ်စာ\"."""
 
+[codes.ZK0428.title]
+en = "slice of borrows"
+[codes.ZK0428.message]
+en = "the cells of a slice cannot hold borrows, as %{k} does"
+[codes.ZK0428.explain]
+en = """A slice points at cells outside the frame of its function, and the checker follows a borrow in locals and parameters alone. A slice whose cells are slices or borrowed addresses would hide those borrows from it. Use a list of borrows, which lives in the frame, or a slice of raw addresses."""
+
 # ---------------------------------------------------------- naturalness ZK05xx
 
 [codes.ZK0501.title]
@@ -798,6 +812,13 @@ en = "the starting value of \"%{n}\" must be known at compile time, since its fi
 en = "literals, constants and operators on them are known; a function call is not, for now"
 [codes.ZK0604.explain]
 en = """The variables and constants of an imported file get their starting value before the program runs, so the value must come from literals, constants and operators on them. A function call cannot give that value for now. Give the variable no value and set it from the file that is run, or write the value out."""
+
+[codes.ZK0605.title]
+en = "range outside its list"
+[codes.ZK0605.message]
+en = "%{len} cells from cell %{s} pass the end of a list of %{n} cells"
+[codes.ZK0605.explain]
+en = """A range \"<list> ၏ အကွက် <start> မှစ၍ <length> ကွက်\" takes the cells from the start on. The start and the length here are known, so the compiler can tell that the last cell is past the end of the list. Shorten the length or move the start."""
 
 [codes.ZK0701.title]
 en = "use after move"

@@ -155,9 +155,12 @@ These belong to `codegen` and to `run`:
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `--results <MODE>` | `in-place` | how a list or struct result reaches the caller: `in-place` builds it in the caller's slot, `duplicate` keeps it in the function's frame and duplicates it on return |
+| `--scratch <MODE>` | `apart` | where a list, struct or slice that a statement builds and uses up lives, such as a printed literal or a slice passed to a function: `apart` gives each one a slot of its own, `shared` lets a later statement take the slot of one before it |
 
-The program prints the same in both modes; `duplicate` costs one more pass over each
-list or struct result. See [Lists and structs as results](../language/functions.md#lists-and-structs-as-results).
+The program prints the same in each mode. `duplicate` costs one more pass over each
+list or struct result. `shared` leaves fewer slots in a frame, and `apart` shows each
+scratch value as a block of its own in the explorer's RAM view. See [Lists and structs
+as results](../language/functions.md#lists-and-structs-as-results).
 
 ## segment
 

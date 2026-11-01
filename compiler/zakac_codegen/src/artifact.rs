@@ -36,7 +36,7 @@ use zakac_span::span::Span;
 
 use crate::bc::Module;
 use crate::emit::emit;
-use crate::options::ResultMode;
+use crate::options::EmitOptions;
 
 /// The first line of a text artifact.
 pub const TEXT_HEADER: &str = "# zakac-codegen-artifact v1";
@@ -75,17 +75,19 @@ impl Emitted
 /// * `options` - The check options.
 /// * `folding` - The foldings to run.
 /// * `mem` - How the ownership check reports.
-/// * `results` - How a list or struct result reaches the caller.
+/// * `emit_options` - How results reach the caller and where scratch values
+///   live.
 ///
 /// # Returns
 ///
 /// The output of each phase.
 pub fn run_phases(
     source: &SourceFile, lexer: &LexerOptions, options: &SemcheckOptions,
-    folding: &FoldOptions, mem: &BorrowCheckOptions, results: ResultMode,
+    folding: &FoldOptions, mem: &BorrowCheckOptions,
+    emit_options: impl Into<EmitOptions>,
 ) -> Emitted
 {
-    run_loaded(Loaded::single(source, lexer), options, folding, mem, results)
+    run_loaded(Loaded::single(source, lexer), options, folding, mem, emit_options)
 }
 
 /// Run each phase from the check to code generation on a program read with
@@ -98,14 +100,15 @@ pub fn run_phases(
 /// * `options` - The check options.
 /// * `folding` - The foldings to run.
 /// * `mem` - How the ownership check reports.
-/// * `results` - How a list or struct result reaches the caller.
+/// * `emit_options` - How results reach the caller and where scratch values
+///   live.
 ///
 /// # Returns
 ///
 /// The output of each phase.
 pub fn run_loaded(
     loaded: Loaded, options: &SemcheckOptions, folding: &FoldOptions,
-    mem: &BorrowCheckOptions, results: ResultMode,
+    mem: &BorrowCheckOptions, emit_options: impl Into<EmitOptions>,
 ) -> Emitted
 {
     let checked =
@@ -113,7 +116,7 @@ pub fn run_loaded(
     let clean = !has_errors(&checked.diagnostics);
     let bits = options.platform_bits;
     let folded = checked.lowered.folded.as_ref();
-    let module = folded.filter(|_| clean).map(|m| emit(m, bits, results));
+    let module = folded.filter(|_| clean).map(|m| emit(m, bits, emit_options.into()));
     Emitted::builder().borrowchecked(checked).maybe_module(module).build()
 }
 
@@ -147,17 +150,19 @@ impl CodegenArtifact
     /// * `options` - The check options.
     /// * `folding` - The foldings to run.
     /// * `mem` - How the ownership check reports.
-    /// * `results` - How a list or struct result reaches the caller.
+    /// * `emit_options` - How results reach the caller and where scratch values
+    ///   live.
     ///
     /// # Returns
     ///
     /// The artifact.
     pub fn from_source(
         source: &SourceFile, lexer: &LexerOptions, options: &SemcheckOptions,
-        folding: &FoldOptions, mem: &BorrowCheckOptions, results: ResultMode,
+        folding: &FoldOptions, mem: &BorrowCheckOptions,
+        emit_options: impl Into<EmitOptions>,
     ) -> Self
     {
-        let emitted = run_phases(source, lexer, options, folding, mem, results);
+        let emitted = run_phases(source, lexer, options, folding, mem, emit_options);
         Self::from_emitted(source, emitted)
     }
 

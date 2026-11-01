@@ -33,6 +33,8 @@ enum Suffix
     RawPtr,
     /// `စာရင်း`
     List,
+    /// `တစ်စိတ်တစ်ပိုင်း`, after a `စာရင်း`
+    Part,
 }
 
 /// Bit counts of integer kinds.
@@ -192,19 +194,23 @@ impl Parser<'_>
     }
 
     /// The suffix that starts `n` tokens ahead, and its token count:
-    /// `၏ လိပ်စာ`, `၏ လိပ်စာအကြမ်း`, `၏ စာရင်း`, a bare `စာရင်း`, or a bare
-    /// `လိပ်စာ` or `လိပ်စာအကြမ်း` when `bare_ptr` allows one.
+    /// `၏ လိပ်စာ`, `၏ လိပ်စာအကြမ်း`, `၏ စာရင်း`, a bare `စာရင်း`, a bare
+    /// `လိပ်စာ` or `လိပ်စာအကြမ်း` when `after_list` or the base allows one, or
+    /// `တစ်စိတ်တစ်ပိုင်း` right after a `စာရင်း`.
     ///
     /// # Arguments
     ///
     /// * `n` - How far ahead.
     /// * `bare_ptr` - Whether a pointer word without `၏` is a suffix here:
     ///   right after the base word or a list level.
+    /// * `after_list` - Whether the suffix before is a `စာရင်း`.
     ///
     /// # Returns
     ///
     /// The suffix and its length, or `None` when no suffix starts there.
-    fn suffix_at(&self, n: usize, bare_ptr: bool) -> Option<(Suffix, usize)>
+    fn suffix_at(
+        &self, n: usize, bare_ptr: bool, after_list: bool,
+    ) -> Option<(Suffix, usize)>
     {
         let ei = usize::from(self.peek_n(n).kind == TokenKind::Punct(Punct::Ei));
         let suffix = match kw_of(&self.peek_n(n + ei))?
@@ -212,6 +218,7 @@ impl Parser<'_>
             Kw::Address if ei == 1 || bare_ptr => Suffix::Ptr,
             Kw::RawAddress if ei == 1 || bare_ptr => Suffix::RawPtr,
             Kw::List => Suffix::List,
+            Kw::Part if ei == 0 && after_list => Suffix::Part,
             _ => return None,
         };
         Some((suffix, ei + 1))
@@ -232,11 +239,13 @@ impl Parser<'_>
     fn scan_suffixes(&self, n: usize, after_base: bool) -> (usize, Vec<Suffix>)
     {
         let (mut len, mut found, mut bare_ptr) = (0, Vec::new(), after_base);
-        while let Some((suffix, more)) = self.suffix_at(n + len, bare_ptr)
+        let mut after_list = false;
+        while let Some((suffix, more)) = self.suffix_at(n + len, bare_ptr, after_list)
         {
             len += more;
             found.push(suffix);
-            bare_ptr = suffix == Suffix::List;
+            after_list = suffix == Suffix::List;
+            bare_ptr = matches!(suffix, Suffix::List | Suffix::Part);
         }
         (len, found)
     }
@@ -273,12 +282,14 @@ impl Parser<'_>
     /// `အကွက် ၃ ခုရှိသော`, the base, then pointer and list levels. A bare `လိပ်စာ` can
     /// follow the base word or a list level; `၏ လိပ်စာ` and `[၏] စာရင်း` can
     /// follow each level. Each `စာရင်း` takes the innermost count prefix
-    /// left, or none.
+    /// left, or none; a `စာရင်း` with `တစ်စိတ်တစ်ပိုင်း` after it is a slice
+    /// level and takes none.
     ///
     /// # Returns
     ///
-    /// The kind, or a diagnostic for a missing word, a bad count, a sign word
-    /// on a kind that is not an integer, or a bad bit count.
+    /// The kind, or a diagnostic for a missing word, a bad count, a count
+    /// left for a slice, a sign word on a kind that is not an integer, or a
+    /// bad bit count.
     pub(crate) fn parse_kind(&mut self) -> PResult<Kind>
     {
         let start = self.peek().span;
@@ -289,18 +300,26 @@ impl Parser<'_>
         kind.extra_borrows = u8::try_from(marks.saturating_sub(1)).unwrap_or(u8::MAX);
         let (len, suffixes) = self.scan_suffixes(0, kind.base != BaseKind::Opaque);
         do_for!(_ in 0..len, self.advance());
-        let wrap = |suffix| match suffix
+        let sliced = suffixes.contains(&Suffix::Part);
+        let mut rest = suffixes.into_iter().peekable();
+        while let Some(suffix) = rest.next()
         {
-            Suffix::Ptr => Wrap::Ptr,
-            Suffix::RawPtr => Wrap::RawPtr,
-            Suffix::List =>
+            let part =
+                suffix == Suffix::List && rest.next_if_eq(&Suffix::Part).is_some();
+            kind.wraps.push(match suffix
             {
-                Wrap::List(counts.pop().map_or(Cells::Inferred, Cells::Fixed))
-            }
-        };
-        kind.wraps.extend(suffixes.into_iter().map(wrap));
-        ret_if!(!counts.is_empty(), Err(self.err_expected(&quote(&kw_text(Kw::List)))));
+                Suffix::Ptr => Wrap::Ptr,
+                Suffix::RawPtr => Wrap::RawPtr,
+                Suffix::List if !part =>
+                {
+                    Wrap::List(counts.pop().map_or(Cells::Inferred, Cells::Fixed))
+                }
+                Suffix::List | Suffix::Part => Wrap::Slice,
+            });
+        }
         kind.span = start.to(&self.prev_span());
+        ret_if!(sliced && !counts.is_empty(), Err(diag::slice_count(kind.span)));
+        ret_if!(!counts.is_empty(), Err(self.err_expected(&quote(&kw_text(Kw::List)))));
         Ok(kind)
     }
 

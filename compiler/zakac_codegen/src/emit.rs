@@ -12,6 +12,7 @@ use zakac_ir_builder::ir::LogicOp;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::PrefixOp;
 use zakac_ir_builder::ir::PrintValue;
+use zakac_ir_builder::ir::SliceFrom;
 use zakac_ir_builder::ir::Stmt;
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::compare;
@@ -28,14 +29,22 @@ use zakac_span::span::Span;
 use crate::bc::Func;
 use crate::bc::Module;
 use crate::bc::Op;
+use crate::bc::SliceSource;
 use crate::bc::Slot;
 use crate::bc::TrapCode;
 use crate::code::CodeBuilder;
 use crate::code::Label;
+use crate::options::EmitOptions;
 use crate::options::ResultMode;
+use crate::options::ScratchMode;
 
 /// The name of the main function.
 pub const MAIN_NAME: &str = "main";
+
+/// The names of the slots that hold scratch values: values a statement
+/// builds and uses before it ends. The slots of a counted loop live across
+/// its block and are not among them.
+const SCRATCH: &[&str] = &["%list", "%slice", "%ret", "%at"];
 
 /// Generate stack machine ops for a checked, folded module.
 ///
@@ -43,19 +52,19 @@ pub const MAIN_NAME: &str = "main";
 ///
 /// * `module` - The IR module.
 /// * `platform_bits` - Bit count of the platform-sized integer kinds.
-/// * `results` - How a list or struct result reaches the caller.
+/// * `options` - How results reach the caller and where scratch values live.
 ///
 /// # Returns
 ///
 /// The op module. Its functions keep their IR indices; the main function
 /// comes last.
-pub fn emit(module: &ir::Module, platform_bits: u16, results: ResultMode) -> Module
+pub fn emit(module: &ir::Module, platform_bits: u16, options: EmitOptions) -> Module
 {
     let rets = module.funcs.iter().map(|f| f.ret).collect();
     let globals = module.globals.iter().map(slot).collect();
     #[rustfmt::skip]
     let mut shared = Shared::builder().platform(platform_bits).rets(rets)
-        .globals(globals).results(results).build();
+        .globals(globals).results(options.results).scratch(options.scratch).build();
     let mut funcs: Vec<Func> =
         module.funcs.iter().map(|f| func(&mut shared, f)).collect();
     funcs.push(main_func(&mut shared, module));
@@ -126,6 +135,8 @@ struct Shared
     rets: Vec<Option<DataKind>>,
     /// How a list or struct result reaches the caller.
     results: ResultMode,
+    /// Where the scratch values of a function live.
+    scratch: ScratchMode,
     /// The global slots.
     globals: Vec<Slot>,
     /// Pooled print strings.
@@ -207,6 +218,10 @@ struct FuncGen<'s>
     loops: Vec<LoopLabels>,
     /// The local that lives in the caller's slot for the result.
     in_slot: Option<u32>,
+    /// Scratch slots a statement before this one used, free to take again.
+    free: Vec<u32>,
+    /// Scratch slots the statements since the last one began have taken.
+    taken: Vec<u32>,
 }
 
 impl<'s> FuncGen<'s>
@@ -227,7 +242,9 @@ impl<'s> FuncGen<'s>
     {
         let mut code = CodeBuilder::new();
         code.at(end);
-        Self { shared, code, locals, loops: Vec::new(), in_slot: None }
+        #[rustfmt::skip]
+        return Self { shared, code, locals, loops: Vec::new(), in_slot: None,
+            free: Vec::new(), taken: Vec::new() };
     }
 
     /// Finish the function.
@@ -256,7 +273,9 @@ impl<'s> FuncGen<'s>
     /// * `op` - The op.
     fn op(&mut self, op: Op) { self.code.emit(op); }
 
-    /// Add a local slot for a value the generator keeps.
+    /// Add a local slot for a value the generator keeps. With shared scratch
+    /// slots, a scratch value takes a free slot of its name and kind when a
+    /// statement before this one left one.
     ///
     /// # Arguments
     ///
@@ -268,8 +287,22 @@ impl<'s> FuncGen<'s>
     /// The slot index.
     fn temp(&mut self, name: &str, kind: DataKind) -> u32
     {
-        self.locals.push(Slot::builder().name(name).kind(kind).build());
-        self.locals.len() as u32 - 1
+        let scratch = SCRATCH.contains(&name);
+        let shared = scratch && self.shared.scratch == ScratchMode::Shared;
+        let fits = |n: &u32| {
+            let slot = &self.locals[*n as usize];
+            slot.name == name && slot.kind == kind
+        };
+        let found = shared.then(|| self.free.iter().position(fits)).flatten();
+        let n = found.map_or_else(
+            || {
+                self.locals.push(Slot::builder().name(name).kind(kind).build());
+                self.locals.len() as u32 - 1
+            },
+            |at| self.free.swap_remove(at),
+        );
+        do_if!(scratch, self.taken.push(n));
+        n
     }
 
     /// The slot at a place.
@@ -297,13 +330,89 @@ impl<'s> FuncGen<'s>
     /// * `place` - The slot.
     fn addr_of(&mut self, place: Place)
     {
-        let op = match place
+        let op = self.addr_op(place);
+        self.op(op);
+    }
+
+    /// The op that pushes the address of the block that holds a slot.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The slot.
+    ///
+    /// # Returns
+    ///
+    /// The op.
+    fn addr_op(&self, place: Place) -> Op
+    {
+        match place
         {
             Place::Global(n) => Op::GlobalAddr(n),
             Place::Local(n) if self.in_slot == Some(n) => Op::ResultAddr,
             Place::Local(n) => Op::LocalAddr(n),
+        }
+    }
+
+    /// Set a slot that holds a list, a struct or a slice. A slice, and a
+    /// literal whose cells read nothing of the slot, are built in the slot
+    /// itself; each other value is built elsewhere and duplicated in, so a
+    /// value that reads the slot, as `l = [l[1], l[0]]` does, sees it whole.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The slot.
+    /// * `value` - The value.
+    fn set_block(&mut self, place: Place, value: &Expr)
+    {
+        let base = self.addr_op(place);
+        match &value.node
+        {
+            ExprNode::List(cells) if cells.iter().all(|c| apart_from(c, place)) =>
+            {
+                self.fill_at(base, value.kind, Some(cells))
+            }
+            ExprNode::MakeSlice { .. } =>
+            {
+                self.make_slice(base, value);
+                self.op(Op::Pop);
+            }
+            _ =>
+            {
+                self.op(base);
+                self.fill_list(value);
+            }
+        }
+    }
+
+    /// Make a slice in a block and push the address of the block. The source,
+    /// the start and the length run first, and the op reads the source
+    /// before it writes the block, so the block can be the source itself.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - The op that pushes the address of the block.
+    /// * `e` - The [`ExprNode::MakeSlice`] expression.
+    fn make_slice(&mut self, dest: Op, e: &Expr)
+    {
+        let ExprNode::MakeSlice { source, start, len, from, checked } = &e.node
+        else
+        {
+            panic!("make_slice takes a slice expression");
         };
-        self.op(op);
+        self.op(dest);
+        self.expr(source);
+        self.expr(start);
+        self.expr(len);
+        let cell = e.kind.as_slice().expect("a slice has cells").cell;
+        let stride = cell.size(self.shared.platform);
+        let from = match from
+        {
+            SliceFrom::List(_) if *checked => SliceSource::Checked,
+            SliceFrom::List(n) => SliceSource::List(*n),
+            SliceFrom::Slice => SliceSource::Slice,
+            SliceFrom::Block => SliceSource::Block,
+        };
+        self.op(Op::MakeSlice { stride, from });
     }
 
     /// Push the value of a slot, read from its block.
@@ -379,12 +488,24 @@ impl<'s> FuncGen<'s>
     /// * `cells` - The cells; none for a blank list.
     fn build_list(&mut self, base: Op, kind: DataKind, cells: Option<&[Expr]>)
     {
+        self.fill_at(base, kind, cells);
+        self.op(base);
+    }
+
+    /// Build a list or struct value at an address.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The op that pushes the address.
+    /// * `kind` - The list kind.
+    /// * `cells` - The cells; none for a blank list.
+    fn fill_at(&mut self, base: Op, kind: DataKind, cells: Option<&[Expr]>)
+    {
         self.op(base);
         let Some(cells) = cells
         else
         {
-            self.op(Op::Zero(kind));
-            return self.op(base);
+            return self.op(Op::Zero(kind));
         };
         let platform = self.shared.platform;
         let stride = kind.as_list().map_or(0, |l| l.cell.size(platform));
@@ -402,7 +523,6 @@ impl<'s> FuncGen<'s>
             });
             self.put(cell);
         }
-        self.op(base);
     }
 
     /// Push the address of a list cell. A cell number not proved in range is
@@ -519,6 +639,9 @@ impl<'s> FuncGen<'s>
     /// * `s` - The statement.
     fn stmt(&mut self, s: &Stmt)
     {
+        // The scratch values of the statements before this one are dead.
+        let done = std::mem::take(&mut self.taken);
+        self.free.extend(done);
         let outer = self.code.at(s.span());
         self.stmt_ops(s);
         self.code.at(outer);
@@ -535,8 +658,7 @@ impl<'s> FuncGen<'s>
         {
             Stmt::Set { place, value, .. } if value.kind.is_aggregate() =>
             {
-                self.addr_of(*place);
-                self.fill_list(value);
+                self.set_block(*place, value)
             }
             Stmt::Set { place, value, .. } => self.store(*place, |g| g.expr(value)),
             Stmt::Print { value: PrintValue::Expr(e), .. } =>
@@ -1022,9 +1144,20 @@ impl<'s> FuncGen<'s>
             ExprNode::SizeOf(kind) => self.size_of(*kind),
             ExprNode::List(cells) => self.spill_list(e.kind, Some(cells)),
             ExprNode::BlankList => self.spill_list(e.kind, None),
-            ExprNode::CellAddr { list, index, len, first, checked } =>
+            ExprNode::CellAddr { list, index, len: None, first, .. } =>
+            {
+                self.expr(list);
+                self.expr(index);
+                self.op(Op::SliceCell { stride: self.stride(e.kind), first: *first });
+            }
+            ExprNode::CellAddr { list, index, len: Some(len), first, checked } =>
             {
                 self.cell_addr(e, list, index, (*len, *first), *checked)
+            }
+            ExprNode::MakeSlice { .. } =>
+            {
+                let slot = self.temp("%slice", e.kind);
+                self.make_slice(Op::LocalAddr(slot), e)
             }
             ExprNode::FieldAddr { base, offset, .. } =>
             {
@@ -1230,6 +1363,45 @@ fn held_kind(at: &Expr) -> DataKind
 {
     extract!(Some(kind) = at.kind.pointee(), "a heap destination holds a pointer");
     kind
+}
+
+/// Whether a value reads nothing that a write to a slot could change, so the
+/// slot can be built in place while the value runs: constants, sizes, blank
+/// values, reads of and moves out of other slots, and operators and literals
+/// over these. A load, a call or a cell can reach the slot through an
+/// address, so each counts as reading it.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+/// * `place` - The slot.
+///
+/// # Returns
+///
+/// `true` when the value stands apart from the slot.
+fn apart_from(e: &Expr, place: Place) -> bool
+{
+    match &e.node
+    {
+        ExprNode::Const(_) | ExprNode::SizeOf(_) | ExprNode::BlankList => true,
+        ExprNode::Read(p) => *p != place,
+        ExprNode::Take { addr } =>
+        {
+            matches!(addr.node, ExprNode::AddrOf(p) if p != place)
+        }
+        ExprNode::Prefix { operand, .. } | ExprNode::Convert { operand, .. } =>
+        {
+            apart_from(operand, place)
+        }
+        ExprNode::Infix { lhs, rhs, .. }
+        | ExprNode::Compare { lhs, rhs, .. }
+        | ExprNode::Logic { lhs, rhs, .. } =>
+        {
+            apart_from(lhs, place) && apart_from(rhs, place)
+        }
+        ExprNode::List(cells) => cells.iter().all(|c| apart_from(c, place)),
+        _ => false,
+    }
 }
 
 /// A `usize` constant.

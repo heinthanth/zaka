@@ -523,3 +523,18 @@ pub fn struct_holds_itself(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::StructHoldsItself, t!("codes.ZK0427.message", n = name), span)
         .with_help(t!("codes.ZK0427.help", n = name))
 }
+
+/// The cells of a slice kind hold borrows.
+///
+/// # Arguments
+///
+/// * `span` - The kind.
+/// * `kind` - The slice kind, as its short name.
+///
+/// # Returns
+///
+/// The `ZK0428` diagnostic.
+pub fn slice_of_borrows(span: Span, kind: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::SliceOfBorrows, t!("codes.ZK0428.message", k = kind), span)
+}

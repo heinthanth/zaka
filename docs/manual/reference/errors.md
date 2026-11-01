@@ -50,6 +50,7 @@ Messages use short names for kinds:
 | `ptr` | `လိပ်စာ` (the opaque pointer) |
 | `[3]isize`, `[2][3]isize` | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း`, ... ; one `[n]` for each `စာရင်း`, outermost first; `[]` while the count is not known |
 | `*[3]isize` | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, the address of a whole list |
+| `&[]isize` | `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း`, a slice: a borrowed run of cells with its count |
 | `null` | the kind of `ဗလာ` |
 
 ## Codes
@@ -106,6 +107,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0230 | an import after a declaration or statement, or inside a block | [Module mistakes](../../learn/modules/mistakes.md#an-import-below-a-statement) |
 | ZK0231 | files that import each other | [Module mistakes](../../learn/modules/mistakes.md#files-that-import-each-other) |
 | ZK0232 | an import in a program that was not read from a file | [Module mistakes](../../learn/modules/mistakes.md#imports-outside-a-file) |
+| ZK0233 | a cell count on the list of a slice kind | [Slices](../language/slices.md#the-kind) |
 
 ### ZK03: names
 
@@ -166,6 +168,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0425 | a list kind too large for the VM | [Lists of lists](../../learn/lists/grids.md#the-size-of-a-list) |
 | ZK0426 | a field of a value that is no struct | [Struct mistakes](../../learn/structs/mistakes.md#a-field-of-a-value-that-is-no-struct) |
 | ZK0427 | a struct that holds itself | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-that-holds-itself) |
+| ZK0428 | a slice whose cells hold borrows | [Slices](../language/slices.md#ownership) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -192,6 +195,7 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | ZK0602 | a constant zero as the divisor | [Arithmetic](../../learn/operators/arithmetic.md#dividing-integers) |
 | ZK0603 | a constant cell number outside its list | [List mistakes](../../learn/lists/mistakes.md#a-cell-number-outside-the-list) |
 | ZK0604 | a variable of an imported file whose starting value is not known at compile time | [Module mistakes](../../learn/modules/mistakes.md#a-starting-value-that-needs-a-call) |
+| ZK0605 | a constant range past the end of its list | [Slices](../language/slices.md#making-a-slice) |
 
 ### ZK07: ownership and borrowing
 

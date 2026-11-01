@@ -91,6 +91,8 @@ pub enum Expr
     Index(IndexExpr),
     /// `x ၏ <field>`: one field of a struct.
     Field(FieldExpr),
+    /// `x ၏ အကွက် <start> မှစ၍ <length> ကွက်`: a slice of cells.
+    Range(RangeExpr),
     /// `a၊ b၊ c တို့ပါသော စာရင်း` or `[a၊ b၊ c]`
     List(ListLit),
     /// `<field> <value>၊ … ရှိသော <struct>တစ်<classifier>` or
@@ -204,6 +206,26 @@ pub struct IndexExpr
     /// `n ခုမြောက်အကွက်`.
     pub first: u8,
     /// Source region, from the list to the index or the verb.
+    pub span: Span,
+}
+
+/// A slice of cells: `x ၏ အကွက် <start> မှစ၍ <length> ကွက်`, `length` cells
+/// from the cell numbered `start`, counted from 0.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct RangeExpr
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The list, a pointer to a list or a block, or a slice.
+    #[builder(into)]
+    pub source: Box<Expr>,
+    /// The number of the first cell.
+    #[builder(into)]
+    pub start: Box<Expr>,
+    /// The number of cells.
+    #[builder(into)]
+    pub len: Box<Expr>,
+    /// Source region, from the source to `ကွက်`.
     pub span: Span,
 }
 
@@ -601,6 +623,7 @@ impl Expr
             Expr::SizeOf(n) => n.id,
             Expr::Index(n) => n.id,
             Expr::Field(n) => n.id,
+            Expr::Range(n) => n.id,
             Expr::List(n) => n.id,
             Expr::Struct(n) => n.id,
             Expr::BlankList(n) => n.id,

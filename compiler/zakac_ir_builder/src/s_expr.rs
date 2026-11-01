@@ -11,6 +11,7 @@ use crate::ir::Func;
 use crate::ir::Module;
 use crate::ir::Place;
 use crate::ir::PrintValue;
+use crate::ir::SliceFrom;
 use crate::ir::Slot;
 use crate::ir::Stmt;
 
@@ -145,9 +146,22 @@ impl ToSexpr for Expr
             ExprNode::CellAddr { list: base, index, len, first, checked } =>
             {
                 let head = tern!(*first == 0, "cell@", "cell1@");
-                let parts = [base.to_sexpr(), index.to_sexpr(), len.to_string()];
+                let len = len.map_or("count".to_string(), |n| n.to_string());
+                let parts = [base.to_sexpr(), index.to_sexpr(), len];
                 let mark = checked.then(|| "checked".to_string());
                 list(head, parts.into_iter().chain(mark))
+            }
+            ExprNode::MakeSlice { source, start, len, from, checked } =>
+            {
+                let from = match from
+                {
+                    SliceFrom::List(n) => n.to_string(),
+                    SliceFrom::Slice => "slice".to_string(),
+                    SliceFrom::Block => "block".to_string(),
+                };
+                let parts = [source.to_sexpr(), start.to_sexpr(), len.to_sexpr(), from];
+                let mark = checked.then(|| "checked".to_string());
+                list("slice", parts.into_iter().chain(mark))
             }
             ExprNode::FieldAddr { base, field, offset } =>
             {

@@ -9,5 +9,8 @@ en = "Write the asm listing instead of the artifact."
 [codegen.results]
 en = "How a list or struct result reaches the caller: duplicated out of the callee, or built in place."
 
+[codegen.scratch]
+en = "Where scratch lists, structs and slices live: each in a slot apart, or shared across statements."
+
 [codegen.artifact.source_changed]
 en = "source text changed after re-ingest"

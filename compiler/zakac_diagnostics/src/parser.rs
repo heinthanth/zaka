@@ -437,6 +437,20 @@ pub fn bad_list_count(span: Span, count: &str) -> Diagnostic
     Diagnostic::new(Code::BadListCount, t!("codes.ZK0227.message", n = count), span)
 }
 
+/// A count prefix pairs with the `စာရင်း` of a slice kind.
+///
+/// # Arguments
+///
+/// * `span` - The kind.
+///
+/// # Returns
+///
+/// The `ZK0233` diagnostic.
+pub fn slice_count(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::SliceCount, t!("codes.ZK0233.message"), span)
+}
+
 /// The export mark stands before something other than a top-level
 /// declaration.
 ///

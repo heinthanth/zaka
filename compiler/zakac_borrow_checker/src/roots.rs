@@ -6,6 +6,7 @@ use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
+use zakac_ir_builder::ir::SliceFrom;
 use zakac_ir_builder::ir::Slot;
 use zakac_ir_builder::ir::Stmt;
 use zakac_rust_sugars::ret_if;
@@ -87,6 +88,12 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
         | ExprNode::Convert { operand, .. }
         | ExprNode::PtrAdd { base: operand, .. } => deeper(operand),
         ExprNode::Load { addr } => load_roots(addr, e.kind, state, ctx),
+        ExprNode::CellAddr { list, .. } if list.kind.is_slice() => deeper(list),
+        ExprNode::MakeSlice { source, from: SliceFrom::List(_), .. } =>
+        {
+            list_roots(source, state, ctx).iter().map(|r| r.cell(None)).collect()
+        }
+        ExprNode::MakeSlice { source, .. } => deeper(source),
         ExprNode::CellAddr { list, index, first, .. } =>
         {
             let n = cell_number(index, *first);
@@ -162,7 +169,7 @@ fn cell_kind(addr: &Expr) -> Option<DataKind>
 {
     match &addr.node
     {
-        ExprNode::CellAddr { list, .. } => list.kind.as_list().map(|l| l.cell),
+        ExprNode::CellAddr { list, .. } => list.kind.cell_kind(),
         ExprNode::FieldAddr { base, field, .. } => field_kind(base.kind, *field),
         _ => None,
     }
@@ -222,7 +229,8 @@ pub(crate) fn list_slot(addr: &Expr) -> Option<Place>
 /// of one read from mem, the roots of a pointer to a list.
 fn list_roots(list: &Expr, state: &State, ctx: &RootCtx) -> Roots
 {
-    ret_if!(!list.kind.is_aggregate(), roots_of(list, state, ctx));
+    let view = !list.kind.is_aggregate() || list.kind.is_slice();
+    ret_if!(view, roots_of(list, state, ctx));
     match &list.node
     {
         ExprNode::Read(place) => Roots::from([Root::slot(*place)]),

@@ -210,3 +210,64 @@ q ၏ အကွက် ၅ ကို ၉ ဟု ထားပါ။";
     let cells = "ကိန်းရှင် q သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ စာရင်း ဖြစ်ပါစေ။";
     assert_eq!(codes(cells), [Code::ListCountMissing]);
 }
+
+/// `s` a slice of `l`, and `h` a heap block of four integers.
+const SLICES: &str = "ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း ဖြစ်၍ တန်ဖိုးသည် l ၏ တန်ဖိုးအငှား \
+                      ဖြစ်ပါစေ။
+ကိန်းရှင် h သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+";
+
+#[test]
+fn ranges_and_lends_make_slices()
+{
+    let checked = check(&lines(&[
+        LISTS,
+        SLICES,
+        "l ၏ အကွက် ၁ မှစ၍ ၂ ကွက် ကို ပြသပါ။",
+        "p ၏ အကွက် ၀ မှစ၍ ၃ ကွက် ကို ပြသပါ။",
+        "s ၏ အကွက် ၁ မှစ၍ ၁ ကွက် ကို ပြသပါ။",
+        "h ၏ အကွက် ၀ မှစ၍ ၄ ကွက် ကို ပြသပါ။",
+        "g ၏ တန်ဖိုးအငှား ကို ပြသပါ။",
+    ]));
+    let msgs: Vec<&str> =
+        checked.out.diagnostics.iter().map(|d| d.message.as_str()).collect();
+    assert!(msgs.is_empty(), "{msgs:?}");
+    assert_eq!(kind_at(&checked, "l ၏ အကွက် ၁ မှစ၍ ၂ ကွက်"), "&[]isize");
+    assert_eq!(kind_at(&checked, "p ၏ အကွက် ၀ မှစ၍ ၃ ကွက်"), "&[]isize");
+    assert_eq!(kind_at(&checked, "h ၏ အကွက် ၀ မှစ၍ ၄ ကွက်"), "&[]isize");
+    assert_eq!(kind_at(&checked, "g ၏ တန်ဖိုးအငှား"), "&[][3]isize");
+}
+
+#[test]
+fn slice_cells_and_counts_read_like_lists()
+{
+    let checked = check(&lines(&[
+        LISTS,
+        SLICES,
+        "s ၏ အကွက် ၀ ကို ၅ ဟု ထားပါ။",
+        "s ၏ အကွက်အရေအတွက် ကို ပြသပါ။",
+    ]));
+    assert!(checked.out.diagnostics.is_empty());
+    assert_eq!(kind_at(&checked, "s ၏ အကွက်အရေအတွက်"), "usize");
+    ok(&lines(&[LISTS, SLICES, "s ၏ ၁ ခုမြောက်အကွက် ကို ပြသပါ။"]));
+}
+
+#[test]
+fn range_and_lend_mistakes()
+{
+    let at = |line: &str| codes(&lines(&[LISTS, SLICES, line]));
+    assert_eq!(at("၅ ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ကို ပြသပါ။"), [Code::NotAList]);
+    assert_eq!(at("l ၏ အကွက် ၀ မှစ၍ ၁.၅ ကွက် ကို ပြသပါ။"), [Code::CellNumberNotInt]);
+    assert_eq!(at("(l) ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ကို ပြသပါ။").len(), 0);
+    assert_eq!(at("[၁၊ ၂] ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ကို ပြသပါ။"), [Code::NoAddress]);
+    assert_eq!(at("s == s ကို ပြသပါ။"), [Code::OperandKind]);
+    let constant =
+        "ကိန်းသေ c သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။\nc ၏ တန်ဖိုးအငှား ကို ပြသပါ။";
+    assert_eq!(at(constant), [Code::FixedAddress]);
+    let borrows = "ကိန်းရှင် b သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ စာရင်း ဖြစ်၍ တန်ဖိုးသည် [(h ၏ \
+                   တန်ဖိုးအငှား)] ဖြစ်ပါစေ။\nb ၏ တန်ဖိုးအငှား ကို ပြသပါ။";
+    assert_eq!(at(borrows), [Code::SliceOfBorrows]);
+    let nested = "ကိန်းရှင် n သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း စာရင်း တစ်စိတ်တစ်ပိုင်း ဖြစ်ပါစေ။";
+    assert_eq!(at(nested), [Code::SliceOfBorrows]);
+    assert_eq!(at("ကိန်းရှင် x သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် s ဖြစ်ပါစေ။").len(), 1);
+}

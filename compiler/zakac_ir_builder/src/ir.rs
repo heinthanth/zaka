@@ -512,11 +512,29 @@ pub enum ExprNode
         list: Box<Expr>,
         /// The cell number, an integer of its own kind.
         index: Box<Expr>,
-        /// The number of cells.
-        len: u32,
+        /// The number of cells of a list, or `None` for a slice, whose count
+        /// is read when the program runs.
+        len: Option<u32>,
         /// The number of the first cell: 0 or 1.
         first: u8,
         /// Whether the cell number is known to be in range, so no check is
+        /// needed when the program runs.
+        checked: bool,
+    },
+    /// A slice of `len` cells from cell `start` on, counted from 0; the
+    /// expression kind is the slice kind.
+    MakeSlice
+    {
+        /// The list, a pointer to a list or a block, or a slice.
+        source: Box<Expr>,
+        /// The number of the first cell, a `usize`.
+        start: Box<Expr>,
+        /// The number of cells, a `usize`.
+        len: Box<Expr>,
+        /// What the source is, which tells where the cells start and what
+        /// bounds them.
+        from: SliceFrom,
+        /// Whether the range is known to lie in its source, so no check is
         /// needed when the program runs.
         checked: bool,
     },
@@ -629,6 +647,22 @@ impl InfixOp
             InfixOp::Shr => "shr",
         }
     }
+}
+
+/// The source of a slice: where its cells start and what bounds them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SliceFrom
+{
+    /// A list of this count of cells, or a pointer to one: the cells start at
+    /// its address.
+    List(u32),
+    /// A slice: the cells start at its first word, and its second word holds
+    /// their count.
+    Slice,
+    /// A pointer into a heap block: the cells start at the pointer, and the
+    /// VM checks the range against the block.
+    Block,
 }
 
 /// A comparison operator.

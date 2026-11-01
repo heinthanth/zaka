@@ -10,6 +10,7 @@ use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::artifact::run_loaded;
 use zakac_codegen::artifact::run_phases;
 use zakac_codegen::bc::Module;
+use zakac_codegen::options::EmitOptions;
 use zakac_codegen::options::ResultMode;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::has_errors;
@@ -41,15 +42,16 @@ pub fn compile_checked(text: &str) -> Module
 }
 
 /// Compile a source file and the files it imports with the ownership check
-/// on, which must report nothing at all, and a result mode.
-pub fn compile_file(path: &Path, results: ResultMode) -> Module
+/// on, which must report nothing at all, and code generation choices.
+pub fn compile_file(path: &Path, emit_options: impl Into<EmitOptions>) -> Module
 {
     let mut sm = SourceMap::new();
     let file = sm.load_file(path).unwrap();
     let loaded = load(&file, &mut sm, &LexerOptions::default()).unwrap();
     let options = SemcheckOptions::default();
     let mem = BorrowCheckOptions::default();
-    let emitted = run_loaded(loaded, &options, &FoldOptions::default(), &mem, results);
+    let emitted =
+        run_loaded(loaded, &options, &FoldOptions::default(), &mem, emit_options);
     let msgs: Vec<&str> =
         emitted.diagnostics().iter().map(|d| d.message.as_str()).collect();
     assert!(emitted.diagnostics().is_empty(), "{}: {msgs:?}", path.display());

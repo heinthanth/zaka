@@ -47,6 +47,7 @@
 - [Lists](lists/README.md)
   - [Passing and comparing lists](lists/passing.md)
   - [Lists of lists](lists/grids.md)
+  - [Slices](lists/slices.md)
   - [List mistakes](lists/mistakes.md)
 - [Structs](structs/README.md)
   - [Struct mistakes](structs/mistakes.md)

@@ -13,6 +13,7 @@
   - [Pointers](language/pointers.md)
   - [Ownership and borrowing](language/ownership.md)
   - [Lists](language/lists.md)
+  - [Slices](language/slices.md)
   - [Structs](language/structs.md)
   - [Modules](language/modules.md)
   - [Natural wording](language/naturalness.md)

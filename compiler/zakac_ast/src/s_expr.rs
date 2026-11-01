@@ -91,6 +91,10 @@ impl ToSexpr for Expr
                 list(head, [n.list.to_sexpr(), n.index.to_sexpr()])
             }
             Expr::Field(n) => list("field", [n.base.to_sexpr(), n.field.name.clone()]),
+            Expr::Range(n) => list(
+                "range",
+                [n.source.to_sexpr(), n.start.to_sexpr(), n.len.to_sexpr()],
+            ),
             Expr::List(n) => list("list", n.cells.iter().map(ToSexpr::to_sexpr)),
             Expr::Struct(n) =>
             {
@@ -179,7 +183,8 @@ fn list(head: &str, parts: impl IntoIterator<Item = String>) -> String
     format!("({head} {})", parts.join(" "))
 }
 
-/// The mark a wrap puts in front of the kind inside it: `*`, `[3]` or `[]`.
+/// The mark a wrap puts in front of the kind inside it: `*`, `[3]`, `[]` or
+/// `&[]`.
 ///
 /// # Arguments
 ///
@@ -196,6 +201,7 @@ fn wrap_mark(w: Wrap) -> String
         Wrap::RawPtr => "~".into(),
         Wrap::List(Cells::Fixed(n)) => format!("[{n}]"),
         Wrap::List(Cells::Inferred) => "[]".into(),
+        Wrap::Slice => "&[]".into(),
     }
 }
 

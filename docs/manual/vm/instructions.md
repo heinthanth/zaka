@@ -74,8 +74,8 @@ How to read it:
   text. After `;` comes the source name, for the reader. A jump shows a label, `L0`, in
   the listing; the artifact holds the index of the target instruction.
 - A function lists its locals, parameters first (`l0` is the parameter `န`), then the
-  locals of the source, then slots the generator adds, such as `%list`, `%to`, `%step`
-  and `%dir`. The last function is `main`, which holds the sentences outside each
+  locals of the source, then slots the generator adds, such as `%list`, `%slice`, `%to`,
+  `%step` and `%dir`. The last function is `main`, which holds the sentences outside each
   function.
 - A kind is written short: `isize` and `usize` for the platform-sized integers, `u8`,
   `i32` and so on, `f64`, `char`, `bool`, `*isize` for an address of an integer,
@@ -148,6 +148,8 @@ A list lives in a block, and its instructions work on addresses.
 | `blit k` | to from → | duplicate a value of kind `k`, such as a whole list, from one address to another |
 | `zero k` | addr → | set the octets of a value of kind `k` to zero |
 | `list_eq k` | a b → bool | whether each cell of one list equals the cell of the other |
+| `make_slice 8 of 3` | slot source start len → slot | write the slice of `len` cells from cell `start` of the source in the slot; the source is a list of 3 cells (`of 3`), a slice (`of slice`) or a heap block (`of block`), and a range past its end stops the program; `checked` skips the test |
+| `slice_cell 8` | slice n → addr | check a cell number against the count of a slice; push the address of the cell |
 
 ### Control
 
@@ -170,7 +172,7 @@ arguments into its parameters; `ret` gives the room back. A call nested deeper t
 | --- | --- | --- |
 | `print` | v → | write the value and a line break |
 | `print_text t` | | write the pooled text `t` and a line break |
-| `print_list k` | addr → | write the cells of a list of kind `k` and a line break |
+| `print_list k` | addr → | write the cells of a list or a slice, or the fields of a struct, of kind `k` and a line break |
 
 How each value reads is in [Running a program](running.md#printing).
 

@@ -89,6 +89,23 @@ pub enum TrapCode
     StepNotPositive,
 }
 
+/// How [`Op::MakeSlice`] finds the cells of its source and checks the range.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SliceSource
+{
+    /// The address of a list of this count of cells, or of its first cell.
+    List(u32),
+    /// The address of a list whose range is known to fit, so no check runs.
+    Checked,
+    /// The address of a slice: its first word is where the cells start, its
+    /// second word their count.
+    Slice,
+    /// A pointer into a heap block; the VM checks the range against the
+    /// block.
+    Block,
+}
+
 /// A stack machine op. Ops that work on values read the kind from their
 /// operands; the stack holds kinded values.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, IntoStaticStr)]
@@ -175,12 +192,32 @@ pub enum Op
     /// Pop the addresses of two lists of this kind, the right one first;
     /// push whether each cell of one equals the cell of the other.
     ListEq(DataKind),
-    /// Pop the address of a list or a struct of this kind; write its cells or
-    /// fields and a line break.
+    /// Pop the address of a list, a struct or a slice of this kind; write its
+    /// cells or fields and a line break.
     PrintList(DataKind),
     /// Push the address of the caller's slot for the list or struct result
     /// of the running call.
     ResultAddr,
+    /// Pop a length, a start, a source and the address of a slice slot;
+    /// stop the program when the range passes the end of the source, else
+    /// write the address of cell `start` and the length in the slot, and
+    /// push its address.
+    MakeSlice
+    {
+        /// The size of a cell.
+        stride: u32,
+        /// What the source is.
+        from: SliceSource,
+    },
+    /// Pop a cell number, then the address of a slice; stop the program when
+    /// the number is outside the slice, else push the address of the cell.
+    SliceCell
+    {
+        /// The size of a cell.
+        stride: u32,
+        /// The number of the first cell: 0 or 1.
+        first: u8,
+    },
 }
 
 impl Op
@@ -260,6 +297,12 @@ impl Op
             | Op::Zero(kind)
             | Op::ListEq(kind)
             | Op::PrintList(kind) => kind.name(),
+            Op::MakeSlice { stride, from } =>
+            {
+                format!("{stride} {}", slice_source_text(from))
+            }
+            Op::SliceCell { stride, first: 0 } => stride.to_string(),
+            Op::SliceCell { stride, first } => format!("{stride} from {first}"),
             Op::Index { len, first: 0 } => len.to_string(),
             Op::Index { len, first } => format!("{len} from {first}"),
             Op::PtrAdd(s) | Op::PtrSub(s) | Op::Alloc(s) | Op::Realloc(s) =>
@@ -273,6 +316,26 @@ impl Op
             Op::Prefix(_) | Op::Infix(_) | Op::Compare(_) => return None,
         };
         Some(text)
+    }
+}
+
+/// The text of a slice source in a listing.
+///
+/// # Arguments
+///
+/// * `from` - The source.
+///
+/// # Returns
+///
+/// The count of a list, or a word for the other sources.
+fn slice_source_text(from: SliceSource) -> String
+{
+    match from
+    {
+        SliceSource::List(n) => format!("of {n}"),
+        SliceSource::Checked => "checked".to_string(),
+        SliceSource::Slice => "of slice".to_string(),
+        SliceSource::Block => "of block".to_string(),
     }
 }
 

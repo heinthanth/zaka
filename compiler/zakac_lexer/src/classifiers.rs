@@ -12,10 +12,11 @@ pub const COUNT_ENDING: &str = "စာ";
 
 /// Mark the count words of the classifiers a program declares.
 ///
-/// A classifier is the name after `မျိုးပြပစ္စည်းမှာ`. The lexer has no word list,
-/// so `ယောက်စာ` lexes as a name; each name spelled `<classifier>စာ` becomes
-/// [`Kw::Items`] here, with its span kept, so the parser reads the classifier
-/// from the text before `စာ`.
+/// A classifier is the name after `မျိုးပြပစ္စည်းမှာ`, or the reserved `ကွက်`,
+/// which a struct can declare as its classifier too. The lexer has no word
+/// list, so `ယောက်စာ` lexes as a name; each name spelled `<classifier>စာ`
+/// becomes [`Kw::Items`] here, with its span kept, so the parser reads the
+/// classifier from the text before `စာ`.
 ///
 /// # Arguments
 ///
@@ -27,8 +28,9 @@ pub fn mark_classifiers(tokens: &mut [Token], text: &str, base: Pos)
     let text_of =
         |span: Span| &text[(span.lo - base) as usize..(span.hi - base) as usize];
     let declared = |pair: &[Token]| {
-        let named = pair[0].kind == TokenKind::Kw(Kw::ClassifierIs)
-            && pair[1].kind == TokenKind::Ident;
+        let word =
+            matches!(pair[1].kind, TokenKind::Ident | TokenKind::Kw(Kw::CellWord));
+        let named = pair[0].kind == TokenKind::Kw(Kw::ClassifierIs) && word;
         named.then(|| format!("{}{COUNT_ENDING}", text_of(pair[1].span)))
     };
     let words: HashSet<String> = tokens.windows(2).filter_map(declared).collect();

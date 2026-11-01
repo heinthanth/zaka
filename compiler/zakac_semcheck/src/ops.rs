@@ -541,9 +541,10 @@ impl Checker
         }
     }
 
-    /// Infer a two-operand operation where at least one side is a list or a
-    /// struct: `==` and `!=` compare two lists of one kind, one cell at a
-    /// time, and other operators take no lists. No operator takes a struct.
+    /// Infer a two-operand operation where at least one side is a list, a
+    /// struct or a slice: `==` and `!=` compare two lists of one kind, one
+    /// cell at a time, and other operators take no lists. No operator takes
+    /// a struct or a slice.
     ///
     /// # Arguments
     ///
@@ -561,7 +562,7 @@ impl Checker
         rhs: (DataKind, &Expr), span: Span,
     ) -> Option<DataKind>
     {
-        let structs = lhs.0.is_struct() || rhs.0.is_struct();
+        let structs = [lhs.0, rhs.0].iter().any(|k| k.is_struct() || k.is_slice());
         let equal = class == OpClass::Equal && !structs;
         ret_if!(equal && lhs.0 == rhs.0, Some(DataKind::Bool));
         let mismatch = kd::incompatible_operands(span, &lhs.0.name(), &rhs.0.name());

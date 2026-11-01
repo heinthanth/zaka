@@ -21,7 +21,7 @@ use zakac_codegen::artifact::decode_artifact;
 use zakac_codegen::artifact::run_loaded;
 use zakac_codegen::bc::Module;
 use zakac_codegen::cli::attach_codegen_args;
-use zakac_codegen::cli::result_mode;
+use zakac_codegen::cli::emit_options;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::has_errors;
 use zakac_host_errors::Error;
@@ -368,9 +368,8 @@ fn compiled(
     let options = semcheck_options(matches);
     let folding = fold_options(matches);
     let mem = borrow_check_options(matches);
-    let results = result_mode(matches);
     let program = load_program(source, source_map, &LexerOptions::default())?;
-    let emitted = run_loaded(program, &options, &folding, &mem, results);
+    let emitted = run_loaded(program, &options, &folding, &mem, emit_options(matches));
     let diagnostics = emitted.diagnostics().to_vec();
     Ok(Loaded { module: emitted.module, diagnostics })
 }

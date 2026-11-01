@@ -33,6 +33,42 @@ fn list_kinds_nest_and_mix_with_pointers()
 }
 
 #[test]
+fn slice_kinds_follow_a_count_less_list()
+{
+    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} ဖြစ်ပါစေ။"));
+    assert_eq!(decl("ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က &[]isize)");
+    assert_eq!(decl("ကိန်းပြည့် ၏ စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က &[]isize)");
+    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က &[][3]isize)");
+    assert_eq!(decl("အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း စာရင်း"), "(var က [2]&[]isize)");
+    let bad = |kind: &str| codes(&format!("ကိန်းရှင် က သည် {kind} ဖြစ်ပါစေ။"));
+    assert_eq!(bad("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း"), [Code::SliceCount]);
+}
+
+#[test]
+fn a_range_reads_its_start_and_length()
+{
+    assert_eq!(expr("က ၏ အကွက် ၁ မှစ၍ ၂ ကွက်"), "(range က 1 2)");
+    assert_eq!(expr("က ၏ အကွက် i + ၁ မှစ၍ န - ၁ ကွက်"), "(range က (+ i 1) (- န 1))");
+    assert_eq!(expr("က ၏ အကွက် ၁ မှစ၍ ၂ ကွက် ၏ အကွက် ၀"), "(cell (range က 1 2) 0)");
+    assert_eq!(expr("က ၏ တန်ဖိုးအငှား"), "(lend က)");
+    assert_eq!(codes("က ၏ အကွက် ၁ မှစ၍ ၂ ကို ပြသပါ။"), [Code::ExpectedToken]);
+}
+
+#[test]
+fn a_struct_can_name_the_cell_word_as_its_classifier()
+{
+    let decl = "ဒေတာအမျိုးအစား ကွက်လပ် တွင် ကိန်းပြည့် အမှတ် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ကွက် ဖြစ်သည်။";
+    assert_eq!(codes(decl), []);
+    let heap = format!(
+        "{decl}\nကိန်းရှင် ပ သည် ကွက်လပ် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကွက်လပ် ၃ ကွက်စာ နေရာယူ၍ လိပ်စာကို ပ တွင် \
+         သိမ်းထားမည်။"
+    );
+    assert_eq!(codes(&heap), []);
+    let lit = format!("{decl}\nအမှတ် ၁ ရှိသော ကွက်လပ်တစ်ကွက် ကို ပြသပါ။");
+    assert_eq!(codes(&lit), []);
+}
+
+#[test]
 fn a_list_count_is_a_whole_number_above_zero()
 {
     let bad = |kind: &str| codes(&format!("ကိန်းရှင် က သည် {kind} ဖြစ်ပါစေ။"));

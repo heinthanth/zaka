@@ -88,6 +88,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("lists", "grid"),
     sample!("lists", "borrow"),
     sample!("lists", "sort"),
+    sample!("lists", "slices"),
     sample!("structs", "basics"),
     sample!("structs", "literal"),
     sample!("structs", "nested"),

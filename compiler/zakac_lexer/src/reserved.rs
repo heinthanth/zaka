@@ -142,6 +142,10 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ခုရှိသော", Kw::Having),
     ("ရှိသော", Kw::Having),
     ("တို့ပါသော", Kw::ListOf),
+    // slices
+    ("တစ်စိတ်တစ်ပိုင်း", Kw::Part),
+    ("မှစ၍", Kw::StartingAt),
+    ("ကွက်", Kw::CellWord),
     // structs
     ("အချက်အလက်အမျိုးအစား", Kw::StructOpen),
     ("ဒေတာအမျိုးအစား", Kw::StructOpen),

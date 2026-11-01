@@ -249,6 +249,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::SizeOf
         | Kw::Cell
         | Kw::CellCount
+        | Kw::CellWord
         | Kw::Ordinal => "tok-op",
         Kw::Thi
         | Kw::Ko
@@ -266,6 +267,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Step
         | Kw::CountAs
         | Kw::ListOf
+        | Kw::StartingAt
         | Kw::Having => "tok-particle",
         Kw::IntKind
         | Kw::FloatKind
@@ -285,7 +287,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Lend
         | Kw::Octets
         | Kw::Items
-        | Kw::List => "tok-kind",
+        | Kw::List
+        | Kw::Part => "tok-kind",
         Kw::True | Kw::False | Kw::Null | Kw::BlankList => "tok-bool",
     }
 }

@@ -647,7 +647,8 @@ impl Parser<'_>
         Ok(Stmt::Struct(node))
     }
 
-    /// Parse `မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်`.
+    /// Parse `မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်`. The classifier is a name,
+    /// or the reserved `ကွက်`, which the range form uses as its count word.
     ///
     /// # Returns
     ///
@@ -655,7 +656,16 @@ impl Parser<'_>
     fn parse_classifier(&mut self) -> PResult<Ident>
     {
         self.expect(Kw::ClassifierIs)?;
-        let word = self.parse_ident()?;
+        let cell = self.peek();
+        let word = match kw_of(&cell)
+        {
+            Some(Kw::CellWord) =>
+            {
+                self.bump();
+                Ident::builder().name(self.text_of(cell.span)).span(cell.span).build()
+            }
+            _ => self.parse_ident()?,
+        };
         self.expect(Kw::Is)?;
         Ok(word)
     }

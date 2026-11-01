@@ -174,5 +174,9 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
             expr(index, f);
         }
         ExprNode::FieldAddr { base, .. } => expr(base, f),
+        ExprNode::MakeSlice { source, start, len, .. } =>
+        {
+            do_for!(a in [source, start, len], expr(a, f))
+        }
     }
 }

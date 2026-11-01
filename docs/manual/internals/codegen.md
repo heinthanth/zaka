@@ -313,6 +313,18 @@ frame ends with the return.
 | `in-place` (default) | the local that each `return` gives back, often the result variable, is read and written through `result_addr`; a returned literal is built at `result_addr`, and a returned call passes `result_addr` on as its slot, so `ret` duplicates nothing |
 | `duplicate` | the function keeps the value in its own frame, and `ret` duplicates it into the slot |
 
+A list, a struct or a slice set into a slot is built in the slot itself when nothing it
+reads could change while it is written: a slice, whose `make_slice` reads its source
+before it writes, and a literal whose cells are constants, other slots, and operators
+on these. Each other value, such as `l = [l[1], l[0]]`, is built in a `%list` or
+`%slice` local first and then duplicated in with `blit`, so it reads the slot whole. A
+literal or a slice with no slot to go to, such as one printed or passed, is built in
+such a local too. With `--scratch apart`, each such value gets a local of its own. With
+`--scratch shared`, a value of one statement is dead once the statement ends, so a later
+statement takes a free local of the same name and kind; the values of one statement
+still keep slots of their own. The locals of a counted loop live across its block and
+are never shared.
+
 A counted loop evaluates `from`, `to` and `step` once, in that order. A constant bound
 or step is pushed again where needed; a value that is not constant goes into a `%to` or
 `%step` local. A step that is not a constant is checked once, and the program stops with

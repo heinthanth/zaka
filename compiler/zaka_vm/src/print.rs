@@ -80,16 +80,61 @@ pub fn burmese_digits(num: &str) -> String
 pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKind>
 {
     ret_if!(let Some(s) = kind.as_struct(), struct_text(mem, addr, s));
+    if let Some(slice) = kind.as_slice()
+    {
+        let (base, count) = slice_parts(mem, addr)?;
+        return cells_text(mem, base, slice.cell, count);
+    }
     let Some(list) = kind.as_list()
     else
     {
         return mem.load(addr, kind).map(text);
     };
-    let stride = u64::from(list.cell.size(mem.platform()));
-    let cell = |i: u64| list_text(mem, addr + i * stride, list.cell);
-    let cells: Vec<String> =
-        (0..u64::from(list.len)).map(cell).collect::<Result<_, _>>()?;
+    cells_text(mem, addr, list.cell, u64::from(list.len))
+}
+
+/// The text of a run of cells, between `[` and `]` and joined with `၊ `.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the cells.
+/// * `addr` - The address of the first cell.
+/// * `cell` - The kind of each cell.
+/// * `count` - The number of cells.
+///
+/// # Returns
+///
+/// The text, or the trap a read of a cell hits.
+fn cells_text(
+    mem: &Mem, addr: u64, cell: DataKind, count: u64,
+) -> Result<String, TrapKind>
+{
+    let stride = u64::from(cell.size(mem.platform()));
+    let one = |i: u64| list_text(mem, addr + i * stride, cell);
+    let cells: Vec<String> = (0..count).map(one).collect::<Result<_, _>>()?;
     Ok(format!("[{}]", cells.join("၊ ")))
+}
+
+/// The two words of a slice: the address of its first cell and its count.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the slice.
+/// * `addr` - The address of the slice.
+///
+/// # Returns
+///
+/// The address and the count, or the trap a read hits.
+pub fn slice_parts(mem: &Mem, addr: u64) -> Result<(u64, u64), TrapKind>
+{
+    let word = u64::from(mem.platform() / 8);
+    let base = mem.load(addr, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
+    let count = match mem.load(addr + word, DataKind::USIZE)?
+    {
+        Value::Int { raw, .. } => u64::try_from(raw).unwrap_or(u64::MAX),
+        _ => 0,
+    };
+    Ok((base, count))
 }
 
 /// The text of a struct: `<struct>(name: value၊ ...)`.

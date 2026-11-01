@@ -8,7 +8,9 @@ use common::ops;
 use zakac_codegen::bc::Op;
 use zakac_codegen::bc::TrapCode;
 use zakac_codegen::emit::MAIN_NAME;
+use zakac_codegen::options::EmitOptions;
 use zakac_codegen::options::ResultMode;
+use zakac_codegen::options::ScratchMode;
 
 const FLAGS: &str =
     "ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး မှန် ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး မမှန် ဖြစ်ပါစေ။\n";
@@ -501,4 +503,71 @@ fn a_returned_owner_struct_is_not_moved_out_first()
         assert!(!code.iter().any(|op| matches!(op, Op::Blit(_))), "{results}");
         assert_eq!(code.last(), Some(&Op::Ret), "{results}");
     }
+}
+
+/// The names of the scratch slots of the main function.
+fn scratch(text: &str) -> Vec<String>
+{
+    let module = emit_text(text);
+    let locals = &main_func(&module).locals;
+    locals.iter().map(|s| s.name.clone()).filter(|n| n.starts_with('%')).collect()
+}
+
+#[test]
+fn a_literal_or_a_slice_set_into_a_slot_is_built_there()
+{
+    let decl = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\n";
+    assert_eq!(scratch(decl), Vec::<String>::new());
+    let slice = format!(
+        "{decl}ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း ဖြစ်၍ တန်ဖိုးသည် l ၏ အကွက် ၁ မှစ၍ ၂ ကွက် \
+         ဖြစ်ပါစေ။\ns ကို s ၏ အကွက် ၁ မှစ၍ ၁ ကွက် ဟု ထားပါ။"
+    );
+    assert_eq!(scratch(&slice), Vec::<String>::new());
+    let shown = format!("{decl}[၄၊ ၅] ကို ပြသပါ။");
+    assert_eq!(scratch(&shown), ["%list"]);
+}
+
+#[test]
+fn a_literal_that_reads_its_own_slot_is_built_apart()
+{
+    let swap = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+l ကို [(l ၏ အကွက် ၁)၊ (l ၏ အကွက် ၀)] ဟု ထားပါ။";
+    assert_eq!(scratch(swap), ["%list"]);
+}
+
+#[test]
+fn shared_scratch_slots_serve_each_later_statement()
+{
+    let text = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၁၀၊ ၂၀၊ ၃၀၊ ၄၀၊ ၅၀] ဖြစ်ပါစေ။
+l ၏ အကွက် ၁ မှစ၍ ၃ ကွက် ကို ပြသပါ။
+l ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသပါ။
+[၁၊ ၂] ကို ပြသပါ။
+[၃၊ ၄] ကို ပြသပါ။";
+    let names = |scratch| {
+        let options = EmitOptions::builder().scratch(scratch).build();
+        let module = emit_mode(text, options);
+        let locals = &main_func(&module).locals;
+        let names: Vec<String> = locals.iter().map(|s| s.name.clone()).collect();
+        names
+    };
+    assert_eq!(names(ScratchMode::Apart), ["%slice", "%slice", "%list", "%list"]);
+    assert_eq!(names(ScratchMode::Shared), ["%slice", "%list"]);
+}
+
+#[test]
+fn shared_scratch_slots_remain_apart_within_a_statement()
+{
+    let text = "လုပ်ဆောင်ချက် ပြ သည်
+ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း a နှင့် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း b တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+a ကို ပြသပါ။
+b ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ပြ ကို l ၏ အကွက် ၀ မှစ၍ ၁ ကွက်၊ l ၏ အကွက် ၁ မှစ၍ ၁ ကွက် တို့ဖြင့် လုပ်ဆောင်ပါ။";
+    let options = EmitOptions::builder().scratch(ScratchMode::Shared).build();
+    let module = emit_mode(text, options);
+    let locals = &main_func(&module).locals;
+    let names: Vec<&str> = locals.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(names, ["%slice", "%slice"]);
 }

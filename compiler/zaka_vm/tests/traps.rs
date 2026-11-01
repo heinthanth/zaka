@@ -191,3 +191,59 @@ fn a_cell_outside_its_list_traps_with_the_range()
     let text = trap.to_string();
     assert!(text.contains("cell 3") && text.contains("0 to 2"), "{text}");
 }
+
+/// A list `l` of three cells, a count `n` of four, and a slice `s` of the
+/// second cell of `l`.
+const SLICED: &str = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် n သည် လက္ခဏာမဲ့ ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
+n ကို n + ၂ ဟု ထားပါ။
+ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း ဖြစ်၍ တန်ဖိုးသည် l ၏ အကွက် ၁ မှစ၍ ၁ ကွက် ဖြစ်ပါစေ။
+";
+
+#[test]
+fn a_range_past_its_source_traps()
+{
+    let options = RunOptions::default();
+    let past_list = format!("{SLICED}l ၏ အကွက် ၀ မှစ၍ n ကွက် ကို ပြသပါ။");
+    let (_, kind, _) = trapped(&past_list, &options);
+    assert_eq!(kind, TrapKind::SliceOutOfRange { start: 0, len: 4, limit: 3 });
+    let past_slice = format!("{SLICED}s ၏ အကွက် ၀ မှစ၍ n - ၂ ကွက် ကို ပြသပါ။");
+    let (_, kind, _) = trapped(&past_slice, &options);
+    assert_eq!(kind, TrapKind::SliceOutOfRange { start: 0, len: 2, limit: 1 });
+    assert!(kind.to_string().contains("2 cells from cell 0"), "{kind}");
+}
+
+#[test]
+fn a_cell_past_the_count_of_its_slice_traps()
+{
+    let (out, kind, _) = trapped(
+        &format!("{SLICED}s ကို ပြသပါ။\ns ၏ အကွက် n - ၃ ကို ပြသပါ။"),
+        &RunOptions::default(),
+    );
+    assert_eq!(out, "[၂]\n");
+    assert_eq!(kind, TrapKind::IndexOutOfRange { index: 1, first: 0, len: 1 });
+}
+
+#[test]
+fn a_range_past_its_heap_block_traps()
+{
+    let text = "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+ကိန်းရှင် n သည် လက္ခဏာမဲ့ ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
+ပ ၏ အကွက် ၀ မှစ၍ n ကွက် ကို ပြသပါ။
+လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
+    let (_, kind, _) = trapped(text, &RunOptions::default());
+    assert!(matches!(kind, TrapKind::OutOfBounds { size: 0, .. }), "{kind}");
+}
+
+#[test]
+fn a_list_that_swaps_its_own_cells_reads_them_whole()
+{
+    let text = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+l ကို [(l ၏ အကွက် ၁)၊ (l ၏ အကွက် ၀)] ဟု ထားပါ။
+l ကို ပြသပါ။
+ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း ဖြစ်၍ တန်ဖိုးသည် l ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+s ကို s ၏ အကွက် ၁ မှစ၍ ၁ ကွက် ဟု ထားပါ။
+s ကို ပြသပါ။";
+    assert_eq!(output(text), "[၂၊ ၁]\n[၁]\n");
+}

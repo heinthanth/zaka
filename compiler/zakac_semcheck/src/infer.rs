@@ -93,6 +93,7 @@ impl Checker
             }
             Expr::Index(n) => self.infer_index(n),
             Expr::Field(n) => self.infer_field(n),
+            Expr::Range(n) => self.infer_range(n),
             Expr::List(n) => self.infer_list(n, expect),
             Expr::Struct(n) => self.infer_struct_lit(n),
             Expr::BlankList(n) => self.infer_blank(n, expect),
@@ -180,23 +181,41 @@ impl Checker
     fn infer_addr_of(&mut self, operand: &Expr) -> Option<DataKind>
     {
         let kind = self.infer(operand, None);
-        let place = place_of(operand).filter(|p| !self.in_temp_list(p));
-        let Some(place) = place
-        else
-        {
-            self.report(kd::no_address(operand.span(), &what_of(operand)));
-            return None;
-        };
-        let fixed = self.fixed_name(place);
-        let diag = fixed.map(|name| kd::fixed_address(operand.span(), name));
-        do_if!(let Some(d) = diag, self.report(d));
+        ret_if!(!self.addressable(operand), None);
         let kind = kind?;
         let span = operand.span();
         ret_if!(kind.holds_borrow(), self.report(od::borrow_of_borrow(span)), None);
         Some(kind.pointer_to().as_borrowed())
     }
 
-    /// Infer a lend: a borrow of the block a pointer holds.
+    /// Whether an operand is a place whose address can be taken, reporting
+    /// one that is no place, or a cell of a list that is no place, and one
+    /// that cannot be changed.
+    ///
+    /// # Arguments
+    ///
+    /// * `operand` - The operand.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a place; a constant counts, after its report.
+    pub(crate) fn addressable(&mut self, operand: &Expr) -> bool
+    {
+        let place = place_of(operand).filter(|p| !self.in_temp_list(p));
+        let Some(place) = place
+        else
+        {
+            self.report(kd::no_address(operand.span(), &what_of(operand)));
+            return false;
+        };
+        let fixed = self.fixed_name(place);
+        let diag = fixed.map(|name| kd::fixed_address(operand.span(), name));
+        do_if!(let Some(d) = diag, self.report(d));
+        true
+    }
+
+    /// Infer a lend: a borrow of the block a pointer holds, or a slice of
+    /// each cell of a list.
     ///
     /// # Arguments
     ///
@@ -204,13 +223,15 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// The pointer kind as a borrow, or `None` after an error.
+    /// The pointer kind as a borrow, the slice kind for a list, or `None`
+    /// after an error.
     pub fn infer_lend(&mut self, operand: &Expr) -> Option<DataKind>
     {
         let kind = self.infer(operand, None)?;
         let span = operand.span();
         ret_if!(kind.is_raw_ptr(), self.report(od::lend_of_raw(span)), None);
         ret_if!(kind.is_ptr(), Some(kind.as_borrowed()));
+        ret_if!(let Some(l) = kind.as_list(), self.lend_list(operand, l.cell));
         let found = kind.name();
         let diag = var_name(operand).map_or_else(
             || kd::not_a_pointer(span, &found),

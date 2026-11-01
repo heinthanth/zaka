@@ -123,7 +123,17 @@ pub enum TrapKind
         /// The number of the first cell: 0 or 1.
         first: u8,
         /// The number of cells.
-        len: u32,
+        len: u64,
+    },
+    /// A range of cells that passes the end of its list or slice.
+    SliceOutOfRange
+    {
+        /// The first cell of the range.
+        start: u64,
+        /// The number of cells of the range.
+        len: u64,
+        /// The number of cells of the source.
+        limit: u64,
     },
 }
 
@@ -181,8 +191,17 @@ impl fmt::Display for TrapKind
             TrapKind::MixedBlocks => t!("vm.trap.mixed_blocks"),
             TrapKind::IndexOutOfRange { index, first, len } =>
             {
-                let last = i64::from(*len) + i64::from(*first) - 1;
+                let last = i128::from(*len) + i128::from(*first) - 1;
                 t!("vm.trap.index_out_of_range", index = index, lo = first, hi = last)
+            }
+            TrapKind::SliceOutOfRange { start, len, limit } =>
+            {
+                t!(
+                    "vm.trap.slice_out_of_range",
+                    start = start,
+                    len = len,
+                    limit = limit
+                )
             }
         };
         f.write_str(&text)
@@ -218,7 +237,8 @@ impl TrapKind
             | TrapKind::StackFull { .. }
             | TrapKind::OutOfMem { .. }
             | TrapKind::MixedBlocks
-            | TrapKind::IndexOutOfRange { .. } => None,
+            | TrapKind::IndexOutOfRange { .. }
+            | TrapKind::SliceOutOfRange { .. } => None,
         }
     }
 }

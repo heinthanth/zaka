@@ -137,6 +137,9 @@ as well.
 | `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `စာရင်းအလွတ်` | "blank list": each cell at its default | [Lists](../../learn/lists/README.md) |
 | `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../../learn/lists/README.md#list-kinds) |
+| `တစ်စိတ်တစ်ပိုင်း` | "a part": after a `စာရင်း` with no count it makes a slice kind | [Slices](../../learn/lists/slices.md) |
+| `မှစ၍` | "starting at", in `x ၏ အကွက် <start> မှစ၍ <length> ကွက်` | [Slices](../../learn/lists/slices.md#part-of-a-list) |
+| `ကွက်` | "cells", after the length of a range; a struct can also name it as its classifier | [Slices](../../learn/lists/slices.md#part-of-a-list) |
 
 ## Structs
 

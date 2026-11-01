@@ -3,6 +3,7 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use bon::Builder;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::options::ResultMode;
+use zakac_codegen::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -14,7 +15,10 @@ use crate::state::settings::AstMode;
 use crate::state::settings::LowerMode;
 
 /// Version of the link format.
-const FORMAT: &str = "6";
+const FORMAT: &str = "7";
+
+/// Version of the format before the scratch mode.
+const FORMAT_6: &str = "6";
 
 /// Version of the format before the result mode.
 const FORMAT_5: &str = "5";
@@ -50,10 +54,11 @@ pub struct Link
 
 /// Encode a link for the URL hash.
 ///
-/// The format is `6.<platform bits>.<foldings>.<ownership check>.<mem
-/// flags>.<result mode>.<stage>.<AST view>.<lowering view>.<base64url of
-/// the UTF-8 source>`, with the check, the mode, the stage and the views in
-/// lowercase, as in `6.64.7.error.0.in-place.lower.tree.folded.…`. The foldings
+/// The format is `7.<platform bits>.<foldings>.<ownership check>.<mem
+/// flags>.<result mode>.<scratch mode>.<stage>.<AST view>.<lowering
+/// view>.<base64url of the UTF-8 source>`, with the check, the modes, the
+/// stage and the views in lowercase, as in
+/// `7.64.7.error.0.in-place.apart.lower.tree.folded.…`. The foldings
 /// are a digit from 0 to 7: 1 for expressions, 2 for constants, 4 for branches.
 /// The mem flags are a digit from 0 to 3: 1 for the strict check, 2 to forbid
 /// raw addresses.
@@ -75,7 +80,9 @@ pub fn encode(link: &Link) -> String
     let check: &'static str = link.options.check.into();
     let mem = mem_digit(&link.options);
     let results: &'static str = link.options.results.into();
-    format!("{FORMAT}.{bits}.{fold}.{check}.{mem}.{results}.{stage}.{views}.{text}")
+    let scratch: &'static str = link.options.scratch.into();
+    let modes = format!("{results}.{scratch}");
+    format!("{FORMAT}.{bits}.{fold}.{check}.{mem}.{modes}.{stage}.{views}.{text}")
 }
 
 /// The digit of the flags of the ownership check.
@@ -138,7 +145,8 @@ pub fn decode(hash: &str) -> Option<Link>
     let (format, rest) = hash.trim_start_matches('#').split_once('.')?;
     match format
     {
-        FORMAT => decode_6(rest),
+        FORMAT => decode_7(rest),
+        FORMAT_6 => decode_6(rest),
         FORMAT_5 => decode_5(rest),
         FORMAT_4 => decode_4(rest),
         FORMAT_3 => decode_view(rest),
@@ -148,6 +156,29 @@ pub fn decode(hash: &str) -> Option<Link>
         }
         _ => None,
     }
+}
+
+/// Decode the part of a link after the format: bits, foldings, ownership
+/// check, mem flags, result mode, scratch mode, stage, AST view, lowering
+/// view, source.
+///
+/// # Arguments
+///
+/// * `rest` - The part.
+///
+/// # Returns
+///
+/// The link, or `None` when a part is not well formed.
+fn decode_7(rest: &str) -> Option<Link>
+{
+    let mut parts = rest.splitn(6, '.');
+    let mut next = || parts.next();
+    let (bits, fold, check, mem, results, rest) =
+        (next()?, next()?, next()?, next()?, next()?, next()?);
+    let (scratch, rest) = rest.split_once('.')?;
+    let mut link = decode_6(&format!("{bits}.{fold}.{check}.{mem}.{results}.{rest}"))?;
+    link.options.scratch = scratch.parse::<ScratchMode>().ok()?;
+    Some(link)
 }
 
 /// Decode the part of a link after the format: bits, foldings, ownership

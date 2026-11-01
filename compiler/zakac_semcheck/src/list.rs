@@ -6,6 +6,7 @@ use zakac_ast::expr::FieldExpr;
 use zakac_ast::expr::IndexExpr;
 use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
+use zakac_ast::expr::RangeExpr;
 use zakac_ast::expr::StructLit;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
@@ -39,8 +40,8 @@ pub(crate) enum KindUse
     Other,
 }
 
-/// The list kind a list operand gives its cells from: the list itself, or
-/// the list a pointer points at.
+/// The kind a cell operand gives its cells from: the list or slice itself,
+/// or the list a pointer points at.
 ///
 /// # Arguments
 ///
@@ -48,11 +49,27 @@ pub(crate) enum KindUse
 ///
 /// # Returns
 ///
-/// The list kind, or `None` for a kind that is neither.
+/// The list or slice kind, or `None` for a kind that is none of these.
 pub(crate) fn list_through(kind: DataKind) -> Option<DataKind>
 {
-    ret_if!(kind.is_list(), Some(kind));
+    ret_if!(kind.is_list() || kind.is_slice(), Some(kind));
     kind.pointee().filter(|k| k.is_list())
+}
+
+/// Whether a kind holds a slice whose cells hold borrows, at once or in the
+/// cells of a list or a slice.
+///
+/// # Arguments
+///
+/// * `kind` - The kind.
+///
+/// # Returns
+///
+/// `true` for such a kind.
+fn has_slice_of_borrows(kind: DataKind) -> bool
+{
+    ret_if!(let Some(s) = kind.as_slice(), s.cell.holds_borrow());
+    kind.as_list().is_some_and(|l| has_slice_of_borrows(l.cell))
 }
 
 /// Fill the open counts of `kind` from the shape of a list literal.
@@ -142,8 +159,8 @@ fn open_behind_address(written: &Kind) -> bool
 impl Checker
 {
     /// The data kind of a written kind, reporting a list too large for the
-    /// machine, a count left out where nothing gives it, and a list of
-    /// borrows as a function result.
+    /// machine, a count left out where nothing gives it, a list of borrows
+    /// as a function result, and a slice whose cells hold borrows.
     ///
     /// # Arguments
     ///
@@ -165,6 +182,8 @@ impl Checker
         do_if!(open, self.report(kd::list_count_missing(span)));
         let result = at == KindUse::Result && kind.is_list() && kind.holds_borrow();
         do_if!(result, self.report(kd::borrow_list_result(span)));
+        let nested = has_slice_of_borrows(kind);
+        do_if!(nested, self.report(kd::slice_of_borrows(span, &kind.name())));
         do_if!(bad_marker(written), self.report(od::bad_borrow_marker(span)));
         let raw = self.no_raw && written.has_raw();
         do_if!(raw, self.report(od::raw_not_allowed(span)));
@@ -304,7 +323,8 @@ impl Checker
         want
     }
 
-    /// Infer one cell of a list, or of the list a pointer points at.
+    /// Infer one cell of a list or a slice, or of the list a pointer points
+    /// at.
     ///
     /// # Arguments
     ///
@@ -320,8 +340,96 @@ impl Checker
         let bad = index.filter(|k| !k.is_int());
         let span = n.index.span();
         do_if!(let Some(k) = bad, self.report(kd::cell_number_not_int(span, &k.name())));
-        let cell = self.list_of_operand(&n.list, list?)?.as_list()?.cell;
+        let cell = self.list_of_operand(&n.list, list?)?.cell_kind()?;
         tern!(bad.is_some(), None, Some(cell))
+    }
+
+    /// Infer a range of cells: a slice of `len` cells from `start` on, of a
+    /// list, a slice, or the block a pointer holds.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The range.
+    ///
+    /// # Returns
+    ///
+    /// The slice kind, or `None` after an error.
+    pub(crate) fn infer_range(&mut self, n: &RangeExpr) -> Option<DataKind>
+    {
+        let source = self.infer(&n.source, None);
+        let numbers =
+            [&n.start, &n.len].map(|e| (e, self.infer(e, Some(DataKind::USIZE))));
+        let bad: Vec<_> =
+            numbers.iter().filter(|(_, k)| k.is_some_and(|k| !k.is_int())).collect();
+        for (e, k) in &bad
+        {
+            let found = k.map(DataKind::name).unwrap_or_default();
+            self.report(kd::cell_number_not_int(e.span(), &found));
+        }
+        let cell = self.range_cells(&n.source, source?)?;
+        let slice = DataKind::slice_of(cell);
+        let span = n.span;
+        ret_if!(
+            cell.holds_borrow(),
+            self.report(kd::slice_of_borrows(span, &slice.name())),
+            None
+        );
+        tern!(
+            bad.is_empty() && numbers.iter().all(|(_, k)| k.is_some()),
+            Some(slice),
+            None
+        )
+    }
+
+    /// The cell kind a range reads from its source, reporting a source that
+    /// is no list, no slice and no pointer to a block. A list must be a
+    /// place, since the slice points into it.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The source.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// The cell kind, or `None` after the report.
+    fn range_cells(&mut self, source: &Expr, kind: DataKind) -> Option<DataKind>
+    {
+        if let Some(cells) = list_through(kind)
+        {
+            ret_if!(kind.is_list() && !self.addressable(source), None);
+            return cells.cell_kind();
+        }
+        let span = source.span();
+        ret_if!(kind.is_raw_ptr(), self.report(od::lend_of_raw(span)), None);
+        let pointee = kind.pointee().filter(|_| kind.is_checked_ptr());
+        do_if!(pointee.is_none(), self.report(kd::not_a_list(span, &kind.name())));
+        pointee
+    }
+
+    /// Lend each cell of a list as a slice. The list must be a place.
+    ///
+    /// # Arguments
+    ///
+    /// * `operand` - The list.
+    /// * `cell` - The kind of its cells.
+    ///
+    /// # Returns
+    ///
+    /// The slice kind, or `None` after an error.
+    pub(crate) fn lend_list(
+        &mut self, operand: &Expr, cell: DataKind,
+    ) -> Option<DataKind>
+    {
+        ret_if!(!self.addressable(operand), None);
+        let slice = DataKind::slice_of(cell);
+        let span = operand.span();
+        ret_if!(
+            cell.holds_borrow(),
+            self.report(kd::slice_of_borrows(span, &slice.name())),
+            None
+        );
+        Some(slice)
     }
 
     /// Infer a field of a struct.
@@ -389,11 +497,11 @@ impl Checker
         kind
     }
 
-    /// Infer the cell count of a list.
+    /// Infer the cell count of a list or a slice.
     ///
     /// # Arguments
     ///
-    /// * `value` - The list, or a pointer to one.
+    /// * `value` - The list, a pointer to one, or a slice.
     ///
     /// # Returns
     ///
@@ -405,8 +513,8 @@ impl Checker
         Some(DataKind::USIZE)
     }
 
-    /// The list a list operand gives its cells from, reporting an operand
-    /// that is neither a list nor a pointer to one.
+    /// The list or slice a cell operand gives its cells from, reporting an
+    /// operand that is no list, no pointer to one and no slice.
     ///
     /// # Arguments
     ///
@@ -415,7 +523,7 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// The list kind, or `None` after the report.
+    /// The list or slice kind, or `None` after the report.
     fn list_of_operand(&mut self, operand: &Expr, kind: DataKind) -> Option<DataKind>
     {
         let list = list_through(kind);

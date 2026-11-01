@@ -39,6 +39,10 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
             vec![lhs.as_ref(), rhs.as_ref()]
         }
         ExprNode::Call { args, .. } | ExprNode::List(args) => args.iter().collect(),
+        ExprNode::MakeSlice { source, start, len, .. } =>
+        {
+            vec![source.as_ref(), start.as_ref(), len.as_ref()]
+        }
     }
 }
 
@@ -176,6 +180,10 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
             vec![lhs.as_mut(), rhs.as_mut()]
         }
         ExprNode::Call { args, .. } | ExprNode::List(args) => args.iter_mut().collect(),
+        ExprNode::MakeSlice { source, start, len, .. } =>
+        {
+            vec![source.as_mut(), start.as_mut(), len.as_mut()]
+        }
     }
 }
 

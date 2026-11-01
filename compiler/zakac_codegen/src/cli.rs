@@ -44,7 +44,9 @@ use crate::artifact::CodegenArtifact;
 use crate::artifact::Emitted;
 use crate::artifact::run_loaded;
 use crate::listing::listing;
+use crate::options::EmitOptions;
 use crate::options::ResultMode;
+use crate::options::ScratchMode;
 
 /// Extension of a raw artifact.
 pub const CODEGEN_RAW_EXTENSION: &str = ".zkbc";
@@ -54,6 +56,8 @@ pub const CODEGEN_TEXT_EXTENSION: &str = ".zkbct";
 const ASM_ARG: &str = "asm";
 /// The flag that picks how a list or struct result reaches the caller.
 const RESULTS_ARG: &str = "results";
+/// The flag that picks where the scratch values of a function live.
+const SCRATCH_ARG: &str = "scratch";
 
 /// The `zakac_codegen` command, `zakac codegen` (or `zakac mkbc`) as a
 /// subcommand.
@@ -100,10 +104,17 @@ pub fn attach_codegen_args(cmd: clap::Command) -> clap::Command
         .help(t!("codegen.results"))
         .value_parser(PossibleValuesParser::new(words))
         .default_value(<&'static str>::from(ResultMode::default()));
-    cmd.arg(results)
+    let words: Vec<&'static str> = ScratchMode::iter().map(Into::into).collect();
+    let scratch = Arg::new(SCRATCH_ARG)
+        .long("scratch")
+        .value_name("MODE")
+        .help(t!("codegen.scratch"))
+        .value_parser(PossibleValuesParser::new(words))
+        .default_value(<&'static str>::from(ScratchMode::default()));
+    cmd.arg(results).arg(scratch)
 }
 
-/// The result mode from the command line.
+/// The code generation choices from the command line.
 ///
 /// # Arguments
 ///
@@ -111,11 +122,13 @@ pub fn attach_codegen_args(cmd: clap::Command) -> clap::Command
 ///
 /// # Returns
 ///
-/// The mode.
-pub fn result_mode(matches: &ArgMatches) -> ResultMode
+/// The choices.
+pub fn emit_options(matches: &ArgMatches) -> EmitOptions
 {
-    let word = matches.get_one::<String>(RESULTS_ARG);
-    word.and_then(|w| w.parse().ok()).unwrap_or_default()
+    let word = |arg: &str| matches.get_one::<String>(arg).cloned().unwrap_or_default();
+    #[rustfmt::skip]
+    return EmitOptions::builder().results(word(RESULTS_ARG).parse().unwrap_or_default())
+        .scratch(word(SCRATCH_ARG).parse().unwrap_or_default()).build();
 }
 
 impl Command for ZakacCodegen
@@ -258,8 +271,7 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let options = semcheck_options(matches);
     let folding = fold_options(matches);
     let mem = borrow_check_options(matches);
-    let results = result_mode(matches);
-    let emitted = run_loaded(loaded, &options, &folding, &mem, results);
+    let emitted = run_loaded(loaded, &options, &folding, &mem, emit_options(matches));
     let failed = has_errors(emitted.diagnostics());
     let _ = write_diagnostics(io.stderr, &source_map, emitted.diagnostics());
 

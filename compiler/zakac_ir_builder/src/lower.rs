@@ -12,7 +12,6 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
-use zakac_semcheck::kind::ListKind;
 use zakac_semcheck::semcheck::KindTable;
 use zakac_semcheck::semcheck::RESULT_NAME;
 use zakac_semcheck::structs::StructTable;
@@ -31,6 +30,7 @@ use crate::ir::Module;
 use crate::ir::Place;
 use crate::ir::PrefixOp;
 use crate::ir::PrintValue;
+use crate::ir::SliceFrom;
 use crate::ir::Slot;
 use crate::ir::Stmt;
 use crate::value::Value;
@@ -911,6 +911,7 @@ impl Lowerer<'_>
             {
                 ExprNode::Load { addr: Box::new(self.field_addr(n)) }
             }
+            ast::Expr::Range(n) => self.range(n),
             ast::Expr::List(n) => self.list(n, kind),
             ast::Expr::Struct(n) => self.struct_lit(n, kind),
             ast::Expr::BlankList(_) => ExprNode::BlankList,
@@ -1163,8 +1164,8 @@ impl Lowerer<'_>
         ExprNode::List(fields.collect())
     }
 
-    /// The address of one cell of a list, or of the list a pointer points
-    /// at.
+    /// The address of one cell of a list or a slice, or of the list a
+    /// pointer points at.
     ///
     /// # Arguments
     ///
@@ -1175,13 +1176,76 @@ impl Lowerer<'_>
     /// The address, a pointer to the cell kind.
     fn cell_addr(&mut self, n: &ast::IndexExpr) -> Expr
     {
-        let shape = list_shape(self.kind_of(&n.list));
+        let (cell, len) = cells_of(self.kind_of(&n.list));
         let list = Box::new(self.expr(&n.list));
         let index = Box::new(self.expr(&n.index));
-        let kind = shape.cell.pointer_to();
+        let kind = cell.pointer_to();
         #[rustfmt::skip]
-        let node = ExprNode::CellAddr { list, index, len: shape.len, first: n.first, checked: false };
+        let node = ExprNode::CellAddr { list, index, len, first: n.first, checked: false };
         Expr::builder().kind(kind).node(node).span(n.span).build()
+    }
+
+    /// A range of cells: a slice of a list, a slice, or a block.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The range.
+    ///
+    /// # Returns
+    ///
+    /// The slice.
+    fn range(&mut self, n: &ast::RangeExpr) -> ExprNode
+    {
+        let from = slice_from(self.kind_of(&n.source));
+        let source = Box::new(self.expr(&n.source));
+        let start = Box::new(self.coerce(&n.start, DataKind::USIZE));
+        let len = Box::new(self.coerce(&n.len, DataKind::USIZE));
+        ExprNode::MakeSlice { source, start, len, from, checked: false }
+    }
+
+    /// A slice of each cell of a list: the lend of a list.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The list.
+    ///
+    /// # Returns
+    ///
+    /// The slice.
+    fn lend_list(&mut self, value: &ast::Expr) -> ExprNode
+    {
+        let from = slice_from(self.kind_of(value));
+        let SliceFrom::List(count) = from
+        else
+        {
+            panic!("a lent list has a count");
+        };
+        let span = value.span();
+        let source = Box::new(self.expr(value));
+        let start = Box::new(self.usize_const(0, span));
+        let len = Box::new(self.usize_const(count, span));
+        ExprNode::MakeSlice { source, start, len, from, checked: true }
+    }
+
+    /// A `usize` constant.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The value.
+    /// * `span` - Its source region.
+    ///
+    /// # Returns
+    ///
+    /// The expression.
+    fn usize_const(&self, n: u32, span: Span) -> Expr
+    {
+        let usize = DataKind::USIZE.int_kind().expect("usize is an integer");
+        let value = Value::int(usize, u128::from(n), self.platform);
+        Expr::builder()
+            .kind(DataKind::USIZE)
+            .node(ExprNode::Const(value))
+            .span(span)
+            .build()
     }
 
     /// The address of one field of a struct.
@@ -1209,20 +1273,26 @@ impl Lowerer<'_>
         Expr::builder().kind(kind.pointer_to()).node(node).span(n.span).build()
     }
 
-    /// The cell count of a list, or of the list a pointer points at.
+    /// The cell count of a list, of the list a pointer points at, or of a
+    /// slice.
     ///
     /// # Arguments
     ///
-    /// * `value` - The list.
+    /// * `value` - The list or the slice.
     ///
     /// # Returns
     ///
-    /// A `usize` constant.
-    fn cell_count(&self, value: &ast::Expr) -> ExprNode
+    /// A `usize` constant for a list; for a slice, a read of its second word.
+    fn cell_count(&mut self, value: &ast::Expr) -> ExprNode
     {
-        let len = list_shape(self.kind_of(value)).len;
-        let usize = DataKind::USIZE.int_kind().expect("usize is an integer");
-        ExprNode::Const(Value::int(usize, u128::from(len), self.platform))
+        let (_, len) = cells_of(self.kind_of(value));
+        ret_if!(let Some(len) = len, self.usize_const(len, value.span()).node);
+        let base = Box::new(self.expr(value));
+        let offset = u32::from(self.platform) / 8;
+        let node = ExprNode::FieldAddr { base, field: 1, offset };
+        let kind = DataKind::USIZE.pointer_to();
+        let addr = Expr::builder().kind(kind).node(node).span(value.span()).build();
+        ExprNode::Load { addr: Box::new(addr) }
     }
 
     /// Lower a comparison; both operands take their common kind, which is
@@ -1314,6 +1384,7 @@ impl Lowerer<'_>
             VerbOp::Deref => self.load(value),
             VerbOp::CellCount => self.cell_count(value),
             VerbOp::BitNot => prefix_node(PrefixOp::BitNot, self.expr(value)),
+            VerbOp::Lend if self.kind_of(value).is_list() => self.lend_list(value),
             VerbOp::Lend => ExprNode::Lend { operand: Box::new(self.expr(value)) },
             VerbOp::Cast => ExprNode::Convert {
                 operand: Box::new(self.expr(value)),
@@ -1467,23 +1538,42 @@ fn concrete(kind: DataKind) -> DataKind
     tern!(kind == DataKind::Null, DataKind::OPAQUE, kind)
 }
 
-/// The list a list operand gives its cells from.
+/// The cells a cell operand gives: their kind, and their count for a list.
 ///
 /// # Arguments
 ///
-/// * `kind` - The kind of the operand: a list or a pointer to one.
+/// * `kind` - The kind of the operand: a list, a pointer to one, or a slice.
 ///
 /// # Returns
 ///
-/// The list kind.
+/// The cell kind, and the count of a list or `None` for a slice.
 ///
 /// # Panics
 ///
-/// When the kind is neither, which a clean check rules out.
-fn list_shape(kind: DataKind) -> &'static ListKind
+/// When the kind is none of these, which a clean check rules out.
+fn cells_of(kind: DataKind) -> (DataKind, Option<u32>)
 {
+    ret_if!(let Some(s) = kind.as_slice(), (s.cell, None));
     let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
-    list.expect("a list operand is a list or a pointer to one")
+    let list = list.expect("a cell operand is a list, a pointer to one, or a slice");
+    (list.cell, Some(list.len))
+}
+
+/// What the source of a range is.
+///
+/// # Arguments
+///
+/// * `kind` - The kind of the source.
+///
+/// # Returns
+///
+/// A list of its count for a list or a pointer to one, a slice, or else a
+/// block.
+fn slice_from(kind: DataKind) -> SliceFrom
+{
+    ret_if!(kind.is_slice(), SliceFrom::Slice);
+    let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
+    list.map_or(SliceFrom::Block, |l| SliceFrom::List(l.len))
 }
 
 /// The distance between two pointers.

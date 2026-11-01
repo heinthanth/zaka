@@ -94,6 +94,8 @@ pub enum Base
     List(&'static ListKind),
     /// A struct, for a pointer to a whole struct.
     Struct(&'static StructKind),
+    /// A slice, for a pointer to a slice value.
+    Slice(&'static SliceKind),
 }
 
 impl Base
@@ -114,6 +116,7 @@ impl Base
             Base::Opaque => None,
             Base::List(l) => Some(DataKind::List(l)),
             Base::Struct(s) => Some(DataKind::Struct(s)),
+            Base::Slice(s) => Some(DataKind::Slice(s)),
         }
     }
 }
@@ -130,6 +133,19 @@ pub struct ListKind
 
 /// Each list kind made so far, so a kind is made once and remains `Copy`.
 static LISTS: OnceLock<Mutex<HashSet<&'static ListKind>>> = OnceLock::new();
+
+/// A slice kind: a borrowed run of cells of one kind, whose count is known at
+/// run time. A slice value is two words: the address of the first cell, then
+/// the count as a `usize`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SliceKind
+{
+    /// The kind of each cell.
+    pub cell: DataKind,
+}
+
+/// Each slice kind made so far, so a kind is made once and remains `Copy`.
+static SLICES: OnceLock<Mutex<HashSet<&'static SliceKind>>> = OnceLock::new();
 
 /// A pointer kind: `depth` levels of address over a base.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -257,6 +273,8 @@ pub enum DataKind
     List(&'static ListKind),
     /// A struct of named fields.
     Struct(&'static StructKind),
+    /// A slice: the address of a run of cells and their count.
+    Slice(&'static SliceKind),
 }
 
 impl DataKind
@@ -315,6 +333,7 @@ impl DataKind
             Wrap::RawPtr => inner.raw_pointer_to(),
             Wrap::List(Cells::Fixed(n)) => DataKind::list_of(inner, *n),
             Wrap::List(Cells::Inferred) => DataKind::list_of(inner, 0),
+            Wrap::Slice => DataKind::slice_of(inner),
         })
     }
 
@@ -361,6 +380,55 @@ impl DataKind
         DataKind::List(made)
     }
 
+    /// The slice kind of cells of `cell`. Each slice kind is made once and
+    /// kept for the rest of the run.
+    ///
+    /// # Arguments
+    ///
+    /// * `cell` - The kind of each cell.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn slice_of(cell: DataKind) -> DataKind
+    {
+        let wanted = SliceKind { cell };
+        let slices = SLICES.get_or_init(Mutex::default);
+        let mut slices = slices.lock().unwrap_or_else(PoisonError::into_inner);
+        ret_if!(let Some(found) = slices.get(&wanted), DataKind::Slice(found));
+        let made: &'static SliceKind = Box::leak(Box::new(wanted));
+        slices.insert(made);
+        DataKind::Slice(made)
+    }
+
+    /// The slice part of the kind.
+    ///
+    /// # Returns
+    ///
+    /// The cell kind, or `None` for a kind that is no slice.
+    pub fn as_slice(self) -> Option<&'static SliceKind>
+    {
+        tern!(let DataKind::Slice(s) = self, Some(s), None)
+    }
+
+    /// Whether the kind is a slice.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a slice kind.
+    pub fn is_slice(self) -> bool { matches!(self, DataKind::Slice(_)) }
+
+    /// The kind of each cell a value of the kind holds or views: the cells of
+    /// a list or of a slice.
+    ///
+    /// # Returns
+    ///
+    /// The cell kind, or `None` for a kind that is no list and no slice.
+    pub fn cell_kind(self) -> Option<DataKind>
+    {
+        self.as_list().map(|l| l.cell).or_else(|| self.as_slice().map(|s| s.cell))
+    }
+
     /// The list part of the kind.
     ///
     /// # Returns
@@ -395,14 +463,17 @@ impl DataKind
     /// `true` for a struct kind.
     pub fn is_struct(self) -> bool { matches!(self, DataKind::Struct(_)) }
 
-    /// Whether a value of the kind is a block of other values: a list or a
-    /// struct. Such a value lives in mem, and a duplicate takes the whole
-    /// block.
+    /// Whether a value of the kind is a block of other values: a list, a
+    /// struct, or the two words of a slice. Such a value lives in mem, and a
+    /// duplicate takes the whole block.
     ///
     /// # Returns
     ///
-    /// `true` for a list or a struct kind.
-    pub fn is_aggregate(self) -> bool { self.is_list() || self.is_struct() }
+    /// `true` for a list, a struct or a slice kind.
+    pub fn is_aggregate(self) -> bool
+    {
+        self.is_list() || self.is_struct() || self.is_slice()
+    }
 
     /// Whether some list level of the kind has no cell count so far.
     ///
@@ -411,6 +482,7 @@ impl DataKind
     /// `true` when a count is still 0.
     pub fn has_open_count(self) -> bool
     {
+        ret_if!(let Some(s) = self.as_slice(), s.cell.has_open_count());
         self.as_list().is_some_and(|l| l.len == 0 || l.cell.has_open_count())
     }
 
@@ -426,6 +498,10 @@ impl DataKind
     /// The kind with its counts filled, or `None` when the shapes differ.
     pub fn fill_counts(self, found: DataKind) -> Option<DataKind>
     {
+        if let (Some(want), Some(have)) = (self.as_slice(), found.as_slice())
+        {
+            return Some(DataKind::slice_of(want.cell.fill_counts(have.cell)?));
+        }
         let (Some(want), Some(have)) = (self.as_list(), found.as_list())
         else
         {
@@ -466,6 +542,7 @@ impl DataKind
     pub fn parse(name: &str) -> Option<DataKind>
     {
         ret_if!(name == "null", Some(DataKind::Null));
+        ret_if!(name.starts_with("&["), parse_base(name)?.0.scalar());
         let (borrowed, name) = tern!(
             let Some(rest) = name.strip_prefix('&'),
             (true, rest),
@@ -526,6 +603,7 @@ impl DataKind
             DataKind::Null => "null".to_string(),
             DataKind::List(l) => list_name(l, full),
             DataKind::Struct(s) => tern!(full, s.sig(), &s.name).to_string(),
+            DataKind::Slice(s) => format!("&[]{}", s.cell.spell(full)),
         }
     }
 
@@ -547,6 +625,7 @@ impl DataKind
             DataKind::Null => (1, Base::Opaque),
             DataKind::List(l) => (0, Base::List(l)),
             DataKind::Struct(s) => (0, Base::Struct(s)),
+            DataKind::Slice(s) => (0, Base::Slice(s)),
         }
     }
 
@@ -626,12 +705,16 @@ impl DataKind
     /// `true` for `*i32` and `ptr`, but not for a borrow or a raw address.
     pub fn is_owner_ptr(self) -> bool { self.ptr_kind().is_some_and(PtrKind::is_owner) }
 
-    /// Whether the kind is a pointer whose outer level is a borrow.
+    /// Whether the kind is a borrow: a pointer whose outer level is a
+    /// borrow, or a slice, which borrows its cells.
     ///
     /// # Returns
     ///
-    /// `true` for `&*i32` and `&ptr`.
-    pub fn is_borrow(self) -> bool { self.ptr_kind().is_some_and(PtrKind::is_borrowed) }
+    /// `true` for `&*i32`, `&ptr` and `&[]i32`.
+    pub fn is_borrow(self) -> bool
+    {
+        self.is_slice() || self.ptr_kind().is_some_and(PtrKind::is_borrowed)
+    }
 
     /// Whether the kind is a pointer whose outer level is a raw address.
     ///
@@ -761,10 +844,12 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// The size, or `None` for a list too large for the machine.
+    /// The size, or `None` for a list too large for the machine. A slice is
+    /// two words: its address and its count.
     pub fn checked_size(self, platform: u16) -> Option<u32>
     {
         ret_if!(let Some(s) = self.as_struct(), s.size(platform));
+        ret_if!(self.is_slice(), Some(u32::from(platform) / 4));
         let Some(l) = self.as_list()
         else
         {
@@ -786,6 +871,7 @@ impl DataKind
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.align(platform));
         ret_if!(let Some(s) = self.as_struct(), s.align(platform));
+        ret_if!(self.is_slice(), (u32::from(platform) / 8).min(16));
         self.size(platform).min(16)
     }
 
@@ -847,7 +933,7 @@ impl DataKind
             DataKind::Char => 32,
             DataKind::Bool => 8,
             DataKind::Ptr(_) | DataKind::Null => platform,
-            DataKind::List(_) | DataKind::Struct(_) =>
+            DataKind::List(_) | DataKind::Struct(_) | DataKind::Slice(_) =>
             {
                 let bits = u64::from(self.size(platform)) * 8;
                 u16::try_from(bits).unwrap_or(u16::MAX)
@@ -969,13 +1055,14 @@ impl DataKind
     }
 
     /// Whether a value of the kind holds an address at some level: a
-    /// pointer, or a list whose cells hold one.
+    /// pointer, a slice, or a list whose cells hold one.
     ///
     /// # Returns
     ///
     /// `true` for such a kind.
     pub fn holds_address(self) -> bool
     {
+        ret_true!(self.is_slice());
         ret_if!(let Some(list) = self.as_list(), list.cell.holds_address());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_address()));
         self.is_ptr()
@@ -1102,6 +1189,10 @@ fn ptr_name(p: PtrKind, full: bool) -> String
 fn parse_base(name: &str) -> Option<(Base, bool)>
 {
     ret_if!(name == "ptr", Some((Base::Opaque, false)));
+    if let Some(cell) = name.strip_prefix("&[]")
+    {
+        return Some((DataKind::slice_of(DataKind::parse(cell)?).levels().1, false));
+    }
     ret_if!(name.ends_with('}'), parse_sig(name).map(|s| (Base::Struct(s), false)));
     ret_if!(name == "rawptr", Some((Base::Opaque, true)));
     let Some(inner) = name.strip_prefix('[')

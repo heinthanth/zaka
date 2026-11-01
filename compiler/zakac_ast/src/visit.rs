@@ -20,6 +20,7 @@ use crate::expr::NameExpr;
 use crate::expr::NotExpr;
 use crate::expr::NullLit;
 use crate::expr::PrefixExpr;
+use crate::expr::RangeExpr;
 use crate::expr::SizeOfExpr;
 use crate::expr::StructLit;
 use crate::expr::VerbExpr;
@@ -128,6 +129,7 @@ NullLit => "null", visit_null;
 SizeOfExpr => "sizeof", visit_size_of;
 IndexExpr => "index", visit_index;
 FieldExpr => "field", visit_field;
+RangeExpr => "range", visit_range;
 ListLit => "list", visit_list;
 StructLit => "struct_lit", visit_struct_lit;
 BlankListLit => "blank_list", visit_blank_list;
@@ -197,6 +199,7 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::SizeOf(e) => e,
         Expr::Index(e) => e,
         Expr::Field(e) => e,
+        Expr::Range(e) => e,
         Expr::List(e) => e,
         Expr::Struct(e) => e,
         Expr::BlankList(e) => e,
@@ -336,6 +339,8 @@ pub trait Visitor
     fn visit_index(&mut self, n: &IndexExpr) { walk_index(self, n) }
 
     fn visit_field(&mut self, n: &FieldExpr) { walk_field(self, n) }
+    /// Visit a range of cells.
+    fn visit_range(&mut self, n: &RangeExpr) { walk_range(self, n) }
     /// Visit a list literal.
     fn visit_list(&mut self, n: &ListLit) { walk_list(self, n) }
     /// Visit a struct literal.
@@ -611,6 +616,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::SizeOf(e) => v.visit_size_of(e),
         Expr::Index(e) => v.visit_index(e),
         Expr::Field(e) => v.visit_field(e),
+        Expr::Range(e) => v.visit_range(e),
         Expr::List(e) => v.visit_list(e),
         Expr::Struct(e) => v.visit_struct_lit(e),
         Expr::BlankList(e) => v.visit_blank_list(e),
@@ -735,6 +741,16 @@ pub fn walk_index<V: Visitor + ?Sized>(v: &mut V, n: &IndexExpr)
     v.enter(n);
     v.visit_expr(&n.list);
     v.visit_expr(&n.index);
+    v.leave(n);
+}
+
+/// Visit the source, the start and the length of a range of cells.
+pub fn walk_range<V: Visitor + ?Sized>(v: &mut V, n: &RangeExpr)
+{
+    v.enter(n);
+    v.visit_expr(&n.source);
+    v.visit_expr(&n.start);
+    v.visit_expr(&n.len);
     v.leave(n);
 }
 
@@ -1059,6 +1075,11 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         {
             walk_one_mut(v, &mut e.span, &mut e.base);
             v.visit_ident_mut(&mut e.field);
+        }
+        Expr::Range(e) =>
+        {
+            walk_pair_mut(v, &mut e.span, &mut e.source, &mut e.start);
+            v.visit_expr_mut(&mut e.len);
         }
         Expr::List(e) => walk_list_mut(v, e),
         Expr::Struct(e) => walk_struct_lit_mut(v, e),

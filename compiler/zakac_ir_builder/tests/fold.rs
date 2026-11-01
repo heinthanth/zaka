@@ -153,7 +153,7 @@ fn a_cell_of_a_list_with_no_cells_is_out_of_range_without_a_panic()
     {
         panic!("the store writes a cell");
     };
-    *len = 0;
+    *len = Some(0);
     let found = zakac_ir_builder::fold::fold(&mut module, &FoldOptions::default(), 64);
     let codes: Vec<Code> = found.iter().map(|d| d.code).collect();
     assert_eq!(codes, [Code::CellOutOfRange]);

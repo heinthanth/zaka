@@ -11,6 +11,7 @@ use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::PrefixOp;
 use zakac_ir_builder::ir::PrintValue;
+use zakac_ir_builder::ir::SliceFrom;
 use zakac_ir_builder::ir::Stmt;
 use zakac_ir_builder::value::Value;
 use zakac_rust_sugars::do_for;
@@ -942,6 +943,14 @@ impl<'m> Flow<'m>
                 let b = self.value(base, state);
                 cell_value(base, &b, Interval::point(0), 1)
             }
+            ExprNode::MakeSlice { source, start, len, from, .. } =>
+            {
+                let s = self.value(source, state);
+                self.value(start, state);
+                self.value(len, state);
+                do_if!(*from == SliceFrom::Block, self.deref(source, state));
+                tern!(matches!(from, SliceFrom::List(_)), held_cells(), unbounded(&s))
+            }
             ExprNode::Lend { operand } | ExprNode::Convert { operand, .. } =>
             {
                 let v = self.value(operand, state);
@@ -1009,9 +1018,14 @@ impl<'m> Flow<'m>
         };
         do_if!(!list.kind.is_list(), self.deref(list, state));
         let i = int_of(&self.value(index, state));
-        check_cell(self, i, *len, *first, e.span);
+        let Some(len) = *len
+        else
+        {
+            return unbounded(l);
+        };
+        check_cell(self, i, len, *first, e.span);
         let cell = i.minus(Interval::point(i128::from(*first)));
-        cell_value(list, l, cell, *len)
+        cell_value(list, l, cell, len)
     }
 
     /// Run a load of a list cell or a struct field tested against `ဗလာ`.
@@ -1580,6 +1594,35 @@ fn cell_value(list: &Expr, l: &SlotState, cell: Interval, len: u32) -> SlotState
     let len = count.and_then(|c| c.checked_mul(u64::from(len)));
     SlotState::Ptr(
         PtrInfo::builder().state(state).offset(offset).maybe_len(len).build(),
+    )
+}
+
+/// The fact of a pointer to cells whose extent the check does not follow:
+/// a slice, or a cell of one. It holds what the pointer it comes from holds.
+///
+/// # Arguments
+///
+/// * `from` - The value it comes from.
+///
+/// # Returns
+///
+/// The fact, with no offset and no extent known.
+fn unbounded(from: &SlotState) -> SlotState
+{
+    let state = ptr_info(from).map_or(OwnerState::UNKNOWN, |info| info.state);
+    SlotState::Ptr(PtrInfo::builder().state(state).offset(Interval::TOP).build())
+}
+
+/// The fact of a slice of the cells of a list, which lives as long as the
+/// list.
+///
+/// # Returns
+///
+/// The fact, with no offset and no extent known.
+fn held_cells() -> SlotState
+{
+    SlotState::Ptr(
+        PtrInfo::builder().state(OwnerState::HELD).offset(Interval::TOP).build(),
     )
 }
 

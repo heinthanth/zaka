@@ -101,6 +101,11 @@ fn names_round_trip()
         "&ptr",
         "[3]&*isize",
         "&*[3]isize",
+        "&[]isize",
+        "&[][3]u8",
+        "[2]&[]isize",
+        "&[]*isize",
+        "*&[]isize",
     ];
     for name in names
     {
@@ -380,4 +385,22 @@ fn opaque_pointers_pass_address_free_blocks_alone()
     {
         assert!(widens(from, to), "{from} to {to}");
     }
+}
+
+#[test]
+fn slices_are_two_word_borrows()
+{
+    let slice = k("&[]isize");
+    assert_eq!(slice.as_slice().map(|s| s.cell), Some(DataKind::ISIZE));
+    assert_eq!(slice.cell_kind(), Some(DataKind::ISIZE));
+    assert_eq!(slice.size(64), 16);
+    assert_eq!(slice.align(64), 8);
+    assert_eq!(slice.size(32), 8);
+    assert!(slice.is_borrow() && slice.holds_borrow() && slice.is_dup_kind());
+    assert!(slice.is_aggregate() && slice.holds_address());
+    assert!(k("[2]&[]isize").holds_borrow());
+    assert!(!slice.widens_to(k("[3]isize"), 64));
+    assert!(!k("[3]isize").widens_to(slice, 64));
+    assert!(!slice.cast_allowed(k("usize")));
+    assert_eq!(DataKind::slice_of(DataKind::ISIZE), slice);
 }

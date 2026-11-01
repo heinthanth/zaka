@@ -8,7 +8,9 @@ use common::run_module;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::RunOptions;
+use zakac_codegen::options::EmitOptions;
 use zakac_codegen::options::ResultMode;
+use zakac_codegen::options::ScratchMode;
 use zakac_rust_sugars::do_for;
 
 /// Sample groups that hold programs with errors on purpose: those that do
@@ -20,15 +22,20 @@ fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 
 /// Run a source file, which must pass the ownership check with no
 /// diagnostic, and compare its output with an expected file;
-/// `ZAKA_BLESS=1` rewrites the file from a checked, copied run.
-fn check_run(source: &Path, expected: &Path, frames: FrameMode, results: ResultMode)
+/// `ZAKA_BLESS=1` rewrites the file from a checked, copied run with a slot
+/// for each scratch value.
+fn check_run(
+    source: &Path, expected: &Path, frames: FrameMode, emit_options: EmitOptions,
+)
 {
     let options = RunOptions::builder().max_steps(10_000_000).frames(frames).build();
-    let (out, result) = run_module(&compile_file(source, results), &options);
-    let name = format!("{} ({frames}, {results})", source.display());
+    let (out, result) = run_module(&compile_file(source, emit_options), &options);
+    let EmitOptions { results, scratch } = emit_options;
+    let name = format!("{} ({frames}, {results}, {scratch})", source.display());
     assert_eq!(result, Ok(()), "{name} trapped after:\n{out}");
     let bless = std::env::var("ZAKA_BLESS").is_ok_and(|v| v == "1");
-    if bless && frames == FrameMode::Checked && results == ResultMode::Duplicate
+    let plain = results == ResultMode::Duplicate && scratch == ScratchMode::Apart;
+    if bless && frames == FrameMode::Checked && plain
     {
         std::fs::create_dir_all(expected.parent().unwrap()).unwrap();
         std::fs::write(expected, &out).unwrap();
@@ -53,8 +60,9 @@ fn group_files(dir: &Path) -> Vec<PathBuf>
 }
 
 /// Each repo sample prints its expected output, with its variables
-/// checked or packed and its list and struct results copied or built in
-/// place: a sound program cannot tell them apart.
+/// checked or packed, its list and struct results copied or built in place,
+/// and its scratch values in slots apart or shared: a sound program cannot
+/// tell them apart.
 #[test]
 fn repo_samples_print_their_expected_output()
 {
@@ -79,9 +87,13 @@ fn repo_samples_print_their_expected_output()
                 .join("tests/expected")
                 .join(&group_name)
                 .join(format!("{stem}.out"));
+            let emits = ResultMode::iter().flat_map(|r| {
+                ScratchMode::iter().map(move |s| EmitOptions { results: r, scratch: s })
+            });
+            let emits: Vec<EmitOptions> = emits.collect();
             let modes =
-                FrameMode::iter().flat_map(|f| ResultMode::iter().map(move |r| (f, r)));
-            do_for!((frames, results) in modes, check_run(&file, &expected, frames, results));
+                FrameMode::iter().flat_map(|f| emits.iter().map(move |e| (f, *e)));
+            do_for!((frames, emit) in modes, check_run(&file, &expected, frames, emit));
             count += 1;
         }
     }
@@ -96,6 +108,6 @@ fn counted_loop_edges()
         &source,
         &root().join("tests/expected/counted_edges.out"),
         FrameMode::Checked,
-        ResultMode::default(),
+        EmitOptions::default(),
     );
 }

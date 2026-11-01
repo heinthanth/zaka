@@ -486,6 +486,12 @@ pub enum Kw
     Having,
     /// `တို့ပါသော`, before `စာရင်း` in a list literal
     ListOf,
+    /// `တစ်စိတ်တစ်ပိုင်း`, after a count-less `စာရင်း`: a slice kind
+    Part,
+    /// `မှစ၍`, between the start and the length of a range
+    StartingAt,
+    /// `ကွက်`, after the length of a range
+    CellWord,
 
     // structs
     /// `အချက်အလက်အမျိုးအစား` or `ဒေတာအမျိုးအစား`

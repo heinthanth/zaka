@@ -85,6 +85,7 @@ fn parser_constructors_render_messages()
         p::const_loop(span),
         p::unmatched_block_close(span),
         p::bad_list_count(span, "၀"),
+        p::slice_count(span),
     ]
     {
         assert!(!is_missing(&diag.message), "{}", diag.code);
@@ -216,6 +217,10 @@ fn list_constructors_render_messages()
     let out = f::cell_out_of_range(span, "3", 0, 2);
     assert_eq!(out.code, Code::CellOutOfRange);
     assert!(out.message.contains('3') && out.message.contains('2'));
+    assert!(k::slice_of_borrows(span, "&[]&[]isize").message.contains("&[]&[]isize"));
+    let past = f::range_out_of_list(span, "2", "3", 4);
+    assert_eq!(past.code, Code::RangeOutOfList);
+    assert!(past.message.contains('3') && past.message.contains('4'));
 }
 
 #[test]

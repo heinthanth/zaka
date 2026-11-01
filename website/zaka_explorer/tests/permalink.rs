@@ -10,6 +10,7 @@ use zaka_explorer::state::settings::AstMode;
 use zaka_explorer::state::settings::LowerMode;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::options::ResultMode;
+use zakac_codegen::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
 
 /// A link to a source with the default options.
@@ -53,7 +54,7 @@ fn links_keep_the_stage_and_the_ast_view()
     }
     let shown = encode(&link_at(Phase::Parse, AstMode::Graph));
     assert!(
-        shown.starts_with("6.64.7.error.0.in-place.parse.graph.folded."),
+        shown.starts_with("7.64.7.error.0.in-place.apart.parse.graph.folded."),
         "{shown}"
     );
 }
@@ -74,7 +75,7 @@ fn links_keep_the_foldings_and_the_lowering_view()
                 .lower_mode(lower_mode).build();
             let hash = encode(&link);
             assert!(
-                hash.starts_with(&format!("6.64.{n}.error.0.in-place.lower.")),
+                hash.starts_with(&format!("7.64.{n}.error.0.in-place.apart.lower.")),
                 "{hash}"
             );
             assert_eq!(decode(&hash), Some(link));
@@ -96,7 +97,7 @@ fn links_keep_the_ownership_checks()
             let link = Link::builder().source("x").options(options).build();
             let hash = encode(&link);
             let word: &'static str = check.into();
-            assert!(hash.starts_with(&format!("6.64.7.{word}.{mem}.")), "{hash}");
+            assert!(hash.starts_with(&format!("7.64.7.{word}.{mem}.")), "{hash}");
             assert_eq!(decode(&hash), Some(link));
         }
     }
@@ -111,9 +112,35 @@ fn links_keep_the_result_mode()
         let link = Link::builder().source("x").options(options).build();
         let hash = encode(&link);
         let word: &'static str = results.into();
-        assert!(hash.starts_with(&format!("6.64.7.error.0.{word}.")), "{hash}");
+        assert!(hash.starts_with(&format!("7.64.7.error.0.{word}.apart.")), "{hash}");
         assert_eq!(decode(&hash), Some(link));
     }
+}
+
+#[test]
+fn links_keep_the_scratch_mode()
+{
+    for scratch in ScratchMode::iter()
+    {
+        let options = Options::builder().scratch(scratch).build();
+        let link = Link::builder().source("x").options(options).build();
+        let hash = encode(&link);
+        let word: &'static str = scratch.into();
+        assert!(
+            hash.starts_with(&format!("7.64.7.error.0.in-place.{word}.")),
+            "{hash}"
+        );
+        assert_eq!(decode(&hash), Some(link));
+    }
+}
+
+#[test]
+fn version_6_links_open_with_the_default_scratch_mode()
+{
+    let decoded = decode("6.64.7.error.0.duplicate.lower.tree.folded.eA").unwrap();
+    assert_eq!(decoded.source, "x");
+    assert_eq!(decoded.options.results, ResultMode::Duplicate);
+    assert_eq!(decoded.options.scratch, ScratchMode::default());
 }
 
 #[test]
@@ -176,6 +203,8 @@ fn malformed_links_decode_to_none()
         "",
         "#",
         "1.0.64.eA",
+        "7.64.7.error.0.in-place.both.lex.tree.folded.eA",
+        "7.64.7.error.0.in-place.lex.tree.folded.eA",
         "6.64.7.error.0.both.lex.tree.folded.eA",
         "6.64.7.error.0.lex.tree.folded.eA",
         "5.64.7.strict.0.lex.tree.folded.eA",

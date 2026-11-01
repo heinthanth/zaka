@@ -150,6 +150,14 @@ en = "In place builds a list or struct result in the caller's slot. Duplicate ke
 en = "In place"
 [explorer.settings.results_duplicate]
 en = "Duplicate"
+[explorer.settings.scratch]
+en = "Scratch values"
+[explorer.settings.scratch_note]
+en = "A list, struct or slice that a statement builds and uses up, such as a printed literal, needs a slot. Apart gives each one a slot of its own, so each shows in the RAM view. Shared lets a later statement take the slot of one before it. The output is the same."
+[explorer.settings.scratch_apart]
+en = "Apart"
+[explorer.settings.scratch_shared]
+en = "Shared"
 [explorer.settings.heap_auto]
 en = "Auto (%{size})"
 [explorer.settings.platform_bits]

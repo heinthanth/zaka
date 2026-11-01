@@ -58,6 +58,24 @@ pub fn cell_out_of_range(span: Span, index: &str, first: u8, last: u64) -> Diagn
     Diagnostic::new(Code::CellOutOfRange, msg, span)
 }
 
+/// A constant range passes the end of a list of known count.
+///
+/// # Arguments
+///
+/// * `span` - The range.
+/// * `start` - The first cell of the range.
+/// * `len` - The length of the range.
+/// * `count` - The cell count of the list.
+///
+/// # Returns
+///
+/// The `ZK0605` diagnostic.
+pub fn range_out_of_list(span: Span, start: &str, len: &str, count: u32) -> Diagnostic
+{
+    let msg = t!("codes.ZK0605.message", s = start, len = len, n = count);
+    Diagnostic::new(Code::RangeOutOfList, msg, span)
+}
+
 /// A variable or constant of an imported file starts with a value that is
 /// not known at compile time.
 ///

@@ -22,6 +22,7 @@ use crate::ir::LogicOp;
 use crate::ir::Module;
 use crate::ir::Place;
 use crate::ir::PrintValue;
+use crate::ir::SliceFrom;
 use crate::ir::Slot;
 use crate::ir::Stmt;
 use crate::value;
@@ -378,7 +379,18 @@ impl Folder
             {
                 self.drop_value(list);
                 let at = self.expr(index);
-                *checked = self.cell_in_range(at, *len, *first, index.span);
+                let span = index.span;
+                *checked =
+                    len.is_some_and(|len| self.cell_in_range(at, len, *first, span));
+                (None, None)
+            }
+            ExprNode::MakeSlice { source, start, len, from, checked } =>
+            {
+                self.drop_value(source);
+                let (lo, n) = (self.expr(start), self.expr(len));
+                let count = tern!(let SliceFrom::List(c) = from, Some(*c), None);
+                let fits = count.and_then(|c| self.range_in_list(lo, n, c, e.span));
+                *checked = *checked || fits == Some(true);
                 (None, None)
             }
         };
@@ -417,6 +429,36 @@ impl Folder
         let last = (u64::from(len) + u64::from(first)).saturating_sub(1);
         self.diags.push(fd::cell_out_of_range(span, &index.to_string(), first, last));
         false
+    }
+
+    /// Whether a known range lies in a list of known count; a known one past
+    /// the end is reported.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The first cell, when it is known.
+    /// * `len` - The number of cells, when it is known.
+    /// * `count` - The number of cells of the list.
+    /// * `span` - The range.
+    ///
+    /// # Returns
+    ///
+    /// `Some(true)` for a known range in the list, `Some(false)` for a
+    /// known one past its end, `None` when either number is unknown.
+    fn range_in_list(
+        &mut self, start: Option<Value>, len: Option<Value>, count: u32, span: Span,
+    ) -> Option<bool>
+    {
+        let (Some(Value::Int { raw: lo, .. }), Some(Value::Int { raw: n, .. })) =
+            (start, len)
+        else
+        {
+            return None;
+        };
+        let fits = lo.checked_add(n).is_some_and(|end| end <= u128::from(count));
+        let diag = fd::range_out_of_list(span, &lo.to_string(), &n.to_string(), count);
+        do_if!(!fits, self.diags.push(diag));
+        Some(fits)
     }
 
     /// Fold a read of a slot: a constant slot set to a known value reads

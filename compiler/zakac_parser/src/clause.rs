@@ -5,6 +5,7 @@ use zakac_ast::expr::Ident;
 use zakac_ast::expr::IndexExpr;
 use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
+use zakac_ast::expr::RangeExpr;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AssignStmt;
@@ -415,7 +416,8 @@ impl Parser<'_>
     }
 
     /// Replace the top operand, which holds `၏`, with its cell
-    /// `အကွက် <index>`, counted from 0. The cell word is current.
+    /// `အကွက် <index>`, counted from 0, or with its range
+    /// `အကွက် <start> မှစ၍ <length> ကွက်`. The cell word is current.
     ///
     /// # Arguments
     ///
@@ -423,12 +425,22 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// `Ok`, or a diagnostic from the index.
+    /// `Ok`, or a diagnostic from the index or the range.
     fn push_index(&mut self, stack: &mut Vec<Item>) -> PResult<()>
     {
         self.bump();
         let index = self.parse_notation()?;
         let list = into_expr(stack.pop().expect("the top operand holds ၏"));
+        if self.eat(Kw::StartingAt)
+        {
+            let len = self.parse_notation()?;
+            self.expect(Kw::CellWord)?;
+            let span = list.span().to(&self.prev_span());
+            #[rustfmt::skip]
+            let node = RangeExpr::builder().id(self.new_id()).source(list).start(index).len(len).span(span).build();
+            stack.push(Item::expr(Expr::Range(node)));
+            return Ok(());
+        }
         let span = list.span().to(&index.span());
         stack.push(Item::expr(self.index_expr(list, index, 0, span)));
         Ok(())

@@ -7,6 +7,7 @@ use strum::EnumIter;
 use strum::EnumString;
 use zakac_codegen::bc::Module;
 use zakac_codegen::bc::Op;
+use zakac_codegen::bc::SliceSource;
 use zakac_codegen::bc::Slot;
 use zakac_codegen::bc::TrapCode;
 use zakac_i18n::t;
@@ -31,6 +32,7 @@ use zakac_semcheck::kind::Width;
 use crate::mem::Mem;
 use crate::mem::Origin;
 use crate::print::list_text;
+use crate::print::slice_parts;
 use crate::print::text;
 use crate::trap::Trap;
 use crate::trap::TrapKind;
@@ -928,6 +930,8 @@ impl Machine
                 write_line(&mut self.out, &line);
                 Ok(())
             }
+            Op::MakeSlice { stride, from } => self.make_slice(stride, from),
+            Op::SliceCell { stride, first } => self.slice_cell(stride, first),
         }
     }
 
@@ -1414,6 +1418,24 @@ impl Machine
     /// `Ok`, or `IndexOutOfRange`.
     fn index(&mut self, len: u32, first: u8) -> Step
     {
+        let cell = self.pop_cell(u64::from(len), first)?;
+        let usize = IntKind::new(false, Width::Platform);
+        let platform = self.module.platform_bits;
+        self.push(Value::int(usize, u128::from(cell), platform))
+    }
+
+    /// Pop a cell number and check it against a count of cells.
+    ///
+    /// # Arguments
+    ///
+    /// * `len` - The number of cells.
+    /// * `first` - The number of the first cell: 0 or 1.
+    ///
+    /// # Returns
+    ///
+    /// The cell counted from 0, or `IndexOutOfRange`.
+    fn pop_cell(&mut self, len: u64, first: u8) -> Result<u64, TrapKind>
+    {
         let Value::Int { kind, raw } = self.pop()?
         else
         {
@@ -1424,9 +1446,83 @@ impl Machine
         let lo = i128::from(first);
         let outside = index < lo || index >= lo + i128::from(len);
         ret_if!(outside, Err(TrapKind::IndexOutOfRange { index, first, len }));
+        Ok((index - lo) as u64)
+    }
+
+    /// Pop a length, a start, a source and the address of a slice slot, and
+    /// make the slice of the cells from `start` on. A range past the end of
+    /// a list or a slice traps; a range in a heap block must keep to the
+    /// block, as a pointer step must.
+    ///
+    /// # Arguments
+    ///
+    /// * `stride` - The size of a cell.
+    /// * `from` - What the source is.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap.
+    fn make_slice(&mut self, stride: u32, from: SliceSource) -> Step
+    {
+        let len = self.pop_int("make_slice")?;
+        let start = self.pop_int("make_slice")?;
+        let source = self.pop_ptr("make_slice")?;
+        let slot = self.pop_ptr("make_slice")?;
+        let (len, start) = (
+            u64::try_from(len).unwrap_or(u64::MAX),
+            u64::try_from(start).unwrap_or(u64::MAX),
+        );
+        let (base, limit) = match from
+        {
+            SliceSource::Slice =>
+            {
+                slice_parts(&self.mem, source).map(|(b, c)| (b, Some(c)))?
+            }
+            SliceSource::List(n) => (source, Some(u64::from(n))),
+            SliceSource::Checked | SliceSource::Block => (source, None),
+        };
+        let past = |limit| TrapKind::SliceOutOfRange { start, len, limit };
+        let end = start.checked_add(len);
+        do_if!(let Some(limit) = limit, ret_if!(end.is_none_or(|e| e > limit), Err(past(limit))));
+        let stride = u64::from(stride);
+        let first = self.wrap_addr(base.wrapping_add(start.wrapping_mul(stride)));
+        let last = self.wrap_addr(first.wrapping_add(len.wrapping_mul(stride)));
+        let block = from == SliceSource::Block;
+        ret_if!(
+            block && base == 0 && end != Some(0),
+            Err(TrapKind::NullDeref { addr: base })
+        );
+        let inside =
+            self.mem.steps_within(base, first) && self.mem.steps_within(base, last);
+        ret_if!(block && !inside, Err(TrapKind::OutOfBounds { addr: last, size: 0 }));
+        let word = u64::from(self.module.platform_bits / 8);
         let usize = IntKind::new(false, Width::Platform);
-        let platform = self.module.platform_bits;
-        self.push(Value::int(usize, (index - lo) as u128, platform))
+        self.mem.store(slot, Value::Ptr(first))?;
+        let count = Value::int(usize, u128::from(len), self.module.platform_bits);
+        self.mem.store(slot + word, count)?;
+        self.push(Value::Ptr(slot))
+    }
+
+    /// Pop a cell number, then the address of a slice, and push the address
+    /// of that cell; a number outside the slice traps.
+    ///
+    /// # Arguments
+    ///
+    /// * `stride` - The size of a cell.
+    /// * `first` - The number of the first cell: 0 or 1.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap.
+    fn slice_cell(&mut self, stride: u32, first: u8) -> Step
+    {
+        let index = self.pop()?;
+        let slice = self.pop_ptr("slice_cell")?;
+        let (base, count) = slice_parts(&self.mem, slice)?;
+        self.push(index)?;
+        let cell = self.pop_cell(count, first)?;
+        let to = base.wrapping_add(cell.wrapping_mul(u64::from(stride)));
+        self.push(Value::Ptr(self.wrap_addr(to)))
     }
 
     /// Pop a source address and a destination address, and duplicate a value

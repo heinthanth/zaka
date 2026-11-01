@@ -16,7 +16,9 @@ use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
 use zakac_codegen::bc;
 use zakac_codegen::emit::emit;
+use zakac_codegen::options::EmitOptions;
 use zakac_codegen::options::ResultMode;
+use zakac_codegen::options::ScratchMode;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Label;
 use zakac_diagnostics::Level;
@@ -101,6 +103,23 @@ pub struct Options
     /// How a list or struct result reaches the caller.
     #[builder(default)]
     pub results: ResultMode,
+    /// Where the scratch values of a function live.
+    #[builder(default)]
+    pub scratch: ScratchMode,
+}
+
+/// The code generation choices of the compile options.
+///
+/// # Arguments
+///
+/// * `options` - The compile options.
+///
+/// # Returns
+///
+/// The choices.
+fn emit_options(options: &Options) -> EmitOptions
+{
+    EmitOptions::builder().results(options.results).scratch(options.scratch).build()
 }
 
 impl Default for Options
@@ -678,7 +697,7 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         folded
             .as_ref()
             .filter(|_| emitted)
-            .map(|m| emit(m, options.platform_bits, options.results))
+            .map(|m| emit(m, options.platform_bits, emit_options(options)))
     });
     let times = PhaseTimes::builder()
         .segment(segment_time)

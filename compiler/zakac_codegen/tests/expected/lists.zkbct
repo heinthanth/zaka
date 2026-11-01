@@ -155,29 +155,24 @@ module:
     locals:
     - name: "%list"
       kind: "[3]isize"
-    - name: "%list"
-      kind: "[3]isize"
     code:
     - global_addr: 0
     - zero: "[3]isize"
     - global_addr: 1
     - zero: "[3]isize"
     - global_addr: 2
-    - local_addr: 0
     - push: 1:isize
     - store: isize
-    - local_addr: 0
+    - global_addr: 2
     - push: 1:usize
     - ptr_add: 8
     - push: 2:isize
     - store: isize
-    - local_addr: 0
+    - global_addr: 2
     - push: 2:usize
     - ptr_add: 8
     - push: 3:isize
     - store: isize
-    - local_addr: 0
-    - blit: "[3]isize"
     - global_addr: 2
     - push: 0:usize
     - ptr_add: 8
@@ -246,20 +241,20 @@ module:
     - global_addr: 2
     - call: 0
     - print
-    - local_addr: 1
+    - local_addr: 0
     - push: 4:isize
     - store: isize
-    - local_addr: 1
+    - local_addr: 0
     - push: 1:usize
     - ptr_add: 8
     - push: 5:isize
     - store: isize
-    - local_addr: 1
+    - local_addr: 0
     - push: 2:usize
     - ptr_add: 8
     - push: 6:isize
     - store: isize
-    - local_addr: 1
+    - local_addr: 0
     - call: 0
     - print
     - ret
@@ -275,33 +270,27 @@ module:
     - lo: 606
       hi: 837
     - lo: 745
-      hi: 809
-    - lo: 745
       hi: 748
-    - lo: 745
-      hi: 809
-    - lo: 745
-      hi: 809
-    - lo: 745
-      hi: 809
-    - lo: 745
-      hi: 809
+    - lo: 606
+      hi: 837
+    - lo: 606
+      hi: 837
+    - lo: 606
+      hi: 837
+    - lo: 606
+      hi: 837
     - lo: 752
       hi: 755
-    - lo: 745
-      hi: 809
-    - lo: 745
-      hi: 809
-    - lo: 745
-      hi: 809
-    - lo: 745
-      hi: 809
+    - lo: 606
+      hi: 837
+    - lo: 606
+      hi: 837
+    - lo: 606
+      hi: 837
+    - lo: 606
+      hi: 837
     - lo: 759
       hi: 762
-    - lo: 745
-      hi: 809
-    - lo: 745
-      hi: 809
     - lo: 606
       hi: 837
     - lo: 838

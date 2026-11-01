@@ -134,6 +134,8 @@ ImportNotFirst = ("ZK0230", Level::Error),
 CircularImport = ("ZK0231", Level::Error),
 /// A program that was not read from a file has an import.
 ImportNeedsFile = ("ZK0232", Level::Error),
+/// A count prefix pairs with the `စာရင်း` of a slice kind.
+SliceCount = ("ZK0233", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -238,6 +240,8 @@ ListTooLarge = ("ZK0425", Level::Error),
 NotAStruct = ("ZK0426", Level::Error),
 /// A struct holds itself, other than through an address.
 StructHoldsItself = ("ZK0427", Level::Error),
+/// The cells of a slice kind hold borrows.
+SliceOfBorrows = ("ZK0428", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.
@@ -266,6 +270,8 @@ CellOutOfRange = ("ZK0603", Level::Error),
 /// A variable or constant of an imported file starts with a value that is
 /// not known at compile time.
 GlobalInitNotConstant = ("ZK0604", Level::Error),
+/// A constant range passes the end of a list of known count.
+RangeOutOfList = ("ZK0605", Level::Error),
 // ownership: ZK07xx
 /// A name is used after its block moved to another owner.
 MovedOut = ("ZK0701", Level::Error),

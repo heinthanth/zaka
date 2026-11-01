@@ -401,7 +401,13 @@ impl IrTree<'_>
             ExprNode::CellAddr { list, index, len, first, .. } =>
             {
                 let label = tern!(*first == 0, "cell@", "cell1@");
-                (label, len.to_string(), self.pair(list, index))
+                let len = len.map_or("count".to_string(), |n| n.to_string());
+                (label, len, self.pair(list, index))
+            }
+            ExprNode::MakeSlice { source, start, len, .. } =>
+            {
+                let parts = [source, start, len].map(|e| self.expr(e));
+                ("slice", String::new(), parts.to_vec())
             }
             ExprNode::FieldAddr { base, field, .. } =>
             {

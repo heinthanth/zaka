@@ -18,6 +18,7 @@ use zaka_web_ui_common::controls::settings::switch;
 use zaka_web_ui_common::controls::settings::switch_row;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen::options::ResultMode;
+use zakac_codegen::options::ScratchMode;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
 
@@ -128,6 +129,11 @@ fn compiler_section(state: AppState) -> impl IntoView
                 t!("explorer.settings.results"),
                 t!("explorer.settings.results_note"),
                 results_picker(state),
+            ),
+            row(
+                t!("explorer.settings.scratch"),
+                t!("explorer.settings.scratch_note"),
+                scratch_picker(state),
             ),
         ),
     )
@@ -397,6 +403,38 @@ fn results_picker(state: AppState) -> impl IntoView
     dropdown(picker(
         t!("explorer.settings.results"),
         ResultMode::iter().map(choice).collect(),
+        current,
+        on_pick,
+    ))
+}
+
+/// Picker of where the scratch values of a function live.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn scratch_picker(state: AppState) -> impl IntoView
+{
+    let label = |m: ScratchMode| match m
+    {
+        ScratchMode::Apart => t!("explorer.settings.scratch_apart"),
+        ScratchMode::Shared => t!("explorer.settings.scratch_shared"),
+    };
+    let choice = move |m: ScratchMode| {
+        Choice::builder().value(m.to_string()).label(label(m)).build()
+    };
+    let current = Signal::derive(move || state.options.get().scratch.to_string());
+    let on_pick = move |v: String| {
+        let scratch = v.parse().unwrap_or_default();
+        state.options.update(|o| o.scratch = scratch);
+    };
+    dropdown(picker(
+        t!("explorer.settings.scratch"),
+        ScratchMode::iter().map(choice).collect(),
         current,
         on_pick,
     ))

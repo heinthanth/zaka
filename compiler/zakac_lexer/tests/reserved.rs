@@ -217,6 +217,15 @@ fn list_words_lex_and_split()
 }
 
 #[test]
+fn slice_words_lex_whole()
+{
+    assert_eq!(lookup("တစ်စိတ်တစ်ပိုင်း"), Some(Kw::Part));
+    assert_eq!(lookup("မှစ၍"), Some(Kw::StartingAt));
+    assert_eq!(lookup("ကွက်"), Some(Kw::CellWord));
+    assert_eq!(split("တစ်ကွက်ကျော်"), None);
+}
+
+#[test]
 fn names_that_start_with_list_words_remain_names()
 {
     assert_eq!(split("စာရင်းအင်း"), None);

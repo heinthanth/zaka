@@ -54,6 +54,8 @@ pub enum Wrap
     RawPtr,
     /// A list level: `စာရင်း` or `၏ စာရင်း`.
     List(Cells),
+    /// A slice level: a count-less `စာရင်း` followed with `တစ်စိတ်တစ်ပိုင်း`.
+    Slice,
 }
 
 /// A data kind as written in the source, such as
