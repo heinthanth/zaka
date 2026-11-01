@@ -142,4 +142,7 @@ no order, so `<` and `>` do not take them.
 - Write a function that takes the address of a list of integers and adds 1 to each cell.
 - Duplicate a list, change the duplicate, and compare the two.
 
+A list address names its count in its kind. To take lists of each count, take a
+[slice](slices.md).
+
 Next: [Lists of lists](grids.md).

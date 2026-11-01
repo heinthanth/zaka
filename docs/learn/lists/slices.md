@@ -121,3 +121,5 @@ s ကို ပြသပါ။
 ```
 
 [Slices](../../manual/language/slices.md) in the Docs gives each rule.
+
+Next: [List mistakes](mistakes.md).

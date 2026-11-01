@@ -70,7 +70,9 @@ A statement is one of thirteen forms:
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
 `Convert { implicit }`, `Call`, the pointer forms `AddrOf`, `Load`, `Lend`, `Take`,
-`PtrAdd`, `PtrSub`, `SizeOf`, and the list forms `List`, `BlankList`, `CellAddr`. A `Value`
+`PtrAdd`, `PtrSub`, `SizeOf`, the list forms `List`, `BlankList`, `CellAddr`, `FieldAddr`,
+and `MakeSlice`. A `CellAddr` names the count of its list, or none for a cell of a slice,
+whose count is read when the program runs. A `Value`
 is an integer (kind and bits), a float (width and bit pattern), a char, a boolean or an
 address.
 
@@ -91,6 +93,10 @@ rules out). Its rules:
 - `ကိန်းသေ` becomes a slot with `access: const`; the folder uses the flag.
 - A pointer read through a place becomes `Load`; an owner moved out becomes `Take`; a
   lend becomes `Lend`.
+- A range `x ၏ အကွက် s မှစ၍ n ကွက်` becomes `MakeSlice { source, start, len, from }`,
+  where `from` tells whether the source is a list of a known count, a slice, or a heap
+  block. The lend of a list is a `MakeSlice` of each cell, marked `checked`. The count of
+  a slice is a `Load` of its second word, through a `FieldAddr`.
 - A program of several files gives one module. As in the check, each file has its own
   top-level scope and its own function map, and an import brings the places and
   functions it names from the file it reads. Functions are numbered across all the
@@ -250,7 +256,7 @@ condition `12 > 10` is true, so the `if` is gone and its branch stands in its pl
 
 ## The ops
 
-`zakac_codegen::emit(module, platform_bits, results)` turns the folded IR into a
+`zakac_codegen::emit(module, platform_bits, options)` turns the folded IR into a
 `bc::Module`:
 
 ```text
@@ -262,7 +268,10 @@ Func   { name, params, ret, locals: Vec<Slot>, code: Vec<Op>, spans: Vec<Span> }
 top-level statements; `main` is its number. `texts` is the pool of print strings. `spans`
 runs parallel to `code` and tells the source region of each op, which is how the VM
 and the explorer point at the line being run. The generator can add locals of its own,
-named with a `%`, such as `%to`, `%step` and `%dir` for a counted loop.
+named with a `%`: `%to`, `%step` and `%dir` for a counted loop, and `%list`, `%slice`,
+`%ret` and `%at` for the lists, structs and slices a statement builds. `EmitOptions`
+holds the two choices of the generator: `results` (`--results`) and `scratch`
+(`--scratch`), both below.
 
 The VM is a stack machine. Ops that work on values take the kind from the values on
 the stack, so most ops name no kind. The ones that need a kind name it: `convert`, `load`,
@@ -277,6 +286,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | output | `print`, `print_text t`, `print_list k` |
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k` |
+| slices | `make_slice stride source`, `slice_cell stride from` |
 
 Each variable lives in storage. A read is `local_addr n` or `global_addr n`, then `load`;
 a write is the address, the value, then `store`. That is the reason each access of a

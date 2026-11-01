@@ -57,7 +57,7 @@ routine the checker keeps a `State`: one fact for each global and each local, a
 | Fact | Holds |
 | --- | --- |
 | `Int(Interval)` | an integer slot, as a range `lo..=hi` of the values it can have |
-| `Ptr(PtrInfo)` | an owner or a borrow |
+| `Ptr(PtrInfo)` | an owner or a borrow; a slice is a borrow with no offset or extent known |
 | `List(PtrInfo)` | a list of pointers, one fact for all its cells |
 | `None` | a slot the check does not follow |
 
@@ -242,7 +242,8 @@ cell. A counted loop gives its variable the range of the bounds. `check_offset` 
 `check_cell` report ZK0710 when the interval of an offset lies outside the block altogether.
 When a cell address is proven in range, its span goes to `CellProofs`; at the end,
 `mark_checked` sets `checked: true` on those `CellAddr` nodes, and code generation leaves
-the run-time `index` op out for them. This is done just when the check found no error and
+the run-time `index` op out for them. A cell of a slice gets no proof, since its count is
+known at run time alone, so its `slice_cell` op checks each access. This is done just when the check found no error and
 the program uses no raw address, since a raw address can change a fact the proofs rest on.
 
 ## Calls: digests

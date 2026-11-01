@@ -101,4 +101,4 @@ A list takes its count times the size of one cell, with no gaps:
   and print it.
 - Walk a row of a table with a cell pointer and add up its cells.
 
-Next: [List mistakes](mistakes.md).
+Next: [Slices](slices.md).

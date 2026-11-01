@@ -139,6 +139,7 @@ To let another pointer use a block while the owner keeps it, *lend* the block wi
 | `ပ ၏ တန်ဖိုးအငှား` | a borrow of the block `ပ` owns; `ပ` keeps it |
 | `x ၏ လိပ်စာ` | a borrow of the variable `x` |
 | `ပ + ၁`, `ပ - ၁` | a borrow of a place inside the block |
+| `ပ ၏ အကွက် ၀ မှစ၍ န ကွက်` | a [slice](slices.md): a borrow of `န` cells of the block, with their count |
 
 A borrow can read and write as much as the program needs. Several borrows of one block
 can be alive at once, and all of them can write: Zaka checks that a block is not used

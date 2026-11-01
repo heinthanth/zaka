@@ -121,8 +121,8 @@ error[ZK0421]: this list kind has no cell count, and nothing here gives one
 | `အမှတ်များ ၏ အကွက်အရေအတွက်` | the number of cells, a `လက္ခဏာမဲ့ ကိန်းပြည့်` and a constant |
 
 A cell is a place: it can be read, printed, assigned to, and its address taken. The
-cell number is an integer (ZK0423), and the value in front of `၏` has to be a list or a
-pointer to one (ZK0422).
+cell number is an integer (ZK0423), and the value in front of `၏` has to be a list, a
+pointer to one, or a [slice](slices.md) (ZK0422).
 
 ```zaka-error ZK0422
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၀ ဖြစ်ပါစေ။
@@ -275,6 +275,8 @@ since a parameter is a new variable:
 - A change to a list parameter remains in the function. To let a function change the
   caller's list, or to spare it a duplicate of a large list, pass the address of the list.
   The parameter kind is the list kind with `လိပ်စာ` after it and `ငှားထားသော` in front.
+- To take lists of each count, or a part of a list, take a [slice](slices.md): the
+  argument `x ၏ တန်ဖိုးအငှား` lends the whole list.
 - A function can give back a list. The result kind gives the cell count, and its cells
   cannot be borrows (ZK0424); see [Lists and structs as
   results](functions.md#lists-and-structs-as-results).
@@ -439,7 +441,7 @@ The other mistakes with lists, in one table:
 | ZK0419 | a literal whose cell count differs from the kind |
 | ZK0420 | `စာရင်းအလွတ်` with no list kind from its place |
 | ZK0421 | a list kind with no cell count and no value to give one |
-| ZK0422 | cells of a value that is not a list |
+| ZK0422 | cells of a value that is not a list or a slice |
 | ZK0423 | a cell number that is not an integer |
 | ZK0424 | a list of borrows as the result of a function |
 | ZK0603 | a constant cell number outside the list |

@@ -136,7 +136,7 @@ looks for it in the other files and adds help that names the file that declares 
 
 ## The data it builds
 
-**`DataKind`** is `Copy` and has seven forms:
+**`DataKind`** is `Copy` and has nine forms:
 
 | Form | Holds |
 | --- | --- |
@@ -146,6 +146,8 @@ looks for it in the other files and adds help that names the file that declares 
 | `Ptr(PtrKind)` | levels of address over a base, with the outer level an owner, a borrow or raw |
 | `Null` | the kind of `ဗလာ`, which converts to each pointer kind |
 | `List(&'static ListKind)` | a count of cells of one kind; list kinds are interned so the form remains `Copy` |
+| `Struct(&'static StructKind)` | a struct with its named fields, interned as list kinds are |
+| `Slice(&'static SliceKind)` | a borrowed run of cells of one kind, with its count known at run time; `is_borrow` holds for it |
 
 A written kind becomes a `DataKind` with defaults filled in: no sign word is signed, no
 bit count is platform size for an integer and 64 for a float. So the plain
