@@ -22,6 +22,21 @@ pub enum MemCheck
     Off,
 }
 
+/// What integer arithmetic does with a result outside its kind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Serialize, Deserialize, Display, EnumIter, EnumString, IntoStaticStr)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum OverflowMode
+{
+    /// The result wraps around, as two's complement arithmetic does.
+    #[default]
+    Wrap,
+    /// The VM stops the program, and the check warns about an operation
+    /// that overflows for each value it can see.
+    Stop,
+}
+
 /// Options of the ownership check.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Builder)]
 pub struct BorrowCheckOptions
@@ -32,6 +47,9 @@ pub struct BorrowCheckOptions
     /// Also report the accesses that cannot be proven safe.
     #[builder(default)]
     pub strict: bool,
+    /// What integer arithmetic does with a result outside its kind.
+    #[builder(default)]
+    pub overflow: OverflowMode,
 }
 
 impl Default for BorrowCheckOptions

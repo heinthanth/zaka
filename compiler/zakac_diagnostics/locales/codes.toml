@@ -957,3 +957,12 @@ en = "borrow in a field"
 en = "the field \"%{n}\" holds a borrow, and borrows live in variables and parameters alone"
 [codes.ZK0718.explain]
 en = """A borrow lasts as long as the owner it borrows from, and the checker follows that through variables and parameters, not through mem. A struct can sit in mem, so its fields hold owners or raw addresses: \"<kind> လိပ်စာ\" or \"<kind> လိပ်စာအကြမ်း\"."""
+
+[codes.ZK0719.title]
+en = "overflow on each run"
+[codes.ZK0719.message]
+en = "\"%{op}\" on %{kind} gives a value outside %{kind} for each value of its operands, so the program stops here"
+[codes.ZK0719.help]
+en = "use a wider kind, or change the operands; with --overflow wrap the result wraps around"
+[codes.ZK0719.explain]
+en = """With --overflow stop, integer arithmetic stops the program when its result does not fit its kind. The check follows the values the operands can hold, and each of them makes this operation overflow, so the program stops when it reaches it. Pick a wider kind, change the operands, or compile with --overflow wrap for two's complement arithmetic."""

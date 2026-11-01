@@ -3,9 +3,11 @@ use std::collections::BTreeSet;
 use bon::Builder;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::ownership::Invalidation;
+use zakac_diagnostics::ownership::overflow_proven;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
+use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::LogicOp;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
@@ -48,6 +50,7 @@ use crate::checks::moves::check_loop_moves;
 use crate::checks::moves::check_read;
 use crate::checks::moves::run_take;
 use crate::checks::nullness::check_deref;
+use crate::checks::report;
 use crate::checks::static_rules::check_free_dest;
 use crate::checks::static_rules::check_global_set;
 use crate::checks::static_rules::check_stored_borrow;
@@ -62,10 +65,12 @@ use crate::interval::int_of;
 use crate::liveness::LiveMap;
 use crate::liveness::global_reads;
 use crate::liveness::live_out;
+use crate::narrow::int_slot;
 use crate::narrow::narrow;
 use crate::narrow::null_compared;
 use crate::narrow::null_compared_cell;
 use crate::options::BorrowCheckOptions;
+use crate::options::OverflowMode;
 use crate::roots::RootCtx;
 use crate::roots::Roots;
 use crate::roots::filled_path;
@@ -947,9 +952,14 @@ impl<'m> Flow<'m>
             {
                 let s = self.value(source, state);
                 self.value(start, state);
-                self.value(len, state);
+                let count = int_of(&self.value(len, state));
                 do_if!(*from == SliceFrom::Block, self.deref(source, state));
-                tern!(matches!(from, SliceFrom::List(_)), held_cells(), unbounded(&s))
+                let made = tern!(
+                    matches!(from, SliceFrom::List(_)),
+                    held_cells(),
+                    unbounded(&s)
+                );
+                counted(made, count)
             }
             ExprNode::Lend { operand } | ExprNode::Convert { operand, .. } =>
             {
@@ -974,7 +984,39 @@ impl<'m> Flow<'m>
     {
         let subs: Vec<SlotState> =
             sub_exprs(e).into_iter().map(|sub| self.value(sub, state)).collect();
+        self.check_overflow(e, &subs);
         self.plain_value(e, &subs)
+    }
+
+    /// With `--overflow stop`, report an integer operation whose result lies
+    /// outside its kind for each value its operands can hold: the program
+    /// stops there each time it runs.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The operation.
+    /// * `subs` - The values of its operands.
+    fn check_overflow(&mut self, e: &Expr, subs: &[SlotState])
+    {
+        ret_if!(self.options.overflow != OverflowMode::Stop);
+        let Some(kind) = e.kind.int_kind()
+        else
+        {
+            return;
+        };
+        let ints = |n: usize| subs.get(n).map_or(Interval::TOP, int_of);
+        let (result, op) = match &e.node
+        {
+            ExprNode::Infix { op: InfixOp::Add, .. } => (ints(0).plus(ints(1)), "+"),
+            ExprNode::Infix { op: InfixOp::Sub, .. } => (ints(0).minus(ints(1)), "-"),
+            ExprNode::Infix { op: InfixOp::Mul, .. } => (ints(0).times(ints(1)), "*"),
+            ExprNode::Prefix { op: PrefixOp::Neg, .. } => (ints(0).negate(), "-"),
+            _ => return,
+        };
+        let range = Interval::of_int_kind(kind, self.platform);
+        let outside =
+            result.is_bounded() && (result.hi < range.lo || result.lo > range.hi);
+        do_if!(outside, report(self, overflow_proven(e.span, op, &e.kind.name())));
     }
 
     /// The value of a load, once its address runs.
@@ -1021,11 +1063,45 @@ impl<'m> Flow<'m>
         let Some(len) = *len
         else
         {
+            self.slice_cell(list, index, i, *first, (l, state), e.span);
             return unbounded(l);
         };
         check_cell(self, i, len, *first, e.span);
         let cell = i.minus(Interval::point(i128::from(*first)));
         cell_value(list, l, cell, len)
+    }
+
+    /// Check a cell of a slice. A slice of a known count checks as a list of
+    /// that count does, and a cell outside it is reported. Else the cell is
+    /// proved in range when its number is a local at 0 or above that a test
+    /// left below the count of the slice local, and is checked when the
+    /// program runs otherwise.
+    ///
+    /// # Arguments
+    ///
+    /// * `list` - The slice.
+    /// * `index` - The cell number.
+    /// * `i` - The values the cell number can take.
+    /// * `first` - The number of the first cell: 0 or 1.
+    /// * `facts` - The value of the slice, and the facts.
+    /// * `span` - The cell address.
+    fn slice_cell(
+        &mut self, list: &Expr, index: &Expr, i: Interval, first: u8,
+        facts: (&SlotState, &State), span: Span,
+    )
+    {
+        let (l, state) = facts;
+        let slice = tern!(let ExprNode::Read(place) = list.node, Some(place), None);
+        let n = int_slot(index, self.platform);
+        let pair = n.zip(slice).filter(|pair| state.below.contains(pair));
+        let kind = n.and_then(|p| self.ctx.kind_of(p));
+        let unsigned = kind.is_some_and(DataKind::is_unsigned);
+        let below = first == 0 && (i.lo >= 0 || unsigned) && pair.is_some();
+        ret_if!(below, do_if!(self.recording(), self.proofs.push(span)));
+        let known = ptr_info(l).filter(|p| p.offset == Interval::point(0));
+        let count = known.and_then(|p| p.len).and_then(|n| u32::try_from(n).ok());
+        ret_if!(let Some(n) = count, check_cell(self, i, n, first, span));
+        do_if!(self.recording(), self.doubts.push(span));
     }
 
     /// Run a load of a list cell or a struct field tested against `ဗလာ`.
@@ -1611,6 +1687,34 @@ fn unbounded(from: &SlotState) -> SlotState
 {
     let state = ptr_info(from).map_or(OwnerState::UNKNOWN, |info| info.state);
     SlotState::Ptr(PtrInfo::builder().state(state).offset(Interval::TOP).build())
+}
+
+/// The fact of a slice with the count it was made with, when that count is
+/// one known value: its first cell is at offset 0, and its cells are that
+/// count.
+///
+/// # Arguments
+///
+/// * `made` - The fact of the slice.
+/// * `count` - The values its count can take.
+///
+/// # Returns
+///
+/// The fact.
+fn counted(made: SlotState, count: Interval) -> SlotState
+{
+    let SlotState::Ptr(info) = made
+    else
+    {
+        return made;
+    };
+    let exact = (count.lo == count.hi).then_some(count.lo);
+    let Some(n) = exact.and_then(|n| u64::try_from(n).ok())
+    else
+    {
+        return SlotState::Ptr(info);
+    };
+    SlotState::Ptr(PtrInfo { offset: Interval::point(0), len: Some(n), ..info })
 }
 
 /// The fact of a slice of the cells of a list, which lives as long as the

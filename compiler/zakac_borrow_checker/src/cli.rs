@@ -39,6 +39,7 @@ use crate::artifact::BorrowCheckArtifact;
 use crate::artifact::run_loaded;
 use crate::options::BorrowCheckOptions;
 use crate::options::MemCheck;
+use crate::options::OverflowMode;
 
 /// Extension of a raw artifact.
 pub const BORROW_CHECK_RAW_EXTENSION: &str = ".zkbck";
@@ -46,6 +47,8 @@ pub const BORROW_CHECK_RAW_EXTENSION: &str = ".zkbck";
 pub const BORROW_CHECK_TEXT_EXTENSION: &str = ".zkbckt";
 const MEM_CHECK_ARG: &str = "mem_check";
 const MEM_STRICT_ARG: &str = "mem_strict";
+/// The flag that picks what integer arithmetic does on overflow.
+const OVERFLOW_ARG: &str = "overflow";
 
 /// The `zakac_borrow_checker` command, `zakac borrow-check` (or `zakac mkbck`)
 /// as a subcommand.
@@ -93,7 +96,14 @@ pub fn attach_borrow_check_args(cmd: clap::Command) -> clap::Command
         .long("mem-strict")
         .help(t!("borrow_check.mem_strict"))
         .action(ArgAction::SetTrue);
-    cmd.arg(check).arg(strict)
+    let words: Vec<&'static str> = OverflowMode::iter().map(Into::into).collect();
+    let overflow = Arg::new(OVERFLOW_ARG)
+        .long("overflow")
+        .value_name("MODE")
+        .help(t!("borrow_check.overflow"))
+        .value_parser(PossibleValuesParser::new(words))
+        .default_value(<&'static str>::from(OverflowMode::default()));
+    cmd.arg(check).arg(strict).arg(overflow)
 }
 
 /// The ownership check options from the command line.
@@ -110,7 +120,9 @@ pub fn borrow_check_options(matches: &ArgMatches) -> BorrowCheckOptions
     let word = matches.get_one::<String>(MEM_CHECK_ARG);
     let check = word.and_then(|w| w.parse().ok()).unwrap_or_default();
     let strict = matches.get_flag(MEM_STRICT_ARG);
-    BorrowCheckOptions::builder().check(check).strict(strict).build()
+    let word = matches.get_one::<String>(OVERFLOW_ARG);
+    let overflow = word.and_then(|w| w.parse().ok()).unwrap_or_default();
+    BorrowCheckOptions::builder().check(check).strict(strict).overflow(overflow).build()
 }
 
 impl Command for ZakacBorrowChecker

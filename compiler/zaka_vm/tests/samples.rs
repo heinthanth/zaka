@@ -8,6 +8,8 @@ use common::run_module;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::RunOptions;
+use zakac_borrow_checker::options::OverflowMode;
+use zakac_codegen::bc::Module;
 use zakac_codegen::options::EmitOptions;
 use zakac_codegen::options::ResultMode;
 use zakac_codegen::options::ScratchMode;
@@ -25,16 +27,22 @@ fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 /// `ZAKA_BLESS=1` rewrites the file from a checked, copied run with a slot
 /// for each scratch value.
 fn check_run(
-    source: &Path, expected: &Path, frames: FrameMode, emit_options: EmitOptions,
+    source: &Path, expected: &Path, frames: FrameMode,
+    modes: (EmitOptions, OverflowMode),
 )
 {
+    let (emit_options, overflow) = modes;
     let options = RunOptions::builder().max_steps(10_000_000).frames(frames).build();
-    let (out, result) = run_module(&compile_file(source, emit_options), &options);
+    let module = Module { overflow, ..compile_file(source, emit_options) };
+    let (out, result) = run_module(&module, &options);
     let EmitOptions { results, scratch } = emit_options;
-    let name = format!("{} ({frames}, {results}, {scratch})", source.display());
+    let name =
+        format!("{} ({frames}, {results}, {scratch}, {overflow})", source.display());
     assert_eq!(result, Ok(()), "{name} trapped after:\n{out}");
     let bless = std::env::var("ZAKA_BLESS").is_ok_and(|v| v == "1");
-    let plain = results == ResultMode::Duplicate && scratch == ScratchMode::Apart;
+    let plain = results == ResultMode::Duplicate
+        && scratch == ScratchMode::Apart
+        && overflow == OverflowMode::Wrap;
     if bless && frames == FrameMode::Checked && plain
     {
         std::fs::create_dir_all(expected.parent().unwrap()).unwrap();
@@ -61,8 +69,9 @@ fn group_files(dir: &Path) -> Vec<PathBuf>
 
 /// Each repo sample prints its expected output, with its variables
 /// checked or packed, its list and struct results copied or built in place,
-/// and its scratch values in slots apart or shared: a sound program cannot
-/// tell them apart.
+/// its scratch values in slots apart or shared, and its arithmetic wrapping
+/// or stopping on overflow: a sound program that never overflows cannot tell
+/// them apart.
 #[test]
 fn repo_samples_print_their_expected_output()
 {
@@ -91,6 +100,10 @@ fn repo_samples_print_their_expected_output()
                 ScratchMode::iter().map(move |s| EmitOptions { results: r, scratch: s })
             });
             let emits: Vec<EmitOptions> = emits.collect();
+            let emits: Vec<(EmitOptions, OverflowMode)> = emits
+                .iter()
+                .flat_map(|e| OverflowMode::iter().map(move |o| (*e, o)))
+                .collect();
             let modes =
                 FrameMode::iter().flat_map(|f| emits.iter().map(move |e| (f, *e)));
             do_for!((frames, emit) in modes, check_run(&file, &expected, frames, emit));
@@ -108,6 +121,6 @@ fn counted_loop_edges()
         &source,
         &root().join("tests/expected/counted_edges.out"),
         FrameMode::Checked,
-        EmitOptions::default(),
+        (EmitOptions::default(), OverflowMode::Wrap),
     );
 }

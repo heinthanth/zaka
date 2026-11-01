@@ -56,7 +56,7 @@ module:
     - local_addr: 2
     - load: isize
     - convert: usize
-    - infix: sub
+    - wrap: sub
     - push: 1:usize
     - compare: lt
     - jump_if_true: 36
@@ -64,7 +64,7 @@ module:
     - local_addr: 2
     - load: isize
     - push: 1:isize
-    - infix: add
+    - wrap: add
     - store: isize
     - jump: 11
     - local_addr: 1
@@ -460,4 +460,5 @@ module:
     - lo: 3769
       hi: 3769
   main: 1
+  overflow: wrap
 diagnostics: []

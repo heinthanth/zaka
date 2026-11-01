@@ -122,7 +122,7 @@ L2:
     80  global_addr g5       ; ကိန်း
     81  load isize
     82  convert usize
-    83  sub
+    83  wrap sub
     84  push 1:usize
     85  lt
     86  jump_if_true L3
@@ -130,7 +130,7 @@ L2:
     88  global_addr g5       ; ကိန်း
     89  load isize
     90  push 1:isize
-    91  add
+    91  wrap add
     92  store isize
     93  jump L1
 L3:

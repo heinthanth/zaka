@@ -39,6 +39,7 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | zero divisor | an integer division or remainder has the divisor zero | `integer division or remainder with zero as divisor` |
 | shift too far | a shift distance is not below the bit width | `shift distance D is not below the bit width B` |
 | step not positive | a counted loop step is zero or negative | `counted loop step is not positive` |
+| overflow | with `--overflow stop`, an integer result does not fit its kind | `the result of OP does not fit K` |
 | index out of range | a cell number is outside its list or slice | `cell N is outside the list, whose cells run from A to B` |
 | slice out of range | a range passes the end of its list or slice | `N cells from cell S pass the end of C cells` |
 | null address | an access below the first block | `access through a null address at A` |
@@ -58,9 +59,10 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | malformed | the instructions break a rule the code generator keeps | `malformed ops: R` |
 | write | the output cannot be written | `cannot write the output: E` |
 
-Addresses are written `0x` and lowercase hex digits. Integer arithmetic has no overflow
-trap: it wraps to the width of its kind (`255 + 1` is `0` for an 8-bit unsigned integer),
-and a constant that does not fit is a compile error ([ZK0601](../reference/errors.md)).
+Addresses are written `0x` and lowercase hex digits. Integer arithmetic wraps to the
+width of its kind (`255 + 1` is `0` for an 8-bit unsigned integer) unless the program is
+compiled with `--overflow stop`, which gives the overflow trap; a constant that does not
+fit is a compile error in each mode ([ZK0601](../reference/errors.md)).
 
 ## Arithmetic and loops
 

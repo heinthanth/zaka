@@ -38,7 +38,7 @@ L0:
     22  local_addr l2        ; န
     23  load isize
     24  convert usize
-    25  sub
+    25  wrap sub
     26  push 1:usize
     27  lt
     28  jump_if_true L1
@@ -46,7 +46,7 @@ L0:
     30  local_addr l2        ; န
     31  load isize
     32  push 1:isize
-    33  add
+    33  wrap add
     34  store isize
     35  jump L0
 L1:

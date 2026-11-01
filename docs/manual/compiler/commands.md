@@ -149,6 +149,7 @@ in [Pointer checks](checks.md).
 | --- | --- | --- |
 | `--mem-check <MODE>` | `error` | how the ownership check reports: `error`, `warn` or `off` |
 | `--mem-strict` | off | also report the accesses that the check cannot prove safe |
+| `--overflow <MODE>` | `wrap` | what integer arithmetic does with a result outside its kind: `wrap` wraps it around, `stop` stops the program and warns about an operation that overflows for each value it can see (ZK0719); see [Overflow](../language/expressions.md#arithmetic) |
 
 These belong to `codegen` and to `run`:
 

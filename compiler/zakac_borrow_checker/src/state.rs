@@ -364,7 +364,10 @@ impl Interval
         Interval::checked(self.hi.checked_neg(), self.lo.checked_neg())
     }
 
-    /// This interval, or [`Interval::TOP`] when it differs from `older`.
+    /// This interval with each end that moved since `older` sent to its
+    /// limit, so a loop reaches a fixed point in two steps for each end. An
+    /// end that held is kept: a counter that grows from 0 keeps 0 as its
+    /// least value.
     ///
     /// # Arguments
     ///
@@ -375,7 +378,9 @@ impl Interval
     /// The widened interval.
     fn widen(self, older: Interval) -> Interval
     {
-        tern!(self == older, self, Interval::TOP)
+        let lo = tern!(self.lo < older.lo, i128::MIN, self.lo);
+        let hi = tern!(self.hi > older.hi, i128::MAX, self.hi);
+        Interval { lo, hi }
     }
 }
 
@@ -423,6 +428,11 @@ pub(crate) struct State
     /// allocation filled again: the owner there can be `ဗလာ`.
     #[builder(default)]
     pub(crate) unfilled: BTreeSet<Root>,
+    /// Pairs of an integer local and a slice local where the integer is
+    /// known to be below the count of the slice, after a test such as
+    /// `န < s ၏ အကွက်အရေအတွက်`. A write to either slot ends the pair.
+    #[builder(default)]
+    pub(crate) below: BTreeSet<(Place, Place)>,
 }
 
 impl State
@@ -495,6 +505,7 @@ impl State
     /// * `fact` - The new fact.
     pub(crate) fn set(&mut self, place: Place, fact: SlotState)
     {
+        self.below.retain(|(n, s)| *n != place && *s != place);
         let slot = match place
         {
             Place::Global(n) => self.globals.get_mut(n as usize),
@@ -556,6 +567,7 @@ impl State
             .globals(both(&self.globals, &other.globals))
             .locals(both(&self.locals, &other.locals))
             .unfilled(self.unfilled.union(&other.unfilled).cloned().collect())
+            .below(self.below.intersection(&other.below).copied().collect())
             .build()
     }
 
@@ -578,6 +590,7 @@ impl State
             .globals(both(&self.globals, &older.globals))
             .locals(both(&self.locals, &older.locals))
             .unfilled(self.unfilled.clone())
+            .below(self.below.clone())
             .build()
     }
 }
@@ -848,14 +861,18 @@ mod tests
     }
 
     #[test]
-    fn widening_sends_a_moving_interval_to_top()
+    fn widening_sends_each_moving_end_to_its_limit()
     {
         let int = |lo, hi| SlotState::Int(Interval { lo, hi });
-        let older = State::builder().globals(vec![int(0, 0), int(3, 3)]).build();
-        let next = State::builder().globals(vec![int(0, 1), int(3, 3)]).build();
+        let older =
+            State::builder().globals(vec![int(0, 0), int(3, 3), int(5, 5)]).build();
+        let next =
+            State::builder().globals(vec![int(0, 1), int(3, 3), int(4, 5)]).build();
         let joined = older.join(&next);
-        assert_eq!(joined.globals, vec![int(0, 1), int(3, 3)]);
+        assert_eq!(joined.globals, vec![int(0, 1), int(3, 3), int(4, 5)]);
         let wide = joined.widen(&older);
-        assert_eq!(wide.globals, vec![SlotState::Int(Interval::TOP), int(3, 3)]);
+        let rising = int(0, i128::MAX);
+        let falling = int(i128::MIN, 5);
+        assert_eq!(wide.globals, vec![rising, int(3, 3), falling]);
     }
 }

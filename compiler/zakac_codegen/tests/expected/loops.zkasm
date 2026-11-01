@@ -59,7 +59,7 @@ L5:
     44  global_addr g1       ; အမှတ်
     45  load isize
     46  convert usize
-    47  sub
+    47  wrap sub
     48  push 1:usize
     49  lt
     50  jump_if_true L6
@@ -67,7 +67,7 @@ L5:
     52  global_addr g1       ; အမှတ်
     53  load isize
     54  push 1:isize
-    55  add
+    55  wrap add
     56  store isize
     57  jump L2
 L6:
@@ -87,7 +87,7 @@ L7:
     70  load isize
     71  convert usize
     72  push 0:usize
-    73  sub
+    73  wrap sub
     74  push 2:usize
     75  lt
     76  jump_if_true L8
@@ -95,7 +95,7 @@ L7:
     78  global_addr g2       ; အမှတ်
     79  load isize
     80  push 2:isize
-    81  sub
+    81  wrap sub
     82  store isize
     83  jump L7
 L8:

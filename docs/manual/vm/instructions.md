@@ -112,7 +112,8 @@ rightmost, then the outputs. `k` is a kind, and `s` the size of one element in o
 | Instruction | Effect | Meaning |
 | --- | --- | --- |
 | `neg`, `bnot`, `not` | a → r | minus, bitwise flip, logical not |
-| `add`, `sub`, `mul`, `div`, `rem` | a b → r | arithmetic; integers wrap to their width |
+| `add`, `sub`, `mul`, `div`, `rem` | a b → r | arithmetic; integers wrap to their width, or trap when the module asks to stop on overflow (`--overflow stop`) |
+| `wrap op` | a b → r | `op` on integers, wrapped to their width in each mode; a counted loop uses it for its own steps |
 | `band`, `bor`, `bxor` | a b → r | bitwise and, or, exclusive or |
 | `shl`, `shr` | a n → r | shifts |
 | `eq`, `ne`, `lt`, `gt`, `le`, `ge` | a b → bool | comparisons |
@@ -149,7 +150,7 @@ A list lives in a block, and its instructions work on addresses.
 | `zero k` | addr → | set the octets of a value of kind `k` to zero |
 | `list_eq k` | a b → bool | whether each cell of one list equals the cell of the other |
 | `make_slice 8 of 3` | slot source start len → slot | write the slice of `len` cells from cell `start` of the source in the slot; the source is a list of 3 cells (`of 3`), a slice (`of slice`) or a heap block (`of block`), and a range past its end stops the program; `checked` skips the test |
-| `slice_cell 8` | slice n → addr | check a cell number against the count of a slice; push the address of the cell |
+| `slice_cell 8` | slice n → addr | check a cell number against the count of a slice; push the address of the cell. A cell the compiler proves in range is `load` of the first word, then `ptr_add`, with no check |
 
 ### Control
 
@@ -201,7 +202,9 @@ Here `x` stands for `local_addr n` or `global_addr n`.
 
 A counted loop evaluates its two ends and its step once, in that order, into slots when
 those are not constants. It never moves the counter past the last value, so a counter
-cannot wrap. A step that is not a constant is checked once, before the first round, with
+cannot wrap. It works out the distance left with `wrap sub`, which gives the true
+distance for ends of each sign, and steps with `wrap add` or `wrap sub`, so
+`--overflow stop` does not change it. A step that is not a constant is checked once, before the first round, with
 `trap step_not_positive`.
 
 ### A heap block in instructions

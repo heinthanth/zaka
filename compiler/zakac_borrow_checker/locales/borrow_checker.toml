@@ -11,3 +11,6 @@ en = "Also report the accesses that the check cannot prove safe."
 
 [borrow_check.artifact.source_changed]
 en = "source text changed after re-ingest"
+
+[borrow_check.overflow]
+en = "What integer arithmetic does with a result outside its kind: wrap around, or stop the program and warn about an operation that overflows for each value it can see."

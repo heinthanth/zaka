@@ -116,7 +116,10 @@ pub fn run_loaded(
     let clean = !has_errors(&checked.diagnostics);
     let bits = options.platform_bits;
     let folded = checked.lowered.folded.as_ref();
-    let module = folded.filter(|_| clean).map(|m| emit(m, bits, emit_options.into()));
+    let module = folded.filter(|_| clean).map(|m| Module {
+        overflow: mem.overflow,
+        ..emit(m, bits, emit_options.into())
+    });
     Emitted::builder().borrowchecked(checked).maybe_module(module).build()
 }
 

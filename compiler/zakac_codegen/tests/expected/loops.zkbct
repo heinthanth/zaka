@@ -68,7 +68,7 @@ module:
     - global_addr: 1
     - load: isize
     - convert: usize
-    - infix: sub
+    - wrap: sub
     - push: 1:usize
     - compare: lt
     - jump_if_true: 58
@@ -76,7 +76,7 @@ module:
     - global_addr: 1
     - load: isize
     - push: 1:isize
-    - infix: add
+    - wrap: add
     - store: isize
     - jump: 26
     - global_addr: 2
@@ -94,7 +94,7 @@ module:
     - load: isize
     - convert: usize
     - push: 0:usize
-    - infix: sub
+    - wrap: sub
     - push: 2:usize
     - compare: lt
     - jump_if_true: 84
@@ -102,7 +102,7 @@ module:
     - global_addr: 2
     - load: isize
     - push: 2:isize
-    - infix: sub
+    - wrap: sub
     - store: isize
     - jump: 66
     - global_addr: 3
@@ -332,4 +332,5 @@ module:
     - lo: 1790
       hi: 1790
   main: 0
+  overflow: wrap
 diagnostics: []

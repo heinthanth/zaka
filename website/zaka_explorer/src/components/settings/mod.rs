@@ -17,10 +17,12 @@ use zaka_web_ui_common::controls::settings::settings_modal as shared_modal;
 use zaka_web_ui_common::controls::settings::switch;
 use zaka_web_ui_common::controls::settings::switch_row;
 use zakac_borrow_checker::options::MemCheck;
+use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen::options::ResultMode;
 use zakac_codegen::options::ScratchMode;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
+use zakac_rust_sugars::tern;
 
 use crate::compile::Options;
 use crate::compile::PLATFORM_BITS;
@@ -124,6 +126,15 @@ fn compiler_section(state: AppState) -> impl IntoView
                 (t!("explorer.settings.no_raw"), t!("explorer.settings.no_raw_note")),
                 |o| o.no_raw,
                 |o, on| o.no_raw = on,
+            ),
+            option_row(
+                state,
+                (
+                    t!("explorer.settings.overflow"),
+                    t!("explorer.settings.overflow_note"),
+                ),
+                |o| o.overflow == OverflowMode::Stop,
+                |o, on| o.overflow = tern!(on, OverflowMode::Stop, OverflowMode::Wrap),
             ),
             row(
                 t!("explorer.settings.results"),

@@ -135,6 +135,10 @@ end, like a car's odometer rolling over:
 
 Pick a kind big enough for the numbers at hand. Plain `ကိန်းပြည့်` is a safe choice.
 
+To have the program stop at such a result instead, compile with `--overflow stop`, or
+turn on **Stop on overflow** in the explorer; see
+[Overflow](../../manual/language/expressions.md#arithmetic) in the Docs.
+
 ## Hands on
 
 - Work out the average of 4, 7 and 10 as a decimal number.

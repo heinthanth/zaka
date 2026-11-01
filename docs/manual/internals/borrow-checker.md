@@ -242,9 +242,23 @@ cell. A counted loop gives its variable the range of the bounds. `check_offset` 
 `check_cell` report ZK0710 when the interval of an offset lies outside the block altogether.
 When a cell address is proven in range, its span goes to `CellProofs`; at the end,
 `mark_checked` sets `checked: true` on those `CellAddr` nodes, and code generation leaves
-the run-time `index` op out for them. A cell of a slice gets no proof, since its count is
-known at run time alone, so its `slice_cell` op checks each access. This is done just when the check found no error and
+the run-time `index` op out for them.
+
+A slice made with a length of one known value keeps it as the length of its `PtrInfo`, at
+offset 0, so its cells are checked as the cells of a list are, ZK0710 included. For a
+slice whose count is known at run time alone, `State` keeps `below`: pairs of an integer
+local and a slice local, added on the edge where `n < s ၏ အကွက်အရေအတွက်` holds, kept at a
+merge when both sides hold them, and dropped on each write to either slot. A cell
+`s ၏ အကွက် n` is proven when `n` is at 0 or above and the pair holds; code generation
+then reads the first word of the slice and steps to the cell, with no `slice_cell`. This
+is done just when the check found no error and
 the program uses no raw address, since a raw address can change a fact the proofs rest on.
+
+With `--overflow stop` (`BorrowCheckOptions.overflow`), `check_overflow` works out the
+interval of each integer `+`, `-`, `*` and negation from the intervals of its operands,
+before it is cut to the kind. When that interval is bounded and lies outside the range of
+the kind, each value the operands can hold overflows, and the check reports ZK0719, a
+warning: the VM stops there each time the program reaches it.
 
 ## Calls: digests
 

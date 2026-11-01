@@ -283,4 +283,5 @@ module:
     - lo: 2320
       hi: 2320
   main: 0
+  overflow: wrap
 diagnostics: []

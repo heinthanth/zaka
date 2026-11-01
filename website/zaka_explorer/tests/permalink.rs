@@ -9,6 +9,7 @@ use zaka_explorer::state::permalink::encode;
 use zaka_explorer::state::settings::AstMode;
 use zaka_explorer::state::settings::LowerMode;
 use zakac_borrow_checker::options::MemCheck;
+use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen::options::ResultMode;
 use zakac_codegen::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
@@ -227,4 +228,19 @@ fn malformed_links_decode_to_none()
         assert_eq!(decode(bad), None, "{bad}");
     }
     assert_eq!(decode("3.64.lex.tree._w"), None);
+}
+
+#[test]
+fn links_keep_the_overflow_mode_in_the_mem_flags()
+{
+    for overflow in OverflowMode::iter()
+    {
+        let options = Options::builder().overflow(overflow).no_raw(true).build();
+        let link = Link::builder().source("x").options(options).build();
+        let hash = encode(&link);
+        let digit = if overflow == OverflowMode::Stop { 6 } else { 2 };
+        assert!(hash.starts_with(&format!("7.64.7.error.{digit}.")), "{hash}");
+        assert_eq!(decode(&hash), Some(link));
+    }
+    assert_eq!(decode("7.64.7.error.8.in-place.apart.lex.tree.folded.eA"), None);
 }

@@ -3,12 +3,16 @@ mod common;
 use std::mem::discriminant;
 use std::path::PathBuf;
 
+use common::compile;
 use common::output;
+use common::run_module;
 use common::run_source;
 use common::run_source_with;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::trap::Trap;
 use zaka_vm::trap::TrapKind;
+use zakac_borrow_checker::options::OverflowMode;
+use zakac_codegen::bc::Module;
 
 /// The trap kind and function of a source text that must trap.
 fn trapped(text: &str, options: &RunOptions) -> (String, TrapKind, String)
@@ -246,4 +250,34 @@ l ကို ပြသပါ။
 s ကို s ၏ အကွက် ၁ မှစ၍ ၁ ကွက် ဟု ထားပါ။
 s ကို ပြသပါ။";
     assert_eq!(output(text), "[၂၊ ၁]\n[၁]\n");
+}
+
+#[test]
+fn stop_mode_traps_on_overflow_and_wrap_mode_wraps()
+{
+    let text = "ကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၅၀ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် -၁၂၈ ဖြစ်ပါစေ။
+က + ၁၀ ကို ပြသပါ။
+-ခ ကို ပြသပါ။";
+    assert_eq!(output(text), "၄\n-၁၂၈\n");
+    let module = Module { overflow: OverflowMode::Stop, ..compile(text) };
+    let (out, result) = run_module(&module, &RunOptions::default());
+    assert_eq!(out, "");
+    let kind = result.expect_err("the add overflows").kind;
+    assert_eq!(kind, TrapKind::Overflow { op: "+".into(), kind: "u8".into() });
+    assert!(kind.to_string().contains("does not fit u8"), "{kind}");
+    let negate = text.replace("က + ၁၀ ကို ပြသပါ။\n", "");
+    let module = Module { overflow: OverflowMode::Stop, ..compile(&negate) };
+    let (_, result) = run_module(&module, &RunOptions::default());
+    assert!(matches!(result.unwrap_err().kind, TrapKind::Overflow { .. }));
+}
+
+#[test]
+fn stop_mode_leaves_counted_loops_alone()
+{
+    let text = "-၂၀ မှ ၂၀ အထိ ၂၀ စီ န အနေဖြင့် တိုး၍ န ကို ပြသပါ။";
+    let module = Module { overflow: OverflowMode::Stop, ..compile(text) };
+    let (out, result) = run_module(&module, &RunOptions::default());
+    assert_eq!(result, Ok(()));
+    assert_eq!(out, "-၂၀\n၀\n၂၀\n");
 }

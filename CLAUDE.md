@@ -50,11 +50,31 @@ and one set of tests serve both books.
   - `zaka-stop` must stop at run time, with its output in the `text` fence after it.
   - `zaka-file` shows one file of a program in several files: painted, never run, and
     it must lex with no error. Start it with a `// <file>.zaka` line.
-  - Options can follow the fence word: `mem-check=warn|off`, `mem-strict=on`, `no-raw=on`.
+  - Options can follow the fence word: `mem-check=warn|off`, `mem-strict=on`, `no-raw=on`,
+    `overflow=stop`.
 - The tests also check that each link reaches a page, each `#mark` reaches a `##` head,
   and each code in `zakac_diagnostics` has a row on `manual/reference/errors.md`.
 - Learn shows; Docs states the rules in full. When the code and a note disagree, the
   code wins: check claims against the compiler before writing them down.
+
+## Keeping the docs current
+
+A change is not done until the documents that describe it match the code. Before
+reporting a change as done, go through both sets and update each page the change
+touches:
+
+- **Learn and Docs** (`docs/learn/`, `docs/manual/`): the language page of the feature
+  and its Learn page, both `CONTENTS.md` files, `reference/errors.md` (codes and short
+  kind names), `reference/reserved-words.md`, `compiler/commands.md` (flags),
+  `vm/instructions.md` and `vm/traps.md` (ops and traps), and the `internals/` page of
+  each stage the change touches.
+- **Internal notes** (`docs/*.internal.md`): the design note of the feature (record what
+  was built and where the build left the plan), `ROADMAP.internal.md` (the status of the
+  milestone), the checklist in `LANGUAGE.internal.md` §9, and the note of each stage the
+  change touches (`CODEGEN.internal.md`, `OWNERSHIP.internal.md`, ...).
+- A "known cost", "open" or "not done" line that the change resolves is updated in the
+  same pass, and so is a later change to a feature: a new flag, a mode or a fix.
+- Grep the docs for the old names, codes and wording the change replaces.
 
 ## Writing rules
 

@@ -2,6 +2,7 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use bon::Builder;
 use zakac_borrow_checker::options::MemCheck;
+use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen::options::ResultMode;
 use zakac_codegen::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
@@ -60,8 +61,8 @@ pub struct Link
 /// stage and the views in lowercase, as in
 /// `7.64.7.error.0.in-place.apart.lower.tree.folded.…`. The foldings
 /// are a digit from 0 to 7: 1 for expressions, 2 for constants, 4 for branches.
-/// The mem flags are a digit from 0 to 3: 1 for the strict check, 2 to forbid
-/// raw addresses.
+/// The mem flags are a digit from 0 to 7: 1 for the strict check, 2 to forbid
+/// raw addresses, 4 to stop on overflow; formats before 7 hold 0 to 3.
 ///
 /// # Arguments
 ///
@@ -96,7 +97,8 @@ pub fn encode(link: &Link) -> String
 /// The digit, from 0 to 3.
 fn mem_digit(options: &Options) -> u8
 {
-    u8::from(options.strict) | u8::from(options.no_raw) << 1
+    let stop = options.overflow == OverflowMode::Stop;
+    u8::from(options.strict) | u8::from(options.no_raw) << 1 | u8::from(stop) << 2
 }
 
 /// The digit of a set of foldings.
@@ -176,8 +178,11 @@ fn decode_7(rest: &str) -> Option<Link>
     let (bits, fold, check, mem, results, rest) =
         (next()?, next()?, next()?, next()?, next()?, next()?);
     let (scratch, rest) = rest.split_once('.')?;
-    let mut link = decode_6(&format!("{bits}.{fold}.{check}.{mem}.{results}.{rest}"))?;
+    let mem: u8 = mem.parse().ok().filter(|n| *n < 8)?;
+    let low = mem & 3;
+    let mut link = decode_6(&format!("{bits}.{fold}.{check}.{low}.{results}.{rest}"))?;
     link.options.scratch = scratch.parse::<ScratchMode>().ok()?;
+    link.options.overflow = tern!(mem & 4 != 0, OverflowMode::Stop, OverflowMode::Wrap);
     Some(link)
 }
 

@@ -308,7 +308,10 @@ LendOfRaw = ("ZK0716", Level::Error),
 /// A raw address is used though raw addresses are turned off.
 RawNotAllowed = ("ZK0717", Level::Error),
 /// A struct field holds a borrow.
-BorrowField = ("ZK0718", Level::Error) }
+BorrowField = ("ZK0718", Level::Error),
+/// With `--overflow stop`, an integer operation overflows for each value
+/// its operands can hold.
+OverflowProven = ("ZK0719", Level::Warning) }
 
 impl Code
 {

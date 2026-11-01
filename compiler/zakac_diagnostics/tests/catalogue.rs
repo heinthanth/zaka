@@ -254,6 +254,10 @@ fn ownership_constructors_render_messages()
     assert!(alias.message.contains("argument 2"));
     assert_eq!(o::block_leaked(span, "ပ").code, Code::BlockLeaked);
     assert_eq!(o::null_deref(span, "ပ").code, Code::NullDeref);
+    let over = o::overflow_proven(span, "-", "usize");
+    assert_eq!(over.code, Code::OverflowProven);
+    assert!(over.message.contains("usize") && over.help.is_some());
+    assert!(!over.is_error());
     let past = o::offset_past_end(span, 4, 4);
     assert_eq!(past.code, Code::OffsetPastEnd);
     assert!(past.message.contains("offset 4"));

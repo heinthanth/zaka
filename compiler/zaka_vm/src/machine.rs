@@ -5,6 +5,7 @@ use bon::Builder;
 use strum::Display;
 use strum::EnumIter;
 use strum::EnumString;
+use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen::bc::Module;
 use zakac_codegen::bc::Op;
 use zakac_codegen::bc::SliceSource;
@@ -18,7 +19,9 @@ use zakac_ir_builder::value::EvalError;
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::compare;
 use zakac_ir_builder::value::convert;
+use zakac_ir_builder::value::infix;
 use zakac_ir_builder::value::infix_wrapping;
+use zakac_ir_builder::value::prefix;
 use zakac_ir_builder::value::prefix_wrapping;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
@@ -426,6 +429,24 @@ fn malformed(reason: &str) -> TrapKind
 /// # Returns
 ///
 /// The trap kind.
+/// The trap of an operator that failed: an overflow names the operator and
+/// the kind; each other failure gives the trap of [`eval_trap`].
+///
+/// # Arguments
+///
+/// * `e` - The failure.
+/// * `op` - The name of the operator.
+/// * `operand` - An operand, which gives the kind.
+///
+/// # Returns
+///
+/// The trap.
+fn overflow_trap(e: EvalError, op: &'static str, operand: Value) -> TrapKind
+{
+    ret_if!(e != EvalError::Overflow, eval_trap(e));
+    TrapKind::Overflow { op: op.to_string(), kind: operand.kind().name() }
+}
+
 fn eval_trap(e: EvalError) -> TrapKind
 {
     match e
@@ -895,6 +916,12 @@ impl Machine
             Op::GlobalAddr(n) => self.global_addr(n),
             Op::Prefix(op) => self.prefix(op),
             Op::Infix(op) => self.infix(op),
+            Op::Wrap(op) =>
+            {
+                let (r, l) = (self.pop()?, self.pop()?);
+                let platform = self.module.platform_bits;
+                self.push(infix_wrapping(op, l, r, platform).map_err(eval_trap)?)
+            }
             Op::Compare(op) => self.compare(op),
             Op::Convert(kind) => self.convert(kind),
             Op::Jump(t) => self.goto(t),
@@ -1080,7 +1107,10 @@ impl Machine
     {
         let v = self.pop()?;
         let platform = self.module.platform_bits;
-        self.push(prefix_wrapping(op, v, platform).map_err(eval_trap)?)
+        let stop = self.module.overflow == OverflowMode::Stop;
+        let found =
+            tern!(stop, prefix(op, v, platform), prefix_wrapping(op, v, platform));
+        self.push(found.map_err(|e| overflow_trap(e, op.into(), v))?)
     }
 
     /// Work out an infix operator on the two top values.
@@ -1096,7 +1126,10 @@ impl Machine
     {
         let (r, l) = (self.pop()?, self.pop()?);
         let platform = self.module.platform_bits;
-        self.push(infix_wrapping(op, l, r, platform).map_err(eval_trap)?)
+        let stop = self.module.overflow == OverflowMode::Stop;
+        let found =
+            tern!(stop, infix(op, l, r, platform), infix_wrapping(op, l, r, platform));
+        self.push(found.map_err(|e| overflow_trap(e, op.into(), l))?)
     }
 
     /// Compare the two top values.

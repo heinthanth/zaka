@@ -287,6 +287,9 @@ fn fence_words_with_an_equals_sign_are_options()
 
     assert_eq!(Fence::parse("zaka-error mem-check=loud"), None);
     assert_eq!(Fence::parse("zaka no-raw=off"), None);
+    let (_, options) = Fence::parse("zaka-stop overflow=stop").expect("a fence");
+    assert_eq!(options.overflow, zakac_borrow_checker::options::OverflowMode::Stop);
+    assert_eq!(Fence::parse("zaka overflow=trap"), None);
     assert_eq!(Fence::parse("zaka mem-lint=on"), None);
     assert_eq!(Fence::parse("zaka-stop mem-check"), None);
     assert_eq!(Fence::parse("zaka-stop mem-check:off"), None);

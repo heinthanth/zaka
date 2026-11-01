@@ -107,6 +107,72 @@ fn narrow_ints(op: CmpOp, lhs: &Expr, rhs: &Expr, state: &mut State, platform: u
     let slot = |e: &Expr| int_slot(e, platform);
     do_if!(let Some(place) = slot(lhs), clamp(place, op, right, state));
     do_if!(let Some(place) = slot(rhs), clamp(place, swapped(op), left, state));
+    let pair = below_count(op, lhs, rhs, platform);
+    let pair = pair.or_else(|| below_count(swapped(op), rhs, lhs, platform));
+    do_if!(let Some(pair) = pair, { state.below.insert(pair); });
+}
+
+/// The integer local and the slice local of a test that holds when the
+/// integer is below the count of the slice: `n < s ၏ အကွက်အရေအတွက်`.
+///
+/// # Arguments
+///
+/// * `op` - The comparison that holds, `lhs` on its left.
+/// * `lhs` - The left operand.
+/// * `rhs` - The right operand.
+/// * `platform` - The bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// The integer and the slice, or `None` for another test.
+fn below_count(
+    op: CmpOp, lhs: &Expr, rhs: &Expr, platform: u16,
+) -> Option<(Place, Place)>
+{
+    ret_if!(op != CmpOp::Lt, None);
+    let n = int_slot(lhs, platform).filter(|p| matches!(p, Place::Local(_)))?;
+    Some((n, count_slot(rhs)?))
+}
+
+/// The slice local whose count an operand reads, under each conversion: a
+/// count that a conversion cuts is still at least each value it compares
+/// below, since the count is a `usize`.
+///
+/// # Arguments
+///
+/// * `e` - The operand.
+///
+/// # Returns
+///
+/// The slice, or `None` for another operand.
+fn count_slot(e: &Expr) -> Option<Place>
+{
+    let ExprNode::Load { addr } = &peel_converts(e).node
+    else
+    {
+        return None;
+    };
+    let ExprNode::FieldAddr { base, field: 1, .. } = &addr.node
+    else
+    {
+        return None;
+    };
+    let read = tern!(let ExprNode::Read(place) = base.node, Some(place), None);
+    read.filter(|p| base.kind.is_slice() && matches!(p, Place::Local(_)))
+}
+
+/// An expression with each conversion around it taken off.
+///
+/// # Arguments
+///
+/// * `e` - The expression.
+///
+/// # Returns
+///
+/// The innermost operand.
+fn peel_converts(e: &Expr) -> &Expr
+{
+    tern!(let ExprNode::Convert { operand, .. } = &e.node, peel_converts(operand), e)
 }
 
 /// The integer slot an operand reads, under conversions that keep each
@@ -120,7 +186,7 @@ fn narrow_ints(op: CmpOp, lhs: &Expr, rhs: &Expr, state: &mut State, platform: u
 /// # Returns
 ///
 /// The slot, or `None` for another operand.
-fn int_slot(e: &Expr, platform: u16) -> Option<Place>
+pub(crate) fn int_slot(e: &Expr, platform: u16) -> Option<Place>
 {
     match &e.node
     {

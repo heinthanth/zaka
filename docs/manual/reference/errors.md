@@ -224,3 +224,4 @@ ZK0701 to ZK0704 and ZK0706 to ZK0712 are warnings and the program runs; with
 | ZK0716 | a raw address lent with `တန်ဖိုးအငှား` | [Ownership and borrowing](../../learn/pointers/ownership.md#raw-addresses) |
 | ZK0717 | a raw address kind under `--no-raw` | [Ownership and borrowing](../../learn/pointers/ownership.md#raw-addresses) |
 | ZK0718 | a field that holds a borrow | [Struct mistakes](../../learn/structs/mistakes.md#a-borrow-in-a-field) |
+| ZK0719 | with `--overflow stop`, an operation that overflows for each value of its operands; a warning | [Overflow](../language/expressions.md#arithmetic) |

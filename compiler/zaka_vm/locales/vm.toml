@@ -45,6 +45,9 @@ en = "counted loop step is not positive"
 [vm.trap.index_out_of_range]
 en = "cell %{index} is outside the list, whose cells run from %{lo} to %{hi}"
 
+[vm.trap.overflow]
+en = "the result of %{op} does not fit %{kind}"
+
 [vm.trap.slice_out_of_range]
 en = "%{len} cells from cell %{start} pass the end of %{limit} cells"
 

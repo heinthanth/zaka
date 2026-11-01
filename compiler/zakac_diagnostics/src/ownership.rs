@@ -316,3 +316,21 @@ pub fn borrow_field(span: Span, name: &str) -> Diagnostic
 {
     Diagnostic::new(Code::BorrowField, t!("codes.ZK0718.message", n = name), span)
 }
+
+/// With `--overflow stop`, an integer operation overflows for each value its
+/// operands can hold.
+///
+/// # Arguments
+///
+/// * `span` - The operation.
+/// * `op` - The operator, as written.
+/// * `kind` - The integer kind, as its short name.
+///
+/// # Returns
+///
+/// The `ZK0719` diagnostic, with help on what to change.
+pub fn overflow_proven(span: Span, op: &str, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0719.message", op = op, kind = kind);
+    Diagnostic::new(Code::OverflowProven, msg, span).with_help(t!("codes.ZK0719.help"))
+}

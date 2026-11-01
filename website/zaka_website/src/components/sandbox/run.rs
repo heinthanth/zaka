@@ -5,6 +5,7 @@ use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
+use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen::artifact::run_phases;
 use zakac_codegen::options::ResultMode;
 use zakac_diagnostics::Diagnostic;
@@ -44,7 +45,7 @@ pub enum Fence
 }
 
 /// What a fence of a Learn page asks of the compiler besides its promise:
-/// `mem-check=warn`, `mem-strict=on`, `no-raw=on`.
+/// `mem-check=warn`, `mem-strict=on`, `no-raw=on`, `overflow=stop`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Builder, Serialize, Deserialize)]
 pub struct FenceOptions
 {
@@ -57,6 +58,10 @@ pub struct FenceOptions
     /// Whether raw addresses are refused.
     #[builder(default)]
     pub no_raw: bool,
+    /// What integer arithmetic does with a result outside its kind.
+    #[builder(default)]
+    #[serde(default)]
+    pub overflow: OverflowMode,
 }
 
 impl FenceOptions
@@ -79,6 +84,7 @@ impl FenceOptions
             ("mem-check", _) => self.check = value.parse().ok()?,
             ("mem-strict", "on") => self.strict = true,
             ("no-raw", "on") => self.no_raw = true,
+            ("overflow", _) => self.overflow = value.parse().ok()?,
             _ => return None,
         }
         Some(self)
@@ -212,6 +218,7 @@ pub fn compile(source: &str, options: &FenceOptions) -> Compiled
         &BorrowCheckOptions::builder()
             .check(options.check)
             .strict(options.strict)
+            .overflow(options.overflow)
             .build(),
         ResultMode::default(),
     );

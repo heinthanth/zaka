@@ -125,6 +125,15 @@ pub enum TrapKind
         /// The number of cells.
         len: u64,
     },
+    /// With `--overflow stop`, an integer operation whose result does not fit
+    /// its kind.
+    Overflow
+    {
+        /// The operator, such as `+`.
+        op: String,
+        /// The integer kind, as its short name.
+        kind: String,
+    },
     /// A range of cells that passes the end of its list or slice.
     SliceOutOfRange
     {
@@ -194,6 +203,10 @@ impl fmt::Display for TrapKind
                 let last = i128::from(*len) + i128::from(*first) - 1;
                 t!("vm.trap.index_out_of_range", index = index, lo = first, hi = last)
             }
+            TrapKind::Overflow { op, kind } =>
+            {
+                t!("vm.trap.overflow", op = op, kind = kind)
+            }
             TrapKind::SliceOutOfRange { start, len, limit } =>
             {
                 t!(
@@ -238,7 +251,8 @@ impl TrapKind
             | TrapKind::OutOfMem { .. }
             | TrapKind::MixedBlocks
             | TrapKind::IndexOutOfRange { .. }
-            | TrapKind::SliceOutOfRange { .. } => None,
+            | TrapKind::SliceOutOfRange { .. }
+            | TrapKind::Overflow { .. } => None,
         }
     }
 }

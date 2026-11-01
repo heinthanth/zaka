@@ -178,7 +178,7 @@ module:
     - global_addr: 5
     - load: isize
     - convert: usize
-    - infix: sub
+    - wrap: sub
     - push: 1:usize
     - compare: lt
     - jump_if_true: 94
@@ -186,7 +186,7 @@ module:
     - global_addr: 5
     - load: isize
     - push: 1:isize
-    - infix: add
+    - wrap: add
     - store: isize
     - jump: 43
     - global_addr: 6
@@ -574,4 +574,5 @@ module:
     - lo: 5732
       hi: 5732
   main: 1
+  overflow: wrap
 diagnostics: []

@@ -4,6 +4,7 @@ use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
 use strum::IntoStaticStr;
+use zakac_borrow_checker::options::OverflowMode;
 use zakac_ir_builder::ir::CmpOp;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::PrefixOp;
@@ -28,6 +29,11 @@ pub struct Module
     pub funcs: Vec<Func>,
     /// Index of the main function in `funcs`.
     pub main: u32,
+    /// What integer arithmetic does with a result outside its kind: wrap
+    /// around, or stop the program.
+    #[builder(default)]
+    #[serde(default)]
+    pub overflow: OverflowMode,
 }
 
 impl Module
@@ -125,6 +131,10 @@ pub enum Op
     Infix(InfixOp),
     /// Pop the right then the left operand, push a boolean.
     Compare(CmpOp),
+    /// Pop the right then the left operand, push the result wrapped to its
+    /// kind, whatever the overflow mode: the generator uses it where it
+    /// counts on two's complement arithmetic, as a counted loop does.
+    Wrap(InfixOp),
     /// Pop a value, push it converted to this kind.
     Convert(DataKind),
     /// Go to the op at this index of the function.
@@ -290,6 +300,7 @@ impl Op
             Op::Call(f) => format!("f{f}"),
             Op::PrintText(t) => format!("t{t}"),
             Op::Trap(code) => <&str>::from(code).to_string(),
+            Op::Wrap(op) => op.mnemonic().to_string(),
             Op::Load(kind)
             | Op::Store(kind)
             | Op::Take(kind)

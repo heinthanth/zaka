@@ -142,6 +142,10 @@ en = "Also warn about a pointer that can be ဗလာ, such as a fresh allocatio
 en = "Forbid raw addresses"
 [explorer.settings.no_raw_note]
 en = "Reject each kind written with လိပ်စာအကြမ်း, so a lesson cannot step around the check."
+[explorer.settings.overflow]
+en = "Stop on overflow"
+[explorer.settings.overflow_note]
+en = "Stop the program when integer arithmetic gives a result outside its kind, and warn about an operation that overflows for each value it can see. Off, the result wraps around."
 [explorer.settings.results]
 en = "List and struct results"
 [explorer.settings.results_note]

@@ -980,7 +980,9 @@ impl<'s> FuncGen<'s>
 
     /// Move the loop variable one step on and go back to `head`, or jump to
     /// `exit` when one more step would pass the last value. The distance
-    /// left is worked out in the unsigned kind, so it never wraps.
+    /// left is worked out in the unsigned kind with wrapping ops, which give
+    /// the true distance even for bounds of each sign, so a step never
+    /// moves the variable past the last value.
     ///
     /// # Arguments
     ///
@@ -992,13 +994,13 @@ impl<'s> FuncGen<'s>
     {
         tern!(up, self.push_unsigned(c.to, c), self.load_unsigned(c));
         tern!(up, self.load_unsigned(c), self.push_unsigned(c.to, c));
-        self.op(Op::Infix(InfixOp::Sub));
+        self.op(Op::Wrap(InfixOp::Sub));
         self.push_unsigned(c.step, c);
         self.op(Op::Compare(CmpOp::Lt));
         self.code.jump_if_true(exit);
         self.update_slot(c.var, |g| {
             g.push(c.step);
-            g.op(Op::Infix(tern!(up, InfixOp::Add, InfixOp::Sub)));
+            g.op(Op::Wrap(tern!(up, InfixOp::Add, InfixOp::Sub)));
         });
         self.code.jump(head);
     }
@@ -1144,6 +1146,15 @@ impl<'s> FuncGen<'s>
             ExprNode::SizeOf(kind) => self.size_of(*kind),
             ExprNode::List(cells) => self.spill_list(e.kind, Some(cells)),
             ExprNode::BlankList => self.spill_list(e.kind, None),
+            ExprNode::CellAddr { list, index, len: None, first: 0, checked: true } =>
+            {
+                // A cell proved in range steps from the first cell of the
+                // slice, which its first word holds, with no check.
+                self.expr(list);
+                self.op(Op::Load(e.kind));
+                self.expr(index);
+                self.op(Op::PtrAdd(self.stride(e.kind)));
+            }
             ExprNode::CellAddr { list, index, len: None, first, .. } =>
             {
                 self.expr(list);

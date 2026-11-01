@@ -127,8 +127,17 @@ the program stopped: 4 cells from cell 0 pass the end of 3 cells
 | `s ၏ အကွက် i မှစ၍ n ကွက်` | a slice of the slice |
 
 - A cell of a slice is a cell of its source: writing it changes the list or the block.
-- The compiler cannot see the count of a slice, so each cell number is checked when the
-  program runs, and one outside the slice stops the program.
+- A cell number is checked against the count of the slice. The compiler does the check
+  when it can see the answer, and leaves it out of the program:
+  - a slice made with a known length, such as `l ၏ အကွက် ၁ မှစ၍ ၂ ကွက်` or the lend of a
+    list, keeps that count, so a cell number the compiler can follow is checked as for a
+    list, and one past the end is ZK0710;
+  - in a loop that tests `န < s ၏ အကွက်အရေအတွက်` before each round, the cell `s ၏ အကွက် န`
+    is in range until `န` or `s` changes, as in the first example. `န` must be a
+    variable of the function whose address is never taken, at 0 or above.
+
+  Each other cell number is checked when the program runs, and one outside the slice
+  stops the program.
 - A slice prints its cells, as a list does.
 - Setting one slice to another duplicates the view, its address and its count, and not
   the cells.
@@ -136,6 +145,16 @@ the program stopped: 4 cells from cell 0 pass the end of 3 cells
 - A counted loop to the count minus 1 goes wrong on a slice of no cells, since the count
   is unsigned and 0 - 1 wraps. A loop that tests `န < count` before each round, as in
   the first example, runs zero rounds there.
+
+```zaka-error ZK0710
+ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း ဖြစ်၍ တန်ဖိုးသည် l ၏ အကွက် ၁ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
+s ၏ အကွက် ၂ ကို ပြသပါ။            // s holds cells 0 and 1
+```
+
+```text
+error[ZK0710]: offset 2 is past the end of a block of 2 elements
+```
 
 ```zaka
 ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃၊ ၄] ဖြစ်ပါစေ။
@@ -197,6 +216,7 @@ s ကို ပြသပါ။
 | ZK0233 | the `စာရင်း` of a slice kind has a count |
 | ZK0428 | the cells of a slice kind hold borrows |
 | ZK0605 | a range with a constant start and length passes the end of its list |
+| ZK0710 | a cell number proven past the end of a slice of a known count |
 | ZK0401 | a list is given where a slice is wanted |
 | ZK0422 | a range is taken of a value that is no list, no slice and no pointer to a block |
 | ZK0403 | an operator is given a slice |

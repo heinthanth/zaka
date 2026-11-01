@@ -136,11 +136,11 @@ fn constant_bounds_fix_the_direction()
 {
     let up = main_ops("၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။");
     let count = |list: &[String], op: &str| list.iter().filter(|o| *o == op).count();
-    assert_eq!((count(&up, "add"), count(&up, "sub")), (1, 1), "{up:?}");
+    assert_eq!((count(&up, "wrap add"), count(&up, "wrap sub")), (1, 1), "{up:?}");
     let module = emit_text("၃ မှ ၁ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။");
     let main = main_func(&module);
     assert!(main.locals.is_empty(), "{:?}", main.locals);
-    assert_eq!(ops(main).iter().filter(|o| *o == "sub").count(), 2);
+    assert_eq!(ops(main).iter().filter(|o| *o == "wrap sub").count(), 2);
 }
 
 #[test]
@@ -570,4 +570,22 @@ b ကို ပြသပါ။
     let locals = &main_func(&module).locals;
     let names: Vec<&str> = locals.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(names, ["%slice", "%slice"]);
+}
+
+#[test]
+fn a_slice_cell_proved_in_range_has_no_check()
+{
+    let text = "လုပ်ဆောင်ချက် ပေါင်း သည်
+ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း ကိန်းများ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+ကိန်းရှင် န သည် လက္ခဏာမဲ့ ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ န သည် ကိန်းများ ၏ အကွက်အရေအတွက် အောက် ငယ်နေသရွေ့ \
+                အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+ရလဒ် ကို ရလဒ် + (ကိန်းများ ၏ အကွက် န) ဟု ထားပါ။
+ပြီးလျှင် န ကို န + ၁ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    let module = emit_text(text);
+    let found = ops(&module.funcs[0]);
+    assert!(!found.iter().any(|op| op.starts_with("slice_cell")), "{found:?}");
+    assert!(found.iter().any(|op| op == "load *isize"), "{found:?}");
 }

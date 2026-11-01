@@ -260,7 +260,7 @@ condition `12 > 10` is true, so the `if` is gone and its branch stands in its pl
 `bc::Module`:
 
 ```text
-Module { platform_bits, globals: Vec<Slot>, texts: Vec<String>, funcs: Vec<Func>, main: u32 }
+Module { platform_bits, globals: Vec<Slot>, texts: Vec<String>, funcs: Vec<Func>, main: u32, overflow }
 Func   { name, params, ret, locals: Vec<Slot>, code: Vec<Op>, spans: Vec<Span> }
 ```
 
@@ -273,6 +273,11 @@ named with a `%`: `%to`, `%step` and `%dir` for a counted loop, and `%list`, `%s
 holds the two choices of the generator: `results` (`--results`) and `scratch`
 (`--scratch`), both below.
 
+`overflow` is the `--overflow` mode the borrow-check options hold: with `stop`, the VM
+works `prefix` and `infix` out with checked arithmetic and traps on a result outside its
+kind. `wrap op` wraps in each mode; the generator emits it for the steps and the distance
+of a counted loop, which count on two's complement arithmetic.
+
 The VM is a stack machine. Ops that work on values take the kind from the values on
 the stack, so most ops name no kind. The ones that need a kind name it: `convert`, `load`,
 `store`, `take`, and the list ops. The groups:
@@ -281,7 +286,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | --- | --- |
 | values | `push v`, `pop`, `dup` |
 | storage | `local_addr n`, `global_addr n`, `load k`, `store k`, `take k` |
-| arithmetic | `prefix op`, `infix op`, `compare op`, `convert k` (the ops print as `add`, `lt`, ...) |
+| arithmetic | `prefix op`, `infix op`, `compare op`, `convert k` (the ops print as `add`, `lt`, ...), `wrap op` |
 | control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `ret`, `result_addr`, `trap code` |
 | output | `print`, `print_text t`, `print_list k` |
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |

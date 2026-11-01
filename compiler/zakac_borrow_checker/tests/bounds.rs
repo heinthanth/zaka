@@ -1,9 +1,12 @@
 mod common;
 
+use common::codes_with;
 use common::lines;
 use common::main_forms;
 use common::ok;
 use common::run;
+use zakac_borrow_checker::options::BorrowCheckOptions;
+use zakac_borrow_checker::options::OverflowMode;
 use zakac_diagnostics::Code;
 use zakac_ir_builder::ir::Module;
 
@@ -603,4 +606,19 @@ fn a_raw_store_keeps_a_null_owner()
 ";
     let found: Vec<Code> = lines(text).into_iter().map(|c| c.0).collect();
     assert_eq!(found, [Code::NullDeref]);
+}
+
+#[test]
+fn stop_mode_warns_about_an_operation_that_overflows_each_time()
+{
+    let stop = BorrowCheckOptions::builder().overflow(OverflowMode::Stop).build();
+    let wrap = BorrowCheckOptions::default();
+    let text = "ကိန်းရှင် n သည် လက္ခဏာမဲ့ ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
+n - ၁ ကို ပြသပါ။";
+    assert_eq!(codes_with(text, &stop), [Code::OverflowProven]);
+    assert_eq!(codes_with(text, &wrap), []);
+    let unsure = "ကိန်းရှင် n သည် လက္ခဏာမဲ့ ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
+အကယ်၍ n သည် ၀ နှင့် ညီလျှင် n ကို ၅ ဟု ထားပါ။
+n - ၁ ကို ပြသပါ။";
+    assert_eq!(codes_with(unsure, &stop), []);
 }

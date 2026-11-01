@@ -11,6 +11,7 @@ use zakac_ast::s_expr::ToSexpr;
 use zakac_borrow_checker::borrow_check;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
+use zakac_borrow_checker::options::OverflowMode;
 use zakac_burmese_segmenter::segmenter::PreLexicalToken;
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
@@ -100,6 +101,9 @@ pub struct Options
     /// Reject each kind written with a raw address.
     #[builder(default)]
     pub no_raw: bool,
+    /// What integer arithmetic does with a result outside its kind.
+    #[builder(default)]
+    pub overflow: OverflowMode,
     /// How a list or struct result reaches the caller.
     #[builder(default)]
     pub results: ResultMode,
@@ -694,10 +698,10 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .collect();
     let emitted = borrowchecked && !has_errors(&owner_diags);
     let (ops, codegen_time) = timed(|| {
-        folded
-            .as_ref()
-            .filter(|_| emitted)
-            .map(|m| emit(m, options.platform_bits, emit_options(options)))
+        folded.as_ref().filter(|_| emitted).map(|m| {
+            let emitted = emit(m, options.platform_bits, emit_options(options));
+            bc::Module { overflow: options.overflow, ..emitted }
+        })
     });
     let times = PhaseTimes::builder()
         .segment(segment_time)
@@ -821,7 +825,9 @@ fn check_owners(
     module: &mut Module, options: &Options,
 ) -> (Vec<Diagnostic>, Vec<String>)
 {
-    let mem = BorrowCheckOptions::builder().check(options.check).strict(options.strict);
+    #[rustfmt::skip]
+    let mem = BorrowCheckOptions::builder().check(options.check).strict(options.strict)
+        .overflow(options.overflow);
     let out = borrow_check(module, &mem.build(), options.platform_bits);
     (out.diagnostics, out.digests.iter().map(ToString::to_string).collect())
 }
