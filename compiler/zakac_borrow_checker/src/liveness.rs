@@ -10,6 +10,7 @@ use zakac_ir_builder::ir::Stmt;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
 use crate::callgraph::callees;
@@ -38,7 +39,29 @@ pub(crate) type LiveMap = BTreeMap<Place, Span>;
 /// The live slots after each node, in node order.
 pub(crate) fn live_out(cfg: &Cfg, module: &Module, routine: &Routine) -> Vec<LiveMap>
 {
-    let slots = Slots { module, routine, globals: global_reads(module) };
+    live_out_of(cfg, module, routine, DataKind::holds_borrow)
+}
+
+/// The slots of the kinds `keep` picks live after each node: a backward
+/// fixpoint, with the earliest read in the source as the witness where paths
+/// meet. A call reads each global of those kinds its function reads.
+///
+/// # Arguments
+///
+/// * `cfg` - The graph of the routine.
+/// * `module` - The module.
+/// * `routine` - The routine.
+/// * `keep` - Whether the liveness follows a slot of a kind.
+///
+/// # Returns
+///
+/// The live slots after each node, in node order.
+pub(crate) fn live_out_of(
+    cfg: &Cfg, module: &Module, routine: &Routine, keep: fn(DataKind) -> bool,
+) -> Vec<LiveMap>
+{
+    let globals = global_reads_of(module, keep);
+    let slots = Slots { module, routine, globals, keep };
     let order = cfg.postorder();
     let mut outs = vec![LiveMap::new(); cfg.nodes.len()];
     let mut ins = vec![LiveMap::new(); cfg.nodes.len()];
@@ -84,14 +107,16 @@ struct Slots<'m>
     module: &'m Module,
     /// The routine.
     routine: &'m Routine<'m>,
-    /// The global borrows each function reads, itself or through its
-    /// callees.
+    /// The globals of the followed kinds each function reads, itself or
+    /// through its callees.
     globals: Vec<BTreeSet<u32>>,
+    /// Whether the liveness follows a slot of a kind.
+    keep: fn(DataKind) -> bool,
 }
 
 impl Slots<'_>
 {
-    /// Whether the liveness follows a slot: one that holds a borrow.
+    /// Whether the liveness follows a slot: one of a kind `keep` picks.
     ///
     /// # Arguments
     ///
@@ -99,7 +124,7 @@ impl Slots<'_>
     ///
     /// # Returns
     ///
-    /// `true` for a borrow slot or a list of borrows.
+    /// `true` for such a slot.
     fn tracked(&self, place: Place) -> bool
     {
         let slot = match place
@@ -107,7 +132,7 @@ impl Slots<'_>
             Place::Global(n) => self.module.globals.get(n as usize),
             Place::Local(n) => self.routine.locals.get(n as usize),
         };
-        slot.is_some_and(|s| s.kind.holds_borrow())
+        slot.is_some_and(|s| (self.keep)(s.kind))
     }
 
     /// The live slots before a node.
@@ -233,13 +258,30 @@ fn call_of(e: &Expr) -> Option<(u32, Span)>
 /// The global numbers, in function order.
 pub(crate) fn global_reads(module: &Module) -> Vec<BTreeSet<u32>>
 {
-    let is_borrow =
-        |g: u32| module.globals.get(g as usize).is_some_and(|s| s.kind.holds_borrow());
+    global_reads_of(module, DataKind::holds_borrow)
+}
+
+/// The globals of the kinds `keep` picks that each function reads, itself or
+/// through the functions it calls, to a fixpoint.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+/// * `keep` - Whether a global of a kind counts.
+///
+/// # Returns
+///
+/// The global numbers, in function order.
+pub(crate) fn global_reads_of(
+    module: &Module, keep: fn(DataKind) -> bool,
+) -> Vec<BTreeSet<u32>>
+{
+    let kept = |g: u32| module.globals.get(g as usize).is_some_and(|s| keep(s.kind));
     let direct = |stmts: &[Stmt]| {
         let mut found = Vec::new();
         each_stmt(stmts, &mut |s| do_for!(e in stmt_exprs(s), reads(e, &mut found)));
         let globals = found.into_iter().filter_map(|(place, _)| global_of(place));
-        globals.filter(|&g| is_borrow(g)).collect::<BTreeSet<u32>>()
+        globals.filter(|&g| kept(g)).collect::<BTreeSet<u32>>()
     };
     let mut sets: Vec<BTreeSet<u32>> =
         module.funcs.iter().map(|f| direct(&f.block)).collect();

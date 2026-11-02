@@ -176,7 +176,8 @@ Zaka!
 
 Passing text to a function copies it too, so a function cannot change the caller's
 variable. A duplicate of text built while the program runs takes a new block of storage; to
-read text with no duplicate, lend it.
+read text with no duplicate, lend it. When the first variable is not read again, nothing is
+copied at all: the compiler hands its text over to the second.
 
 ## Lending text
 

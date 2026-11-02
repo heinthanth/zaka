@@ -14,3 +14,5 @@ en = "source text changed after re-ingest"
 
 [borrow_check.overflow]
 en = "What integer arithmetic does with a result outside its kind: wrap around, or stop the program and warn about an operation that overflows for each value it can see."
+[borrow_check.warn_duplicates]
+en = "Warn about each statement that duplicates text, after the compiler moves the text it reads no more."

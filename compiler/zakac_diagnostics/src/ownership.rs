@@ -334,3 +334,19 @@ pub fn overflow_proven(span: Span, op: &str, kind: &str) -> Diagnostic
     let msg = t!("codes.ZK0719.message", op = op, kind = kind);
     Diagnostic::new(Code::OverflowProven, msg, span).with_help(t!("codes.ZK0719.help"))
 }
+
+/// With `--warn-duplicates`, a statement duplicates the text of a place.
+///
+/// # Arguments
+///
+/// * `span` - The read that is duplicated.
+/// * `name` - The place read.
+///
+/// # Returns
+///
+/// The `ZK0720` diagnostic, with help on how to avoid the duplicate.
+pub fn duplicate_made(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0720.message", n = name);
+    Diagnostic::new(Code::DuplicateMade, msg, span).with_help(t!("codes.ZK0720.help"))
+}

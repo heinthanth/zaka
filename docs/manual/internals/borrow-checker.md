@@ -209,6 +209,14 @@ A text constant holds static text, so a read of it is a duplicate, never a move:
 `RootCtx::is_const` keeps `moved` and the moved arguments of a call from marking a
 constant moved, and a read of the constant after a duplicate is no ZK0701.
 
+Before the flow, `last_use.rs` turns each `Dup` of a whole place that the program reads
+no more into a `Take`, so the check follows the code that runs. Liveness
+(`live_out_of` with `holds_text`) gives the places live after each node; a call reads
+each global of a text kind its function reads, at each depth. A `Dup` remains for a
+parameter, for a global read in a function, for a place that a lend, a range or an
+address reads in some routine, and for a place its statement reads twice. With
+`--warn-duplicates`, each `Dup` left is ZK0720.
+
 ## The checks
 
 Each file of `checks/` owns some codes. All of them work on a `Flow` and the `State`.

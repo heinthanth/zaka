@@ -5,12 +5,15 @@ use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::Module;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 use crate::digest::FnDigest;
 use crate::flow::run_flow;
 use crate::interval::CellProofs;
 use crate::interval::mark_checked;
 use crate::interval::uses_raw;
+use crate::last_use::duplicate_reports;
+use crate::last_use::move_last_uses;
 use crate::options::BorrowCheckOptions;
 use crate::options::MemCheck;
 use crate::roots::Roots;
@@ -24,6 +27,7 @@ pub mod cli;
 pub mod digest;
 mod flow;
 mod interval;
+mod last_use;
 mod liveness;
 mod narrow;
 pub mod options;
@@ -65,13 +69,18 @@ pub fn borrow_check(
     module: &mut Module, options: &BorrowCheckOptions, platform_bits: u16,
 ) -> BorrowCheckOutput
 {
+    // Moves at the last use come first, so the check follows the code that
+    // runs.
+    move_last_uses(module);
+    let duplicates =
+        tern!(options.warn_duplicates, duplicate_reports(module), Vec::new());
     let read: &Module = module;
     let (global_roots, digests, diagnostics, mut proofs) =
         roots_and_digests(read, options, platform_bits);
     let main = Routine::main(read);
     let found = run_flow(read, main, &digests, &global_roots, options, platform_bits);
     proofs.add(&found.proofs, &found.doubts);
-    let all = [diagnostics, found.diags].concat();
+    let all = [diagnostics, found.diags, duplicates].concat();
     // A finding, or a raw address the flow cannot follow, means the facts
     // the proofs rest on need not hold.
     let trusted = !has_errors(&all) && !uses_raw(read);

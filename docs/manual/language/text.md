@@ -391,6 +391,13 @@ block, and dropping the duplicate frees nothing.
 A duplicate of heap text takes a new block, and each duplicate is dropped on its own. A
 [view](#views) reads text with no duplicate.
 
+When the place read is not read again, the compiler moves the text instead, and nothing
+is copied: the new place takes the block, and the old one is left blank. The move is
+never seen, since nothing reads the old place. It is not made for a parameter, whose text
+can belong to the caller; for a global read inside a function; for a place that a view
+or an address reads; or for a place the same statement reads twice.
+`--warn-duplicates` names each statement where a duplicate remains (ZK0720).
+
 ```zaka
 ကိန်းရှင် က သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် စာသား တစ်ခု ဖြစ်ပါစေ။

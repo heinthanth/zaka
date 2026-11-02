@@ -229,3 +229,4 @@ ZK0701 to ZK0704 and ZK0706 to ZK0712 are warnings and the program runs; with
 | ZK0717 | a raw address kind under `--no-raw` | [Ownership and borrowing](../../learn/pointers/ownership.md#raw-addresses) |
 | ZK0718 | a field that holds a borrow | [Struct mistakes](../../learn/structs/mistakes.md#a-borrow-in-a-field) |
 | ZK0719 | an operation that overflows for each value of its operands; a warning, not given with `--overflow wrap` | [Overflow](../language/expressions.md#arithmetic) |
+| ZK0720 | with `--warn-duplicates`, a statement that duplicates text; a warning | [Text](../language/text.md#copies) |

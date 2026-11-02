@@ -320,7 +320,9 @@ RawNotAllowed = ("ZK0717", Level::Error),
 BorrowField = ("ZK0718", Level::Error),
 /// With `--overflow stop`, an integer operation overflows for each value
 /// its operands can hold.
-OverflowProven = ("ZK0719", Level::Warning) }
+OverflowProven = ("ZK0719", Level::Warning),
+/// With `--warn-duplicates`, a statement duplicates the text of a place.
+DuplicateMade = ("ZK0720", Level::Warning) }
 
 impl Code
 {
