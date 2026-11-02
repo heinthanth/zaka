@@ -939,6 +939,7 @@ impl Machine
         {
             Op::Push(v) => self.push(v),
             Op::LocalAddr(n) => self.local_addr(n),
+            Op::LocalRef(n) => self.local_ref(n),
             Op::ResultAddr => self.result_addr(),
             Op::GlobalAddr(n) => self.global_addr(n),
             Op::Prefix(op) => self.prefix(op),
@@ -1109,6 +1110,25 @@ impl Machine
         let addr = frame.locals.get(n as usize).copied();
         let addr = addr.ok_or_else(|| malformed("local slot out of range"))?;
         self.push(Value::Ptr(addr))
+    }
+
+    /// Push the address a local slot holds: the caller's list or struct, for
+    /// a parameter the function reads in place.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The slot.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap the read hits.
+    fn local_ref(&mut self, n: u32) -> Step
+    {
+        let frame = self.frames.last().ok_or_else(|| malformed("no call"))?;
+        let slot = frame.locals.get(n as usize).copied();
+        let slot = slot.ok_or_else(|| malformed("local slot out of range"))?;
+        let held = self.mem.load(slot, DataKind::OPAQUE)?;
+        self.push(held)
     }
 
     /// Push the address of the caller's slot for the list or struct result

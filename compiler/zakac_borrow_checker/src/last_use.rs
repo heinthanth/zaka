@@ -7,6 +7,7 @@ use zakac_diagnostics::ownership::duplicate_made;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
+use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::Stmt;
@@ -531,4 +532,176 @@ fn places_in(e: &Expr) -> Vec<Place>
         _ => (),
     });
     found
+}
+
+/// Mark the list and struct parameters each function never writes, so it
+/// reads them in the caller's storage through their address, and give a call
+/// a duplicate of an argument the call could change while the function reads
+/// it: a global the call, or a call inside its arguments, writes, or a place
+/// whose address or a view of it is taken somewhere.
+///
+/// # Arguments
+///
+/// * `module` - The module, after [`lend_arguments`], changed in place.
+pub(crate) fn share_params(module: &mut Module)
+{
+    let shared: Vec<Vec<u32>> = module.funcs.iter().map(unwritten_params).collect();
+    do_for!((f, params) in module.funcs.iter_mut().zip(&shared), f.shared_params = params.clone());
+    let writes = global_writes(module);
+    let mut all = lent_in(&module.main);
+    do_for!(f in &module.funcs, all.extend(lent_in(&f.block)));
+    let globals: BTreeSet<Place> =
+        all.into_iter().filter(|p| matches!(p, Place::Global(_))).collect();
+    let with_globals = |mut own: BTreeSet<Place>| {
+        own.extend(globals.iter().copied());
+        own
+    };
+    let main = with_globals(lent_in(&module.main));
+    let funcs: Vec<BTreeSet<Place>> =
+        module.funcs.iter().map(|f| with_globals(lent_in(&f.block))).collect();
+    let calls = Calls { writes: &writes, shared: &shared };
+    duplicate_unstable(&mut module.main, &main, &calls);
+    do_for!((f, kept) in module.funcs.iter_mut().zip(&funcs), duplicate_unstable(&mut f.block, kept, &calls));
+}
+
+/// What [`duplicate_unstable`] knows of the functions a call can reach.
+struct Calls<'a>
+{
+    /// The globals each function writes, at each depth.
+    writes: &'a [BTreeSet<u32>],
+    /// The parameters each function reads in the caller's storage.
+    shared: &'a [Vec<u32>],
+}
+
+/// The list and struct parameters a function never writes: no set, store,
+/// move, drop, view or address of them, and no text, owner or borrow in
+/// them, which the other rules of the language follow.
+///
+/// # Arguments
+///
+/// * `f` - The function.
+///
+/// # Returns
+///
+/// The parameter numbers.
+fn unwritten_params(f: &Func) -> Vec<u32>
+{
+    let touched = touched_in(&f.block);
+    let plain = |n: &u32| {
+        let slot = &f.locals[*n as usize];
+        let k = slot.kind;
+        let held = k.holds_text() || k.holds_owner_ptr() || k.holds_borrow();
+        k.is_aggregate() && !k.is_slice() && !held && !slot.addressed
+    };
+    (0..f.params)
+        .filter(plain)
+        .filter(|n| !touched.contains(&Place::Local(*n)))
+        .collect()
+}
+
+/// The places a list of statements writes, moves out of, drops, views or
+/// takes the address of, nested blocks included.
+///
+/// # Arguments
+///
+/// * `stmts` - The statements.
+///
+/// # Returns
+///
+/// The places.
+fn touched_in(stmts: &[Stmt]) -> BTreeSet<Place>
+{
+    let mut found = BTreeSet::new();
+    each_stmt(stmts, &mut |s| {
+        found.extend(written_places(s));
+        let mut note = |e: &Expr| match &e.node
+        {
+            ExprNode::Take { addr: inner }
+            | ExprNode::MakeSlice { source: inner, .. }
+            | ExprNode::Lend { operand: inner } => found.extend(places_in(inner)),
+            ExprNode::AddrOf(place) =>
+            {
+                found.insert(*place);
+            }
+            _ => (),
+        };
+        do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
+    });
+    found
+}
+
+/// Give each call in a list of statements a duplicate of each argument for
+/// a parameter read in place that the call could change.
+///
+/// # Arguments
+///
+/// * `stmts` - The statements, changed in place.
+/// * `kept` - The places a lend, a range or an address reads.
+/// * `calls` - The writes and shared parameters of each function.
+fn duplicate_unstable(stmts: &mut [Stmt], kept: &BTreeSet<Place>, calls: &Calls)
+{
+    each_stmt_mut(stmts, &mut |s| {
+        do_if!(let Stmt::Call { func, args, .. } = s, duplicate_args(*func, args, kept, calls));
+        each_expr_mut(s, &mut |e| {
+            do_if!(let ExprNode::Call { func, args, .. } = &mut e.node, duplicate_args(*func, args, kept, calls));
+        });
+    });
+}
+
+/// Give one call a duplicate of each argument for a parameter read in place
+/// that the call could change.
+///
+/// # Arguments
+///
+/// * `func` - The function called.
+/// * `args` - The arguments, changed in place.
+/// * `kept` - The places a lend, a range or an address reads.
+/// * `calls` - The writes and shared parameters of each function.
+fn duplicate_args(func: u32, args: &mut [Expr], kept: &BTreeSet<Place>, calls: &Calls)
+{
+    let Some(params) = calls.shared.get(func as usize).filter(|p| !p.is_empty())
+    else
+    {
+        return;
+    };
+    let mut called = BTreeSet::from([func]);
+    let mut note = |e: &Expr| do_if!(let ExprNode::Call { func, .. } = e.node, { called.insert(func); });
+    do_for!(a in args.iter(), each_expr(a, &mut note));
+    let written: BTreeSet<u32> = called
+        .iter()
+        .filter_map(|f| calls.writes.get(*f as usize))
+        .flatten()
+        .copied()
+        .collect();
+    for n in params
+    {
+        let Some(arg) = args.get_mut(*n as usize)
+        else
+        {
+            continue;
+        };
+        let Some(place) = root_of(arg)
+        else
+        {
+            continue;
+        };
+        let changed = matches!(place, Place::Global(g) if written.contains(&g));
+        do_if!(changed || kept.contains(&place), *arg = plain_dup(arg));
+    }
+}
+
+/// A duplicate of a list or a struct with no text in it: a blit into a slot
+/// of its own.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// The duplicate, of the same kind.
+fn plain_dup(e: &Expr) -> Expr
+{
+    let node = ExprNode::Dup { value: Box::new(e.clone()), lent: false };
+    Expr::builder().kind(e.kind).node(node).span(e.span).build()
 }

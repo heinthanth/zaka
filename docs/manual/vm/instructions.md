@@ -158,6 +158,7 @@ rightmost, then the outputs. `k` is a kind, and `s` the size of one element in o
 | --- | --- | --- |
 | `push v` | → v | push a constant |
 | `local_addr n` | → addr | the address of the block of local `n` of the running call |
+| `local_ref n` | → addr | the address local `n` holds: the caller's list or struct, for a parameter the function reads in place |
 | `global_addr n` | → addr | the address of the block of global `n` |
 | `dup` | v → v v | push the top value again |
 | `pop` | v → | drop the top value |

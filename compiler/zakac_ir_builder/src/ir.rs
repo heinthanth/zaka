@@ -56,6 +56,12 @@ pub struct Func
     /// The statements.
     #[builder(default)]
     pub block: Vec<Stmt>,
+    /// The list and struct parameters the function never writes, so it reads
+    /// them in the caller's storage through their address, with no duplicate.
+    /// The borrow checker fills it.
+    #[builder(default)]
+    #[serde(default)]
+    pub shared_params: Vec<u32>,
     /// Source region of the declaration.
     pub span: Span,
 }

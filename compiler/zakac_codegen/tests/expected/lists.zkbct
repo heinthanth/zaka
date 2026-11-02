@@ -26,7 +26,7 @@ module:
     ret: isize
     locals:
     - name: ကိန်းများ
-      kind: "[3]isize"
+      kind: "&*[3]isize"
     - name: ရလဒ်
       kind: isize
     - name: န
@@ -46,7 +46,7 @@ module:
     - local_addr: 1
     - local_addr: 1
     - load: isize
-    - local_addr: 0
+    - local_ref: 0
     - local_addr: 2
     - load: isize
     - ptr_add: 8
@@ -154,6 +154,8 @@ module:
     params: 0
     ret: null
     locals:
+    - name: "%dup"
+      kind: "[3]isize"
     - name: "%list"
       kind: "[3]isize"
     code:
@@ -239,23 +241,27 @@ module:
     - ptr_add: 8
     - load: isize
     - print
+    - local_addr: 0
     - global_addr: 2
+    - blit: "[3]isize"
+    - local_addr: 0
+    - local_addr: 0
     - call: 0
     - print
-    - local_addr: 0
+    - local_addr: 1
     - push: 4:isize
     - store: isize
-    - local_addr: 0
+    - local_addr: 1
     - push: 1:usize
     - ptr_add: 8
     - push: 5:isize
     - store: isize
-    - local_addr: 0
+    - local_addr: 1
     - push: 2:usize
     - ptr_add: 8
     - push: 6:isize
     - store: isize
-    - local_addr: 0
+    - local_addr: 1
     - call: 0
     - print
     - ret
@@ -420,6 +426,14 @@ module:
       hi: 2637
     - lo: 2602
       hi: 2666
+    - lo: 3513
+      hi: 3516
+    - lo: 3513
+      hi: 3516
+    - lo: 3513
+      hi: 3516
+    - lo: 3513
+      hi: 3516
     - lo: 3513
       hi: 3516
     - lo: 3444

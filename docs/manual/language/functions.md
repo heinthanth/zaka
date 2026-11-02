@@ -312,10 +312,19 @@ another:
 | Kind of the parameter | What the call does | Can the function change the caller's value? |
 | --- | --- | --- |
 | number, true/false value, character | duplicates the value | no |
-| list | duplicates each cell | no; pass the address of the list to change it |
+| list, struct | duplicates each cell and field | no; pass the address to change it |
+| text, or a list or struct with text in it | duplicates it | no |
 | `ငှားထားသော … လိပ်စာ` (a borrow) | duplicates the address; the caller keeps the owner | through the address |
 | `… လိပ်စာ` (an owner) | **moves** the block to the function; the caller's variable holds `ဗလာ` afterwards | the function owns the block now |
 | `… လိပ်စာအကြမ်း` (raw) | duplicates the address | through the address, and nothing is tracked |
+
+A duplicate is what the call means; the compiler skips the work where nothing can tell.
+A list or struct parameter that the function never writes, nor views nor takes the address
+of, is read in the caller's storage through its address. Text the caller reads again after
+the call is lent to the parameter for the length of the call, and text the caller reads no
+more moves in. The caller's value is duplicated at the call after all when the function,
+or a call inside the same arguments, sets the global given, or when the address of the
+value or a view of it is taken somewhere. See [Text](text.md#copies).
 
 ### Values and lists are duplicated
 

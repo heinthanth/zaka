@@ -221,6 +221,7 @@ pub fn comment(op: Op, module: &Module, func: &Func) -> Option<String>
     let local = |n: u32| func.locals.get(n as usize).map(|s| s.name.clone());
     let global = |n: u32| module.globals.get(n as usize).map(|s| s.name.clone());
     ret_if!(let Op::LocalAddr(n) = op, local(n));
+    ret_if!(let Op::LocalRef(n) = op, local(n));
     ret_if!(let Op::GlobalAddr(n) = op, global(n));
     ret_if!(let Op::Call(f) = op, module.funcs.get(f as usize).map(|f| f.name.clone()));
     None

@@ -101,7 +101,9 @@ rules out). Its rules:
   lend becomes `Lend`. A place of a kind that holds text, read into another place,
   becomes `Dup`: codegen copies the value into a temp slot and runs `dup_text` on it, so
   each heap text in the duplicate gets a block of its own. A `Dup` the borrow checker marks
-  `lent` runs `lend_text` instead, which gives each text a room of 0.
+  `lent` runs `lend_text` instead, which gives each text a room of 0. A parameter in
+  `Func::shared_params` gets a borrow slot that holds the caller's address, and each
+  read of it goes through `local_ref`.
 - A range `x ၏ အကွက် s မှစ၍ n ကွက်` becomes `MakeSlice { source, start, len, from }`,
   where `from` tells whether the source is a list of a known count, a slice, or a heap
   block. The lend of a list is a `MakeSlice` of each cell, marked `checked`. The count of
@@ -317,7 +319,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | Group | Ops |
 | --- | --- |
 | values | `push v`, `pop`, `dup` |
-| storage | `local_addr n`, `global_addr n`, `load k`, `store k`, `take k` |
+| storage | `local_addr n`, `local_ref n`, `global_addr n`, `load k`, `store k`, `take k` |
 | arithmetic | `prefix op`, `infix op`, `compare op`, `convert k` (the ops print as `add`, `lt`, ...), `wrap op` |
 | control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `ret`, `result_addr`, `trap code` |
 | output | `print`, `print_text t`, `print_list k` |

@@ -225,6 +225,13 @@ through a pointer, or a lend, a range or an address reads it. A lent `Dup` is fr
 the check, as a `Dup` is. With `--warn-duplicates`, each `Dup` left that is not lent is
 ZK0720.
 
+Last, `share_params` fills `Func::shared_params` with each list or struct parameter that
+holds no text, owner or borrow and that the function never sets, stores into, moves out
+of, drops, views or takes the address of; codegen reads such a parameter in the caller's
+storage. A call gets a plain `Dup` of an argument for such a parameter when the call, or
+a call inside its arguments, writes the global read, or a lend, a range or an address
+reads the place.
+
 ## The checks
 
 Each file of `checks/` owns some codes. All of them work on a `Flow` and the `State`.

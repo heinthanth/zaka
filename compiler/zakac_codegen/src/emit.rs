@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 
 use zakac_ast::stmt::CountMode;
@@ -103,6 +104,7 @@ fn func(shared: &mut Shared, f: &ir::Func) -> Func
     let in_place = shared.results == ResultMode::InPlace;
     let mut g = FuncGen::new(shared, locals, f.span.shrink_to_hi());
     g.in_slot = in_place.then(|| given_back(f)).flatten();
+    g.read_in_place = f.shared_params.iter().copied().collect();
     g.block(&f.block);
     let returns = matches!(f.block.last(), Some(Stmt::Return { .. }));
     do_if!(!returns, g.op(Op::Ret));
@@ -238,6 +240,9 @@ struct FuncGen<'s>
     loops: Vec<LoopLabels>,
     /// The local that lives in the caller's slot for the result.
     in_slot: Option<u32>,
+    /// The parameters the function reads in the caller's storage: each slot
+    /// holds the address of the caller's list or struct.
+    read_in_place: BTreeSet<u32>,
     /// Scratch slots a statement before this one used, free to take again.
     free: Vec<u32>,
     /// Scratch slots the statements since the last one began have taken.
@@ -264,7 +269,7 @@ impl<'s> FuncGen<'s>
         code.at(end);
         #[rustfmt::skip]
         return Self { shared, code, locals, loops: Vec::new(), in_slot: None,
-            free: Vec::new(), taken: Vec::new() };
+            read_in_place: BTreeSet::new(), free: Vec::new(), taken: Vec::new() };
     }
 
     /// Finish the function.
@@ -281,9 +286,16 @@ impl<'s> FuncGen<'s>
     fn finish(self, name: &str, params: u32, ret: Option<DataKind>) -> Func
     {
         let (code, spans) = self.code.finish().expect("each label is bound");
+        let mut locals = self.locals;
+        // A parameter read in place holds the address of the caller's value.
+        for n in &self.read_in_place
+        {
+            let slot = &mut locals[*n as usize];
+            slot.kind = slot.kind.pointer_to().as_borrowed();
+        }
         #[rustfmt::skip]
         return Func::builder().name(name).params(params).maybe_ret(ret)
-            .locals(self.locals).code(code).spans(spans).build();
+            .locals(locals).code(code).spans(spans).build();
     }
 
     /// Add an op.
@@ -369,6 +381,7 @@ impl<'s> FuncGen<'s>
         {
             Place::Global(n) => Op::GlobalAddr(n),
             Place::Local(n) if self.in_slot == Some(n) => Op::ResultAddr,
+            Place::Local(n) if self.read_in_place.contains(&n) => Op::LocalRef(n),
             Place::Local(n) => Op::LocalAddr(n),
         }
     }
@@ -1406,7 +1419,8 @@ impl<'s> FuncGen<'s>
         self.expr(value);
         self.op(Op::Blit(kind));
         self.op(Op::LocalAddr(slot));
-        self.op(tern!(lent, Op::LendText(kind), Op::DupText(kind)));
+        let text = kind.holds_text();
+        do_if!(text, self.op(tern!(lent, Op::LendText(kind), Op::DupText(kind))));
         self.op(Op::LocalAddr(slot));
     }
 

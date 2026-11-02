@@ -171,6 +171,7 @@ module:
         span:
           lo: 3001
           hi: 3442
+    shared_params: []
     span:
       lo: 2771
       hi: 3442

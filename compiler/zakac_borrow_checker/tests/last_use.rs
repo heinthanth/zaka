@@ -173,3 +173,65 @@ fn warn_duplicates_leaves_lent_text_alone()
     let lent = format!("{HEAP}{SHOW}လုပ်ဆောင်ချက် ပြ ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။\nက ကို ပြသပါ။\n");
     assert_eq!(codes_with(&lent, &warn), []);
 }
+
+/// A struct, and functions that read it, write it, view it, and set the
+/// global `ပ`.
+const PEOPLE: &str = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
+ကိန်းရှင် ပ သည် လူ(အသက်: ၃) ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ဖတ် သည်
+လူ က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် ရေး သည်
+လူ က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ၏ အသက် ကို ၁ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် လိပ်စာယူ သည်
+လူ က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ညွှန်း သည် ငှားထားသော လူ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် ထား သည်
+လူ က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပ ကို လူ(အသက်: ၉) ဟု ထားပါ။
+က ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+";
+
+/// The checked module of a program.
+///
+/// # Arguments
+///
+/// * `text` - The program.
+///
+/// # Returns
+///
+/// The module.
+fn checked(text: &str) -> zakac_ir_builder::ir::Module
+{
+    let out = run(text);
+    assert!(out.out.diagnostics.is_empty(), "{:?}", out.out.diagnostics);
+    out.out.lowered.folded.expect("a module")
+}
+
+#[test]
+fn a_struct_parameter_the_function_never_writes_is_read_in_place()
+{
+    let module = checked(PEOPLE);
+    let shared: Vec<&[u32]> =
+        module.funcs.iter().map(|f| f.shared_params.as_slice()).collect();
+    assert_eq!(shared, [&[0][..], &[], &[], &[0]]);
+}
+
+#[test]
+fn a_global_the_callee_sets_is_duplicated_for_a_shared_parameter()
+{
+    let text = format!(
+        "{PEOPLE}လုပ်ဆောင်ချက် ထား ကို ပ တို့ဖြင့် လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် ဖတ် ကို ပ တို့ဖြင့် လုပ်ဆောင်ပါ။\n"
+    );
+    let module = checked(&text).to_sexpr();
+    assert_eq!(module.matches("(dup g0)").count(), 1, "{module}");
+}

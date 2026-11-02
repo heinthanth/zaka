@@ -142,6 +142,9 @@ pub enum Op
     Push(Value),
     /// Push the address of the block of a local slot of the running call.
     LocalAddr(u32),
+    /// Push the address a local slot of the running call holds: the
+    /// caller's list or struct, for a parameter the function reads in place.
+    LocalRef(u32),
     /// Push the address of the block of a global slot.
     GlobalAddr(u32),
     /// Pop one value, push the result of a prefix operator.
@@ -344,7 +347,7 @@ impl Op
         let text = match self
         {
             Op::Push(v) => v.to_string(),
-            Op::LocalAddr(n) => format!("l{n}"),
+            Op::LocalAddr(n) | Op::LocalRef(n) => format!("l{n}"),
             Op::GlobalAddr(n) => format!("g{n}"),
             Op::Convert(kind) => kind.name(),
             Op::Jump(t) | Op::JumpIfFalse(t) | Op::JumpIfTrue(t) => format!("@{t}"),
