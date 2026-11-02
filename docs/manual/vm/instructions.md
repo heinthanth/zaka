@@ -217,6 +217,7 @@ A list lives in a block, and its instructions work on addresses.
 | `drop k` | addr → | free each text inside the value of kind `k` whose room is above 0, and leave each text blank |
 | `dup_text k` | addr → | give each text inside the value of kind `k` whose u8s sit outside static storage a new heap block with the same u8s |
 | `lend_text k` | addr → | give each text inside the value of kind `k` a room of 0, so a parameter reads the caller's u8s and its drop frees nothing |
+| `own_text k` | addr → | give each text inside the value of kind `k` that holds u8s and has a room of 0 a new heap block with the same u8s, so heap text owns its block |
 | `text_eq` | addr addr → b | whether two texts or views of text hold the same u8s |
 | `char_count` | addr → n | the number of characters of the text at `addr`, a `usize` |
 | `char_at` | addr i → c | the character at number `i` of the text at `addr`, counted from 0, or from 1 when listed `char_at from 1`; a number outside the text traps |

@@ -148,7 +148,7 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
 fn read_roots(place: Place, kind: DataKind, state: &State, ctx: &RootCtx) -> Roots
 {
     let held = ctx.kind_of(place).unwrap_or(kind);
-    let owner = held.is_owner_ptr() || held == DataKind::Text;
+    let owner = held.is_owner_ptr() || held.is_text();
     ret_if!(owner, Roots::from([Root::slot(place).block()]));
     state.ptr(place).map(|info| info.roots.clone()).unwrap_or_default()
 }

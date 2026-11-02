@@ -303,6 +303,31 @@ text as *c*, do ...":
 
 A Burmese letter and each mark on it are characters of their own.
 
+## Fixed and heap text
+
+`စာသား` is the text kind for most tasks. Two more words name text with a promise:
+
+| Kind | Reads as | Promise |
+| --- | --- | --- |
+| `စာသားသေ` | "fixed text" | its text never changes |
+| `စာသားရှင်` | "living text" | its text sits on the heap, in a block of its own, from the start |
+
+Each of the three converts to the others, so one can go where another is wanted:
+
+```zaka
+ကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။     // a heap block of its own
+ခ ကို ပြသပါ။
+```
+
+```text
+မင်္ဂလာပါ
+```
+
+A literal such as `"မင်္ဂလာပါ"` sits in the program itself, and `စာသား` points at it. Heap
+text takes a duplicate on the heap instead. The [Docs](../../manual/language/text.md#forms)
+state the rules in full.
+
 ## No cleanup
 
 Text built when the program runs needs room on the [heap](../pointers/heap.md), but a

@@ -1258,6 +1258,11 @@ impl<'s> FuncGen<'s>
                 self.op(Op::Compare(*op));
             }
             ExprNode::Logic { op, lhs, rhs } => self.logic(*op, lhs, rhs),
+            ExprNode::Convert { operand, .. }
+                if owns_heap_text(e.kind, operand.kind) =>
+            {
+                self.own_value(e.kind, operand)
+            }
             ExprNode::Convert { operand, .. } =>
             {
                 self.expr(operand);
@@ -1404,6 +1409,25 @@ impl<'s> FuncGen<'s>
         self.code.bind(short);
         self.op(Op::Push(Value::Bool(!and)));
         self.code.bind(end);
+    }
+
+    /// Give a value heap text: blit it into a slot of its own, then give each
+    /// heap text in the slot a block of its own when it has none. The
+    /// address of the slot is left on the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind with heap text.
+    /// * `value` - The value, of a kind with the same words.
+    fn own_value(&mut self, kind: DataKind, value: &Expr)
+    {
+        let slot = self.temp("%own", kind);
+        self.op(Op::LocalAddr(slot));
+        self.expr(value);
+        self.op(Op::Blit(kind));
+        self.op(Op::LocalAddr(slot));
+        self.op(Op::OwnText(kind));
+        self.op(Op::LocalAddr(slot));
     }
 
     /// Duplicate a value that holds text into a slot of its own: blit the
@@ -1603,6 +1627,22 @@ fn apart_from(e: &Expr, place: Place) -> bool
         ExprNode::List(cells) => cells.iter().all(|c| apart_from(c, place)),
         _ => false,
     }
+}
+
+/// Whether a conversion gives heap text to a value that might hold text
+/// with no block of its own.
+///
+/// # Arguments
+///
+/// * `to` - The kind converted to.
+/// * `from` - The kind of the value.
+///
+/// # Returns
+///
+/// `true` when `to` holds heap text and `from` is another kind.
+fn owns_heap_text(to: DataKind, from: DataKind) -> bool
+{
+    to.holds_heap_text() && from != to
 }
 
 /// A `usize` constant.

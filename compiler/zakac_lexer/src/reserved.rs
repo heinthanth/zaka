@@ -106,6 +106,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ဒဿမကိန်း", Kw::FloatKind),
     ("စာလုံး", Kw::CharKind),
     ("စာသား", Kw::TextKind),
+    ("စာသားသေ", Kw::FixedTextKind),
+    ("စာသားရှင်", Kw::HeapTextKind),
     ("မှန်မှားတန်ဖိုး", Kw::BoolKind),
     ("ဘူလီယန်", Kw::BoolKindLoan),
     ("လက္ခဏာရှိ", Kw::Signed),

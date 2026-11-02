@@ -1004,6 +1004,11 @@ impl Machine
                 let addr = self.pop_ptr("lend_text")?;
                 self.lend_value(addr, kind)
             }
+            Op::OwnText(kind) =>
+            {
+                let addr = self.pop_ptr("own_text")?;
+                self.own_value(addr, kind)
+            }
             Op::CharCount => self.char_count(),
             Op::CharAt { first } => self.char_at(first),
             Op::CharAtOctet => self.char_at_octet(),
@@ -1856,7 +1861,7 @@ impl Machine
                 .flat_map(|i| self.texts_in(addr + i * stride, l.cell))
                 .collect();
         }
-        tern!(kind == DataKind::Text, vec![addr], Vec::new())
+        tern!(kind.is_text(), vec![addr], Vec::new())
     }
 
     /// The room of the text at an address: the size of its heap block, or 0
@@ -1894,7 +1899,7 @@ impl Machine
         {
             let at = self.mem.load(text, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
             do_if!(self.room_of(text)? > 0, self.mem.free(at)?);
-            self.mem.zero(text, DataKind::Text)?;
+            self.mem.zero(text, DataKind::TEXT)?;
         }
         Ok(())
     }
@@ -1923,6 +1928,35 @@ impl Machine
             }
             let content = text_at(&self.mem, text)?;
             let size = content.len() as u64;
+            let block = self.mem.alloc(size, Origin::Heap, 0);
+            let block = block.ok_or(TrapKind::OutOfMem { size })?;
+            self.mem.fill_block(block, content.as_bytes())?;
+            self.write_text(text, block, size, size)?;
+        }
+        Ok(())
+    }
+
+    /// Give each heap text in a value a block of its own: a text with u8s
+    /// and a room of 0 gets a new heap block with the same u8s.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the value.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap the allocation or a write hits.
+    fn own_value(&mut self, addr: u64, kind: DataKind) -> Step
+    {
+        for text in self.texts_in(addr, kind)
+        {
+            let content = text_at(&self.mem, text)?;
+            let size = content.len() as u64;
+            if size == 0 || self.room_of(text)? > 0
+            {
+                continue;
+            }
             let block = self.mem.alloc(size, Origin::Heap, 0);
             let block = block.ok_or(TrapKind::OutOfMem { size })?;
             self.mem.fill_block(block, content.as_bytes())?;

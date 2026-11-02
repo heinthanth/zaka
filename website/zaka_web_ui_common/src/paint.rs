@@ -278,6 +278,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::FloatKind
         | Kw::CharKind
         | Kw::TextKind
+        | Kw::FixedTextKind
+        | Kw::HeapTextKind
         | Kw::BoolKind
         | Kw::BoolKindLoan
         | Kw::Signed

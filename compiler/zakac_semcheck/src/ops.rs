@@ -572,7 +572,7 @@ impl Checker
     ) -> Option<DataKind>
     {
         let joined = is_op(op, InfixOp::Add, VerbOp::Add) && lhs.0.is_textual();
-        ret_if!(joined && rhs.0.is_textual(), Some(DataKind::Text));
+        ret_if!(joined && rhs.0.is_textual(), Some(DataKind::TEXT));
         // Text and views of text compare their u8s, in each mix.
         let texts = lhs.0.is_textual() && rhs.0.is_textual();
         ret_if!(class == OpClass::Equal && texts, Some(DataKind::Bool));

@@ -6338,6 +6338,7 @@ dependencies = [
  "postcard",
  "rust-i18n",
  "serde",
+ "strum",
  "tempfile",
  "termcolor",
  "zakac_ast",

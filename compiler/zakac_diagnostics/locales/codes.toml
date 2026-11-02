@@ -740,6 +740,12 @@ en = "each loop over a value it cannot walk"
 en = "this each loop cannot walk %{got}"
 [codes.ZK0434.explain]
 en = """An each-cell loop (\"အကွက်တိုင်း\") walks a list or a slice whose cells hold no owner pointer: the loop variable holds a duplicate of each cell, and an owner pointer cannot be duplicated. An each-character loop (\"စာလုံးတိုင်း\") walks text or a view of text. To walk the cells of text as u8 numbers, use a counted loop over its cell count."""
+[codes.ZK0435.title]
+en = "constant of heap text"
+[codes.ZK0435.message]
+en = "the constant \"%{n}\" cannot hold heap text"
+[codes.ZK0435.explain]
+en = """A constant sits in static storage, and heap text (\"စာသားရှင်\") owns a heap block from the start, so no constant holds it, alone or inside a list or a struct. Declare the constant as \"စာသား\" or \"စာသားသေ\", or declare a variable with \"ကိန်းရှင်\"."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 

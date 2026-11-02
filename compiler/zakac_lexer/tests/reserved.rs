@@ -156,8 +156,16 @@ fn check_join(parts: &[&str])
     let Some(pieces) = split(&text)
     else
     {
-        let all_particles = parts.iter().all(|p| lookup(p).unwrap().is_particle());
-        assert!(all_particles, "{text} did not split");
+        // A word made of particles alone is kept whole, and two neighbouring
+        // parts can join into one particle, such as `တို့` and `ကို`.
+        let particle = |s: &str| lookup(s).is_some_and(Kw::is_particle);
+        let all_particles = parts.iter().all(|p| particle(p));
+        let joined_pair = |i: usize| {
+            let (left, right) = parts.split_at(i);
+            particle(&left.concat()) && particle(&right.concat())
+        };
+        let paired = parts.len() == 3 && (joined_pair(1) || joined_pair(2));
+        assert!(all_particles || paired, "{text} did not split");
         return;
     };
     let joined: String = pieces.iter().map(|(_, t)| t.as_str()).collect();

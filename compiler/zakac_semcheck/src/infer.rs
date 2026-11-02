@@ -116,7 +116,7 @@ impl Checker
     fn infer_str(&mut self, n: &StrExpr) -> Option<DataKind>
     {
         let slots: Vec<_> = n.template_slots().map(|h| self.infer(h, None)).collect();
-        tern!(slots.iter().all(Option::is_some), Some(DataKind::Text), None)
+        tern!(slots.iter().all(Option::is_some), Some(DataKind::TEXT), None)
     }
 
     /// Infer an integer literal.
@@ -270,7 +270,7 @@ impl Checker
         ret_if!(kind.is_raw_ptr(), self.report(od::lend_of_raw(span)), None);
         ret_if!(kind.is_ptr(), Some(kind.as_borrowed()));
         ret_if!(let Some(l) = kind.as_list(), self.lend_list(operand, l.cell));
-        let text = kind == DataKind::Text;
+        let text = kind.is_text();
         ret_if!(text, tern!(self.viewable(operand), Some(DataKind::text_view()), None));
         let found = kind.name();
         let diag = var_name(operand).map_or_else(
@@ -483,7 +483,7 @@ impl Checker
             fine &=
                 kind.is_some_and(|k| self.need(k, Want::Text, &label, piece).is_some());
         }
-        tern!(fine, Some(DataKind::Text), None)
+        tern!(fine, Some(DataKind::TEXT), None)
     }
 
     /// Infer the character count of text, or the character at a number.

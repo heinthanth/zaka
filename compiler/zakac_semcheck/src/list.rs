@@ -54,7 +54,7 @@ pub(crate) enum KindUse
 pub(crate) fn list_through(kind: DataKind) -> Option<DataKind>
 {
     ret_if!(kind.is_list() || kind.is_slice(), Some(kind));
-    ret_if!(kind == DataKind::Text, Some(DataKind::text_view()));
+    ret_if!(kind.is_text(), Some(DataKind::text_view()));
     kind.pointee().filter(|k| k.is_list())
 }
 
@@ -429,7 +429,7 @@ impl Checker
         if let Some(cells) = list_through(kind)
         {
             ret_if!(kind.is_list() && !self.addressable(source), None);
-            ret_if!(kind == DataKind::Text && !self.viewable(source), None);
+            ret_if!(kind.is_text() && !self.viewable(source), None);
             return cells.cell_kind();
         }
         let span = source.span();

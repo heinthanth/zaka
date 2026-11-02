@@ -106,6 +106,10 @@ rules out). Its rules:
   `lent` runs `lend_text` instead, which gives each text a room of 0. A parameter in
   `Func::shared_params` gets a borrow slot that holds the caller's address, and each
   read of it goes through `local_ref`.
+- Text of one form set into a place of another: plain and fixed text are relabelled,
+  with no node. A value that becomes heap text gets a `Convert`; codegen copies it into
+  a `%own` slot and runs `own_text` there, which gives text with a room of 0 a heap block
+  of its own. The borrow checker never lends an argument for a heap text parameter.
 - A range `x ၏ အကွက် s မှစ၍ n ကွက်` becomes `MakeSlice { source, start, len, from }`,
   where `from` tells whether the source is a list of a known count, a slice, or a heap
   block. The lend of a list is a `MakeSlice` of each cell, marked `checked`. The count of
@@ -328,7 +332,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k` |
 | slices | `make_slice stride source`, `slice_cell stride from` |
-| text | `text t`, `format fmt`, `drop k`, `dup_text k`, `lend_text k`, `text_eq`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
+| text | `text t`, `format fmt`, `drop k`, `dup_text k`, `lend_text k`, `own_text k`, `text_eq`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
 
 A range of text that is not the whole text gets `text_edges` after its `make_slice`, which
 stops the program when an edge falls inside a character; when the fold knows the text, the

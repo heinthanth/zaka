@@ -251,10 +251,12 @@ fn base_name(k: &Kind) -> String
         {
             k.name.as_ref().map_or(String::new(), |n| n.name.to_string())
         }
-        BaseKind::Char | BaseKind::Bool | BaseKind::Text | BaseKind::Opaque =>
-        {
-            k.base.as_ref().to_string()
-        }
+        BaseKind::Char
+        | BaseKind::Bool
+        | BaseKind::Text
+        | BaseKind::FixedText
+        | BaseKind::HeapText
+        | BaseKind::Opaque => k.base.as_ref().to_string(),
     }
 }
 

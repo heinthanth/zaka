@@ -1471,7 +1471,7 @@ impl Lowerer<'_>
         let ptr = self.kind_of(lhs).is_ptr() || self.kind_of(rhs).is_ptr();
         ret_if!(ptr, self.ptr_arith(op, lhs, rhs));
         let pieces = |l: &mut Self| [lhs, rhs].map(|e| FmtPiece::Value(l.expr(e)));
-        ret_if!(kind == DataKind::Text, ExprNode::Format(pieces(self).to_vec()));
+        ret_if!(kind.is_text(), ExprNode::Format(pieces(self).to_vec()));
         let lhs = self.coerce(lhs, kind);
         let shift = matches!(op, InfixOp::Shl | InfixOp::Shr);
         let rhs = tern!(shift, self.expr(rhs), self.coerce(rhs, kind));
@@ -1916,10 +1916,7 @@ impl Lowerer<'_>
             },
             VerbOp::BitNot => prefix_node(PrefixOp::BitNot, self.expr(value)),
             VerbOp::Lend if self.kind_of(value).is_list() => self.lend_list(value),
-            VerbOp::Lend if self.kind_of(value) == DataKind::Text =>
-            {
-                self.lend_text(value)
-            }
+            VerbOp::Lend if self.kind_of(value).is_text() => self.lend_text(value),
             VerbOp::Lend => ExprNode::Lend { operand: Box::new(self.expr(value)) },
             VerbOp::Cast => ExprNode::Convert {
                 operand: Box::new(self.expr(value)),
@@ -1974,7 +1971,9 @@ fn coerce_lowered(lowered: Expr, want: DataKind) -> Expr
     let span = lowered.span;
     let literal = matches!(lowered.node, ExprNode::Const(_));
     let null = literal && lowered.kind.is_ptr() && want.is_ptr();
-    let relabel = null || lowered.kind.same_shape(want);
+    // Plain and fixed text share their three words and the place of their u8s.
+    let texts = lowered.kind.is_text() && want.is_text() && !want.holds_heap_text();
+    let relabel = null || texts || lowered.kind.same_shape(want);
     ret_if!(relabel, Expr::builder().kind(want).node(lowered.node).span(span).build());
     let node = ExprNode::Convert { operand: Box::new(lowered), implicit: true };
     Expr::builder().kind(want).node(node).span(span).build()
@@ -2245,7 +2244,7 @@ fn concrete(kind: DataKind) -> DataKind
 fn cells_of(kind: DataKind) -> (DataKind, Option<u32>)
 {
     ret_if!(let Some(s) = kind.as_slice(), (s.cell, None));
-    ret_if!(kind == DataKind::Text, (DataKind::U8, None));
+    ret_if!(kind.is_text(), (DataKind::U8, None));
     let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
     let list = list.expect("a cell operand is a list, a pointer to one, or a slice");
     (list.cell, Some(list.len))
@@ -2263,7 +2262,7 @@ fn cells_of(kind: DataKind) -> (DataKind, Option<u32>)
 /// block.
 fn slice_from(kind: DataKind) -> SliceFrom
 {
-    ret_if!(kind.is_slice() || kind == DataKind::Text, SliceFrom::Slice);
+    ret_if!(kind.is_slice() || kind.is_text(), SliceFrom::Slice);
     let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
     list.map_or(SliceFrom::Block, |l| SliceFrom::List(l.len))
 }

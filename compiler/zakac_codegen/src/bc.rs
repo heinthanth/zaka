@@ -266,6 +266,10 @@ pub enum Op
     /// Pop the address of a value of this kind; give each text in it a room
     /// of 0, so it reads the u8s it shares and a drop of it frees nothing.
     LendText(DataKind),
+    /// Pop the address of a value of this kind; give each heap text in it
+    /// whose room is 0 and that holds u8s a new heap block with the same
+    /// u8s, so it owns its block.
+    OwnText(DataKind),
     /// Pop the address of text; push the number of its characters, a
     /// `usize`.
     CharCount,
@@ -372,6 +376,7 @@ impl Op
             | Op::Drop(kind)
             | Op::DupText(kind)
             | Op::LendText(kind)
+            | Op::OwnText(kind)
             | Op::PrintList(kind) => kind.name(),
             Op::MakeSlice { stride, from } =>
             {

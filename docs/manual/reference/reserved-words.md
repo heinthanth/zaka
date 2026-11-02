@@ -97,6 +97,7 @@ see [Names](../../learn/variables/names.md).
 | `စာလုံး` | "character" | [Characters](../../learn/values/characters.md) |
 | `မှန်မှားတန်ဖိုး`, `ဘူလီယန်` | "true/false value", "boolean" | [True and false](../../learn/values/booleans.md) |
 | `စာသား` | "text" | [Text](../../learn/values/strings.md) |
+| `စာသားသေ`, `စာသားရှင်` | "fixed text", "living text": the fixed and the heap form | [Text](../../learn/values/strings.md#fixed-and-heap-text) |
 | `လက္ခဏာရှိ`, `လက္ခဏာမဲ့` | "signed", "unsigned" | [Integers](../../learn/values/integers.md) |
 | `အခြေ` | "base" | [Writing integers](../../learn/values/literals.md) |
 | `ကိန်းရှင်` | "variable" | [Variables](../../learn/variables/README.md) |

@@ -5,6 +5,7 @@ use std::sync::PoisonError;
 
 use serde::Deserialize;
 use serde::Serialize;
+use strum::IntoStaticStr;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
@@ -88,8 +89,8 @@ pub enum Base
     Char,
     /// A boolean.
     Bool,
-    /// Owned text.
-    Text,
+    /// Owned text of a form.
+    Text(TextForm),
     /// A bare `လိပ်စာ`, whose target kind is not known.
     Opaque,
     /// A list, for a pointer to a whole list.
@@ -115,7 +116,7 @@ impl Base
             Base::Float(bits) => Some(DataKind::Float(bits)),
             Base::Char => Some(DataKind::Char),
             Base::Bool => Some(DataKind::Bool),
-            Base::Text => Some(DataKind::Text),
+            Base::Text(form) => Some(DataKind::Text(form)),
             Base::Opaque => None,
             Base::List(l) => Some(DataKind::List(l)),
             Base::Struct(s) => Some(DataKind::Struct(s)),
@@ -284,8 +285,24 @@ pub enum DataKind
     /// `စာသား`: owned UTF-8 text, three words: the address of its u8s,
     /// their count, and the room of its heap block. Room 0 means the u8s
     /// sit in static storage, so nothing frees them. The first two words
-    /// are laid out as a slice's.
-    Text,
+    /// are laid out as a slice's. The form tells whether the u8s can change
+    /// and where the u8s live; the three forms share the same three words.
+    Text(TextForm),
+}
+
+/// The form of owned text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, IntoStaticStr)]
+pub enum TextForm
+{
+    /// `စာသား`: static until its first edit, then its own heap block.
+    #[strum(serialize = "text")]
+    Plain,
+    /// `စာသားသေ`: its u8s never change; static, or a block it took over.
+    #[strum(serialize = "fixed_text")]
+    Fixed,
+    /// `စာသားရှင်`: its own heap block from the start.
+    #[strum(serialize = "heap_text")]
+    Heap,
 }
 
 impl DataKind
@@ -298,6 +315,8 @@ impl DataKind
     pub const F64: DataKind = DataKind::Float(64);
     /// `လိပ်စာ`, the opaque pointer.
     pub const OPAQUE: DataKind = DataKind::Ptr(PtrKind::owner(1, Base::Opaque));
+    /// `စာသား`, text of the plain form.
+    pub const TEXT: DataKind = DataKind::Text(TextForm::Plain);
     /// `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်`, the cell of a text.
     pub const U8: DataKind = DataKind::Int(IntKind::new(false, Width::Bits(8)));
 
@@ -326,7 +345,9 @@ impl DataKind
             BaseKind::Float => Base::Float(kind.bits.unwrap_or(64)),
             BaseKind::Char => Base::Char,
             BaseKind::Bool => Base::Bool,
-            BaseKind::Text => Base::Text,
+            BaseKind::Text => Base::Text(TextForm::Plain),
+            BaseKind::FixedText => Base::Text(TextForm::Fixed),
+            BaseKind::HeapText => Base::Text(TextForm::Heap),
             BaseKind::Opaque => Base::Opaque,
             BaseKind::Named => named_base(kind, structs),
         };
@@ -470,7 +491,27 @@ impl DataKind
     /// # Returns
     ///
     /// `true` for `စာသား` and `စာသား တစ်စိတ်တစ်ပိုင်း`.
-    pub fn is_textual(self) -> bool { self == DataKind::Text || self.is_text_view() }
+    pub fn is_textual(self) -> bool { self.is_text() || self.is_text_view() }
+
+    /// Whether the kind is owned text, of one of its three forms.
+    ///
+    /// # Returns
+    ///
+    /// `true` for `စာသား`, `စာသားသေ` and `စာသားရှင်`.
+    pub fn is_text(self) -> bool { matches!(self, DataKind::Text(_)) }
+
+    /// Whether a value of the kind holds heap text, which owns a heap block
+    /// from the start: the text itself, or a list or struct with it inside.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn holds_heap_text(self) -> bool
+    {
+        ret_if!(let Some(l) = self.as_list(), l.cell.holds_heap_text());
+        ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_heap_text()));
+        self == DataKind::Text(TextForm::Heap)
+    }
 
     /// Whether a value of the kind holds owned text, which is dropped when
     /// its place ends: text itself, or a list or struct with text in it.
@@ -482,7 +523,7 @@ impl DataKind
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_text());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_text()));
-        self == DataKind::Text
+        self.is_text()
     }
 
     /// Whether a value of the kind holds an owner pointer, whose block the
@@ -553,7 +594,7 @@ impl DataKind
     /// `true` for a list, a struct or a slice kind.
     pub fn is_aggregate(self) -> bool
     {
-        self.is_list() || self.is_struct() || self.is_slice() || self == DataKind::Text
+        self.is_list() || self.is_struct() || self.is_slice() || self.is_text()
     }
 
     /// Whether some list level of the kind has no cell count so far.
@@ -689,7 +730,7 @@ impl DataKind
             DataKind::Struct(s) => tern!(full, s.sig(), &s.name).to_string(),
             DataKind::Slice(s) if s.text => "&text".to_string(),
             DataKind::Slice(s) => format!("&[]{}", s.cell.spell(full)),
-            DataKind::Text => "text".to_string(),
+            DataKind::Text(form) => <&str>::from(form).to_string(),
         }
     }
 
@@ -712,7 +753,7 @@ impl DataKind
             DataKind::List(l) => (0, Base::List(l)),
             DataKind::Struct(s) => (0, Base::Struct(s)),
             DataKind::Slice(s) => (0, Base::Slice(s)),
-            DataKind::Text => (0, Base::Text),
+            DataKind::Text(form) => (0, Base::Text(form)),
         }
     }
 
@@ -933,7 +974,7 @@ impl DataKind
     {
         ret_if!(let Some(s) = self.as_struct(), s.size(platform));
         ret_if!(self.is_slice(), Some(u32::from(platform) / 4));
-        ret_if!(self == DataKind::Text, Some(u32::from(platform) / 8 * 3));
+        ret_if!(self.is_text(), Some(u32::from(platform) / 8 * 3));
         let Some(l) = self.as_list()
         else
         {
@@ -955,10 +996,7 @@ impl DataKind
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.align(platform));
         ret_if!(let Some(s) = self.as_struct(), s.align(platform));
-        ret_if!(
-            self.is_slice() || self == DataKind::Text,
-            (u32::from(platform) / 8).min(16)
-        );
+        ret_if!(self.is_slice() || self.is_text(), (u32::from(platform) / 8).min(16));
         self.size(platform).min(16)
     }
 
@@ -1023,7 +1061,7 @@ impl DataKind
             DataKind::List(_)
             | DataKind::Struct(_)
             | DataKind::Slice(_)
-            | DataKind::Text =>
+            | DataKind::Text(_) =>
             {
                 let bits = u64::from(self.size(platform)) * 8;
                 u16::try_from(bits).unwrap_or(u16::MAX)
@@ -1056,6 +1094,7 @@ impl DataKind
             (DataKind::Int(a), DataKind::Float(b)) => a.bits(platform) <= precision(b),
             (DataKind::Float(a), DataKind::Float(b)) => a < b,
             (DataKind::Null, DataKind::Ptr(_)) => true,
+            (DataKind::Text(_), DataKind::Text(_)) => true,
             (DataKind::Ptr(_), DataKind::Ptr(_)) =>
             {
                 self.meets_pointer(target) && !self.reads_addresses_as(target)
@@ -1152,7 +1191,7 @@ impl DataKind
     /// `true` for such a kind.
     pub fn holds_address(self) -> bool
     {
-        ret_true!(self.is_slice() || self == DataKind::Text);
+        ret_true!(self.is_slice() || self.is_text());
         ret_if!(let Some(list) = self.as_list(), list.cell.holds_address());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_address()));
         self.is_ptr()
@@ -1225,7 +1264,9 @@ fn parse_plain(name: &str) -> Option<DataKind>
     let named = named.into_iter().chain([
         ("char", DataKind::Char),
         ("bool", DataKind::Bool),
-        ("text", DataKind::Text),
+        ("text", DataKind::TEXT),
+        ("fixed_text", DataKind::Text(TextForm::Fixed)),
+        ("heap_text", DataKind::Text(TextForm::Heap)),
     ]);
     let found = named.into_iter().find(|(n, _)| *n == name).map(|(_, k)| k);
     ret_if!(found.is_some(), found);

@@ -752,6 +752,8 @@ impl Visitor for Checker
         let kind = self.decl_kind(n.kind.as_ref(), n.init.as_ref(), &n.name);
         let missing = n.is_const && n.init.is_none();
         do_if!(missing, self.report(rd::const_without_init(n.name.span, &n.name.name)));
+        let heap = n.is_const && kind.is_some_and(DataKind::holds_heap_text);
+        do_if!(heap, self.report(kd::const_heap_text(n.name.span, &n.name.name)));
         let access = tern!(n.is_const, Access::Const, Access::Var);
         self.declare(&n.name, kind, access);
         do_if!(n.exported, self.scopes.mark_exported(&n.name.name));

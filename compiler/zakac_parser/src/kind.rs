@@ -59,6 +59,8 @@ fn base_kind(kw: Kw) -> Option<BaseKind>
         Kw::FloatKind => Some(BaseKind::Float),
         Kw::CharKind => Some(BaseKind::Char),
         Kw::TextKind => Some(BaseKind::Text),
+        Kw::FixedTextKind => Some(BaseKind::FixedText),
+        Kw::HeapTextKind => Some(BaseKind::HeapText),
         Kw::BoolKind | Kw::BoolKindLoan => Some(BaseKind::Bool),
         _ => None,
     }
@@ -143,7 +145,7 @@ impl Parser<'_>
         let is_base = word.and_then(base_kind).is_some() || named;
         let bare = n == pre && matches!(word, Some(Kw::Address | Kw::RawAddress));
         ret_if!(!is_base && !bare, None);
-        let text = word == Some(Kw::TextKind);
+        let text = word.and_then(base_kind).is_some_and(BaseKind::is_text);
         let (len, _) = self.scan_suffixes(n + 1, is_base, text);
         Some(n + 1 + len)
     }
@@ -319,7 +321,7 @@ impl Parser<'_>
         let mut kind = self.parse_core()?;
         kind.borrowed = marks > 0;
         kind.extra_borrows = u8::try_from(marks.saturating_sub(1)).unwrap_or(u8::MAX);
-        let text = kind.base == BaseKind::Text;
+        let text = kind.base.is_text();
         let (len, suffixes) =
             self.scan_suffixes(0, kind.base != BaseKind::Opaque, text);
         do_for!(_ in 0..len, self.advance());

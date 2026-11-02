@@ -5,10 +5,12 @@ use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_and_keep;
+use zakac_codegen::bc::Op;
 use zakac_codegen::options::EmitOptions;
 use zakac_codegen::options::ResultMode;
 use zakac_codegen::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
+use zakac_semcheck::kind::DataKind;
 
 /// Text built while the program runs, copied into a variable, a struct, a
 /// list, a parameter the function changes, and a result: each duplicate is
@@ -231,6 +233,33 @@ n ကို ပြသပါ။
 const WALKED: &str =
     "၁\n၂\n၃\n၂\n၃\nက!\nဂ!\n[\"က\"၊ \"ခ\"၊ \"ဂ\"၊ \"ဃ\"]\na\né\n၁\n😀\n";
 
+/// Plain, fixed and heap text, set from each other, in a struct field, a
+/// list and a parameter.
+const FORMS: &str = "ဒေတာအမျိုးအစား လူ တွင် စာသားရှင် အမည်၊ ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
+လုပ်ဆောင်ချက် ပြ သည်
+စာသားရှင် စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+ကိန်းရှင် p သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"a\" ဖြစ်ပါစေ။
+ကိန်းရှင် f သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"b\" ဖြစ်ပါစေ။
+ကိန်းရှင် h သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"c\" ဖြစ်ပါစေ။
+h ကို p ဟု ထားပါ။
+f ကို h ဟု ထားပါ။
+p ကို \"{f}{h}\" ဟု ထားပါ။
+\"{p} {f} {h}\" ဟု ပြသပါ။
+ကိန်းရှင် ပ သည် လူ(အမည်: f၊ အသက်: ၃) ဖြစ်ပါစေ။
+ပ ကို ပြသပါ။
+ကိန်းရှင် l သည် စာသားရှင် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [\"x\"၊ p] ဖြစ်ပါစေ။
+l ကို ပြသပါ။
+လုပ်ဆောင်ချက် ပြ ကို \"q\" တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ပြ ကို h တို့ဖြင့် လုပ်ဆောင်ပါ။
+h ကို ပြသပါ။
+";
+
+/// What [`FORMS`] prints.
+const FORMED: &str = "aa a a\nလူ(အမည်: \"a\"၊ အသက်: ၃)\n[\"x\"၊ \"aa\"]\nq\na\na\n";
+
 /// Each mode a program can be built and run in.
 ///
 /// # Returns
@@ -301,4 +330,22 @@ fn text_compares_its_u8s_in_each_mode()
 fn each_loops_walk_cells_and_characters_in_each_mode()
 {
     runs_in_each_mode(WALKS, WALKED)
+}
+
+#[test]
+fn text_forms_convert_to_each_other_in_each_mode() { runs_in_each_mode(FORMS, FORMED) }
+
+/// Heap text gets a block of its own where a value of another form, such as
+/// a literal in static storage, becomes heap text.
+#[test]
+fn heap_text_owns_its_block()
+{
+    let module = compile_text(FORMS, &FoldOptions::default(), EmitOptions::default());
+    let heap = DataKind::parse("heap_text").expect("heap_text");
+    let owns = module
+        .funcs
+        .iter()
+        .flat_map(|f| &f.code)
+        .filter(|op| **op == Op::OwnText(heap));
+    assert!(owns.count() >= 3);
 }

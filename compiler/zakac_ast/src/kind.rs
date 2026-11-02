@@ -24,13 +24,32 @@ pub enum BaseKind
     Char,
     /// `မှန်မှားတန်ဖိုး` or `ဘူလီယန်`
     Bool,
-    /// `စာသား`: owned UTF-8 text.
+    /// `စာသား`: owned UTF-8 text, the plain form.
     Text,
+    /// `စာသားသေ`: text whose u8s never change.
+    #[strum(serialize = "fixed_text")]
+    FixedText,
+    /// `စာသားရှင်`: text that owns a heap block from the start.
+    #[strum(serialize = "heap_text")]
+    HeapText,
     /// A bare `လိပ်စာ`: an address whose target kind is not known.
     #[strum(serialize = "ptr")]
     Opaque,
     /// A struct, named in [`Kind::name`].
     Named,
+}
+
+impl BaseKind
+{
+    /// Whether the base is text of one of its three forms.
+    ///
+    /// # Returns
+    ///
+    /// `true` for `စာသား`, `စာသားသေ` and `စာသားရှင်`.
+    pub fn is_text(self) -> bool
+    {
+        matches!(self, BaseKind::Text | BaseKind::FixedText | BaseKind::HeapText)
+    }
 }
 
 /// The cell count of a list kind.

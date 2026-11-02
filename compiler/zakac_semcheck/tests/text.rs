@@ -20,7 +20,7 @@ fn text_kinds_read_back_from_their_names()
 {
     let text = DataKind::parse("text").expect("text");
     let view = DataKind::parse("&text").expect("&text");
-    assert_eq!(text, DataKind::Text);
+    assert_eq!(text, DataKind::TEXT);
     assert_eq!(view, DataKind::text_view());
     assert_eq!(text.size(64), 24);
     assert_eq!(text.size(32), 12);
@@ -30,6 +30,32 @@ fn text_kinds_read_back_from_their_names()
     assert!(!view.widens_to(DataKind::slice_of(DataKind::U8), 64));
     assert!(!DataKind::slice_of(DataKind::U8).widens_to(view, 64));
     assert_eq!(DataKind::parse("*&text").map(DataKind::name), Some("*&text".into()));
+}
+
+/// The three forms of text share their three words, and each converts to the
+/// others on its own; heap text alone is marked as such.
+#[test]
+fn text_forms_convert_to_each_other()
+{
+    let forms =
+        ["text", "fixed_text", "heap_text"].map(|n| DataKind::parse(n).expect(n));
+    let pairs = forms.iter().flat_map(|a| forms.iter().map(move |b| (*a, *b)));
+    assert!(pairs.clone().all(|(a, b)| a.widens_to(b, 64) && a.size(64) == b.size(64)));
+    assert!(forms.iter().all(|k| k.is_text() && k.holds_text()));
+    let heap: Vec<bool> = forms.iter().map(|k| k.holds_heap_text()).collect();
+    assert_eq!(heap, [false, false, true]);
+    assert_eq!(forms.map(DataKind::name), ["text", "fixed_text", "heap_text"]);
+    assert!(DataKind::parse("[2]heap_text").unwrap().holds_heap_text());
+}
+
+/// A constant can hold plain or fixed text, never heap text.
+#[test]
+fn a_constant_holds_no_heap_text()
+{
+    let fixed = "ကိန်းသေ ဖ သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"a\" ဖြစ်ပါစေ။";
+    ok(&lines(&[fixed, "ကိန်းရှင် ဟ သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဖ ဖြစ်ပါစေ။"]));
+    let heap = "ကိန်းသေ ဟ သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"a\" ဖြစ်ပါစေ။";
+    assert_eq!(codes(heap), [Code::ConstHeapText]);
 }
 
 #[test]

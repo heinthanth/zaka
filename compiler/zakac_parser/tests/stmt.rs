@@ -68,6 +68,10 @@ fn declarations_count_their_kind_or_take_it_from_the_value()
     let letter = "ကိန်းရှင် င သည် စာလုံး တစ်လုံး ဖြစ်ပါစေ။";
     assert_eq!(stmt(letter), "(var င char)");
     assert_eq!(classifier(letter).as_deref(), Some("လုံး"));
+    let fixed = "ကိန်းရှင် ဖ သည် စာသားသေ တစ်ခု ဖြစ်ပါစေ။";
+    assert_eq!(stmt(fixed), "(var ဖ fixed_text)");
+    let heap = "ကိန်းရှင် ဟ သည် စာသားရှင် စာရင်း တစ်ခု ဖြစ်ပါစေ။";
+    assert_eq!(stmt(heap), "(var ဟ []heap_text)");
     let named = "ကိန်းရှင် ခ သည် \"မမ\" ဖြစ်ပါစေ။";
     assert_eq!(stmt(named), "(var ခ _ \"မမ\")");
     assert_eq!(classifier(named), None);

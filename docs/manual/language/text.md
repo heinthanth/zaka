@@ -1,6 +1,6 @@
 ---
 title: Text
-description: Owned text and views of text - the two text kinds, string literals and their template slots, folding, joining, cells, copies, the drops the compiler adds, static text, and the errors ZK0403 and ZK0429.
+description: Owned text and views of text - the text kinds and the three forms of owned text, string literals and their template slots, folding, joining, cells, copies, the drops the compiler adds, static text, and the errors ZK0403 and ZK0429.
 ---
 
 # Text
@@ -37,7 +37,9 @@ v ၏ အကွက်အရေအတွက် ကို ပြသပါ။
 
 | Burmese | In messages | What it is |
 | --- | --- | --- |
-| `စာသား` | `text` | owned UTF-8 text |
+| `စာသား` | `text` | owned UTF-8 text, the plain form |
+| `စာသားသေ` | `fixed_text` | owned UTF-8 text whose u8s never change (see [Forms](#forms)) |
+| `စာသားရှင်` | `heap_text` | owned UTF-8 text in a heap block of its own from the start (see [Forms](#forms)) |
 | `စာသား တစ်စိတ်တစ်ပိုင်း` | `&text` | a view of text: a borrowed run of u8 cells that hold UTF-8 |
 
 - `စာသား` is three words: the address of its u8s, their count, and its *room*, the size of
@@ -56,6 +58,45 @@ v ၏ အကွက်အရေအတွက် ကို ပြသပါ။
 - `စာသား` can be the kind of a variable, a constant, a parameter, a result, a struct field
   and the cells of a list. A view lives in variables and parameters alone, as each slice
   does.
+
+## Forms
+
+Owned text comes in three forms. Each is the same three words, and each converts to the
+others on its own where a value goes into a place: a declaration, a set, an argument, a
+result, a struct field or a list cell.
+
+| Form | Burmese | Its u8s |
+| --- | --- | --- |
+| plain | `စာသား` | in static storage for a literal or a folded value (room 0), else in a heap block it owns |
+| fixed | `စာသားသေ` | as for plain text; the u8s never change |
+| heap | `စာသားရှင်` | in a heap block it owns, from the start |
+
+- **Heap text** owns its block. Where a value of another form becomes heap text, u8s in
+  static storage are duplicated into a new heap block, so a literal given to heap text
+  allocates. Blank heap text holds no u8s and no block. A parameter of heap text takes a
+  duplicate of its argument; the caller's text is never lent to it.
+- **Fixed text** never changes its u8s. Text has no edit in place now, since a cell write
+  is ZK0429, so fixed and plain text behave alike; the form states the promise for the
+  edits to come. A set replaces the whole value, as for each form.
+- A constant holds plain or fixed text, never heap text (ZK0435): a constant sits in
+  static storage.
+- A lend of text of each form gives a view, `&text`. Joins, formats and template literals
+  make plain text, which converts to the other forms.
+
+```zaka
+ကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ + " မောင်မောင်" ဖြစ်ပါစေ။
+"{က} | {ခ} | {ဂ}" ဟု ပြသပါ။
+```
+
+```text
+မင်္ဂလာပါ | မင်္ဂလာပါ | မင်္ဂလာပါ မောင်မောင်
+```
+
+```zaka-error ZK0435
+ကိန်းသေ က သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
+```
 
 ## String literals
 
@@ -512,6 +553,7 @@ a program stops](../vm/traps.md) the trap.
 | ZK0403 | `+` of text and a non-text value, or an operator other than `+`, `==` and `!=` on text |
 | ZK0411 | the lend of a literal or a call result |
 | ZK0429 | a write to a cell of text |
+| ZK0435 | a constant that holds heap text |
 | ZK0704 | a view used after its text is dropped |
 | ZK0706 | a function returns a view of its own local text |
 | ZK0718 | a struct field holds a view |

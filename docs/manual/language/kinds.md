@@ -121,7 +121,9 @@ false. It prints as `မှန်` or `မမှန်`.
 
 `စာသား` (`text`) owns UTF-8 text: the address of its u8s, their count and the size of
 its heap block, three words in all. `စာသား တစ်စိတ်တစ်ပိုင်း` (`&text`) is a view of text,
-two words. String literals are of the first kind. [Text](text.md) states their rules.
+two words. String literals are of the first kind. Owned text has two more forms with the
+same three words: `စာသားသေ` (`fixed_text`), whose u8s never change, and `စာသားရှင်`
+(`heap_text`), which owns a heap block from the start. [Text](text.md) states their rules.
 
 ## Addresses and lists
 

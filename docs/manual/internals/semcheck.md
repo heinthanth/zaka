@@ -145,7 +145,7 @@ looks for it in the other files and adds help that names the file that declares 
 | `Int(IntKind)` | a sign and a `Width`, which is `Platform` or `Bits(n)` |
 | `Float(bits)` | 16, 32, 64 or 128 |
 | `Char`, `Bool` | |
-| `Text` | owned UTF-8 text, `စာသား`; copied, not moved (`is_move_kind` is `holds_owner_ptr`), and `holds_text` holds for it and for each list or struct with text in it |
+| `Text(TextForm)` | owned UTF-8 text of a form: `Plain` (`စာသား`), `Fixed` (`စာသားသေ`) or `Heap` (`စာသားရှင်`), each three words; `holds_heap_text` holds for heap text and for each list or struct with it inside; copied, not moved (`is_move_kind` is `holds_owner_ptr`), and `holds_text` holds for it and for each list or struct with text in it |
 | `Ptr(PtrKind)` | levels of address over a base, with the outer level an owner, a borrow or raw |
 | `Null` | the kind of `ဗလာ`, which converts to each pointer kind |
 | `List(&'static ListKind)` | a count of cells of one kind; list kinds are interned so the form remains `Copy` |
@@ -204,6 +204,7 @@ An implicit conversion (`widens_to`) never loses data:
 | float | float | the target is wider |
 | `ဗလာ` | pointer | in each case |
 | pointer | pointer | the same flavour (owner, borrow or raw) and the same shape, or one is the opaque `လိပ်စာ`; a block of addresses read as other data needs a raw step |
+| text of a form | text of another form | in each case: the three forms share their three words; lowering relabels plain and fixed text and gives heap text its own block |
 | `&text` | `&[]u8` | never: a write through the slice would break the text; nor the reverse, since a slice of u8s is not known to hold UTF-8 |
 | char, bool, list, text | other kinds | never; owned text does not become a view without a lend |
 

@@ -423,6 +423,10 @@ pub enum Kw
     CharKind,
     /// `စာသား`
     TextKind,
+    /// `စာသားသေ`, fixed text
+    FixedTextKind,
+    /// `စာသားရှင်`, heap text
+    HeapTextKind,
     /// `စာလုံးအရေအတွက်`
     CharCount,
     /// `ဆက်ထားသည့်`, in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`
