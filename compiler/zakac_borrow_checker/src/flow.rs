@@ -926,7 +926,7 @@ impl<'m> Flow<'m>
                 self.load(e, addr, &at, state)
             }
             ExprNode::Take { addr } => self.take(e, addr, state),
-            ExprNode::Dup { value } =>
+            ExprNode::Dup { value, .. } =>
             {
                 // A duplicate holds blocks of its own, so it points at
                 // nothing the value read points at.

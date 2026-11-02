@@ -4,6 +4,7 @@ use std::collections::HashSet;
 
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::ownership::duplicate_made;
+use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::Module;
@@ -16,6 +17,8 @@ use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
+use crate::callgraph::callees;
+use crate::cfg::NodeKind;
 use crate::cfg::build_cfg;
 use crate::liveness::live_out_of;
 use crate::liveness::node_exprs;
@@ -33,9 +36,11 @@ type DupAt = (Span, Place);
 /// Turn each duplicate of a text place that the program reads no more into a
 /// move, so the text changes owner and nothing is copied. A duplicate remains
 /// when the place is a parameter, whose cells can belong to the caller; a
-/// global read in a function, which a later call can read; a place that a
-/// lend, a range or an address reads, so a move never ends a live view; or a
-/// place the same statement reads again.
+/// global read in a function, which a later call can read; a global a call
+/// of the same statement writes, whose block the check would see freed
+/// under the moved text; a place that a lend, a range or an address reads,
+/// so a move never ends a live view; or a place the same statement reads
+/// again.
 ///
 /// # Arguments
 ///
@@ -46,11 +51,12 @@ pub(crate) fn move_last_uses(module: &mut Module)
     do_for!(f in &module.funcs, lent.extend(lent_in(&f.block)));
     let lent_globals: BTreeSet<Place> =
         lent.into_iter().filter(|p| matches!(p, Place::Global(_))).collect();
-    let main = moves_in(module, &Routine::main(module), &lent_globals);
+    let writes = global_writes(module);
+    let main = moves_in(module, &Routine::main(module), &lent_globals, &writes);
     let funcs: Vec<HashSet<DupAt>> = module
         .funcs
         .iter()
-        .map(|f| moves_in(module, &Routine::func(f), &lent_globals))
+        .map(|f| moves_in(module, &Routine::func(f), &lent_globals, &writes))
         .collect();
     rewrite(&mut module.main, &main);
     do_for!((f, moves) in module.funcs.iter_mut().zip(&funcs), rewrite(&mut f.block, moves));
@@ -64,12 +70,14 @@ pub(crate) fn move_last_uses(module: &mut Module)
 /// * `routine` - The routine.
 /// * `lent_globals` - The globals a lend, a range or an address reads in some
 ///   routine.
+/// * `writes` - The globals each function writes, at each depth.
 ///
 /// # Returns
 ///
 /// The duplicates, each with the span of its read and its place.
 fn moves_in(
     module: &Module, routine: &Routine, lent_globals: &BTreeSet<Place>,
+    writes: &[BTreeSet<u32>],
 ) -> HashSet<DupAt>
 {
     let cfg = build_cfg(routine.block, routine.span);
@@ -81,6 +89,7 @@ fn moves_in(
         let exprs = node_exprs(&node.kind);
         let mut read = Vec::new();
         do_for!(e in &exprs, reads(e, &mut read));
+        let written = call_writes(&node.kind, &exprs, writes);
         let mut judge = |e: &Expr| {
             let Some(place) = dup_of(e)
             else
@@ -89,6 +98,8 @@ fn moves_in(
             };
             let once = read.iter().filter(|(p, _)| *p == place).count() == 1;
             let kept = lent.contains(&place) || lent_globals.contains(&place);
+            let kept =
+                kept || matches!(place, Place::Global(g) if written.contains(&g));
             let ok =
                 once && movable(routine, place) && !kept && !out.contains_key(&place);
             verdicts.entry((e.span, place)).and_modify(|v| *v &= ok).or_insert(ok);
@@ -96,6 +107,28 @@ fn moves_in(
         do_for!(e in &exprs, each_expr(e, &mut judge));
     }
     verdicts.into_iter().filter(|(_, ok)| *ok).map(|(at, _)| at).collect()
+}
+
+/// The globals the calls of a node write, at each depth.
+///
+/// # Arguments
+///
+/// * `kind` - What the node runs.
+/// * `exprs` - The expressions it runs.
+/// * `writes` - The globals each function writes, at each depth.
+///
+/// # Returns
+///
+/// The global numbers.
+fn call_writes(
+    kind: &NodeKind, exprs: &[&Expr], writes: &[BTreeSet<u32>],
+) -> BTreeSet<u32>
+{
+    let mut called = BTreeSet::new();
+    do_if!(let NodeKind::Leaf(Stmt::Call { func, .. }) = kind, { called.insert(*func); });
+    let mut note = |e: &Expr| do_if!(let ExprNode::Call { func, .. } = e.node, { called.insert(func); });
+    do_for!(e in exprs, each_expr(e, &mut note));
+    called.iter().filter_map(|f| writes.get(*f as usize)).flatten().copied().collect()
 }
 
 /// Whether a move out of a place can stand for a duplicate in a routine: a
@@ -160,7 +193,7 @@ fn lent_in(stmts: &[Stmt]) -> BTreeSet<Place>
 /// The place, or `None` for each other expression.
 fn dup_of(e: &Expr) -> Option<Place>
 {
-    let ExprNode::Dup { value } = &e.node
+    let ExprNode::Dup { value, .. } = &e.node
     else
     {
         return None;
@@ -216,7 +249,7 @@ pub(crate) fn duplicate_reports(module: &Module) -> Vec<Diagnostic>
     let mut found = Vec::new();
     let mut scan = |stmts: &[Stmt], locals: &[zakac_ir_builder::ir::Slot]| {
         let mut note = |e: &Expr| {
-            let ExprNode::Dup { value } = &e.node
+            let ExprNode::Dup { value, lent: false } = &e.node
             else
             {
                 return;
@@ -259,4 +292,243 @@ fn root_name(
         Place::Local(n) => locals.get(*n as usize),
     });
     slot.map_or_else(|| "?".to_string(), |s| s.name.clone())
+}
+
+/// Lend each text argument a call does not take: the parameter reads the
+/// caller's u8s with a room of 0 for the length of the call, and nothing is
+/// copied unless the callee keeps the text. A duplicate remains when the
+/// call, or a call inside its arguments, can change the source while the
+/// loan lives: a global one of them writes, or a place whose address or a
+/// view of it is taken somewhere.
+///
+/// # Arguments
+///
+/// * `module` - The module, after [`move_last_uses`], changed in place.
+pub(crate) fn lend_arguments(module: &mut Module)
+{
+    let writes = global_writes(module);
+    let mut all = lent_in(&module.main);
+    do_for!(f in &module.funcs, all.extend(lent_in(&f.block)));
+    let globals: BTreeSet<Place> =
+        all.into_iter().filter(|p| matches!(p, Place::Global(_))).collect();
+    let with_globals = |mut own: BTreeSet<Place>| {
+        own.extend(globals.iter().copied());
+        own
+    };
+    let main = with_globals(lent_in(&module.main));
+    let funcs: Vec<BTreeSet<Place>> =
+        module.funcs.iter().map(|f| with_globals(lent_in(&f.block))).collect();
+    lend_in(&mut module.main, &main, &writes);
+    do_for!((f, kept) in module.funcs.iter_mut().zip(&funcs), lend_in(&mut f.block, kept, &writes));
+}
+
+/// Lend the text arguments of each call in a list of statements.
+///
+/// # Arguments
+///
+/// * `stmts` - The statements, changed in place.
+/// * `kept` - The places a lend, a range or an address reads.
+/// * `writes` - The globals each function writes, at each depth.
+fn lend_in(stmts: &mut [Stmt], kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>])
+{
+    each_stmt_mut(stmts, &mut |s| {
+        do_if!(let Stmt::Call { func, args, .. } = s, lend_args(*func, args, kept, writes));
+        each_expr_mut(s, &mut |e| {
+            do_if!(let ExprNode::Call { func, args, .. } = &mut e.node, lend_args(*func, args, kept, writes));
+        });
+    });
+}
+
+/// Lend the text arguments of one call that no call of it can change.
+///
+/// # Arguments
+///
+/// * `func` - The function called.
+/// * `args` - The arguments, changed in place.
+/// * `kept` - The places a lend, a range or an address reads.
+/// * `writes` - The globals each function writes, at each depth.
+fn lend_args(
+    func: u32, args: &mut [Expr], kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>],
+)
+{
+    let mut called = BTreeSet::from([func]);
+    let mut note = |e: &Expr| do_if!(let ExprNode::Call { func, .. } = e.node, { called.insert(func); });
+    do_for!(a in args.iter(), each_expr(a, &mut note));
+    let written: BTreeSet<u32> = called
+        .iter()
+        .filter_map(|f| writes.get(*f as usize))
+        .flatten()
+        .copied()
+        .collect();
+    for arg in args
+    {
+        let ExprNode::Dup { value, lent } = &mut arg.node
+        else
+        {
+            continue;
+        };
+        let Some(place) = root_of(value)
+        else
+        {
+            continue;
+        };
+        let safe = match place
+        {
+            Place::Local(_) => true,
+            Place::Global(g) => !written.contains(&g),
+        };
+        do_if!(safe && !kept.contains(&place), *lent = true);
+    }
+}
+
+/// The place a value is read out of through fields and cells alone, with no
+/// step through a pointer.
+///
+/// # Arguments
+///
+/// * `e` - The value, or the address of it.
+///
+/// # Returns
+///
+/// The place, or `None` for a value read through a pointer or made anew.
+fn root_of(e: &Expr) -> Option<Place>
+{
+    match &e.node
+    {
+        ExprNode::Read(place) | ExprNode::AddrOf(place) => Some(*place),
+        ExprNode::Load { addr } => root_of_addr(addr),
+        _ => None,
+    }
+}
+
+/// The place an address points into through fields and cells alone.
+///
+/// # Arguments
+///
+/// * `addr` - The address.
+///
+/// # Returns
+///
+/// The place, or `None` for an address read out of a pointer.
+fn root_of_addr(addr: &Expr) -> Option<Place>
+{
+    match &addr.node
+    {
+        ExprNode::AddrOf(place) => Some(*place),
+        ExprNode::FieldAddr { base, .. } | ExprNode::CellAddr { list: base, .. } =>
+        {
+            tern!(
+                base.kind.is_ptr(),
+                None,
+                root_of(base).or_else(|| root_of_addr(base))
+            )
+        }
+        _ => None,
+    }
+}
+
+/// The globals each function writes, itself or through the functions it
+/// calls: a set, a drop, an allocation, a resize or a free of one, a store
+/// into one, a move out of one, or an address of one.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+///
+/// # Returns
+///
+/// The global numbers, in function order.
+fn global_writes(module: &Module) -> Vec<BTreeSet<u32>>
+{
+    let direct = |stmts: &[Stmt]| {
+        let mut places = Vec::new();
+        each_stmt(stmts, &mut |s| {
+            places.extend(written_places(s));
+            let mut note = |e: &Expr| match &e.node
+            {
+                ExprNode::Take { addr } => places.extend(places_in(addr)),
+                ExprNode::AddrOf(place) => places.push(*place),
+                _ => (),
+            };
+            do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
+        });
+        let globals = places
+            .into_iter()
+            .filter_map(|p| tern!(let Place::Global(g) = p, Some(g), None));
+        globals.collect::<BTreeSet<u32>>()
+    };
+    let mut sets: Vec<BTreeSet<u32>> =
+        module.funcs.iter().map(|f| direct(&f.block)).collect();
+    let calls: Vec<BTreeSet<u32>> = module
+        .funcs
+        .iter()
+        .map(|f| {
+            let mut out = BTreeSet::new();
+            callees(&f.block, &mut out);
+            out
+        })
+        .collect();
+    let mut changed = true;
+    while changed
+    {
+        changed = false;
+        for (f, called) in calls.iter().enumerate()
+        {
+            let more: BTreeSet<u32> =
+                called.iter().flat_map(|&c| sets[c as usize].clone()).collect();
+            let before = sets[f].len();
+            sets[f].extend(more);
+            changed |= sets[f].len() != before;
+        }
+    }
+    sets
+}
+
+/// The places a statement writes as a whole: the slot it sets, the place it
+/// drops, allocates, resizes or frees, and the places the address of a store
+/// reads.
+///
+/// # Arguments
+///
+/// * `s` - The statement.
+///
+/// # Returns
+///
+/// The places.
+fn written_places(s: &Stmt) -> Vec<Place>
+{
+    match s
+    {
+        Stmt::Set { place, .. } => vec![*place],
+        Stmt::Drop { dest, .. }
+        | Stmt::Free { dest, .. }
+        | Stmt::Alloc { dest, .. }
+        | Stmt::Resize { dest, .. } => match dest
+        {
+            Dest::Slot(place) => vec![*place],
+            Dest::Mem(addr) => places_in(addr),
+        },
+        Stmt::Store { addr, .. } => places_in(addr),
+        _ => Vec::new(),
+    }
+}
+
+/// Each place an expression reads or takes the address of.
+///
+/// # Arguments
+///
+/// * `e` - The expression.
+///
+/// # Returns
+///
+/// The places.
+fn places_in(e: &Expr) -> Vec<Place>
+{
+    let mut found = Vec::new();
+    each_expr(e, &mut |sub| match sub.node
+    {
+        ExprNode::Read(place) | ExprNode::AddrOf(place) => found.push(place),
+        _ => (),
+    });
+    found
 }

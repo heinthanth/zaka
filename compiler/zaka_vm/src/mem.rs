@@ -749,6 +749,21 @@ impl Mem
     /// # Returns
     ///
     /// The block, or `None` when the address is outside each block.
+    /// Whether an address lies inside a frozen block: static text, which
+    /// nothing writes or frees.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub fn is_frozen(&self, addr: u64) -> bool
+    {
+        self.block_at(addr).is_some_and(|b| b.frozen)
+    }
+
     fn block_at(&self, addr: u64) -> Option<&Block>
     {
         let (_, block) = self.table.range(..=addr).next_back()?;

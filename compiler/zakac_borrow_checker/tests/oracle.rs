@@ -60,7 +60,7 @@ fn raw_expr(e: &Expr) -> bool
         | ExprNode::Load { addr: operand }
         | ExprNode::Lend { operand }
         | ExprNode::Take { addr: operand }
-        | ExprNode::Dup { value: operand }
+        | ExprNode::Dup { value: operand, .. }
         | ExprNode::FieldAddr { base: operand, .. } => raw_expr(operand),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }

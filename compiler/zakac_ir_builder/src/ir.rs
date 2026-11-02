@@ -501,6 +501,12 @@ pub enum ExprNode
     {
         /// The value read, of the expression kind.
         value: Box<Expr>,
+        /// Whether the duplicate is lent to a parameter for one call: each
+        /// text in it keeps the caller's u8s with a room of 0, so the
+        /// callee's drop frees nothing, and a duplicate the callee makes of
+        /// it takes blocks of its own.
+        #[serde(default)]
+        lent: bool,
     },
     /// An address moved `offset` elements forward; the expression kind is
     /// the kind of `base`.

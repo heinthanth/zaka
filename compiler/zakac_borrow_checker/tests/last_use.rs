@@ -107,3 +107,69 @@ fn warn_duplicates_names_each_duplicate_left()
     let moved = format!("{HEAP}ကိန်းရှင် ခ သည် က ဖြစ်ပါစေ။\nခ ကို ပြသပါ။\n");
     assert_eq!(codes_with(&moved, &warn), []);
 }
+
+/// A function that reads its text parameter.
+const SHOW: &str = "လုပ်ဆောင်ချက် ပြ သည်
+စာသား စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+";
+
+/// A function that sets the global `က`.
+const SET: &str = "လုပ်ဆောင်ချက် ထား သည်
+စာသား စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ကို \"အသစ်\" ဟု ထားပါ။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+";
+
+#[test]
+fn text_a_call_reads_is_lent_to_it()
+{
+    let module = ir(&format!("{SHOW}လုပ်ဆောင်ချက် ပြ ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။\nက ကို ပြသပါ။\n"));
+    assert!(module.contains("(lend_text g1)"), "{module}");
+}
+
+#[test]
+fn a_global_the_callee_sets_is_duplicated()
+{
+    let module = ir(&format!("{SET}လုပ်ဆောင်ချက် ထား ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။\nက ကို ပြသပါ။\n"));
+    assert!(module.contains("(dup g1)"), "{module}");
+    assert!(!module.contains("(lend_text g1)"), "{module}");
+}
+
+#[test]
+fn a_global_the_callee_sets_is_not_moved_into_it()
+{
+    let text = format!(
+        "{SET}လုပ်ဆောင်ချက် ထား ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။\nက ကို \"ပြီး\" ဟု ထားပါ။\nက ကို ပြသပါ။\n"
+    );
+    let module = ir(&text);
+    assert!(!module.contains("(take (addr g1))"), "{module}");
+}
+
+#[test]
+fn a_lent_parameter_is_lent_on()
+{
+    let module = ir(&format!(
+        "{SHOW}လုပ်ဆောင်ချက် ဆင့် သည်
+စာသား စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ပြ ကို စ တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် ဆင့် ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။
+က ကို ပြသပါ။
+"
+    ));
+    assert!(module.contains("(lend_text l0)"), "{module}");
+}
+
+#[test]
+fn warn_duplicates_leaves_lent_text_alone()
+{
+    let warn = BorrowCheckOptions::builder().warn_duplicates(true).build();
+    let lent = format!("{HEAP}{SHOW}လုပ်ဆောင်ချက် ပြ ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။\nက ကို ပြသပါ။\n");
+    assert_eq!(codes_with(&lent, &warn), []);
+}

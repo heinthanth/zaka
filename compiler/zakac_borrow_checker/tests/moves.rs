@@ -1,6 +1,5 @@
 mod common;
 
-use common::codes;
 use common::lines;
 use common::ok;
 use zakac_diagnostics::Code;

@@ -258,8 +258,11 @@ pub enum Op
     /// room is above 0, and leave each text blank.
     Drop(DataKind),
     /// Pop the address of a value of this kind; give each text in it whose
-    /// room is above 0 a new heap block with the same u8s.
+    /// u8s sit outside static storage a new heap block with the same u8s.
     DupText(DataKind),
+    /// Pop the address of a value of this kind; give each text in it a room
+    /// of 0, so it reads the u8s it shares and a drop of it frees nothing.
+    LendText(DataKind),
     /// Pop the address of text; push the number of its characters, a
     /// `usize`.
     CharCount,
@@ -358,6 +361,7 @@ impl Op
             | Op::ListEq(kind)
             | Op::Drop(kind)
             | Op::DupText(kind)
+            | Op::LendText(kind)
             | Op::PrintList(kind) => kind.name(),
             Op::MakeSlice { stride, from } =>
             {

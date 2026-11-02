@@ -1264,7 +1264,7 @@ impl<'s> FuncGen<'s>
                 self.expr(addr);
                 self.op(Op::Take(e.kind));
             }
-            ExprNode::Dup { value } => self.dup_value(e.kind, value),
+            ExprNode::Dup { value, lent } => self.dup_value(e.kind, value, *lent),
             ExprNode::Lend { operand } => self.expr(operand),
             ExprNode::PtrAdd { base, offset } =>
             {
@@ -1389,31 +1389,33 @@ impl<'s> FuncGen<'s>
         self.code.bind(end);
     }
 
-    /// Generate a call: the arguments in order, then the call. A list or
-    /// struct result gets a slot of its own in the caller.
-    ///
-    /// # Arguments
-    ///
-    /// * `func` - The function index.
     /// Duplicate a value that holds text into a slot of its own: blit the
-    /// value, then give each heap text in the duplicate its own block. The
-    /// address of the slot is left on the stack.
+    /// value, then give each text in the duplicate a block of its own, or,
+    /// for a value lent to a parameter, a room of 0. The address of the slot
+    /// is left on the stack.
     ///
     /// # Arguments
     ///
     /// * `kind` - The kind of the value.
     /// * `value` - The read of the value.
-    fn dup_value(&mut self, kind: DataKind, value: &Expr)
+    /// * `lent` - Whether the value is lent to a parameter for one call.
+    fn dup_value(&mut self, kind: DataKind, value: &Expr, lent: bool)
     {
         let slot = self.temp("%dup", kind);
         self.op(Op::LocalAddr(slot));
         self.expr(value);
         self.op(Op::Blit(kind));
         self.op(Op::LocalAddr(slot));
-        self.op(Op::DupText(kind));
+        self.op(tern!(lent, Op::LendText(kind), Op::DupText(kind)));
         self.op(Op::LocalAddr(slot));
     }
 
+    /// Generate a call: the arguments in order, then the call. A list or
+    /// struct result gets a slot of its own in the caller.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - The function index.
     /// * `args` - The arguments.
     fn call(&mut self, func: u32, args: &[Expr])
     {

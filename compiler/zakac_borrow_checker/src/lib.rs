@@ -13,6 +13,7 @@ use crate::interval::CellProofs;
 use crate::interval::mark_checked;
 use crate::interval::uses_raw;
 use crate::last_use::duplicate_reports;
+use crate::last_use::lend_arguments;
 use crate::last_use::move_last_uses;
 use crate::options::BorrowCheckOptions;
 use crate::options::MemCheck;
@@ -72,6 +73,7 @@ pub fn borrow_check(
     // Moves at the last use come first, so the check follows the code that
     // runs.
     move_last_uses(module);
+    lend_arguments(module);
     let duplicates =
         tern!(options.warn_duplicates, duplicate_reports(module), Vec::new());
     let read: &Module = module;

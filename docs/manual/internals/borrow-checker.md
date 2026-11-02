@@ -213,9 +213,17 @@ Before the flow, `last_use.rs` turns each `Dup` of a whole place that the progra
 no more into a `Take`, so the check follows the code that runs. Liveness
 (`live_out_of` with `holds_text`) gives the places live after each node; a call reads
 each global of a text kind its function reads, at each depth. A `Dup` remains for a
-parameter, for a global read in a function, for a place that a lend, a range or an
-address reads in some routine, and for a place its statement reads twice. With
-`--warn-duplicates`, each `Dup` left is ZK0720.
+parameter; for a global read in a function; for a global that a call of its statement
+sets, since the check names a global's block after the global and would see the moved
+text freed; for a place that a lend, a range or an address reads in some routine; and for
+a place its statement reads twice.
+
+After the moves, `lend_arguments` marks each `Dup` left in a call argument `lent`, so the
+callee reads the caller's u8s with a room of 0, unless the call, or a call inside its
+arguments, sets the global read (`global_writes`, at each depth), or the place is read
+through a pointer, or a lend, a range or an address reads it. A lent `Dup` is fresh for
+the check, as a `Dup` is. With `--warn-duplicates`, each `Dup` left that is not lent is
+ZK0720.
 
 ## The checks
 

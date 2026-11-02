@@ -1784,7 +1784,7 @@ fn take(e: Expr) -> Expr
 fn dup(e: Expr) -> Expr
 {
     let (kind, span) = (e.kind, e.span);
-    let node = ExprNode::Dup { value: Box::new(e) };
+    let node = ExprNode::Dup { value: Box::new(e), lent: false };
     Expr::builder().kind(kind).node(node).span(span).build()
 }
 

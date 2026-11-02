@@ -998,6 +998,11 @@ impl Machine
                 let addr = self.pop_ptr("dup_text")?;
                 self.dup_value(addr, kind)
             }
+            Op::LendText(kind) =>
+            {
+                let addr = self.pop_ptr("lend_text")?;
+                self.lend_value(addr, kind)
+            }
             Op::CharCount => self.char_count(),
             Op::CharAt { first } => self.char_at(first),
             Op::TextEdges => self.text_edges(),
@@ -1846,9 +1851,10 @@ impl Machine
         Ok(())
     }
 
-    /// Give each heap text in a value a new heap block with a duplicate of its
-    /// u8s, so the value no longer shares them with the one it was copied
-    /// from. Static text (room 0) is shared, since nothing writes it.
+    /// Give each text in a value whose u8s sit outside static storage a new
+    /// heap block with the same u8s, so the value no longer shares them with
+    /// the one it was copied from: heap text, and text a caller lent with a
+    /// room of 0. Static text is shared, since nothing writes it.
     ///
     /// # Arguments
     ///
@@ -1862,7 +1868,8 @@ impl Machine
     {
         for text in self.texts_in(addr, kind)
         {
-            if self.room_of(text)? == 0
+            let at = self.mem.load(text, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
+            if at == 0 || self.mem.is_frozen(at)
             {
                 continue;
             }
@@ -1872,6 +1879,29 @@ impl Machine
             let block = block.ok_or(TrapKind::OutOfMem { size })?;
             self.mem.fill_block(block, content.as_bytes())?;
             self.write_text(text, block, size, size)?;
+        }
+        Ok(())
+    }
+
+    /// Lend each text in a value to a parameter for one call: give it a room
+    /// of 0, so it reads the caller's u8s and a drop of it frees nothing.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the value.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap the write hits.
+    fn lend_value(&mut self, addr: u64, kind: DataKind) -> Step
+    {
+        let platform = self.module.platform_bits;
+        let word = u64::from(platform / 8);
+        let zero = Value::int(IntKind::new(false, Width::Platform), 0, platform);
+        for text in self.texts_in(addr, kind)
+        {
+            self.mem.store(text + 2 * word, zero)?;
         }
         Ok(())
     }

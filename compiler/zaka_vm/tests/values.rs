@@ -50,6 +50,64 @@ const COPIES: &str = "ဒေတာအမျိုးအစား လူ တွ�
 const PRINTED: &str = "၇ ၇!\nလူ(အမည်: \"၇\"၊ အသက်: ၃)\nလူ(အမည်: \"x\"၊ အသက်: ၃)\n[\"၇\"၊ \
                        \"၇!\"]\n[\"y\"၊ \"၇!\"]\n၇?\n၇\n၇\n၇\n";
 
+/// Text lent to functions that read it, return it, change their parameter,
+/// change the global lent to them, or call themselves with it; and a call
+/// whose other argument changes the global first.
+const LENDS: &str = "ကိန်းရှင် i သည် ၇ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် \"{i}\" ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ပြ သည်
+စာသား စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် ပြန် သည်
+စာသား စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရလဒ် ကို ပြန်ပေးမည်။
+စ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် ပြင် သည်
+စာသား စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စ ကို စ + \"?\" ဟု ထားပါ။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် ဖျက် သည်
+စာသား စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ကို \"အသစ်\" ဟု ထားပါ။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် ဖျက်ပြီးပေး သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က ကို \"နောက်\" ဟု ထားပါ။
+၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် နှစ်ခု သည်
+စာသား စ၊ ကိန်းပြည့် န တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+\"{စ} {န}\" ဟု ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် ပြန်ကြိမ် သည်
+စာသား စ၊ ကိန်းပြည့် န တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အကယ်၍ န သည် ၀ ထက် ကြီးလျှင် လုပ်ဆောင်ချက် ပြန်ကြိမ် ကို စ၊ န - ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် ပြ ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။
+ကိန်းရှင် ထွက် သည် ပြန်(က) ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ပြင် ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ဖျက် ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။
+က ကို \"{i}{i}\" ဟု ထားပါ။
+လုပ်ဆောင်ချက် နှစ်ခု ကို က၊ ဖျက်ပြီးပေး() တို့ဖြင့် လုပ်ဆောင်ပါ။
+က ကို \"{i}!\" ဟု ထားပါ။
+လုပ်ဆောင်ချက် ပြန်ကြိမ် ကို က၊ ၂ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ထွက် ကို ပြသပါ။
+က ကို ပြသပါ။
+";
+
+/// What [`LENDS`] prints.
+const LENT: &str = "၇\n၇?\n၇\n၇၇ ၁\n၇!\n၇!\n၇!\n၇\n၇!\n";
+
 /// Each mode a program can be built and run in.
 ///
 /// # Returns
@@ -67,18 +125,33 @@ fn modes() -> Vec<(FoldOptions, EmitOptions, FrameMode)>
     built.flat_map(|(f, e)| FrameMode::iter().map(move |m| (f, e, m))).collect()
 }
 
-#[test]
-fn duplicated_text_has_its_own_storage_in_each_mode()
+/// Run a program in each mode, and check its output and that it leaks
+/// nothing.
+///
+/// # Arguments
+///
+/// * `program` - The program.
+/// * `printed` - What it prints.
+fn runs_in_each_mode(program: &str, printed: &str)
 {
     for (fold, emit, frames) in modes()
     {
-        let module = compile_text(COPIES, &fold, emit);
+        let module = compile_text(program, &fold, emit);
         let options = RunOptions::builder().frames(frames).build();
         let mut out = Vec::new();
         let (machine, result) = run_and_keep(&module, &mut out, &options);
         let mode = format!("{fold:?} {emit:?} {frames}");
         assert_eq!(result, Ok(()), "{mode}");
-        assert_eq!(String::from_utf8(out).unwrap(), PRINTED, "{mode}");
+        assert_eq!(String::from_utf8(out).unwrap(), printed, "{mode}");
         assert!(machine.leaks().is_empty(), "{mode}");
     }
 }
+
+#[test]
+fn duplicated_text_has_its_own_storage_in_each_mode()
+{
+    runs_in_each_mode(COPIES, PRINTED)
+}
+
+#[test]
+fn lent_text_is_read_in_place_and_kept_in_each_mode() { runs_in_each_mode(LENDS, LENT) }
