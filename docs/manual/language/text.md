@@ -1,6 +1,6 @@
 ---
 title: Text
-description: Owned text and views of text - the two text kinds, string literals and their template slots, folding, joining, cells, moves, the drops the compiler adds, static text, and the errors ZK0403, ZK0429 and ZK0701.
+description: Owned text and views of text - the two text kinds, string literals and their template slots, folding, joining, cells, copies, the drops the compiler adds, static text, and the errors ZK0403 and ZK0429.
 ---
 
 # Text
@@ -363,17 +363,18 @@ number outside the text stops the program when it runs.
 o
 ```
 
-## Moves
+## Copies
 
-`စာသား` is a move kind, as an [owner address](ownership.md) is. Setting one text place
-from another (`ခ ကို က ဟု ထားပါ။`), declaring a variable from one, and passing one to a
-`စာသား` parameter each move the text: the old place holds nothing after that, and reading
-it is ZK0701. A function can return `စာသား`, and its caller owns the result. To keep
-the text, lend a view instead.
+`စာသား` is copied, as a number is. Setting one text place from another
+(`ခ ကို က ဟု ထားပါ။`), declaring a variable from one, passing one to a `စာသား` parameter,
+returning one, and putting one into a list or a struct field each duplicate the text: the new
+place gets a heap block of its own with the same u8s, and the old place keeps its text.
+A list or a struct with text in it is copied alike, each text in it with a block
+of its own. A list or a struct that holds an [owner address](ownership.md) still moves,
+since a duplicate would free one block twice.
 
-A text constant is never moved: its text is static, so each read of it is a free
-duplicate that shares the static block, and dropping a duplicate frees nothing. The
-constant can be read again after that.
+Static text is shared: nothing writes it, so a duplicate of a literal or a constant takes no
+block, and dropping the duplicate frees nothing.
 
 ```zaka
 ကိန်းသေ အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မမ" ဖြစ်ပါစေ။
@@ -387,15 +388,21 @@ constant can be read again after that.
 မမ
 ```
 
-```zaka-error ZK0701
+A duplicate of heap text takes a new block, and each duplicate is dropped on its own. A
+[view](#views) reads text with no duplicate.
+
+```zaka
 ကိန်းရှင် က သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် စာသား တစ်ခု ဖြစ်ပါစေ။
 ခ ကို က ဟု ထားပါ။
+ခ ကို ခ + "!" ဟု ထားပါ။
 က ကို ပြသပါ။
+ခ ကို ပြသပါ။
 ```
 
 ```text
-error[ZK0701]: "က" was moved to another owner and now holds ဗလာ
+abc
+abc!
 ```
 
 ## Drops
@@ -468,7 +475,6 @@ a program stops](../vm/traps.md) the trap.
 | ZK0403 | `+` of text and a non-text value, or another operator on text |
 | ZK0411 | the lend of a literal or a call result |
 | ZK0429 | a write to a cell of text |
-| ZK0701 | a read of a text place after its text moved |
 | ZK0704 | a view used after its text is dropped |
 | ZK0706 | a function returns a view of its own local text |
 | ZK0718 | a struct field holds a view |

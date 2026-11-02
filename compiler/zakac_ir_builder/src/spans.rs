@@ -162,7 +162,8 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }
         | ExprNode::Lend { operand }
-        | ExprNode::Take { addr: operand } => expr(operand, f),
+        | ExprNode::Take { addr: operand }
+        | ExprNode::Dup { value: operand } => expr(operand, f),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
         | ExprNode::Logic { lhs, rhs, .. }

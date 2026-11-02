@@ -993,6 +993,11 @@ impl Machine
                 let addr = self.pop_ptr("drop")?;
                 self.drop_value(addr, kind)
             }
+            Op::DupText(kind) =>
+            {
+                let addr = self.pop_ptr("dup_text")?;
+                self.dup_value(addr, kind)
+            }
             Op::CharCount => self.char_count(),
             Op::CharAt { first } => self.char_at(first),
             Op::TextEdges => self.text_edges(),
@@ -1767,6 +1772,57 @@ impl Machine
         self.mem.store(slot + 2 * word, Value::int(usize, u128::from(room), platform))
     }
 
+    /// The address of each text in a value: the value itself for text, and
+    /// each text field or cell, at each depth, for a struct or a list.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the value.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// The addresses, in storage order.
+    fn texts_in(&self, addr: u64, kind: DataKind) -> Vec<u64>
+    {
+        let platform = self.module.platform_bits;
+        if let Some(s) = kind.as_struct()
+        {
+            let fields =
+                s.fields().iter().enumerate().filter(|(_, (_, k))| k.holds_text());
+            let at = |(i, (_, k)): (usize, &(String, DataKind))| {
+                self.texts_in(addr + u64::from(s.offset(i, platform)), *k)
+            };
+            return fields.flat_map(at).collect();
+        }
+        if let Some(l) = kind.as_list().filter(|l| l.cell.holds_text())
+        {
+            let stride = u64::from(l.cell.size(platform));
+            let cells = 0..u64::from(l.len);
+            return cells
+                .flat_map(|i| self.texts_in(addr + i * stride, l.cell))
+                .collect();
+        }
+        tern!(kind == DataKind::Text, vec![addr], Vec::new())
+    }
+
+    /// The room of the text at an address: the size of its heap block, or 0
+    /// when its u8s sit in static storage or it holds none.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the text.
+    ///
+    /// # Returns
+    ///
+    /// The room, or the trap the read hits.
+    fn room_of(&self, addr: u64) -> Result<u64, TrapKind>
+    {
+        let word = u64::from(self.module.platform_bits / 8);
+        let room = self.mem.load(addr + 2 * word, DataKind::USIZE)?;
+        Ok(tern!(let Value::Int { raw, .. } = room, raw as u64, 0))
+    }
+
     /// Free each heap text in a value and leave each text blank: a text
     /// with room 0 sits in static storage or was moved out, so its u8s
     /// remain.
@@ -1781,30 +1837,43 @@ impl Machine
     /// `Ok`, or the trap a read or the free hits.
     fn drop_value(&mut self, addr: u64, kind: DataKind) -> Step
     {
-        let platform = self.module.platform_bits;
-        if let Some(s) = kind.as_struct()
+        for text in self.texts_in(addr, kind)
         {
-            let fields =
-                s.fields().iter().enumerate().filter(|(_, (_, k))| k.holds_text());
-            let fields: Vec<_> =
-                fields.map(|(i, (_, k))| (s.offset(i, platform), *k)).collect();
-            return fields
-                .into_iter()
-                .try_for_each(|(o, k)| self.drop_value(addr + u64::from(o), k));
+            let at = self.mem.load(text, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
+            do_if!(self.room_of(text)? > 0, self.mem.free(at)?);
+            self.mem.zero(text, DataKind::Text)?;
         }
-        if let Some(l) = kind.as_list().filter(|l| l.cell.holds_text())
+        Ok(())
+    }
+
+    /// Give each heap text in a value a new heap block with a duplicate of its
+    /// u8s, so the value no longer shares them with the one it was copied
+    /// from. Static text (room 0) is shared, since nothing writes it.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the value.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, a trap a read hits, or `OutOfMem`.
+    fn dup_value(&mut self, addr: u64, kind: DataKind) -> Step
+    {
+        for text in self.texts_in(addr, kind)
         {
-            let stride = u64::from(l.cell.size(platform));
-            return (0..u64::from(l.len))
-                .try_for_each(|i| self.drop_value(addr + i * stride, l.cell));
+            if self.room_of(text)? == 0
+            {
+                continue;
+            }
+            let content = text_at(&self.mem, text)?;
+            let size = content.len() as u64;
+            let block = self.mem.alloc(size, Origin::Heap, 0);
+            let block = block.ok_or(TrapKind::OutOfMem { size })?;
+            self.mem.fill_block(block, content.as_bytes())?;
+            self.write_text(text, block, size, size)?;
         }
-        ret_if!(kind != DataKind::Text, Ok(()));
-        let word = u64::from(platform / 8);
-        let room = self.mem.load(addr + 2 * word, DataKind::USIZE)?;
-        let held = matches!(room, Value::Int { raw, .. } if raw > 0);
-        let at = self.mem.load(addr, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
-        do_if!(held, self.mem.free(at)?);
-        self.mem.zero(addr, kind)
+        Ok(())
     }
 
     /// Pop a cell number, then the address of a slice, and push the address

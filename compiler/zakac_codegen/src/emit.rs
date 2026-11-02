@@ -1264,6 +1264,7 @@ impl<'s> FuncGen<'s>
                 self.expr(addr);
                 self.op(Op::Take(e.kind));
             }
+            ExprNode::Dup { value } => self.dup_value(e.kind, value),
             ExprNode::Lend { operand } => self.expr(operand),
             ExprNode::PtrAdd { base, offset } =>
             {
@@ -1394,6 +1395,25 @@ impl<'s> FuncGen<'s>
     /// # Arguments
     ///
     /// * `func` - The function index.
+    /// Duplicate a value that holds text into a slot of its own: blit the
+    /// value, then give each heap text in the duplicate its own block. The
+    /// address of the slot is left on the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the value.
+    /// * `value` - The read of the value.
+    fn dup_value(&mut self, kind: DataKind, value: &Expr)
+    {
+        let slot = self.temp("%dup", kind);
+        self.op(Op::LocalAddr(slot));
+        self.expr(value);
+        self.op(Op::Blit(kind));
+        self.op(Op::LocalAddr(slot));
+        self.op(Op::DupText(kind));
+        self.op(Op::LocalAddr(slot));
+    }
+
     /// * `args` - The arguments.
     fn call(&mut self, func: u32, args: &[Expr])
     {

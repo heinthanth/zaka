@@ -926,6 +926,13 @@ impl<'m> Flow<'m>
                 self.load(e, addr, &at, state)
             }
             ExprNode::Take { addr } => self.take(e, addr, state),
+            ExprNode::Dup { value } =>
+            {
+                // A duplicate holds blocks of its own, so it points at
+                // nothing the value read points at.
+                self.value(value, state);
+                SlotState::unknown(e.kind, Roots::new())
+            }
             ExprNode::Call { func, args, .. } =>
             {
                 self.call(*func, args, e.span, state);

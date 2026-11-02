@@ -134,6 +134,7 @@ impl ToSexpr for Expr
             ExprNode::Load { addr } => list("load", [addr.to_sexpr()]),
             ExprNode::Lend { operand } => list("lend", [operand.to_sexpr()]),
             ExprNode::Take { addr } => list("take", [addr.to_sexpr()]),
+            ExprNode::Dup { value } => list("dup", [value.to_sexpr()]),
             ExprNode::PtrAdd { base, offset } =>
             {
                 list("ptr+", [base.to_sexpr(), offset.to_sexpr()])

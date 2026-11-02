@@ -24,7 +24,7 @@ fn text_kinds_read_back_from_their_names()
     assert_eq!(view, DataKind::text_view());
     assert_eq!(text.size(64), 24);
     assert_eq!(text.size(32), 12);
-    assert!(text.is_move_kind() && text.is_aggregate() && !text.is_borrow());
+    assert!(!text.is_move_kind() && text.is_aggregate() && !text.is_borrow());
     assert!(text.holds_text() && DataKind::parse("[2]text").unwrap().holds_text());
     assert!(view.is_borrow() && !view.holds_text());
     assert!(!view.widens_to(DataKind::slice_of(DataKind::U8), 64));

@@ -250,7 +250,8 @@ borrowed address: the parameter kind is `ငှားထားသော <struct>
 `<variable> ၏ လိပ်စာ`.
 
 A struct with a field that is an owner pointer (`<kind> လိပ်စာ`), at once or inside a field
-that is a struct or a list, moves instead of being duplicated, as an owner does. The new
+that is a struct or a list, moves instead of being duplicated, as an owner does. In a
+struct that is duplicated, each text field gets a block of its own ([Text](text.md#copies)). The new
 struct takes the address, the old one is left with `ဗလာ` in that field, and a later use of
 the old struct is ZK0701. See [Ownership and borrowing](ownership.md#one-owner). A struct
 given back from a function follows the same rules; see [Lists and structs as

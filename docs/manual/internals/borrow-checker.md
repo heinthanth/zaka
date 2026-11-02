@@ -201,7 +201,9 @@ text place roots at that block, as a read of an owner does, and a lend or a rang
 text is a borrow of it. A `Drop` of a text place gives the block back as a `Free` does,
 and then leaves the slot blank, save a struct or a list with an owner in it: the drop frees
 its text alone, so the slot keeps the facts of its owners for the leak checks. A view of text that is still live at the drop is ZK0704,
-and a function that returns a view of its own local text is ZK0706.
+and a function that returns a view of its own local text is ZK0706. Text is no move kind:
+a read of a text place into another place is a `Dup`, whose value holds blocks of its own,
+so it points into nothing the place read points into.
 
 A text constant holds static text, so a read of it is a duplicate, never a move:
 `RootCtx::is_const` keeps `moved` and the moved arguments of a call from marking a

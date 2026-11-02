@@ -1040,9 +1040,11 @@ impl Lowerer<'_>
     }
 
     /// Lower a value headed for a place of kind `want`. A value of a move
-    /// kind headed for a place of a move kind is taken out of its own
-    /// place, which is left at its default; other values are read. A
-    /// constant is never taken: its text is static, so a read is a duplicate.
+    /// kind, one that holds an owner pointer, headed for a place of a move
+    /// kind is taken out of its own place, which is left at its default. A
+    /// place of a kind that holds text is read and duplicated, so the two
+    /// places never share u8s. Other values are read. A constant is never
+    /// taken or duplicated: its text is static, so a read is a duplicate.
     ///
     /// # Arguments
     ///
@@ -1055,9 +1057,12 @@ impl Lowerer<'_>
     fn owned(&mut self, e: &ast::Expr, want: DataKind) -> Expr
     {
         let lowered = self.expr(e);
+        ret_if!(self.reads_const(&lowered), coerce_lowered(lowered, want));
         let moved = lowered.kind.is_move_kind() && want.is_move_kind();
-        let moved = moved && !self.reads_const(&lowered);
-        coerce_lowered(tern!(moved, take(lowered), lowered), want)
+        ret_if!(moved, coerce_lowered(take(lowered), want));
+        let read = matches!(lowered.node, ExprNode::Read(_) | ExprNode::Load { .. });
+        let copied = read && lowered.kind.holds_text();
+        coerce_lowered(tern!(copied, dup(lowered), lowered), want)
     }
 
     /// Whether a value is read out of a constant: the constant itself, or a
@@ -1763,6 +1768,23 @@ fn take(e: Expr) -> Expr
         ExprNode::Load { addr } => ExprNode::Take { addr },
         other => other,
     };
+    Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// Duplicate a value read out of a place, so each heap text in it gets a
+/// block of its own.
+///
+/// # Arguments
+///
+/// * `e` - The read.
+///
+/// # Returns
+///
+/// The duplicate, of the read's kind.
+fn dup(e: Expr) -> Expr
+{
+    let (kind, span) = (e.kind, e.span);
+    let node = ExprNode::Dup { value: Box::new(e) };
     Expr::builder().kind(kind).node(node).span(span).build()
 }
 

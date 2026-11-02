@@ -822,17 +822,13 @@ impl DataKind
     pub fn is_checked_ptr(self) -> bool { self.is_ptr() && !self.is_raw_ptr() }
 
     /// Whether a value of the kind is moved, not copied, when it goes into
-    /// another place.
+    /// another place: a kind that holds an owner pointer, since a duplicate
+    /// would free one block twice. Text and each other value are copied.
     ///
     /// # Returns
     ///
-    /// `true` for an owner and for a list whose cells are moved.
-    pub fn is_move_kind(self) -> bool
-    {
-        ret_if!(let Some(l) = self.as_list(), l.cell.is_move_kind());
-        ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.is_move_kind()));
-        self.is_owner_ptr() || self == DataKind::Text
-    }
+    /// `true` for an owner, and a list or struct with one in it.
+    pub fn is_move_kind(self) -> bool { self.holds_owner_ptr() }
 
     /// Whether a value of the kind is duplicated when it goes into another
     /// place.

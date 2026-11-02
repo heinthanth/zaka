@@ -386,6 +386,7 @@ impl IrTree<'_>
                 ("lend", String::new(), vec![self.expr(operand)])
             }
             ExprNode::Take { addr } => ("take", String::new(), vec![self.expr(addr)]),
+            ExprNode::Dup { value } => ("dup", String::new(), vec![self.expr(value)]),
             ExprNode::PtrAdd { base, offset } =>
             {
                 ("ptr+", String::new(), self.pair(base, offset))

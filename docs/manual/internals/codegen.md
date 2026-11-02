@@ -70,7 +70,7 @@ A statement is one of fourteen forms:
 
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
-`Convert { implicit }`, `Call`, the pointer forms `AddrOf`, `Load`, `Lend`, `Take`,
+`Convert { implicit }`, `Call`, the pointer forms `AddrOf`, `Load`, `Lend`, `Take`, `Dup`,
 `PtrAdd`, `PtrSub`, `SizeOf`, the list forms `List`, `BlankList`, `CellAddr`, `FieldAddr`,
 and `MakeSlice`, and the text forms `Text(String)` (static text, written `"..."` in the
 s-expression form) and `Format(Vec<FmtPiece>)` (text built when the program runs, written
@@ -98,7 +98,9 @@ rules out). Its rules:
   value if the block never sets it.
 - `ကိန်းသေ` becomes a slot with `access: const`; the folder uses the flag.
 - A pointer read through a place becomes `Load`; an owner moved out becomes `Take`; a
-  lend becomes `Lend`.
+  lend becomes `Lend`. A place of a kind that holds text, read into another place,
+  becomes `Dup`: codegen copies the value into a temp slot and runs `dup_text` on it, so
+  each heap text in the duplicate gets a block of its own.
 - A range `x ၏ အကွက် s မှစ၍ n ကွက်` becomes `MakeSlice { source, start, len, from }`,
   where `from` tells whether the source is a list of a known count, a slice, or a heap
   block. The lend of a list is a `MakeSlice` of each cell, marked `checked`. The count of
@@ -321,7 +323,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k` |
 | slices | `make_slice stride source`, `slice_cell stride from` |
-| text | `text t`, `format fmt`, `drop k`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
+| text | `text t`, `format fmt`, `drop k`, `dup_text k`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
 
 A range of text that is not the whole text gets `text_edges` after its `make_slice`, which
 stops the program when an edge falls inside a character; when the fold knows the text, the

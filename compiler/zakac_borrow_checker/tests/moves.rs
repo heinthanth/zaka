@@ -207,7 +207,7 @@ fn implicit_return_of_a_moved_result_is_zk0701()
 }
 
 #[test]
-fn a_read_of_a_text_constant_is_no_move()
+fn a_read_of_text_is_duplicated_not_moved()
 {
     ok("ကိန်းသေ က သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"မမ\" ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် f သည် စာသား စ ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -217,8 +217,8 @@ fn a_read_of_a_text_constant_is_no_move()
 လုပ်ဆောင်ချက် f ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။
 က ကို ပြသပါ။
 x ကို ပြသပါ။");
-    let moved = "ကိန်းရှင် က သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"မမ\" ဖြစ်ပါစေ။
+    let copied = "ကိန်းရှင် က သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"မမ\" ဖြစ်ပါစေ။
 ကိန်းရှင် x သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
 က ကို ပြသပါ။";
-    assert_eq!(codes(moved), [Code::MovedOut]);
+    ok(copied);
 }

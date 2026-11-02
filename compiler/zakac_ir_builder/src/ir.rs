@@ -493,6 +493,15 @@ pub enum ExprNode
         /// The address of the place, a pointer.
         addr: Box<Expr>,
     },
+    /// A duplicate of a value that holds text: the value is read, then each
+    /// heap text in it gets a block of its own, so the place read and the
+    /// place written never share u8s. The expression kind is the kind of
+    /// the value.
+    Dup
+    {
+        /// The value read, of the expression kind.
+        value: Box<Expr>,
+    },
     /// An address moved `offset` elements forward; the expression kind is
     /// the kind of `base`.
     PtrAdd

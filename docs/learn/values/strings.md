@@ -155,28 +155,32 @@ error[ZK0403]: + needs a number, found text
 
 To put a number into text, use a template slot: `"အဆင့် {၁}"`.
 
-## Moving text
+## Copies of text
 
-A `စာသား` variable owns its text. Putting it into another variable *moves* the text, the
-same as an [owner address](../pointers/ownership.md): the old variable gives it up and
-cannot be read after that.
+A `စာသား` variable owns its text. Putting it into another variable *copies* the text: each
+variable then holds its own, and a change to one leaves the other as it was.
 
-```zaka-error ZK0701
+```zaka
 ကိန်းရှင် ပထမ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "Zaka" ဖြစ်ပါစေ။
 ကိန်းရှင် ဒုတိယ သည် စာသား တစ်ခု ဖြစ်ပါစေ။
 ဒုတိယ ကို ပထမ ဟု ထားပါ။
+ဒုတိယ ကို ဒုတိယ + "!" ဟု ထားပါ။
 ပထမ ကို ပြသပါ။
+ဒုတိယ ကို ပြသပါ။
 ```
 
 ```text
-error[ZK0701]: "ပထမ" was moved to another owner and now holds ဗလာ
+Zaka
+Zaka!
 ```
 
-Passing a `စာသား` to a function moves it too.
+Passing text to a function copies it too, so a function cannot change the caller's
+variable. A duplicate of text built while the program runs takes a new block of storage; to
+read text with no duplicate, lend it.
 
 ## Lending text
 
-To let a function read text without taking it, lend it. The kind
+To let a function read text with no duplicate, lend it. The kind
 `စာသား တစ်စိတ်တစ်ပိုင်း` ("a part of text") is a *view* of text, and
 `<text> ၏ တန်ဖိုးအငှား` ("the value, on loan") makes one. A view is a
 [slice](../lists/slices.md), and it follows the same rules.
