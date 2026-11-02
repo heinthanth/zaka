@@ -63,7 +63,8 @@ fn text_mistakes()
 {
     assert_eq!(codes(&lines(&[TEXT, "t ၏ အကွက် ၀ ကို ၁ ဟု ထားပါ။"])), [Code::TextCellWrite]);
     assert_eq!(codes(&lines(&[TEXT, "v ၏ အကွက် ၀ ကို ၁ ဟု ထားပါ။"])), [Code::TextCellWrite]);
-    assert_eq!(codes(&lines(&[TEXT, "t == t ကို ပြသပါ။"])), [Code::OperandKind]);
+    ok(&lines(&[TEXT, "t == t ကို ပြသပါ။", "t != v ကို ပြသပါ။"]));
+    assert_eq!(codes(&lines(&[TEXT, "t < t ကို ပြသပါ။"])), [Code::OperandKind]);
     assert_eq!(codes(&lines(&[TEXT, "t + ၁ ကို ပြသပါ။"])), [Code::OperandKind]);
 }
 

@@ -203,6 +203,12 @@ const EDITS: &str = "ဒေတာအမျိုးအစား လူ တွင
 /// What [`EDITS`] prints.
 const EDITED: &str = "၆\n၇!!\n၃၂\nလူ(အသက်: ၃၂)\n[၁၊ ၃]\n";
 
+/// Text compared with `==` and `!=`: heap, static, a view, and blank text.
+const COMPARES: &str = "ကိန်းရှင် i သည် ၇ ဖြစ်ပါစေ။\nကိန်းရှင် က သည် \"{i}\" ဖြစ်ပါစေ။\nကိန်းရှင် v \
+                        သည် စာသား တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။\nက \
+                        == \"၇\" ကို ပြသပါ။\nက != \"၈\" ကို ပြသပါ။\nv == \"၇\" ကို \
+                        ပြသပါ။\nက == \"abc\" ကို ပြသပါ။\n\"\" == \"\" ကို ပြသပါ။\n";
+
 /// Each mode a program can be built and run in.
 ///
 /// # Returns
@@ -261,4 +267,10 @@ fn shared_structs_and_lists_read_the_callers_value_in_each_mode()
 fn edit_references_change_the_callers_place_in_each_mode()
 {
     runs_in_each_mode(EDITS, EDITED)
+}
+
+#[test]
+fn text_compares_its_u8s_in_each_mode()
+{
+    runs_in_each_mode(COMPARES, "မှန်\nမှန်\nမှန်\nမမှန်\nမှန်\n")
 }

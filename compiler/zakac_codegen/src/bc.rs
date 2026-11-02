@@ -276,6 +276,9 @@ pub enum Op
         /// The number of the first character: 0 or 1.
         first: u8,
     },
+    /// Pop the addresses of two texts or views of text; push whether the two
+    /// hold the same u8s.
+    TextEq,
     /// Look at the address of a view of text on the stack, leaving it there;
     /// stop the program when the view starts or ends inside a character.
     TextEdges,
@@ -387,6 +390,7 @@ impl Op
             | Op::ResultAddr
             | Op::CharCount
             | Op::CharAt { .. }
+            | Op::TextEq
             | Op::TextEdges
             | Op::CheckUtf8 =>
             {

@@ -1006,6 +1006,7 @@ impl Machine
             }
             Op::CharCount => self.char_count(),
             Op::CharAt { first } => self.char_at(first),
+            Op::TextEq => self.text_eq(),
             Op::TextEdges => self.text_edges(),
             Op::CheckUtf8 => self.check_utf8(),
         }
@@ -1963,6 +1964,24 @@ impl Machine
         let from = self.pop_ptr("blit")?;
         let to = self.pop_ptr("blit")?;
         self.mem.blit(to, from, kind)
+    }
+
+    /// Pop the addresses of two texts or views of text and push whether the two
+    /// hold the same u8s.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a read hits.
+    fn text_eq(&mut self) -> Step
+    {
+        let r = self.pop_ptr("text_eq")?;
+        let l = self.pop_ptr("text_eq")?;
+        let octets = |at: u64| {
+            let (base, count) = slice_parts(&self.mem, at)?;
+            self.mem.octets(base, count)
+        };
+        let same = octets(l)? == octets(r)?;
+        self.push(Value::Bool(same))
     }
 
     /// Pop the addresses of two lists and push whether their cells are

@@ -328,7 +328,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k` |
 | slices | `make_slice stride source`, `slice_cell stride from` |
-| text | `text t`, `format fmt`, `drop k`, `dup_text k`, `lend_text k`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
+| text | `text t`, `format fmt`, `drop k`, `dup_text k`, `lend_text k`, `text_eq`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
 
 A range of text that is not the whole text gets `text_edges` after its `make_slice`, which
 stops the program when an edge falls inside a character; when the fold knows the text, the

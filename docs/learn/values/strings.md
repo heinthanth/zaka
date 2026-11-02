@@ -141,8 +141,7 @@ joins these"):
 မင်္ဂလာပါ မောင်မောင်!
 ```
 
-Text joins to text alone. `+` with a number is an error, and two pieces of text cannot be
-compared with `==` so far:
+Text joins to text alone. `+` with a number is an error:
 
 ```zaka-error ZK0403
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "အဆင့် " ဖြစ်ပါစေ။
@@ -154,6 +153,21 @@ error[ZK0403]: + needs a number, found text
 ```
 
 To put a number into text, use a template slot: `"အဆင့် {၁}"`.
+
+## Comparing text
+
+`==` and `!=` tell whether two pieces of text hold the same characters:
+
+```zaka
+ကိန်းရှင် အမည် သည် "မောင်မောင်" ဖြစ်ပါစေ။
+အမည် == "မောင်မောင်" ကို ပြသပါ။
+အမည် != "မမ" ကို ပြသပါ။
+```
+
+```text
+မှန်
+မှန်
+```
 
 ## Copies of text
 

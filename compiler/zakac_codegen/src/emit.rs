@@ -1237,6 +1237,13 @@ impl<'s> FuncGen<'s>
                 self.expr(rhs);
                 self.op(Op::Infix(*op));
             }
+            ExprNode::Compare { op, lhs, rhs } if lhs.kind.is_textual() =>
+            {
+                self.expr(lhs);
+                self.expr(rhs);
+                self.op(Op::TextEq);
+                do_if!(*op == CmpOp::Ne, self.op(Op::Prefix(PrefixOp::Not)));
+            }
             ExprNode::Compare { op, lhs, rhs } if lhs.kind.is_list() =>
             {
                 self.expr(lhs);

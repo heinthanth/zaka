@@ -573,6 +573,9 @@ impl Checker
     {
         let joined = is_op(op, InfixOp::Add, VerbOp::Add) && lhs.0.is_textual();
         ret_if!(joined && rhs.0.is_textual(), Some(DataKind::Text));
+        // Text and views of text compare their u8s, in each mix.
+        let texts = lhs.0.is_textual() && rhs.0.is_textual();
+        ret_if!(class == OpClass::Equal && texts, Some(DataKind::Bool));
         let blocks = |k: &DataKind| k.is_struct() || k.is_slice() || k.is_textual();
         let structs = [lhs.0, rhs.0].iter().any(blocks);
         let equal = class == OpClass::Equal && !structs;

@@ -198,8 +198,8 @@ error[ZK0606]: a text constant must be known at compile time
 `a + b` joins two pieces of text, owned or views in each mix, into new owned text. The
 verbal form joins two or more pieces in order: `a၊ b၊ c တို့ကို ဆက်ထားသည့် စာသား` is the same
 text as `a + b + c`, and folds the same way. Other operators do not take text, and a join
-takes nothing else with it: `t + ၁`, `t == "a"` and a number among the pieces of the
-verbal form are ZK0403. Text cannot be compared so far; compare the cells one at a time.
+takes nothing else with it: `t + ၁` and a number among the pieces of the verbal form are
+ZK0403.
 
 ```zaka
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မမ" ဖြစ်ပါစေ။
@@ -217,6 +217,25 @@ t + ၁ ကို ပြသပါ။
 
 ```text
 error[ZK0403]: + needs a number, found text
+```
+
+## Comparing
+
+`a == b` and `a != b`, and the word forms `a သည် b နှင့် ညီသည်` and `မညီ`, compare two pieces
+of text, owned or views in each mix. Two texts are equal when the two hold the same u8s: the
+compare is exact, with no normal form, so two spellings of one word that differ in their
+code points are not equal. `<` and the other orderings do not take text (ZK0403).
+
+```zaka
+ကိန်းရှင် i သည် ၇ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် "{i}" ဖြစ်ပါစေ။
+က == "၇" ကို ပြသပါ။
+က != "၈" ကို ပြသပါ။
+```
+
+```text
+မှန်
+မှန်
 ```
 
 ## Printing
@@ -488,7 +507,7 @@ a program stops](../vm/traps.md) the trap.
 | ZK0106 | a lone brace, an unclosed `{`, or `{...}` in a character literal |
 | ZK0301 | a template slot names something not declared |
 | ZK0401 | owned text where a view is wanted, or a view of text and a slice of u8s in place of each other |
-| ZK0403 | `+` of text and a non-text value, or another operator on text |
+| ZK0403 | `+` of text and a non-text value, or an operator other than `+`, `==` and `!=` on text |
 | ZK0411 | the lend of a literal or a call result |
 | ZK0429 | a write to a cell of text |
 | ZK0704 | a view used after its text is dropped |

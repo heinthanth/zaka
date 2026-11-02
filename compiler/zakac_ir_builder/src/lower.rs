@@ -1685,6 +1685,16 @@ impl Lowerer<'_>
     /// The comparison.
     fn compare(&mut self, op: CmpOp, lhs: &ast::Expr, rhs: &ast::Expr) -> ExprNode
     {
+        // Text and a view of text compare their u8s, each in its own kind.
+        let texts = self.kind_of(lhs).is_textual() && self.kind_of(rhs).is_textual();
+        ret_if!(
+            texts,
+            ExprNode::Compare {
+                op,
+                lhs: Box::new(self.expr(lhs)),
+                rhs: Box::new(self.expr(rhs))
+            }
+        );
         let common = concrete(self.common(self.kind_of(lhs), self.kind_of(rhs)));
         let lhs = Box::new(self.coerce(lhs, common));
         let rhs = Box::new(self.coerce(rhs, common));
