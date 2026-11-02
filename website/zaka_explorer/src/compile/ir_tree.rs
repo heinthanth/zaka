@@ -424,11 +424,12 @@ impl IrTree<'_>
                 ("field@", name.unwrap_or_default(), vec![self.expr(base)])
             }
             ExprNode::Text(text) => ("text", format!("\"{text}\""), Vec::new()),
-            ExprNode::Chars { text, index, first } =>
+            ExprNode::Chars { text, index, first, octet } =>
             {
                 let label = match (index.is_some(), *first)
                 {
                     (false, _) => "chars",
+                    (true, _) if *octet => "char_at_u8",
                     (true, 0) => "char@",
                     (true, _) => "char1@",
                 };

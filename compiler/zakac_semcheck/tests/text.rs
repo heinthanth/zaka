@@ -68,6 +68,31 @@ fn text_mistakes()
     assert_eq!(codes(&lines(&[TEXT, "t + ၁ ကို ပြသပါ။"])), [Code::OperandKind]);
 }
 
+/// An each-character loop walks text or a view of text; an each-cell loop
+/// walks a list or a slice whose cells hold no owner pointer.
+#[test]
+fn each_loops_walk_lists_slices_and_text()
+{
+    let walks = [
+        "t ၏ စာလုံးတိုင်း ကို c အနေဖြင့် ယူ၍ c ကို ပြသပါ။",
+        "v ၏ စာလုံးတိုင်း ကို c အနေဖြင့် ယူ၍ c ကို ပြသပါ။",
+        "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။",
+        "l ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို x + ၁ ဟု ထားပါ။",
+        "l ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။",
+    ];
+    ok(&lines(&[&[TEXT], &walks[..]].concat()));
+    let wrong = [
+        "t ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။",
+        "v ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။",
+        "၅ ၏ စာလုံးတိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။",
+    ];
+    let found: Vec<_> = wrong.iter().map(|w| codes(&lines(&[TEXT, w]))).collect();
+    assert_eq!(found, [[Code::EachSourceWrong]; 3]);
+    let owners = "ကိန်းရှင် ps သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်ပါစေ။";
+    let walk = "ps ၏ အကွက်တိုင်း ကို p အနေဖြင့် ယူ၍ p ကို ပြသပါ။";
+    assert_eq!(codes(&lines(&[owners, walk])), [Code::EachSourceWrong]);
+}
+
 /// A view of text never becomes a slice of u8s, whose cells can be written,
 /// so a write through it cannot break the UTF-8 of the text.
 #[test]

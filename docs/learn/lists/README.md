@@ -151,7 +151,47 @@ parentheses:
 
 ## Walking a list
 
-A counted loop visits each cell. The cell count, in parentheses, gives the last number:
+An *each-cell loop* visits the cells in turn. It reads "taking each cell of the list as
+*n*, do ...":
+
+```zaka
+ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄၊ ၈၊ ၁၅၊ ၁၆ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
+ကိန်းများ ၏ အကွက်တိုင်း ကို ကိန်း အနေဖြင့် ယူ၍ စုစုပေါင်း ကို စုစုပေါင်း + ကိန်း ဟု ထားပါ။
+စုစုပေါင်း ကို ပြသပါ။
+```
+
+```text
+၄၃
+```
+
+| Zaka | Reads as | Part |
+| --- | --- | --- |
+| `ကိန်းများ ၏` | "of the numbers" | the list |
+| `အကွက်တိုင်း ကို` | "each cell" | what the loop takes |
+| `ကိန်း အနေဖြင့်` | "as ကိန်း" | the name of the loop variable |
+| `ယူ၍` | "taking" | the loop verb |
+
+Each round, the loop variable holds a duplicate of the next cell. The inner part can set
+it, and the list keeps its cells:
+
+```zaka
+ကိန်းရှင် အမည်များ သည် စာသား စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ["မောင်"၊ "မြ"] ဖြစ်ပါစေ။
+အမည်များ ၏ အကွက်တိုင်း ကို အမည် အနေဖြင့် ယူ၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+အမည် ကို "{အမည်}!" ဟု ထားပါ။
+အမည် ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+အမည်များ ကို ပြသပါ။
+```
+
+```text
+မောင်!
+မြ!
+["မောင်"၊ "မြ"]
+```
+
+To change the cells themselves, or to know the number of each cell, walk the numbers with
+a counted loop. The cell count, in parentheses, gives the last number:
 
 ```zaka
 ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
@@ -168,6 +208,7 @@ A counted loop visits each cell. The cell count, in parentheses, gives the last 
 
 - Declare a list of five decimal numbers, set the middle one, and print the list.
 - Print the last cell of a list, once counting from 0 and once counting from 1.
-- Find the largest value in a list with a counted loop.
+- Find the largest value in a list with an each-cell loop.
+- Double each cell of a list with a counted loop, and print the list.
 
 Next: [Passing and comparing lists](passing.md).

@@ -269,6 +269,10 @@ pub enum Op
     /// Pop the address of text; push the number of its characters, a
     /// `usize`.
     CharCount,
+    /// Pop a u8 number, then the address of text; stop the program when the
+    /// number is outside the text or inside a character, else push the
+    /// character that starts there.
+    CharAtOctet,
     /// Pop a character number, then the address of text; stop the program
     /// when the number is outside the text, else push the character.
     CharAt
@@ -391,6 +395,7 @@ impl Op
             | Op::CharCount
             | Op::CharAt { .. }
             | Op::TextEq
+            | Op::CharAtOctet
             | Op::TextEdges
             | Op::CheckUtf8 =>
             {

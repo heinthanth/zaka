@@ -128,6 +128,14 @@ impl ToSexpr for Stmt
             Stmt::If(s) => if_sexpr(s),
             Stmt::While(s) => list("while", [s.cond.to_sexpr(), s.block.to_sexpr()]),
             Stmt::Counted(s) => counted_sexpr(s),
+            Stmt::Each(s) =>
+            {
+                let head = tern!(s.chars, "each_char", "each_cell");
+                list(
+                    head,
+                    [s.var.name.to_string(), s.source.to_sexpr(), s.block.to_sexpr()],
+                )
+            }
             Stmt::Generic(s) => generic_sexpr(s),
             Stmt::Break(_) => "(break)".into(),
             Stmt::Continue(_) => "(continue)".into(),

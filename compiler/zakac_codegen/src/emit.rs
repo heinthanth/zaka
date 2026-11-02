@@ -1330,15 +1330,12 @@ impl<'s> FuncGen<'s>
                 let slot = self.temp("%text", e.kind);
                 self.text_at(Op::LocalAddr(slot), e)
             }
-            ExprNode::Chars { text, index, first } =>
+            ExprNode::Chars { text, index, first, octet } =>
             {
                 let fresh = self.read_operand(text);
                 do_if!(let Some(i) = index, self.expr(i));
-                self.op(tern!(
-                    index.is_some(),
-                    Op::CharAt { first: *first },
-                    Op::CharCount
-                ));
+                let at = tern!(*octet, Op::CharAtOctet, Op::CharAt { first: *first });
+                self.op(tern!(index.is_some(), at, Op::CharCount));
                 do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
             }
             ExprNode::FieldAddr { base, offset, .. } =>

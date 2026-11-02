@@ -34,6 +34,7 @@ use crate::stmt::CallStmt;
 use crate::stmt::ContinueStmt;
 use crate::stmt::CountedStmt;
 use crate::stmt::DeclStmt;
+use crate::stmt::EachStmt;
 use crate::stmt::FnDecl;
 use crate::stmt::FreeStmt;
 use crate::stmt::GenericStmt;
@@ -101,6 +102,7 @@ IfStmt => "if", visit_if;
 IfArm => "if_arm", visit_if_arm;
 WhileStmt => "while", visit_while;
 CountedStmt => "counted", visit_counted;
+EachStmt => "each", visit_each;
 GenericStmt => "generic", visit_generic;
 BreakStmt => "break", visit_break;
 ContinueStmt => "continue", visit_continue;
@@ -157,6 +159,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::If(s) => s,
         Stmt::While(s) => s,
         Stmt::Counted(s) => s,
+        Stmt::Each(s) => s,
         Stmt::Generic(s) => s,
         Stmt::Break(s) => s,
         Stmt::Continue(s) => s,
@@ -258,6 +261,8 @@ pub trait Visitor
     fn visit_while(&mut self, n: &WhileStmt) { walk_while(self, n) }
     /// Visit a counted loop.
     fn visit_counted(&mut self, n: &CountedStmt) { walk_counted(self, n) }
+    /// Visit an each-cell or each-character loop.
+    fn visit_each(&mut self, n: &EachStmt) { walk_each(self, n) }
     /// Visit a generic loop.
     fn visit_generic(&mut self, n: &GenericStmt) { walk_generic(self, n) }
     /// Visit a break statement.
@@ -354,6 +359,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::If(s) => v.visit_if(s),
         Stmt::While(s) => v.visit_while(s),
         Stmt::Counted(s) => v.visit_counted(s),
+        Stmt::Each(s) => v.visit_each(s),
         Stmt::Generic(s) => v.visit_generic(s),
         Stmt::Break(s) => v.visit_break(s),
         Stmt::Continue(s) => v.visit_continue(s),
@@ -433,6 +439,16 @@ pub fn walk_while<V: Visitor + ?Sized>(v: &mut V, n: &WhileStmt)
 {
     v.enter(n);
     v.visit_expr(&n.cond);
+    v.visit_block(&n.block);
+    v.leave(n);
+}
+
+/// Visit the source, variable and block of an each-cell loop.
+pub fn walk_each<V: Visitor + ?Sized>(v: &mut V, n: &EachStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.source);
+    v.visit_ident(&n.var);
     v.visit_block(&n.block);
     v.leave(n);
 }
@@ -861,6 +877,7 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::If(s) => walk_if_mut(v, s),
         Stmt::While(s) => walk_while_mut(v, s),
         Stmt::Counted(s) => walk_counted_mut(v, s),
+        Stmt::Each(s) => walk_each_mut(v, s),
         Stmt::Generic(s) => walk_generic_mut(v, s),
         Stmt::Break(s) => v.visit_span_mut(&mut s.span),
         Stmt::Continue(s) => v.visit_span_mut(&mut s.span),
@@ -918,6 +935,15 @@ pub fn walk_while_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut WhileStmt)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_expr_mut(&mut n.cond);
+    v.visit_block_mut(&mut n.block);
+}
+
+/// Visit the source, variable and block of an each-cell loop.
+pub fn walk_each_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut EachStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_expr_mut(&mut n.source);
+    v.visit_ident_mut(&mut n.var);
     v.visit_block_mut(&mut n.block);
 }
 

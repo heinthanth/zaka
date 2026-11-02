@@ -220,6 +220,7 @@ A list lives in a block, and its instructions work on addresses.
 | `text_eq` | addr addr → b | whether two texts or views of text hold the same u8s |
 | `char_count` | addr → n | the number of characters of the text at `addr`, a `usize` |
 | `char_at` | addr i → c | the character at number `i` of the text at `addr`, counted from 0, or from 1 when listed `char_at from 1`; a number outside the text traps |
+| `char_at_octet` | addr i → c | the character that starts at u8 number `i` of the text at `addr`, counted from 0; a number outside the text or inside a character traps |
 | `text_edges` | addr → addr | trap when the view of text at `addr` starts or ends inside a character; the view remains |
 | `check_utf8` | addr → addr | trap when the u8s of the slice at `addr` are not UTF-8; the slice remains |
 

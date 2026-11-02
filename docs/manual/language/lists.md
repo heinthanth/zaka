@@ -133,6 +133,10 @@ pointer to one, or a [slice](slices.md) (ZK0422).
 error[ZK0422]: isize is not a list, so it has no cells
 ```
 
+An [each-cell loop](statements.md#loops), `အမှတ်များ ၏ အကွက်တိုင်း ကို အမှတ် အနေဖြင့်
+ယူ၍ ...`, reads each cell in turn into a variable of its own; a list whose cells hold an
+owner pointer cannot be walked so (ZK0434).
+
 ### The cell number takes the whole expression
 
 The number after `အကွက်` is read as far as the operator expression goes, just as

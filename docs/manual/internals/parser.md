@@ -278,7 +278,9 @@ token:
 `parse_expr_headed` runs the clause engine in statement mode. If a statement verb closed
 the clause, the statement is built. Otherwise the clause is a value, and the next token
 decides: `နေသရွေ့` makes a while loop; `မှ` makes a counted loop (`from မှ to အထိ (step စီ)? NAME အနေဖြင့်
-mode block`); all else is ZK0203, which lists the endings a statement can have.
+mode block`); `၏` before `အကွက်တိုင်း` or `စာလုံးတိုင်း` makes an each loop (`value ၏
+(အကွက်တိုင်း|စာလုံးတိုင်း) ကို NAME အနေဖြင့် ယူ၍ block`, an `EachStmt`), and the clause engine
+stops before that `၏`; all else is ZK0203, which lists the endings a statement can have.
 
 Blocks and branches share `parse_branch`: with no opener, it reads one sentence into a
 `BlockStmt { single: true }`. Inside an arm of a conditional that sentence cannot itself

@@ -267,6 +267,15 @@ fn statement_errors()
 }
 
 #[test]
+fn each_loops()
+{
+    let cells = "l ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။";
+    assert_eq!(stmt(cells), "(each_cell x l (block (print x)))");
+    let chars = "t ၏ စာလုံးတိုင်း ကို c အနေဖြင့် ယူ၍ c ကို ပြသပါ။";
+    assert_eq!(stmt(chars), "(each_char c t (block (print c)))");
+}
+
+#[test]
 fn counted_variable_joined_to_its_particle_gets_a_hint()
 {
     let out = parse_text("၁ မှ ၁၀ အထိ ကိန်းအနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။");

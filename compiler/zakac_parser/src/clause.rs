@@ -214,6 +214,9 @@ impl Parser<'_>
         loop
         {
             let tok = self.peek();
+            // `၏ အကွက်တိုင်း` opens an each-cell loop; the operand before it is
+            // what the loop walks.
+            ret_if!(self.at_each_head(), self.finish_clause(stack));
             if let Some(slot) = as_slot(&tok)
             {
                 self.attach_slot(&mut stack, slot)?;

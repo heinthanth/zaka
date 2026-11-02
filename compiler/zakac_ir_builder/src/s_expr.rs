@@ -178,9 +178,10 @@ impl ToSexpr for Expr
             {
                 list("chars", [text.to_sexpr()])
             }
-            ExprNode::Chars { text, index: Some(i), first } =>
+            ExprNode::Chars { text, index: Some(i), first, octet } =>
             {
-                let head = tern!(*first == 0, "char@", "char1@");
+                let at = tern!(*first == 0, "char@", "char1@");
+                let head = tern!(*octet, "char_at_u8", at);
                 list(head, [text.to_sexpr(), i.to_sexpr()])
             }
             ExprNode::Format(pieces) =>

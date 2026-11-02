@@ -286,6 +286,23 @@ Text is stored as UTF-8: a Latin letter takes one u8, a Burmese letter three. It
 A part of text, `စာ ၏ အကွက် ၀ မှစ၍ ၆ ကွက်`, must start and end between two characters,
 so that text holds whole characters at each step.
 
+An *each-character loop* takes the characters in turn, "taking each character of the
+text as *c*, do ...":
+
+```zaka
+"ကမ္ဘာ" ၏ စာလုံးတိုင်း ကို စ အနေဖြင့် ယူ၍ စ ကို ပြသပါ။
+```
+
+```text
+က
+မ
+္
+ဘ
+ာ
+```
+
+A Burmese letter and each mark on it are characters of their own.
+
 ## No cleanup
 
 Text built when the program runs needs room on the [heap](../pointers/heap.md), but a

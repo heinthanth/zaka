@@ -590,6 +590,10 @@ pub enum ExprNode
         index: Option<Box<Expr>>,
         /// The number of the first character: 0 or 1.
         first: u8,
+        /// Whether `index` counts u8s from the start, not characters: it
+        /// lands on the first u8 of the character read.
+        #[serde(default)]
+        octet: bool,
     },
     /// The address of one field of a struct; the expression kind is a
     /// pointer to the field kind.

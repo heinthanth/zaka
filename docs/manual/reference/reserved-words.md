@@ -84,6 +84,7 @@ see [Names](../../learn/variables/names.md).
 | `သို့မဟုတ်ပါက` | "otherwise" (else) | [If and else](../../learn/control-flow/if-else.md) |
 | `နေသရွေ့`, `ဖြစ်နေသရွေ့` | "as long as" | [While loops](../../learn/control-flow/while.md) |
 | `ရေတွက်၍`, `တိုး၍`, `လျှော့၍` | "counting", "increasing", "decreasing" | [Counted loops](../../learn/control-flow/counted-loops.md) |
+| `အကွက်တိုင်း`, `စာလုံးတိုင်း`, `ယူ၍` | "each cell", "each character", "taking" | [Lists](../../learn/lists/README.md#walking-a-list) |
 | `ကွင်းဆက်` | "loop" | [Break and continue](../../learn/control-flow/break-continue.md) |
 | `နောက်တစ်ကြိမ်ဆီသို့` | "to the next round" | [Break and continue](../../learn/control-flow/break-continue.md) |
 

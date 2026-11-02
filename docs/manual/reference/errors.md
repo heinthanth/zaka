@@ -174,6 +174,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0431 | an argument for a parameter the function can change, with no mark | [Functions](../language/functions.md#edit-references) |
 | ZK0432 | the mark on an argument for a parameter the function cannot change | [Functions](../language/functions.md#edit-references) |
 | ZK0433 | a place a call changes, in another argument of the same call | [Functions](../language/functions.md#edit-references) |
+| ZK0434 | an each loop over a value it cannot walk: no list or slice, owner pointers in the cells, or no text | [Statements](../language/statements.md#loops) |
 
 ### ZK05: natural Zaka (warnings)
 

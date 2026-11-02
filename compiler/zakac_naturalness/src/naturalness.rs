@@ -10,6 +10,7 @@ use zakac_ast::stmt::AssignStmt;
 use zakac_ast::stmt::CallStmt;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
+use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
 use zakac_ast::stmt::PrintStmt;
@@ -23,6 +24,7 @@ use zakac_ast::visit::walk_call_expr;
 use zakac_ast::visit::walk_call_stmt;
 use zakac_ast::visit::walk_counted;
 use zakac_ast::visit::walk_decl;
+use zakac_ast::visit::walk_each;
 use zakac_ast::visit::walk_generic;
 use zakac_ast::visit::walk_group;
 use zakac_ast::visit::walk_if_arm;
@@ -213,6 +215,12 @@ impl Visitor for Checker
         do_if!(let Some(e) = &n.init, self.report_value(e));
         self.report_group(&n.cond, Place::Condition);
         walk_generic(self, n);
+    }
+
+    fn visit_each(&mut self, n: &EachStmt)
+    {
+        self.report_value(&n.source);
+        walk_each(self, n);
     }
 
     fn visit_counted(&mut self, n: &CountedStmt)

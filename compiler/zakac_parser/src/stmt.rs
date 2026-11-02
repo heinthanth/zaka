@@ -8,6 +8,7 @@ use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountMode;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
+use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
@@ -151,6 +152,7 @@ impl Parser<'_>
         let is_while = self.at(Kw::While) || self.at(Kw::WhileIs);
         ret_if!(is_while, self.parse_while_tail(cond));
         ret_if!(self.at(Kw::From), self.parse_counted_tail(cond));
+        ret_if!(self.at_each_head(), self.parse_each_tail(cond));
         Err(diag::expected_stmt_verb(self.peek().span, &self.found()))
     }
 
@@ -261,6 +263,43 @@ impl Parser<'_>
         let node = CountedStmt::builder().var(var).from(from).to(to).maybe_step(step).mode(mode)
             .block(block).span(span).build();
         Ok(Stmt::Counted(node))
+    }
+
+    /// Whether `၏ အကွက်တိုင်း` or `၏ စာလုံးတိုင်း` comes next: the head of an
+    /// each-cell or each-character loop.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn at_each_head(&self) -> bool
+    {
+        let word = kw_of(&self.peek_n(1));
+        self.at_punct(Punct::Ei) && matches!(word, Some(Kw::EachCell | Kw::EachChar))
+    }
+
+    /// Parse `၏ အကွက်တိုင်း|စာလုံးတိုင်း ကို <name> အနေဖြင့် ယူ၍ <block>` after
+    /// the list or the text an each-cell loop walks.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The list or the text.
+    ///
+    /// # Returns
+    ///
+    /// The loop, or a diagnostic.
+    fn parse_each_tail(&mut self, source: Expr) -> PResult<Stmt>
+    {
+        self.bump();
+        let chars = self.bump().kind == TokenKind::Kw(Kw::EachChar);
+        self.expect(Kw::Ko)?;
+        let var = self.parse_ident()?;
+        self.expect(Kw::CountAs)?;
+        self.expect(Kw::Taking)?;
+        let block = self.parse_branch(true)?;
+        let span = source.span().to(&block.span);
+        #[rustfmt::skip]
+        let node = EachStmt::builder().source(source).chars(chars).var(var).block(block).span(span).build();
+        Ok(Stmt::Each(node))
     }
 
     /// Parse `(<step> စီ)? <name>` in a counted loop. Both start with an

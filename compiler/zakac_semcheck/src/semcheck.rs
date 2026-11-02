@@ -16,6 +16,7 @@ use zakac_ast::stmt::CallStmt;
 use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
+use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::FreeStmt;
 use zakac_ast::stmt::GenericStmt;
@@ -468,6 +469,31 @@ impl Checker
         kind
     }
 
+    /// The kind of the variable of an each loop: a character for text, a
+    /// cell for a list or a slice whose cells hold no owner pointer.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the value the loop walks.
+    /// * `n` - The loop.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or `None` after a report.
+    fn each_var_kind(&mut self, kind: DataKind, n: &EachStmt) -> Option<DataKind>
+    {
+        let cell =
+            kind.as_list().map(|l| l.cell).or_else(|| kind.as_slice().map(|s| s.cell));
+        let walked = tern!(
+            n.chars,
+            kind.is_textual().then_some(DataKind::Char),
+            cell.filter(|c| !kind.is_text_view() && !c.holds_owner_ptr())
+        );
+        ret_if!(walked.is_some(), walked);
+        self.report(kd::each_source_wrong(n.source.span(), &kind.name()));
+        None
+    }
+
     /// Report a counted-loop bound or step that is not an integer.
     ///
     /// # Arguments
@@ -784,6 +810,15 @@ impl Visitor for Checker
         let kind = self.counted_kind(n);
         self.scopes.push();
         self.declare(&n.var, kind, Access::LoopVar);
+        self.in_loop(|c| c.visit_stmts(&n.block.stmts));
+        self.scopes.pop();
+    }
+
+    fn visit_each(&mut self, n: &EachStmt)
+    {
+        let kind = self.infer(&n.source, None).and_then(|k| self.each_var_kind(k, n));
+        self.scopes.push();
+        self.declare(&n.var, kind, Access::Var);
         self.in_loop(|c| c.visit_stmts(&n.block.stmts));
         self.scopes.pop();
     }

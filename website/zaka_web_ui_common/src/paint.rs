@@ -162,6 +162,9 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::While
         | Kw::WhileIs
         | Kw::Counting
+        | Kw::EachCell
+        | Kw::EachChar
+        | Kw::Taking
         | Kw::Increasing
         | Kw::Decreasing
         | Kw::Loop

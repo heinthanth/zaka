@@ -132,6 +132,23 @@ pub fn loop_bound_not_int(span: Span, got: &str) -> Diagnostic
     Diagnostic::new(Code::LoopBoundNotInt, t!("codes.ZK0405.message", got = got), span)
 }
 
+/// An each loop walks a value it cannot walk: an each-cell loop over no
+/// list or slice, or over cells that hold an owner pointer, or an
+/// each-character loop over no text.
+///
+/// # Arguments
+///
+/// * `span` - The value the loop walks.
+/// * `got` - Its kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0434` diagnostic.
+pub fn each_source_wrong(span: Span, got: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::EachSourceWrong, t!("codes.ZK0434.message", got = got), span)
+}
+
 /// An integer literal does not fit the kind its place expects.
 ///
 /// # Arguments

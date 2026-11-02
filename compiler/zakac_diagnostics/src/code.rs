@@ -253,6 +253,8 @@ EditMarkMissing = ("ZK0431", Level::Error),
 EditMarkExtra = ("ZK0432", Level::Error),
 /// A place a call changes through one argument appears in another.
 EditShared = ("ZK0433", Level::Error),
+/// An each loop walks a value it cannot walk.
+EachSourceWrong = ("ZK0434", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

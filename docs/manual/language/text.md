@@ -362,8 +362,10 @@ The characters of text are its Unicode scalar values, the values of `စာလ�
 counted from 0, and `၏ n ခုမြောက်စာလုံး` the character at number `n` counted from 1, each a
 `စာလုံး`, as `၏ အကွက် n` and `၏ n ခုမြောက်အကွက်` are for cells. Each takes owned text or a
 view, and each walks the text from its start, since a character takes from one to four
-u8s: a loop that reads each character in turn takes time in the square of the count. A
-number outside the text stops the program when it runs.
+u8s: a counted loop that reads each character through its number takes time in the
+square of the count. An [each-character loop](statements.md#loops), `စာ ၏ စာလုံးတိုင်း ကို
+စ အနေဖြင့် ယူ၍ ...`, walks the u8s once. A number outside the text stops the program
+when it runs.
 
 ```zaka
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ကမ္ဘာ ok" ဖြစ်ပါစေ။

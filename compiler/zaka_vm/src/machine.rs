@@ -1006,6 +1006,7 @@ impl Machine
             }
             Op::CharCount => self.char_count(),
             Op::CharAt { first } => self.char_at(first),
+            Op::CharAtOctet => self.char_at_octet(),
             Op::TextEq => self.text_eq(),
             Op::TextEdges => self.text_edges(),
             Op::CheckUtf8 => self.check_utf8(),
@@ -1726,6 +1727,32 @@ impl Machine
         let found =
             text.chars().nth(at as usize).ok_or_else(|| malformed("no character"))?;
         self.push(Value::Char(found))
+    }
+
+    /// Pop a u8 number, then the address of text, and push the character
+    /// that starts at that u8, so a walk over the text reads each character
+    /// once.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap for a number outside the text or inside a character.
+    fn char_at_octet(&mut self) -> Step
+    {
+        let index = self.pop()?;
+        let addr = self.pop_ptr("char_at_octet")?;
+        let (base, count) = slice_parts(&self.mem, addr)?;
+        let at = match index
+        {
+            Value::Int { raw, .. } => u64::try_from(raw).unwrap_or(u64::MAX),
+            _ => return Err(malformed("a u8 number is an integer")),
+        };
+        let outside =
+            TrapKind::CharOutOfRange { index: i128::from(at), first: 0, len: count };
+        ret_if!(at >= count, Err(outside));
+        let rest = self.mem.octets(base + at, (count - at).min(4))?;
+        let text = String::from_utf8_lossy(&rest);
+        let found = text.chars().next().filter(|c| *c != char::REPLACEMENT_CHARACTER);
+        self.push(Value::Char(found.ok_or(outside)?))
     }
 
     /// The view of text on the stack, which remains there: its first u8 and

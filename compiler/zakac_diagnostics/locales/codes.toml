@@ -734,6 +734,12 @@ en = "changed place in two arguments"
 en = "\"%{n}\" is changed through another argument of this call, so it cannot appear here"
 [codes.ZK0433.explain]
 en = """A place a call changes through a marked argument appears nowhere else in the same call, as a whole or as a field or a cell. Otherwise the function would read the place through one parameter while it changes it through another. Read the value into a variable of its own before the call."""
+[codes.ZK0434.title]
+en = "each loop over a value it cannot walk"
+[codes.ZK0434.message]
+en = "this each loop cannot walk %{got}"
+[codes.ZK0434.explain]
+en = """An each-cell loop (\"အကွက်တိုင်း\") walks a list or a slice whose cells hold no owner pointer: the loop variable holds a duplicate of each cell, and an owner pointer cannot be duplicated. An each-character loop (\"စာလုံးတိုင်း\") walks text or a view of text. To walk the cells of text as u8 numbers, use a counted loop over its cell count."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 

@@ -87,6 +87,8 @@ pub enum Stmt
     While(WhileStmt),
     /// `a မှ b အထိ i အနေဖြင့် ရေတွက်၍ ...`
     Counted(CountedStmt),
+    /// `l ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ ...`
+    Each(EachStmt),
     /// `ကိန်းရှင် i သည် kind တစ်ခု ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ကာ cond နေသရွေ့ ...`
     Generic(GenericStmt),
     /// `ကွင်းဆက် ကို ရပ်ပါ။`
@@ -251,6 +253,24 @@ pub struct CountedStmt
     pub step: Option<Expr>,
     /// The direction word.
     pub mode: CountMode,
+    /// The loop block.
+    pub block: BlockStmt,
+    /// Source region.
+    pub span: Span,
+}
+
+/// A loop over each cell of a list or a slice, or each character of text:
+/// `<list> ၏ အကွက်တိုင်း ကို <name> အနေဖြင့် ယူ၍ ...` or
+/// `<text> ၏ စာလုံးတိုင်း ကို <name> အနေဖြင့် ယူ၍ ...`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct EachStmt
+{
+    /// The list, the slice or the text walked.
+    pub source: Expr,
+    /// `true` for each character, `false` for each cell.
+    pub chars: bool,
+    /// The variable that holds a duplicate of each cell or character.
+    pub var: Ident,
     /// The loop block.
     pub block: BlockStmt,
     /// Source region.

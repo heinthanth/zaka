@@ -506,6 +506,7 @@ impl Lowerer<'_>
             st::Stmt::While(n) => out.push(self.while_stmt(n)),
             st::Stmt::Counted(n) => out.push(self.counted(n)),
             st::Stmt::Generic(n) => self.generic(n, out),
+            st::Stmt::Each(n) => self.each(n, out),
             st::Stmt::Break(n) =>
             {
                 out.extend(self.loop_drops(n.span));
@@ -893,6 +894,113 @@ impl Lowerer<'_>
         let (set, cond, block, update, after) = parts.expect("the scope ran");
         out.push(Stmt::Loop { init: vec![set], cond, update, block, span: n.span });
         out.extend(after);
+    }
+
+    /// Lower an each-cell or an each-character loop into a walk over a
+    /// duplicate of its source: a hidden number starts at 0 and stops at the
+    /// count. A round sets the loop variable to the cell (or the character
+    /// that starts at that u8), and drops it at the end of the round.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    /// * `out` - The list the statements go to.
+    fn each(&mut self, n: &st::EachStmt, out: &mut Vec<Stmt>)
+    {
+        let kind = self.kind_of(&n.source);
+        let span = n.source.span();
+        let source = self.owned(&n.source, kind);
+        let mut parts = None;
+        self.scoped(|l| {
+            let name = ast::Ident::builder().name("%each").span(span).build();
+            let each = l.declare(&name, kind, Access::Var);
+            let at = l.hidden(DataKind::USIZE, span);
+            let zero = l.usize_const(0, span);
+            let init = vec![
+                Stmt::Set { place: each, value: source, span },
+                Stmt::Set { place: at, value: zero, span },
+            ];
+            let count = l.each_count(each, kind, span);
+            let at_read = read(at, DataKind::USIZE, span);
+            let test = compare_node(CmpOp::Lt, at_read.clone(), count);
+            let cond = node_expr(DataKind::Bool, test, span);
+            let (block, step) = l.each_round(n, each, at);
+            let next = node_expr(
+                DataKind::USIZE,
+                infix_node(InfixOp::Add, at_read, step),
+                span,
+            );
+            let update = vec![Stmt::Set { place: at, value: next, span }];
+            let after = l.drops_from(l.drops.len() - 1, n.span);
+            parts = Some((init, cond, block, update, after));
+        });
+        let (init, cond, block, update, after) = parts.expect("the scope ran");
+        out.push(Stmt::Loop { init, cond, update, block, span: n.span });
+        out.extend(after);
+    }
+
+    /// The count of cells or u8s an each loop walks.
+    ///
+    /// # Arguments
+    ///
+    /// * `each` - The slot of the duplicate of the source.
+    /// * `kind` - Its kind.
+    /// * `span` - The source region of the source.
+    ///
+    /// # Returns
+    ///
+    /// A `usize`: a constant for a list, else the second word.
+    fn each_count(&self, each: Place, kind: DataKind, span: Span) -> Expr
+    {
+        let (_, len) = cells_of(kind);
+        ret_if!(let Some(len) = len, self.usize_const(len, span));
+        let node = self.count_word(read(each, kind, span), span);
+        node_expr(DataKind::USIZE, node, span)
+    }
+
+    /// Lower one round of an each loop in its own scope: set the loop
+    /// variable, then run the block.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    /// * `each` - The slot of the duplicate of the source.
+    /// * `at` - The slot of the number of the cell or the u8.
+    ///
+    /// # Returns
+    ///
+    /// The round, and the step to the next cell or character.
+    fn each_round(
+        &mut self, n: &st::EachStmt, each: Place, at: Place,
+    ) -> (Vec<Stmt>, Expr)
+    {
+        let kind = self.slot_kind(each);
+        let span = n.var.span;
+        let mut block = Vec::new();
+        let mut step = self.usize_const(1, span);
+        self.loops.push(self.scopes.len());
+        self.scoped(|l| {
+            let (value, cell) = tern!(
+                n.chars,
+                each_char(each, kind, at, span),
+                each_cell(each, kind, at, span)
+            );
+            let var = l.declare(&n.var, cell, Access::Var);
+            block.push(Stmt::Set { place: var, value, span });
+            if n.chars
+            {
+                let held = l.hidden(DataKind::USIZE, span);
+                let width = char_width(read(var, cell, span));
+                block.push(Stmt::Set { place: held, value: width, span });
+                step = read(held, DataKind::USIZE, span);
+            }
+            do_for!(s in &n.block.stmts, l.stmt(s, &mut block));
+            let leaves = block.last().is_some_and(leaves_scope);
+            let end = l.drops_from(l.drops.len() - 1, n.block.span);
+            do_if!(!leaves, block.extend(end));
+        });
+        self.loops.pop();
+        (block, step)
     }
 
     /// Lower a function. Parameters come first among its slots, then the
@@ -1663,11 +1771,26 @@ impl Lowerer<'_>
     {
         let (_, len) = cells_of(self.kind_of(value));
         ret_if!(let Some(len) = len, self.usize_const(len, value.span()).node);
-        let base = Box::new(self.expr(value));
+        let base = self.expr(value);
+        self.count_word(base, value.span())
+    }
+
+    /// The read of the second word of a slice or of text: its count.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The slice or the text.
+    /// * `span` - The source region of the count.
+    ///
+    /// # Returns
+    ///
+    /// The load of the count, a `usize`.
+    fn count_word(&self, base: Expr, span: Span) -> ExprNode
+    {
         let offset = u32::from(self.platform) / 8;
-        let node = ExprNode::FieldAddr { base, field: 1, offset };
+        let node = ExprNode::FieldAddr { base: Box::new(base), field: 1, offset };
         let kind = DataKind::USIZE.pointer_to();
-        let addr = Expr::builder().kind(kind).node(node).span(value.span()).build();
+        let addr = Expr::builder().kind(kind).node(node).span(span).build();
         ExprNode::Load { addr: Box::new(addr) }
     }
 
@@ -1772,6 +1895,7 @@ impl Lowerer<'_>
                 text: Box::new(text),
                 index: Some(Box::new(index)),
                 first,
+                octet: false,
             };
         }
         let [value] = args
@@ -1788,6 +1912,7 @@ impl Lowerer<'_>
                 text: Box::new(self.expr(value)),
                 index: None,
                 first: 0,
+                octet: false,
             },
             VerbOp::BitNot => prefix_node(PrefixOp::BitNot, self.expr(value)),
             VerbOp::Lend if self.kind_of(value).is_list() => self.lend_list(value),
@@ -1900,6 +2025,142 @@ fn dup(e: Expr) -> Expr
     let (kind, span) = (e.kind, e.span);
     let node = ExprNode::Dup { value: Box::new(e), lent: false };
     Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// The value of a round of an each-cell loop: a duplicate of the cell.
+///
+/// # Arguments
+///
+/// * `each` - The slot of the list or the slice.
+/// * `kind` - Its kind.
+/// * `at` - The slot of the number of the cell.
+/// * `span` - The source region of the loop variable.
+///
+/// # Returns
+///
+/// The value and the cell kind.
+fn each_cell(each: Place, kind: DataKind, at: Place, span: Span) -> (Expr, DataKind)
+{
+    let (cell, len) = cells_of(kind);
+    let list = Box::new(read(each, kind, span));
+    let index = Box::new(read(at, DataKind::USIZE, span));
+    let node = ExprNode::CellAddr { list, index, len, first: 0, checked: false };
+    let addr = node_expr(cell.pointer_to(), node, span);
+    let load = node_expr(cell, ExprNode::Load { addr: Box::new(addr) }, span);
+    (tern!(cell.holds_text(), dup(load), load), cell)
+}
+
+/// The value of a round of an each-character loop: the character that
+/// starts at the u8.
+///
+/// # Arguments
+///
+/// * `each` - The slot of the text.
+/// * `kind` - Its kind.
+/// * `at` - The slot of the number of the u8.
+/// * `span` - The source region of the loop variable.
+///
+/// # Returns
+///
+/// The value and its kind, a character.
+fn each_char(each: Place, kind: DataKind, at: Place, span: Span) -> (Expr, DataKind)
+{
+    let text = Box::new(read(each, kind, span));
+    let index = Some(Box::new(read(at, DataKind::USIZE, span)));
+    let node = ExprNode::Chars { text, index, first: 0, octet: true };
+    (node_expr(DataKind::Char, node, span), DataKind::Char)
+}
+
+/// An expression of a kind.
+///
+/// # Arguments
+///
+/// * `kind` - The kind.
+/// * `node` - The operation.
+/// * `span` - Its source region.
+///
+/// # Returns
+///
+/// The expression.
+fn node_expr(kind: DataKind, node: ExprNode, span: Span) -> Expr
+{
+    Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// The read of a slot.
+///
+/// # Arguments
+///
+/// * `place` - The slot.
+/// * `kind` - Its kind.
+/// * `span` - The source region.
+///
+/// # Returns
+///
+/// The read.
+fn read(place: Place, kind: DataKind, span: Span) -> Expr
+{
+    node_expr(kind, ExprNode::Read(place), span)
+}
+
+/// A comparison of two operands of one kind.
+///
+/// # Arguments
+///
+/// * `op` - The operator.
+/// * `lhs` - The left operand.
+/// * `rhs` - The right operand.
+///
+/// # Returns
+///
+/// The operation, a boolean.
+fn compare_node(op: CmpOp, lhs: Expr, rhs: Expr) -> ExprNode
+{
+    ExprNode::Compare { op, lhs: Box::new(lhs), rhs: Box::new(rhs) }
+}
+
+/// An arithmetic operation on two operands of one kind.
+///
+/// # Arguments
+///
+/// * `op` - The operator.
+/// * `lhs` - The left operand.
+/// * `rhs` - The right operand.
+///
+/// # Returns
+///
+/// The operation.
+fn infix_node(op: InfixOp, lhs: Expr, rhs: Expr) -> ExprNode
+{
+    ExprNode::Infix { op, lhs: Box::new(lhs), rhs: Box::new(rhs) }
+}
+
+/// The count of u8s that a character takes in UTF-8: one, plus one for
+/// each of the bounds U+0080, U+0800 and U+10000 it reaches.
+///
+/// # Arguments
+///
+/// * `c` - The character.
+///
+/// # Returns
+///
+/// The count, a `usize`.
+fn char_width(c: Expr) -> Expr
+{
+    let span = c.span;
+    let reaches = |bound: char| {
+        let at = constant(Value::Char(bound), span);
+        let test = compare_node(CmpOp::Ge, c.clone(), at);
+        let operand = Box::new(node_expr(DataKind::Bool, test, span));
+        let node = ExprNode::Convert { operand, implicit: true };
+        node_expr(DataKind::USIZE, node, span)
+    };
+    let usize = DataKind::USIZE.int_kind().expect("usize is an integer");
+    let start = constant(Value::Int { kind: usize, raw: 1 }, span);
+    let bounds = ['\u{80}', '\u{800}', '\u{10000}'].into_iter();
+    bounds.fold(start, |sum, bound| {
+        node_expr(DataKind::USIZE, infix_node(InfixOp::Add, sum, reaches(bound)), span)
+    })
 }
 
 /// A constant expression of the value's kind.

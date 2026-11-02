@@ -26,6 +26,8 @@ value), `WORD` the classifier of the kind, and `BODY` a block or one statement. 
 | if | `အကယ်၍ COND လျှင် BODY` then `[ထိုသို့မဟုတ်ဘဲ COND လျှင် BODY]` then `[သို့မဟုတ်ပါက BODY]` |
 | while | `COND နေသရွေ့ BODY` |
 | counted loop | `FROM မှ TO အထိ [STEP စီ] NAME အနေဖြင့် ရေတွက်၍ BODY` |
+| each cell | `LIST ၏ အကွက်တိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` |
+| each character | `TEXT ၏ စာလုံးတိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` |
 | generic loop | `ကိန်းရှင် NAME သည် KIND တစ်WORD [ဖြစ်၍ တန်ဖိုးသည် VALUE]`, or `ကိန်းရှင် NAME သည် VALUE`, then `ဖြစ်ကာ COND နေသရွေ့` and a block with `[ပြီးလျှင် STATEMENT]` last |
 | break | `ကွင်းဆက် ကို ရပ်ပါ။` |
 | continue | `နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။` |
@@ -252,6 +254,37 @@ The inner part can read the counter but not assign to it (ZK0307). The counter a
 names declared in the inner part share one scope, so the inner part cannot declare a name
 equal to the counter's (ZK0302).
 
+**Each cell and each character.** `LIST ၏ အကွက်တိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` runs
+the `BODY` once for each cell of a list or a [slice](slices.md), the first cell first.
+`TEXT ၏ စာလုံးတိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` runs it once for each character of text or
+a view of text, and walks the u8s of the text once. The value in front of `၏` is worked
+out once, before the first round, and the loop walks a duplicate of it: the `BODY` can
+change the list or the text, and the rounds still see the cells it held at the start.
+`NAME` is a variable of the cell kind, or a `စာလုံး`, that lives in one round: each round
+sets it to a duplicate of the next cell or character, so assigning to it leaves the list
+as it was. A list whose cells hold an owner pointer cannot be walked, since an owner
+pointer is never duplicated; that, an each-cell loop over text, and an each-character
+loop over a value that is not text are ZK0434.
+
+```zaka
+ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၀၊ ၈၅၊ ၉၀] ဖြစ်ပါစေ။
+အမှတ်များ ၏ အကွက်တိုင်း ကို အမှတ် အနေဖြင့် ယူ၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+အမှတ် ကို အမှတ် + ၅ ဟု ထားပါ။
+အမှတ် ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+အမှတ်များ ကို ပြသပါ။
+"a၁" ၏ စာလုံးတိုင်း ကို စ အနေဖြင့် ယူ၍ စ ကို ပြသပါ။
+```
+
+```text
+၇၅
+၉၀
+၉၅
+[၇၀၊ ၈၅၊ ၉၀]
+a
+၁
+```
+
 **Generic loop.** `ကိန်းရှင် NAME သည် KIND [VALUE] ဖြစ်ကာ COND နေသရွေ့` opens a block.
 The declaration runs once; then, while the condition holds, the block runs and then the
 update. The update is the last statement of the block, opened with `ပြီးလျှင်`
@@ -363,6 +396,7 @@ same.
 | ZK0302, ZK0306, ZK0307, ZK0308 | a name declared twice, a constant or counter assigned to, a constant with no value |
 | ZK0309, ZK0310, ZK0311 | break, continue or return outside its home |
 | ZK0402, ZK0405, ZK0409 | a condition that is no true/false value, a bound that is no integer, a step of zero or below |
+| ZK0434 | an each loop over a value it cannot walk |
 
 ```zaka-error ZK0307
 ၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ န ကို ၀ ဟု ထားပါ။
@@ -374,6 +408,10 @@ same.
 
 ```zaka-error ZK0309
 ကွင်းဆက် ကို ရပ်ပါ။
+```
+
+```zaka-error ZK0434
+"abc" ၏ အကွက်တိုင်း ကို a အနေဖြင့် ယူ၍ a ကို ပြသပါ။
 ```
 
 ```zaka-stop

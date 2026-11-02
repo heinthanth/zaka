@@ -304,6 +304,12 @@ pub enum Kw
     ShiftHead,
     /// `ပြောင်းလဲသော`
     ConvertHead,
+    /// `အကွက်တိုင်း`, "each cell"
+    EachCell,
+    /// `စာလုံးတိုင်း`, "each character"
+    EachChar,
+    /// `ယူ၍`, "taking": opens the block of an each-cell loop
+    Taking,
     /// `ပြောင်းလဲနိုင်သော`, "that can change"
     EditableAttr,
     /// `ပြောင်းလဲနိုင်သည်`, "can change"
