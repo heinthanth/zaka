@@ -113,7 +113,8 @@ fn limits_come_from_flags()
 fn platform_bits_change_the_width()
 {
     let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၂၇ ဖြစ်ပါစေ။\nက + ၁ ကို ပြသပါ။";
-    let (code, stdout, _) = run_vm(&["--platform-bits", "8"], text);
+    let (code, stdout, _) =
+        run_vm(&["--platform-bits", "8", "--overflow", "wrap"], text);
     assert_eq!(code, ExitCode::Success);
     assert_eq!(stdout, "-၁၂၈\n");
 }

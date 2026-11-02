@@ -302,7 +302,7 @@ text with no slot to go to, such as a printed format. `EmitOptions`
 holds the two choices of the generator: `results` (`--results`) and `scratch`
 (`--scratch`), both below.
 
-`overflow` is the `--overflow` mode the borrow-check options hold: with `stop`, the VM
+`overflow` is the `--overflow` mode the borrow-check options hold: with `stop`, the default, the VM
 works `prefix` and `infix` out with checked arithmetic and traps on a result outside its
 kind. `wrap op` wraps in each mode; the generator emits it for the steps and the distance
 of a counted loop, which count on two's complement arithmetic.

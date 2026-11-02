@@ -55,13 +55,23 @@ fn endless_loops_hit_the_step_limit()
     assert_eq!(kind, TrapKind::StepLimit { steps: 1000 });
 }
 
+/// The output of a source text compiled with `--overflow wrap`; it must not
+/// trap.
+fn wrapped(text: &str) -> String
+{
+    let module = Module { overflow: OverflowMode::Wrap, ..compile(text) };
+    let (out, result) = run_module(&module, &RunOptions::default());
+    assert_eq!(result, Ok(()), "{text}\n{out}");
+    out
+}
+
 #[test]
 fn integer_arithmetic_wraps()
 {
     let text = "ကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၂၅၅ ဖြစ်ပါစေ။\nက + ၁ ကို ပြသပါ။\nကိန်းရှင် ခ \
                 သည် ၈ ဘစ် ကိန်းပြည့် -၁၂၈ ဖြစ်ပါစေ။\n-ခ ကို ပြသပါ။\nခ / -၁ ကို ပြသပါ။\nခ - ၁ ကို \
                 ပြသပါ။\nကိန်းရှင် ဂ သည် ၈ ဘစ် ကိန်းပြည့် ၁၀၀ ဖြစ်ပါစေ။\nဂ * ၃ ကို ပြသပါ။";
-    assert_eq!(output(text), "၀\n-၁၂၈\n-၁၂၈\n၁၂၇\n၄၄\n");
+    assert_eq!(wrapped(text), "၀\n-၁၂၈\n-၁၂၈\n၁၂၇\n၄၄\n");
 }
 
 #[test]
@@ -259,7 +269,7 @@ fn stop_mode_traps_on_overflow_and_wrap_mode_wraps()
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် -၁၂၈ ဖြစ်ပါစေ။
 က + ၁၀ ကို ပြသပါ။
 -ခ ကို ပြသပါ။";
-    assert_eq!(output(text), "၄\n-၁၂၈\n");
+    assert_eq!(wrapped(text), "၄\n-၁၂၈\n");
     let module = Module { overflow: OverflowMode::Stop, ..compile(text) };
     let (out, result) = run_module(&module, &RunOptions::default());
     assert_eq!(out, "");

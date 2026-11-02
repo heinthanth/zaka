@@ -167,7 +167,7 @@ rightmost, then the outputs. `k` is a kind, and `s` the size of one element in o
 | Instruction | Effect | Meaning |
 | --- | --- | --- |
 | `neg`, `bnot`, `not` | a → r | minus, bitwise flip, logical not |
-| `add`, `sub`, `mul`, `div`, `rem` | a b → r | arithmetic; integers wrap to their width, or trap when the module asks to stop on overflow (`--overflow stop`) |
+| `add`, `sub`, `mul`, `div`, `rem` | a b → r | arithmetic; integers trap on a result outside their kind, or wrap to their width when the module asks for it (`--overflow wrap`) |
 | `wrap op` | a b → r | `op` on integers, wrapped to their width in each mode; a counted loop uses it for its own steps |
 | `band`, `bor`, `bxor` | a b → r | bitwise and, or, exclusive or |
 | `shl`, `shr` | a n → r | shifts |

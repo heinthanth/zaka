@@ -612,7 +612,7 @@ fn a_raw_store_keeps_a_null_owner()
 fn stop_mode_warns_about_an_operation_that_overflows_each_time()
 {
     let stop = BorrowCheckOptions::builder().overflow(OverflowMode::Stop).build();
-    let wrap = BorrowCheckOptions::default();
+    let wrap = BorrowCheckOptions::builder().overflow(OverflowMode::Wrap).build();
     let text = "ကိန်းရှင် n သည် လက္ခဏာမဲ့ ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 n - ၁ ကို ပြသပါ။";
     assert_eq!(codes_with(text, &stop), [Code::OverflowProven]);

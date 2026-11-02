@@ -461,5 +461,5 @@ module:
     - lo: 3769
       hi: 3769
   main: 1
-  overflow: wrap
+  overflow: stop
 diagnostics: []

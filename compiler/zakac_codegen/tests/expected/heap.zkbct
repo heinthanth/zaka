@@ -575,5 +575,5 @@ module:
     - lo: 5732
       hi: 5732
   main: 1
-  overflow: wrap
+  overflow: stop
 diagnostics: []

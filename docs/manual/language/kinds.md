@@ -211,8 +211,9 @@ default: it must be given a value (ZK0308).
 ## The edges of a kind
 
 A value keeps inside the range of its kind. A literal that falls outside it is an error
-at compile time, and arithmetic that goes past an edge while the program runs wraps
-around ([Expressions](expressions.md) gives the rules).
+at compile time, and arithmetic that goes past an edge while the program runs stops the
+program, or wraps around with `--overflow wrap` ([Expressions](expressions.md) gives the
+rules).
 
 ```zaka
 ကိန်းရှင် အနည်း သည် ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် -၁၂၈ ဖြစ်ပါစေ။

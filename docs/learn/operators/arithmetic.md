@@ -118,10 +118,25 @@ Numbers written straight into the program bend to fit: `၃ + ၀.၅` is `၃.�
 ## Too big for the kind
 
 Each integer kind has a largest and a smallest value (see [Integers](../values/integers.md)).
-If a result goes past the edge while the program runs, it *wraps around* to the other
-end, like a car's odometer rolling over:
+If a result goes past the edge while the program runs, the program stops there and names
+the operation and the kind:
 
-```zaka
+```zaka-stop
+ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။               // the largest 8-bit integer
+ခ + ၁ ကို ပြသပါ။
+```
+
+```text
+the program stopped: the result of + does not fit i8
+```
+
+Pick a kind big enough for the numbers at hand. Plain `ကိန်းပြည့်` is a safe choice.
+
+Some programs want the result to *wrap around* to the other end instead, like a car's
+odometer rolling over. Compile them with `--overflow wrap`, or turn off **Stop on
+overflow** in the explorer:
+
+```zaka overflow=wrap
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။               // the largest 8-bit integer
 ခ + ၁ ကို ပြသပါ။                                        // wraps to the smallest
 ကိန်းရှင် လ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
@@ -133,11 +148,7 @@ end, like a car's odometer rolling over:
 ၂၅၅
 ```
 
-Pick a kind big enough for the numbers at hand. Plain `ကိန်းပြည့်` is a safe choice.
-
-To have the program stop at such a result instead, compile with `--overflow stop`, or
-turn on **Stop on overflow** in the explorer; see
-[Overflow](../../manual/language/expressions.md#arithmetic) in the Docs.
+See [Overflow](../../manual/language/expressions.md#arithmetic) in the Docs.
 
 ## Hands on
 

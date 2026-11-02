@@ -266,7 +266,7 @@ then reads the first word of the slice and steps to the cell, with no `slice_cel
 is done just when the check found no error and
 the program uses no raw address, since a raw address can change a fact the proofs rest on.
 
-With `--overflow stop` (`BorrowCheckOptions.overflow`), `check_overflow` works out the
+With `--overflow stop`, the default (`BorrowCheckOptions.overflow`), `check_overflow` works out the
 interval of each integer `+`, `-`, `*` and negation from the intervals of its operands,
 before it is cut to the kind. When that interval is bounded and lies outside the range of
 the kind, each value the operands can hold overflows, and the check reports ZK0719, a

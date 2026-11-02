@@ -30,10 +30,11 @@ pub enum MemCheck
 pub enum OverflowMode
 {
     /// The result wraps around, as two's complement arithmetic does.
-    #[default]
     Wrap,
     /// The VM stops the program, and the check warns about an operation
-    /// that overflows for each value it can see.
+    /// that overflows for each value it can see. A stop with a message
+    /// teaches more than a silent wrap, so this is the default.
+    #[default]
     Stop,
 }
 

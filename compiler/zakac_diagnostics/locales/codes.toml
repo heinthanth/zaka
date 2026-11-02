@@ -981,4 +981,4 @@ en = "\"%{op}\" on %{kind} gives a value outside %{kind} for each value of its o
 [codes.ZK0719.help]
 en = "use a wider kind, or change the operands; with --overflow wrap the result wraps around"
 [codes.ZK0719.explain]
-en = """With --overflow stop, integer arithmetic stops the program when its result does not fit its kind. The check follows the values the operands can hold, and each of them makes this operation overflow, so the program stops when it reaches it. Pick a wider kind, change the operands, or compile with --overflow wrap for two's complement arithmetic."""
+en = """Under --overflow stop, the default, integer arithmetic stops the program when its result does not fit its kind. The check follows the values the operands can hold, and each of them makes this operation overflow, so the program stops when it reaches it. Pick a wider kind, change the operands, or compile with --overflow wrap for two's complement arithmetic."""

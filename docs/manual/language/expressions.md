@@ -142,11 +142,48 @@ An integer result that does not fit its kind meets one of two fates.
 
 - When all operands are constants, the compiler works the operation out and a result
   that does not fit is an error (ZK0601).
-- When an operand is a variable, the operation wraps around at run time: the result is
-  the true result cut to the width of the kind, like an odometer rolling over. Nothing
-  stops the program.
+- When an operand is a variable, the program stops at run time, and the message names the
+  operator and the kind. This covers `+`, `-`, `*`, a negation, and the smallest signed
+  value divided with -1. A conversion still wraps, and so does the counter of a counted
+  loop, which never goes past its last value.
 
-```zaka
+```zaka-stop
+ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+မှန် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+ဂ ကို ဂ * ၂ ဟု ထားပါ။
+ဂ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+```
+
+```text
+၂
+၄
+၈
+၁၆
+၃၂
+၆၄
+၁၂၈
+the program stopped: the result of * does not fit u8
+```
+
+The compiler also follows the values a variable can hold, as the pointer checks do, and
+warns when an operation overflows for each of them (ZK0719): the program stops there each
+time it runs.
+
+```zaka-warning ZK0719
+ကိန်းရှင် n သည် လက္ခဏာမဲ့ ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
+n - ၁ ကို ပြသပါ။
+```
+
+```text
+warning[ZK0719]: "-" on usize gives a value outside usize for each value of its operands, so the program stops here
+```
+
+With `--overflow wrap` (**Stop on overflow** turned off in the explorer), the operation
+wraps around instead: the result is the true result cut to the width of the kind, like an
+odometer rolling over. Nothing stops the program, and ZK0719 is not given.
+
+```zaka overflow=wrap
 ကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၅၀ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်ပါစေ။
@@ -167,44 +204,6 @@ An integer result that does not fit its kind meets one of two fates.
 
 The kind decides the edge: the same sum in a wider kind does not wrap. Pick a kind that
 is big enough for the numbers at hand; plain `ကိန်းပြည့်` is a safe choice.
-
-With `--overflow stop` (**Stop on overflow** in the explorer), a result that does not fit
-stops the program instead of wrapping, and the message names the operator and the kind.
-This covers `+`, `-`, `*`, a negation, and the smallest signed value divided with
--1. A conversion still wraps, and so does the counter of a counted loop, which never
-goes past its last value in either mode.
-
-```zaka-stop overflow=stop
-ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-မှန် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ဂ ကို ဂ * ၂ ဟု ထားပါ။
-ဂ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-```
-
-```text
-၂
-၄
-၈
-၁၆
-၃၂
-၆၄
-၁၂၈
-the program stopped: the result of * does not fit u8
-```
-
-In that mode the compiler also follows the values a variable can hold, as the pointer
-checks do, and warns when an operation overflows for each of them (ZK0719): the program
-stops there each time it runs.
-
-```zaka-warning ZK0719 overflow=stop
-ကိန်းရှင် n သည် လက္ခဏာမဲ့ ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
-n - ၁ ကို ပြသပါ။
-```
-
-```text
-warning[ZK0719]: "-" on usize gives a value outside usize for each value of its operands, so the program stops here
-```
 
 ```zaka-error ZK0601
 ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ + ၁ ဖြစ်ပါစေ။

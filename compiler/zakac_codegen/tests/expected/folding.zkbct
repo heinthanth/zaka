@@ -101,5 +101,5 @@ module:
     - lo: 1551
       hi: 1551
   main: 0
-  overflow: wrap
+  overflow: stop
 diagnostics: []

@@ -55,7 +55,7 @@ fn links_keep_the_stage_and_the_ast_view()
     }
     let shown = encode(&link_at(Phase::Parse, AstMode::Graph));
     assert!(
-        shown.starts_with("7.64.7.error.0.in-place.apart.parse.graph.folded."),
+        shown.starts_with("7.64.7.error.4.in-place.apart.parse.graph.folded."),
         "{shown}"
     );
 }
@@ -76,7 +76,7 @@ fn links_keep_the_foldings_and_the_lowering_view()
                 .lower_mode(lower_mode).build();
             let hash = encode(&link);
             assert!(
-                hash.starts_with(&format!("7.64.{n}.error.0.in-place.apart.lower.")),
+                hash.starts_with(&format!("7.64.{n}.error.4.in-place.apart.lower.")),
                 "{hash}"
             );
             assert_eq!(decode(&hash), Some(link));
@@ -98,7 +98,7 @@ fn links_keep_the_ownership_checks()
             let link = Link::builder().source("x").options(options).build();
             let hash = encode(&link);
             let word: &'static str = check.into();
-            assert!(hash.starts_with(&format!("7.64.7.{word}.{mem}.")), "{hash}");
+            assert!(hash.starts_with(&format!("7.64.7.{word}.{}.", mem | 4)), "{hash}");
             assert_eq!(decode(&hash), Some(link));
         }
     }
@@ -113,7 +113,7 @@ fn links_keep_the_result_mode()
         let link = Link::builder().source("x").options(options).build();
         let hash = encode(&link);
         let word: &'static str = results.into();
-        assert!(hash.starts_with(&format!("7.64.7.error.0.{word}.apart.")), "{hash}");
+        assert!(hash.starts_with(&format!("7.64.7.error.4.{word}.apart.")), "{hash}");
         assert_eq!(decode(&hash), Some(link));
     }
 }
@@ -128,7 +128,7 @@ fn links_keep_the_scratch_mode()
         let hash = encode(&link);
         let word: &'static str = scratch.into();
         assert!(
-            hash.starts_with(&format!("7.64.7.error.0.in-place.{word}.")),
+            hash.starts_with(&format!("7.64.7.error.4.in-place.{word}.")),
             "{hash}"
         );
         assert_eq!(decode(&hash), Some(link));

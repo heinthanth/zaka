@@ -333,5 +333,5 @@ module:
     - lo: 1790
       hi: 1790
   main: 0
-  overflow: wrap
+  overflow: stop
 diagnostics: []

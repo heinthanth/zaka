@@ -146,7 +146,7 @@ the program stopped: 4 cells from cell 0 pass the end of 3 cells
   the cells.
 - No operator takes a slice: `==` on two slices is ZK0403. Compare the cells one at a time.
 - A counted loop to the count minus 1 goes wrong on a slice of no cells, since the count
-  is unsigned and 0 - 1 wraps. A loop that tests `န < count` before each round, as in
+  is unsigned and 0 - 1 stops the program (or wraps, with `--overflow wrap`). A loop that tests `န < count` before each round, as in
   the first example, runs zero rounds there.
 
 ```zaka-error ZK0710

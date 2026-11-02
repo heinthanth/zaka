@@ -76,7 +76,8 @@ back. [Checked and packed blocks](blocks.md) tells how.
 
 `--platform-bits` picks the width of `ကိန်းပြည့်`, `လက္ခဏာမဲ့ ကိန်းပြည့်` and each address:
 8, 16, 32, 64 (the default) or 128. The storage holds `2^bits` addresses, to at most
-`2^64`. On a 16-bit platform, the plain integer wraps at 16 bits:
+`2^64`. On a 16-bit platform, the plain integer holds 16 bits, so a result past 32767
+stops the program:
 
 ```console
 $ zakac run --platform-bits 16 program.zaka

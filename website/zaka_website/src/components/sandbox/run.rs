@@ -45,7 +45,7 @@ pub enum Fence
 }
 
 /// What a fence of a Learn page asks of the compiler besides its promise:
-/// `mem-check=warn`, `mem-strict=on`, `no-raw=on`, `overflow=stop`.
+/// `mem-check=warn`, `mem-strict=on`, `no-raw=on`, `overflow=wrap`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Builder, Serialize, Deserialize)]
 pub struct FenceOptions
 {

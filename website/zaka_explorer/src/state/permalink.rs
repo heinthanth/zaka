@@ -292,6 +292,9 @@ fn decode_base(bits: &str, text: &str) -> Option<Link>
     ret_if!(!PLATFORM_BITS.contains(&bits), None);
     let raw = URL_SAFE_NO_PAD.decode(text).ok()?;
     let source = String::from_utf8(raw).ok()?;
-    let options = Options::builder().platform_bits(bits).build();
+    // Links before format 7 hold no overflow mode: arithmetic had no mode
+    // but wrap when those links were made.
+    #[rustfmt::skip]
+    let options = Options::builder().platform_bits(bits).overflow(OverflowMode::Wrap).build();
     Some(Link::builder().source(source).options(options).build())
 }
