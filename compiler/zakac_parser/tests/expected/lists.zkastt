@@ -626,7 +626,8 @@ program:
           lo: 2811
           hi: 2829
       params:
-      - kind:
+      - edit: false
+        kind:
           base: int
           bits: null
           signed: null
@@ -767,6 +768,8 @@ program:
               span:
                 lo: 3513
                 hi: 3516
+          edits:
+          - false
           span:
             lo: 3444
             hi: 3594
@@ -817,6 +820,8 @@ program:
               span:
                 lo: 3693
                 hi: 3757
+          edits:
+          - false
           span:
             lo: 3624
             hi: 3835

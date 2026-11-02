@@ -12,6 +12,7 @@ program:
           lo: 40
           hi: 64
       args: []
+      edits: []
       span:
         lo: 0
         hi: 111
@@ -52,6 +53,10 @@ program:
               span:
                 lo: 234
                 hi: 237
+          edits:
+          - false
+          - false
+          - false
           span:
             lo: 112
             hi: 315
@@ -66,7 +71,8 @@ program:
           lo: 386
           hi: 443
       params:
-      - kind:
+      - edit: false
+        kind:
           base: int
           bits: null
           signed: null
@@ -82,7 +88,8 @@ program:
         span:
           lo: 454
           hi: 488
-      - kind:
+      - edit: false
+        kind:
           base: int
           bits: null
           signed: null
@@ -98,7 +105,8 @@ program:
         span:
           lo: 492
           hi: 526
-      - kind:
+      - edit: false
+        kind:
           base: int
           bits: null
           signed: null
@@ -283,7 +291,8 @@ program:
           lo: 1139
           hi: 1163
       params:
-      - kind:
+      - edit: false
+        kind:
           base: float
           bits: 32
           signed: null
@@ -299,7 +308,8 @@ program:
         span:
           lo: 1174
           hi: 1219
-      - kind:
+      - edit: false
+        kind:
           base: int
           bits: 8
           signed: null

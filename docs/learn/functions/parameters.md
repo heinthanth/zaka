@@ -96,6 +96,50 @@ variable that was passed in:
 ၅
 ```
 
+## Changing the caller's variable
+
+To change the variable a caller holds, return the new value and set the variable from it:
+
+```zaka
+လုပ်ဆောင်ချက် နောက်တစ် သည်
+ကိန်းပြည့် က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+
+ကိန်းရှင် ခ သည် ၅ ဖြစ်ပါစေ။
+ခ ကို နောက်တစ်(ခ) ဟု ထားပါ။
+ခ ကို ပြသပါ။
+```
+
+```text
+၆
+```
+
+When a function must change the variable itself, mark the parameter with
+`လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` ("that the function can change") and the argument with
+`(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)` ("the function can change it"):
+
+```zaka
+လုပ်ဆောင်ချက် တိုး သည်
+လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ကို က + ၁ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+
+ကိန်းရှင် ခ သည် ၅ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် တိုး ကို ခ (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
+ခ ကို ပြသပါ။
+```
+
+```text
+၆
+```
+
+Both ends take the mark, so the call itself shows which variable changes. The argument
+must be a variable, a field or a cell, and it cannot appear twice in one call. See
+[Edit references](../../manual/language/functions.md#edit-references) in the Docs.
+
 ## Matching the call to the function
 
 The call must pass the same number of arguments as the function has parameters, and

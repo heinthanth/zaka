@@ -101,6 +101,8 @@ see [Names](../../learn/variables/names.md).
 | `ကိန်းရှင်` | "variable" | [Variables](../../learn/variables/README.md) |
 | `ကိန်းသေ` | "constant" | [Constants](../../learn/variables/constants.md) |
 | `လုပ်ဆောင်ချက်` | "function" | [Functions](../../learn/functions/README.md) |
+| `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` | "that the function can change": before the kind of a parameter that is the caller's place | [Functions](../language/functions.md#edit-references) |
+| `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်` | "the function can change it": in parentheses after an argument for such a parameter | [Functions](../language/functions.md#edit-references) |
 | `ရလဒ်` | "result" | [Results](../../learn/functions/results.md) |
 | `မှန်`, `မမှန်` | "true", "false" | [True and false](../../learn/values/booleans.md) |
 | `မှတ်ချက်` | "note" (comment) | [Comments](../../learn/hello/comments.md) |

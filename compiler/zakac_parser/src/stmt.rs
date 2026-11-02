@@ -530,17 +530,18 @@ impl Parser<'_>
     {
         let is_decl = self.peek_n(2).kind == TokenKind::Kw(Kw::Thi);
         ret_if!(is_decl, self.parse_fn_decl());
-        let (start, callee, args) = self.parse_call_head()?;
+        let (start, callee, (args, edits)) = self.parse_call_head()?;
         let end = self.expect_one_of(&[Kw::Call, Kw::CallResult])?;
         if end.kind == TokenKind::Kw(Kw::CallResult)
         {
-            let call = self.call_expr(start.to(&end.span), callee, args);
+            let call = self.call_expr(start.to(&end.span), callee, (args, edits));
             let clause = self.parse_clause_from(call, Mode::Stmt)?;
             return self.finish_expr_headed(clause);
         }
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);
-        Ok(Stmt::Call(CallStmt::builder().callee(callee).args(args).span(span).build()))
+        #[rustfmt::skip]
+        return Ok(Stmt::Call(CallStmt::builder().callee(callee).args(args).edits(edits).span(span).build()));
     }
 
     /// Parse a function declaration:
@@ -652,7 +653,7 @@ impl Parser<'_>
     /// The parameters, none when no kind starts the clause, or a diagnostic.
     fn parse_params(&mut self) -> PResult<Vec<Param>>
     {
-        ret_if!(!self.starts_kind(), Ok(Vec::new()));
+        ret_if!(!self.starts_kind() && !self.at(Kw::EditParam), Ok(Vec::new()));
         let mut params = vec![self.parse_param()?];
         while self.eat_punct(Punct::ListSep)
         {
@@ -664,17 +665,21 @@ impl Parser<'_>
         Ok(params)
     }
 
-    /// Parse one parameter: `kind name`.
+    /// Parse one parameter: `kind name`, with
+    /// `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` before it for one the function can
+    /// change.
     ///
     /// # Returns
     ///
     /// The parameter, or a diagnostic.
     fn parse_param(&mut self) -> PResult<Param>
     {
+        let start = self.peek().span;
+        let edit = self.eat(Kw::EditParam);
         let kind = self.parse_kind()?;
         let name = self.parse_ident()?;
-        let span = kind.span.to(&name.span);
-        Ok(Param::builder().kind(kind).name(name).span(span).build())
+        let span = start.to(&name.span);
+        Ok(Param::builder().edit(edit).kind(kind).name(name).span(span).build())
     }
 
     /// Parse `ကွင်းဆက် ကို ရပ်ပါ။`.

@@ -115,6 +115,9 @@ pub(crate) struct FnSig
     /// The parameter kinds, in order.
     #[builder(default)]
     pub params: Vec<DataKind>,
+    /// Whether the function can change each parameter.
+    #[builder(default)]
+    pub edits: Vec<bool>,
     /// The result kind; `None` for a function without a result.
     pub ret: Option<DataKind>,
     /// `true` when other files can import the function.

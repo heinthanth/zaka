@@ -663,6 +663,11 @@ pub struct CallExpr
     /// The arguments.
     #[builder(default)]
     pub args: Vec<Expr>,
+    /// Whether `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)` marks each argument, one
+    /// flag for each.
+    #[builder(default)]
+    #[serde(default)]
+    pub edits: Vec<bool>,
     /// Source region.
     pub span: Span,
 }

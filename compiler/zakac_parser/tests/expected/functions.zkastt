@@ -12,7 +12,8 @@ program:
           lo: 40
           hi: 97
       params:
-      - kind:
+      - edit: false
+        kind:
           base: int
           bits: null
           signed: null
@@ -28,7 +29,8 @@ program:
         span:
           lo: 108
           hi: 142
-      - kind:
+      - edit: false
+        kind:
           base: int
           bits: null
           signed: null
@@ -44,7 +46,8 @@ program:
         span:
           lo: 146
           hi: 180
-      - kind:
+      - edit: false
+        kind:
           base: int
           bits: null
           signed: null
@@ -272,6 +275,9 @@ program:
           span:
             lo: 1149
             hi: 1161
+      edits:
+      - false
+      - false
       span:
         lo: 1064
         hi: 1226

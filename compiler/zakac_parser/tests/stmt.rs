@@ -379,3 +379,21 @@ fn borrowed_kinds_in_function_headers()
                 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(stmt(head), "(fn f [&*isize က, ~isize ခ] &*isize (block))");
 }
+
+/// A parameter the function can change, and the mark at the call.
+#[test]
+fn edit_references_parse_at_both_ends()
+{
+    let decl = stmt(
+        "လုပ်ဆောင်ချက် တိုး သည်
+လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို န + ၁ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။",
+    );
+    assert!(decl.contains("edit isize န"), "{decl}");
+    let call = stmt("လုပ်ဆောင်ချက် တိုး ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)၊ ခ တို့ဖြင့် လုပ်ဆောင်ပါ။");
+    assert_eq!(call, "(call တိုး (edit က) ခ)");
+    let sign = stmt("တိုး(ပ ၏ အသက် (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)) ကို ပြသပါ။");
+    assert!(sign.contains("(call တိုး (edit "), "{sign}");
+}

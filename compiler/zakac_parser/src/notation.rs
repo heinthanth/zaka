@@ -21,12 +21,14 @@ use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::parser::PResult;
 use crate::parser::Parser;
+use crate::parser::kw_of;
 use crate::parser::unquote_raw;
 
 /// Binding power of the prefix operators; above each infix operator.
@@ -102,6 +104,10 @@ fn prefix_of(tok: &Token) -> Option<PrefixOp>
         _ => None,
     }
 }
+
+/// The arguments of a call, and whether `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)`
+/// marks each.
+pub(crate) type Args = (Vec<Expr>, Vec<bool>);
 
 impl Parser<'_>
 {
@@ -387,7 +393,7 @@ impl Parser<'_>
         let callee = self.parse_ident()?;
         self.bump();
         let bare = self.at_punct(Punct::RParen);
-        let args = tern!(bare, Vec::new(), self.parse_sign_args()?);
+        let args = tern!(bare, Args::default(), self.parse_sign_args()?);
         let close = self.expect_punct(Punct::RParen)?;
         Ok(self.call_expr(callee.span.to(&close.span), callee, args))
     }
@@ -396,15 +402,40 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The arguments, or a diagnostic.
-    fn parse_sign_args(&mut self) -> PResult<Vec<Expr>>
+    /// The arguments with their marks, or a diagnostic.
+    fn parse_sign_args(&mut self) -> PResult<Args>
     {
-        let mut args = vec![self.parse_expr()?];
+        let mut args = Args::default();
+        self.parse_arg(&mut args)?;
         while self.eat_punct(Punct::ListSep)
         {
-            args.push(self.parse_expr()?);
+            self.parse_arg(&mut args)?;
         }
         Ok(args)
+    }
+
+    /// Parse one argument, and the mark `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)`
+    /// after it when written: the function can change the argument.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The arguments so far, to add to.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic.
+    fn parse_arg(&mut self, args: &mut Args) -> PResult<()>
+    {
+        args.0.push(self.parse_expr()?);
+        let mark =
+            self.at_punct(Punct::LParen) && kw_of(&self.peek_n(1)) == Some(Kw::EditArg);
+        do_if!(mark, {
+            self.bump();
+            self.bump();
+            self.expect_punct(Punct::RParen)?;
+        });
+        args.1.push(mark);
+        Ok(())
     }
 
     /// Build a call expression node.
@@ -413,18 +444,17 @@ impl Parser<'_>
     ///
     /// * `span` - The whole call.
     /// * `callee` - The function name.
-    /// * `args` - The arguments.
+    /// * `args` - The arguments, with the mark of each.
     ///
     /// # Returns
     ///
     /// The expression.
-    pub(crate) fn call_expr(
-        &mut self, span: Span, callee: Ident, args: Vec<Expr>,
-    ) -> Expr
+    pub(crate) fn call_expr(&mut self, span: Span, callee: Ident, args: Args) -> Expr
     {
         let id = self.new_id();
-        let node =
-            CallExpr::builder().id(id).callee(callee).args(args).span(span).build();
+        let (args, edits) = args;
+        #[rustfmt::skip]
+        let node = CallExpr::builder().id(id).callee(callee).args(args).edits(edits).span(span).build();
         Expr::Call(node)
     }
 
@@ -433,8 +463,9 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The span of `လုပ်ဆောင်ချက်`, the function name and the arguments.
-    pub(crate) fn parse_call_head(&mut self) -> PResult<(Span, Ident, Vec<Expr>)>
+    /// The span of `လုပ်ဆောင်ချက်`, the function name and the arguments with
+    /// their marks.
+    pub(crate) fn parse_call_head(&mut self) -> PResult<(Span, Ident, Args)>
     {
         let start = self.bump().span;
         let callee = self.parse_ident()?;
@@ -448,15 +479,11 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The arguments, or a diagnostic.
-    fn parse_call_args(&mut self) -> PResult<Vec<Expr>>
+    /// The arguments with their marks, or a diagnostic.
+    fn parse_call_args(&mut self) -> PResult<Args>
     {
-        ret_if!(self.at(Kw::Call) || self.at(Kw::CallResult), Ok(Vec::new()));
-        let mut args = vec![self.parse_expr()?];
-        while self.eat_punct(Punct::ListSep)
-        {
-            args.push(self.parse_expr()?);
-        }
+        ret_if!(self.at(Kw::Call) || self.at(Kw::CallResult), Ok(Args::default()));
+        let args = self.parse_sign_args()?;
         self.expect(Kw::ListWith)?;
         Ok(args)
     }

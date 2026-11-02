@@ -42,6 +42,10 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::ConvertHead, Kw::Result], Kw::Convert),
     // လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်
     (&[Kw::CallHead, Kw::Result], Kw::CallResult),
+    // လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>
+    (&[Kw::Function, Kw::From, Kw::EditableAttr], Kw::EditParam),
+    // <name> (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)
+    (&[Kw::Function, Kw::From, Kw::EditableClaim], Kw::EditArg),
     // ဒေတာအမျိုးအစား ... တွင် ... တို့ ပါဝင်သည်။
     (&[Kw::Plural, Kw::Contains], Kw::FieldsClose),
     // ဒေတာအမျိုးအစား ... တွင် ... တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ... ဖြစ်သည်။

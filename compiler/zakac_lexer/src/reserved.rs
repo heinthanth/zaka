@@ -64,6 +64,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ပြောင်းပြန်ပြောင်းလဒ်", Kw::InvertTail),
     ("ရွေ့သော", Kw::ShiftHead),
     ("ပြောင်းလဲသော", Kw::ConvertHead),
+    ("ပြောင်းလဲနိုင်သော", Kw::EditableAttr),
+    ("ပြောင်းလဲနိုင်သည်", Kw::EditableClaim),
     ("လုပ်ဆောင်သော", Kw::CallHead),
     ("အောက်ပါ", Kw::Following),
     ("လုပ်ဆောင်မည်", Kw::WillDo),

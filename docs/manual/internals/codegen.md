@@ -98,7 +98,9 @@ rules out). Its rules:
   value if the block never sets it.
 - `ကိန်းသေ` becomes a slot with `access: const`; the folder uses the flag.
 - A pointer read through a place becomes `Load`; an owner moved out becomes `Take`; a
-  lend becomes `Lend`. A place of a kind that holds text, read into another place,
+  lend becomes `Lend`. A parameter the function can change (`Param::edit`) gets a borrow slot;
+  each read of its name becomes a `Load` through it and each write a store through it,
+  and the marked argument becomes the address of the caller's place. A place of a kind that holds text, read into another place,
   becomes `Dup`: codegen copies the value into a temp slot and runs `dup_text` on it, so
   each heap text in the duplicate gets a block of its own. A `Dup` the borrow checker marks
   `lent` runs `lend_text` instead, which gives each text a room of 0. A parameter in

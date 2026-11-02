@@ -58,7 +58,10 @@ one atom, then loops on operators. A parenthesized expression is an atom, which 
 logical expression gets back inside a clause. A name with `(` right after it, with no space
 (the token's `joined` flag), is the sign form of a call, `f(a၊ b)`, and builds the same
 `CallExpr` as the word form; a struct name, or `<name>(<field>:`, is a struct literal
-instead.
+instead. A parameter can start with the joined phrase
+`လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` (`Param::edit`), and an argument of either call form can
+end with `(`, the phrase `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်` and `)`; `CallExpr::edits` and
+`CallStmt::edits` hold one flag for each argument.
 
 ```text
  parse_expr         clause ဖြစ်၍ clause သို့မဟုတ် clause မဟုတ်      logical.rs

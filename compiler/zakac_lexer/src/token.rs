@@ -304,6 +304,10 @@ pub enum Kw
     ShiftHead,
     /// `ပြောင်းလဲသော`
     ConvertHead,
+    /// `ပြောင်းလဲနိုင်သော`, "that can change"
+    EditableAttr,
+    /// `ပြောင်းလဲနိုင်သည်`, "can change"
+    EditableClaim,
     /// `လုပ်ဆောင်သော`
     CallHead,
     /// `အောက်ပါ`
@@ -336,6 +340,11 @@ pub enum Kw
     Convert,
     /// `လုပ်ဆောင်သော ရလဒ်`
     CallResult,
+    /// `လုပ်ဆောင်ချက် မှ ပြောင်းလဲနိုင်သော`: a parameter the function can change
+    EditParam,
+    /// `လုပ်ဆောင်ချက် မှ ပြောင်းလဲနိုင်သည်`: the mark of an argument the function
+    /// can change
+    EditArg,
     /// `ရလဒ် အဖြစ် ပြန်ပေးပါ`
     ReturnValue,
     /// `အောက်ပါ တို့ကို လုပ်ဆောင်ပါ`

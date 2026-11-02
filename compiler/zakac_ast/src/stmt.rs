@@ -302,6 +302,11 @@ pub struct ContinueStmt
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct Param
 {
+    /// Whether `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` marks it: the function changes
+    /// the caller's place, not a duplicate.
+    #[builder(default)]
+    #[serde(default)]
+    pub edit: bool,
     /// The parameter kind.
     pub kind: Kind,
     /// The parameter name.
@@ -349,6 +354,11 @@ pub struct CallStmt
     /// The arguments.
     #[builder(default)]
     pub args: Vec<Expr>,
+    /// Whether `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)` marks each argument, one
+    /// flag for each.
+    #[builder(default)]
+    #[serde(default)]
+    pub edits: Vec<bool>,
     /// Source region.
     pub span: Span,
 }

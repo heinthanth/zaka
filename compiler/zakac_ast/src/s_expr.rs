@@ -83,7 +83,10 @@ impl ToSexpr for Expr
             Expr::Not(n) => list("not", [n.inner.to_sexpr()]),
             Expr::Logic(n) => list(n.op.as_ref(), [n.lhs.to_sexpr(), n.rhs.to_sexpr()]),
             Expr::Verb(n) => verb_sexpr(n),
-            Expr::Call(n) => list("call", call_parts(&n.callee.name, &n.args)),
+            Expr::Call(n) =>
+            {
+                list("call", call_parts(&n.callee.name, &n.args, &n.edits))
+            }
             Expr::Null(_) => "null".into(),
             Expr::SizeOf(n) => list("sizeof", [n.kind.to_sexpr()]),
             Expr::Index(n) =>
@@ -130,7 +133,10 @@ impl ToSexpr for Stmt
             Stmt::Continue(_) => "(continue)".into(),
             Stmt::Fn(s) => exported(s.exported, fn_sexpr(s)),
             Stmt::Return(s) => list("return", s.value.iter().map(ToSexpr::to_sexpr)),
-            Stmt::Call(s) => list("call", call_parts(&s.callee.name, &s.args)),
+            Stmt::Call(s) =>
+            {
+                list("call", call_parts(&s.callee.name, &s.args, &s.edits))
+            }
             Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
             Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
             Stmt::Free(s) => list("free", [s.target.to_sexpr()]),
@@ -284,10 +290,14 @@ fn verb_sexpr(n: &VerbExpr) -> String
 /// # Returns
 ///
 /// The parts of a call list.
-fn call_parts(callee: &str, args: &[Expr]) -> Vec<String>
+fn call_parts(callee: &str, args: &[Expr], edits: &[bool]) -> Vec<String>
 {
+    let marked = |(n, a): (usize, &Expr)| {
+        let edit = edits.get(n).copied().unwrap_or(false);
+        tern!(edit, list("edit", [a.to_sexpr()]), a.to_sexpr())
+    };
     std::iter::once(callee.to_string())
-        .chain(args.iter().map(ToSexpr::to_sexpr))
+        .chain(args.iter().enumerate().map(marked))
         .collect()
 }
 
@@ -454,7 +464,11 @@ fn struct_sexpr(s: &StructDecl) -> String
 /// # Returns
 ///
 /// The text.
-fn param_sexpr(p: &Param) -> String { format!("{} {}", p.kind.to_sexpr(), p.name.name) }
+fn param_sexpr(p: &Param) -> String
+{
+    let edit = tern!(p.edit, "edit ", "");
+    format!("{edit}{} {}", p.kind.to_sexpr(), p.name.name)
+}
 
 /// Name of a verb operation; a shift takes the name of its direction.
 ///

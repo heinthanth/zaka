@@ -171,6 +171,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0428 | a slice whose cells hold borrows | [Slices](../language/slices.md#ownership) |
 | ZK0429 | a write to a cell of text | [Text](../language/text.md#cells) |
 | ZK0430 | a declaration with no kind whose value is `ဗလာ` | [Statements](../language/statements.md#declarations) |
+| ZK0431 | an argument for a parameter the function can change, with no mark | [Functions](../language/functions.md#edit-references) |
+| ZK0432 | the mark on an argument for a parameter the function cannot change | [Functions](../language/functions.md#edit-references) |
+| ZK0433 | a place a call changes, in another argument of the same call | [Functions](../language/functions.md#edit-references) |
 
 ### ZK05: natural Zaka (warnings)
 

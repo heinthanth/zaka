@@ -545,7 +545,7 @@ impl Checker
     /// The result kind of the function, or `None` after an error.
     fn infer_call(&mut self, n: &CallExpr) -> Option<DataKind>
     {
-        let ret = self.check_call(&n.callee, &n.args, n.span)?;
+        let ret = self.check_call(&n.callee, &n.args, &n.edits, n.span)?;
         let void = rd::value_from_void_function(n.span, &n.callee.name);
         ret_if!(ret.is_none(), self.report(void), None);
         ret

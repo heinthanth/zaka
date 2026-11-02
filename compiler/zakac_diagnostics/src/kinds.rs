@@ -569,3 +569,46 @@ pub fn kind_not_inferred(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::KindNotInferred, t!("codes.ZK0430.message", n = name), span)
         .with_help(t!("codes.ZK0430.help"))
 }
+
+/// An argument for a parameter the function can change lacks the mark.
+///
+/// # Arguments
+///
+/// * `span` - The argument.
+///
+/// # Returns
+///
+/// The `ZK0431` diagnostic.
+pub fn edit_mark_missing(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::EditMarkMissing, t!("codes.ZK0431.message"), span)
+}
+
+/// An argument for a parameter the function cannot change takes the mark.
+///
+/// # Arguments
+///
+/// * `span` - The argument.
+///
+/// # Returns
+///
+/// The `ZK0432` diagnostic.
+pub fn edit_mark_extra(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::EditMarkExtra, t!("codes.ZK0432.message"), span)
+}
+
+/// A place a call changes through one argument appears in another.
+///
+/// # Arguments
+///
+/// * `span` - The other argument.
+/// * `name` - The variable of the place.
+///
+/// # Returns
+///
+/// The `ZK0433` diagnostic.
+pub fn edit_shared(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::EditShared, t!("codes.ZK0433.message", n = name), span)
+}

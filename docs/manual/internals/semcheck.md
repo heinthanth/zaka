@@ -95,7 +95,7 @@ that implements `Visitor`. It has one method for each statement form and calls
 | `ကွင်းဆက်`, `နောက်တစ်ကြိမ်ဆီသို့` | the loop depth is above zero in the current function |
 | function | parameters are distinct; one scope holds the parameters, `ရလဒ်` (just when the function has a result) and the block; the loop depth restarts at zero |
 | return | in a function; a value just when the function has a result, and it converts to the result kind |
-| call | the function exists; one argument for each parameter; each converts |
+| call | the function exists; one argument for each parameter; each converts. For a parameter marked `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော`, the argument takes the mark (ZK0431; a mark elsewhere is ZK0432), is a writable place (`place_kind`: ZK0410, ZK0306) of the parameter kind, with no widening (ZK0401), and its variable appears in no other argument (`check_edits_apart`, ZK0433) |
 | heap sentences | the target is a place of a pointer kind (ZK0417); the size is `usize` |
 | assignment to a cell of text | ZK0429, for owned text and a view alike |
 

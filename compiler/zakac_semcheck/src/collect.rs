@@ -69,5 +69,7 @@ fn sig_of(decl: &FnDecl, structs: &StructTable) -> FnSig
     let kind = |k| DataKind::from_ast(k, structs);
     let params = decl.params.iter().map(|p| kind(&p.kind)).collect();
     let ret = decl.ret.as_ref().map(kind);
-    FnSig::builder().params(params).maybe_ret(ret).exported(decl.exported).build()
+    let edits = decl.params.iter().map(|p| p.edit).collect();
+    #[rustfmt::skip]
+    return FnSig::builder().params(params).edits(edits).maybe_ret(ret).exported(decl.exported).build();
 }

@@ -714,6 +714,27 @@ en = "write the kind: \"<kind> တစ်<classifier> ဖြစ်၍ တန်�
 [codes.ZK0430.explain]
 en = """A declaration with no kind takes the kind of its value. \"ဗလာ\" fits each pointer kind and names none of them, so a declaration of \"ဗလာ\" must write its kind."""
 
+[codes.ZK0431.title]
+en = "unmarked argument the function changes"
+[codes.ZK0431.message]
+en = "the function changes this argument; mark it with \"(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)\""
+[codes.ZK0431.explain]
+en = """A parameter written \"လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>\" is the caller's place itself, not a duplicate: the function changes it. The call marks it too, with \"(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)\" after the argument, so a reader of the call sees which variable it changes."""
+
+[codes.ZK0432.title]
+en = "mark on an argument the function does not change"
+[codes.ZK0432.message]
+en = "this parameter takes a duplicate, so the argument takes no \"(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)\""
+[codes.ZK0432.explain]
+en = """The mark \"(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)\" goes with a parameter written \"လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>\". Each other parameter holds a duplicate, and the caller's variable never sees a change to it. Remove the mark, or mark the parameter in the function."""
+
+[codes.ZK0433.title]
+en = "changed place in two arguments"
+[codes.ZK0433.message]
+en = "\"%{n}\" is changed through another argument of this call, so it cannot appear here"
+[codes.ZK0433.explain]
+en = """A place a call changes through a marked argument appears nowhere else in the same call, as a whole or as a field or a cell. Otherwise the function would read the place through one parameter while it changes it through another. Read the value into a variable of its own before the call."""
+
 # ---------------------------------------------------------- naturalness ZK05xx
 
 [codes.ZK0501.title]

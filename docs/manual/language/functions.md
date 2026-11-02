@@ -416,6 +416,80 @@ block, and the call must agree:
 The full rules, with one error for each manner of getting them wrong, are in [Ownership and
 borrowing](ownership.md).
 
+## Edit references
+
+A parameter written `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>` ("that the function can
+change") is the caller's place itself, not a duplicate: a change to it changes the caller's
+variable. The call marks the argument too, with `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)`
+("the function can change it") after it, so a reader of the call sees which variable
+changes. The mark works in the word form and the sign form of a call alike.
+
+```zaka
+ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
+လုပ်ဆောင်ချက် တိုး သည်
+လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို န + ၁ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် လူ(အသက်: ၃၀) ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် တိုး ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် တိုး ကို ပ ၏ အသက် (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
+က ကို ပြသပါ။
+ပ ကို ပြသပါ။
+```
+
+```text
+၆
+လူ(အသက်: ၃၁)
+```
+
+The rules:
+
+- The reference lasts for the call alone. The name stands for the value, so the function
+  cannot keep the reference: setting another place from it, returning it or storing it
+  makes a duplicate, as for each other value.
+- The argument is a place: a variable, a field or a cell (ZK0410 for another expression).
+  A constant cannot be changed (ZK0306).
+- The place has the kind of the parameter, with no widening (ZK0401).
+- The place appears in no other argument of the same call, as a whole or through a field
+  or a cell (ZK0433): the function would read it through one parameter while it changes
+  it through another.
+- Both ends take the mark: an argument for such a parameter with no mark is ZK0431, and
+  a mark on an argument for another parameter is ZK0432.
+
+Returning the new value, `က ကို နောက်တစ်(က) ဟု ထားပါ။`, does the same work for one
+value. An edit reference suits a function that changes several places at once, or a
+large struct in place.
+
+```zaka-error ZK0431
+လုပ်ဆောင်ချက် တိုး သည်
+လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို န + ၁ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် တိုး ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။
+```
+
+```text
+error[ZK0431]: the function changes this argument; mark it with "(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)"
+```
+
+```zaka-error ZK0433
+လုပ်ဆောင်ချက် ထား သည်
+လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န၊ ကိန်းပြည့် မ တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို မ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ထား ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)၊ က + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+```
+
+```text
+error[ZK0433]: "က" is changed through another argument of this call, so it cannot appear here
+```
+
 ## Recursion
 
 A function can call itself, at once or through other functions. Nothing marks a function
@@ -482,5 +556,8 @@ See [When a program stops](../vm/traps.md) for the other stops.
 | ZK0315 | the result of a function that has none, used as a value |
 | ZK0401 | an argument or a returned value that does not fit its kind |
 | ZK0424 | a list of borrows as a result |
+| ZK0431 | an argument for a parameter the function can change, with no mark |
+| ZK0432 | the mark on an argument for a parameter the function cannot change |
+| ZK0433 | a place a call changes, in another argument of the same call |
 
 The text of each message is in [Error messages](../reference/errors.md).

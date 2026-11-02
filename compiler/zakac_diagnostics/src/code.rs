@@ -247,6 +247,12 @@ SliceOfBorrows = ("ZK0428", Level::Error),
 TextCellWrite = ("ZK0429", Level::Error),
 /// A declaration with no kind has a value that gives none.
 KindNotInferred = ("ZK0430", Level::Error),
+/// An argument for a parameter the function can change lacks the mark.
+EditMarkMissing = ("ZK0431", Level::Error),
+/// An argument for a parameter the function cannot change takes the mark.
+EditMarkExtra = ("ZK0432", Level::Error),
+/// A place a call changes through one argument appears in another.
+EditShared = ("ZK0433", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

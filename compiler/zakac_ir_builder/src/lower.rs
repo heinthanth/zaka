@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 use bon::Builder;
 use zakac_ast::expr as ast;
@@ -110,8 +111,11 @@ struct Sig
 {
     /// Index into the module functions.
     index: u32,
-    /// The parameter kinds.
+    /// The parameter kinds; a parameter the function can change holds a
+    /// borrow of the caller's place.
     params: Vec<DataKind>,
+    /// Whether the function can change each parameter.
+    edits: Vec<bool>,
 }
 
 /// The signatures of the top-level functions of each file, numbered in
@@ -135,12 +139,29 @@ fn collect_sigs(program: &st::Program, structs: &StructTable)
     });
     for (index, (unit, f)) in decls.enumerate()
     {
-        let params =
-            f.params.iter().map(|p| DataKind::from_ast(&p.kind, structs)).collect();
-        let sig = Sig { index: index as u32, params };
+        let params = f.params.iter().map(|p| param_kind(p, structs)).collect();
+        let edits = f.params.iter().map(|p| p.edit).collect();
+        let sig = Sig { index: index as u32, params, edits };
         sigs[unit].entry(f.name.name).or_insert(sig);
     }
     sigs
+}
+
+/// The kind of a parameter slot: the written kind, or for a parameter the
+/// function can change, a borrow of it.
+///
+/// # Arguments
+///
+/// * `p` - The parameter.
+/// * `structs` - The kind of each declared struct.
+///
+/// # Returns
+///
+/// The kind.
+fn param_kind(p: &st::Param, structs: &StructTable) -> DataKind
+{
+    let kind = DataKind::from_ast(&p.kind, structs);
+    tern!(p.edit, kind.pointer_to().as_borrowed(), kind)
 }
 
 /// The function being lowered.
@@ -154,6 +175,9 @@ struct Frame
     /// The number of scopes open outside it, so its own scopes start at
     /// this index.
     depth: usize,
+    /// The parameter slots the function can change: each holds a borrow of
+    /// the caller's place, and each use of the name goes through it.
+    edits: HashSet<u32>,
 }
 
 /// The lowering walk.
@@ -656,7 +680,9 @@ impl Lowerer<'_>
         {
             panic!("expression {} is not a place", e.id().0);
         };
-        Dest::Slot(self.lookup(&n.name))
+        let place = self.lookup(&n.name);
+        ret_if!(self.is_edit(place), Dest::Mem(self.edit_addr(place, n.span)));
+        Dest::Slot(place)
     }
 
     /// Lower a heap allocation.
@@ -884,7 +910,8 @@ impl Lowerer<'_>
     {
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
         let depth = self.scopes.len();
-        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, depth });
+        #[rustfmt::skip]
+        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, depth, edits: HashSet::new() });
         let mut block = Vec::new();
         let mut result = None;
         self.scoped(|l| {
@@ -915,7 +942,64 @@ impl Lowerer<'_>
     /// * `p` - The parameter.
     fn declare_param(&mut self, p: &st::Param)
     {
-        self.declare(&p.name, DataKind::from_ast(&p.kind, self.structs), Access::Var);
+        let place = self.declare(&p.name, param_kind(p, self.structs), Access::Var);
+        let edit = tern!(let Place::Local(n) = place, Some(n), None).filter(|_| p.edit);
+        let frame = self.frame.as_mut();
+        do_if!(let (Some(n), Some(f)) = (edit, frame), { f.edits.insert(n); });
+    }
+
+    /// Whether a place is a parameter the function can change, which holds a
+    /// borrow of the caller's place.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The place.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it is.
+    fn is_edit(&self, place: Place) -> bool
+    {
+        let Place::Local(n) = place
+        else
+        {
+            return false;
+        };
+        self.frame.as_ref().is_some_and(|f| f.edits.contains(&n))
+    }
+
+    /// The borrow a parameter the function can change holds.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The parameter.
+    /// * `span` - The use of its name.
+    ///
+    /// # Returns
+    ///
+    /// The read of the borrow.
+    fn edit_addr(&mut self, place: Place, span: Span) -> Expr
+    {
+        let kind = self.slot_kind(place);
+        Expr::builder().kind(kind).node(ExprNode::Read(place)).span(span).build()
+    }
+
+    /// The read of a name: the slot, or for a parameter the function can
+    /// change, the caller's place through the borrow it holds.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    /// * `span` - The use.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn read_name(&mut self, name: &str, span: Span) -> ExprNode
+    {
+        let place = self.lookup(name);
+        ret_if!(!self.is_edit(place), ExprNode::Read(place));
+        ExprNode::Load { addr: Box::new(self.edit_addr(place, span)) }
     }
 
     /// Declare the result variable of a function and set it to its default.
@@ -1000,9 +1084,29 @@ impl Lowerer<'_>
         let sig = self.sigs.get(&callee.name).cloned();
         let sig =
             sig.unwrap_or_else(|| panic!("function {} is not declared", callee.name));
-        let args =
-            args.iter().zip(&sig.params).map(|(a, k)| self.owned(a, *k)).collect();
+        let params = sig.params.iter().zip(&sig.edits);
+        let lower = |(a, (k, edit)): (&ast::Expr, (&DataKind, &bool))| {
+            tern!(*edit, self.edit_arg(a, *k), self.owned(a, *k))
+        };
+        let args = args.iter().zip(params).map(lower).collect();
         (sig.index, args)
+    }
+
+    /// The argument for a parameter the function can change: a borrow of the
+    /// place the caller marks.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - The place.
+    /// * `want` - The kind of the parameter, a borrow.
+    ///
+    /// # Returns
+    ///
+    /// The borrow.
+    fn edit_arg(&mut self, a: &ast::Expr, want: DataKind) -> Expr
+    {
+        let node = self.addr_of(a);
+        Expr::builder().kind(want).node(node).span(a.span()).build()
     }
 
     /// The common kind of two kinds: the one the other widens to. Two
@@ -1106,7 +1210,7 @@ impl Lowerer<'_>
             ast::Expr::Float(n) => ExprNode::Const(float_lit(n, kind)),
             ast::Expr::Char(n) => ExprNode::Const(Value::Char(n.value)),
             ast::Expr::Bool(n) => ExprNode::Const(Value::Bool(n.value)),
-            ast::Expr::Name(n) => ExprNode::Read(self.lookup(&n.name)),
+            ast::Expr::Name(n) => self.read_name(&n.name, n.span),
             ast::Expr::Group(n) => return self.expr(&n.inner),
             ast::Expr::Prefix(n) => self.prefix(n, kind),
             ast::Expr::Infix(n) => self.infix(n.op, &n.lhs, &n.rhs, kind),

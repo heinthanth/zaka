@@ -287,6 +287,10 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Address
         | Kw::RawAddress
         | Kw::Borrowed
+        | Kw::EditParam
+        | Kw::EditArg
+        | Kw::EditableAttr
+        | Kw::EditableClaim
         | Kw::Lend
         | Kw::Octets
         | Kw::Items

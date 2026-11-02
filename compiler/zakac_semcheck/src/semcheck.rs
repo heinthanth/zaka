@@ -362,6 +362,7 @@ impl Checker
     ///
     /// * `callee` - The function name.
     /// * `args` - The arguments.
+    /// * `edits` - Whether the edit mark follows each argument.
     /// * `span` - The call.
     ///
     /// # Returns
@@ -369,7 +370,7 @@ impl Checker
     /// The result kind of the function (`Some(None)` when it has none), or
     /// `None` when the function is not declared.
     pub fn check_call(
-        &mut self, callee: &Ident, args: &[Expr], span: Span,
+        &mut self, callee: &Ident, args: &[Expr], edits: &[bool], span: Span,
     ) -> Option<Option<DataKind>>
     {
         let Some(sig) = self.fns.get(&callee.name).cloned()
@@ -384,10 +385,67 @@ impl Checker
         let bad_count = rd::arg_count_mismatch(span, &callee.name, want, got);
         let ret = Some(sig.ret);
         ret_if!(want != got, self.report(bad_count), self.infer_all(args), ret);
-        // A parameter whose list count is open was reported at its function.
-        let known = |kind: &DataKind| Some(*kind).filter(|k| !k.has_open_count());
-        do_for!((arg, kind) in args.iter().zip(&sig.params), self.expect_kind(arg, known(kind)));
+        let marked = |n: usize| edits.get(n).copied().unwrap_or(false);
+        for (n, (arg, kind)) in args.iter().zip(&sig.params).enumerate()
+        {
+            let edit = sig.edits.get(n).copied().unwrap_or(false);
+            self.check_arg(arg, *kind, edit, marked(n));
+        }
+        self.check_edits_apart(args, edits);
         ret
+    }
+
+    /// Check one argument against its parameter: a value that converts to
+    /// the parameter kind, or for a parameter the function can change, a
+    /// writable place of that kind alone, with the mark on both ends.
+    ///
+    /// # Arguments
+    ///
+    /// * `arg` - The argument.
+    /// * `kind` - The parameter kind.
+    /// * `edit` - Whether the function can change the parameter.
+    /// * `mark` - Whether the edit mark follows the argument.
+    fn check_arg(&mut self, arg: &Expr, kind: DataKind, edit: bool, mark: bool)
+    {
+        do_if!(edit && !mark, self.report(kd::edit_mark_missing(arg.span())));
+        do_if!(!edit && mark, self.report(kd::edit_mark_extra(arg.span())));
+        if !(edit && mark)
+        {
+            // A parameter whose list count is open was reported at its
+            // function.
+            let known = Some(kind).filter(|k| !k.has_open_count());
+            return self.expect_kind(arg, known);
+        }
+        let Some(found) = self.place_kind(arg)
+        else
+        {
+            return;
+        };
+        do_if!(found != kind, self.report(mismatch_report(arg.span(), kind, found)));
+    }
+
+    /// Report each argument of a call that names a place another argument
+    /// lets the function change: the function would read the place while it
+    /// changes it.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The arguments.
+    /// * `edits` - Whether the edit mark follows each argument.
+    fn check_edits_apart(&mut self, args: &[Expr], edits: &[bool])
+    {
+        let marked = args.iter().zip(edits).filter(|(_, m)| **m).map(|(a, _)| a);
+        let roots: Vec<(Name, Span)> = marked
+            .filter_map(|a| place_of(a).and_then(|p| self.owner_name(p)))
+            .map(|n| (n.name.clone(), n.span))
+            .collect();
+        for (root, at) in roots
+        {
+            let others = args.iter().filter(|a| !a.span().contains(&at));
+            let clash = others.filter(|a| names_in(a).contains(&root));
+            let found: Vec<Span> = clash.map(Node::span).collect();
+            do_for!(span in found, self.report(kd::edit_shared(span, &root)));
+        }
     }
 
     /// The kind of a counted-loop variable: the common kind of the bounds.
@@ -639,6 +697,28 @@ fn access_error(access: Access, target: &NameExpr) -> Option<Diagnostic>
     }
 }
 
+/// The names an expression reads.
+///
+/// # Arguments
+///
+/// * `e` - The expression.
+///
+/// # Returns
+///
+/// The names, in source order.
+fn names_in(e: &Expr) -> Vec<Name>
+{
+    /// The walker that collects the names.
+    struct Names(Vec<Name>);
+    impl Visitor for Names
+    {
+        fn visit_name(&mut self, n: &NameExpr) { self.0.push(n.name.clone()) }
+    }
+    let mut found = Names(Vec::new());
+    found.visit_expr(e);
+    found.0
+}
+
 impl Visitor for Checker
 {
     fn visit_decl(&mut self, n: &DeclStmt)
@@ -774,7 +854,7 @@ impl Visitor for Checker
 
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
-        self.check_call(&n.callee, &n.args, n.span);
+        self.check_call(&n.callee, &n.args, &n.edits, n.span);
     }
 
     fn visit_struct(&mut self, _: &StructDecl) {}
