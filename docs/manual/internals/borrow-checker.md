@@ -199,7 +199,8 @@ free.
 Text works through the same paths. A `text` slot owns the block of its u8s, so a read of a
 text place roots at that block, as a read of an owner does, and a lend or a range of the
 text is a borrow of it. A `Drop` of a text place gives the block back as a `Free` does,
-and then leaves the slot blank. A view of text that is still live at the drop is ZK0704,
+and then leaves the slot blank, save a struct or a list with an owner in it: the drop frees
+its text alone, so the slot keeps the facts of its owners for the leak checks. A view of text that is still live at the drop is ZK0704,
 and a function that returns a view of its own local text is ZK0706.
 
 A text constant holds static text, so a read of it is a duplicate, never a move:
@@ -217,7 +218,7 @@ Each file of `checks/` owns some codes. All of them work on a `Flow` and the `St
 | `loans.rs` | ZK0704 | a block lost while a live borrow can point into it |
 | `escape.rs` | ZK0706 | a function that returns a borrow of its own local or parameter |
 | `calls.rs` | ZK0704, ZK0707 | the effect of a call (below); one block freed through one argument and reachable through another |
-| `leaks.rs` | ZK0708 | an owner that holds a block when it is overwritten, or when its function ends; a kind that holds text is skipped, since the compiler drops it |
+| `leaks.rs` | ZK0708 | an owner that holds a block when it is overwritten, or when its function ends; text is never lost, since the compiler drops it, but an owner beside it in a struct or a list is checked as in each other struct |
 | `nullness.rs` | ZK0709, ZK0711 | a dereference of an owner that is `NULL` (or `FRESH`, in strict mode) |
 | `bounds.rs` | ZK0710, ZK0712 | an offset or cell number proven outside its block; a pointer difference between different blocks |
 | `lists.rs` | | the facts of a list of pointers, one fact for all its cells |

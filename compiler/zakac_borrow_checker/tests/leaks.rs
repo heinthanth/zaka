@@ -2,12 +2,14 @@ mod common;
 
 use common::codes_with;
 use common::lines;
+use common::lines_with;
 use common::ok;
 use common::run;
 use common::run_with;
 use common::strict;
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Level;
+use zakac_rust_sugars::do_for;
 
 /// A function that keeps a list of owners, with a block in its first
 /// cell, when it ends.
@@ -301,6 +303,86 @@ fn a_struct_result_moves_its_owner_to_the_caller()
     assert_eq!(codes_with(MAKES_BOX, &strict()), []);
     let kept = format!(
         "{MAKES_BOX}လုပ်ဆောင်ချက် သုံး သည်
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဃ သည် ဘူး ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် ဖန်တီး ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+"
+    );
+    assert_eq!(codes_with(&kept, &strict()), [Code::BlockLeaked]);
+}
+
+/// A function over a local struct with an owner and one other field, which
+/// it fills, then gives the owner a block.
+///
+/// # Arguments
+///
+/// * `field` - The other field, as written in the struct, such as `စာသား အ`.
+/// * `value` - The value of that field. From the parameter, text sits on the
+///   heap.
+/// * `after` - The lines after the allocation.
+///
+/// # Returns
+///
+/// The program.
+fn record(field: &str, value: &str, after: &str) -> String
+{
+    format!(
+        "ဒေတာအမျိုးအစား ဘူး တွင် {field}၊ ကိန်းပြည့် လိပ်စာ ပ တို့ ပါဝင်သည်။
+လုပ်ဆောင်ချက် စမ်း သည်
+ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ခ သည် ဘူး ဖြစ်ပါစေ။
+ခ ၏ အ ကို {value} ဟု ထားပါ။
+မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ခ ၏ ပ တွင် သိမ်းထားမည်။
+{after}လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+"
+    )
+}
+
+/// The ends of [`record`]: the owner kept, freed, and the struct replaced.
+const ENDS: [&str; 3] = [
+    "",
+    "လိပ်စာ ခ ၏ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n",
+    "ကိန်းရှင် ဂ သည် ဘူး ဖြစ်ပါစေ။\nခ ကို ဂ ဟု ထားပါ။\n",
+];
+
+#[test]
+fn an_owner_beside_text_left_behind_is_zk0708_under_strict()
+{
+    let text = record("စာသား အ", "\"{န}\"", "");
+    assert_eq!(codes_with(&text, &Default::default()), []);
+    let found = run_with(&text, &strict());
+    let kept: Vec<(Code, Level)> =
+        found.out.diagnostics.iter().map(|d| (d.code, d.level)).collect();
+    assert_eq!(kept, [(Code::BlockLeaked, Level::Warning)]);
+}
+
+/// The text the compiler drops hides no owner: a struct with text reports
+/// what the same struct with an integer in its place reports.
+#[test]
+fn text_beside_an_owner_changes_no_leak_report()
+{
+    do_for!(end in ENDS, {
+        let plain = lines_with(&record("ကိန်းပြည့် အ", "န", end), &strict());
+        let text = lines_with(&record("စာသား အ", "\"{န}\"", end), &strict());
+        assert_eq!(text, plain, "{end}");
+    });
+}
+
+#[test]
+fn a_struct_with_text_moves_its_owner_to_the_caller()
+{
+    let made = "\
+ဒေတာအမျိုးအစား ဘူး တွင် စာသား အ၊ ကိန်းပြည့် လိပ်စာ ပ တို့ ပါဝင်သည်။
+လုပ်ဆောင်ချက် ဖန်တီး သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ဘူး ရလဒ် ကို ပြန်ပေးမည်။
+ရလဒ် ၏ အ ကို \"က\" ဟု ထားပါ။
+မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ရလဒ် ၏ ပ တွင် သိမ်းထားမည်။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+";
+    assert_eq!(codes_with(made, &strict()), []);
+    let kept = format!(
+        "{made}လုပ်ဆောင်ချက် သုံး သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဃ သည် ဘူး ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် ဖန်တီး ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။

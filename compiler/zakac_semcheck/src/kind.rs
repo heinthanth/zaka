@@ -485,6 +485,20 @@ impl DataKind
         self == DataKind::Text
     }
 
+    /// Whether a value of the kind holds an owner pointer, whose block the
+    /// program must free or move on: the pointer itself, or a list or struct
+    /// with one in it.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn holds_owner_ptr(self) -> bool
+    {
+        ret_if!(let Some(l) = self.as_list(), l.cell.holds_owner_ptr());
+        ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_owner_ptr()));
+        self.is_owner_ptr()
+    }
+
     /// The kind of each cell a value of the kind holds or views: the cells of
     /// a list or of a slice.
     ///
@@ -1046,10 +1060,6 @@ impl DataKind
             (DataKind::Int(a), DataKind::Float(b)) => a.bits(platform) <= precision(b),
             (DataKind::Float(a), DataKind::Float(b)) => a < b,
             (DataKind::Null, DataKind::Ptr(_)) => true,
-            (DataKind::Slice(a), DataKind::Slice(b)) =>
-            {
-                a.text && !b.text && a.cell == b.cell
-            }
             (DataKind::Ptr(_), DataKind::Ptr(_)) =>
             {
                 self.meets_pointer(target) && !self.reads_addresses_as(target)

@@ -27,7 +27,7 @@ fn text_kinds_read_back_from_their_names()
     assert!(text.is_move_kind() && text.is_aggregate() && !text.is_borrow());
     assert!(text.holds_text() && DataKind::parse("[2]text").unwrap().holds_text());
     assert!(view.is_borrow() && !view.holds_text());
-    assert!(view.widens_to(DataKind::slice_of(DataKind::U8), 64));
+    assert!(!view.widens_to(DataKind::slice_of(DataKind::U8), 64));
     assert!(!DataKind::slice_of(DataKind::U8).widens_to(view, 64));
     assert_eq!(DataKind::parse("*&text").map(DataKind::name), Some("*&text".into()));
 }
@@ -65,6 +65,21 @@ fn text_mistakes()
     assert_eq!(codes(&lines(&[TEXT, "v ၏ အကွက် ၀ ကို ၁ ဟု ထားပါ။"])), [Code::TextCellWrite]);
     assert_eq!(codes(&lines(&[TEXT, "t == t ကို ပြသပါ။"])), [Code::OperandKind]);
     assert_eq!(codes(&lines(&[TEXT, "t + ၁ ကို ပြသပါ။"])), [Code::OperandKind]);
+}
+
+/// A view of text never becomes a slice of u8s, whose cells can be written,
+/// so a write through it cannot break the UTF-8 of the text.
+#[test]
+fn a_text_view_is_no_slice_of_u8s()
+{
+    let u8s = "လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း";
+    let held = format!("ကိန်းရှင် b သည် {u8s} ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ပါစေ။");
+    assert_eq!(codes(&lines(&[TEXT, &held])), [Code::KindMismatch]);
+    let given = format!(
+        "လုပ်ဆောင်ချက် ရေး သည်\n{u8s} b ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nb ၏ အကွက် ၀ ကို ၂၅၅ ဟု \
+         ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nလုပ်ဆောင်ချက် ရေး ကို v တို့ဖြင့် လုပ်ဆောင်ပါ။"
+    );
+    assert_eq!(codes(&lines(&[TEXT, &given])), [Code::KindMismatch]);
 }
 
 #[test]

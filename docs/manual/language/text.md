@@ -45,9 +45,10 @@ v ၏ အကွက်အရေအတွက် ကို ပြသပါ။
   and belong to no block. On a 64-bit platform the kind takes 24 octets.
 - `စာသား တစ်စိတ်တစ်ပိုင်း` is a [slice](slices.md): two words, the address and the count.
   `တစ်စိတ်တစ်ပိုင်း` straight after `စာသား` makes the view, with no `စာရင်း` between them.
-- A view of text widens to `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း` (`&[]u8`) on
-  its own. The reverse does not hold: a slice of u8s is not known to hold UTF-8, so
-  giving one where a view of text is wanted is ZK0401.
+- A view of text does not widen to `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း`
+  (`&[]u8`): the cells of such a slice can be written, which would break the UTF-8 of the
+  text. The reverse does not hold either: a slice of u8s is not known to hold UTF-8.
+  Giving one where the other is wanted is ZK0401.
 - Owned text does not turn into a view on its own either: lend it (see
   [Views](#views)). Giving a `စာသား` where a view is wanted is ZK0401.
 - A `စာသား` declared with no value holds blank text, with no u8s. A view declared with no value views
@@ -236,9 +237,9 @@ The lend `၏ တန်ဖိုးအငှား` views each cell of a text pl
 from cell `start`. Both take owned text or a view. The lend needs a place, a constant
 included: the lend of a literal or of a call result is ZK0411.
 
-A view widens to a slice of u8s, `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း`, on its
-own. The way back is a conversion, which checks the u8s: u8s that are not UTF-8 stop the
-program when it runs.
+A view never widens to a slice of u8s, `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း`: a
+write through the slice would break the text. A conversion turns u8s into text, and it
+checks them: u8s that are not UTF-8 stop the program when it runs.
 
 ```zaka
 ကိန်းရှင် b သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် [၁၀၄၊ ၁၀၅] ဖြစ်ပါစေ။
@@ -412,7 +413,9 @@ list of `စာသား`) drops its text:
 A short-lived text, such as a join or a format that is printed or used in a template slot, is
 dropped right after its use. A drop frees text that sits on the heap. It leaves alone
 static text (room 0) and text that was moved out. The [ownership check](ownership.md)
-reports no leak for these kinds, and `zakac run --leaks` lists none of their blocks.
+reports no leak for the text, and `zakac run --leaks` lists none of its blocks. An owner
+pointer beside the text in a struct or a list is still the program's to free, and the check
+reports it as for each other struct (ZK0708).
 
 ```zaka
 ကိန်းရှင် i သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
@@ -461,7 +464,7 @@ a program stops](../vm/traps.md) the trap.
 | --- | --- |
 | ZK0106 | a lone brace, an unclosed `{`, or `{...}` in a character literal |
 | ZK0301 | a template slot names something not declared |
-| ZK0401 | owned text where a view is wanted, or a slice of u8s where a view of text is wanted |
+| ZK0401 | owned text where a view is wanted, or a view of text and a slice of u8s in place of each other |
 | ZK0403 | `+` of text and a non-text value, or another operator on text |
 | ZK0411 | the lend of a literal or a call result |
 | ZK0429 | a write to a cell of text |

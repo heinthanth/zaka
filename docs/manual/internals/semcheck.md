@@ -203,7 +203,7 @@ An implicit conversion (`widens_to`) never loses data:
 | float | float | the target is wider |
 | `ဗလာ` | pointer | in each case |
 | pointer | pointer | the same flavour (owner, borrow or raw) and the same shape, or one is the opaque `လိပ်စာ`; a block of addresses read as other data needs a raw step |
-| `&text` | `&[]u8` | in each case; the reverse never, since a slice of u8s is not known to hold UTF-8 |
+| `&text` | `&[]u8` | never: a write through the slice would break the text; nor the reverse, since a slice of u8s is not known to hold UTF-8 |
 | char, bool, list, text | other kinds | never; owned text does not become a view without a lend |
 
 The conversion verb (`cast_allowed`) is wider: number to number, char to integer and back,

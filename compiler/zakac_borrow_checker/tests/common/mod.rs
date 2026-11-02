@@ -94,7 +94,13 @@ pub fn codes(text: &str) -> Vec<Code>
 /// Each diagnostic code of `text` with the 1-based line of its span.
 pub fn lines(text: &str) -> Vec<(Code, usize)>
 {
-    let run = run(text);
+    lines_with(text, &BorrowCheckOptions::default())
+}
+
+/// The diagnostic codes of `text` with `options`, each with its line.
+pub fn lines_with(text: &str, options: &BorrowCheckOptions) -> Vec<(Code, usize)>
+{
+    let run = run_with(text, options);
     let line = |pos| run.file.lookup_file_pos(&run.file.relative_position(pos)).0;
     run.out.diagnostics.iter().map(|d| (d.code, line(&d.span.lo))).collect()
 }

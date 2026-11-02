@@ -589,7 +589,10 @@ impl<'m> Flow<'m>
             {
                 self.give_back(dest, Invalidation::Freed, *span, state);
                 self.forget_freed(dest, state);
-                self.write_dest(dest, SlotState::blank(*kind), state)
+                // The drop frees the text alone: an owner beside it keeps its
+                // block, for the leak checks to find.
+                let blank = !kind.holds_owner_ptr();
+                do_if!(blank, self.write_dest(dest, SlotState::blank(*kind), state));
             }
             _ => (),
         }

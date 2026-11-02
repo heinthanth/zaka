@@ -1241,8 +1241,8 @@ impl<'s> FuncGen<'s>
             ExprNode::Convert { operand, .. } =>
             {
                 self.expr(operand);
-                // A view of text widens to a slice of u8s with the same two
-                // words.
+                // A slice of u8s becomes a view of text with the same two
+                // words, once its UTF-8 is checked.
                 let same = operand.kind == e.kind || e.kind.is_aggregate();
                 do_if!(!same, self.op(Op::Convert(e.kind)));
                 let checked = e.kind.is_text_view() && !operand.kind.is_text_view();
