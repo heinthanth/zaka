@@ -138,7 +138,8 @@ age 20 and height 1.75". The last line is the notation form, the one a struct pr
 
 - The pairs stand in each order, with `၊` between them. The `ရှိသော` form writes at
   least one pair; the notation form can write none, as in `လူ()`, a struct with each
-  field at its default.
+  field at its default. After a name that no struct declares, `()` is a
+  [call](functions.md#calls) with no arguments.
 - A field left out holds its default, as in a declaration with no value.
 - Each field name is one the struct has (ZK0320), and each is set once (ZK0321).
 - Each value converts to the kind of its field, as the value of an assignment does

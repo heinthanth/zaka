@@ -114,8 +114,9 @@ impl Parser<'_>
     }
 
     /// Whether a notation struct literal starts here: a struct name and `(`,
-    /// or another name and `(<field>:` or `()`. The checker reports a name
-    /// that no struct declaration gives.
+    /// or another name and `(<field>:`. The checker reports a name that no
+    /// struct declaration gives. Another name and `()` is a call with no
+    /// arguments.
     ///
     /// # Returns
     ///
@@ -123,8 +124,7 @@ impl Parser<'_>
     pub(crate) fn at_call_struct_lit(&self) -> bool
     {
         let open = self.peek_n(1).kind == TokenKind::Punct(Punct::LParen);
-        let named = self.peek_n(3).kind == TokenKind::Punct(Punct::Colon)
-            || self.peek_n(2).kind == TokenKind::Punct(Punct::RParen);
+        let named = self.peek_n(3).kind == TokenKind::Punct(Punct::Colon);
         self.peek().kind == TokenKind::Ident && open && (named || self.is_struct_at(0))
     }
 

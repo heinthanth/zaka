@@ -213,14 +213,16 @@ error[ZK0424]: a function cannot give back a list whose cells are borrows
 
 ## Calls
 
-A call has two forms. Both name the function after `လုပ်ဆောင်ချက်`, and both close the
-argument list with `တို့ဖြင့်` ("with these"), one argument or several. A function with no
-parameters has no argument list.
+A call has three forms. The two word forms name the function after `လုပ်ဆောင်ချက်`, and both
+close the argument list with `တို့ဖြင့်` ("with these"), one argument or several. A
+function with no parameters has no argument list. The sign form writes the arguments in
+parentheses after the name.
 
 | Form | Written | Is |
 | --- | --- | --- |
 | statement | `လုပ်ဆောင်ချက် <name> ကို <arguments> တို့ဖြင့် လုပ်ဆောင်ပါ။` | a statement; a result, if there is one, is dropped |
 | expression | `လုပ်ဆောင်ချက် <name> ကို <arguments> တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်` | a value |
+| sign form | `<name>(<arguments>)` | a value, the same call as the expression form |
 
 The expression form is an operand like a number: print it, store it, pass it as an
 argument, use it in a sum, or give it back from another function. Using the expression
@@ -242,6 +244,33 @@ An argument is a full expression, and `၊` ends it, so an argument needs no par
 ```text
 ၂
 ၁၀
+```
+
+The sign form is the same call as the expression form, as `+` is the same sum as the
+word form: the same order of work, the same checks and the same codes. Its rules:
+
+- The `(` touches the name. With a space, `f (a)`, the name and the group remain apart.
+- `၊` comes between the arguments, and `f()` calls a function with no parameters.
+- A struct name and `(` is a [struct literal](structs.md#struct-literals); another name and
+  `(<field>:` is one too, and the check reports the name.
+- A sign-form call is a value, never a statement: a call whose result is dropped takes
+  the statement form.
+
+```zaka
+လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+ကိန်းပြည့် က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က * က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+နှစ်ထပ်(၇) ကို ပြသပါ။
+နှစ်ထပ်(၃) + နှစ်ထပ်(၄) ကို ပြသပါ။
+နှစ်ထပ်(နှစ်ထပ်(၂)) ကို ပြသပါ။
+```
+
+```text
+၄၉
+၂၅
+၁၆
 ```
 
 A statement that begins with `လုပ်ဆောင်ချက်` is read as a call statement. A sum or other

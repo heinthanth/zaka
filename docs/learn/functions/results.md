@@ -104,6 +104,34 @@ A call later in the sum, or a call on its own, needs none.
 
 To discard a result, call the function as a statement with `လုပ်ဆောင်ပါ။`.
 
+## The sign form
+
+A call inside a sum or inside another call takes a lot of words. The *sign form* writes
+the same call in fewer: the name, then the arguments in parentheses, with `၊` between
+them. It is the same call, as `+` is the same sum as the word form.
+
+```zaka
+လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+ကိန်းပြည့် က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က * က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+ကိန်းရှင် ကိုး သည် နှစ်ထပ်(၃) ဖြစ်ပါစေ။     // store it
+ကိုး ကို ပြသပါ။
+နှစ်ထပ်(၃) + နှစ်ထပ်(၄) ကို ပြသပါ။         // in a sum, with no parentheses around it
+နှစ်ထပ်(နှစ်ထပ်(၂)) ကို ပြသပါ။            // one call inside another
+```
+
+```text
+၉
+၂၅
+၁၆
+```
+
+Write the `(` right after the name, with no space. A call whose result is dropped still
+takes the statement form, `လုပ်ဆောင်ပါ။`.
+
 ## Results of other kinds
 
 A result can be of whatever kind the function needs, lists and structs included (see

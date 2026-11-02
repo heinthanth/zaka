@@ -55,7 +55,10 @@ An expression has three tiers, one module each, from the loosest to the tightest
 `parse_expr` is the top: it parses one clause, then loops on logical words. `parse_clause`
 parses one notation expression, then loops on particles and verbs. `parse_notation` parses
 one atom, then loops on operators. A parenthesized expression is an atom, which is how a
-logical expression gets back inside a clause.
+logical expression gets back inside a clause. A name with `(` right after it, with no space
+(the token's `joined` flag), is the sign form of a call, `f(a၊ b)`, and builds the same
+`CallExpr` as the word form; a struct name, or `<name>(<field>:`, is a struct literal
+instead.
 
 ```text
  parse_expr         clause ဖြစ်၍ clause သို့မဟုတ် clause မဟုတ်      logical.rs

@@ -178,8 +178,8 @@ impl Parser<'_>
     }
 
     /// Parse an atom: a literal, a name, `( expr )`, `[a၊ b]`,
-    /// `<struct>(<field>: <value>)`, a call expression, `ဗလာ` or
-    /// `<kind> ၏ အရွယ်အစား`.
+    /// `<struct>(<field>: <value>)`, a call expression in the word form or
+    /// the sign form `f(a၊ b)`, `ဗလာ` or `<kind> ၏ အရွယ်အစား`.
     ///
     /// # Returns
     ///
@@ -194,6 +194,10 @@ impl Parser<'_>
             TokenKind::Ident if self.at_call_struct_lit() =>
             {
                 self.parse_call_struct_lit()
+            }
+            TokenKind::Ident | TokenKind::RawIdent if self.at_sign_call() =>
+            {
+                self.parse_sign_call()
             }
             TokenKind::Ident if self.is_struct_at(0) && self.at_size_of() =>
             {
@@ -357,6 +361,50 @@ impl Parser<'_>
         let (start, callee, args) = self.parse_call_head()?;
         let end = self.expect(Kw::CallResult)?;
         Ok(self.call_expr(start.to(&end.span), callee, args))
+    }
+
+    /// Whether the sign form of a call starts here: a name with `(` right
+    /// after it, no space between. With a space, `f (a)` is a name, then a
+    /// group.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_sign_call(&self) -> bool
+    {
+        let open = self.peek_n(1);
+        open.kind == TokenKind::Punct(Punct::LParen) && open.joined
+    }
+
+    /// Parse the sign form of a call, `f(a၊ b)` or `f()`: the same node as
+    /// `လုပ်ဆောင်ချက် f ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`.
+    ///
+    /// # Returns
+    ///
+    /// The call, or a diagnostic.
+    fn parse_sign_call(&mut self) -> PResult<Expr>
+    {
+        let callee = self.parse_ident()?;
+        self.bump();
+        let bare = self.at_punct(Punct::RParen);
+        let args = tern!(bare, Vec::new(), self.parse_sign_args()?);
+        let close = self.expect_punct(Punct::RParen)?;
+        Ok(self.call_expr(callee.span.to(&close.span), callee, args))
+    }
+
+    /// Parse `expr (၊ expr)*` inside the parentheses of a sign-form call.
+    ///
+    /// # Returns
+    ///
+    /// The arguments, or a diagnostic.
+    fn parse_sign_args(&mut self) -> PResult<Vec<Expr>>
+    {
+        let mut args = vec![self.parse_expr()?];
+        while self.eat_punct(Punct::ListSep)
+        {
+            args.push(self.parse_expr()?);
+        }
+        Ok(args)
     }
 
     /// Build a call expression node.

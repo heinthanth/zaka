@@ -83,7 +83,8 @@ fn a_struct_literal_takes_the_notation_form()
     assert_eq!(shown("လူ()"), "(print (struct လူ))");
     // An undeclared name is left for the checker to report.
     assert_eq!(shown("ကျား(အသက်: ၁)"), "(print (struct ကျား (အသက် 1)))");
-    assert_eq!(shown("ကျား()"), "(print (struct ကျား))");
+    // With no pairs, a name that no struct declaration gives is a call.
+    assert_eq!(shown("ကျား()"), "(print (call ကျား))");
     assert_eq!(
         shown("[လူ(အသက်: ၁)၊ လူ(အသက်: ၂)]"),
         "(print (list (struct လူ (အသက် 1)) (struct လူ (အသက် 2))))"
