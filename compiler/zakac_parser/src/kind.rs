@@ -73,7 +73,7 @@ fn base_kind(kw: Kw) -> Option<BaseKind>
 /// # Returns
 ///
 /// `Some(true)` for `လက္ခဏာရှိ`, `Some(false)` for `လက္ခဏာမဲ့`.
-fn sign_of(kw: Kw) -> Option<bool>
+pub(crate) fn sign_of(kw: Kw) -> Option<bool>
 {
     match kw
     {
@@ -254,6 +254,21 @@ impl Parser<'_>
             bare_ptr = matches!(suffix, Suffix::List | Suffix::Part);
         }
         (len, found)
+    }
+
+    /// The token count of the pointer and list words that start `n` tokens
+    /// ahead, right after a base word.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead the first word would start.
+    ///
+    /// # Returns
+    ///
+    /// The token count.
+    pub(crate) fn suffix_len(&self, n: usize) -> usize
+    {
+        self.scan_suffixes(n, true, false).0
     }
 
     /// Whether a kind phrase starts here and the reserved word `kw` follows

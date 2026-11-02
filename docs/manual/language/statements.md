@@ -14,19 +14,19 @@ decides what the statement does. A statement does something and has no value; an
 
 In the shapes below, `NAME` is a name, `KIND` a [kind](kinds.md), `VALUE` and `COND`
 expressions, `PLACE` something that can be assigned to (a name, or a cell or a pointer's
-value), and `BODY` a block or one statement. Square brackets mark what can be left out.
+value), `WORD` the classifier of the kind, and `BODY` a block or one statement. Square brackets mark what can be left out.
 
 | Statement | Shape |
 | --- | --- |
-| declare | `ကိန်းရှင် NAME သည် KIND [ဖြစ်၍ တန်ဖိုးသည်] [VALUE] ဖြစ်ပါစေ။` |
-| constant | `ကိန်းသေ NAME သည် KIND [ဖြစ်၍ တန်ဖိုးသည်] VALUE ဖြစ်ပါစေ။` |
+| declare | `ကိန်းရှင် NAME သည် KIND တစ်WORD [ဖြစ်၍ တန်ဖိုးသည် VALUE] ဖြစ်ပါစေ။` or `ကိန်းရှင် NAME သည် VALUE ဖြစ်ပါစေ။` |
+| constant | `ကိန်းသေ NAME သည် KIND တစ်WORD ဖြစ်၍ တန်ဖိုးသည် VALUE ဖြစ်ပါစေ။` or `ကိန်းသေ NAME သည် VALUE ဖြစ်ပါစေ။` |
 | assign | `PLACE ကို VALUE ဟု ထားပါ။` |
 | print | `VALUE ကို ပြသပါ။` or `VALUE ဟု ပြသပါ။` |
 | block | `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။` statements `လုပ်ဆောင်စရာများ ပြီးပါပြီး။` |
 | if | `အကယ်၍ COND လျှင် BODY` then `[ထိုသို့မဟုတ်ဘဲ COND လျှင် BODY]` then `[သို့မဟုတ်ပါက BODY]` |
 | while | `COND နေသရွေ့ BODY` |
 | counted loop | `FROM မှ TO အထိ [STEP စီ] NAME အနေဖြင့် ရေတွက်၍ BODY` |
-| generic loop | `ကိန်းရှင် NAME သည် KIND [VALUE] ဖြစ်ကာ COND နေသရွေ့` block with `[ပြီးလျှင် STATEMENT]` last |
+| generic loop | `ကိန်းရှင် NAME သည် KIND တစ်WORD [ဖြစ်၍ တန်ဖိုးသည် VALUE]`, or `ကိန်းရှင် NAME သည် VALUE`, then `ဖြစ်ကာ COND နေသရွေ့` and a block with `[ပြီးလျှင် STATEMENT]` last |
 | break | `ကွင်းဆက် ကို ရပ်ပါ။` |
 | continue | `နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။` |
 | call | `လုပ်ဆောင်ချက် NAME ကို [ARGS တို့ဖြင့်] လုပ်ဆောင်ပါ။` |
@@ -77,23 +77,48 @@ reading error is not checked for names and kinds, and does not run.
 
 ## Declarations
 
-`ကိန်းရှင်` declares a variable, `ကိန်းသေ` a constant. The kind comes first. The value
-can follow the kind at once, or after `ဖြစ်၍ တန်ဖိုးသည်` ("is, and its value is"),
-which keeps the kind and the value apart. A variable without a value starts at the
-[default](kinds.md#default-values) of its kind; a constant needs a value (ZK0308) and
-can never be assigned to (ZK0306). The value is checked first, so it cannot use the
-name that the statement declares (ZK0301), and it must fit the kind (ZK0401).
+`ကိန်းရှင်` declares a variable, `ကိန်းသေ` a constant. A declaration writes its kind and
+counts it, or writes a value alone:
+
+| Form | Example |
+| --- | --- |
+| the kind | `ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။` |
+| the kind, then the value | `ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။` |
+| the value alone | `ကိန်းရှင် အသက် သည် ၁၈ ဖြစ်ပါစေ။` |
+
+- The kind is counted as Burmese counts a thing: the kind, then `တစ်` ("one") and the
+  classifier of the kind. Most kinds take `ခု`, `စာလုံး` takes `လုံး`, and a struct takes
+  the classifier its declaration names ([Structs](structs.md)), `ခု` when it names none.
+  A struct name and its count word can form one word: `လူတစ်ယောက်`.
+- A kind with no count word after it is ZK0234. A count word with another classifier is
+  the warning ZK0509; the program still compiles.
+- `ဖြစ်၍ တန်ဖိုးသည်` ("is, and its value is") brings the value after the counted kind.
+- With no kind written, the declaration takes the kind of its value: `ကိန်းပြည့်` for an
+  integer literal, `ဒဿမကိန်း` for a decimal one, `စာသား` for text in quotes, and a list of
+  the cells' kind and count for a list literal. A literal with a kind before it, such as
+  `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၂၀၀`, gives that kind. `ဗလာ` fits each pointer kind and names
+  none, so it needs the written kind (ZK0430).
+- Parameters, results and struct fields write their kind with no count word.
+
+A variable without a value starts at the [default](kinds.md#default-values) of its kind;
+a constant needs a value (ZK0308) and can never be assigned to (ZK0306). The value is
+checked first, so it cannot use the name that the statement declares (ZK0301), and it
+must fit the kind (ZK0401).
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
-ကိန်းရှင် အရွယ် သည် ကိန်းပြည့် ၂၀ ဖြစ်ပါစေ။
-ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
+ကိန်းရှင် အရွယ် သည် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် ၁၀၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အက္ခရာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'က' ဖြစ်ပါစေ။
+ကိန်းရှင် အမည် သည် "မမ" ဖြစ်ပါစေ။
 အသက် ကို အသက် + ၁ ဟု ထားပါ။
 အသက် ကို ပြသပါ။
 အရွယ် ကို ပြသပါ။
 အရေအတွက် ကို ပြသပါ။
 အများဆုံး ကို ပြသပါ။
+အက္ခရာ ကို ပြသပါ။
+အမည် ကို ပြသပါ။
 ```
 
 ```text
@@ -101,11 +126,29 @@ name that the statement declares (ZK0301), and it must fit the kind (ZK0401).
 ၂၀
 ၀
 ၁၀၀
+က
+မမ
 ```
 
 ```zaka-error ZK0306
 ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် ၁၀၀ ဖြစ်ပါစေ။
 အများဆုံး ကို ၂၀၀ ဟု ထားပါ။
+```
+
+```zaka-error ZK0234
+ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် ဖြစ်ပါစေ။
+```
+
+```text
+error[ZK0234]: a declared kind takes "တစ်" and a classifier
+```
+
+```zaka-error ZK0430
+ကိန်းရှင် ပ သည် ဗလာ ဖြစ်ပါစေ။
+```
+
+```text
+error[ZK0430]: the value gives no kind for "ပ"
 ```
 
 ## Assignment
@@ -167,7 +210,7 @@ the last word of the condition (`ငယ်လျှင်`); after a name or a w
 ZK0211.
 
 ```zaka
-ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
+ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 အကယ်၍ အမှတ် သည် ၈၀ အောက် မငယ်လျှင် "က" ဟု ပြသပါ။
 ထိုသို့မဟုတ်ဘဲ အမှတ် သည် ၆၀ အောက် မငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 "ခ" ဟု ပြသပါ။
@@ -218,7 +261,7 @@ block alone, and its variable is declared with `ကိန်းရှင်`, ne
 variable is gone after the closer.
 
 ```zaka
-ကိန်းရှင် ဆုံး သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
+ကိန်းရှင် ဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 ၁ မှ ဆုံး အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ဆုံး ကို ၁၀ ဟု ထားပါ။
 န ကို ပြသပါ။
@@ -246,13 +289,13 @@ The first loop shows that the bound is worked out once: changing `ဆုံး` 
 not lengthen the loop.
 
 ```zaka
-ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 အကယ်၍ ကိန်း % ၂ သည် ၁ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။
 အကယ်၍ ကိန်း သည် ၆ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။
 ကိန်း ကို ပြသပါ။
 ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-ကိန်းရှင် ဂဏန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ဂဏန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 မှန် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ဂဏန်း ကို ဂဏန်း * ၂ ဟု ထားပါ။
 အကယ်၍ ဂဏန်း သည် ၁၀၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။
@@ -296,7 +339,7 @@ The size can also be `N ဘိုက်စာ`, a count of octets. `မင်မ
 same.
 
 ```zaka
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ၏ တန်ဖိုး ကို ၄၂ ဟု ထားပါ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
@@ -334,7 +377,7 @@ same.
 ```
 
 ```zaka-stop
-ကိန်းရှင် ခြေလှမ်း သည် ကိန်းပြည့် ဖြစ်ပါစေ။
+ကိန်းရှင် ခြေလှမ်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 "အစ" ဟု ပြသပါ။
 ၁ မှ ၃ အထိ ခြေလှမ်း စီ န အနေဖြင့် ရေတွက်၍ န ကို ပြသပါ။
 ```

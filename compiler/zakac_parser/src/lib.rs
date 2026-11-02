@@ -2,6 +2,7 @@ pub mod artifact;
 mod clause;
 pub mod cli;
 mod cursor;
+mod decl_head;
 pub mod describe;
 mod heap;
 mod kind;

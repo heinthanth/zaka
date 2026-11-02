@@ -214,7 +214,7 @@ or to standard output. Here is the listing of a program with a variable (`age.za
 for a 32-bit platform:
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက် ကို ပြသပါ။
 ```
 

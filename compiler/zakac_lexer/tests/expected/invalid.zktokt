@@ -1,7 +1,7 @@
 # zakac-lex-artifact v1
 name:
   Custom: invalid.zaka
-source: "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၈ဘစ် ဖြစ်ပါစေ။\nက၊ ခ, ဂ\n\"unterminated\n'ab' ကို ပြသပါ။\n\"{မသိ}\" ဟု ပြသပါ။\n`raw\n၁၂.34 ; ?\n"
+source: "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ဘစ် ဖြစ်ပါစေ။\nက၊ ခ, ဂ\n\"unterminated\n'ab' ကို ပြသပါ။\n\"{မသိ}\" ဟု ပြသပါ။\n`raw\n၁၂.34 ; ?\n"
 tokens:
 - kind:
     kw: var
@@ -30,112 +30,139 @@ tokens:
     hi: 72
   particle: none
   joined: false
+- kind: ident
+  span:
+    lo: 73
+    hi: 88
+  particle: none
+  joined: false
+- kind:
+    kw: and
+  span:
+    lo: 89
+    hi: 104
+  particle: none
+  joined: false
+- kind:
+    kw: value
+  span:
+    lo: 105
+    hi: 126
+  particle: none
+  joined: false
+- kind:
+    kw: thi
+  span:
+    lo: 126
+    hi: 135
+  particle: none
+  joined: true
 - kind:
     kw: let
   span:
-    lo: 89
-    hi: 113
+    lo: 152
+    hi: 176
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 113
-    hi: 116
+    lo: 176
+    hi: 179
   particle: none
   joined: true
 - kind: ident
   span:
-    lo: 117
-    hi: 120
+    lo: 180
+    hi: 183
   particle: none
   joined: false
 - kind:
     punct: list_sep
   span:
-    lo: 120
-    hi: 123
+    lo: 183
+    hi: 186
   particle: none
   joined: true
 - kind: ident
   span:
-    lo: 124
-    hi: 127
+    lo: 187
+    hi: 190
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 129
-    hi: 132
+    lo: 192
+    hi: 195
   particle: none
   joined: false
 - kind:
     str: 0
   span:
-    lo: 133
-    hi: 146
+    lo: 196
+    hi: 209
   particle: none
   joined: false
 - kind:
     char: �
   span:
-    lo: 147
-    hi: 151
+    lo: 210
+    hi: 214
   particle: none
   joined: false
 - kind:
     kw: ko
   span:
-    lo: 152
-    hi: 161
+    lo: 215
+    hi: 224
   particle: none
   joined: false
 - kind:
     kw: print
   span:
-    lo: 162
-    hi: 177
+    lo: 225
+    hi: 240
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 177
-    hi: 180
+    lo: 240
+    hi: 243
   particle: none
   joined: true
 - kind:
     str: 1
   span:
-    lo: 181
-    hi: 194
+    lo: 244
+    hi: 257
   particle: none
   joined: false
 - kind:
     kw: hu
   span:
-    lo: 195
-    hi: 201
+    lo: 258
+    hi: 264
   particle: none
   joined: false
 - kind:
     kw: print
   span:
-    lo: 202
-    hi: 217
+    lo: 265
+    hi: 280
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 217
-    hi: 220
+    lo: 280
+    hi: 283
   particle: none
   joined: true
 - kind: raw_ident
   span:
-    lo: 221
-    hi: 225
+    lo: 284
+    hi: 288
   particle: none
   joined: false
 - kind:
@@ -145,14 +172,14 @@ tokens:
       has_exponent: false
       has_letters: false
   span:
-    lo: 226
-    hi: 235
+    lo: 289
+    hi: 298
   particle: none
   joined: false
 - kind: eof
   span:
-    lo: 240
-    hi: 240
+    lo: 303
+    hi: 303
   particle: none
   joined: false
 comments: []
@@ -164,63 +191,63 @@ strings:
   - template_slot:
       text: မသိ
       span:
-        lo: 184
-        hi: 193
+        lo: 247
+        hi: 256
   value: "{မသိ}"
 diagnostics:
 - code: ZK0102
   level: error
   message: invalid number literal "၁၈ဘစ်"
   span:
-    lo: 73
-    hi: 88
+    lo: 136
+    hi: 151
   help: null
 - code: ZK0101
   level: error
   message: invalid character in ","
   span:
-    lo: 127
-    hi: 128
+    lo: 190
+    hi: 191
   help: lists are separated with "၊", not ","
 - code: ZK0104
   level: error
   message: string literal is missing its closing quote before the end of the line
   span:
-    lo: 133
-    hi: 146
+    lo: 196
+    hi: 209
   help: null
 - code: ZK0107
   level: error
   message: a character literal must hold one character, found 2
   span:
-    lo: 147
-    hi: 151
+    lo: 210
+    hi: 214
   help: null
 - code: ZK0108
   level: error
   message: raw identifier is missing its closing backtick before the end of the line
   span:
-    lo: 221
-    hi: 225
+    lo: 284
+    hi: 288
   help: null
 - code: ZK0103
   level: error
   message: Burmese and Western digits cannot be mixed in one number
   span:
-    lo: 226
-    hi: 235
+    lo: 289
+    hi: 298
   help: null
 - code: ZK0101
   level: error
   message: invalid character in ";"
   span:
-    lo: 236
-    hi: 237
+    lo: 299
+    hi: 300
   help: null
 - code: ZK0101
   level: error
   message: invalid character in "?"
   span:
-    lo: 238
-    hi: 239
+    lo: 301
+    hi: 302
   help: null

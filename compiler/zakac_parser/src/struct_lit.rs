@@ -17,7 +17,7 @@ use crate::parser::PResult;
 use crate::parser::Parser;
 
 /// The word between a struct name and its classifier: `တစ်`, "one".
-const ONE: &str = "တစ်";
+pub(crate) const ONE: &str = "တစ်";
 
 /// Whether a token can start the value of a field: a name, a literal, `(`,
 /// or a prefix operator that cannot also stand between two operands.
@@ -68,7 +68,7 @@ fn starts_value(kind: TokenKind) -> bool
 /// # Returns
 ///
 /// The name.
-fn part_ident(text: &str, word: Span, at: usize) -> Ident
+pub(crate) fn part_ident(text: &str, word: Span, at: usize) -> Ident
 {
     let lo = word.lo + at;
     Ident::builder().name(text.to_string()).span(Span::new(lo, lo + text.len())).build()
@@ -195,7 +195,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The struct name and the classifier, or an `expected-token` diagnostic.
-    fn parse_struct_count(&mut self) -> PResult<(Ident, Ident)>
+    pub(crate) fn parse_struct_count(&mut self) -> PResult<(Ident, Ident)>
     {
         let spaced = self.is_spaced_count();
         let tok = self.peek_n(usize::from(spaced));
@@ -245,7 +245,7 @@ impl Parser<'_>
 /// # Returns
 ///
 /// The length in octets, or `None` when the word holds no `တစ်` after a name.
-fn name_len(text: &str, structs: &HashSet<&str>) -> Option<usize>
+pub(crate) fn name_len(text: &str, structs: &HashSet<&str>) -> Option<usize>
 {
     let starts = |s: &&&str| text.strip_prefix(**s).is_some_and(|r| r.starts_with(ONE));
     let declared = structs.iter().filter(starts).map(|s| s.len()).max();

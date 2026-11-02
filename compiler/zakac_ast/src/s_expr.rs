@@ -338,8 +338,22 @@ fn str_sexpr(n: &StrExpr) -> String
 fn decl_sexpr(s: &DeclStmt) -> String
 {
     let head = tern!(s.is_const, "const", "var");
-    let header = [s.name.name.to_string(), s.kind.to_sexpr()];
+    let header = [s.name.name.to_string(), kind_or_blank(s.kind.as_ref())];
     list(head, header.into_iter().chain(s.init.iter().map(ToSexpr::to_sexpr)))
+}
+
+/// The tree of a written kind, or `_` for a kind the value gives.
+///
+/// # Arguments
+///
+/// * `kind` - The kind, when written.
+///
+/// # Returns
+///
+/// The text.
+fn kind_or_blank(kind: Option<&Kind>) -> String
+{
+    kind.map_or_else(|| "_".to_string(), ToSexpr::to_sexpr)
 }
 
 /// `(if cond {..} cond {..} else {..})`.
@@ -388,7 +402,7 @@ fn counted_sexpr(s: &CountedStmt) -> String
 /// The text.
 fn generic_sexpr(s: &GenericStmt) -> String
 {
-    let header = [s.var.name.to_string(), s.kind.to_sexpr()];
+    let header = [s.var.name.to_string(), kind_or_blank(s.kind.as_ref())];
     let init = s.init.iter().map(ToSexpr::to_sexpr);
     let loop_part = [s.cond.to_sexpr(), s.block.to_sexpr()];
     let update = s.update.iter().flat_map(|u| ["then".to_string(), u.to_sexpr()]);

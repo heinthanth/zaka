@@ -143,7 +143,7 @@ so `မှာ` cannot lose its `မှ`. It refuses a cut where each piece is a 
 where the writer meant two, and no cut can fix that:
 
 ```zaka-error ZK0206
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသပါ။
 ```
 

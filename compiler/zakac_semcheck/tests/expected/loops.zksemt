@@ -1,7 +1,7 @@
 # zakac-semcheck-artifact v1
 name:
   Custom: loops.zaka
-source: "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\n"
+source: "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\n"
 imports: []
 program:
   stmts:
@@ -19,12 +19,17 @@ program:
         span:
           lo: 54
           hi: 84
+      classifier:
+        name: ခု
+        span:
+          lo: 94
+          hi: 100
       is_const: false
       init: null
       exported: false
       span:
         lo: 0
-        hi: 112
+        hi: 128
   - while:
       cond:
         verb:
@@ -35,8 +40,8 @@ program:
               id: 0
               name: ကိန်း
               span:
-                lo: 113
-                hi: 128
+                lo: 129
+                hi: 144
           - int:
               id: 1
               value: 5
@@ -44,16 +49,16 @@ program:
               kind: null
               script: burmese
               span:
-                lo: 139
-                hi: 142
+                lo: 155
+                hi: 158
           kind_arg: null
           dir: null
           particle: none
           next: while
           is_cmp: true
           span:
-            lo: 113
-            hi: 168
+            lo: 129
+            hi: 184
       block:
         stmts:
         - print:
@@ -62,20 +67,20 @@ program:
                 id: 3
                 name: ကိန်း
                 span:
-                  lo: 270
-                  hi: 285
+                  lo: 286
+                  hi: 301
             slot: ko
             span:
-              lo: 270
-              hi: 314
+              lo: 286
+              hi: 330
         - assign:
             target:
               name:
                 id: 4
                 name: ကိန်း
                 span:
-                  lo: 315
-                  hi: 330
+                  lo: 331
+                  hi: 346
             value:
               infix:
                 id: 7
@@ -85,8 +90,8 @@ program:
                     id: 5
                     name: ကိန်း
                     span:
-                      lo: 341
-                      hi: 356
+                      lo: 357
+                      hi: 372
                 rhs:
                   int:
                     id: 6
@@ -95,27 +100,27 @@ program:
                     kind: null
                     script: burmese
                     span:
-                      lo: 359
-                      hi: 362
+                      lo: 375
+                      hi: 378
                 span:
-                  lo: 341
-                  hi: 362
+                  lo: 357
+                  hi: 378
             span:
-              lo: 315
-              hi: 388
+              lo: 331
+              hi: 404
         single: false
         span:
-          lo: 190
-          hi: 471
+          lo: 206
+          hi: 487
       span:
-        lo: 113
-        hi: 471
+        lo: 129
+        hi: 487
   - counted:
       var:
         name: အမှတ်
         span:
-          lo: 503
-          hi: 518
+          lo: 519
+          hi: 534
       from:
         int:
           id: 8
@@ -124,8 +129,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 472
-            hi: 475
+            lo: 488
+            hi: 491
       to:
         int:
           id: 9
@@ -134,8 +139,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 483
-            hi: 492
+            lo: 499
+            hi: 508
       step: null
       mode: count
       block:
@@ -155,8 +160,8 @@ program:
                           id: 11
                           name: အမှတ်
                           span:
-                            lo: 662
-                            hi: 677
+                            lo: 678
+                            hi: 693
                       rhs:
                         int:
                           id: 12
@@ -165,11 +170,11 @@ program:
                           kind: null
                           script: burmese
                           span:
-                            lo: 680
-                            hi: 683
+                            lo: 696
+                            hi: 699
                       span:
-                        lo: 662
-                        hi: 683
+                        lo: 678
+                        hi: 699
                   - int:
                       id: 14
                       value: 0
@@ -177,33 +182,33 @@ program:
                       kind: null
                       script: burmese
                       span:
-                        lo: 694
-                        hi: 697
+                        lo: 710
+                        hi: 713
                   kind_arg: null
                   dir: null
                   particle: none
                   next: then
                   is_cmp: true
                   span:
-                    lo: 662
-                    hi: 720
+                    lo: 678
+                    hi: 736
               block:
                 stmts:
                 - continue:
                     span:
-                      lo: 736
-                      hi: 818
+                      lo: 752
+                      hi: 834
                 single: true
                 span:
-                  lo: 736
-                  hi: 818
+                  lo: 752
+                  hi: 834
               span:
-                lo: 646
-                hi: 818
+                lo: 662
+                hi: 834
             else_block: null
             span:
-              lo: 646
-              hi: 818
+              lo: 662
+              hi: 834
         - if:
             arms:
             - cond:
@@ -215,8 +220,8 @@ program:
                       id: 16
                       name: အမှတ်
                       span:
-                        lo: 835
-                        hi: 850
+                        lo: 851
+                        hi: 866
                   - int:
                       id: 17
                       value: 10
@@ -224,58 +229,58 @@ program:
                       kind: null
                       script: burmese
                       span:
-                        lo: 861
-                        hi: 867
+                        lo: 877
+                        hi: 883
                   kind_arg: null
                   dir: null
                   particle: none
                   next: then
                   is_cmp: true
                   span:
-                    lo: 835
-                    hi: 890
+                    lo: 851
+                    hi: 906
               block:
                 stmts:
                 - break:
                     span:
-                      lo: 906
-                      hi: 959
+                      lo: 922
+                      hi: 975
                 single: true
                 span:
-                  lo: 906
-                  hi: 959
+                  lo: 922
+                  hi: 975
               span:
-                lo: 819
-                hi: 959
+                lo: 835
+                hi: 975
             else_block: null
             span:
-              lo: 819
-              hi: 959
+              lo: 835
+              hi: 975
         - print:
             value:
               name:
                 id: 19
                 name: အမှတ်
                 span:
-                  lo: 960
-                  hi: 975
+                  lo: 976
+                  hi: 991
             slot: ko
             span:
-              lo: 960
-              hi: 1004
+              lo: 976
+              hi: 1020
         single: false
         span:
-          lo: 566
-          hi: 1087
+          lo: 582
+          hi: 1103
       span:
-        lo: 472
-        hi: 1087
+        lo: 488
+        hi: 1103
   - counted:
       var:
         name: အမှတ်
         span:
-          lo: 1127
-          hi: 1142
+          lo: 1143
+          hi: 1158
       from:
         int:
           id: 20
@@ -284,8 +289,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 1088
-            hi: 1094
+            lo: 1104
+            hi: 1110
       to:
         int:
           id: 21
@@ -294,8 +299,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 1102
-            hi: 1105
+            lo: 1118
+            hi: 1121
       step:
         int:
           id: 22
@@ -304,8 +309,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 1116
-            hi: 1119
+            lo: 1132
+            hi: 1135
       mode: decrease
       block:
         stmts:
@@ -315,43 +320,44 @@ program:
                 id: 23
                 name: အမှတ်
                 span:
-                  lo: 1190
-                  hi: 1205
+                  lo: 1206
+                  hi: 1221
             slot: ko
             span:
-              lo: 1190
-              hi: 1234
+              lo: 1206
+              hi: 1250
         single: true
         span:
-          lo: 1190
-          hi: 1234
+          lo: 1206
+          hi: 1250
       span:
-        lo: 1088
-        hi: 1234
+        lo: 1104
+        hi: 1250
   - generic:
       var:
         name: အဆင့်
         span:
-          lo: 1263
-          hi: 1278
-      kind:
-        base: int
-        bits: 8
-        signed: false
-        wraps: []
-        span:
-          lo: 1289
-          hi: 1361
+          lo: 1279
+          hi: 1294
+      kind: null
+      classifier: null
       init:
         int:
           id: 24
           value: 0
           base: 10
-          kind: null
+          kind:
+            base: int
+            bits: 8
+            signed: false
+            wraps: []
+            span:
+              lo: 1305
+              hi: 1377
           script: burmese
           span:
-            lo: 1362
-            hi: 1365
+            lo: 1305
+            hi: 1381
       cond:
         verb:
           id: 27
@@ -361,8 +367,8 @@ program:
               id: 25
               name: အဆင့်
               span:
-                lo: 1391
-                hi: 1406
+                lo: 1407
+                hi: 1422
           - int:
               id: 26
               value: 10
@@ -370,16 +376,16 @@ program:
               kind: null
               script: burmese
               span:
-                lo: 1417
-                hi: 1423
+                lo: 1433
+                hi: 1439
           kind_arg: null
           dir: null
           particle: none
           next: while
           is_cmp: true
           span:
-            lo: 1391
-            hi: 1449
+            lo: 1407
+            hi: 1465
       update:
         assign:
           target:
@@ -387,8 +393,8 @@ program:
               id: 29
               name: အဆင့်
               span:
-                lo: 1624
-                hi: 1639
+                lo: 1640
+                hi: 1655
           value:
             infix:
               id: 32
@@ -398,8 +404,8 @@ program:
                   id: 30
                   name: အဆင့်
                   span:
-                    lo: 1650
-                    hi: 1665
+                    lo: 1666
+                    hi: 1681
               rhs:
                 int:
                   id: 31
@@ -408,14 +414,14 @@ program:
                   kind: null
                   script: burmese
                   span:
-                    lo: 1668
-                    hi: 1671
+                    lo: 1684
+                    hi: 1687
               span:
-                lo: 1650
-                hi: 1671
+                lo: 1666
+                hi: 1687
           span:
-            lo: 1624
-            hi: 1697
+            lo: 1640
+            hi: 1713
       block:
         stmts:
         - print:
@@ -424,23 +430,23 @@ program:
                 id: 28
                 name: အဆင့်
                 span:
-                  lo: 1551
-                  hi: 1566
+                  lo: 1567
+                  hi: 1582
             slot: ko
             span:
-              lo: 1551
-              hi: 1595
+              lo: 1567
+              hi: 1611
         single: false
         span:
-          lo: 1471
-          hi: 1789
+          lo: 1487
+          hi: 1805
       span:
-        lo: 1235
-        hi: 1789
+        lo: 1251
+        hi: 1805
   units: []
   span:
     lo: 0
-    hi: 1790
+    hi: 1806
 kinds:
   0: isize
   1: isize

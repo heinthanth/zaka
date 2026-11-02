@@ -498,3 +498,20 @@ pub fn import_needs_file(span: Span, file: &str) -> Diagnostic
     let msg = t!("codes.ZK0232.message", f = file);
     Diagnostic::new(Code::ImportNeedsFile, msg, span)
 }
+
+/// A declared kind has no `တစ်<classifier>` after it.
+///
+/// # Arguments
+///
+/// * `span` - The kind.
+/// * `kind` - The kind as written.
+/// * `classifier` - The classifier the kind takes.
+///
+/// # Returns
+///
+/// The `ZK0234` diagnostic.
+pub fn decl_needs_classifier(span: Span, kind: &str, classifier: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::DeclNeedsClassifier, t!("codes.ZK0234.message"), span)
+        .with_help(t!("codes.ZK0234.help", k = kind, c = classifier))
+}

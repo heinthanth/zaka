@@ -73,7 +73,7 @@ impl Program
 #[serde(rename_all = "snake_case")]
 pub enum Stmt
 {
-    /// `ကိန်းရှင် x သည် kind v ဖြစ်ပါစေ။`
+    /// `ကိန်းရှင် x သည် kind တစ်ခု ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ပါစေ။`
     Decl(DeclStmt),
     /// `x ကို v ဟု ထားပါ။`
     Assign(AssignStmt),
@@ -87,7 +87,7 @@ pub enum Stmt
     While(WhileStmt),
     /// `a မှ b အထိ i အနေဖြင့် ရေတွက်၍ ...`
     Counted(CountedStmt),
-    /// `ကိန်းရှင် i သည် kind ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ကာ cond နေသရွေ့ ...`
+    /// `ကိန်းရှင် i သည် kind တစ်ခု ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ကာ cond နေသရွေ့ ...`
     Generic(GenericStmt),
     /// `ကွင်းဆက် ကို ရပ်ပါ။`
     Break(BreakStmt),
@@ -117,8 +117,12 @@ pub struct DeclStmt
 {
     /// The declared name.
     pub name: Ident,
-    /// The declared kind.
-    pub kind: Kind,
+    /// The declared kind, `<kind> တစ်<classifier>`; `None` when the value
+    /// alone gives it.
+    pub kind: Option<Kind>,
+    /// The classifier after `တစ်`, written with the kind.
+    #[serde(default)]
+    pub classifier: Option<Ident>,
     /// `true` for `ကိန်းသေ`.
     pub is_const: bool,
     /// The initial value, when written.
@@ -259,8 +263,12 @@ pub struct GenericStmt
 {
     /// The loop variable.
     pub var: Ident,
-    /// Its kind.
-    pub kind: Kind,
+    /// Its kind, `<kind> တစ်<classifier>`; `None` when the initial value
+    /// alone gives it.
+    pub kind: Option<Kind>,
+    /// The classifier after `တစ်`, written with the kind.
+    #[serde(default)]
+    pub classifier: Option<Ident>,
     /// Its initial value, when written.
     pub init: Option<Expr>,
     /// The condition.

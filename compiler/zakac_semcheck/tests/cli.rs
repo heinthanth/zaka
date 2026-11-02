@@ -12,7 +12,7 @@ const TEXT_HEADER: &str = "# zakac-semcheck-artifact v1\n";
 
 /// An `i32` value stored in a platform-sized integer.
 const PLATFORM_WIDENING: &str = "ကိန်းရှင် က သည် ၃၂ ဘစ် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် က ဖြစ်ပါစေ။";
+ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။";
 
 /// Run the standalone check command.
 fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)

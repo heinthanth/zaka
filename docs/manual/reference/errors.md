@@ -107,6 +107,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0231 | files that import each other | [Module mistakes](../../learn/modules/mistakes.md#files-that-import-each-other) |
 | ZK0232 | an import in a program that was not read from a file | [Module mistakes](../../learn/modules/mistakes.md#imports-outside-a-file) |
 | ZK0233 | a cell count on the list of a slice kind | [Slices](../language/slices.md#the-kind) |
+| ZK0234 | a declared kind with no `တစ်<classifier>` after it | [Statements](../language/statements.md#declarations) |
 
 ### ZK03: names
 
@@ -169,6 +170,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0427 | a struct that holds itself | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-that-holds-itself) |
 | ZK0428 | a slice whose cells hold borrows | [Slices](../language/slices.md#ownership) |
 | ZK0429 | a write to a cell of text | [Text](../language/text.md#cells) |
+| ZK0430 | a declaration with no kind whose value is `ဗလာ` | [Statements](../language/statements.md#declarations) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -185,7 +187,7 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | ZK0506 | a plain value printed with `ဟု` instead of `ကို` | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 | ZK0507 | parentheses that change nothing | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 | ZK0508 | a sentence used as a value that ends in `ပါ` | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
-| ZK0509 | a warning: a heap size counted with a word that is not the classifier of its kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
+| ZK0509 | a warning: a heap size, a struct literal or a declaration counted with a word that is not the classifier of its kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
 
 ### ZK06: working out constants
 

@@ -33,7 +33,7 @@ module:
               node:
                 const: 127:i8
               span:
-                lo: 183
+                lo: 138
                 hi: 192
             rhs:
               kind: i8
@@ -43,7 +43,7 @@ module:
                 lo: 195
                 hi: 198
         span:
-          lo: 183
+          lo: 138
           hi: 198
       span:
         lo: 96
@@ -109,7 +109,7 @@ module:
         node:
           const: 70:usize
         span:
-          lo: 408
+          lo: 349
           hi: 414
       span:
         lo: 313
@@ -150,7 +150,7 @@ diagnostics:
   level: error
   message: + on these constants does not fit i8
   span:
-    lo: 183
+    lo: 138
     hi: 198
   help: null
 - code: ZK0602

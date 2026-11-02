@@ -1,23 +1,33 @@
 use std::collections::BTreeMap;
 
+use zakac_ast::expr::Ident;
 use zakac_ast::expr::StructLit;
 use zakac_ast::kind::BaseKind;
+use zakac_ast::kind::Kind;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::AllocStmt;
+use zakac_ast::stmt::DeclStmt;
+use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_alloc;
+use zakac_ast::visit::walk_decl;
+use zakac_ast::visit::walk_generic;
 use zakac_ast::visit::walk_resize;
 use zakac_ast::visit::walk_struct_lit;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::naturalness as diag;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 /// The classifier of each kind that declares none: the general `ခု`.
 pub const GENERAL_CLASSIFIER: &str = "ခု";
+
+/// The classifier of `စာလုံး` in a declaration.
+pub const CHARACTER_CLASSIFIER: &str = "လုံး";
 
 /// Report each count word whose classifier is not the one of the kind it
 /// counts: the classifier a struct declares, `ခု` for each other kind.
@@ -88,8 +98,54 @@ impl Sizes<'_>
     }
 }
 
+impl Sizes<'_>
+{
+    /// Report a declared kind whose count word has another classifier than
+    /// the kind: the classifier a struct declares, `လုံး` for `စာလုံး`, `ခု`
+    /// for each other kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The declared kind, when written.
+    /// * `found` - The classifier after `တစ်`, when written.
+    fn check_decl(&mut self, kind: Option<&Kind>, found: Option<&Ident>)
+    {
+        let (Some(kind), Some(found)) = (kind, found)
+        else
+        {
+            return;
+        };
+        let alone = kind.wraps.is_empty();
+        let named = alone && kind.base == BaseKind::Named;
+        let own = kind.name.as_ref().and_then(|n| self.words.get(n.name.as_str()));
+        let letter = alone && kind.base == BaseKind::Char;
+        let other = tern!(letter, CHARACTER_CLASSIFIER, GENERAL_CLASSIFIER);
+        let want = own.filter(|_| named).copied().unwrap_or(other);
+        ret_if!(found.name == want);
+        let text = kind.to_sexpr();
+        self.diags.push(diag::decl_classifier_mismatch(
+            found.span,
+            &text,
+            want,
+            &found.name,
+        ));
+    }
+}
+
 impl Visitor for Sizes<'_>
 {
+    fn visit_decl(&mut self, n: &DeclStmt)
+    {
+        self.check_decl(n.kind.as_ref(), n.classifier.as_ref());
+        walk_decl(self, n);
+    }
+
+    fn visit_generic(&mut self, n: &GenericStmt)
+    {
+        self.check_decl(n.kind.as_ref(), n.classifier.as_ref());
+        walk_generic(self, n);
+    }
+
     fn visit_alloc(&mut self, n: &AllocStmt)
     {
         self.check(&n.size);

@@ -11,7 +11,8 @@ fn flatten(node: &TreeNode) -> Vec<&TreeNode>
 #[test]
 fn decl_has_name_kind_and_value()
 {
-    let out = compile("ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။", &Options::default());
+    let out =
+        compile("ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။", &Options::default());
     assert_eq!(out.tree.label, "program");
     let decl = &out.tree.children[0];
     assert_eq!(decl.label, "decl");

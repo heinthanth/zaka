@@ -42,13 +42,17 @@ fn undeclared_names_are_reported()
 #[test]
 fn an_initial_value_cannot_see_its_own_name()
 {
-    assert_eq!(codes("ကိန်းရှင် က သည် ကိန်းပြည့် က ဖြစ်ပါစေ။"), [Code::UndeclaredName]);
+    assert_eq!(
+        codes("ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။"),
+        [Code::UndeclaredName]
+    );
 }
 
 #[test]
 fn a_name_is_declared_once_per_scope()
 {
-    let text = lines(&["ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။", "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။"]);
+    let text =
+        lines(&["ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။", "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။"]);
     assert_eq!(codes(&text), [Code::Redeclaration]);
 }
 
@@ -56,9 +60,9 @@ fn a_name_is_declared_once_per_scope()
 fn inner_blocks_shadow_outer_names()
 {
     ok(&lines(&[
-        "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။",
+        "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။",
         "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။",
-        "ကိန်းရှင် က သည် စာလုံး 'ခ' ဖြစ်ပါစေ။",
+        "ကိန်းရှင် က သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'ခ' ဖြစ်ပါစေ။",
         "က ကို ပြသပါ။",
         "လုပ်ဆောင်စရာများ ပြီးပါပြီ။",
     ]));
@@ -69,7 +73,7 @@ fn block_names_end_with_the_block()
 {
     let text = lines(&[
         "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။",
-        "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။",
+        "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။",
         "လုပ်ဆောင်စရာများ ပြီးပါပြီ။",
         "က ကို ပြသပါ။",
     ]);
@@ -123,7 +127,7 @@ fn constants_cannot_be_assigned()
 #[test]
 fn constants_need_a_value()
 {
-    let text = lines(&["ကိန်းသေ က သည် ကိန်းပြည့် ဖြစ်ပါစေ။", "က ကို ပြသပါ။"]);
+    let text = lines(&["ကိန်းသေ က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။", "က ကို ပြသပါ။"]);
     assert_eq!(codes(&text), [Code::ConstWithoutInit]);
 }
 
@@ -158,7 +162,7 @@ fn break_and_continue_need_a_loop()
     assert_eq!(codes("ကွင်းဆက် ကို ရပ်ပါ။"), [Code::BreakOutsideLoop]);
     assert_eq!(codes("နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။"), [Code::ContinueOutsideLoop]);
     ok(&lines(&[
-        "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်ပါစေ။",
+        "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။",
         "ကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ ကွင်းဆက် ကို ရပ်ပါ။",
         "၁ မှ ၁၀ အထိ ခ အနေဖြင့် ရေတွက်၍ နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။",
     ]));

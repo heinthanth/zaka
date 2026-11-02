@@ -31,6 +31,7 @@ use zakac_span::span::Span;
 
 use crate::clause::ClauseOut;
 use crate::clause::Mode;
+use crate::decl_head::DeclHead;
 use crate::describe::kw_text;
 use crate::describe::quote;
 use crate::parser::PResult;
@@ -407,8 +408,9 @@ impl Parser<'_>
     }
 
     /// Parse a declaration or a generic loop; both start with
-    /// `(ကိန်းရှင်|ကိန်းသေ) <name> သည် <kind> <init>?`, where the value is
-    /// written `ဖြစ်၍ တန်ဖိုးသည် <expr>` or right after the kind.
+    /// `(ကိန်းရှင်|ကိန်းသေ) <name> သည် <head>`, where the head is
+    /// `<kind> တစ်<classifier>`, with `ဖြစ်၍ တန်ဖိုးသည် <expr>` for a value,
+    /// or a value alone.
     ///
     /// # Returns
     ///
@@ -419,32 +421,19 @@ impl Parser<'_>
         let is_const = word.kind == TokenKind::Kw(Kw::Const);
         let name = self.parse_ident()?;
         self.expect(Kw::Thi)?;
-        let kind = self.parse_kind()?;
-        let init = self.parse_init()?;
+        let head = self.parse_decl_head()?;
         if self.at(Kw::Being)
         {
             ret_if!(is_const, Err(diag::const_loop(word.span)));
-            return self.parse_generic_tail(word.span, name, kind, init);
+            return self.parse_generic_tail(word.span, name, head);
         }
         self.expect_one_of(&[Kw::Let, Kw::Being])?;
         let stop = self.expect_stop()?;
         let span = word.span.to(&stop.span);
         #[rustfmt::skip]
-        let node = DeclStmt::builder().name(name).kind(kind).is_const(is_const).maybe_init(init)
-            .span(span).build();
+        let node = DeclStmt::builder().name(name).maybe_kind(head.kind).maybe_classifier(head.classifier)
+            .is_const(is_const).maybe_init(head.init).span(span).build();
         Ok(Stmt::Decl(node))
-    }
-
-    /// Parse the initial value of a declaration, when one is written.
-    ///
-    /// # Returns
-    ///
-    /// The value, or `None` before `ဖြစ်ပါစေ` and `ဖြစ်ပြီး`.
-    fn parse_init(&mut self) -> PResult<Option<Expr>>
-    {
-        ret_if!(self.at(Kw::Let) || self.at(Kw::Being), Ok(None));
-        ret_if!(self.at(Kw::And), self.parse_value_clause().map(Some));
-        self.parse_clause_expr().map(Some)
     }
 
     /// Parse `ဖြစ်၍ တန်ဖိုးသည် <expr>`; `ဖြစ်၍` is the current token.
@@ -452,7 +441,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The value, or a diagnostic.
-    fn parse_value_clause(&mut self) -> PResult<Expr>
+    pub(crate) fn parse_value_clause(&mut self) -> PResult<Expr>
     {
         self.advance();
         self.expect(Kw::Value)?;
@@ -467,14 +456,13 @@ impl Parser<'_>
     ///
     /// * `start` - The span of `ကိန်းရှင်`.
     /// * `var` - The loop variable.
-    /// * `kind` - Its kind.
-    /// * `init` - Its initial value.
+    /// * `head` - Its kind, classifier and initial value.
     ///
     /// # Returns
     ///
     /// The loop, or a diagnostic.
     fn parse_generic_tail(
-        &mut self, start: Span, var: Ident, kind: Kind, init: Option<Expr>,
+        &mut self, start: Span, var: Ident, head: DeclHead,
     ) -> PResult<Stmt>
     {
         self.bump();
@@ -487,7 +475,8 @@ impl Parser<'_>
         let block = BlockStmt::builder().stmts(stmts).span(block_span).build();
         let span = start.to(&block_span);
         #[rustfmt::skip]
-        let node = GenericStmt::builder().var(var).kind(kind).maybe_init(init).cond(cond)
+        let node = GenericStmt::builder().var(var).maybe_kind(head.kind)
+            .maybe_classifier(head.classifier).maybe_init(head.init).cond(cond)
             .maybe_update(update.map(Box::new)).block(block).span(span).build();
         Ok(Stmt::Generic(node))
     }

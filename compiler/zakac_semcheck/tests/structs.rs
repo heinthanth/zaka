@@ -11,8 +11,8 @@ use zakac_semcheck::structs::parse_sig;
 /// `လူ` with a padded field, and `အဆစ်`, which points at itself.
 const STRUCTS: &str = "ဒေတာအမျိုးအစား လူ တွင် ၈ ဘစ် ကိန်းပြည့် အဆင့်၊ ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
 ဒေတာအမျိုးအစား အဆစ် တွင် ကိန်းပြည့် တန်ဖိုးရင်း၊ အဆစ် လိပ်စာ နောက် တို့ ပါဝင်သည်။
-ကိန်းရှင် ကျော် သည် လူ ဖြစ်ပါစေ။
-ကိန်းရှင် ထိပ် သည် အဆစ် ဖြစ်ပါစေ။
+ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ထိပ် သည် အဆစ် တစ်ခု ဖြစ်ပါစေ။
 ";
 
 /// Join program lines.
@@ -71,7 +71,7 @@ fn struct_mistakes_have_their_codes()
     let used = |text: &str| codes(&lines(&[STRUCTS, text]));
     assert_eq!(used("ကျော် ၏ ဈေး ကို ပြသပါ။"), [Code::UnknownField]);
     assert_eq!(used("ကျော် ၏ အသက် ၏ အသက် ကို ပြသပါ။"), [Code::NotAStruct]);
-    assert_eq!(used("ကိန်းရှင် လူ သည် ကိန်းပြည့် ဖြစ်ပါစေ။"), [Code::StructNameClash]);
+    assert_eq!(used("ကိန်းရှင် လူ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။"), [Code::StructNameClash]);
     assert_eq!(used("ကျော် == ကျော် ကို ပြသပါ။"), [Code::OperandKind]);
     let twice = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် က တို့ ပါဝင်သည်။";
     assert_eq!(codes(&lines(&[STRUCTS, twice])), [Code::DuplicateStruct]);

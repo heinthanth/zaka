@@ -23,7 +23,7 @@ fn literals_lower_to_static_text_or_a_format()
 {
     let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\n\"က = {က}\" ဟု ပြသပါ။";
     assert_eq!(plain(text)[1], "(print (format \"က = \" g0))");
-    let text = "ကိန်းရှင် t သည် စာသား ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။";
+    let text = "ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။";
     assert_eq!(folded(text)[0], "(set g0 \"ab\")");
 }
 
@@ -49,7 +49,7 @@ fn constant_template_slots_and_joins_fold_to_static_text()
 fn places_that_hold_text_are_dropped_as_their_scope_ends()
 {
     let text = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် t သည် စာသား ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။
+ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။
 t ကို \"cd\" ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(
@@ -82,7 +82,7 @@ fn a_break_drops_the_text_of_the_loop_block()
 {
     let text = "ကိန်းရှင် i သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။
 i သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ကိန်းရှင် t သည် စာသား ဖြစ်၍ တန်ဖိုးသည် \"{i}\" ဖြစ်ပါစေ။
+ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"{i}\" ဖြစ်ပါစေ။
 ကွင်းဆက် ကို ရပ်ပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     let forms = folded(text);
@@ -90,7 +90,7 @@ i သည် ၃ အောက် ငယ်နေသရွေ့ အောက်�
 }
 
 /// A text constant and a template that reads it.
-const NAMED: &str = "ကိန်းသေ အမည် သည် စာသား ဖြစ်၍ တန်ဖိုးသည် \"မမ\" ဖြစ်ပါစေ။";
+const NAMED: &str = "ကိန်းသေ အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"မမ\" ဖြစ်ပါစေ။";
 
 #[test]
 fn text_constants_fold_into_templates_and_chains()
@@ -98,8 +98,8 @@ fn text_constants_fold_into_templates_and_chains()
     let text = format!("{NAMED}\n\"ဟေး {{အမည်}}\" ဟု ပြသပါ။");
     assert_eq!(folded(&text)[1], "(print \"ဟေး မမ\")");
     let chain = format!(
-        "{NAMED}\nကိန်းသေ ခ သည် စာသား ဖြစ်၍ တန်ဖိုးသည် \"{{အမည်}}!\" ဖြစ်ပါစေ။\nကိန်းသေ ဂ သည် \
-         စာသား ဖြစ်၍ တန်ဖိုးသည် ခ + ခ ဖြစ်ပါစေ။"
+        "{NAMED}\nကိန်းသေ ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"{{အမည်}}!\" ဖြစ်ပါစေ။\nကိန်းသေ ဂ သည် \
+         စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ + ခ ဖြစ်ပါစေ။"
     );
     assert_eq!(folded(&chain)[2], "(set g2 \"မမ!မမ!\")");
 }
@@ -108,8 +108,8 @@ fn text_constants_fold_into_templates_and_chains()
 fn a_text_constant_holds_static_text_whatever_the_options()
 {
     let text = format!(
-        "{NAMED}\nကိန်းသေ ခ သည် စာသား ဖြစ်၍ တန်ဖိုးသည် \"{{အမည်}}\" + \"!\" ဖြစ်ပါစေ။\nကိန်းရှင် x \
-         သည် စာသား ဖြစ်၍ တန်ဖိုးသည် အမည် ဖြစ်ပါစေ။"
+        "{NAMED}\nကိန်းသေ ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"{{အမည်}}\" + \"!\" \
+         ဖြစ်ပါစေ။\nကိန်းရှင် x သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အမည် ဖြစ်ပါစေ။"
     );
     let forms = folded_with(&text, &FoldOptions::none());
     assert_eq!(forms[1], "(set g1 \"မမ!\")");
@@ -119,12 +119,12 @@ fn a_text_constant_holds_static_text_whatever_the_options()
 #[test]
 fn a_text_constant_that_needs_the_program_to_run_is_zk0606()
 {
-    let var =
-        "ကိန်းရှင် n သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။\nကိန်းသေ က သည် စာသား ဖြစ်၍ တန်ဖိုးသည် \"x {n}\" ဖြစ်ပါစေ။";
+    let var = "ကိန်းရှင် n သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။\nကိန်းသေ က သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"x \
+               {n}\" ဖြစ်ပါစေ။";
     assert_eq!(codes(var), [Code::TextConstNotKnown]);
     assert_eq!(codes_with(var, &FoldOptions::none()), [Code::TextConstNotKnown]);
     let call = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရလဒ် ကို ပြန်ပေးမည်။\n\"z\" ကို \
-                ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nကိန်းသေ ခ သည် စာသား ဖြစ်၍ \
+                ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nကိန်းသေ ခ သည် စာသား တစ်ခု ဖြစ်၍ \
                 တန်ဖိုးသည် လုပ်ဆောင်ချက် f ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။";
     assert_eq!(codes(call), [Code::TextConstNotKnown]);
 }
@@ -132,7 +132,7 @@ fn a_text_constant_that_needs_the_program_to_run_is_zk0606()
 #[test]
 fn a_range_of_known_text_that_cuts_a_character_is_zk0607()
 {
-    let text = "ကိန်းသေ t သည် စာသား ဖြစ်၍ တန်ဖိုးသည် \"ကမ္ဘာ\" ဖြစ်ပါစေ။";
+    let text = "ကိန်းသေ t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ကမ္ဘာ\" ဖြစ်ပါစေ။";
     assert_eq!(
         codes(&format!("{text}\nt ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသပါ။")),
         [Code::RangeCutsChar]
@@ -143,7 +143,7 @@ fn a_range_of_known_text_that_cuts_a_character_is_zk0607()
 #[test]
 fn characters_lower_to_char_reads()
 {
-    let text = "ကိန်းရှင် t သည် စာသား ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။\nt ၏ စာလုံးအရေအတွက် ကို \
+    let text = "ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။\nt ၏ စာလုံးအရေအတွက် ကို \
                 ပြသပါ။\nt ၏ စာလုံး ၀ ကို ပြသပါ။\nt ၏ ၁ ခုမြောက်စာလုံး ကို ပြသပါ။";
     let forms = plain(text);
     assert_eq!(

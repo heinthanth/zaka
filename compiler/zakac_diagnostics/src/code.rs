@@ -135,6 +135,8 @@ CircularImport = ("ZK0231", Level::Error),
 ImportNeedsFile = ("ZK0232", Level::Error),
 /// A count prefix pairs with the `စာရင်း` of a slice kind.
 SliceCount = ("ZK0233", Level::Error),
+/// A declared kind has no `တစ်<classifier>` after it.
+DeclNeedsClassifier = ("ZK0234", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -243,6 +245,8 @@ StructHoldsItself = ("ZK0427", Level::Error),
 SliceOfBorrows = ("ZK0428", Level::Error),
 /// A cell of text is written.
 TextCellWrite = ("ZK0429", Level::Error),
+/// A declaration with no kind has a value that gives none.
+KindNotInferred = ("ZK0430", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

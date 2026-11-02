@@ -87,7 +87,7 @@ that implements `Visitor`. It has one method for each statement form and calls
 
 | Statement | Checks |
 | --- | --- |
-| declaration | a constant has a value; the value converts to the kind; one declaration of a name in a scope. The name is declared after the value is checked |
+| declaration | a constant has a value; the value converts to the kind, or gives it when none is written (`ဗလာ`, which names no kind, is ZK0430); one declaration of a name in a scope. The name is declared after the value is checked |
 | assignment | the target is a place, declared, not a constant or a counted-loop variable; the value converts to the kind of the place |
 | block, if arm | a block is a scope of its own; a condition is `bool` |
 | while, generic loop | a `bool` condition; the loop depth grows with one |
@@ -166,7 +166,7 @@ kinds, even on a 64-bit platform, and neither widens to the other.
 `NodeId` that the parser gave each expression. For this program:
 
 ```text
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက် ကို အသက် နှင့် ၁ ၏ ပေါင်းလဒ် ဟု ထားပါ။
 အကယ်၍ အသက် သည် ၁၈ ထက် ကြီးလျှင် အသက် ကို ပြသပါ။
 ```

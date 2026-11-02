@@ -643,7 +643,7 @@ impl Visitor for Checker
 {
     fn visit_decl(&mut self, n: &DeclStmt)
     {
-        let kind = self.decl_kind(&n.kind, n.init.as_ref());
+        let kind = self.decl_kind(n.kind.as_ref(), n.init.as_ref(), &n.name);
         let missing = n.is_const && n.init.is_none();
         do_if!(missing, self.report(rd::const_without_init(n.name.span, &n.name.name)));
         let access = tern!(n.is_const, Access::Const, Access::Var);
@@ -710,7 +710,7 @@ impl Visitor for Checker
 
     fn visit_generic(&mut self, n: &GenericStmt)
     {
-        let kind = self.decl_kind(&n.kind, n.init.as_ref());
+        let kind = self.decl_kind(n.kind.as_ref(), n.init.as_ref(), &n.var);
         self.scopes.push();
         self.declare(&n.var, kind, Access::Var);
         self.expect_bool(&n.cond);

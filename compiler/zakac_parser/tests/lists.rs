@@ -8,7 +8,7 @@ use zakac_diagnostics::Code;
 #[test]
 fn list_kinds_take_each_spelling()
 {
-    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} ဖြစ်ပါစေ။"));
+    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
     assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း"), "(var က [3]isize)");
     assert_eq!(decl("အကွက် ၃ ရှိသော ကိန်းပြည့် စာရင်း"), "(var က [3]isize)");
     assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် ၏ စာရင်း"), "(var က [3]isize)");
@@ -20,7 +20,7 @@ fn list_kinds_take_each_spelling()
 #[test]
 fn list_kinds_nest_and_mix_with_pointers()
 {
-    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} ဖြစ်ပါစေ။"));
+    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
     assert_eq!(
         decl("အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း"),
         "(var က [2][3]isize)"
@@ -35,12 +35,12 @@ fn list_kinds_nest_and_mix_with_pointers()
 #[test]
 fn slice_kinds_follow_a_count_less_list()
 {
-    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} ဖြစ်ပါစေ။"));
+    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
     assert_eq!(decl("ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က &[]isize)");
     assert_eq!(decl("ကိန်းပြည့် ၏ စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က &[]isize)");
     assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က &[][3]isize)");
     assert_eq!(decl("အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း စာရင်း"), "(var က [2]&[]isize)");
-    let bad = |kind: &str| codes(&format!("ကိန်းရှင် က သည် {kind} ဖြစ်ပါစေ။"));
+    let bad = |kind: &str| codes(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
     assert_eq!(bad("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း"), [Code::SliceCount]);
 }
 
@@ -60,8 +60,8 @@ fn a_struct_can_name_the_cell_word_as_its_classifier()
     let decl = "ဒေတာအမျိုးအစား ကွက်လပ် တွင် ကိန်းပြည့် အမှတ် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ကွက် ဖြစ်သည်။";
     assert_eq!(codes(decl), []);
     let heap = format!(
-        "{decl}\nကိန်းရှင် ပ သည် ကွက်လပ် လိပ်စာ ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကွက်လပ် ၃ ကွက်စာ နေရာယူ၍ လိပ်စာကို ပ တွင် \
-         သိမ်းထားမည်။"
+        "{decl}\nကိန်းရှင် ပ သည် ကွက်လပ် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကွက်လပ် ၃ ကွက်စာ နေရာယူ၍ လိပ်စာကို ပ \
+         တွင် သိမ်းထားမည်။"
     );
     assert_eq!(codes(&heap), []);
     let lit = format!("{decl}\nအမှတ် ၁ ရှိသော ကွက်လပ်တစ်ကွက် ကို ပြသပါ။");
@@ -71,7 +71,7 @@ fn a_struct_can_name_the_cell_word_as_its_classifier()
 #[test]
 fn a_list_count_is_a_whole_number_above_zero()
 {
-    let bad = |kind: &str| codes(&format!("ကိန်းရှင် က သည် {kind} ဖြစ်ပါစေ။"));
+    let bad = |kind: &str| codes(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
     assert_eq!(bad("အကွက် ၀ ခုရှိသော ကိန်းပြည့် စာရင်း"), [Code::BadListCount]);
     assert_eq!(bad("အကွက် ၂ ခုရှိသော ကိန်းပြည့်"), [Code::ExpectedToken]);
 }
@@ -107,7 +107,7 @@ fn list_literals_close_with_a_list_word()
     );
     assert_eq!(expr("စာရင်းအလွတ်"), "blank_list");
     assert_eq!(
-        stmt("ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း ဖြစ်ပါစေ။"),
+        stmt("ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း ဖြစ်ပါစေ။"),
         "(var က []isize (list 1 2))"
     );
     assert_eq!(stmt("၁၊ ၂ တို့ပါသော စာရင်း ကို ပြသပါ။"), "(print (list 1 2))");
@@ -153,6 +153,6 @@ fn a_list_literal_in_call_arguments()
 #[test]
 fn a_borrowed_literal_prefix_is_a_bad_literal_kind()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ငှားထားသော ကိန်းပြည့် ၅ ဖြစ်ပါစေ။";
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ငှားထားသော ကိန်းပြည့် ၅ ဖြစ်ပါစေ။";
     assert_eq!(codes(text), [Code::BadLiteralKind]);
 }

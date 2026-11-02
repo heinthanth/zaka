@@ -37,7 +37,7 @@ gives an expression. A verb that commands gives a statement, which ends with `�
 | Zaka | C-like code | What the Zaka sentence tells |
 | --- | --- | --- |
 | `အသက် ကို ပြသပါ။` | `print(age);` | age, as the object, show |
-| `ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။` | `int age = 20;` | the variable age is an integer, and its value is 20 |
+| `ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။` | `int age = 20;` | the variable age is an integer, and its value is 20 |
 | `အသက် ကို အသက် + ၁ ဟု ထားပါ။` | `age = age + 1;` | age, as the object, set to "age plus 1" |
 | `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` | `3 + 4` | the sum of 3 and 4 |
 | `၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း` | `10 % 3` | 10, divided with 3, the remainder |
@@ -53,7 +53,7 @@ punctuation would mean. The signs are still there for arithmetic: `၃ + ၄` an
 `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` mean the same, and the two forms can be mixed in one line.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက် ကို အသက် + ၁ ဟု ထားပါ။
 အသက် ကို ပြသပါ။
 အသက် သည် ၁၈ အောက် ငယ်သည် ဟု ပြသပါ။

@@ -373,7 +373,7 @@ pub fn walk_decl<V: Visitor + ?Sized>(v: &mut V, n: &DeclStmt)
 {
     v.enter(n);
     v.visit_ident(&n.name);
-    v.visit_kind(&n.kind);
+    do_if!(let Some(kind) = &n.kind, v.visit_kind(kind));
     do_if!(let Some(init) = &n.init, v.visit_expr(init));
     v.leave(n);
 }
@@ -454,7 +454,7 @@ pub fn walk_generic<V: Visitor + ?Sized>(v: &mut V, n: &GenericStmt)
 {
     v.enter(n);
     v.visit_ident(&n.var);
-    v.visit_kind(&n.kind);
+    do_if!(let Some(kind) = &n.kind, v.visit_kind(kind));
     do_if!(let Some(init) = &n.init, v.visit_expr(init));
     v.visit_expr(&n.cond);
     v.visit_block(&n.block);
@@ -880,7 +880,8 @@ pub fn walk_decl_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut DeclStmt)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.name);
-    v.visit_kind_mut(&mut n.kind);
+    do_if!(let Some(kind) = &mut n.kind, v.visit_kind_mut(kind));
+    do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
     opt_expr_mut(v, &mut n.init);
 }
 
@@ -936,7 +937,8 @@ pub fn walk_generic_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut GenericStmt)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.var);
-    v.visit_kind_mut(&mut n.kind);
+    do_if!(let Some(kind) = &mut n.kind, v.visit_kind_mut(kind));
+    do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
     opt_expr_mut(v, &mut n.init);
     v.visit_expr_mut(&mut n.cond);
     v.visit_block_mut(&mut n.block);

@@ -40,33 +40,79 @@ fn print_records_its_particle()
 #[test]
 fn declarations()
 {
-    assert_eq!(stmt("ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်ပါစေ။"), "(var အသက် isize)");
-    assert_eq!(stmt("ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။"), "(var အသက် isize 18)");
-    assert_eq!(stmt("ကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။"), "(const ပိုင် f64 3.14)");
-    let sized = "ကိန်းရှင် ရေတွက် သည် လက္ခဏာမဲ့ ၃၂ ဘစ် ကိန်းပြည့် ဖြစ်ပါစေ။";
+    assert_eq!(stmt("ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။"), "(var အသက် isize)");
+    assert_eq!(stmt("ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။"), "(var အသက် _ 18isize)");
+    assert_eq!(stmt("ကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။"), "(const ပိုင် _ 3.14)");
+    let sized = "ကိန်းရှင် ရေတွက် သည် လက္ခဏာမဲ့ ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(stmt(sized), "(var ရေတွက် u32)");
-    let twice = "ကိန်းရှင် နှစ်ဆ သည် ကိန်းပြည့် အသက် * ၂ ဖြစ်ပါစေ။";
+    let twice = "ကိန်းရှင် နှစ်ဆ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် * ၂ ဖြစ်ပါစေ။";
     assert_eq!(stmt(twice), "(var နှစ်ဆ isize (* အသက် 2))");
-    let adult = "ကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး (အသက် သည် ၁၈ ထက် ကြီးသည်) ဖြစ်ပါစေ။";
+    let adult = "ကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (အသက် သည် ၁၈ ထက် ကြီးသည်) ဖြစ်ပါစေ။";
     assert_eq!(stmt(adult), "(var ကြီးသူ bool [(gt အသက် 18)])");
-    let kinded = "ကိန်းရှင် က သည် ကိန်းပြည့် ၈ ဘစ် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။";
+    let kinded = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၈ ဘစ် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။";
     assert_eq!(stmt(kinded), "(var က isize 5i8)");
-    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ဖြစ်ပါစေ။";
+    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ဖြစ်ပါစေ။";
     assert_eq!(stmt(clause), "(var က isize (add ခ ဂ))");
+}
+
+/// A declaration writes its kind as `<kind> တစ်<classifier>`, or writes a value
+/// alone, whose kind the checker takes.
+#[test]
+fn declarations_count_their_kind_or_take_it_from_the_value()
+{
+    let classifier = |text: &str| match &stmts(text)[0]
+    {
+        Stmt::Decl(d) => d.classifier.as_ref().map(|c| c.name.to_string()),
+        other => panic!("{other:?}"),
+    };
+    let letter = "ကိန်းရှင် င သည် စာလုံး တစ်လုံး ဖြစ်ပါစေ။";
+    assert_eq!(stmt(letter), "(var င char)");
+    assert_eq!(classifier(letter).as_deref(), Some("လုံး"));
+    let named = "ကိန်းရှင် ခ သည် \"မမ\" ဖြစ်ပါစေ။";
+    assert_eq!(stmt(named), "(var ခ _ \"မမ\")");
+    assert_eq!(classifier(named), None);
+    assert_eq!(stmt("ကိန်းရှင် ဂ သည် ခ ဖြစ်ပါစေ။"), "(var ဂ _ ခ)");
+    assert_eq!(stmt("ကိန်းရှင် ဂ သည် ခ + ၁ ဖြစ်ပါစေ။"), "(var ဂ _ (+ ခ 1))");
+    let person = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။\n";
+    let spaced = format!("{person}ကိန်းရှင် စ သည် လူ တစ်ယောက် ဖြစ်ပါစေ။");
+    let joined = format!("{person}ကိန်းရှင် စ သည် လူတစ်ယောက် ဖြစ်ပါစေ။");
+    assert_eq!(stmts(&spaced)[1].to_sexpr(), stmts(&joined)[1].to_sexpr());
+}
+
+/// A kind with no count word after it is the form of old, and the help names
+/// the count word the kind takes.
+#[test]
+fn a_kind_without_its_count_word_is_zk0234()
+{
+    let help = |text: &str| {
+        let out = parse_text(text);
+        assert_eq!(
+            out.diagnostics.iter().map(|d| d.code).collect::<Vec<_>>(),
+            [Code::DeclNeedsClassifier]
+        );
+        out.diagnostics[0].help.clone().unwrap_or_default()
+    };
+    assert!(help("ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။").contains("တစ်ခု"));
+    assert!(help("ကိန်းရှင် က သည် စာလုံး ဖြစ်ပါစေ။").contains("တစ်လုံး"));
+    let person = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။\n";
+    assert!(help(&format!("{person}ကိန်းရှင် က သည် လူ ဖြစ်ပါစေ။")).contains("တစ်ယောက်"));
+    help("ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။");
+    help("ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာ ပ ဖြစ်ပါစေ။");
+    help("ကိန်းရှင် က သည် ငှားထားသော ကိန်းပြည့် ၅ ဖြစ်ပါစေ။");
 }
 
 #[test]
 fn declarations_with_a_value_clause()
 {
-    let age = "ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။";
+    let age = "ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။";
     assert_eq!(stmt(age), "(var အသက် isize 18)");
-    let spaced = "ကိန်းသေ ပိုင် သည် ဒဿမကိန်း ဖြစ်၍ တန်ဖိုး သည် ၃.၁၄ ဖြစ်ပါစေ။";
+    let spaced = "ကိန်းသေ ပိုင် သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုး သည် ၃.၁၄ ဖြစ်ပါစေ။";
     assert_eq!(stmt(spaced), "(const ပိုင် f64 3.14)");
-    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ဖြစ်ပါစေ။";
+    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ဖြစ်ပါစေ။";
     assert_eq!(stmt(clause), "(var က isize (add ခ ဂ))");
-    let adult = "ကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီး ဖြစ်ပါစေ။";
+    let adult = "ကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီး ဖြစ်ပါစေ။";
     assert_eq!(stmt(adult), "(var ကြီးသူ bool (gt အသက် 18))");
-    let bare = "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ ၅ ဖြစ်ပါစေ။";
+    let bare = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ ၅ ဖြစ်ပါစေ။";
     assert_eq!(codes(bare), [Code::ExpectedToken]);
 }
 
@@ -126,8 +172,10 @@ fn loops()
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let want =
         "(for ကိန်း isize 0 (lt ကိန်း 10) (block (print ကိန်း)) then (set ကိန်း (+ ကိန်း 1)))";
-    assert_eq!(stmt(generic), want);
-    let clause = "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ \
+    let inferred =
+        "(for ကိန်း _ 0isize (lt ကိန်း 10) (block (print ကိန်း)) then (set ကိန်း (+ ကိန်း 1)))";
+    assert_eq!(stmt(generic), inferred);
+    let clause = "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ \
                   အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်း ကို ပြသပါ။
 ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။
@@ -184,7 +232,7 @@ fn functions_and_calls()
 #[test]
 fn statement_spans_cover_the_full_stop()
 {
-    let text = "က ကို ပြသပါ။ ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်ပါစေ။";
+    let text = "က ကို ပြသပါ။ ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     let list = stmts(text);
     let out = parse_text(text);
     let end = |s: &Stmt| (s.span().hi - out.program.span.lo) as usize;
@@ -203,7 +251,7 @@ fn statement_errors()
     let const_loop = "ကိန်းသေ က သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး က သည် ၁ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို \
                       လုပ်ဆောင်ပါ။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(const_loop)[0], Code::ConstLoop);
-    let late = "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပြီး က သည် ၁ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+    let late = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပြီး က သည် ၁ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ပြီးလျှင် က ကို က + ၁ ဟု ထားပါ။
 က ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
@@ -267,17 +315,17 @@ fn unclosed_block_reports_the_end_of_input()
 #[test]
 fn pointer_declarations_and_places()
 {
-    assert_eq!(stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။"), "(var p *isize)");
-    assert_eq!(stmt("ကိန်းရှင် pp သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။"), "(var pp **isize)");
-    assert_eq!(stmt("ကိန်းရှင် b သည် ၈ ဘစ် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။"), "(var b *i8)");
-    assert_eq!(stmt("ကိန်းရှင် q သည် လိပ်စာ ဖြစ်ပါစေ။"), "(var q ptr)");
-    assert_eq!(stmt("ကိန်းရှင် qq သည် လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။"), "(var qq *ptr)");
+    assert_eq!(stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var p *isize)");
+    assert_eq!(stmt("ကိန်းရှင် pp သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var pp **isize)");
+    assert_eq!(stmt("ကိန်းရှင် b သည် ၈ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var b *i8)");
+    assert_eq!(stmt("ကိန်းရှင် q သည် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var q ptr)");
+    assert_eq!(stmt("ကိန်းရှင် qq သည် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var qq *ptr)");
     assert_eq!(
-        stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
+        stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
         "(var p *isize (addr x))"
     );
     assert_eq!(
-        stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
+        stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
         "(var p *isize (addr x))"
     );
     assert_eq!(stmt("p ၏ တန်ဖိုး ကို ၅ ဟု ထားပါ။"), "(set (deref p) 5)");
@@ -288,10 +336,13 @@ fn pointer_declarations_and_places()
 #[test]
 fn pointer_kinds_keep_the_older_spelling()
 {
-    assert_eq!(stmt("ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ ဖြစ်ပါစေ။"), "(var p *isize)");
-    assert_eq!(stmt("ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ ဖြစ်ပါစေ။"), "(var pp **isize)");
+    assert_eq!(stmt("ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var p *isize)");
     assert_eq!(
-        stmt("ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
+        stmt("ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"),
+        "(var pp **isize)"
+    );
+    assert_eq!(
+        stmt("ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
         "(var p *isize (addr x))"
     );
 }
@@ -299,7 +350,7 @@ fn pointer_kinds_keep_the_older_spelling()
 #[test]
 fn borrowed_and_raw_kinds()
 {
-    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် q သည် {kind} ဖြစ်ပါစေ။"));
+    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် q သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
     assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာ"), "(var q &*isize)");
     assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ"), "(var q &**isize)");
     assert_eq!(decl("ကိန်းပြည့် လိပ်စာအကြမ်း"), "(var q ~isize)");
@@ -314,7 +365,7 @@ fn borrowed_and_raw_kinds()
 #[test]
 fn misplaced_borrow_markers_parse()
 {
-    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် q သည် {kind} ဖြစ်ပါစေ။"));
+    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် q သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
     assert_eq!(decl("ငှားထားသော ငှားထားသော ကိန်းပြည့် လိပ်စာ"), "(var q &&*isize)");
     assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာအကြမ်း"), "(var q &~isize)");
     assert_eq!(decl("ငှားထားသော ကိန်းပြည့်"), "(var q &isize)");

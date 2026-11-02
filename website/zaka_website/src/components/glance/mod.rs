@@ -53,7 +53,7 @@ struct Line
 /// tells whether the total is more than 50.
 const LINES: [Line; 5] = [
     Line {
-        code: "ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။",
+        code: "ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။",
         pin: "ကိန်းရှင်",
         label: "website.glance.variable",
     },

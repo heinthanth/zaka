@@ -257,7 +257,7 @@ token:
 | First token | Goes to | Notes |
 | --- | --- | --- |
 | `အကယ်၍` | `parse_if` | arms of `ထိုသို့မဟုတ်ဘဲ` and `သို့မဟုတ်ပါက` are read here |
-| `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | shared start `NAME သည် kind init?`; then `ဖြစ်ပါစေ` is a declaration and `ဖြစ်ပြီး` a generic loop |
+| `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | shared start `NAME သည်`, then the head (`parse_decl_head` in `decl_head.rs`): `kind တစ်WORD`, with `ဖြစ်၍ တန်ဖိုးသည် VALUE` for a value, or a value alone; a kind with no count word after it is ZK0234, and a kind with a number after it is a value when the kind is a plain number kind; then `ဖြစ်ပါစေ` is a declaration and `ဖြစ်ပြီး` a generic loop |
 | `လုပ်ဆောင်ချက်` | `parse_fn_or_call` | `NAME သည်` two tokens ahead is a declaration; else a call, which heads a statement or an expression |
 | a block opener | `parse_block` | opener, `။`, statements until the closer, closer, `။` |
 | `ကွင်းဆက်`, `နောက်တစ်ကြိမ်ဆီသို့` | break, continue | |

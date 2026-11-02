@@ -12,10 +12,10 @@ A name can use Burmese letters, other scripts, digits (not first), `_`, and even
 Upper and lower case are different: `Age` and `age` are two names.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။          // Burmese
-ကိန်းရှင် age သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။            // English
-ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇၅ ဖြစ်ပါစေ။        // with _ and a digit
-ကိန်းရှင် 🍎 သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။               // emoji
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။      // Burmese
+ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။        // English
+ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၅ ဖြစ်ပါစေ။    // with _ and a digit
+ကိန်းရှင် 🍎 သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။           // emoji
 အသက် + age + အမှတ်_၁ + 🍎 ကို ပြသပါ။
 ```
 
@@ -29,8 +29,8 @@ A name ends at a space, or at a sign such as `+` or `။`. A change of script do
 it: `အသက်age` and `age၂` are names too, one word each.
 
 ```zaka
-ကိန်းရှင် အသက်age သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။      // Burmese, then English
-ကိန်းရှင် age၂ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။           // English, then a digit
+ကိန်းရှင် အသက်age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။  // Burmese, then English
+ကိန်းရှင် age၂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။       // English, then a digit
 အသက်age + age၂ ကို ပြသပါ။
 ```
 
@@ -42,7 +42,7 @@ That is the reason a name needs a space before a particle. `ageကို` is one
 the name `age` and the particle `ကို`, so the verb finds no particle:
 
 ```zaka-error ZK0206
-ကိန်းရှင် age သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
+ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 ageကို ပြသပါ။
 ```
 
@@ -81,8 +81,8 @@ Backtick names work, but are hard to read. Save them for when nothing else will 
 In one place, a name can be declared once and no more:
 
 ```zaka-error ZK0302
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 ```
 
 ```text
@@ -95,7 +95,7 @@ The help line suggests declaring the name again "in an inner block". The next pa
 ## Hands on
 
 - Declare a variable named with a favourite emoji and print it.
-- Test `ကိန်းရှင် ၂အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။`. What stops a name
+- Test `ကိန်းရှင် ၂အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။`. What stops a name
   from starting with a digit?
 
 Next: [Blocks and scope](scope.md).

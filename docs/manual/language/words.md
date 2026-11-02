@@ -48,7 +48,7 @@ is used between arguments, parameters and the cells of a list literal; a comma i
 Zaka character.
 
 ```zaka-error ZK0101
-ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း ဖြစ်၍ တန်ဖိုးသည် ၁, ၂ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁, ၂ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ```
 
 ```text
@@ -93,7 +93,7 @@ and the particle after it.** When the joined word is not a known name, the compi
 guesses that a space is missing and reports it:
 
 ```zaka-error ZK0206
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသပါ။
 ```
 
@@ -135,11 +135,11 @@ Upper and lower case differ: `Age` and `age` are two names. A name cannot be jus
 reserved word or a row of reserved words.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-ကိန်းရှင် Age သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
-ကိန်းရှင် age သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
-ကိန်းရှင် 🍎 သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် Age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
+ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
+ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
+ကိန်းရှင် 🍎 သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 အသက် + Age + age + အမှတ်_၁ + 🍎 ကို ပြသပါ။
 ```
 
@@ -153,8 +153,8 @@ A name written between backticks is a *raw name*. It can hold reserved words, sp
 and signs. It cannot hold a backtick or a line break, and it cannot be blank.
 
 ```zaka
-ကိန်းရှင် `ကို ပြသပါ` သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
-ကိန်းရှင် `the total` သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၉ ဖြစ်ပါစေ။
+ကိန်းရှင် `ကို ပြသပါ` သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
+ကိန်းရှင် `the total` သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၉ ဖြစ်ပါစေ။
 `ကို ပြသပါ` + `the total` ကို ပြသပါ။
 ```
 
@@ -166,7 +166,7 @@ A raw name with no closing backtick on its line is ZK0108, and two backticks in 
 are ZK0109. Writing a plain reserved word as a name gives ZK0201 ("expected a name").
 
 ```zaka-error ZK0109
-ကိန်းရှင် `` သည် ကိန်းပြည့် ဖြစ်ပါစေ။
+ကိန်းရှင် `` သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ```
 
 ## Numbers

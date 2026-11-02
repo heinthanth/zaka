@@ -27,10 +27,10 @@ fn lines(parts: &[&str]) -> String { parts.join("\n") }
 #[test]
 fn unprefixed_literals_take_the_expected_kind()
 {
-    let checked = check("ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။");
+    let checked = check("ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။");
     assert!(checked.out.diagnostics.is_empty());
     assert_eq!(kind_at(&checked, "၅"), "i8");
-    let checked = check("ကိန်းရှင် က သည် ၃၂ ဘစ် ဒဿမကိန်း ၃ ဖြစ်ပါစေ။");
+    let checked = check("ကိန်းရှင် က သည် ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။");
     assert_eq!(kind_at(&checked, "၃"), "f32");
     assert_eq!(kind_at(&check("၅ ကို ပြသပါ။"), "၅"), "isize");
     assert_eq!(kind_at(&check("၁.၅ ကို ပြသပါ။"), "၁.၅"), "f64");
@@ -39,7 +39,7 @@ fn unprefixed_literals_take_the_expected_kind()
 #[test]
 fn prefixed_literals_keep_their_kind()
 {
-    let checked = check("ကိန်းရှင် က သည် ကိန်းပြည့် ၈ ဘစ် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။");
+    let checked = check("ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၈ ဘစ် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။");
     assert!(checked.out.diagnostics.is_empty());
     assert_eq!(kind_at(&checked, "၈ ဘစ် ကိန်းပြည့် ၅"), "i8");
 }
@@ -47,11 +47,17 @@ fn prefixed_literals_keep_their_kind()
 #[test]
 fn literals_must_fit_the_expected_kind()
 {
-    assert_eq!(codes("ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၂၀၀ ဖြစ်ပါစေ။"), [Code::LiteralDoesNotFit]);
-    assert_eq!(codes("ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၁၂၈ ဖြစ်ပါစေ။"), [Code::LiteralDoesNotFit]);
-    ok("ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် -၁၂၈ ဖြစ်ပါစေ။");
     assert_eq!(
-        codes("ကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် -၁ ဖြစ်ပါစေ။"),
+        codes("ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀၀ ဖြစ်ပါစေ။"),
+        [Code::LiteralDoesNotFit]
+    );
+    assert_eq!(
+        codes("ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၈ ဖြစ်ပါစေ။"),
+        [Code::LiteralDoesNotFit]
+    );
+    ok("ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၁၂၈ ဖြစ်ပါစေ။");
+    assert_eq!(
+        codes("ကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၁ ဖြစ်ပါစေ။"),
         [Code::LiteralDoesNotFit]
     );
 }
@@ -59,7 +65,10 @@ fn literals_must_fit_the_expected_kind()
 #[test]
 fn a_literal_operand_takes_the_other_operand_kind()
 {
-    let text = lines(&[I8_U8, "ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၁၆ ဘစ် ကိန်းပြည့် ခ + ၁ ဖြစ်ပါစေ။"]);
+    let text = lines(&[
+        I8_U8,
+        "ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ + ၁ ဖြစ်ပါစေ။",
+    ]);
     let checked = check(&text);
     assert!(checked.out.diagnostics.is_empty());
     assert_eq!(kind_at(&checked, "ခ + ၁"), "u8");
@@ -79,10 +88,11 @@ fn int_and_float_literals_meet_as_a_float()
 #[test]
 fn values_widen_to_their_place()
 {
-    ok(&lines(&[I8_U8, "ကိန်းရှင် ဂ သည် ၁၆ ဘစ် ကိန်းပြည့် က ဖြစ်ပါစေ။"]));
-    ok(&lines(&[I8_U8, "ကိန်းရှင် ဂ သည် ၁၆ ဘစ် ကိန်းပြည့် ခ ဖြစ်ပါစေ။"]));
-    ok(&lines(&[I8_U8, "ကိန်းရှင် ဂ သည် ဒဿမကိန်း က ဖြစ်ပါစေ။"]));
-    let narrowing = lines(&[I8_U8, "ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် က ဖြစ်ပါစေ။"]);
+    ok(&lines(&[I8_U8, "ကိန်းရှင် ဂ သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။"]));
+    ok(&lines(&[I8_U8, "ကိန်းရှင် ဂ သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ ဖြစ်ပါစေ။"]));
+    ok(&lines(&[I8_U8, "ကိန်းရှင် ဂ သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။"]));
+    let narrowing =
+        lines(&[I8_U8, "ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။"]);
     assert_eq!(codes(&narrowing), [Code::KindMismatch]);
     let char_to_int = lines(&[I8_U8, "က ကို 'က' ဟု ထားပါ။"]);
     assert_eq!(codes(&char_to_int), [Code::KindMismatch]);
@@ -92,7 +102,7 @@ fn values_widen_to_their_place()
 fn platform_width_comes_from_the_options()
 {
     let text = "ကိန်းရှင် က သည် ၃၂ ဘစ် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် က ဖြစ်ပါစေ။";
+ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။";
     ok(text);
     let narrow = SemcheckOptions::builder().platform_bits(32).build();
     let found: Vec<Code> =
@@ -201,18 +211,21 @@ fn calls_check_argument_and_return_kinds()
 fn one_mistake_gives_one_diagnostic()
 {
     assert_eq!(codes("(က + ၁) * ၂ ကို ပြသပါ။"), [Code::UndeclaredName]);
-    assert_eq!(codes("ကိန်းရှင် ခ သည် ကိန်းပြည့် (က + ၁) * ၂ ဖြစ်ပါစေ။"), [Code::UndeclaredName]);
+    assert_eq!(
+        codes("ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (က + ၁) * ၂ ဖြစ်ပါစေ။"),
+        [Code::UndeclaredName]
+    );
 }
 
 #[test]
 fn integer_operators_ignore_a_float_context()
 {
-    let checked = check("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း ၁ << ၂ ဖြစ်ပါစေ။");
+    let checked = check("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ << ၂ ဖြစ်ပါစေ။");
     assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
     assert_eq!(kind_at(&checked, "၁ << ၂"), "isize");
-    ok("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း ၆ & ၃ ဖြစ်ပါစေ။");
-    ok("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း ~၆ ဖြစ်ပါစေ။");
-    ok("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း ၆ ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ် ဖြစ်ပါစေ။");
+    ok("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၆ & ၃ ဖြစ်ပါစေ။");
+    ok("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ~၆ ဖြစ်ပါစေ။");
+    ok("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၆ ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ် ဖြစ်ပါစေ။");
 }
 
 #[test]
@@ -226,10 +239,10 @@ fn unprefixed_literals_reach_the_full_range_of_their_kind()
 #[test]
 fn a_mismatch_names_the_conversion_verb_when_it_can_convert()
 {
-    let out = common::check("ကိန်းရှင် အ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။").out;
+    let out = common::check("ကိန်းရှင် အ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။").out;
     let found: Vec<(Code, Option<String>)> =
         out.diagnostics.iter().map(|d| (d.code, d.help.clone())).collect();
     assert_eq!(found, [(Code::KindMismatch, None)]);
-    let out = common::check("ကိန်းရှင် အ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂.၅ ဖြစ်ပါစေ။").out;
+    let out = common::check("ကိန်းရှင် အ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂.၅ ဖြစ်ပါစေ။").out;
     assert!(out.diagnostics[0].help.as_ref().is_some_and(|h| h.contains("ပြောင်းလဲသော")));
 }

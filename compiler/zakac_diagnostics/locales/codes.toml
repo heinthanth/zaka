@@ -297,6 +297,15 @@ en = "a slice takes no cell count; its count comes when the program runs"
 [codes.ZK0233.explain]
 en = """A slice kind, \"<kind> စာရင်း တစ်စိတ်တစ်ပိုင်း\", views cells whose number is known at run time, so the \"စာရင်း\" before \"တစ်စိတ်တစ်ပိုင်း\" takes no \"အကွက် <n> ခုရှိသော\" prefix. Remove the count, or drop \"တစ်စိတ်တစ်ပိုင်း\" for a list of that count."""
 
+[codes.ZK0234.title]
+en = "kind without a classifier"
+[codes.ZK0234.message]
+en = "a declared kind takes \"တစ်\" and a classifier"
+[codes.ZK0234.help]
+en = "write \"%{k} တစ်%{c}\", then \"ဖြစ်၍ တန်ဖိုးသည် <value>\" for a value"
+[codes.ZK0234.explain]
+en = """A declaration counts its variable as Burmese counts a thing: the kind, then \"တစ်\" (one) and the classifier of the kind. Most kinds take \"ခု\", \"စာလုံး\" takes \"လုံး\", and a struct takes the classifier its declaration gives. A value follows with \"ဖြစ်၍ တန်ဖိုးသည်\". To have the compiler take the kind from the value, leave the kind out and write the value alone."""
+
 # -------------------------------------------------------------- resolve ZK03xx
 
 [codes.ZK0301.title]
@@ -425,7 +434,7 @@ en = "unknown kind name"
 [codes.ZK0318.message]
 en = "no struct named \"%{n}\" is declared"
 [codes.ZK0318.explain]
-en = """A name in a kind phrase, as in \"ကိန်းရှင် x သည် လူ ဖြစ်ပါစေ။\", names a struct. Declare it at the top level with \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\", or check the spelling."""
+en = """A name in a kind phrase, as in \"ကိန်းရှင် x သည် လူ တစ်ယောက် ဖြစ်ပါစေ။\", names a struct. Declare it at the top level with \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\", or check the spelling."""
 
 [codes.ZK0319.title]
 en = "name of a struct reused"
@@ -696,6 +705,15 @@ en = "the cells of %{k} cannot be written"
 [codes.ZK0429.explain]
 en = """Text holds UTF-8, and one u8 written on its own can break a character in two. A text written in quotes also shares its storage with each other literal of the same text. Build new text instead: join pieces with \"+\", or write the value in a template slot of a literal, as in \"{က}\"."""
 
+[codes.ZK0430.title]
+en = "kind not known"
+[codes.ZK0430.message]
+en = "the value gives no kind for \"%{n}\""
+[codes.ZK0430.help]
+en = "write the kind: \"<kind> တစ်<classifier> ဖြစ်၍ တန်ဖိုးသည် <value>\""
+[codes.ZK0430.explain]
+en = """A declaration with no kind takes the kind of its value. \"ဗလာ\" fits each pointer kind and names none of them, so a declaration of \"ဗလာ\" must write its kind."""
+
 # ---------------------------------------------------------- naturalness ZK05xx
 
 [codes.ZK0501.title]
@@ -778,8 +796,10 @@ en = "%{k} is counted with \"%{w}\", not \"%{f}\""
 en = "write \"%{w}စာ\""
 [codes.ZK0509.help_literal]
 en = "write \"%{k}တစ်%{w}\""
+[codes.ZK0509.help_decl]
+en = "write \"တစ်%{w}\""
 [codes.ZK0509.explain]
-en = """Burmese counts things with a classifier that fits them: people with \"ယောက်\", most other things with \"ခု\". A struct names its classifier with \"... တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\"; the other kinds are counted with \"ခု\". The same word follows \"တစ်\" at the end of a struct literal. The size and the value are the same whichever word is written, so the program still compiles."""
+en = """Burmese counts things with a classifier that fits them: people with \"ယောက်\", most other things with \"ခု\". A struct names its classifier with \"... တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\"; the other kinds are counted with \"ခု\". The same word follows \"တစ်\" at the end of a struct literal and after the kind of a declaration, where \"စာလုံး\" takes \"လုံး\". The size and the value are the same whichever word is written, so the program still compiles."""
 
 # -------------------------------------------------------------- folding ZK06xx
 

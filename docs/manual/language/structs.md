@@ -11,7 +11,7 @@ does. The Learn book starts in small steps with [Structs](../../learn/structs/RE
 
 ```zaka
 ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ဒဿမကိန်း အမြင့် တို့ ပါဝင်သည်။
-ကိန်းရှင် ကျော် သည် လူ ဖြစ်ပါစေ။
+ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်ပါစေ။
 ကျော် ၏ အသက် ကို ၂၀ ဟု ထားပါ။
 ကျော် ကို ပြသပါ။
 ```
@@ -49,7 +49,7 @@ does. The Learn book starts in small steps with [Structs](../../learn/structs/RE
 
 Where a kind must stand, as in a declaration, a parameter or a field, a name is read as a
 struct name; a name that no declaration gives is ZK0318, as in
-`ကိန်းရှင် က သည် လုပ် ဖြစ်ပါစေ။`.
+`ကိန်းရှင် က သည် လုပ် တစ်ခု ဖြစ်ပါစေ။`.
 
 ## The classifier
 
@@ -59,15 +59,17 @@ declaration, with `မျိုးပြပစ္စည်းမှာ <word> �
 with `ခု`, like each other kind.
 
 The classifier is the word in a heap size, `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...`, and
-the word after `တစ်` in a [struct literal](#struct-literals), `လူတစ်ယောက်`:
+the word after `တစ်` in a [struct literal](#struct-literals), `လူတစ်ယောက်`, and in the kind
+of a [declaration](statements.md#declarations), `ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်ပါစေ။`:
 
 | Kind | Counted with |
 | --- | --- |
 | a struct that names a classifier | that word |
 | a struct that names none | `ခု` |
+| `စာလုံး`, in a declaration | `လုံး` |
 | each other kind, such as `ကိန်းပြည့်` | `ခု` |
 
-A heap size or a struct literal that uses another word, such as `ခု` for a struct that names `ယောက်`, or
+A heap size, a struct literal or a declaration that uses another word, such as `ခု` for a struct that names `ယောက်`, or
 `ယောက်` for `ကိန်းပြည့်`, is the warning ZK0509. The size does not change with the word,
 and the program runs. The help line of the message gives the word to write. A classifier
 word other than `ခု` is read in a heap size once a struct of the program names it:
@@ -79,7 +81,7 @@ these use `ခု` for each kind.
 
 ```zaka
 ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ကိန်းပြည့် အတန်း တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
-ကိန်းရှင် p သည် လူ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် လူ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
 p ၏ တန်ဖိုး ၏ အသက် ကို ၁၀ ဟု ထားပါ။
 p ၏ တန်ဖိုး ကို ပြသပါ။
@@ -92,7 +94,7 @@ p ၏ တန်ဖိုး ကို ပြသပါ။
 
 ```zaka-warning ZK0509
 ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
-ကိန်းရှင် p သည် လူ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် လူ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် လူ ၃ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
 လိပ်စာ p ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ```
@@ -107,7 +109,7 @@ A struct name stands wherever a kind does:
 
 | Place | Written |
 | --- | --- |
-| a variable | `ကိန်းရှင် ကျော် သည် လူ ဖြစ်ပါစေ။` |
+| a variable | `ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်ပါစေ။` |
 | a parameter | `လူ သူ ကို လက်ခံပြီး` |
 | a pointer kind | `လူ လိပ်စာ` |
 | a borrow | `ငှားထားသော လူ လိပ်စာ` |
@@ -155,7 +157,7 @@ age 20 and height 1.75". The last line is the notation form, the one a struct pr
 
 ```zaka
 ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ဒဿမကိန်း အမြင့် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
-ကိန်းရှင် ကျော် သည် လူ ဖြစ်၍ တန်ဖိုးသည် အမြင့် ၁.၇၅၊ အသက် ၂၀ ရှိသော လူတစ်ယောက် ဖြစ်ပါစေ။
+ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်၍ တန်ဖိုးသည် အမြင့် ၁.၇၅၊ အသက် ၂၀ ရှိသော လူတစ်ယောက် ဖြစ်ပါစေ။
 ကျော် ကို ပြသပါ။
 အသက် ၃၀ ရှိသော လူ တစ်ယောက် ကို ပြသပါ။
 ```
@@ -204,11 +206,11 @@ have its address taken.
 ```zaka
 ဒေတာအမျိုးအစား အမှတ် တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။
 ဒေတာအမျိုးအစား မျဉ်း တွင် အမှတ် စ၊ အမှတ် ဆုံး တို့ ပါဝင်သည်။
-ကိန်းရှင် က သည် မျဉ်း ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် မျဉ်း တစ်ခု ဖြစ်ပါစေ။
 က ၏ ဆုံး ၏ x ကို ၃ ဟု ထားပါ။
-ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော အမှတ် စာရင်း ဖြစ်ပါစေ။
+ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော အမှတ် စာရင်း တစ်ခု ဖြစ်ပါစေ။
 အမှတ်များ ၏ အကွက် ၁ ၏ y ကို ၇ ဟု ထားပါ။
-ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် က ၏ စ ၏ y ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ စ ၏ y ၏ လိပ်စာ ဖြစ်ပါစေ။
 ပ ၏ တန်ဖိုး ကို ၉ ဟု ထားပါ။
 က ကို ပြသပါ။
 အမှတ်များ ကို ပြသပါ။
@@ -227,7 +229,7 @@ field print alike, nested.
 
 ```zaka
 ဒေတာအမျိုးအစား ရမှတ်များ တွင် လက္ခဏာမဲ့ ကိန်းပြည့် အကြိမ်၊ အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရမှတ် တို့ ပါဝင်သည်။
-ကိန်းရှင် ပွဲ သည် ရမှတ်များ ဖြစ်ပါစေ။
+ကိန်းရှင် ပွဲ သည် ရမှတ်များ တစ်ခု ဖြစ်ပါစေ။
 ပွဲ ၏ ရမှတ် ကို ၅၊ ၇၊ ၉ တို့ပါသော စာရင်း ဟု ထားပါ။
 ပွဲ ၏ အကြိမ် ကို ပွဲ ၏ ရမှတ် ၏ အကွက်အရေအတွက် ဟု ထားပါ။
 ပွဲ ကို ပြသပါ။
@@ -255,8 +257,8 @@ results](functions.md#lists-and-structs-as-results).
 
 ```zaka
 ဒေတာအမျိုးအစား အဆစ် တွင် ကိန်းပြည့် တန်ဖိုးရင်း၊ အဆစ် လိပ်စာ နောက် တို့ ပါဝင်သည်။
-ကိန်းရှင် က သည် အဆစ် ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် အဆစ် ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် အဆစ် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် အဆစ် တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် အဆစ် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို က ၏ နောက် တွင် သိမ်းထားမည်။
 က ၏ တန်ဖိုးရင်း ကို ၇ ဟု ထားပါ။
 ခ ကို က ဟု ထားပါ။            // the address moves into ခ

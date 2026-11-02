@@ -527,7 +527,7 @@ impl Lowerer<'_>
     /// The store.
     fn decl(&mut self, n: &st::DeclStmt) -> Stmt
     {
-        let kind = self.declared_kind(&n.kind, n.init.as_ref());
+        let kind = self.declared_kind(n.kind.as_ref(), n.init.as_ref());
         let value = self.initial(n.init.as_ref(), kind, n.name.span);
         let access = tern!(n.is_const, Access::Const, Access::Var);
         let place = self.declare(&n.name, kind, access);
@@ -535,18 +535,30 @@ impl Lowerer<'_>
     }
 
     /// The kind of a declared name: the written kind, or the kind of its
-    /// value when the written kind leaves list counts out.
+    /// value when no kind is written or the written kind leaves list counts
+    /// out.
     ///
     /// # Arguments
     ///
-    /// * `written` - The kind phrase.
+    /// * `written` - The kind phrase, when written.
     /// * `init` - The value, when one is written.
     ///
     /// # Returns
     ///
     /// The kind.
-    fn declared_kind(&self, written: &Kind, init: Option<&ast::Expr>) -> DataKind
+    ///
+    /// # Panics
+    ///
+    /// When neither is written, which the parser rules out.
+    fn declared_kind(
+        &self, written: Option<&Kind>, init: Option<&ast::Expr>,
+    ) -> DataKind
     {
+        let Some(written) = written
+        else
+        {
+            return concrete(self.kind_of(init.expect("a value gives the kind")));
+        };
         let kind = DataKind::from_ast(written, self.structs);
         let open = init.filter(|_| kind.has_open_count());
         open.map_or(kind, |e| self.kind_of(e))
@@ -833,12 +845,18 @@ impl Lowerer<'_>
     /// * `out` - The list the statements go to.
     fn generic(&mut self, n: &st::GenericStmt, out: &mut Vec<Stmt>)
     {
-        let kind = self.declared_kind(&n.kind, n.init.as_ref());
+        let kind = self.declared_kind(n.kind.as_ref(), n.init.as_ref());
         let value = self.initial(n.init.as_ref(), kind, n.var.span);
+        let written = n.kind.as_ref().map(|k| k.span);
+        let head = written.or_else(|| n.init.as_ref().map(ast::Expr::span));
         let mut parts = None;
         self.scoped(|l| {
             let place = l.declare(&n.var, kind, Access::Var);
-            let set = Stmt::Set { place, value, span: n.var.span.to(&n.kind.span) };
+            let set = Stmt::Set {
+                place,
+                value,
+                span: n.var.span.to(&head.unwrap_or(n.var.span)),
+            };
             let cond = l.coerce(&n.cond, DataKind::Bool);
             let block = l.loop_block(&n.block.stmts);
             let mut update = Vec::new();

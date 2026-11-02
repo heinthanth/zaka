@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::collections::HashSet;
 
 use bon::Builder;
@@ -216,6 +217,10 @@ pub(crate) struct Parser<'t>
     /// start a kind.
     #[builder(default)]
     pub(crate) structs: HashSet<&'t str>,
+    /// The classifier each struct of this file declares, for the help of a
+    /// declaration that leaves it out.
+    #[builder(default)]
+    pub(crate) classifiers: HashMap<&'t str, &'t str>,
     /// Whether a statement other than an import has been parsed at the top
     /// level, so a later import is out of place.
     #[builder(default)]
@@ -247,7 +252,38 @@ impl<'t> Parser<'t>
         };
         let names = lexed.tokens.windows(2).filter_map(declared).collect();
         parser.structs = names;
+        let starts = lexed.tokens.iter().enumerate();
+        let starts = starts.filter(|(_, t)| t.kind == TokenKind::Kw(Kw::StructOpen));
+        let found = starts
+            .filter_map(|(at, _)| parser.struct_classifier(&lexed.tokens, at))
+            .collect();
+        parser.classifiers = found;
         parser
+    }
+
+    /// The name and the classifier of the struct declaration whose
+    /// `ဒေတာအမျိုးအစား` sits at token `at`.
+    ///
+    /// # Arguments
+    ///
+    /// * `tokens` - The tokens of the file.
+    /// * `at` - The index of `ဒေတာအမျိုးအစား` in them.
+    ///
+    /// # Returns
+    ///
+    /// The pair, or `None` for a declaration with no classifier clause.
+    fn struct_classifier(
+        &self, tokens: &[Token], at: usize,
+    ) -> Option<(&'t str, &'t str)>
+    {
+        let tokens = tokens.get(at..)?;
+        let name = tokens.get(1).filter(|t| t.kind == TokenKind::Ident)?;
+        let stop = TokenKind::Punct(Punct::FullStop);
+        let clause = tokens.iter().take_while(|t| t.kind != stop);
+        let is =
+            clause.clone().position(|t| t.kind == TokenKind::Kw(Kw::ClassifierIs))?;
+        let word = tokens.get(is + 1)?;
+        Some((self.text_of(name.span), self.text_of(word.span)))
     }
 
     /// Whether the token `n` places ahead is a declared struct name.

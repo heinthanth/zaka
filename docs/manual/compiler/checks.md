@@ -46,7 +46,7 @@ mode compiled it.
 A block of four integers has cells 0 to 3, and the program reads cell 4:
 
 ```zaka-error ZK0710
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ + ၃ ၏ တန်ဖိုး ကို ပြသပါ။
 ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။
@@ -69,7 +69,7 @@ stops it at the bad read. Cell 3 is printed first, since it was fine. A new bloc
 zeros:
 
 ```zaka-stop mem-check=warn
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ + ၃ ၏ တန်ဖိုး ကို ပြသပါ။
 ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။
@@ -96,7 +96,7 @@ With `--mem-check off` the compiler is silent, and the VM stops the program at
 the same read:
 
 ```zaka-stop mem-check=off
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ + ၃ ၏ တန်ဖိုး ကို ပြသပါ။
 ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။
@@ -130,7 +130,7 @@ just been filled can hold `ဗလာ`. `--mem-strict` asks for a warning at each
 through such a pointer that was never compared with `ဗလာ`:
 
 ```zaka
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ၏ တန်ဖိုး ကို ၁ ဟု ထားပါ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
@@ -145,7 +145,7 @@ Without `--mem-strict` the program above compiles with no message. With it, the 
 adds a warning (ZK0711); the program still runs:
 
 ```zaka-warning ZK0711 mem-strict=on
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ၏ တန်ဖိုး ကို ၁ ဟု ထားပါ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
@@ -172,7 +172,7 @@ no owner to check. The VM still checks each use. For a lesson that must remain i
 the ownership check, `--no-raw` refuses each raw kind:
 
 ```zaka
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာအကြမ်း ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။
 "ပြီး" ဟု ပြသပါ။
 ```
 
@@ -181,7 +181,7 @@ the ownership check, `--no-raw` refuses each raw kind:
 ```
 
 ```zaka-error ZK0717 no-raw=on
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာအကြမ်း ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။
 "ပြီး" ဟု ပြသပါ။
 ```
 
@@ -190,7 +190,7 @@ $ zakac run --no-raw raw.zaka
 error[ZK0717]: raw addresses are not allowed here (--no-raw)
  --> raw.zaka:1:17
   |
-1 | ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာအကြမ်း ဖြစ်ပါစေ။
+1 | ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။
   |            ^^^^^^^^^^^^^^^^
 ```
 

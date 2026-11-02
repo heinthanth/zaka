@@ -23,24 +23,25 @@ program:
         span:
           lo: 70
           hi: 82
-      kind:
-        base: int
-        bits: null
-        signed: null
-        wraps: []
-        span:
-          lo: 93
-          hi: 123
+      kind: null
+      classifier: null
       is_const: false
       init:
         int:
           id: 1
           value: 18
           base: 10
-          kind: null
+          kind:
+            base: int
+            bits: null
+            signed: null
+            wraps: []
+            span:
+              lo: 93
+              hi: 123
           script: burmese
           span:
-            lo: 124
+            lo: 93
             hi: 130
       exported: false
       span:
@@ -52,23 +53,24 @@ program:
         span:
           lo: 181
           hi: 196
-      kind:
-        base: float
-        bits: null
-        signed: null
-        wraps: []
-        span:
-          lo: 207
-          hi: 231
+      kind: null
+      classifier: null
       is_const: true
       init:
         float:
           id: 2
           value: 3.14
           text: "3.14"
-          kind: null
+          kind:
+            base: float
+            bits: null
+            signed: null
+            wraps: []
+            span:
+              lo: 207
+              hi: 231
           span:
-            lo: 232
+            lo: 207
             hi: 242
       exported: false
       span:
@@ -372,23 +374,24 @@ program:
         span:
           lo: 1448
           hi: 1463
-      kind:
-        base: int
-        bits: null
-        signed: null
-        wraps: []
-        span:
-          lo: 1474
-          hi: 1504
+      kind: null
+      classifier: null
       init:
         int:
           id: 26
           value: 0
           base: 10
-          kind: null
+          kind:
+            base: int
+            bits: null
+            signed: null
+            wraps: []
+            span:
+              lo: 1474
+              hi: 1504
           script: burmese
           span:
-            lo: 1505
+            lo: 1474
             hi: 1508
       cond:
         verb:

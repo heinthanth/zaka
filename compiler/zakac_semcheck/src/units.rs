@@ -95,7 +95,7 @@ fn exported_kinds(stmt: &Stmt) -> Option<(&Ident, Vec<&Kind>)>
             let params = f.params.iter().map(|p| &p.kind);
             Some((&f.name, params.chain(f.ret.as_ref()).collect()))
         }
-        Stmt::Decl(d) if d.exported => Some((&d.name, vec![&d.kind])),
+        Stmt::Decl(d) if d.exported => Some((&d.name, d.kind.iter().collect())),
         Stmt::Struct(d) if d.exported =>
         {
             Some((&d.name, d.fields.iter().map(|f| &f.kind).collect()))

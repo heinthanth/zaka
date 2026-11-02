@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use zakac_ast::expr::BlankListLit;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::FieldExpr;
+use zakac_ast::expr::Ident;
 use zakac_ast::expr::IndexExpr;
 use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
@@ -193,20 +194,28 @@ impl Checker
 
     /// Check the value of a declaration against its written kind, filling
     /// list counts the kind leaves out from the value. A count left out
-    /// behind an address level is refused: no value fills it.
+    /// behind an address level is refused: no value fills it. With no
+    /// written kind, the value gives it.
     ///
     /// # Arguments
     ///
-    /// * `written` - The kind phrase.
+    /// * `written` - The kind phrase, when written.
     /// * `init` - The value, when one is written.
+    /// * `name` - The declared name.
     ///
     /// # Returns
     ///
-    /// The kind of the declared name, or `None` when its counts remain open.
+    /// The kind of the declared name, or `None` when its counts remain open
+    /// or the value gives none.
     pub(crate) fn decl_kind(
-        &mut self, written: &Kind, init: Option<&Expr>,
+        &mut self, written: Option<&Kind>, init: Option<&Expr>, name: &Ident,
     ) -> Option<DataKind>
     {
+        let Some(written) = written
+        else
+        {
+            return self.inferred_kind(init?, name);
+        };
         let kind = self.written_kind(written, KindUse::Decl);
         if open_behind_address(written)
         {
@@ -226,6 +235,25 @@ impl Checker
             return None;
         };
         self.fill_counts(kind, init)
+    }
+
+    /// The kind of a declaration that writes none: the kind of its value.
+    /// `ဗလာ` gives none, since it fits each pointer kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `init` - The value.
+    /// * `name` - The declared name.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or `None` after an error.
+    fn inferred_kind(&mut self, init: &Expr, name: &Ident) -> Option<DataKind>
+    {
+        let kind = self.infer(init, None)?;
+        ret_if!(kind != DataKind::Null, Some(kind));
+        self.report(kd::kind_not_inferred(init.span(), &name.name));
+        None
     }
 
     /// Fill the open counts of a declared kind from its value, then check

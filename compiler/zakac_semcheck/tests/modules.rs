@@ -30,8 +30,8 @@ fn codes(files: &[(&str, &str)]) -> Vec<Code>
 /// A file with an exported function `ပေါင်း`, a private function `နှစ်ဆ`,
 /// an exported constant `အများဆုံး` and a private variable `ဝှက်`.
 const LIB: &str = "\
-အများသုံး ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၀ ဖြစ်ပါစေ။
-ကိန်းရှင် ဝှက် သည် ကိန်းပြည့် ဖြစ်ပါစေ။
+အများသုံး ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ ဖြစ်ပါစေ။
+ကိန်းရှင် ဝှက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် နှစ်ဆ သည်
 ကိန်းပြည့် က ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
@@ -93,7 +93,7 @@ fn a_name_that_is_not_imported_is_unknown_with_help()
 fn an_imported_name_and_a_declaration_of_one_name_clash()
 {
     let main = "\"lib.zaka\" မှ အများဆုံး ကို ထည့်သွင်းပါ။
-ကိန်းရှင် အများဆုံး သည် ကိန်းပြည့် ဖြစ်ပါစေ။";
+ကိန်းရှင် အများဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(
         codes(&[("/m/main.zaka", main), ("/m/lib.zaka", LIB)]),
         [Code::Redeclaration]
@@ -103,7 +103,7 @@ fn an_imported_name_and_a_declaration_of_one_name_clash()
 #[test]
 fn a_statement_in_an_imported_file_is_zk0323()
 {
-    let lib = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nက ကို ပြသပါ။";
+    let lib = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nက ကို ပြသပါ။";
     let main = "\"lib.zaka\" မှ က ကို ထည့်သွင်းပါ။\nက ကို ပြသပါ။";
     assert_eq!(
         codes(&[("/m/main.zaka", main), ("/m/lib.zaka", lib)]),
@@ -114,7 +114,7 @@ fn a_statement_in_an_imported_file_is_zk0323()
 #[test]
 fn an_import_brings_nothing_the_imported_file_imports()
 {
-    let base = "အများသုံး ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် ဖြစ်ပါစေ။";
+    let base = "အများသုံး ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     let mid = "\"base.zaka\" မှ စုစုပေါင်း ကို ထည့်သွင်းပါ။";
     let main = "\"mid.zaka\" မှ စုစုပေါင်း ကို ထည့်သွင်းပါ။";
     let files = [("/m/main.zaka", main), ("/m/mid.zaka", mid), ("/m/base.zaka", base)];
@@ -145,7 +145,7 @@ fn an_export_that_names_a_private_struct_is_zk0324()
 ပြန်ပေးပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert!(alone(result).contains(&Code::PrivateInExport), "{:?}", alone(result));
-    let var = "အများသုံး ကိန်းရှင် က သည် ဝှက် လိပ်စာ ဖြစ်ပါစေ။";
+    let var = "အများသုံး ကိန်းရှင် က သည် ဝှက် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(alone(var), [Code::PrivateInExport]);
     let field = "အများသုံး ဒေတာအမျိုးအစား စာရင်းခေါင်း တွင် ဝှက် လိပ်စာ ပထမ တို့ ပါဝင်သည်။";
     assert_eq!(alone(field), [Code::PrivateInExport]);
@@ -154,11 +154,11 @@ fn an_export_that_names_a_private_struct_is_zk0324()
 #[test]
 fn an_export_that_names_an_exported_or_imported_struct_passes()
 {
-    let exported = "အများသုံး ကိန်းရှင် က သည် နေရာ ဖြစ်ပါစေ။";
+    let exported = "အများသုံး ကိန်းရှင် က သည် နေရာ တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(alone(exported), []);
-    let private = "ကိန်းရှင် က သည် ဝှက် ဖြစ်ပါစေ။";
+    let private = "ကိန်းရှင် က သည် ဝှက် တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(alone(private), []);
     let lib = "အများသုံး ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။";
-    let main = "\"lib.zaka\" မှ လူ ကို ထည့်သွင်းပါ။\nအများသုံး ကိန်းရှင် က သည် လူ ဖြစ်ပါစေ။";
+    let main = "\"lib.zaka\" မှ လူ ကို ထည့်သွင်းပါ။\nအများသုံး ကိန်းရှင် က သည် လူ တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(codes(&[("/m/main.zaka", main), ("/m/lib.zaka", lib)]), []);
 }

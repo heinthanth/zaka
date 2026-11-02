@@ -303,7 +303,8 @@ fn op_rows_point_at_their_source()
 #[test]
 fn jump_targets_get_labels()
 {
-    let text = "ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး မှန် ဖြစ်ပါစေ။\nအကယ်၍ က ဖြစ်လျှင် \"ဟုတ်\" ဟု ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။\nအကယ်၍ က ဖြစ်လျှင် \
+                \"ဟုတ်\" ဟု ပြသပါ။";
     let out = compile(text, &Options::default());
     let main = out.asm.last().expect("main");
     let jump = main.rows.iter().find(|r| r.text.starts_with("jump_if_false"));
@@ -397,7 +398,7 @@ fn warn_builds_each_mistake_and_off_reports_nothing()
 #[test]
 fn no_raw_rejects_a_raw_kind_in_the_check_phase()
 {
-    let text = "ကိန်းရှင် r သည် ကိန်းပြည့် လိပ်စာအကြမ်း ဖြစ်ပါစေ။";
+    let text = "ကိန်းရှင် r သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။";
     assert!(compile(text, &Options::default()).diagnostics.is_empty());
     let out = compile(text, &Options::builder().no_raw(true).build());
     let codes: Vec<(&str, Phase)> =

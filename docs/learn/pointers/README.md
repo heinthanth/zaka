@@ -11,8 +11,8 @@ or change a variable without using its name: from inside another function, or in
 that has no name at all.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။                       // age = 18
-ကိန်းရှင် ညွှန်း သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် အသက် ၏ လိပ်စာ ဖြစ်ပါစေ။    // a pointer that borrows age
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။                   // age = 18
+ကိန်းရှင် ညွှန်း သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် ၏ လိပ်စာ ဖြစ်ပါစေ။ // a pointer that borrows age
 ညွှန်း ၏ တန်ဖိုး ကို ပြသပါ။                                 // read through it
 ညွှန်း ၏ တန်ဖိုး ကို ၂၀ ဟု ထားပါ။                              // write through it
 အသက် ကို ပြသပါ။                                            // age has changed
@@ -61,8 +61,8 @@ A pointer holds just the addresses of its own kind. The address of a `ကိန�
 a pointer to an 8-bit integer:
 
 ```zaka-error ZK0401
-ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ငှားထားသော ၈ ဘစ် ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ငှားထားသော ၈ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
 ```
 
 ```text
@@ -80,7 +80,7 @@ variable starts out null. A pointer is not true or false, so compare it with `�
 test it:
 
 ```zaka
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ ဖြစ်ပါစေ။     // no address so far
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။ // no address so far
 ပ ကို ပြသပါ။
 အကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် "ဘာမှ မညွှန်ပါ" ဟု ပြသပါ။
 ```
@@ -98,8 +98,8 @@ mistakes](mistakes.md).
 Programmers who know C can write `&` for "the address of" and `*` for "the value at":
 
 ```zaka
-ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ဖြစ်၍ တန်ဖိုးသည် &က ဖြစ်ပါစေ။     // the same as က ၏ လိပ်စာ
+ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် &က ဖြစ်ပါစေ။ // the same as က ၏ လိပ်စာ
 *ပ ကို *ပ + ၁ ဟု ထားပါ။                              // the same as ပ ၏ တန်ဖိုး
 က ကို ပြသပါ။
 ```
@@ -120,7 +120,7 @@ address in RAM, but Zaka will not give it out, because writing through it would 
 the constant. The same holds for the variable of a counted loop:
 
 ```zaka-error ZK0412
-ကိန်းသေ ကြီးဆုံး သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။
+ကိန်းသေ ကြီးဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။
 ကြီးဆုံး ၏ လိပ်စာ ကို ပြသပါ။
 ```
 

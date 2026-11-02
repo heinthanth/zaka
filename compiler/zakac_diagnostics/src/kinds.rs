@@ -553,3 +553,19 @@ pub fn text_cell_write(span: Span, kind: &str) -> Diagnostic
 {
     Diagnostic::new(Code::TextCellWrite, t!("codes.ZK0429.message", k = kind), span)
 }
+
+/// A declaration with no kind has a value that gives none.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `name` - The declared name.
+///
+/// # Returns
+///
+/// The `ZK0430` diagnostic.
+pub fn kind_not_inferred(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::KindNotInferred, t!("codes.ZK0430.message", n = name), span)
+        .with_help(t!("codes.ZK0430.help"))
+}

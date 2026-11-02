@@ -121,7 +121,7 @@ fn output_extensions_pick_the_format()
 #[test]
 fn no_raw_rejects_raw_pointer_kinds()
 {
-    let source = "ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာအကြမ်း ဖြစ်ပါစေ။";
+    let source = "ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။";
     let (code, _, stderr) = run_cli(&["--no-raw"], source);
     assert_ne!(code, ExitCode::Success);
     assert!(stderr.contains("ZK0717"), "{stderr}");

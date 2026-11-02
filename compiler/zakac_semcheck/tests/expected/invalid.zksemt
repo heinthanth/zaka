@@ -1,7 +1,7 @@
 # zakac-semcheck-artifact v1
 name:
   Custom: invalid.zaka
-source: "က ကို ပြသပါ။\nကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် ၃၀၀ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nကိန်းသေ ဂ သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nဂ ကို ၁ ဟု ထားပါ။\nအကယ်၍ ခ ဖြစ်လျှင် ခ ကို ပြသပါ။\nမှန် + ၁ ကို ပြသပါ။\nကွင်းဆက် ကို ရပ်ပါ။\nပြန်ပေးပါ။\nမှန် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nခ ကို ပြသပါ။\n"
+source: "က ကို ပြသပါ။\nကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃၀၀ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်းသေ ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nဂ ကို ၁ ဟု ထားပါ။\nအကယ်၍ ခ ဖြစ်လျှင် ခ ကို ပြသပါ။\nမှန် + ၁ ကို ပြသပါ။\nကွင်းဆက် ကို ရပ်ပါ။\nပြန်ပေးပါ။\nမှန် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nခ ကို ပြသပါ။\n"
 imports: []
 program:
   stmts:
@@ -31,6 +31,11 @@ program:
         span:
           lo: 75
           hi: 119
+      classifier:
+        name: ခု
+        span:
+          lo: 129
+          hi: 135
       is_const: false
       init:
         int:
@@ -40,60 +45,70 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 120
-            hi: 129
+            lo: 183
+            hi: 192
       exported: false
       span:
         lo: 33
-        hi: 157
+        hi: 220
   - decl:
       name:
         name: ခ
         span:
-          lo: 186
-          hi: 189
+          lo: 249
+          hi: 252
       kind:
         base: int
         bits: null
         signed: null
         wraps: []
         span:
-          lo: 200
-          hi: 230
+          lo: 263
+          hi: 293
+      classifier:
+        name: ခု
+        span:
+          lo: 303
+          hi: 309
       is_const: false
       init: null
       exported: false
       span:
-        lo: 158
-        hi: 258
+        lo: 221
+        hi: 337
   - decl:
       name:
         name: ဂ
         span:
-          lo: 281
-          hi: 284
+          lo: 360
+          hi: 363
       kind:
         base: int
         bits: null
         signed: null
         wraps: []
         span:
-          lo: 295
-          hi: 325
+          lo: 374
+          hi: 404
+      classifier:
+        name: ခု
+        span:
+          lo: 414
+          hi: 420
       is_const: true
       init: null
       exported: false
       span:
-        lo: 259
-        hi: 353
+        lo: 338
+        hi: 448
   - assign:
       target:
         name:
           id: 2
           name: ဂ
           span:
-            lo: 354
-            hi: 357
+            lo: 449
+            hi: 452
       value:
         int:
           id: 3
@@ -102,11 +117,11 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 368
-            hi: 371
+            lo: 463
+            hi: 466
       span:
-        lo: 354
-        hi: 397
+        lo: 449
+        hi: 492
   - if:
       arms:
       - cond:
@@ -114,8 +129,8 @@ program:
             id: 4
             name: ခ
             span:
-              lo: 414
-              hi: 417
+              lo: 509
+              hi: 512
         block:
           stmts:
           - print:
@@ -124,23 +139,23 @@ program:
                   id: 5
                   name: ခ
                   span:
-                    lo: 446
-                    hi: 449
+                    lo: 541
+                    hi: 544
               slot: ko
               span:
-                lo: 446
-                hi: 478
+                lo: 541
+                hi: 573
           single: true
           span:
-            lo: 446
-            hi: 478
+            lo: 541
+            hi: 573
         span:
-          lo: 398
-          hi: 478
+          lo: 493
+          hi: 573
       else_block: null
       span:
-        lo: 398
-        hi: 478
+        lo: 493
+        hi: 573
   - print:
       value:
         infix:
@@ -153,8 +168,8 @@ program:
               particle: none
               next: other
               span:
-                lo: 479
-                hi: 491
+                lo: 574
+                hi: 586
           rhs:
             int:
               id: 7
@@ -163,24 +178,24 @@ program:
               kind: null
               script: burmese
               span:
-                lo: 494
-                hi: 497
+                lo: 589
+                hi: 592
           span:
-            lo: 479
-            hi: 497
+            lo: 574
+            hi: 592
       slot: ko
       span:
-        lo: 479
-        hi: 526
+        lo: 574
+        hi: 621
   - break:
       span:
-        lo: 527
-        hi: 580
+        lo: 622
+        hi: 675
   - return:
       value: null
       span:
-        lo: 581
-        hi: 611
+        lo: 676
+        hi: 706
   - print:
       value:
         verb:
@@ -193,43 +208,43 @@ program:
               particle: none
               next: other
               span:
-                lo: 612
-                hi: 624
+                lo: 707
+                hi: 719
           kind_arg:
             base: float
             bits: null
             signed: null
             wraps: []
             span:
-              lo: 635
-              hi: 659
+              lo: 730
+              hi: 754
           dir: null
           particle: none
           next: other
           is_cmp: false
           span:
-            lo: 612
-            hi: 725
+            lo: 707
+            hi: 820
       slot: ko
       span:
-        lo: 612
-        hi: 754
+        lo: 707
+        hi: 849
   - print:
       value:
         name:
           id: 11
           name: ခ
           span:
-            lo: 755
-            hi: 758
+            lo: 850
+            hi: 853
       slot: ko
       span:
-        lo: 755
-        hi: 787
+        lo: 850
+        hi: 882
   units: []
   span:
     lo: 0
-    hi: 788
+    hi: 883
 kinds:
   1: i8
   2: isize
@@ -254,62 +269,62 @@ diagnostics:
   level: error
   message: the literal 300 does not fit i8
   span:
-    lo: 120
-    hi: 129
+    lo: 183
+    hi: 192
   help: null
 - code: ZK0302
   level: error
   message: "\"ခ\" is declared before in this scope"
   span:
-    lo: 186
-    hi: 189
+    lo: 249
+    hi: 252
   help: pick another name, or declare it in an inner block to shadow the outer one
 - code: ZK0308
   level: error
   message: constant "ဂ" needs an initial value
   span:
-    lo: 281
-    hi: 284
+    lo: 360
+    hi: 363
   help: null
 - code: ZK0306
   level: error
   message: "\"ဂ\" is a constant and cannot be assigned"
   span:
-    lo: 354
-    hi: 357
+    lo: 449
+    hi: 452
   help: null
 - code: ZK0402
   level: error
   message: a condition must be a boolean, found i8
   span:
-    lo: 414
-    hi: 417
+    lo: 509
+    hi: 512
   help: null
 - code: ZK0403
   level: error
   message: + needs a number, found bool
   span:
-    lo: 479
-    hi: 491
+    lo: 574
+    hi: 586
   help: null
 - code: ZK0309
   level: error
   message: "\"ကွင်းဆက် ကို ရပ်ပါ\" stands outside a loop"
   span:
-    lo: 527
-    hi: 580
+    lo: 622
+    hi: 675
   help: null
 - code: ZK0311
   level: error
   message: a return statement stands outside a function
   span:
-    lo: 581
-    hi: 611
+    lo: 676
+    hi: 706
   help: null
 - code: ZK0408
   level: error
   message: cannot convert bool to f64
   span:
-    lo: 612
-    hi: 725
+    lo: 707
+    hi: 820
   help: null

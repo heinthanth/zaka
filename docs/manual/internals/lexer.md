@@ -358,14 +358,14 @@ what was decoded, and lexing goes on, so one bad line does not hide the next.
 | ZK0108 | a raw identifier is not closed |
 | ZK0109 | a raw identifier is blank |
 
-For `ကိန်းရှင် က သည် ကိန်းပြည့် ၁၈ဘစ် ဖြစ်ပါစေ။`, `zakac lex` prints the message and still
+For `ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ဘစ် ဖြစ်ပါစေ။`, `zakac lex` prints the message and still
 writes the tokens of the line:
 
 ```text
 error[ZK0102]: invalid number literal "၁၈ဘစ်"
  --> bad.zaka:1:28
   |
-1 | ကိန်းရှင် က သည် ကိန်းပြည့် ၁၈ဘစ် ဖြစ်ပါစေ။
+1 | ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ဘစ် ဖြစ်ပါစေ။
   |                   ^^^^
 ```
 

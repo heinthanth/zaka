@@ -62,14 +62,14 @@ fn import_sentences()
 #[test]
 fn the_export_mark_sets_the_flag_of_a_declaration()
 {
-    let var = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။";
+    let var = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert!(stmt(var).starts_with("(export (var က"), "{}", stmt(var));
     let record = "အများသုံး ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။";
     assert!(stmt(record).starts_with("(export (struct လူ"), "{}", stmt(record));
     let func =
         "အများသုံး လုပ်ဆောင်ချက် ဖ သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n၁ ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert!(stmt(func).starts_with("(export (fn ဖ"), "{}", stmt(func));
-    let plain = "ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။";
+    let plain = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert!(stmt(plain).starts_with("(var က"), "{}", stmt(plain));
 }
 
@@ -77,7 +77,7 @@ fn the_export_mark_sets_the_flag_of_a_declaration()
 fn the_export_mark_before_a_statement_is_zk0229()
 {
     assert_eq!(codes("အများသုံး ၁ ကို ပြသပါ။"), [Code::ExportNotOnDecl]);
-    let nested = "အကယ်၍ မှန် ဖြစ်လျှင် အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။";
+    let nested = "အကယ်၍ မှန် ဖြစ်လျှင် အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(codes(nested), [Code::ExportNotOnDecl]);
 }
 
@@ -100,15 +100,15 @@ fn a_file_imported_twice_is_read_once_and_imports_come_first()
         ),
         (
             "/m/a.zaka",
-            "\"lib/c.zaka\" မှ ဂ ကို ထည့်သွင်းပါ။\nအများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၁ + \
-             ၁ ဖြစ်ပါစေ။",
+            "\"lib/c.zaka\" မှ ဂ ကို ထည့်သွင်းပါ။\nအများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
+             ၁ + ၁ ဖြစ်ပါစေ။",
         ),
         (
             "/m/lib/b.zaka",
-            "\"./c.zaka\" မှ ဂ ကို ထည့်သွင်းပါ။\nအများသုံး ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၂ + ၂ \
-             ဖြစ်ပါစေ။",
+            "\"./c.zaka\" မှ ဂ ကို ထည့်သွင်းပါ။\nအများသုံး ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ \
+             + ၂ ဖြစ်ပါစေ။",
         ),
-        ("/m/lib/c.zaka", "အများသုံး ကိန်းရှင် ဂ သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၃ + ၃ ဖြစ်ပါစေ။"),
+        ("/m/lib/c.zaka", "အများသုံး ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ + ၃ ဖြစ်ပါစေ။"),
     ];
     let loaded = load_files(&files, "/m/main.zaka").unwrap();
     assert_eq!(loaded_codes(&loaded), []);
@@ -141,7 +141,10 @@ fn files_that_import_each_other_are_zk0231()
 {
     let files = [
         ("/m/a.zaka", "\"b.zaka\" မှ ခ ကို ထည့်သွင်းပါ။"),
-        ("/m/b.zaka", "\"a.zaka\" မှ က ကို ထည့်သွင်းပါ။\nအများသုံး ကိန်းရှင် ခ သည် ကိန်းပြည့် ဖြစ်ပါစေ။"),
+        (
+            "/m/b.zaka",
+            "\"a.zaka\" မှ က ကို ထည့်သွင်းပါ။\nအများသုံး ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။",
+        ),
     ];
     let loaded = load_files(&files, "/m/a.zaka").unwrap();
     assert_eq!(loaded_codes(&loaded), [Code::CircularImport]);
@@ -173,7 +176,10 @@ fn a_program_not_read_from_a_file_cannot_import()
 fn an_imported_struct_name_starts_a_kind()
 {
     let files = [
-        ("/m/main.zaka", "\"lib.zaka\" မှ နေရာ ကို ထည့်သွင်းပါ။\nကိန်းရှင် န သည် နေရာ ဖြစ်ပါစေ။"),
+        (
+            "/m/main.zaka",
+            "\"lib.zaka\" မှ နေရာ ကို ထည့်သွင်းပါ။\nကိန်းရှင် န သည် နေရာ တစ်ခု ဖြစ်ပါစေ။",
+        ),
         ("/m/lib.zaka", "အများသုံး ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x တို့ ပါဝင်သည်။"),
     ];
     let loaded = load_files(&files, "/m/main.zaka").unwrap();

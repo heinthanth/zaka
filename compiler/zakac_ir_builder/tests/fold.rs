@@ -27,9 +27,10 @@ fn literal_arithmetic_folds()
         folded("'က' ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"),
         ["(print 4096:isize)"]
     );
-    let text = "ကိန်းရှင် က သည် ၁၆ ဘစ် ဒဿမကိန်း ၁ / ၃ ဖြစ်ပါစေ။";
+    let text = "ကိန်းရှင် က သည် ၁၆ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ / ၃ ဖြစ်ပါစေ။";
     assert_eq!(folded(text), ["(set g0 0.33325:f16)"]);
-    let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ဒဿမကိန်း က + ၁ ဖြစ်ပါစေ။";
+    let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
+                က + ၁ ဖြစ်ပါစေ။";
     assert_eq!(folded(text)[1], "(set g1 (widen f64 (+ g0 1:i8)))");
 }
 
@@ -44,17 +45,19 @@ fn turning_exprs_off_keeps_the_tree()
 #[test]
 fn errors_are_reported_whatever_the_options()
 {
-    let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် (၁၂၇ + ၁) * ၂ ဖြစ်ပါစေ။";
+    let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၂၇ + ၁) * ၂ ဖြစ်ပါစေ။";
     assert_eq!(codes(text), [Code::ConstantOverflow]);
     assert_eq!(codes_with(text, &FoldOptions::none()), [Code::ConstantOverflow]);
-    let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် (၁၀၀ + ၁) * ၂ ဖြစ်ပါစေ။";
+    let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၀၀ + ၁) * ၂ ဖြစ်ပါစေ။";
     assert_eq!(codes_with(text, &FoldOptions::none()), [Code::ConstantOverflow]);
     assert_eq!(codes("၁ / ၀ ကို ပြသပါ။"), [Code::ConstantZeroDivisor]);
     assert_eq!(codes("၇ % (၂ - ၂) ကို ပြသပါ။"), [Code::ConstantZeroDivisor]);
-    let text = "ကိန်းသေ က သည် ၈ ဘစ် ကိန်းပြည့် -၁၂၈ ဖြစ်ပါစေ။\n-က ကို ပြသပါ။";
+    let text = "ကိန်းသေ က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၁၂၈ ဖြစ်ပါစေ။\n-က ကို ပြသပါ။";
     assert_eq!(codes(text), [Code::ConstantOverflow]);
-    let lowered =
-        run("ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၁၂၇ + ၁ ဖြစ်ပါစေ။", &FoldOptions::default());
+    let lowered = run(
+        "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ + ၁ ဖြစ်ပါစေ။",
+        &FoldOptions::default(),
+    );
     assert!(lowered.diagnostics[0].message.contains("i8"), "{:?}", lowered.diagnostics);
     assert!(lowered.folded.is_some());
 }
@@ -75,7 +78,7 @@ fn constants_propagate()
 fn constants_reach_functions_and_chains()
 {
     let text = "ကိန်းသေ က သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။
-ကိန်းသေ ခ သည် ကိန်းပြည့် က * က ဖြစ်ပါစေ။
+ကိန်းသေ ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က * က ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် ပြ သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ခ + ၁ ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
@@ -141,7 +144,8 @@ fn a_cell_of_a_list_with_no_cells_is_out_of_range_without_a_panic()
     use zakac_ir_builder::ir::ExprNode;
     use zakac_ir_builder::ir::Stmt;
 
-    let text = "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ဖြစ်ပါစေ။\nl ၏ အကွက် ၁ ကို ၉ ဟု ထားပါ။";
+    let text =
+        "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။\nl ၏ အကွက် ၁ ကို ၉ ဟု ထားပါ။";
     let mut module = run(text, &FoldOptions::default()).plain.expect("lowered");
     let Some(Stmt::Store { addr, .. }) = module.main.last_mut()
     else

@@ -1,7 +1,7 @@
 # zakac-ir-artifact v1
 name:
   Custom: loops.zaka
-source: "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\n"
+source: "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\n"
 imports: []
 module:
   globals:
@@ -16,22 +16,22 @@ module:
     kind: isize
     access: loop_var
     span:
-      lo: 503
-      hi: 518
+      lo: 519
+      hi: 534
     addressed: false
   - name: အမှတ်
     kind: isize
     access: loop_var
     span:
-      lo: 1127
-      hi: 1142
+      lo: 1143
+      hi: 1158
     addressed: false
   - name: အဆင့်
     kind: u8
     access: var
     span:
-      lo: 1263
-      hi: 1278
+      lo: 1279
+      hi: 1294
     addressed: false
   funcs: []
   main:
@@ -46,7 +46,7 @@ module:
           hi: 43
       span:
         lo: 0
-        hi: 112
+        hi: 128
   - loop:
       init: []
       cond:
@@ -59,18 +59,18 @@ module:
               node:
                 read: g0
               span:
-                lo: 113
-                hi: 128
+                lo: 129
+                hi: 144
             rhs:
               kind: isize
               node:
                 const: 5:isize
               span:
-                lo: 139
-                hi: 142
+                lo: 155
+                hi: 158
         span:
-          lo: 113
-          hi: 168
+          lo: 129
+          hi: 184
       update:
       []
       block:
@@ -81,11 +81,11 @@ module:
               node:
                 read: g0
               span:
-                lo: 270
-                hi: 285
+                lo: 286
+                hi: 301
           span:
-            lo: 270
-            hi: 314
+            lo: 286
+            hi: 330
       - set:
           place: g0
           value:
@@ -98,24 +98,24 @@ module:
                   node:
                     read: g0
                   span:
-                    lo: 341
-                    hi: 356
+                    lo: 357
+                    hi: 372
                 rhs:
                   kind: isize
                   node:
                     const: 1:isize
                   span:
-                    lo: 359
-                    hi: 362
+                    lo: 375
+                    hi: 378
             span:
-              lo: 341
-              hi: 362
+              lo: 357
+              hi: 378
           span:
-            lo: 315
-            hi: 388
+            lo: 331
+            hi: 404
       span:
-        lo: 113
-        hi: 471
+        lo: 129
+        hi: 487
   - counted:
       var: g1
       from:
@@ -123,15 +123,15 @@ module:
         node:
           const: 1:isize
         span:
-          lo: 472
-          hi: 475
+          lo: 488
+          hi: 491
       to:
         kind: isize
         node:
           const: 100:isize
         span:
-          lo: 483
-          hi: 492
+          lo: 499
+          hi: 508
       step: null
       mode: count
       block:
@@ -151,38 +151,38 @@ module:
                         node:
                           read: g1
                         span:
-                          lo: 662
-                          hi: 677
+                          lo: 678
+                          hi: 693
                       rhs:
                         kind: isize
                         node:
                           const: 2:isize
                         span:
-                          lo: 680
-                          hi: 683
+                          lo: 696
+                          hi: 699
                   span:
-                    lo: 662
-                    hi: 683
+                    lo: 678
+                    hi: 699
                 rhs:
                   kind: isize
                   node:
                     const: 0:isize
                   span:
-                    lo: 694
-                    hi: 697
+                    lo: 710
+                    hi: 713
             span:
-              lo: 662
-              hi: 720
+              lo: 678
+              hi: 736
           then:
           - continue:
               span:
-                lo: 736
-                hi: 818
+                lo: 752
+                hi: 834
           els:
           []
           span:
-            lo: 646
-            hi: 818
+            lo: 662
+            hi: 834
       - if:
           cond:
             kind: bool
@@ -194,28 +194,28 @@ module:
                   node:
                     read: g1
                   span:
-                    lo: 835
-                    hi: 850
+                    lo: 851
+                    hi: 866
                 rhs:
                   kind: isize
                   node:
                     const: 10:isize
                   span:
-                    lo: 861
-                    hi: 867
+                    lo: 877
+                    hi: 883
             span:
-              lo: 835
-              hi: 890
+              lo: 851
+              hi: 906
           then:
           - break:
               span:
-                lo: 906
-                hi: 959
+                lo: 922
+                hi: 975
           els:
           []
           span:
-            lo: 819
-            hi: 959
+            lo: 835
+            hi: 975
       - print:
           value:
             expr:
@@ -223,14 +223,14 @@ module:
               node:
                 read: g1
               span:
-                lo: 960
-                hi: 975
+                lo: 976
+                hi: 991
           span:
-            lo: 960
-            hi: 1004
+            lo: 976
+            hi: 1020
       span:
-        lo: 472
-        hi: 1087
+        lo: 488
+        hi: 1103
   - counted:
       var: g2
       from:
@@ -238,22 +238,22 @@ module:
         node:
           const: 10:isize
         span:
-          lo: 1088
-          hi: 1094
+          lo: 1104
+          hi: 1110
       to:
         kind: isize
         node:
           const: 0:isize
         span:
-          lo: 1102
-          hi: 1105
+          lo: 1118
+          hi: 1121
       step:
         kind: isize
         node:
           const: 2:isize
         span:
-          lo: 1116
-          hi: 1119
+          lo: 1132
+          hi: 1135
       mode: decrease
       block:
       - print:
@@ -263,14 +263,14 @@ module:
               node:
                 read: g2
               span:
-                lo: 1190
-                hi: 1205
+                lo: 1206
+                hi: 1221
           span:
-            lo: 1190
-            hi: 1234
+            lo: 1206
+            hi: 1250
       span:
-        lo: 1088
-        hi: 1234
+        lo: 1104
+        hi: 1250
   - loop:
       init:
       - set:
@@ -280,11 +280,11 @@ module:
             node:
               const: 0:u8
             span:
-              lo: 1362
-              hi: 1365
+              lo: 1305
+              hi: 1381
           span:
-            lo: 1263
-            hi: 1361
+            lo: 1279
+            hi: 1381
       cond:
         kind: bool
         node:
@@ -295,18 +295,18 @@ module:
               node:
                 read: g3
               span:
-                lo: 1391
-                hi: 1406
+                lo: 1407
+                hi: 1422
             rhs:
               kind: u8
               node:
                 const: 10:u8
               span:
-                lo: 1417
-                hi: 1423
+                lo: 1433
+                hi: 1439
         span:
-          lo: 1391
-          hi: 1449
+          lo: 1407
+          hi: 1465
       update:
       - set:
           place: g3
@@ -320,21 +320,21 @@ module:
                   node:
                     read: g3
                   span:
-                    lo: 1650
-                    hi: 1665
+                    lo: 1666
+                    hi: 1681
                 rhs:
                   kind: u8
                   node:
                     const: 1:u8
                   span:
-                    lo: 1668
-                    hi: 1671
+                    lo: 1684
+                    hi: 1687
             span:
-              lo: 1650
-              hi: 1671
+              lo: 1666
+              hi: 1687
           span:
-            lo: 1624
-            hi: 1697
+            lo: 1640
+            hi: 1713
       block:
       - print:
           value:
@@ -343,16 +343,16 @@ module:
               node:
                 read: g3
               span:
-                lo: 1551
-                hi: 1566
+                lo: 1567
+                hi: 1582
           span:
-            lo: 1551
-            hi: 1595
+            lo: 1567
+            hi: 1611
       span:
-        lo: 1235
-        hi: 1789
+        lo: 1251
+        hi: 1805
   imported_inits: 0
   span:
     lo: 0
-    hi: 1790
+    hi: 1806
 diagnostics: []
