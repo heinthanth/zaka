@@ -6,7 +6,7 @@ imports: []
 module:
   globals:
   - name: ပ
-    kind: "*isize"
+    kind: isize*
     access: var
     span:
       lo: 71
@@ -20,21 +20,21 @@ module:
       hi: 396
     addressed: false
   - name: ကြည့်
-    kind: "&*isize"
+    kind: isize&
     access: var
     span:
       lo: 557
       hi: 572
     addressed: false
   - name: ရှေ့
-    kind: "&*isize"
+    kind: isize&
     access: var
     span:
       lo: 1437
       hi: 1449
     addressed: false
   - name: နောက်
-    kind: "&*isize"
+    kind: isize&
     access: var
     span:
       lo: 1705
@@ -62,14 +62,14 @@ module:
       hi: 2965
     addressed: true
   - name: ညွှန်
-    kind: "&*isize"
+    kind: isize&
     access: var
     span:
       lo: 3130
       hi: 3145
     addressed: false
   - name: သစ်
-    kind: "*isize"
+    kind: isize*
     access: var
     span:
       lo: 3615
@@ -96,7 +96,7 @@ module:
         hi: 4252
       addressed: false
     - name: ဘူး
-      kind: "*usize"
+      kind: usize*
       access: var
       span:
         lo: 4591
@@ -110,7 +110,7 @@ module:
         hi: 5159
       addressed: false
     - name: လျှောက်
-      kind: "&*usize"
+      kind: usize&
       access: var
       span:
         lo: 5370
@@ -132,7 +132,7 @@ module:
     - set:
         place: l2
         value:
-          kind: "*usize"
+          kind: usize*
           node:
             const: 0x0:ptr
           span:
@@ -162,14 +162,14 @@ module:
             compare:
               op: eq
               lhs:
-                kind: "*usize"
+                kind: usize*
                 node:
                   read: l2
                 span:
                   lo: 4978
                   hi: 4987
               rhs:
-                kind: "*usize"
+                kind: usize*
                 node:
                   const: 0x0:ptr
                 span:
@@ -231,11 +231,11 @@ module:
         block:
         - store:
             addr:
-              kind: "&*usize"
+              kind: usize&
               node:
                 ptr_add:
                   base:
-                    kind: "*usize"
+                    kind: usize*
                     node:
                       read: l2
                     span:
@@ -281,11 +281,11 @@ module:
         - set:
             place: l4
             value:
-              kind: "&*usize"
+              kind: usize&
               node:
                 lend:
                   operand:
-                    kind: "*usize"
+                    kind: usize*
                     node:
                       read: l2
                     span:
@@ -303,18 +303,18 @@ module:
             compare:
               op: lt
               lhs:
-                kind: "&*usize"
+                kind: usize&
                 node:
                   read: l4
                 span:
                   lo: 5644
                   hi: 5665
               rhs:
-                kind: "&*usize"
+                kind: usize&
                 node:
                   ptr_add:
                     base:
-                      kind: "*usize"
+                      kind: usize*
                       node:
                         read: l2
                       span:
@@ -337,11 +337,11 @@ module:
         - set:
             place: l4
             value:
-              kind: "&*usize"
+              kind: usize&
               node:
                 ptr_add:
                   base:
-                    kind: "&*usize"
+                    kind: usize&
                     node:
                       read: l4
                     span:
@@ -380,7 +380,7 @@ module:
                     node:
                       load:
                         addr:
-                          kind: "&*usize"
+                          kind: usize&
                           node:
                             read: l4
                           span:
@@ -423,7 +423,7 @@ module:
   - set:
       place: g0
       value:
-        kind: "*isize"
+        kind: isize*
         node:
           const: 0x0:ptr
         span:
@@ -467,11 +467,11 @@ module:
       block:
       - store:
           addr:
-            kind: "&*isize"
+            kind: isize&
             node:
               ptr_add:
                 base:
-                  kind: "*isize"
+                  kind: isize*
                   node:
                     read: g0
                   span:
@@ -518,11 +518,11 @@ module:
   - set:
       place: g2
       value:
-        kind: "&*isize"
+        kind: isize&
         node:
           lend:
             operand:
-              kind: "*isize"
+              kind: isize*
               node:
                 read: g0
               span:
@@ -541,11 +541,11 @@ module:
           node:
             load:
               addr:
-                kind: "&*isize"
+                kind: isize&
                 node:
                   ptr_add:
                     base:
-                      kind: "&*isize"
+                      kind: isize&
                       node:
                         read: g2
                       span:
@@ -584,11 +584,11 @@ module:
   - set:
       place: g2
       value:
-        kind: "&*isize"
+        kind: isize&
         node:
           lend:
             operand:
-              kind: "*isize"
+              kind: isize*
               node:
                 read: g0
               span:
@@ -607,11 +607,11 @@ module:
           node:
             load:
               addr:
-                kind: "&*isize"
+                kind: isize&
                 node:
                   ptr_add:
                     base:
-                      kind: "&*isize"
+                      kind: isize&
                       node:
                         read: g2
                       span:
@@ -636,11 +636,11 @@ module:
   - set:
       place: g3
       value:
-        kind: "&*isize"
+        kind: isize&
         node:
           lend:
             operand:
-              kind: "*isize"
+              kind: isize*
               node:
                 read: g0
               span:
@@ -655,11 +655,11 @@ module:
   - set:
       place: g4
       value:
-        kind: "&*isize"
+        kind: isize&
         node:
           ptr_add:
             base:
-              kind: "*isize"
+              kind: isize*
               node:
                 read: g0
               span:
@@ -686,14 +686,14 @@ module:
           compare:
             op: lt
             lhs:
-              kind: "&*isize"
+              kind: isize&
               node:
                 read: g3
               span:
                 lo: 1913
                 hi: 1925
             rhs:
-              kind: "&*isize"
+              kind: isize&
               node:
                 read: g4
               span:
@@ -712,7 +712,7 @@ module:
             node:
               load:
                 addr:
-                  kind: "&*isize"
+                  kind: isize&
                   node:
                     read: g3
                   span:
@@ -726,7 +726,7 @@ module:
             hi: 2290
       - store:
           addr:
-            kind: "&*isize"
+            kind: isize&
             node:
               read: g3
             span:
@@ -737,7 +737,7 @@ module:
             node:
               load:
                 addr:
-                  kind: "&*isize"
+                  kind: isize&
                   node:
                     read: g4
                   span:
@@ -751,7 +751,7 @@ module:
             hi: 2407
       - store:
           addr:
-            kind: "&*isize"
+            kind: isize&
             node:
               read: g4
             span:
@@ -770,11 +770,11 @@ module:
       - set:
           place: g3
           value:
-            kind: "&*isize"
+            kind: isize&
             node:
               ptr_add:
                 base:
-                  kind: "&*isize"
+                  kind: isize&
                   node:
                     read: g3
                   span:
@@ -796,11 +796,11 @@ module:
       - set:
           place: g4
           value:
-            kind: "&*isize"
+            kind: isize&
             node:
               ptr_add:
                 base:
-                  kind: "&*isize"
+                  kind: isize&
                   node:
                     read: g4
                   span:
@@ -848,11 +848,11 @@ module:
               node:
                 load:
                   addr:
-                    kind: "&*isize"
+                    kind: isize&
                     node:
                       ptr_add:
                         base:
-                          kind: "*isize"
+                          kind: isize*
                           node:
                             read: g0
                           span:
@@ -892,7 +892,7 @@ module:
   - set:
       place: g8
       value:
-        kind: "&*isize"
+        kind: isize&
         node:
           addr_of: g7
         span:
@@ -903,7 +903,7 @@ module:
         hi: 3354
   - store:
       addr:
-        kind: "&*isize"
+        kind: isize&
         node:
           read: g8
         span:
@@ -919,7 +919,7 @@ module:
               node:
                 load:
                   addr:
-                    kind: "&*isize"
+                    kind: isize&
                     node:
                       read: g8
                     span:
@@ -956,11 +956,11 @@ module:
   - set:
       place: g9
       value:
-        kind: "*isize"
+        kind: isize*
         node:
           take:
             addr:
-              kind: "**isize"
+              kind: isize**
               node:
                 addr_of: g0
               span:
@@ -979,14 +979,14 @@ module:
           compare:
             op: eq
             lhs:
-              kind: "*isize"
+              kind: isize*
               node:
                 read: g0
               span:
                 lo: 3796
                 hi: 3799
             rhs:
-              kind: "*isize"
+              kind: isize*
               node:
                 const: 0x0:ptr
               span:
@@ -1014,7 +1014,7 @@ module:
           node:
             load:
               addr:
-                kind: "*isize"
+                kind: isize*
                 node:
                   read: g9
                 span:

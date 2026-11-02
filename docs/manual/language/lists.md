@@ -41,7 +41,7 @@ and a `၏` in front of `စာရင်း` are optional, so these four kinds a
 - The count is a whole number above zero written with digits (ZK0227). It cannot come from
   a variable, because the size of a list is fixed before the program runs.
 - The cell kind is a kind of each sort: a number, a true/false value, a character, a pointer, or a
-  list. Messages write the kind as `[3]isize`.
+  list. Messages write the kind as `isize[3]`.
 - A declaration that gives the list a value can leave the count out, and the value tells
   it. In each other place a missing count is ZK0421.
 - A list takes its default from its cells: `၀` for a number, `မမှန်` for a true/false
@@ -175,7 +175,7 @@ A counted loop visits each cell; the cell count, in parentheses, gives the last 
 A cell can hold a whole list, and a list of rows is a table. Each count prefix pairs with
 one `စာရင်း`, the inner ones first: in `အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့်
 စာရင်း စာရင်း`, the `၃` belongs to the first `စာရင်း` (a row of 3 integers) and the `၂`
-to the second (2 such rows). Messages write this kind as `[2][3]isize`. Lists nest as deep
+to the second (2 such rows). Messages write this kind as `isize[3][2]`. Lists nest as deep
 as needed.
 
 ```zaka
@@ -216,7 +216,7 @@ of lists stores its rows one after another, so a table is one long stretch with 
 end to end.
 
 ```text
-  table: [2][3]isize, 6 cells of 8 octets = 48 octets
+  table: isize[3][2], 6 cells of 8 octets = 48 octets
 
   octet    0      8      16     24     32     40     48
            +------+------+------+------+------+------+
@@ -325,7 +325,7 @@ since a parameter is a new variable:
 ### Comparing
 
 `==` and `!=`, and the verbs `ညီ` and `မညီ`, compare two lists of the same kind, one cell
-after another. Lists of different kinds, such as `[3]isize` and `[2]isize`, do not compare
+after another. Lists of different kinds, such as `isize[3]` and `isize[2]`, do not compare
 (ZK0404). Lists have no order, so `<` and `>` do not take them (ZK0403).
 
 ```zaka
@@ -350,13 +350,13 @@ after another. Lists of different kinds, such as `[3]isize` and `[2]isize`, do n
 ```
 
 ```text
-error[ZK0404]: cannot combine [3]isize and [2]isize without a conversion
+error[ZK0404]: cannot combine isize[3] and isize[2] without a conversion
 ```
 
 ## Lists and addresses
 
 The address of a list points at the whole list, so its kind holds the count:
-`ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, or `&*[3]isize` in messages. Adding 1
+`ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, or `isize[3]&` in messages. Adding 1
 to it moves one whole list, which for a list of rows is one row:
 
 ```zaka

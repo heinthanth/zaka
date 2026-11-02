@@ -341,7 +341,7 @@ fn text_forms_convert_to_each_other_in_each_mode() { runs_in_each_mode(FORMS, FO
 fn heap_text_owns_its_block()
 {
     let module = compile_text(FORMS, &FoldOptions::default(), EmitOptions::default());
-    let heap = DataKind::parse("heap_text").expect("heap_text");
+    let heap = DataKind::parse("text~").expect("text~");
     let owns = module
         .funcs
         .iter()

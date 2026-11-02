@@ -27,10 +27,10 @@ pub enum BaseKind
     /// `စာသား`: owned UTF-8 text, the plain form.
     Text,
     /// `စာသားသေ`: text whose u8s never change.
-    #[strum(serialize = "fixed_text")]
+    #[strum(serialize = "textf")]
     FixedText,
     /// `စာသားရှင်`: text that owns a heap block from the start.
-    #[strum(serialize = "heap_text")]
+    #[strum(serialize = "text~")]
     HeapText,
     /// A bare `လိပ်စာ`: an address whose target kind is not known.
     #[strum(serialize = "ptr")]

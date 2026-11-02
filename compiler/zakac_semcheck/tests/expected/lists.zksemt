@@ -834,69 +834,69 @@ program:
     lo: 0
     hi: 3865
 kinds:
-  0: "[3]isize"
+  0: isize[3]
   1: isize
   2: isize
   3: isize
-  4: "[3]isize"
-  5: "[3]isize"
+  4: isize[3]
+  5: isize[3]
   6: usize
   7: isize
   8: isize
-  9: "[3]isize"
+  9: isize[3]
   10: usize
   11: isize
-  12: "[3]isize"
+  12: isize[3]
   13: usize
-  14: "[3]isize"
-  15: "[3]isize"
-  16: "[3]isize"
-  17: "[3]isize"
-  18: "[3]isize"
+  14: isize[3]
+  15: isize[3]
+  16: isize[3]
+  17: isize[3]
+  18: isize[3]
   19: bool
-  20: "[3]isize"
-  21: "[3]isize"
+  20: isize[3]
+  21: isize[3]
   22: bool
-  23: "[2][3]isize"
+  23: isize[3][2]
   24: usize
-  25: "[3]isize"
+  25: isize[3]
   26: usize
   27: isize
   28: isize
-  29: "[2][3]isize"
+  29: isize[3][2]
   30: usize
-  31: "[3]isize"
-  32: "[3]isize"
-  33: "[2][3]isize"
-  34: "[3]isize"
-  35: "&*[3]isize"
-  36: "&*[3]isize"
+  31: isize[3]
+  32: isize[3]
+  33: isize[3][2]
+  34: isize[3]
+  35: isize[3]&
+  36: isize[3]&
   37: usize
   38: isize
   39: isize
-  40: "[3]isize"
+  40: isize[3]
   41: usize
   42: isize
-  43: "&*isize"
-  44: "&*isize"
+  43: isize&
+  44: isize&
   45: isize
-  46: "&*isize"
+  46: isize&
   47: isize
   48: isize
   49: isize
   51: isize
   52: isize
-  53: "[3]isize"
+  53: isize[3]
   54: isize
   55: isize
   56: isize
   57: isize
-  58: "[3]isize"
+  58: isize[3]
   59: isize
   60: isize
   61: isize
   62: isize
-  63: "[3]isize"
+  63: isize[3]
   64: isize
 structs: {}
 diagnostics: []

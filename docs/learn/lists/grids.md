@@ -26,7 +26,7 @@ A cell can hold a whole list. A list of rows is a table:
 Each count prefix pairs with one `စာရင်း`, the inner ones first: in
 `အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း`, the `၃` belongs to the
 first `စာရင်း` (a row of 3 integers) and the `၂` to the second (2 such rows). Messages
-write this kind as `[2][3]isize`. Lists nest as deep as needed.
+write this kind as `isize[3][2]`. Lists nest as deep as needed.
 
 ## Nested literals
 
@@ -50,7 +50,7 @@ from the value:
 ## Rows and cells through addresses
 
 The address of a list points at the whole list, so its kind holds the count:
-`ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, or `&*[3]isize` in messages. Adding 1 to it
+`ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, or `isize[3]&` in messages. Adding 1 to it
 moves one whole row:
 
 ```zaka

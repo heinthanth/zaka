@@ -21,8 +21,8 @@ fn cells_take_the_cell_kind()
     let checked = check(&lines(&[LISTS, "l ၏ အကွက် ၀ ကို ပြသပါ။", "g ၏ အကွက် ၁ ကို ပြသပါ။"]));
     assert!(checked.out.diagnostics.is_empty());
     assert_eq!(kind_at(&checked, "l ၏ အကွက် ၀"), "isize");
-    assert_eq!(kind_at(&checked, "g ၏ အကွက် ၁"), "[3]isize");
-    assert_eq!(kind_at(&checked, "l ၏ လိပ်စာ"), "&*[3]isize");
+    assert_eq!(kind_at(&checked, "g ၏ အကွက် ၁"), "isize[3]");
+    assert_eq!(kind_at(&checked, "l ၏ လိပ်စာ"), "isize[3]&");
     ok(&lines(&[LISTS, "p ၏ အကွက် ၂ ကို ၅ ဟု ထားပါ။", "p ၏ အကွက်အရေအတွက် ကို ပြသပါ။"]));
     ok(&lines(&[LISTS, "g ၏ အကွက် ၀ ကို l ဟု ထားပါ။", "l ၏ ၃ ခုမြောက်အကွက် ကို ၁ ဟု ထားပါ။"]));
 }
@@ -32,17 +32,17 @@ fn counts_come_from_the_value()
 {
     let text = "ကိန်းရှင် a သည် ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း \
                 ဖြစ်ပါစေ။\na ကို ပြသပါ။";
-    assert_eq!(kind_at(&check(text), "a"), "[2]i8");
+    assert_eq!(kind_at(&check(text), "a"), "i8[2]");
     let nested = "ကိန်းရှင် a သည် ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၊ ၂ တို့ပါသော စာရင်း)၊ \
                   (၃၊ ၄ တို့ပါသော စာရင်း)၊ (၅၊ ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း ဖြစ်ပါစေ။\na ကို \
                   ပြသပါ။";
-    assert_eq!(kind_at(&check(nested), "a"), "[3][2]isize");
+    assert_eq!(kind_at(&check(nested), "a"), "isize[2][3]");
     let copied = lines(&[
         LISTS,
         "ကိန်းရှင် b သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ဖြစ်ပါစေ။",
         "b ကို ပြသပါ။",
     ]);
-    assert_eq!(kind_at(&check(&copied), "b"), "[3]isize");
+    assert_eq!(kind_at(&check(&copied), "b"), "isize[3]");
 }
 
 #[test]
@@ -236,10 +236,10 @@ fn ranges_and_lends_make_slices()
     let msgs: Vec<&str> =
         checked.out.diagnostics.iter().map(|d| d.message.as_str()).collect();
     assert!(msgs.is_empty(), "{msgs:?}");
-    assert_eq!(kind_at(&checked, "l ၏ အကွက် ၁ မှစ၍ ၂ ကွက်"), "&[]isize");
-    assert_eq!(kind_at(&checked, "p ၏ အကွက် ၀ မှစ၍ ၃ ကွက်"), "&[]isize");
-    assert_eq!(kind_at(&checked, "h ၏ အကွက် ၀ မှစ၍ ၄ ကွက်"), "&[]isize");
-    assert_eq!(kind_at(&checked, "g ၏ တန်ဖိုးအငှား"), "&[][3]isize");
+    assert_eq!(kind_at(&checked, "l ၏ အကွက် ၁ မှစ၍ ၂ ကွက်"), "isize[][..]");
+    assert_eq!(kind_at(&checked, "p ၏ အကွက် ၀ မှစ၍ ၃ ကွက်"), "isize[][..]");
+    assert_eq!(kind_at(&checked, "h ၏ အကွက် ၀ မှစ၍ ၄ ကွက်"), "isize[][..]");
+    assert_eq!(kind_at(&checked, "g ၏ တန်ဖိုးအငှား"), "isize[3][][..]");
 }
 
 #[test]

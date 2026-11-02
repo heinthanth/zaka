@@ -28,7 +28,7 @@ fn fields_take_their_kind()
         check(&lines(&[STRUCTS, "ကျော် ၏ အသက် ကို ပြသပါ။", "ထိပ် ၏ နောက် ကို ပြသပါ။"]));
     assert!(checked.out.diagnostics.is_empty());
     assert_eq!(kind_at(&checked, "ကျော် ၏ အသက်"), "isize");
-    assert_eq!(kind_at(&checked, "ထိပ် ၏ နောက်"), "*အဆစ်");
+    assert_eq!(kind_at(&checked, "ထိပ် ၏ နောက်"), "အဆစ်*");
     ok(&lines(&[STRUCTS, "ထိပ် ၏ နောက် ၏ တန်ဖိုး ၏ တန်ဖိုးရင်း ကို ၁ ဟု ထားပါ။"]));
 }
 
@@ -46,9 +46,9 @@ fn a_struct_reads_back_from_its_signature()
 {
     let kind = struct_kind("အဆစ်");
     let sig = kind.sig_name();
-    assert_eq!(sig, "အဆစ်{တန်ဖိုးရင်း:isize,နောက်:*အဆစ်}");
+    assert_eq!(sig, "အဆစ်{တန်ဖိုးရင်း:isize,နောက်:အဆစ်*}");
     assert_eq!(DataKind::parse(&sig), Some(kind));
-    assert_eq!(DataKind::parse(&format!("*{sig}")), Some(kind.pointer_to()));
+    assert_eq!(DataKind::parse(&format!("{sig}*")), Some(kind.pointer_to()));
     assert!(parse_sig("အဆစ်{တန်ဖိုးရင်း:nothing}").is_none());
 }
 

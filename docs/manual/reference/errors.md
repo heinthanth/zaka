@@ -35,7 +35,10 @@ run time), the message starts with `the program stopped:` and has no code.
 
 ## Short names for kinds
 
-Messages use short names for kinds:
+Messages use short names for kinds. A short name starts with the base kind, then adds one
+mark for each word around it, in the order of the Burmese words: `*` for `လိပ်စာ`, `^`
+for `လိပ်စာအကြမ်း`, `[n]` for `စာရင်း`, `[..]` for `တစ်စိတ်တစ်ပိုင်း`, and `&` in place of
+the `*` that `ငှားထားသော` marks.
 
 | Short name | Zaka kind |
 | --- | --- |
@@ -46,11 +49,15 @@ Messages use short names for kinds:
 | `f16`, `f32`, `f64`, `f128` | `၁၆ ဘစ် ဒဿမကိန်း` ... ; `f64` is plain `ဒဿမကိန်း` |
 | `char` | `စာလုံး` |
 | `bool` | `မှန်မှားတန်ဖိုး` |
-| `*isize`, `*u8`, `**isize`, ... | `ကိန်းပြည့် လိပ်စာ`, ... ; one more `*` for each `၏ လိပ်စာ` after it |
+| `isize*`, `u8*`, `isize**`, ... | `ကိန်းပြည့် လိပ်စာ`, ... ; one more `*` for each `၏ လိပ်စာ` after it |
 | `ptr` | `လိပ်စာ` (the opaque pointer) |
-| `[3]isize`, `[2][3]isize` | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း`, ... ; one `[n]` for each `စာရင်း`, outermost first; `[]` while the count is not known |
-| `*[3]isize` | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, the address of a whole list |
-| `&[]isize` | `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း`, a slice: a borrowed run of cells with its count |
+| `isize&`, `isize*&` | `ငှားထားသော ကိန်းပြည့် လိပ်စာ`, ... : the `&` takes the place of the `*` of the outer level |
+| `isize^` | `ကိန်းပြည့် လိပ်စာအကြမ်း`, a raw address |
+| `isize[3]`, `isize[3][2]` | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း`, ... ; one `[n]` for each `စာရင်း`, in the order of the words: `isize[3][2]` is two lists of three; `[]` while the count is not known |
+| `isize[3]*` | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, the address of a whole list |
+| `isize[][..]` | `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း`, a slice: a borrowed run of cells with its count |
+| `text`, `textf`, `text~` | `စာသား`, `စာသားသေ`, `စာသားရှင်` |
+| `text[..]` | `စာသား တစ်စိတ်တစ်ပိုင်း`, a view of text |
 | `null` | the kind of `ဗလာ` |
 
 ## Codes

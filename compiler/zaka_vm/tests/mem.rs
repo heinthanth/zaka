@@ -167,9 +167,9 @@ fn a_list_copies_and_clears_as_one_checked_access()
     let a = m.alloc(24, Origin::Heap, 0).unwrap();
     let b = m.alloc(24, Origin::Heap, 0).unwrap();
     do_for!(i in 0..3u64, m.store(a + 8 * i, v(&format!("{}:isize", i + 1))).unwrap());
-    assert_eq!(m.blit(b, a, k("[3]isize")), Ok(()));
+    assert_eq!(m.blit(b, a, k("isize[3]")), Ok(()));
     assert_eq!(m.load(b + 16, k("isize")), Ok(v("3:isize")));
-    assert_eq!(m.zero(a, k("[3]isize")), Ok(()));
+    assert_eq!(m.zero(a, k("isize[3]")), Ok(()));
     assert_eq!(m.load(a + 8, k("isize")), Ok(v("0:isize")));
     assert_eq!(
         m.load(b + 8, k("isize")),
@@ -178,12 +178,12 @@ fn a_list_copies_and_clears_as_one_checked_access()
     );
     let past = TrapKind::OutOfBounds { addr: b, size: 32 };
     assert_eq!(
-        m.blit(b, a, k("[4]isize")),
+        m.blit(b, a, k("isize[4]")),
         Err(TrapKind::OutOfBounds { addr: a, size: 32 })
     );
-    assert_eq!(m.zero(b, k("[4]isize")), Err(past));
+    assert_eq!(m.zero(b, k("isize[4]")), Err(past));
     assert_eq!(
-        m.zero(b + 4, k("[2]isize")),
+        m.zero(b + 4, k("isize[2]")),
         Err(TrapKind::Misaligned { addr: b + 4, align: 8 })
     );
 }

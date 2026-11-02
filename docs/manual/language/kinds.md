@@ -120,10 +120,10 @@ false. It prints as `မှန်` or `မမှန်`.
 ## Text
 
 `စာသား` (`text`) owns UTF-8 text: the address of its u8s, their count and the size of
-its heap block, three words in all. `စာသား တစ်စိတ်တစ်ပိုင်း` (`&text`) is a view of text,
+its heap block, three words in all. `စာသား တစ်စိတ်တစ်ပိုင်း` (`text[..]`) is a view of text,
 two words. String literals are of the first kind. Owned text has two more forms with the
-same three words: `စာသားသေ` (`fixed_text`), whose u8s never change, and `စာသားရှင်`
-(`heap_text`), which owns a heap block from the start. [Text](text.md) states their rules.
+same three words: `စာသားသေ` (`textf`), whose u8s never change, and `စာသားရှင်`
+(`text~`), which owns a heap block from the start. [Text](text.md) states their rules.
 
 ## Addresses and lists
 
@@ -132,19 +132,21 @@ their own.
 
 | Burmese | Short name | Page |
 | --- | --- | --- |
-| `ကိန်းပြည့် လိပ်စာ` | `*isize` | [Pointers](pointers.md) |
-| `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | `**isize` | [Pointers](pointers.md) |
-| `ငှားထားသော ကိန်းပြည့် လိပ်စာ` | `&*isize` | [Ownership and borrowing](ownership.md) |
-| `ကိန်းပြည့် လိပ်စာအကြမ်း` | `~isize` | [Ownership and borrowing](ownership.md) |
+| `ကိန်းပြည့် လိပ်စာ` | `isize*` | [Pointers](pointers.md) |
+| `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | `isize**` | [Pointers](pointers.md) |
+| `ငှားထားသော ကိန်းပြည့် လိပ်စာ` | `isize&` | [Ownership and borrowing](ownership.md) |
+| `ကိန်းပြည့် လိပ်စာအကြမ်း` | `isize^` | [Ownership and borrowing](ownership.md) |
 | `လိပ်စာ` | `ptr` | [Pointers](pointers.md) |
 | `ဗလာ` (the null address) | `null` | [Pointers](pointers.md) |
-| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` | `[3]isize` | [Lists](lists.md) |
-| `အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း` | `[2][3]isize` | [Lists](lists.md) |
-| `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း` | `&[]isize` | [Slices](slices.md) |
-| `စာသား တစ်စိတ်တစ်ပိုင်း` | `&text` | [Text](text.md) |
+| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` | `isize[3]` | [Lists](lists.md) |
+| `အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း` | `isize[3][2]` | [Lists](lists.md) |
+| `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း` | `isize[][..]` | [Slices](slices.md) |
+| `စာသား တစ်စိတ်တစ်ပိုင်း` | `text[..]` | [Text](text.md) |
 
-A short name reads left to right as the kind is built: `*` for each level of owner
-address, `&` in front for a borrow, `~` for a raw level, `[n]` for each list level.
+A short name reads left to right in the order of the Burmese words: the base kind first,
+then `*` for each level of owner address, `^` for a raw level, `&` in place of the `*` of
+a borrowed level, `[n]` for each list level and `[..]` for a part (a slice or a view).
+`isize[3][2]` is two lists of three, and `isize&[2]` is a list of two borrows.
 An address takes the platform size.
 
 ## The size of a kind

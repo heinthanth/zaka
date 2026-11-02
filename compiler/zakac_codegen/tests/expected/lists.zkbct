@@ -7,17 +7,17 @@ module:
   platform_bits: 64
   globals:
   - name: က
-    kind: "[3]isize"
+    kind: isize[3]
   - name: ခ
-    kind: "[3]isize"
+    kind: isize[3]
   - name: ဂ
-    kind: "[3]isize"
+    kind: isize[3]
   - name: ဇယား
-    kind: "[2][3]isize"
+    kind: isize[3][2]
   - name: ညွှန်း
-    kind: "&*[3]isize"
+    kind: isize[3]&
   - name: ပ
-    kind: "&*isize"
+    kind: isize&
   texts: []
   formats: []
   funcs:
@@ -26,7 +26,7 @@ module:
     ret: isize
     locals:
     - name: ကိန်းများ
-      kind: "&*[3]isize"
+      kind: isize[3]&
     - name: ရလဒ်
       kind: isize
     - name: န
@@ -155,14 +155,14 @@ module:
     ret: null
     locals:
     - name: "%dup"
-      kind: "[3]isize"
+      kind: isize[3]
     - name: "%list"
-      kind: "[3]isize"
+      kind: isize[3]
     code:
     - global_addr: 0
-    - zero: "[3]isize"
+    - zero: isize[3]
     - global_addr: 1
-    - zero: "[3]isize"
+    - zero: isize[3]
     - global_addr: 2
     - push: 1:isize
     - store: isize
@@ -192,21 +192,21 @@ module:
     - push: 3:usize
     - print
     - global_addr: 2
-    - print_list: "[3]isize"
+    - print_list: isize[3]
     - global_addr: 0
     - global_addr: 2
-    - blit: "[3]isize"
+    - blit: isize[3]
     - global_addr: 0
     - global_addr: 2
-    - list_eq: "[3]isize"
+    - list_eq: isize[3]
     - print
     - global_addr: 1
     - global_addr: 0
-    - list_eq: "[3]isize"
+    - list_eq: isize[3]
     - prefix: not
     - print
     - global_addr: 3
-    - zero: "[2][3]isize"
+    - zero: isize[3][2]
     - global_addr: 3
     - push: 1:usize
     - ptr_add: 24
@@ -218,14 +218,14 @@ module:
     - push: 0:usize
     - ptr_add: 24
     - global_addr: 2
-    - blit: "[3]isize"
+    - blit: isize[3]
     - global_addr: 3
-    - print_list: "[2][3]isize"
+    - print_list: isize[3][2]
     - global_addr: 4
     - global_addr: 2
-    - store: "&*[3]isize"
+    - store: isize[3]&
     - global_addr: 4
-    - load: "&*[3]isize"
+    - load: isize[3]&
     - push: 1:usize
     - ptr_add: 8
     - push: 20:isize
@@ -234,16 +234,16 @@ module:
     - global_addr: 2
     - push: 0:usize
     - ptr_add: 8
-    - store: "&*isize"
+    - store: isize&
     - global_addr: 5
-    - load: "&*isize"
+    - load: isize&
     - push: 2:isize
     - ptr_add: 8
     - load: isize
     - print
     - local_addr: 0
     - global_addr: 2
-    - blit: "[3]isize"
+    - blit: isize[3]
     - local_addr: 0
     - local_addr: 0
     - call: 0

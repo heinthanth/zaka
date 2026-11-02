@@ -15,15 +15,15 @@ module:
   - name: အရေအတွက်
     kind: usize
   - name: ကိန်းများ
-    kind: "*isize"
+    kind: isize*
   - name: ကိန်း
     kind: isize
   - name: နံပါတ်
     kind: usize
   - name: ပစ္စည်း
-    kind: "*u8"
+    kind: u8*
   - name: ဈေးနှုန်း
-    kind: "&*i32"
+    kind: i32&
   texts:
   - နေရာ မရပါ
   formats: []
@@ -33,25 +33,25 @@ module:
     ret: null
     locals:
     - name: က
-      kind: "&*isize"
+      kind: isize&
     - name: ခ
-      kind: "&*isize"
+      kind: isize&
     - name: ယာယီ
       kind: isize
     code:
     - local_addr: 2
     - local_addr: 0
-    - load: "&*isize"
+    - load: isize&
     - load: isize
     - store: isize
     - local_addr: 0
-    - load: "&*isize"
+    - load: isize&
     - local_addr: 1
-    - load: "&*isize"
+    - load: isize&
     - load: isize
     - store: isize
     - local_addr: 1
-    - load: "&*isize"
+    - load: isize&
     - local_addr: 2
     - load: isize
     - store: isize
@@ -119,14 +119,14 @@ module:
     - store: usize
     - global_addr: 4
     - push: 0x0:ptr
-    - store: "*isize"
+    - store: isize*
     - global_addr: 4
     - global_addr: 2
     - load: usize
     - alloc: 8
-    - store: "*isize"
+    - store: isize*
     - global_addr: 4
-    - load: "*isize"
+    - load: isize*
     - push: 0x0:ptr
     - compare: eq
     - jump_if_false: 35
@@ -153,13 +153,13 @@ module:
     - store: usize
     - global_addr: 4
     - global_addr: 4
-    - load: "*isize"
+    - load: isize*
     - global_addr: 2
     - load: usize
     - realloc: 8
-    - store: "*isize"
+    - store: isize*
     - global_addr: 4
-    - load: "*isize"
+    - load: isize*
     - global_addr: 3
     - load: usize
     - ptr_add: 8
@@ -200,7 +200,7 @@ module:
     - compare: lt
     - jump_if_false: 117
     - global_addr: 4
-    - load: "*isize"
+    - load: isize*
     - global_addr: 6
     - load: usize
     - ptr_add: 8
@@ -215,45 +215,45 @@ module:
     - jump: 97
     - global_addr: 4
     - global_addr: 4
-    - load: "*isize"
+    - load: isize*
     - free
     - push: 0x0:ptr
-    - store: "*isize"
+    - store: isize*
     - global_addr: 7
     - push: 0x0:ptr
-    - store: "*u8"
+    - store: u8*
     - global_addr: 7
     - push: 8:usize
     - alloc: 1
-    - store: "*u8"
+    - store: u8*
     - global_addr: 7
-    - load: "*u8"
+    - load: u8*
     - push: 7:u8
     - store: u8
     - global_addr: 8
     - push: 0x0:ptr
-    - store: "&*i32"
+    - store: i32&
     - global_addr: 8
     - global_addr: 7
-    - load: "*u8"
+    - load: u8*
     - push: 4:isize
     - ptr_add: 1
-    - convert: "&*i32"
-    - store: "&*i32"
+    - convert: i32&
+    - store: i32&
     - global_addr: 8
-    - load: "&*i32"
+    - load: i32&
     - push: 1500:i32
     - store: i32
     - global_addr: 8
-    - load: "&*i32"
+    - load: i32&
     - load: i32
     - print
     - global_addr: 7
     - global_addr: 7
-    - load: "*u8"
+    - load: u8*
     - free
     - push: 0x0:ptr
-    - store: "*u8"
+    - store: u8*
     - ret
     spans:
     - lo: 995

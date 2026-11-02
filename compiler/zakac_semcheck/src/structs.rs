@@ -10,12 +10,13 @@ use zakac_ast::name::Name;
 use zakac_rust_sugars::ret_if;
 
 use crate::kind::DataKind;
+use crate::kind::split_marks;
 
 /// The struct kind of each declared name.
 pub type StructTable = BTreeMap<Name, DataKind>;
 
 /// The fields of each struct, as written: each field name with its kind in
-/// text form, where a struct base is its bare name, such as `*လူ`.
+/// text form, where a struct base is its bare name, such as `လူ*`.
 pub type StructDefs = BTreeMap<String, Vec<(String, String)>>;
 
 /// A struct kind: named fields laid out in C order.
@@ -29,7 +30,7 @@ pub struct StructKind
 {
     /// The struct name.
     pub name: String,
-    /// The signature, such as `လူ{အသက်:isize,နောက်:*လူ}`.
+    /// The signature, such as `လူ{အသက်:isize,နောက်:လူ*}`.
     sig: String,
     /// The fields in order, set once each kind the fields name exists.
     fields: OnceLock<Vec<(String, DataKind)>>,
@@ -304,10 +305,10 @@ fn sig_of(name: &str, defs: &StructDefs, around: &mut Vec<String>) -> String
 /// The text.
 fn expand(kind: &str, defs: &StructDefs, around: &mut Vec<String>) -> String
 {
-    let (prefix, base) = split_base(kind);
+    let (base, marks) = split_marks(kind);
     let inner = defs.contains_key(base) && !around.iter().any(|n| n == base);
     ret_if!(!inner, kind.to_string());
-    format!("{prefix}{}", sig_of(base, defs, around))
+    format!("{}{marks}", sig_of(base, defs, around))
 }
 
 /// The kind of a field kind in text form.
@@ -325,106 +326,10 @@ fn kind_of(
     kind: &str, defs: &StructDefs, memo: &mut HashMap<String, &'static StructKind>,
 ) -> Option<DataKind>
 {
-    let (prefix, base) = split_base(kind);
+    let (base, marks) = split_marks(kind);
     ret_if!(!defs.contains_key(base), DataKind::parse(kind));
     let inner = DataKind::Struct(resolve(base, defs, memo)?);
-    wrap_in(inner, prefix)
-}
-
-/// Wrap a kind in the levels of a kind prefix, the innermost (rightmost)
-/// first.
-///
-/// # Arguments
-///
-/// * `inner` - The kind under the prefix.
-/// * `prefix` - The marks `&`, `*`, `~` and `[n]`.
-///
-/// # Returns
-///
-/// The kind, or `None` for a bad count.
-fn wrap_in(inner: DataKind, prefix: &str) -> Option<DataKind>
-{
-    let mut levels = Vec::new();
-    let mut rest = prefix;
-    while let Some(ch) = rest.chars().next()
-    {
-        let len = level_len(rest, ch)?;
-        levels.push(&rest[..len]);
-        rest = &rest[len..];
-    }
-    levels.into_iter().rev().try_fold(inner, |kind, level| match level
-    {
-        "*" => Some(kind.pointer_to()),
-        "~" => Some(kind.raw_pointer_to()),
-        "&" => Some(kind.as_borrowed()),
-        list => list_level(kind, list),
-    })
-}
-
-/// The length of the prefix level that starts with `ch`.
-///
-/// # Arguments
-///
-/// * `rest` - The prefix from the level on.
-/// * `ch` - Its first char.
-///
-/// # Returns
-///
-/// The length in octets, or `None` for an unclosed `[`.
-fn level_len(rest: &str, ch: char) -> Option<usize>
-{
-    ret_if!(ch != '[', Some(ch.len_utf8()));
-    rest.find(']').map(|at| at + 1)
-}
-
-/// The list of `[n]` cells of a kind.
-///
-/// # Arguments
-///
-/// * `cell` - The cell kind.
-/// * `level` - The level text, `[n]` or `[]`.
-///
-/// # Returns
-///
-/// The list kind, or `None` for a bad count.
-fn list_level(cell: DataKind, level: &str) -> Option<DataKind>
-{
-    let count = level.strip_prefix('[')?.strip_suffix(']')?;
-    let len = if count.is_empty()
-    {
-        0
-    }
-    else
-    {
-        count.parse().ok()?
-    };
-    Some(DataKind::list_of(cell, len))
-}
-
-/// Split a kind in text form into its prefix of levels and its base.
-///
-/// # Arguments
-///
-/// * `kind` - The text.
-///
-/// # Returns
-///
-/// The prefix (`&`, `*`, `~` and `[n]` marks) and the base after it.
-pub fn split_base(kind: &str) -> (&str, &str)
-{
-    let mut at = 0;
-    while let Some(ch) = kind[at..].chars().next()
-    {
-        let len = match ch
-        {
-            '&' | '*' | '~' => 1,
-            '[' => kind[at..].find(']').map_or(0, |end| end + 1),
-            _ => 0,
-        };
-        ret_if!(len == 0, kind.split_at(at));
-        at += len;
-    }
-    kind.split_at(at)
+    DataKind::wrap_marks(inner, marks)
 }
 
 /// Record the fields of a signature and of each struct written out in it,
@@ -446,7 +351,7 @@ fn collect_defs(text: &str, defs: &mut StructDefs) -> Option<String>
     for part in top_level_parts(inner_text)
     {
         let (field, kind) = part.split_once(':')?;
-        let (prefix, base) = split_base(kind);
+        let (base, marks) = split_marks(kind);
         let base = if base.contains('{')
         {
             collect_defs(base, defs)?
@@ -455,7 +360,7 @@ fn collect_defs(text: &str, defs: &mut StructDefs) -> Option<String>
         {
             base.to_string()
         };
-        fields.push((field.to_string(), format!("{prefix}{base}")));
+        fields.push((field.to_string(), format!("{base}{marks}")));
     }
     defs.insert(name.to_string(), fields);
     Some(name.to_string())

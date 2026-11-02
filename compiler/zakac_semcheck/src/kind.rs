@@ -10,6 +10,7 @@ use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::Wrap;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
@@ -159,7 +160,7 @@ static SLICES: OnceLock<Mutex<HashSet<&'static SliceKind>>> = OnceLock::new();
 pub struct PtrKind
 {
     /// The number of address levels, at least 1. An opaque base counts
-    /// itself, so `ptr` has depth 1 and `*ptr` depth 2.
+    /// itself, so `ptr` has depth 1 and `ptr*` depth 2.
     pub depth: u8,
     /// The kind at the bottom.
     pub base: Base,
@@ -259,7 +260,7 @@ impl PtrKind
 
 /// A data kind as the checker sees it: a written kind with its defaults
 /// filled in. Artifacts store it as its short name, such as `i8`, `usize`,
-/// `*i32` or `ptr`.
+/// `i32*` or `ptr`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(into = "String", try_from = "String")]
 pub enum DataKind
@@ -298,10 +299,10 @@ pub enum TextForm
     #[strum(serialize = "text")]
     Plain,
     /// `စာသားသေ`: its u8s never change; static, or a block it took over.
-    #[strum(serialize = "fixed_text")]
+    #[strum(serialize = "textf")]
     Fixed,
     /// `စာသားရှင်`: its own heap block from the start.
-    #[strum(serialize = "heap_text")]
+    #[strum(serialize = "text~")]
     Heap,
 }
 
@@ -650,8 +651,10 @@ impl DataKind
         plain.unwrap_or(DataKind::Ptr(PtrKind::owner(depth.max(1), base)))
     }
 
-    /// Read a short name such as `i8`, `usize`, `f32`, `char`, `*i32`, `ptr`,
-    /// `&*i32`, `~i32`, `rawptr` or `null`.
+    /// Read a short name such as `i8`, `usize`, `char`, `i32*`, `i32&`,
+    /// `i32^`, `ptr`, `ptr&`, `rawptr`, `isize[3]`, `isize[][..]`, `text[..]`
+    /// or `null`: a base, then one mark for each level in the order of the
+    /// Burmese words.
     ///
     /// # Arguments
     ///
@@ -659,44 +662,48 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// The kind, or `None` for an unknown name, for a borrow mark on a kind
-    /// with no address level and for a borrowed raw level.
+    /// The kind, or `None` for an unknown name, a borrowed raw level, a
+    /// level over a borrow, and a slice of no list.
     pub fn parse(name: &str) -> Option<DataKind>
     {
         ret_if!(name == "null", Some(DataKind::Null));
-        ret_if!(
-            name.starts_with("&[") || name == "&text",
-            parse_base(name)?.0.scalar()
-        );
-        let (borrowed, name) = tern!(
-            let Some(rest) = name.strip_prefix('&'),
-            (true, rest),
-            (false, name)
-        );
-        let rest = name.trim_start_matches(['*', '~']);
-        let marks = &name[..name.len() - rest.len()];
-        let (base, base_raw) = parse_base(rest)?;
-        let opaque = base == Base::Opaque;
-        let depth = u8::try_from(marks.len() + usize::from(opaque)).ok()?;
-        ret_if!(depth == 0, tern!(borrowed, None, base.scalar()));
-        let mut ptr = PtrKind::owner(depth, base);
-        ptr.raw = u8::from(base_raw);
-        for (at, mark) in marks.chars().enumerate()
+        let (base, marks) = split_marks(name);
+        let base = parse_base(base)?;
+        DataKind::wrap_marks(base, marks)
+    }
+
+    /// Wrap a kind in the levels its marks name, from left to right: `*` an
+    /// owner, `^` a raw address, `&` a borrow, `[n]` a list of `n` cells,
+    /// `[]` a list whose count is open, and `[..]` a slice of the list or
+    /// the view of the text before it. On `ptr`, which is an address
+    /// itself, `&` borrows it and adds no level.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind under the marks.
+    /// * `marks` - The marks.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or `None` for a mark that does not read.
+    pub fn wrap_marks(kind: DataKind, marks: &str) -> Option<DataKind>
+    {
+        let mut kind = kind;
+        let mut rest = marks;
+        while let Some(ch) = rest.chars().next()
         {
-            let level =
-                u8::try_from(marks.len() - 1 - at + usize::from(opaque)).ok()?;
-            let bit = 1u8.checked_shl(u32::from(level));
-            ptr.raw |= tern!(mark == '~', bit?, 0);
+            let len = tern!(ch == '[', rest.find(']')? + 1, ch.len_utf8());
+            kind = wrap_mark(kind, &rest[..len])?;
+            rest = &rest[len..];
         }
-        ret_if!(borrowed && ptr.is_raw_outer(), None);
-        Some(DataKind::Ptr(PtrKind { borrowed, ..ptr }))
+        Some(kind)
     }
 
     /// The short name, for messages.
     ///
     /// # Returns
     ///
-    /// The name, such as `i8`, `usize`, `f64`, `char`, `bool`, `*i32`,
+    /// The name, such as `i8`, `usize`, `f64`, `char`, `bool`, `i32*`,
     /// `ptr` or `null`; a struct is its name alone.
     pub fn name(self) -> String { self.spell(false) }
 
@@ -728,8 +735,8 @@ impl DataKind
             DataKind::Null => "null".to_string(),
             DataKind::List(l) => list_name(l, full),
             DataKind::Struct(s) => tern!(full, s.sig(), &s.name).to_string(),
-            DataKind::Slice(s) if s.text => "&text".to_string(),
-            DataKind::Slice(s) => format!("&[]{}", s.cell.spell(full)),
+            DataKind::Slice(s) if s.text => "text[..]".to_string(),
+            DataKind::Slice(s) => format!("{}[][..]", s.cell.spell(full)),
             DataKind::Text(form) => <&str>::from(form).to_string(),
         }
     }
@@ -809,7 +816,7 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// `true` for `ptr` in each flavour: `ptr`, `&ptr` and `rawptr`.
+    /// `true` for `ptr` in each flavour: `ptr`, `ptr&` and `rawptr`.
     pub fn is_opaque(self) -> bool
     {
         matches!(self, DataKind::Ptr(p) if p.depth == 1 && p.base == Base::Opaque)
@@ -830,7 +837,7 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// `true` for `*i32` and `ptr`, but not for a borrow or a raw address.
+    /// `true` for `i32*` and `ptr`, but not for a borrow or a raw address.
     pub fn is_owner_ptr(self) -> bool { self.ptr_kind().is_some_and(PtrKind::is_owner) }
 
     /// Whether the kind is a borrow: a pointer whose outer level is a
@@ -838,7 +845,7 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// `true` for `&*i32`, `&ptr` and `&[]i32`.
+    /// `true` for `i32&`, `ptr&` and `i32[][..]`.
     pub fn is_borrow(self) -> bool
     {
         self.is_slice() || self.ptr_kind().is_some_and(PtrKind::is_borrowed)
@@ -848,7 +855,7 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// `true` for `~i32` and `rawptr`.
+    /// `true` for `i32^` and `rawptr`.
     pub fn is_raw_ptr(self) -> bool
     {
         self.ptr_kind().is_some_and(PtrKind::is_raw_outer)
@@ -859,7 +866,7 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// `true` for `*i32`, `&*i32` and `ptr`, but not for `~i32`.
+    /// `true` for `i32*`, `i32&` and `ptr`, but not for `i32^`.
     pub fn is_checked_ptr(self) -> bool { self.is_ptr() && !self.is_raw_ptr() }
 
     /// Whether a value of the kind is moved, not copied, when it goes into
@@ -1265,8 +1272,8 @@ fn parse_plain(name: &str) -> Option<DataKind>
         ("char", DataKind::Char),
         ("bool", DataKind::Bool),
         ("text", DataKind::TEXT),
-        ("fixed_text", DataKind::Text(TextForm::Fixed)),
-        ("heap_text", DataKind::Text(TextForm::Heap)),
+        ("textf", DataKind::Text(TextForm::Fixed)),
+        ("text~", DataKind::Text(TextForm::Heap)),
     ]);
     let found = named.into_iter().find(|(n, _)| *n == name).map(|(_, k)| k);
     ret_if!(found.is_some(), found);
@@ -1291,56 +1298,104 @@ fn parse_plain(name: &str) -> Option<DataKind>
 ///
 /// # Returns
 ///
-/// A leading `&` for a borrow, then one mark per address level from the
-/// outer one in, `*` for an owner and `~` for a raw level, then the base
-/// name; `ptr` counts as one level itself and reads `rawptr` when raw.
+/// The base name, then one mark per address level from the base out: `*`
+/// for an owner and `^` for a raw level; a borrowed outer level is `&` in
+/// place of its `*`. `ptr` is a level itself and reads `rawptr` when raw;
+/// a borrow of it adds `&` after its marks.
 fn ptr_name(p: PtrKind, full: bool) -> String
 {
     let plain = p.base.scalar();
-    let marked = usize::from(p.depth) - usize::from(plain.is_none());
-    let mark = |at: usize| {
-        let level = usize::from(p.depth) - 1 - at;
-        tern!(p.raw.checked_shr(level as u32).unwrap_or(0) & 1 == 1, '~', '*')
-    };
-    let marks: String = (0..marked).map(mark).collect();
-    let borrow = tern!(p.borrowed, "&", "");
-    let Some(plain) = plain
-    else
-    {
-        return format!("{borrow}{marks}{}", tern!(p.raw & 1 == 1, "rawptr", "ptr"));
-    };
-    format!("{borrow}{marks}{}", plain.spell(full))
+    let first = usize::from(plain.is_none());
+    let raw = |level: usize| p.raw.checked_shr(level as u32).unwrap_or(0) & 1 == 1;
+    let levels = first..usize::from(p.depth);
+    let mut marks: String = levels.map(|l| tern!(raw(l), '^', '*')).collect();
+    let replace = p.borrowed && plain.is_some();
+    do_if!(replace, _ = marks.pop());
+    do_if!(p.borrowed, marks.push('&'));
+    let base = plain
+        .map_or_else(|| tern!(raw(0), "rawptr", "ptr").to_string(), |k| k.spell(full));
+    format!("{base}{marks}")
 }
 
-/// Read the base part of a short name, past its address marks.
+/// Read the base of a short name: a plain kind, `ptr`, `rawptr` or a struct
+/// signature.
 ///
 /// # Arguments
 ///
-/// * `name` - The name with the leading `&`, `*` and `~` taken off.
+/// * `name` - The base, with its marks taken off.
 ///
 /// # Returns
 ///
-/// The base and whether it is a raw opaque address, or `None` for an unknown
-/// name.
-fn parse_base(name: &str) -> Option<(Base, bool)>
+/// The kind, or `None` for an unknown name.
+fn parse_base(name: &str) -> Option<DataKind>
 {
-    ret_if!(name == "ptr", Some((Base::Opaque, false)));
-    ret_if!(name == "&text", Some((DataKind::text_view().levels().1, false)));
-    if let Some(cell) = name.strip_prefix("&[]")
+    ret_if!(name == "ptr", Some(DataKind::OPAQUE));
+    ret_if!(name == "rawptr", Some(DataKind::OPAQUE.with_outer_raw()));
+    ret_if!(name.ends_with('}'), parse_sig(name).map(DataKind::Struct));
+    parse_plain(name)
+}
+
+/// Wrap a kind in the level one mark names.
+///
+/// # Arguments
+///
+/// * `kind` - The kind under the mark.
+/// * `mark` - `*`, `^`, `&`, `[n]`, `[]` or `[..]`.
+///
+/// # Returns
+///
+/// The kind, or `None` for a mark that does not read here.
+fn wrap_mark(kind: DataKind, mark: &str) -> Option<DataKind>
+{
+    // An address level over a borrow would lose the borrow, so no name
+    // writes one; a list of borrows keeps them.
+    let level = matches!(mark, "*" | "^" | "&");
+    ret_if!(level && kind.is_borrow() && kind.is_ptr(), None);
+    let opaque = kind.ptr_kind().is_some_and(|p| p.base == Base::Opaque);
+    match mark
     {
-        return Some((DataKind::slice_of(DataKind::parse(cell)?).levels().1, false));
+        "*" => Some(kind.pointer_to()),
+        "^" => Some(kind.raw_pointer_to()),
+        "&" if opaque && !kind.is_raw_ptr() => Some(kind.as_borrowed()),
+        "&" => Some(kind.pointer_to().as_borrowed()),
+        "[..]" if kind.is_text() => Some(DataKind::text_view()),
+        "[..]" =>
+        {
+            kind.as_list().filter(|l| l.len == 0).map(|l| DataKind::slice_of(l.cell))
+        }
+        _ =>
+        {
+            let count = mark.strip_prefix('[')?.strip_suffix(']')?;
+            let len = tern!(count.is_empty(), 0, count.parse().ok()?);
+            Some(DataKind::list_of(kind, len))
+        }
     }
-    ret_if!(name.ends_with('}'), parse_sig(name).map(|s| (Base::Struct(s), false)));
-    ret_if!(name == "rawptr", Some((Base::Opaque, true)));
-    let Some(inner) = name.strip_prefix('[')
-    else
+}
+
+/// Split a short name into its base and its marks. The base ends at the
+/// first `*`, `^`, `&` or `[` outside the braces of a struct signature.
+///
+/// # Arguments
+///
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The base and the marks after it.
+pub fn split_marks(name: &str) -> (&str, &str)
+{
+    let mut depth = 0usize;
+    for (at, ch) in name.char_indices()
     {
-        return Some((parse_plain(name)?.levels().1, false));
-    };
-    let (count, cell) = inner.split_once(']')?;
-    let len = tern!(count.is_empty(), 0, count.parse().ok()?);
-    let list = DataKind::list_of(DataKind::parse(cell)?, len);
-    Some((list.levels().1, false))
+        match ch
+        {
+            '{' => depth += 1,
+            '}' => depth = depth.saturating_sub(1),
+            '*' | '^' | '&' | '[' if depth == 0 => return name.split_at(at),
+            _ => (),
+        }
+    }
+    (name, "")
 }
 
 /// The short name of a list kind.
@@ -1352,12 +1407,12 @@ fn parse_base(name: &str) -> Option<(Base, bool)>
 ///
 /// # Returns
 ///
-/// `[n]` then the cell name, such as `[3]isize`; `[]` while the count is
+/// The cell name then `[n]`, such as `isize[3]`; `[]` while the count is
 /// open.
 fn list_name(l: &ListKind, full: bool) -> String
 {
     let count = tern!(l.len == 0, String::new(), l.len.to_string());
-    format!("[{count}]{}", l.cell.spell(full))
+    format!("{}[{count}]", l.cell.spell(full))
 }
 
 /// The short name of an integer kind.

@@ -6,42 +6,42 @@ imports: []
 module:
   globals:
   - name: က
-    kind: "[3]isize"
+    kind: isize[3]
     access: var
     span:
       lo: 225
       hi: 228
     addressed: false
   - name: ခ
-    kind: "[3]isize"
+    kind: isize[3]
     access: var
     span:
       lo: 406
       hi: 409
     addressed: false
   - name: ဂ
-    kind: "[3]isize"
+    kind: isize[3]
     access: var
     span:
       lo: 666
       hi: 669
     addressed: true
   - name: ဇယား
-    kind: "[2][3]isize"
+    kind: isize[3][2]
     access: var
     span:
       lo: 1379
       hi: 1391
     addressed: false
   - name: ညွှန်း
-    kind: "&*[3]isize"
+    kind: isize[3]&
     access: var
     span:
       lo: 1959
       hi: 1977
     addressed: false
   - name: ပ
-    kind: "&*isize"
+    kind: isize&
     access: var
     span:
       lo: 2365
@@ -54,7 +54,7 @@ module:
     ret: isize
     locals:
     - name: ကိန်းများ
-      kind: "[3]isize"
+      kind: isize[3]
       access: var
       span:
         lo: 2935
@@ -125,11 +125,11 @@ module:
                     node:
                       load:
                         addr:
-                          kind: "*isize"
+                          kind: isize*
                           node:
                             cell_addr:
                               list:
-                                kind: "[3]isize"
+                                kind: isize[3]
                                 node:
                                   read: l0
                                 span:
@@ -179,7 +179,7 @@ module:
   - set:
       place: g0
       value:
-        kind: "[3]isize"
+        kind: isize[3]
         node: blank_list
         span:
           lo: 225
@@ -190,7 +190,7 @@ module:
   - set:
       place: g1
       value:
-        kind: "[3]isize"
+        kind: isize[3]
         node: blank_list
         span:
           lo: 576
@@ -201,7 +201,7 @@ module:
   - set:
       place: g2
       value:
-        kind: "[3]isize"
+        kind: isize[3]
         node:
           list:
           - kind: isize
@@ -230,11 +230,11 @@ module:
         hi: 885
   - store:
       addr:
-        kind: "*isize"
+        kind: isize*
         node:
           cell_addr:
             list:
-              kind: "[3]isize"
+              kind: isize[3]
               node:
                 read: g2
               span:
@@ -270,11 +270,11 @@ module:
           node:
             load:
               addr:
-                kind: "*isize"
+                kind: isize*
                 node:
                   cell_addr:
                     list:
-                      kind: "[3]isize"
+                      kind: isize[3]
                       node:
                         read: g2
                       span:
@@ -314,7 +314,7 @@ module:
   - print:
       value:
         expr:
-          kind: "[3]isize"
+          kind: isize[3]
           node:
             read: g2
           span:
@@ -326,7 +326,7 @@ module:
   - set:
       place: g0
       value:
-        kind: "[3]isize"
+        kind: isize[3]
         node:
           read: g2
         span:
@@ -343,14 +343,14 @@ module:
             compare:
               op: eq
               lhs:
-                kind: "[3]isize"
+                kind: isize[3]
                 node:
                   read: g0
                 span:
                   lo: 1192
                   hi: 1195
               rhs:
-                kind: "[3]isize"
+                kind: isize[3]
                 node:
                   read: g2
                 span:
@@ -370,14 +370,14 @@ module:
             compare:
               op: ne
               lhs:
-                kind: "[3]isize"
+                kind: isize[3]
                 node:
                   read: g1
                 span:
                   lo: 1268
                   hi: 1271
               rhs:
-                kind: "[3]isize"
+                kind: isize[3]
                 node:
                   read: g0
                 span:
@@ -392,7 +392,7 @@ module:
   - set:
       place: g3
       value:
-        kind: "[2][3]isize"
+        kind: isize[3][2]
         node: blank_list
         span:
           lo: 1379
@@ -402,19 +402,19 @@ module:
         hi: 1604
   - store:
       addr:
-        kind: "*isize"
+        kind: isize*
         node:
           cell_addr:
             list:
-              kind: "[3]isize"
+              kind: isize[3]
               node:
                 load:
                   addr:
-                    kind: "*[3]isize"
+                    kind: isize[3]*
                     node:
                       cell_addr:
                         list:
-                          kind: "[2][3]isize"
+                          kind: isize[3][2]
                           node:
                             read: g3
                           span:
@@ -461,11 +461,11 @@ module:
         hi: 1705
   - store:
       addr:
-        kind: "*[3]isize"
+        kind: isize[3]*
         node:
           cell_addr:
             list:
-              kind: "[2][3]isize"
+              kind: isize[3][2]
               node:
                 read: g3
               span:
@@ -485,7 +485,7 @@ module:
           lo: 1706
           hi: 1742
       value:
-        kind: "[3]isize"
+        kind: isize[3]
         node:
           read: g2
         span:
@@ -497,7 +497,7 @@ module:
   - print:
       value:
         expr:
-          kind: "[2][3]isize"
+          kind: isize[3][2]
           node:
             read: g3
           span:
@@ -509,7 +509,7 @@ module:
   - set:
       place: g4
       value:
-        kind: "&*[3]isize"
+        kind: isize[3]&
         node:
           addr_of: g2
         span:
@@ -520,11 +520,11 @@ module:
         hi: 2250
   - store:
       addr:
-        kind: "*isize"
+        kind: isize*
         node:
           cell_addr:
             list:
-              kind: "&*[3]isize"
+              kind: isize[3]&
               node:
                 read: g4
               span:
@@ -556,11 +556,11 @@ module:
   - set:
       place: g5
       value:
-        kind: "&*isize"
+        kind: isize&
         node:
           cell_addr:
             list:
-              kind: "[3]isize"
+              kind: isize[3]
               node:
                 read: g2
               span:
@@ -589,11 +589,11 @@ module:
           node:
             load:
               addr:
-                kind: "&*isize"
+                kind: isize&
                 node:
                   ptr_add:
                     base:
-                      kind: "&*isize"
+                      kind: isize&
                       node:
                         read: g5
                       span:
@@ -624,7 +624,7 @@ module:
               func: 0
               name: ပေါင်း
               args:
-              - kind: "[3]isize"
+              - kind: isize[3]
                 node:
                   read: g2
                 span:
@@ -645,7 +645,7 @@ module:
               func: 0
               name: ပေါင်း
               args:
-              - kind: "[3]isize"
+              - kind: isize[3]
                 node:
                   list:
                   - kind: isize

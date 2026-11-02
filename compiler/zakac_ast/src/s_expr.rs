@@ -56,13 +56,21 @@ impl ToSexpr for Kind
 {
     fn to_sexpr(&self) -> String
     {
-        // The opaque kind's own `လိပ်စာ` is its name, not a star.
+        // The opaque kind's own `လိပ်စာ` is its name, not a star. Each wrap
+        // writes its mark after the kind inside it, in the order of the
+        // Burmese words.
         let skip = usize::from(self.base == BaseKind::Opaque);
-        let wraps = self.wraps.iter().skip(skip);
-        let inner =
-            wraps.fold(base_name(self), |inner, w| format!("{}{inner}", wrap_mark(*w)));
-        let borrows = usize::from(self.borrowed) + usize::from(self.extra_borrows);
-        format!("{}{inner}", "&".repeat(borrows))
+        let marks: Vec<String> =
+            self.wraps.iter().skip(skip).map(|w| wrap_mark(*w)).collect();
+        // A borrow takes the place of the `*` of the last address level.
+        let last = marks.iter().rposition(|m| m == "*").filter(|_| self.borrowed);
+        let mark = |(at, m): (usize, &String)| {
+            tern!(Some(at) == last, "&".to_string(), m.clone())
+        };
+        let marks: String = marks.iter().enumerate().map(mark).collect();
+        let extra = usize::from(self.extra_borrows)
+            + usize::from(self.borrowed && last.is_none());
+        format!("{}{marks}{}", base_name(self), "&".repeat(extra))
     }
 }
 
@@ -205,8 +213,8 @@ fn list(head: &str, parts: impl IntoIterator<Item = String>) -> String
     format!("({head} {})", parts.join(" "))
 }
 
-/// The mark a wrap puts in front of the kind inside it: `*`, `[3]`, `[]` or
-/// `&[]`.
+/// The mark a wrap puts after the kind inside it: `*`, `^`, `[3]`, `[]`,
+/// `[][..]` or `[..]`.
 ///
 /// # Arguments
 ///
@@ -220,11 +228,11 @@ fn wrap_mark(w: Wrap) -> String
     match w
     {
         Wrap::Ptr => "*".into(),
-        Wrap::RawPtr => "~".into(),
+        Wrap::RawPtr => "^".into(),
         Wrap::List(Cells::Fixed(n)) => format!("[{n}]"),
         Wrap::List(Cells::Inferred) => "[]".into(),
-        Wrap::Slice => "&[]".into(),
-        Wrap::View => "&".into(),
+        Wrap::Slice => "[][..]".into(),
+        Wrap::View => "[..]".into(),
     }
 }
 

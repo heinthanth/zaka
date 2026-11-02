@@ -9,12 +9,12 @@ use zakac_diagnostics::Code;
 fn list_kinds_take_each_spelling()
 {
     let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
-    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း"), "(var က [3]isize)");
-    assert_eq!(decl("အကွက် ၃ ရှိသော ကိန်းပြည့် စာရင်း"), "(var က [3]isize)");
-    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် ၏ စာရင်း"), "(var က [3]isize)");
-    assert_eq!(decl("အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း"), "(var က [3]isize)");
-    assert_eq!(decl("ကိန်းပြည့် စာရင်း"), "(var က []isize)");
-    assert_eq!(decl("ကိန်းပြည့် ၏ စာရင်း"), "(var က []isize)");
+    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း"), "(var က isize[3])");
+    assert_eq!(decl("အကွက် ၃ ရှိသော ကိန်းပြည့် စာရင်း"), "(var က isize[3])");
+    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် ၏ စာရင်း"), "(var က isize[3])");
+    assert_eq!(decl("အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း"), "(var က isize[3])");
+    assert_eq!(decl("ကိန်းပြည့် စာရင်း"), "(var က isize[])");
+    assert_eq!(decl("ကိန်းပြည့် ၏ စာရင်း"), "(var က isize[])");
 }
 
 #[test]
@@ -23,23 +23,29 @@ fn list_kinds_nest_and_mix_with_pointers()
     let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
     assert_eq!(
         decl("အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း"),
-        "(var က [2][3]isize)"
+        "(var က isize[3][2])"
     );
-    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း"), "(var က [][3]isize)");
-    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း"), "(var က [3]*isize)");
-    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ"), "(var က *[3]isize)");
-    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ၏ လိပ်စာ"), "(var က *[3]isize)");
-    assert_eq!(decl("အကွက် ၂ ခုရှိသော လိပ်စာ စာရင်း"), "(var က [2]ptr)");
+    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း"), "(var က isize[3][])");
+    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း"), "(var က isize*[3])");
+    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ"), "(var က isize[3]*)");
+    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ၏ လိပ်စာ"), "(var က isize[3]*)");
+    assert_eq!(decl("အကွက် ၂ ခုရှိသော လိပ်စာ စာရင်း"), "(var က ptr[2])");
 }
 
 #[test]
 fn slice_kinds_follow_a_count_less_list()
 {
     let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
-    assert_eq!(decl("ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က &[]isize)");
-    assert_eq!(decl("ကိန်းပြည့် ၏ စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က &[]isize)");
-    assert_eq!(decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က &[][3]isize)");
-    assert_eq!(decl("အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း စာရင်း"), "(var က [2]&[]isize)");
+    assert_eq!(decl("ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က isize[][..])");
+    assert_eq!(decl("ကိန်းပြည့် ၏ စာရင်း တစ်စိတ်တစ်ပိုင်း"), "(var က isize[][..])");
+    assert_eq!(
+        decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်စိတ်တစ်ပိုင်း"),
+        "(var က isize[3][][..])"
+    );
+    assert_eq!(
+        decl("အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း စာရင်း"),
+        "(var က isize[][..][2])"
+    );
     let bad = |kind: &str| codes(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
     assert_eq!(bad("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း"), [Code::SliceCount]);
 }
@@ -108,7 +114,7 @@ fn list_literals_close_with_a_list_word()
     assert_eq!(expr("စာရင်းအလွတ်"), "blank_list");
     assert_eq!(
         stmt("ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း ဖြစ်ပါစေ။"),
-        "(var က []isize (list 1 2))"
+        "(var က isize[] (list 1 2))"
     );
     assert_eq!(stmt("၁၊ ၂ တို့ပါသော စာရင်း ကို ပြသပါ။"), "(print (list 1 2))");
 }

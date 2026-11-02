@@ -51,7 +51,7 @@ error[ZK0401]: expected isize, found f64
   = help: convert the value with "ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်"
 ```
 
-The names of kinds in messages are the short ones: `isize`, `f64`, `*u8`. The table is
+The names of kinds in messages are the short ones: `isize`, `f64`, `u8*`. The table is
 in [Error messages](../reference/errors.md#short-names-for-kinds).
 
 ## Levels

@@ -69,9 +69,9 @@ fn declarations_count_their_kind_or_take_it_from_the_value()
     assert_eq!(stmt(letter), "(var င char)");
     assert_eq!(classifier(letter).as_deref(), Some("လုံး"));
     let fixed = "ကိန်းရှင် ဖ သည် စာသားသေ တစ်ခု ဖြစ်ပါစေ။";
-    assert_eq!(stmt(fixed), "(var ဖ fixed_text)");
+    assert_eq!(stmt(fixed), "(var ဖ textf)");
     let heap = "ကိန်းရှင် ဟ သည် စာသားရှင် စာရင်း တစ်ခု ဖြစ်ပါစေ။";
-    assert_eq!(stmt(heap), "(var ဟ []heap_text)");
+    assert_eq!(stmt(heap), "(var ဟ text~[])");
     let named = "ကိန်းရှင် ခ သည် \"မမ\" ဖြစ်ပါစေ။";
     assert_eq!(stmt(named), "(var ခ _ \"မမ\")");
     assert_eq!(classifier(named), None);
@@ -328,18 +328,18 @@ fn unclosed_block_reports_the_end_of_input()
 #[test]
 fn pointer_declarations_and_places()
 {
-    assert_eq!(stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var p *isize)");
-    assert_eq!(stmt("ကိန်းရှင် pp သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var pp **isize)");
-    assert_eq!(stmt("ကိန်းရှင် b သည် ၈ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var b *i8)");
+    assert_eq!(stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var p isize*)");
+    assert_eq!(stmt("ကိန်းရှင် pp သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var pp isize**)");
+    assert_eq!(stmt("ကိန်းရှင် b သည် ၈ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var b i8*)");
     assert_eq!(stmt("ကိန်းရှင် q သည် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var q ptr)");
-    assert_eq!(stmt("ကိန်းရှင် qq သည် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var qq *ptr)");
+    assert_eq!(stmt("ကိန်းရှင် qq သည် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var qq ptr*)");
     assert_eq!(
         stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
-        "(var p *isize (addr x))"
+        "(var p isize* (addr x))"
     );
     assert_eq!(
         stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
-        "(var p *isize (addr x))"
+        "(var p isize* (addr x))"
     );
     assert_eq!(stmt("p ၏ တန်ဖိုး ကို ၅ ဟု ထားပါ။"), "(set (deref p) 5)");
     assert_eq!(stmt("*p ကို *p + ၁ ဟု ထားပါ။"), "(set (deref p) (+ (deref p) 1))");
@@ -349,14 +349,14 @@ fn pointer_declarations_and_places()
 #[test]
 fn pointer_kinds_keep_the_older_spelling()
 {
-    assert_eq!(stmt("ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var p *isize)");
+    assert_eq!(stmt("ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"), "(var p isize*)");
     assert_eq!(
         stmt("ကိန်းရှင် pp သည် ကိန်းပြည့် ၏ လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။"),
-        "(var pp **isize)"
+        "(var pp isize**)"
     );
     assert_eq!(
         stmt("ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
-        "(var p *isize (addr x))"
+        "(var p isize* (addr x))"
     );
 }
 
@@ -364,24 +364,24 @@ fn pointer_kinds_keep_the_older_spelling()
 fn borrowed_and_raw_kinds()
 {
     let decl = |kind: &str| stmt(&format!("ကိန်းရှင် q သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
-    assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာ"), "(var q &*isize)");
-    assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ"), "(var q &**isize)");
-    assert_eq!(decl("ကိန်းပြည့် လိပ်စာအကြမ်း"), "(var q ~isize)");
-    assert_eq!(decl("ကိန်းပြည့် လိပ်စာအကြမ်း ၏ လိပ်စာ"), "(var q *~isize)");
-    assert_eq!(decl("ကိန်းပြည့် ၏ လိပ်စာအကြမ်း"), "(var q ~isize)");
+    assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာ"), "(var q isize&)");
+    assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ"), "(var q isize*&)");
+    assert_eq!(decl("ကိန်းပြည့် လိပ်စာအကြမ်း"), "(var q isize^)");
+    assert_eq!(decl("ကိန်းပြည့် လိပ်စာအကြမ်း ၏ လိပ်စာ"), "(var q isize^*)");
+    assert_eq!(decl("ကိန်းပြည့် ၏ လိပ်စာအကြမ်း"), "(var q isize^)");
     assert_eq!(decl("လိပ်စာအကြမ်း"), "(var q rawptr)");
-    assert_eq!(decl("ငှားထားသော လိပ်စာ"), "(var q &ptr)");
+    assert_eq!(decl("ငှားထားသော လိပ်စာ"), "(var q ptr&)");
     let list = "ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ";
-    assert_eq!(decl(list), "(var q &*[3]isize)");
+    assert_eq!(decl(list), "(var q isize[3]&)");
 }
 
 #[test]
 fn misplaced_borrow_markers_parse()
 {
     let decl = |kind: &str| stmt(&format!("ကိန်းရှင် q သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
-    assert_eq!(decl("ငှားထားသော ငှားထားသော ကိန်းပြည့် လိပ်စာ"), "(var q &&*isize)");
-    assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာအကြမ်း"), "(var q &~isize)");
-    assert_eq!(decl("ငှားထားသော ကိန်းပြည့်"), "(var q &isize)");
+    assert_eq!(decl("ငှားထားသော ငှားထားသော ကိန်းပြည့် လိပ်စာ"), "(var q isize&&)");
+    assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာအကြမ်း"), "(var q isize^&)");
+    assert_eq!(decl("ငှားထားသော ကိန်းပြည့်"), "(var q isize&)");
 }
 
 #[test]
@@ -390,7 +390,7 @@ fn borrowed_kinds_in_function_headers()
     let head = "လုပ်ဆောင်ချက် f သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ က နှင့် ကိန်းပြည့် လိပ်စာအကြမ်း ခ တို့ကို \
                 လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော ကိန်းပြည့် လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။ \
                 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
-    assert_eq!(stmt(head), "(fn f [&*isize က, ~isize ခ] &*isize (block))");
+    assert_eq!(stmt(head), "(fn f [isize& က, isize^ ခ] isize& (block))");
 }
 
 /// A parameter the function can change, and the mark at the call.

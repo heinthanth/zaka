@@ -294,9 +294,9 @@ fn each_variable_is_read_and_written_through_its_block()
         "store isize", // x = 5
         "global_addr g1",
         "global_addr g0",
-        "store &*isize", // p = &x
+        "store isize&", // p = &x
         "global_addr g1",
-        "load &*isize",
+        "load isize&",
         "load isize",
         "print", // *p
         "ret",
@@ -326,29 +326,29 @@ p + ၁ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
     let want = [
         "global_addr g0",
         "push 0x0:ptr",
-        "store *i32",
+        "store i32*",
         "global_addr g0",
         "push 10:usize",
         "alloc 4",
-        "store *i32",
+        "store i32*",
         "global_addr g0",
-        "load *i32",
+        "load i32*",
         "push 1:isize",
         "ptr_add 4",
         "push 7:i32",
         "store i32",
         "global_addr g0",
         "global_addr g0",
-        "load *i32",
+        "load i32*",
         "push 64:usize",
         "realloc 1",
-        "store *i32",
+        "store i32*",
         "global_addr g0",
         "global_addr g0",
-        "load *i32",
+        "load i32*",
         "free",
         "push 0x0:ptr",
-        "store *i32",
+        "store i32*",
         "ret",
     ];
     assert_eq!(found, want);
@@ -365,12 +365,12 @@ fn a_deref_destination_uses_dup()
         found[found.len() - 8..],
         [
             "global_addr g0",
-            "load **isize",
+            "load isize**",
             "dup",
-            "load *isize",
+            "load isize*",
             "free",
             "push 0x0:ptr",
-            "store *isize",
+            "store isize*",
             "ret"
         ]
     );
@@ -395,13 +395,13 @@ r + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
     let module = emit_text(text);
     let found = ops(main_func(&module));
     let at = found.iter().position(|op| op == "ptr_add 8").expect("a ptr_add 8");
-    assert_eq!(found[at + 1], "convert &ptr");
-    assert_eq!(found[at + 2], "store &ptr");
+    assert_eq!(found[at + 1], "convert ptr&");
+    assert_eq!(found[at + 2], "store ptr&");
     let steps = found.iter().filter(|op| *op == "ptr_add 8").count();
     assert_eq!(steps, 4);
     let ret = ops(&module.funcs[1]);
     let at = ret.iter().position(|op| op == "ptr_add 8").expect("a ptr_add 8");
-    assert_eq!(ret[at + 1], "convert &ptr");
+    assert_eq!(ret[at + 1], "convert ptr&");
 }
 
 /// Whether `found` holds the ops of `run` one after another.
@@ -419,9 +419,9 @@ fn a_move_takes_the_owner_and_a_lend_reads_it()
 q ကို p ဟု ထားပါ။
 r ကို q ၏ တန်ဖိုးအငှား ဟု ထားပါ။";
     let found = main_ops(text);
-    let moved = ["global_addr g1", "global_addr g0", "take *isize", "store *isize"];
+    let moved = ["global_addr g1", "global_addr g0", "take isize*", "store isize*"];
     assert!(holds_run(&found, &moved), "{found:?}");
-    let lent = ["global_addr g2", "global_addr g1", "load *isize", "store &*isize"];
+    let lent = ["global_addr g2", "global_addr g1", "load isize*", "store isize&"];
     assert!(holds_run(&found, &lent), "{found:?}");
     assert_eq!(found.iter().filter(|op| op.starts_with("take")).count(), 1);
 }
@@ -435,14 +435,14 @@ fn a_list_of_owners_is_blitted_out_and_zeroed()
     let moved = [
         "local_addr l0",
         "global_addr g0",
-        "store *[2]*isize",
+        "store isize*[2]*",
         "local_addr l1",
         "local_addr l0",
-        "load *[2]*isize",
-        "blit [2]*isize",
+        "load isize*[2]*",
+        "blit isize*[2]",
         "local_addr l0",
-        "load *[2]*isize",
-        "zero [2]*isize",
+        "load isize*[2]*",
+        "zero isize*[2]",
         "local_addr l1",
     ];
     assert!(holds_run(&found, &moved), "{found:?}");
@@ -484,7 +484,7 @@ fn a_list_result_goes_to_a_slot_under_the_arguments()
 fn the_result_variable_lives_in_the_callers_slot_just_in_place()
 {
     let built = emit_mode(FILLS, ResultMode::InPlace);
-    assert_eq!(ops(&built.funcs[0])[..2], ["result_addr", "zero [2]isize"]);
+    assert_eq!(ops(&built.funcs[0])[..2], ["result_addr", "zero isize[2]"]);
     assert_eq!(ops(&built.funcs[0]).last().map(String::as_str), Some("ret"));
     let duplicated = emit_mode(FILLS, ResultMode::Duplicate);
     assert!(!duplicated.funcs.iter().any(|f| f.code.contains(&Op::ResultAddr)));
@@ -587,5 +587,5 @@ fn a_slice_cell_proved_in_range_has_no_check()
     let module = emit_text(text);
     let found = ops(&module.funcs[0]);
     assert!(!found.iter().any(|op| op.starts_with("slice_cell")), "{found:?}");
-    assert!(found.iter().any(|op| op == "load *isize"), "{found:?}");
+    assert!(found.iter().any(|op| op == "load isize*"), "{found:?}");
 }

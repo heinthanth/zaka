@@ -1029,7 +1029,7 @@ impl FromStr for Value
 {
     type Err = String;
 
-    /// Read the text form, such as `-5:i8` or `0x10:*i32`.
+    /// Read the text form, such as `-5:i8` or `0x10:i32*`.
     ///
     /// # Arguments
     ///

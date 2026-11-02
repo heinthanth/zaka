@@ -34,7 +34,7 @@ module:
       hi: 1810
     addressed: false
   - name: ကိန်းများ
-    kind: "*isize"
+    kind: isize*
     access: var
     span:
       lo: 1940
@@ -55,14 +55,14 @@ module:
       hi: 3668
     addressed: false
   - name: ပစ္စည်း
-    kind: "*u8"
+    kind: u8*
     access: var
     span:
       lo: 4589
       hi: 4610
     addressed: false
   - name: ဈေးနှုန်း
-    kind: "&*i32"
+    kind: i32&
     access: var
     span:
       lo: 5062
@@ -75,14 +75,14 @@ module:
     ret: null
     locals:
     - name: က
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 295
         hi: 298
       addressed: false
     - name: ခ
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 396
@@ -103,7 +103,7 @@ module:
           node:
             load:
               addr:
-                kind: "&*isize"
+                kind: isize&
                 node:
                   read: l0
                 span:
@@ -117,7 +117,7 @@ module:
           hi: 735
     - store:
         addr:
-          kind: "&*isize"
+          kind: isize&
           node:
             read: l0
           span:
@@ -128,7 +128,7 @@ module:
           node:
             load:
               addr:
-                kind: "&*isize"
+                kind: isize&
                 node:
                   read: l1
                 span:
@@ -142,7 +142,7 @@ module:
           hi: 831
     - store:
         addr:
-          kind: "&*isize"
+          kind: isize&
           node:
             read: l1
           span:
@@ -191,13 +191,13 @@ module:
       func: 0
       name: လဲလှယ်
       args:
-      - kind: "&*isize"
+      - kind: isize&
         node:
           addr_of: g0
         span:
           lo: 1292
           hi: 1324
-      - kind: "&*isize"
+      - kind: isize&
         node:
           addr_of: g1
         span:
@@ -257,7 +257,7 @@ module:
   - set:
       place: g4
       value:
-        kind: "*isize"
+        kind: isize*
         node:
           const: 0x0:ptr
         span:
@@ -287,14 +287,14 @@ module:
           compare:
             op: eq
             lhs:
-              kind: "*isize"
+              kind: isize*
               node:
                 read: g4
               span:
                 lo: 2332
                 hi: 2359
             rhs:
-              kind: "*isize"
+              kind: isize*
               node:
                 const: 0x0:ptr
               span:
@@ -406,11 +406,11 @@ module:
             hi: 3294
       - store:
           addr:
-            kind: "&*isize"
+            kind: isize&
             node:
               ptr_add:
                 base:
-                  kind: "*isize"
+                  kind: isize*
                   node:
                     read: g4
                   span:
@@ -553,11 +553,11 @@ module:
               node:
                 load:
                   addr:
-                    kind: "&*isize"
+                    kind: isize&
                     node:
                       ptr_add:
                         base:
-                          kind: "*isize"
+                          kind: isize*
                           node:
                             read: g4
                           span:
@@ -591,7 +591,7 @@ module:
   - set:
       place: g7
       value:
-        kind: "*u8"
+        kind: u8*
         node:
           const: 0x0:ptr
         span:
@@ -616,7 +616,7 @@ module:
         hi: 4945
   - store:
       addr:
-        kind: "*u8"
+        kind: u8*
         node:
           read: g7
         span:
@@ -635,7 +635,7 @@ module:
   - set:
       place: g8
       value:
-        kind: "&*i32"
+        kind: i32&
         node:
           const: 0x0:ptr
         span:
@@ -647,15 +647,15 @@ module:
   - set:
       place: g8
       value:
-        kind: "&*i32"
+        kind: i32&
         node:
           convert:
             operand:
-              kind: "&*u8"
+              kind: u8&
               node:
                 ptr_add:
                   base:
-                    kind: "*u8"
+                    kind: u8*
                     node:
                       read: g7
                     span:
@@ -680,7 +680,7 @@ module:
         hi: 5507
   - store:
       addr:
-        kind: "&*i32"
+        kind: i32&
         node:
           read: g8
         span:
@@ -703,7 +703,7 @@ module:
           node:
             load:
               addr:
-                kind: "&*i32"
+                kind: i32&
                 node:
                   read: g8
                 span:

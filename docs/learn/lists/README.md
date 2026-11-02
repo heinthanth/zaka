@@ -44,7 +44,7 @@ The count comes first, then the kind of each cell, then `စာရင်း`. Th
 | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် ၏ စာရင်း` |
 | `အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း` |
 
-Messages write this kind as `[3]isize`. The count is a whole number above zero, written
+Messages write this kind as `isize[3]`. The count is a whole number above zero, written
 as digits: the size of a list is fixed before the program runs.
 
 When a declaration gives the list a value, the count can be left out. The value then

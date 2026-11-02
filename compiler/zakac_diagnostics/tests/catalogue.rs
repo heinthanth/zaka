@@ -136,10 +136,10 @@ fn kinds_constructors_render_messages()
 
     let span = Span::PLACEHOLDER;
     assert!(k::kind_mismatch(span, "i8", "i16").help.is_some());
-    let unbridged = k::kind_mismatch_unbridged(span, "[2]isize", "isize");
-    assert!(unbridged.help.is_none() && unbridged.message.contains("[2]isize"));
-    let pun = k::address_block_mismatch(span, "&**isize", "&ptr", "~*isize");
-    assert!(pun.help.is_some_and(|h| h.contains("~*isize") && h.contains("&**isize")));
+    let unbridged = k::kind_mismatch_unbridged(span, "isize[2]", "isize");
+    assert!(unbridged.help.is_none() && unbridged.message.contains("isize[2]"));
+    let pun = k::address_block_mismatch(span, "isize*&", "ptr&", "isize*^");
+    assert!(pun.help.is_some_and(|h| h.contains("isize*^") && h.contains("isize*&")));
     assert!(k::shift_too_far(span, "9", 8).message.contains('8'));
     for diag in [
         k::kind_mismatch(span, "i8", "i16"),
@@ -192,9 +192,9 @@ fn pointer_constructors_render_messages()
     assert!(k::not_a_pointer(span, "isize").message.contains("isize"));
     assert!(k::opaque_pointer(span).help.is_some());
     assert!(k::pointer_operator(span, "*").message.contains("\"*\""));
-    assert!(k::pointer_kinds_differ(span, "*i8", "*isize").message.contains("*i8"));
+    assert!(k::pointer_kinds_differ(span, "i8*", "isize*").message.contains("i8*"));
     assert!(k::heap_needs_pointer(span, "bool").message.contains("bool"));
-    assert!(k::condition_not_bool(span, "*isize").help.is_some());
+    assert!(k::condition_not_bool(span, "isize*").help.is_some());
     assert!(k::condition_not_bool(span, "isize").help.is_none());
 }
 
@@ -212,11 +212,15 @@ fn list_constructors_render_messages()
     assert!(k::not_a_list(span, "isize").message.contains("isize"));
     assert!(k::cell_number_not_int(span, "f64").message.contains("f64"));
     assert!(k::borrow_list_result(span).help.is_some());
-    assert!(k::list_too_large(span, "[9]u8").message.contains("[9]u8"));
+    assert!(k::list_too_large(span, "u8[9]").message.contains("u8[9]"));
     let out = f::cell_out_of_range(span, "3", 0, 2);
     assert_eq!(out.code, Code::CellOutOfRange);
     assert!(out.message.contains('3') && out.message.contains('2'));
-    assert!(k::slice_of_borrows(span, "&[]&[]isize").message.contains("&[]&[]isize"));
+    assert!(
+        k::slice_of_borrows(span, "isize[][..][][..]")
+            .message
+            .contains("isize[][..][][..]")
+    );
     assert!(k::text_cell_write(span, "text").message.contains("text"));
     let past = f::range_out_of_list(span, "2", "3", 4);
     assert_eq!(past.code, Code::RangeOutOfList);

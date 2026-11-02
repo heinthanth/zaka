@@ -6,7 +6,7 @@ imports: []
 module:
   globals:
   - name: ကိန်းများ
-    kind: "[4]isize"
+    kind: isize[4]
     access: var
     span:
       lo: 106
@@ -33,21 +33,21 @@ module:
     ret: null
     locals:
     - name: တန်း
-      kind: "[2]*isize"
+      kind: isize*[2]
       access: var
       span:
         lo: 1196
         hi: 1208
       addressed: false
     - name: ကြည့်
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 1955
         hi: 1970
       addressed: false
     - name: ယူ
-      kind: "*isize"
+      kind: isize*
       access: var
       span:
         lo: 2259
@@ -57,7 +57,7 @@ module:
     - set:
         place: l0
         value:
-          kind: "[2]*isize"
+          kind: isize*[2]
           node: blank_list
           span:
             lo: 1196
@@ -68,11 +68,11 @@ module:
     - alloc:
         dest:
           mem:
-            kind: "**isize"
+            kind: isize**
             node:
               cell_addr:
                 list:
-                  kind: "[2]*isize"
+                  kind: isize*[2]
                   node:
                     read: l0
                   span:
@@ -105,11 +105,11 @@ module:
     - alloc:
         dest:
           mem:
-            kind: "**isize"
+            kind: isize**
             node:
               cell_addr:
                 list:
-                  kind: "[2]*isize"
+                  kind: isize*[2]
                   node:
                     read: l0
                   span:
@@ -141,15 +141,15 @@ module:
           hi: 1820
     - store:
         addr:
-          kind: "*isize"
+          kind: isize*
           node:
             load:
               addr:
-                kind: "**isize"
+                kind: isize**
                 node:
                   cell_addr:
                     list:
-                      kind: "[2]*isize"
+                      kind: isize*[2]
                       node:
                         read: l0
                       span:
@@ -184,19 +184,19 @@ module:
     - set:
         place: l1
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             lend:
               operand:
-                kind: "*isize"
+                kind: isize*
                 node:
                   load:
                     addr:
-                      kind: "**isize"
+                      kind: isize**
                       node:
                         cell_addr:
                           list:
-                            kind: "[2]*isize"
+                            kind: isize*[2]
                             node:
                               read: l0
                             span:
@@ -227,15 +227,15 @@ module:
     - set:
         place: l2
         value:
-          kind: "*isize"
+          kind: isize*
           node:
             take:
               addr:
-                kind: "**isize"
+                kind: isize**
                 node:
                   cell_addr:
                     list:
-                      kind: "[2]*isize"
+                      kind: isize*[2]
                       node:
                         read: l0
                       span:
@@ -273,7 +273,7 @@ module:
             node:
               load:
                 addr:
-                  kind: "&*isize"
+                  kind: isize&
                   node:
                     read: l1
                   span:
@@ -288,11 +288,11 @@ module:
     - free:
         dest:
           mem:
-            kind: "**isize"
+            kind: isize**
             node:
               cell_addr:
                 list:
-                  kind: "[2]*isize"
+                  kind: isize*[2]
                   node:
                     read: l0
                   span:
@@ -324,14 +324,14 @@ module:
     ret: null
     locals:
     - name: ပ
-      kind: "*isize"
+      kind: isize*
       access: var
       span:
         lo: 3215
         hi: 3218
       addressed: false
     - name: တန်း
-      kind: "[2]&*isize"
+      kind: isize&[2]
       access: var
       span:
         lo: 3540
@@ -355,7 +355,7 @@ module:
     - set:
         place: l0
         value:
-          kind: "*isize"
+          kind: isize*
           node:
             const: 0x0:ptr
           span:
@@ -381,7 +381,7 @@ module:
     - set:
         place: l1
         value:
-          kind: "[2]&*isize"
+          kind: isize&[2]
           node: blank_list
           span:
             lo: 3540
@@ -410,11 +410,11 @@ module:
         block:
         - store:
             addr:
-              kind: "**isize"
+              kind: isize**
               node:
                 cell_addr:
                   list:
-                    kind: "[2]&*isize"
+                    kind: isize&[2]
                     node:
                       read: l1
                     span:
@@ -434,11 +434,11 @@ module:
                 lo: 3828
                 hi: 3864
             value:
-              kind: "&*isize"
+              kind: isize&
               node:
                 ptr_add:
                   base:
-                    kind: "*isize"
+                    kind: isize*
                     node:
                       read: l0
                     span:
@@ -481,15 +481,15 @@ module:
         block:
         - store:
             addr:
-              kind: "&*isize"
+              kind: isize&
               node:
                 load:
                   addr:
-                    kind: "**isize"
+                    kind: isize**
                     node:
                       cell_addr:
                         list:
-                          kind: "[2]&*isize"
+                          kind: isize&[2]
                           node:
                             read: l1
                           span:
@@ -546,15 +546,15 @@ module:
             node:
               load:
                 addr:
-                  kind: "&*isize"
+                  kind: isize&
                   node:
                     load:
                       addr:
-                        kind: "**isize"
+                        kind: isize**
                         node:
                           cell_addr:
                             list:
-                              kind: "[2]&*isize"
+                              kind: isize&[2]
                               node:
                                 read: l1
                               span:
@@ -598,14 +598,14 @@ module:
     ret: null
     locals:
     - name: ဟောင်း
-      kind: "[2]*isize"
+      kind: isize*[2]
       access: var
       span:
         lo: 4690
         hi: 4708
       addressed: false
     - name: သစ်
-      kind: "[2]*isize"
+      kind: isize*[2]
       access: var
       span:
         lo: 5473
@@ -622,7 +622,7 @@ module:
     - set:
         place: l0
         value:
-          kind: "[2]*isize"
+          kind: isize*[2]
           node: blank_list
           span:
             lo: 4690
@@ -633,11 +633,11 @@ module:
     - alloc:
         dest:
           mem:
-            kind: "**isize"
+            kind: isize**
             node:
               cell_addr:
                 list:
-                  kind: "[2]*isize"
+                  kind: isize*[2]
                   node:
                     read: l0
                   span:
@@ -670,11 +670,11 @@ module:
     - alloc:
         dest:
           mem:
-            kind: "**isize"
+            kind: isize**
             node:
               cell_addr:
                 list:
-                  kind: "[2]*isize"
+                  kind: isize*[2]
                   node:
                     read: l0
                   span:
@@ -706,15 +706,15 @@ module:
           hi: 5332
     - store:
         addr:
-          kind: "*isize"
+          kind: isize*
           node:
             load:
               addr:
-                kind: "**isize"
+                kind: isize**
                 node:
                   cell_addr:
                     list:
-                      kind: "[2]*isize"
+                      kind: isize*[2]
                       node:
                         read: l0
                       span:
@@ -749,11 +749,11 @@ module:
     - set:
         place: l1
         value:
-          kind: "[2]*isize"
+          kind: isize*[2]
           node:
             take:
               addr:
-                kind: "*[2]*isize"
+                kind: isize*[2]*
                 node:
                   addr_of: l0
                 span:
@@ -772,15 +772,15 @@ module:
             node:
               load:
                 addr:
-                  kind: "*isize"
+                  kind: isize*
                   node:
                     load:
                       addr:
-                        kind: "**isize"
+                        kind: isize**
                         node:
                           cell_addr:
                             list:
-                              kind: "[2]*isize"
+                              kind: isize*[2]
                               node:
                                 read: l1
                               span:
@@ -830,11 +830,11 @@ module:
         - free:
             dest:
               mem:
-                kind: "**isize"
+                kind: isize**
                 node:
                   cell_addr:
                     list:
-                      kind: "[2]*isize"
+                      kind: isize*[2]
                       node:
                         read: l1
                       span:
@@ -866,17 +866,17 @@ module:
   - name: ချဲ့
     params: 1
     result: 1
-    ret: "&*isize"
+    ret: isize&
     locals:
     - name: ချိတ်
-      kind: "&**isize"
+      kind: isize*&
       access: var
       span:
         lo: 6428
         hi: 6443
       addressed: false
     - name: ရလဒ်
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 6301
@@ -886,7 +886,7 @@ module:
     - set:
         place: l1
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             const: 0x0:ptr
           span:
@@ -898,7 +898,7 @@ module:
     - resize:
         dest:
           mem:
-            kind: "&**isize"
+            kind: isize*&
             node:
               read: l0
             span:
@@ -917,15 +917,15 @@ module:
           hi: 6947
     - return:
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             lend:
               operand:
-                kind: "*isize"
+                kind: isize*
                 node:
                   load:
                     addr:
-                      kind: "&**isize"
+                      kind: isize*&
                       node:
                         read: l0
                       span:
@@ -947,17 +947,17 @@ module:
   - name: ပထမ
     params: 1
     result: 1
-    ret: "&*isize"
+    ret: isize&
     locals:
     - name: တန်း
-      kind: "[2]&*isize"
+      kind: isize&[2]
       access: var
       span:
         lo: 7470
         hi: 7482
       addressed: false
     - name: ရလဒ်
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 7305
@@ -967,7 +967,7 @@ module:
     - set:
         place: l1
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             const: 0x0:ptr
           span:
@@ -978,15 +978,15 @@ module:
           hi: 7314
     - return:
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             load:
               addr:
-                kind: "**isize"
+                kind: isize**
                 node:
                   cell_addr:
                     list:
-                      kind: "[2]&*isize"
+                      kind: isize&[2]
                       node:
                         read: l0
                       span:
@@ -1021,21 +1021,21 @@ module:
     ret: null
     locals:
     - name: ပ
-      kind: "*isize"
+      kind: isize*
       access: var
       span:
         lo: 8249
         hi: 8252
       addressed: true
     - name: တန်း
-      kind: "[2]&*isize"
+      kind: isize&[2]
       access: var
       span:
         lo: 8574
         hi: 8586
       addressed: false
     - name: ရ
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 9279
@@ -1045,7 +1045,7 @@ module:
     - set:
         place: l0
         value:
-          kind: "*isize"
+          kind: isize*
           node:
             const: 0x0:ptr
           span:
@@ -1071,7 +1071,7 @@ module:
     - set:
         place: l1
         value:
-          kind: "[2]&*isize"
+          kind: isize&[2]
           node: blank_list
           span:
             lo: 8574
@@ -1081,11 +1081,11 @@ module:
           hi: 8785
     - store:
         addr:
-          kind: "**isize"
+          kind: isize**
           node:
             cell_addr:
               list:
-                kind: "[2]&*isize"
+                kind: isize&[2]
                 node:
                   read: l1
                 span:
@@ -1105,13 +1105,13 @@ module:
             lo: 8786
             hi: 8822
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             call:
               func: 3
               name: ချဲ့
               args:
-              - kind: "&**isize"
+              - kind: isize*&
                 node:
                   addr_of: l0
                 span:
@@ -1125,11 +1125,11 @@ module:
           hi: 9026
     - store:
         addr:
-          kind: "**isize"
+          kind: isize**
           node:
             cell_addr:
               list:
-                kind: "[2]&*isize"
+                kind: isize&[2]
                 node:
                   read: l1
                 span:
@@ -1149,19 +1149,19 @@ module:
             lo: 9027
             hi: 9063
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             ptr_add:
               base:
-                kind: "&*isize"
+                kind: isize&
                 node:
                   load:
                     addr:
-                      kind: "**isize"
+                      kind: isize**
                       node:
                         cell_addr:
                           list:
-                            kind: "[2]&*isize"
+                            kind: isize&[2]
                             node:
                               read: l1
                             span:
@@ -1198,15 +1198,15 @@ module:
           hi: 9144
     - store:
         addr:
-          kind: "&*isize"
+          kind: isize&
           node:
             load:
               addr:
-                kind: "**isize"
+                kind: isize**
                 node:
                   cell_addr:
                     list:
-                      kind: "[2]&*isize"
+                      kind: isize&[2]
                       node:
                         read: l1
                       span:
@@ -1241,13 +1241,13 @@ module:
     - set:
         place: l2
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             call:
               func: 4
               name: ပထမ
               args:
-              - kind: "[2]&*isize"
+              - kind: isize&[2]
                 node:
                   read: l1
                 span:
@@ -1266,11 +1266,11 @@ module:
             node:
               load:
                 addr:
-                  kind: "&*isize"
+                  kind: isize&
                   node:
                     ptr_add:
                       base:
-                        kind: "&*isize"
+                        kind: isize&
                         node:
                           read: l2
                         span:
@@ -1308,7 +1308,7 @@ module:
     ret: null
     locals:
     - name: ဇယား
-      kind: "[2][2]*isize"
+      kind: isize*[2][2]
       access: var
       span:
         lo: 10195
@@ -1329,7 +1329,7 @@ module:
         hi: 10645
       addressed: false
     - name: ကြည့်
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 11364
@@ -1353,7 +1353,7 @@ module:
     - set:
         place: l0
         value:
-          kind: "[2][2]*isize"
+          kind: isize*[2][2]
           node: blank_list
           span:
             lo: 10195
@@ -1402,19 +1402,19 @@ module:
             - alloc:
                 dest:
                   mem:
-                    kind: "**isize"
+                    kind: isize**
                     node:
                       cell_addr:
                         list:
-                          kind: "[2]*isize"
+                          kind: isize*[2]
                           node:
                             load:
                               addr:
-                                kind: "*[2]*isize"
+                                kind: isize*[2]*
                                 node:
                                   cell_addr:
                                     list:
-                                      kind: "[2][2]*isize"
+                                      kind: isize*[2][2]
                                       node:
                                         read: l0
                                       span:
@@ -1468,23 +1468,23 @@ module:
           hi: 11205
     - store:
         addr:
-          kind: "*isize"
+          kind: isize*
           node:
             load:
               addr:
-                kind: "**isize"
+                kind: isize**
                 node:
                   cell_addr:
                     list:
-                      kind: "[2]*isize"
+                      kind: isize*[2]
                       node:
                         load:
                           addr:
-                            kind: "*[2]*isize"
+                            kind: isize*[2]*
                             node:
                               cell_addr:
                                 list:
-                                  kind: "[2][2]*isize"
+                                  kind: isize*[2][2]
                                   node:
                                     read: l0
                                   span:
@@ -1535,27 +1535,27 @@ module:
     - set:
         place: l3
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             lend:
               operand:
-                kind: "*isize"
+                kind: isize*
                 node:
                   load:
                     addr:
-                      kind: "**isize"
+                      kind: isize**
                       node:
                         cell_addr:
                           list:
-                            kind: "[2]*isize"
+                            kind: isize*[2]
                             node:
                               load:
                                 addr:
-                                  kind: "*[2]*isize"
+                                  kind: isize*[2]*
                                   node:
                                     cell_addr:
                                       list:
-                                        kind: "[2][2]*isize"
+                                        kind: isize*[2][2]
                                         node:
                                           read: l0
                                         span:
@@ -1606,7 +1606,7 @@ module:
             node:
               load:
                 addr:
-                  kind: "&*isize"
+                  kind: isize&
                   node:
                     read: l3
                   span:
@@ -1659,19 +1659,19 @@ module:
             - free:
                 dest:
                   mem:
-                    kind: "**isize"
+                    kind: isize**
                     node:
                       cell_addr:
                         list:
-                          kind: "[2]*isize"
+                          kind: isize*[2]
                           node:
                             load:
                               addr:
-                                kind: "*[2]*isize"
+                                kind: isize*[2]*
                                 node:
                                   cell_addr:
                                     list:
-                                      kind: "[2][2]*isize"
+                                      kind: isize*[2][2]
                                       node:
                                         read: l0
                                       span:
@@ -1723,7 +1723,7 @@ module:
   - set:
       place: g0
       value:
-        kind: "[4]isize"
+        kind: isize[4]
         node:
           list:
           - kind: isize
@@ -1806,11 +1806,11 @@ module:
                   node:
                     load:
                       addr:
-                        kind: "*isize"
+                        kind: isize*
                         node:
                           cell_addr:
                             list:
-                              kind: "[4]isize"
+                              kind: isize[4]
                               node:
                                 read: g0
                               span:

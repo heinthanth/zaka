@@ -38,9 +38,9 @@ v ၏ အကွက်အရေအတွက် ကို ပြသပါ။
 | Burmese | In messages | What it is |
 | --- | --- | --- |
 | `စာသား` | `text` | owned UTF-8 text, the plain form |
-| `စာသားသေ` | `fixed_text` | owned UTF-8 text whose u8s never change (see [Forms](#forms)) |
-| `စာသားရှင်` | `heap_text` | owned UTF-8 text in a heap block of its own from the start (see [Forms](#forms)) |
-| `စာသား တစ်စိတ်တစ်ပိုင်း` | `&text` | a view of text: a borrowed run of u8 cells that hold UTF-8 |
+| `စာသားသေ` | `textf` | owned UTF-8 text whose u8s never change (see [Forms](#forms)) |
+| `စာသားရှင်` | `text~` | owned UTF-8 text in a heap block of its own from the start (see [Forms](#forms)) |
+| `စာသား တစ်စိတ်တစ်ပိုင်း` | `text[..]` | a view of text: a borrowed run of u8 cells that hold UTF-8 |
 
 - `စာသား` is three words: the address of its u8s, their count, and its *room*, the size of
   the heap block that holds them. A room of 0 means that the u8s sit in static storage
@@ -48,7 +48,7 @@ v ၏ အကွက်အရေအတွက် ကို ပြသပါ။
 - `စာသား တစ်စိတ်တစ်ပိုင်း` is a [slice](slices.md): two words, the address and the count.
   `တစ်စိတ်တစ်ပိုင်း` straight after `စာသား` makes the view, with no `စာရင်း` between them.
 - A view of text does not widen to `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း`
-  (`&[]u8`): the cells of such a slice can be written, which would break the UTF-8 of the
+  (`u8[][..]`): the cells of such a slice can be written, which would break the UTF-8 of the
   text. The reverse does not hold either: a slice of u8s is not known to hold UTF-8.
   Giving one where the other is wanted is ZK0401.
 - Owned text does not turn into a view on its own either: lend it (see
@@ -80,7 +80,7 @@ result, a struct field or a list cell.
   edits to come. A set replaces the whole value, as for each form.
 - A constant holds plain or fixed text, never heap text (ZK0435): a constant sits in
   static storage.
-- A lend of text of each form gives a view, `&text`. Joins, formats and template literals
+- A lend of text of each form gives a view, `text[..]`. Joins, formats and template literals
   make plain text, which converts to the other forms.
 
 ```zaka

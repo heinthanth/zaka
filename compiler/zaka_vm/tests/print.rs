@@ -50,9 +50,9 @@ fn lists_print_their_cells_between_brackets()
     m.store(a, v("1:isize")).unwrap();
     m.store(a + 24, v("-4:isize")).unwrap();
     let kind = |n: &str| DataKind::parse(n).unwrap();
-    assert_eq!(list_text(&m, a, kind("[4]isize")), Ok("[၁၊ ၀၊ ၀၊ -၄]".to_string()));
+    assert_eq!(list_text(&m, a, kind("isize[4]")), Ok("[၁၊ ၀၊ ၀၊ -၄]".to_string()));
     assert_eq!(
-        list_text(&m, a, kind("[2][2]isize")),
+        list_text(&m, a, kind("isize[2][2]")),
         Ok("[[၁၊ ၀]၊ [၀၊ -၄]]".to_string())
     );
     assert_eq!(list_text(&m, a, kind("isize")), Ok("၁".to_string()));

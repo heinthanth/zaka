@@ -51,7 +51,7 @@ fn heap_ops_list_their_operands()
         "ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် \
          သိမ်းထားမည်။\np ၏ တန်ဖိုး ကို ပြသပါ။",
     ));
-    assert!(out.contains("globals\n  g0 p *isize\n"), "{out}");
+    assert!(out.contains("globals\n  g0 p isize*\n"), "{out}");
     assert!(out.contains("alloc 8"), "{out}");
     assert!(out.contains("load isize"), "{out}");
 }

@@ -261,7 +261,7 @@ pub struct BlockRow
     #[builder(default)]
     pub vars: Vec<VarRow>,
     /// The cell sizes of the list the block holds, outermost first, such as
-    /// `[24, 8]` for a `[2][3]isize`; none for a block that holds no list.
+    /// `[24, 8]` for an `isize[3][2]`; none for a block that holds no list.
     #[builder(default)]
     pub cells: Vec<u64>,
 }

@@ -134,7 +134,7 @@ at a time:
 မှန်
 ```
 
-Lists of different kinds, such as `[3]isize` and `[2]isize`, do not compare. Lists have
+Lists of different kinds, such as `isize[3]` and `isize[2]`, do not compare. Lists have
 no order, so `<` and `>` do not take them.
 
 ## Hands on

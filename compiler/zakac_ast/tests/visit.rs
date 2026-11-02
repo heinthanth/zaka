@@ -273,10 +273,10 @@ fn resize_walks_the_target_first()
 #[test]
 fn pointer_kinds_print_with_stars()
 {
-    assert_eq!(ptr_kind(BaseKind::Int, Some(32), 1).to_sexpr(), "*i32");
-    assert_eq!(ptr_kind(BaseKind::Int, None, 2).to_sexpr(), "**isize");
+    assert_eq!(ptr_kind(BaseKind::Int, Some(32), 1).to_sexpr(), "i32*");
+    assert_eq!(ptr_kind(BaseKind::Int, None, 2).to_sexpr(), "isize**");
     assert_eq!(ptr_kind(BaseKind::Opaque, None, 1).to_sexpr(), "ptr");
-    assert_eq!(ptr_kind(BaseKind::Opaque, None, 2).to_sexpr(), "*ptr");
+    assert_eq!(ptr_kind(BaseKind::Opaque, None, 2).to_sexpr(), "ptr*");
 }
 
 #[test]

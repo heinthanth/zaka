@@ -309,16 +309,16 @@ fn pointers_round_trip_and_convert()
     {
         assert_eq!(v(text).to_string(), text);
     }
-    assert_eq!(v("0x10:*i32"), Value::Ptr(16));
+    assert_eq!(v("0x10:i32*"), Value::Ptr(16));
     assert_eq!(convert(v("0x1000:ptr"), kind("usize"), P), Ok(v("4096:usize")));
-    assert_eq!(convert(v("4096:isize"), kind("*i8"), P), Ok(v("0x1000:ptr")));
+    assert_eq!(convert(v("4096:isize"), kind("i8*"), P), Ok(v("0x1000:ptr")));
     assert_eq!(convert(v("0x1000:ptr"), kind("f64"), P), Err(EvalError::Mismatch));
     assert_eq!(compare(CmpOp::Lt, v("0x10:ptr"), v("0x20:ptr")), Ok(true));
     assert_eq!(
         compare(CmpOp::Eq, v("0x0:ptr"), v("0:isize")),
         Err(EvalError::Mismatch)
     );
-    assert_eq!(Value::default_of(kind("*isize")), Value::NULL);
+    assert_eq!(Value::default_of(kind("isize*")), Value::NULL);
 }
 
 #[test]

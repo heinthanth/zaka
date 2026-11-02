@@ -63,12 +63,12 @@ q ၏ တန်ဖိုးအငှား ကို ပြသပါ။
 (r + ၁) ကို ပြသပါ။
 q ၏ တန်ဖိုး ကို ပြသပါ။"));
     assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
-    assert_eq!(kind_at(&checked, "x ၏ လိပ်စာ"), "&*isize");
-    assert_eq!(kind_at(&checked, "p ၏ လိပ်စာ"), "&**isize");
-    assert_eq!(kind_at(&checked, "p ၏ တန်ဖိုးအငှား"), "&*isize");
-    assert_eq!(kind_at(&checked, "q ၏ တန်ဖိုးအငှား"), "&*isize");
-    assert_eq!(kind_at(&checked, "p + ၁"), "&*isize");
-    assert_eq!(kind_at(&checked, "r + ၁"), "~isize");
+    assert_eq!(kind_at(&checked, "x ၏ လိပ်စာ"), "isize&");
+    assert_eq!(kind_at(&checked, "p ၏ လိပ်စာ"), "isize*&");
+    assert_eq!(kind_at(&checked, "p ၏ တန်ဖိုးအငှား"), "isize&");
+    assert_eq!(kind_at(&checked, "q ၏ တန်ဖိုးအငှား"), "isize&");
+    assert_eq!(kind_at(&checked, "p + ၁"), "isize&");
+    assert_eq!(kind_at(&checked, "r + ၁"), "isize^");
     assert_eq!(kind_at(&checked, "q ၏ တန်ဖိုး"), "isize");
 }
 
@@ -147,7 +147,7 @@ fn an_integer_becomes_a_checked_address_through_a_raw_one()
     assert_eq!(codes(&owner), [Code::InvalidCast]);
     let borrow = own("q ကို x ကို ငှားထားသော ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။");
     assert_eq!(codes(&borrow), [Code::InvalidCast]);
-    assert!(help_of(&borrow).contains("~isize"), "{}", help_of(&borrow));
+    assert!(help_of(&borrow).contains("isize^"), "{}", help_of(&borrow));
     let opaque = own("(၄၀၉၆ ကို လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်) ကို ပြသပါ။");
     assert_eq!(codes(&opaque), [Code::InvalidCast]);
     ok(&own("r ကို x ကို ကိန်းပြည့် လိပ်စာအကြမ်း အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။"));
@@ -163,7 +163,7 @@ fn a_cast_of_a_borrow_keeps_the_borrow()
     let text = own(&format!("b ကို {cast} ဟု ထားပါ။"));
     assert_eq!(codes(&text), [Code::BorrowForOwner]);
     let shown = check(&own(&format!("{cast} ကို ပြသပါ။")));
-    assert_eq!(kind_at(&shown, cast), "&*i8");
+    assert_eq!(kind_at(&shown, cast), "i8&");
     ok(&own("ကိန်းရှင် c သည် ငှားထားသော ၈ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 c ကို q ကို ငှားထားသော ၈ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။"));
 }
@@ -173,7 +173,7 @@ fn null_fits_each_flavour()
 {
     ok(&own("p ကို ဗလာ ဟု ထားပါ။\nq ကို ဗလာ ဟု ထားပါ။\nr ကို ဗလာ ဟု ထားပါ။"));
     let checked = check(&own("q ကို ဗလာ ဟု ထားပါ။"));
-    assert_eq!(kind_at(&checked, "ဗလာ"), "&*isize");
+    assert_eq!(kind_at(&checked, "ဗလာ"), "isize&");
 }
 
 #[test]
@@ -203,7 +203,7 @@ fn borrow_markers_sit_once_before_a_checked_pointer()
                     လိပ်စာ ဖြစ်ပါစေ။");
     let checked = check(&text);
     assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
-    assert_eq!(kind_at(&checked, "r ၏ လိပ်စာ"), "&*~isize");
+    assert_eq!(kind_at(&checked, "r ၏ လိပ်စာ"), "isize^&");
 }
 
 #[test]
@@ -283,7 +283,7 @@ i ကို ပြသပါ။
     ]
     {
         assert_eq!(codes(text), [Code::InvalidCast], "{text}");
-        assert!(help_of(text).contains("~*isize"), "{}", help_of(text));
+        assert!(help_of(text).contains("isize*^"), "{}", help_of(text));
     }
     ok(&own("ကိန်းရှင် ဒ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (p ကို ကိန်းပြည့် \
              လိပ်စာ ၏ လိပ်စာအကြမ်း အဖြစ် ပြောင်းလဲသော ရလဒ်) ကို ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ \
@@ -416,7 +416,7 @@ fn an_opaque_address_carries_no_block_of_addresses()
     {
         assert_eq!(codes(text), [Code::KindMismatch], "{text}");
         let help = help_of(text);
-        assert!(help.contains("~*isize") || help.contains("rawptr"), "{help}");
+        assert!(help.contains("isize*^") || help.contains("rawptr"), "{help}");
     }
     let raw_step = format!(
         "{opaque}\nကိန်းရှင် ဒ သည် {take} တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (အ ကို ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာအကြမ်း \
@@ -434,7 +434,7 @@ fn a_mismatch_between_blocks_of_addresses_names_the_raw_step()
     );
     assert_eq!(codes(&text), [Code::KindMismatch]);
     let help = help_of(&text);
-    assert!(help.contains("~*isize") && help.contains("&**isize"), "{help}");
+    assert!(help.contains("isize*^") && help.contains("isize*&"), "{help}");
     let plain = own("x ကို q ဟု ထားပါ။");
     assert_eq!(codes(&plain), [Code::KindMismatch]);
     assert!(help_of(&plain).contains("ပြောင်းလဲသော ရလဒ်"), "{}", help_of(&plain));

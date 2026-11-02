@@ -20,21 +20,21 @@ module:
       hi: 6554
     addressed: true
   - name: ပ
-    kind: "*isize"
+    kind: isize*
     access: var
     span:
       lo: 7382
       hi: 7385
     addressed: true
   - name: အသစ်
-    kind: "&*isize"
+    kind: isize&
     access: var
     span:
       lo: 8196
       hi: 8208
     addressed: false
   - name: ဆုံး
-    kind: "&*isize"
+    kind: isize&
     access: var
     span:
       lo: 8672
@@ -61,14 +61,14 @@ module:
         hi: 279
       addressed: false
     - name: အဖြေ
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 364
         hi: 376
       addressed: false
     - name: အကြွင်း
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 474
@@ -77,7 +77,7 @@ module:
     block:
     - store:
         addr:
-          kind: "&*isize"
+          kind: isize&
           node:
             read: l2
           span:
@@ -110,7 +110,7 @@ module:
           hi: 755
     - store:
         addr:
-          kind: "&*isize"
+          kind: isize&
           node:
             read: l3
           span:
@@ -151,14 +151,14 @@ module:
     ret: null
     locals:
     - name: က
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 1126
         hi: 1129
       addressed: false
     - name: ခ
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 1227
@@ -179,7 +179,7 @@ module:
           node:
             load:
               addr:
-                kind: "&*isize"
+                kind: isize&
                 node:
                   read: l0
                 span:
@@ -193,7 +193,7 @@ module:
           hi: 1566
     - store:
         addr:
-          kind: "&*isize"
+          kind: isize&
           node:
             read: l0
           span:
@@ -204,7 +204,7 @@ module:
           node:
             load:
               addr:
-                kind: "&*isize"
+                kind: isize&
                 node:
                   read: l1
                 span:
@@ -218,7 +218,7 @@ module:
           hi: 1662
     - store:
         addr:
-          kind: "&*isize"
+          kind: isize&
           node:
             read: l1
           span:
@@ -241,7 +241,7 @@ module:
   - name: ဘူးသစ်
     params: 1
     result: 1
-    ret: "*isize"
+    ret: isize*
     locals:
     - name: စ
       kind: isize
@@ -251,7 +251,7 @@ module:
         hi: 2066
       addressed: false
     - name: ရလဒ်
-      kind: "*isize"
+      kind: isize*
       access: var
       span:
         lo: 2003
@@ -261,7 +261,7 @@ module:
     - set:
         place: l1
         value:
-          kind: "*isize"
+          kind: isize*
           node:
             const: 0x0:ptr
           span:
@@ -291,14 +291,14 @@ module:
             compare:
               op: eq
               lhs:
-                kind: "*isize"
+                kind: isize*
                 node:
                   read: l1
                 span:
                   lo: 2503
                   hi: 2515
               rhs:
-                kind: "*isize"
+                kind: isize*
                 node:
                   const: 0x0:ptr
                 span:
@@ -310,7 +310,7 @@ module:
         then:
         - return:
             value:
-              kind: "*isize"
+              kind: isize*
               node:
                 const: 0x0:ptr
               span:
@@ -326,7 +326,7 @@ module:
           hi: 2652
     - store:
         addr:
-          kind: "*isize"
+          kind: isize*
           node:
             read: l1
           span:
@@ -344,11 +344,11 @@ module:
           hi: 2731
     - store:
         addr:
-          kind: "&*isize"
+          kind: isize&
           node:
             ptr_add:
               base:
-                kind: "*isize"
+                kind: isize*
                 node:
                   read: l1
                 span:
@@ -391,7 +391,7 @@ module:
           hi: 2822
     - return:
         value:
-          kind: "*isize"
+          kind: isize*
           node:
             read: l1
           span:
@@ -410,7 +410,7 @@ module:
     ret: null
     locals:
     - name: က
-      kind: "*isize"
+      kind: isize*
       access: var
       span:
         lo: 3113
@@ -430,17 +430,17 @@ module:
   - name: ချဲ့
     params: 1
     result: 1
-    ret: "&*isize"
+    ret: isize&
     locals:
     - name: ချိတ်
-      kind: "&**isize"
+      kind: isize*&
       access: var
       span:
         lo: 3754
         hi: 3769
       addressed: false
     - name: ရလဒ်
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 3627
@@ -450,7 +450,7 @@ module:
     - set:
         place: l1
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             const: 0x0:ptr
           span:
@@ -462,7 +462,7 @@ module:
     - resize:
         dest:
           mem:
-            kind: "&**isize"
+            kind: isize*&
             node:
               read: l0
             span:
@@ -481,15 +481,15 @@ module:
           hi: 4273
     - return:
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             lend:
               operand:
-                kind: "*isize"
+                kind: isize*
                 node:
                   load:
                     addr:
-                      kind: "&**isize"
+                      kind: isize*&
                       node:
                         read: l0
                       span:
@@ -511,10 +511,10 @@ module:
   - name: နောက်ဆုံး
     params: 2
     result: 2
-    ret: "&*isize"
+    ret: isize&
     locals:
     - name: ဘူး
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 4759
@@ -528,7 +528,7 @@ module:
         hi: 4853
       addressed: false
     - name: ရလဒ်
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 4640
@@ -538,7 +538,7 @@ module:
     - set:
         place: l2
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             const: 0x0:ptr
           span:
@@ -549,11 +549,11 @@ module:
           hi: 4667
     - return:
         value:
-          kind: "&*isize"
+          kind: isize&
           node:
             ptr_add:
               base:
-                kind: "&*isize"
+                kind: isize&
                 node:
                   read: l0
                 span:
@@ -597,7 +597,7 @@ module:
     ret: isize
     locals:
     - name: ဘူး
-      kind: "&*isize"
+      kind: isize&
       access: var
       span:
         lo: 5561
@@ -681,7 +681,7 @@ module:
                 node:
                   load:
                     addr:
-                      kind: "&*isize"
+                      kind: isize&
                       node:
                         read: l0
                       span:
@@ -697,11 +697,11 @@ module:
                     func: 6
                     name: ပေါင်း
                     args:
-                    - kind: "&*isize"
+                    - kind: isize&
                       node:
                         ptr_add:
                           base:
-                            kind: "&*isize"
+                            kind: isize&
                             node:
                               read: l0
                             span:
@@ -792,13 +792,13 @@ module:
         span:
           lo: 6716
           hi: 6719
-      - kind: "&*isize"
+      - kind: isize&
         node:
           addr_of: g0
         span:
           lo: 6723
           hi: 6749
-      - kind: "&*isize"
+      - kind: isize&
         node:
           addr_of: g1
         span:
@@ -835,13 +835,13 @@ module:
       func: 1
       name: လဲလှယ်
       args:
-      - kind: "&*isize"
+      - kind: isize&
         node:
           addr_of: g0
         span:
           lo: 6998
           hi: 7024
-      - kind: "&*isize"
+      - kind: isize&
         node:
           addr_of: g1
         span:
@@ -854,13 +854,13 @@ module:
       func: 1
       name: လဲလှယ်
       args:
-      - kind: "&*isize"
+      - kind: isize&
         node:
           addr_of: g0
         span:
           lo: 7198
           hi: 7224
-      - kind: "&*isize"
+      - kind: isize&
         node:
           addr_of: g0
         span:
@@ -884,7 +884,7 @@ module:
   - set:
       place: g2
       value:
-        kind: "*isize"
+        kind: isize*
         node:
           call:
             func: 2
@@ -906,11 +906,11 @@ module:
       func: 1
       name: လဲလှယ်
       args:
-      - kind: "&*isize"
+      - kind: isize&
         node:
           lend:
             operand:
-              kind: "*isize"
+              kind: isize*
               node:
                 read: g2
               span:
@@ -919,11 +919,11 @@ module:
         span:
           lo: 7757
           hi: 7801
-      - kind: "&*isize"
+      - kind: isize&
         node:
           ptr_add:
             base:
-              kind: "*isize"
+              kind: isize*
               node:
                 read: g2
               span:
@@ -949,7 +949,7 @@ module:
           node:
             load:
               addr:
-                kind: "*isize"
+                kind: isize*
                 node:
                   read: g2
                 span:
@@ -970,11 +970,11 @@ module:
               func: 6
               name: ပေါင်း
               args:
-              - kind: "&*isize"
+              - kind: isize&
                 node:
                   lend:
                     operand:
-                      kind: "*isize"
+                      kind: isize*
                       node:
                         read: g2
                       span:
@@ -998,13 +998,13 @@ module:
   - set:
       place: g3
       value:
-        kind: "&*isize"
+        kind: isize&
         node:
           call:
             func: 4
             name: ချဲ့
             args:
-            - kind: "&**isize"
+            - kind: isize*&
               node:
                 addr_of: g2
               span:
@@ -1018,11 +1018,11 @@ module:
         hi: 8558
   - store:
       addr:
-        kind: "&*isize"
+        kind: isize&
         node:
           ptr_add:
             base:
-              kind: "&*isize"
+              kind: isize&
               node:
                 read: g3
               span:
@@ -1051,13 +1051,13 @@ module:
   - set:
       place: g4
       value:
-        kind: "&*isize"
+        kind: isize&
         node:
           call:
             func: 5
             name: နောက်ဆုံး
             args:
-            - kind: "&*isize"
+            - kind: isize&
               node:
                 read: g3
               span:
@@ -1082,7 +1082,7 @@ module:
           node:
             load:
               addr:
-                kind: "&*isize"
+                kind: isize&
                 node:
                   read: g4
                 span:
@@ -1098,11 +1098,11 @@ module:
       func: 3
       name: ရှင်းပစ်
       args:
-      - kind: "*isize"
+      - kind: isize*
         node:
           take:
             addr:
-              kind: "**isize"
+              kind: isize**
               node:
                 addr_of: g2
               span:
@@ -1121,14 +1121,14 @@ module:
           compare:
             op: eq
             lhs:
-              kind: "*isize"
+              kind: isize*
               node:
                 read: g2
               span:
                 lo: 9272
                 hi: 9275
             rhs:
-              kind: "*isize"
+              kind: isize*
               node:
                 const: 0x0:ptr
               span:

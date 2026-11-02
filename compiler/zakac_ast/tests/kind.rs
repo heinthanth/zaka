@@ -23,18 +23,18 @@ fn kind(base: BaseKind, wraps: Vec<Wrap>, borrowed: bool, extra: u8) -> Kind
 fn borrowed_and_raw_kinds_print_their_marks()
 {
     let int = BaseKind::Int;
-    assert_eq!(kind(int, vec![Wrap::Ptr], true, 0).to_sexpr(), "&*isize");
+    assert_eq!(kind(int, vec![Wrap::Ptr], true, 0).to_sexpr(), "isize&");
     assert_eq!(
         kind(int, vec![Wrap::RawPtr, Wrap::Ptr], false, 0).to_sexpr(),
-        "*~isize"
+        "isize^*"
     );
-    assert_eq!(kind(int, vec![Wrap::RawPtr], false, 0).to_sexpr(), "~isize");
+    assert_eq!(kind(int, vec![Wrap::RawPtr], false, 0).to_sexpr(), "isize^");
     assert_eq!(
         kind(BaseKind::Opaque, vec![Wrap::RawPtr], false, 0).to_sexpr(),
         "rawptr"
     );
-    assert_eq!(kind(BaseKind::Opaque, vec![Wrap::Ptr], true, 0).to_sexpr(), "&ptr");
-    assert_eq!(kind(int, vec![Wrap::Ptr], true, 1).to_sexpr(), "&&*isize");
+    assert_eq!(kind(BaseKind::Opaque, vec![Wrap::Ptr], true, 0).to_sexpr(), "ptr&");
+    assert_eq!(kind(int, vec![Wrap::Ptr], true, 1).to_sexpr(), "isize&&");
 }
 
 #[test]

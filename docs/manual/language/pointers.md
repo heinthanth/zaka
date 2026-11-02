@@ -46,10 +46,10 @@ pointer to a pointer adds `၏ လိပ်စာ` for each further level.
 
 | Kind | What it is | Short name in messages |
 | --- | --- | --- |
-| `ကိန်းပြည့် လိပ်စာ` | an *owner*: it holds a heap block and alone gives it back | `*isize` |
-| `ငှားထားသော ကိန်းပြည့် လိပ်စာ` | a *borrow*: it points at a variable, or into a block that another pointer owns | `&*isize` |
-| `ကိန်းပြည့် လိပ်စာအကြမ်း` | a *raw* address: the compiler does not follow it, and the VM checks each use | `~isize` |
-| `ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | a borrow of a variable that owns a block | `&**isize` |
+| `ကိန်းပြည့် လိပ်စာ` | an *owner*: it holds a heap block and alone gives it back | `isize*` |
+| `ငှားထားသော ကိန်းပြည့် လိပ်စာ` | a *borrow*: it points at a variable, or into a block that another pointer owns | `isize&` |
+| `ကိန်းပြည့် လိပ်စာအကြမ်း` | a *raw* address: the compiler does not follow it, and the VM checks each use | `isize^` |
+| `ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | a borrow of a variable that owns a block | `isize*&` |
 | `လိပ်စာ` | an *opaque* address: it points at a value of no known kind | `ptr` |
 
 The word `ငှားထားသော` ("lent") stands once, at the front of the kind, and marks the outer
@@ -69,7 +69,7 @@ that points at a smaller integer:
 ```
 
 ```text
-error[ZK0401]: expected &*i8, found &*isize
+error[ZK0401]: expected i8&, found isize&
 ```
 
 Two implicit conversions exist: `ဗလာ` converts to each pointer kind, and a pointer of a named kind

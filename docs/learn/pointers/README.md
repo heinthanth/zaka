@@ -66,7 +66,7 @@ a pointer to an 8-bit integer:
 ```
 
 ```text
-error[ZK0401]: expected &*i8, found &*isize
+error[ZK0401]: expected i8&, found isize&
 ```
 
 A bare `လိပ်စာ` holds the address of a value of whatever kind, unless that value holds an

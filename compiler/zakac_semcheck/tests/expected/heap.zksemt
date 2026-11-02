@@ -1108,28 +1108,28 @@ program:
     lo: 0
     hi: 5843
 kinds:
-  0: "&*isize"
+  0: isize&
   1: isize
-  2: "&*isize"
+  2: isize&
   3: isize
-  4: "&*isize"
+  4: isize&
   5: isize
-  6: "&*isize"
+  6: isize&
   7: isize
   8: isize
   9: isize
   10: isize
   11: isize
-  12: "&*isize"
+  12: isize&
   13: isize
-  14: "&*isize"
+  14: isize&
   15: isize
   16: isize
   17: usize
   18: usize
   19: usize
-  20: "*isize"
-  21: "*isize"
+  20: isize*
+  21: isize*
   22: "null"
   23: bool
   24: text
@@ -1142,11 +1142,11 @@ kinds:
   32: usize
   33: usize
   34: usize
-  35: "*isize"
+  35: isize*
   36: usize
-  37: "*isize"
+  37: isize*
   38: usize
-  39: "&*isize"
+  39: isize&
   40: isize
   41: isize
   42: isize
@@ -1159,30 +1159,30 @@ kinds:
   49: usize
   50: usize
   51: bool
-  52: "*isize"
+  52: isize*
   53: usize
-  54: "&*isize"
+  54: isize&
   55: isize
   56: usize
   57: usize
   58: usize
   59: usize
-  60: "*isize"
+  60: isize*
   61: usize
-  62: "*u8"
-  63: "*u8"
+  62: u8*
+  63: u8*
   64: u8
   65: u8
-  66: "&*i32"
-  67: "*u8"
+  66: i32&
+  67: u8*
   68: isize
-  69: "&*u8"
-  70: "&*i32"
-  71: "&*i32"
+  69: u8&
+  70: i32&
+  71: i32&
   72: i32
   73: i32
-  74: "&*i32"
+  74: i32&
   75: i32
-  76: "*u8"
+  76: u8*
 structs: {}
 diagnostics: []

@@ -6,7 +6,7 @@ use common::kind_at;
 use common::ok;
 use zakac_diagnostics::Code;
 
-/// `x` an integer, `p` a borrow of it, `q` an opaque address, `b` an `*i8`.
+/// `x` an integer, `p` a borrow of it, `q` an opaque address, `b` an `i8*`.
 const PTRS: &str = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။
 ကိန်းရှင် q သည် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
@@ -21,11 +21,11 @@ fn pointer_kinds_and_null()
 {
     let checked = check(PTRS);
     assert!(checked.out.diagnostics.is_empty());
-    assert_eq!(kind_at(&checked, "x ၏ လိပ်စာ"), "&*isize");
+    assert_eq!(kind_at(&checked, "x ၏ လိပ်စာ"), "isize&");
     let opaque = "ကိန်းရှင် o သည် ငှားထားသော လိပ်စာ တစ်ခု ဖြစ်ပါစေ။";
     ok(&lines(&[PTRS, opaque, "o ကို p ဟု ထားပါ။", "p ကို o ဟု ထားပါ။", "p ကို ဗလာ ဟု ထားပါ။"]));
     assert_eq!(codes(&lines(&[PTRS, "p ကို b ဟု ထားပါ။"])), [Code::KindMismatch]);
-    assert_eq!(kind_at(&check(&lines(&[PTRS, "p ကို ဗလာ ဟု ထားပါ။"])), "ဗလာ"), "&*isize");
+    assert_eq!(kind_at(&check(&lines(&[PTRS, "p ကို ဗလာ ဟု ထားပါ။"])), "ဗလာ"), "isize&");
 }
 
 #[test]
@@ -54,7 +54,7 @@ fn pointer_arithmetic_and_comparison()
         "p + ၁ ၏ တန်ဖိုး ကို ပြသပါ။",
     ]));
     assert!(checked.out.diagnostics.is_empty());
-    assert_eq!(kind_at(&checked, "p + ၁"), "&*isize");
+    assert_eq!(kind_at(&checked, "p + ၁"), "isize&");
     assert_eq!(kind_at(&checked, "p - p"), "isize");
     assert_eq!(codes(&lines(&[PTRS, "(p * ၂) ကို ပြသပါ။"])), [Code::PointerOperator]);
     assert_eq!(codes(&lines(&[PTRS, "(q + ၁) ကို ပြသပါ။"])), [Code::OpaquePointer]);

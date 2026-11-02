@@ -17,10 +17,10 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::kind::DataKind;
+use crate::kind::split_marks;
 use crate::structs::StructDefs;
 use crate::structs::StructTable;
 use crate::structs::make_all;
-use crate::structs::split_base;
 
 /// Make the kinds of the top-level structs, reporting a name declared twice,
 /// a field name used twice or taken from a struct, a struct name no
@@ -164,7 +164,7 @@ fn field_texts(decl: &StructDecl, names: &BTreeSet<&str>) -> Vec<(String, String
         {
             return plain;
         };
-        format!("{}{name}", split_base(&plain).0)
+        format!("{name}{}", split_marks(&plain).1)
     };
     decl.fields.iter().map(|f| (f.name.name.to_string(), text(&f.kind))).collect()
 }

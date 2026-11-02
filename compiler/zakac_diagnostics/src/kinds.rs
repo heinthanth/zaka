@@ -78,7 +78,7 @@ pub fn condition_not_bool(span: Span, got: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0402.message", got = got);
     let diag = Diagnostic::new(Code::ConditionNotBool, msg, span);
-    let pointer = got.starts_with('*') || got == "ptr";
+    let pointer = got.ends_with('*') || got == "ptr";
     tern!(pointer, diag.with_help(t!("codes.ZK0402.help")), diag)
 }
 

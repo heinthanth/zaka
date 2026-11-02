@@ -19,17 +19,20 @@ fn lines(parts: &[&str]) -> String { parts.join("\n") }
 fn text_kinds_read_back_from_their_names()
 {
     let text = DataKind::parse("text").expect("text");
-    let view = DataKind::parse("&text").expect("&text");
+    let view = DataKind::parse("text[..]").expect("text[..]");
     assert_eq!(text, DataKind::TEXT);
     assert_eq!(view, DataKind::text_view());
     assert_eq!(text.size(64), 24);
     assert_eq!(text.size(32), 12);
     assert!(!text.is_move_kind() && text.is_aggregate() && !text.is_borrow());
-    assert!(text.holds_text() && DataKind::parse("[2]text").unwrap().holds_text());
+    assert!(text.holds_text() && DataKind::parse("text[2]").unwrap().holds_text());
     assert!(view.is_borrow() && !view.holds_text());
     assert!(!view.widens_to(DataKind::slice_of(DataKind::U8), 64));
     assert!(!DataKind::slice_of(DataKind::U8).widens_to(view, 64));
-    assert_eq!(DataKind::parse("*&text").map(DataKind::name), Some("*&text".into()));
+    assert_eq!(
+        DataKind::parse("text[..]*").map(DataKind::name),
+        Some("text[..]*".into())
+    );
 }
 
 /// The three forms of text share their three words, and each converts to the
@@ -37,15 +40,14 @@ fn text_kinds_read_back_from_their_names()
 #[test]
 fn text_forms_convert_to_each_other()
 {
-    let forms =
-        ["text", "fixed_text", "heap_text"].map(|n| DataKind::parse(n).expect(n));
+    let forms = ["text", "textf", "text~"].map(|n| DataKind::parse(n).expect(n));
     let pairs = forms.iter().flat_map(|a| forms.iter().map(move |b| (*a, *b)));
     assert!(pairs.clone().all(|(a, b)| a.widens_to(b, 64) && a.size(64) == b.size(64)));
     assert!(forms.iter().all(|k| k.is_text() && k.holds_text()));
     let heap: Vec<bool> = forms.iter().map(|k| k.holds_heap_text()).collect();
     assert_eq!(heap, [false, false, true]);
-    assert_eq!(forms.map(DataKind::name), ["text", "fixed_text", "heap_text"]);
-    assert!(DataKind::parse("[2]heap_text").unwrap().holds_heap_text());
+    assert_eq!(forms.map(DataKind::name), ["text", "textf", "text~"]);
+    assert!(DataKind::parse("text~[2]").unwrap().holds_heap_text());
 }
 
 /// A constant can hold plain or fixed text, never heap text.
@@ -73,7 +75,7 @@ fn literals_joins_and_views_take_their_kinds()
     assert_eq!(kind_at(&checked, "t + v"), "text");
     assert_eq!(kind_at(&checked, "v ၏ အကွက်အရေအတွက်"), "usize");
     assert_eq!(kind_at(&checked, "t ၏ အကွက် ၀"), "u8");
-    assert_eq!(kind_at(&checked, "t ၏ အကွက် ၀ မှစ၍ ၁ ကွက်"), "&text");
+    assert_eq!(kind_at(&checked, "t ၏ အကွက် ၀ မှစ၍ ၁ ကွက်"), "text[..]");
 }
 
 #[test]

@@ -327,10 +327,10 @@ fn an_offset_to_an_opaque_place_keeps_its_kind_under_a_widen()
 {
     let found = plain(OFFSETS);
     let expected = [
-        "(set g2 (widen &ptr (ptr+ g1 1:isize)))",
-        "(set g2 (widen &ptr (ptr+ g1 1:isize)))",
-        "(print (== (widen &*isize g2) (ptr+ g1 1:isize)))",
-        "(call ယူ (widen &ptr (ptr+ g1 1:isize)))",
+        "(set g2 (widen ptr& (ptr+ g1 1:isize)))",
+        "(set g2 (widen ptr& (ptr+ g1 1:isize)))",
+        "(print (== (widen isize& g2) (ptr+ g1 1:isize)))",
+        "(call ယူ (widen ptr& (ptr+ g1 1:isize)))",
     ];
     assert_eq!(found[2..], expected);
     let m = module(OFFSETS);
@@ -347,7 +347,7 @@ fn an_offset_to_an_opaque_place_keeps_its_kind_under_a_widen()
     assert_eq!(value.kind, DataKind::OPAQUE.as_borrowed());
     assert!(operand.kind.is_ptr() && !operand.kind.is_opaque());
     let ret = m.funcs[1].to_sexpr();
-    assert!(ret.contains("(return (widen &ptr (ptr+ l0 1:isize)))"), "{ret}");
+    assert!(ret.contains("(return (widen ptr& (ptr+ l0 1:isize)))"), "{ret}");
 }
 
 #[test]
@@ -357,7 +357,7 @@ fn a_pointer_default_takes_the_declared_kind()
 လုပ်ဆောင်ချက် ဗလာပေး သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ၏ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let m = module(text);
-    let to_isize = DataKind::parse("*isize").expect("a pointer kind");
+    let to_isize = DataKind::parse("isize*").expect("a pointer kind");
     let Stmt::Set { value, .. } = &m.main[0]
     else
     {

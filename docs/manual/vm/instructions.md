@@ -78,8 +78,8 @@ How to read it:
   `%step`, `%dir`, `%text` and `%new`. The last function is `main`, which holds the sentences outside each
   function.
 - A kind is written short: `isize` and `usize` for the platform-sized integers, `u8`,
-  `i32` and so on, `f64`, `char`, `bool`, `*isize` for an address of an integer,
-  `[3]isize` for a list of three integers, `text` and `&text` for owned text and a view
+  `i32` and so on, `f64`, `char`, `bool`, `isize*` for an address of an integer,
+  `isize[3]` for a list of three integers, `text` and `text[..]` for owned text and a view
   of text. A value is written `21:isize`.
 - A variable has no instruction of its own. Reading `က` is `global_addr g0` to push the
   address of its block, then `load isize` to read it. Writing is the address, the value,
@@ -92,7 +92,7 @@ How to read it:
 A program with text has two more tables before its functions. `texts` holds each static
 text once: string literals, formats whose template slots folded, and printed text. `formats`
 holds the pieces of each text built when the program runs: a static text `t1`, or the
-kind of a value that the program supplies (`isize`, `text`, `[3]isize`, ...).
+kind of a value that the program supplies (`isize`, `text`, `isize[3]`, ...).
 
 ```zaka
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မြ" ဖြစ်ပါစေ။
@@ -272,10 +272,10 @@ How each value reads is in [Running a program](running.md#printing).
 | call as a statement | `args; call f`, and `pop` when the callee gives a result no one uses |
 | `p ၏ တန်ဖိုး` | `p; load k` |
 | `p + i` | `p; i; ptr_add s` |
-| allocate | `x; count; alloc s; store *k` |
-| resize | `x; x; load *k; count; realloc s; store *k` |
-| free | `x; x; load *k; free; push ဗလာ; store *k` |
-| move an owner | `to; from; take *k; store *k` |
+| allocate | `x; count; alloc s; store k*` |
+| resize | `x; x; load k*; count; realloc s; store k*` |
+| free | `x; x; load k*; free; push ဗလာ; store k*` |
+| move an owner | `to; from; take k*; store k*` |
 | a string literal in a text slot | `x; text t; pop` |
 | a template literal, or a `+` join | `x; v…; format fmt; pop` |
 | `t ကို v ဟု ထားပါ` for text | `v` into the hidden slot `%new`; `t; drop text`; then the text of `%new` moves into `t` (`blit text`, and `zero text` on `%new`) |
@@ -316,33 +316,33 @@ heap](../../learn/pointers/heap.md)), and the instructions of `main`:
 fn f0 main (params 0)
      0  global_addr g0       ; ပ
      1  push 0x0:ptr
-     2  store *isize         ; ပ starts as ဗလာ
+     2  store isize*         ; ပ starts as ဗလာ
      3  global_addr g0       ; ပ
      4  push 2:usize
      5  alloc 8              ; 2 elements of 8 octets
-     6  store *isize         ; keep the address in ပ
+     6  store isize*         ; keep the address in ပ
      7  global_addr g0       ; ပ
-     8  load *isize
+     8  load isize*
      9  push 7:isize
     10  store isize          ; ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ
     11  global_addr g0       ; ပ
-    12  load *isize
+    12  load isize*
     13  push 1:isize
     14  ptr_add 8            ; ပ + ၁
     15  push 9:isize
     16  store isize
     17  global_addr g0       ; ပ
-    18  load *isize
+    18  load isize*
     19  push 1:isize
     20  ptr_add 8
     21  load isize
     22  print
     23  global_addr g0       ; ပ
     24  global_addr g0       ; ပ
-    25  load *isize
+    25  load isize*
     26  free
     27  push 0x0:ptr
-    28  store *isize         ; the free statement clears ပ
+    28  store isize*         ; the free statement clears ပ
     29  ret
 ```
 
