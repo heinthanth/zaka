@@ -45,6 +45,7 @@ thanks to all of these projects.
 | [@fontsource/monaspace-neon](https://fontsource.org/fonts/monaspace-neon) | 5.3.0 | OFL-1.1 |
 | [@fontsource/red-hat-mono](https://fontsource.org/fonts/red-hat-mono) | 5.3.0 | OFL-1.1 |
 | [@fontsource/space-mono](https://fontsource.org/fonts/space-mono) | 5.3.0 | OFL-1.1 |
+| [@fontsource/caveat](https://fontsource.org/fonts/caveat) | 5.3.0 | OFL-1.1 |
 | [@fontsource/iosevka](https://fontsource.org/fonts/iosevka) | 5.3.0 | OFL-1.1 |
 | [gsap](https://gsap.com) | 3.12.5 | Standard 'no charge' license: https://gsap.com/standard-license. Club GSAP members get more: https://gsap.com/licensing/. Why GreenSock doesn't employ an MIT license: https://gsap.com/why-license/ |
 | [lenis](https://github.com/darkroomengineering/lenis) | 1.1.13 | MIT |
