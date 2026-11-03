@@ -142,7 +142,7 @@ A list literal whose cells are each known when the program is compiled adds one 
 table, `seqs`: each static list, with its kind and its cells. A text cell names a static
 text (`t0`), and a plain list cell an earlier static list (`s0`). The VM puts each in a
 frozen static block before `main` starts. `static_seq` points a plain list at one, and a
-counted list copies its cells from one with `seq_addr` and `blit`:
+counted list or a struct copies its cells from one with `seq_addr` and `blit`:
 
 ```zaka
 ကိန်းရှင် l သည် [၁၊ ၂] ဖြစ်ပါစေ။
@@ -162,17 +162,14 @@ seqs
   s0 isize[] [1:isize, 2:isize]
 
 fn f0 main (params 0)
-locals
-  l0 %own isize[]
      0  global_addr g0       ; l
-     1  local_addr l0        ; %own
-     2  static_seq s0
-     3  blit isize[]
-     4  global_addr g0       ; l
-     5  print_list isize[]
-     6  global_addr g0       ; l
-     7  drop isize[]
-     8  ret
+     1  static_seq s0
+     2  pop
+     3  global_addr g0       ; l
+     4  print_list isize[]
+     5  global_addr g0       ; l
+     6  drop isize[]
+     7  ret
 ```
 
 `text t0` points `အမည်` at the static text, with no heap block. The template has a
@@ -247,7 +244,7 @@ a heap block.
 | `list_eq k` | a b → bool | whether each cell of one counted list equals the cell of the other |
 | `seq_eq k` | addr addr → b | whether two plain lists with cells of kind `k` hold the same count of cells, each equal |
 | `static_seq s` | slot → slot | point the plain list slot at the static list `s`, with a room of 0 |
-| `seq_addr s` | → addr | push the address of the cells of the static list `s`, the source of a `blit` into a counted list |
+| `seq_addr s` | → addr | push the address of the cells of the static list `s`, the source of a `blit` into a counted list or a struct |
 | `to_heap k` | slot addr → | move the cells of the counted list of kind `k` at `addr` to a new heap block, and write the plain list of them in the slot |
 | `add_cell k` | list value → | give the plain list of kind `k` at `list` a block of its own when its room is 0, move it to a block twice the size (four cells at the least) when the block is full, then move the cell at `value` into a new last cell and leave the default of the cell kind at `value` |
 | `remove_cell k` | list → | stop the program when the plain list of kind `k` at `list` holds no cells; else drop its last cell when the list owns its block (a room above 0), and take one from its count |
@@ -261,8 +258,8 @@ a heap block.
 | `text t` | slot → slot | write the static text `t` in the text slot, with a room of 0 |
 | `format fmt` | slot v… → slot | build the text of format `fmt` in a new heap block and write it in the slot, with a room equal to its count |
 | `drop k` | addr → | free each text and each plain list inside the value of kind `k` whose room is above 0, and leave each blank |
-| `dup_text k` | addr → | give each text and each plain list inside the value of kind `k` whose cells sit outside static storage a new heap block with the same cells |
-| `lend_text k` | addr → | give each text and each plain list inside the value of kind `k` a room of 0, so a parameter reads the caller's cells and its drop frees nothing |
+| `dup_seqs k` | addr → | give each text and each plain list inside the value of kind `k` whose cells sit outside static storage a new heap block with the same cells |
+| `lend_seqs k` | addr → | give each text and each plain list inside the value of kind `k` a room of 0, so a parameter reads the caller's cells and its drop frees nothing |
 | `own k` | addr → | give each text and each plain list inside the value of kind `k` that has cells and a room of 0 a new heap block with the same cells; the cells of a list are duplicated, each text and list in them too |
 | `text_eq` | addr addr → b | whether two texts or views of text hold the same u8s |
 | `char_count` | addr → n | the number of characters of the text at `addr`, a `usize` |

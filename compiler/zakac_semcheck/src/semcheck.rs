@@ -192,7 +192,7 @@ pub(crate) struct Checker
     #[builder(default)]
     pub no_raw: bool,
     /// Whether the value checked now is the value of a declaration, where a
-    /// fixed list takes `[]`.
+    /// counted list takes `[]`.
     #[builder(default)]
     pub decl_value: bool,
 }
@@ -582,7 +582,7 @@ impl Checker
     }
 
     /// Check the list an add or a remove statement changes: a place that
-    /// holds a plain or a heap list.
+    /// holds a plain list.
     ///
     /// # Arguments
     ///

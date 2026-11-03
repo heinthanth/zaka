@@ -410,8 +410,8 @@ fn a_shown_file_is_painted_in_the_prose()
 /// The first page of Learn past Part I, whose pages teach with values alone.
 const PAST_VALUES: &str = "forms/README.md";
 
-/// The reserved words of the later parts of Learn: views and slices, the
-/// fixed and heap forms, addresses and the heap.
+/// The reserved words of the later parts of Learn: views and slices,
+/// addresses and the heap.
 const LATER_WORDS: &[Kw] = &[
     Kw::Address,
     Kw::RawAddress,

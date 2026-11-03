@@ -264,8 +264,8 @@ impl Checker
     {
         let want = expect.filter(|k| k.is_list() || k.is_seq());
         do_if!(want.is_none(), self.report(kd::blank_list_kind(n.span)));
-        let fixed = want.filter(|k| k.is_list() && n.brackets && !self.decl_value);
-        do_if!(let Some(k) = fixed, self.report(kd::brackets_on_fixed_list(n.span, &k.name())));
+        let counted = want.filter(|k| k.is_list() && n.brackets && !self.decl_value);
+        do_if!(let Some(k) = counted, self.report(kd::brackets_on_counted_list(n.span, &k.name())));
         want
     }
 

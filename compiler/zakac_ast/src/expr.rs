@@ -358,7 +358,7 @@ pub struct FieldInit
     pub value: Expr,
 }
 
-/// `စာရင်းအလွတ်` or `[]`: a list with no cells, or a fixed list whose cells
+/// `စာရင်းအလွတ်` or `[]`: a list with no cells, or a counted list whose cells
 /// all hold their default; the kind comes from the context.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct BlankListLit
@@ -367,7 +367,7 @@ pub struct BlankListLit
     pub id: NodeId,
     /// Source region.
     pub span: Span,
-    /// Whether it is written `[]`, which a fixed list takes in its
+    /// Whether it is written `[]`, which a counted list takes in its
     /// declaration alone.
     #[serde(default)]
     #[builder(default)]

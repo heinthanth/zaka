@@ -23,8 +23,9 @@ pub(crate) struct Placed<'a>
 }
 
 /// The octets of the frozen block of a static list: its cells one after
-/// another, text and plain list cells as three words that point at their
-/// own static blocks with a room of 0.
+/// another, or the fields of a struct at their offsets, text and plain list
+/// cells as three words that point at their own static blocks with a room
+/// of 0.
 ///
 /// # Arguments
 ///
@@ -36,7 +37,13 @@ pub(crate) struct Placed<'a>
 /// The octets, or `None` when a cell names a block not placed so far.
 pub(crate) fn seq_octets(seq: &StaticSeq, placed: Placed) -> Option<Vec<u8>>
 {
-    let cell = seq.kind.cell_kind()?;
+    let Some(cell) = seq.kind.cell_kind()
+    else
+    {
+        // A struct literal: its fields at their offsets.
+        let mut out = vec![0; seq.kind.size(placed.platform) as usize];
+        return put_parts(&seq.cells, seq.kind, &mut out, 0, placed).map(|()| out);
+    };
     let stride = cell.size(placed.platform) as usize;
     let mut out = vec![0; stride * seq.cells.len()];
     for (i, c) in seq.cells.iter().enumerate()

@@ -347,7 +347,7 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
-    /// Add a value as a new last cell of the plain or heap list at `dest`.
+    /// Add a value as a new last cell of the plain list at `dest`.
     /// A list with a room of 0 takes a block of its own first, and a full
     /// block moves to a larger one.
     AddCell
@@ -361,8 +361,8 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
-    /// Remove the last cell of the plain or heap list at `dest`; a list with
-    /// no cells stops the program.
+    /// Remove the last cell of the plain list at `dest`; a list with no
+    /// cells stops the program.
     RemoveCell
     {
         /// The list.
@@ -560,7 +560,7 @@ pub enum ExprNode
         /// The address of the place, a pointer.
         addr: Box<Expr>,
     },
-    /// A plain or heap list about to be written through: when its room is 0
+    /// A plain list about to be written through: when its room is 0
     /// (its cells were lent to it, or it holds none), its cells first move to
     /// a heap block of its own, each text and list in them duplicated. The
     /// value is a place, read where it sits; the expression kind is its kind.
@@ -569,9 +569,10 @@ pub enum ExprNode
         /// The list, a place.
         value: Box<Expr>,
     },
-    /// A duplicate of a value that holds text: the value is read, then each
-    /// heap text in it gets a block of its own, so the place read and the
-    /// place written never share u8s. The expression kind is the kind of
+    /// A duplicate of a value that holds text or a plain list: the value is
+    /// read, then each text and plain list in it whose cells sit in a heap
+    /// block gets a block of its own, so the place read and the place
+    /// written never share cells. The expression kind is the kind of
     /// the value.
     Dup
     {

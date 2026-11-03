@@ -778,7 +778,7 @@ impl SlotState
 }
 
 /// Whether the check follows the pointers of a kind: an owner, a borrow, a
-/// slice, text or a plain or heap list, or a fixed list or a struct whose cells
+/// slice, text or a plain list, or a counted list or a struct whose cells
 /// or fields hold one at some depth. Raw addresses are not followed.
 ///
 /// # Arguments

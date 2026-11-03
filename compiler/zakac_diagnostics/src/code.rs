@@ -254,7 +254,7 @@ EditShared = ("ZK0433", Level::Error),
 /// An each loop walks a value it cannot walk.
 EachSourceWrong = ("ZK0434", Level::Error),
 /// `[]` is given to a counted list outside its declaration.
-BracketsOnFixedList = ("ZK0436", Level::Error),
+BracketsOnCountedList = ("ZK0436", Level::Error),
 /// An add or a remove statement changes a value that cannot grow or shrink.
 ListCannotGrow = ("ZK0437", Level::Error),
 /// A character write or an add changes a view of text.

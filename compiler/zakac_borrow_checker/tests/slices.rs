@@ -62,8 +62,8 @@ l ၏ တန်ဖိုးအငှား ကို ရလဒ်အဖြစ်
         lines(local),
         [(Code::LocalBorrowReturned, 4), (Code::InvalidatedLoan, 4)]
     );
-    let fixed = local.replace("ကိန်းပြည့် စာရင်း တစ်ခု", "အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု");
-    assert_eq!(lines(&fixed), [(Code::LocalBorrowReturned, 4)]);
+    let counted = local.replace("ကိန်းပြည့် စာရင်း တစ်ခု", "အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု");
+    assert_eq!(lines(&counted), [(Code::LocalBorrowReturned, 4)]);
     ok("လုပ်ဆောင်ချက် f သည်
 ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း s ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း ရလဒ် ကို ပြန်ပေးမည်။

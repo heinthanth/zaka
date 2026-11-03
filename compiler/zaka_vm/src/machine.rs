@@ -1038,14 +1038,14 @@ impl Machine
                 let addr = self.pop_ptr("drop")?;
                 self.drop_value(addr, kind)
             }
-            Op::DupText(kind) =>
+            Op::DupSeqs(kind) =>
             {
-                let addr = self.pop_ptr("dup_text")?;
+                let addr = self.pop_ptr("dup_seqs")?;
                 self.dup_value(addr, kind)
             }
-            Op::LendText(kind) =>
+            Op::LendSeqs(kind) =>
             {
-                let addr = self.pop_ptr("lend_text")?;
+                let addr = self.pop_ptr("lend_seqs")?;
                 self.lend_value(addr, kind)
             }
             Op::Own(kind) =>
@@ -1904,10 +1904,10 @@ impl Machine
         self.mem.store(slot + 2 * word, Value::int(usize, u128::from(room), platform))
     }
 
-    /// The address and the kind of each text and each plain or heap list in
-    /// a value: the value itself for one of these, and each field or cell of
-    /// one, at each depth, for a struct or a fixed list. The cells of a plain
-    /// or heap list sit in its block, so the walk leaves them out.
+    /// The address and the kind of each text and each plain list in a value:
+    /// the value itself for one of these, and each field or cell of one, at
+    /// each depth, for a struct or a counted list. The cells of a plain list
+    /// sit in its block, so the walk leaves them out.
     ///
     /// # Arguments
     ///
@@ -1957,7 +1957,7 @@ impl Machine
         Ok(tern!(let Value::Int { raw, .. } = room, raw as u64, 0))
     }
 
-    /// The size of one cell of text or of a plain or heap list.
+    /// The size of one cell of text or of a plain list.
     ///
     /// # Arguments
     ///
@@ -1972,7 +1972,7 @@ impl Machine
         kind.as_seq().map_or(1, |s| u64::from(s.cell.size(platform)))
     }
 
-    /// Free each heap text and list in a value and leave each blank: one with
+    /// Free each text and plain list in a value and leave each blank: one with
     /// room 0 owns no block, so its cells remain. A list that owns its block
     /// drops each of its cells first.
     ///
@@ -1999,7 +1999,7 @@ impl Machine
         Ok(())
     }
 
-    /// Drop each cell of a plain or heap list that holds text or a list.
+    /// Drop each cell of a plain list that holds text or a list.
     ///
     /// # Arguments
     ///
@@ -2095,12 +2095,12 @@ impl Machine
         Ok(())
     }
 
-    /// Pop the address of a fixed list, then the address of a slot; move the
+    /// Pop the address of a counted list, then the address of a slot; move the
     /// cells to a new heap block and write the plain list of them in the slot.
     ///
     /// # Arguments
     ///
-    /// * `kind` - The fixed list kind.
+    /// * `kind` - The counted list kind.
     ///
     /// # Returns
     ///
@@ -2111,7 +2111,7 @@ impl Machine
         let dst = self.pop_ptr("to_heap")?;
         let platform = self.module.platform_bits;
         let list =
-            kind.as_list().ok_or_else(|| malformed("to_heap takes a fixed list"))?;
+            kind.as_list().ok_or_else(|| malformed("to_heap takes a counted list"))?;
         let count = u64::from(list.len);
         let size = count * u64::from(list.cell.size(platform));
         ret_if!(size == 0, self.write_text(dst, 0, 0, 0));
@@ -2122,7 +2122,7 @@ impl Machine
         self.write_text(dst, block, count, size)
     }
 
-    /// Pop the address of a value, then the address of a plain or heap list;
+    /// Pop the address of a value, then the address of a plain list;
     /// move the value into a new last cell of the list and leave the default
     /// of the cell kind in its place. A list with a room of 0 takes a block of
     /// its own first, and a full block moves to one twice its size, four
@@ -2256,7 +2256,7 @@ impl Machine
         self.write_text(at, block, len, room)
     }
 
-    /// Remove the last cell of a plain or heap list: drop it when the list
+    /// Remove the last cell of a plain list: drop it when the list
     /// owns its block, and take one from the count. A list with a room of 0
     /// reads cells it shares, so those cells remain unchanged.
     ///
@@ -2281,7 +2281,7 @@ impl Machine
         self.write_text(at, base, count - 1, room)
     }
 
-    /// Pop the addresses of two plain or heap lists, the right one first, and
+    /// Pop the addresses of two plain lists, the right one first, and
     /// push whether the two hold equal cells.
     ///
     /// # Arguments

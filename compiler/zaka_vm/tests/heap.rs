@@ -401,3 +401,25 @@ fn a_counted_list_copies_its_static_cells()
     assert_eq!(m.output(), shown);
     assert!(m.leaks().is_empty());
 }
+
+/// A struct literal of known fields takes them from a static list, each at
+/// its offset, so an edit of the struct leaves the static fields unchanged
+/// for the next call, and an edited text field takes a block of its own.
+#[test]
+fn a_struct_literal_copies_its_static_fields()
+{
+    let text = "ဒေတာအမျိုးအစား လူ တွင် မှန်မှားတန်ဖိုး အောင်၊ စာသား အမည်၊ ကိန်းပြည့် အသက် တို့ \
+                ပါဝင်သည်။\n\nလုပ်ဆောင်ချက် ပြ သည်\nကိန်းပြည့် န ကို လက်ခံပြီး\nအောက်ပါတို့ကို \
+                လုပ်ဆောင်မည်။\nကိန်းရှင် ခ သည် လူ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အောင် မှန်၊ အမည် \"မမ\"၊ အသက် ၂၀ \
+                ရှိသော လူတစ်ခု ဖြစ်ပါစေ။\nခ ကို ပြသပါ။\nခ ၏ အမည် ထဲသို့ \"x\" ကို ထည့်ပါ။\nခ ၏ အသက် ကို န \
+                ဟု ထားပါ။\nခ ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\n\nလုပ်ဆောင်ချက် ပြ ကို ၁ တို့ဖြင့် \
+                လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် ပြ ကို ၂ တို့ဖြင့် လုပ်ဆောင်ပါ။";
+    let shown = "လူ(အောင်: မှန်၊ အမည်: \"မမ\"၊ အသက်: ၂၀)\nလူ(အောင်: မှန်၊ အမည်: \"မမx\"၊ အသက်: \
+                 ၁)\nလူ(အောင်: မှန်၊ အမည်: \"မမ\"၊ အသက်: ၂၀)\nလူ(အောင်: မှန်၊ အမည်: \"မမx\"၊ \
+                 အသက်: ၂)\n";
+    let mut m = Machine::new(common::compile(text), RunOptions::default());
+    do_while!(m.running(), let _ = m.step());
+    assert_eq!(m.state(), &State::Finished);
+    assert_eq!(m.output(), shown);
+    assert!(m.leaks().is_empty());
+}

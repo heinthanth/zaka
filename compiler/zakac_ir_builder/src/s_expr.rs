@@ -150,7 +150,7 @@ impl ToSexpr for Expr
             ExprNode::Own { value } => list("own", [value.to_sexpr()]),
             ExprNode::Dup { value, lent } =>
             {
-                list(tern!(*lent, "lend_text", "dup"), [value.to_sexpr()])
+                list(tern!(*lent, "dup_lent", "dup"), [value.to_sexpr()])
             }
             ExprNode::PtrAdd { base, offset } =>
             {

@@ -602,7 +602,13 @@ fn a_literal_of_known_cells_points_at_a_static_list()
     let module = emit_text(text);
     let kinds: Vec<String> = module.seqs.iter().map(|s| s.kind.name()).collect();
     assert_eq!(kinds, ["isize[]", "isize[]", "isize[][]"]);
-    assert!(ops(main_func(&module)).contains(&"static_seq s2".to_string()));
+    let main = main_func(&module);
+    let set = ["static_seq s2".to_string(), "pop".to_string()];
+    assert!(ops(main).windows(2).any(|w| w == set), "{:?}", ops(main));
+    assert!(
+        main.locals.iter().all(|l| l.name != "%own"),
+        "a set needs no slot of its own"
+    );
     let built = main_ops("ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။\nကိန်းရှင် l သည် [n၊ ၂] ဖြစ်ပါစေ။");
     assert!(built.iter().any(|o| o.starts_with("to_heap")), "{built:?}");
     assert!(!built.iter().any(|o| o.starts_with("static_seq")), "{built:?}");
@@ -612,7 +618,7 @@ fn a_literal_of_known_cells_points_at_a_static_list()
 /// with one blit; a literal with a cell known when the program runs stores
 /// each cell.
 #[test]
-fn a_counted_literal_of_known_cells_is_one_blit()
+fn a_counted_or_struct_literal_of_known_cells_is_one_blit()
 {
     let module = emit_text(
         "ကိန်းရှင် ခ သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈] ဖြစ်ပါစေ။",
@@ -622,6 +628,11 @@ fn a_counted_literal_of_known_cells_is_one_blit()
     let found = ops(main_func(&module));
     let blit = ["seq_addr s0".to_string(), "blit isize[2]".to_string()];
     assert!(found.windows(2).any(|w| w == blit), "{found:?}");
+    let point = "ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။\nကိန်းရှင် p သည် နေရာ \
+                 တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၁၊ y ၂ ရှိသော နေရာတစ်ခု ဖြစ်ပါစေ။";
+    let fields = main_ops(point);
+    let blit = ["seq_addr s0".to_string(), "blit နေရာ".to_string()];
+    assert!(fields.windows(2).any(|w| w == blit), "{fields:?}");
     let built = main_ops(
         "ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
          [n၊ ၈] ဖြစ်ပါစေ။",

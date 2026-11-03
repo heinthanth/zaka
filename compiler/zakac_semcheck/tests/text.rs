@@ -152,8 +152,8 @@ fn a_verbal_join_takes_text_alone()
     assert_eq!(codes("\"a\"၊ ၁ တို့ကို ဆက်ထားသည့် စာသား ကို ပြသပါ။"), [Code::OperandKind]);
 }
 
-/// A character of text is a place, and text takes an add; fixed text and a
-/// view of text take neither, and text takes no remove.
+/// A character of text is a place, and text takes an add; a view of text
+/// takes neither, and text takes no remove.
 #[test]
 fn text_takes_character_writes_and_adds()
 {

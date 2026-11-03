@@ -281,7 +281,7 @@ const LISTS_SHOWN: &str =
 
 /// Adds and removes cells: a plain list that grows past its first block, a
 /// lent parameter that takes a block of its own at its first add, text
-/// cells, a heap list, a list of lists and a list through a pointer.
+/// cells, a list of lists and a list through a pointer.
 const GROWS: &str = "လုပ်ဆောင်ချက် ချဲ့ သည်
 ကိန်းပြည့် စာရင်း က ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။

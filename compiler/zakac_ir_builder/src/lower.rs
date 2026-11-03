@@ -818,7 +818,7 @@ impl Lowerer<'_>
     {
         let plain = tern!(let ast::Expr::Str(s) = &n.value, s.plain(), None);
         let value = plain.map_or_else(
-            || PrintValue::Expr(fixed_literal(self.expr(&n.value))),
+            || PrintValue::Expr(counted_literal(self.expr(&n.value))),
             |text| PrintValue::Text(text.to_string()),
         );
         Stmt::Print { value, span: n.span }
@@ -1611,11 +1611,11 @@ impl Lowerer<'_>
         let cells =
             ExprNode::List(n.cells.iter().map(|c| self.owned(c, cell)).collect());
         ret_if!(!kind.is_seq(), cells);
-        // A plain or heap list is built as a fixed list, whose cells then
-        // move to a heap block.
-        let fixed = DataKind::list_of(cell, n.cells.len() as u32);
+        // A plain list is built as a counted list, whose cells then sit in
+        // static data or move to a heap block.
+        let counted = DataKind::list_of(cell, n.cells.len() as u32);
         let operand =
-            Box::new(Expr::builder().kind(fixed).node(cells).span(n.span).build());
+            Box::new(Expr::builder().kind(counted).node(cells).span(n.span).build());
         ExprNode::Convert { operand, implicit: true }
     }
 
@@ -1717,7 +1717,7 @@ impl Lowerer<'_>
     /// # Returns
     ///
     /// The view or the slice.
-    fn lend_text(&mut self, value: &ast::Expr) -> ExprNode
+    fn lend_whole(&mut self, value: &ast::Expr) -> ExprNode
     {
         let span = value.span();
         let source = Box::new(owned_source(self.expr(value)));
@@ -1967,7 +1967,7 @@ impl Lowerer<'_>
             VerbOp::Lend
                 if self.kind_of(value).is_text() || self.kind_of(value).is_seq() =>
             {
-                self.lend_text(value)
+                self.lend_whole(value)
             }
             VerbOp::Lend => ExprNode::Lend { operand: Box::new(self.expr(value)) },
             VerbOp::Cast => ExprNode::Convert {
@@ -2060,8 +2060,8 @@ fn take(e: Expr) -> Expr
     Expr::builder().kind(kind).node(node).span(span).build()
 }
 
-/// Duplicate a value read out of a place, so each heap text in it gets a
-/// block of its own.
+/// Duplicate a value read out of a place, so each text and plain list in it
+/// whose cells sit in a heap block gets a block of its own.
 ///
 /// # Arguments
 ///
@@ -2153,7 +2153,7 @@ fn owned_path(addr: Expr) -> Expr
 }
 
 /// A list literal read where it is: a printed literal needs no heap block,
-/// so it keeps the fixed list it is built as.
+/// so it keeps the counted list it is built as.
 ///
 /// # Arguments
 ///
@@ -2161,8 +2161,8 @@ fn owned_path(addr: Expr) -> Expr
 ///
 /// # Returns
 ///
-/// The fixed list for a literal of a plain or heap list, else the value.
-fn fixed_literal(e: Expr) -> Expr
+/// The counted list for a literal of a plain list, else the value.
+fn counted_literal(e: Expr) -> Expr
 {
     let literal = |o: &Expr| matches!(o.node, ExprNode::List(_)) && o.kind.is_list();
     match e.node

@@ -644,6 +644,10 @@ impl<'s> FuncGen<'s>
     fn fill_list(&mut self, value: &Expr)
     {
         ret_if!(value.node == ExprNode::BlankList, self.op(Op::Zero(value.kind)));
+        ret_if!(let Some(s) = self.static_plain(value), {
+            self.op(Op::StaticSeq(s));
+            self.op(Op::Pop);
+        });
         let list = &value.node;
         let known =
             tern!(let ExprNode::List(c) = list, self.static_cells(value.kind, c), None);
@@ -655,23 +659,50 @@ impl<'s> FuncGen<'s>
         self.op(Op::Blit(value.kind));
     }
 
-    /// The static list of a counted list literal whose cells are known at
-    /// compile time, which fills a slot with one blit in place of a store
-    /// for each cell.
+    /// The static list of a counted list or struct literal whose cells are
+    /// known at compile time, which fills a slot with one blit in place of a
+    /// store for each cell or field.
     ///
     /// # Arguments
     ///
     /// * `kind` - The kind of the literal.
-    /// * `cells` - Its cells.
+    /// * `cells` - Its cells or fields.
     ///
     /// # Returns
     ///
-    /// The index of the static list, or `None` for a struct, a literal with
-    /// no cells, or one with a cell known when the program runs.
+    /// The index of the static list, or `None` for a literal with no cells,
+    /// or one with a cell known when the program runs.
     fn static_cells(&mut self, kind: DataKind, cells: &[Expr]) -> Option<u32>
     {
-        let known = kind.is_list() && !cells.is_empty() && cells.iter().all(is_known);
+        let shape = kind.is_list() || kind.is_struct();
+        let known = shape && !cells.is_empty() && cells.iter().all(is_known);
         known.then(|| self.shared.static_seq(kind, cells))
+    }
+
+    /// The static list that a plain list made from a literal of known cells
+    /// points at.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value.
+    ///
+    /// # Returns
+    ///
+    /// The index of the static list, or `None` for each other value.
+    fn static_plain(&mut self, value: &Expr) -> Option<u32>
+    {
+        let ExprNode::Convert { operand, .. } = &value.node
+        else
+        {
+            return None;
+        };
+        let ExprNode::List(items) = &operand.node
+        else
+        {
+            return None;
+        };
+        let known = value.kind.is_seq() && is_known(value);
+        known.then(|| self.shared.static_seq(value.kind, items))
     }
 
     /// Write a value at the address on the stack: a list or a struct is
@@ -987,7 +1018,7 @@ impl<'s> FuncGen<'s>
         }
     }
 
-    /// Add a value as a new last cell of a plain or heap list. The value is
+    /// Add a value as a new last cell of a plain list. The value is
     /// worked out first, in a slot of its own, so it reads the list as it
     /// was before the add.
     ///
@@ -1420,7 +1451,7 @@ impl<'s> FuncGen<'s>
             ExprNode::Convert { operand, .. }
                 if e.kind.is_seq() && operand.kind.is_list() && is_known(e) =>
             {
-                self.static_list(e.kind, operand)
+                self.static_list(e)
             }
             ExprNode::Convert { operand, .. }
                 if e.kind.is_seq() && operand.kind.is_list() =>
@@ -1597,22 +1628,18 @@ impl<'s> FuncGen<'s>
         self.op(Op::LocalAddr(slot));
     }
 
-    /// Point a slot at a static list made from a list literal of known cells,
-    /// and push the address of the slot: no heap block until the first edit.
+    /// Point a slot of its own at a static list made from a list literal of
+    /// known cells, and push the address of the slot: no heap block until the
+    /// first edit. A set fills its slot with no such slot
+    /// ([`Self::fill_list`]).
     ///
     /// # Arguments
     ///
-    /// * `kind` - The plain list kind.
-    /// * `value` - The list literal.
-    fn static_list(&mut self, kind: DataKind, value: &Expr)
+    /// * `e` - The plain list made from the literal.
+    fn static_list(&mut self, e: &Expr)
     {
-        let ExprNode::List(items) = &value.node
-        else
-        {
-            panic!("a static list is a list literal");
-        };
-        let s = self.shared.static_seq(kind, items);
-        let slot = self.temp("%own", kind);
+        extract!(Some(s) = self.static_plain(e), "a static list is known");
+        let slot = self.temp("%own", e.kind);
         self.op(Op::LocalAddr(slot));
         self.op(Op::StaticSeq(s));
     }
@@ -1635,7 +1662,7 @@ impl<'s> FuncGen<'s>
         self.op(Op::Blit(kind));
         self.op(Op::LocalAddr(slot));
         let text = kind.holds_text();
-        do_if!(text, self.op(tern!(lent, Op::LendText(kind), Op::DupText(kind))));
+        do_if!(text, self.op(tern!(lent, Op::LendSeqs(kind), Op::DupSeqs(kind))));
         self.op(Op::LocalAddr(slot));
     }
 

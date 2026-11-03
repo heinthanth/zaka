@@ -130,7 +130,7 @@ const SET: &str = "လုပ်ဆောင်ချက် ထား သည်
 fn text_a_call_reads_is_lent_to_it()
 {
     let module = ir(&format!("{SHOW}လုပ်ဆောင်ချက် ပြ ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။\nက ကို ပြသပါ။\n"));
-    assert!(module.contains("(lend_text g1)"), "{module}");
+    assert!(module.contains("(dup_lent g1)"), "{module}");
 }
 
 #[test]
@@ -138,7 +138,7 @@ fn a_global_the_callee_sets_is_duplicated()
 {
     let module = ir(&format!("{SET}လုပ်ဆောင်ချက် ထား ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။\nက ကို ပြသပါ။\n"));
     assert!(module.contains("(dup g1)"), "{module}");
-    assert!(!module.contains("(lend_text g1)"), "{module}");
+    assert!(!module.contains("(dup_lent g1)"), "{module}");
 }
 
 #[test]
@@ -164,7 +164,7 @@ fn a_lent_parameter_is_lent_on()
 က ကို ပြသပါ။
 "
     ));
-    assert!(module.contains("(lend_text l0)"), "{module}");
+    assert!(module.contains("(dup_lent l0)"), "{module}");
 }
 
 #[test]

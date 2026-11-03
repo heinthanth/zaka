@@ -256,14 +256,17 @@ p ကို ပြသပါ။";
     );
 }
 
-/// `[]` has no cells: a fixed list takes it in its declaration alone, and
+/// `[]` has no cells: a counted list takes it in its declaration alone, and
 /// `စာရင်းအလွတ်` in each place.
 #[test]
-fn brackets_fit_a_fixed_list_in_its_declaration_alone()
+fn brackets_fit_a_counted_list_in_its_declaration_alone()
 {
-    let fixed = "ကိန်းရှင် f သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ။";
-    ok(&lines(&[fixed, "f ကို စာရင်းအလွတ် ဟု ထားပါ။"]));
-    assert_eq!(codes(&lines(&[fixed, "f ကို [] ဟု ထားပါ။"])), [Code::BracketsOnFixedList]);
+    let counted = "ကိန်းရှင် f သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ။";
+    ok(&lines(&[counted, "f ကို စာရင်းအလွတ် ဟု ထားပါ။"]));
+    assert_eq!(
+        codes(&lines(&[counted, "f ကို [] ဟု ထားပါ။"])),
+        [Code::BracketsOnCountedList]
+    );
     ok("ကိန်းရှင် p သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ။\np ကို [] ဟု ထားပါ။");
 }
 
@@ -286,8 +289,8 @@ fn a_constant_list_keeps_its_kind()
 fn plain_lists_grow_and_shrink()
 {
     ok("ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။\nl ထဲသို့ ၂ ကို ထည့်ပါ။\nl ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။");
-    let fixed = "ကိန်းရှင် f သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။";
-    assert_eq!(codes(&lines(&[fixed, "f ထဲသို့ ၂ ကို ထည့်ပါ။"])), [Code::ListCannotGrow]);
+    let counted = "ကိန်းရှင် f သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။";
+    assert_eq!(codes(&lines(&[counted, "f ထဲသို့ ၂ ကို ထည့်ပါ။"])), [Code::ListCannotGrow]);
     let text = "ကိန်းရှင် t သည် \"abc\" ဖြစ်ပါစေ။\nt ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။";
     assert_eq!(codes(text), [Code::ListCannotGrow]);
     let wrong = "ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။\nl ထဲသို့ \"x\" ကို ထည့်ပါ။";

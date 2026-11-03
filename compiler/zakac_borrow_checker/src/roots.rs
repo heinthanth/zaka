@@ -110,7 +110,7 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
         | ExprNode::Convert { operand, .. }
         | ExprNode::PtrAdd { base: operand, .. } => deeper(operand),
         ExprNode::Load { addr } => load_roots(addr, e.kind, state, ctx),
-        // The cells of a slice, and of a plain or heap list, sit in a block
+        // The cells of a slice, and of a plain list, sit in a block
         // the value points at.
         ExprNode::CellAddr { list, .. }
             if list.kind.is_slice() || list.kind.is_seq() =>

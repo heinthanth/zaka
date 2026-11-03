@@ -583,7 +583,7 @@ impl Checker
         let structs = [lhs.0, rhs.0].iter().any(blocks);
         let equal = class == OpClass::Equal && !structs;
         ret_if!(equal && lhs.0 == rhs.0, Some(DataKind::Bool));
-        // A plain and a heap list of one cell kind compare their cells.
+        // Two plain lists of one cell kind compare their cells.
         let seqs =
             lhs.0.as_seq().zip(rhs.0.as_seq()).is_some_and(|(a, b)| a.cell == b.cell);
         ret_if!(equal && seqs, Some(DataKind::Bool));

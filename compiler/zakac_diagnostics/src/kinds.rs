@@ -154,15 +154,15 @@ pub fn each_source_wrong(span: Span, got: &str) -> Diagnostic
 /// # Arguments
 ///
 /// * `span` - The `[]`.
-/// * `kind` - The fixed list kind, as text.
+/// * `kind` - The counted list kind, as text.
 ///
 /// # Returns
 ///
 /// The `ZK0436` diagnostic.
-pub fn brackets_on_fixed_list(span: Span, kind: &str) -> Diagnostic
+pub fn brackets_on_counted_list(span: Span, kind: &str) -> Diagnostic
 {
     Diagnostic::new(
-        Code::BracketsOnFixedList,
+        Code::BracketsOnCountedList,
         t!("codes.ZK0436.message", k = kind),
         span,
     )
@@ -183,7 +183,7 @@ pub fn list_cannot_grow(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::ListCannotGrow, t!("codes.ZK0437.message", k = kind), span)
 }
 
-/// A character write or an add changes fixed text or a view of text.
+/// A character write or an add changes a view of text.
 ///
 /// # Arguments
 ///

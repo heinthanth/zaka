@@ -301,32 +301,32 @@ pub enum Op
     /// in a new heap block, keep it in the slot, and push the address.
     Format(u32),
     /// Pop the address of a value of this kind; free each text and each plain
-    /// or heap list in it whose room is above 0, the cells of a list dropped
+    /// list in it whose room is above 0, the cells of a list dropped
     /// first, and leave each blank.
     Drop(DataKind),
     /// Pop the address of a value of this kind; give each text and each plain
-    /// or heap list in it whose cells sit outside static storage a new heap
-    /// block with the same cells, the cells of a list duplicated in turn.
-    DupText(DataKind),
+    /// list in it whose cells sit outside static storage a new heap block
+    /// with the same cells, the cells of a list duplicated in turn.
+    DupSeqs(DataKind),
     /// Pop the address of a value of this kind; give each text and each plain
-    /// or heap list in it a room of 0, so it reads the cells it shares and a
-    /// drop of it frees nothing.
-    LendText(DataKind),
+    /// list in it a room of 0, so it reads the cells it shares and a drop of
+    /// it frees nothing.
+    LendSeqs(DataKind),
     /// Pop the address of a value of this kind; give each text and each plain
-    /// or heap list in it whose room is 0 and that holds cells a new heap
-    /// block with the same cells, so it owns its block; the cells of a list
-    /// are duplicated.
+    /// list in it whose room is 0 and that holds cells a new heap block with
+    /// the same cells, so it owns its block; the cells of a list are
+    /// duplicated.
     Own(DataKind),
-    /// Pop the address of a fixed list of this kind, then the address of a
+    /// Pop the address of a counted list of this kind, then the address of a
     /// slot; move the cells to a new heap block and write the plain list
     /// that owns it in the slot.
     ToHeap(DataKind),
-    /// Pop the address of a value of the cell kind of this plain or heap list,
+    /// Pop the address of a value of the cell kind of this plain list,
     /// then the address of the list; give the list a block of its own with
     /// room for one more cell, move the value into the new last cell and
     /// leave the default of the cell kind in its place.
     AddCell(DataKind),
-    /// Pop the address of a plain or heap list of this kind; stop the program
+    /// Pop the address of a plain list of this kind; stop the program
     /// when it holds no cells, else drop its last cell when the list owns its
     /// block, and take one from its count.
     RemoveCell(DataKind),
@@ -342,7 +342,7 @@ pub enum Op
     /// of text, then the address of text; give the text a block of its own
     /// with room for the u8s of the value, and add them at its end.
     AddText(DataKind),
-    /// Pop the addresses of two plain or heap lists, the right one first;
+    /// Pop the addresses of two plain lists, the right one first;
     /// push whether the two hold the same count of cells, each equal to the
     /// other's.
     SeqEq(DataKind),
@@ -451,8 +451,8 @@ impl Op
             | Op::Zero(kind)
             | Op::ListEq(kind)
             | Op::Drop(kind)
-            | Op::DupText(kind)
-            | Op::LendText(kind)
+            | Op::DupSeqs(kind)
+            | Op::LendSeqs(kind)
             | Op::Own(kind)
             | Op::ToHeap(kind)
             | Op::AddCell(kind)

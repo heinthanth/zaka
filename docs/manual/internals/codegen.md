@@ -106,24 +106,26 @@ rules out). Its rules:
   lend becomes `Lend`. A parameter the function can change (`Param::edit`) gets a borrow slot;
   each read of its name becomes a `Load` through it and each write a store through it,
   and the marked argument becomes the address of the caller's place. A place of a kind that holds text, read into another place,
-  becomes `Dup`: codegen copies the value into a temp slot and runs `dup_text` on it, so
-  each text on the heap in the duplicate gets a block of its own. A `Dup` the borrow checker marks
-  `lent` runs `lend_text` instead, which gives each text a room of 0. A parameter in
+  becomes `Dup`: codegen copies the value into a temp slot and runs `dup_seqs` on it, so
+  each text and plain list on the heap in the duplicate gets a block of its own. A `Dup`
+  the borrow checker marks `lent` (`dup_lent` in the IR printout) runs `lend_seqs`
+  instead, which gives each text and plain list a room of 0. A parameter in
   `Func::shared_params` gets a borrow slot that holds the caller's address, and each
   read of it goes through `local_ref`.
 - A plain list literal is built as a counted list of its cells, wrapped in a
   `Convert`. A counted list that becomes a plain list, a literal or a counted place,
   gets a `Convert` too. When the literal's cells are each known (`fold::is_known`), codegen
-  adds it to the module's table of static lists, `seqs`, and emits `static_seq s<n>` into a
-  `%own` slot: the slot points at the static list with a room of 0, and no heap block is
-  made. Each other `Convert` gets a `%own` slot and `to_heap k`, which moves the cells to a
+  adds it to the module's table of static lists, `seqs`, and emits `static_seq s<n>`: the
+  slot points at the static list with a room of 0, and no heap block is made. A set writes
+  the three words straight into the variable (`static_seq`, then `pop`); a literal used as
+  a value of its own takes a `%own` slot first. Each other `Convert` gets a `%own` slot and `to_heap k`, which moves the cells to a
   new heap block and writes the plain list of them in the slot. A constant keeps the kind
   its declaration gives.
-- A counted list literal of known cells, set into a slot or duplicated into one, gets a
-  static list too: codegen emits `seq_addr s<n>` and `blit k`, in place of a store for each
-  cell. A struct literal keeps a store for each field. A counted literal used as a value of
-  its own, such as a printed one or one sliced, still goes to a slot of its own, which the
-  blit fills, since a slice can write the cells it borrows.
+- A counted list or struct literal of known cells, set into a slot or duplicated into one,
+  gets a static list too: codegen emits `seq_addr s<n>` and `blit k`, in place of a store
+  for each cell or field. The VM puts each field of a struct at its offset. Such a literal
+  used as a value of its own, such as a printed one or one sliced, still goes to a slot of
+  its own, which the blit fills, since a slice can write the cells it borrows.
 - A write into a plain list: the address of each written place, a cell, a field of a cell
   or the whole list, wraps each plain list on its path in an `Own` node, the outer one
   first, so a list lent with a room of 0 copies its cells into a block of its own before
@@ -377,7 +379,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k`, `seq_eq k`, `static_seq s`, `seq_addr s`, `to_heap k`, `add_cell k`, `remove_cell k` |
 | slices | `make_slice stride source`, `slice_cell stride from` |
-| text | `text t`, `format fmt`, `drop k`, `dup_text k`, `lend_text k`, `own k`, `text_eq`, `char_count`, `char_at`, `set_char from`, `add_text k`, `text_edges`, `check_utf8` |
+| text | `text t`, `format fmt`, `drop k`, `dup_seqs k`, `lend_seqs k`, `own k`, `text_eq`, `char_count`, `char_at`, `set_char from`, `add_text k`, `text_edges`, `check_utf8` |
 
 A range of text that is not the whole text gets `text_edges` after its `make_slice`, which
 stops the program when an edge falls inside a character; when the fold knows the text, the
