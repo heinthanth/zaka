@@ -856,6 +856,20 @@ impl<'s> FuncGen<'s>
                 self.dest_addr(dest);
                 self.op(Op::RemoveCell(*kind));
             }
+            Stmt::SetChar { dest, index, first, value, .. } =>
+            {
+                self.dest_addr(dest);
+                self.expr(index);
+                self.expr(value);
+                self.op(Op::SetChar { first: *first });
+            }
+            Stmt::AddText { dest, value, .. } =>
+            {
+                self.dest_addr(dest);
+                let fresh = self.read_operand(value);
+                self.op(Op::AddText(value.kind));
+                do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
+            }
         }
     }
 

@@ -287,6 +287,18 @@ pub enum Op
     /// when it holds no cells, else drop its last cell when the list owns its
     /// block, and take one from its count.
     RemoveCell(DataKind),
+    /// Pop a character, then a character number, then the address of text;
+    /// stop the program when the number is outside the text, else give the
+    /// text a block of its own and put the character in place of that one.
+    SetChar
+    {
+        /// The number of the first character: 0 or 1.
+        first: u8,
+    },
+    /// Pop a value of this kind, a character or the address of text or a view
+    /// of text, then the address of text; give the text a block of its own
+    /// with room for the u8s of the value, and add them at its end.
+    AddText(DataKind),
     /// Pop the addresses of two plain or heap lists, the right one first;
     /// push whether the two hold the same count of cells, each equal to the
     /// other's.
@@ -401,6 +413,7 @@ impl Op
             | Op::ToHeap(kind)
             | Op::AddCell(kind)
             | Op::RemoveCell(kind)
+            | Op::AddText(kind)
             | Op::SeqEq(kind)
             | Op::PrintList(kind) => kind.name(),
             Op::MakeSlice { stride, from } =>
@@ -411,7 +424,7 @@ impl Op
             Op::SliceCell { stride, first } => format!("{stride} from {first}"),
             Op::Index { len, first: 0 } => len.to_string(),
             Op::Index { len, first } => format!("{len} from {first}"),
-            Op::CharAt { first: 1 } => "from 1".to_string(),
+            Op::CharAt { first: 1 } | Op::SetChar { first: 1 } => "from 1".to_string(),
             Op::PtrAdd(s) | Op::PtrSub(s) | Op::Alloc(s) | Op::Realloc(s) =>
             {
                 s.to_string()
@@ -424,6 +437,7 @@ impl Op
             | Op::ResultAddr
             | Op::CharCount
             | Op::CharAt { .. }
+            | Op::SetChar { .. }
             | Op::TextEq
             | Op::CharAtOctet
             | Op::TextEdges

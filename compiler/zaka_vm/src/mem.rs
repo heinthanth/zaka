@@ -529,6 +529,23 @@ impl Mem
         self.write_raw(to, kind, &vec![0; size])
     }
 
+    /// Write u8s at an address, checked as a store of a list of them.
+    ///
+    /// # Arguments
+    ///
+    /// * `to` - The address.
+    /// * `raw` - The u8s.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap the access hits.
+    pub fn write_octets(&mut self, to: u64, raw: &[u8]) -> Result<(), TrapKind>
+    {
+        ret_if!(raw.is_empty(), Ok(()));
+        let kind = DataKind::list_of(DataKind::U8, raw.len() as u32);
+        self.write_raw(to, kind, raw)
+    }
+
     /// Write the octets of a value of a kind, checked as a store of it.
     ///
     /// # Arguments

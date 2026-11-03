@@ -1,6 +1,6 @@
 ---
 title: Text
-description: Text in double quotes is a value of the kind စာသား - store it, fill template slots in it with values, join it, lend it to a function and read its cells.
+description: Text in double quotes is a value of the kind စာသား - store it, fill template slots in it with values, join it, compare it, read its cells and characters, change a character and add to it.
 ---
 
 # Text
@@ -189,45 +189,9 @@ Zaka!
 ```
 
 Passing text to a function copies it too, so a function cannot change the caller's
-variable. A duplicate of text built while the program runs takes a new block of storage; to
-read text with no duplicate, lend it. When the first variable is not read again, nothing is
-copied at all: the compiler hands its text over to the second. And a function that reads
-a text parameter reads the caller's text in place, with no duplicate.
-
-## Lending text
-
-To let a function read text with no duplicate, lend it. The kind
-`စာသား တစ်စိတ်တစ်ပိုင်း` ("a part of text") is a *view* of text, and
-`<text> ၏ တန်ဖိုးအငှား` ("the value, on loan") makes one. A view is a
-[slice](../lists/slices.md), and it follows the same rules.
-
-```zaka
-လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
-စာသား တစ်စိတ်တစ်ပိုင်း အမည် ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"မင်္ဂလာပါ {အမည်}" ဟု ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-
-လုပ်ဆောင်ချက် နှစ်ခါ သည်
-စာသား တစ်စိတ်တစ်ပိုင်း စာ ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရလဒ် ကို ပြန်ပေးမည်။
-စာ + " " + စာ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-
-ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် နှုတ်ဆက် ကို အမည် ၏ တန်ဖိုးအငှား တို့ဖြင့် လုပ်ဆောင်ပါ။
-ကိန်းရှင် ထပ် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် နှစ်ခါ ကို အမည် ၏ တန်ဖိုးအငှား တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
-ထပ် ကို ပြသပါ။
-အမည် ကို ပြသပါ။
-```
-
-```text
-မင်္ဂလာပါ မောင်မောင်
-မောင်မောင် မောင်မောင်
-မောင်မောင်
-```
-
-`အမည်` still holds its text at the end: the functions borrowed it and gave it back.
+variable, not even with a character write or an add. When the first variable is not read again, nothing is copied: the compiler
+hands its text over to the second. Part II tells what copies cost, and how to read text
+with none: see [What a duplicate costs](../forms/costs.md).
 
 ## Cells
 
@@ -239,19 +203,16 @@ takes three.
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "Zaka စံကား" ဖြစ်ပါစေ။
 စာ ၏ အကွက်အရေအတွက် ကို ပြသပါ။          // the count of cells
 စာ ၏ အကွက် ၀ ကို ပြသပါ။                // the first cell: Z
-စာ ၏ အကွက် ၀ မှစ၍ ၄ ကွက် ကို ပြသပါ။      // a view of four cells
-စာ ၏ အကွက် ၅ မှစ၍ ၁၅ ကွက် ကို ပြသပါ။
 ```
 
 ```text
 ၂၀
 ၉၀
-Zaka
-စံကား
 ```
 
-A range of cells is a view. Nothing checks that it starts and ends at the edge of a
-letter, so count the cells with care. The cells of text can be read but not written:
+The cells of text can be read but not written, since one cell alone can break a Burmese
+letter in two. A whole character can be written: see [Changing a
+character](#changing-a-character).
 
 ```zaka-error ZK0429
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
@@ -283,9 +244,6 @@ Text is stored as UTF-8: a Latin letter takes one u8, a Burmese letter three. It
 မ
 ```
 
-A part of text, `စာ ၏ အကွက် ၀ မှစ၍ ၆ ကွက်`, must start and end between two characters,
-so that text holds whole characters at each step.
-
 An *each-character loop* takes the characters in turn, "taking each character of the
 text as *c*, do ...":
 
@@ -303,35 +261,116 @@ text as *c*, do ...":
 
 A Burmese letter and each mark on it are characters of their own.
 
-## Fixed and heap text
+## Changing a character
 
-`စာသား` is the text kind for most tasks. Two more words name text with a promise:
-
-| Kind | Reads as | Promise |
-| --- | --- | --- |
-| `စာသားသေ` | "fixed text" | its text never changes |
-| `စာသားရှင်` | "living text" | its text sits on the heap, in a block of its own, from the start |
-
-Each of the three converts to the others, so one can go where another is wanted:
+A character of text is a place, as a cell of a list is: the assignment writes a new
+character there. `၏ စာလုံး` counts from 0, and `၏ n ခုမြောက်စာလုံး` from 1.
 
 ```zaka
-ကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။     // a heap block of its own
-ခ ကို ပြသပါ။
+ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "cat" ဖြစ်ပါစေ။
+စာ ၏ စာလုံး ၀ ကို 'b' ဟု ထားပါ။
+စာ ကို ပြသပါ။
+စာ ၏ ၃ ခုမြောက်စာလုံး ကို 'd' ဟု ထားပါ။
+စာ ကို ပြသပါ။
 ```
 
 ```text
-မင်္ဂလာပါ
+bat
+bad
 ```
 
-A literal such as `"မင်္ဂလာပါ"` sits in the program itself, and `စာသား` points at it. Heap
-text takes a duplicate on the heap instead. The [Docs](../../manual/language/text.md#forms)
-state the rules in full.
+The new value must be a character, in single quotes. Text in double quotes is an error,
+even with one character in it:
+
+```zaka-error ZK0401
+ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "cat" ဖြစ်ပါစေ။
+စာ ၏ စာလုံး ၀ ကို "b" ဟု ထားပါ။
+```
+
+```text
+error[ZK0401]: expected char, found text
+```
+
+A character is one Unicode code point, not a letter as it is written. `ကျွန်` reads as one
+sound, but it is five characters: `က`, `ျ`, `ွ`, `န` and `်`. A write replaces one of
+them and keeps the rest:
+
+```zaka
+ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ကျွန်" ဖြစ်ပါစေ။
+စာ ၏ စာလုံးအရေအတွက် ကို ပြသပါ။
+စာ ၏ စာလုံး ၀ ကို 'ခ' ဟု ထားပါ။
+စာ ကို ပြသပါ။
+```
+
+```text
+၅
+ချွန်
+```
+
+A number past the last character stops the program, as a read there does:
+
+```zaka-stop
+ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ab" ဖြစ်ပါစေ။
+စာ ၏ ၃ ခုမြောက်စာလုံး ကို 'x' ဟု ထားပါ။
+```
+
+```text
+the program stopped: character 3 is outside the text, whose characters run from 1 to 2
+```
+
+## Adding to text
+
+`ထဲသို့ ... ကို ထည့်ပါ` ("put ... into") adds text or a character at the end of text:
+
+```zaka
+ကိန်းရှင် နှုတ်ဆက် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။
+နှုတ်ဆက် ထဲသို့ " မောင်မောင်" ကို ထည့်ပါ။
+နှုတ်ဆက် ထဲသို့ '!' ကို ထည့်ပါ။
+နှုတ်ဆက် ကို ပြသပါ။
+```
+
+```text
+မင်္ဂလာပါ မောင်မောင်!
+```
+
+An add changes the text in place, where `နှုတ်ဆက် ကို နှုတ်ဆက် + "!" ဟု ထားပါ။` builds new
+text and puts it in place of the old. Adds build text one piece at a time, such as in a
+[counted loop](../control-flow/counted-loops.md):
+
+```zaka
+ကိန်းရှင် လှေကား သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "" ဖြစ်ပါစေ။
+၁ မှ ၄ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+လှေကား ထဲသို့ '*' ကို ထည့်ပါ။
+လှေကား ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+```
+
+```text
+*
+**
+***
+****
+```
+
+A template literal adds a number: `လှေကား ထဲသို့ "{န}" ကို ထည့်ပါ။`. A number with no
+quotes around it is an error, since a number is no text:
+
+```zaka-error ZK0401
+ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "အဆင့် " ဖြစ်ပါစေ။
+စာ ထဲသို့ ၁ ကို ထည့်ပါ။
+```
+
+```text
+error[ZK0401]: expected text, found isize
+```
+
+Text grows, but it does not shrink: `ဖျက်ပါ`, which removes the last cell of a list, does
+not take text (see [List mistakes](../lists/mistakes.md#removing-from-text)).
 
 ## No cleanup
 
-Text built when the program runs needs room on the [heap](../pointers/heap.md), but a
-program never frees text. A `စာသား` variable frees its text when its block ends, and when
+Text built when the program runs needs storage of its own, but a program never frees
+text. A `စာသား` variable frees its text when its block ends, and when
 a new value replaces the old one. A loop frees the text of each round before the next
 round starts.
 
@@ -356,5 +395,9 @@ i ကို i + ၁ ဟု ထားပါ။
 - Print the same poem with a single `ပြသပါ`, using `{နောက်တစ်ကြောင်း}`.
 - Store a name and an age, and print a sentence about them with two template slots.
 - Count the cells of a Burmese word. Divide the count with three.
+- Put a name into a second variable, change the second, and print both.
+- Change the first character of `"မောင်"` to `'ခ'`, and count its characters first: which
+  marks does the write keep?
+- Build the text `"၁၂၃၄၅"` with a counted loop that adds `"{န}"` in each round.
 
 Next: [Variables](../variables/README.md).

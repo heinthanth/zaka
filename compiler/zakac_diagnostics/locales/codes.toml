@@ -756,9 +756,16 @@ en = """A fixed list keeps its count, so a list with no cells does not fit it. I
 [codes.ZK0437.title]
 en = "a value that cannot grow or shrink"
 [codes.ZK0437.message]
-en = "%{k} cannot grow or shrink: \"ထည့်ပါ\" and \"ဖျက်ပါ\" take a plain or a heap list"
+en = "%{k} cannot grow or shrink here: \"ထည့်ပါ\" takes a plain or a heap list or text, and \"ဖျက်ပါ\" a plain or a heap list"
 [codes.ZK0437.explain]
-en = """A fixed list keeps the count its kind gives, and text, slices and views hold no cells of their own to add to. Declare the list with no count, as a plain list (isize[]), or as a heap list (စာရင်းရှင်, isize[]~), to add cells to it and remove them."""
+en = """A fixed list keeps the count its kind gives, and slices and views hold no cells of their own to add to. Text takes an add but no remove. Declare the list with no count, as a plain list (isize[]), or as a heap list (စာရင်းရှင်, isize[]~), to add cells to it and remove them."""
+
+[codes.ZK0438.title]
+en = "text that cannot change"
+[codes.ZK0438.message]
+en = "%{k} cannot change: a character write or an add takes text (စာသား) or heap text (စာသားရှင်)"
+[codes.ZK0438.explain]
+en = """Fixed text (စာသားသေ) keeps the text its value gives, and a view of text reads text that another value holds. Neither can change. Declare the value as text, or as heap text, to set a character of it or to add to it; a template literal, \"{v}\", makes text of its own from a view v."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 

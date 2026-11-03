@@ -18,7 +18,20 @@ needed beforehand. Each page has:
 - a **Hands on** section that suggests a small change to make to the program.
 
 Read the pages in order. Each page builds on nothing but what the pages before it have
-shown.
+shown. The pages run in three parts:
+
+1. **Values**, from [Hello, world](hello/README.md) to the [Example
+   programs](programs/README.md): numbers, text, lists, structs, functions and loops.
+   Each assignment and each call gives a value of its own, and the program never asks
+   where a value is kept.
+2. **Control**, from [Views and forms](forms/README.md): views and slices, which read
+   text and lists with no duplicate; the fixed and heap forms of text and lists; and
+   what a duplicate costs.
+3. **Storage**, from [Pointers and the heap](pointers/README.md): addresses, blocks of
+   the heap, and the rules of owners and borrows.
+
+A program from an earlier part keeps its meaning in the later ones. The first part is
+enough to write whole programs; the later two give more control over cost and storage.
 
 ## How to run the examples
 

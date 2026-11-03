@@ -629,6 +629,16 @@ impl Lowerer<'_>
     fn assign(&mut self, n: &st::AssignStmt, out: &mut Vec<Stmt>)
     {
         let span = n.span;
+        if let ast::Expr::Verb(v) = ungrouped(&n.target)
+            && let (VerbOp::CharAt | VerbOp::CharNth, [text, index]) =
+                (v.op, v.args.as_slice())
+        {
+            let first = u8::from(v.op == VerbOp::CharNth);
+            let (kind, index, value) =
+                (self.kind_of(text), self.expr(index), self.expr(&n.value));
+            let dest = self.dest(text);
+            return out.push(Stmt::SetChar { dest, kind, index, first, value, span });
+        }
         let dest = self.dest(&n.target);
         let want = match &dest
         {
@@ -712,7 +722,8 @@ impl Lowerer<'_>
         Stmt::Alloc { dest, count, unit, span: n.span }
     }
 
-    /// Lower an add statement: the value is owned, as an assigned one is.
+    /// Lower an add statement: the value of a new cell is owned, as an
+    /// assigned one is; text added to text is read where it is.
     ///
     /// # Arguments
     ///
@@ -724,6 +735,12 @@ impl Lowerer<'_>
     fn add_cell(&mut self, n: &st::AddStmt) -> Stmt
     {
         let kind = self.kind_of(&n.list);
+        if kind.is_text()
+        {
+            let value = self.expr(&n.value);
+            let dest = self.dest(&n.list);
+            return Stmt::AddText { dest, kind, value, span: n.span };
+        }
         let cell = kind.cell_kind().expect("an add statement grows a list");
         let value = self.owned(&n.value, cell);
         let dest = self.dest(&n.list);
@@ -2504,4 +2521,18 @@ fn drop_stmt(dest: Dest, kind: DataKind, span: Span) -> Stmt
 fn leaves_scope(s: &Stmt) -> bool
 {
     matches!(s, Stmt::Return { .. } | Stmt::Break { .. } | Stmt::Continue { .. })
+}
+
+/// An expression with each pair of parentheses around it taken off.
+///
+/// # Arguments
+///
+/// * `e` - The expression.
+///
+/// # Returns
+///
+/// The expression inside.
+fn ungrouped(e: &ast::Expr) -> &ast::Expr
+{
+    tern!(let ast::Expr::Group(n) = e, ungrouped(&n.inner), e)
 }

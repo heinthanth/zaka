@@ -69,6 +69,8 @@ A statement is one of sixteen forms:
 | `Drop { dest, kind }` | free each text on the heap inside the value at `dest`, of a kind that holds text, and leave it blank; written `(drop l0)` |
 | `AddCell { dest, kind, value }` | add `value` as a new last cell of the plain or heap list at `dest`; written `(add_cell l0 7)` |
 | `RemoveCell { dest, kind }` | remove the last cell of the plain or heap list at `dest`; written `(remove_cell l0)` |
+| `SetChar { dest, kind, index, first, value }` | write the character `value` in place of character `index` of the text at `dest`, counted from `first` (0 or 1); written `(set_char g0 2 'x')` |
+| `AddText { dest, kind, value }` | add the text, view of text or character `value` at the end of the text at `dest`; written `(add_text g0 "c")` |
 
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
@@ -133,6 +135,14 @@ rules out). Its rules:
   address of the list and the address of the slot and emits `add_cell k`; the op moves
   the value out and leaves the default of the cell kind in the slot. A remove pushes the
   address of the list and emits `remove_cell k`.
+- A write of one character of text (in `assign`) becomes `SetChar`, and an add to text (in
+  `add_cell`) becomes `AddText`. The text goes through `dest` as a list does, so a plain
+  list around it gets its `Own` step. Codegen pushes the address of the text, the number
+  and the character, and emits `set_char`, or `set_char from 1` for `၏ n ခုမြောက်စာလုံး`.
+  For an add it pushes the address of the text and the value through `read_operand`, emits
+  `add_text k` with `k` the kind of the value, and drops a fresh text the value made, such
+  as a format, right after. The value is read where it is, never duplicated, so `t ထဲသို့ t
+  ကို ထည့်ပါ။` reads `t` itself; the op reads the added u8s before it writes.
 - `==` and `!=` on two plain or heap lists emit `seq_eq k`, which compares the counts and
   then each cell; `!=` adds a `not`. Two fixed lists keep `list_eq k`.
 - A range `x ၏ အကွက် s မှစ၍ n ကွက်` becomes `MakeSlice { source, start, len, from }`,
@@ -357,7 +367,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k`, `seq_eq k`, `to_heap k`, `add_cell k`, `remove_cell k` |
 | slices | `make_slice stride source`, `slice_cell stride from` |
-| text | `text t`, `format fmt`, `drop k`, `dup_text k`, `lend_text k`, `own k`, `text_eq`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
+| text | `text t`, `format fmt`, `drop k`, `dup_text k`, `lend_text k`, `own k`, `text_eq`, `char_count`, `char_at`, `set_char from`, `add_text k`, `text_edges`, `check_utf8` |
 
 A range of text that is not the whole text gets `text_edges` after its `make_slice`, which
 stops the program when an edge falls inside a character; when the fold knows the text, the

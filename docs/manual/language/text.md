@@ -1,6 +1,6 @@
 ---
 title: Text
-description: Owned text and views of text - the text kinds and the three forms of owned text, string literals and their template slots, folding, joining, cells, copies, the drops the compiler adds, static text, and the errors ZK0403 and ZK0429.
+description: Owned text and views of text - the text kinds, string literals and their template slots, joining, cells and characters, changing a character and adding to text, then folding, the three forms of owned text, views, copies, the drops the compiler adds, static text, and the errors ZK0403, ZK0429 and ZK0438.
 ---
 
 # Text
@@ -58,45 +58,6 @@ v ၏ အကွက်အရေအတွက် ကို ပြသပါ။
 - `စာသား` can be the kind of a variable, a constant, a parameter, a result, a struct field
   and the cells of a list. A view lives in variables and parameters alone, as each slice
   does.
-
-## Forms
-
-Owned text comes in three forms. Each is the same three words, and each converts to the
-others on its own where a value goes into a place: a declaration, a set, an argument, a
-result, a struct field or a list cell.
-
-| Form | Burmese | Its u8s |
-| --- | --- | --- |
-| plain | `စာသား` | in static storage for a literal or a folded value (room 0), else in a heap block it owns |
-| fixed | `စာသားသေ` | as for plain text; the u8s never change |
-| heap | `စာသားရှင်` | in a heap block it owns, from the start |
-
-- **Heap text** owns its block. Where a value of another form becomes heap text, u8s in
-  static storage are duplicated into a new heap block, so a literal given to heap text
-  allocates. Blank heap text holds no u8s and no block. A parameter of heap text takes a
-  duplicate of its argument; the caller's text is never lent to it.
-- **Fixed text** never changes its u8s. Text has no edit in place now, since a cell write
-  is ZK0429, so fixed and plain text behave alike; the form states the promise for the
-  edits to come. A set replaces the whole value, as for each form.
-- A constant holds plain or fixed text, never heap text (ZK0435): a constant sits in
-  static storage.
-- A lend of text of each form gives a view, `text[..]`. Joins, formats and template literals
-  make plain text, which converts to the other forms.
-
-```zaka
-ကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
-ကိန်းရှင် ဂ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ + " မောင်မောင်" ဖြစ်ပါစေ။
-"{က} | {ခ} | {ဂ}" ဟု ပြသပါ။
-```
-
-```text
-မင်္ဂလာပါ | မင်္ဂလာပါ | မင်္ဂလာပါ မောင်မောင်
-```
-
-```zaka-error ZK0435
-ကိန်းသေ က သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
-```
 
 ## String literals
 
@@ -179,56 +140,6 @@ Text inside a list or a struct is written in quotes, so that its edges show.
 ၁.၅ မှန် က အောင်
 ```
 
-## Folding
-
-With expression folding on (the default; `--fold` holds `exprs`), a literal whose template slots
-each fold to a constant becomes static text when the program is compiled, and it takes
-no heap. A template slot folds when it holds a literal, a constant, or constant arithmetic on
-them. A `+` of two pieces of constant text folds in the same manner.
-
-A template slot with another value, such as a variable or a list, makes the literal a *format*:
-the program builds its text on the heap when it runs.
-Under `--fold none` each template literal is built when the program runs. The output
-is the same in both cases.
-
-```zaka
-ကိန်းသေ အကျယ် သည် ကိန်းပြည့် ၈ ဖြစ်ပါစေ။
-"အကျယ် {အကျယ်}၊ ဧရိယာ {အကျယ် * အကျယ်}" ဟု ပြသပါ။       // static text
-ကိန်းရှင် i သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။
-"အဆင့် {i}" ဟု ပြသပါ။                                // built when it runs
-```
-
-```text
-အကျယ် ၈၊ ဧရိယာ ၆၄
-အဆင့် ၃
-```
-
-A `ကိန်းသေ` of kind `စာသား` (or a list or struct that holds text) is static text in
-each build: its value must fold at compile time, whatever `--fold` holds. Its value can
-use literals, other constants, template slots of these and `+`. A value that needs the program
-to run, such as a variable in a template slot, a call, a cell or a field, is ZK0606, reported at
-the first part that does not fold. `--fold` changes how the IR shows the reads of the
-constant, never whether it is valid.
-
-```zaka
-ကိန်းသေ အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မမ" ဖြစ်ပါစေ။
-ကိန်းသေ နှုတ်ဆက် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ဟေး {အမည်}" + "!" ဖြစ်ပါစေ။
-နှုတ်ဆက် ကို ပြသပါ။
-```
-
-```text
-ဟေး မမ!
-```
-
-```zaka-error ZK0606
-ကိန်းရှင် n သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။
-ကိန်းသေ အဆင့် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "အဆင့် {n}" ဖြစ်ပါစေ။
-```
-
-```text
-error[ZK0606]: a text constant must be known at compile time
-```
-
 ## Joining
 
 ```text
@@ -286,54 +197,6 @@ one, is quoted with `ဟု`; a text variable, a view or a call is a plain value
 `ကို`. The other choice still runs, with the warning ZK0505 or ZK0506 ([Natural
 wording](naturalness.md)).
 
-## Views
-
-```text
-<text> ၏ တန်ဖိုးအငှား
-<text> ၏ အကွက် <start> မှစ၍ <length> ကွက်
-```
-
-The lend `၏ တန်ဖိုးအငှား` views each cell of a text place; the range views `length` cells
-from cell `start`. Both take owned text or a view. The lend needs a place, a constant
-included: the lend of a literal or of a call result is ZK0411.
-
-A view never widens to a slice of u8s, `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း`: a
-write through the slice would break the text. A conversion turns u8s into text, and it
-checks them: u8s that are not UTF-8 stop the program when it runs.
-
-```zaka
-ကိန်းရှင် b သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၄၊ ၁၀၅] ဖြစ်ပါစေ။
-(b ၏ တန်ဖိုးအငှား) ကို စာသား တစ်စိတ်တစ်ပိုင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-```
-
-```text
-hi
-```
-
-A view is a borrow, and the rules of [slices](slices.md#ownership) hold for it:
-
-- a struct field cannot hold a view (ZK0718);
-- a function cannot return a view of its own local text (ZK0706);
-- a view used after its text is dropped, through a new value or the end of its block, is
-  ZK0704.
-
-```zaka-error ZK0706
-လုပ်ဆောင်ချက် ယူ သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်စိတ်တစ်ပိုင်း ရလဒ် ကို ပြန်ပေးမည်။
-ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
-t ၏ တန်ဖိုးအငှား ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-```
-
-```zaka-error ZK0704
-ကိန်းရှင် v သည် စာသား တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်ပါစေ။
-အကယ်၍ မှန် ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ab" + "{၁ + ၁}" ဖြစ်ပါစေ။
-v ကို t ၏ တန်ဖိုးအငှား ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-v ကို ပြသပါ။
-```
-
 ## Cells
 
 A cell of text is one u8 of its UTF-8. A Latin letter takes one cell, a Burmese letter
@@ -354,8 +217,8 @@ three.
   constant, a range that cuts a character is ZK0607; otherwise it stops the program when
   it runs.
 - The cells of text cannot be written, through owned text or a view: the assignment is
-  ZK0429. Static text is shared, so a write to it would change each literal of the same
-  text.
+  ZK0429, since one u8 alone can break the UTF-8 of the text. A whole character can be
+  written: see [Changing text](#changing-text).
 
 ```zaka
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "Zaka စံကား" ဖြစ်ပါစေ။
@@ -425,6 +288,280 @@ when it runs.
 o
 ```
 
+## Changing text
+
+```text
+<text> ၏ စာလုံး <number> ကို <character> ဟု ထားပါ။
+<text> ၏ <number> ခုမြောက်စာလုံး ကို <character> ဟု ထားပါ။
+<text> ထဲသို့ <value> ကို ထည့်ပါ။
+```
+
+Text changes in place through two statements: the assignment writes one character, and
+the add statement adds to its end.
+
+- **A character write** takes `၏ စာလုံး n` (counted from 0) or `၏ n ခုမြောက်စာလုံး`
+  (counted from 1) as its place. The text is a place that can be set, as for each
+  assignment: a variable, a field, a cell of a list, or `ပ ၏ တန်ဖိုး` through a pointer;
+  a constant is ZK0306. The number is an integer (ZK0423), and the value a `စာလုံး`
+  (ZK0401). A number outside the text stops the program when it runs, with the trap that
+  a read of a character outside the text gives.
+- The write walks the text from its start, as a read of a character does. The new
+  character can take more or fewer u8s than the old one: the u8s after it shift, and the
+  count of u8s changes with them.
+- **An add** takes text, a view of text, or a `စာလုံး`, and adds its u8s at the end. Each
+  other value is ZK0401 ("expected text"). The value is read before the text changes, so
+  `t ထဲသို့ t ကို ထည့်ပါ။` doubles `t`.
+- Text takes no remove: `t ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။` is ZK0437, and so is a remove from
+  each other form of text.
+- The cells (u8s) of text still cannot be written (ZK0429, see [Cells](#cells)); a whole
+  character can.
+- Plain text (`စာသား`) and heap text (`စာသားရှင်`) change. Fixed text (`စာသားသေ`) and a
+  view of text do not: a character write or an add on either is ZK0438 (see
+  [Forms](#forms) and [Views](#views)). Each edit ends the views of the text (ZK0704).
+
+A character is a Unicode code point, not a letter as it is written. `ကျွန်` is five characters,
+`က`, `ျ`, `ွ`, `န`, `်`, so a write at number 0 replaces the `က` alone and keeps the marks
+on it.
+
+```zaka
+ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
+စာ ၏ စာလုံး ၀ ကို 'A' ဟု ထားပါ။
+စာ ၏ ၂ ခုမြောက်စာလုံး ကို 'က' ဟု ထားပါ။      // three u8s in place of one
+စာ ထဲသို့ "!" ကို ထည့်ပါ။
+စာ ထဲသို့ '?' ကို ထည့်ပါ။
+စာ ကို ပြသပါ။
+စာ ၏ အကွက်အရေအတွက် ကို ပြသပါ။
+စာ ထဲသို့ စာ ကို ထည့်ပါ။
+စာ ကို ပြသပါ။
+ကိန်းရှင် စ သည် "ကျွန်" ဖြစ်ပါစေ။
+စ ၏ စာလုံး ၀ ကို 'ခ' ဟု ထားပါ။
+စ ကို ပြသပါ။
+```
+
+```text
+Aကc!?
+၇
+Aကc!?Aကc!?
+ချွန်
+```
+
+```zaka-stop
+ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ab" ဖြစ်ပါစေ။
+t ၏ ၃ ခုမြောက်စာလုံး ကို 'x' ဟု ထားပါ။
+```
+
+```text
+the program stopped: character 3 is outside the text, whose characters run from 1 to 2
+```
+
+```zaka-error ZK0437
+ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ab" ဖြစ်ပါစေ။
+t ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+```
+
+```text
+error[ZK0437]: text cannot grow or shrink here: "ထည့်ပါ" takes a plain or a heap list or text, and "ဖျက်ပါ" a plain or a heap list
+```
+
+When it runs, text with a room of 0 (static text, or text lent to a parameter) first
+takes a heap block of its own with the same u8s. A literal is never written, a duplicate of it
+shares nothing once it changes, and a function that edits its parameter leaves the
+caller's text as it was (see [Copies](#copies)). The new u8s go into the block when it has
+room; else the text moves to a block twice its size, 16 u8s at the least. A run of adds
+therefore copies the text a few times, not once for each add.
+
+```zaka
+လုပ်ဆောင်ချက် အော် သည် စာသား စ ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စ ထဲသို့ "!" ကို ထည့်ပါ။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+
+ကိန်းရှင် အမည် သည် "မမ" ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် အော် ကို အမည် တို့ဖြင့် လုပ်ဆောင်ပါ။
+အမည် ကို ပြသပါ။
+ကိန်းရှင် l သည် ["ab"၊ "cd"] ဖြစ်ပါစေ။
+l ၏ အကွက် ၁ ၏ စာလုံး ၀ ကို 'X' ဟု ထားပါ။
+l ၏ အကွက် ၀ ထဲသို့ "!" ကို ထည့်ပါ။
+l ကို ပြသပါ။
+```
+
+```text
+မမ!
+မမ
+["ab!"၊ "Xd"]
+```
+
+## Folding
+
+With expression folding on (the default; `--fold` holds `exprs`), a literal whose template slots
+each fold to a constant becomes static text when the program is compiled, and it takes
+no heap. A template slot folds when it holds a literal, a constant, or constant arithmetic on
+them. A `+` of two pieces of constant text folds in the same manner.
+
+A template slot with another value, such as a variable or a list, makes the literal a *format*:
+the program builds its text on the heap when it runs.
+Under `--fold none` each template literal is built when the program runs. The output
+is the same in both cases.
+
+```zaka
+ကိန်းသေ အကျယ် သည် ကိန်းပြည့် ၈ ဖြစ်ပါစေ။
+"အကျယ် {အကျယ်}၊ ဧရိယာ {အကျယ် * အကျယ်}" ဟု ပြသပါ။       // static text
+ကိန်းရှင် i သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။
+"အဆင့် {i}" ဟု ပြသပါ။                                // built when it runs
+```
+
+```text
+အကျယ် ၈၊ ဧရိယာ ၆၄
+အဆင့် ၃
+```
+
+A `ကိန်းသေ` of kind `စာသား` (or a list or struct that holds text) is static text in
+each build: its value must fold at compile time, whatever `--fold` holds. Its value can
+use literals, other constants, template slots of these and `+`. A value that needs the program
+to run, such as a variable in a template slot, a call, a cell or a field, is ZK0606, reported at
+the first part that does not fold. `--fold` changes how the IR shows the reads of the
+constant, never whether it is valid.
+
+```zaka
+ကိန်းသေ အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မမ" ဖြစ်ပါစေ။
+ကိန်းသေ နှုတ်ဆက် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ဟေး {အမည်}" + "!" ဖြစ်ပါစေ။
+နှုတ်ဆက် ကို ပြသပါ။
+```
+
+```text
+ဟေး မမ!
+```
+
+```zaka-error ZK0606
+ကိန်းရှင် n သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။
+ကိန်းသေ အဆင့် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "အဆင့် {n}" ဖြစ်ပါစေ။
+```
+
+```text
+error[ZK0606]: a text constant must be known at compile time
+```
+
+## Forms
+
+Owned text comes in three forms. Each is the same three words, and each converts to the
+others on its own where a value goes into a place: a declaration, a set, an argument, a
+result, a struct field or a list cell.
+
+| Form | Burmese | Its u8s |
+| --- | --- | --- |
+| plain | `စာသား` | in static storage for a literal or a folded value (room 0), else in a heap block it owns |
+| fixed | `စာသားသေ` | as for plain text; the u8s never change, and a character write or an add is ZK0438 |
+| heap | `စာသားရှင်` | in a heap block it owns, from the start |
+
+- **Heap text** owns its block. Where a value of another form becomes heap text, u8s in
+  static storage are duplicated into a new heap block, so a literal given to heap text
+  allocates. Blank heap text holds no u8s and no block. A parameter of heap text takes a
+  duplicate of its argument; the caller's text is never lent to it.
+- **Fixed text** never changes its u8s: a [character write or an add](#changing-text) on
+  it is ZK0438. A set replaces the whole value, as for each form. Plain and heap text
+  take both edits.
+- A constant holds plain or fixed text, never heap text (ZK0435): a constant sits in
+  static storage.
+- A lend of text of each form gives a view, `text[..]`. Joins, formats and template literals
+  make plain text, which converts to the other forms.
+
+```zaka
+ကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ + " မောင်မောင်" ဖြစ်ပါစေ။
+"{က} | {ခ} | {ဂ}" ဟု ပြသပါ။
+```
+
+```text
+မင်္ဂလာပါ | မင်္ဂလာပါ | မင်္ဂလာပါ မောင်မောင်
+```
+
+```zaka-error ZK0435
+ကိန်းသေ က သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
+```
+
+```zaka-error ZK0438
+ကိန်းရှင် f သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ab" ဖြစ်ပါစေ။
+f ထဲသို့ "c" ကို ထည့်ပါ။
+```
+
+```text
+error[ZK0438]: textf cannot change: a character write or an add takes text (စာသား) or heap text (စာသားရှင်)
+```
+
+## Views
+
+```text
+<text> ၏ တန်ဖိုးအငှား
+<text> ၏ အကွက် <start> မှစ၍ <length> ကွက်
+```
+
+The lend `၏ တန်ဖိုးအငှား` views each cell of a text place; the range views `length` cells
+from cell `start`. Both take owned text or a view. The lend needs a place, a constant
+included: the lend of a literal or of a call result is ZK0411.
+
+A view never widens to a slice of u8s, `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း`: a
+write through the slice would break the text. A conversion turns u8s into text, and it
+checks them: u8s that are not UTF-8 stop the program when it runs.
+
+```zaka
+ကိန်းရှင် b သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၄၊ ၁၀၅] ဖြစ်ပါစေ။
+(b ၏ တန်ဖိုးအငှား) ကို စာသား တစ်စိတ်တစ်ပိုင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+```
+
+```text
+hi
+```
+
+A view is a borrow, and the rules of [slices](slices.md#ownership) hold for it:
+
+- a struct field cannot hold a view (ZK0718);
+- a function cannot return a view of its own local text (ZK0706);
+- a view used after its text is dropped, through a new value or the end of its block, is
+  ZK0704;
+- a view used after its text is edited, through a [character write or an
+  add](#changing-text), is ZK0704 too, since the edit can move the u8s to a new block. A
+  view read as the added value of the edit itself is fine: `t ထဲသို့ v ကို ထည့်ပါ။` reads `v`
+  first.
+
+A view reads text that another place owns, so it cannot change: a character write or an
+add on a view is ZK0438. Make text of its own from the view first: a template literal
+`"{v}"` or a join builds new `စာသား` from it.
+
+```zaka-error ZK0438
+ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ab" ဖြစ်ပါစေ။
+ကိန်းရှင် v သည် စာသား တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် t ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+v ၏ စာလုံး ၀ ကို 'x' ဟု ထားပါ။
+```
+
+```zaka-error ZK0704
+ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ab" ဖြစ်ပါစေ။
+ကိန်းရှင် v သည် စာသား တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် t ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+t ထဲသို့ "z" ကို ထည့်ပါ။
+v ကို ပြသပါ။
+```
+
+```text
+error[ZK0704]: the block of "t" is edited, so its cells can move, here, but "v" still borrows it and is used later
+```
+
+```zaka-error ZK0706
+လုပ်ဆောင်ချက် ယူ သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်စိတ်တစ်ပိုင်း ရလဒ် ကို ပြန်ပေးမည်။
+ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
+t ၏ တန်ဖိုးအငှား ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+```
+
+```zaka-error ZK0704
+ကိန်းရှင် v သည် စာသား တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်ပါစေ။
+အကယ်၍ မှန် ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ab" + "{၁ + ၁}" ဖြစ်ပါစေ။
+v ကို t ၏ တန်ဖိုးအငှား ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+v ကို ပြသပါ။
+```
+
 ## Copies
 
 `စာသား` is copied, as a number is. Setting one text place from another
@@ -436,7 +573,8 @@ of its own. A list or a struct that holds an [owner address](ownership.md) still
 since a duplicate would free one block twice.
 
 Static text is shared: nothing writes it, so a duplicate of a literal or a constant takes no
-block, and dropping the duplicate frees nothing.
+block, and dropping the duplicate frees nothing. The first [edit](#changing-text) of such a
+duplicate gives it a heap block of its own, and the static text remains as it was.
 
 ```zaka
 ကိန်းသေ အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မမ" ဖြစ်ပါစေ။
@@ -463,7 +601,8 @@ same statement reads twice.
 Text given to a function that is still read after the call is lent to the parameter, not
 copied: the parameter reads the caller's u8s for the length of the call, and nothing is
 freed when the function ends. The function sees a value of its own all the same. Setting
-the parameter gives it new text, and returning it, storing it or setting another place
+the parameter gives it new text, an edit of it (a character write or an add) first copies
+the caller's u8s into a block of its own, and returning it, storing it or setting another place
 from it makes a duplicate there. The text is copied at the call instead when the function,
 or a call inside the same arguments, sets the global given, or when a view or an address
 of the place is taken. `--warn-duplicates` names each statement where a duplicate remains
@@ -526,8 +665,9 @@ share it. Before `main` starts, the VM puts each in a static block of its own, a
 block is frozen. Owned text made from a literal points into that block with a room of 0;
 nothing is duplicated.
 
-A write inside a frozen block stops the program. The compiler forbids it (ZK0429), so a
-raw address that steps around the check is the one road to it:
+A write inside a frozen block stops the program. The compiler forbids a cell write
+(ZK0429), and a character write or an add first moves text with a room of 0 to a block
+of its own, so a raw address that steps around the check is the one road to it:
 
 ```zaka-stop
 ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
@@ -549,11 +689,14 @@ a program stops](../vm/traps.md) the trap.
 | --- | --- |
 | ZK0106 | a lone brace, an unclosed `{`, or `{...}` in a character literal |
 | ZK0301 | a template slot names something not declared |
-| ZK0401 | owned text where a view is wanted, or a view of text and a slice of u8s in place of each other |
+| ZK0401 | owned text where a view is wanted, a view of text and a slice of u8s in place of each other, a character write with no character, or an add of a value that is no text and no character |
 | ZK0403 | `+` of text and a non-text value, or an operator other than `+`, `==` and `!=` on text |
 | ZK0411 | the lend of a literal or a call result |
+| ZK0423 | a character write whose number is no integer |
 | ZK0429 | a write to a cell of text |
 | ZK0435 | a constant that holds heap text or a heap list |
-| ZK0704 | a view used after its text is dropped |
+| ZK0437 | a remove from text |
+| ZK0438 | a character write or an add on fixed text or a view of text |
+| ZK0704 | a view used after its text is dropped or edited |
 | ZK0706 | a function returns a view of its own local text |
 | ZK0718 | a struct field holds a view |

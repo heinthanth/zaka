@@ -18,6 +18,8 @@ use zakac_borrow_checker::options::MemCheck;
 use zakac_diagnostics::Code;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
+use zakac_lexer::token::Kw;
+use zakac_lexer::token::TokenKind;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
@@ -403,4 +405,148 @@ fn a_shown_file_is_painted_in_the_prose()
     assert!(prose.contains("<pre><code class=\"painted\" lang=\"my\">"), "{prose}");
     assert!(prose.contains("tok-kw"));
     assert!(!prose.contains("zaka-file"));
+}
+
+/// The first page of Learn past Part I, whose pages teach with values alone.
+const PAST_VALUES: &str = "forms/README.md";
+
+/// The reserved words of the later parts of Learn: views and slices, the
+/// fixed and heap forms, addresses and the heap.
+const LATER_WORDS: &[Kw] = &[
+    Kw::Address,
+    Kw::RawAddress,
+    Kw::Borrowed,
+    Kw::Lend,
+    Kw::Part,
+    Kw::StartingAt,
+    Kw::Mem,
+    Kw::AllocHead,
+    Kw::AllocTarget,
+    Kw::HeapHead,
+    Kw::WillKeep,
+    Kw::WillResize,
+    Kw::WillRelease,
+    Kw::FixedTextKind,
+    Kw::HeapTextKind,
+    Kw::FixedList,
+    Kw::HeapList,
+];
+
+/// The words of [`LATER_WORDS`] a program uses.
+///
+/// # Arguments
+///
+/// * `sm` - The source map the program goes in.
+/// * `path` - The page of the program.
+/// * `text` - The program.
+///
+/// # Returns
+///
+/// The words, in source order.
+fn later_words(sm: &mut SourceMap, path: &str, text: &str) -> Vec<Kw>
+{
+    let file = sm.new_source_file(FileName::Custom(path.to_string()), text.to_string());
+    let tokens = lex(&file, &LexerOptions::default()).tokens;
+    let later = |kind: TokenKind| match kind
+    {
+        TokenKind::Kw(kw) if LATER_WORDS.contains(&kw) => Some(kw),
+        _ => None,
+    };
+    tokens.into_iter().filter_map(|t| later(t.kind)).collect()
+}
+
+/// Part I of Learn teaches with values alone: no program on its pages uses a
+/// word of a later part.
+#[test]
+fn part_one_of_learn_teaches_with_values_alone()
+{
+    let pages = Book::Learn.pages();
+    let end = pages.iter().position(|p| p.path == PAST_VALUES);
+    let first: Vec<&str> = pages[..end.expect("the forms chapter is listed")]
+        .iter()
+        .map(|p| p.path)
+        .collect();
+    let mut sm = SourceMap::new();
+    let mut offenders = Vec::new();
+    for (path, sample) in
+        samples_of(Book::Learn).into_iter().filter(|(p, _)| first.contains(p))
+    {
+        let found = later_words(&mut sm, path, &sample.source);
+        do_found(&mut offenders, path, found);
+    }
+    for page in pages.iter().filter(|p| first.contains(&p.path))
+    {
+        for shown in shown_files(page.text)
+        {
+            let found = later_words(&mut sm, page.path, &shown);
+            do_found(&mut offenders, page.path, found);
+        }
+    }
+    assert!(offenders.is_empty(), "words of a later part: {offenders:#?}");
+}
+
+/// Note the words of a later part that a program of a page uses.
+///
+/// # Arguments
+///
+/// * `offenders` - The notes so far.
+/// * `path` - The page.
+/// * `found` - The words.
+fn do_found(offenders: &mut Vec<String>, path: &str, found: Vec<Kw>)
+{
+    if !found.is_empty()
+    {
+        offenders.push(format!("{path}: {found:?}"));
+    }
+}
+
+/// The file a link from a page reaches, from the folder of its book.
+///
+/// # Arguments
+///
+/// * `from` - The file of the page, from the folder of its book.
+/// * `target` - The link, relative to that file.
+///
+/// # Returns
+///
+/// The parts of the file path.
+fn reached(from: &str, target: &str) -> Vec<String>
+{
+    let mut parts: Vec<String> = from.split('/').map(str::to_string).collect();
+    parts.pop();
+    for piece in target.split('#').next().unwrap_or_default().split('/')
+    {
+        match piece
+        {
+            ".." => drop(parts.pop()),
+            "." | "" => (),
+            other => parts.push(other.to_string()),
+        }
+    }
+    parts
+}
+
+/// A `Next:` line at the end of a page names the page that follows it in the
+/// contents.
+#[test]
+fn a_next_link_names_the_page_that_follows()
+{
+    let mut wrong = Vec::new();
+    for page in all_pages()
+    {
+        let Some(line) = page.text.lines().rev().find(|l| l.starts_with("Next: ["))
+        else
+        {
+            continue;
+        };
+        let target = line.split_once("](").and_then(|(_, r)| r.split_once(')'));
+        let reached = target.map(|(t, _)| reached(page.path, t));
+        let next =
+            neighbours(page).1.map(|p| p.path.split('/').map(str::to_string).collect());
+        if reached != next
+        {
+            wrong.push(format!("{}: {line}", page.path));
+        }
+    }
+    assert!(wrong.is_empty(), "next links to another page: {wrong:#?}");
 }

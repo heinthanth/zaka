@@ -21,6 +21,7 @@ value), `WORD` the classifier of the kind, and `BODY` a block or one statement. 
 | declare | `ကိန်းရှင် NAME သည် KIND တစ်WORD [ဖြစ်၍ တန်ဖိုးသည် VALUE] ဖြစ်ပါစေ။` or `ကိန်းရှင် NAME သည် VALUE ဖြစ်ပါစေ။` |
 | constant | `ကိန်းသေ NAME သည် KIND တစ်WORD ဖြစ်၍ တန်ဖိုးသည် VALUE ဖြစ်ပါစေ။` or `ကိန်းသေ NAME သည် VALUE ဖြစ်ပါစေ။` |
 | assign | `PLACE ကို VALUE ဟု ထားပါ။` |
+| set a character | `TEXT ၏ စာလုံး N ကို CHAR ဟု ထားပါ။` or `TEXT ၏ N ခုမြောက်စာလုံး ကို CHAR ဟု ထားပါ။` |
 | print | `VALUE ကို ပြသပါ။` or `VALUE ဟု ပြသပါ။` |
 | block | `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။` statements `လုပ်ဆောင်စရာများ ပြီးပါပြီး။` |
 | if | `အကယ်၍ COND လျှင် BODY` then `[ထိုသို့မဟုတ်ဘဲ COND လျှင် BODY]` then `[သို့မဟုတ်ပါက BODY]` |
@@ -34,9 +35,10 @@ value), `WORD` the classifier of the kind, and `BODY` a block or one statement. 
 | call | `လုပ်ဆောင်ချက် NAME ကို [ARGS တို့ဖြင့်] လုပ်ဆောင်ပါ။` |
 | return | `VALUE ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။` or `ပြန်ပေးပါ။` |
 | function | `လုပ်ဆောင်ချက် NAME သည် ...` (see [Functions](functions.md)) |
-| heap | `မင်မိုရီတွင် SIZE နေရာယူ၍ လိပ်စာကို PLACE တွင် သိမ်းထားမည်။` and two more (below) |
 | add a cell | `PLACE ထဲသို့ VALUE ကို ထည့်ပါ။` (see [Lists](lists.md#adding-and-removing-cells)) |
+| add to text | `TEXT ထဲသို့ VALUE ကို ထည့်ပါ။` (see [Text](text.md#changing-text)) |
 | remove a cell | `PLACE ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။` |
+| heap | `မင်မိုရီတွင် SIZE နေရာယူ၍ လိပ်စာကို PLACE တွင် သိမ်းထားမည်။` and two more (below) |
 
 Some words have alternatives: `လျှင်` or `ဖြစ်လျှင်`; `နေသရွေ့` or `ဖြစ်နေသရွေ့`;
 `ဖြစ်ကာ` or `ဖြစ်ပြီး`; `ရေတွက်၍`, `တိုး၍` or `လျှော့၍`; the four spellings of the
@@ -160,7 +162,8 @@ error[ZK0430]: the value gives no kind for "ပ"
 `PLACE ကို VALUE ဟု ထားပါ။` puts the value into the place. The value is worked out first
 with the current contents, then stored, so `အသက် ကို အသက် + ၁ ဟု ထားပါ။` adds one. The
 place is a variable, a cell of a list (`x ၏ အကွက် i`) or the value at a pointer
-(`p ၏ တန်ဖိုး`). Another expression is ZK0410. A constant (ZK0306) and a counted-loop counter
+(`p ၏ တန်ဖိုး`), or a character of text (`t ၏ စာလုံး n`, `t ၏ n ခုမြောက်စာလုံး`; see
+[Text](text.md#changing-text)). Another expression is ZK0410. A constant (ZK0306) and a counted-loop counter
 (ZK0307) cannot be assigned to. The value must widen to the kind of the place
 ([Conversions](conversions.md)).
 
@@ -399,7 +402,8 @@ same.
 | ZK0309, ZK0310, ZK0311 | break, continue or return outside its home |
 | ZK0402, ZK0405, ZK0409 | a condition that is no true/false value, a bound that is no integer, a step of zero or below |
 | ZK0434 | an each loop over a value it cannot walk |
-| ZK0437 | an add or a remove on a list that cannot grow or shrink |
+| ZK0437 | an add or a remove on a list that cannot grow or shrink, or a remove from text |
+| ZK0438 | a character write or an add on text that cannot change |
 
 ```zaka-error ZK0307
 ၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ န ကို ၀ ဟု ထားပါ။

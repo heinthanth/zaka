@@ -507,7 +507,9 @@ fn written_places(s: &Stmt) -> Vec<Place>
         | Stmt::Alloc { dest, .. }
         | Stmt::Resize { dest, .. }
         | Stmt::AddCell { dest, .. }
-        | Stmt::RemoveCell { dest, .. } => match dest
+        | Stmt::RemoveCell { dest, .. }
+        | Stmt::SetChar { dest, .. }
+        | Stmt::AddText { dest, .. } => match dest
         {
             Dest::Slot(place) => vec![*place],
             Dest::Mem(addr) => places_in(addr),

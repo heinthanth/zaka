@@ -292,6 +292,16 @@ impl IrTree<'_>
             {
                 self.heap("remove_cell", dest, None, None, span)
             }
+            Stmt::AddText { dest, value, .. } =>
+            {
+                self.heap("add_text", dest, Some(value), None, span)
+            }
+            Stmt::SetChar { dest, index, value, .. } =>
+            {
+                let mut node = self.heap("set_char", dest, Some(index), None, span);
+                node.children.push(self.expr(value));
+                node
+            }
         }
     }
 

@@ -111,12 +111,12 @@ A struct name stands wherever a kind does:
 | --- | --- |
 | a variable | `ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်ပါစေ။` |
 | a parameter | `လူ သူ ကို လက်ခံပြီး` |
-| a pointer kind | `လူ လိပ်စာ` |
-| a borrow | `ငှားထားသော လူ လိပ်စာ` |
 | the cells of a list | `အကွက် ၃ ခုရှိသော လူ စာရင်း` |
 | a field of another struct | `လူ ပိုင်ရှင်` |
-| a heap size | `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...` |
 | a size | `လူ ၏ အရွယ်အစား` |
+| a pointer kind | `လူ လိပ်စာ` |
+| a borrow | `ငှားထားသော လူ လိပ်စာ` |
+| a heap size | `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...` |
 
 A variable of a struct kind declared with no value starts with each field at its default:
 `၀` for a number, `မမှန်` for a true/false value, `ဗလာ` for an address, and the default of
@@ -192,9 +192,9 @@ have its address taken.
 | --- | --- |
 | `ကျော် ၏ အသက်` | the field of a struct variable |
 | `ကျော် ၏ အသက် ကို ၂၀ ဟု ထားပါ။` | write the field |
-| `p ၏ တန်ဖိုး ၏ အသက်` | the field of the struct a pointer points at |
 | `က ၏ ခ ၏ ဂ` | a field of a field, one `၏` for each step |
 | `xs ၏ အကွက် ၀ ၏ x` | a field of a list cell |
+| `p ၏ တန်ဖိုး ၏ အသက်` | the field of the struct a pointer points at |
 | `ကျော် ၏ အသက် ၏ လိပ်စာ` | the address of the field, a pointer to the kind of the field |
 
 - A field is looked up in the struct on its name. A name the struct does not have is
@@ -239,6 +239,16 @@ field print alike, nested.
 ```text
 ရမှတ်များ(အကြိမ်: ၃၊ ရမှတ်: [၅၊ ၇၊ ၉])
 ```
+
+## What a struct cannot do
+
+| Not allowed | Instead |
+| --- | --- |
+| `==`, `!=`, `<` and the like on structs (ZK0403) | compare the fields |
+| a struct with no fields | declare the field the struct needs |
+| a struct declared inside a block (ZK0228) | declare it at the top level |
+| a struct that holds itself, except through an address (ZK0427) | hold `<name> လိပ်စာ` |
+| a field that is a borrow (ZK0718) | hold an owner or a raw address |
 
 ## Duplicating and moving
 
@@ -316,16 +326,6 @@ as a C struct:
 The address of a struct is a pointer to it, so adding 1 to it moves one whole struct, and
 a heap block of `n` structs holds `n` times the size. See [Pointers](pointers.md#pointer-arithmetic).
 
-## What a struct cannot do
-
-| Not allowed | Instead |
-| --- | --- |
-| `==`, `!=`, `<` and the like on structs (ZK0403) | compare the fields |
-| a field that is a borrow (ZK0718) | hold an owner or a raw address |
-| a struct that holds itself, except through an address (ZK0427) | hold `<name> လိပ်စာ` |
-| a struct with no fields | declare the field the struct needs |
-| a struct declared inside a block (ZK0228) | declare it at the top level |
-
 ## Errors at a glance
 
 | Code | Problem | See |
@@ -340,4 +340,4 @@ a heap block of `n` structs holds `n` times the size. See [Pointers](pointers.md
 | ZK0426 | a field of a value that is no struct | [Struct mistakes](../../learn/structs/mistakes.md#a-field-of-a-value-that-is-no-struct) |
 | ZK0427 | a struct that holds itself | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-that-holds-itself) |
 | ZK0509 | a heap size or a struct literal counted with a word that is not the classifier of the kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
-| ZK0718 | a field that holds a borrow | [Struct mistakes](../../learn/structs/mistakes.md#a-borrow-in-a-field) |
+| ZK0718 | a field that holds a borrow | [Lists and structs through addresses](../../learn/pointers/structs.md#a-borrow-in-a-field) |

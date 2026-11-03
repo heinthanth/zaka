@@ -628,6 +628,17 @@ impl<'m> Flow<'m>
                 self.moved(value, state);
             }
             Stmt::RemoveCell { dest, span, .. } => self.edit_list(dest, *span, state),
+            Stmt::AddText { dest, value, span, .. } =>
+            {
+                self.value(value, state);
+                self.edit_list(dest, *span, state);
+            }
+            Stmt::SetChar { dest, index, value, span, .. } =>
+            {
+                self.value(index, state);
+                self.value(value, state);
+                self.edit_list(dest, *span, state);
+            }
             Stmt::Drop { dest, kind, span } =>
             {
                 self.give_back(dest, Invalidation::Freed, *span, state);

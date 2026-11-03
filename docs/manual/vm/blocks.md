@@ -41,7 +41,9 @@ laid out upward from address 0:
   the end. A static text block is *frozen*: a read works, and a write traps with
   `write at ADDR inside static text, which cannot change`. Each literal of the same text
   points into the one block, so a write would change them all. The compiler forbids such a
-  write ([Text](../language/text.md#cells)); a raw address alone can reach one.
+  write ([Text](../language/text.md#cells)), and an edit of text first copies static
+  u8s into a heap block ([Changing text](../language/text.md#changing-text)); a raw address
+  alone can reach one.
 - **Stack region.** It opens right after the statics. Its size is `--max-stack` or half
   of the room left, whichever is smaller; the heap starts at its end.
 - **Heap.** New blocks go above all the blocks made so far.

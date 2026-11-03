@@ -97,6 +97,14 @@ impl ToSexpr for Stmt
                 list("add_cell", [dest_sexpr(dest), value.to_sexpr()])
             }
             Stmt::RemoveCell { dest, .. } => list("remove_cell", [dest_sexpr(dest)]),
+            Stmt::SetChar { dest, index, value, .. } =>
+            {
+                list("set_char", [dest_sexpr(dest), index.to_sexpr(), value.to_sexpr()])
+            }
+            Stmt::AddText { dest, value, .. } =>
+            {
+                list("add_text", [dest_sexpr(dest), value.to_sexpr()])
+            }
         }
     }
 }

@@ -115,7 +115,14 @@ fn raw_stmt(s: &Stmt) -> bool
         Stmt::Free { dest, .. }
         | Stmt::Drop { dest, .. }
         | Stmt::RemoveCell { dest, .. } => raw_dest(dest),
-        Stmt::AddCell { dest, value, .. } => raw_dest(dest) || raw_expr(value),
+        Stmt::AddCell { dest, value, .. } | Stmt::AddText { dest, value, .. } =>
+        {
+            raw_dest(dest) || raw_expr(value)
+        }
+        Stmt::SetChar { dest, index, value, .. } =>
+        {
+            raw_dest(dest) || raw_expr(index) || raw_expr(value)
+        }
         Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => false,
     }
 }

@@ -65,10 +65,10 @@ inside parentheses.
   with a result, `ရလဒ်` names the result variable.
 - **Parentheses**, `( ... )`, around an expression of each kind.
 - **Calls**, `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်သော ရလဒ်` ([Functions](functions.md)).
-- **Places and addresses**: `p ၏ တန်ဖိုး` ([Pointers](pointers.md)), `x ၏ အကွက် i` and
-  list literals ([Lists](lists.md)).
 - **String literals**, of the kind `စာသား`, with template slots that hold expressions
   ([Text](text.md)).
+- **Places and addresses**: list literals and `x ၏ အကွက် i` ([Lists](lists.md)), and
+  `p ၏ တန်ဖိုး` ([Pointers](pointers.md)).
 
 ## Arithmetic
 

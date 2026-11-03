@@ -182,6 +182,24 @@ v ကို ပြသပါ။"
     }
 }
 
+/// A character write or an add can move the u8s of text, so each ends the
+/// views of it.
+#[test]
+fn a_text_edit_ends_its_views()
+{
+    for edit in ["t ထဲသို့ \"z\" ကို ထည့်ပါ။", "t ၏ စာလုံး ၀ ကို 'x' ဟု ထားပါ။"]
+    {
+        let text = format!(
+            "ကိန်းရှင် t သည် \"ab\" ဖြစ်ပါစေ။
+ကိန်းရှင် v သည် t ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+{edit}
+v ကို ပြသပါ။"
+        );
+        assert_eq!(lines(&text), [(Code::InvalidatedLoan, 3)], "{edit}");
+        ok(&text.replace("v ကို ပြသပါ။", "t ကို ပြသပါ။"));
+    }
+}
+
 /// A pointer to a cell of a plain list points into the block of the list,
 /// so a write into the list, or a new value for it, ends the loan.
 #[test]

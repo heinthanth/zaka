@@ -123,7 +123,15 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             dest(d, f);
             *span = f(*span);
         }
-        Stmt::AddCell { dest: d, value, span, .. } =>
+        Stmt::SetChar { dest: d, index, value, span, .. } =>
+        {
+            dest(d, f);
+            expr(index, f);
+            expr(value, f);
+            *span = f(*span);
+        }
+        Stmt::AddCell { dest: d, value, span, .. }
+        | Stmt::AddText { dest: d, value, span, .. } =>
         {
             dest(d, f);
             expr(value, f);

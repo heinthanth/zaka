@@ -1011,6 +1011,8 @@ impl Machine
             }
             Op::ToHeap(kind) => self.to_heap(kind),
             Op::AddCell(kind) => self.add_cell(kind),
+            Op::SetChar { first } => self.set_char(first),
+            Op::AddText(kind) => self.add_text(kind),
             Op::RemoveCell(kind) =>
             {
                 let at = self.pop_ptr("remove_cell")?;
@@ -2090,6 +2092,104 @@ impl Machine
         self.mem.blit(block + count * stride, src, cell)?;
         self.mem.zero(src, cell)?;
         self.write_text(at, block, count + 1, room)
+    }
+
+    /// Pop a character, a character number and the address of text, and put
+    /// the character in place of that one. The text takes a block of its own
+    /// first when its room is 0.
+    ///
+    /// # Arguments
+    ///
+    /// * `first` - The number of the first character: 0 or 1.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, `CharOutOfRange` for a number outside the text, or a trap a read
+    /// or the allocation hits.
+    fn set_char(&mut self, first: u8) -> Step
+    {
+        let value = self.pop()?;
+        let ch = tern!(let Value::Char(c) = value, c, return Err(malformed("set_char takes a character")));
+        let index = self.pop()?;
+        let at = self.pop_ptr("set_char")?;
+        let text = text_at(&self.mem, at)?;
+        self.push(index)?;
+        let count = text.chars().count() as u64;
+        let n = self.pop_cell(count, first).map_err(|e| match e
+        {
+            TrapKind::IndexOutOfRange { index, first, len } =>
+            {
+                TrapKind::CharOutOfRange { index, first, len }
+            }
+            other => other,
+        })?;
+        let swap = |(i, c): (usize, char)| tern!(i as u64 == n, ch, c);
+        let edited: String = text.chars().enumerate().map(swap).collect();
+        self.own_value(at, DataKind::TEXT)?;
+        self.put_text(at, edited.as_bytes())
+    }
+
+    /// Pop a value of a kind, a character or the address of text or a view of
+    /// text, then the address of text, and add the u8s of the value at the
+    /// end of the text. The text takes a block of its own first when its room
+    /// is 0.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the value.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap a read or the allocation hits.
+    fn add_text(&mut self, kind: DataKind) -> Step
+    {
+        let value = self.pop()?;
+        let at = self.pop_ptr("add_text")?;
+        let added = match value
+        {
+            Value::Char(c) => c.to_string().into_bytes(),
+            _ if kind.is_textual() =>
+            {
+                let from =
+                    value.as_ptr().ok_or_else(|| malformed("add_text takes text"))?;
+                let (base, count) = slice_parts(&self.mem, from)?;
+                self.mem.octets(base, count)?
+            }
+            _ => return Err(malformed("add_text takes text or a character")),
+        };
+        self.own_value(at, DataKind::TEXT)?;
+        let (base, count) = slice_parts(&self.mem, at)?;
+        let mut text = self.mem.octets(base, count)?;
+        text.extend(added);
+        self.put_text(at, &text)
+    }
+
+    /// Write u8s as the whole text at an address: in the block of the text
+    /// when the block holds them all, else in a new block twice its size, 16
+    /// u8s at the least. The text owns its block or has a room of 0.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address of the text.
+    /// * `octets` - The u8s of the new text.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap a write or the allocation hits.
+    fn put_text(&mut self, at: u64, octets: &[u8]) -> Step
+    {
+        let (base, _) = slice_parts(&self.mem, at)?;
+        let held = self.room_of(at)?;
+        let len = octets.len() as u64;
+        let (mut block, mut room) = (base, held);
+        if len > held
+        {
+            room = len.max(held.saturating_mul(2)).max(16);
+            // Text with a room of 0 owns no block to move.
+            block = self.mem.realloc(tern!(held == 0, 0, base), room)?;
+        }
+        self.mem.write_octets(block, octets)?;
+        self.write_text(at, block, len, room)
     }
 
     /// Remove the last cell of a plain or heap list: drop it when the list

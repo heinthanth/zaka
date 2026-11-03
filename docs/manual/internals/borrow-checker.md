@@ -210,6 +210,14 @@ can move the cells to a larger block, and a remove drops the last cell. `edit_li
 value of an add moves into the list (`moved`), as an assigned value does. The liveness
 pass counts both statements as reads of the list slot.
 
+A `SetChar` and an `AddText` edit text in the same manner: the new u8s can move the text
+to a larger block, and text with a room of 0 first takes a block of its own. Each reads
+its operands first (the number and the character, or the added value), then runs
+`edit_list` on the text, so each view of the text still live is ZK0704 and so is each loan
+into a plain list that holds the text. A view read as the added value of the same
+statement is used before the edit, and is fine. The liveness pass counts both statements
+as reads of the text slot.
+
 ```zaka-error ZK0704
 ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။

@@ -14,11 +14,23 @@ runs, and the reasons behind each choice.
 
 | Chapter | For | What it holds |
 | --- | --- | --- |
-| [The language](language/README.md) | programmers | the exact rules of words, kinds, sentences, functions, pointers, ownership and lists |
+| [The language](language/README.md) | programmers | the exact rules of words, kinds, sentences, functions, lists, text, structs and modules, then slices, pointers and ownership |
 | [The compiler](compiler/README.md) | programmers | the `zakac` commands, the stages a program passes through, and its messages |
 | [The VM](vm/README.md) | programmers | how the Zaka VM runs a program, holds its data, and stops on a mistake |
 | [Concepts](concepts/README.md) | the curious | the ideas behind the design, explained with scenarios |
 | [Inside the compiler](internals/README.md) | contributors | how the code of the compiler is built, crate after crate |
+
+The language chapter climbs from values to control to storage. Its first pages state the
+rules of values: [words](language/words.md), [kinds](language/kinds.md),
+[conversions](language/conversions.md), [expressions](language/expressions.md),
+[statements](language/statements.md), [names and scope](language/scope.md),
+[functions](language/functions.md), [lists](language/lists.md), [text](language/text.md),
+[structs](language/structs.md), [modules](language/modules.md) and [natural
+wording](language/naturalness.md). Their later sections, and the page on
+[slices](language/slices.md), turn to control: views, the fixed and heap forms, and what
+a duplicate costs. The last pages, [pointers](language/pointers.md) and [ownership and
+borrowing](language/ownership.md), state the rules of storage: addresses, loans and the
+heap.
 
 The reference pages at the end list the [reserved words](reference/reserved-words.md),
 the [operator precedence](reference/precedence.md) and each

@@ -372,6 +372,38 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Put a character in place of one character of the text at `dest`.
+    /// Text with a room of 0 takes a block of its own first; the u8s after
+    /// the character move when the two take a different number of u8s.
+    SetChar
+    {
+        /// The text.
+        dest: Dest,
+        /// The text kind.
+        kind: DataKind,
+        /// The number of the character, an integer of its own kind.
+        index: Expr,
+        /// The number of the first character: 0 or 1.
+        first: u8,
+        /// The new character.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
+    /// Add text, a view of text or a character at the end of the text at
+    /// `dest`. Text with a room of 0 takes a block of its own first, and a
+    /// full block moves to a larger one.
+    AddText
+    {
+        /// The text.
+        dest: Dest,
+        /// The text kind.
+        kind: DataKind,
+        /// What is added, read where it is.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
 }
 
 impl Stmt
@@ -400,7 +432,9 @@ impl Stmt
             | Stmt::Free { span, .. }
             | Stmt::Drop { span, .. }
             | Stmt::AddCell { span, .. }
-            | Stmt::RemoveCell { span, .. } => *span,
+            | Stmt::RemoveCell { span, .. }
+            | Stmt::SetChar { span, .. }
+            | Stmt::AddText { span, .. } => *span,
         }
     }
 }

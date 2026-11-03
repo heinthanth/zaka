@@ -107,7 +107,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0222 | a character or true/false kind written before a number | [Writing integers](../../learn/values/literals.md#the-order-of-the-parts) |
 | ZK0225 | a generic loop that starts with `ကိန်းသေ` | [Generic loops](../../learn/control-flow/generic-loops.md#the-variable-belongs-to-the-loop) |
 | ZK0226 | a block closer with no block to close | [Blocks and scope](../../learn/variables/scope.md) |
-| ZK0227 | a list count that is not a whole number above zero | [Lists](../../learn/lists/README.md#list-kinds) |
+| ZK0227 | a list count that is not a whole number above zero | [Fixed and heap forms](../../learn/forms/fixed-and-heap.md#fixed-lists) |
 | ZK0228 | a struct declared inside a block | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-declared-inside-a-block) |
 | ZK0229 | `အများသုံး` before something other than a top-level declaration | [Module mistakes](../../learn/modules/mistakes.md#the-export-mark-in-the-wrong-place) |
 | ZK0230 | an import after a declaration or statement, or inside a block | [Module mistakes](../../learn/modules/mistakes.md#an-import-below-a-statement) |
@@ -166,25 +166,26 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0415 | an operator not for pointers, such as `*` or `/` on an address | [Pointer arithmetic](../../learn/pointers/arithmetic.md#walking-with-a-pointer) |
 | ZK0416 | pointer kinds differ: comparing or subtracting pointers to different kinds | [Pointer arithmetic](../../learn/pointers/arithmetic.md#walking-with-a-pointer) |
 | ZK0417 | a heap statement that needs a pointer but was given another kind | [The heap](../../learn/pointers/heap.md) |
-| ZK0419 | a list literal with more or fewer cells than its kind | [List mistakes](../../learn/lists/mistakes.md#a-literal-with-the-wrong-count) |
+| ZK0419 | a list literal with more or fewer cells than its kind | [Fixed and heap forms](../../learn/forms/fixed-and-heap.md#a-literal-with-the-wrong-count) |
 | ZK0420 | `စာရင်းအလွတ်` where no list kind is known | [List mistakes](../../learn/lists/mistakes.md#a-blank-list-with-no-kind) |
-| ZK0421 | a fixed list kind with no count where nothing gives one | [List mistakes](../../learn/lists/mistakes.md#a-list-kind-with-no-count) |
+| ZK0421 | a fixed list kind with no count where nothing gives one | [Fixed and heap forms](../../learn/forms/fixed-and-heap.md#a-list-kind-with-no-count) |
 | ZK0422 | cells of a value that is no list | [List mistakes](../../learn/lists/mistakes.md#cells-of-a-value-that-is-no-list) |
 | ZK0423 | a cell number that is not an integer | [Lists](../../learn/lists/README.md#cell-numbers) |
 | ZK0424 | a list of borrows as a function result | [Lists and structs as results](../language/functions.md#lists-and-structs-as-results) |
-| ZK0425 | a list kind too large for the VM | [Lists of lists](../../learn/lists/grids.md#the-size-of-a-list) |
+| ZK0425 | a list kind too large for the VM | [Fixed and heap forms](../../learn/forms/fixed-and-heap.md#the-size-of-a-fixed-list) |
 | ZK0426 | a field of a value that is no struct | [Struct mistakes](../../learn/structs/mistakes.md#a-field-of-a-value-that-is-no-struct) |
 | ZK0427 | a struct that holds itself | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-that-holds-itself) |
 | ZK0428 | a slice whose cells hold borrows | [Slices](../language/slices.md#ownership) |
-| ZK0429 | a write to a cell of text | [Text](../language/text.md#cells) |
+| ZK0429 | a write to a cell (a u8) of text | [Text](../language/text.md#cells) |
 | ZK0430 | a declaration with no kind whose value is `ဗလာ` | [Statements](../language/statements.md#declarations) |
 | ZK0431 | an argument for a parameter the function can change, with no mark | [Functions](../language/functions.md#edit-references) |
 | ZK0432 | the mark on an argument for a parameter the function cannot change | [Functions](../language/functions.md#edit-references) |
 | ZK0433 | a place a call changes, in another argument of the same call | [Functions](../language/functions.md#edit-references) |
 | ZK0434 | an each loop over a value it cannot walk: no list or slice, owner pointers in the cells, or no text | [Statements](../language/statements.md#loops) |
 | ZK0435 | a constant that holds heap text or a heap list | [Text](../language/text.md#forms) |
-| ZK0436 | `[]` given to a fixed list outside its declaration | [List mistakes](../../learn/lists/mistakes.md#a-list-with-no-cells-in-a-fixed-list) |
-| ZK0437 | an add or a remove on a fixed list, text, a slice or a view | [List mistakes](../../learn/lists/mistakes.md#adding-to-a-fixed-list) |
+| ZK0436 | `[]` given to a fixed list outside its declaration | [Fixed and heap forms](../../learn/forms/fixed-and-heap.md#a-list-with-no-cells-in-a-fixed-list) |
+| ZK0437 | an add or a remove on a fixed list or a slice, or a remove from text | [Fixed and heap forms](../../learn/forms/fixed-and-heap.md#adding-to-a-fixed-list) |
+| ZK0438 | a character write or an add on fixed text or on a view of text | [Text](../language/text.md#changing-text) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -209,7 +210,7 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | --- | --- | --- |
 | ZK0601 | a sum of constants that does not fit its kind | [Arithmetic](../../learn/operators/arithmetic.md) |
 | ZK0602 | a constant zero as the divisor | [Arithmetic](../../learn/operators/arithmetic.md#dividing-integers) |
-| ZK0603 | a constant cell number outside its list | [List mistakes](../../learn/lists/mistakes.md#a-cell-number-outside-the-list) |
+| ZK0603 | a constant cell number outside its list | [Fixed and heap forms](../../learn/forms/fixed-and-heap.md#a-cell-number-past-a-fixed-list) |
 | ZK0604 | a variable of an imported file whose starting value is not known at compile time | [Module mistakes](../../learn/modules/mistakes.md#a-starting-value-that-needs-a-call) |
 | ZK0605 | a constant range past the end of its list | [Slices](../language/slices.md#making-a-slice) |
 | ZK0606 | a text constant whose value needs the program to run | [Text](../language/text.md#folding) |
@@ -241,6 +242,6 @@ ZK0701 to ZK0704 and ZK0706 to ZK0712 are warnings and the program runs; with
 | ZK0715 | an owner given where a borrow is wanted | [Ownership and borrowing](../../learn/pointers/ownership.md#lending-a-block) |
 | ZK0716 | a raw address lent with `တန်ဖိုးအငှား` | [Ownership and borrowing](../../learn/pointers/ownership.md#raw-addresses) |
 | ZK0717 | a raw address kind under `--no-raw` | [Ownership and borrowing](../../learn/pointers/ownership.md#raw-addresses) |
-| ZK0718 | a field that holds a borrow | [Struct mistakes](../../learn/structs/mistakes.md#a-borrow-in-a-field) |
+| ZK0718 | a field that holds a borrow | [Lists and structs through addresses](../../learn/pointers/structs.md#a-borrow-in-a-field) |
 | ZK0719 | an operation that overflows for each value of its operands; a warning, not given with `--overflow wrap` | [Overflow](../language/expressions.md#arithmetic) |
 | ZK0720 | with `--warn-duplicates`, a statement that duplicates text; a warning | [Text](../language/text.md#copies) |

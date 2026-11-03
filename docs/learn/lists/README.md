@@ -86,54 +86,18 @@ time: see [Adding and removing cells](growing.md).
 
 ## List kinds
 
-`ကိန်းပြည့် စာရင်း` is a *plain list*, the list to reach for first. Two more forms of list
-exist, and messages write each with a short name:
+`ကိန်းပြည့် စာရင်း` is a *plain list*, the list to reach for first: its count comes with
+its value, and it can change. Messages write a list kind with a short name, the kind of a
+cell and then `[]`:
 
-| Kind | Short name | Its cells |
-| --- | --- | --- |
-| `ကိန်းပြည့် စာရင်း` | `isize[]` | plain: their count comes with the value, and the cells sit in a heap block |
-| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` | `isize[3]` | fixed: 3 cells for good, kept in the list itself |
-| `ကိန်းပြည့် စာရင်းသေ` | `isize[3]`, from its value | fixed, with the count its value gives |
-| `ကိန်းပြည့် စာရင်းရှင်` | `isize[]~` | heap: as plain, and it owns its heap block from the start |
+| Kind | Short name |
+| --- | --- |
+| `ကိန်းပြည့် စာရင်း` | `isize[]` |
+| `ကိန်းပြည့် စာရင်း စာရင်း` | `isize[][]` |
 
-A *fixed list* keeps its count for good: the count is part of its kind, and it is known
-before the program runs. The count comes first, then the kind of each cell, then
-`စာရင်း`. The word `ခု` and a `၏` before `စာရင်း` are both optional, so these four kinds
-are the same:
-
-| Kind |
-| --- |
-| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` |
-| `အကွက် ၃ ရှိသော ကိန်းပြည့် စာရင်း` |
-| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် ၏ စာရင်း` |
-| `အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း` |
-
-The count is a whole number above zero, written as digits. A fixed list declared with no
-value starts with each cell at its default: `၀` for a number, `မမှန်` for a true/false
-value, `ဗလာ` for an address. `စာရင်းသေ` ("fixed list") in place of `စာရင်း` leaves the
-count to the value:
-
-```zaka
-ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈] ဖြစ်ပါစေ။
-က ကို ပြသပါ။
-ခ ကို ပြသပါ။
-က ကို စာရင်းအလွတ် ဟု ထားပါ။
-```
-
-```text
-[၀၊ ၀၊ ၀]
-[၇၊ ၈]
-```
-
-On a fixed list, `စာရင်းအလွတ်` sets each cell back to its default, and the count remains.
-`[]` is a list with no cells, so it does not fit a fixed list, save in its declaration,
-where each cell starts at its default; see [List mistakes](mistakes.md).
-
-A fixed list turns into a plain list on its own, as in `ခ` given to a plain list: its
-cells are duplicated into a heap block. A plain list never turns into a fixed list on
-its own, since nothing promises its count. A *heap list*, `စာရင်းရှင်` ("living list"),
-works as a plain list does; plain and heap lists turn into each other.
+Part II adds two more forms of list, each with a promise: a fixed list keeps its count for
+good, and a heap list owns a heap block from the start. See [Fixed and heap
+forms](../forms/fixed-and-heap.md).
 
 ## Cell numbers
 
@@ -152,11 +116,12 @@ mistakes](mistakes.md).
 
 ## Lists of other kinds
 
-Cells can hold each kind, and a list prints its cells between `[` and `]`:
+Cells can hold each kind, and a list prints its cells between `[` and `]`. A `၏` before
+`စာရင်း` is optional:
 
 ```zaka
-ကိန်းရှင် က သည် အကွက် ၂ ခုရှိသော ဒဿမကိန်း စာရင်း တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် အကွက် ၃ ရှိသော မှန်မှားတန်ဖိုး ၏ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ဒဿမကိန်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁.၅၊ ၂.၀] ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး ၏ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [မှန်၊ မမှန်၊ မှန်] ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် စာလုံး စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် 'က'၊ 'ခ' တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 က ကို ပြသပါ။
 ခ ကို ပြသပါ။
@@ -164,8 +129,8 @@ Cells can hold each kind, and a list prints its cells between `[` and `]`:
 ```
 
 ```text
-[၀.၀၊ ၀.၀]
-[မမှန်၊ မမှန်၊ မမှန်]
+[၁.၅၊ ၂.၀]
+[မှန်၊ မမှန်၊ မှန်]
 [က၊ ခ]
 ```
 
@@ -248,4 +213,4 @@ a counted loop. The cell count, in parentheses, gives the last number:
 - Find the largest value in a list with an each-cell loop.
 - Double each cell of a list with a counted loop, and print the list.
 
-Next: [Passing and comparing lists](passing.md).
+Next: [Adding and removing cells](growing.md).

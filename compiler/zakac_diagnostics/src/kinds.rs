@@ -199,6 +199,21 @@ pub fn list_cannot_grow(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::ListCannotGrow, t!("codes.ZK0437.message", k = kind), span)
 }
 
+/// A character write or an add changes fixed text or a view of text.
+///
+/// # Arguments
+///
+/// * `span` - The text.
+/// * `kind` - Its kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0438` diagnostic.
+pub fn text_cannot_change(span: Span, kind: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::TextCannotChange, t!("codes.ZK0438.message", k = kind), span)
+}
+
 /// An integer literal does not fit the kind its place expects.
 ///
 /// # Arguments

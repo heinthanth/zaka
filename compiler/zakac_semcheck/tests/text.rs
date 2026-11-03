@@ -166,3 +166,25 @@ fn a_verbal_join_takes_text_alone()
     assert_eq!(kind_at(&checked, "t၊ v၊ \"!\" တို့ကို ဆက်ထားသည့် စာသား"), "text");
     assert_eq!(codes("\"a\"၊ ၁ တို့ကို ဆက်ထားသည့် စာသား ကို ပြသပါ။"), [Code::OperandKind]);
 }
+
+/// A character of text is a place, and text takes an add; fixed text and a
+/// view of text take neither, and text takes no remove.
+#[test]
+fn text_takes_character_writes_and_adds()
+{
+    let text = "ကိန်းရှင် t သည် \"ab\" ဖြစ်ပါစေ။";
+    ok(&lines(&[text, "t ၏ ၂ ခုမြောက်စာလုံး ကို 'x' ဟု ထားပါ။", "t ၏ စာလုံး ၀ ကို 'y' ဟု ထားပါ။"]));
+    ok(&lines(&[text, "t ထဲသို့ \"cd\" ကို ထည့်ပါ။", "t ထဲသို့ 'e' ကို ထည့်ပါ။"]));
+    let fixed = "ကိန်းရှင် f သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။";
+    assert_eq!(
+        codes(&lines(&[fixed, "f ၏ စာလုံး ၀ ကို 'x' ဟု ထားပါ။"])),
+        [Code::TextCannotChange]
+    );
+    assert_eq!(codes(&lines(&[fixed, "f ထဲသို့ \"c\" ကို ထည့်ပါ။"])), [Code::TextCannotChange]);
+    assert_eq!(
+        codes(&lines(&[text, "t ၏ စာလုံး ၀ ကို \"x\" ဟု ထားပါ။"])),
+        [Code::KindMismatch]
+    );
+    assert_eq!(codes(&lines(&[text, "t ထဲသို့ ၅ ကို ထည့်ပါ။"])), [Code::KindMismatch]);
+    assert_eq!(codes(&lines(&[text, "t ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"])), [Code::ListCannotGrow]);
+}

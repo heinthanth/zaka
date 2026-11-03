@@ -1,6 +1,6 @@
 ---
 title: Lists
-description: The list kinds and their plain, fixed and heap forms, literals, cell numbers, adding and removing cells, lists of lists, passing and comparing, how a list is stored, and the mistakes with cell numbers.
+description: The list kinds, literals, cell numbers, adding and removing cells, lists of lists, passing and comparing, then the plain, fixed and heap forms, how a list is stored, addresses and loans, and the mistakes with cell numbers.
 ---
 
 # Lists
@@ -74,69 +74,6 @@ A written count comes first, then the kind of each cell, then `စာရင်�
 [၀.၀၊ ၀.၀]
 [မမှန်၊ မမှန်၊ မမှန်]
 [က၊ ခ]
-```
-
-## Forms
-
-| Form | Burmese | Its cells |
-| --- | --- | --- |
-| plain | `စာရင်း` | in a heap block it owns, or lent from another list; the count comes when the program runs |
-| fixed | `စာရင်းသေ`, or a written count | inline: in the frame, the static block or the struct that holds the list; it never allocates |
-| heap | `စာရင်းရှင်` | in a heap block it owns, from its first cell on |
-
-- **A plain list** is three words, laid out as text is: the address of its first cell, its
-  count, and the room of its heap block in octets. A list literal given to a plain list is
-  built, and its cells go to a heap block of their own. A set replaces the whole value,
-  so the count can change.
-- **A fixed list** holds its cells in place, and its count is part of its kind:
-  `isize[3]` and `isize[2]` are different kinds.
-- **A heap list** is three words as a plain list is, and owns its block from its first
-  cell on: a parameter of a heap list takes a duplicate of its argument, never a loan.
-- A list literal with no fixed list around it is a plain list:
-  `ကိန်းရှင် l သည် [၁၊ ၂] ဖြစ်ပါစေ။` declares a plain list of two cells.
-- A constant list is fixed: a constant written as a plain list, or with no kind, gets its
-  count from its value. A constant heap list is ZK0435: a constant sits in static storage.
-
-Conversions happen on their own where a value goes into a place: a declaration, a set, an
-argument, a result, a struct field or a list cell.
-
-| From | To | |
-| --- | --- | --- |
-| fixed | plain or heap | on its own: the cells are duplicated into a heap block |
-| plain | heap, and back | on its own |
-| plain or heap | fixed | never on its own (ZK0401): the count of a fixed list is part of its kind |
-
-```zaka
-ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
-ကိန်းရှင် ဂ သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ ဖြစ်ပါစေ။
-ခ ကို [၄၊ ၅] ဟု ထားပါ။
-က ကို ပြသပါ။
-ခ ကို ပြသပါ။
-ဂ ကို ပြသပါ။
-```
-
-```text
-[၁၊ ၂၊ ၃]
-[၄၊ ၅]
-[၁၊ ၂၊ ၃]
-```
-
-```zaka-error ZK0401
-ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
-```
-
-```text
-error[ZK0401]: expected isize[3], found isize[]
-```
-
-```zaka-error ZK0435
-ကိန်းသေ က သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
-```
-
-```text
-error[ZK0435]: the constant "က" cannot hold heap text or a heap list
 ```
 
 ## Literals
@@ -301,8 +238,9 @@ A counted loop visits each cell; the cell count, in parentheses, gives the last 
 - The list is a place that can be set: a variable, a field, a cell of another list, or
   `ပ ၏ တန်ဖိုး` through a pointer `ပ`. A constant is ZK0306, as for a set. A pointer to a
   list is no list: add to `ပ ၏ တန်ဖိုး`, not to `ပ`.
-- The list is a plain or a heap list. A fixed list keeps its count, and text, a slice or a
-  view holds no cells of its own to add to: each is ZK0437.
+- The list is a plain or a heap list. A fixed list keeps its count, and a slice holds no
+  cells of its own to add to: each is ZK0437. An add to text is the [add to
+  text](text.md#changing-text), with rules of its own; a remove from text is ZK0437.
 - The value has the cell kind (ZK0401), and it goes into the list as an assigned value
   goes into a place: text and lists are duplicated, and an owner pointer moves into the
   list, so the variable it came from holds `ဗလာ` (ZK0701 on a later read).
@@ -310,7 +248,8 @@ A counted loop visits each cell; the cell count, in parentheses, gives the last 
   ထည့်ပါ။` adds the count from before the add.
 - `နောက်ဆုံးအကွက်` ("last cell") is read right after `၏` alone, and `ကို ဖျက်ပါ` must
   follow it (ZK0201): it is no expression, so the last cell is read through its number.
-- A plain list parameter is lent with a room of 0. Its first add, as its first write, gives
+- A plain list parameter is lent with a room of 0 (see [How a list is
+  stored](#how-a-list-is-stored)). Its first add, as its first write, gives
   it a block of its own, so the caller's list never changes. A remove on a list with a
   room of 0 lowers the count and leaves the shared cells unchanged: it duplicates nothing.
 - A full block moves to a block twice its size, four cells at the least.
@@ -340,7 +279,7 @@ A counted loop visits each cell; the cell count, in parentheses, gives the last 
 ```
 
 ```text
-error[ZK0437]: isize[2] cannot grow or shrink: "ထည့်ပါ" and "ဖျက်ပါ" take a plain or a heap list
+error[ZK0437]: isize[2] cannot grow or shrink here: "ထည့်ပါ" takes a plain or a heap list or text, and "ဖျက်ပါ" a plain or a heap list
 ```
 
 ```zaka-stop
@@ -392,83 +331,6 @@ of a fixed table from it:
 ၅
 ```
 
-## How a list is stored
-
-The cells of a list stand next to each other in one stretch of RAM, in the order of their
-numbers, with no gaps. A fixed list is that stretch, inline: its size is its count times
-the size of one cell. A fixed list of fixed lists stores its rows one after another, so a
-table is one long stretch with the rows end to end.
-
-```text
-  table: isize[3][2], 6 cells of 8 octets = 48 octets
-
-  octet    0      8      16     24     32     40     48
-           +------+------+------+------+------+------+
-           |  1   |  2   |  3   |  4   |  5   |  6   |
-           +------+------+------+------+------+------+
-  cell     [0][0] [0][1] [0][2] [1][0] [1][1] [1][2]
-           '------- row 0 ------''------- row 1 ------'
-
-  one past the end: octet 48, not a cell
-```
-
-A plain or a heap list is three words, laid out as text is, and its cells sit in a heap
-block:
-
-```text
-  list: isize[], holding [1, 2, 3]
-
-  the list, 24 octets                       its heap block, 24 octets
-  +-----------+-----------+-----------+     +------+------+------+
-  |  address  |  count 3  |  room 24  |     |  1   |  2   |  3   |
-  +-----+-----+-----------+-----------+     +------+------+------+
-        |                                   ^
-        '-----------------------------------'
-```
-
-- The room is the size of the heap block in octets. A room of 0 marks cells the list does
-  not own: cells lent to a parameter, or no cells at all.
-- A write into a list of room 0 first copies the cells into a block of its own, so a
-  plain list never writes cells it was lent.
-- An add into a full block moves the cells to a block twice its size, four cells at the
-  least; a remove keeps the block and its room.
-- Each list in the cells of a plain list is a value of its own: a plain list of plain
-  lists holds three words per row, and each row has a block of its own.
-
-```zaka
-အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
-အကွက် ၃ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
-အကွက် ၅ ခုရှိသော မှန်မှားတန်ဖိုး စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
-ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
-ကိန်းပြည့် စာရင်း စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
-```
-
-```text
-၄၈
-၁၂
-၅
-၂၄
-၂၄
-```
-
-The address of a cell is a pointer to the cell, so the cell after it can be reached with
-pointer arithmetic. In a table of fixed lists, the cell after the last of a row is the
-first of the next row; the rows of a plain list each sit in a block of their own, and a
-step from one into the next stops the program:
-
-```zaka
-ကိန်းရှင် ဇယား သည် ကိန်းပြည့် စာရင်းသေ စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း)၊ (၄၊ ၅၊ ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ကိန်းရှင် အစ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဇယား ၏ အကွက် ၀ ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
-ကိန်းရှင် အတန်း သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဇယား ၏ အကွက် ၁ ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
-အတန်း - အစ ကို ပြသပါ။                      // the second row starts 3 cells on
-အစ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။                  // row 1, column 1
-```
-
-```text
-၃
-၅
-```
-
 ## Passing and comparing
 
 A list is a value, like an integer. Setting one list to another duplicates each cell, and
@@ -491,7 +353,8 @@ since a parameter is a new variable:
 
 - Each text and each list in the cells is duplicated as well, with a block of its own.
 - A change to a list parameter remains in the function. A plain list parameter is lent
-  the caller's cells, with a room of 0, until its first write; that write first copies the
+  the caller's cells, with a room of 0 ([How a list is stored](#how-a-list-is-stored)),
+  until its first write; that write first copies the
   cells into a block of its own (the VM op `own`), so the caller's list never changes. A
   heap list parameter takes a duplicate at the call. A fixed list parameter takes a
   duplicate, or reads the caller's list in place when the function never writes it.
@@ -575,6 +438,146 @@ them (ZK0403).
 
 ```text
 error[ZK0404]: cannot combine isize[] and isize[3] without a conversion
+```
+
+## Forms
+
+| Form | Burmese | Its cells |
+| --- | --- | --- |
+| plain | `စာရင်း` | in a heap block it owns, or lent from another list; the count comes when the program runs |
+| fixed | `စာရင်းသေ`, or a written count | inline: in the frame, the static block or the struct that holds the list; it never allocates |
+| heap | `စာရင်းရှင်` | in a heap block it owns, from its first cell on |
+
+- **A plain list** is three words, laid out as text is: the address of its first cell, its
+  count, and the room of its heap block in octets. A list literal given to a plain list is
+  built, and its cells go to a heap block of their own. A set replaces the whole value,
+  so the count can change.
+- **A fixed list** holds its cells in place, and its count is part of its kind:
+  `isize[3]` and `isize[2]` are different kinds.
+- **A heap list** is three words as a plain list is, and owns its block from its first
+  cell on: a parameter of a heap list takes a duplicate of its argument, never a loan.
+- A list literal with no fixed list around it is a plain list:
+  `ကိန်းရှင် l သည် [၁၊ ၂] ဖြစ်ပါစေ။` declares a plain list of two cells.
+- A constant list is fixed: a constant written as a plain list, or with no kind, gets its
+  count from its value. A constant heap list is ZK0435: a constant sits in static storage.
+
+Conversions happen on their own where a value goes into a place: a declaration, a set, an
+argument, a result, a struct field or a list cell.
+
+| From | To | |
+| --- | --- | --- |
+| fixed | plain or heap | on its own: the cells are duplicated into a heap block |
+| plain | heap, and back | on its own |
+| plain or heap | fixed | never on its own (ZK0401): the count of a fixed list is part of its kind |
+
+```zaka
+ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ ဖြစ်ပါစေ။
+ခ ကို [၄၊ ၅] ဟု ထားပါ။
+က ကို ပြသပါ။
+ခ ကို ပြသပါ။
+ဂ ကို ပြသပါ။
+```
+
+```text
+[၁၊ ၂၊ ၃]
+[၄၊ ၅]
+[၁၊ ၂၊ ၃]
+```
+
+```zaka-error ZK0401
+ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
+```
+
+```text
+error[ZK0401]: expected isize[3], found isize[]
+```
+
+```zaka-error ZK0435
+ကိန်းသေ က သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+```
+
+```text
+error[ZK0435]: the constant "က" cannot hold heap text or a heap list
+```
+
+## How a list is stored
+
+The cells of a list stand next to each other in one stretch of RAM, in the order of their
+numbers, with no gaps. A fixed list is that stretch, inline: its size is its count times
+the size of one cell. A fixed list of fixed lists stores its rows one after another, so a
+table is one long stretch with the rows end to end.
+
+```text
+  table: isize[3][2], 6 cells of 8 octets = 48 octets
+
+  octet    0      8      16     24     32     40     48
+           +------+------+------+------+------+------+
+           |  1   |  2   |  3   |  4   |  5   |  6   |
+           +------+------+------+------+------+------+
+  cell     [0][0] [0][1] [0][2] [1][0] [1][1] [1][2]
+           '------- row 0 ------''------- row 1 ------'
+
+  one past the end: octet 48, not a cell
+```
+
+A plain or a heap list is three words, laid out as text is, and its cells sit in a heap
+block:
+
+```text
+  list: isize[], holding [1, 2, 3]
+
+  the list, 24 octets                       its heap block, 24 octets
+  +-----------+-----------+-----------+     +------+------+------+
+  |  address  |  count 3  |  room 24  |     |  1   |  2   |  3   |
+  +-----+-----+-----------+-----------+     +------+------+------+
+        |                                   ^
+        '-----------------------------------'
+```
+
+- The room is the size of the heap block in octets. A room of 0 marks cells the list does
+  not own: cells lent to a parameter, or no cells at all.
+- A write into a list of room 0 first copies the cells into a block of its own, so a
+  plain list never writes cells it was lent.
+- An add into a full block moves the cells to a block twice its size, four cells at the
+  least; a remove keeps the block and its room.
+- Each list in the cells of a plain list is a value of its own: a plain list of plain
+  lists holds three words per row, and each row has a block of its own.
+
+```zaka
+အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+အကွက် ၃ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+အကွက် ၅ ခုရှိသော မှန်မှားတန်ဖိုး စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+ကိန်းပြည့် စာရင်း စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+```
+
+```text
+၄၈
+၁၂
+၅
+၂၄
+၂၄
+```
+
+The address of a cell is a pointer to the cell, so the cell after it can be reached with
+pointer arithmetic. In a table of fixed lists, the cell after the last of a row is the
+first of the next row; the rows of a plain list each sit in a block of their own, and a
+step from one into the next stops the program:
+
+```zaka
+ကိန်းရှင် ဇယား သည် ကိန်းပြည့် စာရင်းသေ စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း)၊ (၄၊ ၅၊ ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း ဖြစ်ပါစေ။
+ကိန်းရှင် အစ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဇယား ၏ အကွက် ၀ ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် အတန်း သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဇယား ၏ အကွက် ၁ ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
+အတန်း - အစ ကို ပြသပါ။                      // the second row starts 3 cells on
+အစ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။                  // row 1, column 1
+```
+
+```text
+၃
+၅
 ```
 
 ## Lists and addresses
@@ -727,7 +730,7 @@ The other mistakes with lists, in one table:
 | ZK0424 | a list of borrows as the result of a function |
 | ZK0435 | a constant heap list |
 | ZK0436 | `[]` given to a fixed list outside its declaration |
-| ZK0437 | an add or a remove on a fixed list, text, a slice or a view |
+| ZK0437 | an add or a remove on a fixed list or a slice, or a remove from text |
 | ZK0603 | a constant cell number outside the list |
 | ZK0704 | a slice of a plain list used after a write into the list, or of a plain or heap list after an add or a remove |
 | ZK0710 | a cell number proven past the end |

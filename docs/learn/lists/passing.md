@@ -1,6 +1,6 @@
 ---
 title: Passing and comparing lists
-description: Lists are values, so each assignment and argument duplicates the cells; lend a list through its address.
+description: Lists are values, so each assignment and argument duplicates the cells, and a function gives a list back as its result.
 ---
 
 # Passing and comparing lists
@@ -49,48 +49,46 @@ each count:
 [၀၊ ၅၊ ၆၊ ၇]
 ```
 
-The duplicate costs little: the parameter reads the caller's cells until its first
-write, and that write gives it cells of its own.
-
-To let a function change the caller's list, pass its address, as with [the caller's
-variables](../pointers/out-parameters.md). The parameter kind is the list kind with
-`လိပ်စာ` after it and `ငှားထားသော` in front, since the function borrows the caller's
-list. The cells are reached through it with `အကွက်` as before:
+To let a function change the caller's list, mark the parameter with
+`လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` and the argument with
+`(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)`, as for [the caller's
+variable](../functions/parameters.md#changing-the-callers-variable). The cells are
+reached through it with `အကွက်` as before:
 
 ```zaka
-// the parameter is the address of the caller's list
+// the function can change the caller's list
 လုပ်ဆောင်ချက် နှစ်ဆတိုး သည်
-ငှားထားသော ကိန်းပြည့် စာရင်း လိပ်စာ ကိန်းများ ကို လက်ခံပြီး
+လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် စာရင်း ကိန်းများ ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
 ကိန်းရှင် မူရင်း သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် နှစ်ဆတိုး ကို မူရင်း ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
-မူရင်း ကို ပြသပါ။     // changed through the address
+လုပ်ဆောင်ချက် နှစ်ဆတိုး ကို မူရင်း (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
+မူရင်း ကို ပြသပါ။     // the function changed it
 ```
 
 ```text
 [၂၊ ၄၊ ၆]
 ```
 
-A fixed list is passed in the same manner, through `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း`
-or the address of one; its count is part of the kind, so the function takes lists of
-that count alone.
+Part III passes the address of the list instead: see [Lists and structs through
+addresses](../pointers/structs.md).
 
 ## Lists as results
 
-A function can also give back a list, plain or fixed, and the function fills `ရလဒ်` or
-returns a list. Here the result is a fixed list of four cells, which start at `၀`:
+A function can also give back a list: it fills `ရလဒ်`, or returns a list. Here `ရလဒ်`
+starts with no cells, and the loop adds one for each square:
 
 ```zaka
 // a function that builds a list and gives it back
 လုပ်ဆောင်ချက် နှစ်ထပ်များ သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
-၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ၏ အကွက် န ကို န * န ဟု ထားပါ။
+ကိန်းပြည့် အရေ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
+၀ မှ အရေ - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ထဲသို့ န * န ကို ထည့်ပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
-ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် နှစ်ထပ်များ ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် နှစ်ထပ်များ ကို ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 ကိန်းများ ကို ပြသပါ။
 ```
 
@@ -98,8 +96,7 @@ returns a list. Here the result is a fixed list of four cells, which start at `�
 [၀၊ ၁၊ ၄၊ ၉]
 ```
 
-The caller gets a list of its own, as with an assignment: here a plain list, which takes
-the cells of the fixed one. See [Lists and structs as
+The caller gets a list of its own, as with an assignment. See [Lists and structs as
 results](../../manual/language/functions.md#lists-and-structs-as-results) for the full rules.
 
 ## List literals as arguments
@@ -143,16 +140,15 @@ at a time:
 မှန်
 ```
 
-Two plain lists compare at each count: lists of different counts are not equal. A plain
-and a heap list of one cell kind compare too. Lists of different kinds do not compare,
-such as `isize[3]` and `isize[2]`, or a fixed and a plain list. Lists have no order, so
+Two lists compare at each count: lists of different counts are not equal. Lists of
+different kinds do not compare, such as `isize[]` and `f64[]`. Lists have no order, so
 `<` and `>` do not take them.
 
 ## Hands on
 
-- Write a function that takes the address of a list of integers and adds 1 to each cell.
+- Write a function that can change a list of integers, and adds 1 to each cell.
 - Duplicate a list, change the duplicate, and compare the two.
 
-To take a part of a list, or a fixed list with no duplicate, take a [slice](slices.md).
+Part II reads a part of a list with no duplicate: see [Slices](slices.md).
 
-Next: [Adding and removing cells](growing.md).
+Next: [Lists of lists](grids.md).

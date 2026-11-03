@@ -405,4 +405,5 @@ error[ZK0413]: isize is not a pointer and cannot be dereferenced
 - Write a function that asks for a block and returns its address. Is that a mistake?
   (No: the caller owns the block from then on.)
 
-Next: [Lists](../lists/README.md).
+This is the last page of Learn. The [Docs](../../manual/README.md) give the full rules of
+the language, the compiler and the VM.

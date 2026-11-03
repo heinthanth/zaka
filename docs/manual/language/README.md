@@ -48,17 +48,27 @@ a command, such as `ပြသပါ`, forms a *statement*. The compiler reads bo
 | [Expressions](expressions.md) | literals, names and the operators: arithmetic, comparison, logic and bitwise, with precedence, division, overflow and grouping |
 | [Statements](statements.md) | each form of statement with its shape, the statement verbs and the error of a missing verb |
 | [Names and scope](scope.md) | blocks, shadowing, constants, where a name can be seen, and the errors ZK0301 to ZK0308 |
-| [Functions](functions.md) | declaring, calling and returning |
+| [Functions](functions.md) | declaring, calling and returning, edit references, and how values are passed |
+| [Lists](lists.md) | plain lists, their literals and cells, adding and removing cells, then the fixed and heap forms |
+| [Text](text.md) | owned text, template literals, joining, cells and characters, then the forms, views, copies and drops |
+| [Structs](structs.md) | declaring a struct, its classifier, literals and fields, then duplicating, moving and storage |
+| [Modules](modules.md) | a program in several files: the export mark, the import sentence and names across files |
+| [Natural wording](naturalness.md) | which particle and which ending read well, and the warnings for the others |
+| [Slices](slices.md) | borrowed runs of cells with their count |
 | [Pointers](pointers.md) | addresses, the heap and pointer arithmetic |
 | [Ownership and borrowing](ownership.md) | the rules that keep a pointer from outliving its block |
-| [Lists](lists.md) | fixed lists, their cells and kinds |
-| [Slices](slices.md) | borrowed runs of cells with their count |
-| [Text](text.md) | owned text and views of text, template literals, joining, cells and drops |
-| [Natural wording](naturalness.md) | which particle and which ending read well, and the warnings for the others |
 
-The pages go from the smallest unit to the largest: words, then the kinds of value, then
-expressions and statements, then names. Functions, pointers, owners and lists build on
-those. Where a rule has a gentler introduction, the page links to the [Learn
+The pages climb from values to control to storage. The first pages, from words to
+natural wording, state the rules of values: numbers, text, plain lists such as `isize[]`,
+structs, functions and loops, with no address, loan or heap block in sight. The later
+sections of those pages, and the page on slices, turn to control: views of text and of
+lists, the fixed and heap forms (`textf`, `text~`, `isize[3]`, `isize[]~`), and what a
+duplicate costs, which `--warn-duplicates` reports. The last two pages state the rules of
+storage: owner, borrow and raw pointers, allocating, resizing and freeing a block, and
+the ownership check. Each page orders its sections alike: the plain value rules
+first, then the fixed and heap forms and views, and addresses, loans and the heap last.
+
+Where a rule has a gentler introduction, the page links to the [Learn
 book](../../learn/README.md). The error codes (`ZK0101` and the rest) are listed in
 [Error messages](../reference/errors.md), and the words of the language in [Reserved
 words](../reference/reserved-words.md).

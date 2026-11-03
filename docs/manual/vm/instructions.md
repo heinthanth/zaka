@@ -228,6 +228,8 @@ cell, its count, and the room of its heap block), and its cells sit in a heap bl
 | `char_count` | addr → n | the number of characters of the text at `addr`, a `usize` |
 | `char_at` | addr i → c | the character at number `i` of the text at `addr`, counted from 0, or from 1 when listed `char_at from 1`; a number outside the text traps |
 | `char_at_octet` | addr i → c | the character that starts at u8 number `i` of the text at `addr`, counted from 0; a number outside the text or inside a character traps |
+| `set_char` | addr i c → | stop the program when number `i` is outside the text at `addr` (counted from 0, or from 1 when listed `set_char from 1`); else give the text a block of its own when its room is 0, and write the character `c` in place of character `i`. A character of another size shifts the u8s after it |
+| `add_text k` | addr v → | add the value `v` of kind `k`, a `char`, or the address of `text`, `textf`, `text~` or `text[..]`, at the end of the text at `addr`. The added u8s are read first, so the text can be added to itself. The text takes a block of its own when its room is 0 |
 | `text_edges` | addr → addr | trap when the view of text at `addr` starts or ends inside a character; the view remains |
 | `check_utf8` | addr → addr | trap when the u8s of the slice at `addr` are not UTF-8; the slice remains |
 
@@ -237,6 +239,12 @@ kind as itself. Each piece is written as a print writes it. When the heap has no
 the text, `format` traps (`OutOfMem`). `drop` works on each kind that holds text or a plain or heap list: `text`, a plain list,
 a struct with such a field, a list of such cells. A drop of text whose room is 0, static or
 moved out, frees nothing.
+
+`set_char` and `add_text` write the new u8s into the block of the text when it has room,
+and else move the text to a block twice its size, 16 u8s at the least (or the new count,
+when that is more). Text with a room of 0, static or lent to a parameter, takes a block
+of its own first (as `own text` gives one), so an edit never reaches static text or the
+caller's text.
 
 The VM puts each static text in a frozen block of its own before `main` starts, so a
 write into one traps ([When a program stops](traps.md)).
@@ -285,6 +293,8 @@ How each value reads is in [Running a program](running.md#printing).
 | a string literal in a text slot | `x; text t; pop` |
 | a template literal, or a `+` join | `x; v…; format fmt; pop` |
 | `t ကို v ဟု ထားပါ` for text | `v` into the hidden slot `%new`; `t; drop text`; then the text of `%new` moves into `t` (`blit text`, and `zero text` on `%new`) |
+| `t ၏ စာလုံး i ကို c ဟု ထားပါ` | `t; i; c; set_char`, or `set_char from 1` for `၏ i ခုမြောက်စာလုံး` |
+| `t ထဲသို့ v ကို ထည့်ပါ` for text | `t; v; add_text k`; text that `v` builds when it runs, such as a format, is dropped right after |
 | the end of a text variable | `x; drop text` |
 | `a ဖြစ်၍ b` (and) | `a; jump_if_false F; b; jump E; F: push မမှန်; E:` |
 | `a သို့မဟုတ် b` (or) | `a; jump_if_true T; b; jump E; T: push မှန်; E:` |

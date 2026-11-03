@@ -125,98 +125,6 @@ two words. String literals are of the first kind. Owned text has two more forms 
 same three words: `စာသားသေ` (`textf`), whose u8s never change, and `စာသားရှင်`
 (`text~`), which owns a heap block from the start. [Text](text.md) states their rules.
 
-## Addresses and lists
-
-Two more families of kind are built from the scalar kinds. Their rules have pages of
-their own.
-
-| Burmese | Short name | Page |
-| --- | --- | --- |
-| `ကိန်းပြည့် လိပ်စာ` | `isize*` | [Pointers](pointers.md) |
-| `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | `isize**` | [Pointers](pointers.md) |
-| `ငှားထားသော ကိန်းပြည့် လိပ်စာ` | `isize&` | [Ownership and borrowing](ownership.md) |
-| `ကိန်းပြည့် လိပ်စာအကြမ်း` | `isize^` | [Ownership and borrowing](ownership.md) |
-| `လိပ်စာ` | `ptr` | [Pointers](pointers.md) |
-| `ဗလာ` (the null address) | `null` | [Pointers](pointers.md) |
-| `ကိန်းပြည့် စာရင်း` (plain) | `isize[]` | [Lists](lists.md#forms) |
-| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` (fixed) | `isize[3]` | [Lists](lists.md#forms) |
-| `ကိန်းပြည့် စာရင်းသေ` (fixed, the count from its value) | `isize[3]` for a value of 3 cells | [Lists](lists.md#forms) |
-| `ကိန်းပြည့် စာရင်းရှင်` (heap) | `isize[]~` | [Lists](lists.md#forms) |
-| `အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း` | `isize[3][2]` | [Lists](lists.md) |
-| `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း` | `isize[][..]` | [Slices](slices.md) |
-| `စာသား တစ်စိတ်တစ်ပိုင်း` | `text[..]` | [Text](text.md) |
-
-A short name reads left to right in the order of the Burmese words: the base kind first,
-then `*` for each level of owner address, `^` for a raw level, `&` in place of the `*` of
-a borrowed level, `[n]` for each fixed list level, `[]` for a plain one, `[]~` for a heap
-one, and `[..]` for a part (a slice or a view). `isize[3][2]` is two lists of three,
-`isize[3][]` a plain list of lists of three, and `isize&[2]` is a list of two borrows.
-An address takes the platform size.
-
-## The size of a kind
-
-`<kind> ၏ အရွယ်အစား` ("the size of the kind") is the number of octets one value takes:
-
-```zaka
-၈ ဘစ် ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
-၁၆ ဘစ် ဒဿမကိန်း ၏ အရွယ်အစား ကို ပြသပါ။
-စာလုံး ၏ အရွယ်အစား ကို ပြသပါ။
-မှန်မှားတန်ဖိုး ၏ အရွယ်အစား ကို ပြသပါ။
-ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
-ကိန်းပြည့် လိပ်စာ ၏ အရွယ်အစား ကို ပြသပါ။
-အကွက် ၃ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
-```
-
-```text
-၁
-၂
-၄
-၁
-၈
-၈
-၁၂
-```
-
-## Default values
-
-A variable declared with no value starts at the default of its kind. A constant has no
-default: it must be given a value (ZK0308).
-
-| Kind | Default |
-| --- | --- |
-| integers | `၀` |
-| decimal numbers | `၀.၀` |
-| `စာလုံး` | the null character, `'\0'` |
-| `မှန်မှားတန်ဖိုး` | `မမှန်` |
-| `စာသား` | blank text, with no u8s |
-| an address | `ဗလာ` |
-| a fixed list | each cell at the default of its kind |
-| a plain or heap list | no cells |
-
-```zaka
-ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ဂ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ဃ သည် စာလုံး တစ်လုံး ဖြစ်ပါစေ။
-ကိန်းရှင် င သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် စ သည် အကွက် ၃ ခုရှိသော မှန်မှားတန်ဖိုး စာရင်း တစ်ခု ဖြစ်ပါစေ။
-က ကို ပြသပါ။
-ခ ကို ပြသပါ။
-ဂ ကို ပြသပါ။
-ဃ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-င ကို ပြသပါ။
-စ ကို ပြသပါ။
-```
-
-```text
-၀
-၀.၀
-မမှန်
-၀
-ဗလာ
-[မမှန်၊ မမှန်၊ မမှန်]
-```
-
 ## The edges of a kind
 
 A value keeps inside the range of its kind. A literal that falls outside it is an error
@@ -257,3 +165,98 @@ error[ZK0216]: ၇ is not a valid bit count here; use 8, 16, 32, 64, 128
 A true/false value is not a number, a character is not an integer and a decimal number
 is not an integer. A value goes where a different kind is wanted just through a
 [conversion](conversions.md), or through the widening that conversions describes.
+
+## Default values
+
+A variable declared with no value starts at the default of its kind. A constant has no
+default: it must be given a value (ZK0308). The list forms and the address in the table
+and the example are stated in [Addresses and lists](#addresses-and-lists), below.
+
+| Kind | Default |
+| --- | --- |
+| integers | `၀` |
+| decimal numbers | `၀.၀` |
+| `စာလုံး` | the null character, `'\0'` |
+| `မှန်မှားတန်ဖိုး` | `မမှန်` |
+| `စာသား` | blank text, with no u8s |
+| a plain or heap list | no cells |
+| a fixed list | each cell at the default of its kind |
+| an address | `ဗလာ` |
+
+```zaka
+ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ဃ သည် စာလုံး တစ်လုံး ဖြစ်ပါစေ။
+ကိန်းရှင် င သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် စ သည် အကွက် ၃ ခုရှိသော မှန်မှားတန်ဖိုး စာရင်း တစ်ခု ဖြစ်ပါစေ။
+က ကို ပြသပါ။
+ခ ကို ပြသပါ။
+ဂ ကို ပြသပါ။
+ဃ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+င ကို ပြသပါ။
+စ ကို ပြသပါ။
+```
+
+```text
+၀
+၀.၀
+မမှန်
+၀
+ဗလာ
+[မမှန်၊ မမှန်၊ မမှန်]
+```
+
+## The size of a kind
+
+`<kind> ၏ အရွယ်အစား` ("the size of the kind") is the number of octets one value takes. The
+address and the fixed list in the example are kinds of [Addresses and
+lists](#addresses-and-lists), below:
+
+```zaka
+၈ ဘစ် ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
+၁၆ ဘစ် ဒဿမကိန်း ၏ အရွယ်အစား ကို ပြသပါ။
+စာလုံး ၏ အရွယ်အစား ကို ပြသပါ။
+မှန်မှားတန်ဖိုး ၏ အရွယ်အစား ကို ပြသပါ။
+ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
+ကိန်းပြည့် လိပ်စာ ၏ အရွယ်အစား ကို ပြသပါ။
+အကွက် ၃ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+```
+
+```text
+၁
+၂
+၄
+၁
+၈
+၈
+၁၂
+```
+
+## Addresses and lists
+
+Two more families of kind are built from the scalar kinds. Their rules have pages of
+their own.
+
+| Burmese | Short name | Page |
+| --- | --- | --- |
+| `ကိန်းပြည့် စာရင်း` (plain) | `isize[]` | [Lists](lists.md#forms) |
+| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` (fixed) | `isize[3]` | [Lists](lists.md#forms) |
+| `ကိန်းပြည့် စာရင်းသေ` (fixed, the count from its value) | `isize[3]` for a value of 3 cells | [Lists](lists.md#forms) |
+| `ကိန်းပြည့် စာရင်းရှင်` (heap) | `isize[]~` | [Lists](lists.md#forms) |
+| `အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း` | `isize[3][2]` | [Lists](lists.md) |
+| `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း` | `isize[][..]` | [Slices](slices.md) |
+| `စာသား တစ်စိတ်တစ်ပိုင်း` | `text[..]` | [Text](text.md) |
+| `ကိန်းပြည့် လိပ်စာ` | `isize*` | [Pointers](pointers.md) |
+| `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | `isize**` | [Pointers](pointers.md) |
+| `ငှားထားသော ကိန်းပြည့် လိပ်စာ` | `isize&` | [Ownership and borrowing](ownership.md) |
+| `ကိန်းပြည့် လိပ်စာအကြမ်း` | `isize^` | [Ownership and borrowing](ownership.md) |
+| `လိပ်စာ` | `ptr` | [Pointers](pointers.md) |
+| `ဗလာ` (the null address) | `null` | [Pointers](pointers.md) |
+
+A short name reads left to right in the order of the Burmese words: the base kind first,
+then `*` for each level of owner address, `^` for a raw level, `&` in place of the `*` of
+a borrowed level, `[n]` for each fixed list level, `[]` for a plain one, `[]~` for a heap
+one, and `[..]` for a part (a slice or a view). `isize[3][2]` is two lists of three,
+`isize[3][]` a plain list of lists of three, and `isize&[2]` is a list of two borrows.
+An address takes the platform size.

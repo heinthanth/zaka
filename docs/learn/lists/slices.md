@@ -1,14 +1,14 @@
 ---
 title: Slices
-description: A slice borrows a run of cells with their count, so one function takes lists of each length and parts of them.
+description: A slice borrows a run of cells with their count, so one function reads and writes whole lists and parts of them with no duplicate.
 ---
 
 # Slices
 
-A function that takes `ကိန်းပြည့် စာရင်း` takes plain lists of each count, but each time a
-whole list, and a fixed list given to it is duplicated into a heap block first. A *slice*
-borrows a run of cells and keeps their count: a whole list of each form, a part of one,
-or a heap block:
+A function that takes `ကိန်းပြည့် စာရင်း` takes lists of each count, but each time a
+whole list, and a function that writes its parameter writes a duplicate. A *slice* borrows
+a run of cells and keeps their count: a whole list or a part of one. A [view of
+text](../forms/views.md) is a slice of the cells of text.
 
 ```zaka
 လုပ်ဆောင်ချက် စုစုပေါင်း သည်
@@ -32,8 +32,8 @@ or a heap block:
 
 The parameter kind is `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း`, "a part of an integer list": a
 list kind with no count, then `တစ်စိတ်တစ်ပိုင်း`. Inside the function, the cells and the
-count read as for a list. `အမှတ်များ ၏ တန်ဖိုးအငှား` lends the whole list, as
-`ပ ၏ တန်ဖိုးအငှား` lends a heap block.
+count read as for a list. `အမှတ်များ ၏ တန်ဖိုးအငှား` lends the whole list, as it lends
+text. Messages write a slice kind with `[..]`, as `isize[..]`.
 
 ## Part of a list
 
@@ -68,26 +68,6 @@ l ကို ပြသပါ။
 [၁၊ ၀၊ ၃၊ ၄]
 ```
 
-## Slices of the heap
-
-A heap block has no count in its kind. A range writes the count once, and the slice keeps
-it from then on:
-
-```zaka
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၃ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ အကွက် ၀ မှစ၍ ၃ ကွက် ဖြစ်ပါစေ။
-ကိန်းများ ၏ အကွက် ၂ ကို ၉ ဟု ထားပါ။
-ကိန်းများ ကို ပြသပါ။
-ကိန်းများ ၏ အကွက်အရေအတွက် ကို ပြသပါ။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-```
-
-```text
-[၀၊ ၀၊ ၉]
-၃
-```
-
 ## Slice mistakes
 
 A list does not turn into a slice on its own. Lend it, so the reader sees the borrow:
@@ -103,27 +83,20 @@ s ကို ပြသပါ။
 လုပ်ဆောင်ချက် ပြ ကို l တို့ဖြင့် လုပ်ဆောင်ပါ။
 ```
 
-A range past the end of its list stops the program. On a fixed list, whose count the
-compiler knows, a range of constant numbers is an error:
+A range past the end of its list stops the program:
 
-```zaka-error ZK0605
-ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+```zaka-stop
+ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 l ၏ အကွက် ၂ မှစ၍ ၂ ကွက် ကို ပြသပါ။
 ```
 
-A slice borrows, so its block must live until the last use of the slice:
-
-```zaka-error ZK0704
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-s ကို ပြသပါ။
+```text
+the program stopped: 2 cells from cell 2 pass the end of 3 cells
 ```
 
-A write into a plain list can move its cells to a block of its own, so it ends each
-slice of the list. A slice used after such a write is an error; a slice of a heap list
-or a fixed list stands:
+A slice borrows its list, so the cells must stand still while the slice is in use. A write
+into a list can move its cells to a block of its own, so it ends each slice of the list,
+and a slice used after such a write is an error:
 
 ```zaka-error ZK0704
 ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
@@ -134,16 +107,28 @@ s ကို ပြသပါ။
 
 Write through the slice, or take the slice after the write.
 
-An [add or a remove](growing.md) ends each slice of the list too, a heap list included:
-an add can move the cells to a larger block, and a remove takes the last cell off.
+An [add or a remove](growing.md) ends each slice of the list too: an add can move the
+cells to a larger block, and a remove takes the last cell off.
 
 ```zaka-error ZK0704
-ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 l ထဲသို့ ၄ ကို ထည့်ပါ။
 s ကို ပြသပါ။
 ```
 
+The fixed and heap lists of the next page keep their cells in place through a write, so
+a slice of one stands: see [Slices of fixed and heap
+lists](../forms/fixed-and-heap.md#slices-of-fixed-and-heap-lists). Part III takes slices
+of heap blocks: see [Slices of the heap](../pointers/structs.md#slices-of-the-heap).
 [Slices](../../manual/language/slices.md) in the Docs gives each rule.
 
-Next: [List mistakes](mistakes.md).
+## Hands on
+
+- Write a function that takes a slice and prints its largest cell, and call it with a
+  whole list and with the last two cells of it.
+- Set each cell of a part of a list to 0 through a slice, and print the list.
+- Take a slice of a list, add a cell to the list, then print the slice, and read the
+  message.
+
+Next: [Fixed and heap forms](../forms/fixed-and-heap.md).

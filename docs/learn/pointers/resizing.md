@@ -75,4 +75,4 @@ kind.
 - After the loop, shrink the block to fit `အရေအတွက်` integers and no more.
 - Change the program to keep just the even squares.
 
-Next: [Ownership and borrowing](ownership.md).
+Next: [Lists and structs through addresses](structs.md).

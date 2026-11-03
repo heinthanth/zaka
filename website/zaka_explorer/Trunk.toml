@@ -14,8 +14,7 @@ stage = "post_build"
 command = "sh"
 command_arguments = [
     "-c",
-    "mkdir -p \"$TRUNK_STAGING_DIR/assets\" && cp target/assets/* \"$TRUNK_STAGING_DIR/assets/\"",
-]
+    "mkdir -p \"$TRUNK_STAGING_DIR/assets\" && cp target/assets/* \"$TRUNK_STAGING_DIR/assets/\"",]
 
 # The share tags of index.html get whole addresses: see scripts/share_tags.sh.
 [[hooks]]
@@ -31,8 +30,7 @@ stage = "post_build"
 command = "sh"
 command_arguments = [
     "-c",
-    "[ \"$TRUNK_PUBLIC_URL\" != / ] || cp -R ../../target/fonts \"$TRUNK_STAGING_DIR/fonts\"",
-]
+    "[ \"$TRUNK_PUBLIC_URL\" != / ] || cp -R ../../target/fonts \"$TRUNK_STAGING_DIR/fonts\"",]
 
 [watch]
 watch = [".", "../../samples", "../../artwork"]

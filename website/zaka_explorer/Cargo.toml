@@ -60,34 +60,12 @@ zaka_web_ui_common = { workspace = true }
 [dependencies.web-sys]
 workspace = true
 features = [
-    "CssStyleDeclaration",
-    "Document",
-    "DomRect",
-    "Element",
-    "EventTarget",
-    "FontFace",
-    "FontFaceDescriptors",
-    "FontFaceSet",
-    "History",
-    "HtmlCollection",
-    "HtmlDialogElement",
-    "HtmlElement",
-    "HtmlHeadElement",
-    "KeyboardEvent",
-    "Location",
-    "MutationObserver",
-    "MutationRecord",
-    "Navigator",
-    "Node",
-    "NodeList",
-    "PointerEvent",
-    "ScrollIntoViewOptions",
-    "ScrollLogicalPosition",
-    "Storage",
-    "WheelEvent",
-    "Window",
-    "console",
-]
+    "CssStyleDeclaration", "Document", "DomRect", "Element", "EventTarget", "FontFace",
+    "FontFaceDescriptors", "FontFaceSet", "History", "HtmlCollection",
+    "HtmlDialogElement", "HtmlElement", "HtmlHeadElement", "KeyboardEvent", "Location",
+    "MutationObserver", "MutationRecord", "Navigator", "Node", "NodeList",
+    "PointerEvent", "ScrollIntoViewOptions", "ScrollLogicalPosition", "Storage",
+    "WheelEvent", "Window", "console",]
 
 [dev-dependencies]
 grass = { workspace = true }

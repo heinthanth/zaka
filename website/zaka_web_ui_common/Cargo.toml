@@ -30,35 +30,18 @@ zakac_span = { workspace = true }
 [dependencies.web-sys]
 workspace = true
 features = [
-    "Document",
-    "DomRect",
-    "Element",
-    "FontFace",
-    "FontFaceDescriptors",
-    "FontFaceSet",
-    "HtmlDialogElement",
-    "HtmlElement",
-    "HtmlHeadElement",
-    "KeyboardEvent",
-    "PointerEvent",
-    "ScrollIntoViewOptions",
-    "ScrollLogicalPosition",
-    "Window",
-    "console",
-]
+    "Document", "DomRect", "Element", "FontFace", "FontFaceDescriptors", "FontFaceSet",
+    "HtmlDialogElement", "HtmlElement", "HtmlHeadElement", "KeyboardEvent",
+    "PointerEvent", "ScrollIntoViewOptions", "ScrollLogicalPosition", "Window",
+    "console",]
 
 [features]
 # Render on a server: the leptos-use hooks then leave the DOM alone.
 ssr = [
-    "leptos-use-color-mode/ssr",
-    "leptos-use-css-var/ssr",
-    "leptos-use-event-listener/ssr",
-    "leptos-use-interval-fn/ssr",
-    "leptos-use-on-click-outside/ssr",
-    "leptos-use-preferences/ssr",
-    "leptos-use-storage/ssr",
-    "leptos-use-window/ssr",
-]
+    "leptos-use-color-mode/ssr", "leptos-use-css-var/ssr",
+    "leptos-use-event-listener/ssr", "leptos-use-interval-fn/ssr",
+    "leptos-use-on-click-outside/ssr", "leptos-use-preferences/ssr",
+    "leptos-use-storage/ssr", "leptos-use-window/ssr",]
 
 [dev-dependencies]
 serde_json = { workspace = true }

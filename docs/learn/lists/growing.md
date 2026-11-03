@@ -1,11 +1,11 @@
 ---
 title: Adding and removing cells
-description: Add a cell at the end of a plain or heap list, and remove its last cell.
+description: Add a cell at the end of a list, and remove its last cell.
 ---
 
 # Adding and removing cells
 
-A plain list and a heap list can grow and shrink a cell at a time. `ထည့်ပါ` ("please
+A plain list can grow and shrink a cell at a time. `ထည့်ပါ` ("please
 add") puts a value in a new last cell, and `ဖျက်ပါ` ("please remove") takes the last
 cell off:
 
@@ -51,10 +51,10 @@ A list declared with no value has no cells, and a loop can fill it:
 ```
 
 The value has the kind of a cell, and it goes in as an assigned value does: text and lists
-are duplicated, so the list holds a value of its own. A heap list grows likewise:
+are duplicated, so the list holds a value of its own:
 
 ```zaka
-ကိန်းရှင် အမည်များ သည် စာသား စာရင်းရှင် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် အမည်များ သည် စာသား စာရင်း တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် အမည် သည် "မောင်" ဖြစ်ပါစေ။
 အမည်များ ထဲသို့ အမည် ကို ထည့်ပါ။           // a duplicate of the text
 အမည်များ ထဲသို့ "မြ" ကို ထည့်ပါ။
@@ -80,8 +80,8 @@ as it was:
 [၇၊ ၁၊ ၂]
 ```
 
-The list can be each place a value can be set in: a variable, a cell of another list,
-a field of a struct, or a list reached through its address:
+The list can be each place a value can be set in: a variable, a cell of another list, or
+a field of a struct:
 
 ```zaka
 ကိန်းရှင် ဇယား သည် ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [[၁]၊ [၂၊ ၃]] ဖြစ်ပါစေ။
@@ -98,8 +98,9 @@ a field of a struct, or a list reached through its address:
 ## Lists in functions
 
 A list parameter is a duplicate of the list passed in, so a function that adds to it
-leaves the caller's list as it was. To grow the caller's list, pass its address, and add
-to `ကိန်းများ ၏ တန်ဖိုး`, the list the address points at:
+leaves the caller's list as it was. To grow the caller's list, mark the parameter and the
+argument as [the caller's variable](../functions/parameters.md#changing-the-callers-variable)
+is marked:
 
 ```zaka
 // the parameter is a duplicate of the list passed in
@@ -110,18 +111,18 @@ to `ကိန်းများ ၏ တန်ဖိုး`, the list the address
 ကိန်းများ ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
-// the parameter is the address of the caller's list
+// the function can change the caller's list
 လုပ်ဆောင်ချက် ထပ်ထည့် သည်
-ငှားထားသော ကိန်းပြည့် စာရင်း လိပ်စာ ကိန်းများ ကို လက်ခံပြီး
+လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် စာရင်း ကိန်းများ ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းများ ၏ တန်ဖိုး ထဲသို့ ၉ ကို ထည့်ပါ။
+ကိန်းများ ထဲသို့ ၉ ကို ထည့်ပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
 ကိန်းရှင် မူရင်း သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် ချဲ့ ကို မူရင်း တို့ဖြင့် လုပ်ဆောင်ပါ။
 မူရင်း ကို ပြသပါ။     // unchanged
-လုပ်ဆောင်ချက် ထပ်ထည့် ကို မူရင်း ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
-မူရင်း ကို ပြသပါ။     // changed through the address
+လုပ်ဆောင်ချက် ထပ်ထည့် ကို မူရင်း (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
+မူရင်း ကို ပြသပါ။     // the function changed it
 ```
 
 ```text
@@ -132,18 +133,16 @@ to `ကိန်းများ ၏ တန်ဖိုး`, the list the address
 
 ## Which lists grow
 
-A fixed list keeps its count for good, so it neither grows nor shrinks; neither does
-text, nor a slice. The compiler stops each of these: see [List
-mistakes](mistakes.md#adding-to-a-fixed-list). A remove from a list with no cells left
-stops the program when it runs: see [List mistakes](mistakes.md#removing-from-a-list-with-no-cells).
-
-A slice or a cell address taken from a list cannot be used after the list grows or
-shrinks, since an add can move the cells to a new block. See [Slices](slices.md#slice-mistakes).
+Text takes an add too, of text or a character (see [Adding to
+text](../values/strings.md#adding-to-text)), but it does not shrink: the compiler stops a
+remove from it (see [List mistakes](mistakes.md#removing-from-text)). A remove from a
+list with no cells left stops the program when it runs: see [List
+mistakes](mistakes.md#removing-from-a-list-with-no-cells).
 
 ## Hands on
 
 - Build a list of the even numbers from 2 to 20 with a counted loop and an add.
 - Remove the last cells of a list in a while loop until one cell is left.
-- Write a function that takes the address of a list of text and adds a name to it.
+- Write a function that can change a list of text, and adds a name to it.
 
-Next: [Lists of lists](grids.md).
+Next: [Passing and comparing lists](passing.md).

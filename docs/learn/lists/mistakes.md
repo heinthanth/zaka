@@ -20,44 +20,16 @@ VM stops the program with the range the list allows:
 the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
 ```
 
-The count of a plain list comes when the program runs, so the VM is the one to check it.
-A fixed list has its count in its kind, and the compiler checks the cell numbers it can
-follow. Here the number sits in a variable, and the compiler still works out that it is 3:
+The count of a list comes when the program runs, so the VM is the one to check it, even
+for a number written in place. Counting from 1 starts at 1, not 0:
 
-```zaka-error ZK0710
-ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-အမှတ်များ ၏ အကွက် န ကို ပြသပါ။            // cells 0, 1 and 2 hold values; 3 does not exist
-```
-
-```text
-error[ZK0710]: offset 3 is past the end of a block of 3 elements
-```
-
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
-stops it, with the range the list allows:
-
-```zaka-stop mem-check=warn
-ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-အမှတ်များ ၏ အကွက် န ကို ပြသပါ။            // cells 0, 1 and 2 hold values; 3 does not exist
-```
-
-```text
-the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
-```
-
-When the number comes from input, the VM's check is the one that catches it. When
-the number is written in place, as a constant, Zaka reports it with another code, in each
-mode. Counting from 1 starts at 1, not 0:
-
-```zaka-error ZK0603
-ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
+```zaka-stop
+ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 အမှတ်များ ၏ ၀ ခုမြောက်အကွက် ကို ပြသပါ။     // counting from 1 starts at 1
 ```
 
 ```text
-error[ZK0603]: cell 0 is outside the list, whose cells run from 1 to 3
+the program stopped: cell 0 is outside the list, whose cells run from 1 to 3
 ```
 
 ## A cell number that takes a sum
@@ -65,54 +37,16 @@ error[ZK0603]: cell 0 is outside the list, whose cells run from 1 to 3
 The cell number takes the whole operator expression after `အကွက်`, so this reads cell
 `၁ + ၂`, which is outside the list:
 
-```zaka-error ZK0603
-ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၊ ၂၀၊ ၃၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
+```zaka-stop
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၊ ၂၀၊ ၃၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းများ ၏ အကွက် ၁ + ၂ ကို ပြသပါ။         // cell 3, not cell 1 plus 2
 ```
 
 ```text
-error[ZK0603]: cell 3 is outside the list, whose cells run from 0 to 2
+the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
 ```
 
 Write `(ကိန်းများ ၏ အကွက် ၁) + ၂` to add 2 to cell 1.
-
-## A literal with the wrong count
-
-```zaka-error ZK0419
-ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-```
-
-```text
-error[ZK0419]: the kind holds 3 cells, but the list has 2
-```
-
-## A list with no cells in a fixed list
-
-`[]` is a list with no cells. A fixed list keeps its count, so `[]` fits it in its
-declaration alone, where each cell starts at its default. Elsewhere, `စာရင်းအလွတ်` sets
-each cell back to its default:
-
-```zaka-error ZK0436
-ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈၊ ၉] ဖြစ်ပါစေ။
-က ကို [] ဟု ထားပါ။
-```
-
-```text
-error[ZK0436]: [] is a list with no cells, and a fixed list of isize[3] cannot take it here
-```
-
-## A fixed list from a plain list
-
-A plain list does not turn into a fixed list on its own: nothing promises its count.
-
-```zaka-error ZK0401
-ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
-```
-
-```text
-error[ZK0401]: expected isize[3], found isize[]
-```
 
 ## A blank list with no kind
 
@@ -126,18 +60,6 @@ error[ZK0401]: expected isize[3], found isize[]
 error[ZK0420]: a blank list needs a list kind from its place
 ```
 
-## A list kind with no count
-
-`စာရင်းသေ` makes a fixed list whose count its value gives, so it needs a value:
-
-```zaka-error ZK0421
-ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်ပါစေ။
-```
-
-```text
-error[ZK0421]: this list kind has no cell count, and nothing here gives one
-```
-
 ## Cells of a value that is no list
 
 ```zaka-error ZK0422
@@ -149,21 +71,26 @@ error[ZK0421]: this list kind has no cell count, and nothing here gives one
 error[ZK0422]: isize is not a list, so it has no cells
 ```
 
-## Adding to a fixed list
+## Removing from text
 
-A fixed list keeps its count for good, so `ထည့်ပါ` and `ဖျက်ပါ` do not take it. Text
-and slices do not grow either:
+Text grows with `ထည့်ပါ` (see [Adding to text](../values/strings.md#adding-to-text)), but
+`ဖျက်ပါ` does not take it: text has no last cell to remove, since a cell of text is one u8
+of a character.
 
 ```zaka-error ZK0437
-ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-အမှတ်များ ထဲသို့ ၇၀ ကို ထည့်ပါ။
+ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
+စာ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
 ```
 
 ```text
-error[ZK0437]: isize[3] cannot grow or shrink: "ထည့်ပါ" and "ဖျက်ပါ" take a plain or a heap list
+error[ZK0437]: text cannot grow or shrink here: "ထည့်ပါ" takes a plain or a heap list or text, and "ဖျက်ပါ" a plain or a heap list
 ```
 
-Declare the list with no count, `ကိန်းပြည့် စာရင်း`, to add cells to it.
+To drop the end of text, build new text from the characters to keep and set the
+variable to it.
+
+The fixed lists of Part II neither grow nor shrink: see [Fixed and heap
+forms](../forms/fixed-and-heap.md#adding-to-a-fixed-list).
 
 ## Removing from a list with no cells
 
@@ -189,9 +116,8 @@ numbered with a variable named `အရေအတွက်`.
 
 ## Hands on
 
-- Read cell 5 of a fixed list of 5 cells through a variable, and read the message.
-- Read the same cell with a constant number, and compare the two messages.
-- Do the same with a plain list, and run it.
+- Read cell 5 of a list of 5 cells through a variable, run it, and read the message.
+- Read the same cell counting from 1, as `၅ ခုမြောက်အကွက်`, and compare.
 - Remove the last cell of a list of two cells three times, and see which remove stops the
   program.
 

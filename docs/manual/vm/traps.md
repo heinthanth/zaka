@@ -351,7 +351,8 @@ the program stopped: pointers into different blocks cannot be subtracted
 
 Each static text sits in a frozen block, which each literal of the same text shares
 ([Checked and packed blocks](blocks.md#the-address-space)). The compiler refuses a write
-to a cell of text (ZK0429), so a raw address is the one road to such a write. The long
+to a cell of text (ZK0429), and a character write or an add first copies static text into
+a heap block of its own, so a raw address is the one road to such a write. The long
 form names the block as `static text t0`, the index in the `texts` table of the
 listing:
 

@@ -26,7 +26,7 @@ see [Names](../../learn/variables/names.md).
 | `ပါ`, `ပါသည်` | polite endings | [Particles](../../learn/sentences/particles.md) |
 | `တို့ကို`, `တို့ဖြင့်` | close a list of parameters / arguments | [Parameters](../../learn/functions/parameters.md) |
 | `လက်ခံပြီး` | "accepting ... and" | [Parameters](../../learn/functions/parameters.md) |
-| `ထဲသို့` | "into", after the list in `l ထဲသို့ v ကို ထည့်ပါ` | [Adding and removing cells](../../learn/lists/growing.md) |
+| `ထဲသို့` | "into", after the list or the text in `l ထဲသို့ v ကို ထည့်ပါ` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `မှ`, `အထိ`, `စီ`, `အနေဖြင့်` | "from", "up to", "each", "as" | [Counted loops](../../learn/control-flow/counted-loops.md) |
 | `ဖြစ်ကာ`, `ဖြစ်ပြီး` | "being ... and" | [Generic loops](../../learn/control-flow/generic-loops.md) |
 | `ပြီးလျှင်` | "when done" | [Generic loops](../../learn/control-flow/generic-loops.md) |
@@ -69,7 +69,7 @@ see [Names](../../learn/variables/names.md).
 | `ပြန်ပေးပါ` | "please return" | [Functions](../../learn/functions/README.md) |
 | `ပြန်ပေးမည်` | "will return" | [Results](../../learn/functions/results.md) |
 | `ရပ်ပါ` | "please stop" | [Break and continue](../../learn/control-flow/break-continue.md) |
-| `ထည့်ပါ` | "please add": `l ထဲသို့ v ကို ထည့်ပါ` adds `v` as a new last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
+| `ထည့်ပါ` | "please add": `l ထဲသို့ v ကို ထည့်ပါ` adds `v` as a new last cell of `l`, or, when `l` is text, adds the text or character `v` at its end | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ဖျက်ပါ` | "please remove": `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ` removes the last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ကျော်ပါ` | "please skip" | [Break and continue](../../learn/control-flow/break-continue.md) |
 
@@ -100,7 +100,7 @@ see [Names](../../learn/variables/names.md).
 | `စာလုံး` | "character" | [Characters](../../learn/values/characters.md) |
 | `မှန်မှားတန်ဖိုး`, `ဘူလီယန်` | "true/false value", "boolean" | [True and false](../../learn/values/booleans.md) |
 | `စာသား` | "text" | [Text](../../learn/values/strings.md) |
-| `စာသားသေ`, `စာသားရှင်` | "fixed text", "living text": the fixed and the heap form | [Text](../../learn/values/strings.md#fixed-and-heap-text) |
+| `စာသားသေ`, `စာသားရှင်` | "fixed text", "living text": the fixed and the heap form | [Fixed and heap forms](../../learn/forms/fixed-and-heap.md#fixed-and-heap-text) |
 | `လက္ခဏာရှိ`, `လက္ခဏာမဲ့` | "signed", "unsigned" | [Integers](../../learn/values/integers.md) |
 | `အခြေ` | "base" | [Writing integers](../../learn/values/literals.md) |
 | `ကိန်းရှင်` | "variable" | [Variables](../../learn/variables/README.md) |
@@ -139,10 +139,10 @@ as well.
 | Word | Reads as | Page |
 | --- | --- | --- |
 | `စာရင်း` | "list": after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`), plain with no count; `တို့ပါသော စာရင်း` closes a list literal | [Lists](../../learn/lists/README.md) |
-| `စာရင်းသေ`, `စာရင်းရှင်` | "fixed list", "living list": after `<kind>`, a fixed list whose count its value gives, and a heap list | [Lists](../../learn/lists/README.md#list-kinds) |
+| `စာရင်းသေ`, `စာရင်းရှင်` | "fixed list", "living list": after `<kind>`, a fixed list whose count its value gives, and a heap list | [Fixed and heap forms](../../learn/forms/fixed-and-heap.md#fixed-lists) |
 | `အကွက်` | "cell": `x ၏ အကွက် i` is cell `i`, counted from 0; `အကွက် n ခုရှိသော` gives the count of a list kind | [Lists](../../learn/lists/README.md) |
 | `ခုမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1, and `t ၏ n ခုမြောက်စာလုံး` character `n` of text | [Lists](../../learn/lists/README.md#cell-numbers) |
-| `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Lists](../../learn/lists/README.md#list-kinds) |
+| `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Fixed and heap forms](../../learn/forms/fixed-and-heap.md#fixed-lists) |
 | `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `နောက်ဆုံးအကွက်` | "last cell", right after `၏` and before `ကို ဖျက်ပါ` alone | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ဆက်ထားသည့်` | "that joins", in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/values/strings.md#joining-text) |
@@ -159,9 +159,9 @@ as well.
 | --- | --- | --- |
 | `ဒေတာအမျိုးအစား`, `အချက်အလက်အမျိုးအစား` | "data kind": starts a struct declaration (two interchangeable spellings) | [Structs](../../learn/structs/README.md) |
 | `တို့ ပါဝင်သည်` | "these are included": closes the field list of a struct | [Structs](../../learn/structs/README.md) |
-| `တို့ ပါဝင်ပြီး` | "these are included, and": closes the field list when a classifier follows | [Structs](../../learn/structs/README.md#pointers-and-the-heap) |
-| `မျိုးပြပစ္စည်းမှာ` | "the count word is": names the classifier of a struct | [Structs](../../learn/structs/README.md#pointers-and-the-heap) |
-| `ဖြစ်သည်` | "is": ends a struct declaration that names a classifier | [Structs](../../learn/structs/README.md#pointers-and-the-heap) |
+| `တို့ ပါဝင်ပြီး` | "these are included, and": closes the field list when a classifier follows | [Structs](../../learn/structs/README.md#count-words) |
+| `မျိုးပြပစ္စည်းမှာ` | "the count word is": names the classifier of a struct | [Structs](../../learn/structs/README.md#count-words) |
+| `ဖြစ်သည်` | "is": ends a struct declaration that names a classifier | [Structs](../../learn/structs/README.md#count-words) |
 
 `တို့` on its own is reserved as well, so it cannot be used as a name. The words inside
 the two closing phrases (`တို့`, `ပါဝင်သည်`, `ပါဝင်ပြီး`) are reserved on their own.

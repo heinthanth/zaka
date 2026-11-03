@@ -162,56 +162,6 @@ error[ZK0312]: function "ပြ" returns nothing, but a value is returned
 error[ZK0313]: function "တစ်" returns isize, but no value is returned
 ```
 
-## Lists and structs as results
-
-A function can give back a list or a struct. The result follows the rules of an
-assignment: the caller gets the whole value, and a list or struct that holds an owner
-moves to the caller, which then frees the blocks it owns. See [Duplicating and
-moving](structs.md#duplicating-and-moving).
-
-```zaka
-ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။
-လုပ်ဆောင်ချက် နေရာသစ် သည်
-ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ နေရာ ရလဒ် ကို ပြန်ပေးမည်။
-x က၊ y ခ ရှိသော နေရာတစ်ခု ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-
-လုပ်ဆောင်ချက် အစဉ် သည်
-ကိန်းပြည့် စ ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
-၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ၏ အကွက် န ကို စ + န ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-
-လုပ်ဆောင်ချက် နေရာသစ် ကို ၃၊ ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
-လုပ်ဆောင်ချက် အစဉ် ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
-```
-
-```text
-နေရာ(x: ၃၊ y: ၄)
-[၅၊ ၆၊ ၇]
-```
-
-- A plain or heap list result takes its count from the value given back. A fixed list
-  result has a written count; `စာရင်းသေ`, with no value to give the count, is ZK0421.
-- A list whose cells are borrows cannot be a result (ZK0424). A borrow lives in a local or
-  a parameter, so it cannot leave the function inside a list.
-- The caller keeps a slot for the result of each call. With the default,
-  `--results in-place`, the function builds a returned literal, or the local that each
-  return gives back, straight in that slot. With `--results duplicate`, the function keeps
-  the value in its own frame and the return duplicates it into the slot. The program prints the same in
-  both modes; see [Commands](../compiler/commands.md#options-of-the-compile-stages).
-
-```zaka-error ZK0424
-လုပ်ဆောင်ချက် ငှား သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-```
-
-```text
-error[ZK0424]: a function cannot give back a list whose cells are borrows
-```
-
 ## Calls
 
 A call has three forms. The two word forms name the function after `လုပ်ဆောင်ချက်`, and both
@@ -302,6 +252,181 @@ error[ZK0314]: function "ပြ" takes 1 arguments, 2 given
 
 ```text
 error[ZK0401]: expected isize, found bool
+```
+
+## Recursion
+
+A function can call itself, at once or through other functions. Nothing marks a function
+as recursive; the call is a plain call. Each call has its own parameters and its own
+`ရလဒ်`.
+
+```zaka
+// even and odd, each defined with the other
+လုပ်ဆောင်ချက် စုံသလား သည်
+ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။
+အကယ်၍ န သည် ၀ နှင့် ညီလျှင် မှန် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်ချက် မကိန်းလား ကို န - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+လုပ်ဆောင်ချက် မကိန်းလား သည်
+ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။
+အကယ်၍ န သည် ၀ နှင့် ညီလျှင် မမှန် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်ချက် စုံသလား ကို န - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+လုပ်ဆောင်ချက် စုံသလား ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+လုပ်ဆောင်ချက် စုံသလား ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+```
+
+```text
+မှန်
+မမှန်
+```
+
+The VM allows 4096 calls that wait to return at one time; the next call stops the
+program. `zakac run --max-depth <calls>` sets another limit. A recursion without a base
+case meets this limit:
+
+```zaka-stop
+လုပ်ဆောင်ချက် အဆုံးမဲ့ သည်
+ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို န + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+```
+
+```text
+the program stopped: more than 4096 nested calls
+```
+
+See [When a program stops](../vm/traps.md) for the other stops.
+
+## Lists and structs as results
+
+A function can give back a list or a struct. The result follows the rules of an
+assignment: the caller gets the whole value, and a list or struct that holds an owner
+moves to the caller, which then frees the blocks it owns. See [Duplicating and
+moving](structs.md#duplicating-and-moving).
+
+```zaka
+ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။
+လုပ်ဆောင်ချက် နေရာသစ် သည်
+ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ နေရာ ရလဒ် ကို ပြန်ပေးမည်။
+x က၊ y ခ ရှိသော နေရာတစ်ခု ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+လုပ်ဆောင်ချက် အစဉ် သည်
+ကိန်းပြည့် စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
+၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ၏ အကွက် န ကို စ + န ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+
+လုပ်ဆောင်ချက် နေရာသစ် ကို ၃၊ ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+လုပ်ဆောင်ချက် အစဉ် ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+```
+
+```text
+နေရာ(x: ၃၊ y: ၄)
+[၅၊ ၆၊ ၇]
+```
+
+- A plain or heap list result takes its count from the value given back. A fixed list
+  result has a written count; `စာရင်းသေ`, with no value to give the count, is ZK0421.
+- A list whose cells are borrows cannot be a result (ZK0424). A borrow lives in a local or
+  a parameter, so it cannot leave the function inside a list.
+- The caller keeps a slot for the result of each call. With the default,
+  `--results in-place`, the function builds a returned literal, or the local that each
+  return gives back, straight in that slot. With `--results duplicate`, the function keeps
+  the value in its own frame and the return duplicates it into the slot. The program prints the same in
+  both modes; see [Commands](../compiler/commands.md#options-of-the-compile-stages).
+
+```zaka-error ZK0424
+လုပ်ဆောင်ချက် ငှား သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+```
+
+```text
+error[ZK0424]: a function cannot give back a list whose cells are borrows
+```
+
+## Edit references
+
+A parameter written `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>` ("that the function can
+change") is the caller's place itself, not a duplicate: a change to it changes the caller's
+variable. The call marks the argument too, with `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)`
+("the function can change it") after it, so a reader of the call sees which variable
+changes. The mark works in the word form and the sign form of a call alike.
+
+```zaka
+ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
+လုပ်ဆောင်ချက် တိုး သည်
+လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို န + ၁ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် လူ(အသက်: ၃၀) ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် တိုး ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် တိုး ကို ပ ၏ အသက် (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
+က ကို ပြသပါ။
+ပ ကို ပြသပါ။
+```
+
+```text
+၆
+လူ(အသက်: ၃၁)
+```
+
+The rules:
+
+- The reference lasts for the call alone. The name stands for the value, so the function
+  cannot keep the reference: setting another place from it, returning it or storing it
+  makes a duplicate, as for each other value.
+- The argument is a place: a variable, a field or a cell (ZK0410 for another expression).
+  A constant cannot be changed (ZK0306).
+- The place has the kind of the parameter, with no widening (ZK0401).
+- The place appears in no other argument of the same call, as a whole or through a field
+  or a cell (ZK0433): the function would read it through one parameter while it changes
+  it through another.
+- Both ends take the mark: an argument for such a parameter with no mark is ZK0431, and
+  a mark on an argument for another parameter is ZK0432.
+
+Returning the new value, `က ကို နောက်တစ်(က) ဟု ထားပါ။`, does the same work for one
+value. An edit reference suits a function that changes several places at once, or a
+large struct in place.
+
+```zaka-error ZK0431
+လုပ်ဆောင်ချက် တိုး သည်
+လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို န + ၁ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် တိုး ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။
+```
+
+```text
+error[ZK0431]: the function changes this argument; mark it with "(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)"
+```
+
+```zaka-error ZK0433
+လုပ်ဆောင်ချက် ထား သည်
+လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န၊ ကိန်းပြည့် မ တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို မ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ထား ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)၊ က + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+```
+
+```text
+error[ZK0433]: "က" is changed through another argument of this call, so it cannot appear here
 ```
 
 ## How values are passed
@@ -420,131 +545,6 @@ block, and the call must agree:
 
 The full rules, with one error for each manner of getting them wrong, are in [Ownership and
 borrowing](ownership.md).
-
-## Edit references
-
-A parameter written `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>` ("that the function can
-change") is the caller's place itself, not a duplicate: a change to it changes the caller's
-variable. The call marks the argument too, with `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)`
-("the function can change it") after it, so a reader of the call sees which variable
-changes. The mark works in the word form and the sign form of a call alike.
-
-```zaka
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
-လုပ်ဆောင်ချက် တိုး သည်
-လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-န ကို န + ၁ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် လူ(အသက်: ၃၀) ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် တိုး ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် တိုး ကို ပ ၏ အသက် (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
-က ကို ပြသပါ။
-ပ ကို ပြသပါ။
-```
-
-```text
-၆
-လူ(အသက်: ၃၁)
-```
-
-The rules:
-
-- The reference lasts for the call alone. The name stands for the value, so the function
-  cannot keep the reference: setting another place from it, returning it or storing it
-  makes a duplicate, as for each other value.
-- The argument is a place: a variable, a field or a cell (ZK0410 for another expression).
-  A constant cannot be changed (ZK0306).
-- The place has the kind of the parameter, with no widening (ZK0401).
-- The place appears in no other argument of the same call, as a whole or through a field
-  or a cell (ZK0433): the function would read it through one parameter while it changes
-  it through another.
-- Both ends take the mark: an argument for such a parameter with no mark is ZK0431, and
-  a mark on an argument for another parameter is ZK0432.
-
-Returning the new value, `က ကို နောက်တစ်(က) ဟု ထားပါ။`, does the same work for one
-value. An edit reference suits a function that changes several places at once, or a
-large struct in place.
-
-```zaka-error ZK0431
-လုပ်ဆောင်ချက် တိုး သည်
-လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-န ကို န + ၁ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် တိုး ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။
-```
-
-```text
-error[ZK0431]: the function changes this argument; mark it with "(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)"
-```
-
-```zaka-error ZK0433
-လုပ်ဆောင်ချက် ထား သည်
-လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န၊ ကိန်းပြည့် မ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-န ကို မ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ထား ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)၊ က + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
-```
-
-```text
-error[ZK0433]: "က" is changed through another argument of this call, so it cannot appear here
-```
-
-## Recursion
-
-A function can call itself, at once or through other functions. Nothing marks a function
-as recursive; the call is a plain call. Each call has its own parameters and its own
-`ရလဒ်`.
-
-```zaka
-// even and odd, each defined with the other
-လုပ်ဆောင်ချက် စုံသလား သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။
-အကယ်၍ န သည် ၀ နှင့် ညီလျှင် မှန် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်ချက် မကိန်းလား ကို န - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-
-လုပ်ဆောင်ချက် မကိန်းလား သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။
-အကယ်၍ န သည် ၀ နှင့် ညီလျှင် မမှန် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်ချက် စုံသလား ကို န - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-
-လုပ်ဆောင်ချက် စုံသလား ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
-လုပ်ဆောင်ချက် စုံသလား ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
-```
-
-```text
-မှန်
-မမှန်
-```
-
-The VM allows 4096 calls that wait to return at one time; the next call stops the
-program. `zakac run --max-depth <calls>` sets another limit. A recursion without a base
-case meets this limit:
-
-```zaka-stop
-လုပ်ဆောင်ချက် အဆုံးမဲ့ သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို န + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-
-လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
-```
-
-```text
-the program stopped: more than 4096 nested calls
-```
-
-See [When a program stops](../vm/traps.md) for the other stops.
 
 ## Errors at a glance
 

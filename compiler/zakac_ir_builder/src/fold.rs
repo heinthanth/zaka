@@ -367,9 +367,15 @@ impl Folder
             Stmt::Free { dest, .. }
             | Stmt::Drop { dest, .. }
             | Stmt::RemoveCell { dest, .. } => self.dest(dest),
-            Stmt::AddCell { dest, value, .. } =>
+            Stmt::AddCell { dest, value, .. } | Stmt::AddText { dest, value, .. } =>
             {
                 self.dest(dest);
+                self.drop_value(value);
+            }
+            Stmt::SetChar { dest, index, value, .. } =>
+            {
+                self.dest(dest);
+                self.drop_value(index);
                 self.drop_value(value);
             }
         }

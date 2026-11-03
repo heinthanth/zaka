@@ -93,14 +93,10 @@ hash-files = true
 # explorer, a crate of its own; a change to one rebuilds both the server and
 # the islands. The paths are from the workspace root.
 watch-additional-files = [
-    "website/zaka_website/src",
-    "website/zaka_website/locales",
-    "website/zaka_website/assets",
-    "website/zaka_web_ui_common/src",
-    "website/zaka_web_ui_common/locales",
-    "website/zaka_explorer/src",
-    "website/zaka_explorer/locales",
-    "docs/learn",]
+    "website/zaka_website/src", "website/zaka_website/locales",
+    "website/zaka_website/assets", "website/zaka_web_ui_common/src",
+    "website/zaka_web_ui_common/locales", "website/zaka_explorer/src",
+    "website/zaka_explorer/locales", "docs/learn",]
 
 # turf: the sheets of the components, built with their classes renamed after
 # a hash, so no class of one section reaches another. The names come from

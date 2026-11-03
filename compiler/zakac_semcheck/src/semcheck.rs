@@ -33,12 +33,14 @@ use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StructDecl;
 use zakac_ast::stmt::WhileStmt;
+use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::ownership as od;
 use zakac_diagnostics::resolve as rd;
+use zakac_lexer::token::Kw;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -47,7 +49,10 @@ use zakac_span::span::Span;
 
 use crate::collect::collect_fns;
 use crate::kind::DataKind;
+use crate::kind::TextForm;
 use crate::list::KindUse;
+use crate::ops::Want;
+use crate::ops::kw_label;
 use crate::place::place_of;
 use crate::place::var_name;
 use crate::scope::Access;
@@ -604,25 +609,82 @@ impl Checker
         kind
     }
 
-    /// Resolve the list an add or a remove statement changes: a place that
+    /// Check the list an add or a remove statement changes: a place that
     /// holds a plain or a heap list.
     ///
     /// # Arguments
     ///
     /// * `list` - The list.
+    /// * `kind` - Its kind.
     ///
     /// # Returns
     ///
     /// The kind of its cells, or `None` after an error.
-    fn growing_cells(&mut self, list: &Expr) -> Option<DataKind>
+    fn growing_cells(&mut self, list: &Expr, kind: DataKind) -> Option<DataKind>
     {
-        let kind = self.place_kind(list)?;
         let cell = kind.as_seq().map(|s| s.cell);
         do_if!(
             cell.is_none(),
             self.report(kd::list_cannot_grow(list.span(), &kind.name()))
         );
         cell
+    }
+
+    /// Check an add to text: the text can change, and the value is text, a
+    /// view of text or a character.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The text that grows, a place.
+    /// * `kind` - Its kind.
+    /// * `value` - What is added.
+    fn text_add(&mut self, text: &Expr, kind: DataKind, value: &Expr)
+    {
+        self.changeable_text(text, kind);
+        let Some(found) = self.infer(value, None)
+        else
+        {
+            return;
+        };
+        ret_if!(found.is_textual() || found == DataKind::Char);
+        self.report(mismatch_report(value.span(), DataKind::TEXT, found));
+    }
+
+    /// Check a write of one character of text: the text is a place that can
+    /// change, the number an integer and the value a character.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The text.
+    /// * `index` - The number of the character.
+    /// * `value` - The new character.
+    fn char_write(&mut self, text: &Expr, index: &Expr, value: &Expr)
+    {
+        let kind = self.place_kind(text);
+        let at = self.infer(index, Some(DataKind::USIZE));
+        let bad = at.filter(|k| !k.is_int());
+        do_if!(let Some(k) = bad, self.report(kd::cell_number_not_int(index.span(), &k.name())));
+        self.expect_kind(value, Some(DataKind::Char));
+        let Some(kind) = kind
+        else
+        {
+            return;
+        };
+        ret_if!(kind.is_textual(), self.changeable_text(text, kind));
+        let label = kw_label(Kw::CharKind);
+        _ = self.need(kind, Want::Text, &label, text);
+    }
+
+    /// Report fixed text or a view of text that a statement would change.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The text.
+    /// * `kind` - Its kind, textual.
+    fn changeable_text(&mut self, text: &Expr, kind: DataKind)
+    {
+        let fixed = kind == DataKind::Text(TextForm::Fixed) || kind.is_text_view();
+        do_if!(fixed, self.report(kd::text_cannot_change(text.span(), &kind.name())));
     }
 
     /// Report a name that cannot be assigned: undeclared, a constant or a
@@ -824,6 +886,7 @@ impl Visitor for Checker
 
     fn visit_assign(&mut self, n: &AssignStmt)
     {
+        ret_if!(let Some((text, index)) = char_target(&n.target), self.char_write(text, index, &n.value));
         let want = self.place_kind(&n.target);
         self.expect_kind(&n.value, want);
     }
@@ -844,11 +907,17 @@ impl Visitor for Checker
 
     fn visit_add(&mut self, n: &AddStmt)
     {
-        let cell = self.growing_cells(&n.list);
+        let kind = self.place_kind(&n.list);
+        ret_if!(let Some(k) = kind.filter(|k| k.is_textual()), self.text_add(&n.list, k, &n.value));
+        let cell = kind.and_then(|k| self.growing_cells(&n.list, k));
         self.expect_kind(&n.value, cell);
     }
 
-    fn visit_remove(&mut self, n: &RemoveStmt) { _ = self.growing_cells(&n.list); }
+    fn visit_remove(&mut self, n: &RemoveStmt)
+    {
+        let kind = self.place_kind(&n.list);
+        do_if!(let Some(k) = kind, { _ = self.growing_cells(&n.list, k); });
+    }
 
     fn visit_print(&mut self, n: &PrintStmt) { _ = self.infer(&n.value, None); }
 
@@ -959,4 +1028,33 @@ impl Visitor for Checker
     }
 
     fn visit_struct(&mut self, _: &StructDecl) {}
+}
+
+/// The text and the number of the character an assignment writes, when its
+/// target is a character of text: `<text> ၏ <n> ခုမြောက်စာလုံး` or
+/// `<text> ၏ စာလုံး <n>`.
+///
+/// # Arguments
+///
+/// * `target` - The target of the assignment.
+///
+/// # Returns
+///
+/// The text and the number, or `None` for each other target.
+pub(crate) fn char_target(target: &Expr) -> Option<(&Expr, &Expr)>
+{
+    match target
+    {
+        Expr::Group(n) => char_target(&n.inner),
+        Expr::Verb(n) if matches!(n.op, VerbOp::CharAt | VerbOp::CharNth) =>
+        {
+            let [text, index] = n.args.as_slice()
+            else
+            {
+                return None;
+            };
+            Some((text, index))
+        }
+        _ => None,
+    }
 }

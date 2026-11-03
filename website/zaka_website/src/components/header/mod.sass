@@ -6,6 +6,8 @@
 
 .header
   --glass: var(--panel)
+  // The mark under the link of the open page: gold, except over gold.
+  --underline: var(--gold)
   position: fixed
   inset: 0 0 auto
   z-index: 50
@@ -32,6 +34,7 @@
 
 .header[data-chapter="gold"]
   --glass: var(--gold)
+  --underline: var(--on-gold)
   color: var(--on-gold)
 
   .header-action
@@ -76,8 +79,8 @@
   margin-left: auto
   gap: 12px
 
-// The link to the Learn pages: a word in the ink of the bar, underlined in gold
-// on the Learn pages.
+// The link to the Learn pages: a word in the ink of the bar, underlined on the
+// Learn pages, in gold or, over a gold field, in the ink of the bar.
 .header-link
   padding: 10px 8px
   // A little more room before the pickers, so the links read apart from them.
@@ -91,7 +94,7 @@
   &:hover,
   &[aria-current]
     text-decoration-line: underline
-    text-decoration-color: var(--gold)
+    text-decoration-color: var(--underline)
 
   &:focus-visible
     outline: 2px solid currentColor
@@ -145,6 +148,7 @@
 // chapter under it, and the page holds still.
 .header.header-open[data-chapter]
   --glass: var(--panel)
+  --underline: var(--gold)
   color: var(--fg)
 
   &::before

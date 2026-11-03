@@ -128,8 +128,9 @@ octets 4 to 7:
 ၁၅၀၀
 ```
 
-Building a record from hand-counted octets like this invites mistakes. A later version
-of Zaka adds records, which do the counting on their own.
+Building a record from hand-counted octets like this invites mistakes. A
+[struct](../structs/README.md) does the counting on its own, and [Lists and structs
+through addresses](structs.md) puts structs on the heap.
 
 An opaque `လိပ်စာ` converts to and from each pointer kind on its own, as long as the boxes
 of that kind hold no address. It has no box size, so a program cannot add to it or read
