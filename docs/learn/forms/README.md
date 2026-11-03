@@ -1,9 +1,9 @@
 ---
-title: Views and forms
+title: Borrowing and storage
 description: Part II of Learn - read text and lists with no duplicate, choose where their cells live, and see what a duplicate costs.
 ---
 
-# Views and forms
+# Borrowing and storage
 
 This page starts Part II of Learn, *control*. Part I taught Zaka with values alone: each
 assignment and each call gives a value of its own, and the program never asks where the
@@ -41,12 +41,12 @@ Zaka
 
 The pages of this part:
 
-- [Views of text](views.md): lend text, and read part of it.
+- [Borrowing text](views.md): lend text, and read part of it.
 - [Slices](../lists/slices.md): lend a list, and read or write a run of its cells.
-- [Fixed and heap forms](fixed-and-heap.md): text and lists with a promise.
+- [Static text, fixed lists and the heap](fixed-and-heap.md): text and lists with a promise.
 - [What a duplicate costs](costs.md): when a duplicate is made, and how to see it.
 
 Part III, *storage*, follows: addresses, the heap and ownership, in [Pointers and the
 heap](../pointers/README.md).
 
-Next: [Views of text](views.md).
+Next: [Borrowing text](views.md).

@@ -99,6 +99,8 @@ pub const SAMPLES: &[Sample] = &[
     sample!("structs", "linked"),
     sample!("structs", "results"),
     sample!("programs", "gradebook"),
+    sample!("programs", "scores"),
+    sample!("programs", "scores_views"),
     sample!("programs", "fizzbuzz"),
     sample!("programs", "gcd"),
     sample!("programs", "primes"),

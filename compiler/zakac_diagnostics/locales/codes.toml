@@ -902,6 +902,15 @@ en = "declare it with \"ကိန်းရှင်\" to build the text when the
 [codes.ZK0606.explain]
 en = """A \"ကိန်းသေ\" of kind \"စာသား\" is text in static storage, the same for each run: each read shares it, and nothing frees it. Its value must fold at compile time: literals, other constants, template slots that hold constants, and joins of these with \"+\". A variable, a call, a cell or a field needs the program to run. Declare such text with \"ကိန်းရှင်\"."""
 
+[codes.ZK0608.title]
+en = "fixed text not known at compile time"
+[codes.ZK0608.message]
+en = "fixed text (\"စာသားသေ\") must be known at compile time"
+[codes.ZK0608.help]
+en = "give text built when the program runs the kind \"စာသား\""
+[codes.ZK0608.explain]
+en = """\"စာသားသေ\" is text in static storage, as \"&'static str\" is in Rust: each value of it is known at compile time, it never changes, and nothing frees it. A variable of it can be set to other static text of each length, and a parameter of it takes static text of each length. Its values fold from literals, constants, template slots that hold constants, and joins of these. Text built from a variable, a call, a cell or a field needs the program to run: give it the kind \"စာသား\"."""
+
 [codes.ZK0607.title]
 en = "range cuts a character"
 [codes.ZK0607.message]

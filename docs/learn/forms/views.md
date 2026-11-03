@@ -1,9 +1,9 @@
 ---
-title: Views of text
+title: Borrowing text
 description: A view reads text where it is, with no duplicate - lend whole text to a function, or take a run of its cells.
 ---
 
-# Views of text
+# Borrowing text
 
 Part I gave each variable and each parameter text of its own: a duplicate, or the text itself
 at its last use. A *view* reads text where it is instead, and copies nothing. Its kind is

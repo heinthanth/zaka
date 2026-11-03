@@ -205,7 +205,7 @@ the compiler: `--frames checked|packed` on `run`. In `checked` form (the default
 variable sits in a block of its own with a gap after it, so a read past a variable
 stops the program. In `packed` form the locals of a call sit next to each other, as in
 C, and a read past one reaches its neighbour. Blocks from the heap keep their checks in
-both forms. See [Checked and packed blocks](../vm/blocks.md).
+both forms. See [Addresses and blocks](../vm/blocks.md).
 
 ## Where each setting is read
 

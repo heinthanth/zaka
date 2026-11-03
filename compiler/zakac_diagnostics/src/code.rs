@@ -297,6 +297,8 @@ RangeOutOfList = ("ZK0605", Level::Error),
 TextConstNotKnown = ("ZK0606", Level::Error),
 /// A range of known text starts or ends inside a character.
 RangeCutsChar = ("ZK0607", Level::Error),
+/// A value of fixed text needs the program to run.
+FixedTextNotKnown = ("ZK0608", Level::Error),
 // ownership: ZK07xx
 /// A name is used after its block moved to another owner.
 MovedOut = ("ZK0701", Level::Error),

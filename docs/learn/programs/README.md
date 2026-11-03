@@ -16,13 +16,14 @@ walk-through explains how it is built.
 | [Greatest common divisor](gcd.md) | while loops, functions calling functions, changing parameters |
 | [Fibonacci numbers](fibonacci.md) | generic loops, the implicit `ရလဒ်`, converting to decimals |
 | [The Collatz sequence](collatz.md) | a shared helper function, returning before the end |
+| [Scores](scores.md) | each-cell and each-character loops, building a list with adds, removing a cell, template literals |
 
 These programs, and more, are also in the `samples/programs` folder of the Zaka source
 tree.
 
 ## Common shape
 
-All four programs follow the same structure:
+All five programs follow the same structure:
 
 1. Small functions at the top, each with a `///` comment telling what it does.
 2. The *main program* at the bottom: the top-level statements that run when the program

@@ -24,7 +24,7 @@ shown. The pages run in three parts:
    programs](programs/README.md): numbers, text, lists, structs, functions and loops.
    Each assignment and each call gives a value of its own, and the program never asks
    where a value is kept.
-2. **Control**, from [Views and forms](forms/README.md): views and slices, which read
+2. **Control**, from [Borrowing and storage](forms/README.md): views and slices, which read
    text and lists with no duplicate; the fixed and heap forms of text and lists; and
    what a duplicate costs.
 3. **Storage**, from [Pointers and the heap](pointers/README.md): addresses, blocks of

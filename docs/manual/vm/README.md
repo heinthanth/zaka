@@ -70,7 +70,7 @@ instruction that pushes the address of the block of `x`, and a read through a st
 address finds the freed block of the variable it once was.
 
 A call takes room for its locals at the top of the stack region, and `ret` gives it
-back. [Checked and packed blocks](blocks.md) tells how.
+back. [Addresses and blocks](blocks.md) tells how.
 
 ## The platform
 
@@ -86,7 +86,7 @@ $ zakac run --platform-bits 16 program.zaka
 ## Pages of this chapter
 
 - [Running a program](running.md): the command, printing, exit codes and limits.
-- [Checked and packed blocks](blocks.md): the address space, the table of blocks, the
+- [Addresses and blocks](blocks.md): the address space, the table of blocks, the
   life of a block, and the two forms of placing variables.
 - [When a program stops](traps.md): each trap, what causes it and what it prints.
 - [Instructions](instructions.md): the instruction set, with a program shown as code.

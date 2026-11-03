@@ -324,7 +324,7 @@ pub enum TextForm
     /// `စာသား`: static until its first edit, then its own heap block.
     #[strum(serialize = "text")]
     Plain,
-    /// `စာသားသေ`: its u8s never change; static, or a block it took over.
+    /// `စာသားသေ`: static text, known at compile time; its u8s never change.
     #[strum(serialize = "textf")]
     Fixed,
     /// `စာသားရှင်`: its own heap block from the start.

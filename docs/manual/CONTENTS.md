@@ -25,7 +25,7 @@
   - [Pointer checks](compiler/checks.md)
 - [The VM](vm/README.md)
   - [Running a program](vm/running.md)
-  - [Checked and packed blocks](vm/blocks.md)
+  - [Addresses and blocks](vm/blocks.md)
   - [When a program stops](vm/traps.md)
   - [Instructions](vm/instructions.md)
 - [Concepts](concepts/README.md)

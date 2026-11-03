@@ -1,9 +1,9 @@
 ---
-title: Fixed and heap forms
-description: Text and lists come in three forms - plain, fixed and heap - and the fixed and heap forms each make a promise about their cells.
+title: Static text, fixed lists and the heap
+description: Text and lists come in three forms - plain, fixed and heap. Fixed text is static text, known at compile time; a fixed list keeps its count; heap text and heap lists own a heap block.
 ---
 
-# Fixed and heap forms
+# Static text, fixed lists and the heap
 
 The text and the lists of Part I are the *plain* form: `စာသား` and `ကိန်းပြည့် စာရင်း`.
 The compiler picks where their cells live, and moves them when it must. Two more forms
@@ -19,8 +19,9 @@ make a promise each:
 
 ## Fixed and heap text
 
-`စာသားသေ` ("fixed text") is text that never changes, and `စာသားရှင်` ("living text")
-sits on the heap, in a block of its own, from the start. Each of the three converts to the
+`စာသားသေ` ("fixed text") is text known before the program runs, which never changes:
+Rust's `&'static str`. `စာသားရှင်` ("living text") sits on the heap, in a block of its
+own, from the start. Each of the three converts to the
 others, so one can go where another is wanted:
 
 ```zaka
@@ -62,7 +63,21 @@ and the compiler refuses both:
 error[ZK0438]: textf cannot change: a character write or an add takes text (စာသား) or heap text (စာသားရှင်)
 ```
 
-A set still gives fixed text a whole new value: `က ကို "ဟယ်လို" ဟု ထားပါ။` is fine.
+A set still gives fixed text a whole new value, of another length too:
+`က ကို "ဟယ်လို" ဟု ထားပါ။` is fine. But each value of fixed text must be known before
+the program runs: a literal, a constant, or a template literal whose slots hold constants.
+Text built from a variable is an error:
+
+```zaka-error ZK0608
+ကိန်းရှင် i သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "အဆင့် {i}" ဖြစ်ပါစေ။
+```
+
+```text
+error[ZK0608]: fixed text ("စာသားသေ") must be known at compile time
+```
+
+Give such text the kind `စာသား`.
 
 ## Fixed lists
 

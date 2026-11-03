@@ -234,7 +234,8 @@ const WALKED: &str =
     "၁\n၂\n၃\n၂\n၃\nက!\nဂ!\n[\"က\"၊ \"ခ\"၊ \"ဂ\"၊ \"ဃ\"]\na\né\n၁\n😀\n";
 
 /// Plain, fixed and heap text, set from each other, in a struct field, a
-/// list and a parameter.
+/// list and a parameter. Fixed text takes static text alone (ZK0608), so it is
+/// set from a literal.
 const FORMS: &str = "ဒေတာအမျိုးအစား လူ တွင် စာသားရှင် အမည်၊ ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
 လုပ်ဆောင်ချက် ပြ သည်
 စာသားရှင် စ ကို လက်ခံပြီး
@@ -245,7 +246,7 @@ const FORMS: &str = "ဒေတာအမျိုးအစား လူ တွင
 ကိန်းရှင် f သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"b\" ဖြစ်ပါစေ။
 ကိန်းရှင် h သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"c\" ဖြစ်ပါစေ။
 h ကို p ဟု ထားပါ။
-f ကို h ဟု ထားပါ။
+f ကို \"a\" ဟု ထားပါ။
 p ကို \"{f}{h}\" ဟု ထားပါ။
 \"{p} {f} {h}\" ဟု ပြသပါ။
 ကိန်းရှင် ပ သည် လူ(အမည်: f၊ အသက်: ၃) ဖြစ်ပါစေ။

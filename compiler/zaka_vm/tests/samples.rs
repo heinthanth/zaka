@@ -113,6 +113,18 @@ fn repo_samples_print_their_expected_output()
     assert!(count >= 30, "found {count} samples");
 }
 
+/// The two forms of the scores program, plain values and views, print the
+/// same output.
+#[test]
+fn both_scores_programs_print_the_same()
+{
+    let out = |stem: &str| {
+        let path = root().join("tests/expected/programs").join(format!("{stem}.out"));
+        std::fs::read_to_string(path).unwrap()
+    };
+    assert_eq!(out("scores"), out("scores_views"));
+}
+
 #[test]
 fn counted_loop_edges()
 {

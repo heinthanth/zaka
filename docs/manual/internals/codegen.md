@@ -192,6 +192,13 @@ module has one, a duplicate of it is folded with each folding on first. Each tex
 constant whose value then is static is kept, and the fold proper puts that value in its
 `set` whatever `--fold` holds, so the constant holds static text with room 0; one
 whose value is not static is ZK0606, at the first value of a format that did not fold.
+Fixed text (`textf`) follows the same route: the same pass with each folding on keeps the
+static text each new value of fixed text folds to (a literal, a format, or a conversion
+or a duplicate of one), under its function and region, and the fold proper puts that
+text in its place whatever `--fold` holds. A value of fixed text that reads fixed text
+held in a place (a read, a load, a move, a duplicate of one, or a call) needs no
+check; each other one is ZK0608. A text constant whose value does not fold gets ZK0606
+alone, with no ZK0608 at the same region.
 Lowering never takes a constant (`owned` sees a read of the constant, or of a field or
 cell of one), and the borrow checker treats such a read as a duplicate, so a read
 after one is no ZK0701.
@@ -557,7 +564,7 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   a program and not to the compiler.
 
 The pages [Running a program](../vm/running.md), [Instructions](../vm/instructions.md),
-[Checked and packed blocks](../vm/blocks.md) and [When a program stops](../vm/traps.md)
+[Addresses and blocks](../vm/blocks.md) and [When a program stops](../vm/traps.md)
 tell the VM from the side of its user.
 
 ## Tests and extending

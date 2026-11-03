@@ -131,4 +131,4 @@ of heap blocks: see [Slices of the heap](../pointers/structs.md#slices-of-the-he
 - Take a slice of a list, add a cell to the list, then print the slice, and read the
   message.
 
-Next: [Fixed and heap forms](../forms/fixed-and-heap.md).
+Next: [Static text, fixed lists and the heap](../forms/fixed-and-heap.md).

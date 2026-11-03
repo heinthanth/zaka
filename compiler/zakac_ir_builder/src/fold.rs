@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::fold as fd;
 use zakac_diagnostics::kinds as kd;
@@ -9,6 +10,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
+use zakac_semcheck::kind::TextForm;
 use zakac_semcheck::kind::Width;
 use zakac_span::span::Span;
 
@@ -55,20 +57,22 @@ pub fn fold(
     let unknown = unknown_inits(module, platform_bits);
     let mut folder = Folder::new(*options, platform_bits, &module.globals);
     folder.diags.extend(unknown);
-    do_if!(has_text_consts(module), {
+    do_if!(has_text_slots(module), {
         let mut probe =
             Folder::new(FoldOptions::default(), platform_bits, &module.globals);
         probe.probing = true;
         probe.run(&mut module.clone());
-        folder.diags.extend(probe.blocked);
+        folder.diags.extend(unrepeated(probe.blocked));
         folder.text_consts = probe.text_consts;
+        folder.fixed_texts = probe.fixed_texts;
     });
     folder.run(module);
     folder.diags.sort_by_key(|d| d.span.lo);
     folder.diags
 }
 
-/// Whether a module has a constant whose kind holds text.
+/// Whether a module has a slot whose kind holds text: a text constant, or a
+/// place where fixed text can go.
 ///
 /// # Arguments
 ///
@@ -77,11 +81,33 @@ pub fn fold(
 /// # Returns
 ///
 /// `true` when it has one.
-fn has_text_consts(module: &Module) -> bool
+fn has_text_slots(module: &Module) -> bool
 {
     let slots =
         module.globals.iter().chain(module.funcs.iter().flat_map(|f| &f.locals));
-    slots.into_iter().any(|s| s.access == Access::Const && s.kind.holds_text())
+    slots.into_iter().any(|s| s.kind.holds_text())
+}
+
+/// The diagnostics of the pass that finds static values, with no `ZK0608`
+/// where a `ZK0606` names the same part of a text constant.
+///
+/// # Arguments
+///
+/// * `blocked` - The diagnostics.
+///
+/// # Returns
+///
+/// The diagnostics left.
+fn unrepeated(blocked: Vec<Diagnostic>) -> Vec<Diagnostic>
+{
+    let consts: Vec<Span> = blocked
+        .iter()
+        .filter(|d| d.code == Code::TextConstNotKnown)
+        .map(|d| d.span)
+        .collect();
+    let repeated =
+        |d: &Diagnostic| d.code == Code::FixedTextNotKnown && consts.contains(&d.span);
+    blocked.into_iter().filter(|d| !repeated(d)).collect()
 }
 
 /// Report each variable or constant of an imported file whose starting
@@ -192,8 +218,12 @@ struct Folder
     /// Whether this is the pass with each folding on that finds the values
     /// of text constants.
     probing: bool,
-    /// The `ZK0606` diagnostics of that pass.
+    /// The `ZK0606` and `ZK0608` diagnostics of that pass.
     blocked: Vec<Diagnostic>,
+    /// The static text each value of fixed text folds to, with each folding
+    /// on, at its function and region. Such a value holds it whatever the
+    /// options, so fixed text never needs the program to run.
+    fixed_texts: HashMap<(Option<u32>, Span), String>,
 }
 
 impl Folder
@@ -223,6 +253,7 @@ impl Folder
             text_consts: HashMap::new(),
             probing: false,
             blocked: Vec::new(),
+            fixed_texts: HashMap::new(),
         }
     }
 
@@ -399,7 +430,10 @@ impl Folder
     /// * `e` - The expression.
     fn drop_value(&mut self, e: &mut Expr) { self.expr(e); }
 
-    /// Fold an expression in place.
+    /// Fold an expression in place. A value of fixed text that is built
+    /// anew must fold to static text: the pass that finds static values
+    /// keeps that text or reports what blocks it, and the other pass puts
+    /// the text in its place whatever the options.
     ///
     /// # Arguments
     ///
@@ -409,6 +443,40 @@ impl Folder
     ///
     /// Its value, when it is known at compile time.
     fn expr(&mut self, e: &mut Expr) -> Option<Value>
+    {
+        let fixed = e.kind == DataKind::Text(TextForm::Fixed);
+        let found = self.fixed_texts.get(&(self.func, e.span));
+        let text = found.filter(|_| fixed && !self.probing).cloned();
+        ret_if!(let Some(t) = text, e.node = ExprNode::Text(t), None);
+        let value = self.fold_expr(e);
+        do_if!(fixed && self.probing, self.fixed_text(e));
+        value
+    }
+
+    /// Keep the static text a folded value of fixed text comes to, or report
+    /// what blocks it, unless it reads fixed text held in a place.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The value, folded with each folding on.
+    fn fixed_text(&mut self, e: &Expr)
+    {
+        let at = (self.func, e.span);
+        ret_if!(let Some(t) = static_text(e), _ = self.fixed_texts.insert(at, t.to_string()));
+        ret_if!(reads_fixed_text(e));
+        self.blocked.push(fd::fixed_text_not_known(blocker(e)));
+    }
+
+    /// Fold an expression in place, before the rule of fixed text.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The expression.
+    ///
+    /// # Returns
+    ///
+    /// Its value, when it is known at compile time.
+    fn fold_expr(&mut self, e: &mut Expr) -> Option<Value>
     {
         let span = e.span;
         ret_if!(let ExprNode::Read(place) = e.node, self.read(e, place));
@@ -811,6 +879,54 @@ fn splice_piece(out: &mut Vec<FmtPiece>, piece: FmtPiece)
 fn rebuilt(kind: DataKind, node: ExprNode, span: Span) -> Expr
 {
     Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// The static text a folded value comes to, through conversions and
+/// duplicates of it.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// The text, or `None` when the value needs the program to run.
+fn static_text(e: &Expr) -> Option<&str>
+{
+    match &e.node
+    {
+        ExprNode::Text(t) => Some(t),
+        ExprNode::Convert { operand: inner, .. }
+        | ExprNode::Dup { value: inner, .. } => static_text(inner),
+        _ => None,
+    }
+}
+
+/// Whether a value of fixed text reads fixed text held in a place: a
+/// slot, a cell or a field, a duplicate or a move of one, or a result.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// `true` when it does.
+fn reads_fixed_text(e: &Expr) -> bool
+{
+    match &e.node
+    {
+        ExprNode::Read(_)
+        | ExprNode::Load { .. }
+        | ExprNode::Take { .. }
+        | ExprNode::Call { .. } => true,
+        ExprNode::Dup { value: inner, .. }
+        | ExprNode::Convert { operand: inner, .. } =>
+        {
+            inner.kind == e.kind && reads_fixed_text(inner)
+        }
+        _ => false,
+    }
 }
 
 /// The first part of a folded value that is not static: the first value of

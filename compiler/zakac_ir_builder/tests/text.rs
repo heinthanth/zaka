@@ -129,6 +129,47 @@ fn a_text_constant_that_needs_the_program_to_run_is_zk0606()
     assert_eq!(codes(call), [Code::TextConstNotKnown]);
 }
 
+/// A variable `i`, known when the program runs and not before.
+const RUN_TIME: &str = "ကိန်းရှင် i သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။\n";
+
+#[test]
+fn fixed_text_that_needs_the_program_to_run_is_zk0608_whatever_the_options()
+{
+    let template =
+        format!("{RUN_TIME}ကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"x {{i}}\" ဖြစ်ပါစေ။");
+    let plain_text = format!(
+        "{RUN_TIME}ကိန်းရှင် ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။\nကိန်းရှင် က သည် \
+         စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ ဖြစ်ပါစေ။"
+    );
+    let argument = format!(
+        "{RUN_TIME}လုပ်ဆောင်ချက် ပြ သည် စာသားသေ စ ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nစ ကို \
+         ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nလုပ်ဆောင်ချက် ပြ ကို \"z{{i}}\" တို့ဖြင့် လုပ်ဆောင်ပါ။"
+    );
+    for text in [template, plain_text, argument]
+    {
+        assert_eq!(codes(&text), [Code::FixedTextNotKnown], "{text}");
+        assert_eq!(codes_with(&text, &FoldOptions::none()), [Code::FixedTextNotKnown]);
+    }
+}
+
+#[test]
+fn fixed_text_holds_static_text_of_each_length_whatever_the_options()
+{
+    let text = "ကိန်းသေ n သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။\nကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
+                \"Zaka {n}\" ဖြစ်ပါစေ။\nက ကို \"ab\" ဟု ထားပါ။";
+    assert_eq!(codes(text), []);
+    let forms = folded_with(text, &FoldOptions::none());
+    assert_eq!(forms[1], "(set g1 \"Zaka ၇\")");
+}
+
+#[test]
+fn a_fixed_text_constant_that_needs_the_program_to_run_is_zk0606_alone()
+{
+    let text =
+        format!("{RUN_TIME}ကိန်းသေ က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"x {{i}}\" ဖြစ်ပါစေ။");
+    assert_eq!(codes(&text), [Code::TextConstNotKnown]);
+}
+
 #[test]
 fn a_range_of_known_text_that_cuts_a_character_is_zk0607()
 {

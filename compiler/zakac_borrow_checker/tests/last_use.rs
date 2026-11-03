@@ -1,6 +1,7 @@
 mod common;
 
 use common::codes_with;
+use common::repo_root;
 use common::run;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_borrow_checker::options::BorrowCheckOptions;
@@ -234,4 +235,20 @@ fn a_global_the_callee_sets_is_duplicated_for_a_shared_parameter()
     );
     let module = checked(&text).to_sexpr();
     assert_eq!(module.matches("(dup g0)").count(), 1, "{module}");
+}
+
+/// The program of `samples/programs/scores_views.zaka` reads its lists and
+/// text through views alone, so `--warn-duplicates` names nothing in it; the
+/// same program with plain parameters, `scores.zaka`, has duplicates left.
+#[test]
+fn the_scores_program_with_views_makes_no_duplicate()
+{
+    let warn = BorrowCheckOptions::builder().warn_duplicates(true).build();
+    let sample = |name: &str| {
+        let path = repo_root().join("samples").join("programs").join(name);
+        std::fs::read_to_string(path).unwrap()
+    };
+    assert_eq!(codes_with(&sample("scores_views.zaka"), &warn), []);
+    let plain = codes_with(&sample("scores.zaka"), &warn);
+    assert!(plain.contains(&Code::DuplicateMade), "{plain:?}");
 }

@@ -450,16 +450,23 @@ result, a struct field or a list cell.
 | Form | Burmese | Its u8s |
 | --- | --- | --- |
 | plain | `စာသား` | in static storage for a literal or a folded value (room 0), else in a heap block it owns |
-| fixed | `စာသားသေ` | as for plain text; the u8s never change, and a character write or an add is ZK0438 |
+| fixed | `စာသားသေ` | in static storage in each case (room 0): each value is known at compile time (ZK0608), and its u8s never change (ZK0438) |
 | heap | `စာသားရှင်` | in a heap block it owns, from the start |
 
 - **Heap text** owns its block. Where a value of another form becomes heap text, u8s in
   static storage are duplicated into a new heap block, so a literal given to heap text
   allocates. Blank heap text holds no u8s and no block. A parameter of heap text takes a
   duplicate of its argument; the caller's text is never lent to it.
-- **Fixed text** never changes its u8s: a [character write or an add](#changing-text) on
-  it is ZK0438. A set replaces the whole value, as for each form. Plain and heap text
-  take both edits.
+- **Fixed text** is static text, as `&'static str` is in Rust. Its value is known at
+  compile time, whatever `--fold` holds: a literal, a constant, a template literal whose
+  slots [fold](#folding), a join of these, or fixed text read from another place. A value
+  that needs the program to run, such as plain text in a variable, a template slot with a
+  variable in it, or a call that returns plain text, is ZK0608, at the first part that
+  does not fold. Fixed text owns no block, so nothing frees it.
+- Fixed text has no length in its kind: a set gives a variable of it other static text
+  of each length, and a parameter of it takes static text of each length.
+- Fixed text never changes its u8s: a [character write or an add](#changing-text) on
+  it is ZK0438. Plain and heap text take both edits.
 - A constant holds plain or fixed text, never heap text (ZK0435): a constant sits in
   static storage.
 - A lend of text of each form gives a view, `text[..]`. Joins, formats and template literals
@@ -478,6 +485,32 @@ result, a struct field or a list cell.
 
 ```zaka-error ZK0435
 ကိန်းသေ က သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
+```
+
+```zaka
+လုပ်ဆောင်ချက် ပြ သည် စာသားသေ စ ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+
+ကိန်းသေ ဗားရှင်း သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။
+ကိန်းရှင် f သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "Zaka {ဗားရှင်း}" ဖြစ်ပါစေ။   // folds: static text
+လုပ်ဆောင်ချက် ပြ ကို f တို့ဖြင့် လုပ်ဆောင်ပါ။
+f ကို "ab" ဟု ထားပါ။                                                       // other static text, another length
+လုပ်ဆောင်ချက် ပြ ကို f တို့ဖြင့် လုပ်ဆောင်ပါ။
+```
+
+```text
+Zaka ၃
+ab
+```
+
+```zaka-error ZK0608
+ကိန်းရှင် i သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။
+ကိန်းရှင် f သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "အဆင့် {i}" ဖြစ်ပါစေ။
+```
+
+```text
+error[ZK0608]: fixed text ("စာသားသေ") must be known at compile time
 ```
 
 ```zaka-error ZK0438
@@ -697,6 +730,7 @@ a program stops](../vm/traps.md) the trap.
 | ZK0435 | a constant that holds heap text or a heap list |
 | ZK0437 | a remove from text |
 | ZK0438 | a character write or an add on fixed text or a view of text |
+| ZK0608 | fixed text given a value that needs the program to run |
 | ZK0704 | a view used after its text is dropped or edited |
 | ZK0706 | a function returns a view of its own local text |
 | ZK0718 | a struct field holds a view |

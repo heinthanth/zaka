@@ -109,6 +109,22 @@ pub fn text_const_not_known(span: Span) -> Diagnostic
     diag.with_help(t!("codes.ZK0606.help"))
 }
 
+/// A value of fixed text needs the program to run.
+///
+/// # Arguments
+///
+/// * `span` - The first part of the value that does not fold.
+///
+/// # Returns
+///
+/// The `ZK0608` diagnostic, with help on the kind to use instead.
+pub fn fixed_text_not_known(span: Span) -> Diagnostic
+{
+    let diag =
+        Diagnostic::new(Code::FixedTextNotKnown, t!("codes.ZK0608.message"), span);
+    diag.with_help(t!("codes.ZK0608.help"))
+}
+
 /// A variable or constant of an imported file starts with a value that is
 /// not known at compile time.
 ///

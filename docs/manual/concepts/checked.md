@@ -97,7 +97,7 @@ goes wrong somewhere else, much later.
 
 The VM can show this difference now. `--frames packed` sets the variables of a run
 next to each other, as a C compiler does, so that a write past one variable changes the next
-([Checked and packed blocks](../vm/blocks.md#checked-and-packed-variables)). It is a view
+([Addresses and blocks](../vm/blocks.md#checked-and-packed-variables)). It is a view
 of what the same program does without the red zones. Heap blocks remain checked in both
 modes, so this program stops in each.
 

@@ -1,9 +1,9 @@
 ---
-title: Checked and packed blocks
+title: Addresses and blocks
 description: How the VM sets out its storage in blocks, how it checks each access, and the two forms of placing variables.
 ---
 
-# Checked and packed blocks
+# Addresses and blocks
 
 The storage of the VM is a flat run of addresses, and each part of it belongs to a
 *block*: a run of octets with a start, a length and a state. A global, a local, and
