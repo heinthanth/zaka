@@ -73,8 +73,8 @@ three words too, since each row keeps its cells apart:
 ၂၄
 ```
 
-Part II adds fixed lists, which keep their cells in place: see [Fixed and heap
-forms](../forms/fixed-and-heap.md#the-size-of-a-fixed-list).
+Part II adds counted lists, which keep their cells in place: see [Static data and counted
+lists](../forms/counted-lists.md#the-size-of-a-counted-list).
 
 ## Hands on
 

@@ -121,9 +121,8 @@ false. It prints as `မှန်` or `မမှန်`.
 
 `စာသား` (`text`) owns UTF-8 text: the address of its u8s, their count and the size of
 its heap block, three words in all. `စာသား တစ်စိတ်တစ်ပိုင်း` (`text[..]`) is a view of text,
-two words. String literals are of the first kind. Owned text has two more forms with the
-same three words: `စာသားသေ` (`textf`), whose u8s never change, and `စာသားရှင်`
-(`text~`), which owns a heap block from the start. [Text](text.md) states their rules.
+two words. String literals are of the first kind, and point at static text until their first
+edit. [Text](text.md) states the rules.
 
 ## The edges of a kind
 
@@ -179,8 +178,8 @@ and the example are stated in [Addresses and lists](#addresses-and-lists), below
 | `စာလုံး` | the null character, `'\0'` |
 | `မှန်မှားတန်ဖိုး` | `မမှန်` |
 | `စာသား` | blank text, with no u8s |
-| a plain or heap list | no cells |
-| a fixed list | each cell at the default of its kind |
+| a plain list | no cells |
+| a counted list | each cell at the default of its kind |
 | an address | `ဗလာ` |
 
 ```zaka
@@ -210,7 +209,7 @@ and the example are stated in [Addresses and lists](#addresses-and-lists), below
 ## The size of a kind
 
 `<kind> ၏ အရွယ်အစား` ("the size of the kind") is the number of octets one value takes. The
-address and the fixed list in the example are kinds of [Addresses and
+address and the counted list in the example are kinds of [Addresses and
 lists](#addresses-and-lists), below:
 
 ```zaka
@@ -241,9 +240,7 @@ their own.
 | Burmese | Short name | Page |
 | --- | --- | --- |
 | `ကိန်းပြည့် စာရင်း` (plain) | `isize[]` | [Lists](lists.md#forms) |
-| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` (fixed) | `isize[3]` | [Lists](lists.md#forms) |
-| `ကိန်းပြည့် စာရင်းသေ` (fixed, the count from its value) | `isize[3]` for a value of 3 cells | [Lists](lists.md#forms) |
-| `ကိန်းပြည့် စာရင်းရှင်` (heap) | `isize[]~` | [Lists](lists.md#forms) |
+| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` (counted) | `isize[3]` | [Lists](lists.md#forms) |
 | `အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း` | `isize[3][2]` | [Lists](lists.md) |
 | `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း` | `isize[][..]` | [Slices](slices.md) |
 | `စာသား တစ်စိတ်တစ်ပိုင်း` | `text[..]` | [Text](text.md) |
@@ -256,7 +253,6 @@ their own.
 
 A short name reads left to right in the order of the Burmese words: the base kind first,
 then `*` for each level of owner address, `^` for a raw level, `&` in place of the `*` of
-a borrowed level, `[n]` for each fixed list level, `[]` for a plain one, `[]~` for a heap
-one, and `[..]` for a part (a slice or a view). `isize[3][2]` is two lists of three,
+a borrowed level, `[n]` for each counted list level, `[]` for a plain one, and `[..]` for a part (a slice or a view). `isize[3][2]` is two lists of three,
 `isize[3][]` a plain list of lists of three, and `isize&[2]` is a list of two borrows.
 An address takes the platform size.

@@ -68,10 +68,8 @@ fn declarations_count_their_kind_or_take_it_from_the_value()
     let letter = "ကိန်းရှင် င သည် စာလုံး တစ်လုံး ဖြစ်ပါစေ။";
     assert_eq!(stmt(letter), "(var င char)");
     assert_eq!(classifier(letter).as_deref(), Some("လုံး"));
-    let fixed = "ကိန်းရှင် ဖ သည် စာသားသေ တစ်ခု ဖြစ်ပါစေ။";
-    assert_eq!(stmt(fixed), "(var ဖ textf)");
-    let heap = "ကိန်းရှင် ဟ သည် စာသားရှင် စာရင်း တစ်ခု ဖြစ်ပါစေ။";
-    assert_eq!(stmt(heap), "(var ဟ text~[])");
+    let heap = "ကိန်းရှင် ဟ သည် စာသား စာရင်း တစ်ခု ဖြစ်ပါစေ။";
+    assert_eq!(stmt(heap), "(var ဟ text[])");
     let named = "ကိန်းရှင် ခ သည် \"မမ\" ဖြစ်ပါစေ။";
     assert_eq!(stmt(named), "(var ခ _ \"မမ\")");
     assert_eq!(classifier(named), None);
@@ -411,14 +409,15 @@ fn edit_references_parse_at_both_ends()
     assert!(sign.contains("(call တိုး (edit "), "{sign}");
 }
 
-/// A list with no count is plain, `စာရင်းသေ` takes its count from the value,
-/// and `စာရင်းရှင်` is a heap list.
+/// A list with no count is plain; a written count makes a counted list.
 #[test]
 fn list_forms_parse()
 {
     assert_eq!(stmt("ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။"), "(var l isize[])");
-    assert_eq!(stmt("ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်ပါစေ။"), "(var l isize[_])");
-    assert_eq!(stmt("ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်ပါစေ။"), "(var l isize[]~)");
+    assert_eq!(
+        stmt("ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။"),
+        "(var l isize[3])"
+    );
 }
 
 #[test]

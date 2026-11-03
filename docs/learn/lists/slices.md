@@ -117,9 +117,9 @@ l ထဲသို့ ၄ ကို ထည့်ပါ။
 s ကို ပြသပါ။
 ```
 
-The fixed and heap lists of the next page keep their cells in place through a write, so
-a slice of one stands: see [Slices of fixed and heap
-lists](../forms/fixed-and-heap.md#slices-of-fixed-and-heap-lists). Part III takes slices
+The counted lists of the next page keep their cells in place through a write, so a slice
+of one stands: see [Slices of counted
+lists](../forms/counted-lists.md#slices-of-counted-lists). Part III takes slices
 of heap blocks: see [Slices of the heap](../pointers/structs.md#slices-of-the-heap).
 [Slices](../../manual/language/slices.md) in the Docs gives each rule.
 
@@ -131,4 +131,4 @@ of heap blocks: see [Slices of the heap](../pointers/structs.md#slices-of-the-he
 - Take a slice of a list, add a cell to the list, then print the slice, and read the
   message.
 
-Next: [Static text, fixed lists and the heap](../forms/fixed-and-heap.md).
+Next: [Static data and counted lists](../forms/counted-lists.md).

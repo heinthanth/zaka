@@ -233,8 +233,6 @@ fn wrap_mark(w: Wrap) -> String
         Wrap::RawPtr => "^".into(),
         Wrap::List(Cells::Fixed(n)) => format!("[{n}]"),
         Wrap::List(Cells::Inferred) => "[]".into(),
-        Wrap::List(Cells::Taken) => "[_]".into(),
-        Wrap::List(Cells::Heap) => "[]~".into(),
         Wrap::Slice => "[][..]".into(),
         Wrap::View => "[..]".into(),
     }
@@ -263,12 +261,10 @@ fn base_name(k: &Kind) -> String
         {
             k.name.as_ref().map_or(String::new(), |n| n.name.to_string())
         }
-        BaseKind::Char
-        | BaseKind::Bool
-        | BaseKind::Text
-        | BaseKind::FixedText
-        | BaseKind::HeapText
-        | BaseKind::Opaque => k.base.as_ref().to_string(),
+        BaseKind::Char | BaseKind::Bool | BaseKind::Text | BaseKind::Opaque =>
+        {
+            k.base.as_ref().to_string()
+        }
     }
 }
 

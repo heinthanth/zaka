@@ -63,7 +63,7 @@ To grow the caller's list, add to `ကိန်းများ ၏ တန်ဖ�
 [၁၊ ၂၊ ၉]
 ```
 
-A fixed list is passed in the same manner, through the address of
+A counted list is passed in the same manner, through the address of
 `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း`; its count is part of the kind, so the function
 takes lists of that count alone.
 
@@ -134,14 +134,13 @@ error[ZK0426]: "အသက်" is read as a field, but the value before "၏" is 
 
 ## Rows and cells through addresses
 
-The address of a fixed list points at the whole list, so its kind holds the count:
+The address of a counted list points at the whole list, so its kind holds the count:
 `ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, or `isize[3]&` in messages. The rows
-of a table of fixed lists sit one after another, so adding 1 to the address of a row
-moves one whole row. `ကိန်းပြည့် စာရင်းသေ စာရင်းသေ` makes such a table and takes both
-counts from the value:
+of a table of counted lists sit one after another, so adding 1 to the address of a row
+moves one whole row:
 
 ```zaka
-ကိန်းရှင် ဇယား သည် ကိန်းပြည့် စာရင်းသေ စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း)၊ (၄၊ ၅၊ ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း ဖြစ်ပါစေ။
+ကိန်းရှင် ဇယား သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း)၊ (၄၊ ၅၊ ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် အတန်း သည် ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဇယား ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
 အတန်း ၏ တန်ဖိုး ကို ပြသပါ။
 အတန်း ကို အတန်း + ၁ ဟု ထားပါ။                 // one whole row further
@@ -156,7 +155,7 @@ counts from the value:
 ```
 
 A plain list keeps each row in a heap block of its own, so the step from one row to the
-next works on fixed rows alone. The address of one cell is a plain pointer, and [pointer
+next works on counted rows alone. The address of one cell is a plain pointer, and [pointer
 arithmetic](arithmetic.md) walks the cells after it, in a list of each form:
 
 ```zaka

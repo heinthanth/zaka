@@ -35,29 +35,14 @@ fn text_kinds_read_back_from_their_names()
     );
 }
 
-/// The three forms of text share their three words, and each converts to the
-/// others on its own; heap text alone is marked as such.
+/// Text has one kind, and a plain list one form: the names the fixed and
+/// heap forms had read as nothing.
 #[test]
-fn text_forms_convert_to_each_other()
+fn text_and_lists_have_one_managed_form()
 {
-    let forms = ["text", "textf", "text~"].map(|n| DataKind::parse(n).expect(n));
-    let pairs = forms.iter().flat_map(|a| forms.iter().map(move |b| (*a, *b)));
-    assert!(pairs.clone().all(|(a, b)| a.widens_to(b, 64) && a.size(64) == b.size(64)));
-    assert!(forms.iter().all(|k| k.is_text() && k.holds_text()));
-    let heap: Vec<bool> = forms.iter().map(|k| k.holds_heap_text()).collect();
-    assert_eq!(heap, [false, false, true]);
-    assert_eq!(forms.map(DataKind::name), ["text", "textf", "text~"]);
-    assert!(DataKind::parse("text~[2]").unwrap().holds_heap_text());
-}
-
-/// A constant can hold plain or fixed text, never heap text.
-#[test]
-fn a_constant_holds_no_heap_text()
-{
-    let fixed = "ကိန်းသေ ဖ သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"a\" ဖြစ်ပါစေ။";
-    ok(&lines(&[fixed, "ကိန်းရှင် ဟ သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဖ ဖြစ်ပါစေ။"]));
-    let heap = "ကိန်းသေ ဟ သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"a\" ဖြစ်ပါစေ။";
-    assert_eq!(codes(heap), [Code::ConstHeapText]);
+    let gone = ["textf", "text~", "isize[]~", "isize[_]", "text[0]"];
+    assert!(gone.iter().all(|n| DataKind::parse(n).is_none()));
+    assert_eq!(DataKind::parse("isize[]").map(DataKind::name), Some("isize[]".into()));
 }
 
 #[test]
@@ -175,12 +160,11 @@ fn text_takes_character_writes_and_adds()
     let text = "ကိန်းရှင် t သည် \"ab\" ဖြစ်ပါစေ။";
     ok(&lines(&[text, "t ၏ ၂ ခုမြောက်စာလုံး ကို 'x' ဟု ထားပါ။", "t ၏ စာလုံး ၀ ကို 'y' ဟု ထားပါ။"]));
     ok(&lines(&[text, "t ထဲသို့ \"cd\" ကို ထည့်ပါ။", "t ထဲသို့ 'e' ကို ထည့်ပါ။"]));
-    let fixed = "ကိန်းရှင် f သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။";
     assert_eq!(
-        codes(&lines(&[fixed, "f ၏ စာလုံး ၀ ကို 'x' ဟု ထားပါ။"])),
+        codes(&lines(&[TEXT, "v ၏ စာလုံး ၀ ကို 'x' ဟု ထားပါ။"])),
         [Code::TextCannotChange]
     );
-    assert_eq!(codes(&lines(&[fixed, "f ထဲသို့ \"c\" ကို ထည့်ပါ။"])), [Code::TextCannotChange]);
+    assert_eq!(codes(&lines(&[TEXT, "v ထဲသို့ \"c\" ကို ထည့်ပါ။"])), [Code::TextCannotChange]);
     assert_eq!(
         codes(&lines(&[text, "t ၏ စာလုံး ၀ ကို \"x\" ဟု ထားပါ။"])),
         [Code::KindMismatch]

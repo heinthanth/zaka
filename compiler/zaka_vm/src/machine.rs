@@ -39,6 +39,8 @@ use crate::print::list_text;
 use crate::print::slice_parts;
 use crate::print::text;
 use crate::print::text_at;
+use crate::statics::Placed;
+use crate::statics::seq_octets;
 use crate::trap::Trap;
 use crate::trap::TrapKind;
 use crate::trap::hex;
@@ -246,6 +248,8 @@ pub enum Held<'m>
     Globals,
     /// A static text, with its index in the module.
     Text(u32),
+    /// A static list, with its index in the module.
+    Seq(u32),
 }
 
 /// A variable of a packed block.
@@ -356,6 +360,9 @@ pub struct Machine
     /// The frozen static block of each static text of the module.
     #[builder(default)]
     texts: Vec<u64>,
+    /// The frozen static block of each static list of the module.
+    #[builder(default)]
+    seqs: Vec<u64>,
     /// The operand stack.
     #[builder(default)]
     stack: Vec<Value>,
@@ -410,6 +417,7 @@ fn held_text(held: Held) -> String
         Held::Frame { func } => t!("vm.trap.frame_of", func = func),
         Held::Globals => t!("vm.trap.globals"),
         Held::Text(n) => t!("vm.trap.static_text", n = n),
+        Held::Seq(n) => t!("vm.trap.static_list", n = n),
     };
     text.into_owned()
 }
@@ -502,6 +510,7 @@ impl Machine
         let mut machine = Machine::builder().module(module).options(options)
             .at((main, 0)).mem(mem).build();
         let placed = machine.place_globals().and_then(|()| machine.place_texts());
+        let placed = placed.and_then(|()| machine.place_seqs());
         machine.mem.open_stack(options.max_stack);
         let entered = placed.and_then(|()| machine.enter(main));
         do_if!(let Err(kind) = entered, machine.state = State::Trapped(machine.trap(kind)));
@@ -540,6 +549,33 @@ impl Machine
             let size = text.len() as u64;
             let made = self.mem.place_frozen(text.as_bytes());
             self.texts.push(made.ok_or(TrapKind::StaticFull { size })?);
+        }
+        Ok(())
+    }
+
+    /// Give each static list a frozen static block, after the static texts
+    /// its cells can point at and before the stack region opens. A cell
+    /// that is a plain list points at an earlier static list.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `StaticFull` when the address space has no room.
+    fn place_seqs(&mut self) -> Step
+    {
+        let text_lens: Vec<u64> =
+            self.module.texts.iter().map(|t| t.len() as u64).collect();
+        let seq_lens: Vec<u64> =
+            self.module.seqs.iter().map(|s| s.cells.len() as u64).collect();
+        for seq in &self.module.seqs
+        {
+            #[rustfmt::skip]
+            let placed = Placed::builder().texts(&self.texts).text_lens(&text_lens)
+                .seqs(&self.seqs).seq_lens(&seq_lens).platform(self.module.platform_bits).build();
+            let raw =
+                seq_octets(seq, placed).ok_or_else(|| malformed("bad static list"))?;
+            let size = raw.len() as u64;
+            let made = tern!(size == 0, Some(0), self.mem.place_frozen(&raw));
+            self.seqs.push(made.ok_or(TrapKind::StaticFull { size })?);
         }
         Ok(())
     }
@@ -797,6 +833,8 @@ impl Machine
     {
         let text = self.texts.iter().position(|a| *a == start);
         ret_if!(let Some(n) = text, Some(Held::Text(n as u32)));
+        let seq = self.seqs.iter().position(|a| *a == start && start != 0);
+        ret_if!(let Some(n) = seq, Some(Held::Seq(n as u32)));
         let owner = self.owners.get(&start)?;
         let func = owner.func.and_then(|f| self.module.funcs.get(f as usize));
         let slots = func.map_or(&self.module.globals, |f| &f.locals);
@@ -988,6 +1026,7 @@ impl Machine
             Op::MakeSlice { stride, from } => self.make_slice(stride, from),
             Op::SliceCell { stride, first } => self.slice_cell(stride, first),
             Op::Text(t) => self.static_text(t),
+            Op::StaticSeq(s) => self.static_seq(s),
             Op::Format(f) => self.format(f),
             Op::Drop(kind) =>
             {
@@ -1638,6 +1677,26 @@ impl Machine
             self.texts.get(t as usize).copied().ok_or_else(|| malformed("no text"))?;
         let len = self.module.texts[t as usize].len() as u64;
         self.write_text(slot, at, len, 0)?;
+        self.push(Value::Ptr(slot))
+    }
+
+    /// Pop the address of a plain list slot; point it at the static list of
+    /// an index, with room 0, and push the address.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The index of the static list.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a write hits.
+    fn static_seq(&mut self, s: u32) -> Step
+    {
+        let slot = self.pop_ptr("static_seq")?;
+        let at = self.seqs.get(s as usize).copied();
+        let at = at.ok_or_else(|| malformed("no static list"))?;
+        let count = self.module.seqs[s as usize].cells.len() as u64;
+        self.write_text(slot, at, count, 0)?;
         self.push(Value::Ptr(slot))
     }
 

@@ -100,7 +100,6 @@ see [Names](../../learn/variables/names.md).
 | `စာလုံး` | "character" | [Characters](../../learn/values/characters.md) |
 | `မှန်မှားတန်ဖိုး`, `ဘူလီယန်` | "true/false value", "boolean" | [True and false](../../learn/values/booleans.md) |
 | `စာသား` | "text" | [Text](../../learn/values/strings.md) |
-| `စာသားသေ`, `စာသားရှင်` | "fixed text", "living text": the fixed and the heap form | [Static text, fixed lists and the heap](../../learn/forms/fixed-and-heap.md#fixed-and-heap-text) |
 | `လက္ခဏာရှိ`, `လက္ခဏာမဲ့` | "signed", "unsigned" | [Integers](../../learn/values/integers.md) |
 | `အခြေ` | "base" | [Writing integers](../../learn/values/literals.md) |
 | `ကိန်းရှင်` | "variable" | [Variables](../../learn/variables/README.md) |
@@ -139,15 +138,14 @@ as well.
 | Word | Reads as | Page |
 | --- | --- | --- |
 | `စာရင်း` | "list": after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`), plain with no count; `တို့ပါသော စာရင်း` closes a list literal | [Lists](../../learn/lists/README.md) |
-| `စာရင်းသေ`, `စာရင်းရှင်` | "fixed list", "living list": after `<kind>`, a fixed list whose count its value gives, and a heap list | [Static text, fixed lists and the heap](../../learn/forms/fixed-and-heap.md#fixed-lists) |
-| `အကွက်` | "cell": `x ၏ အကွက် i` is cell `i`, counted from 0; `အကွက် n ခုရှိသော` gives the count of a list kind | [Lists](../../learn/lists/README.md) |
+| `အကွက်` | "cell": `x ၏ အကွက် i` is cell `i`, counted from 0; `အကွက် n ခုရှိသော` gives the count of a counted list kind | [Lists](../../learn/lists/README.md) |
 | `ခုမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1, and `t ၏ n ခုမြောက်စာလုံး` character `n` of text | [Lists](../../learn/lists/README.md#cell-numbers) |
-| `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Static text, fixed lists and the heap](../../learn/forms/fixed-and-heap.md#fixed-lists) |
+| `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Static data and counted lists](../../learn/forms/counted-lists.md#counted-lists) |
 | `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `နောက်ဆုံးအကွက်` | "last cell", right after `၏` and before `ကို ဖျက်ပါ` alone | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ဆက်ထားသည့်` | "that joins", in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/values/strings.md#joining-text) |
 | `စာလုံးအရေအတွက်` | "character count", in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/values/strings.md#characters) |
-| `စာရင်းအလွတ်` | "blank list": no cells, or each cell of a fixed list at its default | [Lists](../../learn/lists/README.md) |
+| `စာရင်းအလွတ်` | "blank list": no cells, or each cell of a counted list at its default | [Lists](../../learn/lists/README.md) |
 | `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../../learn/lists/README.md#list-kinds) |
 | `တစ်စိတ်တစ်ပိုင်း` | "a part": after a `စာရင်း` with no count it makes a slice kind | [Slices](../../learn/lists/slices.md) |
 | `မှစ၍` | "starting at", in `x ၏ အကွက် <start> မှစ၍ <length> ကွက်` | [Slices](../../learn/lists/slices.md#part-of-a-list) |

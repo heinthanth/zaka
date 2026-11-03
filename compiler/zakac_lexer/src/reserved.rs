@@ -109,8 +109,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ဒဿမကိန်း", Kw::FloatKind),
     ("စာလုံး", Kw::CharKind),
     ("စာသား", Kw::TextKind),
-    ("စာသားသေ", Kw::FixedTextKind),
-    ("စာသားရှင်", Kw::HeapTextKind),
     ("မှန်မှားတန်ဖိုး", Kw::BoolKind),
     ("ဘူလီယန်", Kw::BoolKindLoan),
     ("လက္ခဏာရှိ", Kw::Signed),
@@ -146,8 +144,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ပြန်လည်စွန့်လွှတ်မည်", Kw::WillRelease),
     // lists
     ("စာရင်း", Kw::List),
-    ("စာရင်းသေ", Kw::FixedList),
-    ("စာရင်းရှင်", Kw::HeapList),
     ("စာရင်းအလွတ်", Kw::BlankList),
     ("အကွက်", Kw::Cell),
     ("အကွက်အရေအတွက်", Kw::CellCount),

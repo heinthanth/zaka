@@ -149,23 +149,7 @@ pub fn each_source_wrong(span: Span, got: &str) -> Diagnostic
     Diagnostic::new(Code::EachSourceWrong, t!("codes.ZK0434.message", got = got), span)
 }
 
-/// A constant holds heap text, which owns a heap block, so it cannot sit
-/// in static storage.
-///
-/// # Arguments
-///
-/// * `span` - The name of the constant.
-/// * `name` - The name, as text.
-///
-/// # Returns
-///
-/// The `ZK0435` diagnostic.
-pub fn const_heap_text(span: Span, name: &str) -> Diagnostic
-{
-    Diagnostic::new(Code::ConstHeapText, t!("codes.ZK0435.message", n = name), span)
-}
-
-/// `[]` is given to a fixed list outside its declaration.
+/// `[]` is given to a counted list outside its declaration.
 ///
 /// # Arguments
 ///
@@ -495,21 +479,6 @@ pub fn blank_list_kind(span: Span) -> Diagnostic
 {
     Diagnostic::new(Code::BlankListKind, t!("codes.ZK0420.message"), span)
         .with_help(t!("codes.ZK0420.help"))
-}
-
-/// A list kind has no cell count and nothing gives one.
-///
-/// # Arguments
-///
-/// * `span` - The kind.
-///
-/// # Returns
-///
-/// The `ZK0421` diagnostic.
-pub fn list_count_missing(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::ListCountMissing, t!("codes.ZK0421.message"), span)
-        .with_help(t!("codes.ZK0421.help"))
 }
 
 /// Cells are read from a value that is no list.

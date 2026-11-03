@@ -33,10 +33,6 @@ enum Suffix
     RawPtr,
     /// `စာရင်း`
     List,
-    /// `စာရင်းသေ`
-    FixedList,
-    /// `စာရင်းရှင်`
-    HeapList,
     /// `တစ်စိတ်တစ်ပိုင်း`, after a `စာရင်း`
     Part,
 }
@@ -63,8 +59,6 @@ fn base_kind(kw: Kw) -> Option<BaseKind>
         Kw::FloatKind => Some(BaseKind::Float),
         Kw::CharKind => Some(BaseKind::Char),
         Kw::TextKind => Some(BaseKind::Text),
-        Kw::FixedTextKind => Some(BaseKind::FixedText),
-        Kw::HeapTextKind => Some(BaseKind::HeapText),
         Kw::BoolKind | Kw::BoolKindLoan => Some(BaseKind::Bool),
         _ => None,
     }
@@ -226,8 +220,6 @@ impl Parser<'_>
             Kw::Address if ei == 1 || bare_ptr => Suffix::Ptr,
             Kw::RawAddress if ei == 1 || bare_ptr => Suffix::RawPtr,
             Kw::List => Suffix::List,
-            Kw::FixedList => Suffix::FixedList,
-            Kw::HeapList => Suffix::HeapList,
             Kw::Part if ei == 0 && after_list => Suffix::Part,
             _ => return None,
         };
@@ -259,10 +251,7 @@ impl Parser<'_>
             len += more;
             found.push(suffix);
             after_list = suffix == Suffix::List;
-            bare_ptr = matches!(
-                suffix,
-                Suffix::List | Suffix::FixedList | Suffix::HeapList | Suffix::Part
-            );
+            bare_ptr = matches!(suffix, Suffix::List | Suffix::Part);
         }
         (len, found)
     }
@@ -347,17 +336,12 @@ impl Parser<'_>
             {
                 Suffix::Ptr => Wrap::Ptr,
                 Suffix::RawPtr => Wrap::RawPtr,
-                // A written count makes a fixed list; with none, `စာရင်း` is a
-                // plain list and `စာရင်းသေ` takes its count from the value.
+                // A written count makes a list of that count of cells; with none,
+                // `စာရင်း` is a plain list.
                 Suffix::List if !part =>
                 {
                     Wrap::List(counts.pop().map_or(Cells::Inferred, Cells::Fixed))
                 }
-                Suffix::FixedList =>
-                {
-                    Wrap::List(counts.pop().map_or(Cells::Taken, Cells::Fixed))
-                }
-                Suffix::HeapList => Wrap::List(Cells::Heap),
                 Suffix::List | Suffix::Part => Wrap::Slice,
             });
         }

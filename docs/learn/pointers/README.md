@@ -6,7 +6,7 @@ description: Hold the address of a variable, then read and change the variable t
 # Pointers and the heap
 
 This page starts Part III of Learn, *storage*. Part I taught Zaka with values, and Part II
-added views and the fixed and heap forms; in each, the compiler looks after the storage
+added views, slices and counted lists; in each, the compiler looks after the storage
 of each value. Part III hands that work to the program: addresses, blocks of the heap
 that the program asks for and gives back, and the rules of owners and borrows that keep
 those addresses safe. Programs of the first two parts keep their meaning here.

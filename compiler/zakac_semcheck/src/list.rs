@@ -9,7 +9,6 @@ use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::RangeExpr;
 use zakac_ast::expr::StructLit;
-use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::Wrap;
 use zakac_ast::visit::Node;
@@ -25,7 +24,6 @@ use zakac_rust_sugars::tern;
 use crate::kind::DataKind;
 use crate::place::place_of;
 use crate::semcheck::Checker;
-use crate::semcheck::mismatch_report;
 use crate::struct_check::unknown_name;
 
 /// Where a written kind stands, which decides whether its list counts can
@@ -33,7 +31,7 @@ use crate::struct_check::unknown_name;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum KindUse
 {
-    /// A declaration; the value can give the counts.
+    /// A declaration.
     Decl,
     /// A function result, which cannot be a list of borrows.
     Result,
@@ -75,32 +73,6 @@ fn has_slice_of_borrows(kind: DataKind) -> bool
     kind.as_list().is_some_and(|l| has_slice_of_borrows(l.cell))
 }
 
-/// Fill the open counts of `kind` from the shape of a list literal.
-///
-/// # Arguments
-///
-/// * `kind` - The written kind, with counts of 0 still open.
-/// * `e` - The value.
-///
-/// # Returns
-///
-/// The kind with each count filled, or `None` when `e` is no literal that
-/// gives them.
-fn shape_of(kind: DataKind, e: &Expr) -> Option<DataKind>
-{
-    ret_if!(!kind.has_open_count(), Some(kind));
-    let lit = match e
-    {
-        Expr::Group(n) => return shape_of(kind, &n.inner),
-        Expr::List(lit) => lit,
-        _ => return None,
-    };
-    let l = kind.as_list()?;
-    let count = u32::try_from(lit.cells.len()).ok()?;
-    let len = tern!(l.len == 0, count, l.len);
-    Some(DataKind::list_of(shape_of(l.cell, lit.cells.first()?)?, len))
-}
-
 /// Whether a value is a blank list, perhaps in parentheses.
 ///
 /// # Arguments
@@ -139,31 +111,11 @@ fn bad_marker(written: &Kind) -> bool
     written.borrowed && marked != Some(&Wrap::Ptr)
 }
 
-/// Whether a written kind leaves a list count out behind an address level,
-/// as `ကိန်းပြည့် စာရင်း လိပ်စာ` does: the value of a declaration fills
-/// the counts of its own list levels alone, never those of a list it
-/// points at.
-///
-/// # Arguments
-///
-/// * `written` - The kind phrase.
-///
-/// # Returns
-///
-/// `true` when an open list level has an address level outside it.
-fn open_behind_address(written: &Kind) -> bool
-{
-    let open = written.wraps.iter().position(|w| *w == Wrap::List(Cells::Taken));
-    let is_level = |w: &Wrap| matches!(w, Wrap::Ptr | Wrap::RawPtr);
-    let address = written.wraps.iter().rposition(is_level);
-    matches!((open, address), (Some(o), Some(a)) if o < a)
-}
-
 impl Checker
 {
     /// The data kind of a written kind, reporting a list too large for the
-    /// machine, a count left out where nothing gives it, a list of borrows
-    /// as a function result, and a slice whose cells hold borrows.
+    /// VM, a list of borrows as a function result, and a slice whose cells
+    /// hold borrows.
     ///
     /// # Arguments
     ///
@@ -172,7 +124,7 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// The kind; it still has open counts for a declaration.
+    /// The kind.
     pub(crate) fn written_kind(&mut self, written: &Kind, at: KindUse) -> DataKind
     {
         let kind = DataKind::from_ast(written, &self.structs);
@@ -181,8 +133,6 @@ impl Checker
         do_if!(let Some(d) = unknown_name(written, &names), self.report(d));
         let large = kind.checked_size(self.platform).is_none();
         do_if!(large, self.report(kd::list_too_large(span, &kind.name())));
-        let open = at != KindUse::Decl && written.has_inferred_cells();
-        do_if!(open, self.report(kd::list_count_missing(span)));
         let lists = kind.is_list() || kind.is_seq();
         let result = at == KindUse::Result && lists && kind.holds_borrow();
         do_if!(result, self.report(kd::borrow_list_result(span)));
@@ -194,9 +144,7 @@ impl Checker
         kind
     }
 
-    /// Check the value of a declaration against its written kind, filling
-    /// list counts the kind leaves out from the value. A count left out
-    /// behind an address level is refused: no value fills it. With no
+    /// Check the value of a declaration against its written kind. With no
     /// written kind, the value gives it.
     ///
     /// # Arguments
@@ -207,8 +155,7 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// The kind of the declared name, or `None` when its counts remain open
-    /// or the value gives none.
+    /// The kind of the declared name, or `None` when the value gives none.
     pub(crate) fn decl_kind(
         &mut self, written: Option<&Kind>, init: Option<&Expr>, name: &Ident,
     ) -> Option<DataKind>
@@ -219,26 +166,10 @@ impl Checker
             return self.inferred_kind(init?, name);
         };
         let kind = self.written_kind(written, KindUse::Decl);
-        if open_behind_address(written)
-        {
-            self.report(kd::list_count_missing(written.span));
-            do_if!(let Some(init) = init, { self.infer(init, None); });
-            return None;
-        }
-        if !kind.has_open_count()
-        {
-            self.decl_value = init.is_some_and(is_blank);
-            do_if!(let Some(init) = init, self.expect_kind(init, Some(kind)));
-            self.decl_value = false;
-            return Some(kind);
-        }
-        let Some(init) = init.filter(|e| !is_blank(e))
-        else
-        {
-            self.report(kd::list_count_missing(written.span));
-            return None;
-        };
-        self.fill_counts(kind, init)
+        self.decl_value = init.is_some_and(is_blank);
+        do_if!(let Some(init) = init, self.expect_kind(init, Some(kind)));
+        self.decl_value = false;
+        Some(kind)
     }
 
     /// The kind of a declaration that writes none: the kind of its value.
@@ -260,34 +191,6 @@ impl Checker
         None
     }
 
-    /// Fill the open counts of a declared kind from its value, then check
-    /// the value against the filled kind like each other initializer.
-    ///
-    /// # Arguments
-    ///
-    /// * `kind` - The written kind, with counts still open.
-    /// * `init` - The value.
-    ///
-    /// # Returns
-    ///
-    /// The filled kind, or `None` after an error.
-    pub(crate) fn fill_counts(
-        &mut self, kind: DataKind, init: &Expr,
-    ) -> Option<DataKind>
-    {
-        if let Some(shaped) = shape_of(kind, init)
-        {
-            self.expect_kind(init, Some(shaped));
-            return Some(shaped);
-        }
-        let found = self.infer(init, None)?;
-        let filled = kind.fill_counts(found);
-        let mismatch = mismatch_report(init.span(), kind, found);
-        do_if!(filled.is_none(), self.report(mismatch));
-        do_if!(let Some(filled) = filled, self.expect_fit(init, found, filled));
-        filled
-    }
-
     /// Infer a list literal. With a list kind expected, each cell takes the
     /// cell kind; else the cells share the kind each widens to.
     ///
@@ -304,8 +207,7 @@ impl Checker
     ) -> Option<DataKind>
     {
         let count = u32::try_from(n.cells.len()).ok()?;
-        // A literal with no fixed list around it is a plain list, or the
-        // heap list its place wants.
+        // A literal with no counted list around it is a plain list.
         if let Some(seq) = expect.and_then(DataKind::as_seq)
         {
             do_for!(c in &n.cells, self.expect_kind(c, Some(seq.cell)));
@@ -315,10 +217,10 @@ impl Checker
         else
         {
             let cell = self.common_cell(&n.cells)?;
-            return Some(DataKind::seq_of(cell, false));
+            return Some(DataKind::seq_of(cell));
         };
         do_for!(c in &n.cells, self.expect_kind(c, Some(want.cell)));
-        let wrong = want.len != 0 && want.len != count;
+        let wrong = want.len != count;
         let mismatch = kd::list_count_mismatch(n.span, want.len, n.cells.len());
         ret_if!(wrong, self.report(mismatch), None);
         Some(DataKind::list_of(want.cell, count))
@@ -360,8 +262,7 @@ impl Checker
         &mut self, n: &BlankListLit, expect: Option<DataKind>,
     ) -> Option<DataKind>
     {
-        let want =
-            expect.filter(|k| (k.is_list() || k.is_seq()) && !k.has_open_count());
+        let want = expect.filter(|k| k.is_list() || k.is_seq());
         do_if!(want.is_none(), self.report(kd::blank_list_kind(n.span)));
         let fixed = want.filter(|k| k.is_list() && n.brackets && !self.decl_value);
         do_if!(let Some(k) = fixed, self.report(kd::brackets_on_fixed_list(n.span, &k.name())));

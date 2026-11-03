@@ -516,7 +516,8 @@ fn scratch(text: &str) -> Vec<String>
 #[test]
 fn a_literal_or_a_slice_set_into_a_slot_is_built_there()
 {
-    let decl = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\n";
+    let decl =
+        "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\n";
     assert_eq!(scratch(decl), Vec::<String>::new());
     let slice = format!(
         "{decl}ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ အကွက် ၁ မှစ၍ ၂ ကွက် \
@@ -530,7 +531,7 @@ fn a_literal_or_a_slice_set_into_a_slot_is_built_there()
 #[test]
 fn a_literal_that_reads_its_own_slot_is_built_apart()
 {
-    let swap = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+    let swap = "ကိန်းရှင် l သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
 l ကို [(l ၏ အကွက် ၁)၊ (l ၏ အကွက် ၀)] ဟု ထားပါ။";
     assert_eq!(scratch(swap), ["%list"]);
 }
@@ -538,8 +539,8 @@ l ကို [(l ၏ အကွက် ၁)၊ (l ၏ အကွက် ၀)] ဟု 
 #[test]
 fn shared_scratch_slots_serve_each_later_statement()
 {
-    let text = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၊ ၂၀၊ ၃၀၊ ၄၀၊ ၅၀] \
-                ဖြစ်ပါစေ။
+    let text = "ကိန်းရှင် l သည် အကွက် ၅ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၊ ၂၀၊ ၃၀၊ ၄၀၊ \
+                ၅၀] ဖြစ်ပါစေ။
 l ၏ အကွက် ၁ မှစ၍ ၃ ကွက် ကို ပြသပါ။
 l ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသပါ။
 [၁၊ ၂] ကို ပြသပါ။
@@ -564,7 +565,7 @@ fn shared_scratch_slots_remain_apart_within_a_statement()
 a ကို ပြသပါ။
 b ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+ကိန်းရှင် l သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် ပြ ကို l ၏ အကွက် ၀ မှစ၍ ၁ ကွက်၊ l ၏ အကွက် ၁ မှစ၍ ၁ ကွက် တို့ဖြင့် လုပ်ဆောင်ပါ။";
     let options = EmitOptions::builder().scratch(ScratchMode::Shared).build();
     let module = emit_mode(text, options);
@@ -589,4 +590,20 @@ fn a_slice_cell_proved_in_range_has_no_check()
     let found = ops(&module.funcs[0]);
     assert!(!found.iter().any(|op| op.starts_with("slice_cell")), "{found:?}");
     assert!(found.iter().any(|op| op == "load isize*"), "{found:?}");
+}
+
+/// A plain list literal of known cells points at a static list, inner lists
+/// first; a literal with a cell known when the program runs moves its cells
+/// to the heap.
+#[test]
+fn a_literal_of_known_cells_points_at_a_static_list()
+{
+    let text = "ကိန်းရှင် l သည် [[၁၊ ၂]၊ [၃]] ဖြစ်ပါစေ။\nl ကို ပြသပါ။";
+    let module = emit_text(text);
+    let kinds: Vec<String> = module.seqs.iter().map(|s| s.kind.name()).collect();
+    assert_eq!(kinds, ["isize[]", "isize[]", "isize[][]"]);
+    assert!(ops(main_func(&module)).contains(&"static_seq s2".to_string()));
+    let built = main_ops("ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။\nကိန်းရှင် l သည် [n၊ ၂] ဖြစ်ပါစေ။");
+    assert!(built.iter().any(|o| o.starts_with("to_heap")), "{built:?}");
+    assert!(!built.iter().any(|o| o.starts_with("static_seq")), "{built:?}");
 }

@@ -52,7 +52,7 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | double free | a heap block is freed after it was freed | `the block at A was freed before` |
 | bad free | a free of an address that starts no live heap block | `A is not the start of a live heap block` |
 | mixed blocks | a subtraction of pointers into different blocks | `pointers into different blocks cannot be subtracted` |
-| frozen write | a write lands inside a static text block | `write at A inside static text, which cannot change` |
+| frozen write | a write lands inside a static text or static list block | `write at A inside static data, which cannot change` |
 | text cut | a range of text starts or ends inside a character | `a range of text at A starts or ends inside a character` |
 | character out of range | a character number lies outside its text | `character N is outside the text, whose characters run from L to H` |
 | not UTF-8 | u8s converted to text are not UTF-8 | `the u8s at A are not UTF-8 text` |
@@ -123,8 +123,8 @@ the program stopped: counted loop step is not positive
 
 ### A cell outside the list
 
-A list of 3 cells has cells 0, 1 and 2. Each cell number of a plain or heap list, and a
-cell number of a fixed list that the compiler cannot work out, is checked when the cell
+A list of 3 cells has cells 0, 1 and 2. Each cell number of a plain list, and a
+cell number of a counted list that the compiler cannot work out, is checked when the cell
 is read. The message gives the range the list allows:
 
 ```zaka-stop mem-check=warn
@@ -139,7 +139,7 @@ the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
 
 ### A remove from a list with no cells
 
-`ဖျက်ပါ` takes the last cell off a plain or heap list. The count of such a list comes when
+`ဖျက်ပါ` takes the last cell off a plain list. The count of such a list comes when
 the program runs, so the VM checks it at each remove, and a list with no cells stops the
 program:
 
@@ -364,11 +364,11 @@ q ၏ တန်ဖိုး ကို ၁၂၀ ဟု ထားပါ။
 ```
 
 ```text
-the program stopped: write at 0x1070 inside static text, which cannot change
+the program stopped: write at 0x1070 inside static data, which cannot change
 ```
 
 ```console
-zaka_vm: the program stopped: write at 0x1070 inside static text, which cannot change (in main, op 15); block at 0x1070, 3 octets, static text t0
+zaka_vm: the program stopped: write at 0x1070 inside static data, which cannot change (in main, op 15); block at 0x1070, 3 octets, static text t0
 ```
 
 ## Room

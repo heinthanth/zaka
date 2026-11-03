@@ -150,7 +150,7 @@ the verb, and `။` ends the statement. No guess is needed about where one state
 commands, but both take operands through the same stack. A statement is a clause whose
 verb is a command.
 
-**No word list.** The grammar is bounded: a fixed list of reserved words, a fixed list
+**No word list.** The grammar is bounded: a counted list of reserved words, a counted list
 of particles, and the rest are names. No word list of Burmese is needed. [Finding words
 in Burmese](segmenting.md) tells how that works when the text has no spaces.
 

@@ -27,8 +27,8 @@ rules of values: [words](language/words.md), [kinds](language/kinds.md),
 [functions](language/functions.md), [lists](language/lists.md), [text](language/text.md),
 [structs](language/structs.md), [modules](language/modules.md) and [natural
 wording](language/naturalness.md). Their later sections, and the page on
-[slices](language/slices.md), turn to control: views, the fixed and heap forms, and what
-a duplicate costs. The last pages, [pointers](language/pointers.md) and [ownership and
+[slices](language/slices.md), turn to control: views, static data and counted lists, and
+what a duplicate costs. The last pages, [pointers](language/pointers.md) and [ownership and
 borrowing](language/ownership.md), state the rules of storage: addresses, loans and the
 heap.
 

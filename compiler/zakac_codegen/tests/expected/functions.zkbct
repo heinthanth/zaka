@@ -8,6 +8,7 @@ module:
   globals: []
   texts:
   - မင်္ဂလာပါ
+  seqs: []
   formats: []
   funcs:
   - name: နှစ်ဆတိုးပြီးပေါင်း

@@ -56,7 +56,7 @@ A conversion is allowed between the pairs below, and in no other pair (ZK0408):
 An integer is never turned into a true/false value. Test it with a comparison instead:
 `n != ၀`. Conversions between addresses and integers, and between pointer kinds, have
 rules of their own, in [Pointers](pointers.md). The conversion verb never takes a list
-(ZK0408); a fixed list becomes a plain list on its own where a value goes into a place, as
+(ZK0408); a counted list becomes a plain list on its own where a value goes into a place, as
 [Lists](lists.md#forms) states.
 
 ```zaka-error ZK0408

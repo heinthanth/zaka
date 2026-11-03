@@ -1,5 +1,6 @@
 pub mod artifact;
 pub mod cli;
+mod comptime;
 pub mod fold;
 pub mod ir;
 pub mod lower;

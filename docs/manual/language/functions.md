@@ -335,8 +335,8 @@ x က၊ y ခ ရှိသော နေရာတစ်ခု ကို ရလ�
 [၅၊ ၆၊ ၇]
 ```
 
-- A plain or heap list result takes its count from the value given back. A fixed list
-  result has a written count; `စာရင်းသေ`, with no value to give the count, is ZK0421.
+- A plain list result takes its count from the value given back. A counted list
+  result has a written count.
 - A list whose cells are borrows cannot be a result (ZK0424). A borrow lives in a local or
   a parameter, so it cannot leave the function inside a list.
 - The caller keeps a slot for the result of each call. With the default,
@@ -439,7 +439,7 @@ another:
 | --- | --- | --- |
 | number, true/false value, character | duplicates the value | no |
 | plain list | lends the caller's cells until the first write, which copies them | no; pass the address to change it |
-| fixed or heap list, struct | duplicates each cell and field | no; pass the address to change it |
+| counted list, struct | duplicates each cell and field | no; pass the address to change it |
 | text, or a list or struct with text in it | duplicates it | no |
 | `ငှားထားသော … လိပ်စာ` (a borrow) | duplicates the address; the caller keeps the owner | through the address |
 | `… လိပ်စာ` (an owner) | **moves** the block to the function; the caller's variable holds `ဗလာ` afterwards | the function owns the block now |
@@ -448,8 +448,7 @@ another:
 A duplicate is what the call means; the compiler skips the work where nothing can tell.
 A plain list parameter is lent the caller's cells, with a room of 0, for the length of the
 call. Its first write, to a cell or to the whole list, first copies the cells into a block
-of its own (the VM op `own`), so the caller's list never changes. A heap list parameter
-takes a duplicate, never a loan. A fixed list or struct parameter that the function never
+of its own (the VM op `own`), so the caller's list never changes. A counted list or struct parameter that the function never
 writes, nor views nor takes the address of, is read in the caller's storage through its
 address. Text the caller reads again after
 the call is lent to the parameter for the length of the call, and text the caller reads no

@@ -3,6 +3,7 @@ use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::PrintValue;
 use zakac_ir_builder::ir::Stmt;
+pub use zakac_ir_builder::ir::each_stmt;
 use zakac_ir_builder::ir::fmt_values;
 use zakac_ir_builder::ir::fmt_values_mut;
 use zakac_rust_sugars::do_for;
@@ -117,26 +118,6 @@ pub(crate) fn dest_expr(dest: &Dest) -> Option<&Expr>
     }
 }
 
-/// The statement lists nested in a statement.
-///
-/// # Arguments
-///
-/// * `s` - The statement.
-///
-/// # Returns
-///
-/// The lists, in source order.
-pub(crate) fn nested_blocks(s: &Stmt) -> Vec<&[Stmt]>
-{
-    match s
-    {
-        Stmt::If { then, els, .. } => vec![then, els],
-        Stmt::Loop { init, update, block, .. } => vec![init, block, update],
-        Stmt::Counted { block, .. } => vec![block],
-        _ => Vec::new(),
-    }
-}
-
 /// Call `f` on an expression and on each expression inside it, outer
 /// first.
 ///
@@ -148,22 +129,6 @@ pub(crate) fn each_expr<'m>(e: &'m Expr, f: &mut impl FnMut(&'m Expr))
 {
     f(e);
     do_for!(sub in sub_exprs(e), each_expr(sub, f));
-}
-
-/// Call `f` on each statement of a list and on each statement nested in
-/// it, outer first.
-///
-/// # Arguments
-///
-/// * `stmts` - The statements.
-/// * `f` - The callback.
-pub fn each_stmt<'m>(stmts: &'m [Stmt], f: &mut impl FnMut(&'m Stmt))
-{
-    for s in stmts
-    {
-        f(s);
-        do_for!(block in nested_blocks(s), each_stmt(block, f));
-    }
 }
 
 /// The direct operands of an expression, to change.

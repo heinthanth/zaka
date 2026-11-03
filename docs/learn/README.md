@@ -25,7 +25,7 @@ shown. The pages run in three parts:
    Each assignment and each call gives a value of its own, and the program never asks
    where a value is kept.
 2. **Control**, from [Borrowing and storage](forms/README.md): views and slices, which read
-   text and lists with no duplicate; the fixed and heap forms of text and lists; and
+   text and lists with no duplicate; where their cells live, and the counted list; and
    what a duplicate costs.
 3. **Storage**, from [Pointers and the heap](pointers/README.md): addresses, blocks of
    the heap, and the rules of owners and borrows.

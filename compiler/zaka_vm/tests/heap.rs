@@ -357,3 +357,27 @@ fn a_step_into_another_block_traps_at_the_step()
     let trap = result.expect_err("the step leaves the block of သ");
     assert!(matches!(trap.kind, TrapKind::OutOfBounds { .. }), "{trap}");
 }
+
+/// A list literal of known cells sits in a frozen static list block, and the
+/// list takes a heap block at its first edit alone; a slice and a cell
+/// address of it write a block of its own, never the static one.
+#[test]
+fn a_static_list_takes_no_heap_block_until_its_first_edit()
+{
+    let text = "ကိန်းရှင် l သည် [\"က\"၊ \"ခ\"] ဖြစ်ပါစေ။\nl ကို ပြသပါ။\nl ထဲသို့ \"ဂ\" ကို ထည့်ပါ။\nl \
+                ကို ပြသပါ။";
+    let mut m = Machine::new(common::compile(text), RunOptions::default());
+    do_while!(!m.output().contains('\n'), let _ = m.step());
+    let heap = m.mem().blocks().filter(|b| b.live && b.origin == Origin::Heap).count();
+    assert_eq!(heap, 0, "the literal takes no heap block");
+    let named = m.mem().blocks().filter_map(|b| m.owner(b.start)).collect::<Vec<_>>();
+    assert!(named.contains(&Held::Seq(0)), "{named:?}");
+    do_while!(m.running(), let _ = m.step());
+    assert_eq!(m.state(), &State::Finished);
+    assert_eq!(m.output(), "[\"က\"၊ \"ခ\"]\n[\"က\"၊ \"ခ\"၊ \"ဂ\"]\n");
+    assert!(m.leaks().is_empty());
+    let writes = "ကိန်းရှင် l သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\nကိန်းရှင် s သည် l ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။\ns \
+                  ၏ အကွက် ၀ ကို ၉ ဟု ထားပါ။\nကိန်းရှင် p သည် l ၏ အကွက် ၁ ၏ လိပ်စာ ဖြစ်ပါစေ။\np ၏ \
+                  တန်ဖိုး ကို ၇ ဟု ထားပါ။\nl ကို ပြသပါ။";
+    assert_eq!(output(writes), "[၉၊ ၇၊ ၃]\n");
+}

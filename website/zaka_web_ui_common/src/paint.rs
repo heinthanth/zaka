@@ -282,8 +282,6 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::FloatKind
         | Kw::CharKind
         | Kw::TextKind
-        | Kw::FixedTextKind
-        | Kw::HeapTextKind
         | Kw::BoolKind
         | Kw::BoolKindLoan
         | Kw::Signed
@@ -304,8 +302,6 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Octets
         | Kw::Items
         | Kw::List
-        | Kw::FixedList
-        | Kw::HeapList
         | Kw::Part => "tok-kind",
         Kw::True | Kw::False | Kw::Null | Kw::BlankList => "tok-bool",
     }

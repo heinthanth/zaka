@@ -28,41 +28,15 @@ fn cells_take_the_cell_kind()
 }
 
 #[test]
-fn counts_come_from_the_value()
-{
-    let text = "ကိန်းရှင် a သည် ၈ ဘစ် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း \
-                ဖြစ်ပါစေ။\na ကို ပြသပါ။";
-    assert_eq!(kind_at(&check(text), "a"), "i8[2]");
-    let nested = "ကိန်းရှင် a သည် ကိန်းပြည့် စာရင်းသေ စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၊ ၂ တို့ပါသော \
-                  စာရင်း)၊ (၃၊ ၄ တို့ပါသော စာရင်း)၊ (၅၊ ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း \
-                  ဖြစ်ပါစေ။\na ကို ပြသပါ။";
-    assert_eq!(kind_at(&check(nested), "a"), "isize[2][3]");
-    let copied = lines(&[
-        LISTS,
-        "ကိန်းရှင် b သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ဖြစ်ပါစေ။",
-        "b ကို ပြသပါ။",
-    ]);
-    assert_eq!(kind_at(&check(&copied), "b"), "isize[3]");
-}
-
-#[test]
-fn list_counts_must_be_known_and_match()
+fn list_counts_must_match()
 {
     let decl = |rest: &str| codes(&format!("ကိန်းရှင် a သည် {rest} ဖြစ်ပါစေ။"));
-    assert_eq!(decl("ကိန်းပြည့် စာရင်းသေ တစ်ခု"), [Code::ListCountMissing]);
     assert_eq!(
-        decl("ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ်"),
-        [Code::ListCountMissing]
-    );
-    assert_eq!(
-        decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း"),
+        decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း"),
         [Code::ListCountMismatch]
     );
-    ok("ကိန်းရှင် a သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။");
+    ok("ကိန်းရှင် a သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။");
     assert_eq!(codes("စာရင်းအလွတ် ကို ပြသပါ။"), [Code::BlankListKind]);
-    let param = "လုပ်ဆောင်ချက် f သည်\nကိန်းပြည့် စာရင်းသေ a ကို လက်ခံပြီး\nအောက်ပါတို့ကို \
-                 လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    assert_eq!(codes(param), [Code::ListCountMissing]);
 }
 
 #[test]
@@ -203,21 +177,6 @@ fn a_list_mismatch_does_not_offer_a_conversion()
     }
 }
 
-#[test]
-fn an_open_count_behind_an_address_is_refused()
-{
-    let declared = "ကိန်းရှင် ns သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် q သည် ငှားထားသော ကိန်းပြည့် စာရင်းသေ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ns ၏ လိပ်စာ ဖြစ်ပါစေ။
-q ၏ အကွက် ၂ ကို ပြသပါ။";
-    assert_eq!(codes(declared), [Code::ListCountMissing]);
-    let blank = "ကိန်းရှင် q သည် ကိန်းပြည့် စာရင်းသေ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို q တွင် သိမ်းထားမည်။
-q ၏ အကွက် ၅ ကို ၉ ဟု ထားပါ။";
-    assert_eq!(codes(blank), [Code::ListCountMissing]);
-    let cells = "ကိန်းရှင် q သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်းသေ လိပ်စာ စာရင်းသေ တစ်ခု ဖြစ်ပါစေ။";
-    assert_eq!(codes(cells), [Code::ListCountMissing]);
-}
-
 /// `s` a slice of `l`, and `h` a heap block of four integers.
 const SLICES: &str = "ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ တန်ဖိုးအငှား \
                       ဖြစ်ပါစေ။
@@ -279,36 +238,22 @@ fn range_and_lend_mistakes()
     assert_eq!(at("ကိန်းရှင် x သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် s ဖြစ်ပါစေ။").len(), 1);
 }
 
-/// A fixed list converts to a plain list on its own, and plain and heap
-/// lists convert to each other; nothing converts to a fixed list.
+/// A counted list converts to a plain list on its own; nothing converts to a
+/// counted list.
 #[test]
 fn list_forms_convert()
 {
     let lists = "ကိန်းရှင် f သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် p သည် [၁၊ ၂] ဖြစ်ပါစေ။
-ကိန်းရှင် h သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် p ဖြစ်ပါစေ။";
+p ကို ပြသပါ။";
     let checked = check(lists);
     assert_eq!(kind_at(&checked, "p"), "isize[]");
-    ok(&lines(&[
-        lists,
-        "p ကို f ဟု ထားပါ။",
-        "h ကို p ဟု ထားပါ။",
-        "p ကို h ဟု ထားပါ။",
-        "p == h ကို ပြသပါ။",
-    ]));
+    ok(&lines(&[lists, "p ကို f ဟု ထားပါ။"]));
     assert_eq!(codes(&lines(&[lists, "f ကို p ဟု ထားပါ။"])), [Code::KindMismatch]);
     assert_eq!(
         codes(&lines(&[lists, "f == p ကို ပြသပါ။"])),
         [Code::IncompatibleOperands]
     );
-    for (k, n) in
-        [("isize[]", "isize[]"), ("isize[]~", "isize[]~"), ("isize[_]", "isize[_]")]
-    {
-        assert_eq!(
-            zakac_semcheck::kind::DataKind::parse(k).map(|d| d.name()),
-            Some(n.into())
-        );
-    }
 }
 
 /// `[]` has no cells: a fixed list takes it in its declaration alone, and
@@ -322,27 +267,26 @@ fn brackets_fit_a_fixed_list_in_its_declaration_alone()
     ok("ကိန်းရှင် p သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ။\np ကို [] ဟု ထားပါ။");
 }
 
-/// A constant list is fixed, and a constant heap list is refused.
+/// A constant keeps the kind its declaration gives: a plain list remains
+/// plain, and a written count makes a counted list.
 #[test]
-fn a_constant_list_is_fixed()
+fn a_constant_list_keeps_its_kind()
 {
     let text = "ကိန်းသေ c သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\nc ကို ပြသပါ။";
-    assert_eq!(kind_at(&check(text), "c"), "isize[3]");
+    assert_eq!(kind_at(&check(text), "c"), "isize[]");
     let written = "ကိန်းသေ c သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။\nc ကို ပြသပါ။";
-    assert_eq!(kind_at(&check(written), "c"), "isize[2]");
-    let heap = "ကိန်းသေ c သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။";
-    assert_eq!(codes(heap), [Code::ConstHeapText]);
+    assert_eq!(kind_at(&check(written), "c"), "isize[]");
+    let counted = written.replace("သည် ကိန်း", "သည် အကွက် ၂ ခုရှိသော ကိန်း");
+    assert_eq!(kind_at(&check(&counted), "c"), "isize[2]");
 }
 
-/// Add and remove statements change a plain or a heap list; a fixed list
-/// and text keep their cells, and the new cell takes the cell kind.
+/// Add and remove statements change a plain list; a counted list and text
+/// keep their cells, and the new cell takes the cell kind.
 #[test]
-fn plain_and_heap_lists_grow_and_shrink()
+fn plain_lists_grow_and_shrink()
 {
     ok("ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။\nl ထဲသို့ ၂ ကို ထည့်ပါ။\nl ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။");
-    let heap = "ကိန်းရှင် h သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်ပါစေ။";
-    ok(&lines(&[heap, "h ထဲသို့ ၂ ကို ထည့်ပါ။", "h ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"]));
-    let fixed = "ကိန်းရှင် f သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။";
+    let fixed = "ကိန်းရှင် f သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။";
     assert_eq!(codes(&lines(&[fixed, "f ထဲသို့ ၂ ကို ထည့်ပါ။"])), [Code::ListCannotGrow]);
     let text = "ကိန်းရှင် t သည် \"abc\" ဖြစ်ပါစေ။\nt ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။";
     assert_eq!(codes(text), [Code::ListCannotGrow]);

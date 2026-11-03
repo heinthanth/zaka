@@ -22,7 +22,8 @@ laid out upward from address 0:
         │ reserved: never handed out   │  4096 addresses (16 on an 8-bit platform)
  0x1000 ├──────────────────────────────┤
         │ static blocks: the globals,  │  one block each, for the whole run
-        │   then the static texts      │
+        │   then the static texts and  │
+        │   the static lists           │
         ├──────────────────────────────┤
         │ stack region                 │  the locals of the calls in progress,
         │   (up to --max-stack octets) │  last in, first out
@@ -36,14 +37,16 @@ laid out upward from address 0:
 - **Reserved.** An address below 4096 is never part of a block. `ဗလာ`, and each small
   offset from it, falls here, so a read through a null pointer cannot find a block
   through luck. On a platform of 8 bits the reserved part is 1/16 of the space, 16 addresses.
-- **Static.** Before `main` starts, each global gets a block of zeros, and then each
-  static text of the module gets a block that holds its UTF-8. Static blocks last until
-  the end. A static text block is *frozen*: a read works, and a write traps with
-  `write at ADDR inside static text, which cannot change`. Each literal of the same text
+- **Static.** Before `main` starts, each global gets a block of zeros, then each static
+  text of the module gets a block that holds its UTF-8, and then each static list a block
+  that holds its cells ([Lists](../language/lists.md#static-data)). Static blocks last
+  until the end. A static text or list block is *frozen*: a read works, and a write traps with
+  `write at ADDR inside static data, which cannot change`. Each literal of the same text
   points into the one block, so a write would change them all. The compiler forbids such a
-  write ([Text](../language/text.md#cells)), and an edit of text first copies static
-  u8s into a heap block ([Changing text](../language/text.md#changing-text)); a raw address
-  alone can reach one.
+  write ([Text](../language/text.md#cells)), and an edit of text or of a plain list, a
+  slice of the list or the address of one of its cells first copies static cells into a
+  heap block ([Changing text](../language/text.md#changing-text)); a raw address alone can
+  reach one.
 - **Stack region.** It opens right after the statics. Its size is `--max-stack` or half
   of the room left, whichever is smaller; the heap starts at its end.
 - **Heap.** New blocks go above all the blocks made so far.

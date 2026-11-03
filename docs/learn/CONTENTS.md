@@ -56,7 +56,7 @@
 - [Borrowing and storage](forms/README.md)
   - [Borrowing text](forms/views.md)
   - [Slices](lists/slices.md)
-  - [Static text, fixed lists and the heap](forms/fixed-and-heap.md)
+  - [Static data and counted lists](forms/counted-lists.md)
   - [What a duplicate costs](forms/costs.md)
 - [Pointers and the heap](pointers/README.md)
   - [Changing the caller's variables](pointers/out-parameters.md)

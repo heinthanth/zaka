@@ -277,7 +277,7 @@ impl Lowerer<'_>
         };
         let scope = self.scopes.last_mut().expect("a scope is open");
         scope.insert(ident.name, place);
-        let dropped = kind.needs_drop() && ident.name != RESULT_NAME;
+        let dropped = kind.holds_text() && ident.name != RESULT_NAME;
         let drops = self.drops.last_mut().expect("a scope is open");
         do_if!(dropped, drops.push((place, kind)));
         place
@@ -338,7 +338,7 @@ impl Lowerer<'_>
     fn global_drops(&self, span: Span) -> Vec<Stmt>
     {
         let globals = self.globals.iter().enumerate().rev();
-        let held = globals.filter(|(_, s)| s.kind.needs_drop() && s.name != "%new");
+        let held = globals.filter(|(_, s)| s.kind.holds_text() && s.name != "%new");
         held.map(|(i, s)| drop_stmt(Dest::Slot(Place::Global(i as u32)), s.kind, span))
             .collect()
     }
@@ -560,9 +560,6 @@ impl Lowerer<'_>
     fn decl(&mut self, n: &st::DeclStmt) -> Stmt
     {
         let kind = self.declared_kind(n.kind.as_ref(), n.init.as_ref());
-        // The list of a constant is fixed; the check gave its value that kind.
-        let fixed = n.init.as_ref().filter(|_| n.is_const && kind.holds_seq());
-        let kind = fixed.map_or(kind, |e| self.kind_of(e));
         let value = self.initial(n.init.as_ref(), kind, n.name.span);
         let access = tern!(n.is_const, Access::Const, Access::Var);
         let place = self.declare(&n.name, kind, access);
@@ -570,8 +567,7 @@ impl Lowerer<'_>
     }
 
     /// The kind of a declared name: the written kind, or the kind of its
-    /// value when no kind is written or the written kind leaves list counts
-    /// out.
+    /// value when no kind is written.
     ///
     /// # Arguments
     ///
@@ -594,9 +590,7 @@ impl Lowerer<'_>
         {
             return concrete(self.kind_of(init.expect("a value gives the kind")));
         };
-        let kind = DataKind::from_ast(written, self.structs);
-        let open = init.filter(|_| kind.has_open_count());
-        open.map_or(kind, |e| self.kind_of(e))
+        DataKind::from_ast(written, self.structs)
     }
 
     /// The initial value of a declaration.
@@ -646,7 +640,7 @@ impl Lowerer<'_>
             Dest::Mem(_) => self.kind_of(&n.target),
         };
         let value = self.owned(&n.value, want);
-        let value = tern!(want.needs_drop(), self.replace(&dest, value, out), value);
+        let value = tern!(want.holds_text(), self.replace(&dest, value, out), value);
         out.push(match dest
         {
             Dest::Slot(place) => Stmt::Set { place, value, span },
@@ -1197,7 +1191,7 @@ impl Lowerer<'_>
         let result = value.map(|value| {
             let place = self.lookup(RESULT_NAME);
             let kind = value.kind;
-            let value = tern!(kind.needs_drop(), self.replace(&Dest::Slot(place), value, out), value);
+            let value = tern!(kind.holds_text(), self.replace(&Dest::Slot(place), value, out), value);
             out.push(Stmt::Set { place, value, span });
             tern!(let Place::Local(slot) = place, read_return(slot, kind, span), Stmt::Return { value: None, span })
         });
@@ -1682,7 +1676,7 @@ impl Lowerer<'_>
     fn range(&mut self, n: &ast::RangeExpr) -> ExprNode
     {
         let from = slice_from(self.kind_of(&n.source));
-        let source = Box::new(self.expr(&n.source));
+        let source = Box::new(owned_source(self.expr(&n.source)));
         let start = Box::new(self.coerce(&n.start, DataKind::USIZE));
         let len = Box::new(self.coerce(&n.len, DataKind::USIZE));
         ExprNode::MakeSlice { source, start, len, from, checked: false }
@@ -1712,20 +1706,21 @@ impl Lowerer<'_>
         ExprNode::MakeSlice { source, start, len, from, checked: true }
     }
 
-    /// The view of each u8 of a text: the lend of a text. A text starts
-    /// with the two words of a slice, so the view is a slice of all of it.
+    /// The view of each u8 of a text, or the slice of each cell of a plain
+    /// list: the lend of either. Both start with the two words of a slice,
+    /// so the result is a slice of all of it.
     ///
     /// # Arguments
     ///
-    /// * `value` - The text.
+    /// * `value` - The text or the plain list.
     ///
     /// # Returns
     ///
-    /// The view.
+    /// The view or the slice.
     fn lend_text(&mut self, value: &ast::Expr) -> ExprNode
     {
         let span = value.span();
-        let source = Box::new(self.expr(value));
+        let source = Box::new(owned_source(self.expr(value)));
         let start = Box::new(self.usize_const(0, span));
         let count = self.cell_count(value);
         let len = Box::new(
@@ -2029,9 +2024,7 @@ fn coerce_lowered(lowered: Expr, want: DataKind) -> Expr
     let span = lowered.span;
     let literal = matches!(lowered.node, ExprNode::Const(_));
     let null = literal && lowered.kind.is_ptr() && want.is_ptr();
-    // Plain and fixed text share their three words and the place of their u8s.
-    let texts = lowered.kind.is_text() && want.is_text() && !want.holds_heap_text();
-    let relabel = null || texts || lowered.kind.same_shape(want);
+    let relabel = null || lowered.kind.same_shape(want);
     ret_if!(relabel, Expr::builder().kind(want).node(lowered.node).span(span).build());
     let node = ExprNode::Convert { operand: Box::new(lowered), implicit: true };
     Expr::builder().kind(want).node(node).span(span).build()
@@ -2146,10 +2139,7 @@ fn owned_path(addr: Expr) -> Expr
         ExprNode::CellAddr { list, index, len, first, checked } =>
         {
             let inner = through(owned_path(*list));
-            // A heap list owns its block from the start, so a write moves no
-            // cell.
-            let plain = inner.kind.as_seq().is_some_and(|s| !s.heap);
-            let list = tern!(plain, own(inner), inner);
+            let list = tern!(inner.kind.is_seq(), own(inner), inner);
             ExprNode::CellAddr { list: Box::new(list), index, len, first, checked }
         }
         ExprNode::FieldAddr { base, field, offset } =>
@@ -2197,7 +2187,7 @@ fn fixed_literal(e: Expr) -> Expr
 /// The expression.
 fn through(e: Expr) -> Expr
 {
-    let Some(seq) = e.kind.pointee().filter(|k| k.as_seq().is_some_and(|s| !s.heap))
+    let Some(seq) = e.kind.pointee().filter(|k| k.is_seq())
     else
     {
         return e;
@@ -2206,7 +2196,25 @@ fn through(e: Expr) -> Expr
     node_expr(seq, ExprNode::Load { addr: Box::new(e) }, span)
 }
 
-/// A plain or heap list made to own its block before a write.
+/// The source of a slice: a plain list, or the plain list a pointer points
+/// at, first made to own its block, since a slice can write its cells and
+/// cells in static storage or lent to a parameter must never change. Each
+/// other source as it is.
+///
+/// # Arguments
+///
+/// * `source` - The source.
+///
+/// # Returns
+///
+/// The expression.
+fn owned_source(source: Expr) -> Expr
+{
+    let list = through(source);
+    tern!(list.kind.is_seq(), own(list), list)
+}
+
+/// A plain list made to own its block before a write.
 ///
 /// # Arguments
 ///

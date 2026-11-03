@@ -49,7 +49,6 @@ use zakac_span::span::Span;
 
 use crate::collect::collect_fns;
 use crate::kind::DataKind;
-use crate::kind::TextForm;
 use crate::list::KindUse;
 use crate::ops::Want;
 use crate::ops::kw_label;
@@ -423,10 +422,7 @@ impl Checker
         do_if!(!edit && mark, self.report(kd::edit_mark_extra(arg.span())));
         if !(edit && mark)
         {
-            // A parameter whose list count is open was reported at its
-            // function.
-            let known = Some(kind).filter(|k| !k.has_open_count());
-            return self.expect_kind(arg, known);
+            return self.expect_kind(arg, Some(kind));
         }
         let Some(found) = self.place_kind(arg)
         else
@@ -478,30 +474,6 @@ impl Checker
         let kind = from.zip(to).and_then(|(a, b)| self.common_or_report(a, b, span));
         do_if!(let Some(step) = &n.step, self.check_step(step, kind));
         kind
-    }
-
-    /// The kind of a constant: a constant never changes, so each plain or
-    /// heap list in its kind is a fixed list, whose counts its value gives.
-    ///
-    /// # Arguments
-    ///
-    /// * `kind` - The kind its declaration gives.
-    /// * `init` - Its value.
-    ///
-    /// # Returns
-    ///
-    /// The kind, or `None` after an error.
-    fn const_kind(
-        &mut self, kind: Option<DataKind>, init: Option<&Expr>,
-    ) -> Option<DataKind>
-    {
-        let (Some(kind), Some(init)) = (kind, init)
-        else
-        {
-            return kind;
-        };
-        ret_if!(!kind.holds_seq(), Some(kind));
-        self.fill_counts(kind.fixed_form(), init)
     }
 
     /// The kind of the variable of an each loop: a character for text, a
@@ -675,7 +647,7 @@ impl Checker
         _ = self.need(kind, Want::Text, &label, text);
     }
 
-    /// Report fixed text or a view of text that a statement would change.
+    /// Report a view of text that a statement would change.
     ///
     /// # Arguments
     ///
@@ -683,8 +655,8 @@ impl Checker
     /// * `kind` - Its kind, textual.
     fn changeable_text(&mut self, text: &Expr, kind: DataKind)
     {
-        let fixed = kind == DataKind::Text(TextForm::Fixed) || kind.is_text_view();
-        do_if!(fixed, self.report(kd::text_cannot_change(text.span(), &kind.name())));
+        let view = kind.is_text_view();
+        do_if!(view, self.report(kd::text_cannot_change(text.span(), &kind.name())));
     }
 
     /// Report a name that cannot be assigned: undeclared, a constant or a
@@ -869,9 +841,6 @@ impl Visitor for Checker
         let kind = self.decl_kind(n.kind.as_ref(), n.init.as_ref(), &n.name);
         let missing = n.is_const && n.init.is_none();
         do_if!(missing, self.report(rd::const_without_init(n.name.span, &n.name.name)));
-        let heap = n.is_const && kind.is_some_and(DataKind::holds_heap_text);
-        do_if!(heap, self.report(kd::const_heap_text(n.name.span, &n.name.name)));
-        let kind = tern!(n.is_const, self.const_kind(kind, n.init.as_ref()), kind);
         let access = tern!(n.is_const, Access::Const, Access::Var);
         self.declare(&n.name, kind, access);
         do_if!(n.exported, self.scopes.mark_exported(&n.name.name));

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::fold as fd;
 use zakac_diagnostics::kinds as kd;
@@ -10,10 +9,11 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
-use zakac_semcheck::kind::TextForm;
 use zakac_semcheck::kind::Width;
 use zakac_span::span::Span;
 
+use crate::comptime::Statics;
+use crate::comptime::comptime;
 use crate::ir::Access;
 use crate::ir::Dest;
 use crate::ir::Expr;
@@ -54,107 +54,45 @@ pub fn fold(
     module: &mut Module, options: &FoldOptions, platform_bits: u16,
 ) -> Vec<Diagnostic>
 {
-    let unknown = unknown_inits(module, platform_bits);
+    let known = comptime(module, platform_bits);
     let mut folder = Folder::new(*options, platform_bits, &module.globals);
-    folder.diags.extend(unknown);
-    do_if!(has_text_slots(module), {
-        let mut probe =
-            Folder::new(FoldOptions::default(), platform_bits, &module.globals);
-        probe.probing = true;
-        probe.run(&mut module.clone());
-        folder.diags.extend(unrepeated(probe.blocked));
-        folder.text_consts = probe.text_consts;
-        folder.fixed_texts = probe.fixed_texts;
-    });
+    folder.diags.extend(known.diags);
+    folder.statics = known.values;
     folder.run(module);
     folder.diags.sort_by_key(|d| d.span.lo);
     folder.diags
 }
 
-/// Whether a module has a slot whose kind holds text: a text constant, or a
-/// place where fixed text can go.
+/// Fold statements with each folding on, for the compile-time step; the
+/// diagnostics are left out, since the fold proper reports them.
+///
+/// # Arguments
+///
+/// * `stmts` - The top-level statements.
+/// * `globals` - The global slots.
+/// * `platform` - Bit count of the platform-sized kinds.
+pub(crate) fn fold_each(stmts: &mut Vec<Stmt>, globals: &[Slot], platform: u16)
+{
+    Folder::new(FoldOptions::default(), platform, globals).stmts(stmts);
+}
+
+/// Fold a whole module with each folding on, for the compile-time step: the
+/// constants of the top-level statements are known in each function, as in
+/// the fold proper. The diagnostics are left out.
 ///
 /// # Arguments
 ///
 /// * `module` - The module.
-///
-/// # Returns
-///
-/// `true` when it has one.
-fn has_text_slots(module: &Module) -> bool
+/// * `platform` - Bit count of the platform-sized kinds.
+pub(crate) fn fold_module_each(module: &mut Module, platform: u16)
 {
-    let slots =
-        module.globals.iter().chain(module.funcs.iter().flat_map(|f| &f.locals));
-    slots.into_iter().any(|s| s.kind.holds_text())
+    let globals = module.globals.clone();
+    Folder::new(FoldOptions::default(), platform, &globals).run(module);
 }
 
-/// The diagnostics of the pass that finds static values, with no `ZK0608`
-/// where a `ZK0606` names the same part of a text constant.
-///
-/// # Arguments
-///
-/// * `blocked` - The diagnostics.
-///
-/// # Returns
-///
-/// The diagnostics left.
-fn unrepeated(blocked: Vec<Diagnostic>) -> Vec<Diagnostic>
-{
-    let consts: Vec<Span> = blocked
-        .iter()
-        .filter(|d| d.code == Code::TextConstNotKnown)
-        .map(|d| d.span)
-        .collect();
-    let repeated =
-        |d: &Diagnostic| d.code == Code::FixedTextNotKnown && consts.contains(&d.span);
-    blocked.into_iter().filter(|d| !repeated(d)).collect()
-}
-
-/// Report each variable or constant of an imported file whose starting
-/// value is not known at compile time. A duplicate of the statements that set
-/// them is folded with each folding on, so the options of the build do not
-/// change which programs compile.
-///
-/// # Arguments
-///
-/// * `module` - The module, before folding.
-/// * `platform_bits` - Bit count of the platform-sized kinds.
-///
-/// # Returns
-///
-/// One `ZK0604` diagnostic per such starting value.
-fn unknown_inits(module: &Module, platform_bits: u16) -> Vec<Diagnostic>
-{
-    let mut inits = module.main[..module.imported_inits as usize].to_vec();
-    let mut probe = Folder::new(FoldOptions::default(), platform_bits, &module.globals);
-    probe.stmts(&mut inits);
-    inits.iter().filter_map(|s| unknown_init(s, &module.globals)).collect()
-}
-
-/// Report a variable or constant of an imported file whose starting value
-/// did not fold to a value known at compile time.
-///
-/// # Arguments
-///
-/// * `stmt` - The folded statement that sets it.
-/// * `globals` - The global slots.
-///
-/// # Returns
-///
-/// The `ZK0604` diagnostic, or `None` for a known value.
-fn unknown_init(stmt: &Stmt, globals: &[Slot]) -> Option<Diagnostic>
-{
-    let Stmt::Set { place: Place::Global(g), value, span } = stmt
-    else
-    {
-        return None;
-    };
-    ret_if!(is_known(value), None);
-    Some(fd::global_init_not_constant(*span, &globals[*g as usize].name))
-}
-
-/// Whether a folded value is known at compile time: a constant, a size, a
-/// list or struct at its defaults, or one written out from known values.
+/// Whether a folded value is known at compile time: a constant, a size,
+/// static text, a list or struct at its defaults, or one written out from
+/// known values, a plain list among them.
 ///
 /// # Arguments
 ///
@@ -163,7 +101,7 @@ fn unknown_init(stmt: &Stmt, globals: &[Slot]) -> Option<Diagnostic>
 /// # Returns
 ///
 /// `true` when it is known.
-fn is_known(e: &Expr) -> bool
+pub fn is_known(e: &Expr) -> bool
 {
     match &e.node
     {
@@ -172,8 +110,66 @@ fn is_known(e: &Expr) -> bool
         | ExprNode::BlankList
         | ExprNode::Text(_) => true,
         ExprNode::List(items) => items.iter().all(is_known),
+        ExprNode::Convert { operand, .. } => static_list(e, operand),
         _ => false,
     }
+}
+
+/// Whether a value is a plain list made from a list literal of known cells,
+/// which can sit in static storage.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+/// * `operand` - What it converts.
+///
+/// # Returns
+///
+/// `true` for such a list.
+fn static_list(e: &Expr, operand: &Expr) -> bool
+{
+    let literal = matches!(operand.node, ExprNode::List(_));
+    e.kind.is_seq() && operand.kind.is_list() && literal && is_known(operand)
+}
+
+/// The cells or the fields of a known list or struct value: a literal, or a
+/// plain list made from one.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// The cells, or `None` for another value.
+fn known_items(e: &Expr) -> Option<&[Expr]>
+{
+    match &e.node
+    {
+        ExprNode::List(items) => Some(items),
+        ExprNode::Convert { operand, .. } => known_items(operand),
+        _ => None,
+    }
+}
+
+/// The position of a cell from its number.
+///
+/// # Arguments
+///
+/// * `at` - The cell number.
+/// * `first` - The number of the first cell: 0 or 1.
+///
+/// # Returns
+///
+/// The position, or `None` for a number below the first.
+fn cell_number(at: Value, first: u8) -> Option<usize>
+{
+    let Value::Int { raw, .. } = at
+    else
+    {
+        return None;
+    };
+    usize::try_from(raw).ok()?.checked_sub(usize::from(first))
 }
 
 /// Which slots are constants.
@@ -200,6 +196,9 @@ struct Folder
     platform: u16,
     /// Values of constant slots set so far.
     consts: HashMap<Place, Value>,
+    /// The known value of each constant slot of a list or struct kind set
+    /// so far, whose cells and count a read takes in its place.
+    aggs: HashMap<Place, Expr>,
     /// Which global slots are constants.
     global_consts: Vec<bool>,
     /// Which local slots of the current function are constants.
@@ -211,19 +210,10 @@ struct Folder
     texts: HashMap<Place, String>,
     /// The function being folded; `None` for the top-level statements.
     func: Option<u32>,
-    /// The folded value of each constant whose kind holds text, with each
-    /// folding on, at its function and slot. Such a constant holds it
-    /// whatever the options, so each read of it is a free duplicate.
-    text_consts: HashMap<(Option<u32>, Place), Expr>,
-    /// Whether this is the pass with each folding on that finds the values
-    /// of text constants.
-    probing: bool,
-    /// The `ZK0606` and `ZK0608` diagnostics of that pass.
-    blocked: Vec<Diagnostic>,
-    /// The static text each value of fixed text folds to, with each folding
-    /// on, at its function and region. Such a value holds it whatever the
-    /// options, so fixed text never needs the program to run.
-    fixed_texts: HashMap<(Option<u32>, Span), String>,
+    /// The static value of each constant that holds text or a plain list,
+    /// from the compile-time step. Such a constant holds it whatever the
+    /// options, so each read of it is a free duplicate.
+    statics: Statics,
 }
 
 impl Folder
@@ -245,15 +235,13 @@ impl Folder
             options,
             platform,
             consts: HashMap::new(),
+            aggs: HashMap::new(),
             global_consts: const_flags(globals),
             local_consts: Vec::new(),
             diags: Vec::new(),
             texts: HashMap::new(),
             func: None,
-            text_consts: HashMap::new(),
-            probing: false,
-            blocked: Vec::new(),
-            fixed_texts: HashMap::new(),
+            statics: Statics::new(),
         }
     }
 
@@ -270,29 +258,23 @@ impl Folder
             self.func = Some(i as u32);
             self.local_consts = const_flags(&func.locals);
             self.consts.retain(|place, _| matches!(place, Place::Global(_)));
+            self.aggs.retain(|place, _| matches!(place, Place::Global(_)));
             self.texts.retain(|place, _| matches!(place, Place::Global(_)));
             self.stmts(&mut func.block);
         }
     }
 
-    /// Give a constant whose kind holds text its static value, or, in the
-    /// pass that finds those values, keep the value or report what blocks it.
+    /// Give a constant that holds text or a plain list the static value the
+    /// compile-time step found for it.
     ///
     /// # Arguments
     ///
     /// * `place` - The constant.
-    /// * `value` - Its value: before folding in the pass that keeps values,
-    ///   after folding in the pass that finds them.
-    fn text_const(&mut self, place: Place, value: &mut Expr)
+    /// * `value` - Its value, before folding.
+    fn static_const(&self, place: Place, value: &mut Expr)
     {
-        let at = (self.func, place);
-        if !self.probing
-        {
-            do_if!(let Some(v) = self.text_consts.get(&at), *value = v.clone());
-            return;
-        }
-        ret_if!(is_known(value), _ = self.text_consts.insert(at, value.clone()));
-        self.blocked.push(fd::text_const_not_known(blocker(value)));
+        let found = self.statics.get(&(self.func, place));
+        do_if!(let Some(v) = found, *value = v.clone());
     }
 
     /// Whether a slot is a constant.
@@ -340,11 +322,12 @@ impl Folder
             {
                 let constant = self.is_const(*place);
                 let held = constant && value.kind.holds_text();
-                do_if!(held && !self.probing, self.text_const(*place, value));
+                do_if!(held, self.static_const(*place, value));
                 let v = self.expr(value);
-                do_if!(held && self.probing, self.text_const(*place, value));
                 let known = v.filter(|_| constant);
                 do_if!(let Some(v) = known, let _ = self.consts.insert(*place, v));
+                let agg = constant && value.kind.is_aggregate() && is_known(value);
+                do_if!(agg, _ = self.aggs.insert(*place, value.clone()));
                 let text = value.node.text().filter(|_| constant);
                 do_if!(let Some(t) = text, _ = self.texts.insert(*place, t.to_string()));
             }
@@ -430,10 +413,7 @@ impl Folder
     /// * `e` - The expression.
     fn drop_value(&mut self, e: &mut Expr) { self.expr(e); }
 
-    /// Fold an expression in place. A value of fixed text that is built
-    /// anew must fold to static text: the pass that finds static values
-    /// keeps that text or reports what blocks it, and the other pass puts
-    /// the text in its place whatever the options.
+    /// Fold an expression in place.
     ///
     /// # Arguments
     ///
@@ -443,40 +423,6 @@ impl Folder
     ///
     /// Its value, when it is known at compile time.
     fn expr(&mut self, e: &mut Expr) -> Option<Value>
-    {
-        let fixed = e.kind == DataKind::Text(TextForm::Fixed);
-        let found = self.fixed_texts.get(&(self.func, e.span));
-        let text = found.filter(|_| fixed && !self.probing).cloned();
-        ret_if!(let Some(t) = text, e.node = ExprNode::Text(t), None);
-        let value = self.fold_expr(e);
-        do_if!(fixed && self.probing, self.fixed_text(e));
-        value
-    }
-
-    /// Keep the static text a folded value of fixed text comes to, or report
-    /// what blocks it, unless it reads fixed text held in a place.
-    ///
-    /// # Arguments
-    ///
-    /// * `e` - The value, folded with each folding on.
-    fn fixed_text(&mut self, e: &Expr)
-    {
-        let at = (self.func, e.span);
-        ret_if!(let Some(t) = static_text(e), _ = self.fixed_texts.insert(at, t.to_string()));
-        ret_if!(reads_fixed_text(e));
-        self.blocked.push(fd::fixed_text_not_known(blocker(e)));
-    }
-
-    /// Fold an expression in place, before the rule of fixed text.
-    ///
-    /// # Arguments
-    ///
-    /// * `e` - The expression.
-    ///
-    /// # Returns
-    ///
-    /// Its value, when it is known at compile time.
-    fn fold_expr(&mut self, e: &mut Expr) -> Option<Value>
     {
         let span = e.span;
         ret_if!(let ExprNode::Read(place) = e.node, self.read(e, place));
@@ -524,8 +470,12 @@ impl Folder
                 (None, None)
             }
             ExprNode::AddrOf(_) => (None, None),
-            ExprNode::Load { addr }
-            | ExprNode::Lend { operand: addr }
+            ExprNode::Load { addr } =>
+            {
+                self.drop_value(addr);
+                (self.known_cell(addr), None)
+            }
+            ExprNode::Lend { operand: addr }
             | ExprNode::Take { addr }
             | ExprNode::Dup { value: addr, .. }
             | ExprNode::Own { value: addr }
@@ -616,6 +566,94 @@ impl Folder
         };
         e.node = text.map_or(ExprNode::Format(joined), ExprNode::Text);
         None
+    }
+
+    /// The value a load reads from a constant list or struct whose value is
+    /// known, with constant propagation on: a cell at a constant number, a
+    /// field, or the count of a plain list.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address the load reads, folded.
+    ///
+    /// # Returns
+    ///
+    /// The value, or `None` when it is not known.
+    fn known_cell(&mut self, addr: &Expr) -> Option<Value>
+    {
+        ret_if!(!self.options.consts, None);
+        let count = match &addr.node
+        {
+            ExprNode::FieldAddr { base, field: 1, .. } if base.kind.is_seq() =>
+            {
+                Some(self.known_value(base)?)
+            }
+            _ => None,
+        };
+        ret_if!(let Some(list) = count, known_items(&list).map(|items| {
+            Value::int(USIZE, items.len() as u128, self.platform)
+        }));
+        self.known_part(addr)?.as_const()
+    }
+
+    /// The known value a place of a list or struct kind holds: a constant,
+    /// or a cell or a field of one.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The place, read or loaded.
+    ///
+    /// # Returns
+    ///
+    /// The value, or `None` when it is not known.
+    fn known_value(&mut self, e: &Expr) -> Option<Expr>
+    {
+        match &e.node
+        {
+            ExprNode::Read(place) => self.aggs.get(place).cloned(),
+            ExprNode::Load { addr } => self.known_part(addr),
+            ExprNode::CellAddr { .. } | ExprNode::FieldAddr { .. } =>
+            {
+                self.known_part(e)
+            }
+            _ => None,
+        }
+    }
+
+    /// The known part an address names: a cell of a known list at a constant
+    /// number, or a field of a known struct. A constant number outside a
+    /// known plain list is reported; one outside a counted list is reported
+    /// where its address is folded.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address.
+    ///
+    /// # Returns
+    ///
+    /// The part, or `None` when it is not known.
+    fn known_part(&mut self, addr: &Expr) -> Option<Expr>
+    {
+        match &addr.node
+        {
+            ExprNode::CellAddr { list, index, first, .. } =>
+            {
+                let known = self.known_value(list)?;
+                let items = known_items(&known)?;
+                let len = u32::try_from(items.len()).ok()?;
+                let at = index.as_const();
+                let plain = known.kind.is_seq();
+                let fits = !plain || self.cell_in_range(at, len, *first, index.span);
+                let n = cell_number(at?, *first).filter(|_| fits)?;
+                items.get(n).cloned()
+            }
+            ExprNode::FieldAddr { base, field, .. } if base.kind.is_struct() =>
+            {
+                let known = self.known_value(base)?;
+                known_items(&known)?.get(*field as usize).cloned()
+            }
+            _ => None,
+        }
     }
 
     /// Whether a known cell number names a cell of its list; a known one
@@ -881,54 +919,6 @@ fn rebuilt(kind: DataKind, node: ExprNode, span: Span) -> Expr
     Expr::builder().kind(kind).node(node).span(span).build()
 }
 
-/// The static text a folded value comes to, through conversions and
-/// duplicates of it.
-///
-/// # Arguments
-///
-/// * `e` - The value.
-///
-/// # Returns
-///
-/// The text, or `None` when the value needs the program to run.
-fn static_text(e: &Expr) -> Option<&str>
-{
-    match &e.node
-    {
-        ExprNode::Text(t) => Some(t),
-        ExprNode::Convert { operand: inner, .. }
-        | ExprNode::Dup { value: inner, .. } => static_text(inner),
-        _ => None,
-    }
-}
-
-/// Whether a value of fixed text reads fixed text held in a place: a
-/// slot, a cell or a field, a duplicate or a move of one, or a result.
-///
-/// # Arguments
-///
-/// * `e` - The value.
-///
-/// # Returns
-///
-/// `true` when it does.
-fn reads_fixed_text(e: &Expr) -> bool
-{
-    match &e.node
-    {
-        ExprNode::Read(_)
-        | ExprNode::Load { .. }
-        | ExprNode::Take { .. }
-        | ExprNode::Call { .. } => true,
-        ExprNode::Dup { value: inner, .. }
-        | ExprNode::Convert { operand: inner, .. } =>
-        {
-            inner.kind == e.kind && reads_fixed_text(inner)
-        }
-        _ => false,
-    }
-}
-
 /// The first part of a folded value that is not static: the first value of
 /// a format that did not fold, or the first such cell of a list.
 ///
@@ -939,7 +929,7 @@ fn reads_fixed_text(e: &Expr) -> bool
 /// # Returns
 ///
 /// The region of that part.
-fn blocker(e: &Expr) -> Span
+pub(crate) fn blocker(e: &Expr) -> Span
 {
     match &e.node
     {
@@ -947,6 +937,11 @@ fn blocker(e: &Expr) -> Span
         ExprNode::List(cells) =>
         {
             cells.iter().find(|c| !is_known(c)).map_or(e.span, blocker)
+        }
+        ExprNode::Convert { operand, .. }
+            if matches!(operand.node, ExprNode::List(_)) =>
+        {
+            blocker(operand)
         }
         _ => e.span,
     }

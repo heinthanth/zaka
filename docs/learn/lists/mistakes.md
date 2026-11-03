@@ -83,14 +83,14 @@ of a character.
 ```
 
 ```text
-error[ZK0437]: text cannot grow or shrink here: "ထည့်ပါ" takes a plain or a heap list or text, and "ဖျက်ပါ" a plain or a heap list
+error[ZK0437]: text cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, and "ဖျက်ပါ" a plain list
 ```
 
 To drop the end of text, build new text from the characters to keep and set the
 variable to it.
 
-The fixed lists of Part II neither grow nor shrink: see [Fixed and heap
-forms](../forms/fixed-and-heap.md#adding-to-a-fixed-list).
+The counted lists of Part II neither grow nor shrink: see [Static data and counted
+lists](../forms/counted-lists.md#adding-to-a-counted-list).
 
 ## Removing from a list with no cells
 

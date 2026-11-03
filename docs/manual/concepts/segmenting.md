@@ -177,7 +177,7 @@ words](../../learn/sentences/spacing.md).
 A word list of Burmese would let the compiler cut `အသက်ကို` on its own. It would
 also make the meaning of a line depend on a word list, which grows and which speakers do
 not share. Zaka asks for less on purpose: the compiler needs the rules of the
-script, a fixed table of reserved words, and one space from the writer where a name meets
+script, a counted table of reserved words, and one space from the writer where a name meets
 a particle. The same line is cut in the same manner each time.
 
 ## Running it

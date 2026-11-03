@@ -46,9 +46,10 @@ The compiler skips the work where the program cannot tell the difference:
 
 - **The last use moves.** When the place read is not read again, the new place takes its
   cells, and nothing is copied.
-- **Literals stand still.** A text literal or a text constant sits in the program itself,
-  and nothing writes it, so a duplicate of one takes no block until its first edit (see
-  [The cost of an edit](#the-cost-of-an-edit)).
+- **Literals stand still.** A text literal, a list literal of known values and a constant
+  of either sit in the program itself, and nothing writes them, so a duplicate of one takes
+  no block until its first edit (see [The cost of an edit](#the-cost-of-an-edit) and
+  [Static data and counted lists](counted-lists.md#where-the-cells-live)).
 - **A parameter reads in place.** Text given to a function and read again after the call
   is lent to the parameter for the length of the call, until its first character write or
   add, which gives it cells of its own. A list or a struct parameter that
@@ -156,7 +157,7 @@ In the [Scores](../programs/scores.md) program of Part I, each call lends the li
 its function, which never writes it; but each function walks the list with an each-cell
 loop, and each such loop walks a duplicate. Below is the same program with the
 two routes above: each function takes a slice or a view, each call lends
-`<list> ၏ တန်ဖိုးအငှား`, and the passing scores go into a heap list. Run with
+`<list> ၏ တန်ဖိုးအငှား`, and the passing scores go into a list the function builds. Run with
 `--warn-duplicates`, it names nothing, and it prints what the first one prints.
 
 ```zaka
@@ -180,10 +181,10 @@ two routes above: each function takes a slice or a view, each call lends
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 
-/// A heap list of the scores at or above the pass mark.
+/// A list of the scores at or above the pass mark.
 လုပ်ဆောင်ချက် အောင်သောအမှတ်များ သည်
 ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း အမှတ်များ ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် စာရင်းရှင် ရလဒ် ကို ပြန်ပေးမည်။
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
 အမှတ်များ ၏ အကွက်တိုင်း ကို အမှတ် အနေဖြင့် ယူ၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 အကယ်၍ အမှတ် သည် အောင်မှတ် အောက် မငယ်လျှင် ရလဒ် ထဲသို့ အမှတ် ကို ထည့်ပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
@@ -209,7 +210,7 @@ two routes above: each function takes a slice or a view, each call lends
 ကိန်းရှင် အမည်များ သည် စာသား စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ["အောင်အောင်"၊ "သီတာ"၊ "မြမြ"၊ "ဇော်ဇော်"၊ "နန္ဒာ"] ဖြစ်ပါစေ။
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၂၊ ၃၅၊ ၉၁၊ ၅၈၊ ၂၄] ဖြစ်ပါစေ။
 
-ကိန်းရှင် အောင်သူ သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အောင်သောအမှတ်များ(အမှတ်များ ၏ တန်ဖိုးအငှား) ဖြစ်ပါစေ။
+ကိန်းရှင် အောင်သူ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အောင်သောအမှတ်များ(အမှတ်များ ၏ တန်ဖိုးအငှား) ဖြစ်ပါစေ။
 အောင်သူ ကို ပြသပါ။
 အောင်သူ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
 အောင်သူ ကို ပြသပါ။
@@ -247,8 +248,8 @@ What changed, and what each change saves:
   each-cell loop over a slice walks those cells in place.
 - **A text view** (`စာသား တစ်စိတ်တစ်ပိုင်း`) lends the top name, a cell of `အမည်များ`,
   to `စာလုံးချင်း`, and none of its text is copied.
-- **A heap list** (`စာရင်းရှင်`) holds the passing scores. It is returned to `အောင်သူ` as
-  a move, and grows and shrinks in its own block.
+- **A list built in the function** holds the passing scores. It is returned to `အောင်သူ`
+  as a move, so its block is never copied, and it grows and shrinks in that block.
 
 ## Hands on
 

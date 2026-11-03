@@ -1,6 +1,6 @@
 ---
 title: Borrowing and storage
-description: Part II of Learn - read text and lists with no duplicate, choose where their cells live, and see what a duplicate costs.
+description: Part II of Learn - read text and lists with no duplicate, see where their cells live, keep a list's cells in place, and see what a duplicate costs.
 ---
 
 # Borrowing and storage
@@ -12,8 +12,8 @@ adds the words that control the cost of a value, for when the cost matters:
 
 - a *view* reads text, or part of it, where it is, with no duplicate;
 - a *slice* does the same for the cells of a list, and can write them as well;
-- the *fixed* and *heap* forms of text and lists promise where their cells live and
-  whether their count can change;
+- *static data* holds literals and constants with no heap block, and a *counted list*
+  keeps its count and its cells in place;
 - `--warn-duplicates` names each statement that still makes a duplicate.
 
 ```zaka
@@ -43,7 +43,7 @@ The pages of this part:
 
 - [Borrowing text](views.md): lend text, and read part of it.
 - [Slices](../lists/slices.md): lend a list, and read or write a run of its cells.
-- [Static text, fixed lists and the heap](fixed-and-heap.md): text and lists with a promise.
+- [Static data and counted lists](counted-lists.md): where cells live, and lists that keep them in place.
 - [What a duplicate costs](costs.md): when a duplicate is made, and how to see it.
 
 Part III, *storage*, follows: addresses, the heap and ownership, in [Pointers and the

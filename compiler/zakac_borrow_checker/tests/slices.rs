@@ -57,12 +57,12 @@ l ၏ တန်ဖိုးအငှား ကို ရလဒ်အဖြစ်
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 ";
     // A plain list is dropped before the return, as text is, so the loan
-    // also ends there; a fixed list in the frame reports the return alone.
+    // also ends there; a counted list in the frame reports the return alone.
     assert_eq!(
         lines(local),
         [(Code::LocalBorrowReturned, 4), (Code::InvalidatedLoan, 4)]
     );
-    let fixed = local.replace("ကိန်းပြည့် စာရင်း တစ်ခု", "ကိန်းပြည့် စာရင်းသေ တစ်ခု");
+    let fixed = local.replace("ကိန်းပြည့် စာရင်း တစ်ခု", "အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု");
     assert_eq!(lines(&fixed), [(Code::LocalBorrowReturned, 4)]);
     ok("လုပ်ဆောင်ချက် f သည်
 ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း s ကို လက်ခံပြီး
@@ -148,7 +148,7 @@ fn a_slice_of_a_known_count_checks_its_cells_at_compile_time()
 }
 
 /// A write into a plain list can move its cells to a block of its own, so it
-/// ends each loan into the list; a heap list keeps its cells in place.
+/// ends each loan into the list; a counted list keeps its cells in place.
 #[test]
 fn a_write_into_a_plain_list_ends_its_loans()
 {
@@ -157,22 +157,22 @@ fn a_write_into_a_plain_list_ends_its_loans()
 l ၏ အကွက် ၀ ကို ၉ ဟု ထားပါ။
 v ကို ပြသပါ။";
     assert_eq!(lines(text), [(Code::InvalidatedLoan, 3)]);
-    let heap = text.replace(
+    let counted = text.replace(
         "[၁၊ ၂၊ ၃] ဖြစ်ပါစေ",
-        "ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ",
+        "အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ",
     );
-    ok(&heap);
+    ok(&counted);
 }
 
-/// An add or a remove can move the cells of a plain or a heap list, so each
-/// ends the loans into the list.
+/// An add or a remove can move the cells of a plain list, so each ends the
+/// loans into the list.
 #[test]
 fn adding_or_removing_a_cell_ends_the_loans_into_the_list()
 {
     for edit in ["l ထဲသို့ ၉ ကို ထည့်ပါ။", "l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"]
     {
         let text = format!(
-            "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+            "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် v သည် l ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
 {edit}
 v ကို ပြသပါ။"

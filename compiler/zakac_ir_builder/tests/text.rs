@@ -121,53 +121,32 @@ fn a_text_constant_that_needs_the_program_to_run_is_zk0606()
 {
     let var = "ကိန်းရှင် n သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။\nကိန်းသေ က သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"x \
                {n}\" ဖြစ်ပါစေ။";
-    assert_eq!(codes(var), [Code::TextConstNotKnown]);
-    assert_eq!(codes_with(var, &FoldOptions::none()), [Code::TextConstNotKnown]);
+    assert_eq!(codes(var), [Code::ConstNotKnown]);
+    assert_eq!(codes_with(var, &FoldOptions::none()), [Code::ConstNotKnown]);
     let call = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရလဒ် ကို ပြန်ပေးမည်။\n\"z\" ကို \
                 ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nကိန်းသေ ခ သည် စာသား တစ်ခု ဖြစ်၍ \
                 တန်ဖိုးသည် လုပ်ဆောင်ချက် f ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။";
-    assert_eq!(codes(call), [Code::TextConstNotKnown]);
+    assert_eq!(codes(call), [Code::ConstNotKnown]);
 }
 
 /// A variable `i`, known when the program runs and not before.
 const RUN_TIME: &str = "ကိန်းရှင် i သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။\n";
 
+/// A constant plain list is static data, as a text constant is: its cells
+/// must fold, whatever the options.
 #[test]
-fn fixed_text_that_needs_the_program_to_run_is_zk0608_whatever_the_options()
+fn a_constant_plain_list_that_needs_the_program_to_run_is_zk0606()
 {
-    let template =
-        format!("{RUN_TIME}ကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"x {{i}}\" ဖြစ်ပါစေ။");
-    let plain_text = format!(
-        "{RUN_TIME}ကိန်းရှင် ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။\nကိန်းရှင် က သည် \
-         စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ ဖြစ်ပါစေ။"
+    let text = format!("{RUN_TIME}ကိန်းသေ l သည် [i၊ ၂] ဖြစ်ပါစေ။");
+    assert_eq!(codes(&text), [Code::ConstNotKnown]);
+    assert_eq!(codes_with(&text, &FoldOptions::none()), [Code::ConstNotKnown]);
+    assert_eq!(
+        codes(
+            "ကိန်းသေ l သည် [၁၊ ၂] ဖြစ်ပါစေ။
+l ကို ပြသပါ။"
+        ),
+        []
     );
-    let argument = format!(
-        "{RUN_TIME}လုပ်ဆောင်ချက် ပြ သည် စာသားသေ စ ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nစ ကို \
-         ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nလုပ်ဆောင်ချက် ပြ ကို \"z{{i}}\" တို့ဖြင့် လုပ်ဆောင်ပါ။"
-    );
-    for text in [template, plain_text, argument]
-    {
-        assert_eq!(codes(&text), [Code::FixedTextNotKnown], "{text}");
-        assert_eq!(codes_with(&text, &FoldOptions::none()), [Code::FixedTextNotKnown]);
-    }
-}
-
-#[test]
-fn fixed_text_holds_static_text_of_each_length_whatever_the_options()
-{
-    let text = "ကိန်းသေ n သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။\nကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
-                \"Zaka {n}\" ဖြစ်ပါစေ။\nက ကို \"ab\" ဟု ထားပါ။";
-    assert_eq!(codes(text), []);
-    let forms = folded_with(text, &FoldOptions::none());
-    assert_eq!(forms[1], "(set g1 \"Zaka ၇\")");
-}
-
-#[test]
-fn a_fixed_text_constant_that_needs_the_program_to_run_is_zk0606_alone()
-{
-    let text =
-        format!("{RUN_TIME}ကိန်းသေ က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"x {{i}}\" ဖြစ်ပါစေ။");
-    assert_eq!(codes(&text), [Code::TextConstNotKnown]);
 }
 
 #[test]
@@ -206,4 +185,21 @@ fn a_verbal_join_folds_as_a_join_does()
         folded_with(text, &FoldOptions::none()),
         ["(print (format \"a\" (format 1:isize) \"c\"))"]
     );
+}
+
+/// With constant propagation on, a cell read at a constant number and the
+/// count of a constant plain list become constants; a constant number
+/// outside it is ZK0603. With folding off the reads stand.
+#[test]
+fn reads_of_a_constant_list_fold()
+{
+    let text = "ကိန်းသေ l သည် [၁၀၊ ၂၀၊ ၃၀] ဖြစ်ပါစေ။\nကိန်းသေ x သည် l ၏ အကွက် ၁ ဖြစ်ပါစေ။\nx ကို \
+                ပြသပါ။\nl ၏ အကွက်အရေအတွက် ကို ပြသပါ။";
+    let forms = folded(text);
+    assert_eq!(forms[1], "(set g1 20:isize)");
+    assert_eq!(forms[3], "(print 3:usize)");
+    let kept = folded_with(text, &FoldOptions::none());
+    assert!(kept[1].contains("load"), "{}", kept[1]);
+    let outside = "ကိန်းသေ l သည် [၁၀၊ ၂၀၊ ၃၀] ဖြစ်ပါစေ။\nl ၏ အကွက် ၅ ကို ပြသပါ။";
+    assert_eq!(codes(outside), [Code::CellOutOfRange]);
 }

@@ -227,8 +227,6 @@ HeapNeedsPointer = ("ZK0417", Level::Error),
 ListCountMismatch = ("ZK0419", Level::Error),
 /// A blank list stands where no list kind is known.
 BlankListKind = ("ZK0420", Level::Error),
-/// A list kind has no cell count and nothing gives one.
-ListCountMissing = ("ZK0421", Level::Error),
 /// Cells are read from a value that is no list.
 NotAList = ("ZK0422", Level::Error),
 /// A cell number is no integer.
@@ -255,13 +253,11 @@ EditMarkExtra = ("ZK0432", Level::Error),
 EditShared = ("ZK0433", Level::Error),
 /// An each loop walks a value it cannot walk.
 EachSourceWrong = ("ZK0434", Level::Error),
-/// A constant holds heap text.
-ConstHeapText = ("ZK0435", Level::Error),
-/// `[]` is given to a fixed list outside its declaration.
+/// `[]` is given to a counted list outside its declaration.
 BracketsOnFixedList = ("ZK0436", Level::Error),
 /// An add or a remove statement changes a value that cannot grow or shrink.
 ListCannotGrow = ("ZK0437", Level::Error),
-/// A character write or an add changes fixed text or a view of text.
+/// A character write or an add changes a view of text.
 TextCannotChange = ("ZK0438", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
@@ -293,12 +289,11 @@ CellOutOfRange = ("ZK0603", Level::Error),
 GlobalInitNotConstant = ("ZK0604", Level::Error),
 /// A constant range passes the end of a list of known count.
 RangeOutOfList = ("ZK0605", Level::Error),
-/// A text constant holds a value that needs the program to run.
-TextConstNotKnown = ("ZK0606", Level::Error),
+/// A constant that holds text or a plain list holds a value that needs the
+/// program to run.
+ConstNotKnown = ("ZK0606", Level::Error),
 /// A range of known text starts or ends inside a character.
 RangeCutsChar = ("ZK0607", Level::Error),
-/// A value of fixed text needs the program to run.
-FixedTextNotKnown = ("ZK0608", Level::Error),
 // ownership: ZK07xx
 /// A name is used after its block moved to another owner.
 MovedOut = ("ZK0701", Level::Error),

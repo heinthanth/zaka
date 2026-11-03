@@ -76,7 +76,7 @@ en = "a pointer step to %{addr} leaves the block it started in"
 en = "access at %{addr} inside a freed block"
 
 [vm.trap.frozen_write]
-en = "write at %{addr} inside static text, which cannot change"
+en = "write at %{addr} inside static data, which cannot change"
 
 [vm.trap.text_cut]
 en = "a range of text at %{addr} starts or ends inside a character"
@@ -125,3 +125,5 @@ en = "globals"
 
 [vm.trap.static_text]
 en = "static text t%{n}"
+[vm.trap.static_list]
+en = "static list s%{n}"

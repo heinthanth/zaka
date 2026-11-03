@@ -24,14 +24,8 @@ pub enum BaseKind
     Char,
     /// `မှန်မှားတန်ဖိုး` or `ဘူလီယန်`
     Bool,
-    /// `စာသား`: owned UTF-8 text, the plain form.
+    /// `စာသား`: owned UTF-8 text.
     Text,
-    /// `စာသားသေ`: text whose u8s never change.
-    #[strum(serialize = "textf")]
-    FixedText,
-    /// `စာသားရှင်`: text that owns a heap block from the start.
-    #[strum(serialize = "text~")]
-    HeapText,
     /// A bare `လိပ်စာ`: an address whose target kind is not known.
     #[strum(serialize = "ptr")]
     Opaque,
@@ -41,15 +35,12 @@ pub enum BaseKind
 
 impl BaseKind
 {
-    /// Whether the base is text of one of its three forms.
+    /// Whether the base is text.
     ///
     /// # Returns
     ///
-    /// `true` for `စာသား`, `စာသားသေ` and `စာသားရှင်`.
-    pub fn is_text(self) -> bool
-    {
-        matches!(self, BaseKind::Text | BaseKind::FixedText | BaseKind::HeapText)
-    }
+    /// `true` for `စာသား`.
+    pub fn is_text(self) -> bool { self == BaseKind::Text }
 }
 
 /// The cell count of a list kind.
@@ -61,10 +52,6 @@ pub enum Cells
     Fixed(u32),
     /// No count, `စာရင်း`: a plain list, whose count is known at run time.
     Inferred,
-    /// `စာရင်းသေ`: a fixed list whose count the value gives.
-    Taken,
-    /// `စာရင်းရှင်`: a heap list.
-    Heap,
 }
 
 /// One wrap around the base of a kind, such as the `လိပ်စာ` of a pointer or
@@ -167,16 +154,6 @@ impl Kind
     ///
     /// `true` for a plain value.
     pub fn is_plain(&self) -> bool { self.wraps.is_empty() }
-
-    /// Whether a list wrap of the kind leaves its count to the initializer.
-    ///
-    /// # Returns
-    ///
-    /// `true` when some `စာရင်းသေ` has no count.
-    pub fn has_inferred_cells(&self) -> bool
-    {
-        self.wraps.contains(&Wrap::List(Cells::Taken))
-    }
 
     /// Whether some wrap of the kind is a raw pointer level.
     ///

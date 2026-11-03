@@ -26,6 +26,12 @@ pub struct Module
     /// name them with an index; the VM puts each in a frozen static block.
     #[builder(default)]
     pub texts: Vec<String>,
+    /// The static lists: list literals whose cells are known at compile
+    /// time, each in a frozen static block. [`Op::StaticSeq`] names one with
+    /// its index; a list cell names an earlier one.
+    #[builder(default)]
+    #[serde(default)]
+    pub seqs: Vec<StaticSeq>,
     /// The pieces of each text built when the program runs; [`Op::Format`]
     /// names one with its index.
     #[builder(default)]
@@ -117,6 +123,35 @@ pub enum SliceSource
     /// A pointer into a heap block; the VM checks the range against the
     /// block.
     Block,
+}
+
+/// A plain list whose cells are known at compile time. The VM puts its cells
+/// in a frozen static block before the program starts, and a plain list
+/// made from it points there with a room of 0.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct StaticSeq
+{
+    /// The plain list kind.
+    pub kind: DataKind,
+    /// The cells, in order.
+    pub cells: Vec<StaticCell>,
+}
+
+/// One cell of a [`StaticSeq`], or one part of such a cell.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StaticCell
+{
+    /// A number, a character, a true/false value or an address.
+    Value(Value),
+    /// Text: the static text of this index, with room 0.
+    Text(u32),
+    /// A plain list: the static list of this index, with room 0.
+    Seq(u32),
+    /// A counted list or a struct: its cells or fields, in order.
+    Parts(Vec<StaticCell>),
+    /// The default of its kind: each octet 0.
+    Blank,
 }
 
 /// A piece of text built when the program runs.
@@ -253,6 +288,9 @@ pub enum Op
     /// Pop the address of a text slot; write the static text of this index
     /// there, with room 0, and push the address.
     Text(u32),
+    /// Pop the address of a plain list slot; write the static list of this
+    /// index there, with room 0, and push the address.
+    StaticSeq(u32),
     /// Pop one value for each value piece of this format, the last piece on
     /// top, then the address of a text slot; write the text of each piece
     /// in a new heap block, keep it in the slot, and push the address.
@@ -397,6 +435,7 @@ impl Op
             Op::Jump(t) | Op::JumpIfFalse(t) | Op::JumpIfTrue(t) => format!("@{t}"),
             Op::Call(f) => format!("f{f}"),
             Op::PrintText(t) | Op::Text(t) => format!("t{t}"),
+            Op::StaticSeq(s) => format!("s{s}"),
             Op::Format(f) => format!("fmt{f}"),
             Op::Trap(code) => <&str>::from(code).to_string(),
             Op::Wrap(op) => op.mnemonic().to_string(),

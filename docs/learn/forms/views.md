@@ -166,7 +166,7 @@ v ၏ စာလုံး ၀ ကို 'x' ဟု ထားပါ။
 ```
 
 ```text
-error[ZK0438]: text[..] cannot change: a character write or an add takes text (စာသား) or heap text (စာသားရှင်)
+error[ZK0438]: text[..] cannot change: a character write or an add takes text (စာသား)
 ```
 
 [Views](../../manual/language/text.md#views) in the Docs gives each rule.

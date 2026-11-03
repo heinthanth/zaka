@@ -634,16 +634,7 @@ en = "a blank list needs a list kind from its place"
 [codes.ZK0420.help]
 en = "declare the variable with a list kind first, or write the cells out"
 [codes.ZK0420.explain]
-en = """\"စာရင်းအလွတ်\" and [] are a list with no cells, or a fixed list with each cell at its default, but the list kind comes from the place around it: a declared variable, a parameter, or the other side of a comparison. Here nothing gives that kind."""
-
-[codes.ZK0421.title]
-en = "list count missing"
-[codes.ZK0421.message]
-en = "this list kind has no cell count, and nothing here gives one"
-[codes.ZK0421.help]
-en = "write the count: \"အကွက် <n> ခုရှိသော <kind> စာရင်း\""
-[codes.ZK0421.explain]
-en = """A list kind with no count, such as \"ကိန်းပြည့် စာရင်း\", is allowed in a declaration with a list as its value: the count comes from that value. Parameters, size questions, heap statements, and declarations with no value or a blank list need the count written out."""
+en = """\"စာရင်းအလွတ်\" and [] are a list with no cells, or a counted list with each cell at its default, but the list kind comes from the place around it: a declared variable, a parameter, or the other side of a comparison. Here nothing gives that kind."""
 
 [codes.ZK0422.title]
 en = "not a list"
@@ -740,32 +731,26 @@ en = "each loop over a value it cannot walk"
 en = "this each loop cannot walk %{got}"
 [codes.ZK0434.explain]
 en = """An each-cell loop (\"အကွက်တိုင်း\") walks a list or a slice whose cells hold no owner pointer: the loop variable holds a duplicate of each cell, and an owner pointer cannot be duplicated. An each-character loop (\"စာလုံးတိုင်း\") walks text or a view of text. To walk the cells of text as u8 numbers, use a counted loop over its cell count."""
-[codes.ZK0435.title]
-en = "constant of heap text or a heap list"
-[codes.ZK0435.message]
-en = "the constant \"%{n}\" cannot hold heap text or a heap list"
-[codes.ZK0435.explain]
-en = """A constant sits in static storage, and heap text (\"စာသားရှင်\") and a heap list (\"စာရင်းရှင်\") own a heap block from the start, so no constant holds one, alone or inside a list or a struct. Declare the constant as \"စာသား\" or \"စာသားသေ\", or as a list with no count (a constant list is fixed), or declare a variable with \"ကိန်းရှင်\"."""
 [codes.ZK0436.title]
-en = "[] given to a fixed list"
+en = "[] given to a counted list"
 [codes.ZK0436.message]
-en = "[] is a list with no cells, and a fixed list of %{k} cannot take it here"
+en = "[] is a list with no cells, and the counted list %{k} cannot take it here"
 [codes.ZK0436.explain]
-en = """A fixed list keeps its count, so a list with no cells does not fit it. In the declaration of a fixed list, [] starts each cell at its default. Elsewhere, write \"စာရင်းအလွတ်\" to set each cell back to its default, or make the list a plain list, with no count, which [] fits."""
+en = """A counted list keeps its count, so a list with no cells does not fit it. In the declaration of a counted list, [] starts each cell at its default. Elsewhere, write \"စာရင်းအလွတ်\" to set each cell back to its default, or make the list a plain list, with no count, which [] fits."""
 
 [codes.ZK0437.title]
 en = "a value that cannot grow or shrink"
 [codes.ZK0437.message]
-en = "%{k} cannot grow or shrink here: \"ထည့်ပါ\" takes a plain or a heap list or text, and \"ဖျက်ပါ\" a plain or a heap list"
+en = "%{k} cannot grow or shrink here: \"ထည့်ပါ\" takes a plain list or text, and \"ဖျက်ပါ\" a plain list"
 [codes.ZK0437.explain]
-en = """A fixed list keeps the count its kind gives, and slices and views hold no cells of their own to add to. Text takes an add but no remove. Declare the list with no count, as a plain list (isize[]), or as a heap list (စာရင်းရှင်, isize[]~), to add cells to it and remove them."""
+en = """A counted list keeps the count its kind gives, and slices and views hold no cells of their own to add to. Text takes an add but no remove. Declare the list with no count, as a plain list (isize[]), to add cells to it and remove them."""
 
 [codes.ZK0438.title]
-en = "text that cannot change"
+en = "a view of text cannot change"
 [codes.ZK0438.message]
-en = "%{k} cannot change: a character write or an add takes text (စာသား) or heap text (စာသားရှင်)"
+en = "%{k} cannot change: a character write or an add takes text (စာသား)"
 [codes.ZK0438.explain]
-en = """Fixed text (စာသားသေ) keeps the text its value gives, and a view of text reads text that another value holds. Neither can change. Declare the value as text, or as heap text, to set a character of it or to add to it; a template literal, \"{v}\", makes text of its own from a view v."""
+en = """A view of text reads text that another value holds, so it cannot change. Declare the value as text to set a character of it or to add to it; a template literal, \"{v}\", makes text of its own from a view v."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 
@@ -894,22 +879,13 @@ en = "%{len} cells from cell %{s} pass the end of a list of %{n} cells"
 en = """A range \"<list> ၏ အကွက် <start> မှစ၍ <length> ကွက်\" takes the cells from the start on. The start and the length here are known, so the compiler can tell that the last cell is past the end of the list. Shorten the length or move the start."""
 
 [codes.ZK0606.title]
-en = "text constant not known at compile time"
+en = "constant not known at compile time"
 [codes.ZK0606.message]
-en = "a text constant must be known at compile time"
+en = "a constant that holds text or a plain list must be known at compile time"
 [codes.ZK0606.help]
-en = "declare it with \"ကိန်းရှင်\" to build the text when the program runs"
+en = "declare it with \"ကိန်းရှင်\" to build the value when the program runs"
 [codes.ZK0606.explain]
-en = """A \"ကိန်းသေ\" of kind \"စာသား\" is text in static storage, the same for each run: each read shares it, and nothing frees it. Its value must fold at compile time: literals, other constants, template slots that hold constants, and joins of these with \"+\". A variable, a call, a cell or a field needs the program to run. Declare such text with \"ကိန်းရှင်\"."""
-
-[codes.ZK0608.title]
-en = "fixed text not known at compile time"
-[codes.ZK0608.message]
-en = "fixed text (\"စာသားသေ\") must be known at compile time"
-[codes.ZK0608.help]
-en = "give text built when the program runs the kind \"စာသား\""
-[codes.ZK0608.explain]
-en = """\"စာသားသေ\" is text in static storage, as \"&'static str\" is in Rust: each value of it is known at compile time, it never changes, and nothing frees it. A variable of it can be set to other static text of each length, and a parameter of it takes static text of each length. Its values fold from literals, constants, template slots that hold constants, and joins of these. Text built from a variable, a call, a cell or a field needs the program to run: give it the kind \"စာသား\"."""
+en = """A \"ကိန်းသေ\" that holds text or a plain list, alone or inside a list or a struct, is static data, the same for each run: each read shares it, and nothing frees it. Its value must fold at compile time: literals, other constants, template slots that hold constants, joins of these with \"+\", and list literals of such values. A variable, a call, a cell or a field needs the program to run. Declare such a value with \"ကိန်းရှင်\"."""
 
 [codes.ZK0607.title]
 en = "range cuts a character"

@@ -975,3 +975,39 @@ impl Default for FoldOptions
     /// The options.
     fn default() -> Self { FoldOptions::builder().build() }
 }
+
+/// The statement lists nested in a statement.
+///
+/// # Arguments
+///
+/// * `s` - The statement.
+///
+/// # Returns
+///
+/// The lists, in source order.
+pub fn nested_blocks(s: &Stmt) -> Vec<&[Stmt]>
+{
+    match s
+    {
+        Stmt::If { then, els, .. } => vec![then, els],
+        Stmt::Loop { init, update, block, .. } => vec![init, block, update],
+        Stmt::Counted { block, .. } => vec![block],
+        _ => Vec::new(),
+    }
+}
+
+/// Call `f` on each statement of a list and on each statement nested in
+/// it, outer first.
+///
+/// # Arguments
+///
+/// * `stmts` - The statements.
+/// * `f` - The callback.
+pub fn each_stmt<'m>(stmts: &'m [Stmt], f: &mut impl FnMut(&'m Stmt))
+{
+    for s in stmts
+    {
+        f(s);
+        nested_blocks(s).into_iter().for_each(|block| each_stmt(block, f));
+    }
+}

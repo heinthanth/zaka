@@ -113,7 +113,7 @@ read. When it was moved on a single branch, the compiler is quiet, and the VM
 stops the program if the read finds `ဗလာ`. A move inside a loop reaches the next
 round through the back edge, so a read at the start of the loop is reported.
 
-A list whose cells hold owners moves as a whole when it is assigned or passed, fixed or
+A list whose cells hold owners moves as a whole when it is assigned or passed, counted or
 plain: a plain list of owners moves at a set and at a call, as a struct with an owner
 field does, and the list read is left with no cells.
 
@@ -292,7 +292,7 @@ A borrow that is set again before its next read is not in use, so lending the bl
 after a resize is the fix.
 
 The loans into the cells of a list end in the same manner when an edit can move the cells: a write into a plain
-list, and an add or a remove on a plain or a heap list; see [Edits and
+list, and an add or a remove on one; see [Edits and
 loans](lists.md#edits-and-loans).
 
 "Used later" is worked out from the paths of the program, not from the order of the

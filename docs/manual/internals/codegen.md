@@ -67,8 +67,8 @@ A statement is one of sixteen forms:
 | `Store { addr, value }` | write at an address |
 | `Alloc`, `Resize`, `Free` | a heap sentence, with a `Dest`: a slot, or a cell in storage that holds an address |
 | `Drop { dest, kind }` | free each text on the heap inside the value at `dest`, of a kind that holds text, and leave it blank; written `(drop l0)` |
-| `AddCell { dest, kind, value }` | add `value` as a new last cell of the plain or heap list at `dest`; written `(add_cell l0 7)` |
-| `RemoveCell { dest, kind }` | remove the last cell of the plain or heap list at `dest`; written `(remove_cell l0)` |
+| `AddCell { dest, kind, value }` | add `value` as a new last cell of the plain list at `dest`; written `(add_cell l0 7)` |
+| `RemoveCell { dest, kind }` | remove the last cell of the plain list at `dest`; written `(remove_cell l0)` |
 | `SetChar { dest, kind, index, first, value }` | write the character `value` in place of character `index` of the text at `dest`, counted from `first` (0 or 1); written `(set_char g0 2 'x')` |
 | `AddText { dest, kind, value }` | add the text, view of text or character `value` at the end of the text at `dest`; written `(add_text g0 "c")` |
 
@@ -107,26 +107,24 @@ rules out). Its rules:
   each read of its name becomes a `Load` through it and each write a store through it,
   and the marked argument becomes the address of the caller's place. A place of a kind that holds text, read into another place,
   becomes `Dup`: codegen copies the value into a temp slot and runs `dup_text` on it, so
-  each heap text in the duplicate gets a block of its own. A `Dup` the borrow checker marks
+  each text on the heap in the duplicate gets a block of its own. A `Dup` the borrow checker marks
   `lent` runs `lend_text` instead, which gives each text a room of 0. A parameter in
   `Func::shared_params` gets a borrow slot that holds the caller's address, and each
   read of it goes through `local_ref`.
-- Text of one form set into a place of another: plain and fixed text are relabelled,
-  with no node. A value that becomes heap text, or a plain list that becomes a heap list,
-  gets a `Convert`; codegen copies it into a `%own` slot and runs `own` there, which gives
-  text or a list with a room of 0 a heap block of its own. The borrow checker never lends
-  an argument for a heap text or heap list parameter.
-- A plain or heap list literal is built as a fixed list of its cells, wrapped in a
-  `Convert`. A fixed list that becomes a plain or heap list, a literal or a fixed place,
-  gets a `Convert` too; codegen gives it a `%own` slot and emits `to_heap k`, which moves
-  the cells to a new heap block and writes the plain list of them in the slot. A constant
-  list takes the fixed kind of its value.
+- A plain list literal is built as a counted list of its cells, wrapped in a
+  `Convert`. A counted list that becomes a plain list, a literal or a counted place,
+  gets a `Convert` too. When the literal's cells are each known (`fold::is_known`), codegen
+  adds it to the module's table of static lists, `seqs`, and emits `static_seq s<n>` into a
+  `%own` slot: the slot points at the static list with a room of 0, and no heap block is
+  made. Each other `Convert` gets a `%own` slot and `to_heap k`, which moves the cells to a
+  new heap block and writes the plain list of them in the slot. A constant keeps the kind
+  its declaration gives.
 - A write into a plain list: the address of each written place, a cell, a field of a cell
   or the whole list, wraps each plain list on its path in an `Own` node, the outer one
   first, so a list lent with a room of 0 copies its cells into a block of its own before
   the write. Codegen emits the address of the list, `dup`, and `own k`, and leaves the
-  address for the write. A heap list owns its block from the start, so its path gets no
-  `Own`.
+  address for the write. A slice of a plain list (a range or a lend) and the address of a
+  cell get the same `Own` on their source first, since either can write the cells.
 - An add becomes `AddCell { dest, kind, value }` and a remove `RemoveCell { dest, kind }`
   (S-expressions `add_cell` and `remove_cell`). The list goes through `dest`, so each plain
   list around it on the path gets its `Own` step as for a write; the value of an add goes
@@ -143,17 +141,16 @@ rules out). Its rules:
   `add_text k` with `k` the kind of the value, and drops a fresh text the value made, such
   as a format, right after. The value is read where it is, never duplicated, so `t ထဲသို့ t
   ကို ထည့်ပါ။` reads `t` itself; the op reads the added u8s before it writes.
-- `==` and `!=` on two plain or heap lists emit `seq_eq k`, which compares the counts and
-  then each cell; `!=` adds a `not`. Two fixed lists keep `list_eq k`.
+- `==` and `!=` on two plain lists emit `seq_eq k`, which compares the counts and
+  then each cell; `!=` adds a `not`. Two counted lists keep `list_eq k`.
 - A range `x ၏ အကွက် s မှစ၍ n ကွက်` becomes `MakeSlice { source, start, len, from }`,
   where `from` tells whether the source is a list of a known count, a slice, or a heap
   block. The lend of a list is a `MakeSlice` of each cell, marked `checked`. The count of
   a slice is a `Load` of its second word, through a `FieldAddr`.
 - A string literal with no template slots becomes `Text`; one with template slots, a verbal join, and a `+` of two texts,
   become a `Format`.
-- A place whose kind can own a heap block (`needs_drop`: plain or heap text, a plain or
-  heap list, or a list or struct with one inside; fixed text is static and owns none)
-  gets a `Drop` at each exit of its scope: the end of its
+- A place whose kind can own a heap block (`holds_text`: text, a plain list, or a list or
+  struct with one inside) gets a `Drop` at each exit of its scope: the end of its
   block, the end of a loop round, before a `break`, a `continue` or a return, and, for a
   global, at the end of `main`. A short-lived text that is printed or used in a template slot is
   dropped right after its use.
@@ -189,18 +186,17 @@ folded with each folding on, and each one whose value is then not known (not a c
 a size, a blank list or a list of known values) is ZK0604. The check uses its own
 duplicate, so `--fold` changes the IR but not which programs compile.
 
-A text constant (a `ကိန်းသေ` whose kind holds text) gets the same kind of check: when the
-module has one, a duplicate of it is folded with each folding on first. Each text
-constant whose value then is static is kept, and the fold proper puts that value in its
-`set` whatever `--fold` holds, so the constant holds static text with room 0; one
-whose value is not static is ZK0606, at the first value of a format that did not fold.
-Fixed text (`textf`) follows the same route: the same pass with each folding on keeps the
-static text each new value of fixed text folds to (a literal, a format, or a conversion
-or a duplicate of one), under its function and region, and the fold proper puts that
-text in its place whatever `--fold` holds. A value of fixed text that reads fixed text
-held in a place (a read, a load, a move, a duplicate of one, or a call) needs no
-check; each other one is ZK0608. A text constant whose value does not fold gets ZK0606
-alone, with no ZK0608 at the same region.
+A constant that holds text or a plain list (a `ကိန်းသေ` whose kind holds either) gets the
+same kind of check. Both checks live in a compile-time step of their own (`comptime.rs`)
+that runs before the fold: it folds a duplicate of the module with each folding on, keeps
+the value of each such constant that is then known, and reports ZK0606 for one that is not,
+at the first part that did not fold. The fold proper puts each kept value in the
+constant's `set` whatever `--fold` holds, so the constant holds static data with room 0.
+The options of the build then change how the IR shows a value, never whether a program
+compiles. With constant propagation on, the fold also keeps the known value of each
+constant list or struct, and a `load` of a cell at a constant number, of a struct field,
+or of the count of a plain list (`field_addr` 1) becomes its value; a constant number
+outside a known plain list is ZK0603.
 Lowering never takes a constant (`owned` sees a read of the constant, or of a field or
 cell of one), and the borrow checker treats such a read as a duplicate, so a read
 after one is no ZK0701.

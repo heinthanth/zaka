@@ -5,12 +5,10 @@ use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_and_keep;
-use zakac_codegen::bc::Op;
 use zakac_codegen::options::EmitOptions;
 use zakac_codegen::options::ResultMode;
 use zakac_codegen::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
-use zakac_semcheck::kind::DataKind;
 
 /// Text built while the program runs, copied into a variable, a struct, a
 /// list, a parameter the function changes, and a result: each duplicate is
@@ -115,7 +113,7 @@ const LENT: &str = "၇\n၇?\n၇\n၇၇ ၁\n၇!\n၇!\n၇!\n၇\n၇!\n";
 /// on, or call themselves with it.
 const SHARES: &str = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ကိန်းပြည့် အမြင့် တို့ ပါဝင်သည်။
 ကိန်းရှင် က သည် လူ(အသက်: ၃၀၊ အမြင့်: ၂) ဖြစ်ပါစေ။
-ကိန်းရှင် တန်း သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် တန်း သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် ပေါင်း သည်
 လူ ပ၊ အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း l တို့ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
@@ -233,35 +231,7 @@ n ကို ပြသပါ။
 const WALKED: &str =
     "၁\n၂\n၃\n၂\n၃\nက!\nဂ!\n[\"က\"၊ \"ခ\"၊ \"ဂ\"၊ \"ဃ\"]\na\né\n၁\n😀\n";
 
-/// Plain, fixed and heap text, set from each other, in a struct field, a
-/// list and a parameter. Fixed text takes static text alone (ZK0608), so it is
-/// set from a literal.
-const FORMS: &str = "ဒေတာအမျိုးအစား လူ တွင် စာသားရှင် အမည်၊ ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
-လုပ်ဆောင်ချက် ပြ သည်
-စာသားရှင် စ ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-စ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-ကိန်းရှင် p သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"a\" ဖြစ်ပါစေ။
-ကိန်းရှင် f သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"b\" ဖြစ်ပါစေ။
-ကိန်းရှင် h သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"c\" ဖြစ်ပါစေ။
-h ကို p ဟု ထားပါ။
-f ကို \"a\" ဟု ထားပါ။
-p ကို \"{f}{h}\" ဟု ထားပါ။
-\"{p} {f} {h}\" ဟု ပြသပါ။
-ကိန်းရှင် ပ သည် လူ(အမည်: f၊ အသက်: ၃) ဖြစ်ပါစေ။
-ပ ကို ပြသပါ။
-ကိန်းရှင် l သည် စာသားရှင် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [\"x\"၊ p] ဖြစ်ပါစေ။
-l ကို ပြသပါ။
-လုပ်ဆောင်ချက် ပြ ကို \"q\" တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် ပြ ကို h တို့ဖြင့် လုပ်ဆောင်ပါ။
-h ကို ပြသပါ။
-";
-
-/// What [`FORMS`] prints.
-const FORMED: &str = "aa a a\nလူ(အမည်: \"a\"၊ အသက်: ၃)\n[\"x\"၊ \"aa\"]\nq\na\na\n";
-
-/// Plain, fixed and heap lists: a write, a lent parameter that copies its
+/// Plain and counted lists: a write, a lent parameter that copies its
 /// cells at its first write, copies, a compare, each cell, a list of text,
 /// a list of lists, a struct field, a constant and a list with no cells.
 const FORMS_OF_LISTS: &str = "ဒေတာအမျိုးအစား အုပ် တွင် စာသား အမည်၊ ကိန်းပြည့် စာရင်း အမှတ်များ တို့ \
@@ -286,7 +256,7 @@ u ၏ အကွက် ၀ ကို \"ဂ\" ဟု ထားပါ။
 \"{t} {u}\" ဟု ပြသပါ။
 ကိန်းရှင် f သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈] ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် ပြင် ကို f တို့ဖြင့် လုပ်ဆောင်ပါ။
-ကိန်းရှင် h သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် f ဖြစ်ပါစေ။
+ကိန်းရှင် h သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် f ဖြစ်ပါစေ။
 h ၏ အကွက် ၁ ကို ၅ ဟု ထားပါ။
 \"{f} {h}\" ဟု ပြသပါ။
 ကိန်းရှင် g သည် [[၁၊ ၂]၊ [၃]] ဖြစ်ပါစေ။
@@ -338,7 +308,7 @@ a ကို ပြသပါ။
 t ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
 t ထဲသို့ \"ဂ\" ကို ထည့်ပါ။
 t ကို ပြသပါ။
-ကိန်းရှင် h သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
+ကိန်းရှင် h သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
 h ထဲသို့ ၂ ကို ထည့်ပါ။
 h ကို ပြသပါ။
 ကိန်းရှင် ll သည် ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [[၁]၊ [၂]] ဖြစ်ပါစေ။
@@ -390,7 +360,7 @@ l ကို ပြသပါ။
 t ထဲသို့ t ကို ထည့်ပါ။
 t ထဲသို့ t ကို ထည့်ပါ။
 t ကို ပြသပါ။
-ကိန်းရှင် h သည် စာသားရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"မ\" ဖြစ်ပါစေ။
+ကိန်းရှင် h သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"မ\" ဖြစ်ပါစေ။
 h ထဲသို့ \"ြ\" ကို ထည့်ပါ။
 h ၏ စာလုံး ၀ ကို 'က' ဟု ထားပါ။
 h ကို ပြသပါ။";
@@ -473,22 +443,7 @@ fn each_loops_walk_cells_and_characters_in_each_mode()
 }
 
 #[test]
-fn text_forms_convert_to_each_other_in_each_mode() { runs_in_each_mode(FORMS, FORMED) }
-
-/// Heap text gets a block of its own where a value of another form, such as
-/// a literal in static storage, becomes heap text.
-#[test]
-fn heap_text_owns_its_block()
-{
-    let module = compile_text(FORMS, &FoldOptions::default(), EmitOptions::default());
-    let heap = DataKind::parse("text~").expect("text~");
-    let owns =
-        module.funcs.iter().flat_map(|f| &f.code).filter(|op| **op == Op::Own(heap));
-    assert!(owns.count() >= 3);
-}
-
-#[test]
-fn plain_fixed_and_heap_lists_in_each_mode()
+fn plain_and_counted_lists_in_each_mode()
 {
     runs_in_each_mode(FORMS_OF_LISTS, LISTS_SHOWN)
 }

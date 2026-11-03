@@ -366,8 +366,7 @@ fn lend_args(
         .flatten()
         .copied()
         .collect();
-    // A parameter of heap text owns its block, so it takes a duplicate.
-    for arg in args.iter_mut().filter(|a| !a.kind.holds_heap_text())
+    for arg in args.iter_mut()
     {
         let ExprNode::Dup { value, lent } = &mut arg.node
         else

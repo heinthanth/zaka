@@ -498,6 +498,8 @@ en = "Frame of %{func}"
 en = "Globals"
 [explorer.heap.static_text]
 en = "Static text t%{n}"
+[explorer.heap.static_list]
+en = "Static list s%{n}"
 [explorer.heap.heap_note]
 en = "Heap room the program asked for"
 [explorer.heap.stack_note]

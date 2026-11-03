@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use zakac_ast::stmt::CountMode;
 use zakac_borrow_checker::each_stmt;
+use zakac_ir_builder::fold::is_known;
 use zakac_ir_builder::ir;
 use zakac_ir_builder::ir::CmpOp;
 use zakac_ir_builder::ir::Dest;
@@ -34,6 +35,8 @@ use crate::bc::Module;
 use crate::bc::Op;
 use crate::bc::SliceSource;
 use crate::bc::Slot;
+use crate::bc::StaticCell;
+use crate::bc::StaticSeq;
 use crate::bc::TrapCode;
 use crate::code::CodeBuilder;
 use crate::code::Label;
@@ -74,7 +77,8 @@ pub fn emit(module: &ir::Module, platform_bits: u16, options: EmitOptions) -> Mo
     let main = funcs.len() as u32 - 1;
     #[rustfmt::skip]
     return Module::builder().platform_bits(platform_bits).globals(shared.globals)
-        .texts(shared.texts).formats(shared.formats).funcs(funcs).main(main).build();
+        .texts(shared.texts).seqs(shared.seqs).formats(shared.formats).funcs(funcs)
+        .main(main).build();
 }
 
 /// Make the slot of an IR slot.
@@ -152,6 +156,9 @@ struct Shared
     /// The pieces of each text built when the program runs.
     #[builder(default)]
     formats: Vec<Vec<FmtArg>>,
+    /// The static lists.
+    #[builder(default)]
+    seqs: Vec<StaticSeq>,
 }
 
 impl Shared
@@ -172,6 +179,69 @@ impl Shared
         self.texts.push(text.to_string());
         self.text_index.insert(text.to_string(), i);
         i
+    }
+
+    /// The index of a new static list, made from a list literal of known
+    /// cells. A cell that is a plain list becomes a static list of its own
+    /// first, so each one points back at an earlier one.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The plain list kind.
+    /// * `cells` - The cells of the literal, each known.
+    ///
+    /// # Returns
+    ///
+    /// The index.
+    fn static_seq(&mut self, kind: DataKind, cells: &[Expr]) -> u32
+    {
+        let cells = cells.iter().map(|c| self.static_cell(c)).collect();
+        let s = self.seqs.len() as u32;
+        self.seqs.push(StaticSeq::builder().kind(kind).cells(cells).build());
+        s
+    }
+
+    /// One cell of a static list.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The cell, a known value.
+    ///
+    /// # Returns
+    ///
+    /// The cell.
+    ///
+    /// # Panics
+    ///
+    /// When the value is not known; callers check [`is_known`] first.
+    fn static_cell(&mut self, e: &Expr) -> StaticCell
+    {
+        match &e.node
+        {
+            ExprNode::Const(v) => StaticCell::Value(*v),
+            ExprNode::SizeOf(kind) =>
+            {
+                let size = u128::from(kind.size(self.platform));
+                let usize = int_kind(DataKind::USIZE);
+                StaticCell::Value(Value::int(usize, size, self.platform))
+            }
+            ExprNode::BlankList => StaticCell::Blank,
+            ExprNode::Text(text) => StaticCell::Text(self.text(text)),
+            ExprNode::List(items) =>
+            {
+                StaticCell::Parts(items.iter().map(|i| self.static_cell(i)).collect())
+            }
+            ExprNode::Convert { operand, .. } =>
+            {
+                let ExprNode::List(items) = &operand.node
+                else
+                {
+                    panic!("a static list cell converts a list literal");
+                };
+                StaticCell::Seq(self.static_seq(e.kind, items))
+            }
+            _ => panic!("a static list cell is known at compile time"),
+        }
     }
 
     /// The index of a format, added as a new one.
@@ -1318,6 +1388,11 @@ impl<'s> FuncGen<'s>
             }
             ExprNode::Logic { op, lhs, rhs } => self.logic(*op, lhs, rhs),
             ExprNode::Convert { operand, .. }
+                if e.kind.is_seq() && operand.kind.is_list() && is_known(e) =>
+            {
+                self.static_list(e.kind, operand)
+            }
+            ExprNode::Convert { operand, .. }
                 if e.kind.is_seq() && operand.kind.is_list() =>
             {
                 self.to_heap(e.kind, operand)
@@ -1327,11 +1402,6 @@ impl<'s> FuncGen<'s>
                 self.expr(value);
                 self.op(Op::Dup);
                 self.op(Op::Own(e.kind));
-            }
-            ExprNode::Convert { operand, .. }
-                if owns_heap_text(e.kind, operand.kind) =>
-            {
-                self.own_value(e.kind, operand)
             }
             ExprNode::Convert { operand, .. } =>
             {
@@ -1481,13 +1551,13 @@ impl<'s> FuncGen<'s>
         self.code.bind(end);
     }
 
-    /// Move the cells of a fixed list to a heap block, and push the address of
-    /// a slot that holds the plain or heap list of them.
+    /// Move the cells of a counted list to a heap block, and push the address
+    /// of a slot that holds the plain list of them.
     ///
     /// # Arguments
     ///
-    /// * `kind` - The plain or heap list kind.
-    /// * `value` - The fixed list, a value of its own.
+    /// * `kind` - The plain list kind.
+    /// * `value` - The counted list, a value of its own.
     fn to_heap(&mut self, kind: DataKind, value: &Expr)
     {
         let slot = self.temp("%own", kind);
@@ -1497,23 +1567,24 @@ impl<'s> FuncGen<'s>
         self.op(Op::LocalAddr(slot));
     }
 
-    /// Give a value heap text: blit it into a slot of its own, then give each
-    /// heap text in the slot a block of its own when it has none. The
-    /// address of the slot is left on the stack.
+    /// Point a slot at a static list made from a list literal of known cells,
+    /// and push the address of the slot: no heap block until the first edit.
     ///
     /// # Arguments
     ///
-    /// * `kind` - The kind with heap text.
-    /// * `value` - The value, of a kind with the same words.
-    fn own_value(&mut self, kind: DataKind, value: &Expr)
+    /// * `kind` - The plain list kind.
+    /// * `value` - The list literal.
+    fn static_list(&mut self, kind: DataKind, value: &Expr)
     {
+        let ExprNode::List(items) = &value.node
+        else
+        {
+            panic!("a static list is a list literal");
+        };
+        let s = self.shared.static_seq(kind, items);
         let slot = self.temp("%own", kind);
         self.op(Op::LocalAddr(slot));
-        self.expr(value);
-        self.op(Op::Blit(kind));
-        self.op(Op::LocalAddr(slot));
-        self.op(Op::Own(kind));
-        self.op(Op::LocalAddr(slot));
+        self.op(Op::StaticSeq(s));
     }
 
     /// Duplicate a value that holds text into a slot of its own: blit the
@@ -1713,22 +1784,6 @@ fn apart_from(e: &Expr, place: Place) -> bool
         ExprNode::List(cells) => cells.iter().all(|c| apart_from(c, place)),
         _ => false,
     }
-}
-
-/// Whether a conversion gives heap text to a value that might hold text
-/// with no block of its own.
-///
-/// # Arguments
-///
-/// * `to` - The kind converted to.
-/// * `from` - The kind of the value.
-///
-/// # Returns
-///
-/// `true` when `to` holds heap text and `from` is another kind.
-fn owns_heap_text(to: DataKind, from: DataKind) -> bool
-{
-    to.holds_heap_text() && from != to
 }
 
 /// A `usize` constant.

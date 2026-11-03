@@ -426,10 +426,6 @@ const LATER_WORDS: &[Kw] = &[
     Kw::WillKeep,
     Kw::WillResize,
     Kw::WillRelease,
-    Kw::FixedTextKind,
-    Kw::HeapTextKind,
-    Kw::FixedList,
-    Kw::HeapList,
 ];
 
 /// The words of [`LATER_WORDS`] a program uses.

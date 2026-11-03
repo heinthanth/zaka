@@ -200,10 +200,11 @@ A write into a plain list is a loss too. Lowering wraps each plain list on the p
 written place in an `Own` node, since the write can first move its cells to a block of its
 own; for a `Store`, `owned_lists` finds the place of each such list and
 `check_heap` runs with `Invalidation::Edited`. A slice of the list still live is ZK0704,
-with "is edited, so its cells can move," in place of "is freed". A heap list gets no
-`Own`, so a write to its cells ends no loan.
+with "is edited, so its cells can move," in place of "is freed". The `Own` that lowering
+puts on the source of a slice or of the address of a cell is no `Store`, so it ends no
+loan.
 
-An `AddCell` or a `RemoveCell` is a loss as well, for a plain and a heap list alike: an add
+An `AddCell` or a `RemoveCell` is a loss as well: an add
 can move the cells to a larger block, and a remove drops the last cell. `edit_list` runs
 `check_heap` with `Invalidation::Edited` on the list itself and on each plain list
 `owned_lists` finds around it, since those first take a block of their own; then the
@@ -229,7 +230,7 @@ s ကို ပြသပါ။
 error[ZK0704]: the block of "က" is edited, so its cells can move, here, but "s" still borrows it and is used later
 ```
 
-Text works through the same paths, and so do plain and heap lists, whose kinds
+Text works through the same paths, and so do plain lists, whose kinds
 `holds_text` covers. A `text` slot owns the block of its u8s, so a read of a
 text place roots at that block, as a read of an owner does, and a lend or a range of the
 text is a borrow of it. A `Drop` of a text place gives the block back as a `Free` does,
@@ -260,7 +261,7 @@ the check, as a `Dup` is. With `--warn-duplicates`, each `Dup` left that is not 
 ZK0720.
 
 Last, `share_params` fills `Func::shared_params` with each list or struct parameter that
-holds no text, plain or heap list, owner or borrow and that the function never sets, stores into, moves out
+holds no text, plain list, owner or borrow and that the function never sets, stores into, moves out
 of, drops, views or takes the address of; codegen reads such a parameter in the caller's
 storage. A call gets a plain `Dup` of an argument for such a parameter when the call, or
 a call inside its arguments, writes the global read, or a lend, a range or an address

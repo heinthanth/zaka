@@ -95,9 +95,9 @@ cell and then `[]`:
 | `ကိန်းပြည့် စာရင်း` | `isize[]` |
 | `ကိန်းပြည့် စာရင်း စာရင်း` | `isize[][]` |
 
-Part II adds two more forms of list, each with a promise: a fixed list keeps its count for
-good, and a heap list owns a heap block from the start. See [Fixed and heap
-forms](../forms/fixed-and-heap.md).
+Part II shows where the cells of a list live, and adds the counted list, which keeps its
+count for good and its cells in place. See [Static data and counted
+lists](../forms/counted-lists.md).
 
 ## Cell numbers
 

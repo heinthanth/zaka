@@ -10,14 +10,16 @@ use crate::bc::Func;
 use crate::bc::Module;
 use crate::bc::Op;
 use crate::bc::Slot;
+use crate::bc::StaticCell;
+use crate::bc::StaticSeq;
 
 /// The first line of a listing.
 pub const LISTING_HEADER: &str = "; zakac asm listing v1";
 
 /// Write a module as a readable asm listing: the globals, the pooled texts,
-/// then each function with one op per line. Jump targets become labels
-/// `L0`, `L1`, ... numbered per function in code order, and ops that name a
-/// slot or a function show that name in a comment.
+/// the static lists, then each function with one op per line. Jump targets
+/// become labels `L0`, `L1`, ... numbered per function in code order, and ops
+/// that name a slot or a function show that name in a comment.
 ///
 /// # Arguments
 ///
@@ -35,6 +37,7 @@ pub fn listing(module: &Module) -> String
         slots(&mut out, "globals", 'g', &module.globals)
     );
     do_if!(!module.texts.is_empty(), texts(&mut out, &module.texts));
+    do_if!(!module.seqs.is_empty(), seqs(&mut out, &module.seqs));
     do_if!(!module.formats.is_empty(), formats(&mut out, &module.formats));
     for (i, func) in module.funcs.iter().enumerate()
     {
@@ -73,6 +76,58 @@ fn texts(out: &mut String, list: &[String])
     for (i, t) in list.iter().enumerate()
     {
         let _ = writeln!(out, "  t{i} {}", quote(t));
+    }
+}
+
+/// Write the static lists: each with its kind and its cells, a static text
+/// as `t0` and a static list as `s0`.
+///
+/// # Arguments
+///
+/// * `out` - The listing.
+/// * `list` - The static lists.
+fn seqs(out: &mut String, list: &[StaticSeq])
+{
+    let _ = writeln!(out, "seqs");
+    for (i, s) in list.iter().enumerate()
+    {
+        let _ = writeln!(out, "  s{i} {} {}", s.kind.name(), parts_text(&s.cells));
+    }
+}
+
+/// Cells of a static list as listing text, in brackets.
+///
+/// # Arguments
+///
+/// * `cells` - The cells.
+///
+/// # Returns
+///
+/// The text.
+fn parts_text(cells: &[StaticCell]) -> String
+{
+    let texts: Vec<String> = cells.iter().map(cell_text).collect();
+    format!("[{}]", texts.join(", "))
+}
+
+/// One cell of a static list as listing text.
+///
+/// # Arguments
+///
+/// * `cell` - The cell.
+///
+/// # Returns
+///
+/// The text.
+fn cell_text(cell: &StaticCell) -> String
+{
+    match cell
+    {
+        StaticCell::Value(v) => v.to_string(),
+        StaticCell::Text(t) => format!("t{t}"),
+        StaticCell::Seq(s) => format!("s{s}"),
+        StaticCell::Parts(parts) => parts_text(parts),
+        StaticCell::Blank => "blank".to_string(),
     }
 }
 

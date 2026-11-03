@@ -208,7 +208,6 @@ fn list_constructors_render_messages()
     let span = Span::PLACEHOLDER;
     assert!(k::list_count_mismatch(span, 3, 2).message.contains('3'));
     assert!(k::blank_list_kind(span).help.is_some());
-    assert!(k::list_count_missing(span).help.is_some());
     assert!(k::not_a_list(span, "isize").message.contains("isize"));
     assert!(k::cell_number_not_int(span, "f64").message.contains("f64"));
     assert!(k::borrow_list_result(span).help.is_some());
