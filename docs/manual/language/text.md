@@ -445,7 +445,8 @@ error[ZK0606]: a text constant must be known at compile time
 
 Owned text comes in three forms. Each is the same three words, and each converts to the
 others on its own where a value goes into a place: a declaration, a set, an argument, a
-result, a struct field or a list cell.
+result, a struct field or a list cell. A value becomes fixed text when it is known at
+compile time; else the conversion is ZK0608.
 
 | Form | Burmese | Its u8s |
 | --- | --- | --- |
@@ -470,7 +471,7 @@ result, a struct field or a list cell.
 - A constant holds plain or fixed text, never heap text (ZK0435): a constant sits in
   static storage.
 - A lend of text of each form gives a view, `text[..]`. Joins, formats and template literals
-  make plain text, which converts to the other forms.
+  make plain text, which converts to heap text, and to fixed text when it folds.
 
 ```zaka
 ကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။

@@ -22,7 +22,8 @@ make a promise each:
 `စာသားသေ` ("fixed text") is text known before the program runs, which never changes:
 Rust's `&'static str`. `စာသားရှင်` ("living text") sits on the heap, in a block of its
 own, from the start. Each of the three converts to the
-others, so one can go where another is wanted:
+others, so one can go where another is wanted; for fixed text, the value must be known
+before the program runs, as the end of this section shows:
 
 ```zaka
 ကိန်းရှင် က သည် စာသားသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။
