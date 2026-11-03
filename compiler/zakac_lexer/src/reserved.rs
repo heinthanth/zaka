@@ -143,6 +143,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ပြန်လည်စွန့်လွှတ်မည်", Kw::WillRelease),
     // lists
     ("စာရင်း", Kw::List),
+    ("စာရင်းသေ", Kw::FixedList),
+    ("စာရင်းရှင်", Kw::HeapList),
     ("စာရင်းအလွတ်", Kw::BlankList),
     ("အကွက်", Kw::Cell),
     ("အကွက်အရေအတွက်", Kw::CellCount),

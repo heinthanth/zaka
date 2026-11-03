@@ -196,7 +196,26 @@ error[ZK0704]: the block of "ပ" is freed here, but "မိတ္တူ" still 
 Swap the last two lines and the program is correct: `မိတ္တူ` is no longer live at the
 free.
 
-Text works through the same paths. A `text` slot owns the block of its u8s, so a read of a
+A write into a plain list is a loss too. Lowering wraps each plain list on the path of a
+written place in an `Own` node, since the write can first move its cells to a block of its
+own; for a `Store`, `owned_lists` finds the place of each such list and
+`check_heap` runs with `Invalidation::Edited`. A slice of the list still live is ZK0704,
+with "is edited, so its cells can move," in place of "is freed". A heap list gets no
+`Own`, so a write to its cells ends no loan.
+
+```zaka-error ZK0704
+ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+က ၏ အကွက် ၀ ကို ၉ ဟု ထားပါ။
+s ကို ပြသပါ။
+```
+
+```text
+error[ZK0704]: the block of "က" is edited, so its cells can move, here, but "s" still borrows it and is used later
+```
+
+Text works through the same paths, and so do plain and heap lists, whose kinds
+`holds_text` covers. A `text` slot owns the block of its u8s, so a read of a
 text place roots at that block, as a read of an owner does, and a lend or a range of the
 text is a borrow of it. A `Drop` of a text place gives the block back as a `Free` does,
 and then leaves the slot blank, save a struct or a list with an owner in it: the drop frees
@@ -219,14 +238,14 @@ text freed; for a place that a lend, a range or an address reads in some routine
 a place its statement reads twice.
 
 After the moves, `lend_arguments` marks each `Dup` left in a call argument `lent`, so the
-callee reads the caller's u8s with a room of 0, unless the call, or a call inside its
+callee reads the caller's u8s, or the cells of a plain list, with a room of 0, unless the call, or a call inside its
 arguments, sets the global read (`global_writes`, at each depth), or the place is read
 through a pointer, or a lend, a range or an address reads it. A lent `Dup` is fresh for
 the check, as a `Dup` is. With `--warn-duplicates`, each `Dup` left that is not lent is
 ZK0720.
 
 Last, `share_params` fills `Func::shared_params` with each list or struct parameter that
-holds no text, owner or borrow and that the function never sets, stores into, moves out
+holds no text, plain or heap list, owner or borrow and that the function never sets, stores into, moves out
 of, drops, views or takes the address of; codegen reads such a parameter in the caller's
 storage. A call gets a plain `Dup` of an argument for such a parameter when the call, or
 a call inside its arguments, writes the global read, or a lend, a range or an address

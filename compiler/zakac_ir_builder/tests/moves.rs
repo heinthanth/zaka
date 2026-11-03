@@ -116,7 +116,12 @@ fn a_list_of_owners_moves_as_a_whole()
     let forms = plain(text);
     assert_eq!(forms[1], "(set g1 (take (addr g0)))");
     assert_eq!(forms[2], "(set g2 (take (cell@ g1 0:usize 2)))");
-    assert!(forms[3].starts_with("(set g3 (list (take (addr g2)) 0x0"), "{}", forms[3]);
+    // A list with no count is a plain list: its cells move to a heap block.
+    assert!(
+        forms[3].starts_with("(set g3 (widen isize*[] (list (take (addr g2)) 0x0"),
+        "{}",
+        forms[3]
+    );
 }
 
 #[test]

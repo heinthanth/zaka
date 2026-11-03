@@ -270,6 +270,7 @@ impl Checker
         ret_if!(kind.is_raw_ptr(), self.report(od::lend_of_raw(span)), None);
         ret_if!(kind.is_ptr(), Some(kind.as_borrowed()));
         ret_if!(let Some(l) = kind.as_list(), self.lend_list(operand, l.cell));
+        ret_if!(let Some(l) = kind.as_seq(), self.lend_list(operand, l.cell));
         let text = kind.is_text();
         ret_if!(text, tern!(self.viewable(operand), Some(DataKind::text_view()), None));
         let found = kind.name();

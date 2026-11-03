@@ -257,19 +257,31 @@ pub enum Op
     /// top, then the address of a text slot; write the text of each piece
     /// in a new heap block, keep it in the slot, and push the address.
     Format(u32),
-    /// Pop the address of a value of this kind; free each text in it whose
-    /// room is above 0, and leave each text blank.
+    /// Pop the address of a value of this kind; free each text and each plain
+    /// or heap list in it whose room is above 0, the cells of a list dropped
+    /// first, and leave each blank.
     Drop(DataKind),
-    /// Pop the address of a value of this kind; give each text in it whose
-    /// u8s sit outside static storage a new heap block with the same u8s.
+    /// Pop the address of a value of this kind; give each text and each plain
+    /// or heap list in it whose cells sit outside static storage a new heap
+    /// block with the same cells, the cells of a list duplicated in turn.
     DupText(DataKind),
-    /// Pop the address of a value of this kind; give each text in it a room
-    /// of 0, so it reads the u8s it shares and a drop of it frees nothing.
+    /// Pop the address of a value of this kind; give each text and each plain
+    /// or heap list in it a room of 0, so it reads the cells it shares and a
+    /// drop of it frees nothing.
     LendText(DataKind),
-    /// Pop the address of a value of this kind; give each heap text in it
-    /// whose room is 0 and that holds u8s a new heap block with the same
-    /// u8s, so it owns its block.
-    OwnText(DataKind),
+    /// Pop the address of a value of this kind; give each text and each plain
+    /// or heap list in it whose room is 0 and that holds cells a new heap
+    /// block with the same cells, so it owns its block; the cells of a list
+    /// are duplicated.
+    Own(DataKind),
+    /// Pop the address of a fixed list of this kind, then the address of a
+    /// slot; move the cells to a new heap block and write the plain list
+    /// that owns it in the slot.
+    ToHeap(DataKind),
+    /// Pop the addresses of two plain or heap lists, the right one first;
+    /// push whether the two hold the same count of cells, each equal to the
+    /// other's.
+    SeqEq(DataKind),
     /// Pop the address of text; push the number of its characters, a
     /// `usize`.
     CharCount,
@@ -376,7 +388,9 @@ impl Op
             | Op::Drop(kind)
             | Op::DupText(kind)
             | Op::LendText(kind)
-            | Op::OwnText(kind)
+            | Op::Own(kind)
+            | Op::ToHeap(kind)
+            | Op::SeqEq(kind)
             | Op::PrintList(kind) => kind.name(),
             Op::MakeSlice { stride, from } =>
             {

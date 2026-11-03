@@ -1244,6 +1244,13 @@ impl<'s> FuncGen<'s>
                 self.op(Op::TextEq);
                 do_if!(*op == CmpOp::Ne, self.op(Op::Prefix(PrefixOp::Not)));
             }
+            ExprNode::Compare { op, lhs, rhs } if lhs.kind.is_seq() =>
+            {
+                self.expr(lhs);
+                self.expr(rhs);
+                self.op(Op::SeqEq(lhs.kind));
+                do_if!(*op == CmpOp::Ne, self.op(Op::Prefix(PrefixOp::Not)));
+            }
             ExprNode::Compare { op, lhs, rhs } if lhs.kind.is_list() =>
             {
                 self.expr(lhs);
@@ -1258,6 +1265,17 @@ impl<'s> FuncGen<'s>
                 self.op(Op::Compare(*op));
             }
             ExprNode::Logic { op, lhs, rhs } => self.logic(*op, lhs, rhs),
+            ExprNode::Convert { operand, .. }
+                if e.kind.is_seq() && operand.kind.is_list() =>
+            {
+                self.to_heap(e.kind, operand)
+            }
+            ExprNode::Own { value } =>
+            {
+                self.expr(value);
+                self.op(Op::Dup);
+                self.op(Op::Own(e.kind));
+            }
             ExprNode::Convert { operand, .. }
                 if owns_heap_text(e.kind, operand.kind) =>
             {
@@ -1411,6 +1429,22 @@ impl<'s> FuncGen<'s>
         self.code.bind(end);
     }
 
+    /// Move the cells of a fixed list to a heap block, and push the address of
+    /// a slot that holds the plain or heap list of them.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The plain or heap list kind.
+    /// * `value` - The fixed list, a value of its own.
+    fn to_heap(&mut self, kind: DataKind, value: &Expr)
+    {
+        let slot = self.temp("%own", kind);
+        self.op(Op::LocalAddr(slot));
+        self.expr(value);
+        self.op(Op::ToHeap(value.kind));
+        self.op(Op::LocalAddr(slot));
+    }
+
     /// Give a value heap text: blit it into a slot of its own, then give each
     /// heap text in the slot a block of its own when it has none. The
     /// address of the slot is left on the stack.
@@ -1426,7 +1460,7 @@ impl<'s> FuncGen<'s>
         self.expr(value);
         self.op(Op::Blit(kind));
         self.op(Op::LocalAddr(slot));
-        self.op(Op::OwnText(kind));
+        self.op(Op::Own(kind));
         self.op(Op::LocalAddr(slot));
     }
 

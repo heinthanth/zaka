@@ -553,7 +553,7 @@ a program stops](../vm/traps.md) the trap.
 | ZK0403 | `+` of text and a non-text value, or an operator other than `+`, `==` and `!=` on text |
 | ZK0411 | the lend of a literal or a call result |
 | ZK0429 | a write to a cell of text |
-| ZK0435 | a constant that holds heap text |
+| ZK0435 | a constant that holds heap text or a heap list |
 | ZK0704 | a view used after its text is dropped |
 | ZK0706 | a function returns a view of its own local text |
 | ZK0718 | a struct field holds a view |

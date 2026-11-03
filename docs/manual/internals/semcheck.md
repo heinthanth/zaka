@@ -138,7 +138,7 @@ looks for it in the other files and adds help that names the file that declares 
 
 ## The data it builds
 
-**`DataKind`** is `Copy` and has ten forms:
+**`DataKind`** is `Copy` and has eleven forms:
 
 | Form | Holds |
 | --- | --- |
@@ -148,7 +148,8 @@ looks for it in the other files and adds help that names the file that declares 
 | `Text(TextForm)` | owned UTF-8 text of a form: `Plain` (`စာသား`), `Fixed` (`စာသားသေ`) or `Heap` (`စာသားရှင်`), each three words; `holds_heap_text` holds for heap text and for each list or struct with it inside; copied, not moved (`is_move_kind` is `holds_owner_ptr`), and `holds_text` holds for it and for each list or struct with text in it |
 | `Ptr(PtrKind)` | levels of address over a base, with the outer level an owner, a borrow or raw |
 | `Null` | the kind of `ဗလာ`, which converts to each pointer kind |
-| `List(&'static ListKind)` | a count of cells of one kind; list kinds are interned so the form remains `Copy` |
+| `List(&'static ListKind)` | a fixed list: a count of cells of one kind, inline; list kinds are interned so the form remains `Copy` |
+| `Seq(&'static SeqKind)` | a plain or a heap list, three words as text is (address, count, room); `SeqKind { cell, heap }`, interned through `seq_of`; `holds_seq` holds for it and for each fixed list or struct with one inside; `holds_text` holds for it too, so it is dropped, duplicated and lent as text is, and `holds_heap_text` for a heap list; `cell_kind` gives the cell kind of a list of each form or a slice |
 | `Struct(&'static StructKind)` | a struct with its named fields, interned as list kinds are |
 | `Slice(&'static SliceKind)` | a borrowed run of cells of one kind, with its count known at run time; `is_borrow` holds for it. `SliceKind { cell, text }`: `text` marks the view of text, `text[..]`, whose cells are `u8` |
 
@@ -205,6 +206,9 @@ An implicit conversion (`widens_to`) never loses data:
 | `ဗလာ` | pointer | in each case |
 | pointer | pointer | the same flavour (owner, borrow or raw) and the same shape, or one is the opaque `လိပ်စာ`; a block of addresses read as other data needs a raw step |
 | text of a form | text of another form | in each case: the three forms share their three words; lowering relabels plain and fixed text and gives heap text its own block |
+| fixed list | plain or heap list of the same cell kind | when the fixed list has cells; lowering moves the cells to a heap block (`to_heap`) |
+| plain list | heap list of the same cell kind, and back | in each case |
+| plain or heap list | fixed list | never: the count of a fixed list is part of its kind (ZK0401) |
 | `text[..]` | `u8[][..]` | never: a write through the slice would break the text; nor the reverse, since a slice of u8s is not known to hold UTF-8 |
 | char, bool, list, text | other kinds | never; owned text does not become a view without a lend |
 
@@ -245,8 +249,15 @@ These codes are errors in each mode of the ownership check: these are decided he
 kinds alone, and `--mem-check` never sees them. The rules that need a flow through the
 program belong to [the borrow checker](borrow-checker.md).
 
-Lists are checked in `list.rs`: the cell kind, the count (written or taken from the
-initializer), a cell number that is an integer, and a short-lived list that is not a place.
+Lists are checked in `list.rs`: the cell kind, the count (written, or taken from the
+initializer for `စာရင်းသေ`, else ZK0421), a cell number that is an integer, and a
+short-lived list that is not a place. A list literal with no fixed list expected is a
+plain list, or the heap list its place wants. `[]` checked against a fixed list is
+allowed in the value of a declaration alone, where each cell starts at its default; in
+each other place it is ZK0436. A constant takes `fixed_form` of its kind: each plain or
+heap list in it becomes a fixed list whose count its value gives, and a constant heap
+list is ZK0435. `==` and `!=` take two lists of one kind, or a plain and a heap list of
+one cell kind; a fixed and a plain list is ZK0404.
 The count, a cell, a range and the lend also take text, owned or a view: a cell of text
 is a `u8`, and a range or a lend of text is a `text[..]`. The assignment check in
 `semcheck.rs` reports a write to a cell of text as ZK0429. A range or a lend of text needs

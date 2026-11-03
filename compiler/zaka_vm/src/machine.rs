@@ -1004,11 +1004,13 @@ impl Machine
                 let addr = self.pop_ptr("lend_text")?;
                 self.lend_value(addr, kind)
             }
-            Op::OwnText(kind) =>
+            Op::Own(kind) =>
             {
-                let addr = self.pop_ptr("own_text")?;
+                let addr = self.pop_ptr("own")?;
                 self.own_value(addr, kind)
             }
+            Op::ToHeap(kind) => self.to_heap(kind),
+            Op::SeqEq(kind) => self.seq_eq(kind),
             Op::CharCount => self.char_count(),
             Op::CharAt { first } => self.char_at(first),
             Op::CharAtOctet => self.char_at_octet(),
@@ -1830,8 +1832,10 @@ impl Machine
         self.mem.store(slot + 2 * word, Value::int(usize, u128::from(room), platform))
     }
 
-    /// The address of each text in a value: the value itself for text, and
-    /// each text field or cell, at each depth, for a struct or a list.
+    /// The address and the kind of each text and each plain or heap list in
+    /// a value: the value itself for one of these, and each field or cell of
+    /// one, at each depth, for a struct or a fixed list. The cells of a plain
+    /// or heap list sit in its block, so the walk leaves them out.
     ///
     /// # Arguments
     ///
@@ -1840,8 +1844,8 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// The addresses, in storage order.
-    fn texts_in(&self, addr: u64, kind: DataKind) -> Vec<u64>
+    /// The addresses with their kinds, in storage order.
+    fn blocks_in(&self, addr: u64, kind: DataKind) -> Vec<(u64, DataKind)>
     {
         let platform = self.module.platform_bits;
         if let Some(s) = kind.as_struct()
@@ -1849,7 +1853,7 @@ impl Machine
             let fields =
                 s.fields().iter().enumerate().filter(|(_, (_, k))| k.holds_text());
             let at = |(i, (_, k)): (usize, &(String, DataKind))| {
-                self.texts_in(addr + u64::from(s.offset(i, platform)), *k)
+                self.blocks_in(addr + u64::from(s.offset(i, platform)), *k)
             };
             return fields.flat_map(at).collect();
         }
@@ -1858,18 +1862,18 @@ impl Machine
             let stride = u64::from(l.cell.size(platform));
             let cells = 0..u64::from(l.len);
             return cells
-                .flat_map(|i| self.texts_in(addr + i * stride, l.cell))
+                .flat_map(|i| self.blocks_in(addr + i * stride, l.cell))
                 .collect();
         }
-        tern!(kind.is_text(), vec![addr], Vec::new())
+        tern!(kind.is_text() || kind.is_seq(), vec![(addr, kind)], Vec::new())
     }
 
-    /// The room of the text at an address: the size of its heap block, or 0
-    /// when its u8s sit in static storage or it holds none.
+    /// The room of the text or the list at an address: the size of its heap
+    /// block, or 0 when it owns none.
     ///
     /// # Arguments
     ///
-    /// * `addr` - The address of the text.
+    /// * `addr` - The address of the text or the list.
     ///
     /// # Returns
     ///
@@ -1881,9 +1885,24 @@ impl Machine
         Ok(tern!(let Value::Int { raw, .. } = room, raw as u64, 0))
     }
 
-    /// Free each heap text in a value and leave each text blank: a text
-    /// with room 0 sits in static storage or was moved out, so its u8s
-    /// remain.
+    /// The size of one cell of text or of a plain or heap list.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the text or the list.
+    ///
+    /// # Returns
+    ///
+    /// The size in octets.
+    fn stride_of(&self, kind: DataKind) -> u64
+    {
+        let platform = self.module.platform_bits;
+        kind.as_seq().map_or(1, |s| u64::from(s.cell.size(platform)))
+    }
+
+    /// Free each heap text and list in a value and leave each blank: one with
+    /// room 0 owns no block, so its cells remain. A list that owns its block
+    /// drops each of its cells first.
     ///
     /// # Arguments
     ///
@@ -1895,19 +1914,75 @@ impl Machine
     /// `Ok`, or the trap a read or the free hits.
     fn drop_value(&mut self, addr: u64, kind: DataKind) -> Step
     {
-        for text in self.texts_in(addr, kind)
+        for (at, k) in self.blocks_in(addr, kind)
         {
-            let at = self.mem.load(text, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
-            do_if!(self.room_of(text)? > 0, self.mem.free(at)?);
-            self.mem.zero(text, DataKind::TEXT)?;
+            let (base, count) = slice_parts(&self.mem, at)?;
+            if self.room_of(at)? > 0
+            {
+                self.drop_cells(base, count, k)?;
+                self.mem.free(base)?;
+            }
+            self.mem.zero(at, k)?;
         }
         Ok(())
     }
 
-    /// Give each text in a value whose u8s sit outside static storage a new
-    /// heap block with the same u8s, so the value no longer shares them with
-    /// the one it was copied from: heap text, and text a caller lent with a
-    /// room of 0. Static text is shared, since nothing writes it.
+    /// Drop each cell of a plain or heap list that holds text or a list.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The address of the first cell.
+    /// * `count` - The number of cells.
+    /// * `kind` - The kind of the text or the list.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a drop hits.
+    fn drop_cells(&mut self, base: u64, count: u64, kind: DataKind) -> Step
+    {
+        let Some(cell) = kind.as_seq().map(|s| s.cell).filter(|c| c.holds_text())
+        else
+        {
+            return Ok(());
+        };
+        let stride = self.stride_of(kind);
+        do_for!(i in 0..count, self.drop_value(base + i * stride, cell)?);
+        Ok(())
+    }
+
+    /// Give the text or the list at an address a new heap block with the
+    /// same cells, each text and list in the cells duplicated in turn. One
+    /// with no cells keeps no block.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address of the text or the list.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, a trap a read hits, or `OutOfMem`.
+    fn clone_block(&mut self, at: u64, kind: DataKind) -> Step
+    {
+        let (base, count) = slice_parts(&self.mem, at)?;
+        let stride = self.stride_of(kind);
+        let size = count * stride;
+        ret_if!(size == 0, self.write_text(at, 0, 0, 0));
+        let content = self.mem.octets(base, size)?;
+        let block = self.mem.alloc(size, Origin::Heap, 0);
+        let block = block.ok_or(TrapKind::OutOfMem { size })?;
+        self.mem.fill_block(block, &content)?;
+        self.write_text(at, block, count, size)?;
+        let cell = kind.as_seq().map(|s| s.cell).filter(|c| c.holds_text());
+        do_if!(let Some(cell) = cell, do_for!(i in 0..count, self.dup_value(block + i * stride, cell)?));
+        Ok(())
+    }
+
+    /// Give each text and list in a value whose cells sit outside static
+    /// storage a new heap block with the same cells, so the value no longer
+    /// shares them with the one it was copied from: one that owns a heap
+    /// block, and one a caller lent with a room of 0. Static text is shared,
+    /// since nothing writes it.
     ///
     /// # Arguments
     ///
@@ -1919,25 +1994,17 @@ impl Machine
     /// `Ok`, a trap a read hits, or `OutOfMem`.
     fn dup_value(&mut self, addr: u64, kind: DataKind) -> Step
     {
-        for text in self.texts_in(addr, kind)
+        for (at, k) in self.blocks_in(addr, kind)
         {
-            let at = self.mem.load(text, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
-            if at == 0 || self.mem.is_frozen(at)
-            {
-                continue;
-            }
-            let content = text_at(&self.mem, text)?;
-            let size = content.len() as u64;
-            let block = self.mem.alloc(size, Origin::Heap, 0);
-            let block = block.ok_or(TrapKind::OutOfMem { size })?;
-            self.mem.fill_block(block, content.as_bytes())?;
-            self.write_text(text, block, size, size)?;
+            let base = self.mem.load(at, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
+            do_if!(base != 0 && !self.mem.is_frozen(base), self.clone_block(at, k)?);
         }
         Ok(())
     }
 
-    /// Give each heap text in a value a block of its own: a text with u8s
-    /// and a room of 0 gets a new heap block with the same u8s.
+    /// Give each text and list in a value that owns no block so far a block of
+    /// its own: one with cells and a room of 0 gets a new heap block with the
+    /// same cells.
     ///
     /// # Arguments
     ///
@@ -1949,20 +2016,56 @@ impl Machine
     /// `Ok`, or the trap the allocation or a write hits.
     fn own_value(&mut self, addr: u64, kind: DataKind) -> Step
     {
-        for text in self.texts_in(addr, kind)
+        for (at, k) in self.blocks_in(addr, kind)
         {
-            let content = text_at(&self.mem, text)?;
-            let size = content.len() as u64;
-            if size == 0 || self.room_of(text)? > 0
-            {
-                continue;
-            }
-            let block = self.mem.alloc(size, Origin::Heap, 0);
-            let block = block.ok_or(TrapKind::OutOfMem { size })?;
-            self.mem.fill_block(block, content.as_bytes())?;
-            self.write_text(text, block, size, size)?;
+            do_if!(self.room_of(at)? == 0, self.clone_block(at, k)?);
         }
         Ok(())
+    }
+
+    /// Pop the address of a fixed list, then the address of a slot; move the
+    /// cells to a new heap block and write the plain list of them in the slot.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The fixed list kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, a trap a read hits, or `OutOfMem`.
+    fn to_heap(&mut self, kind: DataKind) -> Step
+    {
+        let src = self.pop_ptr("to_heap")?;
+        let dst = self.pop_ptr("to_heap")?;
+        let platform = self.module.platform_bits;
+        let list =
+            kind.as_list().ok_or_else(|| malformed("to_heap takes a fixed list"))?;
+        let count = u64::from(list.len);
+        let size = count * u64::from(list.cell.size(platform));
+        ret_if!(size == 0, self.write_text(dst, 0, 0, 0));
+        let content = self.mem.octets(src, size)?;
+        let block = self.mem.alloc(size, Origin::Heap, 0);
+        let block = block.ok_or(TrapKind::OutOfMem { size })?;
+        self.mem.fill_block(block, &content)?;
+        self.write_text(dst, block, count, size)
+    }
+
+    /// Pop the addresses of two plain or heap lists, the right one first, and
+    /// push whether the two hold equal cells.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the left list.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a read hits.
+    fn seq_eq(&mut self, kind: DataKind) -> Step
+    {
+        let r = self.pop_ptr("seq_eq")?;
+        let l = self.pop_ptr("seq_eq")?;
+        let same = self.cells_equal(l, r, kind)?;
+        self.push(Value::Bool(same))
     }
 
     /// Lend each text in a value to a parameter for one call: give it a room
@@ -1981,9 +2084,9 @@ impl Machine
         let platform = self.module.platform_bits;
         let word = u64::from(platform / 8);
         let zero = Value::int(IntKind::new(false, Width::Platform), 0, platform);
-        for text in self.texts_in(addr, kind)
+        for (at, _) in self.blocks_in(addr, kind)
         {
-            self.mem.store(text + 2 * word, zero)?;
+            self.mem.store(at + 2 * word, zero)?;
         }
         Ok(())
     }
@@ -2077,6 +2180,22 @@ impl Machine
     /// Whether the two are equal, or the trap a read hits.
     fn cells_equal(&self, l: u64, r: u64, kind: DataKind) -> Result<bool, TrapKind>
     {
+        ret_if!(
+            kind.is_textual(),
+            Ok(text_at(&self.mem, l)? == text_at(&self.mem, r)?)
+        );
+        if let Some(seq) = kind.as_seq()
+        {
+            let ((lb, lc), (rb, rc)) =
+                (slice_parts(&self.mem, l)?, slice_parts(&self.mem, r)?);
+            ret_if!(lc != rc, Ok(false));
+            let stride = self.stride_of(kind);
+            for at in (0..lc).map(|i| i * stride)
+            {
+                ret_if!(!self.cells_equal(lb + at, rb + at, seq.cell)?, Ok(false));
+            }
+            return Ok(true);
+        }
         let Some(list) = kind.as_list()
         else
         {

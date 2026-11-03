@@ -197,14 +197,18 @@ Each of these checks its address as described in [blocks](blocks.md), and can tr
 
 ### Lists
 
-A list lives in a block, and its instructions work on addresses.
+A list lives in a block, and its instructions work on addresses. A fixed list is its
+cells, inline; a plain or heap list is three words, as text is (the address of its first
+cell, its count, and the room of its heap block), and its cells sit in a heap block.
 
 | Instruction | Effect | Meaning |
 | --- | --- | --- |
 | `index 3`, `index 3 from 1` | n → i | check a cell number against a list of 3 cells, whose first cell is numbered 0 (or 1, after `from`); push it counted from 0 |
 | `blit k` | to from → | duplicate a value of kind `k`, such as a whole list, from one address to another |
 | `zero k` | addr → | set the octets of a value of kind `k` to zero |
-| `list_eq k` | a b → bool | whether each cell of one list equals the cell of the other |
+| `list_eq k` | a b → bool | whether each cell of one fixed list equals the cell of the other |
+| `seq_eq k` | addr addr → b | whether two plain or heap lists with cells of kind `k` hold the same count of cells, each equal |
+| `to_heap k` | slot addr → | move the cells of the fixed list of kind `k` at `addr` to a new heap block, and write the plain list of them in the slot |
 | `make_slice 8 of 3` | slot source start len → slot | write the slice of `len` cells from cell `start` of the source in the slot; the source is a list of 3 cells (`of 3`), a slice (`of slice`) or a heap block (`of block`), and a range past its end stops the program; `checked` skips the test |
 | `slice_cell 8` | slice n → addr | check a cell number against the count of a slice; push the address of the cell. A cell the compiler proves in range is `load` of the first word, then `ptr_add`, with no check |
 
@@ -214,10 +218,10 @@ A list lives in a block, and its instructions work on addresses.
 | --- | --- | --- |
 | `text t` | slot → slot | write the static text `t` in the text slot, with a room of 0 |
 | `format fmt` | slot v… → slot | build the text of format `fmt` in a new heap block and write it in the slot, with a room equal to its count |
-| `drop k` | addr → | free each text inside the value of kind `k` whose room is above 0, and leave each text blank |
-| `dup_text k` | addr → | give each text inside the value of kind `k` whose u8s sit outside static storage a new heap block with the same u8s |
-| `lend_text k` | addr → | give each text inside the value of kind `k` a room of 0, so a parameter reads the caller's u8s and its drop frees nothing |
-| `own_text k` | addr → | give each text inside the value of kind `k` that holds u8s and has a room of 0 a new heap block with the same u8s, so heap text owns its block |
+| `drop k` | addr → | free each text and each plain or heap list inside the value of kind `k` whose room is above 0, and leave each blank |
+| `dup_text k` | addr → | give each text and each plain or heap list inside the value of kind `k` whose cells sit outside static storage a new heap block with the same cells |
+| `lend_text k` | addr → | give each text and each plain or heap list inside the value of kind `k` a room of 0, so a parameter reads the caller's cells and its drop frees nothing |
+| `own k` | addr → | give each text and each plain or heap list inside the value of kind `k` that has cells and a room of 0 a new heap block with the same cells; the cells of a list are duplicated, each text and list in them too |
 | `text_eq` | addr addr → b | whether two texts or views of text hold the same u8s |
 | `char_count` | addr → n | the number of characters of the text at `addr`, a `usize` |
 | `char_at` | addr i → c | the character at number `i` of the text at `addr`, counted from 0, or from 1 when listed `char_at from 1`; a number outside the text traps |
@@ -228,8 +232,8 @@ A list lives in a block, and its instructions work on addresses.
 `format` pops one value for each value piece of the format, the last piece on top, and
 then the address of the slot. A list, a struct or text comes as its address, each other
 kind as itself. Each piece is written as a print writes it. When the heap has no room for
-the text, `format` traps (`OutOfMem`). `drop` works on each kind that holds text: `text`,
-a struct with a text field, a list of text. A drop of text whose room is 0, static or
+the text, `format` traps (`OutOfMem`). `drop` works on each kind that holds text or a plain or heap list: `text`, a plain list,
+a struct with such a field, a list of such cells. A drop of text whose room is 0, static or
 moved out, frees nothing.
 
 The VM puts each static text in a frozen block of its own before `main` starts, so a

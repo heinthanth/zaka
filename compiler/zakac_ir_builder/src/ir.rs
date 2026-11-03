@@ -499,6 +499,15 @@ pub enum ExprNode
         /// The address of the place, a pointer.
         addr: Box<Expr>,
     },
+    /// A plain or heap list about to be written through: when its room is 0
+    /// (its cells were lent to it, or it holds none), its cells first move to
+    /// a heap block of its own, each text and list in them duplicated. The
+    /// value is a place, read where it sits; the expression kind is its kind.
+    Own
+    {
+        /// The list, a place.
+        value: Box<Expr>,
+    },
     /// A duplicate of a value that holds text: the value is read, then each
     /// heap text in it gets a block of its own, so the place read and the
     /// place written never share u8s. The expression kind is the kind of

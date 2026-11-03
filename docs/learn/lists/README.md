@@ -1,15 +1,15 @@
 ---
 title: Lists
-description: Keep a fixed number of values of one kind next to each other, and reach each one through its number.
+description: Keep values of one kind next to each other, and reach each one through its number.
 ---
 
 # Lists
 
-A *list* holds a fixed number of values of one kind, next to each other in RAM. Each value
-sits in a *cell*, and a cell is reached through its number.
+A *list* holds values of one kind, next to each other in RAM. Each value sits in a
+*cell*, and a cell is reached through its number.
 
 ```zaka
-ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။ // three integers, each 0
+ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၀၊ ၀၊ ၀] ဖြစ်ပါစေ။ // three integers, each 0
 အမှတ်များ ၏ အကွက် ၀ ကို ၇၀ ဟု ထားပါ။                                   // the first cell
 အမှတ်များ ၏ အကွက် ၂ ကို ၉၀ ဟု ထားပါ။                                   // the last cell
 အမှတ်များ ကို ပြသပါ။
@@ -23,32 +23,15 @@ sits in a *cell*, and a cell is reached through its number.
 
 | Zaka | Reads as |
 | --- | --- |
-| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` | "an integer list that has three cells" |
+| `ကိန်းပြည့် စာရင်း` | "an integer list" |
+| `[၀၊ ၀၊ ၀]` | "the list of these three" |
 | `အမှတ်များ ၏ အကွက် ၀` | "cell 0 of the scores" |
 | `စာရင်း` | "list" |
 | `အကွက်` | "cell" |
 
-A list declared with no value starts with each cell at its default: `၀` for a number,
-`မမှန်` for a true/false value, `ဗလာ` for an address. `စာရင်းအလွတ်` ("blank list"), or
-`[]`, writes the same start out in full.
-
-## List kinds
-
-The count comes first, then the kind of each cell, then `စာရင်း`. The word `ခု` and a
-`၏` before `စာရင်း` are both optional, so these four kinds are the same:
-
-| Kind |
-| --- |
-| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` |
-| `အကွက် ၃ ရှိသော ကိန်းပြည့် စာရင်း` |
-| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် ၏ စာရင်း` |
-| `အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း` |
-
-Messages write this kind as `isize[3]`. The count is a whole number above zero, written
-as digits: the size of a list is fixed before the program runs.
-
-When a declaration gives the list a value, the count can be left out. The value then
-tells it:
+The value `[၀၊ ၀၊ ၀]` is a *list literal*: the cells, with `၊` between them, inside `[`
+and `]`. It gives the list its cells, and so its count. The count of the list is
+`အမှတ်များ ၏ အကွက်အရေအတွက်` ("the cell count of the scores"):
 
 ```zaka
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
@@ -63,11 +46,10 @@ tells it:
 ၈၅
 ```
 
-The value `၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း` is a *list literal*: the cells, with `၊` between them,
-then `တို့ပါသော စာရင်း` ("the list that holds these").
-
-The same list can also be written in brackets, `[၇၀၊ ၈၅၊ ၉၀]`, the form a list prints in.
-The two forms mean the same. A bracket list can hold other bracket lists as written:
+The value `၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း` is the same literal in words: the cells, then
+`တို့ပါသော စာရင်း` ("the list that holds these"). The two forms mean the same, and the
+bracket form is the one a list prints in. A bracket list can hold other bracket lists as
+written:
 
 ```zaka
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၀၊ ၈၅၊ ၉၀] ဖြစ်ပါစေ။
@@ -80,23 +62,78 @@ The two forms mean the same. A bracket list can hold other bracket lists as writ
 [[၁၊ ၂]၊ [၃၊ ၄]]
 ```
 
-`[]` is not a list with no cells. A list kind fixes its count, so `[]`, like
-`စာရင်းအလွတ်`, fills each cell of that count with its default:
+A list declared with no value has no cells. `[]` and `စာရင်းအလွတ်` ("blank list") are
+lists with no cells too:
 
 ```zaka
-ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈၊ ၉] ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+က ၏ အကွက်အရေအတွက် ကို ပြသပါ။
+က ကို [၇၊ ၈၊ ၉] ဟု ထားပါ။
+က ကို ပြသပါ။
 က ကို [] ဟု ထားပါ။
 က ကို ပြသပါ။
-က ၏ အကွက်အရေအတွက် ကို ပြသပါ။
+```
+
+```text
+၀
+[၇၊ ၈၊ ၉]
+[]
+```
+
+Setting a list to another value gives it the cells of that value, and their count. The
+count is known when the program runs. A list cannot grow a cell at a time for now: the
+statements that add and remove cells come later.
+
+## List kinds
+
+`ကိန်းပြည့် စာရင်း` is a *plain list*, the list to reach for first. Two more forms of list
+exist, and messages write each with a short name:
+
+| Kind | Short name | Its cells |
+| --- | --- | --- |
+| `ကိန်းပြည့် စာရင်း` | `isize[]` | plain: their count comes with the value, and the cells sit in a heap block |
+| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` | `isize[3]` | fixed: 3 cells for good, kept in the list itself |
+| `ကိန်းပြည့် စာရင်းသေ` | `isize[3]`, from its value | fixed, with the count its value gives |
+| `ကိန်းပြည့် စာရင်းရှင်` | `isize[]~` | heap: as plain, and it owns its heap block from the start |
+
+A *fixed list* keeps its count for good: the count is part of its kind, and it is known
+before the program runs. The count comes first, then the kind of each cell, then
+`စာရင်း`. The word `ခု` and a `၏` before `စာရင်း` are both optional, so these four kinds
+are the same:
+
+| Kind |
+| --- |
+| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` |
+| `အကွက် ၃ ရှိသော ကိန်းပြည့် စာရင်း` |
+| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် ၏ စာရင်း` |
+| `အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း` |
+
+The count is a whole number above zero, written as digits. A fixed list declared with no
+value starts with each cell at its default: `၀` for a number, `မမှန်` for a true/false
+value, `ဗလာ` for an address. `စာရင်းသေ` ("fixed list") in place of `စာရင်း` leaves the
+count to the value:
+
+```zaka
+ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈] ဖြစ်ပါစေ။
+က ကို ပြသပါ။
+ခ ကို ပြသပါ။
+က ကို စာရင်းအလွတ် ဟု ထားပါ။
 ```
 
 ```text
 [၀၊ ၀၊ ၀]
-၃
+[၇၊ ၈]
 ```
 
-Setting `က` to `[]` resets each cell to `၀`; the count is still 3. With no list kind from
-its place, as in `[] ကို ပြသပါ။`, `[]` has no count to fill and is an error.
+On a fixed list, `စာရင်းအလွတ်` sets each cell back to its default, and the count remains.
+`[]` is a list with no cells, so it does not fit a fixed list, save in its declaration,
+where each cell starts at its default; see [List mistakes](mistakes.md).
+
+A fixed list turns into a plain list on its own, as in `ခ` given to a plain list: its
+cells are duplicated into a heap block. A plain list never turns into a fixed list on
+its own, since nothing promises its count. A *heap list*, `စာရင်းရှင်` ("living list"),
+works as a plain list does; plain and heap lists turn into each other.
 
 ## Cell numbers
 

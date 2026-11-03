@@ -221,6 +221,37 @@ pub(crate) fn run_flow<'m>(
     flow.finish()
 }
 
+/// The place of each plain list a write makes own its block, from the outer
+/// one in.
+///
+/// # Arguments
+///
+/// * `addr` - The address the write goes to.
+///
+/// # Returns
+///
+/// The places of the lists.
+fn owned_lists(addr: &Expr) -> Vec<Dest>
+{
+    let mut found = Vec::new();
+    let mut note = |e: &Expr| {
+        let ExprNode::Own { value } = &e.node
+        else
+        {
+            return;
+        };
+        let place = match &value.node
+        {
+            ExprNode::Read(place) => Some(Dest::Slot(*place)),
+            ExprNode::Load { addr } => Some(Dest::Mem((**addr).clone())),
+            _ => None,
+        };
+        do_if!(let Some(p) = place, found.push(p));
+    };
+    each_expr(addr, &mut note);
+    found
+}
+
 impl<'m> Flow<'m>
 {
     /// A flow with no fact found.
@@ -551,6 +582,11 @@ impl<'m> Flow<'m>
             Stmt::Call { func, args, span, .. } => self.call(*func, args, *span, state),
             Stmt::Store { addr, value, span } =>
             {
+                // A write into a plain list can move its cells first.
+                for list in owned_lists(addr)
+                {
+                    check_heap(self, &list, Invalidation::Edited, *span, state);
+                }
                 check_stored_borrow(self, addr, value, *span);
                 let at = self.value(addr, state);
                 self.deref(addr, state);

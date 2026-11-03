@@ -499,6 +499,10 @@ pub enum Kw
     // lists
     /// `စာရင်း`
     List,
+    /// `စာရင်းသေ`, a fixed list whose count its value gives
+    FixedList,
+    /// `စာရင်းရှင်`, a heap list
+    HeapList,
     /// `စာရင်းအလွတ်`
     BlankList,
     /// `အကွက်`

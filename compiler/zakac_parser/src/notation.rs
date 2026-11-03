@@ -259,7 +259,7 @@ impl Parser<'_>
             let span = open.span.to(&self.bump().span);
             let id = self.new_id();
             return Ok(Expr::BlankList(
-                BlankListLit::builder().id(id).span(span).build(),
+                BlankListLit::builder().id(id).span(span).brackets(true).build(),
             ));
         }
         let mut cells = vec![self.parse_notation()?];

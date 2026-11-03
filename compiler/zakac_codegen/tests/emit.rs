@@ -516,7 +516,7 @@ fn scratch(text: &str) -> Vec<String>
 #[test]
 fn a_literal_or_a_slice_set_into_a_slot_is_built_there()
 {
-    let decl = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\n";
+    let decl = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\n";
     assert_eq!(scratch(decl), Vec::<String>::new());
     let slice = format!(
         "{decl}ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ အကွက် ၁ မှစ၍ ၂ ကွက် \
@@ -530,7 +530,7 @@ fn a_literal_or_a_slice_set_into_a_slot_is_built_there()
 #[test]
 fn a_literal_that_reads_its_own_slot_is_built_apart()
 {
-    let swap = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+    let swap = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
 l ကို [(l ၏ အကွက် ၁)၊ (l ၏ အကွက် ၀)] ဟု ထားပါ။";
     assert_eq!(scratch(swap), ["%list"]);
 }
@@ -538,7 +538,8 @@ l ကို [(l ၏ အကွက် ၁)၊ (l ၏ အကွက် ၀)] ဟု 
 #[test]
 fn shared_scratch_slots_serve_each_later_statement()
 {
-    let text = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၊ ၂၀၊ ၃၀၊ ၄၀၊ ၅၀] ဖြစ်ပါစေ။
+    let text = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၊ ၂၀၊ ၃၀၊ ၄၀၊ ၅၀] \
+                ဖြစ်ပါစေ။
 l ၏ အကွက် ၁ မှစ၍ ၃ ကွက် ကို ပြသပါ။
 l ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသပါ။
 [၁၊ ၂] ကို ပြသပါ။
@@ -563,7 +564,7 @@ fn shared_scratch_slots_remain_apart_within_a_statement()
 a ကို ပြသပါ။
 b ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် ပြ ကို l ၏ အကွက် ၀ မှစ၍ ၁ ကွက်၊ l ၏ အကွက် ၁ မှစ၍ ၁ ကွက် တို့ဖြင့် လုပ်ဆောင်ပါ။";
     let options = EmitOptions::builder().scratch(ScratchMode::Shared).build();
     let module = emit_mode(text, options);

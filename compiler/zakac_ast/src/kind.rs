@@ -59,8 +59,12 @@ pub enum Cells
 {
     /// `အကွက် <n> ခုရှိသော`: a count written before the kind.
     Fixed(u32),
-    /// No count: the initializer gives it.
+    /// No count, `စာရင်း`: a plain list, whose count is known at run time.
     Inferred,
+    /// `စာရင်းသေ`: a fixed list whose count the value gives.
+    Taken,
+    /// `စာရင်းရှင်`: a heap list.
+    Heap,
 }
 
 /// One wrap around the base of a kind, such as the `လိပ်စာ` of a pointer or
@@ -168,10 +172,10 @@ impl Kind
     ///
     /// # Returns
     ///
-    /// `true` when some `စာရင်း` has no count.
+    /// `true` when some `စာရင်းသေ` has no count.
     pub fn has_inferred_cells(&self) -> bool
     {
-        self.wraps.contains(&Wrap::List(Cells::Inferred))
+        self.wraps.contains(&Wrap::List(Cells::Taken))
     }
 
     /// Whether some wrap of the kind is a raw pointer level.

@@ -632,9 +632,9 @@ en = "blank list with no kind"
 [codes.ZK0420.message]
 en = "a blank list needs a list kind from its place"
 [codes.ZK0420.help]
-en = "declare the variable with a list kind and a count first, or write the cells out"
+en = "declare the variable with a list kind first, or write the cells out"
 [codes.ZK0420.explain]
-en = """\"စာရင်းအလွတ်\" sets each cell of a list to its default, but the list kind, and with it the number of cells, comes from where it stands: a declared variable, a parameter, or the other side of a comparison. Here nothing gives that kind."""
+en = """\"စာရင်းအလွတ်\" and [] are a list with no cells, or a fixed list with each cell at its default, but the list kind comes from the place around it: a declared variable, a parameter, or the other side of a comparison. Here nothing gives that kind."""
 
 [codes.ZK0421.title]
 en = "list count missing"
@@ -741,11 +741,17 @@ en = "this each loop cannot walk %{got}"
 [codes.ZK0434.explain]
 en = """An each-cell loop (\"အကွက်တိုင်း\") walks a list or a slice whose cells hold no owner pointer: the loop variable holds a duplicate of each cell, and an owner pointer cannot be duplicated. An each-character loop (\"စာလုံးတိုင်း\") walks text or a view of text. To walk the cells of text as u8 numbers, use a counted loop over its cell count."""
 [codes.ZK0435.title]
-en = "constant of heap text"
+en = "constant of heap text or a heap list"
 [codes.ZK0435.message]
-en = "the constant \"%{n}\" cannot hold heap text"
+en = "the constant \"%{n}\" cannot hold heap text or a heap list"
 [codes.ZK0435.explain]
-en = """A constant sits in static storage, and heap text (\"စာသားရှင်\") owns a heap block from the start, so no constant holds it, alone or inside a list or a struct. Declare the constant as \"စာသား\" or \"စာသားသေ\", or declare a variable with \"ကိန်းရှင်\"."""
+en = """A constant sits in static storage, and heap text (\"စာသားရှင်\") and a heap list (\"စာရင်းရှင်\") own a heap block from the start, so no constant holds one, alone or inside a list or a struct. Declare the constant as \"စာသား\" or \"စာသားသေ\", or as a list with no count (a constant list is fixed), or declare a variable with \"ကိန်းရှင်\"."""
+[codes.ZK0436.title]
+en = "[] given to a fixed list"
+[codes.ZK0436.message]
+en = "[] is a list with no cells, and a fixed list of %{k} cannot take it here"
+[codes.ZK0436.explain]
+en = """A fixed list keeps its count, so a list with no cells does not fit it. In the declaration of a fixed list, [] starts each cell at its default. Elsewhere, write \"စာရင်းအလွတ်\" to set each cell back to its default, or make the list a plain list, with no count, which [] fits."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 
@@ -922,6 +928,8 @@ en = "freed"
 en = "resized"
 [codes.ZK0704.moved]
 en = "moved"
+[codes.ZK0704.edited]
+en = "edited, so its cells can move,"
 [codes.ZK0704.explain]
 en = """While a borrow of a block is in use later on, its owner must not free, resize or move that block. The label points at the later use. Finish with the borrow before the owner changes the block, or take a new borrow after the change."""
 

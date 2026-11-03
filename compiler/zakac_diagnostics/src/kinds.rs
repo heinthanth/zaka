@@ -165,6 +165,25 @@ pub fn const_heap_text(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::ConstHeapText, t!("codes.ZK0435.message", n = name), span)
 }
 
+/// `[]` is given to a fixed list outside its declaration.
+///
+/// # Arguments
+///
+/// * `span` - The `[]`.
+/// * `kind` - The fixed list kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0436` diagnostic.
+pub fn brackets_on_fixed_list(span: Span, kind: &str) -> Diagnostic
+{
+    Diagnostic::new(
+        Code::BracketsOnFixedList,
+        t!("codes.ZK0436.message", k = kind),
+        span,
+    )
+}
+
 /// An integer literal does not fit the kind its place expects.
 ///
 /// # Arguments

@@ -122,8 +122,9 @@ the program stopped: counted loop step is not positive
 
 ### A cell outside the list
 
-A list of 3 cells has cells 0, 1 and 2. A cell number the compiler cannot work out
-is checked when the cell is read. The message gives the range the list allows:
+A list of 3 cells has cells 0, 1 and 2. Each cell number of a plain or heap list, and a
+cell number of a fixed list that the compiler cannot work out, is checked when the cell
+is read. The message gives the range the list allows:
 
 ```zaka-stop mem-check=warn
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။

@@ -410,3 +410,13 @@ fn edit_references_parse_at_both_ends()
     let sign = stmt("တိုး(ပ ၏ အသက် (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)) ကို ပြသပါ။");
     assert!(sign.contains("(call တိုး (edit "), "{sign}");
 }
+
+/// A list with no count is plain, `စာရင်းသေ` takes its count from the value,
+/// and `စာရင်းရှင်` is a heap list.
+#[test]
+fn list_forms_parse()
+{
+    assert_eq!(stmt("ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။"), "(var l isize[])");
+    assert_eq!(stmt("ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်ပါစေ။"), "(var l isize[_])");
+    assert_eq!(stmt("ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်ပါစေ။"), "(var l isize[]~)");
+}

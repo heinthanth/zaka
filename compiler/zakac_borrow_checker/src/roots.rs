@@ -105,11 +105,18 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
         ExprNode::AddrOf(place) => Roots::from([Root::slot(*place)]),
         ExprNode::Read(place) => read_roots(*place, e.kind, state, ctx),
         ExprNode::Lend { operand }
+        | ExprNode::Own { value: operand }
         | ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::PtrAdd { base: operand, .. } => deeper(operand),
         ExprNode::Load { addr } => load_roots(addr, e.kind, state, ctx),
-        ExprNode::CellAddr { list, .. } if list.kind.is_slice() => deeper(list),
+        // The cells of a slice, and of a plain or heap list, sit in a block
+        // the value points at.
+        ExprNode::CellAddr { list, .. }
+            if list.kind.is_slice() || list.kind.is_seq() =>
+        {
+            deeper(list)
+        }
         ExprNode::MakeSlice { source, from: SliceFrom::List(_), .. } =>
         {
             list_roots(source, state, ctx).iter().map(|r| r.cell(None)).collect()
@@ -148,7 +155,7 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
 fn read_roots(place: Place, kind: DataKind, state: &State, ctx: &RootCtx) -> Roots
 {
     let held = ctx.kind_of(place).unwrap_or(kind);
-    let owner = held.is_owner_ptr() || held.is_text();
+    let owner = held.is_owner_ptr() || held.is_text() || held.is_seq();
     ret_if!(owner, Roots::from([Root::slot(place).block()]));
     state.ptr(place).map(|info| info.roots.clone()).unwrap_or_default()
 }

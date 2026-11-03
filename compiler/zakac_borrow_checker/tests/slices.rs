@@ -56,7 +56,14 @@ fn a_slice_returned_from_a_function_follows_its_source()
 l ၏ တန်ဖိုးအငှား ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 ";
-    assert_eq!(lines(local), [(Code::LocalBorrowReturned, 4)]);
+    // A plain list is dropped before the return, as text is, so the loan
+    // also ends there; a fixed list in the frame reports the return alone.
+    assert_eq!(
+        lines(local),
+        [(Code::LocalBorrowReturned, 4), (Code::InvalidatedLoan, 4)]
+    );
+    let fixed = local.replace("ကိန်းပြည့် စာရင်း တစ်ခု", "ကိန်းပြည့် စာရင်းသေ တစ်ခု");
+    assert_eq!(lines(&fixed), [(Code::LocalBorrowReturned, 4)]);
     ok("လုပ်ဆောင်ချက် f သည်
 ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း s ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း ရလဒ် ကို ပြန်ပေးမည်။
@@ -138,4 +145,36 @@ fn a_slice_of_a_known_count_checks_its_cells_at_compile_time()
     assert!(forms.contains("count checked"), "{forms}");
     let past = format!("{KNOWN}s ၏ အကွက် ၂ ကို ပြသပါ။");
     assert_eq!(lines(&past), [(Code::OffsetPastEnd, 3)]);
+}
+
+/// A write into a plain list can move its cells to a block of its own, so it
+/// ends each loan into the list; a heap list keeps its cells in place.
+#[test]
+fn a_write_into_a_plain_list_ends_its_loans()
+{
+    let text = "ကိန်းရှင် l သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် v သည် l ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
+l ၏ အကွက် ၀ ကို ၉ ဟု ထားပါ။
+v ကို ပြသပါ။";
+    assert_eq!(lines(text), [(Code::InvalidatedLoan, 3)]);
+    let heap = text.replace(
+        "[၁၊ ၂၊ ၃] ဖြစ်ပါစေ",
+        "ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ",
+    );
+    ok(&heap);
+}
+
+/// A pointer to a cell of a plain list points into the block of the list,
+/// so a write into the list, or a new value for it, ends the loan.
+#[test]
+fn a_pointer_to_a_cell_of_a_plain_list_follows_its_block()
+{
+    let head = "ကိန်းရှင် က သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ အကွက် ၁ ၏ လိပ်စာ ဖြစ်ပါစေ။
+";
+    for change in ["က ၏ အကွက် ၀ ကို ၉ ဟု ထားပါ။", "က ကို [၄၊ ၅] ဟု ထားပါ။"]
+    {
+        let text = format!("{head}{change}\nပ ၏ တန်ဖိုး ကို ပြသပါ။");
+        assert_eq!(lines(&text), [(Code::InvalidatedLoan, 3)], "{change}");
+    }
 }

@@ -257,6 +257,8 @@ EditShared = ("ZK0433", Level::Error),
 EachSourceWrong = ("ZK0434", Level::Error),
 /// A constant holds heap text.
 ConstHeapText = ("ZK0435", Level::Error),
+/// `[]` is given to a fixed list outside its declaration.
+BracketsOnFixedList = ("ZK0436", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

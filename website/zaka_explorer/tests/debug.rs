@@ -689,7 +689,7 @@ fn a_list_block_knows_its_cells_in_both_frame_forms()
 
     let (_, mut s) = session_of("lists/copies");
     s.set_frames(FrameMode::Packed);
-    do_while!(s.frame_blocks().len() < 2, s.step());
+    do_while!(s.frame_blocks().len() < 2 && s.running(), s.step());
     let heap = s.heap();
     let frame =
         heap.blocks.iter().find(|b| !b.vars.is_empty()).expect("a packed frame");

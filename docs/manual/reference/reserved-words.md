@@ -135,14 +135,15 @@ as well.
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `စာရင်း` | "list": after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`); `တို့ပါသော စာရင်း` closes a list literal | [Lists](../../learn/lists/README.md) |
+| `စာရင်း` | "list": after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`), plain with no count; `တို့ပါသော စာရင်း` closes a list literal | [Lists](../../learn/lists/README.md) |
+| `စာရင်းသေ`, `စာရင်းရှင်` | "fixed list", "living list": after `<kind>`, a fixed list whose count its value gives, and a heap list | [Lists](../../learn/lists/README.md#list-kinds) |
 | `အကွက်` | "cell": `x ၏ အကွက် i` is cell `i`, counted from 0; `အကွက် n ခုရှိသော` gives the count of a list kind | [Lists](../../learn/lists/README.md) |
 | `ခုမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1, and `t ၏ n ခုမြောက်စာလုံး` character `n` of text | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Lists](../../learn/lists/README.md#list-kinds) |
 | `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `ဆက်ထားသည့်` | "that joins", in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/values/strings.md#joining-text) |
 | `စာလုံးအရေအတွက်` | "character count", in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/values/strings.md#characters) |
-| `စာရင်းအလွတ်` | "blank list": each cell at its default | [Lists](../../learn/lists/README.md) |
+| `စာရင်းအလွတ်` | "blank list": no cells, or each cell of a fixed list at its default | [Lists](../../learn/lists/README.md) |
 | `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../../learn/lists/README.md#list-kinds) |
 | `တစ်စိတ်တစ်ပိုင်း` | "a part": after a `စာရင်း` with no count it makes a slice kind | [Slices](../../learn/lists/slices.md) |
 | `မှစ၍` | "starting at", in `x ၏ အကွက် <start> မှစ၍ <length> ကွက်` | [Slices](../../learn/lists/slices.md#part-of-a-list) |

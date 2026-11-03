@@ -30,8 +30,9 @@ write this kind as `isize[3][2]`. Lists nest as deep as needed.
 
 ## Nested literals
 
-Each inner list literal goes in parentheses. A kind with no counts takes all of them
-from the value:
+Each inner list literal goes in parentheses. `ကိန်းပြည့် စာရင်း စာရင်း`, with no counts, is
+a plain list of plain lists: each row takes its cells from the value, and rows can hold
+different counts.
 
 ```zaka
 ကိန်းရှင် ဇယား သည် ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၊ ၂ တို့ပါသော စာရင်း)၊ (၃၊ ၄ တို့ပါသော စာရင်း)၊ (၅၊ ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း ဖြစ်ပါစေ။
@@ -47,14 +48,27 @@ from the value:
 [[၅၊ ၆]၊ [၃၊ ၄]၊ [၅၊ ၆]]
 ```
 
+```zaka
+ကိန်းရှင် ဇယား သည် ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [[၁၊ ၂၊ ၃]၊ [၄၊ ၅]] ဖြစ်ပါစေ။
+ဇယား ကို ပြသပါ။
+ဇယား ၏ အကွက် ၁ ၏ အကွက်အရေအတွက် ကို ပြသပါ။
+```
+
+```text
+[[၁၊ ၂၊ ၃]၊ [၄၊ ၅]]
+၂
+```
+
 ## Rows and cells through addresses
 
-The address of a list points at the whole list, so its kind holds the count:
-`ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, or `isize[3]&` in messages. Adding 1 to it
-moves one whole row:
+The address of a fixed list points at the whole list, so its kind holds the count:
+`ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, or `isize[3]&` in messages. The rows
+of a table of fixed lists sit one after another, so adding 1 to the address of a row
+moves one whole row. `ကိန်းပြည့် စာရင်းသေ စာရင်းသေ` makes such a table and takes both
+counts from the value:
 
 ```zaka
-ကိန်းရှင် ဇယား သည် ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း)၊ (၄၊ ၅၊ ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း ဖြစ်ပါစေ။
+ကိန်းရှင် ဇယား သည် ကိန်းပြည့် စာရင်းသေ စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း)၊ (၄၊ ၅၊ ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် အတန်း သည် ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဇယား ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
 အတန်း ၏ တန်ဖိုး ကို ပြသပါ။
 အတန်း ကို အတန်း + ၁ ဟု ထားပါ။                 // one whole row further
@@ -68,8 +82,9 @@ moves one whole row:
 ၆
 ```
 
-The address of one cell is a plain pointer, and [pointer
-arithmetic](../pointers/arithmetic.md) walks the cells after it:
+A plain list keeps each row in a heap block of its own, so the step from one row to the
+next works on fixed rows alone. The address of one cell is a plain pointer, and [pointer
+arithmetic](../pointers/arithmetic.md) walks the cells after it, in a list of each form:
 
 ```zaka
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၊ ၃၊ ၅၊ ၇ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
@@ -85,14 +100,18 @@ arithmetic](../pointers/arithmetic.md) walks the cells after it:
 
 ## The size of a list
 
-A list takes its count times the size of one cell, with no gaps:
+A fixed list takes its count times the size of one cell, with no gaps. A plain list is
+three words wherever its cells are: the address of the first cell, the count, and the
+room of its heap block:
 
 ```zaka
 အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
 ```
 
 ```text
 ၄၈
+၂၄
 ```
 
 ## Hands on

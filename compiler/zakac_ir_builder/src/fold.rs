@@ -447,6 +447,7 @@ impl Folder
             | ExprNode::Lend { operand: addr }
             | ExprNode::Take { addr }
             | ExprNode::Dup { value: addr, .. }
+            | ExprNode::Own { value: addr }
             | ExprNode::FieldAddr { base: addr, .. } =>
             {
                 self.drop_value(addr);

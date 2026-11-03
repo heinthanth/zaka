@@ -580,6 +580,10 @@ impl Checker
         let structs = [lhs.0, rhs.0].iter().any(blocks);
         let equal = class == OpClass::Equal && !structs;
         ret_if!(equal && lhs.0 == rhs.0, Some(DataKind::Bool));
+        // A plain and a heap list of one cell kind compare their cells.
+        let seqs =
+            lhs.0.as_seq().zip(rhs.0.as_seq()).is_some_and(|(a, b)| a.cell == b.cell);
+        ret_if!(equal && seqs, Some(DataKind::Bool));
         let mismatch = kd::incompatible_operands(span, &lhs.0.name(), &rhs.0.name());
         ret_if!(equal, self.report(mismatch), None);
         let (kind, e) = tern!(lhs.0.is_aggregate(), lhs, rhs);

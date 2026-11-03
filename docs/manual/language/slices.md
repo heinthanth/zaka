@@ -5,10 +5,10 @@ description: A borrowed run of cells with its count - the slice kind, the range 
 
 # Slices
 
-A *slice* views a run of cells of one kind that sit somewhere else: in a list, in a heap
-block, or in another slice. A slice is two words, the address of its first cell and the
+A *slice* views a run of cells of one kind that sit somewhere else: in a list of each
+form, in a heap block, or in another slice. A slice is two words, the address of its first cell and the
 count of its cells, and the count is known when the program runs. A function that takes a
-slice takes lists of each length, and parts of them. [Slices](../../learn/lists/slices.md)
+slice takes lists of each length and form, and parts of them, with no duplicate. [Slices](../../learn/lists/slices.md)
 in the Learn book shows the same rules in small steps.
 
 ```zaka
@@ -81,7 +81,7 @@ error[ZK0233]: a slice takes no cell count; its count comes when the program run
   ZK0411, and a constant is ZK0412.
 - Nothing turns into a slice on its own. A list given where a slice is wanted is ZK0401,
   and a pointer has no count to give. The lend or the range writes the count out.
-- The range must lie in its source. With a list as the source and the start and the
+- The range must lie in its source. With a fixed list as the source and the start and the
   length as constants, a range past the end is ZK0605. Each other range is checked when
   the program runs: past a list or a slice, the program stops with the range it asked
   for; past a heap block, it stops as a pointer step out of the block does.
@@ -102,7 +102,7 @@ error[ZK0233]: a slice takes no cell count; its count comes when the program run
 ```
 
 ```zaka-error ZK0605
-ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 l ၏ အကွက် ၂ မှစ၍ ၂ ကွက် ကို ပြသပါ။
 ```
 
@@ -133,7 +133,7 @@ the program stopped: 4 cells from cell 0 pass the end of 3 cells
 - A cell number is checked against the count of the slice. The compiler does the check
   when it can see the answer, and leaves it out of the program:
   - a slice made with a known length, such as `l ၏ အကွက် ၁ မှစ၍ ၂ ကွက်` or the lend of a
-    list, keeps that count, so a cell number the compiler can follow is checked as for a
+    fixed list, keeps that count, so a cell number the compiler can follow is checked as for a
     list, and one past the end is ZK0710;
   - in a loop that tests `န < s ၏ အကွက်အရေအတွက်` before each round, the cell `s ၏ အကွက် န`
     is in range until `န` or `s` changes, as in the first example. `န` must be a
@@ -178,7 +178,10 @@ s ၏ အကွက်အရေအတွက် ကို ပြသပါ။
 A slice is a borrow, so the rules of [borrows](ownership.md#lending-a-block) hold for it:
 
 - Freeing or resizing the block a slice views, while the slice is still used afterwards,
-  is ZK0704.
+  is ZK0704. So is a write into a plain list that a slice views: the write can move the
+  cells of the list to a block of its own (see [Edits and
+  loans](lists.md#edits-and-loans)). A write into a heap list or a fixed list moves no
+  cell.
 - A function can return a slice of a borrow parameter or of a top-level variable; a slice
   of its own list is ZK0706.
 - A struct field cannot hold a slice (ZK0718), and a function cannot keep one in a
@@ -218,7 +221,7 @@ s ကို ပြသပါ။
 | --- | --- |
 | ZK0233 | the `စာရင်း` of a slice kind has a count |
 | ZK0428 | the cells of a slice kind hold borrows |
-| ZK0605 | a range with a constant start and length passes the end of its list |
+| ZK0605 | a range with a constant start and length passes the end of its fixed list |
 | ZK0710 | a cell number proven past the end of a slice of a known count |
 | ZK0401 | a list is given where a slice is wanted |
 | ZK0422 | a range is taken of a value that is no list, no slice and no pointer to a block |

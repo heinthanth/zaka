@@ -185,6 +185,10 @@ pub(crate) struct Checker
     /// Whether kinds with a raw address level are refused.
     #[builder(default)]
     pub no_raw: bool,
+    /// Whether the value checked now is the value of a declaration, where a
+    /// fixed list takes `[]`.
+    #[builder(default)]
+    pub decl_value: bool,
 }
 
 impl Checker
@@ -469,6 +473,30 @@ impl Checker
         kind
     }
 
+    /// The kind of a constant: a constant never changes, so each plain or
+    /// heap list in its kind is a fixed list, whose counts its value gives.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind its declaration gives.
+    /// * `init` - Its value.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or `None` after an error.
+    fn const_kind(
+        &mut self, kind: Option<DataKind>, init: Option<&Expr>,
+    ) -> Option<DataKind>
+    {
+        let (Some(kind), Some(init)) = (kind, init)
+        else
+        {
+            return kind;
+        };
+        ret_if!(!kind.holds_seq(), Some(kind));
+        self.fill_counts(kind.fixed_form(), init)
+    }
+
     /// The kind of the variable of an each loop: a character for text, a
     /// cell for a list or a slice whose cells hold no owner pointer.
     ///
@@ -482,8 +510,7 @@ impl Checker
     /// The kind, or `None` after a report.
     fn each_var_kind(&mut self, kind: DataKind, n: &EachStmt) -> Option<DataKind>
     {
-        let cell =
-            kind.as_list().map(|l| l.cell).or_else(|| kind.as_slice().map(|s| s.cell));
+        let cell = kind.cell_kind();
         let walked = tern!(
             n.chars,
             kind.is_textual().then_some(DataKind::Char),
@@ -687,8 +714,13 @@ pub(crate) fn mismatch_report(span: Span, want: DataKind, found: DataKind)
     let flavours = flavours && want.is_borrow() != found.is_borrow();
     let unbridged = kd::kind_mismatch_unbridged(span, &want_name, &found_name);
     ret_if!(flavours, unbridged);
+    // Two lists of different forms differ in their count, not in the
+    // addresses their blocks hold.
+    let lists = [want, found]
+        .iter()
+        .all(|k| k.pointee().and_then(DataKind::cell_kind).is_some());
     ret_if!(
-        found.reads_addresses_as(want),
+        found.reads_addresses_as(want) && !lists,
         kd::address_block_mismatch(
             span,
             &want_name,
@@ -754,6 +786,7 @@ impl Visitor for Checker
         do_if!(missing, self.report(rd::const_without_init(n.name.span, &n.name.name)));
         let heap = n.is_const && kind.is_some_and(DataKind::holds_heap_text);
         do_if!(heap, self.report(kd::const_heap_text(n.name.span, &n.name.name)));
+        let kind = tern!(n.is_const, self.const_kind(kind, n.init.as_ref()), kind);
         let access = tern!(n.is_const, Access::Const, Access::Var);
         self.declare(&n.name, kind, access);
         do_if!(n.exported, self.scopes.mark_exported(&n.name.name));

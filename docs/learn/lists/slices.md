@@ -5,9 +5,10 @@ description: A slice borrows a run of cells with their count, so one function ta
 
 # Slices
 
-A list kind holds its count, so a function that takes `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း`
-takes three cells and never four. A *slice* takes cells of each count. It borrows a run
-of cells from a list or a heap block and keeps their count:
+A function that takes `ကိန်းပြည့် စာရင်း` takes plain lists of each count, but each time a
+whole list, and a fixed list given to it is duplicated into a heap block first. A *slice*
+borrows a run of cells and keeps their count: a whole list of each form, a part of one,
+or a heap block:
 
 ```zaka
 လုပ်ဆောင်ချက် စုစုပေါင်း သည်
@@ -102,11 +103,11 @@ s ကို ပြသပါ။
 လုပ်ဆောင်ချက် ပြ ကို l တို့ဖြင့် လုပ်ဆောင်ပါ။
 ```
 
-A range past the end of its list stops the program, or the compiler when it can see the
-numbers:
+A range past the end of its list stops the program. On a fixed list, whose count the
+compiler knows, a range of constant numbers is an error:
 
 ```zaka-error ZK0605
-ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 l ၏ အကွက် ၂ မှစ၍ ၂ ကွက် ကို ပြသပါ။
 ```
 
@@ -119,6 +120,19 @@ A slice borrows, so its block must live until the last use of the slice:
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 s ကို ပြသပါ။
 ```
+
+A write into a plain list can move its cells to a block of its own, so it ends each
+slice of the list. A slice used after such a write is an error; a slice of a heap list
+or a fixed list stands:
+
+```zaka-error ZK0704
+ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+l ၏ အကွက် ၀ ကို ၉ ဟု ထားပါ။
+s ကို ပြသပါ။
+```
+
+Write through the slice, or take the slice after the write.
 
 [Slices](../../manual/language/slices.md) in the Docs gives each rule.
 

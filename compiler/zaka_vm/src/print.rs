@@ -31,10 +31,11 @@ pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKin
 {
     ret_if!(let Some(s) = kind.as_struct(), struct_text(mem, addr, s));
     ret_if!(kind.is_textual(), text_at(mem, addr));
-    if let Some(slice) = kind.as_slice()
+    if let Some(cell) =
+        kind.as_slice().map(|s| s.cell).or_else(|| kind.as_seq().map(|s| s.cell))
     {
         let (base, count) = slice_parts(mem, addr)?;
-        return cells_text(mem, base, slice.cell, count);
+        return cells_text(mem, base, cell, count);
     }
     let Some(list) = kind.as_list()
     else

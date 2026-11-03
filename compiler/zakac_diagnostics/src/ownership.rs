@@ -16,6 +16,8 @@ pub enum Invalidation
     Resized,
     /// The block moves to another owner.
     Moved,
+    /// A plain list is written, so its cells can move to a block of its own.
+    Edited,
 }
 
 impl Invalidation

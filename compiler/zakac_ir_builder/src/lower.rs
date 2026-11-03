@@ -553,6 +553,9 @@ impl Lowerer<'_>
     fn decl(&mut self, n: &st::DeclStmt) -> Stmt
     {
         let kind = self.declared_kind(n.kind.as_ref(), n.init.as_ref());
+        // The list of a constant is fixed; the check gave its value that kind.
+        let fixed = n.init.as_ref().filter(|_| n.is_const && kind.holds_seq());
+        let kind = fixed.map_or(kind, |e| self.kind_of(e));
         let value = self.initial(n.init.as_ref(), kind, n.name.span);
         let access = tern!(n.is_const, Access::Const, Access::Var);
         let place = self.declare(&n.name, kind, access);
@@ -674,8 +677,8 @@ impl Lowerer<'_>
     {
         ret_if!(let ast::Expr::Group(n) = e, self.dest(&n.inner));
         ret_if!(let Some(ptr) = deref_operand(e), Dest::Mem(self.expr(ptr)));
-        ret_if!(let ast::Expr::Index(n) = e, Dest::Mem(self.cell_addr(n)));
-        ret_if!(let ast::Expr::Field(n) = e, Dest::Mem(self.field_addr(n)));
+        ret_if!(let ast::Expr::Index(n) = e, Dest::Mem(owned_path(self.cell_addr(n))));
+        ret_if!(let ast::Expr::Field(n) = e, Dest::Mem(owned_path(self.field_addr(n))));
         let ast::Expr::Name(n) = e
         else
         {
@@ -779,7 +782,7 @@ impl Lowerer<'_>
     {
         let plain = tern!(let ast::Expr::Str(s) = &n.value, s.plain(), None);
         let value = plain.map_or_else(
-            || PrintValue::Expr(self.expr(&n.value)),
+            || PrintValue::Expr(fixed_literal(self.expr(&n.value))),
             |text| PrintValue::Text(text.to_string()),
         );
         Stmt::Print { value, span: n.span }
@@ -1568,8 +1571,16 @@ impl Lowerer<'_>
     /// The operation.
     fn list(&mut self, n: &ast::ListLit, kind: DataKind) -> ExprNode
     {
-        let cell = kind.as_list().expect("a list literal has a list kind").cell;
-        ExprNode::List(n.cells.iter().map(|c| self.owned(c, cell)).collect())
+        let cell = kind.cell_kind().expect("a list literal has a list kind");
+        let cells =
+            ExprNode::List(n.cells.iter().map(|c| self.owned(c, cell)).collect());
+        ret_if!(!kind.is_seq(), cells);
+        // A plain or heap list is built as a fixed list, whose cells then
+        // move to a heap block.
+        let fixed = DataKind::list_of(cell, n.cells.len() as u32);
+        let operand =
+            Box::new(Expr::builder().kind(fixed).node(cells).span(n.span).build());
+        ExprNode::Convert { operand, implicit: true }
     }
 
     /// Lower a struct literal to its fields in order; each field it leaves
@@ -1916,7 +1927,11 @@ impl Lowerer<'_>
             },
             VerbOp::BitNot => prefix_node(PrefixOp::BitNot, self.expr(value)),
             VerbOp::Lend if self.kind_of(value).is_list() => self.lend_list(value),
-            VerbOp::Lend if self.kind_of(value).is_text() => self.lend_text(value),
+            VerbOp::Lend
+                if self.kind_of(value).is_text() || self.kind_of(value).is_seq() =>
+            {
+                self.lend_text(value)
+            }
             VerbOp::Lend => ExprNode::Lend { operand: Box::new(self.expr(value)) },
             VerbOp::Cast => ExprNode::Convert {
                 operand: Box::new(self.expr(value)),
@@ -2068,6 +2083,99 @@ fn each_char(each: Place, kind: DataKind, at: Place, span: Span) -> (Expr, DataK
     let index = Some(Box::new(read(at, DataKind::USIZE, span)));
     let node = ExprNode::Chars { text, index, first: 0, octet: true };
     (node_expr(DataKind::Char, node, span), DataKind::Char)
+}
+
+/// The address of a place about to be written, with each plain list on the
+/// path to it made to own its block first, the outer one first.
+///
+/// # Arguments
+///
+/// * `addr` - The address of the place.
+///
+/// # Returns
+///
+/// The address.
+fn owned_path(addr: Expr) -> Expr
+{
+    let (kind, span) = (addr.kind, addr.span);
+    let node = match addr.node
+    {
+        ExprNode::CellAddr { list, index, len, first, checked } =>
+        {
+            let inner = through(owned_path(*list));
+            // A heap list owns its block from the start, so a write moves no
+            // cell.
+            let plain = inner.kind.as_seq().is_some_and(|s| !s.heap);
+            let list = tern!(plain, own(inner), inner);
+            ExprNode::CellAddr { list: Box::new(list), index, len, first, checked }
+        }
+        ExprNode::FieldAddr { base, field, offset } =>
+        {
+            ExprNode::FieldAddr { base: Box::new(owned_path(*base)), field, offset }
+        }
+        ExprNode::Load { addr } => ExprNode::Load { addr: Box::new(owned_path(*addr)) },
+        other => other,
+    };
+    node_expr(kind, node, span)
+}
+
+/// A list literal read where it is: a printed literal needs no heap block,
+/// so it keeps the fixed list it is built as.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// The fixed list for a literal of a plain or heap list, else the value.
+fn fixed_literal(e: Expr) -> Expr
+{
+    let literal = |o: &Expr| matches!(o.node, ExprNode::List(_)) && o.kind.is_list();
+    match e.node
+    {
+        ExprNode::Convert { operand, .. } if e.kind.is_seq() && literal(&operand) =>
+        {
+            *operand
+        }
+        node => Expr::builder().kind(e.kind).node(node).span(e.span).build(),
+    }
+}
+
+/// The plain list a pointer points at, read in place; each other value as
+/// it is.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// The expression.
+fn through(e: Expr) -> Expr
+{
+    let Some(seq) = e.kind.pointee().filter(|k| k.as_seq().is_some_and(|s| !s.heap))
+    else
+    {
+        return e;
+    };
+    let span = e.span;
+    node_expr(seq, ExprNode::Load { addr: Box::new(e) }, span)
+}
+
+/// A plain or heap list made to own its block before a write.
+///
+/// # Arguments
+///
+/// * `list` - The list, a place.
+///
+/// # Returns
+///
+/// The expression, of the list kind.
+fn own(list: Expr) -> Expr
+{
+    let (kind, span) = (list.kind, list.span);
+    node_expr(kind, ExprNode::Own { value: Box::new(list) }, span)
 }
 
 /// An expression of a kind.
@@ -2245,6 +2353,8 @@ fn cells_of(kind: DataKind) -> (DataKind, Option<u32>)
 {
     ret_if!(let Some(s) = kind.as_slice(), (s.cell, None));
     ret_if!(kind.is_text(), (DataKind::U8, None));
+    let seq = kind.as_seq().or_else(|| kind.pointee().and_then(DataKind::as_seq));
+    ret_if!(let Some(s) = seq, (s.cell, None));
     let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
     let list = list.expect("a cell operand is a list, a pointer to one, or a slice");
     (list.cell, Some(list.len))
@@ -2262,7 +2372,8 @@ fn cells_of(kind: DataKind) -> (DataKind, Option<u32>)
 /// block.
 fn slice_from(kind: DataKind) -> SliceFrom
 {
-    ret_if!(kind.is_slice() || kind.is_text(), SliceFrom::Slice);
+    let seq = kind.is_seq() || kind.pointee().is_some_and(DataKind::is_seq);
+    ret_if!(kind.is_slice() || kind.is_text() || seq, SliceFrom::Slice);
     let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
     list.map_or(SliceFrom::Block, |l| SliceFrom::List(l.len))
 }

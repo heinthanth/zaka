@@ -168,7 +168,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0417 | a heap statement that needs a pointer but was given another kind | [The heap](../../learn/pointers/heap.md) |
 | ZK0419 | a list literal with more or fewer cells than its kind | [List mistakes](../../learn/lists/mistakes.md#a-literal-with-the-wrong-count) |
 | ZK0420 | `စာရင်းအလွတ်` where no list kind is known | [List mistakes](../../learn/lists/mistakes.md#a-blank-list-with-no-kind) |
-| ZK0421 | a list kind with no count where nothing gives one | [List mistakes](../../learn/lists/mistakes.md#a-list-kind-with-no-count) |
+| ZK0421 | a fixed list kind with no count where nothing gives one | [List mistakes](../../learn/lists/mistakes.md#a-list-kind-with-no-count) |
 | ZK0422 | cells of a value that is no list | [List mistakes](../../learn/lists/mistakes.md#cells-of-a-value-that-is-no-list) |
 | ZK0423 | a cell number that is not an integer | [Lists](../../learn/lists/README.md#cell-numbers) |
 | ZK0424 | a list of borrows as a function result | [Lists and structs as results](../language/functions.md#lists-and-structs-as-results) |
@@ -182,7 +182,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0432 | the mark on an argument for a parameter the function cannot change | [Functions](../language/functions.md#edit-references) |
 | ZK0433 | a place a call changes, in another argument of the same call | [Functions](../language/functions.md#edit-references) |
 | ZK0434 | an each loop over a value it cannot walk: no list or slice, owner pointers in the cells, or no text | [Statements](../language/statements.md#loops) |
-| ZK0435 | a constant that holds heap text | [Text](../language/text.md#forms) |
+| ZK0435 | a constant that holds heap text or a heap list | [Text](../language/text.md#forms) |
+| ZK0436 | `[]` given to a fixed list outside its declaration | [List mistakes](../../learn/lists/mistakes.md#a-list-with-no-cells-in-a-fixed-list) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -225,7 +226,7 @@ ZK0701 to ZK0704 and ZK0706 to ZK0712 are warnings and the program runs; with
 | ZK0701 | using an owner after its block moved to another owner | [Ownership and borrowing](../../learn/pointers/ownership.md#one-owner-each) |
 | ZK0702 | giving back or resizing a block through a borrow | [Pointer mistakes](../../learn/pointers/mistakes.md#giving-back-a-block-that-was-not-asked-for) |
 | ZK0703 | a borrow kept in a heap block, behind a pointer, or in a top-level variable from a function | [Ownership and borrowing](../../learn/pointers/ownership.md#borrows-live-in-variables) |
-| ZK0704 | giving back, resizing or moving a block while a borrow of it is still in use | [Pointer mistakes](../../learn/pointers/mistakes.md#using-a-block-after-giving-it-back) |
+| ZK0704 | giving back, resizing, moving or editing a block while a borrow of it is still in use | [Pointer mistakes](../../learn/pointers/mistakes.md#using-a-block-after-giving-it-back) |
 | ZK0705 | the address of a borrow | [Ownership and borrowing](../../learn/pointers/ownership.md#borrows-live-in-variables) |
 | ZK0706 | a function that returns a borrow of its own variable | [Changing the caller's variables](../../learn/pointers/out-parameters.md#how-long-an-address-lasts) |
 | ZK0707 | a call that can give back a block through one argument while another argument reaches it | [Pointer mistakes](../../learn/pointers/mistakes.md#mistakes-the-compiler-catches) |

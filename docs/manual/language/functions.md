@@ -192,7 +192,8 @@ x က၊ y ခ ရှိသော နေရာတစ်ခု ကို ရလ�
 [၅၊ ၆၊ ၇]
 ```
 
-- The result kind gives each cell count; a list kind with the count left out is ZK0421.
+- A plain or heap list result takes its count from the value given back. A fixed list
+  result has a written count; `စာရင်းသေ`, with no value to give the count, is ZK0421.
 - A list whose cells are borrows cannot be a result (ZK0424). A borrow lives in a local or
   a parameter, so it cannot leave the function inside a list.
 - The caller keeps a slot for the result of each call. With the default,
@@ -312,15 +313,20 @@ another:
 | Kind of the parameter | What the call does | Can the function change the caller's value? |
 | --- | --- | --- |
 | number, true/false value, character | duplicates the value | no |
-| list, struct | duplicates each cell and field | no; pass the address to change it |
+| plain list | lends the caller's cells until the first write, which copies them | no; pass the address to change it |
+| fixed or heap list, struct | duplicates each cell and field | no; pass the address to change it |
 | text, or a list or struct with text in it | duplicates it | no |
 | `ငှားထားသော … လိပ်စာ` (a borrow) | duplicates the address; the caller keeps the owner | through the address |
 | `… လိပ်စာ` (an owner) | **moves** the block to the function; the caller's variable holds `ဗလာ` afterwards | the function owns the block now |
 | `… လိပ်စာအကြမ်း` (raw) | duplicates the address | through the address, and nothing is tracked |
 
 A duplicate is what the call means; the compiler skips the work where nothing can tell.
-A list or struct parameter that the function never writes, nor views nor takes the address
-of, is read in the caller's storage through its address. Text the caller reads again after
+A plain list parameter is lent the caller's cells, with a room of 0, for the length of the
+call. Its first write, to a cell or to the whole list, first copies the cells into a block
+of its own (the VM op `own`), so the caller's list never changes. A heap list parameter
+takes a duplicate, never a loan. A fixed list or struct parameter that the function never
+writes, nor views nor takes the address of, is read in the caller's storage through its
+address. Text the caller reads again after
 the call is lent to the parameter for the length of the call, and text the caller reads no
 more moves in. The caller's value is duplicated at the call after all when the function,
 or a call inside the same arguments, sets the global given, or when the address of the
@@ -348,17 +354,16 @@ A change to a parameter remains in the function:
 ၅
 ```
 
-A list parameter is the same: the call duplicates the list one cell after another, and a large list
-costs a duplicate on each call. A function that must change the caller's list, or that
-should be spared the cost of a duplicate, takes the address of the list. The parameter kind is then
-the list kind with `လိပ်စာ` after it, and `ငှားထားသော` in front:
+A list parameter is the same: a change to it remains in the function. A function that must
+change the caller's list takes the address of the list. The parameter kind is then the list
+kind with `လိပ်စာ` after it, and `ငှားထားသော` in front:
 
 ```zaka
 // the parameter holds the address of the caller's list
 လုပ်ဆောင်ချက် နှစ်ဆတိုး သည်
-ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ ကိန်းများ ကို လက်ခံပြီး
+ငှားထားသော ကိန်းပြည့် စာရင်း လိပ်စာ ကိန်းများ ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားပါ။
+၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
 ကိန်းရှင် မူရင်း သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။

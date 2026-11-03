@@ -181,6 +181,7 @@ impl Value
             | DataKind::List(_)
             | DataKind::Struct(_)
             | DataKind::Slice(_)
+            | DataKind::Seq(_)
             | DataKind::Text(_) => Value::NULL,
         }
     }
@@ -848,6 +849,7 @@ pub fn from_raw(kind: DataKind, raw: &[u8], platform: u16) -> Result<Value, RawE
         DataKind::List(_)
         | DataKind::Struct(_)
         | DataKind::Slice(_)
+        | DataKind::Seq(_)
         | DataKind::Text(_) => Err(RawError::WrongLen),
     }
 }
@@ -1060,6 +1062,7 @@ impl FromStr for Value
             DataKind::List(_)
             | DataKind::Struct(_)
             | DataKind::Slice(_)
+            | DataKind::Seq(_)
             | DataKind::Text(_) => None,
         };
         value.ok_or_else(bad)

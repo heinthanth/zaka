@@ -138,15 +138,19 @@ their own.
 | `ကိန်းပြည့် လိပ်စာအကြမ်း` | `isize^` | [Ownership and borrowing](ownership.md) |
 | `လိပ်စာ` | `ptr` | [Pointers](pointers.md) |
 | `ဗလာ` (the null address) | `null` | [Pointers](pointers.md) |
-| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` | `isize[3]` | [Lists](lists.md) |
+| `ကိန်းပြည့် စာရင်း` (plain) | `isize[]` | [Lists](lists.md#forms) |
+| `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` (fixed) | `isize[3]` | [Lists](lists.md#forms) |
+| `ကိန်းပြည့် စာရင်းသေ` (fixed, the count from its value) | `isize[3]` for a value of 3 cells | [Lists](lists.md#forms) |
+| `ကိန်းပြည့် စာရင်းရှင်` (heap) | `isize[]~` | [Lists](lists.md#forms) |
 | `အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း` | `isize[3][2]` | [Lists](lists.md) |
 | `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း` | `isize[][..]` | [Slices](slices.md) |
 | `စာသား တစ်စိတ်တစ်ပိုင်း` | `text[..]` | [Text](text.md) |
 
 A short name reads left to right in the order of the Burmese words: the base kind first,
 then `*` for each level of owner address, `^` for a raw level, `&` in place of the `*` of
-a borrowed level, `[n]` for each list level and `[..]` for a part (a slice or a view).
-`isize[3][2]` is two lists of three, and `isize&[2]` is a list of two borrows.
+a borrowed level, `[n]` for each fixed list level, `[]` for a plain one, `[]~` for a heap
+one, and `[..]` for a part (a slice or a view). `isize[3][2]` is two lists of three,
+`isize[3][]` a plain list of lists of three, and `isize&[2]` is a list of two borrows.
 An address takes the platform size.
 
 ## The size of a kind
@@ -186,7 +190,8 @@ default: it must be given a value (ZK0308).
 | `မှန်မှားတန်ဖိုး` | `မမှန်` |
 | `စာသား` | blank text, with no u8s |
 | an address | `ဗလာ` |
-| a list | each cell at the default of its kind |
+| a fixed list | each cell at the default of its kind |
+| a plain or heap list | no cells |
 
 ```zaka
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။

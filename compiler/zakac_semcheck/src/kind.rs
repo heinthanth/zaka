@@ -100,6 +100,8 @@ pub enum Base
     Struct(&'static StructKind),
     /// A slice, for a pointer to a slice value.
     Slice(&'static SliceKind),
+    /// A plain or a heap list, for a pointer to one.
+    Seq(&'static SeqKind),
 }
 
 impl Base
@@ -122,6 +124,7 @@ impl Base
             Base::List(l) => Some(DataKind::List(l)),
             Base::Struct(s) => Some(DataKind::Struct(s)),
             Base::Slice(s) => Some(DataKind::Slice(s)),
+            Base::Seq(s) => Some(DataKind::Seq(s)),
         }
     }
 }
@@ -154,6 +157,26 @@ pub struct SliceKind
 
 /// Each slice kind made so far, so a kind is made once and remains `Copy`.
 static SLICES: OnceLock<Mutex<HashSet<&'static SliceKind>>> = OnceLock::new();
+
+/// A plain or a heap list kind: cells of one kind in a block of their own,
+/// whose count is known at run time. A value is three words, laid out as
+/// text is: the address of the first cell, the count, and the room of its
+/// heap block in octets. A room of 0 means the list owns no block: it holds
+/// no cells, or it reads cells it was lent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SeqKind
+{
+    /// The kind of each cell.
+    pub cell: DataKind,
+    /// Whether it is a heap list (`စာရင်းရှင်`), which owns a block from its
+    /// first cell on; else a plain list (`စာရင်း`), which takes one at its
+    /// first edit.
+    pub heap: bool,
+}
+
+/// Each plain and heap list kind made so far, so a kind is made once and
+/// remains `Copy`.
+static SEQS: OnceLock<Mutex<HashSet<&'static SeqKind>>> = OnceLock::new();
 
 /// A pointer kind: `depth` levels of address over a base.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -289,6 +312,9 @@ pub enum DataKind
     /// are laid out as a slice's. The form tells whether the u8s can change
     /// and where the u8s live; the three forms share the same three words.
     Text(TextForm),
+    /// A plain list (`ကိန်းပြည့် စာရင်း`) or a heap list (`ကိန်းပြည့်
+    /// စာရင်းရှင်`): three words, see [`SeqKind`].
+    Seq(&'static SeqKind),
 }
 
 /// The form of owned text.
@@ -368,7 +394,9 @@ impl DataKind
             Wrap::Ptr => inner.pointer_to().marked_if(marked == Some(at)),
             Wrap::RawPtr => inner.raw_pointer_to(),
             Wrap::List(Cells::Fixed(n)) => DataKind::list_of(inner, *n),
-            Wrap::List(Cells::Inferred) => DataKind::list_of(inner, 0),
+            Wrap::List(Cells::Inferred) => DataKind::seq_of(inner, false),
+            Wrap::List(Cells::Taken) => DataKind::list_of(inner, 0),
+            Wrap::List(Cells::Heap) => DataKind::seq_of(inner, true),
             Wrap::Slice => DataKind::slice_of(inner),
             Wrap::View => DataKind::text_view(),
         })
@@ -463,6 +491,57 @@ impl DataKind
         DataKind::Slice(made)
     }
 
+    /// The plain or heap list kind of cells of `cell`, made once and kept
+    /// for the rest of the run.
+    ///
+    /// # Arguments
+    ///
+    /// * `cell` - The kind of each cell.
+    /// * `heap` - Whether it is a heap list.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn seq_of(cell: DataKind, heap: bool) -> DataKind
+    {
+        let wanted = SeqKind { cell, heap };
+        let seqs = SEQS.get_or_init(Mutex::default);
+        let mut seqs = seqs.lock().unwrap_or_else(PoisonError::into_inner);
+        ret_if!(let Some(found) = seqs.get(&wanted), DataKind::Seq(found));
+        let made: &'static SeqKind = Box::leak(Box::new(wanted));
+        seqs.insert(made);
+        DataKind::Seq(made)
+    }
+
+    /// The plain or heap list part of the kind.
+    ///
+    /// # Returns
+    ///
+    /// The parts, or `None` for a kind that is no plain or heap list.
+    pub fn as_seq(self) -> Option<&'static SeqKind>
+    {
+        tern!(let DataKind::Seq(s) = self, Some(s), None)
+    }
+
+    /// Whether the kind is a plain or a heap list.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn is_seq(self) -> bool { matches!(self, DataKind::Seq(_)) }
+
+    /// The kind of each cell of a list of each form or of a slice.
+    ///
+    /// # Returns
+    ///
+    /// The cell kind, or `None` for a kind with no cells.
+    pub fn cell_kind(self) -> Option<DataKind>
+    {
+        ret_if!(let Some(l) = self.as_list(), Some(l.cell));
+        ret_if!(let Some(s) = self.as_seq(), Some(s.cell));
+        self.as_slice().map(|s| s.cell)
+    }
+
     /// The slice part of the kind.
     ///
     /// # Returns
@@ -511,7 +590,7 @@ impl DataKind
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_heap_text());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_heap_text()));
-        self == DataKind::Text(TextForm::Heap)
+        self == DataKind::Text(TextForm::Heap) || self.as_seq().is_some_and(|s| s.heap)
     }
 
     /// Whether a value of the kind holds owned text, which is dropped when
@@ -524,7 +603,33 @@ impl DataKind
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_text());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_text()));
-        self.is_text()
+        self.is_text() || self.is_seq()
+    }
+
+    /// Whether a value of the kind holds a plain or a heap list: the list
+    /// itself, or a fixed list or a struct with one inside.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn holds_seq(self) -> bool
+    {
+        ret_if!(let Some(l) = self.as_list(), l.cell.holds_seq());
+        ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_seq()));
+        self.is_seq()
+    }
+
+    /// The kind with each plain or heap list turned into a fixed list whose
+    /// count is still open, at each depth of lists: the kind of a constant.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn fixed_form(self) -> DataKind
+    {
+        ret_if!(let Some(s) = self.as_seq(), DataKind::list_of(s.cell.fixed_form(), 0));
+        ret_if!(let Some(l) = self.as_list(), DataKind::list_of(l.cell.fixed_form(), l.len));
+        self
     }
 
     /// Whether a value of the kind holds an owner pointer, whose block the
@@ -537,19 +642,9 @@ impl DataKind
     pub fn holds_owner_ptr(self) -> bool
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_owner_ptr());
+        ret_if!(let Some(l) = self.as_seq(), l.cell.holds_owner_ptr());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_owner_ptr()));
         self.is_owner_ptr()
-    }
-
-    /// The kind of each cell a value of the kind holds or views: the cells of
-    /// a list or of a slice.
-    ///
-    /// # Returns
-    ///
-    /// The cell kind, or `None` for a kind that is no list and no slice.
-    pub fn cell_kind(self) -> Option<DataKind>
-    {
-        self.as_list().map(|l| l.cell).or_else(|| self.as_slice().map(|s| s.cell))
     }
 
     /// The list part of the kind.
@@ -595,7 +690,11 @@ impl DataKind
     /// `true` for a list, a struct or a slice kind.
     pub fn is_aggregate(self) -> bool
     {
-        self.is_list() || self.is_struct() || self.is_slice() || self.is_text()
+        self.is_list()
+            || self.is_struct()
+            || self.is_slice()
+            || self.is_text()
+            || self.is_seq()
     }
 
     /// Whether some list level of the kind has no cell count so far.
@@ -606,6 +705,7 @@ impl DataKind
     pub fn has_open_count(self) -> bool
     {
         ret_if!(let Some(s) = self.as_slice(), s.cell.has_open_count());
+        ret_if!(let Some(s) = self.as_seq(), s.cell.has_open_count());
         self.as_list().is_some_and(|l| l.len == 0 || l.cell.has_open_count())
     }
 
@@ -624,6 +724,10 @@ impl DataKind
         if let (Some(want), Some(have)) = (self.as_slice(), found.as_slice())
         {
             return Some(DataKind::slice_of(want.cell.fill_counts(have.cell)?));
+        }
+        if let (Some(want), Some(have)) = (self.as_seq(), found.cell_kind())
+        {
+            return Some(DataKind::seq_of(want.cell.fill_counts(have)?, want.heap));
         }
         let (Some(want), Some(have)) = (self.as_list(), found.as_list())
         else
@@ -737,6 +841,10 @@ impl DataKind
             DataKind::Struct(s) => tern!(full, s.sig(), &s.name).to_string(),
             DataKind::Slice(s) if s.text => "text[..]".to_string(),
             DataKind::Slice(s) => format!("{}[][..]", s.cell.spell(full)),
+            DataKind::Seq(s) =>
+            {
+                format!("{}[]{}", s.cell.spell(full), tern!(s.heap, "~", ""))
+            }
             DataKind::Text(form) => <&str>::from(form).to_string(),
         }
     }
@@ -760,6 +868,7 @@ impl DataKind
             DataKind::List(l) => (0, Base::List(l)),
             DataKind::Struct(s) => (0, Base::Struct(s)),
             DataKind::Slice(s) => (0, Base::Slice(s)),
+            DataKind::Seq(s) => (0, Base::Seq(s)),
             DataKind::Text(form) => (0, Base::Text(form)),
         }
     }
@@ -894,6 +1003,7 @@ impl DataKind
     pub fn holds_borrow(self) -> bool
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_borrow());
+        ret_if!(let Some(l) = self.as_seq(), l.cell.holds_borrow());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_borrow()));
         self.is_borrow()
     }
@@ -981,7 +1091,7 @@ impl DataKind
     {
         ret_if!(let Some(s) = self.as_struct(), s.size(platform));
         ret_if!(self.is_slice(), Some(u32::from(platform) / 4));
-        ret_if!(self.is_text(), Some(u32::from(platform) / 8 * 3));
+        ret_if!(self.is_text() || self.is_seq(), Some(u32::from(platform) / 8 * 3));
         let Some(l) = self.as_list()
         else
         {
@@ -1003,7 +1113,8 @@ impl DataKind
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.align(platform));
         ret_if!(let Some(s) = self.as_struct(), s.align(platform));
-        ret_if!(self.is_slice() || self.is_text(), (u32::from(platform) / 8).min(16));
+        let words = self.is_slice() || self.is_text() || self.is_seq();
+        ret_if!(words, (u32::from(platform) / 8).min(16));
         self.size(platform).min(16)
     }
 
@@ -1068,6 +1179,7 @@ impl DataKind
             DataKind::List(_)
             | DataKind::Struct(_)
             | DataKind::Slice(_)
+            | DataKind::Seq(_)
             | DataKind::Text(_) =>
             {
                 let bits = u64::from(self.size(platform)) * 8;
@@ -1102,6 +1214,8 @@ impl DataKind
             (DataKind::Float(a), DataKind::Float(b)) => a < b,
             (DataKind::Null, DataKind::Ptr(_)) => true,
             (DataKind::Text(_), DataKind::Text(_)) => true,
+            (DataKind::List(a), DataKind::Seq(b)) => a.len > 0 && a.cell == b.cell,
+            (DataKind::Seq(a), DataKind::Seq(b)) => a.cell == b.cell,
             (DataKind::Ptr(_), DataKind::Ptr(_)) =>
             {
                 self.meets_pointer(target) && !self.reads_addresses_as(target)
@@ -1198,7 +1312,7 @@ impl DataKind
     /// `true` for such a kind.
     pub fn holds_address(self) -> bool
     {
-        ret_true!(self.is_slice() || self.is_text());
+        ret_true!(self.is_slice() || self.is_text() || self.is_seq());
         ret_if!(let Some(list) = self.as_list(), list.cell.holds_address());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_address()));
         self.is_ptr()
@@ -1359,10 +1473,13 @@ fn wrap_mark(kind: DataKind, mark: &str) -> Option<DataKind>
         "&" if opaque && !kind.is_raw_ptr() => Some(kind.as_borrowed()),
         "&" => Some(kind.pointer_to().as_borrowed()),
         "[..]" if kind.is_text() => Some(DataKind::text_view()),
-        "[..]" =>
+        "[..]" => kind.as_seq().filter(|s| !s.heap).map(|s| DataKind::slice_of(s.cell)),
+        "[]" => Some(DataKind::seq_of(kind, false)),
+        "~" =>
         {
-            kind.as_list().filter(|l| l.len == 0).map(|l| DataKind::slice_of(l.cell))
+            kind.as_seq().filter(|s| !s.heap).map(|s| DataKind::seq_of(s.cell, true))
         }
+        "[_]" => Some(DataKind::list_of(kind, 0)),
         _ =>
         {
             let count = mark.strip_prefix('[')?.strip_suffix(']')?;
@@ -1411,7 +1528,7 @@ pub fn split_marks(name: &str) -> (&str, &str)
 /// open.
 fn list_name(l: &ListKind, full: bool) -> String
 {
-    let count = tern!(l.len == 0, String::new(), l.len.to_string());
+    let count = tern!(l.len == 0, "_".to_string(), l.len.to_string());
     format!("{}[{count}]", l.cell.spell(full))
 }
 

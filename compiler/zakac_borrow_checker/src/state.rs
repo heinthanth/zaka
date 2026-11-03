@@ -770,15 +770,16 @@ impl SlotState
     pub(crate) fn of_kind(kind: DataKind, info: PtrInfo, int: Interval) -> SlotState
     {
         ret_if!(kind.is_int(), SlotState::Int(int));
-        let list = kind.is_aggregate() && !kind.is_slice() && !kind.is_text();
+        let words = kind.is_slice() || kind.is_text() || kind.is_seq();
+        let list = kind.is_aggregate() && !words;
         ret_if!(list && holds_ptr(kind), SlotState::List(info));
         tern!(holds_ptr(kind), SlotState::Ptr(info), SlotState::None)
     }
 }
 
 /// Whether the check follows the pointers of a kind: an owner, a borrow, a
-/// slice or text, or a list or a struct whose cells or fields hold one at
-/// some depth. Raw addresses are not followed.
+/// slice, text or a plain or heap list, or a fixed list or a struct whose cells
+/// or fields hold one at some depth. Raw addresses are not followed.
 ///
 /// # Arguments
 ///
@@ -791,7 +792,8 @@ pub(crate) fn holds_ptr(kind: DataKind) -> bool
 {
     ret_if!(let Some(list) = kind.as_list(), holds_ptr(list.cell));
     ret_if!(let Some(s) = kind.as_struct(), s.fields().iter().any(|(_, k)| holds_ptr(*k)));
-    kind.is_slice() || kind.is_text() || (kind.is_ptr() && !kind.is_raw_ptr())
+    let words = kind.is_slice() || kind.is_text() || kind.is_seq();
+    words || (kind.is_ptr() && !kind.is_raw_ptr())
 }
 
 #[cfg(test)]

@@ -70,7 +70,8 @@ A statement is one of fourteen forms:
 
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
-`Convert { implicit }`, `Call`, the pointer forms `AddrOf`, `Load`, `Lend`, `Take`, `Dup`,
+`Convert { implicit }`, `Call`, the pointer forms `AddrOf`, `Load`, `Lend`, `Take`, `Dup`, `Own` (a plain list made to
+own its block before a write, written `(own ...)`),
 `PtrAdd`, `PtrSub`, `SizeOf`, the list forms `List`, `BlankList`, `CellAddr`, `FieldAddr`,
 and `MakeSlice`, and the text forms `Text(String)` (static text, written `"..."` in the
 s-expression form) and `Format(Vec<FmtPiece>)` (text built when the program runs, written
@@ -107,9 +108,23 @@ rules out). Its rules:
   `Func::shared_params` gets a borrow slot that holds the caller's address, and each
   read of it goes through `local_ref`.
 - Text of one form set into a place of another: plain and fixed text are relabelled,
-  with no node. A value that becomes heap text gets a `Convert`; codegen copies it into
-  a `%own` slot and runs `own_text` there, which gives text with a room of 0 a heap block
-  of its own. The borrow checker never lends an argument for a heap text parameter.
+  with no node. A value that becomes heap text, or a plain list that becomes a heap list,
+  gets a `Convert`; codegen copies it into a `%own` slot and runs `own` there, which gives
+  text or a list with a room of 0 a heap block of its own. The borrow checker never lends
+  an argument for a heap text or heap list parameter.
+- A plain or heap list literal is built as a fixed list of its cells, wrapped in a
+  `Convert`. A fixed list that becomes a plain or heap list, a literal or a fixed place,
+  gets a `Convert` too; codegen gives it a `%own` slot and emits `to_heap k`, which moves
+  the cells to a new heap block and writes the plain list of them in the slot. A constant
+  list takes the fixed kind of its value.
+- A write into a plain list: the address of each written place, a cell, a field of a cell
+  or the whole list, wraps each plain list on its path in an `Own` node, the outer one
+  first, so a list lent with a room of 0 copies its cells into a block of its own before
+  the write. Codegen emits the address of the list, `dup`, and `own k`, and leaves the
+  address for the write. A heap list owns its block from the start, so its path gets no
+  `Own`.
+- `==` and `!=` on two plain or heap lists emit `seq_eq k`, which compares the counts and
+  then each cell; `!=` adds a `not`. Two fixed lists keep `list_eq k`.
 - A range `x ၏ အကွက် s မှစ၍ n ကွက်` becomes `MakeSlice { source, start, len, from }`,
   where `from` tells whether the source is a list of a known count, a slice, or a heap
   block. The lend of a list is a `MakeSlice` of each cell, marked `checked`. The count of
@@ -330,9 +345,9 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `ret`, `result_addr`, `trap code` |
 | output | `print`, `print_text t`, `print_list k` |
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
-| lists | `index len from`, `blit k`, `zero k`, `list_eq k` |
+| lists | `index len from`, `blit k`, `zero k`, `list_eq k`, `seq_eq k`, `to_heap k` |
 | slices | `make_slice stride source`, `slice_cell stride from` |
-| text | `text t`, `format fmt`, `drop k`, `dup_text k`, `lend_text k`, `own_text k`, `text_eq`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
+| text | `text t`, `format fmt`, `drop k`, `dup_text k`, `lend_text k`, `own k`, `text_eq`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
 
 A range of text that is not the whole text gets `text_edges` after its `make_slice`, which
 stops the program when an edge falls inside a character; when the fold knows the text, the

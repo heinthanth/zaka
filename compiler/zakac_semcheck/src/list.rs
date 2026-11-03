@@ -53,9 +53,9 @@ pub(crate) enum KindUse
 /// The list or slice kind, or `None` for a kind that is none of these.
 pub(crate) fn list_through(kind: DataKind) -> Option<DataKind>
 {
-    ret_if!(kind.is_list() || kind.is_slice(), Some(kind));
+    ret_if!(kind.is_list() || kind.is_slice() || kind.is_seq(), Some(kind));
     ret_if!(kind.is_text(), Some(DataKind::text_view()));
-    kind.pointee().filter(|k| k.is_list())
+    kind.pointee().filter(|k| k.is_list() || k.is_seq())
 }
 
 /// Whether a kind holds a slice whose cells hold borrows, at once or in the
@@ -71,6 +71,7 @@ pub(crate) fn list_through(kind: DataKind) -> Option<DataKind>
 fn has_slice_of_borrows(kind: DataKind) -> bool
 {
     ret_if!(let Some(s) = kind.as_slice(), s.cell.holds_borrow());
+    ret_if!(let Some(s) = kind.as_seq(), has_slice_of_borrows(s.cell));
     kind.as_list().is_some_and(|l| has_slice_of_borrows(l.cell))
 }
 
@@ -152,7 +153,7 @@ fn bad_marker(written: &Kind) -> bool
 /// `true` when an open list level has an address level outside it.
 fn open_behind_address(written: &Kind) -> bool
 {
-    let open = written.wraps.iter().position(|w| *w == Wrap::List(Cells::Inferred));
+    let open = written.wraps.iter().position(|w| *w == Wrap::List(Cells::Taken));
     let is_level = |w: &Wrap| matches!(w, Wrap::Ptr | Wrap::RawPtr);
     let address = written.wraps.iter().rposition(is_level);
     matches!((open, address), (Some(o), Some(a)) if o < a)
@@ -182,7 +183,8 @@ impl Checker
         do_if!(large, self.report(kd::list_too_large(span, &kind.name())));
         let open = at != KindUse::Decl && written.has_inferred_cells();
         do_if!(open, self.report(kd::list_count_missing(span)));
-        let result = at == KindUse::Result && kind.is_list() && kind.holds_borrow();
+        let lists = kind.is_list() || kind.is_seq();
+        let result = at == KindUse::Result && lists && kind.holds_borrow();
         do_if!(result, self.report(kd::borrow_list_result(span)));
         let nested = has_slice_of_borrows(kind);
         do_if!(nested, self.report(kd::slice_of_borrows(span, &kind.name())));
@@ -225,7 +227,9 @@ impl Checker
         }
         if !kind.has_open_count()
         {
+            self.decl_value = init.is_some_and(is_blank);
             do_if!(let Some(init) = init, self.expect_kind(init, Some(kind)));
+            self.decl_value = false;
             return Some(kind);
         }
         let Some(init) = init.filter(|e| !is_blank(e))
@@ -267,7 +271,9 @@ impl Checker
     /// # Returns
     ///
     /// The filled kind, or `None` after an error.
-    fn fill_counts(&mut self, kind: DataKind, init: &Expr) -> Option<DataKind>
+    pub(crate) fn fill_counts(
+        &mut self, kind: DataKind, init: &Expr,
+    ) -> Option<DataKind>
     {
         if let Some(shaped) = shape_of(kind, init)
         {
@@ -298,11 +304,18 @@ impl Checker
     ) -> Option<DataKind>
     {
         let count = u32::try_from(n.cells.len()).ok()?;
+        // A literal with no fixed list around it is a plain list, or the
+        // heap list its place wants.
+        if let Some(seq) = expect.and_then(DataKind::as_seq)
+        {
+            do_for!(c in &n.cells, self.expect_kind(c, Some(seq.cell)));
+            return expect;
+        }
         let Some(want) = expect.and_then(DataKind::as_list)
         else
         {
             let cell = self.common_cell(&n.cells)?;
-            return Some(DataKind::list_of(cell, count));
+            return Some(DataKind::seq_of(cell, false));
         };
         do_for!(c in &n.cells, self.expect_kind(c, Some(want.cell)));
         let wrong = want.len != 0 && want.len != count;
@@ -347,8 +360,11 @@ impl Checker
         &mut self, n: &BlankListLit, expect: Option<DataKind>,
     ) -> Option<DataKind>
     {
-        let want = expect.filter(|k| k.is_list() && !k.has_open_count());
+        let want =
+            expect.filter(|k| (k.is_list() || k.is_seq()) && !k.has_open_count());
         do_if!(want.is_none(), self.report(kd::blank_list_kind(n.span)));
+        let fixed = want.filter(|k| k.is_list() && n.brackets && !self.decl_value);
+        do_if!(let Some(k) = fixed, self.report(kd::brackets_on_fixed_list(n.span, &k.name())));
         want
     }
 
@@ -428,7 +444,8 @@ impl Checker
     {
         if let Some(cells) = list_through(kind)
         {
-            ret_if!(kind.is_list() && !self.addressable(source), None);
+            let lists = kind.is_list() || kind.is_seq();
+            ret_if!(lists && !self.addressable(source), None);
             ret_if!(kind.is_text() && !self.viewable(source), None);
             return cells.cell_kind();
         }
@@ -628,6 +645,6 @@ impl Checker
     /// `true` for a list.
     fn holds_list(&self, e: &Expr) -> bool
     {
-        self.kinds.get(&e.id()).is_some_and(|k| k.is_list())
+        self.kinds.get(&e.id()).is_some_and(|k| k.is_list() || k.is_seq())
     }
 }
