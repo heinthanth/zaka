@@ -606,6 +606,20 @@ impl DataKind
         self.is_text() || self.is_seq()
     }
 
+    /// Whether a value of the kind can own a heap block that its place frees
+    /// as it ends: plain or heap text, a plain or heap list, or a fixed list
+    /// or a struct with one inside. Fixed text is static and owns none.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn needs_drop(self) -> bool
+    {
+        ret_if!(let Some(l) = self.as_list(), l.cell.needs_drop());
+        ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.needs_drop()));
+        (self.is_text() && self != DataKind::Text(TextForm::Fixed)) || self.is_seq()
+    }
+
     /// Whether a value of the kind holds a plain or a heap list: the list
     /// itself, or a fixed list or a struct with one inside.
     ///

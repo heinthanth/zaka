@@ -147,7 +147,7 @@ looks for it in the other files and adds help that names the file that declares 
 | `Int(IntKind)` | a sign and a `Width`, which is `Platform` or `Bits(n)` |
 | `Float(bits)` | 16, 32, 64 or 128 |
 | `Char`, `Bool` | |
-| `Text(TextForm)` | owned UTF-8 text of a form: `Plain` (`စာသား`), `Fixed` (`စာသားသေ`) or `Heap` (`စာသားရှင်`), each three words; `holds_heap_text` holds for heap text and for each list or struct with it inside; copied, not moved (`is_move_kind` is `holds_owner_ptr`), and `holds_text` holds for it and for each list or struct with text in it |
+| `Text(TextForm)` | owned UTF-8 text of a form: `Plain` (`စာသား`), `Fixed` (`စာသားသေ`) or `Heap` (`စာသားရှင်`), each three words; `holds_heap_text` holds for heap text and for each list or struct with it inside; copied, not moved (`is_move_kind` is `holds_owner_ptr`), and `holds_text` holds for it and for each list or struct with text in it; `needs_drop` holds for plain and heap text and plain and heap lists, and for each list or struct with one inside, never for fixed text |
 | `Ptr(PtrKind)` | levels of address over a base, with the outer level an owner, a borrow or raw |
 | `Null` | the kind of `ဗလာ`, which converts to each pointer kind |
 | `List(&'static ListKind)` | a fixed list: a count of cells of one kind, inline; list kinds are interned so the form remains `Copy` |

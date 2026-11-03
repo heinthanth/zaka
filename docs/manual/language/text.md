@@ -658,8 +658,9 @@ abc!
 ## Drops
 
 Text is *managed*: the compiler frees it, and a program has no statement for it. A place
-whose kind holds text (a `စာသား` variable or parameter, a struct with a `စာသား` field, a
-list of `စာသား`) drops its text:
+whose kind holds plain or heap text (a `စာသား` variable or parameter, a struct with a
+`စာသား` field, a list of `စာသား`) drops its text. Fixed text is static, so a place of it
+has nothing to drop. The drops come:
 
 - at the end of its block;
 - at the end of each round of a loop;

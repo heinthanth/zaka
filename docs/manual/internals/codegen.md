@@ -151,11 +151,13 @@ rules out). Its rules:
   a slice is a `Load` of its second word, through a `FieldAddr`.
 - A string literal with no template slots becomes `Text`; one with template slots, a verbal join, and a `+` of two texts,
   become a `Format`.
-- A place whose kind holds text gets a `Drop` at each exit of its scope: the end of its
+- A place whose kind can own a heap block (`needs_drop`: plain or heap text, a plain or
+  heap list, or a list or struct with one inside; fixed text is static and owns none)
+  gets a `Drop` at each exit of its scope: the end of its
   block, the end of a loop round, before a `break`, a `continue` or a return, and, for a
   global, at the end of `main`. A short-lived text that is printed or used in a template slot is
   dropped right after its use.
-- An assignment to a text place goes through a hidden slot `%new`: `(set l1 <value>)`,
+- An assignment to such a place goes through a hidden slot `%new`: `(set l1 <value>)`,
   then `(drop l0)`, then `(set l0 (take (addr l1)))`, so the value is worked out from the
   old text before the old text is freed.
 - A program of several files gives one module. As in the check, each file has its own

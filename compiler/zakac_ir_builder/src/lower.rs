@@ -277,7 +277,7 @@ impl Lowerer<'_>
         };
         let scope = self.scopes.last_mut().expect("a scope is open");
         scope.insert(ident.name, place);
-        let dropped = kind.holds_text() && ident.name != RESULT_NAME;
+        let dropped = kind.needs_drop() && ident.name != RESULT_NAME;
         let drops = self.drops.last_mut().expect("a scope is open");
         do_if!(dropped, drops.push((place, kind)));
         place
@@ -338,7 +338,7 @@ impl Lowerer<'_>
     fn global_drops(&self, span: Span) -> Vec<Stmt>
     {
         let globals = self.globals.iter().enumerate().rev();
-        let held = globals.filter(|(_, s)| s.kind.holds_text() && s.name != "%new");
+        let held = globals.filter(|(_, s)| s.kind.needs_drop() && s.name != "%new");
         held.map(|(i, s)| drop_stmt(Dest::Slot(Place::Global(i as u32)), s.kind, span))
             .collect()
     }
@@ -646,7 +646,7 @@ impl Lowerer<'_>
             Dest::Mem(_) => self.kind_of(&n.target),
         };
         let value = self.owned(&n.value, want);
-        let value = tern!(want.holds_text(), self.replace(&dest, value, out), value);
+        let value = tern!(want.needs_drop(), self.replace(&dest, value, out), value);
         out.push(match dest
         {
             Dest::Slot(place) => Stmt::Set { place, value, span },
@@ -1197,7 +1197,7 @@ impl Lowerer<'_>
         let result = value.map(|value| {
             let place = self.lookup(RESULT_NAME);
             let kind = value.kind;
-            let value = tern!(kind.holds_text(), self.replace(&Dest::Slot(place), value, out), value);
+            let value = tern!(kind.needs_drop(), self.replace(&Dest::Slot(place), value, out), value);
             out.push(Stmt::Set { place, value, span });
             tern!(let Place::Local(slot) = place, read_return(slot, kind, span), Stmt::Return { value: None, span })
         });
