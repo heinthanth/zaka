@@ -1,39 +1,44 @@
 // The glance: on the violet field, one short program on a panel, each line
-// with a label in the margin, tied to the words it explains by a short rule.
-// Under it the run button, then what the program printed and what the
-// compiler warned, side by side.
+// with a handwritten note beside it or in the gap under it, and an arrow from
+// the note to the words it explains. Under it, what the program printed and what
+// the compiler warned, next to each other.
 
 .glance
+  display: flex
+  flex-direction: column
+  justify-content: center
+  min-height: var(--band)
   padding: calc(var(--section-gap) / 2) var(--margin)
   background: var(--violet)
 
 .glance-head
-  margin-bottom: 56px
+  margin-bottom: var(--head-gap)
   font-size: var(--step-head)
   font-weight: 700
   line-height: 1.04
   letter-spacing: -0.03em
 
-// The program: one row a line, a counter in front of each. The code takes
-// the room it needs up to a share of the row; the rule runs from its end to
-// the label.
+// The program: one row a line, a counter in front of each, and the note of
+// the line beside the code or in a row of its own under it.
 .glance-code
   counter-reset: line
   display: grid
-  gap: 6px
-  padding: 28px 0
+  gap: 18px
+  padding: 32px 0
   background: var(--panel)
   border: 1px solid var(--panel-border)
 
 .glance-line
   counter-increment: line
+  position: relative
   display: grid
-  grid-template-columns: 3.2em fit-content(60%) minmax(24px, 1fr) minmax(0, 17rem)
+  grid-template-columns: 3.2em minmax(0, 1fr)
   align-items: start
   padding-right: 28px
 
   &::before
     content: counter(line)
+    grid-row: 2
     padding-top: 0.35em
     font-family: var(--mono-font)
     font-size: var(--step-note)
@@ -41,6 +46,8 @@
     color: var(--fg-muted)
 
 .glance-text
+  grid-column: 2
+  grid-row: 2
   font-size: clamp(17px, 1.5vw, 21px)
   line-height: 1.6
 
@@ -50,37 +57,51 @@
   background: var(--accent-soft)
   box-shadow: inset 0 -2px 0 var(--accent)
 
-.glance-tie
-  height: 1px
-  margin: 0.95em 12px 0
-  background: var(--accent)
-
+// A note, in the hand face. The page puts it beside its line when the row has
+// the room, else under it, and moves it along the line (`--shift`): past
+// the last word beside it, past the words it points at under it.
 .glance-label
-  padding-top: 0.3em
-  font-size: var(--step-note)
-  line-height: 1.45
-  color: var(--fg-muted)
+  grid-column: 2
+  justify-self: start
+  width: max-content
+  max-width: min(30ch, 100%)
+  margin-left: var(--shift, 0px)
+  font-family: var(--hand-font)
+  font-size: clamp(19px, 1.6vw, 23px)
+  font-weight: 500
+  line-height: 1.15
+  color: var(--accent)
 
-// The run: the bar, then the panels.
+  &[data-side="beside"]
+    grid-row: 2
+
+  &[data-side="below"]
+    grid-row: 3
+    margin-top: 28px
+
+// The arrows lie over the line; the page draws each path from where its
+// note and its words sit.
+.glance-arrow
+  position: absolute
+  inset: 0
+  width: 100%
+  height: 100%
+  overflow: visible
+  pointer-events: none
+
+.glance-pen
+  fill: none
+  stroke: var(--accent)
+  stroke-width: 1.6
+  stroke-linecap: round
+  stroke-linejoin: round
+
+// The panels of the run, under the program.
 .glance-run
-  display: grid
-
-// The run button and the link into the explorer.
-.glance-bar
-  display: flex
-  flex-wrap: wrap
-  align-items: center
-  gap: 24px
-  margin: 24px 0
-
-.glance-edit
-  font-size: var(--step-note)
-  font-weight: 700
-
-.glance-panels
   display: grid
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)
   gap: 24px
+  margin-top: 24px
 
 .glance-panel
   display: grid
@@ -108,7 +129,7 @@
   display: grid
   gap: 12px
   max-width: 75%
-  margin-top: 56px
+  margin-top: var(--head-gap)
   color: var(--fg-muted)
 
   // The first line leads, a step larger and in the ink of the page.
@@ -130,26 +151,13 @@
 .glance-note
   color: var(--diag-note)
 
-// On a narrow screen each label goes under its line, behind a small mark,
-// and the panels stack.
+// On a narrow screen the counters take less room, and the panels stack.
 @media (max-width: 860px)
   .glance-line
     grid-template-columns: 2.4em minmax(0, 1fr)
-    row-gap: 4px
     padding-right: 16px
 
-  .glance-tie
-    display: none
-
-  .glance-label
-    grid-column: 2
-    padding-top: 0
-
-    &::before
-      content: "↑ "
-      color: var(--accent)
-
-  .glance-panels
+  .glance-run
     grid-template-columns: minmax(0, 1fr)
 
   .glance-about

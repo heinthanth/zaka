@@ -3,12 +3,16 @@
 // word, what backs it and a link to the Docs page that proves it.
 
 .traits
+  display: flex
+  flex-direction: column
+  justify-content: center
+  min-height: var(--band)
   padding: calc(var(--section-gap) / 2) var(--margin)
   color: var(--on-gold)
   background: var(--gold)
 
 .traits-head
-  display: inline-block
+  align-self: flex-start
   padding-bottom: 14px
   font-size: var(--step-head)
   font-weight: 700
@@ -21,7 +25,7 @@
   display: grid
   grid-template-columns: repeat(3, minmax(0, 1fr))
   gap: 48px 24px
-  margin-top: 72px
+  margin-top: var(--head-gap)
 
 .trait
   display: flex
@@ -59,4 +63,3 @@
 @media (max-width: 760px)
   .traits-list
     grid-template-columns: minmax(0, 1fr)
-    margin-top: 48px

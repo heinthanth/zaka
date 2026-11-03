@@ -4,8 +4,10 @@
 .footer
   display: flex
   flex-direction: column
-  gap: 64px
-  padding: 40px var(--margin) 32px
+  // Room to match the sections over it: a deeper top, and a wide gap
+  // between the notes and the row of links.
+  gap: clamp(64px, 8vw, 120px)
+  padding: clamp(56px, 7vw, 104px) var(--margin) 40px
   color: var(--on-gold)
   background: var(--gold)
 

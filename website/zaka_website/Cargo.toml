@@ -13,7 +13,6 @@ required-features = ["server"]
 
 [dependencies]
 axum = { workspace = true, optional = true }
-base64 = { workspace = true }
 bon = { workspace = true }
 console_error_panic_hook = { workspace = true }
 js-sys = { workspace = true }
@@ -50,10 +49,11 @@ zakac_span = { workspace = true }
 [dependencies.web-sys]
 workspace = true
 features = [
-    "Document", "DomRect", "DomTokenList",
+    "Document", "DomRect", "DomRectList", "DomTokenList",
     "Element", "Event", "EventTarget",
     "FontFaceSet", "KeyboardEvent",
-    "MediaQueryList", "MouseEvent", "NodeList", "PointerEvent", "Window"]
+    "MediaQueryList", "MouseEvent", "NodeList", "PointerEvent",
+    "ResizeObserver", "Window"]
 
 [dev-dependencies]
 toml = { workspace = true }

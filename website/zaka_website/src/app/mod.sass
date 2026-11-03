@@ -7,14 +7,23 @@
 html:root
   --ui-font: "Space Mono", "Myanmar Sabae", system-ui, sans-serif
   --mono-font: "Myanmar Sabae (Burmese)", "Sauce Code Pro (HTMM's Custom)", ui-monospace, monospace
+  // The hand of the notes on the program of the landing page: a smaller cut
+  // of the Burmese face draws the Burmese, Caveat the rest.
+  --hand-font: "Myanmar Sabae (Hand)", "Caveat", cursive
 
 
 html
   // One pair of outer margins for the whole page; 16px on narrow screens,
   // in px, as the explorer page sets a root font size of its own.
-  --margin: 24px
+  --edge: 24px
+  --margin: var(--edge)
   // Room between sections, larger than each gap inside one.
   --section-gap: clamp(120px, 14vw, 220px)
+  // The least height of a landing section: the whole of a short screen, and
+  // one fixed band on a tall one, so the sections keep one beat.
+  --band: min(100svh, 920px)
+  // The room between the head of a section and what follows it.
+  --head-gap: clamp(40px, 5vw, 72px)
   // The five text steps: poster, section head, statement, text and note.
   --step-poster: clamp(56px, 9.5vw, 150px)
   --step-head: clamp(32px, 5.6vw, 88px)
@@ -178,7 +187,13 @@ html.lenis body
 
 @media (max-width: 640px)
   html
-    --margin: 16px
+    --edge: 16px
+
+// The landing page holds the header, the sections and the footer in one
+// centered column on a wide screen. The page hides the scroll bar of the
+// browser, so `100vw` is the width of the page.
+html:has([data-field="hero"])
+  --margin: max(var(--edge), (100vw - 1280px) / 2)
 
 @media (prefers-reduced-motion: reduce)
   .rise > *

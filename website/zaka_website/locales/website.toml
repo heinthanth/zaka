@@ -97,8 +97,6 @@ en = "Particles mark each role: သည် the subject, ထက် what it is comp
 en = "Otherwise. Each statement ends at ။, not at the end of the line."
 [website.glance.warning]
 en = "Warning"
-[website.glance.edit]
-en = "Edit in the explorer"
 [website.glance.about]
 en = "Zaka turns plain Burmese into real programs. Write a sentence, and it runs."
 [website.glance.about_run]

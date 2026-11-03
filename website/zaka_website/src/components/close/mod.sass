@@ -9,6 +9,10 @@
   position: relative
   isolation: isolate
   overflow: hidden
+  display: flex
+  flex-direction: column
+  justify-content: center
+  min-height: var(--band)
   padding: calc(var(--section-gap) / 2) var(--margin)
   color: var(--night-ink)
   background: var(--night)
@@ -48,7 +52,7 @@
   align-items: flex-end
   justify-content: space-between
   gap: 32px
-  margin-top: 48px
+  margin-top: var(--head-gap)
 
 .close-text
   max-width: 40ch

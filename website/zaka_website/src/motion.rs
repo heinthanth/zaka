@@ -282,7 +282,7 @@ fn name()
 }
 
 /// The glance: the head rises, then the lines of the program, one after the
-/// other, then the run, then the note under it.
+/// other, each with its note and arrow, then the run, then the text under it.
 fn glance()
 {
     rise(&format!(".{}", Glance::GLANCE_HEAD), &format!(".{}", Glance::GLANCE), &[]);

@@ -33,6 +33,7 @@ use leptos_router::static_routes::StaticRoute;
 use leptos_scoped_style::ComponentStyle;
 use leptos_scoped_style::scss_file;
 use zaka_web_ui_common::font::FONT_ROOT;
+use zaka_web_ui_common::font::face::FONTSOURCE;
 use zaka_web_ui_common::font::face::Face;
 use zaka_web_ui_common::shared_sheets;
 use zaka_web_ui_common::sheet;
@@ -90,6 +91,13 @@ const START_WEIGHTS: [u16; 2] = [400, 700];
 /// Weights of Noto Sans Myanmar, the Burmese face of the explorer, whose
 /// sheets load with the explorer page, as its own `index.html` loads them.
 const EXPLORER_WEIGHTS: [u16; 2] = [400, 600];
+
+/// The sheet of Caveat, the handwriting face of the notes on the program of
+/// the landing page, at its one weight there.
+
+/// The face of the notes on the program of the landing page, a @fontsource
+/// package, and its one weight there.
+const HAND_FACE: (&str, u16) = ("caveat", 500);
 
 /// The libraries of the motion code, in order: GSAP, its scroll plugin and
 /// Lenis, from npm through `vendor/Trunk.toml`, each in a folder named after
@@ -351,8 +359,11 @@ fn home() -> impl IntoView
         close().into_any(),
     ];
     let title = t!("website.page.title").to_string();
+    let (hand, weight) = HAND_FACE;
+    let hand_sheet = format!("{FONT_ROOT}{hand}/{FONTSOURCE}/{weight}.css");
     (
         page_tags("/", title, t!("website.page.description").to_string()),
+        Link(LinkProps::builder().rel("stylesheet").href(hand_sheet).build()),
         header_sheet(),
         SiteHeader(SiteHeaderProps::builder().here(HOME_URL.to_string()).build())
             .into_any(),

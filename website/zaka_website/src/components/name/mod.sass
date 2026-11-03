@@ -4,13 +4,15 @@
 .name
   display: grid
   grid-template-columns: repeat(12, minmax(0, 1fr))
-  grid-template-rows: auto auto 1fr
+  grid-template-rows: auto auto auto
+  align-content: center
+  min-height: var(--band)
   column-gap: 24px
   padding: calc(var(--section-gap) / 2) var(--margin)
   background: var(--panel)
 
 .name-head
-  grid-column: 1 / 7
+  grid-column: 1 / 8
   grid-row: 1
   max-width: 10ch
   font-size: var(--step-head)
@@ -18,20 +20,22 @@
   line-height: 1.04
   letter-spacing: -0.03em
 
-// The photograph runs to the edge of the window; the frame clips the
-// picture, which drifts inside it as the page scrolls. It fills the rows of
+// The photograph runs to the edge of the window where the window is about
+// as narrow as the column, and keeps to the column on a wide one, easing
+// from one to the other as the margin grows; the frame clips the picture, which drifts inside it as the page scrolls. It fills the rows of
 // the heading and the equation and no more, so on a wide window it never
 // pushes them apart, and the text under them can run wide.
 .name-photo
-  grid-column: 7 / 13
+  grid-column: 8 / 13
   grid-row: 1 / 3
   display: flex
   flex-direction: column
-  margin: 0 calc(var(--margin) * -1) 0 0
+  --bleed: max(0px, 2 * var(--edge) - var(--margin))
+  margin: 0 calc(var(--bleed) * -1) 0 0
 
   figcaption
     margin-top: 10px
-    padding-right: var(--margin)
+    padding-right: var(--bleed)
     font-size: var(--step-note)
     color: var(--fg-muted)
 
@@ -62,13 +66,13 @@
 // The name taken apart: three terms with their meanings under them; each
 // sign keeps to the term after it.
 .name-equation
-  grid-column: 1 / 7
+  grid-column: 1 / 8
   grid-row: 2
   display: flex
   flex-wrap: wrap
   align-items: flex-start
   gap: 8px 28px
-  margin-top: 72px
+  margin-top: var(--head-gap)
 
 .name-pair
   display: flex
@@ -120,7 +124,6 @@
     grid-column: 1
     grid-row: 2
     gap: 6px 18px
-    margin-top: 40px
 
   // On one column the photo runs from edge to edge, its caption back on the
   // margins.

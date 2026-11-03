@@ -1,8 +1,3 @@
-use base64::Engine;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use leptos::ev;
-use leptos::html::a;
-use leptos::html::button;
 use leptos::html::div;
 use leptos::html::h2;
 use leptos::html::li;
@@ -12,12 +7,12 @@ use leptos::html::pre;
 use leptos::html::section;
 use leptos::html::span;
 use leptos::prelude::*;
+use leptos::svg::path;
+use leptos::svg::svg;
 use leptos_scoped_style::ComponentStyle;
 use zaka_web_ui_common::paint::painted;
 use zaka_web_ui_common::sheet;
-use zaka_web_ui_common::site::EXPLORER_URL;
 use zakac_i18n::t;
-use zakac_rust_sugars::tern;
 
 use crate::components::sandbox::run::FenceOptions;
 use crate::components::sandbox::run::STEP_CAP;
@@ -31,10 +26,6 @@ turf::style_sheet!("src/components/glance/mod.sass");
 
 /// Rules of the glance.
 static SHEET: ComponentStyle = ComponentStyle::global_css("site-glance", STYLE_SHEET);
-
-/// How long a run keeps its panels clear before it shows them again, so the
-/// reader sees that it ran.
-const RUN_PAUSE_MS: u64 = 280;
 
 /// One line of the program, with the words its label points at.
 #[derive(Clone, Copy)]
@@ -82,16 +73,16 @@ const LINES: [Line; 5] = [
 /// The source.
 pub fn source() -> String { LINES.map(|l| l.code).join("\n") }
 
-/// The glance: one short program with a label pinned to a part of each line,
-/// then what it prints and the warning the compiler gives, which a button
-/// runs again in the browser.
+/// The glance: one short program with a handwritten note pinned to a part of
+/// each line with an arrow, then what it prints and the warning the compiler
+/// gives.
 ///
 /// # Returns
 ///
 /// The view.
 pub fn glance() -> impl IntoView
 {
-    let run = GlanceRun(GlanceRunProps::builder().source(source()).build());
+    let run = run_panels(&source());
     let about = div().class(ClassName::GLANCE_ABOUT).child((
         p().child(t!("website.glance.about")),
         p().child(t!("website.glance.about_run")),
@@ -110,7 +101,9 @@ pub fn glance() -> impl IntoView
 }
 
 /// One line of the program: its number, the painted line with its pinned
-/// words marked, and the label tied to them.
+/// words marked, the note under it, and the arrow from the note to the
+/// words, which [`crate::notes`] draws once the page knows where each
+/// one sits.
 ///
 /// # Arguments
 ///
@@ -126,8 +119,14 @@ fn row(line: Line) -> impl IntoView
     let (pinned, after) = rest.split_at(line.pin.len());
     li().class(ClassName::GLANCE_LINE).child((
         code_text(before, pinned, after),
-        span().class(ClassName::GLANCE_TIE).attr("aria-hidden", "true"),
-        p().class(ClassName::GLANCE_LABEL).lang("en").child(t!(line.label.to_string())),
+        p().class(ClassName::GLANCE_LABEL)
+            .lang("en")
+            .attr("data-side", "below")
+            .child(t!(line.label.to_string())),
+        svg()
+            .class(ClassName::GLANCE_ARROW)
+            .attr("aria-hidden", "true")
+            .child(path().class(ClassName::GLANCE_PEN)),
     ))
 }
 
@@ -179,26 +178,8 @@ fn run_program(source: &str) -> Ran
     Ran { report: compiled.report, printed }
 }
 
-/// The address of the explorer with the program open in it, in the short
-/// link form the explorer reads with its default options.
-///
-/// # Arguments
-///
-/// * `source` - The program.
-///
-/// # Returns
-///
-/// The address.
-fn explorer_link(source: &str) -> String
-{
-    let text = URL_SAFE_NO_PAD.encode(source.as_bytes());
-    format!("{EXPLORER_URL}#2.64.{text}")
-}
-
-/// The run of the glance: the run button and the link into the explorer,
-/// then two panels, what the program printed and what the compiler warned.
-/// The page is built with the first run in place; the button runs the
-/// program again in the browser.
+/// The run of the glance: two panels, what the program printed and what the
+/// compiler warned, both from the run the build makes.
 ///
 /// # Arguments
 ///
@@ -207,49 +188,14 @@ fn explorer_link(source: &str) -> String
 /// # Returns
 ///
 /// The view.
-#[island(lazy)]
-pub fn GlanceRun(source: String) -> impl IntoView
+fn run_panels(source: &str) -> impl IntoView + use<>
 {
-    let ran = RwSignal::new(Some(run_program(&source)));
-    let running = RwSignal::new(false);
-    let started = RwSignal::new(false);
-    Effect::new(move |_| started.set(true));
-    let again = source.clone();
-    let rerun = move |_| {
-        running.set(true);
-        ran.set(None);
-        let again = again.clone();
-        set_timeout(
-            move || {
-                ran.set(Some(run_program(&again)));
-                running.set(false);
-            },
-            std::time::Duration::from_millis(RUN_PAUSE_MS),
-        );
-    };
-    let label = move || {
-        tern!(running.get(), t!("website.sandbox.running"), t!("website.sandbox.run"))
-    };
-    let bar = div().class(ClassName::GLANCE_BAR).child((
-        button()
-            .class("button")
-            .attr("type", "button")
-            .attr("disabled", move || (!started.get() || running.get()).then_some(""))
-            .on(ev::click, rerun)
-            .child(label),
-        a().class(ClassName::GLANCE_EDIT)
-            .href(explorer_link(&source))
-            .child((t!("website.glance.edit"), " →")),
-    ));
-    let printed = move || ran.get().map(|r| r.printed).unwrap_or_default();
-    let report = move || ran.get().map(|r| r.report).unwrap_or_default();
-    let panels = div().class(ClassName::GLANCE_PANELS).child((
-        panel(t!("website.sandbox.output").to_string(), move || printed().into_any()),
-        panel(t!("website.glance.warning").to_string(), move || {
-            report().into_iter().map(stroke).collect_view().into_any()
-        }),
-    ));
-    div().class(ClassName::GLANCE_RUN).child((bar, panels))
+    let ran = run_program(source);
+    let report = ran.report.into_iter().map(stroke).collect_view();
+    div().class(ClassName::GLANCE_RUN).child((
+        panel(t!("website.sandbox.output").to_string(), ran.printed),
+        panel(t!("website.glance.warning").to_string(), report),
+    ))
 }
 
 /// One panel under the program: a name over a block of text.
@@ -262,8 +208,7 @@ pub fn GlanceRun(source: String) -> impl IntoView
 /// # Returns
 ///
 /// The view.
-fn panel(name: String, content: impl Fn() -> AnyView + Send + 'static)
--> impl IntoView
+fn panel(name: String, content: impl IntoView) -> impl IntoView
 {
     div().class(ClassName::GLANCE_PANEL).child((
         p().class(ClassName::GLANCE_PANEL_NAME).child(name),
