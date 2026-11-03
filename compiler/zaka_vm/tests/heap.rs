@@ -381,3 +381,23 @@ fn a_static_list_takes_no_heap_block_until_its_first_edit()
                   တန်ဖိုး ကို ၇ ဟု ထားပါ။\nl ကို ပြသပါ။";
     assert_eq!(output(writes), "[၉၊ ၇၊ ၃]\n");
 }
+
+/// A counted list literal of known cells takes them from a static list, so
+/// an edit of the list leaves the static cells as they were for the next
+/// call, and an edited text cell takes a block of its own.
+#[test]
+fn a_counted_list_copies_its_static_cells()
+{
+    let text = "လုပ်ဆောင်ချက် ပြ သည်\nကိန်းပြည့် န ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ခ သည် \
+                အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈] ဖြစ်ပါစေ။\nခ ကို \
+                ပြသပါ။\nခ ၏ အကွက် ၀ ကို န ဟု ထားပါ။\nခ ကို ပြသပါ။\nလုပ်ဆောင်စရာများ \
+                ပြီးပါပြီ။\n\nလုပ်ဆောင်ချက် ပြ ကို ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် ပြ ကို ၂ တို့ဖြင့် \
+                လုပ်ဆောင်ပါ။\nကိန်းရှင် ဂ သည် အကွက် ၂ ခုရှိသော စာသား စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [\"က\"၊ \
+                \"ခ\"] ဖြစ်ပါစေ။\nဂ ၏ အကွက် ၁ ထဲသို့ \"x\" ကို ထည့်ပါ။\nဂ ကို ပြသပါ။";
+    let shown = "[၇၊ ၈]\n[၁၊ ၈]\n[၇၊ ၈]\n[၂၊ ၈]\n[\"က\"၊ \"ခx\"]\n";
+    let mut m = Machine::new(common::compile(text), RunOptions::default());
+    do_while!(m.running(), let _ = m.step());
+    assert_eq!(m.state(), &State::Finished);
+    assert_eq!(m.output(), shown);
+    assert!(m.leaks().is_empty());
+}

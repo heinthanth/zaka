@@ -6,6 +6,9 @@ globals
   g3 ဇယား isize[3][2]
   g4 ညွှန်း isize[3]&
   g5 ပ isize&
+seqs
+  s0 isize[3] [1:isize, 2:isize, 3:isize]
+  s1 isize[3] [4:isize, 5:isize, 6:isize]
 
 fn f0 ပေါင်း (params 1) -> isize
 locals
@@ -63,102 +66,82 @@ locals
      2  global_addr g1       ; ခ
      3  zero isize[3]
      4  global_addr g2       ; ဂ
-     5  push 1:isize
-     6  store isize
+     5  seq_addr s0
+     6  blit isize[3]
      7  global_addr g2       ; ဂ
-     8  push 1:usize
+     8  push 0:usize
      9  ptr_add 8
-    10  push 2:isize
+    10  push 10:isize
     11  store isize
     12  global_addr g2       ; ဂ
     13  push 2:usize
-    14  ptr_add 8
-    15  push 3:isize
-    16  store isize
-    17  global_addr g2       ; ဂ
-    18  push 0:usize
-    19  ptr_add 8
-    20  push 10:isize
-    21  store isize
-    22  global_addr g2       ; ဂ
-    23  push 2:usize
-    24  index 3 from 1
-    25  ptr_add 8
-    26  load isize
-    27  print
-    28  push 3:usize
-    29  print
-    30  global_addr g2       ; ဂ
-    31  print_list isize[3]
-    32  global_addr g0       ; က
-    33  global_addr g2       ; ဂ
-    34  blit isize[3]
-    35  global_addr g0       ; က
-    36  global_addr g2       ; ဂ
-    37  list_eq isize[3]
-    38  print
-    39  global_addr g1       ; ခ
-    40  global_addr g0       ; က
-    41  list_eq isize[3]
-    42  not
-    43  print
-    44  global_addr g3       ; ဇယား
-    45  zero isize[3][2]
-    46  global_addr g3       ; ဇယား
-    47  push 1:usize
-    48  ptr_add 24
-    49  push 2:usize
-    50  ptr_add 8
-    51  push 9:isize
-    52  store isize
-    53  global_addr g3       ; ဇယား
-    54  push 0:usize
-    55  ptr_add 24
-    56  global_addr g2       ; ဂ
-    57  blit isize[3]
-    58  global_addr g3       ; ဇယား
-    59  print_list isize[3][2]
-    60  global_addr g4       ; ညွှန်း
-    61  global_addr g2       ; ဂ
-    62  store isize[3]&
-    63  global_addr g4       ; ညွှန်း
-    64  load isize[3]&
-    65  push 1:usize
-    66  ptr_add 8
-    67  push 20:isize
-    68  store isize
-    69  global_addr g5       ; ပ
-    70  global_addr g2       ; ဂ
-    71  push 0:usize
-    72  ptr_add 8
-    73  store isize&
-    74  global_addr g5       ; ပ
-    75  load isize&
-    76  push 2:isize
-    77  ptr_add 8
-    78  load isize
-    79  print
-    80  local_addr l0        ; %dup
-    81  global_addr g2       ; ဂ
-    82  blit isize[3]
-    83  local_addr l0        ; %dup
-    84  local_addr l0        ; %dup
-    85  call f0              ; ပေါင်း
-    86  print
-    87  local_addr l1        ; %list
-    88  push 4:isize
-    89  store isize
-    90  local_addr l1        ; %list
-    91  push 1:usize
-    92  ptr_add 8
-    93  push 5:isize
-    94  store isize
-    95  local_addr l1        ; %list
-    96  push 2:usize
-    97  ptr_add 8
-    98  push 6:isize
-    99  store isize
-   100  local_addr l1        ; %list
-   101  call f0              ; ပေါင်း
-   102  print
-   103  ret
+    14  index 3 from 1
+    15  ptr_add 8
+    16  load isize
+    17  print
+    18  push 3:usize
+    19  print
+    20  global_addr g2       ; ဂ
+    21  print_list isize[3]
+    22  global_addr g0       ; က
+    23  global_addr g2       ; ဂ
+    24  blit isize[3]
+    25  global_addr g0       ; က
+    26  global_addr g2       ; ဂ
+    27  list_eq isize[3]
+    28  print
+    29  global_addr g1       ; ခ
+    30  global_addr g0       ; က
+    31  list_eq isize[3]
+    32  not
+    33  print
+    34  global_addr g3       ; ဇယား
+    35  zero isize[3][2]
+    36  global_addr g3       ; ဇယား
+    37  push 1:usize
+    38  ptr_add 24
+    39  push 2:usize
+    40  ptr_add 8
+    41  push 9:isize
+    42  store isize
+    43  global_addr g3       ; ဇယား
+    44  push 0:usize
+    45  ptr_add 24
+    46  global_addr g2       ; ဂ
+    47  blit isize[3]
+    48  global_addr g3       ; ဇယား
+    49  print_list isize[3][2]
+    50  global_addr g4       ; ညွှန်း
+    51  global_addr g2       ; ဂ
+    52  store isize[3]&
+    53  global_addr g4       ; ညွှန်း
+    54  load isize[3]&
+    55  push 1:usize
+    56  ptr_add 8
+    57  push 20:isize
+    58  store isize
+    59  global_addr g5       ; ပ
+    60  global_addr g2       ; ဂ
+    61  push 0:usize
+    62  ptr_add 8
+    63  store isize&
+    64  global_addr g5       ; ပ
+    65  load isize&
+    66  push 2:isize
+    67  ptr_add 8
+    68  load isize
+    69  print
+    70  local_addr l0        ; %dup
+    71  global_addr g2       ; ဂ
+    72  blit isize[3]
+    73  local_addr l0        ; %dup
+    74  local_addr l0        ; %dup
+    75  call f0              ; ပေါင်း
+    76  print
+    77  local_addr l1        ; %list
+    78  seq_addr s1
+    79  blit isize[3]
+    80  local_addr l1        ; %list
+    81  call f0              ; ပေါင်း
+    82  print
+    83  ret

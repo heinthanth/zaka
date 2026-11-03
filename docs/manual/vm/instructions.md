@@ -138,10 +138,11 @@ locals
     16  ret
 ```
 
-A plain list literal whose cells are each known when the program is compiled adds one more
+A list literal whose cells are each known when the program is compiled adds one more
 table, `seqs`: each static list, with its kind and its cells. A text cell names a static
 text (`t0`), and a plain list cell an earlier static list (`s0`). The VM puts each in a
-frozen static block before `main` starts, and `static_seq` points a list at one:
+frozen static block before `main` starts. `static_seq` points a plain list at one, and a
+counted list copies its cells from one with `seq_addr` and `blit`:
 
 ```zaka
 ကိန်းရှင် l သည် [၁၊ ၂] ဖြစ်ပါစေ။
@@ -246,6 +247,7 @@ a heap block.
 | `list_eq k` | a b → bool | whether each cell of one counted list equals the cell of the other |
 | `seq_eq k` | addr addr → b | whether two plain lists with cells of kind `k` hold the same count of cells, each equal |
 | `static_seq s` | slot → slot | point the plain list slot at the static list `s`, with a room of 0 |
+| `seq_addr s` | → addr | push the address of the cells of the static list `s`, the source of a `blit` into a counted list |
 | `to_heap k` | slot addr → | move the cells of the counted list of kind `k` at `addr` to a new heap block, and write the plain list of them in the slot |
 | `add_cell k` | list value → | give the plain list of kind `k` at `list` a block of its own when its room is 0, move it to a block twice the size (four cells at the least) when the block is full, then move the cell at `value` into a new last cell and leave the default of the cell kind at `value` |
 | `remove_cell k` | list → | stop the program when the plain list of kind `k` at `list` holds no cells; else drop its last cell when the list owns its block (a room above 0), and take one from its count |

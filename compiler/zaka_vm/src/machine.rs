@@ -1027,6 +1027,11 @@ impl Machine
             Op::SliceCell { stride, first } => self.slice_cell(stride, first),
             Op::Text(t) => self.static_text(t),
             Op::StaticSeq(s) => self.static_seq(s),
+            Op::SeqAddr(s) =>
+            {
+                let at = self.seqs.get(s as usize).copied();
+                self.push(Value::Ptr(at.ok_or_else(|| malformed("no static list"))?))
+            }
             Op::Format(f) => self.format(f),
             Op::Drop(kind) =>
             {

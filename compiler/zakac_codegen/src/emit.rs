@@ -644,8 +644,34 @@ impl<'s> FuncGen<'s>
     fn fill_list(&mut self, value: &Expr)
     {
         ret_if!(value.node == ExprNode::BlankList, self.op(Op::Zero(value.kind)));
-        self.expr(value);
+        let list = &value.node;
+        let known =
+            tern!(let ExprNode::List(c) = list, self.static_cells(value.kind, c), None);
+        match known
+        {
+            Some(s) => self.op(Op::SeqAddr(s)),
+            None => self.expr(value),
+        }
         self.op(Op::Blit(value.kind));
+    }
+
+    /// The static list of a counted list literal whose cells are known at
+    /// compile time, which fills a slot with one blit in place of a store
+    /// for each cell.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the literal.
+    /// * `cells` - Its cells.
+    ///
+    /// # Returns
+    ///
+    /// The index of the static list, or `None` for a struct, a literal with
+    /// no cells, or one with a cell known when the program runs.
+    fn static_cells(&mut self, kind: DataKind, cells: &[Expr]) -> Option<u32>
+    {
+        let known = kind.is_list() && !cells.is_empty() && cells.iter().all(is_known);
+        known.then(|| self.shared.static_seq(kind, cells))
     }
 
     /// Write a value at the address on the stack: a list or a struct is
@@ -701,6 +727,10 @@ impl<'s> FuncGen<'s>
         {
             return self.op(Op::Zero(kind));
         };
+        ret_if!(let Some(s) = self.static_cells(kind, cells), {
+            self.op(Op::SeqAddr(s));
+            self.op(Op::Blit(kind));
+        });
         let platform = self.shared.platform;
         let stride = kind.as_list().map_or(0, |l| l.cell.size(platform));
         // A cell steps `i` strides; a field steps its offset in octets.

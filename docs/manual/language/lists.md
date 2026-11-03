@@ -488,6 +488,9 @@ and counted lists, structs and plain lists of known cells.
   a heap block.
 - With `--fold none` a literal of operations on constants is built when the program runs;
   the output is the same.
+- A counted list keeps its cells in place, so it never points at static data. A counted
+  literal of known cells is still a static list, and the list copies its cells from it in
+  one step, in place of a write for each cell.
 
 ```zaka
 ကိန်းရှင် l သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။

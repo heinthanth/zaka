@@ -19,7 +19,17 @@ module:
   - name: ပ
     kind: isize&
   texts: []
-  seqs: []
+  seqs:
+  - kind: isize[3]
+    cells:
+    - value: 1:isize
+    - value: 2:isize
+    - value: 3:isize
+  - kind: isize[3]
+    cells:
+    - value: 4:isize
+    - value: 5:isize
+    - value: 6:isize
   formats: []
   funcs:
   - name: ပေါင်း
@@ -165,18 +175,8 @@ module:
     - global_addr: 1
     - zero: isize[3]
     - global_addr: 2
-    - push: 1:isize
-    - store: isize
-    - global_addr: 2
-    - push: 1:usize
-    - ptr_add: 8
-    - push: 2:isize
-    - store: isize
-    - global_addr: 2
-    - push: 2:usize
-    - ptr_add: 8
-    - push: 3:isize
-    - store: isize
+    - seq_addr: 0
+    - blit: isize[3]
     - global_addr: 2
     - push: 0:usize
     - ptr_add: 8
@@ -250,18 +250,8 @@ module:
     - call: 0
     - print
     - local_addr: 1
-    - push: 4:isize
-    - store: isize
-    - local_addr: 1
-    - push: 1:usize
-    - ptr_add: 8
-    - push: 5:isize
-    - store: isize
-    - local_addr: 1
-    - push: 2:usize
-    - ptr_add: 8
-    - push: 6:isize
-    - store: isize
+    - seq_addr: 1
+    - blit: isize[3]
     - local_addr: 1
     - call: 0
     - print
@@ -277,28 +267,8 @@ module:
       hi: 637
     - lo: 638
       hi: 930
-    - lo: 838
-      hi: 841
     - lo: 638
       hi: 930
-    - lo: 638
-      hi: 930
-    - lo: 638
-      hi: 930
-    - lo: 638
-      hi: 930
-    - lo: 845
-      hi: 848
-    - lo: 638
-      hi: 930
-    - lo: 638
-      hi: 930
-    - lo: 638
-      hi: 930
-    - lo: 638
-      hi: 930
-    - lo: 852
-      hi: 855
     - lo: 638
       hi: 930
     - lo: 931
@@ -444,27 +414,7 @@ module:
     - lo: 3738
       hi: 3802
     - lo: 3738
-      hi: 3741
-    - lo: 3738
       hi: 3802
-    - lo: 3738
-      hi: 3802
-    - lo: 3738
-      hi: 3802
-    - lo: 3738
-      hi: 3802
-    - lo: 3745
-      hi: 3748
-    - lo: 3738
-      hi: 3802
-    - lo: 3738
-      hi: 3802
-    - lo: 3738
-      hi: 3802
-    - lo: 3738
-      hi: 3802
-    - lo: 3752
-      hi: 3755
     - lo: 3738
       hi: 3802
     - lo: 3738

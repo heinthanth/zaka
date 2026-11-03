@@ -69,7 +69,7 @@ error[ZK0606]: a constant that holds text or a plain list must be known at compi
 
 A *counted list* keeps its count for good: the count is part of its kind, and it is known
 before the program runs. Its cells sit in the list itself, so it never needs a heap
-block. Write the count first, then the kind of each cell, then `စာရင်း`:
+block. A literal of known cells is copied in from static data in one step. Write the count first, then the kind of each cell, then `စာရင်း`:
 
 ```zaka
 ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။

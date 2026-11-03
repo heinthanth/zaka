@@ -607,3 +607,24 @@ fn a_literal_of_known_cells_points_at_a_static_list()
     assert!(built.iter().any(|o| o.starts_with("to_heap")), "{built:?}");
     assert!(!built.iter().any(|o| o.starts_with("static_seq")), "{built:?}");
 }
+
+/// A counted list literal of known cells fills its slot from a static list
+/// with one blit; a literal with a cell known when the program runs stores
+/// each cell.
+#[test]
+fn a_counted_literal_of_known_cells_is_one_blit()
+{
+    let module = emit_text(
+        "ကိန်းရှင် ခ သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈] ဖြစ်ပါစေ။",
+    );
+    let kinds: Vec<String> = module.seqs.iter().map(|s| s.kind.name()).collect();
+    assert_eq!(kinds, ["isize[2]"]);
+    let found = ops(main_func(&module));
+    let blit = ["seq_addr s0".to_string(), "blit isize[2]".to_string()];
+    assert!(found.windows(2).any(|w| w == blit), "{found:?}");
+    let built = main_ops(
+        "ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
+         [n၊ ၈] ဖြစ်ပါစေ။",
+    );
+    assert!(!built.iter().any(|o| o.starts_with("seq_addr")), "{built:?}");
+}

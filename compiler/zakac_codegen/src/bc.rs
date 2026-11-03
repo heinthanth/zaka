@@ -27,8 +27,9 @@ pub struct Module
     #[builder(default)]
     pub texts: Vec<String>,
     /// The static lists: list literals whose cells are known at compile
-    /// time, each in a frozen static block. [`Op::StaticSeq`] names one with
-    /// its index; a list cell names an earlier one.
+    /// time, each in a frozen static block. [`Op::StaticSeq`] and
+    /// [`Op::SeqAddr`] name one with its index; a list cell names an earlier
+    /// one.
     #[builder(default)]
     #[serde(default)]
     pub seqs: Vec<StaticSeq>,
@@ -125,13 +126,14 @@ pub enum SliceSource
     Block,
 }
 
-/// A plain list whose cells are known at compile time. The VM puts its cells
-/// in a frozen static block before the program starts, and a plain list
-/// made from it points there with a room of 0.
+/// A list literal whose cells are known at compile time. The VM puts its
+/// cells in a frozen static block before the program starts. A plain list
+/// made from it points there with a room of 0, and a counted list copies
+/// the cells into its own slot with one blit.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct StaticSeq
 {
-    /// The plain list kind.
+    /// The list kind: a plain list, or the counted list that copies it.
     pub kind: DataKind,
     /// The cells, in order.
     pub cells: Vec<StaticCell>,
@@ -291,6 +293,9 @@ pub enum Op
     /// Pop the address of a plain list slot; write the static list of this
     /// index there, with room 0, and push the address.
     StaticSeq(u32),
+    /// Push the address of the cells of the static list of this index, the
+    /// source of a blit into a counted list.
+    SeqAddr(u32),
     /// Pop one value for each value piece of this format, the last piece on
     /// top, then the address of a text slot; write the text of each piece
     /// in a new heap block, keep it in the slot, and push the address.
@@ -435,7 +440,7 @@ impl Op
             Op::Jump(t) | Op::JumpIfFalse(t) | Op::JumpIfTrue(t) => format!("@{t}"),
             Op::Call(f) => format!("f{f}"),
             Op::PrintText(t) | Op::Text(t) => format!("t{t}"),
-            Op::StaticSeq(s) => format!("s{s}"),
+            Op::StaticSeq(s) | Op::SeqAddr(s) => format!("s{s}"),
             Op::Format(f) => format!("fmt{f}"),
             Op::Trap(code) => <&str>::from(code).to_string(),
             Op::Wrap(op) => op.mnemonic().to_string(),
