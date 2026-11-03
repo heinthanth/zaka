@@ -153,7 +153,8 @@ fn movable(routine: &Routine, place: Place) -> bool
 }
 
 /// The places a lend, a range or an address reads in a list of statements,
-/// nested blocks included.
+/// nested blocks included. The address under a move is no such read: the
+/// move ends the place, so no view of it outlives the move.
 ///
 /// # Arguments
 ///
@@ -165,11 +166,14 @@ fn movable(routine: &Routine, place: Place) -> bool
 fn lent_in(stmts: &[Stmt]) -> BTreeSet<Place>
 {
     let mut found = BTreeSet::new();
+    let mut addrs: HashMap<(Span, Place), i32> = HashMap::new();
     let mut note = |e: &Expr| match &e.node
     {
-        ExprNode::AddrOf(place) =>
+        ExprNode::AddrOf(place) => *addrs.entry((e.span, *place)).or_default() += 1,
+        ExprNode::Take { addr } =>
         {
-            found.insert(*place);
+            let moved = tern!(let ExprNode::AddrOf(p) = addr.node, Some(p), None);
+            do_if!(let Some(p) = moved, *addrs.entry((addr.span, p)).or_default() -= 1);
         }
         ExprNode::Lend { operand } | ExprNode::MakeSlice { source: operand, .. } =>
         {
@@ -180,6 +184,7 @@ fn lent_in(stmts: &[Stmt]) -> BTreeSet<Place>
         _ => (),
     };
     each_stmt(stmts, &mut |s| do_for!(e in stmt_exprs(s), each_expr(e, &mut note)));
+    found.extend(addrs.into_iter().filter(|(_, n)| *n > 0).map(|((_, p), _)| p));
     found
 }
 

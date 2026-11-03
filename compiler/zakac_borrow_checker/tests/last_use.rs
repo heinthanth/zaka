@@ -237,6 +237,20 @@ fn a_global_the_callee_sets_is_duplicated_for_a_shared_parameter()
     assert_eq!(module.matches("(dup g0)").count(), 1, "{module}");
 }
 
+/// A list that two calls read is lent to both, though the second read of it is
+/// its last, which moves it: the move ends the list, so it keeps no earlier
+/// lend from being one.
+#[test]
+fn a_list_lent_twice_before_its_last_read_is_never_duplicated()
+{
+    let warn = BorrowCheckOptions::builder().warn_duplicates(true).build();
+    let text = "လုပ်ဆောင်ချက် ပြ သည်\nကိန်းပြည့် စာရင်း က ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ၏ အကွက် \
+                ၀ ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nကိန်းရှင် ခ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ \
+                တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် ပြ ကို ခ တို့ဖြင့် လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် ပြ \
+                ကို ခ တို့ဖြင့် လုပ်ဆောင်ပါ။\n";
+    assert_eq!(codes_with(text, &warn), []);
+}
+
 /// The program of `samples/programs/scores_views.zaka` reads its lists and
 /// text through views alone, so `--warn-duplicates` names nothing in it; the
 /// same program with plain parameters, `scores.zaka`, has duplicates left.

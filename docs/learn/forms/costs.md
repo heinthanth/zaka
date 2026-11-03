@@ -152,8 +152,9 @@ asks the heap for blocks of its own, and the owner of each block frees it.
 
 ## The scores program with no duplicate
 
-The [Scores](../programs/scores.md) program of Part I gives each function a duplicate
-of its list, and each each-cell loop walks one more. Below is the same program with the
+In the [Scores](../programs/scores.md) program of Part I, each call lends the list to
+its function, which never writes it; but each function walks the list with an each-cell
+loop, and each such loop walks a duplicate. Below is the same program with the
 two routes above: each function takes a slice or a view, each call lends
 `<list> ၏ တန်ဖိုးအငှား`, and the passing scores go into a heap list. Run with
 `--warn-duplicates`, it names nothing, and it prints what the first one prints.
