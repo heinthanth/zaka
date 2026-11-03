@@ -120,12 +120,12 @@ zakac run --warn-duplicates costs.zaka
 ```
 
 ```text
-warning[ZK0720]: "ပထမ" is duplicated here; text on the heap takes a new block for the duplicate
+warning[ZK0720]: "ပထမ" is duplicated here; the duplicate can take a new heap block for its cells
  --> costs.zaka:3:50
   |
 3 | ကိန်းရှင် ဒုတိယ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပထမ ဖြစ်ပါစေ။        // a duplicate: ပထမ is read again
   |                                    ^^^
-  = help: lend a view to read it with no duplicate, or read it no more after this statement, so it moves
+  = help: lend a view or a slice to read it with no duplicate, or read it no more after this statement, so it moves
 Zaka ၇
 Zaka ၇
 ```

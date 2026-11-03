@@ -51,7 +51,7 @@ pub struct BorrowCheckOptions
     /// What integer arithmetic does with a result outside its kind.
     #[builder(default)]
     pub overflow: OverflowMode,
-    /// Warn about each statement that duplicates text (ZK0720).
+    /// Warn about each statement that duplicates text or a list (ZK0720).
     #[builder(default)]
     pub warn_duplicates: bool,
 }

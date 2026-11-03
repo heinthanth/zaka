@@ -337,7 +337,8 @@ pub fn overflow_proven(span: Span, op: &str, kind: &str) -> Diagnostic
     Diagnostic::new(Code::OverflowProven, msg, span).with_help(t!("codes.ZK0719.help"))
 }
 
-/// With `--warn-duplicates`, a statement duplicates the text of a place.
+/// With `--warn-duplicates`, a statement duplicates the text or the list of a
+/// place.
 ///
 /// # Arguments
 ///

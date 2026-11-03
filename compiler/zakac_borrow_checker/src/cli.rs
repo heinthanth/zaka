@@ -49,7 +49,7 @@ const MEM_CHECK_ARG: &str = "mem_check";
 const MEM_STRICT_ARG: &str = "mem_strict";
 /// The flag that picks what integer arithmetic does on overflow.
 const OVERFLOW_ARG: &str = "overflow";
-/// The flag that names each statement that duplicates text.
+/// The flag that names each statement that duplicates text or a list.
 const WARN_DUPLICATES_ARG: &str = "warn_duplicates";
 
 /// The `zakac_borrow_checker` command, `zakac borrow-check` (or `zakac mkbck`)
