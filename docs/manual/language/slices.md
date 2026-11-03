@@ -181,7 +181,7 @@ A slice is a borrow, so the rules of [borrows](ownership.md#lending-a-block) hol
   is ZK0704. So is a write into a plain list that a slice views: the write can move the
   cells of the list to a block of its own (see [Edits and
   loans](lists.md#edits-and-loans)). A write into a heap list or a fixed list moves no
-  cell.
+  cell. An add or a remove on a plain or a heap list ends each slice of it as well.
 - A function can return a slice of a borrow parameter or of a top-level variable; a slice
   of its own list is ZK0706.
 - A struct field cannot hold a slice (ZK0718), and a function cannot keep one in a

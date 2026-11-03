@@ -85,6 +85,7 @@ use crate::state::OwnerState;
 use crate::state::PtrInfo;
 use crate::state::SlotState;
 use crate::state::State;
+use crate::walk::dest_expr;
 use crate::walk::each_expr;
 use crate::walk::sub_exprs;
 
@@ -621,6 +622,12 @@ impl<'m> Flow<'m>
                 self.forget_freed(dest, state);
                 self.write_dest(dest, SlotState::Ptr(PtrInfo::null()), state)
             }
+            Stmt::AddCell { dest, value, span, .. } =>
+            {
+                self.edit_list(dest, *span, state);
+                self.moved(value, state);
+            }
+            Stmt::RemoveCell { dest, span, .. } => self.edit_list(dest, *span, state),
             Stmt::Drop { dest, kind, span } =>
             {
                 self.give_back(dest, Invalidation::Freed, *span, state);
@@ -632,6 +639,33 @@ impl<'m> Flow<'m>
             }
             _ => (),
         }
+    }
+
+    /// Check an add or a remove statement on the list at `dest`: its cells
+    /// can move, so each loan into it ends, and so does each loan into a
+    /// plain list around it, which the edit makes own its block.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - The list.
+    /// * `span` - The statement.
+    /// * `state` - The facts, changed in place.
+    fn edit_list(&mut self, dest: &Dest, span: Span, state: &mut State)
+    {
+        let outer = dest_expr(dest).map(owned_lists).unwrap_or_default();
+        for list in outer.iter().chain([dest])
+        {
+            check_heap(self, list, Invalidation::Edited, span, state);
+        }
+        let Dest::Mem(addr) = dest
+        else
+        {
+            return;
+        };
+        let at = self.value(addr, state);
+        self.deref(addr, state);
+        check_offset(self, &at, addr.span, true);
+        self.havoc_through(addr, state);
     }
 
     /// Leave the routine: the value given back moves out, then each owner

@@ -535,6 +535,13 @@ impl Lowerer<'_>
             {
                 out.push(Stmt::Free { dest: self.dest(&n.target), span: n.span })
             }
+            st::Stmt::Add(n) => out.push(self.add_cell(n)),
+            st::Stmt::Remove(n) =>
+            {
+                let kind = self.kind_of(&n.list);
+                let dest = self.dest(&n.list);
+                out.push(Stmt::RemoveCell { dest, kind, span: n.span })
+            }
             st::Stmt::Struct(_) => (),
             st::Stmt::Import(n) => self.import(n),
         }
@@ -703,6 +710,24 @@ impl Lowerer<'_>
         let (count, unit) = self.size(&n.size);
         let dest = self.dest(&n.target);
         Stmt::Alloc { dest, count, unit, span: n.span }
+    }
+
+    /// Lower an add statement: the value is owned, as an assigned one is.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn add_cell(&mut self, n: &st::AddStmt) -> Stmt
+    {
+        let kind = self.kind_of(&n.list);
+        let cell = kind.cell_kind().expect("an add statement grows a list");
+        let value = self.owned(&n.value, cell);
+        let dest = self.dest(&n.list);
+        Stmt::AddCell { dest, kind, value, span: n.span }
     }
 
     /// Lower a heap reallocation.
@@ -1955,6 +1980,7 @@ impl Lowerer<'_>
             | VerbOp::Print
             | VerbOp::Assign
             | VerbOp::Return
+            | VerbOp::AddCell
             | VerbOp::Cell
             | VerbOp::CharAt
             | VerbOp::CharNth

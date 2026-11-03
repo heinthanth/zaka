@@ -107,6 +107,10 @@ pub enum Stmt
     Resize(ResizeStmt),
     /// Release of the heap block a place points at.
     Free(FreeStmt),
+    /// `l ထဲသို့ v ကို ထည့်ပါ။`
+    Add(AddStmt),
+    /// `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။`
+    Remove(RemoveStmt),
     /// `ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။`
     Struct(StructDecl),
     /// `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းပါ။`
@@ -429,6 +433,28 @@ pub struct FreeStmt
 {
     /// The address to release.
     pub target: Expr,
+    /// Source region.
+    pub span: Span,
+}
+
+/// `<list> ထဲသို့ <value> ကို ထည့်ပါ။`: the value becomes a new last cell.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct AddStmt
+{
+    /// The list that grows, a place.
+    pub list: Expr,
+    /// The new cell.
+    pub value: Expr,
+    /// Source region.
+    pub span: Span,
+}
+
+/// `<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။`: the list loses its last cell.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct RemoveStmt
+{
+    /// The list that shrinks, a place.
+    pub list: Expr,
     /// Source region.
     pub span: Span,
 }

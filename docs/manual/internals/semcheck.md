@@ -99,6 +99,7 @@ that implements `Visitor`. It has one method for each statement form and calls
 | call | the function exists; one argument for each parameter; each converts. For a parameter marked `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော`, the argument takes the mark (ZK0431; a mark elsewhere is ZK0432), is a writable place (`place_kind`: ZK0410, ZK0306) of the parameter kind, with no widening (ZK0401), and its variable appears in no other argument (`check_edits_apart`, ZK0433) |
 | heap sentences | the target is a place of a pointer kind (ZK0417); the size is `usize` |
 | assignment to a cell of text | ZK0429, for owned text and a view alike |
+| add, remove | `growing_cells` (from `visit_add` and `visit_remove`): the list is a writable place (`place_kind`: ZK0410, ZK0306) of a plain or heap list kind, else ZK0437 (a fixed list, text, a slice, a view, or a pointer to a list); the value of an add converts to the cell kind (ZK0401) |
 
 Each subtree is inferred once, so a diagnostic is never repeated. When an operand has an
 error, its operation returns `None` and reports nothing more; an operation with two bad

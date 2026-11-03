@@ -47,7 +47,7 @@ pub const MAIN_NAME: &str = "main";
 /// The names of the slots that hold scratch values: values a statement
 /// builds and uses before it ends. The slots of a counted loop live across
 /// its block and are not among them.
-const SCRATCH: &[&str] = &["%list", "%slice", "%ret", "%at", "%text"];
+const SCRATCH: &[&str] = &["%list", "%slice", "%ret", "%at", "%text", "%cell"];
 
 /// Generate stack machine ops for a checked, folded module.
 ///
@@ -844,14 +844,52 @@ impl<'s> FuncGen<'s>
             Stmt::Free { dest, .. } => self.update_dest(dest, |g| g.free()),
             Stmt::Drop { dest, kind, .. } =>
             {
-                match dest
-                {
-                    Dest::Slot(place) => self.addr_of(*place),
-                    Dest::Mem(at) => self.expr(at),
-                }
+                self.dest_addr(dest);
                 self.op(Op::Drop(*kind));
             }
+            Stmt::AddCell { dest, kind, value, .. } =>
+            {
+                self.add_cell(dest, *kind, value)
+            }
+            Stmt::RemoveCell { dest, kind, .. } =>
+            {
+                self.dest_addr(dest);
+                self.op(Op::RemoveCell(*kind));
+            }
         }
+    }
+
+    /// Push the address of a place.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - The place.
+    fn dest_addr(&mut self, dest: &Dest)
+    {
+        match dest
+        {
+            Dest::Slot(place) => self.addr_of(*place),
+            Dest::Mem(at) => self.expr(at),
+        }
+    }
+
+    /// Add a value as a new last cell of a plain or heap list. The value is
+    /// worked out first, in a slot of its own, so it reads the list as it
+    /// was before the add.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - The list.
+    /// * `kind` - The list kind.
+    /// * `value` - The new cell.
+    fn add_cell(&mut self, dest: &Dest, kind: DataKind, value: &Expr)
+    {
+        let slot = self.temp("%cell", value.kind);
+        self.op(Op::LocalAddr(slot));
+        self.put(value);
+        self.dest_addr(dest);
+        self.op(Op::LocalAddr(slot));
+        self.op(Op::AddCell(kind));
     }
 
     /// Push an element count, then add a heap op that takes it.

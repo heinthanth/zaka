@@ -50,20 +50,10 @@ zakac_span = { workspace = true }
 [dependencies.web-sys]
 workspace = true
 features = [
-    "Document",
-    "DomRect",
-    "DomTokenList",
-    "Element",
-    "Event",
-    "EventTarget",
-    "FontFaceSet",
-    "KeyboardEvent",
-    "MediaQueryList",
-    "MouseEvent",
-    "NodeList",
-    "PointerEvent",
-    "Window",
-]
+    "Document", "DomRect", "DomTokenList",
+    "Element", "Event", "EventTarget",
+    "FontFaceSet", "KeyboardEvent",
+    "MediaQueryList", "MouseEvent", "NodeList", "PointerEvent", "Window"]
 
 [dev-dependencies]
 toml = { workspace = true }
@@ -75,17 +65,9 @@ zaka_web_builder = { workspace = true }
 [features]
 client = ["leptos/hydrate"]
 server = [
-    "dep:axum",
-    "dep:leptos_axum",
-    "dep:tokio",
-    "dep:tower-http",
-    "leptos-use-event-listener/ssr",
-    "leptos-use-window/ssr",
-    "leptos/ssr",
-    "leptos_meta/ssr",
-    "leptos_router/ssr",
-    "zaka_web_ui_common/ssr",
-]
+    "dep:axum", "dep:leptos_axum", "dep:tokio", "dep:tower-http",
+    "leptos-use-event-listener/ssr", "leptos-use-window/ssr",
+    "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "zaka_web_ui_common/ssr",]
 
 # cargo-leptos: the server binary renders the page, the library builds the
 # islands into wasm.
@@ -118,8 +100,7 @@ watch-additional-files = [
     "website/zaka_web_ui_common/locales",
     "website/zaka_explorer/src",
     "website/zaka_explorer/locales",
-    "docs/learn",
-]
+    "docs/learn",]
 
 # turf: the sheets of the components, built with their classes renamed after
 # a hash, so no class of one section reaches another. The names come from

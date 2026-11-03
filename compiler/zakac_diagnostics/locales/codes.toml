@@ -753,6 +753,13 @@ en = "[] is a list with no cells, and a fixed list of %{k} cannot take it here"
 [codes.ZK0436.explain]
 en = """A fixed list keeps its count, so a list with no cells does not fit it. In the declaration of a fixed list, [] starts each cell at its default. Elsewhere, write \"စာရင်းအလွတ်\" to set each cell back to its default, or make the list a plain list, with no count, which [] fits."""
 
+[codes.ZK0437.title]
+en = "a value that cannot grow or shrink"
+[codes.ZK0437.message]
+en = "%{k} cannot grow or shrink: \"ထည့်ပါ\" and \"ဖျက်ပါ\" take a plain or a heap list"
+[codes.ZK0437.explain]
+en = """A fixed list keeps the count its kind gives, and text, slices and views hold no cells of their own to add to. Declare the list with no count, as a plain list (isize[]), or as a heap list (စာရင်းရှင်, isize[]~), to add cells to it and remove them."""
+
 # ---------------------------------------------------------- naturalness ZK05xx
 
 [codes.ZK0501.title]

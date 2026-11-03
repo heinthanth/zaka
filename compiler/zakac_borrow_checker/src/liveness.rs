@@ -208,7 +208,8 @@ pub(crate) fn node_exprs<'m>(kind: &NodeKind<'m>) -> Vec<&'m Expr>
     }
 }
 
-/// The slot a free or a resize reads the address of.
+/// The slot a free or a resize reads the address of, or the list an add or a
+/// remove statement changes.
 ///
 /// # Arguments
 ///
@@ -227,7 +228,12 @@ fn heap_slot(kind: &NodeKind) -> Option<(Place, Span)>
     match s
     {
         Stmt::Free { dest: Dest::Slot(place), span }
-        | Stmt::Resize { dest: Dest::Slot(place), span, .. } => Some((*place, *span)),
+        | Stmt::Resize { dest: Dest::Slot(place), span, .. }
+        | Stmt::AddCell { dest: Dest::Slot(place), span, .. }
+        | Stmt::RemoveCell { dest: Dest::Slot(place), span, .. } =>
+        {
+            Some((*place, *span))
+        }
         _ => None,
     }
 }

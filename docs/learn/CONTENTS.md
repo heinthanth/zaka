@@ -46,6 +46,7 @@
   - [Pointer mistakes](pointers/mistakes.md)
 - [Lists](lists/README.md)
   - [Passing and comparing lists](lists/passing.md)
+  - [Adding and removing cells](lists/growing.md)
   - [Lists of lists](lists/grids.md)
   - [Slices](lists/slices.md)
   - [List mistakes](lists/mistakes.md)

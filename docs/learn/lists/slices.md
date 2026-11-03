@@ -134,6 +134,16 @@ s ကို ပြသပါ။
 
 Write through the slice, or take the slice after the write.
 
+An [add or a remove](growing.md) ends each slice of the list too, a heap list included:
+an add can move the cells to a larger block, and a remove takes the last cell off.
+
+```zaka-error ZK0704
+ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+l ထဲသို့ ၄ ကို ထည့်ပါ။
+s ကို ပြသပါ။
+```
+
 [Slices](../../manual/language/slices.md) in the Docs gives each rule.
 
 Next: [List mistakes](mistakes.md).

@@ -8,8 +8,10 @@ use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::RangeExpr;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Kind;
+use zakac_ast::stmt::AddStmt;
 use zakac_ast::stmt::AssignStmt;
 use zakac_ast::stmt::PrintStmt;
+use zakac_ast::stmt::RemoveStmt;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::verb::Dir;
@@ -130,6 +132,7 @@ fn as_slot(tok: &Token) -> Option<Slot>
         TokenKind::Kw(Kw::Auk) => Some(Slot::Auk),
         TokenKind::Kw(Kw::Hu) => Some(Slot::Hu),
         TokenKind::Kw(Kw::Ordinal) => Some(Slot::Ordinal),
+        TokenKind::Kw(Kw::Into) => Some(Slot::Into),
         _ => None,
     }
 }
@@ -217,6 +220,11 @@ impl Parser<'_>
             // `၏ အကွက်တိုင်း` opens an each-cell loop; the operand before it is
             // what the loop walks.
             ret_if!(self.at_each_head(), self.finish_clause(stack));
+            // `၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ` removes the last cell of the operand.
+            ret_if!(
+                tok.kind == TokenKind::Kw(Kw::LastCell) && holds_ei(&stack),
+                self.finish_remove(stack, mode)
+            );
             if let Some(slot) = as_slot(&tok)
             {
                 self.attach_slot(&mut stack, slot)?;
@@ -301,6 +309,8 @@ impl Parser<'_>
         ret_if!(as_verb(&tok).is_some() || as_shift_dir(&tok).is_some(), Ok(()));
         let char_word = tok.kind == TokenKind::Kw(Kw::CharKind);
         ret_if!(char_word && matches!(slot, Slot::Ei | Slot::Ordinal), Ok(()));
+        let last_cell = tok.kind == TokenKind::Kw(Kw::LastCell);
+        ret_if!(last_cell && slot == Slot::Ei, Ok(()));
         let first = self.text_of(self.prev_span());
         ret_if!(as_slot(&tok).is_some(), Err(diag::double_particle(tok.span, first)));
         let expr = self.parse_operand()?;
@@ -759,11 +769,45 @@ impl Parser<'_>
         {
             VerbOp::Assign => Ok(assign_stmt(first, args.next(), span)),
             VerbOp::Print => Ok(print_stmt(first, slot, span)),
+            VerbOp::AddCell =>
+            {
+                let value = args.next().expect("an add statement takes two operands");
+                Ok(Stmt::Add(
+                    AddStmt::builder().list(first).value(value).span(span).build(),
+                ))
+            }
             _ =>
             {
                 Ok(Stmt::Return(ReturnStmt::builder().value(first).span(span).build()))
             }
         }
+    }
+
+    /// Finish `<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။` at its `နောက်ဆုံးအကွက်`, and
+    /// read its full stop.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack; its top holds `၏`.
+    /// * `mode` - Whether a statement can close the clause.
+    ///
+    /// # Returns
+    ///
+    /// The statement, or a diagnostic.
+    fn finish_remove(&mut self, mut stack: Vec<Item>, mode: Mode)
+    -> PResult<ClauseOut>
+    {
+        let tok = self.bump();
+        let name = self.text_of(tok.span);
+        ret_if!(mode == Mode::Expr, Err(diag::stmt_verb_in_expr(tok.span, name)));
+        let list = into_expr(stack.pop().expect("the top operand holds ၏"));
+        self.expect(Kw::Ko)?;
+        let verb = self.expect(Kw::Remove)?;
+        ret_if!(!stack.is_empty(), Err(self.dangling(&stack, verb)));
+        let stop = self.expect_stop()?;
+        let span = list.span().to(&stop.span);
+        let node = RemoveStmt::builder().list(list).span(span).build();
+        Ok(ClauseOut::Stmt(Box::new(Stmt::Remove(node))))
     }
 
     /// A `dangling-operands` diagnostic for operands left before a

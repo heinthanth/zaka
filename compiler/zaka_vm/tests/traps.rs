@@ -207,6 +207,18 @@ fn a_cell_outside_its_list_traps_with_the_range()
     assert!(text.contains("cell 3") && text.contains("0 to 2"), "{text}");
 }
 
+#[test]
+fn a_remove_from_a_list_with_no_cells_traps()
+{
+    let text = "ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။
+l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+l ကို ပြသပါ။
+l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။";
+    let (out, kind, _) = trapped(text, &RunOptions::default());
+    assert_eq!(out, "[]\n");
+    assert_eq!(kind, TrapKind::NoCellToRemove);
+}
+
 /// A list `l` of three cells, a count `n` of four, and a slice `s` of the
 /// second cell of `l`.
 const SLICED: &str = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။

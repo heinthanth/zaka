@@ -291,6 +291,10 @@ error[ZK0704]: the block of "ပ" is moved here, but "ကြည့်" still bor
 A borrow that is set again before its next read is not in use, so lending the block again
 after a resize is the fix.
 
+The loans into the cells of a list end in the same manner when an edit can move the cells: a write into a plain
+list, and an add or a remove on a plain or a heap list; see [Edits and
+loans](lists.md#edits-and-loans).
+
 "Used later" is worked out from the paths of the program, not from the order of the
 lines. A read that runs once a month, behind a condition, still counts. The compiler also
 reads a statement as a whole, without an order inside it: a borrow that is used in a part
@@ -727,7 +731,7 @@ checks](../compiler/checks.md).
 | ZK0701 | an owner used after its block moved to another owner |
 | ZK0702 | giving back or resizing a block through a borrow |
 | ZK0703 | a borrow kept in a heap block, behind a pointer, or in a top-level variable from a function |
-| ZK0704 | giving back, resizing or moving a block while a borrow of it is still in use |
+| ZK0704 | giving back, resizing, moving or editing a block while a borrow of it is still in use |
 | ZK0705 | taking the address of a borrow |
 | ZK0706 | returning a borrow of a local variable |
 | ZK0707 | a call that can give back a block through one argument while another argument reaches the same block |

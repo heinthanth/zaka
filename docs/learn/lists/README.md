@@ -81,8 +81,8 @@ lists with no cells too:
 ```
 
 Setting a list to another value gives it the cells of that value, and their count. The
-count is known when the program runs. A list cannot grow a cell at a time for now: the
-statements that add and remove cells come later.
+count is known when the program runs. A plain list can also grow and shrink a cell at a
+time: see [Adding and removing cells](growing.md).
 
 ## List kinds
 

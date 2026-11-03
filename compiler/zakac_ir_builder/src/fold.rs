@@ -364,7 +364,14 @@ impl Folder
                 self.dest(dest);
                 self.drop_value(count);
             }
-            Stmt::Free { dest, .. } | Stmt::Drop { dest, .. } => self.dest(dest),
+            Stmt::Free { dest, .. }
+            | Stmt::Drop { dest, .. }
+            | Stmt::RemoveCell { dest, .. } => self.dest(dest),
+            Stmt::AddCell { dest, value, .. } =>
+            {
+                self.dest(dest);
+                self.drop_value(value);
+            }
         }
         out.push(s);
     }

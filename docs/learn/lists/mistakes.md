@@ -149,6 +149,39 @@ error[ZK0421]: this list kind has no cell count, and nothing here gives one
 error[ZK0422]: isize is not a list, so it has no cells
 ```
 
+## Adding to a fixed list
+
+A fixed list keeps its count for good, so `ထည့်ပါ` and `ဖျက်ပါ` do not take it. Text
+and slices do not grow either:
+
+```zaka-error ZK0437
+ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+အမှတ်များ ထဲသို့ ၇၀ ကို ထည့်ပါ။
+```
+
+```text
+error[ZK0437]: isize[3] cannot grow or shrink: "ထည့်ပါ" and "ဖျက်ပါ" take a plain or a heap list
+```
+
+Declare the list with no count, `ကိန်းပြည့် စာရင်း`, to add cells to it.
+
+## Removing from a list with no cells
+
+A list with no cells has no last cell to remove. The count of a plain list comes when the
+program runs, so the VM is the one to stop it:
+
+```zaka-stop
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
+ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။      // no cell is left to remove
+```
+
+```text
+the program stopped: the list holds no cells, so it has no last cell to remove
+```
+
+Check `ကိန်းများ ၏ အကွက်အရေအတွက်` first when the count is not known.
+
 ## The cell count, written as two words
 
 `အကွက်အရေအတွက်` is one word. Written with a space, `အကွက် အရေအတွက်` reads as the cell
@@ -159,5 +192,7 @@ numbered with a variable named `အရေအတွက်`.
 - Read cell 5 of a fixed list of 5 cells through a variable, and read the message.
 - Read the same cell with a constant number, and compare the two messages.
 - Do the same with a plain list, and run it.
+- Remove the last cell of a list of two cells three times, and see which remove stops the
+  program.
 
 Next: [Structs](../structs/README.md).

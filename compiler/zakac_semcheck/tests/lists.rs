@@ -333,3 +333,19 @@ fn a_constant_list_is_fixed()
     let heap = "ကိန်းသေ c သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။";
     assert_eq!(codes(heap), [Code::ConstHeapText]);
 }
+
+/// Add and remove statements change a plain or a heap list; a fixed list
+/// and text keep their cells, and the new cell takes the cell kind.
+#[test]
+fn plain_and_heap_lists_grow_and_shrink()
+{
+    ok("ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။\nl ထဲသို့ ၂ ကို ထည့်ပါ။\nl ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။");
+    let heap = "ကိန်းရှင် h သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်ပါစေ။";
+    ok(&lines(&[heap, "h ထဲသို့ ၂ ကို ထည့်ပါ။", "h ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"]));
+    let fixed = "ကိန်းရှင် f သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။";
+    assert_eq!(codes(&lines(&[fixed, "f ထဲသို့ ၂ ကို ထည့်ပါ။"])), [Code::ListCannotGrow]);
+    let text = "ကိန်းရှင် t သည် \"abc\" ဖြစ်ပါစေ။\nt ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။";
+    assert_eq!(codes(text), [Code::ListCannotGrow]);
+    let wrong = "ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။\nl ထဲသို့ \"x\" ကို ထည့်ပါ။";
+    assert_eq!(codes(wrong), [Code::KindMismatch]);
+}

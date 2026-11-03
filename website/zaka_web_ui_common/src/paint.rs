@@ -213,6 +213,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Contains
         | Kw::ContainsAnd
         | Kw::Is
+        | Kw::Add
+        | Kw::Remove
         | Kw::Import => "tok-verb",
         Kw::Sum
         | Kw::Difference
@@ -252,6 +254,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::SizeOf
         | Kw::Cell
         | Kw::CellCount
+        | Kw::LastCell
         | Kw::CharCount
         | Kw::Joined
         | Kw::CellWord
@@ -267,6 +270,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Pa
         | Kw::ListKo
         | Kw::ListWith
+        | Kw::Into
         | Kw::From
         | Kw::To
         | Kw::Step

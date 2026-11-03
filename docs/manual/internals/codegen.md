@@ -53,7 +53,7 @@ parameters of a function are its first locals, then the result variable `ရလ�
 other locals. `addressed` marks a slot whose address the program takes, so it needs an address
 that remains fixed.
 
-A statement is one of fourteen forms:
+A statement is one of sixteen forms:
 
 | Form | Meaning |
 | --- | --- |
@@ -67,6 +67,8 @@ A statement is one of fourteen forms:
 | `Store { addr, value }` | write at an address |
 | `Alloc`, `Resize`, `Free` | a heap sentence, with a `Dest`: a slot, or a cell in storage that holds an address |
 | `Drop { dest, kind }` | free each text on the heap inside the value at `dest`, of a kind that holds text, and leave it blank; written `(drop l0)` |
+| `AddCell { dest, kind, value }` | add `value` as a new last cell of the plain or heap list at `dest`; written `(add_cell l0 7)` |
+| `RemoveCell { dest, kind }` | remove the last cell of the plain or heap list at `dest`; written `(remove_cell l0)` |
 
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
@@ -123,6 +125,14 @@ rules out). Its rules:
   the write. Codegen emits the address of the list, `dup`, and `own k`, and leaves the
   address for the write. A heap list owns its block from the start, so its path gets no
   `Own`.
+- An add becomes `AddCell { dest, kind, value }` and a remove `RemoveCell { dest, kind }`
+  (S-expressions `add_cell` and `remove_cell`). The list goes through `dest`, so each plain
+  list around it on the path gets its `Own` step as for a write; the value of an add goes
+  through `owned`, as an assigned value does: text and lists are duplicated, an owner
+  moves. Codegen works the value out first into the scratch slot `%cell`, then pushes the
+  address of the list and the address of the slot and emits `add_cell k`; the op moves
+  the value out and leaves the default of the cell kind in the slot. A remove pushes the
+  address of the list and emits `remove_cell k`.
 - `==` and `!=` on two plain or heap lists emit `seq_eq k`, which compares the counts and
   then each cell; `!=` adds a `not`. Two fixed lists keep `list_eq k`.
 - A range `x ၏ အကွက် s မှစ၍ n ကွက်` becomes `MakeSlice { source, start, len, from }`,
@@ -323,8 +333,8 @@ its index, and the listing shows them in a `formats` section (`fmt0 t0 isize t1`
 runs parallel to `code` and tells the source region of each op, which is how the VM
 and the explorer point at the line being run. The generator can add locals of its own,
 named with a `%`: `%to`, `%step` and `%dir` for a counted loop, `%list`, `%slice`,
-`%ret` and `%at` for the lists, structs and slices a statement builds, and `%text` for
-text with no slot to go to, such as a printed format. `EmitOptions`
+`%ret` and `%at` for the lists, structs and slices a statement builds, `%text` for
+text with no slot to go to, such as a printed format, and `%cell` for the value of an add. `EmitOptions`
 holds the two choices of the generator: `results` (`--results`) and `scratch`
 (`--scratch`), both below.
 
@@ -345,7 +355,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `ret`, `result_addr`, `trap code` |
 | output | `print`, `print_text t`, `print_list k` |
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
-| lists | `index len from`, `blit k`, `zero k`, `list_eq k`, `seq_eq k`, `to_heap k` |
+| lists | `index len from`, `blit k`, `zero k`, `list_eq k`, `seq_eq k`, `to_heap k`, `add_cell k`, `remove_cell k` |
 | slices | `make_slice stride source`, `slice_cell stride from` |
 | text | `text t`, `format fmt`, `drop k`, `dup_text k`, `lend_text k`, `own k`, `text_eq`, `char_count`, `char_at`, `text_edges`, `check_utf8` |
 

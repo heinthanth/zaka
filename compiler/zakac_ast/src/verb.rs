@@ -58,6 +58,9 @@ pub enum Slot
     /// `ခုမြောက်`, after the number of a cell counted from 1.
     #[strum(serialize = "ခုမြောက်")]
     Ordinal,
+    /// `ထဲသို့`, after the list an add statement grows.
+    #[strum(serialize = "ထဲသို့")]
+    Into,
 }
 
 impl Slot
@@ -129,6 +132,9 @@ pub enum VerbOp
     Assign,
     /// `ရလဒ်အဖြစ် ပြန်ပေးပါ`
     Return,
+    /// `ထည့်ပါ`: a new last cell of a list.
+    #[strum(serialize = "add_cell")]
+    AddCell,
     /// `၏ လိပ်စာ`: the address of a place.
     #[strum(serialize = "addr")]
     AddrOf,
@@ -216,6 +222,7 @@ pub static VERBS: &[Verb] = &[
     row(Kw::Print, VerbOp::Print, &[Slot::KoOrHu], true, false),
     row(Kw::Assign, VerbOp::Assign, &[Slot::Ko, Slot::Hu], true, false),
     row(Kw::ReturnValue, VerbOp::Return, &[Slot::Ko], true, false),
+    row(Kw::Add, VerbOp::AddCell, &[Slot::Into, Slot::Ko], true, false),
     row(Kw::Address, VerbOp::AddrOf, &[Slot::Ei], false, false),
     row(Kw::Value, VerbOp::Deref, &[Slot::Ei], false, false),
     row(Kw::Lend, VerbOp::Lend, &[Slot::Ei], false, false),

@@ -92,6 +92,11 @@ impl ToSexpr for Stmt
             }
             Stmt::Free { dest, .. } => list("free", [dest_sexpr(dest)]),
             Stmt::Drop { dest, .. } => list("drop", [dest_sexpr(dest)]),
+            Stmt::AddCell { dest, value, .. } =>
+            {
+                list("add_cell", [dest_sexpr(dest), value.to_sexpr()])
+            }
+            Stmt::RemoveCell { dest, .. } => list("remove_cell", [dest_sexpr(dest)]),
         }
     }
 }

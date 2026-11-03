@@ -75,7 +75,7 @@ How to read it:
   the listing; the artifact holds the index of the target instruction.
 - A function lists its locals, parameters first (`l0` is the parameter `န`), then the
   locals of the source, then slots the generator adds, such as `%list`, `%slice`, `%to`,
-  `%step`, `%dir`, `%text` and `%new`. The last function is `main`, which holds the sentences outside each
+  `%step`, `%dir`, `%text`, `%cell` and `%new`. The last function is `main`, which holds the sentences outside each
   function.
 - A kind is written short: `isize` and `usize` for the platform-sized integers, `u8`,
   `i32` and so on, `f64`, `char`, `bool`, `isize*` for an address of an integer,
@@ -209,6 +209,8 @@ cell, its count, and the room of its heap block), and its cells sit in a heap bl
 | `list_eq k` | a b → bool | whether each cell of one fixed list equals the cell of the other |
 | `seq_eq k` | addr addr → b | whether two plain or heap lists with cells of kind `k` hold the same count of cells, each equal |
 | `to_heap k` | slot addr → | move the cells of the fixed list of kind `k` at `addr` to a new heap block, and write the plain list of them in the slot |
+| `add_cell k` | list value → | give the plain or heap list of kind `k` at `list` a block of its own when its room is 0, move it to a block twice the size (four cells at the least) when the block is full, then move the cell at `value` into a new last cell and leave the default of the cell kind at `value` |
+| `remove_cell k` | list → | stop the program when the plain or heap list of kind `k` at `list` holds no cells; else drop its last cell when the list owns its block (a room above 0), and take one from its count |
 | `make_slice 8 of 3` | slot source start len → slot | write the slice of `len` cells from cell `start` of the source in the slot; the source is a list of 3 cells (`of 3`), a slice (`of slice`) or a heap block (`of block`), and a range past its end stops the program; `checked` skips the test |
 | `slice_cell 8` | slice n → addr | check a cell number against the count of a slice; push the address of the cell. A cell the compiler proves in range is `load` of the first word, then `ptr_add`, with no check |
 

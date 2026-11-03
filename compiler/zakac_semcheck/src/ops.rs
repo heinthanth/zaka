@@ -201,7 +201,10 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         | VerbOp::CharAt
         | VerbOp::CharNth
         | VerbOp::Join => OpClass::CellCount,
-        VerbOp::Print | VerbOp::Assign | VerbOp::Return => OpClass::Stmt,
+        VerbOp::Print | VerbOp::Assign | VerbOp::Return | VerbOp::AddCell =>
+        {
+            OpClass::Stmt
+        }
     }
 }
 

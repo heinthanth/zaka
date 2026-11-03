@@ -41,6 +41,7 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | step not positive | a counted loop step is zero or negative | `counted loop step is not positive` |
 | overflow | an integer result does not fit its kind; not with `--overflow wrap` | `the result of OP does not fit K` |
 | index out of range | a cell number is outside its list or slice | `cell N is outside the list, whose cells run from A to B` |
+| no cell to remove | a remove of the last cell finds a list with no cells | `the list holds no cells, so it has no last cell to remove` |
 | slice out of range | a range passes the end of its list or slice | `N cells from cell S pass the end of C cells` |
 | null address | an access below the first block | `access through a null address at A` |
 | out of bounds | an access lands in no block, or runs past the end of one | `access of N octets at A lands outside each live block` |
@@ -55,7 +56,7 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | text cut | a range of text starts or ends inside a character | `a range of text at A starts or ends inside a character` |
 | character out of range | a character number lies outside its text | `character N is outside the text, whose characters run from L to H` |
 | not UTF-8 | u8s converted to text are not UTF-8 | `the u8s at A are not UTF-8 text` |
-| out of mem | a resize, or text built when the program runs, finds no heap room | `no heap room for N octets` |
+| out of mem | a resize, an add of a cell, or text built when the program runs, finds no heap room | `no heap room for N octets` |
 | stack full | a call finds no room in the stack region | `no stack room for N more octets` |
 | static full | the space has no room for a global or a static text | `no room in the address space for a global of N octets` |
 | stack overflow | calls nest deeper than `--max-depth` | `more than N nested calls` |
@@ -134,6 +135,22 @@ is read. The message gives the range the list allows:
 
 ```text
 the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
+```
+
+### A remove from a list with no cells
+
+`ဖျက်ပါ` takes the last cell off a plain or heap list. The count of such a list comes when
+the program runs, so the VM checks it at each remove, and a list with no cells stops the
+program:
+
+```zaka-stop
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
+ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+```
+
+```text
+the program stopped: the list holds no cells, so it has no last cell to remove
 ```
 
 ## Addresses

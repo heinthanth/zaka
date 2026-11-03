@@ -347,6 +347,31 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Add a value as a new last cell of the plain or heap list at `dest`.
+    /// A list with a room of 0 takes a block of its own first, and a full
+    /// block moves to a larger one.
+    AddCell
+    {
+        /// The list.
+        dest: Dest,
+        /// The list kind.
+        kind: DataKind,
+        /// The new cell, of the cell kind.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
+    /// Remove the last cell of the plain or heap list at `dest`; a list with
+    /// no cells stops the program.
+    RemoveCell
+    {
+        /// The list.
+        dest: Dest,
+        /// The list kind.
+        kind: DataKind,
+        /// Source region.
+        span: Span,
+    },
 }
 
 impl Stmt
@@ -373,7 +398,9 @@ impl Stmt
             | Stmt::Alloc { span, .. }
             | Stmt::Resize { span, .. }
             | Stmt::Free { span, .. }
-            | Stmt::Drop { span, .. } => *span,
+            | Stmt::Drop { span, .. }
+            | Stmt::AddCell { span, .. }
+            | Stmt::RemoveCell { span, .. } => *span,
         }
     }
 }

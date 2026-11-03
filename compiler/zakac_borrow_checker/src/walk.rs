@@ -84,9 +84,12 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
         {
             dest_expr(dest).into_iter().chain([count]).collect()
         }
-        Stmt::Free { dest, .. } | Stmt::Drop { dest, .. } =>
+        Stmt::Free { dest, .. }
+        | Stmt::Drop { dest, .. }
+        | Stmt::RemoveCell { dest, .. } => dest_expr(dest).into_iter().collect(),
+        Stmt::AddCell { dest, value, .. } =>
         {
-            dest_expr(dest).into_iter().collect()
+            dest_expr(dest).into_iter().chain([value]).collect()
         }
         Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => Vec::new(),
     }
@@ -235,9 +238,12 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
         {
             dest_expr_mut(d).into_iter().chain([count]).collect()
         }
-        Stmt::Free { dest: d, .. } | Stmt::Drop { dest: d, .. } =>
+        Stmt::Free { dest: d, .. }
+        | Stmt::Drop { dest: d, .. }
+        | Stmt::RemoveCell { dest: d, .. } => dest_expr_mut(d).into_iter().collect(),
+        Stmt::AddCell { dest: d, value, .. } =>
         {
-            dest_expr_mut(d).into_iter().collect()
+            dest_expr_mut(d).into_iter().chain([value]).collect()
         }
         Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => Vec::new(),
     }

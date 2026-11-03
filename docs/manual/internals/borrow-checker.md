@@ -203,6 +203,13 @@ own; for a `Store`, `owned_lists` finds the place of each such list and
 with "is edited, so its cells can move," in place of "is freed". A heap list gets no
 `Own`, so a write to its cells ends no loan.
 
+An `AddCell` or a `RemoveCell` is a loss as well, for a plain and a heap list alike: an add
+can move the cells to a larger block, and a remove drops the last cell. `edit_list` runs
+`check_heap` with `Invalidation::Edited` on the list itself and on each plain list
+`owned_lists` finds around it, since those first take a block of their own; then the
+value of an add moves into the list (`moved`), as an assigned value does. The liveness
+pass counts both statements as reads of the list slot.
+
 ```zaka-error ZK0704
 ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။

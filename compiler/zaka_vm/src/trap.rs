@@ -144,6 +144,8 @@ pub enum TrapKind
         /// The number of cells.
         len: u64,
     },
+    /// A remove statement found a list with no cells.
+    NoCellToRemove,
     /// A character number lies outside its text.
     CharOutOfRange
     {
@@ -243,6 +245,7 @@ impl fmt::Display for TrapKind
                 let last = i128::from(*len) + i128::from(*first) - 1;
                 t!("vm.trap.char_out_of_range", index = index, lo = first, hi = last)
             }
+            TrapKind::NoCellToRemove => t!("vm.trap.no_cell_to_remove"),
             TrapKind::Overflow { op, kind } =>
             {
                 t!("vm.trap.overflow", op = op, kind = kind)
@@ -295,6 +298,7 @@ impl TrapKind
             | TrapKind::MixedBlocks
             | TrapKind::IndexOutOfRange { .. }
             | TrapKind::CharOutOfRange { .. }
+            | TrapKind::NoCellToRemove
             | TrapKind::SliceOutOfRange { .. }
             | TrapKind::Overflow { .. } => None,
         }

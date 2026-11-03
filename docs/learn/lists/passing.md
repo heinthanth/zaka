@@ -155,4 +155,4 @@ such as `isize[3]` and `isize[2]`, or a fixed and a plain list. Lists have no or
 
 To take a part of a list, or a fixed list with no duplicate, take a [slice](slices.md).
 
-Next: [Lists of lists](grids.md).
+Next: [Adding and removing cells](growing.md).

@@ -104,7 +104,14 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 dest_places(dest, out);
                 expr_places(count, out);
             }
-            Stmt::Free { dest, .. } | Stmt::Drop { dest, .. } => dest_places(dest, out),
+            Stmt::Free { dest, .. }
+            | Stmt::Drop { dest, .. }
+            | Stmt::RemoveCell { dest, .. } => dest_places(dest, out),
+            Stmt::AddCell { dest, value, .. } =>
+            {
+                dest_places(dest, out);
+                expr_places(value, out);
+            }
         }
     }
 }

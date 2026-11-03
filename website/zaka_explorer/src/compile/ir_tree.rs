@@ -284,6 +284,14 @@ impl IrTree<'_>
             }
             Stmt::Free { dest, .. } => self.heap("free", dest, None, None, span),
             Stmt::Drop { dest, .. } => self.heap("drop", dest, None, None, span),
+            Stmt::AddCell { dest, value, .. } =>
+            {
+                self.heap("add_cell", dest, Some(value), None, span)
+            }
+            Stmt::RemoveCell { dest, .. } =>
+            {
+                self.heap("remove_cell", dest, None, None, span)
+            }
         }
     }
 

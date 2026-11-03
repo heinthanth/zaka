@@ -184,6 +184,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0434 | an each loop over a value it cannot walk: no list or slice, owner pointers in the cells, or no text | [Statements](../language/statements.md#loops) |
 | ZK0435 | a constant that holds heap text or a heap list | [Text](../language/text.md#forms) |
 | ZK0436 | `[]` given to a fixed list outside its declaration | [List mistakes](../../learn/lists/mistakes.md#a-list-with-no-cells-in-a-fixed-list) |
+| ZK0437 | an add or a remove on a fixed list, text, a slice or a view | [List mistakes](../../learn/lists/mistakes.md#adding-to-a-fixed-list) |
 
 ### ZK05: natural Zaka (warnings)
 

@@ -8,6 +8,7 @@ use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::NodeId;
 use zakac_ast::expr::PrefixOp;
 use zakac_ast::name::Name;
+use zakac_ast::stmt::AddStmt;
 use zakac_ast::stmt::AllocStmt;
 use zakac_ast::stmt::AssignStmt;
 use zakac_ast::stmt::BlockStmt;
@@ -25,6 +26,7 @@ use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::Program;
+use zakac_ast::stmt::RemoveStmt;
 use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::SizeArg;
@@ -602,6 +604,27 @@ impl Checker
         kind
     }
 
+    /// Resolve the list an add or a remove statement changes: a place that
+    /// holds a plain or a heap list.
+    ///
+    /// # Arguments
+    ///
+    /// * `list` - The list.
+    ///
+    /// # Returns
+    ///
+    /// The kind of its cells, or `None` after an error.
+    fn growing_cells(&mut self, list: &Expr) -> Option<DataKind>
+    {
+        let kind = self.place_kind(list)?;
+        let cell = kind.as_seq().map(|s| s.cell);
+        do_if!(
+            cell.is_none(),
+            self.report(kd::list_cannot_grow(list.span(), &kind.name()))
+        );
+        cell
+    }
+
     /// Report a name that cannot be assigned: undeclared, a constant or a
     /// counted-loop variable.
     ///
@@ -818,6 +841,14 @@ impl Visitor for Checker
     }
 
     fn visit_free(&mut self, n: &FreeStmt) { self.heap_target(&n.target) }
+
+    fn visit_add(&mut self, n: &AddStmt)
+    {
+        let cell = self.growing_cells(&n.list);
+        self.expect_kind(&n.value, cell);
+    }
+
+    fn visit_remove(&mut self, n: &RemoveStmt) { _ = self.growing_cells(&n.list); }
 
     fn visit_print(&mut self, n: &PrintStmt) { _ = self.infer(&n.value, None); }
 

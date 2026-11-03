@@ -238,6 +238,8 @@ pub enum Kw
     ListWith,
     /// `လက်ခံပြီး`
     Accepting,
+    /// `ထဲသို့`, before the value an add statement puts in a list
+    Into,
     /// `မှ`
     From,
     /// `အထိ`
@@ -387,6 +389,10 @@ pub enum Kw
     Skip,
     /// `ထည့်သွင်းပါ`, which ends an import sentence
     Import,
+    /// `ထည့်ပါ`, which adds a cell to a list
+    Add,
+    /// `ဖျက်ပါ`, which removes the last cell of a list
+    Remove,
 
     // control
     /// `အကယ်၍`
@@ -509,6 +515,8 @@ pub enum Kw
     Cell,
     /// `အကွက်အရေအတွက်`
     CellCount,
+    /// `နောက်ဆုံးအကွက်`, the last cell in a remove statement
+    LastCell,
     /// `ခုမြောက်`
     Ordinal,
     /// `ခုရှိသော` or `ရှိသော`
@@ -566,6 +574,7 @@ impl Kw
                 | Kw::ListKo
                 | Kw::ListWith
                 | Kw::Accepting
+                | Kw::Into
                 | Kw::From
                 | Kw::To
                 | Kw::Step

@@ -116,9 +116,17 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             expr(count, f);
             *span = f(*span);
         }
-        Stmt::Free { dest: d, span } | Stmt::Drop { dest: d, span, .. } =>
+        Stmt::Free { dest: d, span }
+        | Stmt::Drop { dest: d, span, .. }
+        | Stmt::RemoveCell { dest: d, span, .. } =>
         {
             dest(d, f);
+            *span = f(*span);
+        }
+        Stmt::AddCell { dest: d, value, span, .. } =>
+        {
+            dest(d, f);
+            expr(value, f);
             *span = f(*span);
         }
     }

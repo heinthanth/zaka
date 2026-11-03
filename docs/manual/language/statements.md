@@ -35,6 +35,8 @@ value), `WORD` the classifier of the kind, and `BODY` a block or one statement. 
 | return | `VALUE ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။` or `ပြန်ပေးပါ။` |
 | function | `လုပ်ဆောင်ချက် NAME သည် ...` (see [Functions](functions.md)) |
 | heap | `မင်မိုရီတွင် SIZE နေရာယူ၍ လိပ်စာကို PLACE တွင် သိမ်းထားမည်။` and two more (below) |
+| add a cell | `PLACE ထဲသို့ VALUE ကို ထည့်ပါ။` (see [Lists](lists.md#adding-and-removing-cells)) |
+| remove a cell | `PLACE ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။` |
 
 Some words have alternatives: `လျှင်` or `ဖြစ်လျှင်`; `နေသရွေ့` or `ဖြစ်နေသရွေ့`;
 `ဖြစ်ကာ` or `ဖြစ်ပြီး`; `ရေတွက်၍`, `တိုး၍` or `လျှော့၍`; the four spellings of the
@@ -397,6 +399,7 @@ same.
 | ZK0309, ZK0310, ZK0311 | break, continue or return outside its home |
 | ZK0402, ZK0405, ZK0409 | a condition that is no true/false value, a bound that is no integer, a step of zero or below |
 | ZK0434 | an each loop over a value it cannot walk |
+| ZK0437 | an add or a remove on a list that cannot grow or shrink |
 
 ```zaka-error ZK0307
 ၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ န ကို ၀ ဟု ထားပါ။

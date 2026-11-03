@@ -1010,6 +1010,12 @@ impl Machine
                 self.own_value(addr, kind)
             }
             Op::ToHeap(kind) => self.to_heap(kind),
+            Op::AddCell(kind) => self.add_cell(kind),
+            Op::RemoveCell(kind) =>
+            {
+                let at = self.pop_ptr("remove_cell")?;
+                self.remove_cell(at, kind)
+            }
             Op::SeqEq(kind) => self.seq_eq(kind),
             Op::CharCount => self.char_count(),
             Op::CharAt { first } => self.char_at(first),
@@ -2048,6 +2054,67 @@ impl Machine
         let block = block.ok_or(TrapKind::OutOfMem { size })?;
         self.mem.fill_block(block, &content)?;
         self.write_text(dst, block, count, size)
+    }
+
+    /// Pop the address of a value, then the address of a plain or heap list;
+    /// move the value into a new last cell of the list and leave the default
+    /// of the cell kind in its place. A list with a room of 0 takes a block of
+    /// its own first, and a full block moves to one twice its size, four
+    /// cells at the least.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The list kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, a trap a read hits, or `OutOfMem`.
+    fn add_cell(&mut self, kind: DataKind) -> Step
+    {
+        let src = self.pop_ptr("add_cell")?;
+        let at = self.pop_ptr("add_cell")?;
+        let cell =
+            kind.as_seq().ok_or_else(|| malformed("add_cell takes a list"))?.cell;
+        let stride = self.stride_of(kind);
+        self.own_value(at, kind)?;
+        let (base, count) = slice_parts(&self.mem, at)?;
+        let held = self.room_of(at)?;
+        let need = (count + 1).saturating_mul(stride);
+        let (mut block, mut room) = (base, held);
+        if need > held
+        {
+            room = need.max(held.saturating_mul(2)).max(4 * stride);
+            // A list with a room of 0 owns no block to move.
+            block = self.mem.realloc(tern!(held == 0, 0, base), room)?;
+        }
+        self.mem.blit(block + count * stride, src, cell)?;
+        self.mem.zero(src, cell)?;
+        self.write_text(at, block, count + 1, room)
+    }
+
+    /// Remove the last cell of a plain or heap list: drop it when the list
+    /// owns its block, and take one from the count. A list with a room of 0
+    /// reads cells it shares, so those cells remain unchanged.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address of the list.
+    /// * `kind` - The list kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, `NoCellToRemove` for a list with no cells, or a trap a read or a
+    /// drop hits.
+    fn remove_cell(&mut self, at: u64, kind: DataKind) -> Step
+    {
+        let cell =
+            kind.as_seq().ok_or_else(|| malformed("remove_cell takes a list"))?.cell;
+        let (base, count) = slice_parts(&self.mem, at)?;
+        ret_if!(count == 0, Err(TrapKind::NoCellToRemove));
+        let room = self.room_of(at)?;
+        let last = base + (count - 1) * self.stride_of(kind);
+        do_if!(room > 0, self.drop_value(last, cell)?);
+        self.write_text(at, base, count - 1, room)
     }
 
     /// Pop the addresses of two plain or heap lists, the right one first, and

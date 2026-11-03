@@ -164,6 +164,24 @@ v ကို ပြသပါ။";
     ok(&heap);
 }
 
+/// An add or a remove can move the cells of a plain or a heap list, so each
+/// ends the loans into the list.
+#[test]
+fn adding_or_removing_a_cell_ends_the_loans_into_the_list()
+{
+    for edit in ["l ထဲသို့ ၉ ကို ထည့်ပါ။", "l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"]
+    {
+        let text = format!(
+            "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် v သည် l ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
+{edit}
+v ကို ပြသပါ။"
+        );
+        assert_eq!(lines(&text), [(Code::InvalidatedLoan, 3)], "{edit}");
+        ok(&text.replace("v ကို ပြသပါ။", "l ကို ပြသပါ။"));
+    }
+}
+
 /// A pointer to a cell of a plain list points into the block of the list,
 /// so a write into the list, or a new value for it, ends the loan.
 #[test]

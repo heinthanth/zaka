@@ -26,6 +26,7 @@ use crate::expr::StrExpr;
 use crate::expr::StructLit;
 use crate::expr::VerbExpr;
 use crate::kind::Kind;
+use crate::stmt::AddStmt;
 use crate::stmt::AllocStmt;
 use crate::stmt::AssignStmt;
 use crate::stmt::BlockStmt;
@@ -44,6 +45,7 @@ use crate::stmt::ImportStmt;
 use crate::stmt::Param;
 use crate::stmt::PrintStmt;
 use crate::stmt::Program;
+use crate::stmt::RemoveStmt;
 use crate::stmt::ResizeStmt;
 use crate::stmt::ReturnStmt;
 use crate::stmt::SizeArg;
@@ -113,6 +115,8 @@ CallStmt => "call_stmt", visit_call_stmt;
 AllocStmt => "alloc", visit_alloc;
 ResizeStmt => "resize", visit_resize;
 FreeStmt => "free", visit_free;
+AddStmt => "add", visit_add;
+RemoveStmt => "remove", visit_remove;
 StructDecl => "struct", visit_struct;
 ImportStmt => "import", visit_import;
 IntLit => "int", visit_int;
@@ -169,6 +173,8 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Alloc(s) => s,
         Stmt::Resize(s) => s,
         Stmt::Free(s) => s,
+        Stmt::Add(s) => s,
+        Stmt::Remove(s) => s,
         Stmt::Struct(s) => s,
         Stmt::Import(s) => s,
     }
@@ -283,6 +289,10 @@ pub trait Visitor
     fn visit_resize(&mut self, n: &ResizeStmt) { walk_resize(self, n) }
     /// Visit a heap release.
     fn visit_free(&mut self, n: &FreeStmt) { walk_free(self, n) }
+    /// Visit an add statement.
+    fn visit_add(&mut self, n: &AddStmt) { walk_add(self, n) }
+    /// Visit a remove statement.
+    fn visit_remove(&mut self, n: &RemoveStmt) { walk_remove(self, n) }
 
     fn visit_struct(&mut self, n: &StructDecl) { walk_struct(self, n) }
 
@@ -369,6 +379,8 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Alloc(s) => v.visit_alloc(s),
         Stmt::Resize(s) => v.visit_resize(s),
         Stmt::Free(s) => v.visit_free(s),
+        Stmt::Add(s) => v.visit_add(s),
+        Stmt::Remove(s) => v.visit_remove(s),
         Stmt::Struct(s) => v.visit_struct(s),
         Stmt::Import(s) => v.visit_import(s),
     }
@@ -552,6 +564,23 @@ pub fn walk_free<V: Visitor + ?Sized>(v: &mut V, n: &FreeStmt)
 {
     v.enter(n);
     v.visit_expr(&n.target);
+    v.leave(n);
+}
+
+/// Visit the list, then the value, of an add statement.
+pub fn walk_add<V: Visitor + ?Sized>(v: &mut V, n: &AddStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.list);
+    v.visit_expr(&n.value);
+    v.leave(n);
+}
+
+/// Visit the list of a remove statement.
+pub fn walk_remove<V: Visitor + ?Sized>(v: &mut V, n: &RemoveStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.list);
     v.leave(n);
 }
 
@@ -887,6 +916,17 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::Alloc(s) => v.visit_alloc_mut(s),
         Stmt::Resize(s) => v.visit_resize_mut(s),
         Stmt::Free(s) => v.visit_free_mut(s),
+        Stmt::Add(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            v.visit_expr_mut(&mut s.list);
+            v.visit_expr_mut(&mut s.value);
+        }
+        Stmt::Remove(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            v.visit_expr_mut(&mut s.list);
+        }
         Stmt::Struct(s) => walk_struct_mut(v, s),
         Stmt::Import(s) => walk_import_mut(v, s),
     }

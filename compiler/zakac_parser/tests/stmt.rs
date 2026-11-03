@@ -420,3 +420,12 @@ fn list_forms_parse()
     assert_eq!(stmt("ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်ပါစေ။"), "(var l isize[_])");
     assert_eq!(stmt("ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်ပါစေ။"), "(var l isize[]~)");
 }
+
+#[test]
+fn add_and_remove_parse()
+{
+    assert_eq!(stmt("l ထဲသို့ ၃ ကို ထည့်ပါ။"), "(add l 3)");
+    assert_eq!(stmt("s ၏ l ထဲသို့ x + ၁ ကို ထည့်ပါ။"), "(add (field s l) (+ x 1))");
+    assert_eq!(stmt("l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"), "(remove l)");
+    assert_eq!(stmt("l ၏ အကွက် ၀ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"), "(remove (cell l 0))");
+}

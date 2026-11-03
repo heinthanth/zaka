@@ -48,6 +48,9 @@ en = "cell %{index} is outside the list, whose cells run from %{lo} to %{hi}"
 [vm.trap.char_out_of_range]
 en = "character %{index} is outside the text, whose characters run from %{lo} to %{hi}"
 
+[vm.trap.no_cell_to_remove]
+en = "the list holds no cells, so it has no last cell to remove"
+
 [vm.trap.overflow]
 en = "the result of %{op} does not fit %{kind}"
 

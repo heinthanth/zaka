@@ -184,6 +184,21 @@ pub fn brackets_on_fixed_list(span: Span, kind: &str) -> Diagnostic
     )
 }
 
+/// An add or a remove statement changes a value that cannot grow or shrink.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `kind` - Its kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0437` diagnostic.
+pub fn list_cannot_grow(span: Span, kind: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::ListCannotGrow, t!("codes.ZK0437.message", k = kind), span)
+}
+
 /// An integer literal does not fit the kind its place expects.
 ///
 /// # Arguments

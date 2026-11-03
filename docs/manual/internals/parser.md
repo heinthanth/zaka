@@ -120,8 +120,8 @@ that starts as `[first]`. It reads the next token and does one of four things.
 4. **Each other token** ends the clause: one item alone, with no slot, is the result
    (else ZK0208).
 
-The table is the one place the parser learns what a verb takes. `Slot` has twelve forms:
-the eight particles `နှင့် ၏ ကို ဖြင့် သည် ထက် အောက် ဟု`, `ခုမြောက်`, the shift pair
+The table is the one place the parser learns what a verb takes. `Slot` has thirteen forms:
+the eight particles `နှင့် ၏ ကို ဖြင့် သည် ထက် အောက် ဟု`, `ခုမြောက်`, `ထဲသို့` (`Into`, the list of an add), the shift pair
 (`Bit(Dir)`, which fits either direction), `KoOrHu` (`ကို` or `ဟု`, for a print) and
 `KindAhpjit` (a kind then `အဖြစ်`). Three examples of rows (the real ones share constants such as `PAIR`):
 
@@ -131,9 +131,10 @@ row(Kw::Greater, VerbOp::Gt,  &[Slot::Thi, Slot::Htet],            false, true),
 row(Kw::Assign, VerbOp::Assign, &[Slot::Ko, Slot::Hu],             true,  false),
 ```
 
-The last two flags are `is_stmt` (the verb closes a statement: `ပြသပါ`, `ထားပါ`, and
-`ရလဒ်အဖြစ် ပြန်ပေးပါ`) and `is_cmp` (a comparison, which cannot be the operand of
-another). There are 25 rows now. A new verb is a new row, and nothing in `clause.rs`
+The last two flags are `is_stmt` (the verb closes a statement: `ပြသပါ`, `ထားပါ`,
+`ရလဒ်အဖြစ် ပြန်ပေးပါ`, and `ထည့်ပါ`, whose row takes `[Into, Ko]` and builds an `AddStmt`)
+and `is_cmp` (a comparison, which cannot be the operand of another). There are 27 rows
+now. A new verb is a new row, and nothing in `clause.rs`
 changes.
 
 ## One sentence, followed
@@ -281,6 +282,13 @@ decides: `နေသရွေ့` makes a while loop; `မှ` makes a counted lo
 mode block`); `၏` before `အကွက်တိုင်း` or `စာလုံးတိုင်း` makes an each loop (`value ၏
 (အကွက်တိုင်း|စာလုံးတိုင်း) ကို NAME အနေဖြင့် ယူ၍ block`, an `EachStmt`), and the clause engine
 stops before that `၏`; all else is ZK0203, which lists the endings a statement can have.
+
+A remove has no verb row, since its list comes before `၏`. When the clause engine meets
+`နောက်ဆုံးအကွက်` (`Kw::LastCell`) after an operand that holds `၏`, `finish_remove` takes
+that operand as the list, expects `ကို`, `ဖျက်ပါ` and `။`, and builds a `RemoveStmt`; in an
+expression it is ZK0204, a statement verb inside an expression. `attach_slot` reads
+no operand after the `၏` when `နောက်ဆုံးအကွက်` follows it. The S-expressions are
+`(add l 3)` and `(remove l)`.
 
 Blocks and branches share `parse_branch`: with no opener, it reads one sentence into a
 `BlockStmt { single: true }`. Inside an arm of a conditional that sentence cannot itself

@@ -112,7 +112,10 @@ fn raw_stmt(s: &Stmt) -> bool
         {
             raw_dest(dest) || raw_expr(count)
         }
-        Stmt::Free { dest, .. } | Stmt::Drop { dest, .. } => raw_dest(dest),
+        Stmt::Free { dest, .. }
+        | Stmt::Drop { dest, .. }
+        | Stmt::RemoveCell { dest, .. } => raw_dest(dest),
+        Stmt::AddCell { dest, value, .. } => raw_dest(dest) || raw_expr(value),
         Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => false,
     }
 }

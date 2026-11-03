@@ -278,6 +278,15 @@ pub enum Op
     /// slot; move the cells to a new heap block and write the plain list
     /// that owns it in the slot.
     ToHeap(DataKind),
+    /// Pop the address of a value of the cell kind of this plain or heap list,
+    /// then the address of the list; give the list a block of its own with
+    /// room for one more cell, move the value into the new last cell and
+    /// leave the default of the cell kind in its place.
+    AddCell(DataKind),
+    /// Pop the address of a plain or heap list of this kind; stop the program
+    /// when it holds no cells, else drop its last cell when the list owns its
+    /// block, and take one from its count.
+    RemoveCell(DataKind),
     /// Pop the addresses of two plain or heap lists, the right one first;
     /// push whether the two hold the same count of cells, each equal to the
     /// other's.
@@ -390,6 +399,8 @@ impl Op
             | Op::LendText(kind)
             | Op::Own(kind)
             | Op::ToHeap(kind)
+            | Op::AddCell(kind)
+            | Op::RemoveCell(kind)
             | Op::SeqEq(kind)
             | Op::PrintList(kind) => kind.name(),
             Op::MakeSlice { stride, from } =>

@@ -1,6 +1,6 @@
 ---
 title: Lists
-description: The list kinds and their plain, fixed and heap forms, literals, cell numbers, lists of lists, passing and comparing, how a list is stored, and the mistakes with cell numbers.
+description: The list kinds and their plain, fixed and heap forms, literals, cell numbers, adding and removing cells, lists of lists, passing and comparing, how a list is stored, and the mistakes with cell numbers.
 ---
 
 # Lists
@@ -9,9 +9,8 @@ A list holds values of one kind, next to each other in RAM. Each value sits in a
 and a program reaches a cell through its number. A list comes in three [forms](#forms): a
 plain list takes its count from its value when the program runs, a fixed list holds its
 count in its kind, known before the program runs, and a heap list is a plain list that
-owns a heap block from the start. A set gives a plain list a new count; no statement adds
-or removes one cell for now. For a run of cells that grows in place, use a block of the
-[heap](pointers.md#heap-statements). The Learn book starts in small steps with
+owns a heap block from the start. A set gives a plain list a new count, and a plain or
+heap list [grows and shrinks](#adding-and-removing-cells) a cell at a time. The Learn book starts in small steps with
 [Lists](../../learn/lists/README.md).
 
 ```zaka
@@ -139,9 +138,6 @@ error[ZK0401]: expected isize[3], found isize[]
 ```text
 error[ZK0435]: the constant "က" cannot hold heap text or a heap list
 ```
-
-A plain list cannot grow or shrink in place for now: the statements that add and remove
-cells come in a later step.
 
 ## Literals
 
@@ -279,6 +275,83 @@ A counted loop visits each cell; the cell count, in parentheses, gives the last 
 ၄၃
 ```
 
+## Adding and removing cells
+
+```text
+<list> ထဲသို့ <value> ကို ထည့်ပါ။
+<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+```
+
+`ထည့်ပါ` ("please add") puts the value in a new last cell of the list, and `ဖျက်ပါ`
+("please remove") takes the last cell off. Neither statement gives a value back.
+
+```zaka
+ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+၁ မှ ၄ အထိ န အနေဖြင့် ရေတွက်၍ က ထဲသို့ န * ၁၀ ကို ထည့်ပါ။
+က ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+က ကို ပြသပါ။
+က ၏ အကွက်အရေအတွက် ကို ပြသပါ။
+```
+
+```text
+[၁၀၊ ၂၀၊ ၃၀]
+၃
+```
+
+- The list is a place that can be set: a variable, a field, a cell of another list, or
+  `ပ ၏ တန်ဖိုး` through a pointer `ပ`. A constant is ZK0306, as for a set. A pointer to a
+  list is no list: add to `ပ ၏ တန်ဖိုး`, not to `ပ`.
+- The list is a plain or a heap list. A fixed list keeps its count, and text, a slice or a
+  view holds no cells of its own to add to: each is ZK0437.
+- The value has the cell kind (ZK0401), and it goes into the list as an assigned value
+  goes into a place: text and lists are duplicated, and an owner pointer moves into the
+  list, so the variable it came from holds `ဗလာ` (ZK0701 on a later read).
+- The value is worked out before the list changes: `က ထဲသို့ က ၏ အကွက်အရေအတွက် ကို
+  ထည့်ပါ။` adds the count from before the add.
+- `နောက်ဆုံးအကွက်` ("last cell") is read right after `၏` alone, and `ကို ဖျက်ပါ` must
+  follow it (ZK0201): it is no expression, so the last cell is read through its number.
+- A plain list parameter is lent with a room of 0. Its first add, as its first write, gives
+  it a block of its own, so the caller's list never changes. A remove on a list with a
+  room of 0 lowers the count and leaves the shared cells unchanged: it duplicates nothing.
+- A full block moves to a block twice its size, four cells at the least.
+- A remove on a list with no cells stops the program: "the list holds no cells, so it has
+  no last cell to remove" (see [When a program stops](../vm/traps.md#all-the-traps)).
+- A remove drops the value in the last cell when the list owns its block: text in it is
+  freed.
+- Each add or remove ends each loan into the list; see [Edits and
+  loans](#edits-and-loans).
+
+```zaka
+ကိန်းရှင် ဇယား သည် ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [[၁]၊ [၂၊ ၃]] ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် စာရင်း စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဇယား ၏ လိပ်စာ ဖြစ်ပါစေ။
+ဇယား ၏ အကွက် ၀ ထဲသို့ ၅ ကို ထည့်ပါ။
+ပ ၏ တန်ဖိုး ထဲသို့ [၆] ကို ထည့်ပါ။
+ဇယား ၏ အကွက် ၁ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+ဇယား ကို ပြသပါ။
+```
+
+```text
+[[၁၊ ၅]၊ [၂]၊ [၆]]
+```
+
+```zaka-error ZK0437
+ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်းသေ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+က ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+```
+
+```text
+error[ZK0437]: isize[2] cannot grow or shrink: "ထည့်ပါ" and "ဖျက်ပါ" take a plain or a heap list
+```
+
+```zaka-stop
+ကိန်းရှင် က သည် စာသား စာရင်း တစ်ခု ဖြစ်ပါစေ။
+က ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+```
+
+```text
+the program stopped: the list holds no cells, so it has no last cell to remove
+```
+
 ## Lists of lists
 
 A cell can hold a whole list, and a list of rows is a table. Each count prefix pairs with
@@ -357,6 +430,8 @@ block:
   not own: cells lent to a parameter, or no cells at all.
 - A write into a list of room 0 first copies the cells into a block of its own, so a
   plain list never writes cells it was lent.
+- An add into a full block moves the cells to a block twice its size, four cells at the
+  least; a remove keeps the block and its room.
 - Each list in the cells of a plain list is a value of its own: a plain list of plain
   lists holds three words per row, and each row has a block of its own.
 
@@ -537,6 +612,22 @@ write is ZK0704. A write into a heap list moves no cell, since the list owns its
 from the start, so a write to one of its cells ends no loan; a set of the whole heap list frees its
 old block, and ends each loan as a free does. The cells of a fixed list never move.
 
+An [add or a remove](#adding-and-removing-cells) ends each loan into the list, on a plain
+and a heap list alike: an add can move the cells to a larger block, and a remove drops the
+last cell. Each also ends the loans into a plain list that holds the edited one, as a
+write does, since that list first takes a block of its own.
+
+```zaka-error ZK0704
+ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်းရှင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
+က ထဲသို့ ၄ ကို ထည့်ပါ။
+ပ ၏ တန်ဖိုး ကို ပြသပါ။
+```
+
+```text
+error[ZK0704]: the block of "က" is edited, so its cells can move, here, but "ပ" still borrows it and is used later
+```
+
 ```zaka-error ZK0704
 ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
@@ -636,8 +727,9 @@ The other mistakes with lists, in one table:
 | ZK0424 | a list of borrows as the result of a function |
 | ZK0435 | a constant heap list |
 | ZK0436 | `[]` given to a fixed list outside its declaration |
+| ZK0437 | an add or a remove on a fixed list, text, a slice or a view |
 | ZK0603 | a constant cell number outside the list |
-| ZK0704 | a slice of a plain list used after a write into the list |
+| ZK0704 | a slice of a plain list used after a write into the list, or of a plain or heap list after an add or a remove |
 | ZK0710 | a cell number proven past the end |
 
 The text of each message is in [Error messages](../reference/errors.md).

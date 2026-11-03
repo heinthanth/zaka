@@ -26,6 +26,7 @@ see [Names](../../learn/variables/names.md).
 | `ပါ`, `ပါသည်` | polite endings | [Particles](../../learn/sentences/particles.md) |
 | `တို့ကို`, `တို့ဖြင့်` | close a list of parameters / arguments | [Parameters](../../learn/functions/parameters.md) |
 | `လက်ခံပြီး` | "accepting ... and" | [Parameters](../../learn/functions/parameters.md) |
+| `ထဲသို့` | "into", after the list in `l ထဲသို့ v ကို ထည့်ပါ` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `မှ`, `အထိ`, `စီ`, `အနေဖြင့်` | "from", "up to", "each", "as" | [Counted loops](../../learn/control-flow/counted-loops.md) |
 | `ဖြစ်ကာ`, `ဖြစ်ပြီး` | "being ... and" | [Generic loops](../../learn/control-flow/generic-loops.md) |
 | `ပြီးလျှင်` | "when done" | [Generic loops](../../learn/control-flow/generic-loops.md) |
@@ -68,6 +69,8 @@ see [Names](../../learn/variables/names.md).
 | `ပြန်ပေးပါ` | "please return" | [Functions](../../learn/functions/README.md) |
 | `ပြန်ပေးမည်` | "will return" | [Results](../../learn/functions/results.md) |
 | `ရပ်ပါ` | "please stop" | [Break and continue](../../learn/control-flow/break-continue.md) |
+| `ထည့်ပါ` | "please add": `l ထဲသို့ v ကို ထည့်ပါ` adds `v` as a new last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
+| `ဖျက်ပါ` | "please remove": `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ` removes the last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ကျော်ပါ` | "please skip" | [Break and continue](../../learn/control-flow/break-continue.md) |
 
 ## Blocks and control flow
@@ -141,6 +144,7 @@ as well.
 | `ခုမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1, and `t ၏ n ခုမြောက်စာလုံး` character `n` of text | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Lists](../../learn/lists/README.md#list-kinds) |
 | `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
+| `နောက်ဆုံးအကွက်` | "last cell", right after `၏` and before `ကို ဖျက်ပါ` alone | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ဆက်ထားသည့်` | "that joins", in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/values/strings.md#joining-text) |
 | `စာလုံးအရေအတွက်` | "character count", in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/values/strings.md#characters) |
 | `စာရင်းအလွတ်` | "blank list": no cells, or each cell of a fixed list at its default | [Lists](../../learn/lists/README.md) |
