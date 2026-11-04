@@ -344,6 +344,12 @@ impl Walk
                 self.expr(value, value_use(value.kind), false);
             }
             Stmt::RemoveCell { dest, .. } => self.dest(dest, true),
+            Stmt::Insert { dest, index, value, .. } =>
+            {
+                self.dest(dest, true);
+                self.expr(index, Use::Read, false);
+                self.expr(value, value_use(value.kind), false);
+            }
             Stmt::SetChar { dest, index, value, .. } =>
             {
                 self.dest(dest, false);

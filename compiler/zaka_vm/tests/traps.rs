@@ -219,6 +219,28 @@ l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"
     assert_eq!(kind, TrapKind::NoCellToRemove);
 }
 
+#[test]
+fn a_remove_from_text_with_no_characters_traps()
+{
+    let text = "ကိန်းရှင် t သည် \"a\" ဖြစ်ပါစေ။
+t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။
+t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။";
+    let (_, kind, _) = trapped(text, &RunOptions::default());
+    assert_eq!(kind, TrapKind::NoCharToRemove);
+}
+
+#[test]
+fn an_add_in_front_of_a_place_past_the_end_traps()
+{
+    let list = "ကိန်းရှင် l သည် [၁၊ ၂] ဖြစ်ပါစေ။\nl ၏ အကွက် ၃ ၏ အရှေ့တွင် ၉ ကို ထည့်ပါ။";
+    let (_, kind, _) = trapped(list, &RunOptions::default());
+    assert_eq!(kind, TrapKind::NoPlaceToInsert { index: 3, first: 0, len: 2 });
+    assert!(kind.to_string().contains("0 to 2, and 2 is the end"), "{kind}");
+    let text = "ကိန်းရှင် t သည် \"ab\" ဖြစ်ပါစေ။\nt ၏ ၄ ခုမြောက်စာလုံး ၏ အရှေ့တွင် \"x\" ကို ထည့်ပါ။";
+    let (_, kind, _) = trapped(text, &RunOptions::default());
+    assert_eq!(kind, TrapKind::NoPlaceToInsert { index: 4, first: 1, len: 2 });
+}
+
 /// A list `l` of three cells, a count `n` of four, and a slice `s` of the
 /// second cell of `l`.
 const SLICED: &str = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။

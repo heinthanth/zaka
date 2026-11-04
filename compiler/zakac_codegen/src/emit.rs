@@ -1001,6 +1001,24 @@ impl<'s> FuncGen<'s>
                 self.op(Op::AddText(value.kind));
                 do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
             }
+            Stmt::Insert { dest, kind, index, first, value, .. } if kind.is_text() =>
+            {
+                self.dest_addr(dest);
+                self.expr(index);
+                let fresh = self.read_operand(value);
+                self.op(Op::InsertText { kind: value.kind, first: *first });
+                do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
+            }
+            Stmt::Insert { dest, kind, index, first, value, .. } =>
+            {
+                let slot = self.temp("%cell", value.kind);
+                self.op(Op::LocalAddr(slot));
+                self.put(value);
+                self.dest_addr(dest);
+                self.expr(index);
+                self.op(Op::LocalAddr(slot));
+                self.op(Op::InsertCell { kind: *kind, first: *first });
+            }
         }
     }
 

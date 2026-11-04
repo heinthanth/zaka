@@ -200,11 +200,15 @@ A counted loop visits each cell; the cell count, in parentheses, gives the last 
 
 ```text
 <list> ထဲသို့ <value> ကို ထည့်ပါ။
+<list> ၏ အကွက် <number> ၏ အရှေ့တွင် <value> ကို ထည့်ပါ။
+<list> ၏ <number> ခုမြောက်အကွက် ၏ အရှေ့တွင် <value> ကို ထည့်ပါ။
 <list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
 ```
 
-`ထည့်ပါ` ("please add") puts the value in a new last cell of the list, and `ဖျက်ပါ`
-("please remove") takes the last cell off. Neither statement gives a value back.
+`ထည့်ပါ` ("please add") puts the value in a new last cell of the list, or, with
+`၏ အရှေ့တွင်` ("in front of"), in front of the cell at the number: the value takes that
+number, and the cells from there on move one cell on. `ဖျက်ပါ` ("please remove") takes the
+last cell off. No statement gives a value back.
 
 ```zaka
 ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
@@ -224,7 +228,13 @@ A counted loop visits each cell; the cell count, in parentheses, gives the last 
   list is no list: add to `ပ ၏ တန်ဖိုး`, not to `ပ`.
 - The list is a plain list. A counted list keeps its count, and a slice holds no
   cells of its own to add to: each is ZK0437. An add to text is the [add to
-  text](text.md#changing-text), with rules of its own; a remove from text is ZK0437.
+  text](text.md#changing-text), with rules of its own, and text loses its last character
+  through `နောက်ဆုံးစာလုံး`; `နောက်ဆုံးအကွက်` on text is ZK0437.
+- The number in front of `၏ အရှေ့တွင်` counts from 0 for `အကွက် n` and from 1 for
+  `n ခုမြောက်အကွက်`, as a cell read does, and is an integer (ZK0423). It can also be the
+  count, which puts the value at the end; a larger number stops the program: "no value
+  can go in front of 3: the places run from 0 to 2, and 2 is the end". `၏ အရှေ့တွင်`
+  after a value that is no cell, and no character of text, is ZK0439.
 - The value has the cell kind (ZK0401), and it goes into the list as an assigned value
   goes into a place: text and lists are duplicated, and an owner pointer moves into the
   list, so the variable it came from holds `ဗလာ` (ZK0701 on a later read).
@@ -257,13 +267,34 @@ A counted loop visits each cell; the cell count, in parentheses, gives the last 
 [[၁၊ ၅]၊ [၂]၊ [၆]]
 ```
 
+```zaka
+ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၊ ၃၀] ဖြစ်ပါစေ။
+က ၏ အကွက် ၁ ၏ အရှေ့တွင် ၂၀ ကို ထည့်ပါ။      // in front of ၃၀
+က ၏ ၁ ခုမြောက်အကွက် ၏ အရှေ့တွင် ၀ ကို ထည့်ပါ။   // at the start
+က ၏ အကွက် ၄ ၏ အရှေ့တွင် ၄၀ ကို ထည့်ပါ။      // ၄ is the count: at the end
+က ကို ပြသပါ။
+```
+
+```text
+[၀၊ ၁၀၊ ၂၀၊ ၃၀၊ ၄၀]
+```
+
+```zaka-error ZK0439
+ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၊ ၃၀] ဖြစ်ပါစေ။
+က ၏ အရှေ့တွင် ၅ ကို ထည့်ပါ။
+```
+
+```text
+error[ZK0439]: "အရှေ့တွင်" follows a cell of a list or a character of text
+```
+
 ```zaka-error ZK0437
 ကိန်းရှင် က သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
 က ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
 ```
 
 ```text
-error[ZK0437]: isize[2] cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, and "ဖျက်ပါ" a plain list
+error[ZK0437]: isize[2] cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, "နောက်ဆုံးအကွက်ကို ဖျက်ပါ" a plain list, and "နောက်ဆုံးစာလုံးကို ဖျက်ပါ" text
 ```
 
 ```zaka-stop

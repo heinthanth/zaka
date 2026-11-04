@@ -647,6 +647,19 @@ impl<'m> Flow<'m>
                 self.value(value, state);
                 self.edit_list(dest, *span, state);
             }
+            Stmt::Insert { dest, kind, index, value, span, .. } if kind.is_text() =>
+            {
+                self.value(index, state);
+                self.value(value, state);
+                self.edit_list(dest, *span, state);
+            }
+            Stmt::Insert { dest, index, value, span, .. } =>
+            {
+                self.value(index, state);
+                self.edit_list(dest, *span, state);
+                let added = self.moved(value, state);
+                add_owner(self, dest, &added, state);
+            }
             Stmt::Drop { dest, kind, span } =>
             {
                 self.give_back(dest, Invalidation::Freed, *span, state);

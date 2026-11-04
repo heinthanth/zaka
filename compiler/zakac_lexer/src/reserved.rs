@@ -148,6 +148,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("အကွက်", Kw::Cell),
     ("အကွက်အရေအတွက်", Kw::CellCount),
     ("နောက်ဆုံးအကွက်", Kw::LastCell),
+    ("နောက်ဆုံးစာလုံး", Kw::LastChar),
+    ("အရှေ့တွင်", Kw::Before),
     ("စာလုံးအရေအတွက်", Kw::CharCount),
     ("ဆက်ထားသည့်", Kw::Joined),
     ("ခုမြောက်", Kw::Ordinal),

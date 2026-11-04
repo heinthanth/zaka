@@ -112,7 +112,8 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 dest_places(dest, out);
                 expr_places(value, out);
             }
-            Stmt::SetChar { dest, index, value, .. } =>
+            Stmt::SetChar { dest, index, value, .. }
+            | Stmt::Insert { dest, index, value, .. } =>
             {
                 dest_places(dest, out);
                 expr_places(index, out);

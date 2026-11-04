@@ -232,6 +232,7 @@ fn heap_slot(kind: &NodeKind) -> Option<(Place, Span)>
         | Stmt::AddCell { dest: Dest::Slot(place), span, .. }
         | Stmt::RemoveCell { dest: Dest::Slot(place), span, .. }
         | Stmt::SetChar { dest: Dest::Slot(place), span, .. }
+        | Stmt::Insert { dest: Dest::Slot(place), span, .. }
         | Stmt::AddText { dest: Dest::Slot(place), span, .. } => Some((*place, *span)),
         _ => None,
     }

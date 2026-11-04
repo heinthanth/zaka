@@ -255,6 +255,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Cell
         | Kw::CellCount
         | Kw::LastCell
+        | Kw::LastChar
+        | Kw::Before
         | Kw::CharCount
         | Kw::Joined
         | Kw::CellWord

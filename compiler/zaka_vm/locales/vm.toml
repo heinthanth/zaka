@@ -51,6 +51,12 @@ en = "character %{index} is outside the text, whose characters run from %{lo} to
 [vm.trap.no_cell_to_remove]
 en = "the list holds no cells, so it has no last cell to remove"
 
+[vm.trap.no_char_to_remove]
+en = "the text holds no characters, so it has no last character to remove"
+
+[vm.trap.no_place_to_insert]
+en = "no value can go in front of %{index}: the places run from %{lo} to %{hi}, and %{hi} is the end"
+
 [vm.trap.overflow]
 en = "the result of %{op} does not fit %{kind}"
 

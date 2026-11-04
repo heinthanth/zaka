@@ -202,7 +202,23 @@ pub fn list_cannot_grow(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::ListCannotGrow, t!("codes.ZK0437.message", k = kind), span)
 }
 
-/// A character write or an add changes a view of text.
+/// `၏ အရှေ့တွင်` follows a value that is no cell of a list and no character
+/// of text.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+///
+/// # Returns
+///
+/// The `ZK0439` diagnostic, with help naming the forms.
+pub fn insert_not_at_cell(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0439.message");
+    Diagnostic::new(Code::InsertNotAtCell, msg, span).with_help(t!("codes.ZK0439.help"))
+}
+
+/// A character write, an add or a remove changes a view of text.
 ///
 /// # Arguments
 ///

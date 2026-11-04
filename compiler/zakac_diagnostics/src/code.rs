@@ -259,6 +259,9 @@ BracketsOnCountedList = ("ZK0436", Level::Error),
 ListCannotGrow = ("ZK0437", Level::Error),
 /// A character write or an add changes a view of text.
 TextCannotChange = ("ZK0438", Level::Error),
+/// `၏ အရှေ့တွင်` follows a value that is no cell of a list and no character
+/// of text.
+InsertNotAtCell = ("ZK0439", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

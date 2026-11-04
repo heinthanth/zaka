@@ -68,9 +68,10 @@ A statement is one of sixteen forms:
 | `Alloc`, `Resize`, `Free` | a heap sentence, with a `Dest`: a slot, or a cell in storage that holds an address |
 | `Drop { dest, kind }` | free each text on the heap inside the value at `dest`, of a kind that holds text, and leave it blank; written `(drop l0)` |
 | `AddCell { dest, kind, value }` | add `value` as a new last cell of the plain list at `dest`; written `(add_cell l0 7)` |
-| `RemoveCell { dest, kind }` | remove the last cell of the plain list at `dest`; written `(remove_cell l0)` |
+| `RemoveCell { dest, kind }` | remove the last cell of the plain list at `dest`, or the last character of the text there; written `(remove_cell l0)` |
 | `SetChar { dest, kind, index, first, value }` | write the character `value` in place of character `index` of the text at `dest`, counted from `first` (0 or 1); written `(set_char g0 2 'x')` |
 | `AddText { dest, kind, value }` | add the text, view of text or character `value` at the end of the text at `dest`; written `(add_text g0 "c")` |
+| `Insert { dest, kind, index, first, value }` | put `value` in front of cell `index` of the plain list at `dest`, or in front of character `index` of the text there, counted from `first`; written `(insert l0 1 20)` |
 
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
@@ -157,6 +158,12 @@ rules out). Its rules:
   `add_text k` with `k` the kind of the value, and drops a fresh text the value made, such
   as a format, right after. The value is read where it is, never duplicated, so `t ထဲသို့ t
   ကို ထည့်ပါ။` reads `t` itself; the op reads the added u8s before it writes.
+- An add in front of a cell or a character (`insert`, from `add_cell`) becomes `Insert`;
+  a list cell goes through `owned` as for an add, and added text is read where it is. For
+  a list, codegen works the value out into `%cell`, then pushes the list, the number and
+  the slot and emits `insert_cell k`; for text it pushes the text, the number and the
+  value and emits `insert_text k`, dropping a fresh value as for `add_text`. A remove of
+  the last character becomes `RemoveCell` with the text kind.
 - `==` and `!=` on two plain lists emit `seq_eq k`, which compares the counts and
   then each cell; `!=` adds a `not`. Two counted lists keep `list_eq k`.
 - A range `x ၏ အကွက် s မှစ၍ n ကွက်` becomes `MakeSlice { source, start, len, from }`,

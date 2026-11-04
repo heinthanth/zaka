@@ -61,6 +61,10 @@ pub enum Slot
     /// `ထဲသို့`, after the list an add statement grows.
     #[strum(serialize = "ထဲသို့")]
     Into,
+    /// `၏ အရှေ့တွင်`, after the cell or the character an add statement puts
+    /// the value in front of; it fills the role of `ထဲသို့`.
+    #[strum(serialize = "၏ အရှေ့တွင်")]
+    Before,
 }
 
 impl Slot
@@ -80,6 +84,7 @@ impl Slot
     {
         ret_true!(matches!((self, want), (Slot::Bit(_), Slot::Bit(_))));
         ret_true!(matches!((self, want), (Slot::Ko | Slot::Hu, Slot::KoOrHu)));
+        ret_true!(matches!((self, want), (Slot::Before, Slot::Into)));
         self == want
     }
 }

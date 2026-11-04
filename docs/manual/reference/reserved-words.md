@@ -69,7 +69,7 @@ see [Names](../../learn/variables/names.md).
 | `ပြန်ပေးပါ` | "please return" | [Functions](../../learn/functions/README.md) |
 | `ပြန်ပေးမည်` | "will return" | [Results](../../learn/functions/results.md) |
 | `ရပ်ပါ` | "please stop" | [Break and continue](../../learn/control-flow/break-continue.md) |
-| `ထည့်ပါ` | "please add": `l ထဲသို့ v ကို ထည့်ပါ` adds `v` as a new last cell of `l`, or, when `l` is text, adds the text or character `v` at its end | [Adding and removing cells](../../learn/lists/growing.md) |
+| `ထည့်ပါ` | "please add": `l ထဲသို့ v ကို ထည့်ပါ` adds `v` as a new last cell of `l`, or, when `l` is text, adds the text or character `v` at its end; `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်ပါ` puts it in front of cell `i` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ဖျက်ပါ` | "please remove": `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ` removes the last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ကျော်ပါ` | "please skip" | [Break and continue](../../learn/control-flow/break-continue.md) |
 
@@ -143,6 +143,8 @@ as well.
 | `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Static data and counted lists](../../learn/forms/counted-lists.md#counted-lists) |
 | `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `နောက်ဆုံးအကွက်` | "last cell", right after `၏` and before `ကို ဖျက်ပါ` alone | [Adding and removing cells](../../learn/lists/growing.md) |
+| `နောက်ဆုံးစာလုံး` | "last character", right after `၏` and before `ကို ဖျက်ပါ` alone: `t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ` removes the last character of text | [Text](../../learn/values/strings.md#adding-in-the-middle-and-removing-the-end) |
+| `အရှေ့တွင်` | "in front of", after `<cell> ၏` or `<character> ၏` in an add: `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်ပါ` | [Adding and removing cells](../../learn/lists/growing.md#adding-in-the-middle) |
 | `ဆက်ထားသည့်` | "that joins", in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/values/strings.md#joining-text) |
 | `စာလုံးအရေအတွက်` | "character count", in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/values/strings.md#characters) |
 | `စာရင်းအလွတ်` | "blank list": no cells, or each cell of a counted list at its default | [Lists](../../learn/lists/README.md) |

@@ -105,6 +105,10 @@ impl ToSexpr for Stmt
             {
                 list("add_text", [dest_sexpr(dest), value.to_sexpr()])
             }
+            Stmt::Insert { dest, index, value, .. } =>
+            {
+                list("insert", [dest_sexpr(dest), index.to_sexpr(), value.to_sexpr()])
+            }
         }
     }
 }

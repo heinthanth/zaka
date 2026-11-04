@@ -364,8 +364,34 @@ quotes around it is an error, since a number is no text:
 error[ZK0401]: expected text, found isize
 ```
 
-Text grows, but it does not shrink: `ဖျက်ပါ`, which removes the last cell of a list, does
-not take text (see [List mistakes](../lists/mistakes.md#removing-from-text)).
+## Adding in the middle and removing the end
+
+`၏ အရှေ့တွင်` ("in front of") after a character puts the added text in front of it, and
+`နောက်ဆုံးစာလုံး` ("the last character") names the end that a remove takes off:
+
+```zaka
+ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "acd" ဖြစ်ပါစေ။
+စာ ၏ စာလုံး ၁ ၏ အရှေ့တွင် "b" ကို ထည့်ပါ။        // in front of c
+စာ ၏ ၁ ခုမြောက်စာလုံး ၏ အရှေ့တွင် '>' ကို ထည့်ပါ။   // at the start
+စာ ကို ပြသပါ။
+စာ ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။
+စာ ကို ပြသပါ။
+```
+
+```text
+>abcd
+>abc
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `စာ ၏ စာလုံး ၁ ၏ အရှေ့တွင် "b" ကို ထည့်ပါ` | "please add "b" in front of character 1 of the text" |
+| `စာ ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ` | "please remove the last character of the text" |
+
+The number can also be the character count, which adds at the end, as `ထဲသို့` does. A
+character is a Unicode code point, so a remove from `ကျွန်` takes off the mark `်` alone.
+`နောက်ဆုံးအကွက်` ("the last cell") belongs to lists: see [List
+mistakes](../lists/mistakes.md#removing-from-text).
 
 ## No cleanup
 

@@ -210,8 +210,10 @@ puts on the source of a slice or of the address of a cell is no `Store`, so it e
 loan. The pass that takes the `Own` off a slice that reads alone keeps it on each slice of
 a list that has such an `Own` left, so a slice without one never sees the cells move.
 
-An `AddCell` or a `RemoveCell` is a loss as well: an add
-can move the cells to a larger block, and a remove drops the last cell. `edit_list` runs
+An `AddCell`, an `Insert` or a `RemoveCell` is a loss as well: an add
+can move the cells to a larger block, and a remove drops the last cell. An `Insert` into a
+list moves its value in as an add does, and one into text reads its value as an add to
+text does. `edit_list` runs
 `check_heap` with `Invalidation::Edited` on the list itself and on each plain list
 `owned_lists` finds around it, since those first take a block of their own; then the
 value of an add moves into the list (`moved`), as an assigned value does. The liveness

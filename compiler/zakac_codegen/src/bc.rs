@@ -342,6 +342,31 @@ pub enum Op
     /// of text, then the address of text; give the text a block of its own
     /// with room for the u8s of the value, and add them at its end.
     AddText(DataKind),
+    /// Pop the address of a value of the cell kind of this plain list, then a
+    /// cell number, then the address of the list; stop the program when the
+    /// number is past the count, else give the list a block of its own with
+    /// room for one more cell, move the cells from that number on one cell
+    /// on, move the value into the cell at the number and leave the default
+    /// of the cell kind in its place.
+    InsertCell
+    {
+        /// The list kind.
+        kind: DataKind,
+        /// The number of the first cell: 0 or 1.
+        first: u8,
+    },
+    /// Pop a value of this kind, a character or the address of text or a view
+    /// of text, then a character number, then the address of text; stop the
+    /// program when the number is past the character count, else give the
+    /// text a block of its own and put the u8s of the value in front of that
+    /// character.
+    InsertText
+    {
+        /// The kind of the value.
+        kind: DataKind,
+        /// The number of the first character: 0 or 1.
+        first: u8,
+    },
     /// Pop the addresses of two plain lists, the right one first;
     /// push whether the two hold the same count of cells, each equal to the
     /// other's.
@@ -469,6 +494,14 @@ impl Op
             Op::Index { len, first: 0 } => len.to_string(),
             Op::Index { len, first } => format!("{len} from {first}"),
             Op::CharAt { first: 1 } | Op::SetChar { first: 1 } => "from 1".to_string(),
+            Op::InsertCell { kind, first: 0 } | Op::InsertText { kind, first: 0 } =>
+            {
+                kind.name()
+            }
+            Op::InsertCell { kind, first } | Op::InsertText { kind, first } =>
+            {
+                format!("{} from {first}", kind.name())
+            }
             Op::PtrAdd(s) | Op::PtrSub(s) | Op::Alloc(s) | Op::Realloc(s) =>
             {
                 s.to_string()

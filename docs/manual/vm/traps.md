@@ -42,6 +42,8 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | overflow | an integer result does not fit its kind; not with `--overflow wrap` | `the result of OP does not fit K` |
 | index out of range | a cell number is outside its list or slice | `cell N is outside the list, whose cells run from A to B` |
 | no cell to remove | a remove of the last cell finds a list with no cells | `the list holds no cells, so it has no last cell to remove` |
+| no character to remove | a remove of the last character finds text with no characters | `the text holds no characters, so it has no last character to remove` |
+| no place to insert | an add in front of a cell or a character names a number past the count | `no value can go in front of N: the places run from A to B, and B is the end` |
 | slice out of range | a range passes the end of its list or slice | `N cells from cell S pass the end of C cells` |
 | null address | an access below the first block | `access through a null address at A` |
 | out of bounds | an access lands in no block, or runs past the end of one | `access of N octets at A lands outside each live block` |

@@ -359,6 +359,18 @@ fn a_remove_after_a_cell_lets_go_warns_under_strict_alone()
 }
 
 #[test]
+fn an_owner_added_in_front_of_a_cell_counts_as_an_add()
+{
+    let inserted = "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+ကိန်းရှင် ပများ သည် ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ပများ ၏ အကွက် ၀ ၏ အရှေ့တွင် ပ ကို ထည့်ပါ။
+ပများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+";
+    assert_eq!(lines(inserted), [(Code::BlockLeaked, 5)]);
+}
+
+#[test]
 fn a_plain_list_of_owners_kept_at_the_end_is_zk0708()
 {
     let inner = owner_cells("");

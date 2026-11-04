@@ -319,7 +319,7 @@ A counted list keeps its count for good, so `ထည့်ပါ` and `ဖျက�
 ```
 
 ```text
-error[ZK0437]: isize[3] cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, and "ဖျက်ပါ" a plain list
+error[ZK0437]: isize[3] cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, "နောက်ဆုံးအကွက်ကို ဖျက်ပါ" a plain list, and "နောက်ဆုံးစာလုံးကို ဖျက်ပါ" text
 ```
 
 Declare the list with no count, `ကိန်းပြည့် စာရင်း`, to add cells to it.

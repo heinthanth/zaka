@@ -247,7 +247,8 @@ a heap block.
 | `seq_addr s` | → addr | push the address of the cells of the static list `s`, the source of a `blit` into a counted list or a struct |
 | `to_heap k` | slot addr → | move the cells of the counted list of kind `k` at `addr` to a new heap block, and write the plain list of them in the slot |
 | `add_cell k` | list value → | give the plain list of kind `k` at `list` a block of its own when its room is 0, move it to a block twice the size (four cells at the least) when the block is full, then move the cell at `value` into a new last cell and leave the default of the cell kind at `value` |
-| `remove_cell k` | list → | stop the program when the plain list of kind `k` at `list` holds no cells; else drop its last cell when the list owns its block (a room above 0), and take one from its count |
+| `remove_cell k` | list → | stop the program when the plain list of kind `k` at `list` holds no cells; else drop its last cell when the list owns its block (a room above 0), and take one from its count. For `text`, take the u8s of the last character off the count, and stop the program when the text holds no characters |
+| `insert_cell k` | list i value → | stop the program when number `i` is past the count of the plain list of kind `k` at `list` (counted from 0, or from 1 when listed `insert_cell k from 1`); else make room for one more cell as `add_cell` does, move the cells from `i` on one cell on, and move the cell at `value` into cell `i` |
 | `make_slice 8 of 3` | slot source start len → slot | write the slice of `len` cells from cell `start` of the source in the slot; the source is a list of 3 cells (`of 3`), a slice (`of slice`) or a heap block (`of block`), and a range past its end stops the program; `checked` skips the test |
 | `slice_cell 8` | slice n → addr | check a cell number against the count of a slice; push the address of the cell. A cell the compiler proves in range is `load` of the first word, then `ptr_add`, with no check |
 
@@ -266,6 +267,7 @@ a heap block.
 | `char_at` | addr i → c | the character at number `i` of the text at `addr`, counted from 0, or from 1 when listed `char_at from 1`; a number outside the text traps |
 | `char_at_octet` | addr i → c | the character that starts at u8 number `i` of the text at `addr`, counted from 0; a number outside the text or inside a character traps |
 | `set_char` | addr i c → | stop the program when number `i` is outside the text at `addr` (counted from 0, or from 1 when listed `set_char from 1`); else give the text a block of its own when its room is 0, and write the character `c` in place of character `i`. A character of another size shifts the u8s after it |
+| `insert_text k` | addr i v → | stop the program when number `i` is past the character count of the text at `addr` (from 0, or from 1 when listed `insert_text k from 1`); else give the text a block of its own when its room is 0, and put the u8s of `v` (a `char`, or the address of `text` or `text[..]`, as for `add_text`) in front of character `i` |
 | `add_text k` | addr v → | add the value `v` of kind `k`, a `char`, or the address of `text` or `text[..]`, at the end of the text at `addr`. The added u8s are read first, so the text can be added to itself. The text takes a block of its own when its room is 0 |
 | `text_edges` | addr → addr | trap when the view of text at `addr` starts or ends inside a character; the view remains |
 | `check_utf8` | addr → addr | trap when the u8s of the slice at `addr` are not UTF-8; the slice remains |
@@ -332,6 +334,9 @@ How each value reads is in [Running a program](running.md#printing).
 | `t ကို v ဟု ထားပါ` for text | `v` into the hidden slot `%new`; `t; drop text`; then the text of `%new` moves into `t` (`blit text`, and `zero text` on `%new`) |
 | `t ၏ စာလုံး i ကို c ဟု ထားပါ` | `t; i; c; set_char`, or `set_char from 1` for `၏ i ခုမြောက်စာလုံး` |
 | `t ထဲသို့ v ကို ထည့်ပါ` for text | `t; v; add_text k`; text that `v` builds when it runs, such as a format, is dropped right after |
+| `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်ပါ` | `v` into the scratch slot `%cell`; `l; i; %cell; insert_cell k` |
+| `t ၏ စာလုံး i ၏ အရှေ့တွင် v ကို ထည့်ပါ` | `t; i; v; insert_text k`, dropped as for `add_text` |
+| `t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ` | `t; remove_cell text` |
 | the end of a text variable | `x; drop text` |
 | `a ဖြစ်၍ b` (and) | `a; jump_if_false F; b; jump E; F: push မမှန်; E:` |
 | `a သို့မဟုတ် b` (or) | `a; jump_if_true T; b; jump E; T: push မှန်; E:` |

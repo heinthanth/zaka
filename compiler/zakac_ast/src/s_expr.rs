@@ -156,8 +156,15 @@ impl ToSexpr for Stmt
             Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
             Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
             Stmt::Free(s) => list("free", [s.target.to_sexpr()]),
-            Stmt::Add(s) => list("add", [s.list.to_sexpr(), s.value.to_sexpr()]),
-            Stmt::Remove(s) => list("remove", [s.list.to_sexpr()]),
+            Stmt::Add(s) =>
+            {
+                let word = tern!(s.before, "insert", "add");
+                list(word, [s.list.to_sexpr(), s.value.to_sexpr()])
+            }
+            Stmt::Remove(s) =>
+            {
+                list(tern!(s.chars, "remove_char", "remove"), [s.list.to_sexpr()])
+            }
             Stmt::Struct(s) => exported(s.exported, struct_sexpr(s)),
             Stmt::Import(s) => import_sexpr(s),
         }

@@ -221,10 +221,14 @@ impl Parser<'_>
             // what the loop walks.
             ret_if!(self.at_each_head(), self.finish_clause(stack));
             // `၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ` removes the last cell of the operand.
-            ret_if!(
-                tok.kind == TokenKind::Kw(Kw::LastCell) && holds_ei(&stack),
-                self.finish_remove(stack, mode)
-            );
+            let last = matches!(tok.kind, TokenKind::Kw(Kw::LastCell | Kw::LastChar));
+            ret_if!(last && holds_ei(&stack), self.finish_remove(stack, mode));
+            // `<cell> ၏ အရှေ့တွင်` names where an add puts its value.
+            if tok.kind == TokenKind::Kw(Kw::Before) && holds_ei(&stack)
+            {
+                self.attach_before(&mut stack)?;
+                continue;
+            }
             if let Some(slot) = as_slot(&tok)
             {
                 self.attach_slot(&mut stack, slot)?;
@@ -309,8 +313,9 @@ impl Parser<'_>
         ret_if!(as_verb(&tok).is_some() || as_shift_dir(&tok).is_some(), Ok(()));
         let char_word = tok.kind == TokenKind::Kw(Kw::CharKind);
         ret_if!(char_word && matches!(slot, Slot::Ei | Slot::Ordinal), Ok(()));
-        let last_cell = tok.kind == TokenKind::Kw(Kw::LastCell);
-        ret_if!(last_cell && slot == Slot::Ei, Ok(()));
+        let after_ei =
+            matches!(tok.kind, TokenKind::Kw(Kw::LastCell | Kw::LastChar | Kw::Before));
+        ret_if!(after_ei && slot == Slot::Ei, Ok(()));
         let first = self.text_of(self.prev_span());
         ret_if!(as_slot(&tok).is_some(), Err(diag::double_particle(tok.span, first)));
         let expr = self.parse_operand()?;
@@ -322,6 +327,25 @@ impl Parser<'_>
         };
         stack.push(Item::expr(item));
         Ok(())
+    }
+
+    /// Turn the `၏` of the top operand into `၏ အရှေ့တွင်`, then push the
+    /// operand that follows it.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack; its top holds `၏`.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic from the operand.
+    fn attach_before(&mut self, stack: &mut Vec<Item>) -> PResult<()>
+    {
+        let tok = self.bump();
+        let top = stack.last_mut().expect("the top operand holds ၏");
+        let (_, ei) = top.slot.expect("the top operand holds ၏");
+        top.slot = Some((Slot::Before, ei.to(&tok.span)));
+        self.push_next_operand(stack, Slot::Before)
     }
 
     /// Take the top operand, which holds `၏`, as the struct of a field.
@@ -772,9 +796,10 @@ impl Parser<'_>
             VerbOp::AddCell =>
             {
                 let value = args.next().expect("an add statement takes two operands");
-                Ok(Stmt::Add(
-                    AddStmt::builder().list(first).value(value).span(span).build(),
-                ))
+                let before = slot == Slot::Before;
+                #[rustfmt::skip]
+                let node = AddStmt::builder().list(first).value(value).before(before).span(span).build();
+                Ok(Stmt::Add(node))
             }
             _ =>
             {
@@ -783,8 +808,9 @@ impl Parser<'_>
         }
     }
 
-    /// Finish `<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။` at its `နောက်ဆုံးအကွက်`, and
-    /// read its full stop.
+    /// Finish `<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။` at its `နောက်ဆုံးအကွက်`, or
+    /// `<text> ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။` at its `နောက်ဆုံးစာလုံး`, and read its
+    /// full stop.
     ///
     /// # Arguments
     ///
@@ -800,13 +826,14 @@ impl Parser<'_>
         let tok = self.bump();
         let name = self.text_of(tok.span);
         ret_if!(mode == Mode::Expr, Err(diag::stmt_verb_in_expr(tok.span, name)));
+        let chars = tok.kind == TokenKind::Kw(Kw::LastChar);
         let list = into_expr(stack.pop().expect("the top operand holds ၏"));
         self.expect(Kw::Ko)?;
         let verb = self.expect(Kw::Remove)?;
         ret_if!(!stack.is_empty(), Err(self.dangling(&stack, verb)));
         let stop = self.expect_stop()?;
         let span = list.span().to(&stop.span);
-        let node = RemoveStmt::builder().list(list).span(span).build();
+        let node = RemoveStmt::builder().list(list).chars(chars).span(span).build();
         Ok(ClauseOut::Stmt(Box::new(Stmt::Remove(node))))
     }
 

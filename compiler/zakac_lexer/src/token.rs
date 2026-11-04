@@ -509,6 +509,11 @@ pub enum Kw
     CellCount,
     /// `နောက်ဆုံးအကွက်`, the last cell in a remove statement
     LastCell,
+    /// `နောက်ဆုံးစာလုံး`, the last character in a remove statement
+    LastChar,
+    /// `အရှေ့တွင်`, after `<cell> ၏` or `<character> ၏` in an add statement:
+    /// the new value goes in front of it
+    Before,
     /// `ခုမြောက်`
     Ordinal,
     /// `ခုရှိသော` or `ရှိသော`

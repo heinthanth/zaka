@@ -1,6 +1,6 @@
 ---
 title: Adding and removing cells
-description: Add a cell at the end of a list, and remove its last cell.
+description: Add a cell at the end of a list or in front of a cell, and remove its last cell.
 ---
 
 # Adding and removing cells
@@ -35,6 +35,30 @@ cell off:
 `နောက်ဆုံးအကွက်` names the last cell for a remove alone: it comes right after `၏`, and
 `ကို ဖျက်ပါ` follows it. To read the last cell, use its number, as in [Cell
 numbers](README.md#cell-numbers).
+
+## Adding in the middle
+
+`၏ အရှေ့တွင်` ("in front of") after a cell puts the new value in front of it. The value
+takes the number of that cell, and the cells from there on move one cell on:
+
+```zaka
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၊ ၃၀] ဖြစ်ပါစေ။
+ကိန်းများ ၏ အကွက် ၁ ၏ အရှေ့တွင် ၂၀ ကို ထည့်ပါ။        // in front of ၃၀
+ကိန်းများ ၏ ၁ ခုမြောက်အကွက် ၏ အရှေ့တွင် ၀ ကို ထည့်ပါ။   // at the start
+ကိန်းများ ကို ပြသပါ။
+```
+
+```text
+[၀၊ ၁၀၊ ၂၀၊ ၃၀]
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `ကိန်းများ ၏ အကွက် ၁ ၏ အရှေ့တွင် ၂၀ ကို ထည့်ပါ` | "please add 20 in front of cell 1 of the numbers" |
+| `အရှေ့တွင်` | "in front of" |
+
+The number can also be the count, which puts the value at the end, as `ထဲသို့` does. A
+larger number stops the program.
 
 ## Building a list
 
@@ -133,9 +157,10 @@ is marked:
 
 ## Which lists grow
 
-Text takes an add too, of text or a character (see [Adding to
-text](../values/strings.md#adding-to-text)), but it does not shrink: the compiler stops a
-remove from it (see [List mistakes](mistakes.md#removing-from-text)). A remove from a
+Text takes an add too, of text or a character, at its end or in front of a character, and
+it loses its last character with `နောက်ဆုံးစာလုံး` (see [Adding in the middle and removing
+the end](../values/strings.md#adding-in-the-middle-and-removing-the-end));
+`နောက်ဆုံးအကွက်` on text is an error (see [List mistakes](mistakes.md#removing-from-text)). A remove from a
 list with no cells left stops the program when it runs: see [List
 mistakes](mistakes.md#removing-from-a-list-with-no-cells).
 
@@ -143,6 +168,7 @@ mistakes](mistakes.md#removing-from-a-list-with-no-cells).
 
 - Build a list of the even numbers from 2 to 20 with a counted loop and an add.
 - Remove the last cells of a list in a while loop until one cell is left.
+- Keep a list in order: add each new number in front of the first cell that is larger.
 - Write a function that can change a list of text, and adds a name to it.
 
 Next: [Passing and comparing lists](passing.md).

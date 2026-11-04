@@ -11,6 +11,7 @@ use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
@@ -627,11 +628,8 @@ impl Lowerer<'_>
     fn assign(&mut self, n: &st::AssignStmt, out: &mut Vec<Stmt>)
     {
         let span = n.span;
-        if let ast::Expr::Verb(v) = ungrouped(&n.target)
-            && let (VerbOp::CharAt | VerbOp::CharNth, [text, index]) =
-                (v.op, v.args.as_slice())
+        if let Some((text, index, first)) = char_place(&n.target)
         {
-            let first = u8::from(v.op == VerbOp::CharNth);
             let (kind, index, value) =
                 (self.kind_of(text), self.expr(index), self.expr(&n.value));
             let dest = self.dest(text);
@@ -732,6 +730,7 @@ impl Lowerer<'_>
     /// The statement.
     fn add_cell(&mut self, n: &st::AddStmt) -> Stmt
     {
+        ret_if!(n.before, self.insert(&n.list, &n.value, n.span));
         let kind = self.kind_of(&n.list);
         if kind.is_text()
         {
@@ -743,6 +742,36 @@ impl Lowerer<'_>
         let value = self.owned(&n.value, cell);
         let dest = self.dest(&n.list);
         Stmt::AddCell { dest, kind, value, span: n.span }
+    }
+
+    /// Lower an add that puts its value in front of a cell of a plain list
+    /// or a character of text. A new cell is owned, as for an add at the
+    /// end; added text is read where it is.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The cell or the character.
+    /// * `value` - The value added.
+    /// * `span` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn insert(&mut self, at: &ast::Expr, value: &ast::Expr, span: Span) -> Stmt
+    {
+        if let Some((text, index, first)) = char_place(at)
+        {
+            let (kind, index, value) =
+                (self.kind_of(text), self.expr(index), self.expr(value));
+            let dest = self.dest(text);
+            return Stmt::Insert { dest, kind, index, first, value, span };
+        }
+        extract!(ast::Expr::Index(cell) = ungrouped(at), "an insert names a cell");
+        let kind = self.kind_of(&cell.list);
+        let cells = kind.cell_kind().expect("an insert grows a list");
+        let (index, value) = (self.expr(&cell.index), self.owned(value, cells));
+        let dest = self.dest(&cell.list);
+        Stmt::Insert { dest, kind, index, first: cell.first, value, span }
     }
 
     /// Lower a heap reallocation.
@@ -2254,6 +2283,31 @@ fn own(list: Expr) -> Expr
 {
     let (kind, span) = (list.kind, list.span);
     node_expr(kind, ExprNode::Own { value: Box::new(list) }, span)
+}
+
+/// The text, the number and the first number of a character place:
+/// `t ၏ စာလုံး n` (from 0) or `t ၏ n ခုမြောက်စာလုံး` (from 1).
+///
+/// # Arguments
+///
+/// * `e` - The place.
+///
+/// # Returns
+///
+/// The parts, or `None` for each other place.
+fn char_place(e: &ast::Expr) -> Option<(&ast::Expr, &ast::Expr, u8)>
+{
+    let ast::Expr::Verb(v) = ungrouped(e)
+    else
+    {
+        return None;
+    };
+    let (VerbOp::CharAt | VerbOp::CharNth, [text, index]) = (v.op, v.args.as_slice())
+    else
+    {
+        return None;
+    };
+    Some((text, index, u8::from(v.op == VerbOp::CharNth)))
 }
 
 /// An expression of a kind.

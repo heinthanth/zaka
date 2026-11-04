@@ -427,4 +427,18 @@ fn add_and_remove_parse()
     assert_eq!(stmt("s ၏ l ထဲသို့ x + ၁ ကို ထည့်ပါ။"), "(add (field s l) (+ x 1))");
     assert_eq!(stmt("l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"), "(remove l)");
     assert_eq!(stmt("l ၏ အကွက် ၀ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"), "(remove (cell l 0))");
+    assert_eq!(stmt("t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။"), "(remove_char t)");
+}
+
+#[test]
+fn adds_in_front_of_a_cell_or_a_character_parse()
+{
+    let cell = stmt("l ၏ အကွက် ၁ ၏ အရှေ့တွင် ၉ ကို ထည့်ပါ။");
+    assert!(cell.starts_with("(insert (cell l 1") && cell.ends_with(" 9)"), "{cell}");
+    let joined = stmt("l ၏ အကွက် ၁ ၏အရှေ့တွင် ၉ ကို ထည့်ပါ။");
+    assert_eq!(joined, cell);
+    let nth = stmt("l ၏ ၂ ခုမြောက်အကွက် ၏ အရှေ့တွင် ၉ ကို ထည့်ပါ။");
+    assert!(nth.starts_with("(insert "), "{nth}");
+    let text = stmt("t ၏ စာလုံး ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်ပါ။");
+    assert!(text.starts_with("(insert ") && text.contains("t"), "{text}");
 }

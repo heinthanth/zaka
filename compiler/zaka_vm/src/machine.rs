@@ -1057,6 +1057,8 @@ impl Machine
             Op::AddCell(kind) => self.add_cell(kind),
             Op::SetChar { first } => self.set_char(first),
             Op::AddText(kind) => self.add_text(kind),
+            Op::InsertCell { kind, first } => self.insert_cell(kind, first),
+            Op::InsertText { kind, first } => self.insert_text(kind, first),
             Op::RemoveCell(kind) =>
             {
                 let at = self.pop_ptr("remove_cell")?;
@@ -1598,17 +1600,8 @@ impl Machine
     /// The cell counted from 0, or `IndexOutOfRange`.
     fn pop_cell(&mut self, len: u64, first: u8) -> Result<u64, TrapKind>
     {
-        let Value::Int { kind, raw } = self.pop()?
-        else
-        {
-            return Err(malformed("index needs an integer"));
-        };
-        let wide = i128::try_from(raw).unwrap_or(i128::MAX);
-        let index = tern!(kind.signed, raw as i128, wide);
-        let lo = i128::from(first);
-        let outside = index < lo || index >= lo + i128::from(len);
-        ret_if!(outside, Err(TrapKind::IndexOutOfRange { index, first, len }));
-        Ok((index - lo) as u64)
+        let value = self.pop()?;
+        cell_of(value, len, first)
     }
 
     /// Pop a length, a start, a source and the address of a slice slot, and
@@ -1793,16 +1786,7 @@ impl Machine
         let index = self.pop()?;
         let addr = self.pop_ptr("char_at")?;
         let text = text_at(&self.mem, addr)?;
-        self.push(index)?;
-        let at =
-            self.pop_cell(text.chars().count() as u64, first).map_err(|e| match e
-            {
-                TrapKind::IndexOutOfRange { index, first, len } =>
-                {
-                    TrapKind::CharOutOfRange { index, first, len }
-                }
-                other => other,
-            })?;
+        let at = char_of(index, text.chars().count() as u64, first)?;
         let found =
             text.chars().nth(at as usize).ok_or_else(|| malformed("no character"))?;
         self.push(Value::Char(found))
@@ -2139,6 +2123,26 @@ impl Machine
     {
         let src = self.pop_ptr("add_cell")?;
         let at = self.pop_ptr("add_cell")?;
+        let (_, count) = slice_parts(&self.mem, at)?;
+        self.put_cell(at, kind, src, count)
+    }
+
+    /// Give a plain list a block of its own with room for one more cell, move
+    /// the cells from a number on one cell on, and move a value into the cell
+    /// at that number, leaving the default of the cell kind in its place.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address of the list.
+    /// * `kind` - The list kind.
+    /// * `src` - The address of the new cell.
+    /// * `n` - The number of the new cell from 0, at most the count.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, a trap a read hits, or `OutOfMem`.
+    fn put_cell(&mut self, at: u64, kind: DataKind, src: u64, n: u64) -> Step
+    {
         let cell =
             kind.as_seq().ok_or_else(|| malformed("add_cell takes a list"))?.cell;
         let stride = self.stride_of(kind);
@@ -2153,7 +2157,11 @@ impl Machine
             // A list with a room of 0 owns no block to move.
             block = self.mem.realloc(tern!(held == 0, 0, base), room)?;
         }
-        self.mem.blit(block + count * stride, src, cell)?;
+        for i in (n..count).rev()
+        {
+            self.mem.blit(block + (i + 1) * stride, block + i * stride, cell)?;
+        }
+        self.mem.blit(block + n * stride, src, cell)?;
         self.mem.zero(src, cell)?;
         self.write_text(at, block, count + 1, room)
     }
@@ -2177,16 +2185,7 @@ impl Machine
         let index = self.pop()?;
         let at = self.pop_ptr("set_char")?;
         let text = text_at(&self.mem, at)?;
-        self.push(index)?;
-        let count = text.chars().count() as u64;
-        let n = self.pop_cell(count, first).map_err(|e| match e
-        {
-            TrapKind::IndexOutOfRange { index, first, len } =>
-            {
-                TrapKind::CharOutOfRange { index, first, len }
-            }
-            other => other,
-        })?;
+        let n = char_of(index, text.chars().count() as u64, first)?;
         let swap = |(i, c): (usize, char)| tern!(i as u64 == n, ch, c);
         let edited: String = text.chars().enumerate().map(swap).collect();
         self.own_value(at, DataKind::TEXT)?;
@@ -2209,23 +2208,87 @@ impl Machine
     {
         let value = self.pop()?;
         let at = self.pop_ptr("add_text")?;
-        let added = match value
-        {
-            Value::Char(c) => c.to_string().into_bytes(),
-            _ if kind.is_textual() =>
-            {
-                let from =
-                    value.as_ptr().ok_or_else(|| malformed("add_text takes text"))?;
-                let (base, count) = slice_parts(&self.mem, from)?;
-                self.mem.octets(base, count)?
-            }
-            _ => return Err(malformed("add_text takes text or a character")),
-        };
+        let added = self.octets_of(value, kind)?;
         self.own_value(at, DataKind::TEXT)?;
         let (base, count) = slice_parts(&self.mem, at)?;
         let mut text = self.mem.octets(base, count)?;
         text.extend(added);
         self.put_text(at, &text)
+    }
+
+    /// The u8s of a value an add puts in text: a character, or the address of
+    /// text or a view of text.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// The u8s, or a trap a read hits.
+    fn octets_of(&self, value: Value, kind: DataKind) -> Result<Vec<u8>, TrapKind>
+    {
+        ret_if!(let Value::Char(c) = value, Ok(c.to_string().into_bytes()));
+        let from = value.as_ptr().filter(|_| kind.is_textual());
+        let from =
+            from.ok_or_else(|| malformed("add_text takes text or a character"))?;
+        let (base, count) = slice_parts(&self.mem, from)?;
+        self.mem.octets(base, count)
+    }
+
+    /// Pop a value of a kind, a character or the address of text or a view of
+    /// text, then a character number, then the address of text, and put the
+    /// u8s of the value in front of that character. A number equal to the
+    /// character count puts them at the end. The text takes a block of its
+    /// own first when its room is 0.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the value.
+    /// * `first` - The number of the first character: 0 or 1.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, `NoPlaceToInsert` for a number past the count, or a trap a read
+    /// or the allocation hits.
+    fn insert_text(&mut self, kind: DataKind, first: u8) -> Step
+    {
+        let value = self.pop()?;
+        let added = self.octets_of(value, kind)?;
+        let index = self.pop()?;
+        let at = self.pop_ptr("insert_text")?;
+        let text = text_at(&self.mem, at)?;
+        let n = place_of(index, text.chars().count() as u64, first)?;
+        let split = text.char_indices().nth(n as usize).map_or(text.len(), |(i, _)| i);
+        let mut edited = text.into_bytes();
+        edited.splice(split..split, added);
+        self.own_value(at, DataKind::TEXT)?;
+        self.put_text(at, &edited)
+    }
+
+    /// Pop the address of a new cell, a cell number and the address of a
+    /// plain list, and move the cell in front of the cell at that number; the
+    /// cells from there on move one cell on. A number equal to the count puts
+    /// the cell at the end. The list takes a block of its own first.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The list kind.
+    /// * `first` - The number of the first cell: 0 or 1.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, `NoPlaceToInsert` for a number past the count, a trap a read
+    /// hits, or `OutOfMem`.
+    fn insert_cell(&mut self, kind: DataKind, first: u8) -> Step
+    {
+        let src = self.pop_ptr("insert_cell")?;
+        let index = self.pop()?;
+        let at = self.pop_ptr("insert_cell")?;
+        let (_, count) = slice_parts(&self.mem, at)?;
+        let n = place_of(index, count, first)?;
+        self.put_cell(at, kind, src, n)
     }
 
     /// Write u8s as the whole text at an address: in the block of the text
@@ -2271,6 +2334,7 @@ impl Machine
     /// drop hits.
     fn remove_cell(&mut self, at: u64, kind: DataKind) -> Step
     {
+        ret_if!(kind.is_text(), self.remove_char(at));
         let cell =
             kind.as_seq().ok_or_else(|| malformed("remove_cell takes a list"))?.cell;
         let (base, count) = slice_parts(&self.mem, at)?;
@@ -2279,6 +2343,30 @@ impl Machine
         let last = base + (count - 1) * self.stride_of(kind);
         do_if!(room > 0, self.drop_value(last, cell)?);
         self.write_text(at, base, count - 1, room)
+    }
+
+    /// Remove the last character of text: take its u8s off the count. Text
+    /// with a room of 0 reads u8s it shares, so those remain unchanged.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address of the text.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, `NoCharToRemove` for text with no characters, or a trap a read
+    /// hits.
+    fn remove_char(&mut self, at: u64) -> Step
+    {
+        let text = text_at(&self.mem, at)?;
+        let Some((last, _)) = text.char_indices().next_back()
+        else
+        {
+            return Err(TrapKind::NoCharToRemove);
+        };
+        let (base, _) = slice_parts(&self.mem, at)?;
+        let room = self.room_of(at)?;
+        self.write_text(at, base, last as u64, room)
     }
 
     /// Pop the addresses of two plain lists, the right one first, and
@@ -2552,4 +2640,78 @@ impl Machine
         let top = self.stack.last().copied();
         self.push(top.ok_or_else(|| malformed("dup of a blank stack"))?)
     }
+}
+
+/// The number of a cell from 0, checked against a count of cells.
+///
+/// # Arguments
+///
+/// * `value` - The cell number, an integer.
+/// * `len` - The number of cells.
+/// * `first` - The number of the first cell: 0 or 1.
+///
+/// # Returns
+///
+/// The cell counted from 0, or `IndexOutOfRange`.
+fn cell_of(value: Value, len: u64, first: u8) -> Result<u64, TrapKind>
+{
+    let Value::Int { kind, raw } = value
+    else
+    {
+        return Err(malformed("index needs an integer"));
+    };
+    let wide = i128::try_from(raw).unwrap_or(i128::MAX);
+    let index = tern!(kind.signed, raw as i128, wide);
+    let lo = i128::from(first);
+    let outside = index < lo || index >= lo + i128::from(len);
+    ret_if!(outside, Err(TrapKind::IndexOutOfRange { index, first, len }));
+    Ok((index - lo) as u64)
+}
+
+/// The number of a character from 0, checked against a count of
+/// characters.
+///
+/// # Arguments
+///
+/// * `value` - The character number, an integer.
+/// * `len` - The number of characters.
+/// * `first` - The number of the first character: 0 or 1.
+///
+/// # Returns
+///
+/// The character counted from 0, or `CharOutOfRange`.
+fn char_of(value: Value, len: u64, first: u8) -> Result<u64, TrapKind>
+{
+    cell_of(value, len, first).map_err(|e| match e
+    {
+        TrapKind::IndexOutOfRange { index, first, len } =>
+        {
+            TrapKind::CharOutOfRange { index, first, len }
+        }
+        other => other,
+    })
+}
+
+/// The number of a place a value goes in front of, from 0: a cell or a
+/// character, or the end, which is the count.
+///
+/// # Arguments
+///
+/// * `value` - The number, an integer.
+/// * `count` - The number of cells or characters.
+/// * `first` - The number of the first one: 0 or 1.
+///
+/// # Returns
+///
+/// The place counted from 0, or `NoPlaceToInsert`.
+fn place_of(value: Value, count: u64, first: u8) -> Result<u64, TrapKind>
+{
+    cell_of(value, count + 1, first).map_err(|e| match e
+    {
+        TrapKind::IndexOutOfRange { index, first, .. } =>
+        {
+            TrapKind::NoPlaceToInsert { index, first, len: count }
+        }
+        other => other,
+    })
 }

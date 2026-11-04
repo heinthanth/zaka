@@ -121,7 +121,7 @@ that starts as `[first]`. It reads the next token and does one of four things.
    (else ZK0208).
 
 The table is the one place the parser learns what a verb takes. `Slot` has thirteen forms:
-the eight particles `နှင့် ၏ ကို ဖြင့် သည် ထက် အောက် ဟု`, `ခုမြောက်`, `ထဲသို့` (`Into`, the list of an add), the shift pair
+the eight particles `နှင့် ၏ ကို ဖြင့် သည် ထက် အောက် ဟု`, `ခုမြောက်`, `ထဲသို့` (`Into`, the list of an add), `၏ အရှေ့တွင်` (`Before`, the cell or the character an add puts its value in front of; it fills the role of `Into`), the shift pair
 (`Bit(Dir)`, which fits either direction), `KoOrHu` (`ကို` or `ဟု`, for a print) and
 `KindAhpjit` (a kind then `အဖြစ်`). Three examples of rows (the real ones share constants such as `PAIR`):
 
@@ -287,8 +287,14 @@ A remove has no verb row, since its list comes before `၏`. When the clause eng
 `နောက်ဆုံးအကွက်` (`Kw::LastCell`) after an operand that holds `၏`, `finish_remove` takes
 that operand as the list, expects `ကို`, `ဖျက်ပါ` and `။`, and builds a `RemoveStmt`; in an
 expression it is ZK0204, a statement verb inside an expression. `attach_slot` reads
-no operand after the `၏` when `နောက်ဆုံးအကွက်` follows it. The S-expressions are
-`(add l 3)` and `(remove l)`.
+no operand after the `၏` when `နောက်ဆုံးအကွက်` follows it. `နောက်ဆုံးစာလုံး`
+(`Kw::LastChar`) takes the same path and sets `RemoveStmt::chars`.
+
+When `အရှေ့တွင်` (`Kw::Before`) follows an operand that holds `၏`, `attach_before` turns
+that `၏` into the slot `Before` and reads the value after it; the `ထည့်ပါ` row then builds
+an `AddStmt` with `before` set, whose `list` is the cell or the character operand. The
+S-expressions are `(add l 3)`, `(insert (cell l 1) 3)`, `(remove l)` and
+`(remove_char t)`.
 
 Blocks and branches share `parse_branch`: with no opener, it reads one sentence into a
 `BlockStmt { single: true }`. Inside an arm of a conditional that sentence cannot itself

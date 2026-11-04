@@ -44,6 +44,7 @@ use zakac_lexer::token::Kw;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
@@ -623,6 +624,84 @@ impl Checker
         self.report(mismatch_report(value.span(), DataKind::TEXT, found));
     }
 
+    /// Check an add that puts its value in front of a cell of a plain list or
+    /// a character of text: the list or the text is a place that can grow,
+    /// the number an integer, and the value fits a cell or is text, a view of
+    /// text or a character.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The cell or the character.
+    /// * `value` - The value added.
+    fn insert(&mut self, at: &Expr, value: &Expr)
+    {
+        if let Some((text, index)) = char_target(at)
+        {
+            let kind = self.place_kind(text);
+            self.cell_number(index);
+            let Some(kind) = kind.filter(|k| self.is_text_place(*k, text))
+            else
+            {
+                _ = self.infer(value, None);
+                return;
+            };
+            return self.text_add(text, kind, value);
+        }
+        let Expr::Index(cell) = at
+        else
+        {
+            self.report(kd::insert_not_at_cell(at.span()));
+            _ = self.infer(value, None);
+            return;
+        };
+        let kind = self.place_kind(&cell.list);
+        self.cell_number(&cell.index);
+        let cells = kind.and_then(|k| self.growing_cells(&cell.list, k));
+        self.expect_kind(value, cells);
+    }
+
+    /// Check the text a remove of the last character changes.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The text.
+    /// * `kind` - Its kind.
+    fn shrinking_text(&mut self, text: &Expr, kind: DataKind)
+    {
+        do_if!(self.is_text_place(kind, text), self.changeable_text(text, kind));
+    }
+
+    /// Whether a place a character statement names is text or a view of it,
+    /// with a report for each other kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the place.
+    /// * `text` - The place.
+    ///
+    /// # Returns
+    ///
+    /// `true` for text or a view of text.
+    fn is_text_place(&mut self, kind: DataKind, text: &Expr) -> bool
+    {
+        ret_true!(kind.is_textual());
+        let label = kw_label(Kw::CharKind);
+        _ = self.need(kind, Want::Text, &label, text);
+        false
+    }
+
+    /// Check the number of a cell or a character: an integer.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The number.
+    fn cell_number(&mut self, index: &Expr)
+    {
+        let at = self.infer(index, Some(DataKind::USIZE));
+        let bad = at.filter(|k| !k.is_int());
+        do_if!(let Some(k) = bad, self.report(kd::cell_number_not_int(index.span(), &k.name())));
+    }
+
     /// Check a write of one character of text: the text is a place that can
     /// change, the number an integer and the value a character.
     ///
@@ -634,18 +713,14 @@ impl Checker
     fn char_write(&mut self, text: &Expr, index: &Expr, value: &Expr)
     {
         let kind = self.place_kind(text);
-        let at = self.infer(index, Some(DataKind::USIZE));
-        let bad = at.filter(|k| !k.is_int());
-        do_if!(let Some(k) = bad, self.report(kd::cell_number_not_int(index.span(), &k.name())));
+        self.cell_number(index);
         self.expect_kind(value, Some(DataKind::Char));
         let Some(kind) = kind
         else
         {
             return;
         };
-        ret_if!(kind.is_textual(), self.changeable_text(text, kind));
-        let label = kw_label(Kw::CharKind);
-        _ = self.need(kind, Want::Text, &label, text);
+        do_if!(self.is_text_place(kind, text), self.changeable_text(text, kind));
     }
 
     /// Report a view of text that a statement would change.
@@ -898,6 +973,7 @@ impl Visitor for Checker
 
     fn visit_add(&mut self, n: &AddStmt)
     {
+        ret_if!(n.before, self.insert(&n.list, &n.value));
         let kind = self.place_kind(&n.list);
         ret_if!(let Some(k) = kind.filter(|k| k.is_textual()), self.text_add(&n.list, k, &n.value));
         let cell = kind.and_then(|k| self.growing_cells(&n.list, k));
@@ -907,6 +983,7 @@ impl Visitor for Checker
     fn visit_remove(&mut self, n: &RemoveStmt)
     {
         let kind = self.place_kind(&n.list);
+        ret_if!(n.chars, do_if!(let Some(k) = kind, self.shrinking_text(&n.list, k)));
         do_if!(let Some(k) = kind, { _ = self.growing_cells(&n.list, k); });
     }
 

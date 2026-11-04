@@ -743,16 +743,25 @@ en = """A counted list keeps its count, so a list with no cells does not fit it.
 [codes.ZK0437.title]
 en = "a value that cannot grow or shrink"
 [codes.ZK0437.message]
-en = "%{k} cannot grow or shrink here: \"ထည့်ပါ\" takes a plain list or text, and \"ဖျက်ပါ\" a plain list"
+en = "%{k} cannot grow or shrink here: \"ထည့်ပါ\" takes a plain list or text, \"နောက်ဆုံးအကွက်ကို ဖျက်ပါ\" a plain list, and \"နောက်ဆုံးစာလုံးကို ဖျက်ပါ\" text"
 [codes.ZK0437.explain]
-en = """A counted list keeps the count its kind gives, and slices and views hold no cells of their own to add to. Text takes an add but no remove. Declare the list with no count, as a plain list (isize[]), to add cells to it and remove them."""
+en = """A counted list keeps the count its kind gives, and slices and views hold no cells of their own to add to. Text has no cells: it loses its last character through \"နောက်ဆုံးစာလုံး\". Declare the list with no count, as a plain list (isize[]), to add cells to it and remove them."""
 
 [codes.ZK0438.title]
 en = "a view of text cannot change"
 [codes.ZK0438.message]
-en = "%{k} cannot change: a character write or an add takes text (စာသား)"
+en = "%{k} cannot change: a character write, an add or a remove takes text (စာသား)"
 [codes.ZK0438.explain]
 en = """A view of text reads text that another value holds, so it cannot change. Declare the value as text to set a character of it or to add to it; a template literal, \"{v}\", makes text of its own from a view v."""
+
+[codes.ZK0439.title]
+en = "nothing to put the value in front of"
+[codes.ZK0439.message]
+en = "\"အရှေ့တွင်\" follows a cell of a list or a character of text"
+[codes.ZK0439.help]
+en = "name the cell or the character the value goes in front of: \"<list> ၏ အကွက် n ၏ အရှေ့တွင်\" or \"<text> ၏ စာလုံး n ၏ အရှေ့တွင်\"; \"<list> ထဲသို့\" adds at the end"
+[codes.ZK0439.explain]
+en = """An add puts its value in front of one cell of a plain list, or one character of text, and the cells or characters from there on move one place on. The number can also be the count, which puts the value at the end. Name the place with a cell form, \"အကွက် n\" or \"n ခုမြောက်အကွက်\", or a character form, \"စာလုံး n\" or \"n ခုမြောက်စာလုံး\"."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 

@@ -302,6 +302,12 @@ impl IrTree<'_>
                 node.children.push(self.expr(value));
                 node
             }
+            Stmt::Insert { dest, index, value, .. } =>
+            {
+                let mut node = self.heap("insert", dest, Some(index), None, span);
+                node.children.push(self.expr(value));
+                node
+            }
         }
     }
 

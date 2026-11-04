@@ -5,6 +5,7 @@ use common::codes;
 use common::kind_at;
 use common::ok;
 use zakac_diagnostics::Code;
+use zakac_rust_sugars::do_for;
 
 /// `l` a list of three integers, `g` a 2 x 3 grid, `p` a borrow of `l`.
 const LISTS: &str = "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
@@ -295,4 +296,35 @@ fn plain_lists_grow_and_shrink()
     assert_eq!(codes(text), [Code::ListCannotGrow]);
     let wrong = "ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။\nl ထဲသို့ \"x\" ကို ထည့်ပါ။";
     assert_eq!(codes(wrong), [Code::KindMismatch]);
+}
+
+#[test]
+fn adds_in_front_of_a_cell_or_a_character_check_their_place()
+{
+    let head = "ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။
+ကိန်းရှင် c သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
+ကိန်းရှင် t သည် \"ab\" ဖြစ်ပါစေ။
+ကိန်းရှင် v သည် စာသား တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် t ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။";
+    let check = |line: &str| codes(&lines(&[head, line]));
+    let fine = [
+        "l ၏ အကွက် ၀ ၏ အရှေ့တွင် ၂ ကို ထည့်ပါ။",
+        "l ၏ ၁ ခုမြောက်အကွက် ၏ အရှေ့တွင် ၂ ကို ထည့်ပါ။",
+        "t ၏ စာလုံး ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်ပါ။",
+        "t ၏ စာလုံး ၀ ၏ အရှေ့တွင် 'x' ကို ထည့်ပါ။",
+        "t ၏ စာလုံး ၀ ၏ အရှေ့တွင် v ကို ထည့်ပါ။",
+        "t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။",
+    ];
+    do_for!(line in fine, assert_eq!(check(line), [], "{line}"));
+    let wrong = [
+        ("c ၏ အကွက် ၀ ၏ အရှေ့တွင် ၂ ကို ထည့်ပါ။", Code::ListCannotGrow),
+        ("v ၏ စာလုံး ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်ပါ။", Code::TextCannotChange),
+        ("v ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။", Code::TextCannotChange),
+        ("n ၏ အရှေ့တွင် ၂ ကို ထည့်ပါ။", Code::InsertNotAtCell),
+        ("l ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။", Code::OperandKind),
+        ("l ၏ အကွက် ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်ပါ။", Code::KindMismatch),
+        ("l ၏ အကွက် \"a\" ၏ အရှေ့တွင် ၂ ကို ထည့်ပါ။", Code::CellNumberNotInt),
+        ("t ၏ စာလုံး ၀ ၏ အရှေ့တွင် ၅ ကို ထည့်ပါ။", Code::KindMismatch),
+    ];
+    do_for!((line, code) in wrong, assert_eq!(check(line), [code], "{line}"));
 }

@@ -119,7 +119,8 @@ fn raw_stmt(s: &Stmt) -> bool
         {
             raw_dest(dest) || raw_expr(value)
         }
-        Stmt::SetChar { dest, index, value, .. } =>
+        Stmt::SetChar { dest, index, value, .. }
+        | Stmt::Insert { dest, index, value, .. } =>
         {
             raw_dest(dest) || raw_expr(index) || raw_expr(value)
         }

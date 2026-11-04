@@ -386,7 +386,8 @@ impl Folder
                 self.dest(dest);
                 self.drop_value(value);
             }
-            Stmt::SetChar { dest, index, value, .. } =>
+            Stmt::SetChar { dest, index, value, .. }
+            | Stmt::Insert { dest, index, value, .. } =>
             {
                 self.dest(dest);
                 self.drop_value(index);

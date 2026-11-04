@@ -441,10 +441,16 @@ pub struct FreeStmt
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct AddStmt
 {
-    /// The list that grows, a place.
+    /// The list that grows, a place; or, with `before`, the cell or the
+    /// character of it that the value goes in front of.
     pub list: Expr,
     /// The new cell.
     pub value: Expr,
+    /// Whether the value goes in front of the cell or the character `list`
+    /// names: `<cell> ၏ အရှေ့တွင် <value> ကို ထည့်ပါ။`.
+    #[serde(default)]
+    #[builder(default)]
+    pub before: bool,
     /// Source region.
     pub span: Span,
 }
@@ -453,8 +459,13 @@ pub struct AddStmt
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct RemoveStmt
 {
-    /// The list that shrinks, a place.
+    /// The list or the text that shrinks, a place.
     pub list: Expr,
+    /// Whether the last character of text goes, not the last cell:
+    /// `<text> ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။`.
+    #[serde(default)]
+    #[builder(default)]
+    pub chars: bool,
     /// Source region.
     pub span: Span,
 }

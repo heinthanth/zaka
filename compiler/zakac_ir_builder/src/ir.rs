@@ -361,13 +361,14 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
-    /// Remove the last cell of the plain list at `dest`; a list with no
-    /// cells stops the program.
+    /// Remove the last cell of the plain list at `dest`, or the last
+    /// character of the text there; a list or text with nothing left stops
+    /// the program.
     RemoveCell
     {
-        /// The list.
+        /// The list or the text.
         dest: Dest,
-        /// The list kind.
+        /// The list kind, or the text kind.
         kind: DataKind,
         /// Source region.
         span: Span,
@@ -386,6 +387,28 @@ pub enum Stmt
         /// The number of the first character: 0 or 1.
         first: u8,
         /// The new character.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
+    /// Put a value in front of one cell of the plain list at `dest`, or in
+    /// front of one character of the text there; the cells or the u8s from
+    /// there on move one place on. A number equal to the count puts the
+    /// value at the end, and a larger one stops the program. A list or text
+    /// with a room of 0 takes a block of its own first.
+    Insert
+    {
+        /// The list or the text.
+        dest: Dest,
+        /// The list kind, or the text kind.
+        kind: DataKind,
+        /// The number of the cell or the character, an integer of its own
+        /// kind.
+        index: Expr,
+        /// The number of the first cell or character: 0 or 1.
+        first: u8,
+        /// The new cell, of the cell kind; for text, text, a view of text or
+        /// a character, read where it is.
         value: Expr,
         /// Source region.
         span: Span,
@@ -434,6 +457,7 @@ impl Stmt
             | Stmt::AddCell { span, .. }
             | Stmt::RemoveCell { span, .. }
             | Stmt::SetChar { span, .. }
+            | Stmt::Insert { span, .. }
             | Stmt::AddText { span, .. } => *span,
         }
     }

@@ -1,6 +1,6 @@
 ---
 title: Text
-description: Owned text and views of text - the text kinds, string literals and their template slots, joining, cells and characters, changing a character and adding to text, then folding, views, copies, the drops the compiler adds, static text, and the errors ZK0403, ZK0429 and ZK0438.
+description: Owned text and views of text - the text kinds, string literals and their template slots, joining, cells and characters, changing a character, adding to text and removing its last character, then folding, views, copies, the drops the compiler adds, static text, and the errors ZK0403, ZK0429, ZK0438 and ZK0439.
 ---
 
 # Text
@@ -292,10 +292,14 @@ o
 <text> ၏ စာလုံး <number> ကို <character> ဟု ထားပါ။
 <text> ၏ <number> ခုမြောက်စာလုံး ကို <character> ဟု ထားပါ။
 <text> ထဲသို့ <value> ကို ထည့်ပါ။
+<text> ၏ စာလုံး <number> ၏ အရှေ့တွင် <value> ကို ထည့်ပါ။
+<text> ၏ <number> ခုမြောက်စာလုံး ၏ အရှေ့တွင် <value> ကို ထည့်ပါ။
+<text> ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။
 ```
 
-Text changes in place through two statements: the assignment writes one character, and
-the add statement adds to its end.
+Text changes in place through three statements: the assignment writes one character, the
+add statement adds at its end or in front of a character, and the remove statement takes
+its last character off.
 
 - **A character write** takes `၏ စာလုံး n` (counted from 0) or `၏ n ခုမြောက်စာလုံး`
   (counted from 1) as its place. The text is a place that can be set, as for each
@@ -309,11 +313,18 @@ the add statement adds to its end.
 - **An add** takes text, a view of text, or a `စာလုံး`, and adds its u8s at the end. Each
   other value is ZK0401 ("expected text"). The value is read before the text changes, so
   `t ထဲသို့ t ကို ထည့်ပါ။` doubles `t`.
-- Text takes no remove: `t ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။` is ZK0437, and so is a remove from
-  each other form of text.
+- **An add in front of a character**, `t ၏ စာလုံး n ၏ အရှေ့တွင် v ကို ထည့်ပါ။`, takes the
+  same values and puts their u8s in front of character `n` (from 0, or from 1 for
+  `n ခုမြောက်စာလုံး`). The number can also be the character count, which adds at the end;
+  a larger one stops the program.
+- **A remove**, `t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။`, takes the last character off; text with no
+  characters stops the program: "the text holds no characters, so it has no last character
+  to remove". `နောက်ဆုံးအကွက်` names the last cell of a list, and on text it is ZK0437;
+  `နောက်ဆုံးစာလုံး` on a list is ZK0403.
 - The cells (u8s) of text still cannot be written (ZK0429, see [Cells](#cells)); a whole
   character can.
-- A view of text does not change: a character write or an add on a view is ZK0438 (see
+- A view of text does not change: a character write, an add or a remove on a view is
+  ZK0438 (see
   [Views](#views)). Each edit ends the views of the text (ZK0704).
 
 A character is a Unicode code point, not a letter as it is written. `ကျွန်` is five characters,
@@ -333,6 +344,9 @@ on it.
 ကိန်းရှင် စ သည် "ကျွန်" ဖြစ်ပါစေ။
 စ ၏ စာလုံး ၀ ကို 'ခ' ဟု ထားပါ။
 စ ကို ပြသပါ။
+စ ၏ စာလုံး ၀ ၏ အရှေ့တွင် "မ" ကို ထည့်ပါ။
+စ ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။      // the last character is the mark ်
+စ ကို ပြသပါ။
 ```
 
 ```text
@@ -340,6 +354,7 @@ Aကc!?
 ၇
 Aကc!?Aကc!?
 ချွန်
+မချွန
 ```
 
 ```zaka-stop
@@ -357,7 +372,7 @@ t ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
 ```
 
 ```text
-error[ZK0437]: text cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, and "ဖျက်ပါ" a plain list
+error[ZK0437]: text cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, "နောက်ဆုံးအကွက်ကို ဖျက်ပါ" a plain list, and "နောက်ဆုံးစာလုံးကို ဖျက်ပါ" text
 ```
 
 When it runs, text with a room of 0 (static text, or text lent to a parameter) first
@@ -644,8 +659,9 @@ a program stops](../vm/traps.md) the trap.
 | ZK0411 | the lend of a literal or a call result |
 | ZK0423 | a character write whose number is no integer |
 | ZK0429 | a write to a cell of text |
-| ZK0437 | a remove from text |
-| ZK0438 | a character write or an add on a view of text |
+| ZK0437 | `နောက်ဆုံးအကွက်` on text |
+| ZK0438 | a character write, an add or a remove on a view of text |
+| ZK0439 | `၏ အရှေ့တွင်` after a value that is no character of text, and no cell of a list |
 | ZK0606 | a constant that holds text, whose value needs the program to run |
 | ZK0704 | a view used after its text is dropped or edited |
 | ZK0706 | a function returns a view of its own local text |

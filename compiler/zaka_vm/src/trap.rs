@@ -146,6 +146,19 @@ pub enum TrapKind
     },
     /// A remove statement found a list with no cells.
     NoCellToRemove,
+    /// A remove statement found text with no characters.
+    NoCharToRemove,
+    /// An add in front of a cell or a character named a number past the
+    /// count, which is the last place a value can go.
+    NoPlaceToInsert
+    {
+        /// The number named.
+        index: i128,
+        /// The number of the first cell or character: 0 or 1.
+        first: u8,
+        /// The number of cells or characters.
+        len: u64,
+    },
     /// A character number lies outside its text.
     CharOutOfRange
     {
@@ -246,6 +259,12 @@ impl fmt::Display for TrapKind
                 t!("vm.trap.char_out_of_range", index = index, lo = first, hi = last)
             }
             TrapKind::NoCellToRemove => t!("vm.trap.no_cell_to_remove"),
+            TrapKind::NoCharToRemove => t!("vm.trap.no_char_to_remove"),
+            TrapKind::NoPlaceToInsert { index, first, len } =>
+            {
+                let last = i128::from(*len) + i128::from(*first);
+                t!("vm.trap.no_place_to_insert", index = index, lo = first, hi = last)
+            }
             TrapKind::Overflow { op, kind } =>
             {
                 t!("vm.trap.overflow", op = op, kind = kind)
@@ -299,6 +318,8 @@ impl TrapKind
             | TrapKind::IndexOutOfRange { .. }
             | TrapKind::CharOutOfRange { .. }
             | TrapKind::NoCellToRemove
+            | TrapKind::NoCharToRemove
+            | TrapKind::NoPlaceToInsert { .. }
             | TrapKind::SliceOutOfRange { .. }
             | TrapKind::Overflow { .. } => None,
         }

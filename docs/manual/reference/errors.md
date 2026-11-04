@@ -183,8 +183,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0433 | a place a call changes, in another argument of the same call | [Functions](../language/functions.md#edit-references) |
 | ZK0434 | an each loop over a value it cannot walk: no list, slice or pointer to a list, owner pointers in the cells, or no text | [Statements](../language/statements.md#loops) |
 | ZK0436 | `[]` given to a counted list outside its declaration | [Static data and counted lists](../../learn/forms/counted-lists.md#a-list-with-no-cells-in-a-counted-list) |
-| ZK0437 | an add or a remove on a counted list or a slice, or a remove from text | [Static data and counted lists](../../learn/forms/counted-lists.md#adding-to-a-counted-list) |
-| ZK0438 | a character write or an add on a view of text | [Text](../language/text.md#changing-text) |
+| ZK0437 | an add or a remove on a counted list or a slice, or `နောက်ဆုံးအကွက်` on text | [Static data and counted lists](../../learn/forms/counted-lists.md#adding-to-a-counted-list) |
+| ZK0438 | a character write, an add or a remove on a view of text | [Text](../language/text.md#changing-text) |
+| ZK0439 | `၏ အရှေ့တွင်` after a value that is no cell of a list and no character of text | [Lists](../language/lists.md#adding-and-removing-cells) |
 
 ### ZK05: natural Zaka (warnings)
 

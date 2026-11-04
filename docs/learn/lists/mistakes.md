@@ -73,9 +73,8 @@ error[ZK0422]: isize is not a list, so it has no cells
 
 ## Removing from text
 
-Text grows with `ထည့်ပါ` (see [Adding to text](../values/strings.md#adding-to-text)), but
-`ဖျက်ပါ` does not take it: text has no last cell to remove, since a cell of text is one u8
-of a character.
+Text has no last cell to remove, since a cell of text is one u8 of a character. Its end is
+the last character, `နောက်ဆုံးစာလုံး`:
 
 ```zaka-error ZK0437
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
@@ -83,11 +82,11 @@ of a character.
 ```
 
 ```text
-error[ZK0437]: text cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, and "ဖျက်ပါ" a plain list
+error[ZK0437]: text cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, "နောက်ဆုံးအကွက်ကို ဖျက်ပါ" a plain list, and "နောက်ဆုံးစာလုံးကို ဖျက်ပါ" text
 ```
 
-To drop the end of text, build new text from the characters to keep and set the
-variable to it.
+The fix is `စာ ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။` (see [Adding in the middle and removing the
+end](../values/strings.md#adding-in-the-middle-and-removing-the-end)).
 
 The counted lists of Part II neither grow nor shrink: see [Static data and counted
 lists](../forms/counted-lists.md#adding-to-a-counted-list).
