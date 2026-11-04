@@ -202,7 +202,8 @@ own; for a `Store`, `owned_lists` finds the place of each such list and
 `check_heap` runs with `Invalidation::Edited`. A slice of the list still live is ZK0704,
 with "is edited, so its cells can move," in place of "is freed". The `Own` that lowering
 puts on the source of a slice or of the address of a cell is no `Store`, so it ends no
-loan.
+loan. The pass that takes the `Own` off a slice that reads alone keeps it on each slice of
+a list that has such an `Own` left, so a slice without one never sees the cells move.
 
 An `AddCell` or a `RemoveCell` is a loss as well: an add
 can move the cells to a larger block, and a remove drops the last cell. `edit_list` runs

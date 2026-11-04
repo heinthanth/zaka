@@ -480,9 +480,14 @@ and counted lists, structs and plain lists of known cells.
 
 - Reads (a cell, the count, a print, a compare, an each-cell loop) work as on each other
   plain list, and take no heap block.
-- The first edit (a cell write, an add, a remove) or a slice of the list first copies the
-  cells into a heap block of its own, so the static data never changes. A remove lowers the
-  count alone and copies nothing.
+- The first edit (a cell write, an add, a remove) first copies the cells into a heap block
+  of its own, so the static data never changes. A remove lowers the count alone and copies
+  nothing.
+- A slice that can write the cells copies them first as well: a slice that is written,
+  passed to a function that writes it, or given back from a function. A slice that reads
+  alone, such as the lend of the list to a function that reads its parameter, points at
+  the static cells and copies nothing, unless another slice of the same list can write
+  them.
 - A duplicate shares the static block, as a duplicate of static text does.
 - A literal with a value known when the program runs and not before, such as a variable, is built in
   a heap block.

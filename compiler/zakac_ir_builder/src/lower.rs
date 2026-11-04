@@ -36,6 +36,7 @@ use crate::ir::PrintValue;
 use crate::ir::SliceFrom;
 use crate::ir::Slot;
 use crate::ir::Stmt;
+use crate::lends::free_read_lends;
 use crate::value::Value;
 
 /// Lower a checked program to the IR. Names become slots, blocks are
@@ -81,8 +82,10 @@ pub fn lower(
     let ends_in_return = matches!(main.last(), Some(Stmt::Return { .. }));
     do_if!(!ends_in_return, main.extend(lowerer.global_drops(program.span)));
     #[rustfmt::skip]
-    return Module::builder().globals(lowerer.globals).funcs(lowerer.funcs).main(main)
-        .imported_inits(imported_inits).span(program.span).build();
+    let mut module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
+        .main(main).imported_inits(imported_inits).span(program.span).build();
+    free_read_lends(&mut module);
+    module
 }
 
 /// What the function names of a unit end with: nothing for the file that

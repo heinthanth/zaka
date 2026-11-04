@@ -132,6 +132,15 @@ rules out). Its rules:
   the write. Codegen emits the address of the list, `dup`, and `own k`, and leaves the
   address for the write. A slice of a plain list (a range or a lend) and the address of a
   cell get the same `Own` on their source first, since either can write the cells.
+- A pass at the end of lowering (`zakac_ir_builder/src/lends.rs`) takes the `Own` off the
+  source of each slice that reads alone. It follows each slice through the slots it is
+  set into and the parameters it is passed to, until nothing changes; a slice that is
+  written, whose address is taken, or that a function gives back counts as written, and
+  so does each slice parameter and the result slot of a function that gives back a slice.
+  The `Own` of a slice that reads alone goes when the list is a slot no pointer reaches and each
+  other `Own` on it sits in a `Store` address or an add or a remove, which end the loans
+  into it. So a static list lent to a reader takes no heap block, and no slice outlives a
+  move of the cells it reads.
 - An add becomes `AddCell { dest, kind, value }` and a remove `RemoveCell { dest, kind }`
   (S-expressions `add_cell` and `remove_cell`). The list goes through `dest`, so each plain
   list around it on the path gets its `Own` step as for a write; the value of an add goes

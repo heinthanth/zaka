@@ -382,6 +382,35 @@ fn a_static_list_takes_no_heap_block_until_its_first_edit()
     assert_eq!(output(writes), "[၉၊ ၇၊ ၃]\n");
 }
 
+/// A static list lent to a function that reads it, and a range of it that is
+/// printed, take no heap block: a slice that reads alone points at the
+/// static cells.
+#[test]
+fn a_static_list_lent_to_a_reader_takes_no_heap_block()
+{
+    let text = "// စာရင်း တစ်စိတ်တစ်ပိုင်း: အကွက်များ၏ လိပ်စာ နှင့် အရေအတွက်\nလုပ်ဆောင်ချက် စုစုပေါင်း \
+                သည်\nကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း ကိန်းများ ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် \
+                ရလဒ် ကို ပြန်ပေးမည်။\nကိန်းရှင် န သည် လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ န \
+                သည် ကိန်းများ ၏ အကွက်အရေအတွက် အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nရလဒ် ကို ရလဒ် + \
+                (ကိန်းများ ၏ အကွက် န) ဟု ထားပါ။\nပြီးလျှင် န ကို န + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ \
+                ပြီးပါပြီး။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု \
+                ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် စုစုပေါင်း ကို l ၏ တန်ဖိုးအငှား တို့ဖြင့် \
+                လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\nကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ \
+                တန်ဖိုးသည် l ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။\ns ကို ပြသပါ။\nl ၏ အကွက်တိုင်း ကို က အနေဖြင့် \
+                ယူ၍ က ကို ပြသပါ။";
+    let mut m = Machine::new(common::compile(text), RunOptions::default());
+    let heap = |m: &Machine| {
+        m.mem().blocks().filter(|b| b.live && b.origin == Origin::Heap).count()
+    };
+    while m.running()
+    {
+        let _ = m.step();
+        assert_eq!(heap(&m), 0, "a heap block after the output {:?}", m.output());
+    }
+    assert_eq!(m.state(), &State::Finished);
+    assert_eq!(m.output(), "၆\n[၁၊ ၂]\n၁\n၂\n၃\n");
+}
+
 /// A counted list literal of known cells takes them from a static list, so
 /// an edit of the list leaves the static cells as they were for the next
 /// call, and an edited text cell takes a block of its own.
