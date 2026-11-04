@@ -82,7 +82,8 @@ fn text_mistakes()
 }
 
 /// An each-character loop walks text or a view of text; an each-cell loop
-/// walks a list or a slice whose cells hold no owner pointer.
+/// walks a list or a slice whose cells hold no owner pointer, or the list a
+/// pointer points at.
 #[test]
 fn each_loops_walk_lists_slices_and_text()
 {
@@ -92,6 +93,8 @@ fn each_loops_walk_lists_slices_and_text()
         "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။",
         "l ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို x + ၁ ဟု ထားပါ။",
         "l ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။",
+        "ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ လိပ်စာ ဖြစ်ပါစေ။",
+        "p ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။",
     ];
     ok(&lines(&[&[TEXT], &walks[..]].concat()));
     let wrong = [

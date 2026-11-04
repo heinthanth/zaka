@@ -41,6 +41,25 @@ pub fn kind_mismatch_unbridged(span: Span, want: &str, got: &str) -> Diagnostic
     Diagnostic::new(Code::KindMismatch, msg, span)
 }
 
+/// A list or text is given where a slice or a view of its cells is
+/// expected, which a lend gives.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `want` - The expected kind, as text.
+/// * `got` - The found kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0401` diagnostic, with help naming the lend.
+pub fn lend_wanted(span: Span, want: &str, got: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0401.message", want = want, got = got);
+    Diagnostic::new(Code::KindMismatch, msg, span)
+        .with_help(t!("codes.ZK0401.help_lend"))
+}
+
 /// A value does not fit its place, and its block holds addresses in other
 /// places than the block the place expects, which takes a raw address in
 /// between.

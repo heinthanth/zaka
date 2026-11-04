@@ -19,7 +19,7 @@ A duplicate of text or of a list is made where the value goes into another place
 - an argument, given to a parameter of a plain kind;
 - a result, given back to the caller;
 - a value added to a list, or put into a cell or a field;
-- an each-cell loop, which walks a duplicate of its list.
+- an each loop that changes its list or text, which walks a duplicate of it.
 
 The last one shows in a run: the loop below writes cell 0 of the list each round, and the
 loop still reads the cells the list held when the loop began.
@@ -50,6 +50,9 @@ The compiler skips the work where the program cannot tell the difference:
   of either sit in the program itself, and nothing writes them, so a duplicate of one takes
   no block until its first edit (see [The cost of an edit](#the-cost-of-an-edit) and
   [Static data and counted lists](counted-lists.md#where-the-cells-live)).
+- **A loop that reads alone lends.** An each loop that writes, moves or takes the
+  address of nothing of its list or text, and calls no function that sets it, reads the
+  cells in place.
 - **A parameter reads in place.** Text given to a function and read again after the call
   is lent to the parameter for the length of the call, until its first character write or
   add, which gives it cells of its own. A list or a struct parameter that
@@ -154,11 +157,14 @@ asks the heap for blocks of its own, and the owner of each block frees it.
 ## The scores program with no duplicate
 
 In the [Scores](../programs/scores.md) program of Part I, each call lends the list to
-its function, which never writes it; but each function walks the list with an each-cell
-loop, and each such loop walks a duplicate. Below is the same program with the
-two routes above: each function takes a slice or a view, each call lends
-`<list> ၏ တန်ဖိုးအငှား`, and the passing scores go into a list the function builds. Run with
-`--warn-duplicates`, it names nothing, and it prints what the first one prints.
+its function, which never writes it, and each function walks the list with an each-cell
+loop that reads alone, so the loop reads the cells in place too. Run with
+`--warn-duplicates`, it names nothing. That rests on what each function does inside:
+a function that later writes its list takes a duplicate at each call. Below is the same
+program with the two routes above, which put the promise in the signatures: each
+function takes a slice or a view, each call lends `<list> ၏ တန်ဖိုးအငှား`, and the passing
+scores go into a list the function builds. It names nothing either, and it prints what
+the first one prints.
 
 ```zaka
 ကိန်းသေ အောင်မှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄၀ ဖြစ်ပါစေ။

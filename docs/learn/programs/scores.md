@@ -117,6 +117,6 @@ out the name of the top student one character at a time.
 - Write a function that counts the scores below the pass mark, and print the count.
 - Print the name of the student with the lowest score.
 
-The same program can read its lists through views and build its passing list on the
-heap, with no duplicate at all: see [the end of What a duplicate
-costs](../forms/costs.md#the-scores-program-with-no-duplicate).
+The same program can read its lists through views, which state in each signature that the
+function reads alone, and build its passing list on the heap: see [the end of What a
+duplicate costs](../forms/costs.md#the-scores-program-with-no-duplicate).

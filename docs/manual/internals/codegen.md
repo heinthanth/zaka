@@ -413,7 +413,7 @@ bound).
 | `and` | `<l>; jump_if_false F; <r>; jump E; F: push false; E:` |
 | `or` | `<l>; jump_if_true T; <r>; jump E; T: push true; E:` |
 | `if` | `<cond>; jump_if_false Else; <then>; jump End; Else: <els>; End:`; the first `jump` is left out when `els` is blank or `then` ends in a jump |
-| each loop | lowered to a `Loop`: `init` sets `%each` to a duplicate of the value and `%new` to 0, `cond` tests it against the count, each round sets the variable to the cell at that number or to the character that starts at that u8 (`char_at_octet`), and `update` adds 1, or the u8 count of the character |
+| each loop | lowered to a `Loop`: `init` sets `%each` to a duplicate of the value (a lent one when the loop leaves the value as it is, see the borrow checker internals; through the pointer for a pointer to a list) and `%new` to 0, `cond` tests it against the count, each round sets the variable to the cell at that number or to the character that starts at that u8 (`char_at_octet`), and `update` adds 1, or the u8 count of the character |
 | while, generic loop | `<init>; Head: <cond>; jump_if_false Exit; <block>; Next: <update>; jump Head; Exit:`; `continue` goes to `Next`, `break` to `Exit` |
 | call statement | `<args>; call f`, then `pop` if the callee has a result |
 | function | its block, then `ret` unless the block ends in one |

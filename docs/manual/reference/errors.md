@@ -181,7 +181,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0431 | an argument for a parameter the function can change, with no mark | [Functions](../language/functions.md#edit-references) |
 | ZK0432 | the mark on an argument for a parameter the function cannot change | [Functions](../language/functions.md#edit-references) |
 | ZK0433 | a place a call changes, in another argument of the same call | [Functions](../language/functions.md#edit-references) |
-| ZK0434 | an each loop over a value it cannot walk: no list or slice, owner pointers in the cells, or no text | [Statements](../language/statements.md#loops) |
+| ZK0434 | an each loop over a value it cannot walk: no list, slice or pointer to a list, owner pointers in the cells, or no text | [Statements](../language/statements.md#loops) |
 | ZK0436 | `[]` given to a counted list outside its declaration | [Static data and counted lists](../../learn/forms/counted-lists.md#a-list-with-no-cells-in-a-counted-list) |
 | ZK0437 | an add or a remove on a counted list or a slice, or a remove from text | [Static data and counted lists](../../learn/forms/counted-lists.md#adding-to-a-counted-list) |
 | ZK0438 | a character write or an add on a view of text | [Text](../language/text.md#changing-text) |

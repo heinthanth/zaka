@@ -477,7 +477,8 @@ impl Checker
     }
 
     /// The kind of the variable of an each loop: a character for text, a
-    /// cell for a list or a slice whose cells hold no owner pointer.
+    /// cell for a list or a slice whose cells hold no owner pointer, or for
+    /// the list a pointer points at, as a cell read takes it.
     ///
     /// # Arguments
     ///
@@ -489,7 +490,7 @@ impl Checker
     /// The kind, or `None` after a report.
     fn each_var_kind(&mut self, kind: DataKind, n: &EachStmt) -> Option<DataKind>
     {
-        let cell = kind.cell_kind();
+        let cell = each_list(kind, n.chars).cell_kind();
         let walked = tern!(
             n.chars,
             kind.is_textual().then_some(DataKind::Char),
@@ -752,7 +753,9 @@ fn non_positive_literal(e: &Expr) -> bool
 /// addresses in different places, the conversion verb cannot bridge them
 /// either, so the help names the raw address to go through. Each other
 /// mismatch names the conversion verb when it can turn the value into the
-/// wanted kind, and gets no help when it cannot, as for a list.
+/// wanted kind, and gets no help when it cannot, as for a list. A list or
+/// text where a slice or a view of the same cells is wanted gets help that
+/// names the lend.
 ///
 /// # Arguments
 ///
@@ -771,6 +774,7 @@ pub(crate) fn mismatch_report(span: Span, want: DataKind, found: DataKind)
     let flavours = flavours && want.is_borrow() != found.is_borrow();
     let unbridged = kd::kind_mismatch_unbridged(span, &want_name, &found_name);
     ret_if!(flavours, unbridged);
+    ret_if!(lends_to(found, want), kd::lend_wanted(span, &want_name, &found_name));
     // Two lists of different forms differ in their count, not in the
     // addresses their blocks hold.
     let lists = [want, found]
@@ -790,6 +794,24 @@ pub(crate) fn mismatch_report(span: Span, want: DataKind, found: DataKind)
         kd::kind_mismatch(span, &want_name, &found_name),
         unbridged
     )
+}
+
+/// Whether a lend of a value of one kind gives a value of another: a list
+/// lends a slice of its cells, and text a view.
+///
+/// # Arguments
+///
+/// * `found` - The kind of the value.
+/// * `want` - The kind wanted.
+///
+/// # Returns
+///
+/// `true` when the lend gives `want`.
+fn lends_to(found: DataKind, want: DataKind) -> bool
+{
+    ret_if!(found.is_text(), want.is_text_view());
+    let cell = want.as_slice().filter(|s| !s.text).map(|s| s.cell);
+    cell.is_some() && found.cell_kind() == cell && !found.is_slice()
 }
 
 /// The diagnostic for assigning to a name that does not allow it.
@@ -1026,4 +1048,21 @@ pub(crate) fn char_target(target: &Expr) -> Option<(&Expr, &Expr)>
         }
         _ => None,
     }
+}
+
+/// The value an each loop walks: the list a pointer points at for an
+/// each-cell loop, else the value itself.
+///
+/// # Arguments
+///
+/// * `kind` - The kind of the source.
+/// * `chars` - Whether the loop walks characters.
+///
+/// # Returns
+///
+/// The kind walked.
+pub fn each_list(kind: DataKind, chars: bool) -> DataKind
+{
+    let pointee = kind.pointee().filter(|k| !chars && (k.is_list() || k.is_seq()));
+    pointee.unwrap_or(kind)
 }

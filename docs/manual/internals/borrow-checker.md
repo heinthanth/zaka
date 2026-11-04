@@ -62,9 +62,14 @@ routine the checker keeps a `State`: one fact for each global and each local, a
 | `List(PtrInfo)` | a list of pointers, one fact for all its cells |
 | `None` | a slot the check does not follow |
 
-A `PtrInfo` is `{ state, roots, offset, len }`. `state` is an `OwnerState`, `roots` names
-where a borrow points, `offset` is an interval of element offsets from the start of the
-block, and `len` is the element count of the block when known.
+A `PtrInfo` is `{ state, roots, offset, len, cells }`. `state` is an `OwnerState`, `roots`
+names where a borrow points, `offset` is an interval of element offsets from the start of
+the block, and `len` is the element count of the block when known. A plain list slot holds
+`HELD` after an add, a remove or a character edit, since each leaves it with a block of
+its own. For a plain list of owners, `cells` is the join of what its cells hold: an add
+joins the state of the owner added, a literal gives the join of its cells, and a write
+through a cell, a move out of one, or a call that can reach the list makes it
+`UNKNOWN`, since the check does not follow cell numbers.
 
 ### Owner states
 
@@ -257,8 +262,12 @@ a place its statement reads twice.
 After the moves, `lend_arguments` marks each `Dup` left in a call argument `lent`, so the
 callee reads the caller's u8s, or the cells of a plain list, with a room of 0, unless the call, or a call inside its
 arguments, sets the global read (`global_writes`, at each depth), or the place is read
-through a pointer, or a lend, a range or an address reads it. A lent `Dup` is fresh for
-the check, as a `Dup` is. With `--warn-duplicates`, each `Dup` left that is not lent is
+through a pointer, or a lend, a range or an address reads it. The same pass lends the
+`Dup` a loop starts from, such as the source of an each loop (`lend_loop_dup`), when
+the loop reads the duplicate through its cells alone and leaves the source as it is: no
+statement of the loop writes it, each read of it is the base of a cell, a field or a
+character or the value of another `Dup`, no call in the loop sets it, and no lend, range
+or address reads it. A lent `Dup` is fresh for the check, as a `Dup` is. With `--warn-duplicates`, each `Dup` left that is not lent is
 ZK0720.
 
 Last, `share_params` fills `Func::shared_params` with each list or struct parameter that
@@ -279,7 +288,7 @@ Each file of `checks/` owns some codes. All of them work on a `Flow` and the `St
 | `loans.rs` | ZK0704 | a block lost while a live borrow can point into it |
 | `escape.rs` | ZK0706 | a function that returns a borrow of its own local or parameter |
 | `calls.rs` | ZK0704, ZK0707 | the effect of a call (below); one block freed through one argument and reachable through another |
-| `leaks.rs` | ZK0708 | an owner that holds a block when it is overwritten, or when its function ends; text is never lost, since the compiler drops it, but an owner beside it in a struct or a list is checked as in each other struct |
+| `leaks.rs` | ZK0708 | an owner that holds a block when it is overwritten, or when its function ends; text is never lost, since the compiler drops it, but an owner beside it in a struct or a list is checked as in each other struct; the cells of a plain list of owners at a remove, an overwrite and the end of a function (`PtrInfo::cells`) |
 | `nullness.rs` | ZK0709, ZK0711 | a dereference of an owner that is `NULL` (or `FRESH`, in strict mode) |
 | `bounds.rs` | ZK0710, ZK0712 | an offset or cell number proven outside its block; a pointer difference between different blocks |
 | `lists.rs` | | the facts of a list of pointers, one fact for all its cells |
@@ -391,7 +400,7 @@ frees and reads; this costs a few false alarms and closes a group of holes in re
 | `MemCheck::Error` (default) | each finding is an error and stops code generation |
 | `MemCheck::Warn` | each finding is made a warning (`downgrade`); code generation goes on and the VM stops the program at the bad access |
 | `MemCheck::Off` | the findings are dropped; the flow still runs |
-| `strict` | also reports what cannot be proven safe: ZK0711, a dereference of a new allocation never compared with `ဗလာ`, and a leak of a list of owners |
+| `strict` | also reports what cannot be proven safe: ZK0711, a dereference of a new allocation never compared with `ဗလာ`, a leak of a counted list of owners, and a leak of a plain list of owners whose cells just can hold a block |
 | `--no-raw` | not an option of this crate: `SemcheckOptions::no_raw` refuses each raw kind (ZK0717) before the IR exists |
 
 ```zaka-warning ZK0704 mem-check=warn

@@ -83,6 +83,13 @@ s ကို ပြသပါ။
 လုပ်ဆောင်ချက် ပြ ကို l တို့ဖြင့် လုပ်ဆောင်ပါ။
 ```
 
+```text
+error[ZK0401]: expected isize[][..], found isize[]
+  = help: hold the value in a variable and lend its cells with "<variable> ၏ တန်ဖိုးအငှား"
+```
+
+The fix lends the list: `လုပ်ဆောင်ချက် ပြ ကို l ၏ တန်ဖိုးအငှား တို့ဖြင့် လုပ်ဆောင်ပါ။`.
+
 A range past the end of its list stops the program:
 
 ```zaka-stop

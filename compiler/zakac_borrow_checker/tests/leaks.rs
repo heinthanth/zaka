@@ -10,6 +10,7 @@ use common::strict;
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Level;
 use zakac_rust_sugars::do_for;
+use zakac_rust_sugars::tern;
 
 /// A function that keeps a list of owners, with a block in its first
 /// cell, when it ends.
@@ -287,6 +288,94 @@ fn return_inside_a_loop_leaks_is_zk0708()
 
 /// A function that gives back a struct with an owner field, which holds a
 /// block.
+/// A plain list of owners with one block added, then `after`.
+///
+/// # Arguments
+///
+/// * `after` - The lines after the add.
+///
+/// # Returns
+///
+/// The program.
+fn owner_cells(after: &str) -> String
+{
+    format!(
+        "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+ကိန်းရှင် ပများ သည် ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ပများ ထဲသို့ ပ ကို ထည့်ပါ။
+{after}"
+    )
+}
+
+/// The remove of the last cell.
+const REMOVE: &str = "ပများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။\n";
+
+/// Each diagnostic of a run, with its level.
+///
+/// # Arguments
+///
+/// * `text` - The program.
+/// * `strict` - Whether strict mode is on.
+///
+/// # Returns
+///
+/// The code and the level of each diagnostic.
+fn levels(text: &str, strict_on: bool) -> Vec<(Code, Level)>
+{
+    let options = tern!(strict_on, strict(), Default::default());
+    let found = run_with(text, &options);
+    found.out.diagnostics.iter().map(|d| (d.code, d.level)).collect()
+}
+
+#[test]
+fn a_remove_from_a_plain_list_of_owners_loses_the_cell_block()
+{
+    let text = owner_cells(REMOVE);
+    assert_eq!(lines(&text), [(Code::BlockLeaked, 5)]);
+    assert_eq!(levels(&text, false), [(Code::BlockLeaked, Level::Error)]);
+    let literal = "\
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+ကိန်းရှင် ပများ သည် ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [ပ] ဖြစ်ပါစေ။
+ပများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+";
+    assert_eq!(lines(literal), [(Code::BlockLeaked, 4)]);
+}
+
+#[test]
+fn a_remove_after_a_cell_lets_go_warns_under_strict_alone()
+{
+    let freed =
+        owner_cells(&format!("လိပ်စာ ပများ ၏ အကွက် ၀ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n{REMOVE}"));
+    let moved = owner_cells(&format!(
+        "ကိန်းရှင် မ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပများ ၏ အကွက် ၀ ဖြစ်ပါစေ။
+{REMOVE}လိပ်စာ မ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n"
+    ));
+    do_for!(text in [freed, moved], {
+        assert_eq!(levels(&text, false), [], "{text}");
+        assert_eq!(levels(&text, true), [(Code::BlockLeaked, Level::Warning)], "{text}");
+    });
+}
+
+#[test]
+fn a_plain_list_of_owners_kept_at_the_end_is_zk0708()
+{
+    let inner = owner_cells("");
+    let text = format!(
+        "လုပ်ဆောင်ချက် စမ်း သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n{inner}လုပ်ဆောင်စရာများ ပြီးပါပြီး။\n"
+    );
+    assert_eq!(lines(&text), [(Code::BlockLeaked, 7)]);
+    let returned = format!(
+        "လုပ်ဆောင်ချက် စမ်း သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် လိပ်စာ စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
+{inner}ပများ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+"
+    );
+    ok(&returned);
+}
+
 const MAKES_BOX: &str = "\
 ဒေတာအမျိုးအစား ဘူး တွင် ကိန်းပြည့် လိပ်စာ ပ တို့ ပါဝင်သည်။
 လုပ်ဆောင်ချက် ဖန်တီး သည်

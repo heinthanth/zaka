@@ -246,3 +246,28 @@ fn a_mismatch_names_the_conversion_verb_when_it_can_convert()
     let out = common::check("ကိန်းရှင် အ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂.၅ ဖြစ်ပါစေ။").out;
     assert!(out.diagnostics[0].help.as_ref().is_some_and(|h| h.contains("ပြောင်းလဲသော")));
 }
+
+#[test]
+fn a_list_where_a_slice_is_wanted_names_the_lend()
+{
+    let helps = |text: &str| {
+        let out = check(text).out;
+        out.diagnostics
+            .iter()
+            .map(|d| d.help.clone().unwrap_or_default())
+            .collect::<Vec<_>>()
+    };
+    let lend = |found: &[String]| found.len() == 1 && found[0].contains("တန်ဖိုးအငှား");
+    let list = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ဖြစ်ပါစေ။";
+    assert!(lend(&helps(list)), "{:?}", helps(list));
+    let counted = "ကိန်းရှင် l သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ဖြစ်ပါစေ။";
+    assert!(lend(&helps(counted)), "{:?}", helps(counted));
+    let text = "ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။
+ကိန်းရှင် v သည် စာသား တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် t ဖြစ်ပါစေ။";
+    assert!(lend(&helps(text)), "{:?}", helps(text));
+    let other = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+ကိန်းရှင် s သည် စာလုံး စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ဖြစ်ပါစေ။";
+    assert!(!lend(&helps(other)), "{:?}", helps(other));
+}

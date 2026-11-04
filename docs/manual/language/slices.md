@@ -80,7 +80,8 @@ error[ZK0233]: a slice takes no cell count; its count comes when the program run
 - A list in either form must be a place, as for its address: a literal or a call result is
   ZK0411, and a constant is ZK0412.
 - Nothing turns into a slice on its own. A list given where a slice is wanted is ZK0401,
-  and a pointer has no count to give. The lend or the range writes the count out.
+  whose help names the lend, and a pointer has no count to give. The lend or the range
+  writes the count out.
 - The range must lie in its source. With a counted list as the source and the start and the
   length as constants, a range past the end is ZK0605. Each other range is checked when
   the program runs: past a list or a slice, the program stops with the range it asked

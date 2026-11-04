@@ -305,7 +305,8 @@ fn root_name(
 /// copied unless the callee keeps the text. A duplicate remains when the
 /// call, or a call inside its arguments, can change the source while the
 /// loan lives: a global one of them writes, or a place whose address or a
-/// view of it is taken somewhere.
+/// view of it is taken somewhere. The duplicate a loop starts from is lent
+/// too, under the same terms, see [`lend_loop_dup`].
 ///
 /// # Arguments
 ///
@@ -338,6 +339,7 @@ pub(crate) fn lend_arguments(module: &mut Module)
 fn lend_in(stmts: &mut [Stmt], kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>])
 {
     each_stmt_mut(stmts, &mut |s| {
+        lend_loop_dup(s, kept, writes);
         do_if!(let Stmt::Call { func, args, .. } = s, lend_args(*func, args, kept, writes));
         each_expr_mut(s, &mut |e| {
             do_if!(let ExprNode::Call { func, args, .. } = &mut e.node, lend_args(*func, args, kept, writes));
@@ -385,6 +387,96 @@ fn lend_args(
         };
         do_if!(safe && !kept.contains(&place), *lent = true);
     }
+}
+
+/// Lend the duplicate a loop starts from, such as the source of an each
+/// loop, when the loop reads the duplicate through its cells alone and leaves
+/// the source as it is: no write, no move, no whole read but another
+/// duplicate, and no call that writes it. The duplicate then reads the
+/// source's cells with a room of 0 until its drop as the loop ends.
+///
+/// # Arguments
+///
+/// * `s` - The statement, changed in place.
+/// * `kept` - The places a lend, a range or an address reads.
+/// * `writes` - The globals each function writes, at each depth.
+fn lend_loop_dup(s: &mut Stmt, kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>])
+{
+    let Stmt::Loop { init, cond, update, block, .. } = s
+    else
+    {
+        return;
+    };
+    let inner = [update.as_slice(), block.as_slice()];
+    let mut called = BTreeSet::new();
+    do_for!(stmts in inner, callees(stmts, &mut called));
+    let written: BTreeSet<u32> = called
+        .iter()
+        .filter_map(|f| writes.get(*f as usize))
+        .flatten()
+        .copied()
+        .collect();
+    let quiet = |place: Place| {
+        let global = tern!(let Place::Global(g) = place, written.contains(&g), false);
+        !global && !kept.contains(&place) && cells_alone(place, cond, &inner)
+    };
+    for set in init.iter_mut()
+    {
+        let Stmt::Set { place: dup, value, .. } = set
+        else
+        {
+            continue;
+        };
+        let ExprNode::Dup { value: source, lent } = &mut value.node
+        else
+        {
+            continue;
+        };
+        let walked = source.kind.is_seq() || source.kind.is_text();
+        let from = root_of(source).filter(|_| walked);
+        do_if!(let Some(from) = from, *lent |= quiet(from) && quiet(*dup));
+    }
+}
+
+/// Whether a loop leaves a place as it is and reads it through its cells
+/// alone: no statement writes it, and each read of it is the base of a cell,
+/// a field or a character, or the value of a duplicate.
+///
+/// # Arguments
+///
+/// * `place` - The place.
+/// * `cond` - The test of the loop.
+/// * `inner` - The statements of the loop.
+///
+/// # Returns
+///
+/// `true` for such a place.
+fn cells_alone(place: Place, cond: &Expr, inner: &[&[Stmt]]) -> bool
+{
+    let is_place = |e: &Expr| matches!(e.node, ExprNode::Read(p) if p == place);
+    let (mut reads, mut through, mut writes) = (0, 0, 0);
+    let mut note = |e: &Expr| match &e.node
+    {
+        ExprNode::Read(p) | ExprNode::AddrOf(p) if *p == place => reads += 1,
+        ExprNode::CellAddr { list: base, .. }
+        | ExprNode::FieldAddr { base, .. }
+        | ExprNode::Chars { text: base, .. }
+        | ExprNode::Dup { value: base, .. }
+            if is_place(base) =>
+        {
+            through += 1
+        }
+        _ => (),
+    };
+    each_expr(cond, &mut note);
+    for stmts in inner
+    {
+        each_stmt(stmts, &mut |s| {
+            writes += written_places(s).iter().filter(|p| **p == place).count();
+            do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
+        });
+    }
+    writes == 0 && reads == through
 }
 
 /// The place a value is read out of through fields and cells alone, with no

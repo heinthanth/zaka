@@ -398,6 +398,11 @@ pub(crate) struct PtrInfo
     pub(crate) offset: Interval,
     /// The element count of the block, when known.
     pub(crate) len: Option<u64>,
+    /// For a plain list of owners, the join of what its cells hold: the
+    /// state of each owner added, and not known after a write through a
+    /// cell, whose number the check does not follow.
+    #[builder(default = OwnerState::NONE)]
+    pub(crate) cells: OwnerState,
 }
 
 /// What the check knows of one slot.
@@ -629,7 +634,7 @@ impl PtrInfo
     /// # Returns
     ///
     /// The union of the states and of the roots, the hull of the offsets,
-    /// and the count both agree on.
+    /// the count both agree on, and the union of the cell states.
     pub(crate) fn join(&self, other: &PtrInfo) -> PtrInfo
     {
         PtrInfo::builder()
@@ -637,6 +642,7 @@ impl PtrInfo
             .roots(self.roots.union(&other.roots).cloned().collect())
             .offset(self.offset.hull(other.offset))
             .maybe_len(self.len.filter(|_| self.len == other.len))
+            .cells(self.cells.join(other.cells))
             .build()
     }
 
@@ -679,6 +685,7 @@ impl PtrInfo
             .state(OwnerState::UNKNOWN)
             .roots(roots)
             .offset(Interval::TOP)
+            .cells(OwnerState::UNKNOWN)
             .build()
     }
 }

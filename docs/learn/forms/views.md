@@ -106,8 +106,8 @@ it takes the whole text:
 
 ## View mistakes
 
-Text does not turn into a view on its own, a literal included. Lend it, so the reader
-sees the loan:
+Text does not turn into a view on its own, a literal included. Hold it in a variable and
+lend the variable, so the reader sees the loan; the help line of the error tells how:
 
 ```zaka-error ZK0401
 လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
@@ -121,6 +121,7 @@ sees the loan:
 
 ```text
 error[ZK0401]: expected text[..], found text
+  = help: hold the value in a variable and lend its cells with "<variable> ၏ တန်ဖိုးအငှား"
 ```
 
 A view borrows the text, so the text must stand still while the view is in use. Setting

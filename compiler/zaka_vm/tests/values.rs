@@ -209,12 +209,15 @@ const COMPARES: &str = "ကိန်းရှင် i သည် ၇ ဖြစ်
                         == \"၇\" ကို ပြသပါ။\nက != \"၈\" ကို ပြသပါ။\nv == \"၇\" ကို \
                         ပြသပါ။\nက == \"abc\" ကို ပြသပါ။\n\"\" == \"\" ကို ပြသပါ။\n";
 
-/// Each-cell and each-character loops: a list, a slice, text cells with
+/// Each-cell and each-character loops: a list, a slice, a pointer to a
+/// list, text cells with
 /// `continue` and `break`, a variable set inside the round, characters of
 /// one to four u8s, and blank text.
 const WALKS: &str = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 l ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။
 l ၏ အကွက် ၁ မှစ၍ ၂ ကွက် ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။
+ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ လိပ်စာ ဖြစ်ပါစေ။
+p ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။
 ကိန်းရှင် n သည် စာသား စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [\"က\"၊ \"ခ\"၊ \"ဂ\"၊ \"ဃ\"] ဖြစ်ပါစေ။
 n ၏ အကွက်တိုင်း ကို w အနေဖြင့် ယူ၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 အကယ်၍ w သည် \"ခ\" နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။
@@ -229,7 +232,7 @@ n ကို ပြသပါ။
 
 /// What [`WALKS`] prints.
 const WALKED: &str =
-    "၁\n၂\n၃\n၂\n၃\nက!\nဂ!\n[\"က\"၊ \"ခ\"၊ \"ဂ\"၊ \"ဃ\"]\na\né\n၁\n😀\n";
+    "၁\n၂\n၃\n၂\n၃\n၁\n၂\n၃\nက!\nဂ!\n[\"က\"၊ \"ခ\"၊ \"ဂ\"၊ \"ဃ\"]\na\né\n၁\n😀\n";
 
 /// Plain and counted lists: a write, a lent parameter that copies its
 /// cells at its first write, copies, a compare, each cell, a list of text,

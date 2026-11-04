@@ -39,8 +39,11 @@ use crate::checks::calls::note_read;
 use crate::checks::calls::note_unfilled;
 use crate::checks::escape::check_result_set;
 use crate::checks::escape::check_return;
+use crate::checks::leaks::add_owner;
+use crate::checks::leaks::blur_cells;
 use crate::checks::leaks::check_exit;
 use crate::checks::leaks::check_overwrite;
+use crate::checks::leaks::check_removed;
 use crate::checks::leaks::return_span;
 use crate::checks::lists::store_into_cell;
 use crate::checks::loans::check_heap;
@@ -625,9 +628,14 @@ impl<'m> Flow<'m>
             Stmt::AddCell { dest, value, span, .. } =>
             {
                 self.edit_list(dest, *span, state);
-                self.moved(value, state);
+                let added = self.moved(value, state);
+                add_owner(self, dest, &added, state);
             }
-            Stmt::RemoveCell { dest, span, .. } => self.edit_list(dest, *span, state),
+            Stmt::RemoveCell { dest, span, .. } =>
+            {
+                self.edit_list(dest, *span, state);
+                check_removed(self, dest, *span, state);
+            }
             Stmt::AddText { dest, value, span, .. } =>
             {
                 self.value(value, state);
@@ -654,7 +662,8 @@ impl<'m> Flow<'m>
 
     /// Check an add or a remove statement on the list at `dest`: its cells
     /// can move, so each loan into it ends, and so does each loan into a
-    /// plain list around it, which the edit makes own its block.
+    /// plain list around it, which the edit makes own its block. A list slot
+    /// holds a block of its own after the edit.
     ///
     /// # Arguments
     ///
@@ -671,6 +680,8 @@ impl<'m> Flow<'m>
         let Dest::Mem(addr) = dest
         else
         {
+            let info = tern!(let Dest::Slot(p) = dest, state.ptr_mut(*p), None);
+            do_if!(let Some(info) = info, info.state = OwnerState::HELD);
             return;
         };
         let at = self.value(addr, state);
@@ -848,6 +859,7 @@ impl<'m> Flow<'m>
     pub(crate) fn havoc_through(&self, addr: &Expr, state: &mut State)
     {
         let roots = roots_of(addr, state, &self.ctx);
+        blur_cells(self, &roots, state);
         let slots = roots.iter().filter(|r| !r.path.contains(&Seg::Block));
         let mut places: BTreeSet<Place> = slots.map(|r| r.place).collect();
         let params = self.routine.params;
@@ -1365,6 +1377,7 @@ impl<'m> Flow<'m>
             {
                 let at = self.value(addr, state);
                 check_offset(self, &at, addr.span, true);
+                blur_cells(self, &roots_of(addr, state, &self.ctx), state);
                 SlotState::unknown(e.kind, Roots::new())
             }
         };
@@ -1400,6 +1413,7 @@ impl<'m> Flow<'m>
         let mut taken = moved_slots(args);
         taken.retain(|p| !self.ctx.is_const(*p));
         do_for!(a in args, { self.moved(a, state); });
+        blur_cells(self, roots.iter().flatten(), state);
         check_call(self, func, &roots, span, state);
         note_unfilled(self, func, &roots, state);
         lift_reads(self, func, &roots);
@@ -1455,8 +1469,12 @@ impl<'m> Flow<'m>
         {
             return;
         };
-        let marked =
-            PtrInfo { state: info.state.join(OwnerState::GIVEN), ..info.clone() };
+        let given = OwnerState::GIVEN;
+        let marked = PtrInfo {
+            state: info.state.join(given),
+            cells: info.cells.join(given),
+            ..info.clone()
+        };
         state.set(place, SlotState::of_kind(kind, marked, Interval::TOP));
     }
 
@@ -1736,6 +1754,13 @@ fn converted(e: &Expr, from: DataKind, v: SlotState, platform: u16) -> SlotState
             SlotState::of_kind(e.kind, info, Interval::TOP)
         }
         SlotState::Int(n) if keeps => int_fact(e.kind, n, platform),
+        // A list literal moved to a plain list: its cells hold what the
+        // literal's cells held.
+        SlotState::List(info) if e.kind.is_seq() =>
+        {
+            let cells = PtrInfo { cells: info.state, ..PtrInfo::unknown(Roots::new()) };
+            SlotState::of_kind(e.kind, cells, Interval::TOP)
+        }
         _ => SlotState::unknown(e.kind, Roots::new()),
     }
 }

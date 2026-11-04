@@ -91,7 +91,7 @@ that implements `Visitor`. It has one method for each statement form and calls
 | assignment | the target is a place, declared, not a constant or a counted-loop variable; the value converts to the kind of the place |
 | block, if arm | a block is a scope of its own; a condition is `bool` |
 | while, generic loop | a `bool` condition; the loop depth grows with one |
-| each loop | a list or a slice whose cells hold no owner pointer for an each-cell loop, text or a view of text for an each-character loop, else ZK0434; the loop variable takes the cell kind or `char` |
+| each loop | a list, a slice or a pointer to a list (`each_list`) whose cells hold no owner pointer for an each-cell loop, text or a view of text for an each-character loop, else ZK0434; the loop variable takes the cell kind or `char` |
 | counted loop | bounds and step are integers; the loop variable takes the common kind of the bounds; a literal step of zero or less is ZK0409 |
 | `ကွင်းဆက်`, `နောက်တစ်ကြိမ်ဆီသို့` | the loop depth is above zero in the current function |
 | function | parameters are distinct; one scope holds the parameters, `ရလဒ်` (just when the function has a result) and the block; the loop depth restarts at zero |

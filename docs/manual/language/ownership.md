@@ -527,8 +527,30 @@ error[ZK0708]: the block that "ပ" owns is never freed or moved on this path
 - **End of a function.** Checked for the locals and the parameters of a function. A
   top-level owner that still holds a block when the program ends is not reported; run
   the program with `zakac run --leaks` to list each block that is left.
+- **A plain list of owners.** The compiler keeps one fact for the cells of a plain list
+  of owners: what each owner added to it holds. A remove of the last cell, a new value
+  over the list, and the end of a function lose a block when each cell holds one for
+  sure, which is an error. Once a cell is freed, moved out or written through its
+  number, the compiler cannot tell which cell still holds a block, so it reports such a
+  loss with `--mem-strict` alone, as a warning. A counted list of owners, and a list whose
+  cells hold owners deeper down, are reported with `--mem-strict` alone.
 - **Not a leak.** Returning soon on the `ဗလာ` branch of a fresh allocation, since there
   was no block, and an owner whose block went into a call that can have freed it.
+
+```zaka-error ZK0708
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+ကိန်းရှင် ပများ သည် ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ပများ ထဲသို့ ပ ကို ထည့်ပါ။
+ပများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။          // the block in the last cell is lost
+```
+
+```text
+error[ZK0708]: the block that "ပများ" owns is never freed or moved on this path
+```
+
+Free the block in the cell before the remove, `လိပ်စာ ပများ ၏ အကွက် ၀ ရှိ မင်မိုရီကို
+ပြန်လည်စွန့်လွှတ်မည်။`, or move it out into an owner of its own.
 
 A lost block does no harm at once, so with `--mem-check warn` the program still runs.
 

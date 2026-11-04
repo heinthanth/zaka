@@ -492,6 +492,8 @@ en = "mismatched kinds"
 en = "expected %{want}, found %{got}"
 [codes.ZK0401.help]
 en = "convert the value with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\""
+[codes.ZK0401.help_lend]
+en = "hold the value in a variable and lend its cells with \"<variable> ၏ တန်ဖိုးအငှား\""
 [codes.ZK0401.help_raw]
 en = "a block that holds addresses changes its kind through a raw address alone; convert the value to %{raw} first, then convert that to %{want}"
 [codes.ZK0401.explain]

@@ -16,6 +16,7 @@ use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::semcheck::KindTable;
 use zakac_semcheck::semcheck::RESULT_NAME;
+use zakac_semcheck::semcheck::each_list;
 use zakac_semcheck::structs::StructTable;
 use zakac_span::span::Span;
 
@@ -949,9 +950,14 @@ impl Lowerer<'_>
     /// * `out` - The list the statements go to.
     fn each(&mut self, n: &st::EachStmt, out: &mut Vec<Stmt>)
     {
-        let kind = self.kind_of(&n.source);
+        let given = self.kind_of(&n.source);
+        let kind = each_list(given, n.chars);
         let span = n.source.span();
-        let source = self.owned(&n.source, kind);
+        let source = tern!(
+            kind == given,
+            self.owned(&n.source, kind),
+            self.through(&n.source, kind)
+        );
         let mut parts = None;
         self.scoped(|l| {
             let name = ast::Ident::builder().name("%each").span(span).build();
@@ -979,6 +985,24 @@ impl Lowerer<'_>
         let (init, cond, block, update, after) = parts.expect("the scope ran");
         out.push(Stmt::Loop { init, cond, update, block, span: n.span });
         out.extend(after);
+    }
+
+    /// The list a pointer points at, read out as a value of its own: a
+    /// duplicate for a plain list.
+    ///
+    /// # Arguments
+    ///
+    /// * `ptr` - The pointer.
+    /// * `kind` - The list kind.
+    ///
+    /// # Returns
+    ///
+    /// The list.
+    fn through(&mut self, ptr: &ast::Expr, kind: DataKind) -> Expr
+    {
+        let addr = Box::new(self.expr(ptr));
+        let load = node_expr(kind, ExprNode::Load { addr }, ptr.span());
+        tern!(kind.holds_text(), dup(load), load)
     }
 
     /// The count of cells or u8s an each loop walks.

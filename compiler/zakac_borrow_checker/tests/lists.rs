@@ -545,3 +545,14 @@ fn a_cell_set_from_a_renewing_call_keeps_the_loans_of_the_other_cells()
     );
     assert_eq!(lines(&text), [(Code::InvalidatedLoan, 14)]);
 }
+
+#[test]
+fn a_cell_of_a_plain_list_reads_after_an_add()
+{
+    ok("\
+ကိန်းရှင် ကများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ကများ ထဲသို့ ၅ ကို ထည့်ပါ။
+ကိန်းရှင် မ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကများ ၏ အကွက် ၀ ဖြစ်ပါစေ။
+မ ကို ပြသပါ။
+");
+}

@@ -252,10 +252,12 @@ fn a_list_lent_twice_before_its_last_read_is_never_duplicated()
 }
 
 /// The program of `samples/programs/scores_views.zaka` reads its lists and
-/// text through views alone, so `--warn-duplicates` names nothing in it; the
-/// same program with plain parameters, `scores.zaka`, has duplicates left.
+/// text through views alone, so `--warn-duplicates` names nothing in it. The
+/// same program with plain parameters, `scores.zaka`, names nothing either:
+/// each call lends its list, and each each-cell loop, which reads alone,
+/// lends its list too.
 #[test]
-fn the_scores_program_with_views_makes_no_duplicate()
+fn the_scores_programs_make_no_duplicate()
 {
     let warn = BorrowCheckOptions::builder().warn_duplicates(true).build();
     let sample = |name: &str| {
@@ -263,6 +265,35 @@ fn the_scores_program_with_views_makes_no_duplicate()
         std::fs::read_to_string(path).unwrap()
     };
     assert_eq!(codes_with(&sample("scores_views.zaka"), &warn), []);
-    let plain = codes_with(&sample("scores.zaka"), &warn);
-    assert!(plain.contains(&Code::DuplicateMade), "{plain:?}");
+    assert_eq!(codes_with(&sample("scores.zaka"), &warn), []);
+}
+
+/// An each loop lends its list when it reads alone, and walks a duplicate
+/// when its block writes the list or calls a function that writes it.
+#[test]
+fn an_each_loop_duplicates_a_list_it_changes_alone()
+{
+    let warn = BorrowCheckOptions::builder().warn_duplicates(true).build();
+    let walk = |inner: &str| {
+        format!(
+            "ကိန်းရှင် ကများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ချဲ့ သည်
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကများ ထဲသို့ ၉ ကို ထည့်ပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+ကများ ၏ အကွက်တိုင်း ကို က အနေဖြင့် ယူ၍ {inner}
+ကများ ကို ပြသပါ။
+"
+        )
+    };
+    let read = walk("က ကို ပြသပါ။");
+    assert_eq!(codes_with(&read, &warn), []);
+    let counted = walk("ကများ ၏ အကွက်အရေအတွက် ကို ပြသပါ။");
+    assert_eq!(codes_with(&counted, &warn), []);
+    let written = walk("ကများ ၏ အကွက် ၀ ကို က ဟု ထားပါ။");
+    assert_eq!(codes_with(&written, &warn), [Code::DuplicateMade]);
+    let grown = walk("ကများ ထဲသို့ က ကို ထည့်ပါ။");
+    assert_eq!(codes_with(&grown, &warn), [Code::DuplicateMade]);
+    let called = walk("လုပ်ဆောင်ချက် ချဲ့ ကို လုပ်ဆောင်ပါ။");
+    assert_eq!(codes_with(&called, &warn), [Code::DuplicateMade]);
 }

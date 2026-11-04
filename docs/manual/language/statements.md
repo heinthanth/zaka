@@ -260,11 +260,15 @@ names declared in the inner part share one scope, so the inner part cannot decla
 equal to the counter's (ZK0302).
 
 **Each cell and each character.** `LIST ၏ အကွက်တိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` runs
-the `BODY` once for each cell of a list or a [slice](slices.md), the first cell first.
+the `BODY` once for each cell of a list or a [slice](slices.md), the first cell first;
+for a pointer to a list it walks the list the pointer points at, as a cell read does.
 `TEXT ၏ စာလုံးတိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` runs it once for each character of text or
 a view of text, and walks the u8s of the text once. The value in front of `၏` is worked
 out once, before the first round, and the loop walks a duplicate of it: the `BODY` can
 change the list or the text, and the rounds still see the cells it held at the start.
+When the loop changes neither (no statement in it writes, moves or takes the address of
+the value, and no call in it sets it), the compiler lends the value to the walk instead,
+and the rounds read its cells in place, with no heap block.
 `NAME` is a variable of the cell kind, or a `စာလုံး`, that lives in one round: each round
 sets it to a duplicate of the next cell or character, so assigning to it leaves the list
 as it was. A list whose cells hold an owner pointer cannot be walked, since an owner
