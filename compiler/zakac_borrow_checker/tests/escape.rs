@@ -60,7 +60,7 @@ fn borrow_param_returned_is_fine()
     let digests = run(text).out.digests;
     let from: Vec<(Vec<u32>, bool)> =
         digests.iter().map(|d| (d.result_from.clone(), d.result_roots_ok)).collect();
-    assert_eq!(from, [(vec![0], true), (vec![1], true)]);
+    assert_eq!(from, [(vec![0], true), (vec![1], true), (vec![], true)]);
 }
 
 #[test]

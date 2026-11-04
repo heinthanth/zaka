@@ -1,5 +1,6 @@
 mod common;
 
+use common::label_line;
 use common::lines;
 use common::ok;
 use common::run;
@@ -18,15 +19,6 @@ const CLEAR: &str = "\
 ဖတ် ၏ တန်ဖိုး ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 ";
-
-/// The 1-based line of the first label of the first diagnostic of `text`.
-fn label_line(text: &str) -> usize
-{
-    let run = run(text);
-    let found = run.out.diagnostics.first().expect("a diagnostic");
-    let label = found.labels.first().expect("a label");
-    run.file.lookup_file_pos(&run.file.relative_position(&label.span.lo)).0
-}
 
 #[test]
 fn digest_marks_param_freed_through()
@@ -72,6 +64,7 @@ fn distinct_hooks_are_fine()
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။ မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။ မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ဂ တွင် သိမ်းထားမည်။
 လုပ်ဆောင်ချက် ရှင်း ကို ပ ၏ လိပ်စာ၊ ဂ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
+လိပ်စာ ဂ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 "
     ));
 }
@@ -252,6 +245,7 @@ fn read_later_in_the_call_statement_is_live()
 ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 ကိန်းရှင် ဆ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (လုပ်ဆောင်ချက် ကြိမ် ကို ပ ၏ လိပ်စာ၊ ဂ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်သော \
          ရလဒ်) + (မိတ္တူ ၏ တန်ဖိုး) ဖြစ်ပါစေ။
+လိပ်စာ ဂ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 
 လုပ်ဆောင်ချက် ကြိမ် သည်
 ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ က နှင့် ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ ခ တို့ကို လက်ခံပြီး
@@ -2622,7 +2616,9 @@ fn old_value_of_a_global_set_target_read_in_a_callee_is_zk0704()
                 ထားပါ။
 ဇ ၏ တန်ဖိုး ကို ပြသပါ။
 ";
-    assert_eq!(lines(text), [(Code::InvalidatedLoan, 66)]);
+    // The start block is a function, which cannot store a borrow in a global.
+    let want = [(Code::BorrowStored, 66), (Code::InvalidatedLoan, 66)];
+    assert_eq!(lines(text), want);
 }
 
 /// A call later in the value of a return reads a global borrow of the block

@@ -13,11 +13,13 @@ hold bigger numbers. A program can choose the size, and whether negative numbers
 allowed.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၄၂ ကို ပြသပါ။                                // plain integer: the default kind
 ၈ ဘစ် ကိန်းပြည့် ၁၂၇ ကို ပြသပါ။                // 8 bits: -128 up to 127
 လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၂၅၅ ကို ပြသပါ။        // 8 bits, no sign: 0 up to 255
 ၃၂ ဘစ် ကိန်းပြည့် ၂၁၄၇၄၈၃၆၄၇ ကို ပြသပါ။         // 32 bits
 -၅ ကို ပြသပါ။                                // a negative number
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

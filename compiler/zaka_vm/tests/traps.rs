@@ -30,7 +30,7 @@ fn zero_divisor_at_run_time_traps_after_earlier_output()
     let (out, kind, func) = trapped(text, &RunOptions::default());
     assert_eq!(out, "အရင်\n");
     assert_eq!(kind, TrapKind::ZeroDivisor);
-    assert_eq!(func, "main");
+    assert_eq!(func, "ပရိုဂရမ်", "the trap names the start block");
     let (_, rem, _) = trapped(&text.replace(" / ", " % "), &RunOptions::default());
     assert_eq!(rem, TrapKind::ZeroDivisor);
 }

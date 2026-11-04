@@ -6,6 +6,7 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
 use zakac_codegen::cli::ZakacCodegen;
 use zakac_codegen::listing::LISTING_HEADER;
+use zakac_parser::wrap::in_start_block;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 
 const TEXT_HEADER: &str = "# zakac-codegen-artifact v1\n";
@@ -19,7 +20,7 @@ fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
     argv.extend(args.iter().map(|arg| (*arg).to_string()));
 
     let command = ZakacCodegen::create_as_standalone();
-    let mut stdin = Cursor::new(stdin.to_string());
+    let mut stdin = Cursor::new(in_start_block(stdin));
     let mut stdout = Buffer::no_color();
     let mut stderr = Buffer::no_color();
     let mut io = CommandIO::builder()

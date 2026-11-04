@@ -93,7 +93,7 @@ impl Parser<'_>
         let mut depth = self.open_blocks_since(start);
         let stuck = self.cur.pos() == start && !self.at_eof();
         ret_if!(stuck && self.skip_token(&mut depth, is_if));
-        while !self.at_eof() && !(depth == 0 && self.at(Kw::BlockClose))
+        while !self.at_eof() && !(depth == 0 && self.at_close())
         {
             ret_if!(self.skip_token(&mut depth, is_if));
         }
@@ -150,7 +150,7 @@ fn track_depth(depth: u32, kind: TokenKind) -> u32
     match kind
     {
         TokenKind::Kw(Kw::BlockOpen | Kw::FnOpen | Kw::FnOpenRet) => depth + 1,
-        TokenKind::Kw(Kw::BlockClose) => depth.saturating_sub(1),
+        TokenKind::Kw(Kw::BlockClose | Kw::ProgramClose) => depth.saturating_sub(1),
         _ => depth,
     }
 }

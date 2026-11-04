@@ -1,41 +1,41 @@
 ; zakac asm listing v1, platform 64 bits
-globals
-  g0 ကိန်း isize
-  g1 အမှတ် isize
-  g2 အမှတ် isize
-  g3 အဆင့် u8
 
-fn f0 main (params 0)
-     0  global_addr g0       ; ကိန်း
+fn f0 ပရိုဂရမ် (params 0)
+locals
+  l0 ကိန်း isize
+  l1 အမှတ် isize
+  l2 အမှတ် isize
+  l3 အဆင့် u8
+     0  local_addr l0        ; ကိန်း
      1  push 0:isize
      2  store isize
 L0:
-     3  global_addr g0       ; ကိန်း
+     3  local_addr l0        ; ကိန်း
      4  load isize
      5  push 5:isize
      6  lt
      7  jump_if_false L1
-     8  global_addr g0       ; ကိန်း
+     8  local_addr l0        ; ကိန်း
      9  load isize
     10  print
-    11  global_addr g0       ; ကိန်း
-    12  global_addr g0       ; ကိန်း
+    11  local_addr l0        ; ကိန်း
+    12  local_addr l0        ; ကိန်း
     13  load isize
     14  push 1:isize
     15  add
     16  store isize
     17  jump L0
 L1:
-    18  global_addr g1       ; အမှတ်
+    18  local_addr l1        ; အမှတ်
     19  push 1:isize
     20  store isize
-    21  global_addr g1       ; အမှတ်
+    21  local_addr l1        ; အမှတ်
     22  load isize
     23  push 100:isize
     24  gt
     25  jump_if_true L6
 L2:
-    26  global_addr g1       ; အမှတ်
+    26  local_addr l1        ; အမှတ်
     27  load isize
     28  push 2:isize
     29  rem
@@ -44,46 +44,46 @@ L2:
     32  jump_if_false L3
     33  jump L5
 L3:
-    34  global_addr g1       ; အမှတ်
+    34  local_addr l1        ; အမှတ်
     35  load isize
     36  push 10:isize
     37  gt
     38  jump_if_false L4
     39  jump L6
 L4:
-    40  global_addr g1       ; အမှတ်
+    40  local_addr l1        ; အမှတ်
     41  load isize
     42  print
 L5:
     43  push 100:usize
-    44  global_addr g1       ; အမှတ်
+    44  local_addr l1        ; အမှတ်
     45  load isize
     46  convert usize
     47  wrap sub
     48  push 1:usize
     49  lt
     50  jump_if_true L6
-    51  global_addr g1       ; အမှတ်
-    52  global_addr g1       ; အမှတ်
+    51  local_addr l1        ; အမှတ်
+    52  local_addr l1        ; အမှတ်
     53  load isize
     54  push 1:isize
     55  wrap add
     56  store isize
     57  jump L2
 L6:
-    58  global_addr g2       ; အမှတ်
+    58  local_addr l2        ; အမှတ်
     59  push 10:isize
     60  store isize
-    61  global_addr g2       ; အမှတ်
+    61  local_addr l2        ; အမှတ်
     62  load isize
     63  push 0:isize
     64  lt
     65  jump_if_true L8
 L7:
-    66  global_addr g2       ; အမှတ်
+    66  local_addr l2        ; အမှတ်
     67  load isize
     68  print
-    69  global_addr g2       ; အမှတ်
+    69  local_addr l2        ; အမှတ်
     70  load isize
     71  convert usize
     72  push 0:usize
@@ -91,28 +91,28 @@ L7:
     74  push 2:usize
     75  lt
     76  jump_if_true L8
-    77  global_addr g2       ; အမှတ်
-    78  global_addr g2       ; အမှတ်
+    77  local_addr l2        ; အမှတ်
+    78  local_addr l2        ; အမှတ်
     79  load isize
     80  push 2:isize
     81  wrap sub
     82  store isize
     83  jump L7
 L8:
-    84  global_addr g3       ; အဆင့်
+    84  local_addr l3        ; အဆင့်
     85  push 0:u8
     86  store u8
 L9:
-    87  global_addr g3       ; အဆင့်
+    87  local_addr l3        ; အဆင့်
     88  load u8
     89  push 10:u8
     90  lt
     91  jump_if_false L10
-    92  global_addr g3       ; အဆင့်
+    92  local_addr l3        ; အဆင့်
     93  load u8
     94  print
-    95  global_addr g3       ; အဆင့်
-    96  global_addr g3       ; အဆင့်
+    95  local_addr l3        ; အဆင့်
+    96  local_addr l3        ; အဆင့်
     97  load u8
     98  push 1:u8
     99  add
@@ -120,3 +120,7 @@ L9:
    101  jump L9
 L10:
    102  ret
+
+fn f1 main (params 0)
+     0  call f0              ; ပရိုဂရမ်
+     1  ret

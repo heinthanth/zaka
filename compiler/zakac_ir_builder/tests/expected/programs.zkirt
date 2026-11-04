@@ -1,427 +1,448 @@
 # zakac-ir-artifact v1
 name:
   Custom: programs.zaka
-source: "ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။\nကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။\nကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီးသည် ဖြစ်ပါစေ။\nကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အခြေ ၁၆ ဖြင့် FF ဖြစ်ပါစေ။\nကိန်းရှင် စာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'က' ဖြစ်ပါစေ။\nအသက် ကို အသက် + ၁ ဟု ထားပါ။\nအသက် ကို အသက် နှင့် ဘိုက် ၏ ပေါင်းလဒ် ဟု ထားပါ။\nပိုင် * ၂ ကို ပြသပါ။\nဘိုက် ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ် ကို ပြသပါ။\nအသက် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nစာ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nအောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် အသက် သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၅ ဖြစ်ပါစေ။\nအသက် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nအကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကြီးသူ ကို မမှန် ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nထိုသို့မဟုတ်ဘဲ ကြီးသူ ဖြစ်၍ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသပါ။\nသို့မဟုတ်ပါက (စာ < 'ခ' ဖြစ်၍ ကြီးသူ) ကို ပြသပါ။\n"
+source: "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။\nကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။\nကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီးသည် ဖြစ်ပါစေ။\nကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အခြေ ၁၆ ဖြင့် FF ဖြစ်ပါစေ။\nကိန်းရှင် စာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'က' ဖြစ်ပါစေ။\nအသက် ကို အသက် + ၁ ဟု ထားပါ။\nအသက် ကို အသက် နှင့် ဘိုက် ၏ ပေါင်းလဒ် ဟု ထားပါ။\nပိုင် * ၂ ကို ပြသပါ။\nဘိုက် ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ် ကို ပြသပါ။\nအသက် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nစာ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nအောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် အသက် သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၅ ဖြစ်ပါစေ။\nအသက် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nအကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကြီးသူ ကို မမှန် ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nထိုသို့မဟုတ်ဘဲ ကြီးသူ ဖြစ်၍ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသပါ။\nသို့မဟုတ်ပါက (စာ < 'ခ' ဖြစ်၍ ကြီးသူ) ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 module:
-  globals:
-  - name: အသက်
-    kind: isize
-    access: var
-    span:
-      lo: 28
-      hi: 40
-    addressed: false
-  - name: ပိုင်
-    kind: f64
-    access: const
-    span:
-      lo: 139
-      hi: 154
-    addressed: false
-  - name: ကြီးသူ
-    kind: bool
-    access: var
-    span:
-      lo: 257
-      hi: 275
-    addressed: false
-  - name: ဘိုက်
-    kind: u8
-    access: var
-    span:
-      lo: 513
-      hi: 528
-    addressed: false
-  - name: စာ
-    kind: char
-    access: var
-    span:
-      lo: 770
-      hi: 776
-    addressed: false
-  - name: အသက်
-    kind: i16
-    access: var
-    span:
-      lo: 1670
-      hi: 1682
-    addressed: false
-  funcs: []
-  main:
-  - set:
-      place: g0
-      value:
-        kind: isize
-        node:
-          const: 18:isize
-        span:
-          lo: 51
-          hi: 88
+  globals: []
+  funcs:
+  - name: ပရိုဂရမ်
+    params: 0
+    result: null
+    ret: null
+    locals:
+    - name: အသက်
+      kind: isize
+      access: var
       span:
-        lo: 0
-        hi: 116
-  - set:
-      place: g1
-      value:
-        kind: f64
-        node:
-          const: 3.14:f64
-        span:
-          lo: 165
-          hi: 200
+        lo: 145
+        hi: 157
+      addressed: false
+    - name: ပိုင်
+      kind: f64
+      access: const
       span:
-        lo: 117
-        hi: 228
-  - set:
-      place: g2
-      value:
-        kind: bool
-        node:
-          compare:
-            op: gt
-            lhs:
-              kind: isize
-              node:
-                read: g0
-              span:
-                lo: 395
-                hi: 407
-            rhs:
-              kind: isize
-              node:
-                const: 18:isize
-              span:
-                lo: 418
-                hi: 424
-        span:
-          lo: 395
-          hi: 456
+        lo: 256
+        hi: 271
+      addressed: false
+    - name: ကြီးသူ
+      kind: bool
+      access: var
       span:
-        lo: 229
-        hi: 484
-  - set:
-      place: g3
-      value:
-        kind: u8
-        node:
-          const: 255:u8
-        span:
-          lo: 675
-          hi: 713
+        lo: 374
+        hi: 392
+      addressed: false
+    - name: ဘိုက်
+      kind: u8
+      access: var
       span:
-        lo: 485
-        hi: 741
-  - set:
-      place: g4
-      value:
-        kind: char
-        node:
-          const: "'က':char"
-        span:
-          lo: 875
-          hi: 880
+        lo: 630
+        hi: 645
+      addressed: false
+    - name: စာ
+      kind: char
+      access: var
       span:
-        lo: 742
-        hi: 908
-  - set:
-      place: g0
-      value:
-        kind: isize
-        node:
-          infix:
-            op: add
-            lhs:
-              kind: isize
-              node:
-                read: g0
-              span:
-                lo: 932
-                hi: 944
-            rhs:
-              kind: isize
-              node:
-                const: 1:isize
-              span:
-                lo: 947
-                hi: 950
-        span:
-          lo: 932
-          hi: 950
+        lo: 887
+        hi: 893
+      addressed: false
+    - name: အသက်
+      kind: i16
+      access: var
       span:
-        lo: 909
-        hi: 976
-  - set:
-      place: g0
-      value:
-        kind: isize
-        node:
-          infix:
-            op: add
-            lhs:
-              kind: isize
-              node:
-                read: g0
-              span:
-                lo: 1000
-                hi: 1012
-            rhs:
-              kind: isize
-              node:
-                convert:
-                  operand:
-                    kind: u8
-                    node:
-                      read: g3
-                    span:
-                      lo: 1029
-                      hi: 1044
-                  implicit: true
-              span:
-                lo: 1029
-                hi: 1044
-        span:
-          lo: 1000
-          hi: 1076
-      span:
-        lo: 977
-        hi: 1102
-  - print:
-      value:
-        expr:
-          kind: f64
-          node:
-            const: 6.28:f64
-          span:
-            lo: 1103
-            hi: 1124
-      span:
-        lo: 1103
-        hi: 1153
-  - print:
-      value:
-        expr:
-          kind: u8
-          node:
-            infix:
-              op: shr
-              lhs:
-                kind: u8
-                node:
-                  read: g3
-                span:
-                  lo: 1154
-                  hi: 1169
-              rhs:
-                kind: usize
-                node:
-                  const: 2:usize
-                span:
-                  lo: 1199
-                  hi: 1202
-          span:
-            lo: 1154
-            hi: 1246
-      span:
-        lo: 1154
-        hi: 1275
-  - print:
-      value:
-        expr:
-          kind: f64
-          node:
-            convert:
-              operand:
-                kind: isize
-                node:
-                  read: g0
-                span:
-                  lo: 1276
-                  hi: 1288
-              implicit: false
-          span:
-            lo: 1276
-            hi: 1389
-      span:
-        lo: 1276
-        hi: 1418
-  - print:
-      value:
-        expr:
+        lo: 1787
+        hi: 1799
+      addressed: false
+    block:
+    - set:
+        place: l0
+        value:
           kind: isize
           node:
-            convert:
-              operand:
-                kind: char
-                node:
-                  read: g4
-                span:
-                  lo: 1419
-                  hi: 1425
-              implicit: false
+            const: 18:isize
           span:
-            lo: 1419
-            hi: 1532
-      span:
-        lo: 1419
-        hi: 1561
-  - set:
-      place: g5
-      value:
-        kind: i16
-        node:
-          const: -5:i16
+            lo: 168
+            hi: 205
         span:
-          lo: 1804
-          hi: 1808
-      span:
-        lo: 1642
-        hi: 1836
-  - print:
-      value:
-        expr:
+          lo: 117
+          hi: 233
+    - set:
+        place: l1
+        value:
+          kind: f64
+          node:
+            const: 3.14:f64
+          span:
+            lo: 282
+            hi: 317
+        span:
+          lo: 234
+          hi: 345
+    - set:
+        place: l2
+        value:
+          kind: bool
+          node:
+            compare:
+              op: gt
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 512
+                  hi: 524
+              rhs:
+                kind: isize
+                node:
+                  const: 18:isize
+                span:
+                  lo: 535
+                  hi: 541
+          span:
+            lo: 512
+            hi: 573
+        span:
+          lo: 346
+          hi: 601
+    - set:
+        place: l3
+        value:
+          kind: u8
+          node:
+            const: 255:u8
+          span:
+            lo: 792
+            hi: 830
+        span:
+          lo: 602
+          hi: 858
+    - set:
+        place: l4
+        value:
+          kind: char
+          node:
+            const: "'က':char"
+          span:
+            lo: 992
+            hi: 997
+        span:
+          lo: 859
+          hi: 1025
+    - set:
+        place: l0
+        value:
+          kind: isize
+          node:
+            infix:
+              op: add
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 1049
+                  hi: 1061
+              rhs:
+                kind: isize
+                node:
+                  const: 1:isize
+                span:
+                  lo: 1064
+                  hi: 1067
+          span:
+            lo: 1049
+            hi: 1067
+        span:
+          lo: 1026
+          hi: 1093
+    - set:
+        place: l0
+        value:
+          kind: isize
+          node:
+            infix:
+              op: add
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 1117
+                  hi: 1129
+              rhs:
+                kind: isize
+                node:
+                  convert:
+                    operand:
+                      kind: u8
+                      node:
+                        read: l3
+                      span:
+                        lo: 1146
+                        hi: 1161
+                    implicit: true
+                span:
+                  lo: 1146
+                  hi: 1161
+          span:
+            lo: 1117
+            hi: 1193
+        span:
+          lo: 1094
+          hi: 1219
+    - print:
+        value:
+          expr:
+            kind: f64
+            node:
+              const: 6.28:f64
+            span:
+              lo: 1220
+              hi: 1241
+        span:
+          lo: 1220
+          hi: 1270
+    - print:
+        value:
+          expr:
+            kind: u8
+            node:
+              infix:
+                op: shr
+                lhs:
+                  kind: u8
+                  node:
+                    read: l3
+                  span:
+                    lo: 1271
+                    hi: 1286
+                rhs:
+                  kind: usize
+                  node:
+                    const: 2:usize
+                  span:
+                    lo: 1316
+                    hi: 1319
+            span:
+              lo: 1271
+              hi: 1363
+        span:
+          lo: 1271
+          hi: 1392
+    - print:
+        value:
+          expr:
+            kind: f64
+            node:
+              convert:
+                operand:
+                  kind: isize
+                  node:
+                    read: l0
+                  span:
+                    lo: 1393
+                    hi: 1405
+                implicit: false
+            span:
+              lo: 1393
+              hi: 1506
+        span:
+          lo: 1393
+          hi: 1535
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              convert:
+                operand:
+                  kind: char
+                  node:
+                    read: l4
+                  span:
+                    lo: 1536
+                    hi: 1542
+                implicit: false
+            span:
+              lo: 1536
+              hi: 1649
+        span:
+          lo: 1536
+          hi: 1678
+    - set:
+        place: l5
+        value:
           kind: i16
           node:
-            read: g5
+            const: -5:i16
           span:
-            lo: 1837
-            hi: 1849
-      span:
-        lo: 1837
-        hi: 1878
-  - if:
-      cond:
-        kind: bool
-        node:
-          compare:
-            op: lt
-            lhs:
-              kind: isize
-              node:
-                read: g0
-              span:
-                lo: 1978
-                hi: 1990
-            rhs:
-              kind: isize
-              node:
-                const: 18:isize
-              span:
-                lo: 2001
-                hi: 2007
+            lo: 1921
+            hi: 1925
         span:
-          lo: 1978
-          hi: 2033
-      then:
-      - set:
-          place: g2
-          value:
-            kind: bool
+          lo: 1759
+          hi: 1953
+    - print:
+        value:
+          expr:
+            kind: i16
             node:
-              const: false:bool
+              read: l5
             span:
-              lo: 2158
-              hi: 2173
+              lo: 1954
+              hi: 1966
+        span:
+          lo: 1954
+          hi: 1995
+    - if:
+        cond:
+          kind: bool
+          node:
+            compare:
+              op: lt
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 2107
+                  hi: 2119
+              rhs:
+                kind: isize
+                node:
+                  const: 18:isize
+                span:
+                  lo: 2130
+                  hi: 2136
           span:
-            lo: 2129
-            hi: 2199
-      els:
-      - if:
-          cond:
-            kind: bool
-            node:
-              logic:
-                op: and
-                lhs:
-                  kind: bool
-                  node:
-                    read: g2
-                  span:
-                    lo: 2326
-                    hi: 2344
-                rhs:
-                  kind: bool
-                  node:
-                    compare:
-                      op: gt
-                      lhs:
-                        kind: isize
-                        node:
-                          read: g0
-                        span:
-                          lo: 2361
-                          hi: 2373
-                      rhs:
-                        kind: isize
-                        node:
-                          const: 60:isize
-                        span:
-                          lo: 2384
-                          hi: 2390
-                  span:
-                    lo: 2361
-                    hi: 2413
+            lo: 2107
+            hi: 2162
+        then:
+        - set:
+            place: l2
+            value:
+              kind: bool
+              node:
+                const: false:bool
+              span:
+                lo: 2287
+                hi: 2302
             span:
-              lo: 2326
-              hi: 2413
-          then:
-          - print:
-              value:
-                text: ok
+              lo: 2258
+              hi: 2328
+        els:
+        - if:
+            cond:
+              kind: bool
+              node:
+                logic:
+                  op: and
+                  lhs:
+                    kind: bool
+                    node:
+                      read: l2
+                    span:
+                      lo: 2467
+                      hi: 2485
+                  rhs:
+                    kind: bool
+                    node:
+                      compare:
+                        op: gt
+                        lhs:
+                          kind: isize
+                          node:
+                            read: l0
+                          span:
+                            lo: 2502
+                            hi: 2514
+                        rhs:
+                          kind: isize
+                          node:
+                            const: 60:isize
+                          span:
+                            lo: 2525
+                            hi: 2531
+                    span:
+                      lo: 2502
+                      hi: 2554
               span:
-                lo: 2429
-                hi: 2459
-          els:
-          - print:
-              value:
-                expr:
-                  kind: bool
-                  node:
-                    logic:
-                      op: and
-                      lhs:
-                        kind: bool
-                        node:
-                          compare:
-                            op: lt
-                            lhs:
-                              kind: char
-                              node:
-                                read: g4
-                              span:
-                                lo: 2498
-                                hi: 2504
-                            rhs:
-                              kind: char
-                              node:
-                                const: "'ခ':char"
-                              span:
-                                lo: 2507
-                                hi: 2512
-                        span:
-                          lo: 2498
-                          hi: 2512
-                      rhs:
-                        kind: bool
-                        node:
-                          read: g2
-                        span:
-                          lo: 2529
-                          hi: 2547
-                  span:
-                    lo: 2498
-                    hi: 2547
-              span:
-                lo: 2497
-                hi: 2577
-          span:
-            lo: 2283
-            hi: 2577
+                lo: 2467
+                hi: 2554
+            then:
+            - print:
+                value:
+                  text: ok
+                span:
+                  lo: 2570
+                  hi: 2600
+            els:
+            - print:
+                value:
+                  expr:
+                    kind: bool
+                    node:
+                      logic:
+                        op: and
+                        lhs:
+                          kind: bool
+                          node:
+                            compare:
+                              op: lt
+                              lhs:
+                                kind: char
+                                node:
+                                  read: l4
+                                span:
+                                  lo: 2639
+                                  hi: 2645
+                              rhs:
+                                kind: char
+                                node:
+                                  const: "'ခ':char"
+                                span:
+                                  lo: 2648
+                                  hi: 2653
+                          span:
+                            lo: 2639
+                            hi: 2653
+                        rhs:
+                          kind: bool
+                          node:
+                            read: l2
+                          span:
+                            lo: 2670
+                            hi: 2688
+                    span:
+                      lo: 2639
+                      hi: 2688
+                span:
+                  lo: 2638
+                  hi: 2718
+            span:
+              lo: 2424
+              hi: 2718
+        span:
+          lo: 2091
+          hi: 2718
+    shared_params: []
+    span:
+      lo: 0
+      hi: 2789
+  main:
+  - call:
+      func: 0
+      name: ပရိုဂရမ်
+      args: []
       span:
-        lo: 1962
-        hi: 2577
+        lo: 0
+        hi: 24
   imported_inits: 0
+  host:
+    args: null
+    env: null
+    exit: null
   span:
     lo: 0
-    hi: 2578
+    hi: 2790
 diagnostics: []

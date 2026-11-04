@@ -100,6 +100,7 @@ fn spec_compounds_split()
         ("ရှိမှတ်ဉာဏ်ကို", &[Kw::Located, Kw::Mem, Kw::Ko]),
         ("တန်ဖိုးအငှားကို", &[Kw::Lend, Kw::Ko]),
         ("လိပ်စာအကြမ်းကို", &[Kw::RawAddress, Kw::Ko]),
+        ("ပရိုဂရမ်သည်", &[Kw::Program, Kw::Thi]),
     ];
     for (text, expected) in cases
     {
@@ -238,5 +239,6 @@ fn names_that_start_with_list_words_remain_names()
 {
     assert_eq!(split("စာရင်းအင်း"), None);
     assert_eq!(split("သူတို့"), None);
+    assert_eq!(split("ပရိုဂရမ်ပိတ်"), None);
     assert_eq!(lookup("အရေအတွက်"), None);
 }

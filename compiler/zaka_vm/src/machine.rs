@@ -93,6 +93,36 @@ impl Default for RunOptions
     fn default() -> Self { RunOptions::builder().build() }
 }
 
+/// What the host hands the start block of a program.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Builder)]
+pub struct HostData
+{
+    /// The arguments of the run, the name of the program first, as in C.
+    #[builder(default)]
+    pub args: Vec<String>,
+    /// The environment variables, one `NAME=VALUE` text for each.
+    #[builder(default)]
+    pub env: Vec<String>,
+}
+
+impl HostData
+{
+    /// A run with no arguments past the name of the program and no
+    /// environment, as the browser gives.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the program.
+    ///
+    /// # Returns
+    ///
+    /// The host data.
+    pub fn program(name: &str) -> Self
+    {
+        HostData::builder().args(vec![name.to_string()]).build()
+    }
+}
+
 /// Run a module with the default limits, writing its output to `out`.
 ///
 /// # Arguments
@@ -123,7 +153,7 @@ pub fn run_with(
     module: &Module, out: &mut dyn Write, options: &RunOptions,
 ) -> Result<(), Trap>
 {
-    run_and_keep(module, out, options).1
+    run_and_keep(module, out, options, &HostData::default()).1
 }
 
 /// Run a module like [`run_with`], and keep the machine, so the caller can
@@ -134,16 +164,18 @@ pub fn run_with(
 /// * `module` - The module.
 /// * `out` - Where print ops write.
 /// * `options` - The limits.
+/// * `host` - The arguments and the environment for the start block.
 ///
 /// # Returns
 ///
 /// The machine where the run stopped, and `Ok` when the main function
 /// returned or the trap that stopped it.
 pub fn run_and_keep(
-    module: &Module, out: &mut dyn Write, options: &RunOptions,
+    module: &Module, out: &mut dyn Write, options: &RunOptions, host: &HostData,
 ) -> (Machine, Result<(), Trap>)
 {
     let mut machine = Machine::new(module.clone(), *options);
+    machine.set_host(host);
     let result = drive(&mut machine, out);
     (machine, result)
 }
@@ -762,6 +794,87 @@ impl Machine
     ///
     /// The block starts.
     pub fn globals(&self) -> &[u64] { &self.globals }
+
+    /// Give the start block the arguments and the environment of the run:
+    /// each text gets a heap block of its own, and each list one more, which
+    /// the hidden globals of the start block own. Call it before the first
+    /// step; without it, both lists are blank. A list with no room on the
+    /// heap traps the run.
+    ///
+    /// # Arguments
+    ///
+    /// * `host` - The arguments and the environment.
+    pub fn set_host(&mut self, host: &HostData)
+    {
+        let links = self.module.host;
+        let lists = [(links.args, &host.args), (links.env, &host.env)];
+        let mut lists = lists.into_iter().filter_map(|(g, texts)| Some((g?, texts)));
+        let placed = lists.try_for_each(|(g, t)| self.place_texts_in(g, t));
+        do_if!(let Err(kind) = placed, self.state = State::Trapped(self.trap(kind)));
+    }
+
+    /// The exit code the start block chose: the lowest 8 bits of its result.
+    ///
+    /// # Returns
+    ///
+    /// The code, or `None` when the program has no start block with a result
+    /// or the run did not finish.
+    pub fn exit_code(&self) -> Option<u8>
+    {
+        ret_if!(self.state != State::Finished, None);
+        let g = self.module.host.exit? as usize;
+        let value =
+            self.mem.load(*self.globals.get(g)?, self.module.globals.get(g)?.kind);
+        let raw = tern!(let Ok(Value::Int { raw, .. }) = value, raw, 0);
+        Some((raw & 0xFF) as u8)
+    }
+
+    /// Put a plain list of texts in a global, each text and the list in a
+    /// heap block of its own.
+    ///
+    /// # Arguments
+    ///
+    /// * `global` - The index of the global.
+    /// * `texts` - The texts.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `OutOfMem` when the heap has no room.
+    fn place_texts_in(&mut self, global: u32, texts: &[String]) -> Step
+    {
+        let slot = self.globals.get(global as usize).copied();
+        let slot = slot.ok_or_else(|| malformed("no host global"))?;
+        let stride = u64::from(DataKind::TEXT.size(self.module.platform_bits));
+        let count = texts.len() as u64;
+        let size = count * stride;
+        ret_if!(size == 0, Ok(()));
+        let block = self.mem.alloc(size, Origin::Heap, 0);
+        let block = block.ok_or(TrapKind::OutOfMem { size })?;
+        (0..)
+            .zip(texts)
+            .try_for_each(|(i, t)| self.place_text(block + i * stride, t))?;
+        self.write_text(slot, block, count, size)
+    }
+
+    /// Put one text in a heap block of its own and write its header.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - Where the header goes.
+    /// * `text` - The text.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `OutOfMem` when the heap has no room.
+    fn place_text(&mut self, at: u64, text: &str) -> Step
+    {
+        let size = text.len() as u64;
+        ret_if!(size == 0, self.write_text(at, 0, 0, 0));
+        let block = self.mem.alloc(size, Origin::Heap, 0);
+        let block = block.ok_or(TrapKind::OutOfMem { size })?;
+        self.mem.fill_block(block, text.as_bytes())?;
+        self.write_text(at, block, size, size)
+    }
 
     /// What print ops wrote and no one took.
     ///

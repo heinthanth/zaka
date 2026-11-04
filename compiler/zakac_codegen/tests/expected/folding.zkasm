@@ -1,22 +1,22 @@
 ; zakac asm listing v1, platform 64 bits
-globals
-  g0 အလျား isize
-  g1 အနံ isize
-  g2 ဧရိယာ isize
 texts
   t0 "ကြီးသည်"
 
-fn f0 main (params 0)
-     0  global_addr g0       ; အလျား
+fn f0 ပရိုဂရမ် (params 0)
+locals
+  l0 အလျား isize
+  l1 အနံ isize
+  l2 ဧရိယာ isize
+     0  local_addr l0        ; အလျား
      1  push 12:isize
      2  store isize
-     3  global_addr g1       ; အနံ
+     3  local_addr l1        ; အနံ
      4  push 8:isize
      5  store isize
-     6  global_addr g2       ; ဧရိယာ
+     6  local_addr l2        ; ဧရိယာ
      7  push 96:isize
      8  store isize
-     9  global_addr g2       ; ဧရိယာ
+     9  local_addr l2        ; ဧရိယာ
     10  load isize
     11  print
     12  push 20:isize
@@ -33,3 +33,7 @@ fn f0 main (params 0)
     23  print
     24  print_text t0
     25  ret
+
+fn f1 main (params 0)
+     0  call f0              ; ပရိုဂရမ်
+     1  ret

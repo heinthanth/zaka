@@ -31,8 +31,29 @@ pub struct Module
     #[builder(default)]
     #[serde(default)]
     pub imported_inits: u32,
+    /// The hidden globals that link the start block to the host.
+    #[builder(default)]
+    #[serde(default)]
+    pub host: Host,
     /// Source region of the whole program.
     pub span: Span,
+}
+
+/// The hidden globals that link the start block to the host. The VM fills
+/// `args` and `env` with text lists before the run, and reads `exit` as the
+/// exit code after it. Each is `None` when the start block does not use it,
+/// and all three are `None` for a program with no start block.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, Builder)]
+pub struct Host
+{
+    /// The global that holds the name of the program and the arguments of the
+    /// run, one text for each.
+    pub args: Option<u32>,
+    /// The global that holds the environment, one `NAME=VALUE` text for
+    /// each variable.
+    pub env: Option<u32>,
+    /// The global that receives the result of the start block.
+    pub exit: Option<u32>,
 }
 
 /// A function.

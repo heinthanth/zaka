@@ -16,8 +16,8 @@ use zakac_span::source_map::SourceMap;
 fn the_hero_line_prints_what_the_hero_shows()
 {
     let mut map = SourceMap::new();
-    let file =
-        map.new_source_file(FileName::Custom("hero.zaka".into()), LINE.to_string());
+    let program = format!("ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n{LINE}\nပရိုဂရမ် ပြီးဆုံးပါပြီး။");
+    let file = map.new_source_file(FileName::Custom("hero.zaka".into()), program);
     let emitted = run_phases(
         &file,
         &LexerOptions::default(),

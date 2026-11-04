@@ -3,6 +3,7 @@ mod common;
 use common::compile_text;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
+use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_and_keep;
 use zaka_vm::trap::TrapKind;
@@ -47,7 +48,8 @@ fn a_text_constant_is_duplicated_in_each_mode_and_leaks_nothing()
                 {
                     let options = RunOptions::builder().frames(frames).build();
                     let mut out = Vec::new();
-                    let (machine, result) = run_and_keep(&module, &mut out, &options);
+                    let (machine, result) =
+                        run_and_keep(&module, &mut out, &options, &HostData::default());
                     let mode = format!("{fold:?} {results} {scratch} {frames}");
                     assert_eq!(result, Ok(()), "{mode}");
                     let out = String::from_utf8(out).unwrap();

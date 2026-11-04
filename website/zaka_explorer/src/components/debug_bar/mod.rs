@@ -258,11 +258,15 @@ fn status_chip(state: AppState) -> impl IntoView
         tern!(on, RunStatus::Running, state.debug.with(Session::status))
     };
     let class = move || format!("{} {}", ClassName::RUN_STATUS, status_class(status()));
-    span()
-        .class(class)
-        .attr(TOUR, "status")
-        .attr("role", "status")
-        .child(move || status().label())
+    span().class(class).attr(TOUR, "status").attr("role", "status").child(move || {
+        let code = state.debug.with(Session::exit_code).filter(|c| *c != 0);
+        let finished = status() == RunStatus::Finished;
+        let code = code.filter(|_| finished);
+        code.map_or_else(
+            || status().label(),
+            |c| t!("explorer.run.status_exit", code = c),
+        )
+    })
 }
 
 /// The chips after the status: the ops run, the times of the compile and of

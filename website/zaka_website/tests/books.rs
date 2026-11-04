@@ -305,8 +305,11 @@ fn fence_words_with_an_equals_sign_are_options()
 #[test]
 fn a_warn_fence_runs_a_program_the_check_refuses()
 {
-    let source =
-        "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\n\"အစ\" ဟု ပြသပါ။\nပ ၏ တန်ဖိုး ကို ပြသပါ။";
+    let source = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+\"အစ\" ဟု ပြသပါ။
+ပ ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let (codes, out) = run_to_end(source, &FenceOptions::default());
     assert!(codes.contains(&"ZK0709".to_string()), "{codes:?}");
     assert_eq!(out, "");

@@ -181,7 +181,7 @@ en = "conditional as a single-statement block"
 [codes.ZK0215.message]
 en = "a single-statement block cannot be another conditional"
 [codes.ZK0215.explain]
-en = """When a conditional arm has no block phrase, its block is the single statement that follows. That statement cannot itself be a conditional, so that each else arm belongs to one clear conditional. Wrap the inner conditional in \"အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\" and \"လုပ်ဆောင်စရာများ ပြီးပါပြီ။\"."""
+en = """When a conditional arm has no block phrase, its block is the single statement that follows. That statement cannot itself be a conditional, so that each else arm belongs to one clear conditional. Wrap the inner conditional in \"အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\" and \"လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\"."""
 
 [codes.ZK0216.title]
 en = "invalid bit count"
@@ -244,7 +244,7 @@ en = "unmatched block closer"
 [codes.ZK0226.message]
 en = "this block closer has no open block to close"
 [codes.ZK0226.explain]
-en = """\"လုပ်ဆောင်စရာများ ပြီးပါပြီ။\" closes the block opened with \"အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\" or with a function opener. Here no block is open. Remove the closer, or add the opener it belongs to."""
+en = """\"လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\" closes the block opened with \"အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\" or with a function opener. Here no block is open. Remove the closer, or add the opener it belongs to."""
 
 [codes.ZK0227.title]
 en = "bad list count"
@@ -474,6 +474,33 @@ en = "statement in an imported file"
 en = "\"%{f}\" is imported, so it holds declarations and no statements"
 [codes.ZK0323.explain]
 en = """A file that another file imports declares functions, structs, variables and constants for other files to use. Statements that print, loop, call or assign belong in the file that is run, the one given to \"zakac run\"."""
+
+[codes.ZK0325.title]
+en = "a second start block"
+[codes.ZK0325.message]
+en = "the program has a start block before this one"
+[codes.ZK0325.help]
+en = "keep one \"ပရိုဂရမ်သည်\" block and move the statements of the other into it"
+[codes.ZK0325.explain]
+en = """A program starts at one place. The file given to \"zakac run\" holds at most one start block, \"ပရိုဂရမ်သည်\", and an imported file holds none."""
+
+[codes.ZK0326.title]
+en = "statement at the top level"
+[codes.ZK0326.message]
+en = "a statement that runs goes inside the start block, not at the top level"
+[codes.ZK0326.help]
+en = "move the statement into the \"ပရိုဂရမ်သည်\" block"
+[codes.ZK0326.explain]
+en = """A program starts at its start block, \"ပရိုဂရမ်သည်\". The top level of a file declares functions, structs, variables and constants, and the starting values of the variables are set before the start block runs. Statements that print, loop, call or assign go inside the start block, or inside a function."""
+
+[codes.ZK0327.title]
+en = "no start block"
+[codes.ZK0327.message]
+en = "the program has no start block, \"ပရိုဂရမ်သည်\""
+[codes.ZK0327.help]
+en = "add \"ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\", the statements to run, and \"ပရိုဂရမ် ပြီးဆုံးပါပြီး။\""
+[codes.ZK0327.explain]
+en = """The file given to \"zakac run\" starts the program, so it holds a start block, \"ပရိုဂရမ်သည်\", with the statements that run first. A file that other files import holds declarations alone and no start block."""
 
 [codes.ZK0324.title]
 en = "private struct in an export"
@@ -762,6 +789,24 @@ en = "\"အရှေ့တွင်\" follows a cell of a list or a character of
 en = "name the cell or the character the value goes in front of: \"<list> ၏ အကွက် n ၏ အရှေ့တွင်\" or \"<text> ၏ စာလုံး n ၏ အရှေ့တွင်\"; \"<list> ထဲသို့\" adds at the end"
 [codes.ZK0439.explain]
 en = """An add puts its value in front of one cell of a plain list, or one character of text, and the cells or characters from there on move one place on. The number can also be the count, which puts the value at the end. Name the place with a cell form, \"အကွက် n\" or \"n ခုမြောက်အကွက်\", or a character form, \"စာလုံး n\" or \"n ခုမြောက်စာလုံး\"."""
+
+[codes.ZK0440.title]
+en = "start block parameter that is no text list"
+[codes.ZK0440.message]
+en = "a parameter of the start block is a \"စာသား စာရင်း\", and there are two of them at most"
+[codes.ZK0440.help]
+en = "write \"စာသား စာရင်း <name>\": the first one gets the name of the program and its arguments, the second the environment"
+[codes.ZK0440.explain]
+en = """The start block takes no parameter, one or two. The first holds the name of the program and then the arguments it was run with, one text for each, as in C; the second holds the environment variables, one \"NAME=VALUE\" text for each. Both are plain text lists, \"စာသား စာရင်း\", and neither is a place the start block can change for a caller."""
+
+[codes.ZK0441.title]
+en = "start block result that is no integer"
+[codes.ZK0441.message]
+en = "the result of the start block is \"%{k}\", but it must be an integer"
+[codes.ZK0441.help]
+en = "write \"ကိန်းပြည့် ရလဒ်\": the result becomes the exit code of the run"
+[codes.ZK0441.explain]
+en = """The result of the start block is the exit code of the run: 0 tells the shell that all went well, and another number tells it that something failed. The host keeps the lowest 8 bits of it. A start block with no result ends the run with 0."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 

@@ -78,7 +78,7 @@ pub fn emit(module: &ir::Module, platform_bits: u16, options: EmitOptions) -> Mo
     #[rustfmt::skip]
     return Module::builder().platform_bits(platform_bits).globals(shared.globals)
         .texts(shared.texts).seqs(shared.seqs).formats(shared.formats).funcs(funcs)
-        .main(main).build();
+        .main(main).host(module.host).build();
 }
 
 /// Make the slot of an IR slot.

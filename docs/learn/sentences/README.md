@@ -13,6 +13,7 @@ The verb comes last and decides what the sentence means. A small word called a
 
 ```zaka
 // "the sum of 3 and 4" — then show it
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။
 
 // "the product of 3 and 4"
@@ -23,6 +24,7 @@ The verb comes last and decides what the sentence means. A small word called a
 
 // "3 is greater than 2"
 ၃ သည် ၂ ထက် ကြီးသည် ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -61,9 +63,11 @@ Most operations can also be written with the signs from school maths. Both forms
 the same result, and the two can be mixed:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၃ + ၄ ကို ပြသပါ။                        // signs
 ၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။           // words
 ၁ + ၂ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။       // both: the sum of (1 + 2) and 4
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

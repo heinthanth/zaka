@@ -1,10 +1,12 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
+use zaka_explorer::compile::Compiled;
 use zaka_explorer::compile::Options;
 use zaka_explorer::compile::PartKind;
 use zaka_explorer::compile::Phase;
 use zaka_explorer::compile::Status;
+use zaka_explorer::compile::asm::AsmFunc;
 use zaka_explorer::compile::compile;
 use zaka_explorer::compile::samples::DIAGNOSTICS;
 use zaka_explorer::compile::samples::GROUPS;
@@ -12,6 +14,7 @@ use zaka_explorer::compile::samples::MISTAKES;
 use zaka_explorer::compile::samples::SAMPLES;
 use zaka_explorer::compile::samples::Sample;
 use zaka_explorer::compile::samples::find_sample;
+use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_diagnostics::Level;
 use zakac_ir_builder::ir::FoldOptions;
@@ -22,6 +25,12 @@ use zakac_rust_sugars::tern;
 fn clean() -> impl Iterator<Item = &'static Sample>
 {
     SAMPLES.iter().filter(|s| s.group != DIAGNOSTICS && s.group != MISTAKES)
+}
+
+/// The ops of the start block.
+fn start_asm(out: &Compiled) -> &AsmFunc
+{
+    out.asm.iter().find(|f| f.name == START_NAME).expect("the start block")
 }
 
 #[test]
@@ -49,7 +58,8 @@ fn clean_groups_have_no_diagnostics()
 #[test]
 fn particle_warnings_belong_to_the_check_stage()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက သည် ၁ နှင့် \
+                ညီသည် ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     assert!(out.checked);
     assert_eq!(out.count(Level::Warning), 1);
@@ -144,10 +154,12 @@ fn lexer_errors_skip_the_check()
 #[test]
 fn check_errors_are_reported()
 {
-    let out = compile("က ကို ပြသပါ။", &Options::default());
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let out = compile(text, &Options::default());
     assert!(out.checked);
     assert_eq!(out.diagnostics[0].code, "ZK0301");
-    assert_eq!(out.diagnostics[0].range.map(|r| r.lo), Some(0));
+    let at = text.find("က ကို ပြသပါ။").map(|n| n as u32);
+    assert_eq!(out.diagnostics[0].range.map(|r| r.lo), at);
 }
 
 #[test]
@@ -205,7 +217,7 @@ fn fold_errors_belong_to_the_lowering_stage()
 #[test]
 fn fold_options_change_the_folded_ir()
 {
-    let text = "(၂ + ၃) * ၄ ကို ပြသပါ။";
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n(၂ + ၃) * ၄ ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let all = compile(text, &Options::default());
     assert!(
         all.ir_folded_sexpr.contains("(print 20:isize)"),
@@ -239,11 +251,12 @@ fn debug_mode_opens_the_last_phase_before_the_first_failure()
 }
 
 #[test]
-fn blank_source_compiles()
+fn blank_source_lacks_a_start_block()
 {
     let out = compile("", &Options::default());
     assert!(out.tokens.is_empty());
-    assert!(out.diagnostics.is_empty());
+    let codes: Vec<&str> = out.diagnostics.iter().map(|d| d.code.as_str()).collect();
+    assert_eq!(codes, ["ZK0327"]);
     assert_eq!(out.tree.label, "program");
 }
 
@@ -286,15 +299,18 @@ fn clean_samples_generate_ops_that_run()
 #[test]
 fn op_rows_point_at_their_source()
 {
-    let text = "\"က\" ဟု ပြသပါ။\n၁ + ၂ ကို ပြသပါ။";
+    let text =
+        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"က\" ဟု ပြသပါ။\n၁ + ၂ ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     let main = out.asm.last().expect("main");
-    assert_eq!(main.head(), "f0 main (params 0)");
+    assert_eq!(main.head(), "f1 main (params 0)");
+    let start = start_asm(&out);
+    assert_eq!(start.head(), format!("f0 {START_NAME} (params 0)"));
     assert_eq!(out.texts, ["က"]);
-    let first = main.rows[0].range.expect("range");
+    let first = start.rows[0].range.expect("range");
     assert_eq!(&text[first.lo as usize..first.hi as usize], "\"က\" ဟု ပြသပါ။");
-    assert_eq!(main.rows[0].line, Some(1));
-    assert_eq!(main.rows[1].line, Some(2));
+    assert_eq!(start.rows[0].line, Some(2));
+    assert_eq!(start.rows[1].line, Some(3));
     let last = main.rows.last().expect("ret");
     assert_eq!(last.text, "ret");
     assert!(last.range.is_some_and(|r| r.is_blank()));
@@ -303,10 +319,10 @@ fn op_rows_point_at_their_source()
 #[test]
 fn jump_targets_get_labels()
 {
-    let text = "ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။\nအကယ်၍ က ဖြစ်လျှင် \
-                \"ဟုတ်\" ဟု ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+                လုပ်ဆောင်မည်။\nအကယ်၍ က ဖြစ်လျှင် \"ဟုတ်\" ဟု ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
-    let main = out.asm.last().expect("main");
+    let main = start_asm(&out);
     let jump = main.rows.iter().find(|r| r.text.starts_with("jump_if_false"));
     let jump = jump.expect("jump");
     let target = main.rows.iter().find(|r| r.label.is_some()).expect("target");
@@ -328,7 +344,8 @@ fn codegen_skips_after_fold_errors()
 #[test]
 fn compiling_does_not_run_the_ops()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
+    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"အရင်\" ဟု \
+                ပြသပါ။\n၁ / သုည ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     assert_eq!(out.status(Phase::Codegen), Status::Clean);
     assert_eq!(out.status(Phase::Run), Status::Clean);
@@ -398,7 +415,8 @@ fn warn_builds_each_mistake_and_off_reports_nothing()
 #[test]
 fn no_raw_rejects_a_raw_kind_in_the_check_phase()
 {
-    let text = "ကိန်းရှင် r သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။";
+    let text = "ကိန်းရှင် r သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+                လုပ်ဆောင်မည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     assert!(compile(text, &Options::default()).diagnostics.is_empty());
     let out = compile(text, &Options::builder().no_raw(true).build());
     let codes: Vec<(&str, Phase)> =
@@ -431,7 +449,7 @@ fn the_borrow_check_labels_the_later_use()
     assert_eq!(row.labels.len(), 1, "{:?}", row.labels);
     let (range, label) = &row.labels[0];
     let line = text[..range.lo as usize].matches('\n').count() + 1;
-    assert_eq!(line, 7);
+    assert_eq!(line, 8);
     assert!(label.contains("used here"), "{label}");
 }
 

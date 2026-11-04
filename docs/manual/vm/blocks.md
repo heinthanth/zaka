@@ -58,12 +58,15 @@ address, so the arrangement can be seen:
 ```zaka
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ဒုတိယ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ကို ပြသပါ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ဒုတိယ တွင် သိမ်းထားမည်။
 ဒုတိယ ကို ပြသပါ။
 လိပ်စာ ဒုတိယ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -160,7 +163,7 @@ marked freed and the top of the stack moves back to where it was before the call
 ```text
  stack region, growing upward
 
- main calls f, f calls g              g returns                  main calls h
+ start calls f, f calls g             g returns                  start calls h
 
  ┌──────────────┐ top              ┌──────────────┐          ┌──────────────┐
  │ g: s, t      │                  │ (g: freed)   │          │ h: p, q      │ takes
@@ -223,8 +226,8 @@ $ zakac run --frames packed program.zaka
 0x1008
 ```
 
-Here `program.zaka` prints `က ၏ လိပ်စာ` and `ခ ၏ လိပ်စာ`, two integers declared one
-after the other. The checked run leaves 24 addresses between them, and the packed run
+Here `program.zaka` declares two integers `က` and `ခ` one after the other at its top
+level, and its start block prints `က ၏ လိပ်စာ` and `ခ ၏ လိပ်စာ`. The checked run leaves 24 addresses between them, and the packed run
 leaves none.
 
 The difference shows when a mistake is made. A program borrows `က`, writes `၉` one box
@@ -233,7 +236,7 @@ past it, and prints `ခ`:
 ```console
 $ zakac run --mem-check warn program.zaka
 warning[ZK0710]: offset 1 is past the end of a block of 1 elements
-zaka_vm: the program stopped: access of 8 octets at 0x1008 lands outside each live block (in main, op 14); block at 0x1000, 8 octets, global က
+zaka_vm: the program stopped: access of 8 octets at 0x1008 lands outside each live block (in ပရိုဂရမ်, op 8); block at 0x1000, 8 octets, global က
 $ zakac run --mem-check warn --frames packed program.zaka
 warning[ZK0710]: offset 1 is past the end of a block of 1 elements
 ၉

@@ -40,7 +40,9 @@ and write an artifact to look at.
 One command takes a source file through all the stages and runs it:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

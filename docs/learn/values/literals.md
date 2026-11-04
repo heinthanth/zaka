@@ -9,12 +9,14 @@ A number written straight into a program, like `၄၂`, is called a *literal*. 
 several forms of integer literal.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁၂၃ ကို ပြသပါ။                                 // Burmese digits
 123 ကို ပြသပါ။                                  // Western digits: the same number
 အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသပါ။                     // base 2: 1010 = ten
 အခြေ ၈ ဖြင့် ၇၇ ကို ပြသပါ။                       // base 8: 77 = 63
 အခြေ ၁၆ ဖြင့် FF ကို ပြသပါ။                       // base 16 (hexadecimal): FF = 255
 အခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF ကို ပြသပါ။  // base and kind together
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -65,8 +67,10 @@ There is no negative literal. `-၅` is the minus operator applied to `၅`. The
 program runs, so the difference never shows.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 -၅ ကို ပြသပါ။
 အနုတ် ၅ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

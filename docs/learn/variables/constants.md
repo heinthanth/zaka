@@ -10,12 +10,14 @@ pass mark of a test. Declare these as *constants* with `ကိန်းသေ` (
 number") instead of `ကိန်းရှင်` ("living number", a variable).
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ ပိုင် သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃.၁၄၁၅၉ ဖြစ်ပါစေ။     // pi
 ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။          // the length of a week
 ကိန်းသေ နှစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် တစ်ပတ် * ၂ ဖြစ်ပါစေ။ // built from another constant
 
 ပိုင် ကို ပြသပါ။
 နှစ်ပတ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -36,7 +38,9 @@ change: fix the value in one place and each use follows.
 A constant must be given its value when it is declared:
 
 ```zaka-error ZK0308
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -47,8 +51,10 @@ After that, it can never be given a new value. The next page shows how to change
 variable; attempting the same on a constant fails:
 
 ```zaka-error ZK0306
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
 တစ်ပတ် ကို ၈ ဟု ထားပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

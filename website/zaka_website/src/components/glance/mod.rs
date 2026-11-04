@@ -35,34 +35,44 @@ struct Line
     code: &'static str,
     /// The words of the line the label points at; the first match is marked.
     pin: &'static str,
-    /// Locale id of the label.
-    label: &'static str,
+    /// Locale id of the label; `None` for a line with no note.
+    label: Option<&'static str>,
 }
 
-/// The program, line after line: it adds the numbers from 1 to 10, prints the
-/// total with a quote mark where a plain value wants an object mark, and
-/// tells whether the total is more than 50.
-const LINES: [Line; 5] = [
+/// The program, line after line: its start block adds the numbers from 1 to
+/// 10, prints the total with a quote mark where a plain value wants an object
+/// mark, and tells whether the total is more than 50.
+const LINES: [Line; 7] = [
+    Line {
+        code: "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။",
+        pin: "ပရိုဂရမ်သည်",
+        label: Some("website.glance.start"),
+    },
     Line {
         code: "ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။",
         pin: "ကိန်းရှင်",
-        label: "website.glance.variable",
+        label: Some("website.glance.variable"),
     },
     Line {
         code: "၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ စုစုပေါင်း ကို စုစုပေါင်း + ကိန်း ဟု ထားပါ။",
         pin: "ရေတွက်၍",
-        label: "website.glance.count",
+        label: Some("website.glance.count"),
     },
     Line {
-        code: "စုစုပေါင်း ဟု ပြသပါ။", pin: "ဟု", label: "website.glance.verb"
+        code: "စုစုပေါင်း ဟု ပြသပါ။", pin: "ဟု", label: Some("website.glance.verb")
     },
     Line {
         code: "အကယ်၍ စုစုပေါင်း သည် ၅၀ ထက် ကြီးလျှင် \"များသည်\" ဟု ပြသပါ။",
         pin: "သည် ၅၀ ထက်",
-        label: "website.glance.particles",
+        label: Some("website.glance.particles"),
     },
     Line {
-        code: "သို့မဟုတ်ပါက \"နည်းသည်\" ဟု ပြသပါ။", pin: "။", label: "website.glance.stop"
+        code: "သို့မဟုတ်ပါက \"နည်းသည်\" ဟု ပြသပါ။",
+        pin: "။",
+        label: Some("website.glance.stop"),
+    },
+    Line {
+        code: "ပရိုဂရမ် ပြီးဆုံးပါပြီး။", pin: "", label: None
     },
 ];
 
@@ -117,17 +127,19 @@ fn row(line: Line) -> impl IntoView
     let at = line.code.find(line.pin).unwrap_or_default();
     let (before, rest) = line.code.split_at(at);
     let (pinned, after) = rest.split_at(line.pin.len());
-    li().class(ClassName::GLANCE_LINE).child((
-        code_text(before, pinned, after),
-        p().class(ClassName::GLANCE_LABEL)
-            .lang("en")
-            .attr("data-side", "below")
-            .child(t!(line.label.to_string())),
-        svg()
-            .class(ClassName::GLANCE_ARROW)
-            .attr("aria-hidden", "true")
-            .child(path().class(ClassName::GLANCE_PEN)),
-    ))
+    let note = line.label.map(|label| {
+        (
+            p().class(ClassName::GLANCE_LABEL)
+                .lang("en")
+                .attr("data-side", "below")
+                .child(t!(label.to_string())),
+            svg()
+                .class(ClassName::GLANCE_ARROW)
+                .attr("aria-hidden", "true")
+                .child(path().class(ClassName::GLANCE_PEN)),
+        )
+    });
+    li().class(ClassName::GLANCE_LINE).child((code_text(before, pinned, after), note))
 }
 
 /// A line of code cut in three, each part painted with the lexer; the middle

@@ -16,6 +16,7 @@ use zakac_ast::stmt::IfStmt;
 use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::ReturnStmt;
+use zakac_ast::stmt::START_NAME;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StrArg;
 use zakac_ast::stmt::StructDecl;
@@ -100,6 +101,7 @@ impl Parser<'_>
             }
             Kw::Var | Kw::Const => self.parse_decl_or_loop(),
             Kw::Function => self.parse_fn_or_call(),
+            Kw::Program => self.parse_fn_decl(),
             Kw::StructOpen => self.parse_struct_decl(),
             Kw::Export => self.parse_exported(),
             Kw::BlockOpen => self.parse_block().map(Stmt::Block),
@@ -109,7 +111,10 @@ impl Parser<'_>
             Kw::AllocHead => self.parse_alloc(),
             Kw::Address => self.parse_heap(),
             Kw::WhenDone => Err(diag::update_outside_loop(tok.span)),
-            Kw::BlockClose => Err(diag::unmatched_block_close(tok.span)),
+            Kw::BlockClose | Kw::ProgramClose =>
+            {
+                Err(diag::unmatched_block_close(tok.span))
+            }
             _ => self.parse_expr_headed(),
         }
     }
@@ -203,7 +208,7 @@ impl Parser<'_>
         let mut stmt = self.parse_stmt()?;
         let flag = match &mut stmt
         {
-            Stmt::Fn(n) => Some((&mut n.exported, &mut n.span)),
+            Stmt::Fn(n) if !n.start => Some((&mut n.exported, &mut n.span)),
             Stmt::Struct(n) => Some((&mut n.exported, &mut n.span)),
             Stmt::Decl(n) => Some((&mut n.exported, &mut n.span)),
             _ => None,
@@ -422,12 +427,23 @@ impl Parser<'_>
     {
         self.depth += 1;
         let mut stmts = Vec::new();
-        while !self.at(Kw::BlockClose) && !self.at_eof()
+        while !self.at_close() && !self.at_eof()
         {
             do_if!(let Some(stmt) = self.parse_stmt_recover(), stmts.push(stmt));
         }
         self.depth -= 1;
         stmts
+    }
+
+    /// Whether the next token closes a block: a block closer, or the closer
+    /// of the start block.
+    ///
+    /// # Returns
+    ///
+    /// `true` at either closer.
+    pub(crate) fn at_close(&self) -> bool
+    {
+        self.at(Kw::BlockClose) || self.at(Kw::ProgramClose)
     }
 
     /// Parse the block closer and its full stop.
@@ -441,7 +457,22 @@ impl Parser<'_>
     /// The span of the whole block, or a diagnostic.
     fn parse_block_close(&mut self, start: Span) -> PResult<Span>
     {
-        self.expect(Kw::BlockClose)?;
+        self.parse_close(start, Kw::BlockClose)
+    }
+
+    /// Parse a closer and its full stop.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The span of the opener.
+    /// * `closer` - The closer the block takes.
+    ///
+    /// # Returns
+    ///
+    /// The span from the opener to the full stop, or a diagnostic.
+    fn parse_close(&mut self, start: Span, closer: Kw) -> PResult<Span>
+    {
+        self.expect(closer)?;
         let stop = self.expect_stop()?;
         Ok(start.to(&stop.span))
     }
@@ -529,7 +560,7 @@ impl Parser<'_>
     {
         self.depth += 1;
         let (mut stmts, mut update) = (Vec::new(), None);
-        while !self.at(Kw::BlockClose) && !self.at_eof()
+        while !self.at_close() && !self.at_eof()
         {
             let is_update = self.at(Kw::WhenDone);
             let start = self.peek().span;
@@ -554,7 +585,7 @@ impl Parser<'_>
     /// * `start` - The span of `ပြီးလျှင်`.
     fn check_update_last(&mut self, start: Span)
     {
-        ret_if!(self.at(Kw::BlockClose) || self.at_eof());
+        ret_if!(self.at_close() || self.at_eof());
         let span = start.to(&self.prev_span());
         self.diags.push(diag::update_not_last(span));
     }
@@ -586,6 +617,7 @@ impl Parser<'_>
     /// Parse a function declaration:
     /// `လုပ်ဆောင်ချက် f သည် <params>? အောက်ပါတို့ကို လုပ်ဆောင်မည်။`, or with a
     /// result, `... အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်။`.
+    /// The start block has the same parts after `ပရိုဂရမ်သည်`, with no name.
     ///
     /// # Returns
     ///
@@ -593,8 +625,11 @@ impl Parser<'_>
     /// parsed and reported.
     fn parse_fn_decl(&mut self) -> PResult<Stmt>
     {
-        let start = self.bump().span;
-        let name = self.parse_ident()?;
+        let head = self.bump();
+        let start = head.span;
+        let is_start = head.kind == TokenKind::Kw(Kw::Program);
+        let start_name = || Ident::builder().name(START_NAME).span(start).build();
+        let name = tern!(is_start, start_name(), self.parse_ident()?);
         self.expect(Kw::Thi)?;
         let params = self.parse_params()?;
         let open = self.expect_one_of(&[Kw::FnOpen, Kw::FnOpenRet])?;
@@ -603,12 +638,15 @@ impl Parser<'_>
         do_if!(self.depth > 0, self.diags.push(diag::nested_function(fn_span)));
         self.expect_stop()?;
         let stmts = self.parse_stmts_to_close();
-        let block_span = self.parse_block_close(open.span)?;
+        let block_span = self.parse_close(
+            open.span,
+            tern!(is_start, Kw::ProgramClose, Kw::BlockClose),
+        )?;
         let block = BlockStmt::builder().stmts(stmts).span(block_span).build();
         let span = start.to(&block_span);
         #[rustfmt::skip]
         let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
-            .span(span).build();
+            .start(is_start).span(span).build();
         Ok(Stmt::Fn(node))
     }
 

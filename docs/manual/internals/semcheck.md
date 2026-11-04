@@ -123,7 +123,16 @@ The walk goes over the statements of each file in turn, in the order the loader 
 them, and `visit_top` moves to the file of each top-level statement first. Moving to a
 new file keeps the top-level scope of the file that ended in `saved`, opens a blank one,
 and sets `fns` to the functions of the new file. A statement of an imported file that is
-not an import, a function, a struct or a declaration is ZK0323.
+not an import, a function, a struct or a declaration is ZK0323, and so is a start block
+there.
+
+`start_rules` looks at the file that is run before the walk: a second start block is
+ZK0325, each top-level statement that runs is ZK0326, and a file with no start block is
+ZK0327, reported at its start.
+`collect_fns` leaves the start block out of the function map, so no call finds it, and
+`visit_fn` checks it as a function, then checks its header with `check_start_header`: up
+to two parameters, each a plain `စာသား စာရင်း` the function cannot change (ZK0440), and
+no result or an integer one (ZK0441).
 
 An import runs at its place, at the top of the file. For each name it looks in the file
 it reads for an exported function (from that file's function map), an exported variable

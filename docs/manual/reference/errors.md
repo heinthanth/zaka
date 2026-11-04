@@ -145,6 +145,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0322 | an import of a name the other file does not export | [Module mistakes](../../learn/modules/mistakes.md#a-name-the-file-does-not-export) |
 | ZK0323 | a statement in an imported file | [Module mistakes](../../learn/modules/mistakes.md#a-statement-in-an-imported-file) |
 | ZK0324 | an exported declaration whose kind names a private struct | [Module mistakes](../../learn/modules/mistakes.md#a-private-struct-in-an-export) |
+| ZK0325 | a second start block | [Functions](../language/functions.md#the-start-block) |
+| ZK0326 | a statement that runs, at the top level of a file | [Functions](../language/functions.md#the-start-block) |
+| ZK0327 | a program with no start block | [Functions](../language/functions.md#the-start-block) |
 
 ### ZK04: kinds
 
@@ -186,6 +189,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0437 | an add or a remove on a counted list or a slice, or `နောက်ဆုံးအကွက်` on text | [Static data and counted lists](../../learn/forms/counted-lists.md#adding-to-a-counted-list) |
 | ZK0438 | a character write, an add or a remove on a view of text | [Text](../language/text.md#changing-text) |
 | ZK0439 | `၏ အရှေ့တွင်` after a value that is no cell of a list and no character of text | [Lists](../language/lists.md#adding-and-removing-cells) |
+| ZK0440 | a start block parameter that is no `စာသား စာရင်း`, a parameter to change, or a third one | [Functions](../language/functions.md#the-start-block) |
+| ZK0441 | a start block result that is no integer | [Functions](../language/functions.md#the-start-block) |
 
 ### ZK05: natural Zaka (warnings)
 

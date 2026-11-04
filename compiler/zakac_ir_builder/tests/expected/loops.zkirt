@@ -1,358 +1,379 @@
 # zakac-ir-artifact v1
 name:
   Custom: loops.zaka
-source: "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\n"
+source: "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 module:
-  globals:
-  - name: ကိန်း
-    kind: isize
-    access: var
-    span:
-      lo: 28
-      hi: 43
-    addressed: false
-  - name: အမှတ်
-    kind: isize
-    access: loop_var
-    span:
-      lo: 519
-      hi: 534
-    addressed: false
-  - name: အမှတ်
-    kind: isize
-    access: loop_var
-    span:
-      lo: 1143
-      hi: 1158
-    addressed: false
-  - name: အဆင့်
-    kind: u8
-    access: var
-    span:
-      lo: 1279
-      hi: 1294
-    addressed: false
-  funcs: []
-  main:
-  - set:
-      place: g0
-      value:
-        kind: isize
-        node:
-          const: 0:isize
+  globals: []
+  funcs:
+  - name: ပရိုဂရမ်
+    params: 0
+    result: null
+    ret: null
+    locals:
+    - name: ကိန်း
+      kind: isize
+      access: var
+      span:
+        lo: 145
+        hi: 160
+      addressed: false
+    - name: အမှတ်
+      kind: isize
+      access: loop_var
+      span:
+        lo: 648
+        hi: 663
+      addressed: false
+    - name: အမှတ်
+      kind: isize
+      access: loop_var
+      span:
+        lo: 1284
+        hi: 1299
+      addressed: false
+    - name: အဆင့်
+      kind: u8
+      access: var
+      span:
+        lo: 1420
+        hi: 1435
+      addressed: false
+    block:
+    - set:
+        place: l0
+        value:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 145
+            hi: 160
         span:
-          lo: 28
-          hi: 43
+          lo: 117
+          hi: 245
+    - loop:
+        init: []
+        cond:
+          kind: bool
+          node:
+            compare:
+              op: lt
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 246
+                  hi: 261
+              rhs:
+                kind: isize
+                node:
+                  const: 5:isize
+                span:
+                  lo: 272
+                  hi: 275
+          span:
+            lo: 246
+            hi: 301
+        update:
+        []
+        block:
+        - print:
+            value:
+              expr:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 403
+                  hi: 418
+            span:
+              lo: 403
+              hi: 447
+        - set:
+            place: l0
+            value:
+              kind: isize
+              node:
+                infix:
+                  op: add
+                  lhs:
+                    kind: isize
+                    node:
+                      read: l0
+                    span:
+                      lo: 474
+                      hi: 489
+                  rhs:
+                    kind: isize
+                    node:
+                      const: 1:isize
+                    span:
+                      lo: 492
+                      hi: 495
+              span:
+                lo: 474
+                hi: 495
+            span:
+              lo: 448
+              hi: 521
+        span:
+          lo: 246
+          hi: 616
+    - counted:
+        var: l1
+        from:
+          kind: isize
+          node:
+            const: 1:isize
+          span:
+            lo: 617
+            hi: 620
+        to:
+          kind: isize
+          node:
+            const: 100:isize
+          span:
+            lo: 628
+            hi: 637
+        step: null
+        mode: count
+        block:
+        - if:
+            cond:
+              kind: bool
+              node:
+                compare:
+                  op: eq
+                  lhs:
+                    kind: isize
+                    node:
+                      infix:
+                        op: rem
+                        lhs:
+                          kind: isize
+                          node:
+                            read: l1
+                          span:
+                            lo: 807
+                            hi: 822
+                        rhs:
+                          kind: isize
+                          node:
+                            const: 2:isize
+                          span:
+                            lo: 825
+                            hi: 828
+                    span:
+                      lo: 807
+                      hi: 828
+                  rhs:
+                    kind: isize
+                    node:
+                      const: 0:isize
+                    span:
+                      lo: 839
+                      hi: 842
+              span:
+                lo: 807
+                hi: 865
+            then:
+            - continue:
+                span:
+                  lo: 881
+                  hi: 963
+            els:
+            []
+            span:
+              lo: 791
+              hi: 963
+        - if:
+            cond:
+              kind: bool
+              node:
+                compare:
+                  op: gt
+                  lhs:
+                    kind: isize
+                    node:
+                      read: l1
+                    span:
+                      lo: 980
+                      hi: 995
+                  rhs:
+                    kind: isize
+                    node:
+                      const: 10:isize
+                    span:
+                      lo: 1006
+                      hi: 1012
+              span:
+                lo: 980
+                hi: 1035
+            then:
+            - break:
+                span:
+                  lo: 1051
+                  hi: 1104
+            els:
+            []
+            span:
+              lo: 964
+              hi: 1104
+        - print:
+            value:
+              expr:
+                kind: isize
+                node:
+                  read: l1
+                span:
+                  lo: 1105
+                  hi: 1120
+            span:
+              lo: 1105
+              hi: 1149
+        span:
+          lo: 617
+          hi: 1244
+    - counted:
+        var: l2
+        from:
+          kind: isize
+          node:
+            const: 10:isize
+          span:
+            lo: 1245
+            hi: 1251
+        to:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 1259
+            hi: 1262
+        step:
+          kind: isize
+          node:
+            const: 2:isize
+          span:
+            lo: 1273
+            hi: 1276
+        mode: decrease
+        block:
+        - print:
+            value:
+              expr:
+                kind: isize
+                node:
+                  read: l2
+                span:
+                  lo: 1347
+                  hi: 1362
+            span:
+              lo: 1347
+              hi: 1391
+        span:
+          lo: 1245
+          hi: 1391
+    - loop:
+        init:
+        - set:
+            place: l3
+            value:
+              kind: u8
+              node:
+                const: 0:u8
+              span:
+                lo: 1446
+                hi: 1522
+            span:
+              lo: 1420
+              hi: 1522
+        cond:
+          kind: bool
+          node:
+            compare:
+              op: lt
+              lhs:
+                kind: u8
+                node:
+                  read: l3
+                span:
+                  lo: 1548
+                  hi: 1563
+              rhs:
+                kind: u8
+                node:
+                  const: 10:u8
+                span:
+                  lo: 1574
+                  hi: 1580
+          span:
+            lo: 1548
+            hi: 1606
+        update:
+        - set:
+            place: l3
+            value:
+              kind: u8
+              node:
+                infix:
+                  op: add
+                  lhs:
+                    kind: u8
+                    node:
+                      read: l3
+                    span:
+                      lo: 1807
+                      hi: 1822
+                  rhs:
+                    kind: u8
+                    node:
+                      const: 1:u8
+                    span:
+                      lo: 1825
+                      hi: 1828
+              span:
+                lo: 1807
+                hi: 1828
+            span:
+              lo: 1781
+              hi: 1854
+        block:
+        - print:
+            value:
+              expr:
+                kind: u8
+                node:
+                  read: l3
+                span:
+                  lo: 1708
+                  hi: 1723
+            span:
+              lo: 1708
+              hi: 1752
+        span:
+          lo: 1392
+          hi: 1949
+    shared_params: []
+    span:
+      lo: 0
+      hi: 2020
+  main:
+  - call:
+      func: 0
+      name: ပရိုဂရမ်
+      args: []
       span:
         lo: 0
-        hi: 128
-  - loop:
-      init: []
-      cond:
-        kind: bool
-        node:
-          compare:
-            op: lt
-            lhs:
-              kind: isize
-              node:
-                read: g0
-              span:
-                lo: 129
-                hi: 144
-            rhs:
-              kind: isize
-              node:
-                const: 5:isize
-              span:
-                lo: 155
-                hi: 158
-        span:
-          lo: 129
-          hi: 184
-      update:
-      []
-      block:
-      - print:
-          value:
-            expr:
-              kind: isize
-              node:
-                read: g0
-              span:
-                lo: 286
-                hi: 301
-          span:
-            lo: 286
-            hi: 330
-      - set:
-          place: g0
-          value:
-            kind: isize
-            node:
-              infix:
-                op: add
-                lhs:
-                  kind: isize
-                  node:
-                    read: g0
-                  span:
-                    lo: 357
-                    hi: 372
-                rhs:
-                  kind: isize
-                  node:
-                    const: 1:isize
-                  span:
-                    lo: 375
-                    hi: 378
-            span:
-              lo: 357
-              hi: 378
-          span:
-            lo: 331
-            hi: 404
-      span:
-        lo: 129
-        hi: 487
-  - counted:
-      var: g1
-      from:
-        kind: isize
-        node:
-          const: 1:isize
-        span:
-          lo: 488
-          hi: 491
-      to:
-        kind: isize
-        node:
-          const: 100:isize
-        span:
-          lo: 499
-          hi: 508
-      step: null
-      mode: count
-      block:
-      - if:
-          cond:
-            kind: bool
-            node:
-              compare:
-                op: eq
-                lhs:
-                  kind: isize
-                  node:
-                    infix:
-                      op: rem
-                      lhs:
-                        kind: isize
-                        node:
-                          read: g1
-                        span:
-                          lo: 678
-                          hi: 693
-                      rhs:
-                        kind: isize
-                        node:
-                          const: 2:isize
-                        span:
-                          lo: 696
-                          hi: 699
-                  span:
-                    lo: 678
-                    hi: 699
-                rhs:
-                  kind: isize
-                  node:
-                    const: 0:isize
-                  span:
-                    lo: 710
-                    hi: 713
-            span:
-              lo: 678
-              hi: 736
-          then:
-          - continue:
-              span:
-                lo: 752
-                hi: 834
-          els:
-          []
-          span:
-            lo: 662
-            hi: 834
-      - if:
-          cond:
-            kind: bool
-            node:
-              compare:
-                op: gt
-                lhs:
-                  kind: isize
-                  node:
-                    read: g1
-                  span:
-                    lo: 851
-                    hi: 866
-                rhs:
-                  kind: isize
-                  node:
-                    const: 10:isize
-                  span:
-                    lo: 877
-                    hi: 883
-            span:
-              lo: 851
-              hi: 906
-          then:
-          - break:
-              span:
-                lo: 922
-                hi: 975
-          els:
-          []
-          span:
-            lo: 835
-            hi: 975
-      - print:
-          value:
-            expr:
-              kind: isize
-              node:
-                read: g1
-              span:
-                lo: 976
-                hi: 991
-          span:
-            lo: 976
-            hi: 1020
-      span:
-        lo: 488
-        hi: 1103
-  - counted:
-      var: g2
-      from:
-        kind: isize
-        node:
-          const: 10:isize
-        span:
-          lo: 1104
-          hi: 1110
-      to:
-        kind: isize
-        node:
-          const: 0:isize
-        span:
-          lo: 1118
-          hi: 1121
-      step:
-        kind: isize
-        node:
-          const: 2:isize
-        span:
-          lo: 1132
-          hi: 1135
-      mode: decrease
-      block:
-      - print:
-          value:
-            expr:
-              kind: isize
-              node:
-                read: g2
-              span:
-                lo: 1206
-                hi: 1221
-          span:
-            lo: 1206
-            hi: 1250
-      span:
-        lo: 1104
-        hi: 1250
-  - loop:
-      init:
-      - set:
-          place: g3
-          value:
-            kind: u8
-            node:
-              const: 0:u8
-            span:
-              lo: 1305
-              hi: 1381
-          span:
-            lo: 1279
-            hi: 1381
-      cond:
-        kind: bool
-        node:
-          compare:
-            op: lt
-            lhs:
-              kind: u8
-              node:
-                read: g3
-              span:
-                lo: 1407
-                hi: 1422
-            rhs:
-              kind: u8
-              node:
-                const: 10:u8
-              span:
-                lo: 1433
-                hi: 1439
-        span:
-          lo: 1407
-          hi: 1465
-      update:
-      - set:
-          place: g3
-          value:
-            kind: u8
-            node:
-              infix:
-                op: add
-                lhs:
-                  kind: u8
-                  node:
-                    read: g3
-                  span:
-                    lo: 1666
-                    hi: 1681
-                rhs:
-                  kind: u8
-                  node:
-                    const: 1:u8
-                  span:
-                    lo: 1684
-                    hi: 1687
-            span:
-              lo: 1666
-              hi: 1687
-          span:
-            lo: 1640
-            hi: 1713
-      block:
-      - print:
-          value:
-            expr:
-              kind: u8
-              node:
-                read: g3
-              span:
-                lo: 1567
-                hi: 1582
-          span:
-            lo: 1567
-            hi: 1611
-      span:
-        lo: 1251
-        hi: 1805
+        hi: 24
   imported_inits: 0
+  host:
+    args: null
+    env: null
+    exit: null
   span:
     lo: 0
-    hi: 1806
+    hi: 2021
 diagnostics: []

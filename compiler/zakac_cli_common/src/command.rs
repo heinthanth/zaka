@@ -18,12 +18,11 @@ use crate::clap_utils::create_help_template;
 use crate::clap_utils::parse_cli_args;
 
 /// The exit code of the command.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, FromPrimitive, IntoPrimitive)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum ExitCode
 {
     /// Nothing went wrong during command execution.
-    #[default]
     Success = 0,
     /// Generic failure.
     Failure,
@@ -31,6 +30,9 @@ pub enum ExitCode
     InvalidUsage,
     /// IO error.
     IoError,
+    /// A code the program chose, from the result of its start block.
+    #[num_enum(catch_all)]
+    Program(u8),
 }
 
 impl From<ExitCode> for PExitCode

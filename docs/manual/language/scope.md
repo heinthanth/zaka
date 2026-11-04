@@ -19,7 +19,9 @@ declaration checks its value **before** it adds the name, so the value cannot us
 name that is being declared:
 
 ```zaka-error ZK0301
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က + ၁ ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -31,8 +33,10 @@ held it has ended: both are ZK0301. In one scope, a name is declared once (ZK030
 second declaration clashes even when it has another kind.
 
 ```zaka-error ZK0302
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် က သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂.၅ ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -47,11 +51,12 @@ one around it, opens at each of these places:
 
 | Place | The scope holds |
 | --- | --- |
-| a block, `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။ ... လုပ်ဆောင်စရာများ ပြီးပါပြီး။` | the statements of the block |
+| a block, `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။ ... လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` | the statements of the block |
 | each branch of an `if`, and the block of a `while` | the statements of the block, or the one statement |
 | a counted loop | the counter and the statements of the loop's block |
 | a generic loop | the loop variable, the statements of the block and the update |
 | a function | the parameters, `ရလဒ်` (when there is a result) and the statements of the block |
+| the [start block](functions.md#the-start-block) | the same as a function |
 
 A name declared in a scope is visible in that scope after its declaration and in each
 scope nested inside it, and in no other place. A lookup starts in the innermost scope
@@ -69,16 +74,18 @@ A branch or a loop with a single statement for its block is a scope too, so a de
 there ends with the statement.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က + ၁၀ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ + ၁၀ ဖြစ်ပါစေ။
 က + ခ + ဂ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ခ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 က ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -88,10 +95,12 @@ there ends with the statement.
 ```
 
 ```zaka-error ZK0301
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်းရှင် ယာယီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ယာယီ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ## Shadowing
@@ -103,14 +112,16 @@ the new name exists, so it can still use the outer one. The inner variable can h
 another kind.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အရေအတွက် + ၁၀၀ ဖြစ်ပါစေ။
 အရေအတွက် ကို ပြသပါ။
 အရေအတွက် ကို အရေအတွက် + ၁ ဟု ထားပါ။
 အရေအတွက် ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 အရေအတွက် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -129,19 +140,23 @@ the pair held two scopes, but hold one:
 - Two parameters of one name are ZK0305, and two functions of one name are ZK0304.
 
 ```zaka-error ZK0302
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် န * ၁၀ ဖြစ်ပါစေ။
 န ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 န ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -162,8 +177,10 @@ assignment is ZK0306, and a constant must be given its value where it is declare
 have its address taken (ZK0412), since a pointer could write through it.
 
 ```zaka-error ZK0306
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
 တစ်ပတ် ကို ၈ ဟု ထားပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -182,10 +199,13 @@ program: assigning to such a variable changes it for the whole program.
 ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် ပေါင်းထည့် သည် ကိန်းပြည့် က ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 စုစုပေါင်း ကို စုစုပေါင်း + က ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၅ တို့ဖြင့် လုပ်ဆောင်ပါ။
 လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၇ တို့ဖြင့် လုပ်ဆောင်ပါ။
 စုစုပေါင်း ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

@@ -6,6 +6,7 @@ use serde::Serialize;
 use strum::IntoStaticStr;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_ir_builder::ir::CmpOp;
+pub use zakac_ir_builder::ir::Host;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::PrefixOp;
 use zakac_ir_builder::value::Value;
@@ -48,6 +49,11 @@ pub struct Module
     #[builder(default)]
     #[serde(default)]
     pub overflow: OverflowMode,
+    /// The globals that link the start block to the host, with their IR
+    /// indices.
+    #[builder(default)]
+    #[serde(default)]
+    pub host: Host,
 }
 
 impl Module

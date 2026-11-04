@@ -1,20 +1,12 @@
 mod common;
 
+use common::label_line;
 use common::lines;
 use common::ok;
 use common::run;
 use zakac_borrow_checker::digest::Root;
 use zakac_diagnostics::Code;
 use zakac_ir_builder::ir::Place;
-
-/// The 1-based line of the first label of the first diagnostic of `text`.
-fn label_line(text: &str) -> usize
-{
-    let run = run(text);
-    let found = run.out.diagnostics.first().expect("a diagnostic");
-    let label = found.labels.first().expect("a label");
-    run.file.lookup_file_pos(&run.file.relative_position(&label.span.lo)).0
-}
 
 #[test]
 fn use_after_free_is_zk0704()
@@ -106,6 +98,7 @@ fn move_out_with_live_borrow_is_zk0704()
 ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 ကိန်းရှင် ဗ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ဖြစ်ပါစေ။
 မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
+လိပ်စာ ဗ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ";
     assert_eq!(lines(text), [(Code::InvalidatedLoan, 3)]);
     assert_eq!(label_line(text), 4);
@@ -121,10 +114,13 @@ fn growable_resize_without_live_borrow_is_fine()
 fn resize_of_blank_owner_is_an_allocation()
 {
     ok("\
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ပထမ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ကိန်းပြည့် ၄ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
 အကယ်၍ ပထမ သည် ဗလာ နှင့် ညီလျှင် \"ဗလာ\" ဟု ပြသပါ။
+လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ");
 }
 
@@ -137,6 +133,7 @@ fn free_of_moved_owner_is_silent()
 ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဗ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
+လိပ်စာ ဗ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ");
 }
 

@@ -575,24 +575,20 @@ mod tests
     use crate::testing::lower;
 
     #[test]
-    fn global_roots_union_top_level_sets()
+    fn global_roots_follow_an_initializer_through_another()
     {
         let module = lower(
             "ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို က တွင် သိမ်းထားမည်။
-မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ခ တွင် သိမ်းထားမည်။
 ကိန်းရှင် ဂ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 ကိန်းရှင် ဃ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဂ + ၁ ဖြစ်ပါစေ။
-ဂ ကို ခ ၏ တန်ဖိုးအငှား ဟု ထားပါ။
 ",
         );
         let roots = global_roots(&module, &[]);
         let a = Root::slot(Place::Global(0)).block();
-        let b = Root::slot(Place::Global(1)).block();
         assert!(roots[0].is_empty() && roots[1].is_empty());
-        assert_eq!(roots[2], Roots::from([a.clone(), b.clone()]));
-        assert_eq!(roots[3], Roots::from([a, b]));
+        assert_eq!(roots[2], Roots::from([a.clone()]));
+        assert_eq!(roots[3], Roots::from([a]));
     }
 
     #[test]
@@ -630,7 +626,6 @@ mod tests
     {
         let module = lower(
             "ကိန်းရှင် ခ သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် လိပ်စာ ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ခ တွင် သိမ်းထားမည်။
 ကိန်းရှင် ဂ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ ၏ တန်ဖိုး ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 ",
         );

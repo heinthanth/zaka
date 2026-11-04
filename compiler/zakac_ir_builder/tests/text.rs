@@ -86,7 +86,7 @@ i သည် ၃ အောက် ငယ်နေသရွေ့ အောက်�
 ကွင်းဆက် ကို ရပ်ပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     let forms = folded(text);
-    assert!(forms[1].contains("(drop g1) (break)"), "{forms:?}");
+    assert!(forms[1].contains("(drop l0) (break)"), "{forms:?}");
 }
 
 /// A text constant and a template that reads it.

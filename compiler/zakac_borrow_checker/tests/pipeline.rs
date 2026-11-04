@@ -2,17 +2,19 @@ mod common;
 
 use common::ok;
 use common::run;
+use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::digest::FnDigest;
 use zakac_borrow_checker::digest::Root;
 use zakac_borrow_checker::digest::Seg;
 use zakac_ir_builder::ir::Place;
 
 #[test]
-fn empt_module_runs_through_borrow_check()
+fn a_start_block_alone_runs_through_borrow_check_with_one_digest()
 {
     let run = run("၁ ကို ပြသပါ။");
     assert!(run.out.diagnostics.is_empty());
-    assert!(run.out.digests.is_empty());
+    let names: Vec<&str> = run.out.digests.iter().map(|d| d.name.as_str()).collect();
+    assert_eq!(names, [START_NAME]);
 }
 
 #[test]
@@ -22,7 +24,7 @@ fn digests_are_blank_per_function()
     assert!(run.out.diagnostics.is_empty(), "{:?}", run.out.diagnostics);
     let module = run.out.lowered.folded.as_ref().expect("folded");
     let blanks: Vec<FnDigest> = module.funcs.iter().map(FnDigest::blank).collect();
-    assert_eq!(module.funcs.len(), 3);
+    assert_eq!(module.funcs.len(), 4);
     assert_eq!(run.out.digests, blanks);
     assert!(run.out.digests.iter().all(|d| d.frees.is_empty()));
 }

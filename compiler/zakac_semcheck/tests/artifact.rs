@@ -57,6 +57,9 @@ fn raw_round_trip()
     assert_eq!(round_trip(&artifact, ArtifactFormat::Raw), artifact);
 }
 
+/// The first line of `invalid.zaka`, before its first error.
+const START_LINE: &str = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n";
+
 #[test]
 fn spans_are_relative_to_the_file()
 {
@@ -65,7 +68,7 @@ fn spans_are_relative_to_the_file()
     assert_eq!(artifact.program.span.lo.as_u32(), 0);
     assert_eq!(artifact.program.stmts[0].span().lo.as_u32(), 0);
     let (invalid, _) = sample("invalid");
-    assert_eq!(invalid.diagnostics[0].span.lo.as_u32(), 0);
+    assert_eq!(invalid.diagnostics[0].span.lo.as_u32(), START_LINE.len() as u32);
 }
 
 #[test]
@@ -77,5 +80,5 @@ fn absolute_output_restores_spans()
     let file = artifact.register_source(&mut sm);
     let (program, diags) = artifact.absolute_output(&file);
     assert_eq!(program.span.lo, file.start_pos);
-    assert_eq!(diags[0].span.lo, file.start_pos);
+    assert_eq!(diags[0].span.lo, file.start_pos + START_LINE.len());
 }

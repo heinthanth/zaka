@@ -2,9 +2,11 @@ mod common;
 
 use common::emit_mode;
 use common::emit_text;
+use common::in_start;
 use common::main_func;
 use common::main_ops;
 use common::ops;
+use zakac_ast::stmt::START_NAME;
 use zakac_codegen::bc::Op;
 use zakac_codegen::bc::TrapCode;
 use zakac_codegen::emit::MAIN_NAME;
@@ -15,21 +17,31 @@ use zakac_codegen::options::ScratchMode;
 const FLAGS: &str = "ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် \
                      မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။\n";
 
-fn with_flags(line: &str) -> Vec<String> { main_ops(&format!("{FLAGS}{line}")) }
+fn with_flags(line: &str) -> Vec<String>
+{
+    main_ops(&in_start(&format!("{FLAGS}{line}")))
+}
 
 #[test]
 fn main_comes_last_and_funcs_keep_their_order()
 {
-    let text = "လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို \
+    let text = "ကိန်းရှင် ဂ သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို \
                 လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ဟု ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nလုပ်ဆောင်ချက် \
-                ဘာမှ သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    let module = emit_text(text);
+                ဘာမှ သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n";
+    let module =
+        emit_text(&format!("{text}{}", in_start("လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။")));
     let names: Vec<&str> = module.funcs.iter().map(|f| f.name.as_str()).collect();
-    assert_eq!(names, ["နှုတ်ဆက်", "ဘာမှ", MAIN_NAME]);
-    assert_eq!(module.main, 2);
+    assert_eq!(names, ["နှုတ်ဆက်", "ဘာမှ", START_NAME, MAIN_NAME]);
+    assert_eq!(module.main, 3);
     assert_eq!(ops(&module.funcs[0]), ["print_text t0", "ret"]);
     assert_eq!(ops(&module.funcs[1]), ["ret"]);
     assert_eq!(ops(main_func(&module)), ["call f0", "ret"]);
+    let main = ["global_addr g0", "push 7:isize", "store isize", "call f2", "ret"];
+    assert_eq!(
+        ops(&module.funcs[3]),
+        main,
+        "main sets the globals, then runs the start block"
+    );
 }
 
 #[test]
@@ -46,16 +58,16 @@ fn and_runs_the_right_side_just_when_needed()
 {
     let found = with_flags("(က && ခ) ကို ပြသပါ။");
     let want = [
-        "global_addr g0",
+        "local_addr l0",
         "push true:bool",
         "store bool",
-        "global_addr g1",
+        "local_addr l1",
         "push false:bool",
         "store bool",
-        "global_addr g0",
+        "local_addr l0",
         "load bool",
         "jump_if_false @12",
-        "global_addr g1",
+        "local_addr l1",
         "load bool",
         "jump @13",
         "push false:bool",
@@ -79,7 +91,7 @@ fn if_without_else_has_no_jump_over_it()
     let found = with_flags("အကယ်၍ က ဖြစ်လျှင် \"ဟုတ်\" ဟု ပြသပါ။");
     let tail = &found[6..];
     let want =
-        ["global_addr g0", "load bool", "jump_if_false @10", "print_text t0", "ret"];
+        ["local_addr l0", "load bool", "jump_if_false @10", "print_text t0", "ret"];
     assert_eq!(tail, want);
 }
 
@@ -89,7 +101,7 @@ fn if_with_else_jumps_over_the_else_branch()
     let found = with_flags("အကယ်၍ က ဖြစ်လျှင် \"ဟုတ်\" ဟု ပြသပါ။\nသို့မဟုတ်ပါက \"မဟုတ်\" ဟု ပြသပါ။");
     let tail = &found[6..];
     let want = [
-        "global_addr g0",
+        "local_addr l0",
         "load bool",
         "jump_if_false @11",
         "print_text t0",
@@ -112,7 +124,7 @@ fn break_and_continue_go_to_the_exit_and_the_update()
     let exit = found.len() - 1;
     assert_eq!(
         found[update..update + 3],
-        ["global_addr g0", "global_addr g0", "load isize"]
+        ["local_addr l0", "local_addr l0", "load isize"]
     );
     assert!(found.contains(&format!("jump @{update}")), "{found:?}");
     assert!(found.contains(&format!("jump @{exit}")), "{found:?}");
@@ -139,7 +151,7 @@ fn constant_bounds_fix_the_direction()
     assert_eq!((count(&up, "wrap add"), count(&up, "wrap sub")), (1, 1), "{up:?}");
     let module = emit_text("၃ မှ ၁ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။");
     let main = main_func(&module);
-    assert!(main.locals.is_empty(), "{:?}", main.locals);
+    assert!(main.locals.iter().all(|l| !l.name.starts_with('%')), "{:?}", main.locals);
     assert_eq!(ops(main).iter().filter(|o| *o == "wrap sub").count(), 2);
 }
 
@@ -151,9 +163,9 @@ fn runtime_bounds_pick_the_direction_once()
     let module = emit_text(text);
     let names: Vec<&str> =
         main_func(&module).locals.iter().map(|s| s.name.as_str()).collect();
-    assert_eq!(names, ["%to", "%dir"], "a top-level loop variable is a global");
+    assert_eq!(names, ["ကိန်း", "%to", "%dir"], "the loop variable comes first");
     let found = ops(main_func(&module));
-    let dir = found.iter().filter(|o| *o == "local_addr l1").count();
+    let dir = found.iter().filter(|o| *o == "local_addr l2").count();
     assert_eq!(dir, 3, "the direction is set once and read twice");
 }
 
@@ -166,7 +178,7 @@ fn a_runtime_step_is_checked()
     let main = main_func(&module);
     assert!(main.code.contains(&Op::Trap(TrapCode::StepNotPositive)));
     let names: Vec<&str> = main.locals.iter().map(|s| s.name.as_str()).collect();
-    assert_eq!(names, ["%step"]);
+    assert_eq!(names, ["ကိန်း", "%step"]);
     let constant = emit_text("၀ မှ ၁၀ အထိ ၂ စီ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသပါ။");
     assert!(!main_func(&constant).code.iter().any(|op| matches!(op, Op::Trap(_))));
 }
@@ -241,7 +253,7 @@ fn each_op_has_a_span()
 #[test]
 fn expression_ops_take_the_region_of_their_expression()
 {
-    let (module, src, base) = unfolded("(၂ + ၃) * ၄ ကို ပြသပါ။");
+    let (module, src, base) = unfolded(&in_start("(၂ + ၃) * ၄ ကို ပြသပါ။"));
     let main = main_func(&module);
     let at = |name: &str| ops(main).iter().position(|op| op == name).unwrap();
     let span = |name: &str| main.spans[at(name)];
@@ -287,21 +299,20 @@ fn each_variable_is_read_and_written_through_its_block()
 {
     let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု \
                 ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။\np ၏ တန်ဖိုး ကို ပြသပါ။";
-    let found = main_ops(text);
-    let want = [
+    let module = emit_text(text);
+    let main = [
         "global_addr g0",
         "push 5:isize",
         "store isize", // x = 5
         "global_addr g1",
         "global_addr g0",
         "store isize&", // p = &x
-        "global_addr g1",
-        "load isize&",
-        "load isize",
-        "print", // *p
+        "call f0",
         "ret",
     ];
-    assert_eq!(found, want);
+    assert_eq!(ops(&module.funcs[module.main as usize]), main);
+    let start = ["global_addr g1", "load isize&", "load isize", "print", "ret"];
+    assert_eq!(ops(main_func(&module)), start, "*p");
 }
 
 #[test]
@@ -324,9 +335,6 @@ p + ၁ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
 လိပ်စာ p ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
     let found = main_ops(text);
     let want = [
-        "global_addr g0",
-        "push 0x0:ptr",
-        "store i32*",
         "global_addr g0",
         "push 10:usize",
         "alloc 4",
@@ -379,20 +387,20 @@ fn a_deref_destination_uses_dup()
 #[test]
 fn an_offset_to_an_opaque_place_steps_then_converts()
 {
-    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
+    let stmts = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။
 ကိန်းရှင် q သည် ငှားထားသော လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် p + ၁ ဖြစ်ပါစေ။
 q ကို p + ၁ ဟု ထားပါ။
 q == p + ၁ ကို ပြသပါ။
-လုပ်ဆောင်ချက် ယူ ကို p + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် ယူ သည် ငှားထားသော လိပ်စာ o ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ယူ ကို p + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။";
+    let funcs = "လုပ်ဆောင်ချက် ယူ သည် ငှားထားသော လိပ်စာ o ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 o ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 လုပ်ဆောင်ချက် ရှေ့ သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ r ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော လိပ်စာ \
-                ရလဒ် ကို ပြန်ပေးမည်။
+                 ရလဒ် ကို ပြန်ပေးမည်။
 r + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    let module = emit_text(text);
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။\n";
+    let module = emit_text(&format!("{funcs}{}", in_start(stmts)));
     let found = ops(main_func(&module));
     let at = found.iter().position(|op| op == "ptr_add 8").expect("a ptr_add 8");
     assert_eq!(found[at + 1], "convert ptr&");
@@ -418,10 +426,10 @@ fn a_move_takes_the_owner_and_a_lend_reads_it()
 ကိန်းရှင် r သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 q ကို p ဟု ထားပါ။
 r ကို q ၏ တန်ဖိုးအငှား ဟု ထားပါ။";
-    let found = main_ops(text);
-    let moved = ["global_addr g1", "global_addr g0", "take isize*", "store isize*"];
+    let found = main_ops(&in_start(text));
+    let moved = ["local_addr l1", "local_addr l0", "take isize*", "store isize*"];
     assert!(holds_run(&found, &moved), "{found:?}");
-    let lent = ["global_addr g2", "global_addr g1", "load isize*", "store isize&"];
+    let lent = ["local_addr l2", "local_addr l1", "load isize*", "store isize&"];
     assert!(holds_run(&found, &lent), "{found:?}");
     assert_eq!(found.iter().filter(|op| op.starts_with("take")).count(), 1);
 }
@@ -431,22 +439,22 @@ fn a_list_of_owners_is_blitted_out_and_zeroed()
 {
     let text = "ကိန်းရှင် l သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် m သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ဖြစ်ပါစေ။";
-    let found = main_ops(text);
+    let found = main_ops(&in_start(text));
     let moved = [
+        "local_addr l2",
         "local_addr l0",
-        "global_addr g0",
         "store isize*[2]*",
-        "local_addr l1",
-        "local_addr l0",
+        "local_addr l3",
+        "local_addr l2",
         "load isize*[2]*",
         "blit isize*[2]",
-        "local_addr l0",
+        "local_addr l2",
         "load isize*[2]*",
         "zero isize*[2]",
-        "local_addr l1",
+        "local_addr l3",
     ];
     assert!(holds_run(&found, &moved), "{found:?}");
-    let reads = found.iter().filter(|op| *op == "global_addr g0").count();
+    let reads = found.iter().filter(|op| *op == "local_addr l0").count();
     assert_eq!(reads, 2, "one to set l, one to move it: {found:?}");
     assert!(!found.iter().any(|op| op.starts_with("take")), "{found:?}");
 }
@@ -518,14 +526,14 @@ fn a_literal_or_a_slice_set_into_a_slot_is_built_there()
 {
     let decl =
         "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\n";
-    assert_eq!(scratch(decl), Vec::<String>::new());
+    assert_eq!(scratch(&in_start(decl)), Vec::<String>::new());
     let slice = format!(
         "{decl}ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ အကွက် ၁ မှစ၍ ၂ ကွက် \
          ဖြစ်ပါစေ။\ns ကို s ၏ အကွက် ၁ မှစ၍ ၁ ကွက် ဟု ထားပါ။"
     );
-    assert_eq!(scratch(&slice), Vec::<String>::new());
+    assert_eq!(scratch(&in_start(&slice)), Vec::<String>::new());
     let shown = format!("{decl}[၄၊ ၅] ကို ပြသပါ။");
-    assert_eq!(scratch(&shown), ["%list"]);
+    assert_eq!(scratch(&in_start(&shown)), ["%list"]);
 }
 
 #[test]
@@ -599,7 +607,7 @@ fn a_slice_cell_proved_in_range_has_no_check()
 fn a_literal_of_known_cells_points_at_a_static_list()
 {
     let text = "ကိန်းရှင် l သည် [[၁၊ ၂]၊ [၃]] ဖြစ်ပါစေ။\nl ကို ပြသပါ။";
-    let module = emit_text(text);
+    let module = emit_text(&in_start(text));
     let kinds: Vec<String> = module.seqs.iter().map(|s| s.kind.name()).collect();
     assert_eq!(kinds, ["isize[]", "isize[]", "isize[][]"]);
     let main = main_func(&module);
@@ -609,7 +617,8 @@ fn a_literal_of_known_cells_points_at_a_static_list()
         main.locals.iter().all(|l| l.name != "%own"),
         "a set needs no slot of its own"
     );
-    let built = main_ops("ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။\nကိန်းရှင် l သည် [n၊ ၂] ဖြစ်ပါစေ။");
+    let built =
+        main_ops(&in_start("ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။\nကိန်းရှင် l သည် [n၊ ၂] ဖြစ်ပါစေ။"));
     assert!(built.iter().any(|o| o.starts_with("to_heap")), "{built:?}");
     assert!(!built.iter().any(|o| o.starts_with("static_seq")), "{built:?}");
 }
@@ -620,22 +629,22 @@ fn a_literal_of_known_cells_points_at_a_static_list()
 #[test]
 fn a_counted_or_struct_literal_of_known_cells_is_one_blit()
 {
-    let module = emit_text(
+    let module = emit_text(&in_start(
         "ကိန်းရှင် ခ သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈] ဖြစ်ပါစေ။",
-    );
+    ));
     let kinds: Vec<String> = module.seqs.iter().map(|s| s.kind.name()).collect();
     assert_eq!(kinds, ["isize[2]"]);
     let found = ops(main_func(&module));
     let blit = ["seq_addr s0".to_string(), "blit isize[2]".to_string()];
     assert!(found.windows(2).any(|w| w == blit), "{found:?}");
-    let point = "ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။\nကိန်းရှင် p သည် နေရာ \
-                 တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၁၊ y ၂ ရှိသော နေရာတစ်ခု ဖြစ်ပါစေ။";
-    let fields = main_ops(point);
+    let point = "ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။\n";
+    let decl = "ကိန်းရှင် p သည် နေရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၁၊ y ၂ ရှိသော နေရာတစ်ခု ဖြစ်ပါစေ။";
+    let fields = main_ops(&format!("{point}\n{}", in_start(decl)));
     let blit = ["seq_addr s0".to_string(), "blit နေရာ".to_string()];
     assert!(fields.windows(2).any(|w| w == blit), "{fields:?}");
-    let built = main_ops(
+    let built = main_ops(&in_start(
         "ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
          [n၊ ၈] ဖြစ်ပါစေ။",
-    );
+    ));
     assert!(!built.iter().any(|o| o.starts_with("seq_addr")), "{built:?}");
 }

@@ -23,7 +23,7 @@ value), `WORD` the classifier of the kind, and `BODY` a block or one statement. 
 | assign | `PLACE ကို VALUE ဟု ထားပါ။` |
 | set a character | `TEXT ၏ စာလုံး N ကို CHAR ဟု ထားပါ။` or `TEXT ၏ N ခုမြောက်စာလုံး ကို CHAR ဟု ထားပါ။` |
 | print | `VALUE ကို ပြသပါ။` or `VALUE ဟု ပြသပါ။` |
-| block | `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။` statements `လုပ်ဆောင်စရာများ ပြီးပါပြီး။` |
+| block | `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။` statements `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` |
 | if | `အကယ်၍ COND လျှင် BODY` then `[ထိုသို့မဟုတ်ဘဲ COND လျှင် BODY]` then `[သို့မဟုတ်ပါက BODY]` |
 | while | `COND နေသရွေ့ BODY` |
 | counted loop | `FROM မှ TO အထိ [STEP စီ] NAME အနေဖြင့် ရေတွက်၍ BODY` |
@@ -35,6 +35,7 @@ value), `WORD` the classifier of the kind, and `BODY` a block or one statement. 
 | call | `လုပ်ဆောင်ချက် NAME ကို [ARGS တို့ဖြင့်] လုပ်ဆောင်ပါ။` |
 | return | `VALUE ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။` or `ပြန်ပေးပါ။` |
 | function | `လုပ်ဆောင်ချက် NAME သည် ...` (see [Functions](functions.md)) |
+| start block | `ပရိုဂရမ်သည် ...`, at most one (see [Functions](functions.md#the-start-block)) |
 | add a cell | `PLACE ထဲသို့ VALUE ကို ထည့်ပါ။` (see [Lists](lists.md#adding-and-removing-cells)) |
 | add to text | `TEXT ထဲသို့ VALUE ကို ထည့်ပါ။` (see [Text](text.md#changing-text)) |
 | remove a cell | `PLACE ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။` |
@@ -112,6 +113,7 @@ checked first, so it cannot use the name that the statement declares (ZK0301), a
 must fit the kind (ZK0401).
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 ကိန်းရှင် အရွယ် သည် ၂၀ ဖြစ်ပါစေ။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
@@ -125,6 +127,7 @@ must fit the kind (ZK0401).
 အများဆုံး ကို ပြသပါ။
 အက္ခရာ ကို ပြသပါ။
 အမည် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -137,8 +140,10 @@ must fit the kind (ZK0401).
 ```
 
 ```zaka-error ZK0306
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် ၁၀၀ ဖြစ်ပါစေ။
 အများဆုံး ကို ၂၀၀ ဟု ထားပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-error ZK0234
@@ -150,7 +155,9 @@ error[ZK0234]: a declared kind takes "တစ်" and a classifier
 ```
 
 ```zaka-error ZK0430
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ဗလာ ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -181,11 +188,13 @@ and gets a warning, ZK0505 or ZK0506; [Natural wording](naturalness.md) has the 
 A logical expression needs parentheses (ZK0204).
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၄၂ ကို ပြသပါ။
 "မင်္ဂလာပါ" ဟု ပြသပါ။
 ၃ သည် ၂ ထက် ကြီးသည် ဟု ပြသပါ။
 'က' ကို ပြသပါ။
 ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -199,7 +208,7 @@ A logical expression needs parentheses (ZK0204).
 ## Blocks
 
 A block is a run of statements between `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။` and
-`လုပ်ဆောင်စရာများ ပြီးပါပြီး။`. Names declared inside it end at the closer
+`လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။`. Names declared inside it end at the closer
 ([Names and scope](scope.md)). A closer with no opener is ZK0226.
 
 Wherever the shape of a statement has `BODY`, a block or one single statement can stand.
@@ -217,13 +226,15 @@ the last word of the condition (`ငယ်လျှင်`); after a name or a w
 ZK0211.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 အကယ်၍ အမှတ် သည် ၈၀ အောက် မငယ်လျှင် "က" ဟု ပြသပါ။
 ထိုသို့မဟုတ်ဘဲ အမှတ် သည် ၆၀ အောက် မငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 "ခ" ဟု ပြသပါ။
 "ကောင်းပါသည်" ဟု ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 သို့မဟုတ်ပါက "ဂ" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -276,13 +287,15 @@ pointer is never duplicated; that, an each-cell loop over text, and an each-char
 loop over a value that is not text are ZK0434.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၀၊ ၈၅၊ ၉၀] ဖြစ်ပါစေ။
 အမှတ်များ ၏ အကွက်တိုင်း ကို အမှတ် အနေဖြင့် ယူ၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 အမှတ် ကို အမှတ် + ၅ ဟု ထားပါ။
 အမှတ် ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 အမှတ်များ ကို ပြသပါ။
 "a၁" ၏ စာလုံးတိုင်း ကို စ အနေဖြင့် ယူ၍ စ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -303,16 +316,18 @@ block alone, and its variable is declared with `ကိန်းရှင်`, ne
 variable is gone after the closer.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 ၁ မှ ဆုံး အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ဆုံး ကို ၁၀ ဟု ထားပါ။
 န ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 "---" ဟု ပြသပါ။
 ၁၀ မှ ၀ အထိ ၅ စီ န အနေဖြင့် လျှော့၍ န ကို ပြသပါ။
 "---" ဟု ပြသပါ။
 ၅ မှ ၁ အထိ န အနေဖြင့် တိုး၍ န ကို ပြသပါ။
 "ပြီး" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -331,18 +346,20 @@ The first loop shows that the bound is worked out once: changing `ဆုံး` 
 not lengthen the loop.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 အကယ်၍ ကိန်း % ၂ သည် ၁ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။
 အကယ်၍ ကိန်း သည် ၆ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။
 ကိန်း ကို ပြသပါ။
 ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ကိန်းရှင် ဂဏန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 မှန် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ဂဏန်း ကို ဂဏန်း * ၂ ဟု ထားပါ။
 အကယ်၍ ဂဏန်း သည် ၁၀၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ဂဏန်း ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -365,6 +382,11 @@ loop the update runs first. Outside a loop these are ZK0309 and ZK0310.
 `VALUE ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။` ends a function with a value, and `ပြန်ပေးပါ။` ends it
 with none. A return outside a function is ZK0311. [Functions](functions.md) has the rest.
 
+Statements run inside the [start block](functions.md#the-start-block) of the program and
+inside functions. The top level of a file holds declarations alone, and a statement that
+runs there is ZK0326: the declarations set their starting values, and then the start
+block runs.
+
 ## Heap statements
 
 Three statements ask for room on the heap, change it and give it back. Each works on a
@@ -381,12 +403,14 @@ The size can also be `N ဘိုက်စာ`, a count of octets. `မင်မ
 same.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ၏ တန်ဖိုး ကို ၄၂ ဟု ထားပါ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ပ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -411,25 +435,35 @@ same.
 | ZK0439 | `၏ အရှေ့တွင်` after a value that is no cell and no character |
 
 ```zaka-error ZK0307
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ န ကို ၀ ဟု ထားပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-error ZK0402
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အကယ်၍ ၁ ဖြစ်လျှင် ၁ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-error ZK0309
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကွင်းဆက် ကို ရပ်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-error ZK0434
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "abc" ၏ အကွက်တိုင်း ကို a အနေဖြင့် ယူ၍ a ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခြေလှမ်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 "အစ" ဟု ပြသပါ။
 ၁ မှ ၃ အထိ ခြေလှမ်း စီ န အနေဖြင့် ရေတွက်၍ န ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

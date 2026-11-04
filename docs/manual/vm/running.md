@@ -23,8 +23,28 @@ what the command does, what it prints, how it ends, and which limits it puts on 
 2. **Compile.** Source goes through each stage of the [compiler](../compiler/stages.md).
    A diagnostic of error level stops here: the messages go to standard error, nothing
    runs, and the exit code is 1.
-3. **Run.** The VM starts at the first instruction of `main`, takes one instruction
-   at a time, and writes what the program prints to standard output as it goes.
+3. **Run.** The VM starts at the first instruction of `main`, which sets the top-level
+   variables and calls the start block. It takes one instruction at a time and writes
+   what the program prints to standard output as it goes.
+
+## Arguments and the environment
+
+The [start block](../language/functions.md#the-start-block) of a program can take two
+text lists: the name of the program (the input as written, or `-` for standard input) and the
+words after `--` on the command line, and the environment variables, one `NAME=VALUE`
+text for each. Before the first instruction, the VM puts each text in a heap
+block of its own and each list in one more, and hands them to hidden top-level
+variables. `main` sets the starting values of the top-level variables, calls the start
+block with the two lists, and gives the u8s back at its end, as it does for each
+top-level variable that holds text. A list with no room on the heap stops the run with
+the `out of mem` trap before the first instruction.
+
+```console
+$ zakac run greet.zaka -- ကက ခခ
+```
+
+The Run buttons of these pages pass the name `main.zaka` and the Explorer `explorer.zaka`,
+with no arguments and a blank environment.
 
 To keep the instructions and run them later:
 
@@ -44,7 +64,7 @@ options of the VM:
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `--max-depth <CALLS>` | 4096 | the most calls waiting to return, `main` included |
+| `--max-depth <CALLS>` | 4096 | the most calls waiting to return, `main` and the start block included |
 | `--max-steps <OPS>` | none | the most instructions to run |
 | `--max-heap <OCTETS>` | 268435456 (256 MiB) | the most live heap octets |
 | `--max-stack <OCTETS>` | 1048576 (1 MiB) | the most octets of the stack region |
@@ -69,6 +89,7 @@ the kind of the value:
 | list | its cells between `[` and `]`, joined with `၊ `; text in a cell prints in quotes |
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၄၂ ကို ပြသပါ။
 -၇ ကို ပြသပါ။
 ၃.၁၄ ကို ပြသပါ။
@@ -79,6 +100,7 @@ the kind of the value:
 ပ ကို ပြသပါ။
 ကိန်းရှင် စာရင်း၁ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 စာရင်း၁ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -99,17 +121,21 @@ program stops on a trap, all that was printed before the trap is written.
 
 | End | Exit code | What is printed |
 | --- | --- | --- |
-| `main` returns | 0 | nothing more, except the `--leaks` list |
+| `main` returns | 0, or the result of the start block | nothing more, except the `--leaks` list |
 | a compile error | 1 | the diagnostics, on standard error |
 | a trap | 1 | the reason, on standard error |
 | an unreadable input | 1 | the host error, on standard error |
+
+The result of a start block becomes the exit code with its lowest 8 bits, so `-၁`
+gives 255. The Explorer shows a code that is not 0 in its status, as `Finished, exit
+code 7`.
 
 A trap reads like this:
 
 ```console
 $ zakac run samples/mistakes/zero_divide.zaka
 စားမည်
-zaka_vm: the program stopped: integer division or remainder with zero as divisor (in main, op 7)
+zaka_vm: the program stopped: integer division or remainder with zero as divisor (in ပရိုဂရမ်, op 7)
 ```
 
 The text after `in` names the function and the index of the instruction that stopped the
@@ -128,8 +154,8 @@ $ zakac run --mem-check warn --leaks samples/mistakes/leak.zaka
 ၁၀
 ၂၀
 ၃၀
-leak: block at 0x101040, 16 octets
-leak: block at 0x101060, 16 octets
+leak: block at 0x101000, 16 octets
+leak: block at 0x101020, 16 octets
 ```
 
 The compiler finds most lost blocks on its own ([ZK0708](../reference/errors.md)). The
@@ -162,7 +188,7 @@ trap. It leaves `ဗလာ` in its place, and a program can test for that:
 သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 "ရပါပြီ" ဟု ပြသပါ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
 The program asks for 16 octets. With the default cap it prints `ရပါပြီ`. With a heap of 8

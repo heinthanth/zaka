@@ -53,6 +53,7 @@
   - [Fibonacci numbers](programs/fibonacci.md)
   - [The Collatz sequence](programs/collatz.md)
   - [Scores](programs/scores.md)
+  - [Where a program starts](programs/start.md)
 - [Borrowing and storage](forms/README.md)
   - [Borrowing text](forms/views.md)
   - [Slices](lists/slices.md)

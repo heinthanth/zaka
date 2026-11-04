@@ -17,6 +17,7 @@ walk-through explains how it is built.
 | [Fibonacci numbers](fibonacci.md) | generic loops, the implicit `ရလဒ်`, converting to decimals |
 | [The Collatz sequence](collatz.md) | a shared helper function, returning before the end |
 | [Scores](scores.md) | each-cell and each-character loops, building a list with adds, removing a cell, template literals |
+| [Where a program starts](start.md) | a start block, the arguments of the command line, an exit code |
 
 These programs, and more, are also in the `samples/programs` folder of the Zaka source
 tree.
@@ -26,10 +27,11 @@ tree.
 All five programs follow the same structure:
 
 1. Small functions at the top, each with a `///` comment telling what it does.
-2. The *main program* at the bottom: the top-level statements that run when the program
-   starts.
+2. The start block at the bottom, `ပရိုဂရမ်သည်`, with the statements that run when the
+   program starts.
 
-Because a function can be called before its declaration, the main program could also
-come first. Choose one structure and keep to it.
+Because a function can be called before its declaration, the start block could also
+come first. Choose one structure and keep to it. The start block can also take the
+arguments of the command line: see [Where a program starts](start.md).
 
 Next: [FizzBuzz](fizzbuzz.md).

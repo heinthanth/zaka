@@ -1,176 +1,197 @@
 # zakac-ir-artifact v1
 name:
   Custom: fold_errors.zaka
-source: "// ကိန်းသေ တွက်ချက်ရာတွင် အမှားများ\nကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၁၂၇ + ၁ ဖြစ်ပါစေ။\n၁ / ၀ ကို ပြသပါ။\n၇ % (၂ - ၂) ကို ပြသပါ။\nကိန်းသေ န သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၇၀ ဖြစ်ပါစေ။\n၁ << န ကို ပြသပါ။\n"
+source: "// ကိန်းသေ တွက်ချက်ရာတွင် အမှားများ\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၁၂၇ + ၁ ဖြစ်ပါစေ။\n၁ / ၀ ကို ပြသပါ။\n၇ % (၂ - ၂) ကို ပြသပါ။\nကိန်းသေ န သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၇၀ ဖြစ်ပါစေ။\n၁ << န ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 module:
-  globals:
-  - name: က
-    kind: i8
-    access: var
-    span:
-      lo: 124
-      hi: 127
-    addressed: false
-  - name: န
-    kind: usize
-    access: const
-    span:
-      lo: 335
-      hi: 338
-    addressed: false
-  funcs: []
-  main:
-  - set:
-      place: g0
-      value:
-        kind: i8
-        node:
-          infix:
-            op: add
-            lhs:
-              kind: i8
-              node:
-                const: 127:i8
-              span:
-                lo: 138
-                hi: 192
-            rhs:
-              kind: i8
-              node:
-                const: 1:i8
-              span:
-                lo: 195
-                hi: 198
+  globals: []
+  funcs:
+  - name: ပရိုဂရမ်
+    params: 0
+    result: null
+    ret: null
+    locals:
+    - name: က
+      kind: i8
+      access: var
+      span:
+        lo: 241
+        hi: 244
+      addressed: false
+    - name: န
+      kind: usize
+      access: const
+      span:
+        lo: 452
+        hi: 455
+      addressed: false
+    block:
+    - set:
+        place: l0
+        value:
+          kind: i8
+          node:
+            infix:
+              op: add
+              lhs:
+                kind: i8
+                node:
+                  const: 127:i8
+                span:
+                  lo: 255
+                  hi: 309
+              rhs:
+                kind: i8
+                node:
+                  const: 1:i8
+                span:
+                  lo: 312
+                  hi: 315
+          span:
+            lo: 255
+            hi: 315
         span:
-          lo: 138
-          hi: 198
+          lo: 213
+          hi: 343
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              infix:
+                op: div
+                lhs:
+                  kind: isize
+                  node:
+                    const: 1:isize
+                  span:
+                    lo: 344
+                    hi: 347
+                rhs:
+                  kind: isize
+                  node:
+                    const: 0:isize
+                  span:
+                    lo: 350
+                    hi: 353
+            span:
+              lo: 344
+              hi: 353
+        span:
+          lo: 344
+          hi: 382
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              infix:
+                op: rem
+                lhs:
+                  kind: isize
+                  node:
+                    const: 7:isize
+                  span:
+                    lo: 383
+                    hi: 386
+                rhs:
+                  kind: isize
+                  node:
+                    const: 0:isize
+                  span:
+                    lo: 390
+                    hi: 399
+            span:
+              lo: 383
+              hi: 400
+        span:
+          lo: 383
+          hi: 429
+    - set:
+        place: l1
+        value:
+          kind: usize
+          node:
+            const: 70:usize
+          span:
+            lo: 466
+            hi: 531
+        span:
+          lo: 430
+          hi: 559
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              infix:
+                op: shl
+                lhs:
+                  kind: isize
+                  node:
+                    const: 1:isize
+                  span:
+                    lo: 560
+                    hi: 563
+                rhs:
+                  kind: usize
+                  node:
+                    const: 70:usize
+                  span:
+                    lo: 567
+                    hi: 570
+            span:
+              lo: 560
+              hi: 570
+        span:
+          lo: 560
+          hi: 599
+    shared_params: []
+    span:
+      lo: 96
+      hi: 670
+  main:
+  - call:
+      func: 0
+      name: ပရိုဂရမ်
+      args: []
       span:
         lo: 96
-        hi: 226
-  - print:
-      value:
-        expr:
-          kind: isize
-          node:
-            infix:
-              op: div
-              lhs:
-                kind: isize
-                node:
-                  const: 1:isize
-                span:
-                  lo: 227
-                  hi: 230
-              rhs:
-                kind: isize
-                node:
-                  const: 0:isize
-                span:
-                  lo: 233
-                  hi: 236
-          span:
-            lo: 227
-            hi: 236
-      span:
-        lo: 227
-        hi: 265
-  - print:
-      value:
-        expr:
-          kind: isize
-          node:
-            infix:
-              op: rem
-              lhs:
-                kind: isize
-                node:
-                  const: 7:isize
-                span:
-                  lo: 266
-                  hi: 269
-              rhs:
-                kind: isize
-                node:
-                  const: 0:isize
-                span:
-                  lo: 273
-                  hi: 282
-          span:
-            lo: 266
-            hi: 283
-      span:
-        lo: 266
-        hi: 312
-  - set:
-      place: g1
-      value:
-        kind: usize
-        node:
-          const: 70:usize
-        span:
-          lo: 349
-          hi: 414
-      span:
-        lo: 313
-        hi: 442
-  - print:
-      value:
-        expr:
-          kind: isize
-          node:
-            infix:
-              op: shl
-              lhs:
-                kind: isize
-                node:
-                  const: 1:isize
-                span:
-                  lo: 443
-                  hi: 446
-              rhs:
-                kind: usize
-                node:
-                  const: 70:usize
-                span:
-                  lo: 450
-                  hi: 453
-          span:
-            lo: 443
-            hi: 453
-      span:
-        lo: 443
-        hi: 482
+        hi: 120
   imported_inits: 0
+  host:
+    args: null
+    env: null
+    exit: null
   span:
     lo: 0
-    hi: 483
+    hi: 671
 diagnostics:
 - code: ZK0601
   level: error
   message: + on these constants does not fit i8
   span:
-    lo: 138
-    hi: 198
+    lo: 255
+    hi: 315
   help: null
 - code: ZK0602
   level: error
   message: / with the constant zero as divisor
   span:
-    lo: 227
-    hi: 236
+    lo: 344
+    hi: 353
   help: null
 - code: ZK0602
   level: error
   message: "% with the constant zero as divisor"
   span:
-    lo: 266
-    hi: 283
+    lo: 383
+    hi: 400
   help: null
 - code: ZK0407
   level: error
   message: shift distance 70 is not below the 64-bit width
   span:
-    lo: 450
-    hi: 453
+    lo: 567
+    hi: 570
   help: null

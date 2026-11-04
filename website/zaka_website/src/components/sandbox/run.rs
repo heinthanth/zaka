@@ -1,6 +1,7 @@
 use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
+use zaka_vm::machine::HostData;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
 use zakac_borrow_checker::options::BorrowCheckOptions;
@@ -226,7 +227,11 @@ pub fn compile(source: &str, options: &FenceOptions) -> Compiled
     let report = diags.iter().flat_map(|d| strokes(&sm, d)).collect();
     let codes = diags.iter().map(|d| d.code.to_string()).collect();
     let options = RunOptions::builder().max_steps(STEP_CAP).build();
-    let machine = emitted.module.map(|m| Machine::new(m, options));
+    let machine = emitted.module.map(|m| {
+        let mut machine = Machine::new(m, options);
+        machine.set_host(&HostData::program(FILE_NAME));
+        machine
+    });
     Compiled::builder().report(report).codes(codes).maybe_machine(machine).build()
 }
 

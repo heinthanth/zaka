@@ -70,7 +70,7 @@ fn spans_are_relative_to_the_file()
     assert_eq!(module.span.lo.as_u32(), 0);
     assert_eq!(module.main[0].span().lo.as_u32(), 0);
     let (errors, _) = sample("fold_errors");
-    assert!(errors.diagnostics[0].span.lo.as_u32() < 200);
+    assert!(errors.diagnostics[0].span.lo.as_u32() < 400);
 }
 
 #[test]

@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use bon::Builder;
+use zakac_ast::stmt::START_NAME;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::ownership::Invalidation;
 use zakac_diagnostics::ownership::overflow_proven;
@@ -1524,7 +1525,7 @@ impl<'m> Flow<'m>
 /// function in source order, since a function names a global declared
 /// before it alone. A global declared after the last function changes in
 /// a call through an address argument alone, and the call resets those
-/// on their own.
+/// on their own. The start block is left out: no call reaches it.
 ///
 /// # Arguments
 ///
@@ -1535,7 +1536,8 @@ impl<'m> Flow<'m>
 /// The globals, in module order.
 fn named_globals(module: &Module) -> Vec<Place>
 {
-    let last = module.funcs.iter().map(|f| f.span.lo).max();
+    let callees = module.funcs.iter().filter(|f| f.name != START_NAME);
+    let last = callees.map(|f| f.span.lo).max();
     let named = |n: &usize| last.is_some_and(|lo| module.globals[*n].span.lo < lo);
     let count = module.globals.len();
     (0..count).filter(named).map(|n| Place::Global(n as u32)).collect()
@@ -2007,6 +2009,7 @@ mod tests
     use super::*;
     use crate::roots::global_roots;
     use crate::testing::program;
+    use crate::testing::top;
 
     /// The facts before the first node `pick` takes, once the flow of
     /// `routine` is solved.
@@ -2037,16 +2040,17 @@ mod tests
     fn a_move_leaves_the_source_moved_and_gives_the_block_on()
     {
         let prog = program(
-            "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+            "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၃ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ကိန်းရှင် ဗ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
         );
-        let end = state_at(&prog.module, Routine::main(&prog.module), |k| {
-            matches!(k, NodeKind::End)
-        });
-        assert_eq!(owner(&end, Place::Global(0)), OwnerState::MOVED);
-        let to = end.ptr(Place::Global(1)).unwrap();
+        let end =
+            state_at(&prog.module, top(&prog.module), |k| matches!(k, NodeKind::End));
+        assert_eq!(owner(&end, Place::Local(0)), OwnerState::MOVED);
+        let to = end.ptr(Place::Local(1)).unwrap();
         assert_eq!((to.state, to.len), (OwnerState::FRESH, Some(3)));
     }
 
@@ -2059,7 +2063,7 @@ mod tests
 အကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် \"ဗလာ\" ဟု ပြသပါ။
 ",
         );
-        let routine = Routine::main(&prog.module);
+        let routine = top(&prog.module);
         let inside = state_at(&prog.module, routine, |k| {
             matches!(k, NodeKind::Leaf(Stmt::Print { .. }))
         });
@@ -2081,19 +2085,20 @@ mod tests
 လိပ်စာ က ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဃ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ဂ တွင် သိမ်းထားမည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ဃ တွင် သိမ်းထားမည်။
 လုပ်ဆောင်ချက် ရှင်းပစ် ကို ပ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
         );
         let module = &prog.module;
-        let end =
-            state_at(module, Routine::main(module), |k| matches!(k, NodeKind::End));
+        let end = state_at(module, top(module), |k| matches!(k, NodeKind::End));
         assert_eq!(owner(&end, Place::Global(0)), OwnerState::MOVED);
         assert_eq!(owner(&end, Place::Global(1)), OwnerState::UNKNOWN);
-        assert_eq!(owner(&end, Place::Global(2)), OwnerState::FRESH);
+        assert_eq!(owner(&end, Place::Local(0)), OwnerState::FRESH);
         let inner = Routine::func(&module.funcs[0]);
         let end = state_at(module, inner, |k| matches!(k, NodeKind::End));
         assert_eq!(owner(&end, Place::Local(0)), OwnerState::NULL);
@@ -2112,9 +2117,8 @@ mod tests
         assert_eq!(first.roots, Roots::from([Root::slot(Place::Local(0)).block()]));
         assert_eq!(first.state, OwnerState::UNKNOWN);
         assert_eq!(*inner_end.get(Place::Local(2)), SlotState::Int(Interval::TOP));
-        let end =
-            state_at(module, Routine::main(module), |k| matches!(k, NodeKind::End));
-        assert_eq!(*end.get(Place::Global(0)), SlotState::Int(Interval::TOP));
+        let end = state_at(module, top(module), |k| matches!(k, NodeKind::End));
+        assert_eq!(*end.get(Place::Local(0)), SlotState::Int(Interval::TOP));
     }
 
     #[test]
@@ -2141,24 +2145,26 @@ mod tests
     fn an_interval_that_wraps_is_not_known()
     {
         let prog = program(
-            "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။
+            "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က + ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ဃ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဂ - ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် င သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က - ၁ ဖြစ်ပါစေ။
 ၀ မှ က + ၁ အထိ န အနေဖြင့် ရေတွက်၍ န ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
         );
         let module = &prog.module;
-        let routine = Routine::main(module);
+        let routine = top(module);
         let inside = state_at(module, routine, |k| {
             matches!(k, NodeKind::Leaf(Stmt::Print { .. }))
         });
         let top = SlotState::Int(Interval::TOP);
-        assert_eq!(*inside.get(Place::Global(1)), top);
-        assert_eq!(*inside.get(Place::Global(3)), top);
-        assert_eq!(*inside.get(Place::Global(4)), SlotState::Int(Interval::point(126)));
-        assert_eq!(*inside.get(Place::Global(5)), top);
+        assert_eq!(*inside.get(Place::Local(1)), top);
+        assert_eq!(*inside.get(Place::Local(3)), top);
+        assert_eq!(*inside.get(Place::Local(4)), SlotState::Int(Interval::point(126)));
+        assert_eq!(*inside.get(Place::Local(5)), top);
     }
 
     #[test]
@@ -2169,26 +2175,25 @@ mod tests
         let module = &prog.module;
         let roots = global_roots(module, &[]);
         let options = BorrowCheckOptions::default();
-        let mut flow =
-            Flow::new(module, Routine::main(module), &[], &roots, &options, 64);
+        let mut flow = Flow::new(module, top(module), &[], &roots, &options, 64);
         flow.solve();
         let node = |pick: &dyn Fn(&NodeKind) -> bool| {
             let n = flow.cfg.nodes.iter().position(|n| pick(&n.kind)).unwrap();
             flow.ins[n].clone().expect("the node is reached")
         };
         let head = node(&|k| matches!(k, NodeKind::LoopHead(_)));
-        let walker = head.ptr(Place::Global(3)).expect("the borrow is a pointer");
+        let walker = head.ptr(Place::Local(3)).expect("the borrow is a pointer");
         assert_eq!(walker.offset, Interval::TOP);
-        assert_eq!(walker.roots, Roots::from([Root::slot(Place::Global(0)).block()]));
+        assert_eq!(walker.roots, Roots::from([Root::slot(Place::Local(0)).block()]));
         let store = node(&|k| matches!(k, NodeKind::Leaf(Stmt::Store { .. })));
         assert_eq!(
-            *store.get(Place::Global(1)),
+            *store.get(Place::Local(1)),
             SlotState::Int(Interval { lo: 0, hi: 4 })
         );
-        let owner = store.ptr(Place::Global(0)).unwrap();
+        let owner = store.ptr(Place::Local(0)).unwrap();
         assert_eq!((owner.state, owner.len), (OwnerState::FRESH, Some(5)));
         let end = node(&|k| matches!(k, NodeKind::End));
-        assert_eq!(end.ptr(Place::Global(0)).unwrap().state, OwnerState::NULL);
+        assert_eq!(end.ptr(Place::Local(0)).unwrap().state, OwnerState::NULL);
         assert!(flow.ins.iter().all(Option::is_some));
     }
 }

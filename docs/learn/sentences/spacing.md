@@ -12,8 +12,10 @@ The rule that matters most: put a space between a **made-up name** and the parti
 after it.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။ // make a number named အသက် (age)
 အသက် ကို ပြသပါ။                          // space between အသက် and ကို
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -43,9 +45,11 @@ help: write "အသက် ကို" with a space: a name joined to a particle i
   same.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသပါ။      // reserved words joined
 ၁+၂ ကို ပြသပါ။                     // no spaces around +
 ၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသပါ။      // ၏ needs no space
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

@@ -31,7 +31,8 @@ pub(crate) fn collect_fns(
 {
     let mut fns = vec![FnSigs::new(); program.units.len().max(1)];
     let decls = program.stmts.iter().enumerate().filter_map(|(i, s)| {
-        tern!(let Stmt::Fn(decl) = s, Some((program.unit_of(i) as usize, decl)), None)
+        let decl = tern!(let Stmt::Fn(decl) = s, Some(decl), None)?;
+        tern!(decl.start, None, Some((program.unit_of(i) as usize, decl)))
     });
     do_for!((unit, decl) in decls, add_fn(&mut fns[unit], decl, structs, diags));
     fns

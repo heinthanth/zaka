@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use zakac_ast::s_expr::ToSexpr;
+use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::artifact::Borrowchecked;
 use zakac_borrow_checker::artifact::run_loaded;
 use zakac_borrow_checker::artifact::run_phases;
@@ -13,11 +14,15 @@ use zakac_borrow_checker::options::MemCheck;
 use zakac_diagnostics::Code;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_ir_builder::ir::Module;
+use zakac_ir_builder::ir::Stmt;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
+use zakac_parser::wrap::in_start_block;
+use zakac_parser::wrap::in_start_block_lines;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
+use zakac_span::pos::Pos;
 use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 
@@ -52,7 +57,8 @@ pub fn off() -> BorrowCheckOptions
 pub fn run_with(text: &str, options: &BorrowCheckOptions) -> Run
 {
     let mut sm = SourceMap::new();
-    let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
+    let file =
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_start_block(text));
     let out = run_phases(
         &file,
         &LexerOptions::default(),
@@ -101,8 +107,26 @@ pub fn lines(text: &str) -> Vec<(Code, usize)>
 pub fn lines_with(text: &str, options: &BorrowCheckOptions) -> Vec<(Code, usize)>
 {
     let run = run_with(text, options);
-    let line = |pos| run.file.lookup_file_pos(&run.file.relative_position(pos)).0;
+    let line = |pos| old_line(text, &run, pos);
     run.out.diagnostics.iter().map(|d| (d.code, line(&d.span.lo))).collect()
+}
+
+/// The 1-based line of `text` a position of its run comes from, or 0 for a
+/// line the start block adds.
+pub fn old_line(text: &str, run: &Run, pos: &Pos) -> usize
+{
+    let old = in_start_block_lines(text).lines;
+    let line = run.file.lookup_file_pos(&run.file.relative_position(pos)).0;
+    old.get(line - 1).copied().flatten().map_or(0, |l| l + 1)
+}
+
+/// The 1-based line of the first label of the first diagnostic of `text`.
+pub fn label_line(text: &str) -> usize
+{
+    let run = run(text);
+    let found = run.out.diagnostics.first().expect("a diagnostic");
+    let label = found.labels.first().expect("a label");
+    old_line(text, &run, &label.span.lo)
 }
 
 /// Assert that `text` has no diagnostic at all.
@@ -114,10 +138,24 @@ pub fn ok(text: &str)
     assert!(run.out.diagnostics.is_empty(), "{text}: {msgs:?}");
 }
 
-/// The statements of the main list, one form each.
+/// The statements of the main list, one form each, with the statements of
+/// the start block in place of the call of it.
 pub fn main_forms(module: &Module) -> Vec<String>
 {
-    module.main.iter().map(ToSexpr::to_sexpr).collect()
+    let start = module.funcs.iter().position(|f| f.name == START_NAME);
+    let block = start.map(|i| &module.funcs[i].block);
+    let block = block.map(|b| match b.last()
+    {
+        Some(Stmt::Return { value: None, .. }) => &b[..b.len() - 1],
+        _ => &b[..],
+    });
+    let is_call = |s: &Stmt| matches!(s, Stmt::Call { func, .. } if Some(*func as usize) == start);
+    let forms = |s: &Stmt| match (is_call(s), block)
+    {
+        (true, Some(b)) => b.iter().map(ToSexpr::to_sexpr).collect(),
+        _ => vec![s.to_sexpr()],
+    };
+    module.main.iter().flat_map(forms).collect()
 }
 
 /// The repo's root dir.

@@ -131,20 +131,22 @@ fn a_counter_changed_after_the_test_proves_nothing()
     assert!(!forms.contains("count checked"), "{forms}");
 }
 
-/// A list of three cells and a slice of its last two.
-const KNOWN: &str = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+/// The start of a start block with a list of three cells and a slice of its
+/// last two.
+const KNOWN: &str = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ အကွက် ၁ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
 ";
 
 #[test]
 fn a_slice_of_a_known_count_checks_its_cells_at_compile_time()
 {
-    let inside = format!("{KNOWN}s ၏ အကွက် ၁ ကို ပြသပါ။");
+    let inside = format!("{KNOWN}s ၏ အကွက် ၁ ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။");
     ok(&inside);
     let forms = main_forms(&module(&inside)).join(" ");
     assert!(forms.contains("count checked"), "{forms}");
-    let past = format!("{KNOWN}s ၏ အကွက် ၂ ကို ပြသပါ။");
-    assert_eq!(lines(&past), [(Code::OffsetPastEnd, 3)]);
+    let past = format!("{KNOWN}s ၏ အကွက် ၂ ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။");
+    assert_eq!(lines(&past), [(Code::OffsetPastEnd, 4)]);
 }
 
 /// A write into a plain list can move its cells to a block of its own, so it

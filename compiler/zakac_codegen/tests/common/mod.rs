@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_codegen::artifact::Emitted;
 use zakac_codegen::artifact::run_phases;
@@ -10,9 +11,17 @@ use zakac_codegen::options::ResultMode;
 use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
+use zakac_parser::wrap::in_start_block;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
+
+/// A program whose start block holds `stmts`, so each variable of `stmts` is a
+/// local of the start block.
+pub fn in_start(stmts: &str) -> String
+{
+    format!("ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n{stmts}\nပရိုဂရမ် ပြီးဆုံးပါပြီး။")
+}
 
 /// Run each phase on a source text.
 pub fn run(text: &str) -> Emitted { run_mode(text, ResultMode::default()) }
@@ -21,7 +30,8 @@ pub fn run(text: &str) -> Emitted { run_mode(text, ResultMode::default()) }
 pub fn run_mode(text: &str, results: impl Into<EmitOptions>) -> Emitted
 {
     let mut sm = SourceMap::new();
-    let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
+    let file =
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_start_block(text));
     let options = SemcheckOptions::default();
     let folding = FoldOptions::default();
     let mem = BorrowCheckOptions::default();
@@ -47,8 +57,12 @@ pub fn ops(func: &Func) -> Vec<String>
     func.code.iter().map(|op| op.to_string()).collect()
 }
 
-/// The main function.
-pub fn main_func(module: &Module) -> &Func { &module.funcs[module.main as usize] }
+/// The start block, or the main function when there is none.
+pub fn main_func(module: &Module) -> &Func
+{
+    let start = module.funcs.iter().find(|f| f.name == START_NAME);
+    start.unwrap_or(&module.funcs[module.main as usize])
+}
 
 /// The ops of the main function of a clean source text, as text.
 pub fn main_ops(text: &str) -> Vec<String> { ops(main_func(&emit_text(text))) }

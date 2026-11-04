@@ -157,9 +157,11 @@ The message names the missing particle and gives the fix.
 **No space is needed** between reserved words, or around a sign:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသပါ။      // ထက်ကြီးသည်: three reserved words, joined
 ၁+၂ ကို ပြသပါ။                     // no space around the sign
 ၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသပါ။      // ၏ stands alone, so no space is needed
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

@@ -9,6 +9,7 @@ Real questions often have parts: "Is it raining **and** have I no umbrella?" The
 *logical operators* join or flip booleans.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မိုးရွာ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။   // it is raining
 ကိန်းရှင် ထီးပါ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။   // I have an umbrella
 
@@ -19,6 +20,7 @@ Real questions often have parts: "Is it raining **and** have I no umbrella?" The
 (မိုးရွာ && ထီးပါ) ကို ပြသပါ။                        // the same with signs
 (မိုးရွာ || ထီးပါ) ကို ပြသပါ။
 !ထီးပါ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -57,6 +59,7 @@ error[ZK0204]: statement verb "ပြသပါ" cannot stand inside an expressio
 The most common use is to join comparisons. Is the age between 18 and 60?
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃၀ ဖြစ်ပါစေ။
 (အသက် သည် ၁၈ အောက် မငယ်သည် ဖြစ်၍ အသက် သည် ၆၀ အောက် ငယ်သည်) ဟု ပြသပါ။
 (အသက် >= ၁၈ && အသက် < ၆၀) ကို ပြသပါ။
@@ -67,6 +70,7 @@ The most common use is to join comparisons. Is the age between 18 and 60?
 // a logical expression can also be stored
 ကိန်းရှင် ထွက်သင့် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (အသက် > ၁၈ ဖြစ်၍ အသက် < ၆၀) ဖြစ်ပါစေ။
 ထွက်သင့် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

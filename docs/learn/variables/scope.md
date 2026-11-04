@@ -9,12 +9,14 @@ A *block* groups several statements together. It opens with "do the following" a
 closes with "the tasks are done":
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "အစ" ဟု ပြသပါ။
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။               // do the following:
 ကိန်းရှင် လူဦးရေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 လူဦးရေ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။              // the tasks are done.
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။              // the tasks are done.
 "အဆုံး" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -26,7 +28,7 @@ closes with "the tasks are done":
 | Zaka | Reads as | Job |
 | --- | --- | --- |
 | `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။` | "please do the following" | opens a block |
-| `လုပ်ဆောင်စရာများ ပြီးပါပြီး။` | "the tasks are done" | closes the block |
+| `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` | "the tasks are done" | closes the block |
 
 On its own, a block does little. Its real job is to hold the statements of
 an [if](../control-flow/if-else.md), a [loop](../control-flow/while.md) or a
@@ -39,10 +41,12 @@ declared inside a block can be used inside that block and nowhere else. After th
 closer, it is gone:
 
 ```zaka-error ZK0301
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်းရှင် ယာယီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။ // short-lived
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ယာယီ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -52,14 +56,16 @@ error[ZK0301]: "ယာယီ" is not declared
 Names from outside **are** visible inside, and blocks can sit inside other blocks:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်းရှင် ယာယီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အရေအတွက် * ၁၀ ဖြစ်ပါစေ။ // uses the outer name
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။                            // a block inside a block
 ယာယီ ကို ယာယီ + ၁ ဟု ထားပါ။
 ယာယီ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -73,12 +79,14 @@ the outer one: inside the block, the name means the new variable. When the block
 the outer variable is back, unchanged.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။ // a new, inner အရေအတွက်
 အရေအတွက် ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 အရေအတွက် ကို ပြသပါ။                          // the outer one again
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -95,7 +103,7 @@ The closer has four spellings that mean the same thing. Pick whichever reads bes
 - `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။`
 - `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။`
 
-These pages use `ပြီးပါပြီး`.
+These pages use `ပြီးဆုံးပါပြီး`. The start block closes with its own closer, `ပရိုဂရမ် ပြီးဆုံးပါပြီး။`, which takes the same four spellings.
 
 ## Hands on
 

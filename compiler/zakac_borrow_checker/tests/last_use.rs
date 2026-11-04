@@ -75,7 +75,8 @@ fn a_parameter_is_duplicated_and_a_local_moves()
 ");
     assert!(module.contains("(dup l0)"), "{module}");
     assert!(module.contains("(take (addr l2))"), "{module}");
-    assert!(module.contains("(take (addr g1))"), "{module}");
+    // The start block is a function, which never moves out of a global.
+    assert!(module.contains("(call ပြန် (dup_lent g1))"), "{module}");
 }
 
 #[test]
@@ -224,7 +225,7 @@ fn a_struct_parameter_the_function_never_writes_is_read_in_place()
     let module = checked(PEOPLE);
     let shared: Vec<&[u32]> =
         module.funcs.iter().map(|f| f.shared_params.as_slice()).collect();
-    assert_eq!(shared, [&[0][..], &[], &[], &[0]]);
+    assert_eq!(shared, [&[0][..], &[], &[], &[0], &[]]);
 }
 
 #[test]

@@ -173,7 +173,7 @@ fn a_trap_is_final()
     let trap = m.state().trap().cloned().expect("trapped");
     assert_eq!(trap.kind, TrapKind::ZeroDivisor);
     let (func, pc) = m.position().expect("place");
-    assert_eq!((m.module().funcs[func as usize].name.as_str(), pc), ("main", trap.pc));
+    assert_eq!((m.module().funcs[func as usize].name.as_str(), pc), ("ပရိုဂရမ်", trap.pc));
     let steps = m.steps();
     m.step();
     m.step_over();

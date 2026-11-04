@@ -51,7 +51,7 @@ these.
 
 ## What it keeps: the State
 
-Each statement list (a function, or the main program) is a *routine*. At each point of a
+Each statement list (a function, the start block, or `main`, which holds the starting values of the top-level variables and the call of the start block) is a *routine*. The start block is checked as a function; the rules `main` alone has, such as keeping a borrow in a top-level variable, now reach the starting values alone. At each point of a
 routine the checker keeps a `State`: one fact for each global and each local, a
 `SlotState`.
 
@@ -179,12 +179,14 @@ witness read from the liveness pass. Here is the program from above, as the comp
 reports it:
 
 ```zaka-error ZK0704
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
 ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -228,10 +230,12 @@ statement is used before the edit, and is fine. The liveness pass counts both st
 as reads of the text slot.
 
 ```zaka-error ZK0704
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 က ၏ အကွက် ၀ ကို ၉ ဟု ထားပါ။
 s ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -303,12 +307,14 @@ A move into a call is the same check as a move into a variable:
 ကိန်းပြည့် လိပ်စာ က ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လိပ်စာ က ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 လုပ်ဆောင်ချက် ရှင်းပစ် ကို ပ တို့ဖြင့် လုပ်ဆောင်ပါ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -368,9 +374,9 @@ function frees through the first are ZK0707.
 Digests are computed in groups of functions that call each other (`callgraph.rs`), callees
 first; a group that calls itself runs again until none of its digests grows (a fixpoint),
 so recursion and mutual recursion are covered. The global borrows add a loop around this:
-a global borrow set at top level from a call takes its roots from a digest, and a function
+a global borrow whose starting value comes from a call takes its roots from a digest, and a function
 that reads the global starts from those roots. `roots_and_digests` repeats until the roots
-stop growing. Then the main program runs last. `zakac borrow-check` prints the digests; for
+stop growing. Then `main` runs last. `zakac borrow-check` prints the digests; for
 `ရှင်းပစ်` above:
 
 ```text
@@ -406,12 +412,14 @@ frees and reads; this costs a few false alarms and closes a group of holes in re
 | `--no-raw` | not an option of this crate: `SemcheckOptions::no_raw` refuses each raw kind (ZK0717) before the IR exists |
 
 ```zaka-warning ZK0704 mem-check=warn
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
 ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 Just the codes decided in this crate (ZK0701 to ZK0704, ZK0706 to ZK0712) change with the

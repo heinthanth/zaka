@@ -5,6 +5,8 @@ use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
+use zakac_parser::wrap::in_start_block;
+use zakac_rust_sugars::tern;
 use zakac_semcheck::artifact::check_loaded;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::file_loader::MemFileLoader;
@@ -14,7 +16,11 @@ use zakac_span::source_map::SourceMap;
 fn check(files: &[(&str, &str)]) -> Vec<Diagnostic>
 {
     let mut loader = MemFileLoader::new();
-    files.iter().for_each(|(path, text)| loader.insert(*path, text));
+    files.iter().for_each(|(path, text)| {
+        let text =
+            tern!(*path == "/m/main.zaka", in_start_block(text), text.to_string());
+        loader.insert(*path, &text);
+    });
     let mut sm = SourceMap::with_loader(Arc::new(loader));
     let file = sm.load_file(Path::new("/m/main.zaka")).unwrap();
     let loaded = load(&file, &mut sm, &LexerOptions::default()).unwrap();
@@ -104,6 +110,18 @@ fn an_imported_name_and_a_declaration_of_one_name_clash()
 fn a_statement_in_an_imported_file_is_zk0323()
 {
     let lib = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nက ကို ပြသပါ။";
+    let main = "\"lib.zaka\" မှ က ကို ထည့်သွင်းပါ။\nက ကို ပြသပါ။";
+    assert_eq!(
+        codes(&[("/m/main.zaka", main), ("/m/lib.zaka", lib)]),
+        [Code::StmtInImportedFile]
+    );
+}
+
+#[test]
+fn a_start_block_in_an_imported_file_is_zk0323()
+{
+    let lib = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let main = "\"lib.zaka\" မှ က ကို ထည့်သွင်းပါ။\nက ကို ပြသပါ။";
     assert_eq!(
         codes(&[("/m/main.zaka", main), ("/m/lib.zaka", lib)]),

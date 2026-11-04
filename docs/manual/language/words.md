@@ -31,10 +31,12 @@ Burmese full stop `။`. A line break does **not** end a statement, so one state
 cover several lines and several statements can share a line.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "တစ်" ဟု ပြသပါ။ "နှစ်" ဟု ပြသပါ။
 ၁ +
 ၂ ကို
 ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -118,8 +120,10 @@ when it is a word on its own.
 // two slashes
 /// three slashes
 မှတ်ချက် the word for "note"
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "http://zaka.example // not a comment" ဟု ပြသပါ။   // a comment after a statement
 ၁ ကို ပြသပါ။ မှတ်ချက် also after a statement
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -135,12 +139,14 @@ Upper and lower case differ: `Age` and `age` are two names. A name cannot be jus
 reserved word or a row of reserved words.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် Age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
 ကိန်းရှင် 🍎 သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 အသက် + Age + age + အမှတ်_၁ + 🍎 ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -153,9 +159,11 @@ A name written between backticks is a *raw name*. It can hold reserved words, sp
 and signs. It cannot hold a backtick or a line break, and it cannot be blank.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် `ကို ပြသပါ` သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
 ကိန်းရှင် `the total` သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၉ ဖြစ်ပါစေ။
 `ကို ပြသပါ` + `the total` ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -195,6 +203,7 @@ parts in a fixed order:
   kind.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁၂၃ ကို ပြသပါ။                                    // Burmese digits
 123 ကို ပြသပါ။                                     // Western digits: the same number
 အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသပါ။                        // 1010 in base 2
@@ -203,6 +212,7 @@ parts in a fixed order:
 ၃.၁၄ ကို ပြသပါ။
 1.5e3 ကို ပြသပါ။
 အနုတ် ၅ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -259,12 +269,14 @@ and `'}}'` are the brace characters, and another `{...}` is ZK0106, as are a lon
 a `{` with no `}` after it on the line.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသပါ။
 "a\\b" ဟု ပြသပါ။
 "{{ }}" ဟု ပြသပါ။
 'က' ကို ပြသပါ။
 '{ယူနီကုဒ် 1000}' ကို ပြသပါ။
 "x\u00000041y" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

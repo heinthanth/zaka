@@ -398,6 +398,51 @@ pub fn stmt_in_imported_file(span: Span, file: &str) -> Diagnostic
     Diagnostic::new(Code::StmtInImportedFile, msg, span)
 }
 
+/// A program has a second start block.
+///
+/// # Arguments
+///
+/// * `span` - The header word of the second block.
+///
+/// # Returns
+///
+/// The `ZK0325` diagnostic.
+pub fn second_start(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0325.message");
+    Diagnostic::new(Code::SecondStart, msg, span).with_help(t!("codes.ZK0325.help"))
+}
+
+/// A statement that would run stands at the top level of the file that is run.
+///
+/// # Arguments
+///
+/// * `span` - The statement.
+///
+/// # Returns
+///
+/// The `ZK0326` diagnostic.
+pub fn top_level_stmt(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0326.message");
+    Diagnostic::new(Code::TopLevelStmt, msg, span).with_help(t!("codes.ZK0326.help"))
+}
+
+/// The file that is run has no start block.
+///
+/// # Arguments
+///
+/// * `span` - The start of the file.
+///
+/// # Returns
+///
+/// The `ZK0327` diagnostic.
+pub fn no_start(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0327.message");
+    Diagnostic::new(Code::NoStart, msg, span).with_help(t!("codes.ZK0327.help"))
+}
+
 /// An exported declaration names a private struct of its file in a kind.
 ///
 /// # Arguments

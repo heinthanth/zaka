@@ -72,7 +72,9 @@ output, or change the program and run it again. Each example is checked against 
 compiler, so the output shown is the output the program prints now.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ" ဟု ပြသပါ။          // show: hello
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

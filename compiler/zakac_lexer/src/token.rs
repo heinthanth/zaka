@@ -369,6 +369,8 @@ pub enum Kw
     FnOpenRet,
     /// `လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?`
     BlockClose,
+    /// `ပရိုဂရမ် ပြီး(ဆုံး)?ပါပြီ(း)?`: closes the start block.
+    ProgramClose,
 
     // statement verbs
     /// `ပြသပါ`
@@ -451,6 +453,8 @@ pub enum Kw
     Value,
     /// `လုပ်ဆောင်ချက်`
     Function,
+    /// `ပရိုဂရမ်`: opens the start block, as in `ပရိုဂရမ်သည်`
+    Program,
     /// `ရလဒ်`
     Result,
     /// `မှန်`

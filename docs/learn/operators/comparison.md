@@ -9,6 +9,7 @@ A *comparison* asks a true-or-false question about two values: are the two equal
 one bigger? The answer is a [boolean](../values/booleans.md), `မှန်` or `မမှန်`.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၅ ဖြစ်ပါစေ။
 
 // Words: the subject takes သည်, then ထက်, အောက် or နှင့်, then the verb
@@ -20,6 +21,7 @@ one bigger? The answer is a [boolean](../values/booleans.md), `မှန်` or 
 အသက် > ၁၈ ကို ပြသပါ။
 အသက် < ၁၈ ကို ပြသပါ။
 အသက် == ၂၅ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -46,10 +48,12 @@ The `မ` in front of a verb means "not": `မညီ` is "not equal", `မကြ
 Equals uses `=` twice: `==`. A single `=` is not an operator in Zaka.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၅ ဖြစ်ပါစေ။
 အသက် သည် ၃၀ နှင့် မညီပါ ဟု ပြသပါ။
 အသက် သည် ၆၀ ထက် မကြီးပါ ဟု ပြသပါ။
 အသက် သည် ၁၈ အောက် မငယ်ပါ ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -62,8 +66,10 @@ Characters can be compared too. Their order follows the Unicode number, so `'က
 comes before `'ခ'`, and `'A'` (65) comes before `'a'` (97):
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 'က' < 'ခ' ကို ပြသပါ။
 'A' < 'a' ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -76,9 +82,11 @@ comes before `'ခ'`, and `'A'` (65) comes before `'a'` (97):
 A comparison is a value, so it can be stored in a boolean variable:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 ကိန်းရှင် အောင် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အမှတ် သည် ၄၀ အောက် မငယ်သည် ဖြစ်ပါစေ။ // passed
 အောင် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

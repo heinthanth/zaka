@@ -187,6 +187,12 @@ ImportNotFound = ("ZK0322", Level::Error),
 StmtInImportedFile = ("ZK0323", Level::Error),
 /// An exported declaration names a private struct of its file in a kind.
 PrivateInExport = ("ZK0324", Level::Error),
+/// A program has a second start block.
+SecondStart = ("ZK0325", Level::Error),
+/// A statement that would run stands at the top level of the file that is run.
+TopLevelStmt = ("ZK0326", Level::Error),
+/// The file that is run has no start block.
+NoStart = ("ZK0327", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.
@@ -262,6 +268,10 @@ TextCannotChange = ("ZK0438", Level::Error),
 /// `၏ အရှေ့တွင်` follows a value that is no cell of a list and no character
 /// of text.
 InsertNotAtCell = ("ZK0439", Level::Error),
+/// A parameter of the start block is no text list, or there are more than two.
+StartParamKind = ("ZK0440", Level::Error),
+/// The result of the start block is no integer.
+StartResultKind = ("ZK0441", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

@@ -22,8 +22,8 @@ turf::style_sheet!("src/components/hero/mod.sass");
 /// Rules of the hero.
 static SHEET: ComponentStyle = ComponentStyle::global_css("site-hero", STYLE_SHEET);
 
-/// The line of Zaka the hero writes out: a whole program that prints a
-/// greeting.
+/// The line of Zaka the hero writes out: a statement that prints a greeting,
+/// as the start block of a program holds it.
 pub const LINE: &str = "\"မင်္ဂလာပါ\" ဟု ပြသပါ။";
 
 /// What [`LINE`] prints.

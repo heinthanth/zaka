@@ -10,6 +10,7 @@ need to **choose** ("if the score is 40 or more, print *pass*") and to **repeat*
 ("print the numbers 1 to 100"). The order in which statements run is called *control flow*.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 
 // choose: if ... then ... otherwise ...
@@ -18,6 +19,7 @@ need to **choose** ("if the score is 40 or more, print *pass*") and to **repeat*
 
 // repeat: count from 1 to 3
 ၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -38,6 +40,6 @@ need to **choose** ("if the score is 40 or more, print *pass*") and to **repeat*
 | [Break and continue](break-continue.md) | leave a loop at once, or skip to its next round |
 
 Each of these runs an *inner part*: either one statement or
-a [block](../variables/scope.md) (`အောက်ပါတို့ကို လုပ်ဆောင်ပါ။ ... လုပ်ဆောင်စရာများ ပြီးပါပြီး။`).
+a [block](../variables/scope.md) (`အောက်ပါတို့ကို လုပ်ဆောင်ပါ။ ... လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။`).
 
 Next: [If and else](if-else.md).

@@ -17,6 +17,7 @@ use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
+use zakac_parser::wrap::in_start_block;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
@@ -89,7 +90,8 @@ fn compile_with(
 ) -> (Module, Vec<Diagnostic>)
 {
     let mut sm = SourceMap::new();
-    let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
+    let file =
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_start_block(text));
     let folding = FoldOptions::default();
     let lexer = LexerOptions::default();
     let emitted = run_phases(&file, &lexer, options, &folding, mem, results);
@@ -107,7 +109,8 @@ pub fn compile_text(
 ) -> Module
 {
     let mut sm = SourceMap::new();
-    let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
+    let file =
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_start_block(text));
     let (lexer, options) = (LexerOptions::default(), SemcheckOptions::default());
     let mem = BorrowCheckOptions::default();
     let emitted = run_phases(&file, &lexer, &options, folding, &mem, emit_options);

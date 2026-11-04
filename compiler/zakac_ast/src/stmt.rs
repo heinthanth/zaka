@@ -339,7 +339,11 @@ pub struct Param
     pub span: Span,
 }
 
-/// Function declaration.
+/// The name the start block carries: the word of its header.
+pub const START_NAME: &str = "ပရိုဂရမ်";
+
+/// Function declaration, or the start block (`ပရိုဂရမ်သည် ...`), which has the
+/// same parts and runs once, after the top-level statements.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct FnDecl
 {
@@ -355,6 +359,10 @@ pub struct FnDecl
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
+    /// `true` for the start block, where the program starts; no call can
+    /// name it.
+    #[builder(default)]
+    pub start: bool,
     /// Source region.
     pub span: Span,
 }

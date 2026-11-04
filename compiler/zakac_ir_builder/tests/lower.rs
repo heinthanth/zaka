@@ -4,10 +4,12 @@ use common::folded;
 use common::plain;
 use common::run;
 use zakac_ast::s_expr::ToSexpr;
+use zakac_ast::stmt::START_NAME;
 use zakac_ir_builder::ir::Access;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::FoldOptions;
+use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::PrintValue;
 use zakac_ir_builder::ir::Stmt;
@@ -17,6 +19,12 @@ fn module(text: &str) -> Module
 {
     let lowered = run(text, &FoldOptions::default());
     lowered.plain.unwrap_or_else(|| panic!("{text}: {:?}", lowered.diagnostics))
+}
+
+/// The start block of a module.
+fn start(m: &Module) -> &Func
+{
+    m.funcs.iter().find(|f| f.name == START_NAME).expect("a start block")
 }
 
 fn printed(s: &Stmt) -> &Expr
@@ -84,8 +92,8 @@ fn widening_becomes_explicit()
         "(set g1 (widen i16 g0))",
         "(set g1 (+ (widen i16 g0) g1))",
         "(print (< (widen i16 g0) g1))",
-        "(set g2 (widen f64 g0))",
-        "(set g3 1.0:f32)",
+        "(set l0 (widen f64 g0))",
+        "(set l1 1.0:f32)",
     ];
     assert_eq!(plain(text), expected);
 }
@@ -140,7 +148,7 @@ fn blocks_flatten_and_shadowing_gets_a_new_slot()
 က ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 က ကို ပြသပါ။";
-    let expected = ["(set g0 1:isize)", "(set g1 2:isize)", "(print g1)", "(print g0)"];
+    let expected = ["(set g0 1:isize)", "(set l0 2:isize)", "(print l0)", "(print g0)"];
     assert_eq!(plain(text), expected);
 }
 
@@ -171,15 +179,13 @@ fn loops()
     let expected = [
         "(set g0 5:isize)",
         "(loop (> g0 0:isize) (block (set g0 (- g0 1:isize))))",
-        "(loop (init (set g1 0:isize)) (< g1 3:isize) (update (set g1 (+ g1 \
-         1:isize))) (block (print g1)))",
-        "(up g2 1:isize 10:isize 2:isize (block (print g2)))",
+        "(loop (init (set l0 0:isize)) (< l0 3:isize) (update (set l0 (+ l0 \
+         1:isize))) (block (print l0)))",
+        "(up l1 1:isize 10:isize 2:isize (block (print l1)))",
     ];
     assert_eq!(forms, expected);
-    assert_eq!(
-        module(&text.replace("ကွင်းဆက် ကို ရပ်ပါ။", "")).globals[2].access,
-        Access::LoopVar
-    );
+    let m = module(&text.replace("ကွင်းဆက် ကို ရပ်ပါ။", ""));
+    assert_eq!(start(&m).locals[1].access, Access::LoopVar);
 }
 
 #[test]
@@ -188,7 +194,7 @@ fn counted_loops_take_the_common_kind_of_their_bounds()
     let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ၁၆ ဘစ် ကိန်းပြည့် ၉ ဖြစ်ပါစေ။
 က မှ ခ အထိ န အနေဖြင့် ရေတွက်၍ န ကို ပြသပါ။";
-    let expected = "(count g2 (widen i16 g0) g1 (block (print g2)))";
+    let expected = "(count l0 (widen i16 g0) g1 (block (print l0)))";
     assert_eq!(plain(text)[2], expected);
 }
 
@@ -206,7 +212,12 @@ fn functions_have_their_own_slots()
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 လုပ်ဆောင်ချက် နှစ်ဆ ကို ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။";
     let m = module(text);
-    let funcs: Vec<String> = m.funcs.iter().map(ToSexpr::to_sexpr).collect();
+    let funcs: Vec<String> = m
+        .funcs
+        .iter()
+        .filter(|f| f.name != START_NAME)
+        .map(ToSexpr::to_sexpr)
+        .collect();
     let expected = [
         "(fn ပြ (params (l0 က isize)) (result -) (locals (l1 ခ isize)) (block (set l1 \
          (* l0 g0)) (print l1)))",
@@ -295,17 +306,18 @@ fn a_bare_null_is_an_opaque_pointer()
 {
     let text = "ဗလာ ကို ပြသပါ။\nဗလာ == ဗလာ ကို ပြသပါ။";
     let m = module(text);
-    assert_eq!(printed(&m.main[0]).kind, DataKind::OPAQUE);
-    let ExprNode::Compare { lhs, rhs, .. } = &printed(&m.main[1]).node
+    let block = &start(&m).block;
+    assert_eq!(printed(&block[0]).kind, DataKind::OPAQUE);
+    let ExprNode::Compare { lhs, rhs, .. } = &printed(&block[1]).node
     else
     {
-        panic!("not a comparison: {:?}", m.main[1]);
+        panic!("not a comparison: {:?}", block[1]);
     };
     assert_eq!((lhs.kind, rhs.kind), (DataKind::OPAQUE, DataKind::OPAQUE));
     let folded = run(text, &FoldOptions::default()).folded.expect("folded");
-    assert_eq!(printed(&folded.main[0]).kind, DataKind::OPAQUE);
+    assert_eq!(printed(&start(&folded).block[0]).kind, DataKind::OPAQUE);
     let none = run(text, &FoldOptions::none()).folded.expect("folded");
-    assert_eq!(printed(&none.main[0]).kind, DataKind::OPAQUE);
+    assert_eq!(printed(&start(&none).block[0]).kind, DataKind::OPAQUE);
 }
 
 const OFFSETS: &str = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။

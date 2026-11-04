@@ -76,7 +76,9 @@ fn off_mode_drops_codes_but_keeps_checked()
     assert_eq!(found(FREED_READ, &off()), []);
     assert!(marks_checked(CELLS, &off()));
     assert!(marks_checked(CELLS, &Default::default()));
-    let both = format!("{FREED_READ}{CELLS}");
+    let (head, closer) =
+        FREED_READ.trim_end().rsplit_once('\n').expect("a start block");
+    let both = format!("{head}\n{CELLS}{closer}\n");
     assert_eq!(found(&both, &off()), []);
     assert!(!marks_checked(&both, &off()));
 }

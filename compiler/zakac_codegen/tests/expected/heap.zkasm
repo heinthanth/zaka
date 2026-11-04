@@ -1,14 +1,4 @@
 ; zakac asm listing v1, platform 64 bits
-globals
-  g0 ပထမ isize
-  g1 ဒုတိယ isize
-  g2 ဆံ့နိုင်ရေ usize
-  g3 အရေအတွက် usize
-  g4 ကိန်းများ isize*
-  g5 ကိန်း isize
-  g6 နံပါတ် usize
-  g7 ပစ္စည်း u8*
-  g8 ဈေးနှုန်း i32&
 texts
   t0 "နေရာ မရပါ"
 
@@ -35,169 +25,183 @@ locals
     15  store isize
     16  ret
 
-fn f1 main (params 0)
-     0  global_addr g0       ; ပထမ
+fn f1 ပရိုဂရမ် (params 0)
+locals
+  l0 ပထမ isize
+  l1 ဒုတိယ isize
+  l2 ဆံ့နိုင်ရေ usize
+  l3 အရေအတွက် usize
+  l4 ကိန်းများ isize*
+  l5 ကိန်း isize
+  l6 နံပါတ် usize
+  l7 ပစ္စည်း u8*
+  l8 ဈေးနှုန်း i32&
+     0  local_addr l0        ; ပထမ
      1  push 1:isize
      2  store isize
-     3  global_addr g1       ; ဒုတိယ
+     3  local_addr l1        ; ဒုတိယ
      4  push 2:isize
      5  store isize
-     6  global_addr g0       ; ပထမ
-     7  global_addr g1       ; ဒုတိယ
+     6  local_addr l0        ; ပထမ
+     7  local_addr l1        ; ဒုတိယ
      8  call f0              ; လဲလှယ်
-     9  global_addr g0       ; ပထမ
+     9  local_addr l0        ; ပထမ
     10  load isize
     11  print
-    12  global_addr g1       ; ဒုတိယ
+    12  local_addr l1        ; ဒုတိယ
     13  load isize
     14  print
-    15  global_addr g2       ; ဆံ့နိုင်ရေ
+    15  local_addr l2        ; ဆံ့နိုင်ရေ
     16  push 4:usize
     17  store usize
-    18  global_addr g3       ; အရေအတွက်
+    18  local_addr l3        ; အရေအတွက်
     19  push 0:usize
     20  store usize
-    21  global_addr g4       ; ကိန်းများ
+    21  local_addr l4        ; ကိန်းများ
     22  push 0x0:ptr
     23  store isize*
-    24  global_addr g4       ; ကိန်းများ
-    25  global_addr g2       ; ဆံ့နိုင်ရေ
+    24  local_addr l4        ; ကိန်းများ
+    25  local_addr l2        ; ဆံ့နိုင်ရေ
     26  load usize
     27  alloc 8
     28  store isize*
-    29  global_addr g4       ; ကိန်းများ
+    29  local_addr l4        ; ကိန်းများ
     30  load isize*
     31  push 0x0:ptr
     32  eq
     33  jump_if_false L0
     34  print_text t0
 L0:
-    35  global_addr g5       ; ကိန်း
+    35  local_addr l5        ; ကိန်း
     36  push 1:isize
     37  store isize
-    38  global_addr g5       ; ကိန်း
+    38  local_addr l5        ; ကိန်း
     39  load isize
     40  push 10:isize
     41  gt
     42  jump_if_true L3
 L1:
-    43  global_addr g3       ; အရေအတွက်
+    43  local_addr l3        ; အရေအတွက်
     44  load usize
-    45  global_addr g2       ; ဆံ့နိုင်ရေ
+    45  local_addr l2        ; ဆံ့နိုင်ရေ
     46  load usize
     47  eq
     48  jump_if_false L2
-    49  global_addr g2       ; ဆံ့နိုင်ရေ
-    50  global_addr g2       ; ဆံ့နိုင်ရေ
+    49  local_addr l2        ; ဆံ့နိုင်ရေ
+    50  local_addr l2        ; ဆံ့နိုင်ရေ
     51  load usize
     52  push 2:usize
     53  mul
     54  store usize
-    55  global_addr g4       ; ကိန်းများ
-    56  global_addr g4       ; ကိန်းများ
+    55  local_addr l4        ; ကိန်းများ
+    56  local_addr l4        ; ကိန်းများ
     57  load isize*
-    58  global_addr g2       ; ဆံ့နိုင်ရေ
+    58  local_addr l2        ; ဆံ့နိုင်ရေ
     59  load usize
     60  realloc 8
     61  store isize*
 L2:
-    62  global_addr g4       ; ကိန်းများ
+    62  local_addr l4        ; ကိန်းများ
     63  load isize*
-    64  global_addr g3       ; အရေအတွက်
+    64  local_addr l3        ; အရေအတွက်
     65  load usize
     66  ptr_add 8
-    67  global_addr g5       ; ကိန်း
+    67  local_addr l5        ; ကိန်း
     68  load isize
-    69  global_addr g5       ; ကိန်း
+    69  local_addr l5        ; ကိန်း
     70  load isize
     71  mul
     72  store isize
-    73  global_addr g3       ; အရေအတွက်
-    74  global_addr g3       ; အရေအတွက်
+    73  local_addr l3        ; အရေအတွက်
+    74  local_addr l3        ; အရေအတွက်
     75  load usize
     76  push 1:usize
     77  add
     78  store usize
     79  push 10:usize
-    80  global_addr g5       ; ကိန်း
+    80  local_addr l5        ; ကိန်း
     81  load isize
     82  convert usize
     83  wrap sub
     84  push 1:usize
     85  lt
     86  jump_if_true L3
-    87  global_addr g5       ; ကိန်း
-    88  global_addr g5       ; ကိန်း
+    87  local_addr l5        ; ကိန်း
+    88  local_addr l5        ; ကိန်း
     89  load isize
     90  push 1:isize
     91  wrap add
     92  store isize
     93  jump L1
 L3:
-    94  global_addr g6       ; နံပါတ်
+    94  local_addr l6        ; နံပါတ်
     95  push 0:usize
     96  store usize
 L4:
-    97  global_addr g6       ; နံပါတ်
+    97  local_addr l6        ; နံပါတ်
     98  load usize
-    99  global_addr g3       ; အရေအတွက်
+    99  local_addr l3        ; အရေအတွက်
    100  load usize
    101  lt
    102  jump_if_false L5
-   103  global_addr g4       ; ကိန်းများ
+   103  local_addr l4        ; ကိန်းများ
    104  load isize*
-   105  global_addr g6       ; နံပါတ်
+   105  local_addr l6        ; နံပါတ်
    106  load usize
    107  ptr_add 8
    108  load isize
    109  print
-   110  global_addr g6       ; နံပါတ်
-   111  global_addr g6       ; နံပါတ်
+   110  local_addr l6        ; နံပါတ်
+   111  local_addr l6        ; နံပါတ်
    112  load usize
    113  push 1:usize
    114  add
    115  store usize
    116  jump L4
 L5:
-   117  global_addr g4       ; ကိန်းများ
-   118  global_addr g4       ; ကိန်းများ
+   117  local_addr l4        ; ကိန်းများ
+   118  local_addr l4        ; ကိန်းများ
    119  load isize*
    120  free
    121  push 0x0:ptr
    122  store isize*
-   123  global_addr g7       ; ပစ္စည်း
+   123  local_addr l7        ; ပစ္စည်း
    124  push 0x0:ptr
    125  store u8*
-   126  global_addr g7       ; ပစ္စည်း
+   126  local_addr l7        ; ပစ္စည်း
    127  push 8:usize
    128  alloc 1
    129  store u8*
-   130  global_addr g7       ; ပစ္စည်း
+   130  local_addr l7        ; ပစ္စည်း
    131  load u8*
    132  push 7:u8
    133  store u8
-   134  global_addr g8       ; ဈေးနှုန်း
+   134  local_addr l8        ; ဈေးနှုန်း
    135  push 0x0:ptr
    136  store i32&
-   137  global_addr g8       ; ဈေးနှုန်း
-   138  global_addr g7       ; ပစ္စည်း
+   137  local_addr l8        ; ဈေးနှုန်း
+   138  local_addr l7        ; ပစ္စည်း
    139  load u8*
    140  push 4:isize
    141  ptr_add 1
    142  convert i32&
    143  store i32&
-   144  global_addr g8       ; ဈေးနှုန်း
+   144  local_addr l8        ; ဈေးနှုန်း
    145  load i32&
    146  push 1500:i32
    147  store i32
-   148  global_addr g8       ; ဈေးနှုန်း
+   148  local_addr l8        ; ဈေးနှုန်း
    149  load i32&
    150  load i32
    151  print
-   152  global_addr g7       ; ပစ္စည်း
-   153  global_addr g7       ; ပစ္စည်း
+   152  local_addr l7        ; ပစ္စည်း
+   153  local_addr l7        ; ပစ္စည်း
    154  load u8*
    155  free
    156  push 0x0:ptr
    157  store u8*
    158  ret
+
+fn f2 main (params 0)
+     0  call f1              ; ပရိုဂရမ်
+     1  ret

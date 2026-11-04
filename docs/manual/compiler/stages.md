@@ -66,7 +66,9 @@ bad character, and the parser goes on from the next sentence.
 This sentence adds two numbers and prints the sum:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ + ၂ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -204,10 +206,14 @@ borrow checker](../internals/borrow-checker.md).
 each op back to a range of the source:
 
 ```text
-fn main
+fn ပရိုဂရမ်
    0  push 3:isize
    1  print
    2  ret
+
+fn main
+   0  call f0
+   1  ret
 ```
 
 The ops are listed in [Instructions](../vm/instructions.md); see [IR and
@@ -215,7 +221,7 @@ code](../internals/codegen.md) for how these are made.
 
 ### The VM
 
-`zakac run` hands the ops to the VM. It pushes `3`, prints it as `၃`, and returns.
+`zakac run` hands the ops to the VM. `main` calls the start block, which pushes `3`, prints it as `၃`, and returns.
 The VM reports no code: when a program does something it must not, the VM
 stops it and tells so ([When a program stops](../vm/traps.md)).
 

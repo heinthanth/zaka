@@ -10,6 +10,7 @@ wherever the value is needed. Creating a variable is called *declaring* it.
 
 ```zaka
 // "Let the variable age be one integer, and its value be 18."
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 
 // "Let the variable price be one decimal number, and its value be 2.5."
@@ -21,6 +22,7 @@ wherever the value is needed. Creating a variable is called *declaring* it.
 အသက် ကို ပြသပါ။
 ဈေး ကို ပြသပါ။
 နှစ်ဆ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -58,12 +60,14 @@ value. A whole number gives `ကိန်းပြည့်`, a number with a po
 in quotes gives `စာသား`.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ၁၈ ဖြစ်ပါစေ။
 ကိန်းရှင် ဈေး သည် ၂.၅ ဖြစ်ပါစေ။
 ကိန်းရှင် အမည် သည် "မမ" ဖြစ်ပါစေ။
 ကိန်းရှင် နှစ်ဆ သည် အသက် * ၂ ဖြစ်ပါစေ။
 အမည် ကို ပြသပါ။
 နှစ်ဆ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -86,12 +90,14 @@ kind's *default*:
 | `စာလုံး` | the null character `'\0'` |
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။      // count, starts at 0
 ကိန်းရှင် ပြီးပြီ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။      // done, starts as false
 ကိန်းရှင် ပျမ်းမျှ သည် ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။         // average, starts at 0.0
 အရေအတွက် ကို ပြသပါ။
 ပြီးပြီ ကို ပြသပါ။
 ပျမ်းမျှ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -106,10 +112,12 @@ The value can also come straight after the kind, without `ဖြစ်၍ တန
 lines declare the same kind of variable with the same value:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 ကိန်းရှင် အရွယ် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
 အသက် ကို ပြသပါ။
 အရွယ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -127,7 +135,9 @@ The initial value must suit the variable's kind. A decimal number cannot go into
 integer variable:
 
 ```zaka-error ZK0401
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈.၅ ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -143,7 +153,9 @@ A variable exists from its declaration onward, and not before. Using a name that
 never declared is an error:
 
 ```zaka-error ZK0301
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အသက် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

@@ -41,7 +41,7 @@ what is not needed: names become numbers, blocks are flattened, operators have o
 spelling, and each conversion is written out.
 
 ```text
-Module { globals: Vec<Slot>, funcs: Vec<Func>, main: Vec<Stmt>, imported_inits, span }
+Module { globals: Vec<Slot>, funcs: Vec<Func>, main: Vec<Stmt>, imported_inits, host, span }
 Func   { name, params, result, ret, locals: Vec<Slot>, block: Vec<Stmt>, span }
 Slot   { name, kind: DataKind, access: Var | Const | LoopVar, addressed, span }
 Place  = Global(n) | Local(n)                   written g0, l0
@@ -187,6 +187,12 @@ rules out). Its rules:
   `<name>@<file>`, so two private functions of one name differ in the listing.
 - The declarations of the imported files come first in the tree, so the `set`s of their
   variables are the first statements of `main`; `imported_inits` counts them.
+- The start block lowers to a function, in its place among the others. `main` then ends
+  with one call of it, before the drops of the globals: its arguments are duplicates of
+  the hidden globals `%args` and `%env`, and its result goes to the hidden global
+  `%exit`. `host` (`Host { args, env, exit }`) records the numbers of these globals,
+  each `None` when the start block does not use it. Nothing else in the IR, the borrow
+  checker or the ops knows about the start block.
 
 ### Folding
 
@@ -233,9 +239,11 @@ Take this program (the file `sq.zaka`):
 ကိန်းပြည့် က ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
 က * က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အကယ်၍ အလျား သည် ၁၀ ထက် ကြီးလျှင် လုပ်ဆောင်ချက် နှစ်ထပ် ကို အလျား တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 `zakac irgen --fold none` prints the IR below (spans left out: `lo` and `hi`
@@ -286,7 +294,7 @@ module:
                   read: l0
 ```
 
-The top-level part, `main`, comes out like this with `--fold none`:
+`main` sets the constant and calls the start block, function 1:
 
 ```text
   main:
@@ -296,60 +304,74 @@ The top-level part, `main`, comes out like this with `--fold none`:
         kind: isize
         node:
           const: 12:isize
-  - if:
-      cond:
-        kind: bool
-        node:
-          compare:
-            op: gt
-            lhs:
-              kind: isize
-              node:
-                read: g0
-            rhs:
-              kind: isize
-              node:
-                const: 10:isize
-      then:
-      - print:
-          value:
-            expr:
-              kind: isize
-              node:
-                call:
-                  func: 0
-                  name: နှစ်ထပ်
-                  args:
-                  - kind: isize
-                    node:
-                      read: g0
-      els:
-      []
+  - call:
+      func: 1
+      name: ပရိုဂရမ်
+      args: []
+```
+
+The start block comes out like this with `--fold none`:
+
+```text
+  - name: ပရိုဂရမ်
+    params: 0
+    result: null
+    ret: null
+    locals: []
+    block:
+    - if:
+        cond:
+          kind: bool
+          node:
+            compare:
+              op: gt
+              lhs:
+                kind: isize
+                node:
+                  read: g0
+              rhs:
+                kind: isize
+                node:
+                  const: 10:isize
+        then:
+        - print:
+            value:
+              expr:
+                kind: isize
+                node:
+                  call:
+                    func: 0
+                    name: နှစ်ထပ်
+                    args:
+                    - kind: isize
+                      node:
+                        read: g0
+        els:
+        []
 ```
 
 and like this with the default `--fold all`: `read g0` is the constant `12`, so the
 condition `12 > 10` is true, so the `if` is gone and its branch stands in its place.
 
 ```text
-  main:
-  - set:
-      place: g0
-      value:
-        kind: isize
-        node:
-          const: 12:isize
-  - print:
-      value:
-        expr:
-          kind: isize
-          node:
-            call:
-              func: 0
-              name: နှစ်ထပ်
-              args:
-              - kind: isize
-                node:
-                  const: 12:isize
+  - name: ပရိုဂရမ်
+    params: 0
+    result: null
+    ret: null
+    locals: []
+    block:
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              call:
+                func: 0
+                name: နှစ်ထပ်
+                args:
+                - kind: isize
+                  node:
+                    const: 12:isize
 ```
 
 ## The ops
@@ -358,12 +380,13 @@ condition `12 > 10` is true, so the `if` is gone and its branch stands in its pl
 `bc::Module`:
 
 ```text
-Module { platform_bits, globals: Vec<Slot>, texts: Vec<String>, formats: Vec<Vec<FmtArg>>, funcs: Vec<Func>, main: u32, overflow }
+Module { platform_bits, globals: Vec<Slot>, texts: Vec<String>, formats: Vec<Vec<FmtArg>>, funcs: Vec<Func>, main: u32, overflow, host }
 Func   { name, params, ret, locals: Vec<Slot>, code: Vec<Op>, spans: Vec<Span> }
 ```
 
-`funcs` holds the IR functions at their IR numbers, then one more function, `main`, for the
-top-level statements; `main` is its number. `texts` is the table of static texts, each
+`funcs` holds the IR functions at their IR numbers, the start block among them, then one
+more function, `main`, which sets the top-level variables and calls the start block;
+`main` is its number. `texts` is the table of static texts, each
 distinct text once: string literals, folded formats and printed text; `print_text` and
 `text` name them through their index. `formats` lists the pieces of each format, `FmtArg::Text(t)` for
 a static text or `FmtArg::Value(kind)` for a value from the stack; `format` names one through
@@ -491,51 +514,58 @@ locals
      7  mul
      8  ret
 
-fn f1 main (params 0)
+fn f1 ပရိုဂရမ် (params 0)
+     0  push 12:isize
+     1  call f0              ; နှစ်ထပ်
+     2  print
+     3  ret
+
+fn f2 main (params 0)
      0  global_addr g0       ; အလျား
      1  push 12:isize
      2  store isize
-     3  push 12:isize
-     4  call f0              ; နှစ်ထပ်
-     5  print
-     6  ret
+     3  call f1              ; ပရိုဂရမ်
+     4  ret
 ```
 
 In `f0`, ops 0 to 2 set the result variable to zero, ops 3 to 7 read `က` twice and
 mul them, and `ret` leaves the product on the stack, which is how a result travels. In
-`main`, the global gets its value (ops 0 to 2), the argument `12` is pushed (op 3; the
-folder turned `read g0` into a constant), `call f0` takes the argument from the stack
-into the local `က` and leaves the result, and `print` writes it. The program prints `၁၄၄`.
+`main`, the global gets its value (ops 0 to 2) and `call f1` runs the start block. There
+the argument `12` is pushed (op 0; the folder turned `read g0` into a constant), `call f0`
+takes the argument from the stack into the local `က` and leaves the result, and `print`
+writes it. The program prints `၁၄၄`.
 
 A counted loop shows the labels. For `၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။`:
 
 ```text
-fn f0 main (params 0)
-     0  global_addr g0       ; ကိန်း
+fn f0 ပရိုဂရမ် (params 0)
+locals
+  l0 ကိန်း isize
+     0  local_addr l0        ; ကိန်း
      1  push 1:isize
      2  store isize
-     3  global_addr g0       ; ကိန်း
+     3  local_addr l0        ; ကိန်း
      4  load isize
      5  push 3:isize
      6  gt
      7  jump_if_true L1
 L0:
-     8  global_addr g0       ; ကိန်း
+     8  local_addr l0        ; ကိန်း
      9  load isize
     10  print
     11  push 3:usize
-    12  global_addr g0       ; ကိန်း
+    12  local_addr l0        ; ကိန်း
     13  load isize
     14  convert usize
-    15  sub
+    15  wrap sub
     16  push 1:usize
     17  lt
     18  jump_if_true L1
-    19  global_addr g0       ; ကိန်း
-    20  global_addr g0       ; ကိန်း
+    19  local_addr l0        ; ကိန်း
+    20  local_addr l0        ; ကိန်း
     21  load isize
     22  push 1:isize
-    23  add
+    23  wrap add
     24  store isize
     25  jump L0
 L1:
@@ -545,7 +575,7 @@ L1:
 Ops 3 to 7 are the one test before the first round (a start past the end runs zero
 rounds). Ops 8 to 10 are the block. Ops 11 to 18 are the test of the formula above, with
 `U` = `usize`. Ops 19 to 25 add the step and go round. The loop variable is `ကိန်း`, a
-global here because the loop is at top level.
+local of the start block.
 
 ## The artifacts
 
@@ -567,6 +597,11 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   frozen static block that holds its UTF-8, opens the stack region and enters `main`. A
   write inside a frozen block is the trap `FrozenWrite`. Globals start at the default of their kind, and the `Set` statements that
   the IR keeps run in source order.
+- **The host.** `set_host` puts the arguments and the environment in the globals that
+  `host.args` and `host.env` name, before the first op: each text in a heap block of its
+  own, and each list in one more, so the drops at the end of `main` give them back.
+  `exit_code` reads the global `host.exit` once the run has finished, and keeps its
+  lowest 8 bits. A run with no host leaves both lists blank.
 - **A call.** `call f` takes one block of the stack region for each local of `f`
   (`FrameMode::Checked`), or one block for all of them at C offsets (`Packed`), moves the
   arguments from the operand stack into the first locals, and pushes a `Frame`. `ret`

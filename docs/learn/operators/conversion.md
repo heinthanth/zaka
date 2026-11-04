@@ -10,6 +10,7 @@ divide as a decimal, a decimal score to round down to a whole number, or a chara
 Unicode number. *Converting* gives the value in the new kind.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃၇ ဖြစ်ပါစေ။
 ကိန်းရှင် အမှတ် သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၉.၇၅ ဖြစ်ပါစေ။
 ကိန်းရှင် အက္ခရာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'A' ဖြစ်ပါစေ။
@@ -19,6 +20,7 @@ Unicode number. *Converting* gives the value in the new kind.
 အက္ခရာ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။   // 'A' as its number
 ၆၆ ကို စာလုံး အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။         // 66 as a character
 မှန် ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။     // true as a number
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -48,9 +50,11 @@ Each conversion has to be written out, because it can change the value:
 - A negative number as an unsigned kind wraps too: `-၁` becomes 255.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 -၂.၇ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
 ၃၀၀ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
 -၁ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -62,7 +66,9 @@ Each conversion has to be written out, because it can change the value:
 Some conversions make no sense and are refused. A number cannot become true or false:
 
 ```zaka-error ZK0408
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ ကို မှန်မှားတန်ဖိုး အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -76,11 +82,13 @@ one: an `၈ ဘစ် ကိန်းပြည့်` into a `ကိန်း�
 number. These are called *widening* conversions.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဘိုက် သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ ဖြစ်ပါစေ။    // octet
 ကိန်းရှင် ကျယ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဘိုက် ဖြစ်ပါစေ။       // 8-bit into 64-bit: automatic
 ကိန်းရှင် ဒဿမ သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဘိုက် ဖြစ်ပါစေ။      // 8-bit into a decimal: automatic
 ကျယ် ကို ပြသပါ။
 ဒဿမ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -92,8 +100,10 @@ A plain `ကိန်းပြည့်` does **not** go into a decimal on its o
 decimal cannot hold all 64-bit integers without loss:
 
 ```zaka-error ZK0401
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ ဖြစ်ပါစေ။
 ကိန်းရှင် ဒဿမ သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စုစုပေါင်း ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -103,6 +113,7 @@ error[ZK0401]: expected f64, found isize
 Write the conversion out. Here is an average that keeps its fraction:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ ဖြစ်ပါစေ။ // total
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။  // count
 
@@ -111,6 +122,7 @@ Write the conversion out. Here is an average that keeps its fraction:
 
 // convert both to decimals first
 (စုစုပေါင်း ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ်) / (အရေအတွက် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ်) ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

@@ -1,19 +1,26 @@
 use std::collections::HashMap;
 
 use zakac_ast::expr::Ident;
+use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
+use zakac_ast::kind::Wrap;
 use zakac_ast::name::Name;
+use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
 use zakac_diagnostics::Diagnostic;
+use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
+use zakac_span::span::Span;
 
+use crate::kind::DataKind;
 use crate::scope::Binding;
 use crate::scope::FnSig;
 use crate::semcheck::Checker;
@@ -124,6 +131,79 @@ fn private_struct<'k>(kind: &'k Kind, unit: u32, homes: &StructHomes)
     (*home == unit && !exported).then_some(name.name.as_str())
 }
 
+/// Report each start block after the first, a file that is run with no start
+/// block, and each statement that runs in place at the top level of the file
+/// that is run. A start block or a statement in an imported file is reported
+/// as a statement there.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+///
+/// # Returns
+///
+/// The diagnostics.
+pub(crate) fn start_rules(program: &Program) -> Vec<Diagnostic>
+{
+    let stmts = program.stmts.iter().enumerate();
+    let root: Vec<&Stmt> = stmts
+        .filter(|(i, _)| program.is_root(program.unit_of(*i)))
+        .map(|(_, s)| s)
+        .collect();
+    let starts: Vec<Span> = root.iter().filter_map(|s| start_of(s)).collect();
+    let mut diags: Vec<Diagnostic> =
+        starts.iter().skip(1).map(|&span| rd::second_start(span)).collect();
+    let top = root.iter().filter(|s| runs_in_place(s));
+    diags.extend(top.map(|s| rd::top_level_stmt(s.span())));
+    let file_start = root.first().map_or(program.span, |s| s.span()).shrink_to_lo();
+    do_if!(starts.is_empty(), diags.push(rd::no_start(file_start)));
+    diags
+}
+
+/// Whether a written kind is a plain list of text, `စာသား စာရင်း`.
+///
+/// # Arguments
+///
+/// * `kind` - The kind.
+///
+/// # Returns
+///
+/// `true` for a text list with no count and no borrow marker.
+fn is_text_list(kind: &Kind) -> bool
+{
+    kind.base.is_text() && kind.wraps == [Wrap::List(Cells::Inferred)] && !kind.borrowed
+}
+
+/// Whether a top-level statement runs where it stands, rather than
+/// declaring something.
+///
+/// # Arguments
+///
+/// * `stmt` - The statement.
+///
+/// # Returns
+///
+/// `false` for a function, a struct, a variable, a constant or an import.
+fn runs_in_place(stmt: &Stmt) -> bool
+{
+    !matches!(stmt, Stmt::Fn(_) | Stmt::Struct(_) | Stmt::Decl(_) | Stmt::Import(_))
+}
+
+/// The header word of a start block.
+///
+/// # Arguments
+///
+/// * `stmt` - The statement.
+///
+/// # Returns
+///
+/// The span of `ပရိုဂရမ်`, or `None` when the statement is no start block.
+fn start_of(stmt: &Stmt) -> Option<Span>
+{
+    let decl = tern!(let Stmt::Fn(decl) = stmt, Some(decl), None)?;
+    tern!(decl.start, Some(decl.name.span), None)
+}
+
 /// The names of the units of a program, as messages show them.
 ///
 /// # Arguments
@@ -152,10 +232,7 @@ impl Checker
     {
         let unit = program.unit_of(index);
         self.enter_unit(unit);
-        let runs = !matches!(
-            stmt,
-            Stmt::Fn(_) | Stmt::Struct(_) | Stmt::Decl(_) | Stmt::Import(_)
-        );
+        let runs = runs_in_place(stmt) || start_of(stmt).is_some();
         let name = || self.unit_names[unit as usize].clone();
         let imported = !program.is_root(unit);
         do_if!(
@@ -163,6 +240,25 @@ impl Checker
             self.report(rd::stmt_in_imported_file(stmt.span(), &name()))
         );
         self.visit_stmt(stmt);
+    }
+
+    /// Check the header of the start block: no parameter, one or two, each a
+    /// plain text list, and no result or an integer one.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The start block.
+    /// * `ret` - The kind of its result, when it has one.
+    pub(crate) fn check_start_header(&mut self, n: &FnDecl, ret: Option<DataKind>)
+    {
+        let bad = n.params.iter().enumerate();
+        let bad = bad.filter(|(i, p)| *i >= 2 || p.edit || !is_text_list(&p.kind));
+        do_for!((_, p) in bad, self.report(kd::start_param_kind(p.span)));
+        let not_int = ret.filter(|k| !k.is_int()).zip(n.ret.as_ref());
+        do_if!(
+            let Some((kind, written)) = not_int,
+            self.report(kd::start_result_kind(written.span, &kind.name()))
+        );
     }
 
     /// Move to a file: keep the top-level names of the files that ended,

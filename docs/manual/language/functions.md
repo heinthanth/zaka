@@ -16,9 +16,11 @@ travel into a call, and the errors the compiler reports. For a gentle start, see
 ကိန်းပြည့် က ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
 က * က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် နှစ်ထပ် ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -34,7 +36,7 @@ travel into a call, and the errors the compiler reports. For a gentle start, see
   or
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်။   (with a result)
 <statements>
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
 | Part | Rule |
@@ -66,8 +68,8 @@ called.
 လုပ်ဆောင်ချက် အတွင်း သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -94,9 +96,12 @@ each other difference needs an explicit conversion.
 ကိန်းပြည့် က ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 က ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် သေး သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် ပြ ကို သေး တို့ဖြင့် လုပ်ဆောင်ပါ။       // 32 bits widens to the full width
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -122,8 +127,11 @@ setting `ရလဒ်` gives back the default of its kind:
 ```zaka
 လုပ်ဆောင်ချက် မေ့ သည်
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် မေ့ ကို လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -144,7 +152,10 @@ What the compiler does check:
 လုပ်ဆောင်ချက် ပြ သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -155,7 +166,10 @@ error[ZK0312]: function "ပြ" returns nothing, but a value is returned
 လုပ်ဆောင်ချက် တစ် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
 ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -188,8 +202,11 @@ An argument is a full expression, and `၊` ends it, so an argument needs no par
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 က ကို ပြသပါ။
 ခ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် အစီအစဉ် ကို ၁ + ၁၊ ၂ * ၅ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -212,10 +229,13 @@ word form: the same order of work, the same checks and the same codes. Its rules
 ကိန်းပြည့် က ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
 က * က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 နှစ်ထပ်(၇) ကို ပြသပါ။
 နှစ်ထပ်(၃) + နှစ်ထပ်(၄) ကို ပြသပါ။
 နှစ်ထပ်(နှစ်ထပ်(၂)) ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -233,8 +253,11 @@ expression that begins with a call is written with that call in parentheses; see
 ကိန်းပြည့် က ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 က ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် ပြ ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -246,8 +269,11 @@ error[ZK0314]: function "ပြ" takes 1 arguments, 2 given
 ကိန်းပြည့် က ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 က ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် ပြ ကို မှန် တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -267,17 +293,19 @@ as recursive; the call is a plain call. Each call has its own parameters and its
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။
 အကယ်၍ န သည် ၀ နှင့် ညီလျှင် မှန် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
 လုပ်ဆောင်ချက် မကိန်းလား ကို န - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 လုပ်ဆောင်ချက် မကိန်းလား သည်
 ကိန်းပြည့် န ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။
 အကယ်၍ န သည် ၀ နှင့် ညီလျှင် မမှန် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
 လုပ်ဆောင်ချက် စုံသလား ကို န - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် စုံသလား ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
 လုပ်ဆောင်ချက် စုံသလား ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -294,9 +322,11 @@ case meets this limit:
 ကိန်းပြည့် န ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို န + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -318,16 +348,18 @@ moving](structs.md#duplicating-and-moving).
 ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ နေရာ ရလဒ် ကို ပြန်ပေးမည်။
 x က၊ y ခ ရှိသော နေရာတစ်ခု ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 လုပ်ဆောင်ချက် အစဉ် သည်
 ကိန်းပြည့် စ ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
 ၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ၏ အကွက် န ကို စ + န ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် နေရာသစ် ကို ၃၊ ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
 လုပ်ဆောင်ချက် အစဉ် ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -348,7 +380,10 @@ x က၊ y ခ ရှိသော နေရာတစ်ခု ကို ရလ�
 ```zaka-error ZK0424
 လုပ်ဆောင်ချက် ငှား သည်
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -369,13 +404,16 @@ changes. The mark works in the word form and the sign form of a call alike.
 လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 န ကို န + ၁ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် ပ သည် လူ(အသက်: ၃၀) ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် တိုး ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
 လုပ်ဆောင်ချက် တိုး ကို ပ ၏ အသက် (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
 က ကို ပြသပါ။
 ပ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -406,9 +444,12 @@ large struct in place.
 လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 န ကို န + ၁ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် တိုး ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -420,9 +461,12 @@ error[ZK0431]: the function changes this argument; mark it with "(လုပ်�
 လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န၊ ကိန်းပြည့် မ တို့ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 န ကို မ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် ထား ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)၊ က + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -466,11 +510,13 @@ A change to a parameter remains in the function:
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 က ကို က + ၁ ဟု ထားပါ။
 က ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် တိုးပြ ကို ခ တို့ဖြင့် လုပ်ဆောင်ပါ။
 ခ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -488,11 +534,13 @@ kind with `လိပ်စာ` after it, and `ငှားထားသော` in
 ငှားထားသော ကိန်းပြည့် စာရင်း လိပ်စာ ကိန်းများ ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မူရင်း သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် နှစ်ဆတိုး ကို မူရင်း ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
 မူရင်း ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -513,13 +561,15 @@ route to get more than one result out of a call:
 ကိန်းရှင် ယာယီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုး ဖြစ်ပါစေ။
 က ၏ တန်ဖိုး ကို ခ ၏ တန်ဖိုး ဟု ထားပါ။
 ခ ၏ တန်ဖိုး ကို ယာယီ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပထမ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် ဒုတိယ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် လဲလှယ် ကို ပထမ ၏ လိပ်စာ၊ ဒုတိယ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
 ပထမ ကို ပြသပါ။
 ဒုတိယ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -545,6 +595,139 @@ block, and the call must agree:
 The full rules, with one error for each manner of getting them wrong, are in [Ownership and
 borrowing](ownership.md).
 
+## The start block
+
+Each program starts in its start block, a block of its own after the word `ပရိုဂရမ်`
+("program"). Its header has the parts of a function header, with no name. The statements
+that run go there or into functions: the top level of a file holds declarations alone.
+
+```text
+ပရိုဂရမ်သည်
+<parameters> လက်ခံပြီး                                    (left out when there are none)
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။                                (exit code 0)
+  or
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ <integer kind> ရလဒ် ကို ပြန်ပေးမည်။   (with an exit code)
+<statements>
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+| Part | Rule |
+| --- | --- |
+| end | `ပရိုဂရမ်` with one of the four spellings of the done word: `ပြီးဆုံးပါပြီး`, `ပြီးဆုံးပါပြီ`, `ပြီးပါပြီး` or `ပြီးပါပြီ`; the closer of other blocks, `လုပ်ဆောင်စရာများ ...`, does not close it (ZK0201) |
+| parameters | none, one or two, each a `စာသား စာရင်း`, with names the program chooses |
+| the first | the name of the program, then the arguments of the run, one text for each |
+| the second | the environment variables, one `NAME=VALUE` text for each |
+| result | none, or an integer kind: the exit code of the run |
+
+```zaka
+ကိန်းရှင် နှုတ်ခွန်း သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည်
+စာသား စာရင်း ညွှန်ကြားချက်များ နှင့် စာသား စာရင်း ပတ်ဝန်းကျင် တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+နှုတ်ခွန်း ကို ပြသပါ။
+ညွှန်ကြားချက်များ ၏ အကွက်အရေအတွက် ကို ပြသပါ။
+၀ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မင်္ဂလာပါ
+၁
+```
+
+The first cell is the name of the program, as in C, Rust and Python, so the count is at
+least 1. On the command line it is the input as written, or `-` for standard input; the
+arguments come after `--`, and the environment is the one `zakac` runs in. The Run
+buttons of these pages give the name `main.zaka` and the Explorer `explorer.zaka`, with
+no arguments and a blank environment:
+
+```console
+$ zakac run greet.zaka -- ကက ခခ
+မင်္ဂလာပါ
+၃
+$ echo $?
+0
+```
+
+### How a program runs
+
+1. The top-level variables and constants get their starting values, in order, those of
+   imported files first.
+2. The start block runs, with the arguments and the environment.
+3. The text that the top-level variables hold is given back, as at the end of each
+   program.
+
+The result of the start block is the exit code. The host keeps its lowest 8 bits, so
+`-၁` ends the run with 255. A start block with no result, or one that never sets
+`ရလဒ်`, ends the run with 0. A run that stops on a trap ends with 1 whatever the
+start block holds.
+
+Inside, the start block follows the rules of a function: it has its own variables and
+`ရလဒ်`, a return statement ends it, and it owns what it allocates, so a block it loses is
+[ZK0708](ownership.md). It can change its two lists as it can each list parameter.
+
+### Where a start block stands
+
+- A program has one start block and no more, in the file given to `zakac run`: a second one
+  is ZK0325, and a file with none is ZK0327. An imported file holds none (ZK0323).
+- The top level of a file holds declarations alone: functions, structs, variables,
+  constants and imports. A statement that runs there is ZK0326; it goes inside the start
+  block or a function.
+- A parameter that is no `စာသား စာရင်း`, a parameter the function can change, and a
+  third parameter are ZK0440. A result that is no integer is ZK0441.
+- No call names the start block, it is not declared inside a block (ZK0214), and
+  `အများသုံး` does not export it (ZK0229).
+
+```zaka-error ZK0326
+"ဟိုင်း" ဟု ပြသပါ။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0326]: a statement that runs goes inside the start block, not at the top level
+```
+
+```zaka-error ZK0325
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0325]: the program has a start block before this one
+```
+
+```zaka-error ZK0327
+ကိန်းရှင် အမည် သည် "ဇကား" ဖြစ်ပါစေ။
+```
+
+```text
+error[ZK0327]: the program has no start block, "ပရိုဂရမ်သည်"
+```
+
+```zaka-error ZK0440
+ပရိုဂရမ်သည်
+ကိန်းပြည့် အရေအတွက် ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0440]: a parameter of the start block is a "စာသား စာရင်း", and there are two of them at most
+```
+
+```zaka-error ZK0441
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရလဒ် ကို ပြန်ပေးမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0441]: the result of the start block is "text", but it must be an integer
+```
+
 ## Errors at a glance
 
 | Code | Mistake |
@@ -556,6 +739,9 @@ borrowing](ownership.md).
 | ZK0311 | a return statement outside a function |
 | ZK0312 | a value returned from a function without a result |
 | ZK0313 | no value returned from a function with a result |
+| ZK0325 | a second start block |
+| ZK0326 | a statement that runs, at the top level of a file |
+| ZK0327 | a program with no start block |
 | ZK0314 | a wrong number of arguments |
 | ZK0315 | the result of a function that has none, used as a value |
 | ZK0401 | an argument or a returned value that does not fit its kind |
@@ -563,5 +749,7 @@ borrowing](ownership.md).
 | ZK0431 | an argument for a parameter the function can change, with no mark |
 | ZK0432 | the mark on an argument for a parameter the function cannot change |
 | ZK0433 | a place a call changes, in another argument of the same call |
+| ZK0440 | a start block parameter that is no `စာသား စာရင်း`, or a third one |
+| ZK0441 | a start block result that is no integer |
 
 The text of each message is in [Error messages](../reference/errors.md).

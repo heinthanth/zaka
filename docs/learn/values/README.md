@@ -10,11 +10,13 @@ Each value has a **kind**. The kind tells what sort of data the value is and wha
 program can do with it. Two numbers can be added, but two answers of "true" cannot.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၄၂ ကို ပြသပါ။          // an integer (a whole number)
 ၃.၁၄ ကို ပြသပါ။        // a decimal number
 'က' ကို ပြသပါ။         // a character
 မှန် ကို ပြသပါ။         // a true/false value: true
 "စာ" ဟု ပြသပါ။         // text in quotes
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

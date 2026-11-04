@@ -193,7 +193,7 @@ fn global_list_filled_through_a_cell_then_owner_freed_in_main_is_zk0704()
 }
 
 #[test]
-fn global_list_filled_through_a_cell_read_in_a_func_that_frees_its_owner_is_zk0704()
+fn global_list_filled_through_a_cell_read_in_a_func_that_frees_its_owner_is_zk0703()
 {
     let text = "\
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
@@ -210,11 +210,11 @@ fn global_list_filled_through_a_cell_read_in_a_func_that_frees_its_owner_is_zk07
 
 လုပ်ဆောင်ချက် ဖတ် ကို လုပ်ဆောင်ပါ။
 ";
-    assert_eq!(lines(text), [(Code::InvalidatedLoan, 9)]);
+    assert_eq!(lines(text), [(Code::BorrowStored, 5)]);
 }
 
 #[test]
-fn global_list_filled_through_a_cell_read_in_a_callee_freeing_through_a_hook_is_zk0704()
+fn global_list_filled_through_a_cell_read_in_a_callee_freeing_through_a_hook_is_zk0703()
 {
     let text = "\
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
@@ -232,7 +232,7 @@ fn global_list_filled_through_a_cell_read_in_a_callee_freeing_through_a_hook_is_
 
 လုပ်ဆောင်ချက် ဖတ် ကို ပ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
 ";
-    assert_eq!(lines(text), [(Code::InvalidatedLoan, 14)]);
+    assert_eq!(lines(text), [(Code::BorrowStored, 5)]);
 }
 
 #[test]
@@ -353,7 +353,7 @@ fn nested_lists_of_borrows_are_one_variable()
 }
 
 #[test]
-fn nested_global_list_filled_through_a_cell_read_in_a_freeing_callee_is_zk0704()
+fn nested_global_list_filled_through_a_cell_read_in_a_freeing_callee_is_zk0703()
 {
     let text = "\
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
@@ -370,11 +370,11 @@ fn nested_global_list_filled_through_a_cell_read_in_a_freeing_callee_is_zk0704()
 ဇယား ၏ အကွက် ၁ ၏ အကွက် ၁ ကို ပ ၏ တန်ဖိုးအငှား ဟု ထားပါ။
 လုပ်ဆောင်ချက် ဖတ် ကို ပ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
 ";
-    assert_eq!(lines(text), [(Code::InvalidatedLoan, 13)]);
+    assert_eq!(lines(text), [(Code::BorrowStored, 12)]);
 }
 
 #[test]
-fn global_list_filled_through_a_cell_in_a_branch_counts()
+fn global_list_filled_through_a_cell_in_a_branch_is_zk0703()
 {
     let text = "\
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
@@ -391,7 +391,7 @@ fn global_list_filled_through_a_cell_in_a_branch_counts()
 အကယ်၍ န သည် ၁ နှင့် ညီလျှင် တန်း ၏ အကွက် ၁ ကို ပ ၏ တန်ဖိုးအငှား ဟု ထားပါ။
 လုပ်ဆောင်ချက် ဖတ် ကို လုပ်ဆောင်ပါ။
 ";
-    assert_eq!(lines(text), [(Code::InvalidatedLoan, 6)]);
+    assert_eq!(lines(text), [(Code::BorrowStored, 12)]);
 }
 
 #[test]

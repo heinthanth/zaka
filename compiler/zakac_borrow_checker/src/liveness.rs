@@ -353,19 +353,22 @@ mod tests
     use crate::cfg::NodeKind;
     use crate::cfg::build_cfg;
     use crate::testing::program;
+    use crate::testing::top;
 
     #[test]
     fn borrow_read_after_free_is_live_with_witness()
     {
         let prog = program(
-            "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+            "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
         );
-        let routine = Routine::main(&prog.module);
+        let routine = top(&prog.module);
         let cfg = build_cfg(routine.block, routine.span);
         let live = live_out(&cfg, &prog.module, &routine);
         let free = cfg
@@ -373,9 +376,9 @@ mod tests
             .iter()
             .position(|n| matches!(n.kind, NodeKind::Leaf(Stmt::Free { .. })));
         let after_free = &live[free.expect("the free is a node")];
-        let witness = after_free.get(&Place::Global(1)).expect("the borrow is live");
-        assert_eq!(prog.line(*witness), 5);
-        assert!(!after_free.contains_key(&Place::Global(0)));
+        let witness = after_free.get(&Place::Local(1)).expect("the borrow is live");
+        assert_eq!(prog.line(*witness), 6);
+        assert!(!after_free.contains_key(&Place::Local(0)));
         let print = cfg
             .nodes
             .iter()
@@ -387,7 +390,8 @@ mod tests
     fn a_set_ends_the_live_range_and_a_loop_carries_it_back()
     {
         let prog = program(
-            "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+            "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၅ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ကိန်းရှင် ညွှန်း သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ကာ ညွှန်း သည် ပ + ၅ \
              အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
@@ -395,9 +399,10 @@ mod tests
 ပြီးလျှင် ညွှန်း ကို ညွှန်း + ၁ ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
         );
-        let routine = Routine::main(&prog.module);
+        let routine = top(&prog.module);
         let cfg = build_cfg(routine.block, routine.span);
         let live = live_out(&cfg, &prog.module, &routine);
         let at = |pick: &dyn Fn(&NodeKind) -> bool| {
@@ -406,7 +411,7 @@ mod tests
                 .position(|n| pick(&n.kind))
                 .expect("the node is in the graph")
         };
-        let walker = Place::Global(1);
+        let walker = Place::Local(1);
         let first_set = at(
             &|k| matches!(k, NodeKind::Leaf(Stmt::Set { place, .. }) if *place == walker),
         );

@@ -9,16 +9,18 @@ fn flatten(node: &TreeNode) -> Vec<&TreeNode>
 }
 
 const TEXT: &str = "ကိန်းသေ အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
-အသက် + ၂ ကို ပြသပါ။";
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အသက် + ၂ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
 
 #[test]
-fn module_holds_globals_and_main()
+fn module_holds_globals_functions_and_main()
 {
     let out = compile(TEXT, &Options::default());
     let labels: Vec<&str> = out.ir_plain.children.iter().map(|c| c.label).collect();
     assert_eq!(
         (out.ir_plain.label, labels.as_slice()),
-        ("module", ["globals", "main"].as_slice())
+        ("module", ["globals", "fn", "main"].as_slice())
     );
     let slot = &out.ir_plain.children[0].children[0];
     assert_eq!((slot.label, slot.detail.as_str()), ("slot", "g0 အသက် const"));
@@ -35,7 +37,8 @@ fn reads_name_their_slot_and_constants_show_their_value()
     assert_eq!(&TEXT[read.range.lo as usize..read.range.hi as usize], "အသက်");
     let folded = flatten(&out.ir_folded);
     assert!(folded.iter().all(|n| n.label != "read"));
-    let sum = folded.iter().rev().find(|n| n.label == "const").expect("a constant");
+    let start = flatten(&out.ir_folded.children[1]);
+    let sum = start.iter().rev().find(|n| n.label == "const").expect("a constant");
     assert_eq!(sum.detail, "20:isize");
     assert!(sum.is_literal());
 }

@@ -6,6 +6,7 @@ use zakac_ast::expr as ast;
 use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt as st;
+use zakac_ast::stmt::START_NAME;
 use zakac_ast::verb::Dir;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
@@ -28,6 +29,7 @@ use crate::ir::Expr;
 use crate::ir::ExprNode;
 use crate::ir::FmtPiece;
 use crate::ir::Func;
+use crate::ir::Host;
 use crate::ir::InfixOp;
 use crate::ir::LogicOp;
 use crate::ir::LowerOptions;
@@ -81,11 +83,12 @@ pub fn lower(
         lowerer.top_stmt(s, &mut main);
         do_if!(!program.is_root(unit), imported_inits = main.len() as u32);
     }
+    let host = lowerer.start_call(&mut main);
     let ends_in_return = matches!(main.last(), Some(Stmt::Return { .. }));
     do_if!(!ends_in_return, main.extend(lowerer.global_drops(program.span)));
     #[rustfmt::skip]
     let mut module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
-        .main(main).imported_inits(imported_inits).span(program.span).build();
+        .main(main).imported_inits(imported_inits).host(host).span(program.span).build();
     free_read_lends(&mut module);
     module
 }
@@ -125,7 +128,7 @@ struct Sig
 
 /// The signatures of the top-level functions of each file, numbered in
 /// source order across the files; the first of two with one name in a file
-/// wins, as in the check.
+/// wins, as in the check. The start block takes its number and no name.
 ///
 /// # Arguments
 ///
@@ -147,6 +150,7 @@ fn collect_sigs(program: &st::Program, structs: &StructTable)
         let params = f.params.iter().map(|p| param_kind(p, structs)).collect();
         let edits = f.params.iter().map(|p| p.edit).collect();
         let sig = Sig { index: index as u32, params, edits };
+        do_if!(f.start, continue);
         sigs[unit].entry(f.name.name).or_insert(sig);
     }
     sigs
@@ -229,6 +233,9 @@ struct Lowerer<'k>
     /// last; `break` and `continue` leave the scopes from there on.
     #[builder(default)]
     loops: Vec<usize>,
+    /// The start block, once lowered: its index, its parameter kinds, its
+    /// result kind and the span of its header word.
+    start: Option<(u32, Vec<DataKind>, Option<DataKind>, Span)>,
 }
 
 impl Lowerer<'_>
@@ -489,8 +496,79 @@ impl Lowerer<'_>
         {
             return self.stmt(s, out);
         };
+        let params = f.params.iter().map(|p| param_kind(p, self.structs)).collect();
+        let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
+        let index = self.funcs.len() as u32;
+        do_if!(f.start, self.start = Some((index, params, ret, f.name.span)));
         let func = self.func(f);
         self.funcs.push(func);
+    }
+
+    /// Call the start block at the end of the top-level statements. Its
+    /// parameters get duplicates of hidden globals that the VM fills with the
+    /// arguments and the environment of the run, and its result goes to a
+    /// hidden global that the VM reads as the exit code.
+    ///
+    /// The call and the hidden globals take the span of the header word
+    /// `ပရိုဂရမ်`, so a run that stops at the call points at the header.
+    ///
+    /// # Arguments
+    ///
+    /// * `out` - The main list.
+    ///
+    /// # Returns
+    ///
+    /// The hidden globals; none when the program has no start block.
+    fn start_call(&mut self, out: &mut Vec<Stmt>) -> Host
+    {
+        let Some((func, params, ret, span)) = self.start.take()
+        else
+        {
+            return Host::default();
+        };
+        let names = params.iter().zip(["%args", "%env"]);
+        let inputs: Vec<u32> =
+            names.map(|(&k, n)| self.host_global(n, k, span)).collect();
+        let read = |(&g, &kind): (&u32, &DataKind)| {
+            let node = ExprNode::Read(Place::Global(g));
+            dup(Expr::builder().kind(kind).node(node).span(span).build())
+        };
+        let args = inputs.iter().zip(&params).map(read).collect();
+        let name = START_NAME.to_string();
+        let exit = ret.map(|kind| (self.host_global("%exit", kind, span), kind));
+        let stmt = match exit
+        {
+            Some((g, kind)) =>
+            {
+                let call = ExprNode::Call { func, name, args };
+                let value = Expr::builder().kind(kind).node(call).span(span).build();
+                Stmt::Set { place: Place::Global(g), value, span }
+            }
+            None => Stmt::Call { func, name, args, span },
+        };
+        out.push(stmt);
+        #[rustfmt::skip]
+        return Host::builder().maybe_args(inputs.first().copied())
+            .maybe_env(inputs.get(1).copied()).maybe_exit(exit.map(|(g, _)| g)).build();
+    }
+
+    /// Make a hidden global that links the start block to the host.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Its name, which starts with `%`.
+    /// * `kind` - Its kind.
+    /// * `span` - The source region of the program.
+    ///
+    /// # Returns
+    ///
+    /// The index of the global.
+    fn host_global(&mut self, name: &str, kind: DataKind, span: Span) -> u32
+    {
+        #[rustfmt::skip]
+        let slot = Slot::builder().name(name).kind(kind).access(Access::Var).span(span).build();
+        self.globals.push(slot);
+        self.globals.len() as u32 - 1
     }
 
     /// Lower a statement and append it to `out`.

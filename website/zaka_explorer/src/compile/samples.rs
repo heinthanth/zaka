@@ -115,6 +115,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("programs", "leap"),
     sample!("programs", "max_of_three"),
     sample!("programs", "triangle"),
+    sample!("programs", "start"),
     sample!("mistakes", "leak"),
     sample!("mistakes", "null_read"),
     sample!("mistakes", "past_the_end"),

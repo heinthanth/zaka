@@ -118,7 +118,7 @@ fn a_dead_loop_keeps_its_start()
 ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ၁ သည် ၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်း ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    assert_eq!(folded(text), ["(set g0 0:isize)"]);
+    assert_eq!(folded(text), ["(set l0 0:isize)"]);
 }
 
 #[test]
@@ -141,13 +141,16 @@ fn logic_short_circuits_on_a_constant_left_side()
 #[test]
 fn a_cell_of_a_list_with_no_cells_is_out_of_range_without_a_panic()
 {
+    use zakac_ast::stmt::START_NAME;
     use zakac_ir_builder::ir::ExprNode;
     use zakac_ir_builder::ir::Stmt;
 
     let text =
         "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။\nl ၏ အကွက် ၁ ကို ၉ ဟု ထားပါ။";
     let mut module = run(text, &FoldOptions::default()).plain.expect("lowered");
-    let Some(Stmt::Store { addr, .. }) = module.main.last_mut()
+    let start = module.funcs.iter_mut().find(|f| f.name == START_NAME);
+    let Some(Stmt::Store { addr, .. }) = start
+        .and_then(|f| f.block.iter_mut().rfind(|s| matches!(s, Stmt::Store { .. })))
     else
     {
         panic!("the last statement is a store");

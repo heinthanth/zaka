@@ -15,5 +15,6 @@ mod recover;
 mod stmt;
 mod str_lit;
 mod struct_lit;
+pub mod wrap;
 
 zakac_i18n::init!();

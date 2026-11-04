@@ -173,6 +173,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::FnOpen
         | Kw::FnOpenRet
         | Kw::BlockClose
+        | Kw::ProgramClose
         | Kw::Following
         | Kw::WillDo
         | Kw::DoAnd
@@ -182,6 +183,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Being
         | Kw::WhenDone
         | Kw::Function
+        | Kw::Program
         | Kw::Const
         | Kw::Var
         | Kw::Mem

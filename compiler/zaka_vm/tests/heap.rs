@@ -209,8 +209,8 @@ fn a_packed_call_takes_one_block_with_its_locals_at_c_offsets()
 န ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let mut m = Machine::new(common::compile(text), laid_out(FrameMode::Packed));
-    do_while!(m.frames().len() < 2, let _ = m.step());
-    let frame = &m.frames()[1];
+    do_while!(m.frames().len() < 3, let _ = m.step());
+    let frame = &m.frames()[2];
     let base = frame.blocks[0];
     assert_eq!(frame.blocks.len(), 1);
     assert_eq!(frame.locals, [base, base + 8], "the integer is aligned past the bool");

@@ -15,10 +15,12 @@ A value that is either **true** or **false** is a *boolean*. Its kind is `မှ
 | `မမှန်` | "not right" | false |
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မှန် ကို ပြသပါ။
 မမှန် ကို ပြသပါ။
 ၅ သည် ၃ ထက် ကြီးသည် ဟု ပြသပါ။     // a comparison gives a boolean
 ၅ < ၃ ကို ပြသပါ။                  // so does the operator form
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -38,8 +40,10 @@ Like a verb, `မှန်` and `မမှန်` can take a polite ending. `မ
 "true". When an ending makes it a sentence, print it with `ဟု`:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မှန်သည် ဟု ပြသပါ။
 မမှန်ပါ ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

@@ -80,7 +80,8 @@ see [Names](../../learn/variables/names.md).
 | `အောက်ပါတို့ကို လုပ်ဆောင်ပါ` | "please do the following" | [Blocks and scope](../../learn/variables/scope.md) |
 | `အောက်ပါတို့ကို လုပ်ဆောင်မည်` | "will do the following" | [Functions](../../learn/functions/README.md) |
 | `အောက်ပါတို့ကို လုပ်ဆောင်ကာ` | "doing the following, ..." | [Results](../../learn/functions/results.md) |
-| `လုပ်ဆောင်စရာများ ပြီးပါပြီး` | "the tasks are done" (four spellings) | [Blocks and scope](../../learn/variables/scope.md) |
+| `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး` | "the tasks are done" (four spellings) | [Blocks and scope](../../learn/variables/scope.md) |
+| `ပရိုဂရမ် ပြီးဆုံးပါပြီး` | "the program is done": closes the start block (four spellings) | [Hello, world](../../learn/hello/README.md#where-the-program-starts) |
 | `အကယ်၍` | "if" | [If and else](../../learn/control-flow/if-else.md) |
 | `လျှင်`, `ဖြစ်လျှင်` | "then" | [If and else](../../learn/control-flow/if-else.md) |
 | `ထိုသို့မဟုတ်ဘဲ` | "if not so, but" (else if) | [If and else](../../learn/control-flow/if-else.md) |
@@ -105,6 +106,7 @@ see [Names](../../learn/variables/names.md).
 | `ကိန်းရှင်` | "variable" | [Variables](../../learn/variables/README.md) |
 | `ကိန်းသေ` | "constant" | [Constants](../../learn/variables/constants.md) |
 | `လုပ်ဆောင်ချက်` | "function" | [Functions](../../learn/functions/README.md) |
+| `ပရိုဂရမ်` | "program": `ပရိုဂရမ်သည်` opens the start block, where the program starts | [Where a program starts](../../learn/programs/start.md) |
 | `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` | "that the function can change": before the kind of a parameter that is the caller's place | [Functions](../language/functions.md#edit-references) |
 | `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်` | "the function can change it": in parentheses after an argument for such a parameter | [Functions](../language/functions.md#edit-references) |
 | `ရလဒ်` | "result" | [Results](../../learn/functions/results.md) |

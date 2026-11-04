@@ -244,6 +244,7 @@ mod tests
     use crate::roots::global_roots;
     use crate::routine::Routine;
     use crate::testing::program;
+    use crate::testing::top;
 
     #[test]
     fn recording_is_off_outside_the_report_pass_and_in_the_loop_rerun()
@@ -268,7 +269,8 @@ mod tests
     fn the_loop_rerun_records_reads_of_moved_owners_alone()
     {
         let prog = program(
-            "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+            "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ဂ တွင် သိမ်းထားမည်။
@@ -281,13 +283,13 @@ mod tests
 လိပ်စာ ဗ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 က ကို က + ၁ ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
         );
         let module = &prog.module;
         let roots = global_roots(module, &[]);
         let options = BorrowCheckOptions::default();
-        let mut flow =
-            Flow::new(module, Routine::main(module), &[], &roots, &options, 64);
+        let mut flow = Flow::new(module, top(module), &[], &roots, &options, 64);
         flow.solve();
         flow.report_pass();
         let found = flow.diags.len();
@@ -296,7 +298,7 @@ mod tests
         check_loop_moves(&mut flow);
         let added: Vec<(Code, usize)> =
             flow.diags[found..].iter().map(|d| (d.code, prog.line(d.span))).collect();
-        assert_eq!(added, [(Code::MovedOut, 10)]);
+        assert_eq!(added, [(Code::MovedOut, 11)]);
         assert_eq!((flow.proofs, flow.frees, flow.result_from), kept);
         assert_eq!((flow.result_roots, flow.result_roots_ok), result);
     }

@@ -11,6 +11,7 @@ first, then a small word that marks it, then `ပြသပါ`. That small word 
 
 ```zaka
 // ကို: "show this value"
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၄၂ ကို ပြသပါ။
 ၃.၁၄ ကို ပြသပါ။
 'က' ကို ပြသပါ။
@@ -25,6 +26,7 @@ first, then a small word that marks it, then `ပြသပါ`. That small word 
 // A pair of quotes with nothing inside prints a blank line
 "" ဟု ပြသပါ။
 "ပြီးပါပြီ" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -61,7 +63,9 @@ natural, the compiler gives a warning. A warning starts with `warning`; the prog
 still runs and prints `၅`:
 
 ```zaka-warning ZK0506
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -69,7 +73,9 @@ warning[ZK0506]: a plain value is marked with "ကို", not quoted with "ဟ�
 ```
 
 ```zaka-warning ZK0505
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ" ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

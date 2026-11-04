@@ -10,12 +10,14 @@ A *decimal number* has a fraction part: `၃.၁၄`, `၀.၅`, `-၂.၅`. Its
 *floats*.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၃.၁၄ ကို ပြသပါ။                    // a decimal point makes a decimal number
 -၂.၅ ကို ပြသပါ။
 ဒဿမကိန်း ၁၀ ကို ပြသပါ။             // the kind prefix makes 10 a decimal number
 1.5e3 ကို ပြသပါ။                   // scientific notation: 1.5 × 10³
 1.5e-3 ကို ပြသပါ။                  // 1.5 × 10⁻³
 ၇.၀ / ၂ ကို ပြသပါ။                  // decimal division keeps the fraction
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -48,8 +50,10 @@ and not as the true value. Most of the time this goes unnoticed, but now and the
 last digits show it:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၀.၁ + ၀.၂ ကို ပြသပါ။
 ၁၆ ဘစ် ဒဿမကိန်း ၀.၁ ကို ပြသပါ။    // fewer bits, a less close neighbour
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

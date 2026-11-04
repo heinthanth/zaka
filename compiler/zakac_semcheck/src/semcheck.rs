@@ -63,6 +63,7 @@ use crate::struct_check::collect_structs;
 use crate::structs::StructTable;
 use crate::units::StructHomes;
 use crate::units::private_in_exports;
+use crate::units::start_rules;
 use crate::units::struct_homes;
 use crate::units::unit_names;
 
@@ -129,6 +130,7 @@ pub fn semcheck(program: &Program, options: &SemcheckOptions) -> SemcheckOutput
     let unit_fns = collect_fns(program, &structs, &mut diags);
     let homes = struct_homes(program);
     diags.extend(private_in_exports(program, &homes));
+    diags.extend(start_rules(program));
     #[rustfmt::skip]
     let mut checker = Checker::builder().fns(unit_fns[0].clone()).unit_fns(unit_fns)
         .homes(homes).unit_names(unit_names(program)).structs(structs)
@@ -1057,6 +1059,7 @@ impl Visitor for Checker
         self.func = Some(ctx);
         self.scopes.push();
         do_for!(p in &n.params, self.declare_param(p));
+        do_if!(n.start, self.check_start_header(n, ret));
         let result = Ident::builder().name(RESULT_NAME).span(n.name.span).build();
         do_if!(ret.is_some(), let _ = self.declare_quiet(&result, ret, Access::Var));
         self.visit_stmts(&n.block.stmts);

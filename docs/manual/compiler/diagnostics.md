@@ -160,11 +160,11 @@ exit code is 1:
 ```console
 $ zakac run --mem-check warn nul2.zaka
 warning[ZK0709]: "ပ" is ဗလာ here, so it cannot be dereferenced
- --> nul2.zaka:2:1
+ --> nul2.zaka:3:1
   |
-2 | ပ ၏ တန်ဖိုး ကို ပြသပါ။
+3 | ပ ၏ တန်ဖိုး ကို ပြသပါ။
   | ^
-zaka_vm: the program stopped: access through a null address at 0x0 (in main, op 5)
+zaka_vm: the program stopped: access through a null address at 0x0 (in ပရိုဂရမ်, op 5)
 ```
 
 Here the compiler warned (ZK0709) and the VM stopped the program at the same place.

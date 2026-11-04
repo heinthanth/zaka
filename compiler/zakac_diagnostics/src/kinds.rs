@@ -218,6 +218,38 @@ pub fn insert_not_at_cell(span: Span) -> Diagnostic
     Diagnostic::new(Code::InsertNotAtCell, msg, span).with_help(t!("codes.ZK0439.help"))
 }
 
+/// A parameter of the start block is no text list, is a place to change, or
+/// comes after the second.
+///
+/// # Arguments
+///
+/// * `span` - The parameter.
+///
+/// # Returns
+///
+/// The `ZK0440` diagnostic, with help naming the kind.
+pub fn start_param_kind(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0440.message");
+    Diagnostic::new(Code::StartParamKind, msg, span).with_help(t!("codes.ZK0440.help"))
+}
+
+/// The result of the start block is no integer.
+///
+/// # Arguments
+///
+/// * `span` - The result kind.
+/// * `kind` - Its spelling.
+///
+/// # Returns
+///
+/// The `ZK0441` diagnostic, with help naming the kind.
+pub fn start_result_kind(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0441.message", k = kind);
+    Diagnostic::new(Code::StartResultKind, msg, span).with_help(t!("codes.ZK0441.help"))
+}
+
 /// A character write, an add or a remove changes a view of text.
 ///
 /// # Arguments

@@ -1,55 +1,55 @@
 # zakac-codegen-artifact v1
 name:
   Custom: loops.zaka
-source: "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\n"
+source: "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်း ကို ပြသပါ။\nကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n၁ မှ ၁၀၀ အထိ အမှတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nအကယ်၍ အမှတ် သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။\nအမှတ် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n၁၀ မှ ၀ အထိ ၂ စီ အမှတ် အနေဖြင့် လျှော့၍ အမှတ် ကို ပြသပါ။\nကိန်းရှင် အဆင့် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၀ ဖြစ်ပြီး အဆင့် သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအဆင့် ကို ပြသပါ။\nပြီးလျှင် အဆင့် ကို အဆင့် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 module:
   platform_bits: 64
-  globals:
-  - name: ကိန်း
-    kind: isize
-  - name: အမှတ်
-    kind: isize
-  - name: အမှတ်
-    kind: isize
-  - name: အဆင့်
-    kind: u8
+  globals: []
   texts: []
   seqs: []
   formats: []
   funcs:
-  - name: main
+  - name: ပရိုဂရမ်
     params: 0
     ret: null
-    locals: []
+    locals:
+    - name: ကိန်း
+      kind: isize
+    - name: အမှတ်
+      kind: isize
+    - name: အမှတ်
+      kind: isize
+    - name: အဆင့်
+      kind: u8
     code:
-    - global_addr: 0
+    - local_addr: 0
     - push: 0:isize
     - store: isize
-    - global_addr: 0
+    - local_addr: 0
     - load: isize
     - push: 5:isize
     - compare: lt
     - jump_if_false: 18
-    - global_addr: 0
+    - local_addr: 0
     - load: isize
     - print
-    - global_addr: 0
-    - global_addr: 0
+    - local_addr: 0
+    - local_addr: 0
     - load: isize
     - push: 1:isize
     - infix: add
     - store: isize
     - jump: 3
-    - global_addr: 1
+    - local_addr: 1
     - push: 1:isize
     - store: isize
-    - global_addr: 1
+    - local_addr: 1
     - load: isize
     - push: 100:isize
     - compare: gt
     - jump_if_true: 58
-    - global_addr: 1
+    - local_addr: 1
     - load: isize
     - push: 2:isize
     - infix: rem
@@ -57,42 +57,42 @@ module:
     - compare: eq
     - jump_if_false: 34
     - jump: 43
-    - global_addr: 1
+    - local_addr: 1
     - load: isize
     - push: 10:isize
     - compare: gt
     - jump_if_false: 40
     - jump: 58
-    - global_addr: 1
+    - local_addr: 1
     - load: isize
     - print
     - push: 100:usize
-    - global_addr: 1
+    - local_addr: 1
     - load: isize
     - convert: usize
     - wrap: sub
     - push: 1:usize
     - compare: lt
     - jump_if_true: 58
-    - global_addr: 1
-    - global_addr: 1
+    - local_addr: 1
+    - local_addr: 1
     - load: isize
     - push: 1:isize
     - wrap: add
     - store: isize
     - jump: 26
-    - global_addr: 2
+    - local_addr: 2
     - push: 10:isize
     - store: isize
-    - global_addr: 2
+    - local_addr: 2
     - load: isize
     - push: 0:isize
     - compare: lt
     - jump_if_true: 84
-    - global_addr: 2
+    - local_addr: 2
     - load: isize
     - print
-    - global_addr: 2
+    - local_addr: 2
     - load: isize
     - convert: usize
     - push: 0:usize
@@ -100,26 +100,26 @@ module:
     - push: 2:usize
     - compare: lt
     - jump_if_true: 84
-    - global_addr: 2
-    - global_addr: 2
+    - local_addr: 2
+    - local_addr: 2
     - load: isize
     - push: 2:isize
     - wrap: sub
     - store: isize
     - jump: 66
-    - global_addr: 3
+    - local_addr: 3
     - push: 0:u8
     - store: u8
-    - global_addr: 3
+    - local_addr: 3
     - load: u8
     - push: 10:u8
     - compare: lt
     - jump_if_false: 102
-    - global_addr: 3
+    - local_addr: 3
     - load: u8
     - print
-    - global_addr: 3
-    - global_addr: 3
+    - local_addr: 3
+    - local_addr: 3
     - load: u8
     - push: 1:u8
     - infix: add
@@ -127,212 +127,228 @@ module:
     - jump: 87
     - ret
     spans:
-    - lo: 0
-      hi: 128
-    - lo: 28
-      hi: 43
-    - lo: 0
-      hi: 128
-    - lo: 129
-      hi: 144
-    - lo: 129
-      hi: 144
-    - lo: 155
-      hi: 158
-    - lo: 129
-      hi: 184
-    - lo: 129
-      hi: 487
-    - lo: 286
+    - lo: 117
+      hi: 245
+    - lo: 145
+      hi: 160
+    - lo: 117
+      hi: 245
+    - lo: 246
+      hi: 261
+    - lo: 246
+      hi: 261
+    - lo: 272
+      hi: 275
+    - lo: 246
       hi: 301
-    - lo: 286
-      hi: 301
-    - lo: 286
-      hi: 330
-    - lo: 331
-      hi: 404
-    - lo: 357
-      hi: 372
-    - lo: 357
-      hi: 372
-    - lo: 375
-      hi: 378
-    - lo: 357
-      hi: 378
-    - lo: 331
-      hi: 404
-    - lo: 129
-      hi: 487
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 491
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 678
-      hi: 693
-    - lo: 678
-      hi: 693
-    - lo: 696
-      hi: 699
-    - lo: 678
-      hi: 699
-    - lo: 710
-      hi: 713
-    - lo: 678
-      hi: 736
-    - lo: 662
-      hi: 834
-    - lo: 752
-      hi: 834
-    - lo: 851
-      hi: 866
-    - lo: 851
-      hi: 866
-    - lo: 877
-      hi: 883
-    - lo: 851
-      hi: 906
-    - lo: 835
-      hi: 975
-    - lo: 922
-      hi: 975
-    - lo: 976
-      hi: 991
-    - lo: 976
-      hi: 991
-    - lo: 976
-      hi: 1020
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 488
-      hi: 1103
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1110
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1206
-      hi: 1221
-    - lo: 1206
-      hi: 1221
-    - lo: 1206
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1104
-      hi: 1250
-    - lo: 1279
-      hi: 1381
-    - lo: 1305
-      hi: 1381
-    - lo: 1279
-      hi: 1381
-    - lo: 1407
-      hi: 1422
-    - lo: 1407
-      hi: 1422
-    - lo: 1433
-      hi: 1439
-    - lo: 1407
-      hi: 1465
-    - lo: 1251
-      hi: 1805
-    - lo: 1567
-      hi: 1582
-    - lo: 1567
-      hi: 1582
-    - lo: 1567
-      hi: 1611
-    - lo: 1640
-      hi: 1713
-    - lo: 1666
-      hi: 1681
-    - lo: 1666
-      hi: 1681
-    - lo: 1684
-      hi: 1687
-    - lo: 1666
-      hi: 1687
-    - lo: 1640
-      hi: 1713
-    - lo: 1251
-      hi: 1805
-    - lo: 1806
-      hi: 1806
-  main: 0
+    - lo: 246
+      hi: 616
+    - lo: 403
+      hi: 418
+    - lo: 403
+      hi: 418
+    - lo: 403
+      hi: 447
+    - lo: 448
+      hi: 521
+    - lo: 474
+      hi: 489
+    - lo: 474
+      hi: 489
+    - lo: 492
+      hi: 495
+    - lo: 474
+      hi: 495
+    - lo: 448
+      hi: 521
+    - lo: 246
+      hi: 616
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 620
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 807
+      hi: 822
+    - lo: 807
+      hi: 822
+    - lo: 825
+      hi: 828
+    - lo: 807
+      hi: 828
+    - lo: 839
+      hi: 842
+    - lo: 807
+      hi: 865
+    - lo: 791
+      hi: 963
+    - lo: 881
+      hi: 963
+    - lo: 980
+      hi: 995
+    - lo: 980
+      hi: 995
+    - lo: 1006
+      hi: 1012
+    - lo: 980
+      hi: 1035
+    - lo: 964
+      hi: 1104
+    - lo: 1051
+      hi: 1104
+    - lo: 1105
+      hi: 1120
+    - lo: 1105
+      hi: 1120
+    - lo: 1105
+      hi: 1149
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 617
+      hi: 1244
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1251
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1347
+      hi: 1362
+    - lo: 1347
+      hi: 1362
+    - lo: 1347
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1245
+      hi: 1391
+    - lo: 1420
+      hi: 1522
+    - lo: 1446
+      hi: 1522
+    - lo: 1420
+      hi: 1522
+    - lo: 1548
+      hi: 1563
+    - lo: 1548
+      hi: 1563
+    - lo: 1574
+      hi: 1580
+    - lo: 1548
+      hi: 1606
+    - lo: 1392
+      hi: 1949
+    - lo: 1708
+      hi: 1723
+    - lo: 1708
+      hi: 1723
+    - lo: 1708
+      hi: 1752
+    - lo: 1781
+      hi: 1854
+    - lo: 1807
+      hi: 1822
+    - lo: 1807
+      hi: 1822
+    - lo: 1825
+      hi: 1828
+    - lo: 1807
+      hi: 1828
+    - lo: 1781
+      hi: 1854
+    - lo: 1392
+      hi: 1949
+    - lo: 2020
+      hi: 2020
+  - name: main
+    params: 0
+    ret: null
+    locals: []
+    code:
+    - call: 0
+    - ret
+    spans:
+    - lo: 0
+      hi: 24
+    - lo: 2021
+      hi: 2021
+  main: 1
   overflow: stop
+  host:
+    args: null
+    env: null
+    exit: null
 diagnostics: []

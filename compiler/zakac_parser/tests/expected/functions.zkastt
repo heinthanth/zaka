@@ -222,6 +222,7 @@ program:
           lo: 282
           hi: 764
       exported: false
+      start: false
       span:
         lo: 0
         hi: 764
@@ -253,6 +254,7 @@ program:
           lo: 841
           hi: 1062
       exported: false
+      start: false
       span:
         lo: 766
         hi: 1062

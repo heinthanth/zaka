@@ -136,14 +136,15 @@ fn value_kind_at(addr: &Expr) -> Option<DataKind>
 #[cfg(test)]
 mod tests
 {
+    use zakac_ast::stmt::START_NAME;
     use zakac_diagnostics::Code;
     use zakac_ir_builder::ir::Stmt;
 
     use crate::flow::run_flow;
     use crate::options::BorrowCheckOptions;
     use crate::roots::global_roots;
-    use crate::routine::Routine;
     use crate::testing::lower;
+    use crate::testing::top;
 
     #[test]
     fn a_borrow_stored_through_a_heap_address_is_zk0703()
@@ -155,16 +156,18 @@ mod tests
 ပပ ၏ တန်ဖိုး ကို ရ ဟု ထားပါ။
 ",
         );
-        let Some(Stmt::Store { value, .. }) = module.main.last_mut()
+        let start = module.funcs.iter_mut().find(|f| f.name == START_NAME);
+        let block = &mut start.expect("a start block").block;
+        let Some(Stmt::Store { value, .. }) =
+            block.iter_mut().rev().find(|s| matches!(s, Stmt::Store { .. }))
         else
         {
-            panic!("the last statement is a store");
+            panic!("the start block stores");
         };
         value.kind = value.kind.as_borrowed();
         let roots = global_roots(&module, &[]);
         let options = BorrowCheckOptions::default();
-        let found =
-            run_flow(&module, Routine::main(&module), &[], &roots, &options, 64);
+        let found = run_flow(&module, top(&module), &[], &roots, &options, 64);
         let codes: Vec<Code> = found.diags.iter().map(|d| d.code).collect();
         assert_eq!(codes, [Code::BorrowStored]);
     }

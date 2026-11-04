@@ -1,99 +1,99 @@
 # zakac-codegen-artifact v1
 name:
   Custom: programs.zaka
-source: "ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။\nကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။\nကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီးသည် ဖြစ်ပါစေ။\nကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အခြေ ၁၆ ဖြင့် FF ဖြစ်ပါစေ။\nကိန်းရှင် စာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'က' ဖြစ်ပါစေ။\nအသက် ကို အသက် + ၁ ဟု ထားပါ။\nအသက် ကို အသက် နှင့် ဘိုက် ၏ ပေါင်းလဒ် ဟု ထားပါ။\nပိုင် * ၂ ကို ပြသပါ။\nဘိုက် ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ် ကို ပြသပါ။\nအသက် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nစာ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nအောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် အသက် သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၅ ဖြစ်ပါစေ။\nအသက် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nအကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကြီးသူ ကို မမှန် ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nထိုသို့မဟုတ်ဘဲ ကြီးသူ ဖြစ်၍ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသပါ။\nသို့မဟုတ်ပါက (စာ < 'ခ' ဖြစ်၍ ကြီးသူ) ကို ပြသပါ။\n"
+source: "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။\nကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။\nကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီးသည် ဖြစ်ပါစေ။\nကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အခြေ ၁၆ ဖြင့် FF ဖြစ်ပါစေ။\nကိန်းရှင် စာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'က' ဖြစ်ပါစေ။\nအသက် ကို အသက် + ၁ ဟု ထားပါ။\nအသက် ကို အသက် နှင့် ဘိုက် ၏ ပေါင်းလဒ် ဟု ထားပါ။\nပိုင် * ၂ ကို ပြသပါ။\nဘိုက် ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ် ကို ပြသပါ။\nအသက် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nစာ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nအောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် အသက် သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၅ ဖြစ်ပါစေ။\nအသက် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nအကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကြီးသူ ကို မမှန် ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nထိုသို့မဟုတ်ဘဲ ကြီးသူ ဖြစ်၍ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသပါ။\nသို့မဟုတ်ပါက (စာ < 'ခ' ဖြစ်၍ ကြီးသူ) ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 module:
   platform_bits: 64
-  globals:
-  - name: အသက်
-    kind: isize
-  - name: ပိုင်
-    kind: f64
-  - name: ကြီးသူ
-    kind: bool
-  - name: ဘိုက်
-    kind: u8
-  - name: စာ
-    kind: char
-  - name: အသက်
-    kind: i16
+  globals: []
   texts:
   - ok
   seqs: []
   formats: []
   funcs:
-  - name: main
+  - name: ပရိုဂရမ်
     params: 0
     ret: null
-    locals: []
+    locals:
+    - name: အသက်
+      kind: isize
+    - name: ပိုင်
+      kind: f64
+    - name: ကြီးသူ
+      kind: bool
+    - name: ဘိုက်
+      kind: u8
+    - name: စာ
+      kind: char
+    - name: အသက်
+      kind: i16
     code:
-    - global_addr: 0
+    - local_addr: 0
     - push: 18:isize
     - store: isize
-    - global_addr: 1
+    - local_addr: 1
     - push: 3.14:f64
     - store: f64
-    - global_addr: 2
-    - global_addr: 0
+    - local_addr: 2
+    - local_addr: 0
     - load: isize
     - push: 18:isize
     - compare: gt
     - store: bool
-    - global_addr: 3
+    - local_addr: 3
     - push: 255:u8
     - store: u8
-    - global_addr: 4
+    - local_addr: 4
     - push: "'က':char"
     - store: char
-    - global_addr: 0
-    - global_addr: 0
+    - local_addr: 0
+    - local_addr: 0
     - load: isize
     - push: 1:isize
     - infix: add
     - store: isize
-    - global_addr: 0
-    - global_addr: 0
+    - local_addr: 0
+    - local_addr: 0
     - load: isize
-    - global_addr: 3
+    - local_addr: 3
     - load: u8
     - convert: isize
     - infix: add
     - store: isize
     - push: 6.28:f64
     - print
-    - global_addr: 3
+    - local_addr: 3
     - load: u8
     - push: 2:usize
     - infix: shr
     - print
-    - global_addr: 0
+    - local_addr: 0
     - load: isize
     - convert: f64
     - print
-    - global_addr: 4
+    - local_addr: 4
     - load: char
     - convert: isize
     - print
-    - global_addr: 5
+    - local_addr: 5
     - push: -5:i16
     - store: i16
-    - global_addr: 5
+    - local_addr: 5
     - load: i16
     - print
-    - global_addr: 0
+    - local_addr: 0
     - load: isize
     - push: 18:isize
     - compare: lt
     - jump_if_false: 62
-    - global_addr: 2
+    - local_addr: 2
     - push: false:bool
     - store: bool
     - jump: 84
-    - global_addr: 2
+    - local_addr: 2
     - load: bool
     - jump_if_false: 70
-    - global_addr: 0
+    - local_addr: 0
     - load: isize
     - push: 60:isize
     - compare: gt
@@ -102,188 +102,204 @@ module:
     - jump_if_false: 74
     - print_text: 0
     - jump: 84
-    - global_addr: 4
+    - local_addr: 4
     - load: char
     - push: "'ခ':char"
     - compare: lt
     - jump_if_false: 82
-    - global_addr: 2
+    - local_addr: 2
     - load: bool
     - jump: 83
     - push: false:bool
     - print
     - ret
     spans:
-    - lo: 0
-      hi: 116
-    - lo: 51
-      hi: 88
-    - lo: 0
-      hi: 116
     - lo: 117
-      hi: 228
-    - lo: 165
-      hi: 200
+      hi: 233
+    - lo: 168
+      hi: 205
     - lo: 117
-      hi: 228
-    - lo: 229
-      hi: 484
-    - lo: 395
-      hi: 407
-    - lo: 395
-      hi: 407
-    - lo: 418
-      hi: 424
-    - lo: 395
-      hi: 456
-    - lo: 229
-      hi: 484
-    - lo: 485
-      hi: 741
-    - lo: 675
-      hi: 713
-    - lo: 485
-      hi: 741
-    - lo: 742
-      hi: 908
-    - lo: 875
-      hi: 880
-    - lo: 742
-      hi: 908
-    - lo: 909
-      hi: 976
-    - lo: 932
-      hi: 944
-    - lo: 932
-      hi: 944
-    - lo: 947
-      hi: 950
-    - lo: 932
-      hi: 950
-    - lo: 909
-      hi: 976
-    - lo: 977
-      hi: 1102
-    - lo: 1000
-      hi: 1012
-    - lo: 1000
-      hi: 1012
-    - lo: 1029
-      hi: 1044
-    - lo: 1029
-      hi: 1044
-    - lo: 1029
-      hi: 1044
-    - lo: 1000
-      hi: 1076
-    - lo: 977
-      hi: 1102
-    - lo: 1103
-      hi: 1124
-    - lo: 1103
-      hi: 1153
-    - lo: 1154
-      hi: 1169
-    - lo: 1154
-      hi: 1169
-    - lo: 1199
-      hi: 1202
-    - lo: 1154
-      hi: 1246
-    - lo: 1154
-      hi: 1275
-    - lo: 1276
-      hi: 1288
-    - lo: 1276
-      hi: 1288
-    - lo: 1276
-      hi: 1389
-    - lo: 1276
-      hi: 1418
-    - lo: 1419
-      hi: 1425
-    - lo: 1419
-      hi: 1425
-    - lo: 1419
-      hi: 1532
-    - lo: 1419
-      hi: 1561
-    - lo: 1642
-      hi: 1836
-    - lo: 1804
-      hi: 1808
-    - lo: 1642
-      hi: 1836
-    - lo: 1837
-      hi: 1849
-    - lo: 1837
-      hi: 1849
-    - lo: 1837
-      hi: 1878
-    - lo: 1978
-      hi: 1990
-    - lo: 1978
-      hi: 1990
-    - lo: 2001
-      hi: 2007
-    - lo: 1978
-      hi: 2033
-    - lo: 1962
-      hi: 2577
-    - lo: 2129
-      hi: 2199
-    - lo: 2158
-      hi: 2173
-    - lo: 2129
-      hi: 2199
-    - lo: 1962
-      hi: 2577
-    - lo: 2326
-      hi: 2344
-    - lo: 2326
-      hi: 2344
-    - lo: 2326
-      hi: 2413
-    - lo: 2361
-      hi: 2373
-    - lo: 2361
-      hi: 2373
-    - lo: 2384
-      hi: 2390
-    - lo: 2361
-      hi: 2413
-    - lo: 2326
-      hi: 2413
-    - lo: 2326
-      hi: 2413
-    - lo: 2283
-      hi: 2577
-    - lo: 2429
-      hi: 2459
-    - lo: 2283
-      hi: 2577
-    - lo: 2498
-      hi: 2504
-    - lo: 2498
-      hi: 2504
-    - lo: 2507
-      hi: 2512
-    - lo: 2498
-      hi: 2512
-    - lo: 2498
-      hi: 2547
-    - lo: 2529
-      hi: 2547
-    - lo: 2529
-      hi: 2547
-    - lo: 2498
-      hi: 2547
-    - lo: 2498
-      hi: 2547
-    - lo: 2497
-      hi: 2577
-    - lo: 2578
-      hi: 2578
-  main: 0
+      hi: 233
+    - lo: 234
+      hi: 345
+    - lo: 282
+      hi: 317
+    - lo: 234
+      hi: 345
+    - lo: 346
+      hi: 601
+    - lo: 512
+      hi: 524
+    - lo: 512
+      hi: 524
+    - lo: 535
+      hi: 541
+    - lo: 512
+      hi: 573
+    - lo: 346
+      hi: 601
+    - lo: 602
+      hi: 858
+    - lo: 792
+      hi: 830
+    - lo: 602
+      hi: 858
+    - lo: 859
+      hi: 1025
+    - lo: 992
+      hi: 997
+    - lo: 859
+      hi: 1025
+    - lo: 1026
+      hi: 1093
+    - lo: 1049
+      hi: 1061
+    - lo: 1049
+      hi: 1061
+    - lo: 1064
+      hi: 1067
+    - lo: 1049
+      hi: 1067
+    - lo: 1026
+      hi: 1093
+    - lo: 1094
+      hi: 1219
+    - lo: 1117
+      hi: 1129
+    - lo: 1117
+      hi: 1129
+    - lo: 1146
+      hi: 1161
+    - lo: 1146
+      hi: 1161
+    - lo: 1146
+      hi: 1161
+    - lo: 1117
+      hi: 1193
+    - lo: 1094
+      hi: 1219
+    - lo: 1220
+      hi: 1241
+    - lo: 1220
+      hi: 1270
+    - lo: 1271
+      hi: 1286
+    - lo: 1271
+      hi: 1286
+    - lo: 1316
+      hi: 1319
+    - lo: 1271
+      hi: 1363
+    - lo: 1271
+      hi: 1392
+    - lo: 1393
+      hi: 1405
+    - lo: 1393
+      hi: 1405
+    - lo: 1393
+      hi: 1506
+    - lo: 1393
+      hi: 1535
+    - lo: 1536
+      hi: 1542
+    - lo: 1536
+      hi: 1542
+    - lo: 1536
+      hi: 1649
+    - lo: 1536
+      hi: 1678
+    - lo: 1759
+      hi: 1953
+    - lo: 1921
+      hi: 1925
+    - lo: 1759
+      hi: 1953
+    - lo: 1954
+      hi: 1966
+    - lo: 1954
+      hi: 1966
+    - lo: 1954
+      hi: 1995
+    - lo: 2107
+      hi: 2119
+    - lo: 2107
+      hi: 2119
+    - lo: 2130
+      hi: 2136
+    - lo: 2107
+      hi: 2162
+    - lo: 2091
+      hi: 2718
+    - lo: 2258
+      hi: 2328
+    - lo: 2287
+      hi: 2302
+    - lo: 2258
+      hi: 2328
+    - lo: 2091
+      hi: 2718
+    - lo: 2467
+      hi: 2485
+    - lo: 2467
+      hi: 2485
+    - lo: 2467
+      hi: 2554
+    - lo: 2502
+      hi: 2514
+    - lo: 2502
+      hi: 2514
+    - lo: 2525
+      hi: 2531
+    - lo: 2502
+      hi: 2554
+    - lo: 2467
+      hi: 2554
+    - lo: 2467
+      hi: 2554
+    - lo: 2424
+      hi: 2718
+    - lo: 2570
+      hi: 2600
+    - lo: 2424
+      hi: 2718
+    - lo: 2639
+      hi: 2645
+    - lo: 2639
+      hi: 2645
+    - lo: 2648
+      hi: 2653
+    - lo: 2639
+      hi: 2653
+    - lo: 2639
+      hi: 2688
+    - lo: 2670
+      hi: 2688
+    - lo: 2670
+      hi: 2688
+    - lo: 2639
+      hi: 2688
+    - lo: 2639
+      hi: 2688
+    - lo: 2638
+      hi: 2718
+    - lo: 2789
+      hi: 2789
+  - name: main
+    params: 0
+    ret: null
+    locals: []
+    code:
+    - call: 0
+    - ret
+    spans:
+    - lo: 0
+      hi: 24
+    - lo: 2790
+      hi: 2790
+  main: 1
   overflow: stop
+  host:
+    args: null
+    env: null
+    exit: null
 diagnostics: []

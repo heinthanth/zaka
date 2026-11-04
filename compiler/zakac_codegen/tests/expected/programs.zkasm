@@ -1,82 +1,82 @@
 ; zakac asm listing v1, platform 64 bits
-globals
-  g0 အသက် isize
-  g1 ပိုင် f64
-  g2 ကြီးသူ bool
-  g3 ဘိုက် u8
-  g4 စာ char
-  g5 အသက် i16
 texts
   t0 "ok"
 
-fn f0 main (params 0)
-     0  global_addr g0       ; အသက်
+fn f0 ပရိုဂရမ် (params 0)
+locals
+  l0 အသက် isize
+  l1 ပိုင် f64
+  l2 ကြီးသူ bool
+  l3 ဘိုက် u8
+  l4 စာ char
+  l5 အသက် i16
+     0  local_addr l0        ; အသက်
      1  push 18:isize
      2  store isize
-     3  global_addr g1       ; ပိုင်
+     3  local_addr l1        ; ပိုင်
      4  push 3.14:f64
      5  store f64
-     6  global_addr g2       ; ကြီးသူ
-     7  global_addr g0       ; အသက်
+     6  local_addr l2        ; ကြီးသူ
+     7  local_addr l0        ; အသက်
      8  load isize
      9  push 18:isize
     10  gt
     11  store bool
-    12  global_addr g3       ; ဘိုက်
+    12  local_addr l3        ; ဘိုက်
     13  push 255:u8
     14  store u8
-    15  global_addr g4       ; စာ
+    15  local_addr l4        ; စာ
     16  push 'က':char
     17  store char
-    18  global_addr g0       ; အသက်
-    19  global_addr g0       ; အသက်
+    18  local_addr l0        ; အသက်
+    19  local_addr l0        ; အသက်
     20  load isize
     21  push 1:isize
     22  add
     23  store isize
-    24  global_addr g0       ; အသက်
-    25  global_addr g0       ; အသက်
+    24  local_addr l0        ; အသက်
+    25  local_addr l0        ; အသက်
     26  load isize
-    27  global_addr g3       ; ဘိုက်
+    27  local_addr l3        ; ဘိုက်
     28  load u8
     29  convert isize
     30  add
     31  store isize
     32  push 6.28:f64
     33  print
-    34  global_addr g3       ; ဘိုက်
+    34  local_addr l3        ; ဘိုက်
     35  load u8
     36  push 2:usize
     37  shr
     38  print
-    39  global_addr g0       ; အသက်
+    39  local_addr l0        ; အသက်
     40  load isize
     41  convert f64
     42  print
-    43  global_addr g4       ; စာ
+    43  local_addr l4        ; စာ
     44  load char
     45  convert isize
     46  print
-    47  global_addr g5       ; အသက်
+    47  local_addr l5        ; အသက်
     48  push -5:i16
     49  store i16
-    50  global_addr g5       ; အသက်
+    50  local_addr l5        ; အသက်
     51  load i16
     52  print
-    53  global_addr g0       ; အသက်
+    53  local_addr l0        ; အသက်
     54  load isize
     55  push 18:isize
     56  lt
     57  jump_if_false L0
-    58  global_addr g2       ; ကြီးသူ
+    58  local_addr l2        ; ကြီးသူ
     59  push false:bool
     60  store bool
     61  jump L6
 L0:
-    62  global_addr g2       ; ကြီးသူ
+    62  local_addr l2        ; ကြီးသူ
     63  load bool
     64  jump_if_false L1
-    65  global_addr g0       ; အသက်
+    65  local_addr l0        ; အသက်
     66  load isize
     67  push 60:isize
     68  gt
@@ -88,12 +88,12 @@ L2:
     72  print_text t0
     73  jump L6
 L3:
-    74  global_addr g4       ; စာ
+    74  local_addr l4        ; စာ
     75  load char
     76  push 'ခ':char
     77  lt
     78  jump_if_false L4
-    79  global_addr g2       ; ကြီးသူ
+    79  local_addr l2        ; ကြီးသူ
     80  load bool
     81  jump L5
 L4:
@@ -102,3 +102,7 @@ L5:
     83  print
 L6:
     84  ret
+
+fn f1 main (params 0)
+     0  call f0              ; ပရိုဂရမ်
+     1  ret

@@ -11,9 +11,11 @@ A list of 3 cells has cells 0, 1 and 2. A cell number past them is a mistake, an
 VM stops the program with the range the list allows:
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 အမှတ်များ ၏ အကွက် န ကို ပြသပါ။            // cells 0, 1 and 2 hold values; 3 does not exist
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -24,8 +26,10 @@ The count of a list comes when the program runs, so the VM is the one to check i
 for a number written in place. Counting from 1 starts at 1, not 0:
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 အမှတ်များ ၏ ၀ ခုမြောက်အကွက် ကို ပြသပါ။     // counting from 1 starts at 1
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -38,8 +42,10 @@ The cell number takes the whole operator expression after `အကွက်`, so 
 `၁ + ၂`, which is outside the list:
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၊ ၂၀၊ ၃၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းများ ၏ အကွက် ၁ + ၂ ကို ပြသပါ။         // cell 3, not cell 1 plus 2
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -53,7 +59,9 @@ Write `(ကိန်းများ ၏ အကွက် ၁) + ၂` to add 2 to 
 `စာရင်းအလွတ်` takes its kind from where it stands. Standing alone, it has none:
 
 ```zaka-error ZK0420
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 စာရင်းအလွတ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -63,8 +71,10 @@ error[ZK0420]: a blank list needs a list kind from its place
 ## Cells of a value that is no list
 
 ```zaka-error ZK0422
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀ ဖြစ်ပါစေ။
 အမှတ် ၏ အကွက် ၀ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -77,8 +87,10 @@ Text has no last cell to remove, since a cell of text is one u8 of a character. 
 the last character, `နောက်ဆုံးစာလုံး`:
 
 ```zaka-error ZK0437
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
 စာ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -97,9 +109,11 @@ A list with no cells has no last cell to remove. The count of a plain list comes
 program runs, so the VM is the one to stop it:
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
 ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
 ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။      // no cell is left to remove
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

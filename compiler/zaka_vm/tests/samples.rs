@@ -4,10 +4,11 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use common::compile_file;
-use common::run_module;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
+use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
+use zaka_vm::machine::run_and_keep;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen::bc::Module;
 use zakac_codegen::options::EmitOptions;
@@ -34,7 +35,11 @@ fn check_run(
     let (emit_options, overflow) = modes;
     let options = RunOptions::builder().max_steps(10_000_000).frames(frames).build();
     let module = Module { overflow, ..compile_file(source, emit_options) };
-    let (out, result) = run_module(&module, &options);
+    let name = source.file_name().unwrap().to_string_lossy();
+    let mut out = Vec::new();
+    let host = HostData::program(&name);
+    let result = run_and_keep(&module, &mut out, &options, &host).1;
+    let out = String::from_utf8(out).unwrap();
     let EmitOptions { results, scratch } = emit_options;
     let name =
         format!("{} ({frames}, {results}, {scratch}, {overflow})", source.display());

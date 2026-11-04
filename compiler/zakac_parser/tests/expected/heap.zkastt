@@ -173,6 +173,7 @@ program:
           lo: 450
           hi: 993
       exported: false
+      start: false
       span:
         lo: 145
         hi: 993

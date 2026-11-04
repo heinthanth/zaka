@@ -85,6 +85,8 @@ en = "Frangipani flowers, cream with a gold heart."
 
 [website.glance.head]
 en = "Zaka at a glance"
+[website.glance.start]
+en = "The program starts here, in its start block."
 [website.glance.variable]
 en = "ကိန်းရှင် makes a variable: a name, a kind and a first value."
 [website.glance.count]

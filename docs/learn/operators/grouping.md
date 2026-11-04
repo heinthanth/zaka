@@ -10,8 +10,10 @@ maths, Zaka does the multiplication first, so the answer is 14. Parentheses chan
 order: `(၂ + ၃) * ၄` is 20.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၂ + ၃ * ၄ ကို ပြသပါ။         // * before +
 (၂ + ၃) * ၄ ကို ပြသပါ။       // parentheses first
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -46,10 +48,12 @@ A part of a word phrase can be a whole sum written with signs. In
 `က + ခ နှင့် ဂ ၏ မြှောက်လဒ်`, the first part is `က + ခ`. It reads "the product of (k + kh) and g":
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
 က + ခ နှင့် ဂ ၏ မြှောက်လဒ် ကို ပြသပါ။         // (2 + 3) × 4
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -62,6 +66,7 @@ Word phrases can nest. Read from left to right. Each verb takes the parts just b
 that hold the particles it needs, and its result joins the sentence:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
@@ -71,6 +76,7 @@ that hold the particles it needs, and its result joins the sentence:
 
 // (the sum of k and kh) and g: the product      → (2 + 3) × 4
 က နှင့် ခ ၏ ပေါင်းလဒ် နှင့် ဂ ၏ မြှောက်လဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -97,9 +103,11 @@ error[ZK0203]: this statement does not end in a statement verb, found "*"
 ```
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 (က နှင့် ခ ၏ ပေါင်းလဒ်) * ၂ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -115,8 +123,10 @@ Parentheses around a whole printed or stored value change nothing. Zaka warns ab
 them, much as an editor flags a double space:
 
 ```zaka-warning ZK0507
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 (က + ၁) ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

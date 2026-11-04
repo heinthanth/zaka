@@ -39,9 +39,9 @@ that names the instruction and the block, and does not damage the program.
 | storage | the blocks where globals, static texts, locals and the heap live; see [blocks](blocks.md) |
 | output | the text that print instructions wrote and the command has not taken so far |
 
-The last function of a module is `main`, which runs the sentences outside each function.
-The VM starts there, and the run ends when `main` returns or a [trap](traps.md)
-stops it.
+The last function of a module is `main`: it sets the starting values of the top-level
+variables and calls the start block, the function named `ပရိုဂရမ်`. The VM starts at
+`main`, and the run ends when `main` returns or a [trap](traps.md) stops it.
 
 ## Values
 

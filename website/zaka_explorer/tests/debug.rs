@@ -18,6 +18,7 @@ use zaka_explorer::debug::Session;
 use zaka_explorer::debug::cell_width;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::mem::Origin;
+use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::do_while;
@@ -40,18 +41,21 @@ fn session_with(path: &str, options: &Options) -> (Compiled, Session)
 /// Options that build a program the ownership check finds fault with.
 fn unchecked() -> Options { Options::builder().check(MemCheck::Off).build() }
 
-/// The main function index and the op indices of its calls.
 /// The heap blocks of a session, without the blocks of its variables.
 fn heap_blocks(s: &Session) -> Vec<BlockRow>
 {
     s.heap().blocks.into_iter().filter(|b| b.origin == Origin::Heap).collect()
 }
 
-fn main_calls(out: &Compiled) -> (u32, Vec<u32>)
+/// The index of the main function, where the run starts.
+fn main_index(out: &Compiled) -> u32 { out.asm.last().expect("main").index }
+
+/// The start block's function index and the op indices of its calls.
+fn start_calls(out: &Compiled) -> (u32, Vec<u32>)
 {
-    let main = out.asm.last().expect("main");
-    let calls = main.rows.iter().filter(|r| r.text.starts_with("call "));
-    (main.index, calls.map(|r| r.pc).collect())
+    let start = out.asm.iter().find(|f| f.name == START_NAME).expect("the start block");
+    let calls = start.rows.iter().filter(|r| r.text.starts_with("call "));
+    (start.index, calls.map(|r| r.pc).collect())
 }
 
 #[test]
@@ -70,7 +74,7 @@ fn a_session_without_ops_does_nothing()
 fn hello_runs_to_its_end_and_goes_back_to_the_first_op()
 {
     let (out, mut s) = session_of("basics/hello");
-    let (main, _) = main_calls(&out);
+    let main = main_index(&out);
     assert_eq!(s.status(), RunStatus::Start);
     s.resume();
     assert_eq!(s.status(), RunStatus::Finished);
@@ -90,11 +94,12 @@ fn hello_runs_to_its_end_and_goes_back_to_the_first_op()
 fn a_step_runs_one_op()
 {
     let (out, mut s) = session_of("basics/hello");
-    let (main, _) = main_calls(&out);
+    let main = main_index(&out);
+    let (start, _) = start_calls(&out);
     assert_eq!(s.position(), Some((main, 0)));
     assert_eq!(s.marked_pc(), Some(0));
     s.step();
-    assert_eq!(s.position(), Some((main, 1)));
+    assert_eq!(s.position(), Some((start, 0)), "the call of the start block");
     assert_eq!(s.steps(), 1);
     assert_eq!(s.status(), RunStatus::Paused);
 }
@@ -103,7 +108,7 @@ fn a_step_runs_one_op()
 fn a_break_point_stops_the_run_and_step_over_runs_the_call()
 {
     let (out, mut s) = session_of("functions/procedures");
-    let (main, calls) = main_calls(&out);
+    let (main, calls) = start_calls(&out);
     let call = calls[1];
     s.toggle_break(main, call);
     assert_eq!(s.breaks_in(main), [call]);
@@ -112,7 +117,7 @@ fn a_break_point_stops_the_run_and_step_over_runs_the_call()
     let before = s.output();
     s.step_over();
     assert_eq!(s.position(), Some((main, call + 1)));
-    assert_eq!(s.frames().len(), 1);
+    assert_eq!(s.frames().len(), 2);
     assert!(s.output().len() > before.len());
 }
 
@@ -120,34 +125,34 @@ fn a_break_point_stops_the_run_and_step_over_runs_the_call()
 fn step_goes_into_a_call_and_step_out_comes_back()
 {
     let (out, mut s) = session_of("functions/procedures");
-    let (main, calls) = main_calls(&out);
+    let (main, calls) = start_calls(&out);
     let call = calls[1];
     s.toggle_break(main, call);
     s.resume();
     s.step();
     let frames = s.frames();
-    assert_eq!(frames.len(), 2);
+    assert_eq!(frames.len(), 3);
     assert_ne!(frames[0].func, main);
     assert_eq!(frames[1].pc, call);
-    assert_eq!(s.viewed(), 1);
+    assert_eq!(s.viewed(), 2);
     let callee = &out.asm[frames[0].func as usize];
     let names: Vec<String> = s.locals().into_iter().map(|v| v.name).collect();
     let want: Vec<String> = callee.locals.iter().map(|l| l.name.clone()).collect();
     assert_eq!(names, want);
     assert_eq!(s.locals()[0].value, "၃");
-    s.view_frame(0);
+    s.view_frame(1);
     assert_eq!(s.viewed_func(), Some(main));
     assert_eq!(s.marked_pc(), Some(call));
     s.step_out();
     assert_eq!(s.position(), Some((main, call + 1)));
-    assert_eq!(s.viewed(), 0);
+    assert_eq!(s.viewed(), 1);
 }
 
 #[test]
 fn reset_keeps_the_break_points()
 {
     let (out, mut s) = session_of("functions/procedures");
-    let (main, calls) = main_calls(&out);
+    let (main, calls) = start_calls(&out);
     s.toggle_break(main, calls[2]);
     s.resume();
     s.reset();
@@ -163,7 +168,7 @@ fn reset_keeps_the_break_points()
 fn the_timer_stops_at_a_break_point()
 {
     let (out, mut s) = session_of("functions/procedures");
-    let (main, calls) = main_calls(&out);
+    let (main, calls) = start_calls(&out);
     s.toggle_break(main, calls[1]);
     let mut ticks = 0;
     while s.tick()
@@ -178,7 +183,8 @@ fn the_timer_stops_at_a_break_point()
 #[test]
 fn a_trap_is_final()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
+    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"အရင်\" ဟု \
+                ပြသပါ။\n၁ / သုည ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     let mut s = Session::new(out.ops.as_ref());
     s.resume();
@@ -197,7 +203,8 @@ fn a_trap_is_final()
 #[test]
 fn globals_and_the_stack_show_their_values()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။\nက + ၁ ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက + ၁ ကို \
+                ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     let mut s = Session::new(out.ops.as_ref());
     let globals = s.globals();
@@ -216,7 +223,7 @@ fn globals_and_the_stack_show_their_values()
 fn a_batch_stops_at_a_break_point_when_asked()
 {
     let (out, mut s) = session_of("functions/procedures");
-    let (main, calls) = main_calls(&out);
+    let (main, calls) = start_calls(&out);
     s.toggle_break(main, calls[1]);
     while s.run_for(3, true)
     {}
@@ -230,16 +237,16 @@ fn a_batch_stops_at_a_break_point_when_asked()
 fn stop_goes_back_to_the_first_op_and_keeps_the_output()
 {
     let (out, mut s) = session_of("functions/procedures");
-    let (main, calls) = main_calls(&out);
+    let (start, calls) = start_calls(&out);
     s.stop();
     assert_eq!(s.status(), RunStatus::Start);
-    s.toggle_break(main, calls[2]);
+    s.toggle_break(start, calls[2]);
     s.resume();
     let (written, steps) = (s.output(), s.steps());
     assert!(!written.is_empty());
     s.stop();
     assert_eq!(s.status(), RunStatus::Stopped);
-    assert_eq!(s.position(), Some((main, 0)));
+    assert_eq!(s.position(), Some((main_index(&out), 0)));
     assert_eq!(s.steps(), steps);
     assert_eq!(s.output(), written);
     s.step();
@@ -251,15 +258,16 @@ fn stop_goes_back_to_the_first_op_and_keeps_the_output()
 fn frames_stack_up_and_the_registers_point_into_them()
 {
     let (out, mut s) = session_of("functions/procedures");
-    let (main, calls) = main_calls(&out);
+    let (main, calls) = start_calls(&out);
     s.toggle_break(main, calls[1]);
     s.resume();
     s.step();
     s.step();
     let blocks = s.frame_blocks();
-    assert_eq!(blocks.len(), 2);
-    let (inner, outer) = (&blocks[0], &blocks[1]);
-    assert_eq!(outer.start, 0);
+    assert_eq!(blocks.len(), 3);
+    let (inner, outer, base) = (&blocks[0], &blocks[1], &blocks[2]);
+    assert_eq!(base.start, 0);
+    assert_eq!(outer.start, base.slots.len() + base.temps.len());
     assert_eq!(inner.start, outer.slots.len() + outer.temps.len());
     assert_eq!(inner.slots[0].value, "၃");
     assert_eq!(inner.temps.len(), 1);
@@ -300,7 +308,10 @@ fn each_speed_steps_at_its_rate()
 #[test]
 fn endless_loops_stop_at_the_budget()
 {
-    let out = compile("မှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသပါ။", &Options::default());
+    let out = compile(
+        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nမှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။",
+        &Options::default(),
+    );
     let mut s = Session::new(out.ops.as_ref());
     s.resume();
     assert_eq!(s.status(), RunStatus::Trapped);
@@ -372,12 +383,12 @@ fn each_op_has_a_spot_that_finds_it_again()
 #[test]
 fn a_spot_finds_its_op_after_the_folding_changes()
 {
-    let text = "ကိန်းသေ က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၂ + ၃) * ၄ ဖြစ်ပါစေ။\nက ကို \
-                ပြသပါ။\n\"x\" ဟု ပြသပါ။";
+    let text = "ကိန်းသေ က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၂ + ၃) * ၄ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် \
+                အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို ပြသပါ။\n\"x\" ဟု ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let folded = compile(text, &Options::default());
     let none = Options::builder().fold(FoldOptions::none()).build();
     let plain = compile(text, &none);
-    let main = folded.asm.last().expect("main");
+    let main = folded.asm.iter().find(|f| f.name == START_NAME).expect("start");
     let print =
         main.rows.iter().find(|r| r.text.starts_with("print_text")).expect("print");
     let spot = op_spot(&folded.asm, main.index, print.pc).expect("spot");
@@ -391,7 +402,8 @@ fn a_spot_finds_its_op_after_the_folding_changes()
 fn each_variable_shows_its_value_and_the_block_it_lives_in()
 {
     let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။";
+ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+                လုပ်ဆောင်မည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     let mut s = Session::new(out.ops.as_ref());
     let set =
@@ -452,8 +464,9 @@ fn a_finished_run_keeps_its_last_heap_until_the_next_run()
 #[test]
 fn heap_room_never_freed_shows_as_leaked_once_the_run_finishes()
 {
-    let text = "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို \
-                ပ တွင် သိမ်းထားမည်။\nပ ၏ တန်ဖိုး ကို ၄၂ ဟု ထားပါ။";
+    let text = "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+                လုပ်ဆောင်မည်။\nမင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။\nပ ၏ တန်ဖိုး \
+                ကို ၄၂ ဟု ထားပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &unchecked());
     let mut s = Session::new(out.ops.as_ref());
     s.resume();
@@ -470,7 +483,7 @@ fn heap_room_never_freed_shows_as_leaked_once_the_run_finishes()
 fn a_local_lives_in_a_stack_block_that_names_it_and_its_call()
 {
     let (_, mut s) = session_of("heap/swap");
-    do_while!(s.frame_blocks().len() < 2, s.step());
+    do_while!(s.frame_blocks().len() < 3, s.step());
     let frames = s.frame_blocks();
     let first = &frames[0].slots[0];
     let heap = s.heap();
@@ -482,7 +495,7 @@ fn a_local_lives_in_a_stack_block_that_names_it_and_its_call()
     let home = first.home.expect("a home");
     assert_eq!(named(home), (Origin::Stack, "က of လဲလှယ်".to_string()));
     let target = first.points_at.expect("a pointer");
-    assert_eq!(named(target), (Origin::Static, "Global ပထမ".to_string()));
+    assert_eq!(named(target), (Origin::Stack, format!("ပထမ of {START_NAME}")));
 }
 
 #[test]
@@ -490,7 +503,7 @@ fn packed_frames_put_the_locals_of_a_call_in_one_block()
 {
     let (_, mut s) = session_of("heap/swap");
     s.set_frames(FrameMode::Packed);
-    do_while!(s.frame_blocks().len() < 2, s.step());
+    do_while!(s.frame_blocks().len() < 3, s.step());
     let frames = s.frame_blocks();
     let homes: Vec<u64> = frames[0].slots.iter().filter_map(|v| v.home).collect();
     let heap = s.heap();
@@ -599,16 +612,18 @@ fn a_trap_in_a_gap_is_found_in_the_map()
 #[test]
 fn the_map_holds_each_block_in_address_order()
 {
-    let text = "ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် လိပ်စာ \
-                ၃၀၀ ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် သိမ်းထားမည်။\nကိန်းရှင် အရွယ် သည် လက္ခဏာမဲ့ ကိန်းပြည့် \
-                တစ်ခု ဖြစ်ပါစေ။\n၀ မှ ၂၉၉ အထိ နံပါတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအရွယ် ကို \
-                (နံပါတ် % ၈ + ၁) ကို လက္ခဏာမဲ့ ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။\nကိန်းရှင် ပ \
-                သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် အရွယ် ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် \
-                သိမ်းထားမည်။\nပ ၏ တန်ဖိုး ကို နံပါတ် ဟု ထားပါ။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို ပ ဟု \
-                ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\n၀ မှ ၂၉၉ အထိ ၃ စီ နံပါတ် အနေဖြင့် တိုး၍ \
-                အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကိန်းများ + \
-                နံပါတ် ၏ တန်ဖိုး ဖြစ်ပါစေ။\nလိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nကိန်းများ + နံပါတ် ၏ \
-                တန်ဖိုး ကို ဗလာ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\"ပြီးပါပြီ\" ဟု ပြသပါ။";
+    let text = "ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+                လုပ်ဆောင်မည်။\nမင်မိုရီတွင် ကိန်းပြည့် လိပ်စာ ၃၀၀ ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် \
+                သိမ်းထားမည်။\nကိန်းရှင် အရွယ် သည် လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n၀ မှ ၂၉၉ အထိ နံပါတ် \
+                အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအရွယ် ကို (နံပါတ် % ၈ + ၁) ကို လက္ခဏာမဲ့ ကိန်းပြည့် \
+                အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု \
+                ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် အရွယ် ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။\nပ ၏ တန်ဖိုး \
+                ကို နံပါတ် ဟု ထားပါ။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို ပ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ \
+                ပြီးပါပြီး။\n\n၀ မှ ၂၉၉ အထိ ၃ စီ နံပါတ် အနေဖြင့် တိုး၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် \
+                ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကိန်းများ + နံပါတ် ၏ တန်ဖိုး ဖြစ်ပါစေ။\nလိပ်စာ \
+                ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို ဗလာ ဟု \
+                ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\"ပြီးပါပြီ\" ဟု ပြသပါ။\nပရိုဂရမ် \
+                ပြီးဆုံးပါပြီး။";
     let out = compile(text, &unchecked());
     let mut s = Session::new(out.ops.as_ref());
     s.resume();
@@ -680,8 +695,9 @@ fn a_list_block_knows_its_cells_in_both_frame_forms()
     let (_, mut s) = session_of("lists/grid");
     s.step();
     let heap = s.heap();
-    let grid = heap.blocks.iter().find(|b| b.owner.as_deref() == Some("Global ဇယား"));
-    let grid = grid.expect("the grid global");
+    let owner = format!("ဇယား of {START_NAME}");
+    let grid = heap.blocks.iter().find(|b| b.owner.as_ref() == Some(&owner));
+    let grid = grid.expect("the grid");
     assert_eq!(grid.cells, [32, 8], "rows of 4 integers, cells of 8 octets");
     assert_eq!(grid.cell_path(0), [0, 0]);
     assert_eq!(grid.cell_path(40), [1, 1], "octet 40 sits in row 1, cell 1");
@@ -689,13 +705,20 @@ fn a_list_block_knows_its_cells_in_both_frame_forms()
 
     let (_, mut s) = session_of("lists/copies");
     s.set_frames(FrameMode::Packed);
-    do_while!(s.frame_blocks().len() < 2 && s.running(), s.step());
+    do_while!(s.frame_blocks().len() < 3 && s.running(), s.step());
     let heap = s.heap();
-    let frame =
-        heap.blocks.iter().find(|b| !b.vars.is_empty()).expect("a packed frame");
+    let start_frame = format!("Frame of {START_NAME}");
+    let called =
+        |b: &&BlockRow| !b.vars.is_empty() && b.owner.as_ref() != Some(&start_frame);
+    let frame = heap.blocks.iter().find(called).expect("the packed frame of the call");
     let rows = frame.rows();
     assert_eq!(rows[0].cells, [8], "the list parameter of the call");
     let rows: Vec<BlockRow> = heap.blocks.iter().flat_map(BlockRow::rows).collect();
-    let global = rows.iter().find(|r| r.owner.as_deref() == Some("Global မူရင်း"));
-    assert_eq!(global.map(|r| r.cells.clone()), Some(vec![8]), "a packed global too");
+    let owner = format!("မူရင်း of {START_NAME}");
+    let local = rows.iter().find(|r| r.owner.as_ref() == Some(&owner));
+    assert_eq!(
+        local.map(|r| r.cells.clone()),
+        Some(vec![8]),
+        "a local of the start block too"
+    );
 }

@@ -9,6 +9,7 @@ use zakac_diagnostics::Code;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_parser::parser::parse;
+use zakac_parser::wrap::in_start_block;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_semcheck::semcheck::SemcheckOutput;
 use zakac_semcheck::semcheck::semcheck;
@@ -27,8 +28,16 @@ pub struct Checked
     pub out: SemcheckOutput,
 }
 
-/// Lex, parse and check `text`; panics on lexer or parser diagnostics.
+/// Put `text` in a start block, then lex, parse and check it; panics on lexer
+/// or parser diagnostics.
 pub fn check_with(text: &str, options: &SemcheckOptions) -> Checked
+{
+    check_as_is(&in_start_block(text), options)
+}
+
+/// Lex, parse and check `text` as it stands, with no start block added; panics
+/// on lexer or parser diagnostics.
+pub fn check_as_is(text: &str, options: &SemcheckOptions) -> Checked
 {
     let mut sm = SourceMap::new();
     let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
@@ -49,6 +58,14 @@ pub fn check(text: &str) -> Checked { check_with(text, &SemcheckOptions::default
 pub fn codes(text: &str) -> Vec<Code>
 {
     check(text).out.diagnostics.iter().map(|d| d.code).collect()
+}
+
+/// The check diagnostic codes of `text` as it stands, with no start block
+/// added.
+pub fn codes_as_is(text: &str) -> Vec<Code>
+{
+    let out = check_as_is(text, &SemcheckOptions::default()).out;
+    out.diagnostics.iter().map(|d| d.code).collect()
 }
 
 /// Assert that `text` checks without diagnostics.

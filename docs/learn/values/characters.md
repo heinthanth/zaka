@@ -10,10 +10,12 @@ A *character* is one letter, digit, sign or mark, written in single quotes: `'�
 included.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 'က' ကို ပြသပါ။
 'A' ကို ပြသပါ။
 '春' ကို ပြသပါ။
 '🔥' ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -32,11 +34,13 @@ written as an *escape sequence*. Escape sequences work in characters and in
 [text](strings.md).
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 '\'' ကို ပြသပါ။                       // a single quote
 '{ယူနီကုဒ် 1000}' ကို ပြသပါ။            // the character with Unicode number 1000 (hex): က
 "တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသပါ။    // a line break inside text
 "{{ }}" ဟု ပြသပါ။                     // literal braces
 '{{' ကို ပြသပါ။                       // a brace character
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

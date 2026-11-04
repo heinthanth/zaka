@@ -185,10 +185,10 @@ fn top_level_declaration_after_a_call_is_fine()
 }
 
 #[test]
-fn top_level_overwrite_is_zk0708()
+fn start_block_overwrite_is_zk0708()
 {
     let text = include_str!("../../../samples/mistakes/leak.zaka");
-    assert_eq!(lines(text), [(Code::BlockLeaked, 4)]);
+    assert_eq!(lines(text), [(Code::BlockLeaked, 5)]);
 }
 
 #[test]
@@ -202,16 +202,20 @@ fn owner_list_kept_is_a_warning_under_strict()
 }
 
 #[test]
-fn top_level_loop_redeclaration_is_zk0708()
+fn start_block_loop_redeclaration_is_zk0708()
 {
     let text = "\
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ၏ တန်ဖိုး ကို ကိန်း ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ";
-    assert_eq!(lines(text), [(Code::BlockLeaked, 2)]);
+    // Each round leaks the block of the round before; the last round's block
+    // leaks at the end of the start block.
+    assert_eq!(lines(text), [(Code::BlockLeaked, 3), (Code::BlockLeaked, 7)]);
 }
 
 #[test]
@@ -308,6 +312,16 @@ fn owner_cells(after: &str) -> String
     )
 }
 
+/// [`owner_cells`] with the list declared before the allocation, so that it
+/// remains a global, whose cells the end of the start block leaves alone.
+fn global_owner_cells(after: &str) -> String
+{
+    let text = owner_cells(after);
+    let mut lines: Vec<&str> = text.lines().collect();
+    lines.swap(1, 2);
+    format!("{}\n", lines.join("\n"))
+}
+
 /// The remove of the last cell.
 const REMOVE: &str = "ပများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။\n";
 
@@ -346,9 +360,10 @@ fn a_remove_from_a_plain_list_of_owners_loses_the_cell_block()
 #[test]
 fn a_remove_after_a_cell_lets_go_warns_under_strict_alone()
 {
-    let freed =
-        owner_cells(&format!("လိပ်စာ ပများ ၏ အကွက် ၀ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n{REMOVE}"));
-    let moved = owner_cells(&format!(
+    let freed = global_owner_cells(&format!(
+        "လိပ်စာ ပများ ၏ အကွက် ၀ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n{REMOVE}"
+    ));
+    let moved = global_owner_cells(&format!(
         "ကိန်းရှင် မ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပများ ၏ အကွက် ၀ ဖြစ်ပါစေ။
 {REMOVE}လိပ်စာ မ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n"
     ));

@@ -430,6 +430,8 @@ en = "Stopped"
 en = "Paused"
 [explorer.run.status_finished]
 en = "Finished"
+[explorer.run.status_exit]
+en = "Finished, exit code %{code}"
 [explorer.run.status_trapped]
 en = "Trapped"
 [explorer.run.steps]

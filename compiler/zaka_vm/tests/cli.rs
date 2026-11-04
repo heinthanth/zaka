@@ -7,6 +7,7 @@ use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
 use zakac_codegen::cli::ZakacCodegen;
+use zakac_parser::wrap::in_start_block;
 
 const SUM: &str = "(၂ + ၃) * ၄ ကို ပြသပါ။\n\"ပြီး\" ဟု ပြသပါ။";
 
@@ -38,7 +39,7 @@ fn run_vm(args: &[&str], stdin: &str) -> (ExitCode, String, String)
         ZakaVm::create_as_standalone(),
         ZakaVm::standalone_name(),
         args,
-        stdin.as_bytes(),
+        in_start_block(stdin).as_bytes(),
     )
 }
 
@@ -60,8 +61,12 @@ fn codegen_artifacts_run_raw_or_text()
         let path = dir.path().join(format!("sum.{ext}"));
         let codegen = ZakacCodegen::create_as_standalone();
         let name = ZakacCodegen::standalone_name();
-        let (code, _, _) =
-            run_cmd(codegen, name, &["-o", path.to_str().unwrap()], SUM.as_bytes());
+        let (code, _, _) = run_cmd(
+            codegen,
+            name,
+            &["-o", path.to_str().unwrap()],
+            in_start_block(SUM).as_bytes(),
+        );
         assert_eq!(code, ExitCode::Success);
         let (code, stdout, stderr) = run_vm(&[path.to_str().unwrap()], "");
         assert_eq!(code, ExitCode::Success, "{ext}: {stderr}");
@@ -216,4 +221,40 @@ fn a_missing_import_stops_with_a_host_error()
     assert_ne!(code, ExitCode::Success);
     assert!(stdout.is_empty());
     assert!(stderr.contains("nope.zaka"), "{stderr}");
+}
+
+/// A start block that prints its arguments, the name of the program first,
+/// tells whether the environment
+/// has variables, and ends with exit code 7.
+const START: &str = "ပရိုဂရမ်သည်
+စာသား စာရင်း ညွှန်ကြားချက်များ နှင့် စာသား စာရင်း ပတ်ဝန်းကျင် တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+ညွှန်ကြားချက်များ ကို ပြသပါ။
+ပတ်ဝန်းကျင် ၏ အကွက်အရေအတွက် သည် ၀ ထက် ကြီးသည် ကို ပြသပါ။
+၇ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+
+#[test]
+fn the_start_block_gets_the_arguments_and_the_environment()
+{
+    let (code, stdout, stderr) = run_vm(&["-", "--", "က", "-x", ""], START);
+    assert_eq!(u8::from(code), 7, "{stderr}");
+    assert_eq!(stdout, "[\"-\"၊ \"က\"၊ \"-x\"၊ \"\"]\nမှန်\n");
+}
+
+#[test]
+fn a_negative_exit_code_keeps_its_lowest_8_bits()
+{
+    let text = START.replace("၇ ကို", "-၁ ကို");
+    let (code, _, stderr) = run_vm(&[], &text);
+    assert_eq!(u8::from(code), 255, "{stderr}");
+}
+
+#[test]
+fn a_start_block_with_no_result_ends_with_0()
+{
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ၁ ကို ပြသပါ။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let (code, stdout, stderr) = run_vm(&[], text);
+    assert_eq!(code, ExitCode::Success, "{stderr}");
+    assert_eq!(stdout, "၁\n");
 }

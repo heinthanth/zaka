@@ -95,7 +95,6 @@ fn invalid_input_reports_one_error_per_bad_line()
         Code::ConditionNotBool,
         Code::OperandKind,
         Code::BreakOutsideLoop,
-        Code::ReturnOutsideFunction,
         Code::InvalidCast,
     ];
     assert_eq!(found, want);

@@ -6,6 +6,7 @@ description: Addition, subtraction, multiplication, division, remainder and nega
 # Arithmetic
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၇ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 
@@ -24,6 +25,7 @@ description: Addition, subtraction, multiplication, division, remainder and nega
 က ကို ခ ဖြင့် စားသော စားလဒ် ကို ပြသပါ။
 က ကို ခ ဖြင့် စားသော စားကြွင်း ကို ပြသပါ။
 အနုတ် က ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -58,10 +60,12 @@ Dividing two integers gives an integer. The fraction is dropped, so `၁၇ / �
 To keep the fraction, divide decimal numbers: `၁၇.၀ / ၅` is `၃.၄`.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁၇ / ၅ ကို ပြသပါ။
 ၁၇.၀ / ၅ ကို ပြသပါ။
 -၇ / ၂ ကို ပြသပါ။        // the fraction is dropped toward zero
 -၇ % ၂ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -75,7 +79,9 @@ Division with zero as the divisor has no answer. If the compiler can see the zer
 program does not run:
 
 ```zaka-error ZK0602
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ / ၀ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -85,10 +91,12 @@ error[ZK0602]: / with the constant zero as divisor
 If the zero first appears while the program runs, the program stops at that point:
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 "အစ" ဟု ပြသပါ။
 ၁၀ / ခ ကို ပြသပါ။
 "ဤနေရာ မရောက်ပါ" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -104,9 +112,11 @@ integer and a decimal number need an explicit [conversion](conversion.md), becau
 large integer could lose digits as a decimal:
 
 ```zaka-error ZK0404
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 ကိန်းရှင် ဈေး သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁.၅ ဖြစ်ပါစေ။
 အသက် * ဈေး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -122,8 +132,10 @@ If a result goes past the edge while the program runs, the program stops there a
 the operation and the kind:
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။           // the largest 8-bit integer
 ခ + ၁ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -137,10 +149,12 @@ odometer rolling over. Compile them with `--overflow wrap`, or turn off **Stop o
 overflow** in the explorer:
 
 ```zaka overflow=wrap
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။           // the largest 8-bit integer
 ခ + ၁ ကို ပြသပါ။                                        // wraps to the smallest
 ကိန်းရှင် လ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 လ - ၁ ကို ပြသပါ။                                        // wraps to 255
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

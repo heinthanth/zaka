@@ -11,16 +11,20 @@ program in a new language prints a greeting. Here it is in Zaka:
 ```zaka
 // The rest of a line after "//" is a comment for people. The computer skips it.
 
+// The program starts here.
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // Print the text inside the quotes.
 "မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသပါ။
+// The program ends here.
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 မင်္ဂလာပါ ကမ္ဘာကြီး
 ```
 
-The line reads as a Burmese sentence: *"Hello, world" — thus, please show.* Each part
-has a job:
+The line in the middle reads as a Burmese sentence: *"Hello, world" — thus, please
+show.* Each part has a job:
 
 | Zaka | Reads as | Job |
 | --- | --- | --- |
@@ -31,6 +35,20 @@ has a job:
 
 Each Zaka statement ends with `။`, the Burmese full stop. A line break does **not** end
 a statement; `။` alone does.
+
+## Where the program starts
+
+The first and the last line hold the program together. The program starts at
+`ပရိုဂရမ်သည်`, runs the statements after it one after another, and ends at the closer.
+
+| Zaka | Reads as |
+| --- | --- |
+| `ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။` | "the program will do the following" |
+| `ပရိုဂရမ် ပြီးဆုံးပါပြီး။` | "the program is done" |
+
+This is the *start block*. Each program has one and no more, and each statement that
+runs goes inside it. The examples on these pages all start like this; [Where a program
+starts](../programs/start.md) shows what more a start block can do.
 
 ## Running it
 
@@ -44,14 +62,16 @@ a statement; `။` alone does.
 
 ## More than one line
 
-A program runs from top to bottom, one statement after another. A program can also
+A start block runs from top to bottom, one statement after another. A program can also
 print numbers, and it can do sums before it prints them.
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသပါ။
 "စံကား ဘာသာစကားမှ ကြိုဆိုပါသည်" ဟု ပြသပါ။   // "Welcome to the Zaka language"
 ၂၀၂၆ ကို ပြသပါ။                            // a number: show 2026
 ၆ * ၇ ကို ပြသပါ။                            // a sum: show 6 times 7
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -70,11 +90,13 @@ If a statement has no `။`, the program does not run. The compiler stops and re
 it expected:
 
 ```zaka-error ZK0201
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ" ဟု ပြသပါ
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0201]: expected "။", found end of input
+error[ZK0201]: expected "။", found "ပရိုဂရမ် ပြီးဆုံးပါပြီး"
 ```
 
 Each message has a code such as `ZK0201`. The [error messages](../../manual/reference/errors.md)
@@ -85,5 +107,6 @@ page lists the common ones.
 - Change the greeting so that it greets a friend instead of the world.
 - Add a line that prints `၁၀၀ + ၂၃`.
 - Put two statements on the same line. Does it still run?
+- Move a statement above `ပရိုဂရမ်သည်`. What does the compiler report?
 
 Next: [Comments](comments.md).

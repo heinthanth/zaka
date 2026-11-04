@@ -1,7 +1,7 @@
 # zakac-ir-artifact v1
 name:
   Custom: functions.zaka
-source: "လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ကို ၁၊ ၂၊ ၃ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\n\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nက ကို က * ၂ ဟု ထားပါ။\nခ ကို ခ * ၂ ဟု ထားပါ။\nဂ ကို ဂ * ၂ ဟု ထားပါ။\nက + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် ပျမ်းမျှ သည်\n၃၂ ဘစ် ဒဿမကိန်း က၊ ၈ ဘစ် ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း ရလဒ် ကို ပြန်ပေးမည်။\nရလဒ် ကို (က + ခ) / ၂ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ဟု ပြသပါ။\nပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n"
+source: "\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nက ကို က * ၂ ဟု ထားပါ။\nခ ကို ခ * ၂ ဟု ထားပါ။\nဂ ကို ဂ * ၂ ဟု ထားပါ။\nက + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် ပျမ်းမျှ သည်\n၃၂ ဘစ် ဒဿမကိန်း က၊ ၈ ဘစ် ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း ရလဒ် ကို ပြန်ပေးမည်။\nရလဒ် ကို (က + ခ) / ၂ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ဟု ပြသပါ။\nပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ကို ၁၊ ၂၊ ၃ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 module:
   globals: []
@@ -15,29 +15,29 @@ module:
       kind: isize
       access: var
       span:
-        lo: 485
-        hi: 488
+        lo: 140
+        hi: 143
       addressed: false
     - name: ခ
       kind: isize
       access: var
       span:
-        lo: 523
-        hi: 526
+        lo: 178
+        hi: 181
       addressed: false
     - name: ဂ
       kind: isize
       access: var
       span:
-        lo: 561
-        hi: 564
+        lo: 216
+        hi: 219
       addressed: false
     - name: ရလဒ်
       kind: isize
       access: var
       span:
-        lo: 386
-        hi: 443
+        lo: 41
+        hi: 98
       addressed: false
     block:
     - set:
@@ -47,11 +47,11 @@ module:
           node:
             const: 0:isize
           span:
-            lo: 386
-            hi: 443
+            lo: 41
+            hi: 98
         span:
-          lo: 386
-          hi: 443
+          lo: 41
+          hi: 98
     - set:
         place: l0
         value:
@@ -64,21 +64,21 @@ module:
                 node:
                   read: l0
                 span:
-                  lo: 794
-                  hi: 797
+                  lo: 449
+                  hi: 452
               rhs:
                 kind: isize
                 node:
                   const: 2:isize
                 span:
-                  lo: 800
-                  hi: 803
+                  lo: 455
+                  hi: 458
           span:
-            lo: 794
-            hi: 803
+            lo: 449
+            hi: 458
         span:
-          lo: 780
-          hi: 829
+          lo: 435
+          hi: 484
     - set:
         place: l1
         value:
@@ -91,21 +91,21 @@ module:
                 node:
                   read: l1
                 span:
-                  lo: 844
-                  hi: 847
+                  lo: 499
+                  hi: 502
               rhs:
                 kind: isize
                 node:
                   const: 2:isize
                 span:
-                  lo: 850
-                  hi: 853
+                  lo: 505
+                  hi: 508
           span:
-            lo: 844
-            hi: 853
+            lo: 499
+            hi: 508
         span:
-          lo: 830
-          hi: 879
+          lo: 485
+          hi: 534
     - set:
         place: l2
         value:
@@ -118,21 +118,21 @@ module:
                 node:
                   read: l2
                 span:
-                  lo: 894
-                  hi: 897
+                  lo: 549
+                  hi: 552
               rhs:
                 kind: isize
                 node:
                   const: 2:isize
                 span:
-                  lo: 900
-                  hi: 903
+                  lo: 555
+                  hi: 558
           span:
-            lo: 894
-            hi: 903
+            lo: 549
+            hi: 558
         span:
-          lo: 880
-          hi: 929
+          lo: 535
+          hi: 584
     - return:
         value:
           kind: isize
@@ -149,35 +149,35 @@ module:
                       node:
                         read: l0
                       span:
-                        lo: 930
-                        hi: 933
+                        lo: 585
+                        hi: 588
                     rhs:
                       kind: isize
                       node:
                         read: l1
                       span:
-                        lo: 936
-                        hi: 939
+                        lo: 591
+                        hi: 594
                 span:
-                  lo: 930
-                  hi: 939
+                  lo: 585
+                  hi: 594
               rhs:
                 kind: isize
                 node:
                   read: l2
                 span:
-                  lo: 942
-                  hi: 945
+                  lo: 597
+                  hi: 600
           span:
-            lo: 930
-            hi: 945
+            lo: 585
+            hi: 600
         span:
-          lo: 930
-          hi: 1014
+          lo: 585
+          hi: 669
     shared_params: []
     span:
-      lo: 346
-      hi: 1097
+      lo: 1
+      hi: 764
   - name: ပျမ်းမျှ
     params: 2
     result: 2
@@ -187,22 +187,22 @@ module:
       kind: f32
       access: var
       span:
-        lo: 1216
-        hi: 1219
+        lo: 883
+        hi: 886
       addressed: false
     - name: ခ
       kind: i8
       access: var
       span:
-        lo: 1268
-        hi: 1271
+        lo: 935
+        hi: 938
       addressed: false
     - name: ရလဒ်
       kind: f64
       access: var
       span:
-        lo: 1139
-        hi: 1163
+        lo: 806
+        hi: 830
       addressed: false
     block:
     - set:
@@ -212,11 +212,11 @@ module:
           node:
             const: 0.0:f64
           span:
-            lo: 1139
-            hi: 1163
+            lo: 806
+            hi: 830
         span:
-          lo: 1139
-          hi: 1163
+          lo: 806
+          hi: 830
     - set:
         place: l2
         value:
@@ -238,8 +238,8 @@ module:
                             node:
                               read: l0
                             span:
-                              lo: 1505
-                              hi: 1508
+                              lo: 1172
+                              hi: 1175
                           rhs:
                             kind: f32
                             node:
@@ -249,47 +249,47 @@ module:
                                   node:
                                     read: l1
                                   span:
-                                    lo: 1511
-                                    hi: 1514
+                                    lo: 1178
+                                    hi: 1181
                                 implicit: true
                             span:
-                              lo: 1511
-                              hi: 1514
+                              lo: 1178
+                              hi: 1181
                       span:
-                        lo: 1505
-                        hi: 1514
+                        lo: 1172
+                        hi: 1181
                     rhs:
                       kind: f32
                       node:
                         const: 2.0:f32
                       span:
-                        lo: 1518
-                        hi: 1521
+                        lo: 1185
+                        hi: 1188
                 span:
-                  lo: 1504
-                  hi: 1521
+                  lo: 1171
+                  hi: 1188
               implicit: true
           span:
-            lo: 1504
-            hi: 1521
+            lo: 1171
+            hi: 1188
         span:
-          lo: 1481
-          hi: 1547
+          lo: 1148
+          hi: 1214
     - return:
         value:
           kind: f64
           node:
             read: l2
           span:
-            lo: 1322
-            hi: 1630
+            lo: 989
+            hi: 1309
         span:
-          lo: 1322
-          hi: 1630
+          lo: 989
+          hi: 1309
     shared_params: []
     span:
-      lo: 1099
-      hi: 1630
+      lo: 766
+      hi: 1309
   - name: နှုတ်ဆက်
     params: 0
     result: null
@@ -300,60 +300,81 @@ module:
         value:
           text: မင်္ဂလာပါ
         span:
-          lo: 1790
-          hi: 1845
+          lo: 1469
+          hi: 1524
     - return:
         value: null
         span:
-          lo: 1846
-          hi: 1876
+          lo: 1525
+          hi: 1555
     shared_params: []
     span:
-      lo: 1632
-      hi: 1959
+      lo: 1311
+      hi: 1650
+  - name: ပရိုဂရမ်
+    params: 0
+    result: null
+    ret: null
+    locals: []
+    block:
+    - call:
+        func: 2
+        name: နှုတ်ဆက်
+        args: []
+        span:
+          lo: 1769
+          hi: 1880
+    - print:
+        value:
+          expr:
+            kind: isize
+            node:
+              call:
+                func: 0
+                name: နှစ်ဆတိုးပြီးပေါင်း
+                args:
+                - kind: isize
+                  node:
+                    const: 1:isize
+                  span:
+                    lo: 1989
+                    hi: 1992
+                - kind: isize
+                  node:
+                    const: 2:isize
+                  span:
+                    lo: 1996
+                    hi: 1999
+                - kind: isize
+                  node:
+                    const: 3:isize
+                  span:
+                    lo: 2003
+                    hi: 2006
+            span:
+              lo: 1881
+              hi: 2084
+        span:
+          lo: 1881
+          hi: 2113
+    shared_params: []
+    span:
+      lo: 1652
+      hi: 2184
   main:
   - call:
-      func: 2
-      name: နှုတ်ဆက်
+      func: 3
+      name: ပရိုဂရမ်
       args: []
       span:
-        lo: 0
-        hi: 111
-  - print:
-      value:
-        expr:
-          kind: isize
-          node:
-            call:
-              func: 0
-              name: နှစ်ဆတိုးပြီးပေါင်း
-              args:
-              - kind: isize
-                node:
-                  const: 1:isize
-                span:
-                  lo: 220
-                  hi: 223
-              - kind: isize
-                node:
-                  const: 2:isize
-                span:
-                  lo: 227
-                  hi: 230
-              - kind: isize
-                node:
-                  const: 3:isize
-                span:
-                  lo: 234
-                  hi: 237
-          span:
-            lo: 112
-            hi: 315
-      span:
-        lo: 112
-        hi: 344
+        lo: 1652
+        hi: 1676
   imported_inits: 0
+  host:
+    args: null
+    env: null
+    exit: null
   span:
     lo: 0
-    hi: 1960
+    hi: 2185
 diagnostics: []

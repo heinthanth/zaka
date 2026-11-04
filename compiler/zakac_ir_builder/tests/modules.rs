@@ -1,12 +1,14 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use zakac_ast::stmt::START_NAME;
 use zakac_diagnostics::Code;
 use zakac_ir_builder::artifact::Lowered;
 use zakac_ir_builder::artifact::run_loaded;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
+use zakac_parser::wrap::in_start_block;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::file_loader::MemFileLoader;
 use zakac_span::source_map::SourceMap;
@@ -15,7 +17,7 @@ use zakac_span::source_map::SourceMap;
 fn lower_pair(main: &str, lib: &str) -> Lowered
 {
     let mut loader = MemFileLoader::new();
-    loader.insert("/m/main.zaka", main);
+    loader.insert("/m/main.zaka", &in_start_block(main));
     loader.insert("/m/lib.zaka", lib);
     let mut sm = SourceMap::with_loader(Arc::new(loader));
     let file = sm.load_file(Path::new("/m/main.zaka")).unwrap();
@@ -80,7 +82,7 @@ fn the_file_that_is_run_keeps_values_from_calls()
     let module = lowered.folded.expect("lowered");
     assert_eq!(module.imported_inits, 0);
     let names: Vec<&str> = module.funcs.iter().map(|f| f.name.as_str()).collect();
-    assert_eq!(names, ["တစ်@lib"]);
+    assert_eq!(names, ["တစ်@lib", START_NAME]);
 }
 
 #[test]
@@ -89,7 +91,7 @@ fn the_check_of_imported_values_does_not_hang_on_the_fold_options()
     let lib = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ * ၃ ဖြစ်ပါစေ။";
     let main = "\"lib.zaka\" မှ က ကို ထည့်သွင်းပါ။\nက ကို ပြသပါ။";
     let mut loader = MemFileLoader::new();
-    loader.insert("/m/main.zaka", main);
+    loader.insert("/m/main.zaka", &in_start_block(main));
     loader.insert("/m/lib.zaka", lib);
     let mut sm = SourceMap::with_loader(Arc::new(loader));
     let file = sm.load_file(Path::new("/m/main.zaka")).unwrap();

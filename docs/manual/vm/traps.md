@@ -18,7 +18,7 @@ the program stopped: access through a null address at 0x0
 ```
 
 ```console
-zaka_vm: the program stopped: access through a null address at 0x0 (in main, op 5)
+zaka_vm: the program stopped: access through a null address at 0x0 (in ပရိုဂရမ်, op 5)
 ```
 
 The command line adds the function and the index of the instruction. When the trap names
@@ -58,7 +58,7 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | text cut | a range of text starts or ends inside a character | `a range of text at A starts or ends inside a character` |
 | character out of range | a character number lies outside its text | `character N is outside the text, whose characters run from L to H` |
 | not UTF-8 | u8s converted to text are not UTF-8 | `the u8s at A are not UTF-8 text` |
-| out of mem | a resize, an add of a cell, or text built when the program runs, finds no heap room | `no heap room for N octets` |
+| out of mem | a resize, an add of a cell, text built when the program runs, or the arguments and the environment of a [start block](../language/functions.md#the-start-block) find no heap room | `no heap room for N octets` |
 | stack full | a call finds no room in the stack region | `no stack room for N more octets` |
 | static full | the space has no room for a global or a static text | `no room in the address space for a global of N octets` |
 | stack overflow | calls nest deeper than `--max-depth` | `more than N nested calls` |
@@ -79,9 +79,11 @@ A division or remainder with a zero the compiler can see is an error (ZK0602). A
 first shows up in the run is a trap:
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 "အစ" ဟု ပြသပါ။
 ၁၀ / ခ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -95,10 +97,12 @@ A shift moves the bits fewer places than the integer has. A distance held in a v
 is checked when the shift runs:
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀ ဖြစ်ပါစေ။
 "အစ" ဟု ပြသပါ။
 က ကို ဘယ်သို့ ခ ဘစ် ရွေ့သောရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -113,9 +117,11 @@ ends. A step written as a number is checked in the compiler; a step held in a va
 is checked once, before the first round:
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခြေလှမ်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 "အစ" ဟု ပြသပါ။
 ၁ မှ ၅ အထိ ခြေလှမ်း စီ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -130,9 +136,11 @@ cell number of a counted list that the compiler cannot work out, is checked when
 is read. The message gives the range the list allows:
 
 ```zaka-stop mem-check=warn
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 အမှတ်များ ၏ အကွက် န ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -146,9 +154,11 @@ the program runs, so the VM checks it at each remove, and a list with no cells s
 program:
 
 ```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
 ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
 ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -164,9 +174,11 @@ small address near it. A step off `ဗလာ` is the same trap, since no offset 
 into the address of a block:
 
 ```zaka-stop mem-check=warn
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။ // never given an address
 "အစ" ဟု ပြသပါ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -180,8 +192,10 @@ An access must lie inside one live block. An address in the gap after a block, o
 block at all, such as a number turned into a raw address, is out of bounds:
 
 ```zaka-stop mem-check=warn
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၃၄၅၆ ကို ကိန်းပြည့် လိပ်စာအကြမ်း အဖြစ် ပြောင်းလဲသော ရလဒ် ဖြစ်ပါစေ။
 ရ ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -193,9 +207,12 @@ box 4 of a block of 4 integers starts at the end of the block, in the gap:
 
 ```zaka-stop mem-check=warn
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ + ၃ ၏ တန်ဖိုး ကို ပြသပါ။     // the last box: fine
 ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။     // one past the end
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -211,11 +228,14 @@ so its message names no octet count:
 
 ```zaka-stop mem-check=warn
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ကိန်းရှင် ဝေး သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။
-ဝေး ကို ပ ကို ကိန်းပြည့် လိပ်စာအကြမ်း အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။
 ကိန်းရှင် နေရာ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀၀ ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+ဝေး ကို ပ ကို ကိန်းပြည့် လိပ်စာအကြမ်း အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။
 ဝေး ကို ဝေး + နေရာ ဟု ထားပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -229,10 +249,13 @@ raw address made from a block of octets plus one is not:
 
 ```zaka-stop mem-check=warn
 ကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ၁၆ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို ဘိုက် တွင် သိမ်းထားမည်။
 ကိန်းရှင် ရ သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+မင်မိုရီတွင် ၁၆ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို ဘိုက် တွင် သိမ်းထားမည်။
 ရ ကို ဘိုက် + ၁ ကို ကိန်းပြည့် လိပ်စာအကြမ်း အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။
 ရ ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -246,11 +269,14 @@ holds a Unicode scalar value. Reading other octets as one of these kinds traps:
 
 ```zaka-stop mem-check=warn
 ကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် အမှန် သည် မှန်မှားတန်ဖိုး လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မင်မိုရီတွင် ၁၆ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို ဘိုက် တွင် သိမ်းထားမည်။
 ဘိုက် ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
-ကိန်းရှင် အမှန် သည် မှန်မှားတန်ဖိုး လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။
 အမှန် ကို ဘိုက် ကို မှန်မှားတန်ဖိုး လိပ်စာအကြမ်း အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။
 အမှန် ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -264,16 +290,18 @@ heap block of a pointer that was given back, and the block of a local whose call
 returned, both trap in this manner:
 
 ```zaka-stop mem-check=warn
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
 ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-the program stopped: access at 0x101040 inside a freed block
+the program stopped: access at 0x101000 inside a freed block
 ```
 
 A function that hands back the address of its own variable leaves the caller with the
@@ -285,10 +313,12 @@ VM shows the fault, and its long form names the variable:
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော ကိန်းပြည့် လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
 ကိန်းရှင် ပမာဏ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 ရလဒ် ကို ပမာဏ ၏ လိပ်စာ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် ဒေသ ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -297,21 +327,23 @@ the program stopped: access at 0x1040 inside a freed block
 
 ```console
 $ zakac run --mem-check warn program.zaka
-zaka_vm: the program stopped: access at 0x1040 inside a freed block (in main, op 5); block at 0x1040, 8 octets, ပမာဏ of ဒေသ
+zaka_vm: the program stopped: access at 0x1040 inside a freed block (in ပရိုဂရမ်, op 5); block at 0x1040, 8 octets, ပမာဏ of ဒေသ
 ```
 
 ### Giving a block back twice
 
 ```zaka-stop mem-check=warn
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 လိပ်စာ မိတ္တူ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-the program stopped: the block at 0x101040 was freed before
+the program stopped: the block at 0x101000 was freed before
 ```
 
 Freeing `ဗလာ` is not a trap: it does nothing. That is the reason freeing the same owner twice
@@ -323,9 +355,11 @@ The start of a live heap block is the one address that can be given back. The bl
 address inside a block, and a wild address are not:
 
 ```zaka-stop mem-check=warn
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -340,9 +374,12 @@ checks that a live block reaches both addresses, its end included:
 ```zaka-stop mem-check=warn
 ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို က တွင် သိမ်းထားမည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ခ တွင် သိမ်းထားမည်။
 က နှင့် ခ ၏ နုတ်လဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -362,7 +399,10 @@ listing:
 ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
 ကိန်းရှင် p သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း ၏ လိပ်စာအကြမ်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် t ၏ လိပ်စာ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း ၏ လိပ်စာအကြမ်း အဖြစ် ပြောင်းလဲသော ရလဒ် ဖြစ်ပါစေ။
 ကိန်းရှင် q သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် p ၏ တန်ဖိုး ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 q ၏ တန်ဖိုး ကို ၁၂၀ ဟု ထားပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -370,7 +410,7 @@ the program stopped: write at 0x1070 inside static data, which cannot change
 ```
 
 ```console
-zaka_vm: the program stopped: write at 0x1070 inside static data, which cannot change (in main, op 15); block at 0x1070, 3 octets, static text t0
+zaka_vm: the program stopped: write at 0x1070 inside static data, which cannot change (in ပရိုဂရမ်, op 3); block at 0x1070, 3 octets, static text t0
 ```
 
 ## Room
@@ -382,9 +422,12 @@ would lose the old block, so it traps. The size below is far over the heap cap:
 
 ```zaka-stop
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ကိန်းရှင် အရေအတွက် သည် လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀၀၀၀၀၀၀၀ ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ကိန်းပြည့် အရေအတွက် ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -403,10 +446,12 @@ The locals of a call live in the stack region, 1 MiB at most, with the default l
 လုပ်ဆောင်ချက် ကြီးမား သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် အကွက် ၂၀၀၀၀၀ ရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "အစ" ဟု ပြသပါ။
 လုပ်ဆောင်ချက် ကြီးမား ကို လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -424,9 +469,11 @@ limit first. The limit is 4096 calls waiting to return:
 ကိန်းပြည့် န ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို န + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -443,7 +490,7 @@ a loop that never ends:
 
 ```console
 $ zakac run --max-steps 50 samples/mistakes/endless_loop.zaka
-zaka_vm: the program stopped: stopped after 50 ops (in main, op 13)
+zaka_vm: the program stopped: stopped after 50 ops (in ပရိုဂရမ်, op 12)
 ```
 
 **Static full.** On a platform with few addresses, the globals and the static texts can

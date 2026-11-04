@@ -11,6 +11,7 @@ Zaka the particles do it.
 
 ```zaka
 // သည် marks the subject, ထက် means "than"
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁၀ သည် ၃ ထက် ကြီးသည် ဟု ပြသပါ။            // 10 is greater than 3
 
 // အောက် means "below", "less than"
@@ -21,6 +22,7 @@ Zaka the particles do it.
 
 // ကို marks the object, ဖြင့် means "with"
 ၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း ကို ပြသပါ။  // the remainder of 10 ÷ 3
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -52,9 +54,11 @@ endings do not change the meaning. `ကြီး`, `ကြီးသည်` and `
 greater":
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ သည် ၂ ထက် ကြီး ကို ပြသပါ။
 ၅ သည် ၂ ထက် ကြီးသည် ဟု ပြသပါ။
 ၅ သည် ၂ ထက် ကြီးပါသည် ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

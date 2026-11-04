@@ -37,7 +37,9 @@ Each stage also builds as a program of its own (`zakac_lexer`, `zakac_parser`,
 Here is a program that adds up two numbers and prints the sum:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ + ၂ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -53,10 +55,14 @@ $ zakac run sum.zaka
 $ zakac codegen --asm sum.zaka
 ; zakac asm listing v1, platform 64 bits
 
-fn f0 main (params 0)
+fn f0 ပရိုဂရမ် (params 0)
      0  push 3:isize
      1  print
      2  ret
+
+fn f1 main (params 0)
+     0  call f0              ; ပရိုဂရမ်
+     1  ret
 ```
 
 The sum was worked out at compile time, so the VM just pushes `၃`.
@@ -215,8 +221,10 @@ or to standard output. Here is the listing of a program with a variable (`age.za
 for a 32-bit platform:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -226,17 +234,21 @@ for a 32-bit platform:
 ```console
 $ zakac codegen --platform-bits 32 --asm age.zaka
 ; zakac asm listing v1, platform 32 bits
-globals
-  g0 အသက် isize
 
-fn f0 main (params 0)
-     0  global_addr g0       ; အသက်
+fn f0 ပရိုဂရမ် (params 0)
+locals
+  l0 အသက် isize
+     0  local_addr l0        ; အသက်
      1  push 20:isize
      2  store isize
-     3  global_addr g0       ; အသက်
+     3  local_addr l0        ; အသက်
      4  load isize
      5  print
      6  ret
+
+fn f1 main (params 0)
+     0  call f0              ; ပရိုဂရမ်
+     1  ret
 ```
 
 The ops are listed in [Instructions](../vm/instructions.md).
@@ -244,7 +256,7 @@ The ops are listed in [Instructions](../vm/instructions.md).
 ## run
 
 ```console
-$ zakac run [options] [INPUT]
+$ zakac run [options] [INPUT] [-- ARGS...]
 ```
 
 `run` takes the compile options and the two checks above, and it reads the files a
@@ -264,6 +276,15 @@ A program that passes a limit stops with a message from the VM, listed in [When 
 program stops](../vm/traps.md). `--frames` is explained in [Checked and packed
 blocks](../vm/blocks.md).
 
+The words after `--` are the arguments of the program. Its [start
+block](../language/functions.md#the-start-block) gets them as a text list after the name
+of the program (the input as written, or `-`), as in C, together with the environment
+variables of `zakac`. A program with no start block ignores them.
+
+```console
+$ zakac run greet.zaka -- ကက ခခ
+```
+
 `--leaks` writes one line to standard error for each block that was never given back.
 Text is freed on its own, so its blocks never show here:
 
@@ -279,6 +300,7 @@ leak: block at 0x101020, 16 octets
 | --- | --- |
 | 0 | the stage finished, with warnings at most; for `run`, the program ended |
 | 1 | an error in the program, or the VM stopped the program |
+| other | for `run`, the result of the start block, its lowest 8 bits |
 
 Messages go to standard error and the artifact or the program output to standard output,
 so `zakac codegen age.zaka -o -` can be piped while the messages still show.

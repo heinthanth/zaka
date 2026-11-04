@@ -21,6 +21,9 @@ en = "The most octets of the stack region, where the locals of each call live."
 [vm.leaks]
 en = "List the heap blocks left unfreed when the program ends."
 
+[vm.args]
+en = "The arguments for the start block of the program, after \"--\"."
+
 [vm.leak]
 en = "leak: block at %{addr}, %{size} octets"
 

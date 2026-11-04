@@ -266,13 +266,14 @@ token:
 | `အကယ်၍` | `parse_if` | arms of `ထိုသို့မဟုတ်ဘဲ` and `သို့မဟုတ်ပါက` are read here |
 | `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | shared start `NAME သည်`, then the head (`parse_decl_head` in `decl_head.rs`): `kind တစ်WORD`, with `ဖြစ်၍ တန်ဖိုးသည် VALUE` for a value, or a value alone; a kind with no count word after it is ZK0234, and a kind with a number after it is a value when the kind is a plain number kind; then `ဖြစ်ပါစေ` is a declaration and `ဖြစ်ပြီး` a generic loop |
 | `လုပ်ဆောင်ချက်` | `parse_fn_or_call` | `NAME သည်` two tokens ahead is a declaration; else a call, which heads a statement or an expression |
+| `ပရိုဂရမ်` | `parse_fn_decl` | the start block: the header of a function with no name, which gets the name `ပရိုဂရမ်` and `start: true`; its statements end at `ပရိုဂရမ် ပြီးဆုံးပါပြီး` (`ProgramClose`, a joined phrase of `ပရိုဂရမ်` and the done word) where other blocks end at `BlockClose` |
 | a block opener | `parse_block` | opener, `။`, statements until the closer, closer, `။` |
 | `ကွင်းဆက်`, `နောက်တစ်ကြိမ်ဆီသို့` | break, continue | |
 | `ပြန်ပေးပါ` | a bare return | |
 | `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
 | `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ မင်မိုရီကို`, then `ပြန်လည်စွန့်လွှတ်မည်` for a release or a size for a resize |
 | a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းပါ။`; after another statement or inside a block it is parsed and reported (ZK0230) |
-| `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, struct or top-level declaration; on another statement it is ZK0229 |
+| `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, struct or top-level declaration; on another statement or the start block it is ZK0229 |
 | an `else`, an update, a closer with no opener | an error | ZK0211, ZK0212, ZK0226 |
 | all other tokens | `parse_expr_headed` | a clause; see below |
 

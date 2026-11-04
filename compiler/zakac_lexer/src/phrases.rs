@@ -24,6 +24,8 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Located, Kw::Mem, Kw::Ko], Kw::HeapHead),
     // လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?။
     (&[Kw::Tasks, Kw::Done], Kw::BlockClose),
+    // ပရိုဂရမ် ပြီး(ဆုံး)?ပါပြီ(း)?။
+    (&[Kw::Program, Kw::Done], Kw::ProgramClose),
     // ... ကို ... ဖြင့် စားသော စားလဒ်
     (&[Kw::DivideHead, Kw::QuotientTail], Kw::Divide),
     // ... ကို ... ဖြင့် စားသော စားကြွင်း

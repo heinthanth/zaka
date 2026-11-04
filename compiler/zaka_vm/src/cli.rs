@@ -1,3 +1,4 @@
+use std::ffi::OsString;
 use std::sync::Arc;
 
 use zakac_borrow_checker::cli::attach_borrow_check_args;
@@ -42,6 +43,7 @@ use zakac_session::config::Input;
 use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 
+use crate::machine::HostData;
 use crate::machine::RunOptions;
 use crate::machine::run_and_keep;
 use crate::trap::hex;
@@ -58,6 +60,8 @@ const MAX_STACK_ARG: &str = "max_stack";
 const FRAMES_ARG: &str = "frames";
 /// The flag that lists the heap blocks left unfreed.
 const LEAKS_ARG: &str = "leaks";
+/// The arguments for the start block, after `--`.
+const ARGS_ARG: &str = "args";
 
 /// The `zaka_vm` command, `zakac run` as a subcommand.
 pub struct ZakaVm
@@ -111,10 +115,15 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .long("leaks")
         .help(t!("vm.leaks"))
         .action(ArgAction::SetTrue);
+    let args = Arg::new(ARGS_ARG)
+        .value_name("ARGS")
+        .help(t!("vm.args"))
+        .num_args(0..)
+        .last(true);
     let cmd = attach_borrow_check_args(attach_compile_args(cmd.arg(input)));
     let cmd = attach_codegen_args(cmd);
     let cmd = cmd.arg(depth).arg(steps).arg(heap).arg(stack).arg(frames);
-    cmd.arg(leaks).about(t!("vm.about"))
+    cmd.arg(leaks).arg(args).about(t!("vm.about"))
 }
 
 impl Command for ZakaVm
@@ -237,12 +246,20 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     };
 
     let options = run_options(matches);
-    let (machine, result) = run_and_keep(&module, &mut *io.stdout, &options);
+    let name = matches.get_one::<String>("input").map_or("-", String::as_str);
+    let rest = matches.get_many::<String>(ARGS_ARG).into_iter().flatten().cloned();
+    let args = std::iter::once(name.to_string()).chain(rest);
+    let pair = |(k, v): (OsString, OsString)| {
+        format!("{}={}", k.to_string_lossy(), v.to_string_lossy())
+    };
+    let env = std::env::vars_os().map(pair).collect();
+    let host = HostData::builder().args(args.collect()).env(env).build();
+    let (machine, result) = run_and_keep(&module, &mut *io.stdout, &options, &host);
     let Err(trap) = result
     else
     {
         do_if!(options.leaks, write_leaks(io, &machine.leaks()));
-        return ExitCode::Success;
+        return machine.exit_code().map_or(ExitCode::Success, ExitCode::from);
     };
     let _ = report_command_error(
         io,

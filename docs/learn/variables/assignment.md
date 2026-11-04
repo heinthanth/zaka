@@ -9,6 +9,7 @@ A variable can be given a new value later on. This is called *assignment*. In Za
 sentence reads "set x to v": `x ကို v ဟု ထားပါ။`
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 အသက် ကို ပြသပါ။
 
@@ -20,6 +21,7 @@ sentence reads "set x to v": `x ကို v ဟု ထားပါ။`
 
 အသက် ကို အသက် နှင့် ၁၀ ၏ ပေါင်းလဒ် ဟု ထားပါ။   // the word form works too
 အသက် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -49,10 +51,12 @@ To a maths student, "age = age + 1" looks impossible. To a computer it is two st
 A sentence that is true or false can be stored too:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 ကိန်းရှင် အရွယ်ရောက် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။   // adult, starts as false
 အရွယ်ရောက် ကို အသက် သည် ၁၈ ထက် ကြီးသည် ဟု ထားပါ။
 အရွယ်ရောက် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -64,8 +68,10 @@ A sentence that is true or false can be stored too:
 The new value must suit the variable's kind, just as the initial value did:
 
 ```zaka-error ZK0401
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 အသက် ကို ၂.၅ ဟု ထားပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

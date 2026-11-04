@@ -105,6 +105,13 @@ fn meant_to_fail(samples: &Path, file: &Path) -> bool
     group.is_some_and(|g| FAILING_GROUPS.iter().any(|f| g.as_os_str() == *f))
 }
 
+/// Whether a sample is a module in a `lib` folder, which has no start block:
+/// the programs that import it check it.
+fn is_lib_module(file: &Path) -> bool
+{
+    file.parent().and_then(Path::file_name).is_some_and(|d| d == "lib")
+}
+
 #[test]
 fn two_writing_borrows_are_fine() { ok(REVERSE); }
 
@@ -138,7 +145,7 @@ fn repo_samples_are_clean()
     let samples = repo_root().join("samples");
     let files: Vec<PathBuf> = zaka_files(&samples)
         .into_iter()
-        .filter(|f| !meant_to_fail(&samples, f))
+        .filter(|f| !meant_to_fail(&samples, f) && !is_lib_module(f))
         .collect();
     assert!(files.len() > 40, "{} samples", files.len());
     let found: Vec<(String, Vec<Code>)> = files

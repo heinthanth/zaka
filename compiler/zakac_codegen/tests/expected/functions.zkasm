@@ -66,7 +66,7 @@ fn f2 နှုတ်ဆက် (params 0)
      0  print_text t0
      1  ret
 
-fn f3 main (params 0)
+fn f3 ပရိုဂရမ် (params 0)
      0  call f2              ; နှုတ်ဆက်
      1  push 1:isize
      2  push 2:isize
@@ -74,3 +74,7 @@ fn f3 main (params 0)
      4  call f0              ; နှစ်ဆတိုးပြီးပေါင်း
      5  print
      6  ret
+
+fn f4 main (params 0)
+     0  call f3              ; ပရိုဂရမ်
+     1  ret

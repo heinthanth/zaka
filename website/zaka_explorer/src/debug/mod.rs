@@ -9,6 +9,7 @@ use strum::IntoStaticStr;
 use web_time::Instant;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::Held;
+use zaka_vm::machine::HostData;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::PackedVar;
 use zaka_vm::machine::RunOptions;
@@ -27,6 +28,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 
+use crate::compile::FILE_NAME;
 use crate::compile::RUN_STEPS;
 use crate::compile::asm::code_starts;
 use crate::compile::trap_text;
@@ -607,6 +609,8 @@ pub struct Session
     /// The number of ops the ended run ran.
     #[builder(default)]
     kept_steps: u64,
+    /// The exit code the start block of the ended run chose.
+    kept_exit: Option<u8>,
     /// The blocks the ended run left.
     #[builder(default)]
     kept_heap: HeapShot,
@@ -714,7 +718,9 @@ fn machine_for(ops: &bc::Module, max_heap: u64, frames: FrameMode) -> Machine
     #[rustfmt::skip]
     let options = RunOptions::builder().max_steps(RUN_STEPS).max_heap(max_heap)
         .frames(frames).build();
-    Machine::new(ops.clone(), options)
+    let mut machine = Machine::new(ops.clone(), options);
+    machine.set_host(&HostData::program(FILE_NAME));
+    machine
 }
 
 /// An octet count with a unit.
@@ -942,6 +948,7 @@ impl Session
         self.ended = None;
         self.kept.clear();
         self.kept_steps = 0;
+        self.kept_exit = None;
         self.kept_heap = HeapShot::default();
         self.spent = Duration::ZERO;
         self.kept_spent = Duration::ZERO;
@@ -968,8 +975,10 @@ impl Session
         let (spent, usage) = (self.run_time(), self.usage());
         let finished = how == RunStatus::Finished;
         let heap = self.machine.as_ref().map(|m| heap_shot(m, finished));
+        let exit = self.machine.as_ref().and_then(Machine::exit_code);
         self.reset();
         self.ended = Some(how);
+        self.kept_exit = exit;
         self.kept = kept;
         self.kept_steps = steps;
         self.kept_heap = heap.unwrap_or_default();
@@ -1067,6 +1076,7 @@ impl Session
         self.ended = None;
         self.kept.clear();
         self.kept_steps = 0;
+        self.kept_exit = None;
         self.kept_heap = HeapShot::default();
         self.kept_spent = Duration::ZERO;
         self.kept_usage = (0, 0);
@@ -1201,6 +1211,17 @@ impl Session
                 tern!(m.steps() == 0, RunStatus::Start, RunStatus::Paused)
             }
         }
+    }
+
+    /// The exit code the start block chose, once the run finished.
+    ///
+    /// # Returns
+    ///
+    /// The code, or `None` before the end or with no start block result.
+    pub fn exit_code(&self) -> Option<u8>
+    {
+        ret_if!(self.ended.is_some(), self.kept_exit);
+        self.machine.as_ref().and_then(Machine::exit_code)
     }
 
     /// Whether ops remain to run.

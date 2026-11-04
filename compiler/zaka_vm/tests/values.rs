@@ -3,6 +3,7 @@ mod common;
 use common::compile_text;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
+use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_and_keep;
 use zakac_codegen::options::EmitOptions;
@@ -404,7 +405,8 @@ fn runs_in_each_mode(program: &str, printed: &str)
         let module = compile_text(program, &fold, emit);
         let options = RunOptions::builder().frames(frames).build();
         let mut out = Vec::new();
-        let (machine, result) = run_and_keep(&module, &mut out, &options);
+        let (machine, result) =
+            run_and_keep(&module, &mut out, &options, &HostData::default());
         let mode = format!("{fold:?} {emit:?} {frames}");
         assert_eq!(result, Ok(()), "{mode}");
         assert_eq!(String::from_utf8(out).unwrap(), printed, "{mode}");

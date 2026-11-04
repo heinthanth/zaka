@@ -232,6 +232,32 @@ fn functions_and_calls()
 }
 
 #[test]
+fn the_start_block_has_the_parts_of_a_function()
+{
+    let text = "ပရိုဂရမ်သည်
+စာသား စာရင်း က နှင့် စာသား စာရင်း ခ တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+၀ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    assert_eq!(
+        stmt(text),
+        "(start ပရိုဂရမ် [text[] က, text[] ခ] isize (block (return 0)))"
+    );
+    let bare = "ပရိုဂရမ် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    assert_eq!(stmt(bare), "(start ပရိုဂရမ် [] - (block))");
+    let nested = "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    assert_eq!(codes(nested), [Code::NestedFunction]);
+    let exported = "အများသုံး ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    assert_eq!(codes(exported), [Code::ExportNotOnDecl]);
+    let wrong_closer = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။";
+    assert_eq!(codes(wrong_closer), [Code::ExpectedToken]);
+    let other_spelling = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ပရိုဂရမ် ပြီးပါပြီ။";
+    assert_eq!(stmt(other_spelling), "(start ပရိုဂရမ် [] - (block))");
+}
+
+#[test]
 fn statement_spans_cover_the_full_stop()
 {
     let text = "က ကို ပြသပါ။ ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";

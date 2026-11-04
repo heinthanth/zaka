@@ -64,12 +64,14 @@ fn alloc_into_borrow_is_zk0702()
 fn borrow_cell_free_is_zk0702()
 {
     let text = "\
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် တန်း သည် ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်ပါစေ။
 တန်း ၏ အကွက် ၁ ကို ပ ၏ တန်ဖိုးအငှား ဟု ထားပါ။
 လိပ်စာ တန်း ၏ အကွက် ၁ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ";
-    assert_eq!(lines(text), [(Code::FreedBorrow, 4)]);
+    assert_eq!(lines(text), [(Code::FreedBorrow, 5)]);
 }
 
 #[test]
@@ -150,13 +152,14 @@ fn top_level_borrow_in_global_is_fine()
 }
 
 #[test]
-fn top_level_store_into_a_borrow_list_is_fine()
+fn start_block_store_into_a_global_borrow_list_is_zk0703()
 {
-    ok("\
+    let text = "\
 ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် တန်း သည် ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်ပါစေ။
 တန်း ၏ အကွက် ၁ ကို x ၏ လိပ်စာ ဟု ထားပါ။
-");
+";
+    assert_eq!(lines(text), [(Code::BorrowStored, 3)]);
 }
 
 #[test]

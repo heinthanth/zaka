@@ -17,17 +17,19 @@ rules of the language do not depend on it: what a program means is set in
 ## Reading a listing
 
 `zakac codegen --asm` writes the listing of a program instead of the artifact. Here is a
-function that doubles its parameter, and a `main` that calls it:
+function that doubles its parameter, and a start block that calls it:
 
 ```zaka
 လုပ်ဆောင်ချက် နှစ်ဆ သည်
 ကိန်းပြည့် န ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
 ရလဒ် ကို န * ၂ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၁ ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် နှစ်ဆ ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -37,8 +39,6 @@ function that doubles its parameter, and a `main` that calls it:
 ```console
 $ zakac codegen --asm program.zaka
 ; zakac asm listing v1, platform 64 bits
-globals
-  g0 က isize
 
 fn f0 နှစ်ဆ (params 1) -> isize
 locals
@@ -57,15 +57,21 @@ locals
     10  load isize
     11  ret
 
-fn f1 main (params 0)
-     0  global_addr g0       ; က
+fn f1 ပရိုဂရမ် (params 0)
+locals
+  l0 က isize
+     0  local_addr l0        ; က
      1  push 21:isize
      2  store isize
-     3  global_addr g0       ; က
+     3  local_addr l0        ; က
      4  load isize
      5  call f0              ; နှစ်ဆ
      6  print
      7  ret
+
+fn f2 main (params 0)
+     0  call f1              ; ပရိုဂရမ်
+     1  ret
 ```
 
 How to read it:
@@ -75,14 +81,15 @@ How to read it:
   the listing; the artifact holds the index of the target instruction.
 - A function lists its locals, parameters first (`l0` is the parameter `န`), then the
   locals of the source, then slots the generator adds, such as `%list`, `%slice`, `%to`,
-  `%step`, `%dir`, `%text`, `%cell` and `%new`. The last function is `main`, which holds the sentences outside each
-  function.
+  `%step`, `%dir`, `%text`, `%cell` and `%new`. The start block is a function named `ပရိုဂရမ်`. The last function is `main`: it
+  sets the starting values of the top-level variables, calls the start block, and gives
+  back their text at the end.
 - A kind is written short: `isize` and `usize` for the platform-sized integers, `u8`,
   `i32` and so on, `f64`, `char`, `bool`, `isize*` for an address of an integer,
   `isize[3]` for a list of three integers, `text` and `text[..]` for owned text and a view
   of text. A value is written `21:isize`.
-- A variable has no instruction of its own. Reading `က` is `global_addr g0` to push the
-  address of its block, then `load isize` to read it. Writing is the address, the value,
+- A variable has no instruction of its own. Reading `က` is `local_addr l0` to push the
+  address of its block (`global_addr` for a top-level variable), then `load isize` to read it. Writing is the address, the value,
   then `store`. This is what gives each variable an address.
 - The local `ရလဒ်` is set to its default, `0`, at the start, and `ret` leaves its value
   on the operand stack for the caller.
@@ -95,9 +102,11 @@ holds the pieces of each text built when the program runs: a static text `t1`, o
 kind of a value that the program supplies (`isize`, `text`, `isize[3]`, ...).
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မြ" ဖြစ်ပါစေ။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၂၅ ဖြစ်ပါစေ။
 "{အမည်}: {အသက်}" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -107,35 +116,38 @@ kind of a value that the program supplies (`isize`, `text`, `isize[3]`, ...).
 ```console
 $ zakac codegen --asm program.zaka
 ; zakac asm listing v1, platform 64 bits
-globals
-  g0 အမည် text
-  g1 အသက် isize
 texts
   t0 "မြ"
   t1 ": "
 formats
   fmt0 text t1 isize
 
-fn f0 main (params 0)
+fn f0 ပရိုဂရမ် (params 0)
 locals
-  l0 %text text
-     0  global_addr g0       ; အမည်
+  l0 အမည် text
+  l1 အသက် isize
+  l2 %text text
+     0  local_addr l0        ; အမည်
      1  text t0
      2  pop
-     3  global_addr g1       ; အသက်
+     3  local_addr l1        ; အသက်
      4  push 25:isize
      5  store isize
-     6  local_addr l0        ; %text
-     7  global_addr g0       ; အမည်
-     8  global_addr g1       ; အသက်
+     6  local_addr l2        ; %text
+     7  local_addr l0        ; အမည်
+     8  local_addr l1        ; အသက်
      9  load isize
     10  format fmt0
     11  print_list text
-    12  local_addr l0        ; %text
+    12  local_addr l2        ; %text
     13  drop text
-    14  global_addr g0       ; အမည်
+    14  local_addr l0        ; အမည်
     15  drop text
     16  ret
+
+fn f1 main (params 0)
+     0  call f0              ; ပရိုဂရမ်
+     1  ret
 ```
 
 A list literal whose cells are each known when the program is compiled adds one more
@@ -145,8 +157,10 @@ frozen static block before `main` starts. `static_seq` points a plain list at on
 counted list or a struct copies its cells from one with `seq_addr` and `blit`:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် l သည် [၁၊ ၂] ဖြစ်ပါစေ။
 l ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -156,20 +170,24 @@ l ကို ပြသပါ။
 ```console
 $ zakac codegen --asm program.zaka
 ; zakac asm listing v1, platform 64 bits
-globals
-  g0 l isize[]
 seqs
   s0 isize[] [1:isize, 2:isize]
 
-fn f0 main (params 0)
-     0  global_addr g0       ; l
+fn f0 ပရိုဂရမ် (params 0)
+locals
+  l0 l isize[]
+     0  local_addr l0        ; l
      1  static_seq s0
      2  pop
-     3  global_addr g0       ; l
+     3  local_addr l0        ; l
      4  print_list isize[]
-     5  global_addr g0       ; l
+     5  local_addr l0        ; l
      6  drop isize[]
      7  ret
+
+fn f1 main (params 0)
+     0  call f0              ; ပရိုဂရမ်
+     1  ret
 ```
 
 `text t0` points `အမည်` at the static text, with no heap block. The template has a
@@ -355,15 +373,17 @@ distance for ends of each sign, and steps with `wrap add` or `wrap sub`, so
 ### A heap block in instructions
 
 A block from the heap, written to, read and given back (see [the
-heap](../../learn/pointers/heap.md)), and the instructions of `main`:
+heap](../../learn/pointers/heap.md)), and the instructions of its start block:
 
 ```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
 ပ + ၁ ၏ တန်ဖိုး ကို ၉ ဟု ထားပါ။
 ပ + ၁ ၏ တန်ဖိုး ကို ပြသပါ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -371,32 +391,34 @@ heap](../../learn/pointers/heap.md)), and the instructions of `main`:
 ```
 
 ```console
-fn f0 main (params 0)
-     0  global_addr g0       ; ပ
+fn f0 ပရိုဂရမ် (params 0)
+locals
+  l0 ပ isize*
+     0  local_addr l0        ; ပ
      1  push 0x0:ptr
      2  store isize*         ; ပ starts as ဗလာ
-     3  global_addr g0       ; ပ
+     3  local_addr l0        ; ပ
      4  push 2:usize
      5  alloc 8              ; 2 elements of 8 octets
      6  store isize*         ; keep the address in ပ
-     7  global_addr g0       ; ပ
+     7  local_addr l0        ; ပ
      8  load isize*
      9  push 7:isize
     10  store isize          ; ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ
-    11  global_addr g0       ; ပ
+    11  local_addr l0        ; ပ
     12  load isize*
     13  push 1:isize
     14  ptr_add 8            ; ပ + ၁
     15  push 9:isize
     16  store isize
-    17  global_addr g0       ; ပ
+    17  local_addr l0        ; ပ
     18  load isize*
     19  push 1:isize
     20  ptr_add 8
     21  load isize
     22  print
-    23  global_addr g0       ; ပ
-    24  global_addr g0       ; ပ
+    23  local_addr l0        ; ပ
+    24  local_addr l0        ; ပ
     25  load isize*
     26  free
     27  push 0x0:ptr

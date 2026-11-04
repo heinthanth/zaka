@@ -1,6 +1,7 @@
 mod common;
 
 use common::codes;
+use common::codes_as_is;
 use common::ok;
 use zakac_diagnostics::Code;
 
@@ -183,8 +184,12 @@ fn a_function_starts_outside_loops()
 #[test]
 fn return_needs_a_function()
 {
-    assert_eq!(codes("ပြန်ပေးပါ။"), [Code::ReturnOutsideFunction]);
-    assert_eq!(codes("၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။"), [Code::ReturnOutsideFunction]);
+    let start = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let bare = format!("ပြန်ပေးပါ။\n{start}");
+    assert_eq!(codes_as_is(&bare), [Code::TopLevelStmt, Code::ReturnOutsideFunction]);
+    let value = format!("၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\n{start}");
+    assert_eq!(codes_as_is(&value), [Code::TopLevelStmt, Code::ReturnOutsideFunction]);
+    ok("ပြန်ပေးပါ။");
 }
 
 #[test]
