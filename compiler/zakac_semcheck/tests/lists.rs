@@ -328,3 +328,28 @@ fn adds_in_front_of_a_cell_or_a_character_check_their_place()
     ];
     do_for!((line, code) in wrong, assert_eq!(check(line), [code], "{line}"));
 }
+
+#[test]
+fn replaces_of_a_range_check_their_text_and_value()
+{
+    let head = "ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။
+ကိန်းရှင် t သည် \"ab\" ဖြစ်ပါစေ။
+ကိန်းရှင် v သည် စာသား တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် t ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။";
+    let check = |line: &str| codes(&lines(&[head, line]));
+    let fine = [
+        "t ၏ အကွက် ၀ မှ ၁ ထိကို \"x\" ဖြင့် အစားထိုးပါ။",
+        "t ၏ အကွက် n မှ n ထိကို 'x' ဖြင့် အစားထိုးပါ။",
+        "t ၏ ၁ လုံးမြောက်စာလုံးမှ ၂ လုံးမြောက်စာလုံးထိကို v ဖြင့် အစားထိုးပါ။",
+        "t ၏ ၁ ခုမြောက်စာလုံးမှ n ခုမြောက်စာလုံးထိကို \"{n}\" ဖြင့် အစားထိုးပါ။",
+    ];
+    do_for!(line in fine, assert_eq!(check(line), [], "{line}"));
+    let wrong = [
+        ("l ၏ အကွက် ၀ မှ ၀ ထိကို \"x\" ဖြင့် အစားထိုးပါ။", Code::OperandKind),
+        ("v ၏ အကွက် ၀ မှ ၀ ထိကို \"x\" ဖြင့် အစားထိုးပါ။", Code::TextCannotChange),
+        ("t ၏ အကွက် ၀ မှ ၀ ထိကို ၅ ဖြင့် အစားထိုးပါ။", Code::KindMismatch),
+        ("t ၏ အကွက် \"a\" မှ ၀ ထိကို \"x\" ဖြင့် အစားထိုးပါ။", Code::CellNumberNotInt),
+        ("t ၏ အကွက် ၀ မှ မှန် ထိကို \"x\" ဖြင့် အစားထိုးပါ။", Code::CellNumberNotInt),
+    ];
+    do_for!((line, code) in wrong, assert_eq!(check(line), [code], "{line}"));
+}

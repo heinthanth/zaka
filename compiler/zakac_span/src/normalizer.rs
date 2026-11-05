@@ -92,7 +92,7 @@ fn normalize_cr(
 
     *cumulative_diff += 1;
     normalized_pos.push(NormalizedPos::new(out.len() as u32, *cumulative_diff));
-    return 2;
+    2
 }
 
 /// Return `true` if no char before `ch` can combine or reorder with it under

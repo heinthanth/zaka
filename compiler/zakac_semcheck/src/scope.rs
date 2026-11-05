@@ -6,6 +6,7 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
+use crate::consts::ConstVal;
 use crate::kind::DataKind;
 
 /// What a name allows besides reading it.
@@ -33,6 +34,9 @@ pub(crate) struct Binding
     /// `true` for a top-level declaration that other files can import.
     #[builder(default)]
     pub exported: bool,
+    /// The value of a constant, when the check works it out.
+    #[builder(default)]
+    pub value: ConstVal,
 }
 
 /// Block scopes from the outermost to the innermost.
@@ -82,6 +86,25 @@ impl Scopes
     {
         self.0.iter().rev().find_map(|scope| scope.get(name)).copied()
     }
+
+    /// Give a name of the innermost scope its constant value.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    /// * `value` - The value.
+    pub fn set_value(&mut self, name: &str, value: ConstVal)
+    {
+        let found = self.0.last_mut().and_then(|scope| scope.get_mut(name));
+        do_if!(let Some(binding) = found, binding.value = value);
+    }
+
+    /// The number of open scopes; 1 at the top level of a file.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    pub fn depth(&self) -> usize { self.0.len() }
 
     /// Mark a name of the innermost scope as exported.
     ///

@@ -342,7 +342,7 @@ fn node_view(state: AppState, node: GraphNode) -> impl IntoView
     let range = node.range;
     let tone = tern!(
         node.literal,
-        format!("{} {}", ClassName::GRAPH_VALUE, value_class(&node.label)),
+        format!("{} {}", ClassName::GRAPH_VALUE, value_class(node.label)),
         ClassName::GRAPH_VALUE.to_string()
     );
     let value = (!node.value.is_empty())

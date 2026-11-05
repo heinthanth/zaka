@@ -296,7 +296,7 @@ fn build_output_path(
         ArtifactFormat::Raw => caps.raw_extension,
         ArtifactFormat::Text => caps.text_extension,
     };
-    return Output::File(path.join(format!("{base}{ext}")));
+    Output::File(path.join(format!("{base}{ext}")))
 }
 
 /// Basename used when expanding a dir output path.

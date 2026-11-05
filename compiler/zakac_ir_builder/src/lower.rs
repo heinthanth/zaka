@@ -625,6 +625,7 @@ impl Lowerer<'_>
                 let dest = self.dest(&n.list);
                 out.push(Stmt::RemoveCell { dest, kind, span: n.span })
             }
+            st::Stmt::Replace(n) => out.push(self.replace_text(n)),
             st::Stmt::Struct(_) => (),
             st::Stmt::Import(n) => self.import(n),
         }
@@ -850,6 +851,26 @@ impl Lowerer<'_>
         let (index, value) = (self.expr(&cell.index), self.owned(value, cells));
         let dest = self.dest(&cell.list);
         Stmt::Insert { dest, kind, index, first: cell.first, value, span }
+    }
+
+    /// Lower a replace of a range of text. The value is read where it is, as
+    /// for an add to text.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn replace_text(&mut self, n: &st::ReplaceStmt) -> Stmt
+    {
+        let kind = self.kind_of(&n.text);
+        let (start, end) = (self.expr(&n.start), self.expr(&n.end));
+        let value = self.expr(&n.value);
+        let dest = self.dest(&n.text);
+        #[rustfmt::skip]
+        return Stmt::Replace { dest, kind, start, end, chars: n.chars, value, span: n.span };
     }
 
     /// Lower a heap reallocation.
@@ -2127,6 +2148,7 @@ impl Lowerer<'_>
             | VerbOp::Assign
             | VerbOp::Return
             | VerbOp::AddCell
+            | VerbOp::Replace
             | VerbOp::Cell
             | VerbOp::CharAt
             | VerbOp::CharNth

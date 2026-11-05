@@ -17,7 +17,7 @@ use zakac_span::source_map::SourceMap;
 fn lower_pair(main: &str, lib: &str) -> Lowered
 {
     let mut loader = MemFileLoader::new();
-    loader.insert("/m/main.zaka", &in_start_block(main));
+    loader.insert("/m/main.zaka", in_start_block(main));
     loader.insert("/m/lib.zaka", lib);
     let mut sm = SourceMap::with_loader(Arc::new(loader));
     let file = sm.load_file(Path::new("/m/main.zaka")).unwrap();
@@ -91,7 +91,7 @@ fn the_check_of_imported_values_does_not_hang_on_the_fold_options()
     let lib = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ * ၃ ဖြစ်ပါစေ။";
     let main = "\"lib.zaka\" မှ က ကို ထည့်သွင်းပါ။\nက ကို ပြသပါ။";
     let mut loader = MemFileLoader::new();
-    loader.insert("/m/main.zaka", &in_start_block(main));
+    loader.insert("/m/main.zaka", in_start_block(main));
     loader.insert("/m/lib.zaka", lib);
     let mut sm = SourceMap::with_loader(Arc::new(loader));
     let file = sm.load_file(Path::new("/m/main.zaka")).unwrap();

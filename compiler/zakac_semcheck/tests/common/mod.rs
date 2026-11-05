@@ -42,12 +42,12 @@ pub fn check_as_is(text: &str, options: &SemcheckOptions) -> Checked
     let mut sm = SourceMap::new();
     let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
     let lexed = lex(&file, &LexerOptions::default());
-    let parsed = parse(&file, &lexed);
+    let mut parsed = parse(&file, &lexed);
     let mut front = lexed.diagnostics;
     front.extend(parsed.diagnostics);
     let msgs: Vec<&str> = front.iter().map(|d| d.message.as_str()).collect();
     assert!(front.is_empty(), "front-end errors in {text}: {msgs:?}");
-    let out = semcheck(&parsed.program, options);
+    let out = semcheck(&mut parsed.program, options);
     Checked { file, program: parsed.program, out }
 }
 

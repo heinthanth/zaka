@@ -97,6 +97,10 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
         {
             dest_expr(dest).into_iter().chain([index, value]).collect()
         }
+        Stmt::Replace { dest, start, end, value, .. } =>
+        {
+            dest_expr(dest).into_iter().chain([start, end, value]).collect()
+        }
         Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => Vec::new(),
     }
 }
@@ -219,6 +223,10 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
         | Stmt::Insert { dest: d, index, value, .. } =>
         {
             dest_expr_mut(d).into_iter().chain([index, value]).collect()
+        }
+        Stmt::Replace { dest: d, start, end, value, .. } =>
+        {
+            dest_expr_mut(d).into_iter().chain([start, end, value]).collect()
         }
         Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => Vec::new(),
     }

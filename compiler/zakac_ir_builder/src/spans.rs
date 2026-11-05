@@ -123,6 +123,14 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             dest(d, f);
             *span = f(*span);
         }
+        Stmt::Replace { dest: d, start, end, value, span, .. } =>
+        {
+            dest(d, f);
+            expr(start, f);
+            expr(end, f);
+            expr(value, f);
+            *span = f(*span);
+        }
         Stmt::SetChar { dest: d, index, value, span, .. }
         | Stmt::Insert { dest: d, index, value, span, .. } =>
         {

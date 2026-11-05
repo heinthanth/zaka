@@ -169,8 +169,10 @@ ZK0717. The artifact keeps the tree and adds a table from each expression to its
 2 (the add)  isize
 ```
 
-An integer written with no kind is an `ကိန်းပြည့်` (`isize` in messages). See [Names and
-kinds](../internals/semcheck.md).
+An integer written with no kind is an `ကိန်းပြည့်` (`isize` in messages).
+This stage also works out each list count written as an expression, such as
+`အကွက် N * ၂ ခုရှိသော`, with the math the folding step uses, and writes it back as a number,
+so each later stage sees the count. See [Names and kinds](../internals/semcheck.md).
 
 ### IR builder and folding
 

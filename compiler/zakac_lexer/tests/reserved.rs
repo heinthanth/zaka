@@ -226,6 +226,20 @@ fn list_words_lex_and_split()
 }
 
 #[test]
+fn replace_words_lex_and_split()
+{
+    assert_eq!(lookup("အစားထိုးပါ"), Some(Kw::Replace));
+    assert_eq!(lookup("လုံးမြောက်"), Some(Kw::Ordinal));
+    assert_eq!(lookup("ထိ"), Some(Kw::Upto));
+    let kws = |word| {
+        split(word).expect("splits").iter().map(|(kw, _)| *kw).collect::<Vec<Kw>>()
+    };
+    assert_eq!(kws("လုံးမြောက်စာလုံးမှ"), [Kw::Ordinal, Kw::CharKind, Kw::From]);
+    assert_eq!(kws("လုံးမြောက်စာလုံးထိကို"), [Kw::Ordinal, Kw::CharKind, Kw::Upto, Kw::Ko]);
+    assert_eq!(kws("ထိကို"), [Kw::Upto, Kw::Ko]);
+}
+
+#[test]
 fn slice_words_lex_whole()
 {
     assert_eq!(lookup("တစ်စိတ်တစ်ပိုင်း"), Some(Kw::Part));

@@ -221,6 +221,10 @@ pub(crate) struct Parser<'t>
     /// declaration that leaves it out.
     #[builder(default)]
     pub(crate) classifiers: HashMap<&'t str, &'t str>,
+    /// Whether a list count is being parsed: its `ရှိသော` closes the count,
+    /// so no struct literal starts inside it.
+    #[builder(default)]
+    pub(crate) in_count: bool,
     /// Whether a statement other than an import has been parsed at the top
     /// level, so a later import is out of place.
     #[builder(default)]

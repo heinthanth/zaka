@@ -32,6 +32,7 @@ use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
 use zakac_semcheck::kind::Width;
+use zakac_semcheck::structs::StructKind;
 
 use crate::mem::Mem;
 use crate::mem::Origin;
@@ -1166,12 +1167,13 @@ impl Machine
                 let addr = self.pop_ptr("own")?;
                 self.own_value(addr, kind)
             }
-            Op::ToHeap(kind) => self.to_heap(kind),
+            Op::ToHeap(kind) => self.copy_to_heap(kind),
             Op::AddCell(kind) => self.add_cell(kind),
             Op::SetChar { first } => self.set_char(first),
             Op::AddText(kind) => self.add_text(kind),
             Op::InsertCell { kind, first } => self.insert_cell(kind, first),
             Op::InsertText { kind, first } => self.insert_text(kind, first),
+            Op::ReplaceText { kind, chars } => self.replace_text(kind, chars),
             Op::RemoveCell(kind) =>
             {
                 let at = self.pop_ptr("remove_cell")?;
@@ -2202,7 +2204,7 @@ impl Machine
     /// # Returns
     ///
     /// `Ok`, a trap a read hits, or `OutOfMem`.
-    fn to_heap(&mut self, kind: DataKind) -> Step
+    fn copy_to_heap(&mut self, kind: DataKind) -> Step
     {
         let src = self.pop_ptr("to_heap")?;
         let dst = self.pop_ptr("to_heap")?;
@@ -2378,6 +2380,69 @@ impl Machine
         edited.splice(split..split, added);
         self.own_value(at, DataKind::TEXT)?;
         self.put_text(at, &edited)
+    }
+
+    /// Pop a value of a kind, a character or the address of text or a view of
+    /// text, then the last and the first number of a range, then the address
+    /// of text, and put the u8s of the value in place of the range, both ends
+    /// included. The text takes a block of its own first when its room is 0.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the value.
+    /// * `chars` - Whether the numbers count characters from 1, not u8 cells
+    ///   from 0.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, `IndexOutOfRange` or `CharOutOfRange` for a number outside the
+    /// text, `EndBeforeStart`, `TextCut` for an edge inside a character, or a
+    /// trap a read or the allocation hits.
+    fn replace_text(&mut self, kind: DataKind, chars: bool) -> Step
+    {
+        let value = self.pop()?;
+        let added = self.octets_of(value, kind)?;
+        let end = self.pop()?;
+        let start = self.pop()?;
+        let at = self.pop_ptr("replace_text")?;
+        let text = text_at(&self.mem, at)?;
+        let (from, to) = tern!(
+            chars,
+            char_span(&text, start, end)?,
+            self.cell_span(at, &text, start, end)?
+        );
+        let mut edited = text.into_bytes();
+        edited.splice(from..to, added);
+        self.own_value(at, DataKind::TEXT)?;
+        self.put_text(at, &edited)
+    }
+
+    /// The u8 offsets of a range of u8 cells of text, counted from 0, both
+    /// ends included.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address of the text.
+    /// * `text` - Its characters.
+    /// * `start` - The first cell.
+    /// * `end` - The last cell.
+    ///
+    /// # Returns
+    ///
+    /// The start and the end past the last cell, or `IndexOutOfRange`,
+    /// `EndBeforeStart`, or `TextCut` at an edge inside a character.
+    fn cell_span(
+        &self, at: u64, text: &str, start: Value, end: Value,
+    ) -> Result<(usize, usize), TrapKind>
+    {
+        let len = text.len() as u64;
+        let (lo, hi) = (cell_of(start, len, 0)?, cell_of(end, len, 0)?);
+        in_order(lo, hi, 0)?;
+        let (base, _) = slice_parts(&self.mem, at)?;
+        let cut =
+            [lo, hi + 1].into_iter().find(|n| !text.is_char_boundary(*n as usize));
+        ret_if!(let Some(n) = cut, Err(TrapKind::TextCut { addr: base + n }));
+        Ok((lo as usize, hi as usize + 1))
     }
 
     /// Pop the address of a new cell, a cell number and the address of a
@@ -2599,7 +2664,8 @@ impl Machine
     }
 
     /// Whether the values of a kind at two addresses are equal; for a list,
-    /// whether each cell equals the cell at the same place.
+    /// whether each cell equals the cell at the same place, and for a struct,
+    /// whether each field equals the same field of the other.
     ///
     /// # Arguments
     ///
@@ -2628,6 +2694,7 @@ impl Machine
             }
             return Ok(true);
         }
+        ret_if!(let Some(s) = kind.as_struct(), self.fields_equal(l, r, s));
         let Some(list) = kind.as_list()
         else
         {
@@ -2638,6 +2705,30 @@ impl Machine
         for at in (0..u64::from(list.len)).map(|i| i * stride)
         {
             ret_if!(!self.cells_equal(l + at, r + at, list.cell)?, Ok(false));
+        }
+        Ok(true)
+    }
+
+    /// Whether each field of two structs of one kind is equal; the padding
+    /// between the fields takes no part.
+    ///
+    /// # Arguments
+    ///
+    /// * `l` - The address of the first struct.
+    /// * `r` - The address of the second struct.
+    /// * `kind` - The struct kind.
+    ///
+    /// # Returns
+    ///
+    /// Whether the two are equal, or the trap a read hits.
+    fn fields_equal(&self, l: u64, r: u64, kind: &StructKind)
+    -> Result<bool, TrapKind>
+    {
+        let platform = self.module.platform_bits;
+        for (at, (_, field)) in kind.fields().iter().enumerate()
+        {
+            let offset = u64::from(kind.offset(at, platform));
+            ret_if!(!self.cells_equal(l + offset, r + offset, *field)?, Ok(false));
         }
         Ok(true)
     }
@@ -2803,6 +2894,50 @@ fn char_of(value: Value, len: u64, first: u8) -> Result<u64, TrapKind>
         }
         other => other,
     })
+}
+
+/// The u8 offsets of a range of characters of text, counted from 1, both
+/// ends included.
+///
+/// # Arguments
+///
+/// * `text` - The text.
+/// * `start` - The first character.
+/// * `end` - The last character.
+///
+/// # Returns
+///
+/// The start and the end past the last character, or `CharOutOfRange` or
+/// `EndBeforeStart`.
+fn char_span(text: &str, start: Value, end: Value) -> Result<(usize, usize), TrapKind>
+{
+    let count = text.chars().count() as u64;
+    let (lo, hi) = (char_of(start, count, 1)?, char_of(end, count, 1)?);
+    in_order(lo, hi, 1)?;
+    let offset =
+        |n: u64| text.char_indices().nth(n as usize).map_or(text.len(), |(i, _)| i);
+    Ok((offset(lo), offset(hi + 1)))
+}
+
+/// Check that the last number of a range does not come before the first.
+///
+/// # Arguments
+///
+/// * `lo` - The first number, from 0.
+/// * `hi` - The last number, from 0.
+/// * `first` - The number the count starts at: 0 or 1.
+///
+/// # Returns
+///
+/// `Ok`, or `EndBeforeStart` with the numbers as written.
+fn in_order(lo: u64, hi: u64, first: u8) -> Result<(), TrapKind>
+{
+    let written = |n: u64| i128::from(n) + i128::from(first);
+    ret_if!(
+        hi < lo,
+        Err(TrapKind::EndBeforeStart { start: written(lo), end: written(hi) })
+    );
+    Ok(())
 }
 
 /// The number of a place a value goes in front of, from 0: a cell or a

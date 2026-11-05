@@ -222,7 +222,7 @@ fn write_out(src: &str, spans: &[(usize, usize)], moves: &[bool]) -> Wrapped
         (0..spans.len()).filter(|&i| !moves[i]).map(|i| (starts[i], ends[i])).collect();
     let moved: Vec<usize> = (0..spans.len()).filter(|&i| moves[i]).collect();
     let mut out = Out::default();
-    let top_end = kept.iter().map(|&(from, to)| trim_end_at(src, from, to)).last();
+    let top_end = kept.iter().map(|&(from, to)| trim_end_at(src, from, to)).next_back();
     for (n, &(from, to)) in kept.iter().enumerate()
     {
         let to = tern!(n + 1 == kept.len(), top_end.unwrap_or(to), to);

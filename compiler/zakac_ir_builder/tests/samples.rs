@@ -119,6 +119,11 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 expr_places(index, out);
                 expr_places(value, out);
             }
+            Stmt::Replace { dest, start, end, value, .. } =>
+            {
+                dest_places(dest, out);
+                [start, end, value].into_iter().for_each(|e| expr_places(e, out));
+            }
         }
     }
 }

@@ -210,7 +210,8 @@ parser reads a lexeme through the span when it needs one.
 `Kw` is one enum for all reserved words. Its groups: particles (`Thi`, `Ko`, `Hnint`,
 `Hpjint`, `Htet`, `Auk`, `Hu`, `Into`, and more; `Kw::is_particle`), verbs and verb-nouns
 (`Sum`, `Equal`, `Not`, `And`, ...), statement words (`Print`, `Assign`, `Add`, `Remove`,
-`If`, `While`), list words (`Cell`, `CellCount`, `LastCell`, `LastChar`, `Before`),
+`Replace`, `If`, `While`), list words (`Cell`, `CellCount`, `LastCell`, `LastChar`,
+`Before`, `Upto`; `Ordinal` for both `ခုမြောက်` and `လုံးမြောက်`),
 kind names (`IntKind`), pieces that exist so the phrase joiner can see them (`*Head`,
 `*Tail`), and joined phrases (`Divide`, `BitAnd`, `Shift`, `Convert`, `CallResult`,
 `BlockOpen`, `FnOpen`, `BlockClose`, ...) that the joiner alone makes.

@@ -169,6 +169,15 @@ pub enum TrapKind
         /// The number of characters.
         len: u64,
     },
+    /// A replace statement named a range whose last cell or character
+    /// comes before its first.
+    EndBeforeStart
+    {
+        /// The first number, as written.
+        start: i128,
+        /// The last number, as written.
+        end: i128,
+    },
     /// With `--overflow stop`, an integer operation whose result does not fit
     /// its kind.
     Overflow
@@ -258,6 +267,10 @@ impl fmt::Display for TrapKind
                 let last = i128::from(*len) + i128::from(*first) - 1;
                 t!("vm.trap.char_out_of_range", index = index, lo = first, hi = last)
             }
+            TrapKind::EndBeforeStart { start, end } =>
+            {
+                t!("vm.trap.end_before_start", start = start, end = end)
+            }
             TrapKind::NoCellToRemove => t!("vm.trap.no_cell_to_remove"),
             TrapKind::NoCharToRemove => t!("vm.trap.no_char_to_remove"),
             TrapKind::NoPlaceToInsert { index, first, len } =>
@@ -317,6 +330,7 @@ impl TrapKind
             | TrapKind::MixedBlocks
             | TrapKind::IndexOutOfRange { .. }
             | TrapKind::CharOutOfRange { .. }
+            | TrapKind::EndBeforeStart { .. }
             | TrapKind::NoCellToRemove
             | TrapKind::NoCharToRemove
             | TrapKind::NoPlaceToInsert { .. }

@@ -60,8 +60,7 @@ impl ToSexpr for Kind
         // writes its mark after the kind inside it, in the order of the
         // Burmese words.
         let skip = usize::from(self.base == BaseKind::Opaque);
-        let marks: Vec<String> =
-            self.wraps.iter().skip(skip).map(|w| wrap_mark(*w)).collect();
+        let marks: Vec<String> = self.wraps.iter().skip(skip).map(wrap_mark).collect();
         // A borrow takes the place of the `*` of the last address level.
         let last = marks.iter().rposition(|m| m == "*").filter(|_| self.borrowed);
         let mark = |(at, m): (usize, &String)| {
@@ -165,6 +164,11 @@ impl ToSexpr for Stmt
             {
                 list(tern!(s.chars, "remove_char", "remove"), [s.list.to_sexpr()])
             }
+            Stmt::Replace(s) =>
+            {
+                let parts = [&s.text, &s.start, &s.end, &s.value].map(|e| e.to_sexpr());
+                list(tern!(s.chars, "replace_chars", "replace"), parts)
+            }
             Stmt::Struct(s) => exported(s.exported, struct_sexpr(s)),
             Stmt::Import(s) => import_sexpr(s),
         }
@@ -232,13 +236,14 @@ fn list(head: &str, parts: impl IntoIterator<Item = String>) -> String
 /// # Returns
 ///
 /// The mark.
-fn wrap_mark(w: Wrap) -> String
+fn wrap_mark(w: &Wrap) -> String
 {
     match w
     {
         Wrap::Ptr => "*".into(),
         Wrap::RawPtr => "^".into(),
         Wrap::List(Cells::Fixed(n)) => format!("[{n}]"),
+        Wrap::List(Cells::Expr(e)) => format!("[{}]", e.to_sexpr()),
         Wrap::List(Cells::Inferred) => "[]".into(),
         Wrap::Slice => "[][..]".into(),
         Wrap::View => "[..]".into(),

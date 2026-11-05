@@ -297,6 +297,15 @@ an `AddStmt` with `before` set, whose `list` is the cell or the character operan
 S-expressions are `(add l 3)`, `(insert (cell l 1) 3)`, `(remove l)` and
 `(remove_char t)`.
 
+A replace starts as a cell (`push_index`) or an n-th character (`push_char_nth`). When
+`မှ` follows and `at_range_end` finds a `ထိ` (`Kw::Upto`) before the full stop or an
+`အထိ`, `push_range` reads the end (and, for characters, `လုံးမြောက်စာလုံး`), then `ထိ`
+and `ကို`, and pushes the range as one operand with the slot `Upto`; with no `ထိ`, `မှ`
+keeps making a counted loop. The `အစားထိုးပါ` row takes `[Upto, Hpjint]`, so the value
+is read as each operand is, and a range before another verb is ZK0206.
+`လုံးမြောက်` is a second spelling of `ခုမြောက်` (`Kw::Ordinal`). The S-expressions are
+`(replace t 0 4 v)` and `(replace_chars t 1 3 v)`.
+
 Blocks and branches share `parse_branch`: with no opener, it reads one sentence into a
 `BlockStmt { single: true }`. Inside an arm of a conditional that sentence cannot itself
 start with `အကယ်၍` (ZK0215). The parser counts the blocks around a statement in `depth`,
@@ -371,6 +380,13 @@ explorer, is parsed once with `Loaded::single`, and `refuse_imports` reports eac
 in it (ZK0232). `Loaded::single` is also what the `run_phases` function of each later
 stage uses, so a test that compiles a bare string needs no file at all; the stage
 commands and `zakac run` call `load` and then `check_loaded` or `run_loaded`.
+
+A list count in digits is `Cells::Fixed`; each other count is `Cells::Expr`, a full
+expression (`parse_count`, through `parse_expr`), which the check works out. The lookahead
+(`count_prefix_len`) runs from `အကွက်` to the `ခုရှိသော` or `ရှိသော` that closes it, counting
+the counts nested inside it (as in a size), and stops at the full stop. While a count is
+parsed, `in_count` holds and no struct literal starts, since a count's own `ရှိသော` would
+read as the end of one (`N - ၁ ရှိသော`).
 
 The imported files go into each later artifact under `imports`, in reading order. That
 order matches the order the source map holds them in after the file that is

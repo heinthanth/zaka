@@ -350,6 +350,13 @@ impl Walk
                 self.expr(index, Use::Read, false);
                 self.expr(value, value_use(value.kind), false);
             }
+            Stmt::Replace { dest, start, end, value, .. } =>
+            {
+                self.dest(dest, true);
+                self.expr(start, Use::Read, false);
+                self.expr(end, Use::Read, false);
+                self.expr(value, Use::Read, false);
+            }
             Stmt::SetChar { dest, index, value, .. } =>
             {
                 self.dest(dest, false);

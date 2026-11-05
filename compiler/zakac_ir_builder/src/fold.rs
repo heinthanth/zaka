@@ -393,6 +393,13 @@ impl Folder
                 self.drop_value(index);
                 self.drop_value(value);
             }
+            Stmt::Replace { dest, start, end, value, .. } =>
+            {
+                self.dest(dest);
+                self.drop_value(start);
+                self.drop_value(end);
+                self.drop_value(value);
+            }
         }
         out.push(s);
     }

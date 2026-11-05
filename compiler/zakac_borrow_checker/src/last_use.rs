@@ -606,6 +606,7 @@ fn written_places(s: &Stmt) -> Vec<Place>
         | Stmt::RemoveCell { dest, .. }
         | Stmt::SetChar { dest, .. }
         | Stmt::Insert { dest, .. }
+        | Stmt::Replace { dest, .. }
         | Stmt::AddText { dest, .. } => match dest
         {
             Dest::Slot(place) => vec![*place],

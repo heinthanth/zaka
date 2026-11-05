@@ -241,6 +241,25 @@ fn an_add_in_front_of_a_place_past_the_end_traps()
     assert_eq!(kind, TrapKind::NoPlaceToInsert { index: 4, first: 1, len: 2 });
 }
 
+#[test]
+fn a_replace_of_a_bad_range_traps()
+{
+    let head = "ကိန်းရှင် t သည် \"ကခ\" ဖြစ်ပါစေ။\n";
+    let trap_of =
+        |line: &str| trapped(&format!("{head}{line}"), &RunOptions::default()).1;
+    let backward = trap_of("t ၏ အကွက် ၂ မှ ၁ ထိကို \"x\" ဖြင့် အစားထိုးပါ။");
+    assert_eq!(backward, TrapKind::EndBeforeStart { start: 2, end: 1 });
+    assert!(backward.to_string().contains("from 2 to 1 ends before"), "{backward}");
+    let past = trap_of("t ၏ အကွက် ၀ မှ ၉ ထိကို \"x\" ဖြင့် အစားထိုးပါ။");
+    assert_eq!(past, TrapKind::IndexOutOfRange { index: 9, first: 0, len: 6 });
+    let cut = trap_of("t ၏ အကွက် ၀ မှ ၀ ထိကို \"x\" ဖြင့် အစားထိုးပါ။");
+    assert!(matches!(cut, TrapKind::TextCut { .. }), "{cut:?}");
+    let chars = trap_of("t ၏ ၁ လုံးမြောက်စာလုံးမှ ၃ လုံးမြောက်စာလုံးထိကို \"x\" ဖြင့် အစားထိုးပါ။");
+    assert_eq!(chars, TrapKind::CharOutOfRange { index: 3, first: 1, len: 2 });
+    let turned = trap_of("t ၏ ၂ လုံးမြောက်စာလုံးမှ ၁ လုံးမြောက်စာလုံးထိကို \"x\" ဖြင့် အစားထိုးပါ။");
+    assert_eq!(turned, TrapKind::EndBeforeStart { start: 2, end: 1 });
+}
+
 /// A list `l` of three cells, a count `n` of four, and a slice `s` of the
 /// second cell of `l`.
 const SLICED: &str = "ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။

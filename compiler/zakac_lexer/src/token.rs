@@ -395,6 +395,8 @@ pub enum Kw
     Add,
     /// `ဖျက်ပါ`, which removes the last cell of a list
     Remove,
+    /// `အစားထိုးပါ`, which replaces a range of text with a value
+    Replace,
 
     // control
     /// `အကယ်၍`
@@ -518,7 +520,8 @@ pub enum Kw
     /// `အရှေ့တွင်`, after `<cell> ၏` or `<character> ၏` in an add statement:
     /// the new value goes in front of it
     Before,
-    /// `ခုမြောက်`
+    /// `ခုမြောက်` or `လုံးမြောက်`, after the number of a cell or a character
+    /// counted from 1
     Ordinal,
     /// `ခုရှိသော` or `ရှိသော`
     Having,
@@ -528,6 +531,9 @@ pub enum Kw
     Part,
     /// `မှစ၍`, between the start and the length of a range
     StartingAt,
+    /// `ထိ`, after the last cell or character of the range a replace
+    /// statement changes; no particle, so `ထိကို` splits into two words
+    Upto,
     /// `ကွက်`, after the length of a range
     CellWord,
 

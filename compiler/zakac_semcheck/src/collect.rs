@@ -52,7 +52,7 @@ fn add_fn(
 {
     let n = &decl.name.name;
     ret_if!(fns.contains_key(n), diags.push(duplicate_function(decl.name.span, n)));
-    fns.insert(n.clone(), sig_of(decl, structs));
+    fns.insert(*n, sig_of(decl, structs));
 }
 
 /// The parameter and result kinds of a declaration.

@@ -308,6 +308,13 @@ impl IrTree<'_>
                 node.children.push(self.expr(value));
                 node
             }
+            Stmt::Replace { dest, start, end, chars, value, .. } =>
+            {
+                let name = tern!(*chars, "replace_chars", "replace");
+                let mut node = self.heap(name, dest, Some(start), None, span);
+                node.children.extend([self.expr(end), self.expr(value)]);
+                node
+            }
         }
     }
 

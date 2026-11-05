@@ -7,6 +7,7 @@ use strum::AsRefStr;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::expr::Expr;
 use crate::expr::Ident;
 
 /// The base of a kind, without its size or sign.
@@ -44,19 +45,23 @@ impl BaseKind
 }
 
 /// The cell count of a list kind.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Cells
 {
     /// `အကွက် <n> ခုရှိသော`: a count written before the kind.
     Fixed(u32),
+    /// `အကွက် <expr> ခုရှိသော`: a count that names constants or works one
+    /// out, such as `N * ၂`. The check works it out with the folder's math
+    /// and writes it back as [`Cells::Fixed`].
+    Expr(Box<Expr>),
     /// No count, `စာရင်း`: a plain list, whose count is known at run time.
     Inferred,
 }
 
 /// One wrap around the base of a kind, such as the `လိပ်စာ` of a pointer or
 /// the `စာရင်း` of a list.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Wrap
 {
@@ -74,7 +79,7 @@ pub enum Wrap
 
 /// A data kind as written in the source, such as
 /// `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်`.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Builder)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Builder)]
 pub struct Kind
 {
     /// The base kind.
@@ -170,6 +175,6 @@ impl Kind
     /// kind is plain or its outer wrap is a list.
     pub fn outer_ptr_wrap(&self) -> Option<Wrap>
     {
-        self.wraps.last().copied().filter(|w| matches!(w, Wrap::Ptr | Wrap::RawPtr))
+        self.wraps.last().filter(|w| matches!(w, Wrap::Ptr | Wrap::RawPtr)).cloned()
     }
 }

@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 use bon::Builder;
 use zakac_ast::expr::Expr;
@@ -27,6 +28,7 @@ use zakac_ast::stmt::Param;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::RemoveStmt;
+use zakac_ast::stmt::ReplaceStmt;
 use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::SizeArg;
@@ -49,6 +51,12 @@ use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::collect::collect_fns;
+use crate::consts::ConstVal;
+use crate::consts::CountTable;
+use crate::consts::Folded;
+use crate::consts::KnownConsts;
+use crate::consts::open_structs;
+use crate::consts::write_counts;
 use crate::kind::DataKind;
 use crate::list::KindUse;
 use crate::ops::Want;
@@ -113,17 +121,56 @@ pub struct SemcheckOutput
     pub diagnostics: Vec<Diagnostic>,
 }
 
-/// Check names, scopes and data kinds of a program.
+/// Check names, scopes and data kinds of a program, and work out each list
+/// count written as an expression. A count takes each expression that the
+/// folder reduces to an integer; the check writes it back into the program as
+/// digits, so each later stage sees a count of digits.
+///
+/// A count can wait for another count, through a size, or name a top-level
+/// constant declared below it; so the check runs again while a run works out
+/// a count or a constant it did not have, and the last run gives the output.
 ///
 /// # Arguments
 ///
-/// * `program` - The tree.
+/// * `program` - The tree; its counts become digits.
 /// * `options` - The options.
 ///
 /// # Returns
 ///
 /// The kind table and the diagnostics.
-pub fn semcheck(program: &Program, options: &SemcheckOptions) -> SemcheckOutput
+pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOutput
+{
+    let mut known = KnownConsts::new();
+    loop
+    {
+        let (mut out, counts, found) = check_once(program, options, known.clone());
+        let written = write_counts(program, &counts);
+        if counts.is_empty() || (written == 0 && found == known)
+        {
+            out.diagnostics
+                .extend(counts.into_values().filter_map(Result::err).flatten());
+            out.diagnostics.sort_by_key(|d| d.span.lo);
+            return out;
+        }
+        known = found;
+    }
+}
+
+/// Run the check once.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+/// * `options` - The options.
+/// * `known` - The top-level constants an earlier run found.
+///
+/// # Returns
+///
+/// The output, the list counts the run met, and the top-level constants it
+/// found.
+fn check_once(
+    program: &Program, options: &SemcheckOptions, known: KnownConsts,
+) -> (SemcheckOutput, CountTable, KnownConsts)
 {
     let mut diags = Vec::new();
     let structs = collect_structs(program, &mut diags);
@@ -134,12 +181,14 @@ pub fn semcheck(program: &Program, options: &SemcheckOptions) -> SemcheckOutput
     #[rustfmt::skip]
     let mut checker = Checker::builder().fns(unit_fns[0].clone()).unit_fns(unit_fns)
         .homes(homes).unit_names(unit_names(program)).structs(structs)
-        .diags(diags).platform(options.platform_bits).no_raw(options.no_raw).build();
+        .diags(diags).platform(options.platform_bits).no_raw(options.no_raw)
+        .known(known).open_structs(open_structs(program)).build();
     checker.scopes.push();
     checker.visit_program(program);
     checker.diags.sort_by_key(|d| d.span.lo);
     #[rustfmt::skip]
-    return SemcheckOutput::builder().kinds(checker.kinds).structs(checker.structs).diagnostics(checker.diags).build();
+    let out = SemcheckOutput::builder().kinds(checker.kinds).structs(checker.structs).diagnostics(checker.diags).build();
+    (out, checker.counts, checker.found)
 }
 
 /// The function whose block is being checked.
@@ -198,6 +247,21 @@ pub(crate) struct Checker
     /// counted list takes `[]`.
     #[builder(default)]
     pub decl_value: bool,
+    /// Each list count written as an expression that this run met.
+    #[builder(default)]
+    pub counts: CountTable,
+    /// The top-level constants with a value that an earlier run found.
+    #[builder(default)]
+    pub known: KnownConsts,
+    /// The top-level constants with a value that this run finds.
+    #[builder(default)]
+    pub found: KnownConsts,
+    /// The structs whose size waits for a count still open.
+    #[builder(default)]
+    pub open_structs: HashSet<Name>,
+    /// The value of each constant list or struct this run found.
+    #[builder(default)]
+    pub aggs: Vec<Folded>,
 }
 
 impl Checker
@@ -448,7 +512,7 @@ impl Checker
         let marked = args.iter().zip(edits).filter(|(_, m)| **m).map(|(a, _)| a);
         let roots: Vec<(Name, Span)> = marked
             .filter_map(|a| place_of(a).and_then(|p| self.owner_name(p)))
-            .map(|n| (n.name.clone(), n.span))
+            .map(|n| (n.name, n.span))
             .collect();
         for (root, at) in roots
         {
@@ -920,13 +984,13 @@ fn access_error(access: Access, target: &NameExpr) -> Option<Diagnostic>
 /// # Returns
 ///
 /// The names, in source order.
-fn names_in(e: &Expr) -> Vec<Name>
+pub(crate) fn names_in(e: &Expr) -> Vec<Name>
 {
     /// The walker that collects the names.
     struct Names(Vec<Name>);
     impl Visitor for Names
     {
-        fn visit_name(&mut self, n: &NameExpr) { self.0.push(n.name.clone()) }
+        fn visit_name(&mut self, n: &NameExpr) { self.0.push(n.name) }
     }
     let mut found = Names(Vec::new());
     found.visit_expr(e);
@@ -943,6 +1007,14 @@ impl Visitor for Checker
         let access = tern!(n.is_const, Access::Const, Access::Var);
         self.declare(&n.name, kind, access);
         do_if!(n.exported, self.scopes.mark_exported(&n.name.name));
+        let init = n.init.as_ref().filter(|_| n.is_const);
+        let value = init.map_or(ConstVal::Unknown, |e| self.const_value(e, kind));
+        self.scopes.set_value(&n.name.name, value);
+        let top = self.scopes.depth() == 1 && n.is_const;
+        do_if!(
+            top,
+            _ = self.found.insert((self.unit, n.name.name), (kind, self.seen(value)))
+        );
     }
 
     fn visit_program(&mut self, n: &Program)
@@ -987,6 +1059,20 @@ impl Visitor for Checker
         let kind = self.place_kind(&n.list);
         ret_if!(n.chars, do_if!(let Some(k) = kind, self.shrinking_text(&n.list, k)));
         do_if!(let Some(k) = kind, { _ = self.growing_cells(&n.list, k); });
+    }
+
+    fn visit_replace(&mut self, n: &ReplaceStmt)
+    {
+        let kind = self.place_kind(&n.text);
+        self.cell_number(&n.start);
+        self.cell_number(&n.end);
+        let Some(kind) = kind.filter(|k| self.is_text_place(*k, &n.text))
+        else
+        {
+            _ = self.infer(&n.value, None);
+            return;
+        };
+        self.text_add(&n.text, kind, &n.value);
     }
 
     fn visit_print(&mut self, n: &PrintStmt) { _ = self.infer(&n.value, None); }
@@ -1098,7 +1184,10 @@ impl Visitor for Checker
         self.check_call(&n.callee, &n.args, &n.edits, n.span);
     }
 
-    fn visit_struct(&mut self, _: &StructDecl) {}
+    fn visit_struct(&mut self, n: &StructDecl)
+    {
+        do_for!(f in &n.fields, self.work_out_counts(&f.kind));
+    }
 }
 
 /// The text and the number of the character an assignment writes, when its

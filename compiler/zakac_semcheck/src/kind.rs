@@ -370,6 +370,11 @@ impl DataKind
             Wrap::Ptr => inner.pointer_to().marked_if(marked == Some(at)),
             Wrap::RawPtr => inner.raw_pointer_to(),
             Wrap::List(Cells::Fixed(n)) => DataKind::list_of(inner, *n),
+            // The check writes each count back as digits; one still open
+            // waits for a later run, or failed with a diagnostic, and stands
+            // as 0 cells meanwhile, a count no written count has, so a read
+            // of it knows to wait.
+            Wrap::List(Cells::Expr(_)) => DataKind::list_of(inner, 0),
             Wrap::List(Cells::Inferred) => DataKind::seq_of(inner),
             Wrap::Slice => DataKind::slice_of(inner),
             Wrap::View => DataKind::text_view(),

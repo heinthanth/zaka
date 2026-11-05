@@ -47,8 +47,22 @@ A written count comes first, then the kind of each cell, then `စာရင်�
 | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် ၏ စာရင်း` |
 | `အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း` |
 
-- The count is a whole number above zero written with digits (ZK0227). It cannot come from
-  a variable, because the size of a counted list is known before the program runs.
+- The count is a whole number above zero (ZK0227): digits, or each expression the
+  compiler [folds](../compiler/stages.md#one-sentence-through-each-stage) to an integer. That takes literals, constants
+  (`ကိန်းသေ`), the arithmetic, bitwise and shift operators in each spelling (`N << ၂`,
+  `N နှင့် ၂ ၏ ပေါင်းလဒ်`), comparisons, conversions (`… ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော
+  ရလဒ်`), sizes (`ဇယား ၏ အရွယ်အစား`), cells and fields of constant lists and structs
+  (`L ၏ အကွက် ၁`, `P ၏ x`), the cell count of a constant plain list, and the cell count of
+  each counted list (`l ၏ အကွက်အရေအတွက်`, from its kind), each in the kinds the program
+  gives them, with the folder's own math: a constant `B` of `၈ ဘစ် ကိန်းပြည့်` makes `B * ၂`
+  overflow (ZK0601) as it would in the program, a division with zero is ZK0602, a shift
+  too far ZK0407 and a cell outside a constant list ZK0603. A constant list is read when
+  each of its cells is known. A constant counts when it is declared before the count in
+  its block, at the top of its file (above or below the count), or imported. A count
+  cannot come from a variable's value, a call, or the count of text, because the size of a
+  counted list is known before the program runs; a variable or a parameter of the same
+  name hides a constant. A count that waits on itself, such as a struct whose count is its
+  own size, is ZK0227.
 - The cell kind is a kind of each sort: a number, a true/false value, a character, text, a
   pointer, a struct, or a list.
 - A counted list takes its default from its cells: `၀` for a number, `မမှန်` for a true/false
@@ -858,7 +872,7 @@ The other mistakes with lists, in one table:
 
 | Code | Mistake |
 | --- | --- |
-| ZK0227 | a count that is not a whole number above zero |
+| ZK0227 | a count that is not a whole number above zero, or names no constant that works out |
 | ZK0401 | a plain list given where a counted list is wanted |
 | ZK0403 | `<`, `>` or another order used on lists |
 | ZK0404 | lists of different kinds compared or combined, such as a counted and a plain list |

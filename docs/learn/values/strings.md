@@ -439,6 +439,35 @@ character is a Unicode code point, so a remove from `ကျွန်` takes off 
 `နောက်ဆုံးအကွက်` ("the last cell") belongs to lists: see [List
 mistakes](../lists/mistakes.md#removing-from-text).
 
+## Replacing part of text
+
+`ဖြင့် အစားထိုးပါ` ("please replace with") puts a value in place of a range of the text.
+The range runs from its first character to its last, both included:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် စာ သည် "red apple" ဖြစ်ပါစေ။
+စာ ၏ ၁ လုံးမြောက်စာလုံးမှ ၃ လုံးမြောက်စာလုံးထိကို "green" ဖြင့် အစားထိုးပါ။
+စာ ကို ပြသပါ။
+စာ ၏ အကွက် ၀ မှ ၄ ထိကို "" ဖြင့် အစားထိုးပါ။      // cells 0 to 4: "green"
+စာ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+green apple
+ apple
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `စာ ၏ ၁ လုံးမြောက်စာလုံးမှ ၃ လုံးမြောက်စာလုံးထိကို "green" ဖြင့် အစားထိုးပါ` | "please replace the 1st to the 3rd character of the text with "green"" |
+| `စာ ၏ အကွက် ၀ မှ ၄ ထိကို "" ဖြင့် အစားထိုးပါ` | "please replace cells 0 to 4 of the text with nothing" |
+
+The character form counts from 1, as `ခုမြောက်စာလုံး` does; the cell form counts the u8s
+of the text from 0, as `အကွက်` does, and stops the program at an end that falls inside a
+character. The new value can be longer or shorter than the range, a character, or blank.
+
 ## No cleanup
 
 Text built when the program runs needs storage of its own, but a program never frees

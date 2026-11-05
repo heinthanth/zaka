@@ -354,7 +354,7 @@ pub trait Command: 'static
     /// The exit code of the command.
     fn execute(&self, args: &[String], io: &mut CommandIO<'_>) -> ExitCode
     {
-        let matches = parse_cli_args(&self.clap_command(), args, io.stdout, io.stderr);
+        let matches = parse_cli_args(self.clap_command(), args, io.stdout, io.stderr);
         ret_if!(let Err(code) = matches, code);
         self.main(&matches.unwrap(), io)
     }

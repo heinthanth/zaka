@@ -259,7 +259,7 @@ a heap block.
 | `index 3`, `index 3 from 1` | n → i | check a cell number against a list of 3 cells, whose first cell is numbered 0 (or 1, after `from`); push it counted from 0 |
 | `blit k` | to from → | duplicate a value of kind `k`, such as a whole list, from one address to another |
 | `zero k` | addr → | set the octets of a value of kind `k` to zero |
-| `list_eq k` | a b → bool | whether each cell of one counted list equals the cell of the other |
+| `list_eq k` | a b → bool | whether each cell of one counted list, or each field of one struct, equals the cell or field of the other |
 | `seq_eq k` | addr addr → b | whether two plain lists with cells of kind `k` hold the same count of cells, each equal |
 | `static_seq s` | slot → slot | point the plain list slot at the static list `s`, with a room of 0 |
 | `seq_addr s` | → addr | push the address of the cells of the static list `s`, the source of a `blit` into a counted list or a struct |
@@ -286,6 +286,7 @@ a heap block.
 | `char_at_octet` | addr i → c | the character that starts at u8 number `i` of the text at `addr`, counted from 0; a number outside the text or inside a character traps |
 | `set_char` | addr i c → | stop the program when number `i` is outside the text at `addr` (counted from 0, or from 1 when listed `set_char from 1`); else give the text a block of its own when its room is 0, and write the character `c` in place of character `i`. A character of another size shifts the u8s after it |
 | `insert_text k` | addr i v → | stop the program when number `i` is past the character count of the text at `addr` (from 0, or from 1 when listed `insert_text k from 1`); else give the text a block of its own when its room is 0, and put the u8s of `v` (a `char`, or the address of `text` or `text[..]`, as for `add_text`) in front of character `i` |
+| `replace_text k` | addr a b v → | stop the program when cell `a` or `b` lies outside the text at `addr` (u8 cells from 0, or characters from 1 when listed `replace_text k chars`), when `b` comes before `a`, or when a cell edge falls inside a character; else give the text a block of its own when its room is 0, and put the u8s of `v` (as for `add_text`) in place of the range from `a` to `b`, both included |
 | `add_text k` | addr v → | add the value `v` of kind `k`, a `char`, or the address of `text` or `text[..]`, at the end of the text at `addr`. The added u8s are read first, so the text can be added to itself. The text takes a block of its own when its room is 0 |
 | `text_edges` | addr → addr | trap when the view of text at `addr` starts or ends inside a character; the view remains |
 | `check_utf8` | addr → addr | trap when the u8s of the slice at `addr` are not UTF-8; the slice remains |
@@ -355,6 +356,7 @@ How each value reads is in [Running a program](running.md#printing).
 | `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်ပါ` | `v` into the scratch slot `%cell`; `l; i; %cell; insert_cell k` |
 | `t ၏ စာလုံး i ၏ အရှေ့တွင် v ကို ထည့်ပါ` | `t; i; v; insert_text k`, dropped as for `add_text` |
 | `t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ` | `t; remove_cell text` |
+| `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးပါ` | `t; a; b; v; replace_text k`, dropped as for `add_text` |
 | the end of a text variable | `x; drop text` |
 | `a ဖြစ်၍ b` (and) | `a; jump_if_false F; b; jump E; F: push မမှန်; E:` |
 | `a သို့မဟုတ် b` (or) | `a; jump_if_true T; b; jump E; T: push မှန်; E:` |

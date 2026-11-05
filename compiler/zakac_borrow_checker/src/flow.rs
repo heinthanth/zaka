@@ -648,6 +648,13 @@ impl<'m> Flow<'m>
                 self.value(value, state);
                 self.edit_list(dest, *span, state);
             }
+            Stmt::Replace { dest, start, end, value, span, .. } =>
+            {
+                self.value(start, state);
+                self.value(end, state);
+                self.value(value, state);
+                self.edit_list(dest, *span, state);
+            }
             Stmt::Insert { dest, kind, index, value, span, .. } if kind.is_text() =>
             {
                 self.value(index, state);

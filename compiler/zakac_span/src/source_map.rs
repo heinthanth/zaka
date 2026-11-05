@@ -353,7 +353,7 @@ impl SourceMap
             .binary_search_by(|file| {
                 ret_if!(pos < &file.start_pos, std::cmp::Ordering::Greater);
                 ret_if!(file_contains_pos(file, pos), std::cmp::Ordering::Equal);
-                return std::cmp::Ordering::Less;
+                std::cmp::Ordering::Less
             })
             .unwrap_or_else(|idx| idx.saturating_sub(1))
     }

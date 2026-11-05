@@ -12,6 +12,7 @@ use zakac_ast::stmt::AddStmt;
 use zakac_ast::stmt::AssignStmt;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::RemoveStmt;
+use zakac_ast::stmt::ReplaceStmt;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::verb::Dir;
@@ -27,8 +28,10 @@ use zakac_lexer::token::Particle;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::extract;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
@@ -64,6 +67,26 @@ enum Operand
     Expr(Expr),
     /// `<kind>` in `<kind> အဖြစ်`.
     Kind(Kind),
+    /// The range of text in `<range> ထိကို`, which a replace statement
+    /// changes.
+    Range(Box<TextRange>),
+}
+
+/// `<text> ၏ အကွက် <start> မှ <end>` or
+/// `<text> ၏ <start> လုံးမြောက်စာလုံးမှ <end> လုံးမြောက်စာလုံး`, before `ထိကို`.
+#[derive(Debug)]
+struct TextRange
+{
+    /// The text.
+    text: Expr,
+    /// The first cell or character.
+    start: Expr,
+    /// The last cell or character.
+    end: Expr,
+    /// Whether the ends count characters from 1, not cells from 0.
+    chars: bool,
+    /// Source region, from the text to `ထိ`.
+    span: Span,
 }
 
 impl Operand
@@ -79,6 +102,7 @@ impl Operand
         {
             Operand::Expr(e) => e.span(),
             Operand::Kind(k) => k.span,
+            Operand::Range(r) => r.span,
         }
     }
 }
@@ -251,7 +275,7 @@ impl Parser<'_>
             }
             if tok.kind == TokenKind::Kw(Kw::CharKind) && holds_ordinal(&stack)
             {
-                self.push_char_nth(&mut stack);
+                self.push_char_nth(&mut stack)?;
                 continue;
             }
             let Some(verb) = as_verb(&tok)
@@ -544,6 +568,7 @@ impl Parser<'_>
             stack.push(Item::expr(Expr::Range(node)));
             return Ok(());
         }
+        ret_if!(self.at_range_end(), self.push_range(stack, list, index, false));
         let span = list.span().to(&index.span());
         stack.push(Item::expr(self.index_expr(list, index, 0, span)));
         Ok(())
@@ -571,20 +596,80 @@ impl Parser<'_>
     }
 
     /// Push `စာလုံး` after `<text> ၏ <number> ခုမြောက်`: the character of
-    /// the text at that number, counted from 1.
+    /// the text at that number, counted from 1; or, with `မှ <end> ...
+    /// ထိကို` next, the range of characters from that number.
     ///
     /// # Arguments
     ///
     /// * `stack` - The operand stack; its top holds `ခုမြောက်`, the operand under
     ///   it `၏`.
-    fn push_char_nth(&mut self, stack: &mut Vec<Item>)
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic from the range.
+    fn push_char_nth(&mut self, stack: &mut Vec<Item>) -> PResult<()>
     {
         let word = self.bump();
         let index = into_expr(stack.pop().expect("the top operand holds ခုမြောက်"));
         let text = into_expr(stack.pop().expect("the operand under it holds ၏"));
+        ret_if!(self.at_range_end(), self.push_range(stack, text, index, true));
         let span = text.span().to(&word.span);
         let node = self.char_verb(VerbOp::CharNth, text, index, span);
         stack.push(Item::expr(node));
+        Ok(())
+    }
+
+    /// Whether `မှ` comes next and opens the range of a replace statement:
+    /// a `ထိ` follows before the full stop. A counted loop `<cell> မှ <end>
+    /// အထိ` has no `ထိ` of its own.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_range_end(&self) -> bool
+    {
+        ret_false!(!self.at(Kw::From));
+        let ends = |k: &TokenKind| {
+            matches!(
+                k,
+                TokenKind::Eof
+                    | TokenKind::Punct(Punct::FullStop)
+                    | TokenKind::Kw(Kw::To)
+            )
+        };
+        let kinds = (1..).map(|n| self.peek_n(n).kind);
+        kinds.take_while(|k| !ends(k)).any(|k| k == TokenKind::Kw(Kw::Upto))
+    }
+
+    /// Push the range of a replace statement, from its `မှ` to its `ထိကို`,
+    /// then the value after it.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack.
+    /// * `text` - The text the range is of.
+    /// * `start` - The first cell or character.
+    /// * `chars` - Whether the ends count characters from 1: the end is
+    ///   `<number> လုံးမြောက်စာလုံး`.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic.
+    fn push_range(
+        &mut self, stack: &mut Vec<Item>, text: Expr, start: Expr, chars: bool,
+    ) -> PResult<()>
+    {
+        self.bump();
+        let end = self.parse_notation()?;
+        do_if!(chars, _ = self.expect(Kw::Ordinal)?);
+        do_if!(chars, _ = self.expect(Kw::CharKind)?);
+        let upto = self.expect(Kw::Upto)?;
+        let ko = self.expect(Kw::Ko)?;
+        let span = text.span().to(&upto.span);
+        let range = TextRange { text, start, end, chars, span };
+        let item = Item::builder().operand(Operand::Range(Box::new(range)));
+        stack.push(item.slot((Slot::Upto, upto.span.to(&ko.span))).build());
+        self.push_next_operand(stack, Slot::Upto)
     }
 
     /// Build a character read of text.
@@ -758,6 +843,10 @@ impl Parser<'_>
             {
                 Operand::Expr(e) => exprs.push(e),
                 Operand::Kind(k) => kind_arg = Some(k),
+                Operand::Range(_) =>
+                {
+                    unreachable!("a range fills the slot of a statement verb alone")
+                }
             }
         }
         let id = self.new_id();
@@ -786,6 +875,7 @@ impl Parser<'_>
         ret_if!(!rest.is_empty(), Err(self.dangling(rest, tok)));
         let stop = self.expect_stop()?;
         let span = args[0].operand.span().to(&stop.span);
+        ret_if!(verb.op == VerbOp::Replace, Ok(replace_stmt(args, span)));
         let slot = args[0].slot.map_or(Slot::Ko, |(slot, _)| slot);
         let mut args = args.into_iter().map(into_expr);
         let first = args.next().expect("statement verbs take operands");
@@ -899,6 +989,26 @@ impl Parser<'_>
         };
         stack.iter().map(describe).collect::<Vec<_>>().join(", ")
     }
+}
+
+/// Build a replace statement from its range and its value.
+///
+/// # Arguments
+///
+/// * `args` - The range, with `ထိကို`, and the value, with `ဖြင့်`.
+/// * `span` - The whole statement.
+///
+/// # Returns
+///
+/// The statement.
+fn replace_stmt(args: Vec<Item>, span: Span) -> Stmt
+{
+    let [range, value] = <[Item; 2]>::try_from(args).expect("slots are checked");
+    extract!(Operand::Range(r) = range.operand, "the slot ထိကို holds a range");
+    #[rustfmt::skip]
+    let node = ReplaceStmt::builder().text(r.text).start(r.start).end(r.end).chars(r.chars)
+        .value(into_expr(value)).span(span).build();
+    Stmt::Replace(node)
 }
 
 /// Whether the top operand holds `၏`, so a cell word after it opens an index

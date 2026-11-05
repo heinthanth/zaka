@@ -201,10 +201,11 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         | VerbOp::CharAt
         | VerbOp::CharNth
         | VerbOp::Join => OpClass::CellCount,
-        VerbOp::Print | VerbOp::Assign | VerbOp::Return | VerbOp::AddCell =>
-        {
-            OpClass::Stmt
-        }
+        VerbOp::Print
+        | VerbOp::Assign
+        | VerbOp::Return
+        | VerbOp::AddCell
+        | VerbOp::Replace => OpClass::Stmt,
     }
 }
 
@@ -555,8 +556,8 @@ impl Checker
 
     /// Infer a two-operand operation where at least one side is a list, a
     /// struct or a slice: `==` and `!=` compare two lists of one kind, one
-    /// cell at a time, and other operators take no lists. No operator takes
-    /// a struct or a slice.
+    /// cell at a time, or two structs of one kind, one field at a time; other
+    /// operators take no lists and no structs. No operator takes a slice.
     ///
     /// # Arguments
     ///
@@ -579,9 +580,9 @@ impl Checker
         // Text and views of text compare their u8s, in each mix.
         let texts = lhs.0.is_textual() && rhs.0.is_textual();
         ret_if!(class == OpClass::Equal && texts, Some(DataKind::Bool));
-        let blocks = |k: &DataKind| k.is_struct() || k.is_slice() || k.is_textual();
-        let structs = [lhs.0, rhs.0].iter().any(blocks);
-        let equal = class == OpClass::Equal && !structs;
+        let blocks = |k: &DataKind| k.is_slice() || k.is_textual();
+        let blocked = [lhs.0, rhs.0].iter().any(blocks);
+        let equal = class == OpClass::Equal && !blocked;
         ret_if!(equal && lhs.0 == rhs.0, Some(DataKind::Bool));
         // Two plain lists of one cell kind compare their cells.
         let seqs =

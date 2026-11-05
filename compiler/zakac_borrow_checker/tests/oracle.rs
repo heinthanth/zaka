@@ -124,6 +124,10 @@ fn raw_stmt(s: &Stmt) -> bool
         {
             raw_dest(dest) || raw_expr(index) || raw_expr(value)
         }
+        Stmt::Replace { dest, start, end, value, .. } =>
+        {
+            raw_dest(dest) || [start, end, value].into_iter().any(raw_expr)
+        }
         Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } => false,
     }
 }

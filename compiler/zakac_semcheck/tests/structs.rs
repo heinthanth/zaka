@@ -60,6 +60,14 @@ fn an_owner_field_makes_a_move_kind()
 }
 
 #[test]
+fn structs_of_one_kind_compare_each_field()
+{
+    ok(&lines(&[STRUCTS, "ကျော် == ကျော် ကို ပြသပါ။", "ထိပ် != ထိပ် ကို ပြသပါ။"]));
+    let cells = "ကိန်းရှင် အုပ်စု သည် [ကျော်၊ ကျော်] ဖြစ်ပါစေ။";
+    ok(&lines(&[STRUCTS, cells, "အုပ်စု == အုပ်စု ကို ပြသပါ။"]));
+}
+
+#[test]
 fn struct_mistakes_have_their_codes()
 {
     let decl = |text: &str| codes(&format!("ဒေတာအမျိုးအစား လူ တွင် {text} ပါဝင်သည်။"));
@@ -72,7 +80,9 @@ fn struct_mistakes_have_their_codes()
     assert_eq!(used("ကျော် ၏ ဈေး ကို ပြသပါ။"), [Code::UnknownField]);
     assert_eq!(used("ကျော် ၏ အသက် ၏ အသက် ကို ပြသပါ။"), [Code::NotAStruct]);
     assert_eq!(used("ကိန်းရှင် လူ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။"), [Code::StructNameClash]);
-    assert_eq!(used("ကျော် == ကျော် ကို ပြသပါ။"), [Code::OperandKind]);
+    assert_eq!(used("ကျော် < ကျော် ကို ပြသပါ။"), [Code::OperandKind]);
+    assert_eq!(used("ကျော် == ထိပ် ကို ပြသပါ။"), [Code::IncompatibleOperands]);
+    assert_eq!(used("ကျော် == ၁ ကို ပြသပါ။"), [Code::IncompatibleOperands]);
     let twice = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် က တို့ ပါဝင်သည်။";
     assert_eq!(codes(&lines(&[STRUCTS, twice])), [Code::DuplicateStruct]);
     let result =

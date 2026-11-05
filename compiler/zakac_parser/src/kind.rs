@@ -6,6 +6,7 @@ use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
+use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
@@ -134,7 +135,7 @@ impl Parser<'_>
     pub(crate) fn kind_len(&self) -> Option<usize>
     {
         let marks = self.count_at(0, Kw::Borrowed);
-        let pre = marks + 3 * self.count_prefixes(marks);
+        let pre = marks + self.count_prefixes_len(marks);
         let signed = kw_of(&self.peek_n(pre)).and_then(sign_of).is_some();
         let n = pre + usize::from(signed);
         let n = n + tern!(self.at_sized_kind(n), 2, 0);
@@ -148,7 +149,7 @@ impl Parser<'_>
         Some(n + 1 + len)
     }
 
-    /// Whether `အကွက် <number> ခုရှိသော|ရှိသော` starts `n` tokens ahead.
+    /// Whether `အကွက် <count> ခုရှိသော|ရှိသော` starts `n` tokens ahead.
     ///
     /// # Arguments
     ///
@@ -157,15 +158,46 @@ impl Parser<'_>
     /// # Returns
     ///
     /// `true` if it does.
-    fn at_count_prefix(&self, n: usize) -> bool
+    fn at_count_prefix(&self, n: usize) -> bool { self.count_prefix_len(n).is_some() }
+
+    /// The number of tokens in the count prefix that starts `n` tokens
+    /// ahead: `အကွက်`, a count, then the `ခုရှိသော` or `ရှိသော` that closes it.
+    /// A count can hold kinds with counts of their own, as in a size, so each
+    /// `အကွက်` that opens one inside it waits for its own `ခုရှိသော`; the full
+    /// stop ends the search.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The token count, or `None` when no count prefix starts there.
+    fn count_prefix_len(&self, n: usize) -> Option<usize>
     {
-        kw_of(&self.peek_n(n)) == Some(Kw::Cell)
-            && is_number(&self.peek_n(n + 1))
-            && kw_of(&self.peek_n(n + 2)) == Some(Kw::Having)
+        ret_if!(kw_of(&self.peek_n(n)) != Some(Kw::Cell), None);
+        let mut depth = 1usize;
+        for at in n + 1..
+        {
+            let tok = self.peek_n(at);
+            ret_if!(ends_sentence(&tok), None);
+            // `အကွက်` after `၏` or `ခုမြောက်` reads a cell; elsewhere it opens a
+            // count of its own.
+            let prev = self.peek_n(at - 1);
+            let read = prev.kind == TokenKind::Punct(Punct::Ei)
+                || kw_of(&prev) == Some(Kw::Ordinal);
+            match kw_of(&tok)
+            {
+                Some(Kw::Cell) if !read => depth += 1,
+                Some(Kw::Having) => depth -= 1,
+                _ => (),
+            }
+            ret_if!(depth == 0, (at > n + 1).then_some(at - n + 1));
+        }
+        None
     }
 
-    /// The number of count prefixes `from` tokens ahead; each takes three
-    /// tokens.
+    /// The number of tokens in the run of count prefixes `from` tokens ahead.
     ///
     /// # Arguments
     ///
@@ -173,10 +205,11 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The count of prefixes.
-    fn count_prefixes(&self, from: usize) -> usize
+    /// The token count; 0 when no prefix starts there.
+    fn count_prefixes_len(&self, from: usize) -> usize
     {
-        (0..).take_while(|i| self.at_count_prefix(from + 3 * i)).count()
+        let next = |at: &usize| self.count_prefix_len(*at).map(|len| at + len);
+        std::iter::successors(Some(from), next).last().unwrap_or(from) - from
     }
 
     /// The length of the run of the reserved word `kw` that starts `n` tokens
@@ -340,7 +373,7 @@ impl Parser<'_>
                 // `စာရင်း` is a plain list.
                 Suffix::List if !part =>
                 {
-                    Wrap::List(counts.pop().map_or(Cells::Inferred, Cells::Fixed))
+                    Wrap::List(counts.pop().unwrap_or(Cells::Inferred))
                 }
                 Suffix::List | Suffix::Part => Wrap::Slice,
             });
@@ -351,29 +384,50 @@ impl Parser<'_>
         Ok(kind)
     }
 
-    /// Parse the count prefixes `အကွက် <n> ခုရှိသော` that come next.
+    /// Parse the count prefixes `အကွက် <count> ခုရှိသော` that come next.
     ///
     /// # Returns
     ///
-    /// The counts, outermost first, or a diagnostic for a count that is not
-    /// a whole number above zero.
-    fn parse_counts(&mut self) -> PResult<Vec<u32>>
+    /// The counts, outermost first, or a diagnostic for a count in digits
+    /// that is not a whole number above zero.
+    fn parse_counts(&mut self) -> PResult<Vec<Cells>>
     {
         let mut counts = Vec::new();
         while self.eat(Kw::Cell)
         {
-            let tok = self.bump();
-            let text = self.text_of(tok.span);
-            let count = decimal_value(text).and_then(|v| u32::try_from(v).ok());
-            let Some(count) = count.filter(|c| *c > 0)
-            else
-            {
-                return Err(diag::bad_list_count(tok.span, text));
-            };
-            counts.push(count);
+            counts.push(self.parse_count()?);
             self.expect(Kw::Having)?;
         }
         Ok(counts)
+    }
+
+    /// Parse one count: digits alone, or an expression that the check works
+    /// out, such as `N * ၂` or a size.
+    ///
+    /// # Returns
+    ///
+    /// The count, or a diagnostic for digits that are not a whole number
+    /// above zero.
+    fn parse_count(&mut self) -> PResult<Cells>
+    {
+        let digits =
+            is_number(&self.peek()) && kw_of(&self.peek_n(1)) == Some(Kw::Having);
+        if !digits
+        {
+            let outer = std::mem::replace(&mut self.in_count, true);
+            let count = self.parse_expr();
+            self.in_count = outer;
+            return Ok(Cells::Expr(Box::new(count?)));
+        }
+        let tok = self.bump();
+        let text = self.text_of(tok.span);
+        let count = decimal_value(text).and_then(|v| u32::try_from(v).ok());
+        let Some(count) = count.filter(|c| *c > 0)
+        else
+        {
+            return Err(diag::bad_list_count(tok.span, text));
+        };
+        Ok(Cells::Fixed(count))
     }
 
     /// Parse the core of a kind: a bare `လိပ်စာ` or `လိပ်စာအကြမ်း`, or a base
@@ -494,4 +548,18 @@ impl Parser<'_>
 fn sized_kind_words() -> String
 {
     one_of(&[quote(&kw_text(Kw::IntKind)), quote(&kw_text(Kw::FloatKind))])
+}
+
+/// Whether a token ends a sentence: the full stop, or the end of the file.
+///
+/// # Arguments
+///
+/// * `tok` - The token.
+///
+/// # Returns
+///
+/// `true` if it does.
+fn ends_sentence(tok: &Token) -> bool
+{
+    matches!(tok.kind, TokenKind::Eof | TokenKind::Punct(Punct::FullStop))
 }

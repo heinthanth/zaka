@@ -166,9 +166,10 @@ error[ZK0427]: "လူ" holds itself, so it would have no end
 Part III shows how a struct reaches another of its kind through an address: see [A linked
 list](../pointers/structs.md#a-linked-list).
 
-## Comparing structs
+## Ordering structs
 
-`==` and `!=` do not take structs. Compare the fields in turn:
+`==` and `!=` take two structs of one kind, but `<`, `>` and the like do not: a struct has
+no order of its own. Compare the field that gives the order:
 
 ```zaka-error ZK0403
 ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
@@ -176,13 +177,15 @@ list](../pointers/structs.md#a-linked-list).
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် လူ တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် လူ တစ်ခု ဖြစ်ပါစေ။
-က == ခ ကို ပြသပါ။
+က < ခ ကို ပြသပါ။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0403]: == needs a number, found လူ
+error[ZK0403]: < needs a number or a character, found လူ
 ```
+
+Write `က ၏ အသက် < ခ ၏ အသက်` instead.
 
 ## The wrong classifier
 

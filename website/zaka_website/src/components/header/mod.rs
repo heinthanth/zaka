@@ -333,8 +333,7 @@ fn chapter_at(line: f64) -> String
     (0..fields.length())
         .filter_map(|idx| fields.item(idx))
         .filter_map(|node| node.dyn_into::<Element>().ok())
-        .filter(spans)
-        .last()
+        .rfind(spans)
         .and_then(|el| el.get_attribute("data-field"))
         .unwrap_or_else(|| PAPER.into())
 }

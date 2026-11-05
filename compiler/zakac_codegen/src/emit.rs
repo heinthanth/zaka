@@ -1009,6 +1009,15 @@ impl<'s> FuncGen<'s>
                 self.op(Op::InsertText { kind: value.kind, first: *first });
                 do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
             }
+            Stmt::Replace { dest, start, end, chars, value, .. } =>
+            {
+                self.dest_addr(dest);
+                self.expr(start);
+                self.expr(end);
+                let fresh = self.read_operand(value);
+                self.op(Op::ReplaceText { kind: value.kind, chars: *chars });
+                do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
+            }
             Stmt::Insert { dest, kind, index, first, value, .. } =>
             {
                 let slot = self.temp("%cell", value.kind);
@@ -1452,7 +1461,8 @@ impl<'s> FuncGen<'s>
                 self.op(Op::SeqEq(lhs.kind));
                 do_if!(*op == CmpOp::Ne, self.op(Op::Prefix(PrefixOp::Not)));
             }
-            ExprNode::Compare { op, lhs, rhs } if lhs.kind.is_list() =>
+            ExprNode::Compare { op, lhs, rhs }
+                if lhs.kind.is_list() || lhs.kind.is_struct() =>
             {
                 self.expr(lhs);
                 self.expr(rhs);
@@ -1474,7 +1484,7 @@ impl<'s> FuncGen<'s>
             ExprNode::Convert { operand, .. }
                 if e.kind.is_seq() && operand.kind.is_list() =>
             {
-                self.to_heap(e.kind, operand)
+                self.copy_to_heap(e.kind, operand)
             }
             ExprNode::Own { value } =>
             {
@@ -1637,7 +1647,7 @@ impl<'s> FuncGen<'s>
     ///
     /// * `kind` - The plain list kind.
     /// * `value` - The counted list, a value of its own.
-    fn to_heap(&mut self, kind: DataKind, value: &Expr)
+    fn copy_to_heap(&mut self, kind: DataKind, value: &Expr)
     {
         let slot = self.temp("%own", kind);
         self.op(Op::LocalAddr(slot));

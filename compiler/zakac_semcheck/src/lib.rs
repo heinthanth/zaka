@@ -1,6 +1,8 @@
 pub mod artifact;
 pub mod cli;
 mod collect;
+pub mod const_op;
+mod consts;
 mod infer;
 pub mod kind;
 mod list;
@@ -11,5 +13,6 @@ pub mod semcheck;
 mod struct_check;
 pub mod structs;
 mod units;
+pub mod value;
 
 zakac_i18n::init!();

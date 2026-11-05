@@ -39,6 +39,7 @@ value), `WORD` the classifier of the kind, and `BODY` a block or one statement. 
 | add a cell | `PLACE ထဲသို့ VALUE ကို ထည့်ပါ။` (see [Lists](lists.md#adding-and-removing-cells)) |
 | add to text | `TEXT ထဲသို့ VALUE ကို ထည့်ပါ။` (see [Text](text.md#changing-text)) |
 | remove a cell | `PLACE ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။` |
+| replace part of text | `TEXT ၏ အကွက် START မှ END ထိကို VALUE ဖြင့် အစားထိုးပါ။`, or `TEXT ၏ START လုံးမြောက်စာလုံးမှ END လုံးမြောက်စာလုံးထိကို VALUE ဖြင့် အစားထိုးပါ။` (see [Text](text.md#changing-text)) |
 | heap | `မင်မိုရီတွင် SIZE နေရာယူ၍ လိပ်စာကို PLACE တွင် သိမ်းထားမည်။` and two more (below) |
 
 Some words have alternatives: `လျှင်` or `ဖြစ်လျှင်`; `နေသရွေ့` or `ဖြစ်နေသရွေ့`;

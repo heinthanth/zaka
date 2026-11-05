@@ -240,6 +240,38 @@ have its address taken.
 [အမှတ်(x: ၀၊ y: ၀)၊ အမှတ်(x: ၀၊ y: ၇)၊ အမှတ်(x: ၀၊ y: ၀)]
 ```
 
+## Comparing
+
+`==` and `!=` take two structs of one kind. Two structs are equal when each field equals
+the same field of the other: numbers and characters as values, text and lists one cell at
+a time, nested structs one field at a time, and addresses as the address each holds. The padding
+between fields takes no part. A decimal field follows the rules of decimals, so `-0.0`
+equals `0.0` and a `NaN` field makes the two unequal. A list of structs compares each
+struct in turn.
+
+```zaka
+ဒေတာအမျိုးအစား အမှတ် တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။
+ဒေတာအမျိုးအစား လူ တွင် စာသား အမည်၊ အမှတ် နေရာ တို့ ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် လူ(အမည်: "မောင်"၊ နေရာ: အမှတ်(x: ၁)) ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် က ဖြစ်ပါစေ။
+က == ခ ကို ပြသပါ။
+ခ ၏ နေရာ ၏ y ကို ၂ ဟု ထားပါ။
+က != ခ ကို ပြသပါ။
+[က၊ ခ] == [က၊ ခ] ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မှန်
+မှန်
+မှန်
+```
+
+Two structs of different kinds do not compare, even with the same fields (ZK0404), and the
+ordering operators take no structs (ZK0403).
+
 ## Printing
 
 A struct prints as its name, then `(`, each field as `<name>: <value>` with `၊` between
@@ -265,7 +297,8 @@ field print alike, nested.
 
 | Not allowed | Instead |
 | --- | --- |
-| `==`, `!=`, `<` and the like on structs (ZK0403) | compare the fields |
+| `<`, `>` and the like on structs (ZK0403) | compare the fields |
+| `==` on two structs of different kinds (ZK0404) | compare the fields |
 | a struct with no fields | declare the field the struct needs |
 | a struct declared inside a block (ZK0228) | declare it at the top level |
 | a struct that holds itself, except through an address (ZK0427) | hold `<name> လိပ်စာ` |

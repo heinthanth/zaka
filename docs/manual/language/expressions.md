@@ -242,7 +242,7 @@ error[ZK0601]: + on these constants does not fit i8
 
 A comparison gives a `မှန်မှားတန်ဖိုး`. The operands have one common kind (the narrower
 one is widened first, as in arithmetic). `==` and `!=` take each kind, including true/false
-values, characters, addresses and lists of one kind. The ordering operators take numbers and
+values, characters, addresses, lists of one kind and structs of one kind. The ordering operators take numbers and
 characters. A decimal `NaN` is equal to nothing, not even itself, and each ordering
 with it is false.
 

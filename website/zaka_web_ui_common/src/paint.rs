@@ -217,6 +217,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Is
         | Kw::Add
         | Kw::Remove
+        | Kw::Replace
         | Kw::Import => "tok-verb",
         Kw::Sum
         | Kw::Difference
@@ -281,6 +282,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::CountAs
         | Kw::ListOf
         | Kw::StartingAt
+        | Kw::Upto
         | Kw::Having => "tok-particle",
         Kw::IntKind
         | Kw::FloatKind

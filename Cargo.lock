@@ -6336,6 +6336,7 @@ dependencies = [
  "clap",
  "postcard",
  "rust-i18n",
+ "rustc_apfloat",
  "serde",
  "strum",
  "tempfile",

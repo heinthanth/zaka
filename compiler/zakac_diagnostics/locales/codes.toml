@@ -249,9 +249,9 @@ en = """\"လုပ်ဆောင်စရာများ ပြီးဆုံ
 [codes.ZK0227.title]
 en = "bad list count"
 [codes.ZK0227.message]
-en = "\"%{n}\" is not a cell count; write a whole number above zero"
+en = "\"%{n}\" is not a cell count; write a whole number above zero, in digits or worked out from constants"
 [codes.ZK0227.explain]
-en = """A list kind with a count, \"အကွက် <n> ခုရှိသော <kind> စာရင်း\", takes a decimal number above zero, such as ၃ or 10. A list with no cells holds nothing, and the count cannot come from a variable: the kind must be known before the program runs."""
+en = """A list kind with a count, \"အကွက် <n> ခုရှိသော <kind> စာရင်း\", takes a whole number above zero. Write it in digits, such as ၃ or 10, or work it out at compile time: \"အကွက် N * ၂ ခုရှိသော\" takes each expression the compiler folds to an integer: literals, constants (declared before it, at the top of the file, or imported), the arithmetic, bitwise and shift operators in each spelling, conversions, sizes, cells and fields of constant lists and structs, and the cell count of a counted list. A list with no cells holds nothing, and the count cannot come from a variable: the kind must be known before the program runs."""
 
 [codes.ZK0228.title]
 en = "nested struct"

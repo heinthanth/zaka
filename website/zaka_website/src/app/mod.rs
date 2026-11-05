@@ -92,9 +92,6 @@ const START_WEIGHTS: [u16; 2] = [400, 700];
 /// sheets load with the explorer page, as its own `index.html` loads them.
 const EXPLORER_WEIGHTS: [u16; 2] = [400, 600];
 
-/// The sheet of Caveat, the handwriting face of the notes on the program of
-/// the landing page, at its one weight there.
-
 /// The face of the notes on the program of the landing page, a @fontsource
 /// package, and its one weight there.
 const HAND_FACE: (&str, u16) = ("caveat", 500);

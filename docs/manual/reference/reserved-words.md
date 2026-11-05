@@ -71,6 +71,7 @@ see [Names](../../learn/variables/names.md).
 | `ရပ်ပါ` | "please stop" | [Break and continue](../../learn/control-flow/break-continue.md) |
 | `ထည့်ပါ` | "please add": `l ထဲသို့ v ကို ထည့်ပါ` adds `v` as a new last cell of `l`, or, when `l` is text, adds the text or character `v` at its end; `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်ပါ` puts it in front of cell `i` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ဖျက်ပါ` | "please remove": `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ` removes the last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
+| `အစားထိုးပါ` | "please replace": `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးပါ` puts `v` in place of cells `a` to `b` of text `t` | [Text](../../learn/values/strings.md#replacing-part-of-text) |
 | `ကျော်ပါ` | "please skip" | [Break and continue](../../learn/control-flow/break-continue.md) |
 
 ## Blocks and control flow
@@ -141,7 +142,7 @@ as well.
 | --- | --- | --- |
 | `စာရင်း` | "list": after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`), plain with no count; `တို့ပါသော စာရင်း` closes a list literal | [Lists](../../learn/lists/README.md) |
 | `အကွက်` | "cell": `x ၏ အကွက် i` is cell `i`, counted from 0; `အကွက် n ခုရှိသော` gives the count of a counted list kind | [Lists](../../learn/lists/README.md) |
-| `ခုမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1, and `t ၏ n ခုမြောက်စာလုံး` character `n` of text | [Lists](../../learn/lists/README.md#cell-numbers) |
+| `ခုမြောက်`, `လုံးမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1, and `t ၏ n ခုမြောက်စာလုံး` or `t ၏ n လုံးမြောက်စာလုံး` character `n` of text | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Static data and counted lists](../../learn/forms/counted-lists.md#counted-lists) |
 | `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `နောက်ဆုံးအကွက်` | "last cell", right after `၏` and before `ကို ဖျက်ပါ` alone | [Adding and removing cells](../../learn/lists/growing.md) |
@@ -153,6 +154,7 @@ as well.
 | `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../../learn/lists/README.md#list-kinds) |
 | `တစ်စိတ်တစ်ပိုင်း` | "a part": after a `စာရင်း` with no count it makes a slice kind | [Slices](../../learn/lists/slices.md) |
 | `မှစ၍` | "starting at", in `x ၏ အကွက် <start> မှစ၍ <length> ကွက်` | [Slices](../../learn/lists/slices.md#part-of-a-list) |
+| `ထိ` | "up to", after the last cell or character of the range a replace changes: `<start> မှ <end> ထိကို` | [Text](../../learn/values/strings.md#replacing-part-of-text) |
 | `ကွက်` | "cells", after the length of a range; a struct can also name it as its classifier | [Slices](../../learn/lists/slices.md#part-of-a-list) |
 
 ## Structs

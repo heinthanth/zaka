@@ -7,7 +7,7 @@ use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::Stmt;
 use zakac_diagnostics::Code;
 
-const DECL: &str = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ကိန်းပြည့် အတန်း တို့ ပါဝင်သည်။\n";
+const DECL: &str = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ကိန်းပြည့် အတန်း တို့ ပါဝင်သည်။\n";
 
 /// The tree of the print statement that shows `value`, after [`DECL`].
 fn shown(value: &str) -> String

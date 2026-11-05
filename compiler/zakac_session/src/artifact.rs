@@ -402,12 +402,12 @@ fn decode_utf_src(
 ///
 /// The decoded artifact.
 fn decode_utf8_source_from_file(
-    path: &PathBuf, _stdin: &mut dyn BufRead, sm: &mut SourceMap,
+    path: &Path, _stdin: &mut dyn BufRead, sm: &mut SourceMap,
 ) -> zakac_host_errors::Result<Arc<SourceFile>>
 {
-    let result = sm.load_file(path.as_path());
+    let result = sm.load_file(path);
     ret_if!(let Ok(file) = result, Ok(file));
-    let ctx = IOErrorContext::new(path.clone(), IOErrorAction::Read);
+    let ctx = IOErrorContext::new(path.to_path_buf(), IOErrorAction::Read);
     Err(Error::from_io(result.err().unwrap(), ctx))
 }
 
@@ -422,13 +422,13 @@ fn decode_utf8_source_from_file(
 ///
 /// The decoded source file.
 fn decode_utf8_source_from_data(
-    data: &[u8], filename: &FileName, path: &PathBuf, sm: &mut SourceMap,
+    data: &[u8], filename: &FileName, path: &Path, sm: &mut SourceMap,
 ) -> zakac_host_errors::Result<Arc<SourceFile>>
 {
     let res = String::from_utf8(data.to_vec());
     ret_if!(let Ok(text) = res, Ok(sm.new_source_file(filename.clone(), text)));
 
-    let ctx = IOErrorContext::new(path.clone(), IOErrorAction::Read);
+    let ctx = IOErrorContext::new(path.to_path_buf(), IOErrorAction::Read);
     let source =
         std::io::Error::new(std::io::ErrorKind::InvalidData, res.err().unwrap());
     Err(Error::from_io(source, ctx))
@@ -445,14 +445,14 @@ fn decode_utf8_source_from_data(
 ///
 /// The decoded source file.
 fn decode_utf8_source_from_stdin(
-    stdin: &mut dyn BufRead, filename: &FileName, path: &PathBuf, sm: &mut SourceMap,
+    stdin: &mut dyn BufRead, filename: &FileName, path: &Path, sm: &mut SourceMap,
 ) -> zakac_host_errors::Result<Arc<SourceFile>>
 {
     let mut content = String::new();
     let res = stdin.read_to_string(&mut content);
     ret_if!(let Ok(_) = res, Ok(sm.new_source_file(filename.clone(), content)));
 
-    let ctx = IOErrorContext::new(path.clone(), IOErrorAction::Read);
+    let ctx = IOErrorContext::new(path.to_path_buf(), IOErrorAction::Read);
     let source =
         std::io::Error::new(std::io::ErrorKind::InvalidData, res.err().unwrap());
     Err(Error::from_io(source, ctx))

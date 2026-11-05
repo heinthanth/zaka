@@ -108,7 +108,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0222 | a character or true/false kind written before a number | [Writing integers](../../learn/values/literals.md#the-order-of-the-parts) |
 | ZK0225 | a generic loop that starts with `ကိန်းသေ` | [Generic loops](../../learn/control-flow/generic-loops.md#the-variable-belongs-to-the-loop) |
 | ZK0226 | a block closer with no block to close | [Blocks and scope](../../learn/variables/scope.md) |
-| ZK0227 | a list count that is not a whole number above zero | [Static data and counted lists](../../learn/forms/counted-lists.md#counted-lists) |
+| ZK0227 | a list count that is not a whole number above zero, or names no constant that works out | [Static data and counted lists](../../learn/forms/counted-lists.md#counted-lists) |
 | ZK0228 | a struct declared inside a block | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-declared-inside-a-block) |
 | ZK0229 | `အများသုံး` before something other than a top-level declaration | [Module mistakes](../../learn/modules/mistakes.md#the-export-mark-in-the-wrong-place) |
 | ZK0230 | an import after a declaration or statement, or inside a block | [Module mistakes](../../learn/modules/mistakes.md#an-import-below-a-statement) |

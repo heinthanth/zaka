@@ -75,6 +75,21 @@ fn a_struct_can_name_the_cell_word_as_its_classifier()
 }
 
 #[test]
+fn a_list_count_can_be_an_expression()
+{
+    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
+    assert_eq!(decl("အကွက် N ခုရှိသော ကိန်းပြည့် စာရင်း"), "(var က isize[N])");
+    assert_eq!(decl("အကွက် N * ၂ ရှိသော ကိန်းပြည့် စာရင်း"), "(var က isize[(* N 2)])");
+    assert_eq!(
+        decl("အကွက် (N + ၁) * ၂ ခုရှိသော အကွက် M ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း"),
+        "(var က isize[M][(* [(+ N 1)] 2)])"
+    );
+    let declared =
+        stmt("ကိန်းရှင် က သည် အကွက် N ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။");
+    assert!(declared.starts_with("(var က isize[N]"), "{declared}");
+}
+
+#[test]
 fn a_list_count_is_a_whole_number_above_zero()
 {
     let bad = |kind: &str| codes(&format!("ကိန်းရှင် က သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));

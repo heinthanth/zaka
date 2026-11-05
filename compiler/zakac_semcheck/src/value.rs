@@ -13,13 +13,13 @@ use serde::Deserialize;
 use serde::Serialize;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
-use zakac_semcheck::kind::DataKind;
-use zakac_semcheck::kind::IntKind;
 
-use crate::ir::CmpOp;
-use crate::ir::InfixOp;
-use crate::ir::LogicOp;
-use crate::ir::PrefixOp;
+use crate::const_op::CmpOp;
+use crate::const_op::InfixOp;
+use crate::const_op::LogicOp;
+use crate::const_op::PrefixOp;
+use crate::kind::DataKind;
+use crate::kind::IntKind;
 
 /// Rounding of all float operations: to nearest, ties to even.
 const NEAREST: Round = Round::NearestTiesToEven;

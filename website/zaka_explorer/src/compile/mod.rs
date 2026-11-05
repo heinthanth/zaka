@@ -672,7 +672,7 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     parsed.diagnostics.extend(refuse_imports(&parsed.program));
     let checked = !has_errors(&lexed.diagnostics) && !has_errors(&parsed.diagnostics);
     let ((mut idiom, out), check_time) = timed(|| {
-        tern!(checked, check_program(&parsed.program, options), Default::default())
+        tern!(checked, check_program(&mut parsed.program, options), Default::default())
     });
     idiom.extend(out.diagnostics.iter().cloned());
     let lowered = checked && !has_errors(&idiom);
@@ -761,7 +761,7 @@ pub fn compile(source: &str, options: &Options) -> Compiled
 ///
 /// The naturalness diagnostics, and the semantic check output.
 fn check_program(
-    program: &zakac_ast::stmt::Program, options: &Options,
+    program: &mut zakac_ast::stmt::Program, options: &Options,
 ) -> (Vec<Diagnostic>, SemcheckOutput)
 {
     let check_options = SemcheckOptions::builder()

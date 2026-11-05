@@ -7,6 +7,6 @@ mod lends;
 pub mod lower;
 pub mod s_expr;
 pub mod spans;
-pub mod value;
+pub use zakac_semcheck::value;
 
 zakac_i18n::init!();

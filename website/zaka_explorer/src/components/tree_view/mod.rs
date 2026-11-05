@@ -113,7 +113,7 @@ fn node_head(state: AppState, node: &TreeNode, kinds: bool) -> impl IntoView + u
         .on(ev::click, pick)
         .child(node.label);
     let id = node.id.map(|i| span().class(ClassName::TREE_ID).child(format!("#{i}")));
-    let value = node.is_literal().then(|| value_class(&node.label));
+    let value = node.is_literal().then(|| value_class(node.label));
     let class = value.map_or_else(
         || ClassName::TREE_DETAIL.to_string(),
         |v| format!("{} {} {v}", ClassName::TREE_DETAIL, ClassName::TREE_VALUE),

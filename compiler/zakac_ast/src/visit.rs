@@ -46,6 +46,7 @@ use crate::stmt::Param;
 use crate::stmt::PrintStmt;
 use crate::stmt::Program;
 use crate::stmt::RemoveStmt;
+use crate::stmt::ReplaceStmt;
 use crate::stmt::ResizeStmt;
 use crate::stmt::ReturnStmt;
 use crate::stmt::SizeArg;
@@ -117,6 +118,7 @@ ResizeStmt => "resize", visit_resize;
 FreeStmt => "free", visit_free;
 AddStmt => "add", visit_add;
 RemoveStmt => "remove", visit_remove;
+ReplaceStmt => "replace", visit_replace;
 StructDecl => "struct", visit_struct;
 ImportStmt => "import", visit_import;
 IntLit => "int", visit_int;
@@ -175,6 +177,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Free(s) => s,
         Stmt::Add(s) => s,
         Stmt::Remove(s) => s,
+        Stmt::Replace(s) => s,
         Stmt::Struct(s) => s,
         Stmt::Import(s) => s,
     }
@@ -293,6 +296,8 @@ pub trait Visitor
     fn visit_add(&mut self, n: &AddStmt) { walk_add(self, n) }
     /// Visit a remove statement.
     fn visit_remove(&mut self, n: &RemoveStmt) { walk_remove(self, n) }
+    /// Visit a replace statement.
+    fn visit_replace(&mut self, n: &ReplaceStmt) { walk_replace(self, n) }
 
     fn visit_struct(&mut self, n: &StructDecl) { walk_struct(self, n) }
 
@@ -381,6 +386,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Free(s) => v.visit_free(s),
         Stmt::Add(s) => v.visit_add(s),
         Stmt::Remove(s) => v.visit_remove(s),
+        Stmt::Replace(s) => v.visit_replace(s),
         Stmt::Struct(s) => v.visit_struct(s),
         Stmt::Import(s) => v.visit_import(s),
     }
@@ -581,6 +587,17 @@ pub fn walk_remove<V: Visitor + ?Sized>(v: &mut V, n: &RemoveStmt)
 {
     v.enter(n);
     v.visit_expr(&n.list);
+    v.leave(n);
+}
+
+/// Visit the text, the two ends, then the value, of a replace statement.
+pub fn walk_replace<V: Visitor + ?Sized>(v: &mut V, n: &ReplaceStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.text);
+    v.visit_expr(&n.start);
+    v.visit_expr(&n.end);
+    v.visit_expr(&n.value);
     v.leave(n);
 }
 
@@ -926,6 +943,14 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         {
             v.visit_span_mut(&mut s.span);
             v.visit_expr_mut(&mut s.list);
+        }
+        Stmt::Replace(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            v.visit_expr_mut(&mut s.text);
+            v.visit_expr_mut(&mut s.start);
+            v.visit_expr_mut(&mut s.end);
+            v.visit_expr_mut(&mut s.value);
         }
         Stmt::Struct(s) => walk_struct_mut(v, s),
         Stmt::Import(s) => walk_import_mut(v, s),

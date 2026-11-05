@@ -97,12 +97,12 @@ pub fn run_phases(
 /// included.
 pub fn check_loaded(loaded: Loaded, options: &SemcheckOptions) -> Checked
 {
-    let Loaded { program, imports, mut diagnostics } = loaded;
+    let Loaded { mut program, imports, mut diagnostics } = loaded;
     let failed = has_errors(&diagnostics);
     let idiom = NaturalnessOptions::builder().strict(options.strict_particles).build();
     let idiom = tern!(failed, Vec::new(), zakac_naturalness::check(&program, &idiom));
     diagnostics.extend(idiom);
-    let out = tern!(failed, SemcheckOutput::default(), semcheck(&program, options));
+    let out = tern!(failed, SemcheckOutput::default(), semcheck(&mut program, options));
     diagnostics.extend(out.diagnostics);
     #[rustfmt::skip]
     return Checked::builder().program(program).kinds(out.kinds).structs(out.structs)

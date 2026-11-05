@@ -1,4 +1,5 @@
 use std::io::BufRead;
+use std::path::Path;
 use std::path::PathBuf;
 
 use bon::Builder;
@@ -107,7 +108,7 @@ impl Input
         let path = self.error_path();
 
         ret_if!(let Input::Stdin = self, read_stdin_input(stdin, &name, &path));
-        ret_if!(let Input::File(path) = self, read_file_input(&path, &name));
+        ret_if!(let Input::File(path) = self, read_file_input(path, &name));
         extract!(Input::Data { content, .. } = self);
         Ok((name, content.clone()))
     }
@@ -125,13 +126,13 @@ impl Input
 ///
 /// The file name and content.
 fn read_stdin_input(
-    stdin: &mut dyn BufRead, name: &FileName, path: &PathBuf,
+    stdin: &mut dyn BufRead, name: &FileName, path: &Path,
 ) -> zakac_host_errors::Result<(FileName, Vec<u8>)>
 {
     let mut content = Vec::new();
     let res = stdin.read_to_end(&mut content);
     ret_if!(let Ok(_) = res, Ok((name.clone(), content)));
-    let ctx = IOErrorContext::new(path.clone(), IOErrorAction::Read);
+    let ctx = IOErrorContext::new(path.to_path_buf(), IOErrorAction::Read);
     Err(zakac_host_errors::Error::from_io(res.err().unwrap(), ctx))
 }
 
@@ -254,7 +255,7 @@ impl Output
     ) -> zakac_host_errors::Result<()>
     {
         ret_if!(let Output::Stdout = self, write_stdout_output(stdout, content));
-        ret_if!(let Output::File(path) = self, write_file_output(&path, content));
+        ret_if!(let Output::File(path) = self, write_file_output(path, content));
         extract!(Output::Data { content: buf, .. } = self);
         buf.extend_from_slice(content);
         Ok(())

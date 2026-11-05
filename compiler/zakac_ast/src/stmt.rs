@@ -111,6 +111,8 @@ pub enum Stmt
     Add(AddStmt),
     /// `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။`
     Remove(RemoveStmt),
+    /// `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးပါ။`
+    Replace(ReplaceStmt),
     /// `ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။`
     Struct(StructDecl),
     /// `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းပါ။`
@@ -323,7 +325,7 @@ pub struct ContinueStmt
 }
 
 /// A function parameter: `ကိန်းပြည့် က`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct Param
 {
     /// Whether `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` marks it: the function changes
@@ -459,6 +461,30 @@ pub struct AddStmt
     #[serde(default)]
     #[builder(default)]
     pub before: bool,
+    /// Source region.
+    pub span: Span,
+}
+
+/// `<text> ၏ အကွက် <start> မှ <end> ထိကို <value> ဖြင့် အစားထိုးပါ။`, or
+/// `<text> ၏ <start> လုံးမြောက်စာလုံးမှ <end> လုံးမြောက်စာလုံးထိကို <value> ဖြင့်
+/// အစားထိုးပါ။`: the cells or the characters from `start` to `end`, both
+/// included, give their place to the value.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct ReplaceStmt
+{
+    /// The text that changes, a place.
+    pub text: Expr,
+    /// The first cell or character that goes.
+    pub start: Expr,
+    /// The last cell or character that goes.
+    pub end: Expr,
+    /// Whether `start` and `end` count characters from 1, not u8 cells
+    /// from 0.
+    #[serde(default)]
+    #[builder(default)]
+    pub chars: bool,
+    /// The text, the view of text or the character that takes their place.
+    pub value: Expr,
     /// Source region.
     pub span: Span,
 }

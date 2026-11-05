@@ -33,6 +33,30 @@ kinds, diagnostics }`: the tree, the kind table, and one list of diagnostics, th
 lexer's first, then the parser's, then the wording warnings, then the name and kind
 errors.
 
+`semcheck` takes the program as `&mut Program` and works out each list count written as
+an expression (`consts.rs`). Where a kind is read (`written_kind`, and struct fields in
+`visit_struct`), `work_out_counts` checks the count as an expression and works it out with
+the folder's own math: `value.rs` and the operator enums of `const_op.rs` live in this
+crate, and the IR builder takes them from here. `work_out` follows lowering: each operand
+in its recorded kind, converted where lowering converts it, so literals, constants,
+operators in both spellings, comparisons, conversions and `၏ အရွယ်အစား` give the value the
+folder would; a constant list or struct is held as its items (`Folded`, kept in
+`Checker::aggs` while a run lasts) when each item is known, as the folder's `is_known`
+asks, so a cell, a field or the count of a plain list reads it (`cell_place` reports
+ZK0603), and the count of a counted list comes from its kind, as lowering takes it. The
+test `counts_agree_with_the_values_the_program_computes` (`zaka_vm/tests/values.rs`) gives
+each form to a constant and to a count and checks the two agree, so the two walks keep in
+step; and an overflow (ZK0601), a division with zero (ZK0602) or a shift too far
+(ZK0407) is reported as the folder reports it. Each constant declaration keeps its value
+in its `Binding` (`ConstVal`). A size that hangs on a count still open waits
+(`Stop::Pending`, `size_waits`, `open_structs`), so no count is fixed from a stand-in. A
+run records each count (`CountTable`) and the top-level constants (`KnownConsts`);
+`write_counts` writes each worked-out count back as `Cells::Fixed`, and `semcheck` runs
+again while a run writes a count or finds new constants, so a struct can name a constant
+declared below it and one count can wait on another. The last run gives the output, and
+a count still open is ZK0227 (a count that waits on itself among them). A program with no
+count expression is checked once.
+
 `SemcheckArtifact` is the reloadable form (text header `# zakac-semcheck-artifact v1`,
 files `.zksemt` and `.zksem`). The command takes `--platform-bits` (8 to 128, default 64),
 `--strict-particles` and `--no-raw`; these become `SemcheckOptions { platform_bits,
@@ -101,6 +125,7 @@ that implements `Visitor`. It has one method for each statement form and calls
 | assignment to a cell of text | ZK0429, for owned text and a view alike |
 | assignment to a character of text | `char_write`, when `char_target` finds `၏ စာလုံး n` or `၏ n ခုမြောက်စာလုံး` as the target: the text is a writable place (`place_kind`), the number an integer (ZK0423) and the value a `char` (ZK0401); `changeable_text` reports a view of text (ZK0438), and a target that is no text is ZK0403 |
 | add, remove | `growing_cells` (from `visit_add` and `visit_remove`): the list is a writable place (`place_kind`: ZK0410, ZK0306) of a plain list kind, else ZK0437 (a counted list, a slice, or a pointer to a list, and `နောက်ဆုံးအကွက်` on text); an add in front of a cell (`insert`) checks the list of the cell so and its number (`cell_number`, ZK0423), an add in front of a character checks the text (`is_text_place`, ZK0403; ZK0438) and goes on as an add to text, and `၏ အရှေ့တွင်` after each other value is ZK0439; a remove of the last character (`shrinking_text`) takes text that can change (ZK0403, ZK0438); the value of an add converts to the cell kind (ZK0401). An add to text goes to `text_add` instead: `changeable_text` reports a view (ZK0438), and the value is text, a view of text or a `char`, else ZK0401 ("expected text") |
+| replace | `visit_replace`: the text is a place (`place_kind`) of text (`is_text_place`, ZK0403), both ends are integers (`cell_number`, ZK0423), and the rest goes as an add to text (`text_add`: ZK0438 for a view, ZK0401 for a value that is no text, view or `char`) |
 
 Each subtree is inferred once, so a diagnostic is never repeated. When an operand has an
 error, its operation returns `None` and reports nothing more; an operation with two bad
@@ -262,7 +287,9 @@ integer, and a short-lived list that is not a place. A list literal with no coun
 expected is a plain list. `[]` checked against a counted list is
 allowed in the value of a declaration alone, where each cell starts at its default; in
 each other place it is ZK0436. A constant keeps the kind its declaration gives. `==` and
-`!=` take two lists of one kind; a counted and a plain list is ZK0404.
+`!=` take two lists of one kind, or two structs of one kind (`infer_list_pair` in
+`ops.rs`); a counted and a plain list, or two structs of different kinds, is ZK0404, and
+an ordering operator on a struct is ZK0403.
 The count, a cell, a range and the lend also take text, owned or a view: a cell of text
 is a `u8`, and a range or a lend of text is a `text[..]`. The assignment check in
 `semcheck.rs` reports a write to a cell of text as ZK0429. A range or a lend of text needs

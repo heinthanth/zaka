@@ -509,3 +509,157 @@ fn text_takes_character_writes_and_adds_in_each_mode()
 {
     runs_in_each_mode(EDITS_TEXT, TEXT_EDITED)
 }
+
+/// Structs compare each field in turn: text, float, nested struct and list
+/// fields, structs in counted and in plain lists, and `-0.0` against `0.0`.
+const STRUCTS_COMPARED: &str = "ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ဒဿမကိန်း y တို့ ပါဝင်သည်။
+ဒေတာအမျိုးအစား လူ တွင် စာသား အမည်၊ နေရာ နေ၊ ကိန်းပြည့် စာရင်း မှတ် တို့ ပါဝင်သည်။
+ကိန်းရှင် က သည် လူ(အမည်: \"မောင်\"၊ နေ: နေရာ(x: ၁၊ y: ၀.၅)၊ မှတ်: [၁၊ ၂]) ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် က ဖြစ်ပါစေ။
+က == ခ ကို ပြသပါ။
+က != ခ ကို ပြသပါ။
+ခ ၏ အမည် ထဲသို့ \"ကြီး\" ကို ထည့်ပါ။
+က == ခ ကို ပြသပါ။
+ခ ၏ အမည် ကို \"မောင်\" ဟု ထားပါ။
+ခ ၏ နေ ၏ x ကို ၂ ဟု ထားပါ။
+က == ခ ကို ပြသပါ။
+ကိန်းရှင် ဂ သည် နေရာ(y: -၀.၀) ဖြစ်ပါစေ။
+ဂ == နေရာ() ကို ပြသပါ။
+ကိန်းရှင် အုပ် သည် [နေရာ(x: ၁)၊ နေရာ(y: ၂.၀)] ဖြစ်ပါစေ။
+အုပ် == [နေရာ(x: ၁)၊ နေရာ(y: ၂.၀)] ကို ပြသပါ။
+ကိန်းရှင် လူများ သည် လူ စာရင်း တစ်ခု ဖြစ်ပါစေ။
+လူများ ထဲသို့ က ကို ထည့်ပါ။
+ကိန်းရှင် တခြား သည် လူများ ဖြစ်ပါစေ။
+လူများ == တခြား ကို ပြသပါ။
+တခြား ထဲသို့ ခ ကို ထည့်ပါ။
+လူများ == တခြား ကို ပြသပါ။
+";
+
+/// What [`STRUCTS_COMPARED`] prints.
+const STRUCTS_COMPARED_OUT: &str = "မှန်\nမမှန်\nမမှန်\nမမှန်\nမှန်\nမှန်\nမှန်\nမမှန်\n";
+
+#[test]
+fn structs_compare_each_field_in_each_mode()
+{
+    runs_in_each_mode(STRUCTS_COMPARED, STRUCTS_COMPARED_OUT)
+}
+
+/// Replaces of u8 cells and of characters: a longer, a shorter and a blank
+/// value, a character, Burmese text, a lent parameter, and a view of the
+/// same text as the value.
+const REPLACES: &str = "လုပ်ဆောင်ချက် ပြင် သည်
+စာသား t ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+t ၏ အကွက် ၀ မှ ၀ ထိကို \"J\" ဖြင့် အစားထိုးပါ။
+t ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+ကိန်းရှင် စာ သည် \"hello world\" ဖြစ်ပါစေ။
+စာ ၏ အကွက် ၀ မှ ၄ ထိကို \"bye\" ဖြင့် အစားထိုးပါ။
+စာ ကို ပြသပါ။
+စာ ၏ ၁ လုံးမြောက်စာလုံးမှ ၃ လုံးမြောက်စာလုံးထိကို 'B' ဖြင့် အစားထိုးပါ။
+စာ ကို ပြသပါ။
+စာ ၏ အကွက် ၁ မှ ၁ ထိကို \"\" ဖြင့် အစားထိုးပါ။
+စာ ကို ပြသပါ။
+စာ ၏ ၂ လုံးမြောက်စာလုံးမှ ၆ လုံးမြောက်စာလုံးထိကို \"{၁ + ၁}\" ဖြင့် အစားထိုးပါ။
+စာ ကို ပြသပါ။
+ကိန်းရှင် ကြိုး သည် \"ကခဂ\" ဖြစ်ပါစေ။
+ကြိုး ၏ ၂ လုံးမြောက်စာလုံးမှ ၂ လုံးမြောက်စာလုံးထိကို \"ငငင\" ဖြင့် အစားထိုးပါ။
+ကြိုး ကို ပြသပါ။
+ကြိုး ၏ အကွက် ၀ မှ ၂ ထိကို ကြိုး ၏ အကွက် ၃ မှစ၍ ၆ ကွက် ဖြင့် အစားထိုးပါ။
+ကြိုး ကို ပြသပါ။
+ကိန်းရှင် မူရင်း သည် \"java\" ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ပြင် ကို မူရင်း တို့ဖြင့် လုပ်ဆောင်ပါ။
+မူရင်း ကို ပြသပါ။
+";
+
+/// What [`REPLACES`] prints.
+const REPLACED: &str = "bye world\nB world\nBworld\nB၂\nကငငငဂ\nငငငငငဂ\nJava\njava\n";
+
+#[test]
+fn ranges_of_text_are_replaced_in_each_mode() { runs_in_each_mode(REPLACES, REPLACED) }
+
+/// List counts worked out from constants: a struct field, a parameter, a
+/// local constant and a size.
+const COUNTED_BY_CONSTANTS: &str = "ကိန်းသေ N သည် ၂ ဖြစ်ပါစေ။
+ဒေတာအမျိုးအစား ဇယား တွင် အကွက် N * ၂ ခုရှိသော ကိန်းပြည့် စာရင်း အမှတ် တို့ ပါဝင်သည်။
+လုပ်ဆောင်ချက် ပြ သည်
+အကွက် N + ၁ ခုရှိသော ကိန်းပြည့် စာရင်း l ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+l ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+ကိန်းသေ M သည် (N + ၁) * ၂ ဖြစ်ပါစေ။
+ဇယား() ကို ပြသပါ။
+လုပ်ဆောင်ချက် ပြ ကို [၁၊ ၂၊ ၃] တို့ဖြင့် လုပ်ဆောင်ပါ။
+အကွက် M ခုရှိသော ၈ ဘစ် ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+";
+
+/// What [`COUNTED_BY_CONSTANTS`] prints.
+const COUNTED_BY_CONSTANTS_OUT: &str = "ဇယား(အမှတ်: [၀၊ ၀၊ ၀၊ ၀])\n[၁၊ ၂၊ ၃]\n၆\n";
+
+#[test]
+fn counts_from_constants_in_each_mode()
+{
+    runs_in_each_mode(COUNTED_BY_CONSTANTS, COUNTED_BY_CONSTANTS_OUT)
+}
+
+/// The constants the expressions of
+/// [`counts_agree_with_the_values_the_program_computes`] read.
+const AGREES_HEAD: &str = "ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ၈ ဘစ် ကိန်းပြည့် y တို့ ပါဝင်သည်။
+ကိန်းသေ N သည် ၃ ဖြစ်ပါစေ။
+ကိန်းသေ B သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။
+ကိန်းသေ L သည် [၂၊ ၃၊ ၄] ဖြစ်ပါစေ။
+ကိန်းသေ C သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၅၊ ၆၊ ၇] ဖြစ်ပါစေ။
+ကိန်းသေ P သည် နေရာ(x: ၂၊ y: ၅) ဖြစ်ပါစေ။
+ကိန်းသေ T သည် [[၁၊ ၂]၊ [၃၊ ၄]] ဖြစ်ပါစေ။
+ကိန်းရှင် v သည် အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် w သည် အကွက် N + ၁ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+";
+
+/// The check works out a list count, and the same expression as a
+/// constant is folded and run: each form of expression a count takes gives
+/// the two the same number.
+#[test]
+fn counts_agree_with_the_values_the_program_computes()
+{
+    let forms = [
+        "(N + ၁) * ၂ - N % ၂",
+        "N << ၂",
+        "(N & ၆) | ၁",
+        "N ^ ၇",
+        "~(-N)",
+        "B / ၃",
+        "N နှင့် ၂ ၏ ပေါင်းလဒ်",
+        "၂.၇ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ်",
+        "('A' ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ်) - ၆၀",
+        "ကိန်းပြည့် ၏ အရွယ်အစား",
+        "နေရာ ၏ အရွယ်အစား",
+        "အကွက် N ခုရှိသော ၁၆ ဘစ် ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား",
+        "L ၏ အကွက် ၁",
+        "C ၏ ၃ ခုမြောက်အကွက်",
+        "(P ၏ x) + (P ၏ y)",
+        "T ၏ အကွက် ၁ ၏ အကွက် ၀",
+        "L ၏ အကွက်အရေအတွက်",
+        "v ၏ အကွက်အရေအတွက်",
+        "(w ၏ အကွက်အရေအတွက်) + ၁",
+    ];
+    for form in forms
+    {
+        let program = format!(
+            "{AGREES_HEAD}ကိန်းသေ K သည် {form} ဖြစ်ပါစေ။
+ကိန်းရှင် l သည် အကွက် {form} ခုရှိသော ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+K ကို ပြသပါ။
+l ၏ အကွက်အရေအတွက် ကို ပြသပါ။"
+        );
+        let module =
+            compile_text(&program, &FoldOptions::default(), EmitOptions::default());
+        let mut out = Vec::new();
+        let options = RunOptions::default();
+        let (_, result) =
+            run_and_keep(&module, &mut out, &options, &HostData::default());
+        assert_eq!(result, Ok(()), "{form}");
+        let out = String::from_utf8(out).unwrap();
+        let lines: Vec<&str> = out.lines().collect();
+        assert_eq!(lines.len(), 2, "{form}: {out}");
+        assert_eq!(lines[0], lines[1], "{form}");
+    }
+}

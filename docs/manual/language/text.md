@@ -318,11 +318,13 @@ o
 <text> ၏ စာလုံး <number> ၏ အရှေ့တွင် <value> ကို ထည့်ပါ။
 <text> ၏ <number> ခုမြောက်စာလုံး ၏ အရှေ့တွင် <value> ကို ထည့်ပါ။
 <text> ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။
+<text> ၏ အကွက် <start> မှ <end> ထိကို <value> ဖြင့် အစားထိုးပါ။
+<text> ၏ <start> လုံးမြောက်စာလုံးမှ <end> လုံးမြောက်စာလုံးထိကို <value> ဖြင့် အစားထိုးပါ။
 ```
 
-Text changes in place through three statements: the assignment writes one character, the
-add statement adds at its end or in front of a character, and the remove statement takes
-its last character off.
+Text changes in place through four statements: the assignment writes one character, the
+add statement adds at its end or in front of a character, the remove statement takes its
+last character off, and the replace statement puts a value in place of a range.
 
 - **A character write** takes `၏ စာလုံး n` (counted from 0) or `၏ n ခုမြောက်စာလုံး`
   (counted from 1) as its place. The text is a place that can be set, as for each
@@ -344,10 +346,20 @@ its last character off.
   characters stops the program: "the text holds no characters, so it has no last character
   to remove". `နောက်ဆုံးအကွက်` names the last cell of a list, and on text it is ZK0437;
   `နောက်ဆုံးစာလုံး` on a list is ZK0403.
-- The cells (u8s) of text still cannot be written (ZK0429, see [Cells](#cells)); a whole
-  character can.
-- A view of text does not change: a character write, an add or a remove on a view is
-  ZK0438 (see
+- **A replace** puts a value in place of a range of the text, both ends included. With
+  `အကွက် <start> မှ <end> ထိကို`, the ends count u8 cells from 0, as a range of cells
+  does; an end that falls inside a character stops the program, as such a range does (see
+  [Views](#views)). With `<start> လုံးမြောက်စာလုံးမှ <end> လုံးမြောက်စာလုံးထိကို`, the
+  ends count characters from 1 (`ခုမြောက်` is a second spelling of `လုံးမြောက်`). The value
+  takes the values of an add, and can be longer or shorter than the range, or blank. The
+  value is read before the text changes, so it can be a view of the same text. The ends
+  are integers (ZK0423); an end outside the text stops the program, and so does an end
+  before the start: "the range from 2 to 1 ends before it starts". A range of a list is
+  ZK0403, and a range on its own, outside a replace statement, is ZK0206.
+- The cells (u8s) of text still cannot be written one at a time (ZK0429, see
+  [Cells](#cells)); a whole character can, and a replace can write a range of cells.
+- A view of text does not change: a character write, an add, a remove or a replace on a
+  view is ZK0438 (see
   [Views](#views)). Each edit ends the views of the text (ZK0704).
 
 A character is a Unicode code point, not a letter as it is written. `ကျွန်` is five characters,
@@ -380,6 +392,38 @@ Aကc!?
 Aကc!?Aကc!?
 ချွန်
 မချွန
+```
+
+A replace of cells and a replace of characters:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် စာ သည် "hello world" ဖြစ်ပါစေ။
+စာ ၏ အကွက် ၀ မှ ၄ ထိကို "bye" ဖြင့် အစားထိုးပါ။
+စာ ကို ပြသပါ။
+ကိန်းရှင် အမည် သည် "ကခဂ" ဖြစ်ပါစေ။
+အမည် ၏ ၂ လုံးမြောက်စာလုံးမှ ၃ လုံးမြောက်စာလုံးထိကို "ငင" ဖြင့် အစားထိုးပါ။
+အမည် ကို ပြသပါ။
+အမည် ၏ ၁ လုံးမြောက်စာလုံးမှ ၁ လုံးမြောက်စာလုံးထိကို "" ဖြင့် အစားထိုးပါ။
+အမည် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+bye world
+ကငင
+ငင
+```
+
+```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် t သည် "abc" ဖြစ်ပါစေ။
+t ၏ အကွက် ၂ မှ ၁ ထိကို "x" ဖြင့် အစားထိုးပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+the program stopped: the range from 2 to 1 ends before it starts
 ```
 
 ```zaka-stop

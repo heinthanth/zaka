@@ -107,12 +107,50 @@ same:
 | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် ၏ စာရင်း` |
 | `အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း` |
 
-The count is a whole number above zero, written as digits. A counted list declared with no
+The count is a whole number above zero, written as digits or worked out from constants
+(see [A count from constants](#a-count-from-constants)). A counted list declared with no
 value starts with each cell at its default: `၀` for a number, `မမှန်` for a true/false
 value, `ဗလာ` for an address. On a counted list, `စာရင်းအလွတ်` sets each cell back to its
 default, and the count remains. `[]` is a list with no cells, so it does not fit a
 counted list, save in its declaration, where each cell starts at its default; see [A list
 with no cells in a counted list](#a-list-with-no-cells-in-a-counted-list).
+
+## A count from constants
+
+A count can name constants and work with them, so one constant sets the size of several
+lists. The compiler works the count out before the program runs, as it folds
+constants: each operator and conversion it can work out, the size of a kind, a cell or a
+field of a constant list or struct, and the cell count of a counted list are fine.
+
+```zaka
+ကိန်းသေ အရွယ် သည် ၃ ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် အကွက် အရွယ် ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် အကွက် အရွယ် * ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+က ကို ပြသပါ။
+ခ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[၀၊ ၀၊ ၀]
+[၀၊ ၀၊ ၀၊ ၀၊ ၀၊ ၀]
+```
+
+A variable does not work: its value is known when the program runs, after the size of the
+list must be fixed.
+
+```zaka-error ZK0227
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အရွယ် သည် ၃ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် အကွက် အရွယ် ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0227]: "အရွယ်" is not a cell count; write a whole number above zero, in digits or worked out from constants
+```
 
 ## Tables of counted lists
 

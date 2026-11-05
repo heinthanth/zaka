@@ -109,6 +109,13 @@ impl ToSexpr for Stmt
             {
                 list("insert", [dest_sexpr(dest), index.to_sexpr(), value.to_sexpr()])
             }
+            Stmt::Replace { dest, start, end, chars, value, .. } =>
+            {
+                let word = tern!(*chars, "replace_chars", "replace");
+                let parts = [start, end, value].map(ToSexpr::to_sexpr);
+                let [start, end, value] = parts;
+                list(word, [dest_sexpr(dest), start, end, value])
+            }
         }
     }
 }

@@ -91,6 +91,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ထည့်သွင်းပါ", Kw::Import),
     ("ထည့်ပါ", Kw::Add),
     ("ဖျက်ပါ", Kw::Remove),
+    ("အစားထိုးပါ", Kw::Replace),
     // control
     ("အကယ်၍", Kw::If),
     ("လျှင်", Kw::Then),
@@ -154,12 +155,14 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("စာလုံးအရေအတွက်", Kw::CharCount),
     ("ဆက်ထားသည့်", Kw::Joined),
     ("ခုမြောက်", Kw::Ordinal),
+    ("လုံးမြောက်", Kw::Ordinal),
     ("ခုရှိသော", Kw::Having),
     ("ရှိသော", Kw::Having),
     ("တို့ပါသော", Kw::ListOf),
     // slices
     ("တစ်စိတ်တစ်ပိုင်း", Kw::Part),
     ("မှစ၍", Kw::StartingAt),
+    ("ထိ", Kw::Upto),
     ("ကွက်", Kw::CellWord),
     // structs
     ("အချက်အလက်အမျိုးအစား", Kw::StructOpen),

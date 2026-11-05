@@ -127,6 +127,7 @@ impl Checker
     /// The kind.
     pub(crate) fn written_kind(&mut self, written: &Kind, at: KindUse) -> DataKind
     {
+        self.work_out_counts(written);
         let kind = DataKind::from_ast(written, &self.structs);
         let span = written.span;
         let names = self.structs.keys().map(|n| n.as_str()).collect();

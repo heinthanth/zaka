@@ -6,10 +6,13 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::IntoStaticStr;
 use zakac_ast::stmt::CountMode;
+pub use zakac_semcheck::const_op::CmpOp;
+pub use zakac_semcheck::const_op::InfixOp;
+pub use zakac_semcheck::const_op::LogicOp;
+pub use zakac_semcheck::const_op::PrefixOp;
 use zakac_semcheck::kind::DataKind;
+use zakac_semcheck::value::Value;
 use zakac_span::span::Span;
-
-use crate::value::Value;
 
 /// A lowered program: the global slots, the functions and the top-level
 /// statements, which run in order.
@@ -434,6 +437,28 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Put a value in place of a range of the text at `dest`: the u8 cells
+    /// from `start` to `end`, both included, or with `chars` the characters
+    /// from `start` to `end`, counted from 1. The u8s after the range move
+    /// when the value takes a different number of u8s. Text with a room of 0
+    /// takes a block of its own first.
+    Replace
+    {
+        /// The text.
+        dest: Dest,
+        /// The text kind.
+        kind: DataKind,
+        /// The first cell or character, an integer of its own kind.
+        start: Expr,
+        /// The last cell or character, an integer of its own kind.
+        end: Expr,
+        /// Whether the ends count characters from 1, not u8 cells from 0.
+        chars: bool,
+        /// Text, a view of text or a character, read where it is.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
     /// Add text, a view of text or a character at the end of the text at
     /// `dest`. Text with a room of 0 takes a block of its own first, and a
     /// full block moves to a larger one.
@@ -479,6 +504,7 @@ impl Stmt
             | Stmt::RemoveCell { span, .. }
             | Stmt::SetChar { span, .. }
             | Stmt::Insert { span, .. }
+            | Stmt::Replace { span, .. }
             | Stmt::AddText { span, .. } => *span,
         }
     }
@@ -789,104 +815,6 @@ pub fn fmt_values_mut(pieces: &mut [FmtPiece]) -> impl Iterator<Item = &mut Expr
     })
 }
 
-/// A prefix operator.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(IntoStaticStr)]
-#[serde(rename_all = "snake_case")]
-pub enum PrefixOp
-{
-    /// Negate a signed integer or a float.
-    #[strum(serialize = "neg")]
-    Neg,
-    /// Flip the bits of an integer.
-    #[strum(serialize = "~")]
-    BitNot,
-    /// Boolean not.
-    #[strum(serialize = "!")]
-    Not,
-}
-
-impl PrefixOp
-{
-    /// The short name of the operator, as asm would write it.
-    ///
-    /// # Returns
-    ///
-    /// `neg`, `bnot` or `not`.
-    pub const fn mnemonic(self) -> &'static str
-    {
-        match self
-        {
-            PrefixOp::Neg => "neg",
-            PrefixOp::BitNot => "bnot",
-            PrefixOp::Not => "not",
-        }
-    }
-}
-
-/// An arithmetic, bitwise or shift operator.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(IntoStaticStr)]
-#[serde(rename_all = "snake_case")]
-pub enum InfixOp
-{
-    /// `+`
-    #[strum(serialize = "+")]
-    Add,
-    /// `-`
-    #[strum(serialize = "-")]
-    Sub,
-    /// `*`
-    #[strum(serialize = "*")]
-    Mul,
-    /// `/`, toward zero for integers.
-    #[strum(serialize = "/")]
-    Div,
-    /// `%`, with the sign of the dividend.
-    #[strum(serialize = "%")]
-    Rem,
-    /// `&`
-    #[strum(serialize = "&")]
-    BitAnd,
-    /// `|`
-    #[strum(serialize = "|")]
-    BitOr,
-    /// `^`
-    #[strum(serialize = "^")]
-    BitXor,
-    /// `<<`
-    #[strum(serialize = "<<")]
-    Shl,
-    /// `>>`, arithmetic for signed integers.
-    #[strum(serialize = ">>")]
-    Shr,
-}
-
-impl InfixOp
-{
-    /// The short name of the operator, as asm would write it.
-    ///
-    /// # Returns
-    ///
-    /// The name, such as `add` for `+` or `shl` for `<<`.
-    pub const fn mnemonic(self) -> &'static str
-    {
-        match self
-        {
-            InfixOp::Add => "add",
-            InfixOp::Sub => "sub",
-            InfixOp::Mul => "mul",
-            InfixOp::Div => "div",
-            InfixOp::Rem => "rem",
-            InfixOp::BitAnd => "band",
-            InfixOp::BitOr => "bor",
-            InfixOp::BitXor => "bxor",
-            InfixOp::Shl => "shl",
-            InfixOp::Shr => "shr",
-        }
-    }
-}
-
 /// The source of a slice: where its cells start and what bounds them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -901,66 +829,6 @@ pub enum SliceFrom
     /// A pointer into a heap block: the cells start at the pointer, and the
     /// VM checks the range against the block.
     Block,
-}
-
-/// A comparison operator.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(IntoStaticStr)]
-#[serde(rename_all = "snake_case")]
-pub enum CmpOp
-{
-    /// `==`
-    #[strum(serialize = "==")]
-    Eq,
-    /// `!=`
-    #[strum(serialize = "!=")]
-    Ne,
-    /// `<`
-    #[strum(serialize = "<")]
-    Lt,
-    /// `>`
-    #[strum(serialize = ">")]
-    Gt,
-    /// `<=`
-    #[strum(serialize = "<=")]
-    Le,
-    /// `>=`
-    #[strum(serialize = ">=")]
-    Ge,
-}
-
-impl CmpOp
-{
-    /// The short name of the operator, as asm would write it.
-    ///
-    /// # Returns
-    ///
-    /// The name, such as `eq` for `==` or `le` for `<=`.
-    pub const fn mnemonic(self) -> &'static str
-    {
-        match self
-        {
-            CmpOp::Eq => "eq",
-            CmpOp::Ne => "ne",
-            CmpOp::Lt => "lt",
-            CmpOp::Gt => "gt",
-            CmpOp::Le => "le",
-            CmpOp::Ge => "ge",
-        }
-    }
-}
-
-/// A logical operator.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(IntoStaticStr)]
-#[serde(rename_all = "snake_case")]
-#[strum(serialize_all = "snake_case")]
-pub enum LogicOp
-{
-    /// Both hold.
-    And,
-    /// One of the two holds.
-    Or,
 }
 
 /// Options of the lowering.

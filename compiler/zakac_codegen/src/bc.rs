@@ -264,8 +264,9 @@ pub enum Op
     /// Pop an address; set the octets of a value of this kind there to
     /// zero.
     Zero(DataKind),
-    /// Pop the addresses of two lists of this kind, the right one first;
-    /// push whether each cell of one equals the cell of the other.
+    /// Pop the addresses of two lists or two structs of this kind, the right
+    /// one first; push whether each cell or field of one equals the cell or
+    /// field of the other.
     ListEq(DataKind),
     /// Pop the address of a list, a struct or a slice of this kind; write its
     /// cells or fields and a line break.
@@ -372,6 +373,19 @@ pub enum Op
         kind: DataKind,
         /// The number of the first character: 0 or 1.
         first: u8,
+    },
+    /// Pop a value of this kind, a character or the address of text or a view
+    /// of text, then the last and the first number of a range, then the
+    /// address of text; stop the program when a number lies outside the text,
+    /// the last comes before the first, or an edge cuts a character, else give
+    /// the text a block of its own and put the u8s of the value in place of
+    /// the range, both ends included.
+    ReplaceText
+    {
+        /// The kind of the value.
+        kind: DataKind,
+        /// Whether the numbers count characters from 1, not u8 cells from 0.
+        chars: bool,
     },
     /// Pop the addresses of two plain lists, the right one first;
     /// push whether the two hold the same count of cells, each equal to the
@@ -508,6 +522,8 @@ impl Op
             {
                 format!("{} from {first}", kind.name())
             }
+            Op::ReplaceText { kind, chars: false } => kind.name(),
+            Op::ReplaceText { kind, chars: true } => format!("{} chars", kind.name()),
             Op::PtrAdd(s) | Op::PtrSub(s) | Op::Alloc(s) | Op::Realloc(s) =>
             {
                 s.to_string()

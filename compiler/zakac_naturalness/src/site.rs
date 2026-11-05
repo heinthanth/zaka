@@ -221,9 +221,14 @@ impl Shape
     {
         ret_if!(is_text(expr), Shape::Str);
         let tail = clause_tail(expr);
-        tail.is_some_and(|p| p != Particle::None)
-            .then_some(Shape::Sentence)
-            .unwrap_or(Shape::Value)
+        if tail.is_some_and(|p| p != Particle::None)
+        {
+            Shape::Sentence
+        }
+        else
+        {
+            Shape::Value
+        }
     }
 }
 

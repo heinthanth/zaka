@@ -77,7 +77,8 @@ pub(crate) fn part_ident(text: &str, word: Span, at: usize) -> Ident
 impl Parser<'_>
 {
     /// Whether a struct literal starts here: a field name with a value right
-    /// after it, and `ရှိသော` ahead before the end of the clause.
+    /// after it, and `ရှိသော` ahead before the end of the clause. None starts
+    /// inside a list count, whose `ရှိသော` closes the count.
     ///
     /// # Returns
     ///
@@ -85,7 +86,7 @@ impl Parser<'_>
     pub(crate) fn at_struct_lit(&self) -> bool
     {
         let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
-        ret_if!(!named || !starts_value(self.peek_n(1).kind), false);
+        ret_if!(self.in_count || !named || !starts_value(self.peek_n(1).kind), false);
         self.close_ahead(2, |p, n| p.peek_n(n).kind == TokenKind::Kw(Kw::Having))
     }
 

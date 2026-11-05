@@ -110,7 +110,7 @@ pub fn segment_at<'s>(
     {
         p = decode_next(&mut chars);
         #[rustfmt::skip]
-        handle_break(&mut tokens, text, base_pos, &mut start, &mut s_class, prev, off, curr, p, options);
+        handle_break(&mut tokens, text, base_pos, (&mut start, &mut s_class), (prev, off, curr), p, options);
         prev = curr;
     }
     emit(&mut tokens, text, base_pos, start, s_class, text.len());
@@ -431,20 +431,19 @@ fn should_break(
 ///
 /// * `tokens`: The vector of tokens to push the new token to.
 /// * `text`: The input text.
-/// * `start_off`: The start offset of the new token.
-/// * `start_class`: The start class of the new token.
-/// * `prev`: The previous character.
-/// * `off`: The offset of the character to break at.
-/// * `curr`: The current character.
+/// * `start`: The start offset and the start class of the new token.
+/// * `at`: The class of the previous character, the offset of the character to
+///   break at, and its class.
 /// * `pending`: The pending character.
 /// * `options`: The options for the segmenter.
 #[inline]
 fn handle_break<'s>(
     tokens: &mut Vec<PreLexicalToken<'s>>, text: &'s str, base_pos: Pos,
-    start_off: &mut usize, start_class: &mut u8, prev: u8, off: usize, curr: u8,
+    start: (&mut usize, &mut u8), at: (u8, usize, u8),
     pending: Option<(usize, u32, u8)>, options: &SegmenterOptions,
 )
 {
+    let ((start_off, start_class), (prev, off, curr)) = (start, at);
     let (next_cp, next, rest) = lookahead(text, pending);
     ret_if!(!should_break(prev, curr, next_cp, next, rest, options));
     emit(tokens, text, base_pos, *start_off, *start_class, off);

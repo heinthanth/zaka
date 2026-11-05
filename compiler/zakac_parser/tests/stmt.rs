@@ -468,3 +468,32 @@ fn adds_in_front_of_a_cell_or_a_character_parse()
     let text = stmt("t ၏ စာလုံး ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်ပါ။");
     assert!(text.starts_with("(insert ") && text.contains("t"), "{text}");
 }
+
+#[test]
+fn replace_of_a_range_parses()
+{
+    let cells = stmt("t ၏ အကွက် ၀ မှ ၄ ထိကို \"bye\" ဖြင့် အစားထိုးပါ။");
+    assert_eq!(cells, "(replace t 0 4 \"bye\")");
+    let chars = stmt("t ၏ ၁ လုံးမြောက်စာလုံးမှ i + ၁ လုံးမြောက်စာလုံးထိကို c ဖြင့် အစားထိုးပါ။");
+    assert_eq!(chars, "(replace_chars t 1 (+ i 1) c)");
+    let spaced = stmt("t ၏ ၁ ခုမြောက်စာလုံး မှ ၂ ခုမြောက်စာလုံး ထိ ကို c ဖြင့် အစားထိုးပါ။");
+    assert_eq!(spaced, "(replace_chars t 1 2 c)");
+    let field = stmt("s ၏ t ၏ အကွက် ၀ မှ ၁ ထိကို u ၏ အကွက် ၀ ဖြင့် အစားထိုးပါ။");
+    assert!(field.starts_with("(replace (field s t) 0 1 (cell u 0"), "{field}");
+}
+
+#[test]
+fn a_range_stands_in_a_replace_statement_alone()
+{
+    let printed = codes("t ၏ အကွက် ၀ မှ ၄ ထိကို ပြသပါ။");
+    assert_eq!(printed, [Code::SlotMismatch]);
+    let missing = codes("t ၏ အကွက် ၀ မှ ၄ ထိကို \"x\" ကို အစားထိုးပါ။");
+    assert_eq!(missing, [Code::SlotMismatch]);
+}
+
+#[test]
+fn a_counted_loop_from_a_cell_still_parses()
+{
+    let looped = stmt("l ၏ အကွက် ၀ မှ ၅ အထိ i အနေဖြင့် ရေတွက်၍ i ကို ပြသပါ။");
+    assert!(looped.starts_with("(count i (cell l 0) 5 count"), "{looped}");
+}

@@ -71,6 +71,7 @@ A statement is one of sixteen forms:
 | `RemoveCell { dest, kind }` | remove the last cell of the plain list at `dest`, or the last character of the text there; written `(remove_cell l0)` |
 | `SetChar { dest, kind, index, first, value }` | write the character `value` in place of character `index` of the text at `dest`, counted from `first` (0 or 1); written `(set_char g0 2 'x')` |
 | `AddText { dest, kind, value }` | add the text, view of text or character `value` at the end of the text at `dest`; written `(add_text g0 "c")` |
+| `Replace { dest, kind, start, end, chars, value }` | put `value` in place of the u8 cells (from 0) or, with `chars`, the characters (from 1) from `start` to `end` of the text at `dest`, both included; written `(replace l0 0 4 "x")` or `(replace_chars …)` |
 | `Insert { dest, kind, index, first, value }` | put `value` in front of cell `index` of the plain list at `dest`, or in front of character `index` of the text there, counted from `first`; written `(insert l0 1 20)` |
 
 An expression has its kind on each node, so no later stage has to work it out again.
@@ -158,6 +159,9 @@ rules out). Its rules:
   `add_text k` with `k` the kind of the value, and drops a fresh text the value made, such
   as a format, right after. The value is read where it is, never duplicated, so `t ထဲသို့ t
   ကို ထည့်ပါ။` reads `t` itself; the op reads the added u8s before it writes.
+- A replace (`replace_text`) becomes `Replace`, its value read where it is; codegen
+  pushes the text, both ends and the value and emits `replace_text k` (`replace_text k
+  chars` for characters), dropping a fresh value as for `add_text`.
 - An add in front of a cell or a character (`insert`, from `add_cell`) becomes `Insert`;
   a list cell goes through `owned` as for an add, and added text is read where it is. For
   a list, codegen works the value out into `%cell`, then pushes the list, the number and
@@ -165,7 +169,8 @@ rules out). Its rules:
   value and emits `insert_text k`, dropping a fresh value as for `add_text`. A remove of
   the last character becomes `RemoveCell` with the text kind.
 - `==` and `!=` on two plain lists emit `seq_eq k`, which compares the counts and
-  then each cell; `!=` adds a `not`. Two counted lists keep `list_eq k`.
+  then each cell; `!=` adds a `not`. Two counted lists keep `list_eq k`, and so do two
+  structs, which the VM compares one field at a time and never as raw u8s.
 - A range `x ၏ အကွက် s မှစ၍ n ကွက်` becomes `MakeSlice { source, start, len, from }`,
   where `from` tells whether the source is a list of a known count, a slice, or a heap
   block. The lend of a list is a `MakeSlice` of each cell, marked `checked`. The count of

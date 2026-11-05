@@ -10,7 +10,7 @@ fn lexemes(text: &str) -> Vec<&str>
 
 fn lexemes_with<'s>(text: &'s str, options: &SegmenterOptions) -> Vec<&'s str>
 {
-    segment(text, &options).into_iter().map(|t| t.lexeme).collect()
+    segment(text, options).into_iter().map(|t| t.lexeme).collect()
 }
 
 fn assert_segments(input: &str, segments: &str)

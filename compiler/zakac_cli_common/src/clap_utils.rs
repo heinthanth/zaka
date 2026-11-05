@@ -35,10 +35,10 @@ where
     O: WriteColor + ?Sized,
     E: WriteColor + ?Sized,
 {
-    let cmd_info = command_info(cmd, &args);
+    let cmd_info = command_info(cmd, args);
     cmd.clone()
         .try_get_matches_from(args)
-        .map_err(|error| handle_args_error(error, &cmd, cmd_info, stdout, stderr))
+        .map_err(|error| handle_args_error(error, cmd, cmd_info, stdout, stderr))
 }
 
 /// The information about the current command or subcommand.

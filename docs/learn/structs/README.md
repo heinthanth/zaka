@@ -153,6 +153,27 @@ The same holds for a struct given as a function argument.
 လူ(အသက်: ၂၀၊ အမြင့်: ၀.၀)
 ```
 
+## Comparing structs
+
+`==` and `!=` compare two structs of one kind, one field at a time:
+
+```zaka
+ဒေတာအမျိုးအစား လူ တွင် စာသား အမည်၊ ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကျော် သည် လူ(အမည်: "ကျော်"၊ အသက်: ၂၀) ဖြစ်ပါစေ။
+ကိန်းရှင် မွန် သည် ကျော် ဖြစ်ပါစေ။
+ကျော် == မွန် ကို ပြသပါ။
+မွန် ၏ အသက် ကို ၃၀ ဟု ထားပါ။
+ကျော် == မွန် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မှန်
+မမှန်
+```
+
 ## Structs in structs and lists
 
 A field can hold another struct, and a list cell can hold a struct. A field of a field is
@@ -325,7 +346,8 @@ The caller gets the struct as with an assignment: a duplicate of its own.
 
 ## What a struct cannot do
 
-- `==` and `!=` do not take structs: compare the fields.
+- `<`, `>` and the like do not take structs: compare the fields. See
+  [Ordering structs](mistakes.md#ordering-structs).
 - A struct cannot hold itself: see [Struct mistakes](mistakes.md#a-struct-that-holds-itself).
 
 ## Hands on
