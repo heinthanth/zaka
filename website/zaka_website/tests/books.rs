@@ -429,6 +429,10 @@ const LATER_WORDS: &[Kw] = &[
     Kw::WillKeep,
     Kw::WillResize,
     Kw::WillRelease,
+    Kw::Toward,
+    Kw::WillBlit,
+    Kw::WillShift,
+    Kw::WillFill,
 ];
 
 /// The words of [`LATER_WORDS`] a program uses.

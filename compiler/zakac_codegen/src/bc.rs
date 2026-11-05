@@ -247,6 +247,16 @@ pub enum Op
     Realloc(u32),
     /// Pop the address of a heap block and release it.
     Free,
+    /// Pop a destination address, a cell count, then a source address;
+    /// write that count of cells of this stride from the source to the
+    /// destination. Stop the program when the two ranges overlap.
+    MemBlit(u32),
+    /// As [`Op::MemBlit`], but the two ranges can overlap: the source is
+    /// read in full before the destination is written.
+    MemMove(u32),
+    /// Pop a cell count, a value of this kind, then an address; write the
+    /// value to that count of cells from the address on.
+    MemFill(DataKind),
     /// Push the top value a second time.
     Dup,
     /// Pop a cell number; stop the program when it is outside the list,
@@ -504,6 +514,7 @@ impl Op
             | Op::RemoveCell(kind)
             | Op::AddText(kind)
             | Op::SeqEq(kind)
+            | Op::MemFill(kind)
             | Op::PrintList(kind) => kind.name(),
             Op::MakeSlice { stride, from } =>
             {
@@ -524,10 +535,12 @@ impl Op
             }
             Op::ReplaceText { kind, chars: false } => kind.name(),
             Op::ReplaceText { kind, chars: true } => format!("{} chars", kind.name()),
-            Op::PtrAdd(s) | Op::PtrSub(s) | Op::Alloc(s) | Op::Realloc(s) =>
-            {
-                s.to_string()
-            }
+            Op::PtrAdd(s)
+            | Op::PtrSub(s)
+            | Op::Alloc(s)
+            | Op::Realloc(s)
+            | Op::MemBlit(s)
+            | Op::MemMove(s) => s.to_string(),
             Op::Ret
             | Op::Print
             | Op::Pop

@@ -91,6 +91,16 @@ impl ToSexpr for Stmt
                 heap_sexpr("resize", dest, count, *unit)
             }
             Stmt::Free { dest, .. } => list("free", [dest_sexpr(dest)]),
+            Stmt::Blit { src, dst, count, unit, overlap, .. } =>
+            {
+                let parts = [src.to_sexpr(), dst.to_sexpr(), count.to_sexpr()];
+                let head = tern!(*overlap, "shift", "blit");
+                list(head, parts.into_iter().chain(unit.map(DataKind::name)))
+            }
+            Stmt::Fill { dst, count, value, .. } =>
+            {
+                list("fill", [dst.to_sexpr(), count.to_sexpr(), value.to_sexpr()])
+            }
             Stmt::Drop { dest, .. } => list("drop", [dest_sexpr(dest)]),
             Stmt::AddCell { dest, value, .. } =>
             {

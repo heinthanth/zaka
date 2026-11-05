@@ -305,9 +305,10 @@ reads or writes at another address.
 
 ## Heap statements
 
-Three statements work with blocks of the heap. In all three, `မင်မိုရီ` can be replaced
-with `မှတ်ဉာဏ်`. Resizing and giving back start alike, with `လိပ်စာ <place> ရှိ မင်မိုရီကို`
-("the RAM at the address in the place"); the words after it tell the two apart.
+Three statements work with blocks of the heap, and [three more](#writing-and-filling-cells)
+write the cells of a block. In all of them, `မင်မိုရီ` can be replaced with `မှတ်ဉာဏ်`. Resizing
+and giving back start alike, with `လိပ်စာ <place> ရှိ မင်မိုရီကို` ("the RAM at the
+address in the place"); the words after it tell the two apart.
 
 ### Sizes
 
@@ -399,6 +400,104 @@ A heap statement whose place is not a pointer is ZK0417:
 error[ZK0417]: the heap statement needs a pointer, found isize
 ```
 
+## Writing and filling cells
+
+Three statements write a whole run of cells at once. Each starts as resizing does, with
+`လိပ်စာ <ptr> ရှိ`, and each has a size, as in Sizes above, of the cells it handles:
+
+| Statement | Shape |
+| --- | --- |
+| write the cells, no overlap | `လိပ်စာ SRC ရှိ SIZE မင်မိုရီကို လိပ်စာ DST ဆီသို့ ကူးယူမည်။` |
+| write the cells, overlap allowed | `လိပ်စာ SRC ရှိ SIZE မင်မိုရီကို လိပ်စာ DST ဆီသို့ ပြောင်းထည့်မည်။` |
+| fill | `လိပ်စာ DST ရှိ မင်မိုရီကို VALUE ဖြင့် SIZE ဖြည့်မည်။` |
+
+`SIZE` is `<kind> N ခုစာ`, a count of cells of the kind, or `N ဘိုက်စာ`, a count of octets.
+The first two write the cells at `SRC` to `DST`, and the third sets each cell at `DST` to
+`VALUE`. `ကူးယူမည်` is the `memcpy` of C: its two ranges must not overlap.
+`ပြောင်းထည့်မည်` is the `memmove` of C: it reads the source in full before it writes, so
+the ranges can overlap, as when a run of cells moves one place on.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို က တွင် သိမ်းထားမည်။
+မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ခ တွင် သိမ်းထားမည်။
+
+လိပ်စာ က ရှိ မင်မိုရီကို ၇ ဖြင့် ကိန်းပြည့် ၄ ခုစာ ဖြည့်မည်။       // fill
+က ၏ တန်ဖိုး ကို ၁ ဟု ထားပါ။
+က + ၁ ၏ တန်ဖိုး ကို ၂ ဟု ထားပါ။
+က + ၂ ၏ တန်ဖိုး ကို ၃ ဟု ထားပါ။
+လိပ်စာ က ရှိ ကိန်းပြည့် ၄ ခုစာ မင်မိုရီကို လိပ်စာ ခ ဆီသို့ ကူးယူမည်။  // two blocks
+လိပ်စာ က ရှိ ကိန်းပြည့် ၃ ခုစာ မင်မိုရီကို လိပ်စာ က + ၁ ဆီသို့ ပြောင်းထည့်မည်။  // one block
+၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ "{က + န ၏ တန်ဖိုး} {ခ + န ၏ တန်ဖိုး}" ဟု ပြသပါ။
+လိပ်စာ က ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လိပ်စာ ခ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၁ ၁
+၁ ၂
+၂ ၃
+၃ ၇
+```
+
+The rules:
+
+- `SRC` and `DST` are values of each pointer kind: an owner, a borrow, a raw address or the
+  opaque `လိပ်စာ`. Each need not be a variable (`က + ၁` serves), since nothing is written back
+  to them. The kinds of `SRC`, `DST` and the cells need not match. A value that is no pointer
+  is ZK0417.
+- The count is a `လက္ခဏာမဲ့ ကိန်းပြည့်`, as for the other heap statements (ZK0401 if it
+  is not).
+- The value of a fill is of the kind of the cells when the size is `<kind> N ခုစာ`, and a
+  `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` when the size is `N ဘိုက်စာ`; with another kind it is ZK0401.
+  A struct value fills as well: `အမှတ်(ဒေါင်: ၁၊ အလျား: ၂) ဖြင့် အမှတ် ၃ ခုစာ`.
+- The verb at the end, `ဖြည့်မည်`, makes the statement a fill, so a value that starts with
+  a kind word, such as `၈ ဘစ် ကိန်းပြည့် ၅`, reads as a value and needs no parentheses. A
+  `ဖြင့်` right after a lone value ends the value, while
+  one inside a phrase such as a division belongs to it: in
+  `က ကို ၂ ဖြင့် စားသော စားလဒ် ဖြင့် ၁ ဘိုက်စာ` the value is the quotient.
+- A count of 0 does nothing, and neither the borrow check nor the VM checks the
+  addresses. Else the VM checks that the source
+  range lies in one live block and the destination range in one live block that can be
+  written, and each failure stops the program as an access does: out of bounds, use after
+  free, a null address, a write into static text. A count whose product with the size of
+  a cell does not fit is out of bounds as well.
+- `ကူးယူမည်` whose ranges overlap is ZK0721 when both addresses point into one block at
+  offsets the borrow check knows and the count is known; else the VM stops the program
+  with the trap `overlap` (see [all the traps](../vm/traps.md#all-the-traps)). Use
+  `ပြောင်းထည့်မည်` when the ranges can overlap.
+- The cells must own no block and borrow none (ZK0442). A cell of an owner pointer, of
+  text or of a plain list holds a block, and a raw duplicate would give one block two
+  owners, which would both give it back. A cell of a borrow or a slice points into a place
+  the borrow check follows, and a raw duplicate would put the borrow where the check
+  cannot see it. The cells are of the kind of the size, or, for a size in
+  octets, of the kind each address points at. Assign such cells one at a time, or keep the
+  addresses in raw pointers.
+
+```zaka-error ZK0442
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် စာသား လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် စာသား လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် စာသား ၂ ခုစာ နေရာယူ၍ လိပ်စာကို က တွင် သိမ်းထားမည်။
+မင်မိုရီတွင် စာသား ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ခ တွင် သိမ်းထားမည်။
+လိပ်စာ က ရှိ စာသား ၂ ခုစာ မင်မိုရီကို လိပ်စာ ခ ဆီသို့ ကူးယူမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0442]: the cells are "text", which own a block or borrow one: a raw duplicate or fill would give the block a second owner, or keep a borrow the check cannot follow
+```
+
+The borrow check sees the destination as a write through the address, as a store through a
+pointer is: a loan into a plain list that the statement edits ends, a destination that
+is `ဗလာ` for sure, or whose first or last cell lies past the end of its block, is an
+error, and what the check knew about the slots the destination names is forgotten. It
+sees the source as a read through the address, with the same checks of its first and
+last cell. The last cell is known when the count is known on each path.
+
 ## Errors at a glance
 
 | Code | Mistake |
@@ -411,6 +510,8 @@ error[ZK0417]: the heap statement needs a pointer, found isize
 | ZK0415 | an operator such as `*` or `/` on a pointer |
 | ZK0416 | pointers of different kinds compared or subtracted |
 | ZK0417 | a heap statement given something other than a pointer |
+| ZK0442 | cells that own a block or borrow one, in a duplicate or a fill |
+| ZK0721 | the two ranges of `ကူးယူမည်` overlap for certain |
 | ZK0709 | a read through a pointer that is `ဗလာ` on each path |
 | ZK0710 | an offset past the end of a block |
 | ZK0711 | a pointer that can be `ဗလာ` (a warning, with `--mem-strict`) |

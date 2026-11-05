@@ -390,8 +390,8 @@ block runs.
 
 ## Heap statements
 
-Three statements ask for room on the heap, change it and give it back. Each works on a
-pointer, which names the block. [Pointers](pointers.md) and [Ownership and borrowing](ownership.md)
+Three statements ask for room on the heap, change it and give it back, and three more
+write the cells of a block. Each works on a pointer, which names the block. [Pointers](pointers.md) and [Ownership and borrowing](ownership.md)
 cover them; the shapes are:
 
 | Statement | Shape |
@@ -401,7 +401,7 @@ cover them; the shapes are:
 | give back | `လိပ်စာ PLACE ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။` |
 
 The size can also be `N ဘိုက်စာ`, a count of octets. `မင်မိုရီ` and `မှတ်ဉာဏ်` mean the
-same.
+same. The rules of the last three are in [Writing and filling cells](pointers.md#writing-and-filling-cells).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

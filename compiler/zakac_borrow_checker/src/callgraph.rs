@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 
+use zakac_ast::stmt::START_NAME;
 use zakac_diagnostics::Diagnostic;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
@@ -100,17 +101,35 @@ pub(crate) fn digests(
     let mut digests: Vec<FnDigest> = module.funcs.iter().map(FnDigest::blank).collect();
     let mut diags = Vec::new();
     let mut proofs = CellProofs::default();
+    let start = start_block(module);
     for group in sccs(module).order
     {
         let found =
             settle(module, &group, &mut digests, global_roots, options, platform);
-        for result in found
+        // The start block reports from the facts the main program gives it,
+        // in a run of its own.
+        let reported = group.iter().zip(found).filter(|(f, _)| Some(**f) != start);
+        for (_, result) in reported
         {
             diags.extend(result.diags);
             proofs.add(&result.proofs, &result.doubts);
         }
     }
     (digests, diags, proofs)
+}
+
+/// The number of the start block, which no call of the program names.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+///
+/// # Returns
+///
+/// The number, or `None` for a program with no start block.
+pub(crate) fn start_block(module: &Module) -> Option<u32>
+{
+    module.funcs.iter().position(|f| f.name == START_NAME).map(|f| f as u32)
 }
 
 /// Run the flow of each function of a group until its digests stop

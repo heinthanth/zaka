@@ -53,7 +53,7 @@ parameters of a function are its first locals, then the result variable `ရလ�
 other locals. `addressed` marks a slot whose address the program takes, so it needs an address
 that remains fixed.
 
-A statement is one of sixteen forms:
+A statement is one of eighteen forms:
 
 | Form | Meaning |
 | --- | --- |
@@ -66,6 +66,8 @@ A statement is one of sixteen forms:
 | `Call { func, name, args }` | a call whose result is dropped |
 | `Store { addr, value }` | write at an address |
 | `Alloc`, `Resize`, `Free` | a heap sentence, with a `Dest`: a slot, or a cell in storage that holds an address |
+| `Blit { src, dst, count, unit, overlap }` | write `count` cells of `unit` from the address `src` to the address `dst`; `overlap` allows the ranges to share cells; written `(blit ...)`, and `(shift ...)` when `overlap` is set |
+| `Fill { dst, count, value }` | set `count` cells at the address `dst` to `value`; written `(fill ...)` |
 | `Drop { dest, kind }` | free each text on the heap inside the value at `dest`, of a kind that holds text, and leave it blank; written `(drop l0)` |
 | `AddCell { dest, kind, value }` | add `value` as a new last cell of the plain list at `dest`; written `(add_cell l0 7)` |
 | `RemoveCell { dest, kind }` | remove the last cell of the plain list at `dest`, or the last character of the text there; written `(remove_cell l0)` |
@@ -420,7 +422,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | arithmetic | `prefix op`, `infix op`, `compare op`, `convert k` (the ops print as `add`, `lt`, ...), `wrap op` |
 | control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `ret`, `result_addr`, `trap code` |
 | output | `print`, `print_text t`, `print_list k` |
-| pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free` |
+| pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free`, `mem_blit stride`, `mem_move stride`, `mem_fill k` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k`, `seq_eq k`, `static_seq s`, `seq_addr s`, `to_heap k`, `add_cell k`, `remove_cell k` |
 | slices | `make_slice stride source`, `slice_cell stride from` |
 | text | `text t`, `format fmt`, `drop k`, `dup_seqs k`, `lend_seqs k`, `own k`, `text_eq`, `char_count`, `char_at`, `set_char from`, `add_text k`, `text_edges`, `check_utf8` |

@@ -27,7 +27,7 @@ fn heap_stems() -> BTreeSet<String>
 /// inputs the checker cannot judge before the run (a misaligned read, a
 /// bad octet read as a truth value, a heap cap, a step off a `ဗလာ`
 /// parameter) give none, and the VM stops them.
-const TABLE: [(&str, &[Code]); 12] = [
+const TABLE: [(&str, &[Code]); 13] = [
     ("use_after_free", &[Code::InvalidatedLoan]),
     ("double_free", &[Code::InvalidatedLoan, Code::FreedBorrow]),
     ("bad_free", &[Code::FreedBorrow]),
@@ -40,6 +40,7 @@ const TABLE: [(&str, &[Code]); 12] = [
     ("misaligned", &[]),
     ("bad_value", &[]),
     ("out_of_mem", &[]),
+    ("overlap", &[Code::BlitRangesOverlap]),
 ];
 
 #[test]

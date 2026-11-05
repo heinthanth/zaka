@@ -272,6 +272,8 @@ InsertNotAtCell = ("ZK0439", Level::Error),
 StartParamKind = ("ZK0440", Level::Error),
 /// The result of the start block is no integer.
 StartResultKind = ("ZK0441", Level::Error),
+/// A raw duplicate or fill writes cells that own a block or borrow one.
+BlitOfHeldCells = ("ZK0442", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.
@@ -349,7 +351,9 @@ BorrowField = ("ZK0718", Level::Error),
 OverflowProven = ("ZK0719", Level::Warning),
 /// With `--warn-duplicates`, a statement duplicates the text or the list of a
 /// place.
-DuplicateMade = ("ZK0720", Level::Warning) }
+DuplicateMade = ("ZK0720", Level::Warning),
+/// The two ranges of a `ကူးယူမည်` overlap for certain.
+BlitRangesOverlap = ("ZK0721", Level::Error) }
 
 impl Code
 {

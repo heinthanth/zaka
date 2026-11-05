@@ -283,6 +283,17 @@ impl IrTree<'_>
                 self.heap("resize", dest, Some(count), unit, span)
             }
             Stmt::Free { dest, .. } => self.heap("free", dest, None, None, span),
+            Stmt::Blit { src, dst, count, unit, overlap, .. } =>
+            {
+                let children = [src, dst, count].map(|e| self.expr(e)).into();
+                let detail = unit.map(|k| k.name()).unwrap_or_default();
+                self.node(tern!(*overlap, "shift", "blit"), detail, span, children)
+            }
+            Stmt::Fill { dst, count, value, .. } =>
+            {
+                let children = [dst, count, value].map(|e| self.expr(e)).into();
+                self.node("fill", value.kind.name(), span, children)
+            }
             Stmt::Drop { dest, .. } => self.heap("drop", dest, None, None, span),
             Stmt::AddCell { dest, value, .. } =>
             {

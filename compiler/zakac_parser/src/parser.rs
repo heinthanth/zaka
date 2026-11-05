@@ -225,6 +225,10 @@ pub(crate) struct Parser<'t>
     /// so no struct literal starts inside it.
     #[builder(default)]
     pub(crate) in_count: bool,
+    /// Whether the value of a fill is being parsed: a `ဖြင့်` after a lone
+    /// operand closes the value, and the size follows it.
+    #[builder(default)]
+    pub(crate) in_fill: bool,
     /// Whether a statement other than an import has been parsed at the top
     /// level, so a later import is out of place.
     #[builder(default)]

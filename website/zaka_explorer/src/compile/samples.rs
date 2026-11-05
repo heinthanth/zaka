@@ -84,6 +84,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("heap", "record"),
     sample!("heap", "pascal"),
     sample!("heap", "arena"),
+    sample!("heap", "blit_fill"),
     sample!("lists", "basics"),
     sample!("lists", "copies"),
     sample!("lists", "equal"),

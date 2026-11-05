@@ -1,5 +1,6 @@
 mod common;
 
+use common::codes;
 use common::codes_with;
 use common::lines;
 use common::main_forms;
@@ -629,4 +630,80 @@ n - ၁ ကို ပြသပါ။
 n - ၁ ကို ပြသပါ။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     assert_eq!(codes_with(unsure, &stop), []);
+}
+
+/// A block of four integers at `ပ`, then `stmt`, then the free.
+fn four_then(stmt: &str) -> String
+{
+    format!(
+        "\
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+{stmt}
+လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။"
+    )
+}
+
+#[test]
+fn blits_and_fills_check_their_last_cell()
+{
+    ok(&four_then("လိပ်စာ ပ ရှိ မင်မိုရီကို ၀ ဖြင့် ကိန်းပြည့် ၄ ခုစာ ဖြည့်မည်။"));
+    let five = four_then("လိပ်စာ ပ ရှိ မင်မိုရီကို ၀ ဖြင့် ကိန်းပြည့် ၅ ခုစာ ဖြည့်မည်။");
+    assert_eq!(codes(&five), [Code::OffsetPastEnd]);
+    let part = four_then("လိပ်စာ ပ ရှိ မင်မိုရီကို ၀ ဖြင့် ၃၃ ဘိုက်စာ ဖြည့်မည်။");
+    assert_eq!(codes(&part), [Code::OffsetPastEnd], "a part of a cell counts as one");
+    let shift = "လိပ်စာ ပ ရှိ ကိန်းပြည့် ၄ ခုစာ မင်မိုရီကို လိပ်စာ ပ + ၁ ဆီသို့ ပြောင်းထည့်မည်။";
+    assert_eq!(codes(&four_then(shift)), [Code::OffsetPastEnd]);
+}
+
+#[test]
+fn a_blit_whose_ranges_overlap_for_certain_is_zk0721()
+{
+    ok(&four_then("လိပ်စာ ပ ရှိ ကိန်းပြည့် ၂ ခုစာ မင်မိုရီကို လိပ်စာ ပ + ၂ ဆီသို့ ကူးယူမည်။"));
+    let blit = "လိပ်စာ ပ ရှိ ကိန်းပြည့် ၃ ခုစာ မင်မိုရီကို လိပ်စာ ပ + ၁ ဆီသို့ ကူးယူမည်။";
+    assert_eq!(codes(&four_then(blit)), [Code::BlitRangesOverlap]);
+    ok(&four_then("လိပ်စာ ပ ရှိ ကိန်းပြည့် ၃ ခုစာ မင်မိုရီကို လိပ်စာ ပ + ၁ ဆီသို့ ပြောင်းထည့်မည်။"));
+}
+
+#[test]
+fn a_run_of_no_cells_checks_no_address()
+{
+    // A local, which the check follows, where a global in the start block
+    // is not known.
+    let program = |count: &str| {
+        format!(
+            "\
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+လိပ်စာ ပ ရှိ မင်မိုရီကို ၀ ဖြင့် ကိန်းပြည့် {count} ခုစာ ဖြည့်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။"
+        )
+    };
+    ok(&program("၀"));
+    assert_eq!(codes(&program("၁")), [Code::NullDeref]);
+}
+
+#[test]
+fn the_start_block_knows_the_globals_the_main_program_left()
+{
+    let program = |stmt: &str| {
+        format!(
+            "\
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+{stmt}
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။"
+        )
+    };
+    let null = program("လိပ်စာ ပ ရှိ မင်မိုရီကို ၀ ဖြင့် ကိန်းပြည့် ၁ ခုစာ ဖြည့်မည်။");
+    assert_eq!(codes(&null), [Code::NullDeref]);
+    let four = "မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။";
+    let free = "လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။";
+    let five = "လိပ်စာ ပ ရှိ မင်မိုရီကို ၀ ဖြင့် ကိန်းပြည့် ၅ ခုစာ ဖြည့်မည်။";
+    let past = program(&format!("{four}\n{five}\n{free}"));
+    assert_eq!(codes(&past), [Code::OffsetPastEnd]);
+    let blit = "လိပ်စာ ပ ရှိ ကိန်းပြည့် ၃ ခုစာ မင်မိုရီကို လိပ်စာ ပ + ၁ ဆီသို့ ကူးယူမည်။";
+    let overlap = program(&format!("{four}\n{blit}\n{free}"));
+    assert_eq!(codes(&overlap), [Code::BlitRangesOverlap]);
 }

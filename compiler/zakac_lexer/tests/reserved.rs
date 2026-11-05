@@ -119,6 +119,9 @@ fn spoken_endings_are_not_reserved()
         ("သိမ်းထားမည်", "သိမ်းထားမယ်", Kw::WillKeep),
         ("နေရာအချဲ့အချုံ့လုပ်မည်", "နေရာအချဲ့အချုံ့လုပ်မယ်", Kw::WillResize),
         ("ပြန်လည်စွန့်လွှတ်မည်", "ပြန်လည်စွန့်လွှတ်မယ်", Kw::WillRelease),
+        ("ကူးယူမည်", "ကူးယူမယ်", Kw::WillBlit),
+        ("ပြောင်းထည့်မည်", "ပြောင်းထည့်မယ်", Kw::WillShift),
+        ("ဖြည့်မည်", "ဖြည့်မယ်", Kw::WillFill),
     ];
     do_for!((written, spoken, kw) in triples, {
         assert_eq!(lookup(written), Some(kw), "{written}");

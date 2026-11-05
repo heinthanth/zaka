@@ -108,6 +108,14 @@ fn raw_stmt(s: &Stmt) -> bool
         Stmt::Return { value, .. } => value.iter().any(raw_expr),
         Stmt::Call { args, .. } => args.iter().any(raw_expr),
         Stmt::Store { addr, value, .. } => raw_expr(addr) || raw_expr(value),
+        Stmt::Blit { src, dst, count, .. } =>
+        {
+            [src, dst, count].into_iter().any(raw_expr)
+        }
+        Stmt::Fill { dst, count, value, .. } =>
+        {
+            [dst, count, value].into_iter().any(raw_expr)
+        }
         Stmt::Alloc { dest, count, .. } | Stmt::Resize { dest, count, .. } =>
         {
             raw_dest(dest) || raw_expr(count)

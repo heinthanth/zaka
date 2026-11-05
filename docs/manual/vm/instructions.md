@@ -243,9 +243,15 @@ value below the top minus the top. Decimal numbers follow IEEE 754 with ties to 
 | `alloc s` | n → addr | a new heap block of `n` elements, or `ဗလာ` when there is no room |
 | `realloc s` | addr n → addr | resize a heap block; the block can move |
 | `free` | addr → | give a heap block back; `ဗလာ` does nothing |
+| `mem_blit s` | src count dst → | write `count` cells of `s` octets (1 for octets) from `src` to `dst`; the ranges must not overlap, or the program stops |
+| `mem_move s` | src count dst → | the same, with the ranges free to overlap: the source is read in full before the write |
+| `mem_fill k` | dst value count → | set `count` cells at `dst` to `value`, a value of kind `k` |
 
 Each of these checks its address as described in [blocks](blocks.md), and can trap.
 `ptr_add` also traps on a step off `ဗလာ` and on a step out of the block it starts in.
+`mem_blit`, `mem_move` and `mem_fill` check that the source range lies in one live block and
+the destination range in one live block that can be written; a count of 0 checks nothing,
+and `mem_blit` traps with [overlap](traps.md#all-the-traps) when its two ranges share an octet.
 
 ### Lists
 
@@ -347,6 +353,8 @@ How each value reads is in [Running a program](running.md#printing).
 | allocate | `x; count; alloc s; store k*` |
 | resize | `x; x; load k*; count; realloc s; store k*` |
 | free | `x; x; load k*; free; push ဗလာ; store k*` |
+| `လိပ်စာ s ရှိ n ခုစာ မင်မိုရီကို လိပ်စာ d ဆီသို့ ကူးယူမည်` | `s; n; d; mem_blit size`, and `mem_move size` for `ပြောင်းထည့်မည်` |
+| `လိပ်စာ d ရှိ မင်မိုရီကို v ဖြင့် n ခုစာ ဖြည့်မည်` | `d; v; n; mem_fill k` |
 | move an owner | `to; from; take k*; store k*` |
 | a string literal in a text slot | `x; text t; pop` |
 | a template literal, or a `+` join | `x; v…; format fmt; pop` |

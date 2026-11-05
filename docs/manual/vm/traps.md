@@ -55,6 +55,7 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | double free | a heap block is freed after it was freed | `the block at A was freed before` |
 | bad free | a free of an address that starts no live heap block | `A is not the start of a live heap block` |
 | mixed blocks | a subtraction of pointers into different blocks | `pointers into different blocks cannot be subtracted` |
+| overlap | a `ကူးယူမည်` whose destination cells overlap its source cells | `the cells at A overlap their source; "ပြောင်းထည့်မည်" allows that` |
 | frozen write | a write lands inside a static text or static list block | `write at A inside static data, which cannot change` |
 | text cut | a range of text starts or ends inside a character | `a range of text at A starts or ends inside a character` |
 | character out of range | a character number lies outside its text | `character N is outside the text, whose characters run from L to H` |
@@ -385,6 +386,32 @@ checks that a live block reaches both addresses, its end included:
 
 ```text
 the program stopped: pointers into different blocks cannot be subtracted
+```
+
+### Cells that overlap
+
+A `ကူးယူမည်` writes cells like the `memcpy` of C, so its source and destination ranges
+must not share an octet. When the ranges do, the VM stops the program before it writes, and
+names the block of the destination. When both addresses point into one block at offsets
+the compiler knows, and the count is known, the borrow check reports the overlap first
+(ZK0721); the program below runs with `--mem-check warn` to reach the VM. `ပြောင်းထည့်မည်` allows the overlap: it reads the
+source in full before it writes. The other checks of these statements stop the program as
+an access does (out of bounds, use after free, a null address, a write into static text),
+a count of 0 is checked for nothing, and a count whose product with the size of a cell
+does not fit is out of bounds.
+
+```zaka-stop mem-check=warn
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို က တွင် သိမ်းထားမည်။
+လိပ်စာ က ရှိ မင်မိုရီကို ၀ ဖြင့် ကိန်းပြည့် ၄ ခုစာ ဖြည့်မည်။
+လိပ်စာ က ရှိ ကိန်းပြည့် ၃ ခုစာ မင်မိုရီကို လိပ်စာ က + ၁ ဆီသို့ ကူးယူမည်။
+လိပ်စာ က ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+the program stopped: the cells at 0x101008 overlap their source; "ပြောင်းထည့်မည်" allows that
 ```
 
 ### A write into static text

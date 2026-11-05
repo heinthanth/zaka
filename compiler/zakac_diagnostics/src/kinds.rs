@@ -516,6 +516,22 @@ pub fn heap_needs_pointer(span: Span, kind: &str) -> Diagnostic
     )
 }
 
+/// A raw duplicate or fill writes cells that own a block or borrow one.
+///
+/// # Arguments
+///
+/// * `span` - The size of the statement.
+/// * `kind` - The kind of the cells, as text.
+///
+/// # Returns
+///
+/// The `ZK0442` diagnostic, with help.
+pub fn blit_of_held_cells(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0442.message", kind = kind);
+    Diagnostic::new(Code::BlitOfHeldCells, msg, span).with_help(t!("codes.ZK0442.help"))
+}
+
 /// A list literal has more or fewer cells than its kind.
 ///
 /// # Arguments

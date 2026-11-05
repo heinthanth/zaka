@@ -97,3 +97,22 @@ fn heap_statements_take_pointer_places()
     let float = lines(&[PTRS, "မင်မိုရီတွင် ၁.၅ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။"]);
     assert_eq!(codes(&float), [Code::KindMismatch]);
 }
+
+#[test]
+fn copies_and_fills_check_addresses_values_and_cells()
+{
+    let owner = "ကိန်းရှင် o သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။";
+    ok(&lines(&[PTRS, "လိပ်စာ p ရှိ ကိန်းပြည့် ၁ ခုစာ မင်မိုရီကို လိပ်စာ b ဆီသို့ ပြောင်းထည့်မည်။"]));
+    ok(&lines(&[PTRS, "လိပ်စာ q ရှိ မင်မိုရီကို ၀ ဖြင့် ၈ ဘိုက်စာ ဖြည့်မည်။"]));
+    let int = lines(&[PTRS, "လိပ်စာ x ရှိ ၈ ဘိုက်စာ မင်မိုရီကို လိပ်စာ p ဆီသို့ ကူးယူမည်။"]);
+    assert_eq!(codes(&int), [Code::HeapNeedsPointer]);
+    let truth = lines(&[PTRS, "လိပ်စာ p ရှိ မင်မိုရီကို မှန် ဖြင့် ကိန်းပြည့် ၁ ခုစာ ဖြည့်မည်။"]);
+    assert_eq!(codes(&truth), [Code::KindMismatch]);
+    let octets = lines(&[PTRS, owner, "လိပ်စာ o ရှိ ၈ ဘိုက်စာ မင်မိုရီကို လိပ်စာ q ဆီသို့ ကူးယူမည်။"]);
+    assert_eq!(codes(&octets), [Code::BlitOfHeldCells]);
+    let cells = lines(&[PTRS, "လိပ်စာ q ရှိ မင်မိုရီကို ဗလာ ဖြင့် ကိန်းပြည့် လိပ်စာ ၁ ခုစာ ဖြည့်မည်။"]);
+    assert_eq!(codes(&cells), [Code::BlitOfHeldCells]);
+    let borrows =
+        lines(&[PTRS, "လိပ်စာ q ရှိ မင်မိုရီကို p ဖြင့် ငှားထားသော ကိန်းပြည့် လိပ်စာ ၁ ခုစာ ဖြည့်မည်။"]);
+    assert_eq!(codes(&borrows), [Code::BlitOfHeldCells]);
+}

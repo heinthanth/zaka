@@ -107,6 +107,10 @@ pub enum Stmt
     Resize(ResizeStmt),
     /// Release of the heap block a place points at.
     Free(FreeStmt),
+    /// A blit of cells from one address to another.
+    Blit(BlitStmt),
+    /// A fill of cells at an address with one value.
+    Fill(FillStmt),
     /// `l ထဲသို့ v ကို ထည့်ပါ။`
     Add(AddStmt),
     /// `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။`
@@ -443,6 +447,37 @@ pub struct FreeStmt
 {
     /// The address to release.
     pub target: Expr,
+    /// Source region.
+    pub span: Span,
+}
+
+/// A blit of the cells at `src` to `dst`, `memcpy` when the two ranges
+/// must stand apart and `memmove` when the two can overlap.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct BlitStmt
+{
+    /// The address the cells come from.
+    pub src: Expr,
+    /// The count of cells, or of octets when no kind is written.
+    pub size: SizeArg,
+    /// The address the cells go to.
+    pub dst: Expr,
+    /// Whether the two ranges can overlap.
+    pub overlap: bool,
+    /// Source region.
+    pub span: Span,
+}
+
+/// A fill of the cells at `dst` with one value.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct FillStmt
+{
+    /// The address of the first cell.
+    pub dst: Expr,
+    /// The value each cell gets.
+    pub value: Expr,
+    /// The count of cells, or of octets when no kind is written.
+    pub size: SizeArg,
     /// Source region.
     pub span: Span,
 }

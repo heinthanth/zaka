@@ -381,6 +381,18 @@ impl Folder
             Stmt::Free { dest, .. }
             | Stmt::Drop { dest, .. }
             | Stmt::RemoveCell { dest, .. } => self.dest(dest),
+            Stmt::Blit { src, dst, count, .. } =>
+            {
+                self.drop_value(src);
+                self.drop_value(dst);
+                self.drop_value(count);
+            }
+            Stmt::Fill { dst, count, value, .. } =>
+            {
+                self.drop_value(dst);
+                self.drop_value(count);
+                self.drop_value(value);
+            }
             Stmt::AddCell { dest, value, .. } | Stmt::AddText { dest, value, .. } =>
             {
                 self.dest(dest);

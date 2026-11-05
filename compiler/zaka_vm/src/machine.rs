@@ -1121,6 +1121,9 @@ impl Machine
             Op::Alloc(stride) => self.alloc(stride),
             Op::Realloc(stride) => self.realloc(stride),
             Op::Free => self.free(),
+            Op::MemBlit(stride) => self.mem_blit(stride, false),
+            Op::MemMove(stride) => self.mem_blit(stride, true),
+            Op::MemFill(kind) => self.mem_fill(kind),
             Op::Dup => self.dup(),
             Op::Index { len, first } => self.index(len, first),
             Op::Blit(kind) => self.blit(kind),
@@ -2823,6 +2826,56 @@ impl Machine
         self.push(Value::Ptr(moved))
     }
 
+    /// Pop a destination address, a cell count and a source address, and
+    /// write the cells from the source to the destination. A count of 0
+    /// touches nothing.
+    ///
+    /// # Arguments
+    ///
+    /// * `stride` - The cell size.
+    /// * `overlap` - Whether the two ranges can overlap.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, a trap either range hits, or `Overlap` when the ranges overlap
+    /// and must not.
+    fn mem_blit(&mut self, stride: u32, overlap: bool) -> Step
+    {
+        let dst = self.pop_ptr("mem_blit")?;
+        let count = self.pop_int("mem_blit")?;
+        let src = self.pop_ptr("mem_blit")?;
+        let len = octet_count(count, u64::from(stride), dst)?;
+        ret_if!(len == 0, Ok(()));
+        let raw = self.mem.octets(src, len)?;
+        let apart = src.saturating_add(len) <= dst || dst.saturating_add(len) <= src;
+        ret_if!(!overlap && !apart, Err(TrapKind::Overlap { addr: dst }));
+        self.mem.write_octets(dst, &raw)
+    }
+
+    /// Pop a cell count, a value and an address, and write the value to
+    /// each cell from the address on. A count of 0 touches nothing.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of each cell.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a write hits.
+    fn mem_fill(&mut self, kind: DataKind) -> Step
+    {
+        let count = self.pop_int("mem_fill")?;
+        let value = self.pop()?;
+        let dst = self.pop_ptr("mem_fill")?;
+        let size = u64::from(kind.size(self.module.platform_bits));
+        let len = octet_count(count, size, dst)?;
+        ret_if!(len == 0, Ok(()));
+        self.pass(dst, value, kind)?;
+        let cell = self.mem.octets(dst, size)?;
+        let rest = cell.repeat(usize::try_from(count - 1).unwrap_or(usize::MAX));
+        self.mem.write_octets(dst + size, &rest)
+    }
+
     /// Pop the start of a heap block and free it; null does nothing.
     ///
     /// # Returns
@@ -2844,6 +2897,23 @@ impl Machine
         let top = self.stack.last().copied();
         self.push(top.ok_or_else(|| malformed("dup of a blank stack"))?)
     }
+}
+
+/// The octets in a count of cells.
+///
+/// # Arguments
+///
+/// * `count` - The count of cells.
+/// * `size` - The octets in each cell.
+/// * `addr` - The address of the first cell, for the trap.
+///
+/// # Returns
+///
+/// The octet count, or `OutOfBounds` when it does not fit an address.
+fn octet_count(count: u128, size: u64, addr: u64) -> Result<u64, TrapKind>
+{
+    let wide = count.checked_mul(u128::from(size)).and_then(|w| u64::try_from(w).ok());
+    wide.ok_or(TrapKind::OutOfBounds { addr, size: u32::MAX })
 }
 
 /// The number of a cell from 0, checked against a count of cells.

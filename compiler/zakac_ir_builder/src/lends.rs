@@ -338,6 +338,18 @@ impl Walk
                 self.expr(count, Use::Read, false);
             }
             Stmt::Free { dest, .. } | Stmt::Drop { dest, .. } => self.dest(dest, false),
+            Stmt::Blit { src, dst, count, .. } =>
+            {
+                self.expr(src, Use::Read, false);
+                self.expr(dst, Use::Written, true);
+                self.expr(count, Use::Read, false);
+            }
+            Stmt::Fill { dst, count, value, .. } =>
+            {
+                self.expr(dst, Use::Written, true);
+                self.expr(count, Use::Read, false);
+                self.expr(value, value_use(value.kind), false);
+            }
             Stmt::AddCell { dest, value, .. } =>
             {
                 self.dest(dest, true);

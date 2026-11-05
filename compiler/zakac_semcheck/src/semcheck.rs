@@ -12,6 +12,7 @@ use zakac_ast::name::Name;
 use zakac_ast::stmt::AddStmt;
 use zakac_ast::stmt::AllocStmt;
 use zakac_ast::stmt::AssignStmt;
+use zakac_ast::stmt::BlitStmt;
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::BreakStmt;
 use zakac_ast::stmt::CallStmt;
@@ -19,6 +20,7 @@ use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
 use zakac_ast::stmt::EachStmt;
+use zakac_ast::stmt::FillStmt;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::FreeStmt;
 use zakac_ast::stmt::GenericStmt;
@@ -841,15 +843,58 @@ impl Checker
         self.report(kd::heap_needs_pointer(target.span(), &kind.name()));
     }
 
+    /// Check an address that a blit or a fill reads or writes through: a
+    /// value of a pointer kind, which need not be a place.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address.
+    ///
+    /// # Returns
+    ///
+    /// The kind of the address, or `None` after a report.
+    fn heap_address(&mut self, addr: &Expr) -> Option<DataKind>
+    {
+        let kind = self.infer(addr, None)?;
+        ret_if!(kind.is_ptr(), Some(kind));
+        self.report(kd::heap_needs_pointer(addr.span(), &kind.name()));
+        None
+    }
+
     /// Check the size operand of a heap statement.
     ///
     /// # Arguments
     ///
     /// * `size` - The size.
-    fn heap_size(&mut self, size: &SizeArg)
+    ///
+    /// # Returns
+    ///
+    /// The kind of each unit, when the size counts a kind.
+    fn heap_size(&mut self, size: &SizeArg) -> Option<DataKind>
     {
         self.expect_kind(&size.count, Some(DataKind::USIZE));
-        do_if!(let Some(unit) = &size.unit, let _ = self.written_kind(unit, KindUse::Other));
+        size.unit.as_ref().map(|unit| self.written_kind(unit, KindUse::Other))
+    }
+
+    /// Report the cells of a blit or a fill that own a block or borrow one: the
+    /// unit kind of the size, or each kind the addresses point at for a
+    /// size in octets.
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - The size.
+    /// * `unit` - The unit kind of the size.
+    /// * `addrs` - The kinds of the addresses.
+    fn owned_cells(
+        &mut self, size: &SizeArg, unit: Option<DataKind>, addrs: &[Option<DataKind>],
+    )
+    {
+        let pointees = || addrs.iter().flatten().filter_map(|a| a.pointee()).collect();
+        let cells: Vec<DataKind> = tern!(let Some(u) = unit, vec![u], pointees());
+        let held =
+            |k: &DataKind| k.holds_owner_ptr() || k.holds_text() || k.holds_borrow();
+        let owner = cells.into_iter().find(held);
+        do_if!(let Some(k) = owner, self.report(kd::blit_of_held_cells(size.span, &k.name())));
     }
 
     /// Run `f` with one more loop around it.
@@ -1044,6 +1089,22 @@ impl Visitor for Checker
     }
 
     fn visit_free(&mut self, n: &FreeStmt) { self.heap_target(&n.target) }
+
+    fn visit_blit(&mut self, n: &BlitStmt)
+    {
+        let src = self.heap_address(&n.src);
+        let unit = self.heap_size(&n.size);
+        let dst = self.heap_address(&n.dst);
+        self.owned_cells(&n.size, unit, &[src, dst]);
+    }
+
+    fn visit_fill(&mut self, n: &FillStmt)
+    {
+        let dst = self.heap_address(&n.dst);
+        let unit = self.heap_size(&n.size);
+        self.expect_kind(&n.value, Some(unit.unwrap_or(DataKind::U8)));
+        self.owned_cells(&n.size, unit, &[dst]);
+    }
 
     fn visit_add(&mut self, n: &AddStmt)
     {

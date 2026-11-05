@@ -155,6 +155,17 @@ impl ToSexpr for Stmt
             Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
             Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
             Stmt::Free(s) => list("free", [s.target.to_sexpr()]),
+            Stmt::Blit(s) =>
+            {
+                let head = tern!(s.overlap, "shift", "blit");
+                let parts = heap_parts(&s.src, &s.size);
+                list(head, parts.into_iter().chain([s.dst.to_sexpr()]))
+            }
+            Stmt::Fill(s) =>
+            {
+                let parts = heap_parts(&s.dst, &s.size);
+                list("fill", parts.into_iter().chain([s.value.to_sexpr()]))
+            }
             Stmt::Add(s) =>
             {
                 let word = tern!(s.before, "insert", "add");

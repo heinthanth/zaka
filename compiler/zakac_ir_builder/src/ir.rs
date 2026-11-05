@@ -358,6 +358,35 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Write the cells at `src` to `dst`.
+    Blit
+    {
+        /// The address the cells come from, a pointer.
+        src: Expr,
+        /// The address the cells go to, a pointer.
+        dst: Expr,
+        /// The cell count, `usize`; the size in octets without a unit.
+        count: Expr,
+        /// The cell kind, when written.
+        unit: Option<DataKind>,
+        /// Whether the two ranges can overlap; when not, an overlap stops
+        /// the program in the VM.
+        overlap: bool,
+        /// Source region.
+        span: Span,
+    },
+    /// Write one value to each cell at `dst`.
+    Fill
+    {
+        /// The address of the first cell, a pointer.
+        dst: Expr,
+        /// The cell count, `usize`.
+        count: Expr,
+        /// The value, whose kind is the kind of each cell.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
     /// Free each text the value at `dest` owns on the heap and leave it
     /// blank: a place whose kind holds text, as its scope ends or before a
     /// new value replaces it. A text in static storage, or one moved out,
@@ -499,6 +528,8 @@ impl Stmt
             | Stmt::Alloc { span, .. }
             | Stmt::Resize { span, .. }
             | Stmt::Free { span, .. }
+            | Stmt::Blit { span, .. }
+            | Stmt::Fill { span, .. }
             | Stmt::Drop { span, .. }
             | Stmt::AddCell { span, .. }
             | Stmt::RemoveCell { span, .. }

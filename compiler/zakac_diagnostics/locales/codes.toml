@@ -647,7 +647,7 @@ en = "heap statement needs a pointer"
 [codes.ZK0417.message]
 en = "the heap statement needs a pointer, found %{kind}"
 [codes.ZK0417.explain]
-en = """The heap statements allocate space, resize it and free it through a variable that holds its address. That variable must have a pointer kind, written \"<kind> လိပ်စာ\", or the opaque \"လိပ်စာ\". Declare the variable with a pointer kind."""
+en = """The heap statements allocate space, resize it, free it, duplicate its cells and fill them, through an address. That address must have a pointer kind, written \"<kind> လိပ်စာ\", or the opaque \"လိပ်စာ\". Allocate, resize and free write the address back, so theirs is a variable; declare it with a pointer kind."""
 
 [codes.ZK0419.title]
 en = "list count mismatch"
@@ -807,6 +807,15 @@ en = "the result of the start block is \"%{k}\", but it must be an integer"
 en = "write \"ကိန်းပြည့် ရလဒ်\": the result becomes the exit code of the run"
 [codes.ZK0441.explain]
 en = """The result of the start block is the exit code of the run: 0 tells the shell that all went well, and another number tells it that something failed. The host keeps the lowest 8 bits of it. A start block with no result ends the run with 0."""
+
+[codes.ZK0442.title]
+en = "raw duplicate or fill of cells that own or borrow"
+[codes.ZK0442.message]
+en = "the cells are \"%{kind}\", which own a block or borrow one: a raw duplicate or fill would give the block a second owner, or keep a borrow the check cannot follow"
+[codes.ZK0442.help]
+en = "assign the cells one at a time, or hold the addresses in raw pointers (\"<kind> လိပ်စာအကြမ်း\")"
+[codes.ZK0442.explain]
+en = """\"ကူးယူမည်\" and \"ပြောင်းထည့်မည်\" duplicate cells, and \"ဖြည့်မည်\" fills them, as raw octets. A cell that holds an owner pointer, text or a plain list owns a heap block, so a raw duplicate of it leaves two cells that both free the same block. A cell that holds a borrow or a slice points into a place the ownership check follows, and a raw duplicate puts the borrow where the check cannot see it, so it could outlast that place. The cells are the kind of the size, or, for a size in octets, the kind each address points at. Assign such cells one at a time, so each value moves, is duplicated or is lent as its kind requires, or hold the addresses in raw pointers, which own nothing and are not followed."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 
@@ -1107,3 +1116,12 @@ en = "\"%{n}\" is duplicated here; the duplicate can take a new heap block for i
 en = "lend a view or a slice to read it with no duplicate, or read it no more after this statement, so it moves"
 [codes.ZK0720.explain]
 en = """Text and lists are copied when a value goes into another place: a variable, a parameter, a result, a field or a cell. When the place read is not read again, the compiler moves the value instead, and nothing is copied. With --warn-duplicates the compiler names each statement where a duplicate remains, so a program that must not allocate there can lend a view or a slice instead."""
+
+[codes.ZK0721.title]
+en = "ranges of a raw duplicate overlap"
+[codes.ZK0721.message]
+en = "the source and the destination of \"ကူးယူမည်\" share %{n} octets"
+[codes.ZK0721.help]
+en = "write \"ပြောင်းထည့်မည်\", which reads the source in full before it writes"
+[codes.ZK0721.explain]
+en = """\"ကူးယူမည်\" is the memcpy of C: it writes the cells in order, so cells it writes can be cells it has still to read, and in C the result is undefined. When both addresses point into the same block at offsets the check knows, and the count is known, the overlap is an error before the program runs; else the VM stops the program with the trap \"overlap\". \"ပြောင်းထည့်မည်\" allows ranges that overlap."""

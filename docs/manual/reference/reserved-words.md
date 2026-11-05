@@ -131,9 +131,13 @@ see [Names](../../learn/variables/names.md).
 | `မင်မိုရီတွင် … နေရာယူ၍ လိပ်စာကို … တွင် သိမ်းထားမည်` | "in RAM, taking … of room, keep the address in …" (allocate) | [The heap](../../learn/pointers/heap.md) |
 | `လိပ်စာ … ရှိ မင်မိုရီကို … ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်` | "make the RAM at … grow or shrink so that it is …" (resize) | [Growing and shrinking](../../learn/pointers/resizing.md) |
 | `လိပ်စာ … ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်` | "give back the RAM at …" (free) | [The heap](../../learn/pointers/heap.md#giving-a-block-back) |
+| `လိပ်စာ … ရှိ … မင်မိုရီကို လိပ်စာ … ဆီသို့ ကူးယူမည်` | "write the RAM at … to the address …, ranges apart" (a `memcpy`) | [Writing and filling cells](../../learn/pointers/resizing.md#writing-and-filling-cells) |
+| `လိပ်စာ … ရှိ … မင်မိုရီကို လိပ်စာ … ဆီသို့ ပြောင်းထည့်မည်` | "move the RAM at … to the address …, ranges can overlap" (a `memmove`) | [Writing and filling cells](../../learn/pointers/resizing.md#writing-and-filling-cells) |
+| `လိပ်စာ … ရှိ မင်မိုရီကို … ဖြင့် … ဖြည့်မည်` | "fill the RAM at … with … for …" (fill) | [Writing and filling cells](../../learn/pointers/resizing.md#writing-and-filling-cells) |
 
-The words inside the three statements (`နေရာယူ၍`, `တွင်`, `သိမ်းထားမည်`, `ရှိ`,
-`ဖြစ်အောင်`, `နေရာအချဲ့အချုံ့လုပ်မည်`, `ပြန်လည်စွန့်လွှတ်မည်`) are reserved on their own
+The words inside the statements (`နေရာယူ၍`, `တွင်`, `သိမ်းထားမည်`, `ရှိ`,
+`ဖြစ်အောင်`, `နေရာအချဲ့အချုံ့လုပ်မည်`, `ပြန်လည်စွန့်လွှတ်မည်`, `ဆီသို့`, `ကူးယူမည်`,
+`ပြောင်းထည့်မည်`, `ဖြည့်မည်`) are reserved on their own
 as well.
 
 ## Lists

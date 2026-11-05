@@ -618,6 +618,8 @@ impl Lowerer<'_>
             {
                 out.push(Stmt::Free { dest: self.dest(&n.target), span: n.span })
             }
+            st::Stmt::Blit(n) => out.push(self.blit(n)),
+            st::Stmt::Fill(n) => out.push(self.fill(n)),
             st::Stmt::Add(n) => out.push(self.add_cell(n)),
             st::Stmt::Remove(n) =>
             {
@@ -887,6 +889,40 @@ impl Lowerer<'_>
         let dest = self.dest(&n.target);
         let (count, unit) = self.size(&n.size);
         Stmt::Resize { dest, count, unit, span: n.span }
+    }
+
+    /// Lower a blit of cells.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn blit(&mut self, n: &st::BlitStmt) -> Stmt
+    {
+        let src = self.expr(&n.src);
+        let (count, unit) = self.size(&n.size);
+        let dst = self.expr(&n.dst);
+        Stmt::Blit { src, dst, count, unit, overlap: n.overlap, span: n.span }
+    }
+
+    /// Lower a fill of cells; a size in octets fills `u8` cells.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn fill(&mut self, n: &st::FillStmt) -> Stmt
+    {
+        let (count, unit) = self.size(&n.size);
+        let dst = self.expr(&n.dst);
+        let value = self.coerce(&n.value, unit.unwrap_or(DataKind::U8));
+        Stmt::Fill { dst, count, value, span: n.span }
     }
 
     /// Lower the size operand of a heap statement.

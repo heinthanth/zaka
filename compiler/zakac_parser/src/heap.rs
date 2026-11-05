@@ -1,6 +1,8 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::stmt::AllocStmt;
+use zakac_ast::stmt::BlitStmt;
+use zakac_ast::stmt::FillStmt;
 use zakac_ast::stmt::FreeStmt;
 use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::SizeArg;
@@ -9,6 +11,8 @@ use zakac_diagnostics::Diagnostic;
 use zakac_i18n::t;
 use zakac_lexer::classifiers::COUNT_ENDING;
 use zakac_lexer::token::Kw;
+use zakac_lexer::token::Punct;
+use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
@@ -39,20 +43,39 @@ impl Parser<'_>
         Ok(Stmt::Alloc(node))
     }
 
-    /// Parse `လိပ်စာ <place> ရှိ မင်မိုရီကို` and the rest of a resize or a
-    /// release; the current token is `လိပ်စာ`. `ပြန်လည်စွန့်လွှတ်မည်` after the
-    /// head makes a release, and a size makes a resize.
+    /// Parse a heap statement that starts with `လိပ်စာ <place> ရှိ`; the
+    /// current token is `လိပ်စာ`. A size before `မင်မိုရီကို` makes a blit.
+    /// After `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` makes a release; the verb
+    /// that ends the statement tells a fill from a resize, so a fill value
+    /// that starts with a kind word reads as a value, not as a size.
     ///
     /// # Returns
     ///
-    /// The resize or the release, or a diagnostic.
+    /// The statement, or a diagnostic.
     pub(crate) fn parse_heap(&mut self) -> PResult<Stmt>
     {
         let start = self.bump().span;
         let target = self.parse_clause_expr()?;
+        ret_if!(self.at(Kw::Located), self.parse_blit_end(start, target));
         self.expect(Kw::HeapHead)?;
         ret_if!(self.at(Kw::WillRelease), self.parse_free_end(start, target));
+        ret_if!(self.ends_in_fill(), self.parse_fill_end(start, target));
         self.parse_resize_end(start, target)
+    }
+
+    /// Whether the statement ends in `ဖြည့်မည်`: the verb of a fill comes
+    /// before the next `။`. No heap statement holds another statement, so
+    /// the first `။` ends this one.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn ends_in_fill(&self) -> bool
+    {
+        let stop = TokenKind::Punct(Punct::FullStop);
+        let kinds = (0..).map(|n| self.peek_n(n).kind);
+        let mut rest = kinds.take_while(|k| *k != stop && *k != TokenKind::Eof);
+        rest.any(|k| k == TokenKind::Kw(Kw::WillFill))
     }
 
     /// Parse `<size> ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။` after the head.
@@ -73,6 +96,60 @@ impl Parser<'_>
         let span = start.to(&self.expect_stop()?.span);
         let node = ResizeStmt::builder().target(target).size(size).span(span).build();
         Ok(Stmt::Resize(node))
+    }
+
+    /// Parse `ရှိ <size> မင်မိုရီကို လိပ်စာ <dst> ဆီသို့ ကူးယူမည်။`, or the
+    /// same with `ပြောင်းထည့်မည်`, after the source address.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The span of `လိပ်စာ`.
+    /// * `src` - The address the cells come from.
+    ///
+    /// # Returns
+    ///
+    /// The blit, or a diagnostic.
+    fn parse_blit_end(&mut self, start: Span, src: Expr) -> PResult<Stmt>
+    {
+        self.bump();
+        let size = self.parse_size_arg()?;
+        self.expect(Kw::Mem)?;
+        self.expect(Kw::Ko)?;
+        self.expect(Kw::Address)?;
+        let dst = self.parse_clause_expr()?;
+        self.expect(Kw::Toward)?;
+        let verb = self.expect_one_of(&[Kw::WillBlit, Kw::WillShift])?;
+        let overlap = verb.kind == TokenKind::Kw(Kw::WillShift);
+        let span = start.to(&self.expect_stop()?.span);
+        #[rustfmt::skip]
+        let node = BlitStmt::builder().src(src).size(size).dst(dst).overlap(overlap).span(span).build();
+        Ok(Stmt::Blit(node))
+    }
+
+    /// Parse `<value> ဖြင့် <size> ဖြည့်မည်။` after the head. A `ဖြင့်`
+    /// right after a lone operand ends the value.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The span of `လိပ်စာ`.
+    /// * `dst` - The address of the first cell.
+    ///
+    /// # Returns
+    ///
+    /// The fill, or a diagnostic.
+    fn parse_fill_end(&mut self, start: Span, dst: Expr) -> PResult<Stmt>
+    {
+        let outer = std::mem::replace(&mut self.in_fill, true);
+        let value = self.parse_clause_expr();
+        self.in_fill = outer;
+        let value = value?;
+        self.expect(Kw::Hpjint)?;
+        let size = self.parse_size_arg()?;
+        self.expect(Kw::WillFill)?;
+        let span = start.to(&self.expect_stop()?.span);
+        let node =
+            FillStmt::builder().dst(dst).value(value).size(size).span(span).build();
+        Ok(Stmt::Fill(node))
     }
 
     /// Parse `ပြန်လည်စွန့်လွှတ်မည်။` after the head.

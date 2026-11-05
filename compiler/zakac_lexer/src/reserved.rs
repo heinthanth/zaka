@@ -144,6 +144,10 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ဖြစ်အောင်", Kw::SoThat),
     ("နေရာအချဲ့အချုံ့လုပ်မည်", Kw::WillResize),
     ("ပြန်လည်စွန့်လွှတ်မည်", Kw::WillRelease),
+    ("ဆီသို့", Kw::Toward),
+    ("ကူးယူမည်", Kw::WillBlit),
+    ("ပြောင်းထည့်မည်", Kw::WillShift),
+    ("ဖြည့်မည်", Kw::WillFill),
     // lists
     ("စာရင်း", Kw::List),
     ("စာရင်းအလွတ်", Kw::BlankList),

@@ -253,6 +253,11 @@ impl Parser<'_>
                 self.attach_before(&mut stack)?;
                 continue;
             }
+            let fill_end = self.in_fill && tok.kind == TokenKind::Kw(Kw::Hpjint);
+            ret_if!(
+                fill_end && stack.len() == 1 && stack[0].slot.is_none(),
+                self.finish_clause(stack)
+            );
             if let Some(slot) = as_slot(&tok)
             {
                 self.attach_slot(&mut stack, slot)?;

@@ -51,7 +51,7 @@ these.
 
 ## What it keeps: the State
 
-Each statement list (a function, the start block, or `main`, which holds the starting values of the top-level variables and the call of the start block) is a *routine*. The start block is checked as a function; the rules `main` alone has, such as keeping a borrow in a top-level variable, now reach the starting values alone. At each point of a
+Each statement list (a function, the start block, or `main`, which holds the starting values of the top-level variables and the call of the start block) is a *routine*. The start block is checked as a function; the rules `main` alone has, such as keeping a borrow in a top-level variable, now reach the starting values alone. The start block's flow does not start from globals it knows nothing of, as other functions do: `main` calls it once, as its last statement, and nothing else can call it, so `run_start_flow` runs it again from the facts `main` has at that call (`Flow::seed`), with the hidden host globals not known, since the VM fills them first. Its diagnostics and cell proofs come from that run, and its digest from the run with nothing known. A null, past-the-end or overlapping access through a top-level variable is therefore found in the start block as in `main`. At each point of a
 routine the checker keeps a `State`: one fact for each global and each local, a
 `SlotState`.
 
@@ -202,6 +202,17 @@ error[ZK0704]: the block of "ပ" is freed here, but "မိတ္တူ" still 
 
 Swap the last two lines and the program is correct: `မိတ္တူ` is no longer live at the
 free.
+
+A `Blit` or a `Fill` is checked as a write and a read through an address. `Fill` and the
+destination of a `Blit` go to `write_cells`, which treats the address as a `Store` does: loans
+into a plain list that it edits end, a destination that is `ဗလာ` for sure, or whose first
+cell lies past the end of its block, is an error, and the facts of the slots the address
+names are forgotten. The source of a `Blit` goes to `read_cells`, a read through the address.
+Both also check the last cell (`check_last_cell`): the octets of the run, from `octets`, at
+the end the count reaches on some path, rounded up to whole cells of the pointee. A run of
+no octets checks neither address. For a `ကူးယူမည်`, `check_overlap` reports ZK0721 when both
+addresses name one block (`blocks_of`, as for ZK0712), both offsets and the count are
+single values, and the octet ranges share an octet; else the VM's trap `overlap` remains.
 
 A write into a plain list is a loss too. Lowering wraps each plain list on the path of a
 written place in an `Own` node, since the write can first move its cells to a block of its

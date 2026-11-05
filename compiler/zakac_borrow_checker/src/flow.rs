@@ -8,6 +8,7 @@ use zakac_diagnostics::ownership::overflow_proven;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
+use zakac_ir_builder::ir::Host;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::LogicOp;
 use zakac_ir_builder::ir::Module;
@@ -30,7 +31,9 @@ use crate::cfg::NodeId;
 use crate::cfg::NodeKind;
 use crate::cfg::build_cfg;
 use crate::checks::bounds::check_cell;
+use crate::checks::bounds::check_last_cell;
 use crate::checks::bounds::check_offset;
+use crate::checks::bounds::check_overlap;
 use crate::checks::bounds::check_ptr_sub;
 use crate::checks::calls::all_given_back;
 use crate::checks::calls::check_call;
@@ -198,6 +201,9 @@ pub(crate) struct Flow<'m>
     pub(crate) result_roots: BTreeSet<Root>,
     /// Whether the result points into nothing that dies with the call.
     pub(crate) result_roots_ok: bool,
+    /// The facts of the globals at the start, when the routine knows them:
+    /// the start block, which the main program calls once, last.
+    pub(crate) seed: Option<Vec<SlotState>>,
 }
 
 /// Run the flow of one routine.
@@ -219,11 +225,96 @@ pub(crate) fn run_flow<'m>(
     global_roots: &'m [Roots], options: &'m BorrowCheckOptions, platform: u16,
 ) -> FlowResult
 {
-    let mut flow = Flow::new(module, routine, digests, global_roots, options, platform);
+    let flow = Flow::new(module, routine, digests, global_roots, options, platform);
+    finish_flow(flow)
+}
+
+/// Solve a flow, report and give back what it found.
+///
+/// # Arguments
+///
+/// * `flow` - The flow, with no fact found.
+///
+/// # Returns
+///
+/// The digest of the routine, its diagnostics and its proofs.
+fn finish_flow(mut flow: Flow) -> FlowResult
+{
     flow.solve();
     flow.report_pass();
     check_loop_moves(&mut flow);
     flow.finish()
+}
+
+/// Run the flow of the start block from the facts the main program has
+/// when it calls it. The main program calls the start block once, as its
+/// last statement, and nothing else can call it, so those facts hold at its
+/// start. The hidden globals of the host are not known: the VM fills them
+/// before the main program runs.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+/// * `start` - The number of the start block.
+/// * `digests` - The digest of each function.
+/// * `global_roots` - The roots top-level code gives each global.
+/// * `options` - How to report.
+/// * `platform` - The bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// What the flow of the start block found, or `None` when the main
+/// program does not reach the call.
+pub(crate) fn run_start_flow<'m>(
+    module: &'m Module, start: u32, digests: &'m [FnDigest], global_roots: &'m [Roots],
+    options: &'m BorrowCheckOptions, platform: u16,
+) -> Option<FlowResult>
+{
+    let main = Routine::main(module);
+    let mut caller = Flow::new(module, main, digests, global_roots, options, platform);
+    caller.solve();
+    let at = caller.cfg.nodes.iter().position(|n| calls_start(&n.kind, start))?;
+    let mut globals = caller.ins[at].clone()?.globals;
+    let Host { args, env, exit } = module.host;
+    for g in [args, env, exit].into_iter().flatten()
+    {
+        let kind = module.globals[g as usize].kind;
+        let roots = global_roots.get(g as usize).cloned().unwrap_or_default();
+        globals[g as usize] = SlotState::unknown(kind, roots);
+    }
+    let routine = Routine::func(&module.funcs[start as usize]);
+    let mut flow = Flow::new(module, routine, digests, global_roots, options, platform);
+    flow.seed = Some(globals);
+    Some(finish_flow(flow))
+}
+
+/// Whether a node calls the start block: a plain call, or a set of the
+/// exit code from its result.
+///
+/// # Arguments
+///
+/// * `kind` - The node.
+/// * `start` - The number of the start block.
+///
+/// # Returns
+///
+/// `true` if it does.
+fn calls_start(kind: &NodeKind, start: u32) -> bool
+{
+    let NodeKind::Leaf(s) = kind
+    else
+    {
+        return false;
+    };
+    match s
+    {
+        Stmt::Call { func, .. } => *func == start,
+        Stmt::Set { value, .. } =>
+        {
+            matches!(value.node, ExprNode::Call { func, .. } if func == start)
+        }
+        _ => false,
+    }
 }
 
 /// The place of each plain list a write makes own its block, from the outer
@@ -313,6 +404,7 @@ impl<'m> Flow<'m>
             result_from: BTreeSet::new(),
             result_roots: BTreeSet::new(),
             result_roots_ok: true,
+            seed: None,
         }
     }
 
@@ -350,6 +442,7 @@ impl<'m> Flow<'m>
         let mut ins = pinned.to_vec();
         let mut start =
             State::at_start(self.module, &self.routine, self.ctx.global_roots);
+        do_if!(let Some(globals) = &self.seed, start.globals = globals.clone());
         for &place in &self.addressed
         {
             let int = matches!(start.get(place), SlotState::Int(_));
@@ -619,6 +712,20 @@ impl<'m> Flow<'m>
                 self.fill(dest, state);
                 self.write_dest(dest, block, state);
             }
+            Stmt::Blit { src, dst, count, unit, overlap, span } =>
+            {
+                let octets = self.octets(count, *unit, state);
+                let from = self.read_cells(src, octets, state);
+                let to = self.write_cells(dst, octets, *span, state);
+                let ends = [(src, &from), (dst, &to)];
+                do_if!(!*overlap, check_overlap(self, ends, octets, *span, state));
+            }
+            Stmt::Fill { dst, count, value, span } =>
+            {
+                let octets = self.octets(count, Some(value.kind), state);
+                self.value(value, state);
+                self.write_cells(dst, octets, *span, state);
+            }
             Stmt::Free { dest, span } =>
             {
                 let counted = self.give_back(dest, Invalidation::Freed, *span, state);
@@ -865,6 +972,81 @@ impl<'m> Flow<'m>
                 self.havoc_through(addr, state);
             }
         }
+    }
+
+    /// The octets a blit or a fill covers: its count of units.
+    ///
+    /// # Arguments
+    ///
+    /// * `count` - The count.
+    /// * `unit` - The kind of each unit; none for a count of octets.
+    /// * `state` - The facts, changed in place.
+    ///
+    /// # Returns
+    ///
+    /// The octets on each path.
+    fn octets(
+        &mut self, count: &Expr, unit: Option<DataKind>, state: &mut State,
+    ) -> Interval
+    {
+        let n = int_of(&self.value(count, state));
+        let size = unit.map_or(1, |k| i128::from(k.size(self.platform)));
+        n.times(Interval::point(size))
+    }
+
+    /// Check a read of the cells at an address, as a blit reads them: the
+    /// first cell and the last are read through the address. A run of no
+    /// octets reads nothing, so nothing is checked.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the first cell.
+    /// * `octets` - The octets of the run.
+    /// * `state` - The facts, changed in place.
+    ///
+    /// # Returns
+    ///
+    /// The value of the address.
+    fn read_cells(
+        &mut self, addr: &Expr, octets: Interval, state: &mut State,
+    ) -> SlotState
+    {
+        let at = self.value(addr, state);
+        ret_if!(octets == Interval::point(0), at);
+        self.deref(addr, state);
+        check_offset(self, &at, addr.span, true);
+        check_last_cell(self, &at, addr, octets);
+        at
+    }
+
+    /// Check a write of the cells at an address, as a blit or a fill writes
+    /// them: each loan into a plain list the write edits ends, the first
+    /// cell and the last are written through the address, and the slots it
+    /// names are no longer known. A run of no octets writes nothing, so
+    /// nothing is checked.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the first cell.
+    /// * `octets` - The octets of the run.
+    /// * `span` - The statement.
+    /// * `state` - The facts, changed in place.
+    ///
+    /// # Returns
+    ///
+    /// The value of the address.
+    fn write_cells(
+        &mut self, addr: &Expr, octets: Interval, span: Span, state: &mut State,
+    ) -> SlotState
+    {
+        let at = self.value(addr, state);
+        ret_if!(octets == Interval::point(0), at);
+        do_for!(list in owned_lists(addr), check_heap(self, &list, Invalidation::Edited, span, state));
+        self.deref(addr, state);
+        check_offset(self, &at, addr.span, true);
+        check_last_cell(self, &at, addr, octets);
+        self.havoc_through(addr, state);
+        at
     }
 
     /// After a write through an address, make the slots it names

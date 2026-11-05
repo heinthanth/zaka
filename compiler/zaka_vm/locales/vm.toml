@@ -120,6 +120,9 @@ en = "no heap room for %{size} octets"
 [vm.trap.mixed_blocks]
 en = "pointers into different blocks cannot be subtracted"
 
+[vm.trap.overlap]
+en = "the cells at %{addr} overlap their source; \"ပြောင်းထည့်မည်\" allows that"
+
 [vm.trap.block]
 en = "block at %{start}, %{size} octets, %{origin}"
 

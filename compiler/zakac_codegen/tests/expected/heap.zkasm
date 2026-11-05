@@ -195,12 +195,33 @@ L5:
    150  load i32
    151  print
    152  local_addr l7        ; ပစ္စည်း
-   153  local_addr l7        ; ပစ္စည်း
-   154  load u8*
-   155  free
-   156  push 0x0:ptr
-   157  store u8*
-   158  ret
+   153  load u8*
+   154  push 0:u8
+   155  push 4:usize
+   156  mem_fill u8
+   157  local_addr l7        ; ပစ္စည်း
+   158  load u8*
+   159  push 4:isize
+   160  ptr_add 1
+   161  push 4:usize
+   162  local_addr l7        ; ပစ္စည်း
+   163  load u8*
+   164  mem_blit 1
+   165  local_addr l7        ; ပစ္စည်း
+   166  load u8*
+   167  push 4:usize
+   168  local_addr l7        ; ပစ္စည်း
+   169  load u8*
+   170  push 2:isize
+   171  ptr_add 1
+   172  mem_move 1
+   173  local_addr l7        ; ပစ္စည်း
+   174  local_addr l7        ; ပစ္စည်း
+   175  load u8*
+   176  free
+   177  push 0x0:ptr
+   178  store u8*
+   179  ret
 
 fn f2 main (params 0)
      0  call f1              ; ပရိုဂရမ်

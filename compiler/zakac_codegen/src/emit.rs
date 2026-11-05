@@ -973,6 +973,17 @@ impl<'s> FuncGen<'s>
                 self.update_dest(dest, |g| g.count(count, Op::Realloc(stride)));
             }
             Stmt::Free { dest, .. } => self.update_dest(dest, |g| g.free()),
+            Stmt::Blit { src, dst, count, unit, overlap, .. } =>
+            {
+                let stride = self.unit_size(*unit);
+                do_for!(e in [src, count, dst], self.expr(e));
+                self.op(tern!(*overlap, Op::MemMove(stride), Op::MemBlit(stride)));
+            }
+            Stmt::Fill { dst, count, value, .. } =>
+            {
+                do_for!(e in [dst, value, count], self.expr(e));
+                self.op(Op::MemFill(value.kind));
+            }
             Stmt::Drop { dest, kind, .. } =>
             {
                 self.dest_addr(dest);

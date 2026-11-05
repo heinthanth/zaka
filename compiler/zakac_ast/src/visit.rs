@@ -29,6 +29,7 @@ use crate::kind::Kind;
 use crate::stmt::AddStmt;
 use crate::stmt::AllocStmt;
 use crate::stmt::AssignStmt;
+use crate::stmt::BlitStmt;
 use crate::stmt::BlockStmt;
 use crate::stmt::BreakStmt;
 use crate::stmt::CallStmt;
@@ -36,6 +37,7 @@ use crate::stmt::ContinueStmt;
 use crate::stmt::CountedStmt;
 use crate::stmt::DeclStmt;
 use crate::stmt::EachStmt;
+use crate::stmt::FillStmt;
 use crate::stmt::FnDecl;
 use crate::stmt::FreeStmt;
 use crate::stmt::GenericStmt;
@@ -116,6 +118,8 @@ CallStmt => "call_stmt", visit_call_stmt;
 AllocStmt => "alloc", visit_alloc;
 ResizeStmt => "resize", visit_resize;
 FreeStmt => "free", visit_free;
+BlitStmt => "blit", visit_blit;
+FillStmt => "fill", visit_fill;
 AddStmt => "add", visit_add;
 RemoveStmt => "remove", visit_remove;
 ReplaceStmt => "replace", visit_replace;
@@ -175,6 +179,8 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Alloc(s) => s,
         Stmt::Resize(s) => s,
         Stmt::Free(s) => s,
+        Stmt::Blit(s) => s,
+        Stmt::Fill(s) => s,
         Stmt::Add(s) => s,
         Stmt::Remove(s) => s,
         Stmt::Replace(s) => s,
@@ -292,6 +298,10 @@ pub trait Visitor
     fn visit_resize(&mut self, n: &ResizeStmt) { walk_resize(self, n) }
     /// Visit a heap release.
     fn visit_free(&mut self, n: &FreeStmt) { walk_free(self, n) }
+    /// Visit a blit of cells.
+    fn visit_blit(&mut self, n: &BlitStmt) { walk_blit(self, n) }
+    /// Visit a fill of cells.
+    fn visit_fill(&mut self, n: &FillStmt) { walk_fill(self, n) }
     /// Visit an add statement.
     fn visit_add(&mut self, n: &AddStmt) { walk_add(self, n) }
     /// Visit a remove statement.
@@ -384,6 +394,8 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Alloc(s) => v.visit_alloc(s),
         Stmt::Resize(s) => v.visit_resize(s),
         Stmt::Free(s) => v.visit_free(s),
+        Stmt::Blit(s) => v.visit_blit(s),
+        Stmt::Fill(s) => v.visit_fill(s),
         Stmt::Add(s) => v.visit_add(s),
         Stmt::Remove(s) => v.visit_remove(s),
         Stmt::Replace(s) => v.visit_replace(s),
@@ -570,6 +582,26 @@ pub fn walk_free<V: Visitor + ?Sized>(v: &mut V, n: &FreeStmt)
 {
     v.enter(n);
     v.visit_expr(&n.target);
+    v.leave(n);
+}
+
+/// Visit the source, the size, then the destination of a blit of cells.
+pub fn walk_blit<V: Visitor + ?Sized>(v: &mut V, n: &BlitStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.src);
+    walk_size_arg(v, &n.size);
+    v.visit_expr(&n.dst);
+    v.leave(n);
+}
+
+/// Visit the destination, the value, then the size of a fill of cells.
+pub fn walk_fill<V: Visitor + ?Sized>(v: &mut V, n: &FillStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.dst);
+    v.visit_expr(&n.value);
+    walk_size_arg(v, &n.size);
     v.leave(n);
 }
 
@@ -879,6 +911,10 @@ pub trait VisitorMut
     fn visit_resize_mut(&mut self, n: &mut ResizeStmt) { walk_resize_mut(self, n) }
     /// Visit a heap release.
     fn visit_free_mut(&mut self, n: &mut FreeStmt) { walk_free_mut(self, n) }
+    /// Visit a blit of cells.
+    fn visit_blit_mut(&mut self, n: &mut BlitStmt) { walk_blit_mut(self, n) }
+    /// Visit a fill of cells.
+    fn visit_fill_mut(&mut self, n: &mut FillStmt) { walk_fill_mut(self, n) }
     /// Visit a null address.
     fn visit_null_mut(&mut self, n: &mut NullLit) { self.visit_span_mut(&mut n.span) }
     /// Visit a size expression.
@@ -933,6 +969,8 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::Alloc(s) => v.visit_alloc_mut(s),
         Stmt::Resize(s) => v.visit_resize_mut(s),
         Stmt::Free(s) => v.visit_free_mut(s),
+        Stmt::Blit(s) => v.visit_blit_mut(s),
+        Stmt::Fill(s) => v.visit_fill_mut(s),
         Stmt::Add(s) =>
         {
             v.visit_span_mut(&mut s.span);
@@ -1109,6 +1147,24 @@ pub fn walk_free_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FreeStmt)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_expr_mut(&mut n.target);
+}
+
+/// Visit the source, the size, then the destination of a blit of cells.
+pub fn walk_blit_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut BlitStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_expr_mut(&mut n.src);
+    walk_size_arg_mut(v, &mut n.size);
+    v.visit_expr_mut(&mut n.dst);
+}
+
+/// Visit the destination, the value, then the size of a fill of cells.
+pub fn walk_fill_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FillStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_expr_mut(&mut n.dst);
+    v.visit_expr_mut(&mut n.value);
+    walk_size_arg_mut(v, &mut n.size);
 }
 
 /// Visit the span, the count, then the unit kind of a size operand.

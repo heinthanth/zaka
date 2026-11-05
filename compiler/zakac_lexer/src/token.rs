@@ -503,6 +503,14 @@ pub enum Kw
     WillResize,
     /// `ပြန်လည်စွန့်လွှတ်မည်`
     WillRelease,
+    /// `ဆီသို့`
+    Toward,
+    /// `ကူးယူမည်`: a blit whose two ranges must not overlap
+    WillBlit,
+    /// `ပြောင်းထည့်မည်`: a blit whose two ranges can overlap
+    WillShift,
+    /// `ဖြည့်မည်`
+    WillFill,
 
     // lists
     /// `စာရင်း`

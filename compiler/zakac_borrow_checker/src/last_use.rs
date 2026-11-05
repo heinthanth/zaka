@@ -612,7 +612,9 @@ fn written_places(s: &Stmt) -> Vec<Place>
             Dest::Slot(place) => vec![*place],
             Dest::Mem(addr) => places_in(addr),
         },
-        Stmt::Store { addr, .. } => places_in(addr),
+        Stmt::Store { addr, .. }
+        | Stmt::Blit { dst: addr, .. }
+        | Stmt::Fill { dst: addr, .. } => places_in(addr),
         _ => Vec::new(),
     }
 }

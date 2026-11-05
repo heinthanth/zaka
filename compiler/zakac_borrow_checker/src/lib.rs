@@ -9,6 +9,7 @@ use zakac_rust_sugars::tern;
 
 use crate::digest::FnDigest;
 use crate::flow::run_flow;
+use crate::flow::run_start_flow;
 use crate::interval::CellProofs;
 use crate::interval::mark_checked;
 use crate::interval::uses_raw;
@@ -84,7 +85,14 @@ pub fn borrow_check(
     let main = Routine::main(read);
     let found = run_flow(read, main, &digests, &global_roots, options, platform_bits);
     proofs.add(&found.proofs, &found.doubts);
-    let all = [diagnostics, found.diags, duplicates].concat();
+    let start = callgraph::start_block(read).and_then(|f| {
+        run_start_flow(read, f, &digests, &global_roots, options, platform_bits)
+    });
+    let start_diags = start.map_or_else(Vec::new, |s| {
+        proofs.add(&s.proofs, &s.doubts);
+        s.diags
+    });
+    let all = [diagnostics, found.diags, start_diags, duplicates].concat();
     // A finding, or a raw address the flow cannot follow, means the facts
     // the proofs rest on need not hold.
     let trusted = !has_errors(&all) && !uses_raw(read);

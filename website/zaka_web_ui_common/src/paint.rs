@@ -212,6 +212,9 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::WillKeep
         | Kw::WillResize
         | Kw::WillRelease
+        | Kw::WillBlit
+        | Kw::WillShift
+        | Kw::WillFill
         | Kw::Contains
         | Kw::ContainsAnd
         | Kw::Is
@@ -276,6 +279,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::ListKo
         | Kw::ListWith
         | Kw::Into
+        | Kw::Toward
         | Kw::From
         | Kw::To
         | Kw::Step

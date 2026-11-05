@@ -94,6 +94,14 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
             }
             Stmt::Call { args, .. } => args.iter().for_each(|a| expr_places(a, out)),
             Stmt::Break { .. } | Stmt::Continue { .. } => (),
+            Stmt::Blit { src, dst, count, .. } =>
+            {
+                [src, dst, count].into_iter().for_each(|e| expr_places(e, out))
+            }
+            Stmt::Fill { dst, count, value, .. } =>
+            {
+                [dst, count, value].into_iter().for_each(|e| expr_places(e, out))
+            }
             Stmt::Store { addr, value, .. } =>
             {
                 expr_places(addr, out);

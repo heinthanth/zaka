@@ -134,6 +134,12 @@ pub enum TrapKind
     },
     /// A subtraction of pointers into different blocks.
     MixedBlocks,
+    /// The two ranges of a raw duplicate that must stand apart overlap.
+    Overlap
+    {
+        /// The address the cells go to.
+        addr: u64,
+    },
     /// A cell number outside its list.
     IndexOutOfRange
     {
@@ -257,6 +263,7 @@ impl fmt::Display for TrapKind
             TrapKind::StackFull { size } => t!("vm.trap.stack_full", size = size),
             TrapKind::OutOfMem { size } => t!("vm.trap.out_of_mem", size = size),
             TrapKind::MixedBlocks => t!("vm.trap.mixed_blocks"),
+            TrapKind::Overlap { addr } => t!("vm.trap.overlap", addr = hex(*addr)),
             TrapKind::IndexOutOfRange { index, first, len } =>
             {
                 let last = i128::from(*len) + i128::from(*first) - 1;
@@ -316,7 +323,8 @@ impl TrapKind
             | TrapKind::DoubleFree { addr }
             | TrapKind::BadFree { addr }
             | TrapKind::Misaligned { addr, .. }
-            | TrapKind::BadValue { addr, .. } => Some(*addr),
+            | TrapKind::BadValue { addr, .. }
+            | TrapKind::Overlap { addr } => Some(*addr),
             TrapKind::ZeroDivisor
             | TrapKind::ShiftTooFar { .. }
             | TrapKind::StackOverflow { .. }

@@ -6,7 +6,9 @@ use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::AllocStmt;
+use zakac_ast::stmt::BlitStmt;
 use zakac_ast::stmt::DeclStmt;
+use zakac_ast::stmt::FillStmt;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::ResizeStmt;
@@ -14,7 +16,9 @@ use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_alloc;
+use zakac_ast::visit::walk_blit;
 use zakac_ast::visit::walk_decl;
+use zakac_ast::visit::walk_fill;
 use zakac_ast::visit::walk_generic;
 use zakac_ast::visit::walk_resize;
 use zakac_ast::visit::walk_struct_lit;
@@ -156,6 +160,18 @@ impl Visitor for Sizes<'_>
     {
         self.check(&n.size);
         walk_resize(self, n);
+    }
+
+    fn visit_blit(&mut self, n: &BlitStmt)
+    {
+        self.check(&n.size);
+        walk_blit(self, n);
+    }
+
+    fn visit_fill(&mut self, n: &FillStmt)
+    {
+        self.check(&n.size);
+        walk_fill(self, n);
     }
 
     fn visit_struct_lit(&mut self, n: &StructLit)

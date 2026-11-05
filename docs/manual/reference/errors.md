@@ -169,7 +169,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0414 | an opaque pointer (`လိပ်စာ`) dereferenced or offset before a conversion | [Pointer arithmetic](../../learn/pointers/arithmetic.md#reading-the-same-octets-as-another-kind) |
 | ZK0415 | an operator not for pointers, such as `*` or `/` on an address | [Pointer arithmetic](../../learn/pointers/arithmetic.md#walking-with-a-pointer) |
 | ZK0416 | pointer kinds differ: comparing or subtracting pointers to different kinds | [Pointer arithmetic](../../learn/pointers/arithmetic.md#walking-with-a-pointer) |
-| ZK0417 | a heap statement that needs a pointer but was given another kind | [The heap](../../learn/pointers/heap.md) |
+| ZK0417 | a heap statement, such as a resize, a duplicate or a fill, that needs a pointer but was given another kind | [The heap](../../learn/pointers/heap.md) |
 | ZK0419 | a list literal with more or fewer cells than its kind | [Static data and counted lists](../../learn/forms/counted-lists.md#a-literal-with-the-wrong-count) |
 | ZK0420 | `စာရင်းအလွတ်` where no list kind is known | [List mistakes](../../learn/lists/mistakes.md#a-blank-list-with-no-kind) |
 | ZK0422 | cells of a value that is no list | [List mistakes](../../learn/lists/mistakes.md#cells-of-a-value-that-is-no-list) |
@@ -191,6 +191,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0439 | `၏ အရှေ့တွင်` after a value that is no cell of a list and no character of text | [Lists](../language/lists.md#adding-and-removing-cells) |
 | ZK0440 | a start block parameter that is no `စာသား စာရင်း`, a parameter to change, or a third one | [Functions](../language/functions.md#the-start-block) |
 | ZK0441 | a start block result that is no integer | [Functions](../language/functions.md#the-start-block) |
+| ZK0442 | a duplicate or a fill of cells that own a block or borrow one: owner pointers, text, plain lists, borrows or slices | [Writing and filling cells](../language/pointers.md#writing-and-filling-cells) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -250,3 +251,4 @@ ZK0701 to ZK0704 and ZK0706 to ZK0712 are warnings and the program runs; with
 | ZK0718 | a field that holds a borrow | [Lists and structs through addresses](../../learn/pointers/structs.md#a-borrow-in-a-field) |
 | ZK0719 | an operation that overflows for each value of its operands; a warning, not given with `--overflow wrap` | [Overflow](../language/expressions.md#arithmetic) |
 | ZK0720 | with `--warn-duplicates`, a statement that duplicates text or a list; a warning | [Text](../language/text.md#copies) |
+| ZK0721 | the two ranges of `ကူးယူမည်` overlap, both in one known block at known offsets | [Writing and filling cells](../language/pointers.md#writing-and-filling-cells) |

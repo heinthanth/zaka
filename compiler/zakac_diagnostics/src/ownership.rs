@@ -353,3 +353,21 @@ pub fn duplicate_made(span: Span, name: &str) -> Diagnostic
     let msg = t!("codes.ZK0720.message", n = name);
     Diagnostic::new(Code::DuplicateMade, msg, span).with_help(t!("codes.ZK0720.help"))
 }
+
+/// The two ranges of a `ကူးယူမည်` overlap for certain.
+///
+/// # Arguments
+///
+/// * `span` - The statement.
+/// * `octets` - The count of octets the two ranges share.
+///
+/// # Returns
+///
+/// The `ZK0721` diagnostic, with help that names the statement for ranges
+/// that overlap.
+pub fn blit_ranges_overlap(span: Span, octets: u64) -> Diagnostic
+{
+    let msg = t!("codes.ZK0721.message", n = octets);
+    Diagnostic::new(Code::BlitRangesOverlap, msg, span)
+        .with_help(t!("codes.ZK0721.help"))
+}

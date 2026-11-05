@@ -81,6 +81,8 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
         Stmt::Return { value, .. } => value.iter().collect(),
         Stmt::Call { args, .. } => args.iter().collect(),
         Stmt::Store { addr, value, .. } => vec![addr, value],
+        Stmt::Blit { src, dst, count, .. } => vec![src, dst, count],
+        Stmt::Fill { dst, count, value, .. } => vec![dst, count, value],
         Stmt::Alloc { dest, count, .. } | Stmt::Resize { dest, count, .. } =>
         {
             dest_expr(dest).into_iter().chain([count]).collect()
@@ -208,6 +210,8 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
         Stmt::Return { value, .. } => value.iter_mut().collect(),
         Stmt::Call { args, .. } => args.iter_mut().collect(),
         Stmt::Store { addr, value, .. } => vec![addr, value],
+        Stmt::Blit { src, dst, count, .. } => vec![src, dst, count],
+        Stmt::Fill { dst, count, value, .. } => vec![dst, count, value],
         Stmt::Alloc { dest: d, count, .. } | Stmt::Resize { dest: d, count, .. } =>
         {
             dest_expr_mut(d).into_iter().chain([count]).collect()

@@ -153,6 +153,7 @@ fn each_heap_mistake_traps_with_its_kind()
         ("bad_value", TrapKind::BadValue { addr: 0, kind: String::new() }),
         ("out_of_mem", TrapKind::OutOfMem { size: 0 }),
         ("mixed_blocks", TrapKind::MixedBlocks),
+        ("overlap", TrapKind::Overlap { addr: 0 }),
         ("local_escape", TrapKind::UseAfterFree { addr: 0 }),
         (
             "index_out_of_range",
@@ -195,6 +196,8 @@ fn heap_traps_name_their_block()
     assert!(block.contains("32 octets, heap"), "{block}");
     assert_eq!(heap_trap("null_deref").block, None);
     assert_eq!(heap_trap("mixed_blocks").block, None);
+    let block = heap_trap("overlap").block.expect("a block");
+    assert!(block.contains("32 octets, heap"), "{block}");
 }
 
 #[test]

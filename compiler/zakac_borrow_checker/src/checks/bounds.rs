@@ -1,3 +1,4 @@
+use zakac_diagnostics::ownership::blit_ranges_overlap;
 use zakac_diagnostics::ownership::mixed_blocks;
 use zakac_diagnostics::ownership::offset_past_end;
 use zakac_ir_builder::ir::Expr;
@@ -14,6 +15,7 @@ use crate::digest::Seg;
 use crate::flow::Flow;
 use crate::roots::Roots;
 use crate::state::Interval;
+use crate::state::PtrInfo;
 use crate::state::SlotState;
 use crate::state::State;
 
@@ -49,6 +51,97 @@ pub(crate) fn check_offset(flow: &mut Flow, at: &SlotState, span: Span, access: 
         return;
     };
     report(flow, offset_past_end(span, off, len));
+}
+
+/// Check the last cell of a run of cells at an address, as a blit or a
+/// fill reads or writes it, when the octet count is known on each path:
+/// the run must end inside the block. The run counts whole cells of the
+/// kind the address points at, so a part of a cell counts as one.
+///
+/// # Arguments
+///
+/// * `flow` - The flow.
+/// * `at` - The value of the address.
+/// * `addr` - The address.
+/// * `octets` - The octets of the run.
+pub(crate) fn check_last_cell(
+    flow: &mut Flow, at: &SlotState, addr: &Expr, octets: Interval,
+)
+{
+    ret_if!(!octets.is_bounded() || octets.hi < 1);
+    let SlotState::Ptr(info) = at
+    else
+    {
+        return;
+    };
+    let size = addr.kind.pointee().map(|k| i128::from(k.size(flow.platform)));
+    let Some(size) = size.filter(|s| *s > 0)
+    else
+    {
+        return;
+    };
+    let step = Interval::point((octets.hi + size - 1) / size - 1);
+    let last =
+        SlotState::Ptr(PtrInfo { offset: info.offset.plus(step), ..info.clone() });
+    check_offset(flow, &last, addr.span, true);
+}
+
+/// Report a `ကူးယူမည်` whose two ranges overlap for certain: both
+/// addresses point into one block the routine knows, at offsets it knows,
+/// and the octet count is known.
+///
+/// # Arguments
+///
+/// * `flow` - The flow.
+/// * `ends` - The source and the destination, each with its value.
+/// * `octets` - The octets of each range.
+/// * `span` - The statement.
+/// * `state` - The facts when it runs.
+pub(crate) fn check_overlap(
+    flow: &mut Flow, ends: [(&Expr, &SlotState); 2], octets: Interval, span: Span,
+    state: &State,
+)
+{
+    ret_if!(!flow.recording() || octets.lo != octets.hi || octets.lo < 1);
+    let [(src, from), (dst, to)] = ends;
+    let (Some(a), Some(b)) = (blocks_of(flow, src, state), blocks_of(flow, dst, state))
+    else
+    {
+        return;
+    };
+    ret_if!(a.len() != 1 || a != b);
+    let starts =
+        start_octet(src, from, flow.platform).zip(start_octet(dst, to, flow.platform));
+    let Some((from, to)) = starts
+    else
+    {
+        return;
+    };
+    let shared = from.min(to) + octets.lo - from.max(to);
+    do_if!(shared > 0, report(flow, blit_ranges_overlap(span, shared as u64)));
+}
+
+/// The octet offset of an address from the start of its block.
+///
+/// # Arguments
+///
+/// * `addr` - The address.
+/// * `at` - Its value.
+/// * `platform` - The bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// The offset, or `None` when it is not known on each path.
+fn start_octet(addr: &Expr, at: &SlotState, platform: u16) -> Option<i128>
+{
+    let SlotState::Ptr(info) = at
+    else
+    {
+        return None;
+    };
+    ret_if!(info.offset.lo != info.offset.hi, None);
+    let size = i128::from(addr.kind.pointee()?.size(platform));
+    Some(info.offset.lo * size)
 }
 
 /// Check a cell number against the cells of its list. A number proven
@@ -194,8 +287,11 @@ fn read_blocks(flow: &Flow, place: Place, state: &State) -> Option<Roots>
 {
     let kind = flow.ctx.kind_of(place)?;
     ret_if!(kind.is_owner_ptr(), Some(Roots::from([Root::slot(place).block()])));
+    // A global is known in the main program, and in the start block, which
+    // starts from the facts of the main program.
+    let known_globals = flow.routine.is_main || flow.seed.is_some();
     let outer = Root::slot(place).is_param(flow.routine.params)
-        || (matches!(place, Place::Global(_)) && !flow.routine.is_main);
+        || (matches!(place, Place::Global(_)) && !known_globals);
     ret_if!(outer || !kind.holds_borrow(), None);
     let roots = &state.ptr(place)?.roots;
     let known = !roots.is_empty() && roots.iter().all(|r| owned_here(flow, r));
