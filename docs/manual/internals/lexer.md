@@ -162,7 +162,13 @@ since common signs such as `၌ ၍ ၎` are not `XID_Continue`.
 
 `reserved::RESERVED` lists each reserved spelling once, mapped to a `Kw` variant; a word
 with two spellings has two rows (the four closers of a block all map to `Kw::Done`).
-`lookup` is a hash map over the table.
+`lookup` is a hash map over the table, read through `spelling::canonical`, which writes
+each `ဒေတာ` as `အချက်အလက်`: the table holds the `အချက်အလက်` form alone, and
+`ဒေတာအမျိုးအစား` finds `Kw::StructOpen` through it. The same function makes names one:
+`Name::new` in `zakac_ast` keeps the canonical text, so the checker and each later stage
+see one name for both spellings. The parser matches struct names against source text
+that is not canonical (a struct name glued to its count word), so its set of struct
+names holds each name in both spellings (`spelling::spellings`).
 
 Burmese is written without spaces, so a word made just of reserved words is lexed as
 those words: `တန်ဖိုးကို` is `တန်ဖိုး` then `ကို` (`value` then `ko` in the dump). The

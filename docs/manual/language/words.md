@@ -177,6 +177,29 @@ are ZK0109. Writing a plain reserved word as a name gives ZK0201 ("expected a na
 ကိန်းရှင် `` သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ```
 
+### Two spellings of one word
+
+`ဒေတာ` and `အချက်အလက်` ("data") are one word in each name and each reserved word:
+`ဒေတာအမျိုးအစား` is `အချက်အလက်အမျိုးအစား`, and a variable `ဒေတာ` is the variable
+`အချက်အလက်`. The compiler keeps `အချက်အလက်`, so messages and printed struct names use
+it. Text in a string literal and in a comment keeps the spelling written.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဒေတာ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
+အချက်အလက် + ၁ ကို ပြသပါ။
+"ဒေတာ" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၆
+ဒေတာ
+```
+
+Since the two spellings make one name, declaring `ဒေတာ` and then `အချက်အလက်` in one scope
+is ZK0302.
+
 ## Numbers
 
 A number literal is a run of digits. The digits are Burmese (`၀` to `၉`) or Western

@@ -29,8 +29,9 @@ of one kind; a struct holds a few values of different kinds.
 | `ကိန်းပြည့် အသက်` | "an integer field, `အသက်` (age)" |
 | `ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်ပါစေ` | "let variable `ကျော်` be a `လူ`" |
 
-A declaration lists the fields as `<kind> <name>`, with `၊` between them. `အချက်အလက်အမျိုးအစား`
-is a second spelling of `ဒေတာအမျိုးအစား`; the two mean the same.
+A declaration lists the fields as `<kind> <name>`, with `၊` between them. `အချက်အလက်` and
+`ဒေတာ` are one word in each name and reserved word, so `အချက်အလက်အမျိုးအစား` and `ဒေတာအမျိုးအစား` mean the same,
+and so do `ဒေတာလူ` and `အချက်အလက်လူ` as names.
 
 A struct is declared at the top level of a file, never inside a block or a function. The
 rest of the program can use it from the first line, even above the declaration. A struct

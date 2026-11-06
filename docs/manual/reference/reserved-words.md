@@ -184,7 +184,7 @@ as well.
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `ဒေတာအမျိုးအစား`, `အချက်အလက်အမျိုးအစား` | "data kind": starts a struct declaration (two interchangeable spellings) | [Structs](../../learn/structs/README.md) |
+| `အချက်အလက်အမျိုးအစား`, `ဒေတာအမျိုးအစား` | "data kind": starts a struct declaration (`ဒေတာ` and `အချက်အလက်` are one word in each reserved word and name) | [Structs](../../learn/structs/README.md) |
 | `တို့ ပါဝင်သည်` | "these are included": closes the field list of a struct | [Structs](../../learn/structs/README.md) |
 | `တို့ ပါဝင်ပြီး` | "these are included, and": closes the field list when a classifier follows | [Structs](../../learn/structs/README.md#count-words) |
 | `မျိုးပြပစ္စည်းမှာ` | "the count word is": names the classifier of a struct | [Structs](../../learn/structs/README.md#count-words) |

@@ -246,9 +246,10 @@ impl Parser<'_>
 /// # Returns
 ///
 /// The length in octets, or `None` when the word holds no `တစ်` after a name.
-pub(crate) fn name_len(text: &str, structs: &HashSet<&str>) -> Option<usize>
+pub(crate) fn name_len(text: &str, structs: &HashSet<String>) -> Option<usize>
 {
-    let starts = |s: &&&str| text.strip_prefix(**s).is_some_and(|r| r.starts_with(ONE));
+    let starts =
+        |s: &&String| text.strip_prefix(s.as_str()).is_some_and(|r| r.starts_with(ONE));
     let declared = structs.iter().filter(starts).map(|s| s.len()).max();
     declared.or_else(|| text.find(ONE).filter(|at| *at > 0))
 }

@@ -593,7 +593,7 @@ pub enum Kw
     CellWord,
 
     // structs
-    /// `အချက်အလက်အမျိုးအစား` or `ဒေတာအမျိုးအစား`
+    /// `အချက်အလက်အမျိုးအစား`, also written `ဒေတာအမျိုးအစား`
     StructOpen,
     /// `တို့`, a piece of the field list closers
     Plural,

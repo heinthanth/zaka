@@ -30,7 +30,9 @@ does. The Learn book starts in small steps with [Structs](../../learn/structs/RE
 ဒေတာအမျိုးအစား <name> တွင် <kind> <field>၊ <kind> <field> တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
 ```
 
-- `အချက်အလက်အမျိုးအစား` is a second spelling of `ဒေတာအမျိုးအစား`.
+- `အချက်အလက်အမျိုးအစား` and `ဒေတာအမျိုးအစား` are one word, as `အချက်အလက်` and `ဒေတာ` are
+  in each name and reserved word ([Two spellings of one word](words.md#names)); a
+  struct name written with either spelling names one struct.
 - A declaration stands at the top level of a file. Inside a block, a loop, a conditional
   or a function it is ZK0228. A struct can be used above its declaration, since the
   declarations are read first.

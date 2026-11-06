@@ -6,6 +6,7 @@ pub mod lexer;
 pub mod number;
 pub mod phrases;
 pub mod reserved;
+pub mod spelling;
 pub mod text;
 pub mod token;
 pub mod words;

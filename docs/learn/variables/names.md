@@ -97,6 +97,9 @@ In one place, a name can be declared once and no more:
 error[ZK0302]: "အသက်" is declared before in this scope
 ```
 
+`ဒေတာ` and `အချက်အလက်` ("data") are one word inside a name, so `ဒေတာ` and `အချက်အလက်` are
+one name too, and declaring both in one place is the same mistake.
+
 The help line suggests declaring the name again "in an inner block". The next page,
 [Blocks and scope](scope.md), explains what that means.
 

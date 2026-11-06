@@ -12,6 +12,7 @@ use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
+use zakac_lexer::spelling::canonical;
 
 /// Each name made so far, kept for the rest of the run, so equal text gives
 /// one address and a name stays `Copy`.
@@ -27,7 +28,9 @@ pub struct Name(&'static str);
 
 impl Name
 {
-    /// The name with this text, kept on first use.
+    /// The name with this text, kept on first use. A name is kept in the
+    /// spelling the compiler keeps, so `ဒေတာ` and `အချက်အလက်` in it name one
+    /// thing.
     ///
     /// # Arguments
     ///
@@ -38,6 +41,8 @@ impl Name
     /// The name.
     pub fn new(text: &str) -> Name
     {
+        let text = canonical(text);
+        let text = text.as_ref();
         let names = NAMES.get_or_init(Mutex::default);
         let mut names = names.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(found) = names.get(text)
@@ -175,5 +180,13 @@ mod tests
         let map = HashMap::from([(a, 1)]);
         assert_eq!(map.get("အသက်"), Some(&1));
         assert_eq!(format!("{a}"), "အသက်");
+    }
+
+    #[test]
+    fn both_spellings_of_data_give_one_name()
+    {
+        let loan = Name::new("ဒေတာစာရင်း");
+        assert_eq!(loan, Name::new("အချက်အလက်စာရင်း"));
+        assert_eq!(loan.as_str(), "အချက်အလက်စာရင်း");
     }
 }

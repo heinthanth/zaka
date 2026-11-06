@@ -4,6 +4,7 @@ use std::sync::LazyLock;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
+use crate::spelling::canonical;
 use crate::token::Kw;
 use crate::words::Word;
 
@@ -188,7 +189,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ကွက်", Kw::CellWord),
     // structs
     ("အချက်အလက်အမျိုးအစား", Kw::StructOpen),
-    ("ဒေတာအမျိုးအစား", Kw::StructOpen),
     ("တို့", Kw::Plural),
     ("ပါဝင်သည်", Kw::Contains),
     ("ပါဝင်ပြီး", Kw::ContainsAnd),
@@ -205,7 +205,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
 static LOOKUP: LazyLock<HashMap<&'static str, Kw>> =
     LazyLock::new(|| RESERVED.iter().copied().collect());
 
-/// Look up a whole word in the reserved table.
+/// Look up a whole word in the reserved table, with `ဒေတာ` read as
+/// `အချက်အလက်`.
 ///
 /// # Arguments
 ///
@@ -214,7 +215,10 @@ static LOOKUP: LazyLock<HashMap<&'static str, Kw>> =
 /// # Returns
 ///
 /// The reserved word, or `None`.
-pub fn lookup(text: &str) -> Option<Kw> { LOOKUP.get(text).copied() }
+pub fn lookup(text: &str) -> Option<Kw>
+{
+    LOOKUP.get(canonical(text).as_ref()).copied()
+}
 
 /// A split of a word prefix into reserved words.
 type Pieces = Vec<(Kw, Span)>;

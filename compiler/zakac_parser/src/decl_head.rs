@@ -5,6 +5,7 @@ use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
+use zakac_lexer::spelling::canonical;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
@@ -225,7 +226,8 @@ impl Parser<'_>
         let text = self.text_of(span);
         let alone = len == 1;
         let char_kind = alone && kw_of(&self.peek()) == Some(Kw::CharKind);
-        let own = self.classifiers.get(text).copied().filter(|_| alone);
+        let own =
+            self.classifiers.get(canonical(text).as_ref()).copied().filter(|_| alone);
         let word = own.unwrap_or(tern!(char_kind, CHARACTER, GENERAL));
         diag::decl_needs_classifier(span, text, word)
     }

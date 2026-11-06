@@ -6,6 +6,8 @@ use zakac_lexer::ident::is_ident;
 use zakac_lexer::reserved::RESERVED;
 use zakac_lexer::reserved::lookup;
 use zakac_lexer::reserved::split_reserved;
+use zakac_lexer::spelling::canonical;
+use zakac_lexer::spelling::spellings;
 use zakac_lexer::token::Kw;
 use zakac_lexer::words::build_words;
 use zakac_rust_sugars::do_for;
@@ -258,4 +260,17 @@ fn names_that_start_with_list_words_remain_names()
     assert_eq!(split("သူတို့"), None);
     assert_eq!(split("ပရိုဂရမ်ပိတ်"), None);
     assert_eq!(lookup("အရေအတွက်"), None);
+}
+
+/// `ဒေတာ` and `အချက်အလက်` are one word in reserved words and names.
+#[test]
+fn both_spellings_of_data_are_one_word()
+{
+    assert_eq!(lookup("ဒေတာအမျိုးအစား"), Some(Kw::StructOpen));
+    assert_eq!(lookup("အချက်အလက်အမျိုးအစား"), Some(Kw::StructOpen));
+    assert_eq!(canonical("ဒေတာစာရင်း"), "အချက်အလက်စာရင်း");
+    assert_eq!(canonical("အသက်"), "အသက်");
+    assert_eq!(spellings("ဒေတာစာရင်း"), ["ဒေတာစာရင်း", "အချက်အလက်စာရင်း"]);
+    assert_eq!(spellings("အချက်အလက်"), ["အချက်အလက်", "ဒေတာ"]);
+    assert_eq!(spellings("အသက်"), ["အသက်"]);
 }

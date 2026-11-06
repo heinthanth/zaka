@@ -10,6 +10,8 @@ use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
 use zakac_lexer::reserved::PLURAL;
+use zakac_lexer::spelling::canonical;
+use zakac_lexer::spelling::spellings;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::LexOutput;
 use zakac_lexer::token::Punct;
@@ -83,7 +85,7 @@ pub fn parse_with(
     ret_if!(lexed.tokens.is_empty(), blank_output(span));
     let mut parser = Parser::new(text, base, lexed);
     parser.next_id = first_id;
-    parser.structs.extend(structs.iter().map(String::as_str));
+    parser.structs.extend(structs.iter().flat_map(|s| spellings(s)));
     finish(parser, span)
 }
 
@@ -214,14 +216,15 @@ pub(crate) struct Parser<'t>
     /// The number of blocks that enclose the current statement.
     #[builder(default)]
     pub(crate) depth: u32,
-    /// The struct names the program declares or imports, so a name can
-    /// start a kind.
+    /// The struct names the program declares or imports, each in both
+    /// spellings of `ဒေတာ`, so a name can start a kind however it is written.
     #[builder(default)]
-    pub(crate) structs: HashSet<&'t str>,
-    /// The classifier each struct of this file declares, for the help of a
-    /// declaration that leaves it out.
+    pub(crate) structs: HashSet<String>,
+    /// The classifier each struct of this file declares, under the name in
+    /// the spelling the compiler keeps, for the help of a declaration that
+    /// leaves it out.
     #[builder(default)]
-    pub(crate) classifiers: HashMap<&'t str, &'t str>,
+    pub(crate) classifiers: HashMap<String, &'t str>,
     /// Whether a list count is being parsed: its `ရှိသော` closes the count,
     /// so no struct literal starts inside it.
     #[builder(default)]
@@ -263,11 +266,13 @@ impl<'t> Parser<'t>
         let names: Vec<&str> = lexed.tokens.windows(2).filter_map(declared).collect();
         // the stem of an enumeration names it too: `အရောင်` for `အရောင်များ`
         let stems = names.iter().filter_map(|name| name.strip_suffix(PLURAL));
-        parser.structs = names.iter().copied().chain(stems).collect();
+        parser.structs =
+            names.iter().copied().chain(stems).flat_map(spellings).collect();
         let starts = lexed.tokens.iter().enumerate();
         let starts = starts.filter(|(_, t)| t.kind == TokenKind::Kw(Kw::StructOpen));
         let found = starts
             .filter_map(|(at, _)| parser.struct_classifier(&lexed.tokens, at))
+            .map(|(name, word)| (canonical(name).into_owned(), word))
             .collect();
         parser.classifiers = found;
         parser
