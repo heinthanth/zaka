@@ -26,6 +26,7 @@ program:
           span:
             lo: 139
             hi: 142
+        mark: null
         span:
           lo: 108
           hi: 142
@@ -43,6 +44,7 @@ program:
           span:
             lo: 177
             hi: 180
+        mark: null
         span:
           lo: 146
           hi: 180
@@ -60,6 +62,7 @@ program:
           span:
             lo: 228
             hi: 231
+        mark: null
         span:
           lo: 197
           hi: 231
@@ -225,6 +228,7 @@ program:
           hi: 764
       exported: false
       start: false
+      external: false
       span:
         lo: 0
         hi: 764
@@ -257,6 +261,7 @@ program:
           hi: 1062
       exported: false
       start: false
+      external: false
       span:
         lo: 766
         hi: 1062
@@ -283,6 +288,8 @@ program:
       - false
       - false
       pass: false
+      using: null
+      marks: []
       span:
         lo: 1064
         hi: 1226

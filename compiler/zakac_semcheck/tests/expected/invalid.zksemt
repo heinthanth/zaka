@@ -259,6 +259,7 @@ program:
           hi: 1070
       exported: false
       start: true
+      external: false
       span:
         lo: 0
         hi: 1070

@@ -8,6 +8,7 @@ use strum::IntoStaticStr;
 use zaka_vm::trap::Trap;
 pub use zaka_web_ui_common::paint::token_class;
 use zakac_ast::s_expr::ToSexpr;
+use zakac_ast::stmt::Program;
 use zakac_borrow_checker::borrow_check;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
@@ -40,8 +41,7 @@ use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_naturalness::NaturalnessOptions;
 use zakac_naturalness::check;
-use zakac_parser::load::refuse_imports;
-use zakac_parser::parser::parse;
+use zakac_parser::load::Loaded;
 use zakac_reporter::render::Piece;
 use zakac_reporter::render::diagnostic_pieces;
 use zakac_reporter::width::Carets;
@@ -668,17 +668,25 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     let (segments, segment_time) =
         timed(|| segment_at(&file.src, file.start_pos, &segment_options));
     let (lexed, lex_time) = timed(|| lex(&file, &LexerOptions::default()));
-    let (mut parsed, parse_time) = timed(|| parse(&file, &lexed));
-    // The explorer holds one file, so it has no folder to import from.
-    parsed.diagnostics.extend(refuse_imports(&parsed.program));
-    let checked = !has_errors(&lexed.diagnostics) && !has_errors(&parsed.diagnostics);
+    // The explorer holds one file, so it has no folder to import from: an
+    // import from the stdlib reads the module the compiler carries, and each
+    // other import is reported.
+    let (loaded, parse_time) =
+        timed(|| Loaded::single(&file, &LexerOptions::default()));
+    let parse_diags: Vec<Diagnostic> = loaded
+        .diagnostics
+        .into_iter()
+        .filter(|d| !lexed.diagnostics.contains(d))
+        .collect();
+    let mut program = loaded.program;
+    let checked = !has_errors(&lexed.diagnostics) && !has_errors(&parse_diags);
     let ((mut idiom, out), check_time) = timed(|| {
-        tern!(checked, check_program(&mut parsed.program, options), Default::default())
+        tern!(checked, check_program(&mut program, options), Default::default())
     });
     idiom.extend(out.diagnostics.iter().cloned());
     let lowered = checked && !has_errors(&idiom);
     let (ir, lower_time) =
-        timed(|| lowered.then(|| lower_and_fold(&parsed.program, &out, options)));
+        timed(|| lowered.then(|| lower_and_fold(&program, &out, options)));
     let (plain, mut folded, fold_diags) = ir.unwrap_or_default();
     let borrowchecked = lowered && !has_errors(&fold_diags);
     let ((owner_diags, digests), borrow_check_time) = timed(|| {
@@ -687,7 +695,7 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     });
     let tagged = [
         (Phase::Lex, &lexed.diagnostics),
-        (Phase::Parse, &parsed.diagnostics),
+        (Phase::Parse, &parse_diags),
         (Phase::Check, &idiom),
         (Phase::Lower, &fold_diags),
         (Phase::BorrowCheck, &owner_diags),
@@ -730,8 +738,8 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .tokens(token_rows(&unit, &lexed.tokens))
         .comments(comment_rows(&unit, &lexed))
         .strings(string_rows(&unit, &lexed))
-        .tree(build_tree(&file, source, &parsed.program, &out.kinds))
-        .sexpr(parsed.program.to_sexpr())
+        .tree(build_tree(&file, source, &own_statements(&program), &out.kinds))
+        .sexpr(own_statements(&program).to_sexpr())
         .diagnostics(diagnostics)
         .checked(checked)
         .ir_plain(ir_tree(&plain))
@@ -749,6 +757,23 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .emitted(emitted)
         .times(times)
         .build()
+}
+
+/// The statements of the file the explorer holds, without the stdlib
+/// modules it imports, which come first, for the views of the tree.
+///
+/// # Arguments
+///
+/// * `program` - The program as read, imported modules first.
+///
+/// # Returns
+///
+/// The program of the file alone.
+fn own_statements(program: &Program) -> Program
+{
+    let first = program.units.last().map_or(0, |u| u.first_stmt as usize);
+    let stmts = program.stmts[first..].to_vec();
+    Program::builder().stmts(stmts).span(program.span).build()
 }
 
 /// Run the naturalness and the semantic checks over a parsed program.

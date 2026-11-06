@@ -26,6 +26,7 @@ program:
           span:
             lo: 140
             hi: 143
+        mark: null
         span:
           lo: 109
           hi: 143
@@ -43,6 +44,7 @@ program:
           span:
             lo: 178
             hi: 181
+        mark: null
         span:
           lo: 147
           hi: 181
@@ -60,6 +62,7 @@ program:
           span:
             lo: 216
             hi: 219
+        mark: null
         span:
           lo: 185
           hi: 219
@@ -225,6 +228,7 @@ program:
           hi: 764
       exported: false
       start: false
+      external: false
       span:
         lo: 1
         hi: 764
@@ -249,6 +253,7 @@ program:
           span:
             lo: 883
             hi: 886
+        mark: null
         span:
           lo: 841
           hi: 886
@@ -266,6 +271,7 @@ program:
           span:
             lo: 935
             hi: 938
+        mark: null
         span:
           lo: 890
           hi: 938
@@ -340,6 +346,7 @@ program:
           hi: 1309
       exported: false
       start: false
+      external: false
       span:
         lo: 766
         hi: 1309
@@ -379,6 +386,7 @@ program:
           hi: 1650
       exported: false
       start: false
+      external: false
       span:
         lo: 1311
         hi: 1650
@@ -401,6 +409,8 @@ program:
             args: []
             edits: []
             pass: false
+            using: null
+            marks: []
             span:
               lo: 1769
               hi: 1880
@@ -446,6 +456,8 @@ program:
                 - false
                 - false
                 pass: false
+                using: null
+                marks: []
                 span:
                   lo: 1881
                   hi: 2084
@@ -459,6 +471,7 @@ program:
           hi: 2184
       exported: false
       start: true
+      external: false
       span:
         lo: 1652
         hi: 2184

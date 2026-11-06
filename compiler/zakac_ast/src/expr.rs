@@ -696,12 +696,12 @@ pub struct CallExpr
     #[serde(default)]
     pub pass: bool,
     /// `ကို` or `တို့ကို` before `သုံး၍`, when the arguments come first.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub using: Option<UsingMark>,
     /// The word after each argument of a marked call, one for each; blank
     /// for the other call forms.
     #[builder(default)]
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
     pub marks: Vec<Ident>,
     /// Source region.
     pub span: Span,

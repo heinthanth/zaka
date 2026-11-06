@@ -644,6 +644,7 @@ program:
           span:
             lo: 2980
             hi: 3007
+        mark: null
         span:
           lo: 2885
           hi: 3007
@@ -752,6 +753,7 @@ program:
           hi: 3487
       exported: false
       start: false
+      external: false
       span:
         lo: 2816
         hi: 3487
@@ -774,6 +776,8 @@ program:
           edits:
           - false
           pass: false
+          using: null
+          marks: []
           span:
             lo: 3489
             hi: 3639
@@ -827,6 +831,8 @@ program:
           edits:
           - false
           pass: false
+          using: null
+          marks: []
           span:
             lo: 3669
             hi: 3880
