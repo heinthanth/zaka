@@ -11,6 +11,7 @@ and hosts a compiler explorer that runs in the browser.
 | `compiler/zakac` | the `zakac` command; each stage adds a subcommand through its own `cli` module |
 | `compiler/zakac_*` | one crate per stage (`burmese_segmenter`, `lexer`, `parser`, `naturalness`, `semcheck`, `ir_builder`, `borrow_checker`, `codegen`), plus shared crates (`span`, `ast`, `diagnostics`, `reporter`, `session`, `i18n`, `cli_common`, `rust_sugars`, ...) |
 | `compiler/zaka_vm` | the VM and its checked mem |
+| `compiler/zaka_host` | the host functions a program can call: their table, values and worlds |
 | `website/zaka_website` | the pre-rendered Leptos site: home page, Learn, Docs |
 | `website/zaka_explorer` | the compiler explorer: its own Trunk app (WASM, feature `csr`), and an island of the site at `/explorer/` |
 | `website/zaka_web_ui_common` | UI parts, theme tokens and site URLs that the site and the explorer share |

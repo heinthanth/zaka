@@ -25,7 +25,9 @@ zakac_i18n::init!();
 pub fn executable_main<C: Command>() -> std::process::ExitCode
 {
     let command = C::create_as_standalone();
-    let mut sin = std::io::stdin().lock();
+    // Stdin is locked for each read alone, so a program that reads its input
+    // while it runs (the VM's terminal world) can take the lock too.
+    let mut sin = std::io::BufReader::new(std::io::stdin());
     let mut sout = StandardStream::stdout(ColorChoice::Auto);
     let mut serr = StandardStream::stderr(ColorChoice::Auto);
     let mut io = CommandIO { stdin: &mut sin, stdout: &mut sout, stderr: &mut serr };

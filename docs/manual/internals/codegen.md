@@ -660,6 +660,15 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
 - **Values.** The operand stack holds `Value`s, so arithmetic wraps to the width of the
   kind, a zero divisor is the trap `ZeroDivisor`, and a shift past the width is
   `ShiftTooFar`. The same `value` functions did the folding.
+- **Host functions.** The op `host h`, the one op of an external function, reads each
+  argument through the address of its parameter as a `zaka_host::HostValue` (from its
+  kind: text, a stream struct, an enumeration member), runs `h` against the world of
+  the machine, and writes the result in the result slot from the kind of the result (a
+  result that can fail: tag 1 and the good side, or tag 0 and the error side). The
+  machine keeps its world (`Box<dyn World>`, a `MemWorld` unless `set_world` or `run_in`
+  gives another) with the rest of its state, so a clone for the explorer carries the
+  world along. Writes to the standard streams go to the output of the machine, so those
+  writes keep their order with what the program prints. See [Host functions](#host-functions).
 - **Limits.** `RunOptions` has `max_depth`, `max_steps`, `max_heap`, `max_stack`, the
   frame mode, and `leaks`. A trap is not a `ZK` diagnostic, since it belongs to the run of
   a program and not to the compiler.
@@ -667,6 +676,41 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
 The pages [Running a program](../vm/running.md), [Instructions](../vm/instructions.md),
 [Addresses and blocks](../vm/blocks.md) and [When a program stops](../vm/traps.md)
 tell the VM from the side of its user.
+
+## Host functions
+
+The functions the VM serves to a program live in `zaka_host`, in three parts:
+
+| Part | Where | What it holds |
+| --- | --- | --- |
+| signature | the stdlib (`ပြင်ပမှလာသော` declarations) and `HOST_FNS` | the name, the parameter kinds and the good result of each function; the check matches each external declaration to a row (`zakac_semcheck::host::find`) |
+| values | `zaka_vm/src/machine/host.rs` | the VM reads an argument and writes a result from its kind alone, so a new function over the kinds there needs no VM code |
+| effects | the run function of a row, against `Effects` | plain Rust: `Effects` reaches the `World` (`read_line`, `read_file`, `write_file`) and the standard streams of the VM (`write`) |
+
+`HOST_FNS` is one table, made with the macro `host_fns!`, which also makes the enum
+`HostFn`:
+
+```text
+ReadFile = "ဖိုင်ကိုဖတ်"(TEXT) -> Some(TEXT), read_file;
+```
+
+Each row runs a Rust function `fn(&Args, &mut Effects) -> HostValue`; `Args::text(n)` and
+`Args::stream(n)` read the arguments, and `text_or_fault` and `nothing_or_fault` turn an
+`io::Result` into a result, a failure going through one mapping of `io::ErrorKind` to
+the members of the error enumeration.
+
+To add a host function:
+
+1. Add a row to `host_fns!` and the function that runs it.
+2. When it needs an effect outside the VM that `World` lacks, add a `World` method and
+   write it for `MemWorld` (the browser and the tests) and `TermWorld` (the terminal).
+   A new kind of argument or result needs a case in `machine/host.rs`.
+3. Declare it in the stdlib with its marks.
+
+A `MemWorld` holds the input lines given before the run and a map of files; a
+`TermWorld` reads the standard input of the process and the files on disk. `zakac run`
+runs in a `TermWorld`, and each other run (the tests, the books, the explorer) in a
+`MemWorld`.
 
 ## Tests and extending
 

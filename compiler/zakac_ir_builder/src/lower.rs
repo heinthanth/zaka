@@ -17,7 +17,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::enums::EnumKind;
 use zakac_semcheck::enums::MemberValue;
-use zakac_semcheck::host::HostFn;
+use zakac_semcheck::host;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::semcheck::KindTable;
 use zakac_semcheck::semcheck::RESULT_NAME;
@@ -1606,7 +1606,7 @@ impl Lowerer<'_>
     {
         let kinds: Vec<DataKind> =
             f.params.iter().map(|p| param_kind(p, self.structs)).collect();
-        let func = HostFn::find(&f.name.name, &kinds, given)
+        let func = host::find(&f.name.name, &kinds, given)
             .expect("a check found the host function");
         let slot = result.expect("each host function gives a result");
         let addr = |(p, kind): (&st::Param, &DataKind)| {

@@ -1,6 +1,7 @@
 use std::ffi::OsString;
 use std::sync::Arc;
 
+use zaka_host::TermWorld;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_cli_common::clap;
@@ -45,7 +46,7 @@ use zakac_span::source_map::SourceMap;
 
 use crate::machine::HostData;
 use crate::machine::RunOptions;
-use crate::machine::run_and_keep;
+use crate::machine::run_in;
 use crate::trap::hex;
 
 /// The flag for the call depth limit.
@@ -254,7 +255,8 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     };
     let env = std::env::vars_os().map(pair).collect();
     let host = HostData::builder().args(args.collect()).env(env).build();
-    let (machine, result) = run_and_keep(&module, &mut *io.stdout, &options, &host);
+    let world = Box::new(TermWorld);
+    let (machine, result) = run_in(&module, &mut *io.stdout, &options, &host, world);
     let Err(trap) = result
     else
     {

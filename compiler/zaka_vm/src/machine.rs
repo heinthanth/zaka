@@ -35,6 +35,11 @@ use zakac_semcheck::kind::IntKind;
 use zakac_semcheck::kind::Width;
 use zakac_semcheck::structs::StructKind;
 
+mod host;
+
+use zaka_host::MemWorld;
+use zaka_host::World;
+
 use crate::mem::Mem;
 use crate::mem::Origin;
 use crate::print::list_text;
@@ -177,8 +182,32 @@ pub fn run_and_keep(
     module: &Module, out: &mut dyn Write, options: &RunOptions, host: &HostData,
 ) -> (Machine, Result<(), Trap>)
 {
+    run_in(module, out, options, host, Box::new(MemWorld::default()))
+}
+
+/// Run a module like [`run_and_keep`], with the host functions reaching a
+/// world of the caller's, such as the terminal.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+/// * `out` - Where print ops write.
+/// * `options` - The limits.
+/// * `host` - The arguments and the environment for the start block.
+/// * `world` - The world.
+///
+/// # Returns
+///
+/// The machine where the run stopped, and `Ok` when the main function
+/// returned or the trap that stopped it.
+pub fn run_in(
+    module: &Module, out: &mut dyn Write, options: &RunOptions, host: &HostData,
+    world: Box<dyn World>,
+) -> (Machine, Result<(), Trap>)
+{
     let mut machine = Machine::new(module.clone(), *options);
     machine.set_host(host);
+    machine.set_world(world);
     let result = drive(&mut machine, out);
     (machine, result)
 }
@@ -215,6 +244,12 @@ fn drive(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Trap>
 /// `Ok`, or a trap at the op that printed when the write fails.
 fn drain(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Trap>
 {
+    // shortcut: standard error goes to the process's own; give the run a
+    // writer for it when a caller needs to catch it.
+    do_if!(!machine.err.is_empty(), {
+        let _ = std::io::stderr().write_all(machine.err.as_bytes());
+        machine.err.clear();
+    });
     ret_if!(machine.out.is_empty(), Ok(()));
     let written = out.write_all(machine.out.as_bytes());
     machine.out.clear();
@@ -419,6 +454,13 @@ pub struct Machine
     /// What print ops wrote and no one took.
     #[builder(default)]
     out: String,
+    /// What the program wrote to standard error and no one took.
+    #[builder(default)]
+    err: String,
+    /// The world the host functions reach: one in storage unless the run is
+    /// given another, such as the terminal.
+    #[builder(default = Box::new(MemWorld::default()))]
+    world: Box<dyn World>,
     /// The static data, the stack region and the heap.
     mem: Mem,
     /// The variable of each stack and static block, at the block start.
@@ -886,6 +928,20 @@ impl Machine
     /// The text.
     pub fn output(&self) -> &str { &self.out }
 
+    /// What the program wrote to standard error and no one took.
+    ///
+    /// # Returns
+    ///
+    /// The text.
+    pub fn errors(&self) -> &str { &self.err }
+
+    /// Give the host functions another world, such as the terminal.
+    ///
+    /// # Arguments
+    ///
+    /// * `world` - The world.
+    pub fn set_world(&mut self, world: Box<dyn World>) { self.world = world; }
+
     /// Take what print ops wrote so far.
     ///
     /// # Returns
@@ -1095,8 +1151,7 @@ impl Machine
             Op::LocalAddr(n) => self.local_addr(n),
             Op::LocalRef(n) => self.local_ref(n),
             Op::ResultAddr => self.result_addr(),
-            // shortcut: no host serves calls in this version; the next step adds it.
-            Op::Host(_) => Err(malformed("no host serves this call")),
+            Op::Host(func) => self.host(func),
             Op::GlobalAddr(n) => self.global_addr(n),
             Op::Prefix(op) => self.prefix(op),
             Op::Infix(op) => self.infix(op),

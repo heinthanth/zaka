@@ -6027,6 +6027,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "zaka_host"
+version = "0.1.0"
+dependencies = [
+ "bon",
+ "serde",
+ "strum",
+ "zakac_rust_sugars",
+]
+
+[[package]]
 name = "zaka_html2png"
 version = "0.1.0"
 dependencies = [
@@ -6045,6 +6055,7 @@ dependencies = [
  "strum",
  "tempfile",
  "termcolor",
+ "zaka_host",
  "zakac_borrow_checker",
  "zakac_cli_common",
  "zakac_codegen",
@@ -6458,6 +6469,7 @@ dependencies = [
  "strum",
  "tempfile",
  "termcolor",
+ "zaka_host",
  "zakac_ast",
  "zakac_cli_common",
  "zakac_diagnostics",

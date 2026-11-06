@@ -58,6 +58,7 @@ web pages. One `Cargo.toml` at the root lists them with `members = ["compiler/*"
 | `zakac_borrow_checker` | the ownership check over the IR (ZK07) |
 | `zakac_codegen` | the ops of the VM, and the asm listing |
 | `zaka_vm` | the VM: stack of values, storage blocks, traps; the `run` subcommand |
+| `zaka_host` | the functions the host serves to a program (`HOST_FNS`), the values that cross over, and the worlds those functions reach: the terminal and one in storage |
 | `zakac_diagnostics` | `Diagnostic`, the `Code` catalogue, one constructor per message, texts in `locales/codes.toml` |
 | `zakac_reporter` | draws a diagnostic with its source line, the span marked in it, and the caret rows when asked for |
 | `zakac_burmese_alignment` | finds the terminal and how it draws Burmese text; places a caret row where a terminal that flows Burmese text draws the line |

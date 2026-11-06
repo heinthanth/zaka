@@ -66,7 +66,7 @@ use crate::consts::open_structs;
 use crate::consts::write_counts;
 use crate::enum_check::KnownEnums;
 use crate::enum_check::collect_enums;
-use crate::host::HostFn;
+use crate::host;
 use crate::host::IO_ERROR;
 use crate::kind::DataKind;
 use crate::list::KindUse;
@@ -577,13 +577,9 @@ impl Checker
             .iter()
             .map(|p| DataKind::from_ast(&p.kind, &self.structs))
             .collect();
-        ret_if!(HostFn::find(&n.name.name, &params, ret).is_some());
-        let diag = rd::unknown_host_fn(
-            n.name.span,
-            &n.name.name,
-            &HostFn::listing(),
-            IO_ERROR,
-        );
+        ret_if!(host::find(&n.name.name, &params, ret).is_some());
+        let diag =
+            rd::unknown_host_fn(n.name.span, &n.name.name, &host::listing(), IO_ERROR);
         self.report(diag);
     }
 

@@ -15,6 +15,7 @@ rustc_apfloat = { workspace = true }
 serde = { workspace = true }
 strum = { workspace = true }
 termcolor = { workspace = true }
+zaka_host = { workspace = true }
 zakac_ast = { workspace = true }
 zakac_cli_common = { workspace = true }
 zakac_diagnostics = { workspace = true }
