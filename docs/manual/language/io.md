@@ -88,22 +88,38 @@ goes to standard error, apart from the output.
 
 `စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ်` gives the next line of standard input, without its
 line break, and at the end of the input it fails with
-`အဝင်အချက်အလက်အဆုံးကိုရောက်ခြင်း`. A loop that reads each line tests the whole result:
+`အဝင်အချက်အလက်အဆုံးကိုရောက်ခြင်း`. A loop that reads each line tests the whole result;
+the `stdin` fence under a program of these pages holds what it reads:
 
-```text
+```zaka
+"စံကား/အဝင်အထွက်" မှ စာကြောင်းတစ်ကြောင်းဖတ်၊ စံပြုအဝင် တို့ကို ထည့်သွင်းပါ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် လိုင်း သည် စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ် သည့် ရလဒ် ဖြစ်ပါစေ။
 လိုင်း သည် ရလဒ်ကောင်း ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 လိုင်း ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
 လိုင်း ကို စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ် သည့် ရလဒ် ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```stdin
+က
+ခ
+```
+
+```text
+က
+ခ
 ```
 
 ## Where the input and the files come from
 
 `zakac run` gives a program the terminal: standard input is the input of the process,
 and a path names a file on disk, relative to the folder the command runs in. The Learn
-and Docs pages and the explorer give a world in storage: no input in this version, and
-files that last as long as the run. See [Running a program](../vm/running.md#input-files-and-the-standard-streams).
+and Docs pages give a world in storage: the input their `stdin` fence holds, and files
+that last as long as the run. The explorer asks for each line on its output panel, as a
+terminal does (see [Running a program](../vm/running.md#input-files-and-the-standard-streams)). See [Running a program](../vm/running.md#input-files-and-the-standard-streams).
 
 ## The rules
 

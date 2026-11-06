@@ -87,10 +87,11 @@ several writes can share a line:
 ## Reading what the user enters
 
 `စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ်` ("read one line from standard input") gives the
-next line the user enters. A page has no input to read from, so save this program and
-run it with `zakac run`:
+next line the user enters. On a page, the `Standard input` box under the program holds
+what the program reads; in the explorer, the output panel asks for each line as a
+terminal does; with `zakac run`, it is what the terminal gives:
 
-```text
+```zaka
 "စံကား/အဝင်အထွက်" မှ ရေး၊ စာကြောင်းတစ်ကြောင်းဖတ်၊ စံပြုအဝင်၊ စံပြုအထွက်၊ အချက်အလက်အဝင်အထွက်အမှားအယွင်း တို့ကို ထည့်သွင်းပါ။
 
 လုပ်ဆောင်ချက် နှုတ်ဆက် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ အောင်မြင်သည့်သတင်း သို့မဟုတ် အချက်အလက်အဝင်အထွက်အမှားအယွင်း အမှားအယွင်း ကို ပြန်ပေးမည်။
@@ -102,6 +103,14 @@ run it with `zakac run`:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် နှုတ်ဆက် သည့် ရလဒ် ဖြစ်ပါစေ။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```stdin
+ဟိန်း
+```
+
+```text
+နာမည်: မင်္ဂလာပါ ဟိန်း
 ```
 
 The [Input and output](../../manual/language/io.md) page of the manual lists each name of

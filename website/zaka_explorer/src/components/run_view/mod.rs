@@ -1,16 +1,20 @@
+use leptos::ev;
 use leptos::html;
 use leptos::html::div;
 use leptos::html::h3;
+use leptos::html::input;
 use leptos::html::p;
 use leptos::html::pre;
 use leptos::html::section;
 use leptos::prelude::*;
 use leptos_scoped_style::ComponentStyle;
+use web_sys::KeyboardEvent;
 use web_sys::ScrollIntoViewOptions;
 use web_sys::ScrollLogicalPosition;
 use zaka_web_ui_common::sheet;
 use zakac_i18n::t;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::compile::asm::AsmFunc;
@@ -178,8 +182,9 @@ fn out_pane(state: AppState) -> impl IntoView
         .child((title, output_view(state)))
 }
 
-/// What the program wrote so far, and the trap when the run stopped before
-/// its end.
+/// What the program wrote so far, with the lines entered for it, and the trap
+/// when the run stopped before its end. While the run waits for standard
+/// input, a line to type it in follows the output, as at a terminal.
 ///
 /// # Arguments
 ///
@@ -191,23 +196,66 @@ fn out_pane(state: AppState) -> impl IntoView
 pub fn output_view(state: AppState) -> impl IntoView
 {
     let text = Memo::new(move |_| state.debug.with(Session::output));
-    let blank = move || text.with(String::is_empty);
+    let waiting = Memo::new(move |_| state.debug.with(Session::waiting));
+    let blank = move || text.with(String::is_empty) && !waiting.get();
     let shown =
         move || tern!(blank(), t!("explorer.run.no_output").to_string(), text.get());
     let end = NodeRef::<html::Pre>::new();
     // Like a terminal, the output keeps its last line in view.
     Effect::new(move |_| {
         text.track();
+        waiting.track();
         do_if!(let Some(el) = end.get(), el.set_scroll_top(el.scroll_height()));
     });
     let output = pre()
         .class(ClassName::RUN_OUTPUT)
         .class((ClassName::RUN_OUTPUT_BLANK, blank))
         .node_ref(end)
-        .child(shown);
+        .child((shown, move || waiting.get().then(|| input_line(state))));
     let trap = move || {
         let trap = state.debug.with(Session::trap);
         trap.map(|t| p().class(ClassName::RUN_TRAP).attr("role", "status").child(t))
     };
     (sheet(&SHEET), output, trap)
+}
+
+/// The line where the reader enters standard input while the run waits: Enter
+/// gives the program the line, and Ctrl+D ends the input; then the run goes
+/// on. It takes the focus when it shows.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn input_line(state: AppState) -> impl IntoView
+{
+    let field = NodeRef::<html::Input>::new();
+    Effect::new(move |_| do_if!(let Some(el) = field.get(), _ = el.focus()));
+    let pressed = move |e: KeyboardEvent| {
+        let Some(el) = field.get_untracked()
+        else
+        {
+            return;
+        };
+        let enter = e.key() == "Enter";
+        let end = e.ctrl_key() && e.key().eq_ignore_ascii_case("d");
+        ret_if!(!enter && !end);
+        e.prevent_default();
+        let line = el.value();
+        el.set_value("");
+        state.debug.update(|s| tern!(enter, s.give_input(&line), s.close_input()));
+        state.going.set(true);
+    };
+    input()
+        .r#type("text")
+        .class(ClassName::RUN_INPUT)
+        .attr("aria-label", t!("explorer.run.input"))
+        .title(t!("explorer.run.input_hint"))
+        .attr("autocomplete", "off")
+        .attr("spellcheck", "false")
+        .node_ref(field)
+        .on(ev::keydown, pressed)
 }

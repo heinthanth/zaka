@@ -32,6 +32,7 @@ tower-http = { workspace = true, optional = true }
 turf = { workspace = true }
 wasm-bindgen = { workspace = true }
 zaka_explorer = { workspace = true }
+zaka_host = { workspace = true }
 zaka_vm = { workspace = true }
 zaka_web_ui_common = { workspace = true }
 zakac_borrow_checker = { workspace = true }

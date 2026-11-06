@@ -184,7 +184,7 @@ struct Ran
 /// Its diagnostics and what it printed.
 fn run_program(source: &str) -> Ran
 {
-    let compiled = compile(source, &FenceOptions::default());
+    let compiled = compile(source, &FenceOptions::default(), "");
     let printed =
         compiled.machine.map(|mut m| advance(&mut m, STEP_CAP).0).unwrap_or_default();
     Ran { report: compiled.report, printed }

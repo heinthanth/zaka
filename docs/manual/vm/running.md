@@ -62,9 +62,14 @@ The external functions of a program (see
 [External functions](../language/functions.md#external-functions)) reach the world the
 run is given. `zakac run` gives the terminal: a line read comes from the standard input
 of the process, a file is read and written on disk, and a write to `စံပြုအမှား` goes to
-standard error. The books and the explorer give a world in storage instead: its input
-lines are set before the run, and the files a program writes there last as long as the
-run. A write to `စံပြုအထွက်` joins what the program prints, in order, in each world.
+standard error. The books and the explorer give a world in storage instead, where the
+files a program writes last as long as the run. On a page of the books, the input is set
+before the run: the `Standard input` box under the program. In the explorer, the input
+remains open: a read with no line makes the run wait (the status reads "Waiting for
+input"), and the output panel asks for the line where the output ends, as a terminal
+does. Enter gives the program the line, which the panel keeps in the output, and Ctrl+D
+ends the input, so the read fails with the end of the input. A write to `စံပြုအထွက်` joins
+what the program prints, in order, in each world.
 
 ## The options
 

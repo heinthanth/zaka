@@ -50,6 +50,8 @@ and one set of tests serve both books.
   - `zaka-error ZK0701` must fail to compile with that code.
   - `zaka-warning ZK0501` must compile with that warning.
   - `zaka-stop` must stop at run time, with its output in the `text` fence after it.
+  - `stdin` right after a `zaka` fence, before its `text` fence, holds what the program
+    reads from standard input; the page shows it under the program.
   - `zaka-file` shows one file of a program in several files: painted, never run, and
     it must lex with no error. Start it with a `// <file>.zaka` line.
   - Options can follow the fence word: `mem-check=warn|off`, `mem-strict=on`, `no-raw=on`,

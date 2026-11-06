@@ -31,6 +31,10 @@ pub const CONTENTS_ID: &str = "contents";
 /// The info string of a fence that holds what the program before it prints.
 const OUTPUT_FENCE: &str = "text";
 
+/// The info string of a fence, between a program and its output, that holds
+/// what the program reads from standard input.
+pub const INPUT_FENCE: &str = "stdin";
+
 /// The info string of a fence that shows one file of a program in several
 /// files: it is painted as Zaka, but a page cannot run it on its own.
 pub const FILE_FENCE: &str = "zaka-file";
@@ -75,6 +79,10 @@ pub struct Sample
     /// follows.
     #[builder(into, default)]
     pub expected: String,
+    /// What it reads from standard input, from the `stdin` fence after it;
+    /// blank when none follows.
+    #[builder(into, default)]
+    pub input: String,
 }
 
 /// A second-level head of a page.
@@ -223,8 +231,9 @@ fn heading(
 }
 
 /// Take a fenced block: a program of Zaka becomes a block of its own, with
-/// what it prints from the `text` fence after it; a file of a longer
-/// program is painted in place; others stand as text.
+/// what it reads from the `stdin` fence after it and what it prints from the
+/// `text` fence after that; a file of a longer program is painted in place;
+/// others stand as text.
 ///
 /// # Arguments
 ///
@@ -241,26 +250,40 @@ fn code_block(rest: &mut Rest, built: &mut Built, info: CowStr<'static>)
         return;
     };
     let source = block_text(rest);
-    let fenced = |e: &Event| match e
-    {
-        Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(i))) => &**i == OUTPUT_FENCE,
-        _ => false,
-    };
-    let output = rest.peek().is_some_and(fenced);
-    let expected = output.then(|| {
-        rest.next();
-        block_text(rest)
-    });
+    let input = fence_after(rest, INPUT_FENCE).unwrap_or_default();
+    let expected = fence_after(rest, OUTPUT_FENCE).unwrap_or_default();
     built.flush();
     let source = source.trim_end().to_string();
-    let expected = expected.unwrap_or_default();
     let sample = Sample::builder()
         .source(source)
         .fence(fence)
         .options(options)
         .expected(expected)
+        .input(input)
         .build();
     built.blocks.push(Block::Zaka(sample));
+}
+
+/// Take the fenced block that comes next when its info string is `info`.
+///
+/// # Arguments
+///
+/// * `rest` - The events.
+/// * `info` - The info string.
+///
+/// # Returns
+///
+/// Its text, or `None` when the next block is another.
+fn fence_after(rest: &mut Rest, info: &str) -> Option<String>
+{
+    let fenced = |e: &Event| match e
+    {
+        Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(i))) => &**i == info,
+        _ => false,
+    };
+    ret_if!(!rest.peek().is_some_and(fenced), None);
+    rest.next();
+    Some(block_text(rest))
 }
 
 /// Take a fenced block that shows one file of a program: painted, in the

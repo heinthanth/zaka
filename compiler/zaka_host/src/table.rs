@@ -224,7 +224,8 @@ mod tests
     ) -> (HostValue, String)
     {
         let (mut out, mut err) = (String::new(), String::new());
-        let mut effects = Effects { world, out: &mut out, err: &mut err };
+        let mut effects =
+            Effects { world, out: &mut out, err: &mut err, blocked: false };
         (func.serve(&Args(args), &mut effects), out)
     }
 

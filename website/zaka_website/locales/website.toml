@@ -194,6 +194,8 @@ en = "Expected warning"
 en = "Running"
 [website.sandbox.output]
 en = "Output"
+[website.sandbox.input]
+en = "Standard input"
 [website.sandbox.nothing]
 en = "The program printed nothing."
 [website.sandbox.halted]

@@ -50,11 +50,35 @@ impl Machine
         let slot = self.pop_ptr("host")?;
         let read = addrs.iter().zip(&kinds).map(|(a, k)| self.host_value_at(*a, *k));
         let args = Args(read.collect::<Result<_, _>>()?);
-        let mut effects =
-            Effects { world: &mut *self.world, out: &mut self.out, err: &mut self.err };
+        let world = &mut *self.world;
+        #[rustfmt::skip]
+        let mut effects = Effects { world, out: &mut self.out, err: &mut self.err, blocked: false };
         let result = func.serve(&args, &mut effects);
+        ret_if!(effects.blocked, self.wait_for_input(slot, &addrs));
         self.put_host_value(slot, ret, result)?;
         self.push(Value::Ptr(slot))
+    }
+
+    /// Wait for standard input: put the operands of the op back and step
+    /// back to it, so it runs again, uncounted, once input comes.
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - The address of the result slot.
+    /// * `addrs` - The address of each parameter.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap a push hits.
+    fn wait_for_input(&mut self, slot: u64, addrs: &[u64]) -> Step
+    {
+        self.push(Value::Ptr(slot))?;
+        addrs.iter().try_for_each(|a| self.push(Value::Ptr(*a)))?;
+        let frame = self.frames.last_mut().ok_or_else(|| malformed("no call"))?;
+        frame.pc -= 1;
+        self.steps -= 1;
+        self.waiting = true;
+        Ok(())
     }
 
     /// The value of a kind at an address, as the host takes it.

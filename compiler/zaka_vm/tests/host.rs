@@ -7,9 +7,12 @@ use zaka_host::HOST_FNS;
 use zaka_host::HostFn;
 use zaka_host::MemWorld;
 use zaka_vm::machine::HostData;
+use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
+use zaka_vm::machine::State;
 use zaka_vm::machine::run_in;
 use zakac_codegen::bc::Op;
+use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::tern;
 
 /// The import of each name of the stdlib module of input and output.
@@ -72,4 +75,37 @@ fn the_stdlib_declares_each_host_function()
         ops.filter_map(|op| tern!(let Op::Host(f) = op, Some(*f), None)).collect();
     let rows: HashSet<HostFn> = HOST_FNS.iter().map(|d| d.func).collect();
     assert_eq!(served, rows);
+}
+
+/// A program that reads two lines of standard input and prints each whole
+/// result.
+const TWO_LINES: &str = "\
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ် သည့် ရလဒ် ကို ပြသပါ။
+စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ် သည့် ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+
+/// In a world whose input remains open, as in the explorer, a read with no
+/// line waits; a line given goes on with the run, and closing the input
+/// makes the read fail with the end of the input.
+#[test]
+fn an_open_world_waits_for_each_line()
+{
+    let module = compile_checked(&format!("{IMPORT}\n{TWO_LINES}"));
+    let mut machine = Machine::new(module, RunOptions::default());
+    machine.set_world(Box::new(MemWorld::builder().open(true).build()));
+    let run = |m: &mut Machine| do_while!(m.running(), _ = m.step());
+    run(&mut machine);
+    assert_eq!(machine.state(), &State::Waiting);
+    assert_eq!(machine.output(), "");
+    machine.give_input("Hein\n");
+    run(&mut machine);
+    assert!(machine.waiting());
+    assert_eq!(machine.output(), "ရလဒ်ကောင်း(\"Hein\")\n");
+    machine.close_input();
+    run(&mut machine);
+    assert_eq!(machine.state(), &State::Finished);
+    let end = "အမှားအယွင်း(အချက်အလက်အဝင်အထွက်အမှားအယွင်းများထဲမှ အဝင်အချက်အလက်အဆုံးကိုရောက်ခြင်း)";
+    assert_eq!(machine.output(), format!("ရလဒ်ကောင်း(\"Hein\")\n{end}\n"));
 }

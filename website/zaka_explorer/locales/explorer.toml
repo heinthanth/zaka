@@ -428,6 +428,8 @@ en = "Running"
 en = "Stopped"
 [explorer.run.status_paused]
 en = "Paused"
+[explorer.run.status_waiting]
+en = "Waiting for input"
 [explorer.run.status_finished]
 en = "Finished"
 [explorer.run.status_exit]
@@ -552,6 +554,10 @@ en = "The first %{shown} of %{len} octets."
 en = "Output"
 [explorer.run.no_output]
 en = "The program wrote nothing so far."
+[explorer.run.input]
+en = "Standard input"
+[explorer.run.input_hint]
+en = "Enter gives the program this line; Ctrl+D ends the input"
 [explorer.run.trapped]
 en = "The program stopped: %{trap}"
 [explorer.run.skipped_title]

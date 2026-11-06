@@ -635,7 +635,8 @@ or a codegen artifact in either form, which it knows from the first octets.
 
 `zaka_vm::machine::Machine` owns a `bc::Module` and runs it one op at a time: `step()`
 fetches the op at the program counter of the innermost call, executes it with `exec`, and
-returns a `State`: `Running`, `Finished` or `Trapped`. `run` and `run_with` loop `step`;
+returns a `State`: `Running`, `Finished`, `Trapped`, or `Waiting` while a read of
+standard input finds no line in a world that keeps its input open. `run` and `run_with` loop `step`;
 the explorer calls `step`, `step_over` and `step_out` to show a program running.
 
 - **Start.** `Machine::new` gives each global a static block, then each static text a
@@ -668,7 +669,11 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   machine keeps its world (`Box<dyn World>`, a `MemWorld` unless `set_world` or `run_in`
   gives another) with the rest of its state, so a clone for the explorer carries the
   world along. Writes to the standard streams go to the output of the machine, so those
-  writes keep their order with what the program prints. See [Host functions](#host-functions).
+  writes keep their order with what the program prints. A `MemWorld` with `open` set (the
+  explorer's) answers a read with no line with `WouldBlock`: `Effects` marks the call
+  blocked, and the op puts its operands back, steps back to itself uncounted, and the
+  state becomes `Waiting` until `give_input` or `close_input`. See
+  [Host functions](#host-functions).
 - **Limits.** `RunOptions` has `max_depth`, `max_steps`, `max_heap`, `max_stack`, the
   frame mode, and `leaks`. A trap is not a `ZK` diagnostic, since it belongs to the run of
   a program and not to the compiler.

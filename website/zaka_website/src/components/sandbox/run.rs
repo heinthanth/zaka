@@ -1,6 +1,7 @@
 use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
+use zaka_host::MemWorld;
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
@@ -207,11 +208,12 @@ pub struct Compiled
 ///
 /// * `source` - The program.
 /// * `options` - What its fence asks of the compiler.
+/// * `input` - What the program reads from standard input.
 ///
 /// # Returns
 ///
 /// The diagnostics and the machine.
-pub fn compile(source: &str, options: &FenceOptions) -> Compiled
+pub fn compile(source: &str, options: &FenceOptions, input: &str) -> Compiled
 {
     let mut sm = SourceMap::new();
     let file =
@@ -235,6 +237,7 @@ pub fn compile(source: &str, options: &FenceOptions) -> Compiled
     let machine = emitted.module.map(|m| {
         let mut machine = Machine::new(m, options);
         machine.set_host(&HostData::program(FILE_NAME));
+        machine.set_world(Box::new(MemWorld::builder().input(input).build()));
         machine
     });
     Compiled::builder().report(report).codes(codes).maybe_machine(machine).build()
@@ -265,14 +268,17 @@ pub fn advance(machine: &mut Machine, ops: u64) -> (String, Option<String>)
 ///
 /// * `source` - The program.
 /// * `options` - What its fence asks of the compiler.
+/// * `input` - What the program reads from standard input.
 ///
 /// # Returns
 ///
 /// The codes of its diagnostics, and its output as its page writes it: what
 /// it printed, then the reason it stopped when it stopped with an error.
-pub fn run_to_end(source: &str, options: &FenceOptions) -> (Vec<String>, String)
+pub fn run_to_end(
+    source: &str, options: &FenceOptions, input: &str,
+) -> (Vec<String>, String)
 {
-    let compiled = compile(source, options);
+    let compiled = compile(source, options, input);
     let Some(mut machine) = compiled.machine
     else
     {

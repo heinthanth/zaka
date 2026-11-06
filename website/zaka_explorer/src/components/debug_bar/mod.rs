@@ -228,7 +228,11 @@ fn go_button(state: AppState) -> impl IntoView
 /// The view.
 fn stop_button(state: AppState) -> impl IntoView
 {
-    let paused = move || state.debug.with(|s| s.status() == RunStatus::Paused);
+    let paused = move || {
+        state
+            .debug
+            .with(|s| matches!(s.status(), RunStatus::Paused | RunStatus::Waiting))
+    };
     let can_stop = move || state.going.get() || state.auto_step.get() || paused();
     let name = t!("explorer.run.stop");
     button()
@@ -325,6 +329,7 @@ fn status_class(status: RunStatus) -> &'static str
         RunStatus::Stopped => ClassName::RUN_STATUS_STOPPED,
         RunStatus::Finished => ClassName::RUN_STATUS_FINISHED,
         RunStatus::Trapped => ClassName::RUN_STATUS_TRAPPED,
+        RunStatus::Waiting => ClassName::RUN_STATUS_WAITING,
     }
 }
 

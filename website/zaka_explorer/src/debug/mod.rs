@@ -7,6 +7,7 @@ use strum::EnumIter;
 use strum::EnumString;
 use strum::IntoStaticStr;
 use web_time::Instant;
+use zaka_host::MemWorld;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::Held;
 use zaka_vm::machine::HostData;
@@ -69,6 +70,9 @@ pub enum RunStatus
     Finished,
     /// The program stopped before its end.
     Trapped,
+    /// The program waits for a line of standard input, which the output
+    /// panel asks for.
+    Waiting,
 }
 
 impl RunStatus
@@ -88,6 +92,7 @@ impl RunStatus
             RunStatus::Stopped => t!("explorer.run.status_stopped"),
             RunStatus::Finished => t!("explorer.run.status_finished"),
             RunStatus::Trapped => t!("explorer.run.status_trapped"),
+            RunStatus::Waiting => t!("explorer.run.status_waiting"),
         }
     }
 }
@@ -629,6 +634,11 @@ pub struct Session
     /// The peak heap octets and stack slots of the ended run.
     #[builder(default)]
     kept_usage: (u64, usize),
+    /// Each line entered on the output panel, with the length of the output
+    /// when it was entered, so the output shows it where it was entered, as a
+    /// terminal does.
+    #[builder(default)]
+    entered: Vec<(usize, String)>,
 }
 
 impl Default for Session
@@ -720,6 +730,9 @@ fn machine_for(ops: &bc::Module, max_heap: u64, frames: FrameMode) -> Machine
         .frames(frames).build();
     let mut machine = Machine::new(ops.clone(), options);
     machine.set_host(&HostData::program(FILE_NAME));
+    // Standard input remains open: a read with no line waits for one entered on
+    // the output panel.
+    machine.set_world(Box::new(MemWorld::builder().open(true).build()));
     machine
 }
 
@@ -946,6 +959,7 @@ impl Session
         self.machine = self.machine.as_ref().map(fresh);
         self.viewed = 0;
         self.ended = None;
+        self.entered.clear();
         self.kept.clear();
         self.kept_steps = 0;
         self.kept_exit = None;
@@ -1206,6 +1220,7 @@ impl Session
         {
             State::Finished => RunStatus::Finished,
             State::Trapped(_) => RunStatus::Trapped,
+            State::Waiting => RunStatus::Waiting,
             State::Running =>
             {
                 tern!(m.steps() == 0, RunStatus::Start, RunStatus::Paused)
@@ -1403,7 +1418,52 @@ impl Session
     pub fn output(&self) -> String
     {
         ret_if!(self.ended.is_some(), self.kept.clone());
-        self.machine.as_ref().map(|m| m.output().to_string()).unwrap_or_default()
+        let written = self.machine.as_ref().map_or("", |m| m.output());
+        let mut shown = String::new();
+        let mut from = 0;
+        for (at, line) in self.entered.iter().filter(|(at, _)| *at <= written.len())
+        {
+            shown.push_str(&written[from..*at]);
+            shown.push_str(line);
+            from = *at;
+        }
+        shown.push_str(&written[from..]);
+        shown
+    }
+
+    /// Whether the run waits for a line of standard input.
+    ///
+    /// # Returns
+    ///
+    /// `true` while it waits.
+    pub fn waiting(&self) -> bool
+    {
+        self.machine.as_ref().is_some_and(Machine::waiting)
+    }
+
+    /// Give the run a line entered on the output panel, which the output shows
+    /// where it was entered.
+    ///
+    /// # Arguments
+    ///
+    /// * `line` - The line, without its line break.
+    pub fn give_input(&mut self, line: &str)
+    {
+        let Some(m) = self.machine.as_mut()
+        else
+        {
+            return;
+        };
+        let text = format!("{line}\n");
+        self.entered.push((m.output().len(), text.clone()));
+        m.give_input(&text);
+    }
+
+    /// End standard input, as Ctrl+D does at a terminal: the read that
+    /// waits fails with the end of the input.
+    pub fn close_input(&mut self)
+    {
+        do_if!(let Some(m) = self.machine.as_mut(), m.close_input());
     }
 
     /// The text of the trap that stopped the run.

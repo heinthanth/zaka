@@ -61,6 +61,8 @@ struct Live
     machine: StoredValue<Option<Machine>>,
     /// What the fence of the program asks of the compiler.
     options: FenceOptions,
+    /// What the program reads from standard input, as its page gives it.
+    input: StoredValue<String>,
 }
 
 /// A program of a Learn page that the reader can edit and run: a bar with the
@@ -76,6 +78,8 @@ struct Live
 /// * `fence` - What its page promises the program does.
 /// * `options` - What its fence asks of the compiler.
 /// * `expected` - What its page shows as its output.
+/// * `input` - What the program reads from standard input, as its page gives
+///   it.
 ///
 /// # Returns
 ///
@@ -83,6 +87,7 @@ struct Live
 #[island(lazy)]
 pub fn Sandbox(
     source: String, fence: Fence, options: FenceOptions, expected: String,
+    input: String,
 ) -> impl IntoView
 {
     let live = Live::builder()
@@ -91,6 +96,7 @@ pub fn Sandbox(
         .running(RwSignal::new(false))
         .machine(StoredValue::new(None))
         .options(options)
+        .input(StoredValue::new(input.clone()))
         .build();
     // The page is read before the island starts; until then the field cannot
     // be edited and the buttons are off.
@@ -103,6 +109,7 @@ pub fn Sandbox(
         .child((
             bar(live, &source, &fence, started, field),
             editor(live, &source, started, field),
+            given_input(input),
             output(live, &fence, expected),
         ))
 }
@@ -252,6 +259,24 @@ fn output(live: Live, fence: &Fence, expected: String) -> impl IntoView + use<>
         ))
 }
 
+/// What the program reads from standard input, as its page gives it; nothing
+/// when the page gives none.
+///
+/// # Arguments
+///
+/// * `input` - The input.
+///
+/// # Returns
+///
+/// The view.
+fn given_input(input: String) -> Option<impl IntoView + use<>>
+{
+    ret_if!(input.is_empty(), None);
+    let label = p().class(ClassName::SANDBOX_LABEL).child(t!("website.sandbox.input"));
+    let text = pre().class(ClassName::SANDBOX_TEXT).lang("my").child(input);
+    Some(div().class(ClassName::SANDBOX_STDIN).child((label, text)))
+}
+
 /// One run of output, in its color.
 ///
 /// # Arguments
@@ -325,7 +350,8 @@ fn reset(live: Live, source: &str, field: NodeRef<leptos::html::Textarea>)
 /// * `live` - What the sandbox shows and runs.
 fn start(live: Live)
 {
-    let compiled = live.code.with_untracked(|c| compile(c, &live.options));
+    let input = live.input.get_value();
+    let compiled = live.code.with_untracked(|c| compile(c, &live.options, &input));
     live.shown.set(Some(compiled.report));
     let Some(machine) = compiled.machine
     else

@@ -176,6 +176,7 @@ fn block(block: Block) -> AnyView
                 .fence(sample.fence)
                 .options(sample.options)
                 .expected(sample.expected)
+                .input(sample.input)
                 .build(),
         )
         .into_any(),

@@ -391,6 +391,9 @@ pub enum State
     Finished,
     /// The program stopped before its end.
     Trapped(Trap),
+    /// The program waits for a line of standard input: the world has none
+    /// so far. [`Machine::give_input`] or [`Machine::close_input`] goes on.
+    Waiting,
 }
 
 impl State
@@ -457,6 +460,9 @@ pub struct Machine
     /// What the program wrote to standard error and no one took.
     #[builder(default)]
     err: String,
+    /// Whether the last op found no input so far and waits for some.
+    #[builder(default)]
+    waiting: bool,
     /// The world the host functions reach: one in storage unless the run is
     /// given another, such as the terminal.
     #[builder(default = Box::new(MemWorld::default()))]
@@ -712,6 +718,7 @@ impl Machine
         {
             Err(kind) => State::Trapped(self.trap(kind)),
             Ok(()) if self.frames.is_empty() => State::Finished,
+            Ok(()) if self.waiting => State::Waiting,
             Ok(()) => State::Running,
         };
         self.raise_peak();
@@ -789,7 +796,10 @@ impl Machine
         {
             State::Trapped(_) => Some(self.at),
             State::Finished => None,
-            State::Running => self.frames.last().map(|f| (f.func, f.pc)),
+            State::Running | State::Waiting =>
+            {
+                self.frames.last().map(|f| (f.func, f.pc))
+            }
         }
     }
 
@@ -941,6 +951,41 @@ impl Machine
     ///
     /// * `world` - The world.
     pub fn set_world(&mut self, world: Box<dyn World>) { self.world = world; }
+
+    /// Give standard input a line, as a terminal does when it is entered, and
+    /// go on with a run that waits for one.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The text, with its line break.
+    pub fn give_input(&mut self, text: &str)
+    {
+        self.world.give_input(text);
+        self.resume();
+    }
+
+    /// Close standard input, so the read that waits and each later one fail
+    /// with the end of the input, and go on with a run that waits.
+    pub fn close_input(&mut self)
+    {
+        self.world.close_input();
+        self.resume();
+    }
+
+    /// Whether the run waits for a line of standard input.
+    ///
+    /// # Returns
+    ///
+    /// `true` while it waits.
+    pub fn waiting(&self) -> bool { self.state == State::Waiting }
+
+    /// Go on with a run that waits for input.
+    fn resume(&mut self)
+    {
+        ret_if!(self.state != State::Waiting);
+        self.waiting = false;
+        self.state = State::Running;
+    }
 
     /// Take what print ops wrote so far.
     ///

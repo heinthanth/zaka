@@ -59,6 +59,19 @@
   color: var(--fg-muted)
   font-style: italic
 
+// The line where the reader enters standard input, inline after the output:
+// the text of the output with a caret, as at a terminal.
+.run-input
+  width: 60%
+  min-width: 12ch
+  padding: 0
+  border: 0
+  outline: none
+  background: transparent
+  color: var(--accent)
+  caret-color: var(--accent)
+  font: inherit
+
 .run-trap
   margin: 8px 0 0
   color: var(--diag-error)

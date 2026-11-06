@@ -53,7 +53,7 @@ fn samples() -> Vec<(&'static str, Sample)>
 /// What is wrong with one program, measured against what its page promises.
 fn mismatch(path: &str, sample: &Sample) -> Option<String>
 {
-    let (codes, out) = run_to_end(&sample.source, &sample.options);
+    let (codes, out) = run_to_end(&sample.source, &sample.options, &sample.input);
     let missing: Vec<_> =
         sample.fence.codes().iter().filter(|c| !codes.contains(c)).collect();
     let wrong = match &sample.fence
@@ -310,12 +310,12 @@ fn a_warn_fence_runs_a_program_the_check_refuses()
 \"အစ\" ဟု ပြသပါ။
 ပ ၏ တန်ဖိုး ကို ပြသပါ။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
-    let (codes, out) = run_to_end(source, &FenceOptions::default());
+    let (codes, out) = run_to_end(source, &FenceOptions::default(), "");
     assert!(codes.contains(&"ZK0709".to_string()), "{codes:?}");
     assert_eq!(out, "");
 
     let warn = FenceOptions::builder().check(MemCheck::Warn).build();
-    let (codes, out) = run_to_end(source, &warn);
+    let (codes, out) = run_to_end(source, &warn, "");
     assert!(codes.contains(&"ZK0709".to_string()), "{codes:?}");
     assert!(out.starts_with("အစ\n"), "{out}");
     assert!(out.contains("null address"), "{out}");

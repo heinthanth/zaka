@@ -46,6 +46,18 @@ pub trait World: Debug + Send + Sync
     /// `Ok`, or the error.
     fn write_file(&mut self, path: &str, data: &str) -> io::Result<()>;
 
+    /// Give standard input more text, as a terminal does when a line is
+    /// entered. A world that cannot take more does nothing.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The text, with its line break.
+    fn give_input(&mut self, text: &str) { let _ = text; }
+
+    /// Close standard input, so a read past what it holds fails with the end
+    /// of the input. A world that cannot take more does nothing.
+    fn close_input(&mut self) {}
+
     /// A clone of the world in a box, so a VM that holds one can be cloned.
     ///
     /// # Returns
@@ -72,6 +84,9 @@ pub struct Effects<'a>
     /// What the program wrote to standard error and the VM did not hand on
     /// so far.
     pub err: &'a mut String,
+    /// Whether a read found no input so far in a world that waits for more: the
+    /// VM then runs the call again once input comes.
+    pub blocked: bool,
 }
 
 impl Effects<'_>
@@ -88,7 +103,10 @@ impl Effects<'_>
     pub fn read_line(&mut self, stream: u32) -> io::Result<Option<String>>
     {
         ret_if!(stream != STDIN, Err(no_stream(stream)));
-        self.world.read_line()
+        let line = self.world.read_line();
+        self.blocked |=
+            line.as_ref().is_err_and(|e| e.kind() == io::ErrorKind::WouldBlock);
+        line
     }
 
     /// Read a whole file as text.
@@ -156,9 +174,10 @@ fn no_stream(stream: u32) -> io::Error
     io::Error::other(format!("stream {stream} is not open in this direction"))
 }
 
-/// A world in storage: input lines given before the run, and files that
-/// live as long as the world. The browser and the tests run in it, and a VM
-/// runs in a blank one unless it is given another.
+/// A world in storage: input lines given before the run, or line after line
+/// while it runs, and files that live as long as the world. The browser and
+/// the tests run in it, and a VM runs in a blank one unless it is given
+/// another.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Builder)]
 pub struct MemWorld
 {
@@ -171,6 +190,10 @@ pub struct MemWorld
     /// Each file, under its path.
     #[builder(default)]
     pub files: BTreeMap<String, String>,
+    /// Whether more input can come, as at a terminal: a read past the input
+    /// waits ([`io::ErrorKind::WouldBlock`]) instead of failing with its end.
+    #[builder(default)]
+    pub open: bool,
 }
 
 impl World for MemWorld
@@ -178,6 +201,8 @@ impl World for MemWorld
     fn read_line(&mut self) -> io::Result<Option<String>>
     {
         let rest = &self.input[self.read..];
+        let waits = rest.is_empty() && self.open;
+        ret_if!(waits, Err(io::ErrorKind::WouldBlock.into()));
         ret_if!(rest.is_empty(), Ok(None));
         let line = rest.split_inclusive('\n').next().unwrap_or(rest);
         self.read += line.len();
@@ -196,6 +221,10 @@ impl World for MemWorld
         self.files.insert(path.to_string(), data.to_string());
         Ok(())
     }
+
+    fn give_input(&mut self, text: &str) { self.input.push_str(text); }
+
+    fn close_input(&mut self) { self.open = false; }
 
     fn boxed(&self) -> Box<dyn World> { Box::new(self.clone()) }
 }
