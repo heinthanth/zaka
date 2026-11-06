@@ -71,6 +71,9 @@ fn sig_of(decl: &FnDecl, structs: &StructTable) -> FnSig
     let params = decl.params.iter().map(|p| kind(&p.kind)).collect();
     let ret = decl.ret.as_ref().map(kind);
     let edits = decl.params.iter().map(|p| p.edit).collect();
+    let marks: Option<Vec<_>> =
+        decl.params.iter().map(|p| p.mark.as_ref().map(|m| m.name)).collect();
     #[rustfmt::skip]
-    return FnSig::builder().params(params).edits(edits).maybe_ret(ret).exported(decl.exported).build();
+    return FnSig::builder().params(params).edits(edits).maybe_ret(ret).exported(decl.exported)
+        .maybe_marks(marks).build();
 }

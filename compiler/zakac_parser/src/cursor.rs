@@ -4,7 +4,7 @@ use zakac_lexer::token::TokenKind;
 
 /// Position in a token list that ends with the end-of-input token. The
 /// cursor never moves past that last token.
-#[derive(Builder)]
+#[derive(Clone, Copy, Builder)]
 pub(crate) struct Cursor<'t>
 {
     /// The tokens; never blank.

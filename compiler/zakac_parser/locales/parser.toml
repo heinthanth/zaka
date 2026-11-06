@@ -9,6 +9,9 @@ en = "end of input"
 [parser.name]
 en = "a name"
 
+[parser.mark]
+en = "a mark: a name or a particle"
+
 [parser.kind]
 en = "a kind"
 

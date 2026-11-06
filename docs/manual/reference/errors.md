@@ -120,6 +120,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0234 | a declared kind with no `တစ်<classifier>` after it | [Statements](../language/statements.md#declarations) |
 | ZK0235 | an enumeration declared inside a block | [Enumeration mistakes](../../learn/enums/mistakes.md#an-enumeration-declared-inside-a-block) |
 | ZK0236 | a switch arm after the default arm | [Enumeration mistakes](../../learn/enums/mistakes.md#an-arm-after-the-default-arm) |
+| ZK0237 | a header that marks some parameters and not the others | [Functions](../language/functions.md#marked-parameters) |
 
 ### ZK03: names
 
@@ -155,6 +156,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0328 | a member name used twice in one enumeration | [Enumeration mistakes](../../learn/enums/mistakes.md#one-member-name-twice) |
 | ZK0329 | a member the enumeration does not have | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-the-enumeration-does-not-have) |
 | ZK0330 | a name before `ထဲမှ` that is no enumeration with `များ` | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-written-without-the-plural-mark) |
+| ZK0331 | an argument of a marked call with a mark other than its parameter's | [Functions](../language/functions.md#marked-parameters) |
 
 ### ZK04: kinds
 

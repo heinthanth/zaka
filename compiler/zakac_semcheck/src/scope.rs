@@ -147,6 +147,8 @@ pub(crate) struct FnSig
     /// `true` when other files can import the function.
     #[builder(default)]
     pub exported: bool,
+    /// The mark of each parameter, when the parameters have marks.
+    pub marks: Option<Vec<Name>>,
 }
 
 /// Functions, indexed on name.

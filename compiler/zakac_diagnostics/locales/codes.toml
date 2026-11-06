@@ -320,6 +320,15 @@ en = "the default arm \"တခြား ... ဖြစ်လျှင်\" comes 
 [codes.ZK0236.explain]
 en = """A switch runs the first arm whose case equals its subject, and the default arm \"တခြား <kind> ဖြစ်လျှင်\" when none does. An arm after the default arm could never run, so the default arm must be the last. Move this arm above the default arm."""
 
+[codes.ZK0237.title]
+en = "parameters marked in part"
+[codes.ZK0237.message]
+en = "some parameters have a mark and some do not"
+[codes.ZK0237.help]
+en = "write a mark after each parameter name, as \"<name>(<mark>)\", or leave out each mark"
+[codes.ZK0237.explain]
+en = """A parameter can have a mark, the word a marked call writes after its argument: \"စာသား လမ်းကြောင်း(၌ရှိသော)\". A marked call gives each argument with its mark, so a header marks each parameter or none of them. With marks, the parameters end in \"လက်ခံပြီး\" straight after the last one; without marks, in \"(တို့)?ကို လက်ခံပြီး\"."""
+
 # -------------------------------------------------------------- resolve ZK03xx
 
 [codes.ZK0301.title]
@@ -547,6 +556,15 @@ en = "\"%{n}\" before \"ထဲမှ\" names no enumeration"
 en = "write \"%{f}ထဲမှ\""
 [codes.ZK0330.explain]
 en = """A member is written \"<name>များထဲမှ <member>\", \"<member> from among the <name>s\": the enumeration name, then \"များ\", then \"ထဲမှ\". A name that ends in \"များ\" takes no second \"များ\". The name before \"ထဲမှ\" here is no enumeration, or lacks its \"များ\"."""
+
+[codes.ZK0331.title]
+en = "wrong mark"
+[codes.ZK0331.message]
+en = "argument %{i} of \"%{n}\" is marked \"%{f}\", not \"%{w}\""
+[codes.ZK0331.help]
+en = "write \"%{w}\" after the argument"
+[codes.ZK0331.explain]
+en = """A marked call writes each argument with the mark its parameter declares, in the order of the parameters: for \"စာသား ဒေတာ(ကို)၊ စာသား လမ်းကြောင်း(သို့)\", the call is \"<data> ကို <path> သို့ <name> မည်\". The mark after this argument is another word."""
 
 # ---------------------------------------------------------------- kinds ZK04xx
 

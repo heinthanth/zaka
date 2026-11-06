@@ -463,7 +463,13 @@ impl Parser<'_>
             stmt => return Ok(stmt),
         };
         ret_if!(self.at_using_rest(), self.parse_using(first, mode));
-        Ok(Head::Expr(first))
+        let end = self.marked_end(self.edit_mark_len());
+        let Some(end) = end
+        else
+        {
+            return Ok(Head::Expr(first));
+        };
+        self.attempt_marked(first, end, mode)
     }
 
     /// Parse an operand of a clause that is no call: a struct literal, a

@@ -141,6 +141,8 @@ DeclNeedsClassifier = ("ZK0234", Level::Error),
 NestedEnum = ("ZK0235", Level::Error),
 /// A switch arm follows the default arm.
 ArmAfterDefault = ("ZK0236", Level::Error),
+/// Some parameters of a header have a mark and some do not.
+MixedMarks = ("ZK0237", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -203,6 +205,8 @@ DuplicateMember = ("ZK0328", Level::Error),
 UnknownMember = ("ZK0329", Level::Error),
 /// The name before `ထဲမှ` is no enumeration written with `များ`.
 UnknownEnum = ("ZK0330", Level::Error),
+/// An argument of a marked call carries a mark other than its parameter's.
+WrongMark = ("ZK0331", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

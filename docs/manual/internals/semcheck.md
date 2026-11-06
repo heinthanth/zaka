@@ -99,7 +99,10 @@ A first walk over the top-level statements records the signature of each functio
 kinds of its parameters, of its result and of its error value, and its export mark), so a call can come before
 the declaration. The table holds one map for each file of the program: the first
 declaration of a name in a file wins, and a second in the same file is ZK0304. Two files
-can each hold a function of one name.
+can each hold a function of one name. A signature keeps the mark of each parameter
+(`FnSig::marks`, `None` with no marks); `check_marks` compares the marks of a marked call
+with it, one argument after another, after the count check (ZK0314), and reports another word
+as ZK0331.
 
 Before it, `collect_enums` (`enum_check.rs`) makes the kind of each enumeration, on its
 name and on its stem, and reports a member name used twice (ZK0328) and a name a struct

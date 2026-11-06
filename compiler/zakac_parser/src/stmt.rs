@@ -1,6 +1,5 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
-use zakac_ast::expr::UsingMark;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::BlockStmt;
@@ -43,10 +42,10 @@ use crate::clause::Mode;
 use crate::decl_head::DeclHead;
 use crate::describe::kw_text;
 use crate::describe::quote;
-use crate::notation::Args;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
+use crate::using::CallParts;
 
 /// The direction a counted-loop word names.
 ///
@@ -138,10 +137,10 @@ impl Parser<'_>
     fn parse_expr_headed(&mut self) -> PResult<Stmt>
     {
         let is_str = matches!(self.peek().kind, TokenKind::Str(_));
-        ret_if!(
-            is_str && self.peek_n(1).kind == TokenKind::Kw(Kw::From),
-            self.parse_import()
-        );
+        let from = self.peek_n(1).kind == TokenKind::Kw(Kw::From);
+        // A string with `မှ` after it opens an import, unless it is the first
+        // argument of a marked call.
+        ret_if!(is_str && from && self.marked_end(1).is_none(), self.parse_import());
         let clause = self.parse_clause(Mode::Stmt)?;
         self.finish_expr_headed(clause)
     }
@@ -620,7 +619,9 @@ impl Parser<'_>
         let end = self.expect_one_of(&ends)?;
         ret_if!(
             matches!(kw_of(&end), Some(Kw::Call | Kw::WillDo)),
-            self.finish_call_stmt(start, callee, args, None)
+            self.finish_call_stmt(
+                CallParts::builder().start(start).callee(callee).args(args).build()
+            )
         );
         let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
         let call = self.call_expr(start.to(&end.span), callee, args, pass);
@@ -634,20 +635,14 @@ impl Parser<'_>
     ///
     /// # Arguments
     ///
-    /// * `start` - Where the statement starts.
-    /// * `callee` - The function name.
-    /// * `args` - The arguments, with the mark of each.
-    /// * `using` - The particle that closes the arguments of a call written
-    ///   arguments first.
+    /// * `parts` - What the call holds.
     ///
     /// # Returns
     ///
     /// The statement, or a diagnostic.
-    pub(crate) fn finish_call_stmt(
-        &mut self, start: Span, callee: Ident, args: Args, using: Option<UsingMark>,
-    ) -> PResult<Stmt>
+    pub(crate) fn finish_call_stmt(&mut self, parts: CallParts) -> PResult<Stmt>
     {
-        let (args, edits) = args;
+        let CallParts { start, callee, args: (args, edits), using, marks } = parts;
         let pass = self.at_punct(Punct::ListSep)
             && kw_of(&self.peek_n(1)) == Some(Kw::PassFault);
         do_if!(pass, {
@@ -658,7 +653,7 @@ impl Parser<'_>
         let span = start.to(&stop.span);
         #[rustfmt::skip]
         let node = CallStmt::builder().callee(callee).args(args).edits(edits).pass(pass)
-            .maybe_using(using).span(span).build();
+            .maybe_using(using).marks(marks).span(span).build();
         Ok(Stmt::Call(node))
     }
 
@@ -988,7 +983,15 @@ impl Parser<'_>
             params.push(self.parse_param()?);
         }
         do_if!(self.eat(Kw::Hnint), params.push(self.parse_param()?));
-        self.expect_one_of(&[Kw::ListKo, Kw::Ko])?;
+        let marked = params.iter().filter(|p| p.mark.is_some()).count();
+        let span = params[0].span.to(&params[params.len() - 1].span);
+        do_if!(
+            marked > 0 && marked < params.len(),
+            self.diags.push(diag::mixed_marks(span))
+        );
+        // With marks the parameters end in `လက်ခံပြီး` straight after the last.
+        let closer = marked == 0 || !self.at(Kw::Accepting);
+        do_if!(closer, _ = self.expect_one_of(&[Kw::ListKo, Kw::Ko])?);
         self.expect(Kw::Accepting)?;
         Ok(params)
     }
@@ -1006,8 +1009,25 @@ impl Parser<'_>
         let edit = self.eat(Kw::EditParam);
         let kind = self.parse_kind()?;
         let name = self.parse_ident()?;
-        let span = start.to(&name.span);
-        Ok(Param::builder().edit(edit).kind(kind).name(name).span(span).build())
+        let open = self.peek();
+        let marked = open.kind == TokenKind::Punct(Punct::LParen) && open.joined;
+        let mark = tern!(marked, Some(self.parse_param_mark()?), None);
+        let span = start.to(&self.prev_span());
+        #[rustfmt::skip]
+        return Ok(Param::builder().edit(edit).kind(kind).name(name).maybe_mark(mark).span(span).build());
+    }
+
+    /// Parse `(<mark>)` after a parameter name.
+    ///
+    /// # Returns
+    ///
+    /// The mark, or a diagnostic.
+    fn parse_param_mark(&mut self) -> PResult<Ident>
+    {
+        self.bump();
+        let mark = self.parse_mark()?;
+        self.expect_punct(Punct::RParen)?;
+        Ok(mark)
     }
 
     /// Parse `ကွင်းဆက် ကို ရပ်ပါ။`.

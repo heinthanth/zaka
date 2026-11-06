@@ -518,7 +518,8 @@ impl Checker
     /// The result kind of the function (`Some(None)` when it has none), or
     /// `None` when the function is not declared.
     pub fn check_call(
-        &mut self, callee: &Ident, args: &[Expr], edits: &[bool], span: Span,
+        &mut self, callee: &Ident, args: &[Expr], edits: &[bool], marks: &[Ident],
+        span: Span,
     ) -> Option<Option<DataKind>>
     {
         let Some(sig) = self.fns.get(&callee.name).cloned()
@@ -540,7 +541,31 @@ impl Checker
             self.check_arg(arg, *kind, edit, marked(n));
         }
         self.check_edits_apart(args, edits);
+        self.check_marks(callee, marks, sig.marks.as_deref());
         ret
+    }
+
+    /// Check that each argument of a marked call carries the mark of its
+    /// parameter.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function name.
+    /// * `marks` - The marks written; blank for the other call forms.
+    /// * `want` - The marks of the parameters, when the parameters have marks.
+    fn check_marks(&mut self, callee: &Ident, marks: &[Ident], want: Option<&[Name]>)
+    {
+        let Some(want) = want
+        else
+        {
+            return;
+        };
+        let wrong =
+            marks.iter().zip(want).enumerate().filter(|(_, (m, w))| m.name != **w);
+        let found: Vec<Diagnostic> = wrong
+            .map(|(n, (m, w))| rd::wrong_mark(m.span, &callee.name, n + 1, &m.name, w))
+            .collect();
+        do_for!(diag in found, self.report(diag));
     }
 
     /// Check how a call meets a failure of the function: a call statement
@@ -1486,7 +1511,7 @@ impl Visitor for Checker
 
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
-        self.check_call(&n.callee, &n.args, &n.edits, n.span);
+        self.check_call(&n.callee, &n.args, &n.edits, &n.marks, n.span);
         self.check_pass(&n.callee, n.pass, true, n.span);
     }
 

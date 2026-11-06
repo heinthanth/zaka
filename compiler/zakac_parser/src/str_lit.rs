@@ -66,6 +66,7 @@ impl Parser<'_>
         let mut inner = Parser::new(text, span.lo, &lexed);
         inner.next_id = self.next_id;
         inner.structs.extend(self.structs.iter().cloned());
+        inner.marked.extend(self.marked.iter().map(|(k, v)| (k.clone(), v.clone())));
         let expr = inner.parse_expr();
         let rest = (!inner.at_eof()).then(|| inner.err_expected("}"));
         self.next_id = inner.next_id;

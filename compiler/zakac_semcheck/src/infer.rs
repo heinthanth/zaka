@@ -618,7 +618,7 @@ impl Checker
     /// The result kind of the function, or `None` after an error.
     fn infer_call(&mut self, n: &CallExpr) -> Option<DataKind>
     {
-        let ret = self.check_call(&n.callee, &n.args, &n.edits, n.span)?;
+        let ret = self.check_call(&n.callee, &n.args, &n.edits, &n.marks, n.span)?;
         self.check_pass(&n.callee, n.pass, false, n.span);
         // Without a pass-on the value is the whole result; with one, the good
         // result.

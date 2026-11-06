@@ -543,3 +543,18 @@ pub fn decl_needs_classifier(span: Span, kind: &str, classifier: &str) -> Diagno
     Diagnostic::new(Code::DeclNeedsClassifier, t!("codes.ZK0234.message"), span)
         .with_help(t!("codes.ZK0234.help", k = kind, c = classifier))
 }
+
+/// Some parameters of a header have a mark and some do not.
+///
+/// # Arguments
+///
+/// * `span` - The parameters.
+///
+/// # Returns
+///
+/// The `ZK0237` diagnostic.
+pub fn mixed_marks(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::MixedMarks, t!("codes.ZK0237.message"), span)
+        .with_help(t!("codes.ZK0237.help"))
+}

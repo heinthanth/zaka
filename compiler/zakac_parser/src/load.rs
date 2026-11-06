@@ -139,6 +139,10 @@ struct Loader<'a>
     /// The struct names each unit exports.
     #[builder(default)]
     structs: Vec<HashSet<String>>,
+    /// The functions each unit exports that declare marks, with the number
+    /// of marks of each.
+    #[builder(default)]
+    marked: Vec<Marked>,
     /// The unit of each file read so far, indexed on its path.
     #[builder(default)]
     done: HashMap<PathBuf, u32>,
@@ -187,7 +191,8 @@ impl Loader<'_>
         }
         self.chain.pop();
         let structs = imported_structs(&imports, &targets, &self.structs);
-        let parsed = parse_with(&file, &lexed, self.next_id, &structs);
+        let marked = imported_marked(&imports, &targets, &self.marked);
+        let parsed = parse_with(&file, &lexed, self.next_id, &structs, &marked);
         self.next_id = parsed.next_id;
         self.diagnostics.extend(lexed.diagnostics);
         self.diagnostics.extend(parsed.diagnostics);
@@ -198,6 +203,7 @@ impl Loader<'_>
         let first_stmt = self.stmts.len() as u32;
         self.units.push(Unit::builder().name(name).first_stmt(first_stmt).build());
         self.structs.push(exported_structs(&program));
+        self.marked.push(exported_marked(&program));
         self.stmts.extend(program.stmts);
         self.done.insert(path, unit);
         Ok(unit)
@@ -301,6 +307,61 @@ fn imported_structs(
         found.flat_map(|i| with_stem(i.name.as_str(), set)).collect::<Vec<_>>()
     });
     names.collect()
+}
+
+/// Functions that declare marks, each name with the number of marks of each
+/// function of that name.
+type Marked = HashMap<String, Vec<usize>>;
+
+/// The imported names that are exported functions that declare marks.
+///
+/// # Arguments
+///
+/// * `imports` - The imports of the file.
+/// * `targets` - The unit each import reads.
+/// * `exports` - The marked functions each unit exports.
+///
+/// # Returns
+///
+/// The imported marked functions.
+fn imported_marked(
+    imports: &[ImportStmt], targets: &[Option<u32>], exports: &[Marked],
+) -> Marked
+{
+    let pairs = imports.iter().zip(targets);
+    let pairs = pairs.filter_map(|(n, t)| Some((n, &exports[(*t)? as usize])));
+    let found = pairs.flat_map(|(n, set)| {
+        let named = n.names.iter().filter_map(|i| set.get_key_value(i.name.as_str()));
+        named.map(|(k, v)| (k.clone(), v.clone())).collect::<Vec<_>>()
+    });
+    found.collect()
+}
+
+/// The exported functions of a file that declare marks.
+///
+/// # Arguments
+///
+/// * `program` - The program of the file.
+///
+/// # Returns
+///
+/// The functions.
+fn exported_marked(program: &Program) -> Marked
+{
+    let mut found = Marked::new();
+    let decls = program.stmts.iter().filter_map(|s| match s
+    {
+        Stmt::Fn(d) if d.exported && d.params.iter().any(|p| p.mark.is_some()) =>
+        {
+            Some(d)
+        }
+        _ => None,
+    });
+    for d in decls
+    {
+        found.entry(d.name.name.to_string()).or_default().push(d.params.len());
+    }
+    found
 }
 
 /// The struct and enumeration names a file exports.

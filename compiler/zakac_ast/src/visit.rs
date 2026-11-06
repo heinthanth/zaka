@@ -25,6 +25,7 @@ use crate::expr::RangeExpr;
 use crate::expr::SizeOfExpr;
 use crate::expr::StrExpr;
 use crate::expr::StructLit;
+use crate::expr::UsingMark;
 use crate::expr::VerbExpr;
 use crate::kind::Kind;
 use crate::stmt::AddStmt;
@@ -1174,6 +1175,7 @@ pub fn walk_fn_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FnDecl)
         v.visit_span_mut(&mut p.span);
         v.visit_kind_mut(&mut p.kind);
         v.visit_ident_mut(&mut p.name);
+        do_if!(let Some(mark) = &mut p.mark, v.visit_ident_mut(mark));
     }
     opt_kind_mut(v, &mut n.ret);
     v.visit_block_mut(&mut n.block);
@@ -1248,6 +1250,7 @@ pub fn walk_call_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallStmt)
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.callee);
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
+    call_marks_mut(v, &mut n.using, &mut n.marks);
 }
 
 /// Visit the size, then the target, of a heap allocation.
@@ -1387,6 +1390,22 @@ pub fn walk_call_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallExpr)
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.callee);
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
+    call_marks_mut(v, &mut n.using, &mut n.marks);
+}
+
+/// Visit the particle before `သုံး၍` and the marks of a call.
+///
+/// # Arguments
+///
+/// * `v` - The visitor.
+/// * `using` - The particle, when the arguments come first.
+/// * `marks` - The word after each argument of a marked call.
+fn call_marks_mut<V: VisitorMut + ?Sized>(
+    v: &mut V, using: &mut Option<UsingMark>, marks: &mut [Ident],
+)
+{
+    do_if!(let Some(mark) = using, v.visit_span_mut(&mut mark.span));
+    do_for!(mark in marks, v.visit_ident_mut(mark));
 }
 
 /// Visit the cells of a list literal.

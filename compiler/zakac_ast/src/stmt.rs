@@ -346,6 +346,10 @@ pub struct Param
     pub kind: Kind,
     /// The parameter name.
     pub name: Ident,
+    /// The word after the name in parentheses, `<name>(<mark>)`: the word a
+    /// marked call writes after this argument.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mark: Option<Ident>,
     /// Source region.
     pub span: Span,
 }
@@ -421,6 +425,11 @@ pub struct CallStmt
     /// `ကို` or `တို့ကို` before `သုံး၍`, when the arguments come first.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub using: Option<UsingMark>,
+    /// The word after each argument of a marked call, one for each; blank
+    /// for the other call forms.
+    #[builder(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub marks: Vec<Ident>,
     /// Source region.
     pub span: Span,
 }

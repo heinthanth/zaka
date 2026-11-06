@@ -370,6 +370,98 @@ The rules of these forms:
 error[ZK0201]: expected "သည့် ရလဒ်" or "သည့် ရလဒ်ကောင်း", found "မည်"
 ```
 
+## Marked parameters
+
+A parameter can name the word that follows its argument in a call, its *mark*, in
+parentheses right after the parameter name: `စာသား လမ်းကြောင်း(၌ရှိသော)`. A call then
+reads as a Burmese sentence, each argument with its mark after it and the function last:
+
+```text
+လုပ်ဆောင်ချက် <name> သည် <kind> <param>(<mark>)၊ <kind> <param>(<mark>) လက်ခံပြီး ...
+<argument> <mark> <argument> <mark> <name> မည်။
+```
+
+With marks, the parameters end in `လက်ခံပြီး` straight after the last one; `တို့ကို` is left
+out, since the marks tell how each argument joins the sentence. The call ends as the
+[arguments-first](#arguments-first) forms do: `<name> မည်` or
+`လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်မည်` for a statement, `<name> သည့် ရလဒ်` or
+`လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်သော ရလဒ်` for a value, with `ရလဒ်ကောင်း` and the pass-on
+tail as there. A function with marks takes the other call forms too.
+
+```zaka
+လုပ်ဆောင်ချက် ရေး သည်
+စာသား စာ(ကို)၊ စာသား နေရာ(သို့) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"{နေရာ}: {စာ}" ဟု ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ဖတ် သည်
+စာသား လမ်း(၌ရှိသော) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရလဒ် ကို ပြန်ပေးမည်။
+"{လမ်း} ၏ စာ" ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"မင်္ဂလာပါ" ကို "စာအုပ်" သို့ ရေး မည်။
+"ဇာတ်လမ်း" ၌ရှိသော ဖတ် သည့် ရလဒ် ကို ပြသပါ။
+ကိန်းရှင် စာ သည် "ကဗျာ" ၌ရှိသော လုပ်ဆောင်ချက် ဖတ် ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+စာ ကို ပြသပါ။
+လုပ်ဆောင်ချက် ရေး ကို "ဟယ်လို"၊ "မှတ်စု" တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+စာအုပ်: မင်္ဂလာပါ
+ဇာတ်လမ်း ၏ စာ
+ကဗျာ ၏ စာ
+မှတ်စု: ဟယ်လို
+```
+
+The rules of marks:
+
+- A mark is one word: a name, or a particle such as `ကို`, `မှ`, `ဖြင့်`, `နှင့်`, `ထဲသို့`,
+  `တွင်`. `သည်`, `ပါ`, `ဖြစ်ကာ`, `ပြီးလျှင်` and `လက်ခံပြီး` cannot be marks, and neither can
+  `၏`. A mark of two words needs them glued: `၌ရှိသော`, not `၌ ရှိသော`.
+- A header marks each parameter or none of them; marks on some alone are ZK0237.
+- A call gives the arguments in the order of the parameters, each with the mark of its
+  parameter. Another mark is ZK0331.
+- An argument is a notation expression, as in the arguments-first call; a sentence that
+  gives a value, another marked call included, goes in parentheses.
+- A marked call ends at a call of a function that declares marks, when the number of
+  marks fits the function, and nowhere else. So a sentence that holds no such call keeps its
+  meaning: `က ကို ခုနစ် သည့် ရလဒ် ဟု ထားပါ။` sets `က` when `ခုနစ်` declares no marks.
+
+```zaka-error ZK0331
+လုပ်ဆောင်ချက် ရေး သည်
+စာသား စာ(ကို)၊ စာသား နေရာ(သို့) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စာ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"မင်္ဂလာပါ" ကို "စာအုပ်" ထဲသို့ ရေး မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0331]: argument 2 of "ရေး" is marked "ထဲသို့", not "သို့"
+```
+
+```zaka-error ZK0237
+လုပ်ဆောင်ချက် ရေး သည်
+စာသား စာ(ကို)၊ စာသား နေရာ လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စာ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0237]: some parameters have a mark and some do not
+```
+
 ## Recursion
 
 A function can call itself, at once or through other functions. Nothing marks a function

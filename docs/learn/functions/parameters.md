@@ -112,6 +112,40 @@ An argument here is a name, a literal, a sum or a sign-form call. A sentence tha
 value goes in parentheses. The [Results](results.md) page shows the form of this call
 that gives back a value.
 
+## Marked arguments
+
+A parameter can also name the word that follows its argument in a call, its *mark*, in
+parentheses after the parameter name. Then a call reads as a Burmese sentence, and needs
+no `သုံး၍`:
+
+```zaka
+// "Function write, accepting a text (marked ကို) and a place (marked သို့)"
+လုပ်ဆောင်ချက် ရေး သည်
+စာသား စာ(ကို)၊ စာသား နေရာ(သို့) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"{နေရာ}: {စာ}" ဟု ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+// "(I) will write 'hello' to the notebook"
+"မင်္ဂလာပါ" ကို "မှတ်စု" သို့ ရေး မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မှတ်စု: မင်္ဂလာပါ
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `စာသား စာ(ကို)` | "a text, `စာ`, written with `ကို` in a call" |
+| `စာသား နေရာ(သို့) လက်ခံပြီး` | "a text, `နေရာ`, written with `သို့`; having accepted" (no `တို့ကို` with marks) |
+| `"မင်္ဂလာပါ" ကို "မှတ်စု" သို့ ရေး မည်` | "will write 'hello' to the notebook" |
+
+Each argument takes the mark of its parameter, in the order of the parameters. Mark each
+parameter or none of them. The [Functions](../../manual/language/functions.md#marked-parameters)
+page of the manual has the full rules.
+
 ## Parameters are local copies
 
 A parameter is a new variable inside the function. Changing it does not change the

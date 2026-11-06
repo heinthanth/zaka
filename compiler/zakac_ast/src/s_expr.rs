@@ -594,7 +594,8 @@ fn enum_sexpr(s: &EnumDecl) -> String
 fn param_sexpr(p: &Param) -> String
 {
     let edit = tern!(p.edit, "edit ", "");
-    format!("{edit}{} {}", p.kind.to_sexpr(), p.name.name)
+    let mark = p.mark.as_ref().map(|m| format!("({})", m.name)).unwrap_or_default();
+    format!("{edit}{} {}{mark}", p.kind.to_sexpr(), p.name.name)
 }
 
 /// Name of a verb operation; a shift takes the name of its direction.

@@ -547,3 +547,75 @@ fn a_counted_loop_from_a_cell_still_parses()
     let looped = stmt("l ၏ အကွက် ၀ မှ ၅ အထိ i အနေဖြင့် ရေတွက်၍ i ကို ပြသပါ။");
     assert!(looped.starts_with("(count i (cell l 0) 5 count"), "{looped}");
 }
+
+/// A parameter carries its mark in parentheses after its name; with marks
+/// the parameters end in `လက်ခံပြီး` straight after the last.
+#[test]
+fn parameters_have_marks()
+{
+    let text = "လုပ်ဆောင်ချက် ရေး သည် စာသား စာ(ကို)၊ စာသား နေရာ(သို့) လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
+                လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    assert_eq!(stmt(text), "(fn ရေး [text စာ(ကို), text နေရာ(သို့)] - (block))");
+    let mixed = "လုပ်ဆောင်ချက် ရေး သည် စာသား စာ(ကို)၊ စာသား နေရာ လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
+                 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    assert_eq!(codes(mixed), [Code::MixedMarks]);
+}
+
+/// The function `ရေး`, whose two parameters have marks, before `rest`.
+fn with_write(rest: &str) -> String
+{
+    format!(
+        "လုပ်ဆောင်ချက် ရေး သည် စာသား စာ(ကို)၊ စာသား နေရာ(သို့) လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
+         လုပ်ဆောင်စရာများ ပြီးပါပြီ။\n{rest}"
+    )
+}
+
+/// The second statement of a program, as a tree, and its call marks.
+fn second(text: &str) -> (String, Vec<String>)
+{
+    let list = stmts(text);
+    let marks =
+        |m: &[zakac_ast::expr::Ident]| m.iter().map(|i| i.name.to_string()).collect();
+    let found = match &list[1]
+    {
+        Stmt::Call(n) => marks(&n.marks),
+        Stmt::Decl(d) => match d.init.as_ref()
+        {
+            Some(zakac_ast::expr::Expr::Call(n)) => marks(&n.marks),
+            _ => Vec::new(),
+        },
+        _ => Vec::new(),
+    };
+    (list[1].to_sexpr(), found)
+}
+
+/// A marked call gives each argument with its mark and builds the call the
+/// other forms build.
+#[test]
+fn marked_calls_match_the_other_forms()
+{
+    let want = |old: &str| second(&with_write(old)).0;
+    let marks = vec!["ကို".to_string(), "သို့".to_string()];
+    let short = second(&with_write("က ကို ခ သို့ ရေး မည်။"));
+    assert_eq!(short, (want("လုပ်ဆောင်ချက် ရေး ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်ပါ။"), marks.clone()));
+    let long = second(&with_write("က ကို ခ သို့ လုပ်ဆောင်ချက် ရေး ကို လုပ်ဆောင်မည်။"));
+    assert_eq!(long.1, marks);
+    let string = second(&with_write("\"a\" ကို \"b\" သို့ ရေး မည်။"));
+    assert_eq!(string.1, marks);
+    let value = second(&with_write("ကိန်းရှင် ဂ သည် က ကို ခ သို့ ရေး သည့် ရလဒ် ဖြစ်ပါစေ။"));
+    assert_eq!(value.1, marks);
+}
+
+/// A name that declares no marks ends no marked call, and a call whose marks
+/// do not fit its function reads as the sentence it was before.
+#[test]
+fn other_sentences_keep_their_meaning()
+{
+    let set = "ကိန်းရှင် က သည် ၀ ဖြစ်ပါစေ။\nက ကို ခုနစ် သည့် ရလဒ် ဟု ထားပါ။";
+    assert!(stmts(set)[1].to_sexpr().starts_with("(set က"), "{set}");
+    let read = "လုပ်ဆောင်ချက် ဖတ် သည် စာသား လမ်း(၌ရှိသော) လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရလဒ် ကို \
+                ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။\nက ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားပါ။";
+    assert!(stmts(read)[1].to_sexpr().starts_with("(set က"), "{read}");
+    let import = format!("\"lib.zaka\" မှ ရေး ကို ထည့်သွင်းပါ။\n{}", with_write(""));
+    assert!(matches!(stmts(&import)[0], Stmt::Import(_)));
+}

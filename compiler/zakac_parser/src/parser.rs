@@ -72,12 +72,15 @@ pub fn parse(source: &SourceFile, lexed: &LexOutput) -> ParseOutput
 ///   each file of the program get different numbers.
 /// * `structs` - The struct names the file imports, so each of them can start a
 ///   kind as the names it declares do.
+/// * `marked` - The functions the file imports that declare marks, with the
+///   number of marks of each, so a marked call of each can be read.
 ///
 /// # Returns
 ///
 /// The program and the parser diagnostics, with absolute spans.
 pub fn parse_with(
     source: &SourceFile, lexed: &LexOutput, first_id: u32, structs: &HashSet<String>,
+    marked: &HashMap<String, Vec<usize>>,
 ) -> ParseOutput
 {
     let (text, base) = (source.src.as_str(), source.start_pos);
@@ -86,6 +89,12 @@ pub fn parse_with(
     let mut parser = Parser::new(text, base, lexed);
     parser.next_id = first_id;
     parser.structs.extend(structs.iter().flat_map(|s| spellings(s)));
+    let marked = marked.iter().flat_map(|(name, counts)| {
+        spellings(name).into_iter().map(move |n| (n, counts.clone()))
+    });
+    marked.for_each(|(name, counts)| {
+        parser.marked.entry(name).or_default().extend(counts)
+    });
     finish(parser, span)
 }
 
@@ -225,6 +234,11 @@ pub(crate) struct Parser<'t>
     /// leaves it out.
     #[builder(default)]
     pub(crate) classifiers: HashMap<String, &'t str>,
+    /// The functions the program declares or imports that declare marks,
+    /// each name in both spellings of `ဒေတာ`, with the number of marks of
+    /// each function of that name, so those names alone end a marked call.
+    #[builder(default)]
+    pub(crate) marked: HashMap<String, Vec<usize>>,
     /// Whether a list count is being parsed: its `ရှိသော` closes the count,
     /// so no struct literal starts inside it.
     #[builder(default)]
@@ -275,7 +289,46 @@ impl<'t> Parser<'t>
             .map(|(name, word)| (canonical(name).into_owned(), word))
             .collect();
         parser.classifiers = found;
+        let heads = lexed.tokens.iter().enumerate();
+        let heads = heads.filter(|(_, t)| t.kind == TokenKind::Kw(Kw::Function));
+        let heads: Vec<(&str, usize)> = heads
+            .filter_map(|(at, _)| parser.marked_header(&lexed.tokens, at))
+            .collect();
+        for (name, count) in heads
+        {
+            let names = spellings(name).into_iter();
+            names.for_each(|n| parser.marked.entry(n).or_default().push(count));
+        }
         parser
+    }
+
+    /// The name and the number of marks of the function declaration whose
+    /// `လုပ်ဆောင်ချက်` sits at token `at`, when its parameters have marks:
+    /// a name with `(` straight after it, before the full stop of the header.
+    ///
+    /// # Arguments
+    ///
+    /// * `tokens` - The tokens of the file.
+    /// * `at` - The index of `လုပ်ဆောင်ချက်` in them.
+    ///
+    /// # Returns
+    ///
+    /// The pair, or `None` for a call, or a header with no marks.
+    fn marked_header(&self, tokens: &[Token], at: usize) -> Option<(&'t str, usize)>
+    {
+        let tokens = tokens.get(at..)?;
+        let name = tokens.get(1).filter(|t| t.kind == TokenKind::Ident)?;
+        ret_if!(tokens.get(2)?.kind != TokenKind::Kw(Kw::Thi), None);
+        let stop = TokenKind::Punct(Punct::FullStop);
+        let header: Vec<&Token> =
+            tokens.iter().take_while(|t| t.kind != stop).collect();
+        let open = |pair: &[&Token]| {
+            let paren =
+                pair[1].kind == TokenKind::Punct(Punct::LParen) && pair[1].joined;
+            pair[0].kind == TokenKind::Ident && paren
+        };
+        let count = header.windows(2).filter(|pair| open(pair)).count();
+        (count > 0).then(|| (self.text_of(name.span), count))
     }
 
     /// The name and the classifier of the struct declaration whose
