@@ -58,12 +58,13 @@ called.
   conditional or another function (ZK0214).
 - A call can come before the declaration it names. The order of declarations does not
   matter, and two functions can call each other.
-- Each name is declared once. Zaka has no overloading: a second function with a name in
-  use is ZK0304.
+- A file can declare several functions of one name when their parameters differ (see
+  [One name, several functions](#one-name-several-functions)); a second function with
+  the same name, parameter kinds and marks is ZK0304.
 - A call to a name that no function has is ZK0303.
 
 ```zaka-error ZK0214
-လုပ်ဆောင်ချက် ပြင်ပ သည်
+လုပ်ဆောင်ချက် အပြင် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် အတွင်း သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -558,6 +559,41 @@ error[ZK0333]: more than one function "ပြ" takes these arguments
 
 ```text
 error[ZK0332]: no function "ပြ" takes these arguments
+```
+
+## External functions
+
+A function can come from outside the program, `ပြင်ပမှလာသော`: its header names its
+parameters and its result, and no statements follow it, since the VM does its work while
+the program runs. The header is one sentence:
+
+| Parameters | Result | Written |
+| --- | --- | --- |
+| none | none | `လုပ်ဆောင်ချက် <name> သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်သည်။` |
+| some | none | `... လုပ်ဆောင်ချက်ဖြစ်၍ <parameters> လက်ခံမည်။` |
+| none | a result | `... လုပ်ဆောင်ချက်ဖြစ်၍ <kind> ရလဒ် ကို ပြန်ပေးမည်။` |
+| some | a result | `... လုပ်ဆောင်ချက်ဖြစ်၍ <parameters> လက်ခံပြီး <kind> ရလဒ် ကို ပြန်ပေးမည်။` |
+
+`လုပ်ဆောင်ချက်` can take `တစ်ခု` after it (`လုပ်ဆောင်ချက်တစ်ခုဖြစ်၍`), and `ပြင်ပမှလာသော`
+can be written apart (`ပြင်ပ မှ လာသော`). The parameters are those of a regular header,
+marks included, and so is the result kind. A call of an external function is a call
+like each other, in each call form.
+
+The VM serves a fixed set of functions, so an external function must be one of them: the
+same name, the same parameter kinds, and a result that can fail with the error
+enumeration of input and output. Another one is ZK0334, whose help lists the set. The
+stdlib declares each of them, so a program imports them from there rather than
+writing the headers.
+
+```zaka-error ZK0334
+လုပ်ဆောင်ချက် ဟိုဟို သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0334]: the VM serves no function "ဟိုဟို" with these parameter and result kinds
 ```
 
 ## Recursion

@@ -184,10 +184,9 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
             expr_places(lhs, out);
             expr_places(rhs, out);
         }
-        ExprNode::Call { args, .. } | ExprNode::List(args) =>
-        {
-            args.iter().for_each(|a| expr_places(a, out))
-        }
+        ExprNode::Call { args, .. }
+        | ExprNode::Host { args, .. }
+        | ExprNode::List(args) => args.iter().for_each(|a| expr_places(a, out)),
         ExprNode::MakeSlice { source, start, len, .. } =>
         {
             [source, start, len].into_iter().for_each(|a| expr_places(a, out))

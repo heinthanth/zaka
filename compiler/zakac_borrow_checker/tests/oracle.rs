@@ -72,7 +72,9 @@ fn raw_expr(e: &Expr) -> bool
         {
             raw_expr(lhs) || raw_expr(rhs)
         }
-        ExprNode::Call { args, .. } | ExprNode::List(args) => args.iter().any(raw_expr),
+        ExprNode::Call { args, .. }
+        | ExprNode::Host { args, .. }
+        | ExprNode::List(args) => args.iter().any(raw_expr),
         ExprNode::MakeSlice { source, start, len, .. } =>
         {
             [source, start, len].into_iter().any(|e| raw_expr(e))

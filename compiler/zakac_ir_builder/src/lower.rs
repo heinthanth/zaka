@@ -17,6 +17,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::enums::EnumKind;
 use zakac_semcheck::enums::MemberValue;
+use zakac_semcheck::host::HostFn;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::semcheck::KindTable;
 use zakac_semcheck::semcheck::RESULT_NAME;
@@ -1548,9 +1549,11 @@ impl Lowerer<'_>
     fn func(&mut self, f: &st::FnDecl) -> Func
     {
         let given = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
-        let fault = given.and_then(Fault::of_kind);
-        // A function that can fail keeps its good result in `ရလဒ်`.
-        let ret = fault.map_or(given, |f| f.ok);
+        // A function that can fail keeps its good result in `ရလဒ်`; an external
+        // one keeps the whole result the host gives.
+        let fault = given.and_then(Fault::of_kind).filter(|_| !f.external);
+        let whole = given.map(DataKind::repr).filter(|_| f.external);
+        let ret = whole.or_else(|| fault.map_or(given, |f| f.ok));
         let depth = self.scopes.len();
         #[rustfmt::skip]
         let outer = self.frame.replace(Frame { locals: Vec::new(), ret, fault, depth, edits: HashSet::new() });
@@ -1559,6 +1562,7 @@ impl Lowerer<'_>
         self.scoped(|l| {
             do_for!(p in &f.params, l.declare_param(p));
             result = ret.map(|k| l.result_slot(f, k, &mut block));
+            do_if!(f.external, l.host_statement(f, given, result, &mut block));
             do_for!(s in &f.block.stmts, l.stmt(s, &mut block));
             let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
             do_if!(!ends_in_return, block.extend(l.drops_from(depth, f.block.span)));
@@ -1582,6 +1586,39 @@ impl Lowerer<'_>
             .params(f.params.len() as u32)
             .maybe_result(result)
             .maybe_ret(given).locals(frame.locals).block(block).span(f.span).build();
+    }
+
+    /// The one statement of an external function: its result variable takes
+    /// what the host function gives for the borrowed address of each
+    /// parameter. A check with no error leaves the host function and the
+    /// result there.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The declaration.
+    /// * `given` - Its result kind.
+    /// * `result` - The slot of its result variable.
+    /// * `block` - The statements so far.
+    fn host_statement(
+        &mut self, f: &st::FnDecl, given: Option<DataKind>, result: Option<u32>,
+        block: &mut Vec<Stmt>,
+    )
+    {
+        let kinds: Vec<DataKind> =
+            f.params.iter().map(|p| param_kind(p, self.structs)).collect();
+        let func = HostFn::find(&f.name.name, &kinds, given)
+            .expect("a check found the host function");
+        let slot = result.expect("each host function gives a result");
+        let addr = |(p, kind): (&st::Param, &DataKind)| {
+            let place = self.lookup(&p.name.name);
+            self.slot(place).addressed = true;
+            node_expr(kind.pointer_to().as_borrowed(), ExprNode::AddrOf(place), p.span)
+        };
+        let args = f.params.iter().zip(&kinds).map(addr).collect();
+        let kind =
+            given.map(DataKind::repr).expect("each host function gives a result");
+        let value = node_expr(kind, ExprNode::Host { func, args }, f.span);
+        block.push(Stmt::Set { place: Place::Local(slot), value, span: f.span });
     }
 
     /// Declare a function parameter.

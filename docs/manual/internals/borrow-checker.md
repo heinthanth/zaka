@@ -414,6 +414,11 @@ code](codegen.md)), so the checker needs no rule of its own: an owner alive at t
 site is lost when the function leaves, which is ZK0708 at the call. The IR statement
 `Halt` (the causes `not_good` and `not_fault`) ends a path in the graph (`cfg.rs`), with no leak check and no exit check there: the run stops, so nothing is left to free.
 
+An external function has one statement, `ExprNode::Host`: the flow reads each argument (the
+borrowed address of a parameter) and gives a value with no roots, a fresh one, and the
+digest of the function follows from that statement as for each other function, so its
+parameters are read and dropped as usual and nothing escapes into the host.
+
 ## Options
 
 `BorrowCheckOptions { check: MemCheck, strict: bool }`, chosen with `--mem-check` and

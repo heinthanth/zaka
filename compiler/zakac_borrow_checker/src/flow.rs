@@ -1236,6 +1236,13 @@ impl<'m> Flow<'m>
                 self.call(*func, args, e.span, state);
                 SlotState::unknown(e.kind, Roots::new())
             }
+            ExprNode::Host { args, .. } =>
+            {
+                // The host reads each argument through its address and gives
+                // a value that holds blocks of its own.
+                do_for!(a in args, _ = self.value(a, state));
+                SlotState::unknown(e.kind, Roots::new())
+            }
             ExprNode::List(cells) =>
             {
                 let values: Vec<SlotState> =

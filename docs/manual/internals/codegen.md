@@ -79,7 +79,10 @@ A statement is one of nineteen forms:
 
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
-`Convert { implicit }`, `Call`, the pointer forms `AddrOf`, `Load`, `Lend`, `Take`, `Dup`, `Own` (a plain list made to
+`Convert { implicit }`, `Call`, `Host { func, args }` (the one statement of an external
+function: its result variable takes what the host function `func` gives for the borrowed
+address of each parameter, written `(host read_file (addr l0))`; the IR builder makes it in
+`host_statement`, and codegen emits the op `host` into the result slot), the pointer forms `AddrOf`, `Load`, `Lend`, `Take`, `Dup`, `Own` (a plain list made to
 own its block before a write, written `(own ...)`),
 `PtrAdd`, `PtrSub`, `SizeOf`, the list forms `List`, `BlankList`, `CellAddr`, `FieldAddr`,
 and `MakeSlice`, and the text forms `Text(String)` (static text, written `"..."` in the

@@ -218,7 +218,9 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
             expr(lhs, f);
             expr(rhs, f);
         }
-        ExprNode::Call { args, .. } | ExprNode::List(args) =>
+        ExprNode::Call { args, .. }
+        | ExprNode::Host { args, .. }
+        | ExprNode::List(args) =>
         {
             do_for!(a in args, expr(a, f))
         }

@@ -44,7 +44,9 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         {
             vec![lhs.as_ref(), rhs.as_ref()]
         }
-        ExprNode::Call { args, .. } | ExprNode::List(args) => args.iter().collect(),
+        ExprNode::Call { args, .. }
+        | ExprNode::Host { args, .. }
+        | ExprNode::List(args) => args.iter().collect(),
         ExprNode::Format(pieces) => fmt_values(pieces).collect(),
         ExprNode::Chars { text, index, .. } =>
         {
@@ -175,7 +177,9 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         {
             vec![lhs.as_mut(), rhs.as_mut()]
         }
-        ExprNode::Call { args, .. } | ExprNode::List(args) => args.iter_mut().collect(),
+        ExprNode::Call { args, .. }
+        | ExprNode::Host { args, .. }
+        | ExprNode::List(args) => args.iter_mut().collect(),
         ExprNode::Format(pieces) => fmt_values_mut(pieces).collect(),
         ExprNode::Chars { text, index, .. } =>
         {

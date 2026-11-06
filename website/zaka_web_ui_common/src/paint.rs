@@ -178,6 +178,11 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::WillDo
         | Kw::Will
         | Kw::Using
+        | Kw::Outside
+        | Kw::Coming
+        | Kw::External
+        | Kw::OneFunction
+        | Kw::WillAccept
         | Kw::DoAnd
         | Kw::Tasks
         | Kw::Done

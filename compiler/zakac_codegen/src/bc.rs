@@ -11,6 +11,7 @@ pub use zakac_ir_builder::ir::Host;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::PrefixOp;
 use zakac_ir_builder::value::Value;
+use zakac_semcheck::host::HostFn;
 use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
@@ -213,6 +214,10 @@ pub enum Op
     /// are on the stack, the last one on top. For a list or struct result,
     /// the address of the caller's slot for it sits under the arguments.
     Call(u32),
+    /// Serve a function of the host: pop the borrowed address of each of
+    /// its parameters, the last on top, with the address of the slot for its
+    /// result under them; write the result there and leave the address.
+    Host(HostFn),
     /// Leave the function. A function with a result leaves it on the stack.
     /// A list or struct result is the address of a value: unless it is
     /// the caller's slot itself, it is duplicated there, and the address of
@@ -508,6 +513,7 @@ impl Op
             Op::Convert(kind) => kind.name(),
             Op::Jump(t) | Op::JumpIfFalse(t) | Op::JumpIfTrue(t) => format!("@{t}"),
             Op::Call(f) => format!("f{f}"),
+            Op::Host(func) => <&str>::from(func).to_string(),
             Op::PrintText(t) | Op::Text(t) => format!("t{t}"),
             Op::StaticSeq(s) | Op::SeqAddr(s) => format!("s{s}"),
             Op::Format(f) => format!("fmt{f}"),

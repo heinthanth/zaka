@@ -47,6 +47,9 @@ use crate::parser::Parser;
 use crate::parser::kw_of;
 use crate::using::CallParts;
 
+/// The count word `တစ်ခု` ("one") in `လုပ်ဆောင်ချက် တစ်ခု`.
+const ONE_THING: &str = "တစ်ခု";
+
 /// The direction a counted-loop word names.
 ///
 /// # Arguments
@@ -674,6 +677,7 @@ impl Parser<'_>
         let start_name = || Ident::builder().name(START_NAME).span(start).build();
         let name = tern!(is_start, start_name(), self.parse_ident()?);
         self.expect(Kw::Thi)?;
+        ret_if!(self.at(Kw::External) && !is_start, self.parse_external(start, name));
         let params = self.parse_params()?;
         let open = self.expect_one_of(&[Kw::FnOpen, Kw::FnOpenRet])?;
         let ret = self.parse_ret_clause(open.kind == TokenKind::Kw(Kw::FnOpenRet))?;
@@ -691,6 +695,78 @@ impl Parser<'_>
         let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
             .start(is_start).span(span).build();
         Ok(Stmt::Fn(node))
+    }
+
+    /// Parse the rest of the header of an external function, after
+    /// `လုပ်ဆောင်ချက် <name> သည်`: `ပြင်ပမှလာသော လုပ်ဆောင်ချက်(တစ်ခု)?ဖြစ်သည်။` with
+    /// no parameters and no result, or `... ဖြစ်၍` then the parameters ending in
+    /// `လက်ခံမည်` (no result) or `လက်ခံပြီး` and the result clause, or the
+    /// result clause alone. The host serves the function, so no block follows.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the declaration starts.
+    /// * `name` - The function name.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    fn parse_external(&mut self, start: Span, name: Ident) -> PResult<Stmt>
+    {
+        self.bump();
+        self.parse_one_function()?;
+        let bare =
+            self.expect_one_of(&[Kw::And, Kw::Is])?.kind == TokenKind::Kw(Kw::Is);
+        let ends = [Kw::Accepting, Kw::WillAccept];
+        let with_params = !bare && self.accepts_ahead();
+        let (params, end) =
+            tern!(with_params, self.parse_params_to(&ends)?, (Vec::new(), None));
+        let ret = tern!(
+            bare || end == Some(Kw::WillAccept),
+            None,
+            self.parse_ret_clause(true)?
+        );
+        let stop = self.expect_stop()?;
+        let span = start.to(&stop.span);
+        do_if!(self.depth > 0, self.diags.push(diag::nested_function(span)));
+        let block = BlockStmt::builder().span(stop.span).build();
+        #[rustfmt::skip]
+        let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
+            .external(true).span(span).build();
+        Ok(Stmt::Fn(node))
+    }
+
+    /// Read `လုပ်ဆောင်ချက်တစ်ခု`, or `လုပ်ဆောင်ချက်` with an optional `တစ်ခု` after it.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic.
+    fn parse_one_function(&mut self) -> PResult<()>
+    {
+        ret_if!(self.eat(Kw::OneFunction), Ok(()));
+        self.expect(Kw::Function)?;
+        let tok = self.peek();
+        let one = tok.kind == TokenKind::Ident && self.text_of(tok.span) == ONE_THING;
+        do_if!(one, self.advance());
+        Ok(())
+    }
+
+    /// Whether `လက်ခံပြီး` or `လက်ခံမည်` comes before the next full stop, so the
+    /// header of an external function lists parameters.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn accepts_ahead(&self) -> bool
+    {
+        let ends = |kind: TokenKind| {
+            matches!(kind, TokenKind::Kw(Kw::Accepting | Kw::WillAccept))
+        };
+        let stop = |kind: TokenKind| {
+            matches!(kind, TokenKind::Punct(Punct::FullStop) | TokenKind::Eof)
+        };
+        let kinds = (0..).map(|n| self.peek_n(n).kind);
+        kinds.take_while(|k| !stop(*k)).any(ends)
     }
 
     /// Parse a struct declaration:
@@ -977,6 +1053,22 @@ impl Parser<'_>
     fn parse_params(&mut self) -> PResult<Vec<Param>>
     {
         ret_if!(!self.starts_kind() && !self.at(Kw::EditParam), Ok(Vec::new()));
+        let (params, _) = self.parse_params_to(&[Kw::Accepting])?;
+        Ok(params)
+    }
+
+    /// Parse a parameter clause that ends in one of `ends`.
+    ///
+    /// # Arguments
+    ///
+    /// * `ends` - The words that can end it: `လက်ခံပြီး`, and `လက်ခံမည်` for an
+    ///   external function.
+    ///
+    /// # Returns
+    ///
+    /// The parameters and the word that ended them, or a diagnostic.
+    fn parse_params_to(&mut self, ends: &[Kw]) -> PResult<(Vec<Param>, Option<Kw>)>
+    {
         let mut params = vec![self.parse_param()?];
         while self.eat_punct(Punct::ListSep)
         {
@@ -990,10 +1082,10 @@ impl Parser<'_>
             self.diags.push(diag::mixed_marks(span))
         );
         // With marks the parameters end in `လက်ခံပြီး` straight after the last.
-        let closer = marked == 0 || !self.at(Kw::Accepting);
+        let closer = marked == 0 || !ends.iter().any(|kw| self.at(*kw));
         do_if!(closer, _ = self.expect_one_of(&[Kw::ListKo, Kw::Ko])?);
-        self.expect(Kw::Accepting)?;
-        Ok(params)
+        let end = self.expect_one_of(ends)?;
+        Ok((params, kw_of(&end)))
     }
 
     /// Parse one parameter: `kind name`, with

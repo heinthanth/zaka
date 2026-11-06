@@ -10,6 +10,7 @@ pub use zakac_semcheck::const_op::CmpOp;
 pub use zakac_semcheck::const_op::InfixOp;
 pub use zakac_semcheck::const_op::LogicOp;
 pub use zakac_semcheck::const_op::PrefixOp;
+pub use zakac_semcheck::host::HostFn;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::value::Value;
 use zakac_span::span::Span;
@@ -648,6 +649,17 @@ pub enum ExprNode
         /// The function name.
         name: String,
         /// The arguments, each of its parameter's kind.
+        args: Vec<Expr>,
+    },
+    /// The work of a function the host serves, the one statement of an
+    /// external function: its result, from the borrowed address of each
+    /// parameter. The host reads each value through its address and takes
+    /// none of them.
+    Host
+    {
+        /// The host function.
+        func: HostFn,
+        /// The address of each parameter.
         args: Vec<Expr>,
     },
     /// The address of a slot. A slot whose address the program takes is

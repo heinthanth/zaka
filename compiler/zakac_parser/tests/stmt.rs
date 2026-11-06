@@ -619,3 +619,22 @@ fn other_sentences_keep_their_meaning()
     let import = format!("\"lib.zaka\" မှ ရေး ကို ထည့်သွင်းပါ။\n{}", with_write(""));
     assert!(matches!(stmts(&import)[0], Stmt::Import(_)));
 }
+
+/// The header of an external function, in each shape: no parameters and no
+/// result, parameters with or without a result, or a result alone; with or
+/// without `တစ်ခု`, glued or apart.
+#[test]
+fn external_functions_have_a_header_alone()
+{
+    let bare = "လုပ်ဆောင်ချက် က သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်တစ်ခုဖြစ်သည်။";
+    assert_eq!(stmt(bare), "(external က [] -)");
+    let apart = "လုပ်ဆောင်ချက် က သည် ပြင်ပ မှ လာသော လုပ်ဆောင်ချက် တစ်ခု ဖြစ်သည်။";
+    assert_eq!(stmt(apart), "(external က [] -)");
+    let takes = "လုပ်ဆောင်ချက် ရေး သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား စ(ကို) လက်ခံမည်။";
+    assert_eq!(stmt(takes), "(external ရေး [text စ(ကို)] -)");
+    let gives = "လုပ်ဆောင်ချက် ဖတ် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား ရလဒ် ကို ပြန်ပေးမည်။";
+    assert_eq!(stmt(gives), "(external ဖတ် [] text)");
+    let both = "လုပ်ဆောင်ချက် ဖတ် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်တစ်ခု ဖြစ်၍ စာသား လမ်း ကို လက်ခံပြီး စာသား \
+                ရလဒ် ကို ပြန်ပေးမည်။";
+    assert_eq!(stmt(both), "(external ဖတ် [text လမ်း] text)");
+}

@@ -66,6 +66,8 @@ use crate::consts::open_structs;
 use crate::consts::write_counts;
 use crate::enum_check::KnownEnums;
 use crate::enum_check::collect_enums;
+use crate::host::HostFn;
+use crate::host::IO_ERROR;
 use crate::kind::DataKind;
 use crate::list::KindUse;
 use crate::ops::Want;
@@ -559,6 +561,30 @@ impl Checker
         self.check_edits_apart(args, edits);
         self.check_marks(callee, marks, sig.marks.as_deref());
         ret
+    }
+
+    /// Check that an external function is one of the functions the host
+    /// serves.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The declaration.
+    /// * `ret` - Its result kind.
+    fn check_external(&mut self, n: &FnDecl, ret: Option<DataKind>)
+    {
+        let params: Vec<DataKind> = n
+            .params
+            .iter()
+            .map(|p| DataKind::from_ast(&p.kind, &self.structs))
+            .collect();
+        ret_if!(HostFn::find(&n.name.name, &params, ret).is_some());
+        let diag = rd::unknown_host_fn(
+            n.name.span,
+            &n.name.name,
+            &HostFn::listing(),
+            IO_ERROR,
+        );
+        self.report(diag);
     }
 
     /// The function a call runs: the one function of its name, or the
@@ -1578,6 +1604,7 @@ impl Visitor for Checker
         self.scopes.push();
         do_for!(p in &n.params, self.declare_param(p));
         do_if!(n.start, self.check_start_header(n, ret));
+        do_if!(n.external, self.check_external(n, given));
         let result = Ident::builder().name(RESULT_NAME).span(n.name.span).build();
         do_if!(ret.is_some(), let _ = self.declare_quiet(&result, ret, Access::Var));
         self.visit_stmts(&n.block.stmts);

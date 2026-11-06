@@ -467,6 +467,10 @@ impl Walk
                 self.expr(offset, Use::Read, write);
             }
             ExprNode::Call { func, args, .. } => self.args(*func, args),
+            ExprNode::Host { args, .. } =>
+            {
+                do_for!(a in args, self.expr(a, Use::Read, write))
+            }
             ExprNode::Compare { lhs, rhs, .. } | ExprNode::PtrSub { lhs, rhs } =>
             {
                 self.expr(lhs, Use::Read, write);

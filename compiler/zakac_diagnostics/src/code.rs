@@ -211,6 +211,8 @@ WrongMark = ("ZK0331", Level::Error),
 NoOverloadFits = ("ZK0332", Level::Error),
 /// More than one function of a name takes the arguments of a call.
 OverloadUnclear = ("ZK0333", Level::Error),
+/// An external function is none of the functions the host serves.
+UnknownHostFn = ("ZK0334", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

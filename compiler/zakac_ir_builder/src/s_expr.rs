@@ -169,6 +169,15 @@ impl ToSexpr for Expr
                 list(head, [self.kind.name(), operand.to_sexpr()])
             }
             ExprNode::Call { name, args, .. } => call_sexpr(name, args),
+            ExprNode::Host { func, args } =>
+            {
+                let name: &'static str = func.into();
+                list(
+                    "host",
+                    std::iter::once(name.to_string())
+                        .chain(args.iter().map(ToSexpr::to_sexpr)),
+                )
+            }
             ExprNode::AddrOf(place) => list("addr", [place.to_string()]),
             ExprNode::Load { addr } => list("load", [addr.to_sexpr()]),
             ExprNode::Lend { operand } => list("lend", [operand.to_sexpr()]),

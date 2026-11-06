@@ -331,6 +331,15 @@ pub enum Kw
     Which,
     /// `သုံး၍`, "using": the arguments of a call written before the function
     Using,
+    /// `ပြင်ပ`, "outside": the first piece of `ပြင်ပမှလာသော`
+    Outside,
+    /// `လာသော`, "coming": the last piece of `ပြင်ပမှလာသော`
+    Coming,
+    /// `လုပ်ဆောင်ချက်တစ်ခု`, "a function", in the header of an external function
+    OneFunction,
+    /// `လက်ခံမည်`, "will accept": ends the parameters of an external function
+    /// with no result
+    WillAccept,
     /// `လုပ်ဆောင်ကာ`
     DoAnd,
     /// `လုပ်ဆောင်စရာများ`
@@ -371,6 +380,9 @@ pub enum Kw
     CallGoodResult,
     /// `သည့် ရလဒ်`: the end of the short call expression `<fn> သည့် ရလဒ်`
     UsedResult,
+    /// `ပြင်ပ မှ လာသော`, "coming from outside": marks a function the host
+    /// serves
+    External,
     /// `သည့် ရလဒ်ကောင်း`: the short call expression that passes a failure on
     UsedGoodResult,
     /// `အမှားအယွင်း အဖြစ် ပြန်ပေးပါ`: gives back an error value

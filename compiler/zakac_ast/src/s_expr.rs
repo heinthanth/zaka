@@ -541,6 +541,7 @@ fn fn_sexpr(s: &FnDecl) -> String
     let params: Vec<String> = s.params.iter().map(param_sexpr).collect();
     let ret = s.ret.as_ref().map_or("-".to_string(), ToSexpr::to_sexpr);
     let parts = [s.name.name.to_string(), format!("[{}]", params.join(", ")), ret];
+    ret_if!(s.external, list("external", parts));
     list(tern!(s.start, "start", "fn"), parts.into_iter().chain([s.block.to_sexpr()]))
 }
 

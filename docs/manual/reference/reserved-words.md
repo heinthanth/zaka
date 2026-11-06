@@ -26,6 +26,8 @@ see [Names](../../learn/variables/names.md).
 | `ပါ`, `ပါသည်` | polite endings | [Particles](../../learn/sentences/particles.md) |
 | `တို့ကို`, `တို့ဖြင့်` | close a list of parameters / arguments | [Parameters](../../learn/functions/parameters.md) |
 | `လက်ခံပြီး` | "accepting ... and" | [Parameters](../../learn/functions/parameters.md) |
+| `ပြင်ပမှလာသော` (`ပြင်ပ`, `မှ`, `လာသော`) | "coming from outside": marks an external function | [Functions](../language/functions.md#external-functions) |
+| `လုပ်ဆောင်ချက်တစ်ခု` | "a function", in the header of an external function | [Functions](../language/functions.md#external-functions) |
 | `သုံး၍` | "using": after `ကို` or `တို့ကို`, closes the arguments of a call written before its function | [Parameters](../../learn/functions/parameters.md#arguments-first) |
 | `ထဲသို့` | "into", after the list or the text in `l ထဲသို့ v ကို ထည့်ပါ` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `မှ`, `အထိ`, `စီ`, `အနေဖြင့်` | "from", "up to", "each", "as" | [Counted loops](../../learn/control-flow/counted-loops.md) |
@@ -71,6 +73,7 @@ see [Names](../../learn/variables/names.md).
 | `လုပ်ဆောင်ပါ` | "please run" | [Functions](../../learn/functions/README.md) |
 | `လုပ်ဆောင်မည်` | "will run": a second end of a call statement, and the end of the long arguments-first call | [Parameters](../../learn/functions/parameters.md#arguments-first) |
 | `မည်` | "will": ends the short call statement `<name> မည်` | [Functions](../../learn/functions/README.md#calling) |
+| `လက်ခံမည်` | "will accept": ends the parameters of an external function with no result | [Functions](../language/functions.md#external-functions) |
 | `ရလဒ်အဖြစ် ပြန်ပေးပါ` | "give back as the result": in a function that cannot fail | [Results](../../learn/functions/results.md) |
 | `ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ` | "give back as the good result": in a function that can fail | [Errors and results](../../learn/error-handling/README.md) |
 | `ပြန်ပေးပါ` | "please return" | [Functions](../../learn/functions/README.md) |

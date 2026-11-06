@@ -584,6 +584,15 @@ en = "write the marks of the function meant, or give each argument the kind of i
 [codes.ZK0333.explain]
 en = """A file can declare several functions of one name, each with other parameter kinds or other marks. A call runs the one whose parameters its arguments fit, and here two or more fit: a number with no kind fits each integer kind, and a call with no marks fits functions that differ in their marks alone. Write the marks of the function meant, or a kind on the number, such as \"(၈ ဘစ် ကိန်းပြည့် ၅)\"."""
 
+[codes.ZK0334.title]
+en = "unknown external function"
+[codes.ZK0334.message]
+en = "the VM serves no function \"%{n}\" with these parameter and result kinds"
+[codes.ZK0334.help]
+en = "the VM serves %{l}, each with a result that can fail with \"%{e}\""
+[codes.ZK0334.explain]
+en = """A function that comes from outside, \"လုပ်ဆောင်ချက် <name> သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", has no statements: the VM serves it while the program runs. The VM serves a fixed set of functions, so the name, the parameter kinds and the result kind must be those of one of them. The stdlib declares each of them; import them from there."""
+
 # ---------------------------------------------------------------- kinds ZK04xx
 
 [codes.ZK0401.title]

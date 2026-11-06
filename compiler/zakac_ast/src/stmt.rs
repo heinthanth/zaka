@@ -379,6 +379,11 @@ pub struct FnDecl
     /// name it.
     #[builder(default)]
     pub start: bool,
+    /// `true` for a function that comes from outside, `ပြင်ပမှလာသော`: the
+    /// host serves it, and its block holds no statements.
+    #[builder(default)]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub external: bool,
     /// Source region.
     pub span: Span,
 }

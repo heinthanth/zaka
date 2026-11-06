@@ -25,6 +25,7 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::host::HostFn;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
 use zakac_span::span::Span;
@@ -482,6 +483,11 @@ impl<'s> FuncGen<'s>
             ExprNode::Text(_) | ExprNode::Format(_) =>
             {
                 self.text_at(base, value);
+                self.op(Op::Pop);
+            }
+            ExprNode::Host { func, args } =>
+            {
+                self.host(base, *func, args);
                 self.op(Op::Pop);
             }
             _ =>
@@ -1528,6 +1534,11 @@ impl<'s> FuncGen<'s>
                 do_if!(checked, self.op(Op::CheckUtf8));
             }
             ExprNode::Call { func, args, .. } => self.call(*func, args),
+            ExprNode::Host { func, args } =>
+            {
+                let slot = self.temp("%host", e.kind);
+                self.host(Op::LocalAddr(slot), *func, args);
+            }
             ExprNode::AddrOf(place) => self.addr_of(*place),
             ExprNode::Load { addr } =>
             {
@@ -1746,6 +1757,21 @@ impl<'s> FuncGen<'s>
         do_if!(let Some(op) = slot, self.op(op));
         do_for!(a in args, self.expr(a));
         self.op(Op::Call(func));
+    }
+
+    /// Serve a host function with its result going to a slot; the address of
+    /// the slot remains on the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - The op that pushes the address of the slot.
+    /// * `func` - The host function.
+    /// * `args` - The borrowed address of each parameter.
+    fn host(&mut self, slot: Op, func: HostFn, args: &[Expr])
+    {
+        self.op(slot);
+        do_for!(a in args, self.expr(a));
+        self.op(Op::Host(func));
     }
 
     /// Push the value a function gives back. A list or struct local is not

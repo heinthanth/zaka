@@ -574,3 +574,25 @@ pub fn overload_unclear(span: Span, name: &str) -> Diagnostic
     let msg = t!("codes.ZK0333.message", n = name);
     Diagnostic::new(Code::OverloadUnclear, msg, span).with_help(t!("codes.ZK0333.help"))
 }
+
+/// An external function is none of the functions the host serves.
+///
+/// # Arguments
+///
+/// * `span` - The name in the declaration.
+/// * `name` - The name.
+/// * `list` - The functions the host serves.
+/// * `error` - The error kind each of them can fail with.
+///
+/// # Returns
+///
+/// The `ZK0334` diagnostic, with the served functions as a hint.
+pub fn unknown_host_fn(span: Span, name: &str, list: &str, error: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0334.message", n = name);
+    Diagnostic::new(Code::UnknownHostFn, msg, span).with_help(t!(
+        "codes.ZK0334.help",
+        l = list,
+        e = error
+    ))
+}

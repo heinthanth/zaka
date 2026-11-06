@@ -159,6 +159,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0331 | an argument of a marked call with a mark other than its parameter's | [Functions](../language/functions.md#marked-parameters) |
 | ZK0332 | a call that no function of its name fits | [Functions](../language/functions.md#one-name-several-functions) |
 | ZK0333 | a call that more than one function of its name fits | [Functions](../language/functions.md#one-name-several-functions) |
+| ZK0334 | an external function that is none of the functions the VM serves | [Functions](../language/functions.md#external-functions) |
 
 ### ZK04: kinds
 

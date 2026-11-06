@@ -1095,6 +1095,8 @@ impl Machine
             Op::LocalAddr(n) => self.local_addr(n),
             Op::LocalRef(n) => self.local_ref(n),
             Op::ResultAddr => self.result_addr(),
+            // shortcut: no host serves calls in this version; the next step adds it.
+            Op::Host(_) => Err(malformed("no host serves this call")),
             Op::GlobalAddr(n) => self.global_addr(n),
             Op::Prefix(op) => self.prefix(op),
             Op::Infix(op) => self.infix(op),

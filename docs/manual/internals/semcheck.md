@@ -117,6 +117,12 @@ each call in `chosen`, and the inner names into each import of an overloaded nam
 builder, the ownership check and codegen then see one function for each name. An import
 brings each exported overload (`import_fn`); a name a file declares and imports is ZK0304.
 
+An external function (`FnDecl::external`) must be one of the functions the host serves:
+`check_external` asks `host::HostFn::find` for the one with its name, parameter kinds and
+result kind (a result that can fail with `host::IO_ERROR`), and reports ZK0334 with
+`HostFn::listing` as help when none matches. The table matches kinds through their names, so
+the stream structs and the error enumeration are the ones the stdlib declares.
+
 Before it, `collect_enums` (`enum_check.rs`) makes the kind of each enumeration, on its
 name and on its stem, and reports a member name used twice (ZK0328) and a name a struct
 or another enumeration has (ZK0316). A member value can name a constant, so the walk works
