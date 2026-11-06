@@ -271,7 +271,8 @@ fn stroke(stroke: Stroke) -> impl IntoView
         Tone::Warning => ClassName::SANDBOX_WARNING,
         Tone::Note => ClassName::SANDBOX_NOTE,
     };
-    span().class(class).child(stroke.text)
+    let marked = (ClassName::SANDBOX_MARKED, stroke.marked);
+    span().class(class).class(marked).child(stroke.text)
 }
 
 /// Run the program on Control or Command with Enter.

@@ -15,7 +15,9 @@ use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_reporter::render::Paint;
+use zakac_reporter::render::Piece;
 use zakac_reporter::render::diagnostic_pieces;
+use zakac_reporter::width::Carets;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_if;
 use zakac_semcheck::semcheck::SemcheckOptions;
@@ -165,6 +167,9 @@ pub struct Stroke
     pub text: String,
     /// How to color it.
     pub tone: Tone,
+    /// Whether it is the source text a diagnostic marks.
+    #[builder(default)]
+    pub marked: bool,
 }
 
 /// How a run of output is colored.
@@ -292,15 +297,19 @@ fn strokes(sm: &SourceMap, diag: &Diagnostic) -> Vec<Stroke>
 {
     let tone = |paint: Paint| match paint
     {
-        Paint::Plain => Tone::Plain,
+        Paint::Plain | Paint::Hidden => Tone::Plain,
         Paint::Gutter => Tone::Gutter,
-        Paint::Tag(level) | Paint::Marked(level) | Paint::Carets(level) =>
-        {
-            level_tone(level)
-        }
+        Paint::Tag(level)
+        | Paint::Marked(level)
+        | Paint::Carets(level)
+        | Paint::Under { level, .. } => level_tone(level),
     };
-    let pieces = diagnostic_pieces(sm, diag).into_iter();
-    pieces.map(|p| Stroke::builder().tone(tone(p.paint)).text(p.text).build()).collect()
+    let marked = |paint: Paint| matches!(paint, Paint::Marked(_));
+    let pieces = diagnostic_pieces(sm, diag, Carets::Off).into_iter();
+    let stroke = |p: Piece| {
+        Stroke::builder().tone(tone(p.paint)).marked(marked(p.paint)).text(p.text)
+    };
+    pieces.map(|p| stroke(p).build()).collect()
 }
 
 /// The tone of a diagnostic level.

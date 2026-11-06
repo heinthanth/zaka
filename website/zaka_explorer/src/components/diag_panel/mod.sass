@@ -4,6 +4,7 @@
 =paint-level($level)
   .paint-tag.paint-#{$level},
   .paint-carets.paint-#{$level},
+  .paint-under.paint-#{$level},
   .paint-marked.paint-#{$level}
     color: var(--diag-#{$level})
 
@@ -84,6 +85,29 @@
 .paint-carets,
 .paint-marked
   font-weight: 600
+
+// A caret row repeats the source line so the browser sets it out the same:
+// the text before the span is hidden, and the span text is hidden under a
+// row of marks clipped to its width. Neither is selected or copied.
+.paint-hidden
+  visibility: hidden
+  user-select: none
+
+.paint-under
+  position: relative
+  font-weight: 600
+  user-select: none
+
+.paint-under-text
+  visibility: hidden
+
+.paint-under-marks
+  position: absolute
+  top: 0
+  left: 0
+  width: 100%
+  overflow: hidden
+  white-space: nowrap
 
 +paint-level(error)
 +paint-level(warning)

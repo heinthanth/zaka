@@ -120,6 +120,11 @@ fn do_select(state: AppState, range: Option<Range>)
 
 /// One painted piece of the CLI rendering.
 ///
+/// The caret rows repeat the source line: the text before the span comes
+/// hidden, and the span text comes hidden under a row of marks that is
+/// clipped to its width. The browser sets both out as it set out the line
+/// above, so the marks stand under the span in each font.
+///
 /// # Arguments
 ///
 /// * `piece` - The piece.
@@ -127,9 +132,25 @@ fn do_select(state: AppState, range: Option<Range>)
 /// # Returns
 ///
 /// The view.
-fn piece_view(piece: Piece) -> impl IntoView
+fn piece_view(piece: Piece) -> AnyView
 {
-    span().class(paint_class(piece.paint)).child(piece.text)
+    let class = paint_class(piece.paint);
+    let Paint::Under { mark, .. } = piece.paint
+    else
+    {
+        let hidden = piece.paint == Paint::Hidden;
+        let quiet = hidden.then_some("true");
+        return span()
+            .class(class)
+            .attr("aria-hidden", quiet)
+            .child(piece.text)
+            .into_any();
+    };
+    // more marks than the text can be wide; the row clips the rest
+    let marks = mark.to_string().repeat(piece.text.chars().count() * 3 + 2);
+    let text = span().class(ClassName::PAINT_UNDER_TEXT).child(piece.text);
+    let row = span().class(ClassName::PAINT_UNDER_MARKS).child(marks);
+    span().class(class).attr("aria-hidden", "true").child((text, row)).into_any()
 }
 
 /// The class of a diagnostic of a level.
@@ -170,6 +191,8 @@ fn paint_class(paint: Paint) -> String
         Paint::Gutter => ClassName::PAINT_GUTTER,
         Paint::Marked(_) => ClassName::PAINT_MARKED,
         Paint::Carets(_) => ClassName::PAINT_CARETS,
+        Paint::Hidden => ClassName::PAINT_HIDDEN,
+        Paint::Under { .. } => ClassName::PAINT_UNDER,
     };
     let level = paint_level(paint).map(|l| match l
     {
@@ -193,7 +216,10 @@ fn paint_level(paint: Paint) -> Option<Level>
 {
     match paint
     {
-        Paint::Tag(level) | Paint::Marked(level) | Paint::Carets(level) => Some(level),
-        Paint::Plain | Paint::Gutter => None,
+        Paint::Tag(level)
+        | Paint::Marked(level)
+        | Paint::Carets(level)
+        | Paint::Under { level, .. } => Some(level),
+        Paint::Plain | Paint::Gutter | Paint::Hidden => None,
     }
 }

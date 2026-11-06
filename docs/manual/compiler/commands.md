@@ -294,6 +294,42 @@ $ zakac run --mem-check warn --leaks leak.zaka
 leak: block at 0x101020, 16 octets
 ```
 
+## Environment
+
+| Name | Meaning |
+| --- | --- |
+| `ZAKAC_CARETS` | the rows under a marked span on a color terminal: `off` leaves them out, `codepoint` draws them with one cell per code point, `cluster` draws them with a consonant and its `ေ`, `ျ` or `ြ` as two cells, `flow` places them where a terminal that draws Burmese text at its natural width puts the text; when unset, the compiler picks one for the terminal it knows, else `off` |
+| `NO_COLOR` | when it is set, color is off |
+
+Terminals do not agree on the cells a Burmese sign takes, so a `^^^^` row can drift from
+the text it points at. On a color terminal the span is marked inside the source line. The
+compiler draws the rows there when it knows how the terminal draws Burmese text, and
+leaves them out otherwise; `ZAKAC_CARETS` overrides the choice. Pick `codepoint` for the
+VS Code terminal, iTerm or Terminal.app, and `cluster` for Ghostty, kitty or foot.
+
+So far the compiler knows Ghostty. When `TERM_PROGRAM` is `ghostty`, it runs
+`ghostty +show-config` and picks the rows from what that lists:
+
+- [saturngod's Ghostty fork](https://ghostty.myanmars.app) lists the setting
+  `myanmar-prompt-width`. It draws Burmese text at the natural width of its font and
+  pushes the rest of the line right, so the compiler uses `flow`: it shapes the line with
+  the Burmese font the fork draws with (the first installed of Noto Sans Myanmar, Myanmar
+  MN, Myanmar Text and Padauk) and places the rows under the text. Where none of these
+  fonts is installed, the rows are left out.
+- Ghostty itself puts Burmese text on its cell grid and gives a grapheme cluster its
+  cells, so the compiler uses `cluster`; with `grapheme-width-method = legacy` it uses
+  `codepoint`.
+
+Other terminals are measured. The compiler asks the terminal where the cursor is, prints
+`ကျော` hidden, asks again, and erases the word. A terminal that gives each code point its
+cells moves the cursor four columns and gets `codepoint`; one that gives a grapheme
+cluster its cells moves it three and gets `cluster`. The VS Code terminal, iTerm,
+Terminal.app, kitty and tmux all go through this measure. A terminal that does not
+answer within a tenth of a second, or moves the cursor another distance, gets no rows.
+
+Without color, as in a pipe, the rows are drawn, one cell per code point. See [How a
+message is set out](diagnostics.md#how-a-message-is-set-out).
+
 ## Exit codes
 
 | Code | Meaning |

@@ -8,7 +8,9 @@ bon = { workspace = true }
 serde = { workspace = true }
 strum = { workspace = true }
 termcolor = { workspace = true }
+unicode-segmentation = { workspace = true }
 unicode-width = { workspace = true }
+zakac_burmese_alignment = { workspace = true }
 zakac_diagnostics = { workspace = true }
 zakac_rust_sugars = { workspace = true }
 zakac_span = { workspace = true }

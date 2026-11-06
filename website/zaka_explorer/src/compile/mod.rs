@@ -44,6 +44,7 @@ use zakac_parser::load::refuse_imports;
 use zakac_parser::parser::parse;
 use zakac_reporter::render::Piece;
 use zakac_reporter::render::diagnostic_pieces;
+use zakac_reporter::width::Carets;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
@@ -1092,6 +1093,6 @@ fn diag_row(unit: &Unit, phase: Phase, diag: &Diagnostic) -> DiagRow
         .maybe_help(diag.help.clone())
         .maybe_range(range)
         .labels(diag.labels.iter().filter_map(label).collect())
-        .pieces(diagnostic_pieces(unit.sm, diag))
+        .pieces(diagnostic_pieces(unit.sm, diag, Carets::Mirror))
         .build()
 }

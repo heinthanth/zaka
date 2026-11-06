@@ -382,6 +382,11 @@ error[ZK0102]: invalid number literal "၁၈ဘစ်"
   |                   ^^^^
 ```
 
+That is the plain form, as a pipe gets it. On a color terminal the word is colored in the
+line, and the caret row follows how the terminal draws Burmese text; where the row is left
+out, the word is underlined in its place. See [How a message is set
+out](../compiler/diagnostics.md#how-a-message-is-set-out).
+
 The parser sees a token list without the bad word and goes on from there. The exit code of
 the command is a failure when an error was reported, but the artifact is written all the
 same, so later stages can be tried on a partial file. The texts of the codes live in

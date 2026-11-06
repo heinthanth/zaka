@@ -1,6 +1,7 @@
 // The four Catppuccin flavours (palette 1.8.0, catppuccin.com) and how their
 // colors map onto the Zaka color tokens.
 
+@use "sass:color"
 @use "sass:map"
 
 $latte: (base: #eff1f5, mantle: #e6e9ef, crust: #dce0e8, surface0: #ccd0da, surface1: #bcc0cc, surface2: #acb0be, overlay1: #8c8fa1, text: #4c4f69, subtext0: #6c6f85, mauve: #8839ef, red: #d20f39, peach: #fe640b, pink: #ea76cb, yellow: #df8e1d, green: #40a02b, teal: #179299, sky: #04a5e5, blue: #1e66f5, lavender: #7287fd, rosewater: #dc8a78)
@@ -30,6 +31,14 @@ $flavours: (latte: ($latte, light), frappe: ($frappe, dark), macchiato: ($macchi
   --ok: #{map.get($p, green)}
   --scroll-thumb: #{rgba(map.get($p, overlay1), 0.35)}
   --scroll-thumb-hover: #{rgba(map.get($p, overlay1), 0.6)}
+  // Selected text, inverted against the page: the base on gold in a dark
+  // flavour, a light gold on the text color in a light one.
+  @if $scheme == dark
+    --select-fg: #{map.get($p, base)}
+    --select-bg: #{map.get($p, yellow)}
+  @else
+    --select-fg: #{color.scale(map.get($p, yellow), $lightness: 40%)}
+    --select-bg: #{map.get($p, text)}
   @if $scheme == dark
     --pop-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.45)
     --photo-opacity: 0.35

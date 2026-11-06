@@ -7,6 +7,9 @@ use zakac_reporter::render::diagnostic_pieces;
 use zakac_reporter::render::format_diagnostic;
 use zakac_reporter::render::write_diagnostic;
 use zakac_reporter::render::write_diagnostics;
+use zakac_reporter::render::write_pieces;
+use zakac_reporter::width::Carets;
+use zakac_reporter::width::carets_setting;
 use zakac_reporter::width::char_cells;
 use zakac_reporter::width::str_cells;
 use zakac_span::filename::FileName;
@@ -122,6 +125,17 @@ fn color_output_marks_span()
 }
 
 #[test]
+fn marked_text_has_no_underline_over_a_caret_row()
+{
+    let (sm, diag) = setup("a b c\n", "b");
+    let mut out = Buffer::ansi();
+    write_pieces(&mut out, &diagnostic_pieces(&sm, &diag, Carets::Codepoint)).unwrap();
+    let text = String::from_utf8(out.into_inner()).unwrap();
+    assert!(!text.contains("\u{1b}[4m"));
+    assert!(text.contains('^'));
+}
+
+#[test]
 fn no_color_output_matches_format()
 {
     let (sm, diag) = setup("a b c\n", "b");
@@ -152,15 +166,94 @@ fn cell_counts()
     assert_eq!(char_cells('\u{102D}'), 0); // vowel sign I
     assert_eq!(char_cells('\u{1031}'), 1); // vowel sign E
     assert_eq!(char_cells('春'), 2);
-    assert_eq!(str_cells("ကိန်းရှင်"), 5);
-    assert_eq!(str_cells("ကျောင်း"), 6);
+    assert_eq!(str_cells("ကိန်းရှင်", Carets::Codepoint), 5);
+    assert_eq!(str_cells("ကျောင်း", Carets::Codepoint), 6);
+}
+
+#[test]
+fn cluster_cells()
+{
+    // a consonant with ျ or ြ and ေ is one cluster of two cells
+    assert_eq!(str_cells("ကျောင်း", Carets::Cluster), 5);
+    assert_eq!(str_cells("ကြော", Carets::Cluster), 3);
+    assert_eq!(str_cells("ကိန်းရှင်", Carets::Cluster), 5);
+    assert_eq!(str_cells("a", Carets::Cluster), 1);
+    assert_eq!(str_cells("春", Carets::Cluster), 2);
+    assert_eq!(str_cells("\t", Carets::Cluster), 4);
+}
+
+#[test]
+fn carets_setting_parses()
+{
+    assert_eq!(carets_setting(None), Carets::Off);
+    assert_eq!(carets_setting(Some("junk")), Carets::Off);
+    assert_eq!(carets_setting(Some("off")), Carets::Off);
+    assert_eq!(carets_setting(Some("cluster")), Carets::Cluster);
+    assert_eq!(carets_setting(Some("CODEPOINT")), Carets::Codepoint);
+}
+
+/// The text of the pieces of a diagnostic, joined.
+fn joined(sm: &SourceMap, diag: &Diagnostic, carets: Carets) -> String
+{
+    diagnostic_pieces(sm, diag, carets).into_iter().map(|piece| piece.text).collect()
+}
+
+#[test]
+fn off_leaves_the_caret_rows_out()
+{
+    let samples = [("ကိန်းရှင် ကျောင်း ။\n", "ကျောင်း"), ("a b c\n", "b")];
+    for (src, needle) in samples
+    {
+        let (sm, diag) = setup(src, needle);
+        let pieces = diagnostic_pieces(&sm, &diag, Carets::Off);
+        assert!(pieces.iter().all(|piece| !matches!(piece.paint, Paint::Carets(_))));
+        assert_eq!(joined(&sm, &diag, Carets::Off).lines().count(), 4);
+    }
+}
+
+#[test]
+fn cluster_draws_the_row_with_cluster_cells()
+{
+    let (sm, diag) = setup("ကိန်းရှင် ကျောင်း ။\n", "ကျောင်း");
+    let rendered = joined(&sm, &diag, Carets::Cluster);
+    // 5 cells for the first word, 1 for the space, then 5 carets.
+    assert_eq!(rendered.lines().nth(4).unwrap(), "  |       ^^^^^");
+}
+
+#[test]
+fn label_row_keeps_its_text_when_off()
+{
+    let (sm, diag) =
+        setup_labelled("free p\nuse q\n", "free p", "use q", "\"q\" is used here");
+    let expected = "\
+error[ZK0101]: it is wrong
+ --> t.zaka:1:1
+  |
+1 | free p
+  |
+2 | use q
+  | \"q\" is used here
+";
+    assert_eq!(joined(&sm, &diag, Carets::Off), expected);
+}
+
+#[test]
+fn color_output_has_marks_and_no_rows()
+{
+    // the default setting, so `ZAKAC_CARETS` must be unset here
+    let (sm, diag) = setup("ကိန်းရှင် ကျောင်း ။\n", "ကျောင်း");
+    let mut out = Buffer::ansi();
+    write_diagnostic(&mut out, &sm, &diag).unwrap();
+    let text = String::from_utf8(out.into_inner()).unwrap();
+    assert!(text.contains("\u{1b}[4m"));
+    assert!(!text.contains('^'));
 }
 
 #[test]
 fn pieces_join_to_the_plain_text()
 {
     let (sm, diag) = setup("ကိန်းရှင် ကျောင်း ။\n", "ကျောင်း");
-    let pieces = diagnostic_pieces(&sm, &diag);
+    let pieces = diagnostic_pieces(&sm, &diag, Carets::Codepoint);
     let joined: String = pieces.iter().map(|piece| piece.text.as_str()).collect();
     assert_eq!(joined, format_diagnostic(&sm, &diag));
     assert_eq!(pieces[0].paint, Paint::Tag(Level::Error));

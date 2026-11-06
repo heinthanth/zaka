@@ -63,6 +63,7 @@ thanks to all of these projects.
 | [codee](https://github.com/Synphonyte/codee) | 0.3.5 | MIT OR Apache-2.0 |
 | [console_error_panic_hook](https://github.com/rustwasm/console_error_panic_hook) | 0.1.7 | Apache-2.0/MIT |
 | [const_for](https://github.com/JENebel/const_for) | 0.1.6 | MIT |
+| [fontdb](https://github.com/RazrFalcon/fontdb) | 0.24.0 | MIT |
 | [headless_chrome](https://github.com/rust-headless-chrome/rust-headless-chrome) | 1.0.22 | MIT |
 | [js-sys](https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys) | 0.3.105 | MIT OR Apache-2.0 |
 | [leptos](https://github.com/leptos-rs/leptos) | 0.8.22 | MIT |
@@ -87,6 +88,8 @@ thanks to all of these projects.
 | [pulldown-cmark-escape](https://github.com/raphlinus/pulldown-cmark) | 0.11.0 | MIT |
 | [rust-i18n](https://github.com/longbridge/rust-i18n) | 4.2.2 | MIT |
 | [rustc_apfloat](https://github.com/rust-lang/rustc_apfloat) | 0.2.3+llvm-462a31f5a5ab | Apache-2.0 WITH LLVM-exception |
+| [rustix](https://github.com/bytecodealliance/rustix) | 1.1.5 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
+| [rustybuzz](https://github.com/harfbuzz/rustybuzz) | 0.20.1 | MIT |
 | [serde](https://github.com/serde-rs/serde) | 1.0.229 | MIT OR Apache-2.0 |
 | [serde-saphyr](https://github.com/bourumir-wyngs/serde-saphyr) | 1.2.0 | MIT OR Apache-2.0 |
 | [serde-wasm-bindgen](https://github.com/RReverser/serde-wasm-bindgen) | 0.6.5 | MIT |
@@ -101,6 +104,7 @@ thanks to all of these projects.
 | [unicode-ident](https://github.com/dtolnay/unicode-ident) | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 |
 | [unicode-normalization](https://github.com/unicode-rs/unicode-normalization) | 0.1.26 | (MIT OR Apache-2.0) AND Unicode-3.0 |
 | [unicode-properties](https://github.com/unicode-rs/unicode-properties) | 0.1.4 | MIT/Apache-2.0 |
+| [unicode-segmentation](https://github.com/unicode-rs/unicode-segmentation) | 1.13.3 | MIT OR Apache-2.0 |
 | [unicode-width](https://github.com/unicode-rs/unicode-width) | 0.2.2 | MIT OR Apache-2.0 |
 | [url](https://github.com/servo/rust-url) | 2.5.8 | MIT OR Apache-2.0 |
 | [wasm-bindgen](https://github.com/wasm-bindgen/wasm-bindgen) | 0.2.128 | MIT OR Apache-2.0 |

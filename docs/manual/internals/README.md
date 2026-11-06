@@ -59,7 +59,8 @@ web pages. One `Cargo.toml` at the root lists them with `members = ["compiler/*"
 | `zakac_codegen` | the ops of the VM, and the asm listing |
 | `zaka_vm` | the VM: stack of values, storage blocks, traps; the `run` subcommand |
 | `zakac_diagnostics` | `Diagnostic`, the `Code` catalogue, one constructor per message, texts in `locales/codes.toml` |
-| `zakac_reporter` | draws a diagnostic with its source line and carets |
+| `zakac_reporter` | draws a diagnostic with its source line, the span marked in it, and the caret rows when asked for |
+| `zakac_burmese_alignment` | finds the terminal and how it draws Burmese text; places a caret row where a terminal that flows Burmese text draws the line |
 | `zakac_session` | the artifact envelope (text and raw forms), command input and output |
 | `zakac_host_errors` | errors of the driver (a missing file, a bad artifact); no code is attached |
 | `zakac_cli_common` | the `Command` trait, the shared `main`, helpers for `clap` |
@@ -100,7 +101,7 @@ rest; the arrows to them are left out of the picture.
 
  foundation:  zakac_span  zakac_diagnostics  zakac_reporter  zakac_session
               zakac_cli_common  zakac_host_errors  zakac_i18n  zakac_consts
-              zakac_rust_sugars
+              zakac_rust_sugars  zakac_burmese_alignment
 ```
 
 Two facts about the picture help when a build fails to link. `zakac_ast` sits above the

@@ -17,6 +17,7 @@ clap = { version = "4.6.7", features = ["cargo"] }
 codee = "0.3.5"
 console_error_panic_hook = "0.1.7"
 const_for = "0.1.6"
+fontdb = "0.24.0"
 grass = "0.13.4"
 headless_chrome = { version = "1.0.22", features = ["fetch"] }
 js-sys = "0.3.105"
@@ -44,6 +45,8 @@ pulldown-cmark = { version = "0.13.4", default-features = false, features = ["ht
 pulldown-cmark-escape = "0.11.0"
 rust-i18n = "4.2.2"
 rustc_apfloat = "0.2.3"
+rustix = { version = "1.1.5", features = ["termios"] }
+rustybuzz = "0.20.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.154"
 serde-saphyr = "1.2.0"
@@ -60,6 +63,7 @@ turf = "0.10.1"
 unicode-ident = "1.0.27"
 unicode-normalization = "0.1.25"
 unicode-properties = "0.1.4"
+unicode-segmentation = "1.13.3"
 unicode-width = "0.2.2"
 url = "2.5.8"
 wasm-bindgen = "0.2.128"
@@ -69,6 +73,7 @@ web-time = "1.1.0"
 xxhash-rust = { version = "0.8.19", features = ["xxh3"] }
 zakac_ast = { path = "compiler/zakac_ast" }
 zakac_borrow_checker = { path = "compiler/zakac_borrow_checker" }
+zakac_burmese_alignment = { path = "compiler/zakac_burmese_alignment" }
 zakac_burmese_segmenter = { path = "compiler/zakac_burmese_segmenter" }
 zakac_cli_common = { path = "compiler/zakac_cli_common" }
 zakac_codegen = { path = "compiler/zakac_codegen" }

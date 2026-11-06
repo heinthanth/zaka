@@ -35,6 +35,15 @@ error[ZK0704]: the block of "ပ" is freed here, but "မိတ္တူ" still 
 | `----` and its text | a *label*: a second place that helps to see the problem |
 | `= help: ...` | a *suggestion* that fixes the problem, when there is one |
 
+The rows of `^^^^` and `----` above are what a pipe or a file gets. On a color terminal
+the main span and each label span are marked inside the source line, in the color of the
+level. Terminals do not agree on the cells a Burmese sign takes, so a row can drift from
+the text it points at: the rows are drawn when the compiler knows how the terminal draws
+Burmese text, and left out otherwise. Without the rows, each span is also underlined, and
+a label shows its text alone on the line under its source line. `ZAKAC_CARETS` overrides the choice (see
+[Environment](commands.md#environment)). The explorer draws the rows in each font: a row
+repeats the text above it, hidden, so the browser sets the marks out under the span.
+
 Columns count characters, not octets. A message with no place in the source (rare)
 shows `<PLACEHOLDER>` in place of the file. When two or more messages are shown, a blank
 line comes between them.
