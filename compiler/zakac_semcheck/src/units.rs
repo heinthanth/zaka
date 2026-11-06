@@ -316,33 +316,36 @@ impl Checker
     fn import_name(&mut self, target: u32, file: &str, name: &Ident)
     {
         let wanted = &name.name;
-        let sig =
-            self.unit_fns[target as usize].get(wanted).filter(|s| s.exported).cloned();
+        let sigs: Vec<FnSig> =
+            self.unit_fns[target as usize].get(wanted).map_or_else(Vec::new, |list| {
+                list.iter().filter(|s| s.exported).cloned().collect()
+            });
         let saved = self.saved.get(target as usize).and_then(|s| s.get(wanted));
         let binding = saved.filter(|b| b.exported).copied();
         let home = self.homes.get(wanted).copied();
         let is_struct = home == Some((target, true));
-        let found = sig.is_some() || binding.is_some() || is_struct;
-        do_if!(let Some(sig) = sig, self.import_fn(name, sig));
+        let found = !sigs.is_empty() || binding.is_some() || is_struct;
+        do_if!(!sigs.is_empty(), self.import_fn(name, sigs));
         do_if!(let Some(binding) = binding, self.import_binding(name, binding));
         ret_if!(found);
         let private = self.declared_in(target, wanted);
         self.report(rd::import_not_found(name.span, file, wanted, private));
     }
 
-    /// Bring an imported function into scope.
+    /// Bring the exported functions of an imported name into scope, each
+    /// overload of it. A name the file declares or imports before is ZK0304.
     ///
     /// # Arguments
     ///
     /// * `name` - The imported name.
-    /// * `sig` - The function.
-    fn import_fn(&mut self, name: &Ident, sig: FnSig)
+    /// * `sigs` - The functions of that name.
+    fn import_fn(&mut self, name: &Ident, sigs: Vec<FnSig>)
     {
         let taken = self.fns.contains_key(&name.name);
         let diag = rd::duplicate_function(name.span, &name.name);
         ret_if!(taken, self.report(diag));
-        let sig = FnSig { exported: false, ..sig };
-        self.fns.insert(name.name, sig);
+        let sigs = sigs.into_iter().map(|sig| FnSig { exported: false, ..sig });
+        self.fns.insert(name.name, sigs.collect());
     }
 
     /// Bring an imported variable or constant into scope.

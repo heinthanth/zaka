@@ -9,6 +9,7 @@ mod infer;
 pub mod kind;
 mod list;
 mod ops;
+mod overloads;
 mod place;
 mod proof;
 mod scope;

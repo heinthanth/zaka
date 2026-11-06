@@ -4,6 +4,7 @@ use bon::Builder;
 use zakac_ast::name::Name;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::consts::ConstVal;
@@ -149,7 +150,45 @@ pub(crate) struct FnSig
     pub exported: bool,
     /// The mark of each parameter, when the parameters have marks.
     pub marks: Option<Vec<Name>>,
+    /// The name each later stage gives the function: the written name for
+    /// the first function of a name in its file, `<name>#<n>` for the n-th.
+    pub inner: Name,
 }
 
-/// Functions, indexed on name.
-pub(crate) type FnSigs = HashMap<Name, FnSig>;
+impl FnSig
+{
+    /// Whether two functions take the same parameters with the same marks, so
+    /// no call can tell them apart.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other function.
+    ///
+    /// # Returns
+    ///
+    /// `true` when both match.
+    pub fn same_params(&self, other: &FnSig) -> bool
+    {
+        self.params == other.params && self.marks == other.marks
+    }
+}
+
+/// Functions, indexed on name; each name holds its overloads in the order
+/// of their declarations.
+pub(crate) type FnSigs = HashMap<Name, Vec<FnSig>>;
+
+/// The name the `index`-th function of a name, counted from 0, takes in the
+/// later stages.
+///
+/// # Arguments
+///
+/// * `name` - The written name.
+/// * `index` - Its place among the functions of that name in its file.
+///
+/// # Returns
+///
+/// The name, `<name>#<index + 1>` from the second function on.
+pub(crate) fn overload_name(name: Name, index: usize) -> Name
+{
+    tern!(index == 0, name, Name::from(format!("{name}#{}", index + 1)))
+}

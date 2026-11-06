@@ -146,6 +146,39 @@ Each argument takes the mark of its parameter, in the order of the parameters. M
 parameter or none of them. The [Functions](../../manual/language/functions.md#marked-parameters)
 page of the manual has the full rules.
 
+## One name, several functions
+
+Two functions can share a name when their parameter kinds or their marks differ. A call
+runs the one its arguments fit:
+
+```zaka
+လုပ်ဆောင်ချက် ပြ သည်
+ကိန်းပြည့် န(ကို) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"ကိန်း {န}" ဟု ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ပြ သည်
+စာသား စ(ကို) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"စာ {စ}" ဟု ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၅ ကို ပြ မည်။            // the integer one
+"ဟယ်လို" ကို ပြ မည်။      // the text one
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ကိန်း ၅
+စာ ဟယ်လို
+```
+
+When no function of the name fits the arguments, or two fit, the compiler reports it
+(ZK0332, ZK0333); the [Functions](../../manual/language/functions.md#one-name-several-functions)
+page of the manual has the rules.
+
 ## Parameters are local copies
 
 A parameter is a new variable inside the function. Changing it does not change the

@@ -51,6 +51,7 @@ use zakac_diagnostics::resolve as rd;
 use zakac_lexer::token::Kw;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
@@ -69,6 +70,8 @@ use crate::kind::DataKind;
 use crate::list::KindUse;
 use crate::ops::Want;
 use crate::ops::kw_label;
+use crate::overloads::Chosen;
+use crate::overloads::write_overloads;
 use crate::place::place_of;
 use crate::place::var_name;
 use crate::proof::Fact;
@@ -78,6 +81,7 @@ use crate::proof::facts_when;
 use crate::proof::leaves_at_end;
 use crate::scope::Access;
 use crate::scope::Binding;
+use crate::scope::FnSig;
 use crate::scope::FnSigs;
 use crate::scope::Scopes;
 use crate::struct_check::collect_structs;
@@ -157,7 +161,7 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
     let mut enums = KnownEnums::new();
     loop
     {
-        let (mut out, counts, found, found_enums) =
+        let (mut out, counts, found, found_enums, chosen) =
             check_once(program, options, known.clone(), &enums);
         let written = write_counts(program, &counts);
         let settled = counts.is_empty() || (written == 0 && found == known);
@@ -168,6 +172,7 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
             out.diagnostics
                 .extend(counts.into_values().filter_map(Result::err).flatten());
             out.diagnostics.sort_by_key(|d| d.span.lo);
+            write_overloads(program, &chosen);
             return out;
         }
         known = found;
@@ -186,11 +191,12 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
 /// # Returns
 ///
 /// The output, the list counts the run met, the top-level constants it
-/// found and the enumeration values it worked out.
+/// found, the enumeration values it worked out and the function each call of
+/// an overloaded name chose.
 fn check_once(
     program: &Program, options: &SemcheckOptions, known: KnownConsts,
     known_enums: &KnownEnums,
-) -> (SemcheckOutput, CountTable, KnownConsts, KnownEnums)
+) -> (SemcheckOutput, CountTable, KnownConsts, KnownEnums, Chosen)
 {
     let mut diags = Vec::new();
     let enums = collect_enums(program, known_enums, &mut diags);
@@ -210,7 +216,7 @@ fn check_once(
     checker.diags.sort_by_key(|d| d.span.lo);
     #[rustfmt::skip]
     let out = SemcheckOutput::builder().kinds(checker.kinds).structs(checker.structs).diagnostics(checker.diags).build();
-    (out, checker.counts, checker.found, checker.found_enums)
+    (out, checker.counts, checker.found, checker.found_enums, checker.chosen)
 }
 
 /// The function whose block is being checked.
@@ -234,6 +240,10 @@ pub(crate) struct Checker
     pub scopes: Scopes,
     /// The functions the current file declares or imports.
     pub fns: FnSigs,
+    /// The function each call of an overloaded name chose, under the span
+    /// of its name at the call.
+    #[builder(default)]
+    pub chosen: Chosen,
     /// The functions each file declares.
     pub unit_fns: Vec<FnSigs>,
     /// The top-level names of each file checked so far.
@@ -522,11 +532,17 @@ impl Checker
         span: Span,
     ) -> Option<Option<DataKind>>
     {
-        let Some(sig) = self.fns.get(&callee.name).cloned()
+        let Some(sigs) = self.fns.get(&callee.name).cloned()
         else
         {
             let diag = rd::undeclared_function(callee.span, &callee.name);
             self.report(self.with_hidden(diag, &callee.name));
+            self.infer_all(args);
+            return None;
+        };
+        let Some(sig) = self.choose(callee, args, marks, &sigs, span)
+        else
+        {
             self.infer_all(args);
             return None;
         };
@@ -543,6 +559,98 @@ impl Checker
         self.check_edits_apart(args, edits);
         self.check_marks(callee, marks, sig.marks.as_deref());
         ret
+    }
+
+    /// The function a call runs: the one function of its name, or the
+    /// overload the call chose.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function name at the call.
+    ///
+    /// # Returns
+    ///
+    /// The function, or `None` when no function of the name fits.
+    fn called(&self, callee: &Ident) -> Option<FnSig>
+    {
+        let sigs = self.fns.get(&callee.name)?;
+        ret_if!(sigs.len() == 1, sigs.first().cloned());
+        let inner = self.chosen.get(&callee.span)?;
+        sigs.iter().find(|s| s.inner == *inner).cloned()
+    }
+
+    /// Choose the function a call runs among the functions of its name: the
+    /// one there is, or the one overload whose parameter count, marks (when
+    /// the call writes marks) and parameter kinds the arguments fit, as the
+    /// check of an argument against its parameter accepts it. No fit is
+    /// ZK0332 and more than one is ZK0333.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function name at the call.
+    /// * `args` - The arguments.
+    /// * `marks` - The marks written; blank for the other call forms.
+    /// * `sigs` - The functions of the name.
+    /// * `span` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The function, or `None` after a report.
+    fn choose(
+        &mut self, callee: &Ident, args: &[Expr], marks: &[Ident], sigs: &[FnSig],
+        span: Span,
+    ) -> Option<FnSig>
+    {
+        ret_if!(sigs.len() == 1, sigs.first().cloned());
+        let fits: Vec<&FnSig> =
+            sigs.iter().filter(|s| self.fits_call(s, args, marks)).collect();
+        let list = || sigs.iter().map(params_text).collect::<Vec<_>>().join(" / ");
+        match fits.as_slice()
+        {
+            [one] =>
+            {
+                self.chosen.insert(callee.span, one.inner);
+                Some((*one).clone())
+            }
+            [] =>
+            {
+                self.report(rd::no_overload_fits(span, &callee.name, &list()));
+                None
+            }
+            _ =>
+            {
+                self.report(rd::overload_unclear(span, &callee.name));
+                None
+            }
+        }
+    }
+
+    /// Whether a call fits a function: an argument for each parameter, the
+    /// marks of the parameters when the call writes marks, and each argument
+    /// fit for its parameter with no report, which the check gives back.
+    ///
+    /// # Arguments
+    ///
+    /// * `sig` - The function.
+    /// * `args` - The arguments.
+    /// * `marks` - The marks written.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it fits.
+    fn fits_call(&mut self, sig: &FnSig, args: &[Expr], marks: &[Ident]) -> bool
+    {
+        ret_false!(sig.params.len() != args.len());
+        let named =
+            |want: &Vec<Name>| marks.iter().map(|m| m.name).eq(want.iter().copied());
+        ret_false!(!marks.is_empty() && !sig.marks.as_ref().is_some_and(named));
+        let before = self.diags.len();
+        args.iter()
+            .zip(&sig.params)
+            .for_each(|(arg, kind)| self.expect_kind(arg, Some(*kind)));
+        let clean = self.diags.len() == before;
+        self.diags.truncate(before);
+        clean
     }
 
     /// Check that each argument of a marked call carries the mark of its
@@ -582,7 +690,7 @@ impl Checker
     /// * `span` - The call.
     pub fn check_pass(&mut self, callee: &Ident, pass: bool, dropped: bool, span: Span)
     {
-        let Some(sig) = self.fns.get(&callee.name)
+        let Some(sig) = self.called(callee)
         else
         {
             return;
@@ -1579,4 +1687,23 @@ pub fn each_list(kind: DataKind, chars: bool) -> DataKind
 fn err_name(err: Option<DataKind>) -> String
 {
     err.map_or_else(|| "မအောင်မြင်သည့်သတင်း".to_string(), DataKind::name)
+}
+
+/// The parameters of a function as a message shows them: `(text(ကို), text)`.
+///
+/// # Arguments
+///
+/// * `sig` - The function.
+///
+/// # Returns
+///
+/// The text.
+fn params_text(sig: &FnSig) -> String
+{
+    let mark = |n: usize| {
+        sig.marks.as_ref().map(|m| format!("({})", m[n])).unwrap_or_default()
+    };
+    let each =
+        sig.params.iter().enumerate().map(|(n, k)| format!("{}{}", k.name(), mark(n)));
+    format!("({})", each.collect::<Vec<_>>().join(", "))
 }

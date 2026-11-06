@@ -10,10 +10,12 @@ use zakac_rust_sugars::tern;
 use crate::kind::DataKind;
 use crate::scope::FnSig;
 use crate::scope::FnSigs;
+use crate::scope::overload_name;
 use crate::structs::StructTable;
 
 /// Record the top-level functions of each file, so calls can come before
-/// declarations. Two files can each declare a function of one name.
+/// declarations. Two files can each declare a function of one name, and one
+/// file can declare several functions of one name with other parameters.
 ///
 /// # Arguments
 ///
@@ -23,8 +25,7 @@ use crate::structs::StructTable;
 ///
 /// # Returns
 ///
-/// The functions of each unit, indexed on name; the first declaration of a
-/// name in a file wins.
+/// The functions of each unit, indexed on name, each name with its overloads.
 pub(crate) fn collect_fns(
     program: &Program, structs: &StructTable, diags: &mut Vec<Diagnostic>,
 ) -> Vec<FnSigs>
@@ -45,14 +46,18 @@ pub(crate) fn collect_fns(
 /// * `fns` - The functions so far.
 /// * `decl` - The declaration.
 /// * `structs` - The kind of each declared struct.
-/// * `diags` - Where to report a name declared twice.
+/// * `diags` - Where to report a function whose parameters and marks another
+///   function of its name has.
 fn add_fn(
     fns: &mut FnSigs, decl: &FnDecl, structs: &StructTable, diags: &mut Vec<Diagnostic>,
 )
 {
     let n = &decl.name.name;
-    ret_if!(fns.contains_key(n), diags.push(duplicate_function(decl.name.span, n)));
-    fns.insert(*n, sig_of(decl, structs));
+    let list = fns.entry(*n).or_default();
+    let sig = sig_of(decl, structs, list.len());
+    let same = list.iter().any(|s| s.same_params(&sig));
+    ret_if!(same, diags.push(duplicate_function(decl.name.span, n)));
+    list.push(sig);
 }
 
 /// The parameter and result kinds of a declaration.
@@ -61,11 +66,12 @@ fn add_fn(
 ///
 /// * `decl` - The declaration.
 /// * `structs` - The kind of each declared struct.
+/// * `index` - Its place among the functions of its name in its file.
 ///
 /// # Returns
 ///
 /// The signature.
-fn sig_of(decl: &FnDecl, structs: &StructTable) -> FnSig
+fn sig_of(decl: &FnDecl, structs: &StructTable, index: usize) -> FnSig
 {
     let kind = |k| DataKind::from_ast(k, structs);
     let params = decl.params.iter().map(|p| kind(&p.kind)).collect();
@@ -75,5 +81,5 @@ fn sig_of(decl: &FnDecl, structs: &StructTable) -> FnSig
         decl.params.iter().map(|p| p.mark.as_ref().map(|m| m.name)).collect();
     #[rustfmt::skip]
     return FnSig::builder().params(params).edits(edits).maybe_ret(ret).exported(decl.exported)
-        .maybe_marks(marks).build();
+        .maybe_marks(marks).inner(overload_name(decl.name.name, index)).build();
 }

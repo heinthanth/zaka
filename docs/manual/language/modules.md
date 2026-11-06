@@ -71,8 +71,9 @@ shows the same rules with examples.
   `/` between folders; `..` names the folder above.
 - The imports of a file come first. An import after a declaration or a statement, or
   inside a block, is ZK0230.
-- Each name brings each exported item of that name from the file: a function, a
-  variable or constant, and a struct. A name the file does not export is ZK0322, with
+- Each name brings each exported item of that name from the file: a function (each
+  exported function of the name, when the file declares several), a variable or
+  constant, and a struct. A name the file does not export is ZK0322, with
   help when the file declares the name without the mark.
 - The imported names join the top-level names of the importing file. A declaration of
   the same name in that file, or a second import of it, is ZK0302 for a variable or

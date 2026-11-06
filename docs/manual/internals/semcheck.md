@@ -104,6 +104,19 @@ can each hold a function of one name. A signature keeps the mark of each paramet
 with it, one argument after another, after the count check (ZK0314), and reports another word
 as ZK0331.
 
+A file can declare several functions of one name: `FnSigs` maps a name to its overloads in
+the order of their declarations, and the same parameter kinds and marks twice are ZK0304.
+Each signature carries its inner name (`FnSig::inner`, from `overload_name`): the written
+name for the first, `<name>#<n>` for the n-th. `check_call` runs `choose`: with more than
+one function of the name, `fits_call` keeps the ones whose count, marks (when the call
+writes marks) and parameter kinds fit, with a trial of `expect_kind` on each argument that puts
+the diagnostics back; one fit is recorded in `Checker::chosen` under the span of the name
+at the call, none is ZK0332, more is ZK0333. After the last run, `write_overloads`
+(`overloads.rs`) writes the inner names into the program: each later declaration of a name,
+each call in `chosen`, and the inner names into each import of an overloaded name. The IR
+builder, the ownership check and codegen then see one function for each name. An import
+brings each exported overload (`import_fn`); a name a file declares and imports is ZK0304.
+
 Before it, `collect_enums` (`enum_check.rs`) makes the kind of each enumeration, on its
 name and on its stem, and reports a member name used twice (ZK0328) and a name a struct
 or another enumeration has (ZK0316). A member value can name a constant, so the walk works

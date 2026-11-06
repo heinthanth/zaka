@@ -540,3 +540,37 @@ pub fn wrong_mark(
     Diagnostic::new(Code::WrongMark, msg, span)
         .with_help(t!("codes.ZK0331.help", w = want))
 }
+
+/// No function of a name takes the arguments of a call.
+///
+/// # Arguments
+///
+/// * `span` - The call.
+/// * `name` - The function name.
+/// * `list` - The parameters of each function of the name.
+///
+/// # Returns
+///
+/// The `ZK0332` diagnostic, with the parameters of each function as a hint.
+pub fn no_overload_fits(span: Span, name: &str, list: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0332.message", n = name);
+    Diagnostic::new(Code::NoOverloadFits, msg, span)
+        .with_help(t!("codes.ZK0332.help", l = list))
+}
+
+/// More than one function of a name takes the arguments of a call.
+///
+/// # Arguments
+///
+/// * `span` - The call.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0333` diagnostic.
+pub fn overload_unclear(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0333.message", n = name);
+    Diagnostic::new(Code::OverloadUnclear, msg, span).with_help(t!("codes.ZK0333.help"))
+}

@@ -151,7 +151,7 @@ UndeclaredName = ("ZK0301", Level::Error),
 Redeclaration = ("ZK0302", Level::Error),
 /// A call names a function that is not declared.
 UndeclaredFunction = ("ZK0303", Level::Error),
-/// Two functions share a name.
+/// Two functions of one name take the same parameters and marks.
 DuplicateFunction = ("ZK0304", Level::Error),
 /// Two parameters of one function share a name.
 DuplicateParam = ("ZK0305", Level::Error),
@@ -207,6 +207,10 @@ UnknownMember = ("ZK0329", Level::Error),
 UnknownEnum = ("ZK0330", Level::Error),
 /// An argument of a marked call carries a mark other than its parameter's.
 WrongMark = ("ZK0331", Level::Error),
+/// No function of a name takes the arguments of a call.
+NoOverloadFits = ("ZK0332", Level::Error),
+/// More than one function of a name takes the arguments of a call.
+OverloadUnclear = ("ZK0333", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

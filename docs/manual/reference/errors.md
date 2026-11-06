@@ -129,7 +129,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0301 | a name that was never declared, or is out of scope | [Blocks and scope](../../learn/variables/scope.md) |
 | ZK0302 | the same name declared twice in one block | [Names](../../learn/variables/names.md) |
 | ZK0303 | calling a function that does not exist | [Functions](../../learn/functions/README.md) |
-| ZK0304 | two functions with one name | [Functions](../../learn/functions/README.md) |
+| ZK0304 | two functions with one name and the same parameter kinds and marks, or a function of a name the file imports | [Functions](../language/functions.md#one-name-several-functions) |
 | ZK0305 | two parameters of one function with one name | [Parameters](../../learn/functions/parameters.md) |
 | ZK0306 | changing a constant | [Constants](../../learn/variables/constants.md) |
 | ZK0307 | changing a counted loop's counter | [Counted loops](../../learn/control-flow/counted-loops.md) |
@@ -157,6 +157,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0329 | a member the enumeration does not have | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-the-enumeration-does-not-have) |
 | ZK0330 | a name before `ထဲမှ` that is no enumeration with `များ` | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-written-without-the-plural-mark) |
 | ZK0331 | an argument of a marked call with a mark other than its parameter's | [Functions](../language/functions.md#marked-parameters) |
+| ZK0332 | a call that no function of its name fits | [Functions](../language/functions.md#one-name-several-functions) |
+| ZK0333 | a call that more than one function of its name fits | [Functions](../language/functions.md#one-name-several-functions) |
 
 ### ZK04: kinds
 

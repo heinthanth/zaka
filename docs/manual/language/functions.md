@@ -462,6 +462,104 @@ error[ZK0331]: argument 2 of "ရေး" is marked "ထဲသို့", not "�
 error[ZK0237]: some parameters have a mark and some do not
 ```
 
+## One name, several functions
+
+A file can declare several functions of one name when their parameter kinds or their
+marks differ. A call runs the one its arguments fit: an argument for each parameter, the
+marks of the parameters when the call writes marks, and each argument fit for the kind of
+its parameter, under the rules a call to a single function follows. The marks can tell two
+functions apart on their own, so a marked call chooses with the words written too.
+
+```zaka
+လုပ်ဆောင်ချက် ပြ သည်
+ကိန်းပြည့် န(ကို) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"ကိန်း {န}" ဟု ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ပြ သည်
+စာသား စ(ကို) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"စာ {စ}" ဟု ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ပြ သည်
+စာသား စ(ထဲသို့) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"{စ} ထဲသို့" ဟု ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၅ ကို ပြ မည်။
+"ဟယ်လို" ကို ပြ မည်။
+"အိမ်" ထဲသို့ ပြ မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ကိန်း ၅
+စာ ဟယ်လို
+အိမ် ထဲသို့
+```
+
+The rules of functions that share a name:
+
+- Two functions of one name with the same parameter kinds and the same marks in one file
+  are ZK0304.
+- A call that no function of the name fits is ZK0332; the help lists the parameters of
+  each.
+- A call that two or more fit is ZK0333. A number with no kind fits each integer kind,
+  and a call with no marks fits functions that differ in their marks alone: write a kind
+  on the number, or the marks of the function meant.
+- An import of the name brings each exported function of it. A file cannot declare a
+  function of a name it imports (ZK0304).
+- Inside the compiler, the second function of a name is `<name>#2`, the third
+  `<name>#3`; the IR, the ownership check and the VM listing show these names.
+
+```zaka-error ZK0333
+လုပ်ဆောင်ချက် ပြ သည်
+စာသား စ(ကို) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ပြ သည်
+စာသား စ(ထဲသို့) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ပြ ကို "ဟယ်လို" တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0333]: more than one function "ပြ" takes these arguments
+```
+
+```zaka-error ZK0332
+လုပ်ဆောင်ချက် ပြ သည်
+ကိန်းပြည့် န(ကို) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ပြ သည်
+စာသား စ(ကို) လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+မှန် ကို ပြ မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0332]: no function "ပြ" takes these arguments
+```
+
 ## Recursion
 
 A function can call itself, at once or through other functions. Nothing marks a function

@@ -359,7 +359,7 @@ en = "function declared twice"
 [codes.ZK0304.message]
 en = "function \"%{n}\" is declared twice"
 [codes.ZK0304.explain]
-en = """Two top-level declarations give a function the same name. Function names share one scope for the whole file, so each name can be declared once. Rename one of the two functions; calls use the first declaration."""
+en = """Two top-level declarations give a function the same name and the same parameter kinds and marks, so no call can tell them apart. A file can declare several functions of one name when their parameter kinds or their marks differ; a call then runs the one its arguments fit. Rename one of the two functions, or change its parameters. A name a file imports cannot also be declared in that file."""
 
 [codes.ZK0305.title]
 en = "duplicate parameter"
@@ -565,6 +565,24 @@ en = "argument %{i} of \"%{n}\" is marked \"%{f}\", not \"%{w}\""
 en = "write \"%{w}\" after the argument"
 [codes.ZK0331.explain]
 en = """A marked call writes each argument with the mark its parameter declares, in the order of the parameters: for \"စာသား ဒေတာ(ကို)၊ စာသား လမ်းကြောင်း(သို့)\", the call is \"<data> ကို <path> သို့ <name> မည်\". The mark after this argument is another word."""
+
+[codes.ZK0332.title]
+en = "no function fits"
+[codes.ZK0332.message]
+en = "no function \"%{n}\" takes these arguments"
+[codes.ZK0332.help]
+en = "the functions of this name take %{l}"
+[codes.ZK0332.explain]
+en = """A file can declare several functions of one name, each with other parameter kinds or other marks. A call runs the one whose parameters its arguments fit: an argument for each parameter, the marks of the parameters when the call writes marks, and each argument of the kind of its parameter. No function of this name fits the arguments of this call."""
+
+[codes.ZK0333.title]
+en = "call fits more than one function"
+[codes.ZK0333.message]
+en = "more than one function \"%{n}\" takes these arguments"
+[codes.ZK0333.help]
+en = "write the marks of the function meant, or give each argument the kind of its parameter"
+[codes.ZK0333.explain]
+en = """A file can declare several functions of one name, each with other parameter kinds or other marks. A call runs the one whose parameters its arguments fit, and here two or more fit: a number with no kind fits each integer kind, and a call with no marks fits functions that differ in their marks alone. Write the marks of the function meant, or a kind on the number, such as \"(၈ ဘစ် ကိန်းပြည့် ၅)\"."""
 
 # ---------------------------------------------------------------- kinds ZK04xx
 
