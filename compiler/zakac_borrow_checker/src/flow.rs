@@ -673,10 +673,12 @@ impl<'m> Flow<'m>
                 check_overwrite(self, *place, *span, state);
                 self.assign(*place, v, state);
             }
-            Stmt::Print { value: PrintValue::Expr(e), .. } =>
+            Stmt::Print { value: PrintValue::Expr(e), .. }
+            | Stmt::Halt { value: Some(e), .. } =>
             {
                 self.value(e, state);
             }
+            Stmt::Halt { value: None, .. } => (),
             Stmt::Call { func, args, span, .. } => self.call(*func, args, *span, state),
             Stmt::Store { addr, value, span } =>
             {

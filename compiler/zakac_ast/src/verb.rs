@@ -140,6 +140,26 @@ pub enum VerbOp
     Assign,
     /// `ရလဒ်အဖြစ် ပြန်ပေးပါ`
     Return,
+    /// `အမှားအယွင်းအဖြစ် ပြန်ပေးပါ`
+    #[strum(serialize = "return_fault")]
+    ReturnFault,
+    /// `ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ`
+    #[strum(serialize = "return_good")]
+    ReturnGood,
+    /// `<r> သည် ရလဒ်ကောင်း`: whether a result holds a good result.
+    #[strum(serialize = "is_good")]
+    IsGood,
+    /// `<r> သည် အမှားအယွင်း`: whether a result holds an error value.
+    #[strum(serialize = "is_fault")]
+    IsFault,
+    /// `<r> ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်`: the good result; a
+    /// result that holds an error stops the run.
+    #[strum(serialize = "unwrap")]
+    Unwrap,
+    /// `<r> ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ်`: the error value; a good
+    /// result stops the run.
+    #[strum(serialize = "unwrap_fault")]
+    UnwrapFault,
     /// `ထည့်ပါ`: a new last cell of a list.
     #[strum(serialize = "add_cell")]
     AddCell,
@@ -233,6 +253,10 @@ pub static VERBS: &[Verb] = &[
     row(Kw::Print, VerbOp::Print, &[Slot::KoOrHu], true, false),
     row(Kw::Assign, VerbOp::Assign, &[Slot::Ko, Slot::Hu], true, false),
     row(Kw::ReturnValue, VerbOp::Return, &[Slot::Ko], true, false),
+    row(Kw::ReturnFault, VerbOp::ReturnFault, &[Slot::Ko], true, false),
+    row(Kw::ReturnGood, VerbOp::ReturnGood, &[Slot::Ko], true, false),
+    row(Kw::GoodResult, VerbOp::IsGood, &[Slot::Thi], false, false),
+    row(Kw::Fault, VerbOp::IsFault, &[Slot::Thi], false, false),
     row(Kw::Add, VerbOp::AddCell, &[Slot::Into, Slot::Ko], true, false),
     row(Kw::Replace, VerbOp::Replace, &[Slot::Upto, Slot::Hpjint], true, false),
     row(Kw::Address, VerbOp::AddrOf, &[Slot::Ei], false, false),

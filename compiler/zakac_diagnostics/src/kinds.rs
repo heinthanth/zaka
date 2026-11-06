@@ -250,6 +250,218 @@ pub fn start_result_kind(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::StartResultKind, msg, span).with_help(t!("codes.ZK0441.help"))
 }
 
+/// A call to a function that can fail does not pass the failure on.
+///
+/// # Arguments
+///
+/// * `span` - The call.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0443` diagnostic.
+pub fn failure_not_passed(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0443.message", f = name);
+    let help = t!("codes.ZK0443.help", f = name);
+    Diagnostic::new(Code::FailureNotPassed, msg, span).with_help(help)
+}
+
+/// A call passes a failure on, but the function cannot fail.
+///
+/// # Arguments
+///
+/// * `span` - The call.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0444` diagnostic.
+pub fn pass_without_failure(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0444.message", f = name);
+    let help = t!("codes.ZK0444.help", f = name);
+    Diagnostic::new(Code::PassWithoutFailure, msg, span).with_help(help)
+}
+
+/// A failure passes on from a function that cannot fail, or from the
+/// top-level statements.
+///
+/// # Arguments
+///
+/// * `span` - The call.
+///
+/// # Returns
+///
+/// The `ZK0445` diagnostic.
+pub fn pass_outside_failing(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0445.message");
+    Diagnostic::new(Code::PassOutsideFailing, msg, span)
+        .with_help(t!("codes.ZK0445.help"))
+}
+
+/// A failure passes on, but its error kind differs from the error kind of
+/// the function around the call.
+///
+/// # Arguments
+///
+/// * `span` - The call.
+/// * `found` - The error kind of the called function.
+/// * `want` - The error kind of the function around the call.
+///
+/// # Returns
+///
+/// The `ZK0446` diagnostic.
+pub fn fault_kind_differs(span: Span, found: &str, want: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0446.message", found = found, want = want);
+    Diagnostic::new(Code::FaultKindDiffers, msg, span)
+        .with_help(t!("codes.ZK0446.help"))
+}
+
+/// An error value is given back from a function that cannot fail.
+///
+/// # Arguments
+///
+/// * `span` - The return statement.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0447` diagnostic.
+pub fn fault_from_sure(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0447.message", f = name);
+    Diagnostic::new(Code::FaultFromSure, msg, span).with_help(t!("codes.ZK0447.help"))
+}
+
+/// A test or a conversion of a result reads a value that is no result of a
+/// function that can fail.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `kind` - Its kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0448` diagnostic.
+pub fn not_a_result(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0448.message", k = kind);
+    Diagnostic::new(Code::NotAResult, msg, span).with_help(t!("codes.ZK0448.help"))
+}
+
+/// A conversion to the good result reads a result with no good value.
+///
+/// # Arguments
+///
+/// * `span` - The result.
+///
+/// # Returns
+///
+/// The `ZK0449` diagnostic.
+pub fn no_good_value(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0449.message");
+    Diagnostic::new(Code::NoGoodValue, msg, span).with_help(t!("codes.ZK0449.help"))
+}
+
+/// A conversion to the error value reads a result whose error side holds no
+/// value.
+///
+/// # Arguments
+///
+/// * `span` - The result.
+///
+/// # Returns
+///
+/// The `ZK0450` diagnostic.
+pub fn no_fault_value(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0450.message");
+    Diagnostic::new(Code::NoFaultValue, msg, span).with_help(t!("codes.ZK0450.help"))
+}
+
+/// A failure with no error value in a function whose failure holds one.
+///
+/// # Arguments
+///
+/// * `span` - The statement.
+/// * `kind` - The error kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0451` diagnostic.
+pub fn fault_value_missing(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0451.message", k = kind);
+    Diagnostic::new(Code::FaultValueMissing, msg, span)
+        .with_help(t!("codes.ZK0451.help"))
+}
+
+/// An error value from a function whose failure holds none.
+///
+/// # Arguments
+///
+/// * `span` - The statement.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0452` diagnostic.
+pub fn fault_value_extra(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0452.message", f = name);
+    Diagnostic::new(Code::FaultValueExtra, msg, span).with_help(t!("codes.ZK0452.help"))
+}
+
+/// A conversion reads the part of a result that the code before it proves
+/// the result does not hold.
+///
+/// # Arguments
+///
+/// * `span` - The conversion.
+/// * `name` - The variable that holds the result.
+/// * `good` - Whether the result is proven good, so the error part is read.
+///
+/// # Returns
+///
+/// The `ZK0454` diagnostic.
+pub fn wrong_part_proven(span: Span, name: &str, good: bool) -> Diagnostic
+{
+    let msg = tern!(
+        good,
+        t!("codes.ZK0454.message_good", n = name),
+        t!("codes.ZK0454.message_fault", n = name)
+    );
+    Diagnostic::new(Code::WrongPartProven, msg, span).with_help(t!("codes.ZK0454.help"))
+}
+
+/// A return gives back a value with the word of the other sort of function.
+///
+/// # Arguments
+///
+/// * `span` - The return statement.
+/// * `name` - The function name.
+/// * `fails` - Whether the function can fail.
+///
+/// # Returns
+///
+/// The `ZK0455` diagnostic.
+pub fn good_return_word(span: Span, name: &str, fails: bool) -> Diagnostic
+{
+    let msg = tern!(
+        fails,
+        t!("codes.ZK0455.message_fails", f = name),
+        t!("codes.ZK0455.message_sure", f = name)
+    );
+    let help =
+        tern!(fails, t!("codes.ZK0455.help_fails"), t!("codes.ZK0455.help_sure"));
+    Diagnostic::new(Code::GoodReturnWord, msg, span).with_help(help)
+}
+
 /// A character write, an add or a remove changes a view of text.
 ///
 /// # Arguments

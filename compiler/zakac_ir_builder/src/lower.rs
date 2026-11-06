@@ -22,6 +22,10 @@ use zakac_semcheck::semcheck::each_list;
 use zakac_semcheck::structs::StructTable;
 use zakac_span::span::Span;
 
+use crate::fault::Fault;
+use crate::fault::has_pass;
+use crate::fault::stmt_passes;
+use crate::fault::wrap_returns;
 use crate::ir::Access;
 use crate::ir::CmpOp;
 use crate::ir::Dest;
@@ -29,6 +33,7 @@ use crate::ir::Expr;
 use crate::ir::ExprNode;
 use crate::ir::FmtPiece;
 use crate::ir::Func;
+use crate::ir::HaltCause;
 use crate::ir::Host;
 use crate::ir::InfixOp;
 use crate::ir::LogicOp;
@@ -124,6 +129,9 @@ struct Sig
     params: Vec<DataKind>,
     /// Whether the function can change each parameter.
     edits: Vec<bool>,
+    /// The result kind, when the function has one; a result kind when it
+    /// can fail.
+    ret: Option<DataKind>,
 }
 
 /// The signatures of the top-level functions of each file, numbered in
@@ -149,7 +157,8 @@ fn collect_sigs(program: &st::Program, structs: &StructTable)
     {
         let params = f.params.iter().map(|p| param_kind(p, structs)).collect();
         let edits = f.params.iter().map(|p| p.edit).collect();
-        let sig = Sig { index: index as u32, params, edits };
+        let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, structs));
+        let sig = Sig { index: index as u32, params, edits, ret };
         do_if!(f.start, continue);
         sigs[unit].entry(f.name.name).or_insert(sig);
     }
@@ -179,8 +188,10 @@ struct Frame
 {
     /// Its slots so far.
     locals: Vec<Slot>,
-    /// Its result kind.
+    /// Its result kind: the kind of the result variable.
     ret: Option<DataKind>,
+    /// What it gives back when it can fail.
+    fault: Option<Fault>,
     /// The number of scopes open outside it, so its own scopes start at
     /// this index.
     depth: usize,
@@ -236,6 +247,24 @@ struct Lowerer<'k>
     /// The start block, once lowered: its index, its parameter kinds, its
     /// result kind and the span of its header word.
     start: Option<(u32, Vec<DataKind>, Option<DataKind>, Span)>,
+    /// Statements that run before the statement being lowered: the calls
+    /// that pass a failure on, and the values an operand left of such a call
+    /// computes first.
+    #[builder(default)]
+    pre: Vec<Stmt>,
+    /// Statements that run before [`Self::pre`]: each hidden slot that holds
+    /// the text of a call that can fail starts blank, so a drop of it at the
+    /// end of its scope is sound when the call did not run.
+    #[builder(default)]
+    pre_init: Vec<Stmt>,
+    /// The calls that pass a failure on in the statement being lowered that
+    /// are still to lower.
+    #[builder(default)]
+    pending: usize,
+    /// Whether an operand is being lowered as a whole into a hidden slot, so
+    /// the parts inside it are left in place.
+    #[builder(default)]
+    spilling: bool,
 }
 
 impl Lowerer<'_>
@@ -571,13 +600,51 @@ impl Lowerer<'_>
         self.globals.len() as u32 - 1
     }
 
-    /// Lower a statement and append it to `out`.
+    /// Lower a statement and append it to `out`, after the statements its
+    /// calls that pass a failure on run first.
     ///
     /// # Arguments
     ///
     /// * `s` - The statement.
     /// * `out` - The list it goes to.
     fn stmt(&mut self, s: &st::Stmt, out: &mut Vec<Stmt>)
+    {
+        let pre = std::mem::take(&mut self.pre);
+        let init = std::mem::take(&mut self.pre_init);
+        let pending = std::mem::replace(&mut self.pending, stmt_passes(s));
+        let mut parts = Vec::new();
+        self.stmt_parts(s, &mut parts);
+        out.append(&mut self.pre_init);
+        out.append(&mut self.pre);
+        out.append(&mut parts);
+        (self.pre, self.pre_init, self.pending) = (pre, init, pending);
+    }
+
+    /// Lower the statements of a value into their own list, which the
+    /// caller places where the value runs: a condition that runs when an
+    /// earlier test lets it, and at no other time.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The work, which lowers the value.
+    ///
+    /// # Returns
+    ///
+    /// The statements, and what the work gives.
+    fn with_pre<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> (Vec<Stmt>, T)
+    {
+        let outer = std::mem::take(&mut self.pre);
+        let value = f(self);
+        (std::mem::replace(&mut self.pre, outer), value)
+    }
+
+    /// Lower a statement and append its parts to `out`.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The statement.
+    /// * `out` - The list it goes to.
+    fn stmt_parts(&mut self, s: &st::Stmt, out: &mut Vec<Stmt>)
     {
         match s
         {
@@ -605,7 +672,13 @@ impl Lowerer<'_>
                 let func = self.func(f);
                 self.funcs.push(func);
             }
+            st::Stmt::Return(n) if n.fault => self.fault_return(n, out),
             st::Stmt::Return(n) => self.return_stmt(n, out),
+            st::Stmt::Call(n) if n.pass =>
+            {
+                self.pending = 0;
+                self.checked_call(&n.callee, &n.args, n.span);
+            }
             st::Stmt::Call(n) =>
             {
                 let (func, args) = self.call_parts(&n.callee, &n.args);
@@ -1003,12 +1076,30 @@ impl Lowerer<'_>
     /// The outermost `if`.
     fn if_stmt(&mut self, n: &st::IfStmt) -> Stmt
     {
-        let arms: Vec<(Expr, Vec<Stmt>, Span)> =
-            n.arms.iter().map(|arm| self.if_arm(arm)).collect();
+        // The condition of a later arm runs inside the `else` of the arm
+        // before it, so the statements of its calls go there too.
+        let arms: Vec<(Vec<Stmt>, (Expr, Vec<Stmt>, Span))> = n
+            .arms
+            .iter()
+            .enumerate()
+            .map(|(i, arm)| {
+                tern!(
+                    i == 0,
+                    (Vec::new(), self.if_arm(arm)),
+                    self.with_pre(|l| l.if_arm(arm))
+                )
+            })
+            .collect();
         let els = n.else_block.as_ref().map_or_else(Vec::new, |b| self.block(&b.stmts));
-        let nest = |els, (i, (cond, then, span)): (usize, (Expr, Vec<Stmt>, Span))| {
+        let nest = |els,
+                    (i, (pre, (cond, then, span))): (
+            usize,
+            (Vec<Stmt>, (Expr, Vec<Stmt>, Span)),
+        )| {
             let span = tern!(i == 0, n.span, span.to(&n.span));
-            vec![Stmt::If { cond, then, els, span }]
+            let mut arm: Vec<Stmt> = pre;
+            arm.push(Stmt::If { cond, then, els, span });
+            arm
         };
         let mut chain = arms.into_iter().enumerate().rev().fold(els, nest);
         chain.pop().expect("an if has at least one arm")
@@ -1040,9 +1131,56 @@ impl Lowerer<'_>
     /// A loop with no start or update statements.
     fn while_stmt(&mut self, n: &st::WhileStmt) -> Stmt
     {
+        if has_pass(&n.cond)
+        {
+            let block = self.passing_round(&n.cond, &n.block.stmts, n.span);
+            let cond = true_expr(n.span);
+            return Stmt::Loop {
+                init: Vec::new(),
+                cond,
+                update: Vec::new(),
+                block,
+                span: n.span,
+            };
+        }
         let cond = self.coerce(&n.cond, DataKind::Bool);
         let block = self.loop_block(&n.block.stmts);
         Stmt::Loop { init: Vec::new(), cond, update: Vec::new(), block, span: n.span }
+    }
+
+    /// Lower the round of a loop whose condition passes a failure on: the
+    /// condition runs at the start of each round, in the scope of the round,
+    /// and leaves the loop when it does not hold.
+    ///
+    /// # Arguments
+    ///
+    /// * `cond` - The condition.
+    /// * `stmts` - The loop statements.
+    /// * `span` - The loop.
+    ///
+    /// # Returns
+    ///
+    /// The statements of a round.
+    fn passing_round(
+        &mut self, cond: &ast::Expr, stmts: &[st::Stmt], span: Span,
+    ) -> Vec<Stmt>
+    {
+        self.loops.push(self.scopes.len());
+        let mut round = Vec::new();
+        self.scoped(|l| {
+            let (pre, test) = l.with_pre(|l| l.coerce(cond, DataKind::Bool));
+            round.extend(pre);
+            let mut leave = l.drops_from(l.drops.len() - 1, span);
+            leave.push(Stmt::Break { span });
+            let stop =
+                node_expr(DataKind::Bool, prefix_node(PrefixOp::Not, test), span);
+            round.push(Stmt::If { cond: stop, then: leave, els: Vec::new(), span });
+            l.scoped_stmts(stmts, &mut round);
+            let leaves = round.last().is_some_and(leaves_scope);
+            do_if!(!leaves, round.extend(l.drops_from(l.drops.len() - 1, span)));
+        });
+        self.loops.pop();
+        round
     }
 
     /// Lower a counted loop. Its variable takes the common kind of the
@@ -1091,8 +1229,11 @@ impl Lowerer<'_>
                 value,
                 span: n.var.span.to(&head.unwrap_or(n.var.span)),
             };
-            let cond = l.coerce(&n.cond, DataKind::Bool);
-            let block = l.loop_block(&n.block.stmts);
+            let (cond, block) = tern!(
+                has_pass(&n.cond),
+                (true_expr(n.span), l.passing_round(&n.cond, &n.block.stmts, n.span)),
+                (l.coerce(&n.cond, DataKind::Bool), l.loop_block(&n.block.stmts))
+            );
             let mut update = Vec::new();
             do_if!(let Some(u) = &n.update, l.stmt(u, &mut update));
             let after = l.drops_from(l.drops.len() - 1, n.span);
@@ -1246,10 +1387,13 @@ impl Lowerer<'_>
     /// The function.
     fn func(&mut self, f: &st::FnDecl) -> Func
     {
-        let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
+        let given = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
+        let fault = given.and_then(Fault::of_kind);
+        // A function that can fail keeps its good result in `ရလဒ်`.
+        let ret = fault.map_or(given, |f| f.ok);
         let depth = self.scopes.len();
         #[rustfmt::skip]
-        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, depth, edits: HashSet::new() });
+        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, fault, depth, edits: HashSet::new() });
         let mut block = Vec::new();
         let mut result = None;
         self.scoped(|l| {
@@ -1264,13 +1408,20 @@ impl Lowerer<'_>
         let ret_stmt =
             implicit.map(|(slot, kind)| read_return(slot, kind, f.block.span));
         block.extend(ret_stmt);
+        // A function that can fail and ends without a return gives back a
+        // good result.
+        let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
+        let bare = Stmt::Return { value: None, span: f.block.span };
+        do_if!(fault.is_some() && !ends_in_return, block.push(bare));
+        do_if!(let Some(fault) = fault, wrap_returns(&mut block, fault, self.platform));
+        let given = fault.map_or(ret, |f| Some(f.wrapper));
         let frame =
             std::mem::replace(&mut self.frame, outer).expect("the frame is set");
         #[rustfmt::skip]
         return Func::builder().name(format!("{}{}", f.name.name, self.suffix))
             .params(f.params.len() as u32)
             .maybe_result(result)
-            .maybe_ret(ret).locals(frame.locals).block(block).span(f.span).build();
+            .maybe_ret(given).locals(frame.locals).block(block).span(f.span).build();
     }
 
     /// Declare a function parameter.
@@ -1388,6 +1539,184 @@ impl Lowerer<'_>
         });
         out.extend(drops);
         out.push(result.unwrap_or(Stmt::Return { value: None, span }));
+    }
+
+    /// Lower `... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။`: the function gives back the
+    /// error value with tag 1. The struct is built in a hidden slot before
+    /// the places that hold text are dropped, since the value can read them.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    /// * `out` - The list the statements go to.
+    fn fault_return(&mut self, n: &st::ReturnStmt, out: &mut Vec<Stmt>)
+    {
+        let fault = self.frame.as_ref().and_then(|f| f.fault);
+        let fault =
+            fault.expect("the check allows an error value in a function that can fail");
+        let err = n.value.as_ref().zip(fault.err).map(|(v, k)| self.owned(v, k));
+        let value = fault.value(true, None, err, self.platform, n.span);
+        self.leave_with(value, n.span, out);
+    }
+
+    /// Give back a struct of the kind the function gives back, after the
+    /// drops of each place that holds text.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The struct.
+    /// * `span` - The source region.
+    /// * `out` - The list the statements go to.
+    fn leave_with(&mut self, value: Expr, span: Span, out: &mut Vec<Stmt>)
+    {
+        let depth = self.frame.as_ref().map_or(0, |f| f.depth);
+        let drops = self.drops_from(depth, span);
+        ret_if!(drops.is_empty(), out.push(Stmt::Return { value: Some(value), span }));
+        let (kind, place) = (value.kind, self.hidden(value.kind, span));
+        out.push(Stmt::Set { place, value, span });
+        out.extend(drops);
+        out.push(Stmt::Return { value: Some(read(place, kind, span)), span });
+    }
+
+    /// Call a function that can fail into a hidden slot, and leave the
+    /// function around the call with the same error value when it fails. The
+    /// statements go to [`Self::pre`]. A slot whose kind holds text joins the
+    /// drops of the scope, so the error value goes out as a duplicate.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function name.
+    /// * `args` - The arguments.
+    /// * `span` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The hidden slot and what the function gives back.
+    fn checked_call(
+        &mut self, callee: &ast::Ident, args: &[ast::Expr], span: Span,
+    ) -> (Place, Fault)
+    {
+        let sig = self.sigs.get(&callee.name).cloned();
+        let sig =
+            sig.unwrap_or_else(|| panic!("function {} is not declared", callee.name));
+        let fault = sig.ret.and_then(Fault::of_kind);
+        let fault = fault.expect("the check found a function that can fail");
+        let (func, args) = self.call_parts(callee, args);
+        let call = ExprNode::Call { func, name: callee.name.to_string(), args };
+        let held = self.hidden(fault.wrapper, span);
+        if fault.wrapper.holds_text()
+        {
+            let value = fault.value(false, None, None, self.platform, span);
+            self.pre_init.push(Stmt::Set { place: held, value, span });
+            let drops = self.drops.last_mut().expect("a scope is open");
+            drops.push((held, fault.wrapper));
+        }
+        let value = node_expr(fault.wrapper, call, span);
+        self.pre.push(Stmt::Set { place: held, value, span });
+        let err = fault.err.map(|_| fault.field(held, "err", self.platform, span));
+        let err = err.map(|e| tern!(e.kind.holds_text(), dup(e), e));
+        let own = self.frame.as_ref().and_then(|f| f.fault);
+        let own = own.expect("the check allows a pass-on in a function that can fail");
+        let mut leave = Vec::new();
+        self.leave_with(
+            own.value(true, None, err, self.platform, span),
+            span,
+            &mut leave,
+        );
+        let cond = fault.failed(held, self.platform, span);
+        self.pre.push(Stmt::If { cond, then: leave, els: Vec::new(), span });
+        (held, fault)
+    }
+
+    /// Lower `<r> သည် ရလဒ်ကောင်း` or `<r> သည် အမှားအယွင်း`: a test of the tag
+    /// of the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The verb.
+    /// * `value` - The result.
+    /// * `span` - The test.
+    ///
+    /// # Returns
+    ///
+    /// The boolean test.
+    fn result_test(&mut self, op: VerbOp, value: &ast::Expr, span: Span) -> ExprNode
+    {
+        let result = self.expr(value);
+        let fault = Fault::of_kind(result.kind).expect("the check found a result");
+        let failed = fault.failed_of(result, self.platform, span);
+        ret_if!(op == VerbOp::IsFault, failed.node);
+        prefix_node(PrefixOp::Not, failed)
+    }
+
+    /// Lower `<r> ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်` or its twin with
+    /// `အမှားအယွင်း`: the result goes to a hidden slot, a statement in
+    /// [`Self::pre`] stops the run when it holds the other part, and the
+    /// value is the part asked for. A result that holds an error shows its
+    /// error value as the run stops.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The verb.
+    /// * `value` - The result.
+    /// * `span` - The conversion.
+    ///
+    /// # Returns
+    ///
+    /// The read of the part.
+    fn result_part(&mut self, op: VerbOp, value: &ast::Expr, span: Span) -> ExprNode
+    {
+        self.pending = self.pending.saturating_sub(1);
+        let good = op == VerbOp::Unwrap;
+        let result = self.expr(value);
+        let fault = Fault::of_kind(result.kind).expect("the check found a result");
+        let held = self.hidden(fault.wrapper, span);
+        if fault.wrapper.holds_text()
+        {
+            let blank = fault.value(false, None, None, self.platform, span);
+            self.pre_init.push(Stmt::Set { place: held, value: blank, span });
+            self.drops.last_mut().expect("a scope is open").push((held, fault.wrapper));
+        }
+        let read_place =
+            matches!(result.node, ExprNode::Read(_) | ExprNode::Load { .. });
+        let result = tern!(read_place && result.kind.holds_text(), dup(result), result);
+        self.pre.push(Stmt::Set { place: held, value: result, span });
+        let failed = fault.failed(held, self.platform, span);
+        let wrong = tern!(
+            good,
+            failed.clone(),
+            node_expr(DataKind::Bool, prefix_node(PrefixOp::Not, failed), span)
+        );
+        let shown = fault
+            .err
+            .filter(|_| good)
+            .map(|_| fault.field(held, "err", self.platform, span));
+        let cause = tern!(good, HaltCause::NotGood, HaltCause::NotFault);
+        let halt = Stmt::Halt { cause, value: shown, span };
+        self.pre.push(Stmt::If {
+            cond: wrong,
+            then: vec![halt],
+            els: Vec::new(),
+            span,
+        });
+        fault.field(held, tern!(good, "ok", "err"), self.platform, span).node
+    }
+
+    /// Lower a call that passes a failure on, as part of a value: the call
+    /// and its test go to [`Self::pre`], and the value is the good result.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The read of the good result.
+    fn pass_call(&mut self, n: &ast::CallExpr) -> ExprNode
+    {
+        self.pending = self.pending.saturating_sub(1);
+        let (held, fault) = self.checked_call(&n.callee, &n.args, n.span);
+        fault.field(held, "ok", self.platform, n.span).node
     }
 
     /// The drops of the scopes a `break` or `continue` leaves.
@@ -1541,6 +1870,57 @@ impl Lowerer<'_>
     /// The expression.
     fn expr(&mut self, e: &ast::Expr) -> Expr
     {
+        let spill = self.pending > 0 && !self.spilling && !has_pass(e);
+        ret_if!(!spill, self.expr_node(e));
+        self.spilling = true;
+        let lowered = self.expr_node(e);
+        self.spilling = false;
+        self.spill(lowered)
+    }
+
+    /// Keep a value in a hidden slot that [`Self::pre`] sets, so it is
+    /// computed before a later call that passes a failure on, in the
+    /// written order. A constant is left in place, and so is a read of an
+    /// owner: the read moves it, and the call cannot change the place
+    /// without a borrow the check refuses. A read of a place whose kind
+    /// holds text goes there as a duplicate, since the call can change the
+    /// place; such a slot starts blank and joins the drops of its scope.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The value.
+    ///
+    /// # Returns
+    ///
+    /// The read of the slot, or the constant.
+    fn spill(&mut self, e: Expr) -> Expr
+    {
+        let read_place = matches!(e.node, ExprNode::Read(_) | ExprNode::Load { .. });
+        let moved = read_place && e.kind.is_move_kind();
+        ret_if!(moved || matches!(e.node, ExprNode::Const(_)), e);
+        let (kind, span, place) = (e.kind, e.span, self.hidden(e.kind, e.span));
+        let value = tern!(read_place && kind.holds_text(), dup(e), e);
+        if kind.holds_text()
+        {
+            let blank = default_constant(kind, span);
+            self.pre_init.push(Stmt::Set { place, value: blank, span });
+            self.drops.last_mut().expect("a scope is open").push((place, kind));
+        }
+        self.pre.push(Stmt::Set { place, value, span });
+        read(place, kind, span)
+    }
+
+    /// Lower an expression with the kind the check recorded for it.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The expression.
+    ///
+    /// # Returns
+    ///
+    /// The expression.
+    fn expr_node(&mut self, e: &ast::Expr) -> Expr
+    {
         let kind = concrete(self.kind_of(e));
         let node = match e
         {
@@ -1555,6 +1935,7 @@ impl Lowerer<'_>
             ast::Expr::Not(n) => prefix_node(PrefixOp::Not, self.expr(&n.inner)),
             ast::Expr::Logic(n) => self.logic(n),
             ast::Expr::Verb(n) => self.verb(n, kind),
+            ast::Expr::Call(n) if n.pass => self.pass_call(n),
             ast::Expr::Call(n) =>
             {
                 let (func, args) = self.call_parts(&n.callee, &n.args);
@@ -2075,9 +2456,38 @@ impl Lowerer<'_>
     fn logic(&mut self, n: &ast::LogicExpr) -> ExprNode
     {
         let op = tern!(n.op == ast::LogicOp::And, LogicOp::And, LogicOp::Or);
+        ret_if!(has_pass(&n.lhs) || has_pass(&n.rhs), self.passing_logic(n, op));
         let lhs = Box::new(self.coerce(&n.lhs, DataKind::Bool));
         let rhs = Box::new(self.coerce(&n.rhs, DataKind::Bool));
         ExprNode::Logic { op, lhs, rhs }
+    }
+
+    /// Lower `နှင့်` or `သို့မဟုတ်` with a call that passes a failure on: the
+    /// left side goes to a hidden slot, and the right side runs in an `if`
+    /// when the left side does not settle the value, and at no other time.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The expression.
+    /// * `op` - The operator.
+    ///
+    /// # Returns
+    ///
+    /// The read of the slot.
+    fn passing_logic(&mut self, n: &ast::LogicExpr, op: LogicOp) -> ExprNode
+    {
+        let span = n.span;
+        let lhs = self.coerce(&n.lhs, DataKind::Bool);
+        let place = self.hidden(DataKind::Bool, span);
+        self.pre.push(Stmt::Set { place, value: lhs, span });
+        let (mut then, rhs) = self.with_pre(|l| l.coerce(&n.rhs, DataKind::Bool));
+        then.push(Stmt::Set { place, value: rhs, span });
+        let held = read(place, DataKind::Bool, span);
+        let not_held =
+            node_expr(DataKind::Bool, prefix_node(PrefixOp::Not, held.clone()), span);
+        let cond = tern!(op == LogicOp::And, held, not_held);
+        self.pre.push(Stmt::If { cond, then, els: Vec::new(), span });
+        ExprNode::Read(place)
     }
 
     /// Lower a verbal clause to the same operations as the notation.
@@ -2165,6 +2575,11 @@ impl Lowerer<'_>
                 operand: Box::new(self.expr(value)),
                 implicit: false,
             },
+            VerbOp::IsGood | VerbOp::IsFault => self.result_test(n.op, value, n.span),
+            VerbOp::Unwrap | VerbOp::UnwrapFault =>
+            {
+                self.result_part(n.op, value, n.span)
+            }
             VerbOp::Add
             | VerbOp::Sub
             | VerbOp::Mul
@@ -2183,6 +2598,8 @@ impl Lowerer<'_>
             | VerbOp::Print
             | VerbOp::Assign
             | VerbOp::Return
+            | VerbOp::ReturnFault
+            | VerbOp::ReturnGood
             | VerbOp::AddCell
             | VerbOp::Replace
             | VerbOp::Cell
@@ -2715,6 +3132,20 @@ fn read_return(slot: u32, kind: DataKind, span: Span) -> Stmt
         .span(span)
         .build();
     Stmt::Return { value: Some(read), span }
+}
+
+/// The constant `true`.
+///
+/// # Arguments
+///
+/// * `span` - The source region.
+///
+/// # Returns
+///
+/// The expression.
+fn true_expr(span: Span) -> Expr
+{
+    node_expr(DataKind::Bool, ExprNode::Const(Value::Bool(true)), span)
 }
 
 /// A drop of the value at a place.

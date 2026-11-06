@@ -89,7 +89,9 @@ fn raw_stmt(s: &Stmt) -> bool
     match s
     {
         Stmt::Set { value, .. } => raw_expr(value),
-        Stmt::Print { value: PrintValue::Expr(e), .. } => raw_expr(e),
+        Stmt::Print { value: PrintValue::Expr(e), .. }
+        | Stmt::Halt { value: Some(e), .. } => raw_expr(e),
+        Stmt::Halt { value: None, .. } => false,
         Stmt::If { cond, then, els, .. } =>
         {
             raw_expr(cond) || raw_block(then) || raw_block(els)

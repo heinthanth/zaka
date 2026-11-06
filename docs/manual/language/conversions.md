@@ -25,6 +25,11 @@ closes a [clause](expressions.md): the value takes `ကို` and the kind take
 result has the target kind, and it can take a particle of its own, so a conversion can
 be the first part of a longer phrase.
 
+Two more targets read a part of a [whole result](error-handling.md#reading-a-whole-result) of a function that
+can fail: `ရလဒ်ကောင်း အဖြစ်` gives its good result, and `အမှားအယွင်း အဖြစ်` its error value.
+The other part stops the run with a trap (`not_good`, `not_fault`), and a value that is no
+such result is ZK0448.
+
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။

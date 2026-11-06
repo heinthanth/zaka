@@ -17,6 +17,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::kind::DataKind;
+use crate::kind::FALLIBLE;
 use crate::kind::split_marks;
 use crate::structs::StructDefs;
 use crate::structs::StructTable;
@@ -138,6 +139,11 @@ fn check_fields(decl: &StructDecl, names: &BTreeSet<&str>, diags: &mut Vec<Diagn
 /// The diagnostic, or `None` for a kind with no unknown name.
 pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagnostic>
 {
+    if let Some(parts) = kind.parts.as_deref()
+    {
+        let side = |k: &Option<Kind>| k.as_ref().and_then(|k| unknown_name(k, names));
+        return side(&parts.ok).or_else(|| side(&parts.err));
+    }
     let name = kind.name.as_ref()?;
     ret_if!(names.contains(name.name.as_str()), None);
     Some(rd::unknown_kind_name(name.span, &name.name))
@@ -156,17 +162,41 @@ pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagno
 /// Each field name with its kind text.
 fn field_texts(decl: &StructDecl, names: &BTreeSet<&str>) -> Vec<(String, String)>
 {
-    let text = |kind: &Kind| {
-        let plain = DataKind::from_ast(kind, &StructTable::new()).sig_name();
-        let name = kind.name.as_ref().map(|n| n.name.as_str());
-        let Some(name) = name.filter(|n| names.contains(n))
-        else
-        {
-            return plain;
-        };
-        format!("{name}{}", split_marks(&plain).1)
-    };
+    let text = |kind: &Kind| field_text(kind, names);
     decl.fields.iter().map(|f| (f.name.name.to_string(), text(&f.kind))).collect()
+}
+
+/// One field kind in text form, with each declared struct as its bare name;
+/// a result kind writes its sides so too.
+///
+/// # Arguments
+///
+/// * `kind` - The field kind.
+/// * `names` - The struct names.
+///
+/// # Returns
+///
+/// The text.
+fn field_text(kind: &Kind, names: &BTreeSet<&str>) -> String
+{
+    if let Some(parts) = kind.parts.as_deref()
+    {
+        let side = |field: &str, k: &Option<Kind>| {
+            k.as_ref()
+                .map_or(String::new(), |k| format!(",{field}:{}", field_text(k, names)))
+        };
+        let (ok, err) = (side("ok", &parts.ok), side("err", &parts.err));
+        let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
+        return format!("{FALLIBLE}{{tag:u8{ok}{err}}}{}", split_marks(&marks).1);
+    }
+    let plain = DataKind::from_ast(kind, &StructTable::new()).sig_name();
+    let name = kind.name.as_ref().map(|n| n.name.as_str());
+    let Some(name) = name.filter(|n| names.contains(n))
+    else
+    {
+        return plain;
+    };
+    format!("{name}{}", split_marks(&plain).1)
 }
 
 /// The struct a field holds inline, not through an address.

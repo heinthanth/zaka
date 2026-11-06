@@ -14,6 +14,7 @@ use zakac_codegen::bc::Slot;
 use zakac_codegen::bc::TrapCode;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::CmpOp;
+use zakac_ir_builder::ir::HaltCause;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::PrefixOp;
 use zakac_ir_builder::value::EvalError;
@@ -1133,6 +1134,7 @@ impl Machine
                 self.mem.zero(addr, kind)
             }
             Op::ListEq(kind) => self.list_eq(kind),
+            Op::Halt { cause, kind } => self.halt(cause, kind),
             Op::PrintList(kind) =>
             {
                 let addr = self.pop_ptr("print_list")?;
@@ -1596,6 +1598,36 @@ impl Machine
         let v = self.pop()?;
         write_line(&mut self.out, &text(v));
         Ok(())
+    }
+
+    /// Stop the run for a failure the program did not handle.
+    ///
+    /// # Arguments
+    ///
+    /// * `cause` - The reason the run stops.
+    /// * `kind` - The kind of the value to show, when there is one; a list, a
+    ///   struct or text comes as its address.
+    ///
+    /// # Returns
+    ///
+    /// The trap of `cause`, or the trap a read of the value meets.
+    fn halt(&mut self, cause: HaltCause, kind: Option<DataKind>) -> Step
+    {
+        let shown = match kind
+        {
+            Some(k) if k.is_aggregate() =>
+            {
+                let addr = self.pop_ptr("halt")?;
+                list_text(&self.mem, addr, k)?
+            }
+            Some(_) => text(self.pop()?),
+            None => String::new(),
+        };
+        Err(match cause
+        {
+            HaltCause::NotGood => TrapKind::NotGood { text: shown },
+            HaltCause::NotFault => TrapKind::NotFault,
+        })
     }
 
     /// Write a pooled text.

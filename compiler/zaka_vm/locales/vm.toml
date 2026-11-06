@@ -90,6 +90,15 @@ en = "access at %{addr} inside a freed block"
 [vm.trap.frozen_write]
 en = "write at %{addr} inside static data, which cannot change"
 
+[vm.trap.not_good_bare]
+en = "the result holds a failure, not a good result"
+
+[vm.trap.not_good]
+en = "the result holds an error, not a good result: %{e}"
+
+[vm.trap.not_fault]
+en = "the result is a good result, not an error"
+
 [vm.trap.text_cut]
 en = "a range of text at %{addr} starts or ends inside a character"
 

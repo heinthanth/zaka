@@ -203,6 +203,8 @@ program:
               hi: 792
         - return:
             value: null
+            fault: false
+            good: false
             span:
               lo: 793
               hi: 823

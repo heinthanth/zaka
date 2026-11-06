@@ -94,7 +94,7 @@ A run of `"မင်္ဂလာပါ" ကို ပြသပါ။` gives `war
 ### 2. Function signatures (`collect_fns`)
 
 A first walk over the top-level statements records the signature of each function (the
-kinds of its parameters and of its result, and its export mark), so a call can come before
+kinds of its parameters, of its result and of its error value, and its export mark), so a call can come before
 the declaration. The table holds one map for each file of the program: the first
 declaration of a name in a file wins, and a second in the same file is ZK0304. Two files
 can each hold a function of one name.
@@ -120,6 +120,8 @@ that implements `Visitor`. It has one method for each statement form and calls
 | `ကွင်းဆက်`, `နောက်တစ်ကြိမ်ဆီသို့` | the loop depth is above zero in the current function |
 | function | parameters are distinct; one scope holds the parameters, `ရလဒ်` (just when the function has a result) and the block; the loop depth restarts at zero |
 | return | in a function; a value just when the function has a result, and it converts to the result kind |
+| return of an error value | `ReturnStmt::fault`: the function can fail (else ZK0447) and the value converts to its error kind (ZK0401) |
+| call that can fail | a call statement to a function with an error kind passes the failure on (else ZK0443); an expression call with no pass-on is a whole result, of the result class `%fallible`, built with `DataKind::fallible(ok, err)`, each side optional (a side with no value has no field; a message writes `isize result or text error`, `success or text error` and `isize result or failure`); a written result kind becomes the same class, in a declaration, a parameter, a struct field (the sugar is resolved in `structs.rs`, where the field kinds are read) and a result clause; it is no operand (ZK0403) and fits just a place of the same kinds; a pass-on needs a callee that can fail (ZK0444) and a function around it that can (ZK0445, also in the start block, which cannot fail, and in top-level statements) with the same error kind (ZK0446); the good result of a callee with none is ZK0315 |
 | call | the function exists; one argument for each parameter; each converts. For a parameter marked `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော`, the argument takes the mark (ZK0431; a mark elsewhere is ZK0432), is a writable place (`place_kind`: ZK0410, ZK0306) of the parameter kind, with no widening (ZK0401), and its variable appears in no other argument (`check_edits_apart`, ZK0433) |
 | heap sentences | the target is a place of a pointer kind (ZK0417); the size is `usize` |
 | blit, fill | `visit_blit`, `visit_fill`: each address is a value of a pointer kind, not a place (ZK0417); the count is `usize` and the fill value is of the unit kind, or a `u8` for a size in octets (ZK0401); `owned_cells` refuses cells of the unit kind, or for octets of the kind each address points at, that hold an owner, text, a plain list or a borrow (ZK0442) |
@@ -158,7 +160,7 @@ ZK0327, reported at its start.
 `collect_fns` leaves the start block out of the function map, so no call finds it, and
 `visit_fn` checks it as a function, then checks its header with `check_start_header`: up
 to two parameters, each a plain `စာသား စာရင်း` the function cannot change (ZK0440), and
-no result or an integer one (ZK0441).
+no result or an integer one: a result kind is ZK0441.
 
 An import runs at its place, at the top of the file. For each name it looks in the file
 it reads for an exported function (from that file's function map), an exported variable
@@ -313,6 +315,9 @@ ZK0403.
 | --- | --- |
 | ZK03 | names: undeclared or doubled names, constants and loop variables assigned, `ကွင်းဆက်` outside a loop, return outside a function, argument counts |
 | ZK04 | kinds: mismatches, conditions that are not `bool`, operands of the wrong kind, literals that do not fit, shifts that go too far, bad conversions, bad pointer and list use |
+| ZK0443 to ZK0449 | failing functions: a call statement that drops a failure, a pass-on with no failure to pass, a pass-on in a function that cannot fail, another error kind (ZK0446, where an error side with no value is a kind of its own), an error value from a function that cannot fail, a test or a conversion of a value that is no result (ZK0448), a good result of a function that has none (ZK0449) |
+| ZK0450 to ZK0452 | the sides with no value: a read of the error value of a result whose error side holds none (ZK0450), `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` in a function whose error side names a kind (ZK0451), an error value given back where the error side holds none (ZK0452) |
+| ZK0454 and ZK0455 | `visit_if`, `visit_while` and the other loop visitors keep the set of result variables proven to hold a good result or a failure, built from the tests with `facts_when` in `proof.rs`, and a conversion to the part ruled out is ZK0454 (a guard arm proves the opposite after the statement, and an assignment, an edit-marked argument, the address of the variable or a new declaration of its name ends the proof; a loop that can change the variable ends it for the whole loop); `visit_return` reports the return word of the other sort of function, `ရလဒ်အဖြစ်` in a function that can fail or `ရလဒ်ကောင်းအဖြစ်` in one that cannot (ZK0455) |
 | ZK05 | wording warnings |
 | ZK0705, ZK0713 to ZK0717 | owner and borrow kind rules |
 

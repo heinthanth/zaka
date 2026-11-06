@@ -10,6 +10,7 @@ use zakac_ast::name::Name;
 use zakac_rust_sugars::ret_if;
 
 use crate::kind::DataKind;
+use crate::kind::FALLIBLE;
 use crate::kind::split_marks;
 
 /// The struct kind of each declared name.
@@ -305,6 +306,12 @@ fn sig_of(name: &str, defs: &StructDefs, around: &mut Vec<String>) -> String
 /// The text.
 fn expand(kind: &str, defs: &StructDefs, around: &mut Vec<String>) -> String
 {
+    if let Some(sides) = fallible_sides(split_marks(kind).0)
+    {
+        let side = |(f, k): &(&str, &str)| format!("{f}:{}", expand(k, defs, around));
+        let parts: Vec<String> = sides.iter().map(side).collect();
+        return format!("{FALLIBLE}{{{}}}{}", parts.join(","), split_marks(kind).1);
+    }
     let (base, marks) = split_marks(kind);
     let inner = defs.contains_key(base) && !around.iter().any(|n| n == base);
     ret_if!(!inner, kind.to_string());
@@ -326,6 +333,22 @@ fn kind_of(
     kind: &str, defs: &StructDefs, memo: &mut HashMap<String, &'static StructKind>,
 ) -> Option<DataKind>
 {
+    if let Some(sides) = fallible_sides(split_marks(kind).0)
+    {
+        let side = |name: &str| sides.iter().find(|(f, _)| *f == name).map(|(_, k)| *k);
+        let (ok, err) = (side("ok"), side("err"));
+        let ok = match ok
+        {
+            Some(k) => Some(kind_of(k, defs, memo)?),
+            None => None,
+        };
+        let err = match err
+        {
+            Some(k) => Some(kind_of(k, defs, memo)?),
+            None => None,
+        };
+        return DataKind::wrap_marks(DataKind::fallible(ok, err), split_marks(kind).1);
+    }
     let (base, marks) = split_marks(kind);
     ret_if!(!defs.contains_key(base), DataKind::parse(kind));
     let inner = DataKind::Struct(resolve(base, defs, memo)?);
@@ -395,4 +418,20 @@ fn top_level_parts(inner_text: &str) -> Vec<&str>
     }
     parts.push(&inner_text[start..]);
     parts
+}
+
+/// The fields of a result kind in text form, as `(field, kind)` pairs: its
+/// `tag`, and its `ok` and `err` sides, each when it holds a value.
+///
+/// # Arguments
+///
+/// * `kind` - The text.
+///
+/// # Returns
+///
+/// The fields, or `None` for text of another kind.
+fn fallible_sides(kind: &str) -> Option<Vec<(&str, &str)>>
+{
+    let inner = kind.strip_prefix(FALLIBLE)?.strip_prefix('{')?.strip_suffix('}')?;
+    top_level_parts(inner).into_iter().map(|p| p.split_once(':')).collect()
 }

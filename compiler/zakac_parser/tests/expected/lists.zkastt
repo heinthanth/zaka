@@ -773,6 +773,7 @@ program:
                 hi: 3561
           edits:
           - false
+          pass: false
           span:
             lo: 3489
             hi: 3639
@@ -825,6 +826,7 @@ program:
                 hi: 3802
           edits:
           - false
+          pass: false
           span:
             lo: 3669
             hi: 3880

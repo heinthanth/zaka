@@ -1,0 +1,1829 @@
+# zakac-ir-artifact v1
+name:
+  Custom: faults.zaka
+source: "လုပ်ဆောင်ချက် စစ် သည်\nကိန်းပြည့် န ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။\nအကယ်၍ န သည် ၀ နှင့် ညီလျှင် \"သုည\" ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။\nန ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် ပေါင်း သည်\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။\nက + စစ်(ခ)? ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် လှည့် သည်\nကိန်းပြည့် န ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ အောင်မြင်သည့်သတင်း သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။\nအကယ်၍ န သည် ၀ နှင့် ညီလျှင် \"သုည\" ဟု ပြသပါ။\nထိုသို့မဟုတ်ဘဲ စစ်(န)? သည် ၁ နှင့် ညီလျှင် \"တစ်\" ဟု ပြသပါ။\nစစ်(န)? သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nန ကို န + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n(န == ၀ || စစ်(န)? == ၁) ကို ပြသပါ။\nလုပ်ဆောင်ချက် စစ် ကို န တို့ဖြင့် လုပ်ဆောင်ပါ၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nပေါင်း(၁၊ ၂) ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+imports: []
+module:
+  globals:
+  - name: "%exit"
+    kind: isize
+    access: var
+    span:
+      lo: 2738
+      hi: 2762
+    addressed: false
+  funcs:
+  - name: စစ်
+    params: 1
+    result: 1
+    ret: "%fallible{tag:u8,ok:isize,err:text}"
+    locals:
+    - name: န
+      kind: isize
+      access: var
+      span:
+        lo: 91
+        hi: 94
+      addressed: false
+    - name: ရလဒ်
+      kind: isize
+      access: var
+      span:
+        lo: 40
+        hi: 49
+      addressed: false
+    block:
+    - set:
+        place: l1
+        value:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 40
+            hi: 49
+        span:
+          lo: 40
+          hi: 49
+    - if:
+        cond:
+          kind: bool
+          node:
+            compare:
+              op: eq
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 392
+                  hi: 395
+              rhs:
+                kind: isize
+                node:
+                  const: 0:isize
+                span:
+                  lo: 406
+                  hi: 409
+          span:
+            lo: 392
+            hi: 432
+        then:
+        - return:
+            value:
+              kind: "%fallible{tag:u8,ok:isize,err:text}"
+              node:
+                list:
+                - kind: u8
+                  node:
+                    const: 0:u8
+                  span:
+                    lo: 448
+                    hi: 549
+                - kind: isize
+                  node:
+                    const: 0:isize
+                  span:
+                    lo: 448
+                    hi: 549
+                - kind: text
+                  node:
+                    text: သုည
+                  span:
+                    lo: 448
+                    hi: 459
+              span:
+                lo: 448
+                hi: 549
+            span:
+              lo: 448
+              hi: 549
+        els:
+        []
+        span:
+          lo: 376
+          hi: 549
+    - return:
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            list:
+            - kind: u8
+              node:
+                const: 1:u8
+              span:
+                lo: 550
+                hi: 640
+            - kind: isize
+              node:
+                read: l0
+              span:
+                lo: 550
+                hi: 553
+            - kind: text
+              node: blank_list
+              span:
+                lo: 550
+                hi: 640
+          span:
+            lo: 550
+            hi: 640
+        span:
+          lo: 550
+          hi: 640
+    shared_params: []
+    span:
+      lo: 0
+      hi: 735
+  - name: ပေါင်း
+    params: 2
+    result: 2
+    ret: "%fallible{tag:u8,ok:isize,err:text}"
+    locals:
+    - name: က
+      kind: isize
+      access: var
+      span:
+        lo: 837
+        hi: 840
+      addressed: false
+    - name: ခ
+      kind: isize
+      access: var
+      span:
+        lo: 875
+        hi: 878
+      addressed: false
+    - name: ရလဒ်
+      kind: isize
+      access: var
+      span:
+        lo: 777
+        hi: 795
+      addressed: false
+    - name: "%new"
+      kind: isize
+      access: var
+      span:
+        lo: 1172
+        hi: 1175
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,ok:isize,err:text}"
+      access: var
+      span:
+        lo: 1178
+        hi: 1193
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,ok:isize,err:text}"
+      access: var
+      span:
+        lo: 1178
+        hi: 1193
+      addressed: false
+    block:
+    - set:
+        place: l2
+        value:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 777
+            hi: 795
+        span:
+          lo: 777
+          hi: 795
+    - set:
+        place: l4
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            list:
+            - kind: u8
+              node:
+                const: 1:u8
+              span:
+                lo: 1178
+                hi: 1193
+            - kind: isize
+              node:
+                const: 0:isize
+              span:
+                lo: 1178
+                hi: 1193
+            - kind: text
+              node: blank_list
+              span:
+                lo: 1178
+                hi: 1193
+          span:
+            lo: 1178
+            hi: 1193
+        span:
+          lo: 1178
+          hi: 1193
+    - set:
+        place: l3
+        value:
+          kind: isize
+          node:
+            read: l0
+          span:
+            lo: 1172
+            hi: 1175
+        span:
+          lo: 1172
+          hi: 1175
+    - set:
+        place: l4
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            call:
+              func: 0
+              name: စစ်
+              args:
+              - kind: isize
+                node:
+                  read: l1
+                span:
+                  lo: 1188
+                  hi: 1191
+          span:
+            lo: 1178
+            hi: 1193
+        span:
+          lo: 1178
+          hi: 1193
+    - if:
+        cond:
+          kind: bool
+          node:
+            compare:
+              op: eq
+              lhs:
+                kind: u8
+                node:
+                  load:
+                    addr:
+                      kind: u8*
+                      node:
+                        field_addr:
+                          base:
+                            kind: "%fallible{tag:u8,ok:isize,err:text}"
+                            node:
+                              read: l4
+                            span:
+                              lo: 1178
+                              hi: 1193
+                          field: 0
+                          offset: 0
+                      span:
+                        lo: 1178
+                        hi: 1193
+                span:
+                  lo: 1178
+                  hi: 1193
+              rhs:
+                kind: u8
+                node:
+                  const: 0:u8
+                span:
+                  lo: 1178
+                  hi: 1193
+          span:
+            lo: 1178
+            hi: 1193
+        then:
+        - set:
+            place: l5
+            value:
+              kind: "%fallible{tag:u8,ok:isize,err:text}"
+              node:
+                list:
+                - kind: u8
+                  node:
+                    const: 0:u8
+                  span:
+                    lo: 1178
+                    hi: 1193
+                - kind: isize
+                  node:
+                    const: 0:isize
+                  span:
+                    lo: 1178
+                    hi: 1193
+                - kind: text
+                  node:
+                    dup:
+                      value:
+                        kind: text
+                        node:
+                          load:
+                            addr:
+                              kind: text*
+                              node:
+                                field_addr:
+                                  base:
+                                    kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                    node:
+                                      read: l4
+                                    span:
+                                      lo: 1178
+                                      hi: 1193
+                                  field: 2
+                                  offset: 16
+                              span:
+                                lo: 1178
+                                hi: 1193
+                        span:
+                          lo: 1178
+                          hi: 1193
+                      lent: false
+                  span:
+                    lo: 1178
+                    hi: 1193
+              span:
+                lo: 1178
+                hi: 1193
+            span:
+              lo: 1178
+              hi: 1193
+        - drop:
+            dest:
+              slot: l4
+            kind: "%fallible{tag:u8,ok:isize,err:text}"
+            span:
+              lo: 1178
+              hi: 1193
+        - return:
+            value:
+              kind: "%fallible{tag:u8,ok:isize,err:text}"
+              node:
+                read: l5
+              span:
+                lo: 1178
+                hi: 1193
+            span:
+              lo: 1178
+              hi: 1193
+        els:
+        []
+        span:
+          lo: 1178
+          hi: 1193
+    - set:
+        place: l2
+        value:
+          kind: isize
+          node:
+            infix:
+              op: add
+              lhs:
+                kind: isize
+                node:
+                  read: l3
+                span:
+                  lo: 1172
+                  hi: 1175
+              rhs:
+                kind: isize
+                node:
+                  load:
+                    addr:
+                      kind: isize*
+                      node:
+                        field_addr:
+                          base:
+                            kind: "%fallible{tag:u8,ok:isize,err:text}"
+                            node:
+                              read: l4
+                            span:
+                              lo: 1178
+                              hi: 1193
+                          field: 1
+                          offset: 8
+                      span:
+                        lo: 1178
+                        hi: 1193
+                span:
+                  lo: 1178
+                  hi: 1193
+          span:
+            lo: 1172
+            hi: 1193
+        span:
+          lo: 1172
+          hi: 1280
+    - drop:
+        dest:
+          slot: l4
+        kind: "%fallible{tag:u8,ok:isize,err:text}"
+        span:
+          lo: 1172
+          hi: 1280
+    - return:
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            list:
+            - kind: u8
+              node:
+                const: 1:u8
+              span:
+                lo: 1172
+                hi: 1280
+            - kind: isize
+              node:
+                read: l2
+              span:
+                lo: 1172
+                hi: 1280
+            - kind: text
+              node: blank_list
+              span:
+                lo: 1172
+                hi: 1280
+          span:
+            lo: 1172
+            hi: 1280
+        span:
+          lo: 1172
+          hi: 1280
+    shared_params: []
+    span:
+      lo: 737
+      hi: 1375
+  - name: လှည့်
+    params: 1
+    result: null
+    ret: "%fallible{tag:u8,err:text}"
+    locals:
+    - name: န
+      kind: isize
+      access: var
+      span:
+        lo: 1474
+        hi: 1477
+      addressed: false
+    - name: "%new"
+      kind: bool
+      access: var
+      span:
+        lo: 1786
+        hi: 1826
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,ok:isize,err:text}"
+      access: var
+      span:
+        lo: 1923
+        hi: 1938
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,err:text}"
+      access: var
+      span:
+        lo: 1923
+        hi: 1938
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,ok:isize,err:text}"
+      access: var
+      span:
+        lo: 2029
+        hi: 2044
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,err:text}"
+      access: var
+      span:
+        lo: 2029
+        hi: 2044
+      addressed: false
+    - name: "%new"
+      kind: bool
+      access: var
+      span:
+        lo: 2332
+        hi: 2342
+      addressed: false
+    - name: "%new"
+      kind: bool
+      access: var
+      span:
+        lo: 2332
+        hi: 2368
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,ok:isize,err:text}"
+      access: var
+      span:
+        lo: 2346
+        hi: 2361
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,err:text}"
+      access: var
+      span:
+        lo: 2346
+        hi: 2361
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,ok:isize,err:text}"
+      access: var
+      span:
+        lo: 2399
+        hi: 2641
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,err:text}"
+      access: var
+      span:
+        lo: 2399
+        hi: 2641
+      addressed: false
+    block:
+    - set:
+        place: l2
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            list:
+            - kind: u8
+              node:
+                const: 1:u8
+              span:
+                lo: 1923
+                hi: 1938
+            - kind: isize
+              node:
+                const: 0:isize
+              span:
+                lo: 1923
+                hi: 1938
+            - kind: text
+              node: blank_list
+              span:
+                lo: 1923
+                hi: 1938
+          span:
+            lo: 1923
+            hi: 1938
+        span:
+          lo: 1923
+          hi: 1938
+    - set:
+        place: l1
+        value:
+          kind: bool
+          node:
+            compare:
+              op: eq
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 1786
+                  hi: 1789
+              rhs:
+                kind: isize
+                node:
+                  const: 0:isize
+                span:
+                  lo: 1800
+                  hi: 1803
+          span:
+            lo: 1786
+            hi: 1826
+        span:
+          lo: 1786
+          hi: 1826
+    - if:
+        cond:
+          kind: bool
+          node:
+            read: l1
+          span:
+            lo: 1786
+            hi: 1826
+        then:
+        - print:
+            value:
+              text: သုည
+            span:
+              lo: 1842
+              hi: 1879
+        els:
+        - set:
+            place: l2
+            value:
+              kind: "%fallible{tag:u8,ok:isize,err:text}"
+              node:
+                call:
+                  func: 0
+                  name: စစ်
+                  args:
+                  - kind: isize
+                    node:
+                      read: l0
+                    span:
+                      lo: 1933
+                      hi: 1936
+              span:
+                lo: 1923
+                hi: 1938
+            span:
+              lo: 1923
+              hi: 1938
+        - if:
+            cond:
+              kind: bool
+              node:
+                compare:
+                  op: eq
+                  lhs:
+                    kind: u8
+                    node:
+                      load:
+                        addr:
+                          kind: u8*
+                          node:
+                            field_addr:
+                              base:
+                                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                node:
+                                  read: l2
+                                span:
+                                  lo: 1923
+                                  hi: 1938
+                              field: 0
+                              offset: 0
+                          span:
+                            lo: 1923
+                            hi: 1938
+                    span:
+                      lo: 1923
+                      hi: 1938
+                  rhs:
+                    kind: u8
+                    node:
+                      const: 0:u8
+                    span:
+                      lo: 1923
+                      hi: 1938
+              span:
+                lo: 1923
+                hi: 1938
+            then:
+            - set:
+                place: l3
+                value:
+                  kind: "%fallible{tag:u8,err:text}"
+                  node:
+                    list:
+                    - kind: u8
+                      node:
+                        const: 0:u8
+                      span:
+                        lo: 1923
+                        hi: 1938
+                    - kind: text
+                      node:
+                        dup:
+                          value:
+                            kind: text
+                            node:
+                              load:
+                                addr:
+                                  kind: text*
+                                  node:
+                                    field_addr:
+                                      base:
+                                        kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                        node:
+                                          read: l2
+                                        span:
+                                          lo: 1923
+                                          hi: 1938
+                                      field: 2
+                                      offset: 16
+                                  span:
+                                    lo: 1923
+                                    hi: 1938
+                            span:
+                              lo: 1923
+                              hi: 1938
+                          lent: false
+                      span:
+                        lo: 1923
+                        hi: 1938
+                  span:
+                    lo: 1923
+                    hi: 1938
+                span:
+                  lo: 1923
+                  hi: 1938
+            - drop:
+                dest:
+                  slot: l2
+                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                span:
+                  lo: 1923
+                  hi: 1938
+            - return:
+                value:
+                  kind: "%fallible{tag:u8,err:text}"
+                  node:
+                    read: l3
+                  span:
+                    lo: 1923
+                    hi: 1938
+                span:
+                  lo: 1923
+                  hi: 1938
+            els:
+            []
+            span:
+              lo: 1923
+              hi: 1938
+        - if:
+            cond:
+              kind: bool
+              node:
+                compare:
+                  op: eq
+                  lhs:
+                    kind: isize
+                    node:
+                      load:
+                        addr:
+                          kind: isize*
+                          node:
+                            field_addr:
+                              base:
+                                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                node:
+                                  read: l2
+                                span:
+                                  lo: 1923
+                                  hi: 1938
+                              field: 1
+                              offset: 8
+                          span:
+                            lo: 1923
+                            hi: 1938
+                    span:
+                      lo: 1923
+                      hi: 1938
+                  rhs:
+                    kind: isize
+                    node:
+                      const: 1:isize
+                    span:
+                      lo: 1949
+                      hi: 1952
+              span:
+                lo: 1923
+                hi: 1975
+            then:
+            - print:
+                value:
+                  text: တစ်
+                span:
+                  lo: 1991
+                  hi: 2028
+            els:
+            []
+            span:
+              lo: 1880
+              hi: 2028
+        span:
+          lo: 1770
+          hi: 2028
+    - set:
+        place: l4
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            list:
+            - kind: u8
+              node:
+                const: 1:u8
+              span:
+                lo: 2029
+                hi: 2044
+            - kind: isize
+              node:
+                const: 0:isize
+              span:
+                lo: 2029
+                hi: 2044
+            - kind: text
+              node: blank_list
+              span:
+                lo: 2029
+                hi: 2044
+          span:
+            lo: 2029
+            hi: 2044
+        span:
+          lo: 2029
+          hi: 2044
+    - loop:
+        init: []
+        cond:
+          kind: bool
+          node:
+            const: true:bool
+          span:
+            lo: 2029
+            hi: 2330
+        update:
+        []
+        block:
+        - set:
+            place: l4
+            value:
+              kind: "%fallible{tag:u8,ok:isize,err:text}"
+              node:
+                call:
+                  func: 0
+                  name: စစ်
+                  args:
+                  - kind: isize
+                    node:
+                      read: l0
+                    span:
+                      lo: 2039
+                      hi: 2042
+              span:
+                lo: 2029
+                hi: 2044
+            span:
+              lo: 2029
+              hi: 2044
+        - if:
+            cond:
+              kind: bool
+              node:
+                compare:
+                  op: eq
+                  lhs:
+                    kind: u8
+                    node:
+                      load:
+                        addr:
+                          kind: u8*
+                          node:
+                            field_addr:
+                              base:
+                                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                node:
+                                  read: l4
+                                span:
+                                  lo: 2029
+                                  hi: 2044
+                              field: 0
+                              offset: 0
+                          span:
+                            lo: 2029
+                            hi: 2044
+                    span:
+                      lo: 2029
+                      hi: 2044
+                  rhs:
+                    kind: u8
+                    node:
+                      const: 0:u8
+                    span:
+                      lo: 2029
+                      hi: 2044
+              span:
+                lo: 2029
+                hi: 2044
+            then:
+            - set:
+                place: l5
+                value:
+                  kind: "%fallible{tag:u8,err:text}"
+                  node:
+                    list:
+                    - kind: u8
+                      node:
+                        const: 0:u8
+                      span:
+                        lo: 2029
+                        hi: 2044
+                    - kind: text
+                      node:
+                        dup:
+                          value:
+                            kind: text
+                            node:
+                              load:
+                                addr:
+                                  kind: text*
+                                  node:
+                                    field_addr:
+                                      base:
+                                        kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                        node:
+                                          read: l4
+                                        span:
+                                          lo: 2029
+                                          hi: 2044
+                                      field: 2
+                                      offset: 16
+                                  span:
+                                    lo: 2029
+                                    hi: 2044
+                            span:
+                              lo: 2029
+                              hi: 2044
+                          lent: false
+                      span:
+                        lo: 2029
+                        hi: 2044
+                  span:
+                    lo: 2029
+                    hi: 2044
+                span:
+                  lo: 2029
+                  hi: 2044
+            - drop:
+                dest:
+                  slot: l4
+                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                span:
+                  lo: 2029
+                  hi: 2044
+            - drop:
+                dest:
+                  slot: l2
+                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                span:
+                  lo: 2029
+                  hi: 2044
+            - return:
+                value:
+                  kind: "%fallible{tag:u8,err:text}"
+                  node:
+                    read: l5
+                  span:
+                    lo: 2029
+                    hi: 2044
+                span:
+                  lo: 2029
+                  hi: 2044
+            els:
+            []
+            span:
+              lo: 2029
+              hi: 2044
+        - if:
+            cond:
+              kind: bool
+              node:
+                prefix:
+                  op: not
+                  operand:
+                    kind: bool
+                    node:
+                      compare:
+                        op: lt
+                        lhs:
+                          kind: isize
+                          node:
+                            load:
+                              addr:
+                                kind: isize*
+                                node:
+                                  field_addr:
+                                    base:
+                                      kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                      node:
+                                        read: l4
+                                      span:
+                                        lo: 2029
+                                        hi: 2044
+                                    field: 1
+                                    offset: 8
+                                span:
+                                  lo: 2029
+                                  hi: 2044
+                          span:
+                            lo: 2029
+                            hi: 2044
+                        rhs:
+                          kind: isize
+                          node:
+                            const: 5:isize
+                          span:
+                            lo: 2055
+                            hi: 2058
+                    span:
+                      lo: 2029
+                      hi: 2084
+              span:
+                lo: 2029
+                hi: 2330
+            then:
+            - drop:
+                dest:
+                  slot: l4
+                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                span:
+                  lo: 2029
+                  hi: 2330
+            - break:
+                span:
+                  lo: 2029
+                  hi: 2330
+            els:
+            []
+            span:
+              lo: 2029
+              hi: 2330
+        - set:
+            place: l0
+            value:
+              kind: isize
+              node:
+                infix:
+                  op: add
+                  lhs:
+                    kind: isize
+                    node:
+                      read: l0
+                    span:
+                      lo: 2200
+                      hi: 2203
+                  rhs:
+                    kind: isize
+                    node:
+                      const: 1:isize
+                    span:
+                      lo: 2206
+                      hi: 2209
+              span:
+                lo: 2200
+                hi: 2209
+            span:
+              lo: 2186
+              hi: 2235
+        - drop:
+            dest:
+              slot: l4
+            kind: "%fallible{tag:u8,ok:isize,err:text}"
+            span:
+              lo: 2029
+              hi: 2330
+        span:
+          lo: 2029
+          hi: 2330
+    - set:
+        place: l8
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            list:
+            - kind: u8
+              node:
+                const: 1:u8
+              span:
+                lo: 2346
+                hi: 2361
+            - kind: isize
+              node:
+                const: 0:isize
+              span:
+                lo: 2346
+                hi: 2361
+            - kind: text
+              node: blank_list
+              span:
+                lo: 2346
+                hi: 2361
+          span:
+            lo: 2346
+            hi: 2361
+        span:
+          lo: 2346
+          hi: 2361
+    - set:
+        place: l6
+        value:
+          kind: bool
+          node:
+            compare:
+              op: eq
+              lhs:
+                kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 2332
+                  hi: 2335
+              rhs:
+                kind: isize
+                node:
+                  const: 0:isize
+                span:
+                  lo: 2339
+                  hi: 2342
+          span:
+            lo: 2332
+            hi: 2342
+        span:
+          lo: 2332
+          hi: 2342
+    - set:
+        place: l7
+        value:
+          kind: bool
+          node:
+            read: l6
+          span:
+            lo: 2332
+            hi: 2342
+        span:
+          lo: 2332
+          hi: 2368
+    - if:
+        cond:
+          kind: bool
+          node:
+            prefix:
+              op: not
+              operand:
+                kind: bool
+                node:
+                  read: l7
+                span:
+                  lo: 2332
+                  hi: 2368
+          span:
+            lo: 2332
+            hi: 2368
+        then:
+        - set:
+            place: l8
+            value:
+              kind: "%fallible{tag:u8,ok:isize,err:text}"
+              node:
+                call:
+                  func: 0
+                  name: စစ်
+                  args:
+                  - kind: isize
+                    node:
+                      read: l0
+                    span:
+                      lo: 2356
+                      hi: 2359
+              span:
+                lo: 2346
+                hi: 2361
+            span:
+              lo: 2346
+              hi: 2361
+        - if:
+            cond:
+              kind: bool
+              node:
+                compare:
+                  op: eq
+                  lhs:
+                    kind: u8
+                    node:
+                      load:
+                        addr:
+                          kind: u8*
+                          node:
+                            field_addr:
+                              base:
+                                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                node:
+                                  read: l8
+                                span:
+                                  lo: 2346
+                                  hi: 2361
+                              field: 0
+                              offset: 0
+                          span:
+                            lo: 2346
+                            hi: 2361
+                    span:
+                      lo: 2346
+                      hi: 2361
+                  rhs:
+                    kind: u8
+                    node:
+                      const: 0:u8
+                    span:
+                      lo: 2346
+                      hi: 2361
+              span:
+                lo: 2346
+                hi: 2361
+            then:
+            - set:
+                place: l9
+                value:
+                  kind: "%fallible{tag:u8,err:text}"
+                  node:
+                    list:
+                    - kind: u8
+                      node:
+                        const: 0:u8
+                      span:
+                        lo: 2346
+                        hi: 2361
+                    - kind: text
+                      node:
+                        dup:
+                          value:
+                            kind: text
+                            node:
+                              load:
+                                addr:
+                                  kind: text*
+                                  node:
+                                    field_addr:
+                                      base:
+                                        kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                        node:
+                                          read: l8
+                                        span:
+                                          lo: 2346
+                                          hi: 2361
+                                      field: 2
+                                      offset: 16
+                                  span:
+                                    lo: 2346
+                                    hi: 2361
+                            span:
+                              lo: 2346
+                              hi: 2361
+                          lent: false
+                      span:
+                        lo: 2346
+                        hi: 2361
+                  span:
+                    lo: 2346
+                    hi: 2361
+                span:
+                  lo: 2346
+                  hi: 2361
+            - drop:
+                dest:
+                  slot: l8
+                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                span:
+                  lo: 2346
+                  hi: 2361
+            - drop:
+                dest:
+                  slot: l2
+                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                span:
+                  lo: 2346
+                  hi: 2361
+            - return:
+                value:
+                  kind: "%fallible{tag:u8,err:text}"
+                  node:
+                    read: l9
+                  span:
+                    lo: 2346
+                    hi: 2361
+                span:
+                  lo: 2346
+                  hi: 2361
+            els:
+            []
+            span:
+              lo: 2346
+              hi: 2361
+        - set:
+            place: l7
+            value:
+              kind: bool
+              node:
+                compare:
+                  op: eq
+                  lhs:
+                    kind: isize
+                    node:
+                      load:
+                        addr:
+                          kind: isize*
+                          node:
+                            field_addr:
+                              base:
+                                kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                node:
+                                  read: l8
+                                span:
+                                  lo: 2346
+                                  hi: 2361
+                              field: 1
+                              offset: 8
+                          span:
+                            lo: 2346
+                            hi: 2361
+                    span:
+                      lo: 2346
+                      hi: 2361
+                  rhs:
+                    kind: isize
+                    node:
+                      const: 1:isize
+                    span:
+                      lo: 2365
+                      hi: 2368
+              span:
+                lo: 2346
+                hi: 2368
+            span:
+              lo: 2332
+              hi: 2368
+        els:
+        []
+        span:
+          lo: 2332
+          hi: 2368
+    - print:
+        value:
+          expr:
+            kind: bool
+            node:
+              read: l7
+            span:
+              lo: 2332
+              hi: 2368
+        span:
+          lo: 2331
+          hi: 2398
+    - set:
+        place: l10
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            list:
+            - kind: u8
+              node:
+                const: 1:u8
+              span:
+                lo: 2399
+                hi: 2641
+            - kind: isize
+              node:
+                const: 0:isize
+              span:
+                lo: 2399
+                hi: 2641
+            - kind: text
+              node: blank_list
+              span:
+                lo: 2399
+                hi: 2641
+          span:
+            lo: 2399
+            hi: 2641
+        span:
+          lo: 2399
+          hi: 2641
+    - set:
+        place: l10
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            call:
+              func: 0
+              name: စစ်
+              args:
+              - kind: isize
+                node:
+                  read: l0
+                span:
+                  lo: 2459
+                  hi: 2462
+          span:
+            lo: 2399
+            hi: 2641
+        span:
+          lo: 2399
+          hi: 2641
+    - if:
+        cond:
+          kind: bool
+          node:
+            compare:
+              op: eq
+              lhs:
+                kind: u8
+                node:
+                  load:
+                    addr:
+                      kind: u8*
+                      node:
+                        field_addr:
+                          base:
+                            kind: "%fallible{tag:u8,ok:isize,err:text}"
+                            node:
+                              read: l10
+                            span:
+                              lo: 2399
+                              hi: 2641
+                          field: 0
+                          offset: 0
+                      span:
+                        lo: 2399
+                        hi: 2641
+                span:
+                  lo: 2399
+                  hi: 2641
+              rhs:
+                kind: u8
+                node:
+                  const: 0:u8
+                span:
+                  lo: 2399
+                  hi: 2641
+          span:
+            lo: 2399
+            hi: 2641
+        then:
+        - set:
+            place: l11
+            value:
+              kind: "%fallible{tag:u8,err:text}"
+              node:
+                list:
+                - kind: u8
+                  node:
+                    const: 0:u8
+                  span:
+                    lo: 2399
+                    hi: 2641
+                - kind: text
+                  node:
+                    dup:
+                      value:
+                        kind: text
+                        node:
+                          load:
+                            addr:
+                              kind: text*
+                              node:
+                                field_addr:
+                                  base:
+                                    kind: "%fallible{tag:u8,ok:isize,err:text}"
+                                    node:
+                                      read: l10
+                                    span:
+                                      lo: 2399
+                                      hi: 2641
+                                  field: 2
+                                  offset: 16
+                              span:
+                                lo: 2399
+                                hi: 2641
+                        span:
+                          lo: 2399
+                          hi: 2641
+                      lent: false
+                  span:
+                    lo: 2399
+                    hi: 2641
+              span:
+                lo: 2399
+                hi: 2641
+            span:
+              lo: 2399
+              hi: 2641
+        - drop:
+            dest:
+              slot: l10
+            kind: "%fallible{tag:u8,ok:isize,err:text}"
+            span:
+              lo: 2399
+              hi: 2641
+        - drop:
+            dest:
+              slot: l8
+            kind: "%fallible{tag:u8,ok:isize,err:text}"
+            span:
+              lo: 2399
+              hi: 2641
+        - drop:
+            dest:
+              slot: l2
+            kind: "%fallible{tag:u8,ok:isize,err:text}"
+            span:
+              lo: 2399
+              hi: 2641
+        - return:
+            value:
+              kind: "%fallible{tag:u8,err:text}"
+              node:
+                read: l11
+              span:
+                lo: 2399
+                hi: 2641
+            span:
+              lo: 2399
+              hi: 2641
+        els:
+        []
+        span:
+          lo: 2399
+          hi: 2641
+    - drop:
+        dest:
+          slot: l10
+        kind: "%fallible{tag:u8,ok:isize,err:text}"
+        span:
+          lo: 1516
+          hi: 2736
+    - drop:
+        dest:
+          slot: l8
+        kind: "%fallible{tag:u8,ok:isize,err:text}"
+        span:
+          lo: 1516
+          hi: 2736
+    - drop:
+        dest:
+          slot: l2
+        kind: "%fallible{tag:u8,ok:isize,err:text}"
+        span:
+          lo: 1516
+          hi: 2736
+    - return:
+        value:
+          kind: "%fallible{tag:u8,err:text}"
+          node:
+            list:
+            - kind: u8
+              node:
+                const: 1:u8
+              span:
+                lo: 1516
+                hi: 2736
+            - kind: text
+              node: blank_list
+              span:
+                lo: 1516
+                hi: 2736
+          span:
+            lo: 1516
+            hi: 2736
+        span:
+          lo: 1516
+          hi: 2736
+    shared_params: []
+    span:
+      lo: 1377
+      hi: 2736
+  - name: ပရိုဂရမ်
+    params: 0
+    result: 0
+    ret: isize
+    locals:
+    - name: ရလဒ်
+      kind: isize
+      access: var
+      span:
+        lo: 2738
+        hi: 2762
+      addressed: false
+    - name: "%new"
+      kind: "%fallible{tag:u8,ok:isize,err:text}"
+      access: var
+      span:
+        lo: 2937
+        hi: 3074
+      addressed: false
+    block:
+    - set:
+        place: l0
+        value:
+          kind: isize
+          node:
+            const: 0:isize
+          span:
+            lo: 2738
+            hi: 2762
+        span:
+          lo: 2738
+          hi: 2762
+    - set:
+        place: l1
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            list:
+            - kind: u8
+              node:
+                const: 1:u8
+              span:
+                lo: 2937
+                hi: 3074
+            - kind: isize
+              node:
+                const: 0:isize
+              span:
+                lo: 2937
+                hi: 3074
+            - kind: text
+              node: blank_list
+              span:
+                lo: 2937
+                hi: 3074
+          span:
+            lo: 2937
+            hi: 3074
+        span:
+          lo: 2937
+          hi: 3074
+    - set:
+        place: l1
+        value:
+          kind: "%fallible{tag:u8,ok:isize,err:text}"
+          node:
+            call:
+              func: 1
+              name: ပေါင်း
+              args:
+              - kind: isize
+                node:
+                  const: 1:isize
+                span:
+                  lo: 2956
+                  hi: 2959
+              - kind: isize
+                node:
+                  const: 2:isize
+                span:
+                  lo: 2963
+                  hi: 2966
+          span:
+            lo: 2937
+            hi: 2967
+        span:
+          lo: 2937
+          hi: 3074
+    - if:
+        cond:
+          kind: bool
+          node:
+            compare:
+              op: eq
+              lhs:
+                kind: u8
+                node:
+                  load:
+                    addr:
+                      kind: u8*
+                      node:
+                        field_addr:
+                          base:
+                            kind: "%fallible{tag:u8,ok:isize,err:text}"
+                            node:
+                              read: l1
+                            span:
+                              lo: 2937
+                              hi: 3074
+                          field: 0
+                          offset: 0
+                      span:
+                        lo: 2937
+                        hi: 3074
+                span:
+                  lo: 2937
+                  hi: 3074
+              rhs:
+                kind: u8
+                node:
+                  const: 0:u8
+                span:
+                  lo: 2937
+                  hi: 3074
+          span:
+            lo: 2937
+            hi: 3074
+        then:
+        - halt:
+            cause: not_good
+            value:
+              kind: text
+              node:
+                load:
+                  addr:
+                    kind: text*
+                    node:
+                      field_addr:
+                        base:
+                          kind: "%fallible{tag:u8,ok:isize,err:text}"
+                          node:
+                            read: l1
+                          span:
+                            lo: 2937
+                            hi: 3074
+                        field: 2
+                        offset: 16
+                    span:
+                      lo: 2937
+                      hi: 3074
+              span:
+                lo: 2937
+                hi: 3074
+            span:
+              lo: 2937
+              hi: 3074
+        els:
+        []
+        span:
+          lo: 2937
+          hi: 3074
+    - set:
+        place: l0
+        value:
+          kind: isize
+          node:
+            load:
+              addr:
+                kind: isize*
+                node:
+                  field_addr:
+                    base:
+                      kind: "%fallible{tag:u8,ok:isize,err:text}"
+                      node:
+                        read: l1
+                      span:
+                        lo: 2937
+                        hi: 3074
+                    field: 1
+                    offset: 8
+                span:
+                  lo: 2937
+                  hi: 3074
+          span:
+            lo: 2937
+            hi: 3074
+        span:
+          lo: 2937
+          hi: 3143
+    - drop:
+        dest:
+          slot: l1
+        kind: "%fallible{tag:u8,ok:isize,err:text}"
+        span:
+          lo: 2937
+          hi: 3143
+    - return:
+        value:
+          kind: isize
+          node:
+            read: l0
+          span:
+            lo: 2937
+            hi: 3143
+        span:
+          lo: 2937
+          hi: 3143
+    shared_params: []
+    span:
+      lo: 2738
+      hi: 3214
+  main:
+  - set:
+      place: g0
+      value:
+        kind: isize
+        node:
+          call:
+            func: 3
+            name: ပရိုဂရမ်
+            args: []
+        span:
+          lo: 2738
+          hi: 2762
+      span:
+        lo: 2738
+        hi: 2762
+  imported_inits: 0
+  host:
+    args: null
+    env: null
+    exit: 0
+  span:
+    lo: 0
+    hi: 3215
+diagnostics: []

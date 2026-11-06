@@ -16,6 +16,19 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Following, Kw::ListKo, Kw::Call], Kw::BlockOpen),
     // ... ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
     (&[Kw::Result, Kw::As, Kw::Return], Kw::ReturnValue),
+    // ... ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+    (&[Kw::GoodResult, Kw::As, Kw::Return], Kw::ReturnGood),
+    // ... ကို အမှားအယွင်း(အဖြစ်|အနေဖြင့်) ပြန်ပေး(ပါ|မည်)။
+    (&[Kw::Fault, Kw::As, Kw::Return], Kw::ReturnFault),
+    (&[Kw::Fault, Kw::As, Kw::WillReturn], Kw::ReturnFault),
+    (&[Kw::Fault, Kw::CountAs, Kw::Return], Kw::ReturnFault),
+    (&[Kw::Fault, Kw::CountAs, Kw::WillReturn], Kw::ReturnFault),
+    // ... လုပ်ဆောင်ပါ၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေး(ပါ|မည်)။
+    (&[Kw::OnFail, Kw::Fault, Kw::Ko, Kw::Return], Kw::PassFault),
+    (&[Kw::OnFail, Kw::Fault, Kw::Ko, Kw::WillReturn], Kw::PassFault),
+    // လုပ်ဆောင်ချက် (အောင်မြင်သည်|မအောင်မြင်ပါ)ဟု သတ်မှတ်မည်။
+    (&[Kw::Function, Kw::Succeeded, Kw::Hu, Kw::WillMark], Kw::MarkSucceeded),
+    (&[Kw::Function, Kw::NotSucceeded, Kw::Hu, Kw::WillMark], Kw::MarkFailed),
     // မင်မိုရီတွင် ... ဘိုက်စာ|ခုစာ နေရာယူ၍ လိပ်စာကို ... တွင် သိမ်းထားမည်။
     (&[Kw::TakeSpace, Kw::Address, Kw::Ko], Kw::AllocTarget),
     (&[Kw::Mem, Kw::At], Kw::AllocHead),
@@ -44,6 +57,8 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::ConvertHead, Kw::Result], Kw::Convert),
     // လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်
     (&[Kw::CallHead, Kw::Result], Kw::CallResult),
+    // လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်ကောင်း
+    (&[Kw::CallHead, Kw::GoodResult], Kw::CallGoodResult),
     // လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>
     (&[Kw::Function, Kw::From, Kw::EditableAttr], Kw::EditParam),
     // <name> (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)

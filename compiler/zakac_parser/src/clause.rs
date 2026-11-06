@@ -33,6 +33,7 @@ use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::parser::PResult;
@@ -67,6 +68,15 @@ enum Operand
     Expr(Expr),
     /// `<kind>` in `<kind> အဖြစ်`.
     Kind(Kind),
+    /// `ရလဒ်ကောင်း` (`good`) or `အမှားအယွင်း` in `... အဖြစ်`: the part of a
+    /// result a conversion reads.
+    Side
+    {
+        /// Whether it is the good result.
+        good: bool,
+        /// The word.
+        span: Span,
+    },
     /// The range of text in `<range> ထိကို`, which a replace statement
     /// changes.
     Range(Box<TextRange>),
@@ -102,6 +112,7 @@ impl Operand
         {
             Operand::Expr(e) => e.span(),
             Operand::Kind(k) => k.span,
+            Operand::Side { span, .. } => *span,
             Operand::Range(r) => r.span,
         }
     }
@@ -318,7 +329,8 @@ impl Parser<'_>
 
     /// Push the operand after a particle, unless a verb or a shift direction
     /// comes first. After `ကို`, `<kind> အဖြစ်` is the target of a
-    /// conversion.
+    /// conversion, and so is `ရလဒ်ကောင်း အဖြစ်` or `အမှားအယွင်း အဖြစ်`, a part
+    /// of a result.
     ///
     /// # Arguments
     ///
@@ -335,6 +347,15 @@ impl Parser<'_>
             let kind = self.parse_kind()?;
             let as_tok = self.bump();
             let item = Item::builder().operand(Operand::Kind(kind));
+            stack.push(item.slot((Slot::KindAhpjit, as_tok.span)).build());
+            return Ok(());
+        }
+        if slot == Slot::Ko && self.at_side()
+        {
+            let word = self.bump();
+            let good = word.kind == TokenKind::Kw(Kw::GoodResult);
+            let as_tok = self.bump();
+            let item = Item::builder().operand(Operand::Side { good, span: word.span });
             stack.push(item.slot((Slot::KindAhpjit, as_tok.span)).build());
             return Ok(());
         }
@@ -841,13 +862,17 @@ impl Parser<'_>
             Some((Slot::Bit(dir), _)) => Some(dir),
             _ => None,
         });
-        let (mut exprs, mut kind_arg) = (Vec::new(), None);
+        let (mut exprs, mut kind_arg, mut op) = (Vec::new(), None, verb.op);
         for item in args
         {
             match item.operand
             {
                 Operand::Expr(e) => exprs.push(e),
                 Operand::Kind(k) => kind_arg = Some(k),
+                Operand::Side { good, .. } =>
+                {
+                    op = tern!(good, VerbOp::Unwrap, VerbOp::UnwrapFault)
+                }
                 Operand::Range(_) =>
                 {
                     unreachable!("a range fills the slot of a statement verb alone")
@@ -856,9 +881,20 @@ impl Parser<'_>
         }
         let id = self.new_id();
         #[rustfmt::skip]
-        let node = VerbExpr::builder().id(id).op(verb.op).args(exprs).maybe_kind_arg(kind_arg)
+        let node = VerbExpr::builder().id(id).op(op).args(exprs).maybe_kind_arg(kind_arg)
             .maybe_dir(dir).particle(tok.particle).is_cmp(verb.is_cmp).span(span).build();
         Expr::Verb(node)
+    }
+
+    /// Whether `ရလဒ်ကောင်း အဖြစ်` or `အမှားအယွင်း အဖြစ်` starts here.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_side(&self) -> bool
+    {
+        let side = matches!(kw_of(&self.peek()), Some(Kw::GoodResult | Kw::Fault));
+        side && kw_of(&self.peek_n(1)) == Some(Kw::As)
     }
 
     /// Build the statement a statement verb closes, and read its full stop.
@@ -895,6 +931,18 @@ impl Parser<'_>
                 #[rustfmt::skip]
                 let node = AddStmt::builder().list(first).value(value).before(before).span(span).build();
                 Ok(Stmt::Add(node))
+            }
+            VerbOp::ReturnGood =>
+            {
+                #[rustfmt::skip]
+                let node = ReturnStmt::builder().value(first).good(true).span(span).build();
+                Ok(Stmt::Return(node))
+            }
+            VerbOp::ReturnFault =>
+            {
+                #[rustfmt::skip]
+                let node = ReturnStmt::builder().value(first).fault(true).span(span).build();
+                Ok(Stmt::Return(node))
             }
             _ =>
             {

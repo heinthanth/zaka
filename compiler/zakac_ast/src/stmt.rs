@@ -358,7 +358,8 @@ pub struct FnDecl
     /// The parameters.
     #[builder(default)]
     pub params: Vec<Param>,
-    /// The result kind, when the function returns a value.
+    /// The result kind, when the function returns a value; a result kind
+    /// ([`crate::kind::BaseKind::Result`]) for a function that can fail.
     pub ret: Option<Kind>,
     /// The function block.
     pub block: BlockStmt,
@@ -379,6 +380,16 @@ pub struct ReturnStmt
 {
     /// The returned value; `None` for a bare `ပြန်ပေးပါ။`.
     pub value: Option<Expr>,
+    /// `true` when the value is an error value: `... ကို အမှားအယွင်းအဖြစ်
+    /// ပြန်ပေးပါ။`
+    #[builder(default)]
+    #[serde(default)]
+    pub fault: bool,
+    /// `true` when the value is the good result of a function that can fail:
+    /// `... ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။`
+    #[builder(default)]
+    #[serde(default)]
+    pub good: bool,
     /// Source region.
     pub span: Span,
 }
@@ -397,6 +408,11 @@ pub struct CallStmt
     #[builder(default)]
     #[serde(default)]
     pub edits: Vec<bool>,
+    /// `true` when `မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` follows: a failure
+    /// of the call leaves the calling function with the same error value.
+    #[builder(default)]
+    #[serde(default)]
+    pub pass: bool,
     /// Source region.
     pub span: Span,
 }

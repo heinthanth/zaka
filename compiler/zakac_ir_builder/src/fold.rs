@@ -339,6 +339,7 @@ impl Folder
                 do_if!(let Some(text) = folded, *value = PrintValue::Text(text.to_string()));
             }
             Stmt::Break { .. } | Stmt::Continue { .. } => (),
+            Stmt::Halt { value, .. } => do_if!(let Some(v) = value, _ = self.expr(v)),
             Stmt::If { cond, then, els, .. } =>
             {
                 let taken = self.expr(cond).and_then(Value::as_bool);

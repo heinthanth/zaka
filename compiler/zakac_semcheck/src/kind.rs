@@ -19,6 +19,10 @@ use crate::structs::StructKind;
 use crate::structs::StructTable;
 use crate::structs::parse_sig;
 
+/// The name of the struct a function that can fail gives back; no written
+/// name starts with `%`.
+pub const FALLIBLE: &str = "%fallible";
+
 /// Bit counts an integer kind can have.
 const INT_BITS: &[u16] = &[8, 16, 32, 64, 128];
 /// Bit counts a floating-point kind can have.
@@ -352,10 +356,19 @@ impl DataKind
             BaseKind::Bool => Base::Bool,
             BaseKind::Text => Base::Seq(&TEXT_SEQ),
             BaseKind::Opaque => Base::Opaque,
-            BaseKind::Named => named_base(kind, structs),
+            BaseKind::Named | BaseKind::Result => named_base(kind, structs),
         };
         let skip = usize::from(kind.base == BaseKind::Opaque);
-        let plain = DataKind::over(base, u8::try_from(skip).unwrap_or(1));
+        // A result kind is the struct `DataKind::fallible` makes, and its
+        // levels wrap that struct.
+        let side =
+            |k: &Option<Kind>| k.as_ref().map(|k| DataKind::from_ast(k, structs));
+        let result = kind
+            .parts
+            .as_deref()
+            .map(|p| DataKind::fallible(side(&p.ok), side(&p.err)));
+        let plain = result
+            .unwrap_or_else(|| DataKind::over(base, u8::try_from(skip).unwrap_or(1)));
         let first_raw = skip == 1 && kind.wraps.first() == Some(&Wrap::RawPtr);
         let plain = tern!(first_raw, plain.with_outer_raw(), plain);
         let marked = tern!(
@@ -730,6 +743,61 @@ impl DataKind
     /// The short name, with each struct written as its signature.
     pub fn sig_name(self) -> String { self.spell(true) }
 
+    /// The kind a function that can fail gives back: a struct with a `tag`
+    /// (1 for a good result, 0 for a failure, so the blank struct, the
+    /// default of each result, is a failure), the good result `ok` and the
+    /// error value `err`, each when that side holds a value. Its name starts
+    /// with `%`, which no written name can.
+    ///
+    /// # Arguments
+    ///
+    /// * `ok` - The result kind, when the good side holds a value.
+    /// * `err` - The error kind, when the error side holds a value.
+    ///
+    /// # Returns
+    ///
+    /// The struct kind.
+    pub fn fallible(ok: Option<DataKind>, err: Option<DataKind>) -> DataKind
+    {
+        let ok = ok.map_or(String::new(), |k| format!(",ok:{}", k.sig_name()));
+        let err = err.map_or(String::new(), |k| format!(",err:{}", k.sig_name()));
+        let sig = format!("{FALLIBLE}{{tag:u8{ok}{err}}}");
+        let shape = parse_sig(&sig);
+        DataKind::Struct(shape.expect("the signature of a fallible result reads back"))
+    }
+
+    /// The name of a result of a function that can fail, for a message:
+    /// `isize result or text error`; `success` stands for a good side with
+    /// no value and `failure` for an error side with no value.
+    ///
+    /// # Returns
+    ///
+    /// The name.
+    fn fallible_name(self) -> String
+    {
+        let Some((ok, err)) = self.fallible_parts()
+        else
+        {
+            return String::new();
+        };
+        let ok = ok.map_or("success".to_string(), |k| format!("{} result", k.name()));
+        let err = err.map_or("failure".to_string(), |k| format!("{} error", k.name()));
+        format!("{ok} or {err}")
+    }
+
+    /// The parts of the kind a function that can fail gives back.
+    ///
+    /// # Returns
+    ///
+    /// The kind of the good result and the error kind, each `None` when
+    /// that side holds no value; `None` for another kind.
+    pub fn fallible_parts(self) -> Option<(Option<DataKind>, Option<DataKind>)>
+    {
+        let shape = self.as_struct().filter(|s| s.name == FALLIBLE)?;
+        let side = |name| shape.field(name).map(|(_, k)| k);
+        Some((side("ok"), side("err")))
+    }
+
     /// The name of the kind.
     ///
     /// # Arguments
@@ -750,6 +818,7 @@ impl DataKind
             DataKind::Ptr(p) => ptr_name(p, full),
             DataKind::Null => "null".to_string(),
             DataKind::List(l) => list_name(l, full),
+            DataKind::Struct(s) if !full && s.name == FALLIBLE => self.fallible_name(),
             DataKind::Struct(s) => tern!(full, s.sig(), &s.name).to_string(),
             DataKind::Slice(s) if s.text => "text[..]".to_string(),
             DataKind::Slice(s) => format!("{}[][..]", s.cell.spell(full)),

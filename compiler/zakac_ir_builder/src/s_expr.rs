@@ -59,6 +59,11 @@ impl ToSexpr for Stmt
                 list("set", [place.to_string(), value.to_sexpr()])
             }
             Stmt::Print { value, .. } => list("print", [print_value(value)]),
+            Stmt::Halt { cause, value, .. } =>
+            {
+                let cause: &'static str = cause.into();
+                list(cause, value.iter().map(ToSexpr::to_sexpr))
+            }
             Stmt::If { cond, then, els, .. } => if_sexpr(cond, then, els),
             Stmt::Loop { init, cond, update, block, .. } =>
             {

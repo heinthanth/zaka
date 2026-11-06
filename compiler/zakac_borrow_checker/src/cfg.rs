@@ -193,6 +193,8 @@ impl<'m> Builder<'m>
                 let n = self.add(NodeKind::Leaf(s), *span, 1);
                 self.returns.push((n, 0));
             }
+            // The run stops here: the path ends, with no exit to check.
+            Stmt::Halt { span, .. } => _ = self.add(NodeKind::Leaf(s), *span, 0),
             _ =>
             {
                 let n = self.add(NodeKind::Leaf(s), s.span(), 1);

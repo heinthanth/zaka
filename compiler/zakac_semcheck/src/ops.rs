@@ -45,6 +45,9 @@ pub(crate) enum OpClass
     CellCount,
     /// A statement verb, which never stands inside an expression.
     Stmt,
+    /// The tests and the conversions of a result of a function that can
+    /// fail.
+    Result,
 }
 
 impl OpClass
@@ -74,7 +77,8 @@ impl OpClass
             | OpClass::Deref
             | OpClass::Lend
             | OpClass::CellCount
-            | OpClass::Stmt => None,
+            | OpClass::Stmt
+            | OpClass::Result => None,
         }
     }
 }
@@ -201,9 +205,15 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         | VerbOp::CharAt
         | VerbOp::CharNth
         | VerbOp::Join => OpClass::CellCount,
+        VerbOp::IsGood | VerbOp::IsFault | VerbOp::Unwrap | VerbOp::UnwrapFault =>
+        {
+            OpClass::Result
+        }
         VerbOp::Print
         | VerbOp::Assign
         | VerbOp::Return
+        | VerbOp::ReturnFault
+        | VerbOp::ReturnGood
         | VerbOp::AddCell
         | VerbOp::Replace => OpClass::Stmt,
     }

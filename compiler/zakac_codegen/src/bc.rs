@@ -6,6 +6,7 @@ use serde::Serialize;
 use strum::IntoStaticStr;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_ir_builder::ir::CmpOp;
+use zakac_ir_builder::ir::HaltCause;
 pub use zakac_ir_builder::ir::Host;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::PrefixOp;
@@ -281,6 +282,16 @@ pub enum Op
     /// Pop the address of a list, a struct or a slice of this kind; write its
     /// cells or fields and a line break.
     PrintList(DataKind),
+    /// Stop the run for a failure the program did not handle. With a kind,
+    /// pop a value of it first, or the address of one for a list, a struct or
+    /// text, which the trap shows.
+    Halt
+    {
+        /// The reason the run stops.
+        cause: HaltCause,
+        /// The kind of the value to show, when there is one.
+        kind: Option<DataKind>,
+    },
     /// Push the address of the caller's slot for the list or struct result
     /// of the running call.
     ResultAddr,
@@ -516,6 +527,14 @@ impl Op
             | Op::SeqEq(kind)
             | Op::MemFill(kind)
             | Op::PrintList(kind) => kind.name(),
+            Op::Halt { cause, kind } =>
+            {
+                let cause: &'static str = cause.into();
+                kind.map_or_else(
+                    || cause.to_string(),
+                    |k| format!("{cause} {}", k.name()),
+                )
+            }
             Op::MakeSlice { stride, from } =>
             {
                 format!("{stride} {}", slice_source_text(from))

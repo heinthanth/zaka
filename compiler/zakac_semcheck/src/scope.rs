@@ -141,7 +141,8 @@ pub(crate) struct FnSig
     /// Whether the function can change each parameter.
     #[builder(default)]
     pub edits: Vec<bool>,
-    /// The result kind; `None` for a function without a result.
+    /// The result kind; `None` for a function without a result, and a
+    /// result kind ([`DataKind::fallible`]) for a function that can fail.
     pub ret: Option<DataKind>,
     /// `true` when other files can import the function.
     #[builder(default)]

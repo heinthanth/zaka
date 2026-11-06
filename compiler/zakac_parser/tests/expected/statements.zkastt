@@ -476,6 +476,8 @@ program:
         hi: 2024
   - return:
       value: null
+      fault: false
+      good: false
       span:
         lo: 2025
         hi: 2055

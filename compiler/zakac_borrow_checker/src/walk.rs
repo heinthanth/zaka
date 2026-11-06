@@ -73,6 +73,7 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
     {
         Stmt::Set { value, .. } => vec![value],
         Stmt::Print { value: PrintValue::Expr(e), .. } => vec![e],
+        Stmt::Halt { value, .. } => value.iter().collect(),
         Stmt::If { cond, .. } | Stmt::Loop { cond, .. } => vec![cond],
         Stmt::Counted { from, to, step, .. } =>
         {
@@ -202,6 +203,7 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
     {
         Stmt::Set { value, .. } => vec![value],
         Stmt::Print { value: PrintValue::Expr(e), .. } => vec![e],
+        Stmt::Halt { value, .. } => value.iter_mut().collect(),
         Stmt::If { cond, .. } | Stmt::Loop { cond, .. } => vec![cond],
         Stmt::Counted { from, to, step, .. } =>
         {

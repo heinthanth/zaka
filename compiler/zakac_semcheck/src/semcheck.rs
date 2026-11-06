@@ -25,6 +25,7 @@ use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::FreeStmt;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
+use zakac_ast::stmt::IfStmt;
 use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::PrintStmt;
@@ -40,6 +41,7 @@ use zakac_ast::stmt::WhileStmt;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
+use zakac_ast::visit::walk_stmt;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::ownership as od;
@@ -65,6 +67,11 @@ use crate::ops::Want;
 use crate::ops::kw_label;
 use crate::place::place_of;
 use crate::place::var_name;
+use crate::proof::Fact;
+use crate::proof::changed_in;
+use crate::proof::changed_in_stmt;
+use crate::proof::facts_when;
+use crate::proof::leaves_at_end;
 use crate::scope::Access;
 use crate::scope::Binding;
 use crate::scope::FnSigs;
@@ -201,6 +208,8 @@ pub(crate) struct FnCtx
     pub name: String,
     /// The result kind; `None` for a function without a result.
     pub ret: Option<DataKind>,
+    /// The result kind it gives back when it can fail.
+    pub fault: Option<DataKind>,
 }
 
 /// State of the walk.
@@ -240,6 +249,14 @@ pub(crate) struct Checker
     pub loop_depth: u32,
     /// The function around the current statement.
     pub func: Option<FnCtx>,
+    /// The part each result variable is proven to hold here: `true` for a
+    /// good result.
+    #[builder(default)]
+    pub proven: HashMap<Name, bool>,
+    /// The variables that statements changed since the statement around
+    /// them started, so what was proven about them before ends.
+    #[builder(default)]
+    pub touched: HashSet<Name>,
     /// Bit count of the platform-sized integer kinds.
     pub platform: u16,
     /// Whether kinds with a raw address level are refused.
@@ -436,6 +453,41 @@ impl Checker
         do_for!(s in stmts, self.visit_stmt(s))
     }
 
+    /// Forget what was proven about variables that can change.
+    ///
+    /// # Arguments
+    ///
+    /// * `names` - The variables.
+    fn forget(&mut self, names: HashSet<Name>)
+    {
+        do_for!(name in &names, _ = self.proven.remove(name));
+        self.touched.extend(names);
+    }
+
+    /// Visit the parts of a loop: what the loop can change is forgotten
+    /// before it, since a later round sees it; what its condition proves
+    /// holds inside it, and is dropped after it.
+    ///
+    /// # Arguments
+    ///
+    /// * `changed` - The variables the loop can change.
+    /// * `cond` - The condition, for a loop with one.
+    /// * `f` - The work.
+    fn proven_loop(
+        &mut self, changed: HashSet<Name>, cond: Option<&Expr>,
+        f: impl FnOnce(&mut Self),
+    )
+    {
+        let facts = cond.map_or_else(Vec::new, |c| facts_when(c, true));
+        let facts: Vec<Fact> =
+            facts.into_iter().filter(|(n, _)| !changed.contains(n)).collect();
+        self.forget(changed);
+        let before = self.proven.clone();
+        self.proven.extend(facts);
+        f(self);
+        self.proven = before;
+    }
+
     /// Check a call against the function it names.
     ///
     /// # Arguments
@@ -473,6 +525,77 @@ impl Checker
         }
         self.check_edits_apart(args, edits);
         ret
+    }
+
+    /// Check how a call meets a failure of the function: a call statement
+    /// to a function that can fail passes the failure on, a pass-on stands
+    /// inside a function that fails with the same error kind, and a call to
+    /// a function that cannot fail passes nothing on. A call expression
+    /// without a pass-on gives the whole result.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function name.
+    /// * `pass` - Whether the call passes a failure on.
+    /// * `dropped` - Whether the result is dropped: a call statement.
+    /// * `span` - The call.
+    pub fn check_pass(&mut self, callee: &Ident, pass: bool, dropped: bool, span: Span)
+    {
+        let Some(sig) = self.fns.get(&callee.name)
+        else
+        {
+            return;
+        };
+        let name = &callee.name;
+        let Some((_, found)) = sig.ret.and_then(DataKind::fallible_parts)
+        else
+        {
+            return do_if!(pass, self.report(kd::pass_without_failure(span, name)));
+        };
+        ret_if!(
+            !pass,
+            do_if!(dropped, self.report(kd::failure_not_passed(span, name)))
+        );
+        let own = self.func.as_ref().and_then(|f| f.fault);
+        let Some((_, want)) = own.and_then(DataKind::fallible_parts)
+        else
+        {
+            return self.report(kd::pass_outside_failing(span));
+        };
+        let differs = kd::fault_kind_differs(span, &err_name(found), &err_name(want));
+        do_if!(found != want, self.report(differs));
+    }
+
+    /// Check `... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။` against the error kind of
+    /// the function.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The return statement.
+    /// * `func` - The function around it.
+    fn check_fault_return(&mut self, n: &ReturnStmt, func: &FnCtx)
+    {
+        let Some((_, err)) = func.fault.and_then(DataKind::fallible_parts)
+        else
+        {
+            self.report(kd::fault_from_sure(n.span, &func.name));
+            do_if!(let Some(v) = &n.value, _ = self.infer(v, None));
+            return;
+        };
+        match (&n.value, err)
+        {
+            (Some(v), Some(err)) => self.expect_kind(v, Some(err)),
+            (Some(v), None) =>
+            {
+                self.report(kd::fault_value_extra(n.span, &func.name));
+                self.infer(v, None);
+            }
+            (None, Some(err)) =>
+            {
+                self.report(kd::fault_value_missing(n.span, &err.name()))
+            }
+            (None, None) => (),
+        }
     }
 
     /// Check one argument against its parameter: a value that converts to
@@ -1050,6 +1173,8 @@ impl Visitor for Checker
         let missing = n.is_const && n.init.is_none();
         do_if!(missing, self.report(rd::const_without_init(n.name.span, &n.name.name)));
         let access = tern!(n.is_const, Access::Const, Access::Var);
+        // A new variable of this name hides what was proven about the old.
+        self.proven.remove(&n.name.name);
         self.declare(&n.name, kind, access);
         do_if!(n.exported, self.scopes.mark_exported(&n.name.name));
         let init = n.init.as_ref().filter(|_| n.is_const);
@@ -1145,6 +1270,41 @@ impl Visitor for Checker
         self.scopes.pop();
     }
 
+    fn visit_stmt(&mut self, n: &Stmt)
+    {
+        walk_stmt(self, n);
+        self.forget(changed_in_stmt(n));
+    }
+
+    fn visit_if(&mut self, n: &IfStmt)
+    {
+        let before = self.proven.clone();
+        let outer = std::mem::take(&mut self.touched);
+        let mut ruled_out: Vec<Fact> = Vec::new();
+        for arm in &n.arms
+        {
+            self.proven = before.clone();
+            self.proven.extend(ruled_out.iter().copied());
+            self.expect_bool(&arm.cond);
+            self.proven.extend(facts_when(&arm.cond, true));
+            self.visit_block(&arm.block);
+            ruled_out.extend(facts_when(&arm.cond, false));
+        }
+        self.proven = before.clone();
+        self.proven.extend(ruled_out.iter().copied());
+        do_if!(let Some(b) = &n.else_block, self.visit_block(b));
+        let inside = std::mem::replace(&mut self.touched, outer);
+        let mut after = before;
+        after.retain(|name, _| !inside.contains(name));
+        // A lone arm that leaves at its end proves the opposite of its test
+        // after the statement.
+        let guard = n.arms.len() == 1 && n.else_block.is_none();
+        let guard = guard && n.arms.first().is_some_and(|a| leaves_at_end(&a.block));
+        do_if!(guard, after.extend(facts_when(&n.arms[0].cond, false)));
+        self.proven = after;
+        self.touched.extend(inside);
+    }
+
     fn visit_if_arm(&mut self, n: &IfArm)
     {
         self.expect_bool(&n.cond);
@@ -1153,8 +1313,12 @@ impl Visitor for Checker
 
     fn visit_while(&mut self, n: &WhileStmt)
     {
+        let changed = changed_in(&n.block.stmts);
+        self.forget(changed.clone());
         self.expect_bool(&n.cond);
-        self.in_loop(|c| c.visit_block(&n.block));
+        self.proven_loop(changed, Some(&n.cond), |c| {
+            c.in_loop(|c| c.visit_block(&n.block))
+        });
     }
 
     fn visit_counted(&mut self, n: &CountedStmt)
@@ -1162,7 +1326,10 @@ impl Visitor for Checker
         let kind = self.counted_kind(n);
         self.scopes.push();
         self.declare(&n.var, kind, Access::LoopVar);
-        self.in_loop(|c| c.visit_stmts(&n.block.stmts));
+        let changed = changed_in(&n.block.stmts);
+        self.proven_loop(changed, None, |c| {
+            c.in_loop(|c| c.visit_stmts(&n.block.stmts))
+        });
         self.scopes.pop();
     }
 
@@ -1171,7 +1338,10 @@ impl Visitor for Checker
         let kind = self.infer(&n.source, None).and_then(|k| self.each_var_kind(k, n));
         self.scopes.push();
         self.declare(&n.var, kind, Access::Var);
-        self.in_loop(|c| c.visit_stmts(&n.block.stmts));
+        let changed = changed_in(&n.block.stmts);
+        self.proven_loop(changed, None, |c| {
+            c.in_loop(|c| c.visit_stmts(&n.block.stmts))
+        });
         self.scopes.pop();
     }
 
@@ -1180,10 +1350,16 @@ impl Visitor for Checker
         let kind = self.decl_kind(n.kind.as_ref(), n.init.as_ref(), &n.var);
         self.scopes.push();
         self.declare(&n.var, kind, Access::Var);
+        let mut changed = changed_in(&n.block.stmts);
+        changed.extend(n.update.as_deref().map(changed_in_stmt).unwrap_or_default());
+        changed.insert(n.var.name);
+        self.forget(changed.clone());
         self.expect_bool(&n.cond);
-        self.in_loop(|c| {
-            c.visit_stmts(&n.block.stmts);
-            do_if!(let Some(update) = &n.update, c.visit_stmt(update));
+        self.proven_loop(changed, Some(&n.cond), |c| {
+            c.in_loop(|c| {
+                c.visit_stmts(&n.block.stmts);
+                do_if!(let Some(update) = &n.update, c.visit_stmt(update));
+            })
         });
         self.scopes.pop();
     }
@@ -1201,8 +1377,17 @@ impl Visitor for Checker
     fn visit_fn(&mut self, n: &FnDecl)
     {
         let depth = std::mem::take(&mut self.loop_depth);
-        let ret = n.ret.as_ref().map(|k| self.written_kind(k, KindUse::Result));
-        let ctx = FnCtx::builder().name(n.name.name.to_string()).maybe_ret(ret).build();
+        self.proven.clear();
+        self.touched.clear();
+        let given = n.ret.as_ref().map(|k| self.written_kind(k, KindUse::Result));
+        // A function that can fail keeps its good result in `ရလဒ်`. The start
+        // block gives back an exit code, never a result: ZK0441 reports a
+        // result kind on it, and its statements check as ones that cannot fail.
+        let parts = given.and_then(DataKind::fallible_parts).filter(|_| !n.start);
+        let (ret, fault) = parts.map_or((given, None), |(ok, _)| (ok, given));
+        #[rustfmt::skip]
+        let ctx = FnCtx::builder().name(n.name.name.to_string()).maybe_ret(ret).maybe_fault(fault)
+            .build();
         self.func = Some(ctx);
         self.scopes.push();
         do_for!(p in &n.params, self.declare_param(p));
@@ -1224,6 +1409,12 @@ impl Visitor for Checker
             do_if!(let Some(v) = &n.value, let _ = self.infer(v, None));
             return;
         };
+        ret_if!(n.fault, self.check_fault_return(n, &func));
+        // A function that can fail gives back its good result with
+        // `ရလဒ်ကောင်းအဖြစ်`, and a plain one with `ရလဒ်အဖြစ်`.
+        let fails = func.fault.is_some();
+        let wrong = n.value.is_some() && n.good != fails;
+        do_if!(wrong, self.report(kd::good_return_word(n.span, &func.name, fails)));
         match (func.ret, &n.value)
         {
             (None, Some(v)) =>
@@ -1243,6 +1434,7 @@ impl Visitor for Checker
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
         self.check_call(&n.callee, &n.args, &n.edits, n.span);
+        self.check_pass(&n.callee, n.pass, true, n.span);
     }
 
     fn visit_struct(&mut self, n: &StructDecl)
@@ -1295,4 +1487,18 @@ pub fn each_list(kind: DataKind, chars: bool) -> DataKind
 {
     let pointee = kind.pointee().filter(|k| !chars && (k.is_list() || k.is_seq()));
     pointee.unwrap_or(kind)
+}
+
+/// The name of the error side of a result, for a message.
+///
+/// # Arguments
+///
+/// * `err` - The error kind, `None` for a side with no value.
+///
+/// # Returns
+///
+/// The kind name, or `မအောင်မြင်သည့်သတင်း`.
+fn err_name(err: Option<DataKind>) -> String
+{
+    err.map_or_else(|| "မအောင်မြင်သည့်သတင်း".to_string(), DataKind::name)
 }

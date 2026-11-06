@@ -214,6 +214,8 @@ program:
                 span:
                   lo: 597
                   hi: 612
+            fault: false
+            good: false
             span:
               lo: 597
               hi: 681
@@ -280,6 +282,7 @@ program:
       edits:
       - false
       - false
+      pass: false
       span:
         lo: 1064
         hi: 1226

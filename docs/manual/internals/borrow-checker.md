@@ -409,6 +409,11 @@ digests:
 looked at, so a function that reads a global and then frees it counts as a function that
 frees and reads; this costs a few false alarms and closes a group of holes in return.
 
+A call that passes a failure on is lowered to a plain return that leaves the function (see [IR and
+code](codegen.md)), so the checker needs no rule of its own: an owner alive at the pass-on
+site is lost when the function leaves, which is ZK0708 at the call. The IR statement
+`Halt` (the causes `not_good` and `not_fault`) ends a path in the graph (`cfg.rs`), with no leak check and no exit check there: the run stops, so nothing is left to free.
+
 ## Options
 
 `BorrowCheckOptions { check: MemCheck, strict: bool }`, chosen with `--mem-check` and

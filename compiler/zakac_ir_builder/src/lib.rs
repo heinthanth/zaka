@@ -1,6 +1,7 @@
 pub mod artifact;
 pub mod cli;
 mod comptime;
+mod fault;
 pub mod fold;
 pub mod ir;
 mod lends;

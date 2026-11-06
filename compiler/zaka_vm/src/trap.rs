@@ -193,6 +193,15 @@ pub enum TrapKind
         /// The integer kind, as its short name.
         kind: String,
     },
+    /// A result that holds a failure was converted to its good result.
+    NotGood
+    {
+        /// The error value, as `ပြသပါ` writes it; blank for a failure with
+        /// no error value.
+        text: String,
+    },
+    /// A good result was converted to its error value.
+    NotFault,
     /// A range of cells that passes the end of its list or slice.
     SliceOutOfRange
     {
@@ -289,6 +298,12 @@ impl fmt::Display for TrapKind
             {
                 t!("vm.trap.overflow", op = op, kind = kind)
             }
+            TrapKind::NotGood { text } if text.is_empty() =>
+            {
+                t!("vm.trap.not_good_bare")
+            }
+            TrapKind::NotGood { text } => t!("vm.trap.not_good", e = text),
+            TrapKind::NotFault => t!("vm.trap.not_fault"),
             TrapKind::SliceOutOfRange { start, len, limit } =>
             {
                 t!(
@@ -343,6 +358,8 @@ impl TrapKind
             | TrapKind::NoCharToRemove
             | TrapKind::NoPlaceToInsert { .. }
             | TrapKind::SliceOutOfRange { .. }
+            | TrapKind::NotGood { .. }
+            | TrapKind::NotFault
             | TrapKind::Overflow { .. } => None,
         }
     }

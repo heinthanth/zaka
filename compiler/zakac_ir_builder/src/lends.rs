@@ -300,6 +300,8 @@ impl Walk
             {
                 self.expr(e, Use::Read, false)
             }
+            Stmt::Halt { value: Some(value), .. } => self.expr(value, Use::Read, false),
+            Stmt::Halt { value: None, .. } => (),
             Stmt::Print { .. } | Stmt::Break { .. } | Stmt::Continue { .. } =>
             {}
             Stmt::If { cond, then, els, .. } =>

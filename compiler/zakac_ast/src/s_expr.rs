@@ -92,7 +92,8 @@ impl ToSexpr for Expr
             Expr::Verb(n) => verb_sexpr(n),
             Expr::Call(n) =>
             {
-                list("call", call_parts(&n.callee.name, &n.args, &n.edits))
+                let word = tern!(n.pass, "call-pass", "call");
+                list(word, call_parts(&n.callee.name, &n.args, &n.edits))
             }
             Expr::Null(_) => "null".into(),
             Expr::SizeOf(n) => list("sizeof", [n.kind.to_sexpr()]),
@@ -147,10 +148,19 @@ impl ToSexpr for Stmt
             Stmt::Break(_) => "(break)".into(),
             Stmt::Continue(_) => "(continue)".into(),
             Stmt::Fn(s) => exported(s.exported, fn_sexpr(s)),
-            Stmt::Return(s) => list("return", s.value.iter().map(ToSexpr::to_sexpr)),
+            Stmt::Return(s) =>
+            {
+                let word = tern!(
+                    s.fault,
+                    "return-fault",
+                    tern!(s.good, "return-good", "return")
+                );
+                list(word, s.value.iter().map(ToSexpr::to_sexpr))
+            }
             Stmt::Call(s) =>
             {
-                list("call", call_parts(&s.callee.name, &s.args, &s.edits))
+                let word = tern!(s.pass, "call-pass", "call");
+                list(word, call_parts(&s.callee.name, &s.args, &s.edits))
             }
             Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
             Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
@@ -283,6 +293,16 @@ fn base_name(k: &Kind) -> String
         BaseKind::Named =>
         {
             k.name.as_ref().map_or(String::new(), |n| n.name.to_string())
+        }
+        BaseKind::Result =>
+        {
+            let side = |k: &Option<Kind>, none: &str| {
+                k.as_ref().map_or(none.to_string(), ToSexpr::to_sexpr)
+            };
+            let parts = k.parts.as_deref();
+            let ok = parts.map_or("-".to_string(), |p| side(&p.ok, "-"));
+            let err = parts.map_or("-".to_string(), |p| side(&p.err, "-"));
+            format!("({ok} ! {err})")
         }
         BaseKind::Char | BaseKind::Bool | BaseKind::Text | BaseKind::Opaque =>
         {

@@ -203,6 +203,9 @@ pub enum Punct
     /// `||`
     #[strum(serialize = "||")]
     OrOr,
+    /// `?`, after a call: pass a failure on
+    #[strum(serialize = "?")]
+    Question,
 }
 
 /// Reserved words and joined reserved phrases.
@@ -355,6 +358,22 @@ pub enum Kw
     EditArg,
     /// `ရလဒ် အဖြစ် ပြန်ပေးပါ`
     ReturnValue,
+    /// `ရလဒ်ကောင်း အဖြစ် ပြန်ပေးပါ`: gives back the good result of a function
+    /// that can fail
+    ReturnGood,
+    /// `လုပ်ဆောင်သော ရလဒ်ကောင်း`: a call that passes a failure on
+    CallGoodResult,
+    /// `အမှားအယွင်း အဖြစ် ပြန်ပေးပါ`: gives back an error value
+    ReturnFault,
+    /// `မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးပါ`: a call statement passes a
+    /// failure on
+    PassFault,
+    /// `လုပ်ဆောင်ချက် အောင်မြင်သည် ဟု သတ်မှတ်မည်`: the function ends with a
+    /// good result that holds no value
+    MarkSucceeded,
+    /// `လုပ်ဆောင်ချက် မအောင်မြင်ပါ ဟု သတ်မှတ်မည်`: the function ends with a
+    /// failure that holds no error value
+    MarkFailed,
     /// `အောက်ပါ တို့ကို လုပ်ဆောင်ပါ`
     BlockOpen,
     /// `အောက်ပါ တို့ကို လုပ်ဆောင်မည်`
@@ -459,6 +478,24 @@ pub enum Kw
     Program,
     /// `ရလဒ်`
     Result,
+    /// `ရလဒ်ကောင်း`, the good result of a call that can fail
+    GoodResult,
+    /// `မအောင်မြင်ပါက`, "if it fails"
+    OnFail,
+    /// `အမှားအယွင်း`, an error value
+    Fault,
+    /// `အောင်မြင်သည့်သတင်း`, "news of success": the good side of a result
+    /// kind with no good value
+    SuccessNews,
+    /// `မအောင်မြင်သည့်သတင်း`, "news of failure": the error side of a result
+    /// kind with no error value
+    FailureNews,
+    /// `အောင်မြင်သည်`, "it succeeded"
+    Succeeded,
+    /// `မအောင်မြင်ပါ`, "it did not succeed"
+    NotSucceeded,
+    /// `သတ်မှတ်မည်`, "will mark"
+    WillMark,
     /// `မှန်`
     True,
     /// `မမှန်`

@@ -64,6 +64,11 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             expr(value, f);
             *span = f(*span);
         }
+        Stmt::Halt { value, span, .. } =>
+        {
+            do_if!(let Some(v) = value, expr(v, f));
+            *span = f(*span);
+        }
         Stmt::Print { value, span } =>
         {
             do_if!(let PrintValue::Expr(e) = value, expr(e, f));

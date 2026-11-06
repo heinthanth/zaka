@@ -8,6 +8,7 @@ pub mod kind;
 mod list;
 mod ops;
 mod place;
+mod proof;
 mod scope;
 pub mod semcheck;
 mod struct_check;

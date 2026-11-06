@@ -183,7 +183,7 @@ fn comma_gets_a_hint()
 fn invalid_words_are_skipped()
 {
     assert_eq!(kinds("က ; ခ"), [TokenKind::Ident, TokenKind::Ident]);
-    assert_eq!(codes("က ; ခ ?"), [Code::InvalidCharacter, Code::InvalidCharacter]);
+    assert_eq!(codes("က ; ခ $"), [Code::InvalidCharacter, Code::InvalidCharacter]);
 }
 
 #[test]
@@ -238,4 +238,41 @@ fn import_and_export_words()
     ];
     assert_eq!(kinds(import), want);
     assert_eq!(kws("အများသုံး လုပ်ဆောင်ချက်"), [Kw::Export, Kw::Function]);
+}
+
+#[test]
+fn failure_words_join_into_their_phrases()
+{
+    assert_eq!(kws("လုပ်ဆောင်သော ရလဒ်ကောင်း"), [Kw::CallGoodResult]);
+    assert_eq!(kws("မအောင်မြင်ပါက"), [Kw::OnFail]);
+    for text in [
+        "အမှားအယွင်းအဖြစ် ပြန်ပေးပါ",
+        "အမှားအယွင်းအနေဖြင့် ပြန်ပေးပါ",
+        "အမှားအယွင်း အဖြစ် ပြန်ပေးမည်",
+        "အမှားအယွင်းအနေဖြင့် ပြန်ပေးမည်",
+    ]
+    {
+        assert_eq!(kws(text), [Kw::ReturnFault], "{text}");
+    }
+    for text in ["မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ", "မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးမည်"]
+    {
+        assert_eq!(kws(text), [Kw::PassFault], "{text}");
+    }
+}
+
+#[test]
+fn a_question_mark_after_a_call_is_one_token()
+{
+    let punct = TokenKind::Punct;
+    #[rustfmt::skip]
+    let want = [TokenKind::Ident, punct(Punct::LParen), TokenKind::Ident, punct(Punct::RParen), punct(Punct::Question)];
+    assert_eq!(kinds("f(က)?"), want);
+}
+
+#[test]
+fn news_and_mark_words_lex_as_reserved()
+{
+    assert_eq!(kws("အောင်မြင်သည့်သတင်း မအောင်မြင်သည့်သတင်း"), [Kw::SuccessNews, Kw::FailureNews]);
+    assert_eq!(kws("လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်"), [Kw::MarkSucceeded]);
+    assert_eq!(kws("လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်"), [Kw::MarkFailed]);
 }

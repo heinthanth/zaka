@@ -32,6 +32,20 @@ pub enum BaseKind
     Opaque,
     /// A struct, named in [`Kind::name`].
     Named,
+    /// A result of a function that can fail, with its sides in
+    /// [`Kind::parts`]: `<kind> ရလဒ် သို့မဟုတ် <kind> အမှားအယွင်း`.
+    Result,
+}
+
+/// The two sides of a result kind; a side with no value is `None`, as
+/// `အောင်မြင်သည့်သတင်း` and `မအောင်မြင်သည့်သတင်း` write it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct ResultParts
+{
+    /// The kind of the good result.
+    pub ok: Option<Kind>,
+    /// The kind of the error value.
+    pub err: Option<Kind>,
 }
 
 impl BaseKind
@@ -98,6 +112,9 @@ pub struct Kind
     #[builder(default)]
     #[serde(default)]
     pub wraps: Vec<Wrap>,
+    /// The sides of a [`BaseKind::Result`] base.
+    #[serde(default)]
+    pub parts: Option<Box<ResultParts>>,
     /// Whether the kind starts with the `ငှားထားသော` marker.
     #[builder(default)]
     #[serde(default)]
@@ -122,9 +139,11 @@ impl Serialize for Kind
         let skip_name = skip && self.name.is_none();
         let skip_borrowed = skip && !self.borrowed;
         let skip_extra = skip && self.extra_borrows == 0;
-        /// The number of fields, the name and borrow fields included.
-        const FIELDS: usize = 8;
-        let skipped = [skip_name, skip_borrowed, skip_extra].map(usize::from);
+        let skip_parts = skip && self.parts.is_none();
+        /// The number of fields, the name, parts and borrow fields included.
+        const FIELDS: usize = 9;
+        let skipped =
+            [skip_name, skip_borrowed, skip_extra, skip_parts].map(usize::from);
         let n = FIELDS - skipped.iter().sum::<usize>();
         let mut state = serializer.serialize_struct("Kind", n)?;
         state.serialize_field("base", &self.base)?;
@@ -136,6 +155,11 @@ impl Serialize for Kind
         state.serialize_field("bits", &self.bits)?;
         state.serialize_field("signed", &self.signed)?;
         state.serialize_field("wraps", &self.wraps)?;
+        tern!(
+            skip_parts,
+            state.skip_field("parts")?,
+            state.serialize_field("parts", &self.parts)?
+        );
         tern!(
             skip_borrowed,
             state.skip_field("borrowed")?,

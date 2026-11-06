@@ -34,6 +34,7 @@ use crate::ops::verb_class;
 use crate::ops::verb_label;
 use crate::place::place_of;
 use crate::place::var_name;
+use crate::proof::result_var;
 use crate::scope::Access;
 use crate::semcheck::Checker;
 use crate::structs::StructTable;
@@ -444,6 +445,7 @@ impl Checker
         match (class, n.args.as_slice())
         {
             (OpClass::Cast, [value]) => self.infer_cast(n, value),
+            (OpClass::Result, [value]) => self.infer_result_part(n.op, value),
             (OpClass::AddrOf, [value]) => self.infer_addr_of(value),
             (OpClass::Deref, [value]) => self.infer_deref(value),
             (OpClass::Lend, [value]) => self.infer_lend(value),
@@ -463,6 +465,42 @@ impl Checker
             ) => self.infer_pair(class, &op, l, r, expect, n.span),
             _ => self.infer_all(&n.args),
         }
+    }
+
+    /// Infer a test or a conversion of a result of a function that can
+    /// fail: the test is a boolean, and the conversion the good result or
+    /// the error value.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The verb.
+    /// * `value` - The result.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or `None` after an error.
+    fn infer_result_part(&mut self, op: VerbOp, value: &Expr) -> Option<DataKind>
+    {
+        let kind = self.infer(value, None)?;
+        let Some((ok, err)) = kind.fallible_parts()
+        else
+        {
+            self.report(kd::not_a_result(value.span(), &kind.name()));
+            return None;
+        };
+        ret_if!(matches!(op, VerbOp::IsGood | VerbOp::IsFault), Some(DataKind::Bool));
+        let proven =
+            result_var(value).and_then(|n| self.proven.get(&n).map(|g| (n, *g)));
+        let good = op == VerbOp::Unwrap;
+        if let Some((name, holds)) = proven.filter(|(_, holds)| *holds != good)
+        {
+            self.report(kd::wrong_part_proven(value.span(), &name, holds));
+        }
+        let no_err = op == VerbOp::UnwrapFault && err.is_none();
+        ret_if!(no_err, self.report(kd::no_fault_value(value.span())), None);
+        ret_if!(op == VerbOp::UnwrapFault, err);
+        ret_if!(ok.is_none(), self.report(kd::no_good_value(value.span())), None);
+        ok
     }
 
     /// Infer a verbal join: each piece must be text, owned or a view.
@@ -547,6 +585,11 @@ impl Checker
     fn infer_call(&mut self, n: &CallExpr) -> Option<DataKind>
     {
         let ret = self.check_call(&n.callee, &n.args, &n.edits, n.span)?;
+        self.check_pass(&n.callee, n.pass, false, n.span);
+        // Without a pass-on the value is the whole result; with one, the good
+        // result.
+        let parts = ret.and_then(DataKind::fallible_parts);
+        let ret = tern!(let Some((ok, _)) = parts.filter(|_| n.pass), ok, ret);
         let void = rd::value_from_void_function(n.span, &n.callee.name);
         ret_if!(ret.is_none(), self.report(void), None);
         ret

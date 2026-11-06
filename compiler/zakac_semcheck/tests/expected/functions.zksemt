@@ -214,6 +214,8 @@ program:
                 span:
                   lo: 585
                   hi: 600
+            fault: false
+            good: false
             span:
               lo: 585
               hi: 669
@@ -366,6 +368,8 @@ program:
               hi: 1524
         - return:
             value: null
+            fault: false
+            good: false
             span:
               lo: 1525
               hi: 1555
@@ -396,6 +400,7 @@ program:
                 hi: 1833
             args: []
             edits: []
+            pass: false
             span:
               lo: 1769
               hi: 1880
@@ -440,6 +445,7 @@ program:
                 - false
                 - false
                 - false
+                pass: false
                 span:
                   lo: 1881
                   hi: 2084

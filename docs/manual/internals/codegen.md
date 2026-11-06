@@ -53,7 +53,7 @@ parameters of a function are its first locals, then the result variable `ရလ�
 other locals. `addressed` marks a slot whose address the program takes, so it needs an address
 that remains fixed.
 
-A statement is one of eighteen forms:
+A statement is one of nineteen forms:
 
 | Form | Meaning |
 | --- | --- |
@@ -63,6 +63,7 @@ A statement is one of eighteen forms:
 | `Loop { init, cond, update, block }` | a while loop has a blank `init` and `update` |
 | `Counted { var, from, to, step, mode, block }` | `var` runs from `from` to `to`, both included |
 | `Break`, `Continue`, `Return { value }` | |
+| `Halt { cause, value }` | stop the run for a read of the wrong part of a whole result; `cause` is `not_good` (the good result of a result that holds an error was read) or `not_fault` (the error value of a good result was read); `value` is the error value to show, and `not_fault` has none, nor has a failure that holds no value (the trap then shows the bare message); written `(not_good v)` and `(not_fault)`, and `(not_good)` for a failure with no value |
 | `Call { func, name, args }` | a call whose result is dropped |
 | `Store { addr, value }` | write at an address |
 | `Alloc`, `Resize`, `Free` | a heap sentence, with a `Dest`: a slot, or a cell in storage that holds an address |
@@ -105,6 +106,22 @@ rules out). Its rules:
 - A negated integer literal becomes a negative constant, so `-၁၂၈` is a constant of `i8`.
 - A function with a result starts with `set l1 = default`, so the result variable has a
   value if the block never sets it.
+- A function that can fail gives back a compiler-built struct `%fallible{tag: u8, ok: T, err: E}`,
+  with no `ok` field when the good side holds no value and no `err` field when the error side holds none. Tag 1 is a good result and tag 0 a failure, so the blank (all-zero) struct is a failure. The statements `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်` and `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` are returns of a struct with the tag alone. Each
+  return builds the struct in a hidden slot and returns it, after the drops of the places
+  that hold text. A call that passes a failure on goes into a hidden slot, and statements
+  that run before the statement holding it test its tag: on a failure the function drops
+  its text and returns the error. Each operand left of the call is worked out first into
+  a hidden slot (a duplicate for text and lists; a plain read of an owner is left in place), so
+  the written order holds. The right side of `&&` and `||`, the condition of a while loop and that of an
+  `else if` arm get their statements inside their own branch, so each runs just when
+  reached. The start block cannot fail, so `main` calls it as a plain function and sets the
+  exit code from its integer result.
+  A call that is no pass-on keeps the whole result in a hidden slot of the same struct,
+  and the tests `is_good` and `is_fault` read its tag. A conversion `unwrap` or
+  `unwrap_fault` is lowered like a pass-on call: its statements go before the statement that
+  holds it, test the tag, and `Halt` with `not_good` (showing the error value) or
+  `not_fault` on the wrong part; the value is then the `ok` or the `err` field.
 - `ကိန်းသေ` becomes a slot with `access: const`; the folder uses the flag.
 - A pointer read through a place becomes `Load`; an owner moved out becomes `Take`; a
   lend becomes `Lend`. A parameter the function can change (`Param::edit`) gets a borrow slot;
@@ -422,6 +439,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | arithmetic | `prefix op`, `infix op`, `compare op`, `convert k` (the ops print as `add`, `lt`, ...), `wrap op` |
 | control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `ret`, `result_addr`, `trap code` |
 | output | `print`, `print_text t`, `print_list k` |
+| failure | `halt cause [k]` |
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free`, `mem_blit stride`, `mem_move stride`, `mem_fill k` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k`, `seq_eq k`, `static_seq s`, `seq_addr s`, `to_heap k`, `add_cell k`, `remove_cell k` |
 | slices | `make_slice stride source`, `slice_cell stride from` |

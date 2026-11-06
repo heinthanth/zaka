@@ -112,7 +112,8 @@ each other difference needs an explicit conversion.
 
 A function without a result returns nothing. A function with a result has a variable named
 `ရလဒ်` ("result") of the result kind. It starts at the default of the kind (`၀` for a
-number, `မမှန်` for a true/false value, `ဗလာ` for an address), and the call gives back
+number, `မမှန်` for a true/false value, `ဗလာ` for an address, a failure for a result
+kind), and the call gives back
 what it holds when the function ends.
 
 A function ends in one of two manners, and both give the same result:
@@ -137,6 +138,11 @@ setting `ရလဒ်` gives back the default of its kind:
 ```text
 ၀
 ```
+
+A result clause can also be a whole result kind, `<kind> ရလဒ် သို့မဟုတ် <kind> အမှားအယွင်း ကို ပြန်ပေးမည်`,
+or `အောင်မြင်သည့်သတင်း သို့မဟုတ် <kind> အမှားအယွင်း ကို ပြန်ပေးမည်` for a good side with no value. Such a function can fail:
+`<value> ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။` gives back an error value instead of a result. The
+rules are in [Errors and results](error-handling.md).
 
 What the compiler does check:
 
@@ -188,6 +194,12 @@ parentheses after the name.
 | statement | `လုပ်ဆောင်ချက် <name> ကို <arguments> တို့ဖြင့် လုပ်ဆောင်ပါ။` | a statement; a result, if there is one, is dropped |
 | expression | `လုပ်ဆောင်ချက် <name> ကို <arguments> တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်` | a value |
 | sign form | `<name>(<arguments>)` | a value, the same call as the expression form |
+
+A function whose result clause names a result kind can fail. A call to it
+passes the failure on, with `ရလဒ်ကောင်း` in place of `ရလဒ်`, a `?` after the `)`, or
+`၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` at the end of a call statement; or, with none
+of these, the expression form gives back the whole result, which a test and a conversion
+read. A call statement with no pass-on is ZK0443. See [Errors and results](error-handling.md).
 
 The expression form is an operand like a number: print it, store it, pass it as an
 argument, use it in a sum, or give it back from another function. Using the expression
@@ -617,7 +629,7 @@ that run go there or into functions: the top level of a file holds declarations 
 | parameters | none, one or two, each a `စာသား စာရင်း`, with names the program chooses |
 | the first | the name of the program, then the arguments of the run, one text for each |
 | the second | the environment variables, one `NAME=VALUE` text for each |
-| result | none, or an integer kind: the exit code of the run |
+| result | none, or an integer kind: the exit code of the run; the clauses of a [failing function](error-handling.md) can be used too |
 
 ```zaka
 ကိန်းရှင် နှုတ်ခွန်း သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။
@@ -675,7 +687,9 @@ Inside, the start block follows the rules of a function: it has its own variable
   constants and imports. A statement that runs there is ZK0326; it goes inside the start
   block or a function.
 - A parameter that is no `စာသား စာရင်း`, a parameter the function can change, and a
-  third parameter are ZK0440. A result that is no integer is ZK0441.
+  third parameter are ZK0440. A result that is no integer is ZK0441, a result kind among
+  them: the start block cannot fail, so it holds no pass-on (ZK0445); see
+  [Errors and results](error-handling.md#the-start-block).
 - No call names the start block, it is not declared inside a block (ZK0214), and
   `အများသုံး` does not export it (ZK0229).
 
@@ -751,5 +765,6 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 | ZK0433 | a place a call changes, in another argument of the same call |
 | ZK0440 | a start block parameter that is no `စာသား စာရင်း`, or a third one |
 | ZK0441 | a start block result that is no integer |
+| ZK0443 to ZK0449 | the failing-function mistakes of [Errors and results](error-handling.md#errors) |
 
 The text of each message is in [Error messages](../reference/errors.md).

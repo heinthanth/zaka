@@ -922,6 +922,14 @@ impl<'s> FuncGen<'s>
                 self.op(tern!(e.kind.is_aggregate(), Op::PrintList(e.kind), Op::Print));
                 do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
             }
+            Stmt::Halt { cause, value, .. } =>
+            {
+                do_if!(let Some(v) = value, _ = self.read_operand(v));
+                self.op(Op::Halt {
+                    cause: *cause,
+                    kind: value.as_ref().map(|v| v.kind),
+                });
+            }
             Stmt::Print { value: PrintValue::Text(text), .. } =>
             {
                 let i = self.shared.text(text);

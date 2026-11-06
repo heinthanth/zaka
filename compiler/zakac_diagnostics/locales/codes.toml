@@ -817,6 +817,120 @@ en = "assign the cells one at a time, or hold the addresses in raw pointers (\"<
 [codes.ZK0442.explain]
 en = """\"ကူးယူမည်\" and \"ပြောင်းထည့်မည်\" duplicate cells, and \"ဖြည့်မည်\" fills them, as raw octets. A cell that holds an owner pointer, text or a plain list owns a heap block, so a raw duplicate of it leaves two cells that both free the same block. A cell that holds a borrow or a slice points into a place the ownership check follows, and a raw duplicate puts the borrow where the check cannot see it, so it could outlast that place. The cells are the kind of the size, or, for a size in octets, the kind each address points at. Assign such cells one at a time, so each value moves, is duplicated or is lent as its kind requires, or hold the addresses in raw pointers, which own nothing and are not followed."""
 
+[codes.ZK0443.title]
+en = "call that can fail, with no pass-on"
+[codes.ZK0443.message]
+en = "\"%{f}\" can fail, but the call does not pass the failure on"
+[codes.ZK0443.help]
+en = "read the value with \"... လုပ်ဆောင်သော ရလဒ်ကောင်း\" or \"%{f}(...)?\", or end a call statement with \"၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ\""
+[codes.ZK0443.explain]
+en = """A function whose result clause is a result kind, such as \"ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်\", can fail: it gives back a good result or an error value. A call to it must tell what happens on a failure. For now the one answer is to pass the failure on: the call reads the good result with \"ရလဒ်ကောင်း\" or \"?\", and when the function fails, the function around the call stops and gives back the same error value. A call statement passes it on with \"၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ\" before its full stop. A failure is never dropped without a word."""
+
+[codes.ZK0444.title]
+en = "pass-on for a function that cannot fail"
+[codes.ZK0444.message]
+en = "the call passes a failure on, but \"%{f}\" cannot fail"
+[codes.ZK0444.help]
+en = "write \"လုပ်ဆောင်သော ရလဒ်\" or \"%{f}(...)\" with no \"?\", and drop the \"မအောင်မြင်ပါက\" part of a call statement"
+[codes.ZK0444.explain]
+en = """\"ရလဒ်ကောင်း\", \"?\" and \"မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ\" pass a failure of the call on. A function whose result clause is no result kind cannot fail, so there is nothing to pass on: read its result with \"လုပ်ဆောင်သော ရလဒ်\" or a plain sign-form call."""
+
+[codes.ZK0445.title]
+en = "pass-on in a function that cannot fail"
+[codes.ZK0445.message]
+en = "the call passes a failure on, but the code around it cannot fail"
+[codes.ZK0445.help]
+en = "give the function around the call a result kind, such as \"<kind> ရလဒ် သို့မဟုတ် <kind> အမှားအယွင်း ကို ပြန်ပေးမည်\""
+[codes.ZK0445.explain]
+en = """Passing a failure on stops the function around the call and gives back the error value, so that function must be able to fail itself: its result clause is a result kind. The top-level statements of a file and the start block cannot fail: the start block gives back an exit code, never a result. Move the call into a function that can fail, or read the result there with \"သည် ရလဒ်ကောင်း\" and the conversions."""
+
+[codes.ZK0446.title]
+en = "pass-on with another error kind"
+[codes.ZK0446.message]
+en = "the called function fails with \"%{found}\", but the function around the call fails with \"%{want}\""
+[codes.ZK0446.help]
+en = "give both functions the same error kind"
+[codes.ZK0446.explain]
+en = """Passing a failure on gives back the error value of the called function as it is, so it must have the error kind of the function around the call. Both result clauses must name the same kind after \"မအောင်မြင်ပါက\". Zaka does not convert one error kind into another."""
+
+[codes.ZK0447.title]
+en = "error value from a function that cannot fail"
+[codes.ZK0447.message]
+en = "\"%{f}\" cannot fail, so it has no error value to give back"
+[codes.ZK0447.help]
+en = "make the result clause a result kind, such as \"<kind> ရလဒ် သို့မဟုတ် <kind> အမှားအယွင်း ကို ပြန်ပေးမည်\""
+[codes.ZK0447.explain]
+en = """\"... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ\" ends the function with a failure and gives back the error value. The result clause of the function names the kind of that value after \"မအောင်မြင်ပါက\"; a function without that part cannot fail."""
+
+[codes.ZK0448.title]
+en = "test or conversion of a value that is no result"
+[codes.ZK0448.message]
+en = "the value is \"%{k}\", not the result of a function that can fail"
+[codes.ZK0448.help]
+en = "\"သည် ရလဒ်ကောင်း\", \"သည် အမှားအယွင်း\" and the conversions to \"ရလဒ်ကောင်း\" and \"အမှားအယွင်း\" read the result of a call such as \"... လုပ်ဆောင်သော ရလဒ်\""
+[codes.ZK0448.explain]
+en = """A call to a function that can fail, written without \"ရလဒ်ကောင်း\" or \"?\", gives back the whole result: a good result or an error value. \"<r> သည် ရလဒ်ကောင်း\" and \"<r> သည် အမှားအယွင်း\" test which one it holds, and \"<r> ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်\" and \"<r> ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ်\" read it out. A value of another kind has no such parts."""
+
+[codes.ZK0449.title]
+en = "good result of a function with no result"
+[codes.ZK0449.message]
+en = "the function gives back no good value, so the result has none to read"
+[codes.ZK0449.help]
+en = "test the result with \"သည် ရလဒ်ကောင်း\", or read its error value with \"အမှားအယွင်း အဖြစ်\""
+[codes.ZK0449.explain]
+en = """A function whose result clause is \"အောင်မြင်သည့်သတင်း သို့မဟုတ် <kind> အမှားအယွင်း ကို ပြန်ပေးမည်\" gives back nothing when it does not fail: its result holds an error value or nothing. A conversion to \"ရလဒ်ကောင်း\" has no value to read; test the result instead."""
+
+[codes.ZK0450.title]
+en = "error value of a result whose failure holds none"
+[codes.ZK0450.message]
+en = "the error side of the result is \"မအောင်မြင်သည့်သတင်း\": it holds no value to read"
+[codes.ZK0450.help]
+en = "test the result with \"သည် အမှားအယွင်း\" instead"
+[codes.ZK0450.explain]
+en = """A result kind whose error side is \"မအောင်မြင်သည့်သတင်း\" fails with no error value, so a conversion to \"အမှားအယွင်း\" has nothing to read. Test the result instead."""
+
+[codes.ZK0451.title]
+en = "failure with no value where one is needed"
+[codes.ZK0451.message]
+en = "the function fails with an error value of the kind \"%{k}\", so a failure must give one back"
+[codes.ZK0451.help]
+en = "write \"<value> ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ\""
+[codes.ZK0451.explain]
+en = """\"လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်\" ends a function with a failure that holds no value. That fits a result kind whose error side is \"မအောင်မြင်သည့်သတင်း\". When the error side names a kind, the failure must give back an error value of that kind."""
+
+[codes.ZK0452.title]
+en = "error value from a function whose failure holds none"
+[codes.ZK0452.message]
+en = "a failure of \"%{f}\" holds no error value"
+[codes.ZK0452.help]
+en = "write \"လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်\", or name an error kind in the result kind"
+[codes.ZK0452.explain]
+en = """A result kind whose error side is \"မအောင်မြင်သည့်သတင်း\" fails with no error value, so \"... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ\" has no place for its value. End the function with \"လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်\", or write an error kind on the error side."""
+
+[codes.ZK0454.title]
+en = "conversion to the part a result does not hold"
+[codes.ZK0454.message_good]
+en = "\"%{n}\" holds a good result here, so reading its error value stops the run each time"
+[codes.ZK0454.message_fault]
+en = "\"%{n}\" holds a failure here, so reading its good result stops the run each time"
+[codes.ZK0454.help]
+en = "read the other part, or test the result first with \"သည် ရလဒ်ကောင်း\" or \"သည် အမှားအယွင်း\""
+[codes.ZK0454.explain]
+en = """A test such as \"အကယ်၍ R သည် ရလဒ်ကောင်း ဖြစ်လျှင်\" proves which part a result variable holds inside its arm, and the opposite in the arms after it; an arm that leaves the function or the loop proves the opposite after the whole statement as well. While nothing changes the variable, a conversion to the part the test ruled out would stop the run each time it ran, so the check reports it. A statement that can change the variable, such as an assignment, a call that the variable is lent to with the edit mark, or the address of the variable, ends what the test proved."""
+
+[codes.ZK0455.title]
+en = "good result given back with the word of the other sort of function"
+[codes.ZK0455.message_fails]
+en = "\"%{f}\" can fail, so its good result goes back with \"ရလဒ်ကောင်းအဖြစ်\""
+[codes.ZK0455.message_sure]
+en = "\"%{f}\" cannot fail, so its result goes back with \"ရလဒ်အဖြစ်\""
+[codes.ZK0455.help_fails]
+en = "write \"... ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ\""
+[codes.ZK0455.help_sure]
+en = "write \"... ကို ရလဒ်အဖြစ် ပြန်ပေးပါ\""
+[codes.ZK0455.explain]
+en = """A function whose result clause is a result kind gives back a good result or an error value, and the sentence tells which: \"... ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ\" for the good result and \"... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ\" for the error value. A function that cannot fail gives back its result with \"... ကို ရလဒ်အဖြစ် ပြန်ပေးပါ\"."""
+
 # ---------------------------------------------------------- naturalness ZK05xx
 
 [codes.ZK0501.title]

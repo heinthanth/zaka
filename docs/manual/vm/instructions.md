@@ -323,10 +323,13 @@ write into one traps ([When a program stops](traps.md)).
 | `call f` | args → result | call function `f`; the last argument is on top |
 | `ret` | | leave the function; a result remains on the stack |
 | `trap step_not_positive` | | stop the program: a counted loop step is zero or negative |
+| `halt cause [k]` | v → | stop the program with the trap that `cause` names: `not_good` (a good result was read from a result that holds an error) pops the value `v` of kind `k` and shows it as a print would, and for a list, a struct or text the operand is its address; when the failure holds no value, `not_good` has no `k` and no operand, and the trap shows the bare message `the result holds a failure, not a good result`; `not_fault` (an error value was read from a good result) has no `k` and no operand |
 
 `call` takes room for the locals of the callee in the stack region and moves the
 arguments into its parameters; `ret` gives the room back. A call nested deeper than
-`--max-depth` traps.
+`--max-depth` traps. `halt` ends the run for a read of the wrong part of a [whole
+result](../language/error-handling.md#reading-a-whole-result): `not_good` and `not_fault`; see
+[When a program stops](traps.md#a-whole-result-read-as-the-wrong-part).
 
 ### Output
 

@@ -357,7 +357,8 @@ impl Parser<'_>
         Expr::Char(CharLit::builder().id(id).value(value).span(tok.span).build())
     }
 
-    /// Parse `လုပ်ဆောင်ချက် f ကို (args တို့ဖြင့်)? လုပ်ဆောင်သော ရလဒ်`.
+    /// Parse `လုပ်ဆောင်ချက် f ကို (args တို့ဖြင့်)? လုပ်ဆောင်သော ရလဒ်`, or
+    /// `... ရလဒ်ကောင်း`, which passes a failure on.
     ///
     /// # Returns
     ///
@@ -365,8 +366,9 @@ impl Parser<'_>
     fn parse_call_expr(&mut self) -> PResult<Expr>
     {
         let (start, callee, args) = self.parse_call_head()?;
-        let end = self.expect(Kw::CallResult)?;
-        Ok(self.call_expr(start.to(&end.span), callee, args))
+        let end = self.expect_one_of(&[Kw::CallResult, Kw::CallGoodResult])?;
+        let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
+        Ok(self.call_expr(start.to(&end.span), callee, args, pass))
     }
 
     /// Whether the sign form of a call starts here: a name with `(` right
@@ -383,7 +385,8 @@ impl Parser<'_>
     }
 
     /// Parse the sign form of a call, `f(a၊ b)` or `f()`: the same node as
-    /// `လုပ်ဆောင်ချက် f ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`.
+    /// `လုပ်ဆောင်ချက် f ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`. A `?` right after
+    /// the `)` passes a failure on, as `... ရလဒ်ကောင်း` does.
     ///
     /// # Returns
     ///
@@ -395,7 +398,10 @@ impl Parser<'_>
         let bare = self.at_punct(Punct::RParen);
         let args = tern!(bare, Args::default(), self.parse_sign_args()?);
         let close = self.expect_punct(Punct::RParen)?;
-        Ok(self.call_expr(callee.span.to(&close.span), callee, args))
+        let mark = self.peek();
+        let pass = mark.kind == TokenKind::Punct(Punct::Question) && mark.joined;
+        let end = tern!(pass, self.bump().span, close.span);
+        Ok(self.call_expr(callee.span.to(&end), callee, args, pass))
     }
 
     /// Parse `expr (၊ expr)*` inside the parentheses of a sign-form call.
@@ -445,16 +451,20 @@ impl Parser<'_>
     /// * `span` - The whole call.
     /// * `callee` - The function name.
     /// * `args` - The arguments, with the mark of each.
+    /// * `pass` - Whether a failure of the call passes on.
     ///
     /// # Returns
     ///
     /// The expression.
-    pub(crate) fn call_expr(&mut self, span: Span, callee: Ident, args: Args) -> Expr
+    pub(crate) fn call_expr(
+        &mut self, span: Span, callee: Ident, args: Args, pass: bool,
+    ) -> Expr
     {
         let id = self.new_id();
         let (args, edits) = args;
         #[rustfmt::skip]
-        let node = CallExpr::builder().id(id).callee(callee).args(args).edits(edits).span(span).build();
+        let node = CallExpr::builder().id(id).callee(callee).args(args).edits(edits).pass(pass)
+            .span(span).build();
         Expr::Call(node)
     }
 

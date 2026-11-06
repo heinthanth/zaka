@@ -1,6 +1,7 @@
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
+use zakac_ast::kind::ResultParts;
 use zakac_ast::kind::Wrap;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
@@ -102,7 +103,10 @@ impl Parser<'_>
         let starts = |kw| {
             base_kind(kw).is_some()
                 || sign_of(kw).is_some()
-                || matches!(kw, Kw::Address | Kw::RawAddress | Kw::Borrowed)
+                || matches!(
+                    kw,
+                    Kw::Address | Kw::RawAddress | Kw::Borrowed | Kw::SuccessNews
+                )
         };
         ret_true!(kw.is_some_and(starts) || self.is_struct_at(0));
         self.at_sized_kind(0) || self.at_count_prefix(0)
@@ -136,16 +140,108 @@ impl Parser<'_>
     {
         let marks = self.count_at(0, Kw::Borrowed);
         let pre = marks + self.count_prefixes_len(marks);
-        let signed = kw_of(&self.peek_n(pre)).and_then(sign_of).is_some();
+        let Some(core) = self.result_core_len(pre)
+        else
+        {
+            return self.plain_kind_len(0);
+        };
+        let (len, _) = self.scan_suffixes(pre + core, true, false);
+        Some(pre + core + len)
+    }
+
+    /// The number of tokens in the two sides of a result kind that starts
+    /// `at` tokens ahead, its pointer and list levels left out.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The token count, or `None` when no result kind starts there.
+    fn result_core_len(&self, at: usize) -> Option<usize>
+    {
+        if kw_of(&self.peek_n(at)) == Some(Kw::SuccessNews)
+        {
+            ret_if!(kw_of(&self.peek_n(at + 1)) != Some(Kw::Or), None);
+            return self.err_side_len(at + 2).map(|len| 2 + len);
+        }
+        let n = self.plain_kind_len(at)?;
+        let tail = match (kw_of(&self.peek_n(at + n)), kw_of(&self.peek_n(at + n + 1)))
+        {
+            (Some(Kw::Result), Some(Kw::Or)) => 2,
+            (Some(Kw::Or), _) if self.ends_with_at(at, n, Kw::Result) => 1,
+            _ => return None,
+        };
+        self.err_side_len(at + n + tail).map(|len| n + tail + len)
+    }
+
+    /// The number of tokens in the error side of a result kind that starts
+    /// `n` tokens ahead: `မအောင်မြင်သည့်သတင်း`, or a kind and `အမှားအယွင်း`,
+    /// which a struct name that ends in `အမှားအယွင်း` can leave out.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The token count, or `None` when no error side starts there.
+    fn err_side_len(&self, n: usize) -> Option<usize>
+    {
+        ret_if!(kw_of(&self.peek_n(n)) == Some(Kw::FailureNews), Some(1));
+        let len = self.plain_kind_len(n)?;
+        ret_if!(kw_of(&self.peek_n(n + len)) == Some(Kw::Fault), Some(len + 1));
+        // A struct name that ends in `အမှားအယွင်း` stands alone, and the levels
+        // after it belong to the whole result kind.
+        Some(tern!(self.ends_with_at(n, 1, Kw::Fault), 1, len))
+    }
+
+    /// Whether the kind of `len` tokens `n` tokens ahead is a struct name
+    /// that ends in the word of `kw`, so a result kind can leave that word
+    /// out after it.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead the kind starts.
+    /// * `len` - Its token count.
+    /// * `kw` - `ရလဒ်` or `အမှားအယွင်း`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn ends_with_at(&self, n: usize, len: usize, kw: Kw) -> bool
+    {
+        let tok = self.peek_n(n);
+        len == 1
+            && tok.kind == TokenKind::Ident
+            && self.text_of(tok.span).ends_with(&kw_text(kw))
+    }
+
+    /// The number of tokens in the kind phrase with no result sides that
+    /// starts `at` tokens ahead.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The token count, or `None` when no kind starts there.
+    fn plain_kind_len(&self, at: usize) -> Option<usize>
+    {
+        let marks = self.count_at(at, Kw::Borrowed);
+        let pre = marks + self.count_prefixes_len(at + marks);
+        let signed = kw_of(&self.peek_n(at + pre)).and_then(sign_of).is_some();
         let n = pre + usize::from(signed);
-        let n = n + tern!(self.at_sized_kind(n), 2, 0);
-        let word = kw_of(&self.peek_n(n));
-        let named = n == pre && self.is_struct_at(n);
+        let n = n + tern!(self.at_sized_kind(at + n), 2, 0);
+        let word = kw_of(&self.peek_n(at + n));
+        let named = n == pre && self.is_struct_at(at + n);
         let is_base = word.and_then(base_kind).is_some() || named;
         let bare = n == pre && matches!(word, Some(Kw::Address | Kw::RawAddress));
         ret_if!(!is_base && !bare, None);
         let text = word.and_then(base_kind).is_some_and(BaseKind::is_text);
-        let (len, _) = self.scan_suffixes(n + 1, is_base, text);
+        let (len, _) = self.scan_suffixes(at + n + 1, is_base, text);
         Some(n + 1 + len)
     }
 
@@ -347,14 +443,104 @@ impl Parser<'_>
     pub(crate) fn parse_kind(&mut self) -> PResult<Kind>
     {
         let start = self.peek().span;
+        let marks = self.count_at(0, Kw::Borrowed);
+        let pre = marks + self.count_prefixes_len(marks);
+        ret_if!(self.result_core_len(pre).is_none(), self.parse_plain_kind());
+        // Borrow marks and count prefixes before a result kind belong to the
+        // levels after it.
+        do_for!(_ in 0..marks, self.advance());
+        let counts = self.parse_counts()?;
+        let mut kind = if self.eat(Kw::SuccessNews)
+        {
+            self.expect(Kw::Or)?;
+            self.parse_err_side(start, None)?
+        }
+        else
+        {
+            let ok = self.parse_plain_kind()?;
+            do_if!(self.at(Kw::Result), self.advance());
+            self.expect(Kw::Or)?;
+            self.parse_err_side(start, Some(ok))?
+        };
+        kind.borrowed = marks > 0;
+        kind.extra_borrows = u8::try_from(marks.saturating_sub(1)).unwrap_or(u8::MAX);
+        self.parse_levels(&mut kind, counts, true, start)?;
+        Ok(kind)
+    }
+
+    /// Parse the error side of a result kind and build the kind:
+    /// `မအောင်မြင်သည့်သတင်း`, or a kind and `အမှားအယွင်း`, which a struct name
+    /// that ends in `အမှားအယွင်း` can leave out.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the result kind starts.
+    /// * `ok` - The good side; `None` for `အောင်မြင်သည့်သတင်း`.
+    ///
+    /// # Returns
+    ///
+    /// The result kind, or a diagnostic.
+    pub(crate) fn parse_err_side(
+        &mut self, start: Span, ok: Option<Kind>,
+    ) -> PResult<Kind>
+    {
+        let err = if self.eat(Kw::FailureNews)
+        {
+            None
+        }
+        else
+        {
+            // A struct name that ends in `အမှားအယွင်း` and has no `အမှားအယွင်း`
+            // after its kind phrase stands alone; the levels after it belong
+            // to the whole result kind.
+            let full = self.plain_kind_len(0).unwrap_or(1);
+            let fault_after = kw_of(&self.peek_n(full)) == Some(Kw::Fault);
+            let sugar = !fault_after && self.ends_with_at(0, 1, Kw::Fault);
+            let err = tern!(sugar, self.parse_core()?, self.parse_plain_kind()?);
+            do_if!(!sugar, _ = self.expect(Kw::Fault)?);
+            Some(err)
+        };
+        Ok(result_kind(ok, err, start.to(&self.prev_span())))
+    }
+
+    /// Parse a kind phrase with no result sides: `ငှားထားသော` markers, count
+    /// prefixes, the base, then pointer and list levels.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or a diagnostic.
+    fn parse_plain_kind(&mut self) -> PResult<Kind>
+    {
+        let start = self.peek().span;
         let marks = std::iter::from_fn(|| self.eat(Kw::Borrowed).then_some(())).count();
-        let mut counts = self.parse_counts()?;
+        let counts = self.parse_counts()?;
         let mut kind = self.parse_core()?;
         kind.borrowed = marks > 0;
         kind.extra_borrows = u8::try_from(marks.saturating_sub(1)).unwrap_or(u8::MAX);
+        let bare_ptr = kind.base != BaseKind::Opaque;
+        self.parse_levels(&mut kind, counts, bare_ptr, start)?;
+        Ok(kind)
+    }
+
+    /// Read the pointer and list levels after a base or a result kind, and
+    /// give each `စာရင်း` the innermost count prefix left.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind so far, which gets the levels.
+    /// * `counts` - The count prefixes read before the kind, outermost first.
+    /// * `bare_ptr` - Whether a pointer word without `၏` can follow the kind.
+    /// * `start` - Where the kind phrase starts.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic for a count left for a slice or for no list.
+    fn parse_levels(
+        &mut self, kind: &mut Kind, mut counts: Vec<Cells>, bare_ptr: bool, start: Span,
+    ) -> PResult<()>
+    {
         let text = kind.base.is_text();
-        let (len, suffixes) =
-            self.scan_suffixes(0, kind.base != BaseKind::Opaque, text);
+        let (len, suffixes) = self.scan_suffixes(0, bare_ptr, text);
         do_for!(_ in 0..len, self.advance());
         let view = suffixes.first() == Some(&Suffix::Part);
         let sliced =
@@ -381,7 +567,7 @@ impl Parser<'_>
         kind.span = start.to(&self.prev_span());
         ret_if!(sliced && !counts.is_empty(), Err(diag::slice_count(kind.span)));
         ret_if!(!counts.is_empty(), Err(self.err_expected(&quote(&kw_text(Kw::List)))));
-        Ok(kind)
+        Ok(())
     }
 
     /// Parse the count prefixes `အကွက် <count> ခုရှိသော` that come next.
@@ -562,4 +748,21 @@ fn sized_kind_words() -> String
 fn ends_sentence(tok: &Token) -> bool
 {
     matches!(tok.kind, TokenKind::Eof | TokenKind::Punct(Punct::FullStop))
+}
+
+/// A result kind with its two sides.
+///
+/// # Arguments
+///
+/// * `ok` - The good side; `None` when it holds no value.
+/// * `err` - The error side; `None` when it holds no value.
+/// * `span` - The whole phrase.
+///
+/// # Returns
+///
+/// The kind.
+pub(crate) fn result_kind(ok: Option<Kind>, err: Option<Kind>, span: Span) -> Kind
+{
+    let parts = ResultParts::builder().maybe_ok(ok).maybe_err(err).build();
+    Kind::builder().base(BaseKind::Result).parts(Box::new(parts)).span(span).build()
 }

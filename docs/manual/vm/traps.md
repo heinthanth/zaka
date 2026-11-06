@@ -66,6 +66,8 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | stack overflow | calls nest deeper than `--max-depth` | `more than N nested calls` |
 | step limit | more instructions ran than `--max-steps` | `stopped after N ops` |
 | malformed | the instructions break a rule the code generator keeps | `malformed ops: R` |
+| not good | the good result is read from a [whole result](../language/error-handling.md#reading-a-whole-result) that holds an error value, or a failure with no value | `the result holds an error, not a good result: V`, or `the result holds a failure, not a good result` |
+| not fault | the error value is read from a whole result that holds a good result | `the result is a good result, not an error` |
 | write | the output cannot be written | `cannot write the output: E` |
 
 Addresses are written `0x` and lowercase hex digits. Integer arithmetic that does not fit
@@ -533,6 +535,38 @@ zaka_vm: the program stopped: no room in the address space for a global of 1 oct
 that break the rules of the code generator, such as a slot that does not exist. The
 VM traps with `malformed ops: ...` and does not crash. A `write` trap happens when
 the output cannot be written, such as a pipe that has been closed.
+
+## A whole result read as the wrong part
+
+A call to a [function that can fail](../language/error-handling.md#reading-a-whole-result), kept
+as a whole result, holds a good result or an error value. A conversion that reads the part
+the result does not hold stops the run. The good result of a result that holds an error
+value is the trap `not good`, which shows the error value as `ပြသပါ` would; the error
+value of a good result is the trap `not fault`, which has no value to show. A result that holds a
+failure with no value gives the bare message `the result holds a failure, not a good result`:
+
+```zaka-stop
+လုပ်ဆောင်ချက် စစ် သည်
+ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။
+အကယ်၍ န သည် ၀ နှင့် ညီလျှင် "မပိတ်နိုင်ပါ" ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
+န ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ရ သည် စစ်(၀) ဖြစ်ပါစေ။
+ရ ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+ရ ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မပိတ်နိုင်ပါ
+the program stopped: the result holds an error, not a good result: မပိတ်နိုင်ပါ
+```
+
+A test (`သည် ရလဒ်ကောင်း`, `သည် အမှားအယွင်း`) before the read tells which part is there. Both
+traps come from the op `halt`, with the cause `not_good` or `not_fault`.
 
 ## What to do with a trap
 

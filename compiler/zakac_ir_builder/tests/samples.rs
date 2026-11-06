@@ -20,7 +20,7 @@ use zakac_span::source_map::SourceMap;
 
 /// Inputs that must lower without diagnostics.
 const CLEAN_INPUTS: &[&str] =
-    &["folding", "functions", "heap", "lists", "loops", "programs"];
+    &["faults", "folding", "functions", "heap", "lists", "loops", "programs"];
 
 /// Lower `tests/inputs/{name}.zaka` with `folding`.
 fn lower_input(name: &str, folding: &FoldOptions) -> IrArtifact
@@ -65,7 +65,9 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 out.push(*place);
                 expr_places(value, out);
             }
-            Stmt::Print { value: PrintValue::Expr(e), .. } => expr_places(e, out),
+            Stmt::Print { value: PrintValue::Expr(e), .. }
+            | Stmt::Halt { value: Some(e), .. } => expr_places(e, out),
+            Stmt::Halt { value: None, .. } => (),
             Stmt::Print { value: PrintValue::Text(_), .. } => (),
             Stmt::If { cond, then, els, .. } =>
             {

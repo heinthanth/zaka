@@ -52,6 +52,7 @@ see [Names](../../learn/variables/names.md).
 | `ငယ်`, `မငယ်` | "less", "not less" | `<`, `>=` | [Comparison](../../learn/operators/comparison.md) |
 | `ပြောင်းလဲသော ရလဒ်` | "changed result" | | [Converting between kinds](../../learn/operators/conversion.md) |
 | `လုပ်ဆောင်သော ရလဒ်` | "result of running" | | [Results](../../learn/functions/results.md) |
+| `လုပ်ဆောင်သော ရလဒ်ကောင်း` | "good result of running": the call passes a failure on | `?` after a call | [Errors and results](../../learn/error-handling/README.md) |
 | `ဖြစ်၍` | "and"; also joins the kind and the value in a declaration | `&&` | [Logic](../../learn/operators/logic.md), [Variables](../../learn/variables/README.md) |
 | `သို့မဟုတ်` | "or" | `\|\|` | [Logic](../../learn/operators/logic.md) |
 | `မဟုတ်` | "not" | `!` | [Logic](../../learn/operators/logic.md) |
@@ -65,9 +66,14 @@ see [Names](../../learn/variables/names.md).
 | `ထားပါ` | "please set" | [Changing a variable](../../learn/variables/assignment.md) |
 | `ဖြစ်ပါစေ` | "let it be" | [Variables](../../learn/variables/README.md) |
 | `လုပ်ဆောင်ပါ` | "please run" | [Functions](../../learn/functions/README.md) |
-| `ရလဒ်အဖြစ် ပြန်ပေးပါ` | "give back as the result" | [Results](../../learn/functions/results.md) |
+| `ရလဒ်အဖြစ် ပြန်ပေးပါ` | "give back as the result": in a function that cannot fail | [Results](../../learn/functions/results.md) |
+| `ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ` | "give back as the good result": in a function that can fail | [Errors and results](../../learn/error-handling/README.md) |
 | `ပြန်ပေးပါ` | "please return" | [Functions](../../learn/functions/README.md) |
 | `ပြန်ပေးမည်` | "will return" | [Results](../../learn/functions/results.md) |
+| `အမှားအယွင်းအဖြစ် ပြန်ပေးပါ` | "give back as an error value" (also `အမှားအယွင်းအနေဖြင့်`) | [Errors and results](../../learn/error-handling/README.md) |
+| `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်` | "mark the function as succeeded": ends it with a good result that holds no value | [Writing result kinds](../../learn/error-handling/kinds.md) |
+| `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` | "mark the function as not succeeded": ends it with a failure that holds no error value | [Writing result kinds](../../learn/error-handling/kinds.md) |
+| `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` | "if it fails, give back the error value": ends a call statement that passes a failure on | [Errors and results](../../learn/error-handling/README.md) |
 | `ရပ်ပါ` | "please stop" | [Break and continue](../../learn/control-flow/break-continue.md) |
 | `ထည့်ပါ` | "please add": `l ထဲသို့ v ကို ထည့်ပါ` adds `v` as a new last cell of `l`, or, when `l` is text, adds the text or character `v` at its end; `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်ပါ` puts it in front of cell `i` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ဖျက်ပါ` | "please remove": `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ` removes the last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
@@ -111,6 +117,14 @@ see [Names](../../learn/variables/names.md).
 | `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` | "that the function can change": before the kind of a parameter that is the caller's place | [Functions](../language/functions.md#edit-references) |
 | `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်` | "the function can change it": in parentheses after an argument for such a parameter | [Functions](../language/functions.md#edit-references) |
 | `ရလဒ်` | "result" | [Results](../../learn/functions/results.md) |
+| `ရလဒ်ကောင်း` | "good result": of a call that can fail; also the test `R သည် ရလဒ်ကောင်း` and the conversion target `R ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်` | [Errors and results](../../learn/error-handling/README.md) |
+| `မအောင်မြင်ပါက` | "if it fails": in the trailer of a call statement, `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` | [Errors and results](../../learn/error-handling/README.md) |
+| `အောင်မြင်သည့်သတင်း` | "news of success": the good side of a result kind that holds no value | [Writing result kinds](../../learn/error-handling/kinds.md) |
+| `မအောင်မြင်သည့်သတင်း` | "news of failure": the error side of a result kind that holds no value | [Writing result kinds](../../learn/error-handling/kinds.md) |
+| `အောင်မြင်သည်` | "it succeeded": in the phrase `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်` | [Writing result kinds](../../learn/error-handling/kinds.md) |
+| `မအောင်မြင်ပါ` | "it did not succeed": in the phrase `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` | [Writing result kinds](../../learn/error-handling/kinds.md) |
+| `သတ်မှတ်မည်` | "will mark": ends the two phrases above | [Writing result kinds](../../learn/error-handling/kinds.md) |
+| `အမှားအယွင်း` | "error value"; also the test `R သည် အမှားအယွင်း` and the conversion target `R ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ်` | [Errors and results](../../learn/error-handling/README.md) |
 | `မှန်`, `မမှန်` | "true", "false" | [True and false](../../learn/values/booleans.md) |
 | `မှတ်ချက်` | "note" (comment) | [Comments](../../learn/hello/comments.md) |
 

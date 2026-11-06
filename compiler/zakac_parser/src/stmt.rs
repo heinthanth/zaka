@@ -1,5 +1,6 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::BreakStmt;
@@ -107,7 +108,8 @@ impl Parser<'_>
             Kw::BlockOpen => self.parse_block().map(Stmt::Block),
             Kw::Loop => self.parse_break(),
             Kw::NextIteration => self.parse_continue(),
-            Kw::Return => self.parse_bare_return(),
+            Kw::Return | Kw::MarkSucceeded => self.parse_bare_return(),
+            Kw::MarkFailed => self.parse_mark_failed(),
             Kw::AllocHead => self.parse_alloc(),
             Kw::Address => self.parse_heap(),
             Kw::WhenDone => Err(diag::update_outside_loop(tok.span)),
@@ -601,17 +603,27 @@ impl Parser<'_>
         let is_decl = self.peek_n(2).kind == TokenKind::Kw(Kw::Thi);
         ret_if!(is_decl, self.parse_fn_decl());
         let (start, callee, (args, edits)) = self.parse_call_head()?;
-        let end = self.expect_one_of(&[Kw::Call, Kw::CallResult])?;
-        if end.kind == TokenKind::Kw(Kw::CallResult)
+        let end =
+            self.expect_one_of(&[Kw::Call, Kw::CallResult, Kw::CallGoodResult])?;
+        if end.kind != TokenKind::Kw(Kw::Call)
         {
-            let call = self.call_expr(start.to(&end.span), callee, (args, edits));
+            let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
+            let call = self.call_expr(start.to(&end.span), callee, (args, edits), pass);
             let clause = self.parse_clause_from(call, Mode::Stmt)?;
             return self.finish_expr_headed(clause);
         }
+        let pass = self.at_punct(Punct::ListSep)
+            && kw_of(&self.peek_n(1)) == Some(Kw::PassFault);
+        do_if!(pass, {
+            self.bump();
+            self.bump();
+        });
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);
         #[rustfmt::skip]
-        return Ok(Stmt::Call(CallStmt::builder().callee(callee).args(args).edits(edits).span(span).build()));
+        let node = CallStmt::builder().callee(callee).args(args).edits(edits).pass(pass).span(span)
+            .build();
+        Ok(Stmt::Call(node))
     }
 
     /// Parse a function declaration:
@@ -703,7 +715,9 @@ impl Parser<'_>
         Ok(word)
     }
 
-    /// Parse `<kind> ရလဒ် ကို ပြန်ပေးမည်` after `အောက်ပါတို့ကို လုပ်ဆောင်ကာ`.
+    /// Parse the result clause after `အောက်ပါတို့ကို လုပ်ဆောင်ကာ`: `<kind> ရလဒ်
+    /// ကို ပြန်ပေးမည်`, or a result kind and `ကို ပြန်ပေးမည်` for a function that
+    /// can fail.
     ///
     /// # Arguments
     ///
@@ -711,12 +725,12 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The result kind, `None` without a result clause, or a diagnostic.
+    /// The result kind, `None` when not written, or a diagnostic.
     fn parse_ret_clause(&mut self, has_ret: bool) -> PResult<Option<Kind>>
     {
         ret_if!(!has_ret, Ok(None));
         let kind = self.parse_kind()?;
-        self.expect(Kw::Result)?;
+        do_if!(kind.base != BaseKind::Result, _ = self.expect(Kw::Result)?);
         self.expect(Kw::Ko)?;
         self.expect(Kw::WillReturn)?;
         Ok(Some(kind))
@@ -786,7 +800,8 @@ impl Parser<'_>
         Ok(Stmt::Continue(ContinueStmt::builder().span(start.to(&stop.span)).build()))
     }
 
-    /// Parse `ပြန်ပေးပါ။`.
+    /// Parse `ပြန်ပေးပါ။`, or `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်။`, which
+    /// ends a function that can fail with a good result that holds no value.
     ///
     /// # Returns
     ///
@@ -796,5 +811,19 @@ impl Parser<'_>
         let start = self.bump().span;
         let stop = self.expect_stop()?;
         Ok(Stmt::Return(ReturnStmt::builder().span(start.to(&stop.span)).build()))
+    }
+
+    /// Parse `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်။`: the function ends with a
+    /// failure that holds no error value.
+    ///
+    /// # Returns
+    ///
+    /// The return statement, or a diagnostic.
+    fn parse_mark_failed(&mut self) -> PResult<Stmt>
+    {
+        let start = self.bump().span;
+        let stop = self.expect_stop()?;
+        #[rustfmt::skip]
+        return Ok(Stmt::Return(ReturnStmt::builder().fault(true).span(start.to(&stop.span)).build()));
     }
 }

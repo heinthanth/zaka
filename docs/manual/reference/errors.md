@@ -60,6 +60,8 @@ the `*` that `ငှားထားသော` marks.
 | `text` | `စာသား` |
 | `text[..]` | `စာသား တစ်စိတ်တစ်ပိုင်း`, a view of text |
 | `null` | the kind of `ဗလာ` |
+| `isize result or text error` | `ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း`, a [result kind](../language/error-handling.md#result-kinds) |
+| `success or text error`, `isize result or failure` | `အောင်မြင်သည့်သတင်း သို့မဟုတ် စာသား အမှားအယွင်း`, `ကိန်းပြည့် ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း`: `success` and `failure` stand for a side with no value |
 
 ## Codes
 
@@ -190,8 +192,20 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0438 | a character write, an add or a remove on a view of text | [Text](../language/text.md#changing-text) |
 | ZK0439 | `၏ အရှေ့တွင်` after a value that is no cell of a list and no character of text | [Lists](../language/lists.md#adding-and-removing-cells) |
 | ZK0440 | a start block parameter that is no `စာသား စာရင်း`, a parameter to change, or a third one | [Functions](../language/functions.md#the-start-block) |
-| ZK0441 | a start block result that is no integer | [Functions](../language/functions.md#the-start-block) |
+| ZK0441 | a start block result that is no integer, such as a result kind | [Functions](../language/functions.md#the-start-block) |
 | ZK0442 | a duplicate or a fill of cells that own a block or borrow one: owner pointers, text, plain lists, borrows or slices | [Writing and filling cells](../language/pointers.md#writing-and-filling-cells) |
+| ZK0443 | a call statement to a function that can fail, with no pass-on | [Errors and results](../language/error-handling.md#errors) |
+| ZK0444 | a pass-on for a function that cannot fail | [Errors and results](../language/error-handling.md#errors) |
+| ZK0445 | a pass-on in a function that cannot fail, in the start block, or in top-level statements | [Errors and results](../language/error-handling.md#errors) |
+| ZK0446 | a pass-on whose error kind differs from the error kind of the function around the call | [Errors and results](../language/error-handling.md#errors) |
+| ZK0447 | an error value given back from a function that cannot fail | [Errors and results](../language/error-handling.md#errors) |
+| ZK0448 | a test or a conversion of a value that is no result of a function that can fail | [Errors and results](../language/error-handling.md#errors) |
+| ZK0449 | a conversion to `ရလဒ်ကောင်း` of the result of a function with no good result | [Errors and results](../language/error-handling.md#errors) |
+| ZK0450 | a read of the error value of a result whose error side holds no value | [Errors and results](../language/error-handling.md#result-kinds) |
+| ZK0451 | a failure with no value in a function whose error side names a kind | [Errors and results](../language/error-handling.md#result-kinds) |
+| ZK0452 | an error value given back from a function whose error side holds no value | [Errors and results](../language/error-handling.md#result-kinds) |
+| ZK0454 | a conversion to the part of a result that a test has ruled out | [Errors and results](../language/error-handling.md#reading-a-whole-result) |
+| ZK0455 | a good result given back with the word of the other sort of function | [Errors and results](../language/error-handling.md#reading-a-whole-result) |
 
 ### ZK05: natural Zaka (warnings)
 

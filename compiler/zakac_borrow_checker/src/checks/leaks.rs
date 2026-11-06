@@ -62,7 +62,8 @@ pub(crate) fn check_exit(flow: &mut Flow, span: Span, state: &State)
 
 /// The span a leak at a return goes to: the end of the function for the
 /// return the compiler adds after the last statement, which reads the
-/// result variable under the span of the return itself.
+/// result variable under the span of the return itself, or which ends where
+/// the function ends: no written return reaches past the closing words.
 ///
 /// # Arguments
 ///
@@ -79,7 +80,8 @@ pub(crate) fn return_span(flow: &Flow, value: Option<&Expr>, span: Span) -> Span
     let added = value.is_some_and(|v| {
         matches!(v.node, ExprNode::Read(p) if Some(p) == result) && v.span == span
     });
-    tern!(added, flow.routine.span.shrink_to_hi(), span)
+    let at_end = span.hi == flow.routine.span.hi;
+    tern!(added || at_end, flow.routine.span.shrink_to_hi(), span)
 }
 
 /// Report an owner slot whose state loses a block, as `lost` tells. A list

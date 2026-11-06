@@ -180,6 +180,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Tasks
         | Kw::Done
         | Kw::Accepting
+        | Kw::OnFail
+        | Kw::PassFault
         | Kw::Being
         | Kw::WhenDone
         | Kw::Function
@@ -209,6 +211,11 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Stop
         | Kw::Skip
         | Kw::ReturnValue
+        | Kw::ReturnFault
+        | Kw::ReturnGood
+        | Kw::MarkSucceeded
+        | Kw::MarkFailed
+        | Kw::WillMark
         | Kw::WillKeep
         | Kw::WillResize
         | Kw::WillRelease
@@ -257,6 +264,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Shift
         | Kw::Convert
         | Kw::CallResult
+        | Kw::CallGoodResult
         | Kw::SizeOf
         | Kw::Cell
         | Kw::CellCount
@@ -300,6 +308,12 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Base
         | Kw::Value
         | Kw::Result
+        | Kw::GoodResult
+        | Kw::Fault
+        | Kw::SuccessNews
+        | Kw::FailureNews
+        | Kw::Succeeded
+        | Kw::NotSucceeded
         | Kw::Note
         | Kw::Address
         | Kw::RawAddress

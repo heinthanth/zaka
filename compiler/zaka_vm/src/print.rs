@@ -7,6 +7,7 @@ pub use zakac_ir_builder::value::value_text as text;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
+use zakac_semcheck::kind::FALLIBLE;
 use zakac_semcheck::structs::StructKind;
 
 use crate::mem::Mem;
@@ -151,6 +152,40 @@ pub fn slice_parts(mem: &Mem, addr: u64) -> Result<(u64, u64), TrapKind>
     Ok((base, count))
 }
 
+/// The text of a result of a function that can fail: `ရလဒ်ကောင်း(<value>)`
+/// for a good result and `အမှားအယွင်း(<value>)` for an error value; a side
+/// with no value writes `အောင်မြင်သည့်သတင်း` or `မအောင်မြင်သည့်သတင်း`.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the result.
+/// * `addr` - The address of the result.
+/// * `s` - The struct kind of the result.
+///
+/// # Returns
+///
+/// The text, or the trap a read of a part hits.
+fn fallible_text(mem: &Mem, addr: u64, s: &StructKind) -> Result<String, TrapKind>
+{
+    let platform = mem.platform();
+    let part = |name: &str| {
+        s.field(name).map(|(at, kind)| (addr + u64::from(s.offset(at, platform)), kind))
+    };
+    let (tag_at, tag_kind) =
+        part("tag").ok_or(TrapKind::BadValue { addr, kind: s.name.clone() })?;
+    // Tag 0, the blank of a result, is a failure.
+    let failed = mem.load(tag_at, tag_kind)? == Value::default_of(tag_kind);
+    let (word, shown) =
+        tern!(failed, ("အမှားအယွင်း", part("err")), ("ရလဒ်ကောင်း", part("ok")));
+    let bare = tern!(failed, "မအောင်မြင်သည့်သတင်း", "အောင်မြင်သည့်သတင်း");
+    let Some((at, kind)) = shown
+    else
+    {
+        return Ok(bare.to_string());
+    };
+    Ok(format!("{word}({})", nested_text(mem, at, kind)?))
+}
+
 /// The text of a struct: `<struct>(name: value၊ ...)`.
 ///
 /// # Arguments
@@ -164,6 +199,7 @@ pub fn slice_parts(mem: &Mem, addr: u64) -> Result<(u64, u64), TrapKind>
 /// The text, or the trap a read of a field hits.
 fn struct_text(mem: &Mem, addr: u64, s: &StructKind) -> Result<String, TrapKind>
 {
+    ret_if!(s.name == FALLIBLE, fallible_text(mem, addr, s));
     let platform = mem.platform();
     let field = |(at, (name, kind)): (usize, &(String, DataKind))| {
         let offset = u64::from(s.offset(at, platform));

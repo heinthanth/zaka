@@ -51,6 +51,7 @@ a command, such as `ပြသပါ`, forms a *statement*. The compiler reads bo
 | [Statements](statements.md) | each form of statement with its shape, the statement verbs and the error of a missing verb |
 | [Names and scope](scope.md) | blocks, shadowing, constants, where a name can be seen, and the errors ZK0301 to ZK0308 |
 | [Functions](functions.md) | declaring, calling and returning, edit references, and how values are passed |
+| [Errors and results](error-handling.md) | a result or an error value, passing a failure on, reading a whole result, and the start block |
 | [Lists](lists.md) | plain lists, their literals and cells, adding and removing cells, then counted lists and static data |
 | [Text](text.md) | owned text, template literals, joining, cells and characters, then views, copies and drops |
 | [Structs](structs.md) | declaring a struct, its classifier, literals and fields, then duplicating, moving and storage |

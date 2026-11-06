@@ -387,6 +387,17 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Stop the run: a conversion read the part of a result it does not
+    /// hold. The VM shows the value, when there is one, as `ပြသပါ` would.
+    Halt
+    {
+        /// The reason the run stops.
+        cause: HaltCause,
+        /// The error value to show, when the failure holds one.
+        value: Option<Expr>,
+        /// Source region.
+        span: Span,
+    },
     /// Free each text the value at `dest` owns on the heap and leave it
     /// blank: a place whose kind holds text, as its scope ends or before a
     /// new value replaces it. A text in static storage, or one moved out,
@@ -531,6 +542,7 @@ impl Stmt
             | Stmt::Blit { span, .. }
             | Stmt::Fill { span, .. }
             | Stmt::Drop { span, .. }
+            | Stmt::Halt { span, .. }
             | Stmt::AddCell { span, .. }
             | Stmt::RemoveCell { span, .. }
             | Stmt::SetChar { span, .. }
@@ -955,4 +967,26 @@ pub fn each_stmt<'m>(stmts: &'m [Stmt], f: &mut impl FnMut(&'m Stmt))
         f(s);
         nested_blocks(s).into_iter().for_each(|block| each_stmt(block, f));
     }
+}
+
+/// The reason a [`Stmt::Halt`] stops the run.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    IntoStaticStr
+)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum HaltCause
+{
+    /// A result that holds an error was converted to its good result.
+    NotGood,
+    /// A good result was converted to its error value.
+    NotFault,
 }

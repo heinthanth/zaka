@@ -274,6 +274,39 @@ StartParamKind = ("ZK0440", Level::Error),
 StartResultKind = ("ZK0441", Level::Error),
 /// A raw duplicate or fill writes cells that own a block or borrow one.
 BlitOfHeldCells = ("ZK0442", Level::Error),
+/// A call to a function that can fail does not pass the failure on.
+FailureNotPassed = ("ZK0443", Level::Error),
+/// A call passes a failure on, but the function cannot fail.
+PassWithoutFailure = ("ZK0444", Level::Error),
+/// A failure passes on from a function that cannot fail, or from the
+/// top-level statements.
+PassOutsideFailing = ("ZK0445", Level::Error),
+/// A failure passes on, but its error kind differs from the error kind of
+/// the function around the call.
+FaultKindDiffers = ("ZK0446", Level::Error),
+/// An error value is given back from a function that cannot fail.
+FaultFromSure = ("ZK0447", Level::Error),
+/// A test or a conversion of a result reads a value that is no result of a
+/// function that can fail.
+NotAResult = ("ZK0448", Level::Error),
+/// A conversion to the good result reads a result with no good value: the
+/// function gives back nothing but a failure.
+NoGoodValue = ("ZK0449", Level::Error),
+/// A conversion to the error value reads a result whose error side holds
+/// no value.
+NoFaultValue = ("ZK0450", Level::Error),
+/// `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` in a function whose failure holds
+/// an error value.
+FaultValueMissing = ("ZK0451", Level::Error),
+/// An error value is given back from a function whose failure holds none.
+FaultValueExtra = ("ZK0452", Level::Error),
+/// A conversion reads the part of a result that the code before it proves
+/// the result does not hold.
+WrongPartProven = ("ZK0454", Level::Error),
+/// A return gives back a value with the word of the other sort of function:
+/// `ရလဒ်အဖြစ်` in a function that can fail, or `ရလဒ်ကောင်းအဖြစ်` in one
+/// that cannot.
+GoodReturnWord = ("ZK0455", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

@@ -132,7 +132,7 @@ row(Kw::Assign, VerbOp::Assign, &[Slot::Ko, Slot::Hu],             true,  false)
 ```
 
 The last two flags are `is_stmt` (the verb closes a statement: `ပြသပါ`, `ထားပါ`,
-`ရလဒ်အဖြစ် ပြန်ပေးပါ`, and `ထည့်ပါ`, whose row takes `[Into, Ko]` and builds an `AddStmt`)
+`ရလဒ်အဖြစ် ပြန်ပေးပါ` and `ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ`, and `ထည့်ပါ`, whose row takes `[Into, Ko]` and builds an `AddStmt`)
 and `is_cmp` (a comparison, which cannot be the operand of another). There are 27 rows
 now. A new verb is a new row, and nothing in `clause.rs`
 changes.
@@ -270,6 +270,7 @@ token:
 | a block opener | `parse_block` | opener, `။`, statements until the closer, closer, `။` |
 | `ကွင်းဆက်`, `နောက်တစ်ကြိမ်ဆီသို့` | break, continue | |
 | `ပြန်ပေးပါ` | a bare return | |
+| a call statement, then `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` | `parse_fn_or_call` | sets `CallStmt::pass`; the words after the `၊` are the phrase `PassFault` |
 | `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
 | `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ`, then a size before `မင်မိုရီကို` for a blit (`parse_blit_end`: `ကူးယူမည်` or `ပြောင်းထည့်မည်`); else after `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` for a release, a fill (`parse_fill_end`) when `ဖြည့်မည်` comes before the `။` (`ends_in_fill`), so a value that starts with a kind word needs no parentheses, or a size for a resize. The value of a fill is read with `in_fill` set, so a `ဖြင့်` right after a lone value ends it |
 | a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းပါ။`; after another statement or inside a block it is parsed and reported (ZK0230) |
@@ -310,6 +311,30 @@ Blocks and branches share `parse_branch`: with no opener, it reads one sentence 
 `BlockStmt { single: true }`. Inside an arm of a conditional that sentence cannot itself
 start with `အကယ်၍` (ZK0215). The parser counts the blocks around a statement in `depth`,
 which is how a function declared inside a block is reported (ZK0214) and still parsed.
+
+The pass-on forms of a call set `CallExpr::pass`: the word form ends in `ရလဒ်ကောင်း`
+(`CallGoodResult`), and the sign form takes a `?` that touches the `)`. The statement
+`<value> ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ` is a `ReturnStmt` with `fault` set (`VerbOp::ReturnFault`).
+A call with neither form is a plain call, and its value is a whole result. Two verbs read it:
+`<r> သည် ရလဒ်ကောင်း` and `<r> သည် အမှားအယွင်း` are the verbs `is_good` and `is_fault`, with a `သည်`
+subject, and `ရလဒ်ကောင်း အဖြစ်` and `အမှားအယွင်း အဖြစ်` after `ကို` are the conversion targets
+(`Operand::Side`, in place of a kind), which make the verbs `unwrap` and `unwrap_fault` of
+the clause.
+A result kind is `BaseKind::Result`: `Kind::parts` holds `ResultParts { ok, err }`, and a side
+with no value (`အောင်မြင်သည့်သတင်း`, `မအောင်မြင်သည့်သတင်း`) is `None`. `kind.rs` reads it
+wherever a kind goes, so a declaration, a parameter and a struct field take it as well as
+the result clause; it is written `(ok ! err)` in an S-expression, with `-` for a side with no
+value. The list, slice and pointer levels after a result kind, and the count and borrowed
+marks before it, belong to the whole result, so `ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း စာရင်း` is a list
+of results; a list as the error kind is written in full, `<kind> စာရင်း အမှားအယွင်း`. When the name before `သို့မဟုတ်` ends in `ရလဒ်`, or the name before the error side
+ends in `အမှားအယွင်း`, the repeated word is left out, and the parser fills the side in
+(the short form; a lone struct name is read as the plain struct).
+`parse_ret_clause` reads the result clause of a function into `FnDecl::ret`: the written result kind, then `ကို ပြန်ပေးမည်`,
+is the one header of a function that can fail. `FnDecl` has no field for the error kind: a function can fail when
+its result kind is a result kind, and not otherwise. The mark statements `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်` and
+`လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` are return statements: the first is a bare return,
+and the second a `ReturnStmt` with `fault` set and no value. The S-expressions are `(call-pass f ..)`,
+`(return-fault v)` and `(return-fault)`.
 
 Kinds and literals have their own modules. `kind.rs` reads `(လက္ခဏာရှိ|လက္ခဏာမဲ့)? (N ဘစ်)?
 base`, and checks the bit counts (8, 16, 32, 64, 128 for integers; 16 and up for floats).

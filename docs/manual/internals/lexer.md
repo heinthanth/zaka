@@ -186,6 +186,12 @@ Three consequences follow:
   is the rule behind the need for a space between a name and a particle, and the parser
   adds a hint for it (see [The parser](parser.md)).
 
+The words of failing functions are `ရလဒ်ကောင်း` (`GoodResult`), `မအောင်မြင်ပါက` (`OnFail`, kept for the call statement trailer) and
+`အမှားအယွင်း` (`Fault`); the words of the sides with no value are `အောင်မြင်သည့်သတင်း` (`SuccessNews`) and
+`မအောင်မြင်သည့်သတင်း` (`FailureNews`), and the words of the mark statements are `အောင်မြင်သည်` (`Succeeded`),
+`မအောင်မြင်ပါ` (`NotSucceeded`) and `သတ်မှတ်မည်` (`WillMark`); `?` is the sign `Punct::Question`. The parser reads a `?` as a
+pass-on just when it touches the `)` of a call (`joined`).
+
 A few reserved words are whole rows on purpose, so that none is ever split: `တန်ဖိုးအငှား`
 (`Lend`), `လိပ်စာအကြမ်း` (`RawAddress`), `ငှားထားသော` (`Borrowed`). The word `မှတ်ချက်` is
 both the comment marker (rule 1 sees it first) and `Kw::Note`, so `မှတ်ချက်ကို` still
@@ -201,7 +207,7 @@ splits.
 | `Char(char)` | a char literal, decoded |
 | `Str(u32)` | a string literal; an index into `LexOutput::strings` |
 | `Kw(Kw)` | a reserved word, or a joined phrase |
-| `Punct(Punct)` | `၊ ။ ၏ ( ) + - * / % & \| ^ ~ ! < > <= >= == != << >> && \|\|` |
+| `Punct(Punct)` | `၊ ။ ၏ ( ) + - * / % & \| ^ ~ ! < > <= >= == != << >> && \|\| ?` |
 | `Eof` | the end of the file |
 
 A `Token` is `{ kind, span, particle, joined }` and is `Copy`. It has no text field; the
@@ -262,6 +268,11 @@ comment showing the sentence shape:
 ... ကို ... ဖြင့် စားသော စားလဒ် | စားကြွင်း              → Divide | Remainder
 ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်                    → Convert
 လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်    → CallResult
+... ရလဒ်ကောင်း (after the call head)                  → CallGoodResult
+... ကို အမှားအယွင်း(အဖြစ်|အနေဖြင့်) ပြန်ပေး(ပါ|မည်)      → ReturnFault
+၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေး(ပါ|မည်)          → PassFault
+လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်                  → MarkSucceeded
+လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်                  → MarkFailed
 ```
 
 The joined token spans from the first piece to the last, and takes `joined` from the

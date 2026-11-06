@@ -673,6 +673,12 @@ pub struct CallExpr
     #[builder(default)]
     #[serde(default)]
     pub edits: Vec<bool>,
+    /// `true` for `... ရလဒ်ကောင်း` and `f(a)?`: a failure of the call leaves
+    /// the calling function with the same error value, and the value is the
+    /// good result.
+    #[builder(default)]
+    #[serde(default)]
+    pub pass: bool,
     /// Source region.
     pub span: Span,
 }
