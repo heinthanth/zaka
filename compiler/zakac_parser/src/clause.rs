@@ -39,6 +39,7 @@ use zakac_span::span::Span;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
+use crate::using::Head;
 
 /// Whether statement verbs are allowed in a clause.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -233,7 +234,11 @@ impl Parser<'_>
     /// A value or a statement, or a diagnostic.
     pub(crate) fn parse_clause(&mut self, mode: Mode) -> PResult<ClauseOut>
     {
-        let first = self.parse_operand()?;
+        let first = match self.parse_head(mode)?
+        {
+            Head::Stmt(stmt) => return Ok(ClauseOut::Stmt(Box::new(stmt))),
+            Head::Expr(first) => first,
+        };
         self.parse_clause_from(first, mode)
     }
 
@@ -426,12 +431,48 @@ impl Parser<'_>
     }
 
     /// Parse an operand of a clause: a struct literal, a notation
-    /// expression, or a list literal that starts with one.
+    /// expression, a list literal that starts with one, or a call written
+    /// with its arguments first or with no arguments.
     ///
     /// # Returns
     ///
     /// The operand, or a diagnostic.
     fn parse_operand(&mut self) -> PResult<Expr>
+    {
+        extract!(Head::Expr(expr) = self.parse_head(Mode::Expr)?);
+        Ok(expr)
+    }
+
+    /// Parse the first operand of a clause, or a call written with its
+    /// arguments first (`<args> ကို သုံး၍ ...`) or with no arguments
+    /// (`<fn> မည်`, `<fn> သည့် ရလဒ်`).
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - Whether a call statement can stand here.
+    ///
+    /// # Returns
+    ///
+    /// The operand or the call statement, or a diagnostic.
+    fn parse_head(&mut self, mode: Mode) -> PResult<Head>
+    {
+        let first = self.parse_plain_operand()?;
+        let first = match self.parse_short_after(first, mode)?
+        {
+            Head::Expr(first) => first,
+            stmt => return Ok(stmt),
+        };
+        ret_if!(self.at_using_rest(), self.parse_using(first, mode));
+        Ok(Head::Expr(first))
+    }
+
+    /// Parse an operand of a clause that is no call: a struct literal, a
+    /// notation expression, or a list literal or a join that starts with one.
+    ///
+    /// # Returns
+    ///
+    /// The operand, or a diagnostic.
+    fn parse_plain_operand(&mut self) -> PResult<Expr>
     {
         ret_if!(self.at_struct_lit(), self.parse_struct_lit());
         let first = self.parse_notation()?;

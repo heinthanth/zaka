@@ -63,6 +63,9 @@ one line.
 
 "Please run the function *name*." `လုပ်ဆောင်ပါ` means "please perform".
 
+A shorter call names the function and ends with `မည်` ("will"): `နှုတ်ဆက် မည်။` runs the
+same call. Keep a space between the name and `မည်`: `နှုတ်ဆက်မည်` reads as one name.
+
 ## Where functions go
 
 - Declare functions at the top level of the program, not inside a block or another

@@ -695,7 +695,21 @@ pub struct CallExpr
     #[builder(default)]
     #[serde(default)]
     pub pass: bool,
+    /// `ကို` or `တို့ကို` before `သုံး၍`, when the arguments come first.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub using: Option<UsingMark>,
     /// Source region.
+    pub span: Span,
+}
+
+/// The particle that closes the arguments of a call written arguments first:
+/// `ကို` after one argument, `တို့ကို` after several.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Builder)]
+pub struct UsingMark
+{
+    /// Whether the particle is `တို့ကို`.
+    pub plural: bool,
+    /// The particle.
     pub span: Span,
 }
 

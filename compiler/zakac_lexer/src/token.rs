@@ -325,6 +325,12 @@ pub enum Kw
     Following,
     /// `လုပ်ဆောင်မည်`
     WillDo,
+    /// `မည်`, the end of the short call statement `<fn> မည်`
+    Will,
+    /// `သည့်`, the first piece of `သည့် ရလဒ်`
+    Which,
+    /// `သုံး၍`, "using": the arguments of a call written before the function
+    Using,
     /// `လုပ်ဆောင်ကာ`
     DoAnd,
     /// `လုပ်ဆောင်စရာများ`
@@ -363,6 +369,10 @@ pub enum Kw
     ReturnGood,
     /// `လုပ်ဆောင်သော ရလဒ်ကောင်း`: a call that passes a failure on
     CallGoodResult,
+    /// `သည့် ရလဒ်`: the end of the short call expression `<fn> သည့် ရလဒ်`
+    UsedResult,
+    /// `သည့် ရလဒ်ကောင်း`: the short call expression that passes a failure on
+    UsedGoodResult,
     /// `အမှားအယွင်း အဖြစ် ပြန်ပေးပါ`: gives back an error value
     ReturnFault,
     /// `မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးပါ`: a call statement passes a

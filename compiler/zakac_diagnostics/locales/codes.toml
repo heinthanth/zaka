@@ -1099,6 +1099,17 @@ en = "write \"တစ်%{w}\""
 [codes.ZK0509.explain]
 en = """Burmese counts things with a classifier that fits them: people with \"ယောက်\", most other things with \"ခု\". A struct names its classifier with \"... တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\"; the other kinds are counted with \"ခု\". The same word follows \"တစ်\" at the end of a struct literal and after the kind of a declaration, where \"စာလုံး\" takes \"လုံး\". The size and the value are the same whichever word is written, so the program still compiles."""
 
+[codes.ZK0510.title]
+en = "arguments closed with the wrong particle"
+[codes.ZK0510.message]
+en = "%{n} arguments close with \"တို့ကို\", not \"ကို\""
+[codes.ZK0510.message_one]
+en = "one argument closes with \"ကို\", not \"တို့ကို\""
+[codes.ZK0510.help]
+en = "write \"%{w}\" before \"သုံး၍\""
+[codes.ZK0510.explain]
+en = """A call that gives its arguments before its function closes them with \"ကို\" after one argument and with \"တို့ကို\" after two or more, as a Burmese sentence marks one object apart from several. The call is the same whichever word is written, so the program still compiles."""
+
 # -------------------------------------------------------------- folding ZK06xx
 
 [codes.ZK0601.title]

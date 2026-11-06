@@ -184,14 +184,14 @@ error[ZK0313]: function "တစ်" returns isize, but no value is returned
 
 ## Calls
 
-A call has three forms. The two word forms name the function after `လုပ်ဆောင်ချက်`, and both
-close the argument list with `တို့ဖြင့်` ("with these"), one argument or several. A
-function with no parameters has no argument list. The sign form writes the arguments in
-parentheses after the name.
+A call has three forms here, and [Arguments first](#arguments-first) gives two more. The two
+word forms name the function after `လုပ်ဆောင်ချက်`, and both close the argument list with
+`တို့ဖြင့်` ("with these"), one argument or several. A function with no parameters has no
+argument list. The sign form writes the arguments in parentheses after the name.
 
 | Form | Written | Is |
 | --- | --- | --- |
-| statement | `လုပ်ဆောင်ချက် <name> ကို <arguments> တို့ဖြင့် လုပ်ဆောင်ပါ။` | a statement; a result, if there is one, is dropped |
+| statement | `လုပ်ဆောင်ချက် <name> ကို <arguments> တို့ဖြင့် လုပ်ဆောင်ပါ။` (or `လုပ်ဆောင်မည်`) | a statement; a result, if there is one, is dropped |
 | expression | `လုပ်ဆောင်ချက် <name> ကို <arguments> တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်` | a value |
 | sign form | `<name>(<arguments>)` | a value, the same call as the expression form |
 
@@ -290,6 +290,84 @@ error[ZK0314]: function "ပြ" takes 1 arguments, 2 given
 
 ```text
 error[ZK0401]: expected isize, found bool
+```
+
+## Arguments first
+
+A call can also give its arguments first and name its function last, the order a Burmese
+sentence puts an object and its verb in. `သုံး၍` ("using") closes the arguments, with
+`ကို` after one and `တို့ကို` after several. The function then comes in a long form or a
+short form, and each ends as a statement or as a value:
+
+| Form | Statement | Value |
+| --- | --- | --- |
+| long | `<arguments> ကို သုံး၍ လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်မည်။` | `<arguments> ကို သုံး၍ လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်သော ရလဒ်` |
+| short | `<arguments> ကို သုံး၍ <name> မည်။` | `<arguments> ကို သုံး၍ <name> သည့် ရလဒ်` |
+
+For a function with no parameters, leave out the arguments and `ကို သုံး၍`: `<name> မည်။`,
+`<name> သည့် ရလဒ်`, and the long forms of [Calls](#calls). Each form is the same call as
+the forms above, with the same order of work, the same checks and the same codes. A
+failure passes on as it does there: `ရလဒ်ကောင်း` in place of `ရလဒ်`, or
+`၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` (or `ပြန်ပေးမည်`) after `မည်` or `လုပ်ဆောင်မည်`.
+
+```zaka
+လုပ်ဆောင်ချက် ပေါင်း သည်
+ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က + ခ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ပြ သည်
+ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ခုနစ် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+၇ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၃၊ ၄ တို့ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသပါ။
+၅ ကို သုံး၍ ပြ မည်။
+၆ ကို သုံး၍ လုပ်ဆောင်ချက် ပြ ကို လုပ်ဆောင်မည်။
+ခုနစ် သည့် ရလဒ်၊ ၁ တို့ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၇
+၅
+၆
+၈
+```
+
+The rules of these forms:
+
+- An argument is a notation expression: a name, a literal, a sum, a sign-form call, or a
+  short call with no arguments. A sentence that gives a value, another arguments-first
+  call included, goes in parentheses.
+- `မည်` and `သည့်` are words of their own, with a space between each and the name:
+  `ပြမည်` is one name, not a call of `ပြ`.
+- `ကို` closes one argument and `တို့ကို` two or more; the other particle is the warning
+  ZK0510 ([Natural wording](naturalness.md#the-rules)).
+- The long form ends in `လုပ်ဆောင်မည်`; `လုပ်ဆောင်ပါ` after `သုံး၍` is ZK0201.
+- A statement end, `မည်` or `လုပ်ဆောင်မည်`, where a value is needed is ZK0201.
+
+```zaka-error ZK0201
+လုပ်ဆောင်ချက် ပြ သည်
+ကိန်းပြည့် န ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ၅ ကို သုံး၍ ပြ မည် ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0201]: expected "သည့် ရလဒ်" or "သည့် ရလဒ်ကောင်း", found "မည်"
 ```
 
 ## Recursion

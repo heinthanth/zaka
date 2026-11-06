@@ -270,7 +270,9 @@ token:
 | a block opener | `parse_block` | opener, `။`, statements until the closer, closer, `။` |
 | `ကွင်းဆက်`, `နောက်တစ်ကြိမ်ဆီသို့` | break, continue | |
 | `ပြန်ပေးပါ` | a bare return | |
-| a call statement, then `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` | `parse_fn_or_call` | sets `CallStmt::pass`; the words after the `၊` are the phrase `PassFault` |
+| a call statement, then `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` | `finish_call_stmt` | sets `CallStmt::pass`; the words after the `၊` are the phrase `PassFault`. Each call statement form ends here: `လုပ်ဆောင်ပါ` and `လုပ်ဆောင်မည်` after `parse_fn_or_call`, `မည်` and `လုပ်ဆောင်မည်` after the forms of `using.rs` |
+| an operand, then `ကို သုံး၍` or `တို့ကို သုံး၍` | `parse_using` (`using.rs`) | the arguments-first call: `parse_head` in `clause.rs` reads the first operand of a clause and hands it over when `at_using_rest` sees `(၊ ARG)* (တို့)?ကို သုံး၍` ahead. The arguments after the first are notation expressions; then `လုပ်ဆောင်ချက် NAME ကို` (long) or `NAME` (short). The end decides the node: `လုပ်ဆောင်မည်` or `မည်` gives a `CallStmt`, and stands at the start of a statement alone; `လုပ်ဆောင်သော ရလဒ်(ကောင်း)` or `သည့် ရလဒ်(ကောင်း)` gives a `CallExpr`, which the clause goes on from |
+| a name, then `မည်` or `သည့် ရလဒ်` | `parse_short_after` (`using.rs`) | the short call with no arguments, read where `parse_head` reads a first operand and where `parse_using` reads an argument |
 | `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
 | `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ`, then a size before `မင်မိုရီကို` for a blit (`parse_blit_end`: `ကူးယူမည်` or `ပြောင်းထည့်မည်`); else after `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` for a release, a fill (`parse_fill_end`) when `ဖြည့်မည်` comes before the `။` (`ends_in_fill`), so a value that starts with a kind word needs no parentheses, or a size for a resize. The value of a fill is read with `in_fill` set, so a `ဖြင့်` right after a lone value ends it |
 | a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းပါ။`; after another statement or inside a block it is parsed and reported (ZK0230) |

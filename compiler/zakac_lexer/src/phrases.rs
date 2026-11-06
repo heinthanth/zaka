@@ -59,6 +59,10 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::CallHead, Kw::Result], Kw::CallResult),
     // လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်ကောင်း
     (&[Kw::CallHead, Kw::GoodResult], Kw::CallGoodResult),
+    // ... ကို သုံး၍ <fn> သည့် ရလဒ်
+    (&[Kw::Which, Kw::Result], Kw::UsedResult),
+    // ... ကို သုံး၍ <fn> သည့် ရလဒ်ကောင်း
+    (&[Kw::Which, Kw::GoodResult], Kw::UsedGoodResult),
     // လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>
     (&[Kw::Function, Kw::From, Kw::EditableAttr], Kw::EditParam),
     // <name> (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)

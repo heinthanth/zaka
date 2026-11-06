@@ -1,3 +1,4 @@
+use bon::Builder;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::InfixOp;
 use zakac_ast::expr::NextCtx;
@@ -24,6 +25,21 @@ pub enum Site
     /// A clause that gives a value: an initial value, a returned value, a
     /// call argument or a loop bound.
     Value(ValueSite),
+    /// The particle that closes the arguments of a call written arguments
+    /// first.
+    Using(UsingSite),
+}
+
+/// The particle before `သုံး၍` and the arguments it closes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
+pub struct UsingSite
+{
+    /// Whether the particle is `တို့ကို`.
+    pub plural: bool,
+    /// The number of arguments.
+    pub count: usize,
+    /// The particle.
+    pub span: Span,
 }
 
 /// A clause used as a value.

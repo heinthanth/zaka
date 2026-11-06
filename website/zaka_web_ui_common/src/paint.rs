@@ -176,6 +176,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::ProgramClose
         | Kw::Following
         | Kw::WillDo
+        | Kw::Will
+        | Kw::Using
         | Kw::DoAnd
         | Kw::Tasks
         | Kw::Done
@@ -269,6 +271,9 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Convert
         | Kw::CallResult
         | Kw::CallGoodResult
+        | Kw::Which
+        | Kw::UsedResult
+        | Kw::UsedGoodResult
         | Kw::SizeOf
         | Kw::Cell
         | Kw::CellCount

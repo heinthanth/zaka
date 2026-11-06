@@ -140,6 +140,31 @@ them. It is the same call, as `+` is the same sum as the word form.
 Write the `(` right after the name, with no space. A call whose result is dropped still
 takes the statement form, `လုပ်ဆောင်ပါ။`.
 
+## Arguments first, with a result
+
+The arguments-first call of [Parameters](parameters.md#arguments-first) gives back the
+result when it ends with `သည့် ရလဒ်` ("the result that ...") in place of `မည်`:
+
+```zaka
+လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+ကိန်းပြည့် က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က * က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+// "the result that square (gives), using 5"
+၅ ကို သုံး၍ နှစ်ထပ် သည့် ရလဒ် ကို ပြသပါ။
+ကိန်းရှင် ခြောက်ဆယ့်လေး သည် ၈ ကို သုံး၍ လုပ်ဆောင်ချက် နှစ်ထပ် ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ခြောက်ဆယ့်လေး ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၂၅
+၆၄
+```
+
 ## Results of other kinds
 
 A result can be of whatever kind the function needs, lists and structs included (see

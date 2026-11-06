@@ -7,6 +7,7 @@ use zakac_span::span::Span;
 
 use crate::expr::Expr;
 use crate::expr::Ident;
+use crate::expr::UsingMark;
 use crate::kind::Kind;
 use crate::verb::Slot;
 
@@ -417,6 +418,9 @@ pub struct CallStmt
     #[builder(default)]
     #[serde(default)]
     pub pass: bool,
+    /// `ကို` or `တို့ကို` before `သုံး၍`, when the arguments come first.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub using: Option<UsingMark>,
     /// Source region.
     pub span: Span,
 }

@@ -234,6 +234,7 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | ZK0507 | parentheses that change nothing | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 | ZK0508 | a sentence used as a value that ends in `ပါ` | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 | ZK0509 | a warning: a heap size, a struct literal or a declaration counted with a word that is not the classifier of its kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
+| ZK0510 | a warning: the arguments of a call written arguments first close with `ကို` after several, or with `တို့ကို` after one | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 
 ### ZK06: working out constants
 

@@ -1,5 +1,6 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::expr::UsingMark;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::BlockStmt;
@@ -42,6 +43,7 @@ use crate::clause::Mode;
 use crate::decl_head::DeclHead;
 use crate::describe::kw_text;
 use crate::describe::quote;
+use crate::notation::Args;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
@@ -613,16 +615,39 @@ impl Parser<'_>
     {
         let is_decl = self.peek_n(2).kind == TokenKind::Kw(Kw::Thi);
         ret_if!(is_decl, self.parse_fn_decl());
-        let (start, callee, (args, edits)) = self.parse_call_head()?;
-        let end =
-            self.expect_one_of(&[Kw::Call, Kw::CallResult, Kw::CallGoodResult])?;
-        if end.kind != TokenKind::Kw(Kw::Call)
-        {
-            let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
-            let call = self.call_expr(start.to(&end.span), callee, (args, edits), pass);
-            let clause = self.parse_clause_from(call, Mode::Stmt)?;
-            return self.finish_expr_headed(clause);
-        }
+        let (start, callee, args) = self.parse_call_head()?;
+        let ends = [Kw::Call, Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
+        let end = self.expect_one_of(&ends)?;
+        ret_if!(
+            matches!(kw_of(&end), Some(Kw::Call | Kw::WillDo)),
+            self.finish_call_stmt(start, callee, args, None)
+        );
+        let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
+        let call = self.call_expr(start.to(&end.span), callee, args, pass);
+        let clause = self.parse_clause_from(call, Mode::Stmt)?;
+        self.finish_expr_headed(clause)
+    }
+
+    /// Finish a call statement after its end word: the pass-on
+    /// `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေး(ပါ|မည်)` when written, then the
+    /// full stop.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the statement starts.
+    /// * `callee` - The function name.
+    /// * `args` - The arguments, with the mark of each.
+    /// * `using` - The particle that closes the arguments of a call written
+    ///   arguments first.
+    ///
+    /// # Returns
+    ///
+    /// The statement, or a diagnostic.
+    pub(crate) fn finish_call_stmt(
+        &mut self, start: Span, callee: Ident, args: Args, using: Option<UsingMark>,
+    ) -> PResult<Stmt>
+    {
+        let (args, edits) = args;
         let pass = self.at_punct(Punct::ListSep)
             && kw_of(&self.peek_n(1)) == Some(Kw::PassFault);
         do_if!(pass, {
@@ -632,8 +657,8 @@ impl Parser<'_>
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);
         #[rustfmt::skip]
-        let node = CallStmt::builder().callee(callee).args(args).edits(edits).pass(pass).span(span)
-            .build();
+        let node = CallStmt::builder().callee(callee).args(args).edits(edits).pass(pass)
+            .maybe_using(using).span(span).build();
         Ok(Stmt::Call(node))
     }
 

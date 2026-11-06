@@ -9,14 +9,14 @@ Zaka accepts more spellings than a Burmese speaker would write. A verb at the en
 clause can hold `သည်`, `ပါ`, `ပါသည်` or no ending at all, and a printed operand can be
 marked with `ကို` or `ဟု`. The parser takes each of them. A separate pass, the
 *naturalness check*, runs right after the parser and points out the spellings that read
-unlike Burmese. Its findings are warnings with codes ZK0501 to ZK0508. A warning never
+unlike Burmese. Its findings are warnings with codes ZK0501 to ZK0508 and ZK0510. A warning never
 stops a program and never changes what it does. The Learn book introduces the idea in
 [Natural Zaka](../../learn/natural-zaka/README.md).
 
 ## What the check looks at
 
 The check reads the tree of the program, not the text, so spacing does not change its
-answers. It looks at four kinds of place:
+answers. It looks at five kinds of place:
 
 | Place | What is examined |
 | --- | --- |
@@ -24,6 +24,7 @@ answers. It looks at four kinds of place:
 | a printed operand | whether it is a sentence, a string or a plain value, and whether it is marked with `ကို` or `ဟု` |
 | a clause that gives a value | the ending of its last word, when the clause is stored, returned, passed or used as a loop bound |
 | a group in parentheses | whether the parentheses change the meaning |
+| the particle before `သုံး၍` | whether `ကို` or `တို့ကို` fits the number of arguments of a call written arguments first |
 
 "What follows" matters because the ending depends on the next word: `သို့မဟုတ်` ("or"),
 `ဖြစ်၍` ("and"), an attached `လျှင်` or `နေသရွေ့`, or the end of the clause.
@@ -43,6 +44,7 @@ When two rules fit one place, the first in the table below alone is reported. So
 | ZK0506 | printing a plain value | `အသက် ကို ပြသပါ` | `အသက် ဟု ပြသပါ` |
 | ZK0507 | parentheses that change nothing | `အသက် + ၁ ကို ပြသပါ` | `(အသက် + ၁) ကို ပြသပါ` |
 | ZK0508 | a sentence used as a value | `... ကြီးသည် ဖြစ်ပါစေ` | `... ကြီးပါ ဖြစ်ပါစေ` |
+| ZK0510 | the arguments of a call written arguments first | `က ကို သုံး၍`, `က၊ ခ တို့ကို သုံး၍` | `က တို့ကို သုံး၍`, `က၊ ခ ကို သုံး၍` |
 
 The right-hand column is still valid Zaka. It just sounds less natural. The "not" verbs
 are `မညီ`, `မကြီး`, `မငယ်`, `မမှန်` and `မဟုတ်`.
@@ -197,6 +199,28 @@ before `သို့မဟုတ်`.
 
 ```text
 warning[ZK0508]: "ကြီးပါ" as a value reads better as "ကြီးသည်"
+```
+
+### ZK0510: "ကို" or "တို့ကို" before "သုံး၍"
+
+A call that gives its arguments before its function
+([Arguments first](functions.md#arguments-first)) marks them as a Burmese sentence marks
+its objects: `ကို` after one argument, `တို့ကို` after two or more.
+
+```zaka-warning ZK0510
+လုပ်ဆောင်ချက် ပေါင်း သည်
+ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က + ခ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၃၊ ၄ ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+warning[ZK0510]: 2 arguments close with "တို့ကို", not "ကို"
 ```
 
 ## All of the rules, followed

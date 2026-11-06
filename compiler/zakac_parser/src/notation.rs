@@ -457,6 +457,18 @@ impl Parser<'_>
     fn parse_arg(&mut self, args: &mut Args) -> PResult<()>
     {
         args.0.push(self.parse_expr()?);
+        args.1.push(self.parse_edit_mark()?);
+        Ok(())
+    }
+
+    /// Read the mark `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)` after an argument
+    /// when it comes next.
+    ///
+    /// # Returns
+    ///
+    /// Whether the mark was there, or a diagnostic for a mark not closed.
+    pub(crate) fn parse_edit_mark(&mut self) -> PResult<bool>
+    {
         let mark =
             self.at_punct(Punct::LParen) && kw_of(&self.peek_n(1)) == Some(Kw::EditArg);
         do_if!(mark, {
@@ -464,8 +476,7 @@ impl Parser<'_>
             self.bump();
             self.expect_punct(Punct::RParen)?;
         });
-        args.1.push(mark);
-        Ok(())
+        Ok(mark)
     }
 
     /// Build a call expression node.
@@ -516,7 +527,8 @@ impl Parser<'_>
     /// The arguments with their marks, or a diagnostic.
     fn parse_call_args(&mut self) -> PResult<Args>
     {
-        ret_if!(self.at(Kw::Call) || self.at(Kw::CallResult), Ok(Args::default()));
+        let ends = [Kw::Call, Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
+        ret_if!(ends.iter().any(|kw| self.at(*kw)), Ok(Args::default()));
         let args = self.parse_sign_args()?;
         self.expect(Kw::ListWith)?;
         Ok(args)

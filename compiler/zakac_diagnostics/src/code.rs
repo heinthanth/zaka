@@ -348,6 +348,9 @@ RedundantGroup = ("ZK0507", Level::Warning),
 PaInValue = ("ZK0508", Level::Warning),
 /// A count word uses a classifier other than the kind's own.
 ClassifierMismatch = ("ZK0509", Level::Warning),
+/// The arguments of a call written arguments first close with `ကို` after
+/// several, or with `တို့ကို` after one.
+UsingParticleCount = ("ZK0510", Level::Warning),
 // constant folding: ZK06xx
 /// An operation on constants gives a value outside its kind.
 ConstantOverflow = ("ZK0601", Level::Error),

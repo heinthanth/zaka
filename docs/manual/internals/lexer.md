@@ -276,6 +276,8 @@ comment showing the sentence shape:
 ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်                    → Convert
 လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်    → CallResult
 ... ရလဒ်ကောင်း (after the call head)                  → CallGoodResult
+... ကို သုံး၍ <name> သည့် ရလဒ်                        → UsedResult
+... ကို သုံး၍ <name> သည့် ရလဒ်ကောင်း                   → UsedGoodResult
 ... ကို အမှားအယွင်း(အဖြစ်|အနေဖြင့်) ပြန်ပေး(ပါ|မည်)      → ReturnFault
 ၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေး(ပါ|မည်)          → PassFault
 လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်                  → MarkSucceeded

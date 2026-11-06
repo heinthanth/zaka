@@ -5,6 +5,7 @@ use zakac_ast::expr::Expr;
 use zakac_ast::expr::GroupExpr;
 use zakac_ast::expr::NextCtx;
 use zakac_ast::expr::NotExpr;
+use zakac_ast::expr::UsingMark;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::stmt::AssignStmt;
 use zakac_ast::stmt::CallStmt;
@@ -52,6 +53,7 @@ use crate::site::Place;
 use crate::site::PrintSite;
 use crate::site::Shape;
 use crate::site::Site;
+use crate::site::UsingSite;
 use crate::site::ValueSite;
 use crate::site::kw_text;
 use crate::site::particle_text;
@@ -143,6 +145,25 @@ impl Checker
     fn report_args(&mut self, args: &[Expr])
     {
         do_for!(arg in args, self.report_value(arg));
+    }
+
+    /// Run the rules on the particle that closes the arguments of a call
+    /// written arguments first.
+    ///
+    /// # Arguments
+    ///
+    /// * `using` - The particle, when the arguments come first.
+    /// * `count` - The number of arguments.
+    fn report_using(&mut self, using: Option<UsingMark>, count: usize)
+    {
+        let Some(mark) = using
+        else
+        {
+            return;
+        };
+        let site =
+            UsingSite::builder().plural(mark.plural).count(count).span(mark.span);
+        self.report(Site::Using(site.build()));
     }
 
     /// Run the rules on an expression that gives a value: its parentheses
@@ -246,12 +267,14 @@ impl Visitor for Checker
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
         self.report_args(&n.args);
+        self.report_using(n.using, n.args.len());
         walk_call_stmt(self, n);
     }
 
     fn visit_call_expr(&mut self, n: &CallExpr)
     {
         self.report_args(&n.args);
+        self.report_using(n.using, n.args.len());
         walk_call_expr(self, n);
     }
 
@@ -305,6 +328,10 @@ fn build(code: Code, site: &Site) -> Diagnostic
         (Code::PaInValue, Site::Value(n)) =>
         {
             diag::pa_in_value(n.span, n.word.text(), particle_text(n.tail))
+        }
+        (Code::UsingParticleCount, Site::Using(n)) =>
+        {
+            diag::using_particle_count(n.span, n.count)
         }
         _ => unreachable!("each rule builds the diagnostic of its own site kind"),
     }

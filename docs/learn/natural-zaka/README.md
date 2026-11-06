@@ -49,6 +49,7 @@ Follow the `help` line and the warning disappears:
 | ZK0506 | printing a plain value | `အသက် ကို ပြသပါ` | `အသက် ဟု ပြသပါ` |
 | ZK0507 | parentheses that change nothing | `က + ၁ ကို ပြသပါ` | `(က + ၁) ကို ပြသပါ` |
 | ZK0508 | a sentence used as a value (stored, returned, passed) | `... ကြီးသည် ဖြစ်ပါစေ` | `... ကြီးပါ ဖြစ်ပါစေ` |
+| ZK0510 | arguments before `သုံး၍` (using) | `က ကို`, `က၊ ခ တို့ကို` | `က တို့ကို`, `က၊ ခ ကို` |
 
 The "Not" column is still valid Zaka. It just sounds less natural.
 

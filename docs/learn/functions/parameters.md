@@ -77,6 +77,41 @@ As in Burmese, `နှင့်` ("and") can replace the last `၊`: `ကိန�
 Arguments close with `တို့ဖြင့်` ("with these") in all cases, even when there is just
 one.
 
+## Arguments first
+
+A call can also give the arguments first, then name the function, the order a Burmese
+sentence puts an object before its verb. `သုံး၍` ("using") closes the arguments, and
+`မည်` ("will") ends the call:
+
+```zaka
+လုပ်ဆောင်ချက် ဧရိယာပြ သည်
+ကိန်းပြည့် အလျား၊ ကိန်းပြည့် အနံ တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အလျား * အနံ ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+// "Using 3 and 4, (the function) area-show will (run)"
+၃၊ ၄ တို့ကို သုံး၍ ဧရိယာပြ မည်။
+၆၊ ၇ တို့ကို သုံး၍ လုပ်ဆောင်ချက် ဧရိယာပြ ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၁၂
+၄၂
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `၃၊ ၄ တို့ကို သုံး၍` | "using 3 and 4": `တို့ကို` after several arguments, `ကို` after one |
+| `ဧရိယာပြ မည်` | "area-show will (run)" |
+| `လုပ်ဆောင်ချက် ဧရိယာပြ ကို လုပ်ဆောင်မည်` | "will run the function area-show": the long form |
+
+An argument here is a name, a literal, a sum or a sign-form call. A sentence that gives a
+value goes in parentheses. The [Results](results.md) page shows the form of this call
+that gives back a value.
+
 ## Parameters are local copies
 
 A parameter is a new variable inside the function. Changing it does not change the

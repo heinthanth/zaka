@@ -240,6 +240,19 @@ fn import_and_export_words()
     assert_eq!(kws("အများသုံး လုပ်ဆောင်ချက်"), [Kw::Export, Kw::Function]);
 }
 
+/// The words of the arguments-first and short calls, glued or apart.
+#[test]
+fn using_call_words_lex()
+{
+    assert_eq!(kws("တို့ကိုသုံး၍"), [Kw::ListKo, Kw::Using]);
+    assert_eq!(kws("ကို သုံး၍"), [Kw::Ko, Kw::Using]);
+    assert_eq!(kws("မည်"), [Kw::Will]);
+    assert_eq!(kws("သည့် ရလဒ်"), [Kw::UsedResult]);
+    assert_eq!(kws("သည့်ရလဒ်ကောင်း"), [Kw::UsedGoodResult]);
+    assert_eq!(kws("ကိုလုပ်ဆောင်မည်"), [Kw::Ko, Kw::WillDo]);
+    assert_eq!(kinds("ဖိုင်ဖတ်မည်")[0], TokenKind::Ident);
+}
+
 #[test]
 fn failure_words_join_into_their_phrases()
 {

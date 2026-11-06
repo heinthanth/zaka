@@ -26,6 +26,7 @@ see [Names](../../learn/variables/names.md).
 | `ပါ`, `ပါသည်` | polite endings | [Particles](../../learn/sentences/particles.md) |
 | `တို့ကို`, `တို့ဖြင့်` | close a list of parameters / arguments | [Parameters](../../learn/functions/parameters.md) |
 | `လက်ခံပြီး` | "accepting ... and" | [Parameters](../../learn/functions/parameters.md) |
+| `သုံး၍` | "using": after `ကို` or `တို့ကို`, closes the arguments of a call written before its function | [Parameters](../../learn/functions/parameters.md#arguments-first) |
 | `ထဲသို့` | "into", after the list or the text in `l ထဲသို့ v ကို ထည့်ပါ` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `မှ`, `အထိ`, `စီ`, `အနေဖြင့်` | "from", "up to", "each", "as" | [Counted loops](../../learn/control-flow/counted-loops.md) |
 | `ဖြစ်ကာ`, `ဖြစ်ပြီး` | "being ... and" | [Generic loops](../../learn/control-flow/generic-loops.md) |
@@ -52,6 +53,8 @@ see [Names](../../learn/variables/names.md).
 | `ငယ်`, `မငယ်` | "less", "not less" | `<`, `>=` | [Comparison](../../learn/operators/comparison.md) |
 | `ပြောင်းလဲသော ရလဒ်` | "changed result" | | [Converting between kinds](../../learn/operators/conversion.md) |
 | `လုပ်ဆောင်သော ရလဒ်` | "result of running" | | [Results](../../learn/functions/results.md) |
+| `သည့် ရလဒ်` | "the result that ...": ends the short call `<arguments> ကို သုံး၍ <name> သည့် ရလဒ်` | | [Results](../../learn/functions/results.md#arguments-first-with-a-result) |
+| `သည့် ရလဒ်ကောင်း` | "the good result that ...": the short call passes a failure on | `?` after a call | [Functions](../language/functions.md#arguments-first) |
 | `လုပ်ဆောင်သော ရလဒ်ကောင်း` | "good result of running": the call passes a failure on | `?` after a call | [Errors and results](../../learn/error-handling/README.md) |
 | `ဖြစ်၍` | "and"; also joins the kind and the value in a declaration | `&&` | [Logic](../../learn/operators/logic.md), [Variables](../../learn/variables/README.md) |
 | `သို့မဟုတ်` | "or" | `\|\|` | [Logic](../../learn/operators/logic.md) |
@@ -66,6 +69,8 @@ see [Names](../../learn/variables/names.md).
 | `ထားပါ` | "please set" | [Changing a variable](../../learn/variables/assignment.md) |
 | `ဖြစ်ပါစေ` | "let it be" | [Variables](../../learn/variables/README.md) |
 | `လုပ်ဆောင်ပါ` | "please run" | [Functions](../../learn/functions/README.md) |
+| `လုပ်ဆောင်မည်` | "will run": a second end of a call statement, and the end of the long arguments-first call | [Parameters](../../learn/functions/parameters.md#arguments-first) |
+| `မည်` | "will": ends the short call statement `<name> မည်` | [Functions](../../learn/functions/README.md#calling) |
 | `ရလဒ်အဖြစ် ပြန်ပေးပါ` | "give back as the result": in a function that cannot fail | [Results](../../learn/functions/results.md) |
 | `ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ` | "give back as the good result": in a function that can fail | [Errors and results](../../learn/error-handling/README.md) |
 | `ပြန်ပေးပါ` | "please return" | [Functions](../../learn/functions/README.md) |

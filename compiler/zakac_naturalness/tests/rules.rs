@@ -199,3 +199,18 @@ fn a_clause_used_as_a_value_wants_thi()
     clean("က သည် ၄၀ အောက် မငယ်ပါ ဟု ပြသပါ။");
     clean("ကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။");
 }
+
+/// The particle before `သုံး၍` is `ကို` after one argument and `တို့ကို`
+/// after several, in a statement and in a value alike.
+#[test]
+fn arguments_first_take_the_particle_of_their_count()
+{
+    assert_eq!(warns("က၊ ခ ကို သုံး၍ ပြ မည်။"), [Code::UsingParticleCount]);
+    assert_eq!(warns("က တို့ကို သုံး၍ ပြ မည်။"), [Code::UsingParticleCount]);
+    let value = "က၊ ခ ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသပါ။";
+    assert_eq!(warns(value), [Code::UsingParticleCount]);
+    clean("က၊ ခ တို့ကို သုံး၍ ပြ မည်။");
+    clean("က ကို သုံး၍ လုပ်ဆောင်ချက် ပြ ကို လုပ်ဆောင်မည်။");
+    clean("က၊ ခ တို့ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသပါ။");
+    clean("ပြ မည်။");
+}
