@@ -285,6 +285,17 @@ variables of `zakac`. A program with no start block ignores them.
 $ zakac run greet.zaka -- ကက ခခ
 ```
 
+A program that uses the stdlib module [`"စံကား/အဝင်အထွက်"`](../language/io.md) reads the
+standard input of `zakac`, and reads and writes files on disk, relative to the folder the
+command runs in:
+
+```console
+$ printf 'က\nခ\n' | zakac run echo.zaka
+> က
+> ခ
+စာကြောင်း ၂ ကြောင်း
+```
+
 `--leaks` writes one line to standard error for each block that was never given back.
 Text is freed on its own, so its blocks never show here:
 

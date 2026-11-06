@@ -118,10 +118,13 @@ builder, the ownership check and codegen then see one function for each name. An
 brings each exported overload (`import_fn`); a name a file declares and imports is ZK0304.
 
 An external function (`FnDecl::external`) must be one of the functions the host serves:
-`check_external` asks `host::HostFn::find` for the one with its name, parameter kinds and
-result kind (a result that can fail with `host::IO_ERROR`), and reports ZK0334 with
-`HostFn::listing` as help when none matches. The table matches kinds through their names, so
-the stream structs and the error enumeration are the ones the stdlib declares.
+`check_external` asks `host::find`, a thin adapter over the table `HOST_FNS` of
+`zaka_host`, for the row with its name, parameter kinds and result kind (a result that can
+fail with `IO_ERROR`), and reports ZK0334 with `host::listing` as help when none matches.
+The table matches kinds through their names, so the stream structs and the error
+enumeration are the ones the stdlib declares. The IR builder asks `host::find` again for
+the host function of its one statement, with the written name of an overload (`#<n>` cut
+off).
 
 Before it, `collect_enums` (`enum_check.rs`) makes the kind of each enumeration, on its
 name and on its stem, and reports a member name used twice (ZK0328) and a name a struct
