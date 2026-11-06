@@ -391,6 +391,15 @@ with `VerbOp::Join`.
 
 ## Reading the imports
 
+An import whose path starts with `စံကား/` (`STD_PREFIX`) reads a module of the stdlib
+from `STD_MODULES`, which `include_str!` fills from `stdlib/`: `import_std` registers it in
+the source map as a file named after the module, and reads it as each imported file, once.
+`Loaded::single`, for a program read from storage, keeps its old path unless the program
+imports from the stdlib; then `with_std` runs the loader with `disk` off, in a source map
+of its own that starts with the file (`SourceMap::add_file`), so the modules sit after it;
+each other import is ZK0232, and a name the stdlib lacks is ZK0238.
+
+
 `load(root, &mut SourceMap, &LexerOptions) -> Result<Loaded>` reads a file and the files it
 imports, and gives one tree for all of them:
 

@@ -329,6 +329,15 @@ en = "write a mark after each parameter name, as \"<name>(<mark>)\", or leave ou
 [codes.ZK0237.explain]
 en = """A parameter can have a mark, the word a marked call writes after its argument: \"စာသား လမ်းကြောင်း(၌ရှိသော)\". A marked call gives each argument with its mark, so a header marks each parameter or none of them. With marks, the parameters end in \"လက်ခံပြီး\" straight after the last one; without marks, in \"(တို့)?ကို လက်ခံပြီး\"."""
 
+[codes.ZK0238.title]
+en = "unknown stdlib module"
+[codes.ZK0238.message]
+en = "the stdlib has no module \"%{n}\""
+[codes.ZK0238.help]
+en = "the stdlib has %{l}"
+[codes.ZK0238.explain]
+en = """An import whose path starts with \"စံကား/\" reads a module of the stdlib, which the compiler carries, never a file of that name. This name is none of its modules."""
+
 # -------------------------------------------------------------- resolve ZK03xx
 
 [codes.ZK0301.title]

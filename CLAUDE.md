@@ -19,6 +19,7 @@ and hosts a compiler explorer that runs in the browser.
 | `docs/manual/` | Docs: the full rules, the compiler, the VM, concepts, internals, reference (`/docs/`) |
 | `docs/*.internal.md` | design notes; gitignored, never published or cited |
 | `samples/` | example programs with their expected output |
+| `stdlib/` | the stdlib modules, in Zaka; the compiler carries each one (`STD_MODULES` in `zakac_parser/src/load.rs`), imported as `"စံကား/<name>"` |
 
 A program passes through: segmenter → lexer → parser → naturalness → names and kinds
 (semcheck) → lower to IR → fold constants → borrow checker → codegen → VM.

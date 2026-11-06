@@ -1,32 +1,20 @@
 mod common;
 
+use std::collections::HashSet;
+
 use common::compile_checked;
+use zaka_host::HOST_FNS;
+use zaka_host::HostFn;
 use zaka_host::MemWorld;
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_in;
+use zakac_codegen::bc::Op;
+use zakac_rust_sugars::tern;
 
-/// The kinds, the standard streams and the external functions, as the
-/// stdlib declares them.
-const DECLS: &str = "\
-အမျိုးအစား အချက်အလက်အဝင်အထွက်အမှားအယွင်း ဆိုသည်မှာ မတွေ့ခြင်း၊ ခွင့်ပြုချက်မရှိခြင်း၊ အဝင်ဒေတာအဆုံးကိုရောက်ခြင်း၊ \
-                     စာသားဖွဲ့စည်းပုံမမှန်ခြင်း၊ တခြားအကြောင်းအရင်း တို့ ဖြစ်သည်။
-ဒေတာအမျိုးအစား အချက်အလက်အဝင်စီးကြောင်း တွင် ကိန်းပြည့် လက်ကိုင် တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား အချက်အလက်အထွက်စီးကြောင်း တွင် ကိန်းပြည့် လက်ကိုင် တို့ ပါဝင်သည်။
-ကိန်းသေ စံပြုအဝင် သည် လက်ကိုင် ၀ ရှိသော အချက်အလက်အဝင်စီးကြောင်းတစ်ခု ဖြစ်ပါစေ။
-ကိန်းသေ စံပြုအထွက် သည် လက်ကိုင် ၁ ရှိသော အချက်အလက်အထွက်စီးကြောင်းတစ်ခု ဖြစ်ပါစေ။
-ကိန်းသေ စံပြုအမှား သည် လက်ကိုင် ၂ ရှိသော အချက်အလက်အထွက်စီးကြောင်းတစ်ခု ဖြစ်ပါစေ။
-
-လုပ်ဆောင်ချက် စာကြောင်းတစ်ကြောင်းဖတ် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ အချက်အလက်အဝင်စီးကြောင်း ရင်းမြစ်(မှ) \
-                     လက်ခံပြီး စာသား ရလဒ် သို့မဟုတ် အချက်အလက်အဝင်အထွက်အမှားအယွင်း အမှားအယွင်း ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် ဖိုင်ကိုဖတ် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား လမ်းကြောင်း(၌ရှိသော) လက်ခံပြီး စာသား ရလဒ် \
-                     သို့မဟုတ် အချက်အလက်အဝင်အထွက်အမှားအယွင်း အမှားအယွင်း ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် ရေး သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား ဒေတာ(ကို)၊ စာသား လမ်းကြောင်း(သို့) လက်ခံပြီး \
-                     အောင်မြင်သည့်သတင်း သို့မဟုတ် အချက်အလက်အဝင်အထွက်အမှားအယွင်း အမှားအယွင်း ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် ရေး သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား ဒေတာ(ကို)၊ အချက်အလက်အထွက်စီးကြောင်း ဦးတည်ရာ(သို့) \
-                     လက်ခံပြီး အောင်မြင်သည့်သတင်း သို့မဟုတ် အချက်အလက်အဝင်အထွက်အမှားအယွင်း အမှားအယွင်း ကို \
-                     ပြန်ပေးမည်။
-";
+/// The import of each name of the stdlib module of input and output.
+const IMPORT: &str = "\"စံကား/အဝင်အထွက်\" မှ အချက်အလက်အဝင်အထွက်အမှားအယွင်း၊ စံပြုအဝင်၊ စံပြုအထွက်၊ \
+                      စံပြုအမှား၊ စာကြောင်းတစ်ကြောင်းဖတ်၊ ဖိုင်ကိုဖတ်၊ ရေး တို့ကို ထည့်သွင်းပါ။";
 
 /// A function that can fail, which does each host call once, and a start
 /// block that prints its whole result.
@@ -56,7 +44,7 @@ const WORK: &str = "\
 #[test]
 fn host_functions_serve_a_program_from_a_world_in_storage()
 {
-    let module = compile_checked(&format!("{DECLS}\n{WORK}"));
+    let module = compile_checked(&format!("{IMPORT}\n{WORK}"));
     let world = Box::new(MemWorld::builder().input("Hein\n").build());
     let mut out = Vec::new();
     let (_, result) =
@@ -70,4 +58,18 @@ Hein
 အောင်မြင်သည့်သတင်း
 ";
     assert_eq!(String::from_utf8(out).unwrap(), want);
+}
+
+/// The stdlib declares a function for each row of the host table, so the
+/// table and the stdlib remain in step: each host function is the op of one of
+/// its external functions.
+#[test]
+fn the_stdlib_declares_each_host_function()
+{
+    let module = compile_checked(&format!("{IMPORT}\n{WORK}"));
+    let ops = module.funcs.iter().flat_map(|f| f.code.iter());
+    let served: HashSet<HostFn> =
+        ops.filter_map(|op| tern!(let Op::Host(f) = op, Some(*f), None)).collect();
+    let rows: HashSet<HostFn> = HOST_FNS.iter().map(|d| d.func).collect();
+    assert_eq!(served, rows);
 }

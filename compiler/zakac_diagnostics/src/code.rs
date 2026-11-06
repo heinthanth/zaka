@@ -143,6 +143,8 @@ NestedEnum = ("ZK0235", Level::Error),
 ArmAfterDefault = ("ZK0236", Level::Error),
 /// Some parameters of a header have a mark and some do not.
 MixedMarks = ("ZK0237", Level::Error),
+/// An import names a module the stdlib does not have.
+UnknownStdModule = ("ZK0238", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

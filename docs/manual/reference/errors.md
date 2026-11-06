@@ -121,6 +121,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0235 | an enumeration declared inside a block | [Enumeration mistakes](../../learn/enums/mistakes.md#an-enumeration-declared-inside-a-block) |
 | ZK0236 | a switch arm after the default arm | [Enumeration mistakes](../../learn/enums/mistakes.md#an-arm-after-the-default-arm) |
 | ZK0237 | a header that marks some parameters and not the others | [Functions](../language/functions.md#marked-parameters) |
+| ZK0238 | an import from `စံကား/` that names no module of the stdlib | [Input and output](../language/io.md#the-rules) |
 
 ### ZK03: names
 

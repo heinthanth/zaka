@@ -16,6 +16,7 @@
   - [Structs](language/structs.md)
   - [Enumerations](language/enums.md)
   - [Modules](language/modules.md)
+  - [Input and output](language/io.md)
   - [Natural wording](language/naturalness.md)
   - [Slices](language/slices.md)
   - [Pointers](language/pointers.md)

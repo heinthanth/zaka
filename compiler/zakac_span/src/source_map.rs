@@ -242,6 +242,14 @@ impl SourceMap
         file
     }
 
+    /// Register a file made elsewhere, keeping its positions, so the files
+    /// registered after it start past its end.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - The file.
+    pub fn add_file(&mut self, file: Arc<SourceFile>) { self.files.push(file); }
+
     /// Load a file from disk via the file loader.
     ///
     /// # Arguments

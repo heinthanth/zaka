@@ -18,6 +18,7 @@ use zakac_host_errors::errors::IOErrorContext;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_lexer::reserved::PLURAL;
+use zakac_lexer::spelling::canonical;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::ret_if;
 use zakac_session::artifact::EmbeddedFile;
@@ -43,10 +44,20 @@ pub struct Loaded
     pub diagnostics: Vec<Diagnostic>,
 }
 
+/// The start of the import path of a module of the stdlib.
+pub const STD_PREFIX: &str = "စံကား/";
+
+/// The modules of the stdlib: the name a program imports, and the source,
+/// which the compiler carries, so a program read from storage imports them
+/// too. Each name is in normalized spelling, as an import path is.
+pub static STD_MODULES: &[(&str, &str)] =
+    &[("စံကား/အဝင်အထွက်", include_str!("../../../stdlib/io.zaka"))];
+
 impl Loaded
 {
-    /// Lex and parse one file that cannot import: each import it has is
-    /// reported.
+    /// Lex and parse one file that cannot read other files: each import it
+    /// has is reported, except an import from the stdlib, which reads the
+    /// module the compiler carries.
     ///
     /// # Arguments
     ///
@@ -60,12 +71,58 @@ impl Loaded
     {
         let lexed = lex(source, options);
         let parsed = parse(source, &lexed);
+        let mut imports = parsed.program.stmts.iter().filter_map(as_import);
+        ret_if!(imports.any(is_std), Loaded::with_std(source, options));
         let mut diagnostics = lexed.diagnostics;
         diagnostics.extend(parsed.diagnostics);
         diagnostics.extend(refuse_imports(&parsed.program));
         #[rustfmt::skip]
         return Loaded::builder().program(parsed.program).diagnostics(diagnostics).build();
     }
+
+    /// Read one file that imports from the stdlib, with the modules it
+    /// imports, in a source map of its own that starts with the file.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The file.
+    /// * `options` - The lexer options.
+    ///
+    /// # Returns
+    ///
+    /// The program, imported modules first.
+    fn with_std(source: &SourceFile, options: &LexerOptions) -> Self
+    {
+        let root = Arc::new(source.clone());
+        let mut source_map = SourceMap::new();
+        source_map.add_file(root.clone());
+        #[rustfmt::skip]
+        let mut loader = Loader::builder().source_map(&mut source_map).options(options)
+            .folder(PathBuf::new()).disk(false).build();
+        let path = PathBuf::from(source.name.to_string());
+        let read = loader.visit(root, path);
+        read.expect("a file read from storage reads no file from disk");
+        let Loader { stmts, units, imports, diagnostics, .. } = loader;
+        let span = zakac_span::span::Span::new(source.start_pos, source.end_pos());
+        let program = Program::builder().stmts(stmts).units(units).span(span).build();
+        #[rustfmt::skip]
+        return Loaded::builder().program(program).imports(imports)
+            .diagnostics(diagnostics).build();
+    }
+}
+
+/// Whether an import reads a module of the stdlib.
+///
+/// # Arguments
+///
+/// * `n` - The import.
+///
+/// # Returns
+///
+/// `true` when its path starts with [`STD_PREFIX`].
+fn is_std(n: &ImportStmt) -> bool
+{
+    canonical(&n.path.lit.value).starts_with(STD_PREFIX)
 }
 
 /// Report each import of a program that was not read from a file.
@@ -158,6 +215,10 @@ struct Loader<'a>
     /// The number for the next expression node.
     #[builder(default)]
     next_id: u32,
+    /// Whether imports can read files from disk; a file read from storage
+    /// imports from the stdlib alone.
+    #[builder(default = true)]
+    disk: bool,
 }
 
 impl Loader<'_>
@@ -243,6 +304,12 @@ impl Loader<'_>
         &mut self, importer: &Path, n: &ImportStmt,
     ) -> zakac_host_errors::Result<Option<u32>>
     {
+        ret_if!(is_std(n), Ok(self.import_std(n)));
+        if !self.disk
+        {
+            self.diagnostics.push(diag::import_needs_file(n.span, &n.path.lit.value));
+            return Ok(None);
+        }
         let folder = importer.parent().unwrap_or(Path::new(""));
         let path = normalize(&folder.join(&n.path.lit.value));
         ret_if!(let Some(unit) = self.done.get(&path), Ok(Some(*unit)));
@@ -259,6 +326,41 @@ impl Loader<'_>
         })?;
         self.imports.push(EmbeddedFile::of(&file));
         self.visit(file, path).map(Some)
+    }
+}
+
+impl Loader<'_>
+{
+    /// Read the module of the stdlib an import names, from the source the
+    /// compiler carries, unless it was read before. A name the stdlib does
+    /// not have is reported.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The import.
+    ///
+    /// # Returns
+    ///
+    /// The unit of the module; `None` for a name the stdlib lacks.
+    fn import_std(&mut self, n: &ImportStmt) -> Option<u32>
+    {
+        let name = canonical(&n.path.lit.value).into_owned();
+        let path = PathBuf::from(&name);
+        ret_if!(let Some(unit) = self.done.get(&path), Some(*unit));
+        let Some((_, src)) = STD_MODULES.iter().find(|(module, _)| *module == name)
+        else
+        {
+            let list: Vec<&str> =
+                STD_MODULES.iter().map(|(module, _)| *module).collect();
+            let diag = diag::unknown_std_module(n.path.span, &name, &list.join(", "));
+            self.diagnostics.push(diag);
+            return None;
+        };
+        let file =
+            self.source_map.new_source_file(FileName::Custom(name), src.to_string());
+        self.imports.push(EmbeddedFile::of(&file));
+        let read = self.visit(file, path);
+        Some(read.expect("a module of the stdlib reads no file from disk"))
     }
 }
 

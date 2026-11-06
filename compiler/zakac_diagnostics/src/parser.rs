@@ -558,3 +558,21 @@ pub fn mixed_marks(span: Span) -> Diagnostic
     Diagnostic::new(Code::MixedMarks, t!("codes.ZK0237.message"), span)
         .with_help(t!("codes.ZK0237.help"))
 }
+
+/// An import names a module the stdlib does not have.
+///
+/// # Arguments
+///
+/// * `span` - The path of the import.
+/// * `name` - The path.
+/// * `list` - The modules of the stdlib.
+///
+/// # Returns
+///
+/// The `ZK0238` diagnostic, with the modules as a hint.
+pub fn unknown_std_module(span: Span, name: &str, list: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0238.message", n = name);
+    Diagnostic::new(Code::UnknownStdModule, msg, span)
+        .with_help(t!("codes.ZK0238.help", l = list))
+}
