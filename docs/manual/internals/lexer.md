@@ -192,6 +192,13 @@ The words of failing functions are `ရလဒ်ကောင်း` (`GoodResult
 `မအောင်မြင်ပါ` (`NotSucceeded`) and `သတ်မှတ်မည်` (`WillMark`); `?` is the sign `Punct::Question`. The parser reads a `?` as a
 pass-on just when it touches the `)` of a call (`joined`).
 
+A name joined to `ထဲမှ`, as in `အရောင်များထဲမှ`, has a non-reserved part, so
+`split_reserved` cannot split it. `lex_ident` does: a name word that ends in `ထဲမှ`, with a
+name before it, becomes an `Ident` and `Kw::Among` (`lex_among`). The `ထဲမှ` must start a
+vanna of its own, so a stacked consonant before it keeps the word whole. The words of
+enumerations and switches are `အမျိုးအစား` (`EnumOpen`), `ဆိုသည်မှာ` (`Meaning`), `ထဲမှ`
+(`Among`) and `တခြား` (`Other`).
+
 A few reserved words are whole rows on purpose, so that none is ever split: `တန်ဖိုးအငှား`
 (`Lend`), `လိပ်စာအကြမ်း` (`RawAddress`), `ငှားထားသော` (`Borrowed`). The word `မှတ်ချက်` is
 both the comment marker (rule 1 sees it first) and `Kw::Note`, so `မှတ်ချက်ကို` still

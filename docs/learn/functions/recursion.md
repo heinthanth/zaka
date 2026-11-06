@@ -105,4 +105,4 @@ the program stopped: more than 4096 nested calls
 - Write a recursive function that counts the digits of a number (hint: n / 10 has one
   digit fewer).
 
-Next: [Errors and results](../error-handling/README.md).
+Next: [Text](../text/README.md).

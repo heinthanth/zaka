@@ -5,11 +5,13 @@ use zakac_ast::expr::InfixExpr;
 use zakac_ast::expr::IntLit;
 use zakac_ast::expr::LogicExpr;
 use zakac_ast::expr::LogicOp;
+use zakac_ast::expr::MemberExpr;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp;
 use zakac_ast::expr::StrExpr;
 use zakac_ast::expr::VerbExpr;
+use zakac_ast::name::Name;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::Diagnostic;
@@ -17,6 +19,7 @@ use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::ownership as od;
 use zakac_diagnostics::resolve as rd;
 use zakac_i18n::t;
+use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::token::Kw;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -101,7 +104,38 @@ impl Checker
             Expr::Struct(n) => self.infer_struct_lit(n),
             Expr::BlankList(n) => self.infer_blank(n, expect),
             Expr::Str(n) => self.infer_str(n),
+            Expr::Member(n) => self.infer_member(n),
         }
+    }
+
+    /// Infer `<enum>များထဲမှ <member>`: the name before `ထဲမှ` is the stem of
+    /// an enumeration name with `များ` after it.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The member.
+    ///
+    /// # Returns
+    ///
+    /// The enumeration, or `None` after an error.
+    fn infer_member(&mut self, n: &MemberExpr) -> Option<DataKind>
+    {
+        let written = n.qualifier.name.as_str();
+        let found =
+            |name: &str| self.structs.get(&Name::new(name)).and_then(|k| k.as_enum());
+        let plain = written.strip_suffix(PLURAL).and_then(found);
+        let exact = plain.filter(|e| format!("{}{PLURAL}", e.stem()) == written);
+        let Some(owner) = exact
+        else
+        {
+            let near = plain.or_else(|| found(written));
+            let fix = near.map(|e| format!("{}{PLURAL}", e.stem()));
+            self.report(rd::unknown_enum(n.qualifier.span, written, fix.as_deref()));
+            return None;
+        };
+        ret_if!(owner.member(&n.member.name).is_some(), Some(DataKind::Enum(owner)));
+        self.report(rd::unknown_member(n.member.span, &owner.name, &n.member.name));
+        None
     }
 
     /// Infer a string literal: owned text, whatever the kind of each template

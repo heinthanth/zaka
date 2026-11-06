@@ -15,6 +15,8 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::enums::EnumKind;
+use zakac_semcheck::enums::MemberValue;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::semcheck::KindTable;
 use zakac_semcheck::semcheck::RESULT_NAME;
@@ -157,7 +159,7 @@ fn collect_sigs(program: &st::Program, structs: &StructTable)
     {
         let params = f.params.iter().map(|p| param_kind(p, structs)).collect();
         let edits = f.params.iter().map(|p| p.edit).collect();
-        let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, structs));
+        let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, structs).repr());
         let sig = Sig { index: index as u32, params, edits, ret };
         do_if!(f.start, continue);
         sigs[unit].entry(f.name.name).or_insert(sig);
@@ -178,7 +180,7 @@ fn collect_sigs(program: &st::Program, structs: &StructTable)
 /// The kind.
 fn param_kind(p: &st::Param, structs: &StructTable) -> DataKind
 {
-    let kind = DataKind::from_ast(&p.kind, structs);
+    let kind = DataKind::from_ast(&p.kind, structs).repr();
     tern!(p.edit, kind.pointer_to().as_borrowed(), kind)
 }
 
@@ -278,7 +280,19 @@ impl Lowerer<'_>
     /// # Returns
     ///
     /// The kind.
-    fn kind_of(&self, e: &ast::Expr) -> DataKind
+    fn kind_of(&self, e: &ast::Expr) -> DataKind { self.shown_kind(e).repr() }
+
+    /// The kind the check recorded for an expression, with an enumeration
+    /// kept as it is, for a print that writes the name of a member.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The expression.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    fn shown_kind(&self, e: &ast::Expr) -> DataKind
     {
         let kind = self.kinds.get(&e.id()).copied();
         kind.unwrap_or_else(|| panic!("expression {} has no kind", e.id().0))
@@ -297,6 +311,7 @@ impl Lowerer<'_>
     /// The place of the slot.
     fn declare(&mut self, ident: &ast::Ident, kind: DataKind, access: Access) -> Place
     {
+        let kind = kind.repr();
         let slot = Slot::builder()
             .name(ident.name.as_str())
             .kind(kind)
@@ -337,6 +352,7 @@ impl Lowerer<'_>
     /// The place of the slot.
     fn hidden(&mut self, kind: DataKind, span: Span) -> Place
     {
+        let kind = kind.repr();
         #[rustfmt::skip]
         let slot = Slot::builder().name("%new").kind(kind).access(Access::Var).span(span).build();
         let Some(frame) = &mut self.frame
@@ -526,7 +542,7 @@ impl Lowerer<'_>
             return self.stmt(s, out);
         };
         let params = f.params.iter().map(|p| param_kind(p, self.structs)).collect();
-        let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
+        let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs).repr());
         let index = self.funcs.len() as u32;
         do_if!(f.start, self.start = Some((index, params, ret, f.name.span)));
         let func = self.func(f);
@@ -701,8 +717,9 @@ impl Lowerer<'_>
                 out.push(Stmt::RemoveCell { dest, kind, span: n.span })
             }
             st::Stmt::Replace(n) => out.push(self.replace_text(n)),
-            st::Stmt::Struct(_) => (),
+            st::Stmt::Struct(_) | st::Stmt::Enum(_) => (),
             st::Stmt::Import(n) => self.import(n),
+            st::Stmt::Switch(n) => self.switch_stmt(n, out),
         }
     }
 
@@ -1059,10 +1076,32 @@ impl Lowerer<'_>
     {
         let plain = tern!(let ast::Expr::Str(s) = &n.value, s.plain(), None);
         let value = plain.map_or_else(
-            || PrintValue::Expr(counted_literal(self.expr(&n.value))),
+            || {
+                let lowered = counted_literal(self.expr(&n.value));
+                PrintValue::Expr(self.shown(&n.value, lowered))
+            },
             |text| PrintValue::Text(text.to_string()),
         );
         Stmt::Print { value, span: n.span }
+    }
+
+    /// A lowered value labelled with its enumeration kind, so a print writes
+    /// the name of the member; each other value as it is. Codegen reads the
+    /// value as its value kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The written value.
+    /// * `lowered` - The lowered value.
+    ///
+    /// # Returns
+    ///
+    /// The value.
+    fn shown(&self, e: &ast::Expr, lowered: Expr) -> Expr
+    {
+        let kind = self.shown_kind(e);
+        ret_if!(kind.as_enum().is_none(), lowered);
+        Expr::builder().kind(kind).node(lowered.node).span(lowered.span).build()
     }
 
     /// Lower an `if` chain; later arms nest in the `else` of earlier ones.
@@ -1078,7 +1117,7 @@ impl Lowerer<'_>
     {
         // The condition of a later arm runs inside the `else` of the arm
         // before it, so the statements of its calls go there too.
-        let arms: Vec<(Vec<Stmt>, (Expr, Vec<Stmt>, Span))> = n
+        let arms: Vec<ChainArm> = n
             .arms
             .iter()
             .enumerate()
@@ -1091,18 +1130,139 @@ impl Lowerer<'_>
             })
             .collect();
         let els = n.else_block.as_ref().map_or_else(Vec::new, |b| self.block(&b.stmts));
-        let nest = |els,
-                    (i, (pre, (cond, then, span))): (
-            usize,
-            (Vec<Stmt>, (Expr, Vec<Stmt>, Span)),
-        )| {
-            let span = tern!(i == 0, n.span, span.to(&n.span));
-            let mut arm: Vec<Stmt> = pre;
-            arm.push(Stmt::If { cond, then, els, span });
-            arm
+        if_chain(arms, els, n.span)
+    }
+
+    /// Lower a switch to the `if` chain an `if` statement lowers to: each arm
+    /// tests the subject with `==` against its case, and the default arm is
+    /// the last `else`. A subject that is no read of a place or a constant
+    /// is kept in a hidden slot first, so it runs once.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The switch.
+    /// * `out` - The list the statements go to.
+    fn switch_stmt(&mut self, n: &st::SwitchStmt, out: &mut Vec<Stmt>)
+    {
+        let owner = self.shown_kind(&n.subject).as_enum();
+        let lowered = self.expr(&n.subject);
+        let subject = self.switch_subject(lowered, out);
+        let arms: Vec<ChainArm> = n
+            .arms
+            .iter()
+            .enumerate()
+            .map(|(i, arm)| {
+                let lower = |l: &mut Self| {
+                    let cond = l.arm_cond(&arm.cases, &subject, owner);
+                    (cond, l.block(&arm.block.stmts), arm.span)
+                };
+                tern!(i == 0, (Vec::new(), lower(self)), self.with_pre(lower))
+            })
+            .collect();
+        let els =
+            n.default.as_ref().map_or_else(Vec::new, |d| self.block(&d.block.stmts));
+        out.extend(std::mem::take(&mut self.pre));
+        out.push(if_chain(arms, els, n.span));
+    }
+
+    /// The subject of a switch as each arm reads it: a read of a place or a
+    /// constant as it is, each other value through a hidden slot set once.
+    /// The slot of a value that holds text joins the drops of its scope.
+    ///
+    /// # Arguments
+    ///
+    /// * `lowered` - The lowered subject.
+    /// * `out` - The list the statement that sets the slot goes to.
+    ///
+    /// # Returns
+    ///
+    /// The subject.
+    fn switch_subject(&mut self, lowered: Expr, out: &mut Vec<Stmt>) -> Expr
+    {
+        let kept = matches!(lowered.node, ExprNode::Read(_) | ExprNode::Const(_));
+        ret_if!(kept, lowered);
+        let (kind, span, place) =
+            (lowered.kind, lowered.span, self.hidden(lowered.kind, lowered.span));
+        if kind.holds_text()
+        {
+            self.pre_init.push(Stmt::Set {
+                place,
+                value: default_constant(kind, span),
+                span,
+            });
+            self.drops.last_mut().expect("a scope is open").push((place, kind));
+        }
+        out.extend(std::mem::take(&mut self.pre));
+        out.push(Stmt::Set { place, value: lowered, span });
+        read(place, kind, span)
+    }
+
+    /// The test of one switch arm: the subject `==` one of its cases.
+    ///
+    /// # Arguments
+    ///
+    /// * `cases` - The cases.
+    /// * `subject` - The subject as each arm reads it.
+    /// * `owner` - The enumeration of the subject, when it has one.
+    ///
+    /// # Returns
+    ///
+    /// The test, a boolean.
+    fn arm_cond(
+        &mut self, cases: &[ast::Expr], subject: &Expr, owner: Option<&EnumKind>,
+    ) -> Expr
+    {
+        let mut tests = cases.iter().map(|c| self.case_cond(c, subject, owner));
+        let first = tests.next().expect("an arm has a case");
+        let tests: Vec<Expr> = tests.collect();
+        tests.into_iter().fold(first, |lhs, rhs| {
+            let span = lhs.span.to(&rhs.span);
+            let node = ExprNode::Logic {
+                op: LogicOp::Or,
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+            };
+            Expr::builder().kind(DataKind::Bool).node(node).span(span).build()
+        })
+    }
+
+    /// The test of one case: the subject `==` the case. A bare name that is
+    /// a member of the enumeration of the subject is that member.
+    ///
+    /// # Arguments
+    ///
+    /// * `case` - The case.
+    /// * `subject` - The subject as each arm reads it.
+    /// * `owner` - The enumeration of the subject, when it has one.
+    ///
+    /// # Returns
+    ///
+    /// The test, a boolean.
+    fn case_cond(
+        &mut self, case: &ast::Expr, subject: &Expr, owner: Option<&EnumKind>,
+    ) -> Expr
+    {
+        let span = case.span();
+        let member = match (case, owner)
+        {
+            (ast::Expr::Name(n), Some(owner)) =>
+            {
+                owner.member(&n.name).map(|v| (v, owner))
+            }
+            _ => None,
         };
-        let mut chain = arms.into_iter().enumerate().rev().fold(els, nest);
-        chain.pop().expect("an if has at least one arm")
+        let case = match member
+        {
+            Some((v, owner)) => member_expr(v, owner.under(), span),
+            None => self.expr(case),
+        };
+        let texts = subject.kind.is_textual() && case.kind.is_textual();
+        let common =
+            tern!(texts, None, Some(concrete(self.common(subject.kind, case.kind))));
+        let side = |e: Expr| common.map_or(e.clone(), |k| coerce_lowered(e, k));
+        let (lhs, rhs) = (Box::new(side(subject.clone())), Box::new(side(case)));
+        let node = ExprNode::Compare { op: CmpOp::Eq, lhs, rhs };
+        Expr::builder().kind(DataKind::Bool).node(node).span(span).build()
     }
 
     /// Lower one arm of an `if` chain.
@@ -1414,7 +1574,7 @@ impl Lowerer<'_>
         let bare = Stmt::Return { value: None, span: f.block.span };
         do_if!(fault.is_some() && !ends_in_return, block.push(bare));
         do_if!(let Some(fault) = fault, wrap_returns(&mut block, fault, self.platform));
-        let given = fault.map_or(ret, |f| Some(f.wrapper));
+        let given = fault.map_or(ret.map(DataKind::repr), |f| Some(f.wrapper));
         let frame =
             std::mem::replace(&mut self.frame, outer).expect("the frame is set");
         #[rustfmt::skip]
@@ -1956,6 +2116,14 @@ impl Lowerer<'_>
             ast::Expr::Struct(n) => self.struct_lit(n, kind),
             ast::Expr::BlankList(_) => ExprNode::BlankList,
             ast::Expr::Str(n) => self.str_node(n),
+            ast::Expr::Member(n) =>
+            {
+                let owner = self.shown_kind(e).as_enum();
+                let owner = owner.expect("the check gives a member its enumeration");
+                let v =
+                    owner.member(&n.member.name).expect("the check found the member");
+                return member_expr(v, owner.under(), n.span);
+            }
         };
         Expr::builder().kind(kind).node(node).span(e.span()).build()
     }
@@ -2325,7 +2493,11 @@ impl Lowerer<'_>
             pieces.push(match piece
             {
                 ast::StrPiece::Text(text) => FmtPiece::Text(text.clone()),
-                ast::StrPiece::TemplateSlot(e) => FmtPiece::Value(self.expr(e)),
+                ast::StrPiece::TemplateSlot(e) =>
+                {
+                    let lowered = self.expr(e);
+                    FmtPiece::Value(self.shown(e, lowered))
+                }
             });
         }
         ExprNode::Format(pieces)
@@ -2374,7 +2546,7 @@ impl Lowerer<'_>
         let base = Box::new(self.expr(&n.base));
         let field = u32::try_from(at).expect("a struct has fewer than 2^32 fields");
         let node = ExprNode::FieldAddr { base, field, offset };
-        Expr::builder().kind(kind.pointer_to()).node(node).span(n.span).build()
+        Expr::builder().kind(kind.repr().pointer_to()).node(node).span(n.span).build()
     }
 
     /// The cell count of a list, of the list a pointer points at, or of a
@@ -2571,10 +2743,13 @@ impl Lowerer<'_>
                 self.lend_whole(value)
             }
             VerbOp::Lend => ExprNode::Lend { operand: Box::new(self.expr(value)) },
-            VerbOp::Cast => ExprNode::Convert {
-                operand: Box::new(self.expr(value)),
-                implicit: false,
-            },
+            VerbOp::Cast =>
+            {
+                let operand = self.expr(value);
+                // a member turned into its value kind is its value
+                ret_if!(operand.kind == kind, operand.node);
+                ExprNode::Convert { operand: Box::new(operand), implicit: false }
+            }
             VerbOp::IsGood | VerbOp::IsFault => self.result_test(n.op, value, n.span),
             VerbOp::Unwrap | VerbOp::UnwrapFault =>
             {
@@ -2629,6 +2804,7 @@ impl Lowerer<'_>
 /// The expression, of kind `want`.
 fn coerce_lowered(lowered: Expr, want: DataKind) -> Expr
 {
+    let want = want.repr();
     ret_if!(lowered.kind == want, lowered);
     let span = lowered.span;
     let literal = matches!(lowered.node, ExprNode::Const(_));
@@ -2983,6 +3159,8 @@ pub fn constant(v: Value, span: Span) -> Expr
 /// The expression.
 fn default_constant(kind: DataKind, span: Span) -> Expr
 {
+    ret_if!(let Some(e) = kind.as_enum(), member_expr(e.first(), e.under(), span));
+    ret_if!(kind.holds_enum(), defaults_of_parts(kind, span));
     let node = tern!(
         kind.is_aggregate(),
         ExprNode::BlankList,
@@ -3127,7 +3305,7 @@ fn float_lit(n: &ast::FloatLit, kind: DataKind) -> Value
 fn read_return(slot: u32, kind: DataKind, span: Span) -> Stmt
 {
     let read = Expr::builder()
-        .kind(kind)
+        .kind(kind.repr())
         .node(ExprNode::Read(Place::Local(slot)))
         .span(span)
         .build();
@@ -3191,4 +3369,114 @@ fn leaves_scope(s: &Stmt) -> bool
 fn ungrouped(e: &ast::Expr) -> &ast::Expr
 {
     tern!(let ast::Expr::Group(n) = e, ungrouped(&n.inner), e)
+}
+
+/// One arm of an `if` chain: the statements its test needs first, then the
+/// test, the statements of the arm and its source region.
+type ChainArm = (Vec<Stmt>, (Expr, Vec<Stmt>, Span));
+
+/// Nest the arms of an `if` chain: each later arm, with the statements its
+/// test needs first, goes in the `else` of the arm before it.
+///
+/// # Arguments
+///
+/// * `arms` - The statements before each test, the test, the statements of the
+///   arm and its source region.
+/// * `els` - The statements of the last `else`.
+/// * `whole` - The source region of the whole chain.
+///
+/// # Returns
+///
+/// The outermost `if`.
+fn if_chain(arms: Vec<ChainArm>, els: Vec<Stmt>, whole: Span) -> Stmt
+{
+    let nest = |els, (i, (pre, (cond, then, span))): (usize, ChainArm)| {
+        let span: Span = tern!(i == 0, whole, span.to(&whole));
+        let mut arm: Vec<Stmt> = pre;
+        arm.push(Stmt::If { cond, then, els, span });
+        arm
+    };
+    let mut chain = arms.into_iter().enumerate().rev().fold(els, nest);
+    chain.pop().expect("an if has at least one arm")
+}
+
+/// The default of a struct or a counted list that holds an enumeration: the
+/// default of each field or cell, so each enumeration starts at its first
+/// member.
+///
+/// # Arguments
+///
+/// * `kind` - The struct or the counted list.
+/// * `span` - Its source region.
+///
+/// # Returns
+///
+/// The expression.
+fn defaults_of_parts(kind: DataKind, span: Span) -> Expr
+{
+    let parts: Vec<Expr> = match (kind.as_struct(), kind.as_list())
+    {
+        (Some(s), _) =>
+        {
+            s.fields().iter().map(|(_, k)| default_constant(*k, span)).collect()
+        }
+        (_, Some(l)) => (0..l.len).map(|_| default_constant(l.cell, span)).collect(),
+        _ => Vec::new(),
+    };
+    Expr::builder().kind(kind).node(ExprNode::List(parts)).span(span).build()
+}
+
+/// The value of an enumeration member, as storage holds it.
+///
+/// # Arguments
+///
+/// * `v` - The member value.
+/// * `kind` - The value kind.
+/// * `span` - Its source region.
+///
+/// # Returns
+///
+/// The expression: a constant, static text, or the cells or fields of a
+/// list or a struct.
+pub(crate) fn member_expr(v: &MemberValue, kind: DataKind, span: Span) -> Expr
+{
+    let kind = kind.repr();
+    let node = match v
+    {
+        MemberValue::Scalar(x) => ExprNode::Const(*x),
+        MemberValue::Text(t) => ExprNode::Text(t.clone()),
+        MemberValue::Items(items) => return items_expr(items, kind, span),
+    };
+    Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// The cells or fields of a list or a struct member value.
+///
+/// # Arguments
+///
+/// * `items` - The cells or fields.
+/// * `kind` - The list or struct kind.
+/// * `span` - Its source region.
+///
+/// # Returns
+///
+/// The expression; a plain list is built as a counted list and converted,
+/// as a list literal is.
+fn items_expr(items: &[MemberValue], kind: DataKind, span: Span) -> Expr
+{
+    let build =
+        |k: DataKind, node| Expr::builder().kind(k).node(node).span(span).build();
+    if let Some(s) = kind.as_struct()
+    {
+        let fields =
+            items.iter().zip(s.fields()).map(|(v, (_, k))| member_expr(v, *k, span));
+        return build(kind, ExprNode::List(fields.collect()));
+    }
+    let cell =
+        kind.cell_kind().expect("a member value with items is a list or a struct");
+    let cells =
+        ExprNode::List(items.iter().map(|v| member_expr(v, cell, span)).collect());
+    ret_if!(!kind.is_seq(), build(kind, cells));
+    let counted = build(DataKind::list_of(cell, items.len() as u32), cells);
+    build(kind, ExprNode::Convert { operand: Box::new(counted), implicit: true })
 }

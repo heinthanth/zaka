@@ -11,7 +11,7 @@ kind of each expression before the program runs, and a variable keeps the kind i
 declared with for its whole life. A kind is written in Burmese; compiler messages use a
 short English name for it, listed below.
 
-[Values and kinds](../../learn/values/README.md) in the Learn book introduces the
+[Scalar values](../../learn/values/README.md) in the Learn book introduces the
 scalar kinds with gentle examples. This page states the full rules.
 
 ## Integer kinds
@@ -189,6 +189,7 @@ and the example are stated in [Addresses and lists](#addresses-and-lists), below
 | a plain list | no cells |
 | a counted list | each cell at the default of its kind |
 | an address | `ဗလာ` |
+| an enumeration | its first member (see [Enumerations](enums.md#values-of-an-enumeration)) |
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

@@ -7,7 +7,7 @@ description: Owned text and views of text - the text kinds, string literals and 
 
 Zaka has two kinds of text. `စာသား` owns its text; `စာသား တစ်စိတ်တစ်ပိုင်း` views text that
 another place owns. A string literal is a value of the first kind, and a pair of braces
-in it is a *template slot* that holds an expression. [Text](../../learn/values/strings.md) in the
+in it is a *template slot* that holds an expression. [Text](../../learn/text/README.md) in the
 Learn book shows the same rules in small steps.
 
 ```zaka

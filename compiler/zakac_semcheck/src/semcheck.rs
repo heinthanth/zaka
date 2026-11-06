@@ -20,6 +20,7 @@ use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
 use zakac_ast::stmt::EachStmt;
+use zakac_ast::stmt::EnumDecl;
 use zakac_ast::stmt::FillStmt;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::FreeStmt;
@@ -37,6 +38,7 @@ use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StructDecl;
+use zakac_ast::stmt::SwitchStmt;
 use zakac_ast::stmt::WhileStmt;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
@@ -61,6 +63,8 @@ use crate::consts::Folded;
 use crate::consts::KnownConsts;
 use crate::consts::open_structs;
 use crate::consts::write_counts;
+use crate::enum_check::KnownEnums;
+use crate::enum_check::collect_enums;
 use crate::kind::DataKind;
 use crate::list::KindUse;
 use crate::ops::Want;
@@ -150,11 +154,16 @@ pub struct SemcheckOutput
 pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOutput
 {
     let mut known = KnownConsts::new();
+    let mut enums = KnownEnums::new();
     loop
     {
-        let (mut out, counts, found) = check_once(program, options, known.clone());
+        let (mut out, counts, found, found_enums) =
+            check_once(program, options, known.clone(), &enums);
         let written = write_counts(program, &counts);
-        if counts.is_empty() || (written == 0 && found == known)
+        let settled = counts.is_empty() || (written == 0 && found == known);
+        let enums_settled = found_enums == enums;
+        enums = found_enums;
+        if settled && enums_settled
         {
             out.diagnostics
                 .extend(counts.into_values().filter_map(Result::err).flatten());
@@ -172,17 +181,21 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
 /// * `program` - The tree.
 /// * `options` - The options.
 /// * `known` - The top-level constants an earlier run found.
+/// * `known_enums` - The enumeration values an earlier run worked out.
 ///
 /// # Returns
 ///
-/// The output, the list counts the run met, and the top-level constants it
-/// found.
+/// The output, the list counts the run met, the top-level constants it
+/// found and the enumeration values it worked out.
 fn check_once(
     program: &Program, options: &SemcheckOptions, known: KnownConsts,
-) -> (SemcheckOutput, CountTable, KnownConsts)
+    known_enums: &KnownEnums,
+) -> (SemcheckOutput, CountTable, KnownConsts, KnownEnums)
 {
     let mut diags = Vec::new();
-    let structs = collect_structs(program, &mut diags);
+    let enums = collect_enums(program, known_enums, &mut diags);
+    let mut structs = collect_structs(program, &enums, &mut diags);
+    structs.extend(enums);
     let unit_fns = collect_fns(program, &structs, &mut diags);
     let homes = struct_homes(program);
     diags.extend(private_in_exports(program, &homes));
@@ -197,7 +210,7 @@ fn check_once(
     checker.diags.sort_by_key(|d| d.span.lo);
     #[rustfmt::skip]
     let out = SemcheckOutput::builder().kinds(checker.kinds).structs(checker.structs).diagnostics(checker.diags).build();
-    (out, checker.counts, checker.found)
+    (out, checker.counts, checker.found, checker.found_enums)
 }
 
 /// The function whose block is being checked.
@@ -281,6 +294,9 @@ pub(crate) struct Checker
     /// The value of each constant list or struct this run found.
     #[builder(default)]
     pub aggs: Vec<Folded>,
+    /// The enumeration values this run works out.
+    #[builder(default)]
+    pub found_enums: KnownEnums,
 }
 
 impl Checker
@@ -1189,7 +1205,18 @@ impl Visitor for Checker
 
     fn visit_program(&mut self, n: &Program)
     {
-        do_for!((i, s) in n.stmts.iter().enumerate(), self.visit_top(n, i, s));
+        // A member value can name a constant declared below its
+        // enumeration, so the values of a file are worked out once its
+        // top-level names are all in scope: before the walk leaves the file.
+        let mut pending: Vec<&EnumDecl> = Vec::new();
+        for (i, s) in n.stmts.iter().enumerate()
+        {
+            let leaving = n.unit_of(i) != self.unit;
+            do_if!(leaving, do_for!(e in pending.drain(..), self.check_enum(e)));
+            self.visit_top(n, i, s);
+            do_if!(let Stmt::Enum(e) = s, pending.push(e));
+        }
+        do_for!(e in pending.drain(..), self.check_enum(e));
     }
 
     fn visit_import(&mut self, n: &ImportStmt) { self.import(n) }
@@ -1304,6 +1331,32 @@ impl Visitor for Checker
         self.proven = after;
         self.touched.extend(inside);
     }
+
+    fn visit_switch(&mut self, n: &SwitchStmt)
+    {
+        let subject = self.infer(&n.subject, None);
+        let before = self.proven.clone();
+        let outer = std::mem::take(&mut self.touched);
+        let mut seen = Vec::new();
+        for arm in &n.arms
+        {
+            self.proven = before.clone();
+            do_for!(case in &arm.cases, self.check_case(case, (&n.subject, subject), &mut seen));
+            self.visit_block(&arm.block);
+        }
+        self.proven = before.clone();
+        self.check_default(n, subject, &seen);
+        do_if!(let Some(d) = &n.default, self.visit_block(&d.block));
+        let inside = std::mem::replace(&mut self.touched, outer);
+        let mut after = before;
+        after.retain(|name, _| !inside.contains(name));
+        self.proven = after;
+        self.touched.extend(inside);
+    }
+
+    /// The values are worked out once the file has its top-level names, see
+    /// `visit_program`.
+    fn visit_enum(&mut self, _n: &EnumDecl) {}
 
     fn visit_if_arm(&mut self, n: &IfArm)
     {

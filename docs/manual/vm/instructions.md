@@ -338,6 +338,7 @@ result](../language/error-handling.md#reading-a-whole-result): `not_good` and `n
 | `print` | v → | write the value and a line break |
 | `print_text t` | | write the static text `t` and a line break |
 | `print_list k` | addr → | write the cells of a list or a slice, the fields of a struct, or the text, of kind `k`, and a line break |
+| `print_enum k` | v → | write the member of enumeration `k` whose value `v` is (the address of the value for a list, a struct or text) as `<stem>များထဲမှ <member>`, and a line break; a value no member has as its value |
 
 How each value reads is in [Running a program](running.md#printing).
 

@@ -201,6 +201,10 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::FieldsClose
         | Kw::FieldsCloseAnd
         | Kw::ClassifierIs
+        | Kw::EnumOpen
+        | Kw::Meaning
+        | Kw::Among
+        | Kw::Other
         | Kw::Export => "tok-kw",
         Kw::Print
         | Kw::Assign

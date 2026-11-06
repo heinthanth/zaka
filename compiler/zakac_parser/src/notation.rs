@@ -10,6 +10,7 @@ use zakac_ast::expr::Ident;
 use zakac_ast::expr::InfixExpr;
 use zakac_ast::expr::InfixOp;
 use zakac_ast::expr::ListLit;
+use zakac_ast::expr::MemberExpr;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::NullLit;
 use zakac_ast::expr::PrefixExpr;
@@ -209,6 +210,10 @@ impl Parser<'_>
             {
                 self.parse_size_of()
             }
+            TokenKind::Ident if self.peek_n(1).kind == TokenKind::Kw(Kw::Among) =>
+            {
+                self.parse_member()
+            }
             TokenKind::Ident | TokenKind::RawIdent | TokenKind::Kw(Kw::Result) =>
             {
                 Ok(self.parse_name())
@@ -271,6 +276,25 @@ impl Parser<'_>
         let span = open.span.to(&close.span);
         let id = self.new_id();
         Ok(Expr::List(ListLit::builder().id(id).cells(cells).span(span).build()))
+    }
+
+    /// Parse `<enum>များထဲမှ <member>`, one member of an enumeration.
+    ///
+    /// # Returns
+    ///
+    /// The member, or a diagnostic.
+    fn parse_member(&mut self) -> PResult<Expr>
+    {
+        let tok = self.bump();
+        let qualifier =
+            Ident::builder().name(self.text_of(tok.span)).span(tok.span).build();
+        self.bump();
+        let member = self.parse_ident()?;
+        let span = tok.span.to(&member.span);
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = MemberExpr::builder().id(id).qualifier(qualifier).member(member).span(span).build();
+        Ok(Expr::Member(node))
     }
 
     /// Parse a variable, including the result variable `ရလဒ်`.

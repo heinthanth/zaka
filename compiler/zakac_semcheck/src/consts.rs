@@ -13,6 +13,8 @@ use zakac_ast::expr::LogicOp as AstLogic;
 use zakac_ast::expr::NodeId;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp as AstPrefix;
+use zakac_ast::expr::StrExpr;
+use zakac_ast::expr::StrPiece;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
@@ -37,6 +39,7 @@ use crate::const_op::CmpOp;
 use crate::const_op::InfixOp;
 use crate::const_op::LogicOp;
 use crate::const_op::PrefixOp;
+use crate::enums::MemberValue;
 use crate::kind::DataKind;
 use crate::scope::Access;
 use crate::scope::Binding;
@@ -71,8 +74,10 @@ pub(crate) enum Folded
     Value(Value),
     /// The cells of a list or the fields of a struct, in order.
     Items(Vec<Folded>),
-    /// A value the folder knows as a whole and reads no part of: text, or a
-    /// list with no cells written.
+    /// Text whose characters the folder knows.
+    Text(String),
+    /// A value the folder knows as a whole and reads no part of: text with a
+    /// template slot that does not fold, or a list with no cells written.
     Whole,
 }
 
@@ -266,7 +271,7 @@ impl Checker
     /// # Returns
     ///
     /// The value, or the reason it has none.
-    fn folded(&self, e: &Expr) -> Result<Folded, Stop>
+    pub(crate) fn folded(&self, e: &Expr) -> Result<Folded, Stop>
     {
         let kind = self.kinds.get(&e.id()).copied().ok_or(NONE)?;
         match e
@@ -283,17 +288,30 @@ impl Checker
                 let s = kind.as_struct().ok_or(NONE)?;
                 let field = |(name, k): &(String, DataKind)| {
                     let init = n.fields.iter().find(|f| f.field.name == name.as_str());
-                    let blank = tern!(
-                        k.is_aggregate(),
-                        Folded::Whole,
-                        Folded::Value(Value::default_of(*k))
-                    );
-                    init.map_or(Ok(blank), |f| self.item(&f.value, *k))
+                    init.map_or_else(
+                        || Ok(default_folded(*k)),
+                        |f| self.item(&f.value, *k),
+                    )
                 };
                 let items: Result<Vec<_>, _> = s.fields().iter().map(field).collect();
                 items.map(Folded::Items)
             }
-            Expr::BlankList(_) | Expr::Str(_) => Ok(Folded::Whole),
+            Expr::BlankList(_) => Ok(Folded::Whole),
+            Expr::Str(n) => Ok(self.str_folded(n)),
+            Expr::Member(n) =>
+            {
+                let v = kind.as_enum().and_then(|e| e.member(&n.member.name));
+                v.map(member_folded).ok_or(NONE)
+            }
+            Expr::Infix(n) if n.op == AstInfix::Add && kind.is_text() =>
+            {
+                self.joined([n.lhs.as_ref(), n.rhs.as_ref()].into_iter())
+            }
+            Expr::Verb(n)
+                if matches!(n.op, VerbOp::Add | VerbOp::Join) && kind.is_text() =>
+            {
+                self.joined(n.args.iter())
+            }
             Expr::Group(n) => self.folded(&n.inner),
             Expr::Name(n) => self.named_folded(n.name),
             Expr::Index(n) =>
@@ -320,6 +338,91 @@ impl Checker
             }
             _ => self.work_out(e).map(Folded::Value),
         }
+    }
+
+    /// The folded text of a string literal: its text, with each template
+    /// slot written as a print writes its value. A slot that does not fold
+    /// leaves the text known as a whole.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The literal.
+    ///
+    /// # Returns
+    ///
+    /// The text, or [`Folded::Whole`].
+    fn str_folded(&self, n: &StrExpr) -> Folded
+    {
+        let mut out = String::new();
+        for piece in &n.pieces
+        {
+            let text = match piece
+            {
+                StrPiece::Text(t) => Some(t.clone()),
+                StrPiece::TemplateSlot(e) => self.slot_text(e),
+            };
+            let Some(text) = text
+            else
+            {
+                return Folded::Whole;
+            };
+            out.push_str(&text);
+        }
+        Folded::Text(out)
+    }
+
+    /// The text a template slot writes, when its value folds: text as it is,
+    /// a member of an enumeration as its name, and each other value as a print
+    /// writes it.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The value of the slot.
+    ///
+    /// # Returns
+    ///
+    /// The text, or `None` when the value does not fold to text or a scalar.
+    fn slot_text(&self, e: &Expr) -> Option<String>
+    {
+        let kind = self.kinds.get(&e.id()).copied()?;
+        let folded = self.folded(e).ok()?;
+        if let Some(owner) = kind.as_enum()
+        {
+            return owner
+                .find(|m| member_folded(m) == folded)
+                .map(|at| owner.text_at(at));
+        }
+        match folded
+        {
+            Folded::Text(t) => Some(t),
+            Folded::Value(v) => Some(value_text(v)),
+            _ => None,
+        }
+    }
+
+    /// The folded text of pieces joined in order.
+    ///
+    /// # Arguments
+    ///
+    /// * `pieces` - The pieces.
+    ///
+    /// # Returns
+    ///
+    /// The text, or the reason it has none: a piece that is no known text.
+    fn joined<'e>(&self, pieces: impl Iterator<Item = &'e Expr>)
+    -> Result<Folded, Stop>
+    {
+        let mut out = String::new();
+        for piece in pieces
+        {
+            let Folded::Text(t) = self.folded(piece)?
+            else
+            {
+                return Err(NONE);
+            };
+            out.push_str(&t);
+        }
+        Ok(Folded::Text(out))
     }
 
     /// The value of a constant in scope, of each kind.
@@ -378,6 +481,11 @@ impl Checker
             }
             Expr::Verb(n) => self.verb(n, kind),
             Expr::SizeOf(n) => self.size_of(&n.kind),
+            Expr::Member(n) =>
+            {
+                let v = kind.as_enum().and_then(|en| en.member(&n.member.name));
+                v.and_then(MemberValue::scalar).ok_or(NONE)
+            }
             Expr::Index(_) | Expr::Field(_) => match self.folded(e)?
             {
                 Folded::Value(v) => Ok(v),
@@ -398,7 +506,7 @@ impl Checker
     /// # Returns
     ///
     /// The value of kind `want`, or the reason it has none.
-    fn coerced(&self, e: &Expr, want: DataKind) -> Worked
+    pub(crate) fn coerced(&self, e: &Expr, want: DataKind) -> Worked
     {
         let v = self.work_out(e)?;
         ret_if!(v.kind() == want, Ok(v));
@@ -931,4 +1039,43 @@ pub(crate) fn write_counts(program: &mut Program, counts: &CountTable) -> usize
     let mut writer = Writer(counts, 0);
     writer.visit_program_mut(program);
     writer.1
+}
+
+/// The folded value of a field that a struct literal leaves out: the default
+/// of its kind, the first member for an enumeration.
+///
+/// # Arguments
+///
+/// * `kind` - The kind of the field.
+///
+/// # Returns
+///
+/// The value.
+fn default_folded(kind: DataKind) -> Folded
+{
+    ret_if!(let Some(e) = kind.as_enum(), member_folded(e.first()));
+    ret_if!(kind.is_text(), Folded::Text(String::new()));
+    tern!(kind.is_aggregate(), Folded::Whole, Folded::Value(Value::default_of(kind)))
+}
+
+/// A member value as the folder holds it.
+///
+/// # Arguments
+///
+/// * `v` - The member value.
+///
+/// # Returns
+///
+/// The value.
+pub(crate) fn member_folded(v: &MemberValue) -> Folded
+{
+    match v
+    {
+        MemberValue::Scalar(x) => Folded::Value(*x),
+        MemberValue::Text(t) => Folded::Text(t.clone()),
+        MemberValue::Items(items) =>
+        {
+            Folded::Items(items.iter().map(member_folded).collect())
+        }
+    }
 }

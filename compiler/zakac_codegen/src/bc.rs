@@ -282,6 +282,9 @@ pub enum Op
     /// Pop the address of a list, a struct or a slice of this kind; write its
     /// cells or fields and a line break.
     PrintList(DataKind),
+    /// Pop a member of this enumeration; write it as `<stem>များထဲမှ
+    /// <member>` and a line break.
+    PrintEnum(DataKind),
     /// Stop the run for a failure the program did not handle. With a kind,
     /// pop a value of it first, or the address of one for a list, a struct or
     /// text, which the trap shows.
@@ -526,7 +529,8 @@ impl Op
             | Op::AddText(kind)
             | Op::SeqEq(kind)
             | Op::MemFill(kind)
-            | Op::PrintList(kind) => kind.name(),
+            | Op::PrintList(kind)
+            | Op::PrintEnum(kind) => kind.name(),
             Op::Halt { cause, kind } =>
             {
                 let cause: &'static str = cause.into();

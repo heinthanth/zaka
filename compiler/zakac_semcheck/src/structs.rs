@@ -406,8 +406,8 @@ fn top_level_parts(inner_text: &str) -> Vec<&str>
     {
         match ch
         {
-            '{' => depth += 1,
-            '}' => depth = depth.saturating_sub(1),
+            '{' | '<' => depth += 1,
+            '}' | '>' => depth = depth.saturating_sub(1),
             ',' if depth == 0 =>
             {
                 parts.push(&inner_text[start..at]);

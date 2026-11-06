@@ -73,9 +73,9 @@ explains how a message is set out and when a message stops the compiler.
 | Code | Problem | See |
 | --- | --- | --- |
 | ZK0101 | a character Zaka does not use, such as `;` or `?` | |
-| ZK0102 | a malformed number, such as `၂.၅e3` or `၁၈ဘစ်` | [Writing integers](../../learn/values/literals.md) |
-| ZK0103 | Burmese and Western digits in one number | [Writing integers](../../learn/values/literals.md) |
-| ZK0104 | text with no closing `"` | [Text](../../learn/values/strings.md) |
+| ZK0102 | a malformed number, such as `၂.၅e3` or `၁၈ဘစ်` | [Integers](../../learn/values/integers.md) |
+| ZK0103 | Burmese and Western digits in one number | [Integers](../../learn/values/integers.md) |
+| ZK0104 | text with no closing `"` | [Text](../../learn/text/README.md) |
 | ZK0105 | a character literal with no closing `'` on its line | [Characters](../../learn/values/characters.md) |
 | ZK0106 | unknown `\` escape, a lone brace, or an unknown `{...}` in a character | [Characters](../../learn/values/characters.md) |
 | ZK0107 | a character literal with more than one character | [Characters](../../learn/values/characters.md) |
@@ -103,11 +103,11 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0215 | an `if` as the one-statement inner block of an `if` | [If and else](../../learn/control-flow/if-else.md) |
 | ZK0216 | a bit count that the kind does not have, such as `၁၀ ဘစ် ကိန်းပြည့်` | [Integers](../../learn/values/integers.md#building-an-integer-kind) |
 | ZK0217 | a sign word before a kind that is not an integer | [Integers](../../learn/values/integers.md#building-an-integer-kind) |
-| ZK0218 | a number base that is not a whole number from 2 to 36 | [Writing integers](../../learn/values/literals.md#bases) |
-| ZK0219 | a digit too big for the number base | [Writing integers](../../learn/values/literals.md) |
+| ZK0218 | a number base that is not a whole number from 2 to 36 | [Integers](../../learn/values/integers.md#bases) |
+| ZK0219 | a digit too big for the number base | [Integers](../../learn/values/integers.md) |
 | ZK0220 | a number too big for its kind | [Integers](../../learn/values/integers.md) |
-| ZK0221 | a fraction or exponent in a literal that is given an integer kind | [Writing integers](../../learn/values/literals.md#the-order-of-the-parts) |
-| ZK0222 | a character or true/false kind written before a number | [Writing integers](../../learn/values/literals.md#the-order-of-the-parts) |
+| ZK0221 | a fraction or exponent in a literal that is given an integer kind | [Integers](../../learn/values/integers.md#the-order-of-the-parts) |
+| ZK0222 | a character or true/false kind written before a number | [Integers](../../learn/values/integers.md#the-order-of-the-parts) |
 | ZK0225 | a generic loop that starts with `ကိန်းသေ` | [Generic loops](../../learn/control-flow/generic-loops.md#the-variable-belongs-to-the-loop) |
 | ZK0226 | a block closer with no block to close | [Blocks and scope](../../learn/variables/scope.md) |
 | ZK0227 | a list count that is not a whole number above zero, or names no constant that works out | [Static data and counted lists](../../learn/forms/counted-lists.md#counted-lists) |
@@ -118,6 +118,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0232 | an import in a program that was not read from a file | [Module mistakes](../../learn/modules/mistakes.md#imports-outside-a-file) |
 | ZK0233 | a cell count on the list of a slice kind | [Slices](../language/slices.md#the-kind) |
 | ZK0234 | a declared kind with no `တစ်<classifier>` after it | [Statements](../language/statements.md#declarations) |
+| ZK0235 | an enumeration declared inside a block | [Enumeration mistakes](../../learn/enums/mistakes.md#an-enumeration-declared-inside-a-block) |
+| ZK0236 | a switch arm after the default arm | [Enumeration mistakes](../../learn/enums/mistakes.md#an-arm-after-the-default-arm) |
 
 ### ZK03: names
 
@@ -138,10 +140,10 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0313 | returning without a value from a function with a result | [Results](../../learn/functions/results.md) |
 | ZK0314 | the wrong number of arguments | [Parameters](../../learn/functions/parameters.md) |
 | ZK0315 | using a function without a result as a value | [Results](../../learn/functions/results.md) |
-| ZK0316 | a struct name declared twice | [Struct mistakes](../../learn/structs/mistakes.md#one-name-for-two-structs) |
+| ZK0316 | a struct or enumeration name declared twice | [Struct mistakes](../../learn/structs/mistakes.md#one-name-for-two-structs) |
 | ZK0317 | a field name used twice in one struct | [Struct mistakes](../../learn/structs/mistakes.md#one-name-for-two-fields) |
-| ZK0318 | a name in a kind that no struct declaration gives | [Struct mistakes](../../learn/structs/mistakes.md#a-name-that-is-no-struct) |
-| ZK0319 | a struct name used for a variable, parameter, field or function | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-name-that-is-also-a-value-name) |
+| ZK0318 | a name in a kind that no struct or enumeration declaration gives | [Struct mistakes](../../learn/structs/mistakes.md#a-name-that-is-no-struct) |
+| ZK0319 | a struct or enumeration name used for a variable, parameter, field or function | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-name-that-is-also-a-value-name) |
 | ZK0320 | a field the struct does not have | [Struct mistakes](../../learn/structs/mistakes.md#a-field-the-struct-does-not-have) |
 | ZK0321 | a field set twice in a struct literal | [Struct mistakes](../../learn/structs/mistakes.md#one-field-set-twice) |
 | ZK0322 | an import of a name the other file does not export | [Module mistakes](../../learn/modules/mistakes.md#a-name-the-file-does-not-export) |
@@ -150,6 +152,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0325 | a second start block | [Functions](../language/functions.md#the-start-block) |
 | ZK0326 | a statement that runs, at the top level of a file | [Functions](../language/functions.md#the-start-block) |
 | ZK0327 | a program with no start block | [Functions](../language/functions.md#the-start-block) |
+| ZK0328 | a member name used twice in one enumeration | [Enumeration mistakes](../../learn/enums/mistakes.md#one-member-name-twice) |
+| ZK0329 | a member the enumeration does not have | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-the-enumeration-does-not-have) |
+| ZK0330 | a name before `ထဲမှ` that is no enumeration with `များ` | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-written-without-the-plural-mark) |
 
 ### ZK04: kinds
 
@@ -206,6 +211,12 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0452 | an error value given back from a function whose error side holds no value | [Errors and results](../language/error-handling.md#result-kinds) |
 | ZK0454 | a conversion to the part of a result that a test has ruled out | [Errors and results](../language/error-handling.md#reading-a-whole-result) |
 | ZK0455 | a good result given back with the word of the other sort of function | [Errors and results](../language/error-handling.md#reading-a-whole-result) |
+| ZK0456 | a member value that does not work out when the program compiles | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-value-that-is-not-a-constant) |
+| ZK0457 | two members of one enumeration with one value | [Enumeration mistakes](../../learn/enums/mistakes.md#two-members-with-one-value) |
+| ZK0458 | a switch over an enumeration that names neither each member nor a default arm | [Enumeration mistakes](../../learn/enums/mistakes.md#a-switch-that-misses-a-member) |
+| ZK0459 | a default arm whose kind is not the kind of the subject | [Enumeration mistakes](../../learn/enums/mistakes.md#a-default-arm-of-the-wrong-kind) |
+| ZK0460 | two switch cases with one value | [Enumeration mistakes](../../learn/enums/mistakes.md#one-case-twice) |
+| ZK0461 | a member with no value whose value cannot count on: its kind is no integer, or the value passes the largest of the kind | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-with-no-value-that-cannot-count-on) |
 
 ### ZK05: natural Zaka (warnings)
 

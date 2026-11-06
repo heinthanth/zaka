@@ -31,7 +31,7 @@ A character literal holds one character, no more and no less. `'ab'` is an error
 
 Some characters are hard to enter, or have a special meaning inside quotes. These are
 written as an *escape sequence*. Escape sequences work in characters and in
-[text](strings.md).
+[text](../text/README.md).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -76,7 +76,7 @@ not know is an error:
 error[ZK0106]: unknown escape sequence "{မသိ}"
 ```
 
-In text, the same braces make a *template slot*, which holds a value (see [Text](strings.md#template-literals)).
+In text, the same braces make a *template slot*, which holds a value (see [Text](../text/README.md#template-literals)).
 
 ## Hands on
 

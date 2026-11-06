@@ -555,7 +555,7 @@ impl<'s> FuncGen<'s>
                 FmtPiece::Text(text) => FmtArg::Text(self.shared.text(text)),
                 FmtPiece::Value(v) =>
                 {
-                    fresh.extend(self.read_operand(v));
+                    fresh.extend(self.read_operand(&stored(v)));
                     FmtArg::Value(v.kind)
                 }
             });
@@ -918,8 +918,14 @@ impl<'s> FuncGen<'s>
             Stmt::Set { place, value, .. } => self.store(*place, |g| g.expr(value)),
             Stmt::Print { value: PrintValue::Expr(e), .. } =>
             {
-                let fresh = self.read_operand(e);
-                self.op(tern!(e.kind.is_aggregate(), Op::PrintList(e.kind), Op::Print));
+                let fresh = self.read_operand(&stored(e));
+                let print = match e.kind
+                {
+                    k if k.as_enum().is_some() => Op::PrintEnum(k),
+                    k if k.is_aggregate() => Op::PrintList(k),
+                    _ => Op::Print,
+                };
+                self.op(print);
                 do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
             }
             Stmt::Halt { cause, value, .. } =>
@@ -1933,4 +1939,22 @@ fn unsigned_of(kind: DataKind) -> DataKind
 {
     let int = int_kind(kind);
     DataKind::Int(IntKind::new(false, int.width))
+}
+
+/// A value as storage holds it: a value labelled with an enumeration kind,
+/// which a print keeps to write the name of the member, is read as its
+/// value kind.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// The value with the kind storage holds.
+fn stored(e: &Expr) -> Expr
+{
+    let mut e = e.clone();
+    e.kind = e.kind.repr();
+    e
 }

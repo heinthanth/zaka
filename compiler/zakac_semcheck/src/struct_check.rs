@@ -31,13 +31,14 @@ use crate::structs::make_all;
 /// # Arguments
 ///
 /// * `program` - The tree.
+/// * `enums` - The kind of each enumeration, which a field can name.
 /// * `diags` - Where to report.
 ///
 /// # Returns
 ///
 /// The kind of each struct; the first declaration of a name wins.
 pub(crate) fn collect_structs(
-    program: &Program, diags: &mut Vec<Diagnostic>,
+    program: &Program, enums: &StructTable, diags: &mut Vec<Diagnostic>,
 ) -> StructTable
 {
     let mut decls: BTreeMap<&str, &StructDecl> = BTreeMap::new();
@@ -49,11 +50,13 @@ pub(crate) fn collect_structs(
         do_if!(!twice, _ = decls.insert(name, decl));
     }
     let names: BTreeSet<&str> = decls.keys().copied().collect();
-    do_for!(decl in decls.values(), check_fields(decl, &names, diags));
+    let known: BTreeSet<&str> =
+        names.iter().copied().chain(enums.keys().map(|n| n.as_str())).collect();
+    do_for!(decl in decls.values(), check_fields(decl, &known, diags));
     do_for!(f in program.stmts.iter().filter_map(as_fn_name), report_clash(f, &names, diags));
     let mut defs: StructDefs = decls
         .iter()
-        .map(|(name, decl)| (name.to_string(), field_texts(decl, &names)))
+        .map(|(name, decl)| (name.to_string(), field_texts(decl, &names, enums)))
         .collect();
     break_loops(&decls, &mut defs, diags);
     let table = make_all(&defs);
@@ -105,13 +108,13 @@ fn report_clash(
     diags.push(rd::struct_name_clash(name.span, &name.name));
 }
 
-/// Report a field name used twice or taken from a struct, and a struct name
-/// in a field kind that no declaration gives.
+/// Report a field name used twice or taken from a struct or an enumeration,
+/// and a name in a field kind that no declaration gives.
 ///
 /// # Arguments
 ///
 /// * `decl` - The declaration.
-/// * `names` - The struct names.
+/// * `names` - The struct and enumeration names.
 /// * `diags` - Where to report.
 fn check_fields(decl: &StructDecl, names: &BTreeSet<&str>, diags: &mut Vec<Diagnostic>)
 {
@@ -156,13 +159,16 @@ pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagno
 ///
 /// * `decl` - The declaration.
 /// * `names` - The struct names.
+/// * `enums` - The kind of each enumeration, written as its signature.
 ///
 /// # Returns
 ///
 /// Each field name with its kind text.
-fn field_texts(decl: &StructDecl, names: &BTreeSet<&str>) -> Vec<(String, String)>
+fn field_texts(
+    decl: &StructDecl, names: &BTreeSet<&str>, enums: &StructTable,
+) -> Vec<(String, String)>
 {
-    let text = |kind: &Kind| field_text(kind, names);
+    let text = |kind: &Kind| field_text(kind, names, enums);
     decl.fields.iter().map(|f| (f.name.name.to_string(), text(&f.kind))).collect()
 }
 
@@ -173,23 +179,25 @@ fn field_texts(decl: &StructDecl, names: &BTreeSet<&str>) -> Vec<(String, String
 ///
 /// * `kind` - The field kind.
 /// * `names` - The struct names.
+/// * `enums` - The kind of each enumeration, written as its signature.
 ///
 /// # Returns
 ///
 /// The text.
-fn field_text(kind: &Kind, names: &BTreeSet<&str>) -> String
+fn field_text(kind: &Kind, names: &BTreeSet<&str>, enums: &StructTable) -> String
 {
     if let Some(parts) = kind.parts.as_deref()
     {
         let side = |field: &str, k: &Option<Kind>| {
-            k.as_ref()
-                .map_or(String::new(), |k| format!(",{field}:{}", field_text(k, names)))
+            k.as_ref().map_or(String::new(), |k| {
+                format!(",{field}:{}", field_text(k, names, enums))
+            })
         };
         let (ok, err) = (side("ok", &parts.ok), side("err", &parts.err));
         let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
         return format!("{FALLIBLE}{{tag:u8{ok}{err}}}{}", split_marks(&marks).1);
     }
-    let plain = DataKind::from_ast(kind, &StructTable::new()).sig_name();
+    let plain = DataKind::from_ast(kind, enums).sig_name();
     let name = kind.name.as_ref().map(|n| n.name.as_str());
     let Some(name) = name.filter(|n| names.contains(n))
     else

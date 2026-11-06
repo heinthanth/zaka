@@ -122,6 +122,23 @@ rules out). Its rules:
   `unwrap_fault` is lowered like a pass-on call: its statements go before the statement that
   holds it, test the tag, and `Halt` with `not_good` (showing the error value) or
   `not_fault` on the wrong part; the value is then the `ok` or the `err` field.
+- A switch becomes the `If` chain of a conditional (`switch_stmt`, which shares `if_chain`
+  with `if_stmt`): each arm tests `Compare Eq` of the subject and its case (`case_cond`),
+  and the default arm is the last `else`. A subject that is a read of a place or a
+  constant is read again in each arm; each other subject goes once into a hidden slot,
+  which joins the drops of its scope when it holds text. An arm with several cases tests
+  them with `Or`. A member, written out or as a bare case over an enumeration, becomes its
+  value (`member_expr`): a `Const`, static `Text`, or a `List` of the items of a list or a
+  struct, so the IR has no node of its own for either.
+- The IR holds a value of an enumeration as its value kind: `kind_of`, each slot, each
+  signature and each wanted kind of `coerce_lowered` take the enumeration off (`repr`), so
+  the folder, the borrow checker and codegen see the value of the member. An enumeration
+  inside a struct or a list kind remains, and the VM looks through it where it walks fields
+  and cells. The value of a print or a template slot keeps the enumeration kind
+  (`shown`), and codegen reads it as the value kind (`stored`) for `print_enum`.
+- The default of a kind with an enumeration inside is built from the default of each field
+  and cell (`defaults_of_parts`), so each enumeration starts at its first member; other
+  kinds start at zero octets, through `BlankList`.
 - `ကိန်းသေ` becomes a slot with `access: const`; the folder uses the flag.
 - A pointer read through a place becomes `Load`; an owner moved out becomes `Take`; a
   lend becomes `Lend`. A parameter the function can change (`Param::edit`) gets a borrow slot;
@@ -438,7 +455,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | storage | `local_addr n`, `local_ref n`, `global_addr n`, `load k`, `store k`, `take k` |
 | arithmetic | `prefix op`, `infix op`, `compare op`, `convert k` (the ops print as `add`, `lt`, ...), `wrap op` |
 | control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `ret`, `result_addr`, `trap code` |
-| output | `print`, `print_text t`, `print_list k` |
+| output | `print`, `print_text t`, `print_list k`, `print_enum k` (a member, found through its value and written as its name) |
 | failure | `halt cause [k]` |
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free`, `mem_blit stride`, `mem_move stride`, `mem_fill k` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k`, `seq_eq k`, `static_seq s`, `seq_addr s`, `to_heap k`, `add_cell k`, `remove_cell k` |

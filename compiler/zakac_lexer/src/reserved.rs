@@ -10,6 +10,13 @@ use crate::words::Word;
 /// Text of the comment marker word.
 pub const NOTE_MARKER: &str = "မှတ်ချက်";
 
+/// Text of the word between `<name>များ` and a member, which can join the name.
+pub const AMONG: &str = "ထဲမှ";
+
+/// The ending `များ` an enumeration name can end in; its stem is the name
+/// without it, so `အရောင်များ` and `အရောင်` name one enumeration.
+pub const PLURAL: &str = "များ";
+
 /// Reserved words, in normalized spelling. Several spellings can
 /// map to one [`Kw`].
 ///
@@ -184,6 +191,11 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ပါဝင်ပြီး", Kw::ContainsAnd),
     ("မျိုးပြပစ္စည်းမှာ", Kw::ClassifierIs),
     ("ဖြစ်သည်", Kw::Is),
+    // enumerations and switch
+    ("အမျိုးအစား", Kw::EnumOpen),
+    ("ဆိုသည်မှာ", Kw::Meaning),
+    ("ထဲမှ", Kw::Among),
+    ("တခြား", Kw::Other),
 ];
 
 /// [`RESERVED`] as a map, built on first use.

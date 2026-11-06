@@ -95,7 +95,7 @@ impl Fault
     fn field_kind(self, name: &str) -> DataKind
     {
         let shape = self.wrapper.as_struct().expect("a fallible result is a struct");
-        shape.field(name).expect("a fallible result has the field").1
+        shape.field(name).expect("a fallible result has the field").1.repr()
     }
 
     /// The read of a field of the struct in a place.
@@ -132,6 +132,7 @@ impl Fault
     {
         let shape = self.wrapper.as_struct().expect("a fallible result is a struct");
         let (at, kind) = shape.field(name).expect("a fallible result has the field");
+        let kind = kind.repr();
         let offset = shape.offset(at, platform);
         let field = u32::try_from(at).expect("a struct has fewer than 2^32 fields");
         let base = Box::new(base);

@@ -87,6 +87,7 @@ the kind of the value:
 | address | `0x` and lowercase hex digits; the null address as `ဗလာ` |
 | text | itself |
 | list | its cells between `[` and `]`, joined with `၊ `; text in a cell prints in quotes |
+| member of an enumeration | `<stem>များထဲမှ <member>`, as in `အရောင်များထဲမှ နီ`, through its own instruction `print_enum`; see [Enumerations](../language/enums.md#values-of-an-enumeration) |
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

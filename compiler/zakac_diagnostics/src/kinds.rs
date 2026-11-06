@@ -958,3 +958,105 @@ pub fn edit_shared(span: Span, name: &str) -> Diagnostic
 {
     Diagnostic::new(Code::EditShared, t!("codes.ZK0433.message", n = name), span)
 }
+
+/// The value of an enumeration member does not work out when the program
+/// compiles.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `name` - The member name.
+///
+/// # Returns
+///
+/// The `ZK0456` diagnostic.
+pub fn member_value(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::MemberValue, t!("codes.ZK0456.message", n = name), span)
+}
+
+/// Two members of one enumeration share a value.
+///
+/// # Arguments
+///
+/// * `span` - The second member.
+/// * `name` - The second member name.
+/// * `first` - The first member with that value.
+///
+/// # Returns
+///
+/// The `ZK0457` diagnostic.
+pub fn duplicate_member_value(span: Span, name: &str, first: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0457.message", n = name, f = first);
+    Diagnostic::new(Code::DuplicateMemberValue, msg, span)
+}
+
+/// A switch over an enumeration names neither each member nor a default
+/// arm.
+///
+/// # Arguments
+///
+/// * `span` - The subject.
+/// * `missing` - The members no arm names, joined for the reader.
+/// * `stem` - The stem of the enumeration name, for the default arm.
+///
+/// # Returns
+///
+/// The `ZK0458` diagnostic, with help to add a default arm.
+pub fn switch_missing(span: Span, missing: &str, stem: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0458.message", m = missing);
+    let help = t!("codes.ZK0458.help", k = stem);
+    Diagnostic::new(Code::SwitchMissing, msg, span).with_help(help)
+}
+
+/// The default arm of a switch names a kind other than its subject's.
+///
+/// # Arguments
+///
+/// * `span` - The kind of the default arm.
+/// * `written` - The kind it names.
+/// * `subject` - The kind of the subject.
+///
+/// # Returns
+///
+/// The `ZK0459` diagnostic.
+pub fn default_kind(span: Span, written: &str, subject: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0459.message", w = written, s = subject);
+    Diagnostic::new(Code::DefaultKind, msg, span)
+}
+
+/// Two cases of one switch have one value.
+///
+/// # Arguments
+///
+/// * `span` - The later case.
+///
+/// # Returns
+///
+/// The `ZK0460` diagnostic.
+pub fn duplicate_case(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::DuplicateCase, t!("codes.ZK0460.message"), span)
+}
+
+/// An enumeration member with no value written, whose value cannot count on
+/// from the member before it: the value kind is no integer, or the value
+/// passes the largest of the kind.
+///
+/// # Arguments
+///
+/// * `span` - The member name.
+/// * `name` - The member name.
+/// * `kind` - The value kind.
+///
+/// # Returns
+///
+/// The `ZK0461` diagnostic.
+pub fn member_needs_value(span: Span, name: &str, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0461.message", n = name, k = kind);
+    Diagnostic::new(Code::MemberNeedsValue, msg, span)
+}

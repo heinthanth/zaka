@@ -35,7 +35,7 @@ changes:
 In the Explorer, the heap view shows the literal as a static list, and the first heap block
 appears at the add. A list built from values known when the program runs, such as
 `[က၊ ခ]` with two variables, takes a heap block from the start. The same holds for text:
-see [Text](../values/strings.md).
+see [Text](../text/README.md).
 
 ## Constants of text and lists
 

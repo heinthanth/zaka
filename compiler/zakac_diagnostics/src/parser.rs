@@ -259,6 +259,34 @@ pub fn nested_struct(span: Span) -> Diagnostic
     Diagnostic::new(Code::NestedStruct, t!("codes.ZK0228.message"), span)
 }
 
+/// An enumeration is declared inside a block.
+///
+/// # Arguments
+///
+/// * `span` - The declaration.
+///
+/// # Returns
+///
+/// The `ZK0235` diagnostic.
+pub fn nested_enum(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::NestedEnum, t!("codes.ZK0235.message"), span)
+}
+
+/// A switch arm follows the default arm.
+///
+/// # Arguments
+///
+/// * `span` - The case of the late arm.
+///
+/// # Returns
+///
+/// The `ZK0236` diagnostic.
+pub fn arm_after_default(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::ArmAfterDefault, t!("codes.ZK0236.message"), span)
+}
+
 /// A single-statement block is a conditional.
 ///
 /// # Arguments

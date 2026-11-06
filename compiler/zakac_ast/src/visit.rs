@@ -16,6 +16,7 @@ use crate::expr::InfixExpr;
 use crate::expr::IntLit;
 use crate::expr::ListLit;
 use crate::expr::LogicExpr;
+use crate::expr::MemberExpr;
 use crate::expr::NameExpr;
 use crate::expr::NotExpr;
 use crate::expr::NullLit;
@@ -37,6 +38,8 @@ use crate::stmt::ContinueStmt;
 use crate::stmt::CountedStmt;
 use crate::stmt::DeclStmt;
 use crate::stmt::EachStmt;
+use crate::stmt::EnumDecl;
+use crate::stmt::EnumMember;
 use crate::stmt::FillStmt;
 use crate::stmt::FnDecl;
 use crate::stmt::FreeStmt;
@@ -55,6 +58,9 @@ use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
 use crate::stmt::StrArg;
 use crate::stmt::StructDecl;
+use crate::stmt::SwitchArm;
+use crate::stmt::SwitchDefault;
+use crate::stmt::SwitchStmt;
 use crate::stmt::WhileStmt;
 
 /// A tree node with a source span.
@@ -125,6 +131,11 @@ RemoveStmt => "remove", visit_remove;
 ReplaceStmt => "replace", visit_replace;
 StructDecl => "struct", visit_struct;
 ImportStmt => "import", visit_import;
+EnumDecl => "enum", visit_enum;
+EnumMember => "enum_member", visit_enum_member;
+SwitchStmt => "switch", visit_switch;
+SwitchArm => "switch_arm", visit_switch_arm;
+SwitchDefault => "switch_default", visit_switch_default;
 IntLit => "int", visit_int;
 FloatLit => "float", visit_float;
 CharLit => "char", visit_char;
@@ -146,6 +157,7 @@ ListLit => "list", visit_list;
 StructLit => "struct_lit", visit_struct_lit;
 BlankListLit => "blank_list", visit_blank_list;
 StrExpr => "str_lit", visit_str_expr;
+MemberExpr => "member", visit_member;
 Ident => "ident", visit_ident;
 Kind => "kind", visit_kind; }
 
@@ -186,6 +198,8 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Replace(s) => s,
         Stmt::Struct(s) => s,
         Stmt::Import(s) => s,
+        Stmt::Enum(s) => s,
+        Stmt::Switch(s) => s,
     }
 }
 
@@ -223,6 +237,7 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::Struct(e) => e,
         Expr::BlankList(e) => e,
         Expr::Str(e) => e,
+        Expr::Member(e) => e,
     }
 }
 
@@ -313,6 +328,19 @@ pub trait Visitor
 
     /// Visit an import.
     fn visit_import(&mut self, n: &ImportStmt) { walk_import(self, n) }
+    /// Visit an enumeration declaration.
+    fn visit_enum(&mut self, n: &EnumDecl) { walk_enum(self, n) }
+    /// Visit a member of an enumeration declaration.
+    fn visit_enum_member(&mut self, n: &EnumMember) { walk_enum_member(self, n) }
+    /// Visit a switch.
+    fn visit_switch(&mut self, n: &SwitchStmt) { walk_switch(self, n) }
+    /// Visit an arm of a switch.
+    fn visit_switch_arm(&mut self, n: &SwitchArm) { walk_switch_arm(self, n) }
+    /// Visit the default arm of a switch.
+    fn visit_switch_default(&mut self, n: &SwitchDefault)
+    {
+        walk_switch_default(self, n)
+    }
 
     /// Visit an expression.
     fn visit_expr(&mut self, n: &Expr) { walk_expr(self, n) }
@@ -358,6 +386,8 @@ pub trait Visitor
     fn visit_blank_list(&mut self, n: &BlankListLit) { walk_blank_list(self, n) }
     /// Visit a string literal.
     fn visit_str_expr(&mut self, n: &StrExpr) { walk_str_expr(self, n) }
+    /// Visit a member of an enumeration.
+    fn visit_member(&mut self, n: &MemberExpr) { walk_member(self, n) }
     /// Visit a name in a declaration, parameter, loop header or call.
     fn visit_ident(&mut self, n: &Ident) { walk_ident(self, n) }
     /// Visit a kind.
@@ -401,6 +431,8 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Replace(s) => v.visit_replace(s),
         Stmt::Struct(s) => v.visit_struct(s),
         Stmt::Import(s) => v.visit_import(s),
+        Stmt::Enum(s) => v.visit_enum(s),
+        Stmt::Switch(s) => v.visit_switch(s),
     }
 }
 
@@ -643,6 +675,52 @@ pub fn walk_struct<V: Visitor + ?Sized>(v: &mut V, n: &StructDecl)
     v.leave(n);
 }
 
+/// Visit the name and the members of an enumeration declaration.
+pub fn walk_enum<V: Visitor + ?Sized>(v: &mut V, n: &EnumDecl)
+{
+    v.enter(n);
+    v.visit_ident(&n.name);
+    do_for!(m in &n.members, v.visit_enum_member(m));
+    v.leave(n);
+}
+
+/// Visit the name and the value of a member of an enumeration declaration.
+pub fn walk_enum_member<V: Visitor + ?Sized>(v: &mut V, n: &EnumMember)
+{
+    v.enter(n);
+    v.visit_ident(&n.name);
+    do_if!(let Some(value) = &n.value, v.visit_expr(value));
+    v.leave(n);
+}
+
+/// Visit the subject, the arms and the default arm of a switch.
+pub fn walk_switch<V: Visitor + ?Sized>(v: &mut V, n: &SwitchStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.subject);
+    do_for!(arm in &n.arms, v.visit_switch_arm(arm));
+    do_if!(let Some(default) = &n.default, v.visit_switch_default(default));
+    v.leave(n);
+}
+
+/// Visit the cases and the block of an arm of a switch.
+pub fn walk_switch_arm<V: Visitor + ?Sized>(v: &mut V, n: &SwitchArm)
+{
+    v.enter(n);
+    do_for!(case in &n.cases, v.visit_expr(case));
+    v.visit_block(&n.block);
+    v.leave(n);
+}
+
+/// Visit the kind and the block of the default arm of a switch.
+pub fn walk_switch_default<V: Visitor + ?Sized>(v: &mut V, n: &SwitchDefault)
+{
+    v.enter(n);
+    v.visit_kind(&n.kind);
+    v.visit_block(&n.block);
+    v.leave(n);
+}
+
 /// Visit the path and the names of an import.
 pub fn walk_import<V: Visitor + ?Sized>(v: &mut V, n: &ImportStmt)
 {
@@ -686,6 +764,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::Struct(e) => v.visit_struct_lit(e),
         Expr::BlankList(e) => v.visit_blank_list(e),
         Expr::Str(e) => v.visit_str_expr(e),
+        Expr::Member(e) => v.visit_member(e),
     }
 }
 
@@ -716,6 +795,15 @@ pub fn walk_char<V: Visitor + ?Sized>(v: &mut V, n: &CharLit)
 pub fn walk_bool<V: Visitor + ?Sized>(v: &mut V, n: &BoolLit)
 {
     v.enter(n);
+    v.leave(n);
+}
+
+/// Visit the qualifier and the name of a member of an enumeration.
+pub fn walk_member<V: Visitor + ?Sized>(v: &mut V, n: &MemberExpr)
+{
+    v.enter(n);
+    v.visit_ident(&n.qualifier);
+    v.visit_ident(&n.member);
     v.leave(n);
 }
 
@@ -992,6 +1080,8 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         }
         Stmt::Struct(s) => walk_struct_mut(v, s),
         Stmt::Import(s) => walk_import_mut(v, s),
+        Stmt::Enum(s) => walk_enum_mut(v, s),
+        Stmt::Switch(s) => walk_switch_mut(v, s),
     }
 }
 
@@ -1095,6 +1185,40 @@ pub fn walk_import_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut ImportStmt)
     v.visit_span_mut(&mut n.span);
     v.visit_span_mut(&mut n.path.span);
     do_for!(name in &mut n.names, v.visit_ident_mut(name));
+}
+
+/// Visit the name and the members of an enumeration declaration.
+pub fn walk_enum_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut EnumDecl)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_ident_mut(&mut n.name);
+    for m in &mut n.members
+    {
+        v.visit_span_mut(&mut m.span);
+        v.visit_ident_mut(&mut m.name);
+        opt_expr_mut(v, &mut m.value);
+    }
+}
+
+/// Visit the subject, the arms and the default arm of a switch.
+pub fn walk_switch_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut SwitchStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_expr_mut(&mut n.subject);
+    for arm in &mut n.arms
+    {
+        v.visit_span_mut(&mut arm.span);
+        do_for!(case in &mut arm.cases, v.visit_expr_mut(case));
+        v.visit_block_mut(&mut arm.block);
+    }
+    let Some(default) = &mut n.default
+    else
+    {
+        return;
+    };
+    v.visit_span_mut(&mut default.span);
+    v.visit_kind_mut(&mut default.kind);
+    v.visit_block_mut(&mut default.block);
 }
 
 /// Visit the name, fields and classifier of a struct declaration.
@@ -1213,6 +1337,12 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         {
             v.visit_span_mut(&mut e.span);
             do_for!(h in e.template_slots_mut(), v.visit_expr_mut(h));
+        }
+        Expr::Member(e) =>
+        {
+            v.visit_span_mut(&mut e.span);
+            v.visit_ident_mut(&mut e.qualifier);
+            v.visit_ident_mut(&mut e.member);
         }
     }
 }

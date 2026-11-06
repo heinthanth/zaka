@@ -56,7 +56,7 @@ view prints, joins and fills a template slot as text does.
 
 `<text> ၏ အကွက် <start> မှစ၍ <length> ကွက်` is a view of `length` cells, from cell
 `start` on, counted from 0. A Latin letter takes one cell and a Burmese letter three, as
-[Cells](../values/strings.md#cells) shows:
+[Cells](../text/characters.md#cells) shows:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -152,8 +152,8 @@ v ကို ပြသပါ။
 error[ZK0704]: the block of "စာ" is freed here, but "v" still borrows it and is used later
 ```
 
-A [character write](../values/strings.md#changing-a-character) or an
-[add](../values/strings.md#adding-to-text) changes the text in place, and an add can move
+A [character write](../text/characters.md#changing-a-character) or an
+[add](../text/changing.md#adding-to-text) changes the text in place, and an add can move
 its cells to a larger block. Each ends the views of the text in the same manner:
 
 ```zaka-error ZK0704

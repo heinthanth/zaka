@@ -58,6 +58,9 @@ pub(crate) enum ClauseOut
     Expr(Expr),
     /// A statement, its full stop included.
     Stmt(Box<Stmt>),
+    /// The head of a switch, `<subject> သည် <case>`, before its first
+    /// `ဖြစ်လျှင်`.
+    Switch(Expr, Expr),
 }
 
 /// A stack operand: a value, or the target kind of a conversion.
@@ -297,6 +300,10 @@ impl Parser<'_>
             let Some(verb) = as_verb(&tok)
             else
             {
+                let at_arm = tok.kind == TokenKind::Kw(Kw::ThenIs)
+                    || (tok.kind == TokenKind::Punct(Punct::ListSep)
+                        && self.reaches_then_is());
+                ret_if!(let Some(head) = switch_head(&mut stack, at_arm, mode), Ok(head));
                 return self.finish_clause(stack);
             };
             ret_if!(let Some(stmt) = self.reduce(&mut stack, verb, mode)?, Ok(ClauseOut::Stmt(Box::new(stmt))));
@@ -1042,6 +1049,31 @@ impl Parser<'_>
         };
         stack.iter().map(describe).collect::<Vec<_>>().join(", ")
     }
+}
+
+/// The head of a switch, when a statement clause holds `<subject> သည်
+/// <case>` and `ဖြစ်လျှင်` follows, or a `၊` before more cases.
+///
+/// # Arguments
+///
+/// * `stack` - The operand stack.
+/// * `at_arm` - Whether the token after the clause goes on with an arm.
+/// * `mode` - Whether the clause starts a statement.
+///
+/// # Returns
+///
+/// The head, or `None` with the stack unchanged.
+fn switch_head(stack: &mut Vec<Item>, at_arm: bool, mode: Mode) -> Option<ClauseOut>
+{
+    let at_arm = mode == Mode::Stmt && at_arm;
+    let shape = stack.len() == 2
+        && matches!(stack[0].slot, Some((Slot::Thi, _)))
+        && stack[1].slot.is_none()
+        && stack.iter().all(|item| matches!(item.operand, Operand::Expr(_)));
+    ret_if!(!at_arm || !shape, None);
+    let case = into_expr(stack.pop()?);
+    let subject = into_expr(stack.pop()?);
+    Some(ClauseOut::Switch(subject, case))
 }
 
 /// Build a replace statement from its range and its value.

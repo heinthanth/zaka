@@ -66,4 +66,4 @@ space". Zaka counts it as a space too.
 - Remove the space between `အသက်` and `ကို` in the first example and read the message.
 - Write `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` with as few spaces as possible while it still runs.
 
-Next: [Values and kinds](../values/README.md).
+Next: [Scalar values](../values/README.md).

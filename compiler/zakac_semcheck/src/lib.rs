@@ -3,6 +3,8 @@ pub mod cli;
 mod collect;
 pub mod const_op;
 mod consts;
+mod enum_check;
+pub mod enums;
 mod infer;
 pub mod kind;
 mod list;
@@ -13,6 +15,7 @@ mod scope;
 pub mod semcheck;
 mod struct_check;
 pub mod structs;
+mod switch_check;
 mod units;
 pub mod value;
 

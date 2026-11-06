@@ -108,7 +108,7 @@ out the name of the top student one character at a time.
 - **The average is a whole number.** `ပေါင်း / အရေအတွက်` divides two integers, so 280 / 5
   gives 56. The count of cells is a `usize`; the start block
   [converts](../operators/conversion.md) it to `ကိန်းပြည့်` first.
-- **The name walk** uses the [each-character loop](../values/strings.md#characters). A
+- **The name walk** uses the [each-character loop](../text/characters.md#characters). A
   Burmese letter and the mark on it are two characters, so `မြမြ` prints four lines.
 - **The calls** use the [sign form](../functions/results.md#the-sign-form), `f(x)`, where
   the result goes into a variable.

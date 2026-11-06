@@ -98,7 +98,7 @@ error[ZK0437]: text cannot grow or shrink here: "ထည့်ပါ" takes a pla
 ```
 
 The fix is `စာ ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။` (see [Adding in the middle and removing the
-end](../values/strings.md#adding-in-the-middle-and-removing-the-end)).
+end](../text/changing.md#adding-in-the-middle-and-removing-the-end)).
 
 The counted lists of Part II neither grow nor shrink: see [Static data and counted
 lists](../forms/counted-lists.md#adding-to-a-counted-list).

@@ -148,7 +148,7 @@ fn moves(
 {
     match stmt
     {
-        Stmt::Fn(_) | Stmt::Struct(_) | Stmt::Import(_) => false,
+        Stmt::Fn(_) | Stmt::Struct(_) | Stmt::Enum(_) | Stmt::Import(_) => false,
         Stmt::Decl(d) =>
         {
             !d.exported && !keep(d, seen, names.contains(d.name.name.as_str()))
@@ -165,10 +165,14 @@ fn moves(
 ///
 /// # Returns
 ///
-/// `false` for a function, a struct, an import, a variable or a constant.
+/// `false` for a function, a struct, an enumeration, an import, a variable or
+/// a constant.
 fn runs(stmt: &Stmt) -> bool
 {
-    !matches!(stmt, Stmt::Fn(_) | Stmt::Struct(_) | Stmt::Import(_) | Stmt::Decl(_))
+    !matches!(
+        stmt,
+        Stmt::Fn(_) | Stmt::Struct(_) | Stmt::Enum(_) | Stmt::Import(_) | Stmt::Decl(_)
+    )
 }
 
 /// The new text, built from slices of the old one and lines of its own.

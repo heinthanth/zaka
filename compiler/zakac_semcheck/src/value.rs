@@ -173,6 +173,8 @@ impl Value
             DataKind::Float(bits) => Value::Float { bits, raw: 0 },
             DataKind::Char => Value::Char('\0'),
             DataKind::Bool => Value::Bool(false),
+            // A value of an enumeration starts at its first member.
+            DataKind::Enum(e) => e.first().scalar().unwrap_or(Value::NULL),
             // A list, a struct or a slice is no single value; its slot is
             // cleared to zero octets instead, the default of each cell or
             // field, and a slice of no cells.
@@ -845,6 +847,7 @@ pub fn from_raw(kind: DataKind, raw: &[u8], platform: u16) -> Result<Value, RawE
             tern!(pattern <= 1, Ok(Value::Bool(pattern == 1)), Err(RawError::BadValue))
         }
         DataKind::Ptr(_) | DataKind::Null => Ok(Value::Ptr(pattern as u64)),
+        DataKind::Enum(e) => from_raw(e.under(), raw, platform),
         DataKind::List(_)
         | DataKind::Struct(_)
         | DataKind::Slice(_)
@@ -1060,7 +1063,8 @@ impl FromStr for Value
             DataKind::List(_)
             | DataKind::Struct(_)
             | DataKind::Slice(_)
-            | DataKind::Seq(_) => None,
+            | DataKind::Seq(_)
+            | DataKind::Enum(_) => None,
         };
         value.ok_or_else(bad)
     }

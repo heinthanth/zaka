@@ -105,6 +105,8 @@ pub enum Expr
     /// Text in double quotes, with a value in place of each `{...}` template
     /// slot.
     Str(StrExpr),
+    /// `<enum>များထဲမှ <member>`: one member of an enumeration.
+    Member(MemberExpr),
 }
 
 /// Integer literal; the digits are converted with the base.
@@ -372,6 +374,20 @@ pub struct BlankListLit
     #[serde(default)]
     #[builder(default)]
     pub brackets: bool,
+}
+
+/// One member of an enumeration: `<enum>များထဲမှ <member>`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct MemberExpr
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The name before `ထဲမှ`, as written: the enumeration name with `များ`.
+    pub qualifier: Ident,
+    /// The member name.
+    pub member: Ident,
+    /// Source region, from the qualifier to the member.
+    pub span: Span,
 }
 
 /// A variable, or the implicit result variable `ရလဒ်`.
@@ -715,6 +731,7 @@ impl Expr
             Expr::Struct(n) => n.id,
             Expr::BlankList(n) => n.id,
             Expr::Str(n) => n.id,
+            Expr::Member(n) => n.id,
         }
     }
 

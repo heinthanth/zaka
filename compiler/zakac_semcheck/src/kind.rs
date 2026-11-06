@@ -15,6 +15,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 
+use crate::enums::EnumKind;
 use crate::structs::StructKind;
 use crate::structs::StructTable;
 use crate::structs::parse_sig;
@@ -103,6 +104,8 @@ pub enum Base
     Slice(&'static SliceKind),
     /// Text or a plain list, for a pointer to one.
     Seq(&'static SeqKind),
+    /// An enumeration.
+    Enum(&'static EnumKind),
 }
 
 impl Base
@@ -125,6 +128,7 @@ impl Base
             Base::Struct(s) => Some(DataKind::Struct(s)),
             Base::Slice(s) => Some(DataKind::Slice(s)),
             Base::Seq(s) => Some(DataKind::Seq(s)),
+            Base::Enum(e) => Some(DataKind::Enum(e)),
         }
     }
 }
@@ -312,6 +316,8 @@ pub enum DataKind
     /// A plain list or text: three words, see [`SeqKind`]. The first two
     /// words are laid out as a slice's.
     Seq(&'static SeqKind),
+    /// An enumeration: a member, held as an `isize`.
+    Enum(&'static EnumKind),
 }
 
 impl DataKind
@@ -580,6 +586,7 @@ impl DataKind
     /// `true` for such a kind.
     pub fn holds_text(self) -> bool
     {
+        ret_if!(let Some(e) = self.as_enum(), e.under().holds_text());
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_text());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_text()));
         self.is_text() || self.is_seq()
@@ -593,6 +600,7 @@ impl DataKind
     /// `true` for such a kind.
     pub fn holds_seq(self) -> bool
     {
+        ret_if!(let Some(e) = self.as_enum(), e.under().holds_seq());
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_seq());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_seq()));
         self.is_seq()
@@ -629,6 +637,45 @@ impl DataKind
     ///
     /// `true` for a list kind.
     pub fn is_list(self) -> bool { matches!(self, DataKind::List(_)) }
+
+    /// The kind as storage holds it: an enumeration as its value kind,
+    /// level after level; each other kind as it is.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn repr(self) -> DataKind
+    {
+        let mut kind = self;
+        while let Some(e) = kind.as_enum()
+        {
+            kind = e.under();
+        }
+        kind
+    }
+
+    /// Whether a value of the kind holds an enumeration inline: the
+    /// enumeration itself, or a counted list or a struct with one inside.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn holds_enum(self) -> bool
+    {
+        ret_true!(self.as_enum().is_some());
+        ret_if!(let Some(l) = self.as_list(), l.cell.holds_enum());
+        self.as_struct().is_some_and(|s| s.fields().iter().any(|(_, k)| k.holds_enum()))
+    }
+
+    /// The enumeration part of the kind.
+    ///
+    /// # Returns
+    ///
+    /// The enumeration, or `None` for a kind that is no enumeration.
+    pub fn as_enum(self) -> Option<&'static EnumKind>
+    {
+        tern!(let DataKind::Enum(e) = self, Some(e), None)
+    }
 
     /// The struct part of the kind.
     ///
@@ -824,6 +871,7 @@ impl DataKind
             DataKind::Slice(s) => format!("{}[][..]", s.cell.spell(full)),
             DataKind::Seq(s) if s.text => "text".to_string(),
             DataKind::Seq(s) => format!("{}[]", s.cell.spell(full)),
+            DataKind::Enum(e) => tern!(full, e.sig(), &e.name).to_string(),
         }
     }
 
@@ -847,6 +895,7 @@ impl DataKind
             DataKind::Struct(s) => (0, Base::Struct(s)),
             DataKind::Slice(s) => (0, Base::Slice(s)),
             DataKind::Seq(s) => (0, Base::Seq(s)),
+            DataKind::Enum(e) => (0, Base::Enum(e)),
         }
     }
 
@@ -1066,6 +1115,7 @@ impl DataKind
     /// two words: its address and its count.
     pub fn checked_size(self, platform: u16) -> Option<u32>
     {
+        ret_if!(let Some(e) = self.as_enum(), e.under().checked_size(platform));
         ret_if!(let Some(s) = self.as_struct(), s.size(platform));
         ret_if!(self.is_slice(), Some(u32::from(platform) / 4));
         ret_if!(self.is_text() || self.is_seq(), Some(u32::from(platform) / 8 * 3));
@@ -1088,6 +1138,7 @@ impl DataKind
     /// The size, at most 16; for a list, the alignment of its cells.
     pub fn align(self, platform: u16) -> u32
     {
+        ret_if!(let Some(e) = self.as_enum(), e.under().align(platform));
         ret_if!(let Some(l) = self.as_list(), l.cell.align(platform));
         ret_if!(let Some(s) = self.as_struct(), s.align(platform));
         let words = self.is_slice() || self.is_text() || self.is_seq();
@@ -1153,6 +1204,7 @@ impl DataKind
             DataKind::Char => 32,
             DataKind::Bool => 8,
             DataKind::Ptr(_) | DataKind::Null => platform,
+            DataKind::Enum(e) => e.under().bits(platform),
             DataKind::List(_)
             | DataKind::Struct(_)
             | DataKind::Slice(_)
@@ -1286,6 +1338,7 @@ impl DataKind
     /// `true` for such a kind.
     pub fn holds_address(self) -> bool
     {
+        ret_if!(let Some(e) = self.as_enum(), e.under().holds_address());
         ret_true!(self.is_slice() || self.is_text() || self.is_seq());
         ret_if!(let Some(list) = self.as_list(), list.cell.holds_address());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_address()));
@@ -1301,14 +1354,19 @@ impl DataKind
     /// # Returns
     ///
     /// `true` between numbers, between characters and integers, from a
-    /// boolean to an integer, between addresses, from an address to an
-    /// integer, from an integer to a raw address, and for the same kind.
-    /// An integer never becomes an owner or a borrow straight off: the
-    /// raw address in between is the step a reader can search for. For the
-    /// same reason a cast between owners and borrows keeps the shape of a
-    /// pointee that holds an address, see [`DataKind::reads_addresses_as`].
+    /// boolean or an enumeration to an integer, between addresses, from an
+    /// address to an integer, from an integer to a raw address, and for the
+    /// same kind. An integer never becomes an owner or a borrow straight
+    /// off: the raw address in between is the step a reader can search for.
+    /// For the same reason a cast between owners and borrows keeps the
+    /// shape of a pointee that holds an address, see
+    /// [`DataKind::reads_addresses_as`].
     pub fn cast_allowed(self, to: DataKind) -> bool
     {
+        // a member turns into its value, and a scalar value on as such a
+        // value turns
+        let under = self.as_enum().map(|e| e.under());
+        ret_if!(let Some(u) = under, u == to || (!u.is_aggregate() && u.cast_allowed(to)));
         let bytes = self.as_slice().is_some_and(|s| !s.text && s.cell == DataKind::U8);
         ret_true!(bytes && to.is_text_view());
         ret_false!(self.is_aggregate() || to.is_aggregate());
@@ -1418,6 +1476,7 @@ fn parse_base(name: &str) -> Option<DataKind>
     ret_if!(name == "ptr", Some(DataKind::OPAQUE));
     ret_if!(name == "rawptr", Some(DataKind::OPAQUE.with_outer_raw()));
     ret_if!(name.ends_with('}'), parse_sig(name).map(DataKind::Struct));
+    ret_if!(name.ends_with('>'), crate::enums::parse_sig(name).map(DataKind::Enum));
     parse_plain(name)
 }
 
@@ -1474,8 +1533,8 @@ pub fn split_marks(name: &str) -> (&str, &str)
     {
         match ch
         {
-            '{' => depth += 1,
-            '}' => depth = depth.saturating_sub(1),
+            '{' | '<' => depth += 1,
+            '}' | '>' => depth = depth.saturating_sub(1),
             '*' | '^' | '&' | '[' if depth == 0 => return name.split_at(at),
             _ => (),
         }

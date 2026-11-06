@@ -7,6 +7,7 @@ use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::lexer as diag;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_while;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::pos::Pos;
@@ -18,6 +19,7 @@ use crate::ident::is_ident;
 use crate::number::lex_number;
 use crate::number::word_script;
 use crate::phrases::join_phrases;
+use crate::reserved::AMONG;
 use crate::reserved::NOTE_MARKER;
 use crate::reserved::lookup;
 use crate::reserved::split_reserved;
@@ -579,8 +581,36 @@ impl Driver<'_, '_>
     {
         let word = self.words[idx];
         ret_if!(!is_ident(word.text), None);
+        ret_if!(self.lex_among(&word), Some(idx + 1));
         self.push(TokenKind::Ident, word.span, word.joined);
         Some(idx + 1)
+    }
+
+    /// Lex a name written joined to `ထဲမှ`, as in `အရောင်များထဲမှ`, as the name
+    /// and [`Kw::Among`]. The reserved split cannot do it, since the name is
+    /// no reserved word.
+    ///
+    /// # Arguments
+    ///
+    /// * `word` - The word, an identifier.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the word ends in `ထဲမှ` after a name and both were pushed.
+    fn lex_among(&mut self, word: &Word<'_>) -> bool
+    {
+        let Some(name) = word.text.strip_suffix(AMONG)
+        else
+        {
+            return false;
+        };
+        // a stacked consonant (U+1039 before it) would cut a letter cluster in
+        // two
+        ret_false!(name.is_empty() || name.ends_with('\u{1039}') || !is_ident(name));
+        let cut = word.span.lo + name.len();
+        self.push(TokenKind::Ident, Span::new(word.span.lo, cut), word.joined);
+        self.push(TokenKind::Kw(Kw::Among), Span::new(cut, word.span.hi), true);
+        true
     }
 
     /// Report a word that is no token and skip it.

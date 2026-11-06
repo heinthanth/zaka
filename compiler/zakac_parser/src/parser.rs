@@ -9,6 +9,7 @@ use zakac_ast::stmt::Program;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
+use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::LexOutput;
 use zakac_lexer::token::Punct;
@@ -254,12 +255,15 @@ impl<'t> Parser<'t>
         #[rustfmt::skip]
         let mut parser = Parser::builder().cur(cur).text(text).base(base).strings(&lexed.strings).build();
         let declared = |pair: &[Token]| {
-            let named = pair[0].kind == TokenKind::Kw(Kw::StructOpen)
-                && pair[1].kind == TokenKind::Ident;
+            let opener =
+                matches!(pair[0].kind, TokenKind::Kw(Kw::StructOpen | Kw::EnumOpen));
+            let named = opener && pair[1].kind == TokenKind::Ident;
             named.then(|| parser.text_of(pair[1].span))
         };
-        let names = lexed.tokens.windows(2).filter_map(declared).collect();
-        parser.structs = names;
+        let names: Vec<&str> = lexed.tokens.windows(2).filter_map(declared).collect();
+        // the stem of an enumeration names it too: `အရောင်` for `အရောင်များ`
+        let stems = names.iter().filter_map(|name| name.strip_suffix(PLURAL));
+        parser.structs = names.iter().copied().chain(stems).collect();
         let starts = lexed.tokens.iter().enumerate();
         let starts = starts.filter(|(_, t)| t.kind == TokenKind::Kw(Kw::StructOpen));
         let found = starts
@@ -294,7 +298,9 @@ impl<'t> Parser<'t>
         Some((self.text_of(name.span), self.text_of(word.span)))
     }
 
-    /// Whether the token `n` places ahead is a declared struct name.
+    /// Whether the token `n` places ahead is a declared struct or
+    /// enumeration name that starts a kind. A name before `ထဲမှ` names a
+    /// member instead: `အမှားများထဲမှ မတွေ့`.
     ///
     /// # Arguments
     ///
@@ -302,11 +308,13 @@ impl<'t> Parser<'t>
     ///
     /// # Returns
     ///
-    /// `true` for a struct name.
+    /// `true` for such a name.
     pub(crate) fn is_struct_at(&self, n: usize) -> bool
     {
         let tok = self.peek_n(n);
-        tok.kind == TokenKind::Ident && self.structs.contains(self.text_of(tok.span))
+        let named = tok.kind == TokenKind::Ident
+            && self.structs.contains(self.text_of(tok.span));
+        named && self.peek_n(n + 1).kind != TokenKind::Kw(Kw::Among)
     }
 
     /// The current token.

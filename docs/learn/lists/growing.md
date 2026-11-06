@@ -173,7 +173,7 @@ is marked:
 
 Text takes an add too, of text or a character, at its end or in front of a character, and
 it loses its last character with `နောက်ဆုံးစာလုံး` (see [Adding in the middle and removing
-the end](../values/strings.md#adding-in-the-middle-and-removing-the-end));
+the end](../text/changing.md#adding-in-the-middle-and-removing-the-end));
 `နောက်ဆုံးအကွက်` on text is an error (see [List mistakes](mistakes.md#removing-from-text)). A remove from a
 list with no cells left stops the program when it runs: see [List
 mistakes](mistakes.md#removing-from-a-list-with-no-cells).

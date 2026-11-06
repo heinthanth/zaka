@@ -137,6 +137,10 @@ ImportNeedsFile = ("ZK0232", Level::Error),
 SliceCount = ("ZK0233", Level::Error),
 /// A declared kind has no `တစ်<classifier>` after it.
 DeclNeedsClassifier = ("ZK0234", Level::Error),
+/// An enumeration is declared inside a block.
+NestedEnum = ("ZK0235", Level::Error),
+/// A switch arm follows the default arm.
+ArmAfterDefault = ("ZK0236", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -193,6 +197,12 @@ SecondStart = ("ZK0325", Level::Error),
 TopLevelStmt = ("ZK0326", Level::Error),
 /// The file that is run has no start block.
 NoStart = ("ZK0327", Level::Error),
+/// Two members of one enumeration share a name.
+DuplicateMember = ("ZK0328", Level::Error),
+/// `<name>များထဲမှ <member>` names a member the enumeration does not have.
+UnknownMember = ("ZK0329", Level::Error),
+/// The name before `ထဲမှ` is no enumeration written with `များ`.
+UnknownEnum = ("ZK0330", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.
@@ -307,6 +317,19 @@ WrongPartProven = ("ZK0454", Level::Error),
 /// `ရလဒ်အဖြစ်` in a function that can fail, or `ရလဒ်ကောင်းအဖြစ်` in one
 /// that cannot.
 GoodReturnWord = ("ZK0455", Level::Error),
+/// The value of an enumeration member does not work out when the program
+/// compiles.
+MemberValue = ("ZK0456", Level::Error),
+/// Two members of one enumeration share a value.
+DuplicateMemberValue = ("ZK0457", Level::Error),
+/// A switch over an enumeration names neither each member nor a default arm.
+SwitchMissing = ("ZK0458", Level::Error),
+/// The default arm of a switch names a kind other than its subject's.
+DefaultKind = ("ZK0459", Level::Error),
+/// Two cases of one switch have one value.
+DuplicateCase = ("ZK0460", Level::Error),
+/// An enumeration member with no value whose value cannot count on.
+MemberNeedsValue = ("ZK0461", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

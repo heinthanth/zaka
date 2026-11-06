@@ -83,8 +83,8 @@ reads twice.
 
 ## The cost of an edit
 
-A [character write](../values/strings.md#changing-a-character) and an
-[add](../values/strings.md#adding-to-text) change text in place, and each has a cost of
+A [character write](../text/characters.md#changing-a-character) and an
+[add](../text/changing.md#adding-to-text) change text in place, and each has a cost of
 its own:
 
 - **The first edit copies text with no block of its own.** A literal, a duplicate of one,

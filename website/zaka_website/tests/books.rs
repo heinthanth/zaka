@@ -207,8 +207,8 @@ fn links_cross_from_one_book_to_the_other()
     );
     let errors = page_at(Book::Manual, "reference/errors").expect("the page is there");
     assert_eq!(
-        link_target(&errors, "../../learn/values/literals.md#top"),
-        "/learn/values/literals/#top"
+        link_target(&errors, "../../learn/values/integers.md#top"),
+        "/learn/values/integers/#top"
     );
     assert_eq!(link_target(&errors, "precedence.md"), "/docs/reference/precedence/");
     assert_eq!(link_target(&errors, "../CONTENTS.md"), "/docs/#contents");

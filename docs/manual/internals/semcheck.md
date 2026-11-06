@@ -99,7 +99,21 @@ the declaration. The table holds one map for each file of the program: the first
 declaration of a name in a file wins, and a second in the same file is ZK0304. Two files
 can each hold a function of one name.
 
-The same first step finds the file of each struct (`struct_homes`) and checks each
+Before it, `collect_enums` (`enum_check.rs`) makes the kind of each enumeration, on its
+name and on its stem, and reports a member name used twice (ZK0328) and a name a struct
+or another enumeration has (ZK0316). A member value can name a constant, so the walk works
+the values out (`check_enum`, once the walk has the top-level names of the file): the
+first value gives the value kind (`isize` with none), each other value converts to it
+(`expect_kind`) and folds (`constant_of`: `coerced` for a scalar, `folded` for text, a list or
+a struct, with `Folded::Text` for constant text), and a member with none counts on (`count_on`, ZK0461). A value
+that does not work out is ZK0456, and one two members share ZK0457. The values go into
+`found_enums`; until a run has them, an enumeration with a value written stands as `isize`
+members numbered from 0, and `semcheck` runs the check again while the values change,
+as it does for list counts. `collect_structs` reads a field of an enumeration kind
+through that table, and the enumerations then join the struct table, so each place that
+reads a named kind finds both.
+
+The same first step finds the file of each struct and enumeration (`struct_homes`) and checks each
 exported declaration with `private_in_exports`: a kind of an exported function,
 variable, constant or struct that names a struct its file keeps private is ZK0324.
 
@@ -128,6 +142,8 @@ that implements `Visitor`. It has one method for each statement form and calls
 | assignment to a cell of text | ZK0429, for owned text and a view alike |
 | assignment to a character of text | `char_write`, when `char_target` finds `၏ စာလုံး n` or `၏ n ခုမြောက်စာလုံး` as the target: the text is a writable place (`place_kind`), the number an integer (ZK0423) and the value a `char` (ZK0401); `changeable_text` reports a view of text (ZK0438), and a target that is no text is ZK0403 |
 | add, remove | `growing_cells` (from `visit_add` and `visit_remove`): the list is a writable place (`place_kind`: ZK0410, ZK0306) of a plain list kind, else ZK0437 (a counted list, a slice, or a pointer to a list, and `နောက်ဆုံးအကွက်` on text); an add in front of a cell (`insert`) checks the list of the cell so and its number (`cell_number`, ZK0423), an add in front of a character checks the text (`is_text_place`, ZK0403; ZK0438) and goes on as an add to text, and `၏ အရှေ့တွင်` after each other value is ZK0439; a remove of the last character (`shrinking_text`) takes text that can change (ZK0403, ZK0438); the value of an add converts to the cell kind (ZK0401). An add to text goes to `text_add` instead: `changeable_text` reports a view (ZK0438), and the value is text, a view of text or a `char`, else ZK0401 ("expected text") |
+| switch | `visit_switch`: the subject is inferred once; each case of each arm goes through `check_case` (`switch_check.rs`): over an enumeration, a bare name that is a member (`member_case`) takes the member before a variable, and a name that is neither is ZK0329; each other case is inferred with the subject kind as its expected kind and checked as `==` checks its sides (`pair_result`). A case is known as a member position over an enumeration and as a folded value otherwise (`CaseHit`); two cases known as one are ZK0460. `check_default` checks the kind of the default arm (ZK0459), or with none, that the cases over an enumeration name each member (ZK0458). With no subject kind, the cases are not checked |
+| member | `infer_member`: the name before `ထဲမှ` is the stem of an enumeration and `များ` (ZK0330, with help when an enumeration is written without its `များ`); a member it lacks is ZK0329 |
 | replace | `visit_replace`: the text is a place (`place_kind`) of text (`is_text_place`, ZK0403), both ends are integers (`cell_number`, ZK0423), and the rest goes as an add to text (`text_add`: ZK0438 for a view, ZK0401 for a value that is no text, view or `char`) |
 
 Each subtree is inferred once, so a diagnostic is never repeated. When an operand has an
@@ -177,7 +193,7 @@ looks for it in the other files and adds help that names the file that declares 
 
 ## The data it builds
 
-**`DataKind`** is `Copy` and has eleven forms:
+**`DataKind`** is `Copy` and has twelve forms:
 
 | Form | Holds |
 | --- | --- |
@@ -190,6 +206,7 @@ looks for it in the other files and adds help that names the file that declares 
 | `Seq(&'static SeqKind)` | a plain list or text, three words (address, count, room); `SeqKind { cell, text }`: `text` marks owned UTF-8 text, `DataKind::TEXT`, whose cells are `u8`, as `SliceKind::text` marks the view. Plain lists are interned through `seq_of`. `is_text` reads the flag, and `as_seq`, `is_seq` and `cell_kind` see plain lists alone, so each rule of text remains apart from the rules of lists; `holds_seq` holds for a plain list and for each counted list or struct with one inside; `holds_text` holds for text and plain lists and for each list or struct with one inside, so each is dropped, duplicated and lent alike; copied, not moved (`is_move_kind` is `holds_owner_ptr`) |
 | `Struct(&'static StructKind)` | a struct with its named fields, interned as list kinds are |
 | `Slice(&'static SliceKind)` | a borrowed run of cells of one kind, with its count known at run time; `is_borrow` holds for it. `SliceKind { cell, text }`: `text` marks the view of text, `text[..]`, whose cells are `u8` |
+| `Enum(&'static EnumKind)` | an enumeration: its name, its value kind and its members, each with its `MemberValue` (a scalar `Value`, text, or the items of a list or a struct; `enums.rs`), interned on the signature `name<member=value\|...;kind>`, which names it in artifacts (each value hex-coded). Storage holds the value of the member, so the size, the alignment and the `holds_*` tests are those of the value kind (`repr` takes it off); it widens to nothing, converts to its value kind and on from a scalar one, and is copied |
 
 A written kind becomes a `DataKind` with defaults filled in: no sign word is signed, no
 bit count is platform size for an integer and 64 for a float. So the plain

@@ -38,6 +38,7 @@ use zakac_semcheck::structs::StructKind;
 use crate::mem::Mem;
 use crate::mem::Origin;
 use crate::print::list_text;
+use crate::print::shown_text;
 use crate::print::slice_parts;
 use crate::print::text;
 use crate::print::text_at;
@@ -1111,6 +1112,13 @@ impl Machine
             Op::Call(f) => self.enter(f),
             Op::Ret => self.leave(),
             Op::Print => self.print(),
+            Op::PrintEnum(kind) =>
+            {
+                let v = self.pop()?;
+                let line = shown_text(&self.mem, v, kind)?;
+                write_line(&mut self.out, &line);
+                Ok(())
+            }
             Op::PrintText(i) => self.print_text(i),
             Op::Pop => self.pop().map(drop),
             Op::Trap(TrapCode::StepNotPositive) => Err(TrapKind::StepNotPositive),
@@ -1902,9 +1910,7 @@ impl Machine
     /// The text, or the trap a read hits.
     fn piece_text(&self, v: Value, kind: DataKind) -> Result<String, TrapKind>
     {
-        ret_if!(!kind.is_aggregate(), Ok(text(v)));
-        let addr = v.as_ptr().ok_or_else(|| malformed("a piece is no address"))?;
-        list_text(&self.mem, addr, kind)
+        shown_text(&self.mem, v, kind)
     }
 
     /// Pop the address of text and push the number of its characters.
@@ -2053,6 +2059,7 @@ impl Machine
     /// The addresses with their kinds, in storage order.
     fn blocks_in(&self, addr: u64, kind: DataKind) -> Vec<(u64, DataKind)>
     {
+        let kind = kind.repr();
         let platform = self.module.platform_bits;
         if let Some(s) = kind.as_struct()
         {
@@ -2713,6 +2720,7 @@ impl Machine
     /// Whether the two are equal, or the trap a read hits.
     fn cells_equal(&self, l: u64, r: u64, kind: DataKind) -> Result<bool, TrapKind>
     {
+        let kind = kind.repr();
         ret_if!(
             kind.is_textual(),
             Ok(text_at(&self.mem, l)? == text_at(&self.mem, r)?)

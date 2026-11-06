@@ -6,6 +6,8 @@ pub use zakac_ir_builder::value::burmese_digits;
 pub use zakac_ir_builder::value::value_text as text;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::enums::EnumKind;
+use zakac_semcheck::enums::MemberValue;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::FALLIBLE;
 use zakac_semcheck::structs::StructKind;
@@ -30,6 +32,7 @@ use crate::trap::TrapKind;
 /// The text, or the trap a read of a cell or field hits.
 pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKind>
 {
+    ret_if!(let Some(e) = kind.as_enum(), member_text(mem, addr, e));
     ret_if!(let Some(s) = kind.as_struct(), struct_text(mem, addr, s));
     ret_if!(kind.is_textual(), text_at(mem, addr));
     if let Some(cell) =
@@ -44,6 +47,127 @@ pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKin
         return mem.load(addr, kind).map(text);
     };
     cells_text(mem, addr, list.cell, u64::from(list.len))
+}
+
+/// The text a print writes for a value: a member of an enumeration as
+/// `<stem>များထဲမှ <member>`, the form that reads back; a list, a struct or
+/// text as [`list_text`] writes it; each other value as [`text`] writes it.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the value.
+/// * `v` - The value, or the address of one that storage holds as a list, a
+///   struct or text.
+/// * `kind` - Its kind.
+///
+/// # Returns
+///
+/// The text, or the trap a read hits.
+pub fn shown_text(mem: &Mem, v: Value, kind: DataKind) -> Result<String, TrapKind>
+{
+    let stored = kind.repr();
+    if stored.is_aggregate()
+    {
+        let reason = "a printed list, struct or text is no address".to_string();
+        let addr = v.as_ptr().ok_or(TrapKind::Malformed { reason })?;
+        return list_text(mem, addr, kind);
+    }
+    let Some(e) = kind.as_enum()
+    else
+    {
+        return Ok(text(v));
+    };
+    let at = e.find(|m| m.scalar() == Some(v));
+    Ok(at.map_or_else(|| text(v), |at| e.text_at(at)))
+}
+
+/// The text of a member of an enumeration held at an address: its name, or
+/// the value as its value kind prints when no member has it.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the value.
+/// * `addr` - The address of the value.
+/// * `e` - The enumeration.
+///
+/// # Returns
+///
+/// The text, or the trap a read hits.
+fn member_text(mem: &Mem, addr: u64, e: &EnumKind) -> Result<String, TrapKind>
+{
+    for (at, (_, v)) in e.members().iter().enumerate()
+    {
+        ret_if!(holds_value(mem, addr, e.under(), v)?, Ok(e.text_at(at)));
+    }
+    list_text(mem, addr, e.under())
+}
+
+/// Whether the value at an address is a member value.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the value.
+/// * `addr` - The address of the value.
+/// * `kind` - The value kind.
+/// * `v` - The member value.
+///
+/// # Returns
+///
+/// `true` if it is, or the trap a read hits.
+fn holds_value(
+    mem: &Mem, addr: u64, kind: DataKind, v: &MemberValue,
+) -> Result<bool, TrapKind>
+{
+    let kind = kind.repr();
+    match v
+    {
+        MemberValue::Scalar(x) => Ok(mem.load(addr, kind)? == *x),
+        MemberValue::Text(t) => Ok(text_at(mem, addr)? == *t),
+        MemberValue::Items(items) => items_held(mem, addr, kind, items),
+    }
+}
+
+/// Whether the cells or fields at an address are the items of a member
+/// value.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the value.
+/// * `addr` - The address of the list or the struct.
+/// * `kind` - Its kind.
+/// * `items` - The cells or fields of the member value.
+///
+/// # Returns
+///
+/// `true` when so, or the trap a read hits.
+fn items_held(
+    mem: &Mem, addr: u64, kind: DataKind, items: &[MemberValue],
+) -> Result<bool, TrapKind>
+{
+    let platform = mem.platform();
+    if let Some(s) = kind.as_struct()
+    {
+        for (at, (v, (_, k))) in items.iter().zip(s.fields()).enumerate()
+        {
+            let field = addr + u64::from(s.offset(at, platform));
+            ret_if!(!holds_value(mem, field, *k, v)?, Ok(false));
+        }
+        return Ok(true);
+    }
+    let Some(cell) = kind.cell_kind()
+    else
+    {
+        return Ok(false);
+    };
+    let (base, count) =
+        tern!(kind.is_seq(), slice_parts(mem, addr)?, (addr, items.len() as u64));
+    ret_if!(count != items.len() as u64, Ok(false));
+    let stride = u64::from(cell.size(platform));
+    for (i, v) in items.iter().enumerate()
+    {
+        ret_if!(!holds_value(mem, base + i as u64 * stride, cell, v)?, Ok(false));
+    }
+    Ok(true)
 }
 
 /// The text of a run of cells, between `[` and `]` and joined with `၊ `.

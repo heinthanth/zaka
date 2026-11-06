@@ -64,7 +64,10 @@ An integer is never turned into a true/false value. Test it with a comparison in
 `n != ၀`. Conversions between addresses and integers, and between pointer kinds, have
 rules of their own, in [Pointers](pointers.md). The conversion verb never takes a list
 (ZK0408); a counted list becomes a plain list on its own where a value goes into a place, as
-[Lists](lists.md#forms) states.
+[Lists](lists.md#forms) states. A member of an enumeration converts to its value
+kind, which gives its value, and a member whose value is a number, a character or a
+true/false value converts to each kind its value converts to, as
+[Enumerations](enums.md#values-of-an-enumeration) states; nothing converts to a member.
 
 ```zaka-error ZK0408
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

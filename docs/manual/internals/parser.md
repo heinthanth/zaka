@@ -274,7 +274,8 @@ token:
 | `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
 | `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ`, then a size before `မင်မိုရီကို` for a blit (`parse_blit_end`: `ကူးယူမည်` or `ပြောင်းထည့်မည်`); else after `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` for a release, a fill (`parse_fill_end`) when `ဖြည့်မည်` comes before the `။` (`ends_in_fill`), so a value that starts with a kind word needs no parentheses, or a size for a resize. The value of a fill is read with `in_fill` set, so a `ဖြင့်` right after a lone value ends it |
 | a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းပါ။`; after another statement or inside a block it is parsed and reported (ZK0230) |
-| `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, struct or top-level declaration; on another statement or the start block it is ZK0229 |
+| `အမျိုးအစား` | `parse_enum_decl` | `NAME ဆိုသည်မှာ`, then members with `၊` between them, each a name with an optional `(VALUE)`, then `တို့ ဖြစ်သည်။` (a lone member can leave out `တို့`); inside a block it is parsed and reported (ZK0235) |
+| `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, struct, enumeration or top-level declaration; on another statement or the start block it is ZK0229 |
 | an `else`, an update, a closer with no opener | an error | ZK0211, ZK0212, ZK0226 |
 | all other tokens | `parse_expr_headed` | a clause; see below |
 
@@ -284,6 +285,20 @@ decides: `နေသရွေ့` makes a while loop; `မှ` makes a counted lo
 mode block`); `၏` before `အကွက်တိုင်း` or `စာလုံးတိုင်း` makes an each loop (`value ၏
 (အကွက်တိုင်း|စာလုံးတိုင်း) ကို NAME အနေဖြင့် ယူ၍ block`, an `EachStmt`), and the clause engine
 stops before that `၏`; all else is ZK0203, which lists the endings a statement can have.
+
+A switch has no verb row either. When the clause engine in statement mode meets
+`ဖြစ်လျှင်` with two operands on its stack, the first marked with `သည်` and the second with
+no particle, `switch_head` gives the pair back as `ClauseOut::Switch`, and `parse_switch`
+reads the first arm from there. Each sentence after it that reaches `ဖြစ်လျှင်` before its
+full stop, with no `သည်` before it and no statement word at its start, is one more arm
+(`at_switch_arm`); `တခြား KIND ဖြစ်လျှင်` reads the default arm, and an arm after it is
+parsed and reported (ZK0236). A one-statement arm that is itself a switch is ZK0215. The
+S-expression is `(switch subject case {..} case {..} else kind {..})`.
+
+An operand that is a name with `ထဲမှ` after it is a member, `Expr::Member` (`parse_member`).
+The parser's set of struct names holds the enumeration names and their stems as well, so
+each of them can start a kind; `is_struct_at` refuses a name with `ထဲမှ` after it, which
+names a member instead.
 
 A remove has no verb row, since its list comes before `၏`. When the clause engine meets
 `နောက်ဆုံးအကွက်` (`Kw::LastCell`) after an operand that holds `၏`, `finish_remove` takes

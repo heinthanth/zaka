@@ -10,6 +10,8 @@ use zakac_ast::stmt::CountMode;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
 use zakac_ast::stmt::EachStmt;
+use zakac_ast::stmt::EnumDecl;
+use zakac_ast::stmt::EnumMember;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
@@ -21,6 +23,9 @@ use zakac_ast::stmt::START_NAME;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StrArg;
 use zakac_ast::stmt::StructDecl;
+use zakac_ast::stmt::SwitchArm;
+use zakac_ast::stmt::SwitchDefault;
+use zakac_ast::stmt::SwitchStmt;
 use zakac_ast::stmt::WhileStmt;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
@@ -104,6 +109,7 @@ impl Parser<'_>
             Kw::Function => self.parse_fn_or_call(),
             Kw::Program => self.parse_fn_decl(),
             Kw::StructOpen => self.parse_struct_decl(),
+            Kw::EnumOpen => self.parse_enum_decl(),
             Kw::Export => self.parse_exported(),
             Kw::BlockOpen => self.parse_block().map(Stmt::Block),
             Kw::Loop => self.parse_break(),
@@ -153,6 +159,10 @@ impl Parser<'_>
         let first = match clause
         {
             ClauseOut::Stmt(stmt) => return Ok(*stmt),
+            ClauseOut::Switch(subject, case) =>
+            {
+                return self.parse_switch(subject, case);
+            }
             ClauseOut::Expr(first) => first,
         };
         let cond = self.parse_logical_rest(first, 0)?;
@@ -212,6 +222,7 @@ impl Parser<'_>
         {
             Stmt::Fn(n) if !n.start => Some((&mut n.exported, &mut n.span)),
             Stmt::Struct(n) => Some((&mut n.exported, &mut n.span)),
+            Stmt::Enum(n) => Some((&mut n.exported, &mut n.span)),
             Stmt::Decl(n) => Some((&mut n.exported, &mut n.span)),
             _ => None,
         };
@@ -690,6 +701,207 @@ impl Parser<'_>
         let node = StructDecl::builder().name(name).fields(fields).maybe_classifier(classifier)
             .span(span).build();
         Ok(Stmt::Struct(node))
+    }
+
+    /// Parse an enumeration declaration:
+    /// `အမျိုးအစား <name> ဆိုသည်မှာ <member> (၊ <member>)* တို့ ဖြစ်သည်။`, each
+    /// member a name with an optional value in parentheses.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic. A declaration inside a block is
+    /// parsed and reported.
+    fn parse_enum_decl(&mut self) -> PResult<Stmt>
+    {
+        let start = self.bump().span;
+        let name = self.parse_ident()?;
+        self.expect(Kw::Meaning)?;
+        let mut members = vec![self.parse_enum_member()?];
+        while self.eat_punct(Punct::ListSep)
+        {
+            members.push(self.parse_enum_member()?);
+        }
+        // one member reads `<member> ဖြစ်သည်`, with no `တို့`
+        do_if!(members.len() > 1 || self.at(Kw::Plural), {
+            self.expect(Kw::Plural)?;
+        });
+        self.expect(Kw::Is)?;
+        let stop = self.expect_stop()?;
+        let span = start.to(&stop.span);
+        do_if!(self.depth > 0, self.diags.push(diag::nested_enum(span)));
+        let node = EnumDecl::builder().name(name).members(members).span(span).build();
+        Ok(Stmt::Enum(node))
+    }
+
+    /// Parse one member of an enumeration: `<name>`, or `<name> (<value>)`.
+    ///
+    /// # Returns
+    ///
+    /// The member, or a diagnostic.
+    fn parse_enum_member(&mut self) -> PResult<EnumMember>
+    {
+        let name = self.parse_ident()?;
+        let span = name.span;
+        ret_if!(
+            !self.at_punct(Punct::LParen),
+            Ok(EnumMember::builder().name(name).span(span).build())
+        );
+        self.bump();
+        let value = self.parse_expr()?;
+        let close = self.expect_punct(Punct::RParen)?;
+        let span = span.to(&close.span);
+        Ok(EnumMember::builder().name(name).value(value).span(span).build())
+    }
+
+    /// Parse a switch after its head `<subject> သည် <case>`: the first
+    /// `ဖြစ်လျှင်` and its block, each arm `<case> ဖြစ်လျှင် <block>` after it,
+    /// and the default arm `တခြား <kind> ဖြစ်လျှင် <block>`. An arm after the
+    /// default arm is parsed and reported.
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - The value each case is compared with.
+    /// * `case` - The case of the first arm.
+    ///
+    /// # Returns
+    ///
+    /// The switch, or a diagnostic.
+    fn parse_switch(&mut self, subject: Expr, case: Expr) -> PResult<Stmt>
+    {
+        let start = subject.span();
+        let mut arms = vec![self.parse_switch_arm(case)?];
+        while self.at_switch_arm()
+        {
+            let case = self.parse_expr()?;
+            arms.push(self.parse_switch_arm(case)?);
+        }
+        let default =
+            tern!(self.at(Kw::Other), Some(self.parse_switch_default()?), None);
+        while default.is_some() && self.at_switch_arm()
+        {
+            let case = self.parse_expr()?;
+            self.diags.push(diag::arm_after_default(case.span()));
+            self.parse_switch_arm(case)?;
+        }
+        let span = start.to(&self.prev_span());
+        #[rustfmt::skip]
+        let node = SwitchStmt::builder().subject(subject).arms(arms).maybe_default(default)
+            .span(span).build();
+        Ok(Stmt::Switch(node))
+    }
+
+    /// Parse the rest of a switch arm after its first case: each case after
+    /// a `၊`, then `တို့` when there are several, then `ဖြစ်လျှင် <block>`.
+    ///
+    /// # Arguments
+    ///
+    /// * `case` - The first case.
+    ///
+    /// # Returns
+    ///
+    /// The arm, or a diagnostic.
+    fn parse_switch_arm(&mut self, case: Expr) -> PResult<SwitchArm>
+    {
+        let start = case.span();
+        let mut cases = vec![case];
+        while self.eat_punct(Punct::ListSep)
+        {
+            cases.push(self.parse_expr()?);
+        }
+        do_if!(cases.len() > 1, {
+            self.expect(Kw::Plural)?;
+        });
+        self.expect(Kw::ThenIs)?;
+        let block = self.parse_switch_branch()?;
+        let span = start.to(&block.span);
+        Ok(SwitchArm::builder().cases(cases).block(block).span(span).build())
+    }
+
+    /// Whether the sentence from here reaches `ဖြစ်လျှင်` before its full
+    /// stop or a block.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn reaches_then_is(&self) -> bool
+    {
+        let ends = |tok: &zakac_lexer::token::Token| {
+            matches!(
+                tok.kind,
+                TokenKind::Kw(Kw::ThenIs | Kw::BlockOpen | Kw::BlockClose)
+                    | TokenKind::Punct(Punct::FullStop)
+                    | TokenKind::Eof
+            )
+        };
+        let end =
+            (0..).map(|n| self.peek_n(n)).find(ends).expect("the input ends with Eof");
+        end.kind == TokenKind::Kw(Kw::ThenIs)
+    }
+
+    /// Parse `တခြား <kind> ဖြစ်လျှင် <block>`, the default arm of a switch.
+    ///
+    /// # Returns
+    ///
+    /// The default arm, or a diagnostic.
+    fn parse_switch_default(&mut self) -> PResult<SwitchDefault>
+    {
+        let start = self.bump().span;
+        let kind = self.parse_kind()?;
+        self.expect(Kw::ThenIs)?;
+        let block = self.parse_switch_branch()?;
+        let span = start.to(&block.span);
+        Ok(SwitchDefault::builder().kind(kind).block(block).span(span).build())
+    }
+
+    /// Parse the block of a switch arm. A single statement cannot be a
+    /// conditional or another switch, so each arm after it belongs to one
+    /// clear switch.
+    ///
+    /// # Returns
+    ///
+    /// The block, or a diagnostic.
+    fn parse_switch_branch(&mut self) -> PResult<BlockStmt>
+    {
+        let block = self.parse_branch(false)?;
+        let inner =
+            block.single && matches!(block.stmts.first(), Some(Stmt::Switch(_)));
+        do_if!(inner, self.diags.push(diag::nested_single_line_if(block.span)));
+        Ok(block)
+    }
+
+    /// Whether a switch arm starts here: a sentence that reaches `ဖြစ်လျှင်`
+    /// before its full stop, with no `သည်` before it (that starts a new
+    /// switch) and no statement word at its start.
+    ///
+    /// # Returns
+    ///
+    /// `true` at an arm.
+    fn at_switch_arm(&self) -> bool
+    {
+        let first = kw_of(&self.peek());
+        let opener = first.is_some_and(|kw| {
+            matches!(
+                kw,
+                Kw::If | Kw::ElseIf | Kw::Else | Kw::Other | Kw::Var | Kw::Const
+            )
+        });
+        ret_if!(opener, false);
+        let ends = |tok: &zakac_lexer::token::Token| {
+            matches!(
+                tok.kind,
+                TokenKind::Kw(
+                    Kw::ThenIs
+                        | Kw::Thi
+                        | Kw::BlockOpen
+                        | Kw::BlockClose
+                        | Kw::ProgramClose
+                ) | TokenKind::Punct(Punct::FullStop)
+                    | TokenKind::Eof
+            )
+        };
+        let end =
+            (0..).map(|n| self.peek_n(n)).find(ends).expect("the input ends with Eof");
+        end.kind == TokenKind::Kw(Kw::ThenIs) && self.peek().kind != end.kind
     }
 
     /// Parse `မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်`. The classifier is a name,

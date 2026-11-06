@@ -18,7 +18,7 @@ see [Names](../../learn/variables/names.md).
 | `ကို` | (object) | [Particles](../../learn/sentences/particles.md) |
 | `နှင့်` | "and", "with" | [Arithmetic](../../learn/operators/arithmetic.md), [Comparison](../../learn/operators/comparison.md) |
 | `၏` | "of" | [Arithmetic](../../learn/operators/arithmetic.md) |
-| `ဖြင့်` | "with", "through" | [Arithmetic](../../learn/operators/arithmetic.md), [Writing integers](../../learn/values/literals.md) |
+| `ဖြင့်` | "with", "through" | [Arithmetic](../../learn/operators/arithmetic.md), [Integers](../../learn/values/integers.md) |
 | `ထက်` | "than" | [Comparison](../../learn/operators/comparison.md) |
 | `အောက်` | "below" | [Comparison](../../learn/operators/comparison.md) |
 | `ဟု` | "so" (quoting) | [Printing](../../learn/hello/printing.md), [Changing a variable](../../learn/variables/assignment.md) |
@@ -77,7 +77,7 @@ see [Names](../../learn/variables/names.md).
 | `ရပ်ပါ` | "please stop" | [Break and continue](../../learn/control-flow/break-continue.md) |
 | `ထည့်ပါ` | "please add": `l ထဲသို့ v ကို ထည့်ပါ` adds `v` as a new last cell of `l`, or, when `l` is text, adds the text or character `v` at its end; `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်ပါ` puts it in front of cell `i` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ဖျက်ပါ` | "please remove": `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ` removes the last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
-| `အစားထိုးပါ` | "please replace": `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးပါ` puts `v` in place of cells `a` to `b` of text `t` | [Text](../../learn/values/strings.md#replacing-part-of-text) |
+| `အစားထိုးပါ` | "please replace": `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးပါ` puts `v` in place of cells `a` to `b` of text `t` | [Text](../../learn/text/changing.md#replacing-part-of-text) |
 | `ကျော်ပါ` | "please skip" | [Break and continue](../../learn/control-flow/break-continue.md) |
 
 ## Blocks and control flow
@@ -107,9 +107,9 @@ see [Names](../../learn/variables/names.md).
 | `ဒဿမကိန်း` | "decimal number" | [Decimal numbers](../../learn/values/floats.md) |
 | `စာလုံး` | "character" | [Characters](../../learn/values/characters.md) |
 | `မှန်မှားတန်ဖိုး`, `ဘူလီယန်` | "true/false value", "boolean" | [True and false](../../learn/values/booleans.md) |
-| `စာသား` | "text" | [Text](../../learn/values/strings.md) |
+| `စာသား` | "text" | [Text](../../learn/text/README.md) |
 | `လက္ခဏာရှိ`, `လက္ခဏာမဲ့` | "signed", "unsigned" | [Integers](../../learn/values/integers.md) |
-| `အခြေ` | "base" | [Writing integers](../../learn/values/literals.md) |
+| `အခြေ` | "base" | [Integers](../../learn/values/integers.md) |
 | `ကိန်းရှင်` | "variable" | [Variables](../../learn/variables/README.md) |
 | `ကိန်းသေ` | "constant" | [Constants](../../learn/variables/constants.md) |
 | `လုပ်ဆောင်ချက်` | "function" | [Functions](../../learn/functions/README.md) |
@@ -164,15 +164,15 @@ as well.
 | `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Static data and counted lists](../../learn/forms/counted-lists.md#counted-lists) |
 | `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `နောက်ဆုံးအကွက်` | "last cell", right after `၏` and before `ကို ဖျက်ပါ` alone | [Adding and removing cells](../../learn/lists/growing.md) |
-| `နောက်ဆုံးစာလုံး` | "last character", right after `၏` and before `ကို ဖျက်ပါ` alone: `t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ` removes the last character of text | [Text](../../learn/values/strings.md#adding-in-the-middle-and-removing-the-end) |
+| `နောက်ဆုံးစာလုံး` | "last character", right after `၏` and before `ကို ဖျက်ပါ` alone: `t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ` removes the last character of text | [Text](../../learn/text/changing.md#adding-in-the-middle-and-removing-the-end) |
 | `အရှေ့တွင်` | "in front of", after `<cell> ၏` or `<character> ၏` in an add: `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်ပါ` | [Adding and removing cells](../../learn/lists/growing.md#adding-in-the-middle) |
-| `ဆက်ထားသည့်` | "that joins", in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/values/strings.md#joining-text) |
-| `စာလုံးအရေအတွက်` | "character count", in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/values/strings.md#characters) |
+| `ဆက်ထားသည့်` | "that joins", in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/text/README.md#joining-text) |
+| `စာလုံးအရေအတွက်` | "character count", in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/text/characters.md#characters) |
 | `စာရင်းအလွတ်` | "blank list": no cells, or each cell of a counted list at its default | [Lists](../../learn/lists/README.md) |
 | `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../../learn/lists/README.md#list-kinds) |
 | `တစ်စိတ်တစ်ပိုင်း` | "a part": after a `စာရင်း` with no count it makes a slice kind | [Slices](../../learn/lists/slices.md) |
 | `မှစ၍` | "starting at", in `x ၏ အကွက် <start> မှစ၍ <length> ကွက်` | [Slices](../../learn/lists/slices.md#part-of-a-list) |
-| `ထိ` | "up to", after the last cell or character of the range a replace changes: `<start> မှ <end> ထိကို` | [Text](../../learn/values/strings.md#replacing-part-of-text) |
+| `ထိ` | "up to", after the last cell or character of the range a replace changes: `<start> မှ <end> ထိကို` | [Text](../../learn/text/changing.md#replacing-part-of-text) |
 | `ကွက်` | "cells", after the length of a range; a struct can also name it as its classifier | [Slices](../../learn/lists/slices.md#part-of-a-list) |
 
 ## Structs
@@ -187,6 +187,19 @@ as well.
 
 `တို့` on its own is reserved as well, so it cannot be used as a name. The words inside
 the two closing phrases (`တို့`, `ပါဝင်သည်`, `ပါဝင်ပြီး`) are reserved on their own.
+
+## Enumerations and switches
+
+| Word | Reads as | Page |
+| --- | --- | --- |
+| `အမျိုးအစား` | "kind": starts an enumeration declaration | [Enumerations and switches](../../learn/enums/README.md) |
+| `ဆိုသည်မှာ` | "means": between the name of an enumeration and its members | [Enumerations and switches](../../learn/enums/README.md) |
+| `ထဲမှ` | "from among", in `<name>များထဲမှ <member>` | [Enumerations and switches](../../learn/enums/README.md#naming-a-member) |
+| `တခြား` | "another": starts the default arm of a switch, `တခြား <kind> ဖြစ်လျှင်` | [Enumerations and switches](../../learn/enums/README.md#the-default-arm) |
+
+An enumeration declaration closes with `တို့ ဖြစ်သည်`, words reserved for structs. `ထဲမှ`
+can be written joined to the name before it, as in `အရောင်များထဲမှ`: the lexer splits a
+name that ends in `ထဲမှ` into the name and `ထဲမှ`, so no name can end in `ထဲမှ`.
 
 ## Modules
 

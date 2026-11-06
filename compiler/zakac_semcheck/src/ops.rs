@@ -521,7 +521,29 @@ impl Checker
             _ => expect.filter(|k| !k.is_address()),
         };
         let (l, r) = self.infer_sides(lhs, rhs, side);
-        let (l, r) = (l?, r?);
+        self.pair_result(class, op, (l?, lhs), (r?, rhs), span)
+    }
+
+    /// The result kind of a two-operand operation whose operand kinds are
+    /// known, reporting operands that the operator does not take.
+    ///
+    /// # Arguments
+    ///
+    /// * `class` - The operator class.
+    /// * `op` - The operator spelling.
+    /// * `lhs` - The kind and the expression of the left operand.
+    /// * `rhs` - The kind and the expression of the right operand.
+    /// * `span` - The operation.
+    ///
+    /// # Returns
+    ///
+    /// The result kind, or `None` after an error.
+    pub fn pair_result(
+        &mut self, class: OpClass, op: &str, lhs: (DataKind, &Expr),
+        rhs: (DataKind, &Expr), span: Span,
+    ) -> Option<DataKind>
+    {
+        let ((l, lhs), (r, rhs)) = (lhs, rhs);
         let block = l.is_aggregate() || r.is_aggregate();
         ret_if!(block, self.infer_list_pair(class, op, (l, lhs), (r, rhs), span));
         let ptr = l.is_address() || r.is_address();

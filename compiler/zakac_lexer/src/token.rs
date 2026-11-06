@@ -599,6 +599,16 @@ pub enum Kw
     FieldsClose,
     /// `တို့ ပါဝင်ပြီး`; a classifier clause follows.
     FieldsCloseAnd,
+
+    // enumerations and switch
+    /// `အမျိုးအစား`, the opener of an enumeration
+    EnumOpen,
+    /// `ဆိုသည်မှာ`, between the name of an enumeration and its members
+    Meaning,
+    /// `ထဲမှ`, between `<name>များ` and a member: `အရောင်များထဲမှ နီ`
+    Among,
+    /// `တခြား`, the opener of the default arm of a switch
+    Other,
 }
 
 impl Kw

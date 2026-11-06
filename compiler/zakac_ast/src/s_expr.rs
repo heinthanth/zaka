@@ -13,6 +13,7 @@ use crate::kind::Wrap;
 use crate::stmt::BlockStmt;
 use crate::stmt::CountedStmt;
 use crate::stmt::DeclStmt;
+use crate::stmt::EnumDecl;
 use crate::stmt::FnDecl;
 use crate::stmt::GenericStmt;
 use crate::stmt::IfStmt;
@@ -22,6 +23,7 @@ use crate::stmt::Program;
 use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
 use crate::stmt::StructDecl;
+use crate::stmt::SwitchStmt;
 use crate::verb::Dir;
 use crate::verb::VerbOp;
 
@@ -119,6 +121,10 @@ impl ToSexpr for Expr
             }
             Expr::BlankList(_) => "blank_list".into(),
             Expr::Str(n) => str_sexpr(n),
+            Expr::Member(n) => list(
+                "member",
+                [n.qualifier.name.to_string(), n.member.name.to_string()],
+            ),
         }
     }
 }
@@ -192,6 +198,8 @@ impl ToSexpr for Stmt
             }
             Stmt::Struct(s) => exported(s.exported, struct_sexpr(s)),
             Stmt::Import(s) => import_sexpr(s),
+            Stmt::Enum(s) => exported(s.exported, enum_sexpr(s)),
+            Stmt::Switch(s) => switch_sexpr(s),
         }
     }
 }
@@ -445,6 +453,45 @@ fn if_sexpr(s: &IfStmt) -> String
     list("if", arms.chain(else_part))
 }
 
+/// `(switch subject case {..} case {..} else kind {..})`.
+///
+/// # Arguments
+///
+/// * `s` - The switch.
+///
+/// # Returns
+///
+/// The text.
+fn switch_sexpr(s: &SwitchStmt) -> String
+{
+    let arms =
+        s.arms.iter().flat_map(|arm| [cases_sexpr(&arm.cases), arm.block.to_sexpr()]);
+    let default = s
+        .default
+        .iter()
+        .flat_map(|d| ["else".to_string(), d.kind.to_sexpr(), d.block.to_sexpr()]);
+    list("switch", std::iter::once(s.subject.to_sexpr()).chain(arms).chain(default))
+}
+
+/// The cases of a switch arm: the case alone, or `(cases a b)` for several.
+///
+/// # Arguments
+///
+/// * `cases` - The cases.
+///
+/// # Returns
+///
+/// The text.
+fn cases_sexpr(cases: &[Expr]) -> String
+{
+    let [one] = cases
+    else
+    {
+        return list("cases", cases.iter().map(ToSexpr::to_sexpr));
+    };
+    one.to_sexpr()
+}
+
 /// `(count var from to step N mode {..})`.
 ///
 /// # Arguments
@@ -514,6 +561,25 @@ fn struct_sexpr(s: &StructDecl) -> String
         "struct",
         parts.into_iter().chain(s.classifier.iter().map(|c| c.name.to_string())),
     )
+}
+
+/// `(enum name [member, member value, ...])` for an enumeration declaration.
+///
+/// # Arguments
+///
+/// * `s` - The declaration.
+///
+/// # Returns
+///
+/// The text.
+fn enum_sexpr(s: &EnumDecl) -> String
+{
+    let member = |m: &crate::stmt::EnumMember| {
+        let value = m.value.iter().map(|v| format!(" {}", v.to_sexpr()));
+        format!("{}{}", m.name.name, value.collect::<String>())
+    };
+    let members: Vec<String> = s.members.iter().map(member).collect();
+    list("enum", [s.name.name.to_string(), format!("[{}]", members.join(", "))])
 }
 
 /// `kind name` for a parameter.

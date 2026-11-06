@@ -17,6 +17,7 @@ use zakac_host_errors::errors::IOErrorAction;
 use zakac_host_errors::errors::IOErrorContext;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
+use zakac_lexer::reserved::PLURAL;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::ret_if;
 use zakac_session::artifact::EmbeddedFile;
@@ -273,7 +274,7 @@ fn as_import(stmt: &Stmt) -> Option<&ImportStmt>
     }
 }
 
-/// The struct names a file imports.
+/// The struct and enumeration names a file imports.
 ///
 /// # Arguments
 ///
@@ -290,13 +291,19 @@ fn imported_structs(
 {
     let pairs = imports.iter().zip(targets);
     let pairs = pairs.filter_map(|(n, t)| Some((n, &exports[(*t)? as usize])));
+    // an enumeration brings its stem along: `အရောင်` with `အရောင်များ`
+    let with_stem = |name: &str, set: &HashSet<String>| {
+        let stem = name.strip_suffix(PLURAL).filter(|s| set.contains(*s));
+        std::iter::once(name.to_string()).chain(stem.map(String::from))
+    };
     let names = pairs.flat_map(|(n, set)| {
-        n.names.iter().map(|i| i.name).filter(|name| set.contains(name.as_str()))
+        let found = n.names.iter().filter(|i| set.contains(i.name.as_str()));
+        found.flat_map(|i| with_stem(i.name.as_str(), set)).collect::<Vec<_>>()
     });
-    names.map(String::from).collect()
+    names.collect()
 }
 
-/// The struct names a file exports.
+/// The struct and enumeration names a file exports.
 ///
 /// # Arguments
 ///
@@ -309,10 +316,27 @@ fn exported_structs(program: &Program) -> HashSet<String>
 {
     let decls = program.stmts.iter().filter_map(|s| match s
     {
-        Stmt::Struct(d) if d.exported => Some(d.name.name.to_string()),
+        Stmt::Struct(d) if d.exported => Some(vec![d.name.name.to_string()]),
+        Stmt::Enum(d) if d.exported => Some(enum_names(&d.name.name)),
         _ => None,
     });
-    decls.collect()
+    decls.flatten().collect()
+}
+
+/// The names an enumeration starts a kind with: its name, and its stem when
+/// the name ends in `များ`.
+///
+/// # Arguments
+///
+/// * `name` - The enumeration name.
+///
+/// # Returns
+///
+/// The names.
+fn enum_names(name: &str) -> Vec<String>
+{
+    let stem = name.strip_suffix(PLURAL).map(String::from);
+    std::iter::once(name.to_string()).chain(stem).collect()
 }
 
 /// Record on each import of a parsed file the unit it reads. The imports

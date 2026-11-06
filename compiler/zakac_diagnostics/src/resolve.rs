@@ -443,6 +443,64 @@ pub fn no_start(span: Span) -> Diagnostic
     Diagnostic::new(Code::NoStart, msg, span).with_help(t!("codes.ZK0327.help"))
 }
 
+/// Two members of one enumeration share a name.
+///
+/// # Arguments
+///
+/// * `span` - The second member name.
+/// * `owner` - The enumeration name.
+/// * `name` - The member name.
+///
+/// # Returns
+///
+/// The `ZK0328` diagnostic.
+pub fn duplicate_member(span: Span, owner: &str, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0328.message", e = owner, n = name);
+    Diagnostic::new(Code::DuplicateMember, msg, span)
+}
+
+/// A member name that the enumeration does not have.
+///
+/// # Arguments
+///
+/// * `span` - The member name.
+/// * `owner` - The enumeration name.
+/// * `name` - The member name.
+///
+/// # Returns
+///
+/// The `ZK0329` diagnostic.
+pub fn unknown_member(span: Span, owner: &str, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0329.message", e = owner, n = name);
+    Diagnostic::new(Code::UnknownMember, msg, span)
+}
+
+/// The name before `ထဲမှ` is no enumeration written with `များ`.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The name as written.
+/// * `fix` - The spelling with `များ`, when the name is an enumeration written
+///   without it.
+///
+/// # Returns
+///
+/// The `ZK0330` diagnostic, with help when a fix is known.
+pub fn unknown_enum(span: Span, name: &str, fix: Option<&str>) -> Diagnostic
+{
+    let diag =
+        Diagnostic::new(Code::UnknownEnum, t!("codes.ZK0330.message", n = name), span);
+    let Some(fix) = fix
+    else
+    {
+        return diag;
+    };
+    diag.with_help(t!("codes.ZK0330.help", f = fix))
+}
+
 /// An exported declaration names a private struct of its file in a kind.
 ///
 /// # Arguments

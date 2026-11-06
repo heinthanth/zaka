@@ -263,9 +263,9 @@ en = """A struct declaration, \"ဒေတာအမျိုးအစား <name
 [codes.ZK0229.title]
 en = "misplaced export mark"
 [codes.ZK0229.message]
-en = "\"အများသုံး\" marks a top-level function, struct, variable or constant, and nothing else"
+en = "\"အများသုံး\" marks a top-level function, struct, enumeration, variable or constant, and nothing else"
 [codes.ZK0229.explain]
-en = """The export mark \"အများသုံး\" stands right before \"လုပ်ဆောင်ချက်\", \"ဒေတာအမျိုးအစား\", \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. It cannot mark a statement, a loop, or a declaration inside a block."""
+en = """The export mark \"အများသုံး\" stands right before \"လုပ်ဆောင်ချက်\", \"ဒေတာအမျိုးအစား\", \"အမျိုးအစား\", \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. It cannot mark a statement, a loop, or a declaration inside a block."""
 
 [codes.ZK0230.title]
 en = "misplaced import"
@@ -305,6 +305,20 @@ en = "a declared kind takes \"တစ်\" and a classifier"
 en = "write \"%{k} တစ်%{c}\", then \"ဖြစ်၍ တန်ဖိုးသည် <value>\" for a value"
 [codes.ZK0234.explain]
 en = """A declaration counts its variable as Burmese counts a thing: the kind, then \"တစ်\" (one) and the classifier of the kind. Most kinds take \"ခု\", \"စာလုံး\" takes \"လုံး\", and a struct takes the classifier its declaration gives. A value follows with \"ဖြစ်၍ တန်ဖိုးသည်\". To have the compiler take the kind from the value, leave the kind out and write the value alone."""
+
+[codes.ZK0235.title]
+en = "nested enumeration"
+[codes.ZK0235.message]
+en = "enumerations can be declared at the top level and nowhere else"
+[codes.ZK0235.explain]
+en = """An enumeration declaration, \"အမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; an enumeration can be used before its declaration."""
+
+[codes.ZK0236.title]
+en = "arm after the default arm"
+[codes.ZK0236.message]
+en = "the default arm \"တခြား ... ဖြစ်လျှင်\" comes last in a switch"
+[codes.ZK0236.explain]
+en = """A switch runs the first arm whose case equals its subject, and the default arm \"တခြား <kind> ဖြစ်လျှင်\" when none does. An arm after the default arm could never run, so the default arm must be the last. Move this arm above the default arm."""
 
 # -------------------------------------------------------------- resolve ZK03xx
 
@@ -418,9 +432,9 @@ en = """The call expression \"... လုပ်ဆောင်သော ရလဒ
 [codes.ZK0316.title]
 en = "duplicate struct"
 [codes.ZK0316.message]
-en = "\"%{n}\" names a struct declared before"
+en = "\"%{n}\" names a struct or an enumeration declared before"
 [codes.ZK0316.explain]
-en = """Each struct name names one struct in the whole program. Rename one of the two declarations."""
+en = """Each struct or enumeration name names one kind in the whole program, and an enumeration whose name ends in \"များ\" claims its name without \"များ\" too. Rename one of the two declarations."""
 
 [codes.ZK0317.title]
 en = "duplicate field"
@@ -432,14 +446,14 @@ en = """A field access \"x ၏ <field>\" finds a field on its name, so two field
 [codes.ZK0318.title]
 en = "unknown kind name"
 [codes.ZK0318.message]
-en = "no struct named \"%{n}\" is declared"
+en = "no struct or enumeration named \"%{n}\" is declared"
 [codes.ZK0318.explain]
-en = """A name in a kind phrase, as in \"ကိန်းရှင် x သည် လူ တစ်ယောက် ဖြစ်ပါစေ။\", names a struct. Declare it at the top level with \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\", or check the spelling."""
+en = """A name in a kind phrase, as in \"ကိန်းရှင် x သည် လူ တစ်ယောက် ဖြစ်ပါစေ။\", names a struct or an enumeration. Declare it at the top level with \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\" or \"အမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\", or check the spelling."""
 
 [codes.ZK0319.title]
 en = "name of a struct reused"
 [codes.ZK0319.message]
-en = "\"%{n}\" names a struct, so it cannot name a value or a function too"
+en = "\"%{n}\" names a struct or an enumeration, so it cannot name a value or a function too"
 [codes.ZK0319.explain]
 en = """A struct name can start a kind wherever a value can stand, as in \"လူ ၏ အရွယ်အစား\", so the compiler reads a struct name as a kind each time. A variable, constant, parameter, field or function with that name could never be read. Pick another name for one of the two."""
 
@@ -510,6 +524,29 @@ en = "\"%{n}\" is exported, but its kind names the private struct \"%{s}\""
 en = "mark \"%{s}\" with \"အများသုံး\" as well, or keep \"%{n}\" private"
 [codes.ZK0324.explain]
 en = """An exported function, struct, variable or constant can be used from other files, so each struct its kinds name must be usable there too. A struct that the file declares without \"အများသုံး\" is private to the file. Export the struct as well, or remove the mark from the declaration that uses it."""
+
+[codes.ZK0328.title]
+en = "duplicate member"
+[codes.ZK0328.message]
+en = "the enumeration \"%{e}\" names the member \"%{n}\" twice"
+[codes.ZK0328.explain]
+en = """Each member of an enumeration has a name of its own, so \"<name>များထဲမှ <member>\" picks one member. Rename one of the two members."""
+
+[codes.ZK0329.title]
+en = "unknown member"
+[codes.ZK0329.message]
+en = "the enumeration \"%{e}\" has no member \"%{n}\""
+[codes.ZK0329.explain]
+en = """\"<name>များထဲမှ <member>\" and a bare case in a switch over an enumeration name one of its members, as its declaration \"အမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\" lists them. Check the spelling, or add the member to the declaration."""
+
+[codes.ZK0330.title]
+en = "unknown enumeration"
+[codes.ZK0330.message]
+en = "\"%{n}\" before \"ထဲမှ\" names no enumeration"
+[codes.ZK0330.help]
+en = "write \"%{f}ထဲမှ\""
+[codes.ZK0330.explain]
+en = """A member is written \"<name>များထဲမှ <member>\", \"<member> from among the <name>s\": the enumeration name, then \"များ\", then \"ထဲမှ\". A name that ends in \"များ\" takes no second \"များ\". The name before \"ထဲမှ\" here is no enumeration, or lacks its \"များ\"."""
 
 # ---------------------------------------------------------------- kinds ZK04xx
 
@@ -930,6 +967,50 @@ en = "write \"... ကို ရလဒ်ကောင်းအဖြစ် ပြ
 en = "write \"... ကို ရလဒ်အဖြစ် ပြန်ပေးပါ\""
 [codes.ZK0455.explain]
 en = """A function whose result clause is a result kind gives back a good result or an error value, and the sentence tells which: \"... ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ\" for the good result and \"... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ\" for the error value. A function that cannot fail gives back its result with \"... ကို ရလဒ်အဖြစ် ပြန်ပေးပါ\"."""
+
+[codes.ZK0456.title]
+en = "member value"
+[codes.ZK0456.message]
+en = "the value of the member \"%{n}\" must work out when the program compiles"
+[codes.ZK0456.explain]
+en = """A member value in parentheses, as in \"မတွေ့ (၁)\" or \"သွား (\"go\")\", is a constant: a literal, a constant, or an operation on constants that the compiler works out. A template slot in text must work out too. The value of the first member gives the kind of each member value."""
+
+[codes.ZK0457.title]
+en = "duplicate member value"
+[codes.ZK0457.message]
+en = "the member \"%{n}\" has the value of \"%{f}\""
+[codes.ZK0457.explain]
+en = """Each member of an enumeration stands for a value of its own, so a switch or a print can tell the members apart. Give one of the two members another value. A member with no value takes the value of the member before it plus one."""
+
+[codes.ZK0458.title]
+en = "switch misses members"
+[codes.ZK0458.message]
+en = "no arm of this switch names %{m}"
+[codes.ZK0458.help]
+en = "name each member in an arm, or add \"တခြား %{k} ဖြစ်လျှင်\" last"
+[codes.ZK0458.explain]
+en = """A switch over an enumeration runs one arm for each member: either an arm names each member, or the default arm \"တခြား <name> ဖြစ်လျှင်\" comes last and runs for the members the arms do not name. A member added to the enumeration later is then caught where a switch forgets it."""
+
+[codes.ZK0459.title]
+en = "default arm kind"
+[codes.ZK0459.message]
+en = "the default arm names \"%{w}\", but the subject of the switch is \"%{s}\""
+[codes.ZK0459.explain]
+en = """The default arm \"တခြား <kind> ဖြစ်လျှင်\" names the kind of the subject of its switch, as in \"တခြား အရောင် ဖြစ်လျှင်\" over a color. Write the kind of the subject there; for an enumeration whose name ends in \"များ\", write the name without \"များ\"."""
+
+[codes.ZK0460.title]
+en = "duplicate case"
+[codes.ZK0460.message]
+en = "an arm before this one has this case"
+[codes.ZK0460.explain]
+en = """A switch runs the first arm whose case equals the subject, so a second arm with an equal case could never run. Remove the arm, or change its case."""
+
+[codes.ZK0461.title]
+en = "member needs a value"
+[codes.ZK0461.message]
+en = "the member \"%{n}\" needs a value: no %{k} value follows the member before it"
+[codes.ZK0461.explain]
+en = """A member with no value takes the value of the member before it plus one, and the first takes 0, when the kind of the members is an integer. For another kind, such as text or a character, write a value for each member. An integer member can also pass the largest value of its kind; write its value then."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 

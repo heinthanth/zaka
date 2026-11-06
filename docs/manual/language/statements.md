@@ -25,6 +25,7 @@ value), `WORD` the classifier of the kind, and `BODY` a block or one statement. 
 | print | `VALUE ကို ပြသပါ။` or `VALUE ဟု ပြသပါ။` |
 | block | `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။` statements `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` |
 | if | `အကယ်၍ COND လျှင် BODY` then `[ထိုသို့မဟုတ်ဘဲ COND လျှင် BODY]` then `[သို့မဟုတ်ပါက BODY]` |
+| switch | `VALUE သည် CASE ဖြစ်လျှင် BODY` then `[CASE၊ CASE တို့ ဖြစ်လျှင် BODY]` then `[တခြား KIND ဖြစ်လျှင် BODY]` (see [Enumerations](enums.md#switch)) |
 | while | `COND နေသရွေ့ BODY` |
 | counted loop | `FROM မှ TO အထိ [STEP စီ] NAME အနေဖြင့် ရေတွက်၍ BODY` |
 | each cell | `LIST ၏ အကွက်တိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` |

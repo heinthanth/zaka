@@ -31,7 +31,7 @@ error[ZK0228]: structs can be declared at the top level and nowhere else
 ```
 
 ```text
-error[ZK0316]: "လူ" names a struct declared before
+error[ZK0316]: "လူ" names a struct or an enumeration declared before
 ```
 
 ## One name for two fields
@@ -62,7 +62,7 @@ A kind that names a struct no declaration gives is refused:
 ```
 
 ```text
-error[ZK0318]: no struct named "လုပ်" is declared
+error[ZK0318]: no struct or enumeration named "လုပ်" is declared
 ```
 
 Check the spelling of the name against the declaration.
@@ -81,7 +81,7 @@ same name cannot name a variable, a constant, a parameter, a field or a function
 ```
 
 ```text
-error[ZK0319]: "လူ" names a struct, so it cannot name a value or a function too
+error[ZK0319]: "လူ" names a struct or an enumeration, so it cannot name a value or a function too
 ```
 
 ## A field the struct does not have
@@ -240,4 +240,4 @@ warning[ZK0509]: လူ is counted with "ယောက်", not "ခု"
 - Give a struct the classifier `ယောက်`, declare a variable of it with `တစ်ခု`, and
   compare the warning with the ones above.
 
-Next: [Modules](../modules/README.md).
+Next: [Enumerations and switches](../enums/README.md).

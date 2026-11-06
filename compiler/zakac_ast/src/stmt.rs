@@ -121,6 +121,10 @@ pub enum Stmt
     Struct(StructDecl),
     /// `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းပါ။`
     Import(ImportStmt),
+    /// `အမျိုးအစား <name> ဆိုသည်မှာ <member>၊ ... တို့ ဖြစ်သည်။`
+    Enum(EnumDecl),
+    /// `<subject> သည် <case> ဖြစ်လျှင် ... တခြား <kind> ဖြစ်လျှင် ...`
+    Switch(SwitchStmt),
 }
 
 /// Variable or constant declaration.
@@ -571,6 +575,78 @@ pub struct StructDecl
     #[builder(default)]
     pub exported: bool,
     /// Source region, the full stop included.
+    pub span: Span,
+}
+
+/// One member of an enumeration: its name, and the value in parentheses
+/// when one is written.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct EnumMember
+{
+    /// The member name.
+    pub name: Ident,
+    /// The value, `(<value>)`; with none, the member takes the value of the
+    /// member before it plus one, and the first takes 0.
+    pub value: Option<Expr>,
+    /// Source region, from the name to the closing parenthesis.
+    pub span: Span,
+}
+
+/// Enumeration declaration:
+/// `အမျိုးအစား <name> ဆိုသည်မှာ <member> (<value>)?၊ ... တို့ ဖြစ်သည်။`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct EnumDecl
+{
+    /// The enumeration name.
+    pub name: Ident,
+    /// The members in order.
+    pub members: Vec<EnumMember>,
+    /// `true` when `အများသုံး` marks it, so other files can import it.
+    #[builder(default)]
+    pub exported: bool,
+    /// Source region, the full stop included.
+    pub span: Span,
+}
+
+/// One arm of a switch: `<case> ဖြစ်လျှင် <block>`, or with several cases,
+/// `<case>၊ <case> တို့ ဖြစ်လျှင် <block>`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct SwitchArm
+{
+    /// The values the subject is compared with; the arm runs when the subject
+    /// equals one of them.
+    pub cases: Vec<Expr>,
+    /// The block run when the subject equals the case.
+    pub block: BlockStmt,
+    /// Source region, from the first case to the end of the block.
+    pub span: Span,
+}
+
+/// The default arm of a switch: `တခြား <kind> ဖြစ်လျှင် <block>`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct SwitchDefault
+{
+    /// The kind of the subject, as written.
+    pub kind: Kind,
+    /// The block run when no case equals the subject.
+    pub block: BlockStmt,
+    /// Source region, from `တခြား` to the end of the block.
+    pub span: Span,
+}
+
+/// A switch over one subject:
+/// `<subject> သည် <case> ဖြစ်လျှင် ... <case> ဖြစ်လျှင် ... တခြား <kind> ဖြစ်လျှင် ...`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct SwitchStmt
+{
+    /// The value each case is compared with.
+    pub subject: Expr,
+    /// The arms, in order; the first whose case equals the subject runs.
+    #[builder(default)]
+    pub arms: Vec<SwitchArm>,
+    /// The default arm.
+    pub default: Option<SwitchDefault>,
+    /// Source region.
     pub span: Span,
 }
 

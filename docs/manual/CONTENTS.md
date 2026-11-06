@@ -14,6 +14,7 @@
   - [Lists](language/lists.md)
   - [Text](language/text.md)
   - [Structs](language/structs.md)
+  - [Enumerations](language/enums.md)
   - [Modules](language/modules.md)
   - [Natural wording](language/naturalness.md)
   - [Slices](language/slices.md)
