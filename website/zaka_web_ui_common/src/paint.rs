@@ -183,6 +183,8 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::External
         | Kw::OneFunction
         | Kw::WillAccept
+        | Kw::AcceptingRel
+        | Kw::ReturningRel
         | Kw::DoAnd
         | Kw::Tasks
         | Kw::Done
@@ -333,6 +335,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::RawAddress
         | Kw::Borrowed
         | Kw::EditParam
+        | Kw::FnKind
         | Kw::EditArg
         | Kw::EditableAttr
         | Kw::EditableClaim

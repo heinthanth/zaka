@@ -90,7 +90,8 @@ impl Checker
             Expr::Call(n) => self.infer_call(n),
             Expr::Null(_) =>
             {
-                Some(expect.filter(|k| k.is_ptr()).unwrap_or(DataKind::Null))
+                let takes = |k: &DataKind| k.is_ptr() || k.is_fn();
+                Some(expect.filter(takes).unwrap_or(DataKind::Null))
             }
             Expr::SizeOf(n) =>
             {
@@ -105,6 +106,7 @@ impl Checker
             Expr::BlankList(n) => self.infer_blank(n, expect),
             Expr::Str(n) => self.infer_str(n),
             Expr::Member(n) => self.infer_member(n),
+            Expr::FnAddr(n) => self.infer_fn_addr(n, expect),
         }
     }
 
@@ -618,8 +620,10 @@ impl Checker
     /// The result kind of the function, or `None` after an error.
     fn infer_call(&mut self, n: &CallExpr) -> Option<DataKind>
     {
-        let ret = self.check_call(&n.callee, &n.args, &n.edits, &n.marks, n.span)?;
-        self.check_pass(&n.callee, n.pass, false, n.span);
+        let place = n.place.as_deref();
+        let ret =
+            self.check_call(&n.callee, place, &n.args, &n.edits, &n.marks, n.span)?;
+        self.check_pass(&n.callee, ret, n.pass, false, n.span);
         // Without a pass-on the value is the whole result; with one, the good
         // result.
         let parts = ret.and_then(DataKind::fallible_parts);

@@ -19,6 +19,7 @@ use zakac_span::span::Span;
 use crate::describe::kw_text;
 use crate::describe::one_of;
 use crate::describe::quote;
+use crate::fn_kind::FnForm;
 use crate::literal::decimal_value;
 use crate::parser::PResult;
 use crate::parser::Parser;
@@ -109,6 +110,9 @@ impl Parser<'_>
                 )
         };
         ret_true!(kw.is_some_and(starts) || self.is_struct_at(0));
+        ret_true!(kw == Some(Kw::FnKind) || self.paren_fn_len(0).is_some());
+        let edit_first = kw == Some(Kw::EditParam) && !self.in_list;
+        ret_true!(edit_first && self.fn_head_at(0, FnForm::Full).is_some());
         self.at_sized_kind(0) || self.at_count_prefix(0)
     }
 
@@ -138,15 +142,32 @@ impl Parser<'_>
     /// The token count, or `None` when no kind starts here.
     pub(crate) fn kind_len(&self) -> Option<usize>
     {
-        let marks = self.count_at(0, Kw::Borrowed);
-        let pre = marks + self.count_prefixes_len(marks);
-        let Some(core) = self.result_core_len(pre)
-        else
-        {
-            return self.plain_kind_len(0);
-        };
-        let (len, _) = self.scan_suffixes(pre + core, true, false);
-        Some(pre + core + len)
+        self.kind_len_at(0, self.fn_form())
+    }
+
+    /// The number of tokens in the kind phrase that starts `at` tokens
+    /// ahead, its levels included. Nothing is consumed.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    /// * `form` - The bare function kinds the phrase can be.
+    ///
+    /// # Returns
+    ///
+    /// The token count, or `None` when no kind starts there.
+    pub(crate) fn kind_len_at(&self, at: usize, form: FnForm) -> Option<usize>
+    {
+        let levels = |core: usize| core + self.scan_suffixes(at + core, true, false).0;
+        ret_if!(let Some(core) = self.fn_head_at(at, form), Some(levels(core)));
+        let marks = self.count_at(at, Kw::Borrowed);
+        let pre = marks + self.count_prefixes_len(at + marks);
+        // A function kind in parentheses can be the good side of a result kind.
+        ret_if!(let Some(core) = self.result_core_len(at + pre), Some(levels(pre + core)));
+        let prefixed = (pre > 0).then(|| self.fn_head_at(at + pre, form)).flatten();
+        let fn_core = self.paren_fn_len(at + pre).or(prefixed);
+        ret_if!(let Some(core) = fn_core, Some(levels(pre + core)));
+        self.plain_kind_len(at)
     }
 
     /// The number of tokens in the two sides of a result kind that starts
@@ -166,7 +187,7 @@ impl Parser<'_>
             ret_if!(kw_of(&self.peek_n(at + 1)) != Some(Kw::Or), None);
             return self.err_side_len(at + 2).map(|len| 2 + len);
         }
-        let n = self.plain_kind_len(at)?;
+        let n = self.paren_fn_len(at).or_else(|| self.plain_kind_len(at))?;
         let tail = match (kw_of(&self.peek_n(at + n)), kw_of(&self.peek_n(at + n + 1)))
         {
             (Some(Kw::Result), Some(Kw::Or)) => 2,
@@ -442,10 +463,36 @@ impl Parser<'_>
     /// bad bit count.
     pub(crate) fn parse_kind(&mut self) -> PResult<Kind>
     {
+        self.parse_kind_with(self.fn_form())
+    }
+
+    /// Parse a kind phrase whose first token can start a bare function kind
+    /// of `form`; see [`Self::parse_kind`].
+    ///
+    /// # Arguments
+    ///
+    /// * `form` - The bare function kinds the phrase can be.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or a diagnostic.
+    pub(crate) fn parse_kind_with(&mut self, form: FnForm) -> PResult<Kind>
+    {
         let start = self.peek().span;
+        if self.fn_head_at(0, form).is_some()
+        {
+            let mut kind = self.parse_fn_head(form)?;
+            self.parse_levels(&mut kind, Vec::new(), true, start)?;
+            return Ok(kind);
+        }
         let marks = self.count_at(0, Kw::Borrowed);
         let pre = marks + self.count_prefixes_len(marks);
-        ret_if!(self.result_core_len(pre).is_none(), self.parse_plain_kind());
+        let result = self.result_core_len(pre).is_some();
+        let paren = self.paren_fn_len(pre).is_some();
+        let prefixed = pre > 0 && self.fn_head_at(pre, form).is_some();
+        let wrapped = !result && (paren || prefixed);
+        ret_if!(wrapped, self.parse_wrapped_fn(marks, paren, form, start));
+        ret_if!(!result, self.parse_plain_kind());
         // Borrow marks and count prefixes before a result kind belong to the
         // levels after it.
         do_for!(_ in 0..marks, self.advance());
@@ -457,11 +504,43 @@ impl Parser<'_>
         }
         else
         {
-            let ok = self.parse_plain_kind()?;
+            let ok = tern!(
+                self.paren_fn_len(0).is_some(),
+                self.parse_wrapped_fn(0, true, FnForm::Full, self.peek().span)?,
+                self.parse_plain_kind()?
+            );
             do_if!(self.at(Kw::Result), self.advance());
             self.expect(Kw::Or)?;
             self.parse_err_side(start, Some(ok))?
         };
+        kind.borrowed = marks > 0;
+        kind.extra_borrows = u8::try_from(marks.saturating_sub(1)).unwrap_or(u8::MAX);
+        self.parse_levels(&mut kind, counts, true, start)?;
+        Ok(kind)
+    }
+
+    /// Parse a function kind after borrow marks and count prefixes, or in
+    /// parentheses, then its levels.
+    ///
+    /// # Arguments
+    ///
+    /// * `marks` - The number of `ငှားထားသော` markers before it.
+    /// * `paren` - Whether the kind stands in parentheses.
+    /// * `form` - The bare function kinds allowed here.
+    /// * `start` - Where the kind phrase starts.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or a diagnostic.
+    fn parse_wrapped_fn(
+        &mut self, marks: usize, paren: bool, form: FnForm, start: Span,
+    ) -> PResult<Kind>
+    {
+        do_for!(_ in 0..marks, self.advance());
+        let counts = self.parse_counts()?;
+        do_if!(paren, self.advance());
+        let mut kind = self.parse_fn_head(tern!(paren, FnForm::Full, form))?;
+        do_if!(paren, _ = self.expect_punct(Punct::RParen)?);
         kind.borrowed = marks > 0;
         kind.extra_borrows = u8::try_from(marks.saturating_sub(1)).unwrap_or(u8::MAX);
         self.parse_levels(&mut kind, counts, true, start)?;

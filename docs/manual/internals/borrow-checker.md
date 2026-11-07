@@ -414,6 +414,27 @@ code](codegen.md)), so the checker needs no rule of its own: an owner alive at t
 site is lost when the function leaves, which is ZK0708 at the call. The IR statement
 `Halt` (the causes `not_good` and `not_fault`) ends a path in the graph (`cfg.rs`), with no leak check and no exit check there: the run stops, so nothing is left to free.
 
+A call through a function value (`Stmt::CallValue`, `ExprNode::CallValue`) names no
+function, but a function value comes from the address of a function alone. `values.rs`
+gives the functions whose address the module takes (`taken_fns`) and, of those, the ones
+whose parameters and result fit the kind of the value (`value_callees`, `Func::fits_kind`).
+`Flow::call` takes a list of functions and runs `check_call`, `note_unfilled` and
+`lift_reads` for each, and joins what each gives back; `call_roots` joins their result
+roots. `callees` adds each function whose address is taken for a call through a value, so
+the call graph, the global reads of the liveness and the global writes of `last_use.rs`
+count them. A function whose address is taken gets no shared parameters (`share_params`):
+a call through a value passes each argument in its own slot, whichever function runs.
+
+A slot of a function kind gets a pointer fact (`SlotState::of_kind`, `fn_const`): `HELD`
+for a function address, folded or not, and `NULL` with `FRESH` for a `ဗလာ` the routine
+writes, so the strict check can tell it from a value that comes from outside (a
+parameter, a global in a function, a call result: `NULL` and `HELD` with no mark). A test
+against `ဗလာ` narrows it as for a pointer, and drops the mark. `check_callee` reports a
+call through a slot that is `ဗလာ` on each path (ZK0709), and, under strict, through one a
+marked `ဗလာ` can reach (ZK0711). A field or a cell of a function kind is not followed; the
+VM stops a call through `ဗလာ` there. `taken_fns` finds a folded address too: a constant of
+a function kind, the number of the function plus one.
+
 An external function has one statement, `ExprNode::Host`: the flow reads each argument (the
 borrowed address of a parameter) and gives a value with no roots, a fresh one, and the
 digest of the function follows from that statement as for each other function, so its

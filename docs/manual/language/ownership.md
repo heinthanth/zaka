@@ -606,6 +606,9 @@ block.
   read. A new pointer variable, a moved owner and a freed owner all hold `ဗလာ`.
 - **ZK0711**, with `--mem-strict` alone. A pointer that *can* be `ဗလာ` there, most often
   a new block never compared with `ဗလာ`, since the heap can run out.
+- A [function value](function-values.md#no-function) is followed the same: a call through
+  one that is `ဗလာ` on each path is ZK0709, and under `--mem-strict`, a call through a
+  variable that a `ဗလာ` the function wrote can reach on some path is ZK0711.
 - **ZK0710.** A box or cell number that is a constant (or that the compiler works out from
   loops with counted bounds), and lies past the end of its block. The variable of a counted
   loop has a known range.

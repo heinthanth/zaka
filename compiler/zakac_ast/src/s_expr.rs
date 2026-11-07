@@ -2,6 +2,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::expr::Expr;
+use crate::expr::Ident;
 use crate::expr::IntLit;
 use crate::expr::StrExpr;
 use crate::expr::StrPiece;
@@ -95,7 +96,10 @@ impl ToSexpr for Expr
             Expr::Call(n) =>
             {
                 let word = tern!(n.pass, "call-pass", "call");
-                list(word, call_parts(&n.callee.name, &n.args, &n.edits))
+                list(
+                    word,
+                    call_parts(&callee_text(&n.callee, &n.place), &n.args, &n.edits),
+                )
             }
             Expr::Null(_) => "null".into(),
             Expr::SizeOf(n) => list("sizeof", [n.kind.to_sexpr()]),
@@ -125,6 +129,7 @@ impl ToSexpr for Expr
                 "member",
                 [n.qualifier.name.to_string(), n.member.name.to_string()],
             ),
+            Expr::FnAddr(n) => list("fn_addr", [n.name.name.to_string()]),
         }
     }
 }
@@ -166,7 +171,10 @@ impl ToSexpr for Stmt
             Stmt::Call(s) =>
             {
                 let word = tern!(s.pass, "call-pass", "call");
-                list(word, call_parts(&s.callee.name, &s.args, &s.edits))
+                list(
+                    word,
+                    call_parts(&callee_text(&s.callee, &s.place), &s.args, &s.edits),
+                )
             }
             Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
             Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
@@ -312,11 +320,41 @@ fn base_name(k: &Kind) -> String
             let err = parts.map_or("-".to_string(), |p| side(&p.err, "-"));
             format!("({ok} ! {err})")
         }
+        BaseKind::Fn => fn_kind_sexpr(k),
         BaseKind::Char | BaseKind::Bool | BaseKind::Text | BaseKind::Opaque =>
         {
             k.base.as_ref().to_string()
         }
     }
+}
+
+/// A function kind as `fn(<param>, …) -> <result>`, each parameter with its
+/// edit flag, its name and its mark when written.
+///
+/// # Arguments
+///
+/// * `k` - The kind; its base is [`BaseKind::Fn`].
+///
+/// # Returns
+///
+/// The text.
+fn fn_kind_sexpr(k: &Kind) -> String
+{
+    let Some(sig) = k.sig.as_deref()
+    else
+    {
+        return "fn()".into();
+    };
+    let param = |p: &crate::kind::SigParam| {
+        let edit = tern!(p.edit, "mut ", "");
+        let name = p.name.as_ref().map_or(String::new(), |n| format!(" {}", n.name));
+        let mark = p.mark.as_ref().map_or(String::new(), |m| format!("({})", m.name));
+        format!("{edit}{}{name}{mark}", p.kind.to_sexpr())
+    };
+    let params: Vec<String> = sig.params.iter().map(param).collect();
+    let ret =
+        sig.ret.as_ref().map_or(String::new(), |r| format!(" -> {}", r.to_sexpr()));
+    format!("fn({}){ret}", params.join(", "))
 }
 
 /// An integer literal with its kind prefix as a suffix: `18u8`.
@@ -347,6 +385,22 @@ fn verb_sexpr(n: &VerbExpr) -> String
 {
     let args = n.args.iter().map(ToSexpr::to_sexpr);
     list(verb_name(n), args.chain(n.kind_arg.iter().map(ToSexpr::to_sexpr)))
+}
+
+/// The callee of a call as an s-expression: the name, or the place that
+/// holds the function value.
+///
+/// # Arguments
+///
+/// * `callee` - The function name.
+/// * `place` - The place, for a call through a field, a cell or a pointer.
+///
+/// # Returns
+///
+/// The text.
+fn callee_text(callee: &Ident, place: &Option<Box<Expr>>) -> String
+{
+    place.as_ref().map_or_else(|| callee.name.to_string(), |p| p.to_sexpr())
 }
 
 /// The callee name followed with the arguments.

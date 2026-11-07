@@ -406,6 +406,7 @@ program:
               span:
                 lo: 1809
                 hi: 1833
+            place: null
             args: []
             edits: []
             pass: false
@@ -423,6 +424,7 @@ program:
                   span:
                     lo: 1921
                     hi: 1978
+                place: null
                 args:
                 - int:
                     id: 25

@@ -196,6 +196,10 @@ argument list. The sign form writes the arguments in parentheses after the name.
 | expression | `လုပ်ဆောင်ချက် <name> ကို <arguments> တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်` | a value |
 | sign form | `<name>(<arguments>)` | a value, the same call as the expression form |
 
+The name can also be a variable, a parameter or a constant that holds a function value,
+and the word forms can name a field or a cell that holds one; see
+[Function values](function-values.md#calling-a-function-value).
+
 A function whose result clause names a result kind can fail. A call to it
 passes the failure on, with `ရလဒ်ကောင်း` in place of `ရလဒ်`, a `?` after the `)`, or
 `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` at the end of a call statement; or, with none

@@ -247,6 +247,14 @@ pub(crate) struct Parser<'t>
     /// operand closes the value, and the size follows it.
     #[builder(default)]
     pub(crate) in_fill: bool,
+    /// Whether a list of parameters or fields is open: a function kind with
+    /// parameters then stands in parentheses.
+    #[builder(default)]
+    pub(crate) in_list: bool,
+    /// Whether the place that holds the function of a long call is being
+    /// parsed: a `ကို` after a lone operand closes the place.
+    #[builder(default)]
+    pub(crate) in_callee: bool,
     /// Whether a statement other than an import has been parsed at the top
     /// level, so a later import is out of place.
     #[builder(default)]
@@ -322,12 +330,23 @@ impl<'t> Parser<'t>
         let stop = TokenKind::Punct(Punct::FullStop);
         let header: Vec<&Token> =
             tokens.iter().take_while(|t| t.kind != stop).collect();
-        let open = |pair: &[&Token]| {
+        // A mark at depth 0 marks the header; one inside the parentheses of a
+        // function kind marks a parameter of that kind.
+        let mut depth = 0usize;
+        let mut count = 0;
+        for pair in header.windows(2)
+        {
             let paren =
                 pair[1].kind == TokenKind::Punct(Punct::LParen) && pair[1].joined;
-            pair[0].kind == TokenKind::Ident && paren
-        };
-        let count = header.windows(2).filter(|pair| open(pair)).count();
+            count +=
+                usize::from(depth == 0 && pair[0].kind == TokenKind::Ident && paren);
+            match pair[0].kind
+            {
+                TokenKind::Punct(Punct::LParen) => depth += 1,
+                TokenKind::Punct(Punct::RParen) => depth = depth.saturating_sub(1),
+                _ => (),
+            }
+        }
         (count > 0).then(|| (self.text_of(name.span), count))
     }
 

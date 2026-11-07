@@ -9,6 +9,7 @@ use crate::expr::CharLit;
 use crate::expr::Expr;
 use crate::expr::FieldExpr;
 use crate::expr::FloatLit;
+use crate::expr::FnAddrExpr;
 use crate::expr::GroupExpr;
 use crate::expr::Ident;
 use crate::expr::IndexExpr;
@@ -27,6 +28,7 @@ use crate::expr::StrExpr;
 use crate::expr::StructLit;
 use crate::expr::UsingMark;
 use crate::expr::VerbExpr;
+use crate::kind::FnSig;
 use crate::kind::Kind;
 use crate::stmt::AddStmt;
 use crate::stmt::AllocStmt;
@@ -159,6 +161,7 @@ StructLit => "struct_lit", visit_struct_lit;
 BlankListLit => "blank_list", visit_blank_list;
 StrExpr => "str_lit", visit_str_expr;
 MemberExpr => "member", visit_member;
+FnAddrExpr => "fn_addr", visit_fn_addr;
 Ident => "ident", visit_ident;
 Kind => "kind", visit_kind; }
 
@@ -239,6 +242,7 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::BlankList(e) => e,
         Expr::Str(e) => e,
         Expr::Member(e) => e,
+        Expr::FnAddr(e) => e,
     }
 }
 
@@ -389,6 +393,8 @@ pub trait Visitor
     fn visit_str_expr(&mut self, n: &StrExpr) { walk_str_expr(self, n) }
     /// Visit a member of an enumeration.
     fn visit_member(&mut self, n: &MemberExpr) { walk_member(self, n) }
+    /// Visit the address of a function.
+    fn visit_fn_addr(&mut self, n: &FnAddrExpr) { walk_fn_addr(self, n) }
     /// Visit a name in a declaration, parameter, loop header or call.
     fn visit_ident(&mut self, n: &Ident) { walk_ident(self, n) }
     /// Visit a kind.
@@ -588,6 +594,7 @@ pub fn walk_call_stmt<V: Visitor + ?Sized>(v: &mut V, n: &CallStmt)
 {
     v.enter(n);
     v.visit_ident(&n.callee);
+    do_if!(let Some(place) = &n.place, v.visit_expr(place));
     do_for!(a in &n.args, v.visit_expr(a));
     v.leave(n);
 }
@@ -766,6 +773,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::BlankList(e) => v.visit_blank_list(e),
         Expr::Str(e) => v.visit_str_expr(e),
         Expr::Member(e) => v.visit_member(e),
+        Expr::FnAddr(e) => v.visit_fn_addr(e),
     }
 }
 
@@ -805,6 +813,14 @@ pub fn walk_member<V: Visitor + ?Sized>(v: &mut V, n: &MemberExpr)
     v.enter(n);
     v.visit_ident(&n.qualifier);
     v.visit_ident(&n.member);
+    v.leave(n);
+}
+
+/// Visit the function name of a function address.
+pub fn walk_fn_addr<V: Visitor + ?Sized>(v: &mut V, n: &FnAddrExpr)
+{
+    v.enter(n);
+    v.visit_ident(&n.name);
     v.leave(n);
 }
 
@@ -871,6 +887,7 @@ pub fn walk_call_expr<V: Visitor + ?Sized>(v: &mut V, n: &CallExpr)
 {
     v.enter(n);
     v.visit_ident(&n.callee);
+    do_if!(let Some(place) = &n.place, v.visit_expr(place));
     do_for!(a in &n.args, v.visit_expr(a));
     v.leave(n);
 }
@@ -993,6 +1010,7 @@ pub trait VisitorMut
     {
         self.visit_span_mut(&mut n.span);
         do_if!(let Some(name) = &mut n.name, self.visit_ident_mut(name));
+        do_if!(let Some(sig) = &mut n.sig, walk_sig_mut(self, sig));
     }
     /// Visit a heap allocation.
     fn visit_alloc_mut(&mut self, n: &mut AllocStmt) { walk_alloc_mut(self, n) }
@@ -1008,6 +1026,19 @@ pub trait VisitorMut
     fn visit_null_mut(&mut self, n: &mut NullLit) { self.visit_span_mut(&mut n.span) }
     /// Visit a size expression.
     fn visit_size_of_mut(&mut self, n: &mut SizeOfExpr) { walk_size_of_mut(self, n) }
+}
+
+/// Visit the parameters and the result of a function kind.
+pub fn walk_sig_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FnSig)
+{
+    for p in &mut n.params
+    {
+        v.visit_span_mut(&mut p.span);
+        v.visit_kind_mut(&mut p.kind);
+        do_if!(let Some(name) = &mut p.name, v.visit_ident_mut(name));
+        do_if!(let Some(mark) = &mut p.mark, v.visit_ident_mut(mark));
+    }
+    opt_kind_mut(v, &mut n.ret);
 }
 
 /// Visit the statements of a program.
@@ -1249,6 +1280,7 @@ pub fn walk_call_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallStmt)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.callee);
+    do_if!(let Some(place) = &mut n.place, v.visit_expr_mut(place));
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
     call_marks_mut(v, &mut n.using, &mut n.marks);
 }
@@ -1347,6 +1379,11 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
             v.visit_ident_mut(&mut e.qualifier);
             v.visit_ident_mut(&mut e.member);
         }
+        Expr::FnAddr(e) =>
+        {
+            v.visit_span_mut(&mut e.span);
+            v.visit_ident_mut(&mut e.name);
+        }
     }
 }
 
@@ -1389,6 +1426,7 @@ pub fn walk_call_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallExpr)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.callee);
+    do_if!(let Some(place) = &mut n.place, v.visit_expr_mut(place));
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
     call_marks_mut(v, &mut n.using, &mut n.marks);
 }

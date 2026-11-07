@@ -47,6 +47,8 @@ pub(crate) struct CallParts
     pub(crate) start: Span,
     /// The function name.
     pub(crate) callee: Ident,
+    /// The place that holds the function, in a long form that writes one.
+    pub(crate) place: Option<Box<Expr>>,
     /// The arguments, with the edit flag of each.
     pub(crate) args: Args,
     /// The particle that closes the arguments of a call written arguments
@@ -420,10 +422,11 @@ impl Parser<'_>
         let using = UsingMark::builder().plural(plural).span(close.span).build();
         self.expect(Kw::Using)?;
         let long = self.eat(Kw::Function);
-        let callee = self.parse_ident()?;
+        let (callee, place) =
+            tern!(long, self.parse_callee()?, (self.parse_ident()?, None));
         do_if!(long, _ = self.expect(Kw::Ko)?);
-        let parts =
-            CallParts::builder().start(start).callee(callee).args(args).using(using);
+        let parts = CallParts::builder().start(start).callee(callee).maybe_place(place);
+        let parts = parts.args(args).using(using);
         let parts = parts.build();
         self.finish_using(parts, long, mode)
     }
@@ -502,8 +505,9 @@ impl Parser<'_>
             self.finish_call_stmt(parts).map(Head::Stmt)
         );
         let pass = matches!(kw, Some(Kw::CallGoodResult | Kw::UsedGoodResult));
-        let CallParts { start, callee, args, using, marks } = parts;
-        let mut call = self.call_expr(start.to(&end.span), callee, args, pass);
+        let CallParts { start, callee, place, args, using, marks } = parts;
+        let call = self.call_expr(start.to(&end.span), callee, args, pass);
+        let mut call = crate::notation::with_place(call, place);
         extract!(Expr::Call(node) = &mut call);
         node.using = using;
         node.marks = marks;

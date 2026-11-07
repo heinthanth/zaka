@@ -273,6 +273,12 @@ impl IrTree<'_>
                 let children = args.iter().map(|a| self.expr(a)).collect();
                 self.node("call", name.clone(), span, children)
             }
+            Stmt::CallValue { callee, args, .. } =>
+            {
+                let children =
+                    std::iter::once(callee).chain(args).map(|a| self.expr(a)).collect();
+                self.node("call_value", blank, span, children)
+            }
             Stmt::Store { addr, value, .. } =>
             {
                 self.node("store", blank, span, self.pair(addr, value))
@@ -426,6 +432,12 @@ impl IrTree<'_>
             {
                 ("call", name.clone(), args.iter().map(|a| self.expr(a)).collect())
             }
+            ExprNode::CallValue { callee, args } =>
+            {
+                let parts = std::iter::once(callee.as_ref()).chain(args);
+                ("call_value", String::new(), parts.map(|a| self.expr(a)).collect())
+            }
+            ExprNode::FnAddr { name, .. } => ("fn_addr", name.clone(), Vec::new()),
             ExprNode::Host { func, args } =>
             {
                 let name: &'static str = func.into();

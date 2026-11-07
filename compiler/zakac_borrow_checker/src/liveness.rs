@@ -17,6 +17,7 @@ use crate::callgraph::callees;
 use crate::cfg::Cfg;
 use crate::cfg::NodeKind;
 use crate::routine::Routine;
+use crate::values::taken_fns;
 use crate::walk::each_expr;
 use crate::walk::each_stmt;
 use crate::walk::stmt_exprs;
@@ -61,7 +62,8 @@ pub(crate) fn live_out_of(
 ) -> Vec<LiveMap>
 {
     let globals = global_reads_of(module, keep);
-    let slots = Slots { module, routine, globals, keep };
+    let taken = taken_fns(module);
+    let slots = Slots { module, routine, globals, taken, keep };
     let order = cfg.postorder();
     let mut outs = vec![LiveMap::new(); cfg.nodes.len()];
     let mut ins = vec![LiveMap::new(); cfg.nodes.len()];
@@ -110,6 +112,9 @@ struct Slots<'m>
     /// The globals of the followed kinds each function reads, itself or
     /// through its callees.
     globals: Vec<BTreeSet<u32>>,
+    /// The functions whose address the module takes: a call through a
+    /// function value can run each of them.
+    taken: BTreeSet<u32>,
     /// Whether the liveness follows a slot of a kind.
     keep: fn(DataKind) -> bool,
 }
@@ -177,6 +182,11 @@ impl Slots<'_>
         let mut calls = Vec::new();
         do_if!(let NodeKind::Leaf(Stmt::Call { func, span, .. }) = kind, calls.push((*func, *span)));
         do_for!(e in &exprs, each_expr(e, &mut |sub| calls.extend(call_of(sub))));
+        let through = |span: Span| self.taken.iter().map(move |&f| (f, span));
+        do_if!(let NodeKind::Leaf(Stmt::CallValue { span, .. }) = kind, calls.extend(through(*span)));
+        do_for!(e in &exprs, each_expr(e, &mut |sub| {
+            do_if!(matches!(sub.node, ExprNode::CallValue { .. }), calls.extend(through(sub.span)));
+        }));
         for (func, span) in calls
         {
             let globals = self.globals.get(func as usize).into_iter().flatten();
@@ -283,6 +293,7 @@ pub(crate) fn global_reads_of(
     module: &Module, keep: fn(DataKind) -> bool,
 ) -> Vec<BTreeSet<u32>>
 {
+    let taken = taken_fns(module);
     let kept = |g: u32| module.globals.get(g as usize).is_some_and(|s| keep(s.kind));
     let direct = |stmts: &[Stmt]| {
         let mut found = Vec::new();
@@ -297,7 +308,7 @@ pub(crate) fn global_reads_of(
         .iter()
         .map(|f| {
             let mut out = BTreeSet::new();
-            callees(&f.block, &mut out);
+            callees(&f.block, &taken, &mut out);
             out
         })
         .collect();

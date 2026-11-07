@@ -17,6 +17,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::enums::EnumKind;
 use zakac_semcheck::enums::MemberValue;
+use zakac_semcheck::fn_kind::FnKind;
 use zakac_semcheck::host;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::semcheck::KindTable;
@@ -48,6 +49,7 @@ use crate::ir::PrintValue;
 use crate::ir::SliceFrom;
 use crate::ir::Slot;
 use crate::ir::Stmt;
+use crate::ir::fn_shape;
 use crate::lends::free_read_lends;
 use crate::value::Value;
 
@@ -135,6 +137,81 @@ struct Sig
     /// The result kind, when the function has one; a result kind when it
     /// can fail.
     ret: Option<DataKind>,
+}
+
+/// What a call runs: a function of the module, or the function a value
+/// holds.
+enum Target
+{
+    /// A function of the module.
+    Fn
+    {
+        /// Index into the module functions.
+        func: u32,
+        /// The function name.
+        name: String,
+    },
+    /// The function value, of a function kind.
+    Value(Expr),
+}
+
+impl Target
+{
+    /// The call node with these arguments.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The lowered arguments.
+    ///
+    /// # Returns
+    ///
+    /// The node.
+    fn node(self, args: Vec<Expr>) -> ExprNode
+    {
+        match self
+        {
+            Target::Fn { func, name } => ExprNode::Call { func, name, args },
+            Target::Value(callee) =>
+            {
+                ExprNode::CallValue { callee: Box::new(callee), args }
+            }
+        }
+    }
+
+    /// The call statement with these arguments, its result dropped.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The lowered arguments.
+    /// * `span` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn stmt(self, args: Vec<Expr>, span: Span) -> Stmt
+    {
+        match self
+        {
+            Target::Fn { func, name } => Stmt::Call { func, name, args, span },
+            Target::Value(callee) => Stmt::CallValue { callee, args, span },
+        }
+    }
+}
+
+/// The signature a call through a value of a function kind sees, laid out
+/// as [`param_kind`] places a parameter.
+///
+/// # Arguments
+///
+/// * `f` - The function kind.
+///
+/// # Returns
+///
+/// The signature; its index names no function.
+fn value_sig(f: &FnKind) -> Sig
+{
+    let (params, ret) = fn_shape(f);
+    Sig { index: u32::MAX, params, edits: f.edits(), ret }
 }
 
 /// The signatures of the top-level functions of each file, numbered in
@@ -694,13 +771,13 @@ impl Lowerer<'_>
             st::Stmt::Call(n) if n.pass =>
             {
                 self.pending = 0;
-                self.checked_call(&n.callee, &n.args, n.span);
+                self.checked_call(&n.callee, n.place.as_deref(), &n.args, n.span);
             }
             st::Stmt::Call(n) =>
             {
-                let (func, args) = self.call_parts(&n.callee, &n.args);
-                let name = n.callee.name.to_string();
-                out.push(Stmt::Call { func, name, args, span: n.span });
+                let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
+                let args = self.lower_args(&n.args, &sig);
+                out.push(target.stmt(args, n.span));
             }
             st::Stmt::Alloc(n) => out.push(self.alloc(n)),
             st::Stmt::Resize(n) => out.push(self.resize(n)),
@@ -1783,6 +1860,7 @@ impl Lowerer<'_>
     /// # Arguments
     ///
     /// * `callee` - The function name.
+    /// * `place` - The place that holds the function value, when written.
     /// * `args` - The arguments.
     /// * `span` - The call.
     ///
@@ -1790,16 +1868,15 @@ impl Lowerer<'_>
     ///
     /// The hidden slot and what the function gives back.
     fn checked_call(
-        &mut self, callee: &ast::Ident, args: &[ast::Expr], span: Span,
+        &mut self, callee: &ast::Ident, place: Option<&ast::Expr>, args: &[ast::Expr],
+        span: Span,
     ) -> (Place, Fault)
     {
-        let sig = self.sigs.get(&callee.name).cloned();
-        let sig =
-            sig.unwrap_or_else(|| panic!("function {} is not declared", callee.name));
+        let (target, sig) = self.call_target(callee, place);
         let fault = sig.ret.and_then(Fault::of_kind);
         let fault = fault.expect("the check found a function that can fail");
-        let (func, args) = self.call_parts(callee, args);
-        let call = ExprNode::Call { func, name: callee.name.to_string(), args };
+        let args = self.lower_args(args, &sig);
+        let call = target.node(args);
         let held = self.hidden(fault.wrapper, span);
         if fault.wrapper.holds_text()
         {
@@ -1912,7 +1989,8 @@ impl Lowerer<'_>
     fn pass_call(&mut self, n: &ast::CallExpr) -> ExprNode
     {
         self.pending = self.pending.saturating_sub(1);
-        let (held, fault) = self.checked_call(&n.callee, &n.args, n.span);
+        let (held, fault) =
+            self.checked_call(&n.callee, n.place.as_deref(), &n.args, n.span);
         fault.field(held, "ok", self.platform, n.span).node
     }
 
@@ -1930,30 +2008,75 @@ impl Lowerer<'_>
         self.loops.last().map_or_else(Vec::new, |&depth| self.drops_from(depth, span))
     }
 
-    /// The function index and the arguments of a call, each converted to
-    /// its parameter's kind.
+    /// What a call runs, and the signature its arguments follow: a declared
+    /// function of the name, as the check decides, else the function value
+    /// the name or the place holds.
     ///
     /// # Arguments
     ///
-    /// * `callee` - The function name.
-    /// * `args` - The arguments.
+    /// * `callee` - The function name, or the first name of the place.
+    /// * `place` - The place that holds the function value, when written.
     ///
     /// # Returns
     ///
-    /// The index and the lowered arguments.
-    fn call_parts(
-        &mut self, callee: &ast::Ident, args: &[ast::Expr],
-    ) -> (u32, Vec<Expr>)
+    /// The target and its signature.
+    fn call_target(
+        &mut self, callee: &ast::Ident, place: Option<&ast::Expr>,
+    ) -> (Target, Sig)
     {
-        let sig = self.sigs.get(&callee.name).cloned();
-        let sig =
-            sig.unwrap_or_else(|| panic!("function {} is not declared", callee.name));
+        let sig = self.sigs.get(&callee.name).filter(|_| place.is_none()).cloned();
+        if let Some(sig) = sig
+        {
+            return (
+                Target::Fn { func: sig.index, name: callee.name.to_string() },
+                sig,
+            );
+        }
+        let value = match place
+        {
+            Some(p) => self.expr(p),
+            None => self.read_value(callee),
+        };
+        let f = value.kind.as_fn().expect("the check found a function value");
+        (Target::Value(value), value_sig(f))
+    }
+
+    /// The read of a variable or a parameter that holds a function value.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name at the call.
+    ///
+    /// # Returns
+    ///
+    /// The read, of the function kind.
+    fn read_value(&mut self, name: &ast::Ident) -> Expr
+    {
+        let place = self.lookup(&name.name);
+        let kind = self.slot_kind(place);
+        let edit = self.is_edit(place);
+        let kind = tern!(edit, kind.pointee().unwrap_or(kind), kind);
+        let node = self.read_name(&name.name, name.span);
+        node_expr(kind, node, name.span)
+    }
+
+    /// The arguments of a call, each converted to its parameter's kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The arguments.
+    /// * `sig` - The signature of the call.
+    ///
+    /// # Returns
+    ///
+    /// The lowered arguments.
+    fn lower_args(&mut self, args: &[ast::Expr], sig: &Sig) -> Vec<Expr>
+    {
         let params = sig.params.iter().zip(&sig.edits);
         let lower = |(a, (k, edit)): (&ast::Expr, (&DataKind, &bool))| {
             tern!(*edit, self.edit_arg(a, *k), self.owned(a, *k))
         };
-        let args = args.iter().zip(params).map(lower).collect();
-        (sig.index, args)
+        args.iter().zip(params).map(lower).collect()
     }
 
     /// The argument for a parameter the function can change: a borrow of the
@@ -2135,8 +2258,17 @@ impl Lowerer<'_>
             ast::Expr::Call(n) if n.pass => self.pass_call(n),
             ast::Expr::Call(n) =>
             {
-                let (func, args) = self.call_parts(&n.callee, &n.args);
-                ExprNode::Call { func, name: n.callee.name.to_string(), args }
+                let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
+                let args = self.lower_args(&n.args, &sig);
+                target.node(args)
+            }
+            ast::Expr::FnAddr(n) =>
+            {
+                let sig = self.sigs.get(&n.name.name);
+                let sig = sig.unwrap_or_else(|| {
+                    panic!("function {} is not declared", n.name.name)
+                });
+                ExprNode::FnAddr { func: sig.index, name: n.name.name.to_string() }
             }
             ast::Expr::Null(_) => ExprNode::Const(Value::NULL),
             ast::Expr::SizeOf(n) =>

@@ -54,6 +54,9 @@ en = "character %{index} is outside the text, whose characters run from %{lo} to
 [vm.trap.end_before_start]
 en = "the range from %{start} to %{end} ends before it starts"
 
+[vm.trap.null_call]
+en = "the function value is ဗလာ, so it holds no function to call"
+
 [vm.trap.no_cell_to_remove]
 en = "the list holds no cells, so it has no last cell to remove"
 

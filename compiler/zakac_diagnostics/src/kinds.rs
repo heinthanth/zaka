@@ -1060,3 +1060,52 @@ pub fn member_needs_value(span: Span, name: &str, kind: &str) -> Diagnostic
     let msg = t!("codes.ZK0461.message", n = name, k = kind);
     Diagnostic::new(Code::MemberNeedsValue, msg, span)
 }
+
+/// A call goes through a value that is no function value.
+///
+/// # Arguments
+///
+/// * `span` - The name or the place at the call.
+/// * `name` - Its text.
+/// * `kind` - Its kind.
+///
+/// # Returns
+///
+/// The `ZK0462` diagnostic.
+pub fn not_a_function(span: Span, name: &str, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0462.message", n = name, k = kind);
+    Diagnostic::new(Code::NotAFunction, msg, span)
+}
+
+/// The address of a function of an overloaded name fits no single one.
+///
+/// # Arguments
+///
+/// * `span` - The address.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0463` diagnostic.
+pub fn fn_addr_unclear(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::FnAddrUnclear, t!("codes.ZK0463.message", n = name), span)
+        .with_help(t!("codes.ZK0463.help"))
+}
+
+/// The address of an external function is taken.
+///
+/// # Arguments
+///
+/// * `span` - The address.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0464` diagnostic.
+pub fn external_fn_addr(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::ExternalFnAddr, t!("codes.ZK0464.message", n = name), span)
+        .with_help(t!("codes.ZK0464.help"))
+}

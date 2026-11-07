@@ -41,6 +41,7 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | step not positive | a counted loop step is zero or negative | `counted loop step is not positive` |
 | overflow | an integer result does not fit its kind; not with `--overflow wrap` | `the result of OP does not fit K` |
 | index out of range | a cell number is outside its list or slice | `cell N is outside the list, whose cells run from A to B` |
+| null call | a call goes through a [function value](../language/function-values.md#no-function) that holds `ဗလာ` | `the function value is ဗလာ, so it holds no function to call` |
 | no cell to remove | a remove of the last cell finds a list with no cells | `the list holds no cells, so it has no last cell to remove` |
 | no character to remove | a remove of the last character finds text with no characters | `the text holds no characters, so it has no last character to remove` |
 | end before start | a replace names a range whose last cell or character comes before its first | `the range from A to B ends before it starts` |
@@ -188,6 +189,26 @@ into the address of a block:
 ```text
 အစ
 the program stopped: access through a null address at 0x0
+```
+
+### A call through ဗလာ
+
+A [function value](../language/function-values.md#no-function) that holds `ဗလာ` holds no
+function, so a call through it stops the program. The ownership check reports a call
+through a variable that is `ဗလာ` on each path (ZK0709); a field or a cell is not
+followed, so the VM is the check there:
+
+```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဇယား သည် အကွက် ၂ ခုရှိသော (ကိန်းပြည့် ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) စာရင်း တစ်ခု ဖြစ်ပါစေ။
+"အစ" ဟု ပြသပါ။
+လုပ်ဆောင်ချက် ဇယား ၏ အကွက် ၁ ကို ၅ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+အစ
+the program stopped: the function value is ဗလာ, so it holds no function to call
 ```
 
 ### Outside each block

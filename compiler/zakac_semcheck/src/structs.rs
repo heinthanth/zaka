@@ -8,7 +8,13 @@ use std::sync::PoisonError;
 
 use zakac_ast::name::Name;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
+use crate::fn_kind::is_fn_text;
+use crate::fn_kind::map_fn_text;
+use crate::fn_kind::parse_fn_with;
+use crate::fn_kind::split_top;
+use crate::fn_kind::unwrap_parens;
 use crate::kind::DataKind;
 use crate::kind::FALLIBLE;
 use crate::kind::split_marks;
@@ -306,6 +312,13 @@ fn sig_of(name: &str, defs: &StructDefs, around: &mut Vec<String>) -> String
 /// The text.
 fn expand(kind: &str, defs: &StructDefs, around: &mut Vec<String>) -> String
 {
+    let (base, marks) = split_marks(kind);
+    if is_fn_text(base)
+    {
+        let mut part = |k: &str| Some(expand(k, defs, around));
+        let text = map_fn_text(base, &mut part);
+        return text.map_or_else(|| kind.to_string(), |t| format!("{t}{marks}"));
+    }
     if let Some(sides) = fallible_sides(split_marks(kind).0)
     {
         let side = |(f, k): &(&str, &str)| format!("{f}:{}", expand(k, defs, around));
@@ -350,6 +363,12 @@ fn kind_of(
         return DataKind::wrap_marks(DataKind::fallible(ok, err), split_marks(kind).1);
     }
     let (base, marks) = split_marks(kind);
+    if is_fn_text(base)
+    {
+        let inner =
+            parse_fn_with(unwrap_parens(base), &mut |k| kind_of(k, defs, memo))?;
+        return DataKind::wrap_marks(inner, marks);
+    }
     ret_if!(!defs.contains_key(base), DataKind::parse(kind));
     let inner = DataKind::Struct(resolve(base, defs, memo)?);
     DataKind::wrap_marks(inner, marks)
@@ -374,19 +393,36 @@ fn collect_defs(text: &str, defs: &mut StructDefs) -> Option<String>
     for part in top_level_parts(inner_text)
     {
         let (field, kind) = part.split_once(':')?;
-        let (base, marks) = split_marks(kind);
-        let base = if base.contains('{')
-        {
-            collect_defs(base, defs)?
-        }
-        else
-        {
-            base.to_string()
-        };
-        fields.push((field.to_string(), format!("{base}{marks}")));
+        fields.push((field.to_string(), collect_kind(kind, defs)?));
     }
     defs.insert(name.to_string(), fields);
     Some(name.to_string())
+}
+
+/// Record the structs written out in a field kind, and give the kind with
+/// each of them as its bare name.
+///
+/// # Arguments
+///
+/// * `kind` - The field kind in text form.
+/// * `defs` - The fields found so far.
+///
+/// # Returns
+///
+/// The kind text, or `None` for text that does not read.
+fn collect_kind(kind: &str, defs: &mut StructDefs) -> Option<String>
+{
+    let (base, marks) = split_marks(kind);
+    // A result kind is no struct of its own: `kind_of` and `expand` read its
+    // sides, so a result inside another one never takes its name.
+    ret_if!(fallible_sides(base).is_some(), Some(kind.to_string()));
+    if is_fn_text(base)
+    {
+        let text = map_fn_text(base, &mut |k| collect_kind(k, defs))?;
+        return Some(format!("{text}{marks}"));
+    }
+    let base = tern!(base.contains('{'), collect_defs(base, defs)?, base.to_string());
+    Some(format!("{base}{marks}"))
 }
 
 /// Split the inner_text of a signature at the commas outside braces.
@@ -398,27 +434,7 @@ fn collect_defs(text: &str, defs: &mut StructDefs) -> Option<String>
 /// # Returns
 ///
 /// The parts.
-fn top_level_parts(inner_text: &str) -> Vec<&str>
-{
-    let mut parts = Vec::new();
-    let (mut depth, mut start) = (0usize, 0);
-    for (at, ch) in inner_text.char_indices()
-    {
-        match ch
-        {
-            '{' | '<' => depth += 1,
-            '}' | '>' => depth = depth.saturating_sub(1),
-            ',' if depth == 0 =>
-            {
-                parts.push(&inner_text[start..at]);
-                start = at + 1;
-            }
-            _ => (),
-        }
-    }
-    parts.push(&inner_text[start..]);
-    parts
-}
+fn top_level_parts(inner_text: &str) -> Vec<&str> { split_top(inner_text, ',') }
 
 /// The fields of a result kind in text form, as `(field, kind)` pairs: its
 /// `tag`, and its `ok` and `err` sides, each when it holds a value.

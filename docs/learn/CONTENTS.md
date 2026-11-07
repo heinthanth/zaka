@@ -73,5 +73,6 @@
   - [Pointer arithmetic](pointers/arithmetic.md)
   - [Growing and shrinking](pointers/resizing.md)
   - [Lists and structs through addresses](pointers/structs.md)
+  - [Functions as values](pointers/functions.md)
   - [Ownership and borrowing](pointers/ownership.md)
   - [Pointer mistakes](pointers/mistakes.md)

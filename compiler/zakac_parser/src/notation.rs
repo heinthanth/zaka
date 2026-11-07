@@ -5,6 +5,7 @@ use zakac_ast::expr::BoolLit;
 use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::CharLit;
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::FnAddrExpr;
 use zakac_ast::expr::GroupExpr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::InfixExpr;
@@ -27,6 +28,10 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::clause::ClauseOut;
+use crate::clause::Mode;
+use crate::describe::kw_text;
+use crate::describe::quote;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
@@ -109,6 +114,26 @@ fn prefix_of(tok: &Token) -> Option<PrefixOp>
 /// The arguments of a call, and whether `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)`
 /// marks each.
 pub(crate) type Args = (Vec<Expr>, Vec<bool>);
+
+/// What the head of a long call holds: where it starts, the function name,
+/// the place that holds the function when one is written, and the arguments.
+pub(crate) type CallHead = (Span, Ident, Option<Box<Expr>>, Args);
+
+/// Set the place of the function of a call expression.
+///
+/// # Arguments
+///
+/// * `call` - The call expression.
+/// * `place` - The place that holds the function, when one is written.
+///
+/// # Returns
+///
+/// The call.
+pub(crate) fn with_place(mut call: Expr, place: Option<Box<Expr>>) -> Expr
+{
+    do_if!(let Expr::Call(node) = &mut call, node.place = place);
+    call
+}
 
 impl Parser<'_>
 {
@@ -389,10 +414,44 @@ impl Parser<'_>
     /// The call, or a diagnostic.
     fn parse_call_expr(&mut self) -> PResult<Expr>
     {
-        let (start, callee, args) = self.parse_call_head()?;
+        ret_if!(self.at_fn_addr(), self.parse_fn_addr());
+        let (start, callee, place, args) = self.parse_call_head()?;
         let end = self.expect_one_of(&[Kw::CallResult, Kw::CallGoodResult])?;
         let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
-        Ok(self.call_expr(start.to(&end.span), callee, args, pass))
+        let call = self.call_expr(start.to(&end.span), callee, args, pass);
+        Ok(with_place(call, place))
+    }
+
+    /// Whether the address of a function starts here:
+    /// `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn at_fn_addr(&self) -> bool
+    {
+        let name =
+            matches!(self.peek_n(1).kind, TokenKind::Ident | TokenKind::RawIdent);
+        self.at(Kw::Function)
+            && name
+            && self.peek_n(2).kind == TokenKind::Punct(Punct::Ei)
+            && kw_of(&self.peek_n(3)) == Some(Kw::Address)
+    }
+
+    /// Parse the address of a function: `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`.
+    ///
+    /// # Returns
+    ///
+    /// The expression, or a diagnostic.
+    pub(crate) fn parse_fn_addr(&mut self) -> PResult<Expr>
+    {
+        let start = self.bump().span;
+        let name = self.parse_ident()?;
+        self.bump();
+        let end = self.bump().span;
+        let id = self.new_id();
+        let node = FnAddrExpr::builder().id(id).name(name).span(start.to(&end));
+        Ok(Expr::FnAddr(node.build()))
     }
 
     /// Whether the sign form of a call starts here: a name with `(` right
@@ -418,6 +477,43 @@ impl Parser<'_>
     fn parse_sign_call(&mut self) -> PResult<Expr>
     {
         let callee = self.parse_ident()?;
+        let mut call = self.parse_sign_tail(callee.clone(), None)?;
+        // `f(a)(b)`: a `(` right after a call calls the function value it
+        // gives.
+        while self.at_sign_open()
+        {
+            call = self.parse_sign_tail(callee.clone(), Some(Box::new(call)))?;
+        }
+        Ok(call)
+    }
+
+    /// Whether a `(` touches the token before it, so a sign-form call goes on.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_sign_open(&self) -> bool
+    {
+        let open = self.peek();
+        open.kind == TokenKind::Punct(Punct::LParen) && open.joined
+    }
+
+    /// Parse the arguments of a sign-form call, `(a၊ b)` or `()`, and the `?`
+    /// that passes a failure on.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function name: the first name of the chain.
+    /// * `value` - The call whose result is the function, for `f(a)(b)`.
+    ///
+    /// # Returns
+    ///
+    /// The call, or a diagnostic.
+    fn parse_sign_tail(
+        &mut self, callee: Ident, value: Option<Box<Expr>>,
+    ) -> PResult<Expr>
+    {
+        let start = value.as_ref().map_or(callee.span, |v| v.span());
         self.bump();
         let bare = self.at_punct(Punct::RParen);
         let args = tern!(bare, Args::default(), self.parse_sign_args()?);
@@ -425,7 +521,8 @@ impl Parser<'_>
         let mark = self.peek();
         let pass = mark.kind == TokenKind::Punct(Punct::Question) && mark.joined;
         let end = tern!(pass, self.bump().span, close.span);
-        Ok(self.call_expr(callee.span.to(&end), callee, args, pass))
+        let call = self.call_expr(start.to(&end), callee, args, pass);
+        Ok(with_place(call, value))
     }
 
     /// Parse `expr (၊ expr)*` inside the parentheses of a sign-form call.
@@ -479,7 +576,8 @@ impl Parser<'_>
         Ok(mark)
     }
 
-    /// Build a call expression node.
+    /// Build a call expression node; [`with_place`] adds the place of its
+    /// function, when one is written.
     ///
     /// # Arguments
     ///
@@ -510,13 +608,37 @@ impl Parser<'_>
     ///
     /// The span of `လုပ်ဆောင်ချက်`, the function name and the arguments with
     /// their marks.
-    pub(crate) fn parse_call_head(&mut self) -> PResult<(Span, Ident, Args)>
+    pub(crate) fn parse_call_head(&mut self) -> PResult<CallHead>
     {
         let start = self.bump().span;
-        let callee = self.parse_ident()?;
+        let (callee, place) = self.parse_callee()?;
         self.expect(Kw::Ko)?;
         let args = self.parse_call_args()?;
-        Ok((start, callee, args))
+        Ok((start, callee, place, args))
+    }
+
+    /// Parse the function of a long call form, before its `ကို`: a name, or
+    /// a place that holds a function value, such as `ဇယား ၏ အကွက် i`.
+    ///
+    /// # Returns
+    ///
+    /// The name, the first name of the place, and the place when one is
+    /// written; or a diagnostic.
+    pub(crate) fn parse_callee(&mut self) -> PResult<(Ident, Option<Box<Expr>>)>
+    {
+        let callee = self.parse_ident()?;
+        ret_if!(!self.at_punct(Punct::Ei), Ok((callee, None)));
+        let id = self.new_id();
+        let name = NameExpr::builder().id(id).name(callee.name).span(callee.span);
+        let outer = std::mem::replace(&mut self.in_callee, true);
+        let read = self.parse_clause_from(Expr::Name(name.build()), Mode::Expr);
+        self.in_callee = outer;
+        let ClauseOut::Expr(place) = read?
+        else
+        {
+            return Err(self.err_expected(&quote(&kw_text(Kw::Ko))));
+        };
+        Ok((callee, Some(Box::new(place))))
     }
 
     /// Parse `expr (၊ expr)* တို့ဖြင့်`, or nothing when the call word comes

@@ -278,6 +278,6 @@ pub fn comment(op: Op, module: &Module, func: &Func) -> Option<String>
     ret_if!(let Op::LocalAddr(n) = op, local(n));
     ret_if!(let Op::LocalRef(n) = op, local(n));
     ret_if!(let Op::GlobalAddr(n) = op, global(n));
-    ret_if!(let Op::Call(f) = op, module.funcs.get(f as usize).map(|f| f.name.clone()));
+    ret_if!(let Op::Call(f) | Op::FnAddr(f) = op, module.funcs.get(f as usize).map(|f| f.name.clone()));
     None
 }

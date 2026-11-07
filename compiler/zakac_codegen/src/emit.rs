@@ -17,6 +17,7 @@ use zakac_ir_builder::ir::PrefixOp;
 use zakac_ir_builder::ir::PrintValue;
 use zakac_ir_builder::ir::SliceFrom;
 use zakac_ir_builder::ir::Stmt;
+use zakac_ir_builder::ir::fn_shape;
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::compare;
 use zakac_ir_builder::value::convert;
@@ -587,7 +588,7 @@ impl<'s> FuncGen<'s>
         let name = match &e.node
         {
             ExprNode::Format(_) => "%text",
-            ExprNode::Call { .. } => "%ret",
+            ExprNode::Call { .. } | ExprNode::CallValue { .. } => "%ret",
             ExprNode::List(_) => "%list",
             _ => "",
         };
@@ -596,7 +597,14 @@ impl<'s> FuncGen<'s>
         let at = Op::LocalAddr(slot);
         match &e.node
         {
-            ExprNode::Call { func, args, .. } => self.call_into(Some(at), *func, args),
+            ExprNode::Call { func, args, .. } =>
+            {
+                self.call_into(Some(at), Target::Fn(*func), args)
+            }
+            ExprNode::CallValue { callee, args } =>
+            {
+                self.call_into(Some(at), Target::Value(callee), args)
+            }
             ExprNode::List(cells) => self.build_list(at, e.kind, Some(cells)),
             _ => self.text_at(at, e),
         }
@@ -927,7 +935,7 @@ impl<'s> FuncGen<'s>
                 let fresh = self.read_operand(&stored(e));
                 let print = match e.kind
                 {
-                    k if k.as_enum().is_some() => Op::PrintEnum(k),
+                    k if k.as_enum().is_some() || k.is_fn() => Op::PrintEnum(k),
                     k if k.is_aggregate() => Op::PrintList(k),
                     _ => Op::Print,
                 };
@@ -963,19 +971,10 @@ impl<'s> FuncGen<'s>
                 do_if!(let Some(e) = value, self.result(e));
                 self.op(Op::Ret);
             }
-            Stmt::Call { func, args, .. } =>
+            Stmt::Call { func, args, .. } => self.call_stmt(Target::Fn(*func), args),
+            Stmt::CallValue { callee, args, .. } =>
             {
-                let ret = self.shared.rets[*func as usize];
-                let held = ret.filter(|k| k.holds_text());
-                let slot = held.map(|kind| (self.temp("%ret", kind), kind));
-                let into = slot.map(|(n, _)| Op::LocalAddr(n));
-                tern!(
-                    slot.is_some(),
-                    self.call_into(into, *func, args),
-                    self.call(*func, args)
-                );
-                do_if!(ret.is_some(), self.op(Op::Pop));
-                do_if!(let Some((n, kind)) = slot, self.drop_local(n, kind));
+                self.call_stmt(Target::Value(callee), args)
             }
             Stmt::Store { addr, value, .. } =>
             {
@@ -1528,12 +1527,19 @@ impl<'s> FuncGen<'s>
                 self.expr(operand);
                 // A slice of u8s becomes a view of text with the same two
                 // words, once its UTF-8 is checked.
-                let same = operand.kind == e.kind || e.kind.is_aggregate();
+                let words = e.kind.is_fn()
+                    && (operand.kind.is_fn() || operand.kind.is_address());
+                let same = operand.kind == e.kind || e.kind.is_aggregate() || words;
                 do_if!(!same, self.op(Op::Convert(e.kind)));
                 let checked = e.kind.is_text_view() && !operand.kind.is_text_view();
                 do_if!(checked, self.op(Op::CheckUtf8));
             }
-            ExprNode::Call { func, args, .. } => self.call(*func, args),
+            ExprNode::Call { func, args, .. } => self.call(Target::Fn(*func), args),
+            ExprNode::CallValue { callee, args } =>
+            {
+                self.call(Target::Value(callee), args)
+            }
+            ExprNode::FnAddr { func, .. } => self.op(Op::FnAddr(*func)),
             ExprNode::Host { func, args } =>
             {
                 let slot = self.temp("%host", e.kind);
@@ -1735,28 +1741,76 @@ impl<'s> FuncGen<'s>
     ///
     /// # Arguments
     ///
-    /// * `func` - The function index.
+    /// * `target` - What the call runs.
     /// * `args` - The arguments.
-    fn call(&mut self, func: u32, args: &[Expr])
+    fn call(&mut self, target: Target, args: &[Expr])
     {
-        let ret = self.shared.rets[func as usize].filter(|k| k.is_aggregate());
+        let ret = self.ret_of(target).filter(|k| k.is_aggregate());
         let slot = ret.map(|kind| Op::LocalAddr(self.temp("%ret", kind)));
-        self.call_into(slot, func, args);
+        self.call_into(slot, target, args);
     }
 
-    /// Generate a call whose list or struct result goes to a slot.
+    /// Generate a call whose result is dropped; a result that holds text
+    /// goes to a slot that is dropped after the call.
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - What the call runs.
+    /// * `args` - The arguments.
+    fn call_stmt(&mut self, target: Target, args: &[Expr])
+    {
+        let ret = self.ret_of(target);
+        let held = ret.filter(|k| k.holds_text());
+        let slot = held.map(|kind| (self.temp("%ret", kind), kind));
+        let into = slot.map(|(n, _)| Op::LocalAddr(n));
+        tern!(
+            slot.is_some(),
+            self.call_into(into, target, args),
+            self.call(target, args)
+        );
+        do_if!(ret.is_some(), self.op(Op::Pop));
+        do_if!(let Some((n, kind)) = slot, self.drop_local(n, kind));
+    }
+
+    /// The result kind of what a call runs.
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - What the call runs.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or `None` for a function with no result.
+    fn ret_of(&self, target: Target) -> Option<DataKind>
+    {
+        match target
+        {
+            Target::Fn(func) => self.shared.rets[func as usize],
+            Target::Value(callee) => callee.kind.as_fn().and_then(|f| fn_shape(f).1),
+        }
+    }
+
+    /// Generate a call whose list or struct result goes to a slot. A call
+    /// through a function value reads the value first, then runs the
+    /// arguments, left to right as the call is written.
     ///
     /// # Arguments
     ///
     /// * `slot` - The op that pushes the address of the slot, for a list or
     ///   struct result.
-    /// * `func` - The function index.
+    /// * `target` - What the call runs.
     /// * `args` - The arguments.
-    fn call_into(&mut self, slot: Option<Op>, func: u32, args: &[Expr])
+    fn call_into(&mut self, slot: Option<Op>, target: Target, args: &[Expr])
     {
         do_if!(let Some(op) = slot, self.op(op));
+        do_if!(let Target::Value(callee) = target, self.expr(callee));
         do_for!(a in args, self.expr(a));
-        self.op(Op::Call(func));
+        // Each argument is one stack value: a scalar, or the address of a
+        // list or a struct.
+        let count = u32::try_from(args.len()).unwrap_or(u32::MAX);
+        self.op(
+            tern!(let Target::Fn(func) = target, Op::Call(func), Op::CallValue(count)),
+        );
     }
 
     /// Serve a host function with its result going to a slot; the address of
@@ -1798,13 +1852,27 @@ impl<'s> FuncGen<'s>
             }
             ExprNode::Call { func, args, .. } if in_place =>
             {
-                self.call_into(Some(Op::ResultAddr), *func, args)
+                self.call_into(Some(Op::ResultAddr), Target::Fn(*func), args)
+            }
+            ExprNode::CallValue { callee, args } if in_place =>
+            {
+                self.call_into(Some(Op::ResultAddr), Target::Value(callee), args)
             }
             _ => self.expr(e),
         }
     }
 }
 
+/// What a call runs: a function of the module, or the function a value
+/// holds.
+#[derive(Clone, Copy)]
+enum Target<'e>
+{
+    /// The function at this index.
+    Fn(u32),
+    /// The function value, of a function kind.
+    Value(&'e Expr),
+}
 /// The local a value reads or moves out of.
 ///
 /// # Arguments

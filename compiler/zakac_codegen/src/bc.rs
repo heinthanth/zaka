@@ -214,6 +214,13 @@ pub enum Op
     /// are on the stack, the last one on top. For a list or struct result,
     /// the address of the caller's slot for it sits under the arguments.
     Call(u32),
+    /// Push the function value that calls the function at this index of
+    /// [`Module::funcs`]: one word, the index plus one, so 0 is `ဗလာ`.
+    FnAddr(u32),
+    /// Call the function a function value holds, as [`Op::Call`] does: the
+    /// value sits under this many arguments, since it is read before them,
+    /// and leaves the stack. A value of 0, `ဗလာ`, stops the program.
+    CallValue(u32),
     /// Serve a function of the host: pop the borrowed address of each of
     /// its parameters, the last on top, with the address of the slot for its
     /// result under them; write the result there and leave the address.
@@ -288,7 +295,8 @@ pub enum Op
     /// cells or fields and a line break.
     PrintList(DataKind),
     /// Pop a member of this enumeration; write it as `<stem>များထဲမှ
-    /// <member>` and a line break.
+    /// <member>` and a line break. A function value of this function kind is
+    /// written so too, as `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ` or `ဗလာ`.
     PrintEnum(DataKind),
     /// Stop the run for a failure the program did not handle. With a kind,
     /// pop a value of it first, or the address of one for a list, a struct or
@@ -512,7 +520,8 @@ impl Op
             Op::GlobalAddr(n) => format!("g{n}"),
             Op::Convert(kind) => kind.name(),
             Op::Jump(t) | Op::JumpIfFalse(t) | Op::JumpIfTrue(t) => format!("@{t}"),
-            Op::Call(f) => format!("f{f}"),
+            Op::Call(f) | Op::FnAddr(f) => format!("f{f}"),
+            Op::CallValue(n) => n.to_string(),
             Op::Host(func) => <&str>::from(func).to_string(),
             Op::PrintText(t) | Op::Text(t) => format!("t{t}"),
             Op::StaticSeq(s) | Op::SeqAddr(s) => format!("s{s}"),

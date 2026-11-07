@@ -65,6 +65,7 @@ A statement is one of nineteen forms:
 | `Break`, `Continue`, `Return { value }` | |
 | `Halt { cause, value }` | stop the run for a read of the wrong part of a whole result; `cause` is `not_good` (the good result of a result that holds an error was read) or `not_fault` (the error value of a good result was read); `value` is the error value to show, and `not_fault` has none, nor has a failure that holds no value (the trap then shows the bare message); written `(not_good v)` and `(not_fault)`, and `(not_good)` for a failure with no value |
 | `Call { func, name, args }` | a call whose result is dropped |
+| `CallValue { callee, args }` | a call through the function value `callee`, its result dropped; written `(call_value f 1)` |
 | `Store { addr, value }` | write at an address |
 | `Alloc`, `Resize`, `Free` | a heap sentence, with a `Dest`: a slot, or a cell in storage that holds an address |
 | `Blit { src, dst, count, unit, overlap }` | write `count` cells of `unit` from the address `src` to the address `dst`; `overlap` allows the ranges to share cells; written `(blit ...)`, and `(shift ...)` when `overlap` is set |
@@ -79,7 +80,9 @@ A statement is one of nineteen forms:
 
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
-`Convert { implicit }`, `Call`, `Host { func, args }` (the one statement of an external
+`Convert { implicit }`, `Call`, `CallValue { callee, args }` (a call through a function
+value: the value first, then the arguments), `FnAddr { func, name }` (the function value of
+`func`, written `(fn_addr name)`), `Host { func, args }` (the one statement of an external
 function: its result variable takes what the host function `func` gives for the borrowed
 address of each parameter, written `(host read_file (addr l0))`; the IR builder makes it in
 `host_statement`, and codegen emits the op `host` into the result slot), the pointer forms `AddrOf`, `Load`, `Lend`, `Take`, `Dup`, `Own` (a plain list made to
@@ -107,6 +110,13 @@ rules out). Its rules:
 - Where the check let a value widen into its place, lowering adds a `Convert` marked
   `implicit`. A written conversion is `implicit: false`.
 - A negated integer literal becomes a negative constant, so `-၁၂၈` is a constant of `i8`.
+- A call runs a declared function of its name, as the check decides, or else the function
+  value of the name or of its place (`call_target`): a `Call` or a `CallValue`. The
+  arguments of a call through a value follow `fn_shape`: each parameter in its own kind,
+  or a borrow of it for one the function can change, as a declared function places its
+  parameters. `လုပ်ဆောင်ချက် NAME ၏ လိပ်စာ` becomes `FnAddr`, which the folder turns into the
+  constant `f + 1`, so a constant list or an imported global can hold it; a template slot
+  keeps such a constant as a value, which prints as the name of its function.
 - A function with a result starts with `set l1 = default`, so the result variable has a
   value if the block never sets it.
 - A function that can fail gives back a compiler-built struct `%fallible{tag: u8, ok: T, err: E}`,
@@ -457,8 +467,8 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | values | `push v`, `pop`, `dup` |
 | storage | `local_addr n`, `local_ref n`, `global_addr n`, `load k`, `store k`, `take k` |
 | arithmetic | `prefix op`, `infix op`, `compare op`, `convert k` (the ops print as `add`, `lt`, ...), `wrap op` |
-| control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `ret`, `result_addr`, `trap code` |
-| output | `print`, `print_text t`, `print_list k`, `print_enum k` (a member, found through its value and written as its name) |
+| control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `fn_addr f`, `call_value n`, `ret`, `result_addr`, `trap code` |
+| output | `print`, `print_text t`, `print_list k`, `print_enum k` (a member, found through its value and written as its name; a function value, written as the function it holds) |
 | failure | `halt cause [k]` |
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free`, `mem_blit stride`, `mem_move stride`, `mem_fill k` |
 | lists | `index len from`, `blit k`, `zero k`, `list_eq k`, `seq_eq k`, `static_seq s`, `seq_addr s`, `to_heap k`, `add_cell k`, `remove_cell k` |
@@ -491,6 +501,7 @@ bound).
 | each loop | lowered to a `Loop`: `init` sets `%each` to a duplicate of the value (a lent one when the loop leaves the value as it is, see the borrow checker internals; through the pointer for a pointer to a list) and `%new` to 0, `cond` tests it against the count, each round sets the variable to the cell at that number or to the character that starts at that u8 (`char_at_octet`), and `update` adds 1, or the u8 count of the character |
 | while, generic loop | `<init>; Head: <cond>; jump_if_false Exit; <block>; Next: <update>; jump Head; Exit:`; `continue` goes to `Next`, `break` to `Exit` |
 | call statement | `<args>; call f`, then `pop` if the callee has a result |
+| call through a function value | `<value>; <args>; call_value n`, the value read first; the result kind and the `%ret` slot come from the function kind (`fn_shape`) |
 | function | its block, then `ret` unless the block ends in one |
 
 A list or struct result travels through a slot of the caller. Each call of such a
@@ -654,6 +665,12 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   pops the frame and gives the blocks back; for a list or struct result it first
   duplicates the value into the caller's slot, the value under the arguments. A depth past `max_depth` is the trap
   `StackOverflow`.
+- **A function value.** `fn_addr f` pushes `f + 1` as an address value, so 0 is `ဗလာ`.
+  `call_value n` takes it from under the `n` arguments, stops the program with `NullCall`
+  for 0, and else enters function `f` as `call f` does. `Mem` keeps the name of each function, so `print_enum` and the
+  prints of lists, structs and template slots write a function value as
+  `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ` (`Mem::fn_text`, which cuts the overload number and the file
+  off the inner name).
 - **Storage.** `Mem` is the address space: blocks of three origins (`Heap`, `Stack`,
   `Static`), each with a red zone after it, so an access just past a block never lands in
   the next one. `load`, `store` and `take` check that the address is inside a live

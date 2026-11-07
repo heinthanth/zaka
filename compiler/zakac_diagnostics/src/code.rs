@@ -145,6 +145,8 @@ ArmAfterDefault = ("ZK0236", Level::Error),
 MixedMarks = ("ZK0237", Level::Error),
 /// An import names a module the stdlib does not have.
 UnknownStdModule = ("ZK0238", Level::Error),
+/// A function kind with parameters stands bare in a parameter or field list.
+FnKindNeedsParens = ("ZK0239", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -215,6 +217,8 @@ NoOverloadFits = ("ZK0332", Level::Error),
 OverloadUnclear = ("ZK0333", Level::Error),
 /// An external function is none of the functions the host serves.
 UnknownHostFn = ("ZK0334", Level::Error),
+/// A call names both a function and a variable that holds a function value.
+CalleeTwice = ("ZK0335", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.
@@ -342,6 +346,12 @@ DefaultKind = ("ZK0459", Level::Error),
 DuplicateCase = ("ZK0460", Level::Error),
 /// An enumeration member with no value whose value cannot count on.
 MemberNeedsValue = ("ZK0461", Level::Error),
+/// A call goes through a value that is no function value.
+NotAFunction = ("ZK0462", Level::Error),
+/// The address of a function of an overloaded name fits no single one.
+FnAddrUnclear = ("ZK0463", Level::Error),
+/// The address of an external function is taken.
+ExternalFnAddr = ("ZK0464", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

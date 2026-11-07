@@ -340,6 +340,13 @@ pub enum Kw
     /// `လက်ခံမည်`, "will accept": ends the parameters of an external function
     /// with no result
     WillAccept,
+    /// `လက်ခံသော`, "that accepts": ends the parameters of a function kind
+    /// with no result
+    AcceptingRel,
+    /// `ပြန်ပေးသော`, "that gives back": ends the result of a function kind
+    ReturningRel,
+    /// `လုပ်ဆောင်ချက် အမျိုးအစား`, "function kind": closes a function kind
+    FnKind,
     /// `လုပ်ဆောင်ကာ`
     DoAnd,
     /// `လုပ်ဆောင်စရာများ`

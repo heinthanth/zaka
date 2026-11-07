@@ -108,6 +108,12 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             do_for!(a in args, expr(a, f));
             *span = f(*span);
         }
+        Stmt::CallValue { callee, args, span } =>
+        {
+            do_for!(a in args, expr(a, f));
+            expr(callee, f);
+            *span = f(*span);
+        }
         Stmt::Store { addr, value, span } =>
         {
             expr(addr, f);
@@ -195,6 +201,7 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
         | ExprNode::AddrOf(_)
         | ExprNode::SizeOf(_)
         | ExprNode::Text(_)
+        | ExprNode::FnAddr { .. }
         | ExprNode::BlankList => (),
         ExprNode::Format(pieces) => do_for!(e in fmt_values_mut(pieces), expr(e, f)),
         ExprNode::Chars { text, index, .. } =>
@@ -223,6 +230,11 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
         | ExprNode::List(args) =>
         {
             do_for!(a in args, expr(a, f))
+        }
+        ExprNode::CallValue { callee, args } =>
+        {
+            do_for!(a in args, expr(a, f));
+            expr(callee, f);
         }
         ExprNode::CellAddr { list, index, .. } =>
         {

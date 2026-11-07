@@ -321,6 +321,8 @@ write into one traps ([When a program stops](traps.md)).
 | `jump_if_false t` | bool → | go to `t` when the boolean is false |
 | `jump_if_true t` | bool → | go to `t` when the boolean is true |
 | `call f` | args → result | call function `f`; the last argument is on top |
+| `fn_addr f` | → fn | push the [function value](../language/function-values.md) that calls function `f`: one word, `f + 1`, so 0 is `ဗလာ` |
+| `call_value n` | fn args → result | take the function value from under the `n` arguments, then call the function it holds as `call` does; a value of 0 stops the program with the `null call` trap |
 | `host h` | slot addrs → slot | serve host function `h` (`read_line`, `read_file`, `write_file`, `write_stream`), the one op of an external function: pop the borrowed address of each parameter, with the address of the result slot under them, write the result there and leave its address. The VM reads each value through its address and frees none. `zakac run` serves it from the terminal and the files on disk; the books and the explorer serve it from storage (see [Host functions](../internals/codegen.md#host-functions)) |
 | `ret` | | leave the function; a result remains on the stack |
 | `trap step_not_positive` | | stop the program: a counted loop step is zero or negative |
@@ -339,7 +341,7 @@ result](../language/error-handling.md#reading-a-whole-result): `not_good` and `n
 | `print` | v → | write the value and a line break |
 | `print_text t` | | write the static text `t` and a line break |
 | `print_list k` | addr → | write the cells of a list or a slice, the fields of a struct, or the text, of kind `k`, and a line break |
-| `print_enum k` | v → | write the member of enumeration `k` whose value `v` is (the address of the value for a list, a struct or text) as `<stem>များထဲမှ <member>`, and a line break; a value no member has as its value |
+| `print_enum k` | v → | write the member of enumeration `k` whose value `v` is (the address of the value for a list, a struct or text) as `<stem>များထဲမှ <member>`, and a line break; a value no member has as its value. For a function kind `k`, write the function value as `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`, or `ဗလာ` |
 
 How each value reads is in [Running a program](running.md#printing).
 
@@ -353,6 +355,7 @@ How each value reads is in [Running a program](running.md#printing).
 | `a နှင့် b ၏ ပေါင်းလဒ်` | `a; b; add` |
 | `v ကို ပြသပါ` | `v; print` |
 | call as a statement | `args; call f`, and `pop` when the callee gives a result no one uses |
+| call through a function value | `fn; args; call_value n` |
 | `p ၏ တန်ဖိုး` | `p; load k` |
 | `p + i` | `p; i; ptr_add s` |
 | allocate | `x; count; alloc s; store k*` |

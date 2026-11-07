@@ -369,6 +369,11 @@ impl Folder
                 do_if!(let Some(v) = value, self.drop_value(v))
             }
             Stmt::Call { args, .. } => do_for!(a in args, self.drop_value(a)),
+            Stmt::CallValue { callee, args, .. } =>
+            {
+                self.drop_value(callee);
+                do_for!(a in args, self.drop_value(a));
+            }
             Stmt::Store { addr, value, .. } =>
             {
                 self.drop_value(addr);
@@ -489,6 +494,18 @@ impl Folder
             {
                 do_for!(a in args.iter_mut(), self.drop_value(a));
                 (None, None)
+            }
+            ExprNode::CallValue { callee, args } =>
+            {
+                self.drop_value(callee);
+                do_for!(a in args.iter_mut(), self.drop_value(a));
+                (None, None)
+            }
+            // A function value is the number of its function plus one, known
+            // at compile time.
+            ExprNode::FnAddr { func, .. } =>
+            {
+                (Some(Value::Ptr(u64::from(*func) + 1)), None)
             }
             ExprNode::AddrOf(_) => (None, None),
             ExprNode::Load { addr } =>
@@ -906,6 +923,9 @@ fn splice_piece(out: &mut Vec<FmtPiece>, piece: FmtPiece)
 {
     let text = match piece
     {
+        // A function value prints as the name of its function, which the
+        // text of its constant does not hold.
+        FmtPiece::Value(e) if e.kind.is_fn() => return out.push(FmtPiece::Value(e)),
         FmtPiece::Text(text) => text,
         FmtPiece::Value(e) => match e.node
         {

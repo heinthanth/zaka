@@ -777,6 +777,8 @@ impl SlotState
     pub(crate) fn of_kind(kind: DataKind, info: PtrInfo, int: Interval) -> SlotState
     {
         ret_if!(kind.is_int(), SlotState::Int(int));
+        // A function value is followed for whether it holds a function.
+        ret_if!(kind.is_fn(), SlotState::Ptr(info));
         let words = kind.is_slice() || kind.is_text() || kind.is_seq();
         let list = kind.is_aggregate() && !words;
         ret_if!(list && holds_ptr(kind), SlotState::List(info));

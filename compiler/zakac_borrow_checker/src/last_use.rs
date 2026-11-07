@@ -25,6 +25,7 @@ use crate::liveness::live_out_of;
 use crate::liveness::node_exprs;
 use crate::liveness::reads;
 use crate::routine::Routine;
+use crate::values::taken_fns;
 use crate::walk::each_expr;
 use crate::walk::each_expr_mut;
 use crate::walk::each_stmt;
@@ -82,6 +83,7 @@ fn moves_in(
 ) -> HashSet<DupAt>
 {
     let cfg = build_cfg(routine.block, routine.span);
+    let taken = taken_fns(module);
     let live = live_out_of(&cfg, module, routine, DataKind::holds_text);
     let lent = lent_in(routine.block);
     let mut verdicts: HashMap<DupAt, bool> = HashMap::new();
@@ -90,7 +92,7 @@ fn moves_in(
         let exprs = node_exprs(&node.kind);
         let mut read = Vec::new();
         do_for!(e in &exprs, reads(e, &mut read));
-        let written = call_writes(&node.kind, &exprs, writes);
+        let written = call_writes(&node.kind, &exprs, writes, &taken);
         let mut judge = |e: &Expr| {
             let Some(place) = dup_of(e)
             else
@@ -122,12 +124,19 @@ fn moves_in(
 ///
 /// The global numbers.
 fn call_writes(
-    kind: &NodeKind, exprs: &[&Expr], writes: &[BTreeSet<u32>],
+    kind: &NodeKind, exprs: &[&Expr], writes: &[BTreeSet<u32>], taken: &BTreeSet<u32>,
 ) -> BTreeSet<u32>
 {
     let mut called = BTreeSet::new();
     do_if!(let NodeKind::Leaf(Stmt::Call { func, .. }) = kind, { called.insert(*func); });
-    let mut note = |e: &Expr| do_if!(let ExprNode::Call { func, .. } = e.node, { called.insert(func); });
+    do_if!(
+        matches!(kind, NodeKind::Leaf(Stmt::CallValue { .. })),
+        called.extend(taken)
+    );
+    let mut note = |e: &Expr| {
+        do_if!(let ExprNode::Call { func, .. } = e.node, { called.insert(func); });
+        do_if!(matches!(e.node, ExprNode::CallValue { .. }), called.extend(taken));
+    };
     do_for!(e in exprs, each_expr(e, &mut note));
     called.iter().filter_map(|f| writes.get(*f as usize)).flatten().copied().collect()
 }
@@ -325,8 +334,9 @@ pub(crate) fn lend_arguments(module: &mut Module)
     let main = with_globals(lent_in(&module.main));
     let funcs: Vec<BTreeSet<Place>> =
         module.funcs.iter().map(|f| with_globals(lent_in(&f.block))).collect();
-    lend_in(&mut module.main, &main, &writes);
-    do_for!((f, kept) in module.funcs.iter_mut().zip(&funcs), lend_in(&mut f.block, kept, &writes));
+    let taken = taken_fns(module);
+    lend_in(&mut module.main, &main, &writes, &taken);
+    do_for!((f, kept) in module.funcs.iter_mut().zip(&funcs), lend_in(&mut f.block, kept, &writes, &taken));
 }
 
 /// Lend the text arguments of each call in a list of statements.
@@ -336,13 +346,16 @@ pub(crate) fn lend_arguments(module: &mut Module)
 /// * `stmts` - The statements, changed in place.
 /// * `kept` - The places a lend, a range or an address reads.
 /// * `writes` - The globals each function writes, at each depth.
-fn lend_in(stmts: &mut [Stmt], kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>])
+fn lend_in(
+    stmts: &mut [Stmt], kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>],
+    taken: &BTreeSet<u32>,
+)
 {
     each_stmt_mut(stmts, &mut |s| {
-        lend_loop_dup(s, kept, writes);
-        do_if!(let Stmt::Call { func, args, .. } = s, lend_args(*func, args, kept, writes));
+        lend_loop_dup(s, kept, writes, taken);
+        do_if!(let Stmt::Call { func, args, .. } = s, lend_args(*func, args, kept, writes, taken));
         each_expr_mut(s, &mut |e| {
-            do_if!(let ExprNode::Call { func, args, .. } = &mut e.node, lend_args(*func, args, kept, writes));
+            do_if!(let ExprNode::Call { func, args, .. } = &mut e.node, lend_args(*func, args, kept, writes, taken));
         });
     });
 }
@@ -355,12 +368,18 @@ fn lend_in(stmts: &mut [Stmt], kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>])
 /// * `args` - The arguments, changed in place.
 /// * `kept` - The places a lend, a range or an address reads.
 /// * `writes` - The globals each function writes, at each depth.
+/// * `taken` - The functions whose address the module takes, which a call
+///   through a function value in an argument can run.
 fn lend_args(
     func: u32, args: &mut [Expr], kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>],
+    taken: &BTreeSet<u32>,
 )
 {
     let mut called = BTreeSet::from([func]);
-    let mut note = |e: &Expr| do_if!(let ExprNode::Call { func, .. } = e.node, { called.insert(func); });
+    let mut note = |e: &Expr| {
+        do_if!(let ExprNode::Call { func, .. } = e.node, { called.insert(func); });
+        do_if!(matches!(e.node, ExprNode::CallValue { .. }), called.extend(taken));
+    };
     do_for!(a in args.iter(), each_expr(a, &mut note));
     let written: BTreeSet<u32> = called
         .iter()
@@ -400,7 +419,10 @@ fn lend_args(
 /// * `s` - The statement, changed in place.
 /// * `kept` - The places a lend, a range or an address reads.
 /// * `writes` - The globals each function writes, at each depth.
-fn lend_loop_dup(s: &mut Stmt, kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>])
+fn lend_loop_dup(
+    s: &mut Stmt, kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>],
+    taken: &BTreeSet<u32>,
+)
 {
     let Stmt::Loop { init, cond, update, block, .. } = s
     else
@@ -409,7 +431,7 @@ fn lend_loop_dup(s: &mut Stmt, kept: &BTreeSet<Place>, writes: &[BTreeSet<u32>])
     };
     let inner = [update.as_slice(), block.as_slice()];
     let mut called = BTreeSet::new();
-    do_for!(stmts in inner, callees(stmts, &mut called));
+    do_for!(stmts in inner, callees(stmts, taken, &mut called));
     let written: BTreeSet<u32> = called
         .iter()
         .filter_map(|f| writes.get(*f as usize))
@@ -538,6 +560,7 @@ fn root_of_addr(addr: &Expr) -> Option<Place>
 /// The global numbers, in function order.
 fn global_writes(module: &Module) -> Vec<BTreeSet<u32>>
 {
+    let taken = taken_fns(module);
     let direct = |stmts: &[Stmt]| {
         let mut places = Vec::new();
         each_stmt(stmts, &mut |s| {
@@ -562,7 +585,7 @@ fn global_writes(module: &Module) -> Vec<BTreeSet<u32>>
         .iter()
         .map(|f| {
             let mut out = BTreeSet::new();
-            callees(&f.block, &mut out);
+            callees(&f.block, &taken, &mut out);
             out
         })
         .collect();
@@ -650,7 +673,18 @@ fn places_in(e: &Expr) -> Vec<Place>
 /// * `module` - The module, after [`lend_arguments`], changed in place.
 pub(crate) fn share_params(module: &mut Module)
 {
-    let shared: Vec<Vec<u32>> = module.funcs.iter().map(unwritten_params).collect();
+    // A call through a function value cannot tell which function runs, so
+    // a function whose address the program takes reads each parameter
+    // from its own slot, as a call through a value passes it.
+    let taken = taken_fns(module);
+    let shared: Vec<Vec<u32>> = module
+        .funcs
+        .iter()
+        .enumerate()
+        .map(|(n, f)| {
+            tern!(taken.contains(&(n as u32)), Vec::new(), unwritten_params(f))
+        })
+        .collect();
     do_for!((f, params) in module.funcs.iter_mut().zip(&shared), f.shared_params = params.clone());
     let writes = global_writes(module);
     let mut all = lent_in(&module.main);
@@ -664,7 +698,7 @@ pub(crate) fn share_params(module: &mut Module)
     let main = with_globals(lent_in(&module.main));
     let funcs: Vec<BTreeSet<Place>> =
         module.funcs.iter().map(|f| with_globals(lent_in(&f.block))).collect();
-    let calls = Calls { writes: &writes, shared: &shared };
+    let calls = Calls { writes: &writes, shared: &shared, taken: &taken };
     duplicate_unstable(&mut module.main, &main, &calls);
     do_for!((f, kept) in module.funcs.iter_mut().zip(&funcs), duplicate_unstable(&mut f.block, kept, &calls));
 }
@@ -676,6 +710,9 @@ struct Calls<'a>
     writes: &'a [BTreeSet<u32>],
     /// The parameters each function reads in the caller's storage.
     shared: &'a [Vec<u32>],
+    /// The functions whose address the module takes, which a call through a
+    /// function value can run.
+    taken: &'a BTreeSet<u32>,
 }
 
 /// The list and struct parameters a function never writes: no set, store,
@@ -770,7 +807,13 @@ fn duplicate_args(func: u32, args: &mut [Expr], kept: &BTreeSet<Place>, calls: &
         return;
     };
     let mut called = BTreeSet::from([func]);
-    let mut note = |e: &Expr| do_if!(let ExprNode::Call { func, .. } = e.node, { called.insert(func); });
+    let mut note = |e: &Expr| {
+        do_if!(let ExprNode::Call { func, .. } = e.node, { called.insert(func); });
+        do_if!(
+            matches!(e.node, ExprNode::CallValue { .. }),
+            called.extend(calls.taken)
+        );
+    };
     do_for!(a in args.iter(), each_expr(a, &mut note));
     let written: BTreeSet<u32> = called
         .iter()

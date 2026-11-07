@@ -26,6 +26,7 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         | ExprNode::AddrOf(_)
         | ExprNode::SizeOf(_)
         | ExprNode::Text(_)
+        | ExprNode::FnAddr { .. }
         | ExprNode::BlankList => Vec::new(),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
@@ -47,6 +48,10 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
         | ExprNode::List(args) => args.iter().collect(),
+        ExprNode::CallValue { callee, args } =>
+        {
+            std::iter::once(callee.as_ref()).chain(args).collect()
+        }
         ExprNode::Format(pieces) => fmt_values(pieces).collect(),
         ExprNode::Chars { text, index, .. } =>
         {
@@ -83,6 +88,10 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
         }
         Stmt::Return { value, .. } => value.iter().collect(),
         Stmt::Call { args, .. } => args.iter().collect(),
+        Stmt::CallValue { callee, args, .. } =>
+        {
+            std::iter::once(callee).chain(args).collect()
+        }
         Stmt::Store { addr, value, .. } => vec![addr, value],
         Stmt::Blit { src, dst, count, .. } => vec![src, dst, count],
         Stmt::Fill { dst, count, value, .. } => vec![dst, count, value],
@@ -159,6 +168,7 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         | ExprNode::AddrOf(_)
         | ExprNode::SizeOf(_)
         | ExprNode::Text(_)
+        | ExprNode::FnAddr { .. }
         | ExprNode::BlankList => Vec::new(),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
@@ -180,6 +190,10 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
         | ExprNode::List(args) => args.iter_mut().collect(),
+        ExprNode::CallValue { callee, args } =>
+        {
+            std::iter::once(callee.as_mut()).chain(args.iter_mut()).collect()
+        }
         ExprNode::Format(pieces) => fmt_values_mut(pieces).collect(),
         ExprNode::Chars { text, index, .. } =>
         {
@@ -215,6 +229,10 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
         }
         Stmt::Return { value, .. } => value.iter_mut().collect(),
         Stmt::Call { args, .. } => args.iter_mut().collect(),
+        Stmt::CallValue { callee, args, .. } =>
+        {
+            std::iter::once(callee).chain(args.iter_mut()).collect()
+        }
         Stmt::Store { addr, value, .. } => vec![addr, value],
         Stmt::Blit { src, dst, count, .. } => vec![src, dst, count],
         Stmt::Fill { dst, count, value, .. } => vec![dst, count, value],

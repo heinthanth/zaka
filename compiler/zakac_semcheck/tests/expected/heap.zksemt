@@ -256,6 +256,7 @@ program:
               span:
                 lo: 1392
                 hi: 1410
+            place: null
             args:
             - verb:
                 id: 12

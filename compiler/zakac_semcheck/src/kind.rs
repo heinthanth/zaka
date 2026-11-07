@@ -16,6 +16,12 @@ use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 
 use crate::enums::EnumKind;
+use crate::fn_kind::FnKind;
+use crate::fn_kind::FnParam;
+use crate::fn_kind::bracket_step;
+use crate::fn_kind::is_fn_text;
+use crate::fn_kind::parse_fn_with;
+use crate::fn_kind::unwrap_parens;
 use crate::structs::StructKind;
 use crate::structs::StructTable;
 use crate::structs::parse_sig;
@@ -106,6 +112,8 @@ pub enum Base
     Seq(&'static SeqKind),
     /// An enumeration.
     Enum(&'static EnumKind),
+    /// A function kind, for a pointer to a function value.
+    Fn(&'static FnKind),
 }
 
 impl Base
@@ -129,6 +137,7 @@ impl Base
             Base::Slice(s) => Some(DataKind::Slice(s)),
             Base::Seq(s) => Some(DataKind::Seq(s)),
             Base::Enum(e) => Some(DataKind::Enum(e)),
+            Base::Fn(f) => Some(DataKind::Fn(f)),
         }
     }
 }
@@ -318,6 +327,8 @@ pub enum DataKind
     Seq(&'static SeqKind),
     /// An enumeration: a member, held as an `isize`.
     Enum(&'static EnumKind),
+    /// A function value: one word, the function it calls or none.
+    Fn(&'static FnKind),
 }
 
 impl DataKind
@@ -363,6 +374,7 @@ impl DataKind
             BaseKind::Text => Base::Seq(&TEXT_SEQ),
             BaseKind::Opaque => Base::Opaque,
             BaseKind::Named | BaseKind::Result => named_base(kind, structs),
+            BaseKind::Fn => Base::Fn(fn_base(kind, structs)),
         };
         let skip = usize::from(kind.base == BaseKind::Opaque);
         // A result kind is the struct `DataKind::fallible` makes, and its
@@ -806,8 +818,9 @@ impl DataKind
     /// The struct kind.
     pub fn fallible(ok: Option<DataKind>, err: Option<DataKind>) -> DataKind
     {
-        let ok = ok.map_or(String::new(), |k| format!(",ok:{}", k.sig_name()));
-        let err = err.map_or(String::new(), |k| format!(",err:{}", k.sig_name()));
+        let ok = ok.map_or(String::new(), |k| format!(",ok:{}", k.spell_inner(true)));
+        let err =
+            err.map_or(String::new(), |k| format!(",err:{}", k.spell_inner(true)));
         let sig = format!("{FALLIBLE}{{tag:u8{ok}{err}}}");
         let shape = parse_sig(&sig);
         DataKind::Struct(shape.expect("the signature of a fallible result reads back"))
@@ -868,12 +881,48 @@ impl DataKind
             DataKind::Struct(s) if !full && s.name == FALLIBLE => self.fallible_name(),
             DataKind::Struct(s) => tern!(full, s.sig(), &s.name).to_string(),
             DataKind::Slice(s) if s.text => "text[..]".to_string(),
-            DataKind::Slice(s) => format!("{}[][..]", s.cell.spell(full)),
+            DataKind::Slice(s) => format!("{}[][..]", s.cell.spell_inner(full)),
             DataKind::Seq(s) if s.text => "text".to_string(),
-            DataKind::Seq(s) => format!("{}[]", s.cell.spell(full)),
+            DataKind::Seq(s) => format!("{}[]", s.cell.spell_inner(full)),
             DataKind::Enum(e) => tern!(full, e.sig(), &e.name).to_string(),
+            DataKind::Fn(f) => f.spell(full),
         }
     }
+
+    /// The name of the kind inside another name: a function kind stands in
+    /// parentheses, so the levels after it never read as levels of its
+    /// result.
+    ///
+    /// # Arguments
+    ///
+    /// * `full` - Whether a struct is written as its signature.
+    ///
+    /// # Returns
+    ///
+    /// The name.
+    pub(crate) fn spell_inner(self, full: bool) -> String
+    {
+        let name = self.spell(full);
+        tern!(self.is_fn(), format!("({name})"), name)
+    }
+
+    /// The function part of the kind.
+    ///
+    /// # Returns
+    ///
+    /// The parameters and the result, or `None` for a kind that is no
+    /// function kind.
+    pub fn as_fn(self) -> Option<&'static FnKind>
+    {
+        tern!(let DataKind::Fn(f) = self, Some(f), None)
+    }
+
+    /// Whether the kind is a function kind.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a function kind.
+    pub fn is_fn(self) -> bool { matches!(self, DataKind::Fn(_)) }
 
     /// The address levels and the base of the kind.
     ///
@@ -896,6 +945,7 @@ impl DataKind
             DataKind::Slice(s) => (0, Base::Slice(s)),
             DataKind::Seq(s) => (0, Base::Seq(s)),
             DataKind::Enum(e) => (0, Base::Enum(e)),
+            DataKind::Fn(f) => (0, Base::Fn(f)),
         }
     }
 
@@ -1203,7 +1253,7 @@ impl DataKind
             DataKind::Float(bits) => bits,
             DataKind::Char => 32,
             DataKind::Bool => 8,
-            DataKind::Ptr(_) | DataKind::Null => platform,
+            DataKind::Ptr(_) | DataKind::Null | DataKind::Fn(_) => platform,
             DataKind::Enum(e) => e.under().bits(platform),
             DataKind::List(_)
             | DataKind::Struct(_)
@@ -1240,7 +1290,8 @@ impl DataKind
             (DataKind::Int(a), DataKind::Int(b)) => int_widens(a, b, platform),
             (DataKind::Int(a), DataKind::Float(b)) => a.bits(platform) <= precision(b),
             (DataKind::Float(a), DataKind::Float(b)) => a < b,
-            (DataKind::Null, DataKind::Ptr(_)) => true,
+            (DataKind::Null, DataKind::Ptr(_) | DataKind::Fn(_)) => true,
+            (DataKind::Fn(a), DataKind::Fn(b)) => a.fits(b),
             (DataKind::List(a), DataKind::Seq(b)) => !b.text && a.cell == b.cell,
             (DataKind::Ptr(_), DataKind::Ptr(_)) =>
             {
@@ -1456,8 +1507,10 @@ fn ptr_name(p: PtrKind, full: bool) -> String
     let replace = p.borrowed && plain.is_some();
     do_if!(replace, _ = marks.pop());
     do_if!(p.borrowed, marks.push('&'));
-    let base = plain
-        .map_or_else(|| tern!(raw(0), "rawptr", "ptr").to_string(), |k| k.spell(full));
+    let base = plain.map_or_else(
+        || tern!(raw(0), "rawptr", "ptr").to_string(),
+        |k| k.spell_inner(full),
+    );
     format!("{base}{marks}")
 }
 
@@ -1473,6 +1526,7 @@ fn ptr_name(p: PtrKind, full: bool) -> String
 /// The kind, or `None` for an unknown name.
 fn parse_base(name: &str) -> Option<DataKind>
 {
+    ret_if!(is_fn_text(name), parse_fn_with(unwrap_parens(name), &mut DataKind::parse));
     ret_if!(name == "ptr", Some(DataKind::OPAQUE));
     ret_if!(name == "rawptr", Some(DataKind::OPAQUE.with_outer_raw()));
     ret_if!(name.ends_with('}'), parse_sig(name).map(DataKind::Struct));
@@ -1528,16 +1582,16 @@ fn wrap_mark(kind: DataKind, mark: &str) -> Option<DataKind>
 /// The base and the marks after it.
 pub fn split_marks(name: &str) -> (&str, &str)
 {
-    let mut depth = 0usize;
+    // A function kind not in parentheses takes each mark after it as a mark
+    // of its result.
+    ret_if!(name.starts_with("fn("), (name, ""));
+    let (mut depth, mut prev) = (0i32, None);
     for (at, ch) in name.char_indices()
     {
-        match ch
-        {
-            '{' | '<' => depth += 1,
-            '}' | '>' => depth = depth.saturating_sub(1),
-            '*' | '^' | '&' | '[' if depth == 0 => return name.split_at(at),
-            _ => (),
-        }
+        depth += bracket_step(prev, ch);
+        prev = Some(ch);
+        let mark = matches!(ch, '*' | '^' | '&' | '[');
+        ret_if!(mark && depth == 0, name.split_at(at));
     }
     (name, "")
 }
@@ -1556,7 +1610,34 @@ pub fn split_marks(name: &str) -> (&str, &str)
 fn list_name(l: &ListKind, full: bool) -> String
 {
     let count = tern!(l.len == 0, "_".to_string(), l.len.to_string());
-    format!("{}[{count}]", l.cell.spell(full))
+    format!("{}[{count}]", l.cell.spell_inner(full))
+}
+
+/// The function kind a function kind phrase names.
+///
+/// # Arguments
+///
+/// * `kind` - The phrase, with a [`BaseKind::Fn`] base.
+/// * `structs` - The kind of each declared struct.
+///
+/// # Returns
+///
+/// The kind; a phrase with no signature names a function with no
+/// parameters and no result.
+fn fn_base(kind: &Kind, structs: &StructTable) -> &'static FnKind
+{
+    let Some(sig) = kind.sig.as_deref()
+    else
+    {
+        return FnKind::make(Vec::new(), None);
+    };
+    let param = |p: &zakac_ast::kind::SigParam| FnParam {
+        kind: DataKind::from_ast(&p.kind, structs),
+        edit: p.edit,
+        mark: p.mark.as_ref().map(|m| m.name),
+    };
+    let ret = sig.ret.as_ref().map(|r| DataKind::from_ast(r, structs));
+    FnKind::make(sig.params.iter().map(param).collect(), ret)
 }
 
 /// The short name of an integer kind.

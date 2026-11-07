@@ -107,6 +107,9 @@ pub enum Expr
     Str(StrExpr),
     /// `<enum>များထဲမှ <member>`: one member of an enumeration.
     Member(MemberExpr),
+    /// `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`: the address of a function, a value of a
+    /// function kind.
+    FnAddr(FnAddrExpr),
 }
 
 /// Integer literal; the digits are converted with the base.
@@ -387,6 +390,18 @@ pub struct MemberExpr
     /// The member name.
     pub member: Ident,
     /// Source region, from the qualifier to the member.
+    pub span: Span,
+}
+
+/// The address of a function: `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct FnAddrExpr
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The function name.
+    pub name: Ident,
+    /// Source region, from `လုပ်ဆောင်ချက်` to `လိပ်စာ`.
     pub span: Span,
 }
 
@@ -679,8 +694,14 @@ pub struct CallExpr
 {
     /// Node number.
     pub id: NodeId,
-    /// The function name.
+    /// The function name, or the variable that holds a function value. With
+    /// a [`CallExpr::place`], the first name of that place.
     pub callee: Ident,
+    /// The value that holds the function: a field, a cell or a read through
+    /// a pointer in a long call form, `လုပ်ဆောင်ချက် ဇယား ၏ အကွက် i ကို …`, or
+    /// the call before it in a sign-form chain, `f(a)(b)`.
+    #[serde(default)]
+    pub place: Option<Box<Expr>>,
     /// The arguments.
     #[builder(default)]
     pub args: Vec<Expr>,
@@ -751,6 +772,7 @@ impl Expr
             Expr::BlankList(n) => n.id,
             Expr::Str(n) => n.id,
             Expr::Member(n) => n.id,
+            Expr::FnAddr(n) => n.id,
         }
     }
 

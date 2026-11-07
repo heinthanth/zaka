@@ -393,4 +393,4 @@ error[ZK0718]: the field "ရှင်" holds a borrow, and borrows live in vari
 - Ask the heap for room for two structs, set a field of each, and print both.
 - Add a function to the linked list that sums the `တန်ဖိုးရင်း` of each node.
 
-Next: [Ownership and borrowing](ownership.md).
+Next: [Functions as values](functions.md).

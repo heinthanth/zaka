@@ -895,7 +895,8 @@ fn value_rows(mem: &Mem, slots: &[bc::Slot], homes: &[u64]) -> Vec<ValueRow>
             .name(s.name.as_str())
             .kind(s.kind.name())
             .value(shown.unwrap_or_else(|| "?".to_string()))
-            .maybe_points_at(held.and_then(pointee))
+            // A function value is the number of a function, not an address.
+            .maybe_points_at(held.filter(|_| !s.kind.is_fn()).and_then(pointee))
             .home(*home)
             .build()
     };

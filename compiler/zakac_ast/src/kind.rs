@@ -35,6 +35,45 @@ pub enum BaseKind
     /// A result of a function that can fail, with its sides in
     /// [`Kind::parts`]: `<kind> ရလဒ် သို့မဟုတ် <kind> အမှားအယွင်း`.
     Result,
+    /// A function value, with its parameters and result in [`Kind::sig`]:
+    /// `<params> လက်ခံပြီး <kind> ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား`.
+    Fn,
+}
+
+/// One parameter of a function kind: its kind, with the name and the mark
+/// when written. The name documents the kind and takes no part in a match.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct SigParam
+{
+    /// Whether `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` marks it: the function can
+    /// change the argument.
+    #[builder(default)]
+    #[serde(default)]
+    pub edit: bool,
+    /// The kind.
+    pub kind: Kind,
+    /// The name, when written.
+    #[serde(default)]
+    pub name: Option<Ident>,
+    /// The word after the argument in a marked call, `(<mark>)` after the
+    /// name.
+    #[serde(default)]
+    pub mark: Option<Ident>,
+    /// Source region.
+    pub span: Span,
+}
+
+/// The parameters and the result of a function kind.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct FnSig
+{
+    /// The parameters, in order.
+    #[builder(default)]
+    #[serde(default)]
+    pub params: Vec<SigParam>,
+    /// The result kind; `None` for a function with no result.
+    #[serde(default)]
+    pub ret: Option<Kind>,
 }
 
 /// The two sides of a result kind; a side with no value is `None`, as
@@ -115,6 +154,9 @@ pub struct Kind
     /// The sides of a [`BaseKind::Result`] base.
     #[serde(default)]
     pub parts: Option<Box<ResultParts>>,
+    /// The parameters and result of a [`BaseKind::Fn`] base.
+    #[serde(default)]
+    pub sig: Option<Box<FnSig>>,
     /// Whether the kind starts with the `ငှားထားသော` marker.
     #[builder(default)]
     #[serde(default)]
@@ -140,10 +182,12 @@ impl Serialize for Kind
         let skip_borrowed = skip && !self.borrowed;
         let skip_extra = skip && self.extra_borrows == 0;
         let skip_parts = skip && self.parts.is_none();
-        /// The number of fields, the name, parts and borrow fields included.
-        const FIELDS: usize = 9;
-        let skipped =
-            [skip_name, skip_borrowed, skip_extra, skip_parts].map(usize::from);
+        let skip_sig = skip && self.sig.is_none();
+        /// The number of fields, the name, parts, signature and borrow fields
+        /// included.
+        const FIELDS: usize = 10;
+        let skipped = [skip_name, skip_borrowed, skip_extra, skip_parts, skip_sig]
+            .map(usize::from);
         let n = FIELDS - skipped.iter().sum::<usize>();
         let mut state = serializer.serialize_struct("Kind", n)?;
         state.serialize_field("base", &self.base)?;
@@ -159,6 +203,11 @@ impl Serialize for Kind
             skip_parts,
             state.skip_field("parts")?,
             state.serialize_field("parts", &self.parts)?
+        );
+        tern!(
+            skip_sig,
+            state.skip_field("sig")?,
+            state.serialize_field("sig", &self.sig)?
         );
         tern!(
             skip_borrowed,

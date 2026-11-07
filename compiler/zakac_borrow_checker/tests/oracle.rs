@@ -49,6 +49,7 @@ fn raw_expr(e: &Expr) -> bool
         | ExprNode::AddrOf(_)
         | ExprNode::SizeOf(_)
         | ExprNode::Text(_)
+        | ExprNode::FnAddr { .. }
         | ExprNode::BlankList => false,
         ExprNode::Format(pieces) => fmt_values(pieces).any(raw_expr),
         ExprNode::Chars { text, index, .. } =>
@@ -75,6 +76,10 @@ fn raw_expr(e: &Expr) -> bool
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
         | ExprNode::List(args) => args.iter().any(raw_expr),
+        ExprNode::CallValue { callee, args } =>
+        {
+            raw_expr(callee) || args.iter().any(raw_expr)
+        }
         ExprNode::MakeSlice { source, start, len, .. } =>
         {
             [source, start, len].into_iter().any(|e| raw_expr(e))
@@ -111,6 +116,10 @@ fn raw_stmt(s: &Stmt) -> bool
         }
         Stmt::Return { value, .. } => value.iter().any(raw_expr),
         Stmt::Call { args, .. } => args.iter().any(raw_expr),
+        Stmt::CallValue { callee, args, .. } =>
+        {
+            raw_expr(callee) || args.iter().any(raw_expr)
+        }
         Stmt::Store { addr, value, .. } => raw_expr(addr) || raw_expr(value),
         Stmt::Blit { src, dst, count, .. } =>
         {

@@ -272,6 +272,13 @@ impl Parser<'_>
                 self.attach_before(&mut stack)?;
                 continue;
             }
+            // `ကို` after the place that holds the function of a long call
+            // closes the place.
+            let callee_end = self.in_callee && tok.kind == TokenKind::Kw(Kw::Ko);
+            ret_if!(
+                callee_end && stack.len() == 1 && stack[0].slot.is_none(),
+                self.finish_clause(stack)
+            );
             let fill_end = self.in_fill && tok.kind == TokenKind::Kw(Kw::Hpjint);
             ret_if!(
                 fill_end && stack.len() == 1 && stack[0].slot.is_none(),

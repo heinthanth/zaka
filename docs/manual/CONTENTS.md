@@ -10,6 +10,7 @@
   - [Statements](language/statements.md)
   - [Names and scope](language/scope.md)
   - [Functions](language/functions.md)
+  - [Function values](language/function-values.md)
   - [Errors and results](language/error-handling.md)
   - [Lists](language/lists.md)
   - [Text](language/text.md)

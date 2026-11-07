@@ -4,6 +4,7 @@ use std::ops::Range;
 
 use bon::Builder;
 use strum::IntoStaticStr;
+use zakac_ir_builder::value::NULL_TEXT;
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::from_raw;
 use zakac_ir_builder::value::to_raw;
@@ -149,6 +150,10 @@ pub struct Mem
     /// The lowest address the next stack block can take.
     #[builder(default)]
     top: u64,
+    /// The name of each function of the program, so a function value can be
+    /// shown as the function it holds.
+    #[builder(default)]
+    fns: Vec<String>,
 }
 
 impl Mem
@@ -175,6 +180,33 @@ impl Mem
             .next(reserved)
             .max_heap(max_heap)
             .build()
+    }
+
+    /// Keep the name of each function of the program, for
+    /// [`Mem::fn_text`].
+    ///
+    /// # Arguments
+    ///
+    /// * `names` - The inner names, in function order.
+    pub fn set_fn_names(&mut self, names: Vec<String>) { self.fns = names; }
+
+    /// The text of a function value, in the form that reads back:
+    /// `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`, or `ဗလာ` for no function.
+    ///
+    /// # Arguments
+    ///
+    /// * `word` - The value: the function number plus one, 0 for none.
+    ///
+    /// # Returns
+    ///
+    /// The text; a word that names no function shows as an address.
+    pub fn fn_text(&self, word: u64) -> String
+    {
+        ret_if!(word == 0, NULL_TEXT.to_string());
+        let name = usize::try_from(word - 1).ok().and_then(|n| self.fns.get(n));
+        // Inner names hold the overload number and the file: `<name>#2@lib`.
+        let name = name.map(|n| n.split(['#', '@']).next().unwrap_or(n));
+        name.map_or_else(|| format!("{word:#x}"), |n| format!("လုပ်ဆောင်ချက် {n} ၏ လိပ်စာ"))
     }
 
     /// Make a block of zeros out of the stack region. A heap block counts

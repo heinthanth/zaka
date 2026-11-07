@@ -288,7 +288,13 @@ comment showing the sentence shape:
 ၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေး(ပါ|မည်)          → PassFault
 လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်                  → MarkSucceeded
 လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်                  → MarkFailed
+လုပ်ဆောင်ချက် အမျိုးအစား                                 → FnKind
 ```
+
+`FnKind` closes a [function kind](../language/function-values.md#the-kind). The two words
+before it are reserved words of their own, not phrases: `လက်ခံသော` (`AcceptingRel`) ends
+the parameters of a function kind with no result, and `ပြန်ပေးသော` (`ReturningRel`) ends
+its result.
 
 The joined token spans from the first piece to the last, and takes `joined` from the
 first and `particle` from the last. Matching ignores white space and line breaks, so

@@ -16,6 +16,8 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::fn_kind::FnText;
+use crate::fn_kind::join_fn;
 use crate::kind::DataKind;
 use crate::kind::FALLIBLE;
 use crate::kind::split_marks;
@@ -142,6 +144,11 @@ fn check_fields(decl: &StructDecl, names: &BTreeSet<&str>, diags: &mut Vec<Diagn
 /// The diagnostic, or `None` for a kind with no unknown name.
 pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagnostic>
 {
+    if let Some(sig) = kind.sig.as_deref()
+    {
+        let params = sig.params.iter().map(|p| &p.kind);
+        return params.chain(&sig.ret).find_map(|k| unknown_name(k, names));
+    }
     if let Some(parts) = kind.parts.as_deref()
     {
         let side = |k: &Option<Kind>| k.as_ref().and_then(|k| unknown_name(k, names));
@@ -186,6 +193,20 @@ fn field_texts(
 /// The text.
 fn field_text(kind: &Kind, names: &BTreeSet<&str>, enums: &StructTable) -> String
 {
+    if let Some(sig) = kind.sig.as_deref()
+    {
+        let text = |k: &Kind| field_text(k, names, enums);
+        let params: Vec<(bool, String, Option<&str>)> = sig
+            .params
+            .iter()
+            .map(|p| (p.edit, text(&p.kind), p.mark.as_ref().map(|m| m.name.as_str())))
+            .collect();
+        let ret = sig.ret.as_ref().map(text);
+        let params = params.iter().map(|(e, k, m)| (*e, k.as_str(), *m)).collect();
+        let parts = FnText { params, ret: ret.as_deref() };
+        let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
+        return format!("({}){}", join_fn(&parts), split_marks(&marks).1);
+    }
     if let Some(parts) = kind.parts.as_deref()
     {
         let side = |field: &str, k: &Option<Kind>| {

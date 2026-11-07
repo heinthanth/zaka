@@ -190,6 +190,7 @@ and the example are stated in [Addresses and lists](#addresses-and-lists), below
 | a counted list | each cell at the default of its kind |
 | an address | `ဗလာ` |
 | an enumeration | its first member (see [Enumerations](enums.md#values-of-an-enumeration)) |
+| a function kind | `ဗလာ`, no function (see [Function values](function-values.md#no-function)) |
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

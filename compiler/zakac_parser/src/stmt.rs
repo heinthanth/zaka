@@ -42,6 +42,7 @@ use crate::clause::Mode;
 use crate::decl_head::DeclHead;
 use crate::describe::kw_text;
 use crate::describe::quote;
+use crate::notation::with_place;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
@@ -509,6 +510,8 @@ impl Parser<'_>
         let name = self.parse_ident()?;
         self.expect(Kw::Thi)?;
         let head = self.parse_decl_head()?;
+        do_if!(let Some(kind) = &head.kind, self.note_marked_value(&name.name, kind));
+        do_if!(let Some(init) = &head.init, self.note_marked_addr(&name.name, init));
         if self.at(Kw::Being)
         {
             ret_if!(is_const, Err(diag::const_loop(word.span)));
@@ -617,17 +620,29 @@ impl Parser<'_>
     {
         let is_decl = self.peek_n(2).kind == TokenKind::Kw(Kw::Thi);
         ret_if!(is_decl, self.parse_fn_decl());
-        let (start, callee, args) = self.parse_call_head()?;
+        if self.at_fn_addr()
+        {
+            let addr = self.parse_fn_addr()?;
+            let clause = self.parse_clause_from(addr, Mode::Stmt)?;
+            return self.finish_expr_headed(clause);
+        }
+        let (start, callee, place, args) = self.parse_call_head()?;
         let ends = [Kw::Call, Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
         let end = self.expect_one_of(&ends)?;
         ret_if!(
             matches!(kw_of(&end), Some(Kw::Call | Kw::WillDo)),
             self.finish_call_stmt(
-                CallParts::builder().start(start).callee(callee).args(args).build()
+                CallParts::builder()
+                    .start(start)
+                    .callee(callee)
+                    .maybe_place(place)
+                    .args(args)
+                    .build()
             )
         );
         let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
         let call = self.call_expr(start.to(&end.span), callee, args, pass);
+        let call = with_place(call, place);
         let clause = self.parse_clause_from(call, Mode::Stmt)?;
         self.finish_expr_headed(clause)
     }
@@ -645,7 +660,8 @@ impl Parser<'_>
     /// The statement, or a diagnostic.
     pub(crate) fn finish_call_stmt(&mut self, parts: CallParts) -> PResult<Stmt>
     {
-        let CallParts { start, callee, args: (args, edits), using, marks } = parts;
+        let CallParts { start, callee, place, args: (args, edits), using, marks } =
+            parts;
         let pass = self.at_punct(Punct::ListSep)
             && kw_of(&self.peek_n(1)) == Some(Kw::PassFault);
         do_if!(pass, {
@@ -655,7 +671,7 @@ impl Parser<'_>
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);
         #[rustfmt::skip]
-        let node = CallStmt::builder().callee(callee).args(args).edits(edits).pass(pass)
+        let node = CallStmt::builder().callee(callee).maybe_place(place).args(args).edits(edits).pass(pass)
             .maybe_using(using).marks(marks).span(span).build();
         Ok(Stmt::Call(node))
     }
@@ -782,11 +798,10 @@ impl Parser<'_>
         let start = self.bump().span;
         let name = self.parse_ident()?;
         self.expect(Kw::At)?;
-        let mut fields = vec![self.parse_param()?];
-        while self.eat_punct(Punct::ListSep)
-        {
-            fields.push(self.parse_param()?);
-        }
+        let outer = std::mem::replace(&mut self.in_list, true);
+        let fields = self.parse_fields();
+        self.in_list = outer;
+        let fields = fields?;
         let close = self.expect_one_of(&[Kw::FieldsClose, Kw::FieldsCloseAnd])?;
         let named = close.kind == TokenKind::Kw(Kw::FieldsCloseAnd);
         let classifier = tern!(named, Some(self.parse_classifier()?), None);
@@ -797,6 +812,22 @@ impl Parser<'_>
         let node = StructDecl::builder().name(name).fields(fields).maybe_classifier(classifier)
             .span(span).build();
         Ok(Stmt::Struct(node))
+    }
+
+    /// Parse the fields of a struct declaration, with the list open:
+    /// `<kind> <field> (၊ <kind> <field>)*`.
+    ///
+    /// # Returns
+    ///
+    /// The fields, or a diagnostic.
+    fn parse_fields(&mut self) -> PResult<Vec<Param>>
+    {
+        let mut fields = vec![self.parse_param()?];
+        while self.eat_punct(Punct::ListSep)
+        {
+            fields.push(self.parse_param()?);
+        }
+        Ok(fields)
     }
 
     /// Parse an enumeration declaration:
@@ -1069,6 +1100,24 @@ impl Parser<'_>
     /// The parameters and the word that ended them, or a diagnostic.
     fn parse_params_to(&mut self, ends: &[Kw]) -> PResult<(Vec<Param>, Option<Kw>)>
     {
+        let outer = std::mem::replace(&mut self.in_list, true);
+        let read = self.parse_param_list(ends);
+        self.in_list = outer;
+        read
+    }
+
+    /// Parse the parameters of a parameter clause and the word that ends
+    /// it, with the list open.
+    ///
+    /// # Arguments
+    ///
+    /// * `ends` - The words that can end it.
+    ///
+    /// # Returns
+    ///
+    /// The parameters and the word that ended them, or a diagnostic.
+    fn parse_param_list(&mut self, ends: &[Kw]) -> PResult<(Vec<Param>, Option<Kw>)>
+    {
         let mut params = vec![self.parse_param()?];
         while self.eat_punct(Punct::ListSep)
         {
@@ -1099,8 +1148,10 @@ impl Parser<'_>
     {
         let start = self.peek().span;
         let edit = self.eat(Kw::EditParam);
-        let kind = self.parse_kind()?;
+        let bare = self.at_bare_listed_kind();
+        let kind = tern!(bare, self.parse_bare_listed_kind()?, self.parse_kind()?);
         let name = self.parse_ident()?;
+        self.note_marked_value(&name.name, &kind);
         let open = self.peek();
         let marked = open.kind == TokenKind::Punct(Punct::LParen) && open.joined;
         let mark = tern!(marked, Some(self.parse_param_mark()?), None);
@@ -1114,7 +1165,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The mark, or a diagnostic.
-    fn parse_param_mark(&mut self) -> PResult<Ident>
+    pub(crate) fn parse_param_mark(&mut self) -> PResult<Ident>
     {
         self.bump();
         let mark = self.parse_mark()?;

@@ -24,7 +24,8 @@ The language chapter climbs from values to control to storage. Its first pages s
 rules of values: [words](language/words.md), [kinds](language/kinds.md),
 [conversions](language/conversions.md), [expressions](language/expressions.md),
 [statements](language/statements.md), [names and scope](language/scope.md),
-[functions](language/functions.md), [lists](language/lists.md), [text](language/text.md),
+[functions](language/functions.md), [function values](language/function-values.md),
+[lists](language/lists.md), [text](language/text.md),
 [structs](language/structs.md), [modules](language/modules.md) and [natural
 wording](language/naturalness.md). Their later sections, and the page on
 [slices](language/slices.md), turn to control: views, static data and counted lists, and

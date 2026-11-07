@@ -100,7 +100,8 @@ sets it, the others read the new value.
   assignment, is ZK0323. The file that is run holds statements as before.
 - The starting value of a variable or a constant of an imported file must be known at
   compile time. Known values are literals, `ဗလာ`, constants of known value, the size of a
-  kind, operators on known values, and list and struct literals of known values. A
+  kind, the [address of a function](function-values.md#the-address-of-a-function),
+  operators on known values, and list and struct literals of known values. A
   variable with no value starts at its default, which is known. Each other starting
   value is ZK0604; a function call is the usual case, and so is the value of a
   `ကိန်းရှင်`, since a variable can change.

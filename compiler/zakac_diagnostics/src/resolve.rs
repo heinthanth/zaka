@@ -596,3 +596,19 @@ pub fn unknown_host_fn(span: Span, name: &str, list: &str, error: &str) -> Diagn
         e = error
     ))
 }
+
+/// A call names both a function and a variable of a function kind.
+///
+/// # Arguments
+///
+/// * `span` - The name at the call.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0335` diagnostic.
+pub fn callee_twice(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::CalleeTwice, t!("codes.ZK0335.message", n = name), span)
+        .with_help(t!("codes.ZK0335.help"))
+}

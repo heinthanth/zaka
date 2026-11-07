@@ -576,3 +576,19 @@ pub fn unknown_std_module(span: Span, name: &str, list: &str) -> Diagnostic
     Diagnostic::new(Code::UnknownStdModule, msg, span)
         .with_help(t!("codes.ZK0238.help", l = list))
 }
+
+/// A function kind with parameters stands bare in a list of parameters or
+/// fields, where its parameters would run into the entries before it.
+///
+/// # Arguments
+///
+/// * `span` - The kind.
+///
+/// # Returns
+///
+/// The `ZK0239` diagnostic.
+pub fn fn_kind_needs_parens(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::FnKindNeedsParens, t!("codes.ZK0239.message"), span)
+        .with_help(t!("codes.ZK0239.help"))
+}

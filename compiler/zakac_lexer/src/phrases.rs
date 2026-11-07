@@ -65,6 +65,8 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Outside, Kw::From, Kw::Coming], Kw::External),
     // ... ကို သုံး၍ <fn> သည့် ရလဒ်ကောင်း
     (&[Kw::Which, Kw::GoodResult], Kw::UsedGoodResult),
+    // <parameters> လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား
+    (&[Kw::Function, Kw::EnumOpen], Kw::FnKind),
     // လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>
     (&[Kw::Function, Kw::From, Kw::EditableAttr], Kw::EditParam),
     // <name> (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)

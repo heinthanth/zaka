@@ -1,3 +1,5 @@
+use zakac_diagnostics::ownership::null_call;
+use zakac_diagnostics::ownership::null_call_possible;
 use zakac_diagnostics::ownership::null_deref;
 use zakac_diagnostics::ownership::null_deref_possible;
 use zakac_ir_builder::ir::Expr;
@@ -9,6 +11,7 @@ use zakac_rust_sugars::ret_if;
 use crate::checks::report;
 use crate::checks::slot_name;
 use crate::flow::Flow;
+use crate::state::OwnerState;
 use crate::state::State;
 
 /// Report a dereference through a pointer slot that is `ဗလာ` on each
@@ -41,6 +44,40 @@ pub(crate) fn check_deref(flow: &mut Flow, addr: &Expr, state: &State)
     ret_if!(seen.is_null(), report(flow, null_deref(addr.span, name)));
     let warn = flow.options.strict && seen.shares_fresh();
     do_if!(warn, report(flow, null_deref_possible(addr.span, name)));
+}
+
+/// Report a call through a function value that is `ဗလာ` on each path, and,
+/// under strict, through one that a `ဗလာ` the routine wrote can reach on some
+/// path, not compared with `ဗလာ` since (the `FRESH` mark). As for a pointer, a
+/// value that comes from outside (a parameter, a global in a function, a call
+/// result, a cell) is silent; the VM stops a call through `ဗလာ` there.
+///
+/// # Arguments
+///
+/// * `flow` - The flow.
+/// * `callee` - The function value.
+/// * `state` - The facts when it runs.
+pub(crate) fn check_callee(flow: &mut Flow, callee: &Expr, state: &State)
+{
+    let strict = flow.options.strict;
+    let Some(place) = deref_slot(callee)
+    else
+    {
+        return;
+    };
+    let Some(info) = state.ptr(place)
+    else
+    {
+        return;
+    };
+    let seen = info.state.as_read();
+    let name = slot_name(flow, place);
+    let null = seen.without(OwnerState::FRESH).is_null();
+    ret_if!(null, report(flow, null_call(callee.span, name)));
+    do_if!(
+        strict && seen.shares_fresh(),
+        report(flow, null_call_possible(callee.span, name))
+    );
 }
 
 /// The pointer slot an address comes from.

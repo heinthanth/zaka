@@ -588,7 +588,8 @@ impl Machine
     pub fn new(module: Module, options: RunOptions) -> Self
     {
         let main = module.main;
-        let mem = Mem::new(module.platform_bits, options.max_heap);
+        let mut mem = Mem::new(module.platform_bits, options.max_heap);
+        mem.set_fn_names(module.funcs.iter().map(|f| f.name.clone()).collect());
         #[rustfmt::skip]
         let mut machine = Machine::builder().module(module).options(options)
             .at((main, 0)).mem(mem).build();
@@ -733,7 +734,7 @@ impl Machine
     pub fn step_over(&mut self) -> &State
     {
         let depth = self.frames.len();
-        let call = matches!(self.next_op(), Some(Op::Call(_)));
+        let call = matches!(self.next_op(), Some(Op::Call(_) | Op::CallValue(_)));
         self.step();
         do_while!(call && self.running() && self.frames.len() > depth, let _ = self.step());
         &self.state
@@ -1212,6 +1213,8 @@ impl Machine
             Op::JumpIfFalse(t) => self.branch(t, false),
             Op::JumpIfTrue(t) => self.branch(t, true),
             Op::Call(f) => self.enter(f),
+            Op::FnAddr(f) => self.push(Value::Ptr(u64::from(f) + 1)),
+            Op::CallValue(n) => self.call_value(n),
             Op::Ret => self.leave(),
             Op::Print => self.print(),
             Op::PrintEnum(kind) =>
@@ -1555,6 +1558,31 @@ impl Machine
         let taken = self.pop_bool()? == when;
         do_if!(taken, self.goto(target)?);
         Ok(())
+    }
+
+    /// Take the function value from under the arguments and call the
+    /// function it holds.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The number of arguments above the value.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, `NullCall` for a value of `ဗလာ`, or what entering the
+    /// function gives.
+    fn call_value(&mut self, args: u32) -> Step
+    {
+        let at = self.stack.len().checked_sub(args as usize + 1);
+        let at = at.ok_or_else(|| malformed("call_value finds no function value"))?;
+        let word = self
+            .stack
+            .remove(at)
+            .as_ptr()
+            .ok_or_else(|| malformed("call_value takes a function value"))?;
+        ret_if!(word == 0, Err(TrapKind::NullCall));
+        let f = u32::try_from(word - 1).map_err(|_| malformed("no function"))?;
+        self.enter(f)
     }
 
     /// Start a call: each local takes a block of zeros in the stack region,

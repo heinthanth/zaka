@@ -520,7 +520,8 @@ impl Checker
     ///
     /// # Arguments
     ///
-    /// * `callee` - The function name.
+    /// * `callee` - The function name, or the first name of the place.
+    /// * `place` - The place that holds the function value, when written.
     /// * `args` - The arguments.
     /// * `edits` - Whether the edit mark follows each argument.
     /// * `span` - The call.
@@ -528,17 +529,15 @@ impl Checker
     /// # Returns
     ///
     /// The result kind of the function (`Some(None)` when it has none), or
-    /// `None` when the function is not declared.
+    /// `None` when the call names no function it can run.
     pub fn check_call(
-        &mut self, callee: &Ident, args: &[Expr], edits: &[bool], marks: &[Ident],
-        span: Span,
+        &mut self, callee: &Ident, place: Option<&Expr>, args: &[Expr], edits: &[bool],
+        marks: &[Ident], span: Span,
     ) -> Option<Option<DataKind>>
     {
-        let Some(sigs) = self.fns.get(&callee.name).cloned()
+        let Some(sigs) = self.call_target(callee, place)
         else
         {
-            let diag = rd::undeclared_function(callee.span, &callee.name);
-            self.report(self.with_hidden(diag, &callee.name));
             self.infer_all(args);
             return None;
         };
@@ -581,24 +580,6 @@ impl Checker
         let diag =
             rd::unknown_host_fn(n.name.span, &n.name.name, &host::listing(), IO_ERROR);
         self.report(diag);
-    }
-
-    /// The function a call runs: the one function of its name, or the
-    /// overload the call chose.
-    ///
-    /// # Arguments
-    ///
-    /// * `callee` - The function name at the call.
-    ///
-    /// # Returns
-    ///
-    /// The function, or `None` when no function of the name fits.
-    fn called(&self, callee: &Ident) -> Option<FnSig>
-    {
-        let sigs = self.fns.get(&callee.name)?;
-        ret_if!(sigs.len() == 1, sigs.first().cloned());
-        let inner = self.chosen.get(&callee.span)?;
-        sigs.iter().find(|s| s.inner == *inner).cloned()
     }
 
     /// Choose the function a call runs among the functions of its name: the
@@ -707,18 +688,17 @@ impl Checker
     /// # Arguments
     ///
     /// * `callee` - The function name.
+    /// * `ret` - The result kind of the function the call runs.
     /// * `pass` - Whether the call passes a failure on.
     /// * `dropped` - Whether the result is dropped: a call statement.
     /// * `span` - The call.
-    pub fn check_pass(&mut self, callee: &Ident, pass: bool, dropped: bool, span: Span)
+    pub fn check_pass(
+        &mut self, callee: &Ident, ret: Option<DataKind>, pass: bool, dropped: bool,
+        span: Span,
+    )
     {
-        let Some(sig) = self.called(callee)
-        else
-        {
-            return;
-        };
         let name = &callee.name;
-        let Some((_, found)) = sig.ret.and_then(DataKind::fallible_parts)
+        let Some((_, found)) = ret.and_then(DataKind::fallible_parts)
         else
         {
             return do_if!(pass, self.report(kd::pass_without_failure(span, name)));
@@ -1642,8 +1622,10 @@ impl Visitor for Checker
 
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
-        self.check_call(&n.callee, &n.args, &n.edits, &n.marks, n.span);
-        self.check_pass(&n.callee, n.pass, true, n.span);
+        let place = n.place.as_deref();
+        let ret =
+            self.check_call(&n.callee, place, &n.args, &n.edits, &n.marks, n.span);
+        do_if!(let Some(ret) = ret, self.check_pass(&n.callee, ret, n.pass, true, n.span));
     }
 
     fn visit_struct(&mut self, n: &StructDecl)

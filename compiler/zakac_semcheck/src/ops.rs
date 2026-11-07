@@ -546,6 +546,7 @@ impl Checker
         let ((l, lhs), (r, rhs)) = (lhs, rhs);
         let block = l.is_aggregate() || r.is_aggregate();
         ret_if!(block, self.infer_list_pair(class, op, (l, lhs), (r, rhs), span));
+        ret_if!(l.is_fn() || r.is_fn(), self.fn_pair(class, l, r, span));
         let ptr = l.is_address() || r.is_address();
         ret_if!(ptr, self.infer_ptr_pair(class, op, (l, lhs), (r, rhs), span));
         let want = class.want();
@@ -553,6 +554,31 @@ impl Checker
         let r = want.map_or(Some(r), |w| self.need(r, w, op, rhs))?;
         let common = self.common_or_report(l, r, span)?;
         Some(tern!(class.is_cmp(), DataKind::Bool, common))
+    }
+
+    /// Infer a two-operand operation where at least one side is a function
+    /// value: `==` and `!=` compare two values that one kind takes, or a
+    /// value with `ဗလာ`; no other operator takes a function value.
+    ///
+    /// # Arguments
+    ///
+    /// * `class` - The operator class.
+    /// * `l` - The left kind.
+    /// * `r` - The right kind.
+    /// * `span` - The operation.
+    ///
+    /// # Returns
+    ///
+    /// `bool`, or `None` after an error.
+    fn fn_pair(
+        &mut self, class: OpClass, l: DataKind, r: DataKind, span: Span,
+    ) -> Option<DataKind>
+    {
+        let p = self.platform;
+        let meets = l.widens_to(r, p) || r.widens_to(l, p);
+        ret_if!(class == OpClass::Equal && meets, Some(DataKind::Bool));
+        self.report(kd::incompatible_operands(span, &l.name(), &r.name()));
+        None
     }
 
     /// Infer a two-operand operation where at least one side is an address.

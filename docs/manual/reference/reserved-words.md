@@ -124,6 +124,9 @@ see [Names](../../learn/variables/names.md).
 | `ပရိုဂရမ်` | "program": `ပရိုဂရမ်သည်` opens the start block, where the program starts | [Where a program starts](../../learn/programs/start.md) |
 | `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` | "that the function can change": before the kind of a parameter that is the caller's place | [Functions](../language/functions.md#edit-references) |
 | `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်` | "the function can change it": in parentheses after an argument for such a parameter | [Functions](../language/functions.md#edit-references) |
+| `လုပ်ဆောင်ချက် အမျိုးအစား` | "function kind": closes a function kind | [Function values](../language/function-values.md#the-kind) |
+| `လက်ခံသော` | "that accepts": ends the parameters of a function kind with no result | [Function values](../language/function-values.md#the-kind) |
+| `ပြန်ပေးသော` | "that gives back": ends the result of a function kind | [Function values](../language/function-values.md#the-kind) |
 | `ရလဒ်` | "result" | [Results](../../learn/functions/results.md) |
 | `ရလဒ်ကောင်း` | "good result": of a call that can fail; also the test `R သည် ရလဒ်ကောင်း` and the conversion target `R ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်` | [Errors and results](../../learn/error-handling/README.md) |
 | `မအောင်မြင်ပါက` | "if it fails": in the trailer of a call statement, `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` | [Errors and results](../../learn/error-handling/README.md) |

@@ -356,6 +356,31 @@ its result kind is a result kind, and not otherwise. The mark statements `လု
 and the second a `ReturnStmt` with `fault` set and no value. The S-expressions are `(call-pass f ..)`,
 `(return-fault v)` and `(return-fault)`.
 
+A function kind is `BaseKind::Fn`: `Kind::sig` holds `FnSig { params, ret }`, each
+parameter a `SigParam` with its edit mark, its kind, and the name and the mark when
+written. `fn_kind.rs` reads it. A kind phrase can be a bare function kind at its first
+token, in the forms `FnForm` allows: `Full` where no list is open, `NoParams` while a list
+of parameters or fields is open (`Parser::in_list`, which `parse_params_to`,
+`parse_fields` and the parameters of a function kind itself set), and `NoFn`, the result of a
+function kind, where `လုပ်ဆောင်ချက် အမျိုးအစား` alone can stand. A function kind with
+parameters inside a list stands in parentheses (`paren_fn_len`). `kind_len_at` and
+`parse_kind_with` look for the function forms first, then a result kind, then a plain kind;
+`listed_head_len` and `ret_tail_len` work out the length of a function kind from its
+closing words, `လက်ခံသော`, `ပြန်ပေးသော` and `လုပ်ဆောင်ချက် အမျိုးအစား`, so the search stops at
+the first word that does not fit. A parameter whose kind is a bare function kind with
+parameters is read all the same and reported (ZK0239, `parse_bare_listed_kind`). It is
+written `fn(<params>) -> <ret>` in an S-expression.
+
+`လုပ်ဆောင်ချက် NAME ၏ လိပ်စာ` is `Expr::FnAddr` (`parse_fn_addr`), read where a call
+expression starts and, through `parse_fn_or_call`, at the start of a statement. The long
+call forms read their function with `parse_callee`: a name, or, when `၏` follows it, a place
+that the clause engine reads with `Parser::in_callee` set, so a `ကို` after a lone operand
+closes it; the place goes into `CallExpr::place` or `CallStmt::place`, and `callee` keeps
+its first name. A parameter or a variable declared with a function kind that has marks
+joins `Parser::marked` under its name (`note_marked_value`), so a marked call through it
+reads; `marked_header` counts the marks of a header outside parentheses alone, so the
+marks of a function kind in it do not count.
+
 Kinds and literals have their own modules. `kind.rs` reads `(လက္ခဏာရှိ|လက္ခဏာမဲ့)? (N ဘစ်)?
 base`, and checks the bit counts (8, 16, 32, 64, 128 for integers; 16 and up for floats).
 `literal.rs` reads `(အခြေ N ဖြင့်)? kind? digits`: it converts one digit after the other in the given

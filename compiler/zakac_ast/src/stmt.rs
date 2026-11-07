@@ -412,8 +412,13 @@ pub struct ReturnStmt
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct CallStmt
 {
-    /// The function name.
+    /// The function name, or the variable that holds a function value. With
+    /// a [`CallStmt::place`], the first name of that place.
     pub callee: Ident,
+    /// The place that holds the function value, in a long call form whose
+    /// function is a field, a cell or a read through a pointer.
+    #[serde(default)]
+    pub place: Option<Box<Expr>>,
     /// The arguments.
     #[builder(default)]
     pub args: Vec<Expr>,

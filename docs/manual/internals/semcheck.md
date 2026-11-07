@@ -285,7 +285,8 @@ An implicit conversion (`widens_to`) never loses data:
 | integer | integer | the target is wider and no sign is lost (an unsigned kind can go to a wider signed one) |
 | integer | float | the integer width is at most the significand of the float: 11, 24, 53, 113 bits for 16, 32, 64, 128 |
 | float | float | the target is wider |
-| `ဗလာ` | pointer | in each case |
+| `ဗလာ` | pointer, function kind | in each case |
+| function kind | function kind | the same parameter kinds, edit marks and result, and the same marks when the target has marks |
 | pointer | pointer | the same flavour (owner, borrow or raw) and the same shape, or one is the opaque `လိပ်စာ`; a block of addresses read as other data needs a raw step |
 | counted list | plain list of the same cell kind | when the counted list has cells; lowering moves the cells to a heap block (`to_heap`) |
 | plain list | counted list | never: the count of a counted list is part of its kind (ZK0401) |
@@ -296,6 +297,31 @@ The conversion verb (`cast_allowed`) is wider: number to number, char to integer
 bool to integer, address to address, address to integer, and integer to a raw address.
 An integer never becomes an owner or a borrow straight off; the raw address between is
 the step a reader can search for.
+
+### Function values
+
+`DataKind::Fn(&'static FnKind)` is a function kind (`fn_kind.rs`): the kind, the edit mark
+and the mark of each parameter, and the result. Each kind is made once (`FnKind::make`),
+as a list kind is. `FnKind::fits` takes a function into a place of a kind with the same
+parameter kinds, edit marks and result, and with the same marks when the place names
+marks: a kind with none takes a function with marks or without. `ဗလာ` widens to a function
+kind, and the default of one is the zero word. The short name is
+`fn(<params>) -> <ret>`, each parameter `[mut ]<kind>[(<mark>)]`; inside another name it
+stands in parentheses (`spell_inner`), so `split_marks` and the struct signatures
+(`split_top`, `bracket_step`, which skips the `>` of `->`) read it back. A struct field of a
+function kind writes its parts with each struct as its bare name (`field_text`,
+`collect_kind`, `expand`, `kind_of`), as each other field does.
+
+`fn_value.rs` holds the calls. `call_target` finds what a call runs: the declared
+functions of its name; else a variable, a parameter or a constant of a function kind, whose
+kind gives one signature (`value_target`); for a place, the kind of the place. A name that
+finds both a function and a value of a function kind is ZK0335, and a value of another kind
+ZK0462. `check_pass` takes the result kind from the signature, so a call through a value
+passes a failure on as a direct call does. `infer_fn_addr` gives the function kind of
+`လုပ်ဆောင်ချက် NAME ၏ လိပ်စာ` (`sig_kind`); with overloads it keeps the one whose kind fits the
+place (ZK0463 when none or several do) and records it in `chosen`, so `write_overloads`
+gives the address its inner name. An external function has no address (ZK0464). `==` and
+`!=` take two function values one kind takes, or one with `ဗလာ` (`fn_pair`).
 
 ### Literals that take the kind of their place
 

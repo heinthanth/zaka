@@ -60,6 +60,7 @@ the `*` that `ငှားထားသော` marks.
 | `text` | `စာသား` |
 | `text[..]` | `စာသား တစ်စိတ်တစ်ပိုင်း`, a view of text |
 | `null` | the kind of `ဗလာ` |
+| `fn(isize, isize) -> bool`, `fn(text(ကို))`, `fn()` | a [function kind](../language/function-values.md#the-kind): its parameters, `mut ` before an edited one and its mark after it, then `->` and the result; `(fn(isize))[]` is a list of them, a function kind inside another name in parentheses |
 | `isize result or text error` | `ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း`, a [result kind](../language/error-handling.md#result-kinds) |
 | `success or text error`, `isize result or failure` | `အောင်မြင်သည့်သတင်း သို့မဟုတ် စာသား အမှားအယွင်း`, `ကိန်းပြည့် ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း`: `success` and `failure` stand for a side with no value |
 
@@ -122,6 +123,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0236 | a switch arm after the default arm | [Enumeration mistakes](../../learn/enums/mistakes.md#an-arm-after-the-default-arm) |
 | ZK0237 | a header that marks some parameters and not the others | [Functions](../language/functions.md#marked-parameters) |
 | ZK0238 | an import from `စံကား/` that names no module of the stdlib | [Input and output](../language/io.md#the-rules) |
+| ZK0239 | a function kind with parameters inside a list of parameters or fields, not in parentheses | [Function values](../language/function-values.md#the-kind) |
 
 ### ZK03: names
 
@@ -161,6 +163,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0332 | a call that no function of its name fits | [Functions](../language/functions.md#one-name-several-functions) |
 | ZK0333 | a call that more than one function of its name fits | [Functions](../language/functions.md#one-name-several-functions) |
 | ZK0334 | an external function that is none of the functions the VM serves | [Functions](../language/functions.md#external-functions) |
+| ZK0335 | a call whose name finds both a declared function and a value of a function kind | [Function values](../language/function-values.md#calling-a-function-value) |
 
 ### ZK04: kinds
 
@@ -223,6 +226,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0459 | a default arm whose kind is not the kind of the subject | [Enumeration mistakes](../../learn/enums/mistakes.md#a-default-arm-of-the-wrong-kind) |
 | ZK0460 | two switch cases with one value | [Enumeration mistakes](../../learn/enums/mistakes.md#one-case-twice) |
 | ZK0461 | a member with no value whose value cannot count on: its kind is no integer, or the value passes the largest of the kind | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-with-no-value-that-cannot-count-on) |
+| ZK0462 | a call through a name or a place whose kind is no function kind | [Function values](../language/function-values.md#calling-a-function-value) |
+| ZK0463 | the address of a name of several functions, where no single one fits the kind the value goes to | [Function values](../language/function-values.md#the-address-of-a-function) |
+| ZK0464 | the address of a function that comes from outside the program | [Function values](../language/function-values.md#the-address-of-a-function) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -271,9 +277,9 @@ ZK0701 to ZK0704 and ZK0706 to ZK0712 are warnings and the program runs; with
 | ZK0706 | a function that returns a borrow of its own variable | [Changing the caller's variables](../../learn/pointers/out-parameters.md#how-long-an-address-lasts) |
 | ZK0707 | a call that can give back a block through one argument while another argument reaches it | [Pointer mistakes](../../learn/pointers/mistakes.md#mistakes-the-compiler-catches) |
 | ZK0708 | a block lost before it is given back | [Pointer mistakes](../../learn/pointers/mistakes.md#losing-a-block) |
-| ZK0709 | reading or writing through a pointer that is `ဗလာ` | [Pointer mistakes](../../learn/pointers/mistakes.md#reading-through-a-null-pointer) |
+| ZK0709 | reading or writing through a pointer that is `ဗလာ`, or a call through a function value that is `ဗလာ` | [Pointer mistakes](../../learn/pointers/mistakes.md#reading-through-a-null-pointer), [Function values](../language/function-values.md#no-function) |
 | ZK0710 | a box or cell number past the end of its block | [Pointer mistakes](../../learn/pointers/mistakes.md#reading-past-the-end) |
-| ZK0711 | a warning, with `--mem-strict` alone: a pointer that can be `ဗလာ` | [Ownership and borrowing](../../learn/pointers/ownership.md#turning-the-checks-down) |
+| ZK0711 | a warning, with `--mem-strict` alone: a pointer, or a function value called, that can be `ဗလာ` | [Ownership and borrowing](../../learn/pointers/ownership.md#turning-the-checks-down), [Function values](../language/function-values.md#no-function) |
 | ZK0712 | subtracting pointers into different blocks | [Pointer mistakes](../../learn/pointers/mistakes.md#mistakes-the-compiler-catches) |
 | ZK0713 | `ငှားထားသော` in the wrong place in a pointer kind | [Ownership and borrowing](../../learn/pointers/ownership.md#three-kinds-of-pointer) |
 | ZK0714 | a borrow given where an owner is wanted | [Ownership and borrowing](../../learn/pointers/ownership.md#lending-a-block) |

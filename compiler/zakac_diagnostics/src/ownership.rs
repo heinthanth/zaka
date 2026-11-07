@@ -371,3 +371,34 @@ pub fn blit_ranges_overlap(span: Span, octets: u64) -> Diagnostic
     Diagnostic::new(Code::BlitRangesOverlap, msg, span)
         .with_help(t!("codes.ZK0721.help"))
 }
+
+/// A call goes through a function value that is `ဗလာ` on each path.
+///
+/// # Arguments
+///
+/// * `span` - The callee.
+/// * `name` - The name of the value.
+///
+/// # Returns
+///
+/// The `ZK0709` diagnostic.
+pub fn null_call(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::NullDeref, t!("codes.ZK0709.call_message", name = name), span)
+}
+
+/// A call goes through a function value that can be `ဗလာ`.
+///
+/// # Arguments
+///
+/// * `span` - The callee.
+/// * `name` - The name of the value.
+///
+/// # Returns
+///
+/// The `ZK0711` warning.
+pub fn null_call_possible(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0711.call_message", name = name);
+    Diagnostic::new(Code::NullDerefPossible, msg, span)
+}

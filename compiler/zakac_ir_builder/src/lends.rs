@@ -329,6 +329,7 @@ impl Walk
                 do_if!(let Some(v) = value, self.expr(v, Use::Written, false));
             }
             Stmt::Call { func, args, .. } => self.args(*func, args),
+            Stmt::CallValue { callee, args, .. } => self.value_args(callee, args),
             Stmt::Store { addr, value, .. } =>
             {
                 self.expr(addr, Use::Written, true);
@@ -417,6 +418,24 @@ impl Walk
         }
     }
 
+    /// Walk the function value of a call through one, then its arguments. The
+    /// pass cannot tell which function runs, so a slice passed to it counts
+    /// as written.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function value.
+    /// * `args` - The arguments.
+    fn value_args(&mut self, callee: &mut Expr, args: &mut [Expr])
+    {
+        self.expr(callee, Use::Read, false);
+        for a in args.iter_mut()
+        {
+            let u = tern!(a.kind.is_slice(), Use::Written, value_use(a.kind));
+            self.expr(a, u, false);
+        }
+    }
+
     /// Walk an expression.
     ///
     /// # Arguments
@@ -467,6 +486,8 @@ impl Walk
                 self.expr(offset, Use::Read, write);
             }
             ExprNode::Call { func, args, .. } => self.args(*func, args),
+            ExprNode::CallValue { callee, args } => self.value_args(callee, args),
+            ExprNode::FnAddr { .. } => (),
             ExprNode::Host { args, .. } =>
             {
                 do_for!(a in args, self.expr(a, Use::Read, write))

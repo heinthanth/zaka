@@ -56,6 +56,7 @@ use crate::checks::loans::holds_blank;
 use crate::checks::moves::check_loop_moves;
 use crate::checks::moves::check_read;
 use crate::checks::moves::run_take;
+use crate::checks::nullness::check_callee;
 use crate::checks::nullness::check_deref;
 use crate::checks::report;
 use crate::checks::static_rules::check_free_dest;
@@ -92,6 +93,7 @@ use crate::state::OwnerState;
 use crate::state::PtrInfo;
 use crate::state::SlotState;
 use crate::state::State;
+use crate::values::value_callees;
 use crate::walk::dest_expr;
 use crate::walk::each_expr;
 use crate::walk::sub_exprs;
@@ -679,7 +681,14 @@ impl<'m> Flow<'m>
                 self.value(e, state);
             }
             Stmt::Halt { value: None, .. } => (),
-            Stmt::Call { func, args, span, .. } => self.call(*func, args, *span, state),
+            Stmt::Call { func, args, span, .. } =>
+            {
+                self.call(&[*func], args, *span, state)
+            }
+            Stmt::CallValue { callee, args, span } =>
+            {
+                self.call_value(callee, args, *span, state)
+            }
             Stmt::Store { addr, value, span } =>
             {
                 // A write into a plain list can move its cells first.
@@ -1233,9 +1242,15 @@ impl<'m> Flow<'m>
             }
             ExprNode::Call { func, args, .. } =>
             {
-                self.call(*func, args, e.span, state);
+                self.call(&[*func], args, e.span, state);
                 SlotState::unknown(e.kind, Roots::new())
             }
+            ExprNode::CallValue { callee, args } =>
+            {
+                self.call_value(callee, args, e.span, state);
+                SlotState::unknown(e.kind, Roots::new())
+            }
+            ExprNode::FnAddr { .. } => fn_const(e.kind, Value::Ptr(1)),
             ExprNode::Host { args, .. } =>
             {
                 // The host reads each argument through its address and gives
@@ -1618,7 +1633,7 @@ impl<'m> Flow<'m>
     /// * `args` - The arguments.
     /// * `span` - The call.
     /// * `state` - The facts, changed in place.
-    fn call(&mut self, func: u32, args: &[Expr], span: Span, state: &mut State)
+    fn call(&mut self, funcs: &[u32], args: &[Expr], span: Span, state: &mut State)
     {
         let roots: Vec<Roots> =
             args.iter().map(|a| value_roots(a, state, &self.ctx)).collect();
@@ -1626,12 +1641,19 @@ impl<'m> Flow<'m>
         taken.retain(|p| !self.ctx.is_const(*p));
         do_for!(a in args, { self.moved(a, state); });
         blur_cells(self, roots.iter().flatten(), state);
-        check_call(self, func, &roots, span, state);
-        note_unfilled(self, func, &roots, state);
-        lift_reads(self, func, &roots);
+        // A call through a function value runs one of `funcs`, so each of
+        // them is checked and their effects join.
+        for &func in funcs
+        {
+            check_call(self, func, &roots, span, state);
+            note_unfilled(self, func, &roots, state);
+            lift_reads(self, func, &roots);
+        }
+        let back = |f: &u32| given_back(self, *f, &roots);
         let given: BTreeSet<Place> =
-            given_back(self, func, &roots).iter().filter_map(own_block).collect();
-        let resized = all_given_back(self, func, &roots);
+            funcs.iter().flat_map(back).filter_map(|r| own_block(&r)).collect();
+        let resized: Roots =
+            funcs.iter().flat_map(|f| all_given_back(self, *f, &roots)).collect();
         let globals = self.named.iter().copied();
         let addressed = args.iter().filter_map(bare_address);
         let pointed = roots.iter().flatten().filter(|r| !r.path.contains(&Seg::Block));
@@ -1652,6 +1674,25 @@ impl<'m> Flow<'m>
             do_if!(had || given.contains(&place), self.mark_given(place, state));
         }
         forget_extents(&resized, state);
+    }
+
+    /// Run a call through a function value: the value, which must hold a
+    /// function, then a call of each function it can hold.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function value.
+    /// * `args` - The arguments.
+    /// * `span` - The call.
+    /// * `state` - The facts before the call, changed in place.
+    fn call_value(
+        &mut self, callee: &Expr, args: &[Expr], span: Span, state: &mut State,
+    )
+    {
+        self.value(callee, state);
+        check_callee(self, callee, state);
+        let funcs = value_callees(self.module, callee.kind);
+        self.call(&funcs, args, span, state);
     }
 
     /// Forget the extent of each pointer into a block a free or a resize
@@ -1856,6 +1897,29 @@ pub(crate) fn is_loop_test(kind: &NodeKind) -> bool
     matches!(kind, NodeKind::LoopHead(_) | NodeKind::CountedHead(_))
 }
 
+/// The fact of a constant of a function kind: a function, or a `ဗလာ` the
+/// routine itself writes, marked `FRESH` so the strict check can tell it
+/// from a value that comes from outside, such as a parameter.
+///
+/// # Arguments
+///
+/// * `kind` - The function kind.
+/// * `v` - The constant.
+///
+/// # Returns
+///
+/// The fact.
+fn fn_const(kind: DataKind, v: Value) -> SlotState
+{
+    let state = tern!(
+        v == Value::NULL,
+        OwnerState::NULL.join(OwnerState::FRESH),
+        OwnerState::HELD
+    );
+    let info = PtrInfo { state, ..PtrInfo::unknown(Roots::new()) };
+    SlotState::of_kind(kind, info, Interval::TOP)
+}
+
 /// The value of a constant.
 ///
 /// # Arguments
@@ -1869,6 +1933,8 @@ pub(crate) fn is_loop_test(kind: &NodeKind) -> bool
 /// `ဗလာ` for the null address, the point of an integer.
 fn const_value(kind: DataKind, v: Value, platform: u16) -> SlotState
 {
+    ret_if!(kind.is_fn(), fn_const(kind, v));
+
     ret_if!(v == Value::NULL, SlotState::blank(kind));
     let Value::Int { kind: int, raw } = v
     else
@@ -1967,6 +2033,11 @@ fn converted(e: &Expr, from: DataKind, v: SlotState, platform: u16) -> SlotState
             SlotState::of_kind(e.kind, info, Interval::TOP)
         }
         SlotState::Int(n) if keeps => int_fact(e.kind, n, platform),
+        // `ဗလာ` that turns into a function kind.
+        SlotState::None if from == DataKind::Null && e.kind.is_fn() =>
+        {
+            fn_const(e.kind, Value::NULL)
+        }
         // A list literal moved to a plain list: its cells hold what the
         // literal's cells held.
         SlotState::List(info) if e.kind.is_seq() =>
@@ -2160,7 +2231,10 @@ fn has_effects(e: &Expr) -> bool
 {
     let mut found = false;
     let mut look = |sub: &Expr| {
-        found |= matches!(sub.node, ExprNode::Call { .. } | ExprNode::Take { .. });
+        found |= matches!(
+            sub.node,
+            ExprNode::Call { .. } | ExprNode::CallValue { .. } | ExprNode::Take { .. }
+        );
     };
     each_expr(e, &mut look);
     found

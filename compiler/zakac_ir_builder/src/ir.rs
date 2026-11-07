@@ -10,6 +10,7 @@ pub use zakac_semcheck::const_op::CmpOp;
 pub use zakac_semcheck::const_op::InfixOp;
 pub use zakac_semcheck::const_op::LogicOp;
 pub use zakac_semcheck::const_op::PrefixOp;
+use zakac_semcheck::fn_kind::FnKind;
 pub use zakac_semcheck::host::HostFn;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::value::Value;
@@ -316,6 +317,18 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Call the function a function value holds and drop its result. The
+    /// value is read first, then the arguments run; a value of `ဗလာ` stops
+    /// the program.
+    CallValue
+    {
+        /// The function value, of a function kind.
+        callee: Expr,
+        /// The arguments, each of its parameter's kind.
+        args: Vec<Expr>,
+        /// Source region.
+        span: Span,
+    },
     /// Write a value at an address.
     Store
     {
@@ -536,6 +549,7 @@ impl Stmt
             | Stmt::Continue { span }
             | Stmt::Return { span, .. }
             | Stmt::Call { span, .. }
+            | Stmt::CallValue { span, .. }
             | Stmt::Store { span, .. }
             | Stmt::Alloc { span, .. }
             | Stmt::Resize { span, .. }
@@ -650,6 +664,23 @@ pub enum ExprNode
         name: String,
         /// The arguments, each of its parameter's kind.
         args: Vec<Expr>,
+    },
+    /// A call of the function a function value holds. The value is read
+    /// first, then the arguments run; a value of `ဗလာ` stops the program.
+    CallValue
+    {
+        /// The function value, of a function kind.
+        callee: Box<Expr>,
+        /// The arguments, each of its parameter's kind.
+        args: Vec<Expr>,
+    },
+    /// The value of a function kind that calls a function of the module.
+    FnAddr
+    {
+        /// Index into [`Module::funcs`].
+        func: u32,
+        /// The function name.
+        name: String,
     },
     /// The work of a function the host serves, the one statement of an
     /// external function: its result, from the borrowed address of each
@@ -1001,4 +1032,53 @@ pub enum HaltCause
     NotGood,
     /// A good result was converted to its error value.
     NotFault,
+}
+
+/// The parameter slot kinds and the result kind of a function of kind `f`:
+/// each parameter in its own kind, or a borrow of it for one the function
+/// can change, as a declared function places its parameters. A call
+/// through a value of the kind passes its arguments so.
+///
+/// # Arguments
+///
+/// * `f` - The function kind.
+///
+/// # Returns
+///
+/// The parameter kinds and the result kind.
+pub fn fn_shape(f: &FnKind) -> (Vec<DataKind>, Option<DataKind>)
+{
+    let param = |p: &zakac_semcheck::fn_kind::FnParam| {
+        let kind = p.kind.repr();
+        if p.edit
+        {
+            kind.pointer_to().as_borrowed()
+        }
+        else
+        {
+            kind
+        }
+    };
+    (f.params.iter().map(param).collect(), f.ret.map(DataKind::repr))
+}
+
+impl Func
+{
+    /// Whether the function takes the parameters and gives the result a
+    /// value of function kind `f` calls with.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The function kind.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the shapes match.
+    pub fn fits_kind(&self, f: &FnKind) -> bool
+    {
+        let (params, ret) = fn_shape(f);
+        let count = self.params as usize;
+        let own = self.locals.iter().take(count).map(|s| s.kind);
+        count == params.len() && own.eq(params) && self.ret == ret
+    }
 }

@@ -95,6 +95,10 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 value.iter().for_each(|v| expr_places(v, out))
             }
             Stmt::Call { args, .. } => args.iter().for_each(|a| expr_places(a, out)),
+            Stmt::CallValue { callee, args, .. } =>
+            {
+                std::iter::once(callee).chain(args).for_each(|a| expr_places(a, out))
+            }
             Stmt::Break { .. } | Stmt::Continue { .. } => (),
             Stmt::Blit { src, dst, count, .. } =>
             {
@@ -158,6 +162,7 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         ExprNode::Const(_)
         | ExprNode::SizeOf(_)
         | ExprNode::BlankList
+        | ExprNode::FnAddr { .. }
         | ExprNode::Text(_) => (),
         ExprNode::Format(pieces) =>
         {
@@ -187,6 +192,9 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
         | ExprNode::List(args) => args.iter().for_each(|a| expr_places(a, out)),
+        ExprNode::CallValue { callee, args } => std::iter::once(callee.as_ref())
+            .chain(args)
+            .for_each(|a| expr_places(a, out)),
         ExprNode::MakeSlice { source, start, len, .. } =>
         {
             [source, start, len].into_iter().for_each(|a| expr_places(a, out))

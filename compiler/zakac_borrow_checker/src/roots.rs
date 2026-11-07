@@ -23,6 +23,7 @@ use crate::state::Interval;
 use crate::state::PtrInfo;
 use crate::state::SlotState;
 use crate::state::State;
+use crate::values::value_callees;
 use crate::walk::each_stmt;
 
 /// The places a pointer can point into.
@@ -133,6 +134,15 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
         }
         ExprNode::List(cells) => cells.iter().flat_map(deeper).collect(),
         ExprNode::Call { func, args, .. } => call_roots(*func, args, state, ctx),
+        ExprNode::CallValue { callee, args } =>
+        {
+            let funcs = value_callees(ctx.module, callee.kind);
+            ret_if!(
+                funcs.is_empty(),
+                args.iter().flat_map(|a| roots_of(a, state, ctx)).collect()
+            );
+            funcs.iter().flat_map(|f| call_roots(*f, args, state, ctx)).collect()
+        }
         _ => Roots::new(),
     }
 }

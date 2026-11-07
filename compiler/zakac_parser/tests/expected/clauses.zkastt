@@ -744,6 +744,7 @@ program:
             span:
               lo: 1978
               hi: 1993
+          place: null
           args:
           - infix:
               id: 73

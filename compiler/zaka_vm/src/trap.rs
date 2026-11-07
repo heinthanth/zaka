@@ -150,6 +150,8 @@ pub enum TrapKind
         /// The number of cells.
         len: u64,
     },
+    /// A call went through a function value that holds no function, `ဗလာ`.
+    NullCall,
     /// A remove statement found a list with no cells.
     NoCellToRemove,
     /// A remove statement found text with no characters.
@@ -287,6 +289,7 @@ impl fmt::Display for TrapKind
             {
                 t!("vm.trap.end_before_start", start = start, end = end)
             }
+            TrapKind::NullCall => t!("vm.trap.null_call"),
             TrapKind::NoCellToRemove => t!("vm.trap.no_cell_to_remove"),
             TrapKind::NoCharToRemove => t!("vm.trap.no_char_to_remove"),
             TrapKind::NoPlaceToInsert { index, first, len } =>
@@ -354,6 +357,7 @@ impl TrapKind
             | TrapKind::IndexOutOfRange { .. }
             | TrapKind::CharOutOfRange { .. }
             | TrapKind::EndBeforeStart { .. }
+            | TrapKind::NullCall
             | TrapKind::NoCellToRemove
             | TrapKind::NoCharToRemove
             | TrapKind::NoPlaceToInsert { .. }

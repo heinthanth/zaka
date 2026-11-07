@@ -18,6 +18,7 @@ use crate::interval::CellProofs;
 use crate::options::BorrowCheckOptions;
 use crate::roots::Roots;
 use crate::routine::Routine;
+use crate::values::taken_fns;
 use crate::walk::each_expr;
 use crate::walk::each_stmt;
 use crate::walk::stmt_exprs;
@@ -32,17 +33,23 @@ pub(crate) struct Groups
 }
 
 /// Add the function each call in `stmts` names to `out`, nested
-/// statements and calls inside expressions included.
+/// statements and calls inside expressions included. A call through a
+/// function value adds each function whose address the module takes.
 ///
 /// # Arguments
 ///
 /// * `stmts` - The statements.
+/// * `taken` - The functions whose address the module takes.
 /// * `out` - The function numbers found so far.
-pub(crate) fn callees(stmts: &[Stmt], out: &mut BTreeSet<u32>)
+pub(crate) fn callees(stmts: &[Stmt], taken: &BTreeSet<u32>, out: &mut BTreeSet<u32>)
 {
     each_stmt(stmts, &mut |s| {
         out.extend(call_target(s));
-        let mut add = |e: &Expr| out.extend(expr_call_target(e));
+        do_if!(matches!(s, Stmt::CallValue { .. }), out.extend(taken));
+        let mut add = |e: &Expr| {
+            out.extend(expr_call_target(e));
+            do_if!(matches!(e.node, ExprNode::CallValue { .. }), out.extend(taken));
+        };
         do_for!(e in stmt_exprs(s), each_expr(e, &mut add));
     });
 }
@@ -184,7 +191,8 @@ fn settle(
 fn calls_within(module: &Module, group: &[u32]) -> bool
 {
     let mut out = BTreeSet::new();
-    do_for!(&f in group, callees(&module.funcs[f as usize].block, &mut out));
+    let taken = taken_fns(module);
+    do_for!(&f in group, callees(&module.funcs[f as usize].block, &taken, &mut out));
     out.iter().any(|f| group.contains(f))
 }
 
@@ -200,12 +208,13 @@ fn calls_within(module: &Module, group: &[u32]) -> bool
 /// The groups, callees first.
 pub(crate) fn sccs(module: &Module) -> Groups
 {
+    let taken = taken_fns(module);
     let edges: Vec<Vec<u32>> = module
         .funcs
         .iter()
         .map(|f| {
             let mut out = BTreeSet::new();
-            callees(&f.block, &mut out);
+            callees(&f.block, &taken, &mut out);
             out.into_iter().collect()
         })
         .collect();

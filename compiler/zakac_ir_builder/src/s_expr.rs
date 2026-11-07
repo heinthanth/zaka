@@ -83,6 +83,7 @@ impl ToSexpr for Stmt
                 list("return", value.iter().map(ToSexpr::to_sexpr))
             }
             Stmt::Call { name, args, .. } => call_sexpr(name, args),
+            Stmt::CallValue { callee, args, .. } => call_value_sexpr(callee, args),
             Stmt::Store { addr, value, .. } =>
             {
                 list("store", [addr.to_sexpr(), value.to_sexpr()])
@@ -169,6 +170,8 @@ impl ToSexpr for Expr
                 list(head, [self.kind.name(), operand.to_sexpr()])
             }
             ExprNode::Call { name, args, .. } => call_sexpr(name, args),
+            ExprNode::CallValue { callee, args } => call_value_sexpr(callee, args),
+            ExprNode::FnAddr { name, .. } => list("fn_addr", [name.clone()]),
             ExprNode::Host { func, args } =>
             {
                 let name: &'static str = func.into();
@@ -421,6 +424,23 @@ fn dest_sexpr(dest: &Dest) -> String
         Dest::Slot(place) => place.to_string(),
         Dest::Mem(addr) => list("mem", [addr.to_sexpr()]),
     }
+}
+
+/// A call through a function value: the value, then its arguments.
+///
+/// # Arguments
+///
+/// * `callee` - The function value.
+/// * `args` - The arguments.
+///
+/// # Returns
+///
+/// The form.
+fn call_value_sexpr(callee: &Expr, args: &[Expr]) -> String
+{
+    let parts =
+        std::iter::once(callee.to_sexpr()).chain(args.iter().map(ToSexpr::to_sexpr));
+    list("call_value", parts)
 }
 
 /// `(call name arg…)`

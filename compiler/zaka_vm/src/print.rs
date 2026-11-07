@@ -33,6 +33,7 @@ use crate::trap::TrapKind;
 pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKind>
 {
     ret_if!(let Some(e) = kind.as_enum(), member_text(mem, addr, e));
+    ret_if!(kind.is_fn(), mem.load(addr, kind).map(|v| fn_value_text(mem, v)));
     ret_if!(let Some(s) = kind.as_struct(), struct_text(mem, addr, s));
     ret_if!(kind.is_textual(), text_at(mem, addr));
     if let Some(cell) =
@@ -50,7 +51,8 @@ pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKin
 }
 
 /// The text a print writes for a value: a member of an enumeration as
-/// `<stem>များထဲမှ <member>`, the form that reads back; a list, a struct or
+/// `<stem>များထဲမှ <member>` and a function value as
+/// `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`, the forms that read back; a list, a struct or
 /// text as [`list_text`] writes it; each other value as [`text`] writes it.
 ///
 /// # Arguments
@@ -72,6 +74,7 @@ pub fn shown_text(mem: &Mem, v: Value, kind: DataKind) -> Result<String, TrapKin
         let addr = v.as_ptr().ok_or(TrapKind::Malformed { reason })?;
         return list_text(mem, addr, kind);
     }
+    ret_if!(kind.is_fn(), Ok(fn_value_text(mem, v)));
     let Some(e) = kind.as_enum()
     else
     {
@@ -79,6 +82,22 @@ pub fn shown_text(mem: &Mem, v: Value, kind: DataKind) -> Result<String, TrapKin
     };
     let at = e.find(|m| m.scalar() == Some(v));
     Ok(at.map_or_else(|| text(v), |at| e.text_at(at)))
+}
+
+/// The text of a function value: the function it holds, in the form that
+/// reads back, or `ဗလာ`.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM, which knows the function names.
+/// * `v` - The value.
+///
+/// # Returns
+///
+/// The text.
+fn fn_value_text(mem: &Mem, v: Value) -> String
+{
+    v.as_ptr().map_or_else(|| text(v), |word| mem.fn_text(word))
 }
 
 /// The text of a member of an enumeration held at an address: its name, or

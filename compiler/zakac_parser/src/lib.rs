@@ -4,6 +4,7 @@ pub mod cli;
 mod cursor;
 mod decl_head;
 pub mod describe;
+mod fn_kind;
 mod heap;
 mod kind;
 mod literal;

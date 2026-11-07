@@ -338,6 +338,15 @@ en = "the stdlib has %{l}"
 [codes.ZK0238.explain]
 en = """An import whose path starts with \"စံကား/\" reads a module of the stdlib, which the compiler carries, never a file of that name. This name is none of its modules."""
 
+[codes.ZK0239.title]
+en = "function kind not in parentheses"
+[codes.ZK0239.message]
+en = "a function kind with parameters in a list of parameters or fields stands in parentheses"
+[codes.ZK0239.help]
+en = "write it as \"(<parameters> လက်ခံ… လုပ်ဆောင်ချက် အမျိုးအစား) <name>\""
+[codes.ZK0239.explain]
+en = """A function kind writes its parameters as a header does: kinds, each with an optional name, joined with \"၊\". In a list of parameters or fields, the parameters of the kind would run into the entries before it, so the list would have two readings. Parentheses close the kind: \"(ကိန်းပြည့်၊ ကိန်းပြည့် တို့ကို လက်ခံပြီး မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) ရှေ့\". A function kind with no parameters needs none."""
+
 # -------------------------------------------------------------- resolve ZK03xx
 
 [codes.ZK0301.title]
@@ -601,6 +610,15 @@ en = "the VM serves no function \"%{n}\" with these parameter and result kinds"
 en = "the VM serves %{l}, each with a result that can fail with \"%{e}\""
 [codes.ZK0334.explain]
 en = """A function that comes from outside, \"လုပ်ဆောင်ချက် <name> သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", has no statements: the VM serves it while the program runs. The VM serves a fixed set of functions, so the name, the parameter kinds and the result kind must be those of one of them. The stdlib declares each of them; import them from there."""
+
+[codes.ZK0335.title]
+en = "function and function value of one name"
+[codes.ZK0335.message]
+en = "\"%{n}\" names both a function and a function value, so the call could run either"
+[codes.ZK0335.help]
+en = "rename the variable that holds the function value"
+[codes.ZK0335.explain]
+en = """A call names its function, and the name finds a declared function first, then a variable, a parameter or a constant of a function kind. When both are in reach, the reader cannot tell which one the call runs, so the compiler refuses it. Rename one of them."""
 
 # ---------------------------------------------------------------- kinds ZK04xx
 
@@ -1066,6 +1084,31 @@ en = "the member \"%{n}\" needs a value: no %{k} value follows the member before
 [codes.ZK0461.explain]
 en = """A member with no value takes the value of the member before it plus one, and the first takes 0, when the kind of the members is an integer. For another kind, such as text or a character, write a value for each member. An integer member can also pass the largest value of its kind; write its value then."""
 
+[codes.ZK0462.title]
+en = "not a function value"
+[codes.ZK0462.message]
+en = "\"%{n}\" is %{k}, not a function value, so it cannot be called"
+[codes.ZK0462.explain]
+en = """A call runs a declared function, or the function a value of a function kind holds: a variable, a parameter, a field or a cell of such a kind. This name or place holds a value of another kind."""
+
+[codes.ZK0463.title]
+en = "unclear function address"
+[codes.ZK0463.message]
+en = "no single function \"%{n}\" fits here"
+[codes.ZK0463.help]
+en = "write the function kind the value goes to, such as the kind of the variable that takes it"
+[codes.ZK0463.explain]
+en = """A file can declare several functions of one name. The address of such a name, \"လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ\", takes the one whose kind the place of the value names: a variable with a written kind, a parameter, a field or a cell. Here no kind is written, or no function of the name fits it, or two of them fit it, as two functions that differ in their marks alone fit a kind with no marks."""
+
+[codes.ZK0464.title]
+en = "address of an external function"
+[codes.ZK0464.message]
+en = "\"%{n}\" comes from outside the program, so it has no address"
+[codes.ZK0464.help]
+en = "declare a function of the program that calls it, and take the address of that one"
+[codes.ZK0464.explain]
+en = """A function that comes from outside, \"ပြင်ပမှလာသော\", runs in the VM itself and has no place among the functions of the program, so no function value can hold it. A function of the program that calls it can stand in for it."""
+
 # ---------------------------------------------------------- naturalness ZK05xx
 
 [codes.ZK0501.title]
@@ -1290,7 +1333,9 @@ en = "dereference of ဗလာ"
 [codes.ZK0709.message]
 en = "\"%{name}\" is ဗလာ here, so it cannot be dereferenced"
 [codes.ZK0709.explain]
-en = """At this point the name holds ဗလာ, for example after a move, so it points at no block. Give it a block first, or leave the dereference out of the path where it holds ဗလာ."""
+en = """At this point the name holds ဗလာ, for example after a move, so it points at no block. Give it a block first, or leave the dereference out of the path where it holds ဗလာ. A function value that holds ဗလာ holds no function, so a call through it is reported the same."""
+[codes.ZK0709.call_message]
+en = "\"%{name}\" is ဗလာ here, so it holds no function to call"
 
 [codes.ZK0710.title]
 en = "offset past the end"
@@ -1304,7 +1349,9 @@ en = "possible dereference of ဗလာ"
 [codes.ZK0711.message]
 en = "\"%{name}\" can be ဗလာ here; compare it with ဗလာ first"
 [codes.ZK0711.explain]
-en = """The name is not compared with ဗလာ on this path, and the strict check wants one before a dereference. Compare it with ဗလာ and dereference it in the branch where it is not ဗလာ."""
+en = """The name is not compared with ဗလာ on this path, and the strict check wants one before a dereference. Compare it with ဗလာ and dereference it in the branch where it is not ဗလာ. A call through a function value is checked the same."""
+[codes.ZK0711.call_message]
+en = "\"%{name}\" can be ဗလာ here; compare it with ဗလာ before the call"
 
 [codes.ZK0712.title]
 en = "pointers into different blocks"

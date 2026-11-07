@@ -148,6 +148,10 @@ pub(crate) struct FnSig
     /// `true` when other files can import the function.
     #[builder(default)]
     pub exported: bool,
+    /// `true` for a function that comes from outside the program, which no
+    /// function value can hold.
+    #[builder(default)]
+    pub external: bool,
     /// The mark of each parameter, when the parameters have marks.
     pub marks: Option<Vec<Name>>,
     /// The name each later stage gives the function: the written name for

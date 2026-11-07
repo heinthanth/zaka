@@ -178,8 +178,10 @@ impl Value
             // A list, a struct or a slice is no single value; its slot is
             // cleared to zero octets instead, the default of each cell or
             // field, and a slice of no cells.
+            // A function value starts as no function, the zero word.
             DataKind::Ptr(_)
             | DataKind::Null
+            | DataKind::Fn(_)
             | DataKind::List(_)
             | DataKind::Struct(_)
             | DataKind::Slice(_)
@@ -846,7 +848,10 @@ pub fn from_raw(kind: DataKind, raw: &[u8], platform: u16) -> Result<Value, RawE
         {
             tern!(pattern <= 1, Ok(Value::Bool(pattern == 1)), Err(RawError::BadValue))
         }
-        DataKind::Ptr(_) | DataKind::Null => Ok(Value::Ptr(pattern as u64)),
+        DataKind::Ptr(_) | DataKind::Null | DataKind::Fn(_) =>
+        {
+            Ok(Value::Ptr(pattern as u64))
+        }
         DataKind::Enum(e) => from_raw(e.under(), raw, platform),
         DataKind::List(_)
         | DataKind::Struct(_)
@@ -1060,7 +1065,8 @@ impl FromStr for Value
             DataKind::Char => read_char(head).map(Value::Char),
             DataKind::Bool => head.parse::<bool>().ok().map(Value::Bool),
             DataKind::Ptr(_) | DataKind::Null => read_address(head).map(Value::Ptr),
-            DataKind::List(_)
+            DataKind::Fn(_)
+            | DataKind::List(_)
             | DataKind::Struct(_)
             | DataKind::Slice(_)
             | DataKind::Seq(_)
