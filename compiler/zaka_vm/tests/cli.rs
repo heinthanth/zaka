@@ -6,7 +6,7 @@ use zaka_vm::cli::ZakaVm;
 use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
-use zakac_codegen::cli::ZakacCodegen;
+use zakac_codegen_target_vm::cli::ZakacTargetVm;
 use zakac_parser::wrap::in_start_block;
 
 const SUM: &str = "(၂ + ၃) * ၄ ကို ပြသပါ။\n\"ပြီး\" ဟု ပြသပါ။";
@@ -56,11 +56,11 @@ fn source_on_stdin_runs()
 fn codegen_artifacts_run_raw_or_text()
 {
     let dir = tempfile::tempdir().unwrap();
-    for ext in ["zkbc", "zkbct"]
+    for ext in ["zkc", "zkct"]
     {
         let path = dir.path().join(format!("sum.{ext}"));
-        let codegen = ZakacCodegen::create_as_standalone();
-        let name = ZakacCodegen::standalone_name();
+        let codegen = ZakacTargetVm::create_as_standalone();
+        let name = ZakacTargetVm::standalone_name();
         let (code, _, _) = run_cmd(
             codegen,
             name,
@@ -198,9 +198,9 @@ fn a_program_runs_with_the_files_it_imports()
 fn a_codegen_artifact_keeps_the_imported_files()
 {
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("points.zkbct");
-    let codegen = ZakacCodegen::create_as_standalone();
-    let name = ZakacCodegen::standalone_name();
+    let path = dir.path().join("points.zkct");
+    let codegen = ZakacTargetVm::create_as_standalone();
+    let name = ZakacTargetVm::standalone_name();
     let args = ["-o", path.to_str().unwrap(), &sample("modules/points.zaka")];
     let (code, _, stderr) = run_cmd(codegen, name, &args, b"");
     assert_eq!(code, ExitCode::Success, "{stderr}");

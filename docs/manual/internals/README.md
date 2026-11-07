@@ -33,9 +33,12 @@ zakac_ir_builder            IR, folding        ZK06     codegen.md
    ▼
 zakac_borrow_checker        owners and loans   ZK07     borrow-checker.md
    ▼
-zakac_codegen               ops                         codegen.md
-   ▼
+zakac_codegen_target_vm     ops                         codegen.md
+   ▼                        (build --target vm)
 zaka_vm                     runs the ops       (traps)
+
+zakac_codegen_target_c      C for each module, then an executable
+                            (build --target c; after the borrow check)
 ```
 
 ## The workspace
@@ -46,7 +49,7 @@ web pages. One `Cargo.toml` at the root lists them with `members = ["compiler/*"
 
 | Crate | Job |
 | --- | --- |
-| `zakac` | the `zakac` command: one program with the subcommands `segment`, `lex`, `parse`, `semcheck`, `irgen`, `borrowck`, `codegen` and `run` |
+| `zakac` | the `zakac` command: one program with the subcommands `segment`, `lex`, `parse`, `semcheck`, `irgen`, `borrowck`, `build` and `run`; `build` hands the program to the target `--target` names |
 | `zakac_span` | source files, the source map, positions and spans, and the text normalizer (NFC plus a fixed order of Burmese signs) |
 | `zakac_burmese_segmenter` | cuts text into vannas, digits and other chars; the `segment` subcommand |
 | `zakac_lexer` | tokens, particles, comments and string tables |
@@ -56,7 +59,8 @@ web pages. One `Cargo.toml` at the root lists them with `members = ["compiler/*"
 | `zakac_semcheck` | name resolution, scopes, kinds, literal fitting, owner and borrow kinds |
 | `zakac_ir_builder` | the IR, lowering from the tree, constant folding |
 | `zakac_borrow_checker` | the ownership check over the IR (ZK07) |
-| `zakac_codegen` | the ops of the VM, and the asm listing |
+| `zakac_codegen_target_vm` | the ops of the VM, and the asm listing |
+| `zakac_codegen_target_c` | the C of each module and its runtime (`runtime/`), and the build of an executable with a C compiler |
 | `zaka_vm` | the VM: stack of values, storage blocks, traps; the `run` subcommand |
 | `zaka_host` | the functions the host serves to a program (`HOST_FNS`), the values that cross over, and the worlds those functions reach: the terminal and one in storage |
 | `zakac_diagnostics` | `Diagnostic`, the `Code` catalogue, one constructor per message, texts in `locales/codes.toml` |
@@ -84,7 +88,7 @@ rest; the arrows to them are left out of the picture.
    │                │                    │
    └────────────────┼────────────────────┘
                     ▼
-                zaka_vm ─────────▶ zakac_codegen
+                zaka_vm ─────────▶ zakac_codegen_target_vm
                                         │
                                         ▼
                                zakac_borrow_checker
@@ -108,7 +112,7 @@ rest; the arrows to them are left out of the picture.
 Two facts about the picture help when a build fails to link. `zakac_ast` sits above the
 lexer because the tree holds lexer words (`Kw`, `Particle`), and the parser, the
 naturalness check and each later stage read the tree. And `zaka_vm` sits above
-`zakac_codegen`, so the code generator never needs the VM; another backend could read
+`zakac_codegen_target_vm`, so the code generator never needs the VM; another backend could read
 the same IR.
 
 ## Build, test and format
@@ -132,7 +136,7 @@ Four kinds of test sit in the repo:
   shared helpers in `tests/common/mod.rs`.
 - **Golden files.** The `tests/inputs/*.zaka` of a stage crate are run through the stage
   and compared with `tests/expected/*` (`.zktokt`, `.zkastt`, `.zksemt`, `.zkirt`,
-  `.zkbckt`, `.zkbct`, `.zkasm`). After an intended change, run the test with
+  `.zkbckt`, `.zkct`, `.zkasm`). After an intended change, run the test with
   `ZAKA_BLESS=1` to rewrite the expected files, and read the diff before committing.
 - **Samples.** The programs in `samples/` (`basics`, `control`, `functions`, `heap`,
   `lists`, `programs`) run through the whole pipeline; `compiler/zaka_vm/tests/expected`
@@ -156,4 +160,5 @@ A new feature wants a test in each stage it touches, and a sample when a user ca
 | a rule about names or kinds, a wording warning | [Names and kinds](semcheck.md) |
 | an ownership rule | [The borrow checker](borrow-checker.md) |
 | the IR, folding, an op | [IR and code](codegen.md) |
+| the C of a native program, or its runtime | [The C target](c-backend.md) |
 | a message or a code | [Diagnostics](../compiler/diagnostics.md) |

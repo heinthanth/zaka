@@ -8,6 +8,7 @@ crate	clap	4.6.7	MIT OR Apache-2.0	https://github.com/clap-rs/clap
 crate	codee	0.3.5	MIT OR Apache-2.0	https://github.com/Synphonyte/codee
 crate	console_error_panic_hook	0.1.7	Apache-2.0/MIT	https://github.com/rustwasm/console_error_panic_hook
 crate	const_for	0.1.6	MIT	https://github.com/JENebel/const_for
+crate	etcetera	0.11.0	MIT OR Apache-2.0	https://github.com/lunacookies/etcetera
 crate	fontdb	0.24.0	MIT	https://github.com/RazrFalcon/fontdb
 crate	headless_chrome	1.0.22	MIT	https://github.com/rust-headless-chrome/rust-headless-chrome
 crate	js-sys	0.3.105	MIT OR Apache-2.0	https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys

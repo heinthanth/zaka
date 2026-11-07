@@ -32,3 +32,18 @@ en = "failed to decode artifact from %{p}: %{e}"
 
 [errors.runtime_trap]
 en = "the program stopped: %{e}"
+
+[errors.no_c_compiler]
+en = "no C compiler found: set CC, pass --cc, or put gcc, clang or zig on the PATH (on Windows, llvm-mingw, w64devkit or Zig need no Visual Studio)"
+
+[errors.flag_not_for_target]
+en = "%{flag} does not go with --target %{target}"
+
+[errors.tool_not_found]
+en = "can't find %{tool}: give a program on the PATH, or a path to one"
+
+[errors.c_compiler_failed]
+en = "the build step of %{cc} failed"
+
+[errors.not_for_target_c]
+en = "the C target cannot build %{what} at present"

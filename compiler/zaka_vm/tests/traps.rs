@@ -12,7 +12,7 @@ use zaka_vm::machine::RunOptions;
 use zaka_vm::trap::Trap;
 use zaka_vm::trap::TrapKind;
 use zakac_borrow_checker::options::OverflowMode;
-use zakac_codegen::bc::Module;
+use zakac_codegen_target_vm::bc::Module;
 
 /// The trap kind and function of a source text that must trap.
 fn trapped(text: &str, options: &RunOptions) -> (String, TrapKind, String)

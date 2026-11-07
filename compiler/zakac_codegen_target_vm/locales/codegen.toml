@@ -1,0 +1,22 @@
+_version = 2
+
+[codegen.about]
+en = "Generate stack machine ops for the Zaka VM from a checked program."
+
+[codegen.input]
+en = "Input file, or `-` for stdin (default: stdin)"
+
+[codegen.output]
+en = "Output file, or `-` for stdout (default: the ops beside the input, the asm listing to stdout; stdout for stdin)"
+
+[codegen.emit]
+en = "What to write: the ops (zkc), the ops as text (zkct), or the asm listing (asm) (default: from the -o extension, else zkc)."
+
+[codegen.results]
+en = "How a list or struct result reaches the caller: duplicated out of the callee, or built in place."
+
+[codegen.scratch]
+en = "Where scratch lists, structs and slices live: each in a slot apart, or shared across statements."
+
+[codegen.artifact.source_changed]
+en = "source text changed after re-ingest"

@@ -1,6 +1,6 @@
 ---
 title: Checks in the VM and in native code
-description: Which mistakes the compiler finds, which the VM stops, and which checks a planned native build would keep.
+description: Which mistakes the compiler finds, which the VM stops, and which checks a native build keeps.
 ---
 
 # Checks in the VM and in native code
@@ -10,9 +10,10 @@ runs; in the VM, while it runs; or in neither, when the program runs as native c
 with no checks, as a C program does. This page sorts each mistake into those places and
 tells the reason for the split.
 
-One part of this is not built. Now Zaka has one means to run a program: the VM.
-Native backends, first a translation to C and then LLVM, are planned. Each statement below
-about native code is the plan and the reasoning behind it, not a feature to use.
+Native code comes from the C target: `zakac build --target c` writes a program as C and
+compiles it. Its `--checks` option picks how much of the VM's watch a native program keeps,
+from none to the sanitizers of the C compiler; [Native programs](../compiler/native.md) has
+the details. LLVM comes later.
 
 ## Three places to look
 
@@ -29,7 +30,7 @@ about native code is the plan and the reasoning behind it, not a feature to use.
    ┌─────────────┐   checks each read, write and free on the path
    │   the VM    │   that this run takes; stops with a trap
    └──────┬──────┘
-          │ the same program, built as native code  (planned)
+          │ the same program, built as native code  (--target c)
           ▼
    ┌─────────────┐   no checks of its own: what the compiler
    │ native code  │   proved still holds; the rest behaves as in C
@@ -42,17 +43,17 @@ the compiler proved, and loses the rest.
 
 ## Which mistake is found where
 
-| Mistake | Before the run | In the VM | In native code (planned) |
+| Mistake | Before the run | In the VM | In native code (`--checks default`) |
 | --- | --- | --- | --- |
 | use after free, through an owner or a borrow | error ZK0704 | `use after free` | kept: proved before the run |
 | double free | error ZK0701, ZK0702 | `double free` | kept |
 | free of something that is not a heap block | error ZK0702, ZK0714 | `bad free` | kept |
 | the address of a local outliving its call | error ZK0706, ZK0703 | `use after free`, naming the variable | kept |
 | a leak of a local's block | error ZK0708 | `--leaks` lists it | kept |
-| a null access on each path | error ZK0709 | `null address` | a crash, as in C |
-| a null access on some path | warning ZK0711, with `--mem-strict` | `null address` | a crash |
-| a box number past the end, known before the run | error ZK0710 | `out of bounds` | not checked |
-| a box number past the end, known just in the run | nothing | `out of bounds` | not checked |
+| a null access on each path | error ZK0709 | `null address` | a crash, as in C; `null address` with `--checks mem` |
+| a null access on some path | warning ZK0711, with `--mem-strict` | `null address` | a crash; `null address` with `--checks mem` |
+| a box number past the end, known before the run | error ZK0710 | `out of bounds` | not checked; the sanitizer with `--checks mem` |
+| a box number past the end, known just in the run | nothing | `out of bounds` | not checked; the sanitizer with `--checks mem` |
 | pointers into two blocks subtracted | error ZK0712, when provable | `mixed blocks` | not checked |
 | a use after free through a raw address | nothing | `use after free` | not checked |
 | a misaligned address, or octets that hold no value | nothing | `misaligned`, `bad value` | not checked |
@@ -122,26 +123,28 @@ program with no raw kinds, compiled at `--mem-check error`, never reaches a use 
 free, a double free or a bad free, and the address of a local never outlives its call.
 [Ownership, explained](ownership.md) tells how.
 
-## Native code, as planned
+## Native code
 
-The plan keeps the VM as it is and adds other means to run the same program:
+The VM remains as it is, and the C target adds a second means to run the same program:
 
 - **The VM remains the reference.** It runs programs for the Explorer and for the
   tests, and it is the place where a mistake is shown rather than suffered.
-- **Native backends come after.** The first is a translation to C, which each C compiler
-  can build, and the next is LLVM. Both read the same intermediate form the VM's
-  instructions come from, so the arrangements agree: the size of each kind, the offset of each
-  field, and the arithmetic on pointers are the same on each backend.
-- **A native build has no run-time checks of its own.** It behaves like C. A pointer
-  becomes a plain `T *`, a read becomes a plain load, and an owner that moves costs one
-  store of `ဗလာ`. All that the compiler proved still holds. A mistake that the
-  VM alone would have caught does what it does in C.
-- **A debug flag could add cheap checks later**, such as a null check, or the sanitizer
-  flags of the C compiler. That is an idea, not a promise.
+- **The C target reads what the VM's code generator reads.** Both start from the same
+  intermediate form, so the arrangements agree: the size of each kind, the offset of each
+  field, and the arithmetic on pointers are the same on each backend. A program that runs
+  clean in the VM prints the same output as native code.
+- **The checks of the language remain at the default level.** A zero divisor, an overflow under
+  `--overflow stop`, a cell outside its list, a range of text that cuts a character and a
+  call through `ဗလာ` stop a native program with the VM's message.
+- **The checks of storage remain in the compiler alone.** A native build behaves like C
+  there: a pointer is a plain address, and an owner that moves costs one store of `ဗလာ`.
+  All that the compiler proved still holds. A mistake that the VM alone would have caught
+  does what it does in C, unless `--checks mem` asks for the null checks and the sanitizers
+  of the C compiler.
 
-For this reason the order matters. Ownership came before the native backends: it moves
-the checks that matter most to the compiler, where such checks cost nothing at run time, before
-the VM's checks are gone.
+For this reason the order matters. Ownership came before the C target: it moves the checks
+that matter most to the compiler, where such checks cost nothing at run time, before the
+VM's checks are gone.
 
 ## Turning the checks up and down
 
@@ -153,6 +156,7 @@ the VM's checks are gone.
 | `--mem-strict` | also warn about a pointer that can be `ဗလာ`, which the compiler cannot prove safe |
 | `--no-raw` | refuse each raw address kind |
 | `--frames packed` | the VM places variables next to each other, as C does |
+| `--checks none`, `default`, `mem` | for `zakac build --target c`: no check past what C has, the checks of the language, or those and the mem checks |
 
 The Explorer has the same settings. Use `warn` to watch the VM catch what the
 compiler would have caught, and `packed` to see what a mistake does when nothing watches.

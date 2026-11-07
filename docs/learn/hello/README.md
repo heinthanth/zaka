@@ -59,6 +59,15 @@ starts](../programs/start.md) shows what more a start block can do.
    ```sh
    zakac run hello.zaka
    ```
+3. Or build it into a program of its own, through C. This needs a C compiler on the
+   PATH, such as GCC, Clang or `zig cc`:
+
+   ```sh
+   zakac build --target c hello.zaka
+   ./hello
+   ```
+
+   [Native programs](../../manual/compiler/native.md) tells what such a program checks.
 
 ## More than one line
 

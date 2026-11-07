@@ -36,7 +36,7 @@ zaka_host = { workspace = true }
 zaka_vm = { workspace = true }
 zaka_web_ui_common = { workspace = true }
 zakac_borrow_checker = { workspace = true }
-zakac_codegen = { workspace = true }
+zakac_codegen_target_vm = { workspace = true }
 zakac_consts = { workspace = true }
 zakac_diagnostics = { workspace = true }
 zakac_i18n = { workspace = true }

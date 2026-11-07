@@ -6,9 +6,9 @@ use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_and_keep;
-use zakac_codegen::options::EmitOptions;
-use zakac_codegen::options::ResultMode;
-use zakac_codegen::options::ScratchMode;
+use zakac_codegen_target_vm::options::EmitOptions;
+use zakac_codegen_target_vm::options::ResultMode;
+use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
 
 /// Text built while the program runs, copied into a variable, a struct, a

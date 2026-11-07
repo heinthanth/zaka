@@ -7,9 +7,9 @@ use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_and_keep;
 use zaka_vm::trap::TrapKind;
-use zakac_codegen::options::EmitOptions;
-use zakac_codegen::options::ResultMode;
-use zakac_codegen::options::ScratchMode;
+use zakac_codegen_target_vm::options::EmitOptions;
+use zakac_codegen_target_vm::options::ResultMode;
+use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
 
 /// A text constant set into a variable, given to a function and read

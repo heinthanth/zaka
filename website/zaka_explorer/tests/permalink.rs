@@ -10,8 +10,8 @@ use zaka_explorer::state::settings::AstMode;
 use zaka_explorer::state::settings::LowerMode;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_borrow_checker::options::OverflowMode;
-use zakac_codegen::options::ResultMode;
-use zakac_codegen::options::ScratchMode;
+use zakac_codegen_target_vm::options::ResultMode;
+use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
 
 /// A link to a source with the default options.

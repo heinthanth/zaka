@@ -1416,6 +1416,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "etcetera"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de48cc4d1c1d97a20fd819def54b890cadde72ed3ad0c614822a0a433361be96"
+dependencies = [
+ "cfg-if",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "event-listener"
 version = "5.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6013,7 +6023,7 @@ dependencies = [
  "zakac_ast",
  "zakac_borrow_checker",
  "zakac_burmese_segmenter",
- "zakac_codegen",
+ "zakac_codegen_target_vm",
  "zakac_consts",
  "zakac_diagnostics",
  "zakac_i18n",
@@ -6059,7 +6069,7 @@ dependencies = [
  "zaka_host",
  "zakac_borrow_checker",
  "zakac_cli_common",
- "zakac_codegen",
+ "zakac_codegen_target_vm",
  "zakac_diagnostics",
  "zakac_host_errors",
  "zakac_i18n",
@@ -6146,7 +6156,7 @@ dependencies = [
  "zaka_web_builder",
  "zaka_web_ui_common",
  "zakac_borrow_checker",
- "zakac_codegen",
+ "zakac_codegen_target_vm",
  "zakac_consts",
  "zakac_diagnostics",
  "zakac_i18n",
@@ -6163,11 +6173,17 @@ name = "zakac"
 version = "0.1.0"
 dependencies = [
  "bon",
+ "cargo-build",
+ "rust-i18n",
+ "strum",
  "zaka_vm",
  "zakac_borrow_checker",
  "zakac_burmese_segmenter",
  "zakac_cli_common",
- "zakac_codegen",
+ "zakac_codegen_target_c",
+ "zakac_codegen_target_vm",
+ "zakac_host_errors",
+ "zakac_i18n",
  "zakac_ir_builder",
  "zakac_lexer",
  "zakac_parser",
@@ -6204,7 +6220,7 @@ dependencies = [
  "zaka_vm",
  "zakac_ast",
  "zakac_cli_common",
- "zakac_codegen",
+ "zakac_codegen_target_vm",
  "zakac_diagnostics",
  "zakac_host_errors",
  "zakac_i18n",
@@ -6272,7 +6288,33 @@ dependencies = [
 ]
 
 [[package]]
-name = "zakac_codegen"
+name = "zakac_codegen_target_c"
+version = "0.1.0"
+dependencies = [
+ "bon",
+ "cargo-build",
+ "etcetera",
+ "rust-i18n",
+ "strum",
+ "tempfile",
+ "zakac_ast",
+ "zakac_borrow_checker",
+ "zakac_cli_common",
+ "zakac_diagnostics",
+ "zakac_host_errors",
+ "zakac_i18n",
+ "zakac_ir_builder",
+ "zakac_lexer",
+ "zakac_parser",
+ "zakac_reporter",
+ "zakac_rust_sugars",
+ "zakac_semcheck",
+ "zakac_session",
+ "zakac_span",
+]
+
+[[package]]
+name = "zakac_codegen_target_vm"
 version = "0.1.0"
 dependencies = [
  "bon",

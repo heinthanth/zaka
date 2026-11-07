@@ -1,0 +1,103 @@
+_version = 2
+
+[target_c.about]
+en = "Build a native program: write C for each module, then compile it with a C compiler from the PATH."
+
+[target_c.input]
+en = "Input file, or `-` for stdin (default: stdin)"
+
+[target_c.output]
+en = "The executable to write (default: the name of the input, without its extension)."
+
+[target_c.cache]
+en = "The folder for the generated C (default: zakac/<folder>/<input>-<hash> in XDG_CACHE_HOME or ~/.cache, or in %LOCALAPPDATA% on Windows; .zakac_c_cache beside the input when that cannot be made)."
+
+[target_c.emit]
+en = "What to make: an executable (bin), or the C files alone (c) (default: bin)."
+
+[target_c.checks]
+en = "The run-time checks of the executable: none, the language checks (default), or those and mem checks (mem)."
+
+[target_c.cc]
+en = "The C compiler, with the words before its flags (default: CC, then cc, gcc, clang or zig cc from the PATH)."
+
+[target_c.linker]
+en = "The program that links the objects, with the words before its flags (default: the C compiler)."
+
+[target_c.cc_flag]
+en = "One more flag for the C compiler, after CFLAGS; repeat it for more."
+
+[target_c.ld_flag]
+en = "One more flag for the linker, after LDFLAGS; repeat it for more."
+
+[target_c.no_default_flags]
+en = "Leave out the default C flags (-O2 -w -ffp-contract=off); -std=c11 stands, since the generated C is written for it."
+
+[target_c.no_sanitizers]
+en = "the C compiler has no sanitizers, so the mem checks cover null addresses alone"
+
+[target_c.stopped]
+en = "the program stopped: %{e}"
+
+[target_c.trap.zero_divisor]
+en = "integer division or remainder with zero as divisor"
+
+[target_c.trap.shift_too_far]
+en = "shift distance %{distance} is not below the bit width %{bits}"
+
+[target_c.trap.step_not_positive]
+en = "counted loop step is not positive"
+
+[target_c.trap.overflow]
+en = "the result of %{op} does not fit %{kind}"
+
+[target_c.no_int128]
+en = "the program holds i128 or u128, and this C compiler has no 128-bit integers"
+
+[target_c.trap.index_out_of_range]
+en = "cell %{index} is outside the list, whose cells run from %{lo} to %{hi}"
+
+[target_c.trap.char_out_of_range]
+en = "character %{index} is outside the text, whose characters run from %{lo} to %{hi}"
+
+[target_c.trap.end_before_start]
+en = "the range from %{start} to %{end} ends before it starts"
+
+[target_c.trap.null_call]
+en = "the function value is ဗလာ, so it holds no function to call"
+
+[target_c.trap.no_cell_to_remove]
+en = "the list holds no cells, so it has no last cell to remove"
+
+[target_c.trap.no_char_to_remove]
+en = "the text holds no characters, so it has no last character to remove"
+
+[target_c.trap.no_place_to_insert]
+en = "no value can go in front of %{index}: the places run from %{lo} to %{hi}, and %{hi} is the end"
+
+[target_c.trap.slice_out_of_range]
+en = "%{len} cells from cell %{start} pass the end of %{limit} cells"
+
+[target_c.trap.text_cut]
+en = "a range of text at %{addr} starts or ends inside a character"
+
+[target_c.trap.bad_utf8]
+en = "the u8s at %{addr} are not UTF-8 text"
+
+[target_c.trap.not_good]
+en = "the result holds an error, not a good result: %{e}"
+
+[target_c.trap.not_good_bare]
+en = "the result holds a failure, not a good result"
+
+[target_c.trap.not_fault]
+en = "the result is a good result, not an error"
+
+[target_c.trap.null_deref]
+en = "access through a null address at %{addr}"
+
+[target_c.trap.out_of_mem]
+en = "no heap room for %{size} octets"
+
+[target_c.trap.overlap]
+en = "the cells at %{addr} overlap their source; \"ပြောင်းထည့်မည်\" allows that"

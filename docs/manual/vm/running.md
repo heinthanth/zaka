@@ -13,12 +13,12 @@ what the command does, what it prints, how it ends, and which limits it puts on 
 ```text
  program.zaka ──▶ lex ──▶ parse ──▶ check ──▶ borrow check ──▶ code ──▶ VM
                                                                   ▲
- program.zkbc  ──────────────── decode ───────────────────────────┘
+ program.zkc  ──────────────── decode ───────────────────────────┘
 ```
 
 1. **Load.** The command reads the input: a file, or standard input when the name is
-   `-` or missing. If the octets begin as a codegen artifact (raw `.zkbc`, or the text
-   form with its `# zakac-codegen-artifact` header), the command decodes the
+   `-` or missing. If the octets begin as the ops of `zakac build` (raw `.zkc`, or
+   the text form `.zkct` with its `# zakac-codegen-artifact` header), the command decodes the
    instructions from it. Otherwise it reads the input as Zaka source.
 2. **Compile.** Source goes through each stage of the [compiler](../compiler/stages.md).
    A diagnostic of error level stops here: the messages go to standard error, nothing
@@ -49,8 +49,8 @@ with no arguments and a blank environment.
 To keep the instructions and run them later:
 
 ```console
-$ zakac codegen -o program.zkbc program.zaka
-$ zakac run program.zkbc
+$ zakac build program.zaka
+$ zakac run program.zkc
 ```
 
 The artifact holds the source and the diagnostics too, so a run from it reports the same

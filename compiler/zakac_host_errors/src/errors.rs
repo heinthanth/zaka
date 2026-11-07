@@ -63,6 +63,28 @@ pub enum Error
     {
         msg: String
     },
+    #[error("{}", t!("errors.no_c_compiler"))]
+    NoCCompiler,
+    #[error("{}", t!("errors.flag_not_for_target", flag = flag, target = target))]
+    FlagNotForTarget
+    {
+        flag: String, target: String
+    },
+    #[error("{}", t!("errors.tool_not_found", tool = tool))]
+    ToolNotFound
+    {
+        tool: String
+    },
+    #[error("{}", t!("errors.c_compiler_failed", cc = cc))]
+    CCompilerFailed
+    {
+        cc: String
+    },
+    #[error("{}", t!("errors.not_for_target_c", what = what))]
+    NotForTargetC
+    {
+        what: String
+    },
 }
 
 /// An action performed on an IO resource.

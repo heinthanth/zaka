@@ -16,7 +16,7 @@ rules of the language do not depend on it: what a program means is set in
 
 ## Reading a listing
 
-`zakac codegen --asm` writes the listing of a program instead of the artifact. Here is a
+`zakac build --emit asm` writes the listing of a program in place of the ops. Here is a
 function that doubles its parameter, and a start block that calls it:
 
 ```zaka
@@ -37,7 +37,7 @@ function that doubles its parameter, and a start block that calls it:
 ```
 
 ```console
-$ zakac codegen --asm program.zaka
+$ zakac build --emit asm program.zaka
 ; zakac asm listing v1, platform 64 bits
 
 fn f0 နှစ်ဆ (params 1) -> isize
@@ -114,7 +114,7 @@ kind of a value that the program supplies (`isize`, `text`, `isize[3]`, ...).
 ```
 
 ```console
-$ zakac codegen --asm program.zaka
+$ zakac build --emit asm program.zaka
 ; zakac asm listing v1, platform 64 bits
 texts
   t0 "မြ"
@@ -168,7 +168,7 @@ l ကို ပြသပါ။
 ```
 
 ```console
-$ zakac codegen --asm program.zaka
+$ zakac build --emit asm program.zaka
 ; zakac asm listing v1, platform 64 bits
 seqs
   s0 isize[] [1:isize, 2:isize]
@@ -195,9 +195,9 @@ variable in it, so `format fmt0` builds it in the scratch slot `%text` from the 
 of the text `အမည်` and the value of `အသက်`. The print drops the slot right after, and the
 end of the program drops `အမည်`, which holds static text and frees nothing.
 
-The artifact of `zakac codegen` holds the same instructions as data: raw (`.zkbc`) or
-as text (`.zkbct`, a header line and then YAML), chosen with the file name or with
-`--output-format`. `zakac run` runs either form.
+The ops of `zakac build` hold the same instructions as data: raw (`.zkc`) or as
+text (`.zkct`, a header line and then YAML), chosen with `--emit` or the file name in
+`-o`. `zakac run` runs either form.
 
 ## The instructions
 

@@ -18,7 +18,7 @@ macro_rules! define_codes {
 ///
 /// Ids are `ZK` plus four digits; the first two give the phase:
 /// `01` lexer, `02` parser, `03` resolve, `04` kinds, `05` naturalness,
-/// `06` constant folding, `07` ownership.
+/// `06` constant folding, `07` ownership, `08` the targets of `build`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Code { $($(#[$meta])* $name,)+ }
 
@@ -438,7 +438,10 @@ OverflowProven = ("ZK0719", Level::Warning),
 /// place.
 DuplicateMade = ("ZK0720", Level::Warning),
 /// The two ranges of a `ကူးယူမည်` overlap for certain.
-BlitRangesOverlap = ("ZK0721", Level::Error) }
+BlitRangesOverlap = ("ZK0721", Level::Error),
+// targets: ZK08xx
+/// A kind the C target cannot build: `f16` or `f128`.
+KindNotForC = ("ZK0801", Level::Error) }
 
 impl Code
 {

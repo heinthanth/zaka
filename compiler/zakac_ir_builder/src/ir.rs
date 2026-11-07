@@ -853,6 +853,29 @@ impl ExprNode
     }
 }
 
+/// Whether an operand is a fresh value that holds text: the text a format
+/// builds, the result of a call, or a list literal. A backend drops such a
+/// value right after the statement reads it, since no place keeps it.
+///
+/// # Arguments
+///
+/// * `e` - The operand.
+///
+/// # Returns
+///
+/// `true` for a fresh value that holds text.
+pub fn fresh_text(e: &Expr) -> bool
+{
+    let made = matches!(
+        e.node,
+        ExprNode::Format(_)
+            | ExprNode::Call { .. }
+            | ExprNode::CallValue { .. }
+            | ExprNode::List(_)
+    );
+    made && e.kind.holds_text()
+}
+
 /// A piece of text built when the program runs.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

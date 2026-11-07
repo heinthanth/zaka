@@ -36,7 +36,7 @@ folding       works out the constants              ZK06
 borrow check  follows owners and borrows           ZK07          zkbck
     │
     ▼
-codegen       writes the ops of the VM                           zkbc
+codegen       writes the ops of the VM (`build`)                 zkc
     │
     ▼
 the VM        runs the ops                         (traps)
@@ -204,7 +204,7 @@ borrow checker](../internals/borrow-checker.md).
 
 ### Code generation
 
-`zakac codegen` turns the IR into the ops of the stack machine, with a table that maps
+`zakac build` turns the IR into the ops of the stack machine, with a table that maps
 each op back to a range of the source:
 
 ```text
@@ -241,7 +241,7 @@ name:
 
 Each artifact holds the name of the source file, the *source text itself* (so that
 spans can be shown without the file), and what the stage made. Each one after the
-segmenter's holds the diagnostics found so far as well. That is how a saved `.zkbc` file
+segmenter's holds the diagnostics found so far as well. That is how a saved `.zkc` file
 can still print a warning with the line it points at. The raw form of an artifact holds
 the same data in a compact encoding, behind the header `ZKAR`, the version, and the name
 of the stage; the name is checked first, so a raw file of one stage is not read as the
@@ -255,6 +255,6 @@ artifact of another.
 | names and kinds | `semcheck` | the tree and the kind of each expression |
 | IR builder, folding | `irgen` | the IR after folding |
 | borrow check | `borrowck` | the IR and the digest of each function |
-| codegen | `codegen` | the module of ops, the one `run` reads |
+| codegen | `build` | the module of ops, the one `run` reads |
 
 [Commands](commands.md) lists the options and the file extensions.

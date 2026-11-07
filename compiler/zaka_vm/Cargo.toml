@@ -16,7 +16,7 @@ termcolor = { workspace = true }
 zaka_host = { workspace = true }
 zakac_borrow_checker = { workspace = true }
 zakac_cli_common = { workspace = true }
-zakac_codegen = { workspace = true }
+zakac_codegen_target_vm = { workspace = true }
 zakac_diagnostics = { workspace = true }
 zakac_host_errors = { workspace = true }
 zakac_i18n = { workspace = true }

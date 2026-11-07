@@ -21,7 +21,7 @@ use zaka_vm::mem::Origin;
 use zaka_vm::mem::RED_ZONE;
 use zaka_vm::print::list_text;
 use zaka_vm::print::text;
-use zakac_codegen::bc;
+use zakac_codegen_target_vm::bc;
 use zakac_i18n::t;
 use zakac_ir_builder::value::Value;
 use zakac_rust_sugars::do_if;

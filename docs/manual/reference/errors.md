@@ -292,3 +292,9 @@ ZK0701 to ZK0704 and ZK0706 to ZK0712 are warnings and the program runs; with
 | ZK0719 | an operation that overflows for each value of its operands; a warning, not given with `--overflow wrap` | [Overflow](../language/expressions.md#arithmetic) |
 | ZK0720 | with `--warn-duplicates`, a statement that duplicates text or a list; a warning | [Text](../language/text.md#copies) |
 | ZK0721 | the two ranges of `ကူးယူမည်` overlap, both in one known block at known offsets | [Writing and filling cells](../language/pointers.md#writing-and-filling-cells) |
+
+### ZK08: building for a target
+
+| Code | Problem | See |
+| --- | --- | --- |
+| ZK0801 | a kind the C target cannot build, `f16` or `f128`, in a program built with `--target c` | [Native programs](../compiler/native.md) |

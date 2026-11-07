@@ -5,8 +5,8 @@ description: Each zakac command, what it reads, what it writes, and each of its 
 
 # Commands
 
-`zakac` has one command for each stage of the compiler, and one to run a program. These
-share one shape:
+`zakac` has one command for each stage of the compiler, one to build a program for a
+target, and one to run a program. These share one shape:
 
 ```console
 $ zakac <command> [options] [INPUT]
@@ -25,12 +25,13 @@ stage made, the *artifact*. The `run` command goes to the end and runs the progr
 | `semcheck` | names, kinds and natural wording | the tree and the kind of each expression | `.zksem` / `.zksemt` |
 | `irgen` | the IR builder and constant folding | the IR | `.zkir` / `.zkirt` |
 | `borrowck` | the ownership check | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
-| `codegen` | the code generator | the ops for the VM | `.zkbc` / `.zkbct` |
+| `build` | the code generator of a target | the ops of the VM (`--target vm`), or an executable through C (`--target c`) | `.zkc` / `.zkct` |
 | `run` | the VM | nothing: the program runs | |
 
 Each stage also builds as a program of its own (`zakac_lexer`, `zakac_parser`,
-`zakac_semcheck`, `zakac_ir_builder`, `zakac_borrow_checker`, `zakac_codegen`,
-`zakac_burmese_segmenter`, `zaka_vm`) with the same options as its command.
+`zakac_semcheck`, `zakac_ir_builder`, `zakac_borrow_checker`, `zakac_burmese_segmenter`,
+`zaka_vm`) with the same options as its command. Each target of `build` does too:
+`zakac_codegen_target_vm` and `zakac_codegen_target_c`.
 
 ## A small session
 
@@ -47,12 +48,12 @@ Here is a program that adds up two numbers and prints the sum:
 ```
 
 Saved as `sum.zaka`, it runs with one command. The second command stops after the code
-generator and prints a listing of the ops, not an artifact:
+generator and prints a listing of the ops, not the ops:
 
 ```console
 $ zakac run sum.zaka
 ၃
-$ zakac codegen --asm sum.zaka
+$ zakac build --emit asm sum.zaka
 ; zakac asm listing v1, platform 64 bits
 
 fn f0 ပရိုဂရမ် (params 0)
@@ -91,12 +92,16 @@ The format is picked in this order:
 The raw form is compact and quick to load; the text form is for reading and for diffs.
 Both hold the same data.
 
+`build` follows these rules for `-o` as well, with two changes: `--emit` picks what it
+writes in place of `--output-format`, and with no `-o` it writes beside the source file
+(see [build](#build)).
+
 ```console
-$ zakac codegen age.zaka -o out/age.zkbc
-$ zakac codegen age.zaka -o out/age.zkbct
-$ zakac codegen age.zaka -o out/
+$ zakac build age.zaka -o out/age.zkc
+$ zakac build age.zaka -o out/age.zkct
+$ zakac build age.zaka -o out/
 $ ls out
-age.zkbc  age.zkbct
+age.zkc  age.zkct
 ```
 
 A stage writes its artifact even when it finds errors; the errors are in the artifact
@@ -104,12 +109,12 @@ too, and the exit code is 1. See [Diagnostics](diagnostics.md).
 
 ### What `run` reads
 
-`run` takes a source file, or a `codegen` artifact in either form. It tells them apart
-from the first octets of the input, not from the file name:
+`run` takes a source file, or the ops of `zakac build` in either form (`.zkc` or
+`.zkct`). It tells them apart from the first octets of the input, not from the file name:
 
 ```console
-$ zakac codegen age.zaka -o age.zkbc
-$ zakac run age.zkbc
+$ zakac build age.zaka
+$ zakac run age.zkc
 ၂၀
 $ zakac run age.zaka
 ၂၀
@@ -160,7 +165,7 @@ in [Pointer checks](checks.md).
 | `--overflow <MODE>` | `stop` | what integer arithmetic does with a result outside its kind: `stop` stops the program and warns about an operation that overflows for each value it can see (ZK0719), `wrap` wraps it around; see [Overflow](../language/expressions.md#arithmetic) |
 | `--warn-duplicates` | off | warn about each statement that duplicates text or a list (ZK0720), after the compiler moves the values a place reads no more; see [Text](../language/text.md#copies) |
 
-These belong to `codegen` and to `run`:
+These belong to `build --target vm` and to `run`:
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -209,16 +214,29 @@ From `parse` on, a command reads the files its input imports as well, and its ar
 holds them under `imports` ([Modules](../language/modules.md)). `segment` and
 `lex` work on the one file given to them.
 
-## codegen
+## build
 
 ```console
-$ zakac codegen [--asm] [options] [INPUT]
+$ zakac build [--target vm|c] [--emit WHAT] [options] [INPUT]
 ```
 
-Besides all the compile options, `codegen` takes `--asm`, which writes a listing of the
-ops in place of the artifact. The listing is plain text, and it goes to the file in `-o`
-or to standard output. Here is the listing of a program with a variable (`age.zaka`),
-for a 32-bit platform:
+`build` runs each stage, then the code generator of a target:
+
+| Target | Makes | `--emit` | Output with no `-o` |
+| --- | --- | --- | --- |
+| `vm` (the default) | the ops of the VM, which `run` runs | `zkc` (default), `zkct`, `asm` | `<name>.zkc` or `<name>.zkct` beside the source; the listing goes to standard output |
+| `c` | an executable, through C and a C compiler | `bin` (default), `c` | `<name>` beside the source (`<name>.exe` on Windows) |
+
+A source read from standard input writes the ops to standard output. Each target
+takes all the compile options above, and the options of its own; an option of the other
+target, or an `--emit` word of the other target, stops the build with an error.
+
+### The VM target
+
+`--emit zkc` writes the raw ops, `zkct` the text form (a header line, then YAML),
+and `asm` a listing of the ops. The listing is plain text, for reading; it goes to
+standard output, or to the file in `-o`. Here is the listing of a program with a variable
+(`age.zaka`), for a 32-bit platform:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -232,7 +250,7 @@ for a 32-bit platform:
 ```
 
 ```console
-$ zakac codegen --platform-bits 32 --asm age.zaka
+$ zakac build --platform-bits 32 --emit asm age.zaka
 ; zakac asm listing v1, platform 32 bits
 
 fn f0 ပရိုဂရမ် (params 0)
@@ -252,6 +270,36 @@ fn f1 main (params 0)
 ```
 
 The ops are listed in [Instructions](../vm/instructions.md).
+
+### The C target
+
+`--target c` writes a C file for each module of the program, then compiles and links
+them with a C compiler; `--emit c` stops after the C files. The C is plain C11, so GCC,
+Clang, MinGW and `zig cc` each build it, on Windows too, with no Visual Studio.
+[Native programs](native.md) tells what the executable checks, and where its output
+differs from the VM.
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--checks <LEVEL>` | `default` | the run-time checks of the executable: `none` (as C, the fastest), `default` (the stops of the language, such as a zero divisor or a cell outside its list), or `mem` (those, null addresses, and the sanitizers of the C compiler) |
+| `--cache <DIR>` | the cache of the user | the folder for the C files and the objects; when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
+| `--cc <CMD>` | `CC`, then the first of `cc`, `gcc`, `clang` and `zig cc` | the C compiler, with the words before its flags |
+| `--linker <CMD>` | the C compiler | the program that links the objects, such as `clang -fuse-ld=lld` |
+| `--cc-flag <FLAG>` | | one more flag for the C compiler; give it again for more |
+| `--ld-flag <FLAG>` | | one more flag for the linker; give it again for more |
+| `--no-default-flags` | off | leave out the default C flags `-O2 -w -ffp-contract=off` |
+
+The flags reach the C compiler in this order: `-std=c11`, the default flags, `CFLAGS`,
+then each `--cc-flag`. The linker gets `-lm`, `LDFLAGS`, then each `--ld-flag`. A later
+flag wins where the compiler keeps the last one, so `--cc-flag -O3` replaces `-O2`. `-w`
+silences warnings wherever it stands, so warnings need `--no-default-flags`.
+
+```console
+$ zakac build --target c age.zaka
+$ ./age
+၂၀
+$ CFLAGS=-O3 zakac build --target c --linker 'clang -fuse-ld=lld' age.zaka
+```
 
 ## run
 
@@ -311,6 +359,9 @@ leak: block at 0x101020, 16 octets
 | --- | --- |
 | `ZAKAC_CARETS` | the rows under a marked span on a color terminal: `off` leaves them out, `codepoint` draws them with one cell per code point, `cluster` draws them with a consonant and its `ေ`, `ျ` or `ြ` as two cells, `flow` places them where a terminal that draws Burmese text at its natural width puts the text; when unset, the compiler picks one for the terminal it knows, else `off` |
 | `NO_COLOR` | when it is set, color is off |
+| `CC` | the C compiler of `build --target c` when `--cc` is left out |
+| `CFLAGS`, `LDFLAGS` | flags for the C compiler and the linker of `build --target c`, split on white space; each `--cc-flag` and `--ld-flag` comes after them |
+| `XDG_CACHE_HOME` | the cache folder of the user, where `build --target c` keeps its C files when `--cache` is left out |
 
 Terminals do not agree on the cells a Burmese sign takes, so a `^^^^` row can drift from
 the text it points at. On a color terminal the span is marked inside the source line. The
@@ -350,4 +401,4 @@ message is set out](diagnostics.md#how-a-message-is-set-out).
 | other | for `run`, the result of the start block, its lowest 8 bits |
 
 Messages go to standard error and the artifact or the program output to standard output,
-so `zakac codegen age.zaka -o -` can be piped while the messages still show.
+so `zakac build age.zaka -o -` can be piped while the messages still show.

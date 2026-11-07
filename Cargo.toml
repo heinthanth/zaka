@@ -17,6 +17,7 @@ clap = { version = "4.6.7", features = ["cargo"] }
 codee = "0.3.5"
 console_error_panic_hook = "0.1.7"
 const_for = "0.1.6"
+etcetera = "0.11.0"
 fontdb = "0.24.0"
 grass = "0.13.4"
 headless_chrome = { version = "1.0.22", features = ["fetch"] }
@@ -77,7 +78,8 @@ zakac_borrow_checker = { path = "compiler/zakac_borrow_checker" }
 zakac_burmese_alignment = { path = "compiler/zakac_burmese_alignment" }
 zakac_burmese_segmenter = { path = "compiler/zakac_burmese_segmenter" }
 zakac_cli_common = { path = "compiler/zakac_cli_common" }
-zakac_codegen = { path = "compiler/zakac_codegen" }
+zakac_codegen_target_vm = { path = "compiler/zakac_codegen_target_vm" }
+zakac_codegen_target_c = { path = "compiler/zakac_codegen_target_c" }
 zakac_consts = { path = "compiler/zakac_consts" }
 zakac_diagnostics = { path = "compiler/zakac_diagnostics" }
 zakac_host_errors = { path = "compiler/zakac_host_errors" }

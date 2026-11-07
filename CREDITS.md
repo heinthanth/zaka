@@ -63,6 +63,7 @@ thanks to all of these projects.
 | [codee](https://github.com/Synphonyte/codee) | 0.3.5 | MIT OR Apache-2.0 |
 | [console_error_panic_hook](https://github.com/rustwasm/console_error_panic_hook) | 0.1.7 | Apache-2.0/MIT |
 | [const_for](https://github.com/JENebel/const_for) | 0.1.6 | MIT |
+| [etcetera](https://github.com/lunacookies/etcetera) | 0.11.0 | MIT OR Apache-2.0 |
 | [fontdb](https://github.com/RazrFalcon/fontdb) | 0.24.0 | MIT |
 | [headless_chrome](https://github.com/rust-headless-chrome/rust-headless-chrome) | 1.0.22 | MIT |
 | [js-sys](https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys) | 0.3.105 | MIT OR Apache-2.0 |

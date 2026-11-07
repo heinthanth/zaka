@@ -5,13 +5,21 @@ edition.workspace = true
 
 [dependencies]
 bon = { workspace = true }
+rust-i18n = { workspace = true }
+strum = { workspace = true }
 zakac_borrow_checker = { workspace = true }
 zakac_burmese_segmenter = { workspace = true }
 zakac_cli_common = { workspace = true }
-zakac_codegen = { workspace = true }
+zakac_host_errors = { workspace = true }
+zakac_i18n = { workspace = true }
+zakac_codegen_target_vm = { workspace = true }
+zakac_codegen_target_c = { workspace = true }
 zakac_lexer = { workspace = true }
 zakac_parser = { workspace = true }
 zakac_rust_sugars = { workspace = true }
 zakac_ir_builder = { workspace = true }
 zakac_semcheck = { workspace = true }
 zaka_vm = { workspace = true }
+
+[build-dependencies]
+cargo-build = { workspace = true }

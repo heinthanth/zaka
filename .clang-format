@@ -1,0 +1,41 @@
+Language: Cpp
+BasedOnStyle: LLVM
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+LineEnding: LF
+
+ColumnLimit: 88
+
+BreakBeforeBraces: Allman
+
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+
+AlignAfterOpenBracket: BlockIndent
+BinPackArguments: true
+BinPackParameters: BinPack
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+PenaltyReturnTypeOnItsOwnLine: 10000
+
+SortIncludes: { Enabled: true, IgnoreCase: false }
+IncludeBlocks: Regroup
+IncludeCategories: [{ Regex: '^<.*>', Priority: 1 }, { Regex: '^".*"', Priority: 2 }]
+
+ReflowComments: Always
+
+PointerAlignment: Right
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions: { AfterControlStatements: true, AfterForeachMacros: false }
+AlignEscapedNewlines: Right
+IndentPPDirectives: None
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+BreakBeforeTernaryOperators: true
+
+ForEachMacros: [DO_FOR]

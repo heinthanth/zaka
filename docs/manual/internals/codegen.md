@@ -10,7 +10,7 @@ the tree to an *IR*, a small program of slots, statements and kinded expressions
 constants in it; lets [the borrow checker](borrow-checker.md) read it; and then turns it
 into *ops*, the instructions of a stack machine. The VM, `zaka_vm`, runs the ops.
 Two crates hold this: `zakac_ir_builder` (the IR, lowering and folding) and
-`zakac_codegen` (the ops and the listing).
+`zakac_codegen_target_vm` (the ops and the listing).
 
 ```text
  Program + KindTable                       from the name and kind check
@@ -21,7 +21,7 @@ Two crates hold this: `zakac_ir_builder` (the IR, lowering and folding) and
                                         │   borrow_check(&mut Module)   ZK07
                                         │   (marks proven cell addresses `checked`)
                                         ▼
-                                  emit   zakac_codegen::emit
+                                  emit   zakac_codegen_target_vm::emit
                                         ▼
                                   bc::Module ──▶ listing (asm text)
                                         │
@@ -29,7 +29,7 @@ Two crates hold this: `zakac_ir_builder` (the IR, lowering and folding) and
                                   the output of the program
 ```
 
-Each crate has a `run_phases` that runs the ones before it, so `zakac codegen` is lex,
+Each crate has a `run_phases` that runs the ones before it, so `zakac build` is lex,
 parse, wording, names and kinds, lower, fold, borrow check, emit. If an earlier stage
 reported an error, the later ones are left out and the artifact holds no module; warnings
 do not stop the chain.
@@ -430,7 +430,7 @@ condition `12 > 10` is true, so the `if` is gone and its branch stands in its pl
 
 ## The ops
 
-`zakac_codegen::emit(module, platform_bits, options)` turns the folded IR into a
+`zakac_codegen_target_vm::emit(module, platform_bits, options)` turns the folded IR into a
 `bc::Module`:
 
 ```text
@@ -549,7 +549,7 @@ directions share one run of the block.
 
 ### One program, as ops
 
-`zakac codegen --asm` writes the listing. For `sq.zaka` above:
+`zakac build --emit asm` writes the listing. For `sq.zaka` above:
 
 ```text
 ; zakac asm listing v1, platform 64 bits
@@ -636,11 +636,11 @@ local of the start block.
 ## The artifacts
 
 `zakac irgen` writes the folded IR (`.zkirt` text, `.zkir` raw), `zakac borrowck`
-the IR and the digests, and `zakac codegen` the ops (`.zkbct`, `.zkbc`) or, with `--asm`,
-the listing (`.zkasm`). Text artifacts start with a header line such as
+the IR and the digests, and `zakac build` the ops (`.zkct`, `.zkc`) or, with
+`--emit asm`, the listing. Text artifacts start with a header line such as
 `# zakac-codegen-artifact v1` and are the form of the golden files; the raw form is the
 `ZKAR` envelope with Postcard inside. `zakac run` takes Zaka source, which it compiles,
-or a codegen artifact in either form, which it knows from the first octets.
+or the ops of `zakac build` in either form, which it knows from the first octets.
 
 ## The VM
 
@@ -738,9 +738,9 @@ runs in a `TermWorld`, and each other run (the tests, the books, the explorer) i
 
 - `zakac_ir_builder/tests`: `lower.rs`, `fold.rs`, `value.rs` (operations on values),
   `lists.rs`, `moves.rs`, and golden `.zkirt` files in `expected/`.
-- `zakac_codegen/tests`: `code.rs` (label patching), `emit.rs` (the ops of each
+- `zakac_codegen_target_vm/tests`: `code.rs` (label patching), `emit.rs` (the ops of each
   construct), `listing.rs`, `artifact.rs`, and `samples.rs`, which holds golden
-  `.zkbct` and `.zkasm` files and checks that each op of each sample is well formed
+  `.zkct` and `.zkasm` files and checks that each op of each sample is well formed
   (indices in range, each function ending in `ret`).
 - `zaka_vm/tests`: `machine.rs` (hand-built modules, malformed ops included, which must
   trap and not panic), `traps.rs`, `heap.rs`, `stepping.rs`, and `samples.rs`, which runs

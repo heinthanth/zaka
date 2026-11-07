@@ -7,6 +7,7 @@ pub mod naturalness;
 pub mod ownership;
 pub mod parser;
 pub mod resolve;
+pub mod target;
 
 pub use code::Code;
 pub use diagnostic::Diagnostic;

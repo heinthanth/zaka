@@ -595,7 +595,7 @@ The message tells what went wrong and where. A good order of work:
 
 1. Read the reason and the block. `use after free` and `double free` name a block that
    some owner gave back; `out of bounds` names the block the access ran past.
-2. Look at the instruction index with `zakac codegen --asm`, which lists the operations of
+2. Look at the instruction index with `zakac build --emit asm`, which lists the operations of
    each function with their index and the name of the variable each touches. See
    [Instructions](instructions.md).
 3. Check the compile-time diagnostics. `--mem-check error`, the default, would have

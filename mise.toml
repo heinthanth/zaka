@@ -7,6 +7,7 @@ components = ["rustfmt"]
 
 [tools]
 age = "latest"
+clang-format = "23"
 "cargo:cargo-nextest" = "latest"
 "cargo:cargo-llvm-cov" = "latest"
 "cargo:cargo-leptos" = "latest"
@@ -15,8 +16,10 @@ age = "latest"
 _.file = ".env"
 
 [tasks.format]
-run = "cargo +nightly fmt"
-description = "Format code using rustfmt"
+run = [
+    "cargo +nightly fmt",
+    "clang-format -i compiler/*/runtime/*.c compiler/*/runtime/*.h"]
+description = "Format the Rust code with rustfmt and the C runtime with clang-format"
 
 [tasks.test]
 run = "cargo nextest run --workspace"
@@ -34,7 +37,6 @@ description = "Run benchmarks"
 run = "cargo +nightly llvm-cov --workspace"
 description = "Generate coverage report"
 
-# The web fonts the website and the explorer share, served under /fonts.
 [tasks."font:fetch"]
 run = "trunk build --release"
 dir = "website/zaka_web_ui_common/fonts"
@@ -65,9 +67,6 @@ run = "trunk build --release"
 dir = "website/zaka_website/vendor"
 description = "Fetch the motion libraries of the website from npm into target/vendor"
 
-# cargo-leptos names the files after their hash on the first build alone; in
-# watch mode each later build would keep serving the old names, so the islands
-# would run stale code. Watch mode serves them under plain names.
 [tasks."website:serve"]
 depends = ["website:vendor", "font:fetch"]
 run = "LEPTOS_HASH_FILES=false cargo leptos watch --project zaka_website --split"

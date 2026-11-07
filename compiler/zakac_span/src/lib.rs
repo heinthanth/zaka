@@ -1,7 +1,7 @@
 mod burmese_normalizer;
 pub mod file_loader;
 pub mod filename;
-mod hash;
+pub mod hash;
 mod normalizer;
 pub mod pos;
 pub mod source_file;

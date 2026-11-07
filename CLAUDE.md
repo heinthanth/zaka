@@ -9,7 +9,7 @@ and hosts a compiler explorer that runs in the browser.
 | Path | What it holds |
 | --- | --- |
 | `compiler/zakac` | the `zakac` command; each stage adds a subcommand through its own `cli` module |
-| `compiler/zakac_*` | one crate per stage (`burmese_segmenter`, `lexer`, `parser`, `naturalness`, `semcheck`, `ir_builder`, `borrow_checker`, `codegen`), plus shared crates (`span`, `ast`, `diagnostics`, `reporter`, `session`, `i18n`, `cli_common`, `rust_sugars`, ...) |
+| `compiler/zakac_*` | one crate per stage (`burmese_segmenter`, `lexer`, `parser`, `naturalness`, `semcheck`, `ir_builder`, `borrow_checker`, `codegen_target_vm`, `codegen_target_c`), plus shared crates (`span`, `ast`, `diagnostics`, `reporter`, `session`, `i18n`, `cli_common`, `rust_sugars`, ...) |
 | `compiler/zaka_vm` | the VM and its checked mem |
 | `compiler/zaka_host` | the host functions a program can call: their table, values and worlds |
 | `website/zaka_website` | the pre-rendered Leptos site: home page, Learn, Docs |
@@ -22,7 +22,9 @@ and hosts a compiler explorer that runs in the browser.
 | `stdlib/` | the stdlib modules, in Zaka; the compiler carries each one (`STD_MODULES` in `zakac_parser/src/load.rs`), imported as `"စံကား/<name>"` |
 
 A program passes through: segmenter → lexer → parser → naturalness → names and kinds
-(semcheck) → lower to IR → fold constants → borrow checker → codegen → VM.
+(semcheck) → lower to IR → fold constants → borrow checker → codegen → VM. `zakac build
+--target vm|c` picks the codegen: ops for the VM (`.zkc` / `.zkct`), or C and a native
+executable.
 
 ## Commands
 
@@ -31,7 +33,7 @@ A program passes through: segmenter → lexer → parser → naturalness → nam
 | Run a program | `cargo run -q -p zakac -- run program.zaka` |
 | Test it all | `mise run test` (`cargo nextest run --workspace`) |
 | Test the Learn and Docs pages | `cargo test -p zaka_website --test books` |
-| Format | `cargo +nightly fmt` (run after each edit) |
+| Format | `mise run format` (rustfmt, then clang-format on the C runtime; run after each edit) |
 | Serve the site | `mise run website:serve` (port 3000, live reload) |
 | Serve the explorer | `mise run explorer:serve` |
 
@@ -166,6 +168,25 @@ macro makes the code harder to read, plain Rust is fine.
 
 `rustfmt.toml` sets the format: 4 spaces, max width 88, braces on the next line. Run
 `cargo +nightly fmt` after editing.
+
+## Writing C
+
+The runtime of the C target (`compiler/zakac_codegen_target_c/runtime/`) is
+hand-written C. It follows the rules above: flat code with guard clauses, no
+lowercase `y` (reserved C words, libc names and proper nouns are the exceptions), and
+comments that state the rule.
+
+- The runtime and the C the compiler writes are strict C11 (`-std=c11
+  -pedantic-errors` builds them): no statement expressions or other GNU forms.
+  128-bit integers stand behind `__SIZEOF_INT128__`, and GCC and Clang builtins
+  behind `__GNUC__`, each with a C11 path beside it.
+- Doc comments are Doxygen: `/** ... */` on each function and function-like
+  macro, with `@param` and `@return`. A header gives each declaration one line;
+  `zaka_rt.c` holds the full doc of each function.
+- Guards use the macros in `runtime/zaka_c_sugars.h` (`RET_IF`, `DONE_IF`, `DO_IF`,
+  `NEXT_IF`, `LEAVE_IF`, `DO_FOR`), as Rust uses `zakac_rust_sugars`.
+- `.clang-format` matches `rustfmt.toml`. `mise run format` runs both formatters;
+  mise pins clang-format.
 
 ### Paths on each host
 

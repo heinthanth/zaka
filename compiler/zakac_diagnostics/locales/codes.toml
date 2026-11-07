@@ -1446,3 +1446,12 @@ en = "the source and the destination of \"ကူးယူမည်\" share %{n} 
 en = "write \"ပြောင်းထည့်မည်\", which reads the source in full before it writes"
 [codes.ZK0721.explain]
 en = """\"ကူးယူမည်\" is the memcpy of C: it writes the cells in order, so cells it writes can be cells it has still to read, and in C the result is undefined. When both addresses point into the same block at offsets the check knows, and the count is known, the overlap is an error before the program runs; else the VM stops the program with the trap \"overlap\". \"ပြောင်းထည့်မည်\" allows ranges that overlap."""
+
+[codes.ZK0801.title]
+en = "kind not for the C target"
+[codes.ZK0801.message]
+en = "the C target cannot build %{kind}"
+[codes.ZK0801.help]
+en = "use f32 or f64, or build for the VM with --target vm"
+[codes.ZK0801.explain]
+en = """C has no kind for a 16-bit or a 128-bit float that each C compiler holds, and no print that writes one as the VM writes it. A program built with --target c holds f32 and f64 alone; the VM runs each float kind."""

@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
 use bon::Builder;
-use zakac_codegen::bc;
-use zakac_codegen::bc::Op;
-use zakac_codegen::listing::comment;
-use zakac_codegen::listing::labels;
-use zakac_codegen::listing::op_text;
+use zakac_codegen_target_vm::bc;
+use zakac_codegen_target_vm::bc::Op;
+use zakac_codegen_target_vm::listing::comment;
+use zakac_codegen_target_vm::listing::labels;
+use zakac_codegen_target_vm::listing::op_text;
 
 use super::Unit;
 use crate::compile::spans::Range;

@@ -1,5 +1,5 @@
-use zakac_codegen::bc::StaticCell;
-use zakac_codegen::bc::StaticSeq;
+use zakac_codegen_target_vm::bc::StaticCell;
+use zakac_codegen_target_vm::bc::StaticSeq;
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::to_raw;
 use zakac_semcheck::kind::DataKind;

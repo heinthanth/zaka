@@ -10,10 +10,10 @@ use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_and_keep;
 use zakac_borrow_checker::options::OverflowMode;
-use zakac_codegen::bc::Module;
-use zakac_codegen::options::EmitOptions;
-use zakac_codegen::options::ResultMode;
-use zakac_codegen::options::ScratchMode;
+use zakac_codegen_target_vm::bc::Module;
+use zakac_codegen_target_vm::options::EmitOptions;
+use zakac_codegen_target_vm::options::ResultMode;
+use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_rust_sugars::do_for;
 
 /// Sample groups that hold programs with errors on purpose: those that do

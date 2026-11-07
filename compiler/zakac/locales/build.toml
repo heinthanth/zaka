@@ -1,0 +1,16 @@
+_version = 2
+
+[build.about]
+en = "Build a program for a target: the ops of the Zaka VM (vm), or a native executable through C (c)."
+
+[build.input]
+en = "Input file, or `-` for stdin (default: stdin)"
+
+[build.output]
+en = "Output file, or `-` for stdout: the ops (vm) or the executable (c) (default: beside the input; the asm listing goes to stdout)"
+
+[build.target]
+en = "What to build for: the Zaka VM (vm), or a native executable through C (c)."
+
+[build.emit]
+en = "What to write. vm: the ops (zkc), the ops as text (zkct), or the asm listing (asm), default zkc. c: an executable (bin) or the C files alone (c), default bin."

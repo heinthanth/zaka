@@ -14,12 +14,13 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
-use zakac_codegen::cli::ZakacCodegen;
 use zakac_ir_builder::cli::ZakacIrBuilder;
 use zakac_lexer::cli::ZakacLexer;
 use zakac_parser::cli::ZakacParser;
 use zakac_rust_sugars::ret_if;
 use zakac_semcheck::cli::ZakacSemcheck;
+
+use crate::build::ZakacBuild;
 
 /// The `zakac` command.
 #[derive(Builder)]
@@ -81,7 +82,7 @@ impl Command for Zakac
             .add_subcommand::<ZakacSemcheck>(Some("semcheck"))
             .add_subcommand::<ZakacIrBuilder>(Some("irgen"))
             .add_subcommand::<ZakacBorrowChecker>(Some("borrowck"))
-            .add_subcommand::<ZakacCodegen>(Some("codegen"))
+            .add_subcommand::<ZakacBuild>(Some("build"))
             .add_subcommand::<ZakaVm>(Some("run"))
     }
 

@@ -28,6 +28,7 @@
   - [Stages](compiler/stages.md)
   - [Diagnostics](compiler/diagnostics.md)
   - [Pointer checks](compiler/checks.md)
+  - [Native programs](compiler/native.md)
 - [The VM](vm/README.md)
   - [Running a program](vm/running.md)
   - [Addresses and blocks](vm/blocks.md)
@@ -44,6 +45,7 @@
   - [Names and kinds](internals/semcheck.md)
   - [The borrow checker](internals/borrow-checker.md)
   - [IR and code](internals/codegen.md)
+  - [The C target](internals/c-backend.md)
 
 ---
 

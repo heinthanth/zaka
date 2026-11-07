@@ -11,7 +11,7 @@ use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::State;
 use zaka_vm::machine::run_in;
-use zakac_codegen::bc::Op;
+use zakac_codegen_target_vm::bc::Op;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::tern;
 

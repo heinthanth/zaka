@@ -6,7 +6,7 @@ use leptos::html::tr;
 use leptos::prelude::*;
 use leptos_scoped_style::ComponentStyle;
 use zaka_web_ui_common::sheet;
-use zakac_codegen::listing::quote;
+use zakac_codegen_target_vm::listing::quote;
 use zakac_i18n::t;
 use zakac_rust_sugars::tern;
 
