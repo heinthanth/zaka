@@ -124,6 +124,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0237 | a header that marks some parameters and not the others | [Functions](../language/functions.md#marked-parameters) |
 | ZK0238 | an import from `စံကား/` that names no module of the stdlib | [Input and output](../language/io.md#the-rules) |
 | ZK0239 | a function kind with parameters inside a list of parameters or fields, not in parentheses | [Function values](../language/function-values.md#the-kind) |
+| ZK0240 | a kind alias declared inside a block | [Kind aliases](../language/aliases.md#errors) |
 
 ### ZK03: names
 
@@ -144,7 +145,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0313 | returning without a value from a function with a result | [Results](../../learn/functions/results.md) |
 | ZK0314 | the wrong number of arguments | [Parameters](../../learn/functions/parameters.md) |
 | ZK0315 | using a function without a result as a value | [Results](../../learn/functions/results.md) |
-| ZK0316 | a struct or enumeration name declared twice | [Struct mistakes](../../learn/structs/mistakes.md#one-name-for-two-structs) |
+| ZK0316 | a struct, enumeration or kind alias name declared twice | [Struct mistakes](../../learn/structs/mistakes.md#one-name-for-two-structs) |
 | ZK0317 | a field name used twice in one struct | [Struct mistakes](../../learn/structs/mistakes.md#one-name-for-two-fields) |
 | ZK0318 | a name in a kind that no struct or enumeration declaration gives | [Struct mistakes](../../learn/structs/mistakes.md#a-name-that-is-no-struct) |
 | ZK0319 | a struct or enumeration name used for a variable, parameter, field or function | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-name-that-is-also-a-value-name) |
@@ -164,6 +165,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0333 | a call that more than one function of its name fits | [Functions](../language/functions.md#one-name-several-functions) |
 | ZK0334 | an external function that is none of the functions the VM serves | [Functions](../language/functions.md#external-functions) |
 | ZK0335 | a call whose name finds both a declared function and a value of a function kind | [Function values](../language/function-values.md#calling-a-function-value) |
+| ZK0336 | a chain of kind aliases that comes back to its start | [Kind aliases](../language/aliases.md#errors) |
 
 ### ZK04: kinds
 

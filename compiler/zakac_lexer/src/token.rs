@@ -639,6 +639,15 @@ pub enum Kw
     Among,
     /// `တခြား`, the opener of the default arm of a switch
     Other,
+
+    // kind aliases
+    /// `လည်း`, "also": a piece of the alias closer
+    Also,
+    /// `မှတ်ယူနိုင်ပါသည်`, "can be taken as": a piece of the alias closer
+    CanRegard,
+    /// `ဟုလည်း မှတ်ယူနိုင်ပါသည်`, "can also be taken as": closes a kind alias,
+    /// `ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
+    AliasClose,
 }
 
 impl Kw

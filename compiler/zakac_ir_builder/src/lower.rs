@@ -795,7 +795,7 @@ impl Lowerer<'_>
                 out.push(Stmt::RemoveCell { dest, kind, span: n.span })
             }
             st::Stmt::Replace(n) => out.push(self.replace_text(n)),
-            st::Stmt::Struct(_) | st::Stmt::Enum(_) => (),
+            st::Stmt::Struct(_) | st::Stmt::Enum(_) | st::Stmt::Alias(_) => (),
             st::Stmt::Import(n) => self.import(n),
             st::Stmt::Switch(n) => self.switch_stmt(n, out),
         }

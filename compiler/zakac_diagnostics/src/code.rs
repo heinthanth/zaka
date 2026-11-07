@@ -147,6 +147,8 @@ MixedMarks = ("ZK0237", Level::Error),
 UnknownStdModule = ("ZK0238", Level::Error),
 /// A function kind with parameters stands bare in a parameter or field list.
 FnKindNeedsParens = ("ZK0239", Level::Error),
+/// A kind alias is declared inside a block.
+NestedAlias = ("ZK0240", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -219,6 +221,8 @@ OverloadUnclear = ("ZK0333", Level::Error),
 UnknownHostFn = ("ZK0334", Level::Error),
 /// A call names both a function and a variable that holds a function value.
 CalleeTwice = ("ZK0335", Level::Error),
+/// A kind alias names itself, at once or through other aliases.
+AliasLoop = ("ZK0336", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

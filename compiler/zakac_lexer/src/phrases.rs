@@ -71,6 +71,8 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Function, Kw::From, Kw::EditableAttr], Kw::EditParam),
     // <name> (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)
     (&[Kw::Function, Kw::From, Kw::EditableClaim], Kw::EditArg),
+    // ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+    (&[Kw::Hu, Kw::Also, Kw::CanRegard], Kw::AliasClose),
     // ဒေတာအမျိုးအစား ... တွင် ... တို့ ပါဝင်သည်။
     (&[Kw::Plural, Kw::Contains], Kw::FieldsClose),
     // ဒေတာအမျိုးအစား ... တွင် ... တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ... ဖြစ်သည်။

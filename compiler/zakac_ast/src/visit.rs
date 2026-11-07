@@ -31,6 +31,7 @@ use crate::expr::VerbExpr;
 use crate::kind::FnSig;
 use crate::kind::Kind;
 use crate::stmt::AddStmt;
+use crate::stmt::AliasDecl;
 use crate::stmt::AllocStmt;
 use crate::stmt::AssignStmt;
 use crate::stmt::BlitStmt;
@@ -135,6 +136,7 @@ ReplaceStmt => "replace", visit_replace;
 StructDecl => "struct", visit_struct;
 ImportStmt => "import", visit_import;
 EnumDecl => "enum", visit_enum;
+AliasDecl => "alias", visit_alias;
 EnumMember => "enum_member", visit_enum_member;
 SwitchStmt => "switch", visit_switch;
 SwitchArm => "switch_arm", visit_switch_arm;
@@ -204,6 +206,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Import(s) => s,
         Stmt::Enum(s) => s,
         Stmt::Switch(s) => s,
+        Stmt::Alias(s) => s,
     }
 }
 
@@ -335,6 +338,8 @@ pub trait Visitor
     fn visit_import(&mut self, n: &ImportStmt) { walk_import(self, n) }
     /// Visit an enumeration declaration.
     fn visit_enum(&mut self, n: &EnumDecl) { walk_enum(self, n) }
+    /// Visit a kind alias.
+    fn visit_alias(&mut self, n: &AliasDecl) { walk_alias(self, n) }
     /// Visit a member of an enumeration declaration.
     fn visit_enum_member(&mut self, n: &EnumMember) { walk_enum_member(self, n) }
     /// Visit a switch.
@@ -440,6 +445,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Import(s) => v.visit_import(s),
         Stmt::Enum(s) => v.visit_enum(s),
         Stmt::Switch(s) => v.visit_switch(s),
+        Stmt::Alias(s) => v.visit_alias(s),
     }
 }
 
@@ -689,6 +695,15 @@ pub fn walk_enum<V: Visitor + ?Sized>(v: &mut V, n: &EnumDecl)
     v.enter(n);
     v.visit_ident(&n.name);
     do_for!(m in &n.members, v.visit_enum_member(m));
+    v.leave(n);
+}
+
+/// Visit the kind and the name of a kind alias.
+pub fn walk_alias<V: Visitor + ?Sized>(v: &mut V, n: &AliasDecl)
+{
+    v.enter(n);
+    v.visit_kind(&n.kind);
+    v.visit_ident(&n.name);
     v.leave(n);
 }
 
@@ -1114,6 +1129,12 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::Import(s) => walk_import_mut(v, s),
         Stmt::Enum(s) => walk_enum_mut(v, s),
         Stmt::Switch(s) => walk_switch_mut(v, s),
+        Stmt::Alias(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            v.visit_kind_mut(&mut s.kind);
+            v.visit_ident_mut(&mut s.name);
+        }
     }
 }
 

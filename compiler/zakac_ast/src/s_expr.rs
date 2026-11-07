@@ -11,6 +11,7 @@ use crate::kind::BaseKind;
 use crate::kind::Cells;
 use crate::kind::Kind;
 use crate::kind::Wrap;
+use crate::stmt::AliasDecl;
 use crate::stmt::BlockStmt;
 use crate::stmt::CountedStmt;
 use crate::stmt::DeclStmt;
@@ -208,6 +209,7 @@ impl ToSexpr for Stmt
             Stmt::Import(s) => import_sexpr(s),
             Stmt::Enum(s) => exported(s.exported, enum_sexpr(s)),
             Stmt::Switch(s) => switch_sexpr(s),
+            Stmt::Alias(s) => exported(s.exported, alias_sexpr(s)),
         }
     }
 }
@@ -635,6 +637,20 @@ fn enum_sexpr(s: &EnumDecl) -> String
     };
     let members: Vec<String> = s.members.iter().map(member).collect();
     list("enum", [s.name.name.to_string(), format!("[{}]", members.join(", "))])
+}
+
+/// `(alias name kind)` for a kind alias.
+///
+/// # Arguments
+///
+/// * `s` - The declaration.
+///
+/// # Returns
+///
+/// The text.
+fn alias_sexpr(s: &AliasDecl) -> String
+{
+    list("alias", [s.name.name.to_string(), s.kind.to_sexpr()])
 }
 
 /// `kind name` for a parameter.

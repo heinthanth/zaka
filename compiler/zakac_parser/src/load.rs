@@ -26,6 +26,7 @@ use zakac_span::filename::FileName;
 use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 
+use crate::alias::expand_aliases;
 use crate::parser::parse;
 use crate::parser::parse_with;
 
@@ -76,8 +77,7 @@ impl Loaded
         let mut diagnostics = lexed.diagnostics;
         diagnostics.extend(parsed.diagnostics);
         diagnostics.extend(refuse_imports(&parsed.program));
-        #[rustfmt::skip]
-        return Loaded::builder().program(parsed.program).diagnostics(diagnostics).build();
+        loaded(parsed.program, Vec::new(), diagnostics)
     }
 
     /// Read one file that imports from the stdlib, with the modules it
@@ -105,10 +105,28 @@ impl Loaded
         let Loader { stmts, units, imports, diagnostics, .. } = loader;
         let span = zakac_span::span::Span::new(source.start_pos, source.end_pos());
         let program = Program::builder().stmts(stmts).units(units).span(span).build();
-        #[rustfmt::skip]
-        return Loaded::builder().program(program).imports(imports)
-            .diagnostics(diagnostics).build();
+        loaded(program, imports, diagnostics)
     }
+}
+
+/// A program read with its imports, each kind alias in it expanded.
+///
+/// # Arguments
+///
+/// * `program` - The program.
+/// * `imports` - The imported files.
+/// * `diagnostics` - The diagnostics so far; the alias diagnostics follow.
+///
+/// # Returns
+///
+/// The loaded program.
+fn loaded(
+    mut program: Program, imports: Vec<EmbeddedFile>, mut diagnostics: Vec<Diagnostic>,
+) -> Loaded
+{
+    diagnostics.extend(expand_aliases(&mut program));
+    #[rustfmt::skip]
+    return Loaded::builder().program(program).imports(imports).diagnostics(diagnostics).build();
 }
 
 /// Whether an import reads a module of the stdlib.
@@ -171,9 +189,7 @@ pub fn load(
     let Loader { stmts, units, imports, diagnostics, .. } = loader;
     let span = zakac_span::span::Span::new(root.start_pos, root.end_pos());
     let program = Program::builder().stmts(stmts).units(units).span(span).build();
-    #[rustfmt::skip]
-    return Ok(Loaded::builder().program(program).imports(imports)
-        .diagnostics(diagnostics).build());
+    Ok(loaded(program, imports, diagnostics))
 }
 
 /// The state of [`load`].
@@ -466,7 +482,7 @@ fn exported_marked(program: &Program) -> Marked
     found
 }
 
-/// The struct and enumeration names a file exports.
+/// The struct, enumeration and kind alias names a file exports.
 ///
 /// # Arguments
 ///
@@ -481,6 +497,7 @@ fn exported_structs(program: &Program) -> HashSet<String>
     {
         Stmt::Struct(d) if d.exported => Some(vec![d.name.name.to_string()]),
         Stmt::Enum(d) if d.exported => Some(enum_names(&d.name.name)),
+        Stmt::Alias(d) if d.exported => Some(enum_names(&d.name.name)),
         _ => None,
     });
     decls.flatten().collect()

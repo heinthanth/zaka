@@ -273,6 +273,20 @@ pub fn nested_enum(span: Span) -> Diagnostic
     Diagnostic::new(Code::NestedEnum, t!("codes.ZK0235.message"), span)
 }
 
+/// A kind alias is declared inside a block.
+///
+/// # Arguments
+///
+/// * `span` - The declaration.
+///
+/// # Returns
+///
+/// The `ZK0240` diagnostic.
+pub fn nested_alias(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::NestedAlias, t!("codes.ZK0240.message"), span)
+}
+
 /// A switch arm follows the default arm.
 ///
 /// # Arguments

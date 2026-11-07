@@ -46,8 +46,8 @@ shows the same rules with examples.
 အများသုံး ကိန်းသေ <name> သည် ...
 ```
 
-- `အများသုံး` exports a function, a struct, a variable or a constant at the top level of
-  a file. Other files can then import it. A declaration without the mark is private to
+- `အများသုံး` exports a function, a struct, an enumeration, a [kind alias](aliases.md),
+  a variable or a constant at the top level of a file. Other files can then import it. A declaration without the mark is private to
   its file.
 - The mark in another place is ZK0229: before a statement, before a generic loop
   that starts with `ကိန်းရှင်`, or before a declaration inside a block, a loop, a
@@ -77,7 +77,8 @@ shows the same rules with examples.
   inside a block, is ZK0230.
 - Each name brings each exported item of that name from the file: a function (each
   exported function of the name, when the file declares several), a variable or
-  constant, and a struct. A name the file does not export is ZK0322, with
+  constant, and a struct, an enumeration or a kind alias. A name the file does not
+  export is ZK0322, with
   help when the file declares the name without the mark.
 - The imported names join the top-level names of the importing file. A declaration of
   the same name in that file, or a second import of it, is ZK0302 for a variable or
@@ -95,9 +96,10 @@ sets it, the others read the new value.
 
 ## What an imported file holds
 
-- The top level of an imported file holds imports, functions, structs, variables and
-  constants. Each other statement there, such as a print, a loop, a call or an
-  assignment, is ZK0323. The file that is run holds statements as before.
+- The top level of an imported file holds imports, functions, structs, enumerations,
+  kind aliases, variables and constants. Each other statement there, such as a print, a
+  loop, a call or an assignment, is ZK0323. The file that is run holds statements as
+  before.
 - The starting value of a variable or a constant of an imported file must be known at
   compile time. Known values are literals, `ဗလာ`, constants of known value, the size of a
   kind, the [address of a function](function-values.md#the-address-of-a-function),
@@ -114,8 +116,8 @@ sets it, the others read the new value.
 
 - Function, variable and constant names belong to their file. Two files can each declare
   a private function or variable of one name, and each file uses its own.
-- Struct names belong to the whole program: two files that each declare a struct `လူ` are
-  ZK0316, exported or not. A variable, function or parameter named like a struct of
+- Struct names belong to the whole program, as enumeration and kind alias names do: two
+  files that each declare a struct `လူ` are ZK0316, exported or not. A variable, function or parameter named like a struct of
   another file is ZK0319 as well.
 - In the IR and in the ops, a function of an imported file is named `<name>@<file>`, the
   file being its name without folder or extension, so two functions of one name remain apart.

@@ -284,7 +284,15 @@ impl<'t> Parser<'t>
             let named = opener && pair[1].kind == TokenKind::Ident;
             named.then(|| parser.text_of(pair[1].span))
         };
-        let names: Vec<&str> = lexed.tokens.windows(2).filter_map(declared).collect();
+        // an alias names a kind too: `... ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်`
+        let aliased = |pair: &[Token]| {
+            let named = pair[0].kind == TokenKind::Ident
+                && pair[1].kind == TokenKind::Kw(Kw::AliasClose);
+            named.then(|| parser.text_of(pair[0].span))
+        };
+        let pairs = || lexed.tokens.windows(2);
+        let names: Vec<&str> =
+            pairs().filter_map(declared).chain(pairs().filter_map(aliased)).collect();
         // the stem of an enumeration names it too: `အရောင်` for `အရောင်များ`
         let stems = names.iter().filter_map(|name| name.strip_suffix(PLURAL));
         parser.structs =

@@ -1,0 +1,293 @@
+# zakac-parse-artifact v1
+name:
+  Custom: aliases.zaka
+source: "// kind aliases: the opener with each kind, a bare function kind, an export\nဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။\nဒေတာအမျိုးအစား လူ ကို ပုဂ္ဂိုလ် ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nအချက်အလက်အမျိုးအစား ၃၂ ဘစ် ကိန်းပြည့် ကို အမှတ် ဟု လည်း မှတ်ယူနိုင်ပါသည်။\nဒေတာအမျိုးအစား ပုဂ္ဂိုလ် စာရင်း ကို လူစု ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nဒေတာအမျိုးအစား (ကိန်းပြည့် ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) ကို ပြချက် ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nကိန်းပြည့်၊ ကိန်းပြည့် တို့ကို လက်ခံပြီး မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား ကို နှိုင်းချက် ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nအများသုံး ဒေတာအမျိုးအစား စာသား ကို အမည် ဟုလည်း မှတ်ယူနိုင်ပါသည်။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် ပုဂ္ဂိုလ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပုဂ္ဂိုလ်(အသက်: ၁) ဖြစ်ပါစေ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+imports: []
+program:
+  stmts:
+  - struct:
+      name:
+        name: လူ
+        span:
+          lo: 119
+          hi: 125
+      fields:
+      - edit: false
+        kind:
+          base: int
+          bits: null
+          signed: null
+          wraps: []
+          span:
+            lo: 139
+            hi: 169
+        name:
+          name: အသက်
+          span:
+            lo: 170
+            hi: 182
+        mark: null
+        span:
+          lo: 139
+          hi: 182
+      classifier: null
+      exported: false
+      span:
+        lo: 76
+        hi: 223
+  - alias:
+      kind:
+        base: named
+        name:
+          name: လူ
+          span:
+            lo: 267
+            hi: 273
+        bits: null
+        signed: null
+        wraps: []
+        span:
+          lo: 267
+          hi: 273
+      name:
+        name: ပုဂ္ဂိုလ်
+        span:
+          lo: 284
+          hi: 311
+      exported: false
+      span:
+        lo: 224
+        hi: 382
+  - alias:
+      kind:
+        base: int
+        bits: 32
+        signed: null
+        wraps: []
+        span:
+          lo: 441
+          hi: 488
+      name:
+        name: အမှတ်
+        span:
+          lo: 499
+          hi: 514
+      exported: false
+      span:
+        lo: 383
+        hi: 586
+  - alias:
+      kind:
+        base: named
+        name:
+          name: ပုဂ္ဂိုလ်
+          span:
+            lo: 630
+            hi: 657
+        bits: null
+        signed: null
+        wraps:
+        - list: inferred
+        span:
+          lo: 630
+          hi: 676
+      name:
+        name: လူစု
+        span:
+          lo: 687
+          hi: 699
+      exported: false
+      span:
+        lo: 587
+        hi: 770
+  - alias:
+      kind:
+        base: fn
+        bits: null
+        signed: null
+        wraps: []
+        sig:
+          params:
+          - edit: false
+            kind:
+              base: int
+              bits: null
+              signed: null
+              wraps: []
+              span:
+                lo: 815
+                hi: 845
+            name: null
+            mark: null
+            span:
+              lo: 815
+              hi: 845
+          ret: null
+        span:
+          lo: 814
+          hi: 952
+      name:
+        name: ပြချက်
+        span:
+          lo: 963
+          hi: 981
+      exported: false
+      span:
+        lo: 771
+        hi: 1052
+  - alias:
+      kind:
+        base: fn
+        bits: null
+        signed: null
+        wraps: []
+        sig:
+          params:
+          - edit: false
+            kind:
+              base: int
+              bits: null
+              signed: null
+              wraps: []
+              span:
+                lo: 1053
+                hi: 1083
+            name: null
+            mark: null
+            span:
+              lo: 1053
+              hi: 1083
+          - edit: false
+            kind:
+              base: int
+              bits: null
+              signed: null
+              wraps: []
+              span:
+                lo: 1087
+                hi: 1117
+            name: null
+            mark: null
+            span:
+              lo: 1087
+              hi: 1117
+          ret:
+            base: bool
+            bits: null
+            signed: null
+            wraps: []
+            span:
+              lo: 1168
+              hi: 1213
+        span:
+          lo: 1053
+          hi: 1338
+      name:
+        name: နှိုင်းချက်
+        span:
+          lo: 1349
+          hi: 1382
+      exported: false
+      span:
+        lo: 1053
+        hi: 1453
+  - alias:
+      kind:
+        base: text
+        bits: null
+        signed: null
+        wraps: []
+        span:
+          lo: 1525
+          hi: 1540
+      name:
+        name: အမည်
+        span:
+          lo: 1551
+          hi: 1563
+      exported: true
+      span:
+        lo: 1454
+        hi: 1634
+  - fn:
+      name:
+        name: ပရိုဂရမ်
+        span:
+          lo: 1636
+          hi: 1660
+      params: []
+      ret: null
+      block:
+        stmts:
+        - decl:
+            name:
+              name: က
+              span:
+                lo: 1781
+                hi: 1784
+            kind:
+              base: named
+              name:
+                name: ပုဂ္ဂိုလ်
+                span:
+                  lo: 1795
+                  hi: 1822
+              bits: null
+              signed: null
+              wraps: []
+              span:
+                lo: 1795
+                hi: 1822
+            classifier:
+              name: ခု
+              span:
+                lo: 1832
+                hi: 1838
+            is_const: false
+            init:
+              struct:
+                id: 1
+                name:
+                  name: ပုဂ္ဂိုလ်
+                  span:
+                    lo: 1886
+                    hi: 1913
+                classifier: null
+                fields:
+                - field:
+                    name: အသက်
+                    span:
+                      lo: 1914
+                      hi: 1926
+                  value:
+                    int:
+                      id: 0
+                      value: 1
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 1928
+                        hi: 1931
+                span:
+                  lo: 1886
+                  hi: 1932
+            exported: false
+            span:
+              lo: 1753
+              hi: 1960
+        single: false
+        span:
+          lo: 1670
+          hi: 2031
+      exported: false
+      start: true
+      external: false
+      span:
+        lo: 1636
+        hi: 2031
+  units: []
+  span:
+    lo: 0
+    hi: 2032
+diagnostics: []

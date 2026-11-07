@@ -612,3 +612,18 @@ pub fn callee_twice(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::CalleeTwice, t!("codes.ZK0335.message", n = name), span)
         .with_help(t!("codes.ZK0335.help"))
 }
+
+/// A kind alias names itself, at once or through other aliases.
+///
+/// # Arguments
+///
+/// * `span` - The name in the alias declaration.
+/// * `name` - The alias.
+///
+/// # Returns
+///
+/// The `ZK0336` diagnostic.
+pub fn alias_loop(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::AliasLoop, t!("codes.ZK0336.message", n = name), span)
+}

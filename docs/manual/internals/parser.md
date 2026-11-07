@@ -280,7 +280,8 @@ token:
 | `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ`, then a size before `မင်မိုရီကို` for a blit (`parse_blit_end`: `ကူးယူမည်` or `ပြောင်းထည့်မည်`); else after `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` for a release, a fill (`parse_fill_end`) when `ဖြည့်မည်` comes before the `။` (`ends_in_fill`), so a value that starts with a kind word needs no parentheses, or a size for a resize. The value of a fill is read with `in_fill` set, so a `ဖြင့်` right after a lone value ends it |
 | a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းပါ။`; after another statement or inside a block it is parsed and reported (ZK0230) |
 | `အချက်အလက်အမျိုးအစား` | `parse_kind_decl` | `NAME`, then `တွင်` for a struct (`parse_struct_decl`) or `ဆိုသည်မှာ` for an enumeration (`parse_enum_decl`); another word is ZK0201, and so is `အမျိုးအစား` alone, the old enumeration opener. An enumeration has members with `၊` between them, each a name with an optional `(VALUE)`, then `တို့ ဖြစ်သည်။` (a lone member can leave out `တို့`); inside a block it is parsed and reported (ZK0235) |
-| `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, struct, enumeration or top-level declaration; on another statement or the start block it is ZK0229 |
+| a sentence that holds `ဟုလည်း မှတ်ယူနိုင်ပါသည်` (`Kw::AliasClose`) | `parse_alias_decl` | checked first, so the kind can start with each word: an optional `အချက်အလက်အမျိုးအစား`, a kind (`parse_kind`), `ကို`, the alias name and the closer. A kind other than a function kind with no opener is ZK0201; inside a block it is parsed and reported (ZK0240). The S-expression is `(alias NAME KIND)` |
+| `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, struct, enumeration, kind alias or top-level declaration; on another statement or the start block it is ZK0229 |
 | an `else`, an update, a closer with no opener | an error | ZK0211, ZK0212, ZK0226 |
 | all other tokens | `parse_expr_headed` | a clause; see below |
 
@@ -301,8 +302,9 @@ parsed and reported (ZK0236). A one-statement arm that is itself a switch is ZK0
 S-expression is `(switch subject case {..} case {..} else kind {..})`.
 
 An operand that is a name with `ထဲမှ` after it is a member, `Expr::Member` (`parse_member`).
-The parser's set of struct names holds the enumeration names and their stems as well, so
-each of them can start a kind; `is_struct_at` refuses a name with `ထဲမှ` after it, which
+The parser's set of struct names holds the enumeration names and their stems as well, and
+the alias names, which `Parser::new` finds before `ဟုလည်း မှတ်ယူနိုင်ပါသည်`, so each of them
+can start a kind; `is_struct_at` refuses a name with `ထဲမှ` after it, which
 names a member instead.
 
 A remove has no verb row, since its list comes before `၏`. When the clause engine meets
@@ -447,7 +449,17 @@ For each file, from the file that is run:
    before, so each expression of the program has a number of its own, and the struct
    names it imports from exported structs start a kind.
 4. Set `unit` on each import to the unit it reads, append a `Unit` and the statements
-   of the file to the program, and note the structs the file exports.
+   of the file to the program, and note the structs, enumerations and kind aliases the
+   file exports.
+
+Once the files are read, `expand_aliases` (`src/alias.rs`) puts the kind of each alias in
+place of each use of its name: in a kind, where the levels written after the alias go
+around the levels of its kind, as the name of a struct literal, and before `ထဲမှ` in a
+member. Alias names belong to the whole program, as struct names do, so one table serves
+each file; a name a struct, an enumeration or an earlier alias has is ZK0316, and a chain
+of aliases that comes back to its start is ZK0336 for each alias in it. Each exit of the
+loader (`Loaded::single`, `with_std`, `load`) runs it, so the stages after the parser see
+no alias; the parse artifact of one file keeps the `alias` statements as written.
 
 So the units come in post-order: each imported file ahead of the files that import it,
 and the file that is run last. `Program::unit_of(i)` gives the unit of statement `i`

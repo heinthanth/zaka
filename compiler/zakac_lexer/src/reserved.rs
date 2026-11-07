@@ -206,6 +206,9 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ဆိုသည်မှာ", Kw::Meaning),
     ("ထဲမှ", Kw::Among),
     ("တခြား", Kw::Other),
+    // kind aliases
+    ("လည်း", Kw::Also),
+    ("မှတ်ယူနိုင်ပါသည်", Kw::CanRegard),
 ];
 
 /// [`RESERVED`] as a map, built on first use.

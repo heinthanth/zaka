@@ -16,6 +16,7 @@
   - [Text](language/text.md)
   - [Structs](language/structs.md)
   - [Enumerations](language/enums.md)
+  - [Kind aliases](language/aliases.md)
   - [Modules](language/modules.md)
   - [Input and output](language/io.md)
   - [Natural wording](language/naturalness.md)

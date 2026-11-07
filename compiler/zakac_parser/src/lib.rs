@@ -1,3 +1,4 @@
+pub mod alias;
 pub mod artifact;
 mod clause;
 pub mod cli;

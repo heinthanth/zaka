@@ -35,3 +35,19 @@ fn without_a_declaration_the_count_word_is_a_name()
 {
     assert_eq!(kinds("ယောက်စာ"), [TokenKind::Ident]);
 }
+
+#[test]
+fn an_alias_closes_with_one_phrase_joined_or_spaced()
+{
+    let kw = TokenKind::Kw;
+    let stop = TokenKind::Punct(zakac_lexer::token::Punct::FullStop);
+    #[rustfmt::skip]
+    let want = [
+        kw(Kw::DataKindOpen), TokenKind::Ident, kw(Kw::Ko), TokenKind::Ident,
+        kw(Kw::AliasClose), stop,
+    ];
+    let joined = "ဒေတာအမျိုးအစား လူ ကို ပုဂ္ဂိုလ် ဟုလည်း မှတ်ယူနိုင်ပါသည်။";
+    let spaced = "ဒေတာအမျိုးအစား လူ ကို ပုဂ္ဂိုလ် ဟု လည်း မှတ်ယူနိုင်ပါသည်။";
+    assert_eq!(kinds(joined), want);
+    assert_eq!(kinds(spaced), want);
+}

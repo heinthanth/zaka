@@ -345,6 +345,39 @@ A function can give back a struct, such as one it writes out as a literal:
 
 The caller gets the struct as with an assignment: a duplicate of its own.
 
+## Another name for a kind
+
+A *kind alias* gives a kind a second name, with `ဟုလည်း မှတ်ယူနိုင်ပါသည်` ("can also be
+taken as"). The alias is no new kind: a value of the alias is a value of the struct, and
+it prints with the struct name.
+
+```zaka
+ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ကိန်းပြည့် အတန်း တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+ဒေတာအမျိုးအစား လူ ကို ကျောင်းသား ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+ဒေတာအမျိုးအစား ကျောင်းသား စာရင်း ကို အတန်းသားများ ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကျော် သည် ကျောင်းသား တစ်ယောက် ဖြစ်၍ တန်ဖိုးသည် အသက် ၁၂၊ အတန်း ၇ ရှိသော ကျောင်းသားတစ်ယောက် ဖြစ်ပါစေ။
+ကိန်းရှင် အခန်း သည် အတန်းသားများ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [ကျော်၊ လူ(အသက်: ၁၃)] ဖြစ်ပါစေ။
+အခန်း ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[လူ(အသက်: ၁၂၊ အတန်း: ၇)၊ လူ(အသက်: ၁၃၊ အတန်း: ၀)]
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `ဒေတာအမျိုးအစား လူ ကို ကျောင်းသား` | "the data kind `လူ`, as `ကျောင်းသား`" |
+| `ဟုလည်း မှတ်ယူနိုင်ပါသည်` | "can also be taken as" |
+
+The alias stands wherever the struct name does: in a declaration, a parameter, a struct
+literal and a list of the struct, as `အတန်းသားများ` shows. The kind after the opener can
+be each kind, not a struct alone: `ဒေတာအမျိုးအစား ၃၂ ဘစ် ကိန်းပြည့် ကို အမှတ် ဟုလည်း
+မှတ်ယူနိုင်ပါသည်။` names a kind of number. The rules in full are in
+[Kind aliases](../../manual/language/aliases.md).
+
 ## What a struct cannot do
 
 - `<`, `>` and the like do not take structs: compare the fields. See

@@ -26,12 +26,12 @@ use crate::scope::Binding;
 use crate::scope::FnSig;
 use crate::semcheck::Checker;
 
-/// The file of each top-level struct or enumeration and whether it is
-/// exported, indexed on the name, and on the stem of an enumeration name too;
-/// the first declaration of a name wins.
+/// The file of each top-level struct, enumeration or kind alias and whether it
+/// is exported, indexed on the name, and on the stem of an enumeration or alias
+/// name too; the first declaration of a name wins.
 pub(crate) type StructHomes = HashMap<Name, (u32, bool)>;
 
-/// Where each top-level struct and enumeration is declared.
+/// Where each top-level struct, enumeration and kind alias is declared.
 ///
 /// # Arguments
 ///
@@ -49,11 +49,13 @@ pub(crate) fn struct_homes(program: &Program) -> StructHomes
         {
             Stmt::Struct(d) => (d.name.name, d.exported),
             Stmt::Enum(d) => (d.name.name, d.exported),
+            Stmt::Alias(d) => (d.name.name, d.exported),
             _ => continue,
         };
         let home = (program.unit_of(i), exported);
         homes.entry(name).or_insert(home);
-        let stem = tern!(let Stmt::Enum(_) = s, Some(stem_of(name.as_str())), None);
+        let stemmed = matches!(s, Stmt::Enum(_) | Stmt::Alias(_));
+        let stem = tern!(stemmed, Some(stem_of(name.as_str())), None);
         let stem = stem.filter(|st| *st != name.as_str());
         do_if!(let Some(st) = stem, _ = homes.entry(Name::new(st)).or_insert(home));
     }
@@ -113,6 +115,7 @@ fn exported_kinds(stmt: &Stmt) -> Option<(&Ident, Vec<&Kind>)>
         {
             Some((&d.name, d.fields.iter().map(|f| &f.kind).collect()))
         }
+        Stmt::Alias(d) if d.exported => Some((&d.name, vec![&d.kind])),
         _ => None,
     }
 }
@@ -189,13 +192,18 @@ fn is_text_list(kind: &Kind) -> bool
 ///
 /// # Returns
 ///
-/// `false` for a function, a struct, an enumeration, a variable, a constant or
-/// an import.
+/// `false` for a function, a struct, an enumeration, a kind alias, a variable,
+/// a constant or an import.
 fn runs_in_place(stmt: &Stmt) -> bool
 {
     !matches!(
         stmt,
-        Stmt::Fn(_) | Stmt::Struct(_) | Stmt::Enum(_) | Stmt::Decl(_) | Stmt::Import(_)
+        Stmt::Fn(_)
+            | Stmt::Struct(_)
+            | Stmt::Enum(_)
+            | Stmt::Alias(_)
+            | Stmt::Decl(_)
+            | Stmt::Import(_)
     )
 }
 

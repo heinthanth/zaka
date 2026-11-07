@@ -148,7 +148,11 @@ fn moves(
 {
     match stmt
     {
-        Stmt::Fn(_) | Stmt::Struct(_) | Stmt::Enum(_) | Stmt::Import(_) => false,
+        Stmt::Fn(_)
+        | Stmt::Struct(_)
+        | Stmt::Enum(_)
+        | Stmt::Alias(_)
+        | Stmt::Import(_) => false,
         Stmt::Decl(d) =>
         {
             !d.exported && !keep(d, seen, names.contains(d.name.name.as_str()))
@@ -171,7 +175,12 @@ fn runs(stmt: &Stmt) -> bool
 {
     !matches!(
         stmt,
-        Stmt::Fn(_) | Stmt::Struct(_) | Stmt::Enum(_) | Stmt::Import(_) | Stmt::Decl(_)
+        Stmt::Fn(_)
+            | Stmt::Struct(_)
+            | Stmt::Enum(_)
+            | Stmt::Alias(_)
+            | Stmt::Import(_)
+            | Stmt::Decl(_)
     )
 }
 

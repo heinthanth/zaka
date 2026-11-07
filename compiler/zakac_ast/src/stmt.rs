@@ -126,6 +126,8 @@ pub enum Stmt
     Enum(EnumDecl),
     /// `<subject> သည် <case> ဖြစ်လျှင် ... တခြား <kind> ဖြစ်လျှင် ...`
     Switch(SwitchStmt),
+    /// `ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
+    Alias(AliasDecl),
 }
 
 /// Variable or constant declaration.
@@ -624,6 +626,23 @@ pub struct EnumDecl
     pub name: Ident,
     /// The members in order.
     pub members: Vec<EnumMember>,
+    /// `true` when `အများသုံး` marks it, so other files can import it.
+    #[builder(default)]
+    pub exported: bool,
+    /// Source region, the full stop included.
+    pub span: Span,
+}
+
+/// Kind alias: `ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`, or
+/// `<function kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`. The alias is a second name
+/// for the kind: the loader puts the kind in place of each use of the name.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct AliasDecl
+{
+    /// The kind the alias names.
+    pub kind: Kind,
+    /// The alias.
+    pub name: Ident,
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,

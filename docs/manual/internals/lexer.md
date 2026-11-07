@@ -204,7 +204,8 @@ name before it, becomes an `Ident` and `Kw::Among` (`lex_among`). The `ထဲမ
 vanna of its own, so a stacked consonant before it keeps the word whole. An enumeration opens with
 the struct opener (`DataKindOpen`); the words of enumerations and switches are
 `ဆိုသည်မှာ` (`Meaning`), `ထဲမှ` (`Among`) and `တခြား` (`Other`). `အမျိုးအစား` (`KindWord`)
-is a piece of the function kind phrase.
+is a piece of the function kind phrase. A kind alias closes with the phrase `ဟု လည်း မှတ်ယူနိုင်ပါသည်`
+(`Hu`, `Also`, `CanRegard` joined into `AliasClose`), written joined as `ဟုလည်း` or apart.
 
 A few reserved words are whole rows on purpose, so that none is ever split: `တန်ဖိုးအငှား`
 (`Lend`), `လိပ်စာအကြမ်း` (`RawAddress`), `ငှားထားသော` (`Borrowed`). The word `မှတ်ချက်` is

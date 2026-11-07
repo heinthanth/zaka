@@ -214,6 +214,9 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Meaning
         | Kw::Among
         | Kw::Other
+        | Kw::AliasClose
+        | Kw::Also
+        | Kw::CanRegard
         | Kw::Export => "tok-kw",
         Kw::Print
         | Kw::Assign

@@ -31,7 +31,7 @@ error[ZK0228]: structs can be declared at the top level and nowhere else
 ```
 
 ```text
-error[ZK0316]: "လူ" names a struct or an enumeration declared before
+error[ZK0316]: "လူ" names a struct, an enumeration or a kind alias declared before
 ```
 
 ## One name for two fields

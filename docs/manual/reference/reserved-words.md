@@ -190,7 +190,7 @@ as well.
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `အချက်အလက်အမျိုးအစား`, `ဒေတာအမျိုးအစား` | "data kind": starts a struct or an enumeration declaration (`ဒေတာ` and `အချက်အလက်` are one word in each reserved word and name) | [Structs](../../learn/structs/README.md) |
+| `အချက်အလက်အမျိုးအစား`, `ဒေတာအမျိုးအစား` | "data kind": starts a struct, an enumeration or a kind alias declaration (`ဒေတာ` and `အချက်အလက်` are one word in each reserved word and name) | [Structs](../../learn/structs/README.md) |
 | `တို့ ပါဝင်သည်` | "these are included": closes the field list of a struct | [Structs](../../learn/structs/README.md) |
 | `တို့ ပါဝင်ပြီး` | "these are included, and": closes the field list when a classifier follows | [Structs](../../learn/structs/README.md#count-words) |
 | `မျိုးပြပစ္စည်းမှာ` | "the count word is": names the classifier of a struct | [Structs](../../learn/structs/README.md#count-words) |
@@ -214,6 +214,15 @@ makes it an enumeration. `အမျိုးအစား` alone is reserved as a
 An enumeration declaration closes with `တို့ ဖြစ်သည်`, words reserved for structs. `ထဲမှ`
 can be written joined to the name before it, as in `အရောင်များထဲမှ`: the lexer splits a
 name that ends in `ထဲမှ` into the name and `ထဲမှ`, so no name can end in `ထဲမှ`.
+
+## Kind aliases
+
+| Word | Reads as | Page |
+| --- | --- | --- |
+| `ဟုလည်း မှတ်ယူနိုင်ပါသည်` | "can also be taken as": closes a kind alias, `ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။` | [Kind aliases](../language/aliases.md) |
+
+The pieces of the closer, `လည်း` ("also") and `မှတ်ယူနိုင်ပါသည်` ("can be taken as"),
+are reserved on their own too. `ဟုလည်း` can be written as one word or as two.
 
 ## Modules
 

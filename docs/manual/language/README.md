@@ -57,6 +57,7 @@ a command, such as `ပြသပါ`, forms a *statement*. The compiler reads bo
 | [Text](text.md) | owned text, template literals, joining, cells and characters, then views, copies and drops |
 | [Structs](structs.md) | declaring a struct, its classifier, literals and fields, then duplicating, moving and storage |
 | [Enumerations](enums.md) | declaring an enumeration, its members and their values, and the switch |
+| [Kind aliases](aliases.md) | a second name for a kind: the alias sentence and where the name can stand |
 | [Modules](modules.md) | a program in several files: the export mark, the import sentence and names across files |
 | [Natural wording](naturalness.md) | which particle and which ending read well, and the warnings for the others |
 | [Slices](slices.md) | borrowed runs of cells with their count |

@@ -2,6 +2,7 @@ use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
+use zakac_ast::stmt::AliasDecl;
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::BreakStmt;
 use zakac_ast::stmt::CallStmt;
@@ -97,6 +98,9 @@ impl Parser<'_>
     /// The statement, or a diagnostic.
     pub(crate) fn parse_stmt(&mut self) -> PResult<Stmt>
     {
+        // an export mark comes first; the statement after it comes back here
+        let alias = !self.at(Kw::Export) && self.sentence_has(Kw::AliasClose);
+        ret_if!(alias, self.parse_alias_decl());
         let tok = self.peek();
         let Some(kw) = kw_of(&tok)
         else
@@ -229,6 +233,7 @@ impl Parser<'_>
             Stmt::Fn(n) if !n.start => Some((&mut n.exported, &mut n.span)),
             Stmt::Struct(n) => Some((&mut n.exported, &mut n.span)),
             Stmt::Enum(n) => Some((&mut n.exported, &mut n.span)),
+            Stmt::Alias(n) => Some((&mut n.exported, &mut n.span)),
             Stmt::Decl(n) => Some((&mut n.exported, &mut n.span)),
             _ => None,
         };
@@ -784,6 +789,52 @@ impl Parser<'_>
         };
         let kinds = (0..).map(|n| self.peek_n(n).kind);
         kinds.take_while(|k| !stop(*k)).any(ends)
+    }
+
+    /// Whether the sentence that starts here holds the reserved word `kw`
+    /// before its full stop.
+    ///
+    /// # Arguments
+    ///
+    /// * `kw` - The reserved word.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn sentence_has(&self, kw: Kw) -> bool
+    {
+        let stop = |kind: TokenKind| {
+            matches!(kind, TokenKind::Punct(Punct::FullStop) | TokenKind::Eof)
+        };
+        let kinds = (0..).map(|n| self.peek_n(n).kind);
+        kinds.take_while(|k| !stop(*k)).any(|k| k == TokenKind::Kw(kw))
+    }
+
+    /// Parse a kind alias:
+    /// `ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`, or a
+    /// function kind with no opener before it.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic. A kind other than a function kind
+    /// needs the opener; a declaration inside a block is parsed and reported.
+    fn parse_alias_decl(&mut self) -> PResult<Stmt>
+    {
+        let start = self.peek().span;
+        let opened = self.eat(Kw::DataKindOpen);
+        let kind = self.parse_kind()?;
+        let bare = !opened && kind.base != BaseKind::Fn;
+        let opener = quote(&kw_text(Kw::DataKindOpen));
+        let found = quote(self.text_of(start));
+        ret_if!(bare, Err(diag::expected_token(start, &opener, &found)));
+        self.expect(Kw::Ko)?;
+        let name = self.parse_ident()?;
+        self.expect(Kw::AliasClose)?;
+        let stop = self.expect_stop()?;
+        let span = start.to(&stop.span);
+        do_if!(self.depth > 0, self.diags.push(diag::nested_alias(span)));
+        let node = AliasDecl::builder().kind(kind).name(name).span(span).build();
+        Ok(Stmt::Alias(node))
     }
 
     /// Parse a declaration that opens with `ဒေတာအမျိုးအစား <name>`: a struct

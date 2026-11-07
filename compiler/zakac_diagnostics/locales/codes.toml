@@ -347,6 +347,13 @@ en = "write it as \"(<parameters> လက်ခံ… လုပ်ဆောင်
 [codes.ZK0239.explain]
 en = """A function kind writes its parameters as a header does: kinds, each with an optional name, joined with \"၊\". In a list of parameters or fields, the parameters of the kind would run into the entries before it, so the list would have two readings. Parentheses close the kind: \"(ကိန်းပြည့်၊ ကိန်းပြည့် တို့ကို လက်ခံပြီး မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) ရှေ့\". A function kind with no parameters needs none."""
 
+[codes.ZK0240.title]
+en = "nested kind alias"
+[codes.ZK0240.message]
+en = "kind aliases can be declared at the top level and nowhere else"
+[codes.ZK0240.explain]
+en = """A kind alias, \"ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; an alias can be used before its declaration."""
+
 # -------------------------------------------------------------- resolve ZK03xx
 
 [codes.ZK0301.title]
@@ -459,9 +466,9 @@ en = """The call expression \"... လုပ်ဆောင်သော ရလဒ
 [codes.ZK0316.title]
 en = "duplicate struct"
 [codes.ZK0316.message]
-en = "\"%{n}\" names a struct or an enumeration declared before"
+en = "\"%{n}\" names a struct, an enumeration or a kind alias declared before"
 [codes.ZK0316.explain]
-en = """Each struct or enumeration name names one kind in the whole program, and an enumeration whose name ends in \"များ\" claims its name without \"များ\" too. Rename one of the two declarations."""
+en = """Each struct, enumeration or kind alias name names one kind in the whole program, and an enumeration or an alias whose name ends in \"များ\" claims its name without \"များ\" too. Rename one of the two declarations."""
 
 [codes.ZK0317.title]
 en = "duplicate field"
@@ -619,6 +626,13 @@ en = "\"%{n}\" names both a function and a function value, so the call could run
 en = "rename the variable that holds the function value"
 [codes.ZK0335.explain]
 en = """A call names its function, and the name finds a declared function first, then a variable, a parameter or a constant of a function kind. When both are in reach, the reader cannot tell which one the call runs, so the compiler refuses it. Rename one of them."""
+
+[codes.ZK0336.title]
+en = "alias loop"
+[codes.ZK0336.message]
+en = "the kind alias \"%{n}\" leads back to itself"
+[codes.ZK0336.explain]
+en = """A kind alias names a kind, and that kind can be another alias. When the chain comes back to the first alias, it names no kind at all. Make one alias in the chain name a struct, an enumeration, a function kind or a built-in kind."""
 
 # ---------------------------------------------------------------- kinds ZK04xx
 
