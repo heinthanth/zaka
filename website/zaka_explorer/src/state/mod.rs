@@ -25,6 +25,7 @@ pub mod url;
 use crate::compile::Compiled;
 use crate::compile::Options;
 use crate::compile::Phase;
+use crate::compile::Target;
 use crate::compile::asm::OpSpot;
 use crate::compile::asm::find_spot;
 use crate::compile::asm::has_ops;
@@ -106,6 +107,11 @@ pub struct AppState
     pub source: RwSignal<String>,
     /// The compile options.
     pub options: RwSignal<Options>,
+    /// Whether code generation writes C: the C viewer and the list of the C
+    /// files take the place of the run.
+    pub c_mode: Signal<bool>,
+    /// The name of the C file the viewer shows.
+    pub c_file: RwSignal<String>,
     /// The phases over the settled text.
     pub compiled: Memo<Compiled>,
     /// The range a view points at; the editor highlights it.
@@ -440,7 +446,7 @@ impl AppState
 /// The state.
 pub fn provide_state() -> AppState
 {
-    let linked = url::read_hash().and_then(|hash| permalink::decode(&hash));
+    let linked = url::read_hash().and_then(|hash| permalink::read(&hash));
     let start = linked.clone().unwrap_or_else(default_link);
     let source = RwSignal::new(start.source);
     let options = RwSignal::new(start.options);
@@ -500,6 +506,8 @@ pub fn provide_state() -> AppState
     let state = AppState::builder()
         .source(source)
         .options(options)
+        .c_mode(Signal::derive(move || options.with(|o| o.target == Target::C)))
+        .c_file(RwSignal::new(String::new()))
         .compiled(compiled)
         .pointer(RwSignal::new(None))
         .caret_token(RwSignal::new(None))

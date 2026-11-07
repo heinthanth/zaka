@@ -6,6 +6,7 @@ use zaka_explorer::compile::Options;
 use zaka_explorer::compile::PartKind;
 use zaka_explorer::compile::Phase;
 use zaka_explorer::compile::Status;
+use zaka_explorer::compile::Target;
 use zaka_explorer::compile::asm::AsmFunc;
 use zaka_explorer::compile::compile;
 use zaka_explorer::compile::samples::DIAGNOSTICS;
@@ -16,6 +17,7 @@ use zaka_explorer::compile::samples::Sample;
 use zaka_explorer::compile::samples::find_sample;
 use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::options::MemCheck;
+use zakac_codegen_target_c::options::Checks;
 use zakac_diagnostics::Level;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::tern;
@@ -461,4 +463,37 @@ fn an_import_is_refused_since_the_explorer_holds_one_file()
     assert!(!out.checked);
     let row = out.diagnostics.iter().find(|d| d.code == "ZK0232").expect("ZK0232");
     assert_eq!(row.phase, Phase::Parse);
+}
+
+#[test]
+fn c_target_writes_the_files_and_skips_the_run()
+{
+    let options = Options::builder().target(Target::C).build();
+    let names = |sample: &str| {
+        let out = compile(find_sample(sample).unwrap().text, &options);
+        assert!(out.ops.is_none() && out.c_missing.is_none(), "{sample}");
+        assert_eq!(out.status(Phase::Codegen), Status::Clean, "{sample}");
+        assert_eq!(out.status(Phase::Run), Status::Skipped, "{sample}");
+        assert_eq!(out.last_passed(), Phase::Codegen, "{sample}");
+        out.c_files.iter().map(|f| f.name.clone()).collect::<Vec<_>>()
+    };
+    let own = ["m0.c", "zaka_kinds.h", "zaka_kinds.c", "main.c"];
+    assert_eq!(names("programs/gcd"), own);
+    // A stdlib module the program imports gets a file of its own.
+    let echo = ["m0.c", "m1.c", "zaka_kinds.h", "zaka_kinds.c", "main.c"];
+    assert_eq!(names("io/echo"), echo);
+}
+
+#[test]
+fn c_checks_pick_the_level_of_the_header()
+{
+    let text = find_sample("programs/gcd").unwrap().text;
+    for c_checks in [Checks::None, Checks::Default, Checks::Mem]
+    {
+        let options = Options::builder().target(Target::C).c_checks(c_checks).build();
+        let out = compile(text, &options);
+        let header = out.c_files.iter().find(|f| f.name == "zaka_kinds.h").unwrap();
+        let define = format!("#define {} 1", c_checks.macro_name());
+        assert!(header.text.contains(&define), "{define}");
+    }
 }

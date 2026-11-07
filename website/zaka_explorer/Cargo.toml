@@ -42,6 +42,7 @@ web-time = { workspace = true }
 zakac_ast = { workspace = true }
 zakac_borrow_checker = { workspace = true }
 zakac_burmese_segmenter = { workspace = true }
+zakac_codegen_target_c = { workspace = true }
 zakac_codegen_target_vm = { workspace = true }
 zakac_consts = { workspace = true }
 zakac_diagnostics = { workspace = true }

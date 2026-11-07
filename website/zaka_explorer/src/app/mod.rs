@@ -17,10 +17,13 @@ use zaka_web_ui_common::site::EXPLORER_FLUSH_EVENT;
 use zakac_diagnostics::Level;
 use zakac_i18n::t;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::assets::BLOSSOMS_PHOTO;
 use crate::components::bottom_panel::bottom_panel;
+use crate::components::c_files::c_file_list;
+use crate::components::c_files::c_viewer;
 use crate::components::debug_bar::debug_bar;
 use crate::components::debug_bar::wire_going;
 use crate::components::debug_dock::debug_dock;
@@ -81,10 +84,12 @@ pub fn app_sheets() -> impl IntoView
 /// The app: toolbar, then the editor on the left and the stage view over the
 /// bottom panel on the right, with splitters between them; the pane switches
 /// show and hide each of them. Outside debug mode the stage view holds the
-/// run and the bottom panel the problems. In debug mode the debugger bar sits
-/// under the toolbar, the pipeline takes the place of the run with the dock
-/// of the VM state next to it, and the bottom panel holds the output too. The
-/// guided tour sits over it all.
+/// run and the bottom panel the problems; when the target is C, the C viewer
+/// takes the place of the run, with the list of the C files next to it. In
+/// debug mode the debugger bar sits under the toolbar, the pipeline takes the
+/// place of the run with the dock of the VM state next to it, or the list of
+/// the C files, and the bottom panel holds the output too. The guided tour
+/// sits over it all.
 ///
 /// # Arguments
 ///
@@ -106,11 +111,13 @@ pub fn app_shell(on_site: bool) -> impl IntoView
     let panes = NodeRef::<html::Div>::new();
     let column = NodeRef::<html::Div>::new();
     let debug = state.debug_mode;
-    // Outside debug mode the run is the right pane, so its switch shows it.
+    // Debug mode and the C target split the right side into the stage view
+    // and the dock; else the run is the right pane, so its switch shows it.
+    let three = Signal::derive(move || debug.get() || state.c_mode.get());
     let stage_shown = Signal::derive(move || {
-        tern!(debug.get(), state.stage_open.get(), state.dock_open.get())
+        tern!(three.get(), state.stage_open.get(), state.dock_open.get())
     });
-    let dock_shown = Signal::derive(move || debug.get() && state.dock_open.get());
+    let dock_shown = Signal::derive(move || three.get() && state.dock_open.get());
     let row_shown = Signal::derive(move || stage_shown.get() || dock_shown.get());
     let panel_shown = state.problems_open;
     let both = Signal::derive(move || row_shown.get() && panel_shown.get());
@@ -208,13 +215,17 @@ fn stage_row(
         .class((ClassName::PANEL_OFF, move || !stage_shown.get()))
         .attr(TOUR, "stage")
         .child(move || {
-            let run = || div().class(ClassName::RUN_PANE).child(run_view());
-            tern!(debug.get(), pipeline().into_any(), run().into_any())
+            ret_if!(debug.get(), pipeline().into_any());
+            ret_if!(state.c_mode.get(), c_viewer().into_any());
+            div().class(ClassName::RUN_PANE).child(run_view()).into_any()
         });
     let dock = section()
         .class(format!("{} {}", ClassName::PANEL, ClassName::PANEL_DOCK))
         .class((ClassName::PANEL_OFF, move || !dock_shown.get()))
-        .child(move || debug.get().then(debug_dock));
+        .child(move || {
+            ret_if!(state.c_mode.get(), Some(c_file_list().into_any()));
+            debug.get().then(|| debug_dock().into_any())
+        });
     div()
         .class(ClassName::STAGE_ROW)
         .class((ClassName::STAGE_ROW_SPLIT, split))
@@ -314,7 +325,7 @@ fn follow_flush(state: AppState)
 fn follow_hash(state: AppState)
 {
     let _ = use_event_listener(use_window(), leptos::ev::hashchange, move |_| {
-        let linked = url::read_hash().and_then(|hash| permalink::decode(&hash));
+        let linked = url::read_hash().and_then(|hash| permalink::read(&hash));
         do_if!(let Some(link) = linked, state.open_link(link));
     });
 }

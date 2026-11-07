@@ -14,6 +14,7 @@ use web_sys::ScrollIntoViewOptions;
 use web_sys::ScrollLogicalPosition;
 use zaka_web_ui_common::sheet;
 use zakac_i18n::t;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
@@ -63,8 +64,9 @@ pub fn pipeline() -> impl IntoView
         let link = (phase as usize > 0).then(|| stage_link(state, phase));
         (link, stage_button(state, phase))
     };
-    let stages = Phase::iter().map(stage).collect_view();
+    let stages = move || shown_phases(state).into_iter().map(stage).collect_view();
     follow_stage(state);
+    leave_run(state);
     let timeline = nav()
         .class(ClassName::PIPELINE)
         .attr(TOUR, "pipeline")
@@ -217,6 +219,36 @@ fn is_passed(state: AppState, phase: Phase) -> bool
     phase as usize <= state.stage.get() as usize
 }
 
+/// The phases the timeline shows: each one, but the run of the VM when the
+/// target is C, which the explorer cannot run.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The phases, in order.
+fn shown_phases(state: AppState) -> Vec<Phase>
+{
+    let c_mode = state.c_mode.get();
+    Phase::iter().filter(|p| !(c_mode && *p == Phase::Run)).collect()
+}
+
+/// Open the code generation stage in place of the run when the target turns
+/// to C, which hides the run.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+fn leave_run(state: AppState)
+{
+    Effect::new(move |_| {
+        let on_run = state.stage.get() == Phase::Run;
+        do_if!(on_run && state.c_mode.get(), state.stage.set(Phase::Codegen));
+    });
+}
+
 /// Keep the open stage in view when the timeline scrolls on a narrow pane.
 ///
 /// # Arguments
@@ -282,8 +314,9 @@ fn stage_id(phase: Phase) -> String
 /// * `e` - The press.
 fn step_stage(state: AppState, e: &ev::KeyboardEvent)
 {
-    let phases: Vec<Phase> = Phase::iter().collect();
-    let at = state.stage.get_untracked() as usize;
+    let phases = untrack(|| shown_phases(state));
+    let open = state.stage.get_untracked();
+    let at = phases.iter().position(|p| *p == open).unwrap_or(0);
     let next = match e.key().as_str()
     {
         "ArrowRight" => (at + 1).min(phases.len() - 1),

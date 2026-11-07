@@ -60,6 +60,10 @@ en = "Show the stage view"
 en = "Hide the run"
 [explorer.toolbar.run_show]
 en = "Show the run"
+[explorer.toolbar.files_hide]
+en = "Hide the list of the C files"
+[explorer.toolbar.files_show]
+en = "Show the list of the C files"
 [explorer.toolbar.dock_hide]
 en = "Hide the VM state"
 [explorer.toolbar.dock_show]
@@ -162,6 +166,24 @@ en = "A list, struct or slice that a statement builds and uses up, such as a pri
 en = "Apart"
 [explorer.settings.scratch_shared]
 en = "Shared"
+[explorer.settings.target]
+en = "Target"
+[explorer.settings.target_note]
+en = "VM writes the ops the explorer runs. C writes the files that zakac build --target c makes; the explorer shows them beside the program but cannot run them."
+[explorer.settings.target_vm]
+en = "VM"
+[explorer.settings.target_c]
+en = "C"
+[explorer.settings.c_checks]
+en = "C checks"
+[explorer.settings.c_checks_note]
+en = "The run-time checks the C files keep, as zakac build --checks sets them. None leaves out each check that C itself lacks. Default keeps the checks of the language. Mem also checks each access through an address for the null address; the sanitizers it adds are flags of the C compiler, so the files do not show them."
+[explorer.settings.c_checks_none]
+en = "None"
+[explorer.settings.c_checks_default]
+en = "Default"
+[explorer.settings.c_checks_mem]
+en = "Mem"
 [explorer.settings.heap_auto]
 en = "Auto (%{size})"
 [explorer.settings.platform_bits]
@@ -389,6 +411,21 @@ en = "Locals"
 en = "Code generation did not run"
 [explorer.codegen.skipped_note]
 en = "It runs once the earlier phases report no errors. Fix the problems below to see the ops."
+
+[explorer.c_files.title]
+en = "Files"
+[explorer.c_files.label]
+en = "C files"
+[explorer.c_files.program]
+en = "program"
+[explorer.c_files.runtime]
+en = "runtime"
+[explorer.c_files.missing_title]
+en = "The C target cannot build this program at present"
+[explorer.c_files.kinds_title]
+en = "The C target cannot build this program"
+[explorer.c_files.kinds_note]
+en = "It holds a kind that has no C form. The problems below point at each one."
 
 [explorer.run.label]
 en = "Debugger controls"

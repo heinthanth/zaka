@@ -3,6 +3,7 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use bon::Builder;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_borrow_checker::options::OverflowMode;
+use zakac_codegen_target_c::options::Checks;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
@@ -12,11 +13,15 @@ use zakac_rust_sugars::tern;
 use crate::compile::Options;
 use crate::compile::PLATFORM_BITS;
 use crate::compile::Phase;
+use crate::compile::Target;
 use crate::state::settings::AstMode;
 use crate::state::settings::LowerMode;
 
 /// Version of the link format.
-const FORMAT: &str = "7";
+const FORMAT: &str = "8";
+
+/// Version of the format before the code generation target.
+const FORMAT_7: &str = "7";
 
 /// Version of the format before the scratch mode.
 const FORMAT_6: &str = "6";
@@ -55,11 +60,11 @@ pub struct Link
 
 /// Encode a link for the URL hash.
 ///
-/// The format is `7.<platform bits>.<foldings>.<ownership check>.<mem
-/// flags>.<result mode>.<scratch mode>.<stage>.<AST view>.<lowering
-/// view>.<base64url of the UTF-8 source>`, with the check, the modes, the
-/// stage and the views in lowercase, as in
-/// `7.64.7.error.0.in-place.apart.lower.tree.folded.…`. The foldings
+/// The format is `8.<platform bits>.<foldings>.<ownership check>.<mem
+/// flags>.<result mode>.<scratch mode>.<target>.<C checks>.<stage>.<AST
+/// view>.<lowering view>.<base64url of the UTF-8 source>`, with the check, the
+/// modes, the target, the C checks, the stage and the views in lowercase, as in
+/// `8.64.7.error.0.in-place.apart.vm.default.lower.tree.folded.…`. The foldings
 /// are a digit from 0 to 7: 1 for expressions, 2 for constants, 4 for branches.
 /// The mem flags are a digit from 0 to 7: 1 for the strict check, 2 to forbid
 /// raw addresses, 4 to stop on overflow; formats before 7 hold 0 to 3.
@@ -82,7 +87,9 @@ pub fn encode(link: &Link) -> String
     let mem = mem_digit(&link.options);
     let results: &'static str = link.options.results.into();
     let scratch: &'static str = link.options.scratch.into();
-    let modes = format!("{results}.{scratch}");
+    let target: &'static str = link.options.target.into();
+    let c_checks: &'static str = link.options.c_checks.into();
+    let modes = format!("{results}.{scratch}.{target}.{c_checks}");
     format!("{FORMAT}.{bits}.{fold}.{check}.{mem}.{modes}.{stage}.{views}.{text}")
 }
 
@@ -147,7 +154,8 @@ pub fn decode(hash: &str) -> Option<Link>
     let (format, rest) = hash.trim_start_matches('#').split_once('.')?;
     match format
     {
-        FORMAT => decode_7(rest),
+        FORMAT => decode_8(rest),
+        FORMAT_7 => decode_7(rest),
         FORMAT_6 => decode_6(rest),
         FORMAT_5 => decode_5(rest),
         FORMAT_4 => decode_4(rest),
@@ -158,6 +166,69 @@ pub fn decode(hash: &str) -> Option<Link>
         }
         _ => None,
     }
+}
+
+/// Read a link from the URL hash: decode it, or, when a part does not decode,
+/// keep its source and its stage with the default options and views. A link
+/// of a format this build does not know, such as one a dev build wrote before
+/// the format changed, then keeps the program and the open stage rather than
+/// falling back to the default sample at the lexer stage.
+///
+/// # Arguments
+///
+/// * `hash` - The hash, with or without the leading `#`.
+///
+/// # Returns
+///
+/// The link, or `None` when the source does not decode either.
+pub fn read(hash: &str) -> Option<Link> { decode(hash).or_else(|| salvage(hash)) }
+
+/// The source and the stage of a link whose other parts do not decode. The
+/// source is the last part, as base64url holds no dot; the stage is the first
+/// part that names a phase.
+///
+/// # Arguments
+///
+/// * `hash` - The hash, with or without the leading `#`.
+///
+/// # Returns
+///
+/// The link with the default options and views, or `None` when the source
+/// does not decode.
+fn salvage(hash: &str) -> Option<Link>
+{
+    let (head, text) = hash.trim_start_matches('#').rsplit_once('.')?;
+    let raw = URL_SAFE_NO_PAD.decode(text).ok()?;
+    let source = String::from_utf8(raw).ok()?;
+    let stage = head.split('.').find_map(|part| part.parse().ok()).unwrap_or_default();
+    #[rustfmt::skip]
+    return Some(Link::builder().source(source).options(Options::default()).stage(stage).build());
+}
+
+/// Decode the part of a link after the format: bits, foldings, ownership
+/// check, mem flags, result mode, scratch mode, target, C checks, stage, AST
+/// view, lowering view, source.
+///
+/// # Arguments
+///
+/// * `rest` - The part.
+///
+/// # Returns
+///
+/// The link, or `None` when a part is not well formed.
+fn decode_8(rest: &str) -> Option<Link>
+{
+    let mut parts = rest.splitn(7, '.');
+    let mut next = || parts.next();
+    let (bits, fold, check, mem, results, scratch, rest) =
+        (next()?, next()?, next()?, next()?, next()?, next()?, next()?);
+    let (target, rest) = rest.split_once('.')?;
+    let (c_checks, rest) = rest.split_once('.')?;
+    let head = format!("{bits}.{fold}.{check}.{mem}.{results}.{scratch}");
+    let mut link = decode_7(&format!("{head}.{rest}"))?;
+    link.options.target = target.parse::<Target>().ok()?;
+    link.options.c_checks = c_checks.parse::<Checks>().ok()?;
+    Some(link)
 }
 
 /// Decode the part of a link after the format: bits, foldings, ownership

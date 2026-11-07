@@ -8,11 +8,13 @@ use leptos_scoped_style::ComponentStyle;
 use zaka_web_ui_common::sheet;
 use zakac_codegen_target_vm::listing::quote;
 use zakac_i18n::t;
+use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::compile::asm::AsmFunc;
 use crate::components::asm_table::asm_table;
 use crate::components::asm_table::slot_table;
+use crate::components::c_files::c_viewer;
 use crate::components::check_view::skipped;
 use crate::components::table::ClassName as Table;
 use crate::components::table::Column;
@@ -34,7 +36,8 @@ const TEXT_COLUMNS: [Column; 2] =
     [("explorer.col.slot", "", ""), ("explorer.col.value", "", "")];
 
 /// The generated ops: the global slots, the pooled texts and each function
-/// with its locals and ops; or a note when code generation did not run.
+/// with its locals and ops; the C viewer when the target is C; or a note
+/// when code generation did not run.
 ///
 /// # Returns
 ///
@@ -44,6 +47,7 @@ pub fn codegen_view() -> impl IntoView
     let state = use_state();
     let emitted = Memo::new(move |_| state.compiled.with(|c| c.emitted));
     let content = move || {
+        ret_if!(state.c_mode.get(), c_viewer().into_any());
         let title = t!("explorer.codegen.skipped_title");
         let note = t!("explorer.codegen.skipped_note");
         tern!(
@@ -52,8 +56,10 @@ pub fn codegen_view() -> impl IntoView
             skipped(title, note).into_any()
         )
     };
+    let skipped_ops = move || !emitted.get() && !state.c_mode.get();
     let view = div()
-        .class((ClassName::CODEGEN_VIEW_SKIPPED, move || !emitted.get()))
+        .class((ClassName::CODEGEN_VIEW_SKIPPED, skipped_ops))
+        .class((ClassName::CODEGEN_VIEW_C, move || state.c_mode.get()))
         .child(content);
     (sheet(&SHEET), view)
 }

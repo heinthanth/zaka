@@ -245,9 +245,9 @@ fn debug_switch() -> impl IntoView
 }
 
 /// The switches of the panes, as in an editor: the editor on the left, the
-/// stage view in the middle and the dock on the right in debug mode, and
-/// the bottom panel. Outside debug mode there is no middle pane: the run
-/// is the right pane.
+/// stage view in the middle and the dock on the right in debug mode or when
+/// the target is C, and the bottom panel. Else there is no middle pane: the
+/// run is the right pane.
 ///
 /// # Returns
 ///
@@ -255,7 +255,7 @@ fn debug_switch() -> impl IntoView
 fn pane_switches() -> impl IntoView
 {
     let state = use_state();
-    let debug = state.debug_mode;
+    let three = move || state.debug_mode.get() || state.c_mode.get();
     let editor = Switch::builder()
         .on(state.editor_open)
         .set(state.set_editor_open)
@@ -274,6 +274,12 @@ fn pane_switches() -> impl IntoView
         .hide("explorer.toolbar.dock_hide")
         .show("explorer.toolbar.dock_show")
         .build();
+    let files = Switch::builder()
+        .on(state.dock_open)
+        .set(state.set_dock_open)
+        .hide("explorer.toolbar.files_hide")
+        .show("explorer.toolbar.files_show")
+        .build();
     let run = Switch::builder()
         .on(state.dock_open)
         .set(state.set_dock_open)
@@ -288,8 +294,11 @@ fn pane_switches() -> impl IntoView
         .build();
     div().class(ClassName::PANE_SWITCHES).attr("role", "group").child((
         pane_switch(editor, left_pane()),
-        move || debug.get().then(|| pane_switch(stage, middle_pane())),
-        move || pane_switch(tern!(debug.get(), dock, run), right_pane()),
+        move || three().then(|| pane_switch(stage, middle_pane())),
+        move || {
+            let right = tern!(state.c_mode.get(), files, tern!(three(), dock, run));
+            pane_switch(right, right_pane())
+        },
         pane_switch(panel, bottom_pane()),
     ))
 }

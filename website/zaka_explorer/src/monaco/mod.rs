@@ -86,6 +86,8 @@ extern "C" {
     fn model(this: &CodeEditor) -> TextModel;
     #[wasm_bindgen(method, js_name = updateOptions)]
     fn update_options(this: &CodeEditor, opts: &JsValue);
+    #[wasm_bindgen(method)]
+    fn dispose(this: &CodeEditor);
     #[wasm_bindgen(method, js_name = createDecorationsCollection)]
     fn new_decor(this: &CodeEditor) -> Decor;
     #[wasm_bindgen(method, js_name = setSelection)]
@@ -228,6 +230,10 @@ struct EditorOpts<'a>
     theme: &'static str,
     #[builder(default = "plaintext")]
     language: &'static str,
+    /// Whether the text takes no edits.
+    #[serde(rename = "readOnly")]
+    #[builder(default = false)]
+    no_edits: bool,
     #[serde(rename = "automaticLayout")]
     #[builder(default = true)]
     auto_fit: bool,
@@ -726,6 +732,78 @@ impl Editor
             .source(OWNER)
             .build()
     }
+}
+
+/// A Monaco editor that shows C text, with the colors of C, and takes no
+/// edits.
+#[derive(Debug, Clone)]
+pub struct Viewer
+{
+    /// The Monaco editor.
+    code: CodeEditor,
+    /// Its text.
+    model: TextModel,
+}
+
+impl Viewer
+{
+    /// Create a viewer once Monaco has loaded.
+    ///
+    /// # Arguments
+    ///
+    /// * `host` - The element the viewer fills.
+    /// * `text` - The starting text.
+    /// * `dark` - Use the dark theme.
+    /// * `font` - The CSS font stack and size in px.
+    ///
+    /// # Returns
+    ///
+    /// The viewer, or `None` when Monaco failed to load.
+    pub async fn create(
+        host: &HtmlElement, text: &str, dark: bool, (stack, size): (&str, u32),
+    ) -> Option<Viewer>
+    {
+        let made = load().await.and_then(|()| {
+            #[rustfmt::skip]
+            let opts = EditorOpts::builder().value(text).theme(theme(dark)).language("c")
+                .no_edits(true).font_stack(stack).font_size(size)
+                .line_height(line_height(size)).build();
+            new_editor(host, &to_js(&opts))
+        });
+        let code = made.inspect_err(web_sys::console::error_1).ok()?;
+        Some(Viewer { model: code.model(), code })
+    }
+
+    /// Replace the text when it differs.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The new text.
+    pub fn set_text(&self, text: &str)
+    {
+        ret_if!(self.model.value() == text);
+        self.model.set_value(text);
+    }
+
+    /// Switch the font, then have Monaco measure it again.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The CSS font stack.
+    /// * `size` - The font size in px.
+    pub fn set_font(&self, stack: &str, size: u32)
+    {
+        let opts = FontOpts::builder()
+            .font_stack(stack)
+            .font_size(size)
+            .line_height(line_height(size))
+            .build();
+        self.code.update_options(&to_js(&opts));
+        remeasure_fonts();
+    }
+
+    /// Free the viewer and its text once its host leaves the page.
+    pub fn dispose(&self) { self.code.dispose() }
 }
 
 /// The decoration of a break point on a source line.

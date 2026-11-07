@@ -1,0 +1,125 @@
+// The C viewer and the list of the C files. The viewer fills its pane: a
+// head with the name of the open file, then Monaco. The list reads as the
+// file tree of an editor: a title, then a folder of the files the program
+// makes and a folder of the runtime files, each of which opens and shuts.
+
+.c-viewer
+  flex: 1
+  min-height: 0
+  height: 100%
+  display: flex
+  flex-direction: column
+
+.c-viewer-skipped
+  flex: 1
+  display: grid
+  place-items: center
+  padding: 16px
+
+.c-viewer-pane
+  flex: 1
+  min-height: 0
+  display: flex
+  flex-direction: column
+
+.c-viewer-head
+  flex: none
+  padding: 8px 12px
+  border-bottom: 1px solid var(--panel-border)
+  font-family: var(--mono-font)
+  font-size: calc(var(--code-size) - 2px)
+  color: var(--fg)
+  background: var(--code-bg)
+
+.c-viewer-host
+  position: relative
+  flex: 1
+  min-height: 0
+
+.c-file-list
+  flex: 1
+  min-height: 0
+  overflow: auto
+  padding: 4px 0 12px
+
+.c-file-list-title
+  margin: 0
+  padding: 10px 12px 6px
+  font-size: 11px
+  font-weight: 600
+  letter-spacing: 0.06em
+  text-transform: uppercase
+  color: var(--fg-muted)
+
+.c-group + .c-group
+  margin-top: 6px
+
+.c-group-head
+  display: flex
+  align-items: center
+  gap: 6px
+  width: 100%
+  padding: 6px 12px
+  font: inherit
+  font-size: 12px
+  font-weight: 600
+  text-align: left
+  color: var(--fg-muted)
+  background: none
+  border: 0
+  cursor: pointer
+  outline: none
+
+  &:hover,
+  &:focus-visible
+    color: var(--fg)
+
+  &:focus-visible
+    box-shadow: inset 0 0 0 2px var(--accent)
+
+  svg
+    flex: none
+    width: 13px
+    height: 13px
+
+.c-group-shut
+  .c-group-head svg
+    rotate: -90deg
+
+  .c-group-files
+    display: none
+
+.c-file
+  display: flex
+  align-items: center
+  gap: 8px
+  width: 100%
+  padding: 4px 12px 4px 31px
+  font-family: var(--mono-font)
+  font-size: calc(var(--code-size) - 2px)
+  text-align: left
+  color: var(--fg)
+  background: none
+  border: 0
+  cursor: pointer
+  outline: none
+
+  &:hover
+    background: color-mix(in srgb, var(--fg) 6%, transparent)
+
+  &:focus-visible
+    box-shadow: inset 0 0 0 2px var(--accent)
+
+.c-file-open,
+.c-file-open:hover
+  background: color-mix(in srgb, var(--accent) 16%, transparent)
+
+.c-file-mark
+  flex: none
+  width: 14px
+  font-weight: 700
+  text-align: center
+  color: var(--accent)
+
+.c-file-mark-h
+  color: var(--fg-muted)

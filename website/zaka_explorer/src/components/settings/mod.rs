@@ -18,6 +18,7 @@ use zaka_web_ui_common::controls::settings::switch;
 use zaka_web_ui_common::controls::settings::switch_row;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_borrow_checker::options::OverflowMode;
+use zakac_codegen_target_c::options::Checks;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_i18n::t;
@@ -26,6 +27,7 @@ use zakac_rust_sugars::tern;
 
 use crate::compile::Options;
 use crate::compile::PLATFORM_BITS;
+use crate::compile::Target;
 use crate::state::AppState;
 use crate::state::settings::HeapCap;
 use crate::state::use_state;
@@ -73,9 +75,10 @@ pub fn settings_modal(open: RwSignal<bool>, on_site: bool) -> impl IntoView
     )
 }
 
-/// The compiler options: the platform bits, the foldings of the IR, the
-/// heap limit and the frames of a run, and the ownership checks. The checks
-/// are not stored on the device; the link carries them.
+/// The compiler options: the target and, for C, its run-time checks, the
+/// platform bits, the foldings of the IR, the heap limit and the frames of a
+/// run, and the ownership checks. The checks are not stored on the device; the
+/// link carries them.
 ///
 /// # Arguments
 ///
@@ -89,6 +92,20 @@ fn compiler_section(state: AppState) -> impl IntoView
     section(
         t!("explorer.settings.compiler"),
         (
+            row(
+                t!("explorer.settings.target"),
+                t!("explorer.settings.target_note"),
+                target_picker(state),
+            ),
+            move || {
+                state.c_mode.get().then(|| {
+                    row(
+                        t!("explorer.settings.c_checks"),
+                        t!("explorer.settings.c_checks_note"),
+                        c_checks_picker(state),
+                    )
+                })
+            },
             row(
                 t!("explorer.settings.platform_bits"),
                 t!("explorer.settings.platform_bits_note"),
@@ -414,6 +431,69 @@ fn results_picker(state: AppState) -> impl IntoView
     dropdown(picker(
         t!("explorer.settings.results"),
         ResultMode::iter().map(choice).collect(),
+        current,
+        on_pick,
+    ))
+}
+
+/// Picker of what code generation writes: ops for the VM, or C.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn target_picker(state: AppState) -> impl IntoView
+{
+    let label = |m: Target| match m
+    {
+        Target::Vm => t!("explorer.settings.target_vm"),
+        Target::C => t!("explorer.settings.target_c"),
+    };
+    let choice =
+        move |m: Target| Choice::builder().value(m.to_string()).label(label(m)).build();
+    let current = Signal::derive(move || state.options.get().target.to_string());
+    let on_pick = move |v: String| {
+        let target = v.parse().unwrap_or_default();
+        state.options.update(|o| o.target = target);
+    };
+    dropdown(picker(
+        t!("explorer.settings.target"),
+        Target::iter().map(choice).collect(),
+        current,
+        on_pick,
+    ))
+}
+
+/// Picker of the run-time checks the C files keep.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn c_checks_picker(state: AppState) -> impl IntoView
+{
+    let label = |c: Checks| match c
+    {
+        Checks::None => t!("explorer.settings.c_checks_none"),
+        Checks::Default => t!("explorer.settings.c_checks_default"),
+        Checks::Mem => t!("explorer.settings.c_checks_mem"),
+    };
+    let choice =
+        move |c: Checks| Choice::builder().value(c.to_string()).label(label(c)).build();
+    let current = Signal::derive(move || state.options.get().c_checks.to_string());
+    let on_pick = move |v: String| {
+        let c_checks = v.parse().unwrap_or_default();
+        state.options.update(|o| o.c_checks = c_checks);
+    };
+    dropdown(picker(
+        t!("explorer.settings.c_checks"),
+        Checks::iter().map(choice).collect(),
         current,
         on_pick,
     ))

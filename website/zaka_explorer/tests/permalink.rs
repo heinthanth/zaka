@@ -2,14 +2,17 @@ use strum::IntoEnumIterator;
 use zaka_explorer::compile::Options;
 use zaka_explorer::compile::PLATFORM_BITS;
 use zaka_explorer::compile::Phase;
+use zaka_explorer::compile::Target;
 use zaka_explorer::compile::samples::SAMPLES;
 use zaka_explorer::state::permalink::Link;
 use zaka_explorer::state::permalink::decode;
 use zaka_explorer::state::permalink::encode;
+use zaka_explorer::state::permalink::read;
 use zaka_explorer::state::settings::AstMode;
 use zaka_explorer::state::settings::LowerMode;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_borrow_checker::options::OverflowMode;
+use zakac_codegen_target_c::options::Checks;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
@@ -55,7 +58,9 @@ fn links_keep_the_stage_and_the_ast_view()
     }
     let shown = encode(&link_at(Phase::Parse, AstMode::Graph));
     assert!(
-        shown.starts_with("7.64.7.error.4.in-place.apart.parse.graph.folded."),
+        shown.starts_with(
+            "8.64.7.error.4.in-place.apart.vm.default.parse.graph.folded."
+        ),
         "{shown}"
     );
 }
@@ -76,7 +81,9 @@ fn links_keep_the_foldings_and_the_lowering_view()
                 .lower_mode(lower_mode).build();
             let hash = encode(&link);
             assert!(
-                hash.starts_with(&format!("7.64.{n}.error.4.in-place.apart.lower.")),
+                hash.starts_with(&format!(
+                    "8.64.{n}.error.4.in-place.apart.vm.default.lower."
+                )),
                 "{hash}"
             );
             assert_eq!(decode(&hash), Some(link));
@@ -98,7 +105,7 @@ fn links_keep_the_ownership_checks()
             let link = Link::builder().source("x").options(options).build();
             let hash = encode(&link);
             let word: &'static str = check.into();
-            assert!(hash.starts_with(&format!("7.64.7.{word}.{}.", mem | 4)), "{hash}");
+            assert!(hash.starts_with(&format!("8.64.7.{word}.{}.", mem | 4)), "{hash}");
             assert_eq!(decode(&hash), Some(link));
         }
     }
@@ -113,7 +120,10 @@ fn links_keep_the_result_mode()
         let link = Link::builder().source("x").options(options).build();
         let hash = encode(&link);
         let word: &'static str = results.into();
-        assert!(hash.starts_with(&format!("7.64.7.error.4.{word}.apart.")), "{hash}");
+        assert!(
+            hash.starts_with(&format!("8.64.7.error.4.{word}.apart.vm.default.")),
+            "{hash}"
+        );
         assert_eq!(decode(&hash), Some(link));
     }
 }
@@ -128,11 +138,53 @@ fn links_keep_the_scratch_mode()
         let hash = encode(&link);
         let word: &'static str = scratch.into();
         assert!(
-            hash.starts_with(&format!("7.64.7.error.4.in-place.{word}.")),
+            hash.starts_with(&format!("8.64.7.error.4.in-place.{word}.vm.default.")),
             "{hash}"
         );
         assert_eq!(decode(&hash), Some(link));
     }
+}
+
+#[test]
+fn links_keep_the_target()
+{
+    for target in Target::iter()
+    {
+        let options = Options::builder().target(target).build();
+        let link = Link::builder().source("x").options(options).build();
+        let hash = encode(&link);
+        let word: &'static str = target.into();
+        assert!(
+            hash.starts_with(&format!("8.64.7.error.4.in-place.apart.{word}.")),
+            "{hash}"
+        );
+        assert_eq!(decode(&hash), Some(link));
+    }
+}
+
+#[test]
+fn links_keep_the_c_checks()
+{
+    for c_checks in Checks::iter()
+    {
+        let options = Options::builder().target(Target::C).c_checks(c_checks).build();
+        let link = Link::builder().source("x").options(options).build();
+        let hash = encode(&link);
+        let word: &'static str = c_checks.into();
+        let head = format!("8.64.7.error.4.in-place.apart.c.{word}.");
+        assert!(hash.starts_with(&head), "{hash}");
+        assert_eq!(decode(&hash), Some(link));
+    }
+}
+
+#[test]
+fn version_7_links_open_with_the_vm_target()
+{
+    let decoded =
+        decode("7.64.7.error.4.in-place.shared.lower.tree.folded.eA").unwrap();
+    assert_eq!(decoded.source, "x");
+    assert_eq!(decoded.options.scratch, ScratchMode::Shared);
+    assert_eq!(decoded.options.target, Target::Vm);
 }
 
 #[test]
@@ -206,6 +258,10 @@ fn malformed_links_decode_to_none()
         "1.0.64.eA",
         "7.64.7.error.0.in-place.both.lex.tree.folded.eA",
         "7.64.7.error.0.in-place.lex.tree.folded.eA",
+        "8.64.7.error.0.in-place.apart.wasm.default.lex.tree.folded.eA",
+        "8.64.7.error.0.in-place.apart.c.strict.lex.tree.folded.eA",
+        "8.64.7.error.0.in-place.apart.c.lex.tree.folded.eA",
+        "8.64.7.error.0.in-place.apart.lex.tree.folded.eA",
         "6.64.7.error.0.both.lex.tree.folded.eA",
         "6.64.7.error.0.lex.tree.folded.eA",
         "5.64.7.strict.0.lex.tree.folded.eA",
@@ -239,8 +295,26 @@ fn links_keep_the_overflow_mode_in_the_mem_flags()
         let link = Link::builder().source("x").options(options).build();
         let hash = encode(&link);
         let digit = if overflow == OverflowMode::Stop { 6 } else { 2 };
-        assert!(hash.starts_with(&format!("7.64.7.error.{digit}.")), "{hash}");
+        assert!(hash.starts_with(&format!("8.64.7.error.{digit}.")), "{hash}");
         assert_eq!(decode(&hash), Some(link));
     }
-    assert_eq!(decode("7.64.7.error.8.in-place.apart.lex.tree.folded.eA"), None);
+    assert_eq!(
+        decode("8.64.7.error.8.in-place.apart.vm.default.lex.tree.folded.eA"),
+        None
+    );
+}
+
+#[test]
+fn unreadable_links_keep_their_source_and_stage()
+{
+    let link = link_at(Phase::Lower, AstMode::Tree);
+    assert_eq!(read(&encode(&link)), Some(link));
+    // A format 8 link from before the C checks part: its options no longer
+    // decode, but the program and the open stage remain.
+    let old = read("8.64.7.error.4.in-place.apart.vm.lower.tree.folded.eA").unwrap();
+    assert_eq!((old.source.as_str(), old.stage), ("x", Phase::Lower));
+    assert_eq!(old.options, Options::default());
+    assert_eq!(read("9.whatever.eA").unwrap().stage, Phase::default());
+    assert_eq!(read("8.64.7.error.4.lex.@@"), None);
+    assert_eq!(read("eA"), None);
 }

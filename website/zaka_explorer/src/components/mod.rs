@@ -3,6 +3,7 @@ pub mod asm_table;
 pub mod ast_view;
 pub mod borrow_check_view;
 pub mod bottom_panel;
+pub mod c_files;
 pub mod check_view;
 pub mod codegen_view;
 pub mod debug_bar;

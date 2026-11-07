@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use bon::Builder;
+use strum::Display;
 use strum::EnumIter;
 use strum::EnumString;
 use strum::IntoEnumIterator;
@@ -16,6 +17,10 @@ use zakac_borrow_checker::options::OverflowMode;
 use zakac_burmese_segmenter::segmenter::PreLexicalToken;
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
+use zakac_codegen_target_c::emit::CFile;
+use zakac_codegen_target_c::emit::NotBuilt;
+use zakac_codegen_target_c::options::Checks;
+use zakac_codegen_target_c::options::TargetCOptions;
 use zakac_codegen_target_vm::bc;
 use zakac_codegen_target_vm::emit::emit;
 use zakac_codegen_target_vm::listing::format_text;
@@ -112,6 +117,42 @@ pub struct Options
     /// Where the scratch values of a function live.
     #[builder(default)]
     pub scratch: ScratchMode,
+    /// What code generation writes: ops for the VM, or C.
+    #[builder(default)]
+    pub target: Target,
+    /// The run-time checks the C files keep, when the target is C.
+    #[builder(default)]
+    pub c_checks: Checks,
+}
+
+/// What code generation writes; its static name is the word links and the
+/// settings use.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Display, EnumIter, EnumString, IntoStaticStr)]
+#[strum(serialize_all = "kebab-case")]
+pub enum Target
+{
+    /// Ops for the VM, which the explorer runs.
+    #[default]
+    Vm,
+    /// C files, which the explorer shows but cannot build.
+    C,
+}
+
+/// The C target choices of the compile options.
+///
+/// # Arguments
+///
+/// * `options` - The compile options.
+///
+/// # Returns
+///
+/// The choices.
+fn c_options(options: &Options) -> TargetCOptions
+{
+    #[rustfmt::skip]
+    return TargetCOptions::builder().checks(options.c_checks).overflow(options.overflow)
+        .platform_bits(options.platform_bits).build();
 }
 
 /// The code generation choices of the compile options.
@@ -442,6 +483,13 @@ pub struct Compiled
     /// The pieces of each text the ops build when the program runs, as
     /// listing text.
     pub formats: Vec<String>,
+    /// The C files the C target writes: a file for each module, the shared
+    /// header, the generated descriptors and `main.c`; the runtime files
+    /// stand apart, in `zakac_codegen_target_c::driver::RUNTIME`.
+    #[builder(default)]
+    pub c_files: Vec<CFile>,
+    /// The construct the C target cannot build at present, as text.
+    pub c_missing: Option<String>,
     /// Whether code generation ran; it is left out after errors in earlier
     /// phases, folding included.
     pub emitted: bool,
@@ -555,15 +603,18 @@ impl Compiled
     ///
     /// The status; the check is skipped after lexer or parser errors, and
     /// lowering, the ownership check, code generation and the run after
-    /// errors in an earlier phase. The ops do not run here; the pipeline warns
+    /// errors in an earlier phase. The run is skipped too when there are no
+    /// ops, as with the C target, and code generation fails on a construct
+    /// the C target cannot build. The ops do not run here; the pipeline warns
     /// on the run once a run of the debugger session traps.
     pub fn status(&self, phase: Phase) -> Status
     {
-        let emits = matches!(phase, Phase::Codegen | Phase::Run);
         ret_if!(phase == Phase::Check && !self.checked, Status::Skipped);
         ret_if!(phase == Phase::Lower && !self.lowered, Status::Skipped);
         ret_if!(phase == Phase::BorrowCheck && !self.borrowchecked, Status::Skipped);
-        ret_if!(emits && !self.emitted, Status::Skipped);
+        ret_if!(phase == Phase::Codegen && !self.emitted, Status::Skipped);
+        ret_if!(phase == Phase::Run && self.ops.is_none(), Status::Skipped);
+        ret_if!(phase == Phase::Codegen && self.c_missing.is_some(), Status::Failed);
         let own = self.diagnostics.iter().filter(|d| d.phase == phase);
         let levels: Vec<Level> = own.map(|d| d.level).collect();
         ret_if!(levels.contains(&Level::Error), Status::Failed);
@@ -661,7 +712,6 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     let mut sm = SourceMap::new();
     let name = FileName::Custom(FILE_NAME.to_string());
     let file = sm.new_source_file(name, source.to_string());
-    let unit = Unit::builder().sm(&sm).file(&file).original(source).build();
 
     let segment_options =
         SegmenterOptions::builder().coalesce_non_burmese_chars(false).build();
@@ -673,6 +723,12 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     // other import is reported.
     let (loaded, parse_time) =
         timed(|| Loaded::single(&file, &LexerOptions::default()));
+    // The imported modules join the map in reading order, as the loader placed
+    // them, so their spans resolve and the C target gives each its own file.
+    loaded.imports.iter().for_each(|f| {
+        sm.new_source_file(f.name.clone(), f.source.clone());
+    });
+    let unit = Unit::builder().sm(&sm).file(&file).original(source).build();
     let parse_diags: Vec<Diagnostic> = loaded
         .diagnostics
         .into_iter()
@@ -693,12 +749,31 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         let module = folded.as_mut().filter(|_| borrowchecked);
         module.map(|m| check_owners(m, options)).unwrap_or_default()
     });
+    let emitted = borrowchecked && !has_errors(&owner_diags);
+    let module = folded.as_ref().filter(|_| emitted);
+    let ((ops, c_built), codegen_time) = timed(|| match module
+    {
+        None => (None, None),
+        Some(m) if options.target == Target::C =>
+        {
+            let c =
+                zakac_codegen_target_c::emit::emit(m, sm.files(), c_options(options));
+            (None, Some(c))
+        }
+        Some(m) =>
+        {
+            let emitted = emit(m, options.platform_bits, emit_options(options));
+            (Some(bc::Module { overflow: options.overflow, ..emitted }), None)
+        }
+    });
+    let (c_files, c_diags, c_missing) = c_parts(c_built);
     let tagged = [
         (Phase::Lex, &lexed.diagnostics),
         (Phase::Parse, &parse_diags),
         (Phase::Check, &idiom),
         (Phase::Lower, &fold_diags),
         (Phase::BorrowCheck, &owner_diags),
+        (Phase::Codegen, &c_diags),
     ];
     let ir_tree = |m: &Option<Module>| {
         m.as_ref().map(|m| build_ir_tree(&file, source, m)).unwrap_or_default()
@@ -709,13 +784,6 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .iter()
         .flat_map(|(phase, diags)| diags.iter().map(|d| diag_row(&unit, *phase, d)))
         .collect();
-    let emitted = borrowchecked && !has_errors(&owner_diags);
-    let (ops, codegen_time) = timed(|| {
-        folded.as_ref().filter(|_| emitted).map(|m| {
-            let emitted = emit(m, options.platform_bits, emit_options(options));
-            bc::Module { overflow: options.overflow, ..emitted }
-        })
-    });
     let times = PhaseTimes::builder()
         .segment(segment_time)
         .lex(lex_time)
@@ -754,9 +822,37 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .globals(globals)
         .texts(texts)
         .formats(formats.unwrap_or_default())
+        .c_files(c_files)
+        .maybe_c_missing(c_missing)
         .emitted(emitted)
         .times(times)
         .build()
+}
+
+/// The parts of what the C target made: the files, the diagnostics of the
+/// kinds it cannot build, and the construct it cannot build at present.
+///
+/// # Arguments
+///
+/// * `built` - What the C target made; `None` when it did not run.
+///
+/// # Returns
+///
+/// The files, the diagnostics and the construct as text.
+fn c_parts(
+    built: Option<Result<Vec<CFile>, NotBuilt>>,
+) -> (Vec<CFile>, Vec<Diagnostic>, Option<String>)
+{
+    match built
+    {
+        Some(Ok(files)) => (files, Vec::new(), None),
+        Some(Err(NotBuilt::Kinds(diags))) => (Vec::new(), diags, None),
+        Some(Err(NotBuilt::Missing(error))) =>
+        {
+            (Vec::new(), Vec::new(), Some(error.to_string()))
+        }
+        None => Default::default(),
+    }
 }
 
 /// The statements of the file the explorer holds, without the stdlib
