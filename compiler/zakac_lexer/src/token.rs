@@ -612,8 +612,9 @@ pub enum Kw
     CellWord,
 
     // structs
-    /// `အချက်အလက်အမျိုးအစား`, also written `ဒေတာအမျိုးအစား`
-    StructOpen,
+    /// `အချက်အလက်အမျိုးအစား`, also written `ဒေတာအမျိုးအစား`: opens a struct or an
+    /// enumeration declaration
+    DataKindOpen,
     /// `တို့`, a piece of the field list closers
     Plural,
     /// `ပါဝင်သည်`
@@ -630,8 +631,8 @@ pub enum Kw
     FieldsCloseAnd,
 
     // enumerations and switch
-    /// `အမျိုးအစား`, the opener of an enumeration
-    EnumOpen,
+    /// `အမျိုးအစား`, "kind": a piece of the function kind phrase
+    KindWord,
     /// `ဆိုသည်မှာ`, between the name of an enumeration and its members
     Meaning,
     /// `ထဲမှ`, between `<name>များ` and a member: `အရောင်များထဲမှ နီ`

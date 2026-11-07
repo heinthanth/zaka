@@ -33,6 +33,8 @@ does. The Learn book starts in small steps with [Structs](../../learn/structs/RE
 - `အချက်အလက်အမျိုးအစား` and `ဒေတာအမျိုးအစား` are one word, as `အချက်အလက်` and `ဒေတာ` are
   in each name and reserved word ([Two spellings of one word](words.md#names)); a
   struct name written with either spelling names one struct.
+- The same opener starts an enumeration, with `ဆိုသည်မှာ` after the name in place of
+  `တွင်` ([Enumerations](enums.md#declaring-an-enumeration)).
 - A declaration stands at the top level of a file. Inside a block, a loop, a conditional
   or a function it is ZK0228. A struct can be used above its declaration, since the
   declarations are read first.

@@ -164,7 +164,7 @@ since common signs such as `၌ ၍ ၎` are not `XID_Continue`.
 with two spellings has two rows (the four closers of a block all map to `Kw::Done`).
 `lookup` is a hash map over the table, read through `spelling::canonical`, which writes
 each `ဒေတာ` as `အချက်အလက်`: the table holds the `အချက်အလက်` form alone, and
-`ဒေတာအမျိုးအစား` finds `Kw::StructOpen` through it. The same function makes names one:
+`ဒေတာအမျိုးအစား` finds `Kw::DataKindOpen` through it. The same function makes names one:
 `Name::new` in `zakac_ast` keeps the canonical text, so the checker and each later stage
 see one name for both spellings. The parser matches struct names against source text
 that is not canonical (a struct name glued to its count word), so its set of struct
@@ -201,9 +201,10 @@ pass-on just when it touches the `)` of a call (`joined`).
 A name joined to `ထဲမှ`, as in `အရောင်များထဲမှ`, has a non-reserved part, so
 `split_reserved` cannot split it. `lex_ident` does: a name word that ends in `ထဲမှ`, with a
 name before it, becomes an `Ident` and `Kw::Among` (`lex_among`). The `ထဲမှ` must start a
-vanna of its own, so a stacked consonant before it keeps the word whole. The words of
-enumerations and switches are `အမျိုးအစား` (`EnumOpen`), `ဆိုသည်မှာ` (`Meaning`), `ထဲမှ`
-(`Among`) and `တခြား` (`Other`).
+vanna of its own, so a stacked consonant before it keeps the word whole. An enumeration opens with
+the struct opener (`DataKindOpen`); the words of enumerations and switches are
+`ဆိုသည်မှာ` (`Meaning`), `ထဲမှ` (`Among`) and `တခြား` (`Other`). `အမျိုးအစား` (`KindWord`)
+is a piece of the function kind phrase.
 
 A few reserved words are whole rows on purpose, so that none is ever split: `တန်ဖိုးအငှား`
 (`Lend`), `လိပ်စာအကြမ်း` (`RawAddress`), `ငှားထားသော` (`Borrowed`). The word `မှတ်ချက်` is

@@ -113,8 +113,9 @@ impl Parser<'_>
             Kw::Var | Kw::Const => self.parse_decl_or_loop(),
             Kw::Function => self.parse_fn_or_call(),
             Kw::Program => self.parse_fn_decl(),
-            Kw::StructOpen => self.parse_struct_decl(),
-            Kw::EnumOpen => self.parse_enum_decl(),
+            Kw::DataKindOpen => self.parse_kind_decl(),
+            // the old enumeration opener; the struct opener opens both now
+            Kw::KindWord => Err(self.err_expected(&quote(&kw_text(Kw::DataKindOpen)))),
             Kw::Export => self.parse_exported(),
             Kw::BlockOpen => self.parse_block().map(Stmt::Block),
             Kw::Loop => self.parse_break(),
@@ -785,19 +786,40 @@ impl Parser<'_>
         kinds.take_while(|k| !stop(*k)).any(ends)
     }
 
-    /// Parse a struct declaration:
+    /// Parse a declaration that opens with `ဒေတာအမျိုးအစား <name>`: a struct
+    /// when `တွင်` comes next, an enumeration when `ဆိုသည်မှာ` does.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    fn parse_kind_decl(&mut self) -> PResult<Stmt>
+    {
+        let start = self.bump().span;
+        let name = self.parse_ident()?;
+        let word = self.expect_one_of(&[Kw::At, Kw::Meaning])?;
+        let enumeration = word.kind == TokenKind::Kw(Kw::Meaning);
+        tern!(
+            enumeration,
+            self.parse_enum_decl(start, name),
+            self.parse_struct_decl(start, name)
+        )
+    }
+
+    /// Parse a struct declaration after its opener, name and `တွင်`:
     /// `ဒေတာအမျိုးအစား <name> တွင် <kind> <field> (၊ <kind> <field>)* တို့ ပါဝင်သည်။`,
     /// or `တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်။` at the end.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Span of the opener.
+    /// * `name` - The struct name.
     ///
     /// # Returns
     ///
     /// The declaration, or a diagnostic. A declaration inside a block is
     /// parsed and reported.
-    fn parse_struct_decl(&mut self) -> PResult<Stmt>
+    fn parse_struct_decl(&mut self, start: Span, name: Ident) -> PResult<Stmt>
     {
-        let start = self.bump().span;
-        let name = self.parse_ident()?;
-        self.expect(Kw::At)?;
         let outer = std::mem::replace(&mut self.in_list, true);
         let fields = self.parse_fields();
         self.in_list = outer;
@@ -830,19 +852,21 @@ impl Parser<'_>
         Ok(fields)
     }
 
-    /// Parse an enumeration declaration:
-    /// `အမျိုးအစား <name> ဆိုသည်မှာ <member> (၊ <member>)* တို့ ဖြစ်သည်။`, each
+    /// Parse an enumeration declaration after its opener, name and `ဆိုသည်မှာ`:
+    /// `ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ <member> (၊ <member>)* တို့ ဖြစ်သည်။`, each
     /// member a name with an optional value in parentheses.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Span of the opener.
+    /// * `name` - The enumeration name.
     ///
     /// # Returns
     ///
     /// The declaration, or a diagnostic. A declaration inside a block is
     /// parsed and reported.
-    fn parse_enum_decl(&mut self) -> PResult<Stmt>
+    fn parse_enum_decl(&mut self, start: Span, name: Ident) -> PResult<Stmt>
     {
-        let start = self.bump().span;
-        let name = self.parse_ident()?;
-        self.expect(Kw::Meaning)?;
         let mut members = vec![self.parse_enum_member()?];
         while self.eat_punct(Punct::ListSep)
         {

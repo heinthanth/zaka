@@ -193,15 +193,16 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("မှစ၍", Kw::StartingAt),
     ("ထိ", Kw::Upto),
     ("ကွက်", Kw::CellWord),
-    // structs
-    ("အချက်အလက်အမျိုးအစား", Kw::StructOpen),
+    // structs and enumerations
+    ("အချက်အလက်အမျိုးအစား", Kw::DataKindOpen),
     ("တို့", Kw::Plural),
     ("ပါဝင်သည်", Kw::Contains),
     ("ပါဝင်ပြီး", Kw::ContainsAnd),
     ("မျိုးပြပစ္စည်းမှာ", Kw::ClassifierIs),
     ("ဖြစ်သည်", Kw::Is),
+    // the function kind phrase
+    ("အမျိုးအစား", Kw::KindWord),
     // enumerations and switch
-    ("အမျိုးအစား", Kw::EnumOpen),
     ("ဆိုသည်မှာ", Kw::Meaning),
     ("ထဲမှ", Kw::Among),
     ("တခြား", Kw::Other),

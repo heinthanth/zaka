@@ -122,7 +122,7 @@ pub enum Stmt
     Struct(StructDecl),
     /// `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းပါ။`
     Import(ImportStmt),
-    /// `အမျိုးအစား <name> ဆိုသည်မှာ <member>၊ ... တို့ ဖြစ်သည်။`
+    /// `ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ <member>၊ ... တို့ ဖြစ်သည်။`
     Enum(EnumDecl),
     /// `<subject> သည် <case> ဖြစ်လျှင် ... တခြား <kind> ဖြစ်လျှင် ...`
     Switch(SwitchStmt),
@@ -616,7 +616,7 @@ pub struct EnumMember
 }
 
 /// Enumeration declaration:
-/// `အမျိုးအစား <name> ဆိုသည်မှာ <member> (<value>)?၊ ... တို့ ဖြစ်သည်။`.
+/// `ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ <member> (<value>)?၊ ... တို့ ဖြစ်သည်။`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct EnumDecl
 {

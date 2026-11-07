@@ -280,8 +280,7 @@ impl<'t> Parser<'t>
         #[rustfmt::skip]
         let mut parser = Parser::builder().cur(cur).text(text).base(base).strings(&lexed.strings).build();
         let declared = |pair: &[Token]| {
-            let opener =
-                matches!(pair[0].kind, TokenKind::Kw(Kw::StructOpen | Kw::EnumOpen));
+            let opener = pair[0].kind == TokenKind::Kw(Kw::DataKindOpen);
             let named = opener && pair[1].kind == TokenKind::Ident;
             named.then(|| parser.text_of(pair[1].span))
         };
@@ -291,7 +290,7 @@ impl<'t> Parser<'t>
         parser.structs =
             names.iter().copied().chain(stems).flat_map(spellings).collect();
         let starts = lexed.tokens.iter().enumerate();
-        let starts = starts.filter(|(_, t)| t.kind == TokenKind::Kw(Kw::StructOpen));
+        let starts = starts.filter(|(_, t)| t.kind == TokenKind::Kw(Kw::DataKindOpen));
         let found = starts
             .filter_map(|(at, _)| parser.struct_classifier(&lexed.tokens, at))
             .map(|(name, word)| (canonical(name).into_owned(), word))

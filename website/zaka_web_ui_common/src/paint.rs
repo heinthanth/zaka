@@ -205,12 +205,12 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::AllocTarget
         | Kw::AllocHead
         | Kw::HeapHead
-        | Kw::StructOpen
+        | Kw::DataKindOpen
         | Kw::Plural
         | Kw::FieldsClose
         | Kw::FieldsCloseAnd
         | Kw::ClassifierIs
-        | Kw::EnumOpen
+        | Kw::KindWord
         | Kw::Meaning
         | Kw::Among
         | Kw::Other

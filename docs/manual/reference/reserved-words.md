@@ -190,7 +190,7 @@ as well.
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `အချက်အလက်အမျိုးအစား`, `ဒေတာအမျိုးအစား` | "data kind": starts a struct declaration (`ဒေတာ` and `အချက်အလက်` are one word in each reserved word and name) | [Structs](../../learn/structs/README.md) |
+| `အချက်အလက်အမျိုးအစား`, `ဒေတာအမျိုးအစား` | "data kind": starts a struct or an enumeration declaration (`ဒေတာ` and `အချက်အလက်` are one word in each reserved word and name) | [Structs](../../learn/structs/README.md) |
 | `တို့ ပါဝင်သည်` | "these are included": closes the field list of a struct | [Structs](../../learn/structs/README.md) |
 | `တို့ ပါဝင်ပြီး` | "these are included, and": closes the field list when a classifier follows | [Structs](../../learn/structs/README.md#count-words) |
 | `မျိုးပြပစ္စည်းမှာ` | "the count word is": names the classifier of a struct | [Structs](../../learn/structs/README.md#count-words) |
@@ -203,10 +203,13 @@ the two closing phrases (`တို့`, `ပါဝင်သည်`, `ပါဝ�
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `အမျိုးအစား` | "kind": starts an enumeration declaration | [Enumerations and switches](../../learn/enums/README.md) |
 | `ဆိုသည်မှာ` | "means": between the name of an enumeration and its members | [Enumerations and switches](../../learn/enums/README.md) |
 | `ထဲမှ` | "from among", in `<name>များထဲမှ <member>` | [Enumerations and switches](../../learn/enums/README.md#naming-a-member) |
 | `တခြား` | "another": starts the default arm of a switch, `တခြား <kind> ဖြစ်လျှင်` | [Enumerations and switches](../../learn/enums/README.md#the-default-arm) |
+
+An enumeration opens with `ဒေတာအမျိုးအစား`, as a struct does; `ဆိုသည်မှာ` after the name
+makes it an enumeration. `အမျိုးအစား` alone is reserved as a piece of
+`လုပ်ဆောင်ချက် အမျိုးအစား`, the closer of a function kind.
 
 An enumeration declaration closes with `တို့ ဖြစ်သည်`, words reserved for structs. `ထဲမှ`
 can be written joined to the name before it, as in `အရောင်များထဲမှ`: the lexer splits a

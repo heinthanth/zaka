@@ -266,8 +266,8 @@ fn names_that_start_with_list_words_remain_names()
 #[test]
 fn both_spellings_of_data_are_one_word()
 {
-    assert_eq!(lookup("ဒေတာအမျိုးအစား"), Some(Kw::StructOpen));
-    assert_eq!(lookup("အချက်အလက်အမျိုးအစား"), Some(Kw::StructOpen));
+    assert_eq!(lookup("ဒေတာအမျိုးအစား"), Some(Kw::DataKindOpen));
+    assert_eq!(lookup("အချက်အလက်အမျိုးအစား"), Some(Kw::DataKindOpen));
     assert_eq!(canonical("ဒေတာစာရင်း"), "အချက်အလက်စာရင်း");
     assert_eq!(canonical("အသက်"), "အသက်");
     assert_eq!(spellings("ဒေတာစာရင်း"), ["ဒေတာစာရင်း", "အချက်အလက်စာရင်း"]);

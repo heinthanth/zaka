@@ -279,7 +279,7 @@ token:
 | `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
 | `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ`, then a size before `မင်မိုရီကို` for a blit (`parse_blit_end`: `ကူးယူမည်` or `ပြောင်းထည့်မည်`); else after `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` for a release, a fill (`parse_fill_end`) when `ဖြည့်မည်` comes before the `။` (`ends_in_fill`), so a value that starts with a kind word needs no parentheses, or a size for a resize. The value of a fill is read with `in_fill` set, so a `ဖြင့်` right after a lone value ends it |
 | a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းပါ။`; after another statement or inside a block it is parsed and reported (ZK0230) |
-| `အမျိုးအစား` | `parse_enum_decl` | `NAME ဆိုသည်မှာ`, then members with `၊` between them, each a name with an optional `(VALUE)`, then `တို့ ဖြစ်သည်။` (a lone member can leave out `တို့`); inside a block it is parsed and reported (ZK0235) |
+| `အချက်အလက်အမျိုးအစား` | `parse_kind_decl` | `NAME`, then `တွင်` for a struct (`parse_struct_decl`) or `ဆိုသည်မှာ` for an enumeration (`parse_enum_decl`); another word is ZK0201, and so is `အမျိုးအစား` alone, the old enumeration opener. An enumeration has members with `၊` between them, each a name with an optional `(VALUE)`, then `တို့ ဖြစ်သည်။` (a lone member can leave out `တို့`); inside a block it is parsed and reported (ZK0235) |
 | `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, struct, enumeration or top-level declaration; on another statement or the start block it is ZK0229 |
 | an `else`, an update, a closer with no opener | an error | ZK0211, ZK0212, ZK0226 |
 | all other tokens | `parse_expr_headed` | a clause; see below |

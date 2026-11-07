@@ -13,12 +13,12 @@ fn struct_declaration_lexes_to_its_words()
     let kw = TokenKind::Kw;
     #[rustfmt::skip]
     let want = [
-        kw(Kw::StructOpen), ident, kw(Kw::At), kw(Kw::IntKind), ident,
+        kw(Kw::DataKindOpen), ident, kw(Kw::At), kw(Kw::IntKind), ident,
         kw(Kw::FieldsCloseAnd), kw(Kw::ClassifierIs), ident, kw(Kw::Is),
         TokenKind::Punct(zakac_lexer::token::Punct::FullStop),
     ];
     assert_eq!(kinds(DECL), want);
-    assert_eq!(kinds("အချက်အလက်အမျိုးအစား")[0], kw(Kw::StructOpen));
+    assert_eq!(kinds("အချက်အလက်အမျိုးအစား")[0], kw(Kw::DataKindOpen));
 }
 
 #[test]

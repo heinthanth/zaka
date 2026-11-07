@@ -11,7 +11,7 @@ another. The Learn book starts in small steps with
 [Enumerations and switches](../../learn/enums/README.md).
 
 ```zaka
-အမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ ဝါ ဖြစ်ပါစေ။
@@ -28,10 +28,14 @@ another. The Learn book starts in small steps with
 ## Declaring an enumeration
 
 ```text
-အမျိုးအစား <name> ဆိုသည်မှာ <member>၊ <member> (<value>)၊ <member> တို့ ဖြစ်သည်။
-အမျိုးအစား <name> ဆိုသည်မှာ <member> ဖြစ်သည်။
+ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ <member>၊ <member> (<value>)၊ <member> တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ <member> ဖြစ်သည်။
 ```
 
+- An enumeration opens with the struct opener, `ဒေတာအမျိုးအစား` or
+  `အချက်အလက်အမျိုးအစား`; `ဆိုသည်မှာ` after the name, where a struct has `တွင်`, makes it
+  an enumeration. Another word there is ZK0201, and so is `အမျိုးအစား` alone at the start
+  of a statement: that word is reserved as a piece of `လုပ်ဆောင်ချက် အမျိုးအစား`.
 - A declaration stands at the top level of a file. Inside a block, a loop, a conditional
   or a function it is ZK0235. An enumeration can be used above its declaration, since the
   declarations are read first.
@@ -48,8 +52,8 @@ another. The Learn book starts in small steps with
 
 ```zaka
 ကိန်းသေ အခြေခံ သည် ၁၀၀ ဖြစ်ပါစေ။
-အမျိုးအစား အမှားများ ဆိုသည်မှာ မတွေ့ (အခြေခံ + ၄)၊ ပိတ်ထား၊ ပြည့်နေ (အခြေခံ * ၂) တို့ ဖြစ်သည်။
-အမျိုးအစား အမိန့် ဆိုသည်မှာ သွား ("go")၊ ရပ် ("stop") တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အမှားများ ဆိုသည်မှာ မတွေ့ (အခြေခံ + ၄)၊ ပိတ်ထား၊ ပြည့်နေ (အခြေခံ * ၂) တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အမိန့် ဆိုသည်မှာ သွား ("go")၊ ရပ် ("stop") တို့ ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အမှားများထဲမှ ပိတ်ထား ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
@@ -127,7 +131,7 @@ reads "`<member>` from among the `<stem>`s": `အရောင်များထ�
   value.
 
 ```zaka
-အမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
 ဒေတာအမျိုးအစား မီးပွိုင့် တွင် ကိန်းပြည့် အမှတ်၊ အရောင် ရောင် တို့ ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -181,7 +185,7 @@ out once.
   other kinds, the default arm can be left out.
 
 ```zaka
-အမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
 
 လုပ်ဆောင်ချက် လုပ်ရန် သည်
 အရောင် ယခု ကို လက်ခံပြီး

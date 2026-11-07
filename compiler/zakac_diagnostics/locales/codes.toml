@@ -265,7 +265,7 @@ en = "misplaced export mark"
 [codes.ZK0229.message]
 en = "\"အများသုံး\" marks a top-level function, struct, enumeration, variable or constant, and nothing else"
 [codes.ZK0229.explain]
-en = """The export mark \"အများသုံး\" stands right before \"လုပ်ဆောင်ချက်\", \"ဒေတာအမျိုးအစား\", \"အမျိုးအစား\", \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. It cannot mark a statement, a loop, or a declaration inside a block."""
+en = """The export mark \"အများသုံး\" stands right before \"လုပ်ဆောင်ချက်\", \"ဒေတာအမျိုးအစား\", \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. It cannot mark a statement, a loop, or a declaration inside a block."""
 
 [codes.ZK0230.title]
 en = "misplaced import"
@@ -311,7 +311,7 @@ en = "nested enumeration"
 [codes.ZK0235.message]
 en = "enumerations can be declared at the top level and nowhere else"
 [codes.ZK0235.explain]
-en = """An enumeration declaration, \"အမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; an enumeration can be used before its declaration."""
+en = """An enumeration declaration, \"ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; an enumeration can be used before its declaration."""
 
 [codes.ZK0236.title]
 en = "arm after the default arm"
@@ -475,7 +475,7 @@ en = "unknown kind name"
 [codes.ZK0318.message]
 en = "no struct or enumeration named \"%{n}\" is declared"
 [codes.ZK0318.explain]
-en = """A name in a kind phrase, as in \"ကိန်းရှင် x သည် လူ တစ်ယောက် ဖြစ်ပါစေ။\", names a struct or an enumeration. Declare it at the top level with \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\" or \"အမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\", or check the spelling."""
+en = """A name in a kind phrase, as in \"ကိန်းရှင် x သည် လူ တစ်ယောက် ဖြစ်ပါစေ။\", names a struct or an enumeration. Declare it at the top level with \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\" or \"ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\", or check the spelling."""
 
 [codes.ZK0319.title]
 en = "name of a struct reused"
@@ -564,7 +564,7 @@ en = "unknown member"
 [codes.ZK0329.message]
 en = "the enumeration \"%{e}\" has no member \"%{n}\""
 [codes.ZK0329.explain]
-en = """\"<name>များထဲမှ <member>\" and a bare case in a switch over an enumeration name one of its members, as its declaration \"အမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\" lists them. Check the spelling, or add the member to the declaration."""
+en = """\"<name>များထဲမှ <member>\" and a bare case in a switch over an enumeration name one of its members, as its declaration \"ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\" lists them. Check the spelling, or add the member to the declaration."""
 
 [codes.ZK0330.title]
 en = "unknown enumeration"

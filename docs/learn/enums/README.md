@@ -9,7 +9,7 @@ An *enumeration* is a kind whose values are a short list of names, its *members*
 traffic light is red, amber or green, and nothing else:
 
 ```zaka
-အမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ ဝါ ဖြစ်ပါစေ။
@@ -23,12 +23,14 @@ traffic light is red, amber or green, and nothing else:
 
 | Zaka | Reads as |
 | --- | --- |
-| `အမျိုးအစား အရောင်` | "the kind `အရောင်` (color)" |
+| `ဒေတာအမျိုးအစား အရောင်` | "the data kind `အရောင်` (color)" |
 | `ဆိုသည်မှာ ... တို့ ဖြစ်သည်` | "means these" |
 | `အရောင်များထဲမှ ဝါ` | "amber, from among the colors" |
 
-An enumeration is declared at the top level of a file, as a struct is, and the rest of
-the program can use it from the first line. Its name is a kind from then on:
+An enumeration opens with `ဒေတာအမျိုးအစား`, as a struct does; `ဆိုသည်မှာ` ("means")
+after the name, in place of `တွင်`, makes it an enumeration. It is declared at the top
+level of a file, as a struct is, and the rest of the program can use it from the first
+line. Its name is a kind from then on:
 `ကိန်းရှင် မီး သည် အရောင် တစ်ခု ဖြစ်ပါစေ။` declares a variable of it.
 
 ## Naming a member
@@ -41,7 +43,7 @@ Printing a member writes it in that same form, so a printed member reads back as
 Inside text, a template slot such as `{မီး}` writes it so too:
 
 ```zaka
-အမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ စိမ်း ဖြစ်ပါစေ။
@@ -68,7 +70,7 @@ the value of a member:
 
 ```zaka
 ကိန်းသေ အခြေခံ သည် ၁၀၀ ဖြစ်ပါစေ။
-အမျိုးအစား အမှားများ ဆိုသည်မှာ မတွေ့ (အခြေခံ + ၄)၊ ပိတ်ထား၊ ပြည့်နေ (အခြေခံ * ၂) တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အမှားများ ဆိုသည်မှာ မတွေ့ (အခြေခံ + ၄)၊ ပိတ်ထား၊ ပြည့်နေ (အခြေခံ * ၂) တို့ ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မ သည် အမှားများထဲမှ ပိတ်ထား ဖြစ်ပါစေ။
@@ -87,7 +89,7 @@ number, a character, text, a list or a struct. Members of text or of another kin
 no integer do not count on, so each needs its value written:
 
 ```zaka
-အမျိုးအစား အမိန့် ဆိုသည်မှာ သွား ("go")၊ ရပ် ("stop") တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အမိန့် ဆိုသည်မှာ သွား ("go")၊ ရပ် ("stop") တို့ ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ညွှန်ကြား သည် အမိန့်များထဲမှ ရပ် ဖြစ်ပါစေ။
@@ -112,7 +114,7 @@ enumeration inside starts each field and each cell at its first member too, sinc
 struct starts each field at the starting value of its kind:
 
 ```zaka
-အမျိုးအစား အမိန့် ဆိုသည်မှာ သွား ("go")၊ ရပ် ("stop") တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အမိန့် ဆိုသည်မှာ သွား ("go")၊ ရပ် ("stop") တို့ ဖြစ်သည်။
 ဒေတာအမျိုးအစား ခရီး တွင် ကိန်းပြည့် အကွာ၊ အမိန့် ညွှန် တို့ ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -134,7 +136,7 @@ A *switch* compares one value, its *subject*, with a list of cases, and runs the
 the first case that equals it:
 
 ```zaka
-အမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ ဝါ ဖြစ်ပါစေ။
