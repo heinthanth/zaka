@@ -177,6 +177,8 @@ program:
       exported: false
       start: false
       external: false
+      lib: null
+      variadic: false
       span:
         lo: 145
         hi: 1005
@@ -1269,6 +1271,8 @@ program:
       exported: false
       start: true
       external: false
+      lib: null
+      variadic: false
       span:
         lo: 1007
         hi: 6665

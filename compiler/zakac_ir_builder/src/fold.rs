@@ -368,7 +368,10 @@ impl Folder
             {
                 do_if!(let Some(v) = value, self.drop_value(v))
             }
-            Stmt::Call { args, .. } => do_for!(a in args, self.drop_value(a)),
+            Stmt::Call { args, .. } | Stmt::Foreign { args, .. } =>
+            {
+                do_for!(a in args, self.drop_value(a))
+            }
             Stmt::CallValue { callee, args, .. } =>
             {
                 self.drop_value(callee);
@@ -490,7 +493,9 @@ impl Folder
                 let v = self.expr(operand);
                 (v.and_then(|v| value::convert(v, e.kind, self.platform).ok()), None)
             }
-            ExprNode::Call { args, .. } | ExprNode::Host { args, .. } =>
+            ExprNode::Call { args, .. }
+            | ExprNode::Host { args, .. }
+            | ExprNode::Foreign { args, .. } =>
             {
                 do_for!(a in args.iter_mut(), self.drop_value(a));
                 (None, None)

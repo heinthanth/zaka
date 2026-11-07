@@ -11,7 +11,7 @@ runs it, then the C compiler. [Native programs](../compiler/native.md) tells wha
 sees; this page tells how it is built.
 
 ```text
-ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_kinds.{h,c}
+ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_kinds.{h,c}, zaka_ffi.c (with C functions)
                          + zaka_rt.h, zaka_rt*.c, zaka_c_sugars.h
                          │
                          └──cc -c, then link──▶ executable
@@ -27,6 +27,7 @@ ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_kinds.{h,c}
 | `stmts.rs`, `exprs.rs` | a statement or an expression of the IR as C |
 | `kinds.rs` | the C kind of each scalar kind, and constants as C text |
 | `descriptors.rs` | the description of each kind the runtime walks: `zk_kind` in `zaka_kinds.c` |
+| `ffi.rs` | `zaka_ffi.c`: the structs, declarations and wrappers of the C functions; the `-lX` flags of their libs |
 | `toolchain.rs` | finding the compiler, the flags, the compile and the link |
 | `runtime/` | the runtime: hand-written C11 |
 
@@ -88,6 +89,35 @@ the one above.
 The runtime is strict C11 and passes `-pedantic-errors`. 128-bit integers stand behind
 `__SIZEOF_INT128__`, and the GCC and Clang builtin for an overflow test behind `__GNUC__`,
 each with a C11 path beside it.
+
+## C functions
+
+`emit` writes `zaka_ffi.c` when `Module::foreign` has rows. The file includes
+`<stddef.h>` and `<stdint.h>` and no libc header, so a declaration of a C function in it,
+with the kinds Zaka gives it (`_Bool`, `void *` for each address), cannot clash with the
+one a header holds; pragmas turn off `-Wincompatible-library-redeclaration` (Clang) and
+`-Wbuiltin-declaration-mismatch` (GCC). For each struct a call passes, it defines
+`zk_ffi_s<n>` with a `_Static_assert` on its size, and for each C function a wrapper
+`zk_ffi_<n>` (`wrapper_name`, `wrapper_proto`) whose declaration stands in `zaka_kinds.h`.
+A wrapper stands for a shape of call, `FfiCall { func, extra }`: the C function and the
+kinds of its other values. `exprs.rs` (`ffi_call`) numbers the shapes of the module in
+`Shared::ffi_calls`, so a C function that takes other values (`ForeignFn::variadic`, declared
+with `, ...`) has a wrapper for each shape of its calls, and the parameters of a wrapper
+are the named ones and then the other values. A struct goes in and out of a wrapper as the
+address of its octets, and a struct result goes to the address of the first parameter,
+`zk_out`. A text goes in as the address of its octets and its count; the wrapper makes
+a duplicate that ends in a zero octet with `zk_text_cstr` (`zaka_rt_data.c`, declared in
+`zaka_rt.h` and in the prelude of `zaka_ffi.c`), and frees it with `zk_text_cstr_free`
+after the call; `zk_open` of the host runtime uses the same function for a path. The module
+files call the wrappers through `ExprNode::Foreign` and `Stmt::Foreign`.
+
+`link_libs` gives `-lX` for each lib `libX` the program names, but libc and libm, in
+order of first use. `BuildPlan::libs` puts them after `-lm` and before the `LDFLAGS` and
+`--ld-flag` flags of the user, which is where a `-L<folder>` flag still reaches them.
+`lib_flags` gives a lib path (`is_lib_path`) to the linker as it is, and, on each host but
+Windows, `-Wl,-rpath,<folder>` after it. The loader made a relative path absolute from the
+folder of its file, so the flags hold an absolute path. On macOS the lib needs an install
+name that is an absolute path or `@rpath/...`.
 
 ## Tests
 

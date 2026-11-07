@@ -6,6 +6,7 @@ use serde::Serialize;
 use strum::IntoStaticStr;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_ir_builder::ir::CmpOp;
+pub use zakac_ir_builder::ir::ForeignFn;
 use zakac_ir_builder::ir::HaltCause;
 pub use zakac_ir_builder::ir::Host;
 use zakac_ir_builder::ir::InfixOp;
@@ -56,6 +57,27 @@ pub struct Module
     #[builder(default)]
     #[serde(default)]
     pub host: Host,
+    /// The C functions the program calls.
+    #[builder(default)]
+    #[serde(default)]
+    pub foreign: Vec<ForeignFn>,
+    /// Each call of a C function with the kinds of its other values;
+    /// [`Op::Foreign`] names one with its index.
+    #[builder(default)]
+    #[serde(default)]
+    pub foreign_calls: Vec<ForeignCall>,
+}
+
+/// A call of a C function: which one, and the kind of each value it gives
+/// past the parameters, for a C function that takes other values.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+pub struct ForeignCall
+{
+    /// Index into [`Module::foreign`].
+    pub func: u32,
+    /// The kind of each other value, in order, as C promotes it.
+    #[builder(default)]
+    pub extra: Vec<DataKind>,
 }
 
 impl Module
@@ -225,6 +247,12 @@ pub enum Op
     /// its parameters, the last on top, with the address of the slot for its
     /// result under them; write the result there and leave the address.
     Host(HostFn),
+    /// Make the C call at this index of [`Module::foreign_calls`]: pop the
+    /// value of each of its parameters and other values, the last on top,
+    /// the address of the value for a struct or text. For a struct result, the
+    /// address of the slot for it sits under them; C writes the result
+    /// there and the address remains. Another result is pushed.
+    Foreign(u32),
     /// Leave the function. A function with a result leaves it on the stack.
     /// A list or struct result is the address of a value: unless it is
     /// the caller's slot itself, it is duplicated there, and the address of
@@ -523,6 +551,7 @@ impl Op
             Op::Call(f) | Op::FnAddr(f) => format!("f{f}"),
             Op::CallValue(n) => n.to_string(),
             Op::Host(func) => <&str>::from(func).to_string(),
+            Op::Foreign(f) => format!("c{f}"),
             Op::PrintText(t) | Op::Text(t) => format!("t{t}"),
             Op::StaticSeq(s) | Op::SeqAddr(s) => format!("s{s}"),
             Op::Format(f) => format!("fmt{f}"),

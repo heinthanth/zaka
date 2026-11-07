@@ -19,7 +19,7 @@ zakac_parser = { workspace = true }
 zakac_rust_sugars = { workspace = true }
 zakac_ir_builder = { workspace = true }
 zakac_semcheck = { workspace = true }
-zaka_vm = { workspace = true }
+zaka_vm = { workspace = true, features = ["ffi"] }
 
 [build-dependencies]
 cargo-build = { workspace = true }

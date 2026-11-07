@@ -8,6 +8,7 @@ use zakac_ir_builder::ir::LogicOp;
 use zakac_ir_builder::ir::PrefixOp;
 use zakac_ir_builder::ir::SliceFrom;
 use zakac_rust_sugars::do_for;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -16,6 +17,8 @@ use zakac_semcheck::kind::DataKind;
 use crate::emit::FnGen;
 use crate::emit::c_string;
 use crate::emit::func_name;
+use crate::ffi::FfiCall;
+use crate::ffi::wrapper_name;
 use crate::kinds::constant;
 use crate::kinds::is_blob;
 use crate::stmts::Callee;
@@ -157,6 +160,7 @@ impl FnGen<'_, '_>
                 self.host_into(&t, *func, args, e.kind);
                 t
             }
+            ExprNode::Foreign { func, args } => self.foreign(*func, args, Some(e.kind)),
             node => self.shared.missing(format!("the expression {}", node_name(node))),
         }
     }
@@ -197,6 +201,62 @@ impl FnGen<'_, '_>
             texts.push(tern!(first, self.spill(e.kind, text), text));
         }
         texts
+    }
+
+    /// Call the wrapper of a C function. A struct result goes to a temp
+    /// whose address the wrapper takes first; another result goes to a temp.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - Index into the C functions of the module.
+    /// * `args` - The value of each parameter.
+    /// * `ret` - The result kind; `None` for a C function that gives back
+    ///   nothing.
+    ///
+    /// # Returns
+    ///
+    /// The C text of the result; blank with no result.
+    pub(crate) fn foreign(
+        &mut self, func: u32, args: &[Expr], ret: Option<DataKind>,
+    ) -> String
+    {
+        let refs: Vec<&Expr> = args.iter().collect();
+        let mut v = self.operands(&refs);
+        let name = wrapper_name(self.ffi_call(func, args));
+        let Some(kind) = ret
+        else
+        {
+            self.line(&format!("{name}({});", v.join(", ")));
+            return String::new();
+        };
+        let t = self.temp(kind);
+        let blob = is_blob(kind);
+        do_if!(blob, v.insert(0, t.clone()));
+        let call = format!("{name}({})", v.join(", "));
+        self.line(&tern!(blob, format!("{call};"), format!("{t} = {call};")));
+        t
+    }
+
+    /// The index of the call shape of a C call, added when it is new.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - Index into the C functions of the module.
+    /// * `args` - The value of each parameter and other value.
+    ///
+    /// # Returns
+    ///
+    /// The index, which names the wrapper.
+    fn ffi_call(&mut self, func: u32, args: &[Expr]) -> u32
+    {
+        let fixed = self.shared.module.foreign[func as usize].params.len();
+        let extra = args.iter().skip(fixed).map(|a| a.kind).collect();
+        let call = FfiCall::builder().func(func).extra(extra).build();
+        let calls = &mut self.shared.ffi_calls;
+        let known = calls.iter().position(|c| *c == call);
+        let index = known.unwrap_or(calls.len());
+        do_if!(known.is_none(), calls.push(call));
+        index as u32
     }
 
     /// The C text of two operands, which run in order.

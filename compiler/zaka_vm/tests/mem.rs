@@ -202,3 +202,19 @@ fn a_step_lands_in_the_block_of_its_base()
     m.free(a).unwrap();
     assert!(!m.steps_within(a, b), "a freed block still has its bounds");
 }
+
+#[test]
+fn live_blocks_map_to_native_addresses_and_back()
+{
+    let mut m = mem();
+    let a = m.alloc(8, Origin::Heap, 0).unwrap();
+    m.store(a, v("7:i32")).unwrap();
+    let native = m.native_at(a + 4).expect("a live block maps");
+    assert_eq!(m.vm_addr(native), Some(a + 4));
+    // SAFETY: the address lies in the block, which nothing changes meanwhile.
+    assert_eq!(unsafe { *((native - 4) as *const u8) }, 7);
+    assert_eq!(m.native_at(0), None, "the null page maps to nothing");
+    assert_eq!(m.vm_addr(1), None, "an address outside each block remains native");
+    m.free(a).unwrap();
+    assert_eq!(m.native_at(a), None, "a freed block maps to nothing");
+}

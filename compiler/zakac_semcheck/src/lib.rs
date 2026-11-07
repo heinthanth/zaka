@@ -7,6 +7,7 @@ mod enum_check;
 pub mod enums;
 pub mod fn_kind;
 mod fn_value;
+pub mod foreign;
 pub mod host;
 mod infer;
 pub mod kind;

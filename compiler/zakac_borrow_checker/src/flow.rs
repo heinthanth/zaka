@@ -681,6 +681,7 @@ impl<'m> Flow<'m>
                 self.value(e, state);
             }
             Stmt::Halt { value: None, .. } => (),
+            Stmt::Foreign { args, .. } => do_for!(a in args, _ = self.value(a, state)),
             Stmt::Call { func, args, span, .. } =>
             {
                 self.call(&[*func], args, *span, state)
@@ -1251,10 +1252,11 @@ impl<'m> Flow<'m>
                 SlotState::unknown(e.kind, Roots::new())
             }
             ExprNode::FnAddr { .. } => fn_const(e.kind, Value::Ptr(1)),
-            ExprNode::Host { args, .. } =>
+            ExprNode::Host { args, .. } | ExprNode::Foreign { args, .. } =>
             {
-                // The host reads each argument through its address and gives
-                // a value that holds blocks of its own.
+                // The host reads each argument through its address, and C takes
+                // each one whole; both give a value that holds blocks of their
+                // own.
                 do_for!(a in args, _ = self.value(a, state));
                 SlotState::unknown(e.kind, Roots::new())
             }

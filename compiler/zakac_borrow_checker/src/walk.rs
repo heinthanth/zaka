@@ -47,6 +47,7 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         }
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
+        | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) => args.iter().collect(),
         ExprNode::CallValue { callee, args } =>
         {
@@ -87,7 +88,7 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
             [from, to].into_iter().chain(step.as_ref()).collect()
         }
         Stmt::Return { value, .. } => value.iter().collect(),
-        Stmt::Call { args, .. } => args.iter().collect(),
+        Stmt::Call { args, .. } | Stmt::Foreign { args, .. } => args.iter().collect(),
         Stmt::CallValue { callee, args, .. } =>
         {
             std::iter::once(callee).chain(args).collect()
@@ -189,6 +190,7 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         }
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
+        | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) => args.iter_mut().collect(),
         ExprNode::CallValue { callee, args } =>
         {
@@ -228,7 +230,10 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
             [from, to].into_iter().chain(step.as_mut()).collect()
         }
         Stmt::Return { value, .. } => value.iter_mut().collect(),
-        Stmt::Call { args, .. } => args.iter_mut().collect(),
+        Stmt::Call { args, .. } | Stmt::Foreign { args, .. } =>
+        {
+            args.iter_mut().collect()
+        }
         Stmt::CallValue { callee, args, .. } =>
         {
             std::iter::once(callee).chain(args.iter_mut()).collect()

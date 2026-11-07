@@ -31,6 +31,10 @@ use crate::descriptors::FN_LEAD;
 use crate::descriptors::FN_TAIL;
 use crate::descriptors::GOOD_BARE;
 use crate::descriptors::GOOD_TEXT;
+use crate::ffi::FFI_SOURCE;
+use crate::ffi::FfiCall;
+use crate::ffi::ffi_source;
+use crate::ffi::wrapper_proto;
 use crate::kinds::c_kind;
 use crate::kinds::is_blob;
 use crate::kinds::mem_name;
@@ -100,6 +104,7 @@ pub fn emit(
     let main = FnGen::new(&mut shared, None).main();
     let header = shared.header();
     let kinds = shared.kinds_source();
+    let ffi = ffi_source(&module.foreign, &shared.ffi_calls, options.platform_bits);
     ret_if!(!shared.diags.is_empty(), Err(NotBuilt::Kinds(shared.diags)));
     let missing =
         shared.missing.map(|what| NotBuilt::Missing(Error::NotForTargetC { what }));
@@ -115,6 +120,10 @@ pub fn emit(
     out.push(CFile::builder().name(KINDS_HEADER).text(header).build());
     out.push(CFile::builder().name(KINDS_SOURCE).text(kinds).build());
     out.push(CFile::builder().name(MAIN_SOURCE).text(main).build());
+    do_if!(
+        !module.foreign.is_empty(),
+        out.push(CFile::builder().name(FFI_SOURCE).text(ffi).build())
+    );
     Ok(out)
 }
 
@@ -239,6 +248,9 @@ pub(crate) struct Shared<'m>
     /// A ZK0801 for each place that holds a kind the C target cannot build.
     #[builder(default)]
     diags: Vec<Diagnostic>,
+    /// Each C call shape met so far; its index names its wrapper.
+    #[builder(default)]
+    pub(crate) ffi_calls: Vec<FfiCall>,
 }
 
 impl Shared<'_>
@@ -455,6 +467,17 @@ impl Shared<'_>
         {
             let proto = self.signature(n as u32);
             let _ = writeln!(out, "{proto}; /* {} */", comment(&f.name));
+        }
+        for (n, call) in self.ffi_calls.iter().enumerate()
+        {
+            let f = &module.foreign[call.func as usize];
+            let proto = wrapper_proto(f, call, n as u32, bits);
+            let _ = writeln!(
+                out,
+                "{proto}; /* {}: {} */",
+                comment(&f.lib),
+                comment(&f.name)
+            );
         }
         out.push_str(&self.descr.declarations());
         if self.wide

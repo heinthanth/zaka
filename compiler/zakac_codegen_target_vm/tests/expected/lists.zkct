@@ -443,4 +443,6 @@ module:
     args: null
     env: null
     exit: null
+  foreign: []
+  foreign_calls: []
 diagnostics: []

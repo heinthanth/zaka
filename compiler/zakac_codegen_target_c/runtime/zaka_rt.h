@@ -306,6 +306,10 @@ zk_fn zk_fn_check(zk_fn f);
 unsigned char *zk_seq_base(const unsigned char *at);
 /** The second word: the cell count, or the octet count of text. */
 size_t zk_seq_len(const unsigned char *at);
+/** A duplicate of text that ends in a zero octet, as C reads a string. */
+char *zk_text_cstr(const unsigned char *at);
+/** Free a duplicate zk_text_cstr made. */
+void zk_text_cstr_free(char *dup);
 /** Write the three words of a plain list or text. */
 void zk_seq_put(unsigned char *at, unsigned char *base, size_t len, size_t room);
 /** Write static text into a slot: its octets and a room of 0. */

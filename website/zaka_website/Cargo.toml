@@ -59,6 +59,10 @@ features = [
 [dev-dependencies]
 toml = { workspace = true }
 
+# The book tests run the C examples, which need a VM that calls C.
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+zaka_vm = { workspace = true, features = ["ffi"] }
+
 [build-dependencies]
 cargo-build = { workspace = true }
 zaka_web_builder = { workspace = true }

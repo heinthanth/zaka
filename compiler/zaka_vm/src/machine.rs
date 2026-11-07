@@ -35,6 +35,7 @@ use zakac_semcheck::kind::IntKind;
 use zakac_semcheck::kind::Width;
 use zakac_semcheck::structs::StructKind;
 
+mod ffi;
 mod host;
 
 use zaka_host::MemWorld;
@@ -467,6 +468,14 @@ pub struct Machine
     /// given another, such as the terminal.
     #[builder(default = Box::new(MemWorld::default()))]
     world: Box<dyn World>,
+    /// The C functions of the program, linked on the first call of one; a
+    /// build that cannot call C never links them.
+    #[builder(skip)]
+    #[cfg_attr(
+        not(all(feature = "ffi", not(target_arch = "wasm32"))),
+        allow(dead_code)
+    )]
+    linked: Option<std::sync::Arc<ffi::Linked>>,
     /// The static data, the stack region and the heap.
     mem: Mem,
     /// The variable of each stack and static block, at the block start.
@@ -1198,6 +1207,7 @@ impl Machine
             Op::LocalRef(n) => self.local_ref(n),
             Op::ResultAddr => self.result_addr(),
             Op::Host(func) => self.host(func),
+            Op::Foreign(func) => self.foreign(func),
             Op::GlobalAddr(n) => self.global_addr(n),
             Op::Prefix(op) => self.prefix(op),
             Op::Infix(op) => self.infix(op),

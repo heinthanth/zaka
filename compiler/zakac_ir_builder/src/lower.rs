@@ -20,6 +20,8 @@ use zakac_semcheck::enums::MemberValue;
 use zakac_semcheck::fn_kind::FnKind;
 use zakac_semcheck::host;
 use zakac_semcheck::kind::DataKind;
+use zakac_semcheck::kind::IntKind;
+use zakac_semcheck::kind::Width;
 use zakac_semcheck::semcheck::KindTable;
 use zakac_semcheck::semcheck::RESULT_NAME;
 use zakac_semcheck::semcheck::each_list;
@@ -36,6 +38,7 @@ use crate::ir::Dest;
 use crate::ir::Expr;
 use crate::ir::ExprNode;
 use crate::ir::FmtPiece;
+use crate::ir::ForeignFn;
 use crate::ir::Func;
 use crate::ir::HaltCause;
 use crate::ir::Host;
@@ -98,7 +101,7 @@ pub fn lower(
     do_if!(!ends_in_return, main.extend(lowerer.global_drops(program.span)));
     #[rustfmt::skip]
     let mut module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
-        .main(main).imported_inits(imported_inits).host(host).span(program.span).build();
+        .foreign(lowerer.foreign).main(main).imported_inits(imported_inits).host(host).span(program.span).build();
     free_read_lends(&mut module);
     module
 }
@@ -137,6 +140,9 @@ struct Sig
     /// The result kind, when the function has one; a result kind when it
     /// can fail.
     ret: Option<DataKind>,
+    /// The C function a call names itself, for a C function that takes other
+    /// values; `None` for each other function, which a call runs.
+    foreign: Option<ForeignFn>,
 }
 
 /// What a call runs: a function of the module, or the function a value
@@ -153,6 +159,9 @@ enum Target
     },
     /// The function value, of a function kind.
     Value(Expr),
+    /// A C function that takes other values, at this index of the C
+    /// functions of the module.
+    Foreign(u32),
 }
 
 impl Target
@@ -175,6 +184,7 @@ impl Target
             {
                 ExprNode::CallValue { callee: Box::new(callee), args }
             }
+            Target::Foreign(func) => ExprNode::Foreign { func, args },
         }
     }
 
@@ -194,6 +204,7 @@ impl Target
         {
             Target::Fn { func, name } => Stmt::Call { func, name, args, span },
             Target::Value(callee) => Stmt::CallValue { callee, args, span },
+            Target::Foreign(func) => Stmt::Foreign { func, args, span },
         }
     }
 }
@@ -211,7 +222,7 @@ impl Target
 fn value_sig(f: &FnKind) -> Sig
 {
     let (params, ret) = fn_shape(f);
-    Sig { index: u32::MAX, params, edits: f.edits(), ret }
+    Sig { index: u32::MAX, params, edits: f.edits(), ret, foreign: None }
 }
 
 /// The signatures of the top-level functions of each file, numbered in
@@ -235,10 +246,16 @@ fn collect_sigs(program: &st::Program, structs: &StructTable)
     });
     for (index, (unit, f)) in decls.enumerate()
     {
-        let params = f.params.iter().map(|p| param_kind(p, structs)).collect();
+        let params: Vec<DataKind> =
+            f.params.iter().map(|p| param_kind(p, structs)).collect();
         let edits = f.params.iter().map(|p| p.edit).collect();
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, structs).repr());
-        let sig = Sig { index: index as u32, params, edits, ret };
+        let foreign = f.lib.as_ref().filter(|_| f.variadic).map(|lib| {
+            #[rustfmt::skip]
+            return ForeignFn::builder().lib(lib.lit.value.clone()).name(f.name.name.to_string())
+                .params(params.clone()).maybe_ret(ret).variadic(true).build();
+        });
+        let sig = Sig { index: index as u32, params, edits, ret, foreign };
         do_if!(f.start, continue);
         sigs[unit].entry(f.name.name).or_insert(sig);
     }
@@ -310,6 +327,9 @@ struct Lowerer<'k>
     /// Lowered functions so far.
     #[builder(default)]
     funcs: Vec<Func>,
+    /// The C functions met so far, one for each C name.
+    #[builder(default)]
+    foreign: Vec<ForeignFn>,
     /// The function being lowered; `None` at the top level.
     frame: Option<Frame>,
     /// Names in scope, innermost last.
@@ -1627,7 +1647,7 @@ impl Lowerer<'_>
     {
         let given = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
         // A function that can fail keeps its good result in `ရလဒ်`; an external
-        // one keeps the whole result the host gives.
+        // one keeps the whole result the host or C gives.
         let fault = given.and_then(Fault::of_kind).filter(|_| !f.external);
         let whole = given.map(DataKind::repr).filter(|_| f.external);
         let ret = whole.or_else(|| fault.map_or(given, |f| f.ok));
@@ -1639,7 +1659,17 @@ impl Lowerer<'_>
         self.scoped(|l| {
             do_for!(p in &f.params, l.declare_param(p));
             result = ret.map(|k| l.result_slot(f, k, &mut block));
-            do_if!(f.external, l.host_statement(f, given, result, &mut block));
+            match (f.external, &f.lib)
+            {
+                // A call names a C function that takes other values itself.
+                (true, Some(_)) if f.variadic => (),
+                (true, Some(lib)) =>
+                {
+                    l.foreign_statement(f, &lib.lit.value, result, &mut block)
+                }
+                (true, None) => l.host_statement(f, given, result, &mut block),
+                _ => (),
+            }
             do_for!(s in &f.block.stmts, l.stmt(s, &mut block));
             let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
             do_if!(!ends_in_return, block.extend(l.drops_from(depth, f.block.span)));
@@ -1696,6 +1726,59 @@ impl Lowerer<'_>
             given.map(DataKind::repr).expect("each host function gives a result");
         let value = node_expr(kind, ExprNode::Host { func, args }, f.span);
         block.push(Stmt::Set { place: Place::Local(slot), value, span: f.span });
+    }
+
+    /// The one statement of a C function: its result variable takes what
+    /// the C function gives for the value of each parameter, or, with no
+    /// result, the C function runs.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The declaration.
+    /// * `lib` - The lib it comes from.
+    /// * `result` - The slot of its result variable.
+    /// * `block` - The statements so far.
+    fn foreign_statement(
+        &mut self, f: &st::FnDecl, lib: &str, result: Option<u32>,
+        block: &mut Vec<Stmt>,
+    )
+    {
+        let kinds: Vec<DataKind> =
+            f.params.iter().map(|p| param_kind(p, self.structs)).collect();
+        let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
+        #[rustfmt::skip]
+        let def = ForeignFn::builder().lib(lib).name(f.name.name.to_string())
+            .params(kinds.clone()).maybe_ret(ret).build();
+        let func = self.foreign_index(def);
+        let read_param = |(p, kind): (&st::Param, &DataKind)| {
+            read(self.lookup(&p.name.name), *kind, p.span)
+        };
+        let args = f.params.iter().zip(&kinds).map(read_param).collect();
+        let Some((slot, kind)) = result.zip(ret)
+        else
+        {
+            return block.push(Stmt::Foreign { func, args, span: f.span });
+        };
+        let value = node_expr(kind, ExprNode::Foreign { func, args }, f.span);
+        block.push(Stmt::Set { place: Place::Local(slot), value, span: f.span });
+    }
+
+    /// The index of a C function among those of the module, added when its
+    /// C name is new. The check gives each C name one set of kinds.
+    ///
+    /// # Arguments
+    ///
+    /// * `def` - The C function.
+    ///
+    /// # Returns
+    ///
+    /// The index.
+    fn foreign_index(&mut self, def: ForeignFn) -> u32
+    {
+        let known = self.foreign.iter().position(|d| d.name == def.name);
+        let index = known.unwrap_or(self.foreign.len());
+        do_if!(known.is_none(), self.foreign.push(def));
+        index as u32
     }
 
     /// Declare a function parameter.
@@ -2025,6 +2108,14 @@ impl Lowerer<'_>
     ) -> (Target, Sig)
     {
         let sig = self.sigs.get(&callee.name).filter(|_| place.is_none()).cloned();
+        if let Some(def) = sig.as_ref().and_then(|s| s.foreign.clone())
+        {
+            let func = self.foreign_index(def);
+            return (
+                Target::Foreign(func),
+                sig.expect("the C function has a signature"),
+            );
+        }
         if let Some(sig) = sig
         {
             return (
@@ -2076,7 +2167,42 @@ impl Lowerer<'_>
         let lower = |(a, (k, edit)): (&ast::Expr, (&DataKind, &bool))| {
             tern!(*edit, self.edit_arg(a, *k), self.owned(a, *k))
         };
-        args.iter().zip(params).map(lower).collect()
+        let mut lowered: Vec<Expr> = args.iter().zip(params).map(lower).collect();
+        let rest = args.iter().skip(sig.params.len());
+        rest.for_each(|a| lowered.push(self.rest_arg(a)));
+        lowered
+    }
+
+    /// An argument past the parameters of a C function that takes other
+    /// values, as C reads it through `...`: a narrow integer or a boolean
+    /// becomes an `i32` and an `f32` an `f64`, as C promotes them. Text the
+    /// call builds is held in a hidden slot, freed as the scope ends, since
+    /// no function of the program takes it.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - The argument.
+    ///
+    /// # Returns
+    ///
+    /// The value C gets.
+    fn rest_arg(&mut self, a: &ast::Expr) -> Expr
+    {
+        let lowered = self.expr(a);
+        if lowered.kind.is_textual()
+        {
+            let plain = matches!(
+                lowered.node,
+                ExprNode::Read(_) | ExprNode::Load { .. } | ExprNode::Text(_)
+            );
+            return tern!(
+                plain || self.reads_const(&lowered),
+                lowered,
+                self.spill(lowered)
+            );
+        }
+        let want = promoted(lowered.kind, self.platform);
+        coerce_lowered(lowered, want)
     }
 
     /// The argument for a parameter the function can change: a borrow of the
@@ -2982,6 +3108,30 @@ fn coerce_lowered(lowered: Expr, want: DataKind) -> Expr
     ret_if!(relabel, Expr::builder().kind(want).node(lowered.node).span(span).build());
     let node = ExprNode::Convert { operand: Box::new(lowered), implicit: true };
     Expr::builder().kind(want).node(node).span(span).build()
+}
+
+/// The kind C gives a value it reads through `...`: an integer narrower than
+/// 32 bits and a boolean become an `i32`, an `f32` an `f64`, as C promotes
+/// them; each other kind is left as it is.
+///
+/// # Arguments
+///
+/// * `kind` - The kind of the value.
+/// * `platform` - Bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// The kind C reads.
+fn promoted(kind: DataKind, platform: u16) -> DataKind
+{
+    let i32 = DataKind::Int(IntKind::new(true, Width::Bits(32)));
+    match kind
+    {
+        DataKind::Int(n) if n.bits(platform) < 32 => i32,
+        DataKind::Bool => i32,
+        DataKind::Float(32) => DataKind::F64,
+        _ => kind,
+    }
 }
 
 /// Move a value out of the place it is read from: a slot through its

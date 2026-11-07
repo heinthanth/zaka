@@ -1823,6 +1823,7 @@ module:
     args: null
     env: null
     exit: 0
+  foreign: []
   span:
     lo: 0
     hi: 3215

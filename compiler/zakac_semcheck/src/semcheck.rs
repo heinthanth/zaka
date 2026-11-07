@@ -66,6 +66,7 @@ use crate::consts::open_structs;
 use crate::consts::write_counts;
 use crate::enum_check::KnownEnums;
 use crate::enum_check::collect_enums;
+use crate::foreign;
 use crate::host;
 use crate::host::IO_ERROR;
 use crate::kind::DataKind;
@@ -284,6 +285,10 @@ pub(crate) struct Checker
     pub touched: HashSet<Name>,
     /// Bit count of the platform-sized integer kinds.
     pub platform: u16,
+    /// The parameter and result kinds of each C function name declared so
+    /// far, in each file.
+    #[builder(default)]
+    pub c_names: HashMap<String, (Vec<DataKind>, Option<DataKind>)>,
     /// Whether kinds with a raw address level are refused.
     #[builder(default)]
     pub no_raw: bool,
@@ -550,7 +555,9 @@ impl Checker
         let (want, got) = (sig.params.len(), args.len());
         let bad_count = rd::arg_count_mismatch(span, &callee.name, want, got);
         let ret = Some(sig.ret);
-        ret_if!(want != got, self.report(bad_count), self.infer_all(args), ret);
+        let wrong = tern!(sig.variadic, got < want, got != want);
+        ret_if!(wrong, self.report(bad_count), self.infer_all(args), ret);
+        do_for!(arg in &args[want..], self.check_rest_arg(arg));
         let marked = |n: usize| edits.get(n).copied().unwrap_or(false);
         for (n, (arg, kind)) in args.iter().zip(&sig.params).enumerate()
         {
@@ -562,8 +569,23 @@ impl Checker
         ret
     }
 
+    /// Check an argument past the parameters of a C function that takes
+    /// other values: its kind is the one it has on its own, and must cross
+    /// to C as an argument of a C `...` does (ZK0465).
+    ///
+    /// # Arguments
+    ///
+    /// * `arg` - The argument.
+    fn check_rest_arg(&mut self, arg: &Expr)
+    {
+        let kind = self.infer(arg, None);
+        let platform = self.platform;
+        let stuck = kind.filter(|k| !foreign::crosses_rest(*k, platform));
+        do_if!(let Some(k) = stuck, self.report(kd::kind_not_across_c(arg.span(), &k.name())));
+    }
+
     /// Check that an external function is one of the functions the host
-    /// serves.
+    /// serves, or, with a lib, a C function.
     ///
     /// # Arguments
     ///
@@ -576,10 +598,46 @@ impl Checker
             .iter()
             .map(|p| DataKind::from_ast(&p.kind, &self.structs))
             .collect();
-        ret_if!(host::find(&n.name.name, &params, ret).is_some());
+        ret_if!(n.lib.is_some(), self.check_c_fn(n, params, ret));
+        // The host serves no function that takes other values.
+        ret_if!(!n.variadic && host::find(&n.name.name, &params, ret).is_some());
         let diag =
             rd::unknown_host_fn(n.name.span, &n.name.name, &host::listing(), IO_ERROR);
         self.report(diag);
+    }
+
+    /// Check a C function: its name is a C name (ZK0337), each parameter and
+    /// the result cross to C (ZK0465), no parameter carries the edit mark
+    /// (ZK0466), and each declaration of the name gives the same kinds
+    /// (ZK0338).
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The declaration.
+    /// * `params` - Its parameter kinds.
+    /// * `ret` - Its result kind.
+    fn check_c_fn(&mut self, n: &FnDecl, params: Vec<DataKind>, ret: Option<DataKind>)
+    {
+        let name = n.name.name.to_string();
+        do_if!(
+            !foreign::is_c_name(&name),
+            self.report(rd::not_a_c_name(n.name.span, &name))
+        );
+        let platform = self.platform;
+        let pairs = n.params.iter().zip(&params);
+        let stuck = pairs.filter(|(_, k)| !foreign::crosses_param(**k, platform));
+        let stuck: Vec<_> =
+            stuck.map(|(p, k)| kd::kind_not_across_c(p.span, &k.name())).collect();
+        do_for!(d in stuck, self.report(d));
+        let edits = n.params.iter().filter(|p| p.edit);
+        let edits: Vec<_> =
+            edits.map(|p| kd::edit_across_c(p.span, &p.name.name)).collect();
+        do_for!(d in edits, self.report(d));
+        let bad_ret = ret.filter(|k| !foreign::crosses_back(*k, platform));
+        do_if!(let Some(k) = bad_ret, self.report(kd::kind_not_across_c(n.name.span, &k.name())));
+        let shape = (params, ret);
+        let first = self.c_names.entry(name.clone()).or_insert_with(|| shape.clone());
+        do_if!(*first != shape, self.report(rd::c_name_twice(n.name.span, &name)));
     }
 
     /// Choose the function a call runs among the functions of its name: the
@@ -643,7 +701,8 @@ impl Checker
     /// `true` when it fits.
     fn fits_call(&mut self, sig: &FnSig, args: &[Expr], marks: &[Ident]) -> bool
     {
-        ret_false!(sig.params.len() != args.len());
+        let short = args.len() < sig.params.len();
+        ret_false!(tern!(sig.variadic, short, sig.params.len() != args.len()));
         let named =
             |want: &Vec<Name>| marks.iter().map(|m| m.name).eq(want.iter().copied());
         ret_false!(!marks.is_empty() && !sig.marks.as_ref().is_some_and(named));

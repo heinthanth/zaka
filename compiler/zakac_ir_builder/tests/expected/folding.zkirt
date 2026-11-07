@@ -176,6 +176,7 @@ module:
     args: null
     env: null
     exit: null
+  foreign: []
   span:
     lo: 0
     hi: 1865

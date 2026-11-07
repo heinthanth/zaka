@@ -290,7 +290,7 @@ differs from the VM.
 | `--no-default-flags` | off | leave out the default C flags `-O2 -w -ffp-contract=off` |
 
 The flags reach the C compiler in this order: `-std=c11`, the default flags, `CFLAGS`,
-then each `--cc-flag`. The linker gets `-lm`, `LDFLAGS`, then each `--ld-flag`. A later
+then each `--cc-flag`. The linker gets `-lm`, the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), `LDFLAGS`, then each `--ld-flag`. A later
 flag wins where the compiler keeps the last one, so `--cc-flag -O3` replaces `-O2`. `-w`
 silences warnings wherever it stands, so warnings need `--no-default-flags`.
 

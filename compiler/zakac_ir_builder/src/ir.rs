@@ -40,8 +40,36 @@ pub struct Module
     #[builder(default)]
     #[serde(default)]
     pub host: Host,
+    /// The C functions the program declares, one for each C name; a
+    /// [`ExprNode::Foreign`] or [`Stmt::Foreign`] names one with its index.
+    #[builder(default)]
+    #[serde(default)]
+    pub foreign: Vec<ForeignFn>,
     /// Source region of the whole program.
     pub span: Span,
+}
+
+/// A C function of a shared lib: where it comes from, its C name and the
+/// kinds C passes. The kinds are those the check lets cross to C.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+pub struct ForeignFn
+{
+    /// The lib, as the program writes it: `libm`.
+    #[builder(into)]
+    pub lib: String,
+    /// The C name.
+    #[builder(into)]
+    pub name: String,
+    /// The kind of each parameter, in order.
+    pub params: Vec<DataKind>,
+    /// The result kind; `None` for a C function that gives back nothing.
+    pub ret: Option<DataKind>,
+    /// Whether a call can give other values after the parameters, which C
+    /// reads through its `...`. Such a call names the C function itself, with
+    /// each value it gives as an argument.
+    #[builder(default)]
+    #[serde(default)]
+    pub variadic: bool,
 }
 
 /// The hidden globals that link the start block to the host. The VM fills
@@ -317,6 +345,17 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Call a C function that gives back nothing, the one statement of a
+    /// function of the program that stands for it.
+    Foreign
+    {
+        /// Index into [`Module::foreign`].
+        func: u32,
+        /// The value of each parameter.
+        args: Vec<Expr>,
+        /// Source region.
+        span: Span,
+    },
     /// Call the function a function value holds and drop its result. The
     /// value is read first, then the arguments run; a value of `ဗလာ` stops
     /// the program.
@@ -549,6 +588,7 @@ impl Stmt
             | Stmt::Continue { span }
             | Stmt::Return { span, .. }
             | Stmt::Call { span, .. }
+            | Stmt::Foreign { span, .. }
             | Stmt::CallValue { span, .. }
             | Stmt::Store { span, .. }
             | Stmt::Alloc { span, .. }
@@ -691,6 +731,15 @@ pub enum ExprNode
         /// The host function.
         func: HostFn,
         /// The address of each parameter.
+        args: Vec<Expr>,
+    },
+    /// The result of a C function, the one statement of a function of the
+    /// program that stands for it, from the value of each parameter.
+    Foreign
+    {
+        /// Index into [`Module::foreign`].
+        func: u32,
+        /// The value of each parameter.
         args: Vec<Expr>,
     },
     /// The address of a slot. A slot whose address the program takes is

@@ -659,6 +659,47 @@ impl Mem
         tern!(block.reaches(addr), Some(block), None)
     }
 
+    /// The native address of an octet of a live block, or of its end, so a C
+    /// function can read and write the block in place. The address holds
+    /// while no block is made, resized or freed.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address in the VM.
+    ///
+    /// # Returns
+    ///
+    /// The native address, or `None` outside each live block.
+    pub fn native_at(&mut self, addr: u64) -> Option<usize>
+    {
+        let (start, block) = self.table.range_mut(..=addr).next_back()?;
+        ret_if!(!block.live || addr > start + block.len, None);
+        let offset = usize::try_from(addr - start).ok()?;
+        Some(block.data.as_mut_ptr().wrapping_add(offset) as usize)
+    }
+
+    /// The address in the VM of a native address that lies in a live block,
+    /// the reverse of [`Mem::native_at`].
+    ///
+    /// # Arguments
+    ///
+    /// * `native` - The native address.
+    ///
+    /// # Returns
+    ///
+    /// The address in the VM, or `None` outside each live block.
+    pub fn vm_addr(&self, native: usize) -> Option<u64>
+    {
+        let holds = |b: &&Block| {
+            let base = b.data.as_ptr() as usize;
+            b.live
+                && !b.data.is_empty()
+                && (base..=base + b.data.len()).contains(&native)
+        };
+        let block = self.table.values().find(holds)?;
+        Some(block.start + (native - block.data.as_ptr() as usize) as u64)
+    }
+
     /// Bit count of the platform-sized kinds and addresses.
     ///
     /// # Returns

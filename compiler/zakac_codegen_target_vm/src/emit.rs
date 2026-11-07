@@ -33,6 +33,8 @@ use zakac_semcheck::kind::IntKind;
 use zakac_span::span::Span;
 
 use crate::bc::FmtArg;
+use crate::bc::ForeignCall;
+use crate::bc::ForeignFn;
 use crate::bc::Func;
 use crate::bc::Module;
 use crate::bc::Op;
@@ -73,7 +75,8 @@ pub fn emit(module: &ir::Module, platform_bits: u16, options: EmitOptions) -> Mo
     let globals = module.globals.iter().map(slot).collect();
     #[rustfmt::skip]
     let mut shared = Shared::builder().platform(platform_bits).rets(rets)
-        .globals(globals).results(options.results).scratch(options.scratch).build();
+        .globals(globals).results(options.results).scratch(options.scratch)
+        .foreign(module.foreign.clone()).build();
     let mut funcs: Vec<Func> =
         module.funcs.iter().map(|f| func(&mut shared, f)).collect();
     funcs.push(main_func(&mut shared, module));
@@ -81,7 +84,8 @@ pub fn emit(module: &ir::Module, platform_bits: u16, options: EmitOptions) -> Mo
     #[rustfmt::skip]
     return Module::builder().platform_bits(platform_bits).globals(shared.globals)
         .texts(shared.texts).seqs(shared.seqs).formats(shared.formats).funcs(funcs)
-        .main(main).host(module.host).build();
+        .main(main).host(module.host).foreign(shared.foreign)
+        .foreign_calls(shared.foreign_calls).build();
 }
 
 /// Make the slot of an IR slot.
@@ -162,6 +166,11 @@ struct Shared
     /// The static lists.
     #[builder(default)]
     seqs: Vec<StaticSeq>,
+    /// The C functions of the module.
+    foreign: Vec<ForeignFn>,
+    /// Each C call of a shape met so far.
+    #[builder(default)]
+    foreign_calls: Vec<ForeignCall>,
 }
 
 impl Shared
@@ -973,6 +982,7 @@ impl<'s> FuncGen<'s>
                 self.op(Op::Ret);
             }
             Stmt::Call { func, args, .. } => self.call_stmt(Target::Fn(*func), args),
+            Stmt::Foreign { func, args, .. } => self.foreign_stmt(*func, args),
             Stmt::CallValue { callee, args, .. } =>
             {
                 self.call_stmt(Target::Value(callee), args)
@@ -1546,6 +1556,11 @@ impl<'s> FuncGen<'s>
                 let slot = self.temp("%host", e.kind);
                 self.host(Op::LocalAddr(slot), *func, args);
             }
+            ExprNode::Foreign { func, args } =>
+            {
+                let slot = e.kind.is_aggregate().then(|| self.temp("%ffi", e.kind));
+                self.foreign(slot.map(Op::LocalAddr), *func, args);
+            }
             ExprNode::AddrOf(place) => self.addr_of(*place),
             ExprNode::Load { addr } =>
             {
@@ -1827,6 +1842,45 @@ impl<'s> FuncGen<'s>
         self.op(slot);
         do_for!(a in args, self.expr(a));
         self.op(Op::Host(func));
+    }
+
+    /// Call a C function; a struct result goes to a slot, whose address
+    /// remains on the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - The op that pushes the address of the slot, for a struct
+    ///   result.
+    /// * `func` - Index into the C functions of the module.
+    /// * `args` - The value of each parameter.
+    fn foreign(&mut self, slot: Option<Op>, func: u32, args: &[Expr])
+    {
+        do_if!(let Some(op) = slot, self.op(op));
+        do_for!(a in args, self.expr(a));
+        let fixed = self.shared.foreign[func as usize].params.len();
+        let extra: Vec<DataKind> = args.iter().skip(fixed).map(|a| a.kind).collect();
+        let call = ForeignCall::builder().func(func).extra(extra).build();
+        let calls = &mut self.shared.foreign_calls;
+        let known = calls.iter().position(|c| *c == call);
+        let index = known.unwrap_or(calls.len());
+        do_if!(known.is_none(), calls.push(call));
+        self.op(Op::Foreign(index as u32));
+    }
+
+    /// Call a C function and drop its result: a struct result goes to a
+    /// slot whose address is dropped, another result is popped.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - Index into the C functions of the module.
+    /// * `args` - The value of each parameter and other value.
+    fn foreign_stmt(&mut self, func: u32, args: &[Expr])
+    {
+        let ret = self.shared.foreign[func as usize].ret;
+        let blob = ret.filter(|k| k.is_aggregate());
+        let slot = blob.map(|kind| Op::LocalAddr(self.temp("%ffi", kind)));
+        self.foreign(slot, func, args);
+        do_if!(ret.is_some(), self.op(Op::Pop));
     }
 
     /// Push the value a function gives back. A list or struct local is not

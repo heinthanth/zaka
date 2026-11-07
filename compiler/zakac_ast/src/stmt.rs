@@ -386,8 +386,34 @@ pub struct FnDecl
     #[builder(default)]
     #[serde(default)]
     pub external: bool,
+    /// The shared lib of a C function, `"libm" မှလာသော`: the function is
+    /// the C function of its name there. `None` for a function the host serves.
+    #[serde(default)]
+    pub lib: Option<StrArg>,
+    /// `true` when the parameters end in `နှင့် အခြားတန်ဖိုးများ`: a call can
+    /// give more arguments than the function names, as a C `...` takes.
+    #[builder(default)]
+    #[serde(default)]
+    pub variadic: bool,
     /// Source region.
     pub span: Span,
+}
+
+/// Whether the lib of a C function is a path to its file, not a name: it
+/// holds a `/` or a `\\`, or ends in `.so`, `.dylib` or `.dll`, or holds
+/// `.so.`, as `libm.so.6` does.
+///
+/// # Arguments
+///
+/// * `lib` - The lib, as the program writes it.
+///
+/// # Returns
+///
+/// `true` for a path.
+pub fn is_lib_path(lib: &str) -> bool
+{
+    let ends = [".so", ".dylib", ".dll"].iter().any(|e| lib.ends_with(e));
+    lib.contains(['/', '\\']) || ends || lib.contains(".so.")
 }
 
 /// Return statement.

@@ -1,7 +1,4 @@
-/* The runtime of a Zaka program that the Zaka Compiler C target builds: the
- * functions the host serves (standard input, files, output streams) and the
- * arguments and the environment of the start block. Each one gives the
- * result the VM's host gives. */
+/* Zaka runtime - host functions */
 
 #include <errno.h>
 #include <stdio.h>
@@ -119,11 +116,7 @@ static uint32_t zk_handle(const unsigned char *at, const zk_kind *k)
  */
 static FILE *zk_open(const unsigned char *path, const char *mode)
 {
-    size_t len = zk_seq_len(path);
-    char *name = malloc(len + 1);
-    DO_IF(!name, zk_out_of_mem(len + 1));
-    DO_IF(len, memcpy(name, zk_seq_base(path), len));
-    name[len] = 0;
+    char *name = zk_text_cstr(path);
 #ifdef _WIN32
     wchar_t wide[4096], wmode[8];
     int ok = MultiByteToWideChar(CP_UTF8, 0, name, -1, wide, 4096) > 0;
@@ -132,7 +125,7 @@ static FILE *zk_open(const unsigned char *path, const char *mode)
 #else
     FILE *f = fopen(name, mode);
 #endif
-    free(name);
+    zk_text_cstr_free(name);
     return f;
 }
 

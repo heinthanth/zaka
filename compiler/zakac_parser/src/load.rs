@@ -10,6 +10,7 @@ use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::Unit;
+use zakac_ast::stmt::is_lib_path;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_host_errors::Error;
@@ -20,6 +21,7 @@ use zakac_lexer::lexer::lex;
 use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::spelling::canonical;
 use zakac_rust_sugars::do_for;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_session::artifact::EmbeddedFile;
 use zakac_span::filename::FileName;
@@ -275,6 +277,7 @@ impl Loader<'_>
         self.diagnostics.extend(parsed.diagnostics);
         let mut program = parsed.program;
         set_targets(&mut program, &imports, &targets);
+        do_if!(self.disk, lib_paths_from(&mut program, &path));
         let unit = self.units.len() as u32;
         let name = self.shown(&path);
         let first_stmt = self.stmts.len() as u32;
@@ -564,4 +567,28 @@ fn normalize(path: &Path) -> PathBuf
         }
     }
     out
+}
+
+/// Make the lib path of each C function of a file absolute: a relative one
+/// starts at the folder of the file, as an import does, so the program finds
+/// its lib wherever it runs from. A lib name is left as it is.
+///
+/// # Arguments
+///
+/// * `program` - The statements of the file.
+/// * `file` - The path of the file.
+fn lib_paths_from(program: &mut Program, file: &Path)
+{
+    let folder = file.parent().unwrap_or(Path::new(""));
+    let libs = program.stmts.iter_mut().filter_map(|s| match s
+    {
+        Stmt::Fn(f) => f.lib.as_mut(),
+        _ => None,
+    });
+    for lib in libs.filter(|l| is_lib_path(&l.lit.value))
+    {
+        let joined = normalize(&folder.join(&lib.lit.value));
+        let full = std::path::absolute(&joined).unwrap_or(joined);
+        lib.lit.value = full.to_string_lossy().into_owned();
+    }
 }

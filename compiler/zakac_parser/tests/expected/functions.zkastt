@@ -229,6 +229,8 @@ program:
       exported: false
       start: false
       external: false
+      lib: null
+      variadic: false
       span:
         lo: 0
         hi: 764
@@ -262,6 +264,8 @@ program:
       exported: false
       start: false
       external: false
+      lib: null
+      variadic: false
       span:
         lo: 766
         hi: 1062

@@ -20,6 +20,10 @@ use zakac_rust_sugars::do_for;
 /// not compile and those that go wrong at run time.
 const SKIPPED_GROUPS: &[&str] = &["diagnostics", "mistakes"];
 
+/// Sample groups that call C functions, which a VM built with no feature
+/// `ffi` cannot run.
+const FFI_GROUPS: &[&str] = &["ffi"];
+
 /// The crate dir.
 fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 
@@ -87,6 +91,7 @@ fn repo_samples_print_their_expected_output()
         .map(|g| g.path())
         .filter(|p| p.is_dir())
         .filter(|p| !SKIPPED_GROUPS.iter().any(|s| p.ends_with(s)))
+        .filter(|p| cfg!(feature = "ffi") || !FFI_GROUPS.iter().any(|s| p.ends_with(s)))
         .collect();
     groups.sort();
     assert!(!groups.is_empty());

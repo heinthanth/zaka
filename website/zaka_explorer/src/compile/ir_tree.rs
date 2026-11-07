@@ -91,6 +91,21 @@ impl IrTree<'_>
             .children(children).build();
     }
 
+    /// The name of a C function of the module, with its lib.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - Index into the C functions of the module.
+    ///
+    /// # Returns
+    ///
+    /// The text, such as `libm: frexp`.
+    fn foreign_name(&self, func: u32) -> String
+    {
+        let def = self.module.foreign.get(func as usize);
+        def.map_or_else(String::new, |d| format!("{}: {}", d.lib, d.name))
+    }
+
     /// The `module` node: globals, functions, then the main statements.
     ///
     /// # Returns
@@ -273,6 +288,11 @@ impl IrTree<'_>
                 let children = args.iter().map(|a| self.expr(a)).collect();
                 self.node("call", name.clone(), span, children)
             }
+            Stmt::Foreign { func, args, .. } =>
+            {
+                let children = args.iter().map(|a| self.expr(a)).collect();
+                self.node("foreign", self.foreign_name(*func), span, children)
+            }
             Stmt::CallValue { callee, args, .. } =>
             {
                 let children =
@@ -442,6 +462,11 @@ impl IrTree<'_>
             {
                 let name: &'static str = func.into();
                 ("host", name.to_string(), args.iter().map(|a| self.expr(a)).collect())
+            }
+            ExprNode::Foreign { func, args } =>
+            {
+                let children = args.iter().map(|a| self.expr(a)).collect();
+                ("foreign", self.foreign_name(*func), children)
             }
             ExprNode::AddrOf(place) => ("addr", self.place_text(*place), Vec::new()),
             ExprNode::Load { addr } => ("load", String::new(), vec![self.expr(addr)]),

@@ -212,6 +212,9 @@ pub struct BuildPlan<'a>
     /// The user's link flags: `LDFLAGS`, then each `--ld-flag`.
     #[builder(default)]
     pub ldflags: &'a [String],
+    /// The link flag of each lib the C functions of the program come from.
+    #[builder(default)]
+    pub libs: &'a [String],
 }
 
 /// What a build ran: the output of each step, and the tool of the step that
@@ -304,7 +307,12 @@ fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Com
     {
         cmd.args(SANITIZE_FLAGS);
     }
-    cmd.args(objects).arg("-o").arg(plan.out).args(LINK_LIBS).args(plan.ldflags);
+    cmd.args(objects)
+        .arg("-o")
+        .arg(plan.out)
+        .args(LINK_LIBS)
+        .args(plan.libs)
+        .args(plan.ldflags);
     cmd
 }
 

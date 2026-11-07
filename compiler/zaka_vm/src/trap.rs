@@ -152,6 +152,21 @@ pub enum TrapKind
     },
     /// A call went through a function value that holds no function, `ဗလာ`.
     NullCall,
+    /// A C function was called in a build of the VM that cannot call C,
+    /// such as the one in the browser.
+    ForeignCall
+    {
+        /// The C name.
+        name: String,
+    },
+    /// The C functions of the program could not be reached: a lib that does
+    /// not open, a C name a lib does not hold, or a platform size that is not
+    /// the host's.
+    ForeignLink
+    {
+        /// What went wrong.
+        reason: String,
+    },
     /// A remove statement found a list with no cells.
     NoCellToRemove,
     /// A remove statement found text with no characters.
@@ -290,6 +305,11 @@ impl fmt::Display for TrapKind
                 t!("vm.trap.end_before_start", start = start, end = end)
             }
             TrapKind::NullCall => t!("vm.trap.null_call"),
+            TrapKind::ForeignCall { name } => t!("vm.trap.foreign_call", name = name),
+            TrapKind::ForeignLink { reason } =>
+            {
+                t!("vm.trap.foreign_link", reason = reason)
+            }
             TrapKind::NoCellToRemove => t!("vm.trap.no_cell_to_remove"),
             TrapKind::NoCharToRemove => t!("vm.trap.no_char_to_remove"),
             TrapKind::NoPlaceToInsert { index, first, len } =>
@@ -358,6 +378,8 @@ impl TrapKind
             | TrapKind::CharOutOfRange { .. }
             | TrapKind::EndBeforeStart { .. }
             | TrapKind::NullCall
+            | TrapKind::ForeignCall { .. }
+            | TrapKind::ForeignLink { .. }
             | TrapKind::NoCellToRemove
             | TrapKind::NoCharToRemove
             | TrapKind::NoPlaceToInsert { .. }

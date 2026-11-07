@@ -103,7 +103,7 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             do_if!(let Some(v) = value, expr(v, f));
             *span = f(*span);
         }
-        Stmt::Call { args, span, .. } =>
+        Stmt::Call { args, span, .. } | Stmt::Foreign { args, span, .. } =>
         {
             do_for!(a in args, expr(a, f));
             *span = f(*span);
@@ -227,6 +227,7 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
         }
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
+        | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) =>
         {
             do_for!(a in args, expr(a, f))

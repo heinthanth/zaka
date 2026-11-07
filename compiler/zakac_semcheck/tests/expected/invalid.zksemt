@@ -260,6 +260,8 @@ program:
       exported: false
       start: true
       external: false
+      lib: null
+      variadic: false
       span:
         lo: 0
         hi: 1070

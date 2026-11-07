@@ -71,6 +71,49 @@ that read back, text, lists, structs, members of an enumeration and results. Flo
 after each operation, as in the VM; the build turns off the fused mul-add of the C
 compiler for that.
 
+## C functions
+
+A program that declares [C functions](../language/functions.md#c-functions) calls them
+from native code with no VM between. The build writes one more file, `zaka_ffi.c`:
+
+- It includes `<stddef.h>` and `<stdint.h>` and no libc header, so a declaration in it
+  cannot clash with the one a header holds. It turns off the warnings for a redeclaration
+  that differs from the compiler's own (`-Wincompatible-library-redeclaration` in Clang),
+  since `void *` for an `int *` is the same to the ABI.
+- It declares each C function with the kinds Zaka gives it (`_Bool` for true and false,
+  `void *` for an address), and writes a struct that a call passes whole as a C struct,
+  `zk_ffi_s<n>`, with a `_Static_assert` on its size.
+- It defines a wrapper `zk_ffi_<n>` for each shape of call (a C function, and the kinds of
+  its other values when it takes some); the module files call the wrappers, whose
+  declarations stand in `zaka_kinds.h`. A struct goes in and out of a wrapper as the
+  address of its octets.
+- A C function that takes other values (`နှင့် အခြားတန်ဖိုးများ`) is declared with
+  `, ...`, and each wrapper passes the other values of its call as C promotes them.
+- A text parameter or other value goes to C as `const char *`: the wrapper makes a
+  duplicate of the u8s with a zero octet at the end (`zk_text_cstr` of the runtime), calls
+  the C function, and frees the duplicate (`zk_text_cstr_free`).
+
+The link gets `-lX` for each lib `libX` the program names, but libc and libm, after `-lm`
+and before `LDFLAGS` and each `--ld-flag`. Give the folder of a lib with `--ld-flag`:
+
+```console
+$ zakac build --target c --ld-flag -L/opt/gears/lib gears.zaka
+```
+
+A lib given as a path (a text that holds `/` or `\`, ends in `.so`, `.dylib` or `.dll`, or
+holds `.so.`) goes to the linker as it is, in place of `-lX`, and on each host but Windows
+the link adds `-Wl,-rpath,<folder>` with the folder of the path, so the program finds the
+lib when it runs. A relative path starts at the folder of the file that declares the C
+function, and the compiler makes it absolute. On macOS the lib must name itself (its
+install name) with an absolute path or `@rpath/...`; a bare file name there is looked up
+in the folder the program starts from.
+
+With `--emit c`, the `-lX` flags are for the reader to add to the `cc` line.
+
+An address in a native program is a real address, so it reaches C as it is; there is no
+block of the VM to map. The checks of the program do not look inside C: a C function that
+writes past a block does what it does in a C program.
+
 ## Where the C goes
 
 The build writes the C into a cache folder. With no `--cache`, it is
@@ -89,4 +132,5 @@ $ cc -std=c11 -O2 gen/*.c -lm -o app
 | `main.c` | `main`: the arguments, the start block, the exit status |
 | `zaka_kinds.h` | the declaration of each global, function and kind |
 | `zaka_kinds.c` | the description of each kind, and the texts of the messages |
+| `zaka_ffi.c` | the wrappers of the C functions of the program; written when it has some |
 | `zaka_rt.h`, `zaka_rt*.c` | the runtime: checked arithmetic, text, lists, prints and the host |

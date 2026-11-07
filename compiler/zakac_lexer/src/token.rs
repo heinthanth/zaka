@@ -335,6 +335,9 @@ pub enum Kw
     Outside,
     /// `လာသော`, "coming": the last piece of `ပြင်ပမှလာသော`
     Coming,
+    /// `အခြားတန်ဖိုးများ`, "other values": the last item of the parameters of a
+    /// C function that takes more arguments than it names
+    OtherValues,
     /// `လုပ်ဆောင်ချက်တစ်ခု`, "a function", in the header of an external function
     OneFunction,
     /// `လက်ခံမည်`, "will accept": ends the parameters of an external function

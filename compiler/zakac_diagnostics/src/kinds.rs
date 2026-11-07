@@ -1109,3 +1109,35 @@ pub fn external_fn_addr(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::ExternalFnAddr, t!("codes.ZK0464.message", n = name), span)
         .with_help(t!("codes.ZK0464.help"))
 }
+
+/// A parameter or the result of a C function has a kind C cannot take.
+///
+/// # Arguments
+///
+/// * `span` - The parameter, or the name of the function for its result.
+/// * `kind` - The kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0465` diagnostic.
+pub fn kind_not_across_c(span: Span, kind: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::KindNotAcrossC, t!("codes.ZK0465.message", k = kind), span)
+        .with_help(t!("codes.ZK0465.help"))
+}
+
+/// A parameter of a C function carries the edit mark.
+///
+/// # Arguments
+///
+/// * `span` - The parameter.
+/// * `name` - The parameter name.
+///
+/// # Returns
+///
+/// The `ZK0466` diagnostic.
+pub fn edit_across_c(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::EditAcrossC, t!("codes.ZK0466.message", n = name), span)
+        .with_help(t!("codes.ZK0466.help"))
+}

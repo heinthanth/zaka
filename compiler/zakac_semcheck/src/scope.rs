@@ -152,6 +152,10 @@ pub(crate) struct FnSig
     /// function value can hold.
     #[builder(default)]
     pub external: bool,
+    /// `true` for a C function that takes more arguments than it names,
+    /// `နှင့် အခြားတန်ဖိုးများ`.
+    #[builder(default)]
+    pub variadic: bool,
     /// The mark of each parameter, when the parameters have marks.
     pub marks: Option<Vec<Name>>,
     /// The name each later stage gives the function: the written name for

@@ -70,6 +70,8 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | not good | the good result is read from a [whole result](../language/error-handling.md#reading-a-whole-result) that holds an error value, or a failure with no value | `the result holds an error, not a good result: V`, or `the result holds a failure, not a good result` |
 | not fault | the error value is read from a whole result that holds a good result | `the result is a good result, not an error` |
 | write | the output cannot be written | `cannot write the output: E` |
+| C function not run | a C function is called in a VM built with no `ffi`, such as the explorer's | `the C function N runs in "zakac run" and in native builds, not in this VM` |
+| C link | the first call of a C function finds a lib that does not open, a C name that no lib holds, or addresses of a size the host does not have | `the C functions of the program cannot be reached: R` |
 
 Addresses are written `0x` and lowercase hex digits. Integer arithmetic that does not fit
 its kind gives the overflow trap, unless the program is compiled with `--overflow wrap`,
@@ -588,6 +590,43 @@ the program stopped: the result holds an error, not a good result: မပိတ�
 
 A test (`သည် ရလဒ်ကောင်း`, `သည် အမှားအယွင်း`) before the read tells which part is there. Both
 traps come from the op `halt`, with the cause `not_good` or `not_fault`.
+
+## C functions
+
+Two traps belong to a [C function](../language/functions.md#c-functions). Both stop the
+run at a call, before C is entered; C itself does what C does, and the VM has no trap for
+what C does with a block.
+
+**C function not run.** The VM of the explorer is built with no `ffi`, so it opens no
+lib: the first call of a C function stops the run, and what was printed before it remains printed.
+`zakac run` and a native build run the call.
+
+```text
+the program stopped: the C function frexp runs in "zakac run" and in native builds, not in this VM
+```
+
+**C link.** The first call in a run opens each lib the program names and looks each C
+name up in its lib, then in the process, which holds libc. The run stops when a lib does
+not open, when no lib holds a C name, or when the program is built for addresses of a size
+other than the host's (`--platform-bits`). The reason follows the colon:
+
+| Reason | Message |
+| --- | --- |
+| a lib that does not open, as a path that names no file | `the lib "L" does not open (E)` |
+| a C name that no lib holds | `the lib "L" holds no C function N` |
+| a platform size that is not the host's | `the program has B-bit addresses, but this host has H-bit ones` |
+
+```zaka-stop
+လုပ်ဆောင်ချက် nosuchfn သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ၃၂ ဘစ် ကိန်းပြည့် n ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် nosuchfn ကို ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+the program stopped: the C functions of the program cannot be reached: the lib "libm" holds no C function nosuchfn
+```
 
 ## What to do with a trap
 

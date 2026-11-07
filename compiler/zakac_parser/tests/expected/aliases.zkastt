@@ -283,6 +283,8 @@ program:
       exported: false
       start: true
       external: false
+      lib: null
+      variadic: false
       span:
         lo: 1636
         hi: 2031

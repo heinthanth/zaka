@@ -1,3 +1,4 @@
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
@@ -583,7 +584,9 @@ fn generic_sexpr(s: &GenericStmt) -> String
     list("for", header.into_iter().chain(init).chain(loop_part).chain(update))
 }
 
-/// `(fn name [kind param, kind param] ret {..})`; `-` for no result.
+/// `(fn name [kind param, kind param] ret {..})`; `-` for no result. An
+/// external function is `(external name ...)`, with its lib first when it
+/// has one: `(external "libm" name ...)`.
 ///
 /// # Arguments
 ///
@@ -594,10 +597,12 @@ fn generic_sexpr(s: &GenericStmt) -> String
 /// The text.
 fn fn_sexpr(s: &FnDecl) -> String
 {
-    let params: Vec<String> = s.params.iter().map(param_sexpr).collect();
+    let mut params: Vec<String> = s.params.iter().map(param_sexpr).collect();
+    do_if!(s.variadic, params.push("...".to_string()));
     let ret = s.ret.as_ref().map_or("-".to_string(), ToSexpr::to_sexpr);
     let parts = [s.name.name.to_string(), format!("[{}]", params.join(", ")), ret];
-    ret_if!(s.external, list("external", parts));
+    let lib = s.lib.iter().map(|l| format!("\"{}\"", l.lit.value));
+    ret_if!(s.external, list("external", lib.chain(parts)));
     list(tern!(s.start, "start", "fn"), parts.into_iter().chain([s.block.to_sexpr()]))
 }
 

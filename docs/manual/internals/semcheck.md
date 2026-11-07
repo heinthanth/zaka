@@ -126,6 +126,23 @@ enumeration are the ones the stdlib declares. The IR builder asks `host::find` a
 the host function of its one statement, with the written name of an overload (`#<n>` cut
 off).
 
+A C function (`FnDecl::lib` is set) goes to `check_c_fn` instead, which asks `foreign.rs`:
+`is_c_name` (ASCII letters, digits and `_`, no digit first: ZK0337), `crosses` for each
+parameter and `crosses_back` for the result (ZK0465; the kinds C takes are integers of 8 to
+64 bits, `f32`, `f64`, `bool`, borrowed and raw addresses, and structs and counted lists of
+these; the owner `လိပ်စာ` is refused, since the wrapper would free it, and an enumeration
+is left out, since Zaka holds it as an `isize` and a C enum is an `int`), and the edit mark
+on a parameter (ZK0466). `Checker::c_names` maps each C name to its parameter and result
+kinds, so a second declaration of the name, in another file or among overloads, with
+other kinds is ZK0338. Its address is refused as for each external function (ZK0464).
+
+A parameter of a C function can be text too (`crosses_param`: `crosses` or a textual
+kind); a result cannot be (`crosses_back`, ZK0465). A header that ends in `နှင့်
+အခြားတန်ဖိုးများ` sets `FnSig::variadic`: a call needs at least the named arguments (ZK0314
+for fewer), and `check_rest_arg` infers each other value with no expected kind and asks
+`crosses_rest` (a parameter kind but a struct, else ZK0465). `check_external` gives a host
+function that takes other values ZK0334, since the host table has none.
+
 Before it, `collect_enums` (`enum_check.rs`) makes the kind of each enumeration, on its
 name and on its stem, and reports a member name used twice (ZK0328) and a name a struct
 or another enumeration has (ZK0316). A member value can name a constant, so the walk works

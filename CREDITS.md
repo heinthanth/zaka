@@ -83,6 +83,8 @@ thanks to all of these projects.
 | [leptos-use-window-size](https://github.com/Synphonyte/leptos-use) | 0.20.1 | MIT OR Apache-2.0 |
 | [leptos_meta](https://github.com/leptos-rs/leptos) | 0.8.7 | MIT |
 | [leptos_router](https://github.com/leptos-rs/leptos) | 0.8.17 | MIT |
+| [libffi](https://github.com/libffi-rs/libffi-rs) | 5.2.0 | MIT OR Apache-2.0 |
+| [libloading](https://github.com/nagisa/rust_libloading/) | 0.9.0 | ISC |
 | [num_enum](https://github.com/illicitonion/num_enum) | 0.7.6 | BSD-3-Clause OR MIT OR Apache-2.0 |
 | [postcard](https://github.com/jamesmunns/postcard) | 1.1.3 | MIT OR Apache-2.0 |
 | [pulldown-cmark](https://github.com/raphlinus/pulldown-cmark) | 0.13.5 | MIT |

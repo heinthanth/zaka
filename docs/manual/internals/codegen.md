@@ -41,7 +41,7 @@ what is not needed: names become numbers, blocks are flattened, operators have o
 spelling, and each conversion is written out.
 
 ```text
-Module { globals: Vec<Slot>, funcs: Vec<Func>, main: Vec<Stmt>, imported_inits, host, span }
+Module { globals: Vec<Slot>, funcs: Vec<Func>, main: Vec<Stmt>, imported_inits, host, foreign: Vec<ForeignFn>, span }
 Func   { name, params, result, ret, locals: Vec<Slot>, block: Vec<Stmt>, span }
 Slot   { name, kind: DataKind, access: Var | Const | LoopVar, addressed, span }
 Place  = Global(n) | Local(n)                   written g0, l0
@@ -85,7 +85,7 @@ value: the value first, then the arguments), `FnAddr { func, name }` (the functi
 `func`, written `(fn_addr name)`), `Host { func, args }` (the one statement of an external
 function: its result variable takes what the host function `func` gives for the borrowed
 address of each parameter, written `(host read_file (addr l0))`; the IR builder makes it in
-`host_statement`, and codegen emits the op `host` into the result slot), the pointer forms `AddrOf`, `Load`, `Lend`, `Take`, `Dup`, `Own` (a plain list made to
+`host_statement`, and codegen emits the op `host` into the result slot), `Foreign { func, args }` (the one expression of a C function with a result; with no result, the statement `Stmt::Foreign { func, args, span }`), the pointer forms `AddrOf`, `Load`, `Lend`, `Take`, `Dup`, `Own` (a plain list made to
 own its block before a write, written `(own ...)`),
 `PtrAdd`, `PtrSub`, `SizeOf`, the list forms `List`, `BlankList`, `CellAddr`, `FieldAddr`,
 and `MakeSlice`, and the text forms `Text(String)` (static text, written `"..."` in the
@@ -434,7 +434,7 @@ condition `12 > 10` is true, so the `if` is gone and its branch stands in its pl
 `bc::Module`:
 
 ```text
-Module { platform_bits, globals: Vec<Slot>, texts: Vec<String>, formats: Vec<Vec<FmtArg>>, funcs: Vec<Func>, main: u32, overflow, host }
+Module { platform_bits, globals: Vec<Slot>, texts: Vec<String>, formats: Vec<Vec<FmtArg>>, funcs: Vec<Func>, main: u32, overflow, host, foreign: Vec<ForeignFn>, foreign_calls: Vec<ForeignCall> }
 Func   { name, params, ret, locals: Vec<Slot>, code: Vec<Op>, spans: Vec<Span> }
 ```
 
@@ -691,6 +691,10 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   blocked, and the op puts its operands back, steps back to itself uncounted, and the
   state becomes `Waiting` until `give_input` or `close_input`. See
   [Host functions](#host-functions).
+- **C functions.** The op `foreign c<n>` (`Op::Foreign`) makes the C call `n` of
+  `Module::foreign_calls`, a table of `ForeignCall { func, extra }` over
+  `Module::foreign`, a table of `ForeignFn { lib, name, params, ret, variadic }`. The code lives in
+  `machine/ffi.rs`, behind the feature `ffi` of `zaka_vm`. See [C functions](#c-functions).
 - **Limits.** `RunOptions` has `max_depth`, `max_steps`, `max_heap`, `max_stack`, the
   frame mode, and `leaks`. A trap is not a `ZK` diagnostic, since it belongs to the run of
   a program and not to the compiler.
@@ -733,6 +737,29 @@ A `MemWorld` holds the input lines given before the run and a map of files; a
 `TermWorld` reads the standard input of the process and the files on disk. `zakac run`
 runs in a `TermWorld`, and each other run (the tests, the books, the explorer) in a
 `MemWorld`.
+
+## C functions
+
+A C function (`"libm" မှလာသော`) remains a function of the program whose one statement calls
+C. Unlike a host function, it passes the value of each parameter and not its address. A C
+function that takes other values (`နှင့် အခြားတန်ဖိုးများ`, C's `...`) has no such function:
+each call names the C function itself, with all its arguments.
+
+| Stage | Where | What it does |
+| --- | --- | --- |
+| IR | `lower.rs`: `foreign_statement`, `foreign_index` | the statement is `ExprNode::Foreign { func, args }` (`Stmt::Foreign` with no result); `Module::foreign` holds one `ForeignFn { lib, name, params, ret }` for each C name, so two declarations of a name share a row. A C function that takes other values has `ForeignFn::variadic`, and `collect_sigs` gives its signature the `ForeignFn`, so `Target::Foreign` makes the call site `ExprNode::Foreign` (or `Stmt::Foreign`) with each argument and no wrapper function runs. `rest_arg` lowers an other value as C promotes it (`promoted`: an integer under 32 bits and a boolean to `i32`, `f32` to `f64`); a text that is not a plain read is built into a hidden slot (`spill`) that the scope end drops |
+| borrow checker | `walk.rs`, `flow.rs` | each argument is a read, and the result is a fresh value, as for `Host` |
+| VM ops | `emit.rs`: `foreign` | the op `foreign c<n>` pops each parameter and each other value, the last on top (a struct or a text is the address of its value); a struct result has the address of its slot under them and leaves it; another result is pushed; no result pushes nothing. One `bc::ForeignCall { func, extra }` stands for each shape of call: the C function and the kinds of its other values, so the same shape shares an index; `bc::Module::foreign_calls` carries them. A statement call (`foreign_stmt`) of a C function with a result pops it |
+| VM | `zaka_vm/src/machine/ffi.rs` | the first call links: each lib opens (`libX` is `libX.dylib`, `libX.so` or `X.dll`; on Linux `libX.so.6` too; libc on Windows is `ucrtbase.dll`) and each C name is looked up in its lib, else in the process, which holds libc. libffi makes the call (`Cif::new_variadic` for a C function that takes other values, with the count of its named parameters). A text parameter or other value goes as the address of a duplicate of its u8s with a zero octet at the end (`arg_cell`, `text_octets`), kept alive until the call returns. A lib given as a path opens as it is (`open`). After each call `flush_c` calls libc's `fflush(NULL)`, found in the process at link time, so what C printed comes in order with the program's output. The run refuses when `--platform-bits` is not the host's, and the VM on a big-endian host is not supported for C |
+| C target | `zakac_codegen_target_c/src/ffi.rs` | `zaka_ffi.c` and one wrapper for each call shape (`FfiCall { func, extra }`, `Shared::ffi_calls`, `ffi_call`); see [The C target](c-backend.md#c-functions) |
+
+An address that lies in a live block becomes the native address of that octet
+(`Mem::native_at`), for a parameter and for an address field of a struct, so C reads and
+writes the block in place. An address C gives back that lies in a block maps back
+(`Mem::vm_addr`); another passes as it is and cannot be read through in the VM. A build
+with no feature `ffi` (the explorer) holds `without_ffi::call_c`, which gives the trap
+`ForeignCall`; a lib that does not open, a missing C name and a platform size that is not
+the host's give `ForeignLink`. The zakac and book-test builds turn `ffi` on.
 
 ## Tests and extending
 

@@ -35,6 +35,7 @@
   - [Parameters](functions/parameters.md)
   - [Results](functions/results.md)
   - [Recursion](functions/recursion.md)
+  - [Calling C](functions/c.md)
 - [Text](text/README.md)
   - [Cells and characters](text/characters.md)
   - [Changing text](text/changing.md)
@@ -75,4 +76,5 @@
   - [Lists and structs through addresses](pointers/structs.md)
   - [Functions as values](pointers/functions.md)
   - [Ownership and borrowing](pointers/ownership.md)
+  - [C functions and addresses](pointers/c.md)
   - [Pointer mistakes](pointers/mistakes.md)

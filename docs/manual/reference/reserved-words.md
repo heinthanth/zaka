@@ -26,7 +26,8 @@ see [Names](../../learn/variables/names.md).
 | `ပါ`, `ပါသည်` | polite endings | [Particles](../../learn/sentences/particles.md) |
 | `တို့ကို`, `တို့ဖြင့်` | close a list of parameters / arguments | [Parameters](../../learn/functions/parameters.md) |
 | `လက်ခံပြီး` | "accepting ... and" | [Parameters](../../learn/functions/parameters.md) |
-| `ပြင်ပမှလာသော` (`ပြင်ပ`, `မှ`, `လာသော`) | "coming from outside": marks an external function | [Functions](../language/functions.md#external-functions) |
+| `ပြင်ပမှလာသော` (`ပြင်ပ`, `မှ`, `လာသော`) | "coming from outside": marks an external function; with a text of a lib in place of `ပြင်ပ` (`"libm" မှလာသော`), a C function | [Functions](../language/functions.md#external-functions), [C functions](../language/functions.md#c-functions) |
+| `အခြားတန်ဖိုးများ` | "other values": `... နှင့် အခြားတန်ဖိုးများ ကို လက်ခံပြီး` ends the parameters of a C function that takes more arguments than it names, as a C `...` does | [C functions](../language/functions.md#c-functions) |
 | `လုပ်ဆောင်ချက်တစ်ခု` | "a function", in the header of an external function | [Functions](../language/functions.md#external-functions) |
 | `သုံး၍` | "using": after `ကို` or `တို့ကို`, closes the arguments of a call written before its function | [Parameters](../../learn/functions/parameters.md#arguments-first) |
 | `ထဲသို့` | "into", after the list or the text in `l ထဲသို့ v ကို ထည့်ပါ` | [Adding and removing cells](../../learn/lists/growing.md) |

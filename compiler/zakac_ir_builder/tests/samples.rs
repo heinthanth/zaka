@@ -94,7 +94,10 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
             {
                 value.iter().for_each(|v| expr_places(v, out))
             }
-            Stmt::Call { args, .. } => args.iter().for_each(|a| expr_places(a, out)),
+            Stmt::Call { args, .. } | Stmt::Foreign { args, .. } =>
+            {
+                args.iter().for_each(|a| expr_places(a, out))
+            }
             Stmt::CallValue { callee, args, .. } =>
             {
                 std::iter::once(callee).chain(args).for_each(|a| expr_places(a, out))
@@ -191,6 +194,7 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         }
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
+        | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) => args.iter().for_each(|a| expr_places(a, out)),
         ExprNode::CallValue { callee, args } => std::iter::once(callee.as_ref())
             .chain(args)

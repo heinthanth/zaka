@@ -638,3 +638,16 @@ fn external_functions_have_a_header_alone()
                 ရလဒ် ကို ပြန်ပေးမည်။";
     assert_eq!(stmt(both), "(external ဖတ် [text လမ်း] text)");
 }
+
+#[test]
+fn c_functions_name_their_lib()
+{
+    let abs = "လုပ်ဆောင်ချက် abs သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ i32 n ကို လက်ခံပြီး i32 ရလဒ် \
+               ကို ပြန်ပေးမည်။";
+    assert_eq!(stmt(abs), "(external \"libc\" abs [i32 n] i32)");
+    let apart = "လုပ်ဆောင်ချက် rand သည် \"libc\" မှ လာသော လုပ်ဆောင်ချက်ဖြစ်၍ i32 ရလဒ် ကို ပြန်ပေးမည်။";
+    assert_eq!(stmt(apart), "(external \"libc\" rand [] i32)");
+    let printf = "လုပ်ဆောင်ချက် printf သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား f နှင့် \
+                  အခြားတန်ဖိုးများ ကို လက်ခံပြီး i32 ရလဒ် ကို ပြန်ပေးမည်။";
+    assert_eq!(stmt(printf), "(external \"libc\" printf [text f, ...] i32)");
+}

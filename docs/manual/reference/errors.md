@@ -166,6 +166,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0334 | an external function that is none of the functions the VM serves | [Functions](../language/functions.md#external-functions) |
 | ZK0335 | a call whose name finds both a declared function and a value of a function kind | [Function values](../language/function-values.md#calling-a-function-value) |
 | ZK0336 | a chain of kind aliases that comes back to its start | [Kind aliases](../language/aliases.md#errors) |
+| ZK0337 | a C function whose name is no C name | [Functions](../language/functions.md#c-functions) |
+| ZK0338 | a C function declared twice with other parameter or result kinds | [Functions](../language/functions.md#c-functions) |
 
 ### ZK04: kinds
 
@@ -231,6 +233,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0462 | a call through a name or a place whose kind is no function kind | [Function values](../language/function-values.md#calling-a-function-value) |
 | ZK0463 | the address of a name of several functions, where no single one fits the kind the value goes to | [Function values](../language/function-values.md#the-address-of-a-function) |
 | ZK0464 | the address of a function that comes from outside the program | [Function values](../language/function-values.md#the-address-of-a-function) |
+| ZK0465 | a parameter or the result of a C function with a kind C cannot take | [Functions](../language/functions.md#c-functions) |
+| ZK0466 | the edit mark on a parameter of a C function | [Functions](../language/functions.md#c-functions) |
 
 ### ZK05: natural Zaka (warnings)
 

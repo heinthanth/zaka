@@ -754,6 +754,8 @@ program:
       exported: false
       start: false
       external: false
+      lib: null
+      variadic: false
       span:
         lo: 2816
         hi: 3487

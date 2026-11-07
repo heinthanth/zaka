@@ -81,5 +81,5 @@ fn sig_of(decl: &FnDecl, structs: &StructTable, index: usize) -> FnSig
         decl.params.iter().map(|p| p.mark.as_ref().map(|m| m.name)).collect();
     #[rustfmt::skip]
     return FnSig::builder().params(params).edits(edits).maybe_ret(ret).exported(decl.exported)
-        .external(decl.external).maybe_marks(marks).inner(overload_name(decl.name.name, index)).build();
+        .external(decl.external).variadic(decl.variadic).maybe_marks(marks).inner(overload_name(decl.name.name, index)).build();
 }

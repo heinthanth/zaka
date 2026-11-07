@@ -39,6 +39,7 @@ use crate::driver::default_cache;
 use crate::driver::translate;
 use crate::driver::write_cache;
 use crate::emit::CFile;
+use crate::ffi::link_libs;
 use crate::options::Checks;
 use crate::options::Emit;
 use crate::toolchain;
@@ -315,9 +316,11 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let out = arg("output").map_or_else(|| stem.with_extension(""), PathBuf::from);
     let out = with_exe(out);
     let files = files.unwrap();
+    let folded = translated.borrowchecked.lowered.folded.as_ref();
+    let libs = folded.map(|m| link_libs(&m.foreign)).unwrap_or_default();
     #[rustfmt::skip]
     let job = Job::builder().cache(&cache).out(&out).checks(checks).emit(emit)
-        .files(&files).build();
+        .files(&files).libs(&libs).build();
     let built = build(matches, io, &info, job);
     ret_if!(let Err(error) = built, report_command_error(io, &info, error));
     built.unwrap()
@@ -373,6 +376,8 @@ struct Job<'a>
     emit: Emit,
     /// The generated C files.
     files: &'a [CFile],
+    /// The link flag of each lib the C functions of the program come from.
+    libs: &'a [String],
 }
 
 /// Write the C into the cache, then compile it unless `--emit c`.
@@ -409,7 +414,7 @@ fn build(
     let plan = BuildPlan::builder().cc(&cc).maybe_linker(linker.as_ref())
         .sources(&sources).out(job.out).checks(job.checks).sanitizers(sanitizers)
         .defaults(!matches.get_flag(NO_DEFAULT_FLAGS_ARG)).cflags(&cflags)
-        .ldflags(&ldflags).build();
+        .ldflags(&ldflags).libs(job.libs).build();
     let built = toolchain::build(&plan)?;
     for output in &built.outputs
     {

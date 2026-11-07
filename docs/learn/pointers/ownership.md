@@ -409,4 +409,4 @@ reports it, and as the VM stops it under `warn`.
   returns the block as its result. Which variable gives the block back?
 - Change `ယူ` so that each piece starts at a multiple of 8 octets.
 
-Next: [Pointer mistakes](mistakes.md).
+Next: [C functions and addresses](c.md).

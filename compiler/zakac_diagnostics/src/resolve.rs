@@ -627,3 +627,36 @@ pub fn alias_loop(span: Span, name: &str) -> Diagnostic
 {
     Diagnostic::new(Code::AliasLoop, t!("codes.ZK0336.message", n = name), span)
 }
+
+/// A C function has a name that is no C name.
+///
+/// # Arguments
+///
+/// * `span` - The name in the declaration.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0337` diagnostic.
+pub fn not_a_c_name(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::NotACName, t!("codes.ZK0337.message", n = name), span)
+        .with_help(t!("codes.ZK0337.help"))
+}
+
+/// A C function of a name declared before has other parameter or result
+/// kinds.
+///
+/// # Arguments
+///
+/// * `span` - The name in the second declaration.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0338` diagnostic.
+pub fn c_name_twice(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::CNameTwice, t!("codes.ZK0338.message", n = name), span)
+        .with_help(t!("codes.ZK0338.help"))
+}

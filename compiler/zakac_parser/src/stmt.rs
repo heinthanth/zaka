@@ -49,6 +49,10 @@ use crate::parser::Parser;
 use crate::parser::kw_of;
 use crate::using::CallParts;
 
+/// A parameter clause: the parameters, the word that ended it, and whether it
+/// ends in `နှင့် အခြားတန်ဖိုးများ`.
+type ParamClause = (Vec<Param>, Option<Kw>, bool);
+
 /// The count word `တစ်ခု` ("one") in `လုပ်ဆောင်ချက် တစ်ခု`.
 const ONE_THING: &str = "တစ်ခု";
 
@@ -699,7 +703,8 @@ impl Parser<'_>
         let start_name = || Ident::builder().name(START_NAME).span(start).build();
         let name = tern!(is_start, start_name(), self.parse_ident()?);
         self.expect(Kw::Thi)?;
-        ret_if!(self.at(Kw::External) && !is_start, self.parse_external(start, name));
+        let external = self.at(Kw::External) || self.at_lib();
+        ret_if!(external && !is_start, self.parse_external(start, name));
         let params = self.parse_params()?;
         let open = self.expect_one_of(&[Kw::FnOpen, Kw::FnOpenRet])?;
         let ret = self.parse_ret_clause(open.kind == TokenKind::Kw(Kw::FnOpenRet))?;
@@ -724,6 +729,8 @@ impl Parser<'_>
     /// no parameters and no result, or `... ဖြစ်၍` then the parameters ending in
     /// `လက်ခံမည်` (no result) or `လက်ခံပြီး` and the result clause, or the
     /// result clause alone. The host serves the function, so no block follows.
+    /// `"<lib>" မှလာသော` in place of `ပြင်ပမှလာသော` makes it a C function of
+    /// that shared lib.
     ///
     /// # Arguments
     ///
@@ -735,14 +742,17 @@ impl Parser<'_>
     /// The declaration, or a diagnostic.
     fn parse_external(&mut self, start: Span, name: Ident) -> PResult<Stmt>
     {
-        self.bump();
+        let lib = self.parse_origin()?;
         self.parse_one_function()?;
         let bare =
             self.expect_one_of(&[Kw::And, Kw::Is])?.kind == TokenKind::Kw(Kw::Is);
         let ends = [Kw::Accepting, Kw::WillAccept];
         let with_params = !bare && self.accepts_ahead();
-        let (params, end) =
-            tern!(with_params, self.parse_params_to(&ends)?, (Vec::new(), None));
+        let (params, end, variadic) = tern!(
+            with_params,
+            self.parse_params_to(&ends, true)?,
+            (Vec::new(), None, false)
+        );
         let ret = tern!(
             bare || end == Some(Kw::WillAccept),
             None,
@@ -754,8 +764,39 @@ impl Parser<'_>
         let block = BlockStmt::builder().span(stop.span).build();
         #[rustfmt::skip]
         let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
-            .external(true).span(span).build();
+            .external(true).maybe_lib(lib).variadic(variadic).span(span).build();
         Ok(Stmt::Fn(node))
+    }
+
+    /// Whether `"<lib>" မှ` starts here, the origin of a C function.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_lib(&self) -> bool
+    {
+        matches!(self.peek().kind, TokenKind::Str(_))
+            && self.peek_n(1).kind == TokenKind::Kw(Kw::From)
+    }
+
+    /// Read where an external function comes from: `ပြင်ပမှလာသော`, the host,
+    /// or `"<lib>" မှလာသော`, a shared lib.
+    ///
+    /// # Returns
+    ///
+    /// The lib, `None` for the host, or a diagnostic.
+    fn parse_origin(&mut self) -> PResult<Option<StrArg>>
+    {
+        let tok = self.bump();
+        let TokenKind::Str(idx) = tok.kind
+        else
+        {
+            return Ok(None);
+        };
+        self.expect(Kw::From)?;
+        self.expect(Kw::Coming)?;
+        let lit = self.strings[idx as usize].clone();
+        Ok(Some(StrArg::builder().lit(lit).span(tok.span).build()))
     }
 
     /// Read `လုပ်ဆောင်ချက်တစ်ခု`, or `လုပ်ဆောင်ချက်` with an optional `တစ်ခု` after it.
@@ -1159,7 +1200,7 @@ impl Parser<'_>
     fn parse_params(&mut self) -> PResult<Vec<Param>>
     {
         ret_if!(!self.starts_kind() && !self.at(Kw::EditParam), Ok(Vec::new()));
-        let (params, _) = self.parse_params_to(&[Kw::Accepting])?;
+        let (params, _, _) = self.parse_params_to(&[Kw::Accepting], false)?;
         Ok(params)
     }
 
@@ -1169,14 +1210,17 @@ impl Parser<'_>
     ///
     /// * `ends` - The words that can end it: `လက်ခံပြီး`, and `လက်ခံမည်` for an
     ///   external function.
+    /// * `rest` - Whether `နှင့် အခြားတန်ဖိုးများ` can end the list, as for an
+    ///   external function.
     ///
     /// # Returns
     ///
-    /// The parameters and the word that ended them, or a diagnostic.
-    fn parse_params_to(&mut self, ends: &[Kw]) -> PResult<(Vec<Param>, Option<Kw>)>
+    /// The parameters, the word that ended them, and whether the list ends in
+    /// `အခြားတန်ဖိုးများ`; or a diagnostic.
+    fn parse_params_to(&mut self, ends: &[Kw], rest: bool) -> PResult<ParamClause>
     {
         let outer = std::mem::replace(&mut self.in_list, true);
-        let read = self.parse_param_list(ends);
+        let read = self.parse_param_list(ends, rest);
         self.in_list = outer;
         read
     }
@@ -1187,18 +1231,22 @@ impl Parser<'_>
     /// # Arguments
     ///
     /// * `ends` - The words that can end it.
+    /// * `rest` - Whether `နှင့် အခြားတန်ဖိုးများ` can end the list.
     ///
     /// # Returns
     ///
-    /// The parameters and the word that ended them, or a diagnostic.
-    fn parse_param_list(&mut self, ends: &[Kw]) -> PResult<(Vec<Param>, Option<Kw>)>
+    /// The parameters, the word that ended them, and whether the list ends in
+    /// `အခြားတန်ဖိုးများ`; or a diagnostic.
+    fn parse_param_list(&mut self, ends: &[Kw], rest: bool) -> PResult<ParamClause>
     {
         let mut params = vec![self.parse_param()?];
         while self.eat_punct(Punct::ListSep)
         {
             params.push(self.parse_param()?);
         }
-        do_if!(self.eat(Kw::Hnint), params.push(self.parse_param()?));
+        let and = self.eat(Kw::Hnint);
+        let variadic = and && rest && self.eat(Kw::OtherValues);
+        do_if!(and && !variadic, params.push(self.parse_param()?));
         let marked = params.iter().filter(|p| p.mark.is_some()).count();
         let span = params[0].span.to(&params[params.len() - 1].span);
         do_if!(
@@ -1209,7 +1257,7 @@ impl Parser<'_>
         let closer = marked == 0 || !ends.iter().any(|kw| self.at(*kw));
         do_if!(closer, _ = self.expect_one_of(&[Kw::ListKo, Kw::Ko])?);
         let end = self.expect_one_of(ends)?;
-        Ok((params, kw_of(&end)))
+        Ok((params, kw_of(&end), variadic))
     }
 
     /// Parse one parameter: `kind name`, with

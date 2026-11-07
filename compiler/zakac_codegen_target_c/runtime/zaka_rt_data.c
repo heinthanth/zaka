@@ -1,6 +1,4 @@
-/* The runtime of a Zaka program that the Zaka Compiler C target builds: the
- * heap, lists, text and the print of each kind. Each function follows the
- * VM op of the same name, so a program prints the same here as there. */
+/* Zaka runtime - data functions */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -184,6 +182,32 @@ size_t zk_seq_len(const unsigned char *at)
     memcpy(&n, at + ZK_WORD, ZK_WORD);
     return n;
 }
+
+/**
+ * A duplicate of the octets of text or a text view that ends in a zero octet, as
+ * a C function reads a string. A zero octet inside the text ends the string
+ * there for C.
+ *
+ * @param at The address of the text.
+ * @return The duplicate on the heap, for zk_text_cstr_free; the program stops
+ *         when no heap room is left.
+ */
+char *zk_text_cstr(const unsigned char *at)
+{
+    size_t len = zk_seq_len(at);
+    char *dup = malloc(len + 1);
+    DO_IF(!dup, zk_out_of_mem(len + 1));
+    DO_IF(len, memcpy(dup, zk_seq_base(at), len));
+    dup[len] = 0;
+    return dup;
+}
+
+/**
+ * Free a duplicate zk_text_cstr made.
+ *
+ * @param dup The duplicate.
+ */
+void zk_text_cstr_free(char *dup) { free(dup); }
 
 /**
  * The third word of a plain list or text: the size of its heap block, 0

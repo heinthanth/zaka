@@ -57,6 +57,21 @@ en = "the range from %{start} to %{end} ends before it starts"
 [vm.trap.null_call]
 en = "the function value is ဗလာ, so it holds no function to call"
 
+[vm.trap.foreign_call]
+en = "the C function %{name} runs in \"zakac run\" and in native builds, not in this VM"
+
+[vm.trap.foreign_link]
+en = "the C functions of the program cannot be reached: %{reason}"
+
+[vm.trap.foreign_no_lib]
+en = "the lib \"%{lib}\" does not open (%{reason})"
+
+[vm.trap.foreign_no_name]
+en = "the lib \"%{lib}\" holds no C function %{name}"
+
+[vm.trap.foreign_bits]
+en = "the program has %{bits}-bit addresses, but this host has %{host}-bit ones"
+
 [vm.trap.no_cell_to_remove]
 en = "the list holds no cells, so it has no last cell to remove"
 

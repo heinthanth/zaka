@@ -223,6 +223,10 @@ UnknownHostFn = ("ZK0334", Level::Error),
 CalleeTwice = ("ZK0335", Level::Error),
 /// A kind alias names itself, at once or through other aliases.
 AliasLoop = ("ZK0336", Level::Error),
+/// A C function has a name that is no C name.
+NotACName = ("ZK0337", Level::Error),
+/// Two C functions of one name have different parameter or result kinds.
+CNameTwice = ("ZK0338", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.
@@ -356,6 +360,10 @@ NotAFunction = ("ZK0462", Level::Error),
 FnAddrUnclear = ("ZK0463", Level::Error),
 /// The address of an external function is taken.
 ExternalFnAddr = ("ZK0464", Level::Error),
+/// A parameter or the result of a C function has a kind C cannot take.
+KindNotAcrossC = ("ZK0465", Level::Error),
+/// A parameter of a C function carries the edit mark.
+EditAcrossC = ("ZK0466", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

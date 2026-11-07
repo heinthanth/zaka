@@ -75,6 +75,7 @@ fn raw_expr(e: &Expr) -> bool
         }
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
+        | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) => args.iter().any(raw_expr),
         ExprNode::CallValue { callee, args } =>
         {
@@ -115,7 +116,10 @@ fn raw_stmt(s: &Stmt) -> bool
                 || raw_block(block)
         }
         Stmt::Return { value, .. } => value.iter().any(raw_expr),
-        Stmt::Call { args, .. } => args.iter().any(raw_expr),
+        Stmt::Call { args, .. } | Stmt::Foreign { args, .. } =>
+        {
+            args.iter().any(raw_expr)
+        }
         Stmt::CallValue { callee, args, .. } =>
         {
             raw_expr(callee) || args.iter().any(raw_expr)

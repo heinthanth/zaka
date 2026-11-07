@@ -84,6 +84,7 @@ impl ToSexpr for Stmt
             }
             Stmt::Call { name, args, .. } => call_sexpr(name, args),
             Stmt::CallValue { callee, args, .. } => call_value_sexpr(callee, args),
+            Stmt::Foreign { func, args, .. } => foreign_sexpr(*func, args),
             Stmt::Store { addr, value, .. } =>
             {
                 list("store", [addr.to_sexpr(), value.to_sexpr()])
@@ -172,6 +173,7 @@ impl ToSexpr for Expr
             ExprNode::Call { name, args, .. } => call_sexpr(name, args),
             ExprNode::CallValue { callee, args } => call_value_sexpr(callee, args),
             ExprNode::FnAddr { name, .. } => list("fn_addr", [name.clone()]),
+            ExprNode::Foreign { func, args } => foreign_sexpr(*func, args),
             ExprNode::Host { func, args } =>
             {
                 let name: &'static str = func.into();
@@ -458,5 +460,24 @@ fn call_sexpr(name: &str, args: &[Expr]) -> String
     list(
         "call",
         std::iter::once(name.to_string()).chain(args.iter().map(ToSexpr::to_sexpr)),
+    )
+}
+
+/// `(foreign <n> args...)`: the call of the C function at index `n` of the
+/// module.
+///
+/// # Arguments
+///
+/// * `func` - Index into the C functions of the module.
+/// * `args` - The value of each parameter.
+///
+/// # Returns
+///
+/// The text.
+fn foreign_sexpr(func: u32, args: &[Expr]) -> String
+{
+    list(
+        "foreign",
+        std::iter::once(func.to_string()).chain(args.iter().map(ToSexpr::to_sexpr)),
     )
 }

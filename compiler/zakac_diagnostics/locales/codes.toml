@@ -634,6 +634,24 @@ en = "the kind alias \"%{n}\" leads back to itself"
 [codes.ZK0336.explain]
 en = """A kind alias names a kind, and that kind can be another alias. When the chain comes back to the first alias, it names no kind at all. Make one alias in the chain name a struct, an enumeration, a function kind or a built-in kind."""
 
+[codes.ZK0337.title]
+en = "C function name is no C name"
+[codes.ZK0337.message]
+en = "\"%{n}\" comes from a C lib, so its name must be a C name"
+[codes.ZK0337.help]
+en = "write the name as the lib spells it: ASCII letters, digits and \"_\", not starting with a digit"
+[codes.ZK0337.explain]
+en = """A function that comes from a C lib, \"လုပ်ဆောင်ချက် <name> သည် \"<lib>\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", calls the C function of its name in that lib. A C name holds ASCII letters, digits and \"_\" alone, and does not start with a digit."""
+
+[codes.ZK0338.title]
+en = "C function declared twice with other kinds"
+[codes.ZK0338.message]
+en = "\"%{n}\" was declared as a C function with other parameter or result kinds"
+[codes.ZK0338.help]
+en = "give each declaration of \"%{n}\" the same parameter and result kinds"
+[codes.ZK0338.explain]
+en = """Each C name names one C function, so each declaration of a C function of that name, in each file of the program and among overloads, must give it the same parameter kinds and the same result kind."""
+
 # ---------------------------------------------------------------- kinds ZK04xx
 
 [codes.ZK0401.title]
@@ -1122,6 +1140,24 @@ en = "\"%{n}\" comes from outside the program, so it has no address"
 en = "declare a function of the program that calls it, and take the address of that one"
 [codes.ZK0464.explain]
 en = """A function that comes from outside, \"ပြင်ပမှလာသော\", runs in the VM itself and has no place among the functions of the program, so no function value can hold it. A function of the program that calls it can stand in for it."""
+
+[codes.ZK0465.title]
+en = "kind that C cannot take"
+[codes.ZK0465.message]
+en = "a C function cannot take or give back a value of the kind \"%{k}\""
+[codes.ZK0465.help]
+en = "use an integer of up to 64 bits, f32, f64, a boolean, a borrowed or raw address, a struct of these, or text as a parameter"
+[codes.ZK0465.explain]
+en = """A C function takes its parameters and gives its result as whole values, laid out as in C. Integers of up to 64 bits, f32, f64, booleans, borrowed addresses and raw addresses cross, and so do structs whose fields are such kinds, structs or counted lists of them. Text crosses as a parameter: C gets a duplicate of it that ends in a zero octet. An owner would be freed when the call ends; plain lists, slices and function values have no C form; text cannot be a result, since Zaka cannot tell who frees it; and a result that can fail has no C form either. A result cannot be a borrow, since C has no place to lend from: give back a raw address. An other value, past the parameters of a C function that takes them, cannot be a struct."""
+
+[codes.ZK0466.title]
+en = "edit mark on a C parameter"
+[codes.ZK0466.message]
+en = "the C function cannot change the parameter \"%{n}\" in place"
+[codes.ZK0466.help]
+en = "drop the edit mark and pass a borrowed address of the value"
+[codes.ZK0466.explain]
+en = """A C function takes each parameter as a whole value, so it cannot change the caller's place through the edit mark. To let C write a value back, pass a borrowed address, as C passes a pointer."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 

@@ -63,6 +63,11 @@ impl FnGen<'_, '_>
             }
             Stmt::Return { value, .. } => self.return_stmt(value.as_ref()),
             Stmt::Call { func, args, .. } => self.call_stmt(Callee::Fn(*func), args),
+            Stmt::Foreign { func, args, .. } =>
+            {
+                let ret = self.shared.module.foreign[*func as usize].ret;
+                _ = self.foreign(*func, args, ret);
+            }
             Stmt::CallValue { callee, args, .. } =>
             {
                 self.call_stmt(Callee::Value(callee), args)

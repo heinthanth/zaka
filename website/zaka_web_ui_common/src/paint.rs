@@ -180,6 +180,7 @@ pub fn kw_class(kw: Kw) -> &'static str
         | Kw::Using
         | Kw::Outside
         | Kw::Coming
+        | Kw::OtherValues
         | Kw::External
         | Kw::OneFunction
         | Kw::WillAccept

@@ -86,6 +86,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("သုံး၍", Kw::Using),
     ("ပြင်ပ", Kw::Outside),
     ("လာသော", Kw::Coming),
+    ("အခြားတန်ဖိုးများ", Kw::OtherValues),
     ("လုပ်ဆောင်ချက်တစ်ခု", Kw::OneFunction),
     ("လက်ခံမည်", Kw::WillAccept),
     ("လက်ခံသော", Kw::AcceptingRel),

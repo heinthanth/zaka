@@ -600,6 +600,162 @@ writing the headers.
 error[ZK0334]: the VM serves no function "ဟိုဟို" with these parameter and result kinds
 ```
 
+## C functions
+
+A text with the name of a shared lib in place of `ပြင်ပ` makes a C function:
+`"libm" မှလာသော`. The function is the C function of its name in that lib, so its name is a
+C name: ASCII letters, digits and `_`, not starting with a digit (ZK0337). Each C function
+names its lib, libc too (`"libc"`). The header has the forms of the table above, and a
+call is a call like each other.
+
+```zaka
+လုပ်ဆောင်ချက် abs သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+၃၂ ဘစ် ကိန်းပြည့် n ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် abs ကို -၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၄၂
+```
+
+C takes each parameter and gives its result as a whole value, laid out as in C, so the
+kinds that cross are those C has:
+
+| Kind | In C |
+| --- | --- |
+| integers of 8 to 64 bits, `ကိန်းပြည့်` | `int8_t` to `int64_t`, `uint8_t` to `uint64_t` |
+| `၃၂ ဘစ် ဒဿမကိန်း`, `ဒဿမကိန်း` | `float`, `double` |
+| `မှန်မှားတန်ဖိုး` | `_Bool` |
+| a borrowed address, a raw address | a pointer |
+| a struct whose fields are these kinds, structs or counted lists of them | a struct, passed whole |
+| `စာသား`, `စာသား တစ်စိတ်တစ်ပိုင်း`, as a parameter | `const char *` |
+
+C reads a string up to a zero octet, which Zaka text does not hold, so a text parameter
+reaches C as the address of a duplicate of its u8s with a zero octet after them. The duplicate
+lives until the call ends: C reads it but cannot change the text, and a zero octet
+inside the text ends the string there for C.
+
+```zaka
+လုပ်ဆောင်ချက် strlen သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စာသား s ကို လက်ခံပြီး လက္ခဏာမဲ့ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် strlen ကို "မောင်" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၁၅
+```
+
+Each other kind is ZK0465: an owner, which the call would free as it ends; plain lists,
+slices and function values, which C has no form for; text as a result, since Zaka cannot
+tell who frees what C gives back; and a result that can fail. A result cannot be a borrow,
+since C has no place to lend from: it gives back a raw address. A parameter with the edit
+mark is ZK0466; to let C write a value back, pass a borrowed address, as `frexp` takes
+its `int *`:
+
+```zaka
+လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+ဒဿမကိန်း x၊ ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ e တို့ကို လက်ခံပြီး ဒဿမကိန်း ရလဒ် ကို ပြန်ပေးမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ထပ်ကိန်း သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် frexp ကို ၈.၀၊ ထပ်ကိန်း ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ထပ်ကိန်း ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၀.၅
+၄
+```
+
+```zaka-error ZK0465
+လုပ်ဆောင်ချက် getenv သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စာသား n ကို လက်ခံပြီး စာသား ရလဒ် ကို ပြန်ပေးမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0465]: a C function cannot take or give back a value of the kind "text"
+```
+
+Each declaration of one C name, in each file and among overloads, gives it the same
+parameter and result kinds (ZK0338). Like each function that comes from outside, a C
+function has no address (ZK0464): a function of the program that calls it stands in for
+it.
+
+### Other values
+
+A C function whose parameters end in `...`, as `printf` does, takes more arguments than
+it names. Its header ends the parameters with `နှင့် အခြားတန်ဖိုးများ` ("and other
+values"), after the last parameter it names:
+
+```text
+... စာသား fmt နှင့် အခြားတန်ဖိုးများ ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+```
+
+A call gives an argument for each parameter, then each other value it wants (too few is
+ZK0314). An other value has the kind it has on its own: a number literal is a
+`ကိန်းပြည့်` or a `ဒဿမကိန်း`. C reads it as C promotes it: an integer narrower than 32
+bits and a boolean as an `int`, a `၃၂ ဘစ် ဒဿမကိန်း` as a `double`. Text goes as a duplicate
+that ends in a zero octet; a struct cannot be an other value (ZK0465). The format must
+match the kinds, as in C: `%ld` for a `ကိန်းပြည့်`, which has 64 bits, and `%d` for a
+`၃၂ ဘစ် ကိန်းပြည့်` or a boolean. Functions the host serves take no other values (ZK0334).
+
+```zaka
+လုပ်ဆောင်ချက် snprintf သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+ငှားထားသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ buf၊ လက္ခဏာမဲ့ ကိန်းပြည့် size၊ စာသား fmt နှင့် အခြားတန်ဖိုးများ ကို
+လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဘောင် သည် အကွက် ၃၂ ခုရှိသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ရေ သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် snprintf ကို ဘောင် ၏ အကွက် ၀ ၏ လိပ်စာ၊ ၃၂၊ "%s=%ld"၊ "x"၊ ၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+(ဘောင် ၏ အကွက် ၀ မှစ၍ ရေ ကွက်) ကို စာသား တစ်စိတ်တစ်ပိုင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+x=42
+```
+
+### The lib
+
+The text before `မှလာသော` is a lib name or a path to the file of a lib. A name, such as
+`"libsqlite3"`, is looked up where the host keeps its libs. A path holds a `/` or a `\`,
+or ends in `.so`, `.dylib` or `.dll`, such as `"./libpair.so"` or `"/opt/x/libfoo.dylib"`.
+A relative path starts at the folder of the file that declares the function, as an import
+does, so the program finds its lib wherever it runs from.
+
+### How each build calls C
+
+- `zakac run` opens each lib as the program first calls a C function: `libX` is the file
+  `libX.dylib`, `libX.so` or `X.dll`, a path opens as it is, and a C name the lib does not
+  hold is looked up in the process, which holds libc. An address that lies in a block of
+  the VM reaches C as the native address of that octet, so C reads and writes the block in
+  place. After each call the VM writes out what C holds back for its streams, so the text
+  a C function prints comes in order with the text the program prints. A lib that does
+  not open, or a C name no lib holds, stops the program with `ForeignLink`.
+- The VM in the browser opens no lib: a call of a C function stops the program with
+  `ForeignCall`.
+- `zakac build --target c` declares each C function in a C file of its own and links
+  `-lX` for each lib `libX` other than libc and libm, and a lib given as a path as it is,
+  with its folder as a run path. Give the folder of a named lib with
+  `--ld-flag -L<folder>`. On macOS a lib given as a path must name itself with an
+  absolute path or `@rpath/...` (its install name), since a bare file name there is
+  looked up in the folder the program starts from.
+
+C does what C does: a C function that writes past a block, or keeps an address after
+the call, harms the run as it would harm a C program. A native address that C gives
+back, and that lies in no block, passes back to C as it is, but the VM cannot read
+through it. Function values cannot cross, so C cannot call back into the program.
+
 ## Recursion
 
 A function can call itself, at once or through other functions. Nothing marks a function
@@ -1073,6 +1229,10 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 | ZK0433 | a place a call changes, in another argument of the same call |
 | ZK0440 | a start block parameter that is no `စာသား စာရင်း`, or a third one |
 | ZK0441 | a start block result that is no integer |
+| ZK0337 | a C function whose name is no C name |
+| ZK0338 | two declarations of one C function with other kinds |
+| ZK0465 | a parameter or a result of a C function with a kind C cannot take |
+| ZK0466 | the edit mark on a parameter of a C function |
 | ZK0443 to ZK0449 | the failing-function mistakes of [Errors and results](error-handling.md#errors) |
 
 The text of each message is in [Error messages](../reference/errors.md).

@@ -438,7 +438,8 @@ a function kind, the number of the function plus one.
 An external function has one statement, `ExprNode::Host`: the flow reads each argument (the
 borrowed address of a parameter) and gives a value with no roots, a fresh one, and the
 digest of the function follows from that statement as for each other function, so its
-parameters are read and dropped as usual and nothing escapes into the host.
+parameters are read and dropped as usual and nothing escapes into the host. A C function has `ExprNode::Foreign` (or `Stmt::Foreign`) in its place, read as
+the host form is: each argument is a read, and the result is a fresh value. A call of a C function that takes other values is that statement at the call site, with an argument for each other value too; a text among them that is built is held in a hidden slot, which the scope end drops.
 
 ## Options
 
