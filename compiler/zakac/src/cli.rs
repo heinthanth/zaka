@@ -78,9 +78,9 @@ impl Command for Zakac
             .add_subcommand::<ZakacBurmeseSegmenter>(Some("segment"))
             .add_subcommand::<ZakacLexer>(Some("lex"))
             .add_subcommand::<ZakacParser>(Some("parse"))
-            .add_subcommand::<ZakacSemcheck>(Some("semantic-check"))
+            .add_subcommand::<ZakacSemcheck>(Some("semcheck"))
             .add_subcommand::<ZakacIrBuilder>(Some("irgen"))
-            .add_subcommand::<ZakacBorrowChecker>(Some("borrow-check"))
+            .add_subcommand::<ZakacBorrowChecker>(Some("borrowck"))
             .add_subcommand::<ZakacCodegen>(Some("codegen"))
             .add_subcommand::<ZakaVm>(Some("run"))
     }

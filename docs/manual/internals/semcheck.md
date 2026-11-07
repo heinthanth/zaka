@@ -255,7 +255,7 @@ kinds, even on a 64-bit platform, and neither widens to the other.
 အကယ်၍ အသက် သည် ၁၈ ထက် ကြီးလျှင် အသက် ကို ပြသပါ။
 ```
 
-`zakac semantic-check` writes the tree again and then:
+`zakac semcheck` writes the tree again and then:
 
 ```text
 kinds:

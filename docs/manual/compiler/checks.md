@@ -18,7 +18,7 @@ in Learn shows the settings in the Explorer.
 | report what cannot be proved | `--mem-strict` | **Strict ownership check** | off |
 | refuse raw addresses | `--no-raw` | **Forbid raw addresses** | off |
 
-Each one works on `borrow-check`, `codegen` and `run`, and `--no-raw` on `irgen` too.
+Each one works on `borrowck`, `codegen` and `run`, and `--no-raw` on `irgen` too.
 See [Commands](commands.md).
 
 ## What each setting changes

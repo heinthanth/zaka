@@ -46,7 +46,7 @@ web pages. One `Cargo.toml` at the root lists them with `members = ["compiler/*"
 
 | Crate | Job |
 | --- | --- |
-| `zakac` | the `zakac` command: one program with the subcommands `segment`, `lex`, `parse`, `semantic-check`, `irgen`, `borrow-check`, `codegen` and `run` |
+| `zakac` | the `zakac` command: one program with the subcommands `segment`, `lex`, `parse`, `semcheck`, `irgen`, `borrowck`, `codegen` and `run` |
 | `zakac_span` | source files, the source map, positions and spans, and the text normalizer (NFC plus a fixed order of Burmese signs) |
 | `zakac_burmese_segmenter` | cuts text into vannas, digits and other chars; the `segment` subcommand |
 | `zakac_lexer` | tokens, particles, comments and string tables |

@@ -52,7 +52,7 @@ const OVERFLOW_ARG: &str = "overflow";
 /// The flag that names each statement that duplicates text or a list.
 const WARN_DUPLICATES_ARG: &str = "warn_duplicates";
 
-/// The `zakac_borrow_checker` command, `zakac borrow-check` (or `zakac mkbck`)
+/// The `zakac_borrow_checker` command, `zakac borrowck` (or `zakac mkbck`)
 /// as a subcommand.
 pub struct ZakacBorrowChecker
 {

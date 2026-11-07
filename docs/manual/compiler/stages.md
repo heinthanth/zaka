@@ -158,7 +158,7 @@ above has none. See [Natural wording](../language/naturalness.md).
 
 ### Names and kinds
 
-`zakac semantic-check` resolves each name to its declaration, works out the *kind* of each
+`zakac semcheck` resolves each name to its declaration, works out the *kind* of each
 expression, and checks that the kinds fit. It owns **ZK03** (names and scopes) and
 **ZK04** (kinds), and also the kind rules of owners and borrows: ZK0705 and ZK0713 to
 ZK0717. The artifact keeps the tree and adds a table from each expression to its kind:
@@ -191,7 +191,7 @@ kind, a division with the constant zero as divisor, a constant cell number outsi
 
 ### Borrow check
 
-`zakac borrow-check` follows each owner and each borrow of the program through the IR,
+`zakac borrowck` follows each owner and each borrow of the program through the IR,
 and reports **ZK07**: a block used after it moved, a borrow that outlives its block, a
 block never given back, a read past the end of a block. The sentence above holds no
 pointer, so there is nothing to find. The artifact adds a *digest* of each function: what
@@ -252,9 +252,9 @@ artifact of another.
 | segmenter | `segment` | the pieces (no diagnostics) |
 | lexer | `lex` | the tokens, the text of each string, the comments |
 | parser | `parse` | the tree |
-| names and kinds | `semantic-check` | the tree and the kind of each expression |
+| names and kinds | `semcheck` | the tree and the kind of each expression |
 | IR builder, folding | `irgen` | the IR after folding |
-| borrow check | `borrow-check` | the IR and the digest of each function |
+| borrow check | `borrowck` | the IR and the digest of each function |
 | codegen | `codegen` | the module of ops, the one `run` reads |
 
 [Commands](commands.md) lists the options and the file extensions.

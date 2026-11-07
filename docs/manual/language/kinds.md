@@ -47,7 +47,7 @@ An integer kind is built from three parts in a fixed order:
 ### The platform size
 
 `isize` and `usize` take their width from the platform: 64 bits unless set otherwise.
-`zakac run --platform-bits N` (and `semantic-check`) picks 8, 16, 32, 64 or 128 instead. Plain
+`zakac run --platform-bits N` (and `semcheck`) picks 8, 16, 32, 64 or 128 instead. Plain
 `ကိန်းပြည့်` is the right choice when no size matters, and it is the kind that an
 integer literal gets when its place asks for nothing else.
 

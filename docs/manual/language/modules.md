@@ -129,7 +129,7 @@ Each import in it is ZK0232, and the program does not go on to the check.
 
 ## The compiler
 
-- `parse`, `semantic-check`, `irgen`, `borrow-check`, `codegen` and `run` read the imports
+- `parse`, `semcheck`, `irgen`, `borrowck`, `codegen` and `run` read the imports
   of their input. `segment` and `lex` work on the one file given to them.
 - The artifacts of those stages hold each imported file, its name and its text, under
   `imports`, so a saved artifact can still show the line of a diagnostic in an imported

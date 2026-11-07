@@ -453,7 +453,7 @@ text with no slot to go to, such as a printed format, and `%cell` for the value 
 holds the two choices of the generator: `results` (`--results`) and `scratch`
 (`--scratch`), both below.
 
-`overflow` is the `--overflow` mode the borrow-check options hold: with `stop`, the default, the VM
+`overflow` is the `--overflow` mode the borrowck options hold: with `stop`, the default, the VM
 works `prefix` and `infix` out with checked arithmetic and traps on a result outside its
 kind. `wrap op` wraps in each mode; the generator emits it for the steps and the distance
 of a counted loop, which count on two's complement arithmetic.
@@ -635,7 +635,7 @@ local of the start block.
 
 ## The artifacts
 
-`zakac irgen` writes the folded IR (`.zkirt` text, `.zkir` raw), `zakac borrow-check`
+`zakac irgen` writes the folded IR (`.zkirt` text, `.zkir` raw), `zakac borrowck`
 the IR and the digests, and `zakac codegen` the ops (`.zkbct`, `.zkbc`) or, with `--asm`,
 the listing (`.zkasm`). Text artifacts start with a header line such as
 `# zakac-codegen-artifact v1` and are the form of the golden files; the raw form is the

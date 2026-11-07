@@ -141,7 +141,7 @@ Zaka ၇
 ```
 
 Line 3 is named; line 4, the move, is not. The flag belongs to the borrow checker, so
-`zakac borrow-check --warn-duplicates` takes it too.
+`zakac borrowck --warn-duplicates` takes it too.
 
 ## Removing a duplicate
 

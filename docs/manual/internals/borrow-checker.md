@@ -387,7 +387,7 @@ first; a group that calls itself runs again until none of its digests grows (a f
 so recursion and mutual recursion are covered. The global borrows add a loop around this:
 a global borrow whose starting value comes from a call takes its roots from a digest, and a function
 that reads the global starts from those roots. `roots_and_digests` repeats until the roots
-stop growing. Then `main` runs last. `zakac borrow-check` prints the digests; for
+stop growing. Then `main` runs last. `zakac borrowck` prints the digests; for
 `ရှင်းပစ်` above:
 
 ```text
@@ -443,7 +443,7 @@ parameters are read and dropped as usual and nothing escapes into the host.
 ## Options
 
 `BorrowCheckOptions { check: MemCheck, strict: bool }`, chosen with `--mem-check` and
-`--mem-strict` on `borrow-check`, `codegen` and `run`.
+`--mem-strict` on `borrowck`, `codegen` and `run`.
 
 | Option | Effect |
 | --- | --- |

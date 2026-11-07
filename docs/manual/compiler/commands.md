@@ -22,9 +22,9 @@ stage made, the *artifact*. The `run` command goes to the end and runs the progr
 | `segment` | the word segmenter | the pieces of the text | `.zkseg` / `.zksegt` |
 | `lex` | the lexer | the tokens | `.zktok` / `.zktokt` |
 | `parse` | the parser | the tree | `.zkast` / `.zkastt` |
-| `semantic-check` | names, kinds and natural wording | the tree and the kind of each expression | `.zksem` / `.zksemt` |
+| `semcheck` | names, kinds and natural wording | the tree and the kind of each expression | `.zksem` / `.zksemt` |
 | `irgen` | the IR builder and constant folding | the IR | `.zkir` / `.zkirt` |
-| `borrow-check` | the ownership check | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
+| `borrowck` | the ownership check | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
 | `codegen` | the code generator | the ops for the VM | `.zkbc` / `.zkbct` |
 | `run` | the VM | nothing: the program runs | |
 
@@ -121,7 +121,7 @@ it was written are the checks it carries.
 
 ## Options of the compile stages
 
-These options belong to `semantic-check` and the stages after it, and to `run`.
+These options belong to `semcheck` and the stages after it, and to `run`.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -150,7 +150,7 @@ $ zakac irgen --fold none sum.zaka
 With `--fold none` the IR of `sum.zaka` keeps `add` with `1` and `2` as its two sides;
 without it, the IR holds the constant `3`.
 
-These belong to `borrow-check` and the stages after it, and to `run`. These are explained
+These belong to `borrowck` and the stages after it, and to `run`. These are explained
 in [Pointer checks](checks.md).
 
 | Option | Default | Meaning |
@@ -198,7 +198,7 @@ $ echo 'abc ၁' | zakac segment --coalesce-non-burmese
 (The `span` of each piece is left out here.) See [Finding words in
 Burmese](../concepts/segmenting.md).
 
-## lex, parse, semantic-check, irgen, borrow-check
+## lex, parse, semcheck, irgen, borrowck
 
 These five take the input and output options and the compile options listed above for
 their stage (`lex` and `parse` have none), and nothing else. `lex` segments the text
