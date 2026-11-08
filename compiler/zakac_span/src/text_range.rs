@@ -1,7 +1,8 @@
 use zakac_rust_sugars::ret_if;
-use zakac_span::pos::Pos;
-use zakac_span::source_file::SourceFile;
-use zakac_span::span::Span;
+
+use crate::pos::Pos;
+use crate::source_file::SourceFile;
+use crate::span::Span;
 
 /// A region of the text the user wrote, in UTF-8 offsets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

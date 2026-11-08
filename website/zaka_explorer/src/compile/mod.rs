@@ -65,7 +65,7 @@ pub mod graph;
 pub mod ir_tree;
 pub mod s_expr;
 pub mod samples;
-pub mod spans;
+pub use zakac_span::text_range as spans;
 pub mod timing;
 pub mod tree;
 

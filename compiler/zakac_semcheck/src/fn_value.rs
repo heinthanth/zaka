@@ -61,6 +61,7 @@ impl Checker
             (Some(sigs), _) => Some(sigs),
             (None, Some(binding)) =>
             {
+                self.refer(&callee.name, callee.span, binding.home());
                 self.value_target(callee.name, callee.span, binding.kind?)
             }
             (None, None) =>
@@ -143,6 +144,7 @@ impl Checker
             None
         );
         do_if!(sigs.len() > 1, _ = self.chosen.insert(name.span, one.inner));
+        self.refer(&name.name, name.span, one.decl);
         Some(DataKind::Fn(sig_kind(one)))
     }
 }

@@ -1,0 +1,35 @@
+name = "Zaka"
+scopeName = "source.zaka"
+
+[[patterns]]
+include = "#comment"
+
+[[patterns]]
+include = "#string"
+
+[[patterns]]
+include = "#char"
+
+[[patterns]]
+include = "#number"
+
+[repository.comment]
+name = "comment.line.zaka"
+match = "(//|(?<![^\\s])မှတ်ချက်(?=\\s)).*$"
+
+[repository.string]
+name = "string.quoted.double.zaka"
+begin = "\""
+end = "\""
+
+[[repository.string.patterns]]
+name = "constant.character.escape.zaka"
+match = "\\\\."
+
+[repository.char]
+name = "string.quoted.single.zaka"
+match = "'(\\\\.|[^'\\\\])'"
+
+[repository.number]
+name = "constant.numeric.zaka"
+match = "(?<![\\p{L}\\p{M}_])[0-9၀-၉]+(\\.[0-9၀-၉]+)?"

@@ -135,6 +135,10 @@ impl Checker
             self.report(rd::unknown_enum(n.qualifier.span, written, fix.as_deref()));
             return None;
         };
+        let (q, m) = (&n.qualifier, &n.member);
+        do_if!(let Some(d) = self.decls.name(&owner.name), self.refer(&q.name, q.span, d));
+        let member = self.decls.member(&owner.name, &m.name);
+        do_if!(let Some(d) = member, self.refer(&m.name, m.span, d));
         ret_if!(owner.member(&n.member.name).is_some(), Some(DataKind::Enum(owner)));
         self.report(rd::unknown_member(n.member.span, &owner.name, &n.member.name));
         None
@@ -192,7 +196,11 @@ impl Checker
     /// Its declared kind, or `None` when it is not declared.
     fn infer_name(&mut self, n: &NameExpr) -> Option<DataKind>
     {
-        ret_if!(let Some(binding) = self.scopes.lookup(&n.name), binding.kind);
+        if let Some(binding) = self.scopes.lookup(&n.name)
+        {
+            self.refer(&n.name, n.span, binding.home());
+            return binding.kind;
+        }
         self.report(self.with_hidden(rd::undeclared_name(n.span, &n.name), &n.name));
         None
     }

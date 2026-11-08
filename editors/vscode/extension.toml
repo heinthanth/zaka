@@ -1,0 +1,29 @@
+publisher = "heinthanth"
+displayName = "Zaka"
+categories = ["Programming Languages"]
+
+[engines]
+vscode = "^1.91.0"
+
+[dependencies]
+vscode-languageclient = "^11.0.0"
+
+[[contributes.languages]]
+id = "zaka"
+aliases = ["Zaka", "စံကား"]
+extensions = [".zaka", ".zk"]
+configuration = "./.cache/language-configuration.json"
+icon = { light = "./icons/zaka-light.svg", dark = "./icons/zaka-dark.svg" }
+
+[[contributes.grammars]]
+language = "zaka"
+scopeName = "source.zaka"
+path = "./.cache/zaka.tmLanguage.json"
+
+[contributes.configuration]
+title = "Zaka"
+
+[contributes.configuration.properties."zaka.server.path"]
+type = "string"
+default = "zakac"
+description = "The zakac command that runs the language server (zakac lsp): a name on the PATH, an absolute path, or a path from the first workspace folder, such as target/debug/zakac."

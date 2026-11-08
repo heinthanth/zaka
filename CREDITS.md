@@ -65,6 +65,7 @@ thanks to all of these projects.
 | [const_for](https://github.com/JENebel/const_for) | 0.1.6 | MIT |
 | [etcetera](https://github.com/lunacookies/etcetera) | 0.11.0 | MIT OR Apache-2.0 |
 | [fontdb](https://github.com/RazrFalcon/fontdb) | 0.24.0 | MIT |
+| [gen-lsp-types](https://github.com/ribru17/gen-lsp-types) | 0.11.0 | MIT |
 | [headless_chrome](https://github.com/rust-headless-chrome/rust-headless-chrome) | 1.0.22 | MIT |
 | [js-sys](https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys) | 0.3.105 | MIT OR Apache-2.0 |
 | [leptos](https://github.com/leptos-rs/leptos) | 0.8.22 | MIT |
@@ -85,6 +86,7 @@ thanks to all of these projects.
 | [leptos_router](https://github.com/leptos-rs/leptos) | 0.8.17 | MIT |
 | [libffi](https://github.com/libffi-rs/libffi-rs) | 5.2.0 | MIT OR Apache-2.0 |
 | [libloading](https://github.com/nagisa/rust_libloading/) | 0.9.0 | ISC |
+| [lsp-server](https://github.com/rust-lang/rust-analyzer/tree/master/lib/lsp-server) | 0.10.0 | MIT OR Apache-2.0 |
 | [num_enum](https://github.com/illicitonion/num_enum) | 0.7.6 | BSD-3-Clause OR MIT OR Apache-2.0 |
 | [postcard](https://github.com/jamesmunns/postcard) | 1.1.3 | MIT OR Apache-2.0 |
 | [pulldown-cmark](https://github.com/raphlinus/pulldown-cmark) | 0.13.5 | MIT |
@@ -96,6 +98,7 @@ thanks to all of these projects.
 | [serde](https://github.com/serde-rs/serde) | 1.0.229 | MIT OR Apache-2.0 |
 | [serde-saphyr](https://github.com/bourumir-wyngs/serde-saphyr) | 1.2.0 | MIT OR Apache-2.0 |
 | [serde-wasm-bindgen](https://github.com/RReverser/serde-wasm-bindgen) | 0.6.5 | MIT |
+| [serde_json](https://github.com/serde-rs/json) | 1.0.154 | MIT OR Apache-2.0 |
 | [sha2](https://github.com/RustCrypto/hashes) | 0.11.0 | MIT OR Apache-2.0 |
 | [shadow-rs](https://github.com/baoyachi/shadow-rs) | 2.0.0 | MIT AND Apache-2.0 |
 | [strum](https://github.com/Peternator7/strum) | 0.28.0 | MIT |
@@ -103,6 +106,7 @@ thanks to all of these projects.
 | [tempfile](https://github.com/Stebalien/tempfile) | 3.27.0 | MIT OR Apache-2.0 |
 | [termcolor](https://github.com/BurntSushi/termcolor) | 1.4.1 | Unlicense OR MIT |
 | [thiserror](https://github.com/dtolnay/thiserror) | 2.0.21 | MIT OR Apache-2.0 |
+| [toml](https://github.com/toml-rs/toml) | 1.1.6+spec-1.1.0 | MIT OR Apache-2.0 |
 | [turf](https://github.com/myFavShrimp/turf) | 0.10.1 | MIT |
 | [unicode-ident](https://github.com/dtolnay/unicode-ident) | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 |
 | [unicode-normalization](https://github.com/unicode-rs/unicode-normalization) | 0.1.26 | (MIT OR Apache-2.0) AND Unicode-3.0 |

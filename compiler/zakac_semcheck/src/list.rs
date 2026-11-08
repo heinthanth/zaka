@@ -407,7 +407,20 @@ impl Checker
             found.is_none(),
             self.report(rd::unknown_field(field.span, &s.name, &field.name))
         );
+        self.refer_field(&s.name, field);
         found
+    }
+
+    /// Record a field name with the field it names.
+    ///
+    /// # Arguments
+    ///
+    /// * `owner` - The struct name.
+    /// * `field` - The field name where it stands.
+    fn refer_field(&mut self, owner: &str, field: &Ident)
+    {
+        let decl = self.decls.field(owner, &field.name);
+        do_if!(let Some(d) = decl, self.refer(&field.name, field.span, d));
     }
 
     /// Infer a struct literal: each field it sets takes the kind of that
@@ -424,6 +437,7 @@ impl Checker
     {
         let name = &n.name;
         let kind = self.structs.get(&name.name).copied();
+        do_if!(let Some(d) = self.decls.name(&name.name), self.refer(&name.name, name.span, d));
         do_if!(
             kind.is_none(),
             self.report(rd::unknown_kind_name(name.span, &name.name))
@@ -438,6 +452,7 @@ impl Checker
                 twice,
                 self.report(rd::field_set_twice(field.span, &name.name, &field.name))
             );
+            do_if!(let Some(s) = s, self.refer_field(&s.name, field));
             let want = s.and_then(|s| s.field(&field.name)).map(|(_, k)| k);
             let unknown = s.filter(|_| want.is_none());
             let unknown =

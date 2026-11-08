@@ -16,6 +16,7 @@ base64 = { workspace = true }
 bon = { workspace = true }
 codee = { workspace = true }
 console_error_panic_hook = { workspace = true }
+gen-lsp-types = { workspace = true }
 js-sys = { workspace = true }
 leptos = { workspace = true }
 leptos-scoped-style = { workspace = true }
@@ -49,6 +50,7 @@ zakac_diagnostics = { workspace = true }
 zakac_i18n = { workspace = true }
 zakac_ir_builder = { workspace = true }
 zakac_lexer = { workspace = true }
+zakac_lsp = { workspace = true }
 zakac_naturalness = { workspace = true }
 zakac_parser = { workspace = true }
 zakac_reporter = { workspace = true }

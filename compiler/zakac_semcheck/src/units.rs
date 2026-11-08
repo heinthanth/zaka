@@ -141,18 +141,19 @@ fn private_struct<'k>(kind: &'k Kind, unit: u32, homes: &StructHomes)
 }
 
 /// Report each start block after the first, a file that is run with no start
-/// block, and each statement that runs in place at the top level of the file
-/// that is run. A start block or a statement in an imported file is reported
-/// as a statement there.
+/// block when it needs one, and each statement that runs in place at the top
+/// level of the file that is run. A start block or a statement in an imported
+/// file is reported as a statement there.
 ///
 /// # Arguments
 ///
 /// * `program` - The tree.
+/// * `needs_start` - Whether the file that is run needs a start block.
 ///
 /// # Returns
 ///
 /// The diagnostics.
-pub(crate) fn start_rules(program: &Program) -> Vec<Diagnostic>
+pub(crate) fn start_rules(program: &Program, needs_start: bool) -> Vec<Diagnostic>
 {
     let stmts = program.stmts.iter().enumerate();
     let root: Vec<&Stmt> = stmts
@@ -165,7 +166,7 @@ pub(crate) fn start_rules(program: &Program) -> Vec<Diagnostic>
     let top = root.iter().filter(|s| runs_in_place(s));
     diags.extend(top.map(|s| rd::top_level_stmt(s.span())));
     let file_start = root.first().map_or(program.span, |s| s.span()).shrink_to_lo();
-    do_if!(starts.is_empty(), diags.push(rd::no_start(file_start)));
+    do_if!(needs_start && starts.is_empty(), diags.push(rd::no_start(file_start)));
     diags
 }
 
@@ -352,6 +353,7 @@ impl Checker
         let taken = self.fns.contains_key(&name.name);
         let diag = rd::duplicate_function(name.span, &name.name);
         ret_if!(taken, self.report(diag));
+        do_if!(let Some(first) = sigs.first(), self.refer(&name.name, name.span, first.decl));
         let sigs = sigs.into_iter().map(|sig| FnSig { exported: false, ..sig });
         self.fns.insert(name.name, sigs.collect());
     }
@@ -364,7 +366,9 @@ impl Checker
     /// * `binding` - What it stands for in its file.
     fn import_binding(&mut self, name: &Ident, binding: Binding)
     {
-        let binding = Binding { span: name.span, exported: false, ..binding };
+        self.refer(&name.name, name.span, binding.home());
+        let from = Some(binding.home());
+        let binding = Binding { span: name.span, from, exported: false, ..binding };
         let fresh = self.scopes.declare(name.name, binding).is_ok();
         do_if!(!fresh, self.report(rd::redeclaration(name.span, &name.name)));
     }

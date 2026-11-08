@@ -16,6 +16,7 @@ mod ops;
 mod overloads;
 mod place;
 mod proof;
+mod refs;
 mod scope;
 pub mod semcheck;
 mod struct_check;

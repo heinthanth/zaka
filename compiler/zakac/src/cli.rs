@@ -16,6 +16,7 @@ use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
 use zakac_ir_builder::cli::ZakacIrBuilder;
 use zakac_lexer::cli::ZakacLexer;
+use zakac_lsp::cli::ZakacLsp;
 use zakac_parser::cli::ZakacParser;
 use zakac_rust_sugars::ret_if;
 use zakac_semcheck::cli::ZakacSemcheck;
@@ -84,6 +85,7 @@ impl Command for Zakac
             .add_subcommand::<ZakacBorrowChecker>(Some("borrowck"))
             .add_subcommand::<ZakacBuild>(Some("build"))
             .add_subcommand::<ZakaVm>(Some("run"))
+            .add_subcommand::<ZakacLsp>(Some("lsp"))
     }
 
     /// Construct this command wrapper from a finished [`CommandSetup`].

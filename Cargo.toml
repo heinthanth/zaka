@@ -1,6 +1,8 @@
 [workspace]
 resolver = "3"
-members = ["compiler/*", "website/*"]
+members = ["compiler/*", "website/*", "editors/vscode"]
+# Zed builds its extension on its own, with the target folder inside it.
+exclude = ["editors/zed"]
 default-members = ["compiler/zakac"]
 
 [workspace.package]
@@ -18,6 +20,7 @@ codee = "0.3.5"
 console_error_panic_hook = "0.1.7"
 const_for = "0.1.6"
 etcetera = "0.11.0"
+gen-lsp-types = { version = "0.11.0", features = ["url"] }
 fontdb = "0.24.0"
 grass = "0.13.4"
 headless_chrome = { version = "1.0.22", features = ["fetch"] }
@@ -42,6 +45,7 @@ leptos-use-window = "0.20"
 leptos-use-window-size = "0.20"
 libffi = "5.2"
 libloading = "0.9"
+lsp-server = "0.10.0"
 num_enum = "0.7.6"
 postcard = { version = "1.1.3", features = ["alloc"] }
 pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
@@ -88,6 +92,7 @@ zakac_host_errors = { path = "compiler/zakac_host_errors" }
 zakac_i18n = { path = "compiler/zakac_i18n" }
 zakac_ir_builder = { path = "compiler/zakac_ir_builder" }
 zakac_lexer = { path = "compiler/zakac_lexer" }
+zakac_lsp = { path = "compiler/zakac_lsp" }
 zakac_parser = { path = "compiler/zakac_parser" }
 zakac_reporter = { path = "compiler/zakac_reporter" }
 zakac_rust_sugars = { path = "compiler/zakac_rust_sugars" }

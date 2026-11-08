@@ -7,5 +7,6 @@ pub mod pos;
 pub mod source_file;
 pub mod source_map;
 pub mod span;
+pub mod text_range;
 
 pub use burmese_normalizer::continues_cluster;

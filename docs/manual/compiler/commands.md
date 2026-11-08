@@ -27,11 +27,13 @@ stage made, the *artifact*. The `run` command goes to the end and runs the progr
 | `borrowck` | the ownership check | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
 | `build` | the code generator of a target | the ops of the VM (`--target vm`), or an executable through C (`--target c`) | `.zkc` / `.zkct` |
 | `run` | the VM | nothing: the program runs | |
+| `lsp` | the ownership check, for each file an editor holds open | errors, colors and hovers, to the editor | |
 
 Each stage also builds as a program of its own (`zakac_lexer`, `zakac_parser`,
 `zakac_semcheck`, `zakac_ir_builder`, `zakac_borrow_checker`, `zakac_burmese_segmenter`,
 `zaka_vm`) with the same options as its command. Each target of `build` does too:
-`zakac_codegen_target_vm` and `zakac_codegen_target_c`.
+`zakac_codegen_target_vm` and `zakac_codegen_target_c`; and so does the language server,
+`zakac_lsp`.
 
 ## A small session
 
@@ -391,6 +393,12 @@ answer within a tenth of a second, or moves the cursor another distance, gets no
 
 Without color, as in a pipe, the rows are drawn, one cell per code point. See [How a
 message is set out](diagnostics.md#how-a-message-is-set-out).
+
+## lsp
+
+`zakac lsp` takes no input and no options: it serves the Language Server Protocol over
+standard input and output until the editor shuts it down. [Editors](editors.md) tells
+what it shows and how to set it up.
 
 ## Exit codes
 

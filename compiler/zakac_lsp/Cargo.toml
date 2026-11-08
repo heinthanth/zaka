@@ -1,0 +1,36 @@
+[package]
+name = "zakac_lsp"
+version = "0.1.0"
+edition.workspace = true
+
+[[bin]]
+name = "zakac_lsp"
+path = "src/main.rs"
+required-features = ["server"]
+
+[features]
+# The stdio server and the `lsp` command; without it, the crate is the logic
+# alone, which the explorer builds for the browser.
+server = ["dep:lsp-server", "dep:zakac_cli_common"]
+
+[dependencies]
+bon = { workspace = true }
+gen-lsp-types = { workspace = true }
+lsp-server = { workspace = true, optional = true }
+rust-i18n = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+zakac_ast = { workspace = true }
+zakac_borrow_checker = { workspace = true }
+zakac_cli_common = { workspace = true, optional = true }
+zakac_diagnostics = { workspace = true }
+zakac_i18n = { workspace = true }
+zakac_ir_builder = { workspace = true }
+zakac_lexer = { workspace = true }
+zakac_parser = { workspace = true }
+zakac_rust_sugars = { workspace = true }
+zakac_semcheck = { workspace = true }
+zakac_span = { workspace = true }
+
+[build-dependencies]
+cargo-build = { workspace = true }

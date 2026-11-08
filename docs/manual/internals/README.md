@@ -43,16 +43,18 @@ zakac_codegen_target_c      C for each module, then an executable
 
 ## The workspace
 
-The workspace has two folders: `compiler/` for the language tools and `website/` for the
-web pages. One `Cargo.toml` at the root lists them with `members = ["compiler/*",
-"website/*"]`, and `default-members` is just `zakac`.
+The workspace has three folders: `compiler/` for the language tools, `website/` for the
+web pages and `editors/` for the editor extensions. One `Cargo.toml` at the root lists
+them with `members = ["compiler/*", "website/*", "editors/vscode"]`, and
+`default-members` is just `zakac`. The Zed extension, `editors/zed`, stands outside the
+workspace: Zed builds it on its own, with the target folder inside it.
 
 | Crate | Job |
 | --- | --- |
-| `zakac` | the `zakac` command: one program with the subcommands `segment`, `lex`, `parse`, `semcheck`, `irgen`, `borrowck`, `build` and `run`; `build` hands the program to the target `--target` names |
-| `zakac_span` | source files, the source map, positions and spans, and the text normalizer (NFC plus a fixed order of Burmese signs) |
+| `zakac` | the `zakac` command: one program with the subcommands `segment`, `lex`, `parse`, `semcheck`, `irgen`, `borrowck`, `build`, `run` and `lsp`; `build` hands the program to the target `--target` names |
+| `zakac_span` | source files, the source map, positions and spans, the text normalizer (NFC plus a fixed order of Burmese signs), and `text_range`: spans back to ranges of the text as written, and UTF-8 to UTF-16 offsets |
 | `zakac_burmese_segmenter` | cuts text into vannas, digits and other chars; the `segment` subcommand |
-| `zakac_lexer` | tokens, particles, comments and string tables |
+| `zakac_lexer` | tokens, particles, comments and string tables; `TokenRole`, the role of a token that decides its color |
 | `zakac_ast` | the tree: statements, expressions, kinds, the verb table, visitors, the S-expression form |
 | `zakac_parser` | tokens to tree; carries on after a bad sentence |
 | `zakac_naturalness` | warnings about wording that is allowed but not natural (ZK05) |
@@ -61,6 +63,7 @@ web pages. One `Cargo.toml` at the root lists them with `members = ["compiler/*"
 | `zakac_borrow_checker` | the ownership check over the IR (ZK07) |
 | `zakac_codegen_target_vm` | the ops of the VM, and the asm listing |
 | `zakac_codegen_target_c` | the C of each module and its runtime (`runtime/`), and the build of an executable with a C compiler |
+| `zakac_lsp` | the language server: checks the files an editor holds open and sends back errors, colors, hovers, completions, definitions, uses, renames and the outline; the `lsp` subcommand, behind the feature `server`, which `zakac` turns on; without it the crate builds for the browser, and the explorer uses it |
 | `zaka_vm` | the VM: stack of values, storage blocks, traps; the `run` subcommand |
 | `zaka_host` | the functions the host serves to a program (`HOST_FNS`), the values that cross over, and the worlds those functions reach: the terminal and one in storage |
 | `zakac_diagnostics` | `Diagnostic`, the `Code` catalogue, one constructor per message, texts in `locales/codes.toml` |
@@ -76,6 +79,7 @@ web pages. One `Cargo.toml` at the root lists them with `members = ["compiler/*"
 | `zaka_website` | the site with its books, served with `cargo-leptos` |
 | `zaka_web_ui_common` | pieces used in both the site and the explorer: fonts, themes, controls |
 | `zaka_web_builder` | build-script helper that names asset files after their hash |
+| `zaka_vscode` | the VS Code extension: a Rust client built for Node.js with wasm-pack, which starts `zakac lsp` |
 | `zaka_html2png` | renders the cover cards of the site to PNG with a headless browser |
 
 ## How the crates link

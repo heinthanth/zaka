@@ -1,0 +1,13 @@
+[package]
+name = "zaka_zed"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+zakac_rust_sugars = { path = "../../compiler/zakac_rust_sugars" }
+zed_extension_api = "0.7.0"

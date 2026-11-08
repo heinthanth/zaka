@@ -28,6 +28,7 @@ use zakac_span::filename::FileName;
 use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 
+use crate::alias::AliasRefs;
 use crate::alias::expand_aliases;
 use crate::parser::parse;
 use crate::parser::parse_with;
@@ -45,6 +46,9 @@ pub struct Loaded
     /// The lexer and parser diagnostics of each file, then the loader's.
     #[builder(default)]
     pub diagnostics: Vec<Diagnostic>,
+    /// Each kind alias name, beside its declaration, for the editors.
+    #[builder(default)]
+    pub alias_refs: AliasRefs,
 }
 
 /// The start of the import path of a module of the stdlib.
@@ -126,9 +130,11 @@ fn loaded(
     mut program: Program, imports: Vec<EmbeddedFile>, mut diagnostics: Vec<Diagnostic>,
 ) -> Loaded
 {
-    diagnostics.extend(expand_aliases(&mut program));
+    let (expanded, alias_refs) = expand_aliases(&mut program);
+    diagnostics.extend(expanded);
     #[rustfmt::skip]
-    return Loaded::builder().program(program).imports(imports).diagnostics(diagnostics).build();
+    return Loaded::builder().program(program).imports(imports).diagnostics(diagnostics)
+        .alias_refs(alias_refs).build();
 }
 
 /// Whether an import reads a module of the stdlib.

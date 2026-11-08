@@ -32,12 +32,25 @@ pub(crate) struct Binding
     pub access: Access,
     /// The declared name.
     pub span: Span,
+    /// The name in the file that declares it, for a name imported from
+    /// another file; `None` when `span` is that name.
+    pub from: Option<Span>,
     /// `true` for a top-level declaration that other files can import.
     #[builder(default)]
     pub exported: bool,
     /// The value of a constant, when the check works it out.
     #[builder(default)]
     pub value: ConstVal,
+}
+
+impl Binding
+{
+    /// The declared name in the file that declares it.
+    ///
+    /// # Returns
+    ///
+    /// The span of that name.
+    pub fn home(&self) -> Span { self.from.unwrap_or(self.span) }
 }
 
 /// Block scopes from the outermost to the innermost.
@@ -158,6 +171,10 @@ pub(crate) struct FnSig
     pub variadic: bool,
     /// The mark of each parameter, when the parameters have marks.
     pub marks: Option<Vec<Name>>,
+    /// The declared name; a placeholder for a function value's own
+    /// signature.
+    #[builder(default)]
+    pub decl: Span,
     /// The name each later stage gives the function: the written name for
     /// the first function of a name in its file, `<name>#<n>` for the n-th.
     pub inner: Name,

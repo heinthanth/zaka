@@ -1,0 +1,43 @@
+_version = 2
+
+[lsp.about]
+en = "Serve the Language Server Protocol over standard input and output, for editors."
+
+[lsp.failed]
+en = "the language server stopped: %{reason}"
+
+[lsp.imported]
+en = "%{file}: %{message}"
+
+[lsp.panicked]
+en = "the compiler stopped on this text (a bug in zakac): %{reason}"
+
+[lsp.bad_name]
+en = "\"%{name}\" is not one name: a new name cannot be a reserved word, several words or a number"
+
+[lsp.no_name]
+en = "no declared name here to rename"
+
+[lsp.hover_layout]
+en = "size = %{size}, align = %{align}"
+
+[lsp.hover_field]
+en = "field of %{name}, at offset %{offset}"
+
+[lsp.hover_member]
+en = "member of %{name}"
+
+[lsp.hover_value]
+en = "value %{value}"
+
+[lsp.hover_param]
+en = "parameter of %{name}"
+
+[lsp.hover_loop]
+en = "loop variable"
+
+[lsp.hover_alias]
+en = "kind alias"
+
+[lsp.hover_c_fn]
+en = "C function from %{lib}"

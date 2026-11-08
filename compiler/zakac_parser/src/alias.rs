@@ -26,10 +26,16 @@ use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_span::span::Span;
 
 /// Each alias under its name, and under its stem when the name ends in
 /// `များ`, with the kind it names as written and the name in its declaration.
 type Aliases = HashMap<Name, (Kind, Ident)>;
+
+/// Each alias name the expansion met, where it stands, beside the name in
+/// its declaration; each declared alias name stands beside itself too. The
+/// editors read it, as the check never sees an alias name.
+pub type AliasRefs = Vec<(Span, Span)>;
 
 /// Put the kind of each alias in place of each use of its name.
 ///
@@ -41,21 +47,24 @@ type Aliases = HashMap<Name, (Kind, Ident)>;
 ///
 /// A `ZK0316` diagnostic for each alias whose name a struct, an enumeration
 /// or another alias has, and a `ZK0336` diagnostic for each alias that leads
-/// back to itself.
-pub fn expand_aliases(program: &mut Program) -> Vec<Diagnostic>
+/// back to itself; and each alias name met, beside its declaration.
+pub fn expand_aliases(program: &mut Program) -> (Vec<Diagnostic>, AliasRefs)
 {
     let mut diags = Vec::new();
     let aliases = collect(program, &mut diags);
-    ret_if!(aliases.is_empty(), diags);
-    let mut swap =
-        Swap { aliases: &aliases, trail: Vec::new(), looped: BTreeSet::new() };
+    ret_if!(aliases.is_empty(), (diags, AliasRefs::new()));
+    let own = aliases.values().map(|(_, decl)| (decl.span, decl.span)).collect();
+    #[rustfmt::skip]
+    let mut swap = Swap { aliases: &aliases, trail: Vec::new(), looped: BTreeSet::new(),
+        refs: own };
     swap.visit_program_mut(program);
+    let refs = std::mem::take(&mut swap.refs);
     let looped = swap.looped.into_iter().filter_map(|name| aliases.get(&name));
     diags.extend(
         looped.map(|(_, ident)| rd::alias_loop(ident.span, ident.name.as_str())),
     );
     diags.sort_by_key(|d| d.span.lo);
-    diags
+    (diags, refs)
 }
 
 /// The aliases of a program; the first declaration of a name wins.
@@ -137,10 +146,23 @@ struct Swap<'a>
     trail: Vec<Name>,
     /// The aliases that lead back to themselves.
     looped: BTreeSet<Name>,
+    /// Each alias name met, beside its declaration.
+    refs: AliasRefs,
 }
 
 impl Swap<'_>
 {
+    /// Record an alias name where it stands, beside its declaration.
+    ///
+    /// # Arguments
+    ///
+    /// * `used` - The name, when it is an alias.
+    fn note(&mut self, used: &Ident)
+    {
+        let decl = self.aliases.get(&used.name).map(|(_, d)| d.span);
+        do_if!(let Some(decl) = decl, self.refs.push((used.span, decl)));
+    }
+
     /// The kind an alias names, with each alias in it expanded too.
     ///
     /// # Arguments
@@ -206,6 +228,8 @@ impl Swap<'_>
         {
             return;
         };
+        let decl = alias.and_then(|n| self.aliases.get(&n)).map(|(_, d)| d.span);
+        do_if!(let Some(decl) = decl, self.refs.push((qualifier.span, decl)));
         // before `ထဲမှ` an enumeration name ends in `များ`
         let text = target.as_str();
         let plural = text.ends_with(PLURAL);
@@ -240,6 +264,7 @@ impl VisitorMut for Swap<'_>
     fn visit_kind_mut(&mut self, n: &mut Kind)
     {
         let alias = (n.base == BaseKind::Named).then_some(n.name.as_ref()).flatten();
+        do_if!(let Some(used) = alias, self.note(used));
         let target = alias.and_then(|ident| self.expanded(ident.name));
         do_if!(let Some(target) = target, *n = spliced(target, n));
         do_if!(let Some(sig) = &mut n.sig, walk_sig_mut(self, sig));
@@ -257,6 +282,7 @@ impl VisitorMut for Swap<'_>
             Expr::Struct(lit) =>
             {
                 let target = self.bare_target(lit.name.name);
+                do_if!(target.is_some(), self.note(&lit.name));
                 do_if!(let Some(target) = target, lit.name.name = target);
             }
             Expr::Member(member) => self.swap_qualifier(&mut member.qualifier),

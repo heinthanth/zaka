@@ -1,0 +1,9 @@
+# build.rs and wasm-pack write these from the TOML sources and the crate.
+package.json
+package-lock.json
+.cache
+pkg
+node_modules
+*.vsix
+LICENSE
+icons

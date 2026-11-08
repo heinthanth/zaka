@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::io::BufRead;
 use std::path::Path;
 use std::path::PathBuf;
@@ -33,6 +34,7 @@ use zakac_span::source_map::SourceMap;
 use zakac_span::span::Span;
 
 use crate::semcheck::KindTable;
+use crate::semcheck::RefTable;
 use crate::semcheck::SemcheckOptions;
 use crate::semcheck::SemcheckOutput;
 use crate::semcheck::semcheck;
@@ -41,6 +43,28 @@ use crate::structs::StructTable;
 const TEXT_HEADER: &str = "# zakac-semcheck-artifact v1";
 const RAW_PHASE: &str = "semcheck";
 const ARTIFACT_VERSION: u32 = 1;
+
+/// The resolved names of the check with the alias names of the loader. The
+/// check reads a struct literal or a member through an alias as the struct
+/// or enumeration it stands for; at those places the alias wins.
+///
+/// # Arguments
+///
+/// * `refs` - The names the check resolved.
+/// * `aliases` - The alias names.
+///
+/// # Returns
+///
+/// All of them, each place once.
+fn with_aliases(mut refs: RefTable, aliases: RefTable) -> RefTable
+{
+    let alias_uses: HashSet<Span> = aliases.iter().map(|(at, _)| *at).collect();
+    refs.retain(|(at, _)| !alias_uses.contains(at));
+    refs.extend(aliases);
+    refs.sort_by_key(|(at, decl)| (at.lo, at.hi, decl.lo, decl.hi));
+    refs.dedup();
+    refs
+}
 
 /// Tree, kinds and diagnostics of a source file, with absolute spans.
 #[derive(Debug, Clone, PartialEq, Builder)]
@@ -60,6 +84,9 @@ pub struct Checked
     /// The imported files, in reading order.
     #[builder(default)]
     pub imports: Vec<EmbeddedFile>,
+    /// Each resolved name with its declaration, for the editors.
+    #[builder(default)]
+    pub refs: RefTable,
 }
 
 /// Lex, parse and check a source file. The check is left out when the lexer
@@ -97,7 +124,7 @@ pub fn run_phases(
 /// included.
 pub fn check_loaded(loaded: Loaded, options: &SemcheckOptions) -> Checked
 {
-    let Loaded { mut program, imports, mut diagnostics } = loaded;
+    let Loaded { mut program, imports, mut diagnostics, alias_refs } = loaded;
     let failed = has_errors(&diagnostics);
     let idiom = NaturalnessOptions::builder().strict(options.strict_particles).build();
     let idiom = tern!(failed, Vec::new(), zakac_naturalness::check(&program, &idiom));
@@ -106,7 +133,8 @@ pub fn check_loaded(loaded: Loaded, options: &SemcheckOptions) -> Checked
     diagnostics.extend(out.diagnostics);
     #[rustfmt::skip]
     return Checked::builder().program(program).kinds(out.kinds).structs(out.structs)
-        .diagnostics(diagnostics).imports(imports).build();
+        .diagnostics(diagnostics).imports(imports).refs(with_aliases(out.refs, alias_refs))
+        .build();
 }
 
 /// Reloadable output of the check phase. Spans are relative to the file
@@ -174,7 +202,8 @@ impl SemcheckArtifact
     {
         let base = source.start_pos;
         let shift = |span: Span| relative(span, base);
-        let Checked { mut program, kinds, structs, mut diagnostics, imports } = checked;
+        let Checked { mut program, kinds, structs, mut diagnostics, imports, .. } =
+            checked;
         MapSpans(shift).visit_program_mut(&mut program);
         diagnostics.iter_mut().for_each(|d| d.map_spans(&shift));
         #[rustfmt::skip]

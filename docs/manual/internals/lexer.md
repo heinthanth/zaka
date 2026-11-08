@@ -237,6 +237,12 @@ kind names (`IntKind`), pieces that exist so the phrase joiner can see them (`*H
 `*Tail`), and joined phrases (`Divide`, `BitAnd`, `Shift`, `Convert`, `CallResult`,
 `BlockOpen`, `FnOpen`, `BlockClose`, ...) that the joiner alone makes.
 
+`role::token_role` gives each token kind a `TokenRole`: a control word, a verb, an
+operator, a particle, a kind noun, a truth value, a name, a number, a char, a string or a
+separator. The site and the explorer color a token after its role, and the language
+server sends the role to the editor; a new reserved word gets its role in
+`role::kw_role`.
+
 ## Particles
 
 A comparison verb, `မဟုတ်` and the two boolean words can end a sentence with `သည်`, `ပါ` or

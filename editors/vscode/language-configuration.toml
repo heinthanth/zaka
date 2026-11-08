@@ -1,0 +1,14 @@
+brackets = [["(", ")"]]
+surroundingPairs = [["(", ")"], ["\"", "\""], ["'", "'"]]
+
+[comments]
+lineComment = "//"
+
+[[autoClosingPairs]]
+open = "("
+close = ")"
+
+[[autoClosingPairs]]
+open = "\""
+close = "\""
+notIn = ["string"]

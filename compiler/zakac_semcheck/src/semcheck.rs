@@ -82,6 +82,8 @@ use crate::proof::changed_in;
 use crate::proof::changed_in_stmt;
 use crate::proof::facts_when;
 use crate::proof::leaves_at_end;
+use crate::refs::KindDecls;
+use crate::refs::kind_refs;
 use crate::scope::Access;
 use crate::scope::Binding;
 use crate::scope::FnSig;
@@ -111,6 +113,10 @@ pub struct SemcheckOptions
     /// Refuse each kind with a raw address level.
     #[builder(default)]
     pub no_raw: bool,
+    /// Check the file as a module that another file imports, as an editor
+    /// does for an open module: it needs no start block.
+    #[builder(default)]
+    pub as_module: bool,
 }
 
 impl Default for SemcheckOptions
@@ -126,10 +132,17 @@ impl Default for SemcheckOptions
 /// The kind of each expression, indexed on node number.
 pub type KindTable = BTreeMap<NodeId, DataKind>;
 
+/// Each name the check resolved: the span of a use, or of a declared name,
+/// beside the span of the declared name in the file that declares it.
+pub type RefTable = Vec<(Span, Span)>;
+
 /// Output of the check.
 #[derive(Debug, Clone, PartialEq, Default, Builder)]
 pub struct SemcheckOutput
 {
+    /// Each resolved name with its declaration, for the editors.
+    #[builder(default)]
+    pub refs: RefTable,
     /// The kind of each expression whose kind is known.
     #[builder(default)]
     pub kinds: KindTable,
@@ -162,10 +175,14 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
 {
     let mut known = KnownConsts::new();
     let mut enums = KnownEnums::new();
+    // A run writes each count it works out back as digits, so the names in a
+    // count are met in the earlier runs alone: their records are kept.
+    let mut refs = RefTable::new();
     loop
     {
         let (mut out, counts, found, found_enums, chosen) =
             check_once(program, options, known.clone(), &enums);
+        refs.extend(std::mem::take(&mut out.refs));
         let written = write_counts(program, &counts);
         let settled = counts.is_empty() || (written == 0 && found == known);
         let enums_settled = found_enums == enums;
@@ -176,7 +193,9 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
                 .extend(counts.into_values().filter_map(Result::err).flatten());
             out.diagnostics.sort_by_key(|d| d.span.lo);
             write_overloads(program, &chosen);
-            return out;
+            refs.sort_by_key(|(at, decl)| (at.lo, at.hi, decl.lo, decl.hi));
+            refs.dedup();
+            return SemcheckOutput { refs, ..out };
         }
         known = found;
     }
@@ -207,18 +226,24 @@ fn check_once(
     structs.extend(enums);
     let unit_fns = collect_fns(program, &structs, &mut diags);
     let homes = struct_homes(program);
+    let decls = KindDecls::of(program);
     diags.extend(private_in_exports(program, &homes));
-    diags.extend(start_rules(program));
+    diags.extend(start_rules(program, !options.as_module));
     #[rustfmt::skip]
     let mut checker = Checker::builder().fns(unit_fns[0].clone()).unit_fns(unit_fns)
         .homes(homes).unit_names(unit_names(program)).structs(structs)
         .diags(diags).platform(options.platform_bits).no_raw(options.no_raw)
-        .known(known).open_structs(open_structs(program)).build();
+        .known(known).open_structs(open_structs(program)).decls(decls).build();
     checker.scopes.push();
     checker.visit_program(program);
+    let own = checker.decls.own();
+    checker.refs.extend(own);
+    checker.refs.extend(kind_refs(program, &checker.decls));
     checker.diags.sort_by_key(|d| d.span.lo);
+    checker.refs.sort_by_key(|(at, decl)| (at.lo, at.hi, decl.lo, decl.hi));
+    checker.refs.dedup();
     #[rustfmt::skip]
-    let out = SemcheckOutput::builder().kinds(checker.kinds).structs(checker.structs).diagnostics(checker.diags).build();
+    let out = SemcheckOutput::builder().kinds(checker.kinds).structs(checker.structs).diagnostics(checker.diags).refs(checker.refs).build();
     (out, checker.counts, checker.found, checker.found_enums, checker.chosen)
 }
 
@@ -247,6 +272,12 @@ pub(crate) struct Checker
     /// of its name at the call.
     #[builder(default)]
     pub chosen: Chosen,
+    /// Each resolved name with its declaration.
+    #[builder(default)]
+    pub refs: RefTable,
+    /// The declared names of the structs, fields, enumerations and members.
+    #[builder(default)]
+    pub decls: KindDecls,
     /// The functions each file declares.
     pub unit_fns: Vec<FnSigs>,
     /// The top-level names of each file checked so far.
@@ -342,7 +373,23 @@ impl Checker
     {
         #[rustfmt::skip]
         let binding = Binding::builder().maybe_kind(kind).access(access).span(ident.span).build();
-        self.scopes.declare(ident.name, binding).is_ok()
+        let fresh = self.scopes.declare(ident.name, binding).is_ok();
+        do_if!(fresh, self.refer(&ident.name, ident.span, ident.span));
+        fresh
+    }
+
+    /// Record a resolved name with its declaration. The implicit result
+    /// `ရလဒ်` is left out: it has no declaration of its own to go to.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    /// * `at` - The span of the name where it stands.
+    /// * `decl` - The declared name in the file that declares it.
+    pub(crate) fn refer(&mut self, name: &str, at: Span, decl: Span)
+    {
+        let real = name != RESULT_NAME && !decl.is_placeholder();
+        do_if!(real, self.refs.push((at, decl)));
     }
 
     /// Declare a name, reporting a second declaration in one scope.
@@ -552,6 +599,7 @@ impl Checker
             self.infer_all(args);
             return None;
         };
+        self.refer(&callee.name, callee.span, sig.decl);
         let (want, got) = (sig.params.len(), args.len());
         let bad_count = rd::arg_count_mismatch(span, &callee.name, want, got);
         let ret = Some(sig.ret);
@@ -1156,6 +1204,7 @@ impl Checker
             );
             return false;
         };
+        self.refer(&n.name, n.span, binding.home());
         do_if!(let Some(diag) = access_error(binding.access, n), self.report(diag));
         true
     }
@@ -1623,6 +1672,7 @@ impl Visitor for Checker
 
     fn visit_fn(&mut self, n: &FnDecl)
     {
+        do_if!(!n.start, self.refer(&n.name.name, n.name.span, n.name.span));
         let depth = std::mem::take(&mut self.loop_depth);
         self.proven.clear();
         self.touched.clear();

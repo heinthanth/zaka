@@ -16,6 +16,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 pub mod decor;
+mod language;
 
 use zaka_web_ui_common::look::line_height;
 
@@ -118,6 +119,8 @@ extern "C" {
     fn pos_at(this: &TextModel, off16: u32) -> Pos;
     #[wasm_bindgen(method, js_name = getOffsetAt)]
     fn offset_at(this: &TextModel, pos: &Pos) -> u32;
+    #[wasm_bindgen(method, getter)]
+    fn uri(this: &TextModel) -> JsValue;
 
     /// A set of decorations that is replaced as a whole.
     #[derive(Debug, Clone)]
@@ -230,6 +233,10 @@ struct EditorOpts<'a>
     theme: &'static str,
     #[builder(default = "plaintext")]
     language: &'static str,
+    /// Where the words Monaco offers beside the language's own come from;
+    /// `off`, as the language offers the names in scope.
+    #[builder(default = "off")]
+    word_based_suggestions: &'static str,
     /// Whether the text takes no edits.
     #[serde(rename = "readOnly")]
     #[builder(default = false)]
@@ -432,9 +439,11 @@ impl Editor
     ) -> Result<Editor, JsValue>
     {
         load().await?;
+        language::add_language();
         let opts = EditorOpts::builder()
             .value(text)
             .theme(theme(dark))
+            .language(language::LANGUAGE)
             .font_stack(stack)
             .font_size(size)
             .line_height(line_height(size))

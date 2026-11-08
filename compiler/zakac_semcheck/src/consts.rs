@@ -167,9 +167,13 @@ impl Checker
         for (name, (kind, seen)) in known
         {
             let value = self.adopt(seen);
+            // The constant is declared below: its declared name is the place to
+            // go to from this use.
+            let decl =
+                self.decls.constant(self.unit, &name).unwrap_or(Span::PLACEHOLDER);
             #[rustfmt::skip]
             let binding = Binding::builder().maybe_kind(kind).access(Access::Const).span(e.span())
-                .value(value).build();
+                .from(decl).value(value).build();
             _ = self.scopes.declare(name, binding);
         }
     }

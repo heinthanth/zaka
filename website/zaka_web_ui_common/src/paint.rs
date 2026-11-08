@@ -3,11 +3,10 @@ use leptos::html::span;
 use leptos::prelude::*;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
-use zakac_lexer::token::Kw;
-use zakac_lexer::token::Punct;
+use zakac_lexer::role::TokenRole;
+use zakac_lexer::role::token_role;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_if;
-use zakac_rust_sugars::tern;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 use zakac_span::span::Span;
@@ -115,7 +114,7 @@ pub fn painted(source: &str) -> impl IntoView + use<>
     paint(source).into_iter().map(view).collect_view()
 }
 
-/// CSS class that colors a token kind.
+/// CSS class that colors a token kind: `tok-` and the name of its role.
 ///
 /// # Arguments
 ///
@@ -126,247 +125,21 @@ pub fn painted(source: &str) -> impl IntoView + use<>
 /// The class.
 pub fn token_class(kind: &TokenKind) -> &'static str
 {
-    match kind
+    match token_role(kind)
     {
-        TokenKind::Ident => "tok-ident",
-        TokenKind::RawIdent => "tok-raw",
-        TokenKind::Number(_) => "tok-number",
-        TokenKind::Char(_) => "tok-char",
-        TokenKind::Str(_) => "tok-str",
-        TokenKind::Kw(kw) => kw_class(*kw),
-        TokenKind::Punct(punct) => punct_class(*punct),
-        TokenKind::Eof => "tok-plain",
+        TokenRole::Control => "tok-kw",
+        TokenRole::Verb => "tok-verb",
+        TokenRole::Op => "tok-op",
+        TokenRole::Particle => "tok-particle",
+        TokenRole::Kind => "tok-kind",
+        TokenRole::Truth => "tok-bool",
+        TokenRole::Ident => "tok-ident",
+        TokenRole::Raw => "tok-raw",
+        TokenRole::Number => "tok-number",
+        TokenRole::Char => "tok-char",
+        TokenRole::Str => "tok-str",
+        TokenRole::Delim => "tok-delim",
+        TokenRole::Comment => COMMENT_CLASS,
+        TokenRole::Plain => "tok-plain",
     }
-}
-
-/// CSS class that colors a reserved word, from its role in a sentence:
-/// control word, statement verb, operator, particle, kind noun or truth
-/// value.
-///
-/// # Arguments
-///
-/// * `kw` - The reserved word.
-///
-/// # Returns
-///
-/// The class.
-pub fn kw_class(kw: Kw) -> &'static str
-{
-    match kw
-    {
-        Kw::If
-        | Kw::Then
-        | Kw::ThenIs
-        | Kw::ElseIf
-        | Kw::Else
-        | Kw::While
-        | Kw::WhileIs
-        | Kw::Counting
-        | Kw::EachCell
-        | Kw::EachChar
-        | Kw::Taking
-        | Kw::Increasing
-        | Kw::Decreasing
-        | Kw::Loop
-        | Kw::NextIteration
-        | Kw::BlockOpen
-        | Kw::FnOpen
-        | Kw::FnOpenRet
-        | Kw::BlockClose
-        | Kw::ProgramClose
-        | Kw::Following
-        | Kw::WillDo
-        | Kw::Will
-        | Kw::Using
-        | Kw::Outside
-        | Kw::Coming
-        | Kw::OtherValues
-        | Kw::External
-        | Kw::OneFunction
-        | Kw::WillAccept
-        | Kw::AcceptingRel
-        | Kw::ReturningRel
-        | Kw::DoAnd
-        | Kw::Tasks
-        | Kw::Done
-        | Kw::Accepting
-        | Kw::OnFail
-        | Kw::PassFault
-        | Kw::Being
-        | Kw::WhenDone
-        | Kw::Function
-        | Kw::Program
-        | Kw::Const
-        | Kw::Var
-        | Kw::Mem
-        | Kw::TakeSpace
-        | Kw::At
-        | Kw::Located
-        | Kw::SoThat
-        | Kw::AllocTarget
-        | Kw::AllocHead
-        | Kw::HeapHead
-        | Kw::DataKindOpen
-        | Kw::Plural
-        | Kw::FieldsClose
-        | Kw::FieldsCloseAnd
-        | Kw::ClassifierIs
-        | Kw::KindWord
-        | Kw::Meaning
-        | Kw::Among
-        | Kw::Other
-        | Kw::AliasClose
-        | Kw::Also
-        | Kw::CanRegard
-        | Kw::Export => "tok-kw",
-        Kw::Print
-        | Kw::Assign
-        | Kw::Return
-        | Kw::WillReturn
-        | Kw::Call
-        | Kw::Let
-        | Kw::Stop
-        | Kw::Skip
-        | Kw::ReturnValue
-        | Kw::ReturnFault
-        | Kw::ReturnGood
-        | Kw::MarkSucceeded
-        | Kw::MarkFailed
-        | Kw::WillMark
-        | Kw::WillKeep
-        | Kw::WillResize
-        | Kw::WillRelease
-        | Kw::WillBlit
-        | Kw::WillShift
-        | Kw::WillFill
-        | Kw::Contains
-        | Kw::ContainsAnd
-        | Kw::Is
-        | Kw::Add
-        | Kw::Remove
-        | Kw::Replace
-        | Kw::Import => "tok-verb",
-        Kw::Sum
-        | Kw::Difference
-        | Kw::Product
-        | Kw::Equal
-        | Kw::NotEqual
-        | Kw::Greater
-        | Kw::NotGreater
-        | Kw::Less
-        | Kw::NotLess
-        | Kw::Not
-        | Kw::And
-        | Kw::Or
-        | Kw::Negate
-        | Kw::ShiftLeft
-        | Kw::ShiftRight
-        | Kw::DivideHead
-        | Kw::QuotientTail
-        | Kw::RemainderTail
-        | Kw::BitwiseHead
-        | Kw::MeetTail
-        | Kw::UnionTail
-        | Kw::DifferTail
-        | Kw::InvertTail
-        | Kw::ShiftHead
-        | Kw::ConvertHead
-        | Kw::CallHead
-        | Kw::Divide
-        | Kw::Remainder
-        | Kw::BitAnd
-        | Kw::BitOr
-        | Kw::BitXor
-        | Kw::BitNot
-        | Kw::Shift
-        | Kw::Convert
-        | Kw::CallResult
-        | Kw::CallGoodResult
-        | Kw::Which
-        | Kw::UsedResult
-        | Kw::UsedGoodResult
-        | Kw::SizeOf
-        | Kw::Cell
-        | Kw::CellCount
-        | Kw::LastCell
-        | Kw::LastChar
-        | Kw::Before
-        | Kw::CharCount
-        | Kw::Joined
-        | Kw::CellWord
-        | Kw::Ordinal => "tok-op",
-        Kw::Thi
-        | Kw::Ko
-        | Kw::Hnint
-        | Kw::Hpjint
-        | Kw::Htet
-        | Kw::Auk
-        | Kw::Hu
-        | Kw::As
-        | Kw::Pa
-        | Kw::ListKo
-        | Kw::ListWith
-        | Kw::Into
-        | Kw::Toward
-        | Kw::From
-        | Kw::To
-        | Kw::Step
-        | Kw::CountAs
-        | Kw::ListOf
-        | Kw::StartingAt
-        | Kw::Upto
-        | Kw::Having => "tok-particle",
-        Kw::IntKind
-        | Kw::FloatKind
-        | Kw::CharKind
-        | Kw::TextKind
-        | Kw::BoolKind
-        | Kw::BoolKindLoan
-        | Kw::Signed
-        | Kw::Unsigned
-        | Kw::Bit
-        | Kw::Base
-        | Kw::Value
-        | Kw::Result
-        | Kw::GoodResult
-        | Kw::Fault
-        | Kw::SuccessNews
-        | Kw::FailureNews
-        | Kw::Succeeded
-        | Kw::NotSucceeded
-        | Kw::Note
-        | Kw::Address
-        | Kw::RawAddress
-        | Kw::Borrowed
-        | Kw::EditParam
-        | Kw::FnKind
-        | Kw::EditArg
-        | Kw::EditableAttr
-        | Kw::EditableClaim
-        | Kw::Lend
-        | Kw::Octets
-        | Kw::Items
-        | Kw::List
-        | Kw::Part => "tok-kind",
-        Kw::True | Kw::False | Kw::Null | Kw::BlankList => "tok-bool",
-    }
-}
-
-/// CSS class that colors a punctuation token: operators stand out,
-/// separators and brackets recede.
-///
-/// # Arguments
-///
-/// * `punct` - The punctuation.
-///
-/// # Returns
-///
-/// The class.
-pub fn punct_class(punct: Punct) -> &'static str
-{
-    let delim = matches!(
-        punct,
-        Punct::ListSep | Punct::FullStop | Punct::Ei | Punct::LParen | Punct::RParen
-    );
-    tern!(delim, "tok-delim", "tok-op")
 }

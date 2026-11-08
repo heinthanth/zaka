@@ -12,6 +12,9 @@ and hosts a compiler explorer that runs in the browser.
 | `compiler/zakac_*` | one crate per stage (`burmese_segmenter`, `lexer`, `parser`, `naturalness`, `semcheck`, `ir_builder`, `borrow_checker`, `codegen_target_vm`, `codegen_target_c`), plus shared crates (`span`, `ast`, `diagnostics`, `reporter`, `session`, `i18n`, `cli_common`, `rust_sugars`, ...) |
 | `compiler/zaka_vm` | the VM and its checked mem |
 | `compiler/zaka_host` | the host functions a program can call: their table, values and worlds |
+| `compiler/zakac_lsp` | the language server (`zakac lsp`, feature `server`): errors, colors, hover, completion, definitions, uses, renames and the outline; the explorer runs the same code in the page |
+| `editors/vscode` | the VS Code extension: a Rust client built with wasm-pack; its manifest, comment rules and grammar are TOML that `build.rs` turns into JSON |
+| `editors/zed` | the Zed extension; outside the workspace, as Zed builds it on its own |
 | `website/zaka_website` | the pre-rendered Leptos site: home page, Learn, Docs |
 | `website/zaka_explorer` | the compiler explorer: its own Trunk app (WASM, feature `csr`), and an island of the site at `/explorer/` |
 | `website/zaka_web_ui_common` | UI parts, theme tokens and site URLs that the site and the explorer share |
@@ -36,6 +39,7 @@ executable.
 | Format | `mise run format` (rustfmt, then clang-format on the C runtime; run after each edit) |
 | Serve the site | `mise run website:serve` (port 3000, live reload) |
 | Serve the explorer | `mise run explorer:serve` |
+| Build the VS Code extension | `mise run vscode:build` (wasm-pack, npm, vsce) |
 
 ## Learn and Docs pages
 

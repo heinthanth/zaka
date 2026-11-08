@@ -11,15 +11,22 @@ clang-format = "23"
 "cargo:cargo-nextest" = "latest"
 "cargo:cargo-llvm-cov" = "latest"
 "cargo:cargo-leptos" = "latest"
+"cargo:wasm-pack" = "latest"
 
 [env]
 _.file = ".env"
 
 [tasks.format]
-run = [
-    "cargo +nightly fmt",
-    "clang-format -i compiler/*/runtime/*.c compiler/*/runtime/*.h"]
+depends = ["format:rust", "format:c"]
 description = "Format the Rust code with rustfmt and the C runtime with clang-format"
+
+[tasks."format:c"]
+run = "clang-format -i compiler/*/runtime/*.c compiler/*/runtime/*.h"
+description = "Format the C code with clang-format"
+
+[tasks."format:rust"]
+run = "cargo +nightly fmt"
+description = "Format the Rust code with rustfmt"
 
 [tasks.test]
 run = "cargo nextest run --workspace"

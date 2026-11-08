@@ -29,6 +29,7 @@
   - [Diagnostics](compiler/diagnostics.md)
   - [Pointer checks](compiler/checks.md)
   - [Native programs](compiler/native.md)
+  - [Editors](compiler/editors.md)
 - [The VM](vm/README.md)
   - [Running a program](vm/running.md)
   - [Addresses and blocks](vm/blocks.md)

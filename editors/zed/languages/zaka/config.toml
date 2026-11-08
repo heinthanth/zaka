@@ -1,0 +1,18 @@
+# The Zaka language. It names no tree-sitter grammar: the zakac language
+# server colors the code, once the semantic_tokens setting is on for Zaka.
+name = "Zaka"
+path_suffixes = ["zaka", "zk"]
+line_comments = ["// "]
+
+[[brackets]]
+start = "("
+end = ")"
+close = true
+newline = false
+
+[[brackets]]
+start = "\""
+end = "\""
+close = true
+newline = false
+not_in = ["string"]

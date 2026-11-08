@@ -3,6 +3,7 @@ use zakac_ast::stmt::SwitchStmt;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
 use crate::kind::DataKind;
@@ -113,6 +114,8 @@ impl Checker
         };
         if let Some(at) = owner.position(&n.name)
         {
+            let member = self.decls.member(&owner.name, &n.name);
+            do_if!(let Some(d) = member, self.refer(&n.name, n.span, d));
             self.kinds.insert(case.id(), subject);
             return Some(Some(CaseHit::Member(at)));
         }

@@ -60,7 +60,26 @@ count expression is checked once.
 `SemcheckArtifact` is the reloadable form (text header `# zakac-semcheck-artifact v1`,
 files `.zksemt` and `.zksem`). The command takes `--platform-bits` (8 to 128, default 64),
 `--strict-particles` and `--no-raw`; these become `SemcheckOptions { platform_bits,
-strict_particles, no_raw }`, and the later stages receive the same options.
+strict_particles, no_raw }`, and the later stages receive the same options. One more
+option, `as_module`, has no flag: the language server sets it for an open module, and the
+check then asks for no start block (ZK0327).
+
+The check also fills `SemcheckOutput::refs`, a `RefTable` for the editors: each name it
+resolves, as the span of the name where it stands beside the span of the declared name
+in the file that declares it. A declared name stands beside itself. Variables,
+parameters and constants are recorded where a lookup finds them (`infer_name`,
+`check_writable`, `call_target`); functions where a call settles on one overload, from
+the `decl` span each `FnSig` keeps; an imported name keeps the span in its own file in
+`Binding::from`. Struct, field, enumeration and member names come from `KindDecls`
+(`refs.rs`), gathered from the declarations of all files: field and member uses are
+recorded where the check knows the struct or enumeration, and names in written kinds
+through a walk of the tree. A top-level constant that a list count names above its
+declaration takes its declared name from `KindDecls` too; a run writes each count it
+works out back as digits, so `semcheck` keeps what each run records, not only the
+last run's pairs. Kind aliases are gone before the check: the loader records each alias name beside
+its declaration as it expands them (`Loaded::alias_refs`, from `expand_aliases`), and
+`check_loaded` joins those pairs to the table, the alias winning at a place where the
+check also resolved the struct or enumeration it stands for.
 
 ## The passes, in order
 

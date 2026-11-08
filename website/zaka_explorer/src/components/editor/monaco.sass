@@ -171,3 +171,23 @@
   .quick-input-widget
     border: 1px solid var(--panel-border)
     box-shadow: var(--pop-shadow) !important
+
+// A hover can reveal its scrollbars while it sets out its text, and Monaco
+// then fades a scrollbar the text does not need over most of a second: the
+// slider shows as a bar at the right edge. In a hover, a scrollbar marked
+// `invisible` leaves at once; one the text needs is marked `visible` and
+// remains.
+.monaco-hover .scrollbar.invisible
+  visibility: hidden
+  transition: none !important
+
+// Monaco puts a copy button in each hover row: it fades in at the right edge
+// under the pointer and covers the end of a short hover, such as a kind. The
+// text of a hover can be selected and copied as it is, so the button and the
+// room Monaco keeps for it go.
+.monaco-editor .monaco-hover
+  .hover-copy-button
+    display: none !important
+
+  .hover-row.hover-row-with-copy
+    padding-right: 0 !important

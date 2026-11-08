@@ -1,0 +1,8 @@
+src/**
+target/**
+build.rs
+Cargo.toml
+*.toml
+grammars/*.toml
+pkg/.gitignore
+pkg/*.d.ts
