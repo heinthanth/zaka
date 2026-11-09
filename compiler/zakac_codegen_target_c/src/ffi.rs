@@ -13,9 +13,12 @@ use std::path::Path;
 
 use bon::Builder;
 use zakac_ir_builder::ir::ForeignFn;
+use zakac_ir_builder::ir::fn_shape;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::fn_kind::FnKind;
+use zakac_semcheck::foreign::is_c_text_result;
 use zakac_semcheck::foreign::is_lib_path;
 use zakac_semcheck::kind::DataKind;
 
@@ -47,6 +50,18 @@ const PRELUDE: &str = "\
 char *zk_text_cstr(const unsigned char *at);
 /** Free a duplicate zk_text_cstr made, from the runtime. */
 void zk_text_cstr_free(char *dup);
+/** The text result of a C function, or the failure for NULL, from the runtime. */
+void zk_text_from_c(unsigned char *out, size_t size, size_t ok_at, const char *s);
+/** libc's free, for a string C hands over. */
+void free(void *p);
+/** The code of a function, cast to one kind, from the runtime. */
+typedef void (*zk_code)(void);
+/** A function value, the address of its record, from the runtime. */
+typedef const void *zk_fn;
+/** The code a function value runs, from the runtime. */
+zk_code zk_fn_code(zk_fn f);
+/** The run stops when a function value is a closure, from the runtime. */
+zk_fn zk_fn_c(zk_fn f);
 
 /** Write `size` octets from `from` to `to`; the two do not overlap. */
 static void zk_ffi_put(void *to, const void *from, size_t size)
@@ -170,8 +185,12 @@ fn lib_flags(lib: &str) -> Vec<String>
 pub fn ffi_source(fns: &[ForeignFn], calls: &[FfiCall], platform: u16) -> String
 {
     let mut structs = Vec::new();
-    let kinds = fns.iter().flat_map(|f| f.params.iter().chain(f.ret.iter()));
-    kinds.for_each(|k| collect_structs(*k, &mut structs));
+    // A text result is a string to C, no struct.
+    let ret = |f: &ForeignFn| f.ret.into_iter().filter(|k| !is_c_text_result(*k));
+    let kinds = fns.iter().flat_map(|f| f.params.iter().copied().chain(ret(f)));
+    // A struct given as an other value alone needs its definition too.
+    let extra = calls.iter().flat_map(|c| c.extra.iter().copied());
+    kinds.chain(extra).for_each(|k| collect_structs(k, &mut structs));
     let names = Names { structs: &structs, platform };
     let mut out = PRELUDE.to_string();
     structs
@@ -244,11 +263,12 @@ impl Names<'_>
     /// The C kind.
     fn real(&self, kind: DataKind) -> String
     {
+        ret_if!(let Some(f) = kind.as_fn(), self.declarator(f, ""));
         match kind
         {
             DataKind::Bool => "_Bool".into(),
             DataKind::Ptr(_) => "void *".into(),
-            _ if kind.is_textual() => "const char *".into(),
+            _ if kind.is_textual() || is_c_text_result(kind) => "const char *".into(),
             DataKind::Struct(_) =>
             {
                 let at = self.structs.iter().position(|s| *s == kind).unwrap_or(0);
@@ -256,6 +276,26 @@ impl Names<'_>
             }
             _ => c_kind(kind, self.platform).unwrap_or_else(|| "void".into()),
         }
+    }
+
+    /// The C kind of a function C calls back, with a name in it for a
+    /// declaration: `int32_t (*name)(void *, void *)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The function kind.
+    /// * `name` - The name; blank for the kind alone.
+    ///
+    /// # Returns
+    ///
+    /// The C text.
+    fn declarator(&self, f: &FnKind, name: &str) -> String
+    {
+        let (params, ret) = fn_shape(f);
+        let ret = ret.map_or_else(|| "void".into(), |k| self.real(k));
+        let params: Vec<String> = params.iter().map(|k| self.real(*k)).collect();
+        let params = tern!(params.is_empty(), "void".to_string(), params.join(", "));
+        format!("{ret} (*{name})({params})")
     }
 
     /// The declaration of a field: a counted list becomes a run of C cells,
@@ -350,7 +390,7 @@ impl Names<'_>
         let arg = |(i, k): (usize, &DataKind)| match k
         {
             k if k.is_textual() => format!("zk_s{i}"),
-            k if is_blob(*k) => format!("zk_v{i}"),
+            k if is_blob(*k) || k.is_fn() => format!("zk_v{i}"),
             _ => format!("zk_a{i}"),
         };
         let args: Vec<String> = each.clone().map(arg).collect();
@@ -361,18 +401,27 @@ impl Names<'_>
             Some(r) => writeln!(out, "    {r} zk_r = {call_text};"),
             None => writeln!(out, "    {call_text};"),
         };
+        // A string C gives back can point into a duplicate of a text
+        // argument, so the text of the result is taken before those are freed.
+        let taken = def.ret.filter(|k| is_c_text_result(*k)).map(|k| {
+            let ok_at = k.as_struct().map_or(0, |s| s.offset(1, self.platform));
+            let size = k.size(self.platform);
+            let line = format!("    zk_text_from_c(zk_out, {size}, {ok_at}, zk_r);\n");
+            // A string C hands over is freed once its octets are copied.
+            let free = tern!(def.owned_ret, "    free((void *)zk_r);\n", "");
+            format!("{line}{free}")
+        });
+        out.push_str(taken.as_deref().unwrap_or_default());
         let texts = each.filter(|(_, k)| k.is_textual());
         texts.for_each(|(i, _)| _ = writeln!(out, "    zk_text_cstr_free(zk_s{i});"));
         let tail = match def.ret
         {
-            None => String::new(),
-            Some(k) if is_blob(k) =>
-            {
-                "    zk_ffi_put(zk_out, &zk_r, sizeof zk_r);\n".into()
-            }
-            Some(_) => "    return zk_r;\n".into(),
+            None => "",
+            Some(_) if taken.is_some() => "",
+            Some(k) if is_blob(k) => "    zk_ffi_put(zk_out, &zk_r, sizeof zk_r);\n",
+            Some(_) => "    return zk_r;\n",
         };
-        out.push_str(&tail);
+        out.push_str(tail);
         out.push_str("}\n");
         out
     }
@@ -395,6 +444,16 @@ impl Names<'_>
             kind.is_textual(),
             format!("    char *zk_s{i} = zk_text_cstr(zk_a{i});\n")
         );
+        if let Some(f) = kind.as_fn()
+        {
+            // C calls the code of the function; a closure stops the run.
+            let decl = self.declarator(f, &format!("zk_v{i}"));
+            let cast = self.declarator(f, "");
+            return format!(
+                "    {decl} = zk_a{i} ? ({cast})zk_fn_code(zk_fn_c(zk_a{i})) : \
+                 ({cast})0;\n"
+            );
+        }
         ret_if!(!is_blob(kind), String::new());
         let real = self.real(kind);
         format!(

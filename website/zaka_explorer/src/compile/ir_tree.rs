@@ -458,6 +458,14 @@ impl IrTree<'_>
                 ("call_value", String::new(), parts.map(|a| self.expr(a)).collect())
             }
             ExprNode::FnAddr { name, .. } => ("fn_addr", name.clone(), Vec::new()),
+            ExprNode::Closure { name, record, .. } =>
+            {
+                ("closure", name.clone(), vec![self.expr(record)])
+            }
+            ExprNode::Plain { value } =>
+            {
+                ("plain", String::new(), vec![self.expr(value)])
+            }
             ExprNode::Host { func, args } =>
             {
                 let name: &'static str = func.into();

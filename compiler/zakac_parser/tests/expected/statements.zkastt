@@ -43,6 +43,7 @@ program:
           span:
             lo: 93
             hi: 130
+      moves: false
       exported: false
       span:
         lo: 42
@@ -72,6 +73,7 @@ program:
           span:
             lo: 207
             hi: 242
+      moves: false
       exported: false
       span:
         lo: 159
@@ -108,6 +110,7 @@ program:
           span:
             lo: 294
             hi: 312
+      moves: false
       span:
         lo: 271
         hi: 338
@@ -178,6 +181,7 @@ program:
                   span:
                     lo: 782
                     hi: 797
+              moves: false
               span:
                 lo: 729
                 hi: 823
@@ -454,6 +458,7 @@ program:
               span:
                 lo: 1748
                 hi: 1769
+          moves: false
           span:
             lo: 1722
             hi: 1795

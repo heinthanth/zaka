@@ -431,7 +431,6 @@ const LATER_WORDS: &[Kw] = &[
     Kw::WillRelease,
     Kw::Toward,
     Kw::WillBlit,
-    Kw::WillShift,
     Kw::WillFill,
 ];
 

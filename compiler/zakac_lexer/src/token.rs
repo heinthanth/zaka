@@ -251,6 +251,9 @@ pub enum Kw
     Step,
     /// `အနေဖြင့်`
     CountAs,
+    /// `အပိုင်အနေဖြင့်`, before `ပြန်ပေးမည်` in the result clause of a C
+    /// function whose text the program takes over
+    AsOwned,
     /// `ဖြစ်ပြီး`, `ဖြစ်ကာ`
     Being,
     /// `ပြီးလျှင်`
@@ -576,8 +579,11 @@ pub enum Kw
     Toward,
     /// `ကူးယူမည်`: a blit whose two ranges must not overlap
     WillBlit,
-    /// `ပြောင်းထည့်မည်`: a blit whose two ranges can overlap
+    /// `ပြောင်းထည့်မည်`: a blit whose two ranges can overlap, or a move of a
+    /// value into a variable
     WillShift,
+    /// `ကူးထည့်မည်`: a duplicate of a value into a variable
+    WillDupIn,
     /// `ဖြည့်မည်`
     WillFill,
 
@@ -646,6 +652,11 @@ pub enum Kw
     // kind aliases
     /// `လည်း`, "also": a piece of the alias closer
     Also,
+    /// `လည်းကောင်း`, "as well as": ends each item of a list of parameters
+    /// that takes captures
+    AsWellAs,
+    /// `ငှား၍`, "lending": a capture the closure borrows
+    Lending,
     /// `မှတ်ယူနိုင်ပါသည်`, "can be taken as": a piece of the alias closer
     CanRegard,
     /// `ဟုလည်း မှတ်ယူနိုင်ပါသည်`, "can also be taken as": closes a kind alias,

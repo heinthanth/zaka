@@ -57,6 +57,7 @@ program:
                 span:
                   lo: 300
                   hi: 309
+            moves: false
             exported: false
             span:
               lo: 150
@@ -82,6 +83,7 @@ program:
                 hi: 426
             is_const: false
             init: null
+            moves: false
             exported: false
             span:
               lo: 338
@@ -107,6 +109,7 @@ program:
                 hi: 537
             is_const: true
             init: null
+            moves: false
             exported: false
             span:
               lo: 455
@@ -129,6 +132,7 @@ program:
                 span:
                   lo: 580
                   hi: 583
+            moves: false
             span:
               lo: 566
               hi: 609
@@ -262,6 +266,8 @@ program:
       external: false
       lib: null
       variadic: false
+      owned_ret: false
+      captures: []
       span:
         lo: 0
         hi: 1070

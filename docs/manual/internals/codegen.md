@@ -82,7 +82,7 @@ An expression has its kind on each node, so no later stage has to work it out ag
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
 `Convert { implicit }`, `Call`, `CallValue { callee, args }` (a call through a function
 value: the value first, then the arguments), `FnAddr { func, name }` (the function value of
-`func`, written `(fn_addr name)`), `Host { func, args }` (the one statement of an external
+`func`, written `(fn_addr name)`), `Closure { func, name, record }` (the closure of a nested function with captures, made where it is declared: `func` is its thunk, and `record` the address of the record in a hidden slot, which moves to the heap), `Plain { value }` (a function value headed where a closure cannot go, so the VM and the C runtime check it as it passes), `Host { func, args }` (the one statement of an external
 function: its result variable takes what the host function `func` gives for the borrowed
 address of each parameter, written `(host read_file (addr l0))`; the IR builder makes it in
 `host_statement`, and codegen emits the op `host` into the result slot), `Foreign { func, args }` (the one expression of a C function with a result; with no result, the statement `Stmt::Foreign { func, args, span }`), the pointer forms `AddrOf`, `Load`, `Lend`, `Take`, `Dup`, `Own` (a plain list made to
@@ -100,7 +100,7 @@ address.
 
 ### Lowering
 
-`lower(program, kinds, options)` walks the tree once with a `Lowerer`. It reads the kind
+`lower(program, kinds, structs, options)` walks the tree once with a `Lowerer`. It reads the kind
 of each expression from the `KindTable` (it panics on a missing one, which a clean check
 rules out). Its rules:
 
@@ -117,6 +117,31 @@ rules out). Its rules:
   parameters. `လုပ်ဆောင်ချက် NAME ၏ လိပ်စာ` becomes `FnAddr`, which the folder turns into the
   constant `f + 1`, so a constant list or an imported global can hold it; a template slot
   keeps such a constant as a value, which prints as the name of its function.
+- A function declared inside a function (`lower/nested.rs`) is lifted into a function of the
+  module of its own, numbered after the top-level ones and named `<name>#<index>` (and the
+  file suffix). A function with captures takes its own closure after its declared
+  parameters (`Sig::own`, `declare_own`), lent, so its statements name it as each other
+  place does, and each capture of its list (`FnDecl::captures`) becomes a hidden trailing
+  parameter that holds a borrow of the capture, read and written as an edit-marked
+  parameter, so `Sig::captures` lists them after the declared parameters; a closure among
+  the captures is kept under the name `<name>%`. Where a function with captures is
+  declared, `make_closure` fills a record in a hidden slot, a struct of kind
+  `DataKind::closure_record` (`%closure{code, info, c0, ...}`): the code and info words for
+  the backend, then each capture, a duplicate or a move of the value, or the address of the
+  local for a borrow. `Closure { func, name, record }` moves the record to the heap and
+  gives the function value, which a hidden local `<name>%` holds and drops as its block
+  ends; `func` is the thunk `<name>#record<index>`, which takes the declared parameters and
+  the record address and calls the lifted function with the address of each field, or the
+  address a borrowed field holds. A call of the function through its name, and its address, read
+  that local (`through_closure`, `closure_value`); a call of itself inside itself passes
+  its own hidden parameters on. Function values hold text for `holds_text`, so an
+  assignment duplicates one and a block drops it, and a function value argument is a
+  `Dup { lent: true }` (`lend_fn`); one that a call makes fresh waits in a hidden slot its
+  scope drops (`hold_fresh_fn`). `Plain { value }` wraps a function value headed to a
+  field, a cell, a global, a place reached through an address, a list add or insert, a
+  result or a C argument, unless it is the address of a top-level function or a constant.
+- `ပြောင်းထည့်မည်` (`DeclStmt::moves`, `AssignStmt::moves`) turns the duplicate of the
+  value into a `Take` (`move_out`); `ကူးထည့်မည်` is a plain assignment.
 - A function with a result starts with `set l1 = default`, so the result variable has a
   value if the block never sets it.
 - A function that can fail gives back a compiler-built struct `%fallible{tag: u8, ok: T, err: E}`,
@@ -467,7 +492,7 @@ the stack, so most ops name no kind. The ones that need a kind name it: `convert
 | values | `push v`, `pop`, `dup` |
 | storage | `local_addr n`, `local_ref n`, `global_addr n`, `load k`, `store k`, `take k` |
 | arithmetic | `prefix op`, `infix op`, `compare op`, `convert k` (the ops print as `add`, `lt`, ...), `wrap op` |
-| control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `fn_addr f`, `call_value n`, `ret`, `result_addr`, `trap code` |
+| control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `fn_addr f`, `closure f k`, `fn_plain`, `call_value n`, `ret`, `result_addr`, `trap code` |
 | output | `print`, `print_text t`, `print_list k`, `print_enum k` (a member, found through its value and written as its name; a function value, written as the function it holds) |
 | failure | `halt cause [k]` |
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free`, `mem_blit stride`, `mem_move stride`, `mem_fill k` |
@@ -501,6 +526,8 @@ bound).
 | each loop | lowered to a `Loop`: `init` sets `%each` to a duplicate of the value (a lent one when the loop leaves the value as it is, see the borrow checker internals; through the pointer for a pointer to a list) and `%new` to 0, `cond` tests it against the count, each round sets the variable to the cell at that number or to the character that starts at that u8 (`char_at_octet`), and `update` adds 1, or the u8 count of the character |
 | while, generic loop | `<init>; Head: <cond>; jump_if_false Exit; <block>; Next: <update>; jump Head; Exit:`; `continue` goes to `Next`, `break` to `Exit` |
 | call statement | `<args>; call f`, then `pop` if the callee has a result |
+| declaration of a nested function with captures | `<record>; closure f k` |
+| `Plain { value }` | `<value>; fn_plain` |
 | call through a function value | `<value>; <args>; call_value n`, the value read first; the result kind and the `%ret` slot come from the function kind (`fn_shape`) |
 | function | its block, then `ret` unless the block ends in one |
 
@@ -667,7 +694,22 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   `StackOverflow`.
 - **A function value.** `fn_addr f` pushes `f + 1` as an address value, so 0 is `ဗလာ`.
   `call_value n` takes it from under the `n` arguments, stops the program with `NullCall`
-  for 0, and else enters function `f` as `call f` does. `Mem` keeps the name of each function, so `print_enum` and the
+  for 0, and else enters function `f` as `call f` does. A closure is the address of its
+  record on the heap, which lies above the function numbers (`Mem::closure_record`,
+  `Mem::thunk_word`), with the lowest bit set while a call borrows it: `closure f k` pops
+  the address of a record of kind `k`, moves it to a new heap block (`move_record`),
+  writes `f + 1` into its first word, keeps `k` for the thunk in `Machine::records`, and
+  pushes the address; `call_value n` on a closure reads the thunk from the first word and
+  passes the address of the record as the last argument. `blocks_in` gives each function
+  value inside a value too, so `drop_value` frees the record with what its fields own
+  (`drop_fn`), `dup_value` copies it (`dup_fn`) and `lend_value` sets the lowest bit
+  (`lend_fn`); a lent closure owns nothing. A record frees the owners in it
+  (`free_owners`), and a duplicate of one that holds an owner is the trap `ClosureOwner`.
+  A call statement that drops a function value it gets stores it in a scratch slot and
+  drops that. A function value one word wide goes through a
+  scratch slot for its duplicate, then is loaded back. `fn_plain` stops the program with
+  `ClosureEscape` when the value on top is a closure whose record kind holds a borrow, and
+  leaves the value. A print of a closure names the function its thunk calls. `Mem` keeps the name of each function, so `print_enum` and the
   prints of lists, structs and template slots write a function value as
   `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ` (`Mem::fn_text`, which cuts the overload number and the file
   off the inner name).
@@ -751,6 +793,8 @@ each call names the C function itself, with all its arguments.
 | borrow checker | `walk.rs`, `flow.rs` | each argument is a read, and the result is a fresh value, as for `Host` |
 | VM ops | `emit.rs`: `foreign` | the op `foreign c<n>` pops each parameter and each other value, the last on top (a struct or a text is the address of its value); a struct result has the address of its slot under them and leaves it; another result is pushed; no result pushes nothing. One `bc::ForeignCall { func, extra }` stands for each shape of call: the C function and the kinds of its other values, so the same shape shares an index; `bc::Module::foreign_calls` carries them. A statement call (`foreign_stmt`) of a C function with a result pops it |
 | VM | `zaka_vm/src/machine/ffi.rs` | the first call links: each lib opens (`libX` is `libX.dylib`, `libX.so` or `X.dll`; on Linux `libX.so.6` too; libc on Windows is `ucrtbase.dll`) and each C name is looked up in its lib, else in the process, which holds libc. libffi makes the call (`Cif::new_variadic` for a C function that takes other values, with the count of its named parameters). A text parameter or other value goes as the address of a duplicate of its u8s with a zero octet at the end (`arg_cell`, `text_octets`), kept alive until the call returns. A lib given as a path opens as it is (`open`). After each call `flush_c` calls libc's `fflush(NULL)`, found in the process at link time, so what C printed comes in order with the program's output. The run refuses when `--platform-bits` is not the host's, and the VM on a big-endian host is not supported for C |
+| text result | `zakac_semcheck/src/foreign.rs` `is_c_text_result`; VM `machine/ffi.rs` `text_from_c` | the result kind `စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း` is read as a C string: NULL writes the failure, else the zero-ended octets are copied into new text of the program (`bad_utf8` for octets that are not UTF-8). The text is taken before the duplicates of the text arguments are freed |
+| callbacks | `machine/ffi.rs`: `Callbacks` | a function value of a kind `is_callback` takes goes to C as a function pointer: one libffi closure for each function a call gives C, made on the first such call and kept for the run. It runs the function in the VM until it returns; a trap in it waits until C returns, then stops the program (each later callback of that call gives 0). A closure cannot go: the compiler reports ZK0722, or `fn_plain` traps |
 | C target | `zakac_codegen_target_c/src/ffi.rs` | `zaka_ffi.c` and one wrapper for each call shape (`FfiCall { func, extra }`, `Shared::ffi_calls`, `ffi_call`); see [The C target](c-backend.md#c-functions) |
 
 An address that lies in a live block becomes the native address of that octet

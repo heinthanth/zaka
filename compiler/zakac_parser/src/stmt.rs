@@ -6,6 +6,8 @@ use zakac_ast::stmt::AliasDecl;
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::BreakStmt;
 use zakac_ast::stmt::CallStmt;
+use zakac_ast::stmt::CaptureItem;
+use zakac_ast::stmt::CaptureMode;
 use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountMode;
 use zakac_ast::stmt::CountedStmt;
@@ -517,7 +519,13 @@ impl Parser<'_>
     {
         let word = self.bump();
         let is_const = word.kind == TokenKind::Kw(Kw::Const);
+        let at_name = self.cur;
         let name = self.parse_ident()?;
+        if self.at(Kw::Into)
+        {
+            self.cur = at_name;
+            return self.parse_decl_into(word.span, is_const, name);
+        }
         self.expect(Kw::Thi)?;
         let head = self.parse_decl_head()?;
         do_if!(let Some(kind) = &head.kind, self.note_marked_value(&name.name, kind));
@@ -533,6 +541,41 @@ impl Parser<'_>
         #[rustfmt::skip]
         let node = DeclStmt::builder().name(name).maybe_kind(head.kind).maybe_classifier(head.classifier)
             .is_const(is_const).maybe_init(head.init).span(span).build();
+        Ok(Stmt::Decl(node))
+    }
+
+    /// Parse `<name> ထဲသို့ <value> ကို ကူးထည့်မည်။` or the same with
+    /// `ပြောင်းထည့်မည်` after `ကိန်းရှင်` or `ကိန်းသေ`: a declaration whose
+    /// kind is the kind of the value. The clause engine reads it from the
+    /// name as an assignment.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The span of `ကိန်းရှင်` or `ကိန်းသေ`.
+    /// * `is_const` - `true` for `ကိန်းသေ`.
+    /// * `name` - The declared name; the cursor is back at it.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    fn parse_decl_into(
+        &mut self, start: Span, is_const: bool, name: Ident,
+    ) -> PResult<Stmt>
+    {
+        let ClauseOut::Stmt(stmt) = self.parse_clause(Mode::Stmt)?
+        else
+        {
+            return Err(diag::expected_stmt_verb(self.peek().span, &self.found()));
+        };
+        let Stmt::Assign(assign) = *stmt
+        else
+        {
+            return Err(diag::expected_stmt_verb(stmt.span(), "ထည့်ပါ"));
+        };
+        let span = start.to(&assign.span);
+        #[rustfmt::skip]
+        let node = DeclStmt::builder().name(name).is_const(is_const).init(assign.value)
+            .moves(assign.moves).span(span).build();
         Ok(Stmt::Decl(node))
     }
 
@@ -693,7 +736,7 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The declaration, or a diagnostic. A declaration inside a block is
+    /// The declaration, or a diagnostic. A start block inside a block is
     /// parsed and reported.
     fn parse_fn_decl(&mut self) -> PResult<Stmt>
     {
@@ -705,11 +748,17 @@ impl Parser<'_>
         self.expect(Kw::Thi)?;
         let external = self.at(Kw::External) || self.at_lib();
         ret_if!(external && !is_start, self.parse_external(start, name));
-        let params = self.parse_params()?;
+        let (params, captures) = self.parse_params()?;
         let open = self.expect_one_of(&[Kw::FnOpen, Kw::FnOpenRet])?;
-        let ret = self.parse_ret_clause(open.kind == TokenKind::Kw(Kw::FnOpenRet))?;
+        let (ret, owned) =
+            self.parse_ret_clause(open.kind == TokenKind::Kw(Kw::FnOpenRet))?;
         let fn_span = start.to(&self.prev_span());
-        do_if!(self.depth > 0, self.diags.push(diag::nested_function(fn_span)));
+        // A function inside a block borrows the locals around it; the start
+        // block has its place at the top level alone.
+        do_if!(
+            self.depth > 0 && is_start,
+            self.diags.push(diag::nested_function(fn_span))
+        );
         self.expect_stop()?;
         let stmts = self.parse_stmts_to_close();
         let block_span = self.parse_close(
@@ -720,7 +769,7 @@ impl Parser<'_>
         let span = start.to(&block_span);
         #[rustfmt::skip]
         let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
-            .start(is_start).span(span).build();
+            .start(is_start).owned_ret(owned).captures(captures).span(span).build();
         Ok(Stmt::Fn(node))
     }
 
@@ -753,9 +802,9 @@ impl Parser<'_>
             self.parse_params_to(&ends, true)?,
             (Vec::new(), None, false)
         );
-        let ret = tern!(
+        let (ret, owned) = tern!(
             bare || end == Some(Kw::WillAccept),
-            None,
+            (None, false),
             self.parse_ret_clause(true)?
         );
         let stop = self.expect_stop()?;
@@ -764,7 +813,7 @@ impl Parser<'_>
         let block = BlockStmt::builder().span(stop.span).build();
         #[rustfmt::skip]
         let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
-            .external(true).maybe_lib(lib).variadic(variadic).span(span).build();
+            .external(true).maybe_lib(lib).variadic(variadic).owned_ret(owned).span(span).build();
         Ok(Stmt::Fn(node))
     }
 
@@ -1172,7 +1221,8 @@ impl Parser<'_>
 
     /// Parse the result clause after `အောက်ပါတို့ကို လုပ်ဆောင်ကာ`: `<kind> ရလဒ်
     /// ကို ပြန်ပေးမည်`, or a result kind and `ကို ပြန်ပေးမည်` for a function that
-    /// can fail.
+    /// can fail. `အပိုင်အနေဖြင့်` before `ပြန်ပေးမည်` gives the result as the
+    /// program's own; the check allows it on a C function that gives back text.
     ///
     /// # Arguments
     ///
@@ -1180,28 +1230,101 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The result kind, `None` when not written, or a diagnostic.
-    fn parse_ret_clause(&mut self, has_ret: bool) -> PResult<Option<Kind>>
+    /// The result kind, `None` when not written, and whether the result is the
+    /// program's own; or a diagnostic.
+    fn parse_ret_clause(&mut self, has_ret: bool) -> PResult<(Option<Kind>, bool)>
     {
-        ret_if!(!has_ret, Ok(None));
+        ret_if!(!has_ret, Ok((None, false)));
         let kind = self.parse_kind()?;
         do_if!(kind.base != BaseKind::Result, _ = self.expect(Kw::Result)?);
         self.expect(Kw::Ko)?;
+        let owned = self.at(Kw::AsOwned);
+        do_if!(owned, _ = self.bump());
         self.expect(Kw::WillReturn)?;
-        Ok(Some(kind))
+        Ok((Some(kind), owned))
     }
 
     /// Parse the optional parameter clause:
     /// `kind name (၊ kind name)* (နှင့် kind name)? (တို့ကို|ကို) လက်ခံပြီး`.
     ///
+    /// When an item ends in `ကိုလည်းကောင်း`, the clause is a listed one,
+    /// which can also hold the captures of a nested function.
+    ///
     /// # Returns
     ///
-    /// The parameters, none when no kind starts the clause, or a diagnostic.
-    fn parse_params(&mut self) -> PResult<Vec<Param>>
+    /// The parameters and the captures, none when no kind starts the clause
+    /// and it is no listed one, or a diagnostic.
+    fn parse_params(&mut self) -> PResult<(Vec<Param>, Vec<CaptureItem>)>
     {
-        ret_if!(!self.starts_kind() && !self.at(Kw::EditParam), Ok(Vec::new()));
+        ret_if!(self.sentence_has(Kw::AsWellAs), self.parse_listed_params());
+        ret_if!(!self.starts_kind() && !self.at(Kw::EditParam), Ok(Default::default()));
         let (params, _, _) = self.parse_params_to(&[Kw::Accepting], false)?;
-        Ok(params)
+        Ok((params, Vec::new()))
+    }
+
+    /// Parse a listed parameter clause: items that each end in
+    /// `ကိုလည်းကောင်း`, split with `၊` or not, then `လက်ခံပြီး`. A
+    /// parameter has a kind; a capture is a bare name, with
+    /// `အပိုင်အနေဖြင့်` before `လည်းကောင်း` for a move, or `ငှား၍` for a
+    /// borrow.
+    ///
+    /// # Returns
+    ///
+    /// The parameters and the captures, in source order each, or a
+    /// diagnostic.
+    fn parse_listed_params(&mut self) -> PResult<(Vec<Param>, Vec<CaptureItem>)>
+    {
+        let outer = std::mem::replace(&mut self.in_list, true);
+        let (mut params, mut captures) = (Vec::new(), Vec::new());
+        let read = loop
+        {
+            let item = self.parse_listed_item(&mut params, &mut captures);
+            do_if!(item.is_err(), break item);
+            _ = self.eat_punct(Punct::ListSep);
+            do_if!(self.at(Kw::Accepting), break Ok(()));
+        };
+        self.in_list = outer;
+        read?;
+        self.expect(Kw::Accepting)?;
+        Ok((params, captures))
+    }
+
+    /// Parse one item of a listed parameter clause, through its
+    /// `လည်းကောင်း`.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - The parameters; a parameter joins them.
+    /// * `captures` - The captures; a capture joins them.
+    ///
+    /// # Returns
+    ///
+    /// Nothing, or a diagnostic.
+    fn parse_listed_item(
+        &mut self, params: &mut Vec<Param>, captures: &mut Vec<CaptureItem>,
+    ) -> PResult<()>
+    {
+        let is_param = self.starts_kind() || self.at(Kw::EditParam);
+        if is_param
+        {
+            params.push(self.parse_param()?);
+            self.expect(Kw::Ko)?;
+            self.expect(Kw::AsWellAs)?;
+            return Ok(());
+        }
+        let name = self.parse_ident()?;
+        self.expect(Kw::Ko)?;
+        let mode = match kw_of(&self.peek())
+        {
+            Some(Kw::AsOwned) => CaptureMode::Move,
+            Some(Kw::Lending) => CaptureMode::Lend,
+            _ => CaptureMode::Dup,
+        };
+        do_if!(mode != CaptureMode::Dup, _ = self.bump());
+        let end = self.expect(Kw::AsWellAs)?;
+        let span = name.span.to(&end.span);
+        captures.push(CaptureItem::builder().name(name).mode(mode).span(span).build());
+        Ok(())
     }
 
     /// Parse a parameter clause that ends in one of `ends`.

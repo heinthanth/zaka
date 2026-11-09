@@ -12,6 +12,7 @@ use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::Stmt;
 use zakac_ir_builder::ir::fn_shape;
+use zakac_ir_builder::ir::shown_name;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -167,6 +168,17 @@ pub fn global_name(n: u32) -> String { format!("zk_g{n}") }
 /// The name.
 pub fn func_name(n: u32) -> String { format!("zk_f{n}") }
 
+/// The C name of the record of a function, the value its address gives.
+///
+/// # Arguments
+///
+/// * `n` - The index of the function.
+///
+/// # Returns
+///
+/// The name, `zk_r<n>`.
+pub fn record_name(n: u32) -> String { format!("zk_r{n}") }
+
 /// Text that can stand inside a C comment.
 ///
 /// # Arguments
@@ -213,18 +225,6 @@ pub fn c_string(text: &str) -> String
     out.push('"');
     out
 }
-
-/// The name of a function as a print of its value writes it: the name as
-/// written, without the overload number and the file the compiler adds.
-///
-/// # Arguments
-///
-/// * `name` - The name of the function in the IR.
-///
-/// # Returns
-///
-/// The name.
-fn shown_name(name: &str) -> &str { name.split(['#', '@']).next().unwrap_or(name) }
 
 /// State shared across the functions of a program.
 #[derive(Builder)]
@@ -419,16 +419,18 @@ impl Shared<'_>
     }
 
     /// The C kind of a pointer to a function of a function kind, for a call
-    /// through a function value.
+    /// through a function value: the function itself, or the thunk of a
+    /// closure, which takes the address of the record last.
     ///
     /// # Arguments
     ///
     /// * `f` - The function kind.
+    /// * `bound` - Whether it is the thunk of a closure.
     ///
     /// # Returns
     ///
     /// The C kind, such as `int64_t (*)(int64_t, unsigned char *)`.
-    pub(crate) fn fn_pointer(&mut self, f: &FnKind) -> String
+    pub(crate) fn fn_pointer(&mut self, f: &FnKind, bound: bool) -> String
     {
         let (params, ret) = fn_shape(f);
         let blob_ret = ret.is_some_and(is_blob);
@@ -437,6 +439,7 @@ impl Shared<'_>
         let mut list: Vec<String> = Vec::new();
         do_if!(blob_ret, list.push("unsigned char *".into()));
         list.extend(params.iter().map(|k| self.kind(*k)));
+        do_if!(bound, list.push("unsigned char *".into()));
         let list = tern!(list.is_empty(), "void".into(), list.join(", "));
         format!("{r} (*)({list})")
     }
@@ -467,6 +470,7 @@ impl Shared<'_>
         {
             let proto = self.signature(n as u32);
             let _ = writeln!(out, "{proto}; /* {} */", comment(&f.name));
+            let _ = writeln!(out, "extern const zk_fnrec {};", record_name(n as u32));
         }
         for (n, call) in self.ffi_calls.iter().enumerate()
         {
@@ -520,11 +524,17 @@ impl Shared<'_>
         do_for!((name, text) in words, {
             let _ = writeln!(out, "const char {name}[] = {};", c_string(text));
         });
+        for n in 0..self.module.funcs.len() as u32
+        {
+            let (record, func) = (record_name(n), func_name(n));
+            let _ =
+                writeln!(out, "const zk_fnrec {record} = {{(zk_code){func}, NULL}};");
+        }
         out.push_str("const zk_fn_name zk_fn_names[] = {\n");
         for (n, f) in self.module.funcs.iter().enumerate()
         {
             let name = c_string(shown_name(&f.name));
-            let _ = writeln!(out, "    {{(zk_fn){}, {name}}},", func_name(n as u32));
+            let _ = writeln!(out, "    {{(zk_code){}, {name}}},", func_name(n as u32));
         }
         out.push_str("    {NULL, NULL}\n};\n");
         let count = self.module.funcs.len();
@@ -567,6 +577,8 @@ fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_CHAR_OUT_OF_RANGE", t!("target_c.trap.char_out_of_range")),
         ("ZK_TRAP_END_BEFORE_START", t!("target_c.trap.end_before_start")),
         ("ZK_TRAP_NULL_CALL", t!("target_c.trap.null_call")),
+        ("ZK_TRAP_CLOSURE_ESCAPE", t!("target_c.trap.closure_escape")),
+        ("ZK_TRAP_CLOSURE_OWNER", t!("target_c.trap.closure_owner")),
         ("ZK_TRAP_NO_CELL_TO_REMOVE", t!("target_c.trap.no_cell_to_remove")),
         ("ZK_TRAP_NO_CHAR_TO_REMOVE", t!("target_c.trap.no_char_to_remove")),
         ("ZK_TRAP_NO_PLACE_TO_INSERT", t!("target_c.trap.no_place_to_insert")),

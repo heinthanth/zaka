@@ -36,6 +36,7 @@ program:
                 hi: 217
             is_const: false
             init: null
+            moves: false
             exported: false
             span:
               lo: 117
@@ -115,6 +116,7 @@ program:
                       span:
                         lo: 474
                         hi: 495
+                  moves: false
                   span:
                     lo: 448
                     hi: 521
@@ -429,6 +431,7 @@ program:
                     span:
                       lo: 1807
                       hi: 1828
+                moves: false
                 span:
                   lo: 1781
                   hi: 1854
@@ -462,6 +465,8 @@ program:
       external: false
       lib: null
       variadic: false
+      owned_ret: false
+      captures: []
       span:
         lo: 0
         hi: 2020

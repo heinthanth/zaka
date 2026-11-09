@@ -154,6 +154,119 @@ first") whether one number comes before another:
 [၉၊ ၇၊ ၅၊ ၂၊ ၁]
 ```
 
+## A function that uses the variables around it
+
+A function declared inside another function, or inside the start block, can use the
+variables above it. It lists each one it uses in the list of its parameters, and tells how
+it takes it. With such a list, each item ends in `ကိုလည်းကောင်း` ("and also"), the
+parameters too:
+
+| Item | Reads as | The function gets |
+| --- | --- | --- |
+| `တိုး ကိုလည်းကောင်း` | "and တိုး" | a duplicate of its own |
+| `တိုး ကို အပိုင်အနေဖြင့်လည်းကောင်း` | "and တိုး, as its own" | the value, moved; `တိုး` is left blank |
+| `တိုး ကို ငှား၍လည်းကောင်း` | "and တိုး, borrowed" | `တိုး` itself |
+
+The listed variables are its *captures*, and its address, a function value that carries
+them, is a *closure*. A borrowed variable is shared, so each call sees its current value:
+
+```zaka
+လုပ်ဆောင်ချက် ကွက်တိုင်း သည်
+ကိန်းပြည့် စာရင်း စ၊
+(ကိန်းပြည့် ကို လက်ခံပြီး ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) ပြောင်း
+တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
+စ ၏ အကွက်တိုင်း ကို တန် အနေဖြင့် ယူ၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+ရလဒ် ထဲသို့ ပြောင်း(တန်) ကို ထည့်ပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် တိုး သည် ၁၀ ဖြစ်ပါစေ။
+// a function that borrows တိုး, a variable around it
+လုပ်ဆောင်ချက် ထည့် သည် ကိန်းပြည့် က ကိုလည်းကောင်း၊ တိုး ကို ငှား၍လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က + တိုး ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် ကွက်တိုင်း ကို [၁၊ ၂၊ ၃]၊ လုပ်ဆောင်ချက် ထည့် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+တိုး ကို ၅၀ ဟု ထားပါ။
+လုပ်ဆောင်ချက် ကွက်တိုင်း ကို [၁၊ ၂၊ ၃]၊ လုပ်ဆောင်ချက် ထည့် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[၁၁၊ ၁၂၊ ၁၃]
+[၅၁၊ ၅၂၊ ၅၃]
+```
+
+A variable the list leaves out is an error, ZK0339, so each function shows what it takes
+from around it.
+
+## A function that keeps values
+
+A duplicate or a move belongs to the closure, and what the function writes to it remains for
+the next call. Such a closure owns what it keeps, so it can leave the block that made it: here
+a function gives back a counter.
+
+```zaka
+လုပ်ဆောင်ချက် ရေတွက်စက် သည် ကိန်းပြည့် စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ (လုပ်ဆောင်ချက် အမျိုးအစား) ရလဒ် ကို ပြန်ပေးမည်။
+ကိန်းရှင် ကြိမ် သည် စ ဖြစ်ပါစေ။
+// a duplicate of ကြိမ်, which this counter keeps
+လုပ်ဆောင်ချက် တိုး သည် ကြိမ် ကိုလည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကြိမ် ကို ကြိမ် + ၁ ဟု ထားပါ။
+ကြိမ် ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် တိုး ၏ လိပ်စာ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ရေ သည် လုပ်ဆောင်ချက် ရေတွက်စက် ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ရေ ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ရေ ကို လုပ်ဆောင်ပါ။
+// a duplicate of the closure counts on its own
+ကိန်းရှင် နောက်တစ်ခု ထဲသို့ ရေ ကို ကူးထည့်မည်။
+လုပ်ဆောင်ချက် နောက်တစ်ခု ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ရေ ကို လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၁၁
+၁၂
+၁၃
+၁၃
+```
+
+A closure handed to a function is lent for the call: the function runs that same closure,
+so its count goes on.
+
+A closure that borrows uses the variables of the block that declares it, so it cannot leave
+that block. Giving its address back as a result would leave the function with variables
+that are gone, and the compiler refuses it with ZK0722:
+
+```zaka-error ZK0722
+လုပ်ဆောင်ချက် ဖန်တီး သည် ကိန်းပြည့် တိုး ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ (ကိန်းပြည့် ကို လက်ခံပြီး ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် ထည့် သည် ကိန်းပြည့် က ကိုလည်းကောင်း၊ တိုး ကို ငှား၍လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က + တိုး ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် ထည့် ၏ လိပ်စာ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0722]: "ထည့်" borrows the locals around it, so its address cannot go where it outlives them
+```
+
+List `တိုး ကိုလည်းကောင်း` in its place, and the closure keeps a duplicate and can go. The full
+rules are in
+[Nested functions and closures](../../manual/language/function-values.md#nested-functions-and-closures).
+
 ## Naming a function kind
 
 A function kind is long to write in each header. A [kind

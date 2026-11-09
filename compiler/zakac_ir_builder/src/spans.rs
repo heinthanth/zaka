@@ -215,6 +215,8 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
         | ExprNode::Lend { operand }
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }
+        | ExprNode::Closure { record: operand, .. }
+        | ExprNode::Plain { value: operand }
         | ExprNode::Own { value: operand } => expr(operand, f),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }

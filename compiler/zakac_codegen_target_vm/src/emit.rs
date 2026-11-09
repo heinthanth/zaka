@@ -1551,6 +1551,17 @@ impl<'s> FuncGen<'s>
                 self.call(Target::Value(callee), args)
             }
             ExprNode::FnAddr { func, .. } => self.op(Op::FnAddr(*func)),
+            ExprNode::Closure { func, record, .. } =>
+            {
+                self.expr(record);
+                let kind = record.kind.pointee().expect("a record address");
+                self.op(Op::Closure { func: *func, record: kind });
+            }
+            ExprNode::Plain { value } =>
+            {
+                self.expr(value);
+                self.op(Op::FnPlain);
+            }
             ExprNode::Host { func, args } =>
             {
                 let slot = self.temp("%host", e.kind);
@@ -1745,11 +1756,14 @@ impl<'s> FuncGen<'s>
         let slot = self.temp("%dup", kind);
         self.op(Op::LocalAddr(slot));
         self.expr(value);
-        self.op(Op::Blit(kind));
+        // A function value is one word on the stack, not an address.
+        let word = !kind.is_aggregate();
+        self.op(tern!(word, Op::Store(kind), Op::Blit(kind)));
         self.op(Op::LocalAddr(slot));
         let text = kind.holds_text();
         do_if!(text, self.op(tern!(lent, Op::LendSeqs(kind), Op::DupSeqs(kind))));
         self.op(Op::LocalAddr(slot));
+        do_if!(word, self.op(Op::Load(kind)));
     }
 
     /// Generate a call: the arguments in order, then the call. A list or
@@ -1776,6 +1790,16 @@ impl<'s> FuncGen<'s>
     fn call_stmt(&mut self, target: Target, args: &[Expr])
     {
         let ret = self.ret_of(target);
+        // A function value is one word on the stack: it goes to a slot that
+        // is dropped, so a closure frees its record.
+        if let Some(kind) = ret.filter(|k| k.is_fn())
+        {
+            let n = self.temp("%ret", kind);
+            self.op(Op::LocalAddr(n));
+            self.call(target, args);
+            self.op(Op::Store(kind));
+            return self.drop_local(n, kind);
+        }
         let held = ret.filter(|k| k.holds_text());
         let slot = held.map(|kind| (self.temp("%ret", kind), kind));
         let into = slot.map(|(n, _)| Op::LocalAddr(n));

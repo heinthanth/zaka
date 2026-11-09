@@ -492,6 +492,11 @@ impl Walk
             ExprNode::Call { func, args, .. } => self.args(*func, args),
             ExprNode::CallValue { callee, args } => self.value_args(callee, args),
             ExprNode::FnAddr { .. } => (),
+            ExprNode::Closure { record: operand, .. }
+            | ExprNode::Plain { value: operand } =>
+            {
+                self.expr(operand, Use::Read, write)
+            }
             ExprNode::Host { args, .. } | ExprNode::Foreign { args, .. } =>
             {
                 do_for!(a in args, self.expr(a, Use::Read, write))

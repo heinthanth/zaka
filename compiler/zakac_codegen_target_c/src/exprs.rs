@@ -17,6 +17,7 @@ use zakac_semcheck::kind::DataKind;
 use crate::emit::FnGen;
 use crate::emit::c_string;
 use crate::emit::func_name;
+use crate::emit::record_name;
 use crate::ffi::FfiCall;
 use crate::ffi::wrapper_name;
 use crate::kinds::constant;
@@ -74,7 +75,18 @@ impl FnGen<'_, '_>
             {
                 self.call(Callee::Value(callee), args)
             }
-            ExprNode::FnAddr { func, .. } => format!("((zk_fn){})", func_name(*func)),
+            ExprNode::FnAddr { func, .. } =>
+            {
+                format!("((zk_fn)&{})", record_name(*func))
+            }
+            ExprNode::Closure { func, record, .. } =>
+            {
+                let kind = record.kind.pointee().expect("a record address");
+                let k = self.shared.descr.of(kind);
+                let record = self.expr(record);
+                format!("zk_closure({record}, (zk_code){}, {k})", func_name(*func))
+            }
+            ExprNode::Plain { value } => format!("zk_fn_plain({})", self.expr(value)),
             ExprNode::Lend { operand } => self.expr(operand),
             ExprNode::FieldAddr { base, offset, .. } =>
             {
@@ -598,6 +610,8 @@ impl FnGen<'_, '_>
     fn dup(&mut self, value: &Expr, kind: DataKind, lent: bool) -> String
     {
         let v = self.expr(value);
+        let call = tern!(lent, "zk_fn_lend", "zk_fn_dup");
+        ret_if!(kind.is_fn(), format!("{call}({v})"));
         ret_if!(!is_blob(kind), v);
         let t = self.temp(kind);
         let size = self.shared.size(kind);

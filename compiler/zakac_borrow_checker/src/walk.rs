@@ -35,6 +35,8 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }
         | ExprNode::Own { value: operand }
+        | ExprNode::Closure { record: operand, .. }
+        | ExprNode::Plain { value: operand }
         | ExprNode::FieldAddr { base: operand, .. } => vec![operand.as_ref()],
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
@@ -178,6 +180,8 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }
         | ExprNode::Own { value: operand }
+        | ExprNode::Closure { record: operand, .. }
+        | ExprNode::Plain { value: operand }
         | ExprNode::FieldAddr { base: operand, .. } => vec![operand.as_mut()],
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }

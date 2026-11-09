@@ -211,6 +211,8 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         }
         VerbOp::Print
         | VerbOp::Assign
+        | VerbOp::DupInto
+        | VerbOp::MoveInto
         | VerbOp::Return
         | VerbOp::ReturnFault
         | VerbOp::ReturnGood

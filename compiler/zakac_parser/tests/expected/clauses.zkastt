@@ -691,6 +691,7 @@ program:
           span:
             lo: 1605
             hi: 1669
+      moves: false
       span:
         lo: 1582
         hi: 1695

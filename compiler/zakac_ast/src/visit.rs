@@ -573,6 +573,7 @@ pub fn walk_fn<V: Visitor + ?Sized>(v: &mut V, n: &FnDecl)
     v.enter(n);
     v.visit_ident(&n.name);
     do_for!(p in &n.params, v.visit_param(p));
+    do_for!(c in &n.captures, v.visit_ident(&c.name));
     do_if!(let Some(ret) = &n.ret, v.visit_kind(ret));
     v.visit_block(&n.block);
     v.leave(n);
@@ -1228,6 +1229,11 @@ pub fn walk_fn_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FnDecl)
         v.visit_kind_mut(&mut p.kind);
         v.visit_ident_mut(&mut p.name);
         do_if!(let Some(mark) = &mut p.mark, v.visit_ident_mut(mark));
+    }
+    for c in &mut n.captures
+    {
+        v.visit_span_mut(&mut c.span);
+        v.visit_ident_mut(&mut c.name);
     }
     opt_kind_mut(v, &mut n.ret);
     v.visit_block_mut(&mut n.block);

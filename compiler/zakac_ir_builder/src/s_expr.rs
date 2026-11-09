@@ -173,6 +173,11 @@ impl ToSexpr for Expr
             ExprNode::Call { name, args, .. } => call_sexpr(name, args),
             ExprNode::CallValue { callee, args } => call_value_sexpr(callee, args),
             ExprNode::FnAddr { name, .. } => list("fn_addr", [name.clone()]),
+            ExprNode::Closure { name, record, .. } =>
+            {
+                list("closure", [name.clone(), record.to_sexpr()])
+            }
+            ExprNode::Plain { value } => list("plain", [value.to_sexpr()]),
             ExprNode::Foreign { func, args } => foreign_sexpr(*func, args),
             ExprNode::Host { func, args } =>
             {

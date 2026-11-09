@@ -5,6 +5,8 @@ use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
+use zakac_ast::visit::Visitor;
+use zakac_ast::visit::walk_block;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
@@ -88,7 +90,7 @@ fn node_of(file: &FileCheck, stmt: &Stmt) -> Option<DocumentSymbol>
 }
 
 /// The node of a function, a C function or the start block, with its
-/// parameters as children.
+/// parameters and the functions declared inside it as children.
 ///
 /// # Arguments
 ///
@@ -102,8 +104,20 @@ fn fn_node(file: &FileCheck, f: &FnDecl) -> DocumentSymbol
 {
     let param =
         |p: &Param| node(file, &p.name, p.span, SymbolKind::Variable, Vec::new());
-    let params = f.params.iter().map(param).collect();
-    node(file, &f.name, f.span, SymbolKind::Function, params)
+    let params = f.params.iter().map(param);
+    let mut inside = Inside(Vec::new());
+    walk_block(&mut inside, &f.block);
+    let nested = inside.0.iter().map(|n| fn_node(file, n));
+    node(file, &f.name, f.span, SymbolKind::Function, params.chain(nested).collect())
+}
+
+/// The functions declared inside a block, at each depth but inside one of
+/// them, which has its own node.
+struct Inside(Vec<FnDecl>);
+
+impl Visitor for Inside
+{
+    fn visit_fn(&mut self, n: &FnDecl) { self.0.push(n.clone()) }
 }
 
 /// An outline node with its name, the range of its whole statement and the

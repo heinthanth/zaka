@@ -21,6 +21,10 @@ value), `WORD` the classifier of the kind, and `BODY` a block or one statement. 
 | declare | `ကိန်းရှင် NAME သည် KIND တစ်WORD [ဖြစ်၍ တန်ဖိုးသည် VALUE] ဖြစ်ပါစေ။` or `ကိန်းရှင် NAME သည် VALUE ဖြစ်ပါစေ။` |
 | constant | `ကိန်းသေ NAME သည် KIND တစ်WORD ဖြစ်၍ တန်ဖိုးသည် VALUE ဖြစ်ပါစေ။` or `ကိန်းသေ NAME သည် VALUE ဖြစ်ပါစေ။` |
 | assign | `PLACE ကို VALUE ဟု ထားပါ။` |
+| declare a duplicate | `ကိန်းရှင် NAME ထဲသို့ VALUE ကို ကူးထည့်မည်။` (or `ကိန်းသေ`) |
+| declare through a move | `ကိန်းရှင် NAME ထဲသို့ VALUE ကို ပြောင်းထည့်မည်။` (or `ကိန်းသေ`) |
+| duplicate into | `PLACE ထဲသို့ VALUE ကို ကူးထည့်မည်။` |
+| move into | `PLACE ထဲသို့ VALUE ကို ပြောင်းထည့်မည်။` |
 | set a character | `TEXT ၏ စာလုံး N ကို CHAR ဟု ထားပါ။` or `TEXT ၏ N ခုမြောက်စာလုံး ကို CHAR ဟု ထားပါ။` |
 | print | `VALUE ကို ပြသပါ။` or `VALUE ဟု ပြသပါ။` |
 | block | `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။` statements `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` |
@@ -175,6 +179,36 @@ place is a variable, a cell of a list (`x ၏ အကွက် i`) or the value a
 [Text](text.md#changing-text)). Another expression is ZK0410. A constant (ZK0306) and a counted-loop counter
 (ZK0307) cannot be assigned to. The value must widen to the kind of the place
 ([Conversions](conversions.md)).
+
+## Duplicating and moving into a variable
+
+Two verbs put a value into a variable and tell how:
+
+- `PLACE ထဲသို့ VALUE ကို ကူးထည့်မည်။` ("will duplicate into") puts a duplicate of the value
+  there, as `ဟု ထားပါ` does: text, a list or a closure gets cells of its own.
+- `PLACE ထဲသို့ VALUE ကို ပြောင်းထည့်မည်။` ("will move into") moves the value there and
+  leaves the place it came from blank: `""` for text, `[]` for a list, `ဗလာ` for a
+  function value or an owner. A number has no block, so a move of it leaves it as it is.
+
+After `ကိန်းရှင်` or `ကိန်းသေ`, the same sentences declare the name, with the kind of the
+value. `ထဲသို့ VALUE ကို ထည့်ပါ` remains the add of a cell or of text; the verb tells them apart.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် "စံ" ဖြစ်ပါစေ။
+ကိန်းရှင် ခ ထဲသို့ က ကို ကူးထည့်မည်။
+ခ ထဲသို့ "ကား" ကို ထည့်ပါ။
+ကိန်းရှင် ဂ ထဲသို့ က ကို ပြောင်းထည့်မည်။
+"[{က}] {ခ} {ဂ}" ဟု ပြသပါ။
+က ထဲသို့ ဂ ကို ကူးထည့်မည်။
+"{က} {ဂ}" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[] စံကား စံ
+စံ စံ
+```
 
 ## Printing
 

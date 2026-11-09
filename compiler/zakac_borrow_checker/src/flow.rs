@@ -37,6 +37,8 @@ use crate::checks::bounds::check_overlap;
 use crate::checks::bounds::check_ptr_sub;
 use crate::checks::calls::all_given_back;
 use crate::checks::calls::check_call;
+use crate::checks::calls::check_closure_args;
+use crate::checks::calls::check_owner_dup;
 use crate::checks::calls::given_back;
 use crate::checks::calls::lift_reads;
 use crate::checks::calls::note_read;
@@ -62,6 +64,7 @@ use crate::checks::report;
 use crate::checks::static_rules::check_free_dest;
 use crate::checks::static_rules::check_global_set;
 use crate::checks::static_rules::check_stored_borrow;
+use crate::closures::Closures;
 use crate::digest::FnDigest;
 use crate::digest::Root;
 use crate::digest::Seg;
@@ -206,6 +209,8 @@ pub(crate) struct Flow<'m>
     /// The facts of the globals at the start, when the routine knows them:
     /// the start block, which the main program calls once, last.
     pub(crate) seed: Option<Vec<SlotState>>,
+    /// The closures the routine makes, and the slots that hold them.
+    pub(crate) closures: Closures,
 }
 
 /// Run the flow of one routine.
@@ -407,6 +412,7 @@ impl<'m> Flow<'m>
             result_roots: BTreeSet::new(),
             result_roots_ok: true,
             seed: None,
+            closures: Closures::of(module, routine.block),
         }
     }
 
@@ -671,9 +677,16 @@ impl<'m> Flow<'m>
             {
                 check_global_set(self, *place, value, *span);
                 check_result_set(self, *place, value, *span, state);
+                // The closures the slot holds from here on are those of the
+                // value, in place of what it held before.
+                let held = self.closures.held_in(value, state);
                 let v = self.moved(value, state);
                 check_overwrite(self, *place, *span, state);
                 self.assign(*place, v, state);
+                state.closures.remove(place);
+                do_if!(!held.is_empty(), {
+                    state.closures.insert(*place, held);
+                });
             }
             Stmt::Print { value: PrintValue::Expr(e), .. }
             | Stmt::Halt { value: Some(e), .. } =>
@@ -1234,10 +1247,11 @@ impl<'m> Flow<'m>
                 self.load(e, addr, &at, state)
             }
             ExprNode::Take { addr } => self.take(e, addr, state),
-            ExprNode::Dup { value, .. } =>
+            ExprNode::Dup { value, lent } =>
             {
                 // A duplicate holds blocks of its own, so it points at
                 // nothing the value read points at.
+                do_if!(!*lent, check_owner_dup(self, e.span, value, state));
                 self.value(value, state);
                 SlotState::unknown(e.kind, Roots::new())
             }
@@ -1252,6 +1266,16 @@ impl<'m> Flow<'m>
                 SlotState::unknown(e.kind, Roots::new())
             }
             ExprNode::FnAddr { .. } => fn_const(e.kind, Value::Ptr(1)),
+            ExprNode::Closure { record, .. } =>
+            {
+                self.value(record, state);
+                // The record moves to the heap, leaving its slot blank.
+                let slot = tern!(let ExprNode::AddrOf(p) = record.node, Some(p), None);
+                let kind = record.kind.pointee();
+                do_if!(let (Some(p), Some(k)) = (slot, kind), leave_moved(p, k, state));
+                fn_const(e.kind, Value::Ptr(1))
+            }
+            ExprNode::Plain { value } => self.value(value, state),
             ExprNode::Host { args, .. } | ExprNode::Foreign { args, .. } =>
             {
                 // The host reads each argument through its address, and C takes
@@ -1642,6 +1666,26 @@ impl<'m> Flow<'m>
         let mut taken = moved_slots(args);
         taken.retain(|p| !self.ctx.is_const(*p));
         do_for!(a in args, { self.moved(a, state); });
+        self.effects(funcs, &roots, args, &taken, span, state);
+        self.closure_args(args, &roots, span, state);
+    }
+
+    /// What a call does to the facts of the caller: each of `funcs` is
+    /// checked against the arguments, and their effects join.
+    ///
+    /// # Arguments
+    ///
+    /// * `funcs` - The functions the call can run.
+    /// * `roots` - The roots of each argument before the call.
+    /// * `args` - The arguments, or the borrows a closure passes.
+    /// * `taken` - The slots the arguments move out of.
+    /// * `span` - The call.
+    /// * `state` - The facts, changed in place.
+    fn effects(
+        &mut self, funcs: &[u32], roots: &[Roots], args: &[Expr],
+        taken: &BTreeSet<Place>, span: Span, state: &mut State,
+    )
+    {
         blur_cells(self, roots.iter().flatten(), state);
         // A call through a function value runs one of `funcs`, so each of
         // them is checked and their effects join.
@@ -1678,6 +1722,111 @@ impl<'m> Flow<'m>
         forget_extents(&resized, state);
     }
 
+    /// Run the closures the arguments of a call can hold, as the callee can:
+    /// each can run or not, so its effects on the locals it borrows join the
+    /// facts of a call that does not run it. An argument that reaches a block
+    /// such a closure can free is ZK0707.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The arguments.
+    /// * `roots` - The roots of each argument before the call.
+    /// * `span` - The call.
+    /// * `state` - The facts, changed in place.
+    fn closure_args(
+        &mut self, args: &[Expr], roots: &[Roots], span: Span, state: &mut State,
+    )
+    {
+        for (at, arg) in args.iter().enumerate()
+        {
+            for func in self.closures.held_in(arg, state)
+            {
+                let Some((own, borrows)) = self.closure_roots(func, Vec::new(), state)
+                else
+                {
+                    continue;
+                };
+                check_closure_args(self, func, at, &own, roots, span);
+                self.run_or_not(func, &own, &borrows, span, state);
+            }
+        }
+    }
+
+    /// The roots a function declared inside a function takes when a closure
+    /// runs it: those of its declared parameters, then those of the borrows
+    /// the closure passes.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - The function.
+    /// * `declared` - The roots of the declared parameters, when known.
+    /// * `state` - The facts.
+    ///
+    /// # Returns
+    ///
+    /// The roots and the borrows, or `None` when the routine makes no closure
+    /// of the function.
+    fn closure_roots(
+        &self, func: u32, mut declared: Vec<Roots>, state: &State,
+    ) -> Option<(Vec<Roots>, Vec<Expr>)>
+    {
+        let borrows = self.closures.borrows(func)?.to_vec();
+        let params = self.module.funcs.get(func as usize)?.params as usize;
+        declared.resize(params.saturating_sub(borrows.len()), Roots::new());
+        let lent = borrows.iter().map(|b| value_roots(b, state, &self.ctx));
+        declared.extend(lent);
+        Some((declared, borrows))
+    }
+
+    /// Take on what a function declared inside a function does to the locals
+    /// it borrows, as a call that can run it or not.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - The function.
+    /// * `roots` - The roots of its parameters.
+    /// * `borrows` - The borrows the closure passes.
+    /// * `span` - The call.
+    /// * `state` - The facts, changed in place.
+    fn run_or_not(
+        &mut self, func: u32, roots: &[Roots], borrows: &[Expr], span: Span,
+        state: &mut State,
+    )
+    {
+        let mut ran = state.clone();
+        self.effects(&[func], roots, borrows, &BTreeSet::new(), span, &mut ran);
+        *state = state.join(&ran);
+        self.run_held(func, span, state);
+    }
+
+    /// Take on the closures a closure holds, at each depth: the function it
+    /// runs can call each closure its record holds, as a duplicate, a move or
+    /// a borrow, or not, and so on inward. Each function runs once.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - The function the outer closure runs, which is left out.
+    /// * `span` - The call.
+    /// * `state` - The facts, changed in place.
+    fn run_held(&mut self, func: u32, span: Span, state: &mut State)
+    {
+        let mut seen = BTreeSet::from([func]);
+        let mut next: Vec<u32> = self.closures.inner(func, state).into_iter().collect();
+        while let Some(g) = next.pop()
+        {
+            do_if!(!seen.insert(g), continue);
+            next.extend(self.closures.inner(g, state));
+            let Some((own, inner)) = self.closure_roots(g, Vec::new(), state)
+            else
+            {
+                continue;
+            };
+            let mut ran = state.clone();
+            self.effects(&[g], &own, &inner, &BTreeSet::new(), span, &mut ran);
+            *state = state.join(&ran);
+        }
+    }
+
     /// Run a call through a function value: the value, which must hold a
     /// function, then a call of each function it can hold.
     ///
@@ -1694,7 +1843,19 @@ impl<'m> Flow<'m>
         self.value(callee, state);
         check_callee(self, callee, state);
         let funcs = value_callees(self.module, callee.kind);
+        let roots: Vec<Roots> =
+            args.iter().map(|a| value_roots(a, state, &self.ctx)).collect();
         self.call(&funcs, args, span, state);
+        // A closure the value holds runs with the arguments of the call.
+        for func in self.closures.held_in(callee, state)
+        {
+            let Some((own, borrows)) = self.closure_roots(func, roots.clone(), state)
+            else
+            {
+                continue;
+            };
+            self.run_or_not(func, &own, &borrows, span, state);
+        }
     }
 
     /// Forget the extent of each pointer into a block a free or a resize

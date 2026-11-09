@@ -28,6 +28,7 @@ program:
           hi: 349
       is_const: false
       init: null
+      moves: false
       exported: false
       span:
         lo: 197
@@ -61,6 +62,7 @@ program:
             lo: 576
             hi: 609
           brackets: false
+      moves: false
       exported: false
       span:
         lo: 378
@@ -121,6 +123,7 @@ program:
           span:
             lo: 838
             hi: 902
+      moves: false
       exported: false
       span:
         lo: 638
@@ -160,6 +163,7 @@ program:
           span:
             lo: 969
             hi: 975
+      moves: false
       span:
         lo: 931
         hi: 1001
@@ -243,6 +247,7 @@ program:
           span:
             lo: 1207
             hi: 1210
+      moves: false
       span:
         lo: 1193
         hi: 1236
@@ -327,6 +332,7 @@ program:
           hi: 1621
       is_const: false
       init: null
+      moves: false
       exported: false
       span:
         lo: 1396
@@ -383,6 +389,7 @@ program:
           span:
             lo: 1721
             hi: 1724
+      moves: false
       span:
         lo: 1650
         hi: 1750
@@ -418,6 +425,7 @@ program:
           span:
             lo: 1798
             hi: 1801
+      moves: false
       span:
         lo: 1751
         hi: 1827
@@ -476,6 +484,7 @@ program:
           span:
             lo: 2241
             hi: 2267
+      moves: false
       exported: false
       span:
         lo: 1976
@@ -515,6 +524,7 @@ program:
           span:
             lo: 2349
             hi: 2355
+      moves: false
       span:
         lo: 2296
         hi: 2381
@@ -576,6 +586,7 @@ program:
           span:
             lo: 2568
             hi: 2618
+      moves: false
       exported: false
       span:
         lo: 2382
@@ -737,6 +748,7 @@ program:
                       span:
                         lo: 3310
                         hi: 3378
+                  moves: false
                   span:
                     lo: 3287
                     hi: 3404
@@ -756,6 +768,8 @@ program:
       external: false
       lib: null
       variadic: false
+      owned_ret: false
+      captures: []
       span:
         lo: 2816
         hi: 3487

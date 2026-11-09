@@ -282,9 +282,9 @@ a heap block.
 | --- | --- | --- |
 | `text t` | slot → slot | write the static text `t` in the text slot, with a room of 0 |
 | `format fmt` | slot v… → slot | build the text of format `fmt` in a new heap block and write it in the slot, with a room equal to its count |
-| `drop k` | addr → | free each text and each plain list inside the value of kind `k` whose room is above 0, and leave each blank |
-| `dup_seqs k` | addr → | give each text and each plain list inside the value of kind `k` whose cells sit outside static storage a new heap block with the same cells |
-| `lend_seqs k` | addr → | give each text and each plain list inside the value of kind `k` a room of 0, so a parameter reads the caller's cells and its drop frees nothing |
+| `drop k` | addr → | free each text and each plain list inside the value of kind `k` whose room is above 0, and the record of each closure not lent, with what its fields own, owner blocks included; leave each blank |
+| `dup_seqs k` | addr → | give each text and each plain list inside the value of kind `k` whose cells sit outside static storage a new heap block with the same cells, and each closure a new record, its fields duplicated in turn; a closure whose record owns a block stops the program with the `closure owner` trap |
+| `lend_seqs k` | addr → | give each text and each plain list inside the value of kind `k` a room of 0, and set the lowest bit of each closure, so a parameter reads the caller's cells and runs the caller's closure, and its drop frees nothing |
 | `own k` | addr → | give each text and each plain list inside the value of kind `k` that has cells and a room of 0 a new heap block with the same cells; the cells of a list are duplicated, each text and list in them too |
 | `text_eq` | addr addr → b | whether two texts or views of text hold the same u8s |
 | `char_count` | addr → n | the number of characters of the text at `addr`, a `usize` |
@@ -321,8 +321,10 @@ write into one traps ([When a program stops](traps.md)).
 | `jump_if_false t` | bool → | go to `t` when the boolean is false |
 | `jump_if_true t` | bool → | go to `t` when the boolean is true |
 | `call f` | args → result | call function `f`; the last argument is on top |
-| `fn_addr f` | → fn | push the [function value](../language/function-values.md) that calls function `f`: one word, `f + 1`, so 0 is `ဗလာ` |
-| `call_value n` | fn args → result | take the function value from under the `n` arguments, then call the function it holds as `call` does; a value of 0 stops the program with the `null call` trap |
+| `fn_addr f` | → fn | push the [function value](../language/function-values.md) that calls function `f`: one word, `f + 1`, so 0 is `ဗလာ`. The word of a plain function lies below the first record of a closure, so the two never meet |
+| `closure f k` | addr → fn | make a [closure](../language/function-values.md#nested-functions-and-closures): pop the address of a record of kind `k`, move the record to a new heap block and leave zeros behind, write `f + 1` into its first word, where `f` is the thunk that calls the nested function with the address of each capture, and push the address of the block as the function value |
+| `fn_plain` | fn → fn | check a function value headed where a closure that borrows cannot go (a field, a cell, a global, a place reached through an address, a result): stop the program with the `closure escape` trap when the value on top is a closure whose record holds a borrow; the value remains |
+| `call_value n` | fn args → result | take the function value from under the `n` arguments, then call the function it holds as `call` does; a value of 0 stops the program with the `null call` trap. A closure is the address of its record, with the lowest bit set while a call borrows it: the call reads the thunk from the first word and passes the address of the record as one more argument, the last |
 | `host h` | slot addrs → slot | serve host function `h` (`read_line`, `read_file`, `write_file`, `write_stream`), the one op of an external function: pop the borrowed address of each parameter, with the address of the result slot under them, write the result there and leave its address. The VM reads each value through its address and frees none. `zakac run` serves it from the terminal and the files on disk; the books and the explorer serve it from storage (see [Host functions](../internals/codegen.md#host-functions)) |
 | `foreign c` | values → result | make C call `c` of the table of C calls of the module (`foreign_calls`), the op of a [C function](../language/functions.md#c-functions) (`--emit asm` writes `foreign c0`, `foreign c1`, ...). A call row names the C function and the kind of each of its other values, so a C function that takes other values has a row for each shape of call. Pop the value of each parameter and then of each other value, the last on top, where a struct or a text is the address of its value (a text goes to C as a duplicate of its u8s that ends in a zero octet, freed when the call ends). A struct result goes to the slot whose address lies under the values, and the address remains; another result is pushed; a function with no result pushes nothing. An address that lies in a live block reaches C as the native address of that octet. The first call opens each lib; a VM built with no `ffi`, such as the one in the explorer, stops at the call with the trap `C function not run` (see [When a program stops](traps.md#c-functions)) |
 | `ret` | | leave the function; a result remains on the stack |
@@ -342,7 +344,7 @@ result](../language/error-handling.md#reading-a-whole-result): `not_good` and `n
 | `print` | v → | write the value and a line break |
 | `print_text t` | | write the static text `t` and a line break |
 | `print_list k` | addr → | write the cells of a list or a slice, the fields of a struct, or the text, of kind `k`, and a line break |
-| `print_enum k` | v → | write the member of enumeration `k` whose value `v` is (the address of the value for a list, a struct or text) as `<stem>များထဲမှ <member>`, and a line break; a value no member has as its value. For a function kind `k`, write the function value as `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`, or `ဗလာ` |
+| `print_enum k` | v → | write the member of enumeration `k` whose value `v` is (the address of the value for a list, a struct or text) as `<stem>များထဲမှ <member>`, and a line break; a value no member has as its value. For a function kind `k`, write the function value as `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`, or `ဗလာ` (a closure names the function its thunk calls) |
 
 How each value reads is in [Running a program](running.md#printing).
 
@@ -357,6 +359,8 @@ How each value reads is in [Running a program](running.md#printing).
 | `v ကို ပြသပါ` | `v; print` |
 | call as a statement | `args; call f`, and `pop` when the callee gives a result no one uses |
 | call through a function value | `fn; args; call_value n` |
+| declaration of a nested function with captures | `record; closure f k`, kept in a hidden local |
+| a function value headed to a field, a cell, a global or a result | `fn; fn_plain` |
 | `p ၏ တန်ဖိုး` | `p; load k` |
 | `p + i` | `p; i; ptr_add s` |
 | allocate | `x; count; alloc s; store k*` |

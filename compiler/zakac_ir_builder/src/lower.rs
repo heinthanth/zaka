@@ -56,6 +56,10 @@ use crate::ir::fn_shape;
 use crate::lends::free_read_lends;
 use crate::value::Value;
 
+mod nested;
+
+use nested::Nested;
+
 /// Lower a checked program to the IR. Names become slots, blocks are
 /// flattened, operators get one spelling, and widening conversions become
 /// explicit. A negated integer literal becomes a negative constant.
@@ -65,6 +69,8 @@ use crate::value::Value;
 /// * `program` - The tree; the check must have reported no errors.
 /// * `kinds` - The kind of each expression, from the check.
 /// * `structs` - The kind of each declared struct, from the check.
+/// * `captures` - The locals each function declared inside a function borrows,
+///   from the check.
 /// * `options` - The options.
 ///
 /// # Returns
@@ -80,11 +86,14 @@ pub fn lower(
 ) -> Module
 {
     let unit_sigs = collect_sigs(program, structs);
+    let top_count =
+        program.stmts.iter().filter(|s| matches!(s, st::Stmt::Fn(_))).count();
     #[rustfmt::skip]
     let mut lowerer = Lowerer::builder().kinds(kinds).structs(structs)
-        .platform(options.platform_bits).sigs(unit_sigs[0].clone()).unit_sigs(unit_sigs)
-        .build();
+        .top_count(top_count as u32).platform(options.platform_bits)
+        .sigs(unit_sigs[0].clone()).unit_sigs(unit_sigs).build();
     lowerer.scopes.push(HashMap::new());
+    lowerer.nested.push(HashMap::new());
     lowerer.drops.push(Vec::new());
     let mut main = Vec::new();
     let mut imported_inits = 0;
@@ -97,6 +106,9 @@ pub fn lower(
         do_if!(!program.is_root(unit), imported_inits = main.len() as u32);
     }
     let host = lowerer.start_call(&mut main);
+    // The functions declared inside functions follow the top-level ones.
+    let lifted = std::mem::take(&mut lowerer.lifted).into_iter();
+    lowerer.funcs.extend(lifted.map(|f| f.expect("each lifted function is lowered")));
     let ends_in_return = matches!(main.last(), Some(Stmt::Return { .. }));
     do_if!(!ends_in_return, main.extend(lowerer.global_drops(program.span)));
     #[rustfmt::skip]
@@ -143,6 +155,13 @@ struct Sig
     /// The C function a call names itself, for a C function that takes other
     /// values; `None` for each other function, which a call runs.
     foreign: Option<ForeignFn>,
+    /// The locals a function declared inside a function borrows, whose
+    /// borrows a call passes after the arguments.
+    captures: Vec<Name>,
+    /// The name of the closure of a function declared inside a function with
+    /// captures, whose value a call passes after the arguments, before the
+    /// borrows.
+    own: Option<Name>,
 }
 
 /// What a call runs: a function of the module, or the function a value
@@ -222,7 +241,15 @@ impl Target
 fn value_sig(f: &FnKind) -> Sig
 {
     let (params, ret) = fn_shape(f);
-    Sig { index: u32::MAX, params, edits: f.edits(), ret, foreign: None }
+    Sig {
+        index: u32::MAX,
+        params,
+        edits: f.edits(),
+        ret,
+        foreign: None,
+        captures: Vec::new(),
+        own: None,
+    }
 }
 
 /// The signatures of the top-level functions of each file, numbered in
@@ -253,9 +280,17 @@ fn collect_sigs(program: &st::Program, structs: &StructTable)
         let foreign = f.lib.as_ref().filter(|_| f.variadic).map(|lib| {
             #[rustfmt::skip]
             return ForeignFn::builder().lib(lib.lit.value.clone()).name(f.name.name.to_string())
-                .params(params.clone()).maybe_ret(ret).variadic(true).build();
+                .params(params.clone()).maybe_ret(ret).variadic(true).owned_ret(f.owned_ret).build();
         });
-        let sig = Sig { index: index as u32, params, edits, ret, foreign };
+        let sig = Sig {
+            index: index as u32,
+            params,
+            edits,
+            ret,
+            foreign,
+            captures: Vec::new(),
+            own: None,
+        };
         do_if!(f.start, continue);
         sigs[unit].entry(f.name.name).or_insert(sig);
     }
@@ -303,6 +338,19 @@ struct Lowerer<'k>
 {
     /// Kinds from the check.
     kinds: &'k KindTable,
+    /// The functions declared inside functions whose blocks are being
+    /// lowered, the outermost first.
+    #[builder(default)]
+    own_fns: Vec<Name>,
+    /// The number of top-level functions, which take the first numbers.
+    top_count: u32,
+    /// The functions declared inside functions, and their thunks, numbered
+    /// after the top-level ones; each is `None` while it is lowered.
+    #[builder(default)]
+    lifted: Vec<Option<Func>>,
+    /// The functions declared inside functions in each open scope.
+    #[builder(default)]
+    nested: Vec<HashMap<Name, Nested>>,
     /// The kind of each declared struct, from the check.
     structs: &'k StructTable,
     /// Bit count of the platform-sized kinds.
@@ -525,9 +573,11 @@ impl Lowerer<'_>
     fn scoped(&mut self, f: impl FnOnce(&mut Self))
     {
         self.scopes.push(HashMap::new());
+        self.nested.push(HashMap::new());
         self.drops.push(Vec::new());
         f(self);
         self.drops.pop();
+        self.nested.pop();
         self.scopes.pop();
     }
 
@@ -643,7 +693,7 @@ impl Lowerer<'_>
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs).repr());
         let index = self.funcs.len() as u32;
         do_if!(f.start, self.start = Some((index, params, ret, f.name.span)));
-        let func = self.func(f);
+        let func = self.func(f, None, &[]);
         self.funcs.push(func);
     }
 
@@ -781,11 +831,7 @@ impl Lowerer<'_>
                 out.extend(self.loop_drops(n.span));
                 out.push(Stmt::Continue { span: n.span });
             }
-            st::Stmt::Fn(f) =>
-            {
-                let func = self.func(f);
-                self.funcs.push(func);
-            }
+            st::Stmt::Fn(f) => self.nested_fn(f, out),
             st::Stmt::Return(n) if n.fault => self.fault_return(n, out),
             st::Stmt::Return(n) => self.return_stmt(n, out),
             st::Stmt::Call(n) if n.pass =>
@@ -835,6 +881,7 @@ impl Lowerer<'_>
     {
         let kind = self.declared_kind(n.kind.as_ref(), n.init.as_ref());
         let value = self.initial(n.init.as_ref(), kind, n.name.span);
+        let value = tern!(n.moves, move_out(value), value);
         let access = tern!(n.is_const, Access::Const, Access::Var);
         let place = self.declare(&n.name, kind, access);
         Stmt::Set { place, value, span: n.span }
@@ -911,6 +958,11 @@ impl Lowerer<'_>
             Dest::Mem(_) => self.kind_of(&n.target),
         };
         let value = self.owned(&n.value, want);
+        let value = tern!(n.moves, move_out(value), value);
+        // A function value kept past the block that made it must be plain.
+        let result = matches!(ungrouped(&n.target), ast::Expr::Name(v) if v.name.as_str() == RESULT_NAME);
+        let kept = result || !matches!(dest, Dest::Slot(Place::Local(_)));
+        let value = tern!(kept, plain(value), value);
         let value = tern!(want.holds_text(), self.replace(&dest, value, out), value);
         out.push(match dest
         {
@@ -1008,7 +1060,7 @@ impl Lowerer<'_>
             return Stmt::AddText { dest, kind, value, span: n.span };
         }
         let cell = kind.cell_kind().expect("an add statement grows a list");
-        let value = self.owned(&n.value, cell);
+        let value = plain(self.owned(&n.value, cell));
         let dest = self.dest(&n.list);
         Stmt::AddCell { dest, kind, value, span: n.span }
     }
@@ -1038,7 +1090,7 @@ impl Lowerer<'_>
         extract!(ast::Expr::Index(cell) = ungrouped(at), "an insert names a cell");
         let kind = self.kind_of(&cell.list);
         let cells = kind.cell_kind().expect("an insert grows a list");
-        let (index, value) = (self.expr(&cell.index), self.owned(value, cells));
+        let (index, value) = (self.expr(&cell.index), plain(self.owned(value, cells)));
         let dest = self.dest(&cell.list);
         Stmt::Insert { dest, kind, index, first: cell.first, value, span }
     }
@@ -1643,7 +1695,10 @@ impl Lowerer<'_>
     /// # Returns
     ///
     /// The function.
-    fn func(&mut self, f: &st::FnDecl) -> Func
+    fn func(
+        &mut self, f: &st::FnDecl, own: Option<(Name, DataKind)>,
+        captures: &[(Name, DataKind)],
+    ) -> Func
     {
         let given = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
         // A function that can fail keeps its good result in `ရလဒ်`; an external
@@ -1658,6 +1713,8 @@ impl Lowerer<'_>
         let mut result = None;
         self.scoped(|l| {
             do_for!(p in &f.params, l.declare_param(p));
+            do_if!(let Some((name, kind)) = own, l.declare_own(name, kind, f.name.span));
+            do_for!((name, kind) in captures, l.declare_capture(*name, *kind, f.name.span));
             result = ret.map(|k| l.result_slot(f, k, &mut block));
             match (f.external, &f.lib)
             {
@@ -1690,7 +1747,7 @@ impl Lowerer<'_>
             std::mem::replace(&mut self.frame, outer).expect("the frame is set");
         #[rustfmt::skip]
         return Func::builder().name(format!("{}{}", f.name.name, self.suffix))
-            .params(f.params.len() as u32)
+            .params((f.params.len() + usize::from(own.is_some()) + captures.len()) as u32)
             .maybe_result(result)
             .maybe_ret(given).locals(frame.locals).block(block).span(f.span).build();
     }
@@ -1748,10 +1805,11 @@ impl Lowerer<'_>
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
         #[rustfmt::skip]
         let def = ForeignFn::builder().lib(lib).name(f.name.name.to_string())
-            .params(kinds.clone()).maybe_ret(ret).build();
+            .params(kinds.clone()).maybe_ret(ret).owned_ret(f.owned_ret).build();
         let func = self.foreign_index(def);
+        // C keeps no locals alive for a closure.
         let read_param = |(p, kind): (&st::Param, &DataKind)| {
-            read(self.lookup(&p.name.name), *kind, p.span)
+            plain(read(self.lookup(&p.name.name), *kind, p.span))
         };
         let args = f.params.iter().zip(&kinds).map(read_param).collect();
         let Some((slot, kind)) = result.zip(ret)
@@ -1882,7 +1940,7 @@ impl Lowerer<'_>
     {
         let span = n.span;
         let ret = self.frame.as_ref().and_then(|f| f.ret);
-        let value = n.value.as_ref().zip(ret).map(|(v, k)| self.owned(v, k));
+        let value = n.value.as_ref().zip(ret).map(|(v, k)| plain(self.owned(v, k)));
         let depth = self.frame.as_ref().map(|f| f.depth);
         let drops =
             depth.map_or_else(|| self.global_drops(span), |d| self.drops_from(d, span));
@@ -2107,6 +2165,19 @@ impl Lowerer<'_>
         &mut self, callee: &ast::Ident, place: Option<&ast::Expr>,
     ) -> (Target, Sig)
     {
+        let nested =
+            self.nested_named(&callee.name).filter(|_| place.is_none()).cloned();
+        if let Some(n) = nested
+        {
+            if self.through_closure(&n)
+            {
+                let value = self.closure_value(&n, callee.span);
+                let f = value.kind.as_fn().expect("a closure has a function kind");
+                return (Target::Value(value), value_sig(f));
+            }
+            let target = Target::Fn { func: n.sig.index, name: n.name.clone() };
+            return (target, n.sig.clone());
+        }
         let sig = self.sigs.get(&callee.name).filter(|_| place.is_none()).cloned();
         if let Some(def) = sig.as_ref().and_then(|s| s.foreign.clone())
         {
@@ -2168,9 +2239,56 @@ impl Lowerer<'_>
             tern!(*edit, self.edit_arg(a, *k), self.owned(a, *k))
         };
         let mut lowered: Vec<Expr> = args.iter().zip(params).map(lower).collect();
+        // A function value is lent for the call: the callee runs the caller's
+        // closure, and its drop of the lent value frees nothing.
+        lowered = lowered.into_iter().map(|e| self.hold_fresh_fn(e)).collect();
+        lowered.iter_mut().for_each(lend_fn);
+        // C keeps no locals alive for a closure.
+        do_if!(
+            sig.foreign.is_some(),
+            lowered = lowered.into_iter().map(plain).collect()
+        );
         let rest = args.iter().skip(sig.params.len());
         rest.for_each(|a| lowered.push(self.rest_arg(a)));
+        let span = args.first().map_or_else(Span::default, |a| a.span());
+        // A call of a closure inside itself passes its own value on, lent.
+        let own = sig.own.map(|name| {
+            let place = self.lookup(&name);
+            read(place, self.slot_kind(place), span)
+        });
+        lowered.extend(own);
+        let borrows = sig.captures.iter().map(|c| self.capture_arg(c, span));
+        let borrows: Vec<Expr> = borrows.collect();
+        lowered.extend(borrows);
         lowered
+    }
+
+    /// Keep a function value that a call or another expression makes fresh,
+    /// and that goes to a parameter, in a hidden slot its scope drops: the
+    /// parameter is lent, so the callee frees nothing of it. A read of a
+    /// place, an address of a function and a constant pass unchanged.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The argument.
+    ///
+    /// # Returns
+    ///
+    /// The argument, a duplicate of the hidden slot for a fresh value.
+    fn hold_fresh_fn(&mut self, e: Expr) -> Expr
+    {
+        let kept = matches!(
+            e.node,
+            ExprNode::Read(_)
+                | ExprNode::Load { .. }
+                | ExprNode::Dup { .. }
+                | ExprNode::Take { .. }
+                | ExprNode::FnAddr { .. }
+                | ExprNode::Const(_)
+        );
+        ret_if!(!e.kind.is_fn() || kept, e);
+        let held = self.spill(e);
+        dup(held)
     }
 
     /// An argument past the parameters of a C function that takes other
@@ -2202,7 +2320,7 @@ impl Lowerer<'_>
             );
         }
         let want = promoted(lowered.kind, self.platform);
-        coerce_lowered(lowered, want)
+        plain(coerce_lowered(lowered, want))
     }
 
     /// The argument for a parameter the function can change: a borrow of the
@@ -2296,7 +2414,11 @@ impl Lowerer<'_>
     {
         match &e.node
         {
-            ExprNode::Read(place) => self.slot(*place).access == Access::Const,
+            // A constant that holds a closure owns its record, as a variable does.
+            ExprNode::Read(place) =>
+            {
+                self.slot(*place).access == Access::Const && !e.kind.holds_fn()
+            }
             ExprNode::Load { addr } => self.reads_const(addr),
             ExprNode::FieldAddr { base, .. }
             | ExprNode::CellAddr { list: base, .. } => self.reads_const(base),
@@ -2387,6 +2509,10 @@ impl Lowerer<'_>
                 let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
                 let args = self.lower_args(&n.args, &sig);
                 target.node(args)
+            }
+            ast::Expr::FnAddr(n) if self.nested_named(&n.name.name).is_some() =>
+            {
+                self.nested_addr(&n.name).expect("the function is declared")
             }
             ast::Expr::FnAddr(n) =>
             {
@@ -2643,8 +2769,9 @@ impl Lowerer<'_>
     fn list(&mut self, n: &ast::ListLit, kind: DataKind) -> ExprNode
     {
         let cell = kind.cell_kind().expect("a list literal has a list kind");
-        let cells =
-            ExprNode::List(n.cells.iter().map(|c| self.owned(c, cell)).collect());
+        let cells = ExprNode::List(
+            n.cells.iter().map(|c| plain(self.owned(c, cell))).collect(),
+        );
         ret_if!(!kind.is_seq(), cells);
         // A plain list is built as a counted list, whose cells then sit in
         // static data or move to a heap block.
@@ -2672,7 +2799,7 @@ impl Lowerer<'_>
         let fields = s.fields().iter().map(|(name, k)| {
             init(name).map_or_else(
                 || default_constant(*k, n.span),
-                |f| self.owned(&f.value, *k),
+                |f| plain(self.owned(&f.value, *k)),
             )
         });
         ExprNode::List(fields.collect())
@@ -3067,6 +3194,8 @@ impl Lowerer<'_>
             | VerbOp::Ge
             | VerbOp::Print
             | VerbOp::Assign
+            | VerbOp::DupInto
+            | VerbOp::MoveInto
             | VerbOp::Return
             | VerbOp::ReturnFault
             | VerbOp::ReturnGood
@@ -3629,6 +3758,57 @@ fn read_return(slot: u32, kind: DataKind, span: Span) -> Stmt
         .span(span)
         .build();
     Stmt::Return { value: Some(read), span }
+}
+
+/// A function value headed where it can outlive the locals a closure
+/// borrows, checked to be no closure when the program runs. The address of
+/// a top-level function and a constant need no check.
+///
+/// # Arguments
+///
+/// * `e` - The value, of each kind.
+///
+/// # Returns
+///
+/// The value, checked when it is a function value.
+fn plain(e: Expr) -> Expr
+{
+    let known = matches!(e.node, ExprNode::FnAddr { .. } | ExprNode::Const(_));
+    ret_if!(!e.kind.is_fn() || known, e);
+    let (kind, span) = (e.kind, e.span);
+    node_expr(kind, ExprNode::Plain { value: Box::new(e) }, span)
+}
+
+/// The move that `ပြောင်းထည့်မည်` asks for in place of a duplicate: the value
+/// moves out of the place it is read from, which is left blank. A value that
+/// is no duplicate, such as a number, remains as it is.
+///
+/// # Arguments
+///
+/// * `e` - The value, as an assignment lowers it.
+///
+/// # Returns
+///
+/// The value.
+fn move_out(e: Expr) -> Expr
+{
+    let ExprNode::Dup { value, .. } = e.node
+    else
+    {
+        return e;
+    };
+    take(*value)
+}
+
+/// Lend a duplicate of a function value that goes to a parameter.
+///
+/// # Arguments
+///
+/// * `e` - The argument, changed in place.
+fn lend_fn(e: &mut Expr)
+{
+    let fn_dup = e.kind.is_fn() && matches!(e.node, ExprNode::Dup { .. });
+    do_if!(fn_dup, do_if!(let ExprNode::Dup { lent, .. } = &mut e.node, *lent = true));
 }
 
 /// The constant `true`.

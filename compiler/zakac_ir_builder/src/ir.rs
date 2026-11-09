@@ -70,6 +70,11 @@ pub struct ForeignFn
     #[builder(default)]
     #[serde(default)]
     pub variadic: bool,
+    /// Whether C hands over the string of a text result, which is freed with
+    /// libc's `free` once the text holds its octets.
+    #[builder(default)]
+    #[serde(default)]
+    pub owned_ret: bool,
 }
 
 /// The hidden globals that link the start block to the host. The VM fills
@@ -722,6 +727,31 @@ pub enum ExprNode
         /// The function name.
         name: String,
     },
+    /// The address of a function declared inside a function that borrows
+    /// locals: a value of the function kind that runs `func`, a thunk that
+    /// takes the parameters and the address of the record, and passes on the
+    /// addresses the record holds. The record is a list of raw addresses in
+    /// a slot of the caller; its first word belongs to the backend, which
+    /// writes there what it needs to call the thunk, and the borrowed
+    /// addresses follow. The value lives as long as the slot.
+    Closure
+    {
+        /// Index into [`Module::funcs`] of the thunk.
+        func: u32,
+        /// The name of the function declared inside a function.
+        name: String,
+        /// The address of the record.
+        record: Box<Expr>,
+    },
+    /// A function value that must be no [`ExprNode::Closure`], since it goes
+    /// where it can outlive the locals a closure borrows: a field, a cell, a
+    /// global, a place reached through an address, a result or a C
+    /// function. A closure stops the program.
+    Plain
+    {
+        /// The function value.
+        value: Box<Expr>,
+    },
     /// The work of a function the host serves, the one statement of an
     /// external function: its result, from the borrowed address of each
     /// parameter. The host reads each value through its address and takes
@@ -1105,6 +1135,20 @@ pub enum HaltCause
     /// A good result was converted to its error value.
     NotFault,
 }
+
+/// The name of a function a reader knows: the name the program writes. The
+/// name of a function in the module adds `#<n>` for an overload or a function
+/// declared inside a function, and `@<file>` for one of an imported file;
+/// both are left out.
+///
+/// # Arguments
+///
+/// * `name` - The name of the function in the module.
+///
+/// # Returns
+///
+/// The written name.
+pub fn shown_name(name: &str) -> &str { name.split(['#', '@']).next().unwrap_or(name) }
 
 /// The parameter slot kinds and the result kind of a function of kind `f`:
 /// each parameter in its own kind, or a borrow of it for one the function

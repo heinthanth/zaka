@@ -152,6 +152,13 @@ pub enum TrapKind
     },
     /// A call went through a function value that holds no function, `ဗလာ`.
     NullCall,
+    /// The address of a function that borrows the locals around it went
+    /// where it could outlive them: a field, a cell, a global, a place
+    /// reached through an address, a result or a C function.
+    ClosureEscape,
+    /// A closure that owns a block was duplicated: two records would free
+    /// the one block.
+    ClosureOwner,
     /// A C function was called in a build of the VM that cannot call C,
     /// such as the one in the browser.
     ForeignCall
@@ -305,6 +312,8 @@ impl fmt::Display for TrapKind
                 t!("vm.trap.end_before_start", start = start, end = end)
             }
             TrapKind::NullCall => t!("vm.trap.null_call"),
+            TrapKind::ClosureEscape => t!("vm.trap.closure_escape"),
+            TrapKind::ClosureOwner => t!("vm.trap.closure_owner"),
             TrapKind::ForeignCall { name } => t!("vm.trap.foreign_call", name = name),
             TrapKind::ForeignLink { reason } =>
             {
@@ -378,6 +387,8 @@ impl TrapKind
             | TrapKind::CharOutOfRange { .. }
             | TrapKind::EndBeforeStart { .. }
             | TrapKind::NullCall
+            | TrapKind::ClosureEscape
+            | TrapKind::ClosureOwner
             | TrapKind::ForeignCall { .. }
             | TrapKind::ForeignLink { .. }
             | TrapKind::NoCellToRemove

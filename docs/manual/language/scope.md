@@ -216,8 +216,11 @@ A name declared below the function is not visible in it (ZK0301). The functions
 themselves are not subject to this order: a call can come before the declaration, and a
 function's own name is visible in all places. Variables and functions have separate sets of
 names, so a variable and a function can share a name without a clash. A call of a name
-that no function has is ZK0303. A function is declared at the top level and nowhere else
-(ZK0214), so a function never sees the locals of another function.
+that no function has is ZK0303. A top-level function never sees the locals of another function. A function nested in
+another one is the exception: it lists the locals around it that its statements use, and
+takes a duplicate of each, moves it in, or borrows it to read and change the outer variable
+itself (see
+[Nested functions and closures](function-values.md#nested-functions-and-closures)).
 
 ## The errors
 

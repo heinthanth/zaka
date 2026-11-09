@@ -143,6 +143,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Other
         | Kw::AliasClose
         | Kw::Also
+        | Kw::AsWellAs
         | Kw::CanRegard
         | Kw::Export => TokenRole::Control,
         Kw::Print
@@ -164,6 +165,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::WillRelease
         | Kw::WillBlit
         | Kw::WillShift
+        | Kw::WillDupIn
         | Kw::WillFill
         | Kw::Contains
         | Kw::ContainsAnd
@@ -238,6 +240,8 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::To
         | Kw::Step
         | Kw::CountAs
+        | Kw::AsOwned
+        | Kw::Lending
         | Kw::ListOf
         | Kw::StartingAt
         | Kw::Upto

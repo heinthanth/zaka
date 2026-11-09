@@ -170,11 +170,11 @@ en = "the \"ပြီးလျှင်\" update must be the last statement of t
 en = """The update of a generic loop runs after the rest of the block, so it is written last, right before the block closer. Move the statements that follow it above it."""
 
 [codes.ZK0214.title]
-en = "nested function"
+en = "nested external function or start block"
 [codes.ZK0214.message]
-en = "functions can be declared at the top level and nowhere else"
+en = "external functions, C functions and the start block can be declared at the top level and nowhere else"
 [codes.ZK0214.explain]
-en = """A function declaration cannot appear inside a block, a loop, a conditional or another function. Move it to the top level of the file; functions can be called before their declaration."""
+en = """A function with statements can sit inside another function, where it borrows the locals around it. An external function, a C function and the start block have no locals to borrow and belong to the whole file: declare them at the top level."""
 
 [codes.ZK0215.title]
 en = "conditional as a single-statement block"
@@ -651,6 +651,33 @@ en = "\"%{n}\" was declared as a C function with other parameter or result kinds
 en = "give each declaration of \"%{n}\" the same parameter and result kinds"
 [codes.ZK0338.explain]
 en = """Each C name names one C function, so each declaration of a C function of that name, in each file of the program and among overloads, must give it the same parameter kinds and the same result kind."""
+
+[codes.ZK0339.title]
+en = "capture not listed"
+[codes.ZK0339.message]
+en = "\"%{f}\" uses \"%{n}\" of the function around it, which its list leaves out"
+[codes.ZK0339.help]
+en = "add \"%{n} ကိုလည်းကောင်း\" to the list before လက်ခံပြီး, or \"%{n} ကို ငှား၍လည်းကောင်း\" to share it"
+[codes.ZK0339.explain]
+en = """A function declared inside another function lists each local of the functions around it that its statements use, in the list of its parameters: \"<name> ကိုလည်းကောင်း\" takes a duplicate, \"<name> ကို အပိုင်အနေဖြင့်လည်းကောင်း\" moves the value in, and \"<name> ကို ငှား၍လည်းကောင်း\" borrows the local. A nested function with captures of its own that it calls, or whose address it takes, is listed too. Its own name inside itself needs no listing."""
+
+[codes.ZK0340.title]
+en = "capture of no local"
+[codes.ZK0340.message]
+en = "\"%{n}\" is no local of a function around \"%{f}\""
+[codes.ZK0340.help]
+en = "list locals of the functions around it alone; a global or a top-level function needs no listing"
+[codes.ZK0340.explain]
+en = """The capture list of a function declared inside another function names locals and parameters of the functions around it, and nested functions with captures of their own. A global, a constant of the file and a top-level function are reached without a list."""
+
+[codes.ZK0341.title]
+en = "capture never used"
+[codes.ZK0341.message]
+en = "\"%{f}\" lists \"%{n}\" but never uses it"
+[codes.ZK0341.help]
+en = "remove \"%{n}\" from the list"
+[codes.ZK0341.explain]
+en = """Each capture costs a duplicate, a move or a borrow as the function is declared. A capture that the statements never use costs that for nothing, and a move leaves the local blank for nothing."""
 
 # ---------------------------------------------------------------- kinds ZK04xx
 
@@ -1146,9 +1173,11 @@ en = "kind that C cannot take"
 [codes.ZK0465.message]
 en = "a C function cannot take or give back a value of the kind \"%{k}\""
 [codes.ZK0465.help]
-en = "use an integer of up to 64 bits, f32, f64, a boolean, a borrowed or raw address, a struct of these, or text as a parameter"
+en = "use an integer of up to 64 bits, f32, f64, a boolean, a borrowed or raw address, a struct of these, or, as a parameter, text or a function value of these"
+[codes.ZK0465.help_text]
+en = "C can give back NULL for text: write the result as \"စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း\""
 [codes.ZK0465.explain]
-en = """A C function takes its parameters and gives its result as whole values, laid out as in C. Integers of up to 64 bits, f32, f64, booleans, borrowed addresses and raw addresses cross, and so do structs whose fields are such kinds, structs or counted lists of them. Text crosses as a parameter: C gets a duplicate of it that ends in a zero octet. An owner would be freed when the call ends; plain lists, slices and function values have no C form; text cannot be a result, since Zaka cannot tell who frees it; and a result that can fail has no C form either. A result cannot be a borrow, since C has no place to lend from: give back a raw address. An other value, past the parameters of a C function that takes them, cannot be a struct."""
+en = """A C function takes its parameters and gives its result as whole values, laid out as in C. Integers of up to 64 bits, f32, f64, booleans, borrowed addresses and raw addresses cross, and so do structs whose fields are such kinds, structs or counted lists of them. Text crosses as a parameter: C gets a duplicate of it that ends in a zero octet. Text crosses back as the result kind `စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း`: NULL is the failure, and Zaka copies the other strings into text of its own, so C keeps what it gave. A function value crosses as a callback, the address of a C function, when each of its parameters and its result is an integer, a float, a boolean or an address, with no edit mark; C cannot keep the locals of a closure alive, so a closure stops the program there. An owner would be freed when the call ends; plain lists and slices have no C form; bare text cannot be a result, since C can give back NULL; and another result that can fail has no C form either. A result cannot be a borrow, since C has no place to lend from: give back a raw address. An other value, past the parameters of a C function that takes them, takes the parameter kinds, structs among them."""
 
 [codes.ZK0466.title]
 en = "edit mark on a C parameter"
@@ -1158,6 +1187,15 @@ en = "the C function cannot change the parameter \"%{n}\" in place"
 en = "drop the edit mark and pass a borrowed address of the value"
 [codes.ZK0466.explain]
 en = """A C function takes each parameter as a whole value, so it cannot change the caller's place through the edit mark. To let C write a value back, pass a borrowed address, as C passes a pointer."""
+
+[codes.ZK0467.title]
+en = "own result of no C text"
+[codes.ZK0467.message]
+en = "\"%{n}\" gives back no text from C, so \"အပိုင်အနေဖြင့်\" cannot stand on its result"
+[codes.ZK0467.help]
+en = "write \"အပိုင်အနေဖြင့်\" on a C function whose result is \"စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း\", or leave it out"
+[codes.ZK0467.explain]
+en = """\"အပိုင်အနေဖြင့် ပြန်ပေးမည်\" tells that a C function hands its string over, as strdup does: the program takes the octets into text of its own and then frees the string with the free of libc. It stands on a C function whose result is text or a failure alone. Without it, C keeps the string, as getenv and strstr want; a Zaka function and each other result kind have nothing to hand over."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 
@@ -1482,6 +1520,33 @@ en = "the source and the destination of \"ကူးယူမည်\" share %{n} 
 en = "write \"ပြောင်းထည့်မည်\", which reads the source in full before it writes"
 [codes.ZK0721.explain]
 en = """\"ကူးယူမည်\" is the memcpy of C: it writes the cells in order, so cells it writes can be cells it has still to read, and in C the result is undefined. When both addresses point into the same block at offsets the check knows, and the count is known, the overlap is an error before the program runs; else the VM stops the program with the trap \"overlap\". \"ပြောင်းထည့်မည်\" allows ranges that overlap."""
+
+[codes.ZK0722.title]
+en = "borrowing function leaves its locals"
+[codes.ZK0722.message]
+en = "\"%{f}\" borrows the locals around it, so its address cannot go where it outlives them"
+[codes.ZK0722.help]
+en = "pass the address to a function, call it, or keep it in a variable of the block that declares \"%{f}\"; or list the locals as duplicates or moves in place of ငှား၍"
+[codes.ZK0722.explain]
+en = """A nested function that lists a local with \"ငှား၍\", or a capture that holds a borrow, borrows the locals around it, and so does its address. The address can be called, passed to a parameter, or kept in a variable of the block that declares the function, but it cannot be given back as a result, stored in a field, a cell, a global or a place reached through an address, or set into a variable of an outer block. A function of duplicates and moves alone owns its captures, and its address goes each of those places. Where the compiler cannot tell that a value is a borrowing address, such as a parameter stored in a global, the VM stops the program with the trap \"closure_escape\", and a native build stops it too."""
+
+[codes.ZK0723.title]
+en = "closure to C"
+[codes.ZK0723.message]
+en = "\"%{f}\" has captures, so its address cannot go to a C function"
+[codes.ZK0723.help]
+en = "pass a function with no captures; C calls a code address and keeps no record"
+[codes.ZK0723.explain]
+en = """C calls a function value as a bare code address, so the captures of a nested function have no place to go. Where the compiler cannot tell that a value holds such a function, the VM stops the program with the trap \"closure_escape\", and a native build stops it too."""
+
+[codes.ZK0724.title]
+en = "closure that owns a block duplicated"
+[codes.ZK0724.message]
+en = "the closure of \"%{f}\" owns a block, so it cannot be duplicated"
+[codes.ZK0724.help]
+en = "move it with ပြောင်းထည့်မည်, use it for the last time here, or pass it to a call, which lends it"
+[codes.ZK0724.explain]
+en = """A nested function that takes an owner with \"အပိုင်အနေဖြင့်\" keeps the block in its record, and frees it as the closure ends. A duplicate would give two records the one block, which both would free, so such a closure moves and is lent, but is not duplicated, as a Rust closure that is not Clone. Where the compiler cannot tell that a value holds such a closure, the VM stops the program with the trap \"closure_owner\", and a native build stops it too."""
 
 [codes.ZK0801.title]
 en = "kind not for the C target"

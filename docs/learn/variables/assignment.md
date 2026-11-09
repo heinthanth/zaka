@@ -1,6 +1,6 @@
 ---
 title: Changing a variable
-description: Give a variable a new value with ... ကို ... ဟု ထားပါ။
+description: Give a variable a new value with ... ကို ... ဟု ထားပါ။, and duplicate or move a value into one.
 ---
 
 # Changing a variable
@@ -62,6 +62,35 @@ A sentence that is true or false can be stored too:
 ```text
 မှန်
 ```
+
+## Duplicating and moving
+
+Two more verbs put a value into a variable and tell how. `ကူးထည့်မည်` ("will duplicate
+into") puts a duplicate there; `ပြောင်းထည့်မည်` ("will move into") moves the value and leaves the
+first variable blank. After `ကိန်းရှင်`, either one makes a new variable of the value's kind:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အမည် သည် "မောင်" ဖြစ်ပါစေ။
+ကိန်းရှင် မိတ္တူ ထဲသို့ အမည် ကို ကူးထည့်မည်။      // a duplicate: both keep the text
+ကိန်းရှင် ပိုင်ရှင် ထဲသို့ အမည် ကို ပြောင်းထည့်မည်။   // a move: အမည် is left blank
+"[{အမည်}] [{မိတ္တူ}] [{ပိုင်ရှင်}]" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[] [မောင်] [မောင်]
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `မိတ္တူ ထဲသို့` | "into the duplicate" |
+| `အမည် ကို` | "the name" (object) |
+| `ကူးထည့်မည်` | "will duplicate in" |
+| `ပြောင်းထည့်မည်` | "will move in" |
+
+A number has nothing to move, so a move of a number leaves it as it is. Moves matter for text,
+lists and the [functions that keep values](../pointers/functions.md#a-function-that-keeps-values).
 
 ## The new value must fit
 

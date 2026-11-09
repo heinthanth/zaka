@@ -227,6 +227,15 @@ AliasLoop = ("ZK0336", Level::Error),
 NotACName = ("ZK0337", Level::Error),
 /// Two C functions of one name have different parameter or result kinds.
 CNameTwice = ("ZK0338", Level::Error),
+/// A nested function names a local of a function around it, or a nested
+/// function with captures, that its capture list leaves out.
+CaptureUnlisted = ("ZK0339", Level::Error),
+/// A capture list names what is no local of a function around it and no
+/// nested function with captures.
+CaptureNotLocal = ("ZK0340", Level::Error),
+/// A capture list names a local that the statements of the function never
+/// use.
+CaptureUnused = ("ZK0341", Level::Warning),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.
@@ -364,6 +373,8 @@ ExternalFnAddr = ("ZK0464", Level::Error),
 KindNotAcrossC = ("ZK0465", Level::Error),
 /// A parameter of a C function carries the edit mark.
 EditAcrossC = ("ZK0466", Level::Error),
+/// `အပိုင်အနေဖြင့်` on a result that is no text from a C function.
+OwnedNotCText = ("ZK0467", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.
@@ -447,6 +458,13 @@ OverflowProven = ("ZK0719", Level::Warning),
 DuplicateMade = ("ZK0720", Level::Warning),
 /// The two ranges of a `ကူးယူမည်` overlap for certain.
 BlitRangesOverlap = ("ZK0721", Level::Error),
+/// The address of a function that borrows the locals around it goes where
+/// it could outlive them.
+ClosureEscapes = ("ZK0722", Level::Error),
+/// The address of a nested function with captures goes to a C function.
+ClosureToC = ("ZK0723", Level::Error),
+/// A closure that owns a block is duplicated.
+ClosureOwnerDup = ("ZK0724", Level::Error),
 // targets: ZK08xx
 /// A kind the C target cannot build: `f16` or `f128`.
 KindNotForC = ("ZK0801", Level::Error) }

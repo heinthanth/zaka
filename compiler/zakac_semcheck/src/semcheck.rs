@@ -606,6 +606,8 @@ impl Checker
         let wrong = tern!(sig.variadic, got < want, got != want);
         ret_if!(wrong, self.report(bad_count), self.infer_all(args), ret);
         do_for!(arg in &args[want..], self.check_rest_arg(arg));
+        // C keeps no locals alive for a function that borrows them.
+        do_if!(sig.external, do_for!(arg in args, self.check_no_closure_to_c(arg)));
         let marked = |n: usize| edits.get(n).copied().unwrap_or(false);
         for (n, (arg, kind)) in args.iter().zip(&sig.params).enumerate()
         {
@@ -619,7 +621,8 @@ impl Checker
 
     /// Check an argument past the parameters of a C function that takes
     /// other values: its kind is the one it has on its own, and must cross
-    /// to C as an argument of a C `...` does (ZK0465).
+    /// to C as a parameter does (ZK0465); C passes a struct through `...` as
+    /// it passes a struct parameter.
     ///
     /// # Arguments
     ///
@@ -628,7 +631,7 @@ impl Checker
     {
         let kind = self.infer(arg, None);
         let platform = self.platform;
-        let stuck = kind.filter(|k| !foreign::crosses_rest(*k, platform));
+        let stuck = kind.filter(|k| !foreign::crosses_param(*k, platform));
         do_if!(let Some(k) = stuck, self.report(kd::kind_not_across_c(arg.span(), &k.name())));
     }
 
@@ -682,7 +685,12 @@ impl Checker
             edits.map(|p| kd::edit_across_c(p.span, &p.name.name)).collect();
         do_for!(d in edits, self.report(d));
         let bad_ret = ret.filter(|k| !foreign::crosses_back(*k, platform));
-        do_if!(let Some(k) = bad_ret, self.report(kd::kind_not_across_c(n.name.span, &k.name())));
+        let bad_ret = bad_ret.map(|k| match k.is_text()
+        {
+            true => kd::text_result_across_c(n.name.span),
+            false => kd::kind_not_across_c(n.name.span, &k.name()),
+        });
+        do_if!(let Some(d) = bad_ret, self.report(d));
         let shape = (params, ret);
         let first = self.c_names.entry(name.clone()).or_insert_with(|| shape.clone());
         do_if!(*first != shape, self.report(rd::c_name_twice(n.name.span, &name)));
@@ -1469,6 +1477,7 @@ impl Visitor for Checker
         ret_if!(let Some((text, index)) = char_target(&n.target), self.char_write(text, index, &n.value));
         let want = self.place_kind(&n.target);
         self.expect_kind(&n.value, want);
+        self.check_closure_set(&n.target, &n.value);
     }
 
     fn visit_alloc(&mut self, n: &AllocStmt)
@@ -1503,11 +1512,13 @@ impl Visitor for Checker
 
     fn visit_add(&mut self, n: &AddStmt)
     {
+        do_if!(n.before, self.check_no_closure(&n.value));
         ret_if!(n.before, self.insert(&n.list, &n.value));
         let kind = self.place_kind(&n.list);
         ret_if!(let Some(k) = kind.filter(|k| k.is_textual()), self.text_add(&n.list, k, &n.value));
         let cell = kind.and_then(|k| self.growing_cells(&n.list, k));
         self.expect_kind(&n.value, cell);
+        self.check_no_closure(&n.value);
     }
 
     fn visit_remove(&mut self, n: &RemoveStmt)
@@ -1673,9 +1684,20 @@ impl Visitor for Checker
     fn visit_fn(&mut self, n: &FnDecl)
     {
         do_if!(!n.start, self.refer(&n.name.name, n.name.span, n.name.span));
+        // A function inside a function borrows the locals around it, and
+        // the walk of the outer one goes on after it.
+        let nested = self.func.is_some();
+        let borrows = tern!(nested, self.check_capture_list(n), false);
+        do_if!(nested, self.declare_nested(n, borrows));
+        let outside = n.captures.iter().filter(|_| !nested);
+        let outside: Vec<_> = outside
+            .map(|c| rd::capture_not_local(c.name.span, &n.name.name, &c.name.name))
+            .collect();
+        do_for!(d in outside, self.report(d));
+        let outer = self.func.take();
         let depth = std::mem::take(&mut self.loop_depth);
-        self.proven.clear();
-        self.touched.clear();
+        let proven = std::mem::take(&mut self.proven);
+        let touched = std::mem::take(&mut self.touched);
         let given = n.ret.as_ref().map(|k| self.written_kind(k, KindUse::Result));
         // A function that can fail keeps its good result in `ရလဒ်`. The start
         // block gives back an exit code, never a result: ZK0441 reports a
@@ -1686,16 +1708,24 @@ impl Visitor for Checker
         let ctx = FnCtx::builder().name(n.name.name.to_string()).maybe_ret(ret).maybe_fault(fault)
             .build();
         self.func = Some(ctx);
-        self.scopes.push();
+        self.scopes.enter_fn();
         do_for!(p in &n.params, self.declare_param(p));
         do_if!(n.start, self.check_start_header(n, ret));
         do_if!(n.external, self.check_external(n, given));
+        let handed = n.lib.is_some() && given.is_some_and(foreign::is_c_text_result);
+        do_if!(
+            n.owned_ret && !handed,
+            self.report(kd::owned_not_c_text(n.name.span, &n.name.name))
+        );
         let result = Ident::builder().name(RESULT_NAME).span(n.name.span).build();
         do_if!(ret.is_some(), let _ = self.declare_quiet(&result, ret, Access::Var));
         self.visit_stmts(&n.block.stmts);
-        self.scopes.pop();
-        self.func = None;
+        let used = self.scopes.leave_fn();
+        do_if!(nested, self.check_captures_used(n, &used));
+        self.func = outer;
         self.loop_depth = depth;
+        (self.proven, self.touched) =
+            tern!(nested, (proven, touched), Default::default());
     }
 
     fn visit_return(&mut self, n: &ReturnStmt)
@@ -1724,7 +1754,11 @@ impl Visitor for Checker
             {
                 self.report(rd::missing_return_value(n.span, &func.name, &k.name()))
             }
-            (Some(k), Some(v)) => self.expect_kind(v, Some(k)),
+            (Some(k), Some(v)) =>
+            {
+                self.expect_kind(v, Some(k));
+                self.check_no_closure(v);
+            }
             (None, None) => (),
         }
     }

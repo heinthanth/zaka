@@ -584,9 +584,11 @@ fn generic_sexpr(s: &GenericStmt) -> String
     list("for", header.into_iter().chain(init).chain(loop_part).chain(update))
 }
 
-/// `(fn name [kind param, kind param] ret {..})`; `-` for no result. An
-/// external function is `(external name ...)`, with its lib first when it
-/// has one: `(external "libm" name ...)`.
+/// `(fn name [kind param, kind param] ret {..})`; `-` for no result. A
+/// function that takes locals around it lists them after its parameters:
+/// `(fn name [kind param] [dup a, move b, lend c] ret {..})`. An external
+/// function is `(external name ...)`, with its lib first when it has one:
+/// `(external "libm" name ...)`.
 ///
 /// # Arguments
 ///
@@ -600,7 +602,14 @@ fn fn_sexpr(s: &FnDecl) -> String
     let mut params: Vec<String> = s.params.iter().map(param_sexpr).collect();
     do_if!(s.variadic, params.push("...".to_string()));
     let ret = s.ret.as_ref().map_or("-".to_string(), ToSexpr::to_sexpr);
-    let parts = [s.name.name.to_string(), format!("[{}]", params.join(", ")), ret];
+    let taken = |c: &crate::stmt::CaptureItem| {
+        let mode: &'static str = c.mode.into();
+        format!("{mode} {}", c.name.name)
+    };
+    let taken: Vec<String> = s.captures.iter().map(taken).collect();
+    let taken = (!taken.is_empty()).then(|| format!("[{}]", taken.join(", ")));
+    let head = [s.name.name.to_string(), format!("[{}]", params.join(", "))];
+    let parts: Vec<String> = head.into_iter().chain(taken).chain([ret]).collect();
     let lib = s.lib.iter().map(|l| format!("\"{}\"", l.lit.value));
     ret_if!(s.external, list("external", lib.chain(parts)));
     list(tern!(s.start, "start", "fn"), parts.into_iter().chain([s.block.to_sexpr()]))

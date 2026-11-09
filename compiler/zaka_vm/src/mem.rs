@@ -4,6 +4,7 @@ use std::ops::Range;
 
 use bon::Builder;
 use strum::IntoStaticStr;
+use zakac_ir_builder::ir::shown_name;
 use zakac_ir_builder::value::NULL_TEXT;
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::from_raw;
@@ -203,10 +204,46 @@ impl Mem
     pub fn fn_text(&self, word: u64) -> String
     {
         ret_if!(word == 0, NULL_TEXT.to_string());
+        // A closure names the function its thunk calls, which the thunk's
+        // name starts with.
+        let thunk = self.closure_record(word).map(|r| self.thunk_word(r));
+        let word = thunk.and_then(Result::ok).unwrap_or(word);
         let name = usize::try_from(word - 1).ok().and_then(|n| self.fns.get(n));
-        // Inner names hold the overload number and the file: `<name>#2@lib`.
-        let name = name.map(|n| n.split(['#', '@']).next().unwrap_or(n));
+        let name = name.map(|n| shown_name(n));
         name.map_or_else(|| format!("{word:#x}"), |n| format!("လုပ်ဆောင်ချက် {n} ၏ လိပ်စာ"))
+    }
+
+    /// The record of a closure, when a function value is one: a function
+    /// value is the number of its function plus one, below the reserved
+    /// addresses, and a closure is the address of its record, with the
+    /// lowest bit set while a call borrows it.
+    ///
+    /// # Arguments
+    ///
+    /// * `word` - The function value.
+    ///
+    /// # Returns
+    ///
+    /// The address of the record, or `None` for a function or `ဗလာ`.
+    pub fn closure_record(&self, word: u64) -> Option<u64>
+    {
+        (word > self.fns.len() as u64).then_some(word & !1)
+    }
+
+    /// The function value of the thunk a closure record names, in its first
+    /// word.
+    ///
+    /// # Arguments
+    ///
+    /// * `record` - The address of the record.
+    ///
+    /// # Returns
+    ///
+    /// The function value, or the trap the read hits.
+    pub fn thunk_word(&self, record: u64) -> Result<u64, TrapKind>
+    {
+        let word = self.load(record, DataKind::OPAQUE)?;
+        word.as_ptr().ok_or(TrapKind::NullCall)
     }
 
     /// Make a block of zeros out of the stack region. A heap block counts

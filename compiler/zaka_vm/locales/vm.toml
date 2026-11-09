@@ -57,6 +57,12 @@ en = "the range from %{start} to %{end} ends before it starts"
 [vm.trap.null_call]
 en = "the function value is ဗလာ, so it holds no function to call"
 
+[vm.trap.closure_escape]
+en = "the function value borrows the locals around its function, so it cannot go where it outlives them"
+
+[vm.trap.closure_owner]
+en = "the closure owns a block, so it cannot be duplicated: move it, or lend it to a call"
+
 [vm.trap.foreign_call]
 en = "the C function %{name} runs in \"zakac run\" and in native builds, not in this VM"
 

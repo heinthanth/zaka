@@ -241,8 +241,27 @@ pub enum Op
     FnAddr(u32),
     /// Call the function a function value holds, as [`Op::Call`] does: the
     /// value sits under this many arguments, since it is read before them,
-    /// and leaves the stack. A value of 0, `ဗလာ`, stops the program.
+    /// and leaves the stack. A value of 0, `ဗလာ`, stops the program. A
+    /// closure calls the thunk its record names, with the address of the
+    /// record as one more argument, the last.
     CallValue(u32),
+    /// Pop the address of a closure record of the kind `record`, move the
+    /// record to a new heap block, leaving zeros behind, write the function
+    /// value of the thunk at index `func` of [`Module::funcs`] in its first
+    /// word, and push the address of the block as the closure. Function
+    /// numbers lie below the first address, so the value tells a closure
+    /// from a function; a closure lent to a call has its lowest bit set.
+    Closure
+    {
+        /// The thunk.
+        func: u32,
+        /// The kind of the record.
+        record: DataKind,
+    },
+    /// Stop the program when the function value on top of the stack is a
+    /// closure that borrows, which must not outlive the locals it borrows;
+    /// the value remains.
+    FnPlain,
     /// Serve a function of the host: pop the borrowed address of each of
     /// its parameters, the last on top, with the address of the slot for its
     /// result under them; write the result there and leave the address.
@@ -548,7 +567,10 @@ impl Op
             Op::GlobalAddr(n) => format!("g{n}"),
             Op::Convert(kind) => kind.name(),
             Op::Jump(t) | Op::JumpIfFalse(t) | Op::JumpIfTrue(t) => format!("@{t}"),
-            Op::Call(f) | Op::FnAddr(f) => format!("f{f}"),
+            Op::Call(f) | Op::FnAddr(f) | Op::Closure { func: f, .. } =>
+            {
+                format!("f{f}")
+            }
             Op::CallValue(n) => n.to_string(),
             Op::Host(func) => <&str>::from(func).to_string(),
             Op::Foreign(f) => format!("c{f}"),
@@ -620,6 +642,7 @@ impl Op
             | Op::TextEq
             | Op::CharAtOctet
             | Op::TextEdges
+            | Op::FnPlain
             | Op::CheckUtf8 =>
             {
                 return None;

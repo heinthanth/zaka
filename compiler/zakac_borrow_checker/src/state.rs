@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
 use bon::Builder;
@@ -438,6 +439,32 @@ pub(crate) struct State
     /// `န < s ၏ အကွက်အရေအတွက်`. A write to either slot ends the pair.
     #[builder(default)]
     pub(crate) below: BTreeSet<(Place, Place)>,
+    /// The functions declared inside a function whose closures each slot
+    /// can hold here; a slot with none is left out.
+    #[builder(default)]
+    pub(crate) closures: BTreeMap<Place, BTreeSet<u32>>,
+}
+
+/// The closures each slot can hold on either path: those of both.
+///
+/// # Arguments
+///
+/// * `a` - The closures of one path.
+/// * `b` - The closures of the other.
+///
+/// # Returns
+///
+/// The joined closures.
+fn join_closures(
+    a: &BTreeMap<Place, BTreeSet<u32>>, b: &BTreeMap<Place, BTreeSet<u32>>,
+) -> BTreeMap<Place, BTreeSet<u32>>
+{
+    let mut joined = a.clone();
+    for (place, funcs) in b
+    {
+        joined.entry(*place).or_default().extend(funcs);
+    }
+    joined
 }
 
 impl State
@@ -573,6 +600,7 @@ impl State
             .locals(both(&self.locals, &other.locals))
             .unfilled(self.unfilled.union(&other.unfilled).cloned().collect())
             .below(self.below.intersection(&other.below).copied().collect())
+            .closures(join_closures(&self.closures, &other.closures))
             .build()
     }
 
@@ -596,6 +624,7 @@ impl State
             .locals(both(&self.locals, &older.locals))
             .unfilled(self.unfilled.clone())
             .below(self.below.clone())
+            .closures(self.closures.clone())
             .build()
     }
 }

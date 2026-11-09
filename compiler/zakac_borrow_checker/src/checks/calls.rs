@@ -1,12 +1,14 @@
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::ownership::Invalidation;
 use zakac_diagnostics::ownership::aliased_argument;
+use zakac_diagnostics::ownership::closure_owner_dup;
 use zakac_diagnostics::ownership::invalidated_loan;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::Stmt;
+use zakac_ir_builder::ir::shown_name;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -58,7 +60,7 @@ pub(crate) fn check_call(
         return;
     };
     let freed = freed_per_param(callee, digest, args);
-    check_aliasing(flow, &callee.name, &freed, args, span);
+    check_aliasing(flow, shown_name(&callee.name), &freed, args, span);
     let clash = global_clash(callee, digest, args);
     let clash = clash.or_else(|| read_clash(digest, args));
     let clash = clash.map(|(owner, n)| clash_report(flow, callee, owner, n, span));
@@ -163,7 +165,7 @@ fn held_report(
     let (hit, value) = held_values(flow, span).into_iter().find_map(hit)?;
     let owner = slot_name(flow, hit.place);
     let what = Invalidation::Freed.text();
-    let name = value_name(flow, value).unwrap_or(&callee.name);
+    let name = value_name(flow, value).unwrap_or(shown_name(&callee.name));
     Some(invalidated_loan(span, owner, &what, name, value.span))
 }
 
@@ -352,7 +354,7 @@ fn value_name<'m>(flow: &Flow<'m>, v: &Expr) -> Option<&'m str>
         }
         ExprNode::Call { func, .. } =>
         {
-            flow.module.funcs.get(*func as usize).map(|f| f.name.as_str())
+            flow.module.funcs.get(*func as usize).map(|f| shown_name(&f.name))
         }
         _ => value_name(flow, sub_exprs(v).first()?),
     }
@@ -397,7 +399,7 @@ fn stale_report(
     let hit = given.iter().find(|g| held.iter().any(|r| g.reaches(r)))?;
     let owner = slot_name(flow, hit.place);
     let what = Invalidation::Freed.text();
-    Some(invalidated_loan(span, owner, &what, &callee.name, span))
+    Some(invalidated_loan(span, owner, &what, shown_name(&callee.name), span))
 }
 
 /// The result paths of a call that point into a block the callee
@@ -500,6 +502,39 @@ pub(crate) fn all_given_back(flow: &Flow, func: u32, args: &[Roots]) -> Roots
         return Roots::new();
     };
     given_paths(digest, &freed_per_param(callee, digest, args))
+}
+
+/// Check a call that gets a closure: another argument that reaches a block
+/// the closure can free through the locals it borrows is ZK0707, since the
+/// callee could run the closure while it holds that argument.
+///
+/// # Arguments
+///
+/// * `flow` - The flow.
+/// * `func` - The function the closure runs.
+/// * `at` - The argument that holds the closure, from 0.
+/// * `own` - The roots of each parameter of that function.
+/// * `args` - The roots of each argument of the call.
+/// * `span` - The call.
+pub(crate) fn check_closure_args(
+    flow: &mut Flow, func: u32, at: usize, own: &[Roots], args: &[Roots], span: Span,
+)
+{
+    ret_if!(!flow.recording());
+    let Some((callee, digest)) = callee_digest(flow, func)
+    else
+    {
+        return;
+    };
+    let freed: Roots =
+        freed_per_param(callee, digest, own).into_iter().flatten().collect();
+    let mut others = args.iter().enumerate().filter(|(m, _)| *m != at);
+    let Some((m, _)) = others.find(|(_, r)| overlap(&freed, r))
+    else
+    {
+        return;
+    };
+    report(flow, aliased_argument(span, shown_name(&callee.name), at + 1, m + 1));
 }
 
 /// The function and its digest.
@@ -790,4 +825,30 @@ pub(crate) fn note_unfilled(flow: &Flow, func: u32, args: &[Roots], state: &mut 
 fn overlap(a: &Roots, b: &Roots) -> bool
 {
     a.iter().any(|mine| b.iter().any(|theirs| mine.overlaps(theirs)))
+}
+
+/// Report a duplicate of a closure whose record owns a block (ZK0724): two
+/// records would free the one block. A move and a loan are no duplicate.
+///
+/// # Arguments
+///
+/// * `flow` - The flow.
+/// * `span` - The duplicate.
+/// * `value` - The value duplicated.
+/// * `state` - The facts where it is read.
+pub(crate) fn check_owner_dup(flow: &mut Flow, span: Span, value: &Expr, state: &State)
+{
+    let owning: Vec<u32> = flow
+        .closures
+        .held_in(value, state)
+        .into_iter()
+        .filter(|f| flow.closures.owns(*f))
+        .collect();
+    let name = |f: u32| flow.module.funcs.get(f as usize).map(|f| shown_name(&f.name));
+    let found: Vec<Diagnostic> = owning
+        .iter()
+        .filter_map(|f| name(*f))
+        .map(|n| closure_owner_dup(span, &n))
+        .collect();
+    do_for!(d in found, report(flow, d));
 }

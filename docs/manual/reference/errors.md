@@ -100,7 +100,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0211 | `သို့မဟုတ်ပါက` without an `အကယ်၍` before it | [If and else](../../learn/control-flow/if-else.md) |
 | ZK0212 | the `ပြီးလျှင်` update outside a generic loop | [Generic loops](../../learn/control-flow/generic-loops.md#the-update-goes-last) |
 | ZK0213 | the `ပြီးလျှင်` update is not last | [Generic loops](../../learn/control-flow/generic-loops.md) |
-| ZK0214 | a function declared inside a block or function | [Functions](../../learn/functions/README.md) |
+| ZK0214 | an external function, a C function or the start block declared inside a block or function | [Functions](../language/functions.md#declaring-a-function), [Nested functions](../language/function-values.md#nested-functions-and-closures) |
 | ZK0215 | an `if` as the one-statement inner block of an `if` | [If and else](../../learn/control-flow/if-else.md) |
 | ZK0216 | a bit count that the kind does not have, such as `၁၀ ဘစ် ကိန်းပြည့်` | [Integers](../../learn/values/integers.md#building-an-integer-kind) |
 | ZK0217 | a sign word before a kind that is not an integer | [Integers](../../learn/values/integers.md#building-an-integer-kind) |
@@ -168,6 +168,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0336 | a chain of kind aliases that comes back to its start | [Kind aliases](../language/aliases.md#errors) |
 | ZK0337 | a C function whose name is no C name | [Functions](../language/functions.md#c-functions) |
 | ZK0338 | a C function declared twice with other parameter or result kinds | [Functions](../language/functions.md#c-functions) |
+| ZK0339 | a nested function that uses a local of a function around it, or a closure, that its capture list leaves out | [Function values](../language/function-values.md#nested-functions-and-closures) |
+| ZK0340 | a capture list that names no local of a function around it, nor a closure | [Function values](../language/function-values.md#nested-functions-and-closures) |
+| ZK0341 | a listed capture the statements never use; a warning | [Function values](../language/function-values.md#nested-functions-and-closures) |
 
 ### ZK04: kinds
 
@@ -233,8 +236,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0462 | a call through a name or a place whose kind is no function kind | [Function values](../language/function-values.md#calling-a-function-value) |
 | ZK0463 | the address of a name of several functions, where no single one fits the kind the value goes to | [Function values](../language/function-values.md#the-address-of-a-function) |
 | ZK0464 | the address of a function that comes from outside the program | [Function values](../language/function-values.md#the-address-of-a-function) |
-| ZK0465 | a parameter or the result of a C function with a kind C cannot take | [Functions](../language/functions.md#c-functions) |
+| ZK0465 | a parameter or the result of a C function with a kind C cannot take: a bare text result, a function kind with a struct, text or an edit mark in it, an owner, a plain list | [Functions](../language/functions.md#c-functions) |
 | ZK0466 | the edit mark on a parameter of a C function | [Functions](../language/functions.md#c-functions) |
+| ZK0467 | `အပိုင်အနေဖြင့်` on a result that is no text from a C function | [Functions](../language/functions.md#c-functions) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -296,6 +300,9 @@ ZK0701 to ZK0704 and ZK0706 to ZK0712 are warnings and the program runs; with
 | ZK0719 | an operation that overflows for each value of its operands; a warning, not given with `--overflow wrap` | [Overflow](../language/expressions.md#arithmetic) |
 | ZK0720 | with `--warn-duplicates`, a statement that duplicates text or a list; a warning | [Text](../language/text.md#copies) |
 | ZK0721 | the two ranges of `ကူးယူမည်` overlap, both in one known block at known offsets | [Writing and filling cells](../language/pointers.md#writing-and-filling-cells) |
+| ZK0722 | the address of a function that borrows the locals around it, where it would outlive them | [Function values](../language/function-values.md#nested-functions-and-closures) |
+| ZK0723 | the address of a nested function with captures, as the argument of a C function | [Function values](../language/function-values.md#nested-functions-and-closures) |
+| ZK0724 | a duplicate of a closure that owns a block | [Function values](../language/function-values.md#nested-functions-and-closures) |
 
 ### ZK08: building for a target
 

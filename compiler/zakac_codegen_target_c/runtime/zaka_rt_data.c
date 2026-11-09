@@ -167,6 +167,185 @@ zk_fn zk_fn_check(zk_fn f)
     return f;
 }
 
+_Static_assert(
+    sizeof(zk_code) == sizeof(void *),
+    "a closure record holds code in a word of an address"
+);
+
+/**
+ * The code a function value runs: the first word of its record.
+ *
+ * @param f The value, not null.
+ * @return The code.
+ */
+zk_code zk_fn_code(zk_fn f)
+{
+    zk_code code;
+    memcpy(&code, zk_fn_rec(f), sizeof code);
+    return code;
+}
+
+/**
+ * The record of a function value: its address without the mark of a loan.
+ *
+ * @param f The value.
+ * @return The record.
+ */
+unsigned char *zk_fn_rec(zk_fn f)
+{
+    return (unsigned char *)((uintptr_t)f & ~(uintptr_t)1);
+}
+
+/**
+ * The kind of the record of a closure: the second word of the record.
+ *
+ * @param f The value, not null.
+ * @return The kind, or NULL for a function.
+ */
+static const zk_kind *zk_fn_kind(zk_fn f)
+{
+    const zk_kind *k;
+    memcpy(&k, zk_fn_rec(f) + sizeof(zk_code), sizeof k);
+    return k;
+}
+
+/**
+ * Whether a function value is a closure: the second word of its record is
+ * the kind of the record, where the record of a function holds NULL.
+ *
+ * @param f The value, not null.
+ * @return 1 for a closure, else 0.
+ */
+int zk_fn_bound(zk_fn f) { return zk_fn_kind(f) != NULL; }
+
+/**
+ * Make a closure: move its record from a slot of the caller to the heap,
+ * leaving zeros behind, with the code of its thunk in the first word and the
+ * kind of the record in the second.
+ *
+ * @param record The record, in a slot of the caller.
+ * @param thunk The code of the thunk.
+ * @param k The kind of the record.
+ * @return The closure.
+ */
+zk_fn zk_closure(unsigned char *record, zk_code thunk, const zk_kind *k)
+{
+    unsigned char *block = zk_block(k->size);
+    memcpy(block, record, k->size);
+    memset(record, 0, k->size);
+    memcpy(block, &thunk, sizeof thunk);
+    memcpy(block + sizeof thunk, &k, sizeof k);
+    return block;
+}
+
+/**
+ * Check a function value headed where it can outlive the locals a closure
+ * borrows: a closure that borrows stops the run.
+ *
+ * @param f The value.
+ * @return The value.
+ */
+zk_fn zk_fn_plain(zk_fn f)
+{
+    int borrows = f && zk_fn_bound(f) && zk_fn_kind(f)->holds_borrow;
+    DO_IF(borrows, zk_plain_trap(ZK_TRAP_CLOSURE_ESCAPE));
+    return f;
+}
+
+/**
+ * Check a function value headed to C, which calls a bare code address: a
+ * closure stops the run.
+ *
+ * @param f The value.
+ * @return The value.
+ */
+zk_fn zk_fn_c(zk_fn f)
+{
+    DO_IF(f && zk_fn_bound(f), zk_plain_trap(ZK_TRAP_CLOSURE_ESCAPE));
+    return f;
+}
+
+/**
+ * A duplicate of a function value: a closure gets a new record with the same
+ * fields, each value in them duplicated in turn.
+ *
+ * @param f The value.
+ * @return The duplicate.
+ */
+zk_fn zk_fn_dup(zk_fn f)
+{
+    RET_IF(!f || !zk_fn_bound(f), f);
+    const zk_kind *k = zk_fn_kind(f);
+    DO_IF(k->owns, zk_plain_trap(ZK_TRAP_CLOSURE_OWNER));
+    unsigned char *block = zk_block(k->size);
+    memcpy(block, zk_fn_rec(f), k->size);
+    zk_dup_seqs(block, k);
+    return block;
+}
+
+/**
+ * A function value lent to a call: a closure gets the mark of a loan, so a
+ * drop frees nothing and a duplicate copies the record.
+ *
+ * @param f The value.
+ * @return The lent value.
+ */
+zk_fn zk_fn_lend(zk_fn f)
+{
+    RET_IF(!f || !zk_fn_bound(f), f);
+    return (zk_fn)((uintptr_t)f | 1);
+}
+
+static const zk_kind *zk_repr(const zk_kind *k);
+
+/**
+ * Free the block of each owner pointer inside a value, through its fields
+ * and cells: the record of a closure owns what moved into it.
+ *
+ * @param at The value.
+ * @param k Its kind.
+ */
+static void zk_free_owners(unsigned char *at, const zk_kind *k)
+{
+    k = zk_repr(k);
+    RET_IF(!k->owns);
+    if (k->tag == ZK_K_STRUCT || k->tag == ZK_K_FALLIBLE)
+    {
+        DO_FOR(i, k->len) zk_free_owners(at + k->fields[i].offset, k->fields[i].kind);
+        return;
+    }
+    if (k->tag == ZK_K_LIST)
+    {
+        DO_FOR(i, k->len) zk_free_owners(at + i * k->cell->size, k->cell);
+        return;
+    }
+    RET_IF(k->tag != ZK_K_PTR);
+    void *block;
+    memcpy(&block, at, sizeof block);
+    free(block);
+    memset(at, 0, sizeof block);
+}
+
+/**
+ * Free the record of the closure a slot holds, with each value its fields
+ * own, and leave NULL. A function, or a lent closure, owns no record.
+ *
+ * @param at The slot.
+ */
+static void zk_drop_fn(unsigned char *at)
+{
+    zk_fn f;
+    memcpy(&f, at, sizeof f);
+    int owned = f && !((uintptr_t)f & 1) && zk_fn_bound(f);
+    if (owned)
+    {
+        zk_drop(zk_fn_rec(f), zk_fn_kind(f));
+        zk_free_owners(zk_fn_rec(f), zk_fn_kind(f));
+        free(zk_fn_rec(f));
+    }
+    memset(at, 0, sizeof f);
+}
+
 /* ---- the words of lists and text ---- */
 
 unsigned char *zk_seq_base(const unsigned char *at)
@@ -295,7 +474,7 @@ static void zk_each_block(unsigned char *at, const zk_kind *k, zk_visit f)
         DO_FOR(i, k->len) zk_each_block(at + i * k->cell->size, k->cell, f);
         return;
     }
-    DO_IF(k->tag == ZK_K_TEXT || k->tag == ZK_K_SEQ, f(at, k));
+    DO_IF(k->tag == ZK_K_TEXT || k->tag == ZK_K_SEQ || k->tag == ZK_K_FN, f(at, k));
 }
 
 /**
@@ -318,6 +497,7 @@ static const zk_kind *zk_text_cells(const zk_kind *k)
  */
 static void zk_drop_block(unsigned char *at, const zk_kind *k)
 {
+    DONE_IF(k->tag == ZK_K_FN, zk_drop_fn(at));
     unsigned char *base = zk_seq_base(at);
     size_t count = zk_seq_len(at);
     const zk_kind *cell = zk_text_cells(k);
@@ -360,6 +540,14 @@ static void zk_clone_block(unsigned char *at, const zk_kind *k)
  */
 static void zk_dup_block(unsigned char *at, const zk_kind *k)
 {
+    if (k->tag == ZK_K_FN)
+    {
+        zk_fn f;
+        memcpy(&f, at, sizeof f);
+        f = zk_fn_dup(f);
+        memcpy(at, &f, sizeof f);
+        return;
+    }
     DO_IF(zk_seq_base(at), zk_clone_block(at, k));
 }
 
@@ -376,7 +564,14 @@ void zk_dup_seqs(unsigned char *at, const zk_kind *k)
  */
 static void zk_lend_block(unsigned char *at, const zk_kind *k)
 {
-    (void)k;
+    if (k->tag == ZK_K_FN)
+    {
+        zk_fn f;
+        memcpy(&f, at, sizeof f);
+        f = zk_fn_lend(f);
+        memcpy(at, &f, sizeof f);
+        return;
+    }
     size_t room = 0;
     memcpy(at + 2 * ZK_WORD, &room, ZK_WORD);
 }
@@ -394,6 +589,7 @@ void zk_lend_seqs(unsigned char *at, const zk_kind *k)
  */
 static void zk_own_block(unsigned char *at, const zk_kind *k)
 {
+    RET_IF(k->tag == ZK_K_FN);
     DO_IF(zk_seq_room(at) == 0, zk_clone_block(at, k));
 }
 
@@ -718,7 +914,7 @@ static void zk_splice(
     DO_IF(n, memcpy(edited + from, add, n));
     DO_IF(len > to, memcpy(edited + from + n, base + to, len - to));
     static const zk_kind text = {
-        ZK_K_TEXT, 3 * sizeof(void *), NULL, 0, NULL, NULL, NULL, 1
+        ZK_K_TEXT, 3 * sizeof(void *), NULL, 0, NULL, NULL, NULL, 1, 0, 0
     };
     zk_own(at, &text);
     zk_put_text(at, edited, total);
@@ -1081,7 +1277,7 @@ void zk_put_fn(zk_fn f)
     DONE_IF(!f, zk_emit(zk_null_text, strlen(zk_null_text)));
     DO_FOR(i, zk_fn_count)
     {
-        NEXT_IF(zk_fn_names[i].fn != f);
+        NEXT_IF(zk_fn_names[i].code != zk_fn_code(f));
         zk_emit(zk_fn_lead, strlen(zk_fn_lead));
         zk_emit(zk_fn_names[i].name, strlen(zk_fn_names[i].name));
         zk_emit(zk_fn_tail, strlen(zk_fn_tail));

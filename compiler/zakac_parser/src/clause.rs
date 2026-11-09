@@ -983,7 +983,17 @@ impl Parser<'_>
         let first = args.next().expect("statement verbs take operands");
         match verb.op
         {
-            VerbOp::Assign => Ok(assign_stmt(first, args.next(), span)),
+            VerbOp::Assign | VerbOp::DupInto =>
+            {
+                Ok(assign_stmt(first, args.next(), span))
+            }
+            VerbOp::MoveInto =>
+            {
+                let value = args.next().expect("a move takes two operands");
+                #[rustfmt::skip]
+                let node = AssignStmt::builder().target(first).value(value).moves(true).span(span).build();
+                Ok(Stmt::Assign(node))
+            }
             VerbOp::Print => Ok(print_stmt(first, slot, span)),
             VerbOp::AddCell =>
             {

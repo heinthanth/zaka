@@ -5,6 +5,7 @@ use zakac_ir_builder::ir::Place;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::cfg::NodeId;
@@ -18,6 +19,7 @@ use crate::flow::leave_moved;
 use crate::roots::Roots;
 use crate::roots::roots_of;
 use crate::roots::take_paths;
+use crate::state::SlotState;
 use crate::state::State;
 
 /// Report a read of an owner moved out on each path. A test against
@@ -71,7 +73,14 @@ pub(crate) fn run_take(flow: &mut Flow, e: &Expr, state: &mut State) -> Roots
         return paths;
     };
     check_read(flow, place, e.span, state, false);
-    leave_moved(place, e.kind, state);
+    // A move out of text, a list or a function value leaves it blank, which
+    // reads as each blank value does; an owner left behind holds no block.
+    let owner = e.kind.holds_owner_ptr() || e.kind.holds_borrow();
+    tern!(
+        owner,
+        leave_moved(place, e.kind, state),
+        state.set(place, SlotState::unknown(e.kind, Roots::new()))
+    );
     paths
 }
 

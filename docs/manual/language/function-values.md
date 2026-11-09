@@ -1,6 +1,6 @@
 ---
 title: Function values
-description: Function kinds, the address of a function, calls through a function value, ဗလာ, comparing and printing function values, and the errors of each.
+description: Function kinds, the address of a function, calls through a function value, ဗလာ, comparing and printing function values, nested functions and closures, and the errors of each.
 ---
 
 # Function values
@@ -483,18 +483,307 @@ or when it starts as the address of a function with marks:
 
 ## Ownership
 
-A function value holds no borrow and no block, so it is duplicated on assignment and on
-a call, never moved and never freed, and it can sit in a global and cross a module edge.
-The address of a function is known when the program is compiled, so it can be the value
-of a constant, a cell of a constant list, and the starting value of a variable or a
-constant in an imported file: a module can export a table of functions.
 A function value is one word: in the VM the number of the function plus one, so 0 is
-`ဗလာ`; in native code the code address.
+`ဗလာ`; in native code the address of a record whose first word is the code address. The
+address of a function is known when the program is compiled, so it can be the value of a
+constant, a cell of a constant list, and the starting value of a variable or a constant in
+an imported file: a module can export a table of functions.
+
+A [closure](#nested-functions-and-closures) is one word too: the address of a record on the
+heap that holds its captures. A function value is a value as text is:
+
+- `ဖြစ်ပါစေ`, `ဟု ထားပါ`, `ကူးထည့်မည်`, a field, a cell and a result make a duplicate, and
+  the duplicate of a closure gets a record of its own, its captures duplicated;
+- the last use of a variable moves the value instead, and `ပြောင်းထည့်မည်` moves it;
+- an argument *lends* the value for the call: the callee runs the caller's closure, so a
+  counter passed to a helper keeps counting, and the callee frees nothing of it;
+- a variable frees the record of the closure it holds as its block ends.
 
 A call through a function value names no function, but such a value comes from the
-address of a function alone. So the [borrow checker](../internals/borrow-checker.md)
+address of a function alone, a closure included. So the [borrow checker](../internals/borrow-checker.md)
 treats the call as a call of each function whose address the program takes and whose
 kind fits, and joins what each of them frees and keeps.
+
+## Nested functions and closures
+
+A function with statements can be declared inside the statements of a function, the start
+block, a block, a loop or a conditional. Such a *nested function* is visible from its
+declaration to the end of the block that holds it, and inside itself, so it can call
+itself. Two nested functions of one name in one scope are ZK0304, and nested functions
+have no overloads. A nested function hides a top-level function of its name. External
+functions, C functions and the start block remain at the top level (ZK0214).
+
+### The capture list
+
+A nested function lists each local variable and each parameter of the functions around it
+that its statements use, its *captures*, in the list of its parameters. With a capture in
+the list, each item of the list ends in `ကိုလည်းကောင်း` ("and also"), the parameters too, and
+`၊` can stand between the items. A parameter has a kind; a capture is a bare name, with the
+kind of the outer local. A word before `လည်းကောင်း` gives the mode of a capture:
+
+| Item | Mode | The function gets | The outer local after |
+| --- | --- | --- | --- |
+| `<name> ကိုလည်းကောင်း` | duplicate | a duplicate of its own | unchanged |
+| `<name> ကို အပိုင်အနေဖြင့်လည်းကောင်း` | move | the value itself | blank: `""`, `[]` or `ဗလာ`; a number is copied |
+| `<name> ကို ငှား၍လည်းကောင်း` | borrow | the outer local itself | shared with the function |
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အမည် သည် "စံ" ဖြစ်ပါစေ။
+ကိန်းရှင် စုစုပေါင်း သည် ၀ ဖြစ်ပါစေ။
+ကိန်းရှင် မှတ်တမ်း သည် "" ဖြစ်ပါစေ။
+// a parameter, then a duplicate, a borrow and a move
+လုပ်ဆောင်ချက် နှုတ်ဆက် သည် စာသား နောက် ကိုလည်းကောင်း၊ အမည် ကိုလည်းကောင်း၊
+စုစုပေါင်း ကို ငှား၍လည်းကောင်း၊ မှတ်တမ်း ကို အပိုင်အနေဖြင့်လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အမည် ထဲသို့ နောက် ကို ထည့်ပါ။
+မှတ်တမ်း ထဲသို့ "+" ကို ထည့်ပါ။
+စုစုပေါင်း ကို စုစုပေါင်း + ၁ ဟု ထားပါ။
+"{အမည်} {မှတ်တမ်း} {စုစုပေါင်း}" ဟု ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် နှုတ်ဆက် ကို "က" တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် နှုတ်ဆက် ကို "ခ" တို့ဖြင့် လုပ်ဆောင်ပါ။
+"အပြင်: {အမည်} [{မှတ်တမ်း}] {စုစုပေါင်း}" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+စံက + ၁
+စံကခ ++ ၂
+အပြင်: စံ [] ၂
+```
+
+The duplicates and the moves happen once, where the function is declared, and what the
+function writes to them remains for its next call: `အမည်` grows from one call to the next,
+while the outer `အမည်` keeps `စံ`.
+
+- Each local the statements use is listed: one the list leaves out is ZK0339, and a name
+  that is no local of a function around it, such as a global, is ZK0340. Globals and
+  top-level functions need no listing. A listed capture the statements never use is the
+  warning ZK0341.
+- A function nested in a nested function lists what it uses, and the function around it
+  lists those in turn, since it makes the inner one.
+- A nested function that calls a nested function with captures, or takes its address,
+  lists it too, under its name: the closure is captured as each other value is, and so is
+  the function it sits inside. Its own name inside itself needs no listing.
+- A nested function with no captures is a plain function, with no list.
+
+```zaka-error ZK0339
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် န သည် ၁ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ပြ သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် ပြ ကို လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0339]: "ပြ" uses "န" of the function around it, which its list leaves out
+```
+
+A borrow reaches the local itself, as in a Pascal nested function or a Rust closure that
+borrows. A function nested two levels deep borrows through the one around it:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် မှတ်တမ်း သည် "" ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် မှတ် သည် စာသား စာ ကိုလည်းကောင်း၊ မှတ်တမ်း ကို ငှား၍လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+// nested in မှတ်: it borrows မှတ်တမ်း through မှတ်
+လုပ်ဆောင်ချက် ခြား သည် မှတ်တမ်း ကို ငှား၍လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အကယ်၍ (မှတ်တမ်း ၏ အကွက်အရေအတွက်) > ၀ ဖြစ်လျှင် မှတ်တမ်း ထဲသို့ "၊ " ကို ထည့်ပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် ခြား ကို လုပ်ဆောင်ပါ။
+မှတ်တမ်း ထဲသို့ စာ ကို ထည့်ပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် မှတ် ကို "က" တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် မှတ် ကို "ခ" တို့ဖြင့် လုပ်ဆောင်ပါ။
+မှတ်တမ်း ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+က၊ ခ
+```
+
+### Closures
+
+The address of a nested function, `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`, is a plain function value
+when the function has no captures. With captures it is a *closure*: a value of the same
+function kind, so each function kind takes closures, and no new spelling is needed. The
+captures never show in the kind. A call of the function through its name, and its address, go
+through that one closure, made where the function is declared. It prints as
+`လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`, as a function value does.
+
+A closure of duplicates and moves owns its captures, so it goes where each value goes: it
+can be given back, stored in a field, a cell or a global, and kept after the block that
+declares it ends. Inside its own statements, `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ` is that same
+closure, with the rules of each other place: an argument lends it, so the callee runs it
+and its captures change, while `=`, a store or a result makes a duplicate.
+
+```zaka
+လုပ်ဆောင်ချက် ရေတွက်စက် သည် ကိန်းပြည့် စ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ (လုပ်ဆောင်ချက် အမျိုးအစား) ရလဒ် ကို ပြန်ပေးမည်။
+ကိန်းရှင် ကြိမ် သည် စ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် တိုး သည် ကြိမ် ကိုလည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကြိမ် ကို ကြိမ် + ၁ ဟု ထားပါ။
+ကြိမ် ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် တိုး ၏ လိပ်စာ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် နှစ်ကြိမ် သည် (လုပ်ဆောင်ချက် အမျိုးအစား) ဖ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ဖ ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ဖ ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ရေတွက် သည် လုပ်ဆောင်ချက် ရေတွက်စက် ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ရေတွက် ကို လုပ်ဆောင်ပါ။
+// the helper runs this closure: its count goes on
+လုပ်ဆောင်ချက် နှစ်ကြိမ် ကို ရေတွက် တို့ဖြင့် လုပ်ဆောင်ပါ။
+// a duplicate counts on its own
+ကိန်းရှင် မိတ္တူ ထဲသို့ ရေတွက် ကို ကူးထည့်မည်။
+လုပ်ဆောင်ချက် မိတ္တူ ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ရေတွက် ကို လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၁၁
+၁၂
+၁၃
+၁၄
+၁၄
+```
+
+An owner moved into a closure, `ပ ကို အပိုင်အနေဖြင့်လည်းကောင်း`, belongs to the record, which
+frees its block as the closure ends, unless the function freed it first. Two records cannot
+free one block, so such a closure moves and is lent but is never duplicated, as a Rust
+closure that is not `Clone`: a duplicate the compiler sees is ZK0724, and one it cannot
+see, such as a parameter put into a variable, stops the program with the trap
+`closure_owner`.
+
+```zaka-error ZK0724
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+ပ ၏ တန်ဖိုး ကို ၄၂ ဟု ထားပါ။
+လုပ်ဆောင်ချက် ပြ သည် ပ ကို အပိုင်အနေဖြင့်လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပ ၏ တန်ဖိုး ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ကိန်းရှင် ပွား ထဲသို့ လုပ်ဆောင်ချက် ပြ ၏ လိပ်စာ ကို ကူးထည့်မည်။
+လုပ်ဆောင်ချက် ပြ ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ပွား ကို လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0724]: the closure of "ပြ" owns a block, so it cannot be duplicated
+```
+
+Write `ပြောင်းထည့်မည်` in place of `ကူးထည့်မည်`, or use `ပြ` no more after the line, and the
+closure moves.
+
+A closure with a borrowed capture, or with a capture that holds a borrow, *borrows*: it
+cannot go where it would outlive the locals it borrows. Moving into such a closure is
+allowed. The compiler reports ZK0722 when the address of a borrowing function, written in
+the place itself, is:
+
+- given back as a result;
+- put in a field of a struct, in a literal or an assignment;
+- put in a cell of a list, in a literal or with an add or an insert;
+- put in a global, or in a place reached through an address;
+- set into a variable of an outer block.
+
+```zaka-error ZK0722
+လုပ်ဆောင်ချက် ဖန်တီး သည် ကိန်းပြည့် တိုး ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ (ကိန်းပြည့် ကို လက်ခံပြီး ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် ထည့် သည် ကိန်းပြည့် က ကိုလည်းကောင်း၊ တိုး ကို ငှား၍လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က + တိုး ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် ထည့် ၏ လိပ်စာ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0722]: "ထည့်" borrows the locals around it, so its address cannot go where it outlives them
+```
+
+C calls a bare code address, so no closure goes to a C function, borrowing or not: the
+address of a nested function with captures as the argument of a C function is ZK0723.
+
+Where the compiler cannot tell, as with a closure that came in as a parameter, the check
+moves to run time. A function value that a program stores in a global, a field or a cell,
+or gives back, is checked as it leaves: a borrowing closure stops the program with the
+closure escape trap (see [When a program stops](../vm/traps.md#all-the-traps)). A function
+value that goes to C stops it when it is a closure of each sort.
+
+```zaka-stop
+// a global that keeps a function value
+ကိန်းရှင် သိမ်း သည် (ကိန်းပြည့် ကို လက်ခံပြီး ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ဖြစ်ပါစေ။
+
+လုပ်ဆောင်ချက် မှတ်ထား သည်
+(ကိန်းပြည့် ကို လက်ခံပြီး ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) ဖ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+သိမ်း ကို ဖ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် နှစ်ဆ သည် ကိန်းပြည့် က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က * ၂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် မှတ်ထား ကို လုပ်ဆောင်ချက် နှစ်ဆ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
+"ပုံမှန် လုပ်ဆောင်ချက် ရ" ဟု ပြသပါ။
+ကိန်းရှင် ထပ် သည် ၁ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ထည့် သည် ကိန်းပြည့် က ကိုလည်းကောင်း၊ ထပ် ကို ငှား၍လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က + ထပ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် မှတ်ထား ကို လုပ်ဆောင်ချက် ထည့် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
+"မရောက်" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ပုံမှန် လုပ်ဆောင်ချက် ရ
+the program stopped: the function value borrows the locals around its function, so it cannot go where it outlives them
+```
+
+### How it runs
+
+The function of a nested function takes its declared parameters, then its own closure,
+lent, then the address of each capture. Where it is declared, the program fills a record of a code word, an info
+word and one field for each capture (the value for a duplicate or a move, the address of
+the local for a borrow), and moves the record to the heap. A hidden variable of the block
+holds the closure, and frees the record as the block ends. A call through a closure runs a
+*thunk*, which takes the record last and calls the function with the address of each
+field, or the address a borrowed field holds. A call of the function inside itself passes
+its own closure and captures on. A closure value that a call makes and an argument takes
+at once waits in a hidden variable, which frees it as its block ends. See [call_value](../vm/instructions.md#the-instructions) and
+[Function values in C](../compiler/native.md#function-values-and-closures).
+
+### Limits
+
+- A call that gets a closure, as an argument or through a variable that holds one, can run
+  it or not, so what the closure does to the locals it borrows counts as what the call can
+  do. After a call that gets a closure that frees `ပ`, a borrow into the block of `ပ` is
+  ZK0704, and `ပ` can be `ဗလာ`: compare it with `ဗလာ` before a read, as after each call that
+  can free it (`--mem-strict` reports a read that does not, ZK0711). Another argument of
+  that call that reaches the block is ZK0707.
+- The checker follows the closures a closure holds at each depth, each one once: a closure
+  that calls a closure it holds, as a duplicate, a move or a borrow, counts as a call of that
+  one too, and so on inward.
+- Sharing one closure for good, as JS does, needs a counted box, which is not built:
+  each duplicate counts on its own.
 
 ## Errors at a glance
 
@@ -502,9 +791,15 @@ kind fits, and joins what each of them frees and keeps.
 | --- | --- |
 | ZK0239 | a function kind with parameters inside a list of parameters or fields, not in parentheses |
 | ZK0335 | a call that names both a declared function and a value of a function kind |
+| ZK0339 | a nested function that uses a local of a function around it, or a closure, that its list leaves out |
+| ZK0340 | a capture list that names no local of a function around it |
+| ZK0341 | a warning: a listed capture the statements never use |
 | ZK0401 | a function value of another kind for a variable or a parameter |
 | ZK0462 | a call through a name or a place whose kind is no function kind |
 | ZK0463 | the address of an overloaded name where no single function fits |
 | ZK0464 | the address of a function that comes from outside |
 | ZK0709 | a call through a value that is `ဗလာ` on each path |
 | ZK0711 | a warning, with `--mem-strict` alone: a call through a variable that a `ဗလာ` the function wrote can reach |
+| ZK0722 | the address of a function that borrows locals, where it would outlive them |
+| ZK0723 | the address of a nested function with captures, as the argument of a C function |
+| ZK0724 | a duplicate of a closure that owns a block |

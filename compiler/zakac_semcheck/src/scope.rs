@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use bon::Builder;
@@ -53,17 +54,72 @@ impl Binding
     pub fn home(&self) -> Span { self.from.unwrap_or(self.span) }
 }
 
-/// Block scopes from the outermost to the innermost.
+/// A local of an enclosing function that a nested function names, or a
+/// nested function with captures that it calls or names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Capture
+{
+    /// The name.
+    pub name: Name,
+    /// The declared name of the local.
+    pub decl: Span,
+}
+
+/// Block scopes from the outermost to the innermost, with the functions
+/// declared in each and the functions whose blocks are open.
 #[derive(Debug, Default)]
-pub(crate) struct Scopes(Vec<HashMap<Name, Binding>>);
+pub(crate) struct Scopes
+{
+    /// The names of each scope.
+    names: Vec<HashMap<Name, Binding>>,
+    /// The functions each scope declares, beside its names: the functions
+    /// declared inside a function.
+    fns: Vec<HashMap<Name, FnSig>>,
+    /// The index of the first scope of each function whose block is open,
+    /// the outermost first.
+    bases: Vec<usize>,
+    /// The locals of enclosing functions each open function names so far,
+    /// in the order of [`Self::bases`]. A read records them, so it sits in a
+    /// cell.
+    captures: RefCell<Vec<Vec<Capture>>>,
+}
 
 impl Scopes
 {
     /// Open a scope.
-    pub fn push(&mut self) { self.0.push(HashMap::new()) }
+    pub fn push(&mut self)
+    {
+        self.names.push(HashMap::new());
+        self.fns.push(HashMap::new());
+    }
 
     /// Close the innermost scope.
-    pub fn pop(&mut self) { self.0.pop(); }
+    pub fn pop(&mut self)
+    {
+        self.names.pop();
+        self.fns.pop();
+    }
+
+    /// Open the first scope of a function.
+    pub fn enter_fn(&mut self)
+    {
+        self.bases.push(self.names.len());
+        self.captures.get_mut().push(Vec::new());
+        self.push();
+    }
+
+    /// Close the first scope of a function.
+    ///
+    /// # Returns
+    ///
+    /// The locals of enclosing functions it names, in the order of their
+    /// first use.
+    pub fn leave_fn(&mut self) -> Vec<Capture>
+    {
+        self.pop();
+        self.bases.pop();
+        self.captures.get_mut().pop().unwrap_or_default()
+    }
 
     /// Declare a name in the innermost scope.
     ///
@@ -77,7 +133,7 @@ impl Scopes
     /// `Ok`, or the earlier binding when the scope holds the name.
     pub fn declare(&mut self, name: Name, binding: Binding) -> Result<(), Binding>
     {
-        let Some(inner) = self.0.last_mut()
+        let Some(inner) = self.names.last_mut()
         else
         {
             return Ok(());
@@ -87,7 +143,8 @@ impl Scopes
         Ok(())
     }
 
-    /// Find a name, innermost scope first.
+    /// Find a name, innermost scope first. A local of an enclosing function
+    /// counts as a borrow of each open function inside that one.
     ///
     /// # Arguments
     ///
@@ -98,7 +155,115 @@ impl Scopes
     /// What the name stands for, or `None` when it is not declared.
     pub fn lookup(&self, name: &str) -> Option<Binding>
     {
-        self.0.iter().rev().find_map(|scope| scope.get(name)).copied()
+        let mut each = self.names.iter().enumerate().rev();
+        let (at, stored, binding) =
+            each.find_map(|(i, s)| s.get_key_value(name).map(|(k, b)| (i, *k, *b)))?;
+        let capture = Capture { name: stored, decl: binding.span };
+        self.note_capture(at, capture);
+        Some(binding)
+    }
+
+    /// Record a name found in scope `at` as a borrow of each open function
+    /// whose first scope lies past it; a name of the top level of the file
+    /// is no local.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The index of the scope that declares the name.
+    /// * `capture` - The name.
+    fn note_capture(&self, at: usize, capture: Capture)
+    {
+        ret_if!(at == 0);
+        let mut captures = self.captures.borrow_mut();
+        let open = self.bases.iter().zip(captures.iter_mut());
+        let inside = open.filter(|(base, _)| at < **base).map(|(_, list)| list);
+        inside.for_each(|list| tern!(list.contains(&capture), (), list.push(capture)));
+    }
+
+    /// Declare a function in the innermost scope.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    /// * `sig` - The function.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the earlier function when the scope holds the name.
+    pub fn declare_fn(&mut self, name: Name, sig: FnSig) -> Result<(), FnSig>
+    {
+        let Some(inner) = self.fns.last_mut()
+        else
+        {
+            return Ok(());
+        };
+        ret_if!(let Some(prior) = inner.get(&name), Err(prior.clone()));
+        inner.insert(name, sig);
+        Ok(())
+    }
+
+    /// Find a function declared inside a function, innermost scope first. A
+    /// closure declared in an enclosing function counts as a use of each open
+    /// function inside that one, as a local does.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    ///
+    /// # Returns
+    ///
+    /// The function, or `None`.
+    pub fn lookup_fn(&self, name: &str) -> Option<FnSig>
+    {
+        let mut each = self.fns.iter().enumerate().rev();
+        let (at, stored, sig) =
+            each.find_map(|(i, s)| s.get_key_value(name).map(|(k, f)| (i, *k, f)))?;
+        let capture = Capture { name: stored, decl: sig.decl };
+        do_if!(sig.closure, self.note_capture(at, capture));
+        Some(sig.clone())
+    }
+
+    /// The index of the scope that declares a name, with no use recorded.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    ///
+    /// # Returns
+    ///
+    /// The index, or `None` when it is not declared.
+    pub fn index_of(&self, name: &str) -> Option<usize>
+    {
+        self.names.iter().rposition(|s| s.contains_key(name))
+    }
+
+    /// Whether the scope at an index belongs to a function: its names are
+    /// locals, not names of the file.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The index.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a scope of an open function.
+    pub fn is_local(&self, at: usize) -> bool
+    {
+        self.bases.first().is_some_and(|b| at >= *b)
+    }
+
+    /// The index of the scope that declares a function inside a function.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The function name.
+    ///
+    /// # Returns
+    ///
+    /// The index, or `None`.
+    pub fn fn_index_of(&self, name: &str) -> Option<usize>
+    {
+        self.fns.iter().rposition(|s| s.contains_key(name))
     }
 
     /// Give a name of the innermost scope its constant value.
@@ -109,7 +274,7 @@ impl Scopes
     /// * `value` - The value.
     pub fn set_value(&mut self, name: &str, value: ConstVal)
     {
-        let found = self.0.last_mut().and_then(|scope| scope.get_mut(name));
+        let found = self.names.last_mut().and_then(|scope| scope.get_mut(name));
         do_if!(let Some(binding) = found, binding.value = value);
     }
 
@@ -118,7 +283,7 @@ impl Scopes
     /// # Returns
     ///
     /// The count.
-    pub fn depth(&self) -> usize { self.0.len() }
+    pub fn depth(&self) -> usize { self.names.len() }
 
     /// Mark a name of the innermost scope as exported.
     ///
@@ -127,7 +292,7 @@ impl Scopes
     /// * `name` - The name.
     pub fn mark_exported(&mut self, name: &str)
     {
-        let found = self.0.last_mut().and_then(|scope| scope.get_mut(name));
+        let found = self.names.last_mut().and_then(|scope| scope.get_mut(name));
         do_if!(let Some(binding) = found, binding.exported = true);
     }
 
@@ -139,7 +304,8 @@ impl Scopes
     /// The top-level names of the file that ended.
     pub fn restart(&mut self) -> HashMap<Name, Binding>
     {
-        let top = std::mem::take(&mut self.0).into_iter().next();
+        let top = std::mem::take(&mut self.names).into_iter().next();
+        self.fns.clear();
         self.push();
         top.unwrap_or_default()
     }
@@ -171,6 +337,14 @@ pub(crate) struct FnSig
     pub variadic: bool,
     /// The mark of each parameter, when the parameters have marks.
     pub marks: Option<Vec<Name>>,
+    /// `true` for a function declared inside a function with a capture
+    /// list: its calls and its address go through its closure.
+    #[builder(default)]
+    pub closure: bool,
+    /// `true` for a closure that borrows: a capture with `ငှား၍`, one that
+    /// holds a borrow, or a borrowing closure among its captures.
+    #[builder(default)]
+    pub borrows: bool,
     /// The declared name; a placeholder for a function value's own
     /// signature.
     #[builder(default)]

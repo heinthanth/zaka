@@ -121,6 +121,7 @@ program:
                       span:
                         lo: 598
                         hi: 666
+                  moves: false
                   span:
                     lo: 575
                     hi: 692
@@ -140,6 +141,8 @@ program:
       external: false
       lib: null
       variadic: false
+      owned_ret: false
+      captures: []
       span:
         lo: 104
         hi: 787
@@ -176,6 +179,7 @@ program:
                 hi: 1255
             is_const: false
             init: null
+            moves: false
             exported: false
             span:
               lo: 1103
@@ -209,6 +213,7 @@ program:
                   lo: 1482
                   hi: 1515
                 brackets: false
+            moves: false
             exported: false
             span:
               lo: 1284
@@ -269,6 +274,7 @@ program:
                 span:
                   lo: 1744
                   hi: 1808
+            moves: false
             exported: false
             span:
               lo: 1544
@@ -308,6 +314,7 @@ program:
                 span:
                   lo: 1875
                   hi: 1881
+            moves: false
             span:
               lo: 1837
               hi: 1907
@@ -391,6 +398,7 @@ program:
                 span:
                   lo: 2113
                   hi: 2116
+            moves: false
             span:
               lo: 2099
               hi: 2142
@@ -475,6 +483,7 @@ program:
                 hi: 2527
             is_const: false
             init: null
+            moves: false
             exported: false
             span:
               lo: 2302
@@ -531,6 +540,7 @@ program:
                 span:
                   lo: 2627
                   hi: 2630
+            moves: false
             span:
               lo: 2556
               hi: 2656
@@ -566,6 +576,7 @@ program:
                 span:
                   lo: 2704
                   hi: 2707
+            moves: false
             span:
               lo: 2657
               hi: 2733
@@ -624,6 +635,7 @@ program:
                 span:
                   lo: 3147
                   hi: 3173
+            moves: false
             exported: false
             span:
               lo: 2882
@@ -663,6 +675,7 @@ program:
                 span:
                   lo: 3255
                   hi: 3261
+            moves: false
             span:
               lo: 3202
               hi: 3287
@@ -724,6 +737,7 @@ program:
                 span:
                   lo: 3474
                   hi: 3524
+            moves: false
             exported: false
             span:
               lo: 3288
@@ -863,6 +877,8 @@ program:
       external: false
       lib: null
       variadic: false
+      owned_ret: false
+      captures: []
       span:
         lo: 986
         hi: 4110

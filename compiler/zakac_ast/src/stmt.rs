@@ -146,6 +146,11 @@ pub struct DeclStmt
     pub is_const: bool,
     /// The initial value, when written.
     pub init: Option<Expr>,
+    /// `true` for `ထဲသို့ <v> ကို ပြောင်းထည့်မည်`: the value moves in and
+    /// leaves its variable blank.
+    #[builder(default)]
+    #[serde(default)]
+    pub moves: bool,
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
@@ -161,6 +166,11 @@ pub struct AssignStmt
     pub target: Expr,
     /// The new value.
     pub value: Expr,
+    /// `true` for `ပြောင်းထည့်မည်`: the value moves in and leaves its
+    /// variable blank.
+    #[builder(default)]
+    #[serde(default)]
+    pub moves: bool,
     /// Source region.
     pub span: Span,
 }
@@ -356,6 +366,38 @@ pub struct Param
     pub span: Span,
 }
 
+/// How a function declared inside a function takes a local around it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(strum::IntoStaticStr)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum CaptureMode
+{
+    /// `<name> ကိုလည်းကောင်း`: a duplicate of its own, made at the declaration.
+    #[default]
+    Dup,
+    /// `<name> ကို အပိုင်အနေဖြင့်လည်းကောင်း`: the value itself; the local is
+    /// left blank.
+    Move,
+    /// `<name> ကို ငှား၍လည်းကောင်း`: the local itself, which the function reads
+    /// and writes.
+    Lend,
+}
+
+/// A local around a function declared inside a function that the function
+/// takes, in its list of parameters: `<name> ကို <mode> လည်းကောင်း`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct CaptureItem
+{
+    /// The name of the local.
+    pub name: Ident,
+    /// How the function takes it.
+    #[builder(default)]
+    pub mode: CaptureMode,
+    /// Source region.
+    pub span: Span,
+}
+
 /// The name the start block carries: the word of its header.
 pub const START_NAME: &str = "ပရိုဂရမ်";
 
@@ -395,6 +437,17 @@ pub struct FnDecl
     #[builder(default)]
     #[serde(default)]
     pub variadic: bool,
+    /// `true` for a C function that gives back text as its own,
+    /// `... ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်`: the program takes the string over and
+    /// frees it with libc's `free` once its text holds the octets.
+    #[builder(default)]
+    #[serde(default)]
+    pub owned_ret: bool,
+    /// The locals around a function declared inside a function that it
+    /// takes, in the order of its list.
+    #[builder(default)]
+    #[serde(default)]
+    pub captures: Vec<CaptureItem>,
     /// Source region.
     pub span: Span,
 }

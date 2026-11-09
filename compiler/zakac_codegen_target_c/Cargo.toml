@@ -29,6 +29,8 @@ zakac_span = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+zaka_vm = { workspace = true, features = ["ffi"] }
+zakac_codegen_target_vm = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }

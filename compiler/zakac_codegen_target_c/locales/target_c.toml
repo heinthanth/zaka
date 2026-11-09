@@ -66,6 +66,12 @@ en = "the range from %{start} to %{end} ends before it starts"
 [target_c.trap.null_call]
 en = "the function value is ဗလာ, so it holds no function to call"
 
+[target_c.trap.closure_escape]
+en = "the function value borrows the locals around its function, so it cannot go where it outlives them"
+
+[target_c.trap.closure_owner]
+en = "the closure owns a block, so it cannot be duplicated: move it, or lend it to a call"
+
 [target_c.trap.no_cell_to_remove]
 en = "the list holds no cells, so it has no last cell to remove"
 

@@ -231,7 +231,8 @@ pub fn update_not_last(span: Span) -> Diagnostic
     Diagnostic::new(Code::UpdateNotLast, t!("codes.ZK0213.message"), span)
 }
 
-/// A function is declared inside a block.
+/// An external function, a C function or the start block is declared inside
+/// a block.
 ///
 /// # Arguments
 ///

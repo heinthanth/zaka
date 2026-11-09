@@ -321,7 +321,8 @@ impl Folder
             Stmt::Set { place, value, .. } =>
             {
                 let constant = self.is_const(*place);
-                let held = constant && value.kind.holds_text();
+                let held =
+                    constant && value.kind.holds_text() && !value.kind.holds_fn();
                 do_if!(held, self.static_const(*place, value));
                 let v = self.expr(value);
                 let known = v.filter(|_| constant);
@@ -522,6 +523,8 @@ impl Folder
             | ExprNode::Take { addr }
             | ExprNode::Dup { value: addr, .. }
             | ExprNode::Own { value: addr }
+            | ExprNode::Closure { record: addr, .. }
+            | ExprNode::Plain { value: addr }
             | ExprNode::FieldAddr { base: addr, .. } =>
             {
                 self.drop_value(addr);

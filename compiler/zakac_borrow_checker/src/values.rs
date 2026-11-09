@@ -43,8 +43,9 @@ pub(crate) fn taken_fns(module: &Module) -> BTreeSet<u32>
     found
 }
 
-/// The function whose address an expression is: `FnAddr`, or the constant
-/// the folder makes of one, the number of the function plus one.
+/// The function whose address an expression is: `FnAddr`, the thunk of a
+/// `Closure`, or the constant the folder makes of an address, the number of
+/// the function plus one.
 ///
 /// # Arguments
 ///
@@ -57,7 +58,7 @@ fn addressed_fn(e: &Expr) -> Option<u32>
 {
     match e.node
     {
-        ExprNode::FnAddr { func, .. } => Some(func),
+        ExprNode::FnAddr { func, .. } | ExprNode::Closure { func, .. } => Some(func),
         ExprNode::Const(Value::Ptr(word)) if e.kind.is_fn() && word > 0 =>
         {
             u32::try_from(word - 1).ok()

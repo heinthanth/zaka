@@ -1126,6 +1126,39 @@ pub fn kind_not_across_c(span: Span, kind: &str) -> Diagnostic
         .with_help(t!("codes.ZK0465.help"))
 }
 
+/// A C function gives back text with no failure side, which a NULL from C
+/// could not fill.
+///
+/// # Arguments
+///
+/// * `span` - The name of the function.
+///
+/// # Returns
+///
+/// The `ZK0465` diagnostic, with the result kind to write.
+pub fn text_result_across_c(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::KindNotAcrossC, t!("codes.ZK0465.message", k = "text"), span)
+        .with_help(t!("codes.ZK0465.help_text"))
+}
+
+/// `အပိုင်အနေဖြင့်` stands on the result of a function that is no C function
+/// giving back text or a failure.
+///
+/// # Arguments
+///
+/// * `span` - The name of the function.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0467` diagnostic.
+pub fn owned_not_c_text(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::OwnedNotCText, t!("codes.ZK0467.message", n = name), span)
+        .with_help(t!("codes.ZK0467.help"))
+}
+
 /// A parameter of a C function carries the edit mark.
 ///
 /// # Arguments

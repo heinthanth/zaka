@@ -183,8 +183,8 @@ pub fn constant(v: Value, kind: DataKind, platform: u16) -> Option<String>
         Value::Bool(b) => Some(format!("(({t}){})", u8::from(b))),
         Value::Ptr(0) => Some(format!("(({t})0)")),
         // A function value folds to the index of its function plus one, as
-        // the VM holds it.
-        Value::Ptr(a) if kind.is_fn() => Some(format!("((zk_fn)zk_f{})", a - 1)),
+        // the VM holds it; C holds the address of its record.
+        Value::Ptr(a) if kind.is_fn() => Some(format!("((zk_fn)&zk_r{})", a - 1)),
         Value::Ptr(a) => Some(format!("(({t})(uintptr_t){a:#x})")),
         _ => None,
     }

@@ -155,12 +155,17 @@ on a parameter (ZK0466). `Checker::c_names` maps each C name to its parameter an
 kinds, so a second declaration of the name, in another file or among overloads, with
 other kinds is ZK0338. Its address is refused as for each external function (ZK0464).
 
-A parameter of a C function can be text too (`crosses_param`: `crosses` or a textual
-kind); a result cannot be (`crosses_back`, ZK0465). A header that ends in `နှင့်
-အခြားတန်ဖိုးများ` sets `FnSig::variadic`: a call needs at least the named arguments (ZK0314
-for fewer), and `check_rest_arg` infers each other value with no expected kind and asks
-`crosses_rest` (a parameter kind but a struct, else ZK0465). `check_external` gives a host
-function that takes other values ZK0334, since the host table has none.
+A parameter of a C function can be text or a callback too (`crosses_param`: `crosses`, a
+textual kind, or `is_callback`: a function kind whose parameters and result are scalars or
+addresses `crosses` takes, with no struct, no edit mark and no borrow as the result); a
+result is a kind `crosses` takes, but no borrow, or the text-or-failure result kind
+(`crosses_back`, with `is_c_text_result`: `စာသား ရလဒ် သို့မဟုတ်
+မအောင်မြင်သည့်သတင်း`); a bare text result is ZK0465, whose help names that form. A header
+that ends in `နှင့် အခြားတန်ဖိုးများ` sets `FnSig::variadic`: a call needs at least the named
+arguments (ZK0314 for fewer), and `check_rest_arg` infers each other value with no expected
+kind and asks `crosses_param`, so a struct is an other value too (else ZK0465).
+`check_external` gives a host function that takes other values ZK0334, since the host
+table has none.
 
 Before it, `collect_enums` (`enum_check.rs`) makes the kind of each enumeration, on its
 name and on its stem, and reports a member name used twice (ZK0328) and a name a struct
@@ -280,7 +285,14 @@ kinds, even on a 64-bit platform, and neither widens to the other.
 `Access` is `Var`, `Const` or `LoopVar`. A lookup runs from the innermost scope out. A
 `kind` of `None` means an error left it unknown, which silences follow-on messages.
 
-**`FnSigs`** maps a function name to `FnSig { params, ret }`.
+**`FnSigs`** maps a function name to `FnSig { params, ret }`. `Scopes` also keeps the
+functions each scope declares, beside its names (`declare_fn`, `lookup_fn`, `index_of`,
+`fn_index_of`, `is_local`), and a stack of function frames (`enter_fn`, `leave_fn`): a
+lookup that finds a local of an enclosing function, or `lookup_fn` that finds a closure (a
+nested function with a capture list) declared in one, records it as a `Capture { name,
+decl }` of each open function between the two, and `leave_fn` gives back what the function
+it closes used from around it. `FnSig::closure` and `FnSig::borrows` mark a nested function
+with captures, and one whose closure borrows.
 
 **`KindTable`** is `BTreeMap<NodeId, DataKind>`, the product of the stage. The id is the
 `NodeId` that the parser gave each expression. For this program:
@@ -359,6 +371,25 @@ place (ZK0463 when none or several do) and records it in `chosen`, so `write_ove
 gives the address its inner name. An external function has no address (ZK0464). `==` and
 `!=` take two function values one kind takes, or one with `ဗလာ` (`fn_pair`).
 
+A function with statements can stand inside the statements of a function or a block.
+`visit_fn` saves and restores `func`, `loop_depth`, `proven` and `touched` around a nested
+function, and `declare_nested` declares it in the scope that holds it (ZK0304 for a second
+one of its name). `fns_named` finds nested functions before top-level ones, so a nested
+function hides a top-level one of its name, and a nested function has no overloads.
+The capture list sits in `FnDecl::captures`, each a `CaptureItem { name, mode }` with the
+mode `Dup`, `Move` or `Lend`. Before the statements, `check_capture_list` looks each name up:
+a local of an open function, or a closure, the function it sits inside included; each other
+name is ZK0340, and so is a list on a top-level function. A borrowed capture, a capture whose kind
+holds a borrow, or a borrowing closure among the captures makes the closure borrow. After
+the statements, `check_captures_used` compares the list with what `leave_fn` gives back: a
+use the list leaves out is ZK0339, its own name excepted, and a listed capture never used is
+the warning ZK0341. `check_no_closure` and `check_closure_set` report ZK0722 for each place
+a borrowing closure cannot go: a result, a field, a list cell, a global, a place reached
+through an address, or a variable of an outer block; `check_no_closure_to_c` reports ZK0723
+for a closure of each sort as the argument of a C function. `closure_of` finds the borrowing
+nested function an expression names. A function value that the compiler cannot follow to
+its function is left to the run-time check (`fn_plain` in the IR).
+
 ### Literals that take the kind of their place
 
 An unprefixed literal is *flexible*: `infer` passes down an `expect` kind from the
@@ -419,13 +450,14 @@ ZK0403.
 
 | Range | Stage |
 | --- | --- |
-| ZK03 | names: undeclared or doubled names, constants and loop variables assigned, `ကွင်းဆက်` outside a loop, return outside a function, argument counts |
+| ZK03 | names: undeclared or doubled names, capture lists (ZK0339 to ZK0341), constants and loop variables assigned, `ကွင်းဆက်` outside a loop, return outside a function, argument counts |
 | ZK04 | kinds: mismatches, conditions that are not `bool`, operands of the wrong kind, literals that do not fit, shifts that go too far, bad conversions, bad pointer and list use |
 | ZK0443 to ZK0449 | failing functions: a call statement that drops a failure, a pass-on with no failure to pass, a pass-on in a function that cannot fail, another error kind (ZK0446, where an error side with no value is a kind of its own), an error value from a function that cannot fail, a test or a conversion of a value that is no result (ZK0448), a good result of a function that has none (ZK0449) |
 | ZK0450 to ZK0452 | the sides with no value: a read of the error value of a result whose error side holds none (ZK0450), `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` in a function whose error side names a kind (ZK0451), an error value given back where the error side holds none (ZK0452) |
 | ZK0454 and ZK0455 | `visit_if`, `visit_while` and the other loop visitors keep the set of result variables proven to hold a good result or a failure, built from the tests with `facts_when` in `proof.rs`, and a conversion to the part ruled out is ZK0454 (a guard arm proves the opposite after the statement, and an assignment, an edit-marked argument, the address of the variable or a new declaration of its name ends the proof; a loop that can change the variable ends it for the whole loop); `visit_return` reports the return word of the other sort of function, `ရလဒ်အဖြစ်` in a function that can fail or `ရလဒ်ကောင်းအဖြစ်` in one that cannot (ZK0455) |
 | ZK05 | wording warnings |
 | ZK0705, ZK0713 to ZK0717 | owner and borrow kind rules |
+| ZK0722, ZK0723 | a borrowing closure that goes where it would outlive its locals; a closure that goes to C |
 
 Each code has a constructor in `zakac_diagnostics` (`resolve.rs`, `kinds.rs`,
 `naturalness.rs`, `ownership.rs`). See [Error messages](../reference/errors.md) for the list.

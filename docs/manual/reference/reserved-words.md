@@ -28,6 +28,7 @@ see [Names](../../learn/variables/names.md).
 | `လက်ခံပြီး` | "accepting ... and" | [Parameters](../../learn/functions/parameters.md) |
 | `ပြင်ပမှလာသော` (`ပြင်ပ`, `မှ`, `လာသော`) | "coming from outside": marks an external function; with a text of a lib in place of `ပြင်ပ` (`"libm" မှလာသော`), a C function | [Functions](../language/functions.md#external-functions), [C functions](../language/functions.md#c-functions) |
 | `အခြားတန်ဖိုးများ` | "other values": `... နှင့် အခြားတန်ဖိုးများ ကို လက်ခံပြီး` ends the parameters of a C function that takes more arguments than it names, as a C `...` does | [C functions](../language/functions.md#c-functions) |
+| `အပိုင်အနေဖြင့်` | "as its own": `... ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်` ends the result clause of a C function that hands its string over, which Zaka frees with libc's `free` | [C functions](../language/functions.md#c-functions) |
 | `လုပ်ဆောင်ချက်တစ်ခု` | "a function", in the header of an external function | [Functions](../language/functions.md#external-functions) |
 | `သုံး၍` | "using": after `ကို` or `တို့ကို`, closes the arguments of a call written before its function | [Parameters](../../learn/functions/parameters.md#arguments-first) |
 | `ထဲသို့` | "into", after the list or the text in `l ထဲသို့ v ကို ထည့်ပါ` | [Adding and removing cells](../../learn/lists/growing.md) |
@@ -125,6 +126,11 @@ see [Names](../../learn/variables/names.md).
 | `ပရိုဂရမ်` | "program": `ပရိုဂရမ်သည်` opens the start block, where the program starts | [Where a program starts](../../learn/programs/start.md) |
 | `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` | "that the function can change": before the kind of a parameter that is the caller's place | [Functions](../language/functions.md#edit-references) |
 | `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်` | "the function can change it": in parentheses after an argument for such a parameter | [Functions](../language/functions.md#edit-references) |
+| `လည်းကောင်း` | "and also": ends each item of a list of parameters that holds captures, after `ကို` | [Function values](../language/function-values.md#nested-functions-and-closures) |
+| `ငှား၍` | "borrowing": before `လည်းကောင်း`, a capture that borrows the local | [Function values](../language/function-values.md#nested-functions-and-closures) |
+| `အပိုင်အနေဖြင့်` | "as its own": before `လည်းကောင်း`, a capture that moves the value in; before `ပြန်ပေးမည်`, text a C function hands over | [Function values](../language/function-values.md#nested-functions-and-closures) |
+| `ထဲသို့ … ကို ကူးထည့်မည်` | "will duplicate … into": puts a duplicate into a variable, or declares one after `ကိန်းရှင်` | [Changing a variable](../../learn/variables/assignment.md#duplicating-and-moving) |
+| `ထဲသို့ … ကို ပြောင်းထည့်မည်` | "will move … into": moves a value into a variable and leaves its place blank, or declares one after `ကိန်းရှင်` | [Changing a variable](../../learn/variables/assignment.md#duplicating-and-moving) |
 | `လုပ်ဆောင်ချက် အမျိုးအစား` | "function kind": closes a function kind | [Function values](../language/function-values.md#the-kind) |
 | `လက်ခံသော` | "that accepts": ends the parameters of a function kind with no result | [Function values](../language/function-values.md#the-kind) |
 | `ပြန်ပေးသော` | "that gives back": ends the result of a function kind | [Function values](../language/function-values.md#the-kind) |

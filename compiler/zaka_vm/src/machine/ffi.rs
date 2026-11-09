@@ -10,7 +10,11 @@
 //! program at the call instead.
 
 #[cfg(all(feature = "ffi", not(target_arch = "wasm32")))]
+pub(crate) use with_ffi::Callbacks;
+#[cfg(all(feature = "ffi", not(target_arch = "wasm32")))]
 pub(crate) use with_ffi::Linked;
+#[cfg(not(all(feature = "ffi", not(target_arch = "wasm32"))))]
+pub(crate) use without_ffi::Callbacks;
 #[cfg(not(all(feature = "ffi", not(target_arch = "wasm32"))))]
 pub(crate) use without_ffi::Linked;
 use zakac_codegen_target_vm::bc::ForeignCall;
@@ -55,6 +59,10 @@ mod without_ffi
     #[derive(Debug)]
     pub(crate) struct Linked;
 
+    /// Nothing: this build gives C no function to call back.
+    #[derive(Debug, Clone, Default)]
+    pub(crate) struct Callbacks;
+
     impl Machine
     {
         /// Stop the program: this build cannot call C.
@@ -78,26 +86,37 @@ mod without_ffi
 #[cfg(all(feature = "ffi", not(target_arch = "wasm32")))]
 mod with_ffi
 {
+    use std::cell::Cell as Shared;
+    use std::collections::HashMap;
+    use std::ffi::c_char;
     use std::ffi::c_void;
     use std::fmt;
     use std::sync::Arc;
 
+    use libffi::low::ffi_cif;
     use libffi::middle::Arg;
     use libffi::middle::Cif;
+    use libffi::middle::Closure;
     use libffi::middle::CodePtr;
     use libffi::middle::Ret;
     use libffi::middle::Type;
     use libloading::Library;
     use zakac_codegen_target_vm::bc::Module;
     use zakac_i18n::t;
+    use zakac_ir_builder::ir::fn_shape;
     use zakac_ir_builder::value::Value;
     use zakac_ir_builder::value::from_raw;
     use zakac_ir_builder::value::to_raw;
+    use zakac_rust_sugars::do_for;
     use zakac_rust_sugars::do_if;
     use zakac_rust_sugars::ret_if;
     use zakac_rust_sugars::tern;
+    use zakac_semcheck::fn_kind::FnKind;
+    use zakac_semcheck::foreign::is_c_text_result;
     use zakac_semcheck::foreign::is_lib_path;
     use zakac_semcheck::kind::DataKind;
+    use zakac_semcheck::kind::IntKind;
+    use zakac_semcheck::kind::Width;
 
     use super::*;
     use crate::trap::TrapKind;
@@ -112,6 +131,9 @@ mod with_ffi
         addrs: Vec<usize>,
         /// libc's `fflush`, when the process holds it.
         flush: Option<usize>,
+        /// libc's `free`, for the strings C hands over, when the process
+        /// holds it.
+        free: Option<usize>,
     }
 
     impl fmt::Debug for Linked
@@ -120,6 +142,69 @@ mod with_ffi
         {
             f.debug_struct("Linked").field("addrs", &self.addrs).finish()
         }
+    }
+
+    /// The functions of the program C can call back: a libffi closure for
+    /// each function a call gave C, kept for the whole run, since a lib can
+    /// keep the address and call it later. A trap inside a callback cannot
+    /// cross C, so it waits here until C returns.
+    #[derive(Default)]
+    pub(crate) struct Callbacks
+    {
+        /// The closure of each function, under its index.
+        made: HashMap<u32, Callback>,
+        /// The trap a callback hit, raised once C returns.
+        trap: Option<TrapKind>,
+    }
+
+    // SAFETY: a closure runs inside a call of C that the machine makes, on
+    // the thread that runs the machine, and the machine moves to another
+    // thread between runs alone, when no call of C is in progress.
+    unsafe impl Send for Callbacks {}
+    // SAFETY: as above; nothing reads the closures through a shared machine.
+    unsafe impl Sync for Callbacks {}
+
+    impl Clone for Callbacks
+    {
+        /// A duplicate of a machine makes its own closures when it calls C,
+        /// since each closure runs the machine that made it.
+        fn clone(&self) -> Self
+        {
+            Callbacks { made: HashMap::new(), trap: self.trap.clone() }
+        }
+    }
+
+    impl fmt::Debug for Callbacks
+    {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+        {
+            f.debug_struct("Callbacks").field("trap", &self.trap).finish()
+        }
+    }
+
+    /// A function of the program that C can call.
+    struct Callback
+    {
+        /// The libffi closure, which lives as long as its code.
+        _closure: Closure<'static>,
+        /// What the closure needs when C calls it.
+        data: &'static CallbackData,
+        /// The native address C calls.
+        code: usize,
+    }
+
+    /// What a closure needs when C calls it.
+    struct CallbackData
+    {
+        /// The machine that runs the function, set at each call of C that
+        /// gives the function.
+        machine: Shared<*mut Machine>,
+        /// The index of the function.
+        func: u32,
+        /// The parameter kinds.
+        params: Vec<DataKind>,
+        /// The result kind.
+        ret: Option<DataKind>,
     }
 
     /// Octets aligned for each kind C passes, the storage of an argument or a
@@ -193,7 +278,14 @@ mod with_ffi
             let cells = pairs.map(|(v, k)| self.arg_cell(*v, *k, &mut texts));
             let cells = cells.collect::<Result<Vec<Cell>, _>>()?;
             let types = kinds.iter().map(|k| ffi_kind(*k, platform));
-            let ret_kind = def.ret.map_or_else(Type::void, |k| ffi_kind(k, platform));
+            let text_ret = def.ret.filter(|k| is_c_text_result(*k));
+            let ret_kind = match def.ret
+            {
+                // C gives the string as an address.
+                _ if text_ret.is_some() => Type::pointer(),
+                Some(k) => ffi_kind(k, platform),
+                None => Type::void(),
+            };
             let fixed = def.params.len();
             let cif = tern!(
                 def.variadic,
@@ -212,6 +304,16 @@ mod with_ffi
                 cif.call_return_into(code, &args, Ret::new(ret.0.as_mut_slice()))
             };
             flush_c(&linked);
+            ret_if!(let Some(trap) = self.callbacks.trap.take(), Err(trap));
+            if let (Some(kind), Some(slot)) = (text_ret, slot)
+            {
+                let native = read_word(ret.octets(), 0);
+                let made = self.text_from_c(kind, slot, native);
+                // A string C hands over is freed once its octets are copied.
+                do_if!(def.owned_ret && native != 0, free_c(&linked, native));
+                made?;
+                return self.push(Value::Ptr(slot));
+            }
             let Some(kind) = def.ret
             else
             {
@@ -228,6 +330,39 @@ mod with_ffi
             };
             self.mem.write_octets(slot, &raw)?;
             self.push(Value::Ptr(slot))
+        }
+
+        /// Write the result of a C function that gives back text: a failure
+        /// for NULL, else text of its own with a duplicate of the zero-ended
+        /// octets C gave, which C keeps.
+        ///
+        /// # Arguments
+        ///
+        /// * `kind` - The result kind, text or a failure.
+        /// * `slot` - The address of the result.
+        /// * `native` - The address C gave back.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, or `BadUtf8` for octets that are not UTF-8, or the trap a
+        /// write hits.
+        fn text_from_c(&mut self, kind: DataKind, slot: u64, native: usize) -> Step
+        {
+            let platform = self.module.platform_bits;
+            let blank = vec![0; kind.size(platform) as usize];
+            self.mem.write_octets(slot, &blank)?;
+            ret_if!(native == 0, Ok(()));
+            // SAFETY: C gives back a string that ends in a zero octet, as the
+            // program declares; C itself must keep to that, as in C.
+            let octets = unsafe { std::ffi::CStr::from_ptr(native as *const c_char) };
+            let text = std::str::from_utf8(octets.to_bytes()).map_err(|e| {
+                TrapKind::BadUtf8 { addr: (native + e.valid_up_to()) as u64 }
+            })?;
+            let s =
+                kind.as_struct().ok_or_else(|| malformed("a result is a struct"))?;
+            let tag = IntKind::new(false, Width::Bits(8));
+            self.mem.store(slot, Value::int(tag, 1, platform))?;
+            self.place_text(slot + u64::from(s.offset(1, platform)), text)
         }
 
         /// The linked C functions, linked on the first call.
@@ -263,6 +398,11 @@ mod with_ffi
         ) -> Result<Cell, TrapKind>
         {
             let platform = self.module.platform_bits;
+            if let Some(f) = kind.as_fn()
+            {
+                let native = self.callback(v, f)?;
+                return Ok(Cell::of(&native.to_le_bytes()));
+            }
             if kind.is_textual()
             {
                 let addr =
@@ -284,6 +424,88 @@ mod with_ffi
             let mut raw = to_raw(v, platform);
             self.to_native(kind, &mut raw, 0);
             Ok(Cell::of(&raw))
+        }
+
+        /// The native address C calls for a function value: none for `ဗလာ`,
+        /// and a libffi closure that runs the function in this machine,
+        /// made on the first call that gives it.
+        ///
+        /// # Arguments
+        ///
+        /// * `v` - The function value.
+        /// * `f` - Its kind.
+        ///
+        /// # Returns
+        ///
+        /// The address, or `ClosureEscape` for a closure, which C cannot keep
+        /// alive.
+        fn callback(&mut self, v: Value, f: &FnKind) -> Result<usize, TrapKind>
+        {
+            let word =
+                v.as_ptr().ok_or_else(|| malformed("foreign needs a function"))?;
+            ret_if!(word == 0, Ok(0));
+            ret_if!(
+                self.mem.closure_record(word).is_some(),
+                Err(TrapKind::ClosureEscape)
+            );
+            let func = u32::try_from(word - 1).map_err(|_| malformed("no function"))?;
+            let me: *mut Machine = self;
+            if let Some(made) = self.callbacks.made.get(&func)
+            {
+                made.data.machine.set(me);
+                return Ok(made.code);
+            }
+            let platform = self.module.platform_bits;
+            let (params, ret) = fn_shape(f);
+            let shapes = params.iter().map(|k| ffi_kind(*k, platform));
+            let cif = Cif::new(
+                shapes,
+                ret.map_or_else(Type::void, |k| ffi_kind(k, platform)),
+            );
+            #[rustfmt::skip]
+            let data = CallbackData { machine: Shared::new(me), func, params, ret };
+            // The data lives for the run; one for each function C gets.
+            let data: &'static CallbackData = Box::leak(Box::new(data));
+            let closure = Closure::new(cif, call_back, data);
+            let code = *closure.code_ptr() as usize;
+            let made = Callback { _closure: closure, data, code };
+            self.callbacks.made.insert(func, made);
+            Ok(code)
+        }
+
+        /// Run a function of the program for C, to its return: push the
+        /// arguments, enter the function, and run its ops until it leaves.
+        /// A trap waits in [`Callbacks`] and the frames remain, so the trap
+        /// names the function it hit; each later callback of the C call
+        /// gives a zero.
+        ///
+        /// # Arguments
+        ///
+        /// * `func` - The index of the function.
+        /// * `args` - The arguments.
+        /// * `gives` - Whether it gives a result.
+        ///
+        /// # Returns
+        ///
+        /// The result, or `None`.
+        fn run_callback(
+            &mut self, func: u32, args: Vec<Value>, gives: bool,
+        ) -> Option<Value>
+        {
+            ret_if!(self.callbacks.trap.is_some(), None);
+            let depth = self.frames.len();
+            do_for!(v in args, self.stack.push(v));
+            let mut ran = self.enter(func);
+            while ran.is_ok() && self.frames.len() > depth
+            {
+                ran = self.fetch();
+            }
+            if let Err(trap) = ran
+            {
+                self.callbacks.trap = Some(trap);
+                return None;
+            }
+            tern!(gives, self.stack.pop(), None)
         }
 
         /// The octets of text or a text view: its first word is the address of
@@ -338,6 +560,63 @@ mod with_ffi
                 write_word(raw, at, vm);
             });
         }
+    }
+
+    /// The code C calls back: read each argument from its native octets, run
+    /// the function in the machine, and write its result as C reads it, an
+    /// integer narrower than a word widened with its sign.
+    ///
+    /// # Arguments
+    ///
+    /// * `_cif` - The shape of the call.
+    /// * `result` - Where the result goes.
+    /// * `args` - The address of each argument.
+    /// * `data` - The function and its machine.
+    unsafe extern "C" fn call_back(
+        _cif: &ffi_cif, result: &mut u64, args: *const *const c_void,
+        data: &CallbackData,
+    )
+    {
+        *result = 0;
+        // SAFETY: the machine runs the call of C that runs this callback,
+        // and does nothing else until C returns.
+        let machine = unsafe { &mut *data.machine.get() };
+        let platform = machine.module.platform_bits;
+        let read = |(i, kind): (usize, &DataKind)| {
+            let size = kind.size(platform) as usize;
+            // SAFETY: libffi passes the address of each argument, of the kind
+            // the closure was made with.
+            let at = unsafe { *args.add(i) }.cast::<u8>();
+            // SAFETY: as above.
+            let mut raw = unsafe { std::slice::from_raw_parts(at, size) }.to_vec();
+            machine.to_vm(*kind, &mut raw, 0);
+            from_raw(*kind, &raw, platform).ok()
+        };
+        let values: Option<Vec<Value>> =
+            data.params.iter().enumerate().map(read).collect();
+        let Some(values) = values
+        else
+        {
+            machine
+                .callbacks
+                .trap
+                .get_or_insert(malformed("C gave a value of no kind"));
+            return;
+        };
+        let out = machine.run_callback(data.func, values, data.ret.is_some());
+        let Some((value, kind)) = out.zip(data.ret)
+        else
+        {
+            return;
+        };
+        let mut raw = to_raw(value, platform);
+        machine.to_native(kind, &mut raw, 0);
+        let negative = kind.int_kind().is_some_and(|k| k.signed)
+            && raw.last().is_some_and(|b| *b >= 0x80);
+        let mut word = [tern!(negative, 0xff, 0); 8];
+        let n = raw.len().min(8);
+        word[..n].copy_from_slice(&raw[..n]);
+        *result = u64::from_le_bytes(word);
     }
 
     /// Call `each` with the offset of each address a value of the kind holds:
@@ -479,8 +758,12 @@ mod with_ffi
             .as_ref()
             .and_then(|l| unsafe { l.get::<*const c_void>(b"fflush") }.ok());
         let flush = flush.map(|s| *s as usize);
+        // SAFETY: the address is called as `void free(void *)`, its C kind.
+        let free =
+            this.as_ref().and_then(|l| unsafe { l.get::<*const c_void>(b"free") }.ok());
+        let free = free.map(|s| *s as usize);
         let libs = libs.into_iter().filter_map(Result::ok).chain(this).collect();
-        Ok(Linked { _libs: libs, addrs, flush })
+        Ok(Linked { _libs: libs, addrs, flush, free })
     }
 
     /// Write out what C holds back for its streams, so the text a C function
@@ -503,6 +786,27 @@ mod with_ffi
             unsafe { std::mem::transmute(addr) };
         // SAFETY: as above.
         unsafe { flush(std::ptr::null_mut()) };
+    }
+
+    /// Free a string C handed over, with libc's `free`.
+    ///
+    /// # Arguments
+    ///
+    /// * `linked` - The linked C functions, with libc's `free`.
+    /// * `native` - The address of the string.
+    fn free_c(linked: &Linked, native: usize)
+    {
+        let Some(addr) = linked.free
+        else
+        {
+            return;
+        };
+        // SAFETY: the address is libc's `void free(void *)`, and the program
+        // declares that C handed the string over.
+        let free: unsafe extern "C" fn(*mut c_void) =
+            unsafe { std::mem::transmute(addr) };
+        // SAFETY: as above.
+        unsafe { free(native as *mut c_void) };
     }
 
     /// The address of a C function: in its lib, else in the process.

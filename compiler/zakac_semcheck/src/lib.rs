@@ -17,7 +17,7 @@ mod overloads;
 mod place;
 mod proof;
 mod refs;
-mod scope;
+pub mod scope;
 pub mod semcheck;
 mod struct_check;
 pub mod structs;

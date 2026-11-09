@@ -285,10 +285,15 @@ fn statement_errors()
 က ကို ပြသပါ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(late), [Code::UpdateNotLast]);
+    // A function with statements can sit in a block; an external one cannot.
     let nested_fn = "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
 လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
-    assert_eq!(codes(nested_fn), [Code::NestedFunction]);
+    assert!(codes(nested_fn).is_empty());
+    let nested_c = "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် abs သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ကိန်းပြည့် n ကို လက်ခံမည်။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    assert_eq!(codes(nested_c), [Code::NestedFunction]);
     let no_result = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(no_result), [Code::ExpectedToken]);
     assert_eq!(codes("\"x\" ဟု ထားပါ။"), [Code::MissingOperand]);
@@ -650,4 +655,25 @@ fn c_functions_name_their_lib()
     let printf = "လုပ်ဆောင်ချက် printf သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား f နှင့် \
                   အခြားတန်ဖိုးများ ကို လက်ခံပြီး i32 ရလဒ် ကို ပြန်ပေးမည်။";
     assert_eq!(stmt(printf), "(external \"libc\" printf [text f, ...] i32)");
+}
+
+#[test]
+fn a_c_function_can_give_back_its_text_as_the_program_s_own()
+{
+    let owned = "လုပ်ဆောင်ချက် strdup သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား s ကို လက်ခံပြီး \
+                 စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။";
+    let list = stmts(owned);
+    let zakac_ast::stmt::Stmt::Fn(f) = &list[0]
+    else
+    {
+        panic!("a function");
+    };
+    assert!(f.owned_ret);
+    let kept = owned.replace("အပိုင်အနေဖြင့် ", "");
+    let zakac_ast::stmt::Stmt::Fn(f) = &stmts(&kept)[0]
+    else
+    {
+        panic!("a function");
+    };
+    assert!(!f.owned_ret);
 }

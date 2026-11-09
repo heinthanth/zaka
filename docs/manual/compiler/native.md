@@ -93,6 +93,22 @@ from native code with no VM between. The build writes one more file, `zaka_ffi.c
   duplicate of the u8s with a zero octet at the end (`zk_text_cstr` of the runtime), calls
   the C function, and frees the duplicate (`zk_text_cstr_free`).
 
+- A result of `စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း` is held as `const char *`: the
+  wrapper gives it to `zk_text_from_c`, which writes the failure for NULL and otherwise
+  copies the string into new text of the program. The wrapper takes the text before it
+  frees the duplicates of the text arguments, since a result such as `strstr` gives points
+  into them. C keeps what it gave, unless the result clause holds `အပိုင်အနေဖြင့်`: then the
+  wrapper frees the string with libc's `free` once the text holds its octets.
+- A struct goes in as an other value as it does as a parameter, so `zaka_ffi.c` defines the
+  structs of the other values of each call too.
+- A parameter of a function kind that crosses (see
+  [Callbacks](../language/functions.md#c-functions)) is declared with the C signature of the
+  function, with `void *` for each address. The wrapper passes `zk_fn_code(value)` cast to
+  that pointer to a function, and NULL for `ဗလာ`. The functions of the program have the C
+  signature of the kind that crosses, so C calls them as it calls a C function.
+  A trap in a callback is kept until C returns (see
+  [When a program stops](../vm/traps.md#c-functions)).
+
 The link gets `-lX` for each lib `libX` the program names, but libc and libm, after `-lm`
 and before `LDFLAGS` and each `--ld-flag`. Give the folder of a lib with `--ld-flag`:
 
@@ -113,6 +129,37 @@ With `--emit c`, the `-lX` flags are for the reader to add to the `cc` line.
 An address in a native program is a real address, so it reaches C as it is; there is no
 block of the VM to map. The checks of the program do not look inside C: a C function that
 writes past a block does what it does in a C program.
+
+## Function values and closures
+
+A [function value](../language/function-values.md) is one word in the C, of the kind `zk_fn`
+(`const void *`): the address of a record whose first word is the code address.
+
+- Each function has a static record `zk_r<n>`, `{code, NULL}`, declared in
+  `zaka_kinds.h` and defined in `zaka_kinds.c`. The address of function `n` is `&zk_r<n>`.
+  `ဗလာ` is NULL.
+- A closure, the function value of a [nested function](../language/function-values.md#nested-functions-and-closures)
+  with captures, is a record on the heap. Where the function is declared,
+  `zk_closure(record, thunk, kind)` moves the record from a hidden local to a new block,
+  leaves zeros behind, and writes the code of the thunk in the first word and the
+  descriptor of the record kind in the second, which is never NULL, so `zk_fn_bound` tests
+  it. The thunk takes the declared parameters and the record, and calls the nested function
+  with the address of each field, or the address a borrowed field holds.
+- `zk_drop`, `zk_dup_seqs` and `zk_lend_seqs` walk a function value as each walks text:
+  `zk_fn_dup` copies the record and duplicates its fields (a record that owns a block
+  stops the run with `ZK_TRAP_CLOSURE_OWNER`), a drop frees the record with what its fields
+  own, owner blocks included (`zk_free_owners`, through the `owns` flag of the
+  descriptors), and `zk_fn_lend` sets the lowest bit of the address, so the callee
+  runs the caller's closure and frees nothing. `zk_fn_rec` gives the address without
+  that bit.
+- A call through a value reads `zk_fn_bound(f)`: for a closure it calls the thunk with the
+  arguments and the record, for a plain function it calls the code with the arguments.
+- `zk_fn_plain(f)` is run on a value headed where a closure that borrows cannot go. It
+  stops the run with `ZK_TRAP_CLOSURE_ESCAPE` when the descriptor of the record tells that it
+  holds a borrow, with the message of the [closure escape trap](../vm/traps.md#all-the-traps).
+  `zk_fn_c(f)` stops a closure of each sort that goes to C.
+- Printing a value looks its code up in a table of names, so a closure prints as the
+  function its thunk calls.
 
 ## Where the C goes
 

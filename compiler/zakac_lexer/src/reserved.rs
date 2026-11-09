@@ -43,6 +43,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("အထိ", Kw::To),
     ("စီ", Kw::Step),
     ("အနေဖြင့်", Kw::CountAs),
+    ("အပိုင်အနေဖြင့်", Kw::AsOwned),
     ("ဖြစ်ပြီး", Kw::Being),
     ("ဖြစ်ကာ", Kw::Being),
     ("ပြီးလျှင်", Kw::WhenDone),
@@ -173,6 +174,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ဆီသို့", Kw::Toward),
     ("ကူးယူမည်", Kw::WillBlit),
     ("ပြောင်းထည့်မည်", Kw::WillShift),
+    ("ကူးထည့်မည်", Kw::WillDupIn),
     ("ဖြည့်မည်", Kw::WillFill),
     // lists
     ("စာရင်း", Kw::List),
@@ -209,6 +211,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("တခြား", Kw::Other),
     // kind aliases
     ("လည်း", Kw::Also),
+    ("လည်းကောင်း", Kw::AsWellAs),
+    ("ငှား၍", Kw::Lending),
     ("မှတ်ယူနိုင်ပါသည်", Kw::CanRegard),
 ];
 

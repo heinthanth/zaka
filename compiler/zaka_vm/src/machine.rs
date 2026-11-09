@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::io::Write;
 
 use bon::Builder;
@@ -476,6 +477,17 @@ pub struct Machine
         allow(dead_code)
     )]
     linked: Option<std::sync::Arc<ffi::Linked>>,
+    /// The functions of the program C can call back.
+    #[builder(skip)]
+    #[cfg_attr(
+        not(all(feature = "ffi", not(target_arch = "wasm32"))),
+        allow(dead_code)
+    )]
+    callbacks: ffi::Callbacks,
+    /// The record kind of the closures of each thunk made so far, which a
+    /// duplicate and a drop of a closure walk.
+    #[builder(default)]
+    records: HashMap<u32, DataKind>,
     /// The static data, the stack region and the heap.
     mem: Mem,
     /// The variable of each stack and static block, at the block start.
@@ -1225,6 +1237,8 @@ impl Machine
             Op::Call(f) => self.enter(f),
             Op::FnAddr(f) => self.push(Value::Ptr(u64::from(f) + 1)),
             Op::CallValue(n) => self.call_value(n),
+            Op::Closure { func, record } => self.closure(func, record),
+            Op::FnPlain => self.fn_plain(),
             Op::Ret => self.leave(),
             Op::Print => self.print(),
             Op::PrintEnum(kind) =>
@@ -1591,8 +1605,198 @@ impl Machine
             .as_ptr()
             .ok_or_else(|| malformed("call_value takes a function value"))?;
         ret_if!(word == 0, Err(TrapKind::NullCall));
+        let record = self.mem.closure_record(word);
+        let word = record.map_or(Ok(word), |r| self.mem.thunk_word(r))?;
+        do_if!(let Some(r) = record, self.push(Value::Ptr(r))?);
         let f = u32::try_from(word - 1).map_err(|_| malformed("no function"))?;
         self.enter(f)
+    }
+
+    /// Make a closure: pop the address of its record, move the record to a
+    /// new heap block and leave zeros behind, write the function value of
+    /// its thunk in the first word, and push the address of the block.
+    ///
+    /// # Arguments
+    ///
+    /// * `thunk` - The index of the thunk.
+    /// * `record` - The kind of the record.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, the trap a read or a write hits, or `OutOfMem`.
+    fn closure(&mut self, thunk: u32, record: DataKind) -> Step
+    {
+        let from = self.pop_ptr("closure")?;
+        self.records.insert(thunk, record);
+        let block = self.move_record(from, record)?;
+        self.mem.store(block, Value::Ptr(u64::from(thunk) + 1))?;
+        self.push(Value::Ptr(block))
+    }
+
+    /// Move a closure record into a new heap block, leaving zeros behind.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - The address of the record.
+    /// * `record` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// The address of the block, the trap a read hits, or `OutOfMem`.
+    fn move_record(&mut self, from: u64, record: DataKind) -> Result<u64, TrapKind>
+    {
+        let size = u64::from(record.size(self.module.platform_bits));
+        let content = self.mem.octets(from, size)?;
+        let block = self.mem.alloc(size, Origin::Heap, 0);
+        let block = block.ok_or(TrapKind::OutOfMem { size })?;
+        self.mem.fill_block(block, &content)?;
+        self.mem.zero(from, record)?;
+        Ok(block)
+    }
+
+    /// The record of a closure and the kind of it, when a function value is
+    /// a closure.
+    ///
+    /// # Arguments
+    ///
+    /// * `word` - The function value.
+    ///
+    /// # Returns
+    ///
+    /// The address and the kind, `None` for a function or `ဗလာ`, or the
+    /// trap the read of the code word hits.
+    fn record_of(&self, word: u64) -> Result<Option<(u64, DataKind)>, TrapKind>
+    {
+        let Some(at) = self.mem.closure_record(word)
+        else
+        {
+            return Ok(None);
+        };
+        let thunk = self.mem.thunk_word(at)?.saturating_sub(1);
+        let kind = u32::try_from(thunk).ok().and_then(|t| self.records.get(&t));
+        let kind = kind.ok_or_else(|| malformed("a closure names no record kind"))?;
+        Ok(Some((at, *kind)))
+    }
+
+    /// Free the record of the closure at an address, and each value its
+    /// fields own, then leave `ဗလာ`. A function, or a closure lent to a call,
+    /// owns no record.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address of the function value.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a read or the free hits.
+    fn drop_fn(&mut self, at: u64) -> Step
+    {
+        let word = self.mem.load(at, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
+        let lent = word & 1 == 1;
+        let record = tern!(lent, None, self.record_of(word)?);
+        if let Some((block, kind)) = record
+        {
+            self.drop_value(block, kind)?;
+            self.free_owners(block, kind)?;
+            self.mem.free(block)?;
+        }
+        self.mem.store(at, Value::Ptr(0))
+    }
+
+    /// Free the block of each owner pointer inside a value, through its
+    /// fields and cells, and leave `ဗလာ`: the record of a closure owns what
+    /// moved into it.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the value.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a read or the free hits.
+    fn free_owners(&mut self, addr: u64, kind: DataKind) -> Step
+    {
+        let kind = kind.repr();
+        ret_if!(!kind.holds_owner_ptr(), Ok(()));
+        let platform = self.module.platform_bits;
+        if let Some(s) = kind.as_struct()
+        {
+            let fields = s.fields().iter().enumerate();
+            do_for!((i, (_, k)) in fields, self.free_owners(addr + u64::from(s.offset(i, platform)), *k)?);
+            return Ok(());
+        }
+        if let Some(l) = kind.as_list()
+        {
+            let stride = u64::from(l.cell.size(platform));
+            do_for!(i in 0..u64::from(l.len), self.free_owners(addr + i * stride, l.cell)?);
+            return Ok(());
+        }
+        ret_if!(!kind.is_owner_ptr(), Ok(()));
+        let block = self.mem.load(addr, kind)?.as_ptr().unwrap_or(0);
+        do_if!(block != 0, self.mem.free(block)?);
+        self.mem.store(addr, Value::NULL)
+    }
+
+    /// Give the closure at an address a record of its own: a new heap block
+    /// with the same fields, each value in them duplicated in turn.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address of the function value.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, a trap a read hits, or `OutOfMem`.
+    fn dup_fn(&mut self, at: u64) -> Step
+    {
+        let word = self.mem.load(at, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
+        let Some((block, kind)) = self.record_of(word)?
+        else
+        {
+            return Ok(());
+        };
+        ret_if!(kind.holds_owner_ptr(), Err(TrapKind::ClosureOwner));
+        let size = u64::from(kind.size(self.module.platform_bits));
+        let content = self.mem.octets(block, size)?;
+        let twin = self.mem.alloc(size, Origin::Heap, 0);
+        let twin = twin.ok_or(TrapKind::OutOfMem { size })?;
+        self.mem.fill_block(twin, &content)?;
+        self.dup_value(twin, kind)?;
+        self.mem.store(at, Value::Ptr(twin))
+    }
+
+    /// Lend the closure at an address to a call: set the lowest bit of the
+    /// address, so a drop frees nothing and a duplicate copies the record.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address of the function value.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a read or the write hits.
+    fn lend_fn(&mut self, at: u64) -> Step
+    {
+        let word = self.mem.load(at, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
+        ret_if!(self.mem.closure_record(word).is_none(), Ok(()));
+        self.mem.store(at, Value::Ptr(word | 1))
+    }
+
+    /// Stop the program when the function value on top of the stack is a
+    /// closure.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `ClosureEscape`.
+    fn fn_plain(&mut self) -> Step
+    {
+        let top = self.stack.last().and_then(|v| v.as_ptr());
+        let word = top.ok_or_else(|| malformed("fn_plain takes a function value"))?;
+        let record = self.record_of(word)?;
+        let borrows = record.is_some_and(|(_, kind)| kind.holds_borrow());
+        ret_if!(borrows, Err(TrapKind::ClosureEscape));
+        Ok(())
     }
 
     /// Start a call: each local takes a block of zeros in the stack region,
@@ -2218,7 +2422,8 @@ impl Machine
                 .flat_map(|i| self.blocks_in(addr + i * stride, l.cell))
                 .collect();
         }
-        tern!(kind.is_text() || kind.is_seq(), vec![(addr, kind)], Vec::new())
+        let held = kind.is_text() || kind.is_seq() || kind.is_fn();
+        tern!(held, vec![(addr, kind)], Vec::new())
     }
 
     /// The room of the text or the list at an address: the size of its heap
@@ -2269,6 +2474,10 @@ impl Machine
     {
         for (at, k) in self.blocks_in(addr, kind)
         {
+            do_if!(k.is_fn(), {
+                self.drop_fn(at)?;
+                continue;
+            });
             let (base, count) = slice_parts(&self.mem, at)?;
             if self.room_of(at)? > 0
             {
@@ -2349,6 +2558,10 @@ impl Machine
     {
         for (at, k) in self.blocks_in(addr, kind)
         {
+            do_if!(k.is_fn(), {
+                self.dup_fn(at)?;
+                continue;
+            });
             let base = self.mem.load(at, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
             do_if!(base != 0 && !self.mem.is_frozen(base), self.clone_block(at, k)?);
         }
@@ -2371,7 +2584,7 @@ impl Machine
     {
         for (at, k) in self.blocks_in(addr, kind)
         {
-            do_if!(self.room_of(at)? == 0, self.clone_block(at, k)?);
+            do_if!(!k.is_fn() && self.room_of(at)? == 0, self.clone_block(at, k)?);
         }
         Ok(())
     }
@@ -2763,8 +2976,12 @@ impl Machine
         let platform = self.module.platform_bits;
         let word = u64::from(platform / 8);
         let zero = Value::int(IntKind::new(false, Width::Platform), 0, platform);
-        for (at, _) in self.blocks_in(addr, kind)
+        for (at, k) in self.blocks_in(addr, kind)
         {
+            do_if!(k.is_fn(), {
+                self.lend_fn(at)?;
+                continue;
+            });
             self.mem.store(at + 2 * word, zero)?;
         }
         Ok(())

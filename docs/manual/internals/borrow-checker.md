@@ -93,7 +93,9 @@ through a cell, a move out of one, or a call that can reach the list makes it
 ```
 
 A new owner declared with no value starts at `NULL`; an allocation or a resize makes it
-`FRESH`; a free sets the slot back to `NULL`; a `Take` (a move out) leaves `MOVED`. A
+`FRESH`; a free sets the slot back to `NULL`; a `Take` (a move out) of an owner or a
+borrow leaves `MOVED`, and of text, a list or a function value leaves the place blank and
+not known, since a blank one reads as each value does. A
 read of a moved owner sees `NULL` (`as_read`), and the one read that remains allowed is the
 test against `ဗလာ`, the means to ask "was it given off?". Where two paths meet, the
 sets are joined, so after an `if` that moves the owner on one branch alone the state is
@@ -424,6 +426,30 @@ roots. `callees` adds each function whose address is taken for a call through a 
 the call graph, the global reads of the liveness and the global writes of `last_use.rs`
 count them. A function whose address is taken gets no shared parameters (`share_params`):
 a call through a value passes each argument in its own slot, whichever function runs.
+
+A closure is a function value that is not `ဗလာ`: the walk reads the record of `ExprNode::Closure`
+and gives the value the fact `HELD`, and `addressed_fn` (`values.rs`) counts its thunk as a
+taken function, so a call through a value reaches the thunk. `ExprNode::Plain` is the
+value it wraps, and so are `Dup` and `Take` of a slot that holds one. A closure is made
+where its function is declared, and each call of it goes through its value. The record
+moves to the heap, so `ExprNode::Closure` leaves its slot moved out. `closures.rs` finds the
+closures of each routine before its flow: the function each thunk calls and the borrows its
+record holds, a field of the kind of the hidden parameter being a borrow of a local
+(`lent_fields`); a duplicated or moved capture lives in the record, which no local reaches,
+so it passes `ဗလာ`. A `Dup` that is not lent of a value that can hold a closure whose
+record owns a block is ZK0724 (`check_owner_dup`). A `Take` out of a slot counts as a read
+of it for the liveness, so an earlier use is no last use. Which closures a slot holds is a fact
+of the flow, `State::closures`: a set of the slot replaces it with the closures of the
+value, and the paths that meet join theirs, so a slot runs the closure of its last set
+alone. `Flow::call` then treats an argument that
+can hold a closure as a call that can run its function: the effects of that function on
+the borrows join the facts of a call that does not run it (`closure_args`, `run_or_not`),
+and so do the effects of each closure the record holds, as a duplicate, a move or a
+borrow, at each depth, each once (`run_held`, `Closures::inner`),
+and `check_closure_args` reports ZK0707 for another argument that reaches a block the
+closure can free. A call through a slot that can hold a closure runs it with the
+arguments of the call. `callgraph.rs` puts the thunk of each closure a function makes
+before the function, so the digests are there.
 
 A slot of a function kind gets a pointer fact (`SlotState::of_kind`, `fn_const`): `HELD`
 for a function address, folded or not, and `NULL` with `FRESH` for a `ဗလာ` the routine

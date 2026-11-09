@@ -372,6 +372,57 @@ pub fn blit_ranges_overlap(span: Span, octets: u64) -> Diagnostic
         .with_help(t!("codes.ZK0721.help"))
 }
 
+/// The address of a function that borrows the locals around it goes where it
+/// could outlive them: a result, a field, a cell, a global, a place reached
+/// through an address, a variable of an outer block, or a C function.
+///
+/// # Arguments
+///
+/// * `span` - The address.
+/// * `func` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0722` diagnostic.
+pub fn closure_escapes(span: Span, func: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0722.message", f = func);
+    Diagnostic::new(Code::ClosureEscapes, msg, span)
+        .with_help(t!("codes.ZK0722.help", f = func))
+}
+
+/// The address of a nested function with captures goes to a C function.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `func` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0723` diagnostic.
+pub fn closure_to_c(span: Span, func: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0723.message", f = func);
+    Diagnostic::new(Code::ClosureToC, msg, span).with_help(t!("codes.ZK0723.help"))
+}
+
+/// A closure that owns a block is duplicated.
+///
+/// # Arguments
+///
+/// * `span` - The duplicate.
+/// * `func` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0724` diagnostic.
+pub fn closure_owner_dup(span: Span, func: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0724.message", f = func);
+    Diagnostic::new(Code::ClosureOwnerDup, msg, span).with_help(t!("codes.ZK0724.help"))
+}
+
 /// A call goes through a function value that is `ဗလာ` on each path.
 ///
 /// # Arguments

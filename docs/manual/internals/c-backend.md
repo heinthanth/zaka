@@ -36,9 +36,24 @@ A function or a global goes into the module file of the source file its span sta
 ## Values in C
 
 A scalar is a C scalar: `int32_t`, `double`, `uint32_t` for a character, `uint8_t` for a
-boolean, `unsigned char *` for each address, `zk_fn` for a function value. A function value
-folds to the index of its function plus one, as in the VM; the C target writes it as the
-address of that function.
+boolean, `unsigned char *` for each address, `zk_fn` (`const void *`) for a function value.
+A function value is the address of a record whose first word is code, `zk_code`. Each
+function has a static record `zk_r<n>` = `{code, NULL}` (declared in `zaka_kinds.h`,
+defined in `zaka_kinds.c`), and the address of a function is `&zk_r<n>`; a constant folds to
+the index of its function plus one, as in the VM, and the C target writes it as that
+address. A closure is a record on the heap: `zk_closure(record, thunk, kind)` moves the
+record slot of the IR to a new block, leaves zeros behind, and writes the code of the
+thunk into its first word and the descriptor of the record kind into its second, which is
+never NULL, so `zk_fn_bound` tests it. A lent closure has the lowest bit of its address set,
+which `zk_fn_rec` clears. A call through a value is `zk_fn_bound(f) ? thunk(args…,
+zk_fn_rec(f)) : code(args…)`, the code read through `zk_fn_code`. The descriptor walk
+(`zk_each_block`) visits a `ZK_K_FN` value as it visits text: a drop frees an owned record
+with what its fields own, owner blocks included (`zk_free_owners`, the descriptor flag
+`owns`), `zk_fn_dup` copies a record and stops one that owns a block, and `zk_fn_lend` marks a loan. The op
+`fn_plain` is `zk_fn_plain`, which stops the run with `ZK_TRAP_CLOSURE_ESCAPE` for a
+closure whose descriptor has `holds_borrow`, and a C argument goes through `zk_fn_c`, which
+stops each closure. These functions live in `zaka_rt_data.c`, and the table of names holds
+code pointers, so a print finds the name of a closure through its thunk.
 
 A list, a struct, a slice, a plain list and text are blocks of octets, laid out as the VM
 sets them out: each field at the offset `StructKind::offset` gives, text and plain lists as
@@ -110,6 +125,18 @@ a duplicate that ends in a zero octet with `zk_text_cstr` (`zaka_rt_data.c`, dec
 `zaka_rt.h` and in the prelude of `zaka_ffi.c`), and frees it with `zk_text_cstr_free`
 after the call; `zk_open` of the host runtime uses the same function for a path. The module
 files call the wrappers through `ExprNode::Foreign` and `Stmt::Foreign`.
+
+A result of the kind `စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း` (`is_c_text_result`)
+is held as `const char *` and given to `zk_text_from_c(out, size, ok_at, s)`
+(`zaka_rt_host.c`): NULL writes the failure, else the string is copied into new text of the
+program, with `bad_utf8` for octets that are not UTF-8. The wrapper calls it before it
+frees the duplicates of the text arguments, since `strstr` and `strchr` point into them.
+`ffi_source` defines the structs of `FfiCall::extra` too, so a struct can be an other value.
+A parameter of a function kind that `is_callback` takes is declared with the C pointer
+kind of its signature (`void *` for each address), and the wrapper passes `zk_fn_code(value)`
+cast to it, NULL for `ဗလာ`. The C signature of a Zaka function that such a kind can hold
+matches the C one, so C can call it as it calls a C function. A trap in a callback is the trap of the run: the
+program stops where it happens.
 
 `link_libs` gives `-lX` for each lib `libX` the program names, but libc and libm, in
 order of first use. `BuildPlan::libs` puts them after `-lm` and before the `LDFLAGS` and

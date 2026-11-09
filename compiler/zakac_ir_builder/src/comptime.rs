@@ -104,7 +104,8 @@ fn has_static_consts(module: &Module) -> bool
 /// `true` for such a constant.
 fn must_be_static(slot: &Slot) -> bool
 {
-    slot.access == Access::Const && slot.kind.holds_text()
+    // A closure record lives on the heap, so a constant of one is no static.
+    slot.access == Access::Const && slot.kind.holds_text() && !slot.kind.holds_fn()
 }
 
 /// The slot a place names.

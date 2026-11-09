@@ -68,8 +68,8 @@ same call. Keep a space between the name and `မည်`: `နှုတ်ဆက
 
 ## Where functions go
 
-- Declare functions at the top level of the program, not inside a block or another
-  function.
+- Declare functions at the top level of the program. A function can also stand inside the
+  start block or another function (see below).
 - A function can be called before its declaration appears. A lot of programs put the
   start block at the top and the functions below it.
 
@@ -94,18 +94,37 @@ same call. Keep a space between the name and `မည်`: `နှုတ်ဆက
 --------
 ```
 
-```zaka-error ZK0214
-အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် တစ် သည်
+## A function inside a function
+
+A function can be declared inside the start block or inside another function. It can use
+the variables declared above it in the block around it, when it lists them before
+`လက်ခံပြီး`. With `ငှား၍` ("borrowing") it reads and changes those variables themselves,
+not copies of them; then each item of the list ends in `ကိုလည်းကောင်း` ("and also"):
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် စုစုပေါင်း သည် ၀ ဖြစ်ပါစေ။
+// a function inside the start block: it borrows စုစုပေါင်း, to read and change it
+လုပ်ဆောင်ချက် ပေါင်းထည့် သည် ကိန်းပြည့် က ကိုလည်းကောင်း၊ စုစုပေါင်း ကို ငှား၍လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ ကို ပြသပါ။
+စုစုပေါင်း ကို စုစုပေါင်း + က ဟု ထားပါ။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၅ တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၇ တို့ဖြင့် လုပ်ဆောင်ပါ။
+စုစုပေါင်း ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0214]: functions can be declared at the top level and nowhere else
+၁၂
 ```
+
+`ပေါင်းထည့်` can be called from its declaration to the end of the block that holds it. A
+function that keeps copies of its own, and so can be given back, is in
+[Functions as values](../pointers/functions.md#a-function-that-keeps-values). The start
+block itself, and a function that comes from outside, remain at the top level. The rules in
+full are in
+[Nested functions and closures](../../manual/language/function-values.md#nested-functions-and-closures).
 
 ## Leaving before the end
 

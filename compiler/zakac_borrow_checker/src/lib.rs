@@ -27,6 +27,7 @@ mod callgraph;
 mod cfg;
 mod checks;
 pub mod cli;
+mod closures;
 pub mod digest;
 mod flow;
 mod interval;

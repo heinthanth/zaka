@@ -71,7 +71,7 @@ fn add_fn(
 /// # Returns
 ///
 /// The signature.
-fn sig_of(decl: &FnDecl, structs: &StructTable, index: usize) -> FnSig
+pub(crate) fn sig_of(decl: &FnDecl, structs: &StructTable, index: usize) -> FnSig
 {
     let kind = |k| DataKind::from_ast(k, structs);
     let params = decl.params.iter().map(|p| kind(&p.kind)).collect();

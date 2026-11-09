@@ -54,27 +54,31 @@ called.
 
 ### Where a function stands
 
-- A function is declared at the top level of the program: not inside a block, a loop, a
-  conditional or another function (ZK0214).
-- A call can come before the declaration it names. The order of declarations does not
-  matter, and two functions can call each other.
+- A function with statements is declared at the top level of the program, or inside the
+  statements of a function, the start block, a block, a loop or a conditional. A function
+  declared inside another one is a *nested function*: it sees from its declaration to the
+  end of its block, and it lists the locals around it that it uses, as copies, moves or
+  borrows. See
+  [Nested functions](function-values.md#nested-functions-and-closures).
+- External functions, C functions and the start block are declared at the top level and
+  nowhere else (ZK0214).
+- A call can come before the declaration it names at the top level. The order of
+  declarations does not matter there, and two functions can call each other.
 - A file can declare several functions of one name when their parameters differ (see
   [One name, several functions](#one-name-several-functions)); a second function with
-  the same name, parameter kinds and marks is ZK0304.
+  the same name, parameter kinds and marks is ZK0304. Nested functions of one scope have
+  no overloads: a second one of a name is ZK0304.
 - A call to a name that no function has is ZK0303.
 
 ```zaka-error ZK0214
-လုပ်ဆောင်ချက် အပြင် သည်
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် အတွင်း သည်
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် abs သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+၃၂ ဘစ် ကိန်းပြည့် n ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0214]: functions can be declared at the top level and nowhere else
+error[ZK0214]: external functions, C functions and the start block can be declared at the top level and nowhere else
 ```
 
 ## Parameters
@@ -632,6 +636,8 @@ kinds that cross are those C has:
 | a borrowed address, a raw address | a pointer |
 | a struct whose fields are these kinds, structs or counted lists of them | a struct, passed whole |
 | `စာသား`, `စာသား တစ်စိတ်တစ်ပိုင်း`, as a parameter | `const char *` |
+| `စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း`, as a result | `const char *`, NULL for the failure |
+| a function kind whose parameters and result cross, as a parameter | a pointer to a function |
 
 C reads a string up to a zero octet, which Zaka text does not hold, so a text parameter
 reaches C as the address of a duplicate of its u8s with a zero octet after them. The duplicate
@@ -651,12 +657,13 @@ inside the text ends the string there for C.
 ၁၅
 ```
 
-Each other kind is ZK0465: an owner, which the call would free as it ends; plain lists,
-slices and function values, which C has no form for; text as a result, since Zaka cannot
-tell who frees what C gives back; and a result that can fail. A result cannot be a borrow,
-since C has no place to lend from: it gives back a raw address. A parameter with the edit
-mark is ZK0466; to let C write a value back, pass a borrowed address, as `frexp` takes
-its `int *`:
+Each other kind is ZK0465: an owner, which the call would free as it ends; plain lists
+and slices, which C has no form for; function values that do not cross (see
+[Callbacks](#c-functions)); text as a bare result, since C can give back NULL for it (see
+[Text as a result](#c-functions)); and a result that can fail. A result
+cannot be a borrow, since C has no place to lend from: it gives back a raw address. A
+parameter with the edit mark is ZK0466; to let C write a value back, pass a borrowed
+address, as `frexp` takes its `int *`:
 
 ```zaka
 လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -691,6 +698,142 @@ parameter and result kinds (ZK0338). Like each function that comes from outside,
 function has no address (ZK0464): a function of the program that calls it stands in for
 it.
 
+### Text as a result
+
+A C function that gives back a string writes its result as `စာသား ရလဒ် သို့မဟုတ်
+မအောင်မြင်သည့်သတင်း` ([a result kind](error-handling.md#result-kinds) with no error
+value). NULL is the failure; each other address is a good result. Zaka copies the string
+up to its zero octet into new text of its own, so the result is a plain text that the
+program owns. Octets that are no UTF-8 stop the program with the
+[not UTF-8 trap](../vm/traps.md#all-the-traps).
+
+Who frees the string of C depends on the result clause:
+
+| Result clause | C's string | For |
+| --- | --- | --- |
+| `... ကို ပြန်ပေးမည်` | C keeps it; Zaka never frees it | `getenv`, `strerror`, `strstr`, static buffers |
+| `... ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်` | C hands it over; Zaka frees it with libc's `free` once its text holds the octets | `strdup` and each function that allocates the string it gives |
+
+`အပိုင်အနေဖြင့်` stands on a C function whose result is text or a failure; on each other
+function it is ZK0467. Without it, a string that C allocates is never freed.
+
+Zaka takes the text before it frees the duplicates of the text arguments, so a result
+that points into an argument, as `strstr` gives, is copied while it is still there.
+
+```zaka
+လုပ်ဆောင်ချက် strstr သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စာသား s၊ စာသား part တို့ကို လက်ခံပြီး စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ကို ပြန်ပေးမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် strstr ကို "မင်္ဂလာပါ ကမ္ဘာ"၊ "ကမ္ဘာ" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+လုပ်ဆောင်ချက် strstr ကို "abc"၊ "x" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ရလဒ်ကောင်း("ကမ္ဘာ")
+မအောင်မြင်သည့်သတင်း
+```
+
+`strdup` hands its string over, so its result clause holds `အပိုင်အနေဖြင့်`:
+
+```zaka
+လုပ်ဆောင်ချက် strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စာသား s ကို လက်ခံပြီး စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် strdup ကို "စံကား" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ရလဒ်ကောင်း("စံကား")
+```
+
+A program can also take the string as a raw address and free it itself, as Rust and Go
+programs do: read its length with `strlen`, bring its octets into a list of its own with
+`memcpy`, free it with `free`, and read the list as text. The VM cannot read through an
+address C gives, so `memcpy`, a C function, copies the octets.
+
+```zaka
+လုပ်ဆောင်ချက် strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စာသား s ကို လက်ခံပြီး လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် strlen သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း s ကို လက်ခံပြီး လက္ခဏာမဲ့ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် memcpy သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+ငှားထားသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ dst၊ လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း src၊ လက္ခဏာမဲ့ ကိန်းပြည့် n တို့ကို
+လက်ခံပြီး လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် free သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာအကြမ်း p ကို လက်ခံမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် လုပ်ဆောင်ချက် strdup ကို "zaka" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် ရေ သည် လုပ်ဆောင်ချက် strlen ကို ပ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် ဘောင် သည် အကွက် ၆၄ ခုရှိသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ပြန် သည် လုပ်ဆောင်ချက် memcpy ကို ဘောင် ၏ အကွက် ၀ ၏ လိပ်စာ၊ ပ၊ ရေ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် free ကို ပ တို့ဖြင့် လုပ်ဆောင်ပါ။
+(ဘောင် ၏ အကွက် ၀ မှစ၍ ရေ ကွက်) ကို စာသား တစ်စိတ်တစ်ပိုင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+zaka
+```
+
+The list here holds 64 octets; a longer string needs a larger list, or a block from the
+heap.
+
+### Callbacks
+
+A parameter of a function kind crosses to C as a pointer to a function, when each
+parameter and the result of the kind is an integer up to 64 bits, a `၃၂ ဘစ် ဒဿမကိန်း`, a
+`ဒဿမကိန်း`, a `မှန်မှားတန်ဖိုး`, or a borrowed or raw address. The kind has no edit mark,
+no struct passed whole and no text, and its result is no borrow. Each other function kind
+is ZK0465. The argument is the address of a function of the program, or `ဗလာ`, which C
+gets as NULL.
+
+```zaka
+လုပ်ဆောင်ချက် qsort သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ base၊ လက္ခဏာမဲ့ ကိန်းပြည့် count၊ လက္ခဏာမဲ့ ကိန်းပြည့် size၊
+(ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ၊ ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ တို့ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) compare
+တို့ကို လက်ခံမည်။
+
+လုပ်ဆောင်ချက် ငယ်စဉ် သည်
+ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ က၊ ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ ခ တို့ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ၃၂ ဘစ် ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+(က ၏ တန်ဖိုး) - (ခ ၏ တန်ဖိုး) ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကိန်းများ သည် အကွက် ၅ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၅၊ ၂၊ ၉၊ ၁၊ ၇] ဖြစ်ပါစေ။
+ကိန်းရှင် အရွယ် သည် ၃၂ ဘစ် ကိန်းပြည့် ၏ အရွယ်အစား ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် qsort ကို ကိန်းများ ၏ အကွက် ၀ ၏ လိပ်စာ၊ ၅၊ အရွယ်၊ လုပ်ဆောင်ချက် ငယ်စဉ် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ကိန်းများ ကို ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[၁၊ ၂၊ ၅၊ ၇၊ ၉]
+```
+
+Each build gives C a pointer it can call:
+
+- `zakac run` makes one native closure for each function a call gives C, on the first
+  such call, and keeps it for the run. The callback runs the function in the VM until it
+  returns.
+- A native build passes the code address of the function.
+
+A trap inside a callback waits until C returns, then stops the program; each later
+callback of that C call gives 0. Text that a callback prints in the VM comes out after
+the output of the C call itself, where a native build keeps the order. A callback must
+not resize or free a block that C holds an address into, since the native address goes
+stale.
+
+A [closure](function-values.md#nested-functions-and-closures), the address of a nested
+function with captures, cannot go to C, since C calls a bare code address: ZK0723 when the
+address is written in the call, and the [closure escape trap](../vm/traps.md#all-the-traps)
+when the compiler cannot tell.
+
 ### Other values
 
 A C function whose parameters end in `...`, as `printf` does, takes more arguments than
@@ -705,7 +848,7 @@ A call gives an argument for each parameter, then each other value it wants (too
 ZK0314). An other value has the kind it has on its own: a number literal is a
 `ကိန်းပြည့်` or a `ဒဿမကိန်း`. C reads it as C promotes it: an integer narrower than 32
 bits and a boolean as an `int`, a `၃၂ ဘစ် ဒဿမကိန်း` as a `double`. Text goes as a duplicate
-that ends in a zero octet; a struct cannot be an other value (ZK0465). The format must
+that ends in a zero octet, and a struct goes whole, so C reads it as it reads a struct parameter. The format must
 match the kinds, as in C: `%ld` for a `ကိန်းပြည့်`, which has 64 bits, and `%d` for a
 `၃၂ ဘစ် ကိန်းပြည့်` or a boolean. Functions the host serves take no other values (ZK0334).
 
@@ -754,7 +897,8 @@ does, so the program finds its lib wherever it runs from.
 C does what C does: a C function that writes past a block, or keeps an address after
 the call, harms the run as it would harm a C program. A native address that C gives
 back, and that lies in no block, passes back to C as it is, but the VM cannot read
-through it. Function values cannot cross, so C cannot call back into the program.
+through it. C can call back into the program through a function value of a kind that
+crosses (see [Callbacks](#c-functions)).
 
 ## Recursion
 
@@ -1210,7 +1354,7 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 
 | Code | Mistake |
 | --- | --- |
-| ZK0214 | a function declared inside a block or another function |
+| ZK0214 | an external function, a C function or the start block declared inside a block or a function |
 | ZK0303 | a call to a function that is not declared |
 | ZK0304 | two functions with one name |
 | ZK0305 | one parameter name listed twice |
@@ -1233,6 +1377,7 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 | ZK0338 | two declarations of one C function with other kinds |
 | ZK0465 | a parameter or a result of a C function with a kind C cannot take |
 | ZK0466 | the edit mark on a parameter of a C function |
+| ZK0467 | `အပိုင်အနေဖြင့်` on a result that is no text from a C function |
 | ZK0443 to ZK0449 | the failing-function mistakes of [Errors and results](error-handling.md#errors) |
 
 The text of each message is in [Error messages](../reference/errors.md).

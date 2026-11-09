@@ -207,6 +207,7 @@ impl Checker
         &mut self, n: &ListLit, expect: Option<DataKind>,
     ) -> Option<DataKind>
     {
+        do_for!(c in &n.cells, self.check_no_closure(c));
         let count = u32::try_from(n.cells.len()).ok()?;
         // A literal with no counted list around it is a plain list.
         if let Some(seq) = expect.and_then(DataKind::as_seq)
@@ -459,6 +460,7 @@ impl Checker
                 unknown.map(|s| rd::unknown_field(field.span, &s.name, &field.name));
             do_if!(let Some(d) = unknown, self.report(d));
             self.expect_kind(&init.value, want);
+            self.check_no_closure(&init.value);
         }
         kind
     }

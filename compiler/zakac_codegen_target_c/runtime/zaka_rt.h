@@ -53,6 +53,8 @@ enum zk_trap
     ZK_TRAP_CHAR_OUT_OF_RANGE,
     ZK_TRAP_END_BEFORE_START,
     ZK_TRAP_NULL_CALL,
+    ZK_TRAP_CLOSURE_ESCAPE,
+    ZK_TRAP_CLOSURE_OWNER,
     ZK_TRAP_NO_CELL_TO_REMOVE,
     ZK_TRAP_NO_CHAR_TO_REMOVE,
     ZK_TRAP_NO_PLACE_TO_INSERT,
@@ -113,8 +115,24 @@ uint32_t zk_char_of(int negative, zk_umax v);
 
 /* ---- kinds ---- */
 
-/** A function value: each function of the program, cast to one kind. */
-typedef void (*zk_fn)(void);
+/** The code of a function of the program, cast to one kind. */
+typedef void (*zk_code)(void);
+
+/**
+ * A function value: the address of a record whose first word is code. The
+ * record of a function, zk_fnrec, holds NULL in its second word; a closure
+ * record, on the heap, holds the code of its thunk, the kind of the record
+ * in its second word, then its captures, and the thunk takes the record
+ * last. A closure lent to a call has the lowest bit of its address set.
+ */
+typedef const void *zk_fn;
+
+/** The record of a function of the program. */
+typedef struct
+{
+    zk_code code;
+    const void *none;
+} zk_fnrec;
 
 /** The shape of a data kind, as the runtime walks it. */
 enum zk_tag
@@ -173,8 +191,12 @@ struct zk_kind
     const zk_member *members;
     /** The name of a struct. */
     const char *name;
-    /** Whether a value holds text or a plain list on the heap. */
+    /** Whether a value holds text, a plain list or a closure on the heap. */
     int holds_text;
+    /** Whether a value holds a borrow. */
+    int holds_borrow;
+    /** Whether the kind is an owner pointer, or holds one. */
+    int owns;
 };
 
 /** The words of a print that zaka_kinds.c holds, from the compiler. */
@@ -184,7 +206,7 @@ extern const char zk_fn_lead[], zk_fn_tail[];
 /** A function of the program and its name, for the print of a value. */
 typedef struct
 {
-    zk_fn fn;
+    zk_code code;
     const char *name;
 } zk_fn_name;
 
@@ -298,6 +320,22 @@ void zk_blit(
 void zk_fill(unsigned char *dst, zk_umax count, const unsigned char *cell, size_t size);
 /** The function of a function value; the run stops when it is null. */
 zk_fn zk_fn_check(zk_fn f);
+/** The code a function value runs. */
+zk_code zk_fn_code(zk_fn f);
+/** Whether a function value is a closure. */
+int zk_fn_bound(zk_fn f);
+/** The record of a function value, without the mark of a loan. */
+unsigned char *zk_fn_rec(zk_fn f);
+/** Make a closure: move its record to the heap, with its code and its kind. */
+zk_fn zk_closure(unsigned char *record, zk_code thunk, const zk_kind *k);
+/** Stop the run when a function value is a closure that borrows. */
+zk_fn zk_fn_plain(zk_fn f);
+/** Stop the run when a function value is a closure, which C cannot call. */
+zk_fn zk_fn_c(zk_fn f);
+/** A duplicate of a function value: a closure gets a record of its own. */
+zk_fn zk_fn_dup(zk_fn f);
+/** A function value lent to a call: a closure gets the mark of a loan. */
+zk_fn zk_fn_lend(zk_fn f);
 
 /* ---- lists and text ---- */
 
@@ -310,6 +348,8 @@ size_t zk_seq_len(const unsigned char *at);
 char *zk_text_cstr(const unsigned char *at);
 /** Free a duplicate zk_text_cstr made. */
 void zk_text_cstr_free(char *dup);
+/** The text result of a C function, or the failure for NULL. */
+void zk_text_from_c(unsigned char *out, size_t size, size_t ok_at, const char *s);
 /** Write the three words of a plain list or text. */
 void zk_seq_put(unsigned char *at, unsigned char *base, size_t len, size_t room);
 /** Write static text into a slot: its octets and a room of 0. */

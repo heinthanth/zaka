@@ -41,6 +41,7 @@ program:
                 span:
                   lo: 168
                   hi: 205
+            moves: false
             exported: false
             span:
               lo: 117
@@ -70,6 +71,7 @@ program:
                 span:
                   lo: 282
                   hi: 317
+            moves: false
             exported: false
             span:
               lo: 234
@@ -122,6 +124,7 @@ program:
                 span:
                   lo: 512
                   hi: 573
+            moves: false
             exported: false
             span:
               lo: 346
@@ -156,6 +159,7 @@ program:
                 span:
                   lo: 792
                   hi: 830
+            moves: false
             exported: false
             span:
               lo: 602
@@ -187,6 +191,7 @@ program:
                 span:
                   lo: 992
                   hi: 997
+            moves: false
             exported: false
             span:
               lo: 859
@@ -223,6 +228,7 @@ program:
                 span:
                   lo: 1049
                   hi: 1067
+            moves: false
             span:
               lo: 1026
               hi: 1093
@@ -259,6 +265,7 @@ program:
                 span:
                   lo: 1117
                   hi: 1193
+            moves: false
             span:
               lo: 1094
               hi: 1219
@@ -425,6 +432,7 @@ program:
                     span:
                       lo: 1921
                       hi: 1925
+                moves: false
                 exported: false
                 span:
                   lo: 1759
@@ -494,6 +502,7 @@ program:
                         span:
                           lo: 2287
                           hi: 2302
+                    moves: false
                     span:
                       lo: 2258
                       hi: 2328
@@ -632,6 +641,8 @@ program:
       external: false
       lib: null
       variadic: false
+      owned_ret: false
+      captures: []
       span:
         lo: 0
         hi: 2789

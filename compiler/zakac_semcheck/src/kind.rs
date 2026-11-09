@@ -30,6 +30,9 @@ use crate::structs::parse_sig;
 /// name starts with `%`.
 pub const FALLIBLE: &str = "%fallible";
 
+/// The name of the struct kind of a closure record.
+pub const CLOSURE: &str = "%closure";
+
 /// Bit counts an integer kind can have.
 const INT_BITS: &[u16] = &[8, 16, 32, 64, 128];
 /// Bit counts a floating-point kind can have.
@@ -589,9 +592,11 @@ impl DataKind
     /// `true` for `စာသား`.
     pub fn is_text(self) -> bool { matches!(self, DataKind::Seq(s) if s.text) }
 
-    /// Whether a value of the kind holds owned text or a plain list, which
-    /// can own a heap block that its place frees as it ends: the text or
-    /// the list itself, or a counted list or a struct with one inside.
+    /// Whether a value of the kind holds owned text, a plain list or a
+    /// function value, which can own a heap block that its place frees as
+    /// it ends: the text, the list or the closure record itself, or a
+    /// counted list or a struct with one inside. A duplicate copies each such
+    /// block.
     ///
     /// # Returns
     ///
@@ -601,7 +606,21 @@ impl DataKind
         ret_if!(let Some(e) = self.as_enum(), e.under().holds_text());
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_text());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_text()));
-        self.is_text() || self.is_seq()
+        self.is_text() || self.is_seq() || self.is_fn()
+    }
+
+    /// Whether a value of the kind holds a function value, which can be a
+    /// closure with a record on the heap: the value itself, or a counted
+    /// list or a struct with one inside.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn holds_fn(self) -> bool
+    {
+        ret_if!(let Some(l) = self.as_list(), l.cell.holds_fn());
+        ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_fn()));
+        self.is_fn()
     }
 
     /// Whether a value of the kind holds a plain list: the list itself, or a
@@ -824,6 +843,30 @@ impl DataKind
         let sig = format!("{FALLIBLE}{{tag:u8{ok}{err}}}");
         let shape = parse_sig(&sig);
         DataKind::Struct(shape.expect("the signature of a fallible result reads back"))
+    }
+
+    /// The kind of the record of a closure: a struct of the code word, an
+    /// info word that a native build points at the kind of the record, then
+    /// one field for each capture, in the order of the list. Its name starts
+    /// with `%`, which no written name can.
+    ///
+    /// # Arguments
+    ///
+    /// * `fields` - The kind of each capture field.
+    ///
+    /// # Returns
+    ///
+    /// The struct kind.
+    pub fn closure_record(fields: &[DataKind]) -> DataKind
+    {
+        let each = fields.iter().enumerate();
+        let fields: String =
+            each.map(|(i, k)| format!(",c{i}:{}", k.spell_inner(true))).collect();
+        let code = DataKind::Ptr(PtrKind::owner(1, Base::Opaque).with_outer_raw());
+        let word = code.spell_inner(true);
+        let sig = format!("{CLOSURE}{{code:{word},info:{word}{fields}}}");
+        let shape = parse_sig(&sig);
+        DataKind::Struct(shape.expect("the signature of a closure record reads back"))
     }
 
     /// The name of a result of a function that can fail, for a message:

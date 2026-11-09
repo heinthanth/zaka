@@ -272,6 +272,7 @@ program:
                 span:
                   lo: 1886
                   hi: 1932
+            moves: false
             exported: false
             span:
               lo: 1753
@@ -285,6 +286,8 @@ program:
       external: false
       lib: null
       variadic: false
+      owned_ret: false
+      captures: []
       span:
         lo: 1636
         hi: 2031

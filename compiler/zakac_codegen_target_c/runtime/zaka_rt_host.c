@@ -48,6 +48,28 @@ static void zk_text_put(unsigned char *at, const void *s, size_t len)
 }
 
 /**
+ * The result of a C function that gives back text, as Zaka holds a result
+ * of text or a failure: NULL is the failure; else the zero-ended octets are
+ * copied into text of its own, and C keeps what it gave. The tag sits at
+ * offset 0.
+ *
+ * @param out The result: `size` octets.
+ * @param size The size of the result.
+ * @param ok_at The offset of the text in it.
+ * @param s What C gave back.
+ */
+void zk_text_from_c(unsigned char *out, size_t size, size_t ok_at, const char *s)
+{
+    memset(out, 0, size);
+    RET_IF(!s);
+    size_t len = strlen(s);
+    const unsigned char *raw = (const unsigned char *)s;
+    DO_IF(!zk_is_utf8(raw, len), zk_addr_trap(ZK_TRAP_BAD_UTF8, s));
+    out[0] = 1;
+    zk_text_put(out + ok_at, s, len);
+}
+
+/**
  * Write a good result.
  *
  * @param slot The result.

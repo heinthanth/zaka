@@ -593,20 +593,42 @@ impl FnGen<'_, '_>
         do_if!(let Callee::Value(c) = callee, exprs.push(c));
         exprs.extend(args.iter());
         let mut texts = self.operands(&exprs);
-        let head = match callee
+        let value = match callee
         {
-            Callee::Fn(n) => func_name(n),
-            Callee::Value(c) =>
-            {
-                let f = texts.remove(0);
-                let shape = c.kind.as_fn().map(|k| self.shared.fn_pointer(k));
-                let shape =
-                    shape.unwrap_or_else(|| self.shared.missing("a call of a value"));
-                format!("(({shape})zk_fn_check({f}))")
-            }
+            Callee::Fn(_) => None,
+            Callee::Value(c) => Some((c, texts.remove(0))),
         };
         do_if!(let Some(slot) = into, texts.insert(0, slot.to_string()));
-        format!("{head}({})", texts.join(", "))
+        let Some((c, f)) = value
+        else
+        {
+            let Callee::Fn(n) = callee
+            else
+            {
+                return self.shared.missing("a call");
+            };
+            return format!("{}({})", func_name(n), texts.join(", "));
+        };
+        // The value is read once; a closure runs its thunk, which takes the
+        // record last.
+        let f = self.spill(c.kind, format!("zk_fn_check({f})"));
+        let kind = c.kind.as_fn();
+        let shapes = kind.map(|k| {
+            (self.shared.fn_pointer(k, false), self.shared.fn_pointer(k, true))
+        });
+        let Some((plain, bound)) = shapes
+        else
+        {
+            return self.shared.missing("a call of a value");
+        };
+        let args = texts.join(", ");
+        let with_record = texts.into_iter().chain([format!("zk_fn_rec({f})")]);
+        let with_record: Vec<String> = with_record.collect();
+        format!(
+            "(zk_fn_bound({f}) ? (({bound})zk_fn_code({f}))({}) : \
+             (({plain})zk_fn_code({f}))({args}))",
+            with_record.join(", ")
+        )
     }
 
     /// The result kind of what a call runs.
@@ -640,6 +662,16 @@ impl FnGen<'_, '_>
     fn call_stmt(&mut self, callee: Callee<'_>, args: &[Expr])
     {
         let ret = self.ret_of(callee);
+        // A function value given back and left unused is dropped, so a
+        // closure frees its record.
+        if let Some(kind) = ret.filter(|k| k.is_fn())
+        {
+            let call = self.call_text(callee, args, None);
+            let slot = self.temp(kind);
+            let k = self.shared.descr.of(kind);
+            self.line(&format!("{slot} = {call};"));
+            return self.line(&format!("zk_drop((unsigned char *)&{slot}, {k});"));
+        }
         let Some(kind) = ret.filter(|k| is_blob(*k))
         else
         {

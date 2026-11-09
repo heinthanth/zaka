@@ -163,10 +163,12 @@ impl Descriptors
         let tag = tag(kind);
         let size = kind.size(platform);
         let text = u8::from(kind.holds_text());
+        let borrow = u8::from(kind.holds_borrow());
+        let owns = u8::from(kind.holds_owner_ptr());
         let _ = writeln!(
             out,
             "const zk_kind zk_k{n} = {{{tag}, {size}, {cell}, {len}, {fields}, \
-             {members}, {name}, {text}}};"
+             {members}, {name}, {text}, {borrow}, {owns}}};"
         );
         out
     }

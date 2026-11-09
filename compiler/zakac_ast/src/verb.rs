@@ -163,6 +163,13 @@ pub enum VerbOp
     /// `ထည့်ပါ`: a new last cell of a list.
     #[strum(serialize = "add_cell")]
     AddCell,
+    /// `ကူးထည့်မည်`: a duplicate of a value goes into a variable.
+    #[strum(serialize = "dup_into")]
+    DupInto,
+    /// `ပြောင်းထည့်မည်`: a value moves into a variable, which leaves the
+    /// source blank.
+    #[strum(serialize = "move_into")]
+    MoveInto,
     /// `အစားထိုးပါ`: a range of text gives its place to a value.
     #[strum(serialize = "replace")]
     Replace,
@@ -258,6 +265,8 @@ pub static VERBS: &[Verb] = &[
     row(Kw::GoodResult, VerbOp::IsGood, &[Slot::Thi], false, false),
     row(Kw::Fault, VerbOp::IsFault, &[Slot::Thi], false, false),
     row(Kw::Add, VerbOp::AddCell, &[Slot::Into, Slot::Ko], true, false),
+    row(Kw::WillDupIn, VerbOp::DupInto, &[Slot::Into, Slot::Ko], true, false),
+    row(Kw::WillShift, VerbOp::MoveInto, &[Slot::Into, Slot::Ko], true, false),
     row(Kw::Replace, VerbOp::Replace, &[Slot::Upto, Slot::Hpjint], true, false),
     row(Kw::Address, VerbOp::AddrOf, &[Slot::Ei], false, false),
     row(Kw::Value, VerbOp::Deref, &[Slot::Ei], false, false),

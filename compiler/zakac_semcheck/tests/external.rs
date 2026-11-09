@@ -105,7 +105,8 @@ fn other_values_have_their_rules()
     assert_eq!(codes_as_is(&printing("", none)), [Code::ArgCountMismatch]);
     let pair = "ဒေတာအမျိုးအစား စုံ တွင် ကိန်းပြည့် က တို့ ပါဝင်သည်။";
     let call = "ကိန်းရှင် တ သည် စုံ တစ်ခု ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် printf ကို \"%d\"၊ တ တို့ဖြင့် လုပ်ဆောင်ပါ။";
-    assert_eq!(codes_as_is(&printing(pair, call)), [Code::KindNotAcrossC]);
+    // C reads a struct through `...` as it reads a struct parameter.
+    assert_eq!(codes_as_is(&printing(pair, call)), []);
     let host =
         "လုပ်ဆောင်ချက် ရေး သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား စ နှင့် အခြားတန်ဖိုးများ ကို လက်ခံမည်။";
     assert_eq!(codes_as_is(&program(host)), [Code::UnknownHostFn]);

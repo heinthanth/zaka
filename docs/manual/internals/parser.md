@@ -333,7 +333,25 @@ is read as each operand is, and a range before another verb is ZK0206.
 Blocks and branches share `parse_branch`: with no opener, it reads one sentence into a
 `BlockStmt { single: true }`. Inside an arm of a conditional that sentence cannot itself
 start with `အကယ်၍` (ZK0215). The parser counts the blocks around a statement in `depth`,
-which is how a function declared inside a block is reported (ZK0214) and still parsed.
+which is how a start block, an external function or a C function declared inside a block
+is reported (`parse_fn_decl`, `parse_external`: ZK0214) and still parsed. A function with
+statements inside a block parses as at the top level, a `Stmt::Fn` among the statements of
+the block; semcheck declares it in its scope.
+
+When the header sentence holds `လည်းကောင်း` (`Kw::AsWellAs`), `parse_params` reads a listed
+clause (`parse_listed_params`): items split with `၊` or with nothing, each ending in `ကို`, an
+optional `အပိုင်အနေဖြင့်` (`Kw::AsOwned`) or `ငှား၍` (`Kw::Lending`), and `လည်းကောင်း`,
+then `လက်ခံပြီး`. An item that starts with a kind or with the edit mark is a parameter; a
+bare name is a capture, a `CaptureItem { name, mode }` in `FnDecl::captures`, with the mode
+`Dup`, `Move` or `Lend` from the word before `လည်းကောင်း`. The s-expression writes the
+captures after the parameters: `(fn name [params] [dup a, move b, lend c] ret block)`.
+
+`ကူးထည့်မည်` (`Kw::WillDupIn`) and `ပြောင်းထည့်မည်` (`Kw::WillShift`) are statement verbs of
+the valence table with the slots `ထဲသို့` and `ကို`, as `ထည့်ပါ` is (`VerbOp::DupInto`,
+`VerbOp::MoveInto`): `x ထဲသို့ v ကို ကူးထည့်မည်` is an `AssignStmt`, and the move sets
+`AssignStmt::moves`. After `ကိန်းရှင်` or `ကိန်းသေ`, a name with `ထဲသို့` after it sends
+`parse_decl_or_loop` back to the name, reads the sentence as that assignment, and makes a
+`DeclStmt` with the value as its start and no written kind (`parse_decl_into`).
 
 The pass-on forms of a call set `CallExpr::pass`: the word form ends in `ရလဒ်ကောင်း`
 (`CallGoodResult`), and the sign form takes a `?` that touches the `)`. The statement

@@ -342,7 +342,8 @@ fn global_of(place: Place) -> Option<u32>
     tern!(let Place::Global(g) = place, Some(g), None)
 }
 
-/// Add each slot an expression reads, with the span of the read.
+/// Add each slot an expression reads, with the span of the read. A move
+/// out of a slot reads it too, so a use before the move is no last use.
 ///
 /// # Arguments
 ///
@@ -350,10 +351,15 @@ fn global_of(place: Place) -> Option<u32>
 /// * `out` - The reads so far.
 pub(crate) fn reads(e: &Expr, out: &mut Vec<(Place, Span)>)
 {
-    each_expr(
-        e,
-        &mut |sub| do_if!(let ExprNode::Read(place) = sub.node, out.push((place, sub.span))),
-    );
+    each_expr(e, &mut |sub| match &sub.node
+    {
+        ExprNode::Read(place) => out.push((*place, sub.span)),
+        ExprNode::Take { addr } =>
+        {
+            do_if!(let ExprNode::AddrOf(place) = addr.node, out.push((place, sub.span)));
+        }
+        _ => (),
+    });
 }
 
 #[cfg(test)]

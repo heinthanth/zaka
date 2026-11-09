@@ -42,6 +42,8 @@ shows. Without it, the compiler would refuse numerous programs of this page.
 | overflow | an integer result does not fit its kind; not with `--overflow wrap` | `the result of OP does not fit K` |
 | index out of range | a cell number is outside its list or slice | `cell N is outside the list, whose cells run from A to B` |
 | null call | a call goes through a [function value](../language/function-values.md#no-function) that holds `ဗလာ` | `the function value is ဗလာ, so it holds no function to call` |
+| closure escape | a function value that borrows locals goes where it would outlive them: into a global, a field or a cell, or back as a result; or a closure goes to C | `the function value borrows the locals around its function, so it cannot go where it outlives them` |
+| closure owner | a closure whose record owns a block is duplicated | `the closure owns a block, so it cannot be duplicated: move it, or lend it to a call` |
 | no cell to remove | a remove of the last cell finds a list with no cells | `the list holds no cells, so it has no last cell to remove` |
 | no character to remove | a remove of the last character finds text with no characters | `the text holds no characters, so it has no last character to remove` |
 | end before start | a replace names a range whose last cell or character comes before its first | `the range from A to B ends before it starts` |
@@ -211,6 +213,79 @@ followed, so the VM is the check there:
 ```text
 အစ
 the program stopped: the function value is ဗလာ, so it holds no function to call
+```
+
+### A closure that leaves its locals
+
+The address of a [nested function](../language/function-values.md#nested-functions-and-closures)
+that borrows locals, with `ငှား၍` in its capture list, is a closure that borrows, which is
+good while those locals live. The compiler refuses the places it can see (ZK0722). A
+parameter that a function stores in a global, a field or a cell, or gives back, goes
+through the op `fn_plain`, which stops the program when the value is a closure that
+borrows. A function value that goes to C stops the program when it is a closure of each
+sort, since C calls a bare code address:
+
+```zaka-stop
+// a global that keeps a function value
+ကိန်းရှင် သိမ်း သည် (ကိန်းပြည့် ကို လက်ခံပြီး ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ဖြစ်ပါစေ။
+
+လုပ်ဆောင်ချက် မှတ်ထား သည်
+(ကိန်းပြည့် ကို လက်ခံပြီး ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) ဖ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+သိမ်း ကို ဖ ဟု ထားပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် နှစ်ဆ သည် ကိန်းပြည့် က ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က * ၂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် မှတ်ထား ကို လုပ်ဆောင်ချက် နှစ်ဆ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
+"ပုံမှန် လုပ်ဆောင်ချက် ရ" ဟု ပြသပါ။
+ကိန်းရှင် ထပ် သည် ၁ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ထည့် သည် ကိန်းပြည့် က ကိုလည်းကောင်း၊ ထပ် ကို ငှား၍လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
+က + ထပ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် မှတ်ထား ကို လုပ်ဆောင်ချက် ထည့် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
+"မရောက်" ဟု ပြသပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ပုံမှန် လုပ်ဆောင်ချက် ရ
+the program stopped: the function value borrows the locals around its function, so it cannot go where it outlives them
+```
+
+### A closure that owns a block, duplicated
+
+A closure that takes an owner with `အပိုင်အနေဖြင့်` frees the block with its record, so it
+moves but is never duplicated. The compiler refuses the duplicates it can see (ZK0724). A
+parameter that the function puts into a variable goes through `dup_seqs`, which stops the
+program when the value is such a closure:
+
+```zaka-stop
+လုပ်ဆောင်ချက် ခေါ် သည် (လုပ်ဆောင်ချက် အမျိုးအစား) ဖ ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပွား ထဲသို့ ဖ ကို ကူးထည့်မည်။
+လုပ်ဆောင်ချက် ပွား ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+ပ ၏ တန်ဖိုး ကို ၄၂ ဟု ထားပါ။
+လုပ်ဆောင်ချက် ပြ သည် ပ ကို အပိုင်အနေဖြင့်လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပ ၏ တန်ဖိုး ကို ပြသပါ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် ပြ ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ခေါ် ကို လုပ်ဆောင်ချက် ပြ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၄၂
+the program stopped: the closure owns a block, so it cannot be duplicated: move it, or lend it to a call
 ```
 
 ### Outside each block
@@ -627,6 +702,12 @@ other than the host's (`--platform-bits`). The reason follows the colon:
 ```text
 the program stopped: the C functions of the program cannot be reached: the lib "libm" holds no C function nosuchfn
 ```
+
+**A trap inside a callback.** C calls a [callback](../language/functions.md#c-functions)
+in the middle of its own call, and the VM cannot unwind C. A trap in the callback
+is kept: C gets 0 from that callback, each later callback of that call gives 0 without
+running, and the program stops with the kept trap once C returns. What C did in the meantime is
+not undone.
 
 ## What to do with a trap
 

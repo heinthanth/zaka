@@ -48,6 +48,8 @@ pub(crate) fn callees(stmts: &[Stmt], taken: &BTreeSet<u32>, out: &mut BTreeSet<
         do_if!(matches!(s, Stmt::CallValue { .. }), out.extend(taken));
         let mut add = |e: &Expr| {
             out.extend(expr_call_target(e));
+            // A closure can run once a call gets it, so its thunk comes first.
+            do_if!(let ExprNode::Closure { func, .. } = &e.node, { out.insert(*func); });
             do_if!(matches!(e.node, ExprNode::CallValue { .. }), out.extend(taken));
         };
         do_for!(e in stmt_exprs(s), each_expr(e, &mut add));
