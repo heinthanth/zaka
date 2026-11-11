@@ -140,3 +140,22 @@ pub fn blank_raw_identifier(span: Span) -> Diagnostic
 {
     Diagnostic::new(Code::BlankRawIdentifier, t!("codes.ZK0109.message"), span)
 }
+
+/// A statement verb ends in `ပါ`, the spelling statements had before the
+/// verbs ended in `မည်`.
+///
+/// # Arguments
+///
+/// * `span` - The verb.
+/// * `old` - The verb as written.
+/// * `new` - The verb with the `မည်` ending.
+///
+/// # Returns
+///
+/// The `ZK0110` diagnostic, with the new spelling as its help.
+pub fn old_ending(span: Span, old: &str, new: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0110.message", old = old);
+    let diag = Diagnostic::new(Code::OldEnding, msg, span);
+    diag.with_help(t!("lexer.help_new_ending", new = new))
+}

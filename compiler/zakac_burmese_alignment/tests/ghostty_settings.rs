@@ -16,7 +16,7 @@ fn a_flowing_build_lists_its_setting()
 }
 
 #[test]
-fn the_legacy_width_method_counts_code_points()
+fn the_old_width_method_counts_code_points()
 {
     assert!(!read_settings("grapheme-width-method = legacy\n").clusters);
     assert!(read_settings("grapheme-width-method = unicode\n").clusters);

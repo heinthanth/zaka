@@ -15,6 +15,7 @@ use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::value::Value;
 use zakac_semcheck::value::compare;
 
+use crate::callbacks::shape_name;
 use crate::emit::FnGen;
 use crate::emit::c_string;
 use crate::emit::func_name;
@@ -96,6 +97,11 @@ impl FnGen<'_, '_>
             Stmt::Alloc { dest, count, unit, .. } => self.alloc(dest, count, *unit),
             Stmt::Resize { dest, count, unit, .. } => self.resize(dest, count, *unit),
             Stmt::Free { dest, .. } => self.free(dest),
+            Stmt::Leave { value, grant, .. } => self.leave(value, *grant),
+            Stmt::CStore { base, offset, value, .. } =>
+            {
+                self.c_store(base, *offset, value)
+            }
             Stmt::Blit { src, dst, count, unit, overlap, .. } =>
             {
                 let stride = self.unit_size(*unit);
@@ -346,6 +352,12 @@ impl FnGen<'_, '_>
     fn halt(&mut self, cause: HaltCause, value: Option<&Expr>)
     {
         ret_if!(cause == HaltCause::NotFault, self.line("zk_not_fault();"));
+        ret_if!(cause == HaltCause::NoData, self.line("zk_no_data();"));
+        ret_if!(cause == HaltCause::ClosedHandle, self.line("zk_closed_handle();"));
+        ret_if!(
+            cause == HaltCause::NullFromC,
+            self.line("zk_plain_trap(ZK_TRAP_NULL_TEXT);")
+        );
         let Some(e) = value
         else
         {
@@ -555,6 +567,50 @@ impl FnGen<'_, '_>
         let (read, write, close) = self.pointer_at(dest);
         self.line(&format!("free({read});"));
         self.line(&format!("{write}NULL{close}"));
+    }
+
+    /// Generate a write of a field of a struct C keeps, with `memcpy`, since
+    /// its address lies outside the blocks the runtime knows.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The address of the C struct.
+    /// * `offset` - The offset of the field.
+    /// * `value` - The value.
+    fn c_store(&mut self, base: &Expr, offset: u32, value: &Expr)
+    {
+        let v = self.operands(&[base, value]);
+        let at = self.addressed(&v[1], value.kind);
+        let size = self.shared.size(value.kind);
+        self.line(&format!(
+            "memcpy((unsigned char *)({}) + {offset}, {at}, {size});",
+            v[0]
+        ));
+    }
+
+    /// Generate a leave for C to call a function value, or its end.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The function value.
+    /// * `grant` - `true` to give the leave, `false` to take it back.
+    fn leave(&mut self, value: &Expr, grant: bool)
+    {
+        let v = self.operands(&[value]).remove(0);
+        let Some(n) = self.shared.cb_shape(value.kind)
+        else
+        {
+            let what = "a leave for C of a function that takes or gives a value C \
+                        cannot pass to a callback";
+            self.shared.missing(what);
+            return;
+        };
+        let line = tern!(
+            grant,
+            format!("zk_cb_leave({v}, &{});", shape_name(n)),
+            format!("zk_cb_revoke({v});")
+        );
+        self.line(&line);
     }
 
     /// Generate a fill: one value in each cell.

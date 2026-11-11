@@ -14,7 +14,7 @@ after it.
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။ // make a number named အသက် (age)
-အသက် ကို ပြသပါ။                          // space between အသက် and ကို
+အသက် ကို ပြသမည်။                          // space between အသက် and ကို
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -27,11 +27,11 @@ compiler complains, and it suggests the fix:
 
 ```zaka-error ZK0206
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-အသက်ကို ပြသပါ။
+အသက်ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0206]: "ပြသပါ" needs "ကို|ဟု" after operand 1, found no particle
+error[ZK0206]: "ပြသမည်" needs "ကို|ဟု" after operand 1, found no particle
 help: write "အသက် ကို" with a space: a name joined to a particle is read as one word
 ```
 
@@ -40,15 +40,15 @@ help: write "အသက် ကို" with a space: a name joined to a particle i
 - **Between Zaka's own words.** The compiler splits a run made of reserved words alone.
   `ထက်ကြီးသည်` is `ထက်` + `ကြီး` + `သည်`.
 - **Around signs.** `။`, `၊`, `၏`, `(`, `)`, quotes, and maths signs such as `+` and
-  `<` are words on their own in all cases. `၁+၂`, `ပြသပါ။` and `၏ပေါင်းလဒ်` are fine.
+  `<` are words on their own in all cases. `၁+၂`, `ပြသမည်။` and `၏ပေါင်းလဒ်` are fine.
 - **How much space.** One space, several spaces, a tab, or a line break all count the
   same.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသပါ။      // reserved words joined
-၁+၂ ကို ပြသပါ။                     // no spaces around +
-၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသပါ။      // ၏ needs no space
+၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသမည်။      // reserved words joined
+၁+၂ ကို ပြသမည်။                     // no spaces around +
+၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသမည်။      // ၏ needs no space
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

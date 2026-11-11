@@ -5,6 +5,7 @@ use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::EnumDecl;
+use zakac_ast::stmt::EnumMember;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Node;
@@ -135,22 +136,44 @@ fn enum_kind(
     decl: &EnumDecl, known: &KnownEnums, diags: &mut Vec<Diagnostic>,
 ) -> &'static EnumKind
 {
-    let names: Vec<String> = distinct_members(decl, Some(diags))
-        .iter()
-        .map(|(_, n)| n.name.to_string())
-        .collect();
+    let kept = distinct_members(decl, Some(diags));
+    let initial = initial_member(decl, &kept, diags);
+    let names: Vec<String> = kept.iter().map(|(_, n)| n.name.to_string()).collect();
     let found = known.get(&decl.name.name).filter(|(_, v)| v.len() == names.len());
     if let Some((under, values)) = found
     {
-        return make(
-            &decl.name.name,
-            *under,
-            names.into_iter().zip(values.clone()).collect(),
-        );
+        let members = names.into_iter().zip(values.clone()).collect();
+        return make(&decl.name.name, *under, members, initial);
     }
     let numbered =
         (0..names.len()).map(|i| MemberValue::Scalar(isize_value(i as i128)));
-    make(&decl.name.name, DataKind::ISIZE, names.into_iter().zip(numbered).collect())
+    let members = names.into_iter().zip(numbered).collect();
+    make(&decl.name.name, DataKind::ISIZE, members, initial)
+}
+
+/// The member marked `ကနဦးတန်ဖိုး`, the initial value of the enumeration. A
+/// second mark is reported.
+///
+/// # Arguments
+///
+/// * `decl` - The declaration.
+/// * `kept` - The members kept, each with its position in the declaration.
+/// * `diags` - Where to report.
+///
+/// # Returns
+///
+/// The position of the marked member among those kept, or `None`.
+fn initial_member(
+    decl: &EnumDecl, kept: &[(usize, &Ident)], diags: &mut Vec<Diagnostic>,
+) -> Option<usize>
+{
+    let mut marked = decl.members.iter().filter(|m| m.initial);
+    let first = marked.next()?;
+    let owner = decl.name.name.as_str();
+    let twice =
+        |m: &EnumMember| kd::two_initial_members(m.span, owner, &first.name.name);
+    diags.extend(marked.map(twice));
+    kept.iter().position(|(at, _)| decl.members[*at].initial)
 }
 
 /// An `isize` value.

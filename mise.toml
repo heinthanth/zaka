@@ -1,5 +1,6 @@
 [[tools.rust]]
 version = "stable"
+targets = ["wasm32-unknown-unknown"]
 
 [[tools.rust]]
 version = "nightly"
@@ -7,74 +8,52 @@ components = ["rustfmt"]
 
 [tools]
 age = "latest"
+bun = "latest"
+cargo-binstall = "latest"
 clang-format = "23"
 "cargo:cargo-nextest" = "latest"
 "cargo:cargo-llvm-cov" = "latest"
-"cargo:cargo-leptos" = "latest"
+"cargo:cargo-leptos" = "0.3.11"
+"cargo:trunk" = "0.22.0"
 "cargo:wasm-pack" = "latest"
+
+[settings]
+env_shell_expand = true
 
 [env]
 _.file = ".env"
+LEPTOS_SITE_ADDR = '${LEPTOS_SITE_ADDR:-127.0.0.1:8000}'
+LEPTOS_RELOAD_PORT = '${LEPTOS_RELOAD_PORT:-8001}'
+ZAKA_SITE_ORIGIN = '${ZAKA_SITE_ORIGIN:-http://localhost:8000}'
+CARGO_TERM_COLOR = '${CARGO_TERM_COLOR:-always}'
 
 [tasks.format]
 depends = ["format:rust", "format:c"]
 description = "Format the Rust code with rustfmt and the C runtime with clang-format"
 
-[tasks."format:c"]
-run = "clang-format -i compiler/*/runtime/*.c compiler/*/runtime/*.h"
-description = "Format the C code with clang-format"
-
 [tasks."format:rust"]
 run = "cargo +nightly fmt"
 description = "Format the Rust code with rustfmt"
 
+[tasks."format:c"]
+run = "clang-format -i compiler/*/runtime/*.c compiler/*/runtime/*.h"
+shell = "bun exec"
+description = "Format the C code with clang-format"
+
+# Test
+
 [tasks.test]
 run = "cargo nextest run --workspace"
-description = "Run tests"
+description = "Run the tests"
 
 [tasks."test:benches"]
 run = "cargo nextest run --workspace --benches"
-description = "Run benchmark code as tests"
+description = "Run the benchmark code as tests"
+
+[tasks."test:coverage"]
+run = "cargo +nightly llvm-cov --workspace"
+description = "Run the tests and report their coverage"
 
 [tasks.bench]
 run = "cargo bench"
-description = "Run benchmarks"
-
-[tasks.coverage]
-run = "cargo +nightly llvm-cov --workspace"
-description = "Generate coverage report"
-
-[tasks."font:fetch"]
-run = "trunk build --release"
-dir = "website/zaka_web_ui_common/fonts"
-description = "Fetch the shared web fonts from npm into target/fonts"
-
-[tasks."explorer:serve"]
-depends = ["font:fetch"]
-run = "trunk serve --cargo-profile web-dev"
-dir = "website/zaka_explorer"
-description = "Serve the compiler explorer with live reload"
-
-[tasks."explorer:build"]
-depends = ["font:fetch"]
-run = "trunk build --release --cargo-profile wasm-release"
-dir = "website/zaka_explorer"
-description = "Build the compiler explorer"
-
-[tasks."check:wasm"]
-run = "cargo check -p zaka_explorer --features csr --target wasm32-unknown-unknown"
-description = "Check the compiler explorer for the wasm target"
-
-[tasks."font:secret"]
-run = "age-keygen"
-description = "Print a new age secret for ZAKA_PDA_FONT_SECRET"
-
-[tasks."website:vendor"]
-run = "trunk build --release"
-dir = "website/zaka_website/vendor"
-description = "Fetch the motion libraries of the website from npm into target/vendor"
-
-[tasks."website:serve"]
-depends = ["website:vendor", "font:fetch"]
-run = "LEPTOS_HASH_FILES=false cargo leptos watch --project zaka_website --split"
-description = "Serve the website with live reload, the explorer page with it"
+description = "Run the benchmarks"

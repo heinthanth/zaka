@@ -116,7 +116,8 @@ pub fn is_known(e: &Expr) -> bool
 }
 
 /// Whether a value is a plain list made from a list literal of known cells,
-/// which can sit in static storage.
+/// which can sit in static storage. A box, of an object or of a shared
+/// variable, is written through, so it never does.
 ///
 /// # Arguments
 ///
@@ -129,7 +130,8 @@ pub fn is_known(e: &Expr) -> bool
 fn static_list(e: &Expr, operand: &Expr) -> bool
 {
     let literal = matches!(operand.node, ExprNode::List(_));
-    e.kind.is_seq() && operand.kind.is_list() && literal && is_known(operand)
+    let plain = e.kind.is_seq() && !e.kind.is_box();
+    plain && operand.kind.is_list() && literal && is_known(operand)
 }
 
 /// The cells or the fields of a known list or struct value: a literal, or a
@@ -339,6 +341,12 @@ impl Folder
                     tern!(let PrintValue::Expr(e) = value, e.node.text(), None);
                 do_if!(let Some(text) = folded, *value = PrintValue::Text(text.to_string()));
             }
+            Stmt::Leave { value, .. } => self.drop_value(value),
+            Stmt::CStore { base, value, .. } =>
+            {
+                self.drop_value(base);
+                self.drop_value(value);
+            }
             Stmt::Break { .. } | Stmt::Continue { .. } => (),
             Stmt::Halt { value, .. } => do_if!(let Some(v) = value, _ = self.expr(v)),
             Stmt::If { cond, then, els, .. } =>
@@ -522,9 +530,9 @@ impl Folder
             ExprNode::Lend { operand: addr }
             | ExprNode::Take { addr }
             | ExprNode::Dup { value: addr, .. }
-            | ExprNode::Own { value: addr }
+            | ExprNode::Own { value: addr, .. }
             | ExprNode::Closure { record: addr, .. }
-            | ExprNode::Plain { value: addr }
+            | ExprNode::CField { base: addr, .. }
             | ExprNode::FieldAddr { base: addr, .. } =>
             {
                 self.drop_value(addr);
@@ -571,7 +579,7 @@ impl Folder
                 let count = tern!(let SliceFrom::List(c) = from, Some(*c), None);
                 let fits = count.and_then(|c| self.range_in_list(lo, n, c, e.span));
                 *checked = *checked || fits == Some(true);
-                do_if!(e.kind.is_text_view(), self.text_edges(source, lo, n, e.span));
+                do_if!(e.kind.is_text(), self.text_edges(source, lo, n, e.span));
                 (None, None)
             }
         };

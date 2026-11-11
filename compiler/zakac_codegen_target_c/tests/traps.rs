@@ -33,13 +33,21 @@ fn stops_with(path: &Path, printed: &str, trap: &str)
     assert!(run.stderr.ends_with(&line), "stderr: {}", run.stderr);
 }
 
-/// A division by zero stops the program, as in the VM.
+/// A zero divisor stops the program, as in the VM.
 #[test]
 fn a_zero_divisor_stops_the_program()
 {
     let path = samples().join("mistakes/zero_divide.zaka");
     let trap = "integer division or remainder with zero as divisor";
     stops_with(&path, "စားမည်\n", trap);
+}
+
+/// A read of the data of an empty optional stops the program, as in the VM.
+#[test]
+fn an_empty_optional_read_stops_the_program()
+{
+    let path = root().join("tests/inputs/empty_optional.zaka");
+    stops_with(&path, "၇\n", "the optional holds no data");
 }
 
 /// An overflow stops the program under `--overflow stop`, as in the VM.

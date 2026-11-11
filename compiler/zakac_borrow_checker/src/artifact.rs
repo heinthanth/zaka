@@ -46,7 +46,7 @@ pub const RAW_PHASE: &str = "borrow_check";
 /// The schema version of the artifact.
 pub const ARTIFACT_VERSION: u32 = 1;
 
-/// The output of the phases up to the ownership check, with absolute spans.
+/// The output of the phases up to the checker, with absolute spans.
 #[derive(Debug, Clone, PartialEq, Builder)]
 pub struct Borrowchecked
 {
@@ -63,7 +63,7 @@ pub struct Borrowchecked
 }
 
 /// Lex, parse, check, lower, fold and borrow check a source file. The
-/// ownership check is left out when an earlier phase reports an error.
+/// checker is left out when an earlier phase reports an error.
 ///
 /// # Arguments
 ///
@@ -72,7 +72,7 @@ pub struct Borrowchecked
 /// * `options` - The check options; their platform width also drives the later
 ///   phases.
 /// * `folding` - Which foldings rewrite the module.
-/// * `mem` - How the ownership check reports.
+/// * `mem` - How the checker reports.
 ///
 /// # Returns
 ///
@@ -86,7 +86,7 @@ pub fn run_phases(
 }
 
 /// Check, lower, fold and borrow check a program read with its imports. The
-/// ownership check is left out when an earlier phase reports an error.
+/// checker is left out when an earlier phase reports an error.
 ///
 /// # Arguments
 ///
@@ -94,7 +94,7 @@ pub fn run_phases(
 /// * `options` - The check options; their platform width also drives the later
 ///   phases.
 /// * `folding` - Which foldings rewrite the module.
-/// * `mem` - How the ownership check reports.
+/// * `mem` - How the checker reports.
 ///
 /// # Returns
 ///
@@ -120,7 +120,7 @@ pub fn run_loaded(
         .build();
 }
 
-/// Reloadable output of the ownership check: the folded module and the
+/// Reloadable output of the checker: the folded module and the
 /// digests. Spans are relative to the file start.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct BorrowCheckArtifact
@@ -151,7 +151,7 @@ impl BorrowCheckArtifact
     /// * `lexer` - The lexer options.
     /// * `options` - The check options.
     /// * `folding` - Which foldings rewrite the module.
-    /// * `mem` - How the ownership check reports.
+    /// * `mem` - How the checker reports.
     ///
     /// # Returns
     ///
@@ -241,7 +241,7 @@ fn do_map(module: Option<&mut Module>, f: &impl Fn(Span) -> Span)
 
 impl PhaseArtifact for BorrowCheckArtifact
 {
-    /// Decode an ownership check artifact from an input.
+    /// Decode an checker artifact from an input.
     ///
     /// # Arguments
     ///
@@ -265,7 +265,7 @@ impl PhaseArtifact for BorrowCheckArtifact
         Ok(artifact)
     }
 
-    /// Encode an ownership check artifact.
+    /// Encode an checker artifact.
     ///
     /// # Arguments
     ///

@@ -32,6 +32,7 @@ use crate::check::Buffers;
 use crate::check::FileCheck;
 use crate::check::check_file;
 use crate::complete::completions;
+use crate::hints::call_hints;
 use crate::hover::hover;
 use crate::names::definition;
 use crate::names::references;
@@ -77,7 +78,7 @@ pub fn serve(connection: &Connection) -> Result<(), ServeError>
             {
                 ret_if!(connection.handle_shutdown(&req)?, Ok(()));
                 refresh(connection, &mut state)?;
-                connection.sender.send(answer_safely(&state, req).into())?;
+                connection.sender.send(answer_guarded(&state, req).into())?;
             }
             Message::Notification(note) => take_note(&mut state, note),
             Message::Response(_) => (),
@@ -106,9 +107,9 @@ fn refresh_when_idle(
     refresh(connection, state)
 }
 
-/// What the server can do: the whole text on each change, hover, colored
-/// tokens, the outline, completions, definitions, references and renames,
-/// with positions in UTF-16 columns.
+/// What the server can do: the whole text on each change, hover, call
+/// hints, colored tokens, the outline, completions, definitions, references
+/// and renames, with positions in UTF-16 columns.
 ///
 /// # Returns
 ///
@@ -119,6 +120,7 @@ fn capabilities() -> serde_json::Value
         "positionEncoding": "utf-16",
         "textDocumentSync": 1,
         "hoverProvider": true,
+        "inlayHintProvider": true,
         "documentSymbolProvider": true,
         "completionProvider": {},
         "definitionProvider": true,
@@ -256,8 +258,9 @@ fn open_paths(docs: &HashMap<Uri, String>) -> HashMap<PathBuf, String>
     docs.iter().filter_map(on_disk).collect()
 }
 
-/// Answer a request: colored tokens, a hover, the outline, completions, a
-/// definition, references or a rename; each other method is refused.
+/// Answer a request: colored tokens, a hover, call hints, the outline,
+/// completions, a definition, references or a rename; each other method is
+/// refused.
 ///
 /// # Arguments
 ///
@@ -282,6 +285,10 @@ fn answer(state: &State, req: Request) -> Response
                 let data = file(&d).map(semantic_tokens).unwrap_or_default();
                 json!(SemanticTokens { result_id: None, data })
             }),
+        "textDocument/inlayHint" =>
+        {
+            doc.map(|d| json!(file(&d).map(call_hints).unwrap_or_default()))
+        }
         "textDocument/documentSymbol" =>
         {
             doc.map(|d| json!(file(&d).map(outline).unwrap_or_default()))
@@ -322,7 +329,10 @@ fn answer(state: &State, req: Request) -> Response
             let edit = found.map(|f| rename(all, f, at.position, &p.new_name));
             match edit
             {
-                Some(Err(why)) => return Response::new_err(id, REQUEST_FAILED, why),
+                Some(Err(reason)) =>
+                {
+                    return Response::new_err(id, REQUEST_FAILED, reason);
+                }
                 edit => Some(json!(edit.and_then(Result::ok))),
             }
         }
@@ -369,7 +379,7 @@ fn invalid(id: RequestId) -> Response
 /// # Returns
 ///
 /// The response.
-fn answer_safely(state: &State, req: Request) -> Response
+fn answer_guarded(state: &State, req: Request) -> Response
 {
     let id = req.id.clone();
     let answered = catch_unwind(AssertUnwindSafe(|| answer(state, req)));

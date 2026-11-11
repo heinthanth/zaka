@@ -1,4 +1,6 @@
 pub mod artifact;
+mod buildable;
+mod captures;
 pub mod cli;
 mod collect;
 pub mod const_op;
@@ -12,6 +14,7 @@ pub mod host;
 mod infer;
 pub mod kind;
 mod list;
+pub mod mark;
 mod ops;
 mod overloads;
 mod place;

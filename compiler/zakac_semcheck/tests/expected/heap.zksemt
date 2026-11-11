@@ -1,7 +1,7 @@
 # zakac-semcheck-artifact v1
 name:
   Custom: heap.zaka
-source: "// လိပ်စာများမှတစ်ဆင့် တန်ဖိုး နှစ်ခုကို လဲလှယ်ခြင်း\nလုပ်ဆောင်ချက် လဲလှယ် သည်\nငှားထားသော ကိန်းပြည့် လိပ်စာ က နှင့် ငှားထားသော ကိန်းပြည့် လိပ်စာ ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ယာယီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုး ဖြစ်ပါစေ။\nက ၏ တန်ဖိုး ကို ခ ၏ တန်ဖိုး ဟု ထားပါ။\nခ ၏ တန်ဖိုး ကို ယာယီ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ပထမ သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\nကိန်းရှင် ဒုတိယ သည် ကိန်းပြည့် ၂ ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် လဲလှယ် ကို ပထမ ၏ လိပ်စာ၊ ဒုတိယ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။\nပထမ ကို ပြသပါ။\nဒုတိယ ကို ပြသပါ။\n\n// လိုသလို ချဲ့နိုင်သော စာရင်း\nကိန်းရှင် ဆံ့နိုင်ရေ သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၄ ဖြစ်ပါစေ။\nကိန်းရှင် အရေအတွက် သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် ဆံ့နိုင်ရေ ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် သိမ်းထားမည်။\nအကယ်၍ ကိန်းများ သည် ဗလာ နှင့် ညီလျှင် \"နေရာ မရပါ\" ဟု ပြသပါ။\n\n၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအကယ်၍ အရေအတွက် သည် ဆံ့နိုင်ရေ နှင့် ညီလျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nဆံ့နိုင်ရေ ကို ဆံ့နိုင်ရေ * ၂ ဟု ထားပါ။\nလိပ်စာ ကိန်းများ ရှိ မင်မိုရီကို ကိန်းပြည့် ဆံ့နိုင်ရေ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nကိန်းများ + အရေအတွက် ၏ တန်ဖိုး ကို ကိန်း * ကိန်း ဟု ထားပါ။\nအရေအတွက် ကို အရေအတွက် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nကိန်းရှင် နံပါတ် သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၀ ဖြစ်ပြီး နံပါတ် သည် အရေအတွက် အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို ပြသပါ။\nပြီးလျှင် နံပါတ် ကို နံပါတ် + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလိပ်စာ ကိန်းများ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n\n// ဘိုက် အကွာအဝေးများဖြင့် ကိုယ်တိုင် ဖွဲ့စည်းသော မှတ်တမ်း\nကိန်းရှင် ပစ္စည်း သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ၈ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို ပစ္စည်း တွင် သိမ်းထားမည်။\nပစ္စည်း ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။\nကိန်းရှင် ဈေးနှုန်း သည် ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nဈေးနှုန်း ကို ပစ္စည်း + ၄ ကို ငှားထားသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။\nဈေးနှုန်း ၏ တန်ဖိုး ကို ၁၅၀၀ ဟု ထားပါ။\nဈေးနှုန်း ၏ တန်ဖိုး ကို ပြသပါ။\nလိပ်စာ ပစ္စည်း ရှိ မင်မိုရီကို ၀ ဖြင့် ၄ ဘိုက်စာ ဖြည့်မည်။\nလိပ်စာ ပစ္စည်း + ၄ ရှိ ၄ ဘိုက်စာ မင်မိုရီကို လိပ်စာ ပစ္စည်း ဆီသို့ ကူးယူမည်။\nလိပ်စာ ပစ္စည်း ရှိ ၄ ဘိုက်စာ မင်မိုရီကို လိပ်စာ ပစ္စည်း + ၂ ဆီသို့ ပြောင်းထည့်မည်။\nလိပ်စာ ပစ္စည်း ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+source: "// လိပ်စာများမှတစ်ဆင့် တန်ဖိုး နှစ်ခုကို လဲလှယ်ခြင်း\nစိတ်မချရသော လုပ်ဆောင်ချက် လဲလှယ် သည်\nက ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို လည်းကောင်း လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ယာယီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုး ဖြစ်ပါစေ။\nက ၏ တန်ဖိုး ကို ခ ၏ တန်ဖိုး ဟု ထားမည်။\nခ ၏ တန်ဖိုး ကို ယာယီ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\nကိန်းရှင် ပထမ သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ဒုတိယ သည် ၂ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် လဲလှယ် ကို ပထမ ၏ လိပ်စာ၊ ဒုတိယ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်မည်။\nပထမ ကို ပြသမည်။\nဒုတိယ ကို ပြသမည်။\n\n// လိုသလို ချဲ့နိုင်သော စာရင်း\nကိန်းရှင် ဆံ့နိုင်ရေ သည် ၄ ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် အရေအတွက် သည် ၀ ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် ဆံ့နိုင်ရေ ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် သိမ်းထားမည်။\nအကယ်၍ ကိန်းများ သည် မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ နှင့် ညီလျှင် \"နေရာ မရပါ\" ဟု ပြသမည်။\n\n၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအကယ်၍ အရေအတွက် သည် ဆံ့နိုင်ရေ နှင့် ညီလျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nဆံ့နိုင်ရေ ကို ဆံ့နိုင်ရေ * ၂ ဟု ထားမည်။\nလိပ်စာ ကိန်းများ ရှိ မင်မိုရီကို ကိန်းပြည့် ဆံ့နိုင်ရေ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nကိန်းများ + အရေအတွက် ၏ တန်ဖိုး ကို ကိန်း * ကိန်း ဟု ထားမည်။\nအရေအတွက် ကို အရေအတွက် + ၁ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nကိန်းရှင် နံပါတ် သည် ၀ ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်ပြီး နံပါတ် သည် အရေအတွက် အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို ပြသမည်။\nပြီးလျှင် နံပါတ် ကို နံပါတ် + ၁ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလိပ်စာ ကိန်းများ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n\n// ဘိုက် အကွာအဝေးများဖြင့် ကိုယ်တိုင် ဖွဲ့စည်းသော မှတ်တမ်း\nကိန်းရှင် ပစ္စည်း သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ၈ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို ပစ္စည်း တွင် သိမ်းထားမည်။\nပစ္စည်း ၏ တန်ဖိုး ကို ၇ ဟု ထားမည်။\nကိန်းရှင် ဈေးနှုန်း သည် ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nဈေးနှုန်း ကို ပစ္စည်း + ၄ ကို ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားမည်။\nဈေးနှုန်း ၏ တန်ဖိုး ကို ၁၅၀၀ ဟု ထားမည်။\nဈေးနှုန်း ၏ တန်ဖိုး ကို ပြသမည်။\nလိပ်စာ ပစ္စည်း ရှိ မင်မိုရီကို ၀ ဖြင့် ၄ ဘိုက်စာ ဖြည့်မည်။\nလိပ်စာ ပစ္စည်း + ၄ ရှိ ၄ ဘိုက်စာ မင်မိုရီကို လိပ်စာ ပစ္စည်း ဆီသို့ ကူးယူမည်။\nလိပ်စာ ပစ္စည်း ရှိ ၄ ဘိုက်စာ မင်မိုရီကို လိပ်စာ ပစ္စည်း + ၂ ဆီသို့ ပြောင်းထည့်မည်။\nလိပ်စာ ပစ္စည်း ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 program:
   stmts:
@@ -9,49 +9,61 @@ program:
       name:
         name: လဲလှယ်
         span:
-          lo: 185
-          hi: 203
+          lo: 219
+          hi: 237
       params:
       - edit: false
+        fill: false
+        owned: false
         kind:
           base: int
           bits: null
           signed: null
           wraps:
           - ptr
-          borrowed: true
+          classifier:
+            name: ခု
+            span:
+              lo: 327
+              hi: 333
           span:
-            lo: 214
-            hi: 294
+            lo: 268
+            hi: 317
         name:
           name: က
           span:
-            lo: 295
-            hi: 298
+            lo: 248
+            hi: 251
         mark: null
         span:
-          lo: 214
-          hi: 298
+          lo: 248
+          hi: 343
       - edit: false
+        fill: false
+        owned: false
         kind:
           base: int
           bits: null
           signed: null
           wraps:
           - ptr
-          borrowed: true
+          classifier:
+            name: ခု
+            span:
+              lo: 454
+              hi: 460
           span:
-            lo: 315
-            hi: 395
+            lo: 395
+            hi: 444
         name:
           name: ခ
           span:
-            lo: 396
-            hi: 399
+            lo: 375
+            hi: 378
         mark: null
         span:
-          lo: 315
-          hi: 399
+          lo: 375
+          hi: 470
       ret: null
       block:
         stmts:
@@ -59,21 +71,21 @@ program:
             name:
               name: ယာယီ
               span:
-                lo: 561
-                hi: 573
+                lo: 641
+                hi: 653
             kind:
               base: int
               bits: null
               signed: null
               wraps: []
+              classifier:
+                name: ခု
+                span:
+                  lo: 704
+                  hi: 710
               span:
-                lo: 584
-                hi: 614
-            classifier:
-              name: ခု
-              span:
-                lo: 624
-                hi: 630
+                lo: 664
+                hi: 694
             is_const: false
             init:
               verb:
@@ -84,21 +96,21 @@ program:
                     id: 0
                     name: က
                     span:
-                      lo: 678
-                      hi: 681
+                      lo: 758
+                      hi: 761
                 kind_arg: null
                 dir: null
                 particle: none
                 next: other
                 is_cmp: false
+                classifier: null
                 span:
-                  lo: 678
-                  hi: 707
-            moves: false
+                  lo: 758
+                  hi: 787
             exported: false
             span:
-              lo: 533
-              hi: 735
+              lo: 613
+              hi: 815
         - assign:
             target:
               verb:
@@ -109,16 +121,17 @@ program:
                     id: 2
                     name: က
                     span:
-                      lo: 736
-                      hi: 739
+                      lo: 816
+                      hi: 819
                 kind_arg: null
                 dir: null
                 particle: none
                 next: other
                 is_cmp: false
+                classifier: null
                 span:
-                  lo: 736
-                  hi: 765
+                  lo: 816
+                  hi: 845
             value:
               verb:
                 id: 5
@@ -128,20 +141,20 @@ program:
                     id: 4
                     name: ခ
                     span:
-                      lo: 776
-                      hi: 779
+                      lo: 856
+                      hi: 859
                 kind_arg: null
                 dir: null
                 particle: none
                 next: other
                 is_cmp: false
+                classifier: null
                 span:
-                  lo: 776
-                  hi: 805
-            moves: false
+                  lo: 856
+                  hi: 885
             span:
-              lo: 736
-              hi: 831
+              lo: 816
+              hi: 914
         - assign:
             target:
               verb:
@@ -152,32 +165,34 @@ program:
                     id: 6
                     name: ခ
                     span:
-                      lo: 832
-                      hi: 835
+                      lo: 915
+                      hi: 918
                 kind_arg: null
                 dir: null
                 particle: none
                 next: other
                 is_cmp: false
+                classifier: null
                 span:
-                  lo: 832
-                  hi: 861
+                  lo: 915
+                  hi: 944
             value:
               name:
                 id: 8
                 name: ယာယီ
                 span:
-                  lo: 872
-                  hi: 884
-            moves: false
+                  lo: 955
+                  hi: 967
             span:
-              lo: 832
-              hi: 910
+              lo: 915
+              hi: 996
         single: false
+        unchecked: false
         span:
-          lo: 450
-          hi: 1005
+          lo: 530
+          hi: 1091
       exported: false
+      unchecked: true
       start: false
       external: false
       lib: null
@@ -186,1108 +201,1136 @@ program:
       captures: []
       span:
         lo: 145
-        hi: 1005
+        hi: 1091
   - fn:
       name:
         name: ပရိုဂရမ်
         span:
-          lo: 1007
-          hi: 1031
+          lo: 1093
+          hi: 1117
       params: []
       ret: null
       block:
         stmts:
-        - decl:
-            name:
-              name: ပထမ
-              span:
-                lo: 1152
-                hi: 1161
-            kind: null
-            classifier: null
-            is_const: false
-            init:
-              int:
-                id: 9
-                value: 1
-                base: 10
-                kind:
-                  base: int
-                  bits: null
-                  signed: null
-                  wraps: []
+        - block:
+            stmts:
+            - decl:
+                name:
+                  name: ပထမ
                   span:
-                    lo: 1172
-                    hi: 1202
-                script: burmese
+                    lo: 1370
+                    hi: 1379
+                kind: null
+                is_const: false
+                init:
+                  int:
+                    id: 9
+                    value: 1
+                    base: 10
+                    kind:
+                      base: int
+                      bits: null
+                      signed: null
+                      wraps: []
+                      classifier:
+                        name: ခု
+                        span:
+                          lo: 1450
+                          hi: 1456
+                      span:
+                        lo: 1410
+                        hi: 1440
+                    script: burmese
+                    span:
+                      lo: 1390
+                      hi: 1456
+                exported: false
                 span:
-                  lo: 1172
-                  hi: 1206
-            moves: false
-            exported: false
-            span:
-              lo: 1124
-              hi: 1234
-        - decl:
-            name:
-              name: ဒုတိယ
-              span:
-                lo: 1263
-                hi: 1278
-            kind: null
-            classifier: null
-            is_const: false
-            init:
-              int:
-                id: 10
-                value: 2
-                base: 10
-                kind:
-                  base: int
-                  bits: null
-                  signed: null
-                  wraps: []
+                  lo: 1342
+                  hi: 1484
+            - decl:
+                name:
+                  name: ဒုတိယ
                   span:
-                    lo: 1289
-                    hi: 1319
-                script: burmese
+                    lo: 1513
+                    hi: 1528
+                kind: null
+                is_const: false
+                init:
+                  int:
+                    id: 10
+                    value: 2
+                    base: 10
+                    kind:
+                      base: int
+                      bits: null
+                      signed: null
+                      wraps: []
+                      classifier:
+                        name: ခု
+                        span:
+                          lo: 1599
+                          hi: 1605
+                      span:
+                        lo: 1559
+                        hi: 1589
+                    script: burmese
+                    span:
+                      lo: 1539
+                      hi: 1605
+                exported: false
                 span:
-                  lo: 1289
-                  hi: 1323
-            moves: false
-            exported: false
-            span:
-              lo: 1235
-              hi: 1351
-        - call:
-            callee:
-              name: လဲလှယ်
-              span:
-                lo: 1392
-                hi: 1410
-            place: null
-            args:
-            - verb:
-                id: 12
-                op: addr_of
+                  lo: 1485
+                  hi: 1633
+            - call:
+                callee:
+                  name: လဲလှယ်
+                  span:
+                    lo: 1674
+                    hi: 1692
+                place: null
                 args:
-                - name:
-                    id: 11
+                - verb:
+                    id: 12
+                    op: addr_of
+                    args:
+                    - name:
+                        id: 11
+                        name: ပထမ
+                        span:
+                          lo: 1703
+                          hi: 1712
+                    kind_arg: null
+                    dir: null
+                    particle: none
+                    next: other
+                    is_cmp: false
+                    classifier: null
+                    span:
+                      lo: 1703
+                      hi: 1735
+                - verb:
+                    id: 14
+                    op: addr_of
+                    args:
+                    - name:
+                        id: 13
+                        name: ဒုတိယ
+                        span:
+                          lo: 1739
+                          hi: 1754
+                    kind_arg: null
+                    dir: null
+                    particle: none
+                    next: other
+                    is_cmp: false
+                    classifier: null
+                    span:
+                      lo: 1739
+                      hi: 1777
+                pass: false
+                using: null
+                marks: []
+                span:
+                  lo: 1634
+                  hi: 1845
+            - print:
+                value:
+                  name:
+                    id: 15
                     name: ပထမ
                     span:
-                      lo: 1421
-                      hi: 1430
-                kind_arg: null
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
+                      lo: 1846
+                      hi: 1855
+                slot: ko
                 span:
-                  lo: 1421
-                  hi: 1453
-            - verb:
-                id: 14
-                op: addr_of
-                args:
-                - name:
-                    id: 13
+                  lo: 1846
+                  hi: 1887
+            - print:
+                value:
+                  name:
+                    id: 16
                     name: ဒုတိယ
                     span:
-                      lo: 1457
-                      hi: 1472
-                kind_arg: null
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
+                      lo: 1888
+                      hi: 1903
+                slot: ko
                 span:
-                  lo: 1457
-                  hi: 1495
-            edits:
-            - false
-            - false
-            pass: false
-            using: null
-            marks: []
-            span:
-              lo: 1352
-              hi: 1560
-        - print:
-            value:
-              name:
-                id: 15
-                name: ပထမ
-                span:
-                  lo: 1561
-                  hi: 1570
-            slot: ko
-            span:
-              lo: 1561
-              hi: 1599
-        - print:
-            value:
-              name:
-                id: 16
-                name: ဒုတိယ
-                span:
-                  lo: 1600
-                  hi: 1615
-            slot: ko
-            span:
-              lo: 1600
-              hi: 1644
-        - decl:
-            name:
-              name: ဆံ့နိုင်ရေ
-              span:
-                lo: 1755
-                hi: 1785
-            kind: null
-            classifier: null
-            is_const: false
-            init:
-              int:
-                id: 17
-                value: 4
-                base: 10
-                kind:
-                  base: int
-                  bits: null
-                  signed: false
-                  wraps: []
-                  span:
-                    lo: 1796
-                    hi: 1854
-                script: burmese
-                span:
-                  lo: 1796
-                  hi: 1858
-            moves: false
-            exported: false
-            span:
-              lo: 1727
-              hi: 1886
-        - decl:
-            name:
-              name: အရေအတွက်
-              span:
-                lo: 1915
-                hi: 1939
-            kind: null
-            classifier: null
-            is_const: false
-            init:
-              int:
-                id: 18
-                value: 0
-                base: 10
-                kind:
-                  base: int
-                  bits: null
-                  signed: false
-                  wraps: []
-                  span:
-                    lo: 1950
-                    hi: 2008
-                script: burmese
-                span:
-                  lo: 1950
-                  hi: 2012
-            moves: false
-            exported: false
-            span:
-              lo: 1887
-              hi: 2040
-        - decl:
-            name:
-              name: ကိန်းများ
-              span:
-                lo: 2069
-                hi: 2096
-            kind:
-              base: int
-              bits: null
-              signed: null
-              wraps:
-              - ptr
-              span:
-                lo: 2107
-                hi: 2160
-            classifier:
-              name: ခု
-              span:
-                lo: 2170
-                hi: 2176
-            is_const: false
-            init: null
-            moves: false
-            exported: false
-            span:
-              lo: 2041
-              hi: 2204
-        - alloc:
-            size:
-              count:
+                  lo: 1888
+                  hi: 1935
+            - decl:
                 name:
-                  id: 19
                   name: ဆံ့နိုင်ရေ
                   span:
-                    lo: 2273
-                    hi: 2303
-              unit:
-                base: int
-                bits: null
-                signed: null
-                wraps: []
-                span:
-                  lo: 2242
-                  hi: 2272
-              classifier:
-                name: ခု
-                span:
-                  lo: 2304
-                  hi: 2316
-              span:
-                lo: 2242
-                hi: 2316
-            target:
-              name:
-                id: 20
-                name: ကိန်းများ
-                span:
-                  lo: 2367
-                  hi: 2394
-            span:
-              lo: 2205
-              hi: 2444
-        - if:
-            arms:
-            - cond:
-                verb:
-                  id: 23
-                  op: eq
-                  args:
-                  - name:
-                      id: 21
-                      name: ကိန်းများ
-                      span:
-                        lo: 2461
-                        hi: 2488
-                  - "null":
-                      id: 22
-                      span:
-                        lo: 2499
-                        hi: 2508
-                  kind_arg: null
-                  dir: null
-                  particle: none
-                  next: then
-                  is_cmp: true
-                  span:
-                    lo: 2461
-                    hi: 2531
-              block:
-                stmts:
-                - print:
-                    value:
-                      str:
-                        id: 24
-                        pieces:
-                        - text: နေရာ မရပါ
-                        span:
-                          lo: 2547
-                          hi: 2574
-                    slot: hu
-                    span:
-                      lo: 2547
-                      hi: 2600
-                single: true
-                span:
-                  lo: 2547
-                  hi: 2600
-              span:
-                lo: 2445
-                hi: 2600
-            else_block: null
-            span:
-              lo: 2445
-              hi: 2600
-        - counted:
-            var:
-              name: ကိန်း
-              span:
-                lo: 2630
-                hi: 2645
-            from:
-              int:
-                id: 25
-                value: 1
-                base: 10
+                    lo: 2046
+                    hi: 2076
                 kind: null
-                script: burmese
-                span:
-                  lo: 2602
-                  hi: 2605
-            to:
-              int:
-                id: 26
-                value: 10
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 2613
-                  hi: 2619
-            step: null
-            mode: count
-            block:
-              stmts:
-              - if:
-                  arms:
-                  - cond:
-                      verb:
-                        id: 30
-                        op: eq
-                        args:
-                        - name:
-                            id: 28
-                            name: အရေအတွက်
-                            span:
-                              lo: 2789
-                              hi: 2813
-                        - name:
-                            id: 29
-                            name: ဆံ့နိုင်ရေ
-                            span:
-                              lo: 2824
-                              hi: 2854
-                        kind_arg: null
-                        dir: null
-                        particle: none
-                        next: then
-                        is_cmp: true
+                is_const: false
+                init:
+                  int:
+                    id: 17
+                    value: 4
+                    base: 10
+                    kind:
+                      base: int
+                      bits: null
+                      signed: false
+                      wraps: []
+                      classifier:
+                        name: ခု
                         span:
-                          lo: 2789
-                          hi: 2877
-                    block:
-                      stmts:
-                      - assign:
-                          target:
-                            name:
-                              id: 31
-                              name: ဆံ့နိုင်ရေ
-                              span:
-                                lo: 2973
-                                hi: 3003
-                          value:
-                            infix:
-                              id: 34
-                              op: mul
-                              lhs:
-                                name:
-                                  id: 32
-                                  name: ဆံ့နိုင်ရေ
-                                  span:
-                                    lo: 3014
-                                    hi: 3044
-                              rhs:
-                                int:
-                                  id: 33
-                                  value: 2
-                                  base: 10
-                                  kind: null
-                                  script: burmese
-                                  span:
-                                    lo: 3047
-                                    hi: 3050
-                              span:
-                                lo: 3014
-                                hi: 3050
-                          moves: false
-                          span:
-                            lo: 2973
-                            hi: 3076
-                      - resize:
-                          target:
-                            name:
-                              id: 35
-                              name: ကိန်းများ
-                              span:
-                                lo: 3096
-                                hi: 3123
-                          size:
-                            count:
-                              name:
-                                id: 36
-                                name: ဆံ့နိုင်ရေ
-                                span:
-                                  lo: 3199
-                                  hi: 3229
-                            unit:
-                              base: int
-                              bits: null
-                              signed: null
-                              wraps: []
-                              span:
-                                lo: 3168
-                                hi: 3198
-                            classifier:
-                              name: ခု
-                              span:
-                                lo: 3230
-                                hi: 3242
-                            span:
-                              lo: 3168
-                              hi: 3242
-                          span:
-                            lo: 3077
-                            hi: 3340
-                      single: false
+                          lo: 2175
+                          hi: 2181
                       span:
-                        lo: 2893
-                        hi: 3435
+                        lo: 2107
+                        hi: 2165
+                    script: burmese
                     span:
-                      lo: 2773
-                      hi: 3435
-                  else_block: null
+                      lo: 2087
+                      hi: 2181
+                exported: false
+                span:
+                  lo: 2018
+                  hi: 2209
+            - decl:
+                name:
+                  name: အရေအတွက်
                   span:
-                    lo: 2773
-                    hi: 3435
-              - assign:
-                  target:
-                    verb:
-                      id: 40
-                      op: deref
-                      args:
-                      - infix:
-                          id: 39
-                          op: add
-                          lhs:
-                            name:
-                              id: 37
-                              name: ကိန်းများ
-                              span:
-                                lo: 3436
-                                hi: 3463
-                          rhs:
-                            name:
-                              id: 38
-                              name: အရေအတွက်
-                              span:
-                                lo: 3466
-                                hi: 3490
-                          span:
-                            lo: 3436
-                            hi: 3490
-                      kind_arg: null
-                      dir: null
-                      particle: none
-                      next: other
-                      is_cmp: false
+                    lo: 2238
+                    hi: 2262
+                kind: null
+                is_const: false
+                init:
+                  int:
+                    id: 18
+                    value: 0
+                    base: 10
+                    kind:
+                      base: int
+                      bits: null
+                      signed: false
+                      wraps: []
+                      classifier:
+                        name: ခု
+                        span:
+                          lo: 2361
+                          hi: 2367
                       span:
-                        lo: 3436
-                        hi: 3516
-                  value:
-                    infix:
-                      id: 43
-                      op: mul
-                      lhs:
-                        name:
-                          id: 41
-                          name: ကိန်း
-                          span:
-                            lo: 3527
-                            hi: 3542
-                      rhs:
-                        name:
-                          id: 42
-                          name: ကိန်း
-                          span:
-                            lo: 3545
-                            hi: 3560
-                      span:
-                        lo: 3527
-                        hi: 3560
-                  moves: false
+                        lo: 2293
+                        hi: 2351
+                    script: burmese
+                    span:
+                      lo: 2273
+                      hi: 2367
+                exported: false
+                span:
+                  lo: 2210
+                  hi: 2395
+            - decl:
+                name:
+                  name: ကိန်းများ
                   span:
-                    lo: 3436
-                    hi: 3586
-              - assign:
-                  target:
-                    name:
-                      id: 44
-                      name: အရေအတွက်
-                      span:
-                        lo: 3587
-                        hi: 3611
-                  value:
-                    infix:
-                      id: 47
-                      op: add
-                      lhs:
-                        name:
-                          id: 45
-                          name: အရေအတွက်
-                          span:
-                            lo: 3622
-                            hi: 3646
-                      rhs:
-                        int:
-                          id: 46
-                          value: 1
-                          base: 10
-                          kind: null
-                          script: burmese
-                          span:
-                            lo: 3649
-                            hi: 3652
-                      span:
-                        lo: 3622
-                        hi: 3652
-                  moves: false
-                  span:
-                    lo: 3587
-                    hi: 3678
-              single: false
-              span:
-                lo: 2693
-                hi: 3773
-            span:
-              lo: 2602
-              hi: 3773
-        - generic:
-            var:
-              name: နံပါတ်
-              span:
-                lo: 3803
-                hi: 3821
-            kind: null
-            classifier: null
-            init:
-              int:
-                id: 48
-                value: 0
-                base: 10
+                    lo: 2424
+                    hi: 2451
                 kind:
                   base: int
                   bits: null
-                  signed: false
-                  wraps: []
+                  signed: null
+                  wraps:
+                  - ptr
+                  classifier:
+                    name: ခု
+                    span:
+                      lo: 2525
+                      hi: 2531
                   span:
-                    lo: 3832
-                    hi: 3890
-                script: burmese
+                    lo: 2462
+                    hi: 2515
+                is_const: false
+                init: null
+                exported: false
                 span:
-                  lo: 3832
-                  hi: 3894
-            cond:
-              verb:
-                id: 51
-                op: lt
-                args:
-                - name:
-                    id: 49
-                    name: နံပါတ်
+                  lo: 2396
+                  hi: 2559
+            - alloc:
+                size:
+                  count:
+                    name:
+                      id: 19
+                      name: ဆံ့နိုင်ရေ
+                      span:
+                        lo: 2628
+                        hi: 2658
+                  unit:
+                    base: int
+                    bits: null
+                    signed: null
+                    wraps: []
+                    classifier:
+                      name: ခု
+                      span:
+                        lo: 2659
+                        hi: 2671
                     span:
-                      lo: 3920
-                      hi: 3938
-                - name:
-                    id: 50
-                    name: အရေအတွက်
-                    span:
-                      lo: 3949
-                      hi: 3973
-                kind_arg: null
-                dir: null
-                particle: none
-                next: while
-                is_cmp: true
-                span:
-                  lo: 3920
-                  hi: 3999
-            update:
-              assign:
+                      lo: 2597
+                      hi: 2627
+                  span:
+                    lo: 2597
+                    hi: 2671
                 target:
                   name:
-                    id: 56
-                    name: နံပါတ်
+                    id: 20
+                    name: ကိန်းများ
                     span:
-                      lo: 4233
-                      hi: 4251
-                value:
-                  infix:
-                    id: 59
-                    op: add
-                    lhs:
-                      name:
-                        id: 57
-                        name: နံပါတ်
-                        span:
-                          lo: 4262
-                          hi: 4280
-                    rhs:
-                      int:
-                        id: 58
-                        value: 1
-                        base: 10
-                        kind: null
-                        script: burmese
-                        span:
-                          lo: 4283
-                          hi: 4286
-                    span:
-                      lo: 4262
-                      hi: 4286
-                moves: false
+                      lo: 2722
+                      hi: 2749
                 span:
-                  lo: 4233
-                  hi: 4312
-            block:
-              stmts:
-              - print:
-                  value:
+                  lo: 2560
+                  hi: 2799
+            - if:
+                arms:
+                - cond:
                     verb:
-                      id: 55
-                      op: deref
+                      id: 23
+                      op: eq
                       args:
-                      - infix:
-                          id: 54
-                          op: add
-                          lhs:
-                            name:
-                              id: 52
-                              name: ကိန်းများ
-                              span:
-                                lo: 4101
-                                hi: 4128
-                          rhs:
-                            name:
-                              id: 53
-                              name: နံပါတ်
-                              span:
-                                lo: 4131
-                                hi: 4149
+                      - name:
+                          id: 21
+                          name: ကိန်းများ
                           span:
-                            lo: 4101
-                            hi: 4149
+                            lo: 2816
+                            hi: 2843
+                      - "null":
+                          id: 22
+                          blank: false
+                          initial: false
+                          span:
+                            lo: 2854
+                            hi: 2937
                       kind_arg: null
                       dir: null
                       particle: none
-                      next: other
-                      is_cmp: false
+                      next: then
+                      is_cmp: true
+                      classifier: null
                       span:
-                        lo: 4101
-                        hi: 4175
-                  slot: ko
+                        lo: 2816
+                        hi: 2960
+                  block:
+                    stmts:
+                    - print:
+                        value:
+                          str:
+                            id: 24
+                            pieces:
+                            - text: နေရာ မရပါ
+                            span:
+                              lo: 2976
+                              hi: 3003
+                        slot: hu
+                        span:
+                          lo: 2976
+                          hi: 3032
+                    single: true
+                    unchecked: false
+                    span:
+                      lo: 2976
+                      hi: 3032
                   span:
-                    lo: 4101
-                    hi: 4204
-              single: false
-              span:
-                lo: 4021
-                hi: 4407
-            span:
-              lo: 3775
-              hi: 4407
-        - free:
-            target:
-              name:
-                id: 60
-                name: ကိန်းများ
+                    lo: 2800
+                    hi: 3032
+                else_block: null
                 span:
-                  lo: 4428
-                  hi: 4455
-            span:
-              lo: 4409
-              hi: 4563
-        - decl:
-            name:
-              name: ပစ္စည်း
-              span:
-                lo: 4754
-                hi: 4775
-            kind:
-              base: int
-              bits: 8
-              signed: false
-              wraps:
-              - ptr
-              span:
-                lo: 4786
-                hi: 4881
-            classifier:
-              name: ခု
-              span:
-                lo: 4891
-                hi: 4897
-            is_const: false
-            init: null
-            moves: false
-            exported: false
-            span:
-              lo: 4726
-              hi: 4925
-        - alloc:
-            size:
-              count:
-                int:
-                  id: 61
-                  value: 8
-                  base: 10
-                  kind: null
-                  script: burmese
+                  lo: 2800
+                  hi: 3032
+            - counted:
+                var:
+                  name: ကိန်း
                   span:
-                    lo: 4963
-                    hi: 4966
-              unit: null
-              classifier: null
-              span:
-                lo: 4963
-                hi: 4988
-            target:
-              name:
-                id: 62
-                name: ပစ္စည်း
+                    lo: 3062
+                    hi: 3077
+                from:
+                  int:
+                    id: 25
+                    value: 1
+                    base: 10
+                    kind: null
+                    script: burmese
+                    span:
+                      lo: 3034
+                      hi: 3037
+                to:
+                  int:
+                    id: 26
+                    value: 10
+                    base: 10
+                    kind: null
+                    script: burmese
+                    span:
+                      lo: 3045
+                      hi: 3051
+                step: null
+                mode: count
+                block:
+                  stmts:
+                  - if:
+                      arms:
+                      - cond:
+                          verb:
+                            id: 30
+                            op: eq
+                            args:
+                            - name:
+                                id: 28
+                                name: အရေအတွက်
+                                span:
+                                  lo: 3224
+                                  hi: 3248
+                            - name:
+                                id: 29
+                                name: ဆံ့နိုင်ရေ
+                                span:
+                                  lo: 3259
+                                  hi: 3289
+                            kind_arg: null
+                            dir: null
+                            particle: none
+                            next: then
+                            is_cmp: true
+                            classifier: null
+                            span:
+                              lo: 3224
+                              hi: 3312
+                        block:
+                          stmts:
+                          - assign:
+                              target:
+                                name:
+                                  id: 31
+                                  name: ဆံ့နိုင်ရေ
+                                  span:
+                                    lo: 3411
+                                    hi: 3441
+                              value:
+                                infix:
+                                  id: 34
+                                  op: mul
+                                  lhs:
+                                    name:
+                                      id: 32
+                                      name: ဆံ့နိုင်ရေ
+                                      span:
+                                        lo: 3452
+                                        hi: 3482
+                                  rhs:
+                                    int:
+                                      id: 33
+                                      value: 2
+                                      base: 10
+                                      kind: null
+                                      script: burmese
+                                      span:
+                                        lo: 3485
+                                        hi: 3488
+                                  span:
+                                    lo: 3452
+                                    hi: 3488
+                              span:
+                                lo: 3411
+                                hi: 3517
+                          - resize:
+                              target:
+                                name:
+                                  id: 35
+                                  name: ကိန်းများ
+                                  span:
+                                    lo: 3537
+                                    hi: 3564
+                              size:
+                                count:
+                                  name:
+                                    id: 36
+                                    name: ဆံ့နိုင်ရေ
+                                    span:
+                                      lo: 3640
+                                      hi: 3670
+                                unit:
+                                  base: int
+                                  bits: null
+                                  signed: null
+                                  wraps: []
+                                  classifier:
+                                    name: ခု
+                                    span:
+                                      lo: 3671
+                                      hi: 3683
+                                  span:
+                                    lo: 3609
+                                    hi: 3639
+                                span:
+                                  lo: 3609
+                                  hi: 3683
+                              span:
+                                lo: 3518
+                                hi: 3781
+                          single: false
+                          unchecked: false
+                          span:
+                            lo: 3328
+                            hi: 3876
+                        span:
+                          lo: 3208
+                          hi: 3876
+                      else_block: null
+                      span:
+                        lo: 3208
+                        hi: 3876
+                  - assign:
+                      target:
+                        verb:
+                          id: 40
+                          op: deref
+                          args:
+                          - infix:
+                              id: 39
+                              op: add
+                              lhs:
+                                name:
+                                  id: 37
+                                  name: ကိန်းများ
+                                  span:
+                                    lo: 3877
+                                    hi: 3904
+                              rhs:
+                                name:
+                                  id: 38
+                                  name: အရေအတွက်
+                                  span:
+                                    lo: 3907
+                                    hi: 3931
+                              span:
+                                lo: 3877
+                                hi: 3931
+                          kind_arg: null
+                          dir: null
+                          particle: none
+                          next: other
+                          is_cmp: false
+                          classifier: null
+                          span:
+                            lo: 3877
+                            hi: 3957
+                      value:
+                        infix:
+                          id: 43
+                          op: mul
+                          lhs:
+                            name:
+                              id: 41
+                              name: ကိန်း
+                              span:
+                                lo: 3968
+                                hi: 3983
+                          rhs:
+                            name:
+                              id: 42
+                              name: ကိန်း
+                              span:
+                                lo: 3986
+                                hi: 4001
+                          span:
+                            lo: 3968
+                            hi: 4001
+                      span:
+                        lo: 3877
+                        hi: 4030
+                  - assign:
+                      target:
+                        name:
+                          id: 44
+                          name: အရေအတွက်
+                          span:
+                            lo: 4031
+                            hi: 4055
+                      value:
+                        infix:
+                          id: 47
+                          op: add
+                          lhs:
+                            name:
+                              id: 45
+                              name: အရေအတွက်
+                              span:
+                                lo: 4066
+                                hi: 4090
+                          rhs:
+                            int:
+                              id: 46
+                              value: 1
+                              base: 10
+                              kind: null
+                              script: burmese
+                              span:
+                                lo: 4093
+                                hi: 4096
+                          span:
+                            lo: 4066
+                            hi: 4096
+                      span:
+                        lo: 4031
+                        hi: 4125
+                  single: false
+                  unchecked: false
+                  span:
+                    lo: 3125
+                    hi: 4220
                 span:
-                  lo: 5039
-                  hi: 5060
-            span:
-              lo: 4926
-              hi: 5110
-        - assign:
-            target:
-              verb:
-                id: 64
-                op: deref
-                args:
-                - name:
-                    id: 63
+                  lo: 3034
+                  hi: 4220
+            - generic:
+                var:
+                  name: နံပါတ်
+                  span:
+                    lo: 4250
+                    hi: 4268
+                kind: null
+                init:
+                  int:
+                    id: 48
+                    value: 0
+                    base: 10
+                    kind:
+                      base: int
+                      bits: null
+                      signed: false
+                      wraps: []
+                      classifier:
+                        name: ခု
+                        span:
+                          lo: 4367
+                          hi: 4373
+                      span:
+                        lo: 4299
+                        hi: 4357
+                    script: burmese
+                    span:
+                      lo: 4279
+                      hi: 4373
+                cond:
+                  verb:
+                    id: 51
+                    op: lt
+                    args:
+                    - name:
+                        id: 49
+                        name: နံပါတ်
+                        span:
+                          lo: 4399
+                          hi: 4417
+                    - name:
+                        id: 50
+                        name: အရေအတွက်
+                        span:
+                          lo: 4428
+                          hi: 4452
+                    kind_arg: null
+                    dir: null
+                    particle: none
+                    next: while
+                    is_cmp: true
+                    classifier: null
+                    span:
+                      lo: 4399
+                      hi: 4478
+                update:
+                  assign:
+                    target:
+                      name:
+                        id: 56
+                        name: နံပါတ်
+                        span:
+                          lo: 4718
+                          hi: 4736
+                    value:
+                      infix:
+                        id: 59
+                        op: add
+                        lhs:
+                          name:
+                            id: 57
+                            name: နံပါတ်
+                            span:
+                              lo: 4747
+                              hi: 4765
+                        rhs:
+                          int:
+                            id: 58
+                            value: 1
+                            base: 10
+                            kind: null
+                            script: burmese
+                            span:
+                              lo: 4768
+                              hi: 4771
+                        span:
+                          lo: 4747
+                          hi: 4771
+                    span:
+                      lo: 4718
+                      hi: 4800
+                block:
+                  stmts:
+                  - print:
+                      value:
+                        verb:
+                          id: 55
+                          op: deref
+                          args:
+                          - infix:
+                              id: 54
+                              op: add
+                              lhs:
+                                name:
+                                  id: 52
+                                  name: ကိန်းများ
+                                  span:
+                                    lo: 4583
+                                    hi: 4610
+                              rhs:
+                                name:
+                                  id: 53
+                                  name: နံပါတ်
+                                  span:
+                                    lo: 4613
+                                    hi: 4631
+                              span:
+                                lo: 4583
+                                hi: 4631
+                          kind_arg: null
+                          dir: null
+                          particle: none
+                          next: other
+                          is_cmp: false
+                          classifier: null
+                          span:
+                            lo: 4583
+                            hi: 4657
+                      slot: ko
+                      span:
+                        lo: 4583
+                        hi: 4689
+                  single: false
+                  unchecked: false
+                  span:
+                    lo: 4500
+                    hi: 4895
+                span:
+                  lo: 4222
+                  hi: 4895
+            - free:
+                target:
+                  name:
+                    id: 60
+                    name: ကိန်းများ
+                    span:
+                      lo: 4916
+                      hi: 4943
+                span:
+                  lo: 4897
+                  hi: 5051
+            - decl:
+                name:
+                  name: ပစ္စည်း
+                  span:
+                    lo: 5242
+                    hi: 5263
+                kind:
+                  base: int
+                  bits: 8
+                  signed: false
+                  wraps:
+                  - ptr
+                  classifier:
+                    name: ခု
+                    span:
+                      lo: 5379
+                      hi: 5385
+                  span:
+                    lo: 5274
+                    hi: 5369
+                is_const: false
+                init: null
+                exported: false
+                span:
+                  lo: 5214
+                  hi: 5413
+            - alloc:
+                size:
+                  count:
+                    int:
+                      id: 61
+                      value: 8
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 5451
+                        hi: 5454
+                  unit: null
+                  span:
+                    lo: 5451
+                    hi: 5476
+                target:
+                  name:
+                    id: 62
                     name: ပစ္စည်း
                     span:
-                      lo: 5111
-                      hi: 5132
-                kind_arg: null
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
+                      lo: 5527
+                      hi: 5548
                 span:
-                  lo: 5111
-                  hi: 5158
-            value:
-              int:
-                id: 65
-                value: 7
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 5169
-                  hi: 5172
-            moves: false
-            span:
-              lo: 5111
-              hi: 5198
-        - decl:
-            name:
-              name: ဈေးနှုန်း
-              span:
-                lo: 5227
-                hi: 5254
-            kind:
-              base: int
-              bits: 32
-              signed: null
-              wraps:
-              - ptr
-              borrowed: true
-              span:
-                lo: 5265
-                hi: 5362
-            classifier:
-              name: ခု
-              span:
-                lo: 5372
-                hi: 5378
-            is_const: false
-            init: null
-            moves: false
-            exported: false
-            span:
-              lo: 5199
-              hi: 5406
-        - assign:
-            target:
-              name:
-                id: 66
-                name: ဈေးနှုန်း
-                span:
-                  lo: 5407
-                  hi: 5434
-            value:
-              verb:
-                id: 70
-                op: cast
-                args:
-                - infix:
-                    id: 69
-                    op: add
-                    lhs:
-                      name:
-                        id: 67
+                  lo: 5414
+                  hi: 5598
+            - assign:
+                target:
+                  verb:
+                    id: 64
+                    op: deref
+                    args:
+                    - name:
+                        id: 63
                         name: ပစ္စည်း
                         span:
-                          lo: 5445
-                          hi: 5466
-                    rhs:
-                      int:
-                        id: 68
-                        value: 4
-                        base: 10
-                        kind: null
-                        script: burmese
-                        span:
-                          lo: 5469
-                          hi: 5472
+                          lo: 5599
+                          hi: 5620
+                    kind_arg: null
+                    dir: null
+                    particle: none
+                    next: other
+                    is_cmp: false
+                    classifier: null
                     span:
-                      lo: 5445
-                      hi: 5472
-                kind_arg:
+                      lo: 5599
+                      hi: 5646
+                value:
+                  int:
+                    id: 65
+                    value: 7
+                    base: 10
+                    kind: null
+                    script: burmese
+                    span:
+                      lo: 5657
+                      hi: 5660
+                span:
+                  lo: 5599
+                  hi: 5689
+            - decl:
+                name:
+                  name: ဈေးနှုန်း
+                  span:
+                    lo: 5718
+                    hi: 5745
+                kind:
                   base: int
                   bits: 32
                   signed: null
                   wraps:
                   - ptr
-                  borrowed: true
-                  span:
-                    lo: 5483
-                    hi: 5580
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
-                span:
-                  lo: 5445
-                  hi: 5646
-            moves: false
-            span:
-              lo: 5407
-              hi: 5672
-        - assign:
-            target:
-              verb:
-                id: 72
-                op: deref
-                args:
-                - name:
-                    id: 71
-                    name: ဈေးနှုန်း
+                  classifier:
+                    name: ခု
                     span:
-                      lo: 5673
-                      hi: 5700
-                kind_arg: null
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
-                span:
-                  lo: 5673
-                  hi: 5726
-            value:
-              int:
-                id: 73
-                value: 1500
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 5737
-                  hi: 5749
-            moves: false
-            span:
-              lo: 5673
-              hi: 5775
-        - print:
-            value:
-              verb:
-                id: 75
-                op: deref
-                args:
-                - name:
-                    id: 74
-                    name: ဈေးနှုန်း
-                    span:
-                      lo: 5776
-                      hi: 5803
-                kind_arg: null
-                dir: null
-                particle: none
-                next: other
-                is_cmp: false
-                span:
-                  lo: 5776
-                  hi: 5829
-            slot: ko
-            span:
-              lo: 5776
-              hi: 5858
-        - fill:
-            dst:
-              name:
-                id: 76
-                name: ပစ္စည်း
-                span:
-                  lo: 5878
-                  hi: 5899
-            value:
-              int:
-                id: 77
-                value: 0
-                base: 10
-                kind: null
-                script: burmese
-                span:
-                  lo: 5944
-                  hi: 5947
-            size:
-              count:
-                int:
-                  id: 78
-                  value: 4
-                  base: 10
-                  kind: null
-                  script: burmese
+                      lo: 5832
+                      hi: 5838
                   span:
-                    lo: 5964
-                    hi: 5967
-              unit: null
-              classifier: null
-              span:
-                lo: 5964
-                hi: 5989
-            span:
-              lo: 5859
-              hi: 6017
-        - blit:
-            src:
-              infix:
-                id: 81
-                op: add
-                lhs:
+                    lo: 5756
+                    hi: 5822
+                is_const: false
+                init: null
+                exported: false
+                span:
+                  lo: 5690
+                  hi: 5866
+            - assign:
+                target:
                   name:
-                    id: 79
-                    name: ပစ္စည်း
+                    id: 66
+                    name: ဈေးနှုန်း
                     span:
-                      lo: 6037
-                      hi: 6058
-                rhs:
+                      lo: 5867
+                      hi: 5894
+                value:
+                  verb:
+                    id: 70
+                    op: cast
+                    args:
+                    - infix:
+                        id: 69
+                        op: add
+                        lhs:
+                          name:
+                            id: 67
+                            name: ပစ္စည်း
+                            span:
+                              lo: 5905
+                              hi: 5926
+                        rhs:
+                          int:
+                            id: 68
+                            value: 4
+                            base: 10
+                            kind: null
+                            script: burmese
+                            span:
+                              lo: 5929
+                              hi: 5932
+                        span:
+                          lo: 5905
+                          hi: 5932
+                    kind_arg:
+                      base: int
+                      bits: 32
+                      signed: null
+                      wraps:
+                      - ptr
+                      classifier:
+                        name: ခု
+                        span:
+                          lo: 6019
+                          hi: 6025
+                      span:
+                        lo: 5943
+                        hi: 6009
+                    dir: null
+                    particle: none
+                    next: other
+                    is_cmp: false
+                    classifier: null
+                    span:
+                      lo: 5905
+                      hi: 6091
+                span:
+                  lo: 5867
+                  hi: 6120
+            - assign:
+                target:
+                  verb:
+                    id: 72
+                    op: deref
+                    args:
+                    - name:
+                        id: 71
+                        name: ဈေးနှုန်း
+                        span:
+                          lo: 6121
+                          hi: 6148
+                    kind_arg: null
+                    dir: null
+                    particle: none
+                    next: other
+                    is_cmp: false
+                    classifier: null
+                    span:
+                      lo: 6121
+                      hi: 6174
+                value:
                   int:
-                    id: 80
-                    value: 4
+                    id: 73
+                    value: 1500
                     base: 10
                     kind: null
                     script: burmese
                     span:
-                      lo: 6061
-                      hi: 6064
+                      lo: 6185
+                      hi: 6197
                 span:
-                  lo: 6037
-                  hi: 6064
-            size:
-              count:
-                int:
-                  id: 82
-                  value: 4
-                  base: 10
-                  kind: null
-                  script: burmese
-                  span:
-                    lo: 6075
-                    hi: 6078
-              unit: null
-              classifier: null
-              span:
-                lo: 6075
-                hi: 6100
-            dst:
-              name:
-                id: 83
-                name: ပစ္စည်း
+                  lo: 6121
+                  hi: 6226
+            - print:
+                value:
+                  verb:
+                    id: 75
+                    op: deref
+                    args:
+                    - name:
+                        id: 74
+                        name: ဈေးနှုန်း
+                        span:
+                          lo: 6227
+                          hi: 6254
+                    kind_arg: null
+                    dir: null
+                    particle: none
+                    next: other
+                    is_cmp: false
+                    classifier: null
+                    span:
+                      lo: 6227
+                      hi: 6280
+                slot: ko
                 span:
-                  lo: 6154
-                  hi: 6175
-            overlap: false
-            span:
-              lo: 6018
-              hi: 6222
-        - blit:
-            src:
-              name:
-                id: 84
-                name: ပစ္စည်း
-                span:
-                  lo: 6242
-                  hi: 6263
-            size:
-              count:
-                int:
-                  id: 85
-                  value: 4
-                  base: 10
-                  kind: null
-                  script: burmese
-                  span:
-                    lo: 6274
-                    hi: 6277
-              unit: null
-              classifier: null
-              span:
-                lo: 6274
-                hi: 6299
-            dst:
-              infix:
-                id: 88
-                op: add
-                lhs:
+                  lo: 6227
+                  hi: 6312
+            - fill:
+                dst:
                   name:
-                    id: 86
+                    id: 76
                     name: ပစ္စည်း
                     span:
-                      lo: 6353
-                      hi: 6374
-                rhs:
+                      lo: 6332
+                      hi: 6353
+                value:
                   int:
-                    id: 87
-                    value: 2
+                    id: 77
+                    value: 0
                     base: 10
                     kind: null
                     script: burmese
                     span:
-                      lo: 6377
-                      hi: 6380
+                      lo: 6398
+                      hi: 6401
+                size:
+                  count:
+                    int:
+                      id: 78
+                      value: 4
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 6418
+                        hi: 6421
+                  unit: null
+                  span:
+                    lo: 6418
+                    hi: 6443
                 span:
-                  lo: 6353
-                  hi: 6380
-            overlap: true
-            span:
-              lo: 6223
-              hi: 6445
-        - free:
-            target:
-              name:
-                id: 89
-                name: ပစ္စည်း
+                  lo: 6313
+                  hi: 6471
+            - blit:
+                src:
+                  infix:
+                    id: 81
+                    op: add
+                    lhs:
+                      name:
+                        id: 79
+                        name: ပစ္စည်း
+                        span:
+                          lo: 6491
+                          hi: 6512
+                    rhs:
+                      int:
+                        id: 80
+                        value: 4
+                        base: 10
+                        kind: null
+                        script: burmese
+                        span:
+                          lo: 6515
+                          hi: 6518
+                    span:
+                      lo: 6491
+                      hi: 6518
+                size:
+                  count:
+                    int:
+                      id: 82
+                      value: 4
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 6529
+                        hi: 6532
+                  unit: null
+                  span:
+                    lo: 6529
+                    hi: 6554
+                dst:
+                  name:
+                    id: 83
+                    name: ပစ္စည်း
+                    span:
+                      lo: 6608
+                      hi: 6629
+                overlap: false
                 span:
-                  lo: 6465
-                  hi: 6486
+                  lo: 6472
+                  hi: 6676
+            - blit:
+                src:
+                  name:
+                    id: 84
+                    name: ပစ္စည်း
+                    span:
+                      lo: 6696
+                      hi: 6717
+                size:
+                  count:
+                    int:
+                      id: 85
+                      value: 4
+                      base: 10
+                      kind: null
+                      script: burmese
+                      span:
+                        lo: 6728
+                        hi: 6731
+                  unit: null
+                  span:
+                    lo: 6728
+                    hi: 6753
+                dst:
+                  infix:
+                    id: 88
+                    op: add
+                    lhs:
+                      name:
+                        id: 86
+                        name: ပစ္စည်း
+                        span:
+                          lo: 6807
+                          hi: 6828
+                    rhs:
+                      int:
+                        id: 87
+                        value: 2
+                        base: 10
+                        kind: null
+                        script: burmese
+                        span:
+                          lo: 6831
+                          hi: 6834
+                    span:
+                      lo: 6807
+                      hi: 6834
+                overlap: true
+                span:
+                  lo: 6677
+                  hi: 6899
+            - free:
+                target:
+                  name:
+                    id: 89
+                    name: ပစ္စည်း
+                    span:
+                      lo: 6919
+                      hi: 6940
+                span:
+                  lo: 6900
+                  hi: 7048
+            single: false
+            unchecked: true
             span:
-              lo: 6446
-              hi: 6594
+              lo: 1210
+              hi: 7143
         single: false
+        unchecked: false
         span:
-          lo: 1041
-          hi: 6665
+          lo: 1127
+          hi: 7214
       exported: false
+      unchecked: false
       start: true
       external: false
       lib: null
@@ -1295,28 +1338,28 @@ program:
       owned_ret: false
       captures: []
       span:
-        lo: 1007
-        hi: 6665
+        lo: 1093
+        hi: 7214
   units: []
   span:
     lo: 0
-    hi: 6666
+    hi: 7215
 kinds:
-  0: isize&
+  0: isize*
   1: isize
-  2: isize&
+  2: isize*
   3: isize
-  4: isize&
+  4: isize*
   5: isize
-  6: isize&
+  6: isize*
   7: isize
   8: isize
   9: isize
   10: isize
   11: isize
-  12: isize&
+  12: isize*
   13: isize
-  14: isize&
+  14: isize*
   15: isize
   16: isize
   17: usize
@@ -1340,7 +1383,7 @@ kinds:
   36: usize
   37: isize*
   38: usize
-  39: isize&
+  39: isize*
   40: isize
   41: isize
   42: isize
@@ -1355,7 +1398,7 @@ kinds:
   51: bool
   52: isize*
   53: usize
-  54: isize&
+  54: isize*
   55: isize
   56: usize
   57: usize
@@ -1367,29 +1410,29 @@ kinds:
   63: u8*
   64: u8
   65: u8
-  66: i32&
+  66: i32*
   67: u8*
   68: isize
-  69: u8&
-  70: i32&
-  71: i32&
+  69: u8*
+  70: i32*
+  71: i32*
   72: i32
   73: i32
-  74: i32&
+  74: i32*
   75: i32
   76: u8*
   77: u8
   78: usize
   79: u8*
   80: isize
-  81: u8&
+  81: u8*
   82: usize
   83: u8*
   84: u8*
   85: usize
   86: u8*
   87: isize
-  88: u8&
+  88: u8*
   89: u8*
 structs: {}
 diagnostics: []

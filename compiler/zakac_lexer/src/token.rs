@@ -274,6 +274,8 @@ pub enum Kw
     Product,
     /// `ညီ`
     Equal,
+    /// `တစ်ခုတည်း`, "one and the same": whether two names hold one object
+    SameOne,
     /// `မညီ`
     NotEqual,
     /// `ကြီး`
@@ -318,10 +320,23 @@ pub enum Kw
     EachChar,
     /// `ယူ၍`, "taking": opens the block of an each-cell loop
     Taking,
-    /// `ပြောင်းလဲနိုင်သော`, "that can change"
-    EditableAttr,
-    /// `ပြောင်းလဲနိုင်သည်`, "can change"
-    EditableClaim,
+    /// `ပြောင်းလဲရန်`, "in order to change": the second word of
+    /// `ဒေတာ ပြောင်းလဲရန်`
+    ToChange,
+    /// `ထည့်ပေးရန်`, "in order to put in": the second word of `ဒေတာ ထည့်ပေးရန်`
+    ToFill,
+    /// `ဒေတာ ပြောင်းလဲရန်`, "to change the data": a parameter the function can
+    /// read and write, whose changes reach the caller's place, which the caller
+    /// sets first
+    DataToChange,
+    /// `ဒေတာ ထည့်ပေးရန်`, "to put the data in": a parameter the function writes
+    /// and never reads first, which the caller need not set; it counts as set
+    /// after the call
+    DataToFill,
+    /// `ဝိဘတ်`, "particle": opens the mark of a parameter, `ဝိဘတ် "<mark>" ဖြင့်`
+    MarkWord,
+    /// `ဟူသော`, "called": before `လုပ်ဆောင်ချက်` in a function value
+    Called,
     /// `လုပ်ဆောင်သော`
     CallHead,
     /// `အောက်ပါ`
@@ -341,6 +356,13 @@ pub enum Kw
     /// `အခြားတန်ဖိုးများ`, "other values": the last item of the parameters of a
     /// C function that takes more arguments than it names
     OtherValues,
+    /// `နှင့်အတူ`, "together with": the word after `အခြားတန်ဖိုးများ` that
+    /// ends the item form of the parameters of such a C function
+    Along,
+    /// `အခြားတန်ဖိုးများနှင့်အတူ`, "together with other values": ends the
+    /// item form of the parameters of a C function that takes more
+    /// arguments than it names
+    WithOtherValues,
     /// `လုပ်ဆောင်ချက်တစ်ခု`, "a function", in the header of an external function
     OneFunction,
     /// `လက်ခံမည်`, "will accept": ends the parameters of an external function
@@ -353,6 +375,9 @@ pub enum Kw
     ReturningRel,
     /// `လုပ်ဆောင်ချက် အမျိုးအစား`, "function kind": closes a function kind
     FnKind,
+    /// `ဟူသော လုပ်ဆောင်ချက်`, "the function called": after a name, the
+    /// function of that name as a value
+    FnValue,
     /// `လုပ်ဆောင်ကာ`
     DoAnd,
     /// `လုပ်ဆောင်စရာများ`
@@ -379,16 +404,6 @@ pub enum Kw
     Convert,
     /// `လုပ်ဆောင်သော ရလဒ်`
     CallResult,
-    /// `လုပ်ဆောင်ချက် မှ ပြောင်းလဲနိုင်သော`: a parameter the function can change
-    EditParam,
-    /// `လုပ်ဆောင်ချက် မှ ပြောင်းလဲနိုင်သည်`: the mark of an argument the function
-    /// can change
-    EditArg,
-    /// `ရလဒ် အဖြစ် ပြန်ပေးပါ`
-    ReturnValue,
-    /// `ရလဒ်ကောင်း အဖြစ် ပြန်ပေးပါ`: gives back the good result of a function
-    /// that can fail
-    ReturnGood,
     /// `လုပ်ဆောင်သော ရလဒ်ကောင်း`: a call that passes a failure on
     CallGoodResult,
     /// `သည့် ရလဒ်`: the end of the short call expression `<fn> သည့် ရလဒ်`
@@ -398,9 +413,7 @@ pub enum Kw
     External,
     /// `သည့် ရလဒ်ကောင်း`: the short call expression that passes a failure on
     UsedGoodResult,
-    /// `အမှားအယွင်း အဖြစ် ပြန်ပေးပါ`: gives back an error value
-    ReturnFault,
-    /// `မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးပါ`: a call statement passes a
+    /// `မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးမည်`: a call statement passes a
     /// failure on
     PassFault,
     /// `လုပ်ဆောင်ချက် အောင်မြင်သည် ဟု သတ်မှတ်မည်`: the function ends with a
@@ -409,10 +422,11 @@ pub enum Kw
     /// `လုပ်ဆောင်ချက် မအောင်မြင်ပါ ဟု သတ်မှတ်မည်`: the function ends with a
     /// failure that holds no error value
     MarkFailed,
-    /// `အောက်ပါ တို့ကို လုပ်ဆောင်ပါ`
+    /// `အောက်ပါ တို့ကို လုပ်ဆောင်မည်`: opens a block, or the steps of a function
     BlockOpen,
-    /// `အောက်ပါ တို့ကို လုပ်ဆောင်မည်`
-    FnOpen,
+    /// `အောက်ပါ တို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်`: opens a block of marked
+    /// code
+    UnsafeBlockOpen,
     /// `နေရာယူ၍ လိပ်စာ ကို`
     AllocTarget,
     /// `မင်မိုရီ တွင်`; an allocation follows.
@@ -427,29 +441,25 @@ pub enum Kw
     ProgramClose,
 
     // statement verbs
-    /// `ပြသပါ`
+    /// `ပြသမည်`
     Print,
-    /// `ထားပါ`
+    /// `ထားမည်`
     Assign,
-    /// `ပြန်ပေးပါ`
-    Return,
     /// `ပြန်ပေးမည်`
     WillReturn,
-    /// `လုပ်ဆောင်ပါ`
-    Call,
     /// `ဖြစ်ပါစေ`
     Let,
-    /// `ရပ်ပါ`
+    /// `ရပ်မည်`
     Stop,
-    /// `ကျော်ပါ`
+    /// `ကျော်မည်`
     Skip,
-    /// `ထည့်သွင်းပါ`, which ends an import sentence
+    /// `ထည့်သွင်းမည်`, which ends an import sentence
     Import,
-    /// `ထည့်ပါ`, which adds a cell to a list
+    /// `ထည့်မည်`, which adds a cell to a list
     Add,
-    /// `ဖျက်ပါ`, which removes the last cell of a list
+    /// `ဖျက်မည်`, which removes the last cell of a list
     Remove,
-    /// `အစားထိုးပါ`, which replaces a range of text with a value
+    /// `အစားထိုးမည်`, which replaces a range of text with a value
     Replace,
 
     // control
@@ -525,6 +535,39 @@ pub enum Kw
     /// `မအောင်မြင်သည့်သတင်း`, "news of failure": the error side of a result
     /// kind with no error value
     FailureNews,
+    /// `ရှိကောင်းရှိနိုင်သော`, "that might contain": an optional kind,
+    /// `T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`
+    Perhaps,
+    /// `ရှိနိုင်သော`, "that can hold": a result kind,
+    /// `T သို့မဟုတ် အမှားအယွင်းအနေဖြင့် E ရှိနိုင်သော ဒေတာဆဲလ်`
+    CanHold,
+    /// `ဒေတာဆဲလ်`, "a data cell": ends an optional or a result kind
+    DataCell,
+    /// `အလွတ်`, "blank": the optional that holds no data
+    NoData,
+    /// `ကနဦးတန်ဖိုး`, "the initial value": the written default of the kind
+    /// its place takes, and the mark of the default member of an enumeration
+    Initial,
+    /// `ဒေတာ` or `အချက်အလက်`, "data": what an optional holds
+    Data,
+    /// `ထဲတွင်`, "in": after the optional or the result a test looks in
+    Within,
+    /// `မရှိ` or `မရှိနေ`, "is not there"
+    NotLocated,
+    /// `ဒေတာ ရှိ`: a test that an optional holds data
+    HasData,
+    /// `ဒေတာ မရှိ`: a test that an optional holds no data
+    LacksData,
+    /// `ရလဒ်ကောင်း ရှိ` or `အောင်မြင်သည့်သတင်း ရှိ`: a test that a result is good
+    HasGood,
+    /// `အမှားအယွင်း ရှိ` or `မအောင်မြင်သည့်သတင်း ရှိ`: a test that a result failed
+    HasFault,
+    /// `အမှားအယွင်း ဒေတာ`, after `ထဲမှ`: the error value of a result
+    FaultData,
+    /// `ဟူသော အမှားအယွင်း`: an error value, `<value> ဟူသော အမှားအယွင်း`
+    CalledFault,
+    /// `အမှားအယွင်းအနေဖြင့်`: marks the error side of a result kind
+    AsFault,
     /// `အောင်မြင်သည်`, "it succeeded"
     Succeeded,
     /// `မအောင်မြင်ပါ`, "it did not succeed"
@@ -541,18 +584,25 @@ pub enum Kw
     Note,
     /// `အများသုံး`, which marks a top-level declaration as exported
     Export,
+    /// `မျှဝေနိုင်သော`, which marks a struct whose values are shared objects
+    Shareable,
+    /// `စိတ်မချရသော`, "not to be trusted": marks a function whose statements
+    /// can work with pointers, and which marked code alone can call
+    Unsafe,
+    /// `စိတ်မချရသော်လည်း`, "though not to be trusted": in the phrase that
+    /// opens a block of marked code
+    UnsafeThough,
 
     // pointers and the heap
     /// `လိပ်စာ`
     Address,
-    /// `လိပ်စာအကြမ်း`
-    RawAddress,
-    /// `ငှားထားသော`
-    Borrowed,
-    /// `တန်ဖိုးအငှား`
-    Lend,
-    /// `ဗလာ`
+    /// `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, "an address that points at nothing":
+    /// the null pointer, joined from its three words
     Null,
+    /// `မည်သည်ကိုမှ`, "nothing at all": the first word of the null pointer
+    Nothing,
+    /// `မညွှန်းသော`, "that points at no": the second word of the null pointer
+    PointsAtNo,
     /// `အရွယ်အစား`
     SizeOf,
     /// `မင်မိုရီ` or `မှတ်ဉာဏ်`
@@ -575,6 +625,20 @@ pub enum Kw
     WillResize,
     /// `ပြန်လည်စွန့်လွှတ်မည်`
     WillRelease,
+    /// `ခေါ်ဆိုခွင့်`, "leave to call": the first piece of the statements that
+    /// let C keep a function value and take that leave back
+    CallLeave,
+    /// `ပြုမည်`, "will grant": the last piece of `ခေါ်ဆိုခွင့် ပြုမည်`
+    WillGrant,
+    /// `ပြန်လည်ရုပ်သိမ်းမည်`, "will take back": the last piece of
+    /// `ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်`
+    WillRevoke,
+    /// `ခေါ်ဆိုခွင့် ပြုမည်`: lets C keep a function value and call it after the
+    /// call that gave it
+    AllowCall,
+    /// `ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်`: takes back the leave
+    /// `ခေါ်ဆိုခွင့် ပြုမည်` gave
+    RevokeCall,
     /// `ဆီသို့`
     Toward,
     /// `ကူးယူမည်`: a blit whose two ranges must not overlap
@@ -582,8 +646,14 @@ pub enum Kw
     /// `ပြောင်းထည့်မည်`: a blit whose two ranges can overlap, or a move of a
     /// value into a variable
     WillShift,
-    /// `ကူးထည့်မည်`: a duplicate of a value into a variable
+    /// `ကူးထည့်မည်`: a duplicate of a value into a variable; a shallow duplicate
+    /// of an object
     WillDupIn,
+    /// `အကုန်ကူးထည့်မည်`: a deep duplicate of a value into a variable: each
+    /// object inside is copied too
+    WillDupAllIn,
+    /// `အကုန်`: the word before `ကူးထည့်မည်` in a deep duplicate, written apart
+    All,
     /// `ဖြည့်မည်`
     WillFill,
 
@@ -610,8 +680,6 @@ pub enum Kw
     Having,
     /// `တို့ပါသော`, before `စာရင်း` in a list literal
     ListOf,
-    /// `တစ်စိတ်တစ်ပိုင်း`, after a count-less `စာရင်း`: a slice kind
-    Part,
     /// `မှစ၍`, between the start and the length of a range
     StartingAt,
     /// `ထိ`, after the last cell or character of the range a replace
@@ -621,8 +689,7 @@ pub enum Kw
     CellWord,
 
     // structs
-    /// `အချက်အလက်အမျိုးအစား`, also written `ဒေတာအမျိုးအစား`: opens a struct or an
-    /// enumeration declaration
+    /// `အချက်အလက်အမျိုးအစား`, also written `ဒေတာအမျိုးအစား`: opens a kind alias
     DataKindOpen,
     /// `တို့`, a piece of the field list closers
     Plural,
@@ -642,8 +709,6 @@ pub enum Kw
     // enumerations and switch
     /// `အမျိုးအစား`, "kind": a piece of the function kind phrase
     KindWord,
-    /// `ဆိုသည်မှာ`, between the name of an enumeration and its members
-    Meaning,
     /// `ထဲမှ`, between `<name>များ` and a member: `အရောင်များထဲမှ နီ`
     Among,
     /// `တခြား`, the opener of the default arm of a switch
@@ -655,13 +720,33 @@ pub enum Kw
     /// `လည်းကောင်း`, "as well as": ends each item of a list of parameters
     /// that takes captures
     AsWellAs,
-    /// `ငှား၍`, "lending": a capture the closure borrows
-    Lending,
     /// `မှတ်ယူနိုင်ပါသည်`, "can be taken as": a piece of the alias closer
     CanRegard,
     /// `ဟုလည်း မှတ်ယူနိုင်ပါသည်`, "can also be taken as": closes a kind alias,
-    /// `ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
+    /// `ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
     AliasClose,
+    /// `မှတ်ယူနိုင်ပြီး`, "can be taken as, and": a piece of the alias closer
+    /// that a classifier clause follows
+    CanRegardAnd,
+    /// `ဟုလည်း မှတ်ယူနိုင်ပြီး`: closes a kind alias; a classifier clause follows
+    AliasCloseAnd,
+
+    // the declarations of structs and enumerations
+    /// `အချက်အလက်အစုအဝေး`, also written `ဒေတာအစုအဝေး`: the word of a struct
+    /// declaration, `<name> ဟူသော ဒေတာအစုအဝေးတွင် ...`
+    StructWord,
+    /// `အချက်အလက်အမျိုးအစားကွဲ`, also written `ဒေတာအမျိုးအစားကွဲ`: the word of an
+    /// enumeration declaration, `<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ...`
+    EnumWord,
+    /// `သုံးမည့်`, "to be used": a piece of the mark of the initial variant
+    ToUse,
+    /// `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်`: marks the variant that is the initial
+    /// value of its enumeration
+    InitialMark,
+    /// `တန်ဖိုးအနေဖြင့်`, "as its value": opens the value of a variant
+    ValueAs,
+    /// `ရှိသည့်`, "which has": closes the value of a variant
+    HavingRel,
 }
 
 impl Kw

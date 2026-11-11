@@ -1,5 +1,3 @@
-use zakac_diagnostics::ownership::null_call;
-use zakac_diagnostics::ownership::null_call_possible;
 use zakac_diagnostics::ownership::null_deref;
 use zakac_diagnostics::ownership::null_deref_possible;
 use zakac_ir_builder::ir::Expr;
@@ -11,15 +9,15 @@ use zakac_rust_sugars::ret_if;
 use crate::checks::report;
 use crate::checks::slot_name;
 use crate::flow::Flow;
-use crate::state::OwnerState;
 use crate::state::State;
 
-/// Report a dereference through a pointer slot that is `ဗလာ` on each
-/// path, and, under strict, through one that can hold an allocation not
-/// compared with `ဗလာ`. A slot that is not known (a parameter, a global
-/// in a function or after a call, a call result) or that is `ဗလာ` on
-/// some paths is silent: warning there would flag most code. A slot moved out
-/// on each path is left to the move check.
+/// Report a dereference through a pointer slot that is the null address on
+/// each path, and, under strict, through one that can hold an allocation not
+/// compared with it. An object or a function value is never null; one read
+/// before it is set is the check of unset values to report. A slot that is not
+/// known (a parameter, a global in a function or after a call, a call result)
+/// or that is null on some paths is silent: warning there would flag most
+/// code. A slot moved out on each path is left to the move check.
 ///
 /// # Arguments
 ///
@@ -33,6 +31,7 @@ pub(crate) fn check_deref(flow: &mut Flow, addr: &Expr, state: &State)
     {
         return;
     };
+    ret_if!(!holds_pointer(flow, place));
     let Some(info) = state.ptr(place)
     else
     {
@@ -42,42 +41,8 @@ pub(crate) fn check_deref(flow: &mut Flow, addr: &Expr, state: &State)
     let seen = info.state.as_read();
     let name = slot_name(flow, place);
     ret_if!(seen.is_null(), report(flow, null_deref(addr.span, name)));
-    let warn = flow.options.strict && seen.shares_fresh();
+    let warn = flow.options.strict && seen.shares_untested();
     do_if!(warn, report(flow, null_deref_possible(addr.span, name)));
-}
-
-/// Report a call through a function value that is `ဗလာ` on each path, and,
-/// under strict, through one that a `ဗလာ` the routine wrote can reach on some
-/// path, not compared with `ဗလာ` since (the `FRESH` mark). As for a pointer, a
-/// value that comes from outside (a parameter, a global in a function, a call
-/// result, a cell) is silent; the VM stops a call through `ဗလာ` there.
-///
-/// # Arguments
-///
-/// * `flow` - The flow.
-/// * `callee` - The function value.
-/// * `state` - The facts when it runs.
-pub(crate) fn check_callee(flow: &mut Flow, callee: &Expr, state: &State)
-{
-    let strict = flow.options.strict;
-    let Some(place) = deref_slot(callee)
-    else
-    {
-        return;
-    };
-    let Some(info) = state.ptr(place)
-    else
-    {
-        return;
-    };
-    let seen = info.state.as_read();
-    let name = slot_name(flow, place);
-    let null = seen.without(OwnerState::FRESH).is_null();
-    ret_if!(null, report(flow, null_call(callee.span, name)));
-    do_if!(
-        strict && seen.shares_fresh(),
-        report(flow, null_call_possible(callee.span, name))
-    );
 }
 
 /// The pointer slot an address comes from.
@@ -89,7 +54,7 @@ pub(crate) fn check_callee(flow: &mut Flow, callee: &Expr, state: &State)
 /// # Returns
 ///
 /// The slot read, under conversions, lends and offsets, which keep
-/// whether the address is `ဗလာ`.
+/// whether the address is null.
 fn deref_slot(addr: &Expr) -> Option<Place>
 {
     match &addr.node
@@ -100,4 +65,25 @@ fn deref_slot(addr: &Expr) -> Option<Place>
         | ExprNode::PtrAdd { base: operand, .. } => deref_slot(operand),
         _ => None,
     }
+}
+
+/// Whether a slot holds a pointer, the one kind that can be the null
+/// address.
+///
+/// # Arguments
+///
+/// * `flow` - The flow.
+/// * `place` - The slot.
+///
+/// # Returns
+///
+/// `true` for a pointer slot.
+fn holds_pointer(flow: &Flow, place: Place) -> bool
+{
+    let slot = match place
+    {
+        Place::Global(n) => flow.module.globals.get(n as usize),
+        Place::Local(n) => flow.routine.locals.get(n as usize),
+    };
+    slot.is_some_and(|s| s.kind.is_ptr())
 }

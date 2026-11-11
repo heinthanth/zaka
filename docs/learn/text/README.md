@@ -1,6 +1,6 @@
 ---
 title: Text
-description: Text in double quotes is a value of the kind စာသား - store it, fill template slots in it with values, join it, compare it and copy it.
+description: Text in double quotes is a value of the kind စာသား - store it, fill template slots in it with values, join it, compare it and duplicate it.
 ---
 
 # Text
@@ -11,9 +11,9 @@ return it from one, and join two pieces of it.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"မင်္ဂလာပါ" ဟု ပြသပါ။
-"ဆို \"ဟယ်လို\"" ဟု ပြသပါ။               // \" puts a double quote inside
-"ပထမကြောင်း{နောက်တစ်ကြောင်း}ဒုတိယကြောင်း" ဟု ပြသပါ။
+"မင်္ဂလာပါ" ဟု ပြသမည်။
+"ဆို \"ဟယ်လို\"" ဟု ပြသမည်။               // \" puts a double quote inside
+"ပထမကြောင်း{နောက်တစ်ကြောင်း}ဒုတိယကြောင်း" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -35,9 +35,9 @@ it with `ကို`, as it would a number.
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
-အမည် ကို ပြသပါ။
-အမည် ကို "အောင်အောင်" ဟု ထားပါ။
-အမည် ကို ပြသပါ။
+အမည် ကို ပြသမည်။
+အမည် ကို "အောင်အောင်" ဟု ထားမည်။
+အမည် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -46,21 +46,21 @@ it with `ကို`, as it would a number.
 အောင်အောင်
 ```
 
-A `စာသား` declared with no value holds no text at all, and prints as a blank line.
+`ကနဦးတန်ဖိုး` for `စာသား` is `""`, text with no characters, which prints as a blank line.
 
 ## Template literals
 
 A pair of braces inside a string is a *template slot*. It holds an expression, and the program
-writes the value of that expression in its place, the same as `ပြသပါ` would print it.
+writes the value of that expression in its place, the same as `ပြသမည်` would print it.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၂၅ ဖြစ်ပါစေ။
-"{အမည်} သည် အသက် {အသက်} နှစ် ဖြစ်သည်" ဟု ပြသပါ။
-"နောက်နှစ်တွင် {အသက် + ၁} နှစ်" ဟု ပြသပါ။
-"{၁.၅} {မှန်} {'က'} {[၁၊ ၂၊ ၃]}" ဟု ပြသပါ။
-"{{ မဟုတ် }}" ဟု ပြသပါ။                 // a doubled brace is a brace
+ကိန်းရှင် အသက် သည် ၂၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+"{အမည်} သည် အသက် {အသက်} နှစ် ဖြစ်သည်" ဟု ပြသမည်။
+"နောက်နှစ်တွင် {အသက် + ၁} နှစ်" ဟု ပြသမည်။
+"{၁.၅} {မှန်} {'က'} {[၁၊ ၂၊ ၃]}" ဟု ပြသမည်။
+"{{ မဟုတ် }}" ဟု ပြသမည်။                 // a doubled brace is a brace
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -76,8 +76,8 @@ template slots of its own:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် ၉၅ ဖြစ်ပါစေ။
-"ရလဒ်: {"အမှတ် {အမှတ်}" + " (အောင်)"}" ဟု ပြသပါ။
+ကိန်းရှင် အမှတ် သည် ၉၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+"ရလဒ်: {"အမှတ် {အမှတ်}" + " (အောင်)"}" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -92,7 +92,7 @@ A mistake inside a template slot is reported at its place inside the quotes:
 
 ```zaka-error ZK0301
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"{မသိ}" ဟု ပြသပါ။
+"{မသိ}" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -111,8 +111,8 @@ and each read of it is a duplicate, so it is never left blank:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မမ" ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ဟေး {အမည်}" ဖြစ်ပါစေ။
-ခ ကို ပြသပါ။
-အမည် ကို ပြသပါ။
+ခ ကို ပြသမည်။
+အမည် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -132,9 +132,9 @@ A text constant built from a variable is an error (ZK0606): declare such text wi
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
 ကိန်းရှင် နှုတ်ဆက် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ " + အမည် ဖြစ်ပါစေ။
-နှုတ်ဆက် ကို ပြသပါ။
-နှုတ်ဆက် ကို နှုတ်ဆက် + "!" ဟု ထားပါ။
-နှုတ်ဆက် ကို ပြသပါ။
+နှုတ်ဆက် ကို ပြသမည်။
+နှုတ်ဆက် ကို နှုတ်ဆက် + "!" ဟု ထားမည်။
+နှုတ်ဆက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -149,7 +149,7 @@ joins these"):
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
-"မင်္ဂလာပါ "၊ အမည်၊ "!" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသပါ။
+"မင်္ဂလာပါ "၊ အမည်၊ "!" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -162,7 +162,7 @@ Text joins to text alone. `+` with a number is an error:
 ```zaka-error ZK0403
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "အဆင့် " ဖြစ်ပါစေ။
-စာ + ၁ ကို ပြသပါ။
+စာ + ၁ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -179,8 +179,8 @@ To put a number into text, use a template slot: `"အဆင့် {၁}"`.
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် "မောင်မောင်" ဖြစ်ပါစေ။
-အမည် == "မောင်မောင်" ကို ပြသပါ။
-အမည် != "မမ" ကို ပြသပါ။
+အမည် == "မောင်မောင်" ကို ပြသမည်။
+အမည် != "မမ" ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -198,10 +198,10 @@ variable then holds its own, and a change to one leaves the other as it was.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပထမ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "Zaka" ဖြစ်ပါစေ။
 ကိန်းရှင် ဒုတိယ သည် စာသား တစ်ခု ဖြစ်ပါစေ။
-ဒုတိယ ကို ပထမ ဟု ထားပါ။
-ဒုတိယ ကို ဒုတိယ + "!" ဟု ထားပါ။
-ပထမ ကို ပြသပါ။
-ဒုတိယ ကို ပြသပါ။
+ဒုတိယ ကို ပထမ ဟု ထားမည်။
+ဒုတိယ ကို ဒုတိယ + "!" ဟု ထားမည်။
+ပထမ ကို ပြသမည်။
+ဒုတိယ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -212,13 +212,13 @@ Zaka!
 
 Passing text to a function copies it too, so a function cannot change the caller's
 variable, not even with a character write or an add. When the first variable is not read again, nothing is copied: the compiler
-hands its text over to the second. Part II tells what copies cost, and how to read text
-with none: see [What a duplicate costs](../forms/costs.md).
+hands its text over to the second. Part II tells what copies cost: see
+[What a duplicate costs](../forms/costs.md).
 
 ## Hands on
 
-- Print a short poem, one line per `ပြသပါ`.
-- Print the same poem with a single `ပြသပါ`, using `{နောက်တစ်ကြောင်း}`.
+- Print a short poem, one line per `ပြသမည်`.
+- Print the same poem with a single `ပြသမည်`, using `{နောက်တစ်ကြောင်း}`.
 - Store a name and an age, and print a sentence about them with two template slots.
 - Put a name into a second variable, change the second, and print both.
 

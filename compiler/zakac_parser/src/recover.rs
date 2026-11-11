@@ -149,7 +149,7 @@ fn track_depth(depth: u32, kind: TokenKind) -> u32
 {
     match kind
     {
-        TokenKind::Kw(Kw::BlockOpen | Kw::FnOpen | Kw::FnOpenRet) => depth + 1,
+        TokenKind::Kw(Kw::BlockOpen | Kw::UnsafeBlockOpen | Kw::FnOpenRet) => depth + 1,
         TokenKind::Kw(Kw::BlockClose | Kw::ProgramClose) => depth.saturating_sub(1),
         _ => depth,
     }

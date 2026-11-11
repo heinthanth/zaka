@@ -54,20 +54,20 @@ const LINES: [Line; 7] = [
         label: Some("website.glance.variable"),
     },
     Line {
-        code: "၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ စုစုပေါင်း ကို စုစုပေါင်း + ကိန်း ဟု ထားပါ။",
+        code: "၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ စုစုပေါင်း ကို စုစုပေါင်း + ကိန်း ဟု ထားမည်။",
         pin: "ရေတွက်၍",
         label: Some("website.glance.count"),
     },
     Line {
-        code: "စုစုပေါင်း ဟု ပြသပါ။", pin: "ဟု", label: Some("website.glance.verb")
+        code: "စုစုပေါင်း ဟု ပြသမည်။", pin: "ဟု", label: Some("website.glance.verb")
     },
     Line {
-        code: "အကယ်၍ စုစုပေါင်း သည် ၅၀ ထက် ကြီးလျှင် \"များသည်\" ဟု ပြသပါ။",
+        code: "အကယ်၍ စုစုပေါင်း သည် ၅၀ ထက် ကြီးလျှင် \"များသည်\" ဟု ပြသမည်။",
         pin: "သည် ၅၀ ထက်",
         label: Some("website.glance.particles"),
     },
     Line {
-        code: "သို့မဟုတ်ပါက \"နည်းသည်\" ဟု ပြသပါ။",
+        code: "သို့မဟုတ်ပါက \"နည်းသည်\" ဟု ပြသမည်။",
         pin: "။",
         label: Some("website.glance.stop"),
     },

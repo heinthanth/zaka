@@ -25,15 +25,15 @@ parser        builds the tree of sentences         ZK02          zkast
     │  (the next two stages run when there is no error so far)
     ▼
 naturalness   warns about unnatural wording        ZK05  ┐
-names, kinds  resolves names, works out kinds      ZK03  ├─────  zksem
-              ZK04, and ZK0705, ZK0713 to ZK0717            ┘
+names, kinds  resolves names, works out kinds,     ZK03  ├─────  zksem
+              checks the marks of unsafe code      ZK04  ┘
     │
     ▼
 IR builder    lowers the tree to the IR                          zkir
 folding       works out the constants              ZK06
     │
     ▼
-borrow check  follows owners and borrows           ZK07          zkbck
+checker       flow checks and the pointer lint     ZK07          zkbck
     │
     ▼
 codegen       writes the ops of the VM (`build`)                 zkc
@@ -54,8 +54,8 @@ A stage runs when the stages before it found no *error*. A warning never stops t
 | --- | --- |
 | the lexer or the parser | naturalness, names, kinds, and all the stages after |
 | names and kinds (and a warning under `--strict-particles`) | the IR builder and all after |
-| constant folding | the borrow check and all after |
-| the borrow check | the code generator and the VM |
+| constant folding | the checker and all after |
+| the checker | the code generator and the VM |
 
 This keeps one broken sentence from making a chain of errors in the stages that depend
 on it. Inside a stage, the first problem does not end the stage: the lexer reports each
@@ -67,7 +67,7 @@ This sentence adds two numbers and prints the sum:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ + ၂ ကို ပြသပါ။
+၁ + ၂ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -115,7 +115,7 @@ number  (burmese digits)    ၁
 punct   plus                +
 number  (burmese digits)    ၂
 kw      ko                  ကို
-kw      print               ပြသပါ
+kw      print               ပြသမည်
 punct   full_stop           ။
 eof
 ```
@@ -160,8 +160,10 @@ above has none. See [Natural wording](../language/naturalness.md).
 
 `zakac semcheck` resolves each name to its declaration, works out the *kind* of each
 expression, and checks that the kinds fit. It owns **ZK03** (names and scopes) and
-**ZK04** (kinds), and also the kind rules of owners and borrows: ZK0705 and ZK0713 to
-ZK0717. The artifact keeps the tree and adds a table from each expression to its kind:
+**ZK04** (kinds), the rules of marked code among them: pointer work outside marked code
+(ZK0468), a marked function as a value (ZK0469), an owned marker on no pointer (ZK0470),
+a mark under `--no-unsafe` (ZK0471) and a C declaration that passes or gives a pointer, with no mark (ZK0472). The
+artifact keeps the tree and adds a table from each expression to its kind:
 
 ```text
 0 (the 1)    isize
@@ -189,22 +191,24 @@ The add is gone. Without folding (`--fold none`), the IR keeps `add` with `const
 and `const 2` under it. Folding owns **ZK06**: a sum of constants that does not fit its
 kind, a division with the constant zero as divisor, a constant cell number outside its list.
 
-### Borrow check
+### The checker
 
-`zakac borrowck` follows each owner and each borrow of the program through the IR,
-and reports **ZK07**: a block used after it moved, a borrow that outlives its block, a
-block never given back, a read past the end of a block. The sentence above holds no
+`zakac borrowck` follows the values of the program through the IR and reports **ZK07**.
+Its flow checks run on each program: a read of a value before it is set, a read past the
+end of a block, an operation that overflows for each value. Its pointer lint runs on marked code: a
+block used after it was given back, a block never given back, the address of a local that
+escapes, and a read of a place after an owned hand-over. The sentence above holds no
 pointer, so there is nothing to find. The artifact adds a *digest* of each function: what
-it frees, resizes or moves out through its parameters, and which parameters its result
+it frees, resizes or hands over through its parameters, and which parameters its result
 can point into. A call site uses the digest instead of looking inside the function again.
 
-The check also marks the cell reads it has proved to be in range, so the code generator
-can leave out the run-time check for those. See [Pointer checks](checks.md) and [The
-borrow checker](../internals/borrow-checker.md).
+The checker also marks the cell reads it has proved to be in range, so the code generator
+can leave out the run-time check for those. See [Compiler checks](checks.md) and [The
+flow checker](../internals/borrow-checker.md).
 
 ### Code generation
 
-`zakac build` turns the IR into the ops of the stack machine, with a table that maps
+`zakac build` turns the IR into the ops of the VM, with a table that maps
 each op back to a range of the source:
 
 ```text
@@ -254,7 +258,7 @@ artifact of another.
 | parser | `parse` | the tree |
 | names and kinds | `semcheck` | the tree and the kind of each expression |
 | IR builder, folding | `irgen` | the IR after folding |
-| borrow check | `borrowck` | the IR and the digest of each function |
+| checker | `borrowck` | the IR and the digest of each function |
 | codegen | `build` | the module of ops, the one `run` reads |
 
 [Commands](commands.md) lists the options and the file extensions.

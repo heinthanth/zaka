@@ -20,8 +20,8 @@ segmenter ──► lexer ──► parser ──► naturalness ──► names
                                                         │
     ┌───────────────────────────────────────────────────┘
     ▼
-IR builder ──► constant folding ──► borrow check ──► codegen ──► the VM
- the IR         ZK06                 ZK07             the ops      runs the ops
+IR builder ──► constant folding ──► checker ──► codegen ──► the VM
+ the IR         ZK06                 ZK07        the ops      runs the ops
 ```
 
 The segmenter and the lexer work as one step in practice, and so do the IR builder and
@@ -42,7 +42,7 @@ One command takes a source file through all the stages and runs it:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသပါ။
+"မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -64,4 +64,5 @@ exit code is 1; the [error messages](../reference/errors.md) page lists each cod
 - To see errors and kinds while editing: [Editors](editors.md).
 - To see what happens to a sentence: [Stages](stages.md).
 - To read how a stage is built: the chapter [Inside the compiler](../internals/README.md).
-- To learn what the checks follow: [Ownership and borrowing](../language/ownership.md).
+- To learn what the checks follow: [Compiler checks](checks.md) and [Unsafe
+  Zaka](../language/unsafe.md).

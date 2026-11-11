@@ -114,7 +114,7 @@ struct TreeBuilder<'a>
     /// Node number of the expression whose node opens next.
     pending_id: Option<NodeId>,
     /// Label of the node that opens next, in place of the label of its
-    /// type; an operator node goes by the short name of its operator.
+    /// kind; an operator node takes the short name of its operator.
     pending_label: Option<&'static str>,
 }
 

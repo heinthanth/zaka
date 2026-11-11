@@ -24,10 +24,10 @@ stage made, the *artifact*. The `run` command goes to the end and runs the progr
 | `parse` | the parser | the tree | `.zkast` / `.zkastt` |
 | `semcheck` | names, kinds and natural wording | the tree and the kind of each expression | `.zksem` / `.zksemt` |
 | `irgen` | the IR builder and constant folding | the IR | `.zkir` / `.zkirt` |
-| `borrowck` | the ownership check | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
+| `borrowck` | the checker: the flow checks and the pointer lint | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
 | `build` | the code generator of a target | the ops of the VM (`--target vm`), or an executable through C (`--target c`) | `.zkc` / `.zkct` |
 | `run` | the VM | nothing: the program runs | |
-| `lsp` | the ownership check, for each file an editor holds open | errors, colors and hovers, to the editor | |
+| `lsp` | the checker, for each file an editor holds open | errors, colors and hovers, to the editor | |
 
 Each stage also builds as a program of its own (`zakac_lexer`, `zakac_parser`,
 `zakac_semcheck`, `zakac_ir_builder`, `zakac_borrow_checker`, `zakac_burmese_segmenter`,
@@ -41,7 +41,7 @@ Here is a program that adds up two numbers and prints the sum:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ + ၂ ကို ပြသပါ။
+၁ + ၂ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -140,7 +140,7 @@ These belong to `irgen` and the stages after it, and to `run`:
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `--fold <LIST>` | `all` | the foldings to run: `all`, `none`, or a comma list of `exprs`, `consts` and `branches` |
-| `--no-raw` | off | refuse each raw address kind (`လိပ်စာအကြမ်း`) with ZK0717 |
+| `--no-unsafe` | off | refuse each mark `စိတ်မချရသော`, on a function or a block, with ZK0471 |
 
 `--fold` changes the IR, not what the program does. `exprs` replaces an operation on
 constants with its value, `consts` replaces a read of a `ကိန်းသေ` that was set to a
@@ -158,21 +158,20 @@ With `--fold none` the IR of `sum.zaka` keeps `add` with `1` and `2` as its two 
 without it, the IR holds the constant `3`.
 
 These belong to `borrowck` and the stages after it, and to `run`. These are explained
-in [Pointer checks](checks.md).
+in [Compiler checks](checks.md).
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `--mem-check <MODE>` | `error` | how the ownership check reports: `error`, `warn` or `off` |
-| `--mem-strict` | off | also report the accesses that the check cannot prove safe |
+| `--mem-check <MODE>` | `warn` | how the pointer lint of marked code is reported: `error`, `warn` or `off` |
+| `--mem-strict` | off | also report the accesses that the checker cannot prove safe (ZK0711) |
 | `--overflow <MODE>` | `stop` | what integer arithmetic does with a result outside its kind: `stop` stops the program and warns about an operation that overflows for each value it can see (ZK0719), `wrap` wraps it around; see [Overflow](../language/expressions.md#arithmetic) |
-| `--warn-duplicates` | off | warn about each statement that duplicates text or a list (ZK0720), after the compiler moves the values a place reads no more; see [Text](../language/text.md#copies) |
 
 These belong to `build --target vm` and to `run`:
 
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `--results <MODE>` | `in-place` | how a list or struct result reaches the caller: `in-place` builds it in the caller's slot, `duplicate` keeps it in the function's frame and duplicates it on return |
-| `--scratch <MODE>` | `apart` | where a list, struct or slice that a statement builds and uses up lives, such as a printed literal or a slice passed to a function: `apart` gives each one a slot of its own, `shared` lets a later statement take the slot of one before it |
+| `--scratch <MODE>` | `apart` | where a list or struct that a statement builds and uses up lives, such as a printed literal or a range passed to a function: `apart` gives each one a slot of its own, `shared` lets a later statement take the slot of one before it |
 
 The program prints the same in each mode. `duplicate` costs one more pass over each
 list or struct result. `shared` leaves fewer slots in a frame, and `apart` shows each
@@ -243,7 +242,7 @@ standard output, or to the file in `-o`. Here is the listing of a program with a
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-အသက် ကို ပြသပါ။
+အသက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -292,7 +291,7 @@ differs from the VM.
 | `--no-default-flags` | off | leave out the default C flags `-O2 -w -ffp-contract=off` |
 
 The flags reach the C compiler in this order: `-std=c11`, the default flags, `CFLAGS`,
-then each `--cc-flag`. The linker gets `-lm`, the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), `LDFLAGS`, then each `--ld-flag`. A later
+then each `--cc-flag`. The linker gets `-lm`, the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), `-lffi` when the build writes `zaka_cb.c` (a program that gives closures to C), `LDFLAGS`, then each `--ld-flag`. A later
 flag wins where the compiler keeps the last one, so `--cc-flag -O3` replaces `-O2`. `-w`
 silences warnings wherever it stands, so warnings need `--no-default-flags`.
 
@@ -347,12 +346,15 @@ $ printf 'က\nခ\n' | zakac run echo.zaka
 ```
 
 `--leaks` writes one line to standard error for each block that was never given back.
-Text is freed on its own, so its blocks never show here:
+The VM frees each counted block on its own, text, lists and shared objects among them,
+and runs the ring collector at the end, so the blocks that show here are those of the
+[heap statements](../language/unsafe.md#heap-statements) that marked code never gave back:
 
 ```console
-$ zakac run --mem-check warn --leaks leak.zaka
+$ zakac run --leaks leak.zaka
+warning[ZK0708]: the block that "ပ" holds is never given back or handed over on this path
 ၇
-leak: block at 0x101020, 16 octets
+leak: block at 0x101000, 8 octets
 ```
 
 ## Environment

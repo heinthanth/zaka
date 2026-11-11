@@ -16,10 +16,10 @@ A value that is either **true** or **false** is a *boolean*. Its kind is `မှ
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-မှန် ကို ပြသပါ။
-မမှန် ကို ပြသပါ။
-၅ သည် ၃ ထက် ကြီးသည် ဟု ပြသပါ။     // a comparison gives a boolean
-၅ < ၃ ကို ပြသပါ။                  // so does the operator form
+မှန် ကို ပြသမည်။
+မမှန် ကို ပြသမည်။
+၅ သည် ၃ ထက် ကြီးသည် ဟု ပြသမည်။     // a comparison gives a boolean
+၅ < ၃ ကို ပြသမည်။                  // so does the operator form
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -41,8 +41,8 @@ Like a verb, `မှန်` and `မမှန်` can take a polite ending. `မ
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-မှန်သည် ဟု ပြသပါ။
-မမှန်ပါ ဟု ပြသပါ။
+မှန်သည် ဟု ပြသမည်။
+မမှန်ပါ ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

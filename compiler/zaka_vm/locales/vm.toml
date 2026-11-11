@@ -1,7 +1,7 @@
 _version = 2
 
 [vm.about]
-en = "Run a Zaka program on the stack machine: a source file, or a codegen artifact."
+en = "Run a Zaka program on the Zaka VM: a source file, or a codegen artifact."
 
 [vm.max_depth]
 en = "The most nested calls before the program stops."
@@ -55,13 +55,22 @@ en = "character %{index} is outside the text, whose characters run from %{lo} to
 en = "the range from %{start} to %{end} ends before it starts"
 
 [vm.trap.null_call]
-en = "the function value is ဗလာ, so it holds no function to call"
+en = "the function value holds no function to call"
+
+[vm.trap.closed_handle]
+en = "a C function that took the handle over closed it, so it cannot be used again"
+
+[vm.trap.null_text]
+en = "C gave NULL where its declaration promised a value; declare the result or the parameter as an optional, \"T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်\", when C can give NULL"
+
+[vm.trap.null_object]
+en = "the object variable holds no object, so it has no field to read or write"
 
 [vm.trap.closure_escape]
-en = "the function value borrows the locals around its function, so it cannot go where it outlives them"
+en = "C called a closure after the call that gave it ended, and C has no leave to call it; give one with \"ခေါ်ဆိုခွင့် ပြုမည်\""
 
-[vm.trap.closure_owner]
-en = "the closure owns a block, so it cannot be duplicated: move it, or lend it to a call"
+[vm.callback_thread]
+en = "C called a function of the program from a thread other than the one that runs it; the VM runs on one thread, so the run ends here"
 
 [vm.trap.foreign_call]
 en = "the C function %{name} runs in \"zakac run\" and in native builds, not in this VM"
@@ -122,6 +131,9 @@ en = "the result holds an error, not a good result: %{e}"
 
 [vm.trap.not_fault]
 en = "the result is a good result, not an error"
+
+[vm.trap.no_data]
+en = "the optional holds no data"
 
 [vm.trap.text_cut]
 en = "a range of text at %{addr} starts or ends inside a character"

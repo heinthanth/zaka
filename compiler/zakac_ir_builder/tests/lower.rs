@@ -40,12 +40,12 @@ fn printed(s: &Stmt) -> &Expr
 #[test]
 fn declarations_store_values_and_defaults()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
+    let text = "ကိန်းရှင် က သည် ၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ဃ သည် စာလုံး တစ်လုံး ဖြစ်ပါစေ။
 ကိန်းရှင် င သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။
-ကိန်းသေ စ သည် ဒဿမကိန်း ၂.၅ ဖြစ်ပါစေ။";
+ကိန်းသေ စ သည် ၂.၅ ဟူသော ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။";
     let expected = [
         "(set g0 5:isize)",
         "(set g1 0:i8)",
@@ -67,7 +67,7 @@ fn negated_literals_are_constants()
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အနုတ် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် ၁၆ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၃ ဖြစ်ပါစေ။
 ကိန်းရှင် ဃ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -(၅) ဖြစ်ပါစေ။
--က ကို ပြသပါ။";
+-က ကို ပြသမည်။";
     let expected = [
         "(set g0 -128:i8)",
         "(set g1 -5:isize)",
@@ -81,12 +81,12 @@ fn negated_literals_are_constants()
 #[test]
 fn widening_becomes_explicit()
 {
-    let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
+    let text = "ကိန်းရှင် က သည် ၅ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
-ခ ကို က + ခ ဟု ထားပါ။
-က < ခ ကို ပြသပါ။
+ခ ကို က + ခ ဟု ထားမည်။
+က < ခ ကို ပြသမည်။
 ကိန်းရှင် ဂ သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
-ကိန်းရှင် ဃ သည် ၃၂ ဘစ် ဒဿမကိန်း ၁ ဖြစ်ပါစေ။";
+ကိန်းရှင် ဃ သည် ၁ ဟူသော ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။";
     let expected = [
         "(set g0 5:i8)",
         "(set g1 (widen i16 g0))",
@@ -101,7 +101,8 @@ fn widening_becomes_explicit()
 #[test]
 fn verbs_and_notation_lower_alike()
 {
-    let head = "ကိန်းရှင် က သည် ကိန်းပြည့် ၆ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ကိန်းပြည့် ၄ ဖြစ်ပါစေ။\n";
+    let head = "ကိန်းရှင် က သည် ၆ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ၄ ဟူသော ကိန်းပြည့် တစ်ခု \
+                ဖြစ်ပါစေ။\n";
     let pairs = [
         ("က နှင့် ခ ၏ ပေါင်းလဒ်", "က + ခ"),
         ("က ကို ခ ဖြင့် စားသော စားကြွင်း", "က % ခ"),
@@ -113,22 +114,22 @@ fn verbs_and_notation_lower_alike()
     ];
     for (verbal, notation) in pairs
     {
-        let a = plain(&format!("{head}{verbal} ကို ပြသပါ။"));
-        let b = plain(&format!("{head}{notation} ကို ပြသပါ။"));
+        let a = plain(&format!("{head}{verbal} ကို ပြသမည်။"));
+        let b = plain(&format!("{head}{notation} ကို ပြသမည်။"));
         assert_eq!(a, b, "{verbal}");
     }
-    let shift = plain(&format!("{head}က << ၂ ကို ပြသပါ။"));
+    let shift = plain(&format!("{head}က << ၂ ကို ပြသမည်။"));
     assert_eq!(shift[2], "(print (<< g0 2:usize))");
 }
 
 #[test]
 fn conversions_and_logic()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၆ ဖြစ်ပါစေ။
-က ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-(က > ၁ && က < ၉) ကို ပြသပါ။
-(က == ၁ မဟုတ်) ကို ပြသပါ။
-\"မင်္ဂလာပါ\" ဟု ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ၆ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+(က > ၁ && က < ၉) ကို ပြသမည်။
+(က == ၁ မဟုတ်) ကို ပြသမည်။
+\"မင်္ဂလာပါ\" ဟု ပြသမည်။";
     let expected = [
         "(set g0 6:isize)",
         "(print (cast f64 g0))",
@@ -142,12 +143,12 @@ fn conversions_and_logic()
 #[test]
 fn blocks_flatten_and_shadowing_gets_a_new_slot()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
-အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ကိန်းရှင် က သည် ကိန်းပြည့် ၂ ဖြစ်ပါစေ။
-က ကို ပြသပါ။
+    let text = "ကိန်းရှင် က သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ၂ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+က ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-က ကို ပြသပါ။";
+က ကို ပြသမည်။";
     let expected = ["(set g0 1:isize)", "(set l0 2:isize)", "(print l0)", "(print g0)"];
     assert_eq!(plain(text), expected);
 }
@@ -155,10 +156,10 @@ fn blocks_flatten_and_shadowing_gets_a_new_slot()
 #[test]
 fn branches_nest_in_the_else_list()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
-အကယ်၍ က သည် ၀ အောက် ငယ်လျှင် \"a\" ဟု ပြသပါ။
-ထိုသို့မဟုတ်ဘဲ က သည် ၀ နှင့် ညီလျှင် \"b\" ဟု ပြသပါ။
-သို့မဟုတ်ပါက \"c\" ဟု ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+အကယ်၍ က သည် ၀ အောက် ငယ်လျှင် \"a\" ဟု ပြသမည်။
+ထိုသို့မဟုတ်ဘဲ က သည် ၀ နှင့် ညီလျှင် \"b\" ဟု ပြသမည်။
+သို့မဟုတ်ပါက \"c\" ဟု ပြသမည်။";
     let expected = "(if (< g0 0:isize) (block (print \"a\")) (block (if (== g0 \
                     0:isize) (block (print \"b\")) (block (print \"c\")))))";
     assert_eq!(plain(text)[1], expected);
@@ -167,15 +168,15 @@ fn branches_nest_in_the_else_list()
 #[test]
 fn loops()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
-က သည် ၀ ထက် ကြီးနေသရွေ့ က ကို က - ၁ ဟု ထားပါ။
-ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ကိန်း ကို ပြသပါ။
-ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။
+    let text = "ကိန်းရှင် က သည် ၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+က သည် ၀ ထက် ကြီးနေသရွေ့ က ကို က - ၁ ဟု ထားမည်။
+ကိန်းရှင် ကိန်း သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပြီး ကိန်း သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်း ကို ပြသမည်။
+ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-၁ မှ ၁၀ အထိ ၂ စီ န အနေဖြင့် တိုး၍ န ကို ပြသပါ။
-ကွင်းဆက် ကို ရပ်ပါ။";
-    let forms = plain(&text.replace("ကွင်းဆက် ကို ရပ်ပါ။", ""));
+၁ မှ ၁၀ အထိ ၂ စီ န အနေဖြင့် တိုး၍ န ကို ပြသမည်။
+ကွင်းဆက် ကို ရပ်မည်။";
+    let forms = plain(&text.replace("ကွင်းဆက် ကို ရပ်မည်။", ""));
     let expected = [
         "(set g0 5:isize)",
         "(loop (> g0 0:isize) (block (set g0 (- g0 1:isize))))",
@@ -184,16 +185,16 @@ fn loops()
         "(up l1 1:isize 10:isize 2:isize (block (print l1)))",
     ];
     assert_eq!(forms, expected);
-    let m = module(&text.replace("ကွင်းဆက် ကို ရပ်ပါ။", ""));
+    let m = module(&text.replace("ကွင်းဆက် ကို ရပ်မည်။", ""));
     assert_eq!(start(&m).locals[1].access, Access::LoopVar);
 }
 
 #[test]
 fn counted_loops_take_the_common_kind_of_their_bounds()
 {
-    let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ၁၆ ဘစ် ကိန်းပြည့် ၉ ဖြစ်ပါစေ။
-က မှ ခ အထိ န အနေဖြင့် ရေတွက်၍ န ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ၁ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ၉ ဟူသော ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+က မှ ခ အထိ န အနေဖြင့် ရေတွက်၍ န ကို ပြသမည်။";
     let expected = "(count l0 (widen i16 g0) g1 (block (print l0)))";
     assert_eq!(plain(text)[2], expected);
 }
@@ -201,16 +202,16 @@ fn counted_loops_take_the_common_kind_of_their_bounds()
 #[test]
 fn functions_have_their_own_slots()
 {
-    let text = "ကိန်းရှင် ဆ သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ပြ ကို ၂ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် ပြ သည် ကိန်းပြည့် က ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+    let text = "ကိန်းရှင် ဆ သည် ၃ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ပြ ကို ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ပြ သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က * ဆ ဖြစ်ပါစေ။
-ခ ကို ပြသပါ။
+ခ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-လုပ်ဆောင်ချက် နှစ်ဆ သည် ကိန်းပြည့် က ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-ရလဒ် ကို က * ၂ ဟု ထားပါ။
+လုပ်ဆောင်ချက် နှစ်ဆ သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က * ၂ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-လုပ်ဆောင်ချက် နှစ်ဆ ကို ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။";
+လုပ်ဆောင်ချက် နှစ်ဆ ကို ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
     let m = module(text);
     let funcs: Vec<String> = m
         .funcs
@@ -221,8 +222,8 @@ fn functions_have_their_own_slots()
     let expected = [
         "(fn ပြ (params (l0 က isize)) (result -) (locals (l1 ခ isize)) (block (set l1 \
          (* l0 g0)) (print l1)))",
-        "(fn နှစ်ဆ (params (l0 က isize)) (result l1) (locals) (block (set l1 0:isize) \
-         (set l1 (* l0 2:isize)) (return l1)))",
+        "(fn နှစ်ဆ (params (l0 က isize)) (result -) (locals) (block (return (* l0 \
+         2:isize))))",
     ];
     assert_eq!(funcs, expected);
     let main = common::main_forms(&m);
@@ -235,18 +236,17 @@ fn functions_have_their_own_slots()
 #[test]
 fn an_explicit_return_is_not_doubled()
 {
-    let text = "လုပ်ဆောင်ချက် ခုနစ် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-၇ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+    let text = "လုပ်ဆောင်ချက် ခုနစ် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+၇ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    let expected = "(fn ခုနစ် (params) (result l0) (locals) (block (set l0 0:isize) \
-                    (return 7:isize)))";
+    let expected = "(fn ခုနစ် (params) (result -) (locals) (block (return 7:isize)))";
     assert_eq!(module(text).funcs[0].to_sexpr(), expected);
 }
 
 #[test]
 fn nothing_is_lowered_after_a_check_error()
 {
-    let lowered = run("က ကို ပြသပါ။", &FoldOptions::default());
+    let lowered = run("က ကို ပြသမည်။", &FoldOptions::default());
     assert!(lowered.plain.is_none() && lowered.folded.is_none());
     assert!(!lowered.diagnostics.is_empty());
 }
@@ -254,26 +254,26 @@ fn nothing_is_lowered_after_a_check_error()
 #[test]
 fn pointers_lower_to_mem_nodes()
 {
-    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။
-p ၏ တန်ဖိုး ကို ၆ ဟု ထားပါ။
-*p + ၁ ကို ပြသပါ။
-p + ၂ ၏ တန်ဖိုး ကို ပြသပါ။
-(p - p) ကို ပြသပါ။
-p ကို ဗလာ ဟု ထားပါ။";
+    let text = "ကိန်းရှင် x သည် ၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။
+p ၏ တန်ဖိုး ကို ၆ ဟု ထားမည်။
+*p + ၁ ကို ပြသမည်။
+p + ၂ ၏ တန်ဖိုး ကို ပြသမည်။
+(p - p) ကို ပြသမည်။
+p ကို မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ ဟု ထားမည်။";
     let expected = [
         "(set g0 5:isize)",
-        "(set g1 (addr g0))",
-        "(store g1 6:isize)",
-        "(print (+ (load g1) 1:isize))",
-        "(print (load (ptr+ g1 2:isize)))",
-        "(print (ptr- g1 g1))",
-        "(set g1 0x0:ptr)",
+        "(set l0 (addr g0))",
+        "(store l0 6:isize)",
+        "(print (+ (load l0) 1:isize))",
+        "(print (load (ptr+ l0 2:isize)))",
+        "(print (ptr- l0 l0))",
+        "(set l0 0x0:ptr)",
     ];
     assert_eq!(plain(text), expected);
     let m = module(text);
     assert!(m.globals[0].addressed);
-    assert!(!m.globals[1].addressed);
+    assert_eq!(m.globals.len(), 1);
 }
 
 #[test]
@@ -283,7 +283,7 @@ fn heap_statements_lower_with_their_unit()
 မင်မိုရီတွင် ကိန်းပြည့် ၁၀ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
 လိပ်စာ p ရှိ မင်မိုရီကို ၆၄ ဘိုက်စာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
 လိပ်စာ p ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။";
+ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။";
     let found = plain(text);
     assert_eq!(found[1], "(alloc g0 10:usize isize)");
     assert_eq!(found[2], "(resize g0 64:usize)");
@@ -304,7 +304,8 @@ fn a_deref_destination_lowers_to_its_address()
 #[test]
 fn a_bare_null_is_an_opaque_pointer()
 {
-    let text = "ဗလာ ကို ပြသပါ။\nဗလာ == ဗလာ ကို ပြသပါ။";
+    let text = "မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ ကို ပြသမည်။\nမည်သည်ကိုမှ မညွှန်းသော လိပ်စာ == မည်သည်ကိုမှ မညွှန်းသော \
+                လိပ်စာ ကို ပြသမည်။";
     let m = module(text);
     let block = &start(&m).block;
     assert_eq!(printed(&block[0]).kind, DataKind::OPAQUE);
@@ -320,18 +321,18 @@ fn a_bare_null_is_an_opaque_pointer()
     assert_eq!(printed(&start(&none).block[0]).kind, DataKind::OPAQUE);
 }
 
-const OFFSETS: &str = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။
-ကိန်းရှင် q သည် ငှားထားသော လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် p + ၁ ဖြစ်ပါစေ။
-q ကို p + ၁ ဟု ထားပါ။
-q == p + ၁ ကို ပြသပါ။
-လုပ်ဆောင်ချက် ယူ ကို p + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် ယူ သည် ငှားထားသော လိပ်စာ o ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-o ကို ပြသပါ။
+const OFFSETS: &str = "ကိန်းရှင် x သည် ၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် q သည် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် p + ၁ ဖြစ်ပါစေ။
+q ကို p + ၁ ဟု ထားမည်။
+q == p + ၁ ကို ပြသမည်။
+လုပ်ဆောင်ချက် ယူ ကို p + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ယူ သည် o ဟူသော လိပ်စာ တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+o ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-လုပ်ဆောင်ချက် ရှေ့ သည် ကိန်းပြည့် ၏ လိပ်စာ r ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော လိပ်စာ ရလဒ် ကို \
+လုပ်ဆောင်ချက် ရှေ့ သည် r ဟူသော ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ လိပ်စာ တစ်ခု ကို \
                        ပြန်ပေးမည်။
-r + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+r + ၁ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
 
 #[test]
@@ -339,34 +340,35 @@ fn an_offset_to_an_opaque_place_keeps_its_kind_under_a_widen()
 {
     let found = plain(OFFSETS);
     let expected = [
-        "(set g2 (widen ptr& (ptr+ g1 1:isize)))",
-        "(set g2 (widen ptr& (ptr+ g1 1:isize)))",
-        "(print (== (widen isize& g2) (ptr+ g1 1:isize)))",
-        "(call ယူ (widen ptr& (ptr+ g1 1:isize)))",
+        "(set l1 (widen ptr (ptr+ l0 1:isize)))",
+        "(set l1 (widen ptr (ptr+ l0 1:isize)))",
+        "(print (== (widen isize* l1) (ptr+ l0 1:isize)))",
+        "(call ယူ (widen ptr (ptr+ l0 1:isize)))",
     ];
     assert_eq!(found[2..], expected);
     let m = module(OFFSETS);
-    let Stmt::Set { value, .. } = &m.main[2]
+    let Stmt::Set { value, .. } = &start(&m).block[2]
     else
     {
-        panic!("not a store: {:?}", m.main[2]);
+        panic!("not a store: {:?}", start(&m).block[2]);
     };
     let ExprNode::Convert { operand, implicit: true } = &value.node
     else
     {
         panic!("not an implicit conversion: {value:?}");
     };
-    assert_eq!(value.kind, DataKind::OPAQUE.as_borrowed());
+    assert_eq!(value.kind, DataKind::OPAQUE);
     assert!(operand.kind.is_ptr() && !operand.kind.is_opaque());
     let ret = m.funcs[1].to_sexpr();
-    assert!(ret.contains("(return (widen ptr& (ptr+ l0 1:isize)))"), "{ret}");
+    assert!(ret.contains("(return (widen ptr (ptr+ l0 1:isize)))"), "{ret}");
 }
 
 #[test]
-fn a_pointer_default_takes_the_declared_kind()
+fn a_pointer_initial_value_takes_the_declared_kind()
 {
-    let text = "ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ဗလာပေး သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ၏ လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။
+    let text = "ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ကနဦးပေး သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ကို ပြန်ပေးမည်။
+ကနဦးတန်ဖိုး ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let m = module(text);
     let to_isize = DataKind::parse("isize*").expect("a pointer kind");
@@ -376,10 +378,10 @@ fn a_pointer_default_takes_the_declared_kind()
         panic!("not a store: {:?}", m.main[0]);
     };
     assert_eq!(value.kind, to_isize);
-    let Stmt::Set { value, .. } = &m.funcs[0].block[0]
+    let Stmt::Return { value: Some(value), .. } = &m.funcs[0].block[0]
     else
     {
-        panic!("not a store: {:?}", m.funcs[0].block[0]);
+        panic!("not a return: {:?}", m.funcs[0].block[0]);
     };
     assert_eq!(value.kind, to_isize);
 }

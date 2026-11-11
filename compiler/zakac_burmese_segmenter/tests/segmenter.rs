@@ -143,7 +143,7 @@ fn token_spans_cover_lexemes()
 fn aw_vowel_starts_new_vanna()
 {
     // the asat in `ော်` belongs to the vowel, not to the consonant
-    assert_eq!(lexemes("သည်ကျော်ပါ"), ["သည်", "ကျော်", "ပါ"]);
+    assert_eq!(lexemes("သည်ကျော်မည်"), ["သည်", "ကျော်", "မည်"]);
     assert_eq!(lexemes("ပြောင်းရွှေ့ကျော်"), ["ပြောင်း", "ရွှေ့", "ကျော်"]);
     // the dot below can still sit between a killed consonant and its asat
     assert_eq!(lexemes("နှင့်"), ["နှင့်"]);

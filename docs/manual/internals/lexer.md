@@ -53,16 +53,16 @@ Vec<Token>
 LexOutput { tokens (the last is Eof), comments, strings, diagnostics }
 ```
 
-The sentence `အသက် ကို ပြသပါ။` ("print age") shows each step. The segmenter cuts it into
+The sentence `အသက် ကို ပြသမည်။` ("print age") shows each step. The segmenter cuts it into
 vannas (Burmese clusters of a consonant and its signs), spaces and the line feed; `zakac segment` prints the
 list:
 
-| Pre-token | `အ` | `သက်` | space | `ကို` | space | `ပြ` | `သ` | `ပါ` | `။` | line feed |
+| Pre-token | `အ` | `သက်` | space | `ကို` | space | `ပြ` | `သ` | `မည်` | `။` | line feed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Octets | 0..3 | 3..12 | 12..13 | 13..22 | 22..23 | 23..29 | 29..32 | 32..38 | 38..41 | 41..42 |
+| Octets | 0..3 | 3..12 | 12..13 | 13..22 | 22..23 | 23..29 | 29..32 | 32..41 | 41..44 | 44..45 |
 
 The word builder joins pre-tokens that touch and share a script, drops the white space,
-and keeps `။` alone, which gives four words: `အသက်`, `ကို`, `ပြသပါ`, `။`. The classifier
+and keeps `။` alone, which gives four words: `အသက်`, `ကို`, `ပြသမည်`, `။`. The classifier
 then looks each word up. `zakac lex` prints the result (the header lines with the file
 name and the source text are left out here):
 
@@ -85,20 +85,20 @@ tokens:
     kw: print
   span:
     lo: 23
-    hi: 38
+    hi: 41
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 38
-    hi: 41
+    lo: 41
+    hi: 44
   particle: none
   joined: true
 - kind: eof
   span:
-    lo: 42
-    hi: 42
+    lo: 45
+    hi: 45
   particle: none
   joined: false
 comments: []
@@ -106,7 +106,7 @@ strings: []
 diagnostics: []
 ```
 
-`အသက်` is no reserved word, so it is an identifier. `ကို` and `ပြသပါ` are in the reserved
+`အသက်` is no reserved word, so it is an identifier. `ကို` and `ပြသမည်` are in the reserved
 table. `။` is punctuation, and `joined: true` records that no space came before it. The
 last token is `Eof`, with a blank span at the end of the file.
 
@@ -193,7 +193,13 @@ Three consequences follow:
   adds a hint for it (see [The parser](parser.md)).
 
 The words of failing functions are `ရလဒ်ကောင်း` (`GoodResult`), `မအောင်မြင်ပါက` (`OnFail`, kept for the call statement trailer) and
-`အမှားအယွင်း` (`Fault`); the words of the sides with no value are `အောင်မြင်သည့်သတင်း` (`SuccessNews`) and
+`အမှားအယွင်း` (`Fault`). The words of optionals and result kinds are `ရှိကောင်းရှိနိုင်သော` (`Perhaps`),
+`ရှိနိုင်သော` (`CanHold`), `အချက်အလက်ဆဲလ်` (`DataCell`), `အလွတ်` (`NoData`),
+`အချက်အလက်` (`Data`), `ထဲတွင်` (`Within`), `ရှိနေ` (`Located`) and `မရှိ` with `မရှိနေ`
+(`NotLocated`); the spelling pass writes `ဒေတာ` as `အချက်အလက်`, so `ဒေတာဆဲလ်` and `ဒေတာ` reach
+the table in their `အချက်အလက်` form. A lone `ဒေတာ` splits joined words as a reserved word, and
+`free_data_words` in `phrases.rs` turns it back into a name unless it follows `ထဲမှ`, `ထဲတွင်` or
+`အမှားအယွင်း`; the words of the sides with no value are `အောင်မြင်သည့်သတင်း` (`SuccessNews`) and
 `မအောင်မြင်သည့်သတင်း` (`FailureNews`), and the words of the mark statements are `အောင်မြင်သည်` (`Succeeded`),
 `မအောင်မြင်ပါ` (`NotSucceeded`) and `သတ်မှတ်မည်` (`WillMark`); `?` is the sign `Punct::Question`. The parser reads a `?` as a
 pass-on just when it touches the `)` of a call (`joined`).
@@ -201,16 +207,38 @@ pass-on just when it touches the `)` of a call (`joined`).
 A name joined to `ထဲမှ`, as in `အရောင်များထဲမှ`, has a non-reserved part, so
 `split_reserved` cannot split it. `lex_ident` does: a name word that ends in `ထဲမှ`, with a
 name before it, becomes an `Ident` and `Kw::Among` (`lex_among`). The `ထဲမှ` must start a
-vanna of its own, so a stacked consonant before it keeps the word whole. An enumeration opens with
-the struct opener (`DataKindOpen`); the words of enumerations and switches are
-`ဆိုသည်မှာ` (`Meaning`), `ထဲမှ` (`Among`) and `တခြား` (`Other`). `အမျိုးအစား` (`KindWord`)
-is a piece of the function kind phrase. A kind alias closes with the phrase `ဟု လည်း မှတ်ယူနိုင်ပါသည်`
-(`Hu`, `Also`, `CanRegard` joined into `AliasClose`), written joined as `ဟုလည်း` or apart.
+vanna of its own, so a stacked consonant before it keeps the word whole. A struct
+declaration has the word `ဒေတာအစုအဝေး` (`StructWord`) and an enumeration
+`ဒေတာအမျိုးအစားကွဲ` (`EnumWord`), each one whole word in the table, so the longest
+match wins over `ဒေတာအမျိုးအစား` and `အမျိုးအစား` inside it; a joined `တွင်` splits off
+the word, as in `ဒေတာအမျိုးအစားကွဲတွင်` (`EnumWord`, `At`). A member value closes with
+`ရှိသည့်` (`HavingRel`), and `သုံးမည့်` (`ToUse`) is the last piece of the initial mark.
+The words of switches are `ထဲမှ` (`Among`) and `တခြား` (`Other`). `အမျိုးအစား` (`KindWord`)
+is a piece of the function kind phrase. `ဒေတာအမျိုးအစား` (`DataKindOpen`) opens a kind
+alias, which closes with the phrase `ဟု လည်း မှတ်ယူနိုင်ပါသည်` (`Hu`, `Also`, `CanRegard`
+joined into `AliasClose`), or with `ဟု လည်း မှတ်ယူနိုင်ပြီး` (`CanRegardAnd`, joined into
+`AliasCloseAnd`) when a classifier clause follows; `ဟုလည်း` is written joined or apart.
+`လုံးစာ`, like `ခုစာ`, is `Kw::Items`, the count word of a heap size of characters.
 
-A few reserved words are whole rows on purpose, so that none is ever split: `တန်ဖိုးအငှား`
-(`Lend`), `လိပ်စာအကြမ်း` (`RawAddress`), `ငှားထားသော` (`Borrowed`). The word `မှတ်ချက်` is
-both the comment marker (rule 1 sees it first) and `Kw::Note`, so `မှတ်ချက်ကို` still
-splits.
+The word `မှတ်ချက်` is both the comment marker (rule 1 sees it first) and `Kw::Note`, so
+`မှတ်ချက်ကို` still splits.
+
+The words of v2 each have a row: `ပြောင်းလဲရန်` (`ToChange`) and `ထည့်ပေးရန်` (`ToFill`), the
+second words of the parameter marks `ဒေတာ ပြောင်းလဲရန်` and `ဒေတာ ထည့်ပေးရန်`, and `ဝိဘတ်`
+(`MarkWord`) mark a parameter, `ဟူသော` (`Called`) follows a name or a literal (the word
+after it decides what it starts: a kind, the function value, the error value, or the
+words of a struct or an enumeration), and the statement verbs end in
+`မည်` (`ပြသမည်` is `Print`, `လုပ်ဆောင်မည်` is `WillDo`, `ပြန်ပေးမည်` is `WillReturn`, and so
+on). `မိတ္တူ` is no reserved word: the parser reads it after `၏` alone.
+
+### Old endings
+
+A statement verb once ended in `ပါ`. `OLD_ENDINGS` lists each old spelling with its `မည်`
+spelling and its `Kw` (`ပြသပါ` → `ပြသမည်`, `Print`). `old_ending`, the first step of
+`lex_reserved`, looks a whole word up in that list: it reports ZK0110, whose help line
+gives the `မည်` spelling, and pushes the `Kw` of the new spelling, so the parser reads the
+sentence as if it were written right and reports nothing more. The declaration verb
+`ဖြစ်ပါစေ` and the closers keep their `ပါ`, and so do the particles a comparison takes.
 
 ### Token kinds
 
@@ -235,7 +263,8 @@ parser reads a lexeme through the span when it needs one.
 `Before`, `Upto`; `Ordinal` for both `ခုမြောက်` and `လုံးမြောက်`),
 kind names (`IntKind`), pieces that exist so the phrase joiner can see them (`*Head`,
 `*Tail`), and joined phrases (`Divide`, `BitAnd`, `Shift`, `Convert`, `CallResult`,
-`BlockOpen`, `FnOpen`, `BlockClose`, ...) that the joiner alone makes.
+`BlockOpen`, `UnsafeBlockOpen`, `FnValue`, `BlockClose`, ...) that the joiner alone
+makes.
 
 `role::token_role` gives each token kind a `TokenRole`: a control word, a verb, an
 operator, a particle, a kind noun, a truth value, a name, a number, a char, a string or a
@@ -284,34 +313,70 @@ a phrase with one `Kw` token. `PHRASES` lists them, the longest first, each with
 comment showing the sentence shape:
 
 ```text
-အောက်ပါတို့ကို လုပ်ဆောင်ပါ။                          → BlockOpen
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။                          → BlockOpen
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။          → UnsafeBlockOpen
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ                           → FnOpenRet
 လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?။                  → BlockClose
+ပရိုဂရမ် ပြီး(ဆုံး)?ပါပြီ(း)?။                         → ProgramClose
 ... ကို ... ဖြင့် စားသော စားလဒ် | စားကြွင်း              → Divide | Remainder
 ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်                    → Convert
 လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်    → CallResult
 ... ရလဒ်ကောင်း (after the call head)                  → CallGoodResult
 ... ကို သုံး၍ <name> သည့် ရလဒ်                        → UsedResult
 ... ကို သုံး၍ <name> သည့် ရလဒ်ကောင်း                   → UsedGoodResult
-... ကို အမှားအယွင်း(အဖြစ်|အနေဖြင့်) ပြန်ပေး(ပါ|မည်)      → ReturnFault
-၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေး(ပါ|မည်)          → PassFault
+<value> ဟူသော အမှားအယွင်း                              → CalledFault
+<x> ထဲတွင် ဒေတာ ရှိ(နေ)                                → HasData
+<x> ထဲတွင် ဒေတာ မရှိ(နေ)                               → LacksData
+<x> ထဲတွင် ရလဒ်ကောင်း | အောင်မြင်သည့်သတင်း ရှိ(နေ)         → HasGood
+<x> ထဲတွင် အမှားအယွင်း | မအောင်မြင်သည့်သတင်း ရှိ(နေ)       → HasFault
+<x> ထဲမှ အမှားအယွင်း ဒေတာ                              → FaultData
+T သို့မဟုတ် အမှားအယွင်းအနေဖြင့် E ရှိနိုင်သော ဒေတာဆဲလ်      → AsFault (the piece `အမှားအယွင်းအနေဖြင့်`)
+၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်              → PassFault
 လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်                  → MarkSucceeded
 လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်                  → MarkFailed
 လုပ်ဆောင်ချက် အမျိုးအစား                                 → FnKind
+<name> ဟူသော လုပ်ဆောင်ချက်                               → FnValue
+မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ                            → Null
+<name> ဟူသော <kind> တစ်ခု ကို ဒေတာ ပြောင်းလဲရန်            → DataToChange
+<name> ဟူသော <kind> တစ်ခု ကို ဒေတာ ထည့်ပေးရန်              → DataToFill
+... ဟုလည်း မှတ်ယူနိုင်ပါသည်                               → AliasClose
+... ဟုလည်း မှတ်ယူနိုင်ပြီး                                 → AliasCloseAnd
+... တို့ပါဝင်သည် | တို့ပါဝင်ပြီး                            → FieldsClose | FieldsCloseAnd
+ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် <member>                      → InitialMark
+တန်ဖိုးအနေဖြင့် <value> ရှိသည့် <member>                   → ValueAs (the piece `တန်ဖိုးအနေဖြင့်`)
 ```
 
-`FnKind` closes a [function kind](../language/function-values.md#the-kind). The two words
+`FnKind` closes a [function kind](../language/function-values.md), and `FnValue` after a
+name makes the function a value. A run `ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား` does not join
+into `FnValue`: `phrase_at` keeps `ဟူသော` as `Called` there, so the next two words join into
+`FnKind`, the kind of a parameter or a field, `ဖ ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု`. `Null` is the null pointer, "an address that points at
+nothing": the reserved words `မည်သည်ကိုမှ` (`Nothing`) and `မညွှန်းသော` (`PointsAtNo`)
+and the kind word `လိပ်စာ` (`Address`) join into it, and neither of the first two stands
+alone in a program. `ကနဦးတန်ဖိုး` (`Initial`), the
+[initial value](../language/kinds.md#initial-values), is one word and needs no joining.
+The editors paint all three as literal values, like `မှန်` and `အလွတ်`. A block opener and a function opener are one token,
+`BlockOpen`; the parser tells them apart from what comes before it. The two words
 before it are reserved words of their own, not phrases: `လက်ခံသော` (`AcceptingRel`) ends
 the parameters of a function kind with no result, and `ပြန်ပေးသော` (`ReturningRel`) ends
 its result.
 
+The two parameter marks are phrases: `ဒေတာ` (`Data`) then `ပြောင်းလဲရန်` joins into
+`DataToChange`, and `ဒေတာ` then `ထည့်ပေးရန်` into `DataToFill`. `ဒေတာ` is otherwise a name,
+so `free_data_words` turns each `ဒေတာ` back into an identifier, save one after `ထဲမှ`,
+`ထဲတွင်` or `အမှားအယွင်း` and one before `ပြောင်းလဲရန်` or `ထည့်ပေးရန်`. The second word alone
+remains a reserved word of its own, so a lone `ပြောင်းလဲရန်` after `ကို` reaches the parser as
+`ToChange`, which no rule takes (ZK0201).
+
 The joined token spans from the first piece to the last, and takes `joined` from the
 first and `particle` from the last. Matching ignores white space and line breaks, so
-`အောက်ပါတို့ကို လုပ်ဆောင်ပါ` is one `block_open` token of 76 octets, and the same words
+`အောက်ပါတို့ကို လုပ်ဆောင်မည်` is one `block_open` token of 76 octets, and the same words
 split over two lines are the same token.
 
-Where the language writes two forms (`ရလဒ်အဖြစ်` attached, `ရလဒ် အဖြစ်` apart) the
+Where the language writes two forms (`ဟူသော အမှားအယွင်း` apart, `ဟူသောအမှားအယွင်း` attached) the
 reserved table has the pieces and the classifier splits the attached form, so one phrase
-row serves both.
+row serves both. The tests are phrases of the two
+words after `ထဲတွင်`: `ထဲတွင်` is a word of its own, and a phrase such as `HasData` holds the
+word the test asks about and the `ရှိ`, `ရှိနေ`, `မရှိ` or `မရှိနေ` that ends it.
 
 ## Numbers and scripts
 
@@ -399,6 +464,7 @@ what was decoded, and lexing goes on, so one bad line does not hide the next.
 | ZK0107 | a char literal that holds zero or several chars |
 | ZK0108 | a raw identifier is not closed |
 | ZK0109 | a raw identifier is blank |
+| ZK0110 | a statement verb in its old spelling, ending in `ပါ`; the token of the `မည်` spelling is made all the same |
 
 For `ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ဘစ် ဖြစ်ပါစေ။`, `zakac lex` prints the message and still
 writes the tokens of the line:

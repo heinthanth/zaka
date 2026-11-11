@@ -12,6 +12,7 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::foreign::is_c_text_result;
 use zakac_semcheck::kind::DataKind;
 
 use crate::emit::FnGen;
@@ -81,12 +82,12 @@ impl FnGen<'_, '_>
             }
             ExprNode::Closure { func, record, .. } =>
             {
+                self.shared.made_closure = true;
                 let kind = record.kind.pointee().expect("a record address");
                 let k = self.shared.descr.of(kind);
                 let record = self.expr(record);
                 format!("zk_closure({record}, (zk_code){}, {k})", func_name(*func))
             }
-            ExprNode::Plain { value } => format!("zk_fn_plain({})", self.expr(value)),
             ExprNode::Lend { operand } => self.expr(operand),
             ExprNode::FieldAddr { base, offset, .. } =>
             {
@@ -97,8 +98,50 @@ impl FnGen<'_, '_>
                 let t = self.shared.kind(e.kind);
                 format!("(({t}){})", self.shared.size(*k))
             }
+            ExprNode::CField { base, offset } => self.c_field(base, *offset, e.kind),
             _ => self.data(e),
         }
+    }
+
+    /// A field of a struct C keeps, copied out with `memcpy`, since its
+    /// address lies outside the blocks the runtime knows: a number, a
+    /// boolean or a counted list as it is, and for text the string the
+    /// field's `char *` points at, or the optional with no data for NULL.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The address of the C struct.
+    /// * `offset` - The offset of the field.
+    /// * `kind` - The kind of the field.
+    ///
+    /// # Returns
+    ///
+    /// The C text of the value.
+    fn c_field(&mut self, base: &Expr, offset: u32, kind: DataKind) -> String
+    {
+        let b = self.expr(base);
+        let at = format!("((const unsigned char *)({b}) + {offset})");
+        if is_c_text_result(kind)
+        {
+            let size = self.shared.size(kind);
+            let platform = self.shared.platform();
+            let ok_at = kind.as_struct().map_or(0, |s| s.offset(1, platform));
+            let t = self.blob_temp(kind);
+            self.line(&format!(
+                "{{ const char *zk_s; memcpy(&zk_s, {at}, sizeof zk_s); \
+                 zk_text_from_c({t}, {size}, {ok_at}, zk_s); }}"
+            ));
+            return t;
+        }
+        if is_blob(kind)
+        {
+            let t = self.blob_temp(kind);
+            self.line(&format!("memcpy({t}, {at}, {});", self.shared.size(kind)));
+            return t;
+        }
+        let t = self.temp(kind);
+        self.line(&format!("memcpy(&{t}, {at}, sizeof {t});"));
+        t
     }
 
     /// The C text of an expression that reads or makes data: a load, a
@@ -122,12 +165,16 @@ impl FnGen<'_, '_>
                 format!("zk_ld_{}({a})", self.shared.mem(e.kind))
             }
             ExprNode::Take { addr } => self.take(addr, e.kind),
-            ExprNode::Own { value } =>
+            ExprNode::Own { value, pin } =>
             {
                 let v = self.expr(value);
-                format!("zk_own({v}, {})", self.shared.descr.of(e.kind))
+                let owned = format!("zk_own({v}, {})", self.shared.descr.of(e.kind));
+                tern!(*pin, format!("zk_pin({owned})"), owned)
             }
-            ExprNode::Dup { value, lent } => self.dup(value, e.kind, *lent),
+            ExprNode::Dup { value, lent, deep } =>
+            {
+                self.dup(value, e.kind, (*lent, *deep))
+            }
             ExprNode::PtrAdd { base, offset } =>
             {
                 let stride = self.stride(base.kind);
@@ -143,6 +190,11 @@ impl FnGen<'_, '_>
             }
             ExprNode::List(cells) => self.list(cells, e.kind),
             ExprNode::BlankList => self.temp(e.kind),
+            ExprNode::CellAddr { list, .. } if list.kind.as_object().is_some() =>
+            {
+                let l = self.expr(list);
+                format!("zk_object_cell({l})")
+            }
             ExprNode::CellAddr { list, index, len, first, checked } =>
             {
                 let stride = self.stride(e.kind);
@@ -358,7 +410,7 @@ impl FnGen<'_, '_>
     {
         let (a, b) = self.pair(lhs, rhs);
         let not = tern!(op == zakac_ir_builder::ir::CmpOp::Ne, "!", "");
-        ret_if!(lhs.kind.is_textual(), format!("({not}zk_text_eq({a}, {b}))"));
+        ret_if!(lhs.kind.is_text(), format!("({not}zk_text_eq({a}, {b}))"));
         if is_blob(lhs.kind)
         {
             let k = self.shared.descr.of(lhs.kind);
@@ -464,11 +516,21 @@ impl FnGen<'_, '_>
             let k = self.shared.descr.of(from);
             // A list of known cells is static in the VM: a block with a
             // room of 0, which no drop frees, so places can share it.
-            let fixed = u8::from(is_known(&self.whole(operand, to)));
+            // A box is counted and shared, so it never points at static cells.
+            let fixed = u8::from(!to.is_box() && is_known(&self.whole(operand, to)));
             self.line(&format!("zk_to_heap({t}, {a}, {k}, {fixed});"));
             return t;
         }
-        if to.is_text_view() && !from.is_text_view()
+        // An object becomes a pointer that holds a count of it, and back.
+        ret_if!(from.as_object().is_some() && to.is_ptr(), format!("zk_obj_ptr({a})"));
+        if from.is_ptr() && to.as_object().is_some()
+        {
+            let t = self.temp(to);
+            self.line(&format!("zk_ptr_obj({t}, {a});"));
+            return t;
+        }
+        // A plain list of u8s becomes text once its UTF-8 is checked.
+        if to.is_text() && from.is_seq()
         {
             let at = self.spill(from, a);
             self.line(&format!("zk_check_utf8({at});"));
@@ -602,12 +664,15 @@ impl FnGen<'_, '_>
     ///
     /// * `value` - The value.
     /// * `kind` - Its kind.
-    /// * `lent` - Whether it is lent to a parameter for one call.
+    /// * `(lent, deep)` - Whether it is lent to a parameter for one call, and
+    ///   whether each object it reaches gets a duplicate of its own.
     ///
     /// # Returns
     ///
     /// The C text.
-    fn dup(&mut self, value: &Expr, kind: DataKind, lent: bool) -> String
+    fn dup(
+        &mut self, value: &Expr, kind: DataKind, (lent, deep): (bool, bool),
+    ) -> String
     {
         let v = self.expr(value);
         let call = tern!(lent, "zk_fn_lend", "zk_fn_dup");
@@ -617,7 +682,8 @@ impl FnGen<'_, '_>
         let size = self.shared.size(kind);
         self.line(&format!("zk_put_block({t}, {v}, {size});"));
         let k = self.shared.descr.of(kind);
-        let call = tern!(lent, "zk_lend_seqs", "zk_dup_seqs");
+        let share = tern!(lent, "zk_lend_seqs", "zk_dup_seqs");
+        let call = tern!(deep, "zk_deep_seqs", share);
         do_if_holds(self, kind, &format!("{call}({t}, {k});"));
         t
     }
@@ -679,13 +745,17 @@ impl FnGen<'_, '_>
             }
             _ => (source, "SIZE_MAX".into()),
         };
-        let text = u8::from(kind.is_text_view() && !checked);
+        let text = u8::from(kind.is_text() && !checked);
         let t = self.temp(kind);
         self.line(&format!(
             "zk_make_slice({t}, {base}, (zk_umax)({}), (zk_umax)({}), {limit}, \
              {stride}, {text});",
             v[1], v[2]
         ));
+        // A view of a list or text lends its cells: a room of 0, which `own`
+        // copies.
+        let lent = format!("zk_seq_put({t}, zk_seq_base({t}), zk_seq_len({t}), 0);");
+        do_if!(kind.is_seq() || kind.is_text(), self.line(&lent));
         t
     }
 
@@ -957,7 +1027,7 @@ fn acts(e: &Expr, stop: bool) -> bool
         ExprNode::PtrAdd { base, offset } => acts(base, stop) || acts(offset, stop),
         ExprNode::Convert { operand, .. } =>
         {
-            let checks = e.kind.is_text_view() && !operand.kind.is_text_view();
+            let checks = e.kind.is_text() && operand.kind.is_seq();
             checks || acts(operand, stop)
         }
         ExprNode::CellAddr { list, index, first, checked, .. } =>

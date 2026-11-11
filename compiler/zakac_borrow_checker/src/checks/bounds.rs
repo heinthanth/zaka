@@ -18,6 +18,7 @@ use crate::state::Interval;
 use crate::state::PtrInfo;
 use crate::state::SlotState;
 use crate::state::State;
+use crate::state::holds_address;
 
 /// Report a pointer whose offset leaves its block, when the element count
 /// of the block and both ends of the offset are known: a read or a write
@@ -286,13 +287,18 @@ fn blocks_of(flow: &Flow, e: &Expr, state: &State) -> Option<Roots>
 fn read_blocks(flow: &Flow, place: Place, state: &State) -> Option<Roots>
 {
     let kind = flow.ctx.kind_of(place)?;
-    ret_if!(kind.is_owner_ptr(), Some(Roots::from([Root::slot(place).block()])));
+    // A slot is a block of its own while it holds a block made here; one a
+    // call gave, with no roots, points where the check cannot tell.
+    let info = state.ptr(place);
+    let own = info.is_some_and(|i| i.roots.is_empty() && i.state.shares_fresh());
+    ret_if!(kind.is_owner_ptr() && own, Some(Roots::from([Root::slot(place).block()])));
+    ret_if!(kind.is_owner_ptr() && info.is_none_or(|i| i.roots.is_empty()), None);
     // A global is known in the main program, and in the start block, which
     // starts from the facts of the main program.
     let known_globals = flow.routine.is_main || flow.seed.is_some();
     let outer = Root::slot(place).is_param(flow.routine.params)
         || (matches!(place, Place::Global(_)) && !known_globals);
-    ret_if!(outer || !kind.holds_borrow(), None);
+    ret_if!(outer || !holds_address(kind), None);
     let roots = &state.ptr(place)?.roots;
     let known = !roots.is_empty() && roots.iter().all(|r| owned_here(flow, r));
     known.then(|| roots.iter().map(block_path).collect())

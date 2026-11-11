@@ -43,7 +43,7 @@ pub struct GraphNode
     /// The left edge.
     pub x: f64,
     /// The top edge.
-    pub y: f64,
+    pub top: f64,
     /// The width of the box.
     pub width: f64,
     /// Index of the parent node; `None` for the root.
@@ -52,11 +52,11 @@ pub struct GraphNode
 
 impl GraphNode
 {
-    /// The middle of the box along the x axis.
+    /// The middle of the box along the horizontal axis.
     ///
     /// # Returns
     ///
-    /// The x coordinate.
+    /// The horizontal coordinate.
     pub fn center(&self) -> f64 { self.x + self.width / 2.0 }
 }
 
@@ -77,8 +77,8 @@ struct Measure
 {
     /// Width of the box of the node.
     width: f64,
-    /// Width of the room of the subtree: the box or the children side by
-    /// side, whichever is wider.
+    /// Width of the room of the subtree: the box or the children next to
+    /// one another, whichever is wider.
     room: f64,
     /// Measures of the children.
     children: Vec<Measure>,
@@ -100,7 +100,7 @@ pub fn graph(tree: &TreeNode) -> Graph
     let measure = measure(tree);
     let mut nodes = Vec::new();
     place(tree, &measure, MARGIN, 0, None, &mut nodes);
-    let bottom = nodes.iter().map(|n| n.y + NODE_HEIGHT).fold(0.0, f64::max);
+    let bottom = nodes.iter().map(|n| n.top + NODE_HEIGHT).fold(0.0, f64::max);
     Graph { nodes, width: measure.room + MARGIN * 2.0, height: bottom + MARGIN }
 }
 
@@ -195,7 +195,7 @@ fn place(
         .literal(node.is_literal())
         .range(node.range)
         .x(left + (measure.room - measure.width) / 2.0)
-        .y(MARGIN + depth as f64 * (NODE_HEIGHT + ROW_GAP))
+        .top(MARGIN + depth as f64 * (NODE_HEIGHT + ROW_GAP))
         .width(measure.width)
         .maybe_parent(parent)
         .build();
@@ -221,10 +221,10 @@ pub struct View
 {
     /// The zoom; 1 is the natural size.
     pub zoom: f64,
-    /// The origin along the x axis, in viewport px.
+    /// The origin along the horizontal axis, in viewport px.
     pub x: f64,
-    /// The origin along the y axis, in viewport px.
-    pub y: f64,
+    /// The origin along the vertical axis, in viewport px.
+    pub top: f64,
 }
 
 impl Default for View
@@ -234,43 +234,43 @@ impl Default for View
     /// # Returns
     ///
     /// The view.
-    fn default() -> Self { View { zoom: 1.0, x: 0.0, y: 0.0 } }
+    fn default() -> Self { View { zoom: 1.0, x: 0.0, top: 0.0 } }
 }
 
 impl View
 {
-    /// Zoom by a factor around a point of the viewport; the graph point under
-    /// it holds still. The zoom stays within [`MIN_ZOOM`] and [`MAX_ZOOM`].
+    /// Zoom with a factor around a point of the viewport; the graph point under
+    /// it holds still. The zoom remains within [`MIN_ZOOM`] and [`MAX_ZOOM`].
     ///
     /// # Arguments
     ///
     /// * `factor` - The factor; above 1 zooms in.
-    /// * `px` - The point along the x axis, in viewport px.
-    /// * `py` - The point along the y axis, in viewport px.
+    /// * `px` - The point along the horizontal axis, in viewport px.
+    /// * `pt` - The point along the vertical axis, in viewport px.
     ///
     /// # Returns
     ///
     /// The new view.
-    pub fn zoom_at(self, factor: f64, px: f64, py: f64) -> View
+    pub fn zoom_at(self, factor: f64, px: f64, pt: f64) -> View
     {
         let zoom = (self.zoom * factor).clamp(MIN_ZOOM, MAX_ZOOM);
         let k = zoom / self.zoom;
-        View { zoom, x: px - (px - self.x) * k, y: py - (py - self.y) * k }
+        View { zoom, x: px - (px - self.x) * k, top: pt - (pt - self.top) * k }
     }
 
     /// Move the graph.
     ///
     /// # Arguments
     ///
-    /// * `dx` - The move along the x axis, in viewport px.
-    /// * `dy` - The move along the y axis, in viewport px.
+    /// * `dx` - The move along the horizontal axis, in viewport px.
+    /// * `dt` - The move along the vertical axis, in viewport px.
     ///
     /// # Returns
     ///
     /// The new view.
-    pub fn moved(self, dx: f64, dy: f64) -> View
+    pub fn moved(self, dx: f64, dt: f64) -> View
     {
-        View { x: self.x + dx, y: self.y + dy, ..self }
+        View { x: self.x + dx, top: self.top + dt, ..self }
     }
 
     /// The view that shows a whole graph in a viewport, centered, no larger
@@ -291,8 +291,8 @@ impl View
         let zoom = room(width, graph.width).min(room(height, graph.height));
         let zoom = zoom.clamp(MIN_ZOOM, 1.0);
         let x = (width - graph.width * zoom) / 2.0;
-        let y = ((height - graph.height * zoom) / 2.0).max(0.0);
-        View { zoom, x, y }
+        let top = ((height - graph.height * zoom) / 2.0).max(0.0);
+        View { zoom, x, top }
     }
 
     /// The view a graph opens with: the root at the top middle at the
@@ -315,6 +315,6 @@ impl View
         {
             return View::fit(graph, width, height);
         };
-        View { zoom: 1.0, x: width / 2.0 - root.center(), y: 0.0 }
+        View { zoom: 1.0, x: width / 2.0 - root.center(), top: 0.0 }
     }
 }

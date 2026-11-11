@@ -13,8 +13,8 @@ turf::style_sheet!("src/components/explorer/mod.sass");
 static SHEET: ComponentStyle = ComponentStyle::global_css("site-explorer", STYLE_SHEET);
 
 /// The sheets of the explorer page: the frame, and the page-wide sheets of
-/// the explorer. They mount outside the island, as a global sheet renders on
-/// the server alone.
+/// the explorer. The sheets mount outside the island, as a global sheet renders
+/// on the server alone.
 ///
 /// # Returns
 ///
@@ -26,7 +26,7 @@ pub fn explorer_sheets() -> impl IntoView
 
 /// The compiler explorer, in a frame under the header, which names the site
 /// and links to its pages in place of the toolbar of the explorer. The server
-/// writes the empty frame; the explorer starts in the browser alone, with the
+/// writes the bare frame; the explorer starts in the browser alone, with the
 /// stored language and its hashed files. The island loads late, on its own, so
 /// the explorer reaches this page and no other.
 ///

@@ -29,7 +29,7 @@ pub enum Carets
     /// terminal does not flow Burmese text, or the row wraps, the rows count
     /// one cell per code point.
     Flow,
-    /// Rows for a front end that lays text out itself, such as a browser:
+    /// Rows for a front end that places text itself, such as a browser:
     /// each row repeats the text before the span as [`Paint::Hidden`], then
     /// the span text as [`Paint::Under`], which the front end draws as a row
     /// of marks over the hidden text. The rows then take the widths the text

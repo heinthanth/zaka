@@ -65,7 +65,13 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 out.push(*place);
                 expr_places(value, out);
             }
-            Stmt::Print { value: PrintValue::Expr(e), .. }
+            Stmt::CStore { base, value, .. } =>
+            {
+                expr_places(base, out);
+                expr_places(value, out);
+            }
+            Stmt::Leave { value: e, .. }
+            | Stmt::Print { value: PrintValue::Expr(e), .. }
             | Stmt::Halt { value: Some(e), .. } => expr_places(e, out),
             Stmt::Halt { value: None, .. } => (),
             Stmt::Print { value: PrintValue::Text(_), .. } => (),
@@ -180,9 +186,9 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         | ExprNode::Lend { operand }
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }
-        | ExprNode::Own { value: operand }
+        | ExprNode::Own { value: operand, .. }
         | ExprNode::Closure { record: operand, .. }
-        | ExprNode::Plain { value: operand }
+        | ExprNode::CField { base: operand, .. }
         | ExprNode::FieldAddr { base: operand, .. } => expr_places(operand, out),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }

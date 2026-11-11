@@ -237,11 +237,11 @@ pub enum Op
     /// the address of the caller's slot for it sits under the arguments.
     Call(u32),
     /// Push the function value that calls the function at this index of
-    /// [`Module::funcs`]: one word, the index plus one, so 0 is `ဗလာ`.
+    /// [`Module::funcs`]: one word, the index plus one, so 0 is the zero word.
     FnAddr(u32),
     /// Call the function a function value holds, as [`Op::Call`] does: the
-    /// value sits under this many arguments, since it is read before them,
-    /// and leaves the stack. A value of 0, `ဗလာ`, stops the program. A
+    /// value sits under the count of arguments, since it is read before them,
+    /// and leaves the stack. A value of 0, the zero word, stops the program. A
     /// closure calls the thunk its record names, with the address of the
     /// record as one more argument, the last.
     CallValue(u32),
@@ -258,10 +258,6 @@ pub enum Op
         /// The kind of the record.
         record: DataKind,
     },
-    /// Stop the program when the function value on top of the stack is a
-    /// closure that borrows, which must not outlive the locals it borrows;
-    /// the value remains.
-    FnPlain,
     /// Serve a function of the host: pop the borrowed address of each of
     /// its parameters, the last on top, with the address of the slot for its
     /// result under them; write the result there and leave the address.
@@ -290,7 +286,7 @@ pub enum Op
     /// Pop a value of this kind, then an address; write the value there.
     Store(DataKind),
     /// Pop an address; push the value of this kind at it and leave the
-    /// default of the kind there, `ဗလာ` for an owner.
+    /// default of the kind there, the zero word for an owner.
     Take(DataKind),
     /// Pop an integer count, then an address; push the address moved that
     /// count of elements of this stride forward.
@@ -307,6 +303,36 @@ pub enum Op
     Realloc(u32),
     /// Pop the address of a heap block and release it.
     Free,
+    /// Pop a function value of this kind and give C leave to call it after
+    /// the call that gave it: the VM holds a count of its record until the
+    /// leave ends. A function with no captures needs no leave.
+    CLeave(DataKind),
+    /// Pop a function value and end the leave `c_leave` gave it: a later
+    /// call from C stops the program. A value with no leave is left alone.
+    CRevoke,
+    /// Pop the address of a struct C keeps and read the field at this
+    /// offset: push a number or a boolean as it is. For a counted list, or
+    /// an optional of text, pop the address of a block under it,
+    /// write the cells, or the string the field's `char *` points at, copied
+    /// (the optional with no data for NULL), there, and push the address of the
+    /// block.
+    CLoad
+    {
+        /// The kind of the field.
+        kind: DataKind,
+        /// The offset of the field, in octets.
+        offset: u32,
+    },
+    /// Pop a value, then the address of a struct C keeps, and write the value
+    /// in the field at this offset: a number or a boolean as it is, a counted
+    /// list from the block whose address is the value.
+    CStore
+    {
+        /// The kind of the field.
+        kind: DataKind,
+        /// The offset of the field, in octets.
+        offset: u32,
+    },
     /// Pop a destination address, a cell count, then a source address;
     /// write that count of cells of this stride from the source to the
     /// destination. Stop the program when the two ranges overlap.
@@ -338,12 +364,12 @@ pub enum Op
     /// one first; push whether each cell or field of one equals the cell or
     /// field of the other.
     ListEq(DataKind),
-    /// Pop the address of a list, a struct or a slice of this kind; write its
-    /// cells or fields and a line break.
+    /// Pop the address of a list or a struct of this kind; write its cells or
+    /// fields and a line break.
     PrintList(DataKind),
     /// Pop a member of this enumeration; write it as `<stem>များထဲမှ
     /// <member>` and a line break. A function value of this function kind is
-    /// written so too, as `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ` or `ဗလာ`.
+    /// written so too, as `<name> ဟူသော လုပ်ဆောင်ချက်` or the zero word.
     PrintEnum(DataKind),
     /// Stop the run for a failure the program did not handle. With a kind,
     /// pop a value of it first, or the address of one for a list, a struct or
@@ -378,6 +404,14 @@ pub enum Op
         /// The number of the first cell: 0 or 1.
         first: u8,
     },
+    /// Pop a cell number, then the address of the box of an object; stop the
+    /// program when the box holds no object (the zero word), else push the
+    /// address of its fields.
+    ObjectCell
+    {
+        /// The size of the fields.
+        stride: u32,
+    },
     /// Pop the address of a text slot; write the static text of this index
     /// there, with room 0, and push the address.
     Text(u32),
@@ -395,10 +429,15 @@ pub enum Op
     /// list in it whose room is above 0, the cells of a list dropped
     /// first, and leave each blank.
     Drop(DataKind),
-    /// Pop the address of a value of this kind; give each text and each plain
-    /// list in it whose cells sit outside static storage a new heap block
-    /// with the same cells, the cells of a list duplicated in turn.
+    /// Pop the address of a value of this kind; count one more holder of each
+    /// counted block in it (text, plain lists, objects and closure records),
+    /// so the value read and its duplicate share the blocks; a pinned block
+    /// is copied at once.
     DupSeqs(DataKind),
+    /// Pop the address of a value of this kind; give it a duplicate of its own
+    /// of each object it reaches, at each depth, each object copied once.
+    /// Text, lists and function values are shared as `DupSeqs` shares them.
+    DeepSeqs(DataKind),
     /// Pop the address of a value of this kind; give each text and each plain
     /// list in it a room of 0, so it reads the cells it shares and a drop of
     /// it frees nothing.
@@ -495,9 +534,19 @@ pub enum Op
     /// Look at the address of a view of text on the stack, leaving it there;
     /// stop the program when the view starts or ends inside a character.
     TextEdges,
-    /// Look at the address of a slice of u8s on the stack, leaving it there;
-    /// stop the program when the u8s are not UTF-8.
+    /// Look at the address of a plain list of u8s on the stack, leaving it
+    /// there; stop the program when the u8s are not UTF-8.
     CheckUtf8,
+    /// Pop the address of text or a plain list; pin its block, so a duplicate
+    /// copies it: an address of one of its cells is taken.
+    Pin,
+    /// Pop the address of an object; push the address of its block, which
+    /// holds one more count of it.
+    ObjToPtr,
+    /// Pop a pointer to the block of an object, then the address of a slot;
+    /// write the object into the slot, which takes the count the pointer
+    /// held.
+    PtrToObj,
 }
 
 impl Op
@@ -536,8 +585,8 @@ impl Op
         }
     }
 
-    /// The op name, such as `load_local`; an operator op goes by the short
-    /// name of its operator, such as `add` or `lt`.
+    /// The op name, such as `load_local`; an operator op is named with the
+    /// short name of its operator, such as `add` or `lt`.
     ///
     /// # Returns
     ///
@@ -587,6 +636,7 @@ impl Op
             | Op::ListEq(kind)
             | Op::Drop(kind)
             | Op::DupSeqs(kind)
+            | Op::DeepSeqs(kind)
             | Op::LendSeqs(kind)
             | Op::Own(kind)
             | Op::ToHeap(kind)
@@ -596,7 +646,8 @@ impl Op
             | Op::SeqEq(kind)
             | Op::MemFill(kind)
             | Op::PrintList(kind)
-            | Op::PrintEnum(kind) => kind.name(),
+            | Op::PrintEnum(kind)
+            | Op::CLeave(kind) => kind.name(),
             Op::Halt { cause, kind } =>
             {
                 let cause: &'static str = cause.into();
@@ -609,7 +660,14 @@ impl Op
             {
                 format!("{stride} {}", slice_source_text(from))
             }
-            Op::SliceCell { stride, first: 0 } => stride.to_string(),
+            Op::CLoad { kind, offset } | Op::CStore { kind, offset } =>
+            {
+                format!("{} at {offset}", kind.name())
+            }
+            Op::SliceCell { stride, first: 0 } | Op::ObjectCell { stride } =>
+            {
+                stride.to_string()
+            }
             Op::SliceCell { stride, first } => format!("{stride} from {first}"),
             Op::Index { len, first: 0 } => len.to_string(),
             Op::Index { len, first } => format!("{len} from {first}"),
@@ -634,6 +692,7 @@ impl Op
             | Op::Print
             | Op::Pop
             | Op::Free
+            | Op::CRevoke
             | Op::Dup
             | Op::ResultAddr
             | Op::CharCount
@@ -642,8 +701,10 @@ impl Op
             | Op::TextEq
             | Op::CharAtOctet
             | Op::TextEdges
-            | Op::FnPlain
-            | Op::CheckUtf8 =>
+            | Op::CheckUtf8
+            | Op::Pin
+            | Op::ObjToPtr
+            | Op::PtrToObj =>
             {
                 return None;
             }

@@ -10,6 +10,7 @@ use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AddStmt;
 use zakac_ast::stmt::AssignStmt;
+use zakac_ast::stmt::LeaveStmt;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::RemoveStmt;
 use zakac_ast::stmt::ReplaceStmt;
@@ -39,6 +40,7 @@ use zakac_span::span::Span;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
+use crate::struct_lit::ONE;
 use crate::using::Head;
 
 /// Whether statement verbs are allowed in a clause.
@@ -72,15 +74,6 @@ enum Operand
     Expr(Expr),
     /// `<kind>` in `<kind> အဖြစ်`.
     Kind(Kind),
-    /// `ရလဒ်ကောင်း` (`good`) or `အမှားအယွင်း` in `... အဖြစ်`: the part of a
-    /// result a conversion reads.
-    Side
-    {
-        /// Whether it is the good result.
-        good: bool,
-        /// The word.
-        span: Span,
-    },
     /// The range of text in `<range> ထိကို`, which a replace statement
     /// changes.
     Range(Box<TextRange>),
@@ -116,11 +109,19 @@ impl Operand
         {
             Operand::Expr(e) => e.span(),
             Operand::Kind(k) => k.span,
-            Operand::Side { span, .. } => *span,
             Operand::Range(r) => r.span,
         }
     }
 }
+
+/// The dup word: `<value> ၏ မိတ္တူ` copies the value.
+const DUP_WORD: &str = "မိတ္တူ";
+
+/// The end of `တစ်<classifier>လုံး`, "the whole of", which makes a duplicate deep.
+const WHOLE: &str = "လုံး";
+
+/// The possessive particle, as it ends a word it is joined to.
+const EI: &str = "၏";
 
 /// One item of the operand stack.
 #[derive(Debug, Builder)]
@@ -130,6 +131,9 @@ struct Item
     operand: Operand,
     /// The particle after it and the particle span, once one is read.
     slot: Option<(Slot, Span)>,
+    /// The classifier of the `တစ်<classifier>လုံး` after it: the whole of
+    /// the value, so a duplicate of it is deep.
+    whole: Option<Ident>,
 }
 
 impl Item
@@ -172,6 +176,7 @@ fn as_slot(tok: &Token) -> Option<Slot>
         TokenKind::Kw(Kw::Hu) => Some(Slot::Hu),
         TokenKind::Kw(Kw::Ordinal) => Some(Slot::Ordinal),
         TokenKind::Kw(Kw::Into) => Some(Slot::Into),
+        TokenKind::Kw(Kw::Within) => Some(Slot::Within),
         _ => None,
     }
 }
@@ -263,9 +268,12 @@ impl Parser<'_>
             // `၏ အကွက်တိုင်း` opens an each-cell loop; the operand before it is
             // what the loop walks.
             ret_if!(self.at_each_head(), self.finish_clause(stack));
-            // `၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ` removes the last cell of the operand.
+            // `၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်` removes the last cell of the operand.
             let last = matches!(tok.kind, TokenKind::Kw(Kw::LastCell | Kw::LastChar));
             ret_if!(last && holds_ei(&stack), self.finish_remove(stack, mode));
+            // `ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်` gives outside code leave to call the
+            // operand.
+            ret_if!(self.at_leave(), self.finish_leave(stack, mode));
             // `<cell> ၏ အရှေ့တွင်` names where an add puts its value.
             if tok.kind == TokenKind::Kw(Kw::Before) && holds_ei(&stack)
             {
@@ -284,6 +292,31 @@ impl Parser<'_>
                 fill_end && stack.len() == 1 && stack[0].slot.is_none(),
                 self.finish_clause(stack)
             );
+            // `၏ မိတ္တူ` copies the operand; `တစ်<classifier>လုံး` before the `၏`
+            // makes the duplicate deep.
+            if holds_ei(&stack) && self.at_dup_word()
+            {
+                self.push_dup(&mut stack);
+                continue;
+            }
+            // `ထဲမှ ဒေတာ` reads an optional or a result, and `ဟူသော အမှားအယွင်း`
+            // makes an error value, of the operand before it.
+            let bare = stack.last().is_some_and(|i| i.slot.is_none());
+            if let Some(op) = self.data_read_at(0).filter(|_| bare)
+            {
+                self.push_postfix(&mut stack, op, 2);
+                continue;
+            }
+            if bare && tok.kind == TokenKind::Kw(Kw::CalledFault)
+            {
+                self.push_postfix(&mut stack, VerbOp::MakeFault, 1);
+                continue;
+            }
+            if let Some(glued) = self.whole_at()
+            {
+                self.mark_whole(&mut stack, glued)?;
+                continue;
+            }
             if let Some(slot) = as_slot(&tok)
             {
                 self.attach_slot(&mut stack, slot)?;
@@ -346,10 +379,118 @@ impl Parser<'_>
         self.push_next_operand(stack, slot)
     }
 
+    /// Whether the current token is the dup word `မိတ္တူ`, which after `၏`
+    /// copies the operand; elsewhere it is a name.
+    ///
+    /// # Returns
+    ///
+    /// `true` for the dup word.
+    fn at_dup_word(&self) -> bool
+    {
+        let tok = self.peek();
+        tok.kind == TokenKind::Ident && self.text_of(tok.span) == DUP_WORD
+    }
+
+    /// Whether the current token is `တစ်<classifier>လုံး`, "the whole of", with
+    /// the `၏` after it joined or not.
+    ///
+    /// # Returns
+    ///
+    /// Whether the `၏` is joined, or `None` for another token.
+    fn whole_at(&self) -> Option<bool>
+    {
+        let tok = self.peek();
+        ret_if!(tok.kind != TokenKind::Ident, None);
+        whole_word(self.text_of(tok.span))
+    }
+
+    /// Mark the top operand as the whole of a value, for a deep duplicate; a
+    /// joined `၏` is its particle too.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack.
+    /// * `glued` - Whether the `၏` is joined to the word.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a `double-particle` diagnostic for an operand that holds a
+    /// particle at this point.
+    fn mark_whole(&mut self, stack: &mut Vec<Item>, glued: bool) -> PResult<()>
+    {
+        let tok = self.bump();
+        let first = stack.last().and_then(|top| top.slot).map(|(_, at)| at);
+        ret_if!(let Some(first) = first, Err(diag::double_particle(tok.span, self.text_of(first))));
+        let top = stack.last_mut().expect("the stack holds the first operand");
+        let word = self.text_of(tok.span);
+        let classifier = whole_classifier(word).unwrap_or_default().to_string();
+        top.whole = Some(Ident::builder().name(classifier).span(tok.span).build());
+        do_if!(glued, top.slot = Some((Slot::Ei, tok.span)));
+        Ok(())
+    }
+
+    /// Turn the top operand, which holds `၏`, into a duplicate of it at the dup
+    /// word: a deep duplicate when it is marked as the whole of a value.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack.
+    fn push_dup(&mut self, stack: &mut Vec<Item>)
+    {
+        let tok = self.bump();
+        let item = stack.pop().expect("the top operand holds ၏");
+        let op = tern!(item.whole.is_some(), VerbOp::DeepDupOf, VerbOp::DupOf);
+        let classifier = item.whole.clone();
+        let value = into_expr(item);
+        let span = value.span().to(&tok.span);
+        let copied = self.dup_expr(op, value, span, tok.particle);
+        let copied = with_classifier(copied, classifier);
+        stack.push(Item::expr(copied));
+    }
+
+    /// Read the words of a postfix operation and turn the top operand into it.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack; its top has no particle.
+    /// * `op` - The operation.
+    /// * `words` - The count of tokens that spell it.
+    fn push_postfix(&mut self, stack: &mut Vec<Item>, op: VerbOp, words: usize)
+    {
+        let last =
+            (0..words).map(|_| self.bump()).last().expect("an operation has words");
+        let value = into_expr(stack.pop().expect("an operand comes first"));
+        let span = value.span().to(&last.span);
+        let made = self.dup_expr(op, value, span, last.particle);
+        stack.push(Item::expr(made));
+    }
+
+    /// A duplicate of a value.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - [`VerbOp::DupOf`] or [`VerbOp::DeepDupOf`].
+    /// * `value` - The value.
+    /// * `span` - The duplicate.
+    /// * `particle` - The particle after the dup word.
+    ///
+    /// # Returns
+    ///
+    /// The expression.
+    pub(crate) fn dup_expr(
+        &mut self, op: VerbOp, value: Expr, span: Span, particle: Particle,
+    ) -> Expr
+    {
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = VerbExpr::builder().id(id).op(op).args(vec![value]).particle(particle)
+            .is_cmp(false).span(span).build();
+        Expr::Verb(node)
+    }
+
     /// Push the operand after a particle, unless a verb or a shift direction
-    /// comes first. After `ကို`, `<kind> အဖြစ်` is the target of a
-    /// conversion, and so is `ရလဒ်ကောင်း အဖြစ်` or `အမှားအယွင်း အဖြစ်`, a part
-    /// of a result.
+    /// comes first. After `ကို`, `<kind> တစ်<classifier> အဖြစ်` is the target
+    /// of a conversion.
     ///
     /// # Arguments
     ///
@@ -361,20 +502,11 @@ impl Parser<'_>
     /// `Ok`, or a diagnostic from the operand.
     fn push_next_operand(&mut self, stack: &mut Vec<Item>, slot: Slot) -> PResult<()>
     {
-        if slot == Slot::Ko && self.starts_kind() && self.kind_then(Kw::As)
+        if slot == Slot::Ko && self.starts_kind() && self.slot_then(Kw::As)
         {
-            let kind = self.parse_kind()?;
+            let kind = self.parse_slot_kind()?;
             let as_tok = self.bump();
             let item = Item::builder().operand(Operand::Kind(kind));
-            stack.push(item.slot((Slot::KindAhpjit, as_tok.span)).build());
-            return Ok(());
-        }
-        if slot == Slot::Ko && self.at_side()
-        {
-            let word = self.bump();
-            let good = word.kind == TokenKind::Kw(Kw::GoodResult);
-            let as_tok = self.bump();
-            let item = Item::builder().operand(Operand::Side { good, span: word.span });
             stack.push(item.slot((Slot::KindAhpjit, as_tok.span)).build());
             return Ok(());
         }
@@ -385,6 +517,7 @@ impl Parser<'_>
         let after_ei =
             matches!(tok.kind, TokenKind::Kw(Kw::LastCell | Kw::LastChar | Kw::Before));
         ret_if!(after_ei && slot == Slot::Ei, Ok(()));
+        ret_if!(slot == Slot::Ei && self.at_dup_word(), Ok(()));
         let first = self.text_of(self.prev_span());
         ret_if!(as_slot(&tok).is_some(), Err(diag::double_particle(tok.span, first)));
         let expr = self.parse_operand()?;
@@ -392,6 +525,7 @@ impl Parser<'_>
         let item = match expr
         {
             Expr::Name(n) if is_field => self.field_of(stack, n),
+            expr if is_field && reads_a_name(&expr) => self.read_of_field(stack, expr),
             expr => expr,
         };
         stack.push(Item::expr(item));
@@ -415,6 +549,37 @@ impl Parser<'_>
         let (_, ei) = top.slot.expect("the top operand holds ၏");
         top.slot = Some((Slot::Before, ei.to(&tok.span)));
         self.push_next_operand(stack, Slot::Before)
+    }
+
+    /// Rebuild a read of the data of a field, `x ၏ f ထဲမှ ဒေတာ`, whose operand
+    /// came back as the read of the bare name `f`: the field comes first,
+    /// and each read wraps it.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack; its top holds `၏`.
+    /// * `expr` - The reads around the field name.
+    ///
+    /// # Returns
+    ///
+    /// The reads of the field.
+    fn read_of_field(&mut self, stack: &mut Vec<Item>, expr: Expr) -> Expr
+    {
+        let Expr::Verb(mut read) = expr
+        else
+        {
+            let Expr::Name(n) = expr
+            else
+            {
+                unreachable!("the reads end in a name");
+            };
+            return self.field_of(stack, n);
+        };
+        let inner = read.args.pop().expect("a read takes one operand");
+        let field = self.read_of_field(stack, inner);
+        read.span = field.span().to(&read.span);
+        read.args.push(field);
+        Expr::Verb(read)
     }
 
     /// Take the top operand, which holds `၏`, as the struct of a field.
@@ -470,7 +635,7 @@ impl Parser<'_>
             stmt => return Ok(stmt),
         };
         ret_if!(self.at_using_rest(), self.parse_using(first, mode));
-        let end = self.marked_end(self.edit_mark_len());
+        let end = self.marked_end(0);
         let Some(end) = end
         else
         {
@@ -606,7 +771,8 @@ impl Parser<'_>
     }
 
     /// Parse the rest of a list literal after its first cell:
-    /// `(၊ cell)* တို့ပါသော စာရင်း`.
+    /// `(၊ cell)* တို့ပါသော စာရင်း`, and its kind when `ဟူသော <kind>
+    /// တစ်<classifier>` follows.
     ///
     /// # Arguments
     ///
@@ -623,10 +789,12 @@ impl Parser<'_>
             cells.push(self.parse_notation()?);
         }
         self.expect(Kw::ListOf)?;
-        let end = self.expect(Kw::List)?;
-        let span = cells[0].span().to(&end.span);
+        self.expect(Kw::List)?;
+        let kind = tern!(self.at_literal_kind(), Some(self.parse_list_kind()?), None);
+        let span = cells[0].span().to(&self.prev_span());
         let id = self.new_id();
-        Ok(Expr::List(ListLit::builder().id(id).cells(cells).span(span).build()))
+        #[rustfmt::skip]
+        return Ok(Expr::List(ListLit::builder().id(id).cells(cells).maybe_kind(kind).span(span).build()));
     }
 
     /// Replace the top operand, which holds `၏`, with its cell
@@ -923,17 +1091,13 @@ impl Parser<'_>
             Some((Slot::Bit(dir), _)) => Some(dir),
             _ => None,
         });
-        let (mut exprs, mut kind_arg, mut op) = (Vec::new(), None, verb.op);
+        let (mut exprs, mut kind_arg) = (Vec::new(), None);
         for item in args
         {
             match item.operand
             {
                 Operand::Expr(e) => exprs.push(e),
                 Operand::Kind(k) => kind_arg = Some(k),
-                Operand::Side { good, .. } =>
-                {
-                    op = tern!(good, VerbOp::Unwrap, VerbOp::UnwrapFault)
-                }
                 Operand::Range(_) =>
                 {
                     unreachable!("a range fills the slot of a statement verb alone")
@@ -942,20 +1106,9 @@ impl Parser<'_>
         }
         let id = self.new_id();
         #[rustfmt::skip]
-        let node = VerbExpr::builder().id(id).op(op).args(exprs).maybe_kind_arg(kind_arg)
+        let node = VerbExpr::builder().id(id).op(verb.op).args(exprs).maybe_kind_arg(kind_arg)
             .maybe_dir(dir).particle(tok.particle).is_cmp(verb.is_cmp).span(span).build();
         Expr::Verb(node)
-    }
-
-    /// Whether `ရလဒ်ကောင်း အဖြစ်` or `အမှားအယွင်း အဖြစ်` starts here.
-    ///
-    /// # Returns
-    ///
-    /// `true` if it does.
-    fn at_side(&self) -> bool
-    {
-        let side = matches!(kw_of(&self.peek()), Some(Kw::GoodResult | Kw::Fault));
-        side && kw_of(&self.peek_n(1)) == Some(Kw::As)
     }
 
     /// Build the statement a statement verb closes, and read its full stop.
@@ -983,16 +1136,15 @@ impl Parser<'_>
         let first = args.next().expect("statement verbs take operands");
         match verb.op
         {
-            VerbOp::Assign | VerbOp::DupInto =>
+            VerbOp::Assign => Ok(assign_stmt(first, args.next(), span)),
+            VerbOp::DupInto | VerbOp::DeepDupInto =>
             {
-                Ok(assign_stmt(first, args.next(), span))
-            }
-            VerbOp::MoveInto =>
-            {
-                let value = args.next().expect("a move takes two operands");
-                #[rustfmt::skip]
-                let node = AssignStmt::builder().target(first).value(value).moves(true).span(span).build();
-                Ok(Stmt::Assign(node))
+                let value = args.next().expect("a duplicate takes two operands");
+                let deep = verb.op == VerbOp::DeepDupInto;
+                let op = tern!(deep, VerbOp::DeepDupOf, VerbOp::DupOf);
+                let at = value.span();
+                let copied = self.dup_expr(op, value, at, Particle::None);
+                Ok(assign_stmt(first, Some(copied), span))
             }
             VerbOp::Print => Ok(print_stmt(first, slot, span)),
             VerbOp::AddCell =>
@@ -1003,18 +1155,6 @@ impl Parser<'_>
                 let node = AddStmt::builder().list(first).value(value).before(before).span(span).build();
                 Ok(Stmt::Add(node))
             }
-            VerbOp::ReturnGood =>
-            {
-                #[rustfmt::skip]
-                let node = ReturnStmt::builder().value(first).good(true).span(span).build();
-                Ok(Stmt::Return(node))
-            }
-            VerbOp::ReturnFault =>
-            {
-                #[rustfmt::skip]
-                let node = ReturnStmt::builder().value(first).fault(true).span(span).build();
-                Ok(Stmt::Return(node))
-            }
             _ =>
             {
                 Ok(Stmt::Return(ReturnStmt::builder().value(first).span(span).build()))
@@ -1022,8 +1162,8 @@ impl Parser<'_>
         }
     }
 
-    /// Finish `<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။` at its `နောက်ဆုံးအကွက်`, or
-    /// `<text> ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။` at its `နောက်ဆုံးစာလုံး`, and read its
+    /// Finish `<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။` at its `နောက်ဆုံးအကွက်`, or
+    /// `<text> ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။` at its `နောက်ဆုံးစာလုံး`, and read its
     /// full stop.
     ///
     /// # Arguments
@@ -1049,6 +1189,54 @@ impl Parser<'_>
         let span = list.span().to(&stop.span);
         let node = RemoveStmt::builder().list(list).chars(chars).span(span).build();
         Ok(ClauseOut::Stmt(Box::new(Stmt::Remove(node))))
+    }
+
+    /// Whether `ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်` or
+    /// `ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်` starts here, after the value
+    /// of a leave for code outside the program.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_leave(&self) -> bool
+    {
+        let kws = [1, 2, 3].map(|n| kw_of(&self.peek_n(n)));
+        let verb = matches!(kws[2], Some(Kw::AllowCall | Kw::RevokeCall));
+        self.at(Kw::Ko)
+            && kws[0] == Some(Kw::Outside)
+            && kws[1] == Some(Kw::From)
+            && verb
+    }
+
+    /// Finish `<value> ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။` or
+    /// `<value> ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်။` at its `ကို`, and
+    /// read its full stop.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack: the value alone.
+    /// * `mode` - Whether a statement can close the clause.
+    ///
+    /// # Returns
+    ///
+    /// The statement, or a diagnostic.
+    fn finish_leave(&mut self, mut stack: Vec<Item>, mode: Mode) -> PResult<ClauseOut>
+    {
+        let ko = self.bump();
+        let verb = [self.bump(), self.bump(), self.bump()][2];
+        let name = self.text_of(verb.span);
+        ret_if!(mode == Mode::Expr, Err(diag::stmt_verb_in_expr(verb.span, name)));
+        let value = stack.pop().expect("an operand comes before ကို");
+        ret_if!(
+            !stack.is_empty() || value.slot.is_some(),
+            Err(self.dangling(&stack, ko))
+        );
+        let value = into_expr(value);
+        let stop = self.expect_stop()?;
+        let span = value.span().to(&stop.span);
+        let grant = verb.kind == TokenKind::Kw(Kw::AllowCall);
+        let node = LeaveStmt::builder().value(value).grant(grant).span(span).build();
+        Ok(ClauseOut::Stmt(Box::new(Stmt::Leave(node))))
     }
 
     /// A `dangling-operands` diagnostic for operands left before a
@@ -1184,7 +1372,7 @@ fn holds_ei(stack: &[Item]) -> bool
 ///
 /// # Returns
 ///
-/// `true` when they do.
+/// `true` when the stack does.
 fn holds_ordinal(stack: &[Item]) -> bool
 {
     let [.., under, top] = stack
@@ -1246,4 +1434,81 @@ fn assign_stmt(target: Expr, value: Option<Expr>, span: Span) -> Stmt
 {
     let value = value.expect("assignment takes two operands");
     Stmt::Assign(AssignStmt::builder().target(target).value(value).span(span).build())
+}
+
+/// A duplicate with the classifier of the `တစ်<classifier>လုံး` before it.
+///
+/// # Arguments
+///
+/// * `e` - The duplicate.
+/// * `classifier` - The classifier, when written.
+///
+/// # Returns
+///
+/// The duplicate.
+fn with_classifier(e: Expr, classifier: Option<Ident>) -> Expr
+{
+    let Expr::Verb(mut node) = e
+    else
+    {
+        return e;
+    };
+    node.classifier = classifier;
+    Expr::Verb(node)
+}
+
+/// The classifier of `တစ်<classifier>လုံး`, with the `၏` after it joined or
+/// not.
+///
+/// # Arguments
+///
+/// * `text` - The word.
+///
+/// # Returns
+///
+/// The classifier, or `None` for another word.
+fn whole_classifier(text: &str) -> Option<&str>
+{
+    let text = text.strip_suffix(EI).unwrap_or(text);
+    let middle = text.strip_prefix(ONE)?.strip_suffix(WHOLE)?;
+    (!middle.is_empty()).then_some(middle)
+}
+
+/// Whether a word is `တစ်<classifier>လုံး`, "the whole of", with the `၏` after
+/// it joined or not.
+///
+/// # Arguments
+///
+/// * `text` - The word.
+///
+/// # Returns
+///
+/// Whether the `၏` is joined, or `None` for another word.
+pub(crate) fn whole_word(text: &str) -> Option<bool>
+{
+    let (text, glued) = text.strip_suffix(EI).map_or((text, false), |t| (t, true));
+    let middle = text.strip_prefix(ONE)?.strip_suffix(WHOLE)?;
+    (!middle.is_empty()).then_some(glued)
+}
+
+/// Whether an operand is one or more reads of data, `ထဲမှ ဒေတာ`, around a
+/// bare name.
+///
+/// # Arguments
+///
+/// * `expr` - The operand.
+///
+/// # Returns
+///
+/// `true` for such reads.
+fn reads_a_name(expr: &Expr) -> bool
+{
+    let Expr::Verb(v) = expr
+    else
+    {
+        return false;
+    };
+    let read =
+        matches!(v.op, VerbOp::Unwrap | VerbOp::UnwrapFault) && v.args.len() == 1;
+    read && matches!(&v.args[0], Expr::Name(_)) || read && reads_a_name(&v.args[0])
 }

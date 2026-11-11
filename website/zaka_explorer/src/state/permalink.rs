@@ -29,7 +29,7 @@ const FORMAT_6: &str = "6";
 /// Version of the format before the result mode.
 const FORMAT_5: &str = "5";
 
-/// Version of the format before the ownership checks.
+/// Version of the format before the checkers.
 const FORMAT_4: &str = "4";
 
 /// Version of the older format, without the foldings and the lowering view.
@@ -60,14 +60,14 @@ pub struct Link
 
 /// Encode a link for the URL hash.
 ///
-/// The format is `8.<platform bits>.<foldings>.<ownership check>.<mem
+/// The format is `8.<platform bits>.<foldings>.<checker>.<mem
 /// flags>.<result mode>.<scratch mode>.<target>.<C checks>.<stage>.<AST
 /// view>.<lowering view>.<base64url of the UTF-8 source>`, with the check, the
 /// modes, the target, the C checks, the stage and the views in lowercase, as in
 /// `8.64.7.error.0.in-place.apart.vm.default.lower.tree.folded.…`. The foldings
 /// are a digit from 0 to 7: 1 for expressions, 2 for constants, 4 for branches.
 /// The mem flags are a digit from 0 to 7: 1 for the strict check, 2 to forbid
-/// raw addresses, 4 to stop on overflow; formats before 7 hold 0 to 3.
+/// marked code, 4 to stop on overflow; formats before 7 hold 0 to 3.
 ///
 /// # Arguments
 ///
@@ -93,7 +93,7 @@ pub fn encode(link: &Link) -> String
     format!("{FORMAT}.{bits}.{fold}.{check}.{mem}.{modes}.{stage}.{views}.{text}")
 }
 
-/// The digit of the flags of the ownership check.
+/// The digit of the flags of the checker.
 ///
 /// # Arguments
 ///
@@ -105,7 +105,7 @@ pub fn encode(link: &Link) -> String
 fn mem_digit(options: &Options) -> u8
 {
     let stop = options.overflow == OverflowMode::Stop;
-    u8::from(options.strict) | u8::from(options.no_raw) << 1 | u8::from(stop) << 2
+    u8::from(options.strict) | u8::from(options.no_unsafe) << 1 | u8::from(stop) << 2
 }
 
 /// The digit of a set of foldings.
@@ -298,7 +298,7 @@ fn decode_5(rest: &str) -> Option<Link>
     let mut link = decode_4(&format!("{bits}.{fold}.{rest}"))?;
     link.options.check = check.parse::<MemCheck>().ok()?;
     link.options.strict = mem & 1 != 0;
-    link.options.no_raw = mem & 2 != 0;
+    link.options.no_unsafe = mem & 2 != 0;
     Some(link)
 }
 
@@ -311,7 +311,7 @@ fn decode_5(rest: &str) -> Option<Link>
 ///
 /// # Returns
 ///
-/// The link with the default ownership checks, or `None` when a part is not
+/// The link with the default checkers, or `None` when a part is not
 /// well formed.
 fn decode_4(rest: &str) -> Option<Link>
 {

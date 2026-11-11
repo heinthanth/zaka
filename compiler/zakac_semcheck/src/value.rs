@@ -184,7 +184,6 @@ impl Value
             | DataKind::Fn(_)
             | DataKind::List(_)
             | DataKind::Struct(_)
-            | DataKind::Slice(_)
             | DataKind::Seq(_) => Value::NULL,
         }
     }
@@ -853,10 +852,10 @@ pub fn from_raw(kind: DataKind, raw: &[u8], platform: u16) -> Result<Value, RawE
             Ok(Value::Ptr(pattern as u64))
         }
         DataKind::Enum(e) => from_raw(e.under(), raw, platform),
-        DataKind::List(_)
-        | DataKind::Struct(_)
-        | DataKind::Slice(_)
-        | DataKind::Seq(_) => Err(RawError::WrongLen),
+        DataKind::List(_) | DataKind::Struct(_) | DataKind::Seq(_) =>
+        {
+            Err(RawError::WrongLen)
+        }
     }
 }
 
@@ -1068,7 +1067,6 @@ impl FromStr for Value
             DataKind::Fn(_)
             | DataKind::List(_)
             | DataKind::Struct(_)
-            | DataKind::Slice(_)
             | DataKind::Seq(_)
             | DataKind::Enum(_) => None,
         };
@@ -1153,13 +1151,14 @@ impl TryFrom<String> for Value
 pub const TRUE_TEXT: &str = "မှန်";
 /// The text a print op writes for `false`.
 pub const FALSE_TEXT: &str = "မမှန်";
-/// The text a print op writes for the null address.
-pub const NULL_TEXT: &str = "ဗလာ";
+/// The text a print op writes for the null address: the phrase the program
+/// writes for it, so the output reads as the source does.
+pub const NULL_TEXT: &str = "မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ";
 
 /// The text a print op writes for a value, without the line break.
 /// Numbers use Burmese digits; floats use the shortest text that reads
 /// back; a character is written as itself; an address is written as `0x`
-/// and lowercase hex digits, the null address as `ဗလာ`.
+/// and lowercase hex digits, the null address as [`NULL_TEXT`].
 ///
 /// # Arguments
 ///

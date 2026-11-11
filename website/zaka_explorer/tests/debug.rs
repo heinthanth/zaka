@@ -9,6 +9,7 @@ use zaka_explorer::compile::asm::op_spot;
 use zaka_explorer::compile::compile;
 use zaka_explorer::compile::samples::MISTAKES;
 use zaka_explorer::compile::samples::SAMPLES;
+use zaka_explorer::compile::samples::Sample;
 use zaka_explorer::compile::samples::find_sample;
 use zaka_explorer::debug::BlockRow;
 use zaka_explorer::debug::BlockState;
@@ -21,6 +22,7 @@ use zaka_vm::mem::Origin;
 use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_ir_builder::ir::FoldOptions;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::tern;
 
@@ -34,11 +36,14 @@ fn session_of(path: &str) -> (Compiled, Session)
 fn session_with(path: &str, options: &Options) -> (Compiled, Session)
 {
     let out = compile(find_sample(path).unwrap().text, options);
+    // A session with no ops never moves, so a test that steps until a change
+    // would wait for ever on a sample that fails to compile.
+    assert!(out.ops.is_some(), "{path} does not compile: {:?}", out.diagnostics);
     let session = Session::new(out.ops.as_ref());
     (out, session)
 }
 
-/// Options that build a program the ownership check finds fault with.
+/// Options that build a program the checker finds fault with.
 fn unchecked() -> Options { Options::builder().check(MemCheck::Off).build() }
 
 /// The heap blocks of a session, without the blocks of its variables.
@@ -183,8 +188,8 @@ fn the_timer_stops_at_a_break_point()
 #[test]
 fn a_trap_is_final()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"အရင်\" ဟု \
-                ပြသပါ။\n၁ / သုည ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let text = "ကိန်းရှင် သုည သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+                လုပ်ဆောင်မည်။\n\"အရင်\" ဟု ပြသမည်။\n၁ / သုည ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     let mut s = Session::new(out.ops.as_ref());
     s.resume();
@@ -203,8 +208,8 @@ fn a_trap_is_final()
 #[test]
 fn globals_and_the_stack_show_their_values()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက + ၁ ကို \
-                ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let text = "ကိန်းရှင် က သည် ၇ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက \
+                + ၁ ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     let mut s = Session::new(out.ops.as_ref());
     let globals = s.globals();
@@ -309,7 +314,7 @@ fn each_speed_steps_at_its_rate()
 fn endless_loops_stop_at_the_budget()
 {
     let out = compile(
-        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nမှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။",
+        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nမှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။",
         &Options::default(),
     );
     let mut s = Session::new(out.ops.as_ref());
@@ -357,12 +362,14 @@ fn line_stops_join_the_op_breaks_and_replace_as_a_whole()
     let (out, mut s) = session_of("programs/gcd");
     let stops = line_stops(&out.asm, 7);
     let (f, pc) = stops[0];
-    s.toggle_break(f, 0);
+    // A break of its own at an op that no line stop holds.
+    let own = (0..).find(|op| !stops.contains(&(f, *op))).expect("an op off the line");
+    s.toggle_break(f, own);
     s.set_line_stops(stops.clone());
-    assert!(s.from_line(f, pc) && !s.from_line(f, 0));
-    assert!(s.breaks_in(f).contains(&pc) && s.breaks_in(f).contains(&0));
+    assert!(s.from_line(f, pc) && !s.from_line(f, own));
+    assert!(s.breaks_in(f).contains(&pc) && s.breaks_in(f).contains(&own));
     s.set_line_stops([]);
-    assert_eq!(s.breaks_in(f), [0]);
+    assert_eq!(s.breaks_in(f), [own]);
 }
 
 #[test]
@@ -384,7 +391,7 @@ fn each_op_has_a_spot_that_finds_it_again()
 fn a_spot_finds_its_op_after_the_folding_changes()
 {
     let text = "ကိန်းသေ က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၂ + ၃) * ၄ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် \
-                အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို ပြသပါ။\n\"x\" ဟု ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+                အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို ပြသမည်။\n\"x\" ဟု ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let folded = compile(text, &Options::default());
     let none = Options::builder().fold(FoldOptions::none()).build();
     let plain = compile(text, &none);
@@ -401,9 +408,10 @@ fn a_spot_finds_its_op_after_the_folding_changes()
 #[test]
 fn each_variable_shows_its_value_and_the_block_it_lives_in()
 {
-    let text = "ကိန်းရှင် x သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ငှားထားသော ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
-                လုပ်ဆောင်မည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let text = "ကိန်းရှင် x သည် ၇ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု \
+                ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအောက်ပါတို့ကို စိတ်မချရသော်လည်း \
+                လုပ်ဆောင်မည်။\np ကို x ၏ လိပ်စာ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nပရိုဂရမ် \
+                ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     let mut s = Session::new(out.ops.as_ref());
     let set =
@@ -465,8 +473,9 @@ fn a_finished_run_keeps_its_last_heap_until_the_next_run()
 fn heap_room_never_freed_shows_as_leaked_once_the_run_finishes()
 {
     let text = "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
-                လုပ်ဆောင်မည်။\nမင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။\nပ ၏ တန်ဖိုး \
-                ကို ၄၂ ဟု ထားပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+                လုပ်ဆောင်မည်။\nအောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\nမင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ \
+                နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။\nပ ၏ တန်ဖိုး ကို ၄၂ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ \
+                ပြီးဆုံးပါပြီး။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &unchecked());
     let mut s = Session::new(out.ops.as_ref());
     s.resume();
@@ -493,9 +502,9 @@ fn a_local_lives_in_a_stack_block_that_names_it_and_its_call()
         (b.origin, b.owner.clone().unwrap_or_default())
     };
     let home = first.home.expect("a home");
-    assert_eq!(named(home), (Origin::Stack, "က of လဲလှယ်".to_string()));
+    assert_eq!(named(home), (Origin::Stack, "က@လဲလှယ်".to_string()));
     let target = first.points_at.expect("a pointer");
-    assert_eq!(named(target), (Origin::Stack, format!("ပထမ of {START_NAME}")));
+    assert_eq!(named(target), (Origin::Stack, format!("ပထမ@{START_NAME}")));
 }
 
 #[test]
@@ -517,7 +526,7 @@ fn packed_frames_put_the_locals_of_a_call_in_one_block()
     assert_eq!(names, ["က", "ခ", "ယာယီ"], "the map shows each variable of the frame");
     let rows = block.rows();
     let owners: Vec<&str> = rows.iter().filter_map(|r| r.owner.as_deref()).collect();
-    assert_eq!(owners, ["က of လဲလှယ်", "ခ of လဲလှယ်", "ယာယီ of လဲလှယ်"]);
+    assert_eq!(owners, ["က@လဲလှယ်", "ခ@လဲလှယ်", "ယာယီ@လဲလှယ်"]);
     assert_eq!(rows.iter().map(|r| r.len).collect::<Vec<_>>(), [8, 8, 8]);
     assert_eq!(rows[1].start, start + 8, "a row of its own at the variable");
     assert_eq!(heap.row_of(homes[1]), Some(homes[1]), "a pointer finds its variable");
@@ -528,7 +537,8 @@ fn packed_frames_put_the_locals_of_a_call_in_one_block()
 #[test]
 fn each_mistake_traps_or_leaks()
 {
-    let mistakes: Vec<_> = SAMPLES.iter().filter(|s| s.group == MISTAKES).collect();
+    let builds = |s: &&Sample| s.group == MISTAKES;
+    let mistakes: Vec<_> = SAMPLES.iter().filter(builds).collect();
     assert!(mistakes.len() >= 8);
     let warn = Options::builder().check(MemCheck::Warn).build();
     for sample in mistakes
@@ -613,16 +623,17 @@ fn a_trap_in_a_gap_is_found_in_the_map()
 fn the_map_holds_each_block_in_address_order()
 {
     let text = "ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
-                လုပ်ဆောင်မည်။\nမင်မိုရီတွင် ကိန်းပြည့် လိပ်စာ ၃၀၀ ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် \
-                သိမ်းထားမည်။\nကိန်းရှင် အရွယ် သည် လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n၀ မှ ၂၉၉ အထိ နံပါတ် \
-                အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nအရွယ် ကို (နံပါတ် % ၈ + ၁) ကို လက္ခဏာမဲ့ ကိန်းပြည့် \
-                အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားပါ။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု \
-                ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် အရွယ် ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။\nပ ၏ တန်ဖိုး \
-                ကို နံပါတ် ဟု ထားပါ။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို ပ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ \
-                ပြီးပါပြီး။\n\n၀ မှ ၂၉၉ အထိ ၃ စီ နံပါတ် အနေဖြင့် တိုး၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် \
-                ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကိန်းများ + နံပါတ် ၏ တန်ဖိုး ဖြစ်ပါစေ။\nလိပ်စာ \
-                ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို ဗလာ ဟု \
-                ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\"ပြီးပါပြီ\" ဟု ပြသပါ။\nပရိုဂရမ် \
+                လုပ်ဆောင်မည်။\nအောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\nမင်မိုရီတွင် ကိန်းပြည့် လိပ်စာ ၃၀၀ \
+                ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် သိမ်းထားမည်။\nကိန်းရှင် အရွယ် သည် လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု \
+                ဖြစ်ပါစေ။\n၀ မှ ၂၉၉ အထိ နံပါတ် အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအရွယ် ကို \
+                (နံပါတ် % ၈ + ၁) ကို လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု \
+                ထားမည်။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် အရွယ် ခုစာ \
+                နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။\nပ ၏ တန်ဖိုး ကို နံပါတ် ဟု ထားမည်။\nကိန်းများ + နံပါတ် \
+                ၏ တန်ဖိုး ကို ပ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n၀ မှ ၂၉၉ အထိ ၃ စီ နံပါတ် \
+                အနေဖြင့် တိုး၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
+                ကိန်းများ + နံပါတ် ၏ တန်ဖိုး ဖြစ်ပါစေ။\nလိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\nကိန်းများ \
+                + နံပါတ် ၏ တန်ဖိုး ကို မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ \
+                ပြီးဆုံးပါပြီး။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\"ပြီးပါပြီ\" ဟု ပြသမည်။\nပရိုဂရမ် \
                 ပြီးဆုံးပါပြီး။";
     let out = compile(text, &unchecked());
     let mut s = Session::new(out.ops.as_ref());
@@ -721,4 +732,26 @@ fn a_list_block_knows_its_cells_in_both_frame_forms()
         Some(vec![8]),
         "a local of the start block too"
     );
+}
+
+#[test]
+fn a_shared_list_shows_two_holders()
+{
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
+က ထဲသို့ ၄ ကို ထည့်မည်။
+ကိန်းရှင် ခ သည် က ဖြစ်ပါစေ။
+\"ပြီး\" ဟု ပြသမည်။
+ခ ကို ပြသမည်။
+က ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let out = compile(text, &Options::default());
+    let mut s = Session::new(out.ops.as_ref());
+    let shared = |s: &Session| heap_blocks(s).iter().any(|b| b.holders == 2);
+    // The list is shared once `ခ` takes it; a bounded walk finds that step.
+    for _ in 0..200
+    {
+        do_if!(!shared(&s), s.step());
+    }
+    assert!(shared(&s), "{:?}", heap_blocks(&s));
 }

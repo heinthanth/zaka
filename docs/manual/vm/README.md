@@ -54,7 +54,7 @@ inputs, so `add` works for each integer width and for decimal numbers alike.
 | decimal number, 32 or 64 bits | 4 or 8 octets, in IEEE 754 form |
 | character | 4 octets, one Unicode scalar value |
 | boolean | 1 octet, `0` or `1` |
-| address | one octet for each 8 bits of the platform width; `ဗလာ` is address 0 |
+| address | one octet for each 8 bits of the platform width; the null pointer, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, is address 0 |
 
 Octets are stored least significant first. A load of octets that hold no value of the
 kind, such as a boolean octet of `7`, is a trap (`bad value`).
@@ -106,5 +106,5 @@ the explorer is built with no `ffi` and stops at the call; see
 - [Instructions](instructions.md): the instruction set, with a program shown as code.
 
 The compile-time side of the same checks is in
-[pointer checks](../compiler/checks.md). [Checks in the VM and in native
+[Compiler checks](../compiler/checks.md). [Checks in the VM and in native
 code](../concepts/checked.md) tells which checks a native build keeps.

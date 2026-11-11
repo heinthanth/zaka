@@ -74,16 +74,16 @@ impl Camera
     ///
     /// # Arguments
     ///
-    /// * `x` - Client x.
-    /// * `y` - Client y.
+    /// * `x` - Client horizontal position.
+    /// * `top` - Client vertical position.
     ///
     /// # Returns
     ///
     /// The point.
-    fn local(&self, x: f64, y: f64) -> (f64, f64)
+    fn local(&self, x: f64, top: f64) -> (f64, f64)
     {
         let rect = self.port.get_untracked().map(|el| el.get_bounding_client_rect());
-        rect.map_or((x, y), |r| (x - r.left(), y - r.top()))
+        rect.map_or((x, top), |r| (x - r.left(), top - r.top()))
     }
 
     /// Zoom around the middle of the viewport.
@@ -152,7 +152,7 @@ pub fn graph_view(
     });
     let transform = move || {
         let v = cam.view.get();
-        format!("translate({} {}) scale({})", v.x, v.y, v.zoom)
+        format!("translate({} {}) scale({})", v.x, v.top, v.zoom)
     };
     let content = move || cam.shape.with(|shape| drawing(state, shape));
     let picture = svg()
@@ -185,14 +185,14 @@ pub fn graph_view(
 fn on_wheel(cam: Camera, e: &ev::WheelEvent)
 {
     e.prevent_default();
-    let (dx, dy) = (e.delta_x(), e.delta_y());
+    let (dx, dt) = (e.delta_x(), e.delta_y());
     ret_if!(
         !(e.ctrl_key() || e.meta_key()),
-        cam.view.update(|v| *v = v.moved(-dx, -dy))
+        cam.view.update(|v| *v = v.moved(-dx, -dt))
     );
-    let (px, py) = cam.local(f64::from(e.client_x()), f64::from(e.client_y()));
-    let factor = (-dy * WHEEL_ZOOM).exp();
-    cam.view.update(|v| *v = v.zoom_at(factor, px, py));
+    let (px, pt) = cam.local(f64::from(e.client_x()), f64::from(e.client_y()));
+    let factor = (-dt * WHEEL_ZOOM).exp();
+    cam.view.update(|v| *v = v.zoom_at(factor, px, pt));
 }
 
 /// Start a Ctrl-drag or Cmd-drag.
@@ -217,14 +217,14 @@ fn start_drag(cam: Camera, e: &ev::PointerEvent)
 /// * `e` - The move.
 fn follow_drag(cam: Camera, e: &ev::PointerEvent)
 {
-    let Some((lx, ly)) = cam.drag.get_untracked()
+    let Some((lx, lt)) = cam.drag.get_untracked()
     else
     {
         return;
     };
-    let (x, y) = (f64::from(e.client_x()), f64::from(e.client_y()));
-    cam.view.update(|v| *v = v.moved(x - lx, y - ly));
-    cam.drag.set(Some((x, y)));
+    let (x, top) = (f64::from(e.client_x()), f64::from(e.client_y()));
+    cam.view.update(|v| *v = v.moved(x - lx, top - lt));
+    cam.drag.set(Some((x, top)));
 }
 
 /// Zoom with `+` and `-` and fit with `0`.
@@ -320,10 +320,10 @@ fn drawing(state: AppState, graph: &Graph) -> impl IntoView + use<>
 /// The view.
 fn line(from: &GraphNode, to: &GraphNode) -> impl IntoView + use<>
 {
-    let (x1, y1) = (from.center(), from.y + NODE_HEIGHT);
-    let (x2, y2) = (to.center(), to.y);
-    let mid = (y1 + y2) / 2.0;
-    path().attr("d", format!("M {x1} {y1} C {x1} {mid}, {x2} {mid}, {x2} {y2}"))
+    let (x1, t1) = (from.center(), from.top + NODE_HEIGHT);
+    let (x2, t2) = (to.center(), to.top);
+    let mid = (t1 + t2) / 2.0;
+    path().attr("d", format!("M {x1} {t1} C {x1} {mid}, {x2} {mid}, {x2} {t2}"))
 }
 
 /// One node: a box with its label and, for literals and names, the source
@@ -349,7 +349,7 @@ fn node_view(state: AppState, node: GraphNode) -> impl IntoView
         .then(|| tspan().attr("class", tone).attr("dx", CHAR_WIDTH).child(node.value));
     let caption = text()
         .attr("x", node.x + NODE_PAD)
-        .attr("y", node.y + NODE_HEIGHT / 2.0)
+        .attr("y", node.top + NODE_HEIGHT / 2.0)
         .attr("dominant-baseline", "central")
         .child((
             tspan().attr("class", ClassName::GRAPH_LABEL).child(node.label),
@@ -357,7 +357,7 @@ fn node_view(state: AppState, node: GraphNode) -> impl IntoView
         ));
     let frame = rect()
         .attr("x", node.x)
-        .attr("y", node.y)
+        .attr("y", node.top)
         .attr("width", node.width)
         .attr("height", NODE_HEIGHT);
     g().attr("class", ClassName::GRAPH_NODE)

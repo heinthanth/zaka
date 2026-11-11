@@ -1,7 +1,7 @@
 # zakac-ir-artifact v1
 name:
   Custom: programs.zaka
-source: "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။\nကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။\nကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီးသည် ဖြစ်ပါစေ။\nကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အခြေ ၁၆ ဖြင့် FF ဖြစ်ပါစေ။\nကိန်းရှင် စာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'က' ဖြစ်ပါစေ။\nအသက် ကို အသက် + ၁ ဟု ထားပါ။\nအသက် ကို အသက် နှင့် ဘိုက် ၏ ပေါင်းလဒ် ဟု ထားပါ။\nပိုင် * ၂ ကို ပြသပါ။\nဘိုက် ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ် ကို ပြသပါ။\nအသက် ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nစာ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။\nအောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကိန်းရှင် အသက် သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၅ ဖြစ်ပါစေ။\nအသက် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nအကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nကြီးသူ ကို မမှန် ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nထိုသို့မဟုတ်ဘဲ ကြီးသူ ဖြစ်၍ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသပါ။\nသို့မဟုတ်ပါက (စာ < 'ခ' ဖြစ်၍ ကြီးသူ) ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+source: "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် အသက် သည် ၁၈ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်းသေ ပိုင် သည် ၃.၁၄ ဟူသော ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီးသည် ဖြစ်ပါစေ။\nကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အခြေ ၁၆ ဖြင့် FF ဖြစ်ပါစေ။\nကိန်းရှင် စာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'က' ဖြစ်ပါစေ။\nအသက် ကို အသက် + ၁ ဟု ထားမည်။\nအသက် ကို အသက် နှင့် ဘိုက် ၏ ပေါင်းလဒ် ဟု ထားမည်။\nပိုင် * ၂ ကို ပြသမည်။\nဘိုက် ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ် ကို ပြသမည်။\nအသက် ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။\nစာ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် အသက် သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၅ ဖြစ်ပါစေ။\nအသက် ကို ပြသမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nအကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကြီးသူ ကို မမှန် ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nထိုသို့မဟုတ်ဘဲ ကြီးသူ ဖြစ်၍ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသမည်။\nသို့မဟုတ်ပါက (စာ < 'ခ' ဖြစ်၍ ကြီးသူ) ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 module:
   globals: []
@@ -18,41 +18,47 @@ module:
         lo: 145
         hi: 157
       addressed: false
+      unset: null
     - name: ပိုင်
       kind: f64
       access: const
       span:
-        lo: 256
-        hi: 271
+        lo: 288
+        hi: 303
       addressed: false
+      unset: null
     - name: ကြီးသူ
       kind: bool
       access: var
       span:
-        lo: 374
-        hi: 392
+        lo: 438
+        hi: 456
       addressed: false
+      unset: null
     - name: ဘိုက်
       kind: u8
       access: var
       span:
-        lo: 630
-        hi: 645
+        lo: 694
+        hi: 709
       addressed: false
+      unset: null
     - name: စာ
       kind: char
       access: var
       span:
-        lo: 887
-        hi: 893
+        lo: 951
+        hi: 957
       addressed: false
+      unset: null
     - name: အသက်
       kind: i16
       access: var
       span:
-        lo: 1787
-        hi: 1799
+        lo: 1904
+        hi: 1916
       addressed: false
+      unset: null
     block:
     - set:
         place: l0
@@ -62,10 +68,10 @@ module:
             const: 18:isize
           span:
             lo: 168
-            hi: 205
+            hi: 237
         span:
           lo: 117
-          hi: 233
+          hi: 265
     - set:
         place: l1
         value:
@@ -73,11 +79,11 @@ module:
           node:
             const: 3.14:f64
           span:
-            lo: 282
-            hi: 317
+            lo: 314
+            hi: 381
         span:
-          lo: 234
-          hi: 345
+          lo: 266
+          hi: 409
     - set:
         place: l2
         value:
@@ -90,21 +96,21 @@ module:
                 node:
                   read: l0
                 span:
-                  lo: 512
-                  hi: 524
+                  lo: 576
+                  hi: 588
               rhs:
                 kind: isize
                 node:
                   const: 18:isize
                 span:
-                  lo: 535
-                  hi: 541
+                  lo: 599
+                  hi: 605
           span:
-            lo: 512
-            hi: 573
+            lo: 576
+            hi: 637
         span:
-          lo: 346
-          hi: 601
+          lo: 410
+          hi: 665
     - set:
         place: l3
         value:
@@ -112,11 +118,11 @@ module:
           node:
             const: 255:u8
           span:
-            lo: 792
-            hi: 830
+            lo: 856
+            hi: 894
         span:
-          lo: 602
-          hi: 858
+          lo: 666
+          hi: 922
     - set:
         place: l4
         value:
@@ -124,11 +130,11 @@ module:
           node:
             const: "'က':char"
           span:
-            lo: 992
-            hi: 997
+            lo: 1056
+            hi: 1061
         span:
-          lo: 859
-          hi: 1025
+          lo: 923
+          hi: 1089
     - set:
         place: l0
         value:
@@ -141,21 +147,21 @@ module:
                 node:
                   read: l0
                 span:
-                  lo: 1049
-                  hi: 1061
+                  lo: 1113
+                  hi: 1125
               rhs:
                 kind: isize
                 node:
                   const: 1:isize
                 span:
-                  lo: 1064
-                  hi: 1067
+                  lo: 1128
+                  hi: 1131
           span:
-            lo: 1049
-            hi: 1067
+            lo: 1113
+            hi: 1131
         span:
-          lo: 1026
-          hi: 1093
+          lo: 1090
+          hi: 1160
     - set:
         place: l0
         value:
@@ -168,8 +174,8 @@ module:
                 node:
                   read: l0
                 span:
-                  lo: 1117
-                  hi: 1129
+                  lo: 1184
+                  hi: 1196
               rhs:
                 kind: isize
                 node:
@@ -179,18 +185,18 @@ module:
                       node:
                         read: l3
                       span:
-                        lo: 1146
-                        hi: 1161
+                        lo: 1213
+                        hi: 1228
                     implicit: true
                 span:
-                  lo: 1146
-                  hi: 1161
+                  lo: 1213
+                  hi: 1228
           span:
-            lo: 1117
-            hi: 1193
+            lo: 1184
+            hi: 1260
         span:
-          lo: 1094
-          hi: 1219
+          lo: 1161
+          hi: 1289
     - print:
         value:
           expr:
@@ -198,11 +204,11 @@ module:
             node:
               const: 6.28:f64
             span:
-              lo: 1220
-              hi: 1241
+              lo: 1290
+              hi: 1311
         span:
-          lo: 1220
-          hi: 1270
+          lo: 1290
+          hi: 1343
     - print:
         value:
           expr:
@@ -215,21 +221,21 @@ module:
                   node:
                     read: l3
                   span:
-                    lo: 1271
-                    hi: 1286
+                    lo: 1344
+                    hi: 1359
                 rhs:
                   kind: usize
                   node:
                     const: 2:usize
                   span:
-                    lo: 1316
-                    hi: 1319
+                    lo: 1389
+                    hi: 1392
             span:
-              lo: 1271
-              hi: 1363
+              lo: 1344
+              hi: 1436
         span:
-          lo: 1271
-          hi: 1392
+          lo: 1344
+          hi: 1468
     - print:
         value:
           expr:
@@ -241,15 +247,15 @@ module:
                   node:
                     read: l0
                   span:
-                    lo: 1393
-                    hi: 1405
+                    lo: 1469
+                    hi: 1481
                 implicit: false
             span:
-              lo: 1393
-              hi: 1506
+              lo: 1469
+              hi: 1598
         span:
-          lo: 1393
-          hi: 1535
+          lo: 1469
+          hi: 1630
     - print:
         value:
           expr:
@@ -261,15 +267,15 @@ module:
                   node:
                     read: l4
                   span:
-                    lo: 1536
-                    hi: 1542
+                    lo: 1631
+                    hi: 1637
                 implicit: false
             span:
-              lo: 1536
-              hi: 1649
+              lo: 1631
+              hi: 1760
         span:
-          lo: 1536
-          hi: 1678
+          lo: 1631
+          hi: 1792
     - set:
         place: l5
         value:
@@ -277,11 +283,11 @@ module:
           node:
             const: -5:i16
           span:
-            lo: 1921
-            hi: 1925
+            lo: 2038
+            hi: 2042
         span:
-          lo: 1759
-          hi: 1953
+          lo: 1876
+          hi: 2070
     - print:
         value:
           expr:
@@ -289,11 +295,11 @@ module:
             node:
               read: l5
             span:
-              lo: 1954
-              hi: 1966
+              lo: 2071
+              hi: 2083
         span:
-          lo: 1954
-          hi: 1995
+          lo: 2071
+          hi: 2115
     - if:
         cond:
           kind: bool
@@ -305,18 +311,18 @@ module:
                 node:
                   read: l0
                 span:
-                  lo: 2107
-                  hi: 2119
+                  lo: 2227
+                  hi: 2239
               rhs:
                 kind: isize
                 node:
                   const: 18:isize
                 span:
-                  lo: 2130
-                  hi: 2136
+                  lo: 2250
+                  hi: 2256
           span:
-            lo: 2107
-            hi: 2162
+            lo: 2227
+            hi: 2282
         then:
         - set:
             place: l2
@@ -325,11 +331,11 @@ module:
               node:
                 const: false:bool
               span:
-                lo: 2287
-                hi: 2302
+                lo: 2410
+                hi: 2425
             span:
-              lo: 2258
-              hi: 2328
+              lo: 2381
+              hi: 2454
         els:
         - if:
             cond:
@@ -342,8 +348,8 @@ module:
                     node:
                       read: l2
                     span:
-                      lo: 2467
-                      hi: 2485
+                      lo: 2593
+                      hi: 2611
                   rhs:
                     kind: bool
                     node:
@@ -354,28 +360,28 @@ module:
                           node:
                             read: l0
                           span:
-                            lo: 2502
-                            hi: 2514
+                            lo: 2628
+                            hi: 2640
                         rhs:
                           kind: isize
                           node:
                             const: 60:isize
                           span:
-                            lo: 2525
-                            hi: 2531
+                            lo: 2651
+                            hi: 2657
                     span:
-                      lo: 2502
-                      hi: 2554
+                      lo: 2628
+                      hi: 2680
               span:
-                lo: 2467
-                hi: 2554
+                lo: 2593
+                hi: 2680
             then:
             - print:
                 value:
                   text: ok
                 span:
-                  lo: 2570
-                  hi: 2600
+                  lo: 2696
+                  hi: 2729
             els:
             - print:
                 value:
@@ -394,41 +400,43 @@ module:
                                 node:
                                   read: l4
                                 span:
-                                  lo: 2639
-                                  hi: 2645
+                                  lo: 2768
+                                  hi: 2774
                               rhs:
                                 kind: char
                                 node:
                                   const: "'ခ':char"
                                 span:
-                                  lo: 2648
-                                  hi: 2653
+                                  lo: 2777
+                                  hi: 2782
                           span:
-                            lo: 2639
-                            hi: 2653
+                            lo: 2768
+                            hi: 2782
                         rhs:
                           kind: bool
                           node:
                             read: l2
                           span:
-                            lo: 2670
-                            hi: 2688
+                            lo: 2799
+                            hi: 2817
                     span:
-                      lo: 2639
-                      hi: 2688
+                      lo: 2768
+                      hi: 2817
                 span:
-                  lo: 2638
-                  hi: 2718
+                  lo: 2767
+                  hi: 2850
             span:
-              lo: 2424
-              hi: 2718
+              lo: 2550
+              hi: 2850
         span:
-          lo: 2091
-          hi: 2718
+          lo: 2211
+          hi: 2850
     shared_params: []
+    owned: []
+    owned_ret: false
     span:
       lo: 0
-      hi: 2789
+      hi: 2921
   main:
   - call:
       func: 0
@@ -443,7 +451,8 @@ module:
     env: null
     exit: null
   foreign: []
+  marked: []
   span:
     lo: 0
-    hi: 2790
+    hi: 2922
 diagnostics: []

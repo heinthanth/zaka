@@ -1,13 +1,10 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
-use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AliasDecl;
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::BreakStmt;
 use zakac_ast::stmt::CallStmt;
-use zakac_ast::stmt::CaptureItem;
-use zakac_ast::stmt::CaptureMode;
 use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountMode;
 use zakac_ast::stmt::CountedStmt;
@@ -32,6 +29,7 @@ use zakac_ast::stmt::SwitchStmt;
 use zakac_ast::stmt::WhileStmt;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
+use zakac_i18n::t;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
@@ -50,10 +48,26 @@ use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
 use crate::using::CallParts;
+use crate::using::is_mark_text;
+
+/// The markers of a parameter item: owned, changed, written alone, and its
+/// particle mark.
+pub(crate) type ItemMarkers = (bool, bool, bool, Option<Ident>);
 
 /// A parameter clause: the parameters, the word that ended it, and whether it
-/// ends in `နှင့် အခြားတန်ဖိုးများ`.
+/// ends in `နှင့် အခြားတန်ဖိုးများ`, or `အခြားတန်ဖိုးများနှင့်အတူ` in the item form.
 type ParamClause = (Vec<Param>, Option<Kw>, bool);
+
+/// The result clause of a function header.
+#[derive(Default)]
+struct RetClause
+{
+    /// The result kind with its measure word, `None` when the header gives
+    /// none.
+    kind: Option<Kind>,
+    /// Whether the result is the program's own, `အပိုင်အနေဖြင့်`.
+    owned: bool,
+}
 
 /// The count word `တစ်ခု` ("one") in `လုပ်ဆောင်ချက် တစ်ခု`.
 const ONE_THING: &str = "တစ်ခု";
@@ -104,9 +118,7 @@ impl Parser<'_>
     /// The statement, or a diagnostic.
     pub(crate) fn parse_stmt(&mut self) -> PResult<Stmt>
     {
-        // an export mark comes first; the statement after it comes back here
-        let alias = !self.at(Kw::Export) && self.sentence_has(Kw::AliasClose);
-        ret_if!(alias, self.parse_alias_decl());
+        ret_if!(self.at_kind_decl(), self.parse_kind_decl());
         let tok = self.peek();
         let Some(kw) = kw_of(&tok)
         else
@@ -123,14 +135,13 @@ impl Parser<'_>
             Kw::Var | Kw::Const => self.parse_decl_or_loop(),
             Kw::Function => self.parse_fn_or_call(),
             Kw::Program => self.parse_fn_decl(),
-            Kw::DataKindOpen => self.parse_kind_decl(),
-            // the old enumeration opener; the struct opener opens both now
-            Kw::KindWord => Err(self.err_expected(&quote(&kw_text(Kw::DataKindOpen)))),
+            Kw::DataKindOpen => self.parse_alias_decl(),
             Kw::Export => self.parse_exported(),
-            Kw::BlockOpen => self.parse_block().map(Stmt::Block),
+            Kw::Unsafe => self.parse_unchecked(),
+            Kw::BlockOpen | Kw::UnsafeBlockOpen => self.parse_block().map(Stmt::Block),
             Kw::Loop => self.parse_break(),
             Kw::NextIteration => self.parse_continue(),
-            Kw::Return | Kw::MarkSucceeded => self.parse_bare_return(),
+            Kw::WillReturn | Kw::MarkSucceeded => self.parse_bare_return(),
             Kw::MarkFailed => self.parse_mark_failed(),
             Kw::AllocHead => self.parse_alloc(),
             Kw::Address => self.parse_heap(),
@@ -189,7 +200,7 @@ impl Parser<'_>
         Err(diag::expected_stmt_verb(self.peek().span, &self.found()))
     }
 
-    /// Parse `"<file>" မှ <name> (၊ <name>)* (တို့ကို|ကို) ထည့်သွင်းပါ။`. An
+    /// Parse `"<file>" မှ <name> (၊ <name>)* (တို့ကို|ကို) ထည့်သွင်းမည်။`. An
     /// import after another statement or inside a block is parsed and
     /// reported.
     ///
@@ -224,8 +235,9 @@ impl Parser<'_>
     }
 
     /// Parse a declaration after the export mark `အများသုံး` and mark it
-    /// exported. The mark before another statement, or before a declaration
-    /// inside a block, is reported.
+    /// exported: a function, a variable, a constant or a kind alias. A struct
+    /// and an enumeration hold the mark after `ဟူသော`. The mark before another
+    /// statement, or before a declaration inside a block, is reported.
     ///
     /// # Returns
     ///
@@ -237,8 +249,6 @@ impl Parser<'_>
         let flag = match &mut stmt
         {
             Stmt::Fn(n) if !n.start => Some((&mut n.exported, &mut n.span)),
-            Stmt::Struct(n) => Some((&mut n.exported, &mut n.span)),
-            Stmt::Enum(n) => Some((&mut n.exported, &mut n.span)),
             Stmt::Alias(n) => Some((&mut n.exported, &mut n.span)),
             Stmt::Decl(n) => Some((&mut n.exported, &mut n.span)),
             _ => None,
@@ -251,6 +261,28 @@ impl Parser<'_>
         };
         *exported = true;
         *span = mark.to(span);
+        Ok(stmt)
+    }
+
+    /// Parse a function marked `စိတ်မချရသော`: its statements can work with
+    /// pointers, and marked code alone can call it. The start block takes no
+    /// mark.
+    ///
+    /// # Returns
+    ///
+    /// The function, or a diagnostic when no function follows.
+    fn parse_unchecked(&mut self) -> PResult<Stmt>
+    {
+        let mark = self.bump().span;
+        let mut stmt = self.parse_stmt()?;
+        let Stmt::Fn(n) = &mut stmt
+        else
+        {
+            return Err(diag::expected_token(mark, "လုပ်ဆောင်ချက်", "စိတ်မချရသော"));
+        };
+        ret_if!(n.start, Err(diag::expected_token(mark, "လုပ်ဆောင်ချက်", "စိတ်မချရသော")));
+        n.unchecked = true;
+        n.span = mark.to(&n.span);
         Ok(stmt)
     }
 
@@ -422,7 +454,10 @@ impl Parser<'_>
     /// The block, or a diagnostic.
     fn parse_branch(&mut self, allow_if: bool) -> PResult<BlockStmt>
     {
-        ret_if!(self.at(Kw::BlockOpen), self.parse_block());
+        ret_if!(
+            self.at(Kw::BlockOpen) || self.at(Kw::UnsafeBlockOpen),
+            self.parse_block()
+        );
         let tok = self.peek();
         let nested_if = !allow_if && self.at(Kw::If);
         ret_if!(nested_if, Err(diag::nested_single_line_if(tok.span)));
@@ -434,18 +469,20 @@ impl Parser<'_>
         Ok(BlockStmt::builder().stmts(vec![stmt]).single(true).span(span).build())
     }
 
-    /// Parse `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။ <stmt>* လုပ်ဆောင်စရာများ ပြီးပါပြီ။`.
+    /// Parse `အောက်ပါတို့ကို လုပ်ဆောင်မည်။ <stmt>* လုပ်ဆောင်စရာများ ပြီးပါပြီ။`.
     ///
     /// # Returns
     ///
     /// The block, or a diagnostic.
     pub(crate) fn parse_block(&mut self) -> PResult<BlockStmt>
     {
-        let start = self.expect(Kw::BlockOpen)?.span;
+        let open = self.expect_one_of(&[Kw::BlockOpen, Kw::UnsafeBlockOpen])?;
+        let unchecked = open.kind == TokenKind::Kw(Kw::UnsafeBlockOpen);
         self.expect_stop()?;
         let stmts = self.parse_stmts_to_close();
-        let span = self.parse_block_close(start)?;
-        Ok(BlockStmt::builder().stmts(stmts).span(span).build())
+        let span = self.parse_block_close(open.span)?;
+        #[rustfmt::skip]
+        return Ok(BlockStmt::builder().stmts(stmts).unchecked(unchecked).span(span).build());
     }
 
     /// Parse statements until a block closer or the end of the input.
@@ -539,13 +576,13 @@ impl Parser<'_>
         let stop = self.expect_stop()?;
         let span = word.span.to(&stop.span);
         #[rustfmt::skip]
-        let node = DeclStmt::builder().name(name).maybe_kind(head.kind).maybe_classifier(head.classifier)
+        let node = DeclStmt::builder().name(name).maybe_kind(head.kind)
             .is_const(is_const).maybe_init(head.init).span(span).build();
         Ok(Stmt::Decl(node))
     }
 
-    /// Parse `<name> ထဲသို့ <value> ကို ကူးထည့်မည်။` or the same with
-    /// `ပြောင်းထည့်မည်` after `ကိန်းရှင်` or `ကိန်းသေ`: a declaration whose
+    /// Parse `<name> ထဲသို့ <value> ကို ကူးထည့်မည်။` or `... အကုန်ကူးထည့်မည်။` after
+    /// `ကိန်းရှင်` or `ကိန်းသေ`: a declaration whose
     /// kind is the kind of the value. The clause engine reads it from the
     /// name as an assignment.
     ///
@@ -570,12 +607,12 @@ impl Parser<'_>
         let Stmt::Assign(assign) = *stmt
         else
         {
-            return Err(diag::expected_stmt_verb(stmt.span(), "ထည့်ပါ"));
+            return Err(diag::expected_stmt_verb(stmt.span(), "ထည့်မည်"));
         };
         let span = start.to(&assign.span);
         #[rustfmt::skip]
         let node = DeclStmt::builder().name(name).is_const(is_const).init(assign.value)
-            .moves(assign.moves).span(span).build();
+            .span(span).build();
         Ok(Stmt::Decl(node))
     }
 
@@ -611,15 +648,17 @@ impl Parser<'_>
         self.bump();
         let cond = self.parse_expr()?;
         self.expect_one_of(&[Kw::While, Kw::WhileIs])?;
-        let open = self.expect(Kw::BlockOpen)?;
+        let open = self.expect_one_of(&[Kw::BlockOpen, Kw::UnsafeBlockOpen])?;
+        let unchecked = open.kind == TokenKind::Kw(Kw::UnsafeBlockOpen);
         self.expect_stop()?;
         let (stmts, update) = self.parse_loop_stmts();
         let block_span = self.parse_block_close(open.span)?;
-        let block = BlockStmt::builder().stmts(stmts).span(block_span).build();
+        #[rustfmt::skip]
+        let block = BlockStmt::builder().stmts(stmts).unchecked(unchecked).span(block_span).build();
         let span = start.to(&block_span);
         #[rustfmt::skip]
         let node = GenericStmt::builder().var(var).maybe_kind(head.kind)
-            .maybe_classifier(head.classifier).maybe_init(head.init).cond(cond)
+            .maybe_init(head.init).cond(cond)
             .maybe_update(update.map(Box::new)).block(block).span(span).build();
         Ok(Stmt::Generic(node))
     }
@@ -673,17 +712,11 @@ impl Parser<'_>
     {
         let is_decl = self.peek_n(2).kind == TokenKind::Kw(Kw::Thi);
         ret_if!(is_decl, self.parse_fn_decl());
-        if self.at_fn_addr()
-        {
-            let addr = self.parse_fn_addr()?;
-            let clause = self.parse_clause_from(addr, Mode::Stmt)?;
-            return self.finish_expr_headed(clause);
-        }
         let (start, callee, place, args) = self.parse_call_head()?;
-        let ends = [Kw::Call, Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
+        let ends = [Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
         let end = self.expect_one_of(&ends)?;
         ret_if!(
-            matches!(kw_of(&end), Some(Kw::Call | Kw::WillDo)),
+            matches!(kw_of(&end), Some(Kw::WillDo)),
             self.finish_call_stmt(
                 CallParts::builder()
                     .start(start)
@@ -713,8 +746,7 @@ impl Parser<'_>
     /// The statement, or a diagnostic.
     pub(crate) fn finish_call_stmt(&mut self, parts: CallParts) -> PResult<Stmt>
     {
-        let CallParts { start, callee, place, args: (args, edits), using, marks } =
-            parts;
+        let CallParts { start, callee, place, args, using, marks } = parts;
         let pass = self.at_punct(Punct::ListSep)
             && kw_of(&self.peek_n(1)) == Some(Kw::PassFault);
         do_if!(pass, {
@@ -724,7 +756,7 @@ impl Parser<'_>
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);
         #[rustfmt::skip]
-        let node = CallStmt::builder().callee(callee).maybe_place(place).args(args).edits(edits).pass(pass)
+        let node = CallStmt::builder().callee(callee).maybe_place(place).args(args).pass(pass)
             .maybe_using(using).marks(marks).span(span).build();
         Ok(Stmt::Call(node))
     }
@@ -748,9 +780,9 @@ impl Parser<'_>
         self.expect(Kw::Thi)?;
         let external = self.at(Kw::External) || self.at_lib();
         ret_if!(external && !is_start, self.parse_external(start, name));
-        let (params, captures) = self.parse_params()?;
-        let open = self.expect_one_of(&[Kw::FnOpen, Kw::FnOpenRet])?;
-        let (ret, owned) =
+        let (params, _, _) = self.parse_params(&[Kw::Accepting], false)?;
+        let open = self.expect_one_of(&[Kw::BlockOpen, Kw::FnOpenRet])?;
+        let RetClause { kind: ret, owned } =
             self.parse_ret_clause(open.kind == TokenKind::Kw(Kw::FnOpenRet))?;
         let fn_span = start.to(&self.prev_span());
         // A function inside a block borrows the locals around it; the start
@@ -769,7 +801,7 @@ impl Parser<'_>
         let span = start.to(&block_span);
         #[rustfmt::skip]
         let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
-            .start(is_start).owned_ret(owned).captures(captures).span(span).build();
+            .start(is_start).owned_ret(owned).span(span).build();
         Ok(Stmt::Fn(node))
     }
 
@@ -777,9 +809,10 @@ impl Parser<'_>
     /// `လုပ်ဆောင်ချက် <name> သည်`: `ပြင်ပမှလာသော လုပ်ဆောင်ချက်(တစ်ခု)?ဖြစ်သည်။` with
     /// no parameters and no result, or `... ဖြစ်၍` then the parameters ending in
     /// `လက်ခံမည်` (no result) or `လက်ခံပြီး` and the result clause, or the
-    /// result clause alone. The host serves the function, so no block follows.
-    /// `"<lib>" မှလာသော` in place of `ပြင်ပမှလာသော` makes it a C function of
-    /// that shared lib.
+    /// result clause alone. The parameters can end in
+    /// `အခြားတန်ဖိုးများနှင့်အတူ`, as for a C function that takes more. The host
+    /// serves the function, so no block follows. `"<lib>" မှလာသော` in place
+    /// of `ပြင်ပမှလာသော` makes it a C function of that shared lib.
     ///
     /// # Arguments
     ///
@@ -796,15 +829,11 @@ impl Parser<'_>
         let bare =
             self.expect_one_of(&[Kw::And, Kw::Is])?.kind == TokenKind::Kw(Kw::Is);
         let ends = [Kw::Accepting, Kw::WillAccept];
-        let with_params = !bare && self.accepts_ahead();
-        let (params, end, variadic) = tern!(
-            with_params,
-            self.parse_params_to(&ends, true)?,
-            (Vec::new(), None, false)
-        );
-        let (ret, owned) = tern!(
+        let (params, end, variadic) =
+            tern!(bare, (Vec::new(), None, false), self.parse_params(&ends, true)?);
+        let RetClause { kind: ret, owned } = tern!(
             bare || end == Some(Kw::WillAccept),
-            (None, false),
+            RetClause::default(),
             self.parse_ret_clause(true)?
         );
         let stop = self.expect_stop()?;
@@ -813,7 +842,8 @@ impl Parser<'_>
         let block = BlockStmt::builder().span(stop.span).build();
         #[rustfmt::skip]
         let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
-            .external(true).maybe_lib(lib).variadic(variadic).owned_ret(owned).span(span).build();
+            .external(true).maybe_lib(lib).variadic(variadic).owned_ret(owned)
+            .span(span).build();
         Ok(Stmt::Fn(node))
     }
 
@@ -863,96 +893,99 @@ impl Parser<'_>
         Ok(())
     }
 
-    /// Whether `လက်ခံပြီး` or `လက်ခံမည်` comes before the next full stop, so the
-    /// header of an external function lists parameters.
-    ///
-    /// # Returns
-    ///
-    /// `true` if it does.
-    fn accepts_ahead(&self) -> bool
-    {
-        let ends = |kind: TokenKind| {
-            matches!(kind, TokenKind::Kw(Kw::Accepting | Kw::WillAccept))
-        };
-        let stop = |kind: TokenKind| {
-            matches!(kind, TokenKind::Punct(Punct::FullStop) | TokenKind::Eof)
-        };
-        let kinds = (0..).map(|n| self.peek_n(n).kind);
-        kinds.take_while(|k| !stop(*k)).any(ends)
-    }
-
-    /// Whether the sentence that starts here holds the reserved word `kw`
-    /// before its full stop.
-    ///
-    /// # Arguments
-    ///
-    /// * `kw` - The reserved word.
-    ///
-    /// # Returns
-    ///
-    /// `true` if it does.
-    fn sentence_has(&self, kw: Kw) -> bool
-    {
-        let stop = |kind: TokenKind| {
-            matches!(kind, TokenKind::Punct(Punct::FullStop) | TokenKind::Eof)
-        };
-        let kinds = (0..).map(|n| self.peek_n(n).kind);
-        kinds.take_while(|k| !stop(*k)).any(|k| k == TokenKind::Kw(kw))
-    }
-
     /// Parse a kind alias:
-    /// `ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`, or a
-    /// function kind with no opener before it.
+    /// `ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`, or with its
+    /// own classifier, `... ဟုလည်း မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။`.
+    /// The kind takes no measure word.
     ///
     /// # Returns
     ///
-    /// The declaration, or a diagnostic. A kind other than a function kind
-    /// needs the opener; a declaration inside a block is parsed and reported.
+    /// The declaration, or a diagnostic. A declaration inside a block is
+    /// parsed and reported.
     fn parse_alias_decl(&mut self) -> PResult<Stmt>
     {
-        let start = self.peek().span;
-        let opened = self.eat(Kw::DataKindOpen);
-        let kind = self.parse_kind()?;
-        let bare = !opened && kind.base != BaseKind::Fn;
-        let opener = quote(&kw_text(Kw::DataKindOpen));
-        let found = quote(self.text_of(start));
-        ret_if!(bare, Err(diag::expected_token(start, &opener, &found)));
-        self.expect(Kw::Ko)?;
+        let start = self.bump().span;
         let name = self.parse_ident()?;
-        self.expect(Kw::AliasClose)?;
+        self.expect(Kw::Ko)?;
+        let kind = self.parse_kind()?;
+        let close = self.expect_one_of(&[Kw::AliasClose, Kw::AliasCloseAnd])?;
+        let named = close.kind == TokenKind::Kw(Kw::AliasCloseAnd);
+        let classifier = tern!(named, Some(self.parse_classifier()?), None);
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);
         do_if!(self.depth > 0, self.diags.push(diag::nested_alias(span)));
-        let node = AliasDecl::builder().kind(kind).name(name).span(span).build();
+        #[rustfmt::skip]
+        let node = AliasDecl::builder().kind(kind).name(name).maybe_classifier(classifier)
+            .span(span).build();
         Ok(Stmt::Alias(node))
     }
 
-    /// Parse a declaration that opens with `ဒေတာအမျိုးအစား <name>`: a struct
-    /// when `တွင်` comes next, an enumeration when `ဆိုသည်မှာ` does.
+    /// Whether a struct or an enumeration declaration starts here:
+    /// `<name> ဟူသော`, then the marks `အများသုံး`, `မျှဝေနိုင်သော` or
+    /// `ပြင်ပမှ လာသော`, then `ဒေတာအစုအဝေး` or `ဒေတာအမျိုးအစားကွဲ`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    fn at_kind_decl(&self) -> bool
+    {
+        let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
+        ret_if!(!named || kw_of(&self.peek_n(1)) != Some(Kw::Called), false);
+        let marks = [Kw::Export, Kw::Shareable, Kw::External];
+        let word = (2..)
+            .map(|n| kw_of(&self.peek_n(n)))
+            .find(|kw| !kw.is_some_and(|kw| marks.contains(&kw)));
+        matches!(word.flatten(), Some(Kw::StructWord | Kw::EnumWord))
+    }
+
+    /// Parse a struct or an enumeration declaration that opens with
+    /// `<name> ဟူသော`: its marks, then a struct after `ဒေတာအစုအဝေး`, an
+    /// enumeration after `ဒေတာအမျိုးအစားကွဲ`.
     ///
     /// # Returns
     ///
     /// The declaration, or a diagnostic.
     fn parse_kind_decl(&mut self) -> PResult<Stmt>
     {
-        let start = self.bump().span;
+        let start = self.peek().span;
         let name = self.parse_ident()?;
-        let word = self.expect_one_of(&[Kw::At, Kw::Meaning])?;
-        let enumeration = word.kind == TokenKind::Kw(Kw::Meaning);
-        tern!(
-            enumeration,
-            self.parse_enum_decl(start, name),
-            self.parse_struct_decl(start, name)
-        )
+        self.expect(Kw::Called)?;
+        let exported = self.eat(Kw::Export);
+        let external = self.eat(Kw::External);
+        let shared = !external && self.eat(Kw::Shareable);
+        let word = tern!(
+            external || shared,
+            self.expect(Kw::StructWord)?,
+            self.expect_one_of(&[Kw::StructWord, Kw::EnumWord])?
+        );
+        let mut stmt = match kw_of(&word)
+        {
+            Some(Kw::EnumWord) => self.parse_enum_decl(start, name)?,
+            _ if external => self.parse_external_kind(start, name)?,
+            _ => self.parse_struct_decl(start, name)?,
+        };
+        match &mut stmt
+        {
+            Stmt::Struct(n) =>
+            {
+                n.exported = exported;
+                n.shared |= shared;
+            }
+            Stmt::Enum(n) => n.exported = exported,
+            _ => (),
+        }
+        Ok(stmt)
     }
 
-    /// Parse a struct declaration after its opener, name and `တွင်`:
-    /// `ဒေတာအမျိုးအစား <name> တွင် <kind> <field> (၊ <kind> <field>)* တို့ ပါဝင်သည်။`,
-    /// or `တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်။` at the end.
+    /// Parse a struct declaration after `<name> ဟူသော ... ဒေတာအစုအဝေး`:
+    /// `တွင် <field>၊ ... <field> တို့ပါဝင်သည်။`, or with one field
+    /// `တွင် <field> ပါဝင်သည်။`; `…ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်။`
+    /// at the end gives its classifier. Each field is
+    /// `<name> ဟူသော <kind> တစ်<classifier>`.
     ///
     /// # Arguments
     ///
-    /// * `start` - Span of the opener.
+    /// * `start` - Where the declaration starts.
     /// * `name` - The struct name.
     ///
     /// # Returns
@@ -961,15 +994,9 @@ impl Parser<'_>
     /// parsed and reported.
     fn parse_struct_decl(&mut self, start: Span, name: Ident) -> PResult<Stmt>
     {
-        let outer = std::mem::replace(&mut self.in_list, true);
-        let fields = self.parse_fields();
-        self.in_list = outer;
-        let fields = fields?;
-        let close = self.expect_one_of(&[Kw::FieldsClose, Kw::FieldsCloseAnd])?;
-        let named = close.kind == TokenKind::Kw(Kw::FieldsCloseAnd);
-        let classifier = tern!(named, Some(self.parse_classifier()?), None);
-        let stop = self.expect_stop()?;
-        let span = start.to(&stop.span);
+        self.expect(Kw::At)?;
+        let fields = self.parse_listed_fields(true)?;
+        let (classifier, span) = self.parse_decl_end(start)?;
         do_if!(self.depth > 0, self.diags.push(diag::nested_struct(span)));
         #[rustfmt::skip]
         let node = StructDecl::builder().name(name).fields(fields).maybe_classifier(classifier)
@@ -977,29 +1004,114 @@ impl Parser<'_>
         Ok(Stmt::Struct(node))
     }
 
+    /// Parse the end of a struct or an enumeration declaration after its
+    /// closer: the classifier clause when the closer ends in `ပြီး`, then the
+    /// full stop.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the declaration starts.
+    ///
+    /// # Returns
+    ///
+    /// The classifier, when written, and the span of the declaration; or a
+    /// diagnostic.
+    fn parse_decl_end(&mut self, start: Span) -> PResult<(Option<Ident>, Span)>
+    {
+        let and_kws =
+            [TokenKind::Kw(Kw::ContainsAnd), TokenKind::Kw(Kw::FieldsCloseAnd)];
+        let named = self.cur.back(1).is_some_and(|t| and_kws.contains(&t.kind));
+        let classifier = tern!(named, Some(self.parse_classifier()?), None);
+        let stop = self.expect_stop()?;
+        Ok((classifier, start.to(&stop.span)))
+    }
+
+    /// Parse a kind that comes from outside the program, after
+    /// `<name> ဟူသော [အများသုံး] ပြင်ပမှ လာသော ဒေတာအစုအဝေး`: `ဖြစ်သည်။`, or
+    /// `တွင် <field>၊ ... တို့ပါဝင်သည်။` (one field: `ပါဝင်သည်`) with the fields of the
+    /// C struct a value points at, from its start.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the declaration starts.
+    /// * `name` - The kind name.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    fn parse_external_kind(&mut self, start: Span, name: Ident) -> PResult<Stmt>
+    {
+        let with_fields =
+            self.expect_one_of(&[Kw::Is, Kw::At])?.kind == TokenKind::Kw(Kw::At);
+        let fields = tern!(with_fields, self.parse_listed_fields(false)?, Vec::new());
+        let stop = self.expect_stop()?;
+        let span = start.to(&stop.span);
+        do_if!(self.depth > 0, self.diags.push(diag::nested_struct(span)));
+        #[rustfmt::skip]
+        let node = StructDecl::builder().name(name).fields(fields).shared(true).external(true)
+            .span(span).build();
+        Ok(Stmt::Struct(node))
+    }
+
+    /// Parse the fields of a struct and the closer after them, with the list
+    /// open.
+    ///
+    /// # Arguments
+    ///
+    /// * `classifier_ok` - Whether a classifier clause can follow, so the `ပြီး`
+    ///   form of the closer is allowed.
+    ///
+    /// # Returns
+    ///
+    /// The fields, or a diagnostic.
+    fn parse_listed_fields(&mut self, classifier_ok: bool) -> PResult<Vec<Param>>
+    {
+        let outer = std::mem::replace(&mut self.in_list, true);
+        let fields = self.parse_fields();
+        self.in_list = outer;
+        let fields = fields?;
+        self.expect_one_of(member_closers(fields.len(), classifier_ok))?;
+        Ok(fields)
+    }
+
     /// Parse the fields of a struct declaration, with the list open:
-    /// `<kind> <field> (၊ <kind> <field>)*`.
+    /// `<field> (၊ <field>)*`.
     ///
     /// # Returns
     ///
     /// The fields, or a diagnostic.
     fn parse_fields(&mut self) -> PResult<Vec<Param>>
     {
-        let mut fields = vec![self.parse_param()?];
+        let mut fields = vec![self.parse_field()?];
         while self.eat_punct(Punct::ListSep)
         {
-            fields.push(self.parse_param()?);
+            fields.push(self.parse_field()?);
         }
         Ok(fields)
     }
 
-    /// Parse an enumeration declaration after its opener, name and `ဆိုသည်မှာ`:
-    /// `ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ <member> (၊ <member>)* တို့ ဖြစ်သည်။`, each
-    /// member a name with an optional value in parentheses.
+    /// Parse one field: `<name> ဟူသော <kind> တစ်<classifier>`.
+    ///
+    /// # Returns
+    ///
+    /// The field, or a diagnostic.
+    fn parse_field(&mut self) -> PResult<Param>
+    {
+        let start = self.peek().span;
+        let (kind, name) = self.parse_name_and_kind()?;
+        let span = start.to(&self.prev_span());
+        Ok(Param::builder().kind(kind).name(name).span(span).build())
+    }
+
+    /// Parse an enumeration declaration after
+    /// `<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲ`:
+    /// `တွင် <member>၊ ... <member> တို့ပါဝင်သည်။`, or with one member
+    /// `တွင် <member> ပါဝင်သည်။`; the `ပြီး` form of the closer, then
+    /// `မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်`, gives its classifier.
     ///
     /// # Arguments
     ///
-    /// * `start` - Span of the opener.
+    /// * `start` - Where the declaration starts.
     /// * `name` - The enumeration name.
     ///
     /// # Returns
@@ -1008,47 +1120,52 @@ impl Parser<'_>
     /// parsed and reported.
     fn parse_enum_decl(&mut self, start: Span, name: Ident) -> PResult<Stmt>
     {
+        self.expect(Kw::At)?;
         let mut members = vec![self.parse_enum_member()?];
         while self.eat_punct(Punct::ListSep)
         {
             members.push(self.parse_enum_member()?);
         }
-        // one member reads `<member> ဖြစ်သည်`, with no `တို့`
-        do_if!(members.len() > 1 || self.at(Kw::Plural), {
-            self.expect(Kw::Plural)?;
-        });
-        self.expect(Kw::Is)?;
-        let stop = self.expect_stop()?;
-        let span = start.to(&stop.span);
+        self.expect_one_of(member_closers(members.len(), true))?;
+        let (classifier, span) = self.parse_decl_end(start)?;
         do_if!(self.depth > 0, self.diags.push(diag::nested_enum(span)));
-        let node = EnumDecl::builder().name(name).members(members).span(span).build();
+        #[rustfmt::skip]
+        let node = EnumDecl::builder().name(name).members(members).maybe_classifier(classifier)
+            .span(span).build();
         Ok(Stmt::Enum(node))
     }
 
-    /// Parse one member of an enumeration: `<name>`, or `<name> (<value>)`.
+    /// Parse one member of an enumeration:
+    /// `[ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် <value> ရှိသည့်] <name>`.
     ///
     /// # Returns
     ///
     /// The member, or a diagnostic.
     fn parse_enum_member(&mut self) -> PResult<EnumMember>
     {
+        let initial = self.eat(Kw::InitialMark);
+        let start = self.peek().span;
+        let value = match self.eat(Kw::ValueAs)
+        {
+            true =>
+            {
+                let value = self.parse_expr()?;
+                self.expect(Kw::HavingRel)?;
+                Some(value)
+            }
+            false => None,
+        };
         let name = self.parse_ident()?;
-        let span = name.span;
-        ret_if!(
-            !self.at_punct(Punct::LParen),
-            Ok(EnumMember::builder().name(name).span(span).build())
-        );
-        self.bump();
-        let value = self.parse_expr()?;
-        let close = self.expect_punct(Punct::RParen)?;
-        let span = span.to(&close.span);
-        Ok(EnumMember::builder().name(name).value(value).span(span).build())
+        let span = start.to(&name.span);
+        #[rustfmt::skip]
+        return Ok(EnumMember::builder().name(name).maybe_value(value).initial(initial)
+            .span(span).build());
     }
 
     /// Parse a switch after its head `<subject> သည် <case>`: the first
     /// `ဖြစ်လျှင်` and its block, each arm `<case> ဖြစ်လျှင် <block>` after it,
-    /// and the default arm `တခြား <kind> ဖြစ်လျှင် <block>`. An arm after the
-    /// default arm is parsed and reported.
+    /// and the default arm `တခြား <kind> တစ်<classifier> ဖြစ်လျှင် <block>`. An arm
+    /// after the default arm is parsed and reported.
     ///
     /// # Arguments
     ///
@@ -1120,8 +1237,9 @@ impl Parser<'_>
         let ends = |tok: &zakac_lexer::token::Token| {
             matches!(
                 tok.kind,
-                TokenKind::Kw(Kw::ThenIs | Kw::BlockOpen | Kw::BlockClose)
-                    | TokenKind::Punct(Punct::FullStop)
+                TokenKind::Kw(
+                    Kw::ThenIs | Kw::BlockOpen | Kw::UnsafeBlockOpen | Kw::BlockClose
+                ) | TokenKind::Punct(Punct::FullStop)
                     | TokenKind::Eof
             )
         };
@@ -1130,7 +1248,8 @@ impl Parser<'_>
         end.kind == TokenKind::Kw(Kw::ThenIs)
     }
 
-    /// Parse `တခြား <kind> ဖြစ်လျှင် <block>`, the default arm of a switch.
+    /// Parse `တခြား <kind> တစ်<classifier> ဖြစ်လျှင် <block>`, the default arm of
+    /// a switch.
     ///
     /// # Returns
     ///
@@ -1138,7 +1257,7 @@ impl Parser<'_>
     fn parse_switch_default(&mut self) -> PResult<SwitchDefault>
     {
         let start = self.bump().span;
-        let kind = self.parse_kind()?;
+        let kind = self.parse_slot_kind()?;
         self.expect(Kw::ThenIs)?;
         let block = self.parse_switch_branch()?;
         let span = start.to(&block.span);
@@ -1185,6 +1304,7 @@ impl Parser<'_>
                     Kw::ThenIs
                         | Kw::Thi
                         | Kw::BlockOpen
+                        | Kw::UnsafeBlockOpen
                         | Kw::BlockClose
                         | Kw::ProgramClose
                 ) | TokenKind::Punct(Punct::FullStop)
@@ -1219,10 +1339,10 @@ impl Parser<'_>
         Ok(word)
     }
 
-    /// Parse the result clause after `အောက်ပါတို့ကို လုပ်ဆောင်ကာ`: `<kind> ရလဒ်
-    /// ကို ပြန်ပေးမည်`, or a result kind and `ကို ပြန်ပေးမည်` for a function that
-    /// can fail. `အပိုင်အနေဖြင့်` before `ပြန်ပေးမည်` gives the result as the
-    /// program's own; the check allows it on a C function that gives back text.
+    /// Parse the result clause after `အောက်ပါတို့ကို လုပ်ဆောင်ကာ`: `<kind>
+    /// တစ်<classifier> ကို ပြန်ပေးမည်`. `အပိုင်အနေဖြင့်` before `ပြန်ပေးမည်` gives
+    /// the result as the program's own; the check allows it on a C function
+    /// that gives back text.
     ///
     /// # Arguments
     ///
@@ -1230,162 +1350,129 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The result kind, `None` when not written, and whether the result is the
-    /// program's own; or a diagnostic.
-    fn parse_ret_clause(&mut self, has_ret: bool) -> PResult<(Option<Kind>, bool)>
+    /// The clause, blank when not written, or a diagnostic.
+    fn parse_ret_clause(&mut self, has_ret: bool) -> PResult<RetClause>
     {
-        ret_if!(!has_ret, Ok((None, false)));
-        let kind = self.parse_kind()?;
-        do_if!(kind.base != BaseKind::Result, _ = self.expect(Kw::Result)?);
+        ret_if!(!has_ret, Ok(RetClause::default()));
+        let kind = self.parse_slot_kind()?;
         self.expect(Kw::Ko)?;
-        let owned = self.at(Kw::AsOwned);
-        do_if!(owned, _ = self.bump());
+        let owned = self.eat(Kw::AsOwned);
         self.expect(Kw::WillReturn)?;
-        Ok((Some(kind), owned))
+        Ok(RetClause { kind: Some(kind), owned })
     }
 
-    /// Parse the optional parameter clause:
-    /// `kind name (၊ kind name)* (နှင့် kind name)? (တို့ကို|ကို) လက်ခံပြီး`.
-    ///
-    /// When an item ends in `ကိုလည်းကောင်း`, the clause is a listed one,
-    /// which can also hold the captures of a nested function.
+    /// Whether a parameter starts here: `<name> ဟူသော`.
     ///
     /// # Returns
     ///
-    /// The parameters and the captures, none when no kind starts the clause
-    /// and it is no listed one, or a diagnostic.
-    fn parse_params(&mut self) -> PResult<(Vec<Param>, Vec<CaptureItem>)>
+    /// `true` if one does.
+    fn at_param(&self) -> bool
     {
-        ret_if!(self.sentence_has(Kw::AsWellAs), self.parse_listed_params());
-        ret_if!(!self.starts_kind() && !self.at(Kw::EditParam), Ok(Default::default()));
-        let (params, _, _) = self.parse_params_to(&[Kw::Accepting], false)?;
-        Ok((params, Vec::new()))
+        let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
+        named && kw_of(&self.peek_n(1)) == Some(Kw::Called)
     }
 
-    /// Parse a listed parameter clause: items that each end in
-    /// `ကိုလည်းကောင်း`, split with `၊` or not, then `လက်ခံပြီး`. A
-    /// parameter has a kind; a capture is a bare name, with
-    /// `အပိုင်အနေဖြင့်` before `လည်းကောင်း` for a move, or `ငှား၍` for a
-    /// borrow.
-    ///
-    /// # Returns
-    ///
-    /// The parameters and the captures, in source order each, or a
-    /// diagnostic.
-    fn parse_listed_params(&mut self) -> PResult<(Vec<Param>, Vec<CaptureItem>)>
-    {
-        let outer = std::mem::replace(&mut self.in_list, true);
-        let (mut params, mut captures) = (Vec::new(), Vec::new());
-        let read = loop
-        {
-            let item = self.parse_listed_item(&mut params, &mut captures);
-            do_if!(item.is_err(), break item);
-            _ = self.eat_punct(Punct::ListSep);
-            do_if!(self.at(Kw::Accepting), break Ok(()));
-        };
-        self.in_list = outer;
-        read?;
-        self.expect(Kw::Accepting)?;
-        Ok((params, captures))
-    }
-
-    /// Parse one item of a listed parameter clause, through its
-    /// `လည်းကောင်း`.
-    ///
-    /// # Arguments
-    ///
-    /// * `params` - The parameters; a parameter joins them.
-    /// * `captures` - The captures; a capture joins them.
-    ///
-    /// # Returns
-    ///
-    /// Nothing, or a diagnostic.
-    fn parse_listed_item(
-        &mut self, params: &mut Vec<Param>, captures: &mut Vec<CaptureItem>,
-    ) -> PResult<()>
-    {
-        let is_param = self.starts_kind() || self.at(Kw::EditParam);
-        if is_param
-        {
-            params.push(self.parse_param()?);
-            self.expect(Kw::Ko)?;
-            self.expect(Kw::AsWellAs)?;
-            return Ok(());
-        }
-        let name = self.parse_ident()?;
-        self.expect(Kw::Ko)?;
-        let mode = match kw_of(&self.peek())
-        {
-            Some(Kw::AsOwned) => CaptureMode::Move,
-            Some(Kw::Lending) => CaptureMode::Lend,
-            _ => CaptureMode::Dup,
-        };
-        do_if!(mode != CaptureMode::Dup, _ = self.bump());
-        let end = self.expect(Kw::AsWellAs)?;
-        let span = name.span.to(&end.span);
-        captures.push(CaptureItem::builder().name(name).mode(mode).span(span).build());
-        Ok(())
-    }
-
-    /// Parse a parameter clause that ends in one of `ends`.
-    ///
-    /// # Arguments
-    ///
-    /// * `ends` - The words that can end it: `လက်ခံပြီး`, and `လက်ခံမည်` for an
-    ///   external function.
-    /// * `rest` - Whether `နှင့် အခြားတန်ဖိုးများ` can end the list, as for an
-    ///   external function.
-    ///
-    /// # Returns
-    ///
-    /// The parameters, the word that ended them, and whether the list ends in
-    /// `အခြားတန်ဖိုးများ`; or a diagnostic.
-    fn parse_params_to(&mut self, ends: &[Kw], rest: bool) -> PResult<ParamClause>
-    {
-        let outer = std::mem::replace(&mut self.in_list, true);
-        let read = self.parse_param_list(ends, rest);
-        self.in_list = outer;
-        read
-    }
-
-    /// Parse the parameters of a parameter clause and the word that ends
-    /// it, with the list open.
+    /// Parse the parameter clause of a header, when one is written: each
+    /// parameter, then one of `ends`. With more than one parameter, each
+    /// ends in `လည်းကောင်း`; either each has a mark or none has. With `rest`,
+    /// `အခြားတန်ဖိုးများနှင့်အတူ` can stand before the end word, after
+    /// parameters that each end in `လည်းကောင်း`, as for a C function.
     ///
     /// # Arguments
     ///
     /// * `ends` - The words that can end it.
-    /// * `rest` - Whether `နှင့် အခြားတန်ဖိုးများ` can end the list.
+    /// * `rest` - Whether `အခြားတန်ဖိုးများနှင့်အတူ` can end the parameters.
     ///
     /// # Returns
     ///
-    /// The parameters, the word that ended them, and whether the list ends in
-    /// `အခြားတန်ဖိုးများ`; or a diagnostic.
-    fn parse_param_list(&mut self, ends: &[Kw], rest: bool) -> PResult<ParamClause>
+    /// The parameters, in source order, the word that ended them, and
+    /// whether the list ends in `အခြားတန်ဖိုးများနှင့်အတူ`; none when no parameter
+    /// starts here; or a diagnostic.
+    fn parse_params(&mut self, ends: &[Kw], rest: bool) -> PResult<ParamClause>
     {
-        let mut params = vec![self.parse_param()?];
-        while self.eat_punct(Punct::ListSep)
-        {
-            params.push(self.parse_param()?);
-        }
-        let and = self.eat(Kw::Hnint);
-        let variadic = and && rest && self.eat(Kw::OtherValues);
-        do_if!(and && !variadic, params.push(self.parse_param()?));
+        ret_if!(!self.at_param(), Ok((Vec::new(), None, false)));
+        let outer = std::mem::replace(&mut self.in_list, true);
+        let read = self.parse_param_items(ends, rest);
+        self.in_list = outer;
+        let (params, variadic) = read?;
+        let end = self.expect_one_of(ends)?;
         let marked = params.iter().filter(|p| p.mark.is_some()).count();
         let span = params[0].span.to(&params[params.len() - 1].span);
         do_if!(
             marked > 0 && marked < params.len(),
             self.diags.push(diag::mixed_marks(span))
         );
-        // With marks the parameters end in `လက်ခံပြီး` straight after the last.
-        let closer = marked == 0 || !ends.iter().any(|kw| self.at(*kw));
-        do_if!(closer, _ = self.expect_one_of(&[Kw::ListKo, Kw::Ko])?);
-        let end = self.expect_one_of(ends)?;
         Ok((params, kw_of(&end), variadic))
     }
 
-    /// Parse one parameter: `kind name`, with
-    /// `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` before it for one the function can
-    /// change.
+    /// Parse the parameters of a parameter clause, with the list open, up
+    /// to its end word or `အခြားတန်ဖိုးများနှင့်အတူ`.
+    ///
+    /// # Arguments
+    ///
+    /// * `ends` - The words that can end the clause.
+    /// * `rest` - Whether `အခြားတန်ဖိုးများနှင့်အတူ` can end the parameters.
+    ///
+    /// # Returns
+    ///
+    /// The parameters and whether the list ends in `အခြားတန်ဖိုးများနှင့်အတူ`, or a
+    /// diagnostic.
+    fn parse_param_items(
+        &mut self, ends: &[Kw], rest: bool,
+    ) -> PResult<(Vec<Param>, bool)>
+    {
+        let mut params = Vec::new();
+        let mut closed = Vec::new();
+        loop
+        {
+            params.push(self.parse_param()?);
+            closed.push(self.eat(Kw::AsWellAs));
+            let variadic = rest && self.at(Kw::WithOtherValues);
+            do_if!(variadic || ends.iter().any(|kw| self.at(*kw)), break);
+            ret_if!(!closed[closed.len() - 1], Err(self.err_as_well_as()));
+        }
+        let variadic = rest && self.eat(Kw::WithOtherValues);
+        let several = params.len() > 1 || variadic;
+        ret_if!(several && closed.contains(&false), Err(self.err_as_well_as()));
+        Ok((params, variadic))
+    }
+
+    /// Parse the markers of a parameter after its `ကို`, each one optional and
+    /// in this order: `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်`, `အပိုင်အနေဖြင့်`,
+    /// and `ဝိဘတ် "<mark>" ကို သုံး၍`.
+    ///
+    /// # Arguments
+    ///
+    /// * `fill_ok` - Whether `ဒေတာ ထည့်ပေးရန်` can stand here: in a header, not in
+    ///   a function kind.
+    ///
+    /// # Returns
+    ///
+    /// Whether the item is owned, whether the function can change it,
+    /// whether it writes it alone, and its mark; or a diagnostic.
+    pub(crate) fn parse_item_markers(&mut self, fill_ok: bool) -> PResult<ItemMarkers>
+    {
+        let fill = fill_ok && self.eat(Kw::DataToFill);
+        let edit = fill || self.eat(Kw::DataToChange);
+        let owned = self.eat(Kw::AsOwned);
+        ret_if!(!self.eat(Kw::MarkWord), Ok((owned, edit, fill, None)));
+        let tok = self.peek();
+        let TokenKind::Str(idx) = tok.kind
+        else
+        {
+            return Err(self.err_expected(&t!("parser.mark_string")));
+        };
+        self.bump();
+        let text = self.strings[idx as usize].value.clone();
+        do_if!(!is_mark_text(&text), self.diags.push(diag::bad_mark(tok.span, &text)));
+        self.expect(Kw::Ko)?;
+        self.expect(Kw::Using)?;
+        let mark = Ident::builder().name(text).span(tok.span).build();
+        Ok((owned, edit, fill, Some(mark)))
+    }
+
+    /// Parse one parameter: `<name> ဟူသော <kind> တစ်<classifier> ကို`, then its
+    /// markers.
     ///
     /// # Returns
     ///
@@ -1393,33 +1480,33 @@ impl Parser<'_>
     fn parse_param(&mut self) -> PResult<Param>
     {
         let start = self.peek().span;
-        let edit = self.eat(Kw::EditParam);
-        let bare = self.at_bare_listed_kind();
-        let kind = tern!(bare, self.parse_bare_listed_kind()?, self.parse_kind()?);
-        let name = self.parse_ident()?;
-        self.note_marked_value(&name.name, &kind);
-        let open = self.peek();
-        let marked = open.kind == TokenKind::Punct(Punct::LParen) && open.joined;
-        let mark = tern!(marked, Some(self.parse_param_mark()?), None);
+        let (kind, name) = self.parse_name_and_kind()?;
+        self.expect(Kw::Ko)?;
+        let (owned, edit, fill, mark) = self.parse_item_markers(true)?;
         let span = start.to(&self.prev_span());
         #[rustfmt::skip]
-        return Ok(Param::builder().edit(edit).kind(kind).name(name).maybe_mark(mark).span(span).build());
+        return Ok(Param::builder().owned(owned).edit(edit).fill(fill).kind(kind).name(name)
+            .maybe_mark(mark).span(span).build());
     }
 
-    /// Parse `(<mark>)` after a parameter name.
+    /// Parse the name and the kind of a parameter or field,
+    /// `<name> ဟူသော <kind> တစ်<classifier>`. A function kind with parameters
+    /// that stands bare is reported and read all the same.
     ///
     /// # Returns
     ///
-    /// The mark, or a diagnostic.
-    pub(crate) fn parse_param_mark(&mut self) -> PResult<Ident>
+    /// The kind and the name, or a diagnostic.
+    fn parse_name_and_kind(&mut self) -> PResult<(Kind, Ident)>
     {
-        self.bump();
-        let mark = self.parse_mark()?;
-        self.expect_punct(Punct::RParen)?;
-        Ok(mark)
+        let name = self.parse_ident()?;
+        self.expect(Kw::Called)?;
+        let bare = self.at_bare_listed_kind();
+        let kind = tern!(bare, self.parse_bare_listed_kind()?, self.parse_slot_kind()?);
+        self.note_marked_value(&name.name, &kind);
+        Ok((kind, name))
     }
 
-    /// Parse `ကွင်းဆက် ကို ရပ်ပါ။`.
+    /// Parse `ကွင်းဆက် ကို ရပ်မည်။`.
     ///
     /// # Returns
     ///
@@ -1433,7 +1520,7 @@ impl Parser<'_>
         Ok(Stmt::Break(BreakStmt::builder().span(start.to(&stop.span)).build()))
     }
 
-    /// Parse `နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။`.
+    /// Parse `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။`.
     ///
     /// # Returns
     ///
@@ -1446,7 +1533,7 @@ impl Parser<'_>
         Ok(Stmt::Continue(ContinueStmt::builder().span(start.to(&stop.span)).build()))
     }
 
-    /// Parse `ပြန်ပေးပါ။`, or `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်။`, which
+    /// Parse `ပြန်ပေးမည်။`, or `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်။`, which
     /// ends a function that can fail with a good result that holds no value.
     ///
     /// # Returns
@@ -1471,5 +1558,28 @@ impl Parser<'_>
         let stop = self.expect_stop()?;
         #[rustfmt::skip]
         return Ok(Stmt::Return(ReturnStmt::builder().fault(true).span(start.to(&stop.span)).build()));
+    }
+}
+
+/// The closers a list of fields or members takes: `ပါဝင်သည်` after one,
+/// `တို့ပါဝင်သည်` after several, each with its `ပြီး` form where a classifier
+/// clause can follow.
+///
+/// # Arguments
+///
+/// * `count` - The number of fields or members in the list.
+/// * `classifier_ok` - Whether a classifier clause can follow.
+///
+/// # Returns
+///
+/// The closers allowed.
+fn member_closers(count: usize, classifier_ok: bool) -> &'static [Kw]
+{
+    match (count > 1, classifier_ok)
+    {
+        (true, true) => &[Kw::FieldsClose, Kw::FieldsCloseAnd],
+        (true, false) => &[Kw::FieldsClose],
+        (false, true) => &[Kw::Contains, Kw::ContainsAnd],
+        (false, false) => &[Kw::Contains],
     }
 }

@@ -8,7 +8,6 @@ use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
 use zakac_diagnostics::Diagnostic;
-use zakac_i18n::t;
 use zakac_lexer::classifiers::COUNT_ENDING;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
@@ -170,27 +169,26 @@ impl Parser<'_>
     }
 
     /// Parse the size of a heap statement: `<count> ဘိုက်စာ`, or
-    /// `<kind> <count> ခုစာ`. A kind starts the second form unless it is the
-    /// start of `<kind> ၏ အရွယ်အစား`.
+    /// `<kind> <count> <classifier>စာ`, whose classifier is the measure word of
+    /// the kind. A kind starts the second form unless it is the start of
+    /// `<kind> တစ်<classifier> ၏ အရွယ်အစား`.
     ///
     /// # Returns
     ///
-    /// The size, or a diagnostic; a missing `ခုစာ` suggests parentheses
-    /// around a kind-prefixed literal.
+    /// The size, or a diagnostic.
     pub(crate) fn parse_size_arg(&mut self) -> PResult<SizeArg>
     {
         let start = self.peek().span;
         ret_if!(!self.starts_kind() || self.at_size_of(), self.parse_octets(start));
-        let unit = self.parse_kind()?;
+        let mut unit = self.parse_kind()?;
         let count = self.parse_clause_expr()?;
         ret_if!(!self.at(Kw::Items), Err(self.err_items()));
         let end = self.bump().span;
         let word = self.text_of(end);
         let classifier = word.strip_suffix(COUNT_ENDING).unwrap_or(word);
-        let classifier = Ident::builder().name(classifier).span(end).build();
+        unit.classifier = Some(Ident::builder().name(classifier).span(end).build());
         let span = start.to(&end);
-        #[rustfmt::skip]
-        return Ok(SizeArg::builder().count(count).unit(unit).classifier(classifier).span(span).build());
+        Ok(SizeArg::builder().count(count).unit(unit).span(span).build())
     }
 
     /// Parse `<count> ဘိုက်စာ`.
@@ -210,15 +208,10 @@ impl Parser<'_>
         Ok(SizeArg::builder().count(count).span(span).build())
     }
 
-    /// An `expected-token` diagnostic for a missing `ခုစာ`, with a hint to
-    /// put a kind-prefixed literal in parentheses.
+    /// An `expected-token` diagnostic for a missing `ခုစာ`.
     ///
     /// # Returns
     ///
     /// The diagnostic.
-    fn err_items(&self) -> Diagnostic
-    {
-        let diag = self.err_expected(&quote(&kw_text(Kw::Items)));
-        diag.with_help(t!("parser.size_parens"))
-    }
+    fn err_items(&self) -> Diagnostic { self.err_expected(&quote(&kw_text(Kw::Items))) }
 }

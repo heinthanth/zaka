@@ -6,13 +6,13 @@ use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
 use zakac_ir_builder::cli::ZakacIrBuilder;
-use zakac_parser::wrap::in_start_block;
+use zakac_semcheck::mark::in_marked_code;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 
 const TEXT_HEADER: &str = "# zakac-ir-artifact v1\n";
 
 /// Literal arithmetic that folds.
-const SUM: &str = "(၂ + ၃) * ၄ ကို ပြသပါ။";
+const SUM: &str = "(၂ + ၃) * ၄ ကို ပြသမည်။";
 
 /// Run the standalone lowering command.
 fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
@@ -21,7 +21,7 @@ fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
     argv.extend(args.iter().map(|arg| (*arg).to_string()));
 
     let command = ZakacIrBuilder::create_as_standalone();
-    let mut stdin = Cursor::new(in_start_block(stdin));
+    let mut stdin = Cursor::new(in_marked_code(stdin));
     let mut stdout = Buffer::no_color();
     let mut stderr = Buffer::no_color();
     let mut io = CommandIO::builder()
@@ -81,7 +81,7 @@ fn fold_errors_fail_whatever_the_options()
 {
     for fold in ["all", "none"]
     {
-        let (code, stdout, stderr) = run_cli(&["--fold", fold], "၁ / ၀ ကို ပြသပါ။");
+        let (code, stdout, stderr) = run_cli(&["--fold", fold], "၁ / ၀ ကို ပြသမည်။");
         assert_eq!(code, ExitCode::Failure);
         assert!(stdout.starts_with(TEXT_HEADER), "the artifact is still written");
         assert!(stderr.starts_with("error[ZK0602]"), "{stderr}");
@@ -91,7 +91,7 @@ fn fold_errors_fail_whatever_the_options()
 #[test]
 fn check_errors_stop_lowering()
 {
-    let (code, stdout, stderr) = run_cli(&[], "က ကို ပြသပါ။");
+    let (code, stdout, stderr) = run_cli(&[], "က ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Failure);
     assert!(stdout.contains("module: null"), "{stdout}");
     assert!(stderr.starts_with("error[ZK0301]"), "{stderr}");
@@ -120,12 +120,13 @@ fn output_extensions_pick_the_format()
 }
 
 #[test]
-fn no_raw_rejects_raw_pointer_kinds()
+fn no_unsafe_refuses_marked_code()
 {
-    let source = "ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။";
-    let (code, _, stderr) = run_cli(&["--no-raw"], source);
+    let source = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\nကိန်းရှင် \
+                  က သည် ၁ ဖြစ်ပါစေ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let (code, _, stderr) = run_cli(&["--no-unsafe"], source);
     assert_ne!(code, ExitCode::Success);
-    assert!(stderr.contains("ZK0717"), "{stderr}");
+    assert!(stderr.contains("ZK0471"), "{stderr}");
     let (code, _, stderr) = run_cli(&[], source);
     assert_eq!(code, ExitCode::Success, "{stderr}");
 }

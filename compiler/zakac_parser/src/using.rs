@@ -11,7 +11,7 @@
 //! argument with the mark its parameter declares, `<kind> <name>(<mark>)`. The
 //! parser knows which functions declare marks (`Parser::marked`), and those
 //! names alone end a marked call, and a value of another call keeps its
-//! meaning: `က ကို ခ သည့် ရလဒ် ဟု ထားပါ။` still sets `က`.
+//! meaning: `က ကို ခ သည့် ရလဒ် ဟု ထားမည်။` still sets `က`.
 
 use bon::Builder;
 use zakac_ast::expr::Expr;
@@ -21,6 +21,8 @@ use zakac_ast::expr::UsingMark;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Node;
 use zakac_i18n::t;
+use zakac_lexer::lexer::LexerOptions;
+use zakac_lexer::lexer::lex_at;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
@@ -30,6 +32,7 @@ use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
+use zakac_span::pos::Pos;
 use zakac_span::span::Span;
 
 use crate::clause::Mode;
@@ -80,6 +83,27 @@ pub(crate) fn is_mark(tok: &Token) -> bool
     let closer =
         matches!(kw, Kw::Thi | Kw::Pa | Kw::Being | Kw::WhenDone | Kw::Accepting);
     (kw.is_particle() && !closer) || matches!(kw, Kw::At | Kw::Toward)
+}
+
+/// Whether the text of a mark string can be a mark: it reads as one token
+/// that [`is_mark`] takes.
+///
+/// # Arguments
+///
+/// * `text` - The text inside the string.
+///
+/// # Returns
+///
+/// `true` for such a text.
+pub(crate) fn is_mark_text(text: &str) -> bool
+{
+    let lexed = lex_at(text, Pos::default(), &LexerOptions::default());
+    let [tok, end] = lexed.tokens.as_slice()
+    else
+    {
+        return false;
+    };
+    lexed.diagnostics.is_empty() && end.kind == TokenKind::Eof && is_mark(tok)
 }
 
 /// Whether the scan for the end of a marked call stops at a token: the end
@@ -146,18 +170,16 @@ impl Parser<'_>
 {
     /// Whether the rest of an arguments-first call comes after its first
     /// argument: `ကို` or `တို့ကို`, then `သုံး၍`; or `၊` with those ahead,
-    /// outside parentheses. The mark `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)` can
-    /// stand after the argument.
+    /// outside parentheses.
     ///
     /// # Returns
     ///
     /// `true` if it does.
     pub(crate) fn at_using_rest(&self) -> bool
     {
-        let n = self.edit_mark_len();
-        ret_true!(self.at_using_close(n));
-        self.peek_n(n).kind == TokenKind::Punct(Punct::ListSep)
-            && self.close_ahead(n + 1, Self::at_using_close)
+        ret_true!(self.at_using_close(0));
+        self.peek_n(0).kind == TokenKind::Punct(Punct::ListSep)
+            && self.close_ahead(1, Self::at_using_close)
     }
 
     /// Whether `ကို` or `တို့ကို` starts `n` tokens ahead, with `သုံး၍` after
@@ -174,18 +196,6 @@ impl Parser<'_>
     {
         let using = self.peek_n(n + 1).kind == TokenKind::Kw(Kw::Using);
         using && matches!(self.peek_n(n).kind, TokenKind::Kw(Kw::Ko | Kw::ListKo))
-    }
-
-    /// The number of tokens of the mark
-    /// `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)` when it comes next.
-    ///
-    /// # Returns
-    ///
-    /// 3 for the mark, else 0.
-    pub(crate) fn edit_mark_len(&self) -> usize
-    {
-        let open = self.at_punct(Punct::LParen);
-        tern!(open && kw_of(&self.peek_n(1)) == Some(Kw::EditArg), 3, 0)
     }
 
     /// Whether the end of a short call comes next: `မည်`, `သည့် ရလဒ်` or
@@ -290,7 +300,7 @@ impl Parser<'_>
     /// Read a marked call after its first argument, and keep it when the
     /// number of its marks fits a function of its name; otherwise go back,
     /// so the sentence reads as it would with no marked call, such as
-    /// `က ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားပါ။` with `ဖတ်` taking one mark.
+    /// `က ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားမည်။` with `ဖတ်` taking one mark.
     ///
     /// # Arguments
     ///
@@ -357,15 +367,13 @@ impl Parser<'_>
         let end_at = self.peek_n(end).span.lo;
         let start = first.span();
         let mut args = Args::default();
-        args.0.push(first);
-        args.1.push(self.parse_edit_mark()?);
+        args.push(first);
         let mut marks = vec![self.parse_mark()?];
         while self.peek().span.lo < end_at
         {
             let arg = self.parse_notation()?;
             extract!(Head::Expr(arg) = self.parse_short_after(arg, Mode::Expr)?);
-            args.0.push(arg);
-            args.1.push(self.parse_edit_mark()?);
+            args.push(arg);
             marks.push(self.parse_mark()?);
         }
         let long = self.eat(Kw::Function);
@@ -408,14 +416,12 @@ impl Parser<'_>
     {
         let start = first.span();
         let mut args = Args::default();
-        args.0.push(first);
-        args.1.push(self.parse_edit_mark()?);
+        args.push(first);
         while self.eat_punct(Punct::ListSep)
         {
             let arg = self.parse_notation()?;
             extract!(Head::Expr(arg) = self.parse_short_after(arg, Mode::Expr)?);
-            args.0.push(arg);
-            args.1.push(self.parse_edit_mark()?);
+            args.push(arg);
         }
         let close = self.expect_one_of(&[Kw::Ko, Kw::ListKo])?;
         let plural = close.kind == TokenKind::Kw(Kw::ListKo);

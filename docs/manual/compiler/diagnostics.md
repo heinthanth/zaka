@@ -13,15 +13,15 @@ the stages. The list of codes is on the page of [error messages](../reference/er
 ## How a message is set out
 
 ```console
-$ zakac run loan.zaka
-error[ZK0704]: the block of "ပ" is freed here, but "မိတ္တူ" still borrows it and is used later
- --> loan.zaka:5:1
+$ zakac run --mem-check error freed.zaka
+error[ZK0704]: the block of "ပ" is freed here, but "တွဲ" still points into it and is used later
+ --> freed.zaka:6:1
   |
-5 | လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+6 | လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-6 | မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
-  | --- "မိတ္တူ" is used here
+7 | တွဲ ၏ တန်ဖိုး ကို ပြသမည်။
+  | - "တွဲ" is used here
 ```
 
 | Part | Means |
@@ -29,7 +29,7 @@ error[ZK0704]: the block of "ပ" is freed here, but "မိတ္တူ" still 
 | `error` | the *level* |
 | `[ZK0704]` | the *code*, the same through each release |
 | the text after `:` | the *message*: what is wrong, with the names from the program |
-| `--> loan.zaka:5:1` | the file, then the line and the column of the first marked character |
+| `--> freed.zaka:6:1` | the file, then the line and the column of the first marked character |
 | the line with its number | the source line, taken from the program |
 | `^^^^` | the *main span*: the part of the line that the message is about |
 | `----` and its text | a *label*: a second place that helps to see the problem |
@@ -55,9 +55,9 @@ $ zakac run bad2.zaka
 error[ZK0401]: expected isize, found f64
  --> bad2.zaka:2:10
   |
-2 | အသက် ကို ၂.၅ ဟု ထားပါ။
+2 | အသက် ကို ၂.၅ ဟု ထားမည်။
   |       ^^^
-  = help: convert the value with "ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်"
+  = help: convert the value with "ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်"
 ```
 
 The names of kinds in messages are the short ones: `isize`, `f64`, `u8*`. The table is
@@ -75,8 +75,9 @@ A code has one level of its own: ZK0101 is an error at all times and ZK0502 a wa
 Two settings move the level:
 
 - `--strict-particles` makes each ZK05 warning an error.
-- `--mem-check warn` makes each finding of the borrow checker (ZK0701 to ZK0704 and
-  ZK0706 to ZK0712) a warning; `--mem-check off` drops them. See [Pointer checks](checks.md).
+- `--mem-check` sets the level of the pointer lint of marked code (ZK0702 to ZK0712 and
+  ZK0721): `warn`, the default, makes each finding a warning, `error` an error, and `off`
+  drops them. See [Compiler checks](checks.md).
 
 ## Codes
 
@@ -88,10 +89,10 @@ problem, as the table tells; the last two number the problems of that stage.
 | ZK01 | lexer | a character Zaka does not use; a malformed number |
 | ZK02 | parser | a missing `။`; a particle in the wrong place |
 | ZK03 | names | a name never declared; a name declared twice |
-| ZK04 | kinds | a value of the wrong kind; a pointer mistake in the kinds |
+| ZK04 | kinds | a value of the wrong kind; pointer work outside marked code |
 | ZK05 | naturalness | `ကြီးသည်လျှင်` for `ကြီးလျှင်` (warnings) |
 | ZK06 | constant folding | a constant sum that does not fit; a divisor of zero |
-| ZK07 | ownership and borrowing | a block used after a move; a borrow that outlives its block |
+| ZK07 | the checker | a read through the null pointer; a value read before it is set; a block used after it was given back |
 
 A code keeps its meaning once it is given out. The numbers within a range are not all
 used (there is no ZK0224 or ZK0418, for one). [Stages](stages.md) tells which stage owns
@@ -119,12 +120,12 @@ $ zakac run two2.zaka
 error[ZK0401]: expected isize, found f64
  --> two2.zaka:3:10
   |
-3 | အသက် ကို ၂.၅ ဟု ထားပါ။
+3 | အသက် ကို ၂.၅ ဟု ထားမည်။
   |       ^^^
-  = help: convert the value with "ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်"
+  = help: convert the value with "ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်"
 ```
 
-The line `အသက် ကို ၁ / ၀ ဟု ထားပါ။` before it holds a ZK0602, but constants are worked out
+The line `အသက် ကို ၁ / ၀ ဟု ထားမည်။` before it holds a ZK0602, but constants are worked out
 after the kinds, so that error shows once the first is fixed. Fix the first error first.
 
 With warnings alone, the program runs, and the messages come before its output:
@@ -134,7 +135,7 @@ $ zakac run nat.zaka
 warning[ZK0502]: "ကြီးသည်" before "လျှင်" reads better without the particle
  --> nat.zaka:2:7
   |
-2 | အကယ်၍ အသက် သည် ၁၈ ထက် ကြီးသည်လျှင် "အရွယ်ရောက်" ဟု ပြသပါ။
+2 | အကယ်၍ အသက် သည် ၁၈ ထက် ကြီးသည်လျှင် "အရွယ်ရောက်" ဟု ပြသမည်။
   |      ^^^^^^^^^^^^^^^^^^
   = help: write "ကြီးလျှင်", or keep the particle and write "ဖြစ်လျှင်"
 အရွယ်ရောက်
@@ -154,7 +155,7 @@ diagnostics:
   span:
     lo: 187
     hi: 194
-  help: convert the value with "ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်"
+  help: convert the value with "ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်"
 ```
 
 `lo` and `hi` are octet offsets into the source text kept in the same artifact. Running a
@@ -168,10 +169,10 @@ exit code is 1:
 
 ```console
 $ zakac run --mem-check warn nul2.zaka
-warning[ZK0709]: "ပ" is ဗလာ here, so it cannot be dereferenced
- --> nul2.zaka:3:1
+warning[ZK0709]: "ပ" points at nothing here, so there is nothing to read or write through it
+ --> nul2.zaka:4:1
   |
-3 | ပ ၏ တန်ဖိုး ကို ပြသပါ။
+4 | ပ ၏ တန်ဖိုး ကို ပြသမည်။
   | ^
 zaka_vm: the program stopped: access through a null address at 0x0 (in ပရိုဂရမ်, op 5)
 ```

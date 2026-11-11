@@ -11,7 +11,7 @@ use zakac_ir_builder::ir::Place;
 #[test]
 fn a_start_block_alone_runs_through_borrow_check_with_one_digest()
 {
-    let run = run("၁ ကို ပြသပါ။");
+    let run = run("၁ ကို ပြသမည်။");
     assert!(run.out.diagnostics.is_empty());
     let names: Vec<&str> = run.out.digests.iter().map(|d| d.name.as_str()).collect();
     assert_eq!(names, [START_NAME]);
@@ -57,7 +57,7 @@ fn a_digest_prints_the_params_then_the_globals_it_frees()
 #[test]
 fn earlier_errors_skip_the_check()
 {
-    let run = run("က ကို ပြသပါ။");
+    let run = run("က ကို ပြသမည်။");
     assert!(!run.out.diagnostics.is_empty());
     assert!(run.out.digests.is_empty());
     assert!(run.out.lowered.folded.is_none());

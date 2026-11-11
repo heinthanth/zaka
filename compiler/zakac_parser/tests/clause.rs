@@ -62,31 +62,31 @@ fn comparison_verbs()
 #[test]
 fn conversion_takes_a_kind_operand()
 {
-    assert_eq!(expr("၁၁.၁၁ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast 11.11 isize)");
-    assert_eq!(expr("က * ခ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast (* က ခ) isize)");
-    let text =
-        "အခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။";
+    assert_eq!(expr("၁၁.၁၁ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast 11.11 isize)");
+    assert_eq!(expr("က * ခ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast (* က ခ) isize)");
+    let text = "အခြေ ၁၆ ဖြင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ဒဿမကိန်း တစ်ခု အဖြစ် \
+                ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။";
     assert_eq!(stmt(text), "(print (cast 255u8 f64))");
-    let sized = "က ကို ၃၂ ဘစ် ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ်";
+    let sized = "က ကို ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်";
     assert_eq!(expr(sized), "(cast က f32)");
 }
 
 #[test]
 fn statement_verbs_close_the_clause()
 {
-    let text = "အသက် ကို အသက် နှင့် ၁ ၏ ပေါင်းလဒ် ဟု ထားပါ။";
+    let text = "အသက် ကို အသက် နှင့် ၁ ၏ ပေါင်းလဒ် ဟု ထားမည်။";
     assert_eq!(stmt(text), "(set အသက် (add အသက် 1))");
-    assert_eq!(stmt("က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသပါ။"), "(print (add က ခ))");
-    assert_eq!(stmt("က + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။"), "(return (+ (+ က ခ) ဂ))");
-    assert_eq!(stmt("ရလဒ် ကို (က + ခ) * ၂ ဟု ထားပါ။"), "(set ရလဒ် (* [(+ က ခ)] 2))");
+    assert_eq!(stmt("က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်။"), "(print (add က ခ))");
+    assert_eq!(stmt("က + ခ + ဂ ကို ပြန်ပေးမည်။"), "(return (+ (+ က ခ) ဂ))");
+    assert_eq!(stmt("ရလဒ် ကို (က + ခ) * ၂ ဟု ထားမည်။"), "(set ရလဒ် (* [(+ က ခ)] 2))");
 }
 
 #[test]
 fn a_call_can_head_a_statement()
 {
-    let text = "လုပ်ဆောင်ချက် နှစ်ဆ ကို ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။";
+    let text = "လုပ်ဆောင်ချက် နှစ်ဆ ကို ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
     assert_eq!(stmt(text), "(print (call နှစ်ဆ 1))");
-    let sum = "လုပ်ဆောင်ချက် f ကို လုပ်ဆောင်သော ရလဒ် နှင့် ၁ ၏ ပေါင်းလဒ် ကို ပြသပါ။";
+    let sum = "လုပ်ဆောင်ချက် f ကို လုပ်ဆောင်သော ရလဒ် နှင့် ၁ ၏ ပေါင်းလဒ် ကို ပြသမည်။";
     assert_eq!(stmt(sum), "(print (add (call f) 1))");
 }
 
@@ -98,15 +98,15 @@ fn particle_errors()
     assert_eq!(expr_err("က ကို ခ ၏ ပေါင်းလဒ်"), Code::SlotMismatch);
     assert_eq!(expr_err("က နှင့် ခ ပေါင်းလဒ်"), Code::SlotMismatch);
     assert_eq!(expr_err("က နှင့် ခ"), Code::UnclosedClause);
-    assert_eq!(expr_err("က ကို ပြသပါ"), Code::StmtVerbInExpr);
+    assert_eq!(expr_err("က ကို ပြသမည်"), Code::StmtVerbInExpr);
 }
 
 #[test]
 fn statement_level_clause_errors()
 {
-    assert_eq!(codes("ဂ နှင့် က ကို ပြသပါ။"), [Code::DanglingOperands]);
-    assert_eq!(codes("(က ကို ပြသပါ) ကို ပြသပါ။"), [Code::StmtVerbInExpr]);
-    assert_eq!(stmt("၁ ကို ၂ ဟု ထားပါ။"), "(set 1 2)");
+    assert_eq!(codes("ဂ နှင့် က ကို ပြသမည်။"), [Code::DanglingOperands]);
+    assert_eq!(codes("(က ကို ပြသမည်) ကို ပြသမည်။"), [Code::StmtVerbInExpr]);
+    assert_eq!(stmt("၁ ကို ၂ ဟု ထားမည်။"), "(set 1 2)");
     assert_eq!(codes("က + ၁ ။"), [Code::ExpectedStmtVerb]);
 }
 
@@ -122,7 +122,7 @@ fn comparisons_do_not_chain()
 #[test]
 fn a_name_joined_to_a_particle_gets_a_hint()
 {
-    let out = common::parse_text("အသက်ကို ပြသပါ။");
+    let out = common::parse_text("အသက်ကို ပြသမည်။");
     assert_eq!(out.diagnostics.len(), 1);
     let help = out.diagnostics[0].help.clone().unwrap_or_default();
     assert!(help.contains("အသက် ကို"), "{help}");

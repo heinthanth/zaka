@@ -31,14 +31,14 @@ zakac_semcheck              names and kinds    ZK03 ZK04  semcheck.md
    ▼
 zakac_ir_builder            IR, folding        ZK06     codegen.md
    ▼
-zakac_borrow_checker        owners and loans   ZK07     borrow-checker.md
+zakac_borrow_checker        flow and lint      ZK07     borrow-checker.md
    ▼
 zakac_codegen_target_vm     ops                         codegen.md
    ▼                        (build --target vm)
 zaka_vm                     runs the ops       (traps)
 
 zakac_codegen_target_c      C for each module, then an executable
-                            (build --target c; after the borrow check)
+                            (build --target c; after the flow check)
 ```
 
 ## The workspace
@@ -58,9 +58,9 @@ workspace: Zed builds it on its own, with the target folder inside it.
 | `zakac_ast` | the tree: statements, expressions, kinds, the verb table, visitors, the S-expression form |
 | `zakac_parser` | tokens to tree; carries on after a bad sentence |
 | `zakac_naturalness` | warnings about wording that is allowed but not natural (ZK05) |
-| `zakac_semcheck` | name resolution, scopes, kinds, literal fitting, owner and borrow kinds |
+| `zakac_semcheck` | name resolution, scopes, kinds, literal fitting, captures, marked code and the pointer kind |
 | `zakac_ir_builder` | the IR, lowering from the tree, constant folding |
-| `zakac_borrow_checker` | the ownership check over the IR (ZK07) |
+| `zakac_borrow_checker` | the flow check over the IR, and the lint on marked code (ZK07); the crate keeps its old name |
 | `zakac_codegen_target_vm` | the ops of the VM, and the asm listing |
 | `zakac_codegen_target_c` | the C of each module and its runtime (`runtime/`), and the build of an executable with a C compiler |
 | `zakac_lsp` | the language server: checks the files an editor holds open and sends back errors, colors, hovers, completions, definitions, uses, renames and the outline; the `lsp` subcommand, behind the feature `server`, which `zakac` turns on; without it the crate builds for the browser, and the explorer uses it |
@@ -131,8 +131,8 @@ cargo +nightly fmt                         # format
 ```
 
 `mise run test` runs the workspace with `cargo nextest`, and `mise run format` is the
-formatter. The tasks that serve the explorer and the site (`explorer:serve`,
-`website:serve`) are in `mise.toml`.
+formatter. The tasks that serve the explorer and the site with live reload
+(`explorer:dev`, `website:dev`) are Bun Shell scripts in `.mise-tasks/`.
 
 Four kinds of test sit in the repo:
 
@@ -145,7 +145,7 @@ Four kinds of test sit in the repo:
 - **Samples.** The programs in `samples/` (`basics`, `control`, `functions`, `heap`,
   `lists`, `programs`) run through the whole pipeline; `compiler/zaka_vm/tests/expected`
   holds the output of each. The groups `diagnostics` and `mistakes` hold programs that
-  fail on purpose and are skipped there. The borrow checker has an oracle test: each
+  fail on purpose and are skipped there. The flow checker has an oracle test: each
   sample that passes the check without raw addresses must run with no use after free,
   double free or bad free.
 - **The book tests.** `cargo test -p zaka_website --test books` runs each fenced
@@ -162,7 +162,7 @@ A new feature wants a test in each stage it touches, and a sample when a user ca
 | a reserved word, a phrase, a number or string form | [The lexer](lexer.md) |
 | a sentence form, a verb, a statement | [The parser](parser.md) |
 | a rule about names or kinds, a wording warning | [Names and kinds](semcheck.md) |
-| an ownership rule | [The borrow checker](borrow-checker.md) |
+| a flow check or a lint rule | [The flow checker](borrow-checker.md) |
 | the IR, folding, an op | [IR and code](codegen.md) |
 | the C of a native program, or its runtime | [The C target](c-backend.md) |
 | a message or a code | [Diagnostics](../compiler/diagnostics.md) |

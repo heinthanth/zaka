@@ -1,7 +1,6 @@
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::ownership::Invalidation;
 use zakac_diagnostics::ownership::aliased_argument;
-use zakac_diagnostics::ownership::closure_owner_dup;
 use zakac_diagnostics::ownership::invalidated_loan;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
@@ -28,6 +27,7 @@ use crate::roots::Roots;
 use crate::roots::roots_of;
 use crate::roots::translate;
 use crate::state::State;
+use crate::state::holds_address;
 use crate::walk::each_expr;
 use crate::walk::sub_exprs;
 
@@ -304,7 +304,7 @@ fn held_roots(flow: &Flow, v: &Expr, call: Span, state: &State) -> Roots
     let read = matches!(v.node, ExprNode::Read(_));
     let after = v.span.contains(&call) || (v.span.lo >= call.hi && !read);
     ret_if!(after, global_result(flow, v));
-    tern!(v.kind.holds_borrow(), roots_of(v, state, &flow.ctx), Roots::new())
+    tern!(holds_address(v.kind), roots_of(v, state, &flow.ctx), Roots::new())
 }
 
 /// The global paths the result of a call can point into.
@@ -603,10 +603,11 @@ fn lost_paths(callee: &Func, digest: &FnDigest, freed: &[Roots]) -> Roots
 ///
 /// # Returns
 ///
-/// `true` for a parameter of a move kind.
+/// `true` for a parameter marked `အပိုင်အနေဖြင့်`, which takes the block
+/// over.
 fn owns(callee: &Func, n: u32) -> bool
 {
-    callee.locals.get(n as usize).is_some_and(|slot| slot.kind.is_move_kind())
+    callee.owned.get(n as usize).copied().unwrap_or(false)
 }
 
 /// The places of the caller the callee can free through one parameter:
@@ -825,30 +826,4 @@ pub(crate) fn note_unfilled(flow: &Flow, func: u32, args: &[Roots], state: &mut 
 fn overlap(a: &Roots, b: &Roots) -> bool
 {
     a.iter().any(|mine| b.iter().any(|theirs| mine.overlaps(theirs)))
-}
-
-/// Report a duplicate of a closure whose record owns a block (ZK0724): two
-/// records would free the one block. A move and a loan are no duplicate.
-///
-/// # Arguments
-///
-/// * `flow` - The flow.
-/// * `span` - The duplicate.
-/// * `value` - The value duplicated.
-/// * `state` - The facts where it is read.
-pub(crate) fn check_owner_dup(flow: &mut Flow, span: Span, value: &Expr, state: &State)
-{
-    let owning: Vec<u32> = flow
-        .closures
-        .held_in(value, state)
-        .into_iter()
-        .filter(|f| flow.closures.owns(*f))
-        .collect();
-    let name = |f: u32| flow.module.funcs.get(f as usize).map(|f| shown_name(&f.name));
-    let found: Vec<Diagnostic> = owning
-        .iter()
-        .filter_map(|f| name(*f))
-        .map(|n| closure_owner_dup(span, &n))
-        .collect();
-    do_for!(d in found, report(flow, d));
 }

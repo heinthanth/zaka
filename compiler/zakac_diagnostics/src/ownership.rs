@@ -49,18 +49,18 @@ pub fn moved_out(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::MovedOut, t!("codes.ZK0701.message", name = name), span)
 }
 
-/// A borrowed address is freed or resized.
+/// A pointer to a variable, not to a heap block, is freed or resized.
 ///
 /// # Arguments
 ///
-/// * `span` - The borrowed address.
+/// * `span` - The statement.
 ///
 /// # Returns
 ///
 /// The `ZK0702` diagnostic.
-pub fn freed_borrow(span: Span) -> Diagnostic
+pub fn bad_free(span: Span) -> Diagnostic
 {
-    Diagnostic::new(Code::FreedBorrow, t!("codes.ZK0702.message"), span)
+    Diagnostic::new(Code::BadFree, t!("codes.ZK0702.message"), span)
 }
 
 /// A borrowed address is stored where it could outlast its owner.
@@ -99,25 +99,11 @@ pub fn invalidated_loan(
     Diagnostic::new(Code::InvalidatedLoan, msg, span).with_label(use_span, label)
 }
 
-/// The address of a borrowed address is taken.
+/// A function returns the address of one of its locals.
 ///
 /// # Arguments
 ///
-/// * `span` - The address-of operation.
-///
-/// # Returns
-///
-/// The `ZK0705` diagnostic.
-pub fn borrow_of_borrow(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::BorrowOfBorrow, t!("codes.ZK0705.message"), span)
-}
-
-/// A function returns a borrow of one of its locals.
-///
-/// # Arguments
-///
-/// * `span` - The returned borrow.
+/// * `span` - The returned address.
 /// * `name` - The local.
 ///
 /// # Returns
@@ -162,7 +148,23 @@ pub fn block_leaked(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::BlockLeaked, t!("codes.ZK0708.message", name = name), span)
 }
 
-/// A name known to hold ဗလာ is dereferenced.
+/// The result variable of a function with an unmarked result still holds a
+/// block the function made when the function returns.
+///
+/// # Arguments
+///
+/// * `span` - The exit.
+/// * `name` - The result variable.
+///
+/// # Returns
+///
+/// The `ZK0708` diagnostic, with help to mark the result.
+pub fn result_block_leaked(span: Span, name: &str) -> Diagnostic
+{
+    block_leaked(span, name).with_help(t!("codes.ZK0708.help_result"))
+}
+
+/// A name known to hold the null address is dereferenced.
 ///
 /// # Arguments
 ///
@@ -194,7 +196,7 @@ pub fn offset_past_end(span: Span, off: i64, len: u64) -> Diagnostic
     Diagnostic::new(Code::OffsetPastEnd, msg, span)
 }
 
-/// A name that can hold ဗလာ is dereferenced without a check.
+/// A name that can hold the null address is dereferenced without a check.
 ///
 /// # Arguments
 ///
@@ -224,101 +226,6 @@ pub fn mixed_blocks(span: Span) -> Diagnostic
     Diagnostic::new(Code::MixedBlocks, t!("codes.ZK0712.message"), span)
 }
 
-/// A borrow marker sits where none is allowed.
-///
-/// # Arguments
-///
-/// * `span` - The marked kind.
-///
-/// # Returns
-///
-/// The `ZK0713` diagnostic.
-pub fn bad_borrow_marker(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::BadBorrowMarker, t!("codes.ZK0713.message"), span)
-}
-
-/// A borrowed address is given where an owner is wanted.
-///
-/// # Arguments
-///
-/// * `span` - The borrowed address.
-///
-/// # Returns
-///
-/// The `ZK0714` diagnostic.
-pub fn borrow_for_owner(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::BorrowForOwner, t!("codes.ZK0714.message"), span)
-}
-
-/// An owner is given where a borrow is wanted and would move.
-///
-/// # Arguments
-///
-/// * `span` - The owner.
-/// * `name` - The variable that holds the owner, or `None` for a value with no
-///   name, which has no lend spelling to offer.
-///
-/// # Returns
-///
-/// The `ZK0715` diagnostic; for a variable, with a help that shows the lend
-/// spelling.
-pub fn owner_for_borrow(span: Span, name: Option<&str>) -> Diagnostic
-{
-    let Some(name) = name
-    else
-    {
-        return Diagnostic::new(Code::OwnerForBorrow, t!("codes.ZK0715.unnamed"), span);
-    };
-    let msg = t!("codes.ZK0715.message", name = name);
-    Diagnostic::new(Code::OwnerForBorrow, msg, span)
-        .with_help(t!("codes.ZK0715.help", name = name))
-}
-
-/// A raw address is lent.
-///
-/// # Arguments
-///
-/// * `span` - The lent raw address.
-///
-/// # Returns
-///
-/// The `ZK0716` diagnostic.
-pub fn lend_of_raw(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::LendOfRaw, t!("codes.ZK0716.message"), span)
-}
-
-/// A raw address is used though raw addresses are turned off.
-///
-/// # Arguments
-///
-/// * `span` - The raw address.
-///
-/// # Returns
-///
-/// The `ZK0717` diagnostic.
-pub fn raw_not_allowed(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::RawNotAllowed, t!("codes.ZK0717.message"), span)
-}
-
-/// A struct field holds a borrow.
-///
-/// # Arguments
-///
-/// * `span` - The field.
-/// * `name` - The field name.
-///
-/// # Returns
-///
-/// The `ZK0718` diagnostic.
-pub fn borrow_field(span: Span, name: &str) -> Diagnostic
-{
-    Diagnostic::new(Code::BorrowField, t!("codes.ZK0718.message", n = name), span)
-}
-
 /// With `--overflow stop`, an integer operation overflows for each value its
 /// operands can hold.
 ///
@@ -335,23 +242,6 @@ pub fn overflow_proven(span: Span, op: &str, kind: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0719.message", op = op, kind = kind);
     Diagnostic::new(Code::OverflowProven, msg, span).with_help(t!("codes.ZK0719.help"))
-}
-
-/// With `--warn-duplicates`, a statement duplicates the text or the list of a
-/// place.
-///
-/// # Arguments
-///
-/// * `span` - The read that is duplicated.
-/// * `name` - The place read.
-///
-/// # Returns
-///
-/// The `ZK0720` diagnostic, with help on how to avoid the duplicate.
-pub fn duplicate_made(span: Span, name: &str) -> Diagnostic
-{
-    let msg = t!("codes.ZK0720.message", n = name);
-    Diagnostic::new(Code::DuplicateMade, msg, span).with_help(t!("codes.ZK0720.help"))
 }
 
 /// The two ranges of a `ကူးယူမည်` overlap for certain.
@@ -372,84 +262,69 @@ pub fn blit_ranges_overlap(span: Span, octets: u64) -> Diagnostic
         .with_help(t!("codes.ZK0721.help"))
 }
 
-/// The address of a function that borrows the locals around it goes where it
-/// could outlive them: a result, a field, a cell, a global, a place reached
-/// through an address, a variable of an outer block, or a C function.
+/// A read of a value that can be unset on a path to it.
 ///
 /// # Arguments
 ///
-/// * `span` - The address.
-/// * `func` - The function name.
+/// * `span` - The read.
+/// * `name` - The variable.
 ///
 /// # Returns
 ///
 /// The `ZK0722` diagnostic.
-pub fn closure_escapes(span: Span, func: &str) -> Diagnostic
+pub fn read_unset(span: Span, name: &str) -> Diagnostic
 {
-    let msg = t!("codes.ZK0722.message", f = func);
-    Diagnostic::new(Code::ClosureEscapes, msg, span)
-        .with_help(t!("codes.ZK0722.help", f = func))
+    Diagnostic::new(Code::ReadUnset, t!("codes.ZK0722.message", n = name), span)
+        .with_help(t!("codes.ZK0722.help"))
 }
 
-/// The address of a nested function with captures goes to a C function.
+/// A read of a cell the check cannot prove set.
 ///
 /// # Arguments
 ///
-/// * `span` - The value.
-/// * `func` - The function name.
+/// * `span` - The read.
+/// * `name` - The list.
 ///
 /// # Returns
 ///
-/// The `ZK0723` diagnostic.
-pub fn closure_to_c(span: Span, func: &str) -> Diagnostic
+/// The `ZK0723` warning.
+pub fn read_unset_doubt(span: Span, name: &str) -> Diagnostic
 {
-    let msg = t!("codes.ZK0723.message", f = func);
-    Diagnostic::new(Code::ClosureToC, msg, span).with_help(t!("codes.ZK0723.help"))
+    Diagnostic::new(Code::ReadUnsetDoubt, t!("codes.ZK0723.message", n = name), span)
+        .with_help(t!("codes.ZK0723.help"))
 }
 
-/// A closure that owns a block is duplicated.
+/// A call of a function that reads a global that can be unset at the call.
 ///
 /// # Arguments
 ///
-/// * `span` - The duplicate.
-/// * `func` - The function name.
+/// * `span` - The call.
+/// * `func` - The function.
+/// * `global` - The global.
 ///
 /// # Returns
 ///
 /// The `ZK0724` diagnostic.
-pub fn closure_owner_dup(span: Span, func: &str) -> Diagnostic
+pub fn global_unset_at_call(span: Span, func: &str, global: &str) -> Diagnostic
 {
-    let msg = t!("codes.ZK0724.message", f = func);
-    Diagnostic::new(Code::ClosureOwnerDup, msg, span).with_help(t!("codes.ZK0724.help"))
+    let msg = t!("codes.ZK0724.message", f = func, g = global);
+    Diagnostic::new(Code::GlobalUnsetAtCall, msg, span)
+        .with_help(t!("codes.ZK0724.help", g = global))
 }
 
-/// A call goes through a function value that is `ဗလာ` on each path.
+/// A return that can leave a parameter marked `ဒေတာ ထည့်ပေးရန်` unset.
 ///
 /// # Arguments
 ///
-/// * `span` - The callee.
-/// * `name` - The name of the value.
+/// * `span` - The return, or the end of the function.
+/// * `name` - The parameter.
 ///
 /// # Returns
 ///
-/// The `ZK0709` diagnostic.
-pub fn null_call(span: Span, name: &str) -> Diagnostic
+/// The `ZK0725` diagnostic.
+pub fn fill_unset_at_return(span: Span, name: &str) -> Diagnostic
 {
-    Diagnostic::new(Code::NullDeref, t!("codes.ZK0709.call_message", name = name), span)
-}
-
-/// A call goes through a function value that can be `ဗလာ`.
-///
-/// # Arguments
-///
-/// * `span` - The callee.
-/// * `name` - The name of the value.
-///
-/// # Returns
-///
-/// The `ZK0711` warning.
-pub fn null_call_possible(span: Span, name: &str) -> Diagnostic
-{
-    let msg = t!("codes.ZK0711.call_message", name = name);
-    Diagnostic::new(Code::NullDerefPossible, msg, span)
+    let msg = t!("codes.ZK0725.message", n = name);
+    Diagnostic::new(Code::FillUnsetAtReturn, msg, span)
+        .with_help(t!("codes.ZK0725.help", n = name))
 }

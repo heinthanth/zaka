@@ -119,7 +119,7 @@ en = "Compiler"
 [explorer.settings.heap_cap]
 en = "Heap limit"
 [explorer.settings.heap_cap_note]
-en = "The most heap a run can hold at once; past it, a new block comes back as null (ဗလာ) and a resize traps. Auto uses the RAM the browser reports, up to the 4 GiB a WebAssembly page can address."
+en = "The most heap a run can hold at once; past it, a new block comes back as the null pointer (မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ) and a resize traps. Auto uses the RAM the browser reports, up to the 4 GiB a WebAssembly page can address."
 [explorer.settings.frames]
 en = "Variables"
 [explorer.settings.frames_note]
@@ -129,9 +129,9 @@ en = "Checked"
 [explorer.settings.frames_packed]
 en = "Packed, as C"
 [explorer.settings.mem_check]
-en = "Ownership check"
+en = "Pointer check"
 [explorer.settings.mem_check_note]
-en = "What a proven pointer mistake does. Error stops the build on the line at fault; warn still builds, so the VM shows the trap; off reports nothing. A move leaves ဗလာ behind in each mode."
+en = "What a proven pointer mistake does. Error stops the build on the line at fault; warn still builds, so the VM shows the trap; off reports nothing. The default is warn."
 [explorer.settings.mem_check_error]
 en = "Error"
 [explorer.settings.mem_check_warn]
@@ -139,13 +139,13 @@ en = "Warn"
 [explorer.settings.mem_check_off]
 en = "Off"
 [explorer.settings.mem_strict]
-en = "Strict ownership check"
+en = "Strict pointer check"
 [explorer.settings.mem_strict_note]
-en = "Also warn about a pointer that can be ဗလာ, such as a fresh allocation never compared with ဗလာ."
-[explorer.settings.no_raw]
-en = "Forbid raw addresses"
-[explorer.settings.no_raw_note]
-en = "Reject each kind written with လိပ်စာအကြမ်း, so a lesson cannot step around the check."
+en = "Also warn about a pointer that can be null, such as a fresh allocation never compared with the null pointer (မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ)."
+[explorer.settings.no_unsafe]
+en = "Forbid marked code"
+[explorer.settings.no_unsafe_note]
+en = "Refuse each function and block marked စိတ်မချရသော, so a lesson keeps to safe Zaka."
 [explorer.settings.overflow]
 en = "Stop on overflow"
 [explorer.settings.overflow_note]
@@ -519,6 +519,10 @@ en = "%{count} more blocks not listed"
 en = "Size"
 [explorer.heap.size_note]
 en = "The size of the block in octets"
+[explorer.heap.holders]
+en = "Holders"
+[explorer.heap.holders_note]
+en = "The count of values that hold a counted block: text, a list, an object or a closure; the last one to let go frees it"
 [explorer.heap.origin]
 en = "Origin"
 [explorer.heap.state]
@@ -530,7 +534,7 @@ en = "Stack"
 [explorer.heap.origin_static]
 en = "Static"
 [explorer.heap.stack_of]
-en = "%{name} of %{func}"
+en = "%{name}@%{func}"
 [explorer.heap.global]
 en = "Global %{name}"
 [explorer.heap.frame_of]
@@ -653,7 +657,7 @@ en = "Lowering turns the tree into a simpler IR. Switch between the IR as lowere
 [explorer.tour.borrow_check]
 en = "6 · Borrow check"
 [explorer.tour.borrow_check_text]
-en = "The borrow checker follows each owner pointer and each loan through the IR. It stops a free of a borrowed address, a use after a free, a block never freed and a read past the end before the program runs."
+en = "The borrow checker follows each owner pointer and each loan through the IR. It stops a use after a free, a block never freed and a read past the end before the program runs."
 [explorer.tour.codegen]
 en = "7 · Codegen"
 [explorer.tour.codegen_text]

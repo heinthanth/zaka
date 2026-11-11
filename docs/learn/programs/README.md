@@ -14,7 +14,7 @@ walk-through explains how it is built.
 | --- | --- |
 | [FizzBuzz](fizzbuzz.md) | functions with results, boolean variables, if / else-if chains, counted loops |
 | [Greatest common divisor](gcd.md) | while loops, functions calling functions, changing parameters |
-| [Fibonacci numbers](fibonacci.md) | generic loops, the implicit `ရလဒ်`, converting to decimals |
+| [Fibonacci numbers](fibonacci.md) | generic loops, a variable that is given back, converting to decimals |
 | [The Collatz sequence](collatz.md) | a shared helper function, returning before the end |
 | [Scores](scores.md) | each-cell and each-character loops, building a list with adds, removing a cell, template literals |
 | [Where a program starts](start.md) | a start block, the arguments of the command line, an exit code |

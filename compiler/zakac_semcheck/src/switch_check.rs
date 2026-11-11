@@ -161,8 +161,10 @@ impl Checker
             .filter(|(at, _)| !seen.contains(&CaseHit::Member(*at)))
             .map(|(_, (m, _))| format!("\"{m}\""))
             .collect();
-        ret_if!(missing.is_empty());
+        ret_if!(missing.is_empty(), _ = self.full_switches.insert(n.span));
         let span = n.subject.span();
-        self.report(kd::switch_missing(span, &missing.join(", "), owner.stem()));
+        let word = self.classifiers.get(&owner.name).map_or("ခု", String::as_str);
+        let help = kd::switch_missing(span, &missing.join(", "), owner.stem(), word);
+        self.report(help);
     }
 }

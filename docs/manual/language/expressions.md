@@ -37,11 +37,11 @@ inside parentheses.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-က + ခ * ၂ ကို ပြသပါ။
-က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသပါ။
-က + ခ နှင့် ၁၀ ၏ မြှောက်လဒ် ကို ပြသပါ။
-(က နှင့် ခ ၏ ပေါင်းလဒ်) * ၁၀ ကို ပြသပါ။
-(က သည် ခ အောက် ငယ်သည် ဖြစ်၍ ခ သည် ၅ အောက် ငယ်သည်) ဟု ပြသပါ။
+က + ခ * ၂ ကို ပြသမည်။
+က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်။
+က + ခ နှင့် ၁၀ ၏ မြှောက်လဒ် ကို ပြသမည်။
+(က နှင့် ခ ၏ ပေါင်းလဒ်) * ၁၀ ကို ပြသမည်။
+(က သည် ခ အောက် ငယ်သည် ဖြစ်၍ ခ သည် ၅ အောက် ငယ်သည်) ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -56,21 +56,25 @@ inside parentheses.
 ## Atoms
 
 - **Number literals** and **character literals**, written as in [Source text and
-  words](words.md). A number literal without a kind prefix is *flexible*: it takes the kind
+  words](words.md). A number literal without a kind after it is *flexible*: it takes the kind
   that its place wants (a declaration, an assignment, a parameter, the other operand of
   an operator), and the integer `၃` is an `isize` when nothing wants another kind.
   A literal that does not fit is ZK0406. A `-` right before a literal counts in the
   range check, so `-၁၂၈` fits an `၈ ဘစ် ကိန်းပြည့်`.
 - **`မှန်` and `မမှန်`**, the two true/false values.
 - **Names** of variables, constants, parameters and loop counters. A name that is not
-  declared where it is used is ZK0301 ([Names and scope](scope.md)). Inside a function
-  with a result, `ရလဒ်` names the result variable.
+  declared where it is used is ZK0301 ([Names and scope](scope.md)). A function has no
+  variable of its own for its result: it gives the value back with `ကို ပြန်ပေးမည်`.
 - **Parentheses**, `( ... )`, around an expression of each kind.
 - **Calls**, `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်သော ရလဒ်` ([Functions](functions.md)).
 - **String literals**, of the kind `စာသား`, with template slots that hold expressions
   ([Text](text.md)).
-- **Places and addresses**: list literals and `x ၏ အကွက် i` ([Lists](lists.md)), and
-  `p ၏ တန်ဖိုး` ([Pointers](pointers.md)).
+- **Places and ranges**: list literals, `x ၏ အကွက် i` and ranges ([Lists](lists.md)),
+  fields ([Structs](structs.md)), and in marked code `p ၏ တန်ဖိုး` and `x ၏ လိပ်စာ`
+  ([Unsafe Zaka](unsafe.md)).
+- **Function values**, `f ဟူသော လုပ်ဆောင်ချက်` ([Function values](function-values.md)).
+- **Copies**, `x ၏ မိတ္တူ` and the deep `x တစ်ခုလုံး ၏ မိတ္တူ` ([Values and
+  objects](objects.md)).
 
 ## Arithmetic
 
@@ -97,13 +101,13 @@ dividend, so each pair satisfies `a == (a / b) * b + a % b`:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁၇ / ၅ ကို ပြသပါ။
-၁၇ % ၅ ကို ပြသပါ။
--၁၇ / ၅ ကို ပြသပါ။
--၁၇ % ၅ ကို ပြသပါ။
-၁၇ / -၅ ကို ပြသပါ။
-၁၇ % -၅ ကို ပြသပါ။
-၁၇.၅ % ၅ ကို ပြသပါ။
+၁၇ / ၅ ကို ပြသမည်။
+၁၇ % ၅ ကို ပြသမည်။
+-၁၇ / ၅ ကို ပြသမည်။
+-၁၇ % ၅ ကို ပြသမည်။
+၁၇ / -၅ ကို ပြသမည်။
+၁၇ % -၅ ကို ပြသမည်။
+၁၇.၅ % ၅ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -129,10 +133,10 @@ runs, the program stops at that operation ([When a program stops](../vm/traps.md
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-"အစ" ဟု ပြသပါ။
-၁၀ % ခ ကို ပြသပါ။
-"ဤနေရာ မရောက်ပါ" ဟု ပြသပါ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+"အစ" ဟု ပြသမည်။
+၁၀ % ခ ကို ပြသမည်။
+"ဤနေရာ မရောက်ပါ" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -158,9 +162,9 @@ An integer result that does not fit its kind meets one of two fates.
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-မှန် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ဂ ကို ဂ * ၂ ဟု ထားပါ။
-ဂ ကို ပြသပါ။
+မှန် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဂ ကို ဂ * ၂ ဟု ထားမည်။
+ဂ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -176,14 +180,14 @@ An integer result that does not fit its kind meets one of two fates.
 the program stopped: the result of * does not fit u8
 ```
 
-The compiler also follows the values a variable can hold, as the pointer checks do, and
+The compiler also follows the values a variable can hold, as the flow checks do ([Compiler checks](../compiler/checks.md)), and
 warns when an operation overflows for each of them (ZK0719): the program stops there each
 time it runs.
 
 ```zaka-warning ZK0719
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် n သည် လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
-n - ၁ ကို ပြသပါ။
+n - ၁ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -199,12 +203,12 @@ odometer rolling over. Nothing stops the program, and ZK0719 is not given.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၅၀ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။
-ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-က + ၁၀ ကို ပြသပါ။
-က * ၂ ကို ပြသပါ။
-ဂ - ၁ ကို ပြသပါ။
-ခ + ၁ ကို ပြသပါ။
--ခ - ၂ ကို ပြသပါ။
+ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+က + ၁၀ ကို ပြသမည်။
+က * ၂ ကို ပြသမည်။
+ဂ - ၁ ကို ပြသမည်။
+ခ + ၁ ကို ပြသမည်။
+-ခ - ၂ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -242,9 +246,16 @@ error[ZK0601]: + on these constants does not fit i8
 
 A comparison gives a `မှန်မှားတန်ဖိုး`. The operands have one common kind (the narrower
 one is widened first, as in arithmetic). `==` and `!=` take each kind, including true/false
-values, characters, addresses, lists of one kind and structs of one kind. The ordering operators take numbers and
+values, characters, text, lists of one kind, structs of one kind, shared objects of one
+kind, function values and pointers. Text, lists, structs and objects compare their
+contents in depth, safe on objects that reach each other in a ring; function values and
+pointers compare as the same function or address ([Values and objects](objects.md)). The ordering operators take numbers and
 characters. A decimal `NaN` is equal to nothing, not even itself, and each ordering
 with it is false.
+
+`X နှင့် Y သည် တစ်ခုတည်း` ("are one and the same") is a comparison of its own: it asks
+whether two objects of one kind, or two function values, are one, and is ZK0404 on other
+kinds ([Values and objects](objects.md)).
 
 A comparison cannot be the direct operand of another comparison, in either spelling
 (ZK0210). Join two comparisons with `ဖြစ်၍`, or put the inner one in parentheses.
@@ -253,11 +264,11 @@ A comparison cannot be the direct operand of another comparison, in either spell
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅၀၀ ဖြစ်ပါစေ။
-က < ခ ကို ပြသပါ။
-က သည် ခ နှင့် ညီသည် ဟု ပြသပါ။
-'က' < 'ခ' ကို ပြသပါ။
-မှန် == မမှန် ကို ပြသပါ။
-(က >= ၁ ဖြစ်၍ က <= ၁၀) ကို ပြသပါ။
+က < ခ ကို ပြသမည်။
+က သည် ခ နှင့် ညီသည် ဟု ပြသမည်။
+'က' < 'ခ' ကို ပြသမည်။
+မှန် == မမှန် ကို ပြသမည်။
+(က >= ၁ ဖြစ်၍ က <= ၁၀) ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -270,7 +281,7 @@ A comparison cannot be the direct operand of another comparison, in either spell
 ```
 
 ```zaka-error ZK0210
-၁ < ၂ < ၃ ကို ပြသပါ။
+၁ < ၂ < ၃ ကို ပြသမည်။
 ```
 
 ```text
@@ -299,15 +310,15 @@ tell where it ends (ZK0204).
 
 ```zaka
 လုပ်ဆောင်ချက် စစ် သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။
-"စစ်ပြီ" ဟု ပြသပါ။
-မှန် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
+"စစ်ပြီ" ဟု ပြသမည်။
+မှန် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-(မမှန် ဖြစ်၍ လုပ်ဆောင်ချက် စစ် ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသပါ။
-(မှန် သို့မဟုတ် လုပ်ဆောင်ချက် စစ် ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသပါ။
-(မှန် ဖြစ်၍ လုပ်ဆောင်ချက် စစ် ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသပါ။
+(မမှန် ဖြစ်၍ လုပ်ဆောင်ချက် စစ် ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသမည်။
+(မှန် သို့မဟုတ် လုပ်ဆောင်ချက် စစ် ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသမည်။
+(မှန် ဖြစ်၍ လုပ်ဆောင်ချက် စစ် ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -320,7 +331,7 @@ tell where it ends (ZK0204).
 
 ```zaka-error ZK0204
 ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။
-က ဖြစ်၍ မှန် ကို ပြသပါ။
+က ဖြစ်၍ မှန် ကို ပြသမည်။
 ```
 
 ## Bitwise operators
@@ -345,11 +356,11 @@ repeats the sign bit, so `-၈ >> ၁` is `-၄`.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အခြေ ၂ ဖြင့် ၁၁၀၀၁၀၁၀ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၈ ဖြစ်ပါစေ။
-က & အခြေ ၂ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၁၁၁၁၀၀၀၀ ကို ပြသပါ။
-~က ကို ပြသပါ။
-က << ၂ ကို ပြသပါ။
-ခ >> ၁ ကို ပြသပါ။
-က ကို ညာသို့ ၄ ဘစ် ရွေ့သောရလဒ် ကို ပြသပါ။
+က & အခြေ ၂ ဖြင့် ၁၁၁၁၀၀၀၀ ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။
+~က ကို ပြသမည်။
+က << ၂ ကို ပြသမည်။
+ခ >> ၁ ကို ပြသမည်။
+က ကို ညာသို့ ၄ ဘစ် ရွေ့သောရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -364,15 +375,15 @@ repeats the sign bit, so `-၈ >> ၁` is `-၄`.
 ```zaka-error ZK0407
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-က << ၈ ကို ပြသပါ။
+က << ၈ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဆ သည် လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၆၄ ဖြစ်ပါစေ။
-"အစ" ဟု ပြသပါ။
-၁ << ဆ ကို ပြသပါ။
+"အစ" ဟု ပြသမည်။
+၁ << ဆ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -403,11 +414,11 @@ Unlike C, the bitwise operators bind tighter than comparison, so `၆ & ၃ == �
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၂ + ၃ * ၄ ကို ပြသပါ။
-၁၀ - ၃ - ၂ ကို ပြသပါ။
-၂ * ၃ + ၄ * ၅ ကို ပြသပါ။
-၁ << ၃ + ၁ ကို ပြသပါ။
-၆ & ၃ == ၂ ကို ပြသပါ။
+၂ + ၃ * ၄ ကို ပြသမည်။
+၁၀ - ၃ - ၂ ကို ပြသမည်။
+၂ * ၃ + ၄ * ၅ ကို ပြသမည်။
+၁ << ၃ + ၁ ကို ပြသမည်။
+၆ & ၃ == ၂ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -424,7 +435,7 @@ Unlike C, the bitwise operators bind tighter than comparison, so `၆ & ၃ == �
 Parentheses make an expression an atom, override precedence and move an
 expression between tiers: a clause into a notation expression, and a logical
 expression into a clause. A conversion is a clause, so
-`(က ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ်) / ၂` needs its parentheses; a call is an atom and
+`(က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်) / ၂` needs its parentheses; a call is an atom and
 needs none.
 
 Parentheses around a whole printed, assigned or returned value change nothing unless
@@ -434,7 +445,7 @@ flags a double space; see [Natural wording](naturalness.md).
 ```zaka-error ZK0203
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-က နှင့် ခ ၏ ပေါင်းလဒ် * ၂ ကို ပြသပါ။
+က နှင့် ခ ၏ ပေါင်းလဒ် * ၂ ကို ပြသမည်။
 ```
 
 ```text

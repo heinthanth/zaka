@@ -1,6 +1,7 @@
 # build.rs and wasm-pack write these from the TOML sources and the crate.
 package.json
 package-lock.json
+bun.lock
 .cache
 pkg
 node_modules

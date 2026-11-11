@@ -1,0 +1,8 @@
+#!/usr/bin/env bun
+#MISE description="Build the website and write its pages to target/website"
+#MISE depends=["website:vendor"]
+#MISE dir="{{config_root}}"
+
+cargo leptos build --project zaka_website --release --split \
+  && LEPTOS_OUTPUT_NAME=zaka_website LEPTOS_SITE_ROOT=target/website LEPTOS_SITE_PKG_DIR=pkg \
+    LEPTOS_HASH_FILES=true ZAKA_WEBSITE_ONCE=1 target/release/zaka_website

@@ -17,6 +17,7 @@ use crate::callgraph::callees;
 use crate::cfg::Cfg;
 use crate::cfg::NodeKind;
 use crate::routine::Routine;
+use crate::state::holds_address;
 use crate::values::taken_fns;
 use crate::walk::each_expr;
 use crate::walk::each_stmt;
@@ -40,7 +41,7 @@ pub(crate) type LiveMap = BTreeMap<Place, Span>;
 /// The live slots after each node, in node order.
 pub(crate) fn live_out(cfg: &Cfg, module: &Module, routine: &Routine) -> Vec<LiveMap>
 {
-    live_out_of(cfg, module, routine, DataKind::holds_borrow)
+    live_out_of(cfg, module, routine, holds_address)
 }
 
 /// The slots of the kinds `keep` picks live after each node: a backward
@@ -275,7 +276,7 @@ fn call_of(e: &Expr) -> Option<(u32, Span)>
 /// The global numbers, in function order.
 pub(crate) fn global_reads(module: &Module) -> Vec<BTreeSet<u32>>
 {
-    global_reads_of(module, DataKind::holds_borrow)
+    global_reads_of(module, holds_address)
 }
 
 /// The globals of the kinds `keep` picks that each function reads, itself or
@@ -380,9 +381,9 @@ mod tests
             "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+ကိန်းရှင် မိတ္တူ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
+မိတ္တူ ၏ တန်ဖိုး ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
         );
@@ -411,10 +412,10 @@ mod tests
             "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၅ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ကိန်းရှင် ညွှန်း သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ကာ ညွှန်း သည် ပ + ၅ \
-             အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ညွှန်း ၏ တန်ဖိုး ကို ပြသပါ။
-ပြီးလျှင် ညွှန်း ကို ညွှန်း + ၁ ဟု ထားပါ။
+ကိန်းရှင် ညွှန်း သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ဖြစ်ကာ ညွှန်း သည် ပ + ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို \
+             လုပ်ဆောင်မည်။
+ညွှန်း ၏ တန်ဖိုး ကို ပြသမည်။
+ပြီးလျှင် ညွှန်း ကို ညွှန်း + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။

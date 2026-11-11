@@ -16,26 +16,26 @@ examples. This page gives the rules.
 ## The conversion expression
 
 ```text
-<value>  ကို  <kind>  အဖြစ်  ပြောင်းလဲသော ရလဒ်
- operand      target kind        the verb
+<value>  ကို  <kind> တစ်<word>  အဖြစ်  ပြောင်းလဲသော ရလဒ်
+ operand      target kind, counted     the verb
 ```
 
 It reads "the result of changing the value into the kind". The verb `ပြောင်းလဲသော ရလဒ်`
-closes a [clause](expressions.md): the value takes `ကို` and the kind takes `အဖြစ်`. The
+closes a [clause](expressions.md): the value takes `ကို` and the kind, with its
+[measure word](kinds.md#measure-words), takes `အဖြစ်`; a kind with no word there is ZK0234. The
 result has the target kind, and it can take a particle of its own, so a conversion can
 be the first part of a longer phrase.
 
-Two more targets read a part of a [whole result](error-handling.md#reading-a-whole-result) of a function that
-can fail: `ရလဒ်ကောင်း အဖြစ်` gives its good result, and `အမှားအယွင်း အဖြစ်` its error value.
-The other part stops the run with a trap (`not_good`, `not_fault`), and a value that is no
-such result is ZK0448.
+A part of a [whole result](error-handling.md#reading-a-whole-result) of a function that
+can fail is no conversion: `x ထဲမှ ဒေတာ` gives its good result, and `x ထဲမှ အမှားအယွင်း ဒေတာ` its
+error value, as [Errors and results](error-handling.md) states.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
-က ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-က ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် နှင့် ၂.၅ ၏ ပေါင်းလဒ် ကို ပြသပါ။
-(က ကို ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ်) / ၄ ကို ပြသပါ။
+က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် နှင့် ၂.၅ ၏ ပေါင်းလဒ် ကို ပြသမည်။
+(က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်) / ၄ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -61,17 +61,33 @@ A conversion is allowed between the pairs below, and in no other pair (ZK0408):
 | `မှန်မှားတန်ဖိုး` | allowed | refused | refused | allowed |
 
 An integer is never turned into a true/false value. Test it with a comparison instead:
-`n != ၀`. Conversions between addresses and integers, and between pointer kinds, have
-rules of their own, in [Pointers](pointers.md). The conversion verb never takes a list
-(ZK0408); a counted list becomes a plain list on its own where a value goes into a place, as
+`n != ၀`. Conversions between pointers and integers, between pointer kinds, and between
+a shared object and a pointer, have rules of their own and need marked code (ZK0468
+outside it), in [Unsafe Zaka](unsafe.md). The conversion verb takes one list: a plain
+list of `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` converts to text, and the VM checks that its u8s are
+UTF-8, stopping the program when the u8s are not ([Text](text.md)). Each other list is
+ZK0408; a counted list becomes a plain list on its own where a value goes into a place, as
 [Lists](lists.md#forms) states. A member of an enumeration converts to its value
 kind, which gives its value, and a member whose value is a number, a character or a
 true/false value converts to each kind its value converts to, as
 [Enumerations](enums.md#values-of-an-enumeration) states; nothing converts to a member.
 
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် စ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ။
+စ ထဲသို့ ၁၀၄ ကို ထည့်မည်။
+စ ထဲသို့ ၁၀၅ ကို ထည့်မည်။
+စ ကို စာသား တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+hi
+```
+
 ```zaka-error ZK0408
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ ကို မှန်မှားတန်ဖိုး အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+၁ ကို မှန်မှားတန်ဖိုး တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -96,14 +112,14 @@ new kind cannot hold the old value. Each pair has one fixed rule.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၃၀၀ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
--၁ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-၂၀၀ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ၈ ဘစ် ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
--၁ ကို ၈ ဘစ် ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို လက္ခဏာမဲ့ ၃၂ ဘစ် ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-၃.၉ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
--၃.၉ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
--၅.၅ ကို လက္ခဏာမဲ့ ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-1e30 ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+၃၀၀ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+-၁ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+၂၀၀ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+-၁ ကို ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို လက္ခဏာမဲ့ ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+၃.၉ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+-၃.၉ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+-၅.၅ ကို လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+1e30 ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -126,12 +142,12 @@ Characters, true/false values and decimal numbers of other widths:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၆၅ ကို စာလုံး အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-'က' ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-'က' ကို ၈ ဘစ် ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-မမှန် ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-၁၆၇၇၇၂၁၇ ကို ၃၂ ဘစ် ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-၁.၁ ကို ၁၆ ဘစ် ဒဿမကိန်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+၆၅ ကို စာလုံး တစ်လုံး အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+'က' ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+'က' ကို ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+မမှန် ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+၁၆၇၇၇၂၁၇ ကို ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+၁.၁ ကို ၁၆ ဘစ် ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -160,8 +176,8 @@ operands of an operator (the next section). The cases:
 So `u8` goes into `i16`, `i16` into `f32`, `i32` into `f64`, and `f32` into `f64`.
 These do not widen: signed to unsigned, a narrower target, `isize` or `usize` (64 bits)
 into `f64`, `i32` into `f32`, and `isize` into `i64` (the two kinds are the same width
-but differ). A `စာလုံး` and a `မှန်မှားတန်ဖိုး` never widen. An address widens to the
-address kinds described in [Pointers](pointers.md) and to nothing else.
+but differ). A `စာလုံး` and a `မှန်မှားတန်ဖိုး` never widen. A pointer widens to the
+pointer kinds described in [Unsafe Zaka](unsafe.md) and to nothing else.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -169,9 +185,9 @@ address kinds described in [Pointers](pointers.md) and to nothing else.
 ကိန်းရှင် ခ သည် ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ ဖြစ်ပါစေ။
 ကိန်းရှင် ဃ သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဂ ဖြစ်ပါစေ။
-ခ ကို ပြသပါ။
-ဂ ကို ပြသပါ။
-ဃ ကို ပြသပါ။
+ခ ကို ပြသမည်။
+ဂ ကို ပြသမည်။
+ဃ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -193,7 +209,7 @@ conversion:
 
 ```text
 error[ZK0401]: expected f64, found isize
- = help: convert the value with "ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်"
+ = help: convert the value with "ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်"
 ```
 
 ## Mixing kinds in an operation
@@ -206,7 +222,7 @@ An operator with two operands joins them as follows (see [Expressions](expressio
 - If neither widens to the other, there is no common kind and the program does not
   compile (ZK0404). A signed and an unsigned integer of one width are such a pair.
 
-A literal without a kind prefix takes the kind of the other operand, so `က + ၁` with a
+A literal without a kind after it takes the kind of the other operand, so `က + ၁` with a
 `u8` named `က` adds a `u8`. When both sides are literals, a fraction or an exponent
 in either makes both of them decimal numbers: `၃ + ၀.၅` is `၃.၅`. A literal that does not
 fit the kind it must take is ZK0406.
@@ -215,7 +231,7 @@ fit the kind it must take is ZK0406.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
-က + ခ ကို ပြသပါ။
+က + ခ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -226,7 +242,7 @@ error[ZK0404]: cannot combine i8 and u8 without a conversion
 ```zaka-error ZK0406
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
-က + ၃၀၀ ကို ပြသပါ။
+က + ၃၀၀ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -240,7 +256,7 @@ Convert one side to join two kinds that do not widen:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀၀ ဖြစ်ပါစေ။
-က နှင့် ခ ကို ၁၆ ဘစ် ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ၏ ပေါင်းလဒ် ကို ပြသပါ။
+က နှင့် ခ ကို ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ၏ ပေါင်းလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

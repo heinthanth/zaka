@@ -53,8 +53,10 @@ enum zk_trap
     ZK_TRAP_CHAR_OUT_OF_RANGE,
     ZK_TRAP_END_BEFORE_START,
     ZK_TRAP_NULL_CALL,
+    ZK_TRAP_NULL_OBJECT,
+    ZK_TRAP_CLOSED_HANDLE,
+    ZK_TRAP_NULL_TEXT,
     ZK_TRAP_CLOSURE_ESCAPE,
-    ZK_TRAP_CLOSURE_OWNER,
     ZK_TRAP_NO_CELL_TO_REMOVE,
     ZK_TRAP_NO_CHAR_TO_REMOVE,
     ZK_TRAP_NO_PLACE_TO_INSERT,
@@ -64,6 +66,7 @@ enum zk_trap
     ZK_TRAP_NOT_GOOD,
     ZK_TRAP_NOT_GOOD_BARE,
     ZK_TRAP_NOT_FAULT,
+    ZK_TRAP_NO_DATA,
     ZK_TRAP_NULL_DEREF,
     ZK_TRAP_OUT_OF_MEM,
     ZK_TRAP_OVERLAP,
@@ -147,9 +150,7 @@ enum zk_tag
     ZK_K_LIST,
     ZK_K_STRUCT,
     ZK_K_FALLIBLE,
-    ZK_K_SLICE,
     ZK_K_SEQ,
-    ZK_K_VIEW,
     ZK_K_TEXT,
     ZK_K_ENUM
 };
@@ -197,10 +198,14 @@ struct zk_kind
     int holds_borrow;
     /** Whether the kind is an owner pointer, or holds one. */
     int owns;
+    /** Whether a plain list is a box: an object, or a variable a closure
+     * shares. A box is shared among its duplicates. */
+    int boxed;
 };
 
 /** The words of a print that zaka_kinds.c holds, from the compiler. */
 extern const char zk_good_text[], zk_fault_text[], zk_good_bare[], zk_fault_bare[];
+extern const char zk_data_text[], zk_no_data_text[];
 extern const char zk_fn_lead[], zk_fn_tail[];
 
 /** A function of the program and its name, for the print of a value. */
@@ -298,7 +303,7 @@ ZK_MEM_OPS(i128, zk_i128)
 ZK_MEM_OPS(u128, zk_u128)
 #endif
 
-/** Copy a value of a list or struct kind to an address; the two can
+/** Write a value of a list or struct kind to an address; the two can
  * overlap. */
 void zk_put_block(unsigned char *to, const unsigned char *from, size_t size);
 /** An address moved count steps of stride octets; wraps as the VM does. */
@@ -310,7 +315,7 @@ zk_imax zk_ptr_sub(const unsigned char *p, const unsigned char *q, size_t stride
 unsigned char *zk_alloc(zk_umax count, size_t stride);
 /** A block moved to a new size; the run stops when no room is left. */
 unsigned char *zk_realloc(unsigned char *p, zk_umax count, size_t stride);
-/** Copy count cells of stride octets; with overlap 0, the mem checks stop
+/** Move count cells of stride octets; with overlap 0, the mem checks stop
  * the run when the two ranges overlap. */
 void zk_blit(
     const unsigned char *src, zk_umax count, unsigned char *dst, size_t stride,
@@ -328,10 +333,52 @@ int zk_fn_bound(zk_fn f);
 unsigned char *zk_fn_rec(zk_fn f);
 /** Make a closure: move its record to the heap, with its code and its kind. */
 zk_fn zk_closure(unsigned char *record, zk_code thunk, const zk_kind *k);
-/** Stop the run when a function value is a closure that borrows. */
-zk_fn zk_fn_plain(zk_fn f);
 /** Stop the run when a function value is a closure, which C cannot call. */
 zk_fn zk_fn_c(zk_fn f);
+/** The size of the record of a closure. */
+size_t zk_fn_size(zk_fn f);
+/** Let go of one count of the record of a closure. */
+void zk_fn_release(zk_fn f);
+
+/**
+ * The bridge of a function kind C calls back, with its libffi kinds, which
+ * zaka_cb.c defines for each such kind of the program.
+ */
+typedef struct zk_cb_shape
+{
+    /** Read the arguments libffi gives, run the thunk with the record, and
+     * write the result where libffi wants it. */
+    void (*bridge)(void *ret, void **args, unsigned char *record);
+    /** The libffi kind of the result, an ffi_type. */
+    const void *ret;
+    /** The libffi kind of each parameter, each an ffi_type. */
+    void *const *args;
+    /** The count of parameters. */
+    unsigned nargs;
+    /** Whether C can call the code of a function of the kind with no
+     * bridge: each parameter crosses as it is. */
+    int as_is;
+} zk_cb_shape;
+
+/** The address C calls for a function value given to a C call. */
+zk_code zk_cb_code(zk_fn f, const zk_cb_shape *shape);
+/** The count of lends before a C call. */
+size_t zk_cb_lent(void);
+/** End the lends of the closures a C call got. */
+void zk_cb_end(size_t from);
+/** Write a new handle around an address C passed to a function of the
+ * program. */
+void zk_cb_handle(unsigned char *out, void *const *addr, const zk_kind *list);
+/** Write an optional of a new handle around an address C passed to a
+ * function of the program, with no data for NULL. */
+void zk_cb_opt_handle(
+    unsigned char *out, size_t size, size_t ok_at, void *const *addr,
+    const zk_kind *list
+);
+/** Give C leave to call a closure after the call that gave it. */
+void zk_cb_leave(zk_fn f, const zk_cb_shape *shape);
+/** End the leave zk_cb_leave gave a closure. */
+void zk_cb_revoke(zk_fn f);
 /** A duplicate of a function value: a closure gets a record of its own. */
 zk_fn zk_fn_dup(zk_fn f);
 /** A function value lent to a call: a closure gets the mark of a loan. */
@@ -348,10 +395,16 @@ size_t zk_seq_len(const unsigned char *at);
 char *zk_text_cstr(const unsigned char *at);
 /** Free a duplicate zk_text_cstr made. */
 void zk_text_cstr_free(char *dup);
-/** The text result of a C function, or the failure for NULL. */
+/** The text result of a C function, an optional with no data for NULL. */
 void zk_text_from_c(unsigned char *out, size_t size, size_t ok_at, const char *s);
+/** Text C passed to a function of the program; NULL stops the run. */
+void zk_text_of_c(unsigned char *out, const char *s);
 /** Write the three words of a plain list or text. */
 void zk_seq_put(unsigned char *at, unsigned char *base, size_t len, size_t room);
+/** A new counted block of text or a plain list, with one holder. */
+unsigned char *zk_seq_new(size_t size);
+/** Free a counted block of text or a plain list; NULL does nothing. */
+void zk_seq_free(unsigned char *base);
 /** Write static text into a slot: its octets and a room of 0. */
 void zk_text_lit(unsigned char *slot, const char *s, size_t len, size_t size);
 
@@ -359,13 +412,21 @@ void zk_text_lit(unsigned char *slot, const char *s, size_t len, size_t size);
 void zk_drop(unsigned char *at, const zk_kind *k);
 /** Give each text and plain list of a value a heap block of its own. */
 void zk_dup_seqs(unsigned char *at, const zk_kind *k);
+/** Give a value a duplicate of its own of each object it reaches, once each. */
+void zk_deep_seqs(unsigned char *at, const zk_kind *k);
 /** Lend each text and plain list of a value: its room becomes 0. */
 void zk_lend_seqs(unsigned char *at, const zk_kind *k);
 /** Give each text and plain list of a value with a room of 0 a block. */
 unsigned char *zk_own(unsigned char *at, const zk_kind *k);
+/** The block of an object, holding one more count of it. */
+unsigned char *zk_obj_ptr(const unsigned char *at);
+/** Write the object a pointer to its block names; it takes the count. */
+void zk_ptr_obj(unsigned char *at, unsigned char *base);
+/** Pin the block of text or a plain list, so a duplicate copies it. */
+unsigned char *zk_pin(unsigned char *at);
 /** Zero a value an owner moved out of. */
 void zk_zero(unsigned char *at, size_t size);
-/** Copy the cells of a list to the heap as a plain list; a fixed one, of
+/** Write the cells of a list to the heap as a plain list; a fixed one, of
  * known cells, gets a room of 0, as the VM's static lists do. */
 void zk_to_heap(
     unsigned char *dst, const unsigned char *src, const zk_kind *list, int fixed
@@ -374,6 +435,8 @@ void zk_to_heap(
 /** The cell a number names, counted from first; the run stops when it is
  * outside the count. */
 size_t zk_cell_of(zk_imax index, size_t len, int first);
+/** The address of the fields of an object; the run stops when it is the zero word. */
+unsigned char *zk_object_cell(const unsigned char *at);
 /** The address of a cell of a slice or a plain list. */
 unsigned char *zk_slice_cell(
     const unsigned char *at, zk_imax index, int first, size_t stride
@@ -381,12 +444,12 @@ unsigned char *zk_slice_cell(
 /** Write a slice of len cells from cell start of base into a slot; limit is
  * the cell count of the source, SIZE_MAX for none, and text keeps whole
  * characters. */
+/** Stop the run when a plain list of u8s holds no UTF-8. */
+void zk_check_utf8(const unsigned char *at);
 void zk_make_slice(
     unsigned char *slot, unsigned char *base, zk_umax start, zk_umax len, size_t limit,
     size_t stride, int text
 );
-/** Stop the run when the octets of a view are not UTF-8 text. */
-void zk_check_utf8(const unsigned char *at);
 
 /** Add a cell at the end of a plain list; the cell moves out of src. */
 void zk_add_cell(unsigned char *at, const zk_kind *k, unsigned char *src);
@@ -446,6 +509,10 @@ _Noreturn void zk_not_good(const unsigned char *at, const zk_kind *k);
 _Noreturn void zk_not_good_bare(void);
 /** Stop the run: the error part of a good result was read. */
 _Noreturn void zk_not_fault(void);
+/** Stop the run: an optional that holds no data was read. */
+_Noreturn void zk_no_data(void);
+/** Stop the run: a handle a C function closed went to C again. */
+_Noreturn void zk_closed_handle(void);
 
 /* ---- host ---- */
 

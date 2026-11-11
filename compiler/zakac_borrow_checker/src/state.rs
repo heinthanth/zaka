@@ -22,19 +22,23 @@ pub(crate) struct OwnerState(u8);
 
 impl OwnerState
 {
-    /// `ဗလာ`.
+    /// null.
     pub(crate) const NULL: OwnerState = OwnerState(1);
     /// A block.
     pub(crate) const HELD: OwnerState = OwnerState(2);
-    /// A fresh allocation not compared with `ဗလာ`, so a block or `ဗလာ`.
+    /// A fresh allocation not compared with null, so a block or null.
     pub(crate) const FRESH: OwnerState = OwnerState(4);
-    /// Nothing: the value moved out and left `ဗလာ`.
+    /// Nothing: the value moved out and left null.
     pub(crate) const MOVED: OwnerState = OwnerState(8);
     /// A mark, not a fact: a call can have freed, resized or moved the
     /// block through an address of the slot, so the slot is not reported
     /// as a leak until the routine writes it again.
     pub(crate) const GIVEN: OwnerState = OwnerState(16);
-    /// A block or `ဗလာ`, with nothing known.
+    /// A mark, not a fact: the value is a duplicate of a fresh allocation
+    /// not compared with null, so `--mem-strict` warns at a read through
+    /// it, as through the allocation itself; a test against null ends it.
+    pub(crate) const UNTESTED: OwnerState = OwnerState(32);
+    /// A block or null, with nothing known.
     pub(crate) const UNKNOWN: OwnerState = OwnerState(1 | 2);
     /// No fact: a point no path reaches.
     pub(crate) const NONE: OwnerState = OwnerState(0);
@@ -92,7 +96,7 @@ impl OwnerState
     /// `true` with [`OwnerState::GIVEN`].
     pub(crate) const fn shares_given(self) -> bool { self.shares(OwnerState::GIVEN) }
 
-    /// Whether the owner is `ဗလာ` on each path.
+    /// Whether the owner is null on each path.
     ///
     /// # Returns
     ///
@@ -128,8 +132,8 @@ impl OwnerState
         self.can_hold() && rest.0 == OwnerState::NONE.0
     }
 
-    /// Whether the owner can be `ဗလာ` though it was never compared with
-    /// it, or is `ဗလာ` on some path.
+    /// Whether the owner can be null though it was never compared with
+    /// it, or is null on some path.
     ///
     /// # Returns
     ///
@@ -140,7 +144,7 @@ impl OwnerState
         self.shares(OwnerState(OwnerState::NULL.0 | OwnerState::FRESH.0))
     }
 
-    /// Whether the owner can hold an allocation not compared with `ဗလာ`
+    /// Whether the owner can hold an allocation not compared with null
     /// since it was made.
     ///
     /// # Returns
@@ -148,7 +152,18 @@ impl OwnerState
     /// `true` with [`OwnerState::FRESH`].
     pub(crate) const fn shares_fresh(self) -> bool { self.shares(OwnerState::FRESH) }
 
-    /// The state a read of the owner sees: moved out reads as `ဗလာ`, and
+    /// Whether the owner can hold an allocation, or a duplicate of one, not
+    /// compared with null since it was made.
+    ///
+    /// # Returns
+    ///
+    /// `true` with [`OwnerState::FRESH`] or [`OwnerState::UNTESTED`].
+    pub(crate) const fn shares_untested(self) -> bool
+    {
+        self.shares(OwnerState(OwnerState::FRESH.0 | OwnerState::UNTESTED.0))
+    }
+
+    /// The state a read of the owner sees: moved out reads as null, and
     /// the mark of the slot remains with the slot.
     ///
     /// # Returns
@@ -161,15 +176,15 @@ impl OwnerState
         tern!(self.shares_moved(), rest.join(OwnerState::NULL), rest)
     }
 
-    /// The state on one edge of a test against `ဗလာ`.
+    /// The state on one edge of a test against null.
     ///
     /// # Arguments
     ///
-    /// * `null` - `true` on the edge where the owner is `ဗလာ`.
+    /// * `null` - `true` on the edge where the owner is null.
     ///
     /// # Returns
     ///
-    /// On the `ဗလာ` edge: `ဗလာ` for each fact that allows it, moved out
+    /// On the null edge: null for each fact that allows it, moved out
     /// kept; on the other edge: a block for each fact that allows one.
     /// [`OwnerState::NONE`] when the edge cannot run. The test tells
     /// whether a call gave the block back, so the mark goes.
@@ -389,7 +404,7 @@ impl Interval
 #[derive(Debug, Clone, PartialEq, Eq, Builder)]
 pub(crate) struct PtrInfo
 {
-    /// Whether it holds a block, `ဗလာ`, or moved out.
+    /// Whether it holds a block, null, or moved out.
     pub(crate) state: OwnerState,
     /// The places it can point into; none for an owner, whose block is
     /// its own.
@@ -431,7 +446,7 @@ pub(crate) struct State
     pub(crate) locals: Vec<SlotState>,
     /// The paths from a parameter or a global that a free, in the routine
     /// or in a call, left without a block on some path here, and no
-    /// allocation filled again: the owner there can be `ဗလာ`.
+    /// allocation filled again: the owner there can be null.
     #[builder(default)]
     pub(crate) unfilled: BTreeSet<Root>,
     /// Pairs of an integer local and a slice local where the integer is
@@ -547,7 +562,7 @@ impl State
     }
 
     /// The facts at the start of a routine. The main program starts with
-    /// each slot at `ဗလာ` or zero. A function knows nothing of the
+    /// each slot at null or zero. A function knows nothing of the
     /// globals but the roots top-level code gives the borrows; each
     /// parameter is not known, a borrow parameter pointing into what its
     /// argument points into; the other locals start blank.
@@ -644,11 +659,8 @@ impl State
 fn param_roots(n: u32, kind: DataKind) -> Roots
 {
     let slot = Root::slot(Place::Local(n));
-    ret_if!(!kind.holds_borrow(), Roots::new());
-    ret_if!(
-        kind.is_aggregate() && !kind.is_slice(),
-        Roots::from([slot.cell(None).block()])
-    );
+    ret_if!(!holds_address(kind), Roots::new());
+    ret_if!(kind.is_aggregate(), Roots::from([slot.cell(None).block()]));
     Roots::from([slot.block()])
 }
 
@@ -689,7 +701,7 @@ impl PtrInfo
         PtrInfo { offset: self.offset.widen(older.offset), ..self.clone() }
     }
 
-    /// The pointer `ဗလာ`.
+    /// The pointer null.
     ///
     /// # Returns
     ///
@@ -699,7 +711,7 @@ impl PtrInfo
         PtrInfo::builder().state(OwnerState::NULL).offset(Interval::point(0)).build()
     }
 
-    /// A pointer that can hold a block or `ဗလာ`, at an offset not known.
+    /// A pointer that can hold a block or null, at an offset not known.
     ///
     /// # Arguments
     ///
@@ -761,7 +773,7 @@ impl SlotState
         }
     }
 
-    /// The fact a slot of `kind` holds before the program sets it: `ဗလာ`
+    /// The fact a slot of `kind` holds before the program sets it: null
     /// or zero.
     ///
     /// # Arguments
@@ -808,7 +820,7 @@ impl SlotState
         ret_if!(kind.is_int(), SlotState::Int(int));
         // A function value is followed for whether it holds a function.
         ret_if!(kind.is_fn(), SlotState::Ptr(info));
-        let words = kind.is_slice() || kind.is_text() || kind.is_seq();
+        let words = kind.is_text() || kind.is_seq();
         let list = kind.is_aggregate() && !words;
         ret_if!(list && holds_ptr(kind), SlotState::List(info));
         tern!(holds_ptr(kind), SlotState::Ptr(info), SlotState::None)
@@ -830,8 +842,26 @@ pub(crate) fn holds_ptr(kind: DataKind) -> bool
 {
     ret_if!(let Some(list) = kind.as_list(), holds_ptr(list.cell));
     ret_if!(let Some(s) = kind.as_struct(), s.fields().iter().any(|(_, k)| holds_ptr(*k)));
-    let words = kind.is_slice() || kind.is_text() || kind.is_seq();
+    let words = kind.is_text() || kind.is_seq();
     words || (kind.is_ptr() && !kind.is_raw_ptr())
+}
+
+/// Whether a value of the kind holds an address the program wrote: a
+/// pointer, or a counted list or a struct with one at some depth. Text and
+/// plain lists own their cells, so those lend nothing.
+///
+/// # Arguments
+///
+/// * `kind` - The kind.
+///
+/// # Returns
+///
+/// `true` for such a kind.
+pub(crate) fn holds_address(kind: DataKind) -> bool
+{
+    ret_if!(let Some(list) = kind.as_list(), holds_address(list.cell));
+    ret_if!(let Some(s) = kind.as_struct(), s.fields().iter().any(|(_, k)| holds_address(*k)));
+    kind.is_ptr() && !kind.is_raw_ptr()
 }
 
 #[cfg(test)]

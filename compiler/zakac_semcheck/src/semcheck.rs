@@ -28,6 +28,7 @@ use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
 use zakac_ast::stmt::IfStmt;
 use zakac_ast::stmt::ImportStmt;
+use zakac_ast::stmt::LeaveStmt;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::Program;
@@ -46,7 +47,6 @@ use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_stmt;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
-use zakac_diagnostics::ownership as od;
 use zakac_diagnostics::resolve as rd;
 use zakac_lexer::token::Kw;
 use zakac_rust_sugars::do_for;
@@ -57,6 +57,8 @@ use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::captures::Captured;
+use crate::captures::write_captures;
 use crate::collect::collect_fns;
 use crate::consts::ConstVal;
 use crate::consts::CountTable;
@@ -76,12 +78,12 @@ use crate::ops::kw_label;
 use crate::overloads::Chosen;
 use crate::overloads::write_overloads;
 use crate::place::place_of;
-use crate::place::var_name;
 use crate::proof::Fact;
 use crate::proof::changed_in;
 use crate::proof::changed_in_stmt;
 use crate::proof::facts_when;
 use crate::proof::leaves_at_end;
+use crate::proof::returns_on_each_path;
 use crate::refs::KindDecls;
 use crate::refs::kind_refs;
 use crate::scope::Access;
@@ -97,8 +99,39 @@ use crate::units::start_rules;
 use crate::units::struct_homes;
 use crate::units::unit_names;
 
+/// The words of a heap statement in a report.
+const HEAP_WORK: &str = "a heap statement";
+
 /// The implicit result variable of a function with a result.
 pub const RESULT_NAME: &str = "ရလဒ်";
+
+/// What marked code alone can do with a handle a function got as a
+/// parameter: close it, since the caller, or C that called back, still
+/// holds it.
+const CLOSE_PARAM: &str = "closing a handle the function got as a parameter";
+
+/// The classifier each struct and enumeration of a program declares.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+///
+/// # Returns
+///
+/// The classifier of each that declares one, under its name.
+fn struct_classifiers(program: &Program) -> HashMap<String, String>
+{
+    let word = |name: &zakac_ast::expr::Ident, c: &Option<zakac_ast::expr::Ident>| {
+        c.as_ref().map(|c| (name.name.to_string(), c.name.to_string()))
+    };
+    let declared = program.stmts.iter().filter_map(|s| match s
+    {
+        Stmt::Struct(d) => word(&d.name, &d.classifier),
+        Stmt::Enum(d) => word(&d.name, &d.classifier),
+        _ => None,
+    });
+    declared.collect()
+}
 
 /// Options of the check.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
@@ -110,9 +143,9 @@ pub struct SemcheckOptions
     /// Report particle idiom warnings as errors.
     #[builder(default)]
     pub strict_particles: bool,
-    /// Refuse each kind with a raw address level.
+    /// Refuse each function and block marked `စိတ်မချရသော`.
     #[builder(default)]
-    pub no_raw: bool,
+    pub no_unsafe: bool,
     /// Check the file as a module that another file imports, as an editor
     /// does for an open module: it needs no start block.
     #[builder(default)]
@@ -180,7 +213,7 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
     let mut refs = RefTable::new();
     loop
     {
-        let (mut out, counts, found, found_enums, chosen) =
+        let (mut out, counts, found, found_enums, chosen, captured) =
             check_once(program, options, known.clone(), &enums);
         refs.extend(std::mem::take(&mut out.refs));
         let written = write_counts(program, &counts);
@@ -193,6 +226,7 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
                 .extend(counts.into_values().filter_map(Result::err).flatten());
             out.diagnostics.sort_by_key(|d| d.span.lo);
             write_overloads(program, &chosen);
+            write_captures(program, &captured);
             refs.sort_by_key(|(at, decl)| (at.lo, at.hi, decl.lo, decl.hi));
             refs.dedup();
             return SemcheckOutput { refs, ..out };
@@ -218,7 +252,7 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
 fn check_once(
     program: &Program, options: &SemcheckOptions, known: KnownConsts,
     known_enums: &KnownEnums,
-) -> (SemcheckOutput, CountTable, KnownConsts, KnownEnums, Chosen)
+) -> (SemcheckOutput, CountTable, KnownConsts, KnownEnums, Chosen, Captured)
 {
     let mut diags = Vec::new();
     let enums = collect_enums(program, known_enums, &mut diags);
@@ -232,8 +266,10 @@ fn check_once(
     #[rustfmt::skip]
     let mut checker = Checker::builder().fns(unit_fns[0].clone()).unit_fns(unit_fns)
         .homes(homes).unit_names(unit_names(program)).structs(structs)
-        .diags(diags).platform(options.platform_bits).no_raw(options.no_raw)
-        .known(known).open_structs(open_structs(program)).decls(decls).build();
+        .diags(diags).platform(options.platform_bits).no_unsafe(options.no_unsafe)
+        .as_module(options.as_module)
+        .known(known).open_structs(open_structs(program)).decls(decls)
+        .classifiers(struct_classifiers(program)).build();
     checker.scopes.push();
     checker.visit_program(program);
     let own = checker.decls.own();
@@ -244,7 +280,8 @@ fn check_once(
     checker.refs.dedup();
     #[rustfmt::skip]
     let out = SemcheckOutput::builder().kinds(checker.kinds).structs(checker.structs).diagnostics(checker.diags).refs(checker.refs).build();
-    (out, checker.counts, checker.found, checker.found_enums, checker.chosen)
+    let captured = std::mem::take(&mut checker.captured);
+    (out, checker.counts, checker.found, checker.found_enums, checker.chosen, captured)
 }
 
 /// The function whose block is being checked.
@@ -257,6 +294,10 @@ pub(crate) struct FnCtx
     pub ret: Option<DataKind>,
     /// The result kind it gives back when it can fail.
     pub fault: Option<DataKind>,
+    /// The parameters that hold a handle, or an optional of one: the
+    /// function did not make them, so safe code cannot close them.
+    #[builder(default)]
+    pub handles: Vec<Name>,
 }
 
 /// State of the walk.
@@ -266,12 +307,19 @@ pub(crate) struct Checker
     /// Names in scope.
     #[builder(default)]
     pub scopes: Scopes,
+    /// The classifier each struct declares; a struct with none counts with
+    /// `ခု`.
+    #[builder(default)]
+    pub classifiers: HashMap<String, String>,
     /// The functions the current file declares or imports.
     pub fns: FnSigs,
     /// The function each call of an overloaded name chose, under the span
     /// of its name at the call.
     #[builder(default)]
     pub chosen: Chosen,
+    /// The locals and closures each nested function uses from around it.
+    #[builder(default)]
+    pub captured: Captured,
     /// Each resolved name with its declaration.
     #[builder(default)]
     pub refs: RefTable,
@@ -314,19 +362,27 @@ pub(crate) struct Checker
     /// them started, so what was proven about them before ends.
     #[builder(default)]
     pub touched: HashSet<Name>,
+    /// The switches over an enumeration that name each member, so no path
+    /// runs past them with no arm.
+    #[builder(default)]
+    pub full_switches: HashSet<Span>,
     /// Bit count of the platform-sized integer kinds.
     pub platform: u16,
     /// The parameter and result kinds of each C function name declared so
     /// far, in each file.
     #[builder(default)]
     pub c_names: HashMap<String, (Vec<DataKind>, Option<DataKind>)>,
-    /// Whether kinds with a raw address level are refused.
+    /// Whether marked code is refused.
     #[builder(default)]
-    pub no_raw: bool,
-    /// Whether the value checked now is the value of a declaration, where a
-    /// counted list takes `[]`.
+    pub no_unsafe: bool,
+    /// Whether the statements checked now are marked code: a function marked
+    /// `စိတ်မချရသော`, a block marked `စိတ်မချရသော်လည်း`, or a function inside
+    /// either.
     #[builder(default)]
-    pub decl_value: bool,
+    pub unchecked: bool,
+    /// Whether the program is checked as a module, with no start block.
+    #[builder(default)]
+    pub as_module: bool,
     /// Each list count written as an expression that this run met.
     #[builder(default)]
     pub counts: CountTable,
@@ -460,40 +516,7 @@ impl Checker
     pub fn expect_fit(&mut self, e: &Expr, found: DataKind, want: DataKind)
     {
         ret_if!(found.widens_to(want, self.platform));
-        ret_if!(self.report_flavour(e, found, want));
         self.report(mismatch_report(e.span(), want, found));
-    }
-
-    /// Report a value whose kind differs from the wanted one in its flavour
-    /// alone: a borrow given for an owner, or an owner given for a borrow.
-    /// A raw address never matches a checked one here; that mismatch is left
-    /// to the caller. The shapes are compared as [`DataKind::meets_pointer`]
-    /// does, so a borrow of a block of addresses given for an owner `ptr` is
-    /// named as a flavour mistake, not as a block read as other data.
-    ///
-    /// # Arguments
-    ///
-    /// * `e` - The value.
-    /// * `found` - Its kind.
-    /// * `want` - The kind its place expects.
-    ///
-    /// # Returns
-    ///
-    /// `true` when a flavour diagnostic was reported.
-    pub fn report_flavour(&mut self, e: &Expr, found: DataKind, want: DataKind)
-    -> bool
-    {
-        let fits = |k: DataKind| k.meets_pointer(want);
-        let borrow_for_owner = found.is_borrow() && want.is_owner_ptr();
-        ret_if!(
-            borrow_for_owner && fits(found.as_owner()),
-            self.report(od::borrow_for_owner(e.span())),
-            true
-        );
-        let owner_for_borrow = found.is_owner_ptr() && want.is_borrow();
-        ret_if!(!owner_for_borrow || !fits(found.as_borrowed()), false);
-        self.report(od::owner_for_borrow(e.span(), var_name(e)));
-        true
     }
 
     /// Infer a condition and report one that is not a boolean.
@@ -575,7 +598,7 @@ impl Checker
     /// * `callee` - The function name, or the first name of the place.
     /// * `place` - The place that holds the function value, when written.
     /// * `args` - The arguments.
-    /// * `edits` - Whether the edit mark follows each argument.
+    /// * `marks` - The word after each argument of a marked call.
     /// * `span` - The call.
     ///
     /// # Returns
@@ -583,7 +606,7 @@ impl Checker
     /// The result kind of the function (`Some(None)` when it has none), or
     /// `None` when the call names no function it can run.
     pub fn check_call(
-        &mut self, callee: &Ident, place: Option<&Expr>, args: &[Expr], edits: &[bool],
+        &mut self, callee: &Ident, place: Option<&Expr>, args: &[Expr],
         marks: &[Ident], span: Span,
     ) -> Option<Option<DataKind>>
     {
@@ -600,21 +623,26 @@ impl Checker
             return None;
         };
         self.refer(&callee.name, callee.span, sig.decl);
+        let call =
+            format!("a call of \"{}\", a function marked \"စိတ်မချရသော\",", callee.name);
+        do_if!(sig.unchecked, self.need_unchecked(span, &call));
         let (want, got) = (sig.params.len(), args.len());
         let bad_count = rd::arg_count_mismatch(span, &callee.name, want, got);
         let ret = Some(sig.ret);
         let wrong = tern!(sig.variadic, got < want, got != want);
         ret_if!(wrong, self.report(bad_count), self.infer_all(args), ret);
         do_for!(arg in &args[want..], self.check_rest_arg(arg));
-        // C keeps no locals alive for a function that borrows them.
-        do_if!(sig.external, do_for!(arg in args, self.check_no_closure_to_c(arg)));
-        let marked = |n: usize| edits.get(n).copied().unwrap_or(false);
         for (n, (arg, kind)) in args.iter().zip(&sig.params).enumerate()
         {
             let edit = sig.edits.get(n).copied().unwrap_or(false);
-            self.check_arg(arg, *kind, edit, marked(n));
+            self.check_arg(arg, *kind, edit);
+            let closes = sig.closes.get(n).copied().unwrap_or(false);
+            do_if!(
+                closes && self.is_handle_param(arg),
+                self.need_unchecked(arg.span(), CLOSE_PARAM)
+            );
         }
-        self.check_edits_apart(args, edits);
+        self.check_edits_apart(args, &sig.edits);
         self.check_marks(callee, marks, sig.marks.as_deref());
         ret
     }
@@ -658,9 +686,10 @@ impl Checker
     }
 
     /// Check a C function: its name is a C name (ZK0337), each parameter and
-    /// the result cross to C (ZK0465), no parameter carries the edit mark
-    /// (ZK0466), and each declaration of the name gives the same kinds
-    /// (ZK0338).
+    /// the result cross to C (ZK0465), no parameter but a list of numbers is
+    /// marked `ဒေတာ ပြောင်းလဲရန်` (ZK0466), a function that passes a pointer or
+    /// gives back text that can be NULL is marked `စိတ်မချရသော` (ZK0472), and
+    /// each declaration of the name gives the same kinds (ZK0338).
     ///
     /// # Arguments
     ///
@@ -680,17 +709,24 @@ impl Checker
         let stuck: Vec<_> =
             stuck.map(|(p, k)| kd::kind_not_across_c(p.span, &k.name())).collect();
         do_for!(d in stuck, self.report(d));
-        let edits = n.params.iter().filter(|p| p.edit);
+        let written = |k: &DataKind| foreign::edit_crosses(*k, platform);
+        let edits = n.params.iter().zip(&params).filter(|(p, k)| p.edit && !written(k));
+        let edits = edits.map(|(p, _)| p);
         let edits: Vec<_> =
             edits.map(|p| kd::edit_across_c(p.span, &p.name.name)).collect();
         do_for!(d in edits, self.report(d));
         let bad_ret = ret.filter(|k| !foreign::crosses_back(*k, platform));
-        let bad_ret = bad_ret.map(|k| match k.is_text()
-        {
-            true => kd::text_result_across_c(n.name.span),
-            false => kd::kind_not_across_c(n.name.span, &k.name()),
-        });
+        let bad_ret =
+            bad_ret.map(|k| match k.is_text() || foreign::is_failing_pointer(k)
+            {
+                true => kd::text_result_across_c(n.name.span, &k.name()),
+                false => kd::kind_not_across_c(n.name.span, &k.name()),
+            });
         do_if!(let Some(d) = bad_ret, self.report(d));
+        let pointer = params.iter().chain(&ret).any(|k| foreign::holds_ptr(*k));
+        // NULL from C is an optional the kind declares, so it needs no mark.
+        let mark = kd::foreign_needs_mark(n.name.span, &name);
+        do_if!(pointer && !n.unchecked, self.report(mark));
         let shape = (params, ret);
         let first = self.c_names.entry(name.clone()).or_insert_with(|| shape.clone());
         do_if!(*first != shape, self.report(rd::c_name_twice(n.name.span, &name)));
@@ -813,7 +849,9 @@ impl Checker
     )
     {
         let name = &callee.name;
-        let Some((_, found)) = ret.and_then(DataKind::fallible_parts)
+        // An optional holds no data or some; it is no failure to pass on.
+        let fails = ret.filter(|k| !k.is_optional());
+        let Some((_, found)) = fails.and_then(DataKind::fallible_parts)
         else
         {
             return do_if!(pass, self.report(kd::pass_without_failure(span, name)));
@@ -832,7 +870,7 @@ impl Checker
         do_if!(found != want, self.report(differs));
     }
 
-    /// Check `... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။` against the error kind of
+    /// Check `... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးမည်။` against the error kind of
     /// the function.
     ///
     /// # Arguments
@@ -853,7 +891,7 @@ impl Checker
             (Some(v), Some(err)) => self.expect_kind(v, Some(err)),
             (Some(v), None) =>
             {
-                self.report(kd::fault_value_extra(n.span, &func.name));
+                self.report(kd::fault_needs_result(v.span()));
                 self.infer(v, None);
             }
             (None, Some(err)) =>
@@ -864,24 +902,169 @@ impl Checker
         }
     }
 
+    /// The variables statements can change, at each depth.
+    ///
+    /// # Arguments
+    ///
+    /// * `stmts` - The statements.
+    ///
+    /// # Returns
+    ///
+    /// The names.
+    fn changed(&self, stmts: &[Stmt]) -> HashSet<Name>
+    {
+        changed_in(stmts, &|name| self.scopes.lookup_fn(name).map(|s| s.edits))
+    }
+
+    /// The variables a statement can change on its own.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// The names.
+    fn changed_stmt(&self, s: &Stmt) -> HashSet<Name>
+    {
+        changed_in_stmt(s, &|name| self.scopes.lookup_fn(name).map(|s| s.edits))
+    }
+
+    /// Check the marks `အပိုင်အနေဖြင့်` of a function: each on a parameter or
+    /// a result that is a pointer (ZK0470), and on a C result, a pointer or
+    /// text the program takes over (ZK0467).
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The declaration.
+    /// * `given` - Its result kind.
+    fn check_owned(&mut self, n: &FnDecl, given: Option<DataKind>)
+    {
+        let kind = |p: &Param| DataKind::from_ast(&p.kind, &self.structs);
+        // A C function can take a handle over, which closes it.
+        let held =
+            |k: DataKind| k.is_ptr() || (n.lib.is_some() && k.as_external().is_some());
+        let bad: Vec<_> =
+            n.params.iter().filter(|p| p.owned && !held(kind(p))).collect();
+        let bad: Vec<_> =
+            bad.iter().map(|p| kd::owned_not_ptr(p.span, &kind(p).name())).collect();
+        do_for!(d in bad, self.report(d));
+        ret_if!(!n.owned_ret);
+        let ptr = given.is_some_and(DataKind::is_ptr);
+        let text = given.is_some_and(foreign::is_c_text_result);
+        ret_if!(ptr || (n.lib.is_some() && text));
+        let name = given.map_or_else(String::new, |k| k.name());
+        let diag = tern!(
+            n.lib.is_some(),
+            kd::owned_not_c_text(n.name.span, &n.name.name),
+            kd::owned_not_ptr(n.name.span, &name)
+        );
+        self.report(diag);
+    }
+
+    /// Check a write of a field of the struct C keeps behind a handle:
+    /// marked code can write a number, a boolean or a counted list; text and
+    /// a handle are pointers C owns, and safe code writes no field.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The field.
+    /// * `value` - The value written.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the base is a handle, so the write is checked here.
+    fn c_field_write(&mut self, f: &zakac_ast::expr::FieldExpr, value: &Expr) -> bool
+    {
+        let base = self.infer(&f.base, None);
+        let Some(shape) = base.and_then(DataKind::as_external)
+        else
+        {
+            return false;
+        };
+        let field = shape.c_field(&f.field.name, self.platform).map(|(k, _)| k);
+        let Some(kind) = field
+        else
+        {
+            self.report(rd::unknown_field(f.field.span, &shape.name, &f.field.name));
+            return true;
+        };
+        let pointer = kind.is_text() || kind.as_external().is_some();
+        ret_if!(
+            !self.unchecked || pointer,
+            self.report(kd::c_field_write(f.span, &shape.name)),
+            true
+        );
+        self.expect_kind(value, Some(kind));
+        true
+    }
+
+    /// Whether a parameter holds a handle, or an optional of one.
+    ///
+    /// # Arguments
+    ///
+    /// * `p` - The parameter.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn holds_handle(&self, p: &Param) -> bool
+    {
+        let kind = DataKind::from_ast(&p.kind, &self.structs);
+        kind.as_external().is_some() || foreign::is_c_handle_result(kind)
+    }
+
+    /// Whether an argument is a handle parameter of the function around it,
+    /// as it is or read out of its optional with `ထဲမှ ဒေတာ`.
+    ///
+    /// # Arguments
+    ///
+    /// * `arg` - The argument.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a parameter.
+    fn is_handle_param(&self, arg: &Expr) -> bool
+    {
+        let name = match arg
+        {
+            Expr::Name(n) => Some(n.name),
+            Expr::Group(g) => return self.is_handle_param(&g.inner),
+            Expr::Verb(v) if v.op == VerbOp::Unwrap => match v.args.as_slice()
+            {
+                [Expr::Name(n)] => Some(n.name),
+                _ => None,
+            },
+            _ => None,
+        };
+        let handles =
+            self.func.as_ref().map(|f| f.handles.as_slice()).unwrap_or_default();
+        name.is_some_and(|n| handles.contains(&n))
+    }
+
+    /// Report an operation that works with pointers outside marked code.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The operation.
+    /// * `what` - The words of the operation, as text.
+    pub(crate) fn need_unchecked(&mut self, span: Span, what: &str)
+    {
+        do_if!(!self.unchecked, self.report(kd::unsafe_outside(span, what)));
+    }
+
     /// Check one argument against its parameter: a value that converts to
     /// the parameter kind, or for a parameter the function can change, a
-    /// writable place of that kind alone, with the mark on both ends.
+    /// writable place of that kind alone.
     ///
     /// # Arguments
     ///
     /// * `arg` - The argument.
     /// * `kind` - The parameter kind.
     /// * `edit` - Whether the function can change the parameter.
-    /// * `mark` - Whether the edit mark follows the argument.
-    fn check_arg(&mut self, arg: &Expr, kind: DataKind, edit: bool, mark: bool)
+    fn check_arg(&mut self, arg: &Expr, kind: DataKind, edit: bool)
     {
-        do_if!(edit && !mark, self.report(kd::edit_mark_missing(arg.span())));
-        do_if!(!edit && mark, self.report(kd::edit_mark_extra(arg.span())));
-        if !(edit && mark)
-        {
-            return self.expect_kind(arg, Some(kind));
-        }
+        ret_if!(!edit, self.expect_kind(arg, Some(kind)));
         let Some(found) = self.place_kind(arg)
         else
         {
@@ -897,7 +1080,7 @@ impl Checker
     /// # Arguments
     ///
     /// * `args` - The arguments.
-    /// * `edits` - Whether the edit mark follows each argument.
+    /// * `edits` - Whether the function can change each parameter.
     fn check_edits_apart(&mut self, args: &[Expr], edits: &[bool])
     {
         let marked = args.iter().zip(edits).filter(|(_, m)| **m).map(|(a, _)| a);
@@ -935,8 +1118,8 @@ impl Checker
     }
 
     /// The kind of the variable of an each loop: a character for text, a
-    /// cell for a list or a slice whose cells hold no owner pointer, or for
-    /// the list a pointer points at, as a cell read takes it.
+    /// cell for a list, or for the list a pointer points at, as a cell read
+    /// takes it.
     ///
     /// # Arguments
     ///
@@ -949,11 +1132,7 @@ impl Checker
     fn each_var_kind(&mut self, kind: DataKind, n: &EachStmt) -> Option<DataKind>
     {
         let cell = each_list(kind, n.chars).cell_kind();
-        let walked = tern!(
-            n.chars,
-            kind.is_textual().then_some(DataKind::Char),
-            cell.filter(|c| !kind.is_text_view() && !c.holds_owner_ptr())
-        );
+        let walked = tern!(n.chars, kind.is_text().then_some(DataKind::Char), cell);
         ret_if!(walked.is_some(), walked);
         self.report(kd::each_source_wrong(n.source.span(), &kind.name()));
         None
@@ -1020,9 +1199,18 @@ impl Checker
             return self.infer(target, None);
         }
         let kind = self.infer(target, None);
+        // C owns the fields of a struct a handle points at.
+        let base =
+            tern!(let Expr::Field(f) = place, self.kinds.get(&f.base.id()), None);
+        let handle = base.copied().and_then(DataKind::as_external);
+        ret_if!(
+            let Some(s) = handle,
+            self.report(kd::c_field_write(target.span(), &s.name)),
+            None
+        );
         let text =
             tern!(let Expr::Index(cell) = place, self.kinds.get(&cell.list.id()), None);
-        let text = text.copied().filter(|k| k.is_textual());
+        let text = text.copied().filter(|k| k.is_text());
         ret_if!(
             let Some(k) = text,
             self.report(kd::text_cell_write(target.span(), &k.name())),
@@ -1061,30 +1249,26 @@ impl Checker
         cell
     }
 
-    /// Check an add to text: the text can change, and the value is text, a
-    /// view of text or a character.
+    /// Check what an add puts in text: text or a character.
     ///
     /// # Arguments
     ///
-    /// * `text` - The text that grows, a place.
-    /// * `kind` - Its kind.
     /// * `value` - What is added.
-    fn text_add(&mut self, text: &Expr, kind: DataKind, value: &Expr)
+    fn text_add(&mut self, value: &Expr)
     {
-        self.changeable_text(text, kind);
         let Some(found) = self.infer(value, None)
         else
         {
             return;
         };
-        ret_if!(found.is_textual() || found == DataKind::Char);
+        ret_if!(found.is_text() || found == DataKind::Char);
         self.report(mismatch_report(value.span(), DataKind::TEXT, found));
     }
 
     /// Check an add that puts its value in front of a cell of a plain list or
     /// a character of text: the list or the text is a place that can grow,
-    /// the number an integer, and the value fits a cell or is text, a view of
-    /// text or a character.
+    /// the number an integer, and the value fits a cell or is text or a
+    /// character.
     ///
     /// # Arguments
     ///
@@ -1096,13 +1280,9 @@ impl Checker
         {
             let kind = self.place_kind(text);
             self.cell_number(index);
-            let Some(kind) = kind.filter(|k| self.is_text_place(*k, text))
-            else
-            {
-                _ = self.infer(value, None);
-                return;
-            };
-            return self.text_add(text, kind, value);
+            let text = kind.is_some_and(|k| self.is_text_place(k, text));
+            ret_if!(!text, _ = self.infer(value, None));
+            return self.text_add(value);
         }
         let Expr::Index(cell) = at
         else
@@ -1125,11 +1305,11 @@ impl Checker
     /// * `kind` - Its kind.
     fn shrinking_text(&mut self, text: &Expr, kind: DataKind)
     {
-        do_if!(self.is_text_place(kind, text), self.changeable_text(text, kind));
+        _ = self.is_text_place(kind, text);
     }
 
-    /// Whether a place a character statement names is text or a view of it,
-    /// with a report for each other kind.
+    /// Whether a place a character statement names is text, with a report
+    /// for each other kind.
     ///
     /// # Arguments
     ///
@@ -1138,10 +1318,10 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// `true` for text or a view of text.
+    /// `true` for text.
     fn is_text_place(&mut self, kind: DataKind, text: &Expr) -> bool
     {
-        ret_true!(kind.is_textual());
+        ret_true!(kind.is_text());
         let label = kw_label(Kw::CharKind);
         _ = self.need(kind, Want::Text, &label, text);
         false
@@ -1172,24 +1352,7 @@ impl Checker
         let kind = self.place_kind(text);
         self.cell_number(index);
         self.expect_kind(value, Some(DataKind::Char));
-        let Some(kind) = kind
-        else
-        {
-            return;
-        };
-        do_if!(self.is_text_place(kind, text), self.changeable_text(text, kind));
-    }
-
-    /// Report a view of text that a statement would change.
-    ///
-    /// # Arguments
-    ///
-    /// * `text` - The text.
-    /// * `kind` - Its kind, textual.
-    fn changeable_text(&mut self, text: &Expr, kind: DataKind)
-    {
-        let view = kind.is_text_view();
-        do_if!(view, self.report(kd::text_cannot_change(text.span(), &kind.name())));
+        do_if!(let Some(kind) = kind, _ = self.is_text_place(kind, text));
     }
 
     /// Report a name that cannot be assigned: undeclared, a constant or a
@@ -1266,9 +1429,10 @@ impl Checker
         size.unit.as_ref().map(|unit| self.written_kind(unit, KindUse::Other))
     }
 
-    /// Report the cells of a blit or a fill that own a block or borrow one: the
-    /// unit kind of the size, or each kind the addresses point at for a
-    /// size in octets.
+    /// Report the cells of a blit or a fill that hold counted blocks (text,
+    /// plain lists, objects, function values), whose counts a raw duplicate
+    /// would not keep: the unit kind of the size, or each kind the addresses
+    /// point at for a size in octets. Pointer cells are plain addresses.
     ///
     /// # Arguments
     ///
@@ -1281,10 +1445,29 @@ impl Checker
     {
         let pointees = || addrs.iter().flatten().filter_map(|a| a.pointee()).collect();
         let cells: Vec<DataKind> = tern!(let Some(u) = unit, vec![u], pointees());
-        let held =
-            |k: &DataKind| k.holds_owner_ptr() || k.holds_text() || k.holds_borrow();
-        let owner = cells.into_iter().find(held);
+        let owner = cells.into_iter().find(|k| k.holds_text());
         do_if!(let Some(k) = owner, self.report(kd::blit_of_held_cells(size.span, &k.name())));
+    }
+
+    /// Check the statements of a loop block, and the update of a generic
+    /// loop after them: marked code when the block opens with
+    /// `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။`.
+    ///
+    /// # Arguments
+    ///
+    /// * `block` - The block of the loop.
+    /// * `update` - The update of a generic loop.
+    fn scan_loop_block(&mut self, block: &BlockStmt, update: Option<&Stmt>)
+    {
+        do_if!(
+            block.unchecked && self.no_unsafe,
+            self.report(kd::unsafe_refused(block.span))
+        );
+        let outer = self.unchecked;
+        self.unchecked |= block.unchecked;
+        self.visit_stmts(&block.stmts);
+        do_if!(let Some(update) = update, self.visit_stmt(update));
+        self.unchecked = outer;
     }
 
     /// Run `f` with one more loop around it.
@@ -1324,14 +1507,11 @@ fn non_positive_literal(e: &Expr) -> bool
 }
 
 /// The report of a value that does not fit its place. No conversion
-/// turns a borrow into an owner or back, so a mismatch of flavours gets
-/// no help. When the two kinds are owners or borrows whose blocks hold
-/// addresses in different places, the conversion verb cannot bridge them
-/// either, so the help names the raw address to go through. Each other
-/// mismatch names the conversion verb when it can turn the value into the
-/// wanted kind, and gets no help when it cannot, as for a list. A list or
-/// text where a slice or a view of the same cells is wanted gets help that
-/// names the lend.
+/// turns a pointer the compiler lends into one that owns its block, or
+/// back, so a mismatch of the two gets no help. Each other mismatch names
+/// the conversion verb when it can turn the value into the wanted kind, as
+/// for a pointer whose block holds addresses, which marked code converts
+/// with the verb; it gets no help when the verb cannot, as for a list.
 ///
 /// # Arguments
 ///
@@ -1350,44 +1530,11 @@ pub(crate) fn mismatch_report(span: Span, want: DataKind, found: DataKind)
     let flavours = flavours && want.is_borrow() != found.is_borrow();
     let unbridged = kd::kind_mismatch_unbridged(span, &want_name, &found_name);
     ret_if!(flavours, unbridged);
-    ret_if!(lends_to(found, want), kd::lend_wanted(span, &want_name, &found_name));
-    // Two lists of different forms differ in their count, not in the
-    // addresses their blocks hold.
-    let lists = [want, found]
-        .iter()
-        .all(|k| k.pointee().and_then(DataKind::cell_kind).is_some());
-    ret_if!(
-        found.reads_addresses_as(want) && !lists,
-        kd::address_block_mismatch(
-            span,
-            &want_name,
-            &found_name,
-            &want.with_outer_raw().name()
-        )
-    );
     tern!(
         found.cast_allowed(want),
         kd::kind_mismatch(span, &want_name, &found_name),
         unbridged
     )
-}
-
-/// Whether a lend of a value of one kind gives a value of another: a list
-/// lends a slice of its cells, and text a view.
-///
-/// # Arguments
-///
-/// * `found` - The kind of the value.
-/// * `want` - The kind wanted.
-///
-/// # Returns
-///
-/// `true` when the lend gives `want`.
-fn lends_to(found: DataKind, want: DataKind) -> bool
-{
-    ret_if!(found.is_text(), want.is_text_view());
-    let cell = want.as_slice().filter(|s| !s.text).map(|s| s.cell);
-    cell.is_some() && found.cell_kind() == cell && !found.is_slice()
 }
 
 /// The diagnostic for assigning to a name that does not allow it.
@@ -1475,27 +1622,45 @@ impl Visitor for Checker
     fn visit_assign(&mut self, n: &AssignStmt)
     {
         ret_if!(let Some((text, index)) = char_target(&n.target), self.char_write(text, index, &n.value));
+        ret_if!(let Expr::Field(f) = &n.target && self.c_field_write(f, &n.value));
         let want = self.place_kind(&n.target);
         self.expect_kind(&n.value, want);
-        self.check_closure_set(&n.target, &n.value);
     }
 
     fn visit_alloc(&mut self, n: &AllocStmt)
     {
+        self.need_unchecked(n.span, HEAP_WORK);
         self.heap_size(&n.size);
         self.heap_target(&n.target);
     }
 
     fn visit_resize(&mut self, n: &ResizeStmt)
     {
+        self.need_unchecked(n.span, HEAP_WORK);
         self.heap_target(&n.target);
         self.heap_size(&n.size);
     }
 
-    fn visit_free(&mut self, n: &FreeStmt) { self.heap_target(&n.target) }
+    fn visit_free(&mut self, n: &FreeStmt)
+    {
+        self.need_unchecked(n.span, HEAP_WORK);
+        self.heap_target(&n.target);
+    }
+
+    fn visit_leave(&mut self, n: &LeaveStmt)
+    {
+        let kind = self.infer(&n.value, None);
+        let Some(kind) = kind.filter(|k| !k.is_fn())
+        else
+        {
+            return;
+        };
+        self.report(kd::leave_needs_function(n.value.span(), &kind.name()));
+    }
 
     fn visit_blit(&mut self, n: &BlitStmt)
     {
+        self.need_unchecked(n.span, HEAP_WORK);
         let src = self.heap_address(&n.src);
         let unit = self.heap_size(&n.size);
         let dst = self.heap_address(&n.dst);
@@ -1504,6 +1669,7 @@ impl Visitor for Checker
 
     fn visit_fill(&mut self, n: &FillStmt)
     {
+        self.need_unchecked(n.span, HEAP_WORK);
         let dst = self.heap_address(&n.dst);
         let unit = self.heap_size(&n.size);
         self.expect_kind(&n.value, Some(unit.unwrap_or(DataKind::U8)));
@@ -1512,13 +1678,11 @@ impl Visitor for Checker
 
     fn visit_add(&mut self, n: &AddStmt)
     {
-        do_if!(n.before, self.check_no_closure(&n.value));
         ret_if!(n.before, self.insert(&n.list, &n.value));
         let kind = self.place_kind(&n.list);
-        ret_if!(let Some(k) = kind.filter(|k| k.is_textual()), self.text_add(&n.list, k, &n.value));
+        ret_if!(kind.is_some_and(|k| k.is_text()), self.text_add(&n.value));
         let cell = kind.and_then(|k| self.growing_cells(&n.list, k));
         self.expect_kind(&n.value, cell);
-        self.check_no_closure(&n.value);
     }
 
     fn visit_remove(&mut self, n: &RemoveStmt)
@@ -1533,28 +1697,36 @@ impl Visitor for Checker
         let kind = self.place_kind(&n.text);
         self.cell_number(&n.start);
         self.cell_number(&n.end);
-        let Some(kind) = kind.filter(|k| self.is_text_place(*k, &n.text))
-        else
-        {
-            _ = self.infer(&n.value, None);
-            return;
-        };
-        self.text_add(&n.text, kind, &n.value);
+        let text = kind.is_some_and(|k| self.is_text_place(k, &n.text));
+        ret_if!(!text, _ = self.infer(&n.value, None));
+        self.text_add(&n.value);
     }
 
-    fn visit_print(&mut self, n: &PrintStmt) { _ = self.infer(&n.value, None); }
+    fn visit_print(&mut self, n: &PrintStmt)
+    {
+        let kind = self.infer(&n.value, None);
+        // An optional of a handle prints its handle when it holds one.
+        let good = kind.and_then(|k| k.fallible_parts()).and_then(|(ok, _)| ok);
+        let handle = kind.or(good).and_then(DataKind::as_external);
+        let handle = handle.or_else(|| good.and_then(DataKind::as_external));
+        do_if!(let Some(s) = handle, self.report(kd::handle_in_zaka(n.value.span(), &s.name, kd::HandleUse::Print)));
+    }
 
     fn visit_block(&mut self, n: &BlockStmt)
     {
+        do_if!(n.unchecked && self.no_unsafe, self.report(kd::unsafe_refused(n.span)));
+        let outer = self.unchecked;
+        self.unchecked |= n.unchecked;
         self.scopes.push();
         self.visit_stmts(&n.stmts);
         self.scopes.pop();
+        self.unchecked = outer;
     }
 
     fn visit_stmt(&mut self, n: &Stmt)
     {
         walk_stmt(self, n);
-        self.forget(changed_in_stmt(n));
+        self.forget(self.changed_stmt(n));
     }
 
     fn visit_if(&mut self, n: &IfStmt)
@@ -1620,7 +1792,7 @@ impl Visitor for Checker
 
     fn visit_while(&mut self, n: &WhileStmt)
     {
-        let changed = changed_in(&n.block.stmts);
+        let changed = self.changed(&n.block.stmts);
         self.forget(changed.clone());
         self.expect_bool(&n.cond);
         self.proven_loop(changed, Some(&n.cond), |c| {
@@ -1633,9 +1805,9 @@ impl Visitor for Checker
         let kind = self.counted_kind(n);
         self.scopes.push();
         self.declare(&n.var, kind, Access::LoopVar);
-        let changed = changed_in(&n.block.stmts);
+        let changed = self.changed(&n.block.stmts);
         self.proven_loop(changed, None, |c| {
-            c.in_loop(|c| c.visit_stmts(&n.block.stmts))
+            c.in_loop(|c| c.scan_loop_block(&n.block, None))
         });
         self.scopes.pop();
     }
@@ -1645,9 +1817,9 @@ impl Visitor for Checker
         let kind = self.infer(&n.source, None).and_then(|k| self.each_var_kind(k, n));
         self.scopes.push();
         self.declare(&n.var, kind, Access::Var);
-        let changed = changed_in(&n.block.stmts);
+        let changed = self.changed(&n.block.stmts);
         self.proven_loop(changed, None, |c| {
-            c.in_loop(|c| c.visit_stmts(&n.block.stmts))
+            c.in_loop(|c| c.scan_loop_block(&n.block, None))
         });
         self.scopes.pop();
     }
@@ -1657,16 +1829,15 @@ impl Visitor for Checker
         let kind = self.decl_kind(n.kind.as_ref(), n.init.as_ref(), &n.var);
         self.scopes.push();
         self.declare(&n.var, kind, Access::Var);
-        let mut changed = changed_in(&n.block.stmts);
-        changed.extend(n.update.as_deref().map(changed_in_stmt).unwrap_or_default());
+        let mut changed = self.changed(&n.block.stmts);
+        changed.extend(
+            n.update.as_deref().map(|s| self.changed_stmt(s)).unwrap_or_default(),
+        );
         changed.insert(n.var.name);
         self.forget(changed.clone());
         self.expect_bool(&n.cond);
         self.proven_loop(changed, Some(&n.cond), |c| {
-            c.in_loop(|c| {
-                c.visit_stmts(&n.block.stmts);
-                do_if!(let Some(update) = &n.update, c.visit_stmt(update));
-            })
+            c.in_loop(|c| c.scan_loop_block(&n.block, n.update.as_deref()))
         });
         self.scopes.pop();
     }
@@ -1684,45 +1855,51 @@ impl Visitor for Checker
     fn visit_fn(&mut self, n: &FnDecl)
     {
         do_if!(!n.start, self.refer(&n.name.name, n.name.span, n.name.span));
-        // A function inside a function borrows the locals around it, and
-        // the walk of the outer one goes on after it.
+        // A function inside a function shares the locals around it that it
+        // names, and the walk of the outer one goes on after it.
         let nested = self.func.is_some();
-        let borrows = tern!(nested, self.check_capture_list(n), false);
-        do_if!(nested, self.declare_nested(n, borrows));
-        let outside = n.captures.iter().filter(|_| !nested);
-        let outside: Vec<_> = outside
-            .map(|c| rd::capture_not_local(c.name.span, &n.name.name, &c.name.name))
-            .collect();
-        do_for!(d in outside, self.report(d));
+        do_if!(n.unchecked && self.no_unsafe, self.report(kd::unsafe_refused(n.span)));
+        // A function inside marked code is marked code too.
+        let outer_unchecked = self.unchecked;
+        self.unchecked = n.unchecked || (nested && outer_unchecked);
+        do_if!(nested, self.declare_nested(n));
         let outer = self.func.take();
         let depth = std::mem::take(&mut self.loop_depth);
         let proven = std::mem::take(&mut self.proven);
         let touched = std::mem::take(&mut self.touched);
         let given = n.ret.as_ref().map(|k| self.written_kind(k, KindUse::Result));
-        // A function that can fail keeps its good result in `ရလဒ်`. The start
-        // block gives back an exit code, never a result: ZK0441 reports a
-        // result kind on it, and its statements check as ones that cannot fail.
-        let parts = given.and_then(DataKind::fallible_parts).filter(|_| !n.start);
+        // A function that can fail gives back its good result or its error
+        // value; an optional is a plain result. The start block gives back an
+        // exit code, never a result: ZK0441 reports a result kind on it, and
+        // its statements check as ones that cannot fail.
+        let fails = given.filter(|k| !k.is_optional() && !n.start);
+        let parts = fails.and_then(DataKind::fallible_parts);
         let (ret, fault) = parts.map_or((given, None), |(ok, _)| (ok, given));
         #[rustfmt::skip]
-        let ctx = FnCtx::builder().name(n.name.name.to_string()).maybe_ret(ret).maybe_fault(fault)
+        let handles = n.params.iter().filter(|p| self.holds_handle(p)).map(|p| p.name.name);
+        let handles = handles.collect();
+        let ctx = FnCtx::builder()
+            .name(n.name.name.to_string())
+            .maybe_ret(ret)
+            .maybe_fault(fault)
+            .handles(handles)
             .build();
         self.func = Some(ctx);
         self.scopes.enter_fn();
         do_for!(p in &n.params, self.declare_param(p));
         do_if!(n.start, self.check_start_header(n, ret));
         do_if!(n.external, self.check_external(n, given));
-        let handed = n.lib.is_some() && given.is_some_and(foreign::is_c_text_result);
-        do_if!(
-            n.owned_ret && !handed,
-            self.report(kd::owned_not_c_text(n.name.span, &n.name.name))
-        );
-        let result = Ident::builder().name(RESULT_NAME).span(n.name.span).build();
-        do_if!(ret.is_some(), let _ = self.declare_quiet(&result, ret, Access::Var));
+        self.check_owned(n, given);
         self.visit_stmts(&n.block.stmts);
+        let open_end = ret.is_some() && !n.start && !n.external;
+        do_if!(
+            open_end && !returns_on_each_path(&n.block.stmts, &self.full_switches),
+            self.report(rd::end_without_return(n.block.span, &n.name.name))
+        );
         let used = self.scopes.leave_fn();
-        do_if!(nested, self.check_captures_used(n, &used));
+        do_if!(nested, self.note_captures(n, &used));
         self.func = outer;
+        self.unchecked = outer_unchecked;
         self.loop_depth = depth;
         (self.proven, self.touched) =
             tern!(nested, (proven, touched), Default::default());
@@ -1738,14 +1915,12 @@ impl Visitor for Checker
             return;
         };
         ret_if!(n.fault, self.check_fault_return(n, &func));
-        // A function that can fail gives back its good result with
-        // `ရလဒ်ကောင်းအဖြစ်`, and a plain one with `ရလဒ်အဖြစ်`.
-        let fails = func.fault.is_some();
-        let wrong = n.value.is_some() && n.good != fails;
-        do_if!(wrong, self.report(kd::good_return_word(n.span, &func.name, fails)));
+        // A function that can fail takes its good result as it is, or a
+        // whole result such as `<e> ဟူသော အမှားအယွင်း`.
+        let whole = func.fault;
         match (func.ret, &n.value)
         {
-            (None, Some(v)) =>
+            (None, Some(v)) if whole.is_none() =>
             {
                 self.report(rd::value_returned_from_void(n.span, &func.name));
                 self.infer(v, None);
@@ -1754,10 +1929,9 @@ impl Visitor for Checker
             {
                 self.report(rd::missing_return_value(n.span, &func.name, &k.name()))
             }
-            (Some(k), Some(v)) =>
+            (ret, Some(v)) =>
             {
-                self.expect_kind(v, Some(k));
-                self.check_no_closure(v);
+                self.expect_kind(v, whole.or(ret));
             }
             (None, None) => (),
         }
@@ -1766,8 +1940,7 @@ impl Visitor for Checker
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
         let place = n.place.as_deref();
-        let ret =
-            self.check_call(&n.callee, place, &n.args, &n.edits, &n.marks, n.span);
+        let ret = self.check_call(&n.callee, place, &n.args, &n.marks, n.span);
         do_if!(let Some(ret) = ret, self.check_pass(&n.callee, ret, n.pass, true, n.span));
     }
 

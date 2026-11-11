@@ -14,7 +14,7 @@ VM stops the program with the range the list allows:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-အမှတ်များ ၏ အကွက် န ကို ပြသပါ။            // cells 0, 1 and 2 hold values; 3 does not exist
+အမှတ်များ ၏ အကွက် န ကို ပြသမည်။            // cells 0, 1 and 2 hold values; 3 does not exist
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -28,7 +28,7 @@ for a number written in place. Counting from 1 starts at 1, not 0:
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-အမှတ်များ ၏ ၀ ခုမြောက်အကွက် ကို ပြသပါ။     // counting from 1 starts at 1
+အမှတ်များ ၏ ၀ ခုမြောက်အကွက် ကို ပြသမည်။     // counting from 1 starts at 1
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -44,7 +44,7 @@ The cell number takes the whole operator expression after `အကွက်`, so 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၊ ၂၀၊ ၃၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ကိန်းများ ၏ အကွက် ၁ + ၂ ကို ပြသပါ။         // cell 3, not cell 1 plus 2
+ကိန်းများ ၏ အကွက် ၁ + ၂ ကို ပြသမည်။         // cell 3, not cell 1 plus 2
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -56,11 +56,11 @@ Write `(ကိန်းများ ၏ အကွက် ၁) + ၂` to add 2 to 
 
 ## A blank list with no kind
 
-`စာရင်းအလွတ်` takes its kind from where it stands. Standing alone, it has none:
+`စာရင်းအလွတ်` ("blank list") takes its kind from where it stands. Standing alone, it has none:
 
 ```zaka-error ZK0420
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-စာရင်းအလွတ် ကို ပြသပါ။
+စာရင်းအလွတ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -73,7 +73,7 @@ error[ZK0420]: a blank list needs a list kind from its place
 ```zaka-error ZK0422
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀ ဖြစ်ပါစေ။
-အမှတ် ၏ အကွက် ၀ ကို ပြသပါ။
+အမှတ် ၏ အကွက် ၀ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -89,15 +89,15 @@ the last character, `နောက်ဆုံးစာလုံး`:
 ```zaka-error ZK0437
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
-စာ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
+စာ ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0437]: text cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, "နောက်ဆုံးအကွက်ကို ဖျက်ပါ" a plain list, and "နောက်ဆုံးစာလုံးကို ဖျက်ပါ" text
+error[ZK0437]: text cannot grow or shrink here: "ထည့်မည်" takes a plain list or text, "နောက်ဆုံးအကွက်ကို ဖျက်မည်" a plain list, and "နောက်ဆုံးစာလုံးကို ဖျက်မည်" text
 ```
 
-The fix is `စာ ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။` (see [Adding in the middle and removing the
+The fix is `စာ ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။` (see [Adding in the middle and removing the
 end](../text/changing.md#adding-in-the-middle-and-removing-the-end)).
 
 The counted lists of Part II neither grow nor shrink: see [Static data and counted
@@ -111,8 +111,8 @@ program runs, so the VM is the one to stop it:
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
-ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။
-ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။      // no cell is left to remove
+ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။
+ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။      // no cell is left to remove
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

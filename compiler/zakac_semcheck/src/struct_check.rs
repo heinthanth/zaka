@@ -4,23 +4,27 @@ use std::collections::BTreeSet;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::Wrap;
+use zakac_ast::name::Name;
+use zakac_ast::stmt::Param;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StructDecl;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
-use zakac_diagnostics::ownership as od;
 use zakac_diagnostics::resolve as rd;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::buildable::report_unbuildable;
 use crate::fn_kind::FnText;
 use crate::fn_kind::join_fn;
+use crate::foreign;
 use crate::kind::DataKind;
 use crate::kind::FALLIBLE;
 use crate::kind::split_marks;
+use crate::structs::EXTERN_FIELD;
 use crate::structs::StructDefs;
 use crate::structs::StructTable;
 use crate::structs::make_all;
@@ -52,18 +56,68 @@ pub(crate) fn collect_structs(
         do_if!(!twice, _ = decls.insert(name, decl));
     }
     let names: BTreeSet<&str> = decls.keys().copied().collect();
+    let shared: BTreeSet<&str> =
+        decls.iter().filter(|(_, d)| d.shared).map(|(n, _)| *n).collect();
     let known: BTreeSet<&str> =
         names.iter().copied().chain(enums.keys().map(|n| n.as_str())).collect();
     do_for!(decl in decls.values(), check_fields(decl, &known, diags));
     do_for!(f in program.stmts.iter().filter_map(as_fn_name), report_clash(f, &names, diags));
-    let mut defs: StructDefs = decls
-        .iter()
-        .map(|(name, decl)| (name.to_string(), field_texts(decl, &names, enums)))
-        .collect();
+    // A kind from outside holds C's address alone; its written fields are C's.
+    let held = |decl: &StructDecl| match decl.external
+    {
+        true => vec![(EXTERN_FIELD.to_string(), DataKind::handle_pointer().sig_name())],
+        false => field_texts(decl, &names, &shared, enums),
+    };
+    let mut defs: StructDefs =
+        decls.iter().map(|(name, decl)| (name.to_string(), held(decl))).collect();
     break_loops(&decls, &mut defs, diags);
-    let table = make_all(&defs);
-    do_for!(decl in decls.values(), check_borrow_fields(decl, &table, diags));
+    report_unbuildable(&decls, diags);
+    let mut table = make_all(&defs);
+    // A shared struct names its object: the box of the struct, which copies
+    // share.
+    for name in &shared
+    {
+        let boxed = Name::new(name);
+        do_if!(let Some(k) = table.get(&boxed).copied(), _ = table.insert(boxed, DataKind::box_of(k)));
+    }
+    let external = decls.values().filter(|d| d.external);
+    do_for!(decl in external, set_c_fields(decl, &table, diags));
     table
+}
+
+/// Give the struct of a kind from outside its C fields: numbers, booleans,
+/// counted lists of numbers, which C holds in place, text, a `char *` that a
+/// read copies, and a handle of a kind from outside, a pointer to another
+/// struct C keeps.
+///
+/// # Arguments
+///
+/// * `decl` - The declaration.
+/// * `table` - The kind of each struct.
+/// * `diags` - Where a field of another kind is reported.
+fn set_c_fields(decl: &StructDecl, table: &StructTable, diags: &mut Vec<Diagnostic>)
+{
+    let Some(shape) = table.get(&decl.name.name).and_then(|k| k.as_external())
+    else
+    {
+        return;
+    };
+    let kind_of = |f: &Param| DataKind::from_ast(&f.kind, table);
+    let readable = |k: DataKind| {
+        let number = matches!(k, DataKind::Int(_) | DataKind::Float(_))
+            && foreign::crosses(k, 64);
+        let list = k.as_list().is_some() && foreign::number_cells(k, 64).is_some();
+        number
+            || list
+            || k == DataKind::Bool
+            || k.is_text()
+            || k.as_external().is_some()
+    };
+    let stuck = decl.fields.iter().filter(|f| !readable(kind_of(f)));
+    do_for!(f in stuck, diags.push(kd::kind_not_across_c(f.span, &kind_of(f).name())));
+    let fields =
+        decl.fields.iter().map(|f| (f.name.name.to_string(), kind_of(f))).collect();
+    shape.set_c_fields(fields);
 }
 
 /// The declaration of a top-level struct statement.
@@ -172,10 +226,11 @@ pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagno
 ///
 /// Each field name with its kind text.
 fn field_texts(
-    decl: &StructDecl, names: &BTreeSet<&str>, enums: &StructTable,
+    decl: &StructDecl, names: &BTreeSet<&str>, shared: &BTreeSet<&str>,
+    enums: &StructTable,
 ) -> Vec<(String, String)>
 {
-    let text = |kind: &Kind| field_text(kind, names, enums);
+    let text = |kind: &Kind| field_text(kind, names, shared, enums);
     decl.fields.iter().map(|f| (f.name.name.to_string(), text(&f.kind))).collect()
 }
 
@@ -191,11 +246,13 @@ fn field_texts(
 /// # Returns
 ///
 /// The text.
-fn field_text(kind: &Kind, names: &BTreeSet<&str>, enums: &StructTable) -> String
+fn field_text(
+    kind: &Kind, names: &BTreeSet<&str>, shared: &BTreeSet<&str>, enums: &StructTable,
+) -> String
 {
     if let Some(sig) = kind.sig.as_deref()
     {
-        let text = |k: &Kind| field_text(k, names, enums);
+        let text = |k: &Kind| field_text(k, names, shared, enums);
         let params: Vec<(bool, String, Option<&str>)> = sig
             .params
             .iter()
@@ -211,10 +268,11 @@ fn field_text(kind: &Kind, names: &BTreeSet<&str>, enums: &StructTable) -> Strin
     {
         let side = |field: &str, k: &Option<Kind>| {
             k.as_ref().map_or(String::new(), |k| {
-                format!(",{field}:{}", field_text(k, names, enums))
+                format!(",{field}:{}", field_text(k, names, shared, enums))
             })
         };
-        let (ok, err) = (side("ok", &parts.ok), side("err", &parts.err));
+        let ok_name = tern!(parts.optional, "some", "ok");
+        let (ok, err) = (side(ok_name, &parts.ok), side("err", &parts.err));
         let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
         return format!("{FALLIBLE}{{tag:u8{ok}{err}}}{}", split_marks(&marks).1);
     }
@@ -225,7 +283,9 @@ fn field_text(kind: &Kind, names: &BTreeSet<&str>, enums: &StructTable) -> Strin
     {
         return plain;
     };
-    format!("{name}{}", split_marks(&plain).1)
+    // A shared struct is held as its object, never inline.
+    let object = tern!(shared.contains(name), "@", "");
+    format!("{name}{object}{}", split_marks(&plain).1)
 }
 
 /// The struct a field holds inline, not through an address.
@@ -239,8 +299,7 @@ fn field_text(kind: &Kind, names: &BTreeSet<&str>, enums: &StructTable) -> Strin
 /// The struct name, or `None` for a field that holds no struct inline.
 fn held_inline(kind: &Kind) -> Option<&str>
 {
-    let through_address =
-        kind.wraps.iter().any(|w| matches!(w, Wrap::Ptr | Wrap::RawPtr));
+    let through_address = kind.wraps.iter().any(|w| matches!(w, Wrap::Ptr));
     ret_if!(kind.base != BaseKind::Named || through_address, None);
     kind.name.as_ref().map(|n| n.name.as_str())
 }
@@ -301,7 +360,8 @@ fn reach_inline<'a>(
         };
         for held in decl.fields.iter().filter_map(|f| held_inline(&f.kind))
         {
-            let Some((found, _)) = decls.get_key_value(held)
+            // A shared struct is held as its object, so it closes no loop.
+            let Some((found, _)) = decls.get_key_value(held).filter(|(_, d)| !d.shared)
             else
             {
                 continue;
@@ -310,22 +370,4 @@ fn reach_inline<'a>(
         }
     }
     seen
-}
-
-/// Report each field of a struct whose kind holds a borrow.
-///
-/// # Arguments
-///
-/// * `decl` - The declaration.
-/// * `table` - The struct kinds.
-/// * `diags` - Where to report.
-fn check_borrow_fields(
-    decl: &StructDecl, table: &StructTable, diags: &mut Vec<Diagnostic>,
-)
-{
-    for field in &decl.fields
-    {
-        let holds = DataKind::from_ast(&field.kind, table).holds_borrow();
-        do_if!(holds, diags.push(od::borrow_field(field.span, &field.name.name)));
-    }
 }

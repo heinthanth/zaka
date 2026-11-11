@@ -61,8 +61,11 @@ pub struct Capture
 {
     /// The name.
     pub name: Name,
-    /// The declared name of the local.
+    /// The declared name of the local or the function.
     pub decl: Span,
+    /// Whether it names a function declared inside a function, which is a
+    /// capture when it turns out to be a closure.
+    pub func: bool,
 }
 
 /// Block scopes from the outermost to the innermost, with the functions
@@ -158,7 +161,7 @@ impl Scopes
         let mut each = self.names.iter().enumerate().rev();
         let (at, stored, binding) =
             each.find_map(|(i, s)| s.get_key_value(name).map(|(k, b)| (i, *k, *b)))?;
-        let capture = Capture { name: stored, decl: binding.span };
+        let capture = Capture { name: stored, decl: binding.span, func: false };
         self.note_capture(at, capture);
         Some(binding)
     }
@@ -218,52 +221,23 @@ impl Scopes
         let mut each = self.fns.iter().enumerate().rev();
         let (at, stored, sig) =
             each.find_map(|(i, s)| s.get_key_value(name).map(|(k, f)| (i, *k, f)))?;
-        let capture = Capture { name: stored, decl: sig.decl };
-        do_if!(sig.closure, self.note_capture(at, capture));
+        // Whether the function is a closure is known once each function is
+        // checked, so each use is noted and the check settles it.
+        let capture = Capture { name: stored, decl: sig.decl, func: true };
+        self.note_capture(at, capture);
         Some(sig.clone())
     }
 
-    /// The index of the scope that declares a name, with no use recorded.
+    /// Mark a function declared inside a function as a closure, once its
+    /// statements turn out to name locals around it.
     ///
     /// # Arguments
     ///
-    /// * `name` - The name.
-    ///
-    /// # Returns
-    ///
-    /// The index, or `None` when it is not declared.
-    pub fn index_of(&self, name: &str) -> Option<usize>
+    /// * `name` - The name of the function, innermost scope first.
+    pub fn mark_closure(&mut self, name: &str)
     {
-        self.names.iter().rposition(|s| s.contains_key(name))
-    }
-
-    /// Whether the scope at an index belongs to a function: its names are
-    /// locals, not names of the file.
-    ///
-    /// # Arguments
-    ///
-    /// * `at` - The index.
-    ///
-    /// # Returns
-    ///
-    /// `true` for a scope of an open function.
-    pub fn is_local(&self, at: usize) -> bool
-    {
-        self.bases.first().is_some_and(|b| at >= *b)
-    }
-
-    /// The index of the scope that declares a function inside a function.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The function name.
-    ///
-    /// # Returns
-    ///
-    /// The index, or `None`.
-    pub fn fn_index_of(&self, name: &str) -> Option<usize>
-    {
-        self.fns.iter().rposition(|s| s.contains_key(name))
+        let found = self.fns.iter_mut().rev().find_map(|s| s.get_mut(name));
+        do_if!(let Some(sig) = found, sig.closure = true);
     }
 
     /// Give a name of the innermost scope its constant value.
@@ -331,12 +305,20 @@ pub(crate) struct FnSig
     /// function value can hold.
     #[builder(default)]
     pub external: bool,
+    /// `true` for a function marked `စိတ်မချရသော`, which marked code alone
+    /// can call.
+    #[builder(default)]
+    pub unchecked: bool,
     /// `true` for a C function that takes more arguments than it names,
     /// `နှင့် အခြားတန်ဖိုးများ`.
     #[builder(default)]
     pub variadic: bool,
     /// The mark of each parameter, when the parameters have marks.
     pub marks: Option<Vec<Name>>,
+    /// Whether the function takes each parameter over and closes it: a
+    /// parameter of a C function marked `အပိုင်အနေဖြင့်`.
+    #[builder(default)]
+    pub closes: Vec<bool>,
     /// `true` for a function declared inside a function with a capture
     /// list: its calls and its address go through its closure.
     #[builder(default)]

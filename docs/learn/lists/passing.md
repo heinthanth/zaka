@@ -1,21 +1,23 @@
 ---
 title: Passing and comparing lists
-description: Lists are values, so each assignment and argument duplicates the cells, and a function gives a list back as its result.
+description: Lists are values, so each assignment and argument gives a duplicate, and a function gives a list back as its result.
 ---
 
 # Passing and comparing lists
 
-A list is a value, like an integer. Setting one list to another duplicates each cell,
-and the two lists stand apart afterwards:
+A list is a value, like an integer, as a list is in PHP and unlike a list in Java or
+JavaScript. Setting one list to another gives a duplicate, and the two lists stand apart
+afterwards. The duplicate is cheap: the two share their cells until one of them writes, and
+that write copies the cells first.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မူရင်း သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် ပွား သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-ပွား ကို မူရင်း ဟု ထားပါ။              // each cell is duplicated
-ပွား ၏ အကွက် ၀ ကို ၁၀၀ ဟု ထားပါ။
-မူရင်း ကို ပြသပါ။
-ပွား ကို ပြသပါ။
+ပွား ကို မူရင်း ဟု ထားမည်။              // shares the cells, for now
+ပွား ၏ အကွက် ၀ ကို ၁၀၀ ဟု ထားမည်။        // this write copies them first
+မူရင်း ကို ပြသမည်။
+ပွား ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -33,17 +35,17 @@ each count:
 ```zaka
 // the parameter is a duplicate of the list passed in
 လုပ်ဆောင်ချက် သုညထား သည်
-ကိန်းပြည့် စာရင်း ကိန်းများ ကို လက်ခံပြီး
+ကိန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းများ ၏ အကွက် ၀ ကို ၀ ဟု ထားပါ။
-ကိန်းများ ကို ပြသပါ။
+ကိန်းများ ၏ အကွက် ၀ ကို ၀ ဟု ထားမည်။
+ကိန်းများ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မူရင်း သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် သုညထား ကို မူရင်း တို့ဖြင့် လုပ်ဆောင်ပါ။
-မူရင်း ကို ပြသပါ။     // unchanged
-လုပ်ဆောင်ချက် သုညထား ကို [၄၊ ၅၊ ၆၊ ၇] တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် သုညထား ကို မူရင်း တို့ဖြင့် လုပ်ဆောင်မည်။
+မူရင်း ကို ပြသမည်။     // unchanged
+လုပ်ဆောင်ချက် သုညထား ကို [၄၊ ၅၊ ၆၊ ၇] တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -53,24 +55,22 @@ each count:
 [၀၊ ၅၊ ၆၊ ၇]
 ```
 
-To let a function change the caller's list, mark the parameter with
-`လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` and the argument with
-`(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)`, as for [the caller's
-variable](../functions/parameters.md#changing-the-callers-variable). The cells are
+To let a function change the caller's list, write the parameter with `ဒေတာ ပြောင်းလဲရန်`, as
+for [the caller's variable](../functions/parameters.md#changing-the-callers-variable). The cells are
 reached through it with `အကွက်` as before:
 
 ```zaka
 // the function can change the caller's list
 လုပ်ဆောင်ချက် နှစ်ဆတိုး သည်
-လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် စာရင်း ကိန်းများ ကို လက်ခံပြီး
+ကိန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားပါ။
+၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မူရင်း သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် နှစ်ဆတိုး ကို မူရင်း (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
-မူရင်း ကို ပြသပါ။     // the function changed it
+လုပ်ဆောင်ချက် နှစ်ဆတိုး ကို မူရင်း တို့ဖြင့် လုပ်ဆောင်မည်။
+မူရင်း ကို ပြသမည်။     // the function changed it
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -83,20 +83,22 @@ addresses](../pointers/structs.md).
 
 ## Lists as results
 
-A function can also give back a list: it fills `ရလဒ်`, or returns a list. Here `ရလဒ်`
-starts with no cells, and the loop adds one for each square:
+A function can also give back a list: it builds one in a variable and returns it. Here
+`အဖြေ` starts with no cells, `[]`, and the loop adds one for each square:
 
 ```zaka
 // a function that builds a list and gives it back
 လုပ်ဆောင်ချက် နှစ်ထပ်များ သည်
-ကိန်းပြည့် အရေ ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
-၀ မှ အရေ - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ထဲသို့ န * န ကို ထည့်ပါ။
+အရေ ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် စာရင်း တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် အဖြေ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ။
+၀ မှ အရေ - ၁ အထိ န အနေဖြင့် ရေတွက်၍ အဖြေ ထဲသို့ န * န ကို ထည့်မည်။
+အဖြေ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် နှစ်ထပ်များ ကို ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
-ကိန်းများ ကို ပြသပါ။
+ကိန်းများ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -115,14 +117,16 @@ starts the argument list. Put it in parentheses when another argument comes befo
 ```zaka
 // a list literal after another argument goes in parentheses
 လုပ်ဆောင်ချက် ပေါင်း သည်
-ကိန်းပြည့် အစ နှင့် ကိန်းပြည့် စာရင်း ကိန်းများ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-ရလဒ် ကို အစ ဟု ထားပါ။
-၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ကို ရလဒ် + (ကိန်းများ ၏ အကွက် န) ဟု ထားပါ။
+အစ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ကိန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် အဖြေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+အဖြေ ကို အစ ဟု ထားမည်။
+၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ အဖြေ ကို အဖြေ + (ကိန်းများ ၏ အကွက် န) ဟု ထားမည်။
+အဖြေ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပေါင်း ကို ၁၀၀၊ (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း) တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+လုပ်ဆောင်ချက် ပေါင်း ကို ၁၀၀၊ (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း) တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -139,10 +143,10 @@ at a time:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
-က သည် ခ နှင့် ညီသည် ဟု ပြသပါ။
-ခ ၏ အကွက် ၂ ကို ၄ ဟု ထားပါ။
-က == ခ ကို ပြသပါ။
-က != စာရင်းအလွတ် ကို ပြသပါ။
+က သည် ခ နှင့် ညီသည် ဟု ပြသမည်။
+ခ ၏ အကွက် ၂ ကို ၄ ဟု ထားမည်။
+က == ခ ကို ပြသမည်။
+က != စာရင်းအလွတ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -161,6 +165,6 @@ different kinds do not compare, such as `isize[]` and `f64[]`. Lists have no ord
 - Write a function that can change a list of integers, and adds 1 to each cell.
 - Duplicate a list, change the duplicate, and compare the two.
 
-Part II reads a part of a list with no duplicate: see [Slices](slices.md).
+Part II takes a run of cells from a list: see [Ranges](../forms/ranges.md).
 
 Next: [Lists of lists](grids.md).

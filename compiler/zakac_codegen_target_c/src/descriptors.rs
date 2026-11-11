@@ -16,10 +16,14 @@ pub const FAULT_TEXT: &str = "အမှားအယွင်း";
 pub const GOOD_BARE: &str = "အောင်မြင်သည့်သတင်း";
 /// The word of a failure with no value.
 pub const FAULT_BARE: &str = "မအောင်မြင်သည့်သတင်း";
+/// The word of a print of an optional that holds data, before the data.
+pub const DATA_TEXT: &str = "ဒေတာ";
+/// The print of an optional that holds no data.
+pub const NO_DATA_TEXT: &str = "အလွတ်";
 /// The text before the name of a function value.
-pub const FN_LEAD: &str = "လုပ်ဆောင်ချက် ";
+pub const FN_LEAD: &str = "";
 /// The text after the name of a function value.
-pub const FN_TAIL: &str = " ၏ လိပ်စာ";
+pub const FN_TAIL: &str = " ဟူသော လုပ်ဆောင်ချက်";
 
 /// The kind descriptors a program needs: one `zk_kind` in `zaka_kinds.c` for
 /// each data kind the runtime walks, named `zk_k<n>`.
@@ -165,10 +169,11 @@ impl Descriptors
         let text = u8::from(kind.holds_text());
         let borrow = u8::from(kind.holds_borrow());
         let owns = u8::from(kind.holds_owner_ptr());
+        let boxed = u8::from(kind.is_box());
         let _ = writeln!(
             out,
             "const zk_kind zk_k{n} = {{{tag}, {size}, {cell}, {len}, {fields}, \
-             {members}, {name}, {text}, {borrow}, {owns}}};"
+             {members}, {name}, {text}, {borrow}, {owns}, {boxed}}};"
         );
         out
     }
@@ -218,8 +223,6 @@ fn tag(kind: DataKind) -> &'static str
         DataKind::List(_) => "ZK_K_LIST",
         DataKind::Struct(s) if s.name == FALLIBLE => "ZK_K_FALLIBLE",
         DataKind::Struct(_) => "ZK_K_STRUCT",
-        DataKind::Slice(s) if s.text => "ZK_K_VIEW",
-        DataKind::Slice(_) => "ZK_K_SLICE",
         DataKind::Seq(s) if s.text => "ZK_K_TEXT",
         DataKind::Seq(_) => "ZK_K_SEQ",
         DataKind::Enum(_) => "ZK_K_ENUM",

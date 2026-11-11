@@ -1,7 +1,7 @@
 # zakac-parse-artifact v1
 name:
   Custom: invalid.zaka
-source: "က ကို ကို ပြသပါ။\nက နှင့် ခ ကို ပြသပါ။\nက ၏ ပေါင်းလဒ် ကို ပြသပါ။\nက < ခ < ဂ ကို ပြသပါ။\nအသက်ကို ပြသပါ။\nအခြေ ၂ ဖြင့် ၁၂ ကို ပြသပါ။\nသို့မဟုတ်ပါက က ကို ပြသပါ။\nက + ၁ ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nခ ကို ပြသပါ။\n"
+source: "က ကို ကို ပြသမည်။\nက နှင့် ခ ကို ပြသမည်။\nက ၏ ပေါင်းလဒ် ကို ပြသမည်။\nက < ခ < ဂ ကို ပြသမည်။\nအသက်ကို ပြသမည်။\nအခြေ ၂ ဖြင့် ၁၂ ကို ပြသမည်။\nသို့မဟုတ်ပါက က ကို ပြသမည်။\nက + ၁ ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nခ ကို ပြသမည်။\n"
 imports: []
 program:
   stmts:
@@ -11,16 +11,16 @@ program:
           id: 12
           name: ခ
           span:
-            lo: 480
-            hi: 483
+            lo: 501
+            hi: 504
       slot: ko
       span:
-        lo: 480
-        hi: 512
+        lo: 501
+        hi: 536
   units: []
   span:
     lo: 0
-    hi: 513
+    hi: 537
 diagnostics:
 - code: ZK0207
   level: error
@@ -31,57 +31,57 @@ diagnostics:
   help: null
 - code: ZK0209
   level: error
-  message: "operands left over before \"ပြသပါ\": က (နှင့်)"
+  message: "operands left over before \"ပြသမည်\": က (နှင့်)"
   span:
-    lo: 43
-    hi: 46
+    lo: 46
+    hi: 49
   help: null
 - code: ZK0205
   level: error
   message: "\"ပေါင်းလဒ်\" needs 2 operands, found 1"
   span:
-    lo: 104
-    hi: 131
+    lo: 110
+    hi: 137
   help: null
 - code: ZK0210
   level: error
   message: a comparison cannot be the operand of another comparison
   span:
-    lo: 161
-    hi: 176
+    lo: 170
+    hi: 185
   help: join the two comparisons with "ဖြစ်၍", or put the inner one in parentheses
 - code: ZK0206
   level: error
-  message: "\"ပြသပါ\" needs \"ကို|ဟု\" after operand 1, found no particle"
+  message: "\"ပြသမည်\" needs \"ကို|ဟု\" after operand 1, found no particle"
   span:
-    lo: 206
-    hi: 227
+    lo: 218
+    hi: 239
   help: "write \"အသက် ကို\" with a space: a name joined to a particle is read as one word"
 - code: ZK0219
   level: error
   message: "\"၂\" is not a digit in base 2"
   span:
-    lo: 280
-    hi: 286
+    lo: 295
+    hi: 301
   help: null
 - code: ZK0211
   level: error
   message: "\"သို့မဟုတ်ပါက\" must follow the block of a conditional"
   span:
-    lo: 316
-    hi: 352
+    lo: 334
+    hi: 370
   help: null
 - code: ZK0203
   level: error
   message: this statement does not end in a statement verb, found "။"
   span:
-    lo: 396
-    hi: 399
-  help: a statement ends in "ပြသပါ", "ထားပါ" or "ရလဒ်အဖြစ် ပြန်ပေးပါ", or is a loop with "နေသရွေ့" or "မှ ... အထိ"
+    lo: 417
+    hi: 420
+  help: a statement ends in "ပြသမည်", "ထားမည်" or "ကို ပြန်ပေးမည်", or is a loop with "နေသရွေ့" or "မှ ... အထိ"
 - code: ZK0226
   level: error
   message: this block closer has no open block to close
   span:
-    lo: 400
-    hi: 476
+    lo: 421
+    hi: 497
   help: null

@@ -65,7 +65,8 @@ impl CellProofs
 }
 
 /// Whether a module holds a raw address kind at all: in a slot, a
-/// result or an expression, a cast target included. Such a program can
+/// result or an expression, a cast target included; or a pointer made from
+/// a value that is no pointer, such as an integer. Such a program can
 /// write an integer through an address the flow cannot see, so none of
 /// its cells is proven in range.
 ///
@@ -83,13 +84,39 @@ pub(crate) fn uses_raw(module: &Module) -> bool
     let results = funcs.clone().filter_map(|f| f.ret);
     ret_if!(slots.map(|s| s.kind).chain(results).any(has_raw), true);
     let mut found = false;
-    let mut look = |e: &Expr| found |= has_raw(e.kind);
+    let mut look = |e: &Expr| found |= has_raw(e.kind) || forged(e);
     let blocks = funcs.map(|f| f.block.as_slice()).chain([module.main.as_slice()]);
     for block in blocks
     {
         each_stmt(block, &mut |s| do_for!(e in stmt_exprs(s), each_expr(e, &mut look)));
     }
     found
+}
+
+/// Whether an expression makes a pointer the flow cannot follow: a cast
+/// written in the program into a pointer kind from another kind, such as an
+/// integer turned into an address, or a pointer read as one to pointers.
+/// The conversions the compiler adds itself, such as to `ptr`, keep the
+/// place.
+///
+/// # Arguments
+///
+/// * `e` - The expression.
+///
+/// # Returns
+///
+/// `true` for such a cast.
+fn forged(e: &Expr) -> bool
+{
+    let ExprNode::Convert { operand, implicit } = &e.node
+    else
+    {
+        return false;
+    };
+    !implicit
+        && e.kind.is_ptr()
+        && operand.kind != e.kind
+        && operand.kind != DataKind::Null
 }
 
 /// Whether a kind has a raw address level, at whatever depth, cell or

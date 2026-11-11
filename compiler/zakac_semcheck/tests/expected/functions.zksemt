@@ -1,7 +1,7 @@
 # zakac-semcheck-artifact v1
 name:
   Custom: functions.zaka
-source: "\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nက ကို က * ၂ ဟု ထားပါ။\nခ ကို ခ * ၂ ဟု ထားပါ။\nဂ ကို ဂ * ၂ ဟု ထားပါ။\nက + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် ပျမ်းမျှ သည်\n၃၂ ဘစ် ဒဿမကိန်း က၊ ၈ ဘစ် ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း ရလဒ် ကို ပြန်ပေးမည်။\nရလဒ် ကို (က + ခ) / ၂ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ဟု ပြသပါ။\nပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ကို ၁၊ ၂၊ ၃ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+source: "\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်\nက ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ဂ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\nက ကို က * ၂ ဟု ထားမည်။\nခ ကို ခ * ၂ ဟု ထားမည်။\nဂ ကို ဂ * ၂ ဟု ထားမည်။\nက + ခ + ဂ ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် ပျမ်းမျှ သည်\nက ဟူသော ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ကို လည်းကောင်း ခ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း တစ်ခု ကို ပြန်ပေးမည်။\n(က + ခ) / ၂ ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ဟု ပြသမည်။\nပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း ကို ၁၊ ၂၊ ၃ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 program:
   stmts:
@@ -13,67 +13,93 @@ program:
           hi: 98
       params:
       - edit: false
+        fill: false
+        owned: false
         kind:
           base: int
           bits: null
           signed: null
           wraps: []
+          classifier:
+            name: ခု
+            span:
+              lo: 169
+              hi: 175
           span:
-            lo: 109
-            hi: 139
+            lo: 129
+            hi: 159
         name:
           name: က
           span:
-            lo: 140
-            hi: 143
+            lo: 109
+            hi: 112
         mark: null
         span:
           lo: 109
-          hi: 143
+          hi: 185
       - edit: false
+        fill: false
+        owned: false
         kind:
           base: int
           bits: null
           signed: null
           wraps: []
+          classifier:
+            name: ခု
+            span:
+              lo: 277
+              hi: 283
           span:
-            lo: 147
-            hi: 177
+            lo: 237
+            hi: 267
         name:
           name: ခ
           span:
-            lo: 178
-            hi: 181
+            lo: 217
+            hi: 220
         mark: null
         span:
-          lo: 147
-          hi: 181
+          lo: 217
+          hi: 293
       - edit: false
+        fill: false
+        owned: false
         kind:
           base: int
           bits: null
           signed: null
           wraps: []
+          classifier:
+            name: ခု
+            span:
+              lo: 385
+              hi: 391
           span:
-            lo: 185
-            hi: 215
+            lo: 345
+            hi: 375
         name:
           name: ဂ
           span:
-            lo: 216
-            hi: 219
+            lo: 325
+            hi: 328
         mark: null
         span:
-          lo: 185
-          hi: 219
+          lo: 325
+          hi: 401
       ret:
         base: int
         bits: null
         signed: null
         wraps: []
+        classifier:
+          name: ခု
+          span:
+            lo: 578
+            hi: 584
         span:
-          lo: 347
-          hi: 377
+          lo: 538
+          hi: 568
       block:
         stmts:
         - assign:
@@ -82,8 +108,8 @@ program:
                 id: 0
                 name: က
                 span:
-                  lo: 435
-                  hi: 438
+                  lo: 629
+                  hi: 632
             value:
               infix:
                 id: 3
@@ -93,8 +119,8 @@ program:
                     id: 1
                     name: က
                     span:
-                      lo: 449
-                      hi: 452
+                      lo: 643
+                      hi: 646
                 rhs:
                   int:
                     id: 2
@@ -103,23 +129,22 @@ program:
                     kind: null
                     script: burmese
                     span:
-                      lo: 455
-                      hi: 458
+                      lo: 649
+                      hi: 652
                 span:
-                  lo: 449
-                  hi: 458
-            moves: false
+                  lo: 643
+                  hi: 652
             span:
-              lo: 435
-              hi: 484
+              lo: 629
+              hi: 681
         - assign:
             target:
               name:
                 id: 4
                 name: ခ
                 span:
-                  lo: 485
-                  hi: 488
+                  lo: 682
+                  hi: 685
             value:
               infix:
                 id: 7
@@ -129,8 +154,8 @@ program:
                     id: 5
                     name: ခ
                     span:
-                      lo: 499
-                      hi: 502
+                      lo: 696
+                      hi: 699
                 rhs:
                   int:
                     id: 6
@@ -139,23 +164,22 @@ program:
                     kind: null
                     script: burmese
                     span:
-                      lo: 505
-                      hi: 508
+                      lo: 702
+                      hi: 705
                 span:
-                  lo: 499
-                  hi: 508
-            moves: false
+                  lo: 696
+                  hi: 705
             span:
-              lo: 485
-              hi: 534
+              lo: 682
+              hi: 734
         - assign:
             target:
               name:
                 id: 8
                 name: ဂ
                 span:
-                  lo: 535
-                  hi: 538
+                  lo: 735
+                  hi: 738
             value:
               infix:
                 id: 11
@@ -165,8 +189,8 @@ program:
                     id: 9
                     name: ဂ
                     span:
-                      lo: 549
-                      hi: 552
+                      lo: 749
+                      hi: 752
                 rhs:
                   int:
                     id: 10
@@ -175,15 +199,14 @@ program:
                     kind: null
                     script: burmese
                     span:
-                      lo: 555
-                      hi: 558
+                      lo: 755
+                      hi: 758
                 span:
-                  lo: 549
-                  hi: 558
-            moves: false
+                  lo: 749
+                  hi: 758
             span:
-              lo: 535
-              hi: 584
+              lo: 735
+              hi: 787
         - return:
             value:
               infix:
@@ -198,38 +221,39 @@ program:
                         id: 12
                         name: က
                         span:
-                          lo: 585
-                          hi: 588
+                          lo: 788
+                          hi: 791
                     rhs:
                       name:
                         id: 13
                         name: ခ
                         span:
-                          lo: 591
-                          hi: 594
+                          lo: 794
+                          hi: 797
                     span:
-                      lo: 585
-                      hi: 594
+                      lo: 788
+                      hi: 797
                 rhs:
                   name:
                     id: 15
                     name: ဂ
                     span:
-                      lo: 597
-                      hi: 600
+                      lo: 800
+                      hi: 803
                 span:
-                  lo: 585
-                  hi: 600
+                  lo: 788
+                  hi: 803
             fault: false
-            good: false
             span:
-              lo: 585
-              hi: 669
+              lo: 788
+              hi: 847
         single: false
+        unchecked: false
         span:
-          lo: 270
-          hi: 764
+          lo: 461
+          hi: 942
       exported: false
+      unchecked: false
       start: false
       external: false
       lib: null
@@ -238,121 +262,135 @@ program:
       captures: []
       span:
         lo: 1
-        hi: 764
+        hi: 942
   - fn:
       name:
         name: ပျမ်းမျှ
         span:
-          lo: 806
-          hi: 830
+          lo: 984
+          hi: 1008
       params:
       - edit: false
+        fill: false
+        owned: false
         kind:
           base: float
           bits: 32
           signed: null
           wraps: []
+          classifier:
+            name: ခု
+            span:
+              lo: 1090
+              hi: 1096
           span:
-            lo: 841
-            hi: 882
+            lo: 1039
+            hi: 1080
         name:
           name: က
           span:
-            lo: 883
-            hi: 886
+            lo: 1019
+            hi: 1022
         mark: null
         span:
-          lo: 841
-          hi: 886
+          lo: 1019
+          hi: 1106
       - edit: false
+        fill: false
+        owned: false
         kind:
           base: int
           bits: 8
           signed: null
           wraps: []
+          classifier:
+            name: ခု
+            span:
+              lo: 1212
+              hi: 1218
           span:
-            lo: 890
-            hi: 934
+            lo: 1158
+            hi: 1202
         name:
           name: ခ
           span:
-            lo: 935
-            hi: 938
+            lo: 1138
+            hi: 1141
         mark: null
         span:
-          lo: 890
-          hi: 938
+          lo: 1138
+          hi: 1228
       ret:
         base: float
         bits: null
         signed: null
         wraps: []
+        classifier:
+          name: ခု
+          span:
+            lo: 1399
+            hi: 1405
         span:
-          lo: 1066
-          hi: 1090
+          lo: 1365
+          hi: 1389
       block:
         stmts:
-        - assign:
-            target:
-              name:
-                id: 17
-                name: ရလဒ်
-                span:
-                  lo: 1148
-                  hi: 1160
+        - return:
             value:
               infix:
-                id: 23
+                id: 22
                 op: div
                 lhs:
                   group:
-                    id: 21
+                    id: 20
                     inner:
                       infix:
-                        id: 20
+                        id: 19
                         op: add
                         lhs:
                           name:
-                            id: 18
+                            id: 17
                             name: က
                             span:
-                              lo: 1172
-                              hi: 1175
+                              lo: 1451
+                              hi: 1454
                         rhs:
                           name:
-                            id: 19
+                            id: 18
                             name: ခ
                             span:
-                              lo: 1178
-                              hi: 1181
+                              lo: 1457
+                              hi: 1460
                         span:
-                          lo: 1172
-                          hi: 1181
+                          lo: 1451
+                          hi: 1460
                     span:
-                      lo: 1171
-                      hi: 1182
+                      lo: 1450
+                      hi: 1461
                 rhs:
                   int:
-                    id: 22
+                    id: 21
                     value: 2
                     base: 10
                     kind: null
                     script: burmese
                     span:
-                      lo: 1185
-                      hi: 1188
+                      lo: 1464
+                      hi: 1467
                 span:
-                  lo: 1171
-                  hi: 1188
-            moves: false
+                  lo: 1450
+                  hi: 1467
+            fault: false
             span:
-              lo: 1148
-              hi: 1214
+              lo: 1450
+              hi: 1511
         single: false
+        unchecked: false
         span:
-          lo: 989
-          hi: 1309
+          lo: 1288
+          hi: 1606
       exported: false
+      unchecked: false
       start: false
       external: false
       lib: null
@@ -360,14 +398,14 @@ program:
       owned_ret: false
       captures: []
       span:
-        lo: 766
-        hi: 1309
+        lo: 944
+        hi: 1606
   - fn:
       name:
         name: နှုတ်ဆက်
         span:
-          lo: 1351
-          hi: 1375
+          lo: 1648
+          hi: 1672
       params: []
       ret: null
       block:
@@ -375,28 +413,29 @@ program:
         - print:
             value:
               str:
-                id: 24
+                id: 23
                 pieces:
                 - text: မင်္ဂလာပါ
                 span:
-                  lo: 1469
-                  hi: 1498
+                  lo: 1766
+                  hi: 1795
             slot: hu
             span:
-              lo: 1469
-              hi: 1524
+              lo: 1766
+              hi: 1824
         - return:
             value: null
             fault: false
-            good: false
             span:
-              lo: 1525
-              hi: 1555
+              lo: 1825
+              hi: 1858
         single: false
+        unchecked: false
         span:
-          lo: 1386
-          hi: 1650
+          lo: 1683
+          hi: 1953
       exported: false
+      unchecked: false
       start: false
       external: false
       lib: null
@@ -404,14 +443,14 @@ program:
       owned_ret: false
       captures: []
       span:
-        lo: 1311
-        hi: 1650
+        lo: 1608
+        hi: 1953
   - fn:
       name:
         name: ပရိုဂရမ်
         span:
-          lo: 1652
-          hi: 1676
+          lo: 1955
+          hi: 1979
       params: []
       ret: null
       block:
@@ -420,74 +459,71 @@ program:
             callee:
               name: နှုတ်ဆက်
               span:
-                lo: 1809
-                hi: 1833
+                lo: 2112
+                hi: 2136
             place: null
             args: []
-            edits: []
             pass: false
             using: null
             marks: []
             span:
-              lo: 1769
-              hi: 1880
+              lo: 2072
+              hi: 2186
         - print:
             value:
               call:
-                id: 28
+                id: 27
                 callee:
                   name: နှစ်ဆတိုးပြီးပေါင်း
                   span:
-                    lo: 1921
-                    hi: 1978
+                    lo: 2227
+                    hi: 2284
                 place: null
                 args:
                 - int:
-                    id: 25
+                    id: 24
                     value: 1
                     base: 10
                     kind: null
                     script: burmese
                     span:
-                      lo: 1989
-                      hi: 1992
+                      lo: 2295
+                      hi: 2298
                 - int:
-                    id: 26
+                    id: 25
                     value: 2
                     base: 10
                     kind: null
                     script: burmese
                     span:
-                      lo: 1996
-                      hi: 1999
+                      lo: 2302
+                      hi: 2305
                 - int:
-                    id: 27
+                    id: 26
                     value: 3
                     base: 10
                     kind: null
                     script: burmese
                     span:
-                      lo: 2003
-                      hi: 2006
-                edits:
-                - false
-                - false
-                - false
+                      lo: 2309
+                      hi: 2312
                 pass: false
                 using: null
                 marks: []
                 span:
-                  lo: 1881
-                  hi: 2084
+                  lo: 2187
+                  hi: 2390
             slot: ko
             span:
-              lo: 1881
-              hi: 2113
+              lo: 2187
+              hi: 2422
         single: false
+        unchecked: false
         span:
-          lo: 1686
-          hi: 2184
+          lo: 1989
+          hi: 2493
       exported: false
+      unchecked: false
       start: true
       external: false
       lib: null
@@ -495,12 +531,12 @@ program:
       owned_ret: false
       captures: []
       span:
-        lo: 1652
-        hi: 2184
+        lo: 1955
+        hi: 2493
   units: []
   span:
     lo: 0
-    hi: 2185
+    hi: 2494
 kinds:
   0: isize
   1: isize
@@ -519,17 +555,16 @@ kinds:
   14: isize
   15: isize
   16: isize
-  17: f64
-  18: f32
-  19: i8
+  17: f32
+  18: i8
+  19: f32
   20: f32
   21: f32
   22: f32
-  23: f32
-  24: text
+  23: text
+  24: isize
   25: isize
   26: isize
   27: isize
-  28: isize
 structs: {}
 diagnostics: []

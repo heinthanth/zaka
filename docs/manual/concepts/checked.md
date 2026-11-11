@@ -22,8 +22,8 @@ the details. LLVM comes later.
           │
           │  the compiler reads each path, runs nothing
           ▼
-   ┌─────────────┐   a mistake it can prove stops the build
-   │ compile time │   (ZK0701 to ZK0712)
+   ┌─────────────┐   a mistake it can prove is a warning in marked
+   │ compile time │   code, or stops the build (ZK0701 to ZK0712)
    └──────┬──────┘
           │ the program that remains
           ▼
@@ -43,57 +43,68 @@ the compiler proved, and loses the rest.
 
 ## Which mistake is found where
 
+Safe code makes none of the mistakes below: it never reads or writes through a pointer,
+and the VM frees each block it makes, rings of objects included. It holds no NULL either:
+a shared object and a function value hold a value at each point, and the compiler proves that each
+variable, field and cell is set before a read, as an error in each mode (ZK0722; see
+[Statements](../language/statements.md#set-before-read)). Each row is a mistake of
+[marked code](../language/unsafe.md), where the compiler's findings are warnings, and
+errors under `--mem-check error`.
+
 | Mistake | Before the run | In the VM | In native code (`--checks default`) |
 | --- | --- | --- | --- |
-| use after free, through an owner or a borrow | error ZK0704 | `use after free` | kept: proved before the run |
-| double free | error ZK0701, ZK0702 | `double free` | kept |
-| free of something that is not a heap block | error ZK0702, ZK0714 | `bad free` | kept |
-| the address of a local outliving its call | error ZK0706, ZK0703 | `use after free`, naming the variable | kept |
-| a leak of a local's block | error ZK0708 | `--leaks` lists it | kept |
-| a null access on each path | error ZK0709 | `null address` | a crash, as in C; `null address` with `--checks mem` |
-| a null access on some path | warning ZK0711, with `--mem-strict` | `null address` | a crash; `null address` with `--checks mem` |
-| a box number past the end, known before the run | error ZK0710 | `out of bounds` | not checked; the sanitizer with `--checks mem` |
+| use after free | ZK0704 | `use after free` | as in C |
+| double free | ZK0704 | `double free` | as in C |
+| free of something that is not a heap block | ZK0702 | `bad free` | as in C |
+| the address of a local outliving its call | ZK0706, ZK0703 | `use after free`, naming the variable | as in C |
+| a read after an owned hand-over, on each path | error ZK0701 | `null address` | kept: an error in each mode |
+| a leak of a block this function asked for | ZK0708 | `--leaks` lists it | as in C |
+| a null access on each path | ZK0709 | `null address` | a crash, as in C; `null address` with `--checks mem` |
+| a null access on some path | ZK0711, with `--mem-strict` | `null address` | a crash; `null address` with `--checks mem` |
+| a box number past the end, known before the run | ZK0710 | `out of bounds` | not checked; the sanitizer with `--checks mem` |
 | a box number past the end, known just in the run | nothing | `out of bounds` | not checked; the sanitizer with `--checks mem` |
-| pointers into two blocks subtracted | error ZK0712, when provable | `mixed blocks` | not checked |
-| a use after free through a raw address | nothing | `use after free` | not checked |
+| pointers into two blocks subtracted | ZK0712, when provable | `mixed blocks` | not checked |
 | a misaligned address, or octets that hold no value | nothing | `misaligned`, `bad value` | not checked |
-| the heap running out | nothing | allocate leaves `ဗလာ`; resize: `out of mem` | allocate leaves `ဗလာ`; a resize stops the program |
+| the heap running out | nothing | allocate leaves the null pointer; resize: `out of mem` | allocate leaves the null pointer; a resize stops the program |
 
-"Kept" means the compiler found the mistake, so the program that remains has none of it,
-however it is run. The other rows depend on a check that the VM alone makes.
+"As in C" means the native program does what a C program with the same mistake does,
+unless `--mem-check error` kept the program from compiling. "Kept" means the compiler
+refuses the mistake in each mode, so the program that remains has none of it, however it
+is run. The other rows depend on a check that the VM alone makes.
 
 ## A mistake that the VM alone sees
 
-The compiler gives this function a borrowed block and a count. It cannot know that the
+The compiler gives this marked function a block and a count. It cannot know that the
 block holds 4 boxes while the loop goes to box 4:
 
 ```zaka-stop
 // fill: write the box number into each box, from box 0 up to box အရေအတွက်
-လုပ်ဆောင်ချက် ဖြည့် သည်
-ငှားထားသော ကိန်းပြည့် လိပ်စာ က နှင့် ကိန်းပြည့် အရေအတွက် တို့ကို လက်ခံပြီး
+စိတ်မချရသော လုပ်ဆောင်ချက် ဖြည့် သည်
+က ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို လည်းကောင်း အရေအတွက် ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၀ မှ အရေအတွက် အထိ နံပါတ် အနေဖြင့် ရေတွက်၍ က + နံပါတ် ၏ တန်ဖိုး ကို နံပါတ် ဟု ထားပါ။
+၀ မှ အရေအတွက် အထိ နံပါတ် အနေဖြင့် ရေတွက်၍ က + နံပါတ် ၏ တန်ဖိုး ကို နံပါတ် ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-"အစ" ဟု ပြသပါ။
-လုပ်ဆောင်ချက် ဖြည့် ကို ပ ၏ တန်ဖိုးအငှား၊ ၄ တို့ဖြင့် လုပ်ဆောင်ပါ။
+"အစ" ဟု ပြသမည်။
+လုပ်ဆောင်ချက် ဖြည့် ကို ပ၊ ၄ တို့ဖြင့် လုပ်ဆောင်မည်။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 အစ
-the program stopped: access of 8 octets at 0x101060 lands outside each live block
+the program stopped: access of 8 octets at 0x101040 lands outside each live block
 ```
 
 A counted loop includes its last number, so the loop writes boxes 0 to 4: five boxes into
 a block of four. The VM stops at the fifth write, which lands in the gap after the
-block. The program is correct in each respect the compiler can follow, since the owner, the
-borrow and the free are all in order.
+block. The program is correct in each respect the compiler can follow, since the block is
+asked for, used and given back in order.
 
 In C the same loop writes 8 octets past the block. Nothing stops it, and it changes what
 comes next in the heap: the header of the next block, or the next variable. The program
@@ -114,14 +125,16 @@ not, for two reasons:
   would have to prove a fact about numbers, and it would often have to give up. When it
   cannot know, it reports nothing and leaves the check to the VM, instead of guessing.
   A check that guessed wrong in the other direction would refuse good programs.
-- A raw address is the exit for code that shares storage in its own fashion, such as an
-  arena. The compiler does not follow raw addresses, on purpose, and `--no-raw` forbids
-  them when a lesson must not step around the check.
+- A pointer can come from C, from an integer, or from an object turned into an address.
+  Marked code is the exit for work that shares storage in its own fashion, such as an
+  arena, and the compiler does not attempt to follow each such pointer. It warns about what it
+  can see, and `--no-unsafe` forbids marked code when a lesson must not step around the
+  checks.
 
-What the compiler does prove is a smaller set, and the proof is sound for that set. A
-program with no raw kinds, compiled at `--mem-check error`, never reaches a use after
-free, a double free or a bad free, and the address of a local never outlives its call.
-[Ownership, explained](ownership.md) tells how.
+What is proved is a smaller set, and the proof is sound for that set. A program that
+compiles under `--no-unsafe` never reaches a use after free, a double free, a bad free or
+a leak, since it has no pointer to misuse and the VM frees each block it makes.
+[Storage, explained](storage.md) tells how.
 
 ## Native code
 
@@ -134,31 +147,34 @@ The VM remains as it is, and the C target adds a second means to run the same pr
   field, and the arithmetic on pointers are the same on each backend. A program that runs
   clean in the VM prints the same output as native code.
 - **The checks of the language remain at the default level.** A zero divisor, an overflow under
-  `--overflow stop`, a cell outside its list, a range of text that cuts a character and a
-  call through `ဗလာ` stop a native program with the VM's message.
+  `--overflow stop`, a cell outside its list, a range of text that cuts a character, a
+  call through a function value that holds no function, and C that gives NULL for a handle
+  result written with no optional stop a native program with the VM's message.
 - **The checks of storage remain in the compiler alone.** A native build behaves like C
-  there: a pointer is a plain address, and an owner that moves costs one store of `ဗလာ`.
+  there: a pointer is a plain address, and an owned hand-over costs one store of the null pointer.
+  Safe code counts its blocks, and frees them, as it does in the VM.
   All that the compiler proved still holds. A mistake that the VM alone would have caught
   does what it does in C, unless `--checks mem` asks for the null checks and the sanitizers
   of the C compiler.
 
-For this reason the order matters. Ownership came before the C target: it moves the checks
-that matter most to the compiler, where such checks cost nothing at run time, before the
-VM's checks are gone.
+For this reason the split matters. Safe code needs no check of storage at run time: the
+counts free each block, and no pointer reaches it. Marked code is the small part of a
+program where the VM's checks are gone in a native build, and the compiler's warnings
+point at it.
 
 ## Turning the checks up and down
 
 | Option | What changes |
 | --- | --- |
-| `--mem-check error` | the compiler refuses programs with a proved mistake; the default |
-| `--mem-check warn` | the same mistakes are warnings; the program runs, and the VM stops it |
+| `--mem-check warn` | a proved mistake in marked code is a warning; the program runs, and the VM stops it; the default |
+| `--mem-check error` | the compiler refuses programs with a proved mistake in marked code |
 | `--mem-check off` | the compiler reports none of them |
-| `--mem-strict` | also warn about a pointer that can be `ဗလာ`, which the compiler cannot prove safe |
-| `--no-raw` | refuse each raw address kind |
+| `--mem-strict` | also warn about a pointer that can point at nothing, which the compiler cannot prove safe |
+| `--no-unsafe` | refuse marked code |
 | `--frames packed` | the VM places variables next to each other, as C does |
 | `--checks none`, `default`, `mem` | for `zakac build --target c`: no check past what C has, the checks of the language, or those and the mem checks |
 
-The Explorer has the same settings. Use `warn` to watch the VM catch what the
-compiler would have caught, and `packed` to see what a mistake does when nothing watches.
-The compile-time side is in [pointer checks](../compiler/checks.md), and the VM's
-side in [When a program stops](../vm/traps.md).
+The Explorer has the same settings. Use `warn` to watch the VM catch what the compiler
+saw, and `packed` to see what a mistake does when nothing watches. The compile-time side
+is in [Compiler checks](../compiler/checks.md), and the VM's side in [When a program
+stops](../vm/traps.md).

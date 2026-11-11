@@ -1,17 +1,16 @@
 //! The closures of a routine. A closure is the function value of a function
 //! declared inside a function with captures: its thunk calls that function
-//! with the address of each field of its record, or the borrow a field holds
-//! for a capture with `ငှား၍`. The routine fills the record in a slot, and
-//! the closure moves it to the heap. The flow sees what the function does to
-//! the borrowed locals at each call that can run it: a call that gets a
-//! closure as an argument, which can run it or not, and a call through a slot
-//! that holds one. A duplicated or moved capture lives in the record, which
-//! no local of the routine reaches.
+//! with the box of each variable it captures, which the record holds. The
+//! routine fills the record in a slot, and the closure moves it to the heap.
+//! The flow sees what the function does through the boxes at each call that
+//! can run it: a call that gets a closure as an argument, which can run it or
+//! not, and a call through a slot that holds one. A box is counted, so the
+//! closure and the routine share it, and a free through it reaches the block
+//! the captured variable holds.
 //!
-//! This pass finds, once for the routine, the function each closure runs
-//! and the borrows it passes; which closures a slot holds at each node is a
-//! fact of the flow ([`State::closures`]), which each write of the slot sets. A
-//! closure cannot outlive the call it goes to, so the effects end there.
+//! This pass finds, once for the routine, the function each closure runs and
+//! the boxes it passes; which closures a slot holds at each node is a fact of
+//! the flow ([`State::closures`]), which each write of the slot sets.
 
 use std::collections::BTreeSet;
 use std::collections::HashMap;
@@ -22,7 +21,6 @@ use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::Stmt;
 use zakac_ir_builder::value::Value;
-use zakac_rust_sugars::do_if;
 
 use crate::state::State;
 use crate::walk::each_expr;
@@ -39,9 +37,6 @@ pub(crate) struct Closures
     /// The fields of the record of each such function, after the code and
     /// info words, as the routine fills them.
     fields: HashMap<u32, Vec<Expr>>,
-    /// The functions whose record owns a block: a capture that holds an
-    /// owner.
-    owning: BTreeSet<u32>,
     /// The function each thunk of the routine's closures calls.
     thunks: HashMap<u32, u32>,
 }
@@ -108,10 +103,6 @@ impl Closures
         let borrows = lent_fields(module, target, &cells);
         self.borrows.entry(target).or_insert(borrows);
         self.fields.entry(target).or_insert(cells);
-        let owns = record.kind.pointee().is_some_and(|k| k.holds_owner_ptr());
-        do_if!(owns, {
-            self.owning.insert(target);
-        });
         self.thunks.insert(*func, target);
     }
 
@@ -138,9 +129,10 @@ impl Closures
             {
                 state.closures.get(place).cloned().unwrap_or_default()
             }
-            ExprNode::Plain { value }
-            | ExprNode::Convert { operand: value, .. }
-            | ExprNode::Dup { value, .. } => self.held_in(value, state),
+            ExprNode::Convert { operand: value, .. } | ExprNode::Dup { value, .. } =>
+            {
+                self.held_in(value, state)
+            }
             ExprNode::Take { addr } => match addr.node
             {
                 ExprNode::AddrOf(place) =>
@@ -152,18 +144,6 @@ impl Closures
             _ => BTreeSet::new(),
         }
     }
-
-    /// Whether the closure of a function owns a block, so it cannot be
-    /// duplicated.
-    ///
-    /// # Arguments
-    ///
-    /// * `func` - The function.
-    ///
-    /// # Returns
-    ///
-    /// `true` for such a function.
-    pub(crate) fn owns(&self, func: u32) -> bool { self.owning.contains(&func) }
 
     /// The closures the record of a function declared inside a function can
     /// hold: a duplicate, a move or a borrow of a slot that holds one.
@@ -230,7 +210,7 @@ fn lifted_of(module: &Module, thunk: u32) -> Option<u32>
 /// The borrow each field of a closure record passes to the hidden
 /// parameter of its capture: a field of the parameter's kind is a borrow of a
 /// local, and each other field holds a value of the record, which no local
-/// reaches, so it passes `ဗလာ`.
+/// reaches, so it passes null.
 ///
 /// # Arguments
 ///

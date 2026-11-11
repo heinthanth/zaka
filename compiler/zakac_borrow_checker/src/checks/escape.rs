@@ -4,7 +4,6 @@ use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::Place;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
-use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
 use crate::checks::report;
@@ -14,6 +13,7 @@ use crate::digest::Seg;
 use crate::flow::Flow;
 use crate::roots::roots_of;
 use crate::state::State;
+use crate::state::holds_address;
 
 /// Check a value the function gives back, save a read of its result
 /// variable, whose sets were checked each.
@@ -47,13 +47,11 @@ pub(crate) fn check_result_set(
     do_if!(is_result(flow, place), check_result_roots(flow, value, span, state));
 }
 
-/// Report a borrow the function gives back that points into a place that
-/// dies with the call: a local, a parameter slot, or the block of a
-/// parameter that is no borrow, which the function must free or move
-/// before it returns. A borrow through a borrow parameter points into
-/// what the caller lent, and a borrow of a global into a place that
-/// outlasts the call, so each such path goes into the digest as one the
-/// result can point into.
+/// Report an address the function gives back that points into a place
+/// that dies with the call: a local or a parameter slot, or a cell of one.
+/// An address through the block a parameter points at reaches the caller's
+/// places, and an address of a global a place that outlasts the call, so
+/// each such path goes into the digest as one the result can point into.
 ///
 /// # Arguments
 ///
@@ -66,14 +64,14 @@ pub(crate) fn check_result_roots(
 )
 {
     ret_if!(!flow.recording());
-    ret_if!(!flow.routine.ret.is_some_and(DataKind::holds_borrow));
+    ret_if!(!flow.routine.ret.is_some_and(holds_address));
     let roots = roots_of(value, state, &flow.ctx);
     let lent: Vec<u32> = roots.iter().filter_map(|r| lent_param(flow, r)).collect();
     flow.result_from.extend(lent);
     let outlasts = |r: &&Root| r.is_global() || lent_param(flow, r).is_some();
     let kept: Vec<Root> = roots.iter().filter(outlasts).cloned().collect();
     flow.result_roots.extend(kept);
-    let dead = roots.iter().find(|r| dies(flow, r));
+    let dead = roots.iter().find(|r| dies(r));
     let Some(dead) = dead
     else
     {
@@ -99,8 +97,8 @@ fn is_result(flow: &Flow, place: Place) -> bool
     flow.routine.result.is_some_and(|n| place == Place::Local(n))
 }
 
-/// The borrow parameter a path reaches the caller's places through: it
-/// starts at the parameter and goes through the block it points at.
+/// The parameter a path reaches the caller's places through: it starts at
+/// the parameter and goes through the block it points at.
 ///
 /// # Arguments
 ///
@@ -118,24 +116,21 @@ fn lent_param(flow: &Flow, root: &Root) -> Option<u32>
         return None;
     };
     ret_if!(n >= flow.routine.params, None);
-    let borrow = flow.ctx.kind_of(root.place).is_some_and(DataKind::holds_borrow);
-    let through = root.path.contains(&Seg::Block);
-    (borrow && through).then_some(n)
+    root.path.contains(&Seg::Block).then_some(n)
 }
 
 /// Whether a path leads into a place that dies with the call: it starts
-/// at a local slot and does not reach the caller's places through a
-/// borrow parameter.
+/// at a local slot and takes no step into a block, which a local can hold
+/// from the heap or from the caller.
 ///
 /// # Arguments
 ///
-/// * `flow` - The flow.
 /// * `root` - The path.
 ///
 /// # Returns
 ///
 /// `true` when the place ends when the function returns.
-fn dies(flow: &Flow, root: &Root) -> bool
+fn dies(root: &Root) -> bool
 {
-    matches!(root.place, Place::Local(_)) && lent_param(flow, root).is_none()
+    matches!(root.place, Place::Local(_)) && !root.path.contains(&Seg::Block)
 }

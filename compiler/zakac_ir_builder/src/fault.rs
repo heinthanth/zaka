@@ -10,6 +10,7 @@ use zakac_ast::visit::walk_call_expr;
 use zakac_ast::visit::walk_verb;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
@@ -92,10 +93,23 @@ impl Fault
     /// # Returns
     ///
     /// The kind.
-    fn field_kind(self, name: &str) -> DataKind
+    fn field_kind(self, name: &str) -> DataKind { self.slot(name).1.repr() }
+
+    /// The index and the kind of a field of the struct. An optional names its
+    /// good side `some`, which `ok` reaches too.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - `tag`, `ok` or `err`.
+    ///
+    /// # Returns
+    ///
+    /// The index and the kind.
+    fn slot(self, name: &str) -> (usize, DataKind)
     {
         let shape = self.wrapper.as_struct().expect("a fallible result is a struct");
-        shape.field(name).expect("a fallible result has the field").1.repr()
+        let some = tern!(name == "ok", shape.field("some"), None);
+        shape.field(name).or(some).expect("a fallible result has the field")
     }
 
     /// The read of a field of the struct in a place.
@@ -131,7 +145,7 @@ impl Fault
     pub fn field_of(self, base: Expr, name: &str, platform: u16, span: Span) -> Expr
     {
         let shape = self.wrapper.as_struct().expect("a fallible result is a struct");
-        let (at, kind) = shape.field(name).expect("a fallible result has the field");
+        let (at, kind) = self.slot(name);
         let kind = kind.repr();
         let offset = shape.offset(at, platform);
         let field = u32::try_from(at).expect("a struct has fewer than 2^32 fields");

@@ -1,4 +1,5 @@
 use bon::Builder;
+use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Level;
 use zakac_diagnostics::has_errors;
@@ -6,6 +7,7 @@ use zakac_ir_builder::ir::Module;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_span::span::Span;
 
 use crate::digest::FnDigest;
 use crate::flow::run_flow;
@@ -13,7 +15,6 @@ use crate::flow::run_start_flow;
 use crate::interval::CellProofs;
 use crate::interval::mark_checked;
 use crate::interval::uses_raw;
-use crate::last_use::duplicate_reports;
 use crate::last_use::lend_arguments;
 use crate::last_use::move_last_uses;
 use crate::last_use::share_params;
@@ -30,6 +31,7 @@ pub mod cli;
 mod closures;
 pub mod digest;
 mod flow;
+mod init;
 mod interval;
 mod last_use;
 mod liveness;
@@ -79,8 +81,6 @@ pub fn borrow_check(
     move_last_uses(module);
     lend_arguments(module);
     share_params(module);
-    let duplicates =
-        tern!(options.warn_duplicates, duplicate_reports(module), Vec::new());
     let read: &Module = module;
     let (global_roots, digests, diagnostics, mut proofs) =
         roots_and_digests(read, options, platform_bits);
@@ -94,12 +94,23 @@ pub fn borrow_check(
         proofs.add(&s.proofs, &s.doubts);
         s.diags
     });
-    let all = [diagnostics, found.diags, start_diags, duplicates].concat();
+    let all = [diagnostics, found.diags, start_diags].concat();
+    // A value read before it is set is an error at each level of the check:
+    // the kinds promise there is no hidden default.
+    let unset = init::check_init(read);
     // A finding, or a raw address the flow cannot follow, means the facts
     // the proofs rest on need not hold.
     let trusted = !has_errors(&all) && !uses_raw(read);
     do_if!(trusted, mark_checked(module, &proofs.proven()));
-    let mut diagnostics = downgrade(all, options.check);
+    let mut diagnostics = downgrade(all, options.check, &module.marked);
+    // A pointer read before it is set holds the zero octets its declaration
+    // gave it, so the null check sees it too; the report of the unset read
+    // stands for both.
+    let unset_at: Vec<Span> = unset.iter().map(|d| d.span).collect();
+    let null =
+        |d: &Diagnostic| matches!(d.code, Code::NullDeref | Code::NullDerefPossible);
+    diagnostics.retain(|d| !(null(d) && unset_at.iter().any(|s| s.overlaps(&d.span))));
+    diagnostics.extend(unset);
     diagnostics.sort_by_key(|d| d.span.lo);
     BorrowCheckOutput::builder().diagnostics(diagnostics).digests(digests).build()
 }
@@ -146,21 +157,51 @@ fn roots_and_digests(
 /// # Arguments
 ///
 /// * `diags` - What the check found.
-/// * `mode` - How to report.
+/// * `mode` - How to report the pointer lint.
+/// * `marked` - The source regions of marked code.
 ///
 /// # Returns
 ///
-/// Each diagnostic for [`MemCheck::Error`], each as a warning for
-/// [`MemCheck::Warn`], none for [`MemCheck::Off`].
-fn downgrade(diags: Vec<Diagnostic>, mode: MemCheck) -> Vec<Diagnostic>
+/// Each finding of the pointer lint as the mode wants it: an error for
+/// [`MemCheck::Error`], a warning for [`MemCheck::Warn`], none for
+/// [`MemCheck::Off`]. The lint holds each [`LINT`] finding, and each
+/// [`MARKED_LINT`] finding inside marked code. Each other finding remains as
+/// it is.
+fn downgrade(diags: Vec<Diagnostic>, mode: MemCheck, marked: &[Span])
+-> Vec<Diagnostic>
 {
-    match mode
+    let inside =
+        |d: &Diagnostic| marked.iter().any(|m| m.lo <= d.span.lo && d.span.hi <= m.hi);
+    let lint = |d: &Diagnostic| {
+        LINT.contains(&d.code) || (MARKED_LINT.contains(&d.code) && inside(d))
+    };
+    let level = |d: Diagnostic| match mode
     {
-        MemCheck::Error => diags,
-        MemCheck::Warn =>
-        {
-            diags.into_iter().map(|d| d.with_level(Level::Warning)).collect()
-        }
-        MemCheck::Off => Vec::new(),
-    }
+        MemCheck::Warn => Some(d.with_level(Level::Warning)),
+        MemCheck::Off => None,
+        MemCheck::Error => Some(d),
+    };
+    diags.into_iter().filter_map(|d| tern!(lint(&d), level(d), Some(d))).collect()
 }
+
+/// The findings that are lint inside marked code and errors outside it,
+/// where an object or a list gives them: a read of null, a step past the
+/// end of a block, and a read that can meet null.
+const MARKED_LINT: &[Code] =
+    &[Code::NullDeref, Code::OffsetPastEnd, Code::NullDerefPossible];
+
+/// The findings that come from pointer work, which marked code
+/// alone does: a block given back twice or through the wrong pointer, a
+/// block kept or freed while a pointer still reads it, a local's address
+/// that escapes, an argument another one frees, a leaked block, pointers
+/// into different blocks subtracted, and overlapping block copies.
+const LINT: &[Code] = &[
+    Code::BadFree,
+    Code::BorrowStored,
+    Code::InvalidatedLoan,
+    Code::LocalBorrowReturned,
+    Code::AliasedArgument,
+    Code::BlockLeaked,
+    Code::MixedBlocks,
+    Code::BlitRangesOverlap,
+];

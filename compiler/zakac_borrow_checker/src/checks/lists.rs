@@ -10,6 +10,7 @@ use crate::roots::Roots;
 use crate::roots::list_slot;
 use crate::state::SlotState;
 use crate::state::State;
+use crate::state::holds_address;
 
 /// Add what a value stored into a cell of a list of borrows points into
 /// to the roots of the list. The list counts as one variable whose roots
@@ -26,7 +27,7 @@ pub(crate) fn store_into_cell(
     flow: &Flow, addr: &Expr, stored: &SlotState, state: &mut State,
 )
 {
-    let Some(place) = borrow_list(flow, addr)
+    let Some(place) = pointer_list(flow, addr)
     else
     {
         return;
@@ -67,12 +68,12 @@ pub(crate) fn cell_result_target(flow: &Flow, call: Span) -> Option<(Place, Root
         return None;
     };
     let direct = is_call_value(value, call);
-    let place = borrow_list(flow, addr).filter(|_| direct)?;
+    let place = pointer_list(flow, addr).filter(|_| direct)?;
     let before = flow.ins.get(flow.node as usize)?.as_ref()?;
     Some((place, before.ptr(place)?.roots.clone()))
 }
 
-/// The list slot of borrows a cell address names, through the cells of
+/// The list slot of pointers a cell address names, through the cells of
 /// nested lists.
 ///
 /// # Arguments
@@ -83,10 +84,10 @@ pub(crate) fn cell_result_target(flow: &Flow, call: Span) -> Option<(Place, Root
 /// # Returns
 ///
 /// The slot, or `None` for an address that is no cell of a list slot of
-/// borrows.
-fn borrow_list(flow: &Flow, addr: &Expr) -> Option<Place>
+/// pointers.
+fn pointer_list(flow: &Flow, addr: &Expr) -> Option<Place>
 {
     let place = list_slot(addr)?;
     let kind = flow.ctx.kind_of(place)?;
-    (kind.is_list() && kind.holds_borrow()).then_some(place)
+    (kind.is_list() && holds_address(kind)).then_some(place)
 }

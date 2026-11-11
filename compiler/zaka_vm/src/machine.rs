@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::io::Write;
 
 use bon::Builder;
@@ -34,7 +35,6 @@ use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
 use zakac_semcheck::kind::Width;
-use zakac_semcheck::structs::StructKind;
 
 mod ffi;
 mod host;
@@ -54,6 +54,9 @@ use crate::statics::seq_octets;
 use crate::trap::Trap;
 use crate::trap::TrapKind;
 use crate::trap::hex;
+
+mod collector;
+mod deep;
 
 /// The kind of a pointer difference.
 const ISIZE: IntKind = IntKind::new(true, Width::Platform);
@@ -488,6 +491,17 @@ pub struct Machine
     /// duplicate and a drop of a closure walk.
     #[builder(default)]
     records: HashMap<u32, DataKind>,
+    /// The blocks let go and still to free, each with its cell count and
+    /// kind; the outermost drop frees them in a loop.
+    #[builder(default)]
+    freeing: Vec<(u64, u64, DataKind)>,
+    /// Whether a drop is freeing the queue, so an inner drop just queues.
+    #[builder(default)]
+    draining: bool,
+    /// The blocks a release left held that can be part of a ring, for the
+    /// ring collector.
+    #[builder(default)]
+    candidates: Vec<u64>,
     /// The static data, the stack region and the heap.
     mem: Mem,
     /// The variable of each stack and static block, at the block start.
@@ -927,6 +941,7 @@ impl Machine
         ret_if!(size == 0, Ok(()));
         let block = self.mem.alloc(size, Origin::Heap, 0);
         let block = block.ok_or(TrapKind::OutOfMem { size })?;
+        self.mem.set_kind(block, DataKind::TEXT);
         (0..)
             .zip(texts)
             .try_for_each(|(i, t)| self.place_text(block + i * stride, t))?;
@@ -1238,7 +1253,6 @@ impl Machine
             Op::FnAddr(f) => self.push(Value::Ptr(u64::from(f) + 1)),
             Op::CallValue(n) => self.call_value(n),
             Op::Closure { func, record } => self.closure(func, record),
-            Op::FnPlain => self.fn_plain(),
             Op::Ret => self.leave(),
             Op::Print => self.print(),
             Op::PrintEnum(kind) =>
@@ -1259,6 +1273,10 @@ impl Machine
             Op::Alloc(stride) => self.alloc(stride),
             Op::Realloc(stride) => self.realloc(stride),
             Op::Free => self.free(),
+            Op::CLeave(kind) => self.c_leave(kind),
+            Op::CRevoke => self.c_revoke(),
+            Op::CLoad { kind, offset } => self.c_load(kind, offset),
+            Op::CStore { kind, offset } => self.c_store(kind, offset),
             Op::MemBlit(stride) => self.mem_blit(stride, false),
             Op::MemMove(stride) => self.mem_blit(stride, true),
             Op::MemFill(kind) => self.mem_fill(kind),
@@ -1281,6 +1299,7 @@ impl Machine
             }
             Op::MakeSlice { stride, from } => self.make_slice(stride, from),
             Op::SliceCell { stride, first } => self.slice_cell(stride, first),
+            Op::ObjectCell { stride } => self.object_cell(stride),
             Op::Text(t) => self.static_text(t),
             Op::StaticSeq(s) => self.static_seq(s),
             Op::SeqAddr(s) =>
@@ -1299,6 +1318,11 @@ impl Machine
                 let addr = self.pop_ptr("dup_seqs")?;
                 self.dup_value(addr, kind)
             }
+            Op::DeepSeqs(kind) =>
+            {
+                let addr = self.pop_ptr("deep_seqs")?;
+                self.deep_value(addr, kind)
+            }
             Op::LendSeqs(kind) =>
             {
                 let addr = self.pop_ptr("lend_seqs")?;
@@ -1309,7 +1333,28 @@ impl Machine
                 let addr = self.pop_ptr("own")?;
                 self.own_value(addr, kind)
             }
-            Op::ToHeap(kind) => self.copy_to_heap(kind),
+            Op::ObjToPtr =>
+            {
+                let addr = self.pop_ptr("obj_to_ptr")?;
+                let base = self.mem.load(addr, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
+                do_if!(base != 0, self.mem.retain(base)?);
+                self.push(Value::Ptr(base))
+            }
+            Op::PtrToObj =>
+            {
+                let base = self.pop_ptr("ptr_to_obj")?;
+                let slot = self.pop_ptr("ptr_to_obj")?;
+                let size = self.mem.live_block(base).map_or(0, |b| b.len);
+                self.write_text(slot, base, u64::from(base != 0), size)
+            }
+            Op::Pin =>
+            {
+                let addr = self.pop_ptr("pin")?;
+                let base = self.mem.load(addr, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
+                do_if!(let Some(b) = self.mem.live_block_mut(base), b.pinned = true);
+                Ok(())
+            }
+            Op::ToHeap(kind) => self.clone_to_heap(kind),
             Op::AddCell(kind) => self.add_cell(kind),
             Op::SetChar { first } => self.set_char(first),
             Op::AddText(kind) => self.add_text(kind),
@@ -1326,8 +1371,8 @@ impl Machine
             Op::CharAt { first } => self.char_at(first),
             Op::CharAtOctet => self.char_at_octet(),
             Op::TextEq => self.text_eq(),
-            Op::TextEdges => self.text_edges(),
             Op::CheckUtf8 => self.check_utf8(),
+            Op::TextEdges => self.text_edges(),
         }
     }
 
@@ -1593,7 +1638,7 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// `Ok`, `NullCall` for a value of `ဗလာ`, or what entering the
+    /// `Ok`, `NullCall` for a value of the zero word, or what entering the
     /// function gives.
     fn call_value(&mut self, args: u32) -> Step
     {
@@ -1649,6 +1694,7 @@ impl Machine
         let content = self.mem.octets(from, size)?;
         let block = self.mem.alloc(size, Origin::Heap, 0);
         let block = block.ok_or(TrapKind::OutOfMem { size })?;
+        self.mem.set_kind(block, record);
         self.mem.fill_block(block, &content)?;
         self.mem.zero(from, record)?;
         Ok(block)
@@ -1663,7 +1709,7 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// The address and the kind, `None` for a function or `ဗလာ`, or the
+    /// The address and the kind, `None` for a function or the zero word, or the
     /// trap the read of the code word hits.
     fn record_of(&self, word: u64) -> Result<Option<(u64, DataKind)>, TrapKind>
     {
@@ -1678,9 +1724,10 @@ impl Machine
         Ok(Some((at, *kind)))
     }
 
-    /// Free the record of the closure at an address, and each value its
-    /// fields own, then leave `ဗလာ`. A function, or a closure lent to a call,
-    /// owns no record.
+    /// Let go of the record of the closure at an address, then leave the zero
+    /// word: the last holder drops its fields, the boxes of its captures,
+    /// and frees it. A function,
+    /// or a closure lent to a call, holds no count of a record.
     ///
     /// # Arguments
     ///
@@ -1694,52 +1741,33 @@ impl Machine
         let word = self.mem.load(at, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
         let lent = word & 1 == 1;
         let record = tern!(lent, None, self.record_of(word)?);
-        if let Some((block, kind)) = record
-        {
-            self.drop_value(block, kind)?;
-            self.free_owners(block, kind)?;
-            self.mem.free(block)?;
-        }
+        do_if!(let Some((block, kind)) = record, self.release_record(block, kind)?);
         self.mem.store(at, Value::Ptr(0))
     }
 
-    /// Free the block of each owner pointer inside a value, through its
-    /// fields and cells, and leave `ဗလာ`: the record of a closure owns what
-    /// moved into it.
+    /// Count one holder fewer of a closure record: the last holder drops its
+    /// fields, the boxes of its captures, and frees it; a record still held
+    /// can be part of a ring, so the collector notes it.
     ///
     /// # Arguments
     ///
-    /// * `addr` - The address of the value.
+    /// * `block` - The record.
     /// * `kind` - Its kind.
     ///
     /// # Returns
     ///
     /// `Ok`, or the trap a read or the free hits.
-    fn free_owners(&mut self, addr: u64, kind: DataKind) -> Step
+    fn release_record(&mut self, block: u64, kind: DataKind) -> Step
     {
-        let kind = kind.repr();
-        ret_if!(!kind.holds_owner_ptr(), Ok(()));
-        let platform = self.module.platform_bits;
-        if let Some(s) = kind.as_struct()
-        {
-            let fields = s.fields().iter().enumerate();
-            do_for!((i, (_, k)) in fields, self.free_owners(addr + u64::from(s.offset(i, platform)), *k)?);
-            return Ok(());
-        }
-        if let Some(l) = kind.as_list()
-        {
-            let stride = u64::from(l.cell.size(platform));
-            do_for!(i in 0..u64::from(l.len), self.free_owners(addr + i * stride, l.cell)?);
-            return Ok(());
-        }
-        ret_if!(!kind.is_owner_ptr(), Ok(()));
-        let block = self.mem.load(addr, kind)?.as_ptr().unwrap_or(0);
-        do_if!(block != 0, self.mem.free(block)?);
-        self.mem.store(addr, Value::NULL)
+        let last = self.mem.release(block)?;
+        ret_if!(!last, self.note_candidate(block));
+        self.drop_value(block, kind)?;
+        self.mem.free(block)
     }
 
-    /// Give the closure at an address a record of its own: a new heap block
-    /// with the same fields, each value in them duplicated in turn.
+    /// Share the closure at an address: count one more holder of its record.
+    /// Each duplicate runs the one closure, so its captures remain shared. A
+    /// duplicate of a lent closure holds a count, so it is no longer lent.
     ///
     /// # Arguments
     ///
@@ -1747,27 +1775,22 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// `Ok`, a trap a read hits, or `OutOfMem`.
+    /// `Ok`, or a trap a read hits.
     fn dup_fn(&mut self, at: u64) -> Step
     {
         let word = self.mem.load(at, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
-        let Some((block, kind)) = self.record_of(word)?
+        let Some((block, _)) = self.record_of(word)?
         else
         {
             return Ok(());
         };
-        ret_if!(kind.holds_owner_ptr(), Err(TrapKind::ClosureOwner));
-        let size = u64::from(kind.size(self.module.platform_bits));
-        let content = self.mem.octets(block, size)?;
-        let twin = self.mem.alloc(size, Origin::Heap, 0);
-        let twin = twin.ok_or(TrapKind::OutOfMem { size })?;
-        self.mem.fill_block(twin, &content)?;
-        self.dup_value(twin, kind)?;
-        self.mem.store(at, Value::Ptr(twin))
+        self.mem.retain(block)?;
+        self.mem.store(at, Value::Ptr(block))
     }
 
     /// Lend the closure at an address to a call: set the lowest bit of the
-    /// address, so a drop frees nothing and a duplicate copies the record.
+    /// address, so a drop lets go of nothing, and a duplicate counts one more
+    /// holder of the record and is no longer lent.
     ///
     /// # Arguments
     ///
@@ -1781,22 +1804,6 @@ impl Machine
         let word = self.mem.load(at, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
         ret_if!(self.mem.closure_record(word).is_none(), Ok(()));
         self.mem.store(at, Value::Ptr(word | 1))
-    }
-
-    /// Stop the program when the function value on top of the stack is a
-    /// closure.
-    ///
-    /// # Returns
-    ///
-    /// `Ok`, or `ClosureEscape`.
-    fn fn_plain(&mut self) -> Step
-    {
-        let top = self.stack.last().and_then(|v| v.as_ptr());
-        let word = top.ok_or_else(|| malformed("fn_plain takes a function value"))?;
-        let record = self.record_of(word)?;
-        let borrows = record.is_some_and(|(_, kind)| kind.holds_borrow());
-        ret_if!(borrows, Err(TrapKind::ClosureEscape));
-        Ok(())
     }
 
     /// Start a call: each local takes a block of zeros in the stack region,
@@ -1918,6 +1925,10 @@ impl Machine
         do_if!(let Some(kind) = ret.filter(|k| k.is_aggregate()), self.dup_result(kind)?);
         self.mem.pop_stack(&frame.blocks, frame.sp);
         self.slots -= frame.locals.len();
+        // The program has ended: C can call nothing more, so each leave ends;
+        // then free each ring left, so no block remains held.
+        do_if!(self.frames.is_empty(), self.end_leaves()?);
+        do_if!(self.frames.is_empty(), self.collect_rings()?);
         Ok(())
     }
 
@@ -1979,6 +1990,9 @@ impl Machine
         {
             HaltCause::NotGood => TrapKind::NotGood { text: shown },
             HaltCause::NotFault => TrapKind::NotFault,
+            HaltCause::NoData => TrapKind::NoData,
+            HaltCause::ClosedHandle => TrapKind::ClosedHandle,
+            HaltCause::NullFromC => TrapKind::NullText,
         })
     }
 
@@ -2016,7 +2030,7 @@ impl Machine
     }
 
     /// Pop an address, push the value of a kind at it and leave the default
-    /// of the kind there, `ဗလာ` for an owner.
+    /// of the kind there, the zero word for an owner.
     ///
     /// # Arguments
     ///
@@ -2351,7 +2365,7 @@ impl Machine
         cut.map_or(Ok(()), |addr| Err(TrapKind::TextCut { addr }))
     }
 
-    /// Stop the program when the u8s of the slice on the stack are not
+    /// Stop the program when the u8s of the plain list on the stack are not
     /// UTF-8.
     ///
     /// # Returns
@@ -2479,12 +2493,35 @@ impl Machine
                 continue;
             });
             let (base, count) = slice_parts(&self.mem, at)?;
-            if self.room_of(at)? > 0
-            {
-                self.drop_cells(base, count, k)?;
-                self.mem.free(base)?;
-            }
+            // A block other values still hold remains; the last one frees it.
+            // One still held can be part of a ring, so the collector notes it.
+            let owned = self.room_of(at)? > 0;
+            let last = owned && self.mem.release(base)?;
+            // A block let go is queued, so a long chain frees in a loop, not
+            // in one call for each link.
+            do_if!(last, self.freeing.push((base, count, k)));
+            do_if!(owned && !last, self.note_candidate(base)?);
             self.mem.zero(at, k)?;
+        }
+        ret_if!(self.draining, Ok(()));
+        self.draining = true;
+        let drained = self.drain_frees();
+        self.draining = false;
+        drained
+    }
+
+    /// Free each queued block, dropping its cells first; a cell let go joins
+    /// the queue.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a read or a free hits.
+    fn drain_frees(&mut self) -> Step
+    {
+        while let Some((base, count, k)) = self.freeing.pop()
+        {
+            self.drop_cells(base, count, k)?;
+            self.mem.free(base)?;
         }
         Ok(())
     }
@@ -2533,6 +2570,7 @@ impl Machine
         let content = self.mem.octets(base, size)?;
         let block = self.mem.alloc(size, Origin::Heap, 0);
         let block = block.ok_or(TrapKind::OutOfMem { size })?;
+        do_if!(let Some(s) = kind.as_seq(), self.mem.set_kind(block, s.cell));
         self.mem.fill_block(block, &content)?;
         self.write_text(at, block, count, size)?;
         let cell = kind.as_seq().map(|s| s.cell).filter(|c| c.holds_text());
@@ -2563,7 +2601,17 @@ impl Machine
                 continue;
             });
             let base = self.mem.load(at, DataKind::OPAQUE)?.as_ptr().unwrap_or(0);
-            do_if!(base != 0 && !self.mem.is_frozen(base), self.clone_block(at, k)?);
+            do_if!(base == 0 || self.mem.is_frozen(base), continue);
+            // An owned block is shared and counted; a lent one (room 0) holds
+            // no count to share, and a pinned one is never shared, so each is
+            // copied.
+            let pinned = self.mem.live_block(base).is_some_and(|b| b.pinned);
+            if self.room_of(at)? > 0 && !pinned
+            {
+                self.mem.retain(base)?;
+                continue;
+            }
+            self.clone_block(at, k)?;
         }
         Ok(())
     }
@@ -2584,8 +2632,35 @@ impl Machine
     {
         for (at, k) in self.blocks_in(addr, kind)
         {
-            do_if!(!k.is_fn() && self.room_of(at)? == 0, self.clone_block(at, k)?);
+            do_if!(k.is_fn(), continue);
+            if self.room_of(at)? == 0
+            {
+                self.clone_block(at, k)?;
+                continue;
+            }
+            self.unshare(at, k)?;
         }
+        Ok(())
+    }
+
+    /// Give the text or the list at an address a block of its own when other
+    /// values share its block, so a write reaches this value alone.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address of the text or the list, which owns its block.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, a trap a read hits, or `OutOfMem`.
+    fn unshare(&mut self, at: u64, kind: DataKind) -> Step
+    {
+        let (base, _) = slice_parts(&self.mem, at)?;
+        ret_if!(base == 0 || self.mem.count(base) <= 1, Ok(()));
+        self.clone_block(at, kind)?;
+        // The other holders keep the old block, so this release never frees.
+        self.mem.release(base)?;
         Ok(())
     }
 
@@ -2599,7 +2674,7 @@ impl Machine
     /// # Returns
     ///
     /// `Ok`, a trap a read hits, or `OutOfMem`.
-    fn copy_to_heap(&mut self, kind: DataKind) -> Step
+    fn clone_to_heap(&mut self, kind: DataKind) -> Step
     {
         let src = self.pop_ptr("to_heap")?;
         let dst = self.pop_ptr("to_heap")?;
@@ -2612,6 +2687,7 @@ impl Machine
         let content = self.mem.octets(src, size)?;
         let block = self.mem.alloc(size, Origin::Heap, 0);
         let block = block.ok_or(TrapKind::OutOfMem { size })?;
+        self.mem.set_kind(block, list.cell);
         self.mem.fill_block(block, &content)?;
         self.write_text(dst, block, count, size)
     }
@@ -2666,6 +2742,7 @@ impl Machine
             room = need.max(held.saturating_mul(2)).max(4 * stride);
             // A list with a room of 0 owns no block to move.
             block = self.mem.realloc(tern!(held == 0, 0, base), room)?;
+            self.mem.set_kind(block, cell);
         }
         for i in (n..count).rev()
         {
@@ -2740,7 +2817,7 @@ impl Machine
     fn octets_of(&self, value: Value, kind: DataKind) -> Result<Vec<u8>, TrapKind>
     {
         ret_if!(let Value::Char(c) = value, Ok(c.to_string().into_bytes()));
-        let from = value.as_ptr().filter(|_| kind.is_textual());
+        let from = value.as_ptr().filter(|_| kind.is_text());
         let from =
             from.ok_or_else(|| malformed("add_text takes text or a character"))?;
         let (base, count) = slice_parts(&self.mem, from)?;
@@ -2910,9 +2987,12 @@ impl Machine
         ret_if!(kind.is_text(), self.remove_char(at));
         let cell =
             kind.as_seq().ok_or_else(|| malformed("remove_cell takes a list"))?.cell;
-        let (base, count) = slice_parts(&self.mem, at)?;
+        let (_, count) = slice_parts(&self.mem, at)?;
         ret_if!(count == 0, Err(TrapKind::NoCellToRemove));
+        // The drop writes into the block, so a shared one is copied first.
+        do_if!(self.room_of(at)? > 0, self.unshare(at, kind)?);
         let room = self.room_of(at)?;
+        let (base, _) = slice_parts(&self.mem, at)?;
         let last = base + (count - 1) * self.stride_of(kind);
         do_if!(room > 0, self.drop_value(last, cell)?);
         self.write_text(at, base, count - 1, room)
@@ -3009,6 +3089,29 @@ impl Machine
         self.push(Value::Ptr(self.wrap_addr(to)))
     }
 
+    /// Pop a cell number and the address of the box of an object, and push
+    /// the address of its fields; stop the program when the box holds no
+    /// object.
+    ///
+    /// # Arguments
+    ///
+    /// * `stride` - The size of the fields.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `NullObject`.
+    fn object_cell(&mut self, stride: u32) -> Step
+    {
+        let index = self.pop()?;
+        let object = self.pop_ptr("object_cell")?;
+        let (base, count) = slice_parts(&self.mem, object)?;
+        ret_if!(count == 0, Err(TrapKind::NullObject));
+        self.push(index)?;
+        let cell = self.pop_cell(count, 0)?;
+        let to = base.wrapping_add(cell.wrapping_mul(u64::from(stride)));
+        self.push(Value::Ptr(self.wrap_addr(to)))
+    }
+
     /// Pop a source address and a destination address, and duplicate a value
     /// of a kind from one to the other.
     ///
@@ -3064,7 +3167,10 @@ impl Machine
 
     /// Whether the values of a kind at two addresses are equal; for a list,
     /// whether each cell equals the cell at the same place, and for a struct,
-    /// whether each field equals the same field of the other.
+    /// whether each field equals the same field of the other. The walk keeps
+    /// the pairs still to compare in a list of its own, so a long chain of
+    /// objects takes no stack; two objects met before count as equal, so a
+    /// ring ends.
     ///
     /// # Arguments
     ///
@@ -3075,61 +3181,71 @@ impl Machine
     /// # Returns
     ///
     /// Whether the two are equal, or the trap a read hits.
-    fn cells_equal(&self, l: u64, r: u64, kind: DataKind) -> Result<bool, TrapKind>
+    fn cells_equal(&mut self, l: u64, r: u64, kind: DataKind)
+    -> Result<bool, TrapKind>
+    {
+        let mut work = vec![(l, r, kind)];
+        let mut seen = HashSet::new();
+        while let Some((l, r, kind)) = work.pop()
+        {
+            ret_if!(!self.equal_step(l, r, kind, &mut work, &mut seen)?, Ok(false));
+        }
+        Ok(true)
+    }
+
+    /// Compare one pair of values: scalars and text at once, and the parts of
+    /// a list, a plain list, an object or a struct through adding them to the
+    /// work list.
+    ///
+    /// # Arguments
+    ///
+    /// * `l` - The first address.
+    /// * `r` - The second address.
+    /// * `kind` - The kind.
+    /// * `work` - The pairs still to compare, added to.
+    /// * `seen` - The pairs of objects met so far, added to.
+    ///
+    /// # Returns
+    ///
+    /// `false` when the pair differs, else `true`, or the trap a read hits.
+    fn equal_step(
+        &self, l: u64, r: u64, kind: DataKind, work: &mut Vec<(u64, u64, DataKind)>,
+        seen: &mut HashSet<(u64, u64)>,
+    ) -> Result<bool, TrapKind>
     {
         let kind = kind.repr();
-        ret_if!(
-            kind.is_textual(),
-            Ok(text_at(&self.mem, l)? == text_at(&self.mem, r)?)
-        );
+        let platform = self.module.platform_bits;
+        ret_if!(kind.is_text(), Ok(text_at(&self.mem, l)? == text_at(&self.mem, r)?));
         if let Some(seq) = kind.as_seq()
         {
             let ((lb, lc), (rb, rc)) =
                 (slice_parts(&self.mem, l)?, slice_parts(&self.mem, r)?);
             ret_if!(lc != rc, Ok(false));
+            // An object is equal to itself at once, and one pair is compared
+            // once.
+            ret_if!(seq.boxed && (lb == rb || !seen.insert((lb, rb))), Ok(true));
             let stride = self.stride_of(kind);
-            for at in (0..lc).map(|i| i * stride)
-            {
-                ret_if!(!self.cells_equal(lb + at, rb + at, seq.cell)?, Ok(false));
-            }
+            work.extend((0..lc).map(|i| (lb + i * stride, rb + i * stride, seq.cell)));
             return Ok(true);
         }
-        ret_if!(let Some(s) = kind.as_struct(), self.fields_equal(l, r, s));
+        if let Some(s) = kind.as_struct()
+        {
+            let fields = s.fields().iter().enumerate();
+            let at = |i: usize| u64::from(s.offset(i, platform));
+            work.extend(fields.map(|(i, (_, k))| (l + at(i), r + at(i), *k)));
+            return Ok(true);
+        }
         let Some(list) = kind.as_list()
         else
         {
             let (a, b) = (self.mem.load(l, kind)?, self.mem.load(r, kind)?);
             return compare(CmpOp::Eq, a, b).map_err(eval_trap);
         };
-        let stride = u64::from(list.cell.size(self.module.platform_bits));
-        for at in (0..u64::from(list.len)).map(|i| i * stride)
-        {
-            ret_if!(!self.cells_equal(l + at, r + at, list.cell)?, Ok(false));
-        }
-        Ok(true)
-    }
-
-    /// Whether each field of two structs of one kind is equal; the padding
-    /// between the fields takes no part.
-    ///
-    /// # Arguments
-    ///
-    /// * `l` - The address of the first struct.
-    /// * `r` - The address of the second struct.
-    /// * `kind` - The struct kind.
-    ///
-    /// # Returns
-    ///
-    /// Whether the two are equal, or the trap a read hits.
-    fn fields_equal(&self, l: u64, r: u64, kind: &StructKind)
-    -> Result<bool, TrapKind>
-    {
-        let platform = self.module.platform_bits;
-        for (at, (_, field)) in kind.fields().iter().enumerate()
-        {
-            let offset = u64::from(kind.offset(at, platform));
-            ret_if!(!self.cells_equal(l + offset, r + offset, *field)?, Ok(false));
-        }
+        let stride = u64::from(list.cell.size(platform));
+        work.extend(
+            (0..u64::from(list.len))
+                .map(|i| (l + i * stride, r + i * stride, list.cell)),
+        );
         Ok(true)
     }
 

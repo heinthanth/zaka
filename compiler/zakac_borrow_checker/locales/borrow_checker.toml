@@ -1,10 +1,10 @@
 _version = 2
 
 [borrow_check.about]
-en = "Check the ownership and the loans of a folded program."
+en = "Check the flow facts of a folded program, and the pointer work of its marked code."
 
 [borrow_check.mem_check]
-en = "How the ownership check reports: error, warn or off."
+en = "How the check reports what it finds about pointers in marked code: error, warn or off."
 
 [borrow_check.mem_strict]
 en = "Also report the accesses that the check cannot prove safe."
@@ -14,5 +14,3 @@ en = "source text changed after re-ingest"
 
 [borrow_check.overflow]
 en = "What integer arithmetic does with a result outside its kind: wrap around, or stop the program and warn about an operation that overflows for each value it can see."
-[borrow_check.warn_duplicates]
-en = "Warn about each statement that duplicates text or a list, after the compiler moves the values it reads no more."

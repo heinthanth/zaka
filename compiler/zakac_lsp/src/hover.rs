@@ -53,8 +53,24 @@ const VAR: &str = "ကိန်းရှင်";
 const CONST: &str = "ကိန်းသေ";
 /// The word of a function.
 const FUNCTION: &str = "လုပ်ဆောင်ချက်";
-/// The words of a struct or an enumeration.
+/// The mark of a function marked as unsafe.
+const UNSAFE: &str = "စိတ်မချရသော";
+/// The mark of a shared struct.
+const SHARED: &str = "မျှဝေနိုင်သော";
+/// The mark of a parameter the function can change.
+const TO_CHANGE: &str = "ဒေတာ ပြောင်းလဲရန်";
+/// The mark of a parameter the function writes and never reads first.
+const TO_FILL: &str = "ဒေတာ ထည့်ပေးရန်";
+/// The mark of a parameter the function takes over.
+const OWNED: &str = "အပိုင်အနေဖြင့်";
+/// The word of a kind alias.
 const DATA_KIND: &str = "ဒေတာအမျိုးအစား";
+/// The word between the name of a struct or an enumeration and its marks.
+const CALLED: &str = "ဟူသော";
+/// The word of a struct.
+const STRUCT_WORD: &str = "ဒေတာအစုအဝေး";
+/// The word of an enumeration.
+const ENUM_WORD: &str = "ဒေတာအမျိုးအစားကွဲ";
 /// The word between a value and its field.
 const EI: &str = "၏";
 /// The words between an enumeration and its member.
@@ -205,6 +221,24 @@ fn expr_card(file: &FileCheck, checked: &Checked, at: u32) -> Option<Card>
     Some(Card::builder().range(range).code(kind.name()).build())
 }
 
+/// The marks of a parameter as a hover writes them before its kind, each
+/// with a space after it.
+///
+/// # Arguments
+///
+/// * `p` - The parameter.
+///
+/// # Returns
+///
+/// The marks; blank for none.
+fn param_marks(p: &zakac_ast::stmt::Param) -> String
+{
+    let owned = tern!(p.owned, format!("{OWNED} "), String::new());
+    let word = tern!(p.fill, TO_FILL, TO_CHANGE);
+    let edit = tern!(p.edit, format!("{word} "), String::new());
+    format!("{edit}{owned}")
+}
+
 /// The bit count of the platform-sized kinds the editors check with.
 fn platform() -> u16 { SemcheckOptions::default().platform_bits }
 
@@ -217,11 +251,11 @@ fn platform() -> u16 { SemcheckOptions::default().platform_bits }
 /// # Returns
 ///
 /// The note, or `None` for a kind with no fixed size.
-fn layout(kind: DataKind) -> Option<String>
+fn size_note(kind: DataKind) -> Option<String>
 {
     let size = kind.checked_size(platform())?;
     let align = kind.align(platform());
-    Some(t!("lsp.hover_layout", size = size, align = align).to_string())
+    Some(t!("lsp.hover_size", size = size, align = align).to_string())
 }
 
 /// Builds the card of the declaration with one name span.
@@ -302,12 +336,15 @@ impl CardMaker<'_>
     fn head(&self, n: &FnDecl) -> String
     {
         let param = |p: &zakac_ast::stmt::Param| {
-            format!("{}: {}", shown_name(&p.name), self.kind_of(&p.kind).name())
+            let kind = self.kind_of(&p.kind).name();
+            format!("{}: {}{kind}", shown_name(&p.name), param_marks(p))
         };
         let params: Vec<String> = n.params.iter().map(param).collect();
         let ret = n.ret.as_ref().map(|k| format!(": {}", self.kind_of(k).name()));
         let name = shown_name(&n.name);
-        format!("{FUNCTION} {name}({}){}", params.join("၊ "), ret.unwrap_or_default())
+        let mark = tern!(n.unchecked, format!("{UNSAFE} "), String::new());
+        let params = params.join("၊ ");
+        format!("{mark}{FUNCTION} {name}({params}){}", ret.unwrap_or_default())
     }
 
     /// The card of a struct and its fields, or of one of its fields.
@@ -324,8 +361,11 @@ impl CardMaker<'_>
         if self.is_target(&n.name)
         {
             let lines = fields.iter().map(|(f, k)| format!("\n    {f}: {}", k.name()));
-            let code = format!("{DATA_KIND} {name}{}", lines.collect::<String>());
-            self.keep(code, vec![kind.and_then(layout)], Some(n.span));
+            let mark = tern!(n.shared, format!("{SHARED} "), String::new());
+            let lines = lines.collect::<String>();
+            let code = format!("{name} {CALLED} {mark}{STRUCT_WORD}{lines}");
+            let shared = n.shared.then(|| t!("lsp.hover_shared").to_string());
+            self.keep(code, vec![shared, kind.and_then(size_note)], Some(n.span));
         }
         let Some(at) = n.fields.iter().position(|p| self.is_target(&p.name))
         else
@@ -341,7 +381,7 @@ impl CardMaker<'_>
             kind.and_then(DataKind::as_struct).map(|s| s.offset(at, platform()));
         let place = t!("lsp.hover_field", name = name, offset = offset.unwrap_or(0));
         let code = format!("{name} {EI} {field}: {}", field_kind.name());
-        self.keep(code, vec![Some(place.to_string()), layout(field_kind)], None);
+        self.keep(code, vec![Some(place.to_string()), size_note(field_kind)], None);
     }
 
     /// The card of an enumeration and its members, or of one of its members.
@@ -357,8 +397,9 @@ impl CardMaker<'_>
         {
             let lines =
                 n.members.iter().map(|m| format!("\n    {}", shown_name(&m.name)));
-            let code = format!("{DATA_KIND} {name}{}", lines.collect::<String>());
-            self.keep(code, vec![kind.and_then(layout)], Some(n.span));
+            let lines = lines.collect::<String>();
+            let code = format!("{name} {CALLED} {ENUM_WORD}{lines}");
+            self.keep(code, vec![kind.and_then(size_note)], Some(n.span));
         }
         let Some(member) = n.members.iter().find(|m| self.is_target(&m.name))
         else
@@ -411,15 +452,17 @@ impl Visitor for CardMaker<'_>
         {
             let lib = n.lib.as_ref().map(|l| l.lit.value.clone());
             let c_fn = lib.map(|lib| t!("lsp.hover_c_fn", lib = lib).to_string());
-            self.keep(head.clone(), vec![c_fn], Some(n.span));
+            let marked = n.unchecked.then(|| t!("lsp.hover_unsafe").to_string());
+            self.keep(head.clone(), vec![c_fn, marked], Some(n.span));
         }
         let param = n.params.iter().find(|p| self.is_target(&p.name));
         if let Some(p) = param
         {
             let kind = self.kind_of(&p.kind);
-            let code = format!("{}: {}", shown_name(&p.name), kind.name());
+            let code =
+                format!("{}: {}{}", shown_name(&p.name), param_marks(p), kind.name());
             let of = t!("lsp.hover_param", name = shown_name(&n.name)).to_string();
-            self.keep(code, vec![Some(of), layout(kind)], None);
+            self.keep(code, vec![Some(of), size_note(kind)], None);
         }
         walk_fn(self, n);
     }
@@ -434,7 +477,7 @@ impl Visitor for CardMaker<'_>
             let word = tern!(n.is_const, CONST, VAR);
             let kind_text = kind.map(DataKind::name).unwrap_or_else(|| "?".into());
             let code = format!("{word} {}: {kind_text}", shown_name(&n.name));
-            self.keep(code, vec![kind.and_then(layout)], Some(n.span));
+            self.keep(code, vec![kind.and_then(size_note)], Some(n.span));
         }
         walk_decl(self, n);
     }
@@ -458,7 +501,7 @@ impl Visitor for CardMaker<'_>
             let kind = self.kind_of(&n.kind);
             let code = format!("{DATA_KIND} {} = {}", shown_name(&n.name), kind.name());
             let alias = Some(t!("lsp.hover_alias").to_string());
-            self.keep(code, vec![alias, layout(kind)], Some(n.span));
+            self.keep(code, vec![alias, size_note(kind)], Some(n.span));
         }
         walk_alias(self, n);
     }
@@ -502,7 +545,7 @@ impl CardMaker<'_>
         let kind_text = kind.map(DataKind::name).unwrap_or_else(|| "?".into());
         let code = format!("{}: {kind_text}", shown_name(var));
         let note = Some(t!("lsp.hover_loop").to_string());
-        self.keep(code, vec![note, kind.and_then(layout)], None);
+        self.keep(code, vec![note, kind.and_then(size_note)], None);
     }
 }
 

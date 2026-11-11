@@ -37,7 +37,6 @@ use zakac_rust_sugars::tern;
 use zakac_semcheck::enums::stem_of;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::semcheck::KindTable;
-use zakac_semcheck::semcheck::RESULT_NAME;
 use zakac_semcheck::structs::StructTable;
 use zakac_span::span::Span;
 
@@ -63,9 +62,10 @@ pub fn completions(file: Option<&FileCheck>, pos: Position) -> Vec<CompletionIte
     let linked = file.and_then(|f| after_link(f, pos));
     ret_if!(let Some(items) = linked, items);
     let words = RESERVED.iter().filter(|(_, kw)| kw_role(*kw) != TokenRole::Particle);
-    let words = words.map(|(word, kw)| keyword(word.to_string(), *kw));
-    let phrases =
-        PHRASES.iter().filter_map(|(pieces, kw)| Some(keyword(spell(pieces)?, *kw)));
+    let words = words.map(|(word, kw)| reserved_item(word.to_string(), *kw));
+    let phrases = PHRASES
+        .iter()
+        .filter_map(|(pieces, kw)| Some(reserved_item(spell(pieces)?, *kw)));
     let names = file.map(|f| names_in_scope(f, pos)).unwrap_or_default();
     words.chain(phrases).chain(names).collect()
 }
@@ -80,7 +80,7 @@ pub fn completions(file: Option<&FileCheck>, pos: Position) -> Vec<CompletionIte
 /// # Returns
 ///
 /// The item.
-fn keyword(label: String, kw: Kw) -> CompletionItem
+fn reserved_item(label: String, kw: Kw) -> CompletionItem
 {
     let role: &'static str = kw_role(kw).into();
     item(label, CompletionItemKind::Keyword, role)
@@ -121,7 +121,7 @@ fn after_link(file: &FileCheck, pos: Position) -> Option<Vec<CompletionItem>>
 {
     let at = file.lines.offset(pos);
     let ends = |t: &&Token| file.root_range(&t.span).hi;
-    // The chain stays on the cursor's line: an unfinished line above must not
+    // The chain holds to the cursor's line: an unfinished line above must not
     // join it, as `က ၏` on one line and `က ၏ အိမ် ၏` on the next.
     let line_start = file.lines.starts().get(pos.line as usize).copied().unwrap_or(0);
     let starts = |t: &&Token| file.root_range(&t.span).lo;
@@ -129,9 +129,9 @@ fn after_link(file: &FileCheck, pos: Position) -> Option<Vec<CompletionItem>>
     let on_line = live.filter(|t| starts(t) >= line_start);
     let before: Vec<&Token> = on_line.filter(|t| ends(t) <= at).collect();
     // A name that ends at the cursor is the part the editor filters on.
-    let typing =
+    let writing =
         before.last().is_some_and(|t| t.kind == TokenKind::Ident && ends(t) == at);
-    let before = &before[..before.len() - usize::from(typing)];
+    let before = &before[..before.len() - usize::from(writing)];
     let (link, head) = before.split_last()?;
     let program = &file.checked.as_ref()?.lowered.checked.program;
     match link.kind
@@ -162,7 +162,7 @@ fn fields_after(
     let (root, steps) = chain(file, head)?;
     let scope = scope_at(file, pos)?;
     let start = scope.kinds.get(&root).copied()?;
-    let end = steps.iter().try_fold(start, |kind, step| step.apply(kind))?;
+    let end = steps.iter().try_fold(start, |kind, step| step.follow(kind))?;
     let fields = end.as_struct()?.fields();
     let field = |(name, kind): &(String, DataKind)| {
         item(name.clone(), CompletionItemKind::Field, &kind.name())
@@ -191,7 +191,7 @@ impl Step
     /// # Returns
     ///
     /// The kind after it, or `None` when the step does not fit the kind.
-    fn apply(&self, kind: DataKind) -> Option<DataKind>
+    fn follow(&self, kind: DataKind) -> Option<DataKind>
     {
         match self
         {
@@ -311,7 +311,7 @@ fn members_after(
 /// The name, or `None` for another kind.
 fn struct_of(kind: &Kind) -> Option<String>
 {
-    let through = kind.wraps.iter().all(|w| matches!(w, Wrap::Ptr | Wrap::RawPtr));
+    let through = kind.wraps.iter().all(|w| matches!(w, Wrap::Ptr));
     let named = kind.base == BaseKind::Named && through;
     named.then(|| kind.name.as_ref().map(|n| n.name.to_string())).flatten()
 }
@@ -531,8 +531,6 @@ impl Visitor for Scope<'_>
             self.add(&p.name, VARIABLE);
             self.note(&p.name, DataKind::from_ast(&p.kind, self.structs));
         }
-        let result = Ident::builder().name(RESULT_NAME).span(n.name.span).build();
-        do_if!(n.ret.is_some() && !n.start, self.add(&result, VARIABLE));
         walk_fn(self, n);
     }
 
@@ -551,7 +549,7 @@ impl Visitor for Scope<'_>
     fn visit_each(&mut self, n: &EachStmt)
     {
         do_if!(self.holds(&n.span), self.add(&n.var, VARIABLE));
-        let cells = self.table.get(&n.source.id()).and_then(|k| Step::Cell.apply(*k));
+        let cells = self.table.get(&n.source.id()).and_then(|k| Step::Cell.follow(*k));
         do_if!(let Some(cell) = cells.filter(|_| self.holds(&n.span)), self.note(&n.var, cell));
         walk_each(self, n);
     }

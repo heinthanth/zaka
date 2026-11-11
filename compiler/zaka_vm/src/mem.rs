@@ -65,7 +65,7 @@ pub struct Block
     pub start: u64,
     /// The octet count, kept once the block is freed.
     pub len: u64,
-    /// The contents; empty once the block is freed.
+    /// The contents; no octets once the block is freed.
     pub data: Vec<u8>,
     /// Where the block came from.
     pub origin: Origin,
@@ -78,6 +78,37 @@ pub struct Block
     /// literal of the same text shares.
     #[builder(default)]
     pub frozen: bool,
+    /// The count of values that hold the block: text and plain lists share a
+    /// block when one is set from another, and the last to let go frees it.
+    #[builder(default = 1)]
+    pub rc: u32,
+    /// The kind of each cell of a counted block, so the ring collector can
+    /// walk the blocks its cells hold; `None` for a block with nothing to
+    /// walk.
+    pub kind: Option<DataKind>,
+    /// Where the ring collector stands with the block.
+    #[builder(default)]
+    pub color: Color,
+    /// Whether the block waits in the buffer of the ring collector.
+    #[builder(default)]
+    pub buffered: bool,
+    /// Whether an address of one of its cells was taken: the block is never
+    /// shared again, so a duplicate copies it.
+    #[builder(default)]
+    pub pinned: bool,
+}
+
+/// Where the ring collector stands with a block, as trial deletion paints it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Color
+{
+    /// In use, or not looked at.
+    #[default]
+    Black,
+    /// Its counts from inside the candidate graph are taken off for a trial.
+    Pending,
+    /// Nothing outside the graph holds it: garbage.
+    White,
 }
 
 impl Block
@@ -192,7 +223,7 @@ impl Mem
     pub fn set_fn_names(&mut self, names: Vec<String>) { self.fns = names; }
 
     /// The text of a function value, in the form that reads back:
-    /// `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`, or `ဗလာ` for no function.
+    /// `<name> ဟူသော လုပ်ဆောင်ချက်`, or the zero word for no function.
     ///
     /// # Arguments
     ///
@@ -210,7 +241,7 @@ impl Mem
         let word = thunk.and_then(Result::ok).unwrap_or(word);
         let name = usize::try_from(word - 1).ok().and_then(|n| self.fns.get(n));
         let name = name.map(|n| shown_name(n));
-        name.map_or_else(|| format!("{word:#x}"), |n| format!("လုပ်ဆောင်ချက် {n} ၏ လိပ်စာ"))
+        name.map_or_else(|| format!("{word:#x}"), |n| format!("{n} ဟူသော လုပ်ဆောင်ချက်"))
     }
 
     /// The record of a closure, when a function value is one: a function
@@ -224,7 +255,7 @@ impl Mem
     ///
     /// # Returns
     ///
-    /// The address of the record, or `None` for a function or `ဗလာ`.
+    /// The address of the record, or `None` for a function or the zero word.
     pub fn closure_record(&self, word: u64) -> Option<u64>
     {
         (word > self.fns.len() as u64).then_some(word & !1)
@@ -402,6 +433,11 @@ impl Mem
         ret_if!(after > self.max_heap, Err(full));
         let start = self.place(size, Origin::Heap, 0).ok_or(full)?;
         self.keep_prefix(addr, start);
+        // The new block stands for the old one: same holders, same cells.
+        let old = self.table.get(&addr);
+        let (rc, kind, pinned) =
+            old.map_or((1, None, false), |b| (b.rc, b.kind, b.pinned));
+        do_if!(let Some(b) = self.table.get_mut(&start), (b.rc, b.kind, b.pinned) = (rc, kind, pinned));
         self.retire(addr);
         Ok(start)
     }
@@ -727,14 +763,16 @@ impl Mem
     /// The address in the VM, or `None` outside each live block.
     pub fn vm_addr(&self, native: usize) -> Option<u64>
     {
-        let holds = |b: &&Block| {
-            let base = b.data.as_ptr() as usize;
-            b.live
-                && !b.data.is_empty()
-                && (base..=base + b.data.len()).contains(&native)
-        };
-        let block = self.table.values().find(holds)?;
-        Some(block.start + (native - block.data.as_ptr() as usize) as u64)
+        let base = |b: &Block| b.data.as_ptr() as usize;
+        let live = |b: &Block| b.live && !b.data.is_empty();
+        let inside =
+            |b: &&Block| live(b) && (base(b)..base(b) + b.data.len()).contains(&native);
+        // An address one past the end of a block counts for that block, unless
+        // it lies inside another, whose octets can start right there.
+        let end = |b: &&Block| live(b) && base(b) + b.data.len() == native;
+        let blocks = || self.table.values();
+        let block = blocks().find(inside).or_else(|| blocks().find(end))?;
+        Some(block.start + (native - base(block)) as u64)
     }
 
     /// Bit count of the platform-sized kinds and addresses.
@@ -889,6 +927,99 @@ impl Mem
     pub fn is_frozen(&self, addr: u64) -> bool
     {
         self.block_at(addr).is_some_and(|b| b.frozen)
+    }
+
+    /// Count one more value that holds a live heap block.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the block.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, `DoubleFree` for a freed block, or `BadFree` for an address that
+    /// is not the start of a heap block.
+    pub fn retain(&mut self, start: u64) -> Result<(), TrapKind>
+    {
+        self.check_free(start)?;
+        do_if!(let Some(b) = self.table.get_mut(&start), b.rc += 1);
+        Ok(())
+    }
+
+    /// Count one value fewer that holds a live heap block.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the block.
+    ///
+    /// # Returns
+    ///
+    /// Whether no value holds the block now, so the caller frees it; or
+    /// the trap of [`Mem::retain`].
+    pub fn release(&mut self, start: u64) -> Result<bool, TrapKind>
+    {
+        self.check_free(start)?;
+        let Some(b) = self.table.get_mut(&start)
+        else
+        {
+            return Ok(false);
+        };
+        b.rc = b.rc.saturating_sub(1);
+        Ok(b.rc == 0)
+    }
+
+    /// The count of values that hold the block that starts at an address.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the block.
+    ///
+    /// # Returns
+    ///
+    /// The count; 0 for an address that starts no block.
+    pub fn count(&self, start: u64) -> u32
+    {
+        self.table.get(&start).map_or(0, |b| b.rc)
+    }
+
+    /// Record the kind of each cell of a counted block, so the ring
+    /// collector can walk what it holds.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the block.
+    /// * `cell` - The kind of each cell.
+    pub fn set_kind(&mut self, start: u64, cell: DataKind)
+    {
+        do_if!(let Some(b) = self.table.get_mut(&start), b.kind = Some(cell));
+    }
+
+    /// The heap block that starts at an address, when it is live.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the block.
+    ///
+    /// # Returns
+    ///
+    /// The block, or `None`.
+    pub fn live_block(&self, start: u64) -> Option<&Block>
+    {
+        self.table.get(&start).filter(|b| b.live && b.origin == Origin::Heap)
+    }
+
+    /// The heap block that starts at an address, to change, when it is live.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start of the block.
+    ///
+    /// # Returns
+    ///
+    /// The block, or `None`.
+    pub fn live_block_mut(&mut self, start: u64) -> Option<&mut Block>
+    {
+        self.table.get_mut(&start).filter(|b| b.live && b.origin == Origin::Heap)
     }
 
     fn block_at(&self, addr: u64) -> Option<&Block>

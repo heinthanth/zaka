@@ -24,7 +24,7 @@ static SHEET: ComponentStyle = ComponentStyle::global_css("site-hero", STYLE_SHE
 
 /// The line of Zaka the hero writes out: a statement that prints a greeting,
 /// as the start block of a program holds it.
-pub const LINE: &str = "\"မင်္ဂလာပါ\" ဟု ပြသပါ။";
+pub const LINE: &str = "\"မင်္ဂလာပါ\" ဟု ပြသမည်။";
 
 /// What [`LINE`] prints.
 pub const PRINTED: &str = "မင်္ဂလာပါ";
@@ -38,7 +38,7 @@ const PHOTO_AUTHOR: &str = "Antonio Gabriel";
 
 /// The hero: plumeria blossoms against clear blue, mirrored so the flowers
 /// stand on the right, and over it the line of Zaka writing itself out, a
-/// sentence, the way into Learn in gold and the link to the Docs beside it.
+/// sentence, the path into Learn in gold and the link to the Docs beside it.
 /// The explorer waits in the header.
 /// The writing is a CSS animation, so it needs no script, and with less
 /// motion asked for, the whole line stands from the start.
@@ -93,7 +93,7 @@ pub fn hero() -> impl IntoView
 fn code_line() -> impl IntoView
 {
     let mut quoted = false;
-    let keys: Vec<_> = syllables(LINE)
+    let strokes: Vec<_> = clusters(LINE)
         .into_iter()
         .enumerate()
         .map(|(idx, piece)| {
@@ -107,7 +107,7 @@ fn code_line() -> impl IntoView
         })
         .collect();
     let caret = span().class(ClassName::HERO_CARET).attr("aria-hidden", "true");
-    h1().class(ClassName::HERO_LINE).lang("my").child((keys, caret))
+    h1().class(ClassName::HERO_LINE).lang("my").child((strokes, caret))
 }
 
 /// Split a line into the pieces it is written in: a Burmese cluster stands
@@ -121,7 +121,7 @@ fn code_line() -> impl IntoView
 /// # Returns
 ///
 /// The pieces, in order.
-pub fn syllables(line: &str) -> Vec<String>
+pub fn clusters(line: &str) -> Vec<String>
 {
     line.chars().fold(Vec::<String>::new(), |mut pieces, ch| {
         let prev = pieces.last().and_then(|p| p.chars().last());

@@ -7,8 +7,12 @@ use bon::Builder;
 use zakac_host_errors::Error;
 use zakac_host_errors::errors::IOErrorAction;
 use zakac_host_errors::errors::IOErrorContext;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
+use crate::callbacks::CB_SOURCE;
+use crate::callbacks::ffi_flags;
 use crate::options::Checks;
 
 /// The compilers tried, in order, when neither `--cc` nor `CC` names one.
@@ -285,6 +289,8 @@ fn compile_command(plan: &BuildPlan<'_>, source: &Path, object: &Path) -> Comman
     {
         cmd.args(SANITIZE_FLAGS);
     }
+    let callbacks = source.file_name() == Some(CB_SOURCE.as_ref());
+    do_if!(callbacks, _ = cmd.args(&ffi_flags().0));
     cmd.args(plan.cflags).arg("-c").arg(source).arg("-o").arg(object);
     cmd
 }
@@ -307,11 +313,17 @@ fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Com
     {
         cmd.args(SANITIZE_FLAGS);
     }
+    // libffi links when `zaka_cb.c` is built, with the flags `pkg-config`
+    // gives.
+    let callbacks =
+        plan.sources.iter().any(|s| s.file_name() == Some(CB_SOURCE.as_ref()));
+    let ffi: &[String] = tern!(callbacks, &ffi_flags().1, &[]);
     cmd.args(objects)
         .arg("-o")
         .arg(plan.out)
         .args(LINK_LIBS)
         .args(plan.libs)
+        .args(ffi)
         .args(plan.ldflags);
     cmd
 }

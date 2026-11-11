@@ -5,7 +5,7 @@ description: Keep the good result or the error value of a call, test which one i
 
 # Reading a whole result
 
-A call that can fail, written with no `ရလဒ်ကောင်း` and no `?`, passes no failure on.
+A call that can fail, written with no `?` and no `ရလဒ်ကောင်း`, passes no failure on.
 It gives back the *whole result*: the good result or the error value, whichever the call
 met. The first store of such a value is a declaration, and the kind here is taken from the
 value, as the kind of a variable is when it is written with no kind (the next page writes
@@ -13,19 +13,19 @@ the kind out):
 
 ```zaka
 လုပ်ဆောင်ချက် စားခွဲ သည်
-ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။
-အကယ်၍ ခ သည် ၀ နှင့် ညီလျှင် "သုညဖြင့် စား၍ မရပါ" ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
-က / ခ ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ ခ သည် ၀ နှင့် ညီလျှင် "သုညဖြင့် စား၍ မရပါ" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။
-အကယ်၍ ရ သည် ရလဒ်ကောင်း ဖြစ်လျှင် "ရလဒ် {ရ ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်}" ဟု ပြသပါ။
-သို့မဟုတ်ပါက "မအောင်မြင်" ဟု ပြသပါ။
-ရ ကို စားခွဲ(၁၀၀၊ ၀) ဟု ထားပါ။
-အကယ်၍ ရ သည် ရလဒ်ကောင်း ဖြစ်လျှင် "ရလဒ်" ဟု ပြသပါ။
-သို့မဟုတ်ပါက "အမှား: {ရ ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ်}" ဟု ပြသပါ။
+အကယ်၍ ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင် "ရလဒ် {ရ ထဲမှ ဒေတာ}" ဟု ပြသမည်။
+သို့မဟုတ်ပါက "မအောင်မြင်" ဟု ပြသမည်။
+ရ ကို စားခွဲ(၁၀၀၊ ၀) ဟု ထားမည်။
+အကယ်၍ ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင် "ရလဒ်" ဟု ပြသမည်။
+သို့မဟုတ်ပါက "အမှား: {ရ ထဲမှ အမှားအယွင်း ဒေတာ}" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -34,37 +34,37 @@ the kind out):
 အမှား: သုညဖြင့် စား၍ မရပါ
 ```
 
-The second line of the start block stores another result of the same kinds with `ထားပါ`.
+The second line of the start block stores another result of the same kinds with `ထားမည်`.
 Two tests and two reads are new:
 
 | Written | Is |
 | --- | --- |
-| `ရ သည် ရလဒ်ကောင်း` | true when `ရ` holds a good result |
-| `ရ သည် အမှားအယွင်း` | true when `ရ` holds an error value |
-| `ရ ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်` | the good result |
-| `ရ ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ်` | the error value |
+| `ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင်` | true when `ရ` holds a good result |
+| `ရ ထဲတွင် အမှားအယွင်း ရှိလျှင်` | true when `ရ` holds an error value |
+| `ရ ထဲမှ ဒေတာ` | the good result |
+| `ရ ထဲမှ အမှားအယွင်း ဒေတာ` | the error value |
 
-The tests are true or false like `ညီ`, so each fits in `အကယ်၍`, in a loop condition, and
-beside `&&` and `||`. A read uses the conversion sentence of
-[Conversions](../../manual/language/conversions.md), with `ရလဒ်ကောင်း` or `အမှားအယွင်း` in the
-place of a kind.
+The tests are true or false like `ညီ`, so each fits in `အကယ်၍`, in a loop condition
+(`ရ ထဲတွင် ရလဒ်ကောင်း ရှိနေသရွေ့`), and beside `&&` and `||`. `ရှိ` can take `နေ`, as in
+`ရှိနေလျှင်`, with the same meaning. A read is the cell, `ထဲမှ`, and `ဒေတာ` for the good
+result or `အမှားအယွင်း ဒေတာ` for the error value.
 
 A read of the part the result does not hold stops the run, as a conversion that cannot be
 made does. Test first, as the program above does, or be sure of the part:
 
 ```zaka-stop
 လုပ်ဆောင်ချက် စားခွဲ သည်
-ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။
-အကယ်၍ ခ သည် ၀ နှင့် ညီလျှင် "သုညဖြင့် စား၍ မရပါ" ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
-က / ခ ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ ခ သည် ၀ နှင့် ညီလျှင် "သုညဖြင့် စား၍ မရပါ" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၀) ဖြစ်ပါစေ။
-"မစမီ" ဟု ပြသပါ။
-ရ ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-"ဤနေရာ မရောက်ပါ" ဟု ပြသပါ။
+"မစမီ" ဟု ပြသမည်။
+ရ ထဲမှ ဒေတာ ကို ပြသမည်။
+"ဤနေရာ မရောက်ပါ" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -74,22 +74,22 @@ the program stopped: the result holds an error, not a good result: သုညဖ�
 ```
 
 When a test tells the part, the compiler does not wait for the run. Inside the
-arm of `ရ သည် ရလဒ်ကောင်း`, `ရ` holds a good result, so a read of its error value there is
-ZK0454. The arms after it get the opposite, and an arm that ends with `ပြန်ပေးပါ`,
-`ရပ်ပါ` or `ကျော်ပါ` proves the opposite for what follows the whole statement. A change to
-`ရ`, such as `ထားပါ`, ends the proof:
+arm of `ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင်`, `ရ` holds a good result, so a read of its error value there is
+ZK0454. The arms after it get the opposite, and an arm that ends with `ပြန်ပေးမည်`,
+`ရပ်မည်` or `ကျော်မည်` proves the opposite for what follows the whole statement. A change to
+`ရ`, such as `ထားမည်`, ends the proof:
 
 ```zaka-error ZK0454
 လုပ်ဆောင်ချက် စားခွဲ သည်
-ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။
-အကယ်၍ ခ သည် ၀ နှင့် ညီလျှင် "သုညဖြင့် စား၍ မရပါ" ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
-က / ခ ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ ခ သည် ၀ နှင့် ညီလျှင် "သုညဖြင့် စား၍ မရပါ" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။
-အကယ်၍ ရ သည် ရလဒ်ကောင်း ဖြစ်လျှင် ရ ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+အကယ်၍ ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင် ရ ထဲမှ အမှားအယွင်း ဒေတာ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

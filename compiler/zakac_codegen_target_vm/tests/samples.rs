@@ -156,7 +156,14 @@ fn repo_samples_are_well_formed()
             let emitted = run_loaded(loaded, &options, &folding, &mem, results);
             let artifact = CodegenArtifact::from_emitted(&source, emitted);
             let name = file.path().display().to_string();
-            let module = artifact.module.as_ref().unwrap_or_else(|| panic!("{name}"));
+            // A mistake in safe code is an error the check reports, with no
+            // module to look at.
+            let Some(module) = artifact.module.as_ref()
+            else
+            {
+                assert!(mistake, "{name}");
+                continue;
+            };
             assert_well_formed(&name, module);
         }
     }

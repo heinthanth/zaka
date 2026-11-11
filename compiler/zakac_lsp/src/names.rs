@@ -102,7 +102,8 @@ pub fn rename_range(file: &FileCheck, pos: Position) -> Option<gen_lsp_types::Ra
     under(file, pos).map(|(used, _)| used.range)
 }
 
-/// Why a rename has nothing to change: the cursor is on no declared name.
+/// The reason a rename has nothing to change: the cursor is on no declared
+/// name.
 ///
 /// # Returns
 ///

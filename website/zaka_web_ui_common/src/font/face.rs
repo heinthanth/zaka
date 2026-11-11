@@ -153,22 +153,22 @@ impl Default for Face
 
 impl Face
 {
-    /// Name in the pickers: the family, or a note for [`Face::Native`].
+    /// Name in the pickers: the font name, or a note for [`Face::Native`].
     ///
     /// # Returns
     ///
     /// The name.
     pub fn label(self) -> Cow<'static, str>
     {
-        tern!(self == Face::Native, t!("web_ui.face.native"), self.family().into())
+        tern!(self == Face::Native, t!("web_ui.face.native"), self.css_name().into())
     }
 
-    /// The CSS font family; [`Face::Native`] has none of its own.
+    /// The CSS font name; [`Face::Native`] has none of its own.
     ///
     /// # Returns
     ///
-    /// The family name.
-    pub fn family(self) -> &'static str
+    /// The font name.
+    pub fn css_name(self) -> &'static str
     {
         match self
         {
@@ -343,7 +343,7 @@ impl Face
     pub fn burmese_alias(self) -> String
     {
         ret_if!(self == Face::Pda10, BURMESE_FONT.to_string());
-        format!("{} (Burmese)", self.family())
+        format!("{} (Burmese)", self.css_name())
     }
 
     /// A stored Burmese font, or a default when the picker lacks it.
@@ -490,7 +490,7 @@ impl Pair
         let name = tern!(
             self.rest().is_some(),
             self.burmese.burmese_alias(),
-            self.burmese.family().to_string()
+            self.burmese.css_name().to_string()
         );
         format!("\"{name}\", ")
     }
@@ -503,7 +503,7 @@ impl Pair
     /// The stack.
     pub fn code_stack(self) -> String
     {
-        let rest = self.rest().map(|f| format!("\"{}\", ", f.family()));
+        let rest = self.rest().map(|f| format!("\"{}\", ", f.css_name()));
         format!("{}{}{MONO_FALLBACK}", self.lead(), rest.unwrap_or_default())
     }
 
@@ -516,7 +516,7 @@ impl Pair
     pub fn ui_stack(self) -> String
     {
         let rest = self.rest().filter(|f| *f != Face::Native);
-        let rest = rest.map(|f| format!("\"{}\", ", f.family()));
+        let rest = rest.map(|f| format!("\"{}\", ", f.css_name()));
         format!(
             "{}{}{SYSTEM_UI}, {SANS_FALLBACK}",
             self.lead(),

@@ -1,149 +1,205 @@
 ---
-title: Pointer checks
-description: The settings that decide how the compiler reports pointer mistakes, with one program shown under each of them.
+title: Compiler checks
+description: What the flow checks find in each program, the check that each value is set before it is read, how the pointer lint of marked code is reported, and the settings that tune them, with one program shown under each setting.
 ---
 
-# Pointer checks
+# Compiler checks
 
-Pointer mistakes are caught twice: the compiler proves what it can from the text of the
-program, and the VM checks each read and write while the program runs. Three
-settings tune the first of these. This page lists them and shows the same program under
-each setting. [Ownership and borrowing](../language/ownership.md) gives the rules the check
-follows, and [Ownership and borrowing](../../learn/pointers/ownership.md#turning-the-checks-down)
-in Learn shows the settings in the Explorer.
+Mistakes with storage are caught twice: the compiler proves what it can from the text of
+the program, and the VM checks each read and write while the program runs. The compiler's
+part is the checker that runs after constant folding (see [Stages](stages.md)). It holds
+two sets of findings:
+
+- **The flow checks**, on each program: a read of a variable, a field or a cell before
+  the program gives it a value (ZK0722, and the warning ZK0723 where the check cannot
+  tell); a call that reads a global no path to it has set (ZK0724); a cell or an offset
+  past the end; and an operation that overflows for each value it can see. These are
+  errors, save ZK0723 and the overflow, which are warnings.
+- **The pointer lint**, on marked code: the mistakes that pointers alone can make, such
+  as a use after a give-back, a leak, or the address of a local that escapes. These follow
+  `--mem-check`, and are warnings unless the setting asks for errors.
+
+[Unsafe Zaka](../language/unsafe.md) gives the rules the lint follows, and the list of
+its findings.
 
 | Setting | Command line | In the Explorer | Default |
 | --- | --- | --- | --- |
-| how findings are reported | `--mem-check error`, `warn` or `off` | **Ownership check** | `error` |
+| how the lint is reported | `--mem-check error`, `warn` or `off` | **Ownership check** | `warn` |
 | report what cannot be proved | `--mem-strict` | **Strict ownership check** | off |
-| refuse raw addresses | `--no-raw` | **Forbid raw addresses** | off |
+| refuse marked code | `--no-unsafe` | **Forbid marked code** | off |
+| what overflow does | `--overflow stop` or `wrap` | **Stop on overflow** | `stop` |
 
-Each one works on `borrowck`, `codegen` and `run`, and `--no-raw` on `irgen` too.
-See [Commands](commands.md).
+`--mem-check`, `--mem-strict` and `--overflow` work on `borrowck`, `build` and `run`, and
+`--no-unsafe` on `irgen` too. See [Commands](commands.md).
 
 ## What each setting changes
 
-The VM's own checks never change with these settings. A read through a null
-address, past the end of a block, or into a block that was given back stops the program
-under each of them. The settings change what the *compiler* does with the same finding.
+The VM's own checks never change with these settings. A read through a null address, past
+the end of a block, or into a block that was given back stops the program under each of
+them. The settings change what the *compiler* does with the same finding.
 
 | Setting | Effect |
 | --- | --- |
-| `--mem-check error` | each finding of the check is an error: nothing runs |
-| `--mem-check warn` | each finding is a warning: the program runs, and the VM stops it if it reaches the bad access |
-| `--mem-check off` | the check reports nothing: the VM is the one check left |
-| `--mem-strict` | adds the warnings for what the check cannot prove safe (ZK0711) |
-| `--no-raw` | each raw address kind (`လိပ်စာအကြမ်း`) is an error (ZK0717) |
+| `--mem-check warn` | each finding of the lint is a warning: the program runs, and the VM stops it if it reaches the bad access |
+| `--mem-check error` | each finding of the lint is an error: nothing runs |
+| `--mem-check off` | the lint reports nothing: the VM is the one check left |
+| `--mem-strict` | adds the warnings for what the compiler cannot prove safe (ZK0711) |
+| `--no-unsafe` | each mark `စိတ်မချရသော` is an error (ZK0471) |
 
-`warn` and `off` move the findings of the borrow checker alone: ZK0701 to ZK0704 and
-ZK0706 to ZK0712. The rules of kinds, ZK0705 and ZK0713 to ZK0717, are errors in each
-mode, since a program that breaks one of them has no meaning to check. A move leaves
-`ဗလာ` in the old owner in each mode as well, so a program does the same thing whichever
-mode compiled it.
+The lint holds ZK0702 to ZK0708, ZK0712 and ZK0721 wherever the compiler finds them, and
+ZK0709, ZK0710 and ZK0711 when it finds them inside marked code. Outside marked code, the last three
+come from the flow checks and keep their own level: ZK0709 and ZK0710 are errors, ZK0711 a
+warning, in each mode. ZK0701, a read after an owned hand-over, is an error in each mode
+too, since the place it reads holds the null pointer for certain. ZK0722, ZK0723 and ZK0724
+never move with the mode, in marked code or out of it: the kinds of Zaka promise that no
+value is read before it is set.
 
 ## One program, three modes
 
 A block of four integers has cells 0 to 3, and the program reads cell 4:
 
-```zaka-error ZK0710
+```zaka-warning ZK0710
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ + ၃ ၏ တန်ဖိုး ကို ပြသပါ။
-ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။
+ပ + ၃ ၏ တန်ဖိုး ကို ပြသမည်။
+ပ + ၄ ၏ တန်ဖိုး ကို ပြသမည်။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
-With the default, `--mem-check error`, the compiler refuses the program and nothing runs:
+With the default, `--mem-check warn`, the finding is a warning, the program starts, and
+the VM stops it at the bad read. Cell 3 is printed first, since it was fine. A new block
+holds zeros:
+
+```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+ပ + ၃ ၏ တန်ဖိုး ကို ပြသမည်။
+ပ + ၄ ၏ တန်ဖိုး ကို ပြသမည်။
+လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၀
+the program stopped: access of 8 octets at 0x101020 lands outside each live block
+```
 
 ```console
 $ zakac run past.zaka
-error[ZK0710]: offset 4 is past the end of a block of 4 elements
- --> past.zaka:4:1
-  |
-4 | ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။
-  | ^^^^^
-```
-
-With `--mem-check warn` the same finding is a warning, the program starts, and the VM
-stops it at the bad read. Cell 3 is printed first, since it was fine. A new block holds
-zeros:
-
-```zaka-stop mem-check=warn
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ + ၃ ၏ တန်ဖိုး ကို ပြသပါ။
-ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၀
-the program stopped: access of 8 octets at 0x101040 lands outside each live block
-```
-
-```console
-$ zakac run --mem-check warn past.zaka
 warning[ZK0710]: offset 4 is past the end of a block of 4 elements
  --> past.zaka:6:1
   |
-6 | ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။
+6 | ပ + ၄ ၏ တန်ဖိုး ကို ပြသမည်။
   | ^^^^^
 ၀
-zaka_vm: the program stopped: access of 8 octets at 0x101040 lands outside each live block (in ပရိုဂရမ်, op 14); block at 0x101020, 32 octets, heap
+zaka_vm: the program stopped: access of 8 octets at 0x101020 lands outside each live block (in ပရိုဂရမ်, op 17); block at 0x101000, 32 octets, heap
 ```
 
-With `--mem-check off` the compiler is silent, and the VM stops the program at
-the same read:
+With `--mem-check error` the compiler refuses the program and nothing runs:
+
+```zaka-error ZK0710 mem-check=error
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+ပ + ၃ ၏ တန်ဖိုး ကို ပြသမည်။
+ပ + ၄ ၏ တန်ဖိုး ကို ပြသမည်။
+လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```console
+$ zakac run --mem-check error past.zaka
+error[ZK0710]: offset 4 is past the end of a block of 4 elements
+ --> past.zaka:6:1
+  |
+6 | ပ + ၄ ၏ တန်ဖိုး ကို ပြသမည်။
+  | ^^^^^
+```
+
+With `--mem-check off` the compiler is silent, and the VM stops the program at the same
+read:
 
 ```zaka-stop mem-check=off
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ + ၃ ၏ တန်ဖိုး ကို ပြသပါ။
-ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။
+ပ + ၃ ၏ တန်ဖိုး ကို ပြသမည်။
+ပ + ၄ ၏ တန်ဖိုး ကို ပြသမည်။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 ၀
-the program stopped: access of 8 octets at 0x101040 lands outside each live block
+the program stopped: access of 8 octets at 0x101020 lands outside each live block
 ```
 
-The three runs end at the same read. What differs is when the reader hears of it: before
-a thing ran, as a warning followed with the stop, or just in the stop.
+The runs that start end at the same read. What differs is when the reader hears of it:
+before a thing ran, as a warning followed with the stop, or just in the stop.
 
 | Mode | Message from the compiler | Program runs | Exit code |
 | --- | --- | --- | --- |
-| `error` | `error[ZK0710]` | no | 1 |
 | `warn` | `warning[ZK0710]` | up to the bad read | 1 |
+| `error` | `error[ZK0710]` | no | 1 |
 | `off` | none | up to the bad read | 1 |
 
-Pick `error` to find mistakes soon, as the default does. Pick `warn` or `off` to see
-what the VM does with a mistake, which is the point of the lessons on [pointer
-mistakes](../../learn/pointers/mistakes.md). The compiler cannot find all mistakes: a cell number that comes from input is out of its reach, and the VM's
-check alone can catch it.
+The default lets a program with a pointer mistake run to the mistake, so the VM shows
+where it goes wrong, which is the point of the lessons on [unsafe
+Zaka](../../learn/pointers/README.md). Pick `error` to keep such a program from running at
+all. The compiler cannot find each mistake: an offset that comes from input is out of its
+reach, and the VM's check alone can catch it.
+
+## Safe code keeps its errors
+
+Outside marked code, a finding of the flow checks does not move with `--mem-check`. A
+function value is never null, so a variable of a function kind that a path reaches with no
+function given is a read of an unset value, ZK0722, even under `--mem-check off`:
+
+```zaka-error ZK0722 mem-check=off
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဖ သည် (လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ဖ ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```console
+$ zakac run --mem-check off call.zaka
+error[ZK0722]: "ဖ" can be unset here: a path reaches this read with no value given to it
+```
+
+The rules of that check, for variables, fields, cells and globals, are in
+[Statements](../language/statements.md#set-before-read). Safe code cannot hold a mistake of
+the lint at all, since it never reads through a pointer: each block it makes is counted,
+and the VM frees it.
 
 ## Strict: what cannot be proved
 
-The compiler is quiet about a pointer when it cannot tell whether the pointer holds
-`ဗလာ`. A new block can fail to come, since the heap can run out, so a pointer that has
-just been filled can hold `ဗလာ`. `--mem-strict` asks for a warning at each read or write
-through such a pointer that was never compared with `ဗလာ`:
+The compiler is quiet about a pointer when it cannot tell whether the pointer holds the
+null pointer, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`. A new block can fail to come, since the heap
+can run out, so a pointer that has just been filled can point at nothing. `--mem-strict`
+asks for a warning at each read or write through such a pointer that was never compared
+with the null pointer:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ ၏ တန်ဖိုး ကို ၁ ဟု ထားပါ။
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
+ပ ၏ တန်ဖိုး ကို ၁ ဟု ထားမည်။
+ပ ၏ တန်ဖိုး ကို ပြသမည်။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -156,37 +212,40 @@ adds a warning (ZK0711); the program still runs:
 
 ```zaka-warning ZK0711 mem-strict=on
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ ၏ တန်ဖိုး ကို ၁ ဟု ထားပါ။
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
+ပ ၏ တန်ဖိုး ကို ၁ ဟု ထားမည်။
+ပ ၏ တန်ဖိုး ကို ပြသမည်။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```console
 $ zakac run --mem-strict nul.zaka
-warning[ZK0711]: "ပ" can be ဗလာ here; compare it with ဗလာ first
- --> nul.zaka:3:1
+warning[ZK0711]: "ပ" can point at nothing here; compare it with "မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ" first
+ --> nul.zaka:5:1
   |
-3 | ပ ၏ တန်ဖိုး ကို ၁ ဟု ထားပါ။
+5 | ပ ၏ တန်ဖိုး ကို ၁ ဟု ထားမည်။
   | ^
 ```
 
-The warning goes when the program compares the pointer with `ဗလာ` first. ZK0711 is a
-warning in the modes `error` and `warn`, and `--mem-check off` drops it with the rest.
-Strict adds warnings alone; it never turns a program that compiles into one that does not.
+The warning goes when the program compares the pointer with the null pointer first. ZK0711 is a
+warning in the modes `error` and `warn`, and `--mem-check off` drops it with the rest of
+the lint. Strict adds warnings alone; it never turns a program that compiles into one
+that does not.
 
-## No raw addresses
+## Safe Zaka alone
 
-A raw address (`လိပ်စာအကြမ်း`) is a pointer that the compiler does not follow: it has
-no owner to check. The VM still checks each use. For a lesson that must remain inside
-the ownership check, `--no-raw` refuses each raw kind:
+For a lesson or a project that must keep to safe Zaka, `--no-unsafe` refuses each mark
+`စိတ်မချရသော`, on a function or on a block:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။
-"ပြီး" ဟု ပြသပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+"ပြီး" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -194,43 +253,50 @@ the ownership check, `--no-raw` refuses each raw kind:
 ပြီး
 ```
 
-```zaka-error ZK0717 no-raw=on
+```zaka-error ZK0471 no-unsafe=on
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။
-"ပြီး" ဟု ပြသပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+"ပြီး" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```console
-$ zakac run --no-raw raw.zaka
-error[ZK0717]: raw addresses are not allowed here (--no-raw)
- --> raw.zaka:1:17
-  |
-1 | ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။
-  |            ^^^^^^^^^^^^^^^^
+$ zakac run --no-unsafe marked.zaka
+error[ZK0471]: this program keeps to safe Zaka, so it cannot mark code "စိတ်မချရသော"
+ --> marked.zaka:2:1
 ```
 
-The refusal is an error in each `--mem-check` mode, because it is a rule of kinds.
-Each raw kind is spelled with `အကြမ်း`, so a search for that word finds each place that
-the compiler does not follow.
+The refusal is an error in each `--mem-check` mode, because it is a rule of the language,
+read with names and kinds. Each mark is spelled with `စိတ်မချရ`, so a search for that
+word finds each place the compiler does not vouch for.
+
+## Overflow
+
+`--overflow stop`, the default, stops the program at an integer operation whose result
+lies outside its kind, and the flow checks warn (ZK0719) about an operation that
+overflows for each value of its operands the checks can see. `--overflow wrap` wraps the result
+around and drops the warning. See
+[Arithmetic](../language/expressions.md#arithmetic).
 
 ## Variables: checked and packed
 
-One more setting belongs near these, though it is a setting of the VM and not of
-the compiler: `--frames checked|packed` on `run`. In `checked` form (the default) each
-variable sits in a block of its own with a gap after it, so a read past a variable
-stops the program. In `packed` form the locals of a call sit next to each other, as in
-C, and a read past one reaches its neighbour. Blocks from the heap keep their checks in
-both forms. See [Addresses and blocks](../vm/blocks.md).
+One more setting belongs near these, though it is a setting of the VM and not of the
+compiler: `--frames checked|packed` on `run`. In `checked` form (the default) each
+variable sits in a block of its own with a gap after it, so a read past a variable stops
+the program. In `packed` form the locals of a call sit next to each other, as in C, and a
+read past one reaches its neighbour. Blocks from the heap keep their checks in both forms.
+See [Addresses and blocks](../vm/blocks.md).
 
 ## Where each setting is read
 
 | Setting | Read in | Result |
 | --- | --- | --- |
-| `--no-raw` | names and kinds | ZK0717, an error |
-| `--mem-check`, `--mem-strict` | the borrow checker | the level of ZK0701 to ZK0704 and ZK0706 to ZK0712, and ZK0711 |
+| `--no-unsafe` | names and kinds | ZK0471, an error |
+| `--mem-check`, `--mem-strict` | the checker | the level of the lint, and ZK0711; never ZK0722 to ZK0724 |
+| `--overflow` | the checker and the code generators | what an overflow does, and ZK0719 |
 | `--frames` | the VM | where the variables sit |
 
-The borrow checker runs just when the stages before it found no error, so under
-`--mem-check error` a program with a kind error shows that error first and the pointer
-findings after it is fixed. See [Stages](stages.md).
+The checker runs when the stages before it found no error, so a program with a kind error
+shows that error first and the findings of the checker after it is fixed. See
+[Stages](stages.md).

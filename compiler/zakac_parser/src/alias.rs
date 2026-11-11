@@ -238,7 +238,8 @@ impl Swap<'_>
 }
 
 /// The kind of an alias in place of a use of its name: the levels written at
-/// the use go around the levels of the alias.
+/// the use go around the levels of the alias, and the use keeps its measure
+/// word. A use that adds no levels names the alias, whose word it counts with.
 ///
 /// # Arguments
 ///
@@ -250,12 +251,10 @@ impl Swap<'_>
 /// The kind.
 fn spliced(mut target: Kind, used: &Kind) -> Kind
 {
-    let both = u8::from(target.borrowed && used.borrowed);
-    target.extra_borrows =
-        target.extra_borrows.saturating_add(used.extra_borrows).saturating_add(both);
-    target.borrowed |= used.borrowed;
+    target.alias = used.name.clone().filter(|_| used.wraps.is_empty());
     target.wraps.extend(used.wraps.iter().cloned());
     target.span = used.span;
+    target.classifier = used.classifier.clone();
     target
 }
 

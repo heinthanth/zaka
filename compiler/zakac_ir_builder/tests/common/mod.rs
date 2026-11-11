@@ -9,7 +9,7 @@ use zakac_ir_builder::ir::FoldOptions;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Stmt;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::wrap::in_start_block;
+use zakac_semcheck::mark::in_marked_code;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
@@ -19,7 +19,7 @@ pub fn run(text: &str, folding: &FoldOptions) -> Lowered
 {
     let mut sm = SourceMap::new();
     let file =
-        sm.new_source_file(FileName::Custom("t.zaka".into()), in_start_block(text));
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_marked_code(text));
     let options = SemcheckOptions::default();
     run_phases(&file, &LexerOptions::default(), &options, folding)
 }

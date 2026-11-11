@@ -1,6 +1,6 @@
 ---
 title: Kinds and values
-description: The kinds of value in Zaka - integers, decimal numbers, characters, true/false values, text, addresses and lists - with ranges, sizes and default values.
+description: The kinds of value in Zaka - integers, decimal numbers, characters, true/false values, text, lists, shared objects and pointers - with ranges, sizes and initial values.
 ---
 
 # Kinds and values
@@ -58,7 +58,7 @@ and `u64`. Neither goes into the other without a [conversion](conversions.md):
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၆၄ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
-က + ခ ကို ပြသပါ။
+က + ခ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -90,13 +90,13 @@ an exponent when its size is far from 1.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် သုည သည် ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။
-၁ / သုည ကို ပြသပါ။
--၁ / သုည ကို ပြသပါ။
-သုည / သုည ကို ပြသပါ။
-သုည / သုည == သုည / သုည ကို ပြသပါ။
-1e30 ကို ပြသပါ။
-၁၆ ဘစ် ဒဿမကိန်း ၇၀၀၀၀ ကို ပြသပါ။
+ကိန်းရှင် သုည သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၁ / သုည ကို ပြသမည်။
+-၁ / သုည ကို ပြသမည်။
+သုည / သုည ကို ပြသမည်။
+သုည / သုည == သုည / သုည ကို ပြသမည်။
+1e30 ကို ပြသမည်။
+၇၀၀၀၀ ဟူသော ၁၆ ဘစ် ဒဿမကိန်း တစ်ခု ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -123,10 +123,10 @@ false. It prints as `မှန်` or `မမှန်`.
 
 ## Text
 
-`စာသား` (`text`) owns UTF-8 text: the address of its u8s, their count and the size of
-its heap block, three words in all. `စာသား တစ်စိတ်တစ်ပိုင်း` (`text[..]`) is a view of text,
-two words. String literals are of the first kind, and point at static text until their first
-edit. [Text](text.md) states the rules.
+`စာသား` (`text`) holds UTF-8 text: the address of its u8s, their count and the size of
+its heap block, three words in all. Text is a value: assigning it shares the u8s until one
+side writes ([Values and objects](objects.md)). String literals point at static text until
+their first edit. [Text](text.md) states the rules.
 
 ## The edges of a kind
 
@@ -139,8 +139,8 @@ rules).
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အနည်း သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၁၂၈ ဖြစ်ပါစေ။
 ကိန်းရှင် အများ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၅၅ ဖြစ်ပါစေ။
-အနည်း ကို ပြသပါ။
-အများ ကို ပြသပါ။
+အနည်း ကို ပြသမည်။
+အများ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -173,13 +173,87 @@ A true/false value is not a number, a character is not an integer and a decimal 
 is not an integer. A value goes where a different kind is wanted just through a
 [conversion](conversions.md), or through the widening that conversions describes.
 
-## Default values
+## Measure words
 
-A variable declared with no value starts at the default of its kind. A constant has no
-default: it must be given a value (ZK0308). The list forms and the address in the table
-and the example are stated in [Addresses and lists](#addresses-and-lists), below.
+Burmese counts a thing with `တစ်` ("one") and a classifier that fits it, and a kind written
+in a Zaka program is counted alike: `<kind> တစ်<classifier>`. The word goes after
+the kind in each place a kind stands:
 
-| Kind | Default |
+| Place | Written |
+| --- | --- |
+| a declaration or a generic loop | `ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။` |
+| a parameter | `l ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး` |
+| a field | `အမည် ဟူသော စာသား တစ်ခု` |
+| a result | `စာလုံး တစ်လုံး ကို ပြန်ပေးမည်` |
+| a parameter or result of a function kind | `(ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု` |
+| a conversion | `x ကို ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` |
+| a size | `ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား` |
+| the default arm of a switch | `တခြား အရောင် တစ်ခု ဖြစ်လျှင်` |
+| a literal with a kind | `၁၂၇ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု` |
+
+- The word goes after the outermost kind alone: `ကိန်းပြည့် စာရင်း တစ်ခု`,
+  `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု`, `ကိန်းပြည့် လိပ်စာ တစ်ခု`. A list cell, a side of
+  an optional or a result, and the base of a pointer take none. The parameters and the
+  result of a function kind take their own.
+- `စာလုံး` counts with `လုံး`. A struct, an enumeration and an alias count with the word
+  their declaration names, and with `ခု` when it names none; an alias that names none
+  counts with the word of its kind. Each other kind counts with `ခု`: the numbers,
+  true/false, text, lists, pointers, optionals, results and function kinds.
+- The kind of an alias, in its own declaration, takes no word
+  ([Kind aliases](aliases.md)).
+- A heap size counts its cells with the same word and `စာ`: `စာလုံး ၅ လုံးစာ`,
+  `လူ ၃ ယောက်စာ` ([Unsafe Zaka](unsafe.md)).
+- A kind in one of these places with no word after it is ZK0234. A word other than the
+  kind's own is the warning ZK0509; the size and the value do not change, so the program
+  still runs.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အက္ခရာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'က' ဖြစ်ပါစေ။
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+အက္ခရာ ကို ပြသမည်။
+ကိန်းများ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+က
+[၁၊ ၂]
+```
+
+```zaka-error ZK0234
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0234]: a kind here takes "တစ်" and a classifier
+help: write "ကိန်းပြည့် တစ်ခု"
+```
+
+## Initial values
+
+No kind has a hidden default. A variable declared with no value holds none until the
+program sets it, and the check refuses a read before that
+([Set before read](statements.md#set-before-read)). Where a program wants a plain starting
+value, it writes `ကနဦးတန်ဖိုး` ("the initial value"), and the kind decides what that is.
+
+`ကနဦးတန်ဖိုး` takes its kind from where it stands, as `အလွတ်` does:
+
+| Place | Written |
+| --- | --- |
+| a declaration | `ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။` |
+| an assignment | `က ကို ကနဦးတန်ဖိုး ဟု ထားမည်။` |
+| a field of a struct literal | `လူ(အမည်: "မောင်"၊ အသက်: ကနဦးတန်ဖိုး)` |
+| a cell of a list literal | `[လူ(အမည်: "မောင်"၊ အသက်: ၁)၊ ကနဦးတန်ဖိုး]` |
+| a return | `ကနဦးတန်ဖိုး ကို ပြန်ပေးမည်။` |
+| an argument | `လုပ်ဆောင်ချက် ပြ ကို ကနဦးတန်ဖိုး တို့ဖြင့် လုပ်ဆောင်မည်။` |
+
+Where nothing gives a kind, as in `ကနဦးတန်ဖိုး ကို ပြသမည်။` or
+`ကိန်းရှင် က သည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။`, it is ZK0478.
+
+| Kind | `ကနဦးတန်ဖိုး` |
 | --- | --- |
 | integers | `၀` |
 | decimal numbers | `၀.၀` |
@@ -187,25 +261,34 @@ and the example are stated in [Addresses and lists](#addresses-and-lists), below
 | `မှန်မှားတန်ဖိုး` | `မမှန်` |
 | `စာသား` | blank text, with no u8s |
 | a plain list | no cells |
-| a counted list | each cell at the default of its kind |
-| an address | `ဗလာ` |
-| an enumeration | its first member (see [Enumerations](enums.md#values-of-an-enumeration)) |
-| a function kind | `ဗလာ`, no function (see [Function values](function-values.md#no-function)) |
+| an optional | `အလွတ်` |
+| a pointer | the null address, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` |
+| a counted list | each cell at its own initial value |
+| a struct | each field at its own initial value |
+| a shared object | a new object, each field at its own initial value |
+| an enumeration | the member marked `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်` ([Enumerations](enums.md#the-initial-member)); none when no member is marked |
+| a function kind, a result, a handle of C | none |
+
+A kind that holds a part with none, such as a struct with a function field, has none
+too. `ကနဦးတန်ဖိုး` for a kind with none is ZK0479: write the value in full. A shared kind
+that names itself through an optional field still has an initial value, since the walk
+stops at the blank optional. A constant needs a value (ZK0308), and `ကနဦးတန်ဖိုး` is one:
+`ကိန်းသေ က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။`.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ဂ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ဃ သည် စာလုံး တစ်လုံး ဖြစ်ပါစေ။
-ကိန်းရှင် င သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် စ သည် အကွက် ၃ ခုရှိသော မှန်မှားတန်ဖိုး စာရင်း တစ်ခု ဖြစ်ပါစေ။
-က ကို ပြသပါ။
-ခ ကို ပြသပါ။
-ဂ ကို ပြသပါ။
-ဃ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-င ကို ပြသပါ။
-စ ကို ပြသပါ။
+ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကိန်းရှင် ဃ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကိန်းရှင် င သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကိန်းရှင် စ သည် အကွက် ၃ ခုရှိသော မှန်မှားတန်ဖိုး စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+က ကို ပြသမည်။
+ခ ကို ပြသမည်။
+ဂ ကို ပြသမည်။
+ဃ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+င ကို ပြသမည်။
+စ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -214,25 +297,53 @@ and the example are stated in [Addresses and lists](#addresses-and-lists), below
 ၀.၀
 မမှန်
 ၀
-ဗလာ
+မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ
 [မမှန်၊ မမှန်၊ မမှန်]
 ```
 
+```zaka-error ZK0478
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကနဦးတန်ဖိုး ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0478]: "ကနဦးတန်ဖိုး" stands where no kind can be worked out
+```
+
+```zaka-error ZK0479
+ခလုတ် ဟူသော ဒေတာအစုအဝေးတွင် အမည် ဟူသော စာသား တစ်ခု၊ နှိပ် ဟူသော (ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု တို့ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ခ သည် ခလုတ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0479]: "ခလုတ်" has no initial value: "နှိပ်" inside it has none
+```
+
+Whether a kind can be built at all is a question apart: a struct with a function field can
+be built, with a function in the field, but has no initial value. A kind no program can
+build is refused at its declaration ([Kinds no program can
+build](objects.md#kinds-no-program-can-build)).
+
 ## The size of a kind
 
-`<kind> ၏ အရွယ်အစား` ("the size of the kind") is the number of octets one value takes. The
-address and the counted list in the example are kinds of [Addresses and
-lists](#addresses-and-lists), below:
+`<kind> တစ်<word> ၏ အရွယ်အစား` ("the size of one of the kind") is the number of octets
+one value takes; the kind takes its [measure word](#measure-words). The
+pointer and the counted list in the example are kinds of [Lists, objects and
+pointers](#lists-objects-and-pointers), below:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၈ ဘစ် ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
-၁၆ ဘစ် ဒဿမကိန်း ၏ အရွယ်အစား ကို ပြသပါ။
-စာလုံး ၏ အရွယ်အစား ကို ပြသပါ။
-မှန်မှားတန်ဖိုး ၏ အရွယ်အစား ကို ပြသပါ။
-ကိန်းပြည့် ၏ အရွယ်အစား ကို ပြသပါ။
-ကိန်းပြည့် လိပ်စာ ၏ အရွယ်အစား ကို ပြသပါ။
-အကွက် ၃ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+၈ ဘစ် ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
+၁၆ ဘစ် ဒဿမကိန်း တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
+စာလုံး တစ်လုံး ၏ အရွယ်အစား ကို ပြသမည်။
+မှန်မှားတန်ဖိုး တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
+ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
+ကိန်းပြည့် လိပ်စာ တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
+အကွက် ၃ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -246,27 +357,33 @@ lists](#addresses-and-lists), below:
 ၁၂
 ```
 
-## Addresses and lists
+## Lists, objects and pointers
 
-Two more families of kind are built from the scalar kinds. Their rules have pages of
-their own.
+More families of kind are built from the scalar kinds. Their rules have pages of their
+own.
 
 | Burmese | Short name | Page |
 | --- | --- | --- |
 | `ကိန်းပြည့် စာရင်း` (plain) | `isize[]` | [Lists](lists.md#forms) |
 | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း` (counted) | `isize[3]` | [Lists](lists.md#forms) |
 | `အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း` | `isize[3][2]` | [Lists](lists.md) |
-| `ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း` | `isize[][..]` | [Slices](slices.md) |
-| `စာသား တစ်စိတ်တစ်ပိုင်း` | `text[..]` | [Text](text.md) |
-| `ကိန်းပြည့် လိပ်စာ` | `isize*` | [Pointers](pointers.md) |
-| `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | `isize**` | [Pointers](pointers.md) |
-| `ငှားထားသော ကိန်းပြည့် လိပ်စာ` | `isize&` | [Ownership and borrowing](ownership.md) |
-| `ကိန်းပြည့် လိပ်စာအကြမ်း` | `isize^` | [Ownership and borrowing](ownership.md) |
-| `လိပ်စာ` | `ptr` | [Pointers](pointers.md) |
-| `ဗလာ` (the null address) | `null` | [Pointers](pointers.md) |
+| a struct `လူ` | `လူ` | [Structs](structs.md) |
+| a shared object kind `ဘူး` | `ဘူး@` | [Values and objects](objects.md) |
+| a function kind | `fn(isize) -> isize` | [Function values](function-values.md) |
+| `ကိန်းပြည့် လိပ်စာ` | `isize*` | [Unsafe Zaka](unsafe.md) |
+| `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | `isize**` | [Unsafe Zaka](unsafe.md) |
+| `လိပ်စာ` | `ptr` | [Unsafe Zaka](unsafe.md) |
+| `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` (the null address) | `null` | [Unsafe Zaka](unsafe.md#the-null-address) |
 
 A short name reads left to right in the order of the Burmese words: the base kind first,
-then `*` for each level of owner address, `^` for a raw level, `&` in place of the `*` of
-a borrowed level, `[n]` for each counted list level, `[]` for a plain one, and `[..]` for a part (a slice or a view). `isize[3][2]` is two lists of three,
-`isize[3][]` a plain list of lists of three, and `isize&[2]` is a list of two borrows.
-An address takes the platform size.
+then `*` for each level of pointer, `[n]` for each counted list level and `[]` for a
+plain one. `isize[3][2]` is two lists of three, `isize[3][]` a plain list of lists of
+three, and `isize*[2]` a list of two pointers. A shared object kind is its name with `@`
+after it, since a value of the kind is a reference to the object. A pointer and an object
+reference take the platform size.
+
+Safe code can hold a pointer, pass it on and compare it with the null address
+`မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`; reading or writing through it, and making one, need marked
+code ([Unsafe Zaka](unsafe.md)). The pointer is the one kind that can hold NULL: a shared
+object and a function value hold an object or a function at each point, and a value that can be
+missing is an [optional](optionals.md).

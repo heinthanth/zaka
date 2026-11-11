@@ -184,7 +184,7 @@ fn out_pane(state: AppState) -> impl IntoView
 
 /// What the program wrote so far, with the lines entered for it, and the trap
 /// when the run stopped before its end. While the run waits for standard
-/// input, a line to type it in follows the output, as at a terminal.
+/// input, a line to write it in follows the output, as at a terminal.
 ///
 /// # Arguments
 ///

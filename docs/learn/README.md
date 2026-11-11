@@ -6,7 +6,7 @@ description: Learn the Zaka programming language one small, runnable example at 
 # Zaka through Examples
 
 Zaka (စံကား) is a programming language based on a subset of Burmese. A Zaka program is a list of
-Burmese sentences such as `"မင်္ဂလာပါ" ဟု ပြသပါ။` ("show: hello"), held in a start block.
+Burmese sentences such as `"မင်္ဂလာပါ" ဟု ပြသမည်။` ("show: hello"), held in a start block.
 The computer carries them out one after another.
 
 These pages teach the language through examples. No other programming language is
@@ -21,14 +21,13 @@ Read the pages in order. Each page builds on nothing but what the pages before i
 shown. The pages run in three parts:
 
 1. **Values**, from [Hello, world](hello/README.md) to the [Example
-   programs](programs/README.md): numbers, text, lists, structs, functions and loops.
-   Each assignment and each call gives a value of its own, and the program never asks
-   where a value is kept.
-2. **Control**, from [Borrowing and storage](forms/README.md): views and slices, which read
-   text and lists with no duplicate; where their cells live, and the counted list; and
-   what a duplicate costs.
-3. **Storage**, from [Pointers and the heap](pointers/README.md): addresses, blocks of
-   the heap, and the rules of owners and borrows.
+   programs](programs/README.md): numbers, text, lists, structs, shared objects,
+   functions, closures and loops. Each assignment and each call gives a value of its own,
+   or shares an object, and the program frees nothing itself.
+2. **Copies and storage**, from [Copies and storage](forms/README.md): ranges, where the
+   cells of a value live, the counted list, and what a duplicate costs.
+3. **Unsafe Zaka**, from [Unsafe Zaka](pointers/README.md): marked code, pointers, blocks
+   of the heap, and C functions that take addresses. This part is for advanced work.
 
 A program from an earlier part keeps its meaning in the later ones. The first part is
 enough to write whole programs; the later two give more control over cost and storage.

@@ -19,7 +19,9 @@ use zakac_lexer::token::StrLit;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::ret_true;
 use zakac_span::pos::Pos;
 use zakac_span::source_file::SourceFile;
 use zakac_span::span::Span;
@@ -190,6 +192,34 @@ pub(crate) fn kw_of(tok: &Token) -> Option<Kw>
     }
 }
 
+/// Whether the token at `at` is the name of a kind declaration: a struct or
+/// an enumeration, `<name> ဟူသော [marks] ဒေတာအစုအဝေး|ဒေတာအမျိုးအစားကွဲ`, or an
+/// alias, `ဒေတာအမျိုးအစား <name> ကို`.
+///
+/// # Arguments
+///
+/// * `tokens` - The tokens of the file.
+/// * `at` - The index of the name.
+///
+/// # Returns
+///
+/// `true` for such a name.
+fn declares_kind(tokens: &[Token], at: usize) -> bool
+{
+    let kw = |n: usize| match tokens.get(n).map(|t| t.kind)
+    {
+        Some(TokenKind::Kw(kw)) => Some(kw),
+        _ => None,
+    };
+    ret_false!(tokens[at].kind != TokenKind::Ident);
+    let alias = at > 0 && kw(at - 1) == Some(Kw::DataKindOpen);
+    ret_true!(alias && kw(at + 1) == Some(Kw::Ko));
+    ret_false!(kw(at + 1) != Some(Kw::Called));
+    let marks = [Kw::Export, Kw::Shareable, Kw::External];
+    let word = (at + 2..).map(kw).find(|k| !k.is_some_and(|k| marks.contains(&k)));
+    matches!(word.flatten(), Some(Kw::StructWord | Kw::EnumWord))
+}
+
 /// Whether a token is a number.
 ///
 /// # Arguments
@@ -279,28 +309,18 @@ impl<'t> Parser<'t>
         let cur = Cursor::builder().tokens(&lexed.tokens).build();
         #[rustfmt::skip]
         let mut parser = Parser::builder().cur(cur).text(text).base(base).strings(&lexed.strings).build();
-        let declared = |pair: &[Token]| {
-            let opener = pair[0].kind == TokenKind::Kw(Kw::DataKindOpen);
-            let named = opener && pair[1].kind == TokenKind::Ident;
-            named.then(|| parser.text_of(pair[1].span))
-        };
-        // an alias names a kind too: `... ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်`
-        let aliased = |pair: &[Token]| {
-            let named = pair[0].kind == TokenKind::Ident
-                && pair[1].kind == TokenKind::Kw(Kw::AliasClose);
-            named.then(|| parser.text_of(pair[0].span))
-        };
-        let pairs = || lexed.tokens.windows(2);
+        let decls: Vec<usize> = (0..lexed.tokens.len())
+            .filter(|at| declares_kind(&lexed.tokens, *at))
+            .collect();
         let names: Vec<&str> =
-            pairs().filter_map(declared).chain(pairs().filter_map(aliased)).collect();
+            decls.iter().map(|at| parser.text_of(lexed.tokens[*at].span)).collect();
         // the stem of an enumeration names it too: `အရောင်` for `အရောင်များ`
         let stems = names.iter().filter_map(|name| name.strip_suffix(PLURAL));
         parser.structs =
             names.iter().copied().chain(stems).flat_map(spellings).collect();
-        let starts = lexed.tokens.iter().enumerate();
-        let starts = starts.filter(|(_, t)| t.kind == TokenKind::Kw(Kw::DataKindOpen));
-        let found = starts
-            .filter_map(|(at, _)| parser.struct_classifier(&lexed.tokens, at))
+        let found = decls
+            .iter()
+            .filter_map(|at| parser.kind_classifier(&lexed.tokens, *at))
             .map(|(name, word)| (canonical(name).into_owned(), word))
             .collect();
         parser.classifiers = found;
@@ -319,7 +339,7 @@ impl<'t> Parser<'t>
 
     /// The name and the number of marks of the function declaration whose
     /// `လုပ်ဆောင်ချက်` sits at token `at`, when its parameters have marks:
-    /// a name with `(` straight after it, before the full stop of the header.
+    /// each `ဝိဘတ်` before the full stop of the header.
     ///
     /// # Arguments
     ///
@@ -341,13 +361,10 @@ impl<'t> Parser<'t>
         // function kind marks a parameter of that kind.
         let mut depth = 0usize;
         let mut count = 0;
-        for pair in header.windows(2)
+        for tok in header
         {
-            let paren =
-                pair[1].kind == TokenKind::Punct(Punct::LParen) && pair[1].joined;
-            count +=
-                usize::from(depth == 0 && pair[0].kind == TokenKind::Ident && paren);
-            match pair[0].kind
+            count += usize::from(depth == 0 && tok.kind == TokenKind::Kw(Kw::MarkWord));
+            match tok.kind
             {
                 TokenKind::Punct(Punct::LParen) => depth += 1,
                 TokenKind::Punct(Punct::RParen) => depth = depth.saturating_sub(1),
@@ -357,29 +374,27 @@ impl<'t> Parser<'t>
         (count > 0).then(|| (self.text_of(name.span), count))
     }
 
-    /// The name and the classifier of the struct declaration whose
-    /// `ဒေတာအမျိုးအစား` sits at token `at`.
+    /// The name and the classifier of the struct, enumeration or alias
+    /// declaration whose name sits at token `at`.
     ///
     /// # Arguments
     ///
     /// * `tokens` - The tokens of the file.
-    /// * `at` - The index of `ဒေတာအမျိုးအစား` in them.
+    /// * `at` - The index of the name in them.
     ///
     /// # Returns
     ///
     /// The pair, or `None` for a declaration with no classifier clause.
-    fn struct_classifier(
-        &self, tokens: &[Token], at: usize,
-    ) -> Option<(&'t str, &'t str)>
+    fn kind_classifier(&self, tokens: &[Token], at: usize)
+    -> Option<(&'t str, &'t str)>
     {
         let tokens = tokens.get(at..)?;
-        let name = tokens.get(1).filter(|t| t.kind == TokenKind::Ident)?;
         let stop = TokenKind::Punct(Punct::FullStop);
         let clause = tokens.iter().take_while(|t| t.kind != stop);
         let is =
             clause.clone().position(|t| t.kind == TokenKind::Kw(Kw::ClassifierIs))?;
         let word = tokens.get(is + 1)?;
-        Some((self.text_of(name.span), self.text_of(word.span)))
+        Some((self.text_of(tokens[0].span), self.text_of(word.span)))
     }
 
     /// Whether the token `n` places ahead is a declared struct or

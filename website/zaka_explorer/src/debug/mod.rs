@@ -271,6 +271,10 @@ pub struct BlockRow
     /// `[24, 8]` for an `isize[3][2]`; none for a block that holds no list.
     #[builder(default)]
     pub cells: Vec<u64>,
+    /// The count of values that hold a counted block: text, a plain list, an
+    /// object or a closure record; 0 for a block that is not counted.
+    #[builder(default)]
+    pub holders: u32,
 }
 
 /// A variable of a packed block, as the map shows it.
@@ -815,6 +819,7 @@ fn block_row(m: &Machine, b: &Block, finished: bool) -> BlockRow
         .vars(vars)
         .data(data)
         .cells(m.held_kind(b.start).map_or_else(Vec::new, |k| cell_sizes(k, platform)))
+        .holders(tern!(b.live, b.rc, 0))
         .build()
 }
 

@@ -23,7 +23,7 @@ use crate::state::SlotState;
 use crate::state::State;
 
 /// Report a read of an owner moved out on each path. A test against
-/// `ဗလာ` reads the slot without using its value, so it is silent.
+/// null reads the slot without using its value, so it is silent.
 ///
 /// # Arguments
 ///
@@ -31,7 +31,7 @@ use crate::state::State;
 /// * `place` - The slot read.
 /// * `span` - The read.
 /// * `state` - The facts when it runs.
-/// * `null_compare` - Whether the read is a test against `ဗလာ`.
+/// * `null_compare` - Whether the read is a test against null.
 pub(crate) fn check_read(
     flow: &mut Flow, place: Place, span: Span, state: &State, null_compare: bool,
 )
@@ -275,22 +275,25 @@ mod tests
     }
 
     #[test]
-    fn the_loop_rerun_records_reads_of_moved_owners_alone()
+    fn the_loop_rerun_records_reads_of_handed_over_owners_alone()
     {
         let prog = program(
-            "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+            "လုပ်ဆောင်ချက် ရှင်းပစ် သည်
+ခ ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လိပ်စာ ခ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ဂ တွင် သိမ်းထားမည်။
-ကိန်းရှင် ဗ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
-က သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ဂ ၏ တန်ဖိုး ကို ပြသပါ။
+က သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဂ ၏ တန်ဖိုး ကို ပြသမည်။
 လိပ်စာ ဂ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-ဗ ကို ပ ဟု ထားပါ။
-လိပ်စာ ဗ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-က ကို က + ၁ ဟု ထားပါ။
+လုပ်ဆောင်ချက် ရှင်းပစ် ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။
+က ကို က + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
@@ -307,7 +310,7 @@ mod tests
         check_loop_moves(&mut flow);
         let added: Vec<(Code, usize)> =
             flow.diags[found..].iter().map(|d| (d.code, prog.line(d.span))).collect();
-        assert_eq!(added, [(Code::MovedOut, 11)]);
+        assert_eq!(added, [(Code::MovedOut, 15)]);
         assert_eq!((flow.proofs, flow.frees, flow.result_from), kept);
         assert_eq!((flow.result_roots, flow.result_roots_ok), result);
     }

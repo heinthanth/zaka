@@ -27,6 +27,12 @@ pub(crate) enum OpClass
     Bit,
     /// `== !=` and their verbs.
     Equal,
+    /// The sameness verb `တစ်ခုတည်း`: whether two names hold one object or
+    /// one function value.
+    Same,
+    /// The dup verbs `၏ မိတ္တူ` and `တစ်<classifier>လုံး ၏ မိတ္တူ`: a duplicate
+    /// of a value, of its kind.
+    Dup,
     /// `< > <= >=` and their verbs.
     Order,
     /// `<< >>` and the shift verb.
@@ -39,11 +45,11 @@ pub(crate) enum OpClass
     AddrOf,
     /// The dereference verb.
     Deref,
-    /// The lend verb.
-    Lend,
     /// The list cell verbs.
     CellCount,
     /// A statement verb, which never stands inside an expression.
+    /// `<value> ဟူသော အမှားအယွင်း`, an error value of the result kind wanted.
+    MakeFault,
     Stmt,
     /// The tests and the conversions of a result of a function that can
     /// fail.
@@ -57,7 +63,10 @@ impl OpClass
     /// # Returns
     ///
     /// `true` for equalities and orderings.
-    pub fn is_cmp(self) -> bool { matches!(self, OpClass::Equal | OpClass::Order) }
+    pub fn is_cmp(self) -> bool
+    {
+        matches!(self, OpClass::Equal | OpClass::Order | OpClass::Same)
+    }
 
     /// What both operands of a two-operand class must be.
     ///
@@ -72,13 +81,15 @@ impl OpClass
             OpClass::Bit | OpClass::BitNot | OpClass::Shift => Some(Want::Int),
             OpClass::Order => Some(Want::Ordered),
             OpClass::Equal
+            | OpClass::Same
+            | OpClass::Dup
             | OpClass::Cast
             | OpClass::AddrOf
             | OpClass::Deref
-            | OpClass::Lend
             | OpClass::CellCount
             | OpClass::Stmt
-            | OpClass::Result => None,
+            | OpClass::Result
+            | OpClass::MakeFault => None,
         }
     }
 }
@@ -124,7 +135,7 @@ impl Want
             Want::Signed => kind.is_float() || (kind.is_int() && !kind.is_unsigned()),
             Want::Bool => kind == DataKind::Bool,
             Want::Ordered => kind.is_numeric() || kind == DataKind::Char,
-            Want::Text => kind.is_textual(),
+            Want::Text => kind.is_text(),
         }
     }
 
@@ -194,28 +205,30 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         VerbOp::BitNot => OpClass::BitNot,
         VerbOp::Shift => OpClass::Shift,
         VerbOp::Eq | VerbOp::Ne => OpClass::Equal,
+        VerbOp::Same => OpClass::Same,
+        VerbOp::DupOf | VerbOp::DeepDupOf => OpClass::Dup,
         VerbOp::Gt | VerbOp::Le | VerbOp::Lt | VerbOp::Ge => OpClass::Order,
         VerbOp::Cast => OpClass::Cast,
         VerbOp::AddrOf => OpClass::AddrOf,
         VerbOp::Deref => OpClass::Deref,
-        VerbOp::Lend => OpClass::Lend,
         VerbOp::Cell
         | VerbOp::CellCount
         | VerbOp::CharCount
         | VerbOp::CharAt
         | VerbOp::CharNth
         | VerbOp::Join => OpClass::CellCount,
-        VerbOp::IsGood | VerbOp::IsFault | VerbOp::Unwrap | VerbOp::UnwrapFault =>
-        {
-            OpClass::Result
-        }
+        VerbOp::IsGood
+        | VerbOp::IsFault
+        | VerbOp::HasData
+        | VerbOp::LacksData
+        | VerbOp::Unwrap
+        | VerbOp::UnwrapFault => OpClass::Result,
+        VerbOp::MakeFault => OpClass::MakeFault,
         VerbOp::Print
         | VerbOp::Assign
         | VerbOp::DupInto
-        | VerbOp::MoveInto
+        | VerbOp::DeepDupInto
         | VerbOp::Return
-        | VerbOp::ReturnFault
-        | VerbOp::ReturnGood
         | VerbOp::AddCell
         | VerbOp::Replace => OpClass::Stmt,
     }
@@ -518,7 +531,7 @@ impl Checker
     {
         let side = match class
         {
-            OpClass::Equal | OpClass::Order => None,
+            OpClass::Equal | OpClass::Order | OpClass::Same => None,
             OpClass::Bit => int_expect(expect),
             _ => expect.filter(|k| !k.is_address()),
         };
@@ -546,6 +559,9 @@ impl Checker
     ) -> Option<DataKind>
     {
         let ((l, lhs), (r, rhs)) = (lhs, rhs);
+        ret_if!(class == OpClass::Same, self.same_pair(l, r, span));
+        let object = l.as_object().is_some() || r.as_object().is_some();
+        ret_if!(object, self.fn_pair(class, l, r, span));
         let block = l.is_aggregate() || r.is_aggregate();
         ret_if!(block, self.infer_list_pair(class, op, (l, lhs), (r, rhs), span));
         ret_if!(l.is_fn() || r.is_fn(), self.fn_pair(class, l, r, span));
@@ -558,9 +574,33 @@ impl Checker
         Some(tern!(class.is_cmp(), DataKind::Bool, common))
     }
 
+    /// Infer the sameness verb: two objects or two function values that one
+    /// kind takes, or one of them with `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`.
+    ///
+    /// # Arguments
+    ///
+    /// * `l` - The left kind.
+    /// * `r` - The right kind.
+    /// * `span` - The operation.
+    ///
+    /// # Returns
+    ///
+    /// `bool`, or `None` after an error.
+    fn same_pair(&mut self, l: DataKind, r: DataKind, span: Span) -> Option<DataKind>
+    {
+        let held =
+            |k: DataKind| k.as_object().is_some() || k.is_fn() || k == DataKind::Null;
+        let p = self.platform;
+        let meets = l.widens_to(r, p) || r.widens_to(l, p);
+        ret_if!(held(l) && held(r) && meets, Some(DataKind::Bool));
+        self.report(kd::sameness_of_values(span, &l.name(), &r.name()));
+        None
+    }
+
     /// Infer a two-operand operation where at least one side is a function
-    /// value: `==` and `!=` compare two values that one kind takes, or a
-    /// value with `ဗလာ`; no other operator takes a function value.
+    /// value or an object: `==` and `!=` compare two values that one kind
+    /// takes, or a value with `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`; no other operator takes
+    /// either.
     ///
     /// # Arguments
     ///
@@ -635,12 +675,12 @@ impl Checker
         rhs: (DataKind, &Expr), span: Span,
     ) -> Option<DataKind>
     {
-        let joined = is_op(op, InfixOp::Add, VerbOp::Add) && lhs.0.is_textual();
-        ret_if!(joined && rhs.0.is_textual(), Some(DataKind::TEXT));
-        // Text and views of text compare their u8s, in each mix.
-        let texts = lhs.0.is_textual() && rhs.0.is_textual();
+        let joined = is_op(op, InfixOp::Add, VerbOp::Add) && lhs.0.is_text();
+        ret_if!(joined && rhs.0.is_text(), Some(DataKind::TEXT));
+        // Text compares its u8s.
+        let texts = lhs.0.is_text() && rhs.0.is_text();
         ret_if!(class == OpClass::Equal && texts, Some(DataKind::Bool));
-        let blocks = |k: &DataKind| k.is_slice() || k.is_textual();
+        let blocks = |k: &DataKind| k.is_text();
         let blocked = [lhs.0, rhs.0].iter().any(blocks);
         let equal = class == OpClass::Equal && !blocked;
         ret_if!(equal && lhs.0 == rhs.0, Some(DataKind::Bool));
@@ -693,8 +733,7 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// The pointer kind as a borrow, since an address inside a block cannot
-    /// own it; `isize` for a distance, or `None` after an error.
+    /// The pointer kind, `isize` for a distance, or `None` after an error.
     fn ptr_arith(
         &mut self, op: &str, lhs: (DataKind, &Expr), rhs: (DataKind, &Expr), span: Span,
     ) -> Option<DataKind>
@@ -706,9 +745,10 @@ impl Checker
             [lhs, rhs].into_iter().find(|(k, _)| k.levels() == (1, Base::Opaque));
         let opaque = blank.map(|(_, e)| kd::opaque_pointer(e.span()));
         ret_if!(let Some(d) = opaque, self.report(d), None);
+        self.need_unchecked(span, "pointer arithmetic");
         let (l, r) = (lhs.0, rhs.0);
-        ret_if!(l.is_ptr() && r.is_int(), Some(l.as_borrowed()));
-        ret_if!(add && l.is_int() && r.is_ptr(), Some(r.as_borrowed()));
+        ret_if!(l.is_ptr() && r.is_int(), Some(l));
+        ret_if!(add && l.is_int() && r.is_ptr(), Some(r));
         ret_if!(sub && l.is_ptr() && l.same_shape(r), Some(DataKind::ISIZE));
         self.report(ptr_misuse(l, r, op, span));
         None

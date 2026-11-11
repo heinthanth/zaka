@@ -36,15 +36,9 @@ const CASES: &[(&[&str], Kw)] = &[
     (&["လုပ်ဆောင်သော ရလဒ်", 
         "လုပ်ဆောင်သောရလဒ်"],
         Kw::CallResult),
-    (&["ရလဒ်အဖြစ် ပြန်ပေးပါ", 
-        "ရလဒ် အဖြစ် ပြန်ပေးပါ", "ရလဒ်အဖြစ်ပြန်ပေးပါ"],
-        Kw::ReturnValue),
-    (&["အောက်ပါတို့ကို လုပ်ဆောင်ပါ", 
-        "အောက်ပါ တို့ကို လုပ်ဆောင်ပါ"],
-        Kw::BlockOpen),
     (&["အောက်ပါတို့ကို လုပ်ဆောင်မည်", 
         "အောက်ပါ တို့ကို လုပ်ဆောင်မည်"],
-        Kw::FnOpen,),
+        Kw::BlockOpen),
     (&["အောက်ပါတို့ကို လုပ်ဆောင်ကာ", 
         "အောက်ပါ တို့ကို လုပ်ဆောင်ကာ"],
         Kw::FnOpenRet,),
@@ -70,7 +64,19 @@ const CASES: &[(&[&str], Kw)] = &[
         Kw::FieldsClose),
     (&["တို့ ပါဝင်ပြီး",
         "တို့ပါဝင်ပြီး"],
-        Kw::FieldsCloseAnd), ];
+        Kw::FieldsCloseAnd),
+    (&["အကုန် ကူးထည့်မည်",
+        "အကုန်ကူးထည့်မည်"],
+        Kw::WillDupAllIn),
+    (&["အခြားတန်ဖိုးများ နှင့်အတူ",
+        "အခြားတန်ဖိုးများနှင့်အတူ"],
+        Kw::WithOtherValues),
+    (&["ခေါ်ဆိုခွင့် ပြုမည်",
+        "ခေါ်ဆိုခွင့်ပြုမည်"],
+        Kw::AllowCall),
+    (&["ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်",
+        "ခေါ်ဆိုခွင့်ပြန်လည်ရုပ်သိမ်းမည်"],
+        Kw::RevokeCall), ];
 
 #[test]
 fn phrases_join_attached_and_spaced()
@@ -81,11 +87,11 @@ fn phrases_join_attached_and_spaced()
 #[test]
 fn phrase_span_covers_all_pieces()
 {
-    let (out, file) = lex_text("x ကို ရလဒ် အဖြစ် ပြန်ပေးပါ။");
+    let (out, file) = lex_text("x ကို မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးမည်။");
     let tok = out.tokens[2];
     let lo = (tok.span.lo - file.start_pos) as usize;
     let hi = (tok.span.hi - file.start_pos) as usize;
-    assert_eq!(&file.src[lo..hi], "ရလဒ် အဖြစ် ပြန်ပေးပါ");
+    assert_eq!(&file.src[lo..hi], "မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးမည်");
     assert!(!tok.joined);
 }
 
@@ -137,8 +143,8 @@ fn compounds_keep_order_and_spans()
 {
     assert_eq!(kws("ထက်ကြီးသည်"), [Kw::Htet, Kw::Greater]);
     assert_eq!(kws("အောက်ငယ်လျှင်"), [Kw::Auk, Kw::Less, Kw::Then]);
-    let spaced = kws("အောက်ပါ တို့ကို လုပ်ဆောင်ပါ");
-    let attached = kws("အောက်ပါတို့ကို လုပ်ဆောင်ပါ");
+    let spaced = kws("အောက်ပါ တို့ကို လုပ်ဆောင်မည်");
+    let attached = kws("အောက်ပါတို့ကို လုပ်ဆောင်မည်");
     assert_eq!(spaced, attached);
     assert_eq!(kws("တန်ဖိုးကို"), kws("တန်ဖိုး ကို"));
 }

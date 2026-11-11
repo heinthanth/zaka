@@ -11,7 +11,7 @@ use zakac_codegen_target_vm::options::ResultMode;
 use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::wrap::in_start_block;
+use zakac_semcheck::mark::in_marked_code;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
@@ -31,7 +31,7 @@ pub fn run_mode(text: &str, results: impl Into<EmitOptions>) -> Emitted
 {
     let mut sm = SourceMap::new();
     let file =
-        sm.new_source_file(FileName::Custom("t.zaka".into()), in_start_block(text));
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_marked_code(text));
     let options = SemcheckOptions::default();
     let folding = FoldOptions::default();
     let mem = BorrowCheckOptions::default();

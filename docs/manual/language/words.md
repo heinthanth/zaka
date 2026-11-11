@@ -32,10 +32,10 @@ cover several lines and several statements can share a line.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"တစ်" ဟု ပြသပါ။ "နှစ်" ဟု ပြသပါ။
+"တစ်" ဟု ပြသမည်။ "နှစ်" ဟု ပြသမည်။
 ၁ +
 ၂ ကို
-ပြသပါ။
+ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -70,7 +70,7 @@ clusters), digits and single other characters; it joins the pieces that touch in
   them count the same, and none is a token.
 - **Some characters are words on their own.** `၊`, `။`, `၏` and each ASCII punctuation
   character except `_` are cut out even with no space beside them, such as `( ) + - * /
-  % ; , .` and the quote marks. That is the reason `၁+၂` and `ပြသပါ။` need no spaces. A pair
+  % ; , .` and the quote marks. That is the reason `၁+၂` and `ပြသမည်။` need no spaces. A pair
   that forms one sign (`<=  >=  ==  !=  <<  >>  &&  ||`) is joined when its two
   characters touch.
 - **A name runs to the next white space or lone character.** The name can mix scripts
@@ -80,12 +80,12 @@ clusters), digits and single other characters; it joins the pieces that touch in
   word that holds just particles (such as `ကိုကို`) is not split.
 - **A word with a vanna that is not reserved is a name.** `အသက်ကို` is one name, not
   `အသက်` then `ကို`.
-- **The words of a reserved phrase** such as `စားသော စားလဒ်` or `အောက်ပါတို့ကို လုပ်ဆောင်ပါ`
+- **The words of a reserved phrase** such as `စားသော စားလဒ်` or `အောက်ပါတို့ကို လုပ်ဆောင်မည်`
   can have white space between the words or none; both read the same.
 
 ```text
-အသက် ကို ပြသပါ။     အသက်   |  ကို   |  ပြသပါ  |  ။       a name, two reserved words, a stop
-အသက်ကို ပြသပါ။     အသက်ကို  |  ပြသပါ  |  ။                one name: no reserved split
+အသက် ကို ပြသမည်။     အသက်   |  ကို   |  ပြသမည်  |  ။       a name, two reserved words, a stop
+အသက်ကို ပြသမည်။     အသက်ကို  |  ပြသမည်  |  ။                one name: no reserved split
 ထက်ကြီးသည်          ထက်  |  ကြီး  |  သည်                  reserved words alone: split
 ၁+၂                 ၁  |  +  |  ၂                         signs are cut out
 ```
@@ -96,11 +96,11 @@ guesses that a space is missing and reports it:
 
 ```zaka-error ZK0206
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-အသက်ကို ပြသပါ။
+အသက်ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0206]: "ပြသပါ" needs "ကို|ဟု" after operand 1, found no particle
+error[ZK0206]: "ပြသမည်" needs "ကို|ဟု" after operand 1, found no particle
 help: write "အသက် ကို" with a space: a name joined to a particle is read as one word
 ```
 
@@ -121,8 +121,8 @@ when it is a word on its own.
 /// three slashes
 မှတ်ချက် the word for "note"
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"http://zaka.example // not a comment" ဟု ပြသပါ။   // a comment after a statement
-၁ ကို ပြသပါ။ မှတ်ချက် also after a statement
+"http://zaka.example // not a comment" ဟု ပြသမည်။   // a comment after a statement
+၁ ကို ပြသမည်။ မှတ်ချက် also after a statement
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -145,7 +145,7 @@ reserved word or a row of reserved words.
 ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
 ကိန်းရှင် 🍎 သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
-အသက် + Age + age + အမှတ်_၁ + 🍎 ကို ပြသပါ။
+အသက် + Age + age + အမှတ်_၁ + 🍎 ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -160,9 +160,9 @@ and signs. It cannot hold a backtick or a line break, and it cannot be blank.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် `ကို ပြသပါ` သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
+ကိန်းရှင် `ကို ပြသမည်` သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
 ကိန်းရှင် `the total` သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၉ ဖြစ်ပါစေ။
-`ကို ပြသပါ` + `the total` ကို ပြသပါ။
+`ကို ပြသမည်` + `the total` ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -180,15 +180,18 @@ are ZK0109. Writing a plain reserved word as a name gives ZK0201 ("expected a na
 ### Two spellings of one word
 
 `ဒေတာ` and `အချက်အလက်` ("data") are one word in each name and each reserved word:
-`ဒေတာအမျိုးအစား` is `အချက်အလက်အမျိုးအစား`, and a variable `ဒေတာ` is the variable
-`အချက်အလက်`. The compiler keeps `အချက်အလက်`, so messages and printed struct names use
-it. Text in a string literal and in a comment keeps the spelling written.
+`ဒေတာအစုအဝေး` is `အချက်အလက်အစုအဝေး`, `ဒေတာအမျိုးအစားကွဲ` is `အချက်အလက်အမျိုးအစားကွဲ`,
+`ဒေတာအမျိုးအစား` is `အချက်အလက်အမျိုးအစား`, `ဒေတာဆဲလ်` is `အချက်အလက်ဆဲလ်`, and `ဒေတာ` alone is `အချက်အလက်`: a reserved word after `ထဲမှ`, `ထဲတွင်` and
+`အမှားအယွင်း`, and a name elsewhere. A
+variable `ဒေတာအရေအတွက်` is the variable `အချက်အလက်အရေအတွက်`. The compiler keeps
+`အချက်အလက်`, so messages and printed struct names use it. Text in a string literal and in a
+comment keeps the spelling written.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ဒေတာ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
-အချက်အလက် + ၁ ကို ပြသပါ။
-"ဒေတာ" ဟု ပြသပါ။
+ကိန်းရှင် ဒေတာအရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
+အချက်အလက်အရေအတွက် + ၁ ကို ပြသမည်။
+"ဒေတာ" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -197,8 +200,8 @@ it. Text in a string literal and in a comment keeps the spelling written.
 ဒေတာ
 ```
 
-Since the two spellings make one name, declaring `ဒေတာ` and then `အချက်အလက်` in one scope
-is ZK0302.
+Since the two spellings make one name, declaring `ဒေတာအရေအတွက်` and then
+`အချက်အလက်အရေအတွက်` in one scope is ZK0302.
 
 ## Numbers
 
@@ -209,8 +212,8 @@ parts in a fixed order:
 | Part | Written | Notes |
 | --- | --- | --- |
 | base | `အခြေ ၁၆ ဖြင့်` | optional; a base from 2 to 36, itself written in base 10 (ZK0218) |
-| kind | `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` | optional; see [Kinds and values](kinds.md) (ZK0216, ZK0217) |
 | digits | `၂၅၅`, `FF`, `၃.၁၄`, `1.5e3` | in base 10, a fraction `.` and an exponent are allowed |
+| kind | `ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု` | optional; a plain number kind with its [measure word](kinds.md#measure-words) (ZK0216, ZK0217, ZK0234); another kind is ZK0222 |
 
 - Digits above 9 are the letters `A` to `Z`, in either case. A digit not below the base is
   ZK0219.
@@ -219,22 +222,23 @@ parts in a fixed order:
   `၂.၅e3` is ZK0102. A fraction or an exponent makes a decimal number, and a base prefix
   cannot go with one.
 - There is no negative literal. `-၅` is the minus sign applied to `၅`, and so is
-  `အနုတ် ၅`. The compiler works it out before the program runs.
-- A literal with no kind prefix is *flexible*: it takes the kind that its place wants
+  `အနုတ် ၅`. The compiler works it out before the program runs. A kind after the digits
+  belongs to the literal, the minus sign included: `-၁၂၈ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု`.
+- A literal with no kind is *flexible*: it takes the kind that its place wants
   (see [Expressions](expressions.md)). A literal that does not fit its kind is an error:
-  ZK0220 when the kind is written in front of it, and ZK0406 when the place gave the
-  kind.
+  ZK0220 when the kind is written after it, and ZK0406 when the place gave the kind.
+- Characters, text and true/false values have one kind each and take no kind after them.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁၂၃ ကို ပြသပါ။                                    // Burmese digits
-123 ကို ပြသပါ။                                     // Western digits: the same number
-အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသပါ။                        // 1010 in base 2
-အခြေ ၁၆ ဖြင့် ff ကို ပြသပါ။                          // letters, either case
-အခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF ကို ပြသပါ။   // base, then kind, then digits
-၃.၁၄ ကို ပြသပါ။
-1.5e3 ကို ပြသပါ။
-အနုတ် ၅ ကို ပြသပါ။
+၁၂၃ ကို ပြသမည်။                                    // Burmese digits
+123 ကို ပြသမည်။                                     // Western digits: the same number
+အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသမည်။                        // 1010 in base 2
+အခြေ ၁၆ ဖြင့် ff ကို ပြသမည်။                          // letters, either case
+အခြေ ၁၆ ဖြင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။   // base, then digits, then kind
+၃.၁၄ ကို ပြသမည်။
+1.5e3 ကို ပြသမည်။
+အနုတ် ၅ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -252,11 +256,11 @@ parts in a fixed order:
 Numbers print with Burmese digits, whatever digits the program used.
 
 ```zaka-error ZK0103
-၁၂.34 ကို ပြသပါ။
+၁၂.34 ကို ပြသမည်။
 ```
 
 ```zaka-error ZK0219
-အခြေ ၂ ဖြင့် ၁၂ ကို ပြသပါ။
+အခြေ ၂ ဖြင့် ၁၂ ကို ပြသမည်။
 ```
 
 ```text
@@ -293,12 +297,12 @@ a `{` with no `}` after it on the line.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသပါ။
-"a\\b" ဟု ပြသပါ။
-"{{ }}" ဟု ပြသပါ။
-'က' ကို ပြသပါ။
-'{ယူနီကုဒ် 1000}' ကို ပြသပါ။
-"x\u00000041y" ဟု ပြသပါ။
+"တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသမည်။
+"a\\b" ဟု ပြသမည်။
+"{{ }}" ဟု ပြသမည်။
+'က' ကို ပြသမည်။
+'{ယူနီကုဒ် 1000}' ကို ပြသမည်။
+"x\u00000041y" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -313,19 +317,19 @@ xAy
 ```
 
 ```zaka-error ZK0106
-'{မသိ}' ကို ပြသပါ။
+'{မသိ}' ကို ပြသမည်။
 ```
 
 ```zaka-error ZK0107
-'ကို' ကို ပြသပါ။
+'ကို' ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0107]: a character literal must hold one character, found 2
+error[ZK0107]: a character literal must hold one character, found 3
 ```
 
 ```zaka-error ZK0104
-"မပိတ်ထားသော စာ ဟု ပြသပါ။
+"မပိတ်ထားသော စာ ဟု ပြသမည်။
 ```
 
 ## Reserved words

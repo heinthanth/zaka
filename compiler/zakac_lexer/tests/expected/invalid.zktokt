@@ -1,7 +1,7 @@
 # zakac-lex-artifact v1
 name:
   Custom: invalid.zaka
-source: "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ဘစ် ဖြစ်ပါစေ။\nက၊ ခ, ဂ\n\"unterminated\n'ab' ကို ပြသပါ။\n\"{မသိ}\" ဟု ပြသပါ။\n`raw\n၁၂.34 ; $\n"
+source: "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ဘစ် ဖြစ်ပါစေ။\nက၊ ခ, ဂ\n\"unterminated\n'ab' ကို ပြသမည်။\n\"{မသိ}\" ဟု ပြသမည်။\n`raw\n၁၂.34 ; $\n"
 tokens:
 - kind:
     kw: var
@@ -121,48 +121,48 @@ tokens:
     kw: print
   span:
     lo: 225
-    hi: 240
+    hi: 243
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 240
-    hi: 243
+    lo: 243
+    hi: 246
   particle: none
   joined: true
 - kind:
     str: 1
   span:
-    lo: 244
-    hi: 257
+    lo: 247
+    hi: 260
   particle: none
   joined: false
 - kind:
     kw: hu
   span:
-    lo: 258
-    hi: 264
+    lo: 261
+    hi: 267
   particle: none
   joined: false
 - kind:
     kw: print
   span:
-    lo: 265
-    hi: 280
+    lo: 268
+    hi: 286
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 280
-    hi: 283
+    lo: 286
+    hi: 289
   particle: none
   joined: true
 - kind: raw_ident
   span:
-    lo: 284
-    hi: 288
+    lo: 290
+    hi: 294
   particle: none
   joined: false
 - kind:
@@ -172,14 +172,14 @@ tokens:
       has_exponent: false
       has_letters: false
   span:
-    lo: 289
-    hi: 298
+    lo: 295
+    hi: 304
   particle: none
   joined: false
 - kind: eof
   span:
-    lo: 303
-    hi: 303
+    lo: 309
+    hi: 309
   particle: none
   joined: false
 comments: []
@@ -191,8 +191,8 @@ strings:
   - template_slot:
       text: မသိ
       span:
-        lo: 247
-        hi: 256
+        lo: 250
+        hi: 259
   value: "{မသိ}"
 diagnostics:
 - code: ZK0102
@@ -227,27 +227,27 @@ diagnostics:
   level: error
   message: raw identifier is missing its closing backtick before the end of the line
   span:
-    lo: 284
-    hi: 288
+    lo: 290
+    hi: 294
   help: null
 - code: ZK0103
   level: error
   message: Burmese and Western digits cannot be mixed in one number
   span:
-    lo: 289
-    hi: 298
+    lo: 295
+    hi: 304
   help: null
 - code: ZK0101
   level: error
   message: invalid character in ";"
   span:
-    lo: 299
-    hi: 300
+    lo: 305
+    hi: 306
   help: null
 - code: ZK0101
   level: error
   message: invalid character in "$"
   span:
-    lo: 301
-    hi: 302
+    lo: 307
+    hi: 308
   help: null

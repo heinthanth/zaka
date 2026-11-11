@@ -19,9 +19,9 @@ wherever the value is needed. Creating a variable is called *declaring* it.
 // The initial value can be worked out from other variables.
 ကိန်းရှင် နှစ်ဆ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် * ၂ ဖြစ်ပါစေ။
 
-အသက် ကို ပြသပါ။
-ဈေး ကို ပြသပါ။
-နှစ်ဆ ကို ပြသပါ။
+အသက် ကို ပြသမည်။
+ဈေး ကို ပြသမည်။
+နှစ်ဆ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -42,7 +42,7 @@ A declaration reads like a Burmese sentence:
 | `တစ်ခု` | "one" | counts the kind, as Burmese counts a thing |
 | `ဖြစ်၍` | "is, and" | joins the kind and the value |
 | `တန်ဖိုးသည်` | "its value" | |
-| `၁၈` | 18 | the initial value (optional) |
+| `၁၈` | 18 | the initial value |
 | `ဖြစ်ပါစေ` | "let it be" | the verb that declares |
 | `။` | full stop | |
 
@@ -65,8 +65,8 @@ in quotes gives `စာသား`.
 ကိန်းရှင် ဈေး သည် ၂.၅ ဖြစ်ပါစေ။
 ကိန်းရှင် အမည် သည် "မမ" ဖြစ်ပါစေ။
 ကိန်းရှင် နှစ်ဆ သည် အသက် * ၂ ဖြစ်ပါစေ။
-အမည် ကို ပြသပါ။
-နှစ်ဆ ကို ပြသပါ။
+အမည် ကို ပြသမည်။
+နှစ်ဆ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -78,25 +78,26 @@ in quotes gives `စာသား`.
 Write the kind when the value alone would pick another one, such as a small integer kind:
 `ကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀၀ ဖြစ်ပါစေ။`
 
-## Starting values
+## The initial value
 
-Leave out `ဖြစ်၍ တန်ဖိုးသည်` and the initial value, and the variable starts at its
-kind's *default*:
+`ကနဦးတန်ဖိုး` ("the initial value") stands for a starting value of each kind. It takes
+its kind from where it stands, so the declaration names the kind:
 
-| Kind | Default |
+| Kind | `ကနဦးတန်ဖိုး` is |
 | --- | --- |
 | integers and decimal numbers | `၀` (zero) |
 | `မှန်မှားတန်ဖိုး` | `မမှန်` (false) |
 | `စာလုံး` | the null character `'\0'` |
+| `စာသား` | `""`, text with no characters |
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။      // count, starts at 0
-ကိန်းရှင် ပြီးပြီ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။      // done, starts as false
-ကိန်းရှင် ပျမ်းမျှ သည် ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။         // average, starts at 0.0
-အရေအတွက် ကို ပြသပါ။
-ပြီးပြီ ကို ပြသပါ။
-ပျမ်းမျှ ကို ပြသပါ။
+ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။   // count, 0
+ကိန်းရှင် ပြီးပြီ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။                // done, false
+ကိန်းရှင် ပျမ်းမျှ သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။                   // average, 0.0
+အရေအတွက် ကို ပြသမည်။
+ပြီးပြီ ကို ပြသမည်။
+ပျမ်းမျှ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -106,17 +107,59 @@ kind's *default*:
 ၀.၀
 ```
 
-## The short form
+Each line writes the kind with its count word, then `ကနဦးတန်ဖိုး` as the value. Without a kind to take, as in `ကနဦးတန်ဖိုး ကို ပြသမည်။`, the compiler stops
+with ZK0478. Later pages give the initial value of lists, structs and the other kinds; the
+rules in full are in [Initial values](../../manual/language/kinds.md#initial-values).
 
-The value can also come straight after the kind, without `ဖြစ်၍ တန်ဖိုးသည်`. These two
-lines declare the same kind of variable with the same value:
+## Set before read
+
+A declaration can also leave the value out. The variable then holds no value until the
+program gives it one, and no zero fills it in on the quiet. A read before then is a
+mistake:
+
+```zaka-error ZK0722
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+အရေအတွက် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0722]: "အရေအတွက်" can be unset here: a path reaches this read with no value given to it
+```
+
+Set the variable first, with `ထားမည်` from [Changing a variable](assignment.md), and the
+read is fine:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+အရေအတွက် ကို ၃ ဟု ထားမည်။
+အရေအတွက် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၃
+```
+
+Once a program can choose between paths, with [If and
+else](../control-flow/if-else.md), each path that leads to a read sets the variable
+before it. The rules in full are in [Set before
+read](../../manual/language/statements.md#set-before-read).
+
+## A value with its kind
+
+A number can hold its kind after it, `<value> ဟူသော <kind> တစ်ခု` ("the value called a
+`<kind>`"), and a declaration of that value alone takes the kind. These two lines declare
+the same kind of variable with the same value:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
-ကိန်းရှင် အရွယ် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
-အသက် ကို ပြသပါ။
-အရွယ် ကို ပြသပါ။
+ကိန်းရှင် အရွယ် သည် ၁၈ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+အသက် ကို ပြသမည်။
+အရွယ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -125,9 +168,8 @@ lines declare the same kind of variable with the same value:
 ၁၈
 ```
 
-The short form is quicker to write. The long form keeps the kind and the value apart,
-which reads better when the value is long or starts with a kind word of its own. These
-pages use the long form.
+The first form keeps the kind and the value apart, which reads better when the value is
+long. These pages use it.
 
 ## The value must fit the kind
 
@@ -154,7 +196,7 @@ never declared is an error:
 
 ```zaka-error ZK0301
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အသက် ကို ပြသပါ။
+အသက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -165,6 +207,8 @@ error[ZK0301]: "အသက်" is not declared
 ## Hands on
 
 - Declare a variable for a height in centimetres and print it.
+- Declare a `ဒဿမကိန်း` variable with no value, print it, and read the mistake. Then give it
+  `ကနဦးတန်ဖိုး`.
 - Declare a `မှန်မှားတန်ဖိုး` variable with the value `၅ သည် ၃ ထက် ကြီးသည်` and print it.
 
 Next: [Constants](constants.md).

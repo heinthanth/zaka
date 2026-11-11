@@ -58,9 +58,8 @@ fn links_keep_the_stage_and_the_ast_view()
     }
     let shown = encode(&link_at(Phase::Parse, AstMode::Graph));
     assert!(
-        shown.starts_with(
-            "8.64.7.error.4.in-place.apart.vm.default.parse.graph.folded."
-        ),
+        shown
+            .starts_with("8.64.7.warn.4.in-place.apart.vm.default.parse.graph.folded."),
         "{shown}"
     );
 }
@@ -82,7 +81,7 @@ fn links_keep_the_foldings_and_the_lowering_view()
             let hash = encode(&link);
             assert!(
                 hash.starts_with(&format!(
-                    "8.64.{n}.error.4.in-place.apart.vm.default.lower."
+                    "8.64.{n}.warn.4.in-place.apart.vm.default.lower."
                 )),
                 "{hash}"
             );
@@ -98,9 +97,9 @@ fn links_keep_the_ownership_checks()
     {
         for mem in 0..4u8
         {
-            let (strict, no_raw) = (mem & 1 != 0, mem & 2 != 0);
+            let (strict, no_unsafe) = (mem & 1 != 0, mem & 2 != 0);
             #[rustfmt::skip]
-            let options = Options::builder().check(check).strict(strict).no_raw(no_raw)
+            let options = Options::builder().check(check).strict(strict).no_unsafe(no_unsafe)
                 .build();
             let link = Link::builder().source("x").options(options).build();
             let hash = encode(&link);
@@ -121,7 +120,7 @@ fn links_keep_the_result_mode()
         let hash = encode(&link);
         let word: &'static str = results.into();
         assert!(
-            hash.starts_with(&format!("8.64.7.error.4.{word}.apart.vm.default.")),
+            hash.starts_with(&format!("8.64.7.warn.4.{word}.apart.vm.default.")),
             "{hash}"
         );
         assert_eq!(decode(&hash), Some(link));
@@ -138,7 +137,7 @@ fn links_keep_the_scratch_mode()
         let hash = encode(&link);
         let word: &'static str = scratch.into();
         assert!(
-            hash.starts_with(&format!("8.64.7.error.4.in-place.{word}.vm.default.")),
+            hash.starts_with(&format!("8.64.7.warn.4.in-place.{word}.vm.default.")),
             "{hash}"
         );
         assert_eq!(decode(&hash), Some(link));
@@ -155,7 +154,7 @@ fn links_keep_the_target()
         let hash = encode(&link);
         let word: &'static str = target.into();
         assert!(
-            hash.starts_with(&format!("8.64.7.error.4.in-place.apart.{word}.")),
+            hash.starts_with(&format!("8.64.7.warn.4.in-place.apart.{word}.")),
             "{hash}"
         );
         assert_eq!(decode(&hash), Some(link));
@@ -171,7 +170,7 @@ fn links_keep_the_c_checks()
         let link = Link::builder().source("x").options(options).build();
         let hash = encode(&link);
         let word: &'static str = c_checks.into();
-        let head = format!("8.64.7.error.4.in-place.apart.c.{word}.");
+        let head = format!("8.64.7.warn.4.in-place.apart.c.{word}.");
         assert!(hash.starts_with(&head), "{hash}");
         assert_eq!(decode(&hash), Some(link));
     }
@@ -213,8 +212,8 @@ fn version_4_links_open_with_the_default_checks()
     assert_eq!((decoded.stage, decoded.lower_mode), (Phase::Lower, LowerMode::Folded));
     let options = decoded.options;
     assert_eq!(
-        (options.check, options.strict, options.no_raw),
-        (MemCheck::Error, false, false)
+        (options.check, options.strict, options.no_unsafe),
+        (MemCheck::Warn, false, false)
     );
 }
 
@@ -258,10 +257,10 @@ fn malformed_links_decode_to_none()
         "1.0.64.eA",
         "7.64.7.error.0.in-place.both.lex.tree.folded.eA",
         "7.64.7.error.0.in-place.lex.tree.folded.eA",
-        "8.64.7.error.0.in-place.apart.wasm.default.lex.tree.folded.eA",
-        "8.64.7.error.0.in-place.apart.c.strict.lex.tree.folded.eA",
-        "8.64.7.error.0.in-place.apart.c.lex.tree.folded.eA",
-        "8.64.7.error.0.in-place.apart.lex.tree.folded.eA",
+        "8.64.7.warn.0.in-place.apart.wasm.default.lex.tree.folded.eA",
+        "8.64.7.warn.0.in-place.apart.c.strict.lex.tree.folded.eA",
+        "8.64.7.warn.0.in-place.apart.c.lex.tree.folded.eA",
+        "8.64.7.warn.0.in-place.apart.lex.tree.folded.eA",
         "6.64.7.error.0.both.lex.tree.folded.eA",
         "6.64.7.error.0.lex.tree.folded.eA",
         "5.64.7.strict.0.lex.tree.folded.eA",
@@ -291,15 +290,15 @@ fn links_keep_the_overflow_mode_in_the_mem_flags()
 {
     for overflow in OverflowMode::iter()
     {
-        let options = Options::builder().overflow(overflow).no_raw(true).build();
+        let options = Options::builder().overflow(overflow).no_unsafe(true).build();
         let link = Link::builder().source("x").options(options).build();
         let hash = encode(&link);
         let digit = if overflow == OverflowMode::Stop { 6 } else { 2 };
-        assert!(hash.starts_with(&format!("8.64.7.error.{digit}.")), "{hash}");
+        assert!(hash.starts_with(&format!("8.64.7.warn.{digit}.")), "{hash}");
         assert_eq!(decode(&hash), Some(link));
     }
     assert_eq!(
-        decode("8.64.7.error.8.in-place.apart.vm.default.lex.tree.folded.eA"),
+        decode("8.64.7.warn.8.in-place.apart.vm.default.lex.tree.folded.eA"),
         None
     );
 }
@@ -311,10 +310,10 @@ fn unreadable_links_keep_their_source_and_stage()
     assert_eq!(read(&encode(&link)), Some(link));
     // A format 8 link from before the C checks part: its options no longer
     // decode, but the program and the open stage remain.
-    let old = read("8.64.7.error.4.in-place.apart.vm.lower.tree.folded.eA").unwrap();
+    let old = read("8.64.7.warn.4.in-place.apart.vm.lower.tree.folded.eA").unwrap();
     assert_eq!((old.source.as_str(), old.stage), ("x", Phase::Lower));
     assert_eq!(old.options, Options::default());
     assert_eq!(read("9.whatever.eA").unwrap().stage, Phase::default());
-    assert_eq!(read("8.64.7.error.4.lex.@@"), None);
+    assert_eq!(read("8.64.7.warn.4.lex.@@"), None);
     assert_eq!(read("eA"), None);
 }

@@ -1,4 +1,4 @@
-//! The check for Ghostty: what a Ghostty build says about how it draws
+//! The check for Ghostty: what a Ghostty build reports about how it draws
 //! Burmese text.
 
 pub mod settings;

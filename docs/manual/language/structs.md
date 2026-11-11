@@ -1,6 +1,6 @@
 ---
 title: Structs
-description: The struct declaration, its classifier, struct literals, field access, duplicating and moving, how a struct is stored, and what a struct cannot do.
+description: The struct declaration, its classifier, struct literals, field access, copies, how a struct is stored, and what a struct cannot do.
 ---
 
 # Structs
@@ -10,12 +10,12 @@ RAM. It is a kind that a program declares for itself, and its name works whereve
 does. The Learn book starts in small steps with [Structs](../../learn/structs/README.md).
 
 ```zaka
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ဒဿမကိန်း အမြင့် တို့ ပါဝင်သည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အမြင့် ဟူသော ဒဿမကိန်း တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်ပါစေ။
-ကျော် ၏ အသက် ကို ၂၀ ဟု ထားပါ။
-ကျော် ကို ပြသပါ။
+ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကျော် ၏ အသက် ကို ၂၀ ဟု ထားမည်။
+ကျော် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -26,33 +26,45 @@ does. The Learn book starts in small steps with [Structs](../../learn/structs/RE
 ## Declaring a struct
 
 ```text
-ဒေတာအမျိုးအစား <name> တွင် <kind> <field>၊ <kind> <field> တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား <name> တွင် <kind> <field>၊ <kind> <field> တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
+<name> ဟူသော [အများသုံး] ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ … <field> ဟူသော <kind> တစ်<word> တို့ပါဝင်သည်။
+<name> ဟူသော [အများသုံး] ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ … တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
+<name> ဟူသော [အများသုံး] ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word> ပါဝင်သည်။
 ```
 
-- `အချက်အလက်အမျိုးအစား` and `ဒေတာအမျိုးအစား` are one word, as `အချက်အလက်` and `ဒေတာ` are
+`မျှဝေနိုင်သော` before `ဒေတာအစုအဝေး`, as in `<name> ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် ...`, declares a shared object kind in place of a
+struct: the same declaration, literal and fields, but assigning one shares it rather than
+duplicating it. This page states the rules of both; [Values and objects](objects.md) states
+what sharing changes.
+
+- `အချက်အလက်အစုအဝေး` and `ဒေတာအစုအဝေး` are one word, as `အချက်အလက်` and `ဒေတာ` are
   in each name and reserved word ([Two spellings of one word](words.md#names)); a
   struct name written with either spelling names one struct.
-- The same opener starts an enumeration, with `ဆိုသည်မှာ` after the name in place of
-  `တွင်` ([Enumerations](enums.md#declaring-an-enumeration)).
+- `တွင်` can stand joined to `ဒေတာအစုအဝေး` or apart from it; the pages write it joined.
+- The export mark `အများသုံး` stands after `ဟူသော`, before `မျှဝေနိုင်သော` and the word
+  `ဒေတာအစုအဝေး` ([Modules](modules.md)).
+- An enumeration has the same shape, with `ဒေတာအမျိုးအစားကွဲ` in place of `ဒေတာအစုအဝေး`
+  ([Enumerations](enums.md#declaring-an-enumeration)).
 - A declaration stands at the top level of a file. Inside a block, a loop, a conditional
   or a function it is ZK0228. A struct can be used above its declaration, since the
   declarations are read first.
-- A struct has at least one field. Each field is `<kind> <name>`, with `၊` between
-  them, and the list closes with `တို့ ပါဝင်သည်` or `တို့ ပါဝင်ပြီး`.
-- A field kind is each kind there is: a number, a true/false value, a character, a pointer, a list,
-  or another struct.
+- A struct has at least one field. Each field is `<name> ဟူသော <kind> တစ်<word>`, its
+  kind with the [measure word](#the-classifier) of that kind, with `၊` between them, and
+  the list closes with `တို့ပါဝင်သည်` or `တို့ပါဝင်ပြီး`. A lone field closes with
+  `ပါဝင်သည်` or `ပါဝင်ပြီး`, with no `တို့`; `တို့` after one field, or none after
+  several, is ZK0201.
+- A field kind is each kind there is: a number, a true/false value, a character, text, a
+  list, another struct, a shared object, a function value or a pointer. Safe code can hold
+  a pointer field, while reading through it needs marked code ([Unsafe Zaka](unsafe.md)).
 - A struct name is declared once in the whole program (ZK0316), and the field names of
   one struct differ from each other (ZK0317).
 - A struct name cannot also name a variable, a constant, a parameter, a field or a
   function (ZK0319), because the compiler reads each struct name as a kind wherever a
-  value can stand, as in `လူ ၏ အရွယ်အစား`.
-- A field cannot hold its own struct, at once or through other structs (ZK0427): it would
-  have to be larger than itself. Hold an address of it, as in `အဆစ် လိပ်စာ နောက်`.
-- A field cannot hold a borrow, as in `ငှားထားသော ကိန်းပြည့် လိပ်စာ ရှင်` (ZK0718). Use an
-  owner (`<kind> လိပ်စာ`) or a raw address (`<kind> လိပ်စာအကြမ်း`). A borrow lasts as
-  long as the owner it borrows from, which the checker follows through variables and
-  parameters and not through a struct that can sit in the heap.
+  value can stand, as in `လူ တစ်ခု ၏ အရွယ်အစား`.
+- A struct cannot hold itself, at once, through other structs or through a counted list
+  of itself (ZK0427): it would have no end. A shared object kind can name itself in its
+  fields, since such a field holds a reference, but the chain needs an end: one field of
+  the loop is an optional or a plain list, as in `နောက် ဟူသော အဆစ် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု`.
+  A loop with no such field is ZK0481 ([Kinds no program can build](objects.md#kinds-no-program-can-build)).
 
 Where a kind must stand, as in a declaration, a parameter or a field, a name is read as a
 struct name; a name that no declaration gives is ZK0318, as in
@@ -62,22 +74,27 @@ struct name; a name that no declaration gives is ZK0318, as in
 
 Burmese counts things with a word that fits them: people with `ယောက်`, most other things
 with `ခု`. A struct names its own counting word, its *classifier*, at the end of its
-declaration, with `မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`. A struct that names none is counted
-with `ခု`, like each other kind.
+declaration, with `တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`. A struct that names
+none is counted with `ခု`, like each other kind.
 
-The classifier is the word in a heap size, `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...`, and
-the word after `တစ်` in a [struct literal](#struct-literals), `လူတစ်ယောက်`, and in the kind
-of a [declaration](statements.md#declarations), `ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်ပါစေ။`:
+The classifier is the word after `တစ်` in a [struct literal](#struct-literals),
+`လူတစ်ယောက်`, and the measure word after each kind written in a declaration, a parameter,
+a field, a result, a conversion, a size, a default arm or after a literal:
+`ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်ပါစေ။` ([Kinds](kinds.md#measure-words)). In marked
+code it is also the word in a heap size, `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...`
+([Unsafe Zaka](unsafe.md)):
 
 | Kind | Counted with |
 | --- | --- |
-| a struct that names a classifier | that word |
-| a struct that names none | `ခု` |
-| `စာလုံး`, in a declaration | `လုံး` |
-| each other kind, such as `ကိန်းပြည့်` | `ခု` |
+| a struct, an enumeration or an alias that names a classifier | that word |
+| a struct or an enumeration that names none | `ခု` |
+| an alias that names none | the word of its kind |
+| `စာလုံး` | `လုံး` |
+| each other kind, such as `ကိန်းပြည့်` or `လူ စာရင်း` | `ခု` |
 
-A heap size, a struct literal or a declaration that uses another word, such as `ခု` for a struct that names `ယောက်`, or
-`ယောက်` for `ကိန်းပြည့်`, is the warning ZK0509. The size does not change with the word,
+A kind in one of those places with no measure word after it is ZK0234. A measure word
+other than the kind's own, such as `ခု` for a struct that names `ယောက်`, or `ယောက်` for
+`ကိန်းပြည့်`, is the warning ZK0509. The size does not change with the word,
 and the program runs. The help line of the message gives the word to write. A classifier
 word other than `ခု` is read in a heap size once a struct of the program names it:
 `ကိန်းပြည့် ၃ ယောက်စာ` is the warning when some struct names `ယောက်`, and a shape
@@ -87,33 +104,34 @@ List counts (`အကွက် ၃ ခုရှိသော`) and ordinals (`ခ�
 these use `ခု` for each kind.
 
 ```zaka
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ကိန်းပြည့် အတန်း တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အတန်း ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် p သည် လူ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
-p ၏ တန်ဖိုး ၏ အသက် ကို ၁၀ ဟု ထားပါ။
-p ၏ တန်ဖိုး ကို ပြသပါ။
-လိပ်စာ p ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်ပါစေ။
+ကျော် ၏ အသက် ကို ၁၀ ဟု ထားမည်။
+ကျော် ၏ အတန်း ကို ၅ ဟု ထားမည်။
+ကျော် ကို ပြသမည်။
+အသက် ၁၂၊ အတန်း ၇ ရှိသော လူတစ်ယောက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-လူ(အသက်: ၁၀၊ အတန်း: ၀)
+လူ(အသက်: ၁၀၊ အတန်း: ၅)
+လူ(အသက်: ၁၂၊ အတန်း: ၇)
 ```
 
 ```zaka-warning ZK0509
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် p သည် လူ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် လူ ၃ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
-လိပ်စာ p ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကျော် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 warning[ZK0509]: လူ is counted with "ယောက်", not "ခု"
+help: write "တစ်ယောက်"
 ```
 
 ## Where a struct kind goes
@@ -123,18 +141,54 @@ A struct name stands wherever a kind does:
 | Place | Written |
 | --- | --- |
 | a variable | `ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်ပါစေ။` |
-| a parameter | `လူ သူ ကို လက်ခံပြီး` |
-| the cells of a list | `အကွက် ၃ ခုရှိသော လူ စာရင်း` |
-| a field of another struct | `လူ ပိုင်ရှင်` |
-| a size | `လူ ၏ အရွယ်အစား` |
-| a pointer kind | `လူ လိပ်စာ` |
-| a borrow | `ငှားထားသော လူ လိပ်စာ` |
-| a heap size | `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...` |
+| a parameter | `သူ ဟူသော လူ တစ်ယောက် ကို လက်ခံပြီး` |
+| the cells of a list | `အကွက် ၃ ခုရှိသော လူ စာရင်း တစ်ခု` |
+| a field of another struct | `ပိုင်ရှင် ဟူသော လူ တစ်ယောက်` |
+| a size | `လူ တစ်ယောက် ၏ အရွယ်အစား` |
+| a pointer kind | `လူ လိပ်စာ တစ်ခု` |
+| a heap size, in marked code | `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...` |
 
-A variable of a struct kind declared with no value starts with each field at its default:
-`၀` for a number, `မမှန်` for a true/false value, `ဗလာ` for an address, and the default of
-its kind for a list or another struct. A declaration can also take another struct of the
-same kind, or a struct literal.
+A variable of a struct kind takes a struct literal, another struct of the same kind, or
+`ကနဦးတန်ဖိုး`, the [initial value](kinds.md#initial-values), which sets each field to the
+initial value of its own kind:
+`ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။`. A declaration with no value leaves each field
+unset, and the program sets each one before it reads the struct
+([Set before read](statements.md#set-before-read)):
+
+- The struct counts as set once each field is set on each path.
+- A struct inside a struct is followed one field at a time too: writing `က ၏ ဆုံး ၏ x`
+  sets that one field, and `က ၏ ဆုံး` counts as set once each of its fields is.
+- Reading a field that can be unset, or the whole struct while one field can be, is
+  ZK0722.
+
+```zaka
+အမှတ် ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် မ သည် အမှတ် တစ်ခု ဖြစ်ပါစေ။
+မ ၏ x ကို ၃ ဟု ထားမည်။
+မ ၏ y ကို ၄ ဟု ထားမည်။      // each field is set now
+မ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+အမှတ်(x: ၃၊ y: ၄)
+```
+
+```zaka-error ZK0722
+အမှတ် ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် မ သည် အမှတ် တစ်ခု ဖြစ်ပါစေ။
+မ ၏ x ကို ၃ ဟု ထားမည်။
+မ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0722]: "မ" can be unset here: a path reaches this read with no value given to it
+```
 
 ## Struct literals
 
@@ -149,11 +203,11 @@ values after them, as in `အသက် ၂၀၊ အမြင့် ၁.၇၅ �
 age 20 and height 1.75". The last line is the notation form, the one a struct prints in:
 `လူ(အသက်: ၂၀၊ အမြင့်: ၁.၇၅)` means the same, and writes no classifier.
 
-- The pairs stand in each order, with `၊` between them. The `ရှိသော` form writes at
-  least one pair; the notation form can write none, as in `လူ()`, a struct with each
-  field at its default. After a name that no struct declares, `()` is a
-  [call](functions.md#calls) with no arguments.
-- A field left out holds its default, as in a declaration with no value.
+- The pairs stand in each order, with `၊` between them. After a name that no struct
+  declares, `()` is a [call](functions.md#calls) with no arguments.
+- Each field of the struct has a pair: a field left out is ZK0482, as in `လူ(အသက်: ၁)`
+  for a struct that also has `အမြင့်`. `ကနဦးတန်ဖိုး` as the value gives a field the
+  initial value of its kind: `လူ(အသက်: ၁၊ အမြင့်: ကနဦးတန်ဖိုး)`.
 - Each field name is one the struct has (ZK0320), and each is set once (ZK0321).
 - Each value converts to the kind of its field, as the value of an assignment does
   (ZK0401).
@@ -165,17 +219,15 @@ age 20 and height 1.75". The last line is the notation form, the one a struct pr
   written as one word or with a space between them. In the notation form, the name and
   `(` stand together, and a `:` follows each field name.
 - A struct literal stands wherever a value of the struct can: the value of a
-  declaration, the value of an assignment, an argument, or the value of `ပြသပါ`.
-- An owner given to a field moves into the struct, and the variable it came from holds
-  `ဗလာ` afterwards, as in an assignment.
+  declaration, the value of an assignment, an argument, or the value of `ပြသမည်`.
 
 ```zaka
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ဒဿမကိန်း အမြင့် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အမြင့် ဟူသော ဒဿမကိန်း တစ်ခု တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်၍ တန်ဖိုးသည် အမြင့် ၁.၇၅၊ အသက် ၂၀ ရှိသော လူတစ်ယောက် ဖြစ်ပါစေ။
-ကျော် ကို ပြသပါ။
-အသက် ၃၀ ရှိသော လူ တစ်ယောက် ကို ပြသပါ။
+ကျော် ကို ပြသမည်။
+အသက် ၃၀၊ အမြင့် ကနဦးတန်ဖိုး ရှိသော လူ တစ်ယောက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -190,52 +242,57 @@ next to another value without an operator or a particle between them. The notati
 starts with a struct name and `(`, or with a name, `(`, a field name and `:`.
 
 ```zaka
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ဒဿမကိန်း အမြင့် တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား အသင်း တွင် လူ ခေါင်းဆောင်၊ အကွက် ၂ ခုရှိသော လူ စာရင်း အဖွဲ့ဝင် တို့ ပါဝင်သည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အမြင့် ဟူသော ဒဿမကိန်း တစ်ခု တို့ပါဝင်သည်။
+အသင်း ဟူသော ဒေတာအစုအဝေးတွင် ခေါင်းဆောင် ဟူသော လူ တစ်ခု၊ အဖွဲ့ဝင် ဟူသော အကွက် ၂ ခုရှိသော လူ စာရင်း တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အသင်း(ခေါင်းဆောင်: လူ(အသက်: ၄၀)၊ အဖွဲ့ဝင်: [လူ(အသက်: ၂၀)၊ လူ(အမြင့်: ၁.၈)]) ကို ပြသပါ။
+အသင်း(ခေါင်းဆောင်: လူ(အသက်: ၄၀၊ အမြင့်: ၁.၇)၊ အဖွဲ့ဝင်: [လူ(အသက်: ၂၀၊ အမြင့်: ကနဦးတန်ဖိုး)၊ ကနဦးတန်ဖိုး]) ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-အသင်း(ခေါင်းဆောင်: လူ(အသက်: ၄၀၊ အမြင့်: ၀.၀)၊ အဖွဲ့ဝင်: [လူ(အသက်: ၂၀၊ အမြင့်: ၀.၀)၊ လူ(အသက်: ၀၊ အမြင့်: ၁.၈)])
+အသင်း(ခေါင်းဆောင်: လူ(အသက်: ၄၀၊ အမြင့်: ၁.၇)၊ အဖွဲ့ဝင်: [လူ(အသက်: ၂၀၊ အမြင့်: ၀.၀)၊ လူ(အသက်: ၀၊ အမြင့်: ၀.၀)])
 ```
 
 ## Fields
 
 `<value> ၏ <field>` is a field. It is a place: it can be read, printed, assigned to, and
-have its address taken.
+passed to a `ဒေတာ ပြောင်းလဲရန်` parameter ([Functions](functions.md)). In marked code its
+address can be taken.
 
 | Written | Means |
 | --- | --- |
 | `ကျော် ၏ အသက်` | the field of a struct variable |
-| `ကျော် ၏ အသက် ကို ၂၀ ဟု ထားပါ။` | write the field |
+| `ကျော် ၏ အသက် ကို ၂၀ ဟု ထားမည်။` | write the field |
 | `က ၏ ခ ၏ ဂ` | a field of a field, one `၏` for each step |
 | `xs ၏ အကွက် ၀ ၏ x` | a field of a list cell |
-| `p ၏ တန်ဖိုး ၏ အသက်` | the field of the struct a pointer points at |
-| `ကျော် ၏ အသက် ၏ လိပ်စာ` | the address of the field, a pointer to the kind of the field |
+| `p ၏ တန်ဖိုး ၏ အသက်` | in marked code, the field of the struct a pointer points at |
+| `ကျော် ၏ အသက် ၏ လိပ်စာ` | in marked code, the address of the field, a pointer to the kind of the field |
 
 - A field is looked up in the struct on its name. A name the struct does not have is
   ZK0320.
-- The value in front of `၏` has to be a struct (ZK0426). For a pointer, dereference it
+- The value in front of `၏` has to be a struct or a shared object (ZK0426). For a pointer, dereference it
   first with `တန်ဖိုး`: `p ၏ အသက်` is ZK0426.
 - A field inside an operator expression goes in parentheses, as a list cell does:
   `(ကျော် ၏ အသက်) + ၁`. Without parentheses the sentence is ZK0209 or ZK0206.
 
 ```zaka
-ဒေတာအမျိုးအစား အမှတ် တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား မျဉ်း တွင် အမှတ် စ၊ အမှတ် ဆုံး တို့ ပါဝင်သည်။
+အမှတ် ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+မျဉ်း ဟူသော ဒေတာအစုအဝေးတွင် စ ဟူသော အမှတ် တစ်ခု၊ ဆုံး ဟူသော အမှတ် တစ်ခု တို့ပါဝင်သည်။
+
+လုပ်ဆောင်ချက် ကိုး သည် န ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+န ကို ၉ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် မျဉ်း တစ်ခု ဖြစ်ပါစေ။
-က ၏ ဆုံး ၏ x ကို ၃ ဟု ထားပါ။
-ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော အမှတ် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-အမှတ်များ ၏ အကွက် ၁ ၏ y ကို ၇ ဟု ထားပါ။
-ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ စ ၏ y ၏ လိပ်စာ ဖြစ်ပါစေ။
-ပ ၏ တန်ဖိုး ကို ၉ ဟု ထားပါ။
-က ကို ပြသပါ။
-အမှတ်များ ကို ပြသပါ။
+ကိန်းရှင် က သည် မျဉ်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+က ၏ ဆုံး ၏ x ကို ၃ ဟု ထားမည်။
+ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော အမှတ် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အမှတ်များ ၏ အကွက် ၁ ၏ y ကို ၇ ဟု ထားမည်။
+လုပ်ဆောင်ချက် ကိုး ကို က ၏ စ ၏ y တို့ဖြင့် လုပ်ဆောင်မည်။
+က ကို ပြသမည်။
+အမှတ်များ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -248,22 +305,24 @@ have its address taken.
 
 `==` and `!=` take two structs of one kind. Two structs are equal when each field equals
 the same field of the other: numbers and characters as values, text and lists one cell at
-a time, nested structs one field at a time, and addresses as the address each holds. The padding
+a time, nested structs one field at a time, shared objects in depth as `==` compares
+them ([Values and objects](objects.md)), function values as the same function, and
+pointers as the address each holds. The padding
 between fields takes no part. A decimal field follows the rules of decimals, so `-0.0`
 equals `0.0` and a `NaN` field makes the two unequal. A list of structs compares each
 struct in turn.
 
 ```zaka
-ဒေတာအမျိုးအစား အမှတ် တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား လူ တွင် စာသား အမည်၊ အမှတ် နေရာ တို့ ပါဝင်သည်။
+အမှတ် ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အမည် ဟူသော စာသား တစ်ခု၊ နေရာ ဟူသော အမှတ် တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် လူ(အမည်: "မောင်"၊ နေရာ: အမှတ်(x: ၁)) ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် လူ(အမည်: "မောင်"၊ နေရာ: အမှတ်(x: ၁၊ y: ၀)) ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် က ဖြစ်ပါစေ။
-က == ခ ကို ပြသပါ။
-ခ ၏ နေရာ ၏ y ကို ၂ ဟု ထားပါ။
-က != ခ ကို ပြသပါ။
-[က၊ ခ] == [က၊ ခ] ကို ပြသပါ။
+က == ခ ကို ပြသမည်။
+ခ ၏ နေရာ ၏ y ကို ၂ ဟု ထားမည်။
+က != ခ ကို ပြသမည်။
+[က၊ ခ] == [က၊ ခ] ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -283,13 +342,13 @@ them, and `)`, as in `လူ(အသက်: ၂၀၊ အမြင့်: ၁.၇
 field print alike, nested.
 
 ```zaka
-ဒေတာအမျိုးအစား ရမှတ်များ တွင် လက္ခဏာမဲ့ ကိန်းပြည့် အကြိမ်၊ အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရမှတ် တို့ ပါဝင်သည်။
+ရမှတ်များ ဟူသော ဒေတာအစုအဝေးတွင် အကြိမ် ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု၊ ရမှတ် ဟူသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပွဲ သည် ရမှတ်များ တစ်ခု ဖြစ်ပါစေ။
-ပွဲ ၏ ရမှတ် ကို ၅၊ ၇၊ ၉ တို့ပါသော စာရင်း ဟု ထားပါ။
-ပွဲ ၏ အကြိမ် ကို ပွဲ ၏ ရမှတ် ၏ အကွက်အရေအတွက် ဟု ထားပါ။
-ပွဲ ကို ပြသပါ။
+ကိန်းရှင် ပွဲ သည် ရမှတ်များ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ပွဲ ၏ ရမှတ် ကို ၅၊ ၇၊ ၉ တို့ပါသော စာရင်း ဟု ထားမည်။
+ပွဲ ၏ အကြိမ် ကို ပွဲ ၏ ရမှတ် ၏ အကွက်အရေအတွက် ဟု ထားမည်။
+ပွဲ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -305,44 +364,45 @@ field print alike, nested.
 | `==` on two structs of different kinds (ZK0404) | compare the fields |
 | a struct with no fields | declare the field the struct needs |
 | a struct declared inside a block (ZK0228) | declare it at the top level |
-| a struct that holds itself, except through an address (ZK0427) | hold `<name> လိပ်စာ` |
-| a field that is a borrow (ZK0718) | hold an owner or a raw address |
+| a struct that holds itself (ZK0427) | declare the kind `မျှဝေနိုင်သော`, so the field holds a reference, and make the field optional |
+| a struct literal that leaves out a field (ZK0482) | give each field a value, `ကနဦးတန်ဖိုး` for its initial value |
+| reading a struct before each field is set (ZK0722) | set each field first, or declare the struct with a value |
 
-## Duplicating and moving
+## Copies
 
-A struct is a value, like an integer or a list. Setting one struct to another of the same
-kind duplicates each field, and the two stand apart afterwards. A struct passed as an
-argument is duplicated into the parameter alike, so a change to a struct
-parameter is lost when the function ends. To let a function change the caller's struct, pass a
-borrowed address: the parameter kind is `ငှားထားသော <struct> လိပ်စာ`, and the call gives
-`<variable> ၏ လိပ်စာ`.
+A struct is a value, like an integer or a list ([Values and objects](objects.md)).
+Setting one struct to another of the same kind copies each field, and the two stand apart
+afterwards: a later write to one never reaches the other. A text or list field shares its
+cells with the old struct until one side writes. A field that holds a shared object, a
+function value or a pointer copies the reference, so both structs reach the one object.
 
-A struct with a field that is an owner pointer (`<kind> လိပ်စာ`), at once or inside a field
-that is a struct or a list, moves instead of being duplicated, as an owner does. In a
-struct that is duplicated, each text field gets a block of its own ([Text](text.md#copies)). The new
-struct takes the address, the old one is left with `ဗလာ` in that field, and a later use of
-the old struct is ZK0701. See [Ownership and borrowing](ownership.md#one-owner). A struct
-given back from a function follows the same rules; see [Lists and structs as
-results](functions.md#lists-and-structs-as-results).
+A struct passed as an argument is copied into the parameter alike, so a change to a
+struct parameter is lost when the function ends. To let a function change the caller's
+struct, mark the parameter `ဒေတာ ပြောင်းလဲရန်` ([Functions](functions.md)); the call names the
+struct with no mark. A struct given back from a function follows the same rules; see
+[Lists and structs as results](functions.md#lists-and-structs-as-results).
 
 ```zaka
-ဒေတာအမျိုးအစား အဆစ် တွင် ကိန်းပြည့် တန်ဖိုးရင်း၊ အဆစ် လိပ်စာ နောက် တို့ ပါဝင်သည်။
+အမှတ် ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+
+လုပ်ဆောင်ချက် ရွှေ့ သည် မ ဟူသော အမှတ် တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+မ ၏ x ကို (မ ၏ x) + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် အဆစ် တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် အဆစ် တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် အဆစ် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို က ၏ နောက် တွင် သိမ်းထားမည်။
-က ၏ တန်ဖိုးရင်း ကို ၇ ဟု ထားပါ။
-ခ ကို က ဟု ထားပါ။            // the address moves into ခ
-ခ ၏ တန်ဖိုးရင်း ကို ပြသပါ။
-ခ ၏ နောက် ၏ တန်ဖိုး ကို ပြသပါ။
-လိပ်စာ ခ ၏ နောက် ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ကိန်းရှင် က သည် အမှတ်(x: ၁၊ y: ၂) ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် က ဖြစ်ပါစေ။
+ခ ၏ y ကို ၉ ဟု ထားမည်။
+လုပ်ဆောင်ချက် ရွှေ့ ကို က တို့ဖြင့် လုပ်ဆောင်မည်။
+က ကို ပြသမည်။
+ခ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-၇
-အဆစ်(တန်ဖိုးရင်း: ၀၊ နောက်: ဗလာ)
+အမှတ်(x: ၂၊ y: ၂)
+အမှတ်(x: ၁၊ y: ၉)
 ```
 
 ## How a struct is stored
@@ -368,15 +428,15 @@ as a C struct:
 ```
 
 ```zaka
-ဒေတာအမျိုးအစား ယ တွင် မှန်မှားတန်ဖိုး အ၊ ကိန်းပြည့် ဘ၊ မှန်မှားတန်ဖိုး စ တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား ရ တွင် ကိန်းပြည့် ဘ၊ မှန်မှားတန်ဖိုး အ၊ မှန်မှားတန်ဖိုး စ တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား လ တွင် ၃၂ ဘစ် ကိန်းပြည့် ဘ၊ မှန်မှားတန်ဖိုး အ တို့ ပါဝင်သည်။
+ယ ဟူသော ဒေတာအစုအဝေးတွင် အ ဟူသော မှန်မှားတန်ဖိုး တစ်ခု၊ ဘ ဟူသော ကိန်းပြည့် တစ်ခု၊ စ ဟူသော မှန်မှားတန်ဖိုး တစ်ခု တို့ပါဝင်သည်။
+ရ ဟူသော ဒေတာအစုအဝေးတွင် ဘ ဟူသော ကိန်းပြည့် တစ်ခု၊ အ ဟူသော မှန်မှားတန်ဖိုး တစ်ခု၊ စ ဟူသော မှန်မှားတန်ဖိုး တစ်ခု တို့ပါဝင်သည်။
+လ ဟူသော ဒေတာအစုအဝေးတွင် ဘ ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု၊ အ ဟူသော မှန်မှားတန်ဖိုး တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ယ ၏ အရွယ်အစား ကို ပြသပါ။
-ရ ၏ အရွယ်အစား ကို ပြသပါ။
-လ ၏ အရွယ်အစား ကို ပြသပါ။
-အကွက် ၃ ခုရှိသော ယ စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+ယ တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
+ရ တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
+လ တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
+အကွက် ၃ ခုရှိသော ယ စာရင်း တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -387,8 +447,9 @@ as a C struct:
 ၇၂
 ```
 
-The address of a struct is a pointer to it, so adding 1 to it moves one whole struct, and
-a heap block of `n` structs holds `n` times the size. See [Pointers](pointers.md#pointer-arithmetic).
+In marked code, the address of a struct is a pointer to it, so adding 1 to it steps over
+one whole struct, and a heap block of `n` structs holds `n` times the size. See [Unsafe
+Zaka](unsafe.md).
 
 ## Errors at a glance
 
@@ -403,5 +464,6 @@ a heap block of `n` structs holds `n` times the size. See [Pointers](pointers.md
 | ZK0321 | a field set twice in a struct literal | [Struct mistakes](../../learn/structs/mistakes.md#one-field-set-twice) |
 | ZK0426 | a field of a value that is no struct | [Struct mistakes](../../learn/structs/mistakes.md#a-field-of-a-value-that-is-no-struct) |
 | ZK0427 | a struct that holds itself | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-that-holds-itself) |
-| ZK0509 | a heap size or a struct literal counted with a word that is not the classifier of the kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
-| ZK0718 | a field that holds a borrow | [Lists and structs through addresses](../../learn/pointers/structs.md#a-borrow-in-a-field) |
+| ZK0482 | a struct literal that leaves out a field | [Struct mistakes](../../learn/structs/mistakes.md#a-field-left-out) |
+| ZK0722 | a struct read before each field is set | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-read-before-each-field-is-set) |
+| ZK0509 | a kind, a struct literal or a heap size counted with a word that is not the classifier of the kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |

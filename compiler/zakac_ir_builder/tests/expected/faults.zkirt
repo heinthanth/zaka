@@ -1,7 +1,7 @@
 # zakac-ir-artifact v1
 name:
   Custom: faults.zaka
-source: "လုပ်ဆောင်ချက် စစ် သည်\nကိန်းပြည့် န ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။\nအကယ်၍ န သည် ၀ နှင့် ညီလျှင် \"သုည\" ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။\nန ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် ပေါင်း သည်\nကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။\nက + စစ်(ခ)? ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် လှည့် သည်\nကိန်းပြည့် န ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ အောင်မြင်သည့်သတင်း သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။\nအကယ်၍ န သည် ၀ နှင့် ညီလျှင် \"သုည\" ဟု ပြသပါ။\nထိုသို့မဟုတ်ဘဲ စစ်(န)? သည် ၁ နှင့် ညီလျှင် \"တစ်\" ဟု ပြသပါ။\nစစ်(န)? သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nန ကို န + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n(န == ၀ || စစ်(န)? == ၁) ကို ပြသပါ။\nလုပ်ဆောင်ချက် စစ် ကို န တို့ဖြင့် လုပ်ဆောင်ပါ၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။\nပေါင်း(၁၊ ၂) ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+source: "လုပ်ဆောင်ချက် စစ် သည်\nန ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။\nအကယ်၍ န သည် ၀ နှင့် ညီလျှင် \"သုည\" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။\nန ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် ပေါင်း သည်\nက ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။\nက + စစ်(ခ)? ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် လှည့် သည်\nန ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။\nအကယ်၍ န သည် ၀ နှင့် ညီလျှင် \"သုည\" ဟု ပြသမည်။\nထိုသို့မဟုတ်ဘဲ စစ်(န)? သည် ၁ နှင့် ညီလျှင် \"တစ်\" ဟု ပြသမည်။\nစစ်(န)? သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nန ကို န + ၁ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n(န == ၀ || စစ်(န)? == ၁) ကို ပြသမည်။\nလုပ်ဆောင်ချက် စစ် ကို န တို့ဖြင့် လုပ်ဆောင်မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\nပေါင်း(၁၊ ၂) ထဲမှ ဒေတာ ကို ပြန်ပေးမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 module:
   globals:
@@ -9,42 +9,25 @@ module:
     kind: isize
     access: var
     span:
-      lo: 2738
-      hi: 2762
+      lo: 3133
+      hi: 3157
     addressed: false
+    unset: null
   funcs:
   - name: စစ်
     params: 1
-    result: 1
+    result: null
     ret: "%fallible{tag:u8,ok:isize,err:text}"
     locals:
     - name: န
       kind: isize
       access: var
       span:
-        lo: 91
-        hi: 94
+        lo: 60
+        hi: 63
       addressed: false
-    - name: ရလဒ်
-      kind: isize
-      access: var
-      span:
-        lo: 40
-        hi: 49
-      addressed: false
+      unset: null
     block:
-    - set:
-        place: l1
-        value:
-          kind: isize
-          node:
-            const: 0:isize
-          span:
-            lo: 40
-            hi: 49
-        span:
-          lo: 40
-          hi: 49
     - if:
         cond:
           kind: bool
@@ -56,18 +39,18 @@ module:
                 node:
                   read: l0
                 span:
-                  lo: 392
-                  hi: 395
+                  lo: 510
+                  hi: 513
               rhs:
                 kind: isize
                 node:
                   const: 0:isize
                 span:
-                  lo: 406
-                  hi: 409
+                  lo: 524
+                  hi: 527
           span:
-            lo: 392
-            hi: 432
+            lo: 510
+            hi: 550
         then:
         - return:
             value:
@@ -78,31 +61,31 @@ module:
                   node:
                     const: 0:u8
                   span:
-                    lo: 448
-                    hi: 549
+                    lo: 566
+                    hi: 627
                 - kind: isize
                   node:
                     const: 0:isize
                   span:
-                    lo: 448
-                    hi: 549
+                    lo: 566
+                    hi: 627
                 - kind: text
                   node:
                     text: သုည
                   span:
-                    lo: 448
-                    hi: 459
+                    lo: 566
+                    hi: 577
               span:
-                lo: 448
-                hi: 549
+                lo: 566
+                hi: 627
             span:
-              lo: 448
-              hi: 549
+              lo: 566
+              hi: 671
         els:
         []
         span:
-          lo: 376
-          hi: 549
+          lo: 494
+          hi: 671
     - return:
         value:
           kind: "%fallible{tag:u8,ok:isize,err:text}"
@@ -112,91 +95,88 @@ module:
               node:
                 const: 1:u8
               span:
-                lo: 550
-                hi: 640
+                lo: 672
+                hi: 719
             - kind: isize
               node:
                 read: l0
               span:
-                lo: 550
-                hi: 553
+                lo: 672
+                hi: 675
             - kind: text
               node: blank_list
               span:
-                lo: 550
-                hi: 640
+                lo: 672
+                hi: 719
           span:
-            lo: 550
-            hi: 640
+            lo: 672
+            hi: 719
         span:
-          lo: 550
-          hi: 640
+          lo: 672
+          hi: 719
     shared_params: []
+    owned:
+    - false
+    owned_ret: false
     span:
       lo: 0
-      hi: 735
+      hi: 814
   - name: ပေါင်း
     params: 2
-    result: 2
+    result: null
     ret: "%fallible{tag:u8,ok:isize,err:text}"
     locals:
     - name: က
       kind: isize
       access: var
       span:
-        lo: 837
-        hi: 840
+        lo: 885
+        hi: 888
       addressed: false
+      unset: null
     - name: ခ
       kind: isize
       access: var
       span:
-        lo: 875
-        hi: 878
+        lo: 993
+        hi: 996
       addressed: false
-    - name: ရလဒ်
-      kind: isize
-      access: var
-      span:
-        lo: 777
-        hi: 795
-      addressed: false
+      unset: null
     - name: "%new"
       kind: isize
       access: var
       span:
-        lo: 1172
-        hi: 1175
+        lo: 1458
+        hi: 1461
       addressed: false
+      unset: null
     - name: "%new"
       kind: "%fallible{tag:u8,ok:isize,err:text}"
       access: var
       span:
-        lo: 1178
-        hi: 1193
+        lo: 1464
+        hi: 1479
       addressed: false
+      unset: null
     - name: "%new"
       kind: "%fallible{tag:u8,ok:isize,err:text}"
       access: var
       span:
-        lo: 1178
-        hi: 1193
+        lo: 1464
+        hi: 1479
       addressed: false
+      unset: null
+    - name: "%new"
+      kind: isize
+      access: var
+      span:
+        lo: 1458
+        hi: 1523
+      addressed: false
+      unset: null
     block:
     - set:
-        place: l2
-        value:
-          kind: isize
-          node:
-            const: 0:isize
-          span:
-            lo: 777
-            hi: 795
-        span:
-          lo: 777
-          hi: 795
-    - set:
-        place: l4
+        place: l3
         value:
           kind: "%fallible{tag:u8,ok:isize,err:text}"
           node:
@@ -205,39 +185,39 @@ module:
               node:
                 const: 1:u8
               span:
-                lo: 1178
-                hi: 1193
+                lo: 1464
+                hi: 1479
             - kind: isize
               node:
                 const: 0:isize
               span:
-                lo: 1178
-                hi: 1193
+                lo: 1464
+                hi: 1479
             - kind: text
               node: blank_list
               span:
-                lo: 1178
-                hi: 1193
+                lo: 1464
+                hi: 1479
           span:
-            lo: 1178
-            hi: 1193
+            lo: 1464
+            hi: 1479
         span:
-          lo: 1178
-          hi: 1193
+          lo: 1464
+          hi: 1479
     - set:
-        place: l3
+        place: l2
         value:
           kind: isize
           node:
             read: l0
           span:
-            lo: 1172
-            hi: 1175
+            lo: 1458
+            hi: 1461
         span:
-          lo: 1172
-          hi: 1175
+          lo: 1458
+          hi: 1461
     - set:
-        place: l4
+        place: l3
         value:
           kind: "%fallible{tag:u8,ok:isize,err:text}"
           node:
@@ -249,14 +229,14 @@ module:
                 node:
                   read: l1
                 span:
-                  lo: 1188
-                  hi: 1191
+                  lo: 1474
+                  hi: 1477
           span:
-            lo: 1178
-            hi: 1193
+            lo: 1464
+            hi: 1479
         span:
-          lo: 1178
-          hi: 1193
+          lo: 1464
+          hi: 1479
     - if:
         cond:
           kind: bool
@@ -274,31 +254,31 @@ module:
                           base:
                             kind: "%fallible{tag:u8,ok:isize,err:text}"
                             node:
-                              read: l4
+                              read: l3
                             span:
-                              lo: 1178
-                              hi: 1193
+                              lo: 1464
+                              hi: 1479
                           field: 0
                           offset: 0
                       span:
-                        lo: 1178
-                        hi: 1193
+                        lo: 1464
+                        hi: 1479
                 span:
-                  lo: 1178
-                  hi: 1193
+                  lo: 1464
+                  hi: 1479
               rhs:
                 kind: u8
                 node:
                   const: 0:u8
                 span:
-                  lo: 1178
-                  hi: 1193
+                  lo: 1464
+                  hi: 1479
           span:
-            lo: 1178
-            hi: 1193
+            lo: 1464
+            hi: 1479
         then:
         - set:
-            place: l5
+            place: l4
             value:
               kind: "%fallible{tag:u8,ok:isize,err:text}"
               node:
@@ -307,14 +287,14 @@ module:
                   node:
                     const: 0:u8
                   span:
-                    lo: 1178
-                    hi: 1193
+                    lo: 1464
+                    hi: 1479
                 - kind: isize
                   node:
                     const: 0:isize
                   span:
-                    lo: 1178
-                    hi: 1193
+                    lo: 1464
+                    hi: 1479
                 - kind: text
                   node:
                     dup:
@@ -329,53 +309,54 @@ module:
                                   base:
                                     kind: "%fallible{tag:u8,ok:isize,err:text}"
                                     node:
-                                      read: l4
+                                      read: l3
                                     span:
-                                      lo: 1178
-                                      hi: 1193
+                                      lo: 1464
+                                      hi: 1479
                                   field: 2
                                   offset: 16
                               span:
-                                lo: 1178
-                                hi: 1193
+                                lo: 1464
+                                hi: 1479
                         span:
-                          lo: 1178
-                          hi: 1193
+                          lo: 1464
+                          hi: 1479
                       lent: false
+                      deep: false
                   span:
-                    lo: 1178
-                    hi: 1193
+                    lo: 1464
+                    hi: 1479
               span:
-                lo: 1178
-                hi: 1193
+                lo: 1464
+                hi: 1479
             span:
-              lo: 1178
-              hi: 1193
+              lo: 1464
+              hi: 1479
         - drop:
             dest:
-              slot: l4
+              slot: l3
             kind: "%fallible{tag:u8,ok:isize,err:text}"
             span:
-              lo: 1178
-              hi: 1193
+              lo: 1464
+              hi: 1479
         - return:
             value:
               kind: "%fallible{tag:u8,ok:isize,err:text}"
               node:
-                read: l5
+                read: l4
               span:
-                lo: 1178
-                hi: 1193
+                lo: 1464
+                hi: 1479
             span:
-              lo: 1178
-              hi: 1193
+              lo: 1464
+              hi: 1479
         els:
         []
         span:
-          lo: 1178
-          hi: 1193
+          lo: 1464
+          hi: 1479
     - set:
-        place: l2
+        place: l5
         value:
           kind: isize
           node:
@@ -384,10 +365,10 @@ module:
               lhs:
                 kind: isize
                 node:
-                  read: l3
+                  read: l2
                 span:
-                  lo: 1172
-                  hi: 1175
+                  lo: 1458
+                  hi: 1461
               rhs:
                 kind: isize
                 node:
@@ -399,31 +380,31 @@ module:
                           base:
                             kind: "%fallible{tag:u8,ok:isize,err:text}"
                             node:
-                              read: l4
+                              read: l3
                             span:
-                              lo: 1178
-                              hi: 1193
+                              lo: 1464
+                              hi: 1479
                           field: 1
                           offset: 8
                       span:
-                        lo: 1178
-                        hi: 1193
+                        lo: 1464
+                        hi: 1479
                 span:
-                  lo: 1178
-                  hi: 1193
+                  lo: 1464
+                  hi: 1479
           span:
-            lo: 1172
-            hi: 1193
+            lo: 1458
+            hi: 1479
         span:
-          lo: 1172
-          hi: 1280
+          lo: 1458
+          hi: 1523
     - drop:
         dest:
-          slot: l4
+          slot: l3
         kind: "%fallible{tag:u8,ok:isize,err:text}"
         span:
-          lo: 1172
-          hi: 1280
+          lo: 1458
+          hi: 1523
     - return:
         value:
           kind: "%fallible{tag:u8,ok:isize,err:text}"
@@ -433,29 +414,33 @@ module:
               node:
                 const: 1:u8
               span:
-                lo: 1172
-                hi: 1280
+                lo: 1458
+                hi: 1523
             - kind: isize
               node:
-                read: l2
+                read: l5
               span:
-                lo: 1172
-                hi: 1280
+                lo: 1458
+                hi: 1523
             - kind: text
               node: blank_list
               span:
-                lo: 1172
-                hi: 1280
+                lo: 1458
+                hi: 1523
           span:
-            lo: 1172
-            hi: 1280
+            lo: 1458
+            hi: 1523
         span:
-          lo: 1172
-          hi: 1280
+          lo: 1458
+          hi: 1523
     shared_params: []
+    owned:
+    - false
+    - false
+    owned_ret: false
     span:
-      lo: 737
-      hi: 1375
+      lo: 816
+      hi: 1618
   - name: လှည့်
     params: 1
     result: null
@@ -465,86 +450,98 @@ module:
       kind: isize
       access: var
       span:
-        lo: 1474
-        hi: 1477
+        lo: 1686
+        hi: 1689
       addressed: false
+      unset: null
     - name: "%new"
       kind: bool
       access: var
       span:
-        lo: 1786
-        hi: 1826
+        lo: 2160
+        hi: 2200
       addressed: false
+      unset: null
     - name: "%new"
       kind: "%fallible{tag:u8,ok:isize,err:text}"
       access: var
       span:
-        lo: 1923
-        hi: 1938
+        lo: 2300
+        hi: 2315
       addressed: false
+      unset: null
     - name: "%new"
       kind: "%fallible{tag:u8,err:text}"
       access: var
       span:
-        lo: 1923
-        hi: 1938
+        lo: 2300
+        hi: 2315
       addressed: false
+      unset: null
     - name: "%new"
       kind: "%fallible{tag:u8,ok:isize,err:text}"
       access: var
       span:
-        lo: 2029
-        hi: 2044
+        lo: 2409
+        hi: 2424
       addressed: false
+      unset: null
     - name: "%new"
       kind: "%fallible{tag:u8,err:text}"
       access: var
       span:
-        lo: 2029
-        hi: 2044
+        lo: 2409
+        hi: 2424
       addressed: false
+      unset: null
     - name: "%new"
       kind: bool
       access: var
       span:
-        lo: 2332
-        hi: 2342
+        lo: 2718
+        hi: 2728
       addressed: false
+      unset: null
+    - name: "%new"
+      kind: "%fallible{tag:u8,ok:isize,err:text}"
+      access: var
+      span:
+        lo: 2732
+        hi: 2747
+      addressed: false
+      unset: null
+    - name: "%new"
+      kind: "%fallible{tag:u8,err:text}"
+      access: var
+      span:
+        lo: 2732
+        hi: 2747
+      addressed: false
+      unset: null
     - name: "%new"
       kind: bool
       access: var
       span:
-        lo: 2332
-        hi: 2368
+        lo: 2718
+        hi: 2754
       addressed: false
+      unset: null
     - name: "%new"
       kind: "%fallible{tag:u8,ok:isize,err:text}"
       access: var
       span:
-        lo: 2346
-        hi: 2361
+        lo: 2788
+        hi: 3036
       addressed: false
+      unset: null
     - name: "%new"
       kind: "%fallible{tag:u8,err:text}"
       access: var
       span:
-        lo: 2346
-        hi: 2361
+        lo: 2788
+        hi: 3036
       addressed: false
-    - name: "%new"
-      kind: "%fallible{tag:u8,ok:isize,err:text}"
-      access: var
-      span:
-        lo: 2399
-        hi: 2641
-      addressed: false
-    - name: "%new"
-      kind: "%fallible{tag:u8,err:text}"
-      access: var
-      span:
-        lo: 2399
-        hi: 2641
-      addressed: false
+      unset: null
     block:
     - set:
         place: l2
@@ -556,25 +553,25 @@ module:
               node:
                 const: 1:u8
               span:
-                lo: 1923
-                hi: 1938
+                lo: 2300
+                hi: 2315
             - kind: isize
               node:
                 const: 0:isize
               span:
-                lo: 1923
-                hi: 1938
+                lo: 2300
+                hi: 2315
             - kind: text
               node: blank_list
               span:
-                lo: 1923
-                hi: 1938
+                lo: 2300
+                hi: 2315
           span:
-            lo: 1923
-            hi: 1938
+            lo: 2300
+            hi: 2315
         span:
-          lo: 1923
-          hi: 1938
+          lo: 2300
+          hi: 2315
     - set:
         place: l1
         value:
@@ -587,36 +584,36 @@ module:
                 node:
                   read: l0
                 span:
-                  lo: 1786
-                  hi: 1789
+                  lo: 2160
+                  hi: 2163
               rhs:
                 kind: isize
                 node:
                   const: 0:isize
                 span:
-                  lo: 1800
-                  hi: 1803
+                  lo: 2174
+                  hi: 2177
           span:
-            lo: 1786
-            hi: 1826
+            lo: 2160
+            hi: 2200
         span:
-          lo: 1786
-          hi: 1826
+          lo: 2160
+          hi: 2200
     - if:
         cond:
           kind: bool
           node:
             read: l1
           span:
-            lo: 1786
-            hi: 1826
+            lo: 2160
+            hi: 2200
         then:
         - print:
             value:
               text: သုည
             span:
-              lo: 1842
-              hi: 1879
+              lo: 2216
+              hi: 2256
         els:
         - set:
             place: l2
@@ -631,14 +628,14 @@ module:
                     node:
                       read: l0
                     span:
-                      lo: 1933
-                      hi: 1936
+                      lo: 2310
+                      hi: 2313
               span:
-                lo: 1923
-                hi: 1938
+                lo: 2300
+                hi: 2315
             span:
-              lo: 1923
-              hi: 1938
+              lo: 2300
+              hi: 2315
         - if:
             cond:
               kind: bool
@@ -658,26 +655,26 @@ module:
                                 node:
                                   read: l2
                                 span:
-                                  lo: 1923
-                                  hi: 1938
+                                  lo: 2300
+                                  hi: 2315
                               field: 0
                               offset: 0
                           span:
-                            lo: 1923
-                            hi: 1938
+                            lo: 2300
+                            hi: 2315
                     span:
-                      lo: 1923
-                      hi: 1938
+                      lo: 2300
+                      hi: 2315
                   rhs:
                     kind: u8
                     node:
                       const: 0:u8
                     span:
-                      lo: 1923
-                      hi: 1938
+                      lo: 2300
+                      hi: 2315
               span:
-                lo: 1923
-                hi: 1938
+                lo: 2300
+                hi: 2315
             then:
             - set:
                 place: l3
@@ -689,8 +686,8 @@ module:
                       node:
                         const: 0:u8
                       span:
-                        lo: 1923
-                        hi: 1938
+                        lo: 2300
+                        hi: 2315
                     - kind: text
                       node:
                         dup:
@@ -707,49 +704,50 @@ module:
                                         node:
                                           read: l2
                                         span:
-                                          lo: 1923
-                                          hi: 1938
+                                          lo: 2300
+                                          hi: 2315
                                       field: 2
                                       offset: 16
                                   span:
-                                    lo: 1923
-                                    hi: 1938
+                                    lo: 2300
+                                    hi: 2315
                             span:
-                              lo: 1923
-                              hi: 1938
+                              lo: 2300
+                              hi: 2315
                           lent: false
+                          deep: false
                       span:
-                        lo: 1923
-                        hi: 1938
+                        lo: 2300
+                        hi: 2315
                   span:
-                    lo: 1923
-                    hi: 1938
+                    lo: 2300
+                    hi: 2315
                 span:
-                  lo: 1923
-                  hi: 1938
+                  lo: 2300
+                  hi: 2315
             - drop:
                 dest:
                   slot: l2
                 kind: "%fallible{tag:u8,ok:isize,err:text}"
                 span:
-                  lo: 1923
-                  hi: 1938
+                  lo: 2300
+                  hi: 2315
             - return:
                 value:
                   kind: "%fallible{tag:u8,err:text}"
                   node:
                     read: l3
                   span:
-                    lo: 1923
-                    hi: 1938
+                    lo: 2300
+                    hi: 2315
                 span:
-                  lo: 1923
-                  hi: 1938
+                  lo: 2300
+                  hi: 2315
             els:
             []
             span:
-              lo: 1923
-              hi: 1938
+              lo: 2300
+              hi: 2315
         - if:
             cond:
               kind: bool
@@ -769,41 +767,41 @@ module:
                                 node:
                                   read: l2
                                 span:
-                                  lo: 1923
-                                  hi: 1938
+                                  lo: 2300
+                                  hi: 2315
                               field: 1
                               offset: 8
                           span:
-                            lo: 1923
-                            hi: 1938
+                            lo: 2300
+                            hi: 2315
                     span:
-                      lo: 1923
-                      hi: 1938
+                      lo: 2300
+                      hi: 2315
                   rhs:
                     kind: isize
                     node:
                       const: 1:isize
                     span:
-                      lo: 1949
-                      hi: 1952
+                      lo: 2326
+                      hi: 2329
               span:
-                lo: 1923
-                hi: 1975
+                lo: 2300
+                hi: 2352
             then:
             - print:
                 value:
                   text: တစ်
                 span:
-                  lo: 1991
-                  hi: 2028
+                  lo: 2368
+                  hi: 2408
             els:
             []
             span:
-              lo: 1880
-              hi: 2028
+              lo: 2257
+              hi: 2408
         span:
-          lo: 1770
-          hi: 2028
+          lo: 2144
+          hi: 2408
     - set:
         place: l4
         value:
@@ -814,25 +812,25 @@ module:
               node:
                 const: 1:u8
               span:
-                lo: 2029
-                hi: 2044
+                lo: 2409
+                hi: 2424
             - kind: isize
               node:
                 const: 0:isize
               span:
-                lo: 2029
-                hi: 2044
+                lo: 2409
+                hi: 2424
             - kind: text
               node: blank_list
               span:
-                lo: 2029
-                hi: 2044
+                lo: 2409
+                hi: 2424
           span:
-            lo: 2029
-            hi: 2044
+            lo: 2409
+            hi: 2424
         span:
-          lo: 2029
-          hi: 2044
+          lo: 2409
+          hi: 2424
     - loop:
         init: []
         cond:
@@ -840,8 +838,8 @@ module:
           node:
             const: true:bool
           span:
-            lo: 2029
-            hi: 2330
+            lo: 2409
+            hi: 2716
         update:
         []
         block:
@@ -858,14 +856,14 @@ module:
                     node:
                       read: l0
                     span:
-                      lo: 2039
-                      hi: 2042
+                      lo: 2419
+                      hi: 2422
               span:
-                lo: 2029
-                hi: 2044
+                lo: 2409
+                hi: 2424
             span:
-              lo: 2029
-              hi: 2044
+              lo: 2409
+              hi: 2424
         - if:
             cond:
               kind: bool
@@ -885,26 +883,26 @@ module:
                                 node:
                                   read: l4
                                 span:
-                                  lo: 2029
-                                  hi: 2044
+                                  lo: 2409
+                                  hi: 2424
                               field: 0
                               offset: 0
                           span:
-                            lo: 2029
-                            hi: 2044
+                            lo: 2409
+                            hi: 2424
                     span:
-                      lo: 2029
-                      hi: 2044
+                      lo: 2409
+                      hi: 2424
                   rhs:
                     kind: u8
                     node:
                       const: 0:u8
                     span:
-                      lo: 2029
-                      hi: 2044
+                      lo: 2409
+                      hi: 2424
               span:
-                lo: 2029
-                hi: 2044
+                lo: 2409
+                hi: 2424
             then:
             - set:
                 place: l5
@@ -916,8 +914,8 @@ module:
                       node:
                         const: 0:u8
                       span:
-                        lo: 2029
-                        hi: 2044
+                        lo: 2409
+                        hi: 2424
                     - kind: text
                       node:
                         dup:
@@ -934,56 +932,57 @@ module:
                                         node:
                                           read: l4
                                         span:
-                                          lo: 2029
-                                          hi: 2044
+                                          lo: 2409
+                                          hi: 2424
                                       field: 2
                                       offset: 16
                                   span:
-                                    lo: 2029
-                                    hi: 2044
+                                    lo: 2409
+                                    hi: 2424
                             span:
-                              lo: 2029
-                              hi: 2044
+                              lo: 2409
+                              hi: 2424
                           lent: false
+                          deep: false
                       span:
-                        lo: 2029
-                        hi: 2044
+                        lo: 2409
+                        hi: 2424
                   span:
-                    lo: 2029
-                    hi: 2044
+                    lo: 2409
+                    hi: 2424
                 span:
-                  lo: 2029
-                  hi: 2044
+                  lo: 2409
+                  hi: 2424
             - drop:
                 dest:
                   slot: l4
                 kind: "%fallible{tag:u8,ok:isize,err:text}"
                 span:
-                  lo: 2029
-                  hi: 2044
+                  lo: 2409
+                  hi: 2424
             - drop:
                 dest:
                   slot: l2
                 kind: "%fallible{tag:u8,ok:isize,err:text}"
                 span:
-                  lo: 2029
-                  hi: 2044
+                  lo: 2409
+                  hi: 2424
             - return:
                 value:
                   kind: "%fallible{tag:u8,err:text}"
                   node:
                     read: l5
                   span:
-                    lo: 2029
-                    hi: 2044
+                    lo: 2409
+                    hi: 2424
                 span:
-                  lo: 2029
-                  hi: 2044
+                  lo: 2409
+                  hi: 2424
             els:
             []
             span:
-              lo: 2029
-              hi: 2044
+              lo: 2409
+              hi: 2424
         - if:
             cond:
               kind: bool
@@ -1008,46 +1007,46 @@ module:
                                       node:
                                         read: l4
                                       span:
-                                        lo: 2029
-                                        hi: 2044
+                                        lo: 2409
+                                        hi: 2424
                                     field: 1
                                     offset: 8
                                 span:
-                                  lo: 2029
-                                  hi: 2044
+                                  lo: 2409
+                                  hi: 2424
                           span:
-                            lo: 2029
-                            hi: 2044
+                            lo: 2409
+                            hi: 2424
                         rhs:
                           kind: isize
                           node:
                             const: 5:isize
                           span:
-                            lo: 2055
-                            hi: 2058
+                            lo: 2435
+                            hi: 2438
                     span:
-                      lo: 2029
-                      hi: 2084
+                      lo: 2409
+                      hi: 2464
               span:
-                lo: 2029
-                hi: 2330
+                lo: 2409
+                hi: 2716
             then:
             - drop:
                 dest:
                   slot: l4
                 kind: "%fallible{tag:u8,ok:isize,err:text}"
                 span:
-                  lo: 2029
-                  hi: 2330
+                  lo: 2409
+                  hi: 2716
             - break:
                 span:
-                  lo: 2029
-                  hi: 2330
+                  lo: 2409
+                  hi: 2716
             els:
             []
             span:
-              lo: 2029
-              hi: 2330
+              lo: 2409
+              hi: 2716
         - set:
             place: l0
             value:
@@ -1060,33 +1059,33 @@ module:
                     node:
                       read: l0
                     span:
-                      lo: 2200
-                      hi: 2203
+                      lo: 2583
+                      hi: 2586
                   rhs:
                     kind: isize
                     node:
                       const: 1:isize
                     span:
-                      lo: 2206
-                      hi: 2209
+                      lo: 2589
+                      hi: 2592
               span:
-                lo: 2200
-                hi: 2209
+                lo: 2583
+                hi: 2592
             span:
-              lo: 2186
-              hi: 2235
+              lo: 2569
+              hi: 2621
         - drop:
             dest:
               slot: l4
             kind: "%fallible{tag:u8,ok:isize,err:text}"
             span:
-              lo: 2029
-              hi: 2330
+              lo: 2409
+              hi: 2716
         span:
-          lo: 2029
-          hi: 2330
+          lo: 2409
+          hi: 2716
     - set:
-        place: l8
+        place: l7
         value:
           kind: "%fallible{tag:u8,ok:isize,err:text}"
           node:
@@ -1095,25 +1094,25 @@ module:
               node:
                 const: 1:u8
               span:
-                lo: 2346
-                hi: 2361
+                lo: 2732
+                hi: 2747
             - kind: isize
               node:
                 const: 0:isize
               span:
-                lo: 2346
-                hi: 2361
+                lo: 2732
+                hi: 2747
             - kind: text
               node: blank_list
               span:
-                lo: 2346
-                hi: 2361
+                lo: 2732
+                hi: 2747
           span:
-            lo: 2346
-            hi: 2361
+            lo: 2732
+            hi: 2747
         span:
-          lo: 2346
-          hi: 2361
+          lo: 2732
+          hi: 2747
     - set:
         place: l6
         value:
@@ -1126,33 +1125,33 @@ module:
                 node:
                   read: l0
                 span:
-                  lo: 2332
-                  hi: 2335
+                  lo: 2718
+                  hi: 2721
               rhs:
                 kind: isize
                 node:
                   const: 0:isize
                 span:
-                  lo: 2339
-                  hi: 2342
+                  lo: 2725
+                  hi: 2728
           span:
-            lo: 2332
-            hi: 2342
+            lo: 2718
+            hi: 2728
         span:
-          lo: 2332
-          hi: 2342
+          lo: 2718
+          hi: 2728
     - set:
-        place: l7
+        place: l9
         value:
           kind: bool
           node:
             read: l6
           span:
-            lo: 2332
-            hi: 2342
+            lo: 2718
+            hi: 2728
         span:
-          lo: 2332
-          hi: 2368
+          lo: 2718
+          hi: 2754
     - if:
         cond:
           kind: bool
@@ -1162,16 +1161,16 @@ module:
               operand:
                 kind: bool
                 node:
-                  read: l7
+                  read: l9
                 span:
-                  lo: 2332
-                  hi: 2368
+                  lo: 2718
+                  hi: 2754
           span:
-            lo: 2332
-            hi: 2368
+            lo: 2718
+            hi: 2754
         then:
         - set:
-            place: l8
+            place: l7
             value:
               kind: "%fallible{tag:u8,ok:isize,err:text}"
               node:
@@ -1183,14 +1182,14 @@ module:
                     node:
                       read: l0
                     span:
-                      lo: 2356
-                      hi: 2359
+                      lo: 2742
+                      hi: 2745
               span:
-                lo: 2346
-                hi: 2361
+                lo: 2732
+                hi: 2747
             span:
-              lo: 2346
-              hi: 2361
+              lo: 2732
+              hi: 2747
         - if:
             cond:
               kind: bool
@@ -1208,31 +1207,31 @@ module:
                               base:
                                 kind: "%fallible{tag:u8,ok:isize,err:text}"
                                 node:
-                                  read: l8
+                                  read: l7
                                 span:
-                                  lo: 2346
-                                  hi: 2361
+                                  lo: 2732
+                                  hi: 2747
                               field: 0
                               offset: 0
                           span:
-                            lo: 2346
-                            hi: 2361
+                            lo: 2732
+                            hi: 2747
                     span:
-                      lo: 2346
-                      hi: 2361
+                      lo: 2732
+                      hi: 2747
                   rhs:
                     kind: u8
                     node:
                       const: 0:u8
                     span:
-                      lo: 2346
-                      hi: 2361
+                      lo: 2732
+                      hi: 2747
               span:
-                lo: 2346
-                hi: 2361
+                lo: 2732
+                hi: 2747
             then:
             - set:
-                place: l9
+                place: l8
                 value:
                   kind: "%fallible{tag:u8,err:text}"
                   node:
@@ -1241,8 +1240,8 @@ module:
                       node:
                         const: 0:u8
                       span:
-                        lo: 2346
-                        hi: 2361
+                        lo: 2732
+                        hi: 2747
                     - kind: text
                       node:
                         dup:
@@ -1257,60 +1256,61 @@ module:
                                       base:
                                         kind: "%fallible{tag:u8,ok:isize,err:text}"
                                         node:
-                                          read: l8
+                                          read: l7
                                         span:
-                                          lo: 2346
-                                          hi: 2361
+                                          lo: 2732
+                                          hi: 2747
                                       field: 2
                                       offset: 16
                                   span:
-                                    lo: 2346
-                                    hi: 2361
+                                    lo: 2732
+                                    hi: 2747
                             span:
-                              lo: 2346
-                              hi: 2361
+                              lo: 2732
+                              hi: 2747
                           lent: false
+                          deep: false
                       span:
-                        lo: 2346
-                        hi: 2361
+                        lo: 2732
+                        hi: 2747
                   span:
-                    lo: 2346
-                    hi: 2361
+                    lo: 2732
+                    hi: 2747
                 span:
-                  lo: 2346
-                  hi: 2361
+                  lo: 2732
+                  hi: 2747
             - drop:
                 dest:
-                  slot: l8
+                  slot: l7
                 kind: "%fallible{tag:u8,ok:isize,err:text}"
                 span:
-                  lo: 2346
-                  hi: 2361
+                  lo: 2732
+                  hi: 2747
             - drop:
                 dest:
                   slot: l2
                 kind: "%fallible{tag:u8,ok:isize,err:text}"
                 span:
-                  lo: 2346
-                  hi: 2361
+                  lo: 2732
+                  hi: 2747
             - return:
                 value:
                   kind: "%fallible{tag:u8,err:text}"
                   node:
-                    read: l9
+                    read: l8
                   span:
-                    lo: 2346
-                    hi: 2361
+                    lo: 2732
+                    hi: 2747
                 span:
-                  lo: 2346
-                  hi: 2361
+                  lo: 2732
+                  hi: 2747
             els:
             []
             span:
-              lo: 2346
-              hi: 2361
+              lo: 2732
+              hi: 2747
         - set:
-            place: l7
+            place: l9
             value:
               kind: bool
               node:
@@ -1327,48 +1327,48 @@ module:
                               base:
                                 kind: "%fallible{tag:u8,ok:isize,err:text}"
                                 node:
-                                  read: l8
+                                  read: l7
                                 span:
-                                  lo: 2346
-                                  hi: 2361
+                                  lo: 2732
+                                  hi: 2747
                               field: 1
                               offset: 8
                           span:
-                            lo: 2346
-                            hi: 2361
+                            lo: 2732
+                            hi: 2747
                     span:
-                      lo: 2346
-                      hi: 2361
+                      lo: 2732
+                      hi: 2747
                   rhs:
                     kind: isize
                     node:
                       const: 1:isize
                     span:
-                      lo: 2365
-                      hi: 2368
+                      lo: 2751
+                      hi: 2754
               span:
-                lo: 2346
-                hi: 2368
+                lo: 2732
+                hi: 2754
             span:
-              lo: 2332
-              hi: 2368
+              lo: 2718
+              hi: 2754
         els:
         []
         span:
-          lo: 2332
-          hi: 2368
+          lo: 2718
+          hi: 2754
     - print:
         value:
           expr:
             kind: bool
             node:
-              read: l7
+              read: l9
             span:
-              lo: 2332
-              hi: 2368
+              lo: 2718
+              hi: 2754
         span:
-          lo: 2331
-          hi: 2398
+          lo: 2717
+          hi: 2787
     - set:
         place: l10
         value:
@@ -1379,25 +1379,25 @@ module:
               node:
                 const: 1:u8
               span:
-                lo: 2399
-                hi: 2641
+                lo: 2788
+                hi: 3036
             - kind: isize
               node:
                 const: 0:isize
               span:
-                lo: 2399
-                hi: 2641
+                lo: 2788
+                hi: 3036
             - kind: text
               node: blank_list
               span:
-                lo: 2399
-                hi: 2641
+                lo: 2788
+                hi: 3036
           span:
-            lo: 2399
-            hi: 2641
+            lo: 2788
+            hi: 3036
         span:
-          lo: 2399
-          hi: 2641
+          lo: 2788
+          hi: 3036
     - set:
         place: l10
         value:
@@ -1411,14 +1411,14 @@ module:
                 node:
                   read: l0
                 span:
-                  lo: 2459
-                  hi: 2462
+                  lo: 2848
+                  hi: 2851
           span:
-            lo: 2399
-            hi: 2641
+            lo: 2788
+            hi: 3036
         span:
-          lo: 2399
-          hi: 2641
+          lo: 2788
+          hi: 3036
     - if:
         cond:
           kind: bool
@@ -1438,26 +1438,26 @@ module:
                             node:
                               read: l10
                             span:
-                              lo: 2399
-                              hi: 2641
+                              lo: 2788
+                              hi: 3036
                           field: 0
                           offset: 0
                       span:
-                        lo: 2399
-                        hi: 2641
+                        lo: 2788
+                        hi: 3036
                 span:
-                  lo: 2399
-                  hi: 2641
+                  lo: 2788
+                  hi: 3036
               rhs:
                 kind: u8
                 node:
                   const: 0:u8
                 span:
-                  lo: 2399
-                  hi: 2641
+                  lo: 2788
+                  hi: 3036
           span:
-            lo: 2399
-            hi: 2641
+            lo: 2788
+            hi: 3036
         then:
         - set:
             place: l11
@@ -1469,8 +1469,8 @@ module:
                   node:
                     const: 0:u8
                   span:
-                    lo: 2399
-                    hi: 2641
+                    lo: 2788
+                    hi: 3036
                 - kind: text
                   node:
                     dup:
@@ -1487,84 +1487,85 @@ module:
                                     node:
                                       read: l10
                                     span:
-                                      lo: 2399
-                                      hi: 2641
+                                      lo: 2788
+                                      hi: 3036
                                   field: 2
                                   offset: 16
                               span:
-                                lo: 2399
-                                hi: 2641
+                                lo: 2788
+                                hi: 3036
                         span:
-                          lo: 2399
-                          hi: 2641
+                          lo: 2788
+                          hi: 3036
                       lent: false
+                      deep: false
                   span:
-                    lo: 2399
-                    hi: 2641
+                    lo: 2788
+                    hi: 3036
               span:
-                lo: 2399
-                hi: 2641
+                lo: 2788
+                hi: 3036
             span:
-              lo: 2399
-              hi: 2641
+              lo: 2788
+              hi: 3036
         - drop:
             dest:
               slot: l10
             kind: "%fallible{tag:u8,ok:isize,err:text}"
             span:
-              lo: 2399
-              hi: 2641
+              lo: 2788
+              hi: 3036
         - drop:
             dest:
-              slot: l8
+              slot: l7
             kind: "%fallible{tag:u8,ok:isize,err:text}"
             span:
-              lo: 2399
-              hi: 2641
+              lo: 2788
+              hi: 3036
         - drop:
             dest:
               slot: l2
             kind: "%fallible{tag:u8,ok:isize,err:text}"
             span:
-              lo: 2399
-              hi: 2641
+              lo: 2788
+              hi: 3036
         - return:
             value:
               kind: "%fallible{tag:u8,err:text}"
               node:
                 read: l11
               span:
-                lo: 2399
-                hi: 2641
+                lo: 2788
+                hi: 3036
             span:
-              lo: 2399
-              hi: 2641
+              lo: 2788
+              hi: 3036
         els:
         []
         span:
-          lo: 2399
-          hi: 2641
+          lo: 2788
+          hi: 3036
     - drop:
         dest:
           slot: l10
         kind: "%fallible{tag:u8,ok:isize,err:text}"
         span:
-          lo: 1516
-          hi: 2736
+          lo: 1791
+          hi: 3131
     - drop:
         dest:
-          slot: l8
+          slot: l7
         kind: "%fallible{tag:u8,ok:isize,err:text}"
         span:
-          lo: 1516
-          hi: 2736
+          lo: 1791
+          hi: 3131
     - drop:
         dest:
           slot: l2
         kind: "%fallible{tag:u8,ok:isize,err:text}"
         span:
-          lo: 1516
-          hi: 2736
+          lo: 1791
+          hi: 3131
     - return:
         value:
           kind: "%fallible{tag:u8,err:text}"
@@ -1574,57 +1575,50 @@ module:
               node:
                 const: 1:u8
               span:
-                lo: 1516
-                hi: 2736
+                lo: 1791
+                hi: 3131
             - kind: text
               node: blank_list
               span:
-                lo: 1516
-                hi: 2736
+                lo: 1791
+                hi: 3131
           span:
-            lo: 1516
-            hi: 2736
+            lo: 1791
+            hi: 3131
         span:
-          lo: 1516
-          hi: 2736
+          lo: 1791
+          hi: 3131
     shared_params: []
+    owned:
+    - false
+    owned_ret: false
     span:
-      lo: 1377
-      hi: 2736
+      lo: 1620
+      hi: 3131
   - name: ပရိုဂရမ်
     params: 0
-    result: 0
+    result: null
     ret: isize
     locals:
-    - name: ရလဒ်
-      kind: isize
-      access: var
-      span:
-        lo: 2738
-        hi: 2762
-      addressed: false
     - name: "%new"
       kind: "%fallible{tag:u8,ok:isize,err:text}"
       access: var
       span:
-        lo: 2937
-        hi: 3074
+        lo: 3335
+        hi: 3391
       addressed: false
+      unset: null
+    - name: "%new"
+      kind: isize
+      access: var
+      span:
+        lo: 3335
+        hi: 3435
+      addressed: false
+      unset: null
     block:
     - set:
         place: l0
-        value:
-          kind: isize
-          node:
-            const: 0:isize
-          span:
-            lo: 2738
-            hi: 2762
-        span:
-          lo: 2738
-          hi: 2762
-    - set:
-        place: l1
         value:
           kind: "%fallible{tag:u8,ok:isize,err:text}"
           node:
@@ -1633,27 +1627,27 @@ module:
               node:
                 const: 1:u8
               span:
-                lo: 2937
-                hi: 3074
+                lo: 3335
+                hi: 3391
             - kind: isize
               node:
                 const: 0:isize
               span:
-                lo: 2937
-                hi: 3074
+                lo: 3335
+                hi: 3391
             - kind: text
               node: blank_list
               span:
-                lo: 2937
-                hi: 3074
+                lo: 3335
+                hi: 3391
           span:
-            lo: 2937
-            hi: 3074
+            lo: 3335
+            hi: 3391
         span:
-          lo: 2937
-          hi: 3074
+          lo: 3335
+          hi: 3391
     - set:
-        place: l1
+        place: l0
         value:
           kind: "%fallible{tag:u8,ok:isize,err:text}"
           node:
@@ -1665,20 +1659,20 @@ module:
                 node:
                   const: 1:isize
                 span:
-                  lo: 2956
-                  hi: 2959
+                  lo: 3354
+                  hi: 3357
               - kind: isize
                 node:
                   const: 2:isize
                 span:
-                  lo: 2963
-                  hi: 2966
+                  lo: 3361
+                  hi: 3364
           span:
-            lo: 2937
-            hi: 2967
+            lo: 3335
+            hi: 3365
         span:
-          lo: 2937
-          hi: 3074
+          lo: 3335
+          hi: 3391
     - if:
         cond:
           kind: bool
@@ -1696,28 +1690,28 @@ module:
                           base:
                             kind: "%fallible{tag:u8,ok:isize,err:text}"
                             node:
-                              read: l1
+                              read: l0
                             span:
-                              lo: 2937
-                              hi: 3074
+                              lo: 3335
+                              hi: 3391
                           field: 0
                           offset: 0
                       span:
-                        lo: 2937
-                        hi: 3074
+                        lo: 3335
+                        hi: 3391
                 span:
-                  lo: 2937
-                  hi: 3074
+                  lo: 3335
+                  hi: 3391
               rhs:
                 kind: u8
                 node:
                   const: 0:u8
                 span:
-                  lo: 2937
-                  hi: 3074
+                  lo: 3335
+                  hi: 3391
           span:
-            lo: 2937
-            hi: 3074
+            lo: 3335
+            hi: 3391
         then:
         - halt:
             cause: not_good
@@ -1732,28 +1726,28 @@ module:
                         base:
                           kind: "%fallible{tag:u8,ok:isize,err:text}"
                           node:
-                            read: l1
+                            read: l0
                           span:
-                            lo: 2937
-                            hi: 3074
+                            lo: 3335
+                            hi: 3391
                         field: 2
                         offset: 16
                     span:
-                      lo: 2937
-                      hi: 3074
+                      lo: 3335
+                      hi: 3391
               span:
-                lo: 2937
-                hi: 3074
+                lo: 3335
+                hi: 3391
             span:
-              lo: 2937
-              hi: 3074
+              lo: 3335
+              hi: 3391
         els:
         []
         span:
-          lo: 2937
-          hi: 3074
+          lo: 3335
+          hi: 3391
     - set:
-        place: l0
+        place: l1
         value:
           kind: isize
           node:
@@ -1765,43 +1759,45 @@ module:
                     base:
                       kind: "%fallible{tag:u8,ok:isize,err:text}"
                       node:
-                        read: l1
+                        read: l0
                       span:
-                        lo: 2937
-                        hi: 3074
+                        lo: 3335
+                        hi: 3391
                     field: 1
                     offset: 8
                 span:
-                  lo: 2937
-                  hi: 3074
+                  lo: 3335
+                  hi: 3391
           span:
-            lo: 2937
-            hi: 3074
+            lo: 3335
+            hi: 3391
         span:
-          lo: 2937
-          hi: 3143
+          lo: 3335
+          hi: 3435
     - drop:
         dest:
-          slot: l1
+          slot: l0
         kind: "%fallible{tag:u8,ok:isize,err:text}"
         span:
-          lo: 2937
-          hi: 3143
+          lo: 3335
+          hi: 3435
     - return:
         value:
           kind: isize
           node:
-            read: l0
+            read: l1
           span:
-            lo: 2937
-            hi: 3143
+            lo: 3335
+            hi: 3435
         span:
-          lo: 2937
-          hi: 3143
+          lo: 3335
+          hi: 3435
     shared_params: []
+    owned: []
+    owned_ret: false
     span:
-      lo: 2738
-      hi: 3214
+      lo: 3133
+      hi: 3506
   main:
   - set:
       place: g0
@@ -1813,18 +1809,19 @@ module:
             name: ပရိုဂရမ်
             args: []
         span:
-          lo: 2738
-          hi: 2762
+          lo: 3133
+          hi: 3157
       span:
-        lo: 2738
-        hi: 2762
+        lo: 3133
+        hi: 3157
   imported_inits: 0
   host:
     args: null
     env: null
     exit: 0
   foreign: []
+  marked: []
   span:
     lo: 0
-    hi: 3215
+    hi: 3507
 diagnostics: []

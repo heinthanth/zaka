@@ -6,7 +6,7 @@ use strum::EnumIter;
 use strum::EnumString;
 use strum::IntoStaticStr;
 
-/// How the ownership check reports what it finds.
+/// How the checker reports what it finds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[derive(Serialize, Deserialize, Display, EnumIter, EnumString, IntoStaticStr)]
 #[serde(rename_all = "snake_case")]
@@ -14,9 +14,9 @@ use strum::IntoStaticStr;
 pub enum MemCheck
 {
     /// Each finding is an error and stops code generation.
-    #[default]
     Error,
     /// Each finding is a warning.
+    #[default]
     Warn,
     /// The check reports nothing.
     Off,
@@ -38,7 +38,7 @@ pub enum OverflowMode
     Stop,
 }
 
-/// Options of the ownership check.
+/// Options of the checker.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Builder)]
 pub struct BorrowCheckOptions
 {
@@ -51,9 +51,6 @@ pub struct BorrowCheckOptions
     /// What integer arithmetic does with a result outside its kind.
     #[builder(default)]
     pub overflow: OverflowMode,
-    /// Warn about each statement that duplicates text or a list (ZK0720).
-    #[builder(default)]
-    pub warn_duplicates: bool,
 }
 
 impl Default for BorrowCheckOptions

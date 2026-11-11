@@ -46,9 +46,10 @@ static SHEET: ComponentStyle =
     ComponentStyle::global_css("zaka-heap-view", STYLE_SHEET);
 
 /// Columns of the blocks.
-const BLOCK_COLUMNS: [Column; 4] = [
+const BLOCK_COLUMNS: [Column; 5] = [
     ("explorer.col.addr", Table::CELL_NUM, ""),
     ("explorer.heap.size", Table::CELL_NUM, "explorer.heap.size_note"),
+    ("explorer.heap.holders", Table::CELL_NUM, "explorer.heap.holders_note"),
     ("explorer.heap.origin", "", ""),
     ("explorer.heap.state", "", ""),
 ];
@@ -195,44 +196,40 @@ fn heap_stats(
 /// The view.
 fn legend(shot: Memo<HeapShot>) -> impl IntoView
 {
-    let entry = |class: &'static str, id: &'static str, note: &'static str| {
+    let item = |class: &'static str, id: &'static str, note: &'static str| {
         span().class(ClassName::LEGEND_ENTRY).title(t!(note.to_string())).child((
             span().class(format!("{} {class}", ClassName::LEGEND_SWATCH)),
             t!(id.to_string()),
         ))
     };
     div().class(ClassName::HEAP_LEGEND).child((
-        entry(
+        item(
             ClassName::ORIGIN_HEAP,
             "explorer.heap.origin_heap",
             "explorer.heap.heap_note",
         ),
-        entry(
+        item(
             ClassName::ORIGIN_STACK,
             "explorer.heap.origin_stack",
             "explorer.heap.stack_note",
         ),
-        entry(
+        item(
             ClassName::ORIGIN_STATIC,
             "explorer.heap.origin_static",
             "explorer.heap.static_note",
         ),
-        entry(
-            ClassName::STATE_FREED,
-            "explorer.heap.freed",
-            "explorer.heap.freed_note",
-        ),
-        entry(
+        item(ClassName::STATE_FREED, "explorer.heap.freed", "explorer.heap.freed_note"),
+        item(
             ClassName::STATE_LEAKED,
             "explorer.heap.leaked",
             "explorer.heap.leaked_note",
         ),
-        entry(ClassName::SWATCH_GAP, "explorer.heap.gap", "explorer.heap.gap_note"),
+        item(ClassName::SWATCH_GAP, "explorer.heap.gap", "explorer.heap.gap_note"),
         size_scale(),
         move || {
             let trapped = shot.with(|s| s.fault.is_some());
             let fault = || {
-                entry(
+                item(
                     ClassName::SWATCH_FAULT,
                     "explorer.heap.fault",
                     "explorer.heap.fault_note",
@@ -264,6 +261,21 @@ fn size_scale() -> impl IntoView
             [8, 64, 512].map(swatch),
             t!("explorer.heap.size_large"),
         ))
+}
+
+/// The text of the holder count of a block: the count, or a dash for a
+/// block that is not counted.
+///
+/// # Arguments
+///
+/// * `holders` - The count.
+///
+/// # Returns
+///
+/// The text.
+fn holders_text(holders: u32) -> String
+{
+    tern!(holders == 0, "–".to_string(), holders.to_string())
 }
 
 /// The class of the color of an origin.
@@ -348,7 +360,7 @@ fn block_tip(b: &BlockRow, digits: usize) -> String
     format!("{} · {size} · {origin} · {state}", addr_text(b.start, digits))
 }
 
-/// The map, in the style of a contribution graph: one run of cells in
+/// The map, like a contribution graph: one run of cells in
 /// address order, as the machine places blocks in RAM: the static data, the
 /// stack, then the heap. A cell stands for a block, or a variable of a packed
 /// block, and wraps to the width of the pane. A cell takes the color of its
@@ -556,9 +568,10 @@ fn block_list(
             parts.map(|p| row(s, p)).collect_view()
         })
     };
-    table()
+    let table = table()
         .class(format!("{} {}", Table::PHASE_TABLE, ClassName::BLOCK_TABLE))
-        .child((table_head("heap-blocks", &BLOCK_COLUMNS), tbody().child(rows)))
+        .child((table_head("heap-blocks", &BLOCK_COLUMNS), tbody().child(rows)));
+    div().class(Table::TABLE_SCROLL).child(table)
 }
 
 /// The row of a block, and its dump when it is open.
@@ -593,6 +606,7 @@ fn block_rows(b: BlockRow, open: RwSignal<Option<u64>>, digits: usize)
         .child((
             cell(Table::CELL_NUM, addr_text(start, digits)),
             cell(Table::CELL_NUM, b.len),
+            cell(Table::CELL_NUM, holders_text(b.holders)),
             td().child((swatch, origin_text(&b))),
             td().child(badge),
         ));
@@ -633,6 +647,8 @@ fn gap_row(start: u64, len: u64, fault: bool, digits: usize) -> impl IntoView
         cell(Table::CELL_NUM, len),
         td().child((swatch, t!("explorer.heap.gap"))),
         td().child(badge),
+        // the state column, blank, so the row draws its rule to the edge
+        td(),
     ))
 }
 

@@ -9,11 +9,11 @@ An *enumeration* is a kind whose values are a short list of names, its *members*
 traffic light is red, amber or green, and nothing else:
 
 ```zaka
-ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ ဝါ ဖြစ်ပါစေ။
-မီး ကို ပြသပါ။
+မီး ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -23,12 +23,12 @@ traffic light is red, amber or green, and nothing else:
 
 | Zaka | Reads as |
 | --- | --- |
-| `ဒေတာအမျိုးအစား အရောင်` | "the data kind `အရောင်` (color)" |
-| `ဆိုသည်မှာ ... တို့ ဖြစ်သည်` | "means these" |
+| `အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲ` | "the data kind of variants called `အရောင်` (color)" |
+| `တွင် ... တို့ပါဝင်သည်` | "in it, these are included" |
 | `အရောင်များထဲမှ ဝါ` | "amber, from among the colors" |
 
-An enumeration opens with `ဒေတာအမျိုးအစား`, as a struct does; `ဆိုသည်မှာ` ("means")
-after the name, in place of `တွင်`, makes it an enumeration. It is declared at the top
+An enumeration reads as a struct does, with `ဒေတာအမျိုးအစားကွဲ` in place of
+`ဒေတာအစုအဝေး`. It is declared at the top
 level of a file, as a struct is, and the rest of the program can use it from the first
 line. Its name is a kind from then on:
 `ကိန်းရှင် မီး သည် အရောင် တစ်ခု ဖြစ်ပါစေ။` declares a variable of it.
@@ -43,12 +43,12 @@ Printing a member writes it in that same form, so a printed member reads back as
 Inside text, a template slot such as `{မီး}` writes it so too:
 
 ```zaka
-ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ စိမ်း ဖြစ်ပါစေ။
-"မီး {မီး}" ဟု ပြသပါ။
-မီး == အရောင်များထဲမှ စိမ်း ကို ပြသပါ။
+"မီး {မီး}" ဟု ပြသမည်။
+မီး == အရောင်များထဲမှ စိမ်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -63,19 +63,20 @@ members: colors have no order.
 ## Member values
 
 Each member stands for a value. With none written, the first member is 0 and each member
-after it is one more than the member before. A value in parentheses after a member sets
-it, and the members after it count on from there. A value can be each constant the
+after it is one more than the member before. `တန်ဖိုးအနေဖြင့် <value> ရှိသည့်` ("that has
+`<value>` as its value") in front of a member sets it, and the members after it count on
+from there. A value can be each constant the
 compiler works out: a literal, a constant, or an operation on them. A conversion gives
 the value of a member:
 
 ```zaka
 ကိန်းသေ အခြေခံ သည် ၁၀၀ ဖြစ်ပါစေ။
-ဒေတာအမျိုးအစား အမှားများ ဆိုသည်မှာ မတွေ့ (အခြေခံ + ၄)၊ ပိတ်ထား၊ ပြည့်နေ (အခြေခံ * ၂) တို့ ဖြစ်သည်။
+အမှားများ ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် အခြေခံ + ၄ ရှိသည့် မတွေ့၊ ပိတ်ထား၊ တန်ဖိုးအနေဖြင့် အခြေခံ * ၂ ရှိသည့် ပြည့်နေ တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မ သည် အမှားများထဲမှ ပိတ်ထား ဖြစ်ပါစေ။
-မ ကို ပြသပါ။
-မ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+မ ကို ပြသမည်။
+မ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -89,12 +90,12 @@ number, a character, text, a list or a struct. Members of text or of another kin
 no integer do not count on, so each needs its value written:
 
 ```zaka
-ဒေတာအမျိုးအစား အမိန့် ဆိုသည်မှာ သွား ("go")၊ ရပ် ("stop") တို့ ဖြစ်သည်။
+အမိန့် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် "go" ရှိသည့် သွား၊ တန်ဖိုးအနေဖြင့် "stop" ရှိသည့် ရပ် တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ညွှန်ကြား သည် အမိန့်များထဲမှ ရပ် ဖြစ်ပါစေ။
-ညွှန်ကြား ကို ပြသပါ။
-ညွှန်ကြား ကို စာသား အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+ညွှန်ကြား ကို ပြသမည်။
+ညွှန်ကြား ကို စာသား တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -107,28 +108,34 @@ A variable of an enumeration holds the value of its member, so `ညွှန်�
 text `"stop"`. No conversion goes back from a value to a member, and a member never equals
 a value of its kind without a conversion first.
 
-## Starting values
+## The initial member
 
-A variable declared with no value starts at the first member. A struct or a list with an
-enumeration inside starts each field and each cell at its first member too, since a
-struct starts each field at the starting value of its kind:
+No member is picked for a variable on its own: not the first, not the one of value 0.
+To give an enumeration an [initial value](../variables/README.md#the-initial-value), mark
+one member with `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်` ("to be used as the initial value") in front of
+it, before its value when it has one. `ကနဦးတန်ဖိုး` for an `အမိန့်` is then that member, and
+so is each enumeration field or cell of a struct or a list at its initial value:
 
 ```zaka
-ဒေတာအမျိုးအစား အမိန့် ဆိုသည်မှာ သွား ("go")၊ ရပ် ("stop") တို့ ဖြစ်သည်။
-ဒေတာအမျိုးအစား ခရီး တွင် ကိန်းပြည့် အကွာ၊ အမိန့် ညွှန် တို့ ပါဝင်သည်။
+အမိန့် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် "go" ရှိသည့် သွား၊ ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် တန်ဖိုးအနေဖြင့် "stop" ရှိသည့် ရပ် တို့ပါဝင်သည်။
+ခရီး ဟူသော ဒေတာအစုအဝေးတွင် အကွာ ဟူသော ကိန်းပြည့် တစ်ခု၊ ညွှန် ဟူသော အမိန့် တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ညွှန်ကြား သည် အမိန့် တစ်ခု ဖြစ်ပါစေ။
-ညွှန်ကြား ကို ပြသပါ။
-ကိန်းရှင် ခရီးစဉ် သည် ခရီး တစ်ခု ဖြစ်ပါစေ။
-ခရီးစဉ် ကို ပြသပါ။
+ကိန်းရှင် ညွှန်ကြား သည် အမိန့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ညွှန်ကြား ကို ပြသမည်။
+ကိန်းရှင် ခရီးစဉ် သည် ခရီး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ခရီးစဉ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-အမိန့်များထဲမှ သွား
-ခရီး(အကွာ: ၀၊ ညွှန်: အမိန့်များထဲမှ သွား)
+အမိန့်များထဲမှ ရပ်
+ခရီး(အကွာ: ၀၊ ညွှန်: အမိန့်များထဲမှ ရပ်)
 ```
+
+An enumeration with no marked member has no initial value, so `ကနဦးတန်ဖိုး` for it is a
+mistake, and so are two marks: see [Enumeration
+mistakes](mistakes.md#no-member-marked-as-the-initial-one).
 
 ## Choosing with a switch
 
@@ -136,13 +143,13 @@ A *switch* compares one value, its *subject*, with a list of cases, and runs the
 the first case that equals it:
 
 ```zaka
-ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ ဝါ ဖြစ်ပါစေ။
-မီး သည် နီ ဖြစ်လျှင် "ရပ်" ဟု ပြသပါ။
-ဝါ ဖြစ်လျှင် "ဖြည်းဖြည်း" ဟု ပြသပါ။
-စိမ်း ဖြစ်လျှင် "သွား" ဟု ပြသပါ။
+မီး သည် နီ ဖြစ်လျှင် "ရပ်" ဟု ပြသမည်။
+ဝါ ဖြစ်လျှင် "ဖြည်းဖြည်း" ဟု ပြသမည်။
+စိမ်း ဖြစ်လျှင် "သွား" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -165,11 +172,12 @@ One arm can take several cases, with `၊` between them and `တို့` after
 
 ## The default arm
 
-`တခြား <kind> ဖြစ်လျှင်`, "if another `<kind>`", comes last and runs when no case equals
+`တခြား <kind> တစ်ခု ဖြစ်လျှင်`, "if another `<kind>`", comes last and runs when no case equals
 the subject. Over an enumeration, a switch either names each member in an arm or ends with
 the default arm, so a member added to the enumeration later is caught at each switch that
 forgets it. For an enumeration whose name ends in `များ`, the default arm writes the name
-without it: `တခြား အမှား ဖြစ်လျှင်`.
+without it: `တခြား အမှား တစ်ခု ဖြစ်လျှင်`. The kind takes its measure word, `ခု` unless the
+enumeration names another.
 
 A switch takes a subject of each kind that `==` takes: a number, a character, text, a
 list, a struct or an enumeration. Over a number or text, the default arm can be left out;
@@ -178,13 +186,13 @@ then a value that no case equals runs nothing.
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရက် သည် ၆ ဖြစ်ပါစေ။
-ရက် သည် ၀ ဖြစ်လျှင် "တနင်္ဂနွေ" ဟု ပြသပါ။
-၆ ဖြစ်လျှင် "စနေ" ဟု ပြသပါ။
-တခြား ကိန်းပြည့် ဖြစ်လျှင် "ကြားရက်" ဟု ပြသပါ။
+ရက် သည် ၀ ဖြစ်လျှင် "တနင်္ဂနွေ" ဟု ပြသမည်။
+၆ ဖြစ်လျှင် "စနေ" ဟု ပြသမည်။
+တခြား ကိန်းပြည့် တစ်ခု ဖြစ်လျှင် "ကြားရက်" ဟု ပြသမည်။
 
 ကိန်းရှင် ညွှန်ကြား သည် "ရပ်" ဖြစ်ပါစေ။
-ညွှန်ကြား သည် "သွား" ဖြစ်လျှင် "go" ဟု ပြသပါ။
-"ရပ်" ဖြစ်လျှင် "stop" ဟု ပြသပါ။
+ညွှန်ကြား သည် "သွား" ဖြစ်လျှင် "go" ဟု ပြသမည်။
+"ရပ်" ဖြစ်လျှင် "stop" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

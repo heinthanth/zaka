@@ -76,11 +76,11 @@ pub enum Stmt
 {
     /// `ကိန်းရှင် x သည် kind တစ်ခု ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ပါစေ။`
     Decl(DeclStmt),
-    /// `x ကို v ဟု ထားပါ။`
+    /// `x ကို v ဟု ထားမည်။`
     Assign(AssignStmt),
-    /// `v ကို ပြသပါ။`
+    /// `v ကို ပြသမည်။`
     Print(PrintStmt),
-    /// `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။ ... လုပ်ဆောင်စရာများ ပြီးပါပြီ။`
+    /// `အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ... လုပ်ဆောင်စရာများ ပြီးပါပြီ။`
     Block(BlockStmt),
     /// `အကယ်၍ ... လျှင် ...`
     If(IfStmt),
@@ -92,15 +92,15 @@ pub enum Stmt
     Each(EachStmt),
     /// `ကိန်းရှင် i သည် kind တစ်ခု ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ကာ cond နေသရွေ့ ...`
     Generic(GenericStmt),
-    /// `ကွင်းဆက် ကို ရပ်ပါ။`
+    /// `ကွင်းဆက် ကို ရပ်မည်။`
     Break(BreakStmt),
-    /// `နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။`
+    /// `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။`
     Continue(ContinueStmt),
     /// `လုပ်ဆောင်ချက် f သည် ...`
     Fn(FnDecl),
-    /// `v ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။` or `ပြန်ပေးပါ။`
+    /// `v ကို ပြန်ပေးမည်။` or `ပြန်ပေးမည်။`
     Return(ReturnStmt),
-    /// `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်ပါ။`
+    /// `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်မည်။`
     Call(CallStmt),
     /// Heap allocation into a place.
     Alloc(AllocStmt),
@@ -108,25 +108,28 @@ pub enum Stmt
     Resize(ResizeStmt),
     /// Release of the heap block a place points at.
     Free(FreeStmt),
+    /// The leave C gets to call a function value after the call that gave
+    /// it, or the end of that leave.
+    Leave(LeaveStmt),
     /// A blit of cells from one address to another.
     Blit(BlitStmt),
     /// A fill of cells at an address with one value.
     Fill(FillStmt),
-    /// `l ထဲသို့ v ကို ထည့်ပါ။`
+    /// `l ထဲသို့ v ကို ထည့်မည်။`
     Add(AddStmt),
-    /// `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။`
+    /// `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။`
     Remove(RemoveStmt),
-    /// `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးပါ။`
+    /// `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးမည်။`
     Replace(ReplaceStmt),
-    /// `ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။`
+    /// `<name> ဟူသော ဒေတာအစုအဝေးတွင် ... တို့ပါဝင်သည်။`
     Struct(StructDecl),
-    /// `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းပါ။`
+    /// `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းမည်။`
     Import(ImportStmt),
-    /// `ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ <member>၊ ... တို့ ဖြစ်သည်။`
+    /// `<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် <member>၊ ... တို့ပါဝင်သည်။`
     Enum(EnumDecl),
-    /// `<subject> သည် <case> ဖြစ်လျှင် ... တခြား <kind> ဖြစ်လျှင် ...`
+    /// `<subject> သည် <case> ဖြစ်လျှင် ... တခြား <kind> တစ်ခု ဖြစ်လျှင် ...`
     Switch(SwitchStmt),
-    /// `ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
+    /// `ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
     Alias(AliasDecl),
 }
 
@@ -136,21 +139,13 @@ pub struct DeclStmt
 {
     /// The declared name.
     pub name: Ident,
-    /// The declared kind, `<kind> တစ်<classifier>`; `None` when the value
-    /// alone gives it.
+    /// The declared kind, `<kind> တစ်<classifier>`, its measure word in
+    /// [`Kind::classifier`]; `None` when the value alone gives it.
     pub kind: Option<Kind>,
-    /// The classifier after `တစ်`, written with the kind.
-    #[serde(default)]
-    pub classifier: Option<Ident>,
     /// `true` for `ကိန်းသေ`.
     pub is_const: bool,
     /// The initial value, when written.
     pub init: Option<Expr>,
-    /// `true` for `ထဲသို့ <v> ကို ပြောင်းထည့်မည်`: the value moves in and
-    /// leaves its variable blank.
-    #[builder(default)]
-    #[serde(default)]
-    pub moves: bool,
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
@@ -166,11 +161,6 @@ pub struct AssignStmt
     pub target: Expr,
     /// The new value.
     pub value: Expr,
-    /// `true` for `ပြောင်းထည့်မည်`: the value moves in and leaves its
-    /// variable blank.
-    #[builder(default)]
-    #[serde(default)]
-    pub moves: bool,
     /// Source region.
     pub span: Span,
 }
@@ -208,6 +198,12 @@ pub struct BlockStmt
     /// block phrases.
     #[builder(default)]
     pub single: bool,
+    /// `true` for a block of marked code,
+    /// `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။`: its statements can work
+    /// with pointers.
+    #[builder(default)]
+    #[serde(default)]
+    pub unchecked: bool,
     /// Source region.
     pub span: Span,
 }
@@ -310,12 +306,9 @@ pub struct GenericStmt
 {
     /// The loop variable.
     pub var: Ident,
-    /// Its kind, `<kind> တစ်<classifier>`; `None` when the initial value
-    /// alone gives it.
+    /// Its kind, `<kind> တစ်<classifier>`, its measure word in
+    /// [`Kind::classifier`]; `None` when the initial value alone gives it.
     pub kind: Option<Kind>,
-    /// The classifier after `တစ်`, written with the kind.
-    #[serde(default)]
-    pub classifier: Option<Ident>,
     /// Its initial value, when written.
     pub init: Option<Expr>,
     /// The condition.
@@ -329,7 +322,7 @@ pub struct GenericStmt
     pub span: Span,
 }
 
-/// `ကွင်းဆက် ကို ရပ်ပါ။`
+/// `ကွင်းဆက် ကို ရပ်မည်။`
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct BreakStmt
 {
@@ -337,7 +330,7 @@ pub struct BreakStmt
     pub span: Span,
 }
 
-/// `နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။`
+/// `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။`
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct ContinueStmt
 {
@@ -349,17 +342,28 @@ pub struct ContinueStmt
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct Param
 {
-    /// Whether `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` marks it: the function changes
-    /// the caller's place, not a duplicate.
+    /// Whether `ဒေတာ ပြောင်းလဲရန်` marks it: what the function leaves in it goes
+    /// back to the caller's place.
     #[builder(default)]
     #[serde(default)]
     pub edit: bool,
+    /// Whether `ဒေတာ ထည့်ပေးရန်` marks it: the function writes the caller's
+    /// place and never reads it first, so the caller need not set it, and it
+    /// counts as set after the call. `edit` holds too.
+    #[builder(default)]
+    #[serde(default)]
+    pub fill: bool,
+    /// Whether `အပိုင်အနေဖြင့်` marks it: the function takes over the block the
+    /// pointer holds.
+    #[builder(default)]
+    #[serde(default)]
+    pub owned: bool,
     /// The parameter kind.
     pub kind: Kind,
     /// The parameter name.
     pub name: Ident,
-    /// The word after the name in parentheses, `<name>(<mark>)`: the word a
-    /// marked call writes after this argument.
+    /// The mark, `ဝိဘတ် "<mark>" ကို သုံး၍`: the word a marked call writes after
+    /// this argument.
     #[serde(default)]
     pub mark: Option<Ident>,
     /// Source region.
@@ -419,6 +423,11 @@ pub struct FnDecl
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
+    /// `true` for a function marked `စိတ်မချရသော`: its statements can work
+    /// with pointers, and marked code alone can call it.
+    #[builder(default)]
+    #[serde(default)]
+    pub unchecked: bool,
     /// `true` for the start block, where the program starts; no call can
     /// name it.
     #[builder(default)]
@@ -473,18 +482,13 @@ pub fn is_lib_path(lib: &str) -> bool
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct ReturnStmt
 {
-    /// The returned value; `None` for a bare `ပြန်ပေးပါ။`.
+    /// The returned value; `None` for a bare `ပြန်ပေးမည်။`.
     pub value: Option<Expr>,
-    /// `true` when the value is an error value: `... ကို အမှားအယွင်းအဖြစ်
-    /// ပြန်ပေးပါ။`
+    /// `true` for a failure with no value: `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု
+    /// သတ်မှတ်မည်။`
     #[builder(default)]
     #[serde(default)]
     pub fault: bool,
-    /// `true` when the value is the good result of a function that can fail:
-    /// `... ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။`
-    #[builder(default)]
-    #[serde(default)]
-    pub good: bool,
     /// Source region.
     pub span: Span,
 }
@@ -503,12 +507,7 @@ pub struct CallStmt
     /// The arguments.
     #[builder(default)]
     pub args: Vec<Expr>,
-    /// Whether `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)` marks each argument, one
-    /// flag for each.
-    #[builder(default)]
-    #[serde(default)]
-    pub edits: Vec<bool>,
-    /// `true` when `မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` follows: a failure
+    /// `true` when `မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်` follows: a failure
     /// of the call leaves the calling function with the same error value.
     #[builder(default)]
     #[serde(default)]
@@ -532,11 +531,9 @@ pub struct SizeArg
 {
     /// The element count, or the size in octets when no kind is written.
     pub count: Expr,
-    /// The element kind, when written.
+    /// The element kind, when written. Its [`Kind::classifier`] is the text
+    /// of the count word before its `စာ`: `ခု` in `ခုစာ`, `ယောက်` in `ယောက်စာ`.
     pub unit: Option<Kind>,
-    /// The classifier of the count word, the text before its `စာ`: `ခု` in
-    /// `ခုစာ`, `ယောက်` in `ယောက်စာ`. Written with each unit kind.
-    pub classifier: Option<Ident>,
     /// Source region.
     pub span: Span,
 }
@@ -575,6 +572,21 @@ pub struct FreeStmt
     pub span: Span,
 }
 
+/// `<value> ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။`, which lets C keep a function value
+/// and call it after the call that gave it, or
+/// `<value> ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်။`, which takes that leave
+/// back.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct LeaveStmt
+{
+    /// The function value.
+    pub value: Expr,
+    /// `true` to give the leave, `false` to take it back.
+    pub grant: bool,
+    /// Source region.
+    pub span: Span,
+}
+
 /// A blit of the cells at `src` to `dst`, `memcpy` when the two ranges
 /// must stand apart and `memmove` when the two can overlap.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
@@ -606,7 +618,7 @@ pub struct FillStmt
     pub span: Span,
 }
 
-/// `<list> ထဲသို့ <value> ကို ထည့်ပါ။`: the value becomes a new last cell.
+/// `<list> ထဲသို့ <value> ကို ထည့်မည်။`: the value becomes a new last cell.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct AddStmt
 {
@@ -616,7 +628,7 @@ pub struct AddStmt
     /// The new cell.
     pub value: Expr,
     /// Whether the value goes in front of the cell or the character `list`
-    /// names: `<cell> ၏ အရှေ့တွင် <value> ကို ထည့်ပါ။`.
+    /// names: `<cell> ၏ အရှေ့တွင် <value> ကို ထည့်မည်။`.
     #[serde(default)]
     #[builder(default)]
     pub before: bool,
@@ -624,9 +636,9 @@ pub struct AddStmt
     pub span: Span,
 }
 
-/// `<text> ၏ အကွက် <start> မှ <end> ထိကို <value> ဖြင့် အစားထိုးပါ။`, or
+/// `<text> ၏ အကွက် <start> မှ <end> ထိကို <value> ဖြင့် အစားထိုးမည်။`, or
 /// `<text> ၏ <start> လုံးမြောက်စာလုံးမှ <end> လုံးမြောက်စာလုံးထိကို <value> ဖြင့်
-/// အစားထိုးပါ။`: the cells or the characters from `start` to `end`, both
+/// အစားထိုးမည်။`: the cells or the characters from `start` to `end`, both
 /// included, give their place to the value.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct ReplaceStmt
@@ -648,14 +660,14 @@ pub struct ReplaceStmt
     pub span: Span,
 }
 
-/// `<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။`: the list loses its last cell.
+/// `<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။`: the list loses its last cell.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct RemoveStmt
 {
     /// The list or the text that shrinks, a place.
     pub list: Expr,
     /// Whether the last character of text goes, not the last cell:
-    /// `<text> ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။`.
+    /// `<text> ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။`.
     #[serde(default)]
     #[builder(default)]
     pub chars: bool,
@@ -664,8 +676,8 @@ pub struct RemoveStmt
 }
 
 /// Struct declaration:
-/// `ဒေတာအမျိုးအစား <name> တွင် <kind> <field>၊ ... တို့ ပါဝင်သည်။`, with an
-/// optional classifier clause `ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`.
+/// `<name> ဟူသော ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ ... တို့ပါဝင်သည်။`,
+/// with an optional classifier clause `တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct StructDecl
 {
@@ -678,26 +690,44 @@ pub struct StructDecl
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
+    /// `true` when `မျှဝေနိုင်သော` marks it: each value is an object that
+    /// copies share, not a value of its own.
+    #[builder(default)]
+    #[serde(default)]
+    pub shared: bool,
+    /// `true` for a kind that comes from outside the program,
+    /// `ပြင်ပမှ လာသော ဒေတာအစုအဝေး`: each value is a handle to a struct C
+    /// keeps, which copies share, and the fields, when written, are C's.
+    #[builder(default)]
+    #[serde(default)]
+    pub external: bool,
     /// Source region, the full stop included.
     pub span: Span,
 }
 
-/// One member of an enumeration: its name, and the value in parentheses
-/// when one is written.
+/// One member of an enumeration: its name, and its value when one is written,
+/// `[ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် <value> ရှိသည့်] <name>`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct EnumMember
 {
     /// The member name.
     pub name: Ident,
-    /// The value, `(<value>)`; with none, the member takes the value of the
-    /// member before it plus one, and the first takes 0.
+    /// The value, `တန်ဖိုးအနေဖြင့် <value> ရှိသည့်`; with none, the member takes
+    /// the value of the member before it plus one, and the first takes 0.
     pub value: Option<Expr>,
-    /// Source region, from the name to the closing parenthesis.
+    /// `true` when `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်` stands in front of it: the
+    /// member is the initial value of the enumeration.
+    #[builder(default)]
+    #[serde(default)]
+    pub initial: bool,
+    /// Source region, from `တန်ဖိုးအနေဖြင့်` or the name to the name; the
+    /// initial mark in front is left out.
     pub span: Span,
 }
 
 /// Enumeration declaration:
-/// `ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ <member> (<value>)?၊ ... တို့ ဖြစ်သည်။`.
+/// `<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် <member>၊ ... တို့ပါဝင်သည်။`, with an
+/// optional classifier clause `တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct EnumDecl
 {
@@ -705,6 +735,9 @@ pub struct EnumDecl
     pub name: Ident,
     /// The members in order.
     pub members: Vec<EnumMember>,
+    /// The classifier that counts values of the enumeration, when written.
+    #[serde(default)]
+    pub classifier: Option<Ident>,
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
@@ -712,16 +745,21 @@ pub struct EnumDecl
     pub span: Span,
 }
 
-/// Kind alias: `ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`, or
-/// `<function kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`. The alias is a second name
-/// for the kind: the loader puts the kind in place of each use of the name.
+/// Kind alias: `ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`, with
+/// an optional classifier clause `မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`.
+/// The alias is a second name for the kind: the loader puts the kind in place
+/// of each use of the name.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct AliasDecl
 {
-    /// The kind the alias names.
+    /// The kind the alias names, with no measure word.
     pub kind: Kind,
     /// The alias.
     pub name: Ident,
+    /// The classifier that counts values of the alias, when written; with
+    /// none, the alias counts with the word of its kind.
+    #[serde(default)]
+    pub classifier: Option<Ident>,
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
@@ -743,11 +781,11 @@ pub struct SwitchArm
     pub span: Span,
 }
 
-/// The default arm of a switch: `တခြား <kind> ဖြစ်လျှင် <block>`.
+/// The default arm of a switch: `တခြား <kind> တစ်<classifier> ဖြစ်လျှင် <block>`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct SwitchDefault
 {
-    /// The kind of the subject, as written.
+    /// The kind of the subject, as written, with its measure word.
     pub kind: Kind,
     /// The block run when no case equals the subject.
     pub block: BlockStmt,
@@ -756,7 +794,8 @@ pub struct SwitchDefault
 }
 
 /// A switch over one subject:
-/// `<subject> သည် <case> ဖြစ်လျှင် ... <case> ဖြစ်လျှင် ... တခြား <kind> ဖြစ်လျှင် ...`.
+/// `<subject> သည် <case> ဖြစ်လျှင် ... <case> ဖြစ်လျှင် ... တခြား <kind> တစ်ခု ဖြစ်လျှင်
+/// ...`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct SwitchStmt
 {
@@ -771,8 +810,8 @@ pub struct SwitchStmt
     pub span: Span,
 }
 
-/// Import: `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းပါ။`, or with one name,
-/// `"<file>" မှ <name> ကို ထည့်သွင်းပါ။`.
+/// Import: `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းမည်။`, or with one name,
+/// `"<file>" မှ <name> ကို ထည့်သွင်းမည်။`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct ImportStmt
 {

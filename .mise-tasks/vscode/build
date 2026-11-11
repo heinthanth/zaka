@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-#MISE description="Build the VS Code extension into a .vsix"
-#MISE dir="{{config_root}}/editors/vscode"
-set -euo pipefail
-
-wasm-pack build --target nodejs --no-pack --release
-npm install
-npx --yes @vscode/vsce package

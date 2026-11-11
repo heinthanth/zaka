@@ -10,6 +10,7 @@ use std::sync::PoisonError;
 use zakac_lexer::reserved::AMONG;
 use zakac_lexer::reserved::PLURAL;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 use crate::kind::DataKind;
 use crate::value::Value;
@@ -135,8 +136,9 @@ fn read_hex(hex: &str) -> Option<String>
 ///
 /// Two enumeration kinds are equal when their signatures are: the name, then
 /// each member with its value, then the value kind, such as
-/// `အရောင်<နီ=v...|ဝါ=v...;isize>`. The signature is also the name of the kind
-/// in artifacts, so a kind reads back from its text alone.
+/// `အရောင်<နီ=v...|ဝါ=v...;isize>`; `!` stands in front of the member marked
+/// `ကနဦးတန်ဖိုး`. The signature is also the name of the kind in artifacts, so
+/// a kind reads back from its text alone.
 pub struct EnumKind
 {
     /// The enumeration name.
@@ -147,6 +149,9 @@ pub struct EnumKind
     under: DataKind,
     /// The members in order, each a name and its value.
     members: Vec<(String, MemberValue)>,
+    /// The position of the member marked `ကနဦးတန်ဖိုး`, the initial value of
+    /// the enumeration; `None` when no member is marked.
+    initial: Option<usize>,
 }
 
 impl EnumKind
@@ -208,6 +213,13 @@ impl EnumKind
     ///
     /// The value.
     pub fn first(&self) -> &MemberValue { &self.members[0].1 }
+
+    /// The position of the member marked `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်`.
+    ///
+    /// # Returns
+    ///
+    /// The position, or `None` when the enumeration has no initial value.
+    pub fn initial(&self) -> Option<usize> { self.initial }
 
     /// The stem of the name: the name without a closing `များ`, the form the
     /// default arm of a switch writes.
@@ -299,12 +311,14 @@ static MADE: OnceLock<Mutex<HashMap<String, &'static EnumKind>>> = OnceLock::new
 /// The kind.
 pub fn make(
     name: &str, under: DataKind, members: Vec<(String, MemberValue)>,
+    initial: Option<usize>,
 ) -> &'static EnumKind
 {
     let mut parts = Vec::with_capacity(members.len());
-    for (n, v) in &members
+    for (at, (n, v)) in members.iter().enumerate()
     {
-        let mut part = format!("{n}=");
+        let mark = tern!(initial == Some(at), "!", "");
+        let mut part = format!("{mark}{n}=");
         v.encode(&mut part);
         parts.push(part);
     }
@@ -312,8 +326,8 @@ pub fn make(
     let made = MADE.get_or_init(Mutex::default);
     let mut made = made.lock().unwrap_or_else(PoisonError::into_inner);
     let fresh = || -> &'static EnumKind {
-        let kind =
-            EnumKind { name: name.to_string(), sig: sig.clone(), under, members };
+        #[rustfmt::skip]
+        let kind = EnumKind { name: name.to_string(), sig: sig.clone(), under, members, initial };
         Box::leak(Box::new(kind))
     };
     made.entry(sig.clone()).or_insert_with(fresh)
@@ -334,11 +348,13 @@ pub fn parse_sig(text: &str) -> Option<&'static EnumKind>
     let (listed, under) = inner.split_once(';')?;
     ret_if!(name.is_empty() || listed.is_empty(), None);
     let under = DataKind::parse(under)?;
-    let member = |part: &str| {
-        let (n, mut v) = part.split_once('=')?;
+    let parts: Vec<&str> = listed.split('|').collect();
+    let initial = parts.iter().position(|p| p.starts_with('!'));
+    let member = |part: &&str| {
+        let (n, mut v) = part.trim_start_matches('!').split_once('=')?;
         let value = MemberValue::decode(&mut v)?;
         v.is_empty().then(|| (n.to_string(), value))
     };
-    let members: Option<Vec<_>> = listed.split('|').map(member).collect();
-    Some(make(name, under, members?))
+    let members: Option<Vec<_>> = parts.iter().map(member).collect();
+    Some(make(name, under, members?, initial))
 }

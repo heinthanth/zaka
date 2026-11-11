@@ -8,9 +8,9 @@ fn flatten(node: &TreeNode) -> Vec<&TreeNode>
     std::iter::once(node).chain(node.children.iter().flat_map(flatten)).collect()
 }
 
-const TEXT: &str = "ကိန်းသေ အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။
+const TEXT: &str = "ကိန်းသေ အသက် သည် ၁၈ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အသက် + ၂ ကို ပြသပါ။
+အသက် + ၂ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
 
 #[test]
@@ -46,7 +46,7 @@ fn reads_name_their_slot_and_constants_show_their_value()
 #[test]
 fn trees_are_blank_when_lowering_is_skipped()
 {
-    let out = compile("က ကို ပြသပါ။", &Options::default());
+    let out = compile("က ကို ပြသမည်။", &Options::default());
     assert!(!out.lowered);
     assert!(out.ir_plain.children.is_empty() && out.ir_folded_sexpr.is_empty());
 }

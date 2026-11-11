@@ -52,6 +52,8 @@ impl Machine
 #[cfg(not(all(feature = "ffi", not(target_arch = "wasm32"))))]
 mod without_ffi
 {
+    use zakac_semcheck::kind::DataKind;
+
     use super::*;
     use crate::trap::TrapKind;
 
@@ -79,6 +81,70 @@ mod without_ffi
         {
             Err(TrapKind::ForeignCall { name: def.name.clone() })
         }
+
+        /// Pop the function value of a leave: this build gives C nothing to
+        /// call, so the leave changes nothing.
+        ///
+        /// # Arguments
+        ///
+        /// * `_kind` - The function kind.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, or the trap the pop hits.
+        pub(in crate::machine) fn c_leave(&mut self, _kind: DataKind) -> Step
+        {
+            self.pop().map(drop)
+        }
+
+        /// Pop the function value of the end of a leave, which changes
+        /// nothing in this build.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, or the trap the pop hits.
+        pub(in crate::machine) fn c_revoke(&mut self) -> Step { self.pop().map(drop) }
+
+        /// Stop the program: this build holds no struct of C to read.
+        ///
+        /// # Arguments
+        ///
+        /// * `_kind` - The kind of the field.
+        /// * `_offset` - Its offset.
+        ///
+        /// # Returns
+        ///
+        /// The trap.
+        pub(in crate::machine) fn c_load(
+            &mut self, _kind: DataKind, _offset: u32,
+        ) -> Step
+        {
+            Err(malformed("this build reads no struct of C"))
+        }
+
+        /// Stop the program: this build holds no struct of C to write.
+        ///
+        /// # Arguments
+        ///
+        /// * `_kind` - The kind of the field.
+        /// * `_offset` - Its offset.
+        ///
+        /// # Returns
+        ///
+        /// The trap.
+        pub(in crate::machine) fn c_store(
+            &mut self, _kind: DataKind, _offset: u32,
+        ) -> Step
+        {
+            Err(malformed("this build writes no struct of C"))
+        }
+
+        /// End each leave at the end of the run: this build gives none.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`.
+        pub(in crate::machine) fn end_leaves(&mut self) -> Step { Ok(()) }
     }
 }
 
@@ -92,6 +158,7 @@ mod with_ffi
     use std::ffi::c_void;
     use std::fmt;
     use std::sync::Arc;
+    use std::thread::ThreadId;
 
     use libffi::low::ffi_cif;
     use libffi::middle::Arg;
@@ -112,6 +179,7 @@ mod with_ffi
     use zakac_rust_sugars::ret_if;
     use zakac_rust_sugars::tern;
     use zakac_semcheck::fn_kind::FnKind;
+    use zakac_semcheck::foreign::is_c_handle_result;
     use zakac_semcheck::foreign::is_c_text_result;
     use zakac_semcheck::foreign::is_lib_path;
     use zakac_semcheck::kind::DataKind;
@@ -119,6 +187,7 @@ mod with_ffi
     use zakac_semcheck::kind::Width;
 
     use super::*;
+    use crate::mem::Origin;
     use crate::trap::TrapKind;
 
     /// The libs a run opened, and the native address of each C function of
@@ -145,14 +214,22 @@ mod with_ffi
     }
 
     /// The functions of the program C can call back: a libffi closure for
-    /// each function a call gave C, kept for the whole run, since a lib can
-    /// keep the address and call it later. A trap inside a callback cannot
-    /// cross C, so it waits here until C returns.
+    /// each function and each closure a call gave C, kept for the whole run,
+    /// since a lib can keep the address and call it later. The code of a
+    /// closure remains in place after its last use, so a late call from C stops
+    /// the program instead of running freed code. A trap inside a callback
+    /// cannot cross C, so it waits here until C returns.
     #[derive(Default)]
     pub(crate) struct Callbacks
     {
-        /// The closure of each function, under its index.
+        /// The libffi closure of each function, under its index.
         made: HashMap<u32, Callback>,
+        /// The libffi closure of each closure, under the octets of its
+        /// record: two values with the same function and the same captures
+        /// are one closure.
+        closures: HashMap<Vec<u8>, Callback>,
+        /// The closures lent to the C calls that run now, the latest last.
+        lent: Vec<&'static CallbackData>,
         /// The trap a callback hit, raised once C returns.
         trap: Option<TrapKind>,
     }
@@ -170,7 +247,8 @@ mod with_ffi
         /// since each closure runs the machine that made it.
         fn clone(&self) -> Self
         {
-            Callbacks { made: HashMap::new(), trap: self.trap.clone() }
+            let trap = self.trap.clone();
+            Callbacks { trap, ..Callbacks::default() }
         }
     }
 
@@ -185,8 +263,11 @@ mod with_ffi
     /// A function of the program that C can call.
     struct Callback
     {
-        /// The libffi closure, which lives as long as its code.
-        _closure: Closure<'static>,
+        /// The libffi closure. It is never freed, as its data is leaked: a lib
+        /// can keep the address past the run, and freeing libffi closures as
+        /// the VM drops crashed on macOS now and then. The C target keeps its
+        /// closures for the whole run too.
+        _closure: std::mem::ManuallyDrop<Closure<'static>>,
         /// What the closure needs when C calls it.
         data: &'static CallbackData,
         /// The native address C calls.
@@ -205,6 +286,28 @@ mod with_ffi
         params: Vec<DataKind>,
         /// The result kind.
         ret: Option<DataKind>,
+        /// The record a closure passes its thunk last; 0 for a function.
+        record: Shared<u64>,
+        /// The C calls that run now and got the closure.
+        calls: Shared<u32>,
+        /// Whether C has leave to call the closure after those calls.
+        kept: Shared<bool>,
+        /// The thread that runs the VM.
+        thread: ThreadId,
+    }
+
+    impl CallbackData
+    {
+        /// Whether C can call the function now: a function at all times, a
+        /// closure while a C call that got it runs or while C has leave.
+        ///
+        /// # Returns
+        ///
+        /// `true` when it can.
+        fn live(&self) -> bool
+        {
+            self.record.get() == 0 || self.kept.get() || self.calls.get() > 0
+        }
     }
 
     /// Octets aligned for each kind C passes, the storage of an argument or a
@@ -274,10 +377,12 @@ mod with_ffi
             // The zero-ended duplicates of the texts, which live until the call
             // ends.
             let mut texts = Vec::new();
+            let lent_from = self.callbacks.lent.len();
             let pairs = values.iter().zip(&kinds);
             let cells = pairs.map(|(v, k)| self.arg_cell(*v, *k, &mut texts));
-            let cells = cells.collect::<Result<Vec<Cell>, _>>()?;
-            let types = kinds.iter().map(|k| ffi_kind(*k, platform));
+            let cells = cells.collect::<Result<Vec<Cell>, _>>();
+            let cells = cells.inspect_err(|_| self.end_lends(lent_from))?;
+            let ffi_kinds = kinds.iter().map(|k| ffi_kind(*k, platform));
             let text_ret = def.ret.filter(|k| is_c_text_result(*k));
             let ret_kind = match def.ret
             {
@@ -289,8 +394,8 @@ mod with_ffi
             let fixed = def.params.len();
             let cif = tern!(
                 def.variadic,
-                Cif::new_variadic(types, fixed, ret_kind),
-                Cif::new(types, ret_kind)
+                Cif::new_variadic(ffi_kinds, fixed, ret_kind),
+                Cif::new(ffi_kinds, ret_kind)
             );
             let size = def.ret.map_or(0, |k| k.size(platform) as usize);
             let mut ret = Cell::zeros(size);
@@ -303,6 +408,7 @@ mod with_ffi
             unsafe {
                 cif.call_return_into(code, &args, Ret::new(ret.0.as_mut_slice()))
             };
+            self.end_lends(lent_from);
             flush_c(&linked);
             ret_if!(let Some(trap) = self.callbacks.trap.take(), Err(trap));
             if let (Some(kind), Some(slot)) = (text_ret, slot)
@@ -338,7 +444,7 @@ mod with_ffi
         ///
         /// # Arguments
         ///
-        /// * `kind` - The result kind, text or a failure.
+        /// * `kind` - The result kind, an optional of text.
         /// * `slot` - The address of the result.
         /// * `native` - The address C gave back.
         ///
@@ -403,7 +509,7 @@ mod with_ffi
                 let native = self.callback(v, f)?;
                 return Ok(Cell::of(&native.to_le_bytes()));
             }
-            if kind.is_textual()
+            if kind.is_text()
             {
                 let addr =
                     v.as_ptr().ok_or_else(|| malformed("foreign needs an address"))?;
@@ -426,9 +532,11 @@ mod with_ffi
             Ok(Cell::of(&raw))
         }
 
-        /// The native address C calls for a function value: none for `ဗလာ`,
-        /// and a libffi closure that runs the function in this machine,
-        /// made on the first call that gives it.
+        /// The native address C calls for a function value: none for the zero
+        /// word, and a libffi closure that runs the function in this
+        /// machine, made on the first call that gives it. A closure is
+        /// lent to the call: C can call it until the call returns, and
+        /// later while C has leave.
         ///
         /// # Arguments
         ///
@@ -437,17 +545,20 @@ mod with_ffi
         ///
         /// # Returns
         ///
-        /// The address, or `ClosureEscape` for a closure, which C cannot keep
-        /// alive.
+        /// The address, or the trap a read of the record hits.
         fn callback(&mut self, v: Value, f: &FnKind) -> Result<usize, TrapKind>
         {
             let word =
                 v.as_ptr().ok_or_else(|| malformed("foreign needs a function"))?;
             ret_if!(word == 0, Ok(0));
-            ret_if!(
-                self.mem.closure_record(word).is_some(),
-                Err(TrapKind::ClosureEscape)
-            );
+            if let Some((record, kind)) = self.record_of(word)?
+            {
+                let (data, code) = self.closure_callback(record, kind, f)?;
+                data.calls.set(data.calls.get() + 1);
+                do_if!(!data.kept.get(), data.record.set(record));
+                self.callbacks.lent.push(data);
+                return Ok(code);
+            }
             let func = u32::try_from(word - 1).map_err(|_| malformed("no function"))?;
             let me: *mut Machine = self;
             if let Some(made) = self.callbacks.made.get(&func)
@@ -455,6 +566,60 @@ mod with_ffi
                 made.data.machine.set(me);
                 return Ok(made.code);
             }
+            let made = self.new_callback(func, 0, f);
+            let code = made.code;
+            self.callbacks.made.insert(func, made);
+            Ok(code)
+        }
+
+        /// The libffi closure of a closure, made on its first use: one for
+        /// each function and set of captures.
+        ///
+        /// # Arguments
+        ///
+        /// * `record` - The record of the closure.
+        /// * `kind` - The kind of the record.
+        /// * `f` - The function kind.
+        ///
+        /// # Returns
+        ///
+        /// What the libffi closure reads and the native address, or the trap
+        /// a read of the record hits.
+        fn closure_callback(
+            &mut self, record: u64, kind: DataKind, f: &FnKind,
+        ) -> Result<(&'static CallbackData, usize), TrapKind>
+        {
+            let size = u64::from(kind.size(self.module.platform_bits));
+            let raw = self.mem.octets(record, size)?;
+            let me: *mut Machine = self;
+            if let Some(made) = self.callbacks.closures.get(&raw)
+            {
+                made.data.machine.set(me);
+                return Ok((made.data, made.code));
+            }
+            let thunk = self.mem.thunk_word(record)?.saturating_sub(1);
+            let func = u32::try_from(thunk).map_err(|_| malformed("no thunk"))?;
+            let made = self.new_callback(func, record, f);
+            let found = (made.data, made.code);
+            self.callbacks.closures.insert(raw, made);
+            Ok(found)
+        }
+
+        /// A libffi closure that runs a function of the program in this
+        /// machine; its data lives for the run.
+        ///
+        /// # Arguments
+        ///
+        /// * `func` - The function, or the thunk of a closure.
+        /// * `record` - The record of a closure, 0 for a function.
+        /// * `f` - The function kind.
+        ///
+        /// # Returns
+        ///
+        /// The closure.
+        fn new_callback(&mut self, func: u32, record: u64, f: &FnKind) -> Callback
+        {
+            let me: *mut Machine = self;
             let platform = self.module.platform_bits;
             let (params, ret) = fn_shape(f);
             let shapes = params.iter().map(|k| ffi_kind(*k, platform));
@@ -463,14 +628,193 @@ mod with_ffi
                 ret.map_or_else(Type::void, |k| ffi_kind(k, platform)),
             );
             #[rustfmt::skip]
-            let data = CallbackData { machine: Shared::new(me), func, params, ret };
-            // The data lives for the run; one for each function C gets.
+            let data = CallbackData {
+                machine: Shared::new(me), func, params, ret, record: Shared::new(record),
+                calls: Shared::new(0), kept: Shared::new(false),
+                thread: std::thread::current().id(),
+            };
             let data: &'static CallbackData = Box::leak(Box::new(data));
             let closure = Closure::new(cif, call_back, data);
             let code = *closure.code_ptr() as usize;
-            let made = Callback { _closure: closure, data, code };
-            self.callbacks.made.insert(func, made);
-            Ok(code)
+            Callback { _closure: std::mem::ManuallyDrop::new(closure), data, code }
+        }
+
+        /// End the lends of the closures a C call got, once it returns.
+        ///
+        /// # Arguments
+        ///
+        /// * `from` - The count of lends that ran before the call.
+        fn end_lends(&mut self, from: usize)
+        {
+            let ended = self.callbacks.lent.drain(from..);
+            ended.for_each(|d| d.calls.set(d.calls.get().saturating_sub(1)));
+        }
+
+        /// Run the op `c_leave`: pop a function value and give C leave to
+        /// call it after the call that gave it. The leave holds a count of
+        /// the record, so its captures live while C can call it. A function
+        /// with no captures, the zero word and a closure with leave are left
+        /// alone.
+        ///
+        /// # Arguments
+        ///
+        /// * `kind` - The function kind.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, or the trap a read of the record hits.
+        pub(in crate::machine) fn c_leave(&mut self, kind: DataKind) -> Step
+        {
+            let word = self.pop_ptr("c_leave")?;
+            let Some((record, rkind)) = self.record_of(word)?
+            else
+            {
+                return Ok(());
+            };
+            let f =
+                kind.as_fn().ok_or_else(|| malformed("c_leave needs a function"))?;
+            let (data, _) = self.closure_callback(record, rkind, f)?;
+            ret_if!(data.kept.get(), Ok(()));
+            self.mem.retain(record)?;
+            data.kept.set(true);
+            data.record.set(record);
+            Ok(())
+        }
+
+        /// Run the op `c_load`: read a field of a struct C keeps, at the
+        /// address a handle holds plus an offset. A number or a boolean is
+        /// pushed; a counted list is copied into the block under the address,
+        /// and so is the string a `char *` field points at, as text or a
+        /// optional with no data for NULL.
+        ///
+        /// # Arguments
+        ///
+        /// * `kind` - The kind of the field.
+        /// * `offset` - Its offset.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, or the trap a write of the block hits.
+        pub(in crate::machine) fn c_load(&mut self, kind: DataKind, offset: u32)
+        -> Step
+        {
+            let base = self.pop_ptr("c_load")?;
+            let native = (base as usize).wrapping_add(offset as usize);
+            if is_c_text_result(kind)
+            {
+                let slot = self.pop_ptr("c_load")?;
+                // SAFETY: the declaration gives the field a `char *`, and the
+                // handle is open, as the guard before the read checks.
+                let string =
+                    unsafe { std::ptr::read_unaligned(native as *const usize) };
+                self.text_from_c(kind, slot, string)?;
+                return self.push(Value::Ptr(slot));
+            }
+            let size = kind.size(self.module.platform_bits) as usize;
+            // SAFETY: the declaration names the fields of the C struct from
+            // its start, and the handle is open, as the guard checks.
+            let raw = unsafe { std::slice::from_raw_parts(native as *const u8, size) }
+                .to_vec();
+            if kind.is_aggregate()
+            {
+                let slot = self.pop_ptr("c_load")?;
+                self.mem.write_octets(slot, &raw)?;
+                return self.push(Value::Ptr(slot));
+            }
+            let platform = self.module.platform_bits;
+            let value = from_raw(kind, &raw, platform);
+            self.push(value.map_err(|_| malformed("C gave a value of no kind"))?)
+        }
+
+        /// Run the op `c_store`: write a field of a struct C keeps, at the
+        /// address a handle holds plus an offset, from a number or a boolean
+        /// on the stack, or from the block a counted list holds.
+        ///
+        /// # Arguments
+        ///
+        /// * `kind` - The kind of the field.
+        /// * `offset` - Its offset.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, or the trap a read of the list hits.
+        pub(in crate::machine) fn c_store(
+            &mut self, kind: DataKind, offset: u32,
+        ) -> Step
+        {
+            let platform = self.module.platform_bits;
+            let size = kind.size(platform) as usize;
+            let value = self.pop()?;
+            let raw = match kind.is_aggregate()
+            {
+                true =>
+                {
+                    let at = value
+                        .as_ptr()
+                        .ok_or_else(|| malformed("c_store needs a list"))?;
+                    self.mem.octets(at, size as u64)?
+                }
+                false => to_raw(value, platform),
+            };
+            let base = self.pop_ptr("c_store")?;
+            let native = (base as usize).wrapping_add(offset as usize);
+            let n = raw.len().min(size);
+            // SAFETY: the declaration names the fields of the C struct from
+            // its start, the handle is open, as the guard checks, and marked
+            // code writes the field.
+            unsafe {
+                std::ptr::copy_nonoverlapping(raw.as_ptr(), native as *mut u8, n)
+            };
+            Ok(())
+        }
+
+        /// End each leave left when the run ends, as `c_revoke` would: C can
+        /// call nothing more, and the records the leaves hold go back.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, or the trap a read or a free hits.
+        pub(in crate::machine) fn end_leaves(&mut self) -> Step
+        {
+            let held = self.callbacks.closures.values().map(|made| made.data);
+            let kept: Vec<&'static CallbackData> =
+                held.filter(|d| d.kept.get()).collect();
+            for data in kept
+            {
+                data.kept.set(false);
+                let record = data.record.get();
+                let kind = self.record_of(record)?.map(|(_, k)| k);
+                let kind = kind.ok_or_else(|| malformed("a leave holds no record"))?;
+                self.release_record(record, kind)?;
+            }
+            Ok(())
+        }
+
+        /// Run the op `c_revoke`: pop a function value and end the leave
+        /// `c_leave` gave it, letting go of the count of its record. A value
+        /// with no leave is left alone.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, or the trap a read or a free hits.
+        pub(in crate::machine) fn c_revoke(&mut self) -> Step
+        {
+            let word = self.pop_ptr("c_revoke")?;
+            let Some((record, kind)) = self.record_of(word)?
+            else
+            {
+                return Ok(());
+            };
+            let size = u64::from(kind.size(self.module.platform_bits));
+            let raw = self.mem.octets(record, size)?;
+            let data = self.callbacks.closures.get(&raw).map(|made| made.data);
+            let Some(data) = data.filter(|d| d.kept.get())
+            else
+            {
+                return Ok(());
+            };
+            data.kept.set(false);
+            self.release_record(data.record.get(), kind)
         }
 
         /// Run a function of the program for C, to its return: push the
@@ -506,6 +850,176 @@ mod with_ffi
                 return None;
             }
             tern!(gives, self.stack.pop(), None)
+        }
+
+        /// The value of an argument C passes to a callback, from its native
+        /// octets. A number, a boolean or an address is read as it is. A
+        /// struct, text and a handle become a value of the VM in a block of
+        /// its own; the argument is the address of a lent duplicate of it, as
+        /// each call passes, so a drop in the callback frees nothing. Both
+        /// blocks are noted in `temps`, the duplicate as `ptr`, and dropped
+        /// once the callback returns: a `char *` is
+        /// copied into text, and a struct address C keeps becomes a new
+        /// handle. NULL is an optional with no data, a handle that reads as
+        /// closed, or, for plain text, `NullText`.
+        ///
+        /// # Arguments
+        ///
+        /// * `kind` - The parameter kind.
+        /// * `at` - The address of the argument.
+        /// * `temps` - The blocks made for the arguments, added to.
+        ///
+        /// # Returns
+        ///
+        /// The value, or the trap the read hits.
+        fn callback_arg(
+            &mut self, kind: DataKind, at: *const u8, temps: &mut Vec<(u64, DataKind)>,
+        ) -> Result<Value, TrapKind>
+        {
+            let platform = self.module.platform_bits;
+            let size = kind.size(platform) as usize;
+            let word = size_of::<usize>();
+            // A result and an optional are structs of Zaka, never C structs.
+            let plain = kind.is_struct() && kind.fallible_parts().is_none();
+            let made = plain || kind.is_text() || kind.as_external().is_some();
+            // SAFETY: libffi passes the address of the argument, of its kind;
+            // a pointer argument is one word.
+            let read = |n: usize| unsafe { std::slice::from_raw_parts(at, n) }.to_vec();
+            if !made && !is_c_text_result(kind) && !is_c_handle_result(kind)
+            {
+                let mut raw = read(size);
+                self.to_vm(kind, &mut raw, 0);
+                return from_raw(kind, &raw, platform)
+                    .map_err(|_| malformed("C gave a value of no kind"));
+            }
+            let raw = read(tern!(plain, size, word));
+            let slot = self.mem.alloc(size as u64, Origin::Heap, 0);
+            let slot = slot.ok_or(TrapKind::OutOfMem { size: size as u64 })?;
+            temps.push((slot, kind));
+            let native = read_word(&raw, 0);
+            match kind
+            {
+                _ if plain =>
+                {
+                    let mut raw = raw;
+                    self.to_vm(kind, &mut raw, 0);
+                    self.mem.write_octets(slot, &raw)?;
+                }
+                _ if is_c_text_result(kind) => self.text_from_c(kind, slot, native)?,
+                _ if kind.is_text() => self.text_arg(slot, native)?,
+                _ if kind.as_external().is_some() =>
+                {
+                    self.handle_arg(slot, kind, native)?
+                }
+                _ => self.optional_handle_arg(slot, kind, native)?,
+            }
+            // The callback gets a lent duplicate, as each call does, so its
+            // drop frees nothing; the slot above keeps the blocks.
+            let lent = self.mem.alloc(size as u64, Origin::Heap, 0);
+            let lent = lent.ok_or(TrapKind::OutOfMem { size: size as u64 })?;
+            temps.push((lent, DataKind::OPAQUE));
+            self.mem.blit(lent, slot, kind)?;
+            self.lend_value(lent, kind)?;
+            Ok(Value::Ptr(lent))
+        }
+
+        /// Write the text a `char *` C passed into a slot; NULL stops the run.
+        ///
+        /// # Arguments
+        ///
+        /// * `slot` - Where the text goes.
+        /// * `native` - The address C passed.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, `NullText`, or `BadUtf8` for octets that are not UTF-8.
+        fn text_arg(&mut self, slot: u64, native: usize) -> Step
+        {
+            ret_if!(native == 0, Err(TrapKind::NullText));
+            // SAFETY: C passes a string that ends in a zero octet, as the
+            // function kind declares; C itself must keep to that, as in C.
+            let octets = unsafe { std::ffi::CStr::from_ptr(native as *const c_char) };
+            let text = std::str::from_utf8(octets.to_bytes()).map_err(|e| {
+                TrapKind::BadUtf8 { addr: (native + e.valid_up_to()) as u64 }
+            })?;
+            self.place_text(slot, text)
+        }
+
+        /// Write a new handle around an address C passed into a slot: a box
+        /// whose one field holds the address. NULL stops the run: the
+        /// parameter promised a handle, and an optional takes NULL.
+        ///
+        /// # Arguments
+        ///
+        /// * `slot` - Where the handle goes.
+        /// * `kind` - The handle kind.
+        /// * `native` - The address C passed.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, `NullText` for NULL, or `OutOfMem`.
+        fn handle_arg(&mut self, slot: u64, kind: DataKind, native: usize) -> Step
+        {
+            ret_if!(native == 0, Err(TrapKind::NullText));
+            let shape = kind.as_external().ok_or_else(|| malformed("a handle"))?;
+            let cell = DataKind::Struct(shape);
+            let size = u64::from(cell.size(self.module.platform_bits));
+            let block = self.mem.alloc(size, Origin::Heap, 0);
+            let block = block.ok_or(TrapKind::OutOfMem { size })?;
+            self.mem.set_kind(block, cell);
+            self.mem.store(block, Value::Ptr(native as u64))?;
+            self.write_text(slot, block, 1, 1)
+        }
+
+        /// Write an optional of a handle C passed into a slot: no data for
+        /// NULL, else a new handle around the address.
+        ///
+        /// # Arguments
+        ///
+        /// * `slot` - Where the optional goes.
+        /// * `kind` - The optional kind.
+        /// * `native` - The address C passed.
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, or `OutOfMem`.
+        fn optional_handle_arg(
+            &mut self, slot: u64, kind: DataKind, native: usize,
+        ) -> Step
+        {
+            let platform = self.module.platform_bits;
+            let blank = vec![0; kind.size(platform) as usize];
+            self.mem.write_octets(slot, &blank)?;
+            ret_if!(native == 0, Ok(()));
+            let s =
+                kind.as_struct().ok_or_else(|| malformed("an optional is a struct"))?;
+            let handle = s
+                .fields()
+                .get(1)
+                .map(|(_, k)| *k)
+                .ok_or_else(|| malformed("no data field"))?;
+            let tag = IntKind::new(false, Width::Bits(8));
+            self.mem.store(slot, Value::int(tag, 1, platform))?;
+            self.handle_arg(slot + u64::from(s.offset(1, platform)), handle, native)
+        }
+
+        /// Drop the blocks a callback got for its arguments, once it returns:
+        /// a value the callback kept holds its own count, so the block it
+        /// shares remains.
+        ///
+        /// # Arguments
+        ///
+        /// * `temps` - The blocks and their kinds.
+        fn drop_temps(&mut self, temps: Vec<(u64, DataKind)>)
+        {
+            for (slot, kind) in temps
+            {
+                // A lent duplicate, noted as `ptr`, holds nothing to drop.
+                let lent = kind == DataKind::OPAQUE;
+                let held = tern!(lent, Ok(()), self.drop_value(slot, kind));
+                let dropped = held.and_then(|()| self.mem.free(slot));
+                do_if!(let Err(trap) = dropped, _ = self.callbacks.trap.get_or_insert(trap));
+            }
         }
 
         /// The octets of text or a text view: its first word is the address of
@@ -578,32 +1092,47 @@ mod with_ffi
     )
     {
         *result = 0;
+        if std::thread::current().id() != data.thread
+        {
+            eprintln!("{}", t!("vm.callback_thread"));
+            std::process::abort();
+        }
         // SAFETY: the machine runs the call of C that runs this callback,
         // and does nothing else until C returns.
         let machine = unsafe { &mut *data.machine.get() };
+        if !data.live()
+        {
+            machine.callbacks.trap.get_or_insert(TrapKind::ClosureEscape);
+            return;
+        }
         let platform = machine.module.platform_bits;
-        let read = |(i, kind): (usize, &DataKind)| {
-            let size = kind.size(platform) as usize;
+        let mut temps = Vec::new();
+        let mut read = |(i, kind): (usize, &DataKind)| {
             // SAFETY: libffi passes the address of each argument, of the kind
             // the closure was made with.
             let at = unsafe { *args.add(i) }.cast::<u8>();
-            // SAFETY: as above.
-            let mut raw = unsafe { std::slice::from_raw_parts(at, size) }.to_vec();
-            machine.to_vm(*kind, &mut raw, 0);
-            from_raw(*kind, &raw, platform).ok()
+            machine.callback_arg(*kind, at, &mut temps)
         };
-        let values: Option<Vec<Value>> =
-            data.params.iter().enumerate().map(read).collect();
-        let Some(values) = values
-        else
+        let values: Result<Vec<Value>, TrapKind> =
+            data.params.iter().enumerate().map(&mut read).collect();
+        // A closure's thunk takes its record after the declared parameters.
+        let record = data.record.get();
+        let values = values.map(|mut v| {
+            do_if!(record != 0, v.push(Value::Ptr(record)));
+            v
+        });
+        let values = match values
         {
-            machine
-                .callbacks
-                .trap
-                .get_or_insert(malformed("C gave a value of no kind"));
-            return;
+            Ok(values) => values,
+            Err(trap) =>
+            {
+                machine.callbacks.trap.get_or_insert(trap);
+                machine.drop_temps(temps);
+                return;
+            }
         };
         let out = machine.run_callback(data.func, values, data.ret.is_some());
+        machine.drop_temps(temps);
         let Some((value, kind)) = out.zip(data.ret)
         else
         {

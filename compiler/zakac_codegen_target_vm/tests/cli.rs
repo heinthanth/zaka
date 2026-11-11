@@ -6,12 +6,12 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
 use zakac_codegen_target_vm::cli::ZakacTargetVm;
 use zakac_codegen_target_vm::listing::LISTING_HEADER;
-use zakac_parser::wrap::in_start_block;
+use zakac_semcheck::mark::in_marked_code;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 
 const TEXT_HEADER: &str = "# zakac-codegen-artifact v1\n";
 
-const SUM: &str = "(၂ + ၃) * ၄ ကို ပြသပါ။";
+const SUM: &str = "(၂ + ၃) * ၄ ကို ပြသမည်။";
 
 /// Run the command with arguments and stdin.
 fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
@@ -20,7 +20,7 @@ fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
     argv.extend(args.iter().map(|arg| (*arg).to_string()));
 
     let command = ZakacTargetVm::create_as_standalone();
-    let mut stdin = Cursor::new(in_start_block(stdin));
+    let mut stdin = Cursor::new(in_marked_code(stdin));
     let mut stdout = Buffer::no_color();
     let mut stderr = Buffer::no_color();
     let mut io = CommandIO::builder()
@@ -71,7 +71,7 @@ fn fold_none_keeps_the_operations()
 #[test]
 fn check_errors_leave_no_module()
 {
-    let (code, stdout, stderr) = run_cli(&[], "က ကို ပြသပါ။");
+    let (code, stdout, stderr) = run_cli(&[], "က ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Failure);
     assert!(stdout.contains("module: null"), "{stdout}");
     assert!(stderr.starts_with("error[ZK0301]"), "{stderr}");

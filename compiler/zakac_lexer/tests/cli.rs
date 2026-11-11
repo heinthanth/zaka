@@ -43,7 +43,7 @@ fn sample(name: &str) -> String
 #[test]
 fn lex_stdin_without_input()
 {
-    let (code, stdout, stderr) = run_cli(&[], "အသက် ကို ပြသပါ။");
+    let (code, stdout, stderr) = run_cli(&[], "အသက် ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Success);
     assert!(stdout.starts_with(TEXT_HEADER));
     assert!(stdout.contains("kw: print"));

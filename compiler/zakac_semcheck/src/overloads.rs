@@ -3,7 +3,7 @@
 //! and the n-th becomes `<name>#<n>`. Once the check has chosen the function
 //! of each call, the program is written over: each declaration and each call
 //! takes the inner name, and an import of a name lists the inner names of the
-//! other functions of that name, so the IR builder, the ownership check and
+//! other functions of that name, so the IR builder, the checker and
 //! codegen see one function for each name.
 
 use std::collections::HashMap;

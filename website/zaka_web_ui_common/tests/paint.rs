@@ -20,7 +20,7 @@ fn classes(source: &str) -> Vec<&'static str>
 #[test]
 fn the_pieces_cover_the_text()
 {
-    let source = "၆ * ၇ ကို ပြသပါ။\n// မှတ်ချက်\n";
+    let source = "၆ * ၇ ကို ပြသမည်။\n// မှတ်ချက်\n";
     let joined: String = paint(source).iter().map(|p| p.text.as_str()).collect();
     assert_eq!(joined, source);
 }
@@ -28,7 +28,7 @@ fn the_pieces_cover_the_text()
 #[test]
 fn words_take_the_color_of_their_role()
 {
-    let found = classes("၆ * ၇ ကို ပြသပါ။");
+    let found = classes("၆ * ၇ ကို ပြသမည်။");
     let roles =
         ["tok-number", "tok-op", "tok-number", "tok-particle", "tok-verb", "tok-delim"];
     assert_eq!(found, roles);

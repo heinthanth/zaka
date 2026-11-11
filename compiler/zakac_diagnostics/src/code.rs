@@ -69,6 +69,8 @@ BadCharLength = ("ZK0107", Level::Error),
 UnterminatedRawIdentifier = ("ZK0108", Level::Error),
 /// A raw identifier has nothing between its backticks.
 BlankRawIdentifier = ("ZK0109", Level::Error),
+/// A statement verb ends in `ပါ`; statements end in `မည်`.
+OldEnding = ("ZK0110", Level::Error),
 
 // parser: ZK02xx
 /// A token does not fit the grammar at this point.
@@ -133,8 +135,6 @@ ImportNotFirst = ("ZK0230", Level::Error),
 CircularImport = ("ZK0231", Level::Error),
 /// A program that was not read from a file has an import.
 ImportNeedsFile = ("ZK0232", Level::Error),
-/// A count prefix pairs with the `စာရင်း` of a slice kind.
-SliceCount = ("ZK0233", Level::Error),
 /// A declared kind has no `တစ်<classifier>` after it.
 DeclNeedsClassifier = ("ZK0234", Level::Error),
 /// An enumeration is declared inside a block.
@@ -149,6 +149,11 @@ UnknownStdModule = ("ZK0238", Level::Error),
 FnKindNeedsParens = ("ZK0239", Level::Error),
 /// A kind alias is declared inside a block.
 NestedAlias = ("ZK0240", Level::Error),
+/// The mark string of a parameter is not one word a mark can be.
+BadMark = ("ZK0241", Level::Error),
+/// `ဒေတာ ထည့်ပေးရန်` on a parameter of a function kind, where a call through
+/// the value cannot know the place is filled.
+FillInFnKind = ("ZK0243", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -227,15 +232,8 @@ AliasLoop = ("ZK0336", Level::Error),
 NotACName = ("ZK0337", Level::Error),
 /// Two C functions of one name have different parameter or result kinds.
 CNameTwice = ("ZK0338", Level::Error),
-/// A nested function names a local of a function around it, or a nested
-/// function with captures, that its capture list leaves out.
-CaptureUnlisted = ("ZK0339", Level::Error),
-/// A capture list names what is no local of a function around it and no
-/// nested function with captures.
-CaptureNotLocal = ("ZK0340", Level::Error),
-/// A capture list names a local that the statements of the function never
-/// use.
-CaptureUnused = ("ZK0341", Level::Warning),
+/// A function with a result can reach the end of its block with no return.
+EndWithoutReturn = ("ZK0339", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.
@@ -280,24 +278,16 @@ BlankListKind = ("ZK0420", Level::Error),
 NotAList = ("ZK0422", Level::Error),
 /// A cell number is no integer.
 CellNumberNotInt = ("ZK0423", Level::Error),
-/// A function gives back a list of borrows as its result.
-BorrowListResult = ("ZK0424", Level::Error),
 /// A list kind is too large for the machine.
 ListTooLarge = ("ZK0425", Level::Error),
 /// A field is read from a value that is no struct.
 NotAStruct = ("ZK0426", Level::Error),
 /// A struct holds itself, other than through an address.
 StructHoldsItself = ("ZK0427", Level::Error),
-/// The cells of a slice kind hold borrows.
-SliceOfBorrows = ("ZK0428", Level::Error),
 /// A cell of text is written.
 TextCellWrite = ("ZK0429", Level::Error),
 /// A declaration with no kind has a value that gives none.
 KindNotInferred = ("ZK0430", Level::Error),
-/// An argument for a parameter the function can change lacks the mark.
-EditMarkMissing = ("ZK0431", Level::Error),
-/// An argument for a parameter the function cannot change takes the mark.
-EditMarkExtra = ("ZK0432", Level::Error),
 /// A place a call changes through one argument appears in another.
 EditShared = ("ZK0433", Level::Error),
 /// An each loop walks a value it cannot walk.
@@ -306,8 +296,6 @@ EachSourceWrong = ("ZK0434", Level::Error),
 BracketsOnCountedList = ("ZK0436", Level::Error),
 /// An add or a remove statement changes a value that cannot grow or shrink.
 ListCannotGrow = ("ZK0437", Level::Error),
-/// A character write or an add changes a view of text.
-TextCannotChange = ("ZK0438", Level::Error),
 /// `၏ အရှေ့တွင်` follows a value that is no cell of a list and no character
 /// of text.
 InsertNotAtCell = ("ZK0439", Level::Error),
@@ -341,15 +329,9 @@ NoFaultValue = ("ZK0450", Level::Error),
 /// `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` in a function whose failure holds
 /// an error value.
 FaultValueMissing = ("ZK0451", Level::Error),
-/// An error value is given back from a function whose failure holds none.
-FaultValueExtra = ("ZK0452", Level::Error),
 /// A conversion reads the part of a result that the code before it proves
 /// the result does not hold.
 WrongPartProven = ("ZK0454", Level::Error),
-/// A return gives back a value with the word of the other sort of function:
-/// `ရလဒ်အဖြစ်` in a function that can fail, or `ရလဒ်ကောင်းအဖြစ်` in one
-/// that cannot.
-GoodReturnWord = ("ZK0455", Level::Error),
 /// The value of an enumeration member does not work out when the program
 /// compiles.
 MemberValue = ("ZK0456", Level::Error),
@@ -371,10 +353,46 @@ FnAddrUnclear = ("ZK0463", Level::Error),
 ExternalFnAddr = ("ZK0464", Level::Error),
 /// A parameter or the result of a C function has a kind C cannot take.
 KindNotAcrossC = ("ZK0465", Level::Error),
-/// A parameter of a C function carries the edit mark.
+/// A parameter of a C function is marked `ဒေတာ ပြောင်းလဲရန်`.
 EditAcrossC = ("ZK0466", Level::Error),
 /// `အပိုင်အနေဖြင့်` on a result that is no text from a C function.
 OwnedNotCText = ("ZK0467", Level::Error),
+/// An operation that works with pointers stands outside marked code.
+UnsafeOutside = ("ZK0468", Level::Error),
+/// A function marked `စိတ်မချရသော` is taken as a value.
+UnsafeFnValue = ("ZK0469", Level::Error),
+/// `အပိုင်အနေဖြင့်` stands on a parameter or result that is no pointer.
+OwnedNotPtr = ("ZK0470", Level::Error),
+/// Marked code where `--no-unsafe` refuses it.
+UnsafeRefused = ("ZK0471", Level::Error),
+/// A C function with a pointer in its kinds, or a result that can be NULL,
+/// is not marked `စိတ်မချရသော`.
+ForeignNeedsMark = ("ZK0472", Level::Error),
+/// A value of a kind from outside the program is made, copied or printed
+/// in Zaka.
+HandleInZaka = ("ZK0473", Level::Error),
+/// A field of a struct a handle points at is written; C owns it.
+CFieldWrite = ("ZK0474", Level::Error),
+/// A test for data on a result, or for a good side on an optional.
+TestWordMismatch = ("ZK0475", Level::Error),
+/// An error value where no result kind with an error side is wanted.
+FaultNeedsResult = ("ZK0476", Level::Error),
+NoDataNeedsOptional = ("ZK0477", Level::Error),
+/// `ကနဦးတန်ဖိုး` where no kind can be worked out from its place.
+InitialNeedsKind = ("ZK0478", Level::Error),
+/// `ကနဦးတန်ဖိုး` for a kind that has none: a function value, a handle, an
+/// enumeration with no member marked, or a kind that holds one of them.
+NoInitialValue = ("ZK0479", Level::Error),
+/// Two members of one enumeration marked `ကနဦးတန်ဖိုး`.
+TwoInitialMembers = ("ZK0480", Level::Error),
+/// A kind no program can build: its fields hold it again, with no optional
+/// field or plain list on the loop to end the chain.
+KindNeverBuilt = ("ZK0481", Level::Error),
+/// A struct literal that leaves out a field: no field takes a hidden default.
+FieldLeftOut = ("ZK0482", Level::Error),
+/// A global of a module declared with no value: a module has no start block
+/// to set it in.
+ModuleGlobalNeedsValue = ("ZK0483", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.
@@ -416,55 +434,40 @@ RangeCutsChar = ("ZK0607", Level::Error),
 // ownership: ZK07xx
 /// A name is used after its block moved to another owner.
 MovedOut = ("ZK0701", Level::Error),
-/// A borrowed address is freed or resized.
-FreedBorrow = ("ZK0702", Level::Error),
+/// A pointer to a variable, not to a heap block, is freed or resized.
+BadFree = ("ZK0702", Level::Error),
 /// A borrowed address is stored where it could outlast its owner.
 BorrowStored = ("ZK0703", Level::Error),
 /// An owner changes its block while a borrow of it is still used.
 InvalidatedLoan = ("ZK0704", Level::Error),
-/// The address of a borrowed address is taken.
-BorrowOfBorrow = ("ZK0705", Level::Error),
 /// A function returns a borrow of one of its locals.
 LocalBorrowReturned = ("ZK0706", Level::Error),
 /// A call frees through one argument while another reaches the same block.
 AliasedArgument = ("ZK0707", Level::Error),
 /// An owner goes out of scope without its block freed or moved.
 BlockLeaked = ("ZK0708", Level::Error),
-/// A name known to hold ဗလာ is dereferenced.
+/// A name known to hold the null address is dereferenced.
 NullDeref = ("ZK0709", Level::Error),
 /// A constant offset is past the end of its block.
 OffsetPastEnd = ("ZK0710", Level::Error),
-/// A name that can hold ဗလာ is dereferenced without a check.
+/// A name that can hold the null address is dereferenced without a check.
 NullDerefPossible = ("ZK0711", Level::Warning),
 /// Pointers into different blocks are subtracted.
 MixedBlocks = ("ZK0712", Level::Error),
-/// A borrow marker sits where none is allowed.
-BadBorrowMarker = ("ZK0713", Level::Error),
-/// A borrowed address is given where an owner is wanted.
-BorrowForOwner = ("ZK0714", Level::Error),
-/// An owner is given where a borrow is wanted and would move.
-OwnerForBorrow = ("ZK0715", Level::Error),
-/// A raw address is lent.
-LendOfRaw = ("ZK0716", Level::Error),
-/// A raw address is used though raw addresses are turned off.
-RawNotAllowed = ("ZK0717", Level::Error),
-/// A struct field holds a borrow.
-BorrowField = ("ZK0718", Level::Error),
 /// With `--overflow stop`, an integer operation overflows for each value
 /// its operands can hold.
 OverflowProven = ("ZK0719", Level::Warning),
-/// With `--warn-duplicates`, a statement duplicates the text or the list of a
-/// place.
-DuplicateMade = ("ZK0720", Level::Warning),
 /// The two ranges of a `ကူးယူမည်` overlap for certain.
 BlitRangesOverlap = ("ZK0721", Level::Error),
-/// The address of a function that borrows the locals around it goes where
-/// it could outlive them.
-ClosureEscapes = ("ZK0722", Level::Error),
-/// The address of a nested function with captures goes to a C function.
-ClosureToC = ("ZK0723", Level::Error),
-/// A closure that owns a block is duplicated.
-ClosureOwnerDup = ("ZK0724", Level::Error),
+/// A read of a variable, a field or a cell that can be unset on a path to it.
+ReadUnset = ("ZK0722", Level::Error),
+/// A read of a cell the check cannot prove set: a cell was written, or is
+/// read, at a position the check does not know.
+ReadUnsetDoubt = ("ZK0723", Level::Warning),
+/// A call of a function that reads a global that can be unset at the call.
+GlobalUnsetAtCall = ("ZK0724", Level::Error),
+/// A return that can leave a parameter marked `ဒေတာ ထည့်ပေးရန်` unset.
+FillUnsetAtReturn = ("ZK0725", Level::Error),
 // targets: ZK08xx
 /// A kind the C target cannot build: `f16` or `f128`.
 KindNotForC = ("ZK0801", Level::Error) }

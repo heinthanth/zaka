@@ -2,6 +2,7 @@ pub mod check;
 #[cfg(feature = "server")]
 pub mod cli;
 pub mod complete;
+pub mod hints;
 pub mod hover;
 pub mod lines;
 pub mod names;

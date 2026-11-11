@@ -7,9 +7,9 @@ use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
 use zakac_codegen_target_vm::cli::ZakacTargetVm;
-use zakac_parser::wrap::in_start_block;
+use zakac_semcheck::mark::in_marked_code;
 
-const SUM: &str = "(၂ + ၃) * ၄ ကို ပြသပါ။\n\"ပြီး\" ဟု ပြသပါ။";
+const SUM: &str = "(၂ + ၃) * ၄ ကို ပြသမည်။\n\"ပြီး\" ဟု ပြသမည်။";
 
 /// Run a command with arguments and stdin.
 fn run_cmd(
@@ -39,7 +39,7 @@ fn run_vm(args: &[&str], stdin: &str) -> (ExitCode, String, String)
         ZakaVm::create_as_standalone(),
         ZakaVm::standalone_name(),
         args,
-        in_start_block(stdin).as_bytes(),
+        in_marked_code(stdin).as_bytes(),
     )
 }
 
@@ -65,7 +65,7 @@ fn codegen_artifacts_run_raw_or_text()
             codegen,
             name,
             &["-o", path.to_str().unwrap()],
-            in_start_block(SUM).as_bytes(),
+            in_marked_code(SUM).as_bytes(),
         );
         assert_eq!(code, ExitCode::Success);
         let (code, stdout, stderr) = run_vm(&[path.to_str().unwrap()], "");
@@ -85,7 +85,7 @@ fn codegen_artifacts_run_raw_or_text()
 #[test]
 fn compile_errors_stop_before_running()
 {
-    let (code, stdout, stderr) = run_vm(&[], "\"အရင်\" ဟု ပြသပါ။\nက ကို ပြသပါ။");
+    let (code, stdout, stderr) = run_vm(&[], "\"အရင်\" ဟု ပြသမည်။\nက ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Failure);
     assert!(stdout.is_empty(), "{stdout}");
     assert!(stderr.starts_with("error[ZK0301]"), "{stderr}");
@@ -94,7 +94,8 @@ fn compile_errors_stop_before_running()
 #[test]
 fn traps_report_on_stderr_and_fail()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
+    let text =
+        "ကိန်းရှင် သုည သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသမည်။\n၁ / သုည ကို ပြသမည်။";
     let (code, stdout, stderr) = run_vm(&[], text);
     assert_eq!(code, ExitCode::Failure);
     assert_eq!(stdout, "အရင်\n");
@@ -105,7 +106,7 @@ fn traps_report_on_stderr_and_fail()
 #[test]
 fn limits_come_from_flags()
 {
-    let text = "မှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသပါ။";
+    let text = "မှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသမည်။";
     let (code, stdout, stderr) = run_vm(&["--max-steps", "40"], text);
     assert_eq!(code, ExitCode::Failure);
     assert!(stdout.lines().count() > 5, "{stdout}");
@@ -117,7 +118,7 @@ fn limits_come_from_flags()
 #[test]
 fn platform_bits_change_the_width()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁၂၇ ဖြစ်ပါစေ။\nက + ၁ ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ၁၂၇ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nက + ၁ ကို ပြသမည်။";
     let (code, stdout, _) =
         run_vm(&["--platform-bits", "8", "--overflow", "wrap"], text);
     assert_eq!(code, ExitCode::Success);
@@ -135,15 +136,15 @@ const FREED_TRAP: &str = "inside a freed block";
 #[test]
 fn the_mem_check_flag_picks_error_warn_or_off()
 {
-    let (code, stdout, stderr) = run_vm(&[], USE_AFTER_FREE);
+    let (code, _, stderr) = run_vm(&[], USE_AFTER_FREE);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stderr.contains("warning[ZK0704]"), "{stderr}");
+    assert!(stderr.contains(FREED_TRAP), "{stderr}");
+    let (code, stdout, stderr) = run_vm(&["--mem-check", "error"], USE_AFTER_FREE);
     assert_eq!(code, ExitCode::Failure);
     assert!(stdout.is_empty(), "{stdout}");
     assert!(stderr.contains("error[ZK0704]"), "{stderr}");
     assert!(!stderr.contains(FREED_TRAP), "{stderr}");
-    let (code, _, stderr) = run_vm(&["--mem-check", "warn"], USE_AFTER_FREE);
-    assert_eq!(code, ExitCode::Failure);
-    assert!(stderr.contains("warning[ZK0704]"), "{stderr}");
-    assert!(stderr.contains(FREED_TRAP), "{stderr}");
     let (code, _, stderr) = run_vm(&["--mem-check", "off"], USE_AFTER_FREE);
     assert_eq!(code, ExitCode::Failure);
     assert!(!stderr.contains("ZK07"), "{stderr}");
@@ -170,11 +171,11 @@ fn the_leaks_flag_lists_unfreed_blocks_and_keeps_success()
 fn the_max_heap_flag_caps_allocation()
 {
     let text = "ကိန်းရှင် p သည် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ၆၄ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် \
-                သိမ်းထားမည်။\np ကို ပြသပါ။";
+                သိမ်းထားမည်။\np ကို ပြသမည်။";
     let (code, stdout, stderr) =
         run_vm(&["--mem-check", "off", "--max-heap", "16"], text);
     assert_eq!(code, ExitCode::Success, "{stderr}");
-    assert_eq!(stdout, "ဗလာ\n");
+    assert_eq!(stdout, "မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ\n");
     let (_, stdout, _) = run_vm(&["--mem-check", "off"], text);
     assert!(stdout.starts_with("0x"), "{stdout}");
 }
@@ -216,7 +217,7 @@ fn a_missing_import_stops_with_a_host_error()
 {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("main.zaka");
-    std::fs::write(&path, "\"nope.zaka\" မှ က ကို ထည့်သွင်းပါ။\n").unwrap();
+    std::fs::write(&path, "\"nope.zaka\" မှ က ကို ထည့်သွင်းမည်။\n").unwrap();
     let (code, stdout, stderr) = run_vm(&[path.to_str().unwrap()], "");
     assert_ne!(code, ExitCode::Success);
     assert!(stdout.is_empty());
@@ -227,11 +228,12 @@ fn a_missing_import_stops_with_a_host_error()
 /// tells whether the environment
 /// has variables, and ends with exit code 7.
 const START: &str = "ပရိုဂရမ်သည်
-စာသား စာရင်း ညွှန်ကြားချက်များ နှင့် စာသား စာရင်း ပတ်ဝန်းကျင် တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-ညွှန်ကြားချက်များ ကို ပြသပါ။
-ပတ်ဝန်းကျင် ၏ အကွက်အရေအတွက် သည် ၀ ထက် ကြီးသည် ကို ပြသပါ။
-၇ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+ညွှန်ကြားချက်များ ဟူသော စာသား စာရင်း တစ်ခု ကို လည်းကောင်း ပတ်ဝန်းကျင် ဟူသော စာသား စာရင်း တစ်ခု ကို လည်းကောင်း \
+                     လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+ညွှန်ကြားချက်များ ကို ပြသမည်။
+ပတ်ဝန်းကျင် ၏ အကွက်အရေအတွက် သည် ၀ ထက် ကြီးသည် ကို ပြသမည်။
+၇ ကို ပြန်ပေးမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
 
 #[test]
@@ -253,7 +255,7 @@ fn a_negative_exit_code_keeps_its_lowest_8_bits()
 #[test]
 fn a_start_block_with_no_result_ends_with_0()
 {
-    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ၁ ကို ပြသပါ။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ၁ ကို ပြသမည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let (code, stdout, stderr) = run_vm(&[], text);
     assert_eq!(code, ExitCode::Success, "{stderr}");
     assert_eq!(stdout, "၁\n");

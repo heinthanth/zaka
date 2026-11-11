@@ -1,7 +1,7 @@
 # zakac-parse-artifact v1
 name:
   Custom: literals.zaka
-source: "၁၀ ကို ပြသပါ။\n16 ကို ပြသပါ။\nကိန်းပြည့် ၁၀ ကို ပြသပါ။\nလက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၁၈ ကို ပြသပါ။\nအခြေ ၂ ဖြင့် ၁၀ ကို ပြသပါ။\nအခြေ ၂ ဖြင့် ၈ ဘစ် ကိန်းပြည့် ၁၁၁၁၁၁၁၀ ကို ပြသပါ။\nအခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF ကို ပြသပါ။\n၁၂.၃၄ ကို ပြသပါ။\n-၁၁.၁၁ ကို ပြသပါ။\n100e+10 ကို ပြသပါ။\n၃၂ ဘစ် ဒဿမကိန်း ၁၀ ကို ပြသပါ။\n'春' ကို ပြသပါ။\n\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ဟု ပြသပါ။\nမှန်ပါသည် ဟု ပြသပါ။\n`ကို ပြသပါ` ကို ပြသပါ။\n"
+source: "၁၀ ကို ပြသမည်။\n16 ကို ပြသမည်။\n၁၀ ဟူသော ကိန်းပြည့် တစ်ခု ကို ပြသမည်။\n၁၈ ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။\nအခြေ ၂ ဖြင့် ၁၀ ကို ပြသမည်။\nအခြေ ၂ ဖြင့် ၁၁၁၁၁၁၁၀ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။\nအခြေ ၁၆ ဖြင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။\n၁၂.၃၄ ကို ပြသမည်။\n-၁၁.၁၁ ကို ပြသမည်။\n100e+10 ကို ပြသမည်။\n၁၀ ဟူသော ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ကို ပြသမည်။\n'春' ကို ပြသမည်။\n\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ဟု ပြသမည်။\nမှန်ပါသည် ဟု ပြသမည်။\n`ကို ပြသမည်` ကို ပြသမည်။\n"
 imports: []
 program:
   stmts:
@@ -19,7 +19,7 @@ program:
       slot: ko
       span:
         lo: 0
-        hi: 35
+        hi: 38
   - print:
       value:
         int:
@@ -29,12 +29,12 @@ program:
           kind: null
           script: western
           span:
-            lo: 36
-            hi: 38
+            lo: 39
+            hi: 41
       slot: ko
       span:
-        lo: 36
-        hi: 67
+        lo: 39
+        hi: 73
   - print:
       value:
         int:
@@ -46,17 +46,22 @@ program:
             bits: null
             signed: null
             wraps: []
+            classifier:
+              name: ခု
+              span:
+                lo: 137
+                hi: 143
             span:
-              lo: 68
-              hi: 98
+              lo: 97
+              hi: 127
           script: burmese
           span:
-            lo: 68
-            hi: 105
+            lo: 74
+            hi: 143
       slot: ko
       span:
-        lo: 68
-        hi: 134
+        lo: 74
+        hi: 175
   - print:
       value:
         int:
@@ -68,17 +73,22 @@ program:
             bits: 8
             signed: false
             wraps: []
+            classifier:
+              name: ခု
+              span:
+                lo: 281
+                hi: 287
             span:
-              lo: 135
-              hi: 207
+              lo: 199
+              hi: 271
           script: burmese
           span:
-            lo: 135
-            hi: 214
+            lo: 176
+            hi: 287
       slot: ko
       span:
-        lo: 135
-        hi: 243
+        lo: 176
+        hi: 319
   - print:
       value:
         int:
@@ -88,12 +98,12 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 244
-            hi: 283
+            lo: 320
+            hi: 359
       slot: ko
       span:
-        lo: 244
-        hi: 312
+        lo: 320
+        hi: 391
   - print:
       value:
         int:
@@ -105,17 +115,22 @@ program:
             bits: 8
             signed: null
             wraps: []
+            classifier:
+              name: ခု
+              span:
+                lo: 520
+                hi: 526
             span:
-              lo: 346
-              hi: 390
+              lo: 466
+              hi: 510
           script: burmese
           span:
-            lo: 313
-            hi: 415
+            lo: 392
+            hi: 526
       slot: ko
       span:
-        lo: 313
-        hi: 444
+        lo: 392
+        hi: 558
   - print:
       value:
         int:
@@ -127,17 +142,22 @@ program:
             bits: 8
             signed: false
             wraps: []
+            classifier:
+              name: ခု
+              span:
+                lo: 696
+                hi: 702
             span:
-              lo: 481
-              hi: 553
+              lo: 614
+              hi: 686
           script: western
           span:
-            lo: 445
-            hi: 556
+            lo: 559
+            hi: 702
       slot: ko
       span:
-        lo: 445
-        hi: 585
+        lo: 559
+        hi: 734
   - print:
       value:
         float:
@@ -146,12 +166,12 @@ program:
           text: "12.34"
           kind: null
           span:
-            lo: 586
-            hi: 599
+            lo: 735
+            hi: 748
       slot: ko
       span:
-        lo: 586
-        hi: 628
+        lo: 735
+        hi: 780
   - print:
       value:
         prefix:
@@ -164,15 +184,15 @@ program:
               text: "11.11"
               kind: null
               span:
-                lo: 630
-                hi: 643
+                lo: 782
+                hi: 795
           span:
-            lo: 629
-            hi: 643
+            lo: 781
+            hi: 795
       slot: ko
       span:
-        lo: 629
-        hi: 672
+        lo: 781
+        hi: 827
   - print:
       value:
         float:
@@ -181,12 +201,12 @@ program:
           text: "100e+10"
           kind: null
           span:
-            lo: 673
-            hi: 680
+            lo: 828
+            hi: 835
       slot: ko
       span:
-        lo: 673
-        hi: 709
+        lo: 828
+        hi: 867
   - print:
       value:
         float:
@@ -198,28 +218,33 @@ program:
             bits: 32
             signed: null
             wraps: []
+            classifier:
+              name: ခု
+              span:
+                lo: 942
+                hi: 948
             span:
-              lo: 710
-              hi: 751
+              lo: 891
+              hi: 932
           span:
-            lo: 710
-            hi: 758
+            lo: 868
+            hi: 948
       slot: ko
       span:
-        lo: 710
-        hi: 787
+        lo: 868
+        hi: 980
   - print:
       value:
         char:
           id: 12
           value: 春
           span:
-            lo: 788
-            hi: 793
+            lo: 981
+            hi: 986
       slot: ko
       span:
-        lo: 788
-        hi: 822
+        lo: 981
+        hi: 1018
   - print:
       value:
         str:
@@ -227,12 +252,12 @@ program:
           pieces:
           - text: ၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ
           span:
-            lo: 823
-            hi: 902
+            lo: 1019
+            hi: 1098
       slot: hu
       span:
-        lo: 823
-        hi: 928
+        lo: 1019
+        hi: 1127
   - print:
       value:
         bool:
@@ -241,26 +266,26 @@ program:
           particle: pa_thi
           next: other
           span:
-            lo: 929
-            hi: 956
+            lo: 1128
+            hi: 1155
       slot: hu
       span:
-        lo: 929
-        hi: 982
+        lo: 1128
+        hi: 1184
   - print:
       value:
         name:
           id: 15
-          name: ကို ပြသပါ
+          name: ကို ပြသမည်
           span:
-            lo: 983
-            hi: 1010
+            lo: 1185
+            hi: 1215
       slot: ko
       span:
-        lo: 983
-        hi: 1039
+        lo: 1185
+        hi: 1247
   units: []
   span:
     lo: 0
-    hi: 1040
+    hi: 1248
 diagnostics: []

@@ -11,19 +11,19 @@ use zakac_cli_common::clap;
 use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
-use zakac_parser::wrap::in_start_block;
+use zakac_semcheck::mark::in_marked_code;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 
 const TEXT_HEADER: &str = "# zakac-borrow-check-artifact v1\n";
 
-/// Run the standalone ownership check command.
+/// Run the standalone checker command.
 fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
 {
     let mut argv = vec![ZakacBorrowChecker::standalone_name().to_string()];
     argv.extend(args.iter().map(|arg| (*arg).to_string()));
 
     let command = ZakacBorrowChecker::create_as_standalone();
-    let mut stdin = Cursor::new(in_start_block(stdin));
+    let mut stdin = Cursor::new(in_marked_code(stdin));
     let mut stdout = Buffer::no_color();
     let mut stderr = Buffer::no_color();
     let mut io = CommandIO::builder()
@@ -38,7 +38,7 @@ fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
     (code, stdout, stderr)
 }
 
-/// Parse a command line with just the ownership check flags.
+/// Parse a command line with just the checker flags.
 fn parse(args: &[&str]) -> Result<BorrowCheckOptions, clap::Error>
 {
     let cmd = attach_borrow_check_args(clap::Command::new("t"));
@@ -49,7 +49,7 @@ fn parse(args: &[&str]) -> Result<BorrowCheckOptions, clap::Error>
 #[test]
 fn borrow_check_stdin_without_input()
 {
-    let (code, stdout, stderr) = run_cli(&[], "၁ ကို ပြသပါ။");
+    let (code, stdout, stderr) = run_cli(&[], "၁ ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Success);
     assert!(stdout.starts_with(TEXT_HEADER), "{stdout}");
     assert!(stderr.is_empty(), "{stderr}");
@@ -77,11 +77,11 @@ fn mem_check_words_are_parsed()
 }
 
 #[test]
-fn mem_check_defaults_to_error_and_not_strict()
+fn mem_check_defaults_to_warn_and_not_strict()
 {
     let options = parse(&[]).unwrap();
     assert_eq!(options, BorrowCheckOptions::default());
-    assert_eq!(options.check, MemCheck::Error);
+    assert_eq!(options.check, MemCheck::Warn);
     assert!(!options.strict);
 }
 
@@ -89,14 +89,14 @@ fn mem_check_defaults_to_error_and_not_strict()
 fn mem_check_rejects_other_words()
 {
     assert!(parse(&["--mem-check", "loud"]).is_err());
-    let (code, _, _) = run_cli(&["--mem-check", "loud"], "၁ ကို ပြသပါ။");
+    let (code, _, _) = run_cli(&["--mem-check", "loud"], "၁ ကို ပြသမည်။");
     assert_ne!(code, ExitCode::Success);
 }
 
 #[test]
 fn earlier_errors_fail_but_still_write_the_artifact()
 {
-    let (code, stdout, stderr) = run_cli(&[], "က ကို ပြသပါ။");
+    let (code, stdout, stderr) = run_cli(&[], "က ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Failure);
     assert!(stdout.starts_with(TEXT_HEADER), "{stdout}");
     assert!(stderr.starts_with("error[ZK0301]"), "{stderr}");
@@ -107,12 +107,12 @@ fn output_extensions_pick_the_format()
 {
     let dir = tempfile::tempdir().unwrap();
     let raw = dir.path().join("out.zkbck");
-    let (code, stdout, stderr) = run_cli(&["-o", raw.to_str().unwrap()], "၁ ကို ပြသပါ။");
+    let (code, stdout, stderr) = run_cli(&["-o", raw.to_str().unwrap()], "၁ ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Success);
     assert!(stdout.is_empty() && stderr.is_empty());
     assert!(std::fs::read(&raw).unwrap().starts_with(RAW_ARTIFACT_MAGIC));
     let text = dir.path().join("out.zkbckt");
-    let (code, _, _) = run_cli(&["-o", text.to_str().unwrap()], "၁ ကို ပြသပါ။");
+    let (code, _, _) = run_cli(&["-o", text.to_str().unwrap()], "၁ ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Success);
     assert!(std::fs::read_to_string(&text).unwrap().starts_with(TEXT_HEADER));
 }

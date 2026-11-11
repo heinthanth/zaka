@@ -5,52 +5,53 @@ description: Write the kind of a result that can fail, with a good side and an e
 
 # Writing result kinds
 
-So far the kind of a result that can fail was never written whole: the header named the
-error kind with a short form, and a variable took its kind from the call. A result
-kind can be written too, wherever a kind goes: in a declaration, in a parameter, in the
-field of a struct and in the result clause of a function.
+So far a variable that held the result of a call took its kind from the call. A result
+kind can be written out too, wherever a kind goes: in a declaration, in a parameter, in the
+field of a struct and in the result clause of a function. A function that can fail has
+named its whole result kind in its header from the start.
 
 ```text
-<kind> ရလဒ် သို့မဟုတ် <kind> အမှားအယွင်း
+<kind> သို့မဟုတ် အမှားအယွင်းအနေဖြင့် <kind> ရှိနိုင်သော ဒေတာဆဲလ်
 ```
 
-reads as "a result of this kind, or an error value of that kind". Each side can also hold no value at all:
+reads as "a cell that can hold a value of the first kind, or an error value of the second kind". Each side can also hold no value at all:
 
 | Written | The good side | The error side |
 | --- | --- | --- |
-| `ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း` | an integer | text |
-| `အောင်မြင်သည့်သတင်း သို့မဟုတ် စာသား အမှားအယွင်း` | no value | text |
-| `ကိန်းပြည့် ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း` | an integer | no value |
-| `အောင်မြင်သည့်သတင်း သို့မဟုတ် မအောင်မြင်သည့်သတင်း` | no value | no value |
+| `ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်` | an integer | text |
+| `အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်` | no value | text |
+| `ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ်` | an integer | no value |
+| `အောင်မြင်သည့်သတင်း သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ်` | no value | no value |
 
 `အောင်မြင်သည့်သတင်း` is "news of success" and `မအောင်မြင်သည့်သတင်း` is "news of failure":
-each tells which side was met, and carries nothing more.
+each tells which side was met, and carries nothing more. A side with no error value drops
+`အမှားအယွင်းအနေဖြင့်` as well, so the error side reads `မအောင်မြင်သည့်သတင်း` alone.
 
 ## In a clause, a parameter and a variable
 
-The result clause of a function is the written kind, then `ကို ပြန်ပေးမည်`. The function can
+The result clause of a function is the written kind, then `တစ်ခု ကို ပြန်ပေးမည်`. The function can
 fail when its result kind is a result kind, and not otherwise:
 
 ```zaka
 လုပ်ဆောင်ချက် စားခွဲ သည်
-ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။
-အကယ်၍ ခ သည် ၀ နှင့် ညီလျှင် "သုညဖြင့် စား၍ မရပါ" ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
-က / ခ ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ ခ သည် ၀ နှင့် ညီလျှင် "သုညဖြင့် စား၍ မရပါ" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 လုပ်ဆောင်ချက် ပြ သည်
-ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း R ကို လက်ခံပြီး
+R ဟူသော ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အကယ်၍ R သည် ရလဒ်ကောင်း ဖြစ်လျှင် "ရလဒ် {R ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်}" ဟု ပြသပါ။
-သို့မဟုတ်ပါက "အမှား: {R ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ်}" ဟု ပြသပါ။
+အကယ်၍ R ထဲတွင် ရလဒ်ကောင်း ရှိလျှင် "ရလဒ် {R ထဲမှ ဒေတာ}" ဟု ပြသမည်။
+သို့မဟုတ်ပါက "အမှား: {R ထဲမှ အမှားအယွင်း ဒေတာ}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ရ သည် ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ပြ ကို ရ တို့ဖြင့် လုပ်ဆောင်ပါ။
-ရ ကို စားခွဲ(၁၀၀၊ ၀) ဟု ထားပါ။
-လုပ်ဆောင်ချက် ပြ ကို ရ တို့ဖြင့် လုပ်ဆောင်ပါ။
+ကိန်းရှင် ရ သည် ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ပြ ကို ရ တို့ဖြင့် လုပ်ဆောင်မည်။
+ရ ကို စားခွဲ(၁၀၀၊ ၀) ဟု ထားမည်။
+လုပ်ဆောင်ချက် ပြ ကို ရ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -59,40 +60,34 @@ fail when its result kind is a result kind, and not otherwise:
 အမှား: သုညဖြင့် စား၍ မရပါ
 ```
 
-The result kind with `ကို ပြန်ပေးမည်` after it is the one header of a function that can
+The result kind with `တစ်ခု ကို ပြန်ပေးမည်` after it is the header of a function that can
 fail. A function that fails and has no good result writes the side with no value as its good
-side: `အောင်မြင်သည့်သတင်း သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်`.
+side: `အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်`.
 
-A variable of a result kind can have no starting value. It then holds a failure, and the
-failure holds the default of the error side, so an unset result never claims a success that
-did not happen:
+A result has no [initial value](../variables/README.md#the-initial-value): Zaka never
+picks a success or a failure for the program. A result variable gets its value from a
+call or a return, such as `ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။`, before its first
+read, and `ကနဦးတန်ဖိုး` for a result kind is a mistake:
 
-```zaka
+```zaka-error ZK0479
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် R သည် ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း တစ်ခု ဖြစ်ပါစေ။
-R ကို ပြသပါ။
-ကိန်းရှင် S သည် ကိန်းပြည့် ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း တစ်ခု ဖြစ်ပါစေ။
-S ကို ပြသပါ။
+ကိန်းရှင် R သည် ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+R ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-အမှားအယွင်း("")
-မအောင်မြင်သည့်သတင်း
+error[ZK0479]: "isize result or text error" has no initial value: a result must hold its good value or its failure
 ```
 
-The default of `စာသား` is the empty text, so `R` is a failure that holds `""`. An error
-side of `မအောင်မြင်သည့်သတင်း` holds no value, so `S` is the bare failure. The cells of a list
-with a count and a struct field left out of a struct literal start the same way, and so do
-the cells of a heap block. Give a starting value, such as the call
-`ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။`, when the variable has to hold a result at
-once, and let the value tell the kind.
+The same goes for a struct or a list that holds a result: it has no initial value either,
+so each of its fields and cells gets a value written out.
 
 ## A side with no value
 
 When a failure has nothing to tell, write `မအောင်မြင်သည့်သတင်း` for the error side. The
 function ends with a failure through its own sentence, which is a return as
-`ပြန်ပေးပါ` is:
+`ပြန်ပေးမည်` is:
 
 ```text
 လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်။
@@ -100,32 +95,32 @@ function ends with a failure through its own sentence, which is a return as
 
 reads as "mark the function as not succeeded". The good side with no value is the same
 for success: `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်။` ends the function with a good
-result that holds nothing, as a bare `ပြန်ပေးပါ` does. Printing a whole result of
+result that holds nothing, as a bare `ပြန်ပေးမည်` does. Printing a whole result of
 such a side shows the news, with no value in brackets:
 
 ```zaka
 လုပ်ဆောင်ချက် ရှာ သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ကို ပြန်ပေးမည်။
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 အကယ်၍ န သည် ၀ အောက် ငယ်လျှင် လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်။
-န * ၂ ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+န * ၂ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 လုပ်ဆောင်ချက် ရေး သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ အောင်မြင်သည့်သတင်း သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။
-အကယ်၍ န သည် ၀ နှင့် ညီလျှင် "ရေး၍ မရ" ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
-"ရေးပြီး {န}" ဟု ပြသပါ။
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ န သည် ၀ နှင့် ညီလျှင် "ရေး၍ မရ" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+"ရေးပြီး {န}" ဟု ပြသမည်။
 လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ရှာ(၄) ကို ပြသပါ။
-ရှာ(၀ - ၁) ကို ပြသပါ။
-ရေး(၁) ကို ပြသပါ။
-ရေး(၀) ကို ပြသပါ။
-ကိန်းရှင် R သည် ကိန်းပြည့် ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ရှာ(၀ - ၂) ဖြစ်ပါစေ။
-အကယ်၍ R သည် အမှားအယွင်း ဖြစ်လျှင် "ရှာ၍ မတွေ့" ဟု ပြသပါ။
+ရှာ(၄) ကို ပြသမည်။
+ရှာ(၀ - ၁) ကို ပြသမည်။
+ရေး(၁) ကို ပြသမည်။
+ရေး(၀) ကို ပြသမည်။
+ကိန်းရှင် R သည် ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ရှာ(၀ - ၂) ဖြစ်ပါစေ။
+အကယ်၍ R ထဲတွင် အမှားအယွင်း ရှိလျှင် "ရှာ၍ မတွေ့" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -138,9 +133,9 @@ such a side shows the news, with no value in brackets:
 ရှာ၍ မတွေ့
 ```
 
-The test `R သည် အမှားအယွင်း` is true for a failure with no value too. What a side with no
-value cannot do is be read: there is no value to read. `ရ ကို အမှားအယွင်း အဖြစ်
-ပြောင်းလဲသော ရလဒ်` on such a side is an error, shown in [Mistakes](#mistakes).
+The test `R ထဲတွင် အမှားအယွင်း ရှိလျှင်` is true for a failure with no value too. What a side with no
+value cannot do is be read: there is no value to read. `ရ ထဲမှ အမှားအယွင်း ဒေတာ`
+on such a side is an error, shown in [Mistakes](#mistakes).
 
 Passing on works as before. A failure with no value counts as an error side of its own:
 a function that fails with no value passes its failure on to a caller that fails with
@@ -150,26 +145,26 @@ stops the run:
 
 ```zaka-stop
 လုပ်ဆောင်ချက် ရှာ သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ကို ပြန်ပေးမည်။
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 အကယ်၍ န သည် ၀ အောက် ငယ်လျှင် လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်။
-န * ၂ ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+န * ၂ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 လုပ်ဆောင်ချက် နှစ်ဆ သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ကို ပြန်ပေးမည်။
-"စစ် {န}" ဟု ပြသပါ။
-ရှာ(န)? + ရှာ(န)? ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+"စစ် {န}" ဟု ပြသမည်။
+ရှာ(န)? + ရှာ(န)? ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-နှစ်ဆ(၅) ကို ပြသပါ။
+နှစ်ဆ(၅) ကို ပြသမည်။
 ကိန်းရှင် ရ သည် နှစ်ဆ(၀ - ၁) ဖြစ်ပါစေ။
-ရ ကို ပြသပါ။
-"မစမီ" ဟု ပြသပါ။
-ရ ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
-"ဤနေရာ မရောက်ပါ" ဟု ပြသပါ။
+ရ ကို ပြသမည်။
+"မစမီ" ဟု ပြသမည်။
+ရ ထဲမှ ဒေတာ ကို ပြသမည်။
+"ဤနေရာ မရောက်ပါ" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -185,29 +180,28 @@ the program stopped: the result holds a failure, not a good result
 The message is `the result holds a failure, not a good result`; with an error value to show,
 the message ends with the value.
 
-## Struct fields and the short form
+## Struct fields
 
-A field of a struct can hold a result kind. Here the names end in `ရလဒ်` and
-`အမှားအယွင်း`, and the kind of the field is written in the short form:
+A field of a struct can hold a result kind. The structs here are the good side and the
+error side, and the field holds either of them:
 
 ```zaka
-ဒေတာအမျိုးအစား ဖိုင်ရလဒ် တွင် ကိန်းပြည့် အရွယ် တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား ဖိုင်အမှားအယွင်း တွင် စာသား စာ တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား ဖတ်ချက် တွင် ဖိုင်ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း တွေ့ချက်၊ ကိန်းပြည့် အကြိမ် တို့ ပါဝင်သည်။
+ဖိုင်ရလဒ် ဟူသော ဒေတာအစုအဝေးတွင် အရွယ် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+ဖိုင်အမှားအယွင်း ဟူသော ဒေတာအစုအဝေးတွင် စာ ဟူသော စာသား တစ်ခု ပါဝင်သည်။
+ဖတ်ချက် ဟူသော ဒေတာအစုအဝေးတွင် တွေ့ချက် ဟူသော ဖိုင်ရလဒ် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု၊ အကြိမ် ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
 
 လုပ်ဆောင်ချက် ဖွင့် သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ဖိုင်ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း ကို ပြန်ပေးမည်။
-အကယ်၍ န သည် ၀ နှင့် ညီလျှင် ဖိုင်အမှားအယွင်း(စာ: "မရှိ") ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
-ဖိုင်ရလဒ်(အရွယ်: န * ၁၀၀) ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ဖိုင်ရလဒ် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ န သည် ၀ နှင့် ညီလျှင် ဖိုင်အမှားအယွင်း(စာ: "မရှိ") ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+ဖိုင်ရလဒ်(အရွယ်: န * ၁၀၀) ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ဖ သည် ဖတ်ချက် တစ်ခု ဖြစ်ပါစေ။
-ဖ ၏ တွေ့ချက် ကို ဖွင့်(၃) ဟု ထားပါ။
-ဖ ၏ တွေ့ချက် ကို ပြသပါ။
-ဖ ၏ တွေ့ချက် ကို ဖွင့်(၀) ဟု ထားပါ။
-ဖ ၏ တွေ့ချက် ကို ပြသပါ။
+ကိန်းရှင် ဖ သည် ဖတ်ချက်(တွေ့ချက်: ဖွင့်(၃)၊ အကြိမ်: ၁) ဖြစ်ပါစေ။
+ဖ ၏ တွေ့ချက် ကို ပြသမည်။
+ဖ ၏ တွေ့ချက် ကို ဖွင့်(၀) ဟု ထားမည်။
+ဖ ၏ တွေ့ချက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -216,17 +210,10 @@ A field of a struct can hold a result kind. Here the names end in `ရလဒ်`
 အမှားအယွင်း(ဖိုင်အမှားအယွင်း(စာ: "မရှိ"))
 ```
 
-A struct whose name ends in `ရလဒ်` can leave out the repeated `ရလဒ်` before `သို့မဟုတ်`, and
-a struct whose name ends in `အမှားအယွင်း` can leave out the repeated `အမှားအယွင်း` after it. So
-
-```text
-ဖိုင်ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း
-```
-
-is the short form of `ဖိုင်ရလဒ် ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း အမှားအယွင်း`, and the full form
-still works. The short form is read just next to `သို့မဟုတ်` in a kind; a lone `ဖိုင်ရလဒ်`
-is the plain struct. It works in the header too:
-`ဖိုင်ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း ကို ပြန်ပေးမည်`.
+A struct on either side is written like each other kind: `ဖိုင်ရလဒ်` is the good side and
+`အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း` is the error side. The function above gives back
+a struct value for the good side with a plain return, and a struct value for the error side
+with `ဟူသော အမှားအယွင်း`.
 
 ## Lists of results
 
@@ -235,74 +222,75 @@ wraps the whole result: each cell of the list holds a result.
 
 | Written | Is |
 | --- | --- |
-| `ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း စာရင်း` | a list of results |
-| `အကွက် ၂ ခုရှိသော ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း စာရင်း` | a list of 2 results |
+| `ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း` | a list of results |
+| `အကွက် ၂ ခုရှိသော ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း` | a list of 2 results |
 
 A count such as `အကွက် ၂ ခုရှိသော` stands before the result kind, and belongs to the list
 after it. A result kind with no such word after it is one result, as before. The same
 kinds serve a variable, a parameter and a field of a struct:
 
 ```zaka
-ဒေတာအမျိုးအစား ဖိုင်အမှားအယွင်း တွင် စာသား စာ တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား ဖတ်ချက် တွင် ကိန်းပြည့် ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း စာရင်း တွေ့ချက်များ၊ ကိန်းပြည့် အကြိမ် တို့ ပါဝင်သည်။
+ဖိုင်အမှားအယွင်း ဟူသော ဒေတာအစုအဝေးတွင် စာ ဟူသော စာသား တစ်ခု ပါဝင်သည်။
+ဖတ်ချက် ဟူသော ဒေတာအစုအဝေးတွင် တွေ့ချက်များ ဟူသော ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း တစ်ခု၊ အကြိမ် ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
 
 လုပ်ဆောင်ချက် ရှာ သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း ကို ပြန်ပေးမည်။
-အကယ်၍ န သည် ၀ အောက် ငယ်လျှင် ဖိုင်အမှားအယွင်း(စာ: "အနုတ်") ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
-န * ၂ ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ န သည် ၀ အောက် ငယ်လျှင် ဖိုင်အမှားအယွင်း(စာ: "အနုတ်") ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+န * ၂ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ရများ သည် ကိန်းပြည့် ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း စာရင်း တစ်ခု ဖြစ်ပါစေ။
-ရများ ထဲသို့ ရှာ(၃) ကို ထည့်ပါ။
-ရများ ထဲသို့ ရှာ(၀ - ၁) ကို ထည့်ပါ။
-ရများ ထဲသို့ ရှာ(၄) ကို ထည့်ပါ။
-ရများ ကို ပြသပါ။
-ရများ ၏ အကွက်တိုင်း ကို ရ အနေဖြင့် ယူ၍ အကယ်၍ ရ သည် အမှားအယွင်း ဖြစ်လျှင် ရ ကို ပြသပါ။
+ကိန်းရှင် ရများ သည် ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ။
+ရများ ထဲသို့ ရှာ(၃) ကို ထည့်မည်။
+ရများ ထဲသို့ ရှာ(၀ - ၁) ကို ထည့်မည်။
+ရများ ထဲသို့ ရှာ(၄) ကို ထည့်မည်။
+ရများ ကို ပြသမည်။
+ရများ ၏ အကွက်တိုင်း ကို ရ အနေဖြင့် ယူ၍ အကယ်၍ ရ ထဲတွင် အမှားအယွင်း ရှိလျှင် ရ ကို ပြသမည်။
 
-ကိန်းရှင် နှစ်ကွက် သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း စာရင်း တစ်ခု ဖြစ်ပါစေ။
-နှစ်ကွက် ကို ပြသပါ။
+ကိန်းရှင် နှစ်ကွက် သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [ရှာ(၁)၊ ရှာ(၀ - ၂)] ဖြစ်ပါစေ။
+နှစ်ကွက် ကို ပြသမည်။
 
-ကိန်းရှင် ဖ သည် ဖတ်ချက် တစ်ခု ဖြစ်ပါစေ။
-ဖ ၏ တွေ့ချက်များ ထဲသို့ ရှာ(၉) ကို ထည့်ပါ။
-ဖ ၏ တွေ့ချက်များ ကို ပြသပါ။
+ကိန်းရှင် ဖ သည် ဖတ်ချက်(တွေ့ချက်များ: []၊ အကြိမ်: ၀) ဖြစ်ပါစေ။
+ဖ ၏ တွေ့ချက်များ ထဲသို့ ရှာ(၉) ကို ထည့်မည်။
+ဖ ၏ တွေ့ချက်များ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 [ရလဒ်ကောင်း(၆)၊ အမှားအယွင်း(ဖိုင်အမှားအယွင်း(စာ: "အနုတ်"))၊ ရလဒ်ကောင်း(၈)]
 အမှားအယွင်း(ဖိုင်အမှားအယွင်း(စာ: "အနုတ်"))
-[အမှားအယွင်း(ဖိုင်အမှားအယွင်း(စာ: ""))၊ အမှားအယွင်း(ဖိုင်အမှားအယွင်း(စာ: ""))]
+[ရလဒ်ကောင်း(၂)၊ အမှားအယွင်း(ဖိုင်အမှားအယွင်း(စာ: "အနုတ်"))]
 [ရလဒ်ကောင်း(၁၈)]
 ```
 
-A list prints its cells in brackets, each cell as a whole result. The cells of a list with
-a count start as failures that hold the default of the error side. A failure holds no claim
-of success, so a cell that was never set is not read as a good value. The cells added with `ထည့်ပါ` hold what was given. Each cell is read with
-`အကွက်တိုင်း` as for each list, and the test `ရ သည် အမှားအယွင်း` of
-[Reading a whole result](results.md) tells which part a cell holds. Slices and pointers of
+A list prints its cells in brackets, each cell as a whole result. A result has no initial
+value, so a list with a count gets each cell written out, as `နှစ်ကွက်` does: a cell
+never set would hold neither a success nor a failure. The cells added with `ထည့်မည်`
+hold what was given. Each cell is read with
+`အကွက်တိုင်း` as for each list, and the test `ရ ထဲတွင် အမှားအယွင်း ရှိလျှင်` of
+[Reading a whole result](results.md) tells which part a cell holds. Pointers to
 results work the same, and are in
 [Errors and results](../../manual/language/error-handling.md#result-kinds).
 
-With the short form, the words after a struct name that ends in `အမှားအယွင်း` belong to the
-whole result, so `ကိန်းပြည့် ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း စာရင်း` is a list of results,
-as the program above uses it. A list as the error kind needs the full form,
-`ကိန်းပြည့် ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း စာရင်း အမှားအယွင်း`, so the error value of a
-function with that clause is a list, and a single `ဖိုင်အမှားအယွင်း` does not fit it:
+The levels after `ရှိနိုင်သော ဒေတာဆဲလ်` belong to the whole result, so
+`ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း` is
+a list of results, as the program above uses it. A list as the error kind goes before
+`ရှိနိုင်သော ဒေတာဆဲလ်`, as `အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း စာရင်း`, so the error value
+of a function with that clause is a list, and a single `ဖိုင်အမှားအယွင်း` does not fit it:
 
 ```zaka-error ZK0401
-ဒေတာအမျိုးအစား ဖိုင်အမှားအယွင်း တွင် စာသား စာ တို့ ပါဝင်သည်။
+ဖိုင်အမှားအယွင်း ဟူသော ဒေတာအစုအဝေးတွင် စာ ဟူသော စာသား တစ်ခု ပါဝင်သည်။
 
 လုပ်ဆောင်ချက် ရှာ သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် ဖိုင်အမှားအယွင်း စာရင်း အမှားအယွင်း ကို ပြန်ပေးမည်။
-အကယ်၍ န သည် ၀ အောက် ငယ်လျှင် ဖိုင်အမှားအယွင်း(စာ: "အနုတ်") ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
-န * ၂ ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း စာရင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ န သည် ၀ အောက် ငယ်လျှင် ဖိုင်အမှားအယွင်း(စာ: "အနုတ်") ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+န * ၂ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ရှာ(၃) ကို ပြသပါ။
+ရှာ(၃) ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -317,15 +305,15 @@ Reading the error value of a failure with no value is ZK0450:
 
 ```zaka-error ZK0450
 လုပ်ဆောင်ချက် ရှာ သည်
-ကိန်းပြည့် န ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ကို ပြန်ပေးမည်။
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 အကယ်၍ န သည် ၀ အောက် ငယ်လျှင် လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်။
-န * ၂ ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+န * ၂ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် ရှာ(၁) ဖြစ်ပါစေ။
-ရ ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။
+ရ ထဲမှ အမှားအယွင်း ဒေတာ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -338,7 +326,7 @@ A failure in a function whose error side names a kind has to hold a value of tha
 
 ```zaka-error ZK0451
 လုပ်ဆောင်ချက် ရေး သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
@@ -350,12 +338,12 @@ A failure in a function whose error side names a kind has to hold a value of tha
 error[ZK0451]: the function fails with an error value of the kind "text", so a failure must give one back
 ```
 
-And a failure in a function whose error side holds no value cannot hold one (ZK0452):
+And an error value has no place in a function whose error side holds no value (ZK0476):
 
-```zaka-error ZK0452
+```zaka-error ZK0476
 လုပ်ဆောင်ချက် ရေး သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ကို ပြန်ပေးမည်။
-"ရေး၍ မရ" ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+"ရေး၍ မရ" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -363,7 +351,7 @@ And a failure in a function whose error side holds no value cannot hold one (ZK0
 ```
 
 ```text
-error[ZK0452]: a failure of "ရေး" holds no error value
+error[ZK0476]: an error value goes where a result kind with an error side is wanted
 ```
 
 The full rules, with the other codes, are in
@@ -380,4 +368,4 @@ The full rules, with the other codes, are in
 - Keep the results of three calls in a list of results, and print each cell with a test in
   `အကယ်၍`.
 
-Next: [Lists](../lists/README.md).
+Next: [Optional values](../optionals/README.md).

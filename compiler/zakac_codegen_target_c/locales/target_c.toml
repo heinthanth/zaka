@@ -64,13 +64,19 @@ en = "character %{index} is outside the text, whose characters run from %{lo} to
 en = "the range from %{start} to %{end} ends before it starts"
 
 [target_c.trap.null_call]
-en = "the function value is ဗလာ, so it holds no function to call"
+en = "the function value holds no function to call"
+
+[target_c.trap.closed_handle]
+en = "a C function that took the handle over closed it, so it cannot be used again"
+
+[target_c.trap.null_text]
+en = "C gave NULL where its declaration promised a value; declare the result or the parameter as an optional, \"T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်\", when C can give NULL"
+
+[target_c.trap.null_object]
+en = "the object variable holds no object, so it has no field to read or write"
 
 [target_c.trap.closure_escape]
-en = "the function value borrows the locals around its function, so it cannot go where it outlives them"
-
-[target_c.trap.closure_owner]
-en = "the closure owns a block, so it cannot be duplicated: move it, or lend it to a call"
+en = "C called a closure after the call that gave it ended, and C has no leave to call it; give one with \"ခေါ်ဆိုခွင့် ပြုမည်\""
 
 [target_c.trap.no_cell_to_remove]
 en = "the list holds no cells, so it has no last cell to remove"
@@ -98,6 +104,9 @@ en = "the result holds a failure, not a good result"
 
 [target_c.trap.not_fault]
 en = "the result is a good result, not an error"
+
+[target_c.trap.no_data]
+en = "the optional holds no data"
 
 [target_c.trap.null_deref]
 en = "access through a null address at %{addr}"

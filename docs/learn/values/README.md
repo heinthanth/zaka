@@ -14,10 +14,10 @@ Text, lists and structs are built from parts, and have chapters of their own lat
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၄၂ ကို ပြသပါ။          // an integer (a whole number)
-၃.၁၄ ကို ပြသပါ။        // a decimal number
-'က' ကို ပြသပါ။         // a character
-မှန် ကို ပြသပါ။         // a true/false value: true
+၄၂ ကို ပြသမည်။          // an integer (a whole number)
+၃.၁၄ ကို ပြသမည်။        // a decimal number
+'က' ကို ပြသမည်။         // a character
+မှန် ကို ပြသမည်။         // a true/false value: true
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

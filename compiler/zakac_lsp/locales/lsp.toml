@@ -18,7 +18,22 @@ en = "\"%{name}\" is not one name: a new name cannot be a reserved word, several
 [lsp.no_name]
 en = "no declared name here to rename"
 
-[lsp.hover_layout]
+[lsp.hint_edit]
+en = "ဒေတာ ပြောင်းလဲရန်:"
+
+[lsp.hint_fill]
+en = "ဒေတာ ထည့်ပေးရန်:"
+
+[lsp.hint_owned]
+en = "အပိုင်အနေဖြင့်:"
+
+[lsp.hover_unsafe]
+en = "marked: marked code alone can call it"
+
+[lsp.hover_shared]
+en = "shared: a duplicate of the value names the one object"
+
+[lsp.hover_size]
 en = "size = %{size}, align = %{align}"
 
 [lsp.hover_field]

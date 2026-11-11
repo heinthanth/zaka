@@ -2,16 +2,20 @@ mod common;
 
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment;
+use zakac_diagnostics::Code;
 use zakac_lexer::ident::is_ident;
+use zakac_lexer::reserved::OLD_ENDINGS;
 use zakac_lexer::reserved::RESERVED;
 use zakac_lexer::reserved::lookup;
 use zakac_lexer::reserved::split_reserved;
 use zakac_lexer::spelling::canonical;
 use zakac_lexer::spelling::spellings;
 use zakac_lexer::token::Kw;
+use zakac_lexer::token::TokenKind;
 use zakac_lexer::words::build_words;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::tern;
 use zakac_span::filename::FileName;
 use zakac_span::pos::Pos;
 use zakac_span::source_map::SourceMap;
@@ -77,9 +81,10 @@ fn table_rows_are_one_word_each()
 #[test]
 fn borrow_words_are_whole_words()
 {
-    assert_eq!(lookup("ငှားထားသော"), Some(Kw::Borrowed));
-    assert_eq!(lookup("တန်ဖိုးအငှား"), Some(Kw::Lend));
-    assert_eq!(lookup("လိပ်စာအကြမ်း"), Some(Kw::RawAddress));
+    for gone in ["ငှားထားသော", "တန်ဖိုးအငှား", "လိပ်စာအကြမ်း"]
+    {
+        assert_eq!(lookup(gone), None, "{gone}");
+    }
     assert_eq!(split("တန်ဖိုးအငှား"), None);
     assert_eq!(split("လိပ်စာအကြမ်း"), None);
 }
@@ -100,8 +105,6 @@ fn spec_compounds_split()
         ("လိပ်စာကို", &[Kw::Address, Kw::Ko]),
         ("ရှိမင်မိုရီကို", &[Kw::Located, Kw::Mem, Kw::Ko]),
         ("ရှိမှတ်ဉာဏ်ကို", &[Kw::Located, Kw::Mem, Kw::Ko]),
-        ("တန်ဖိုးအငှားကို", &[Kw::Lend, Kw::Ko]),
-        ("လိပ်စာအကြမ်းကို", &[Kw::RawAddress, Kw::Ko]),
         ("ပရိုဂရမ်သည်", &[Kw::Program, Kw::Thi]),
     ];
     for (text, expected) in cases
@@ -233,7 +236,7 @@ fn list_words_lex_and_split()
 #[test]
 fn replace_words_lex_and_split()
 {
-    assert_eq!(lookup("အစားထိုးပါ"), Some(Kw::Replace));
+    assert_eq!(lookup("အစားထိုးမည်"), Some(Kw::Replace));
     assert_eq!(lookup("လုံးမြောက်"), Some(Kw::Ordinal));
     assert_eq!(lookup("ထိ"), Some(Kw::Upto));
     let kws = |word| {
@@ -247,7 +250,7 @@ fn replace_words_lex_and_split()
 #[test]
 fn slice_words_lex_whole()
 {
-    assert_eq!(lookup("တစ်စိတ်တစ်ပိုင်း"), Some(Kw::Part));
+    assert_eq!(lookup("တစ်စိတ်တစ်ပိုင်း"), None);
     assert_eq!(lookup("မှစ၍"), Some(Kw::StartingAt));
     assert_eq!(lookup("ကွက်"), Some(Kw::CellWord));
     assert_eq!(split("တစ်ကွက်ကျော်"), None);
@@ -273,4 +276,67 @@ fn both_spellings_of_data_are_one_word()
     assert_eq!(spellings("ဒေတာစာရင်း"), ["ဒေတာစာရင်း", "အချက်အလက်စာရင်း"]);
     assert_eq!(spellings("အချက်အလက်"), ["အချက်အလက်", "ဒေတာ"]);
     assert_eq!(spellings("အသက်"), ["အသက်"]);
+}
+
+/// The reserved words of `text`, its names and literals left out.
+fn kw_alone(text: &str) -> Vec<Kw>
+{
+    let kws = common::kinds(text).into_iter();
+    kws.filter_map(|k| tern!(let TokenKind::Kw(kw) = k, Some(kw), None)).collect()
+}
+
+/// The words of the declarations of structs, enumerations and aliases lex
+/// whole, and the longest one wins over the words inside it, joined to
+/// `တွင်` or apart from it.
+#[test]
+fn declaration_words_lex_joined_and_apart()
+{
+    let cases: &[(&str, &[Kw])] = &[
+        ("ဒေတာအစုအဝေးတွင်", &[Kw::StructWord, Kw::At]),
+        ("ဒေတာအစုအဝေး တွင်", &[Kw::StructWord, Kw::At]),
+        ("အချက်အလက်အစုအဝေးတွင်", &[Kw::StructWord, Kw::At]),
+        ("ဒေတာအမျိုးအစားကွဲတွင်", &[Kw::EnumWord, Kw::At]),
+        ("ဒေတာအမျိုးအစားကွဲ တွင်", &[Kw::EnumWord, Kw::At]),
+        ("အချက်အလက်အမျိုးအစားကွဲတွင်", &[Kw::EnumWord, Kw::At]),
+        ("ဒေတာအမျိုးအစား", &[Kw::DataKindOpen]),
+        ("တို့ပါဝင်သည်", &[Kw::FieldsClose]),
+        ("တို့ ပါဝင်သည်", &[Kw::FieldsClose]),
+        ("တို့ပါဝင်ပြီး", &[Kw::FieldsCloseAnd]),
+        ("ပါဝင်သည်", &[Kw::Contains]),
+        ("ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်", &[Kw::InitialMark]),
+        ("ကနဦးတန်ဖိုး အနေဖြင့် သုံးမည့်", &[Kw::InitialMark]),
+        ("တန်ဖိုးအနေဖြင့်", &[Kw::ValueAs]),
+        ("တန်ဖိုး အနေဖြင့်", &[Kw::ValueAs]),
+        ("ရှိသည့်", &[Kw::HavingRel]),
+        ("ဟုလည်း မှတ်ယူနိုင်ပါသည်", &[Kw::AliasClose]),
+        ("ဟုလည်း မှတ်ယူနိုင်ပြီး", &[Kw::AliasCloseAnd]),
+        ("ဝိဘတ် \"x\" ကို သုံး၍", &[Kw::MarkWord, Kw::Ko, Kw::Using]),
+        ("လုံးစာ", &[Kw::Items]),
+    ];
+    do_for!((text, want) in cases, assert_eq!(kw_alone(text), *want, "{text}"));
+}
+
+/// `ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား` keeps `ဟူသော` apart from the function kind
+/// after it, and `ဟူသော လုပ်ဆောင်ချက်` alone is the function value.
+#[test]
+fn called_before_a_function_kind_keeps_apart()
+{
+    let kind = kw_alone("ဖ ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု");
+    assert_eq!(kind, [Kw::Called, Kw::FnKind]);
+    assert_eq!(kw_alone("ဖ ဟူသော လုပ်ဆောင်ချက်"), [Kw::FnValue]);
+}
+
+#[test]
+fn an_old_ending_is_reported_and_read_as_the_new_verb()
+{
+    for (old, new, kw) in OLD_ENDINGS
+    {
+        let (out, _) = common::lex_text(old);
+        assert_eq!(out.diagnostics.len(), 1, "{old}");
+        assert_eq!(out.diagnostics[0].code, Code::OldEnding, "{old}");
+        assert_eq!(common::kws(old), [*kw], "{old}");
+        let (out, _) = common::lex_text(new);
+        assert!(out.diagnostics.is_empty(), "{new}");
+        assert_eq!(common::kws(new), [*kw], "{new}");
+    }
 }

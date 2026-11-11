@@ -409,7 +409,8 @@ pub fn float_for_int_kind(span: Span) -> Diagnostic
     Diagnostic::new(Code::FloatForIntKind, t!("codes.ZK0221.message"), span)
 }
 
-/// A character or boolean kind prefixes a number.
+/// The kind after a number literal is no number kind, or the kind after a list
+/// literal no list kind.
 ///
 /// # Arguments
 ///
@@ -464,20 +465,6 @@ pub fn unmatched_block_close(span: Span) -> Diagnostic
 pub fn bad_list_count(span: Span, count: &str) -> Diagnostic
 {
     Diagnostic::new(Code::BadListCount, t!("codes.ZK0227.message", n = count), span)
-}
-
-/// A count prefix pairs with the `စာရင်း` of a slice kind.
-///
-/// # Arguments
-///
-/// * `span` - The kind.
-///
-/// # Returns
-///
-/// The `ZK0233` diagnostic.
-pub fn slice_count(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::SliceCount, t!("codes.ZK0233.message"), span)
 }
 
 /// The export mark stands before something other than a top-level
@@ -606,4 +593,35 @@ pub fn fn_kind_needs_parens(span: Span) -> Diagnostic
 {
     Diagnostic::new(Code::FnKindNeedsParens, t!("codes.ZK0239.message"), span)
         .with_help(t!("codes.ZK0239.help"))
+}
+
+/// The mark string of a parameter is not one word a mark can be.
+///
+/// # Arguments
+///
+/// * `span` - The string.
+/// * `mark` - Its text.
+///
+/// # Returns
+///
+/// The `ZK0241` diagnostic.
+pub fn bad_mark(span: Span, mark: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::BadMark, t!("codes.ZK0241.message", m = mark), span)
+        .with_help(t!("codes.ZK0241.help"))
+}
+
+/// `ဒေတာ ထည့်ပေးရန်` on a parameter of a function kind.
+///
+/// # Arguments
+///
+/// * `span` - The mark.
+///
+/// # Returns
+///
+/// The `ZK0243` diagnostic.
+pub fn fill_in_fn_kind(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::FillInFnKind, t!("codes.ZK0243.message"), span)
+        .with_help(t!("codes.ZK0243.help"))
 }

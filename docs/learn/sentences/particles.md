@@ -12,16 +12,16 @@ Zaka the particles do it.
 ```zaka
 // သည် marks the subject, ထက် means "than"
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁၀ သည် ၃ ထက် ကြီးသည် ဟု ပြသပါ။            // 10 is greater than 3
+၁၀ သည် ၃ ထက် ကြီးသည် ဟု ပြသမည်။            // 10 is greater than 3
 
 // အောက် means "below", "less than"
-၁၀ သည် ၃ အောက် ငယ်သည် ဟု ပြသပါ။           // 10 is less than 3
+၁၀ သည် ၃ အောက် ငယ်သည် ဟု ပြသမည်။           // 10 is less than 3
 
 // နှင့် marks the first operand, ၏ ("of") the last
-၁၀ နှင့် ၃ ၏ နုတ်လဒ် ကို ပြသပါ။            // the difference of 10 and 3
+၁၀ နှင့် ၃ ၏ နုတ်လဒ် ကို ပြသမည်။            // the difference of 10 and 3
 
 // ကို marks the object, ဖြင့် means "with"
-၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း ကို ပြသပါ။  // the remainder of 10 ÷ 3
+၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း ကို ပြသမည်။  // the remainder of 10 ÷ 3
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -37,13 +37,13 @@ Zaka the particles do it.
 | Particle | Reads as | Example | Meaning |
 | --- | --- | --- | --- |
 | `သည်` | (subject) | `က သည် ခ ထက် ကြီး` | k is greater than kh |
-| `ကို` | (object) | `က ကို ပြသပါ` | show k |
+| `ကို` | (object) | `က ကို ပြသမည်` | show k |
 | `နှင့်` | "and", "with" | `က နှင့် ခ ၏ ပေါင်းလဒ်` | the sum of k and kh |
 | `၏` | "of" | `က ၏ ...` | closes a list of operands |
 | `ဖြင့်` | "with", "using" | `က ကို ခ ဖြင့် စားသော စားလဒ်` | k ÷ kh |
 | `ထက်` | "than" | `က သည် ခ ထက် ကြီး` | k is greater than kh |
 | `အောက်` | "below" | `က သည် ခ အောက် ငယ်` | k is less than kh |
-| `ဟု` | "so" (quoting) | `"..." ဟု ပြသပါ` | show "..." |
+| `ဟု` | "so" (quoting) | `"..." ဟု ပြသမည်` | show "..." |
 
 Later chapters introduce a few more, each with the feature that uses it.
 
@@ -55,9 +55,9 @@ greater":
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၅ သည် ၂ ထက် ကြီး ကို ပြသပါ။
-၅ သည် ၂ ထက် ကြီးသည် ဟု ပြသပါ။
-၅ သည် ၂ ထက် ကြီးပါသည် ဟု ပြသပါ။
+၅ သည် ၂ ထက် ကြီး ကို ပြသမည်။
+၅ သည် ၂ ထက် ကြီးသည် ဟု ပြသမည်။
+၅ သည် ၂ ထက် ကြီးပါသည် ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

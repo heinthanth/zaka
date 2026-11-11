@@ -77,14 +77,14 @@ fn int_value(text: &str, base: u32, span: Span) -> Result<u128, Diagnostic>
 ///
 /// Unsigned kinds and literals with a base prefix (bit patterns) take the full
 /// width. Signed decimal literals take one more than the largest positive
-/// value, so that a negated minimum such as `-128` folds later. A literal
-/// without a kind prefix takes the kind of its place, which the semantic
-/// check finds, so it is not limited here.
+/// value, so that a negated minimum such as `-၁၂၈ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု`
+/// folds later. A literal without a kind takes the kind of its place, which
+/// the semantic check finds, so it is not limited here.
 ///
 /// # Arguments
 ///
 /// * `value` - The value.
-/// * `kind` - The kind prefix.
+/// * `kind` - The kind written after the literal.
 /// * `based` - Whether a base prefix is written.
 ///
 /// # Returns
@@ -155,7 +155,8 @@ fn is_base(kind: Option<&Kind>, base: BaseKind) -> bool
 
 impl Parser<'_>
 {
-    /// Parse a number literal with its optional base and kind prefixes.
+    /// Parse a number literal with its optional base prefix and its optional
+    /// kind, `<literal> ဟူသော <kind> တစ်<classifier>`.
     ///
     /// # Returns
     ///
@@ -164,9 +165,9 @@ impl Parser<'_>
     {
         let start = self.peek().span;
         let base = self.parse_base()?;
-        let kind = self.parse_literal_kind()?;
         let tok = self.literal_digits(base)?;
-        let span = start.to(&tok.span);
+        let kind = self.parse_literal_kind()?;
+        let span = start.to(&self.prev_span());
         let text = self.text_of(tok.span);
         let shape = shape_of(&tok);
         let fraction = shape.is_some_and(|s| s.has_fraction || s.has_exponent);
@@ -204,20 +205,34 @@ impl Parser<'_>
         Ok(Some(base as u32))
     }
 
-    /// Parse the kind prefix of a literal when one comes next.
+    /// Parse `ဟူသော <kind> တစ်<classifier>` after the digits of a literal, when
+    /// it comes next.
     ///
     /// # Returns
     ///
-    /// The kind, or a `bad-literal-kind` diagnostic for a character,
-    /// boolean, address or borrowed kind.
+    /// The kind, or a `bad-literal-kind` diagnostic for a kind that is not a
+    /// plain number kind.
     fn parse_literal_kind(&mut self) -> PResult<Option<Kind>>
     {
-        ret_if!(!self.starts_kind(), Ok(None));
-        let kind = self.parse_kind()?;
-        let numeric = matches!(kind.base, BaseKind::Int | BaseKind::Float);
-        let numeric = numeric && kind.is_plain() && !kind.borrowed;
+        ret_if!(!self.at_literal_kind(), Ok(None));
+        self.bump();
+        let kind = self.parse_slot_kind()?;
+        let numeric =
+            matches!(kind.base, BaseKind::Int | BaseKind::Float) && kind.is_plain();
         ret_if!(!numeric, Err(diag::bad_literal_kind(kind.span)));
         Ok(Some(kind))
+    }
+
+    /// Whether `ဟူသော` and a kind come next, the kind of a literal.
+    ///
+    /// # Returns
+    ///
+    /// `true` if both come next.
+    pub(crate) fn at_literal_kind(&self) -> bool
+    {
+        let called = self.peek().kind == TokenKind::Kw(Kw::Called);
+        called
+            && (self.kind_len_at(1, self.fn_form()).is_some() || self.is_struct_at(1))
     }
 
     /// Move past the digits of a literal: a number token, or after a base

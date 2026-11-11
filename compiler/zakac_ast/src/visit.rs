@@ -51,6 +51,7 @@ use crate::stmt::GenericStmt;
 use crate::stmt::IfArm;
 use crate::stmt::IfStmt;
 use crate::stmt::ImportStmt;
+use crate::stmt::LeaveStmt;
 use crate::stmt::Param;
 use crate::stmt::PrintStmt;
 use crate::stmt::Program;
@@ -128,6 +129,7 @@ CallStmt => "call_stmt", visit_call_stmt;
 AllocStmt => "alloc", visit_alloc;
 ResizeStmt => "resize", visit_resize;
 FreeStmt => "free", visit_free;
+LeaveStmt => "leave", visit_leave;
 BlitStmt => "blit", visit_blit;
 FillStmt => "fill", visit_fill;
 AddStmt => "add", visit_add;
@@ -197,6 +199,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Alloc(s) => s,
         Stmt::Resize(s) => s,
         Stmt::Free(s) => s,
+        Stmt::Leave(s) => s,
         Stmt::Blit(s) => s,
         Stmt::Fill(s) => s,
         Stmt::Add(s) => s,
@@ -321,6 +324,8 @@ pub trait Visitor
     fn visit_resize(&mut self, n: &ResizeStmt) { walk_resize(self, n) }
     /// Visit a heap release.
     fn visit_free(&mut self, n: &FreeStmt) { walk_free(self, n) }
+    /// Visit a leave for C to call a function value.
+    fn visit_leave(&mut self, n: &LeaveStmt) { walk_leave(self, n) }
     /// Visit a blit of cells.
     fn visit_blit(&mut self, n: &BlitStmt) { walk_blit(self, n) }
     /// Visit a fill of cells.
@@ -436,6 +441,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Alloc(s) => v.visit_alloc(s),
         Stmt::Resize(s) => v.visit_resize(s),
         Stmt::Free(s) => v.visit_free(s),
+        Stmt::Leave(s) => v.visit_leave(s),
         Stmt::Blit(s) => v.visit_blit(s),
         Stmt::Fill(s) => v.visit_fill(s),
         Stmt::Add(s) => v.visit_add(s),
@@ -632,6 +638,14 @@ pub fn walk_free<V: Visitor + ?Sized>(v: &mut V, n: &FreeStmt)
     v.leave(n);
 }
 
+/// Visit the function value of a leave for C.
+pub fn walk_leave<V: Visitor + ?Sized>(v: &mut V, n: &LeaveStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.value);
+    v.leave(n);
+}
+
 /// Visit the source, the size, then the destination of a blit of cells.
 pub fn walk_blit<V: Visitor + ?Sized>(v: &mut V, n: &BlitStmt)
 {
@@ -696,6 +710,7 @@ pub fn walk_enum<V: Visitor + ?Sized>(v: &mut V, n: &EnumDecl)
     v.enter(n);
     v.visit_ident(&n.name);
     do_for!(m in &n.members, v.visit_enum_member(m));
+    do_if!(let Some(word) = &n.classifier, v.visit_ident(word));
     v.leave(n);
 }
 
@@ -705,6 +720,7 @@ pub fn walk_alias<V: Visitor + ?Sized>(v: &mut V, n: &AliasDecl)
     v.enter(n);
     v.visit_kind(&n.kind);
     v.visit_ident(&n.name);
+    do_if!(let Some(word) = &n.classifier, v.visit_ident(word));
     v.leave(n);
 }
 
@@ -793,7 +809,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
     }
 }
 
-/// Visit the kind prefix of an integer literal.
+/// Visit the kind of an integer literal.
 pub fn walk_int<V: Visitor + ?Sized>(v: &mut V, n: &IntLit)
 {
     v.enter(n);
@@ -801,7 +817,7 @@ pub fn walk_int<V: Visitor + ?Sized>(v: &mut V, n: &IntLit)
     v.leave(n);
 }
 
-/// Visit the kind prefix of a floating-point literal.
+/// Visit the kind of a floating-point literal.
 pub fn walk_float<V: Visitor + ?Sized>(v: &mut V, n: &FloatLit)
 {
     v.enter(n);
@@ -956,6 +972,7 @@ pub fn walk_list<V: Visitor + ?Sized>(v: &mut V, n: &ListLit)
 {
     v.enter(n);
     do_for!(c in &n.cells, v.visit_expr(c));
+    do_if!(let Some(kind) = &n.kind, v.visit_kind(kind));
     v.leave(n);
 }
 
@@ -973,10 +990,11 @@ pub fn walk_struct_lit<V: Visitor + ?Sized>(v: &mut V, n: &StructLit)
     v.leave(n);
 }
 
-/// Visit a blank list; it has no children.
+/// Visit a blank list and its written kind.
 pub fn walk_blank_list<V: Visitor + ?Sized>(v: &mut V, n: &BlankListLit)
 {
     v.enter(n);
+    do_if!(let Some(kind) = &n.kind, v.visit_kind(kind));
     v.leave(n);
 }
 
@@ -1027,6 +1045,7 @@ pub trait VisitorMut
         self.visit_span_mut(&mut n.span);
         do_if!(let Some(name) = &mut n.name, self.visit_ident_mut(name));
         do_if!(let Some(sig) = &mut n.sig, walk_sig_mut(self, sig));
+        do_if!(let Some(word) = &mut n.classifier, self.visit_ident_mut(word));
     }
     /// Visit a heap allocation.
     fn visit_alloc_mut(&mut self, n: &mut AllocStmt) { walk_alloc_mut(self, n) }
@@ -1034,6 +1053,8 @@ pub trait VisitorMut
     fn visit_resize_mut(&mut self, n: &mut ResizeStmt) { walk_resize_mut(self, n) }
     /// Visit a heap release.
     fn visit_free_mut(&mut self, n: &mut FreeStmt) { walk_free_mut(self, n) }
+    /// Visit a leave for C to call a function value.
+    fn visit_leave_mut(&mut self, n: &mut LeaveStmt) { walk_leave_mut(self, n) }
     /// Visit a blit of cells.
     fn visit_blit_mut(&mut self, n: &mut BlitStmt) { walk_blit_mut(self, n) }
     /// Visit a fill of cells.
@@ -1105,6 +1126,7 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::Alloc(s) => v.visit_alloc_mut(s),
         Stmt::Resize(s) => v.visit_resize_mut(s),
         Stmt::Free(s) => v.visit_free_mut(s),
+        Stmt::Leave(s) => v.visit_leave_mut(s),
         Stmt::Blit(s) => v.visit_blit_mut(s),
         Stmt::Fill(s) => v.visit_fill_mut(s),
         Stmt::Add(s) =>
@@ -1135,6 +1157,7 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
             v.visit_span_mut(&mut s.span);
             v.visit_kind_mut(&mut s.kind);
             v.visit_ident_mut(&mut s.name);
+            do_if!(let Some(word) = &mut s.classifier, v.visit_ident_mut(word));
         }
     }
 }
@@ -1145,7 +1168,6 @@ pub fn walk_decl_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut DeclStmt)
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.name);
     do_if!(let Some(kind) = &mut n.kind, v.visit_kind_mut(kind));
-    do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
     opt_expr_mut(v, &mut n.init);
 }
 
@@ -1211,7 +1233,6 @@ pub fn walk_generic_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut GenericStmt)
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.var);
     do_if!(let Some(kind) = &mut n.kind, v.visit_kind_mut(kind));
-    do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
     opt_expr_mut(v, &mut n.init);
     v.visit_expr_mut(&mut n.cond);
     v.visit_block_mut(&mut n.block);
@@ -1258,6 +1279,7 @@ pub fn walk_enum_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut EnumDecl)
         v.visit_ident_mut(&mut m.name);
         opt_expr_mut(v, &mut m.value);
     }
+    do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
 }
 
 /// Visit the subject, the arms and the default arm of a switch.
@@ -1335,6 +1357,13 @@ pub fn walk_free_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FreeStmt)
     v.visit_expr_mut(&mut n.target);
 }
 
+/// Visit the function value of a leave for C.
+pub fn walk_leave_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut LeaveStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_expr_mut(&mut n.value);
+}
+
 /// Visit the source, the size, then the destination of a blit of cells.
 pub fn walk_blit_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut BlitStmt)
 {
@@ -1359,7 +1388,6 @@ fn walk_size_arg_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut SizeArg)
     v.visit_span_mut(&mut n.span);
     v.visit_expr_mut(&mut n.count);
     opt_kind_mut(v, &mut n.unit);
-    do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
 }
 
 /// Visit the children of an expression.
@@ -1394,7 +1422,11 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         }
         Expr::List(e) => walk_list_mut(v, e),
         Expr::Struct(e) => walk_struct_lit_mut(v, e),
-        Expr::BlankList(e) => v.visit_span_mut(&mut e.span),
+        Expr::BlankList(e) =>
+        {
+            v.visit_span_mut(&mut e.span);
+            opt_kind_mut(v, &mut e.kind);
+        }
         Expr::Str(e) =>
         {
             v.visit_span_mut(&mut e.span);
@@ -1478,6 +1510,7 @@ pub fn walk_list_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut ListLit)
 {
     v.visit_span_mut(&mut n.span);
     do_for!(c in &mut n.cells, v.visit_expr_mut(c));
+    opt_kind_mut(v, &mut n.kind);
 }
 
 /// Visit the fields and the name of a struct literal.

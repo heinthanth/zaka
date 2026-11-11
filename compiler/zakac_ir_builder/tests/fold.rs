@@ -9,7 +9,7 @@ use zakac_ast::s_expr::ToSexpr;
 use zakac_diagnostics::Code;
 use zakac_ir_builder::ir::FoldOptions;
 
-fn only(exprs: bool, consts: bool, branches: bool) -> FoldOptions
+fn just(exprs: bool, consts: bool, branches: bool) -> FoldOptions
 {
     FoldOptions::builder().exprs(exprs).consts(consts).branches(branches).build()
 }
@@ -17,28 +17,28 @@ fn only(exprs: bool, consts: bool, branches: bool) -> FoldOptions
 #[test]
 fn literal_arithmetic_folds()
 {
-    assert_eq!(folded("(၂ + ၃) * ၄ ကို ပြသပါ။"), ["(print 20:isize)"]);
-    assert_eq!(folded("၁ / ၃ ကို ပြသပါ။"), ["(print 0:isize)"]);
-    assert_eq!(folded("၁.၀ / ၀.၀ ကို ပြသပါ။"), ["(print inf:f64)"]);
-    assert_eq!(folded("၁ < ၂ ကို ပြသပါ။"), ["(print true:bool)"]);
-    assert_eq!(folded("၁ << ၄ ကို ပြသပါ။"), ["(print 16:isize)"]);
-    assert_eq!(folded("-(၅) ကို ပြသပါ။"), ["(print -5:isize)"]);
+    assert_eq!(folded("(၂ + ၃) * ၄ ကို ပြသမည်။"), ["(print 20:isize)"]);
+    assert_eq!(folded("၁ / ၃ ကို ပြသမည်။"), ["(print 0:isize)"]);
+    assert_eq!(folded("၁.၀ / ၀.၀ ကို ပြသမည်။"), ["(print inf:f64)"]);
+    assert_eq!(folded("၁ < ၂ ကို ပြသမည်။"), ["(print true:bool)"]);
+    assert_eq!(folded("၁ << ၄ ကို ပြသမည်။"), ["(print 16:isize)"]);
+    assert_eq!(folded("-(၅) ကို ပြသမည်။"), ["(print -5:isize)"]);
     assert_eq!(
-        folded("'က' ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။"),
+        folded("'က' ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။"),
         ["(print 4096:isize)"]
     );
     let text = "ကိန်းရှင် က သည် ၁၆ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ / ၃ ဖြစ်ပါစေ။";
     assert_eq!(folded(text), ["(set g0 0.33325:f16)"]);
-    let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
-                က + ၁ ဖြစ်ပါစေ။";
+    let text = "ကိန်းရှင် က သည် ၅ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ဒဿမကိန်း တစ်ခု \
+                ဖြစ်၍ တန်ဖိုးသည် က + ၁ ဖြစ်ပါစေ။";
     assert_eq!(folded(text)[1], "(set g1 (widen f64 (+ g0 1:i8)))");
 }
 
 #[test]
 fn turning_exprs_off_keeps_the_tree()
 {
-    let off = only(false, true, true);
-    let forms = folded_with("(၂ + ၃) * ၄ ကို ပြသပါ။", &off);
+    let off = just(false, true, true);
+    let forms = folded_with("(၂ + ၃) * ၄ ကို ပြသမည်။", &off);
     assert_eq!(forms, ["(print (* (+ 2:isize 3:isize) 4:isize))"]);
 }
 
@@ -50,9 +50,9 @@ fn errors_are_reported_whatever_the_options()
     assert_eq!(codes_with(text, &FoldOptions::none()), [Code::ConstantOverflow]);
     let text = "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၀၀ + ၁) * ၂ ဖြစ်ပါစေ။";
     assert_eq!(codes_with(text, &FoldOptions::none()), [Code::ConstantOverflow]);
-    assert_eq!(codes("၁ / ၀ ကို ပြသပါ။"), [Code::ConstantZeroDivisor]);
-    assert_eq!(codes("၇ % (၂ - ၂) ကို ပြသပါ။"), [Code::ConstantZeroDivisor]);
-    let text = "ကိန်းသေ က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၁၂၈ ဖြစ်ပါစေ။\n-က ကို ပြသပါ။";
+    assert_eq!(codes("၁ / ၀ ကို ပြသမည်။"), [Code::ConstantZeroDivisor]);
+    assert_eq!(codes("၇ % (၂ - ၂) ကို ပြသမည်။"), [Code::ConstantZeroDivisor]);
+    let text = "ကိန်းသေ က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် -၁၂၈ ဖြစ်ပါစေ။\n-က ကို ပြသမည်။";
     assert_eq!(codes(text), [Code::ConstantOverflow]);
     let lowered = run(
         "ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ + ၁ ဖြစ်ပါစေ။",
@@ -65,22 +65,22 @@ fn errors_are_reported_whatever_the_options()
 #[test]
 fn constants_propagate()
 {
-    let text = "ကိန်းသေ ဆ သည် ကိန်းပြည့် ၁၀ ဖြစ်ပါစေ။
-ကိန်းရှင် က သည် ကိန်းပြည့် ၁၀ ဖြစ်ပါစေ။
-ဆ * ၂ ကို ပြသပါ။
-က * ၂ ကို ပြသပါ။";
+    let text = "ကိန်းသေ ဆ သည် ၁၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ၁၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ဆ * ၂ ကို ပြသမည်။
+က * ၂ ကို ပြသမည်။";
     assert_eq!(folded(text)[2..], ["(print 20:isize)", "(print (* g1 2:isize))"]);
-    let off = folded_with(text, &only(true, false, true));
+    let off = folded_with(text, &just(true, false, true));
     assert_eq!(off[2], "(print (* g0 2:isize))");
 }
 
 #[test]
 fn constants_reach_functions_and_chains()
 {
-    let text = "ကိန်းသေ က သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။
+    let text = "ကိန်းသေ က သည် ၃ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ကိန်းသေ ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က * က ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် ပြ သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ခ + ၁ ကို ပြသပါ။
+ခ + ၁ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let lowered = run(text, &FoldOptions::default());
     let module = lowered.folded.expect("folded");
@@ -92,21 +92,21 @@ fn constants_reach_functions_and_chains()
 #[test]
 fn propagated_shift_distances_are_checked()
 {
-    let text = "ကိန်းသေ န သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၇၀ ဖြစ်ပါစေ။
-ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
-က << န ကို ပြသပါ။";
+    let text = "ကိန်းသေ န သည် ၇၀ ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+က << န ကို ပြသမည်။";
     assert_eq!(codes(text), [Code::ShiftTooFar]);
-    assert!(codes_with(text, &only(true, false, true)).is_empty());
+    assert!(codes_with(text, &just(true, false, true)).is_empty());
 }
 
 #[test]
 fn constant_branches_are_spliced()
 {
-    let text = "အကယ်၍ ၁ သည် ၂ အောက် ငယ်လျှင် \"a\" ဟု ပြသပါ။
-သို့မဟုတ်ပါက \"b\" ဟု ပြသပါ။
-အကယ်၍ ၁ သည် ၂ ထက် ကြီးလျှင် \"c\" ဟု ပြသပါ။";
+    let text = "အကယ်၍ ၁ သည် ၂ အောက် ငယ်လျှင် \"a\" ဟု ပြသမည်။
+သို့မဟုတ်ပါက \"b\" ဟု ပြသမည်။
+အကယ်၍ ၁ သည် ၂ ထက် ကြီးလျှင် \"c\" ဟု ပြသမည်။";
     assert_eq!(folded(text), ["(print \"a\")"]);
-    let kept = folded_with(text, &only(true, true, false));
+    let kept = folded_with(text, &just(true, true, false));
     assert_eq!(kept[0], "(if true:bool (block (print \"a\")) (block (print \"b\")))");
     assert_eq!(kept.len(), 2);
 }
@@ -114,9 +114,9 @@ fn constant_branches_are_spliced()
 #[test]
 fn a_dead_loop_keeps_its_start()
 {
-    let text = "၁ သည် ၂ ထက် ကြီးနေသရွေ့ \"x\" ဟု ပြသပါ။
-ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ၁ သည် ၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ကိန်း ကို ပြသပါ။
+    let text = "၁ သည် ၂ ထက် ကြီးနေသရွေ့ \"x\" ဟု ပြသမည်။
+ကိန်းရှင် ကိန်း သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပြီး ၁ သည် ၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်း ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     assert_eq!(folded(text), ["(set l0 0:isize)"]);
 }
@@ -124,7 +124,7 @@ fn a_dead_loop_keeps_its_start()
 #[test]
 fn logic_short_circuits_on_a_constant_left_side()
 {
-    let head = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\n";
+    let head = "ကိန်းရှင် က သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n";
     let cases = [
         ("(၁ == ၁ && က == ၁)", "(print (== g0 1:isize))"),
         ("(၁ == ၂ && က == ၁)", "(print false:bool)"),
@@ -134,7 +134,7 @@ fn logic_short_circuits_on_a_constant_left_side()
     ];
     for (expr, expected) in cases
     {
-        assert_eq!(folded(&format!("{head}{expr} ကို ပြသပါ။"))[1], expected, "{expr}");
+        assert_eq!(folded(&format!("{head}{expr} ကို ပြသမည်။"))[1], expected, "{expr}");
     }
 }
 
@@ -146,7 +146,7 @@ fn a_cell_of_a_list_with_no_cells_is_out_of_range_without_a_panic()
     use zakac_ir_builder::ir::Stmt;
 
     let text =
-        "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။\nl ၏ အကွက် ၁ ကို ၉ ဟု ထားပါ။";
+        "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။\nl ၏ အကွက် ၁ ကို ၉ ဟု ထားမည်။";
     let mut module = run(text, &FoldOptions::default()).plain.expect("lowered");
     let start = module.funcs.iter_mut().find(|f| f.name == START_NAME);
     let Some(Stmt::Store { addr, .. }) = start

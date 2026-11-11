@@ -1,89 +1,30 @@
 ---
 title: Lists and structs through addresses
-description: Change a caller's list or struct through its address, walk rows and cells with pointers, put structs on the heap, and link them into a list.
+description: Reach fields and cells through addresses, walk rows with pointers, put structs on the heap, and link them into a list.
 ---
 
 # Lists and structs through addresses
 
-Part I changed a caller's list or struct with a marked parameter, and kept each struct in
-a variable. An address does the same work in the open: the function holds a pointer to
-the caller's value, and a struct can sit in a heap block that the program asks for.
-
-## Changing the caller's list
-
-The parameter kind is the list kind with `လိပ်စာ` after it and `ငှားထားသော` in front,
-since the function borrows the caller's list, and the call gives `မူရင်း ၏ လိပ်စာ`. The
-cells are reached through it with `အကွက်` as before:
-
-```zaka
-// the parameter is the address of the caller's list
-လုပ်ဆောင်ချက် နှစ်ဆတိုး သည်
-ငှားထားသော ကိန်းပြည့် စာရင်း လိပ်စာ ကိန်းများ ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားပါ။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် မူရင်း သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် နှစ်ဆတိုး ကို မူရင်း ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
-မူရင်း ကို ပြသပါ။     // changed through the address
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-[၂၊ ၄၊ ၆]
-```
-
-To grow the caller's list, add to `ကိန်းများ ၏ တန်ဖိုး`, the list the address points at:
-
-```zaka
-// the parameter is a duplicate of the list passed in
-လုပ်ဆောင်ချက် ချဲ့ သည်
-ကိန်းပြည့် စာရင်း ကိန်းများ ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းများ ထဲသို့ ၉ ကို ထည့်ပါ။
-ကိန်းများ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-// the parameter is the address of the caller's list
-လုပ်ဆောင်ချက် ထပ်ထည့် သည်
-ငှားထားသော ကိန်းပြည့် စာရင်း လိပ်စာ ကိန်းများ ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းများ ၏ တန်ဖိုး ထဲသို့ ၉ ကို ထည့်ပါ။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် မူရင်း သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ချဲ့ ကို မူရင်း တို့ဖြင့် လုပ်ဆောင်ပါ။
-မူရင်း ကို ပြသပါ။     // unchanged
-လုပ်ဆောင်ချက် ထပ်ထည့် ကို မူရင်း ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
-မူရင်း ကို ပြသပါ။     // changed through the address
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-[၁၊ ၂၊ ၉]
-[၁၊ ၂]
-[၁၊ ၂၊ ၉]
-```
-
-A counted list is passed in the same manner, through the address of
-`အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း`; its count is part of the kind, so the function
-takes lists of that count alone.
+Safe Zaka changes a caller's list or struct with a [`ဒေတာ ပြောင်းလဲရန်`
+parameter](../functions/parameters.md#changing-the-callers-variable), and links values to
+each other with [shared objects](../structs/objects.md). Addresses do the same work in the
+open, as C does: a pointer to a field or a cell, and structs in heap blocks that the
+program asks for.
 
 ## Fields through addresses
 
-A field is a place, so it has an address too: a pointer to a value of the field's kind,
-which can be lent or written through:
+A field is a place, so it has an address too: a pointer to a value of the field's kind.
 
 ```zaka
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ဒဿမကိန်း အမြင့် တို့ ပါဝင်သည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အမြင့် ဟူသော ဒဿမကိန်း တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကျော် ၏ အသက် ၏ လိပ်စာ ဖြစ်ပါစေ။
-ပ ၏ တန်ဖိုး ကို ၂၅ ဟု ထားပါ။
-ကျော် ၏ အသက် ကို ပြသပါ။
+ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကျော် ၏ အသက် ၏ လိပ်စာ ဖြစ်ပါစေ။
+ပ ၏ တန်ဖိုး ကို ၂၅ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ကျော် ၏ အသက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -91,75 +32,71 @@ which can be lent or written through:
 ၂၅
 ```
 
-## Changing the caller's struct
+## A struct through its address
 
 A struct name goes in front of `လိပ်စာ` to make a pointer kind. Through a pointer, a field
-is reached with `တန်ဖိုး` first: `သူ ၏ တန်ဖိုး ၏ အသက်`. To let a function change the
-caller's struct, pass a borrowed address: the parameter kind is `ငှားထားသော လူ လိပ်စာ`,
-and the call gives `ကျော် ၏ လိပ်စာ`.
+is reached with `တန်ဖိုး` first: `သူ ၏ တန်ဖိုး ၏ အသက်`. A function that takes the address
+reads and writes the caller's struct itself:
 
 ```zaka
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ကိန်းပြည့် အတန်း တို့ ပါဝင်သည်။
-လုပ်ဆောင်ချက် ပွားကြည့် သည်
-လူ သူ ကို လက်ခံပြီး
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အတန်း ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+
+စိတ်မချရသော လုပ်ဆောင်ချက် အသက်ကြီး သည်
+သူ ဟူသော လူ လိပ်စာ တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-သူ ၏ အသက် ကို ၉၉ ဟု ထားပါ။
-သူ ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-လုပ်ဆောင်ချက် အသက်ကြီး သည်
-ငှားထားသော လူ လိပ်စာ သူ ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-သူ ၏ တန်ဖိုး ၏ အသက် ကို (သူ ၏ တန်ဖိုး ၏ အသက်) + ၁ ဟု ထားပါ။
+သူ ၏ တန်ဖိုး ၏ အသက် ကို (သူ ၏ တန်ဖိုး ၏ အသက်) + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်ပါစေ။
-ကျော် ၏ အသက် ကို ၂၀ ဟု ထားပါ။
-လုပ်ဆောင်ချက် ပွားကြည့် ကို ကျော် တို့ဖြင့် လုပ်ဆောင်ပါ။
-ကျော် ၏ အသက် ကို ပြသပါ။
-လုပ်ဆောင်ချက် အသက်ကြီး ကို ကျော် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
-ကျော် ၏ အသက် ကို ပြသပါ။
+ကိန်းရှင် ကျော် သည် လူ(အသက်: ၂၀၊ အတန်း: ၇) ဖြစ်ပါစေ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် အသက်ကြီး ကို ကျော် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ကျော် ၏ အသက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-လူ(အသက်: ၉၉၊ အတန်း: ၀)
-၂၀
 ၂၁
 ```
 
-A field is not reached through the pointer itself. `သူ ၏ အသက်`, with no `တန်ဖိုး`, reads
-a field of the address, and an address has none:
+`အသက်ကြီး` is marked, so its call needs marked code too. A field is not reached through
+the pointer itself. `သူ ၏ အသက်`, with no `တန်ဖိုး`, reads a field of the address, and an
+address has none:
 
 ```zaka-error ZK0426
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ငှားထားသော လူ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကျော် ၏ လိပ်စာ ဖြစ်ပါစေ။
-p ၏ အသက် ကို ပြသပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် p သည် လူ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကျော် ၏ လိပ်စာ ဖြစ်ပါစေ။
+p ၏ အသက် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0426]: "အသက်" is read as a field, but the value before "၏" is လူ&, not a struct
+error[ZK0426]: "အသက်" is read as a field, but the value before "၏" is လူ*, not a struct
 ```
 
 ## Rows and cells through addresses
 
 The address of a counted list points at the whole list, so its kind holds the count:
-`ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, or `isize[3]&` in messages. The rows
-of a table of counted lists sit one after another, so adding 1 to the address of a row
-moves one whole row:
+`အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, or `isize[3]&` in messages. The rows of a table
+of counted lists sit one after another, so adding 1 to the address of a row moves one
+whole row:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ဇယား သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း)၊ (၄၊ ၅၊ ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ကိန်းရှင် အတန်း သည် ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဇယား ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
-အတန်း ၏ တန်ဖိုး ကို ပြသပါ။
-အတန်း ကို အတန်း + ၁ ဟု ထားပါ။                 // one whole row further
-အတန်း ၏ တန်ဖိုး ကို ပြသပါ။
-အတန်း ၏ အကွက် ၂ ကို ပြသပါ။                     // a cell, through the row address
+ကိန်းရှင် အတန်း သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဇယား ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
+အတန်း ၏ တန်ဖိုး ကို ပြသမည်။
+အတန်း ကို အတန်း + ၁ ဟု ထားမည်။                 // one whole row further
+အတန်း ၏ တန်ဖိုး ကို ပြသမည်။
+အတန်း ၏ အကွက် ၂ ကို ပြသမည်။                     // a cell, through the row address
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -169,92 +106,100 @@ moves one whole row:
 ၆
 ```
 
-A plain list keeps each row in a heap block of its own, so the step from one row to the
+A plain list keeps its cells in a heap block of its own, so the step from one row to the
 next works on counted rows alone. The address of one cell is a plain pointer, and [pointer
-arithmetic](arithmetic.md) walks the cells after it, in a list of each form:
+arithmetic](arithmetic.md) walks the cells after it, in a list of each form.
+
+## The address of a cell pins the list
+
+A duplicate of a list shares its cells until one side writes. A pointer could write a cell with
+no warning to the duplicate, so taking the address of a cell first gives the list cells of its
+own, and *pins* them: a duplicate made later copies the cells at once. A write through the
+pointer then reaches this list alone:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၊ ၃၊ ၅၊ ၇ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကိန်းများ ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။ // the first cell
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
-ပ + ၃ ၏ တန်ဖိုး ကို ပြသပါ။                 // the cell 3 steps further
+ကိန်းရှင် ကိန်းများ သည် [၂၊ ၃၊ ၅၊ ၇] ဖြစ်ပါစေ။
+ကိန်းရှင် အရင် သည် ကိန်းများ ဖြစ်ပါစေ။               // a duplicate from before
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကိန်းများ ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
+ပ + ၃ ၏ တန်ဖိုး ကို ပြသမည်။                       // the cell 3 steps further
+ကိန်းရှင် နောက် သည် ကိန်းများ ဖြစ်ပါစေ။               // a duplicate from after
+ပ ၏ တန်ဖိုး ကို ၉ ဟု ထားမည်။
+ကိန်းများ ကို ပြသမည်။
+အရင် ကို ပြသမည်။
+နောက် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-၂
 ၇
+[၉၊ ၃၊ ၅၊ ၇]
+[၂၊ ၃၊ ၅၊ ၇]
+[၂၊ ၃၊ ၅၊ ၇]
 ```
 
-A cell address borrows the list, as a [slice](../lists/slices.md) does. An add can move
-the cells to a new block, so the address cannot be used after the list grows or shrinks:
+The same holds for the cells of text. An add can still move the cells to a larger block,
+so a cell address must not be used after the list grows. The compiler warns (ZK0704),
+and the VM stops the read:
 
-```zaka-error ZK0704
+```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် l သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
-l ထဲသို့ ၃ ကို ထည့်ပါ။
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် l သည် [၁၊ ၂] ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
+l ထဲသို့ ၃ ကို ထည့်မည်။
+ပ ၏ တန်ဖိုး ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0704]: the block of "l" is edited, so its cells can move, here, but "ပ" still borrows it and is used later
+the program stopped: access at 0x101020 inside a freed block
 ```
 
-## Slices of the heap
+## A range of a heap block
 
-A heap block has no count in its kind. A range writes the count once, and the
-[slice](../lists/slices.md) keeps it from then on. `ပ ၏ တန်ဖိုးအငှား` lends a whole block
-in the same manner:
+A heap block has no count in its kind. A [range](../forms/ranges.md) writes the count
+once, and gives a list of its own, with copies of the cells:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၃ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ အကွက် ၀ မှစ၍ ၃ ကွက် ဖြစ်ပါစေ။
-ကိန်းများ ၏ အကွက် ၂ ကို ၉ ဟု ထားပါ။
-ကိန်းများ ကို ပြသပါ။
-ကိန်းများ ၏ အကွက်အရေအတွက် ကို ပြသပါ။
+ပ + ၂ ၏ တန်ဖိုး ကို ၉ ဟု ထားမည်။
+ကိန်းရှင် ကိန်းများ သည် ပ ၏ အကွက် ၀ မှစ၍ ၃ ကွက် ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+ကိန်းများ ကို ပြသမည်။                        // the list stands after the block is gone
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 [၀၊ ၀၊ ၉]
-၃
-```
-
-A slice borrows, so its block must live until the last use of the slice:
-
-```zaka-error ZK0704
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-s ကို ပြသပါ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ## Structs on the heap
 
 A struct name goes in front of a count to ask the heap for room, as a kind does. The size
-counts with the [classifier](../structs/README.md#count-words) of the struct:
+counts with the [count word](../structs/README.md#count-words) of the struct:
 
 ```zaka
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ကိန်းပြည့် အတန်း တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အတန်း ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် p သည် လူ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
-p ၏ တန်ဖိုး ၏ အသက် ကို ၁၀ ဟု ထားပါ။
-(p + ၁) ၏ တန်ဖိုး ၏ အသက် ကို ၁၁ ဟု ထားပါ။
-p ၏ တန်ဖိုး ကို ပြသပါ။
-(p + ၁) ၏ တန်ဖိုး ကို ပြသပါ။
-လူ ၏ အရွယ်အစား ကို ပြသပါ။
+p ၏ တန်ဖိုး ၏ အသက် ကို ၁၀ ဟု ထားမည်။
+(p + ၁) ၏ တန်ဖိုး ၏ အသက် ကို ၁၁ ဟု ထားမည်။
+p ၏ တန်ဖိုး ကို ပြသမည်။
+(p + ၁) ၏ တန်ဖိုး ကို ပြသမည်။
+လူ တစ်ယောက် ၏ အရွယ်အစား ကို ပြသမည်။
 လိပ်စာ p ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -264,18 +209,19 @@ p ၏ တန်ဖိုး ကို ပြသပါ။
 ၁၆
 ```
 
-Adding 1 to the address of a struct moves one whole struct, here 16 octets. A list count
-(`အကွက် ၃ ခုရှိသော`) and an ordinal (`၁ ခုမြောက်အကွက်`) count cells, not structs, so
-these use `ခု` each time. A heap size with another word gives the warning of [The wrong
+Adding 1 to the address of a struct moves one whole struct, here 16 octets. A heap size
+with another count word gives the warning of [The wrong
 classifier](../structs/mistakes.md#the-wrong-classifier):
 
 ```zaka-warning ZK0509
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် p သည် လူ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် လူ ၃ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
 လိပ်စာ p ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -283,54 +229,39 @@ classifier](../structs/mistakes.md#the-wrong-classifier):
 warning[ZK0509]: လူ is counted with "ယောက်", not "ခု"
 ```
 
-The same warning comes for `ယောက်` in the heap size of a kind such as `ကိန်းပြည့်`, once a
-struct of the program has named `ယောက်` as its classifier:
-
-```zaka-warning ZK0509
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၃ ယောက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။
-လိပ်စာ p ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-warning[ZK0509]: isize is counted with "ခု", not "ယောက်"
-```
-
 ## A linked list
 
-A struct cannot hold itself, but it can hold the address of its own kind. Such an address
-is an owner, so each node owns the next one, and a chain of nodes forms a linked list.
-The `နောက်` ("next") field ends in `ဗလာ` at the last node.
+A struct cannot hold itself, but it can hold the address of its own kind, so a chain of
+nodes forms a linked list. The `နောက်` ("next") field holds the null address at the last node, and
+the program gives back each node itself:
 
 ```zaka
-ဒေတာအမျိုးအစား အဆစ် တွင် ကိန်းပြည့် တန်ဖိုးရင်း၊ အဆစ် လိပ်စာ နောက် တို့ ပါဝင်သည်။
+အဆစ် ဟူသော ဒေတာအစုအဝေးတွင် တန်ဖိုးရင်း ဟူသော ကိန်းပြည့် တစ်ခု၊ နောက် ဟူသော အဆစ် လိပ်စာ တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ထိပ် သည် အဆစ် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ထိပ် သည် အဆစ် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ ဖြစ်ပါစေ။
+၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသစ် သည် အဆစ် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် အဆစ် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို အသစ် တွင် သိမ်းထားမည်။
-အသစ် ၏ တန်ဖိုး ၏ တန်ဖိုးရင်း ကို န * န ဟု ထားပါ။
-အသစ် ၏ တန်ဖိုး ၏ နောက် ကို ထိပ် ဟု ထားပါ။    // the old head moves into the new node
-ထိပ် ကို အသစ် ဟု ထားပါ။
+အသစ် ၏ တန်ဖိုး ၏ တန်ဖိုးရင်း ကို န * န ဟု ထားမည်။
+အသစ် ၏ တန်ဖိုး ၏ နောက် ကို ထိပ် ဟု ထားမည်။    // the old head goes after the new node
+ထိပ် ကို အသစ် ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-// walk the list with a borrowed address
-ကိန်းရှင် လက်ရှိ သည် ငှားထားသော အဆစ် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ထိပ် ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
-လက်ရှိ သည် ဗလာ နှင့် မညီနေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-လက်ရှိ ၏ တန်ဖိုး ၏ တန်ဖိုးရင်း ကို ပြသပါ။
-လက်ရှိ ကို လက်ရှိ ၏ တန်ဖိုး ၏ နောက် ၏ တန်ဖိုးအငှား ဟု ထားပါ။
+// walk the list with a second pointer
+ကိန်းရှင် လက်ရှိ သည် ထိပ် ဖြစ်ပါစေ။
+လက်ရှိ သည် မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ နှင့် မညီနေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လက်ရှိ ၏ တန်ဖိုး ၏ တန်ဖိုးရင်း ကို ပြသမည်။
+လက်ရှိ ကို လက်ရှိ ၏ တန်ဖိုး ၏ နောက် ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 // give back each node
-ထိပ် သည် ဗလာ နှင့် မညီနေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ကိန်းရှင် ကျန် သည် အဆစ် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ထိပ် ၏ တန်ဖိုး ၏ နောက် ဖြစ်ပါစေ။
+ထိပ် သည် မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ နှင့် မညီနေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကျန် သည် ထိပ် ၏ တန်ဖိုး ၏ နောက် ဖြစ်ပါစေ။
 လိပ်စာ ထိပ် ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-ထိပ် ကို ကျန် ဟု ထားပါ။
+ထိပ် ကို ကျန် ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -341,56 +272,15 @@ The `နောက်` ("next") field ends in `ဗလာ` at the last node.
 ၁
 ```
 
-A struct that holds an owner moves instead of being duplicated, as an owner does: the new
-struct takes the address, and the old one is left with `ဗလာ` in that field and cannot be
-used again. The next page, [Ownership and borrowing](ownership.md#one-owner-each), gives
-the rules of owners and borrows.
-
-## Using a struct after it moved
-
-A struct that holds an owner moves when it is set to another, so the old one cannot be
-used after:
-
-```zaka-error ZK0701
-ဒေတာအမျိုးအစား အဆစ် တွင် ကိန်းပြည့် တန်ဖိုးရင်း၊ အဆစ် လိပ်စာ နောက် တို့ ပါဝင်သည်။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် အဆစ် တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် အဆစ် တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် အဆစ် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို က ၏ နောက် တွင် သိမ်းထားမည်။
-ခ ကို က ဟု ထားပါ။
-က ၏ နောက် ကို ပြသပါ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0701]: "က" was moved to another owner and now holds ဗလာ
-```
-
-## A borrow in a field
-
-A borrow lasts as long as the owner it borrows from, and the checker follows that through
-variables and parameters. A struct can sit in the heap, out of the checker's sight, so a
-field holds an owner (`လူ လိပ်စာ`) or a raw address (`လူ လိပ်စာအကြမ်း`), never a borrow:
-
-```zaka-error ZK0718
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ငှားထားသော ကိန်းပြည့် လိပ်စာ ရှင် တို့ ပါဝင်သည်။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0718]: the field "ရှင်" holds a borrow, and borrows live in variables and parameters alone
-```
+A duplicate of a struct that holds a pointer copies the address, not the block it points at,
+so two structs can then reach one block. The same list built from a [shared
+object](../structs/objects.md) needs no marked code and frees itself.
 
 ## Hands on
 
-- Write a function that takes the address of a list of integers and adds 1 to each cell,
-  then compare it with the marked parameter of [Passing and comparing
-  lists](../lists/passing.md).
-- Write a function that takes the address of a list of text and adds a name to it.
+- Write a marked function that takes the address of a `လူ` and sets both of its fields,
+  then compare it with a `ဒေတာ ပြောင်းလဲရန်` parameter.
 - Ask the heap for room for two structs, set a field of each, and print both.
 - Add a function to the linked list that sums the `တန်ဖိုးရင်း` of each node.
 
-Next: [Functions as values](functions.md).
+Next: [Owned pointers](ownership.md).

@@ -8,8 +8,8 @@ use zakac_codegen_target_vm::listing::quote;
 #[test]
 fn listing_names_labels_slots_and_calls()
 {
-    let text = "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nကိန်း သည် ၃ အောက် ငယ်နေသရွေ့ ကိန်း ကို ကိန်း + ၁ ဟု \
-                ထားပါ။\n\"ပြီး\" ဟု ပြသပါ။";
+    let text = "ကိန်းရှင် ကိန်း သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်း သည် ၃ အောက် ငယ်နေသရွေ့ ကိန်း ကို \
+                ကိန်း + ၁ ဟု ထားမည်။\n\"ပြီး\" ဟု ပြသမည်။";
     let out = listing(&emit_text(text));
     let lines: Vec<&str> = out.lines().collect();
     assert!(lines[0].starts_with(LISTING_HEADER), "{out}");
@@ -28,9 +28,9 @@ fn listing_names_labels_slots_and_calls()
 #[test]
 fn functions_show_params_result_and_locals()
 {
-    let text = "လုပ်ဆောင်ချက် နှစ်ဆ ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။\nလုပ်ဆောင်ချက် နှစ်ဆ \
-                သည်\nကိန်းပြည့် ဂဏန်း ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို \
-                ပြန်ပေးမည်။\nဂဏန်း * ၂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    let text = "လုပ်ဆောင်ချက် နှစ်ဆ ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။\nလုပ်ဆောင်ချက် နှစ်ဆ သည်\nဂဏန်း \
+                ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို \
+                ပြန်ပေးမည်။\nဂဏန်း * ၂ ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let out = listing(&emit_text(text));
     assert!(
         out.contains("fn f0 နှစ်ဆ (params 1) -> isize\nlocals\n  l0 ဂဏန်း isize\n"),
@@ -51,7 +51,7 @@ fn heap_ops_list_their_operands()
 {
     let out = listing(&emit_text(
         "ကိန်းရှင် p သည် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\nမင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို p တွင် \
-         သိမ်းထားမည်။\np ၏ တန်ဖိုး ကို ပြသပါ။",
+         သိမ်းထားမည်။\np ၏ တန်ဖိုး ကို ပြသမည်။",
     ));
     assert!(out.contains("globals\n  g0 p isize*\n"), "{out}");
     assert!(out.contains("alloc 8"), "{out}");

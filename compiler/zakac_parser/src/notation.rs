@@ -17,6 +17,9 @@ use zakac_ast::expr::NullLit;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp;
 use zakac_ast::expr::SizeOfExpr;
+use zakac_ast::kind::Kind;
+use zakac_ast::kind::Wrap;
+use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
 use zakac_lexer::token::Kw;
@@ -111,9 +114,8 @@ fn prefix_of(tok: &Token) -> Option<PrefixOp>
     }
 }
 
-/// The arguments of a call, and whether `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)`
-/// marks each.
-pub(crate) type Args = (Vec<Expr>, Vec<bool>);
+/// The arguments of a call.
+pub(crate) type Args = Vec<Expr>;
 
 /// What the head of a long call holds: where it starts, the function name,
 /// the place that holds the function when one is written, and the arguments.
@@ -199,7 +201,8 @@ impl Parser<'_>
         let Some(op) = prefix_of(&tok)
         else
         {
-            return self.parse_atom();
+            let atom = self.parse_atom()?;
+            return Ok(self.data_reads(atom));
         };
         self.bump();
         let rhs = self.notation_bp(PREFIX_BP)?;
@@ -211,7 +214,8 @@ impl Parser<'_>
 
     /// Parse an atom: a literal, a name, `( expr )`, `[a၊ b]`,
     /// `<struct>(<field>: <value>)`, a call expression in the word form or
-    /// the sign form `f(a၊ b)`, `ဗလာ` or `<kind> ၏ အရွယ်အစား`.
+    /// the sign form `f(a၊ b)`, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` or
+    /// `<kind> တစ်<classifier> ၏ အရွယ်အစား`.
     ///
     /// # Returns
     ///
@@ -235,9 +239,15 @@ impl Parser<'_>
             {
                 self.parse_size_of()
             }
-            TokenKind::Ident if self.peek_n(1).kind == TokenKind::Kw(Kw::Among) =>
+            TokenKind::Ident
+                if self.peek_n(1).kind == TokenKind::Kw(Kw::Among)
+                    && !self.at_data_read(1) =>
             {
                 self.parse_member()
+            }
+            TokenKind::Ident | TokenKind::RawIdent if self.at_fn_value() =>
+            {
+                self.parse_fn_value()
             }
             TokenKind::Ident | TokenKind::RawIdent | TokenKind::Kw(Kw::Result) =>
             {
@@ -245,18 +255,15 @@ impl Parser<'_>
             }
             TokenKind::Kw(Kw::Function) => self.parse_call_expr(),
             TokenKind::Kw(Kw::True | Kw::False) => Ok(self.parse_bool()),
-            TokenKind::Kw(Kw::Null) => Ok(self.parse_null()),
-            TokenKind::Kw(Kw::BlankList) => Ok(self.parse_blank_list()),
+            TokenKind::Kw(Kw::Null | Kw::NoData | Kw::Initial) => Ok(self.parse_null()),
+            TokenKind::Kw(Kw::BlankList) => self.parse_blank_list(),
             TokenKind::Char(value) => Ok(self.parse_char(value)),
             TokenKind::Number(_) | TokenKind::Kw(Kw::Base) if !self.at_size_of() =>
             {
                 self.parse_literal()
             }
             TokenKind::Str(idx) => self.parse_str(idx),
-            _ if self.starts_kind() =>
-            {
-                tern!(self.at_size_of(), self.parse_size_of(), self.parse_literal())
-            }
+            _ if self.at_size_of() => self.parse_size_of(),
             _ => Err(diag::expected_operand(tok.span, &self.found())),
         }
     }
@@ -276,7 +283,8 @@ impl Parser<'_>
         Ok(Expr::Group(GroupExpr::builder().id(id).inner(inner).span(span).build()))
     }
 
-    /// Parse `[a၊ b၊ c]`: a list with at least one cell.
+    /// Parse `[a၊ b၊ c]` or `[]`, and its kind when
+    /// `ဟူသော <kind> တစ်<classifier>` follows.
     ///
     /// # Returns
     ///
@@ -286,21 +294,35 @@ impl Parser<'_>
         let open = self.bump();
         if self.at_punct(Punct::RBracket)
         {
-            let span = open.span.to(&self.bump().span);
-            let id = self.new_id();
-            return Ok(Expr::BlankList(
-                BlankListLit::builder().id(id).span(span).brackets(true).build(),
-            ));
+            self.bump();
+            return self.blank_list_rest(open.span, true);
         }
         let mut cells = vec![self.parse_notation()?];
         while self.eat_punct(Punct::ListSep)
         {
             cells.push(self.parse_notation()?);
         }
-        let close = self.expect_punct(Punct::RBracket)?;
-        let span = open.span.to(&close.span);
+        self.expect_punct(Punct::RBracket)?;
+        let kind = tern!(self.at_literal_kind(), Some(self.parse_list_kind()?), None);
+        let span = open.span.to(&self.prev_span());
         let id = self.new_id();
-        Ok(Expr::List(ListLit::builder().id(id).cells(cells).span(span).build()))
+        #[rustfmt::skip]
+        return Ok(Expr::List(ListLit::builder().id(id).cells(cells).maybe_kind(kind).span(span).build()));
+    }
+
+    /// Parse `ဟူသော <kind> တစ်<classifier>` after a list literal, a list kind.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or a `bad-literal-kind` diagnostic for a kind that is not a
+    /// list.
+    pub(crate) fn parse_list_kind(&mut self) -> PResult<Kind>
+    {
+        self.bump();
+        let kind = self.parse_slot_kind()?;
+        let list = matches!(kind.wraps.last(), Some(Wrap::List(_)));
+        ret_if!(!list, Err(diag::bad_literal_kind(kind.span)));
+        Ok(kind)
     }
 
     /// Parse `<enum>များထဲမှ <member>`, one member of an enumeration.
@@ -351,41 +373,123 @@ impl Parser<'_>
         Expr::Bool(lit)
     }
 
-    /// Parse `ဗလာ`, which is the current token.
+    /// Parse `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, `အလွတ်` or `ကနဦးတန်ဖိုး`, which is the current
+    /// token.
     ///
     /// # Returns
     ///
-    /// The null literal.
+    /// The literal.
     fn parse_null(&mut self) -> Expr
     {
         let tok = self.bump();
         let id = self.new_id();
-        Expr::Null(NullLit::builder().id(id).span(tok.span).build())
+        let blank = tok.kind == TokenKind::Kw(Kw::NoData);
+        let initial = tok.kind == TokenKind::Kw(Kw::Initial);
+        #[rustfmt::skip]
+        let lit = NullLit::builder().id(id).blank(blank).initial(initial).span(tok.span).build();
+        Expr::Null(lit)
     }
 
-    /// Parse `စာရင်းအလွတ်`, which is the current token.
+    /// The read of an optional or a result that starts `n` tokens ahead:
+    /// `ထဲမှ ဒေတာ`, or `ထဲမှ အမှားအယွင်း ဒေတာ` for the error value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead `ထဲမှ` stands.
     ///
     /// # Returns
     ///
-    /// The blank list.
-    fn parse_blank_list(&mut self) -> Expr
+    /// The operation, or `None` when no such read starts there.
+    pub(crate) fn data_read_at(&self, n: usize) -> Option<VerbOp>
     {
-        let tok = self.bump();
-        let id = self.new_id();
-        Expr::BlankList(BlankListLit::builder().id(id).span(tok.span).build())
+        ret_if!(self.peek_n(n).kind != TokenKind::Kw(Kw::Among), None);
+        match kw_of(&self.peek_n(n + 1))
+        {
+            Some(Kw::Data) => Some(VerbOp::Unwrap),
+            Some(Kw::FaultData) => Some(VerbOp::UnwrapFault),
+            _ => None,
+        }
     }
 
-    /// Parse `<kind> ၏ အရွယ်အစား`; [`Parser::at_size_of`] has passed.
+    /// Whether a read of an optional or a result starts `n` tokens ahead.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead `ထဲမှ` stands.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    fn at_data_read(&self, n: usize) -> bool { self.data_read_at(n).is_some() }
+
+    /// Wrap a value in each read of its data that follows it: `ထဲမှ ဒေတာ`
+    /// or `ထဲမှ အမှားအယွင်း ဒေတာ`. A read binds tighter than an operator.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value.
+    ///
+    /// # Returns
+    ///
+    /// The value under its reads.
+    fn data_reads(&mut self, mut value: Expr) -> Expr
+    {
+        while let Some(op) = self.data_read_at(0)
+        {
+            self.bump();
+            let last = self.bump();
+            let span = value.span().to(&last.span);
+            value = self.dup_expr(op, value, span, last.particle);
+        }
+        value
+    }
+
+    /// Parse `စာရင်းအလွတ်`, which is the current token, and its kind when
+    /// `ဟူသော <kind> တစ်<classifier>` follows.
+    ///
+    /// # Returns
+    ///
+    /// The blank list, or a diagnostic.
+    fn parse_blank_list(&mut self) -> PResult<Expr>
+    {
+        let tok = self.bump();
+        self.blank_list_rest(tok.span, false)
+    }
+
+    /// Finish a blank list once its words are read: its kind when
+    /// `ဟူသော <kind> တစ်<classifier>` follows.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the blank list starts.
+    /// * `brackets` - Whether it is written `[]`.
+    ///
+    /// # Returns
+    ///
+    /// The blank list, or a diagnostic.
+    fn blank_list_rest(&mut self, start: Span, brackets: bool) -> PResult<Expr>
+    {
+        let kind = tern!(self.at_literal_kind(), Some(self.parse_list_kind()?), None);
+        let span = start.to(&self.prev_span());
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = BlankListLit::builder().id(id).span(span).brackets(brackets).maybe_kind(kind).build();
+        Ok(Expr::BlankList(node))
+    }
+
+    /// Parse `<kind> တစ်<classifier> ၏ အရွယ်အစား`; [`Parser::at_size_of`] has
+    /// passed.
     ///
     /// # Returns
     ///
     /// The size expression, or a diagnostic from the kind.
     fn parse_size_of(&mut self) -> PResult<Expr>
     {
-        let kind = self.parse_kind()?;
+        let start = self.peek().span;
+        let kind = self.parse_slot_kind()?;
         self.expect_punct(Punct::Ei)?;
         let end = self.expect(Kw::SizeOf)?;
-        let span = kind.span.to(&end.span);
+        let span = start.to(&end.span);
         let id = self.new_id();
         Ok(Expr::SizeOf(SizeOfExpr::builder().id(id).kind(kind).span(span).build()))
     }
@@ -414,7 +518,6 @@ impl Parser<'_>
     /// The call, or a diagnostic.
     fn parse_call_expr(&mut self) -> PResult<Expr>
     {
-        ret_if!(self.at_fn_addr(), self.parse_fn_addr());
         let (start, callee, place, args) = self.parse_call_head()?;
         let end = self.expect_one_of(&[Kw::CallResult, Kw::CallGoodResult])?;
         let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
@@ -422,36 +525,29 @@ impl Parser<'_>
         Ok(with_place(call, place))
     }
 
-    /// Whether the address of a function starts here:
-    /// `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`.
+    /// Whether a function value starts here: `<name> ဟူသော လုပ်ဆောင်ချက်`.
     ///
     /// # Returns
     ///
     /// `true` if it does.
-    pub(crate) fn at_fn_addr(&self) -> bool
+    pub(crate) fn at_fn_value(&self) -> bool
     {
-        let name =
-            matches!(self.peek_n(1).kind, TokenKind::Ident | TokenKind::RawIdent);
-        self.at(Kw::Function)
-            && name
-            && self.peek_n(2).kind == TokenKind::Punct(Punct::Ei)
-            && kw_of(&self.peek_n(3)) == Some(Kw::Address)
+        kw_of(&self.peek_n(1)) == Some(Kw::FnValue)
     }
 
-    /// Parse the address of a function: `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`.
+    /// Parse a function value: `<name> ဟူသော လုပ်ဆောင်ချက်`, "the function
+    /// called <name>".
     ///
     /// # Returns
     ///
     /// The expression, or a diagnostic.
-    pub(crate) fn parse_fn_addr(&mut self) -> PResult<Expr>
+    pub(crate) fn parse_fn_value(&mut self) -> PResult<Expr>
     {
-        let start = self.bump().span;
         let name = self.parse_ident()?;
-        self.bump();
         let end = self.bump().span;
         let id = self.new_id();
-        let node = FnAddrExpr::builder().id(id).name(name).span(start.to(&end));
-        Ok(Expr::FnAddr(node.build()))
+        let span = name.span.to(&end);
+        Ok(Expr::FnAddr(FnAddrExpr::builder().id(id).name(name).span(span).build()))
     }
 
     /// Whether the sign form of a call starts here: a name with `(` right
@@ -541,8 +637,7 @@ impl Parser<'_>
         Ok(args)
     }
 
-    /// Parse one argument, and the mark `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)`
-    /// after it when written: the function can change the argument.
+    /// Parse one argument.
     ///
     /// # Arguments
     ///
@@ -553,27 +648,8 @@ impl Parser<'_>
     /// `Ok`, or a diagnostic.
     fn parse_arg(&mut self, args: &mut Args) -> PResult<()>
     {
-        args.0.push(self.parse_expr()?);
-        args.1.push(self.parse_edit_mark()?);
+        args.push(self.parse_expr()?);
         Ok(())
-    }
-
-    /// Read the mark `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)` after an argument
-    /// when it comes next.
-    ///
-    /// # Returns
-    ///
-    /// Whether the mark was there, or a diagnostic for a mark not closed.
-    pub(crate) fn parse_edit_mark(&mut self) -> PResult<bool>
-    {
-        let mark =
-            self.at_punct(Punct::LParen) && kw_of(&self.peek_n(1)) == Some(Kw::EditArg);
-        do_if!(mark, {
-            self.bump();
-            self.bump();
-            self.expect_punct(Punct::RParen)?;
-        });
-        Ok(mark)
     }
 
     /// Build a call expression node; [`with_place`] adds the place of its
@@ -594,9 +670,8 @@ impl Parser<'_>
     ) -> Expr
     {
         let id = self.new_id();
-        let (args, edits) = args;
         #[rustfmt::skip]
-        let node = CallExpr::builder().id(id).callee(callee).args(args).edits(edits).pass(pass)
+        let node = CallExpr::builder().id(id).callee(callee).args(args).pass(pass)
             .span(span).build();
         Expr::Call(node)
     }
@@ -649,7 +724,7 @@ impl Parser<'_>
     /// The arguments with their marks, or a diagnostic.
     fn parse_call_args(&mut self) -> PResult<Args>
     {
-        let ends = [Kw::Call, Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
+        let ends = [Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
         ret_if!(ends.iter().any(|kw| self.at(*kw)), Ok(Args::default()));
         let args = self.parse_sign_args()?;
         self.expect(Kw::ListWith)?;

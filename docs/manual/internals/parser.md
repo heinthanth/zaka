@@ -36,7 +36,7 @@ Where two forms share a start, the start is read once and the token after it dec
 Zaka sentences are verb-final, and each operand carries a particle that names its role:
 
 ```text
-အသက် ကို   အသက် နှင့်  ၁ ၏   ပေါင်းလဒ်  ဟု   ထားပါ။
+အသက် ကို   အသက် နှင့်  ၁ ၏   ပေါင်းလဒ်  ဟု   ထားမည်။
  operand ကို  operand နှင့်  operand ၏   verb    ဟု  statement verb
 ```
 
@@ -58,10 +58,8 @@ one atom, then loops on operators. A parenthesized expression is an atom, which 
 logical expression gets back inside a clause. A name with `(` right after it, with no space
 (the token's `joined` flag), is the sign form of a call, `f(a၊ b)`, and builds the same
 `CallExpr` as the word form; a struct name, or `<name>(<field>:`, is a struct literal
-instead. A parameter can start with the joined phrase
-`လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` (`Param::edit`), and an argument of either call form can
-end with `(`, the phrase `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်` and `)`; `CallExpr::edits` and
-`CallStmt::edits` hold one flag for each argument.
+instead. A call writes each argument as a plain value; which ones the function changes is known
+from its parameters.
 
 ```text
  parse_expr         clause ဖြစ်၍ clause သို့မဟုတ် clause မဟုတ်      logical.rs
@@ -120,8 +118,8 @@ that starts as `[first]`. It reads the next token and does one of four things.
 4. **Each other token** ends the clause: one item alone, with no slot, is the result
    (else ZK0208).
 
-The table is the one place the parser learns what a verb takes. `Slot` has thirteen forms:
-the eight particles `နှင့် ၏ ကို ဖြင့် သည် ထက် အောက် ဟု`, `ခုမြောက်`, `ထဲသို့` (`Into`, the list of an add), `၏ အရှေ့တွင်` (`Before`, the cell or the character an add puts its value in front of; it fills the role of `Into`), the shift pair
+The table is the one place the parser learns what a verb takes. `Slot` has sixteen forms:
+the eight particles `နှင့် ၏ ကို ဖြင့် သည် ထက် အောက် ဟု`, `ခုမြောက်`, `ထဲသို့` (`Into`, the list of an add), `၏ အရှေ့တွင်` (`Before`, the cell or the character an add puts its value in front of; it fills the role of `Into`), `ထိကို` (`Upto`), `ထဲတွင်` (`Within`, the optional or the result a test looks in), the shift pair
 (`Bit(Dir)`, which fits either direction), `KoOrHu` (`ကို` or `ဟု`, for a print) and
 `KindAhpjit` (a kind then `အဖြစ်`). Three examples of rows (the real ones share constants such as `PAIR`):
 
@@ -131,15 +129,17 @@ row(Kw::Greater, VerbOp::Gt,  &[Slot::Thi, Slot::Htet],            false, true),
 row(Kw::Assign, VerbOp::Assign, &[Slot::Ko, Slot::Hu],             true,  false),
 ```
 
-The last two flags are `is_stmt` (the verb closes a statement: `ပြသပါ`, `ထားပါ`,
-`ရလဒ်အဖြစ် ပြန်ပေးပါ` and `ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ`, and `ထည့်ပါ`, whose row takes `[Into, Ko]` and builds an `AddStmt`)
-and `is_cmp` (a comparison, which cannot be the operand of another). There are 27 rows
+The last two flags are `is_stmt` (the verb closes a statement: `ပြသမည်`, `ထားမည်`,
+`ကို ပြန်ပေးမည်` (the row of `WillReturn`, with `[Ko]`), and `ထည့်မည်`, whose row takes `[Into, Ko]` and builds an `AddStmt`)
+and `is_cmp` (a comparison, which cannot be the operand of another). The tests of an optional
+or a result are rows too: `HasGood`, `HasFault`, `HasData` and `LacksData` take the slot
+`Within` (`ထဲတွင်`). There are 34 rows
 now. A new verb is a new row, and nothing in `clause.rs`
 changes.
 
 ## One sentence, followed
 
-Take `အသက် ကို အသက် နှင့် ၁ ၏ ပေါင်းလဒ် ဟု ထားပါ။` ("set age to the sum of age and 1").
+Take `အသက် ကို အသက် နှင့် ၁ ၏ ပေါင်းလဒ် ဟု ထားမည်။` ("set age to the sum of age and 1").
 The first token is a name, so `parse_stmt` sends it to `parse_expr_headed`, which runs the
 clause engine in statement mode. Letters stand for the slots: `K` is `ကို`, `H` is
 `နှင့်`, `E` is `၏`, `U` is `ဟု`.
@@ -153,7 +153,7 @@ parse_notation → အသက်                         stack: [အသက်]
 ပေါင်းလဒ်  row Sum, slots [H, E]: take two,
         both match, reduce to (add အသက် ၁)     stack: [အသက်:K  r1]
 ဟု      slot U; a verb comes next              stack: [အသက်:K  r1:U]
-ထားပါ    row Assign, slots [K, U]: take two,
+ထားမည်    row Assign, slots [K, U]: take two,
         the stack is now blank, read ။,
         build the assignment, return it
 ```
@@ -239,7 +239,7 @@ Things to read from it:
   context that came after it (`then` here: `လျှင်` came after the verb).
 - `single: true` marks a block that is one sentence written without the block phrases.
 - The integer literal holds its converted `value` (a `u128`), its `base`, an optional
-  kind prefix and the digit `script`. A float literal holds an `f64`.
+  kind written after it (`ဟူသော <kind> တစ်ခု`) and the digit `script`. A float literal holds an `f64`.
 - A name in a binding place (declaration, parameter, call target) is an `Ident`; a name
   used as a value is a `NameExpr`. Names are plain `String`s; there is no interner.
 
@@ -264,25 +264,25 @@ token:
 | First token | Goes to | Notes |
 | --- | --- | --- |
 | `အကယ်၍` | `parse_if` | arms of `ထိုသို့မဟုတ်ဘဲ` and `သို့မဟုတ်ပါက` are read here |
-| `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | shared start `NAME သည်`, then the head (`parse_decl_head` in `decl_head.rs`): `kind တစ်WORD`, with `ဖြစ်၍ တန်ဖိုးသည် VALUE` for a value, or a value alone; a kind with no count word after it is ZK0234, and a kind with a number after it is a value when the kind is a plain number kind; then `ဖြစ်ပါစေ` is a declaration and `ဖြစ်ပြီး` a generic loop |
+| `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | shared start `NAME သည်`, then the head (`parse_decl_head` in `decl_head.rs`): `kind တစ်WORD` (`parse_slot_kind`), with `ဖြစ်၍ တန်ဖိုးသည် VALUE` for a value, or a value alone; a kind with no count word after it is ZK0234 (`needs_word`), and a kind with its word and then `၏ အရွယ်အစား` (`size_at`) is a value, a size; then `ဖြစ်ပါစေ` is a declaration and `ဖြစ်ပြီး` a generic loop |
 | `လုပ်ဆောင်ချက်` | `parse_fn_or_call` | `NAME သည်` two tokens ahead is a declaration; else a call, which heads a statement or an expression |
 | `ပရိုဂရမ်` | `parse_fn_decl` | the start block: the header of a function with no name, which gets the name `ပရိုဂရမ်` and `start: true`; its statements end at `ပရိုဂရမ် ပြီးဆုံးပါပြီး` (`ProgramClose`, a joined phrase of `ပရိုဂရမ်` and the done word) where other blocks end at `BlockClose` |
 | a block opener | `parse_block` | opener, `။`, statements until the closer, closer, `။` |
 | `ကွင်းဆက်`, `နောက်တစ်ကြိမ်ဆီသို့` | break, continue | |
-| `ပြန်ပေးပါ` | a bare return | |
-| a call statement, then `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ` | `finish_call_stmt` | sets `CallStmt::pass`; the words after the `၊` are the phrase `PassFault`. Each call statement form ends here: `လုပ်ဆောင်ပါ` and `လုပ်ဆောင်မည်` after `parse_fn_or_call`, `မည်` and `လုပ်ဆောင်မည်` after the forms of `using.rs` |
+| `ပြန်ပေးမည်` | a bare return | |
+| an operand, then `ကို`, `ပြင်ပ`, `မှ` and `ခေါ်ဆိုခွင့်` | `at_leave`, `finish_leave` (`clause.rs`) | the leave statement `f ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်` or `... ပြန်လည်ရုပ်သိမ်းမည်`: the lexer joins `ခေါ်ဆိုခွင့်` with `ပြုမည်` (`Kw::WillGrant`) or `ပြန်လည်ရုပ်သိမ်းမည်` (`Kw::WillRevoke`) into `Kw::AllowCall` or `Kw::RevokeCall`, the fused spelling too; `at_leave` looks past the `ကို` for `ပြင်ပ` (`Kw::Outside`) and `မှ`, so the value is read alone. The clause engine builds `Stmt::Leave(LeaveStmt { value, grant, span })`, so the statement also works as the inline block of an `if` |
+| a call statement, then `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်` | `finish_call_stmt` | sets `CallStmt::pass`; the words after the `၊` are the phrase `PassFault`. Each call statement form ends here: `လုပ်ဆောင်မည်` and `လုပ်ဆောင်မည်` after `parse_fn_or_call`, `မည်` and `လုပ်ဆောင်မည်` after the forms of `using.rs` |
 | an operand, then `ကို သုံး၍` or `တို့ကို သုံး၍` | `parse_using` (`using.rs`) | the arguments-first call: `parse_head` in `clause.rs` reads the first operand of a clause and hands it over when `at_using_rest` sees `(၊ ARG)* (တို့)?ကို သုံး၍` ahead. The arguments after the first are notation expressions; then `လုပ်ဆောင်ချက် NAME ကို` (long) or `NAME` (short). The end decides the node: `လုပ်ဆောင်မည်` or `မည်` gives a `CallStmt`, and stands at the start of a statement alone; `လုပ်ဆောင်သော ရလဒ်(ကောင်း)` or `သည့် ရလဒ်(ကောင်း)` gives a `CallExpr`, which the clause goes on from |
 | a name, then `မည်` or `သည့် ရလဒ်` | `parse_short_after` (`using.rs`) | the short call with no arguments, read where `parse_head` reads a first operand and where `parse_using` reads an argument |
-| a parameter name with `(` touching it | `parse_param_mark` (`stmt.rs`) | the mark of the parameter, one word (`is_mark`: a name or a particle other than the endings and closers); with marks, `parse_params` reads `လက်ခံပြီး` straight after the last parameter, and marks on some alone are ZK0237 |
-| `ပြင်ပမှလာသော` after `လုပ်ဆောင်ချက် NAME သည်` | `parse_external` (`stmt.rs`) | the header of an external function: `လုပ်ဆောင်ချက်(တစ်ခု)?` (`parse_one_function`: the word `လုပ်ဆောင်ချက်တစ်ခု`, or `လုပ်ဆောင်ချက်` with an optional `တစ်ခု` name), then `ဖြစ်သည်` (nothing more) or `ဖြစ်၍`; parameters come when `accepts_ahead` sees `လက်ခံပြီး` or `လက်ခံမည်` before the full stop (`parse_params_to`), and the result clause after `လက်ခံပြီး` or alone. `FnDecl::external` is set and the block holds no statements. The lexer joins `ပြင်ပ မှ လာသော` into `External` |
-| a text then `မှလာသော` after `လုပ်ဆောင်ချက် NAME သည်` | `parse_external`, through `at_lib` and `parse_origin` (`stmt.rs`) | the header of a C function: the same header as an external function, with the text of a lib where `ပြင်ပ` stood. The lexer has no joined word for it: the text is a `Str` token, then `မှ` (`Kw::From`) and `လာသော` (`Kw::Coming`). `parse_origin` gives `FnDecl::lib`, a `StrArg` of the text (`None` for the host form); the s-expression form is `(external "libm" name [params] ret)`. `parse_params_to(ends, rest)` and `parse_param_list` take `rest` for an external header: after the last named parameter, `နှင့်` then the reserved word `အခြားတန်ဖိုးများ` (`Kw::OtherValues`) ends the list and sets `FnDecl::variadic` (the s-expression writes `...` among the parameters); in another header `နှင့်` goes on to one more parameter. A C function can use it; a host function that has it is ZK0334 |
-| an operand, then a mark | `attempt_marked` (`using.rs`) | the marked call. `Parser::marked` holds the functions that declare marks, with the number of marks of each: `Parser::new` finds them in the headers of the file (`marked_header`), and the loader passes the ones a file imports to `parse_with`. `marked_end` scans for the end of a call of such a function, outside parentheses, past marks and notation words; a value end with a mark after it can be an argument, so the scan goes on past it and keeps it when no later end comes. `parse_marked` then reads argument, mark, argument, mark, up to that end, and `attempt_marked` keeps the call when its marks count as the parameters of a function of that name; otherwise it puts the cursor, the diagnostics and the node number back, and the sentence reads as before (`က ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားပါ။` remains a set). The `"<file>" မှ` start of an import is read as an import unless `marked_end` finds a marked call |
+| `ပြင်ပမှလာသော` after `လုပ်ဆောင်ချက် NAME သည်` | `parse_external` (`stmt.rs`) | the header of an external function: `လုပ်ဆောင်ချက်(တစ်ခု)?` (`parse_one_function`: the word `လုပ်ဆောင်ချက်တစ်ခု`, or `လုပ်ဆောင်ချက်` with an optional `တစ်ခု` name), then `ဖြစ်သည်` (nothing more) or `ဖြစ်၍`; parameters come when `at_param` sees `NAME ဟူသော` (`parse_params`, ending in `လက်ခံပြီး` or `လက်ခံမည်`), and the result clause after `လက်ခံပြီး` or alone. `FnDecl::external` is set and the block holds no statements. The lexer joins `ပြင်ပ မှ လာသော` into `External` |
+| a text then `မှလာသော` after `လုပ်ဆောင်ချက် NAME သည်` | `parse_external`, through `at_lib` and `parse_origin` (`stmt.rs`) | the header of a C function: the same header as an external function, with the text of a lib where `ပြင်ပ` stood. The lexer has no joined word for it: the text is a `Str` token, then `မှ` (`Kw::From`) and `လာသော` (`Kw::Coming`). `parse_origin` gives `FnDecl::lib`, a `StrArg` of the text (`None` for the host form); the s-expression form is `(external "libm" name [params] ret)`. `parse_params(ends, rest)` takes `rest` for an external header: `အခြားတန်ဖိုးများနှင့်အတူ` (`Kw::WithOtherValues`, the lexer joins `Kw::OtherValues` and `နှင့်အတူ`, `Kw::Along`, written apart) after the last `လည်းကောင်း`, before the end word, sets `FnDecl::variadic` (the s-expression writes `...` among the parameters), and each parameter before it ends in `လည်းကောင်း`. A C function can use it; a host function that has it is ZK0334 |
+| an operand, then a mark | `attempt_marked` (`using.rs`) | the marked call. `Parser::marked` holds the functions that declare marks, with the number of marks of each: `Parser::new` finds them in the headers of the file (`marked_header`), and the loader passes the ones a file imports to `parse_with`. `marked_end` scans for the end of a call of such a function, outside parentheses, past marks and notation words; a value end with a mark after it can be an argument, so the scan goes on past it and keeps it when no later end comes. `parse_marked` then reads argument, mark, argument, mark, up to that end, and `attempt_marked` keeps the call when its marks count as the parameters of a function of that name; otherwise it puts the cursor, the diagnostics and the node number back, and the sentence reads as before (`က ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားမည်။` remains a set). The `"<file>" မှ` start of an import is read as an import unless `marked_end` finds a marked call |
 | `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
-| `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ`, then a size before `မင်မိုရီကို` for a blit (`parse_blit_end`: `ကူးယူမည်` or `ပြောင်းထည့်မည်`); else after `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` for a release, a fill (`parse_fill_end`) when `ဖြည့်မည်` comes before the `။` (`ends_in_fill`), so a value that starts with a kind word needs no parentheses, or a size for a resize. The value of a fill is read with `in_fill` set, so a `ဖြင့်` right after a lone value ends it |
-| a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းပါ။`; after another statement or inside a block it is parsed and reported (ZK0230) |
-| `အချက်အလက်အမျိုးအစား` | `parse_kind_decl` | `NAME`, then `တွင်` for a struct (`parse_struct_decl`) or `ဆိုသည်မှာ` for an enumeration (`parse_enum_decl`); another word is ZK0201, and so is `အမျိုးအစား` alone, the old enumeration opener. An enumeration has members with `၊` between them, each a name with an optional `(VALUE)`, then `တို့ ဖြစ်သည်။` (a lone member can leave out `တို့`); inside a block it is parsed and reported (ZK0235) |
-| a sentence that holds `ဟုလည်း မှတ်ယူနိုင်ပါသည်` (`Kw::AliasClose`) | `parse_alias_decl` | checked first, so the kind can start with each word: an optional `အချက်အလက်အမျိုးအစား`, a kind (`parse_kind`), `ကို`, the alias name and the closer. A kind other than a function kind with no opener is ZK0201; inside a block it is parsed and reported (ZK0240). The S-expression is `(alias NAME KIND)` |
-| `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, struct, enumeration, kind alias or top-level declaration; on another statement or the start block it is ZK0229 |
+| `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ`, then a size before `မင်မိုရီကို` for a blit (`parse_blit_end`: `ကူးယူမည်` or `ပြောင်းထည့်မည်`); else after `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` for a release, a fill (`parse_fill_end`) when `ဖြည့်မည်` comes before the `။` (`ends_in_fill`), or a size for a resize. A size with a kind is `KIND N WORDစာ` (`parse_size_arg`): the text of the count word before its `စာ` becomes the measure word of the unit kind, `Kind::classifier`. The value of a fill is read with `in_fill` set, so a `ဖြင့်` right after a lone value ends it |
+| a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းမည်။`; after another statement or inside a block it is parsed and reported (ZK0230) |
+| a name, then `ဟူသော`, the marks `အများသုံး`, `မျှဝေနိုင်သော` or `ပြင်ပမှ လာသော`, then `ဒေတာအစုအဝေး` or `ဒေတာအမျိုးအစားကွဲ` | `parse_kind_decl` | checked first (`at_kind_decl`); the marks set `exported`, `shared` and `external`. `ဒေတာအစုအဝေး` (`Kw::StructWord`) then `တွင်` reads a struct (`parse_struct_decl`): fields with `၊` between them, each `NAME ဟူသော KIND တစ်WORD` (`parse_field`), then `တို့ပါဝင်သည်` (`FieldsClose`) or `တို့ပါဝင်ပြီး` (`FieldsCloseAnd`) and the classifier clause (`parse_decl_end`). With `ပြင်ပမှ လာသော` (`Kw::External`) it reads a kind from outside the program (`parse_external_kind`): `ဖြစ်သည်` (`Kw::Is`) ends a declaration with no field, and `တွင်` goes on to the fields and `တို့ပါဝင်သည်`; the node is a `StructDecl` with `shared` and `external` set (s-expression head `external_struct`). `ဒေတာအမျိုးအစားကွဲ` (`Kw::EnumWord`) then `တွင်` reads an enumeration (`parse_enum_decl`): members with `၊` between them, each `[ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် VALUE ရှိသည့်] NAME` (`parse_enum_member`; the lexer joins the mark into `Kw::InitialMark` and the opener of the value into `Kw::ValueAs`, `HavingRel` closes it; `EnumMember::initial` marks the one [initial member](../language/enums.md#the-initial-member)), then `တို့ပါဝင်သည်`, or `ပါဝင်သည်` after a lone member, or the `...ပြီး` closers and a classifier clause (`EnumDecl::classifier`). A declaration inside a block is parsed and reported (ZK0228, ZK0235) |
+| `အချက်အလက်အမျိုးအစား` | `parse_alias_decl` | the alias name, `ကို`, the kind (`parse_kind`, with no measure word), then `ဟုလည်း မှတ်ယူနိုင်ပါသည်` (`Kw::AliasClose`), or `ဟုလည်း မှတ်ယူနိုင်ပြီး` (`Kw::AliasCloseAnd`) and a classifier clause (`AliasDecl::classifier`); inside a block it is parsed and reported (ZK0240). The S-expression is `(alias NAME KIND)` |
+| `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, kind alias or top-level declaration; on another statement or the start block it is ZK0229. A struct and an enumeration hold the mark after `ဟူသော` instead |
 | an `else`, an update, a closer with no opener | an error | ZK0211, ZK0212, ZK0226 |
 | all other tokens | `parse_expr_headed` | a clause; see below |
 
@@ -298,25 +298,25 @@ A switch has no verb row either. When the clause engine in statement mode meets
 no particle, `switch_head` gives the pair back as `ClauseOut::Switch`, and `parse_switch`
 reads the first arm from there. Each sentence after it that reaches `ဖြစ်လျှင်` before its
 full stop, with no `သည်` before it and no statement word at its start, is one more arm
-(`at_switch_arm`); `တခြား KIND ဖြစ်လျှင်` reads the default arm, and an arm after it is
+(`at_switch_arm`); `တခြား KIND တစ်WORD ဖြစ်လျှင်` reads the default arm (`parse_slot_kind`), and an arm after it is
 parsed and reported (ZK0236). A one-statement arm that is itself a switch is ZK0215. The
 S-expression is `(switch subject case {..} case {..} else kind {..})`.
 
 An operand that is a name with `ထဲမှ` after it is a member, `Expr::Member` (`parse_member`).
 The parser's set of struct names holds the enumeration names and their stems as well, and
-the alias names, which `Parser::new` finds before `ဟုလည်း မှတ်ယူနိုင်ပါသည်`, so each of them
+the alias names, which `Parser::new` finds in each declaration (`declares_kind`: `NAME ဟူသော ... ဒေတာအစုအဝေး|ဒေတာအမျိုးအစားကွဲ`, and `ဒေတာအမျိုးအစား NAME ကို`), so each of them
 can start a kind; `is_struct_at` refuses a name with `ထဲမှ` after it, which
 names a member instead.
 
 A remove has no verb row, since its list comes before `၏`. When the clause engine meets
 `နောက်ဆုံးအကွက်` (`Kw::LastCell`) after an operand that holds `၏`, `finish_remove` takes
-that operand as the list, expects `ကို`, `ဖျက်ပါ` and `။`, and builds a `RemoveStmt`; in an
+that operand as the list, expects `ကို`, `ဖျက်မည်` and `။`, and builds a `RemoveStmt`; in an
 expression it is ZK0204, a statement verb inside an expression. `attach_slot` reads
 no operand after the `၏` when `နောက်ဆုံးအကွက်` follows it. `နောက်ဆုံးစာလုံး`
 (`Kw::LastChar`) takes the same path and sets `RemoveStmt::chars`.
 
 When `အရှေ့တွင်` (`Kw::Before`) follows an operand that holds `၏`, `attach_before` turns
-that `၏` into the slot `Before` and reads the value after it; the `ထည့်ပါ` row then builds
+that `၏` into the slot `Before` and reads the value after it; the `ထည့်မည်` row then builds
 an `AddStmt` with `before` set, whose `list` is the cell or the character operand. The
 S-expressions are `(add l 3)`, `(insert (cell l 1) 3)`, `(remove l)` and
 `(remove_char t)`.
@@ -325,7 +325,7 @@ A replace starts as a cell (`push_index`) or an n-th character (`push_char_nth`)
 `မှ` follows and `at_range_end` finds a `ထိ` (`Kw::Upto`) before the full stop or an
 `အထိ`, `push_range` reads the end (and, for characters, `လုံးမြောက်စာလုံး`), then `ထိ`
 and `ကို`, and pushes the range as one operand with the slot `Upto`; with no `ထိ`, `မှ`
-keeps making a counted loop. The `အစားထိုးပါ` row takes `[Upto, Hpjint]`, so the value
+keeps making a counted loop. The `အစားထိုးမည်` row takes `[Upto, Hpjint]`, so the value
 is read as each operand is, and a range before another verb is ZK0206.
 `လုံးမြောက်` is a second spelling of `ခုမြောက်` (`Kw::Ordinal`). The S-expressions are
 `(replace t 0 4 v)` and `(replace_chars t 1 3 v)`.
@@ -338,51 +338,95 @@ is reported (`parse_fn_decl`, `parse_external`: ZK0214) and still parsed. A func
 statements inside a block parses as at the top level, a `Stmt::Fn` among the statements of
 the block; semcheck declares it in its scope.
 
-When the header sentence holds `လည်းကောင်း` (`Kw::AsWellAs`), `parse_params` reads a listed
-clause (`parse_listed_params`): items split with `၊` or with nothing, each ending in `ကို`, an
-optional `အပိုင်အနေဖြင့်` (`Kw::AsOwned`) or `ငှား၍` (`Kw::Lending`), and `လည်းကောင်း`,
-then `လက်ခံပြီး`. An item that starts with a kind or with the edit mark is a parameter; a
-bare name is a capture, a `CaptureItem { name, mode }` in `FnDecl::captures`, with the mode
-`Dup`, `Move` or `Lend` from the word before `လည်းကောင်း`. The s-expression writes the
-captures after the parameters: `(fn name [params] [dup a, move b, lend c] ret block)`.
+When `NAME ဟူသော` starts the header after `သည်` (`at_param`), `parse_params` reads the
+parameters (`parse_param_items`), each `NAME ဟူသော KIND တစ်WORD ကို` (`parse_name_and_kind`,
+`parse_slot_kind`), then the markers `parse_item_markers` reads in order, `ဒေတာ ပြောင်းလဲရန်`
+(`Kw::DataToChange`, `Param::edit`) or `ဒေတာ ထည့်ပေးရန်` (`Kw::DataToFill`, `Param::fill`,
+which sets `Param::edit` too), `အပိုင်အနေဖြင့်` (`Kw::AsOwned`, `Param::owned`), and
+`ဝိဘတ် "<mark>" ကို သုံး၍` (`Kw::MarkWord`, the string, `Kw::Ko`, `Kw::Using`; `Param::mark`),
+and `လည်းကောင်း`, which each parameter of several takes (`err_as_well_as` otherwise); then
+`လက်ခံပြီး`, or `လက်ခံမည်` for an external function. The mark string must lex as one token a mark can be
+(`is_mark_text`, ZK0241). The s-expression writes `own` and `edit` before the kind and the
+mark after the name: `own edit int* ပ(ကို)`. `parse_item_markers` takes a flag, `fill_ok`:
+a header passes `true`, and a function kind (`fn_kind.rs`) passes `false`, so `SigParam` has
+no `fill` and `ဒေတာ ထည့်ပေးရန်` in a function kind stops the item, ZK0201. A lone
+`ပြောင်းလဲရန်` or `ထည့်ပေးရန်` (`Kw::ToChange`, `Kw::ToFill`) is no marker and stops the item
+likewise.
 
-`ကူးထည့်မည်` (`Kw::WillDupIn`) and `ပြောင်းထည့်မည်` (`Kw::WillShift`) are statement verbs of
-the valence table with the slots `ထဲသို့` and `ကို`, as `ထည့်ပါ` is (`VerbOp::DupInto`,
-`VerbOp::MoveInto`): `x ထဲသို့ v ကို ကူးထည့်မည်` is an `AssignStmt`, and the move sets
-`AssignStmt::moves`. After `ကိန်းရှင်` or `ကိန်းသေ`, a name with `ထဲသို့` after it sends
-`parse_decl_or_loop` back to the name, reads the sentence as that assignment, and makes a
-`DeclStmt` with the value as its start and no written kind (`parse_decl_into`).
+`ကူးထည့်မည်` (`Kw::WillDupIn`) and `အကုန်ကူးထည့်မည်` (`Kw::WillDupAllIn`) are statement
+verbs of the valence table with the slots `ထဲသို့` and `ကို`, as `ထည့်မည်` is
+(`VerbOp::DupInto`, `VerbOp::DeepDupInto`): `x ထဲသို့ v ကို ကူးထည့်မည်` is an `AssignStmt`
+whose value is the duplicate expression of `v`, shallow or deep, as below. After `ကိန်းရှင်` or
+`ကိန်းသေ`, a name with `ထဲသို့` after it sends `parse_decl_or_loop` back to the name, reads
+the sentence as that assignment, and makes a `DeclStmt` with the value as its start and no
+written kind (`parse_decl_into`). `ပြောင်းထည့်မည်` (`Kw::WillShift`) is left to the heap
+statement, where it is the `memmove` form of `ကူးယူမည်`.
+
+The duplicate word `မိတ္တူ` is no reserved word: when the clause engine meets the name `မိတ္တူ`
+after an operand that holds `၏` (`at_dup_word`), `push_dup` turns the operand into a duplicate
+of it (`VerbOp::DupOf`). A word `တစ်<classifier>လုံး` before the `၏`, with the `၏` joined to
+it or not (`whole_word`, `mark_whole`), marks the operand as the whole of a value, and the
+duplicate is deep (`VerbOp::DeepDupOf`). The classifier itself is not kept in the tree. The
+test of one object `X နှင့် Y သည် တစ်ခုတည်း ဖြစ်…` is the comparison row of `Kw::SameOne`
+(`VerbOp::Same`), with the slots `နှင့်` and `သည်`.
+
+Three marks stand in front of a declaration, each read with a function of its own that
+parses the next statement and sets a flag: `အများသုံး` (`parse_exported`, the field
+`exported`), `မျှဝေနိုင်သော` (`parse_shared`, `StructDecl.shared`, on a struct alone) and
+`စိတ်မချရသော` (`parse_unchecked`, `FnDecl.unchecked`, on a function that is not the start
+block). A marked block opens with the joined token `UnsafeBlockOpen`, which `parse_block`
+takes as it takes `BlockOpen`, and sets `BlockStmt.unchecked`.
 
 The pass-on forms of a call set `CallExpr::pass`: the word form ends in `ရလဒ်ကောင်း`
 (`CallGoodResult`), and the sign form takes a `?` that touches the `)`. The statement
-`<value> ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ` is a `ReturnStmt` with `fault` set (`VerbOp::ReturnFault`).
-A call with neither form is a plain call, and its value is a whole result. Two verbs read it:
-`<r> သည် ရလဒ်ကောင်း` and `<r> သည် အမှားအယွင်း` are the verbs `is_good` and `is_fault`, with a `သည်`
-subject, and `ရလဒ်ကောင်း အဖြစ်` and `အမှားအယွင်း အဖြစ်` after `ကို` are the conversion targets
-(`Operand::Side`, in place of a kind), which make the verbs `unwrap` and `unwrap_fault` of
-the clause.
-A result kind is `BaseKind::Result`: `Kind::parts` holds `ResultParts { ok, err }`, and a side
-with no value (`အောင်မြင်သည့်သတင်း`, `မအောင်မြင်သည့်သတင်း`) is `None`. `kind.rs` reads it
+`<value> ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်` is a plain `ReturnStmt` whose value is an error value: `ဟူသော အမှားအယွင်း`
+is the phrase `CalledFault`, a postfix of the operand before it that `push_postfix` turns into
+the verb `make_fault` (`VerbOp::MakeFault`), so an error value is an expression that a
+return, an assignment or an argument can hold; the plain return is the `WillReturn` row.
+A call with neither form is a plain call, and its value is a whole result. The tests of a
+result and of an optional are the verbs `is_good`, `is_fault`, `has_data` and `lacks_data`, with the
+slot `Within`: `<x> ထဲတွင် ရလဒ်ကောင်း ရှိ`, `<x> ထဲတွင် အမှားအယွင်း ရှိ`, `<x> ထဲတွင် ဒေတာ ရှိ` and
+`<x> ထဲတွင် ဒေတာ မရှိ`. The reads `ထဲမှ ဒေတာ` and `ထဲမှ အမှားအယွင်း ဒေတာ` are postfix too:
+`data_read_at` in `notation.rs` tells which of `VerbOp::Unwrap` and `VerbOp::UnwrapFault` stands
+at a `ထဲမှ`, `data_reads` wraps a value in each read that follows it (a read binds tighter than an
+operator), and the clause reader does the same for an operand with no slot through
+`push_postfix`.
+`အလွတ်` is an atom, a `NullLit` with `blank` set (`parse_null`), the optional that holds no data.
+`ကနဦးတန်ဖိုး` is the same node with `initial` set, the initial value of the kind its place
+takes, and the null pointer `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, one token `Kw::Null`, is the node
+with neither set. The `initial` field of a `NullLit` and of an `EnumMember` is left out of
+an artifact when false.
+A result kind is `BaseKind::Result`: `Kind::parts` holds `ResultParts { ok, err, optional }`, and a side
+with no value (`အောင်မြင်သည့်သတင်း`, `မအောင်မြင်သည့်သတင်း`) is `None`. An optional kind,
+`T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, is the same base with `optional` set and no error side.
+`parse_cell_kind` reads both: the good side (`အောင်မြင်သည့်သတင်း`, a function kind in parentheses or a
+plain kind), then `ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, or `သို့မဟုတ်` and the error side
+(`မအောင်မြင်သည့်သတင်း`, or `အမှားအယွင်းအနေဖြင့်` and a plain kind) and `ရှိနိုင်သော ဒေတာဆဲလ်`.
+`cell_kind_len` measures the same phrase without consuming it, so `kind_len_at` and
+`parse_kind_with` can tell a result kind from a plain kind with a look ahead. `kind.rs` reads it
 wherever a kind goes, so a declaration, a parameter and a struct field take it as well as
 the result clause; it is written `(ok ! err)` in an S-expression, with `-` for a side with no
-value. The list, slice and pointer levels after a result kind, and the count and borrowed
-marks before it, belong to the whole result, so `ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း စာရင်း` is a list
-of results; a list as the error kind is written in full, `<kind> စာရင်း အမှားအယွင်း`. When the name before `သို့မဟုတ်` ends in `ရလဒ်`, or the name before the error side
-ends in `အမှားအယွင်း`, the repeated word is left out, and the parser fills the side in
-(the short form; a lone struct name is read as the plain struct).
-`parse_ret_clause` reads the result clause of a function into `FnDecl::ret`: the written result kind, then `ကို ပြန်ပေးမည်`,
+value. The list and pointer levels after a result kind, and the count before it, belong to the
+whole result, so `ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း` is a list
+of results. A result kind ends in `ဒေတာဆဲလ်`, and no other phrase is one.
+`parse_ret_clause` reads the result clause of a function into `FnDecl::ret`: the written result kind and its
+measure word (`parse_slot_kind`, the word kept in `Kind::classifier`; the clause is a
+`RetClause { kind, owned }`), then `ကို`, an optional `အပိုင်အနေဖြင့်` (`FnDecl.owned_ret`), and
+`ပြန်ပေးမည်`. A clause with no measure word is ZK0234. A function kind reads its result clause as a header does (`fn_kind.rs`);
+the result kind
 is the one header of a function that can fail. `FnDecl` has no field for the error kind: a function can fail when
 its result kind is a result kind, and not otherwise. The mark statements `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်` and
 `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` are return statements: the first is a bare return,
 and the second a `ReturnStmt` with `fault` set and no value. The S-expressions are `(call-pass f ..)`,
-`(return-fault v)` and `(return-fault)`.
+`(make_fault v)` and `(return-fault)`.
 
 A function kind is `BaseKind::Fn`: `Kind::sig` holds `FnSig { params, ret }`, each
-parameter a `SigParam` with its edit mark, its kind, and the name and the mark when
-written. `fn_kind.rs` reads it. A kind phrase can be a bare function kind at its first
+parameter a `SigParam` with its owned and edit flags, its kind with its measure word, and
+the mark when written; each reads `KIND တစ်WORD ကို`, the markers and `လည်းကောင်း`, as in a
+header with no name (`sig_params_len`, `parse_sig_params`). `fn_kind.rs` reads it. A kind phrase can be a bare function kind at its first
 token, in the forms `FnForm` allows: `Full` where no list is open, `NoParams` while a list
-of parameters or fields is open (`Parser::in_list`, which `parse_params_to`,
-`parse_fields` and the parameters of a function kind itself set), and `NoFn`, the result of a
+of parameters or fields is open (`Parser::in_list`, which `parse_params`,
+`parse_listed_fields` and the parameters of a function kind itself set), and `NoFn`, the result of a
 function kind, where `လုပ်ဆောင်ချက် အမျိုးအစား` alone can stand. A function kind with
 parameters inside a list stands in parentheses (`paren_fn_len`). `kind_len_at` and
 `parse_kind_with` look for the function forms first, then a result kind, then a plain kind;
@@ -392,8 +436,11 @@ the first word that does not fit. A parameter whose kind is a bare function kind
 parameters is read all the same and reported (ZK0239, `parse_bare_listed_kind`). It is
 written `fn(<params>) -> <ret>` in an S-expression.
 
-`လုပ်ဆောင်ချက် NAME ၏ လိပ်စာ` is `Expr::FnAddr` (`parse_fn_addr`), read where a call
-expression starts and, through `parse_fn_or_call`, at the start of a statement. The long
+`NAME ဟူသော လုပ်ဆောင်ချက်` is `Expr::FnAddr` (`at_fn_value`, `parse_fn_value`): the
+phrase `ဟူသော လုပ်ဆောင်ချက်` after a name is one token, `Kw::FnValue`, so the word right
+after the name tells a value from a call. Before `အမျိုးအစား` the lexer keeps `ဟူသော`
+apart (`Kw::Called`, then `Kw::FnKind`), so `NAME ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု` is a
+parameter or a field of the bare function kind. It is read where a call expression starts and, through `parse_fn_or_call`, at the start of a statement. The long
 call forms read their function with `parse_callee`: a name, or, when `၏` follows it, a place
 that the clause engine reads with `Parser::in_callee` set, so a `ကို` after a lone operand
 closes it; the place goes into `CallExpr::place` or `CallStmt::place`, and `callee` keeps
@@ -404,12 +451,28 @@ marks of a function kind in it do not count.
 
 Kinds and literals have their own modules. `kind.rs` reads `(လက္ခဏာရှိ|လက္ခဏာမဲ့)? (N ဘစ်)?
 base`, and checks the bit counts (8, 16, 32, 64, 128 for integers; 16 and up for floats).
-`literal.rs` reads `(အခြေ N ဖြင့်)? kind? digits`: it converts one digit after the other in the given
-base, checks the range of the kind (ZK0220) and the digits against the base (ZK0219).
-A literal with no kind prefix is limited to 128 bits here; the kind check gives it the
+`literal.rs` reads `(အခြေ N ဖြင့်)? digits (ဟူသော kind တစ်WORD)?` (`at_literal_kind`,
+`parse_literal_kind`): it converts one digit after the other in the given base, checks the
+range of the kind (ZK0220) and the digits against the base (ZK0219); a kind that is not a
+plain number kind is ZK0222. A list literal, `[...]` or `... တို့ပါသော စာရင်း`, takes
+`ဟူသော kind တစ်WORD` after it as well (`parse_list_kind`, a list kind or ZK0222), kept in
+`ListLit::kind`. A literal with no kind is limited to 128 bits here; the kind check gives it the
 kind of its place and checks the range there. In `kind.rs`, the base word `စာသား` gives
-the base `text`, and a bare `တစ်စိတ်တစ်ပိုင်း` straight after it, with no `စာရင်း`, is the
-view of text (`Wrap::View`).
+the base `text`. The levels after a base are `Wrap::List` (`စာရင်း`, with a count before it or
+none) and `Wrap::Ptr` (`လိပ်စာ`, the pointer kind); there is no other level.
+
+Each place a kind stands in, a declaration, a generic loop, a parameter, a field, a
+result, a parameter or the result of a function kind, a conversion, a size, a default arm
+and the kind of a literal, reads it with `parse_slot_kind` (`decl_head.rs`): the kind, then
+the count word `တစ်WORD`, kept in `Kind::classifier`, or a struct name joined to its count
+word, `လူတစ်ယောက်`. A kind with no word after it is ZK0234 (`needs_word`), with the word the
+kind takes in its help. `slot_kind_len_at` measures the same with a look ahead, and
+`slot_then` asks whether a word follows a kind with or without its count word, which a
+conversion uses for `အဖြစ်`. A kind inside a kind takes no word, and neither does the kind
+of an alias. The size of a heap statement keeps its count word in `Kind::classifier` of
+its unit too. The loader writes `Kind::alias` when it puts the kind of an alias in place
+of a use that adds no levels, so the naturalness check counts it with the word of the
+alias.
 
 A string literal is an expression, read in `str_lit.rs` wherever an operand starts, a
 print included: a print of a literal goes through the clause engine as each other print
@@ -530,21 +593,21 @@ inside a block remains inside it and the closer still matches. A real run, with 
 each of two lines:
 
 ```text
-error[ZK0206]: "ပြသပါ" needs "ကို|ဟု" after operand 1, found no particle
+error[ZK0206]: "ပြသမည်" needs "ကို|ဟု" after operand 1, found no particle
  --> recover.zaka:1:1
   |
-1 | အသက်ကို ပြသပါ။
+1 | အသက်ကို ပြသမည်။
   | ^^^^
   = help: write "အသက် ကို" with a space: a name joined to a particle is read as one word
 
 error[ZK0206]: "ပေါင်းလဒ်" needs "နှင့်" after operand 1, found ကို
  --> recover.zaka:2:1
   |
-2 | ၁ ကို ၂ ကို ပေါင်းလဒ် ဟု ထားပါ။
+2 | ၁ ကို ၂ ကို ပေါင်းလဒ် ဟု ထားမည်။
   | ^
 ```
 
-The third line of that file, `၂၀ ကို ပြသပါ။`, is fine and ends up in the tree, as the one
+The third line of that file, `၂၀ ကို ပြသမည်။`, is fine and ends up in the tree, as the one
 statement. The known weak spot: skipping goes to the next `။`, so a sentence with a
 missing `။` takes the next one with it.
 

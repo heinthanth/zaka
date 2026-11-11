@@ -53,7 +53,8 @@ impl ToSexpr for BlockStmt
 {
     fn to_sexpr(&self) -> String
     {
-        list("block", self.stmts.iter().map(ToSexpr::to_sexpr))
+        let head = tern!(self.unchecked, "unsafe-block", "block");
+        list(head, self.stmts.iter().map(ToSexpr::to_sexpr))
     }
 }
 
@@ -65,16 +66,8 @@ impl ToSexpr for Kind
         // writes its mark after the kind inside it, in the order of the
         // Burmese words.
         let skip = usize::from(self.base == BaseKind::Opaque);
-        let marks: Vec<String> = self.wraps.iter().skip(skip).map(wrap_mark).collect();
-        // A borrow takes the place of the `*` of the last address level.
-        let last = marks.iter().rposition(|m| m == "*").filter(|_| self.borrowed);
-        let mark = |(at, m): (usize, &String)| {
-            tern!(Some(at) == last, "&".to_string(), m.clone())
-        };
-        let marks: String = marks.iter().enumerate().map(mark).collect();
-        let extra = usize::from(self.extra_borrows)
-            + usize::from(self.borrowed && last.is_none());
-        format!("{}{marks}{}", base_name(self), "&".repeat(extra))
+        let marks: String = self.wraps.iter().skip(skip).map(wrap_mark).collect();
+        format!("{}{marks}", base_name(self))
     }
 }
 
@@ -98,11 +91,10 @@ impl ToSexpr for Expr
             Expr::Call(n) =>
             {
                 let word = tern!(n.pass, "call-pass", "call");
-                list(
-                    word,
-                    call_parts(&callee_text(&n.callee, &n.place), &n.args, &n.edits),
-                )
+                list(word, call_parts(&callee_text(&n.callee, &n.place), &n.args))
             }
+            Expr::Null(n) if n.initial => "initial".into(),
+            Expr::Null(n) if n.blank => "blank".into(),
             Expr::Null(_) => "null".into(),
             Expr::SizeOf(n) => list("sizeof", [n.kind.to_sexpr()]),
             Expr::Index(n) =>
@@ -160,27 +152,30 @@ impl ToSexpr for Stmt
             Stmt::Generic(s) => generic_sexpr(s),
             Stmt::Break(_) => "(break)".into(),
             Stmt::Continue(_) => "(continue)".into(),
-            Stmt::Fn(s) => exported(s.exported, fn_sexpr(s)),
+            Stmt::Fn(s) =>
+            {
+                let decl =
+                    tern!(s.unchecked, list("unsafe", [fn_sexpr(s)]), fn_sexpr(s));
+                exported(s.exported, decl)
+            }
             Stmt::Return(s) =>
             {
-                let word = tern!(
-                    s.fault,
-                    "return-fault",
-                    tern!(s.good, "return-good", "return")
-                );
+                let word = tern!(s.fault, "return-fault", "return");
                 list(word, s.value.iter().map(ToSexpr::to_sexpr))
             }
             Stmt::Call(s) =>
             {
                 let word = tern!(s.pass, "call-pass", "call");
-                list(
-                    word,
-                    call_parts(&callee_text(&s.callee, &s.place), &s.args, &s.edits),
-                )
+                list(word, call_parts(&callee_text(&s.callee, &s.place), &s.args))
             }
             Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
             Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
             Stmt::Free(s) => list("free", [s.target.to_sexpr()]),
+            Stmt::Leave(s) =>
+            {
+                let word = tern!(s.grant, "c_leave", "c_revoke");
+                list(word, [s.value.to_sexpr()])
+            }
             Stmt::Blit(s) =>
             {
                 let head = tern!(s.overlap, "shift", "blit");
@@ -281,12 +276,9 @@ fn wrap_mark(w: &Wrap) -> String
     match w
     {
         Wrap::Ptr => "*".into(),
-        Wrap::RawPtr => "^".into(),
         Wrap::List(Cells::Fixed(n)) => format!("[{n}]"),
         Wrap::List(Cells::Expr(e)) => format!("[{}]", e.to_sexpr()),
         Wrap::List(Cells::Inferred) => "[]".into(),
-        Wrap::Slice => "[][..]".into(),
-        Wrap::View => "[..]".into(),
     }
 }
 
@@ -308,7 +300,6 @@ fn base_name(k: &Kind) -> String
     {
         BaseKind::Int => format!("{sign}{bits}"),
         BaseKind::Float => format!("f{}", k.bits.unwrap_or(64)),
-        BaseKind::Opaque if k.wraps.first() == Some(&Wrap::RawPtr) => "rawptr".into(),
         BaseKind::Named =>
         {
             k.name.as_ref().map_or(String::new(), |n| n.name.to_string())
@@ -332,7 +323,7 @@ fn base_name(k: &Kind) -> String
 }
 
 /// A function kind as `fn(<param>, …) -> <result>`, each parameter with its
-/// edit flag, its name and its mark when written.
+/// owned and edit flags, its name and its mark when written.
 ///
 /// # Arguments
 ///
@@ -349,10 +340,11 @@ fn fn_kind_sexpr(k: &Kind) -> String
         return "fn()".into();
     };
     let param = |p: &crate::kind::SigParam| {
+        let owned = tern!(p.owned, "own ", "");
         let edit = tern!(p.edit, "mut ", "");
         let name = p.name.as_ref().map_or(String::new(), |n| format!(" {}", n.name));
         let mark = p.mark.as_ref().map_or(String::new(), |m| format!("({})", m.name));
-        format!("{edit}{}{name}{mark}", p.kind.to_sexpr())
+        format!("{owned}{edit}{}{name}{mark}", p.kind.to_sexpr())
     };
     let params: Vec<String> = sig.params.iter().map(param).collect();
     let ret =
@@ -416,14 +408,10 @@ fn callee_text(callee: &Ident, place: &Option<Box<Expr>>) -> String
 /// # Returns
 ///
 /// The parts of a call list.
-fn call_parts(callee: &str, args: &[Expr], edits: &[bool]) -> Vec<String>
+fn call_parts(callee: &str, args: &[Expr]) -> Vec<String>
 {
-    let marked = |(n, a): (usize, &Expr)| {
-        let edit = edits.get(n).copied().unwrap_or(false);
-        tern!(edit, list("edit", [a.to_sexpr()]), a.to_sexpr())
-    };
     std::iter::once(callee.to_string())
-        .chain(args.iter().enumerate().map(marked))
+        .chain(args.iter().map(ToSexpr::to_sexpr))
         .collect()
 }
 
@@ -628,10 +616,8 @@ fn struct_sexpr(s: &StructDecl) -> String
 {
     let fields: Vec<String> = s.fields.iter().map(param_sexpr).collect();
     let parts = [s.name.name.to_string(), format!("[{}]", fields.join(", "))];
-    list(
-        "struct",
-        parts.into_iter().chain(s.classifier.iter().map(|c| c.name.to_string())),
-    )
+    let head = tern!(s.external, "external_struct", "struct");
+    list(head, parts.into_iter().chain(s.classifier.iter().map(|c| c.name.to_string())))
 }
 
 /// `(enum name [member, member value, ...])` for an enumeration declaration.
@@ -678,9 +664,10 @@ fn alias_sexpr(s: &AliasDecl) -> String
 /// The text.
 fn param_sexpr(p: &Param) -> String
 {
+    let owned = tern!(p.owned, "own ", "");
     let edit = tern!(p.edit, "edit ", "");
     let mark = p.mark.as_ref().map(|m| format!("({})", m.name)).unwrap_or_default();
-    format!("{edit}{} {}{mark}", p.kind.to_sexpr(), p.name.name)
+    format!("{owned}{edit}{} {}{mark}", p.kind.to_sexpr(), p.name.name)
 }
 
 /// Name of a verb operation; a shift takes the name of its direction.

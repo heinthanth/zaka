@@ -8,18 +8,18 @@ description: A second name for a kind, where the name can stand, and the errors 
 A *kind alias* gives a kind a second name. The alias and the kind it names are one kind:
 a value of one is a value of the other, and a printed value and a message use the name
 the kind has on its own. The Learn book shows it in [Structs](../../learn/structs/README.md#another-name-for-a-kind)
-and in [Functions as values](../../learn/pointers/functions.md#naming-a-function-kind).
+and in [Function values](../../learn/function-values/README.md).
 
 ```zaka
-ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။
-ဒေတာအမျိုးအစား လူ ကို ကျောင်းသား ဟုလည်း မှတ်ယူနိုင်ပါသည်။
-ဒေတာအမျိုးအစား ကျောင်းသား စာရင်း ကို အတန်းသားများ ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+ဒေတာအမျိုးအစား ကျောင်းသား ကို လူ ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+ဒေတာအမျိုးအစား အတန်းသားများ ကို ကျောင်းသား စာရင်း ဟုလည်း မှတ်ယူနိုင်ပါသည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကျော် သည် ကျောင်းသား(အသက်: ၁၂) ဖြစ်ပါစေ။
 ကိန်းရှင် မွန် သည် လူ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကျော် ဖြစ်ပါစေ။
 ကိန်းရှင် အတန်း သည် အတန်းသားများ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [ကျော်၊ မွန်] ဖြစ်ပါစေ။
-အတန်း ကို ပြသပါ။
+အတန်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -29,23 +29,26 @@ and in [Functions as values](../../learn/pointers/functions.md#naming-a-function
 
 | Zaka | Reads as |
 | --- | --- |
-| `ဒေတာအမျိုးအစား လူ ကို ကျောင်းသား` | "the data kind `လူ`, as `ကျောင်းသား`" |
+| `ဒေတာအမျိုးအစား ကျောင်းသား ကို လူ` | "the data kind `ကျောင်းသား`, as `လူ`" |
 | `ဟုလည်း မှတ်ယူနိုင်ပါသည်` | "can also be taken as" |
 
 ## Declaring an alias
 
 ```text
-ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။
-<function kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+[အများသုံး] ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+[အများသုံး] ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
 ```
 
-- `<kind>` is a whole kind phrase, its levels included: a built-in kind such as
+- The new name comes first, then `ကို` and the kind it names.
+- `<kind>` is a whole kind phrase, its levels included, with no measure word after it: a built-in kind such as
   `၃၂ ဘစ် ကိန်းပြည့်`, a struct, an enumeration, a list, an address, a
   [result kind](error-handling.md#result-kinds), a [function kind](function-values.md#the-kind),
   or another alias.
-- The opener is the one a struct and an enumeration take, `ဒေတာအမျိုးအစား` or
-  `အချက်အလက်အမျိုးအစား`. A function kind can stand with no opener before it; another
-  kind with none is ZK0201.
+- The opener is `ဒေတာအမျိုးအစား` or `အချက်အလက်အမျိုးအစား`, one word in two spellings,
+  for each kind a function kind among them.
+- An alias counts with the classifier its declaration names with
+  `မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`; with none, it counts with the word of
+  the kind it names ([Measure words](kinds.md#measure-words)).
 - `ဟုလည်း` can be written apart, as `ဟု လည်း`.
 - A declaration stands at the top level of a file. Inside a block, a loop, a conditional
   or a function it is ZK0240. An alias can be used above its declaration, since the
@@ -55,7 +58,7 @@ and in [Functions as values](../../learn/pointers/functions.md#naming-a-function
   its name without `များ` too, as an enumeration does.
 - An alias can name another alias, declared above it or below. A chain of aliases that
   comes back to its start names no kind, and each alias in it is ZK0336.
-- `အများသုံး` before the declaration exports the alias, and another file imports it with
+- `အများသုံး` at the start of the declaration exports the alias, and another file imports it with
   its name, as it imports a struct ([Modules](modules.md)).
 
 ## Where an alias stands
@@ -64,37 +67,37 @@ The compiler reads an alias as the kind it names, so the alias stands wherever t
 does:
 
 - In each place a kind goes: a declaration, a parameter, a field, a result, a list
-  `<alias> စာရင်း`, an address `<alias> ၏ လိပ်စာ`, a size `<alias> ၏ အရွယ်အစား` and
-  a conversion. The levels written after the alias go around the levels of the kind it
+  `<alias> စာရင်း`, a pointer `<alias> ၏ လိပ်စာ`, a size `<alias> တစ်<word> ၏ အရွယ်အစား`
+  and a conversion, each with its measure word. The levels written after the alias go around the levels of the kind it
   names: with the alias above, `အတန်းသားများ ၏ လိပ်စာ` is `လူ စာရင်း ၏ လိပ်စာ`.
 - For a struct, in a struct literal of each form, `ကျောင်းသား(အသက်: ၁၂)` and
   `အသက် ၁၂ ရှိသော ကျောင်းသားတစ်ခု`. The literal counts with the classifier of the struct.
 - For an enumeration, before `ထဲမှ` in a member, `<alias>များထဲမှ <member>`, and in the
-  default arm of a switch, `တခြား <alias> ဖြစ်လျှင်`.
+  default arm of a switch, `တခြား <alias> တစ်<word> ဖြစ်လျှင်`.
 
 A function kind with parameters stands in parentheses in a list of parameters or fields
 (ZK0239). Its alias is one word, so it needs none:
 
 ```zaka
-ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
-ဒေတာအမျိုးအစား အရောင် ကို မီးရောင် ဟုလည်း မှတ်ယူနိုင်ပါသည်။
-ကိန်းပြည့် ကို လက်ခံပြီး ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား ကို ပြောင်းချက် ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
+ဒေတာအမျိုးအစား မီးရောင် ကို အရောင် ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+ဒေတာအမျိုးအစား ပြောင်းချက် ကို ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား ဟုလည်း မှတ်ယူနိုင်ပါသည်။
 
-လုပ်ဆောင်ချက် နှစ်ဆ သည် ကိန်းပြည့် က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-က * ၂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်ချက် နှစ်ဆ သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က * ၂ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-လုပ်ဆောင်ချက် နှစ်ခါ သည် ပြောင်းချက် ဖ၊ ကိန်းပြည့် က တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-ဖ(ဖ(က)) ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+လုပ်ဆောင်ချက် နှစ်ခါ သည် ဖ ဟူသော ပြောင်းချက် တစ်ခု ကို လည်းကောင်း က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+ဖ(ဖ(က)) ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် မီးရောင်များထဲမှ စိမ်း ဖြစ်ပါစေ။
-မီး သည် နီ ဖြစ်လျှင် "ရပ်" ဟု ပြသပါ။
-တခြား မီးရောင် ဖြစ်လျှင် "{မီး}" ဟု ပြသပါ။
-လုပ်ဆောင်ချက် နှစ်ခါ ကို လုပ်ဆောင်ချက် နှစ်ဆ ၏ လိပ်စာ၊ ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+မီး သည် နီ ဖြစ်လျှင် "ရပ်" ဟု ပြသမည်။
+တခြား မီးရောင် တစ်ခု ဖြစ်လျှင် "{မီး}" ဟု ပြသမည်။
+လုပ်ဆောင်ချက် နှစ်ခါ ကို နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်၊ ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -112,7 +115,7 @@ An alias inside a block:
 
 ```zaka-error ZK0240
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ဒေတာအမျိုးအစား ကိန်းပြည့် ကို အမှတ် ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+ဒေတာအမျိုးအစား အမှတ် ကို ကိန်းပြည့် ဟုလည်း မှတ်ယူနိုင်ပါသည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -123,8 +126,8 @@ error[ZK0240]: kind aliases can be declared at the top level and nowhere else
 Two aliases that name each other:
 
 ```zaka-error ZK0336
-ဒေတာအမျိုးအစား ခ ကို က ဟုလည်း မှတ်ယူနိုင်ပါသည်။
 ဒေတာအမျိုးအစား က ကို ခ ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+ဒေတာအမျိုးအစား ခ ကို က ဟုလည်း မှတ်ယူနိုင်ပါသည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -137,7 +140,6 @@ error[ZK0336]: the kind alias "ခ" leads back to itself
 
 | Code | Problem |
 | --- | --- |
-| ZK0201 | a kind other than a function kind with no `ဒေတာအမျိုးအစား` before it |
 | ZK0240 | an alias declared inside a block |
 | ZK0316 | an alias with the name of a struct, an enumeration or another alias |
 | ZK0336 | a chain of aliases that comes back to its start |

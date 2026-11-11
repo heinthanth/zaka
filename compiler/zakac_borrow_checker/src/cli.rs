@@ -50,7 +50,6 @@ const MEM_STRICT_ARG: &str = "mem_strict";
 /// The flag that picks what integer arithmetic does on overflow.
 const OVERFLOW_ARG: &str = "overflow";
 /// The flag that names each statement that duplicates text or a list.
-const WARN_DUPLICATES_ARG: &str = "warn_duplicates";
 
 /// The `zakac_borrow_checker` command, `zakac borrowck` (or `zakac mkbck`)
 /// as a subcommand.
@@ -60,7 +59,7 @@ pub struct ZakacBorrowChecker
     cmd_instance: clap::Command,
 }
 
-/// Configure the ownership check command.
+/// Configure the checker command.
 ///
 /// # Arguments
 ///
@@ -75,7 +74,7 @@ fn configure_borrow_check_command(cmd: clap::Command) -> clap::Command
     attach_borrow_check_args(cmd).about(t!("borrow_check.about"))
 }
 
-/// Add the flags that steer the ownership check: how it reports and how
+/// Add the flags that steer the checker: how it reports and how
 /// strict it is. Later phases share them.
 ///
 /// # Arguments
@@ -105,14 +104,10 @@ pub fn attach_borrow_check_args(cmd: clap::Command) -> clap::Command
         .help(t!("borrow_check.overflow"))
         .value_parser(PossibleValuesParser::new(words))
         .default_value(<&'static str>::from(OverflowMode::default()));
-    let duplicates = Arg::new(WARN_DUPLICATES_ARG)
-        .long("warn-duplicates")
-        .help(t!("borrow_check.warn_duplicates"))
-        .action(ArgAction::SetTrue);
-    cmd.arg(check).arg(strict).arg(overflow).arg(duplicates)
+    cmd.arg(check).arg(strict).arg(overflow)
 }
 
-/// The ownership check options from the command line.
+/// The checker options from the command line.
 ///
 /// # Arguments
 ///
@@ -128,10 +123,7 @@ pub fn borrow_check_options(matches: &ArgMatches) -> BorrowCheckOptions
     let strict = matches.get_flag(MEM_STRICT_ARG);
     let word = matches.get_one::<String>(OVERFLOW_ARG);
     let overflow = word.and_then(|w| w.parse().ok()).unwrap_or_default();
-    let duplicates = matches.get_flag(WARN_DUPLICATES_ARG);
-    #[rustfmt::skip]
-    return BorrowCheckOptions::builder().check(check).strict(strict).overflow(overflow)
-        .warn_duplicates(duplicates).build();
+    BorrowCheckOptions::builder().check(check).strict(strict).overflow(overflow).build()
 }
 
 impl Command for ZakacBorrowChecker
@@ -217,7 +209,7 @@ impl Command for ZakacBorrowChecker
     }
 }
 
-/// Output capabilities for the ownership check phase.
+/// Output capabilities for the checker phase.
 ///
 /// # Returns
 ///

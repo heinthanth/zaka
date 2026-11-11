@@ -7,19 +7,20 @@ use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::Stmt;
 use zakac_diagnostics::Code;
 
-const DECL: &str = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက်၊ ကိန်းပြည့် အတန်း တို့ ပါဝင်သည်။\n";
+const DECL: &str =
+    "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အတန်း ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။\n";
 
 /// The tree of the print statement that shows `value`, after [`DECL`].
 fn shown(value: &str) -> String
 {
-    let list = stmts(&format!("{DECL}{value} ကို ပြသပါ။"));
+    let list = stmts(&format!("{DECL}{value} ကို ပြသမည်။"));
     list.last().expect("a print statement").to_sexpr()
 }
 
 /// The struct name and classifier of the literal a print statement shows.
 fn count_of(value: &str) -> (String, String)
 {
-    let list = stmts(&format!("{DECL}{value} ကို ပြသပါ။"));
+    let list = stmts(&format!("{DECL}{value} ကို ပြသမည်။"));
     let Some(Stmt::Print(print)) = list.last()
     else
     {
@@ -63,7 +64,7 @@ fn an_undeclared_name_splits_at_one_for_the_checker()
 #[test]
 fn a_literal_inside_a_literal_takes_parentheses()
 {
-    let text = "ဒေတာအမျိုးအစား မျဉ်း တွင် လူ စ၊ လူ ဆုံး တို့ ပါဝင်သည်။\n";
+    let text = "မျဉ်း ဟူသော ဒေတာအစုအဝေးတွင် စ ဟူသော လူ တစ်ခု၊ ဆုံး ဟူသော လူ တစ်ခု တို့ပါဝင်သည်။\n";
     let program =
         format!("{text}စ (အသက် ၁ ရှိသော လူတစ်ခု)၊ ဆုံး (အတန်း ၂ ရှိသော လူတစ်ခု) ရှိသော မျဉ်းတစ်ခု");
     assert_eq!(
@@ -94,7 +95,7 @@ fn a_struct_literal_takes_the_notation_form()
 #[test]
 fn a_notation_literal_needs_no_parentheses_inside_another()
 {
-    let text = "ဒေတာအမျိုးအစား မျဉ်း တွင် လူ စ၊ လူ ဆုံး တို့ ပါဝင်သည်။\n";
+    let text = "မျဉ်း ဟူသော ဒေတာအစုအဝေးတွင် စ ဟူသော လူ တစ်ခု၊ ဆုံး ဟူသော လူ တစ်ခု တို့ပါဝင်သည်။\n";
     assert_eq!(
         shown(&format!("{text}စ လူ(အသက်: ၁) ရှိသော မျဉ်းတစ်ခု")),
         "(print (struct မျဉ်း (စ (struct လူ (အသက် 1)))))"
@@ -108,7 +109,7 @@ fn a_notation_literal_needs_no_parentheses_inside_another()
 #[test]
 fn a_notation_literal_writes_no_classifier()
 {
-    let list = stmts(&format!("{DECL}လူ(အသက်: ၁) ကို ပြသပါ။"));
+    let list = stmts(&format!("{DECL}လူ(အသက်: ၁) ကို ပြသမည်။"));
     let Some(Stmt::Print(print)) = list.last()
     else
     {
@@ -125,14 +126,14 @@ fn a_notation_literal_writes_no_classifier()
 #[test]
 fn a_notation_literal_pairs_each_field_with_a_colon()
 {
-    assert_eq!(codes(&format!("{DECL}လူ(အသက် ၁) ကို ပြသပါ။")), [Code::ExpectedToken]);
-    assert_eq!(codes(&format!("{DECL}လူ(အသက်: ၁ ကို ပြသပါ။")), [Code::ExpectedToken]);
+    assert_eq!(codes(&format!("{DECL}လူ(အသက် ၁) ကို ပြသမည်။")), [Code::ExpectedToken]);
+    assert_eq!(codes(&format!("{DECL}လူ(အသက်: ၁ ကို ပြသမည်။")), [Code::ExpectedToken]);
 }
 
 #[test]
 fn a_literal_needs_its_count()
 {
-    assert_eq!(codes(&format!("{DECL}အသက် ၂၀ ရှိသော လူ ကို ပြသပါ။")), [Code::ExpectedToken]);
-    let no_word = format!("{DECL}အသက် ၂၀ ရှိသော လူတစ် ကို ပြသပါ။");
+    assert_eq!(codes(&format!("{DECL}အသက် ၂၀ ရှိသော လူ ကို ပြသမည်။")), [Code::ExpectedToken]);
+    let no_word = format!("{DECL}အသက် ၂၀ ရှိသော လူတစ် ကို ပြသမည်။");
     assert_eq!(codes(&no_word), [Code::ExpectedToken]);
 }

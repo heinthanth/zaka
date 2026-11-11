@@ -51,11 +51,11 @@ one around it, opens at each of these places:
 
 | Place | The scope holds |
 | --- | --- |
-| a block, `အောက်ပါတို့ကို လုပ်ဆောင်ပါ။ ... လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` | the statements of the block |
+| a block, `အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ... လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` | the statements of the block |
 | each branch of an `if`, and the block of a `while` | the statements of the block, or the one statement |
 | a counted loop | the counter and the statements of the loop's block |
 | a generic loop | the loop variable, the statements of the block and the update |
-| a function | the parameters, `ရလဒ်` (when there is a result) and the statements of the block |
+| a function | the parameters and the statements of the block |
 | the [start block](functions.md#the-start-block) | the same as a function |
 
 A name declared in a scope is visible in that scope after its declaration and in each
@@ -76,15 +76,15 @@ there ends with the statement.
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က + ၁၀ ဖြစ်ပါစေ။
-အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ + ၁၀ ဖြစ်ပါစေ။
-က + ခ + ဂ ကို ပြသပါ။
+က + ခ + ဂ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ခ ကို ပြသပါ။
+ခ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-က ကို ပြသပါ။
+က ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -96,10 +96,10 @@ there ends with the statement.
 
 ```zaka-error ZK0301
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ယာယီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ယာယီ ကို ပြသပါ။
+ယာယီ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -114,13 +114,13 @@ another kind.
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အရေအတွက် + ၁၀၀ ဖြစ်ပါစေ။
-အရေအတွက် ကို ပြသပါ။
-အရေအတွက် ကို အရေအတွက် + ၁ ဟု ထားပါ။
-အရေအတွက် ကို ပြသပါ။
+အရေအတွက် ကို ပြသမည်။
+အရေအတွက် ကို အရေအတွက် + ၁ ဟု ထားမည်။
+အရေအတွက် ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-အရေအတွက် ကို ပြသပါ။
+အရေအတွက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -141,7 +141,7 @@ the pair held two scopes, but hold one:
 
 ```zaka-error ZK0302
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -149,12 +149,12 @@ the pair held two scopes, but hold one:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် န * ၁၀ ဖြစ်ပါစေ။
-န ကို ပြသပါ။
+န ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-န ကို ပြသပါ။
+န ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -174,12 +174,14 @@ A name has an *access* besides its kind. A variable, a parameter and a generic-l
 variable can be read and assigned to. A constant (`ကိန်းသေ`) can be read alone: an
 assignment is ZK0306, and a constant must be given its value where it is declared
 (ZK0308). The counter of a counted loop can be read alone as well (ZK0307). Neither can
-have its address taken (ZK0412), since a pointer could write through it.
+go to a `ဒေတာ ပြောင်းလဲရန်` parameter, which writes the argument back (ZK0306, ZK0307; [Functions](functions.md)),
+nor have its address taken in marked code (ZK0412), since a pointer could write through
+it.
 
 ```zaka-error ZK0306
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
-တစ်ပတ် ကို ၈ ဟု ထားပါ။
+တစ်ပတ် ကို ၈ ဟု ထားမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -197,14 +199,14 @@ program: assigning to such a variable changes it for the whole program.
 
 ```zaka
 ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ပေါင်းထည့် သည် ကိန်းပြည့် က ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-စုစုပေါင်း ကို စုစုပေါင်း + က ဟု ထားပါ။
+လုပ်ဆောင်ချက် ပေါင်းထည့် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စုစုပေါင်း ကို စုစုပေါင်း + က ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၅ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၇ တို့ဖြင့် လုပ်ဆောင်ပါ။
-စုစုပေါင်း ကို ပြသပါ။
+လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၅ တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၇ တို့ဖြင့် လုပ်ဆောင်မည်။
+စုစုပေါင်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -217,10 +219,9 @@ themselves are not subject to this order: a call can come before the declaration
 function's own name is visible in all places. Variables and functions have separate sets of
 names, so a variable and a function can share a name without a clash. A call of a name
 that no function has is ZK0303. A top-level function never sees the locals of another function. A function nested in
-another one is the exception: it lists the locals around it that its statements use, and
-takes a duplicate of each, moves it in, or borrows it to read and change the outer variable
-itself (see
-[Nested functions and closures](function-values.md#nested-functions-and-closures)).
+another one is the exception: it reads and writes the locals around it, with no list of them, and
+shares each one with the block around it, so a write on either side is seen on the other
+(see [Function values](function-values.md)).
 
 ## The errors
 
@@ -236,4 +237,4 @@ itself (see
 | ZK0308 | a constant is declared with no value |
 
 The next pages build on these rules: [Functions](functions.md) for parameters and
-results, and [Pointers](pointers.md) for names whose address is taken.
+results, and [Unsafe Zaka](unsafe.md) for names whose address is taken.

@@ -69,6 +69,16 @@ en = "raw identifier between backticks is blank"
 [codes.ZK0109.explain]
 en = """Two backticks with nothing between them do not name a variable. A raw identifier needs at least one character between the backticks."""
 
+[codes.ZK0110.title]
+en = "old statement ending"
+[codes.ZK0110.message]
+en = "\"%{old}\" ends in ပါ; a statement ends in မည်"
+[codes.ZK0110.explain]
+en = """Each statement verb ends in မည်: ထားမည်, ပြသမည်, လုပ်ဆောင်မည်, ထည့်မည်, ပြန်ပေးမည်, ရပ်မည်, ကျော်မည် and the rest. The ending ပါ was the spelling of an earlier version. The declaration ဖြစ်ပါစေ and the closers ပြီးဆုံးပါပြီး keep their ပါ."""
+
+[lexer.help_new_ending]
+en = "write \"%{new}\""
+
 # --------------------------------------------------------------- parser ZK02xx
 
 [parser.help_split]
@@ -93,30 +103,30 @@ en = "statement verb missing"
 [codes.ZK0203.message]
 en = "this statement does not end in a statement verb, found %{f}"
 [codes.ZK0203.help]
-en = "a statement ends in \"ပြသပါ\", \"ထားပါ\" or \"ရလဒ်အဖြစ် ပြန်ပေးပါ\", or is a loop with \"နေသရွေ့\" or \"မှ ... အထိ\""
+en = "a statement ends in \"ပြသမည်\", \"ထားမည်\" or \"ကို ပြန်ပေးမည်\", or is a loop with \"နေသရွေ့\" or \"မှ ... အထိ\""
 [codes.ZK0203.explain]
-en = """A statement that does not start with a reserved word is a clause that ends in a statement verb: \"ပြသပါ\" (print), \"ထားပါ\" (assign) or \"ရလဒ်အဖြစ် ပြန်ပေးပါ\" (return a value). It can also be a condition followed with \"နေသရွေ့\" (a while loop) or a bound followed with \"မှ\" (a counted loop). This statement ends in a value and none of these."""
+en = """A statement that does not start with a reserved word is a clause that ends in a statement verb: \"ပြသမည်\" (print), \"ထားမည်\" (assign) or \"ကို ပြန်ပေးမည်\" (return a value). It can also be a condition followed with \"နေသရွေ့\" (a while loop) or a bound followed with \"မှ\" (a counted loop). This statement ends in a value and none of these."""
 
 [codes.ZK0204.title]
 en = "statement verb inside an expression"
 [codes.ZK0204.message]
 en = "statement verb \"%{v}\" cannot stand inside an expression"
 [codes.ZK0204.explain]
-en = """Statement verbs such as \"ပြသပါ\" and \"ထားပါ\" close a whole statement and produce no value. Here one appears inside parentheses, a call argument or a condition, where a value is needed. Move the statement out, or use a verb-noun such as \"ပေါင်းလဒ်\" that produces a value."""
+en = """Statement verbs such as \"ပြသမည်\" and \"ထားမည်\" close a whole statement and produce no value. Here one appears inside parentheses, a call argument or a condition, where a value is needed. Move the statement out, or use a verb-noun such as \"ပေါင်းလဒ်\" that produces a value."""
 
 [codes.ZK0205.title]
 en = "too few operands"
 [codes.ZK0205.message]
 en = "\"%{v}\" needs %{n} operands, found %{m}"
 [codes.ZK0205.explain]
-en = """Each verb takes a fixed number of operands, each followed with its particle: \"ပေါင်းလဒ်\" takes two (\"a နှင့် b ၏\"), \"ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်\" takes one (\"a ၏\"), and \"ထားပါ\" takes two (\"x ကို v ဟု\"). The clause before this verb holds fewer operands than the verb needs."""
+en = """Each verb takes a fixed number of operands, each followed with its particle: \"ပေါင်းလဒ်\" takes two (\"a နှင့် b ၏\"), \"ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်\" takes one (\"a ၏\"), and \"ထားမည်\" takes two (\"x ကို v ဟု\"). The clause before this verb holds fewer operands than the verb needs."""
 
 [codes.ZK0206.title]
 en = "wrong particle for the verb"
 [codes.ZK0206.message]
 en = "\"%{v}\" needs \"%{e}\" after operand %{i}, found %{f}"
 [codes.ZK0206.explain]
-en = """A verb checks the particle that follows each of its operands. \"ပေါင်းလဒ်\" wants \"a နှင့် b ၏\", \"စားသော စားလဒ်\" wants \"a ကို b ဖြင့်\", the comparisons want \"a သည် b\" then \"နှင့်\", \"ထက်\" or \"အောက်\", and \"ထားပါ\" wants \"x ကို v ဟု\". The operand named in the message carries a different particle, or none."""
+en = """A verb checks the particle that follows each of its operands. \"ပေါင်းလဒ်\" wants \"a နှင့် b ၏\", \"စားသော စားလဒ်\" wants \"a ကို b ဖြင့်\", the comparisons want \"a သည် b\" then \"နှင့်\", \"ထက်\" or \"အောက်\", and \"ထားမည်\" wants \"x ကို v ဟု\". The operand named in the message carries a different particle, or none."""
 
 [codes.ZK0207.title]
 en = "two particles on one operand"
@@ -174,14 +184,14 @@ en = "nested external function or start block"
 [codes.ZK0214.message]
 en = "external functions, C functions and the start block can be declared at the top level and nowhere else"
 [codes.ZK0214.explain]
-en = """A function with statements can sit inside another function, where it borrows the locals around it. An external function, a C function and the start block have no locals to borrow and belong to the whole file: declare them at the top level."""
+en = """A function with statements can sit inside another function, where it can use the locals around it. An external function, a C function and the start block have no locals around them and belong to the whole file: declare them at the top level."""
 
 [codes.ZK0215.title]
 en = "conditional as a single-statement block"
 [codes.ZK0215.message]
 en = "a single-statement block cannot be another conditional"
 [codes.ZK0215.explain]
-en = """When a conditional arm has no block phrase, its block is the single statement that follows. That statement cannot itself be a conditional, so that each else arm belongs to one clear conditional. Wrap the inner conditional in \"အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\" and \"လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\"."""
+en = """When a conditional arm has no block phrase, its block is the single statement that follows. That statement cannot itself be a conditional, so that each else arm belongs to one clear conditional. Wrap the inner conditional in \"အောက်ပါတို့ကို လုပ်ဆောင်မည်။\" and \"လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\"."""
 
 [codes.ZK0216.title]
 en = "invalid bit count"
@@ -228,9 +238,9 @@ en = """The kind prefix \"ကိန်းပြည့်\" makes the literal an 
 [codes.ZK0222.title]
 en = "invalid literal kind"
 [codes.ZK0222.message]
-en = "a literal kind prefix must be an integer or floating-point kind"
+en = "the kind of a number literal must be an integer or floating-point kind, and the kind of a list literal a list kind"
 [codes.ZK0222.explain]
-en = """A kind prefix such as \"လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်\" fixes the kind of the number that follows. Characters and booleans have literals of their own ('က', \"မှန်\"), so \"စာလုံး\" and \"မှန်မှားတန်ဖိုး\" cannot prefix a number."""
+en = """A kind after a literal, as in \"၁၂၇ ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု\", fixes the kind of the number before it; after a list literal, \"[၁၊ ၂] ဟူသော ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု\", the kind of the list. Characters, text and booleans have literals of their own ('က', \"က\", \"မှန်\"), so \"စာလုံး\", \"စာသား\" and \"မှန်မှားတန်ဖိုး\" cannot follow a number, and a list literal takes a list kind alone."""
 
 [codes.ZK0225.title]
 en = "constant loop variable"
@@ -244,7 +254,7 @@ en = "unmatched block closer"
 [codes.ZK0226.message]
 en = "this block closer has no open block to close"
 [codes.ZK0226.explain]
-en = """\"လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\" closes the block opened with \"အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\" or with a function opener. Here no block is open. Remove the closer, or add the opener it belongs to."""
+en = """\"လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\" closes the block opened with \"အောက်ပါတို့ကို လုပ်ဆောင်မည်။\" or with a function opener. Here no block is open. Remove the closer, or add the opener it belongs to."""
 
 [codes.ZK0227.title]
 en = "bad list count"
@@ -258,14 +268,14 @@ en = "nested struct"
 [codes.ZK0228.message]
 en = "structs can be declared at the top level and nowhere else"
 [codes.ZK0228.explain]
-en = """A struct declaration, \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; a struct can be used before its declaration."""
+en = """A struct declaration, \"<name> ဟူသော ဒေတာအစုအဝေးတွင် ... တို့ပါဝင်သည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; a struct can be used before its declaration."""
 
 [codes.ZK0229.title]
 en = "misplaced export mark"
 [codes.ZK0229.message]
-en = "\"အများသုံး\" marks a top-level function, struct, enumeration, variable or constant, and nothing else"
+en = "\"အများသုံး\" marks a top-level function, variable, constant or kind alias, and stands after \"ဟူသော\" in a struct or an enumeration"
 [codes.ZK0229.explain]
-en = """The export mark \"အများသုံး\" stands right before \"လုပ်ဆောင်ချက်\", \"ဒေတာအမျိုးအစား\", \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. It cannot mark a statement, a loop, or a declaration inside a block."""
+en = """The export mark \"အများသုံး\" stands right before \"လုပ်ဆောင်ချက်\", \"ဒေတာအမျိုးအစား\" (an alias), \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. A struct or an enumeration carries it after \"ဟူသော\": \"<name> ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...\". It cannot mark a statement, a loop, or a declaration inside a block."""
 
 [codes.ZK0230.title]
 en = "misplaced import"
@@ -274,7 +284,7 @@ en = "imports go at the top of the file"
 [codes.ZK0230.help]
 en = "move it above the first declaration or statement"
 [codes.ZK0230.explain]
-en = """An import, \"\"<file>\" မှ <name> ကို ထည့်သွင်းပါ။\", names what a file takes from another file. The imports of a file come first, ahead of each declaration and statement, and never inside a block."""
+en = """An import, \"\"<file>\" မှ <name> ကို ထည့်သွင်းမည်။\", names what a file takes from another file. The imports of a file come first, ahead of each declaration and statement, and never inside a block."""
 
 [codes.ZK0231.title]
 en = "circular import"
@@ -290,44 +300,37 @@ en = "this program was not read from a file, so it cannot import \"%{f}\""
 [codes.ZK0232.explain]
 en = """An import names a file relative to the file that holds the import. A program written in the compiler explorer, on a Learn page or on standard input has no folder, so its imports cannot be found. Save the program in a file and run it with \"zakac run\"."""
 
-[codes.ZK0233.title]
-en = "count on a slice"
-[codes.ZK0233.message]
-en = "a slice takes no cell count; its count comes when the program runs"
-[codes.ZK0233.explain]
-en = """A slice kind, \"<kind> စာရင်း တစ်စိတ်တစ်ပိုင်း\", views cells whose number is known at run time, so the \"စာရင်း\" before \"တစ်စိတ်တစ်ပိုင်း\" takes no \"အကွက် <n> ခုရှိသော\" prefix. Remove the count, or drop \"တစ်စိတ်တစ်ပိုင်း\" for a list of that count."""
-
 [codes.ZK0234.title]
 en = "kind without a classifier"
 [codes.ZK0234.message]
-en = "a declared kind takes \"တစ်\" and a classifier"
+en = "a kind here takes \"တစ်\" and a classifier"
 [codes.ZK0234.help]
-en = "write \"%{k} တစ်%{c}\", then \"ဖြစ်၍ တန်ဖိုးသည် <value>\" for a value"
+en = "write \"%{k} တစ်%{c}\""
 [codes.ZK0234.explain]
-en = """A declaration counts its variable as Burmese counts a thing: the kind, then \"တစ်\" (one) and the classifier of the kind. Most kinds take \"ခု\", \"စာလုံး\" takes \"လုံး\", and a struct takes the classifier its declaration gives. A value follows with \"ဖြစ်၍ တန်ဖိုးသည်\". To have the compiler take the kind from the value, leave the kind out and write the value alone."""
+en = """A kind written in a declaration, a parameter, a field, a result, a conversion, a size, a default arm or after a literal counts as Burmese counts a thing: the kind, then \"တစ်\" (one) and the classifier of the kind, as in \"ကိန်းပြည့် စာရင်း တစ်ခု\". Most kinds take \"ခု\", \"စာလုံး\" takes \"လုံး\", and a struct, an enumeration or an alias takes the classifier its declaration gives. The word goes after the whole kind, never inside it. To have the compiler take the kind of a declaration from its value, leave the kind out and write the value alone."""
 
 [codes.ZK0235.title]
 en = "nested enumeration"
 [codes.ZK0235.message]
 en = "enumerations can be declared at the top level and nowhere else"
 [codes.ZK0235.explain]
-en = """An enumeration declaration, \"ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; an enumeration can be used before its declaration."""
+en = """An enumeration declaration, \"<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ... တို့ပါဝင်သည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; an enumeration can be used before its declaration."""
 
 [codes.ZK0236.title]
 en = "arm after the default arm"
 [codes.ZK0236.message]
-en = "the default arm \"တခြား ... ဖြစ်လျှင်\" comes last in a switch"
+en = "the default arm \"တခြား ... တစ်ခု ဖြစ်လျှင်\" comes last in a switch"
 [codes.ZK0236.explain]
-en = """A switch runs the first arm whose case equals its subject, and the default arm \"တခြား <kind> ဖြစ်လျှင်\" when none does. An arm after the default arm could never run, so the default arm must be the last. Move this arm above the default arm."""
+en = """A switch runs the first arm whose case equals its subject, and the default arm \"တခြား <kind> တစ်<classifier> ဖြစ်လျှင်\" when none does. An arm after the default arm could never run, so the default arm must be the last. Move this arm above the default arm."""
 
 [codes.ZK0237.title]
 en = "parameters marked in part"
 [codes.ZK0237.message]
 en = "some parameters have a mark and some do not"
 [codes.ZK0237.help]
-en = "write a mark after each parameter name, as \"<name>(<mark>)\", or leave out each mark"
+en = "give each parameter a mark, as \"<name> ဟူသော <kind> တစ်ခု ကို ဝိဘတ် \"<mark>\" ကို သုံး၍ လည်းကောင်း\", or leave out each mark"
 [codes.ZK0237.explain]
-en = """A parameter can have a mark, the word a marked call writes after its argument: \"စာသား လမ်းကြောင်း(၌ရှိသော)\". A marked call gives each argument with its mark, so a header marks each parameter or none of them. With marks, the parameters end in \"လက်ခံပြီး\" straight after the last one; without marks, in \"(တို့)?ကို လက်ခံပြီး\"."""
+en = """A parameter can have a mark, the word a marked call writes after its argument: \"လမ်းကြောင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"၌ရှိသော\" ကို သုံး၍ လည်းကောင်း\". A marked call gives each argument with its mark, so a header marks each parameter or none of them."""
 
 [codes.ZK0238.title]
 en = "unknown stdlib module"
@@ -343,16 +346,25 @@ en = "function kind not in parentheses"
 [codes.ZK0239.message]
 en = "a function kind with parameters in a list of parameters or fields stands in parentheses"
 [codes.ZK0239.help]
-en = "write it as \"(<parameters> လက်ခံ… လုပ်ဆောင်ချက် အမျိုးအစား) <name>\""
+en = "write it as \"<name> ဟူသော (<parameters> လက်ခံ… လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု\""
 [codes.ZK0239.explain]
-en = """A function kind writes its parameters as a header does: kinds, each with an optional name, joined with \"၊\". In a list of parameters or fields, the parameters of the kind would run into the entries before it, so the list would have two readings. Parentheses close the kind: \"(ကိန်းပြည့်၊ ကိန်းပြည့် တို့ကို လက်ခံပြီး မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) ရှေ့\". A function kind with no parameters needs none."""
+en = """A function kind writes its parameters as a header does, each kind with its measure word and no name, each ending in \"လည်းကောင်း\" when there are several. In a list of parameters or fields, the parameters of the kind would run into the entries around it, so the list would have two readings. Parentheses close the kind: \"ရှေ့ ဟူသော (ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု\". A function kind with no parameters needs none."""
 
 [codes.ZK0240.title]
 en = "nested kind alias"
 [codes.ZK0240.message]
 en = "kind aliases can be declared at the top level and nowhere else"
 [codes.ZK0240.explain]
-en = """A kind alias, \"ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; an alias can be used before its declaration."""
+en = """A kind alias, \"ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; an alias can be used before its declaration."""
+
+[codes.ZK0241.title]
+en = "bad parameter mark"
+[codes.ZK0241.message]
+en = "\"%{m}\" cannot be a mark"
+[codes.ZK0241.help]
+en = "a mark is one name, or one particle such as \"ကို\" or \"သို့\""
+[codes.ZK0241.explain]
+en = """The string after \"ဝိဘတ်\" is the word a marked call writes after the argument, so it must read as one word a mark can be: a name, or a particle other than the endings \"သည်\", \"ပါ\", \"ဖြစ်ကာ\", \"ပြီးလျှင်\" and \"လက်ခံပြီး\". Spaces, signs and several words cannot be a mark."""
 
 # -------------------------------------------------------------- resolve ZK03xx
 
@@ -360,6 +372,8 @@ en = """A kind alias, \"ဒေတာအမျိုးအစား <kind> ကိ
 en = "undeclared name"
 [codes.ZK0301.message]
 en = "\"%{n}\" is not declared"
+[codes.ZK0301.help_result]
+en = "a function has no variable \"ရလဒ်\": give its result back with \"<value> ကို ပြန်ပေးမည်။\""
 [codes.ZK0301.explain]
 en = """A name is used before a declaration of it is in scope. Declare the variable with \"ကိန်းရှင်\" or \"ကိန်းသေ\" first, in this block or in a block around it. Names declared inside a block are not visible after the block closer."""
 
@@ -417,14 +431,14 @@ en = """A constant cannot be assigned later, so its declaration must give its va
 [codes.ZK0309.title]
 en = "break outside a loop"
 [codes.ZK0309.message]
-en = "\"ကွင်းဆက် ကို ရပ်ပါ\" stands outside a loop"
+en = "\"ကွင်းဆက် ကို ရပ်မည်\" stands outside a loop"
 [codes.ZK0309.explain]
 en = """Breaking leaves the innermost while, counted, or generic loop. Here no loop encloses the statement. Remove it, or move it inside a loop."""
 
 [codes.ZK0310.title]
 en = "continue outside a loop"
 [codes.ZK0310.message]
-en = "\"နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ\" stands outside a loop"
+en = "\"နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်\" stands outside a loop"
 [codes.ZK0310.explain]
 en = """Continuing skips to the next iteration of the innermost while, counted, or generic loop. Here no loop encloses the statement. Remove it, or move it inside a loop."""
 
@@ -440,14 +454,14 @@ en = "value returned from a function without a result"
 [codes.ZK0312.message]
 en = "function \"%{n}\" returns nothing, but a value is returned"
 [codes.ZK0312.explain]
-en = """The function header opens with \"အောက်ပါတို့ကို လုပ်ဆောင်မည်\", so the function gives back no value. Write a bare \"ပြန်ပေးပါ။\" to leave the function, or start the statements with \"အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်\"."""
+en = """The function header opens with \"အောက်ပါတို့ကို လုပ်ဆောင်မည်\", so the function gives back no value. Write a bare \"ပြန်ပေးမည်။\" to leave the function, or start the statements with \"အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> တစ်ခု ကို ပြန်ပေးမည်\"."""
 
 [codes.ZK0313.title]
 en = "missing return value"
 [codes.ZK0313.message]
 en = "function \"%{n}\" returns %{k}, but no value is returned"
 [codes.ZK0313.explain]
-en = """The function header promises a result, so each return statement must give one: \"<value> ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\". To return the implicit result variable, write \"ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။\"."""
+en = """The function header promises a result, so each return statement must give one: \"<value> ကို ပြန်ပေးမည်။\"."""
 
 [codes.ZK0314.title]
 en = "wrong number of arguments"
@@ -461,7 +475,7 @@ en = "function without a result used as a value"
 [codes.ZK0315.message]
 en = "function \"%{n}\" returns nothing and cannot be used as a value"
 [codes.ZK0315.explain]
-en = """The call expression \"... လုပ်ဆောင်သော ရလဒ်\" needs the function to return a value, but its header has no result clause. Call it as a statement with \"လုပ်ဆောင်ပါ\", or start its statements with \"အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်\"."""
+en = """The call expression \"... လုပ်ဆောင်သော ရလဒ်\" needs the function to return a value, but its header has no result clause. Call it as a statement with \"လုပ်ဆောင်မည်\", or start its statements with \"အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> တစ်ခု ကို ပြန်ပေးမည်\"."""
 
 [codes.ZK0316.title]
 en = "duplicate struct"
@@ -482,14 +496,14 @@ en = "unknown kind name"
 [codes.ZK0318.message]
 en = "no struct or enumeration named \"%{n}\" is declared"
 [codes.ZK0318.explain]
-en = """A name in a kind phrase, as in \"ကိန်းရှင် x သည် လူ တစ်ယောက် ဖြစ်ပါစေ။\", names a struct or an enumeration. Declare it at the top level with \"ဒေတာအမျိုးအစား <name> တွင် ... တို့ ပါဝင်သည်။\" or \"ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\", or check the spelling."""
+en = """A name in a kind phrase, as in \"ကိန်းရှင် x သည် လူ တစ်ယောက် ဖြစ်ပါစေ။\", names a struct or an enumeration. Declare it at the top level with \"<name> ဟူသော ဒေတာအစုအဝေးတွင် ... တို့ပါဝင်သည်။\" or \"<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ... တို့ပါဝင်သည်။\", or check the spelling."""
 
 [codes.ZK0319.title]
 en = "name of a struct reused"
 [codes.ZK0319.message]
 en = "\"%{n}\" names a struct or an enumeration, so it cannot name a value or a function too"
 [codes.ZK0319.explain]
-en = """A struct name can start a kind wherever a value can stand, as in \"လူ ၏ အရွယ်အစား\", so the compiler reads a struct name as a kind each time. A variable, constant, parameter, field or function with that name could never be read. Pick another name for one of the two."""
+en = """A struct name can start a kind wherever a value can stand, as in \"လူ တစ်ယောက် ၏ အရွယ်အစား\", so the compiler reads a struct name as a kind each time. A variable, constant, parameter, field or function with that name could never be read. Pick another name for one of the two."""
 
 [codes.ZK0320.title]
 en = "unknown field"
@@ -571,7 +585,7 @@ en = "unknown member"
 [codes.ZK0329.message]
 en = "the enumeration \"%{e}\" has no member \"%{n}\""
 [codes.ZK0329.explain]
-en = """\"<name>များထဲမှ <member>\" and a bare case in a switch over an enumeration name one of its members, as its declaration \"ဒေတာအမျိုးအစား <name> ဆိုသည်မှာ ... တို့ ဖြစ်သည်။\" lists them. Check the spelling, or add the member to the declaration."""
+en = """\"<name>များထဲမှ <member>\" and a bare case in a switch over an enumeration name one of its members, as its declaration \"<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ... တို့ပါဝင်သည်။\" lists them. Check the spelling, or add the member to the declaration."""
 
 [codes.ZK0330.title]
 en = "unknown enumeration"
@@ -589,7 +603,7 @@ en = "argument %{i} of \"%{n}\" is marked \"%{f}\", not \"%{w}\""
 [codes.ZK0331.help]
 en = "write \"%{w}\" after the argument"
 [codes.ZK0331.explain]
-en = """A marked call writes each argument with the mark its parameter declares, in the order of the parameters: for \"စာသား ဒေတာ(ကို)၊ စာသား လမ်းကြောင်း(သို့)\", the call is \"<data> ကို <path> သို့ <name> မည်\". The mark after this argument is another word."""
+en = """A marked call writes each argument with the mark its parameter declares, in the order of the parameters: for `ဒေတာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း လမ်းကြောင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း`, the call is \"<data> ကို <path> သို့ <name> မည်\". The mark after this argument is another word."""
 
 [codes.ZK0332.title]
 en = "no function fits"
@@ -643,6 +657,15 @@ en = "write the name as the lib spells it: ASCII letters, digits and \"_\", not 
 [codes.ZK0337.explain]
 en = """A function that comes from a C lib, \"လုပ်ဆောင်ချက် <name> သည် \"<lib>\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", calls the C function of its name in that lib. A C name holds ASCII letters, digits and \"_\" alone, and does not start with a digit."""
 
+[codes.ZK0339.title]
+en = "a function that can end with no result"
+[codes.ZK0339.message]
+en = "function \"%{n}\" gives back a result, but its block can reach its end without giving one back"
+[codes.ZK0339.help]
+en = "end each path with \"<value> ကို ပြန်ပေးမည်။\""
+[codes.ZK0339.explain]
+en = """A function whose header gives a result kind gives a value back on each path, with \"<value> ကို ပြန်ပေးမည်။\". A path ends at a return, or at an \"if\" with an else, or a switch with a default, whose arms each end in one. A loop is no such end, since its condition can be false at the start."""
+
 [codes.ZK0338.title]
 en = "C function declared twice with other kinds"
 [codes.ZK0338.message]
@@ -652,33 +675,6 @@ en = "give each declaration of \"%{n}\" the same parameter and result kinds"
 [codes.ZK0338.explain]
 en = """Each C name names one C function, so each declaration of a C function of that name, in each file of the program and among overloads, must give it the same parameter kinds and the same result kind."""
 
-[codes.ZK0339.title]
-en = "capture not listed"
-[codes.ZK0339.message]
-en = "\"%{f}\" uses \"%{n}\" of the function around it, which its list leaves out"
-[codes.ZK0339.help]
-en = "add \"%{n} ကိုလည်းကောင်း\" to the list before လက်ခံပြီး, or \"%{n} ကို ငှား၍လည်းကောင်း\" to share it"
-[codes.ZK0339.explain]
-en = """A function declared inside another function lists each local of the functions around it that its statements use, in the list of its parameters: \"<name> ကိုလည်းကောင်း\" takes a duplicate, \"<name> ကို အပိုင်အနေဖြင့်လည်းကောင်း\" moves the value in, and \"<name> ကို ငှား၍လည်းကောင်း\" borrows the local. A nested function with captures of its own that it calls, or whose address it takes, is listed too. Its own name inside itself needs no listing."""
-
-[codes.ZK0340.title]
-en = "capture of no local"
-[codes.ZK0340.message]
-en = "\"%{n}\" is no local of a function around \"%{f}\""
-[codes.ZK0340.help]
-en = "list locals of the functions around it alone; a global or a top-level function needs no listing"
-[codes.ZK0340.explain]
-en = """The capture list of a function declared inside another function names locals and parameters of the functions around it, and nested functions with captures of their own. A global, a constant of the file and a top-level function are reached without a list."""
-
-[codes.ZK0341.title]
-en = "capture never used"
-[codes.ZK0341.message]
-en = "\"%{f}\" lists \"%{n}\" but never uses it"
-[codes.ZK0341.help]
-en = "remove \"%{n}\" from the list"
-[codes.ZK0341.explain]
-en = """Each capture costs a duplicate, a move or a borrow as the function is declared. A capture that the statements never use costs that for nothing, and a move leaves the local blank for nothing."""
-
 # ---------------------------------------------------------------- kinds ZK04xx
 
 [codes.ZK0401.title]
@@ -686,20 +682,16 @@ en = "mismatched kinds"
 [codes.ZK0401.message]
 en = "expected %{want}, found %{got}"
 [codes.ZK0401.help]
-en = "convert the value with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\""
-[codes.ZK0401.help_lend]
-en = "hold the value in a variable and lend its cells with \"<variable> ၏ တန်ဖိုးအငှား\""
-[codes.ZK0401.help_raw]
-en = "a block that holds addresses changes its kind through a raw address alone; convert the value to %{raw} first, then convert that to %{want}"
+en = "convert the value with \"ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်\""
 [codes.ZK0401.explain]
-en = """A value must fit the kind its place expects without losing data. Conversions happen on their own when no data can be lost: a narrower integer to a wider one of the same sign, an unsigned integer to a wider signed one, an integer to a float with enough fraction bits, and a narrower float to a wider one. Characters and booleans never convert on their own. Use the conversion verb for the others. A pointer also converts on its own to and from the opaque \"လိပ်စာ\" of its flavour, but an owner or a borrow does so just when no level of its block holds an address: the opaque address hides what the block holds, so reading stored addresses as other data, or other data as addresses, goes through a raw address, \"<kind> လိပ်စာအကြမ်း\", in two conversions."""
+en = """A value must fit the kind its place expects without losing data. Conversions happen on their own when no data can be lost: a narrower integer to a wider one of the same sign, an unsigned integer to a wider signed one, an integer to a float with enough fraction bits, and a narrower float to a wider one. Characters and booleans never convert on their own. Use the conversion verb for the others. In marked code, a pointer also converts on its own to and from the opaque \"လိပ်စာ\" when its block holds no address. A pointer whose block holds addresses, such as a pointer to a pointer, to text or to a plain list, converts with the verb alone, so a stored address is never read as other data without a conversion written out."""
 
 [codes.ZK0402.title]
 en = "condition is not a boolean"
 [codes.ZK0402.message]
 en = "a condition must be a boolean, found %{got}"
 [codes.ZK0402.help]
-en = "compare the pointer with \"ဗလာ\""
+en = "compare the pointer with \"မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ\""
 [codes.ZK0402.explain]
 en = """The condition of \"အကယ်၍\", of a while loop, and of a generic loop must be a boolean value. Numbers do not count as true or false. Compare the value instead, for example \"က သည် ၀ နှင့် မညီ\"."""
 
@@ -714,6 +706,8 @@ en = """Each operator works on certain kinds: arithmetic and \"-\" on numbers, b
 en = "incompatible operands"
 [codes.ZK0404.message]
 en = "cannot combine %{l} and %{r} without a conversion"
+[codes.ZK0404.help_same]
+en = "\"တစ်ခုတည်း\" asks whether two names are one object: it takes two shared objects or two function values; compare values with \"==\""
 [codes.ZK0404.explain]
 en = """The two operands of an operator are brought to one common kind, the wider of the two. Here neither kind converts to the other without losing data, for example a signed and an unsigned integer of the same width, or a 64-bit integer and a 64-bit float. Convert one operand with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\"."""
 
@@ -722,7 +716,7 @@ en = "loop bound is not an integer"
 [codes.ZK0405.message]
 en = "a loop bound or step must be an integer, found %{got}"
 [codes.ZK0405.explain]
-en = """The bounds and the step of a counted loop must be integers. The loop variable takes the common kind of the two bounds. Convert the bound with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\", or use a generic loop for a float counter."""
+en = """The bounds and the step of a counted loop must be integers. The loop variable takes the common kind of the two bounds. Convert the bound with \"ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်\", or use a generic loop for a float counter."""
 
 [codes.ZK0406.title]
 en = "literal does not fit"
@@ -743,11 +737,7 @@ en = "invalid conversion"
 [codes.ZK0408.message]
 en = "cannot convert %{from} to %{to}"
 [codes.ZK0408.explain]
-en = """The conversion verb converts between numbers of all kinds, between characters and integers, and from booleans to integers. Floats and characters do not convert into each other, and nothing converts into a boolean: compare the value instead, for example \"က သည် ၀ နှင့် မညီ\". An integer becomes an address through a raw address, \"<kind> လိပ်စာအကြမ်း\", first; the raw address then converts to an owner or a borrow, and that step is the one a reader searches for. Likewise, a cast between owners or borrows whose blocks hold addresses keeps the kind of what the block holds: reading an address as a number, or a number as an address, also goes through a raw address. The opaque \"လိပ်စာ\" follows the same rule: an owner or a borrow whose block holds addresses does not pass through it, with the verb or on its own, without the raw step."""
-[codes.ZK0408.help_raw]
-en = "convert the integer to %{raw} first, then convert that to %{to}"
-[codes.ZK0408.help_pun]
-en = "this cast reads stored addresses as other data, or other data as addresses; convert to %{raw} first, then convert that to %{to}"
+en = """The conversion verb converts between numbers of all kinds, between characters and integers, and from booleans to integers. Floats and characters do not convert into each other, and nothing converts into a boolean: compare the value instead, for example \"က သည် ၀ နှင့် မညီ\". In marked code it also converts between addresses, between an address and an integer, between an object and an address, and a plain list of u8s into text once its UTF-8 is checked."""
 
 [codes.ZK0409.title]
 en = "loop step is not positive"
@@ -761,14 +751,14 @@ en = "invalid assignment target"
 [codes.ZK0410.message]
 en = "this cannot be assigned to; a target must be a variable or a dereference"
 [codes.ZK0410.explain]
-en = """An assignment \"x ကို v ဟု ထားပါ။\" stores v in a place. The target before \"ကို\" must be a variable, a parameter, \"ရလဒ်\" or a dereference such as \"p ၏ တန်ဖိုး\"; a literal or a computed value has no place to store into. Assign to a variable, or dereference a pointer to store through it."""
+en = """An assignment \"x ကို v ဟု ထားမည်။\" stores v in a place. The target before \"ကို\" must be a variable, a parameter or a dereference such as \"p ၏ တန်ဖိုး\"; a literal or a computed value has no place to store into. Assign to a variable, or dereference a pointer to store through it."""
 
 [codes.ZK0411.title]
 en = "no address"
 [codes.ZK0411.message]
 en = "the address of %{what} cannot be taken; variables and dereferences alone have an address"
 [codes.ZK0411.explain]
-en = """\"x ၏ လိပ်စာ\" and \"&x\" give the address of a place: a variable, a parameter, \"ရလဒ်\" or a dereference. A literal, the result of a call or a computed value is not stored at an address of its own. Store the value in a variable first and take the address of the variable."""
+en = """\"x ၏ လိပ်စာ\" and \"&x\" give the address of a place: a variable, a parameter or a dereference. A literal, the result of a call or a computed value is not stored at an address of its own. Store the value in a variable first and take the address of the variable."""
 
 [codes.ZK0412.title]
 en = "address of a fixed name"
@@ -792,7 +782,7 @@ en = "opaque pointer"
 [codes.ZK0414.message]
 en = "an opaque \"လိပ်စာ\" cannot be dereferenced or offset"
 [codes.ZK0414.help]
-en = "convert it to a pointer kind first with \"ကို <kind> လိပ်စာ အဖြစ် ပြောင်းလဲသော ရလဒ်\""
+en = "convert it to a pointer kind first with \"ကို <kind> လိပ်စာ တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်\""
 [codes.ZK0414.explain]
 en = """The opaque pointer kind \"လိပ်စာ\" holds an address but no kind for the value there, so the compiler cannot tell what to read or how far to move. Convert it to a pointer kind such as \"ကိန်းပြည့် လိပ်စာ\" with the conversion verb, then dereference or offset the result."""
 
@@ -808,7 +798,7 @@ en = "pointer kinds differ"
 [codes.ZK0416.message]
 en = "pointers to different kinds, %{a} and %{b}, cannot be compared or subtracted"
 [codes.ZK0416.explain]
-en = """Two pointers can be compared or subtracted when the kinds the two point at are the same. \"==\" and \"!=\" also accept \"ဗလာ\" or the opaque \"လိပ်စာ\" on one side. Convert one pointer to the kind of the other first."""
+en = """Two pointers can be compared or subtracted when the kinds the two point at are the same. \"==\" and \"!=\" also accept \"မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ\" or the opaque \"လိပ်စာ\" on one side. Convert one pointer to the kind of the other first."""
 
 [codes.ZK0417.title]
 en = "heap statement needs a pointer"
@@ -845,16 +835,7 @@ en = "cell number not an integer"
 [codes.ZK0423.message]
 en = "a cell number must be an integer, not %{k}"
 [codes.ZK0423.explain]
-en = """The number in \"x ၏ အကွက် i\" or \"x ၏ n ခုမြောက်အကွက်\" counts cells, so it must be an integer of a signed or unsigned kind. Convert it with \"ကို <kind> အဖြစ် ပြောင်းလဲသော ရလဒ်\"."""
-
-[codes.ZK0424.title]
-en = "list of borrows as a function result"
-[codes.ZK0424.message]
-en = "a function cannot give back a list whose cells are borrows"
-[codes.ZK0424.help]
-en = "give back a list of owners or raw addresses, or take the list to fill as a parameter"
-[codes.ZK0424.explain]
-en = """A borrow lives in a local or a parameter, never in a list that leaves a function, since the compiler could not tell how long each cell remains good. Give back owners or raw addresses instead, or pass the list to fill as a borrowed address, \"ငှားထားသော ... စာရင်း လိပ်စာ\"."""
+en = """The number in \"x ၏ အကွက် i\" or \"x ၏ n ခုမြောက်အကွက်\" counts cells, so it must be an integer of a signed or unsigned kind. Convert it with \"ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်\"."""
 
 [codes.ZK0425.title]
 en = "list too large"
@@ -879,13 +860,6 @@ en = "hold the address of the struct instead: \"%{n} လိပ်စာ\""
 [codes.ZK0427.explain]
 en = """A field of a struct sits inside the struct, so a struct that holds itself, at once or through other structs, would need to be larger than itself. Hold an address of it instead, as a linked list does with \"နောက်\" fields of kind \"<name> လိပ်စာ\"."""
 
-[codes.ZK0428.title]
-en = "slice of borrows"
-[codes.ZK0428.message]
-en = "the cells of a slice cannot hold borrows, as %{k} does"
-[codes.ZK0428.explain]
-en = """A slice points at cells outside the frame of its function, and the checker follows a borrow in locals and parameters alone. A slice whose cells are slices or borrowed addresses would hide those borrows from it. Use a list of borrows, which lives in the frame, or a slice of raw addresses."""
-
 [codes.ZK0429.title]
 en = "write to a cell of text"
 [codes.ZK0429.message]
@@ -900,21 +874,7 @@ en = "the value gives no kind for \"%{n}\""
 [codes.ZK0430.help]
 en = "write the kind: \"<kind> တစ်<classifier> ဖြစ်၍ တန်ဖိုးသည် <value>\""
 [codes.ZK0430.explain]
-en = """A declaration with no kind takes the kind of its value. \"ဗလာ\" fits each pointer kind and names none of them, so a declaration of \"ဗလာ\" must write its kind."""
-
-[codes.ZK0431.title]
-en = "unmarked argument the function changes"
-[codes.ZK0431.message]
-en = "the function changes this argument; mark it with \"(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)\""
-[codes.ZK0431.explain]
-en = """A parameter written \"လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>\" is the caller's place itself, not a duplicate: the function changes it. The call marks it too, with \"(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)\" after the argument, so a reader of the call sees which variable it changes."""
-
-[codes.ZK0432.title]
-en = "mark on an argument the function does not change"
-[codes.ZK0432.message]
-en = "this parameter takes a duplicate, so the argument takes no \"(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)\""
-[codes.ZK0432.explain]
-en = """The mark \"(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)\" goes with a parameter written \"လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>\". Each other parameter holds a duplicate, and the caller's variable never sees a change to it. Remove the mark, or mark the parameter in the function."""
+en = """A declaration with no kind takes the kind of its value. \"မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ\" fits each pointer kind and names none of them, so a declaration of \"မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ\" must write its kind."""
 
 [codes.ZK0433.title]
 en = "changed place in two arguments"
@@ -927,27 +887,22 @@ en = "each loop over a value it cannot walk"
 [codes.ZK0434.message]
 en = "this each loop cannot walk %{got}"
 [codes.ZK0434.explain]
-en = """An each-cell loop (\"အကွက်တိုင်း\") walks a list or a slice whose cells hold no owner pointer: the loop variable holds a duplicate of each cell, and an owner pointer cannot be duplicated. An each-character loop (\"စာလုံးတိုင်း\") walks text or a view of text. To walk the cells of text as u8 numbers, use a counted loop over its cell count."""
+en = """An each-cell loop (\"အကွက်တိုင်း\") walks a list, a range of one, or the list a pointer points at: the loop variable holds a duplicate of each cell. An each-character loop (\"စာလုံးတိုင်း\") walks text or a range of text. To walk the cells of text as u8 numbers, use a counted loop over its cell count."""
 [codes.ZK0436.title]
-en = "[] given to a counted list"
+en = "a blank list given to a counted list"
 [codes.ZK0436.message]
-en = "[] is a list with no cells, and the counted list %{k} cannot take it here"
+en = "a list with no cells does not fit the counted list %{k}"
+[codes.ZK0436.help]
+en = "write \"ကနဦးတန်ဖိုး\" for each cell at its initial value, or make the list a plain list, with no count"
 [codes.ZK0436.explain]
-en = """A counted list keeps its count, so a list with no cells does not fit it. In the declaration of a counted list, [] starts each cell at its default. Elsewhere, write \"စာရင်းအလွတ်\" to set each cell back to its default, or make the list a plain list, with no count, which [] fits."""
+en = """A counted list keeps its count, so `[]` and `စာရင်းအလွတ်`, the lists with no cells, do not fit it. Write `ကနဦးတန်ဖိုး` to set each cell to its initial value, a literal with each cell, or make the list a plain list, which a list with no cells fits."""
 
 [codes.ZK0437.title]
 en = "a value that cannot grow or shrink"
 [codes.ZK0437.message]
-en = "%{k} cannot grow or shrink here: \"ထည့်ပါ\" takes a plain list or text, \"နောက်ဆုံးအကွက်ကို ဖျက်ပါ\" a plain list, and \"နောက်ဆုံးစာလုံးကို ဖျက်ပါ\" text"
+en = "%{k} cannot grow or shrink here: \"ထည့်မည်\" takes a plain list or text, \"နောက်ဆုံးအကွက်ကို ဖျက်မည်\" a plain list, and \"နောက်ဆုံးစာလုံးကို ဖျက်မည်\" text"
 [codes.ZK0437.explain]
-en = """A counted list keeps the count its kind gives, and slices and views hold no cells of their own to add to. Text has no cells: it loses its last character through \"နောက်ဆုံးစာလုံး\". Declare the list with no count, as a plain list (isize[]), to add cells to it and remove them."""
-
-[codes.ZK0438.title]
-en = "a view of text cannot change"
-[codes.ZK0438.message]
-en = "%{k} cannot change: a character write, an add or a remove takes text (စာသား)"
-[codes.ZK0438.explain]
-en = """A view of text reads text that another value holds, so it cannot change. Declare the value as text to set a character of it or to add to it; a template literal, \"{v}\", makes text of its own from a view v."""
+en = """A counted list keeps the count its kind gives. Text has no cells: it loses its last character through \"နောက်ဆုံးစာလုံး\". Declare the list with no count, as a plain list (isize[]), to add cells to it and remove them."""
 
 [codes.ZK0439.title]
 en = "nothing to put the value in front of"
@@ -972,27 +927,27 @@ en = "start block result that is no integer"
 [codes.ZK0441.message]
 en = "the result of the start block is \"%{k}\", but it must be an integer"
 [codes.ZK0441.help]
-en = "write \"ကိန်းပြည့် ရလဒ်\": the result becomes the exit code of the run"
+en = "write \"ကိန်းပြည့် တစ်ခု\": the result becomes the exit code of the run"
 [codes.ZK0441.explain]
 en = """The result of the start block is the exit code of the run: 0 tells the shell that all went well, and another number tells it that something failed. The host keeps the lowest 8 bits of it. A start block with no result ends the run with 0."""
 
 [codes.ZK0442.title]
-en = "raw duplicate or fill of cells that own or borrow"
+en = "raw duplicate or fill of counted cells"
 [codes.ZK0442.message]
-en = "the cells are \"%{kind}\", which own a block or borrow one: a raw duplicate or fill would give the block a second owner, or keep a borrow the check cannot follow"
+en = "the cells are \"%{kind}\", which hold counted blocks: a raw duplicate or fill would not keep their counts"
 [codes.ZK0442.help]
-en = "assign the cells one at a time, or hold the addresses in raw pointers (\"<kind> လိပ်စာအကြမ်း\")"
+en = "assign the cells one at a time, which keeps each count"
 [codes.ZK0442.explain]
-en = """\"ကူးယူမည်\" and \"ပြောင်းထည့်မည်\" duplicate cells, and \"ဖြည့်မည်\" fills them, as raw octets. A cell that holds an owner pointer, text or a plain list owns a heap block, so a raw duplicate of it leaves two cells that both free the same block. A cell that holds a borrow or a slice points into a place the ownership check follows, and a raw duplicate puts the borrow where the check cannot see it, so it could outlast that place. The cells are the kind of the size, or, for a size in octets, the kind each address points at. Assign such cells one at a time, so each value moves, is duplicated or is lent as its kind requires, or hold the addresses in raw pointers, which own nothing and are not followed."""
+en = """\"ကူးယူမည်\" and \"ပြောင်းထည့်မည်\" duplicate cells, and \"ဖြည့်မည်\" fills them, as raw octets. A cell that holds text, a plain list, an object or a function value holds a counted block, and a raw duplicate of it would make a second holder the count does not know, so the block could be freed while still in use. Pointer cells are plain addresses and can be duplicated as raw octets, as in C."""
 
 [codes.ZK0443.title]
 en = "call that can fail, with no pass-on"
 [codes.ZK0443.message]
 en = "\"%{f}\" can fail, but the call does not pass the failure on"
 [codes.ZK0443.help]
-en = "read the value with \"... လုပ်ဆောင်သော ရလဒ်ကောင်း\" or \"%{f}(...)?\", or end a call statement with \"၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ\""
+en = "read the value with \"... လုပ်ဆောင်သော ရလဒ်ကောင်း\" or \"%{f}(...)?\", or end a call statement with \"၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်\""
 [codes.ZK0443.explain]
-en = """A function whose result clause is a result kind, such as \"ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်\", can fail: it gives back a good result or an error value. A call to it must tell what happens on a failure. For now the one answer is to pass the failure on: the call reads the good result with \"ရလဒ်ကောင်း\" or \"?\", and when the function fails, the function around the call stops and gives back the same error value. A call statement passes it on with \"၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ\" before its full stop. A failure is never dropped without a word."""
+en = """A function whose result clause is a result kind, such as \"ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်\", can fail: it gives back a good result or an error value. A call to it must tell what happens on a failure. For now the one answer is to pass the failure on: the call reads the good result with \"ရလဒ်ကောင်း\" or \"?\", and when the function fails, the function around the call stops and gives back the same error value. A call statement passes it on with \"၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်\" before its full stop. A failure is never dropped without a word."""
 
 [codes.ZK0444.title]
 en = "pass-on for a function that cannot fail"
@@ -1001,14 +956,14 @@ en = "the call passes a failure on, but \"%{f}\" cannot fail"
 [codes.ZK0444.help]
 en = "write \"လုပ်ဆောင်သော ရလဒ်\" or \"%{f}(...)\" with no \"?\", and drop the \"မအောင်မြင်ပါက\" part of a call statement"
 [codes.ZK0444.explain]
-en = """\"ရလဒ်ကောင်း\", \"?\" and \"မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ\" pass a failure of the call on. A function whose result clause is no result kind cannot fail, so there is nothing to pass on: read its result with \"လုပ်ဆောင်သော ရလဒ်\" or a plain sign-form call."""
+en = """\"ရလဒ်ကောင်း\", \"?\" and \"မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်\" pass a failure of the call on. A function whose result clause is no result kind cannot fail, so there is nothing to pass on: read its result with \"လုပ်ဆောင်သော ရလဒ်\" or a plain sign-form call."""
 
 [codes.ZK0445.title]
 en = "pass-on in a function that cannot fail"
 [codes.ZK0445.message]
 en = "the call passes a failure on, but the code around it cannot fail"
 [codes.ZK0445.help]
-en = "give the function around the call a result kind, such as \"<kind> ရလဒ် သို့မဟုတ် <kind> အမှားအယွင်း ကို ပြန်ပေးမည်\""
+en = "give the function around the call a result kind, such as \"<kind> သို့မဟုတ် အမှားအယွင်းအနေဖြင့် <kind> ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်\""
 [codes.ZK0445.explain]
 en = """Passing a failure on stops the function around the call and gives back the error value, so that function must be able to fail itself: its result clause is a result kind. The top-level statements of a file and the start block cannot fail: the start block gives back an exit code, never a result. Move the call into a function that can fail, or read the result there with \"သည် ရလဒ်ကောင်း\" and the conversions."""
 
@@ -1019,85 +974,65 @@ en = "the called function fails with \"%{found}\", but the function around the c
 [codes.ZK0446.help]
 en = "give both functions the same error kind"
 [codes.ZK0446.explain]
-en = """Passing a failure on gives back the error value of the called function as it is, so it must have the error kind of the function around the call. Both result clauses must name the same kind after \"မအောင်မြင်ပါက\". Zaka does not convert one error kind into another."""
+en = """Passing a failure on gives back the error value of the called function as it is, so it must have the error kind of the function around the call. Both result clauses must name the same kind after \"အမှားအယွင်းအနေဖြင့်\". Zaka does not convert one error kind into another."""
 
 [codes.ZK0447.title]
 en = "error value from a function that cannot fail"
 [codes.ZK0447.message]
 en = "\"%{f}\" cannot fail, so it has no error value to give back"
 [codes.ZK0447.help]
-en = "make the result clause a result kind, such as \"<kind> ရလဒ် သို့မဟုတ် <kind> အမှားအယွင်း ကို ပြန်ပေးမည်\""
+en = "make the result clause a result kind, such as \"<kind> သို့မဟုတ် အမှားအယွင်းအနေဖြင့် <kind> ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်\""
 [codes.ZK0447.explain]
-en = """\"... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ\" ends the function with a failure and gives back the error value. The result clause of the function names the kind of that value after \"မအောင်မြင်ပါက\"; a function without that part cannot fail."""
+en = """\"... ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်\" ends the function with a failure and gives back the error value. The result clause of the function names the kind of that value after \"အမှားအယွင်းအနေဖြင့်\"; a function without that part cannot fail."""
 
 [codes.ZK0448.title]
-en = "test or conversion of a value that is no result"
+en = "test or read of a value that is no result"
 [codes.ZK0448.message]
 en = "the value is \"%{k}\", not the result of a function that can fail"
 [codes.ZK0448.help]
-en = "\"သည် ရလဒ်ကောင်း\", \"သည် အမှားအယွင်း\" and the conversions to \"ရလဒ်ကောင်း\" and \"အမှားအယွင်း\" read the result of a call such as \"... လုပ်ဆောင်သော ရလဒ်\""
+en = "\"ထဲတွင် ရလဒ်ကောင်း ရှိ\", \"ထဲတွင် အမှားအယွင်း ရှိ\" and the reads \"ထဲမှ ဒေတာ\" and \"ထဲမှ အမှားအယွင်း ဒေတာ\" take a result, such as the one of a call \"... လုပ်ဆောင်သော ရလဒ်\", or an optional"
 [codes.ZK0448.explain]
-en = """A call to a function that can fail, written without \"ရလဒ်ကောင်း\" or \"?\", gives back the whole result: a good result or an error value. \"<r> သည် ရလဒ်ကောင်း\" and \"<r> သည် အမှားအယွင်း\" test which one it holds, and \"<r> ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်\" and \"<r> ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ်\" read it out. A value of another kind has no such parts."""
+en = """A call to a function that can fail, written without \"ရလဒ်ကောင်း\" or \"?\", gives back the whole result: a good result or an error value. \"<r> ထဲတွင် ရလဒ်ကောင်း ရှိ\" and \"<r> ထဲတွင် အမှားအယွင်း ရှိ\" test which one it holds, and \"<r> ထဲမှ ဒေတာ\" and \"<r> ထဲမှ အမှားအယွင်း ဒေတာ\" read it out. A value of another kind has no such parts."""
 
 [codes.ZK0449.title]
 en = "good result of a function with no result"
 [codes.ZK0449.message]
 en = "the function gives back no good value, so the result has none to read"
 [codes.ZK0449.help]
-en = "test the result with \"သည် ရလဒ်ကောင်း\", or read its error value with \"အမှားအယွင်း အဖြစ်\""
+en = "test the result with \"ထဲတွင် ရလဒ်ကောင်း ရှိ\", or read its error value with \"ထဲမှ အမှားအယွင်း ဒေတာ\""
 [codes.ZK0449.explain]
-en = """A function whose result clause is \"အောင်မြင်သည့်သတင်း သို့မဟုတ် <kind> အမှားအယွင်း ကို ပြန်ပေးမည်\" gives back nothing when it does not fail: its result holds an error value or nothing. A conversion to \"ရလဒ်ကောင်း\" has no value to read; test the result instead."""
+en = """A function whose result clause is \"အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် <kind> ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်\" gives back nothing when it does not fail: its result holds an error value or nothing. The read \"ထဲမှ ဒေတာ\" has no value to read; test the result instead."""
 
 [codes.ZK0450.title]
 en = "error value of a result whose failure holds none"
 [codes.ZK0450.message]
 en = "the error side of the result is \"မအောင်မြင်သည့်သတင်း\": it holds no value to read"
 [codes.ZK0450.help]
-en = "test the result with \"သည် အမှားအယွင်း\" instead"
+en = "test the result with \"ထဲတွင် အမှားအယွင်း ရှိ\" instead"
 [codes.ZK0450.explain]
-en = """A result kind whose error side is \"မအောင်မြင်သည့်သတင်း\" fails with no error value, so a conversion to \"အမှားအယွင်း\" has nothing to read. Test the result instead."""
+en = """A result kind whose error side is \"မအောင်မြင်သည့်သတင်း\" fails with no error value, so the read \"ထဲမှ အမှားအယွင်း ဒေတာ\" has nothing to read. Test the result instead."""
 
 [codes.ZK0451.title]
 en = "failure with no value where one is needed"
 [codes.ZK0451.message]
 en = "the function fails with an error value of the kind \"%{k}\", so a failure must give one back"
 [codes.ZK0451.help]
-en = "write \"<value> ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ\""
+en = "write \"<value> ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်\""
 [codes.ZK0451.explain]
 en = """\"လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်\" ends a function with a failure that holds no value. That fits a result kind whose error side is \"မအောင်မြင်သည့်သတင်း\". When the error side names a kind, the failure must give back an error value of that kind."""
 
-[codes.ZK0452.title]
-en = "error value from a function whose failure holds none"
-[codes.ZK0452.message]
-en = "a failure of \"%{f}\" holds no error value"
-[codes.ZK0452.help]
-en = "write \"လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်\", or name an error kind in the result kind"
-[codes.ZK0452.explain]
-en = """A result kind whose error side is \"မအောင်မြင်သည့်သတင်း\" fails with no error value, so \"... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ\" has no place for its value. End the function with \"လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်\", or write an error kind on the error side."""
-
 [codes.ZK0454.title]
-en = "conversion to the part a result does not hold"
+en = "read of the part a result or an optional does not hold"
 [codes.ZK0454.message_good]
 en = "\"%{n}\" holds a good result here, so reading its error value stops the run each time"
 [codes.ZK0454.message_fault]
 en = "\"%{n}\" holds a failure here, so reading its good result stops the run each time"
+[codes.ZK0454.message_no_data]
+en = "\"%{n}\" holds no data here, so reading its data stops the run each time"
 [codes.ZK0454.help]
-en = "read the other part, or test the result first with \"သည် ရလဒ်ကောင်း\" or \"သည် အမှားအယွင်း\""
+en = "read the other part, or test it first with \"ထဲတွင် ရလဒ်ကောင်း ရှိ\", \"ထဲတွင် အမှားအယွင်း ရှိ\" or, for an optional, \"ထဲတွင် ဒေတာ ရှိ\""
 [codes.ZK0454.explain]
-en = """A test such as \"အကယ်၍ R သည် ရလဒ်ကောင်း ဖြစ်လျှင်\" proves which part a result variable holds inside its arm, and the opposite in the arms after it; an arm that leaves the function or the loop proves the opposite after the whole statement as well. While nothing changes the variable, a conversion to the part the test ruled out would stop the run each time it ran, so the check reports it. A statement that can change the variable, such as an assignment, a call that the variable is lent to with the edit mark, or the address of the variable, ends what the test proved."""
-
-[codes.ZK0455.title]
-en = "good result given back with the word of the other sort of function"
-[codes.ZK0455.message_fails]
-en = "\"%{f}\" can fail, so its good result goes back with \"ရလဒ်ကောင်းအဖြစ်\""
-[codes.ZK0455.message_sure]
-en = "\"%{f}\" cannot fail, so its result goes back with \"ရလဒ်အဖြစ်\""
-[codes.ZK0455.help_fails]
-en = "write \"... ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ\""
-[codes.ZK0455.help_sure]
-en = "write \"... ကို ရလဒ်အဖြစ် ပြန်ပေးပါ\""
-[codes.ZK0455.explain]
-en = """A function whose result clause is a result kind gives back a good result or an error value, and the sentence tells which: \"... ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ\" for the good result and \"... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ\" for the error value. A function that cannot fail gives back its result with \"... ကို ရလဒ်အဖြစ် ပြန်ပေးပါ\"."""
+en = """A test such as \"အကယ်၍ R ထဲတွင် ရလဒ်ကောင်း ရှိလျှင်\" proves which part a result variable holds inside its arm, and the opposite in the arms after it; an arm that leaves the function or the loop proves the opposite after the whole statement as well. While nothing changes the variable, a read of the part the test ruled out, `ထဲမှ ဒေတာ` or `ထဲမှ အမှားအယွင်း ဒေတာ`, would stop the run each time it ran, so the check reports it. A statement that can change the variable, such as an assignment, a call that takes the variable through a parameter marked \"ဒေတာ ပြောင်းလဲရန်\", or the address of the variable, ends what the test proved."""
 
 [codes.ZK0456.title]
 en = "member value"
@@ -1118,16 +1053,16 @@ en = "switch misses members"
 [codes.ZK0458.message]
 en = "no arm of this switch names %{m}"
 [codes.ZK0458.help]
-en = "name each member in an arm, or add \"တခြား %{k} ဖြစ်လျှင်\" last"
+en = "name each member in an arm, or add \"တခြား %{k} တစ်%{w} ဖြစ်လျှင်\" last"
 [codes.ZK0458.explain]
-en = """A switch over an enumeration runs one arm for each member: either an arm names each member, or the default arm \"တခြား <name> ဖြစ်လျှင်\" comes last and runs for the members the arms do not name. A member added to the enumeration later is then caught where a switch forgets it."""
+en = """A switch over an enumeration runs one arm for each member: either an arm names each member, or the default arm \"တခြား <name> တစ်<classifier> ဖြစ်လျှင်\" comes last and runs for the members the arms do not name. A member added to the enumeration later is then caught where a switch forgets it."""
 
 [codes.ZK0459.title]
 en = "default arm kind"
 [codes.ZK0459.message]
 en = "the default arm names \"%{w}\", but the subject of the switch is \"%{s}\""
 [codes.ZK0459.explain]
-en = """The default arm \"တခြား <kind> ဖြစ်လျှင်\" names the kind of the subject of its switch, as in \"တခြား အရောင် ဖြစ်လျှင်\" over a color. Write the kind of the subject there; for an enumeration whose name ends in \"များ\", write the name without \"များ\"."""
+en = """The default arm \"တခြား <kind> တစ်<classifier> ဖြစ်လျှင်\" names the kind of the subject of its switch, as in \"တခြား အရောင် တစ်ခု ဖြစ်လျှင်\" over a color. Write the kind of the subject there; for an enumeration whose name ends in \"များ\", write the name without \"များ\"."""
 
 [codes.ZK0460.title]
 en = "duplicate case"
@@ -1147,24 +1082,26 @@ en = """A member with no value takes the value of the member before it plus one,
 en = "not a function value"
 [codes.ZK0462.message]
 en = "\"%{n}\" is %{k}, not a function value, so it cannot be called"
+[codes.ZK0462.leave]
+en = "this value is %{k}, not a function value, so C cannot get leave to call it"
 [codes.ZK0462.explain]
-en = """A call runs a declared function, or the function a value of a function kind holds: a variable, a parameter, a field or a cell of such a kind. This name or place holds a value of another kind."""
+en = """A call runs a declared function, or the function a value of a function kind holds: a variable, a parameter, a field or a cell of such a kind. This name or place holds a value of another kind. A leave for C, \"<function value> ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်\", also takes a function value, so a value of another kind there is this error too."""
 
 [codes.ZK0463.title]
-en = "unclear function address"
+en = "unclear function value"
 [codes.ZK0463.message]
 en = "no single function \"%{n}\" fits here"
 [codes.ZK0463.help]
 en = "write the function kind the value goes to, such as the kind of the variable that takes it"
 [codes.ZK0463.explain]
-en = """A file can declare several functions of one name. The address of such a name, \"လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ\", takes the one whose kind the place of the value names: a variable with a written kind, a parameter, a field or a cell. Here no kind is written, or no function of the name fits it, or two of them fit it, as two functions that differ in their marks alone fit a kind with no marks."""
+en = """A file can declare several functions of one name. The value of such a name, \"<name> ဟူသော လုပ်ဆောင်ချက်\", takes the one whose kind the place of the value names: a variable with a written kind, a parameter, a field or a cell. Here no kind is written, or no function of the name fits it, or two of them fit it, as two functions that differ in their marks alone fit a kind with no marks."""
 
 [codes.ZK0464.title]
-en = "address of an external function"
+en = "value of an external function"
 [codes.ZK0464.message]
-en = "\"%{n}\" comes from outside the program, so it has no address"
+en = "\"%{n}\" comes from outside the program, so it is no function value"
 [codes.ZK0464.help]
-en = "declare a function of the program that calls it, and take the address of that one"
+en = "declare a function of the program that calls it, and take that one as the value"
 [codes.ZK0464.explain]
 en = """A function that comes from outside, \"ပြင်ပမှလာသော\", runs in the VM itself and has no place among the functions of the program, so no function value can hold it. A function of the program that calls it can stand in for it."""
 
@@ -1173,29 +1110,234 @@ en = "kind that C cannot take"
 [codes.ZK0465.message]
 en = "a C function cannot take or give back a value of the kind \"%{k}\""
 [codes.ZK0465.help]
-en = "use an integer of up to 64 bits, f32, f64, a boolean, a borrowed or raw address, a struct of these, or, as a parameter, text or a function value of these"
+en = "use an integer of up to 64 bits, f32, f64, a boolean, an address, a struct of these, or, as a parameter, text, a list of numbers or a function value of these"
 [codes.ZK0465.help_text]
-en = "C can give back NULL for text: write the result as \"စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း\""
+en = "C can give back NULL: write the result as an optional, \"<kind> ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်\""
 [codes.ZK0465.explain]
-en = """A C function takes its parameters and gives its result as whole values, laid out as in C. Integers of up to 64 bits, f32, f64, booleans, borrowed addresses and raw addresses cross, and so do structs whose fields are such kinds, structs or counted lists of them. Text crosses as a parameter: C gets a duplicate of it that ends in a zero octet. Text crosses back as the result kind `စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း`: NULL is the failure, and Zaka copies the other strings into text of its own, so C keeps what it gave. A function value crosses as a callback, the address of a C function, when each of its parameters and its result is an integer, a float, a boolean or an address, with no edit mark; C cannot keep the locals of a closure alive, so a closure stops the program there. An owner would be freed when the call ends; plain lists and slices have no C form; bare text cannot be a result, since C can give back NULL; and another result that can fail has no C form either. A result cannot be a borrow, since C has no place to lend from: give back a raw address. An other value, past the parameters of a C function that takes them, takes the parameter kinds, structs among them."""
+en = """A C function takes its parameters and gives its result as whole values, laid out as in C. Integers of up to 64 bits, f32, f64, booleans and addresses cross, and so do structs whose fields are such kinds, structs or counted lists of them. Text crosses as a parameter: C gets a duplicate of it that ends in a zero octet. A list of numbers crosses as a parameter: C gets the address of its first cell. Text and a handle cross back as an optional, `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`: NULL is the optional with no data, and Zaka copies the other strings into text of its own, so C keeps what it gave. A function value crosses as a callback, the address C calls, when its result is an integer, a float, a boolean or an address, and each parameter is one of those, a plain struct, text or an optional of text, or a handle or an optional of one, with no \"ဒေတာ ပြောင်းလဲရန်\". Lists of other cells have no C form; bare text cannot be a result, since C can give back NULL; and a result that can fail has no C form either. An other value, past the parameters of a C function that takes them, takes the parameter kinds, structs among them."""
 
 [codes.ZK0466.title]
-en = "edit mark on a C parameter"
+en = "a C parameter to change"
 [codes.ZK0466.message]
 en = "the C function cannot change the parameter \"%{n}\" in place"
 [codes.ZK0466.help]
-en = "drop the edit mark and pass a borrowed address of the value"
+en = "drop \"ဒေတာ ပြောင်းလဲရန်\", or pass a list of numbers or a struct, which C writes in place"
 [codes.ZK0466.explain]
-en = """A C function takes each parameter as a whole value, so it cannot change the caller's place through the edit mark. To let C write a value back, pass a borrowed address, as C passes a pointer."""
+en = """A C function takes each parameter as a whole value, so it cannot change the caller's place through \"ဒေတာ ပြောင်းလဲရန်\". A list of numbers and a struct of values that cross are the exceptions: C takes the address of the first cell, or of the struct, and writes it in place. To let C write another value back, pass its address from marked code."""
 
 [codes.ZK0467.title]
 en = "own result of no C text"
 [codes.ZK0467.message]
 en = "\"%{n}\" gives back no text from C, so \"အပိုင်အနေဖြင့်\" cannot stand on its result"
 [codes.ZK0467.help]
-en = "write \"အပိုင်အနေဖြင့်\" on a C function whose result is \"စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း\", or leave it out"
+en = "write \"အပိုင်အနေဖြင့်\" on a C function whose result is \"စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်\", or leave it out"
 [codes.ZK0467.explain]
 en = """\"အပိုင်အနေဖြင့် ပြန်ပေးမည်\" tells that a C function hands its string over, as strdup does: the program takes the octets into text of its own and then frees the string with the free of libc. It stands on a C function whose result is text or a failure alone. Without it, C keeps the string, as getenv and strstr want; a Zaka function and each other result kind have nothing to hand over."""
+
+[codes.ZK0468.title]
+en = "pointer work outside marked code"
+[codes.ZK0468.message]
+en = "%{w} needs marked code"
+[codes.ZK0468.help]
+en = "put it in a block \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\", or in a function marked \"စိတ်မချရသော\""
+[codes.ZK0468.explain]
+en = """Safe Zaka never reads or writes through a pointer, so a mistake there cannot reach mem. Reading or writing through a pointer, pointer arithmetic, taking an address, a heap statement, a conversion to or from a pointer, and a call of a function marked \"စိတ်မချရသော\" each need marked code: a function marked \"စိတ်မချရသော\", or a block that opens with \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\". A pointer value itself can pass through safe code: held, copied, or compared with \"မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ\"."""
+
+[codes.ZK0469.title]
+en = "marked function as a value"
+[codes.ZK0469.message]
+en = "\"%{n}\" is marked \"စိတ်မချရသော\", so it cannot be a function value"
+[codes.ZK0469.help]
+en = "take a function that calls it inside a marked block"
+[codes.ZK0469.explain]
+en = """A call through a function value is a plain call, which safe code can make. A function marked \"စိတ်မချရသော\" needs marked code at each call, so it cannot hide behind a value. Write a function with no mark that calls it inside a block marked \"စိတ်မချရသော်လည်း\", and take that function as the value."""
+
+[codes.ZK0470.title]
+en = "owned mark on no pointer"
+[codes.ZK0470.message]
+en = "\"အပိုင်အနေဖြင့်\" hands over a block, and \"%{k}\" holds no pointer to one"
+[codes.ZK0470.explain]
+en = """\"အပိုင်အနေဖြင့်\" states that a parameter takes over the block its pointer holds, or that a result gives a block to the caller. Other values are copied or shared, so those hand nothing over: leave the mark out."""
+
+[codes.ZK0471.title]
+en = "marked code refused"
+[codes.ZK0471.message]
+en = "this program keeps to safe Zaka, so it cannot mark code \"စိတ်မချရသော\""
+[codes.ZK0471.explain]
+en = """The \"--no-unsafe\" option refuses each function and each block marked \"စိတ်မချရသော\", so a lesson or a project keeps to safe Zaka, where no mistake can reach mem. Leave the option out to work with pointers."""
+
+[codes.ZK0473.title]
+en = "a value from outside"
+[codes.ZK0473.message]
+en = "\"%{k}\" comes from outside the program, so Zaka cannot %{w} a value of it"
+[codes.ZK0473.make]
+en = "make"
+[codes.ZK0473.duplicate]
+en = "duplicate"
+[codes.ZK0473.print]
+en = "print"
+[codes.ZK0473.help]
+en = "a C function gives a value of it; hold it, pass it on, compare it, or read its fields"
+[codes.ZK0473.explain]
+en = """A value of a kind from outside, `ပြင်ပမှ လာသော ဒေတာအစုအဝေး`, is a handle to a struct C keeps. Zaka holds it, passes it to C, compares it and reads the fields the declaration names, but cannot make one, duplicate the struct behind it, or print it: the duplicates share the one handle, so a C function that takes it over closes it for each of them."""
+
+[codes.ZK0474.title]
+en = "a field C owns"
+[codes.ZK0474.message]
+en = "a field of \"%{k}\" belongs to the struct C keeps, so Zaka reads it but cannot write it"
+[codes.ZK0474.help]
+en = "write a number, a boolean or a counted list in marked code, or call a C function that changes the struct"
+[codes.ZK0474.explain]
+en = """The fields a kind from outside names are read from the struct C keeps, each time the program reads one. C owns that struct, so safe code changes it through a C function. Marked code can write a field of a number, a boolean or a counted list in place; a text or a handle field is a pointer C owns, which no program writes."""
+
+[codes.ZK0475.title]
+en = "a test that does not fit"
+[codes.ZK0475.message]
+en = "a value of \"%{k}\" is tested in a form that does not fit its kind"
+[codes.ZK0475.optional]
+en = "\"%{k}\" is an optional: test it with \"ထဲတွင် ဒေတာ ရှိ\" or \"ထဲတွင် ဒေတာ မရှိ\""
+[codes.ZK0475.result]
+en = "\"%{k}\" is no optional: test a result with \"ထဲတွင် ရလဒ်ကောင်း ရှိ\" or \"ထဲတွင် အမှားအယွင်း ရှိ\""
+[codes.ZK0475.explain]
+en = """An optional holds data or none, so a test asks whether it holds data: `ထဲတွင် ဒေတာ ရှိ`, `ထဲတွင် ဒေတာ မရှိ`. A result holds a good value or an error value, so a test asks which: `ထဲတွင် ရလဒ်ကောင်း ရှိ`, `ထဲတွင် အမှားအယွင်း ရှိ`. The test of the other kind does not fit."""
+
+[codes.ZK0476.title]
+en = "an error value with no result"
+[codes.ZK0476.message]
+en = "an error value goes where a result kind with an error side is wanted"
+[codes.ZK0476.help]
+en = "give the variable, the parameter or the function a result kind, \"T သို့မဟုတ် အမှားအယွင်းအနေဖြင့် E ရှိနိုင်သော ဒေတာဆဲလ်\""
+[codes.ZK0476.explain]
+en = """`<value> ဟူသော အမှားအယွင်း` makes the error side of a result, so the place it goes into must name a result kind with an error side: a variable, a parameter, a field, or the result of the function it is given back from."""
+
+[codes.ZK0477.title]
+en = "no data where no optional is wanted"
+[codes.ZK0477.message]
+en = "\"အလွတ်\" goes where an optional kind is wanted"
+[codes.ZK0477.help]
+en = "give the variable, the parameter or the function an optional kind, \"T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်\""
+[codes.ZK0477.explain]
+en = """`အလွတ်` is the optional that holds no data, so the place it goes into must name an optional kind: a variable, a parameter, a field, or the result of the function it is given back from. A pointer that points at nothing is `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`."""
+
+[codes.ZK0478.title]
+en = "an initial value of no known kind"
+[codes.ZK0478.message]
+en = "\"ကနဦးတန်ဖိုး\" stands where no kind can be worked out"
+[codes.ZK0478.help]
+en = "put it where a kind is known: a declaration that writes its kind, an assignment, a field, a cell, a return or an argument"
+[codes.ZK0478.explain]
+en = """`ကနဦးတန်ဖိုး` is the initial value of a kind, and the kind comes from its place: a declaration with a kind, an assignment, a field, a cell, a return or an argument. A print or an operation gives no kind, so there is no value to make."""
+
+[codes.ZK0479.title]
+en = "a kind with no initial value"
+[codes.ZK0479.message]
+en = "\"%{k}\" has no initial value: %{r}"
+[codes.ZK0479.function]
+en = "a function value has none"
+[codes.ZK0479.handle]
+en = "a handle comes from C alone"
+[codes.ZK0479.member]
+en = "no member of \"%{e}\" is marked \"ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်\""
+[codes.ZK0479.result]
+en = "a result must hold its good value or its failure"
+[codes.ZK0479.part]
+en = "\"%{p}\" inside it has none"
+[codes.ZK0479.help]
+en = "write the value in full"
+[codes.ZK0479.explain]
+en = """A kind has an initial value when each of its parts has one: `၀` for a number, `""` for text, no cells for a plain list, the blank optional, a pointer that points at nothing, and each field or cell at its own. A function value, a handle from C and a result have none, nor has an enumeration whose declaration marks no member with `ကနဦးတန်ဖိုး`; a struct or a list that holds one of them has none either."""
+
+[codes.ZK0480.title]
+en = "two initial members"
+[codes.ZK0480.message]
+en = "\"%{e}\" marks a second member with \"ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်\""
+[codes.ZK0480.help]
+en = "mark one member alone; \"%{m}\" carries the mark"
+[codes.ZK0480.explain]
+en = """`ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်` in front of a member makes it the initial value of the enumeration. An enumeration has one initial value, so the mark goes on one member alone."""
+
+[codes.ZK0481.title]
+en = "a kind no program can build"
+[codes.ZK0481.message]
+en = "no value of \"%{k}\" can be built: %{c}"
+[codes.ZK0481.help]
+en = "make one field of the loop optional, so a value can end the chain"
+[codes.ZK0481.explain]
+en = """Each value of a kind needs a value for each of its fields. When the fields of a kind lead back to the kind itself, through other kinds or at once, each value needs another before it, without end, so no program can build the first one. An optional field ends the chain with the blank optional, and so does a plain list with no cells."""
+
+[codes.ZK0722.title]
+en = "a read before a value is set"
+[codes.ZK0722.message]
+en = "\"%{n}\" can be unset here: a path reaches this read with no value given to it"
+[codes.ZK0722.help]
+en = "give it a value on each path before the read, or declare it with a value"
+[codes.ZK0722.explain]
+en = """A variable declared with no value holds none until the program sets it, and no kind gives it a hidden default. The check follows each path to each read: an `if` with no `else`, a loop that can run no rounds, or a path that sets one field or one cell and not another leaves the variable unset on that path. A struct counts as set once each of its fields is set, and a counted list once each of its cells is."""
+
+[codes.ZK0723.title]
+en = "a cell not proven set"
+[codes.ZK0723.message]
+en = "\"%{n}\" can have a cell with no value here; the check cannot tell which cells a write or a read reaches"
+[codes.ZK0723.help]
+en = "fill the list first, with \"ကနဦးတန်ဖိုး\" or a literal, or write its cells in a counted loop over each of them"
+[codes.ZK0723.explain]
+en = """The check follows each cell of a counted list it can name: a cell at a constant position, and the cells of a counted loop that runs over each cell of the list and writes the cell of its counter on each round. A cell at a position the program works out, or a loop of another form, leaves the check unable to prove the cell set. The program still runs; such a cell holds zero octets until it is set."""
+
+[codes.ZK0724.title]
+en = "a call before a global is set"
+[codes.ZK0724.message]
+en = "the call of \"%{f}\" reads \"%{g}\", which can be unset here"
+[codes.ZK0724.help]
+en = "give \"%{g}\" a value on each path before the call, or declare it with one"
+[codes.ZK0724.explain]
+en = """A global declared with no value holds none until the program sets it. A function reads it at whatever point a call runs, so the check looks at each call: the globals the function reads, itself or through the functions it calls, must be set on each path to the call. A call through a function value counts the globals of each function the program uses as a value. A global of a module, which has no start block, needs its value where it is declared."""
+
+[codes.ZK0482.title]
+en = "a field left out"
+[codes.ZK0482.message]
+en = "\"%{k}\" needs a value for %{f}"
+[codes.ZK0482.help]
+en = "give each field a value; \"ကနဦးတန်ဖိုး\" gives a field its initial value"
+[codes.ZK0482.explain]
+en = """A struct literal names each field of its struct, since no field takes a hidden default. Write `ကနဦးတန်ဖိုး` for a field that starts at its initial value: `၀` for a number, `""` for text, the blank optional."""
+
+[codes.ZK0483.title]
+en = "a module global with no value"
+[codes.ZK0483.message]
+en = "\"%{n}\" is a global of a module, so it needs its value where it is declared"
+[codes.ZK0483.help]
+en = "give it a value, such as \"ကနဦးတန်ဖိုး\""
+[codes.ZK0483.explain]
+en = """A global declared with no value holds none until the program sets it, and the check follows the start block to prove each global set before a function reads it. A module has no start block of its own, so nothing in it can set the global first: it takes its value where it is declared."""
+
+[codes.ZK0725.title]
+en = "a return before a parameter is filled"
+[codes.ZK0725.message]
+en = "\"%{n}\" is marked \"ဒေတာ ထည့်ပေးရန်\", so the function must set it on each path, but a path reaches this return without setting it"
+[codes.ZK0725.help]
+en = "set \"%{n}\" before each return, or mark it \"ဒေတာ ပြောင်းလဲရန်\" when the caller gives its value"
+[codes.ZK0725.explain]
+en = """A parameter marked `ဒေတာ ထည့်ပေးရန်` hands the function a place of the caller to fill: the caller need not set it, and counts it as set after the call. So the function must set the whole of it on each path before it returns, and cannot read it before it sets it (ZK0722). A parameter whose value the function reads first is `ဒေတာ ပြောင်းလဲရန်`, which the caller sets before the call."""
+
+[codes.ZK0243.title]
+en = "a filled parameter in a function kind"
+[codes.ZK0243.message]
+en = "a parameter of a function kind cannot be marked \"ဒေတာ ထည့်ပေးရန်\""
+[codes.ZK0243.help]
+en = "mark it \"ဒေတာ ပြောင်းလဲရန်\"; a function that fills the parameter still fits the kind"
+[codes.ZK0243.explain]
+en = """A call through a function value runs whichever function the value holds, so it cannot count on the place being filled: the caller sets it first. A function kind therefore takes `ဒေတာ ပြောင်းလဲရန်` alone, and a function whose parameter is `ဒေတာ ထည့်ပေးရန်` fits such a kind."""
+
+[codes.ZK0472.title]
+en = "C function needs the mark"
+[codes.ZK0472.message]
+en = "\"%{n}\" %{w}, so its declaration needs the mark \"စိတ်မချရသော\""
+[codes.ZK0472.help]
+en = "write \"စိတ်မချရသော\" before \"လုပ်ဆောင်ချက်\", and call it from marked code"
+[codes.ZK0472.pointer]
+en = "passes a pointer"
+[codes.ZK0472.explain]
+en = """Safe code can call a C function whose parameters are numbers, true or false, text, lists of numbers, plain structs or function values, and whose result is nothing, a number, a plain struct, or an optional of text or of a handle, where NULL is the optional with no data. A C function that takes or gives a pointer can reach mem that Zaka does not check, so its declaration carries the mark \"စိတ်မချရသော\", and marked code alone can call it."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 
@@ -1240,18 +1382,18 @@ en = "sentence printed with \"ကို\""
 [codes.ZK0505.message]
 en = "a sentence or a string is quoted with \"ဟု\", not marked with \"ကို\""
 [codes.ZK0505.help]
-en = "write \"... ဟု ပြသပါ။\""
+en = "write \"... ဟု ပြသမည်။\""
 [codes.ZK0505.explain]
-en = """\"ကို\" marks a thing: a name, a number, an arithmetic result. A whole sentence, such as a comparison that ends in \"သည်\" or \"ပါ\", and a string literal are quoted with \"ဟု\" instead: \"(အသက် သည် ၃၀ နှင့် မညီပါ) ဟု ပြသပါ။\", \"\\\"မင်္ဂလာပါ\\\" ဟု ပြသပါ။\". A bare clause with no particle keeps \"ကို\"."""
+en = """\"ကို\" marks a thing: a name, a number, an arithmetic result. A whole sentence, such as a comparison that ends in \"သည်\" or \"ပါ\", and a string literal are quoted with \"ဟု\" instead: \"(အသက် သည် ၃၀ နှင့် မညီပါ) ဟု ပြသမည်။\", \"\\\"မင်္ဂလာပါ\\\" ဟု ပြသမည်။\". A bare clause with no particle keeps \"ကို\"."""
 
 [codes.ZK0506.title]
 en = "value printed with \"ဟု\""
 [codes.ZK0506.message]
 en = "a plain value is marked with \"ကို\", not quoted with \"ဟု\""
 [codes.ZK0506.help]
-en = "write \"... ကို ပြသပါ။\""
+en = "write \"... ကို ပြသမည်။\""
 [codes.ZK0506.explain]
-en = """\"ဟု\" quotes a sentence or a string. A name, a number, an arithmetic result or a bare clause with no sentence-final particle is a thing, and a thing is marked with \"ကို\": \"အသက် ကို ပြသပါ။\"."""
+en = """\"ဟု\" quotes a sentence or a string. A name, a number, an arithmetic result or a bare clause with no sentence-final particle is a thing, and a thing is marked with \"ကို\": \"အသက် ကို ပြသမည်။\"."""
 
 [codes.ZK0507.title]
 en = "redundant parentheses"
@@ -1269,7 +1411,7 @@ en = "\"%{v}%{p}\" as a value reads better as \"%{v}သည်\""
 [codes.ZK0508.help]
 en = "write \"... %{v}သည်\""
 [codes.ZK0508.explain]
-en = """A clause that gives a value, as an initial value, a returned value, a call argument or a loop bound, names a fact rather than stating a sentence, so its closing verb carries \"သည်\": \"အမှတ် သည် ၄၀ အောက် မငယ်သည် ဖြစ်ပါစေ။\". The \"ပါ\" forms belong to quoted sentences (\"... ဟု ပြသပါ\", \"... ဟု ထားပါ\") and before \"သို့မဟုတ်\"."""
+en = """A clause that gives a value, as an initial value, a returned value, a call argument or a loop bound, names a fact rather than stating a sentence, so its closing verb carries \"သည်\": \"အမှတ် သည် ၄၀ အောက် မငယ်သည် ဖြစ်ပါစေ။\". The \"ပါ\" forms belong to quoted sentences (\"... ဟု ပြသမည်\", \"... ဟု ထားမည်\") and before \"သို့မဟုတ်\"."""
 
 [codes.ZK0509.title]
 en = "count word with another classifier"
@@ -1279,10 +1421,12 @@ en = "%{k} is counted with \"%{w}\", not \"%{f}\""
 en = "write \"%{w}စာ\""
 [codes.ZK0509.help_literal]
 en = "write \"%{k}တစ်%{w}\""
+[codes.ZK0509.help_whole]
+en = "write \"တစ်%{w}လုံး\""
 [codes.ZK0509.help_decl]
 en = "write \"တစ်%{w}\""
 [codes.ZK0509.explain]
-en = """Burmese counts things with a classifier that fits them: people with \"ယောက်\", most other things with \"ခု\". A struct names its classifier with \"... တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\"; the other kinds are counted with \"ခု\". The same word follows \"တစ်\" at the end of a struct literal and after the kind of a declaration, where \"စာလုံး\" takes \"လုံး\". The size and the value are the same whichever word is written, so the program still compiles."""
+en = """Burmese counts things with a classifier that fits them: people with \"ယောက်\", most other things with \"ခု\". A struct or an enumeration names its classifier with \"... တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\", and an alias with \"... ဟုလည်း မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\"; an alias with no word of its own counts with the word of its kind, \"စာလုံး\" counts with \"လုံး\", and each other kind with \"ခု\". The word follows \"တစ်\" after each kind written in a declaration, a parameter, a field, a result, a conversion, a size and a literal, and at the end of a struct literal; \"<word>စာ\" counts the cells of a heap block. The size and the value are the same whichever word is written, so the program still compiles."""
 
 [codes.ZK0510.title]
 en = "arguments closed with the wrong particle"
@@ -1351,30 +1495,30 @@ en = "%{len} u8s from u8 %{s} start or end inside a character of the text"
 en = """Text holds whole characters of UTF-8, and a Burmese character takes three u8s. A range \"<text> ၏ အကွက် <start> မှစ၍ <length> ကွက်\" counts u8s, so its start and its end must each fall between two characters. The text, the start and the length here are known, so the compiler can tell that an edge falls inside a character. Move the edge; \"၏ စာလုံးအရေအတွက်\" and \"၏ စာလုံး\" count characters instead."""
 
 [codes.ZK0701.title]
-en = "use after move"
+en = "use after a hand-over"
 [codes.ZK0701.message]
-en = "\"%{name}\" was moved to another owner and now holds ဗလာ"
+en = "\"%{name}\" handed its block to a parameter marked \"အပိုင်အနေဖြင့်\" and now points at nothing"
 [codes.ZK0701.explain]
-en = """A move gives the block of an owner to another owner, and the old owner is left holding ဗလာ. Reading the old name after the move would use a block it no longer owns. Use the new owner, or lend the value with တန်ဖိုးအငှား when the old name is to keep the block."""
+en = """A parameter marked \"အပိုင်အနေဖြင့်\" takes over the block its argument points at, and the variable given is left holding `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`. Reading it after the call would use a block the function took, and might have given back. Read what is needed before the call, or take a parameter without the mark when the caller is to keep the block."""
 
 [codes.ZK0702.title]
-en = "free of a borrowed address"
+en = "free of a variable's address"
 [codes.ZK0702.message]
-en = "a borrowed address cannot be freed or resized; free its owner instead"
+en = "this pointer holds the address of a variable, not of a heap block, so it cannot be freed or resized"
 [codes.ZK0702.explain]
-en = """A borrowed address is a loan from an owner, so it has no right to free or resize the block. Free or resize the block through its owner, once the loan is no longer in use."""
+en = """A heap statement frees or resizes a block that \"မင်မိုရီတွင် ... နေရာယူ၍\" made. A pointer that holds the address of a variable, from \"x ၏ လိပ်စာ\", points at storage the VM gives back on its own, so it cannot be freed or resized. In marked code this is a warning unless a flag sets otherwise, and the VM stops the free when it runs."""
 
 [codes.ZK0703.title]
-en = "borrowed address stored"
+en = "address stored where it can outlast its place"
 [codes.ZK0703.message]
-en = "a borrowed address cannot be stored in a heap block, through a pointer, or in a top-level variable from a function"
+en = "an address that can point into a variable of this function cannot be stored in a heap block, through a pointer, or in a top-level variable"
 [codes.ZK0703.explain]
-en = """A borrow lasts as long as the owner that lent it remains valid. Storing it in a heap block, through a pointer or in a top-level variable would let it outlast that owner. Keep borrows in locals and parameters, or store an owner or a raw address instead."""
+en = """A variable of a function ends when the function returns, so its address must not outlast the call in a heap block, through a pointer, or in a top-level variable. Store the address of a heap block instead, or keep the address in a local."""
 
 [codes.ZK0704.title]
-en = "loan still in use"
+en = "block freed while a pointer to it is still in use"
 [codes.ZK0704.message]
-en = "the block of \"%{name}\" is %{what} here, but \"%{other}\" still borrows it and is used later"
+en = "the block of \"%{name}\" is %{what} here, but \"%{other}\" still points into it and is used later"
 [codes.ZK0704.label]
 en = "\"%{other}\" is used here"
 [codes.ZK0704.freed]
@@ -1386,21 +1530,14 @@ en = "moved"
 [codes.ZK0704.edited]
 en = "edited, so its cells can move,"
 [codes.ZK0704.explain]
-en = """While a borrow of a block is in use later on, its owner must not free, resize or move that block. The label points at the later use. Finish with the borrow before the owner changes the block, or take a new borrow after the change."""
-
-[codes.ZK0705.title]
-en = "address of a borrowed address"
-[codes.ZK0705.message]
-en = "the address of a borrowed address cannot be taken"
-[codes.ZK0705.explain]
-en = """A borrowed address stands for a loan, and a loan cannot be pointed at in turn. Pass the borrow itself, or take the address of the owner."""
+en = """While a pointer into a block is still in use later on, the block must not be freed, resized or moved, through that pointer or another one. The label points at the later use. Finish with the pointer before the block changes, or take the address again after the change."""
 
 [codes.ZK0706.title]
-en = "borrow of a local returned"
+en = "address of a local returned"
 [codes.ZK0706.message]
-en = "returns a borrow of the local \"%{name}\", which ends when the function returns"
+en = "returns the address of the local \"%{name}\", which ends when the function returns"
 [codes.ZK0706.explain]
-en = """The locals and parameters of a function are released when it returns, so a borrow of one of them would point at released space in the caller. Return the value itself, or return an owner of a heap block."""
+en = """The locals and parameters of a function are released when it returns, so the address of one of them would point at released space in the caller. Return the value itself, or the address of a heap block."""
 
 [codes.ZK0707.title]
 en = "aliased arguments"
@@ -1412,18 +1549,18 @@ en = """A function that frees through one argument must be the one route into th
 [codes.ZK0708.title]
 en = "block not freed"
 [codes.ZK0708.message]
-en = "the block that \"%{name}\" owns is never freed or moved on this path"
+en = "the block that \"%{name}\" holds is never given back or handed over on this path"
 [codes.ZK0708.explain]
-en = """A block that an owner holds must be freed, or moved to another owner, before the owner goes out of scope. Otherwise the block is leaked. Free it with the heap statements, return it, or pass it to a function that takes ownership."""
+en = """A block made in marked code must be accounted for before the variable it was made in goes out of scope: given back with \"ပြန်လည်စွန့်လွှတ်မည်\", handed to a parameter marked \"အပိုင်အနေဖြင့်\", returned through a result marked \"အပိုင်အနေဖြင့်\", or stored in a heap block, a global or a field. Otherwise the block is leaked. A duplicate of its address into another variable counts as stored, since either can give it back. The finding is a warning; \"--mem-check error\" makes it an error."""
+[codes.ZK0708.help_result]
+en = "the caller takes this block: mark the result \"<kind> တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်\""
 
 [codes.ZK0709.title]
-en = "dereference of ဗလာ"
+en = "read through a null pointer"
 [codes.ZK0709.message]
-en = "\"%{name}\" is ဗလာ here, so it cannot be dereferenced"
+en = "\"%{name}\" points at nothing here, so there is nothing to read or write through it"
 [codes.ZK0709.explain]
-en = """At this point the name holds ဗလာ, for example after a move, so it points at no block. Give it a block first, or leave the dereference out of the path where it holds ဗလာ. A function value that holds ဗလာ holds no function, so a call through it is reported the same."""
-[codes.ZK0709.call_message]
-en = "\"%{name}\" is ဗလာ here, so it holds no function to call"
+en = """At this point the pointer is `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`: it points at no block. Give it a block first, or leave the read out of the path where it points at nothing. An object or a function value is never null; one read before it is set is ZK0722."""
 
 [codes.ZK0710.title]
 en = "offset past the end"
@@ -1433,13 +1570,11 @@ en = "offset %{off} is past the end of a block of %{len} elements"
 en = """The offset is a constant, and it lies past the cells of the block. Offsets count from 0, so the last cell of a block of n elements is n - 1. Use a smaller offset or a larger block."""
 
 [codes.ZK0711.title]
-en = "possible dereference of ဗလာ"
+en = "possible dereference of a null pointer"
 [codes.ZK0711.message]
-en = "\"%{name}\" can be ဗလာ here; compare it with ဗလာ first"
+en = "\"%{name}\" can point at nothing here; compare it with \"မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ\" first"
 [codes.ZK0711.explain]
-en = """The name is not compared with ဗလာ on this path, and the strict check wants one before a dereference. Compare it with ဗလာ and dereference it in the branch where it is not ဗလာ. A call through a function value is checked the same."""
-[codes.ZK0711.call_message]
-en = "\"%{name}\" can be ဗလာ here; compare it with ဗလာ before the call"
+en = """The pointer is not compared with `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` on this path, and the strict check wants one before a dereference. Compare it, and dereference it in the branch where it points at a block."""
 
 [codes.ZK0712.title]
 en = "pointers into different blocks"
@@ -1447,52 +1582,6 @@ en = "pointers into different blocks"
 en = "these pointers point into different blocks and cannot be subtracted"
 [codes.ZK0712.explain]
 en = """Subtracting two pointers gives a distance, and a distance exists inside one block. Pointers into different blocks have none. Subtract pointers that were taken from the same block."""
-
-[codes.ZK0713.title]
-en = "misplaced borrow marker"
-[codes.ZK0713.message]
-en = "a pointer kind takes one ငှားထားသော, at its front; a borrow never sits in a heap block or a slot, and a raw address cannot be borrowed"
-[codes.ZK0713.explain]
-en = """A pointer kind takes one ငှားထားသော, written at its front. A borrow is a loan, so it cannot live in a heap block or a slot, and a raw address cannot be loaned. Remove the extra mark, or move it to the front of the kind."""
-
-[codes.ZK0714.title]
-en = "borrowed address given for an owner"
-[codes.ZK0714.message]
-en = "a borrowed address cannot be given where an owner is wanted"
-[codes.ZK0714.explain]
-en = """A place that wants an owner takes the block over. A borrow lends the block but does not own it, so it has nothing to hand over. Pass an owner, or change the place to take a borrow."""
-
-[codes.ZK0715.title]
-en = "owner given for a borrow"
-[codes.ZK0715.message]
-en = "\"%{name}\" owns its block and would move here; write \"%{name} ၏ တန်ဖိုးအငှား\" to lend it"
-[codes.ZK0715.help]
-en = "write \"%{name} ၏ တန်ဖိုးအငှား\""
-[codes.ZK0715.unnamed]
-en = "this value owns its block and would move here, where a borrow is wanted"
-[codes.ZK0715.explain]
-en = """A place that wants a borrow was given an owner as it is, and that would take the block from the owner. Lend the owner with တန်ဖိုးအငှား instead, which keeps the block with the owner."""
-
-[codes.ZK0716.title]
-en = "lend of a raw address"
-[codes.ZK0716.message]
-en = "a raw address cannot be lent with တန်ဖိုးအငှား; convert it with a cast first"
-[codes.ZK0716.explain]
-en = """တန်ဖိုးအငှား lends the block of an owner. A raw address is not tracked, so there is no block to lend. Cast the raw address to a pointer kind first, or use the raw address as it is."""
-
-[codes.ZK0717.title]
-en = "raw address not allowed"
-[codes.ZK0717.message]
-en = "raw addresses are not allowed here (--no-raw)"
-[codes.ZK0717.explain]
-en = """The program was compiled with --no-raw, which turns raw addresses off. Use an owner or a borrow instead, or compile without that flag."""
-
-[codes.ZK0718.title]
-en = "borrow in a field"
-[codes.ZK0718.message]
-en = "the field \"%{n}\" holds a borrow, and borrows live in variables and parameters alone"
-[codes.ZK0718.explain]
-en = """A borrow lasts as long as the owner it borrows from, and the checker follows that through variables and parameters, not through mem. A struct can sit in mem, so its fields hold owners or raw addresses: \"<kind> လိပ်စာ\" or \"<kind> လိပ်စာအကြမ်း\"."""
 
 [codes.ZK0719.title]
 en = "overflow on each run"
@@ -1503,50 +1592,14 @@ en = "use a wider kind, or change the operands; with --overflow wrap the result 
 [codes.ZK0719.explain]
 en = """Under --overflow stop, the default, integer arithmetic stops the program when its result does not fit its kind. The check follows the values the operands can hold, and each of them makes this operation overflow, so the program stops when it reaches it. Pick a wider kind, change the operands, or compile with --overflow wrap for two's complement arithmetic."""
 
-[codes.ZK0720.title]
-en = "value duplicated"
-[codes.ZK0720.message]
-en = "\"%{n}\" is duplicated here; the duplicate can take a new heap block for its cells"
-[codes.ZK0720.help]
-en = "lend a view or a slice to read it with no duplicate, or read it no more after this statement, so it moves"
-[codes.ZK0720.explain]
-en = """Text and lists are copied when a value goes into another place: a variable, a parameter, a result, a field or a cell. When the place read is not read again, the compiler moves the value instead, and nothing is copied. With --warn-duplicates the compiler names each statement where a duplicate remains, so a program that must not allocate there can lend a view or a slice instead."""
-
 [codes.ZK0721.title]
-en = "ranges of a raw duplicate overlap"
+en = "the ranges of a block duplicate overlap"
 [codes.ZK0721.message]
 en = "the source and the destination of \"ကူးယူမည်\" share %{n} octets"
 [codes.ZK0721.help]
 en = "write \"ပြောင်းထည့်မည်\", which reads the source in full before it writes"
 [codes.ZK0721.explain]
 en = """\"ကူးယူမည်\" is the memcpy of C: it writes the cells in order, so cells it writes can be cells it has still to read, and in C the result is undefined. When both addresses point into the same block at offsets the check knows, and the count is known, the overlap is an error before the program runs; else the VM stops the program with the trap \"overlap\". \"ပြောင်းထည့်မည်\" allows ranges that overlap."""
-
-[codes.ZK0722.title]
-en = "borrowing function leaves its locals"
-[codes.ZK0722.message]
-en = "\"%{f}\" borrows the locals around it, so its address cannot go where it outlives them"
-[codes.ZK0722.help]
-en = "pass the address to a function, call it, or keep it in a variable of the block that declares \"%{f}\"; or list the locals as duplicates or moves in place of ငှား၍"
-[codes.ZK0722.explain]
-en = """A nested function that lists a local with \"ငှား၍\", or a capture that holds a borrow, borrows the locals around it, and so does its address. The address can be called, passed to a parameter, or kept in a variable of the block that declares the function, but it cannot be given back as a result, stored in a field, a cell, a global or a place reached through an address, or set into a variable of an outer block. A function of duplicates and moves alone owns its captures, and its address goes each of those places. Where the compiler cannot tell that a value is a borrowing address, such as a parameter stored in a global, the VM stops the program with the trap \"closure_escape\", and a native build stops it too."""
-
-[codes.ZK0723.title]
-en = "closure to C"
-[codes.ZK0723.message]
-en = "\"%{f}\" has captures, so its address cannot go to a C function"
-[codes.ZK0723.help]
-en = "pass a function with no captures; C calls a code address and keeps no record"
-[codes.ZK0723.explain]
-en = """C calls a function value as a bare code address, so the captures of a nested function have no place to go. Where the compiler cannot tell that a value holds such a function, the VM stops the program with the trap \"closure_escape\", and a native build stops it too."""
-
-[codes.ZK0724.title]
-en = "closure that owns a block duplicated"
-[codes.ZK0724.message]
-en = "the closure of \"%{f}\" owns a block, so it cannot be duplicated"
-[codes.ZK0724.help]
-en = "move it with ပြောင်းထည့်မည်, use it for the last time here, or pass it to a call, which lends it"
-[codes.ZK0724.explain]
-en = """A nested function that takes an owner with \"အပိုင်အနေဖြင့်\" keeps the block in its record, and frees it as the closure ends. A duplicate would give two records the one block, which both would free, so such a closure moves and is lent, but is not duplicated, as a Rust closure that is not Clone. Where the compiler cannot tell that a value holds such a closure, the VM stops the program with the trap \"closure_owner\", and a native build stops it too."""
 
 [codes.ZK0801.title]
 en = "kind not for the C target"

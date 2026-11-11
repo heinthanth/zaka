@@ -12,16 +12,16 @@ and each call tells what happens when the function fails.
 
 ## A function that can fail
 
-The header names the whole result kind: the kind of the good result, then `သို့မဟုတ်`, then the kind of the error value with `အမှားအယွင်း` after it:
+The header names the whole result kind: the kind of the good result, then `သို့မဟုတ်`, then `အမှားအယွင်းအနေဖြင့်` and the kind of the error value, and `ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု` to close it:
 
 ```zaka-file
 // divide.zaka
 // Gives back a good integer, or text that tells what went wrong.
 လုပ်ဆောင်ချက် စားခွဲ သည်
-ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် သို့မဟုတ် စာသား အမှားအယွင်း ကို ပြန်ပေးမည်။
-အကယ်၍ ခ သည် ၀ နှင့် ညီလျှင် "သုညဖြင့် စား၍ မရပါ" ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။
-က / ခ ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ ခ သည် ၀ နှင့် ညီလျှင် "သုညဖြင့် စား၍ မရပါ" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
@@ -29,11 +29,11 @@ Two parts are new:
 
 | Where | Written | Reads as |
 | --- | --- | --- |
-| header | `<kind> ရလဒ် သို့မဟုတ် <kind> အမှားအယွင်း ကို ပြန်ပေးမည်။` | "will return a result, or an error value of this kind" |
-| inside | `<value> ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။` | "give back the value as an error value" |
+| header | `<kind> သို့မဟုတ် အမှားအယွင်းအနေဖြင့် <kind> ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။` | "will return one cell: a good result, or an error value of this kind" |
+| inside | `<value> ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။` | "give back the value as an error value" |
 
-The good result is given back with `ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ` (in a function that can fail,
-`ရလဒ်အဖြစ်` is ZK0455) or the variable `ရလဒ်`. The error value can be of whatever kind is needed: an integer, text, a struct. A function can
+The good result is given back like each other value, with `<value> ကို ပြန်ပေးမည်။`: in a
+function that can fail, a plain value is the good side. The error value can be of whatever kind is needed: an integer, text, a struct. A function can
 also fail and have no result; it writes `အောင်မြင်သည့်သတင်း` for the good side.
 [Writing result kinds](kinds.md) shows the written form of the whole kind.
 

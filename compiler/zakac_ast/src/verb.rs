@@ -68,6 +68,9 @@ pub enum Slot
     /// `ထိကို`, after the range of text a replace statement changes.
     #[strum(serialize = "ထိကို")]
     Upto,
+    /// `ထဲတွင်`, after the optional or the result a test looks in.
+    #[strum(serialize = "ထဲတွင်")]
+    Within,
 }
 
 impl Slot
@@ -121,6 +124,9 @@ pub enum VerbOp
     Shift,
     /// `ညီ`
     Eq,
+    /// `တစ်ခုတည်း`: whether two names hold one object or one function value.
+    #[strum(serialize = "same")]
+    Same,
     /// `မညီ`
     Ne,
     /// `ကြီး`
@@ -133,44 +139,56 @@ pub enum VerbOp
     Ge,
     /// `ပြောင်းလဲသော ရလဒ်`
     Cast,
-    /// `ပြသပါ`
+    /// `ပြသမည်`
     Print,
-    /// `ထားပါ`
+    /// `ထားမည်`
     #[strum(serialize = "set")]
     Assign,
-    /// `ရလဒ်အဖြစ် ပြန်ပေးပါ`
+    /// `<v> ကို ပြန်ပေးမည်`
     Return,
-    /// `အမှားအယွင်းအဖြစ် ပြန်ပေးပါ`
-    #[strum(serialize = "return_fault")]
-    ReturnFault,
-    /// `ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ`
-    #[strum(serialize = "return_good")]
-    ReturnGood,
-    /// `<r> သည် ရလဒ်ကောင်း`: whether a result holds a good result.
+    /// `<r> ထဲတွင် ရလဒ်ကောင်း ရှိ`: whether a result holds a good result.
     #[strum(serialize = "is_good")]
     IsGood,
-    /// `<r> သည် အမှားအယွင်း`: whether a result holds an error value.
+    /// `<r> ထဲတွင် အမှားအယွင်း ရှိ`: whether a result holds an error value.
     #[strum(serialize = "is_fault")]
     IsFault,
-    /// `<r> ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်`: the good result; a
-    /// result that holds an error stops the run.
+    /// `<x> ထဲတွင် ဒေတာ ရှိ`: whether an optional holds data.
+    #[strum(serialize = "has_data")]
+    HasData,
+    /// `<x> ထဲတွင် ဒေတာ မရှိ`: whether an optional holds no data.
+    #[strum(serialize = "lacks_data")]
+    LacksData,
+    /// `<value> ဟူသော အမှားအယွင်း`: an error value of the result kind the
+    /// place wants.
+    #[strum(serialize = "make_fault")]
+    MakeFault,
+    /// `<x> ထဲမှ ဒေတာ`: the data of an optional, or the good result of a
+    /// result; an optional with no data, or a result that holds an error, stops
+    /// the run. `<r> ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်` is the old spelling.
     #[strum(serialize = "unwrap")]
     Unwrap,
     /// `<r> ကို အမှားအယွင်း အဖြစ် ပြောင်းလဲသော ရလဒ်`: the error value; a good
     /// result stops the run.
     #[strum(serialize = "unwrap_fault")]
     UnwrapFault,
-    /// `ထည့်ပါ`: a new last cell of a list.
+    /// `ထည့်မည်`: a new last cell of a list.
     #[strum(serialize = "add_cell")]
     AddCell,
     /// `ကူးထည့်မည်`: a duplicate of a value goes into a variable.
     #[strum(serialize = "dup_into")]
     DupInto,
-    /// `ပြောင်းထည့်မည်`: a value moves into a variable, which leaves the
-    /// source blank.
-    #[strum(serialize = "move_into")]
-    MoveInto,
-    /// `အစားထိုးပါ`: a range of text gives its place to a value.
+    /// `အကုန်ကူးထည့်မည်`: a deep duplicate of a value goes into a variable.
+    #[strum(serialize = "deep_dup_into")]
+    DeepDupInto,
+    /// `၏ မိတ္တူ`: a duplicate of a value; a new object with the same fields
+    /// for an object.
+    #[strum(serialize = "dup_of")]
+    DupOf,
+    /// `တစ်<classifier>လုံး ၏ မိတ္တူ`: a deep duplicate, each object inside
+    /// duplicated too, once each.
+    #[strum(serialize = "deep_dup_of")]
+    DeepDupOf,
+    /// `အစားထိုးမည်`: a range of text gives its place to a value.
     #[strum(serialize = "replace")]
     Replace,
     /// `၏ လိပ်စာ`: the address of a place.
@@ -179,9 +197,6 @@ pub enum VerbOp
     /// `၏ တန်ဖိုး`: the value an address points at.
     #[strum(serialize = "deref")]
     Deref,
-    /// `၏ တန်ဖိုးအငှား`: a borrow of the value an address points at.
-    #[strum(serialize = "lend")]
-    Lend,
     /// `၏ n ခုမြောက်အကွက်`: a list cell counted from 1. The parser turns
     /// it into an index expression.
     #[strum(serialize = "cell1")]
@@ -252,6 +267,7 @@ pub static VERBS: &[Verb] = &[
     row(Kw::Shift, VerbOp::Shift, &[Slot::Ko, Slot::Bit(Dir::Left)], false, false),
     row(Kw::Equal, VerbOp::Eq, EQUAL, false, true),
     row(Kw::NotEqual, VerbOp::Ne, EQUAL, false, true),
+    row(Kw::SameOne, VerbOp::Same, &[Slot::Hnint, Slot::Thi], false, true),
     row(Kw::Greater, VerbOp::Gt, GREATER, false, true),
     row(Kw::NotGreater, VerbOp::Le, GREATER, false, true),
     row(Kw::Less, VerbOp::Lt, LESS, false, true),
@@ -259,18 +275,17 @@ pub static VERBS: &[Verb] = &[
     row(Kw::Convert, VerbOp::Cast, &[Slot::Ko, Slot::KindAhpjit], false, false),
     row(Kw::Print, VerbOp::Print, &[Slot::KoOrHu], true, false),
     row(Kw::Assign, VerbOp::Assign, &[Slot::Ko, Slot::Hu], true, false),
-    row(Kw::ReturnValue, VerbOp::Return, &[Slot::Ko], true, false),
-    row(Kw::ReturnFault, VerbOp::ReturnFault, &[Slot::Ko], true, false),
-    row(Kw::ReturnGood, VerbOp::ReturnGood, &[Slot::Ko], true, false),
-    row(Kw::GoodResult, VerbOp::IsGood, &[Slot::Thi], false, false),
-    row(Kw::Fault, VerbOp::IsFault, &[Slot::Thi], false, false),
+    row(Kw::WillReturn, VerbOp::Return, &[Slot::Ko], true, false),
+    row(Kw::HasGood, VerbOp::IsGood, &[Slot::Within], false, false),
+    row(Kw::HasFault, VerbOp::IsFault, &[Slot::Within], false, false),
+    row(Kw::HasData, VerbOp::HasData, &[Slot::Within], false, false),
+    row(Kw::LacksData, VerbOp::LacksData, &[Slot::Within], false, false),
     row(Kw::Add, VerbOp::AddCell, &[Slot::Into, Slot::Ko], true, false),
     row(Kw::WillDupIn, VerbOp::DupInto, &[Slot::Into, Slot::Ko], true, false),
-    row(Kw::WillShift, VerbOp::MoveInto, &[Slot::Into, Slot::Ko], true, false),
+    row(Kw::WillDupAllIn, VerbOp::DeepDupInto, &[Slot::Into, Slot::Ko], true, false),
     row(Kw::Replace, VerbOp::Replace, &[Slot::Upto, Slot::Hpjint], true, false),
     row(Kw::Address, VerbOp::AddrOf, &[Slot::Ei], false, false),
     row(Kw::Value, VerbOp::Deref, &[Slot::Ei], false, false),
-    row(Kw::Lend, VerbOp::Lend, &[Slot::Ei], false, false),
     row(Kw::Cell, VerbOp::Cell, &[Slot::Ei, Slot::Ordinal], false, false),
     row(Kw::CellCount, VerbOp::CellCount, &[Slot::Ei], false, false),
     row(Kw::CharCount, VerbOp::CharCount, &[Slot::Ei], false, false),

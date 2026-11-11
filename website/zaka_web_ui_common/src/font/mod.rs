@@ -120,12 +120,12 @@ pub fn set_face_file(face: Face, url: &'static str)
 ///
 /// # Arguments
 ///
-/// * `family` - The CSS name of the font.
+/// * `name` - The CSS name of the font.
 /// * `size` - The size in px.
-pub async fn ready_font(family: &str, size: u32)
+pub async fn load_font(name: &str, size: u32)
 {
-    let query = format!("{size}px \"{family}\"");
-    let wait = document().fonts().load_with_text(&query, PROBE);
+    let spec = format!("{size}px \"{name}\"");
+    let wait = document().fonts().load_with_text(&spec, PROBE);
     do_if!(let Err(err) = JsFuture::from(wait).await, web_sys::console::error_1(&err));
 }
 
@@ -152,7 +152,7 @@ pub async fn load_face(face: Face, size: u32)
         }
         Source::Shipped => shipped_file(face)
             .map(|url| {
-                once(face.family(), url, |u| add_file(face.family(), 400, u, None))
+                once(face.css_name(), url, |u| add_file(face.css_name(), 400, u, None))
             })
             .into_iter()
             .collect(),
@@ -160,13 +160,13 @@ pub async fn load_face(face: Face, size: u32)
         {
             let add = |(w, path): &(u16, &str)| {
                 let url = format!("{root}{path}");
-                once(face.family(), &url, |u| add_file(face.family(), *w, u, None))
+                once(face.css_name(), &url, |u| add_file(face.css_name(), *w, u, None))
             };
             files.iter().map(add).collect()
         }
     };
     do_for!(load in loads, log_failure(wait(load).await));
-    ready_font(face.family(), size).await;
+    load_font(face.css_name(), size).await;
 }
 
 /// Prepare the face limited to the Burmese range, under
@@ -201,7 +201,7 @@ pub async fn load_burmese(face: Face, size: u32)
         Source::Embedded | Source::Native | Source::Files(_) => Vec::new(),
     };
     do_for!(load in loads, log_failure(wait(load).await));
-    ready_font(&alias, size).await;
+    load_font(&alias, size).await;
 }
 
 /// Prepare a pair of fonts to draw: the Burmese font whole when it draws
@@ -289,7 +289,7 @@ fn add_sheet(href: &str) -> Result<Promise, JsValue>
 ///
 /// # Arguments
 ///
-/// * `family` - The CSS name of the font.
+/// * `name` - The CSS name of the font.
 /// * `weight` - The weight of the file.
 /// * `url` - Its URL.
 /// * `range` - The characters it draws, or all of them.
@@ -298,14 +298,14 @@ fn add_sheet(href: &str) -> Result<Promise, JsValue>
 ///
 /// The load of the file, or the error of the browser.
 fn add_file(
-    family: &str, weight: u16, url: &str, range: Option<&str>,
+    name: &str, weight: u16, url: &str, range: Option<&str>,
 ) -> Result<Promise, JsValue>
 {
     let descriptors = FontFaceDescriptors::new();
     descriptors.set_weight(&weight.to_string());
     do_if!(let Some(r) = range, descriptors.set_unicode_range(r));
     let font = FontFace::new_with_str_and_descriptors(
-        family,
+        name,
         &format!("url({url})"),
         &descriptors,
     )?;

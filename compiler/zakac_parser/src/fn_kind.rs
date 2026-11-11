@@ -1,14 +1,13 @@
-//! Function kinds: `<params> လက်ခံပြီး <kind> ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား`,
-//! `<params> လက်ခံသော …`, `<kind> ရလဒ် ကို ပြန်ပေးသော …`, and
-//! `လုပ်ဆောင်ချက် အမျိုးအစား` alone.
+//! Function kinds: `<params> လက်ခံပြီး <kind> တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက်
+//! အမျိုးအစား`, `<params> လက်ခံသော …`, `<kind> တစ်ခု ကို ပြန်ပေးသော …`, and
+//! `လုပ်ဆောင်ချက် အမျိုးအစား` alone. Each parameter is
+//! `<kind> တစ်<classifier> ကို [marks] [လည်းကောင်း]`, with no name.
 //!
-//! The parameters are those of a header, each name optional, so in a list of
-//! parameters or fields the parameters of the kind would run into the items
-//! before it. A
-//! function kind with parameters therefore stands bare where no list is open
-//! (a declaration, a result, a conversion), and in parentheses inside a list,
-//! inside another function kind among them. A kind with no parameters never
-//! needs them.
+//! In a list of parameters or fields the parameters of the kind would run
+//! into the items around it, so a function kind with parameters stands bare
+//! where no list is open (a declaration, a result, a conversion), and in
+//! parentheses inside a list, inside another function kind among them. A
+//! kind with no parameters never needs them.
 
 use zakac_ast::expr::Expr;
 use zakac_ast::kind::BaseKind;
@@ -23,9 +22,14 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::describe::kw_text;
+use crate::describe::quote;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
+
+/// The parameters and the result kind of a function kind.
+type FnParts = (Vec<SigParam>, Option<Kind>);
 
 /// Which bare function kinds a kind phrase can be at its first token.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -99,9 +103,8 @@ impl Parser<'_>
         }
     }
 
-    /// The token count of `<kind> ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား`
-    /// that starts `at` tokens ahead. A result kind writes no `ရလဒ်` of its
-    /// own, as in a header.
+    /// The token count of `<kind> တစ်<classifier> ကို ပြန်ပေးသော လုပ်ဆောင်ချက်
+    /// အမျိုးအစား` that starts `at` tokens ahead.
     ///
     /// # Arguments
     ///
@@ -112,8 +115,7 @@ impl Parser<'_>
     /// The token count, or `None`.
     fn ret_tail_len(&self, at: usize) -> Option<usize>
     {
-        let kind = self.kind_len_at(at, FnForm::NoFn)?;
-        let n = kind + usize::from(kw_of(&self.peek_n(at + kind)) == Some(Kw::Result));
+        let n = self.slot_kind_len_at(at, FnForm::NoFn)?;
         let tail = [Kw::Ko, Kw::ReturningRel, Kw::FnKind];
         let ends =
             (0..tail.len()).all(|i| kw_of(&self.peek_n(at + n + i)) == Some(tail[i]));
@@ -121,8 +123,10 @@ impl Parser<'_>
     }
 
     /// The token count of the parameters of a function kind that start `at`
-    /// tokens ahead, their closer `ကို` or `တို့ကို` included; with marks no
-    /// closer comes.
+    /// tokens ahead, up to `လက်ခံပြီး` or `လက်ခံသော`: items that each read
+    /// `<kind> တစ်<classifier> ကို [ဒေတာ ပြောင်းလဲရန် | ဒေတာ ထည့်ပေးရန်]
+    /// [အပိုင်အနေဖြင့်] [ဝိဘတ် "<mark>" ကို သုံး၍] [လည်းကောင်း]`. An item with no
+    /// `လည်းကောင်း` ends the list.
     ///
     /// # Arguments
     ///
@@ -130,38 +134,22 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The token count, or `None` when no parameter list starts there.
+    /// The token count, or `None`.
     fn sig_params_len(&self, at: usize) -> Option<usize>
     {
-        let (mut n, mut marked) = (0, false);
+        let mut n = 0;
         loop
         {
-            let (len, mark) = self.sig_param_len(at + n)?;
+            let (len, more) = self.sig_item_len(at + n)?;
             n += len;
-            marked |= mark;
-            let sep = self.peek_n(at + n).kind;
-            match sep
-            {
-                TokenKind::Punct(Punct::ListSep) => n += 1,
-                TokenKind::Kw(Kw::Hnint) =>
-                {
-                    let (len, mark) = self.sig_param_len(at + n + 1)?;
-                    n += 1 + len;
-                    marked |= mark;
-                    break;
-                }
-                _ => break,
-            }
+            let end = kw_of(&self.peek_n(at + n));
+            ret_if!(matches!(end, Some(Kw::Accepting | Kw::AcceptingRel)), Some(n));
+            ret_if!(!more, None);
         }
-        let end = kw_of(&self.peek_n(at + n));
-        let closer = matches!(end, Some(Kw::Ko | Kw::ListKo));
-        let open = matches!(end, Some(Kw::Accepting | Kw::AcceptingRel));
-        ret_if!(closer, Some(n + 1));
-        (marked && open).then_some(n)
     }
 
     /// The token count of one parameter of a function kind that starts `at`
-    /// tokens ahead: the edit mark, the kind, the name and its mark.
+    /// tokens ahead, and whether `လည်းကောင်း` closes it.
     ///
     /// # Arguments
     ///
@@ -169,19 +157,35 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The token count and whether a mark came, or `None`.
-    fn sig_param_len(&self, at: usize) -> Option<(usize, bool)>
+    /// The token count and the closer, or `None`.
+    fn sig_item_len(&self, at: usize) -> Option<(usize, bool)>
     {
-        let edit = usize::from(kw_of(&self.peek_n(at)) == Some(Kw::EditParam));
-        let kind = self.kind_len_at(at + edit, FnForm::NoParams)?;
-        let n = edit + kind;
-        let named =
-            matches!(self.peek_n(at + n).kind, TokenKind::Ident | TokenKind::RawIdent);
-        ret_if!(!named, Some((n, false)));
-        let open = self.peek_n(at + n + 1);
-        let mark = open.kind == TokenKind::Punct(Punct::LParen) && open.joined;
-        // A mark is one word in parentheses: `(<mark>)`.
-        Some(tern!(mark, (n + 4, true), (n + 1, false)))
+        let is = |n: usize, kw: Kw| kw_of(&self.peek_n(at + n)) == Some(kw);
+        let mut n = self.slot_kind_len_at(at, FnForm::NoParams)?;
+        ret_if!(!is(n, Kw::Ko), None);
+        n += 1;
+        n += self.markers_len(at + n);
+        let more = is(n, Kw::AsWellAs);
+        Some((n + usize::from(more), more))
+    }
+
+    /// The token count of the marks of a parameter that start `at` tokens
+    /// ahead, after its `ကို`.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The token count; 0 for none.
+    pub(crate) fn markers_len(&self, at: usize) -> usize
+    {
+        let is = |n: usize, kw: Kw| kw_of(&self.peek_n(at + n)) == Some(kw);
+        let mut n = usize::from(is(0, Kw::DataToChange) || is(0, Kw::DataToFill));
+        n += usize::from(is(n, Kw::AsOwned));
+        // A mark is four tokens: `ဝိဘတ်`, the string, `ကို` and `သုံး၍`.
+        n + tern!(is(n, Kw::MarkWord), 4, 0)
     }
 
     /// The token count of a function kind in parentheses that starts `at`
@@ -247,10 +251,9 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The parameters and the result kind, or a diagnostic.
-    fn parse_fn_parts(
-        &mut self, with_params: bool,
-    ) -> PResult<(Vec<SigParam>, Option<Kind>)>
+    /// The parameters and the result kind with its measure word, or a
+    /// diagnostic.
+    fn parse_fn_parts(&mut self, with_params: bool) -> PResult<FnParts>
     {
         ret_if!(self.eat(Kw::FnKind), Ok((Vec::new(), None)));
         let params = tern!(with_params, self.parse_sig_params()?, Vec::new());
@@ -260,60 +263,71 @@ impl Parser<'_>
             return Ok((params, None));
         }
         do_if!(with_params, _ = self.expect(Kw::Accepting)?);
-        let ret = self.parse_kind_with(FnForm::NoFn)?;
-        do_if!(ret.base != BaseKind::Result, _ = self.expect(Kw::Result)?);
+        let ret = self.parse_slot_kind_with(FnForm::NoFn)?;
         self.expect(Kw::Ko)?;
         self.expect(Kw::ReturningRel)?;
         self.expect(Kw::FnKind)?;
         Ok((params, Some(ret)))
     }
 
-    /// Parse the parameters of a function kind:
-    /// `<param> (၊ <param>)* (နှင့် <param>)? (တို့ကို|ကို)`, with no closer
-    /// when the parameters have marks.
+    /// Parse the parameters of a function kind, up to the `လက်ခံ…` after
+    /// them. With more than one, each ends in `လည်းကောင်း`; either each has a
+    /// mark or none has.
     ///
     /// # Returns
     ///
     /// The parameters, or a diagnostic.
     fn parse_sig_params(&mut self) -> PResult<Vec<SigParam>>
     {
-        let mut params = vec![self.parse_sig_param()?];
-        while self.eat_punct(Punct::ListSep)
+        let mut params = Vec::new();
+        let mut closed = Vec::new();
+        loop
         {
-            params.push(self.parse_sig_param()?);
+            params.push(self.parse_sig_item()?);
+            closed.push(self.eat(Kw::AsWellAs));
+            do_if!(self.at(Kw::Accepting) || self.at(Kw::AcceptingRel), break);
+            ret_if!(!closed[closed.len() - 1], Err(self.err_as_well_as()));
         }
-        do_if!(self.eat(Kw::Hnint), params.push(self.parse_sig_param()?));
+        let open = params.len() > 1 && closed.contains(&false);
+        ret_if!(open, Err(self.err_as_well_as()));
         let marked = params.iter().filter(|p| p.mark.is_some()).count();
         let span = params[0].span.to(&params[params.len() - 1].span);
         do_if!(
             marked > 0 && marked < params.len(),
             self.diags.push(diag::mixed_marks(span))
         );
-        let open = self.at(Kw::Accepting) || self.at(Kw::AcceptingRel);
-        do_if!(marked == 0 || !open, _ = self.expect_one_of(&[Kw::ListKo, Kw::Ko])?);
         Ok(params)
     }
 
-    /// Parse one parameter of a function kind: the edit mark, the kind, and
-    /// the name and its mark when written.
+    /// The report of a parameter in a list of several that `လည်းကောင်း` does
+    /// not close.
+    ///
+    /// # Returns
+    ///
+    /// The `expected-token` diagnostic.
+    pub(crate) fn err_as_well_as(&self) -> zakac_diagnostics::Diagnostic
+    {
+        self.err_expected(&quote(&kw_text(Kw::AsWellAs)))
+    }
+
+    /// Parse one parameter of a function kind: its kind with the measure
+    /// word, `ကို` and its marks.
     ///
     /// # Returns
     ///
     /// The parameter, or a diagnostic.
-    fn parse_sig_param(&mut self) -> PResult<SigParam>
+    fn parse_sig_item(&mut self) -> PResult<SigParam>
     {
         let start = self.peek().span;
-        let edit = self.eat(Kw::EditParam);
-        let kind = self.parse_kind_with(FnForm::NoParams)?;
-        let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
-        let name = tern!(named, Some(self.parse_ident()?), None);
-        let open = self.peek();
-        let marked =
-            named && open.kind == TokenKind::Punct(Punct::LParen) && open.joined;
-        let mark = tern!(marked, Some(self.parse_param_mark()?), None);
+        let kind = self.parse_slot_kind_with(FnForm::NoParams)?;
+        self.expect(Kw::Ko)?;
+        let fill = self.peek_n(0).kind == TokenKind::Kw(Kw::DataToFill);
+        let (owned, edit, _, mark) = self.parse_item_markers(fill)?;
+        do_if!(fill, self.diags.push(diag::fill_in_fn_kind(self.prev_span())));
         let span = start.to(&self.prev_span());
         #[rustfmt::skip]
-        return Ok(SigParam::builder().edit(edit).kind(kind).maybe_name(name).maybe_mark(mark).span(span).build());
+        return Ok(SigParam::builder().owned(owned).edit(edit).kind(kind).maybe_mark(mark)
+            .span(span).build());
     }
 
     /// Register the name of a parameter or a variable whose kind is a
@@ -336,7 +350,7 @@ impl Parser<'_>
     }
 
     /// Register a variable that starts as the address of a function with
-    /// marks, `ကိန်းရှင် <name> သည် လုပ်ဆောင်ချက် <fn> ၏ လိပ်စာ ဖြစ်ပါစေ။`, with the
+    /// marks, `ကိန်းရှင် <name> သည် <fn> ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။`, with the
     /// marks of that function, so a marked call through it can be read.
     ///
     /// # Arguments
@@ -363,7 +377,7 @@ impl Parser<'_>
     pub(crate) fn parse_bare_listed_kind(&mut self) -> PResult<Kind>
     {
         let outer = std::mem::replace(&mut self.in_list, false);
-        let kind = self.parse_kind();
+        let kind = self.parse_slot_kind();
         self.in_list = outer;
         let kind = kind?;
         self.diags.push(diag::fn_kind_needs_parens(kind.span));

@@ -28,6 +28,7 @@ use zakac_ast::visit::walk_stmt;
 use zakac_ast::visit::walk_verb;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_span::span::Span;
 
 /// A result variable and the part it holds: `true` for a good result.
 pub(crate) type Fact = (Name, bool);
@@ -54,12 +55,15 @@ pub(crate) fn facts_when(cond: &Expr, holds: bool) -> Vec<Fact>
             facts.extend(facts_when(&n.rhs, holds));
             facts
         }
-        Expr::Verb(n) if matches!(n.op, VerbOp::IsGood | VerbOp::IsFault) =>
+        Expr::Verb(n)
+            if matches!(
+                n.op,
+                VerbOp::IsGood | VerbOp::IsFault | VerbOp::HasData | VerbOp::LacksData
+            ) =>
         {
             let name = n.args.first().and_then(result_var);
-            name.map_or_else(Vec::new, |name| {
-                vec![(name, (n.op == VerbOp::IsGood) == holds)]
-            })
+            let good = matches!(n.op, VerbOp::IsGood | VerbOp::HasData);
+            name.map_or_else(Vec::new, |name| vec![(name, good == holds)])
         }
         _ => Vec::new(),
     }
@@ -102,19 +106,21 @@ pub(crate) fn leaves_at_end(block: &BlockStmt) -> bool
     )
 }
 
-/// The variables a statement can change by itself, the statements of its
+/// The variables a statement can change on its own, the statements of its
 /// blocks left out.
 ///
 /// # Arguments
 ///
 /// * `s` - The statement.
+/// * `edits` - Whether each parameter of a function can be changed, under its
+///   name; `None` for a name that is no function.
 ///
 /// # Returns
 ///
 /// The names.
-pub(crate) fn changed_in_stmt(s: &Stmt) -> HashSet<Name>
+pub(crate) fn changed_in_stmt(s: &Stmt, edits: &Edits<'_>) -> HashSet<Name>
 {
-    let mut found = Changed { names: HashSet::new(), deep: false };
+    let mut found = Changed { names: HashSet::new(), deep: false, edits };
     walk_stmt(&mut found, s);
     found.names
 }
@@ -124,29 +130,55 @@ pub(crate) fn changed_in_stmt(s: &Stmt) -> HashSet<Name>
 /// # Arguments
 ///
 /// * `stmts` - The statements.
+/// * `edits` - Whether each parameter of a function can be changed, under its
+///   name; `None` for a name that is no function.
 ///
 /// # Returns
 ///
 /// The names.
-pub(crate) fn changed_in(stmts: &[Stmt]) -> HashSet<Name>
+pub(crate) fn changed_in(stmts: &[Stmt], edits: &Edits<'_>) -> HashSet<Name>
 {
-    let mut found = Changed { names: HashSet::new(), deep: true };
+    let mut found = Changed { names: HashSet::new(), deep: true, edits };
     do_for!(s in stmts, found.visit_stmt(s));
     found.names
 }
 
+/// Whether each parameter of a function can be changed, under the
+/// function name; `None` for a name that is no function.
+pub(crate) type Edits<'e> = dyn Fn(&str) -> Option<Vec<bool>> + 'e;
+
 /// Gathers the variables that statements can change: an assignment target,
-/// an argument with the edit mark, and a place whose address is taken.
-struct Changed
+/// an argument for a parameter marked `ဒေတာ ပြောင်းလဲရန်`, and a place whose
+/// address is taken.
+struct Changed<'e>
 {
     /// The names found.
     names: HashSet<Name>,
     /// Whether the statements of blocks count too.
     deep: bool,
+    /// Whether each parameter of a function can be changed.
+    edits: &'e Edits<'e>,
 }
 
-impl Changed
+impl Changed<'_>
 {
+    /// Note each argument of a call whose parameter can be changed; each
+    /// argument of a call through a function value, whose parameters are
+    /// not known here.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function name.
+    /// * `args` - The arguments.
+    fn note_args(&mut self, callee: &str, args: &[Expr])
+    {
+        let edits = (self.edits)(callee);
+        let edit = |n: usize| {
+            edits.as_ref().is_none_or(|e| e.get(n).copied().unwrap_or(false))
+        };
+        do_for!(a in args.iter().enumerate().filter(|(n, _)| edit(*n)).map(|(_, a)| a), self.note(a));
+    }
+
     /// Note the variable a place belongs to.
     ///
     /// # Arguments
@@ -158,7 +190,7 @@ impl Changed
     }
 }
 
-impl Visitor for Changed
+impl Visitor for Changed<'_>
 {
     fn visit_block(&mut self, n: &BlockStmt) { do_if!(self.deep, walk_block(self, n)) }
 
@@ -172,13 +204,13 @@ impl Visitor for Changed
 
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
-        do_for!((a, _) in n.args.iter().zip(&n.edits).filter(|(_, e)| **e), self.note(a));
+        self.note_args(&n.callee.name, &n.args);
         walk_call_stmt(self, n);
     }
 
     fn visit_call_expr(&mut self, n: &CallExpr)
     {
-        do_for!((a, _) in n.args.iter().zip(&n.edits).filter(|(_, e)| **e), self.note(a));
+        self.note_args(&n.callee.name, &n.args);
         walk_call_expr(self, n);
     }
 
@@ -216,4 +248,99 @@ fn root(place: &Expr) -> Option<Name>
         Expr::Index(n) => root(&n.list),
         _ => None,
     }
+}
+
+/// Whether a run of statements gives back on each path: its last statement
+/// is a return, a block that gives back, an `if` with an else whose arms each
+/// give back, or a switch with a default, or one that names each member of
+/// its enumeration, whose arms each give back.
+///
+/// # Arguments
+///
+/// * `stmts` - The statements.
+/// * `full` - The switches that name each member of their enumeration.
+///
+/// # Returns
+///
+/// `true` when no path reaches the end of the run.
+pub(crate) fn returns_on_each_path(stmts: &[Stmt], full: &HashSet<Span>) -> bool
+{
+    let Some(last) = stmts.last()
+    else
+    {
+        return false;
+    };
+    let gives = |b: &BlockStmt| returns_on_each_path(&b.stmts, full);
+    match last
+    {
+        Stmt::Return(_) => true,
+        Stmt::Block(b) => gives(b),
+        Stmt::If(n) =>
+        {
+            n.else_block.as_ref().is_some_and(gives)
+                && n.arms.iter().all(|a| gives(&a.block))
+        }
+        Stmt::Switch(n) =>
+        {
+            let default =
+                n.default.as_ref().map_or(full.contains(&n.span), |d| gives(&d.block));
+            default && n.arms.iter().all(|a| gives(&a.block))
+        }
+        // A loop whose test is the constant true and that no break leaves never
+        // ends, so no path runs past it.
+        Stmt::While(n) => is_true(&n.cond) && !breaks_out(&n.block.stmts),
+        Stmt::Generic(n) => is_true(&n.cond) && !breaks_out(&n.block.stmts),
+        _ => false,
+    }
+}
+
+/// Whether an expression is the constant true, perhaps in parentheses.
+///
+/// # Arguments
+///
+/// * `e` - The expression.
+///
+/// # Returns
+///
+/// `true` for `မှန်`.
+fn is_true(e: &Expr) -> bool
+{
+    match e
+    {
+        Expr::Group(n) => is_true(&n.inner),
+        Expr::Bool(b) => b.value,
+        _ => false,
+    }
+}
+
+/// Whether a break among statements leaves the loop that holds them. A break
+/// inside a loop nested in them leaves that loop alone, and one inside a
+/// nested function belongs to that function.
+///
+/// # Arguments
+///
+/// * `stmts` - The statements of the loop block.
+///
+/// # Returns
+///
+/// `true` when one does.
+fn breaks_out(stmts: &[Stmt]) -> bool
+{
+    let block = |b: &BlockStmt| breaks_out(&b.stmts);
+    stmts.iter().any(|s| match s
+    {
+        Stmt::Break(_) => true,
+        Stmt::Block(b) => block(b),
+        Stmt::If(n) =>
+        {
+            n.arms.iter().any(|a| block(&a.block))
+                || n.else_block.as_ref().is_some_and(block)
+        }
+        Stmt::Switch(n) =>
+        {
+            n.arms.iter().any(|a| block(&a.block))
+                || n.default.as_ref().is_some_and(|d| block(&d.block))
+        }
+        _ => false,
+    })
 }

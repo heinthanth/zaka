@@ -11,16 +11,16 @@ function accepts are its *parameters*. The values passed in a call are the *argu
 ```zaka
 // "Function count-up, accepting an integer amount, will do the following"
 လုပ်ဆောင်ချက် ရေတွက်ပြ သည်
-ကိန်းပြည့် အရေအတွက် ကို လက်ခံပြီး
+အရေအတွက် ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ မှ အရေအတွက် အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။
+၁ မှ အရေအတွက် အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 // "Run the function count-up with 3"
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ရေတွက်ပြ ကို ၃ တို့ဖြင့် လုပ်ဆောင်ပါ။
-"---" ဟု ပြသပါ။
-လုပ်ဆောင်ချက် ရေတွက်ပြ ကို ၂ တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ရေတွက်ပြ ကို ၃ တို့ဖြင့် လုပ်ဆောင်မည်။
+"---" ဟု ပြသမည်။
+လုပ်ဆောင်ချက် ရေတွက်ပြ ကို ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -38,26 +38,27 @@ in: 3 the first time, 2 the second.
 
 | Zaka | Reads as |
 | --- | --- |
-| `ကိန်းပြည့် အရေအတွက် ကို လက်ခံပြီး` | "accepting an integer amount, and ..." |
+| `အရေအတွက် ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး` | "accepting an integer called amount, and ..." |
 | `လက်ခံပြီး` | "having accepted" |
 | `၃ တို့ဖြင့်` | "with 3" |
 
 ## Several parameters
 
-List parameters with `၊`, the Burmese comma. Each has its kind before its name. Close a
-list of two or more with `တို့ကို`, and pass the arguments in the same order:
+Write each parameter as `<name> ဟူသော <kind> တစ်ခု ကို`, the kind counted with its measure
+word, and end each one with `လည်းကောင်း` ("and also") when there are two or more. Pass the
+arguments in the same order:
 
 ```zaka
 // rectangle: print the area of a length × width rectangle
 လုပ်ဆောင်ချက် ဧရိယာပြ သည်
-ကိန်းပြည့် အလျား၊ ကိန်းပြည့် အနံ တို့ကို လက်ခံပြီး
+အလျား ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း အနံ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အလျား * အနံ ကို ပြသပါ။
+အလျား * အနံ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ဧရိယာပြ ကို ၃၊ ၄ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် ဧရိယာပြ ကို ၁၀၊ ၂ + ၃ တို့ဖြင့် လုပ်ဆောင်ပါ။     // arguments can be sums
+လုပ်ဆောင်ချက် ဧရိယာပြ ကို ၃၊ ၄ တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ဧရိယာပြ ကို ၁၀၊ ၂ + ၃ တို့ဖြင့် လုပ်ဆောင်မည်။     // arguments can be sums
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -66,13 +67,10 @@ list of two or more with `တို့ကို`, and pass the arguments in the 
 ၅၀
 ```
 
-As in Burmese, `နှင့်` ("and") can replace the last `၊`: `ကိန်းပြည့် က၊ ကိန်းပြည့် ခ နှင့်
-ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး`.
-
-| Number of parameters | Closer | Example |
+| Number of parameters | Each ends in | Example |
 | --- | --- | --- |
-| one | `ကို` | `ကိန်းပြည့် က ကို လက်ခံပြီး` |
-| two or more | `တို့ကို` | `ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး` |
+| one | `ကို` | `က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး` |
+| two or more | `ကို လည်းကောင်း` | `က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး` |
 
 Arguments close with `တို့ဖြင့်` ("with these") in all cases, even when there is just
 one.
@@ -85,9 +83,9 @@ sentence puts an object before its verb. `သုံး၍` ("using") closes the 
 
 ```zaka
 လုပ်ဆောင်ချက် ဧရိယာပြ သည်
-ကိန်းပြည့် အလျား၊ ကိန်းပြည့် အနံ တို့ကို လက်ခံပြီး
+အလျား ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း အနံ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အလျား * အနံ ကို ပြသပါ။
+အလျား * အနံ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -114,16 +112,15 @@ that gives back a value.
 
 ## Marked arguments
 
-A parameter can also name the word that follows its argument in a call, its *mark*, in
-parentheses after the parameter name. Then a call reads as a Burmese sentence, and needs
-no `သုံး၍`:
+A parameter can also name the word that follows its argument in a call, its *mark*, with
+`ဝိဘတ် "<mark>" ကို သုံး၍` ("using the particle …") after its `ကို`, and a call reads as a Burmese sentence, with no `သုံး၍`:
 
 ```zaka
 // "Function write, accepting a text (marked ကို) and a place (marked သို့)"
 လုပ်ဆောင်ချက် ရေး သည်
-စာသား စာ(ကို)၊ စာသား နေရာ(သို့) လက်ခံပြီး
+စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း နေရာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"{နေရာ}: {စာ}" ဟု ပြသပါ။
+"{နေရာ}: {စာ}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -138,8 +135,8 @@ no `သုံး၍`:
 
 | Zaka | Reads as |
 | --- | --- |
-| `စာသား စာ(ကို)` | "a text, `စာ`, written with `ကို` in a call" |
-| `စာသား နေရာ(သို့) လက်ခံပြီး` | "a text, `နေရာ`, written with `သို့`; having accepted" (no `တို့ကို` with marks) |
+| `စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း` | "a text called `စာ`, written with `ကို` in a call" |
+| `နေရာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး` | "a text called `နေရာ`, written with `သို့`; having accepted" |
 | `"မင်္ဂလာပါ" ကို "မှတ်စု" သို့ ရေး မည်` | "will write 'hello' to the notebook" |
 
 Each argument takes the mark of its parameter, in the order of the parameters. Mark each
@@ -153,15 +150,15 @@ runs the one its arguments fit:
 
 ```zaka
 လုပ်ဆောင်ချက် ပြ သည်
-ကိန်းပြည့် န(ကို) လက်ခံပြီး
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"ကိန်း {န}" ဟု ပြသပါ။
+"ကိန်း {န}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 လုပ်ဆောင်ချက် ပြ သည်
-စာသား စ(ကို) လက်ခံပြီး
+စ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"စာ {စ}" ဟု ပြသပါ။
+"စာ {စ}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -186,16 +183,16 @@ variable that was passed in:
 
 ```zaka
 လုပ်ဆောင်ချက် တိုးပြ သည်
-ကိန်းပြည့် က ကို လက်ခံပြီး
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-က ကို က + ၁ ဟု ထားပါ။
-က ကို ပြသပါ။
+က ကို က + ၁ ဟု ထားမည်။
+က ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် တိုးပြ ကို ခ တို့ဖြင့် လုပ်ဆောင်ပါ။     // prints 6
-ခ ကို ပြသပါ။                                    // still 5
+လုပ်ဆောင်ချက် တိုးပြ ကို ခ တို့ဖြင့် လုပ်ဆောင်မည်။     // prints 6
+ခ ကို ပြသမည်။                                    // still 5
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -210,15 +207,15 @@ To change the variable a caller holds, return the new value and set the variable
 
 ```zaka
 လုပ်ဆောင်ချက် နောက်တစ် သည်
-ကိန်းပြည့် က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-က + ၁ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က + ၁ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ၅ ဖြစ်ပါစေ။
-ခ ကို နောက်တစ်(ခ) ဟု ထားပါ။
-ခ ကို ပြသပါ။
+ခ ကို နောက်တစ်(ခ) ဟု ထားမည်။
+ခ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -226,21 +223,20 @@ To change the variable a caller holds, return the new value and set the variable
 ၆
 ```
 
-When a function must change the variable itself, mark the parameter with
-`လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` ("that the function can change") and the argument with
-`(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)` ("the function can change it"):
+When a function must change the variable itself, write `ဒေတာ ပြောင်းလဲရန်` ("to change the data") after the
+`ကို` of the parameter, and pass the variable as usual:
 
 ```zaka
 လုပ်ဆောင်ချက် တိုး သည်
-လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် က ကို လက်ခံပြီး
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-က ကို က + ၁ ဟု ထားပါ။
+က ကို က + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ၅ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် တိုး ကို ခ (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်) တို့ဖြင့် လုပ်ဆောင်ပါ။
-ခ ကို ပြသပါ။
+လုပ်ဆောင်ချက် တိုး ကို ခ တို့ဖြင့် လုပ်ဆောင်မည်။
+ခ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -248,9 +244,62 @@ When a function must change the variable itself, mark the parameter with
 ၆
 ```
 
-Both ends take the mark, so the call itself shows which variable changes. The argument
-must be a variable, a field or a cell, and it cannot appear twice in one call. See
-[Edit references](../../manual/language/functions.md#edit-references) in the Docs.
+The function works on its own value, which goes back to the variable when the call
+returns. The argument must be a variable, a field or a cell, and it cannot appear twice in
+one call. The function can read it, so the caller gives it a value first. See
+[Changed parameters](../../manual/language/functions.md#changed-parameters) in the Docs.
+
+## Filling the caller's variable
+
+A function that writes a variable and never reads it first marks the parameter
+`ဒေတာ ထည့်ပေးရန်` ("to put the data in"). The caller can declare the variable with no
+value; after the call it holds what the function put in it. So one call gives back
+two values:
+
+```zaka
+လုပ်ဆောင်ချက် အစွန်းများ သည်
+ကိန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လည်းကောင်း အငယ် ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လည်းကောင်း အကြီး ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အငယ် ကို ကိန်းများ ၏ အကွက် ၀ ဟု ထားမည်။
+အကြီး ကို ကိန်းများ ၏ အကွက် ၀ ဟု ထားမည်။
+ကိန်းများ ၏ အကွက်တိုင်း ကို န အနေဖြင့် ယူ၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အကယ်၍ န သည် အငယ် အောက် ငယ်လျှင် အငယ် ကို န ဟု ထားမည်။
+အကယ်၍ န သည် အကြီး ထက် ကြီးလျှင် အကြီး ကို န ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် နိမ့် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် မြင့် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် အစွန်းများ ကို [၄၊ ၉၊ ၂၊ ၇]၊ နိမ့်၊ မြင့် တို့ဖြင့် လုပ်ဆောင်မည်။
+"{နိမ့်} {မြင့်}" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၂ ၉
+```
+
+Inside the function the parameter starts with no value, so the function must set it
+before it reads it, and on each path before it returns. A path that leaves it unset is
+refused:
+
+```zaka-error ZK0725
+လုပ်ဆောင်ချက် အပေါင်းဖြစ်လျှင်ထား သည်
+တန် ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လဒ် ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အကယ်၍ တန် သည် ၀ ထက် ကြီးလျှင် လဒ် ကို တန် ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0725]: "လဒ်" is marked "ဒေတာ ထည့်ပေးရန်", so the function must set it on each path, but a path reaches this return without setting it
+```
+
+See [Filled parameters](../../manual/language/functions.md#filled-parameters) in the Docs.
 
 ## Matching the call to the function
 
@@ -259,13 +308,13 @@ each must fit its parameter's kind:
 
 ```zaka-error ZK0314
 လုပ်ဆောင်ချက် ပြ သည်
-ကိန်းပြည့် က ကို လက်ခံပြီး
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-က ကို ပြသပါ။
+က ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပြ ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ပြ ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -276,7 +325,7 @@ error[ZK0314]: function "ပြ" takes 1 arguments, 2 given
 ## Hands on
 
 - Write a function that takes a number and prints its times table from 1 to 10.
-- Give `ရေတွက်ပြ` a guard: `အကယ်၍ အရေအတွက် သည် ၁ အောက် ငယ်လျှင် ပြန်ပေးပါ။`, then call it
+- Give `ရေတွက်ပြ` a guard: `အကယ်၍ အရေအတွက် သည် ၁ အောက် ငယ်လျှင် ပြန်ပေးမည်။`, then call it
   with `၀`.
 
 Next: [Results](results.md).

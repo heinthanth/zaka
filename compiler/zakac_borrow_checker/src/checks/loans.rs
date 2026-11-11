@@ -8,7 +8,6 @@ use zakac_ir_builder::ir::Stmt;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
-use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
 use crate::cfg::NodeKind;
@@ -24,10 +23,12 @@ use crate::liveness::node_exprs;
 use crate::liveness::reads;
 use crate::roots::Roots;
 use crate::roots::freed_paths;
+use crate::roots::list_slot;
 use crate::state::State;
+use crate::state::holds_address;
 
 /// Report a free or a resize of the block at `dest` while a borrow of it
-/// is still read later. A slot that holds `ဗလာ` on each path, moved out
+/// is still read later. A slot that holds null on each path, moved out
 /// or never filled, gives nothing back: a resize of it is an allocation.
 ///
 /// # Arguments
@@ -44,7 +45,15 @@ pub(crate) fn check_heap(
     ret_if!(!flow.recording());
     ret_if!(matches!(dest, Dest::Slot(place) if holds_blank(*place, state)));
     let freed = freed_paths(dest, state, &flow.ctx);
-    let loss = Loss::builder().paths(freed).what(what).span(span).build();
+    // The slot freed through, or the list whose cell it is, holds no loan on
+    // itself.
+    let rewritten = match dest
+    {
+        Dest::Slot(place) => Some(*place),
+        Dest::Mem(addr) => list_slot(addr),
+    };
+    #[rustfmt::skip]
+    let loss = Loss::builder().paths(freed).what(what).span(span).maybe_rewritten(rewritten).build();
     check_invalidation(flow, &loss, state);
 }
 
@@ -91,7 +100,7 @@ pub(crate) fn check_losses(flow: &mut Flow, losses: &[Loss], state: &State)
     do_for!(loss in losses, check_invalidation(flow, loss, state));
 }
 
-/// Whether an owner slot holds `ဗလာ` on each path.
+/// Whether an owner slot holds null on each path.
 ///
 /// # Arguments
 ///
@@ -100,7 +109,7 @@ pub(crate) fn check_losses(flow: &mut Flow, losses: &[Loss], state: &State)
 ///
 /// # Returns
 ///
-/// `true` when each path leaves it `ဗလာ` or moved out.
+/// `true` when each path leaves it null or moved out.
 pub(crate) fn holds_blank(place: Place, state: &State) -> bool
 {
     state.ptr(place).is_some_and(|info| info.state.as_read().is_null())
@@ -129,7 +138,8 @@ fn first_hit(flow: &Flow, loss: &Loss, state: &State) -> Option<(Place, Place, S
     let target = target.or_else(|| cell_result_target(flow, loss.span));
     let (set, kept) = target.unzip();
     let kept = kept.unwrap_or_default();
-    live.iter().find_map(|(&borrow, &witness)| {
+    let mut others = live.iter().filter(|(b, _)| loss.rewritten != Some(**b));
+    others.find_map(|(&borrow, &witness)| {
         let roots = &state.ptr(borrow)?.roots;
         let handed = |r: &&Root| {
             set == Some(borrow) && loss.returned.contains(*r) && !kept.contains(*r)
@@ -224,7 +234,7 @@ fn live_after(flow: &Flow, span: Span) -> LiveMap
     let mut found = Vec::new();
     let kind = &flow.cfg.nodes[flow.node as usize].kind;
     do_for!(e in node_exprs(kind), reads(e, &mut found));
-    let borrow = |p: Place| flow.ctx.kind_of(p).is_some_and(DataKind::holds_borrow);
+    let borrow = |p: Place| flow.ctx.kind_of(p).is_some_and(holds_address);
     let later = found.into_iter().filter(|&(p, at)| at.lo >= span.hi && borrow(p));
     let mut seen = LiveMap::new();
     do_for!((place, at) in later, { seen.entry(place).or_insert(at); });

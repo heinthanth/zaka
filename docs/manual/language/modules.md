@@ -1,6 +1,6 @@
 ---
 title: Modules
-description: How a program spans several files - the export mark, the import sentence, what an imported file holds, how names meet across files - and the errors ZK0229 to ZK0232, ZK0322 to ZK0324, and ZK0604.
+description: How a program spans several files - the export mark, the import sentence, what an imported file holds, how names meet across files - and the errors ZK0229 to ZK0232, ZK0322 to ZK0324, ZK0483 and ZK0604.
 ---
 
 # Modules
@@ -13,16 +13,16 @@ shows the same rules with examples.
 ```zaka-file
 // math.zaka
 အများသုံး လုပ်ဆောင်ချက် နှစ်ထပ် သည်
-ကိန်းပြည့် က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-က * က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က * က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-file
 // main.zaka
-"math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းပါ။
-လုပ်ဆောင်ချက် နှစ်ထပ် ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+"math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းမည်။
+လုပ်ဆောင်ချက် နှစ်ထပ် ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ```
 
 `zakac run main.zaka` prints `၄၉`.
@@ -41,13 +41,16 @@ shows the same rules with examples.
 
 ```text
 အများသုံး လုပ်ဆောင်ချက် <name> သည် ...
-အများသုံး ဒေတာအမျိုးအစား <name> တွင် ...
+<name> ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...
+<name> ဟူသော အများသုံး ဒေတာအမျိုးအစားကွဲတွင် ...
+အများသုံး ဒေတာအမျိုးအစား <alias> ကို <kind> ...
 အများသုံး ကိန်းရှင် <name> သည် ...
 အများသုံး ကိန်းသေ <name> သည် ...
 ```
 
 - `အများသုံး` exports a function, a struct, an enumeration, a [kind alias](aliases.md),
-  a variable or a constant at the top level of a file. Other files can then import it. A declaration without the mark is private to
+  a variable or a constant at the top level of a file. On a struct or an enumeration it
+  stands after `ဟူသော`, before `မျှဝေနိုင်သော` or `ပြင်ပမှ လာသော`; on the others it comes first. Other files can then import it. A declaration without the mark is private to
   its file.
 - The mark in another place is ZK0229: before a statement, before a generic loop
   that starts with `ကိန်းရှင်`, or before a declaration inside a block, a loop, a
@@ -63,8 +66,8 @@ shows the same rules with examples.
 ## The import sentence
 
 ```text
-"<file>" မှ <name> ကို ထည့်သွင်းပါ။
-"<file>" မှ <name>၊ <name>၊ ... တို့ကို ထည့်သွင်းပါ။
+"<file>" မှ <name> ကို ထည့်သွင်းမည်။
+"<file>" မှ <name>၊ <name>၊ ... တို့ကို ထည့်သွင်းမည်။
 ```
 
 - The file is a string. Its path is relative to the folder of the importing file, with
@@ -100,17 +103,34 @@ sets it, the others read the new value.
   kind aliases, variables and constants. Each other statement there, such as a print, a
   loop, a call or an assignment, is ZK0323. The file that is run holds statements as
   before.
+- A variable of an imported file needs its value at its declaration, as the next section
+  states (ZK0483).
 - The starting value of a variable or a constant of an imported file must be known at
-  compile time. Known values are literals, `ဗလာ`, constants of known value, the size of a
-  kind, the [address of a function](function-values.md#the-address-of-a-function),
-  operators on known values, and list and struct literals of known values. A
-  variable with no value starts at its default, which is known. Each other starting
-  value is ZK0604; a function call is the usual case, and so is the value of a
+  compile time. Known values are literals, `ကနဦးတန်ဖိုး`, `အလွတ်`, the null address,
+  constants of known value, the size of a
+  kind, a [function named as a value](function-values.md#a-function-as-a-value),
+  operators on known values, and list and struct literals of known values. Each other
+  starting value is ZK0604; a function call is the usual case, and so is the value of a
   `ကိန်းရှင်`, since a variable can change.
 - The check works out the values with each folding on, so the `--fold` option of a build
   does not change which programs compile.
 - The variables of the imported files get their starting values before the statements of
   the file that is run, one file after another in the order the program reads them.
+
+## Globals of a module
+
+A variable at the top level of an imported file, a module, needs its value where it is
+declared: `ကိန်းရှင် ရေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။` there is ZK0483. The file that is
+run can declare a global with no value and set it in its start block, since the check
+follows the start block ([Globals and calls](statements.md#globals-and-calls)); a module has
+no start block, so nothing would set the global before a function of another file reads
+it. `ကနဦးတန်ဖိုး` gives the [initial value](kinds.md#initial-values) where no other value
+fits.
+
+```zaka-file
+// counter.zaka
+အများသုံး ကိန်းရှင် ရေတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။      // not "ကိန်းပြည့် တစ်ခု" alone
+```
 
 ## Names across files
 
@@ -146,6 +166,7 @@ Each import in it is ZK0232, and the program does not go on to the check.
 | ZK0322 | an import names something the file does not export |
 | ZK0323 | an imported file holds a statement |
 | ZK0324 | the kind of an exported declaration names a private struct of its file |
+| ZK0483 | a variable of an imported file declared with no value |
 | ZK0604 | a variable or constant of an imported file starts with a value not known at compile time |
 
 [Module mistakes](../../learn/modules/mistakes.md) shows each one with the files that

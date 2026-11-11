@@ -45,7 +45,7 @@ struct IrTree<'a>
     original: &'a str,
     /// The module, for slot names.
     module: &'a Module,
-    /// The function whose locals the places name, if any.
+    /// The function whose locals the places name, when there is one.
     func: Option<&'a Func>,
 }
 
@@ -314,6 +314,15 @@ impl IrTree<'_>
                 self.heap("resize", dest, Some(count), unit, span)
             }
             Stmt::Free { dest, .. } => self.heap("free", dest, None, None, span),
+            Stmt::CStore { base, offset, value, .. } =>
+            {
+                self.node("c_store", offset.to_string(), span, self.pair(base, value))
+            }
+            Stmt::Leave { value, grant, .. } =>
+            {
+                let word = tern!(*grant, "c_leave", "c_revoke");
+                self.node(word, value.kind.name(), span, vec![self.expr(value)])
+            }
             Stmt::Blit { src, dst, count, unit, overlap, .. } =>
             {
                 let children = [src, dst, count].map(|e| self.expr(e)).into();
@@ -462,10 +471,6 @@ impl IrTree<'_>
             {
                 ("closure", name.clone(), vec![self.expr(record)])
             }
-            ExprNode::Plain { value } =>
-            {
-                ("plain", String::new(), vec![self.expr(value)])
-            }
             ExprNode::Host { func, args } =>
             {
                 let name: &'static str = func.into();
@@ -478,15 +483,23 @@ impl IrTree<'_>
             }
             ExprNode::AddrOf(place) => ("addr", self.place_text(*place), Vec::new()),
             ExprNode::Load { addr } => ("load", String::new(), vec![self.expr(addr)]),
+            ExprNode::CField { base, offset } =>
+            {
+                ("c_field", offset.to_string(), vec![self.expr(base)])
+            }
             ExprNode::Lend { operand } =>
             {
                 ("lend", String::new(), vec![self.expr(operand)])
             }
             ExprNode::Take { addr } => ("take", String::new(), vec![self.expr(addr)]),
-            ExprNode::Own { value } => ("own", String::new(), vec![self.expr(value)]),
-            ExprNode::Dup { value, lent } =>
+            ExprNode::Own { value, .. } =>
             {
-                (tern!(*lent, "dup_lent", "dup"), String::new(), vec![self.expr(value)])
+                ("own", String::new(), vec![self.expr(value)])
+            }
+            ExprNode::Dup { value, lent, deep } =>
+            {
+                let name = tern!(*deep, "dup_deep", tern!(*lent, "dup_lent", "dup"));
+                (name, String::new(), vec![self.expr(value)])
             }
             ExprNode::PtrAdd { base, offset } =>
             {

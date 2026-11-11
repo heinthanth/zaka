@@ -1,9 +1,12 @@
+use std::collections::HashSet;
+
 pub use zakac_ir_builder::value::FALSE_TEXT;
 pub use zakac_ir_builder::value::NULL_TEXT;
 pub use zakac_ir_builder::value::TRUE_TEXT;
 use zakac_ir_builder::value::Value;
 pub use zakac_ir_builder::value::burmese_digits;
 pub use zakac_ir_builder::value::value_text as text;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::enums::EnumKind;
@@ -32,27 +35,124 @@ use crate::trap::TrapKind;
 /// The text, or the trap a read of a cell or field hits.
 pub fn list_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKind>
 {
-    ret_if!(let Some(e) = kind.as_enum(), member_text(mem, addr, e));
-    ret_if!(kind.is_fn(), mem.load(addr, kind).map(|v| fn_value_text(mem, v)));
-    ret_if!(let Some(s) = kind.as_struct(), struct_text(mem, addr, s));
-    ret_if!(kind.is_textual(), text_at(mem, addr));
-    if let Some(cell) =
-        kind.as_slice().map(|s| s.cell).or_else(|| kind.as_seq().map(|s| s.cell))
+    let mut out = String::new();
+    let mut tasks = vec![Task::Show { addr, kind, quoted: false }];
+    let mut inside = HashSet::new();
+    while let Some(task) = tasks.pop()
+    {
+        match task
+        {
+            Task::Piece(piece) => out.push_str(&piece),
+            Task::Leave(base) => _ = inside.remove(&base),
+            Task::Show { addr, kind, quoted } =>
+            {
+                show(mem, (addr, kind, quoted), &mut tasks, &mut inside)?;
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// One step of the walk [`list_text`] makes, kept in a list of its own so a
+/// long chain of objects takes no stack: the tasks run last first.
+enum Task
+{
+    /// Write this text.
+    Piece(String),
+    /// Write a value: a cell or a field is `quoted`, so its text reads back.
+    Show
+    {
+        /// The address of the value.
+        addr: u64,
+        /// Its kind.
+        kind: DataKind,
+        /// Whether text is written in quotes.
+        quoted: bool,
+    },
+    /// The print has left the object whose fields sit at this address.
+    Leave(u64),
+}
+
+/// Write one value: a scalar, text, a member or a function value at once,
+/// and a list, a struct or an object as tasks for its parts, pushed last
+/// first. An object the print is still inside writes `…`.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the value.
+/// * `value` - The address of the value, its kind, and whether text is written
+///   in quotes.
+/// * `tasks` - The tasks still to run, added to.
+/// * `inside` - The objects the print is inside, added to.
+///
+/// # Returns
+///
+/// `Ok`, or the trap a read hits.
+fn show(
+    mem: &Mem, value: (u64, DataKind, bool), tasks: &mut Vec<Task>,
+    inside: &mut HashSet<u64>,
+) -> Result<(), TrapKind>
+{
+    let (addr, kind, quoted) = value;
+    let piece = |t: String| Task::Piece(t);
+    ret_if!(let Some(e) = kind.as_enum(), Ok(tasks.push(piece(member_text(mem, addr, e)?))));
+    if kind.is_fn()
+    {
+        let v = mem.load(addr, kind)?;
+        return Ok(tasks.push(piece(fn_value_text(mem, v))));
+    }
+    if kind.is_text()
+    {
+        let t = text_at(mem, addr)?;
+        return Ok(tasks.push(piece(tern!(quoted, quoted_text(&t), t))));
+    }
+    ret_if!(let Some(s) = kind.as_struct(), struct_tasks(mem, addr, s, tasks));
+    if let Some(s) = kind.as_object()
+    {
+        let (base, _) = slice_parts(mem, addr)?;
+        ret_if!(base == 0, Ok(tasks.push(piece(NULL_TEXT.to_string()))));
+        ret_if!(!inside.insert(base), Ok(tasks.push(piece("…".to_string()))));
+        tasks.push(Task::Leave(base));
+        return struct_tasks(mem, base, s, tasks);
+    }
+    if let Some(cell) = kind.as_seq().map(|s| s.cell)
     {
         let (base, count) = slice_parts(mem, addr)?;
-        return cells_text(mem, base, cell, count);
+        return Ok(cell_tasks(mem, base, cell, count, tasks));
     }
     let Some(list) = kind.as_list()
     else
     {
-        return mem.load(addr, kind).map(text);
+        return Ok(tasks.push(piece(mem.load(addr, kind).map(text)?)));
     };
-    cells_text(mem, addr, list.cell, u64::from(list.len))
+    Ok(cell_tasks(mem, addr, list.cell, u64::from(list.len), tasks))
+}
+
+/// Push the tasks of a run of cells, between `[` and `]` and joined with
+/// `၊ `, last first.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the cells.
+/// * `addr` - The address of the first cell.
+/// * `cell` - The kind of each cell.
+/// * `count` - The number of cells.
+/// * `tasks` - The tasks, added to.
+fn cell_tasks(mem: &Mem, addr: u64, cell: DataKind, count: u64, tasks: &mut Vec<Task>)
+{
+    let stride = u64::from(cell.size(mem.platform()));
+    tasks.push(Task::Piece("]".to_string()));
+    for i in (0..count).rev()
+    {
+        tasks.push(Task::Show { addr: addr + i * stride, kind: cell, quoted: true });
+        do_if!(i > 0, tasks.push(Task::Piece("၊ ".to_string())));
+    }
+    tasks.push(Task::Piece("[".to_string()));
 }
 
 /// The text a print writes for a value: a member of an enumeration as
 /// `<stem>များထဲမှ <member>` and a function value as
-/// `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`, the forms that read back; a list, a struct or
+/// `<name> ဟူသော လုပ်ဆောင်ချက်`, the forms that read back; a list, a struct or
 /// text as [`list_text`] writes it; each other value as [`text`] writes it.
 ///
 /// # Arguments
@@ -85,7 +185,7 @@ pub fn shown_text(mem: &Mem, v: Value, kind: DataKind) -> Result<String, TrapKin
 }
 
 /// The text of a function value: the function it holds, in the form that
-/// reads back, or `ဗလာ`.
+/// reads back, or the zero word.
 ///
 /// # Arguments
 ///
@@ -189,28 +289,6 @@ fn items_held(
     Ok(true)
 }
 
-/// The text of a run of cells, between `[` and `]` and joined with `၊ `.
-///
-/// # Arguments
-///
-/// * `mem` - The RAM that holds the cells.
-/// * `addr` - The address of the first cell.
-/// * `cell` - The kind of each cell.
-/// * `count` - The number of cells.
-///
-/// # Returns
-///
-/// The text, or the trap a read of a cell hits.
-fn cells_text(
-    mem: &Mem, addr: u64, cell: DataKind, count: u64,
-) -> Result<String, TrapKind>
-{
-    let stride = u64::from(cell.size(mem.platform()));
-    let one = |i: u64| nested_text(mem, addr + i * stride, cell);
-    let cells: Vec<String> = (0..count).map(one).collect::<Result<_, _>>()?;
-    Ok(format!("[{}]", cells.join("၊ ")))
-}
-
 /// The text of text, owned or a view: its u8s read as UTF-8, a broken
 /// sequence as `U+FFFD`.
 ///
@@ -228,24 +306,6 @@ pub fn text_at(mem: &Mem, addr: u64) -> Result<String, TrapKind>
     Ok(String::from_utf8_lossy(&mem.octets(base, count)?).into_owned())
 }
 
-/// The text of a cell or a field: as [`list_text`] writes it, with text in
-/// quotes, so the whole reads back as notation.
-///
-/// # Arguments
-///
-/// * `mem` - The RAM that holds the value.
-/// * `addr` - The address of the value.
-/// * `kind` - Its kind.
-///
-/// # Returns
-///
-/// The text, or the trap a read hits.
-fn nested_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKind>
-{
-    let text = list_text(mem, addr, kind)?;
-    Ok(tern!(kind.is_textual(), quoted(&text), text))
-}
-
 /// Text in double quotes as a literal writes it: a backslash, a quote and
 /// each brace escaped.
 ///
@@ -256,7 +316,7 @@ fn nested_text(mem: &Mem, addr: u64, kind: DataKind) -> Result<String, TrapKind>
 /// # Returns
 ///
 /// The literal.
-fn quoted(text: &str) -> String
+fn quoted_text(text: &str) -> String
 {
     let mut out = String::with_capacity(text.len() + 2);
     out.push('"');
@@ -295,60 +355,69 @@ pub fn slice_parts(mem: &Mem, addr: u64) -> Result<(u64, u64), TrapKind>
     Ok((base, count))
 }
 
-/// The text of a result of a function that can fail: `ရလဒ်ကောင်း(<value>)`
-/// for a good result and `အမှားအယွင်း(<value>)` for an error value; a side
-/// with no value writes `အောင်မြင်သည့်သတင်း` or `မအောင်မြင်သည့်သတင်း`.
-///
-/// # Arguments
-///
-/// * `mem` - The RAM that holds the result.
-/// * `addr` - The address of the result.
-/// * `s` - The struct kind of the result.
-///
-/// # Returns
-///
-/// The text, or the trap a read of a part hits.
-fn fallible_text(mem: &Mem, addr: u64, s: &StructKind) -> Result<String, TrapKind>
-{
-    let platform = mem.platform();
-    let part = |name: &str| {
-        s.field(name).map(|(at, kind)| (addr + u64::from(s.offset(at, platform)), kind))
-    };
-    let (tag_at, tag_kind) =
-        part("tag").ok_or(TrapKind::BadValue { addr, kind: s.name.clone() })?;
-    // Tag 0, the blank of a result, is a failure.
-    let failed = mem.load(tag_at, tag_kind)? == Value::default_of(tag_kind);
-    let (word, shown) =
-        tern!(failed, ("အမှားအယွင်း", part("err")), ("ရလဒ်ကောင်း", part("ok")));
-    let bare = tern!(failed, "မအောင်မြင်သည့်သတင်း", "အောင်မြင်သည့်သတင်း");
-    let Some((at, kind)) = shown
-    else
-    {
-        return Ok(bare.to_string());
-    };
-    Ok(format!("{word}({})", nested_text(mem, at, kind)?))
-}
-
-/// The text of a struct: `<struct>(name: value၊ ...)`.
+/// Push the tasks of a struct, last first: `<struct>(name: value၊ ...)`; a
+/// result writes `ရလဒ်ကောင်း(<value>)` or `အမှားအယွင်း(<value>)`, and a side
+/// with no value writes `အောင်မြင်သည့်သတင်း` or `မအောင်မြင်သည့်သတင်း`. An optional
+/// writes `ဒေတာ(<value>)`, or `အလွတ်` when it holds no data.
 ///
 /// # Arguments
 ///
 /// * `mem` - The RAM that holds the struct.
 /// * `addr` - The address of the struct.
 /// * `s` - The struct kind.
+/// * `tasks` - The tasks, added to.
 ///
 /// # Returns
 ///
-/// The text, or the trap a read of a field hits.
-fn struct_text(mem: &Mem, addr: u64, s: &StructKind) -> Result<String, TrapKind>
+/// `Ok`, or the trap a read of the tag of a result hits.
+fn struct_tasks(
+    mem: &Mem, addr: u64, s: &StructKind, tasks: &mut Vec<Task>,
+) -> Result<(), TrapKind>
 {
-    ret_if!(s.name == FALLIBLE, fallible_text(mem, addr, s));
     let platform = mem.platform();
-    let field = |(at, (name, kind)): (usize, &(String, DataKind))| {
-        let offset = u64::from(s.offset(at, platform));
-        Ok(format!("{name}: {}", nested_text(mem, addr + offset, *kind)?))
-    };
-    let fields: Vec<String> =
-        s.fields().iter().enumerate().map(field).collect::<Result<_, _>>()?;
-    Ok(format!("{}({})", s.name, fields.join("၊ ")))
+    let at = |i: usize| addr + u64::from(s.offset(i, platform));
+    if s.name == FALLIBLE
+    {
+        let part = |name: &str| s.field(name).map(|(i, kind)| (at(i), kind));
+        let (tag_at, tag_kind) =
+            part("tag").ok_or(TrapKind::BadValue { addr, kind: s.name.clone() })?;
+        // Tag 0, the blank of a result, is a failure.
+        let failed = mem.load(tag_at, tag_kind)? == Value::default_of(tag_kind);
+        let some = part("some");
+        let (word, shown) = match (failed, some)
+        {
+            (true, None) => ("အမှားအယွင်း", part("err")),
+            (false, None) => ("ရလဒ်ကောင်း", part("ok")),
+            (true, Some(_)) => ("", None),
+            (false, Some(_)) => ("ဒေတာ", some),
+        };
+        let bare = match (failed, some.is_some())
+        {
+            (true, true) => "အလွတ်",
+            (true, false) => "မအောင်မြင်သည့်သတင်း",
+            (false, _) => "အောင်မြင်သည့်သတင်း",
+        };
+        let Some((addr, kind)) = shown
+        else
+        {
+            tasks.push(Task::Piece(bare.to_string()));
+            return Ok(());
+        };
+        tasks.push(Task::Piece(")".to_string()));
+        tasks.push(Task::Show { addr, kind, quoted: true });
+        tasks.push(Task::Piece(format!("{word}(")));
+        return Ok(());
+    }
+    tasks.push(Task::Piece(")".to_string()));
+    for (i, (name, kind)) in s.fields().iter().enumerate().rev()
+    {
+        tasks.push(Task::Show { addr: at(i), kind: *kind, quoted: true });
+        tasks.push(Task::Piece(tern!(
+            i > 0,
+            format!("၊ {name}: "),
+            format!("{name}: ")
+        )));
+    }
+    tasks.push(Task::Piece(format!("{}(", s.name)));
+    Ok(())
 }

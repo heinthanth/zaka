@@ -71,7 +71,7 @@ fn errors_leave_no_module_and_keep_relative_spans()
     let mut sm = SourceMap::new();
     sm.new_source_file(FileName::Custom("pad".into()), "pad".into());
     let file =
-        sm.new_source_file(FileName::Custom("bad.zaka".into()), "က ကို ပြသပါ။".into());
+        sm.new_source_file(FileName::Custom("bad.zaka".into()), "က ကို ပြသမည်။".into());
     let options = SemcheckOptions::default();
     let folding = FoldOptions::default();
     let artifact = CodegenArtifact::from_source(

@@ -3,9 +3,16 @@
 // open one.
 
 .heap-view
+  flex: 1 1 auto
+  min-height: 0
   display: flex
   flex-direction: column
   gap: 10px
+
+  // The counts, the legend and the map keep their height; the list of blocks
+  // takes the rest.
+  > :not(:last-child)
+    flex: none
 
 // The counts, with the switch that shows the gaps on the right.
 .heap-stats

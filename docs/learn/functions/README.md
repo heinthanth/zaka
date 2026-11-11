@@ -14,14 +14,14 @@ lines do).
 // Declare a function named နှုတ်ဆက် (greet)
 လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"မင်္ဂလာပါ" ဟု ပြသပါ။
-"နေကောင်းလား" ဟု ပြသပါ။
+"မင်္ဂလာပါ" ဟု ပြသမည်။
+"နေကောင်းလား" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 // Call it twice
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -58,10 +58,10 @@ one line.
 ## Calling
 
 ```
-လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်မည်။
 ```
 
-"Please run the function *name*." `လုပ်ဆောင်ပါ` means "please perform".
+"Please run the function *name*." `လုပ်ဆောင်မည်` means "please perform".
 
 A shorter call names the function and ends with `မည်` ("will"): `နှုတ်ဆက် မည်။` runs the
 same call. Keep a space between the name and `မည်`: `နှုတ်ဆက်မည်` reads as one name.
@@ -78,13 +78,13 @@ same call. Keep a space between the name and `မည်`: `နှုတ်ဆက
 // draw a line
 လုပ်ဆောင်ချက် မျဉ်းဆွဲ သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"--------" ဟု ပြသပါ။
+"--------" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် မျဉ်းဆွဲ ကို လုပ်ဆောင်ပါ။        // called before it is declared: fine
-"ခေါင်းစဉ်" ဟု ပြသပါ။
-လုပ်ဆောင်ချက် မျဉ်းဆွဲ ကို လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် မျဉ်းဆွဲ ကို လုပ်ဆောင်မည်။        // called before it is declared: fine
+"ခေါင်းစဉ်" ဟု ပြသမည်။
+လုပ်ဆောင်ချက် မျဉ်းဆွဲ ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -97,21 +97,20 @@ same call. Keep a space between the name and `မည်`: `နှုတ်ဆက
 ## A function inside a function
 
 A function can be declared inside the start block or inside another function. It can use
-the variables declared above it in the block around it, when it lists them before
-`လက်ခံပြီး`. With `ငှား၍` ("borrowing") it reads and changes those variables themselves,
-not copies of them; then each item of the list ends in `ကိုလည်းကောင်း` ("and also"):
+the variables declared above it in the block around it, as in JavaScript or Python: it
+reads and changes those variables themselves, not copies of them.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စုစုပေါင်း သည် ၀ ဖြစ်ပါစေ။
-// a function inside the start block: it borrows စုစုပေါင်း, to read and change it
-လုပ်ဆောင်ချက် ပေါင်းထည့် သည် ကိန်းပြည့် က ကိုလည်းကောင်း၊ စုစုပေါင်း ကို ငှား၍လည်းကောင်း လက်ခံပြီး
+// a function inside the start block: it changes စုစုပေါင်း
+လုပ်ဆောင်ချက် ပေါင်းထည့် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-စုစုပေါင်း ကို စုစုပေါင်း + က ဟု ထားပါ။
+စုစုပေါင်း ကို စုစုပေါင်း + က ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၅ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၇ တို့ဖြင့် လုပ်ဆောင်ပါ။
-စုစုပေါင်း ကို ပြသပါ။
+လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၅ တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၇ တို့ဖြင့် လုပ်ဆောင်မည်။
+စုစုပေါင်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -119,29 +118,27 @@ not copies of them; then each item of the list ends in `ကိုလည်းက
 ၁၂
 ```
 
-`ပေါင်းထည့်` can be called from its declaration to the end of the block that holds it. A
-function that keeps copies of its own, and so can be given back, is in
-[Functions as values](../pointers/functions.md#a-function-that-keeps-values). The start
-block itself, and a function that comes from outside, remain at the top level. The rules in
-full are in
-[Nested functions and closures](../../manual/language/function-values.md#nested-functions-and-closures).
+`ပေါင်းထည့်` can be called from its declaration to the end of the block that holds it.
+The start block itself, and a function that comes from outside, remain at the top level.
+A function that uses the variables around it is a *closure*, and it can even leave its
+block: see [Closures](../function-values/closures.md).
 
 ## Leaving before the end
 
-`ပြန်ပေးပါ။` ("please return") leaves the function at once. The program goes back to
+`ပြန်ပေးမည်။` ("will return") leaves the function at once. The program goes back to
 where the function was called:
 
 ```zaka
 လုပ်ဆောင်ချက် စမ်း သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"ရောက်သည်" ဟု ပြသပါ။
-ပြန်ပေးပါ။
-"မရောက်ပါ" ဟု ပြသပါ။            // never runs
+"ရောက်သည်" ဟု ပြသမည်။
+ပြန်ပေးမည်။
+"မရောက်ပါ" ဟု ပြသမည်။            // never runs
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် စမ်း ကို လုပ်ဆောင်ပါ။
-"ပြီး" ဟု ပြသပါ။
+လုပ်ဆောင်ချက် စမ်း ကို လုပ်ဆောင်မည်။
+"ပြီး" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

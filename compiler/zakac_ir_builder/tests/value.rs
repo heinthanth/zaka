@@ -157,10 +157,10 @@ fn floats_round_at_their_own_width()
 fn f128_literals_keep_more_than_53_bits()
 {
     let exact = Value::float("9007199254740993", 128).unwrap();
-    let lossy = Value::float("9007199254740993", 64).unwrap();
+    let inexact = Value::float("9007199254740993", 64).unwrap();
     let back = convert(exact, kind("u64"), P).unwrap();
     assert_eq!(back, v("9007199254740993:u64"));
-    assert_eq!(convert(lossy, kind("u64"), P).unwrap(), v("9007199254740992:u64"));
+    assert_eq!(convert(inexact, kind("u64"), P).unwrap(), v("9007199254740992:u64"));
 }
 
 #[test]

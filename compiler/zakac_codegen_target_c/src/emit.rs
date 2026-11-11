@@ -25,6 +25,13 @@ use zakac_semcheck::value::TRUE_TEXT;
 use zakac_span::source_file::SourceFile;
 use zakac_span::span::Span;
 
+use crate::callbacks::CB_SOURCE;
+use crate::callbacks::as_is;
+use crate::callbacks::bridge_kinds;
+use crate::callbacks::cb_source;
+use crate::callbacks::fits;
+use crate::callbacks::shape_name;
+use crate::descriptors::DATA_TEXT;
 use crate::descriptors::Descriptors;
 use crate::descriptors::FAULT_BARE;
 use crate::descriptors::FAULT_TEXT;
@@ -32,6 +39,7 @@ use crate::descriptors::FN_LEAD;
 use crate::descriptors::FN_TAIL;
 use crate::descriptors::GOOD_BARE;
 use crate::descriptors::GOOD_TEXT;
+use crate::descriptors::NO_DATA_TEXT;
 use crate::ffi::FFI_SOURCE;
 use crate::ffi::FfiCall;
 use crate::ffi::ffi_source;
@@ -103,9 +111,21 @@ pub fn emit(
         units[unit_of(f.span.lo)].push_str(&text);
     }
     let main = FnGen::new(&mut shared, None).main();
+    // A closure can go to a C function that takes a function value.
+    let fn_params = module.foreign.iter().flat_map(|f| f.params.iter().copied());
+    let fn_params: Vec<DataKind> = fn_params.filter(|k| k.is_fn()).collect();
+    // So can a function whose parameters do not cross as C passes them, which C
+    // calls through a bridge.
+    let platform = options.platform_bits;
+    let bridged = |k: &DataKind| {
+        shared.made_closure || k.as_fn().is_some_and(|f| !as_is(f, platform))
+    };
+    let bridged: Vec<DataKind> = fn_params.into_iter().filter(bridged).collect();
+    do_for!(k in bridged, _ = shared.cb_shape(k));
     let header = shared.header();
     let kinds = shared.kinds_source();
-    let ffi = ffi_source(&module.foreign, &shared.ffi_calls, options.platform_bits);
+    let ffi =
+        ffi_source(&module.foreign, &shared.ffi_calls, &shared.cb_kinds, platform);
     ret_if!(!shared.diags.is_empty(), Err(NotBuilt::Kinds(shared.diags)));
     let missing =
         shared.missing.map(|what| NotBuilt::Missing(Error::NotForTargetC { what }));
@@ -124,6 +144,11 @@ pub fn emit(
     do_if!(
         !module.foreign.is_empty(),
         out.push(CFile::builder().name(FFI_SOURCE).text(ffi).build())
+    );
+    let cb = cb_source(&shared.cb_kinds, platform, &mut shared.descr);
+    do_if!(
+        !shared.cb_kinds.is_empty(),
+        out.push(CFile::builder().name(CB_SOURCE).text(cb).build())
     );
     Ok(out)
 }
@@ -251,6 +276,12 @@ pub(crate) struct Shared<'m>
     /// Each C call shape met so far; its index names its wrapper.
     #[builder(default)]
     pub(crate) ffi_calls: Vec<FfiCall>,
+    /// Whether the program makes a closure.
+    #[builder(default)]
+    pub(crate) made_closure: bool,
+    /// Each function kind C can get as a closure; its index names its shape.
+    #[builder(default)]
+    pub(crate) cb_kinds: Vec<DataKind>,
 }
 
 impl Shared<'_>
@@ -261,6 +292,28 @@ impl Shared<'_>
     ///
     /// The bit count.
     pub(crate) fn platform(&self) -> u16 { self.options.platform_bits }
+
+    /// The index of the shape of a function kind C can get as a closure,
+    /// noted on its first use.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The function kind.
+    ///
+    /// # Returns
+    ///
+    /// The index, or `None` for a kind whose closure cannot go to C.
+    pub(crate) fn cb_shape(&mut self, kind: DataKind) -> Option<usize>
+    {
+        let platform = self.platform();
+        let f = kind.as_fn().filter(|f| fits(f, platform))?;
+        let at = self.cb_kinds.iter().position(|k| *k == kind);
+        do_if!(at.is_none(), self.cb_kinds.push(kind));
+        // The descriptors the bridge names are made now, before the file of
+        // descriptors is written.
+        bridge_kinds(f, platform).into_iter().for_each(|k| _ = self.descr.of(k));
+        Some(at.unwrap_or(self.cb_kinds.len() - 1))
+    }
 
     /// Note a construct the C target cannot build at present; the first one
     /// is reported.
@@ -484,6 +537,8 @@ impl Shared<'_>
             );
         }
         out.push_str(&self.descr.declarations());
+        let shapes = (0..self.cb_kinds.len()).map(shape_name);
+        shapes.for_each(|s| _ = writeln!(out, "extern const zk_cb_shape {s};"));
         if self.wide
         {
             let error = c_string(&t!("target_c.no_int128"));
@@ -516,6 +571,8 @@ impl Shared<'_>
             ("zk_fault_text", FAULT_TEXT),
             ("zk_good_bare", GOOD_BARE),
             ("zk_fault_bare", FAULT_BARE),
+            ("zk_data_text", DATA_TEXT),
+            ("zk_no_data_text", NO_DATA_TEXT),
             ("zk_fn_lead", FN_LEAD),
             ("zk_fn_tail", FN_TAIL),
         ];
@@ -577,8 +634,10 @@ fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_CHAR_OUT_OF_RANGE", t!("target_c.trap.char_out_of_range")),
         ("ZK_TRAP_END_BEFORE_START", t!("target_c.trap.end_before_start")),
         ("ZK_TRAP_NULL_CALL", t!("target_c.trap.null_call")),
+        ("ZK_TRAP_NULL_OBJECT", t!("target_c.trap.null_object")),
+        ("ZK_TRAP_CLOSED_HANDLE", t!("target_c.trap.closed_handle")),
+        ("ZK_TRAP_NULL_TEXT", t!("target_c.trap.null_text")),
         ("ZK_TRAP_CLOSURE_ESCAPE", t!("target_c.trap.closure_escape")),
-        ("ZK_TRAP_CLOSURE_OWNER", t!("target_c.trap.closure_owner")),
         ("ZK_TRAP_NO_CELL_TO_REMOVE", t!("target_c.trap.no_cell_to_remove")),
         ("ZK_TRAP_NO_CHAR_TO_REMOVE", t!("target_c.trap.no_char_to_remove")),
         ("ZK_TRAP_NO_PLACE_TO_INSERT", t!("target_c.trap.no_place_to_insert")),
@@ -588,6 +647,7 @@ fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_NOT_GOOD", t!("target_c.trap.not_good")),
         ("ZK_TRAP_NOT_GOOD_BARE", t!("target_c.trap.not_good_bare")),
         ("ZK_TRAP_NOT_FAULT", t!("target_c.trap.not_fault")),
+        ("ZK_TRAP_NO_DATA", t!("target_c.trap.no_data")),
         ("ZK_TRAP_NULL_DEREF", t!("target_c.trap.null_deref")),
         ("ZK_TRAP_OUT_OF_MEM", t!("target_c.trap.out_of_mem")),
         ("ZK_TRAP_OVERLAP", t!("target_c.trap.overlap")),

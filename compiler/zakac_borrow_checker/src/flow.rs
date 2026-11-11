@@ -38,7 +38,6 @@ use crate::checks::bounds::check_ptr_sub;
 use crate::checks::calls::all_given_back;
 use crate::checks::calls::check_call;
 use crate::checks::calls::check_closure_args;
-use crate::checks::calls::check_owner_dup;
 use crate::checks::calls::given_back;
 use crate::checks::calls::lift_reads;
 use crate::checks::calls::note_read;
@@ -58,7 +57,6 @@ use crate::checks::loans::holds_blank;
 use crate::checks::moves::check_loop_moves;
 use crate::checks::moves::check_read;
 use crate::checks::moves::run_take;
-use crate::checks::nullness::check_callee;
 use crate::checks::nullness::check_deref;
 use crate::checks::report;
 use crate::checks::static_rules::check_free_dest;
@@ -84,6 +82,7 @@ use crate::options::BorrowCheckOptions;
 use crate::options::OverflowMode;
 use crate::roots::RootCtx;
 use crate::roots::Roots;
+use crate::roots::cell_blocks;
 use crate::roots::filled_path;
 use crate::roots::freed_paths;
 use crate::roots::known_cells;
@@ -96,6 +95,7 @@ use crate::state::OwnerState;
 use crate::state::PtrInfo;
 use crate::state::SlotState;
 use crate::state::State;
+use crate::state::holds_address;
 use crate::values::value_callees;
 use crate::walk::dest_expr;
 use crate::walk::each_expr;
@@ -121,6 +121,9 @@ pub(crate) struct Loss
     /// or a borrow the rest of the node holds across the call: reported
     /// when no loan of the routine is: one report per call is enough.
     pub(crate) clash: Option<Diagnostic>,
+    /// The slot a free or a resize goes through: the operation writes it
+    /// afresh, so it holds no loan on the block it gave back.
+    pub(crate) rewritten: Option<Place>,
 }
 
 /// What the flow of one routine found.
@@ -338,7 +341,7 @@ fn owned_lists(addr: &Expr) -> Vec<Dest>
 {
     let mut found = Vec::new();
     let mut note = |e: &Expr| {
-        let ExprNode::Own { value } = &e.node
+        let ExprNode::Own { value, .. } = &e.node
         else
         {
             return;
@@ -572,7 +575,7 @@ impl<'m> Flow<'m>
             NodeKind::Start => vec![state],
             NodeKind::End =>
             {
-                check_exit(self, self.routine.span.shrink_to_hi(), &state);
+                check_exit(self, self.routine.span.shrink_to_hi(), &state, None);
                 self.leave(&state);
                 vec![state]
             }
@@ -675,12 +678,14 @@ impl<'m> Flow<'m>
         {
             Stmt::Set { place, value, span } =>
             {
-                check_global_set(self, *place, value, *span);
+                check_global_set(self, *place, value, *span, state);
                 check_result_set(self, *place, value, *span, state);
                 // The closures the slot holds from here on are those of the
                 // value, in place of what it held before.
                 let held = self.closures.held_in(value, state);
-                let v = self.moved(value, state);
+                let v = self.value(value, state);
+                let v = copied_list(self, value, v);
+                escape_dup(value, state);
                 check_overwrite(self, *place, *span, state);
                 self.assign(*place, v, state);
                 state.closures.remove(place);
@@ -710,18 +715,18 @@ impl<'m> Flow<'m>
                 {
                     check_heap(self, &list, Invalidation::Edited, *span, state);
                 }
-                check_stored_borrow(self, addr, value, *span);
+                check_stored_borrow(self, addr, value, *span, state);
                 let at = self.value(addr, state);
                 self.deref(addr, state);
                 check_offset(self, &at, addr.span, true);
-                let stored = self.moved(value, state);
+                let stored = self.value(value, state);
+                escape_dup(value, state);
                 self.havoc_through(addr, state);
                 store_into_cell(self, addr, &stored, state);
             }
             Stmt::Return { value, span } => self.ret(value.as_ref(), *span, state),
             Stmt::Alloc { dest, count, unit, span } =>
             {
-                check_free_dest(self, dest, *span);
                 let block = self.new_block(dest, count, *unit, state);
                 do_if!(let Dest::Slot(place) = dest, {
                     check_overwrite(self, *place, *span, state);
@@ -761,7 +766,10 @@ impl<'m> Flow<'m>
             Stmt::AddCell { dest, value, span, .. } =>
             {
                 self.edit_list(dest, *span, state);
-                let added = self.moved(value, state);
+                let added = self.value(value, state);
+                // A block added to a list goes where the list keeps it, as a
+                // store into a cell does.
+                escape_dup(value, state);
                 add_owner(self, dest, &added, state);
             }
             Stmt::RemoveCell { dest, span, .. } =>
@@ -797,7 +805,10 @@ impl<'m> Flow<'m>
             {
                 self.value(index, state);
                 self.edit_list(dest, *span, state);
-                let added = self.moved(value, state);
+                let added = self.value(value, state);
+                // A block added to a list goes where the list keeps it, as a
+                // store into a cell does.
+                escape_dup(value, state);
                 add_owner(self, dest, &added, state);
             }
             Stmt::Drop { dest, kind, span } =>
@@ -830,13 +841,18 @@ impl<'m> Flow<'m>
         {
             check_heap(self, list, Invalidation::Edited, span, state);
         }
+        // A cell added or removed changes the count of the list, so no cell
+        // number remains known below it: the list itself, or each list an
+        // address can reach.
         let Dest::Mem(addr) = dest
         else
         {
+            do_if!(let Dest::Slot(p) = dest, state.below.retain(|(_, s)| s != p));
             let info = tern!(let Dest::Slot(p) = dest, state.ptr_mut(*p), None);
             do_if!(let Some(info) = info, info.state = OwnerState::HELD);
             return;
         };
+        state.below.clear();
         let at = self.value(addr, state);
         self.deref(addr, state);
         check_offset(self, &at, addr.span, true);
@@ -855,15 +871,17 @@ impl<'m> Flow<'m>
     {
         do_if!(let Some(v) = value, {
             check_return(self, v, span, state);
-            self.moved(v, state);
+            self.value(v, state);
         });
-        check_exit(self, return_span(self, value, span), state);
+        let returned =
+            value.and_then(|v| tern!(let ExprNode::Read(p) = v.node, Some(p), None));
+        check_exit(self, return_span(self, value, span), state, returned);
         self.leave(state);
     }
 
     /// Keep, at an exit of the routine, the paths a free left without a
     /// block: a result path among them is no renewal, and a caller finds
-    /// the owner there `ဗလာ`.
+    /// the owner there null.
     ///
     /// # Arguments
     ///
@@ -892,7 +910,7 @@ impl<'m> Flow<'m>
         &mut self, dest: &Dest, what: Invalidation, span: Span, state: &State,
     ) -> bool
     {
-        ret_false!(check_free_dest(self, dest, span));
+        ret_false!(check_free_dest(self, dest, span, state));
         check_heap(self, dest, what, span, state);
         true
     }
@@ -1113,7 +1131,7 @@ impl<'m> Flow<'m>
         {
             return;
         };
-        let roots = state.ptr(place).filter(|_| kind.holds_borrow());
+        let roots = state.ptr(place).filter(|_| holds_address(kind));
         let roots = roots.map(|info| info.roots.clone()).unwrap_or_default();
         state.set(place, SlotState::unknown(kind, roots));
     }
@@ -1135,7 +1153,9 @@ impl<'m> Flow<'m>
         let owner = kind.is_owner_ptr();
         let fact = match v
         {
-            SlotState::Ptr(info) if owner =>
+            // A pointer into no known place, such as a new block, is a block
+            // of its own; one into a known place keeps its roots.
+            SlotState::Ptr(info) if owner && info.roots.is_empty() =>
             {
                 let offset = Interval::point(0);
                 SlotState::Ptr(PtrInfo { roots: Roots::new(), offset, ..info })
@@ -1165,34 +1185,6 @@ impl<'m> Flow<'m>
             SlotState::Int(Interval::TOP),
             fact
         )
-    }
-
-    /// The value of an expression headed for a place that takes
-    /// ownership: a slot read of a move kind there moves out of the slot.
-    ///
-    /// # Arguments
-    ///
-    /// * `e` - The expression.
-    /// * `state` - The facts, changed in place.
-    ///
-    /// # Returns
-    ///
-    /// The value.
-    fn moved(&mut self, e: &Expr, state: &mut State) -> SlotState
-    {
-        let ExprNode::Read(place) = e.node
-        else
-        {
-            return self.value(e, state);
-        };
-        ret_if!(
-            !e.kind.is_move_kind() || self.ctx.is_const(place),
-            self.value(e, state)
-        );
-        check_read(self, place, e.span, state, false);
-        let value = held_value(place, e.kind, state);
-        leave_moved(place, e.kind, state);
-        value
     }
 
     /// The value of an expression, after the moves and the calls in it.
@@ -1247,17 +1239,21 @@ impl<'m> Flow<'m>
                 self.load(e, addr, &at, state)
             }
             ExprNode::Take { addr } => self.take(e, addr, state),
-            ExprNode::Dup { value, lent } =>
+            ExprNode::Dup { value, .. } =>
             {
                 // A duplicate holds blocks of its own, so it points at
                 // nothing the value read points at.
-                do_if!(!*lent, check_owner_dup(self, e.span, value, state));
                 self.value(value, state);
                 SlotState::unknown(e.kind, Roots::new())
             }
             ExprNode::Call { func, args, .. } =>
             {
                 self.call(&[*func], args, e.span, state);
+                // A result marked `အပိုင်အနေဖြင့်` is a block the caller now
+                // owns, as a block it made itself.
+                let owned =
+                    self.module.funcs.get(*func as usize).is_some_and(|f| f.owned_ret);
+                ret_if!(owned && e.kind.is_ptr(), SlotState::Ptr(owned_result()));
                 SlotState::unknown(e.kind, Roots::new())
             }
             ExprNode::CallValue { callee, args } =>
@@ -1275,7 +1271,6 @@ impl<'m> Flow<'m>
                 do_if!(let (Some(p), Some(k)) = (slot, kind), leave_moved(p, k, state));
                 fn_const(e.kind, Value::Ptr(1))
             }
-            ExprNode::Plain { value } => self.value(value, state),
             ExprNode::Host { args, .. } | ExprNode::Foreign { args, .. } =>
             {
                 // The host reads each argument through its address, and C takes
@@ -1287,7 +1282,7 @@ impl<'m> Flow<'m>
             ExprNode::List(cells) =>
             {
                 let values: Vec<SlotState> =
-                    cells.iter().map(|c| self.moved(c, state)).collect();
+                    cells.iter().map(|c| self.value(c, state)).collect();
                 list_value(e.kind, &values)
             }
             ExprNode::PtrAdd { base, offset } =>
@@ -1296,7 +1291,7 @@ impl<'m> Flow<'m>
                 let o = int_of(&self.value(offset, state));
                 let moved = shifted(b, o);
                 check_offset(self, &moved, e.span, false);
-                moved
+                derived(moved)
             }
             ExprNode::PtrSub { lhs, rhs } =>
             {
@@ -1329,7 +1324,7 @@ impl<'m> Flow<'m>
             ExprNode::Lend { operand } | ExprNode::Convert { operand, .. } =>
             {
                 let v = self.value(operand, state);
-                converted(e, operand.kind, v, self.platform)
+                derived(converted(e, operand.kind, v, self.platform))
             }
             _ => self.operands_value(e, state),
         }
@@ -1469,9 +1464,9 @@ impl<'m> Flow<'m>
         do_if!(self.recording(), self.doubts.push(span));
     }
 
-    /// Run a load of a list cell or a struct field tested against `ဗလာ`.
+    /// Run a load of a list cell or a struct field tested against null.
     /// The slot is read without the moved-out check, as the test does not
-    /// use the value: the cells of a list moved out read as `ဗလာ`, as do the
+    /// use the value: the cells of a list moved out read as null, as do the
     /// fields of a struct.
     ///
     /// # Arguments
@@ -1506,7 +1501,7 @@ impl<'m> Flow<'m>
     }
 
     /// The value of a comparison. A test of a slot, or of a cell of a list
-    /// slot, against `ဗလာ` reads the slot without using its value, so it
+    /// slot, against null reads the slot without using its value, so it
     /// is no use of a moved-out owner.
     ///
     /// # Arguments
@@ -1665,7 +1660,7 @@ impl<'m> Flow<'m>
             args.iter().map(|a| value_roots(a, state, &self.ctx)).collect();
         let mut taken = moved_slots(args);
         taken.retain(|p| !self.ctx.is_const(*p));
-        do_for!(a in args, { self.moved(a, state); });
+        do_for!(a in args, { self.value(a, state); });
         self.effects(funcs, &roots, args, &taken, span, state);
         self.closure_args(args, &roots, span, state);
     }
@@ -1841,7 +1836,6 @@ impl<'m> Flow<'m>
     )
     {
         self.value(callee, state);
-        check_callee(self, callee, state);
         let funcs = value_callees(self.module, callee.kind);
         let roots: Vec<Roots> =
             args.iter().map(|a| value_roots(a, state, &self.ctx)).collect();
@@ -1984,8 +1978,8 @@ fn bare_address(arg: &Expr) -> Option<Place>
 }
 
 /// The slots the arguments of a call move out of: the slot of each move
-/// out of a slot, at whatever depth, and each argument that is a bare
-/// read of a move kind.
+/// out of a slot, at whatever depth, as an argument for a parameter marked
+/// `အပိုင်အနေဖြင့်` gives.
 ///
 /// # Arguments
 ///
@@ -1997,9 +1991,6 @@ fn bare_address(arg: &Expr) -> Option<Place>
 fn moved_slots(args: &[Expr]) -> BTreeSet<Place>
 {
     let mut found = BTreeSet::new();
-    let read = |a: &Expr| tern!(let ExprNode::Read(p) = a.node, Some(p), None);
-    let bare = args.iter().filter(|a| a.kind.is_move_kind()).filter_map(read);
-    found.extend(bare);
     let mut take = |e: &Expr| {
         let ExprNode::Take { addr } = &e.node
         else
@@ -2013,7 +2004,7 @@ fn moved_slots(args: &[Expr]) -> BTreeSet<Place>
 }
 
 /// The value a slot holds, as a move out of it gives it on: a value moved
-/// out before is `ဗလာ`.
+/// out before is null.
 ///
 /// # Arguments
 ///
@@ -2060,7 +2051,7 @@ pub(crate) fn is_loop_test(kind: &NodeKind) -> bool
     matches!(kind, NodeKind::LoopHead(_) | NodeKind::CountedHead(_))
 }
 
-/// The fact of a constant of a function kind: a function, or a `ဗလာ` the
+/// The fact of a constant of a function kind: a function, or a null the
 /// routine itself writes, marked `FRESH` so the strict check can tell it
 /// from a value that comes from outside, such as a parameter.
 ///
@@ -2093,7 +2084,7 @@ fn fn_const(kind: DataKind, v: Value) -> SlotState
 ///
 /// # Returns
 ///
-/// `ဗလာ` for the null address, the point of an integer.
+/// null for the null address, the point of an integer.
 fn const_value(kind: DataKind, v: Value, platform: u16) -> SlotState
 {
     ret_if!(kind.is_fn(), fn_const(kind, v));
@@ -2109,7 +2100,7 @@ fn const_value(kind: DataKind, v: Value, platform: u16) -> SlotState
 }
 
 /// The value a slot read gives: the fact of the slot, a moved-out owner
-/// read as `ဗလာ`.
+/// read as null.
 ///
 /// # Arguments
 ///
@@ -2126,11 +2117,108 @@ fn read_value(place: Place, kind: DataKind, state: &State) -> SlotState
     let unmoved = |info: PtrInfo| PtrInfo { state: info.state.as_read(), ..info };
     match fact
     {
-        SlotState::Ptr(info) => SlotState::Ptr(unmoved(info)),
+        // A duplicate of an address owns nothing: the slot the block went into
+        // keeps it.
+        SlotState::Ptr(info) => derived(SlotState::Ptr(unmoved(info))),
         SlotState::List(info) => SlotState::List(unmoved(info)),
         SlotState::None => SlotState::unknown(kind, Roots::new()),
         other => other,
     }
+}
+
+/// The value of a list of pointers duplicated whole from another list slot:
+/// it points where the cells of the source do, when the source knows no
+/// stored roots of its own.
+///
+/// # Arguments
+///
+/// * `flow` - The flow.
+/// * `value` - The value set.
+/// * `v` - Its fact.
+///
+/// # Returns
+///
+/// The fact.
+fn copied_list(flow: &Flow, value: &Expr, v: SlotState) -> SlotState
+{
+    let ExprNode::Read(src) = value.node
+    else
+    {
+        return v;
+    };
+    let SlotState::List(info) = v
+    else
+    {
+        return v;
+    };
+    let kind = flow.ctx.kind_of(src).filter(|k| k.is_list() && holds_address(*k));
+    let Some(kind) = kind.filter(|_| info.roots.is_empty())
+    else
+    {
+        return SlotState::List(info);
+    };
+    SlotState::List(PtrInfo { roots: cell_blocks(src, kind), ..info })
+}
+
+/// The fact of a block a call hands over through a result marked
+/// `အပိုင်အနေဖြင့်`: one the caller owns and has not compared with null,
+/// as an allocation gives it.
+///
+/// # Returns
+///
+/// The fact.
+fn owned_result() -> PtrInfo
+{
+    PtrInfo::builder().state(OwnerState::FRESH).offset(Interval::point(0)).build()
+}
+
+/// The value of a pointer derived from another one, through arithmetic or a
+/// conversion: it reads the block but owns none of it, so a fresh block
+/// reads as one that is not known.
+///
+/// # Arguments
+///
+/// * `v` - The value.
+///
+/// # Returns
+///
+/// The value, owning nothing.
+fn derived(v: SlotState) -> SlotState
+{
+    let SlotState::Ptr(info) = v
+    else
+    {
+        return v;
+    };
+    ret_if!(!info.state.shares_fresh(), SlotState::Ptr(info));
+    let state = info.state.without(OwnerState::FRESH).join(OwnerState::UNKNOWN);
+    let state = state.join(OwnerState::UNTESTED);
+    SlotState::Ptr(PtrInfo { state, ..info })
+}
+
+/// Stop following a fresh block that a duplicate of its address takes into
+/// another place: from there on either place can free it or keep it, so
+/// the slot it was made in no longer reports it as lost.
+///
+/// # Arguments
+///
+/// * `value` - The value stored.
+/// * `state` - The facts, changed in place.
+fn escape_dup(value: &Expr, state: &mut State)
+{
+    let ExprNode::Read(src) = value.node
+    else
+    {
+        return;
+    };
+    let SlotState::Ptr(info) = state.get(src).clone()
+    else
+    {
+        return;
+    };
+    ret_if!(!info.state.shares_fresh());
+    let escaped = info.state.join(OwnerState::GIVEN);
+    state.set(src, SlotState::Ptr(PtrInfo { state: escaped, ..info }));
 }
 
 /// The value of a list written out: one fact for each cell.
@@ -2196,7 +2284,7 @@ fn converted(e: &Expr, from: DataKind, v: SlotState, platform: u16) -> SlotState
             SlotState::of_kind(e.kind, info, Interval::TOP)
         }
         SlotState::Int(n) if keeps => int_fact(e.kind, n, platform),
-        // `ဗလာ` that turns into a function kind.
+        // null that turns into a function kind.
         SlotState::None if from == DataKind::Null && e.kind.is_fn() =>
         {
             fn_const(e.kind, Value::NULL)
@@ -2472,7 +2560,7 @@ mod tests
     }
 
     #[test]
-    fn a_move_leaves_the_source_moved_and_gives_the_block_on()
+    fn a_set_from_a_pointer_leaves_the_source_holding_its_block()
     {
         let prog = program(
             "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -2484,9 +2572,13 @@ mod tests
         );
         let end =
             state_at(&prog.module, top(&prog.module), |k| matches!(k, NodeKind::End));
-        assert_eq!(owner(&end, Place::Local(0)), OwnerState::MOVED);
+        // The source keeps its block, marked given, so it is no leak; the alias
+        // owns nothing, but knows the length of the block.
+        let from = owner(&end, Place::Local(0));
+        assert!(from.shares_fresh() && from.shares_given(), "{from:?}");
         let to = end.ptr(Place::Local(1)).unwrap();
-        assert_eq!((to.state, to.len), (OwnerState::FRESH, Some(3)));
+        let untested = OwnerState::UNKNOWN.join(OwnerState::UNTESTED);
+        assert_eq!((to.state, to.len), (untested, Some(3)));
     }
 
     #[test]
@@ -2495,7 +2587,7 @@ mod tests
         let prog = program(
             "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-အကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် \"ဗလာ\" ဟု ပြသပါ။
+အကယ်၍ ပ သည် မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ နှင့် ညီလျှင် \"ဗလာ\" ဟု ပြသမည်။
 ",
         );
         let routine = top(&prog.module);
@@ -2508,14 +2600,14 @@ mod tests
     }
 
     #[test]
-    fn a_call_resets_the_named_globals_but_keeps_a_move_into_it()
+    fn a_call_resets_the_named_globals_but_keeps_an_owned_hand_over()
     {
         let prog = program(
             "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 
 လုပ်ဆောင်ချက် ရှင်းပစ် သည်
-ကိန်းပြည့် လိပ်စာ က ကို လက်ခံပြီး
+က ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လိပ်စာ က ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
@@ -2525,7 +2617,7 @@ mod tests
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ဂ တွင် သိမ်းထားမည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ဃ တွင် သိမ်းထားမည်။
-လုပ်ဆောင်ချက် ရှင်းပစ် ကို ပ တို့ဖြင့် လုပ်ဆောင်ပါ။
+လုပ်ဆောင်ချက် ရှင်းပစ် ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
         );
@@ -2557,14 +2649,14 @@ mod tests
     }
 
     #[test]
-    fn a_cell_of_a_borrow_list_param_points_through_its_cells()
+    fn a_cell_of_a_list_param_points_at_the_block_of_that_cell()
     {
         let prog = program(
             "လုပ်ဆောင်ချက် ဖတ် သည်
-ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တန်း ကို လက်ခံပြီး
+တန်း ဟူသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ဂ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် တန်း ၏ အကွက် ၁ ဖြစ်ပါစေ။
-ဂ ၏ တန်ဖိုး ကို ပြသပါ။
+ကိန်းရှင် ဂ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် တန်း ၏ အကွက် ၁ ဖြစ်ပါစေ။
+ဂ ၏ တန်ဖိုး ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 ",
         );
@@ -2572,7 +2664,7 @@ mod tests
         let end = state_at(module, Routine::func(&module.funcs[0]), |k| {
             matches!(k, NodeKind::End)
         });
-        let cells = Root::slot(Place::Local(0)).cell(None).block();
+        let cells = Root::slot(Place::Local(0)).cell(Some(1)).block();
         assert_eq!(end.ptr(Place::Local(1)).unwrap().roots, Roots::from([cells]));
     }
 
@@ -2586,7 +2678,7 @@ mod tests
 ကိန်းရှင် ဂ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ဃ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဂ - ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် င သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က - ၁ ဖြစ်ပါစေ။
-၀ မှ က + ၁ အထိ န အနေဖြင့် ရေတွက်၍ န ကို ပြသပါ။
+၀ မှ က + ၁ အထိ န အနေဖြင့် ရေတွက်၍ န ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
         );

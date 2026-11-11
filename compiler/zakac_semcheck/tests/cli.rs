@@ -5,14 +5,14 @@ use termcolor::Buffer;
 use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
-use zakac_parser::wrap::in_start_block;
 use zakac_semcheck::cli::ZakacSemcheck;
+use zakac_semcheck::mark::in_marked_code;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 
 const TEXT_HEADER: &str = "# zakac-semcheck-artifact v1\n";
 
 /// An `i32` value stored in a platform-sized integer.
-const PLATFORM_WIDENING: &str = "ကိန်းရှင် က သည် ၃၂ ဘစ် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။
+const PLATFORM_WIDENING: &str = "ကိန်းရှင် က သည် ၁ ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။";
 
 /// Run the standalone check command.
@@ -22,7 +22,7 @@ fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
     argv.extend(args.iter().map(|arg| (*arg).to_string()));
 
     let command = ZakacSemcheck::create_as_standalone();
-    let mut stdin = Cursor::new(in_start_block(stdin));
+    let mut stdin = Cursor::new(in_marked_code(stdin));
     let mut stdout = Buffer::no_color();
     let mut stderr = Buffer::no_color();
     let mut io = CommandIO::builder()
@@ -48,7 +48,7 @@ fn sample(name: &str) -> String
 #[test]
 fn check_stdin_without_input()
 {
-    let (code, stdout, stderr) = run_cli(&[], "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။");
+    let (code, stdout, stderr) = run_cli(&[], "ကိန်းရှင် က သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။");
     assert_eq!(code, ExitCode::Success);
     assert!(stdout.starts_with(TEXT_HEADER));
     assert!(stdout.contains("isize"));
@@ -67,7 +67,7 @@ fn check_input_file()
 #[test]
 fn diagnostics_go_to_stderr_and_fail()
 {
-    let (code, stdout, stderr) = run_cli(&[], "က ကို ပြသပါ။");
+    let (code, stdout, stderr) = run_cli(&[], "က ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Failure);
     assert!(stdout.starts_with(TEXT_HEADER), "the artifact is still written");
     assert!(stderr.starts_with("error[ZK0301]"), "{stderr}");
@@ -77,7 +77,7 @@ fn diagnostics_go_to_stderr_and_fail()
 #[test]
 fn particle_warnings_do_not_fail()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသမည်။";
     let (code, stdout, stderr) = run_cli(&[], text);
     assert_eq!(code, ExitCode::Success);
     assert!(stdout.starts_with(TEXT_HEADER));
@@ -88,7 +88,7 @@ fn particle_warnings_do_not_fail()
 #[test]
 fn strict_particles_fail()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသမည်။";
     let (code, _stdout, stderr) = run_cli(&["--strict-particles"], text);
     assert_eq!(code, ExitCode::Failure);
     assert!(stderr.starts_with("error[ZK0505]"), "{stderr}");
@@ -97,7 +97,7 @@ fn strict_particles_fail()
 #[test]
 fn parser_errors_stop_the_check()
 {
-    let (code, _stdout, stderr) = run_cli(&[], "က ကို ကို ပြသပါ။\nခ ကို ပြသပါ။");
+    let (code, _stdout, stderr) = run_cli(&[], "က ကို ကို ပြသမည်။\nခ ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Failure);
     assert!(stderr.starts_with("error[ZK0207]"), "{stderr}");
     assert!(!stderr.contains("ZK0301"), "{stderr}");

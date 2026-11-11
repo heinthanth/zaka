@@ -11,7 +11,7 @@ first. Parentheses come before all else. From **tightest** to **loosest**:
 | Order | Operators | Groups | Notes |
 | --- | --- | --- | --- |
 | 1 | literals, names, `( ... )`, function calls | | the building blocks |
-| 2 | `-` `အနုတ်` `~` `!` in front of a value | right to left | `-က * ခ` is `(-က) * ခ` |
+| 2 | `-` `အနုတ်` `~` `!` in front of a value; `*` and `&` in front of a value in [marked code](../language/unsafe.md#reading-and-writing-through-a-pointer) | right to left | `-က * ခ` is `(-က) * ခ`; `*ပ + ၁` is `(*ပ) + ၁` |
 | 3 | `*` `/` `%` | left to right | |
 | 4 | `+` `-` | left to right | |
 | 5 | `<<` `>>` | left to right | |
@@ -41,6 +41,6 @@ first. Parentheses come before all else. From **tightest** to **loosest**:
 - A word phrase inside an operator expression needs parentheses:
   `(က နှင့် ခ ၏ ပေါင်းလဒ်) * ဂ`.
 - A logical expression (`ဖြစ်၍`, `သို့မဟုတ်`, `&&`, `||`, `မဟုတ်`) used as a value to print
-  needs parentheses: `(က ဖြစ်၍ ခ) ကို ပြသပါ။`
+  needs parentheses: `(က ဖြစ်၍ ခ) ကို ပြသမည်။`
 
 See [Grouping and order](../../learn/operators/grouping.md) for worked examples.

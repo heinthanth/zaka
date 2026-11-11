@@ -17,32 +17,32 @@ use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
-use zakac_parser::wrap::in_start_block;
+use zakac_semcheck::mark::in_marked_code;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
-/// The ownership check turned off, as for programs that go wrong on
+/// The checker turned off, as for programs that go wrong on
 /// purpose.
 fn mem_off() -> BorrowCheckOptions
 {
     BorrowCheckOptions::builder().check(MemCheck::Off).build()
 }
 
-/// Compile a clean source text with the ownership check off.
+/// Compile a clean source text with the checker off.
 pub fn compile(text: &str) -> Module
 {
     compile_with(text, &SemcheckOptions::default(), &mem_off(), ResultMode::default()).0
 }
 
-/// Compile a source text with the ownership check on, which must report
+/// Compile a source text with the checker on, which must report
 /// nothing at all, not even a warning.
 pub fn compile_checked(text: &str) -> Module
 {
     compile_results(text, ResultMode::default())
 }
 
-/// Compile a source file and the files it imports with the ownership check
+/// Compile a source file and the files it imports with the checker
 /// on, which must report nothing at all, and code generation choices.
 pub fn compile_file(path: &Path, emit_options: impl Into<EmitOptions>) -> Module
 {
@@ -59,7 +59,7 @@ pub fn compile_file(path: &Path, emit_options: impl Into<EmitOptions>) -> Module
     emitted.module.expect("emitted")
 }
 
-/// Compile a source text with the ownership check on, which must report
+/// Compile a source text with the checker on, which must report
 /// nothing at all, and a result mode.
 pub fn compile_results(text: &str, results: ResultMode) -> Module
 {
@@ -91,7 +91,7 @@ fn compile_with(
 {
     let mut sm = SourceMap::new();
     let file =
-        sm.new_source_file(FileName::Custom("t.zaka".into()), in_start_block(text));
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_marked_code(text));
     let folding = FoldOptions::default();
     let lexer = LexerOptions::default();
     let emitted = run_phases(&file, &lexer, options, &folding, mem, results);
@@ -102,7 +102,7 @@ fn compile_with(
     (emitted.module.expect("emitted"), diagnostics)
 }
 
-/// Compile a source text with the ownership check on, which must report
+/// Compile a source text with the checker on, which must report
 /// nothing at all, with fold and code generation choices.
 pub fn compile_text(
     text: &str, folding: &FoldOptions, emit_options: impl Into<EmitOptions>,
@@ -110,7 +110,7 @@ pub fn compile_text(
 {
     let mut sm = SourceMap::new();
     let file =
-        sm.new_source_file(FileName::Custom("t.zaka".into()), in_start_block(text));
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_marked_code(text));
     let (lexer, options) = (LexerOptions::default(), SemcheckOptions::default());
     let mem = BorrowCheckOptions::default();
     let emitted = run_phases(&file, &lexer, &options, folding, &mem, emit_options);

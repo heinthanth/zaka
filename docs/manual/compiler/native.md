@@ -25,6 +25,10 @@ of `cc`, `gcc`, `clang` and `zig cc`. The C it writes is plain C11, so GCC, Clan
 each build it. On Windows, a MinGW toolchain such as llvm-mingw or w64devkit, or Zig, builds
 it with no Visual Studio.
 
+A program that gives closures to C also needs libffi, where the C compiler looks at first:
+the SDK on macOS, a dev package such as `libffi-dev` on Linux. A program with no such
+closure never links it.
+
 `i128` and `u128` need a C compiler with 128-bit integers, as GCC and Clang have; another
 compiler stops at an `#error`. `f16` and `f128` have no C kind that each compiler holds, so
 the build refuses them with ZK0801.
@@ -36,17 +40,17 @@ The executable keeps the checks `--checks` names:
 | `--checks` | What the executable checks | Cost |
 | --- | --- | --- |
 | `none` | nothing that C itself lacks: a zero divisor, a cell outside its list or a shift too far does what C does with it | the fastest |
-| `default` | the checks of the language, each with the VM's message: a zero divisor, a shift too far, a counted loop whose step is not positive, a cell or a range outside its list, a range of text that cuts a character, octets that are not UTF-8, a call through `ဗလာ`, and the wrong part of a result | a compare or two for each check |
+| `default` | the checks of the language, each with the VM's message: a zero divisor, a shift too far, a counted loop whose step is not positive, a cell or a range outside its list, a range of text that cuts a character, octets that are not UTF-8, a call through a function value that holds no function (a backstop: a function value is never null), and the wrong part of a result | a compare or two for each check |
 | `mem` | those, a check for the null address on each read and write through an address, and the address and undefined-behavior sanitizers of the C compiler | far slower; for finding a mistake |
 
 `--overflow` works as it does for the VM: `stop`, the default, stops the program when a
 result does not fit its kind, and `wrap` wraps it around. A check the compiler proves never
 fails costs nothing, at each level.
 
-The checks of storage remain in the compiler. What it proves before the run, such as no use
-after free through an owner, holds in native code too. A mistake the VM alone would catch,
-such as a read past the end of a block through a raw address, does what it does in C,
-unless `--checks mem` is on. [Checks in the VM and in native code](../concepts/checked.md)
+The checks of storage remain in the compiler. What it proves before the run holds in
+native code too, and safe code counts its blocks there as in the VM, with the same ring
+collector. A mistake the VM alone would catch, such as a read past the end of a block
+through a pointer in marked code, does what it does in C, unless `--checks mem` is on. [Checks in the VM and in native code](../concepts/checked.md)
 sorts each mistake.
 
 A program that stops writes what it printed so far, then one line on standard error, and
@@ -87,30 +91,41 @@ from native code with no VM between. The build writes one more file, `zaka_ffi.c
   its other values when it takes some); the module files call the wrappers, whose
   declarations stand in `zaka_kinds.h`. A struct goes in and out of a wrapper as the
   address of its octets.
-- A C function that takes other values (`နှင့် အခြားတန်ဖိုးများ`) is declared with
+- A C function that takes other values (`အခြားတန်ဖိုးများနှင့်အတူ`) is declared with
   `, ...`, and each wrapper passes the other values of its call as C promotes them.
 - A text parameter or other value goes to C as `const char *`: the wrapper makes a
   duplicate of the u8s with a zero octet at the end (`zk_text_cstr` of the runtime), calls
   the C function, and frees the duplicate (`zk_text_cstr_free`).
 
-- A result of `စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း` is held as `const char *`: the
-  wrapper gives it to `zk_text_from_c`, which writes the failure for NULL and otherwise
+- A result of `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` is held as `const char *`: the
+  wrapper gives it to `zk_text_from_c`, which writes the optional with no data for NULL and otherwise
   copies the string into new text of the program. The wrapper takes the text before it
   frees the duplicates of the text arguments, since a result such as `strstr` gives points
   into them. C keeps what it gave, unless the result clause holds `အပိုင်အနေဖြင့်`: then the
   wrapper frees the string with libc's `free` once the text holds its octets.
 - A struct goes in as an other value as it does as a parameter, so `zaka_ffi.c` defines the
   structs of the other values of each call too.
+- A handle, a value of a [kind from outside the program](../language/functions.md#c-functions),
+  is a box of the program that holds C's address, and C gets that address as `void *`. The
+  wrapper of the IR halts through `zk_closed_handle` when the box holds 0, which stops the
+  run with the closed handle trap, and a C function that takes the handle over leaves the
+  box holding 0. A handle result written with no optional promises that C gives no NULL:
+  a NULL there stops the run with the VM's `null text` message, and an optional handle
+  result is blank for NULL. A read of a field is a `memcpy` from the address of the C struct plus the
+  offset of the field, since that address lies in no block of the runtime; a text field
+  goes through `zk_text_from_c`, as a text result does.
 - A parameter of a function kind that crosses (see
   [Callbacks](../language/functions.md#c-functions)) is declared with the C signature of the
   function, with `void *` for each address. The wrapper passes `zk_fn_code(value)` cast to
-  that pointer to a function, and NULL for `ဗလာ`. The functions of the program have the C
-  signature of the kind that crosses, so C calls them as it calls a C function.
+  that pointer to a function; a function value holds a function at each point, so C never gets
+  NULL there. The functions of the program have the C
+  signature of the kind that crosses, so C calls them as it calls a C function. A closure
+  crosses through `zaka_cb.c` (see [Function values in C](#function-values-and-closures)).
   A trap in a callback is kept until C returns (see
   [When a program stops](../vm/traps.md#c-functions)).
 
 The link gets `-lX` for each lib `libX` the program names, but libc and libm, after `-lm`
-and before `LDFLAGS` and each `--ld-flag`. Give the folder of a lib with `--ld-flag`:
+and before `LDFLAGS` and each `--ld-flag`. A program with `zaka_cb.c` adds `-lffi` as well. Give the folder of a lib with `--ld-flag`:
 
 ```console
 $ zakac build --target c --ld-flag -L/opt/gears/lib gears.zaka
@@ -137,27 +152,43 @@ A [function value](../language/function-values.md) is one word in the C, of the 
 
 - Each function has a static record `zk_r<n>`, `{code, NULL}`, declared in
   `zaka_kinds.h` and defined in `zaka_kinds.c`. The address of function `n` is `&zk_r<n>`.
-  `ဗလာ` is NULL.
+  A function value is never NULL; a word of 0 in a heap block of marked code holds no
+  function, and a call through it stops with the VM's message.
 - A closure, the function value of a [nested function](../language/function-values.md#nested-functions-and-closures)
-  with captures, is a record on the heap. Where the function is declared,
-  `zk_closure(record, thunk, kind)` moves the record from a hidden local to a new block,
-  leaves zeros behind, and writes the code of the thunk in the first word and the
+  with captures, is a counted record on the heap. Where the function is declared,
+  `zk_closure(record, thunk, kind)` moves the record from a hidden local to a new counted
+  block, leaves zeros behind, and writes the code of the thunk in the first word and the
   descriptor of the record kind in the second, which is never NULL, so `zk_fn_bound` tests
-  it. The thunk takes the declared parameters and the record, and calls the nested function
-  with the address of each field, or the address a borrowed field holds.
-- `zk_drop`, `zk_dup_seqs` and `zk_lend_seqs` walk a function value as each walks text:
-  `zk_fn_dup` copies the record and duplicates its fields (a record that owns a block
-  stops the run with `ZK_TRAP_CLOSURE_OWNER`), a drop frees the record with what its fields
-  own, owner blocks included (`zk_free_owners`, through the `owns` flag of the
-  descriptors), and `zk_fn_lend` sets the lowest bit of the address, so the callee
-  runs the caller's closure and frees nothing. `zk_fn_rec` gives the address without
-  that bit.
+  it. The record holds a count on the box of each captured variable, so the closure and
+  the block it was made in share them. The thunk takes the declared parameters and the
+  record, and calls the nested function with the boxes the record holds.
+- `zk_fn_dup` counts one more holder of a closure's record, so each duplicate runs the one
+  closure; a drop takes the count back and frees the record, with the counts it holds,
+  when the last holder goes. A record that a drop leaves held waits for the ring
+  collector, since a closure can capture the variable that holds it. `zk_fn_lend` sets the
+  lowest bit of the address of a value lent to a call, so the callee runs the caller's
+  closure and frees nothing, and a duplicate of a lent value counts a holder of its own.
+  `zk_fn_rec` gives the address without that bit.
 - A call through a value reads `zk_fn_bound(f)`: for a closure it calls the thunk with the
   arguments and the record, for a plain function it calls the code with the arguments.
-- `zk_fn_plain(f)` is run on a value headed where a closure that borrows cannot go. It
-  stops the run with `ZK_TRAP_CLOSURE_ESCAPE` when the descriptor of the record tells that it
-  holds a borrow, with the message of the [closure escape trap](../vm/traps.md#all-the-traps).
-  `zk_fn_c(f)` stops a closure of each sort that goes to C.
+- A program that makes a closure and gives function values to C, or holds a leave
+  statement, gets one more generated file, `zaka_cb.c`: the runtime `zaka_rt_cb.c`, then a
+  bridge and a `zk_cb_shape` (`zk_cbs_<n>`) for each function kind that goes to C. The
+  link then adds libffi: on macOS `-lffi` from the SDK; elsewhere the flags `pkg-config
+  --cflags --libs libffi` gives (the compile flags go to `zaka_cb.c`), or `-lffi` alone
+  when `pkg-config` or its record for libffi is missing. A program with no closure
+  keeps the old path, with no libffi. The wrapper of a C function calls `zk_cb_code` for a
+  parameter of a function kind, which gives the code address of a plain function and the
+  libffi closure of a closure, and wraps the C call in `zk_cb_lent()` and `zk_cb_end()`, so
+  the closure is lent to the call. `zk_cb_leave` and `zk_cb_revoke` run the two leave
+  statements, and a late call from C stops the run with `ZK_TRAP_CLOSURE_ESCAPE`, with the
+  message of the [closure escape trap](../vm/traps.md). The code of a closure is never
+  freed, so a late call traps and never runs freed code. A call from C on another thread
+  ends the run with a message.
+- A C declaration takes function values of numbers, booleans and addresses alone (ZK0465),
+  so each closure that reaches C has a shape. A leave of a function value whose kind takes
+  or gives a struct, text or a function value, which no C function can get, is a construct
+  the C target cannot build.
 - Printing a value looks its code up in a table of names, so a closure prints as the
   function its thunk calls.
 
@@ -173,6 +204,8 @@ $ zakac build --target c --emit c --cache gen/ app.zaka
 $ cc -std=c11 -O2 gen/*.c -lm -o app
 ```
 
+A program with a `zaka_cb.c` in `gen/` links `-lffi` as well.
+
 | File | Holds |
 | --- | --- |
 | `m0.c`, `m1.c`, ... | the globals and functions of each module |
@@ -180,4 +213,5 @@ $ cc -std=c11 -O2 gen/*.c -lm -o app
 | `zaka_kinds.h` | the declaration of each global, function and kind |
 | `zaka_kinds.c` | the description of each kind, and the texts of the messages |
 | `zaka_ffi.c` | the wrappers of the C functions of the program; written when it has some |
+| `zaka_cb.c` | the runtime of the closures that go to C, with a bridge and a shape for each function kind; written when the program makes a closure and gives function values to C, or holds a leave statement |
 | `zaka_rt.h`, `zaka_rt*.c` | the runtime: checked arithmetic, text, lists, prints and the host |

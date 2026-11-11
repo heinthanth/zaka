@@ -7,19 +7,19 @@ fn statements_move_into_a_start_block_at_the_end()
 {
     let text = "ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။
 // show it
-က ကို ပြသပါ။
+က ကို ပြသမည်။
 လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 ကိန်းရှင် ခ သည် ၂ ဖြစ်ပါစေ။
-ခ ကို ပြသပါ။   // and this
+ခ ကို ပြသမည်။   // and this
 ";
     let want = "ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။
 လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 
 // show it
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-က ကို ပြသပါ။
+က ကို ပြသမည်။
 ကိန်းရှင် ခ သည် ၂ ဖြစ်ပါစေ။
-ခ ကို ပြသပါ။   // and this
+ခ ကို ပြသမည်။   // and this
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ";
     assert_eq!(in_start_block(text), want);
@@ -40,10 +40,10 @@ fn a_program_of_declarations_gets_a_blank_start_block()
 fn one_line_of_statements_moves_whole()
 {
     let want = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ ကို ပြသပါ။ ၂ ကို ပြသပါ။
+၁ ကို ပြသမည်။ ၂ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ";
-    assert_eq!(in_start_block("၁ ကို ပြသပါ။ ၂ ကို ပြသပါ။"), want);
+    assert_eq!(in_start_block("၁ ကို ပြသမည်။ ၂ ကို ပြသမည်။"), want);
 }
 
 #[test]
@@ -57,7 +57,7 @@ fn a_program_with_a_start_block_is_left_alone()
 #[test]
 fn keep_decides_for_each_declaration()
 {
-    let text = "ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။\nက ကို ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။\nက ကို ပြသမည်။";
     let all_in = wrap_in_start(text, |_, _, _| false).unwrap().text;
     assert!(all_in.starts_with("ပရိုဂရမ်သည်"), "{all_in}");
 }
@@ -65,15 +65,15 @@ fn keep_decides_for_each_declaration()
 #[test]
 fn a_variable_a_function_uses_remains_at_the_top_level()
 {
-    let text = "၁ ကို ပြသပါ။
+    let text = "၁ ကို ပြသမည်။
 ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ၂ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ က ကို ပြသပါ။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ က ကို ပြသမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     let want = "ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ က ကို ပြသပါ။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ က ကို ပြသမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ ကို ပြသပါ။
+၁ ကို ပြသမည်။
 ကိန်းရှင် ခ သည် ၂ ဖြစ်ပါစေ။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ";
@@ -83,10 +83,10 @@ fn a_variable_a_function_uses_remains_at_the_top_level()
 #[test]
 fn each_new_line_knows_its_old_line()
 {
-    let text = "၁ ကို ပြသပါ။
+    let text = "၁ ကို ပြသမည်။
 လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-၂ ကို ပြသပါ။";
+၂ ကို ပြသမည်။";
     let wrapped = in_start_block_lines(text);
     let want = [Some(1), Some(2), None, None, Some(0), Some(3), None];
     assert_eq!(wrapped.lines, want, "{}", wrapped.text);

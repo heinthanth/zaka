@@ -2,7 +2,7 @@
 
 use bon::Builder;
 
-/// Name of a setting that a Ghostty build lists when it draws Burmese text by
+/// Name of a setting that a Ghostty build lists when it draws Burmese text per
 /// orthographic unit at the natural width of its font, and flows the row to
 /// make room; saturngod's fork adds it.
 pub const FLOW_SETTING: &str = "myanmar-prompt-width";

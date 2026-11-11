@@ -20,7 +20,7 @@ turf::style_sheet!("src/components/borrow_check_view/mod.sass");
 static SHEET: ComponentStyle =
     ComponentStyle::global_css("zaka-borrow-check-view", STYLE_SHEET);
 
-/// The ownership check output: one line for each function with what it
+/// The checker output: one line for each function with what it
 /// frees, resizes or moves through; or a note when the check did not run.
 ///
 /// # Returns

@@ -33,7 +33,7 @@ Sample { group: $group, name: $name, text: include_str!(sample_path!($group, $na
 /// The group of the samples that are meant to report errors.
 pub const DIAGNOSTICS: &str = "diagnostics";
 
-/// The group of the samples that go wrong: the ownership check rejects the
+/// The group of the samples that go wrong: the checker rejects the
 /// pointer mistakes, and with the check on warn or off each sample traps at
 /// run time or leaves heap room behind.
 pub const MISTAKES: &str = "mistakes";
@@ -86,6 +86,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("functions", "dispatch"),
     sample!("functions", "nested"),
     sample!("error_handling", "failures"),
+    sample!("error_handling", "optionals"),
     sample!("error_handling", "result_kinds"),
     sample!("io", "echo"),
     sample!("io", "files"),
@@ -105,7 +106,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("lists", "counts"),
     sample!("lists", "borrow"),
     sample!("lists", "sort"),
-    sample!("lists", "slices"),
+    sample!("lists", "ranges"),
     sample!("structs", "basics"),
     sample!("structs", "literal"),
     sample!("structs", "nested"),
@@ -115,7 +116,6 @@ pub const SAMPLES: &[Sample] = &[
     sample!("structs", "aliases"),
     sample!("programs", "gradebook"),
     sample!("programs", "scores"),
-    sample!("programs", "scores_views"),
     sample!("programs", "fizzbuzz"),
     sample!("programs", "gcd"),
     sample!("programs", "primes"),
@@ -133,8 +133,6 @@ pub const SAMPLES: &[Sample] = &[
     sample!("programs", "start"),
     sample!("mistakes", "leak"),
     sample!("mistakes", "null_read"),
-    sample!("mistakes", "null_call"),
-    sample!("mistakes", "closure_escape"),
     sample!("mistakes", "past_the_end"),
     sample!("mistakes", "use_after_free"),
     sample!("mistakes", "double_free"),

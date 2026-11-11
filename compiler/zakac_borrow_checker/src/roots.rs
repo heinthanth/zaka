@@ -23,6 +23,7 @@ use crate::state::Interval;
 use crate::state::PtrInfo;
 use crate::state::SlotState;
 use crate::state::State;
+use crate::state::holds_address;
 use crate::values::value_callees;
 use crate::walk::each_stmt;
 
@@ -105,19 +106,26 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
     {
         ExprNode::AddrOf(place) => Roots::from([Root::slot(*place)]),
         ExprNode::Read(place) => read_roots(*place, e.kind, state, ctx),
+        // A pointer made from an object holds a count of it, not a loan.
+        ExprNode::Convert { operand, .. } if operand.kind.as_object().is_some() =>
+        {
+            Roots::new()
+        }
+        // A duplicate of text or a list holds a count of its own, so no free
+        // through another holder reaches it; a box duplicated for a capture
+        // shares the one box, and what the box holds can be freed.
+        ExprNode::Dup { value, .. } if e.kind.is_box() || e.kind.is_ptr() =>
+        {
+            deeper(value)
+        }
         ExprNode::Lend { operand }
-        | ExprNode::Own { value: operand }
+        | ExprNode::Own { value: operand, .. }
         | ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::PtrAdd { base: operand, .. } => deeper(operand),
         ExprNode::Load { addr } => load_roots(addr, e.kind, state, ctx),
-        // The cells of a slice, and of a plain list, sit in a block
-        // the value points at.
-        ExprNode::CellAddr { list, .. }
-            if list.kind.is_slice() || list.kind.is_seq() =>
-        {
-            deeper(list)
-        }
+        // The cells of a plain list sit in a block the value points at.
+        ExprNode::CellAddr { list, .. } if list.kind.is_seq() => deeper(list),
         ExprNode::MakeSlice { source, from: SliceFrom::List(_), .. } =>
         {
             list_roots(source, state, ctx).iter().map(|r| r.cell(None)).collect()
@@ -165,16 +173,20 @@ pub(crate) fn roots_of(e: &Expr, state: &State, ctx: &RootCtx) -> Roots
 fn read_roots(place: Place, kind: DataKind, state: &State, ctx: &RootCtx) -> Roots
 {
     let held = ctx.kind_of(place).unwrap_or(kind);
+    let roots = state.ptr(place).map(|info| info.roots.clone()).unwrap_or_default();
+    // A pointer that points into a known place reads as that place; one into
+    // none, such as a new block, is a block of its own.
+    ret_if!(held.is_owner_ptr() && !roots.is_empty(), roots);
     let owner = held.is_owner_ptr() || held.is_text() || held.is_seq();
     ret_if!(owner, Roots::from([Root::slot(place).block()]));
-    state.ptr(place).map(|info| info.roots.clone()).unwrap_or_default()
+    roots
 }
 
-/// The roots of a load. A borrow read out of a cell of a list slot points
-/// where the borrows of the list point, so it gets the roots the state
-/// holds for the whole list; another load gets the block of each place
-/// the address names. The cell decides, as a slot does: a cell that owns
-/// a block, read as the address of what it holds, points into its block.
+/// The roots of a load. A pointer read out of a cell of a list slot points
+/// where the pointers stored in the list point, so it gets the roots the
+/// state holds for the whole list. A load with no such roots, such as a
+/// cell that a new block was stored into, gets the block of each place the
+/// address names.
 ///
 /// # Arguments
 ///
@@ -188,46 +200,14 @@ fn read_roots(place: Place, kind: DataKind, state: &State, ctx: &RootCtx) -> Roo
 /// The roots.
 fn load_roots(addr: &Expr, kind: DataKind, state: &State, ctx: &RootCtx) -> Roots
 {
-    let borrowed =
-        kind.holds_borrow() && !cell_kind(addr).is_some_and(DataKind::is_owner_ptr);
-    let list = borrowed.then(|| list_slot(addr)).flatten();
-    ret_if!(let Some(info) = list.and_then(|place| state.ptr(place)), info.roots.clone());
+    let list = holds_address(kind).then(|| list_slot(addr)).flatten();
+    // Roots that lead back into the list alone, as a parameter starts with,
+    // tell less than the cell the address names.
+    let stored =
+        |place: Place, info: &PtrInfo| info.roots.iter().any(|r| r.place != place);
+    let held = list.and_then(|place| state.ptr(place).filter(|i| stored(place, i)));
+    ret_if!(let Some(info) = held, info.roots.clone());
     roots_of(addr, state, ctx).iter().map(Root::block).collect()
-}
-
-/// The kind of the cell a cell or field address names.
-///
-/// # Arguments
-///
-/// * `addr` - The address.
-///
-/// # Returns
-///
-/// The cell or field kind, or `None` for an address that is no cell of a
-/// list and no field of a struct.
-fn cell_kind(addr: &Expr) -> Option<DataKind>
-{
-    match &addr.node
-    {
-        ExprNode::CellAddr { list, .. } => list.kind.cell_kind(),
-        ExprNode::FieldAddr { base, field, .. } => field_kind(base.kind, *field),
-        _ => None,
-    }
-}
-
-/// The kind of a field of a struct.
-///
-/// # Arguments
-///
-/// * `kind` - The struct kind.
-/// * `field` - The position of the field.
-///
-/// # Returns
-///
-/// The field kind, or `None` for a kind that is no struct.
-pub(crate) fn field_kind(kind: DataKind, field: u32) -> Option<DataKind>
-{
-    kind.as_struct()?.fields().get(field as usize).map(|(_, k)| *k)
 }
 
 /// The list slot a cell address reads, through the cells of nested lists.
@@ -269,7 +249,7 @@ pub(crate) fn list_slot(addr: &Expr) -> Option<Place>
 /// of one read from mem, the roots of a pointer to a list.
 fn list_roots(list: &Expr, state: &State, ctx: &RootCtx) -> Roots
 {
-    let view = !list.kind.is_aggregate() || list.kind.is_slice();
+    let view = !list.kind.is_aggregate();
     ret_if!(view, roots_of(list, state, ctx));
     match &list.node
     {
@@ -389,6 +369,22 @@ pub(crate) fn past_cells(path: &[Seg]) -> &[Seg]
     &path[cells..]
 }
 
+/// The blocks the cells of a list slot hold, for a list duplicated whole
+/// into another slot: the new list points where these cells do.
+///
+/// # Arguments
+///
+/// * `place` - The list slot.
+/// * `kind` - Its kind.
+///
+/// # Returns
+///
+/// The path from the slot to the block of each cell, at each depth.
+pub(crate) fn cell_blocks(place: Place, kind: DataKind) -> Roots
+{
+    owner_steps(kind).into_iter().map(|steps| Root::slot(place).then(&steps)).collect()
+}
+
 /// The paths from a slot of `kind` to the blocks its owners hold: one
 /// step into each cell of each level of a list, or into each field of a
 /// struct that holds an owner, then the block.
@@ -412,7 +408,7 @@ fn owner_steps(kind: DataKind) -> Vec<Vec<Seg>>
     {
         return vec![vec![Seg::Block]];
     };
-    let moved = fields.iter().enumerate().filter(|(_, (_, k))| k.is_move_kind());
+    let moved = fields.iter().enumerate().filter(|(_, (_, k))| k.holds_owner_ptr());
     moved.flat_map(|(at, (_, k))| into(Seg::Cell(u32::try_from(at).ok()), *k)).collect()
 }
 
@@ -427,13 +423,29 @@ fn owner_steps(kind: DataKind) -> Vec<Vec<Seg>>
 /// # Returns
 ///
 /// The block of the owner slot, or the blocks of the owners the address
-/// can point at.
+/// can point at, with the blocks the pointers stored there point at.
 pub(crate) fn freed_paths(dest: &Dest, state: &State, ctx: &RootCtx) -> Roots
 {
     match dest
     {
-        Dest::Slot(place) => Roots::from([Root::slot(*place).block()]),
-        Dest::Mem(addr) => roots_of(addr, state, ctx).iter().map(Root::block).collect(),
+        // The block of the slot, and for a global each block a duplicate in it
+        // points at, such as a parameter's block that the global took: a free
+        // reaches it too, and the callers see it in the digest.
+        Dest::Slot(place) =>
+        {
+            let global = matches!(place, Place::Global(_));
+            let held = state.ptr(*place).filter(|_| global).map(|i| i.roots.clone());
+            let held = held.unwrap_or_default();
+            let blocks =
+                held.into_iter().filter(|r| r.path.last() == Some(&Seg::Block));
+            blocks.chain([Root::slot(*place).block()]).collect()
+        }
+        Dest::Mem(addr) =>
+        {
+            let held = addr.kind.pointee().unwrap_or(addr.kind);
+            let stored = load_roots(addr, held, state, ctx);
+            roots_of(addr, state, ctx).iter().map(Root::block).chain(stored).collect()
+        }
     }
 }
 
@@ -550,7 +562,7 @@ fn global_round(module: &Module, found: &[Roots], digests: &[FnDigest]) -> Vec<R
         {
             return;
         };
-        ret_if!(!value.kind.holds_borrow());
+        ret_if!(!holds_address(value.kind));
         next[g as usize].extend(roots_of(value, &state, &ctx));
     });
     next
@@ -590,31 +602,37 @@ mod tests
         let module = lower(
             "ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ဂ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
-ကိန်းရှင် ဃ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဂ + ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
+ကိန်းရှင် ဃ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဂ ဖြစ်ပါစေ။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ",
         );
         let roots = global_roots(&module, &[]);
         let a = Root::slot(Place::Global(0)).block();
         assert!(roots[0].is_empty() && roots[1].is_empty());
         assert_eq!(roots[2], Roots::from([a.clone()]));
-        assert_eq!(roots[3], Roots::from([a]));
+        // A global read before its roots are known reads as a block of its
+        // own, and the union over the rounds keeps that block.
+        let c = Root::slot(Place::Global(2)).block();
+        assert_eq!(roots[3], Roots::from([a, c]));
     }
 
     #[test]
-    fn a_borrow_read_from_a_cell_points_where_the_list_points()
+    fn a_pointer_read_from_a_cell_points_where_the_list_points()
     {
         let module = lower(
             "ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် တန်း သည် ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (ပ ၏ တန်ဖိုးအငှား)၊ \
-             (ပ ၏ တန်ဖိုးအငှား) တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ကိန်းရှင် ဂ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် တန်း ၏ အကွက် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် တန်း သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (ပ)၊ (ပ) တို့ပါသော စာရင်း \
+             ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် တန်း ၏ အကွက် ၁ ဖြစ်ပါစေ။
 ",
         );
         let roots = global_roots(&module, &[]);
         let owner = Roots::from([Root::slot(Place::Global(0)).block()]);
         assert_eq!(roots[1], owner);
-        assert_eq!(roots[2], owner);
+        // The fixpoint can keep the cell block the first round read, too.
+        assert!(roots[2].is_superset(&owner), "{:?}", roots[2]);
     }
 
     #[test]
@@ -629,20 +647,5 @@ mod tests
         let global = Root::slot(Place::Global(3)).block();
         assert_eq!(translate(&global, &args), Roots::from([global.clone()]));
         assert!(translate(&Root::slot(Place::Local(5)).block(), &args).is_empty());
-    }
-
-    #[test]
-    fn load_through_an_owner_adds_a_block_step()
-    {
-        let module = lower(
-            "ကိန်းရှင် ခ သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ဂ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ ၏ တန်ဖိုး ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
-",
-        );
-        let roots = global_roots(&module, &[]);
-        assert_eq!(
-            roots[1],
-            Roots::from([Root::slot(Place::Global(0)).block().block()])
-        );
     }
 }

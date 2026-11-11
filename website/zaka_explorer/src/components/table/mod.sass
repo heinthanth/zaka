@@ -25,6 +25,15 @@
   max-width: 100%
   overflow-x: auto
 
+// A table in a pane of the debug dock scrolls up, down and sideways in a box
+// that takes the rest of the pane, so the text around it holds still and the
+// head sticks to the top of the box. The box keeps room for a few rows in a
+// short pane.
+.table-scroll
+  flex: 1 1 auto
+  min-height: 120px
+  overflow: auto
+
 .phase-table
   width: 100%
   border-collapse: separate

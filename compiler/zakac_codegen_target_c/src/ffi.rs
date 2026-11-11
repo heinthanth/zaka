@@ -18,10 +18,12 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::fn_kind::FnKind;
+use zakac_semcheck::foreign::is_c_handle_result;
 use zakac_semcheck::foreign::is_c_text_result;
 use zakac_semcheck::foreign::is_lib_path;
 use zakac_semcheck::kind::DataKind;
 
+use crate::callbacks::shape_name;
 use crate::kinds::c_kind;
 use crate::kinds::is_blob;
 
@@ -50,7 +52,8 @@ const PRELUDE: &str = "\
 char *zk_text_cstr(const unsigned char *at);
 /** Free a duplicate zk_text_cstr made, from the runtime. */
 void zk_text_cstr_free(char *dup);
-/** The text result of a C function, or the failure for NULL, from the runtime. */
+/** The text result of a C function, an optional with no data for NULL, from the \
+                       runtime. */
 void zk_text_from_c(unsigned char *out, size_t size, size_t ok_at, const char *s);
 /** libc's free, for a string C hands over. */
 void free(void *p);
@@ -177,12 +180,16 @@ fn lib_flags(lib: &str) -> Vec<String>
 ///
 /// * `fns` - The C functions of the module.
 /// * `calls` - The call shapes.
+/// * `shapes` - The function kinds C can get as a closure, in the order of
+///   their shapes.
 /// * `platform` - Bit count of the platform-sized kinds.
 ///
 /// # Returns
 ///
 /// The C text.
-pub fn ffi_source(fns: &[ForeignFn], calls: &[FfiCall], platform: u16) -> String
+pub fn ffi_source(
+    fns: &[ForeignFn], calls: &[FfiCall], shapes: &[DataKind], platform: u16,
+) -> String
 {
     let mut structs = Vec::new();
     // A text result is a string to C, no struct.
@@ -191,8 +198,9 @@ pub fn ffi_source(fns: &[ForeignFn], calls: &[FfiCall], platform: u16) -> String
     // A struct given as an other value alone needs its definition too.
     let extra = calls.iter().flat_map(|c| c.extra.iter().copied());
     kinds.chain(extra).for_each(|k| collect_structs(k, &mut structs));
-    let names = Names { structs: &structs, platform };
+    let names = Names { structs: &structs, shapes, platform };
     let mut out = PRELUDE.to_string();
+    do_if!(!shapes.is_empty(), out.push_str(&cb_prelude(shapes.len())));
     structs
         .iter()
         .enumerate()
@@ -205,15 +213,50 @@ pub fn ffi_source(fns: &[ForeignFn], calls: &[FfiCall], platform: u16) -> String
     out
 }
 
+/// The runtime functions a wrapper calls to hand C a closure, and the shape
+/// of each function kind, from `zaka_cb.c`.
+///
+/// # Arguments
+///
+/// * `count` - The count of shapes.
+///
+/// # Returns
+///
+/// The C text.
+fn cb_prelude(count: usize) -> String
+{
+    let mut out = "\n/** The bridge of a function kind C calls back, from the \
+                   runtime. */\ntypedef struct zk_cb_shape zk_cb_shape;\n/** The \
+                   address C calls for a function value, from the runtime. \
+                   */\nzk_code zk_cb_code(zk_fn f, const zk_cb_shape *shape);\n/** \
+                   The count of lends before a C call, from the runtime. */\nsize_t \
+                   zk_cb_lent(void);\n/** End the lends of a C call, from the \
+                   runtime. */\nvoid zk_cb_end(size_t from);\n"
+        .to_string();
+    (0..count)
+        .for_each(|n| _ = writeln!(out, "extern const zk_cb_shape {};", shape_name(n)));
+    out
+}
+
 /// Add each struct a kind holds to a list, the structs of its fields first,
-/// so each C struct is defined before a field names it.
+/// so each C struct is defined before a field names it. A function kind
+/// adds the structs its parameters and its result pass as a value; an
+/// optional reaches C as an address, no struct.
 ///
 /// # Arguments
 ///
 /// * `kind` - The kind.
 /// * `out` - The structs so far.
-fn collect_structs(kind: DataKind, out: &mut Vec<DataKind>)
+pub(crate) fn collect_structs(kind: DataKind, out: &mut Vec<DataKind>)
 {
+    if let Some(f) = kind.as_fn()
+    {
+        let (params, ret) = fn_shape(f);
+        let each = params.into_iter().chain(ret);
+        return each
+            .filter(|k| k.fallible_parts().is_none())
+            .for_each(|k| collect_structs(k, out));
+    }
     let kind = cell_of(kind);
     let Some(s) = kind.as_struct()
     else
@@ -245,14 +288,18 @@ struct Names<'a>
 {
     /// The structs the C functions pass, in the order of their definitions.
     structs: &'a [DataKind],
+    /// The function kinds C can get as a closure, in the order of their
+    /// shapes.
+    shapes: &'a [DataKind],
     /// Bit count of the platform-sized kinds.
     platform: u16,
 }
 
 impl Names<'_>
 {
-    /// The C kind of a kind as the C function sees it: `_Bool`, `void *`,
-    /// a struct of this file, or the C kind the generated C holds.
+    /// The C kind of a kind as the C function sees it: `_Bool`, `void *`
+    /// for an address or a handle, a struct of this file, or the C kind the
+    /// generated C holds.
     ///
     /// # Arguments
     ///
@@ -268,7 +315,11 @@ impl Names<'_>
         {
             DataKind::Bool => "_Bool".into(),
             DataKind::Ptr(_) => "void *".into(),
-            _ if kind.is_textual() || is_c_text_result(kind) => "const char *".into(),
+            _ if kind.is_text() || is_c_text_result(kind) => "const char *".into(),
+            _ if kind.as_external().is_some() || is_c_handle_result(kind) =>
+            {
+                "void *".into()
+            }
             DataKind::Struct(_) =>
             {
                 let at = self.structs.iter().position(|s| *s == kind).unwrap_or(0);
@@ -389,18 +440,24 @@ impl Names<'_>
         each.clone().for_each(|(i, k)| out.push_str(&self.unpack(i, *k)));
         let arg = |(i, k): (usize, &DataKind)| match k
         {
-            k if k.is_textual() => format!("zk_s{i}"),
+            k if k.is_text() => format!("zk_s{i}"),
             k if is_blob(*k) || k.is_fn() => format!("zk_v{i}"),
             _ => format!("zk_a{i}"),
         };
         let args: Vec<String> = each.clone().map(arg).collect();
         let call_text = format!("{}({})", def.name, args.join(", "));
         let ret = def.ret.map(|k| self.real(k));
+        // A closure given to C is lent until the call returns.
+        let lends = kinds.iter().any(|k| self.shapes.contains(k));
+        // The count of lends is read before the unpacking lends a closure.
+        let at = out.find("{\n").map_or(0, |i| i + 2);
+        do_if!(lends, out.insert_str(at, "    size_t zk_lent = zk_cb_lent();\n"));
         let _ = match &ret
         {
             Some(r) => writeln!(out, "    {r} zk_r = {call_text};"),
             None => writeln!(out, "    {call_text};"),
         };
+        do_if!(lends, out.push_str("    zk_cb_end(zk_lent);\n"));
         // A string C gives back can point into a duplicate of a text
         // argument, so the text of the result is taken before those are freed.
         let taken = def.ret.filter(|k| is_c_text_result(*k)).map(|k| {
@@ -412,7 +469,7 @@ impl Names<'_>
             format!("{line}{free}")
         });
         out.push_str(taken.as_deref().unwrap_or_default());
-        let texts = each.filter(|(_, k)| k.is_textual());
+        let texts = each.filter(|(_, k)| k.is_text());
         texts.for_each(|(i, _)| _ = writeln!(out, "    zk_text_cstr_free(zk_s{i});"));
         let tail = match def.ret
         {
@@ -427,7 +484,7 @@ impl Names<'_>
     }
 
     /// The lines that turn a parameter of a wrapper into what C takes: a
-    /// copy of text that ends in a zero octet, or a struct read from its
+    /// duplicate of text that ends in a zero octet, or a struct read from its
     /// octets; nothing for each other kind.
     ///
     /// # Arguments
@@ -441,18 +498,22 @@ impl Names<'_>
     fn unpack(&self, i: usize, kind: DataKind) -> String
     {
         ret_if!(
-            kind.is_textual(),
+            kind.is_text(),
             format!("    char *zk_s{i} = zk_text_cstr(zk_a{i});\n")
         );
         if let Some(f) = kind.as_fn()
         {
-            // C calls the code of the function; a closure stops the run.
+            // C calls the code of a function, and a closure through the
+            // runtime of zaka_cb.c; with no such runtime a closure stops the
+            // run.
             let decl = self.declarator(f, &format!("zk_v{i}"));
             let cast = self.declarator(f, "");
-            return format!(
-                "    {decl} = zk_a{i} ? ({cast})zk_fn_code(zk_fn_c(zk_a{i})) : \
-                 ({cast})0;\n"
+            let shape = self.shapes.iter().position(|k| *k == kind);
+            let code = shape.map_or_else(
+                || format!("zk_fn_code(zk_fn_c(zk_a{i}))"),
+                |n| format!("zk_cb_code(zk_a{i}, &{})", shape_name(n)),
             );
+            return format!("    {decl} = zk_a{i} ? ({cast}){code} : ({cast})0;\n");
         }
         ret_if!(!is_blob(kind), String::new());
         let real = self.real(kind);
@@ -480,7 +541,7 @@ mod tests
     {
         let abs = def("libc", "abs", vec![DataKind::ISIZE], Some(DataKind::ISIZE));
         let call = FfiCall::builder().func(0).build();
-        let text = ffi_source(&[abs], &[call], 64);
+        let text = ffi_source(&[abs], &[call], &[], 64);
         let includes: Vec<&str> =
             text.lines().filter(|l| l.starts_with("#include")).collect();
         assert_eq!(includes, ["#include <stddef.h>", "#include <stdint.h>"]);

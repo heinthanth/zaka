@@ -17,9 +17,9 @@ use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Stmt;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
-use zakac_parser::wrap::in_start_block;
-use zakac_parser::wrap::in_start_block_lines;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::mark::in_marked_code;
+use zakac_semcheck::mark::in_marked_code_lines;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::pos::Pos;
@@ -58,7 +58,7 @@ pub fn run_with(text: &str, options: &BorrowCheckOptions) -> Run
 {
     let mut sm = SourceMap::new();
     let file =
-        sm.new_source_file(FileName::Custom("t.zaka".into()), in_start_block(text));
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_marked_code(text));
     let out = run_phases(
         &file,
         &LexerOptions::default(),
@@ -115,7 +115,7 @@ pub fn lines_with(text: &str, options: &BorrowCheckOptions) -> Vec<(Code, usize)
 /// line the start block adds.
 pub fn old_line(text: &str, run: &Run, pos: &Pos) -> usize
 {
-    let old = in_start_block_lines(text).lines;
+    let old = in_marked_code_lines(text).lines;
     let line = run.file.lookup_file_pos(&run.file.relative_position(pos)).0;
     old.get(line - 1).copied().flatten().map_or(0, |l| l + 1)
 }

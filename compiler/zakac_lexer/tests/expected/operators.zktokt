@@ -1,7 +1,7 @@
 # zakac-lex-artifact v1
 name:
   Custom: operators.zaka
-source: "က နှင့် ခ နှင့် ဂ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ်\nက + ၁ သည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ထက် ကြီးသည်\n၁၆ ကို ၄ ဖြင့် စားသော စားလဒ် နှင့် ၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း ၏ ပေါင်းလဒ်\n၄ ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ်\n၁၆ ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်\n၂၅၅ & ~၄\n၁ သည် ၀ ထက် ကြီးသည် ဖြစ်၍ ၁ သည် ၂ အောက် ငယ်သည်\nအသက် သည် ၁၈ အောက် ငယ်သည် သို့မဟုတ် အသက် သည် ၆၀ ထက် ကြီးသည်\n!(၁ > ၁၀ && ၁ < ၂)\nအနုတ် (က နှင့် ခ ၏ ပေါင်းလဒ်)\n၁၁.၁၁ ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ်\na == b != c <= d >= e << f >> g || h\n"
+source: "က နှင့် ခ နှင့် ဂ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ်\nက + ၁ သည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ထက် ကြီးသည်\n၁၆ ကို ၄ ဖြင့် စားသော စားလဒ် နှင့် ၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း ၏ ပေါင်းလဒ်\n၄ ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ်\n၁၆ ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်\n၂၅၅ & ~၄\n၁ သည် ၀ ထက် ကြီးသည် ဖြစ်၍ ၁ သည် ၂ အောက် ငယ်သည်\nအသက် သည် ၁၈ အောက် ငယ်သည် သို့မဟုတ် အသက် သည် ၆၀ ထက် ကြီးသည်\n!(၁ > ၁၀ && ၁ < ၂)\nအနုတ် (က နှင့် ခ ၏ ပေါင်းလဒ်)\n၁၁.၁၁ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်\na == b != c <= d >= e << f >> g || h\n"
 tokens:
 - kind: ident
   span:
@@ -700,121 +700,127 @@ tokens:
     hi: 1058
   particle: none
   joined: false
-- kind:
-    kw: as
+- kind: ident
   span:
     lo: 1059
     hi: 1074
   particle: none
   joined: false
 - kind:
-    kw: convert
+    kw: as
   span:
     lo: 1075
-    hi: 1124
+    hi: 1090
+  particle: none
+  joined: false
+- kind:
+    kw: convert
+  span:
+    lo: 1091
+    hi: 1140
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 1125
-    hi: 1126
+    lo: 1141
+    hi: 1142
   particle: none
   joined: false
 - kind:
     punct: eq_eq
   span:
-    lo: 1127
-    hi: 1129
+    lo: 1143
+    hi: 1145
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 1130
-    hi: 1131
+    lo: 1146
+    hi: 1147
   particle: none
   joined: false
 - kind:
     punct: ne
   span:
-    lo: 1132
-    hi: 1134
+    lo: 1148
+    hi: 1150
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 1135
-    hi: 1136
+    lo: 1151
+    hi: 1152
   particle: none
   joined: false
 - kind:
     punct: le
   span:
-    lo: 1137
-    hi: 1139
+    lo: 1153
+    hi: 1155
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 1140
-    hi: 1141
+    lo: 1156
+    hi: 1157
   particle: none
   joined: false
 - kind:
     punct: ge
   span:
-    lo: 1142
-    hi: 1144
+    lo: 1158
+    hi: 1160
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 1145
-    hi: 1146
+    lo: 1161
+    hi: 1162
   particle: none
   joined: false
 - kind:
     punct: shl
   span:
-    lo: 1147
-    hi: 1149
+    lo: 1163
+    hi: 1165
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 1150
-    hi: 1151
+    lo: 1166
+    hi: 1167
   particle: none
   joined: false
 - kind:
     punct: shr
   span:
-    lo: 1152
-    hi: 1154
+    lo: 1168
+    hi: 1170
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 1155
-    hi: 1156
+    lo: 1171
+    hi: 1172
   particle: none
   joined: false
 - kind:
     punct: or_or
   span:
-    lo: 1157
-    hi: 1159
+    lo: 1173
+    hi: 1175
   particle: none
   joined: false
 - kind: ident
   span:
-    lo: 1160
-    hi: 1161
+    lo: 1176
+    hi: 1177
   particle: none
   joined: false
 - kind: eof
   span:
-    lo: 1162
-    hi: 1162
+    lo: 1178
+    hi: 1178
   particle: none
   joined: false
 comments: []

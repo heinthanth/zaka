@@ -1,26 +1,26 @@
 ---
 title: Changing a variable
-description: Give a variable a new value with ... ကို ... ဟု ထားပါ။, and duplicate or move a value into one.
+description: Give a variable a new value with ... ကို ... ဟု ထားမည်။, and duplicate a value into one.
 ---
 
 # Changing a variable
 
 A variable can be given a new value later on. This is called *assignment*. In Zaka the
-sentence reads "set x to v": `x ကို v ဟု ထားပါ။`
+sentence reads "set x to v": `x ကို v ဟု ထားမည်။`
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
-အသက် ကို ပြသပါ။
+အသက် ကို ပြသမည်။
 
-အသက် ကို ၂၄ ဟု ထားပါ။                // set age to 24
-အသက် ကို ပြသပါ။
+အသက် ကို ၂၄ ဟု ထားမည်။                // set age to 24
+အသက် ကို ပြသမည်။
 
-အသက် ကို အသက် + ၁ ဟု ထားပါ။          // set age to age + 1
-အသက် ကို ပြသပါ။
+အသက် ကို အသက် + ၁ ဟု ထားမည်။          // set age to age + 1
+အသက် ကို ပြသမည်။
 
-အသက် ကို အသက် နှင့် ၁၀ ၏ ပေါင်းလဒ် ဟု ထားပါ။   // the word form works too
-အသက် ကို ပြသပါ။
+အသက် ကို အသက် နှင့် ၁၀ ၏ ပေါင်းလဒ် ဟု ထားမည်။   // the word form works too
+အသက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -37,9 +37,9 @@ sentence reads "set x to v": `x ကို v ဟု ထားပါ။`
 | `ကို` | (object) | |
 | `အသက် + ၁` | age + 1 | the new value |
 | `ဟု` | "so", "as" | marks the new value |
-| `ထားပါ` | "please put", "please set" | the verb: assign |
+| `ထားမည်` | "please put", "please set" | the verb: assign |
 
-## How `အသက် ကို အသက် + ၁ ဟု ထားပါ။` works
+## How `အသက် ကို အသက် + ၁ ဟု ထားမည်။` works
 
 To a maths student, "age = age + 1" looks impossible. To a computer it is two steps:
 
@@ -53,9 +53,9 @@ A sentence that is true or false can be stored too:
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-ကိန်းရှင် အရွယ်ရောက် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။   // adult, starts as false
-အရွယ်ရောက် ကို အသက် သည် ၁၈ ထက် ကြီးသည် ဟု ထားပါ။
-အရွယ်ရောက် ကို ပြသပါ။
+ကိန်းရှင် အရွယ်ရောက် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။   // adult, set on the next line
+အရွယ်ရောက် ကို အသက် သည် ၁၈ ထက် ကြီးသည် ဟု ထားမည်။
+အရွယ်ရောက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -63,23 +63,21 @@ A sentence that is true or false can be stored too:
 မှန်
 ```
 
-## Duplicating and moving
+## Duplicating in
 
-Two more verbs put a value into a variable and tell how. `ကူးထည့်မည်` ("will duplicate
-into") puts a duplicate there; `ပြောင်းထည့်မည်` ("will move into") moves the value and leaves the
-first variable blank. After `ကိန်းရှင်`, either one makes a new variable of the value's kind:
+One more verb puts a value into a variable: `ကူးထည့်မည်` ("will duplicate in"). After
+`ကိန်းရှင်`, it makes a new variable of the value's kind:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် "မောင်" ဖြစ်ပါစေ။
 ကိန်းရှင် မိတ္တူ ထဲသို့ အမည် ကို ကူးထည့်မည်။      // a duplicate: both keep the text
-ကိန်းရှင် ပိုင်ရှင် ထဲသို့ အမည် ကို ပြောင်းထည့်မည်။   // a move: အမည် is left blank
-"[{အမည်}] [{မိတ္တူ}] [{ပိုင်ရှင်}]" ဟု ပြသပါ။
+"[{အမည်}] [{မိတ္တူ}]" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-[] [မောင်] [မောင်]
+[မောင်] [မောင်]
 ```
 
 | Zaka | Reads as |
@@ -87,10 +85,10 @@ first variable blank. After `ကိန်းရှင်`, either one makes a ne
 | `မိတ္တူ ထဲသို့` | "into the duplicate" |
 | `အမည် ကို` | "the name" (object) |
 | `ကူးထည့်မည်` | "will duplicate in" |
-| `ပြောင်းထည့်မည်` | "will move in" |
 
-A number has nothing to move, so a move of a number leaves it as it is. Moves matter for text,
-lists and the [functions that keep values](../pointers/functions.md#a-function-that-keeps-values).
+On a number, text or a list, this does what `ဟု ထားမည်` and `ဖြစ်ပါစေ` do, since each of them
+gives a duplicate. The verb matters for the [shared objects](../structs/objects.md#a-duplicate-of-its-own)
+of a later page, where it makes a new object.
 
 ## The new value must fit
 
@@ -99,7 +97,7 @@ The new value must suit the variable's kind, just as the initial value did:
 ```zaka-error ZK0401
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
-အသက် ကို ၂.၅ ဟု ထားပါ။
+အသက် ကို ၂.၅ ဟု ထားမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

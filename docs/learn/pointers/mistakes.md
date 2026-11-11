@@ -1,42 +1,45 @@
 ---
 title: Pointer mistakes
-description: The mistakes pointers make possible, and how Zaka catches each one.
+description: The mistakes pointers make possible, the warnings the compiler gives for them, and how the VM stops each one.
 ---
 
 # Pointer mistakes
 
 Pointers are powerful because each one reaches straight into RAM, and that same power
 makes them simple to misuse. In a lot of other languages, a RAM mistake corrupts the
-program without warning. Zaka catches these mistakes twice. The compiler finds each one
-it can prove from the text of the program, and does not run the program. The Zaka
-VM checks each read and write through a pointer while the program runs, stops the
-program at the first mistake, and tells what went wrong.
+program without warning. Zaka catches these mistakes twice. In marked code, the compiler
+warns about each one it can prove from the text of the program. The Zaka VM checks each
+read and write through a pointer while the program runs, stops the program at the first
+mistake, and tells what went wrong.
 
-Each section below shows both. With `--mem-check warn`, the compiler reports the
-mistake as a warning and the program runs, so the VM's own check shows.
+Each program below runs with the default `--mem-check warn`: the compiler prints its
+warning, the program runs, and the VM stops it. With `--mem-check error`, or **Error** in
+the Explorer, the same warnings are errors and nothing runs:
 
-## Reading through a null pointer
-
-```zaka-error ZK0709
+```zaka-error ZK0709 mem-check=error
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။ // never given an address
-"အစ" ဟု ပြသပါ။
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။ // the null address
+ပ ၏ တန်ဖိုး ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0709]: "ပ" is ဗလာ here, so it cannot be dereferenced
+error[ZK0709]: "ပ" points at nothing here, so there is nothing to read or write through it
 ```
 
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
-stops it:
+## Reading through a null pointer
 
-```zaka-stop mem-check=warn
+The compiler warns with ZK0709, and the VM stops the read:
+
+```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။ // never given an address
-"အစ" ဟု ပြသပါ။
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။ // the null address
+"အစ" ဟု ပြသမည်။
+ပ ၏ တန်ဖိုး ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -45,42 +48,27 @@ stops it:
 the program stopped: access through a null address at 0x0
 ```
 
-Give the pointer an address first, or test it against `ဗလာ`.
+Give the pointer an address first, or test it against `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`.
 
 ## Reading past the end
 
-A block of 4 integers has boxes 0 to 3. Box 4 is outside it:
+A block of 4 integers has boxes 0 to 3. Box 4 is outside it. The compiler warns with
+ZK0710:
 
-```zaka-error ZK0710
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-
+```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ + ၃ ၏ တန်ဖိုး ကို ပြသပါ။     // the last box: fine
-ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။     // one past the end
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0710]: offset 4 is past the end of a block of 4 elements
-```
-
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
-stops it:
-
-```zaka-stop mem-check=warn
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ + ၃ ၏ တန်ဖိုး ကို ပြသပါ။     // the last box: fine
-ပ + ၄ ၏ တန်ဖိုး ကို ပြသပါ။     // one past the end
+ပ + ၃ ၏ တန်ဖိုး ကို ပြသမည်။     // the last box: fine
+ပ + ၄ ၏ တန်ဖိုး ကို ပြသမည်။     // one past the end
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 ၀
-the program stopped: access of 8 octets at 0x101040 lands outside each live block
+the program stopped: access of 8 octets at 0x101020 lands outside each live block
 ```
 
 A new block starts out filled with zeros, so box 3 prints `၀`. Count from 0 and stop
@@ -91,31 +79,17 @@ is the one that catches it.
 ## Reading past a variable
 
 Each variable has a block of its own, with a gap after it, just like the heap blocks
-above. A borrow of a variable points at a block of one box, so a step past it lands in
+above. The address of a variable points at a block of one box, so a step past it lands in
 the gap:
 
-```zaka-error ZK0710
+```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။ // points at က
-ပ + ၁ ၏ တန်ဖိုး ကို ပြသပါ။                                      // one past က
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0710]: offset 1 is past the end of a block of 1 elements
-```
-
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
-stops it:
-
-```zaka-stop mem-check=warn
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။ // points at က
-ပ + ၁ ၏ တန်ဖိုး ကို ပြသပါ။                                      // one past က
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။ // points at က
+ပ + ၁ ၏ တန်ဖိုး ကို ပြသမည်။                                      // one past က
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -132,10 +106,9 @@ The Zaka VM can set out variables in two forms:
 | checked, the default | each in a block of its own, with a gap after it | stops the program |
 | packed | the locals of a call next to each other in one block, as C does, and the globals in one more | reads or changes the next variable |
 
-Run a program with `zakac run --mem-check warn --frames packed`, or pick **Warn** for
-**Ownership check** and **Packed, as C** for **Variables** in the Explorer's settings.
-The program above then prints `၂`, the value of `ခ`, and goes on as if nothing were
-wrong.
+Run a program with `zakac run --frames packed`, or pick **Packed, as C** for **Variables**
+in the Explorer's settings. The program above then prints `၂`, the value of `ခ`, and goes
+on as if nothing were wrong.
 
 Packed is how C sets out variables, and how native Zaka programs will. There, a step
 past a variable changes its neighbour with no warning, and the program goes wrong far
@@ -145,36 +118,20 @@ to see what the checks catch.
 
 ## Using a block after giving it back
 
-`မိတ္တူ` borrows the block of `ပ`, and `ပ` gives the block back while `မိတ္တူ` still has
-a read to do:
+`မ` holds a duplicate of the address in `ပ`. Giving the block back through `ပ` sets `ပ` to
+the null address, but `မ` still holds the old address. The compiler warns with ZK0704, at the
+give-back and at the later use:
 
-```zaka-error ZK0704
+```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
-ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားမည်။
+ကိန်းရှင် မ သည် ပ ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0704]: the block of "ပ" is freed here, but "မိတ္တူ" still borrows it and is used later
-```
-
-The message points at the give-back, and at the later read of `မိတ္တူ` as well. With
-`--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM stops
-it:
-
-```zaka-stop mem-check=warn
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။
-ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-မိတ္တူ ၏ တန်ဖိုး ကို ပြသပါ။
+မ ၏ တန်ဖိုး ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -182,47 +139,24 @@ it:
 the program stopped: access at 0x101000 inside a freed block
 ```
 
-Swap the last two lines, so the read comes before the give-back, and the program prints
-`၇`. Resizing the block while a borrow of it is still in use is the same mistake, since
-the block can move.
-
-Declared as a plain `ကိန်းပြည့် လိပ်စာ`, `မိတ္တူ` would take the block from `ပ` instead of
-borrowing it. That program is correct: `ပ` holds `ဗလာ` after the move, so giving it back
-does nothing, and `မိတ္တူ` owns the block and gives it back itself.
-
-A function that returns a borrow of its own variable would leave its caller with the same
-fault. The compiler refuses that function: see [how long an address
-lasts](out-parameters.md#how-long-an-address-lasts).
+Swap the last two lines of the marked block, so the read comes before the give-back, and
+the program prints `၇`. Resizing the block while a duplicate of its address is still in use is
+the same mistake, since the block can move.
 
 ## Giving a block back twice
 
-```zaka-error ZK0702
+Giving the block back through `မ` as well gives it back a second time. The compiler warns
+with ZK0704:
+
+```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
+ကိန်းရှင် မ သည် ပ ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-လိပ်စာ မိတ္တူ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0704]: the block of "ပ" is freed here, but "မိတ္တူ" still borrows it and is used later
-error[ZK0702]: a borrowed address cannot be freed or resized; free its owner instead
-```
-
-The last line gives the block back through a borrow, which is never allowed: the owner
-alone gives a block back (ZK0702). The line before it is wrong as well, because the last
-line still uses `မိတ္တူ` (ZK0704). With `--mem-check warn`, or **Warn** in the Explorer,
-the program runs and the VM stops it:
-
-```zaka-stop mem-check=warn
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ကိန်းရှင် မိတ္တူ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-လိပ်စာ မိတ္တူ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လိပ်စာ မ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -231,33 +165,21 @@ the program stopped: the block at 0x101000 was freed before
 ```
 
 Giving back `ပ` a second time would be harmless, because the first time set it to
-null.
+null. Keep each block in one variable that gives it back, and hand it to another function
+with [`အပိုင်အနေဖြင့်`](ownership.md#owned-results-and-parameters).
 
 ## Giving back a block that was not asked for
 
-Blocks from `နေရာယူ၍` can be given back; a variable's own storage cannot. A pointer at a
-variable is a borrow, and a borrow never gives a block back:
+Blocks from `နေရာယူ၍` can be given back; a variable's own storage cannot. The compiler
+warns with ZK0702:
 
-```zaka-error ZK0702
+```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0702]: a borrowed address cannot be freed or resized; free its owner instead
-```
-
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
-stops it:
-
-```zaka-stop mem-check=warn
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -265,99 +187,58 @@ stops it:
 the program stopped: 0x1000 is not the start of a live heap block
 ```
 
-An address inside a heap block, such as `ပ + ၂`, is a borrow too, so giving it back is
-the same error.
+An address inside a heap block, such as `ပ + ၂`, is not the start of a block either, so
+giving it back stops the program too.
 
-## After giving a block to a function
+## Giving back the address of a local
 
-A function whose parameter is a plain `ကိန်းပြည့် လိပ်စာ` takes the block. After the
-call, the caller's variable holds `ဗလာ`:
+The variables of a function end with the call: when it returns, their RAM is given back.
+A function that gives back the address of one of them leaves its caller a pointer into
+storage that is gone. The compiler warns with ZK0706:
 
-```zaka-error ZK0701
-လုပ်ဆောင်ချက် ရှင်းပစ် သည်
-ကိန်းပြည့် လိပ်စာ က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လိပ်စာ က ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+```zaka-stop
+စိတ်မချရသော လုပ်ဆောင်ချက် မှား သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် လိပ်စာ တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် x သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+x ၏ လိပ်စာ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-လုပ်ဆောင်ချက် ရှင်းပစ် ကို ပ တို့ဖြင့် လုပ်ဆောင်ပါ။          // hands the block over
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် လုပ်ဆောင်ချက် မှား ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ပ ၏ တန်ဖိုး ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0701]: "ပ" was moved to another owner and now holds ဗလာ
+the program stopped: access at 0x1020 inside a freed block
 ```
 
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
-stops it at the read of `ဗလာ`:
-
-```zaka-stop mem-check=warn
-လုပ်ဆောင်ချက် ရှင်းပစ် သည်
-ကိန်းပြည့် လိပ်စာ က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လိပ်စာ က ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-လုပ်ဆောင်ချက် ရှင်းပစ် ကို ပ တို့ဖြင့် လုပ်ဆောင်ပါ။          // hands the block over
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-the program stopped: access through a null address at 0x0
-```
-
-In C, this is a use after free hidden inside another function. In Zaka the header tells:
-`ရှင်းပစ်` takes the block. To keep the block, give the parameter a `ငှားထားသော` kind and
-lend the block with `ပ ၏ တန်ဖိုးအငှား`. Then `ရှင်းပစ်` cannot give it back.
+Pointing *into* a function at the caller's variables is fine: the caller's variables
+outlive the call. Room that must outlive the function that makes it is a block from the
+[heap](heap.md), handed to the caller as an [owned
+result](ownership.md#owned-results-and-parameters).
 
 ## Losing a block
 
-A block whose last owner is overwritten, or ends with its function, can never be given
-back:
+A block whose last pointer is overwritten, or ends with its function, can never be given
+back. The compiler warns with ZK0708, and the program runs to its end, since a lost block
+does no harm at once:
 
-```zaka-error ZK0708
-လုပ်ဆောင်ချက် စမ်း သည်
+```zaka
+စိတ်မချရသော လုပ်ဆောင်ချက် စမ်း သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၈ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။  // the first block is lost
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
+ပ ၏ တန်ဖိုး ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။                                     // the second is lost too
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် စမ်း ကို လုပ်ဆောင်ပါ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0708]: the block that "ပ" owns is never freed or moved on this path
-error[ZK0708]: the block that "ပ" owns is never freed or moved on this path
-```
-
-The first message is for the second `နေရာယူ၍`, which overwrites the owner of the first
-block. The second is for the end of `စမ်း`, where `ပ` still holds the second block. With
-`--mem-check warn`, or **Warn** in the Explorer, the program runs to its end, since a
-lost block does no harm at once:
-
-```zaka mem-check=warn
-လုပ်ဆောင်ချက် စမ်း သည်
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-မင်မိုရီတွင် ကိန်းပြည့် ၈ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။  // the first block is lost
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။                                     // the second is lost too
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် စမ်း ကို လုပ်ဆောင်ပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် စမ်း ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -366,17 +247,17 @@ lost block does no harm at once:
 ```
 
 Called in a loop, though, such a function eats the heap a little at a time. The compiler
-checks each overwrite of an owner and the end of each function. A block that a top-level
-variable still holds when the program ends is for `zakac run --leaks`, which lists each
-forgotten block. `samples/mistakes/leak.zaka` asks for a block three times and gives back
-the last one alone:
+checks each overwrite of a pointer that holds a block it made, and the end of each
+function. For the blocks that remain when the program ends, run it with
+`zakac run --leaks`, which lists each forgotten block. `samples/mistakes/leak.zaka` asks
+for a block three times and gives back the last one alone:
 
 ```console
-$ zakac run --mem-check warn --leaks samples/mistakes/leak.zaka
-warning[ZK0708]: the block that "ပ" owns is never freed or moved on this path
- --> samples/mistakes/leak.zaka:5:1
+$ zakac run --leaks samples/mistakes/leak.zaka
+warning[ZK0708]: the block that "ပ" holds is never given back or handed over on this path
+ --> samples/mistakes/leak.zaka:6:1
   |
-5 | မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+6 | မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ၁၀
 ၂၀
@@ -385,11 +266,13 @@ leak: block at 0x101000, 16 octets
 leak: block at 0x101020, 16 octets
 ```
 
+Text, lists, shared objects and closures never show here: the compiler frees them.
+
 ## Mistakes the compiler catches
 
-Some mistakes are visible before the program runs, and the compiler reports them. The
-ZK04 codes are about kinds; the ZK07 codes come from the check of [ownership and
-borrowing](ownership.md):
+The ZK04 codes are about kinds and marks, and are errors in each mode. The ZK07 codes come
+from the pointer check: in marked code each follows `--mem-check`, and in safe code each
+is an error.
 
 | Code | Mistake |
 | --- | --- |
@@ -401,28 +284,30 @@ borrowing](ownership.md):
 | ZK0415 | using an operator such as `*` or `/` on a pointer |
 | ZK0416 | comparing or subtracting pointers of different kinds |
 | ZK0417 | a heap statement given something other than a pointer |
-| ZK0701 | using an owner after its block moved to another owner |
-| ZK0702 | giving back or resizing a block through a borrow |
-| ZK0703 | keeping a borrow in a heap block, behind a pointer, or in a top-level variable from a function |
-| ZK0704 | giving back, resizing or moving a block while a borrow of it is still in use |
-| ZK0705 | taking the address of a borrow |
-| ZK0706 | returning a borrow of a function's own variable |
-| ZK0707 | a call that can give back a block through one argument while another argument reaches the same block |
-| ZK0708 | losing a block: its owner is overwritten, or its function ends, while it holds the block |
-| ZK0709 | reading or writing through a pointer that is `ဗလာ` on each path to the read |
+| ZK0468 | pointer work, or a call of a marked function, outside marked code |
+| ZK0469 | a marked function as a function value |
+| ZK0470 | `အပိုင်အနေဖြင့်` on a kind that is not a pointer |
+| ZK0471 | a mark under `--no-unsafe` |
+| ZK0472 | a C function with a pointer, declared with no mark |
+| ZK0701 | reading a variable after it handed its block to an `အပိုင်အနေဖြင့်` parameter: an error in each mode |
+| ZK0702 | giving back or resizing the address of a variable |
+| ZK0703 | keeping the address of a variable in a heap block, behind a pointer, or in a top-level variable from a function |
+| ZK0704 | using, giving back or resizing a block after it was given back, resized or moved |
+| ZK0706 | giving back the address of a function's own variable |
+| ZK0707 | a call that hands a block over through one argument while another argument reaches the same block |
+| ZK0708 | losing a block: its pointer is overwritten, or its function ends, while it holds the block |
+| ZK0709 | reading or writing through a pointer that holds the null address on each path to the read |
 | ZK0710 | a box or cell number past the end of its block |
-| ZK0711 | a warning, with `--mem-strict` alone: using a pointer that can be `ဗလာ` |
+| ZK0711 | a warning, with `--mem-strict` alone: using a pointer that can hold the null address |
 | ZK0712 | subtracting pointers into different blocks |
-| ZK0713 | `ငှားထားသော` in the wrong place in a pointer kind |
-| ZK0714 | a borrow given where an owner is wanted |
-| ZK0715 | an owner given where a borrow is wanted |
-| ZK0716 | lending a raw address with `တန်ဖိုးအငှား` |
-| ZK0717 | a raw address kind under `--no-raw` |
+| ZK0721 | a `ကူးယူမည်` whose source and destination share cells |
 
 ```zaka-error ZK0413
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
-က ၏ တန်ဖိုး ကို ပြသပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+က ၏ တန်ဖိုး ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -434,12 +319,11 @@ error[ZK0413]: isize is not a pointer and cannot be dereferenced
 
 - Introduce a new fault into each program on this page, and read the message.
 - Fix the "past the end" program so it prints all four boxes and nothing more.
-- Run the "past a variable" program with `--mem-check warn --frames packed`. Then write
-  `၉` through `ပ + ၁` and print `ခ`. Which variable changed?
-- Set **Ownership check** to **Warn** in the Explorer's settings, and step through each
-  program on this page to the line where the VM stops it.
-- Write a function that asks for a block and returns its address. Is that a mistake?
-  (No: the caller owns the block from then on.)
+- Run the "past a variable" program with `--frames packed`. Then write `၉` through
+  `ပ + ၁` and print `ခ`. Which variable changed?
+- Step through each program on this page in the Explorer to the line where the VM stops it.
+- Write a marked function that asks for a block and returns its address. What must its
+  result header hold? (`အပိုင်အနေဖြင့်`: the caller owns the block from then on.)
 
 This is the last page of Learn. The [Docs](../../manual/README.md) give the full rules of
 the language, the compiler and the VM.

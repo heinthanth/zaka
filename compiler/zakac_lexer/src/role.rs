@@ -96,7 +96,6 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Loop
         | Kw::NextIteration
         | Kw::BlockOpen
-        | Kw::FnOpen
         | Kw::FnOpenRet
         | Kw::BlockClose
         | Kw::ProgramClose
@@ -107,6 +106,8 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Outside
         | Kw::Coming
         | Kw::OtherValues
+        | Kw::Along
+        | Kw::WithOtherValues
         | Kw::External
         | Kw::OneFunction
         | Kw::WillAccept
@@ -138,34 +139,46 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::FieldsCloseAnd
         | Kw::ClassifierIs
         | Kw::KindWord
-        | Kw::Meaning
         | Kw::Among
         | Kw::Other
         | Kw::AliasClose
         | Kw::Also
         | Kw::AsWellAs
         | Kw::CanRegard
-        | Kw::Export => TokenRole::Control,
+        | Kw::CanRegardAnd
+        | Kw::AliasCloseAnd
+        | Kw::StructWord
+        | Kw::EnumWord
+        | Kw::ToUse
+        | Kw::InitialMark
+        | Kw::ValueAs
+        | Kw::Export
+        | Kw::Shareable
+        | Kw::Unsafe
+        | Kw::UnsafeThough
+        | Kw::UnsafeBlockOpen => TokenRole::Control,
         Kw::Print
         | Kw::Assign
-        | Kw::Return
         | Kw::WillReturn
-        | Kw::Call
         | Kw::Let
         | Kw::Stop
         | Kw::Skip
-        | Kw::ReturnValue
-        | Kw::ReturnFault
-        | Kw::ReturnGood
         | Kw::MarkSucceeded
         | Kw::MarkFailed
         | Kw::WillMark
         | Kw::WillKeep
         | Kw::WillResize
         | Kw::WillRelease
+        | Kw::CallLeave
+        | Kw::WillGrant
+        | Kw::WillRevoke
+        | Kw::AllowCall
+        | Kw::RevokeCall
         | Kw::WillBlit
         | Kw::WillShift
         | Kw::WillDupIn
+        | Kw::WillDupAllIn
+        | Kw::All
         | Kw::WillFill
         | Kw::Contains
         | Kw::ContainsAnd
@@ -178,6 +191,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Difference
         | Kw::Product
         | Kw::Equal
+        | Kw::SameOne
         | Kw::NotEqual
         | Kw::Greater
         | Kw::NotGreater
@@ -241,11 +255,17 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Step
         | Kw::CountAs
         | Kw::AsOwned
-        | Kw::Lending
+        | Kw::ToChange
+        | Kw::ToFill
+        | Kw::DataToChange
+        | Kw::DataToFill
+        | Kw::MarkWord
+        | Kw::Called
         | Kw::ListOf
         | Kw::StartingAt
         | Kw::Upto
-        | Kw::Having => TokenRole::Particle,
+        | Kw::Having
+        | Kw::HavingRel => TokenRole::Particle,
         Kw::IntKind
         | Kw::FloatKind
         | Kw::CharKind
@@ -262,23 +282,36 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Fault
         | Kw::SuccessNews
         | Kw::FailureNews
+        | Kw::Perhaps
+        | Kw::CanHold
+        | Kw::DataCell
+        | Kw::NoData
+        | Kw::Data
+        | Kw::Within
+        | Kw::NotLocated
+        | Kw::HasData
+        | Kw::LacksData
+        | Kw::HasGood
+        | Kw::HasFault
+        | Kw::FaultData
+        | Kw::CalledFault
+        | Kw::AsFault
         | Kw::Succeeded
         | Kw::NotSucceeded
         | Kw::Note
         | Kw::Address
-        | Kw::RawAddress
-        | Kw::Borrowed
-        | Kw::EditParam
         | Kw::FnKind
-        | Kw::EditArg
-        | Kw::EditableAttr
-        | Kw::EditableClaim
-        | Kw::Lend
+        | Kw::FnValue
         | Kw::Octets
         | Kw::Items
-        | Kw::List
-        | Kw::Part => TokenRole::Kind,
-        Kw::True | Kw::False | Kw::Null | Kw::BlankList => TokenRole::Truth,
+        | Kw::List => TokenRole::Kind,
+        Kw::True
+        | Kw::False
+        | Kw::Null
+        | Kw::Nothing
+        | Kw::PointsAtNo
+        | Kw::BlankList
+        | Kw::Initial => TokenRole::Truth,
     }
 }
 

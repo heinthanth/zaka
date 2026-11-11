@@ -85,7 +85,7 @@ fn ten_isize() -> SizeArg
     SizeArg::builder().count(int(2, 10, 0)).unit(unit).span(sp(0, 4)).build()
 }
 
-/// `x ကို 1 နှင့် 2 ၏ ပေါင်းလဒ် ဟု ထားပါ။` written out in full.
+/// `x ကို 1 နှင့် 2 ၏ ပေါင်းလဒ် ဟု ထားမည်။` written out in full.
 fn sample() -> Program
 {
     let sum = VerbExpr::builder()
@@ -227,7 +227,7 @@ fn kind_builder_keeps_optional_fields()
 }
 
 #[test]
-fn sexpr_prints_the_tree_compactly()
+fn sexpr_prints_the_tree_in_short_form()
 {
     assert_eq!(sample().to_sexpr(), "(program (set x (add 1 2)))");
     let kind = Kind::builder().base(BaseKind::Int).bits(8).signed(false).span(sp(0, 1));

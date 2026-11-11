@@ -1,6 +1,6 @@
 ---
 title: Modules
-description: Split a program into files, share names with အများသုံး, and bring them into another file with ထည့်သွင်းပါ.
+description: Split a program into files, share names with အများသုံး, and bring them into another file with ထည့်သွင်းမည်.
 ---
 
 # Modules
@@ -15,16 +15,16 @@ them and run the second one with `zakac run`.
 ```zaka-file
 // math.zaka
 အများသုံး လုပ်ဆောင်ချက် နှစ်ထပ် သည်
-ကိန်းပြည့် က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-က * က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က * က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-file
 // main.zaka
-"math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းပါ။
-လုပ်ဆောင်ချက် နှစ်ထပ် ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+"math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းမည်။
+လုပ်ဆောင်ချက် နှစ်ထပ် ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ```
 
 ```console
@@ -36,12 +36,13 @@ $ zakac run main.zaka
 | --- | --- |
 | `အများသုံး လုပ်ဆောင်ချက် နှစ်ထပ်` | "the function `နှစ်ထပ်`, for common use" |
 | `"math.zaka" မှ` | "from `math.zaka`" |
-| `နှစ်ထပ် ကို ထည့်သွင်းပါ` | "please bring in `နှစ်ထပ်`" |
+| `နှစ်ထပ် ကို ထည့်သွင်းမည်` | "please bring in `နှစ်ထပ်`" |
 
 ## Sharing names
 
 A function, a struct, a variable or a constant at the top level of a file belongs to that
-file. `အများသုံး` before it shares it: other files can then import it. Each name without
+file. `အများသုံး` before it shares it, and on a struct or an enumeration it goes after
+`ဟူသော`, as in `နေရာ ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...`: other files can then import it. Each name without
 the mark remains private, so a file can keep helpers that no other file sees.
 
 ```zaka-file
@@ -50,26 +51,26 @@ the mark remains private, so a file can keep helpers that no other file sees.
 
 // shared: other files can import it
 အများသုံး လုပ်ဆောင်ချက် ကန့်သတ် သည်
-ကိန်းပြည့် က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-အကယ်၍ လုပ်ဆောင်ချက် ကျော်လွန် ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်လျှင် အများဆုံး ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ လုပ်ဆောင်ချက် ကျော်လွန် ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်လျှင် အများဆုံး ကို ပြန်ပေးမည်။
+က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 // private: math.zaka alone can call it
 လုပ်ဆောင်ချက် ကျော်လွန် သည်
-ကိန်းပြည့် က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။
-က သည် အများဆုံး ထက် ကြီးသည် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
+က သည် အများဆုံး ထက် ကြီးသည် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-file
 // main.zaka
-"math.zaka" မှ ကန့်သတ်၊ အများဆုံး တို့ကို ထည့်သွင်းပါ။
-လုပ်ဆောင်ချက် ကန့်သတ် ကို ၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
-လုပ်ဆောင်ချက် ကန့်သတ် ကို ၅၀၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
-အများဆုံး ကို ပြသပါ။
+"math.zaka" မှ ကန့်သတ်၊ အများဆုံး တို့ကို ထည့်သွင်းမည်။
+လုပ်ဆောင်ချက် ကန့်သတ် ကို ၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်ချက် ကန့်သတ် ကို ၅၀၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+အများဆုံး ကို ပြသမည်။
 ```
 
 ```console
@@ -87,8 +88,8 @@ $ zakac run main.zaka
 An import names a file and the names it takes from it:
 
 ```zaka-file
-"math.zaka" မှ ကန့်သတ်၊ အများဆုံး တို့ကို ထည့်သွင်းပါ။
-"math.zaka" မှ ကန့်သတ် ကို ထည့်သွင်းပါ။
+"math.zaka" မှ ကန့်သတ်၊ အများဆုံး တို့ကို ထည့်သွင်းမည်။
+"math.zaka" မှ ကန့်သတ် ကို ထည့်သွင်းမည်။
 ```
 
 - Several names take `၊` between them and `တို့ကို` after the last; one name takes `ကို`.
@@ -114,29 +115,31 @@ values belong in the file that is run, the one given to `zakac run`.
 The variables and constants of an imported file get their starting value before the
 program runs, so the value must be known at compile time: a literal, a constant, or
 operators on them, as in `၁၀ * ၃`. A value from a function call is not allowed there for
-now. A variable with no value starts at its default, as elsewhere.
+now. A file run as a module has no start block to set its variables later, so each one
+gets its value in its declaration; one with no value is the error ZK0483 ([Globals of a
+module](../../manual/language/modules.md#globals-of-a-module)).
 
 ```zaka-file
 // counter.zaka
 အများသုံး ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ * ၃ ဖြစ်ပါစေ။
-အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 
 အများသုံး လုပ်ဆောင်ချက် တိုး သည်
-ကိန်းပြည့် အရေ ကို လက်ခံပြီး
+အရေ ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အကယ်၍ အကြိမ် + အရေ သည် အများဆုံး ထက် ကြီးလျှင် ပြန်ပေးပါ။
-အကြိမ် ကို အကြိမ် + အရေ ဟု ထားပါ။
+အကယ်၍ အကြိမ် + အရေ သည် အများဆုံး ထက် ကြီးလျှင် ပြန်ပေးမည်။
+အကြိမ် ကို အကြိမ် + အရေ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-file
 // main.zaka
-"counter.zaka" မှ အကြိမ်၊ တိုး တို့ကို ထည့်သွင်းပါ။
-လုပ်ဆောင်ချက် တိုး ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် တိုး ကို ၁၅ တို့ဖြင့် လုပ်ဆောင်ပါ။
-အကြိမ် ကို ပြသပါ။
-လုပ်ဆောင်ချက် တိုး ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်ပါ။
-အကြိမ် ကို ပြသပါ။
+"counter.zaka" မှ အကြိမ်၊ တိုး တို့ကို ထည့်သွင်းမည်။
+လုပ်ဆောင်ချက် တိုး ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် တိုး ကို ၁၅ တို့ဖြင့် လုပ်ဆောင်မည်။
+အကြိမ် ကို ပြသမည်။
+လုပ်ဆောင်ချက် တိုး ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်မည်။
+အကြိမ် ကို ပြသမည်။
 ```
 
 ```console

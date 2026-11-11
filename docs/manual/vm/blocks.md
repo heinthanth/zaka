@@ -34,8 +34,8 @@ laid out upward from address 0:
  end    └──────────────────────────────┘
 ```
 
-- **Reserved.** An address below 4096 is never part of a block. `ဗလာ`, and each small
-  offset from it, falls here, so a read through a null pointer cannot find a block
+- **Reserved.** An address below 4096 is never part of a block. The null pointer, address 0, and each small
+  offset from it fall here, so a read through a null pointer cannot find a block
   through luck. On a platform of 8 bits the reserved part is 1/16 of the space, 16 addresses.
 - **Static.** Before `main` starts, each global gets a block of zeros, then each static
   text of the module gets a block that holds its UTF-8, and then each static list a block
@@ -43,10 +43,9 @@ laid out upward from address 0:
   until the end. A static text or list block is *frozen*: a read works, and a write traps with
   `write at ADDR inside static data, which cannot change`. Each literal of the same text
   points into the one block, so a write would change them all. The compiler forbids such a
-  write ([Text](../language/text.md#cells)), and an edit of text or of a plain list, a
-  slice of the list or the address of one of its cells first copies static cells into a
-  heap block ([Changing text](../language/text.md#changing-text)); a raw address alone can
-  reach one.
+  write ([Text](../language/text.md)), and an edit of text or of a plain list, or the
+  address of one of its cells, first copies static cells into a heap block; a pointer made
+  from an integer in marked code alone can reach one.
 - **Stack region.** It opens right after the statics. Its size is `--max-stack` or half
   of the room left, whichever is smaller; the heap starts at its end.
 - **Heap.** New blocks go above all the blocks made so far.
@@ -60,12 +59,14 @@ address, so the arrangement can be seen:
 ကိန်းရှင် ဒုတိယ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ ကို ပြသပါ။
+ပ ကို ပြသမည်။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ဒုတိယ တွင် သိမ်းထားမည်။
-ဒုတိယ ကို ပြသပါ။
+ဒုတိယ ကို ပြသမည်။
 လိပ်စာ ဒုတိယ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -88,6 +89,9 @@ The reason is in [the life of a heap block](#the-life-of-a-heap-block).
 | live | whether the block is in use; a freed block stands in the table as a record |
 | frozen | whether a write inside the block traps; set for static text |
 | owner | the call depth that made a stack block; 0 for heap and static blocks |
+| count | the number of values that hold a counted block (text, a plain list, a shared object, a box, the record of a closure); the last to let go frees it, and a block from a heap statement has none |
+| cell kind | the kind of each cell of a counted block, so the ring collector can walk the blocks its cells hold |
+| pinned | whether an address of one of its cells was taken; a duplicate of a pinned block copies its cells and never shares them |
 
 The table is kept in order of start. To check an access of `n` octets at `a`, the VM takes
 the last block that starts at or below `a` and asks whether `a + n` remains inside it.
@@ -137,7 +141,7 @@ counting the end.
 
 1. **Allocate.** A new block gets the lowest fresh address above each block made so far,
    filled with zeros, and counts against the heap cap. If the cap or the space has no
-   room, the statement leaves `ဗလာ`.
+   room, the statement leaves the null pointer.
 2. **Free.** The block becomes *freed*: its contents are dropped, but its start and
    length remain in the table, and its start joins a queue of freed blocks, oldest first.
    This is the *quarantine*. An access that lands in a freed block is a use after free,
@@ -149,7 +153,7 @@ counting the end.
    quarantine is shorter, and a use after free can go unseen once the block is reused.
 4. **Resize.** A resize makes a new block each time, copies as much of the old contents as
    fits, zeroes the rest, and frees the old block. The new block can sit at another
-   address, so a borrow made before the resize points into a freed block afterwards.
+   address, so a pointer taken before the resize points into a freed block afterwards.
 
 The cap counts live heap octets. A free lowers the count, and the VM remembers the
 peak, which the Explorer shows.
@@ -176,8 +180,9 @@ A freed stack block has no quarantine. It remains in the table until a later cal
 room, and the table then forgets it. Until then, a read through the address of a local of
 a function that has returned traps as a use after free, and the message names the
 variable and its function. After another call has taken the room, the read finds the new
-local, as it would on a real machine. This is the reason the compiler refuses a function that
-returns a borrow of its own variable: see [pointer checks](../compiler/checks.md).
+local, as it would in a native program. This is the reason the compiler warns about a
+function that returns the address of its own variable (ZK0706): see [Unsafe
+Zaka](../language/unsafe.md).
 
 A call whose locals do not fit in what is left of the region traps with `stack full`.
 
@@ -227,29 +232,29 @@ $ zakac run --frames packed program.zaka
 ```
 
 Here `program.zaka` declares two integers `က` and `ခ` one after the other at its top
-level, and its start block prints `က ၏ လိပ်စာ` and `ခ ၏ လိပ်စာ`. The checked run leaves 24 addresses between them, and the packed run
+level, and a marked block in its start block prints `က ၏ လိပ်စာ` and `ခ ၏ လိပ်စာ`. The checked run leaves 24 addresses between them, and the packed run
 leaves none.
 
-The difference shows when a mistake is made. A program borrows `က`, writes `၉` one box
-past it, and prints `ခ`:
+The difference shows when a mistake is made. A marked block takes the address of `က`,
+writes `၉` one box past it, and the program prints `ခ`:
 
 ```console
-$ zakac run --mem-check warn program.zaka
+$ zakac run program.zaka
 warning[ZK0710]: offset 1 is past the end of a block of 1 elements
-zaka_vm: the program stopped: access of 8 octets at 0x1008 lands outside each live block (in ပရိုဂရမ်, op 8); block at 0x1000, 8 octets, global က
-$ zakac run --mem-check warn --frames packed program.zaka
+zaka_vm: the program stopped: access of 8 octets at 0x1008 lands outside each live block (in ပရိုဂရမ်, op 12); block at 0x1000, 8 octets, global က
+$ zakac run --frames packed program.zaka
 warning[ZK0710]: offset 1 is past the end of a block of 1 elements
 ၉
 ```
 
 Checked stops at the write. Packed writes `၉` over `ခ`, so the program prints it, and the program goes wrong far
 from the line at fault. Keep the checked mode to find such mistakes; use packed to see
-what the checks protect from. [Pointer mistakes](../../learn/pointers/mistakes.md#reading-past-a-variable)
-walks through the program in Learn.
+what the checks protect from. [Pointer mistakes](../../learn/pointers/mistakes.md) walks
+through such a program in Learn.
 
 ## Looking at the blocks
 
 The [Explorer](/explorer/) draws the table of blocks while a
 program steps, with each block's start, length, origin and state. `zakac run --leaks`
-lists the live heap blocks at the end of a run: a block that is still live then was never
-given back.
+lists the live heap blocks at the end of a run, once the ring collector has run: a block
+that is still live then was never given back.

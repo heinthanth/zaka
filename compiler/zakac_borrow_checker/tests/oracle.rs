@@ -10,6 +10,7 @@ use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_with;
 use zaka_vm::trap::TrapKind;
 use zakac_borrow_checker::options::BorrowCheckOptions;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen_target_vm::artifact::run_phases;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_diagnostics::has_errors;
@@ -62,9 +63,9 @@ fn raw_expr(e: &Expr) -> bool
         | ExprNode::Lend { operand }
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }
-        | ExprNode::Own { value: operand }
+        | ExprNode::Own { value: operand, .. }
         | ExprNode::Closure { record: operand, .. }
-        | ExprNode::Plain { value: operand }
+        | ExprNode::CField { base: operand, .. }
         | ExprNode::FieldAddr { base: operand, .. } => raw_expr(operand),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
@@ -142,6 +143,8 @@ fn raw_stmt(s: &Stmt) -> bool
         Stmt::Free { dest, .. }
         | Stmt::Drop { dest, .. }
         | Stmt::RemoveCell { dest, .. } => raw_dest(dest),
+        Stmt::Leave { value, .. } => raw_expr(value),
+        Stmt::CStore { base, value, .. } => raw_expr(base) || raw_expr(value),
         Stmt::AddCell { dest, value, .. } | Stmt::AddText { dest, value, .. } =>
         {
             raw_dest(dest) || raw_expr(value)
@@ -197,7 +200,8 @@ enum Outcome
     Trapped(String),
 }
 
-/// Check one program and, when it passes with no raw kind, run it.
+/// Check one program with the findings of marked code as errors and, when it
+/// passes with no raw kind, run it.
 fn outcome(path: &Path) -> Outcome
 {
     let text = std::fs::read_to_string(path).unwrap();
@@ -208,7 +212,7 @@ fn outcome(path: &Path) -> Outcome
         &LexerOptions::default(),
         &SemcheckOptions::default(),
         &FoldOptions::default(),
-        &BorrowCheckOptions::default(),
+        &BorrowCheckOptions::builder().check(MemCheck::Error).build(),
         ResultMode::default(),
     );
     ret_if!(has_errors(emitted.diagnostics()), Outcome::Skipped);

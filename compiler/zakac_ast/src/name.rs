@@ -15,7 +15,7 @@ use serde::Serializer;
 use zakac_lexer::spelling::canonical;
 
 /// Each name made so far, kept for the rest of the run, so equal text gives
-/// one address and a name stays `Copy`.
+/// one address and a name remains `Copy`.
 static NAMES: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
 
 /// A name from the source, such as a variable, a field or a function: text

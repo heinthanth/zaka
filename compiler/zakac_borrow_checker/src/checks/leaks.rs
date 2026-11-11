@@ -1,5 +1,6 @@
 use zakac_diagnostics::Level;
 use zakac_diagnostics::ownership::block_leaked;
+use zakac_diagnostics::ownership::result_block_leaked;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
@@ -36,8 +37,10 @@ use crate::state::State;
 /// * `state` - The facts after the new value runs, before it is stored.
 pub(crate) fn check_overwrite(flow: &mut Flow, place: Place, span: Span, state: &State)
 {
-    let lost = |s: OwnerState| !s.shares_given() && (s.shares_fresh() || s.must_hold());
-    check_held(flow, place, span, state, lost);
+    // A slot owns a block it made, or one an owned hand-over gave it; a
+    // duplicate of an address owns nothing, so it never loses a block.
+    let lost = |s: OwnerState| !s.shares_given() && s.shares_fresh();
+    check_held(flow, place, span, state, lost, None);
 }
 
 /// Report each owner of a function that can still hold a block when the
@@ -50,13 +53,17 @@ pub(crate) fn check_overwrite(flow: &mut Flow, place: Place, span: Span, state: 
 /// * `flow` - The flow.
 /// * `span` - The exit: a return or the end.
 /// * `state` - The facts there, after a value given back moved out.
-pub(crate) fn check_exit(flow: &mut Flow, span: Span, state: &State)
+/// * `returned` - The slot the return reads its value from, whose lost block
+///   gets the help to mark the result.
+pub(crate) fn check_exit(
+    flow: &mut Flow, span: Span, state: &State, returned: Option<Place>,
+)
 {
     ret_if!(flow.routine.is_main);
     let count = flow.routine.locals.len() as u32;
-    let held = |s: OwnerState| s.can_hold() && !s.shares_given();
+    let held = |s: OwnerState| s.shares_fresh() && !s.shares_given();
     do_for!(place in (0..count).map(Place::Local), {
-        check_held(flow, place, span, state, held);
+        check_held(flow, place, span, state, held, returned);
     });
 }
 
@@ -98,9 +105,10 @@ pub(crate) fn return_span(flow: &Flow, value: Option<&Expr>, span: Span) -> Span
 /// * `span` - Where the block is lost.
 /// * `state` - The facts there.
 /// * `lost` - Whether an owner in a state loses its block there.
+/// * `returned` - The slot a return reads its value from, if one does.
 fn check_held(
     flow: &mut Flow, place: Place, span: Span, state: &State,
-    lost: impl Fn(OwnerState) -> bool,
+    lost: impl Fn(OwnerState) -> bool, returned: Option<Place>,
 )
 {
     let Some(kind) = flow.ctx.kind_of(place)
@@ -117,7 +125,11 @@ fn check_held(
     let list = kind.is_aggregate() && kind.holds_owner_ptr() && flow.options.strict;
     ret_if!(!owner && !list);
     ret_if!(!state.ptr(place).is_some_and(|info| lost(info.state)));
-    let found = block_leaked(span, slot_name(flow, place));
+    let result = place == Place::Local(flow.routine.result.unwrap_or(u32::MAX))
+        || returned == Some(place);
+    let name = slot_name(flow, place);
+    let found =
+        tern!(result, result_block_leaked(span, name), block_leaked(span, name));
     report(flow, tern!(owner, found, found.with_level(Level::Warning)));
 }
 
@@ -145,7 +157,7 @@ fn report_cells(
 }
 
 /// Check a remove from a plain list slot of owners: the last cell goes, with
-/// the block it can hold. The cells left can then be `ဗလာ`, so a later loss
+/// the block it can hold. The cells left can then be null, so a later loss
 /// of the same list is not reported twice as certain.
 ///
 /// # Arguments

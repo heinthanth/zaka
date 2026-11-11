@@ -406,7 +406,8 @@ fn frames_view(state: AppState) -> impl IntoView
         let rows = groups.map(|(i, b)| frame_rows(state, b, i == 0)).collect_view();
         let head = table_head("stack", &STORE_COLUMNS);
         let rows = tbody().child((free, rows));
-        table().class(Table::PHASE_TABLE).child((head, rows)).into_any()
+        let table = table().class(Table::PHASE_TABLE).child((head, rows));
+        div().class(Table::TABLE_SCROLL).child(table).into_any()
     }
 }
 
@@ -521,6 +522,8 @@ fn globals_view(state: AppState) -> impl IntoView
         };
         let rows = rows.into_iter().map(row).collect_view();
         let head = table_head("globals", &VALUE_COLUMNS);
-        table().class(Table::PHASE_TABLE).child((head, tbody().child(rows))).into_any()
+        let table =
+            table().class(Table::PHASE_TABLE).child((head, tbody().child(rows)));
+        div().class(Table::TABLE_SCROLL).child(table).into_any()
     }
 }

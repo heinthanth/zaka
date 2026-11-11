@@ -83,7 +83,7 @@ pub struct FileCheck
     pub lines: LineIndex,
     /// Its tokens and comments.
     pub lexed: LexOutput,
-    /// The output of each phase up to the ownership check; `None` when an
+    /// The output of each phase up to the checker; `None` when an
     /// imported file could not be read.
     pub checked: Option<Borrowchecked>,
     /// What to show in the editor, on the open file.
@@ -106,7 +106,7 @@ struct Imported
     lines: LineIndex,
 }
 
-/// Check an open file and the files it imports, up to the ownership check.
+/// Check an open file and the files it imports, up to the checker.
 ///
 /// # Arguments
 ///

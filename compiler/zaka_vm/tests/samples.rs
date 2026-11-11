@@ -27,7 +27,7 @@ const FFI_GROUPS: &[&str] = &["ffi"];
 /// The crate dir.
 fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 
-/// Run a source file, which must pass the ownership check with no
+/// Run a source file, which must pass the checker with no
 /// diagnostic, and compare its output with an expected file;
 /// `ZAKA_BLESS=1` rewrites the file from a checked, copied run with a slot
 /// for each scratch value.
@@ -121,18 +121,6 @@ fn repo_samples_print_their_expected_output()
         }
     }
     assert!(count >= 30, "found {count} samples");
-}
-
-/// The two forms of the scores program, plain values and views, print the
-/// same output.
-#[test]
-fn both_scores_programs_print_the_same()
-{
-    let out = |stem: &str| {
-        let path = root().join("tests/expected/programs").join(format!("{stem}.out"));
-        std::fs::read_to_string(path).unwrap()
-    };
-    assert_eq!(out("scores"), out("scores_views"));
 }
 
 #[test]

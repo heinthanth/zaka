@@ -14,7 +14,7 @@ program in a new language prints a greeting. Here it is in Zaka:
 // The program starts here.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // Print the text inside the quotes.
-"မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသပါ။
+"မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသမည်။
 // The program ends here.
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -30,7 +30,7 @@ show.* Each part has a job:
 | --- | --- | --- |
 | `"မင်္ဂလာပါ ကမ္ဘာကြီး"` | "Hello, world" | the text to print, in double quotes |
 | `ဟု` | "so" (quoting) | marks the words before it as a quote |
-| `ပြသပါ` | "please show" | the command: print a line |
+| `ပြသမည်` | "please show" | the command: print a line |
 | `။` | full stop | ends the sentence |
 
 Each Zaka statement ends with `။`, the Burmese full stop. A line break does **not** end
@@ -76,10 +76,10 @@ print numbers, and it can do sums before it prints them.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသပါ။
-"စံကား ဘာသာစကားမှ ကြိုဆိုပါသည်" ဟု ပြသပါ။   // "Welcome to the Zaka language"
-၂၀၂၆ ကို ပြသပါ။                            // a number: show 2026
-၆ * ၇ ကို ပြသပါ။                            // a sum: show 6 times 7
+"မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသမည်။
+"စံကား ဘာသာစကားမှ ကြိုဆိုပါသည်" ဟု ပြသမည်။   // "Welcome to the Zaka language"
+၂၀၂၆ ကို ပြသမည်။                            // a number: show 2026
+၆ * ၇ ကို ပြသမည်။                            // a sum: show 6 times 7
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -100,7 +100,7 @@ it expected:
 
 ```zaka-error ZK0201
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"မင်္ဂလာပါ" ဟု ပြသပါ
+"မင်္ဂလာပါ" ဟု ပြသမည်
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

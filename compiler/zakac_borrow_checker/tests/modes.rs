@@ -6,34 +6,36 @@ use common::run;
 use common::run_with;
 use common::strict;
 use common::warn;
+use zakac_borrow_checker::options::BorrowCheckOptions;
+use zakac_borrow_checker::options::MemCheck;
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Level;
 use zakac_diagnostics::has_errors;
 
 /// A borrow read after its block is freed. Strict mode
 /// doubts the store into the fresh allocation and the read through the
-/// borrow lent from it, neither compared with `ဗလာ`.
+/// borrow lent from it, neither compared with null.
 const FREED_READ: &str = include_str!("inputs/invalidated_loan.zaka");
 
 /// A list of three, each cell written in a counted loop over its numbers.
 const CELLS: &str = "\
 ကိန်းရှင် တန်း သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ တန်း ၏ အကွက် န ကို န ဟု ထားပါ။
+၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ တန်း ၏ အကွက် န ကို န ဟု ထားမည်။
 ";
 
 /// A function that frees the block its hook holds, and a call of it.
 const FREES: &str = "\
 လုပ်ဆောင်ချက် ရှင်း သည်
-ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ က ကို လက်ခံပြီး
+က ဟူသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လိပ်စာ က ၏ တန်ဖိုး ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
 
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ကိန်းရှင် ကြည့် သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ရှင်း ကို ပ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်ပါ။
-ကြည့် ၏ တန်ဖိုး ကို ပြသပါ။
+ကိန်းရှင် ကြည့် သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ရှင်း ကို ပ ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်မည်။
+ကြည့် ၏ တန်ဖိုး ကို ပြသမည်။
 ";
 
 /// The code and the level of each diagnostic.
@@ -57,7 +59,7 @@ fn marks_checked(
 }
 
 #[test]
-fn warn_mode_downgrades_to_warnings()
+fn warn_is_the_default_and_error_mode_keeps_errors()
 {
     let run = run_with(FREED_READ, &warn());
     let codes: Vec<Code> = run.out.diagnostics.iter().map(|d| d.code).collect();
@@ -66,8 +68,10 @@ fn warn_mode_downgrades_to_warnings()
     assert_eq!(found(FREED_READ, &warn()), [(Code::InvalidatedLoan, Level::Warning)]);
     assert_eq!(
         found(FREED_READ, &Default::default()),
-        [(Code::InvalidatedLoan, Level::Error)]
+        [(Code::InvalidatedLoan, Level::Warning)]
     );
+    let error = BorrowCheckOptions::builder().check(MemCheck::Error).build();
+    assert_eq!(found(FREED_READ, &error), [(Code::InvalidatedLoan, Level::Error)]);
 }
 
 #[test]

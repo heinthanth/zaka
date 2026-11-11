@@ -21,6 +21,7 @@ use crate::number::word_script;
 use crate::phrases::join_phrases;
 use crate::reserved::AMONG;
 use crate::reserved::NOTE_MARKER;
+use crate::reserved::OLD_ENDINGS;
 use crate::reserved::lookup;
 use crate::reserved::split_reserved;
 use crate::text::Scan;
@@ -485,6 +486,23 @@ impl Driver<'_, '_>
         end
     }
 
+    /// Report a statement verb in its old `ပါ` spelling (ZK0110).
+    ///
+    /// # Arguments
+    ///
+    /// * `idx` - Index of the current word.
+    ///
+    /// # Returns
+    ///
+    /// The word the old spelling stands for, or `None` for another word.
+    fn old_ending(&mut self, idx: usize) -> Option<Kw>
+    {
+        let word = self.words[idx];
+        let (old, new, kw) = OLD_ENDINGS.iter().find(|(old, ..)| *old == word.text)?;
+        self.out.diagnostics.push(diag::old_ending(word.span, old, new));
+        Some(*kw)
+    }
+
     /// Lex a reserved word, or a word made of reserved words.
     ///
     /// # Arguments
@@ -497,6 +515,7 @@ impl Driver<'_, '_>
     fn lex_reserved(&mut self, idx: usize) -> Option<usize>
     {
         let word = self.words[idx];
+        ret_if!(let Some(kw) = self.old_ending(idx), self.push_kw(kw, word.span, word.joined), Some(idx + 1));
         ret_if!(let Some(kw) = lookup(word.text), self.push_kw(kw, word.span, word.joined), Some(idx + 1));
         let pieces = split_reserved(&word)?;
         #[rustfmt::skip]

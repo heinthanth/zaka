@@ -109,8 +109,6 @@ pub enum Base
     List(&'static ListKind),
     /// A struct, for a pointer to a whole struct.
     Struct(&'static StructKind),
-    /// A slice, for a pointer to a slice value.
-    Slice(&'static SliceKind),
     /// Text or a plain list, for a pointer to one.
     Seq(&'static SeqKind),
     /// An enumeration.
@@ -137,7 +135,6 @@ impl Base
             Base::Opaque => None,
             Base::List(l) => Some(DataKind::List(l)),
             Base::Struct(s) => Some(DataKind::Struct(s)),
-            Base::Slice(s) => Some(DataKind::Slice(s)),
             Base::Seq(s) => Some(DataKind::Seq(s)),
             Base::Enum(e) => Some(DataKind::Enum(e)),
             Base::Fn(f) => Some(DataKind::Fn(f)),
@@ -158,22 +155,6 @@ pub struct ListKind
 /// Each list kind made so far, so a kind is made once and remains `Copy`.
 static LISTS: OnceLock<Mutex<HashSet<&'static ListKind>>> = OnceLock::new();
 
-/// A slice kind: a borrowed run of cells of one kind, whose count is known at
-/// run time. A slice value is two words: the address of the first cell, then
-/// the count as a `usize`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct SliceKind
-{
-    /// The kind of each cell.
-    pub cell: DataKind,
-    /// Whether the cells are u8s that hold UTF-8 text: the view
-    /// `စာသား တစ်စိတ်တစ်ပိုင်း`, which prints as text.
-    pub text: bool,
-}
-
-/// Each slice kind made so far, so a kind is made once and remains `Copy`.
-static SLICES: OnceLock<Mutex<HashSet<&'static SliceKind>>> = OnceLock::new();
-
 /// A managed run of cells, whose count is known at run time: a plain list,
 /// or text, whose cells are u8s that hold UTF-8. A value is three words: the
 /// address of the first cell, the count, and the room of its heap block in
@@ -188,10 +169,13 @@ pub struct SeqKind
     /// Whether the cells are u8s that hold UTF-8: `စာသား`, whose cells
     /// cannot be written one at a time and which prints as text.
     pub text: bool,
+    /// Whether it is the box of a variable that a closure shares: one
+    /// cell, shared among its duplicates and never lent or copied on a write.
+    pub boxed: bool,
 }
 
 /// The kind of text: u8 cells that hold UTF-8.
-static TEXT_SEQ: SeqKind = SeqKind { cell: DataKind::U8, text: true };
+static TEXT_SEQ: SeqKind = SeqKind { cell: DataKind::U8, text: true, boxed: false };
 
 /// Each plain list kind made so far, so a kind is made once and remains
 /// `Copy`.
@@ -317,21 +301,35 @@ pub enum DataKind
     Bool,
     /// A pointer.
     Ptr(PtrKind),
-    /// The kind of `ဗလာ`, which converts to each pointer kind.
+    /// The kind of `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, which converts to each pointer kind.
     Null,
     /// A list of cells.
     List(&'static ListKind),
     /// A struct of named fields.
     Struct(&'static StructKind),
-    /// A slice: the address of a run of cells and their count.
-    Slice(&'static SliceKind),
-    /// A plain list or text: three words, see [`SeqKind`]. The first two
-    /// words are laid out as a slice's.
+    /// A plain list or text: three words, see [`SeqKind`].
     Seq(&'static SeqKind),
     /// An enumeration: a member, held as an `isize`.
     Enum(&'static EnumKind),
     /// A function value: one word, the function it calls or none.
     Fn(&'static FnKind),
+}
+
+/// The reason a kind has no initial value, `ကနဦးတန်ဖိုး`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InitialGap
+{
+    /// A function value.
+    Function,
+    /// A handle, which C alone makes.
+    Handle,
+    /// An enumeration with no member marked `ကနဦးတန်ဖိုး`.
+    Member(&'static EnumKind),
+    /// A result, which must hold its good value or its failure.
+    Result,
+    /// A part inside the kind with none: the name of a field, or the kind of
+    /// the cells of a list.
+    Part(String),
 }
 
 impl DataKind
@@ -384,25 +382,16 @@ impl DataKind
         // levels wrap that struct.
         let side =
             |k: &Option<Kind>| k.as_ref().map(|k| DataKind::from_ast(k, structs));
-        let result = kind
-            .parts
-            .as_deref()
-            .map(|p| DataKind::fallible(side(&p.ok), side(&p.err)));
+        let result = kind.parts.as_deref().map(|p| match (p.optional, side(&p.ok))
+        {
+            (true, Some(some)) => DataKind::optional(some),
+            _ => DataKind::fallible(side(&p.ok), side(&p.err)),
+        });
         let plain = result
             .unwrap_or_else(|| DataKind::over(base, u8::try_from(skip).unwrap_or(1)));
-        let first_raw = skip == 1 && kind.wraps.first() == Some(&Wrap::RawPtr);
-        let plain = tern!(first_raw, plain.with_outer_raw(), plain);
-        let marked = tern!(
-            kind.borrowed,
-            kind.wraps.iter().rposition(|w| matches!(w, Wrap::Ptr | Wrap::RawPtr)),
-            None
-        );
-        let plain = tern!(marked.is_some_and(|i| i < skip), plain.as_borrowed(), plain);
-        let wraps = kind.wraps.iter().enumerate().skip(skip);
-        wraps.fold(plain, |inner, (at, w)| match w
+        kind.wraps.iter().skip(skip).fold(plain, |inner, w| match w
         {
-            Wrap::Ptr => inner.pointer_to().marked_if(marked == Some(at)),
-            Wrap::RawPtr => inner.raw_pointer_to(),
+            Wrap::Ptr => inner.pointer_to(),
             Wrap::List(Cells::Fixed(n)) => DataKind::list_of(inner, *n),
             // The check writes each count back as digits; one still open
             // waits for a later run, or failed with a diagnostic, and stands
@@ -410,21 +399,8 @@ impl DataKind
             // of it knows to wait.
             Wrap::List(Cells::Expr(_)) => DataKind::list_of(inner, 0),
             Wrap::List(Cells::Inferred) => DataKind::seq_of(inner),
-            Wrap::Slice => DataKind::slice_of(inner),
-            Wrap::View => DataKind::text_view(),
         })
     }
-
-    /// The kind as a borrow when `mark` holds.
-    ///
-    /// # Arguments
-    ///
-    /// * `mark` - Whether the borrow mark applies.
-    ///
-    /// # Returns
-    ///
-    /// [`DataKind::as_borrowed`] of the kind, or the kind itself.
-    fn marked_if(self, mark: bool) -> DataKind { tern!(mark, self.as_borrowed(), self) }
 
     /// The kind with its outer address level turned into a raw one.
     ///
@@ -458,52 +434,6 @@ impl DataKind
         DataKind::List(made)
     }
 
-    /// The slice kind of cells of `cell`. Each slice kind is made once and
-    /// kept for the rest of the run.
-    ///
-    /// # Arguments
-    ///
-    /// * `cell` - The kind of each cell.
-    ///
-    /// # Returns
-    ///
-    /// The kind.
-    pub fn slice_of(cell: DataKind) -> DataKind
-    {
-        DataKind::slice_kind(SliceKind { cell, text: false })
-    }
-
-    /// The view of text, `စာသား တစ်စိတ်တစ်ပိုင်း`: a slice of u8s that hold
-    /// UTF-8.
-    ///
-    /// # Returns
-    ///
-    /// The kind.
-    pub fn text_view() -> DataKind
-    {
-        DataKind::slice_kind(SliceKind { cell: DataKind::U8, text: true })
-    }
-
-    /// The slice kind with these parts, made once and kept for the rest of
-    /// the run.
-    ///
-    /// # Arguments
-    ///
-    /// * `wanted` - The parts.
-    ///
-    /// # Returns
-    ///
-    /// The kind.
-    fn slice_kind(wanted: SliceKind) -> DataKind
-    {
-        let slices = SLICES.get_or_init(Mutex::default);
-        let mut slices = slices.lock().unwrap_or_else(PoisonError::into_inner);
-        ret_if!(let Some(found) = slices.get(&wanted), DataKind::Slice(found));
-        let made: &'static SliceKind = Box::leak(Box::new(wanted));
-        slices.insert(made);
-        DataKind::Slice(made)
-    }
-
     /// The plain list kind of cells of `cell`, made once and kept for the
     /// rest of the run.
     ///
@@ -516,7 +446,35 @@ impl DataKind
     /// The kind.
     pub fn seq_of(cell: DataKind) -> DataKind
     {
-        let wanted = SeqKind { cell, text: false };
+        DataKind::seq_kind(SeqKind { cell, text: false, boxed: false })
+    }
+
+    /// The kind of the box of a variable that a closure shares: a plain list
+    /// of one cell that each duplicate shares and nothing lends or copies.
+    ///
+    /// # Arguments
+    ///
+    /// * `cell` - The kind of the variable.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn box_of(cell: DataKind) -> DataKind
+    {
+        DataKind::seq_kind(SeqKind { cell, text: false, boxed: true })
+    }
+
+    /// The interned plain list kind with these parts.
+    ///
+    /// # Arguments
+    ///
+    /// * `wanted` - The parts.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    fn seq_kind(wanted: SeqKind) -> DataKind
+    {
         let seqs = SEQS.get_or_init(Mutex::default);
         let mut seqs = seqs.lock().unwrap_or_else(PoisonError::into_inner);
         ret_if!(let Some(found) = seqs.get(&wanted), DataKind::Seq(found));
@@ -542,7 +500,57 @@ impl DataKind
     /// `true` for such a kind.
     pub fn is_seq(self) -> bool { self.as_seq().is_some() }
 
-    /// The kind of each cell of a list of each form or of a slice.
+    /// The struct of a struct kind, or of an object: the box of a struct
+    /// marked `မျှဝေနိုင်သော`, whose fields are read through the box.
+    ///
+    /// # Returns
+    ///
+    /// The struct, or `None` for each other kind.
+    pub fn object_struct(self) -> Option<&'static StructKind>
+    {
+        self.as_struct().or_else(|| self.as_object())
+    }
+
+    /// The struct of an object: the box of a struct marked `မျှဝေနိုင်သော`.
+    ///
+    /// # Returns
+    ///
+    /// The struct, or `None` for each other kind.
+    pub fn as_object(self) -> Option<&'static StructKind>
+    {
+        self.as_seq().filter(|s| s.boxed).and_then(|s| s.cell.as_struct())
+    }
+
+    /// The struct of a handle: a value of a kind from outside the program,
+    /// an object whose one field holds the address of the struct C keeps.
+    ///
+    /// # Returns
+    ///
+    /// The struct, or `None` for each other kind.
+    pub fn as_external(self) -> Option<&'static StructKind>
+    {
+        self.as_object().filter(|s| s.is_external())
+    }
+
+    /// The kind of the address a handle holds: an opaque raw pointer, which
+    /// the VM passes on as it is.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn handle_pointer() -> DataKind
+    {
+        DataKind::Ptr(PtrKind::owner(1, Base::Opaque).with_outer_raw())
+    }
+
+    /// Whether the kind is the box of a variable that a closure shares.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn is_box(self) -> bool { self.as_seq().is_some_and(|s| s.boxed) }
+
+    /// The kind of each cell of a list of each form.
     ///
     /// # Returns
     ///
@@ -550,40 +558,8 @@ impl DataKind
     pub fn cell_kind(self) -> Option<DataKind>
     {
         ret_if!(let Some(l) = self.as_list(), Some(l.cell));
-        ret_if!(let Some(s) = self.as_seq(), Some(s.cell));
-        self.as_slice().map(|s| s.cell)
+        self.as_seq().map(|s| s.cell)
     }
-
-    /// The slice part of the kind.
-    ///
-    /// # Returns
-    ///
-    /// The cell kind, or `None` for a kind that is no slice.
-    pub fn as_slice(self) -> Option<&'static SliceKind>
-    {
-        tern!(let DataKind::Slice(s) = self, Some(s), None)
-    }
-
-    /// Whether the kind is a slice.
-    ///
-    /// # Returns
-    ///
-    /// `true` for a slice kind.
-    pub fn is_slice(self) -> bool { matches!(self, DataKind::Slice(_)) }
-
-    /// Whether the kind is the view of text.
-    ///
-    /// # Returns
-    ///
-    /// `true` for `စာသား တစ်စိတ်တစ်ပိုင်း`.
-    pub fn is_text_view(self) -> bool { self.as_slice().is_some_and(|s| s.text) }
-
-    /// Whether the kind is text: owned, or a view.
-    ///
-    /// # Returns
-    ///
-    /// `true` for `စာသား` and `စာသား တစ်စိတ်တစ်ပိုင်း`.
-    pub fn is_textual(self) -> bool { self.is_text() || self.is_text_view() }
 
     /// Whether the kind is owned text.
     ///
@@ -647,7 +623,9 @@ impl DataKind
     pub fn holds_owner_ptr(self) -> bool
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_owner_ptr());
-        ret_if!(let Some(l) = self.as_seq(), l.cell.holds_owner_ptr());
+        // A box is shared, never moved, and can hold its own struct, so the
+        // walk stops there.
+        ret_if!(let Some(l) = self.as_seq().filter(|s| !s.boxed), l.cell.holds_owner_ptr());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_owner_ptr()));
         self.is_owner_ptr()
     }
@@ -726,19 +704,15 @@ impl DataKind
     pub fn is_struct(self) -> bool { matches!(self, DataKind::Struct(_)) }
 
     /// Whether a value of the kind is a block of other values: a list, a
-    /// struct, or the two words of a slice. Such a value lives in mem, and a
-    /// duplicate takes the whole block.
+    /// struct, or the three words of text or a plain list. Such a value lives
+    /// in mem, and a duplicate takes the whole block.
     ///
     /// # Returns
     ///
-    /// `true` for a list, a struct or a slice kind.
+    /// `true` for such a kind.
     pub fn is_aggregate(self) -> bool
     {
-        self.is_list()
-            || self.is_struct()
-            || self.is_slice()
-            || self.is_text()
-            || self.is_seq()
+        self.is_list() || self.is_struct() || self.is_text() || self.is_seq()
     }
 
     /// The kind `depth` address levels over `base`.
@@ -759,8 +733,8 @@ impl DataKind
     }
 
     /// Read a short name such as `i8`, `usize`, `char`, `i32*`, `i32&`,
-    /// `i32^`, `ptr`, `ptr&`, `rawptr`, `isize[3]`, `isize[][..]`, `text[..]`
-    /// or `null`: a base, then one mark for each level in the order of the
+    /// `i32^`, `ptr`, `ptr&`, `rawptr`, `isize[3]`, `isize[]`, `text` or
+    /// `null`: a base, then one mark for each level in the order of the
     /// Burmese words.
     ///
     /// # Arguments
@@ -769,8 +743,8 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// The kind, or `None` for an unknown name, a borrowed raw level, a
-    /// level over a borrow, and a slice of no list.
+    /// The kind, or `None` for an unknown name, a borrowed raw level, or a
+    /// level over a borrow.
     pub fn parse(name: &str) -> Option<DataKind>
     {
         ret_if!(name == "null", Some(DataKind::Null));
@@ -781,8 +755,7 @@ impl DataKind
 
     /// Wrap a kind in the levels its marks name, from left to right: `*` an
     /// owner, `^` a raw address, `&` a borrow, `[n]` a list of `n` cells,
-    /// `[]` a plain list, and `[..]` a slice of the list or the view of the
-    /// text before it. On `ptr`, which is an address
+    /// `[]` a plain list, and `@` an object. On `ptr`, which is an address
     /// itself, `&` borrows it and adds no level.
     ///
     /// # Arguments
@@ -837,12 +810,122 @@ impl DataKind
     /// The struct kind.
     pub fn fallible(ok: Option<DataKind>, err: Option<DataKind>) -> DataKind
     {
+        let shape = parse_sig(&DataKind::fallible_sig(ok, err));
+        DataKind::Struct(shape.expect("the signature of a fallible result reads back"))
+    }
+
+    /// The signature of the struct [`DataKind::fallible`] makes.
+    ///
+    /// # Arguments
+    ///
+    /// * `ok` - The kind of the good result, or `None` for none.
+    /// * `err` - The error kind, or `None` for none.
+    ///
+    /// # Returns
+    ///
+    /// The signature.
+    pub(crate) fn fallible_sig(ok: Option<DataKind>, err: Option<DataKind>) -> String
+    {
         let ok = ok.map_or(String::new(), |k| format!(",ok:{}", k.spell_inner(true)));
         let err =
             err.map_or(String::new(), |k| format!(",err:{}", k.spell_inner(true)));
-        let sig = format!("{FALLIBLE}{{tag:u8{ok}{err}}}");
-        let shape = parse_sig(&sig);
-        DataKind::Struct(shape.expect("the signature of a fallible result reads back"))
+        format!("{FALLIBLE}{{tag:u8{ok}{err}}}")
+    }
+
+    /// The optional kind of `some`: the struct `DataKind::fallible` makes, with
+    /// the data in a field `some` in place of `ok`, so the two kinds differ.
+    ///
+    /// # Arguments
+    ///
+    /// * `some` - The kind of the data.
+    ///
+    /// # Returns
+    ///
+    /// The struct kind.
+    pub fn optional(some: DataKind) -> DataKind
+    {
+        let shape = parse_sig(&DataKind::optional_sig(some));
+        DataKind::Struct(shape.expect("the signature of an optional reads back"))
+    }
+
+    /// The signature of the struct [`DataKind::optional`] makes.
+    ///
+    /// # Arguments
+    ///
+    /// * `some` - The kind of the data.
+    ///
+    /// # Returns
+    ///
+    /// The signature.
+    pub(crate) fn optional_sig(some: DataKind) -> String
+    {
+        format!("{FALLIBLE}{{tag:u8,some:{}}}", some.spell_inner(true))
+    }
+
+    /// The reason the kind has no initial value, `ကနဦးတန်ဖိုး`: a kind has one
+    /// when each of its parts has one. An optional stops the walk with its
+    /// blank value, a plain list with no cells; a shared struct met again
+    /// is left to the check of kinds that can never be built.
+    ///
+    /// # Returns
+    ///
+    /// The gap, or `None` when the kind has an initial value.
+    pub fn initial_gap(self) -> Option<InitialGap> { self.gap_in(&mut Vec::new()) }
+
+    /// [`DataKind::initial_gap`], with the structs the walk is inside.
+    ///
+    /// # Arguments
+    ///
+    /// * `inside` - The structs the walk is inside.
+    ///
+    /// # Returns
+    ///
+    /// The gap, or `None`.
+    fn gap_in(self, inside: &mut Vec<&'static StructKind>) -> Option<InitialGap>
+    {
+        ret_if!(self.is_fn(), Some(InitialGap::Function));
+        ret_if!(self.as_external().is_some(), Some(InitialGap::Handle));
+        ret_if!(self.is_optional(), None);
+        if let Some(e) = self.as_enum()
+        {
+            return tern!(e.initial().is_some(), None, Some(InitialGap::Member(e)));
+        }
+        if let Some(l) = self.as_list()
+        {
+            return l.cell.gap_in(inside).map(|_| InitialGap::Part(l.cell.name()));
+        }
+        if let Some(s) = self.as_seq()
+        {
+            return s.boxed.then(|| s.cell.gap_in(inside)).flatten();
+        }
+        let shape = self.as_struct()?;
+        ret_if!(shape.name == FALLIBLE, Some(InitialGap::Result));
+        ret_if!(inside.iter().any(|s| std::ptr::eq(*s, shape)), None);
+        inside.push(shape);
+        let gap = shape.fields().iter().find(|(_, k)| k.gap_in(inside).is_some());
+        inside.pop();
+        gap.map(|(name, _)| InitialGap::Part(name.clone()))
+    }
+
+    /// Whether the kind is an optional, `T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`.
+    ///
+    /// # Returns
+    ///
+    /// `true` for an optional.
+    pub fn is_optional(self) -> bool
+    {
+        let shape = self.as_struct().filter(|s| s.name == FALLIBLE);
+        shape.is_some_and(|s| s.field("some").is_some())
+    }
+
+    /// The kind of the data an optional holds.
+    ///
+    /// # Returns
+    ///
+    /// The kind of its data, or `None` for a kind that is no optional.
+    pub fn optional_data(self) -> Option<DataKind>
+    {
+        self.fallible_parts().filter(|_| self.is_optional()).and_then(|(some, _)| some)
     }
 
     /// The kind of the record of a closure: a struct of the code word, an
@@ -883,6 +966,8 @@ impl DataKind
         {
             return String::new();
         };
+        let optional = ok.filter(|_| self.is_optional());
+        ret_if!(let Some(some) = optional, format!("optional {}", some.name()));
         let ok = ok.map_or("success".to_string(), |k| format!("{} result", k.name()));
         let err = err.map_or("failure".to_string(), |k| format!("{} error", k.name()));
         format!("{ok} or {err}")
@@ -898,7 +983,8 @@ impl DataKind
     {
         let shape = self.as_struct().filter(|s| s.name == FALLIBLE)?;
         let side = |name| shape.field(name).map(|(_, k)| k);
-        Some((side("ok"), side("err")))
+        // An optional holds its data where a result holds its good value.
+        Some((side("ok").or_else(|| side("some")), side("err")))
     }
 
     /// The name of the kind.
@@ -923,9 +1009,8 @@ impl DataKind
             DataKind::List(l) => list_name(l, full),
             DataKind::Struct(s) if !full && s.name == FALLIBLE => self.fallible_name(),
             DataKind::Struct(s) => tern!(full, s.sig(), &s.name).to_string(),
-            DataKind::Slice(s) if s.text => "text[..]".to_string(),
-            DataKind::Slice(s) => format!("{}[][..]", s.cell.spell_inner(full)),
             DataKind::Seq(s) if s.text => "text".to_string(),
+            DataKind::Seq(s) if s.boxed => format!("{}@", s.cell.spell_inner(full)),
             DataKind::Seq(s) => format!("{}[]", s.cell.spell_inner(full)),
             DataKind::Enum(e) => tern!(full, e.sig(), &e.name).to_string(),
             DataKind::Fn(f) => f.spell(full),
@@ -985,7 +1070,6 @@ impl DataKind
             DataKind::Null => (1, Base::Opaque),
             DataKind::List(l) => (0, Base::List(l)),
             DataKind::Struct(s) => (0, Base::Struct(s)),
-            DataKind::Slice(s) => (0, Base::Slice(s)),
             DataKind::Seq(s) => (0, Base::Seq(s)),
             DataKind::Enum(e) => (0, Base::Enum(e)),
             DataKind::Fn(f) => (0, Base::Fn(f)),
@@ -1069,15 +1153,12 @@ impl DataKind
     pub fn is_owner_ptr(self) -> bool { self.ptr_kind().is_some_and(PtrKind::is_owner) }
 
     /// Whether the kind is a borrow: a pointer whose outer level is a
-    /// borrow, or a slice, which borrows its cells.
+    /// borrow.
     ///
     /// # Returns
     ///
-    /// `true` for `i32&`, `ptr&` and `i32[][..]`.
-    pub fn is_borrow(self) -> bool
-    {
-        self.is_slice() || self.ptr_kind().is_some_and(PtrKind::is_borrowed)
-    }
+    /// `true` for `i32&` and `ptr&`.
+    pub fn is_borrow(self) -> bool { self.ptr_kind().is_some_and(PtrKind::is_borrowed) }
 
     /// Whether the kind is a pointer whose outer level is a raw address.
     ///
@@ -1097,23 +1178,6 @@ impl DataKind
     /// `true` for `i32*`, `i32&` and `ptr`, but not for `i32^`.
     pub fn is_checked_ptr(self) -> bool { self.is_ptr() && !self.is_raw_ptr() }
 
-    /// Whether a value of the kind is moved, not copied, when it goes into
-    /// another place: a kind that holds an owner pointer, since a duplicate
-    /// would free one block twice. Text and each other value are copied.
-    ///
-    /// # Returns
-    ///
-    /// `true` for an owner, and a list or struct with one in it.
-    pub fn is_move_kind(self) -> bool { self.holds_owner_ptr() }
-
-    /// Whether a value of the kind is duplicated when it goes into another
-    /// place.
-    ///
-    /// # Returns
-    ///
-    /// `true` for each kind that is not a move kind.
-    pub fn is_dup_kind(self) -> bool { !self.is_move_kind() }
-
     /// Whether a value of the kind is a borrow or has a borrow in it.
     ///
     /// # Returns
@@ -1122,7 +1186,7 @@ impl DataKind
     pub fn holds_borrow(self) -> bool
     {
         ret_if!(let Some(l) = self.as_list(), l.cell.holds_borrow());
-        ret_if!(let Some(l) = self.as_seq(), l.cell.holds_borrow());
+        ret_if!(let Some(l) = self.as_seq().filter(|s| !s.boxed), l.cell.holds_borrow());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_borrow()));
         self.is_borrow()
     }
@@ -1204,13 +1268,11 @@ impl DataKind
     ///
     /// # Returns
     ///
-    /// The size, or `None` for a list too large for the machine. A slice is
-    /// two words: its address and its count.
+    /// The size, or `None` for a list too large for the machine.
     pub fn checked_size(self, platform: u16) -> Option<u32>
     {
         ret_if!(let Some(e) = self.as_enum(), e.under().checked_size(platform));
         ret_if!(let Some(s) = self.as_struct(), s.size(platform));
-        ret_if!(self.is_slice(), Some(u32::from(platform) / 4));
         ret_if!(self.is_text() || self.is_seq(), Some(u32::from(platform) / 8 * 3));
         let Some(l) = self.as_list()
         else
@@ -1234,7 +1296,7 @@ impl DataKind
         ret_if!(let Some(e) = self.as_enum(), e.under().align(platform));
         ret_if!(let Some(l) = self.as_list(), l.cell.align(platform));
         ret_if!(let Some(s) = self.as_struct(), s.align(platform));
-        let words = self.is_slice() || self.is_text() || self.is_seq();
+        let words = self.is_text() || self.is_seq();
         ret_if!(words, (u32::from(platform) / 8).min(16));
         self.size(platform).min(16)
     }
@@ -1298,10 +1360,7 @@ impl DataKind
             DataKind::Bool => 8,
             DataKind::Ptr(_) | DataKind::Null | DataKind::Fn(_) => platform,
             DataKind::Enum(e) => e.under().bits(platform),
-            DataKind::List(_)
-            | DataKind::Struct(_)
-            | DataKind::Slice(_)
-            | DataKind::Seq(_) =>
+            DataKind::List(_) | DataKind::Struct(_) | DataKind::Seq(_) =>
             {
                 let bits = u64::from(self.size(platform)) * 8;
                 u16::try_from(bits).unwrap_or(u16::MAX)
@@ -1322,9 +1381,10 @@ impl DataKind
     /// `true` for the same kind, a wider integer of the same sign, a wider
     /// signed integer from an unsigned one, a float whose fraction holds the
     /// integer, a wider float, `null` to a pointer, and a pointer to or from
-    /// `ptr` of the same flavour: owner, borrow or raw. An owner or a borrow
-    /// whose pointee holds an address needs a raw step to pass through
-    /// `ptr`, as a cast does, see [`DataKind::reads_addresses_as`].
+    /// `ptr` of the same flavour: owner, borrow or raw, and a value to an
+    /// optional or a result whose good side is a kind it converts to. An owner
+    /// or a borrow whose pointee holds an address needs a raw step to pass
+    /// through `ptr`, as a cast does, see [`DataKind::reads_addresses_as`].
     pub fn widens_to(self, target: DataKind, platform: u16) -> bool
     {
         ret_true!(self == target);
@@ -1333,8 +1393,13 @@ impl DataKind
             (DataKind::Int(a), DataKind::Int(b)) => int_widens(a, b, platform),
             (DataKind::Int(a), DataKind::Float(b)) => a.bits(platform) <= precision(b),
             (DataKind::Float(a), DataKind::Float(b)) => a < b,
-            (DataKind::Null, DataKind::Ptr(_) | DataKind::Fn(_)) => true,
+            (DataKind::Null, DataKind::Ptr(_)) => true,
             (DataKind::Fn(a), DataKind::Fn(b)) => a.fits(b),
+            (_, t) if t.fallible_parts().is_some() =>
+            {
+                let some = t.fallible_parts().and_then(|(some, _)| some);
+                some.is_some_and(|s| self.widens_to(s, platform))
+            }
             (DataKind::List(a), DataKind::Seq(b)) => !b.text && a.cell == b.cell,
             (DataKind::Ptr(_), DataKind::Ptr(_)) =>
             {
@@ -1425,7 +1490,7 @@ impl DataKind
     }
 
     /// Whether a value of the kind holds an address at some level: a
-    /// pointer, a slice, or a list whose cells hold one.
+    /// pointer, text, a plain list, or a list whose cells hold one.
     ///
     /// # Returns
     ///
@@ -1433,7 +1498,7 @@ impl DataKind
     pub fn holds_address(self) -> bool
     {
         ret_if!(let Some(e) = self.as_enum(), e.under().holds_address());
-        ret_true!(self.is_slice() || self.is_text() || self.is_seq());
+        ret_true!(self.is_text() || self.is_seq());
         ret_if!(let Some(list) = self.as_list(), list.cell.holds_address());
         ret_if!(let Some(s) = self.as_struct(), s.fields().iter().any(|(_, k)| k.holds_address()));
         self.is_ptr()
@@ -1448,27 +1513,28 @@ impl DataKind
     /// # Returns
     ///
     /// `true` between numbers, between characters and integers, from a
-    /// boolean or an enumeration to an integer, between addresses, from an
-    /// address to an integer, from an integer to a raw address, and for the
-    /// same kind. An integer never becomes an owner or a borrow straight
-    /// off: the raw address in between is the step a reader can search for.
-    /// For the same reason a cast between owners and borrows keeps the
-    /// shape of a pointee that holds an address, see
-    /// [`DataKind::reads_addresses_as`].
+    /// plain list of u8s to text, between an object and a pointer, from a
+    /// boolean or an enumeration to an integer, between addresses, between
+    /// an address and an integer, and for the same kind. Each conversion that
+    /// makes or reads an address needs marked code.
     pub fn cast_allowed(self, to: DataKind) -> bool
     {
         // a member turns into its value, and a scalar value on as such a
         // value turns
         let under = self.as_enum().map(|e| e.under());
         ret_if!(let Some(u) = under, u == to || (!u.is_aggregate() && u.cast_allowed(to)));
-        let bytes = self.as_slice().is_some_and(|s| !s.text && s.cell == DataKind::U8);
-        ret_true!(bytes && to.is_text_view());
+        // A plain list of u8s becomes text once its UTF-8 is checked.
+        ret_true!(
+            self.as_seq().is_some_and(|s| s.cell == DataKind::U8) && to.is_text()
+        );
+        // An object becomes a pointer that holds a count of it, and back.
+        let object = |k: DataKind| k.as_object().is_some();
+        ret_true!((object(self) && to.is_ptr()) || (self.is_ptr() && object(to)));
         ret_false!(self.is_aggregate() || to.is_aggregate());
         ret_true!(self == to);
         ret_true!(self.is_numeric() && to.is_numeric());
-        ret_false!(self.reads_addresses_as(to));
         ret_true!(self.is_address() && (to.is_address() || to.is_int()));
-        ret_true!(self.is_int() && to.is_address() && !to.is_checked_ptr());
+        ret_true!(self.is_int() && to.is_address());
         ret_false!(!to.is_int() && !self.is_int());
         matches!(
             (self, to),
@@ -1582,7 +1648,7 @@ fn parse_base(name: &str) -> Option<DataKind>
 /// # Arguments
 ///
 /// * `kind` - The kind under the mark.
-/// * `mark` - `*`, `^`, `&`, `[n]`, `[]` or `[..]`.
+/// * `mark` - `*`, `^`, `&`, `[n]`, `[]` or `@`.
 ///
 /// # Returns
 ///
@@ -1600,9 +1666,8 @@ fn wrap_mark(kind: DataKind, mark: &str) -> Option<DataKind>
         "^" => Some(kind.raw_pointer_to()),
         "&" if opaque && !kind.is_raw_ptr() => Some(kind.as_borrowed()),
         "&" => Some(kind.pointer_to().as_borrowed()),
-        "[..]" if kind.is_text() => Some(DataKind::text_view()),
-        "[..]" => kind.as_seq().map(|s| DataKind::slice_of(s.cell)),
         "[]" => Some(DataKind::seq_of(kind)),
+        "@" => Some(DataKind::box_of(kind)),
         _ =>
         {
             let count = mark.strip_prefix('[')?.strip_suffix(']')?;
@@ -1633,7 +1698,7 @@ pub fn split_marks(name: &str) -> (&str, &str)
     {
         depth += bracket_step(prev, ch);
         prev = Some(ch);
-        let mark = matches!(ch, '*' | '^' | '&' | '[');
+        let mark = matches!(ch, '*' | '^' | '&' | '[' | '@');
         ret_if!(mark && depth == 0, name.split_at(at));
     }
     (name, "")

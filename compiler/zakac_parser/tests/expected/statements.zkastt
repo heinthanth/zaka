@@ -1,7 +1,7 @@
 # zakac-parse-artifact v1
 name:
   Custom: statements.zaka
-source: "အသက် ကို ပြသပါ။\nကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။\nကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။\nအသက် ကို အသက် + ၁ ဟု ထားပါ။\nအောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nလူအရေအတွက် ကို ပြသပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nအကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nဝင်ခွင့်ပြုမည် ကို မမှန် ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nထိုသို့မဟုတ်ဘဲ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသပါ။\nသို့မဟုတ်ပါက \"ကြိုဆိုပါသည်\" ဟု ပြသပါ။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ ကိန်း ကို ပြသပါ။\n၁၀ မှ ၀ အထိ ၂ စီ ကိန်း အနေဖြင့် လျှော့၍ ကိန်း ကို ပြသပါ။\nကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\nကွင်းဆက် ကို ရပ်ပါ။\nနောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။\nပြန်ပေးပါ။\n"
+source: "အသက် ကို ပြသမည်။\nကိန်းရှင် အသက် သည် ၁၈ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်းသေ ပိုင် သည် ၃.၁၄ ဟူသော ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။\nအသက် ကို အသက် + ၁ ဟု ထားမည်။\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလူအရေအတွက် ကို ပြသမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nအကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nဝင်ခွင့်ပြုမည် ကို မမှန် ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\nထိုသို့မဟုတ်ဘဲ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသမည်။\nသို့မဟုတ်ပါက \"ကြိုဆိုပါသည်\" ဟု ပြသမည်။\nကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ ကိန်း ကို ပြသမည်။\n၁၀ မှ ၀ အထိ ၂ စီ ကိန်း အနေဖြင့် လျှော့၍ ကိန်း ကို ပြသမည်။\nကိန်းရှင် ကိန်း သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပြီး ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီ။\nကွင်းဆက် ကို ရပ်မည်။\nနောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။\nပြန်ပေးမည်။\n"
 imports: []
 program:
   stmts:
@@ -16,15 +16,14 @@ program:
       slot: ko
       span:
         lo: 0
-        hi: 41
+        hi: 44
   - decl:
       name:
         name: အသက်
         span:
-          lo: 70
-          hi: 82
+          lo: 73
+          hi: 85
       kind: null
-      classifier: null
       is_const: false
       init:
         int:
@@ -36,26 +35,29 @@ program:
             bits: null
             signed: null
             wraps: []
+            classifier:
+              name: ခု
+              span:
+                lo: 159
+                hi: 165
             span:
-              lo: 93
-              hi: 123
+              lo: 119
+              hi: 149
           script: burmese
           span:
-            lo: 93
-            hi: 130
-      moves: false
+            lo: 96
+            hi: 165
       exported: false
       span:
-        lo: 42
-        hi: 158
+        lo: 45
+        hi: 193
   - decl:
       name:
         name: ပိုင်
         span:
-          lo: 181
-          hi: 196
+          lo: 216
+          hi: 231
       kind: null
-      classifier: null
       is_const: true
       init:
         float:
@@ -67,25 +69,29 @@ program:
             bits: null
             signed: null
             wraps: []
+            classifier:
+              name: ခု
+              span:
+                lo: 303
+                hi: 309
             span:
-              lo: 207
-              hi: 231
+              lo: 269
+              hi: 293
           span:
-            lo: 207
-            hi: 242
-      moves: false
+            lo: 242
+            hi: 309
       exported: false
       span:
-        lo: 159
-        hi: 270
+        lo: 194
+        hi: 337
   - assign:
       target:
         name:
           id: 3
           name: အသက်
           span:
-            lo: 271
-            hi: 283
+            lo: 338
+            hi: 350
       value:
         infix:
           id: 6
@@ -95,8 +101,8 @@ program:
               id: 4
               name: အသက်
               span:
-                lo: 294
-                hi: 306
+                lo: 361
+                hi: 373
           rhs:
             int:
               id: 5
@@ -105,15 +111,14 @@ program:
               kind: null
               script: burmese
               span:
-                lo: 309
-                hi: 312
+                lo: 376
+                hi: 379
           span:
-            lo: 294
-            hi: 312
-      moves: false
+            lo: 361
+            hi: 379
       span:
-        lo: 271
-        hi: 338
+        lo: 338
+        hi: 408
   - block:
       stmts:
       - print:
@@ -122,16 +127,17 @@ program:
               id: 7
               name: လူအရေအတွက်
               span:
-                lo: 419
-                hi: 449
+                lo: 492
+                hi: 522
           slot: ko
           span:
-            lo: 419
-            hi: 478
+            lo: 492
+            hi: 554
       single: false
+      unchecked: false
       span:
-        lo: 339
-        hi: 561
+        lo: 409
+        hi: 637
   - if:
       arms:
       - cond:
@@ -143,8 +149,8 @@ program:
                 id: 8
                 name: အသက်
                 span:
-                  lo: 578
-                  hi: 590
+                  lo: 654
+                  hi: 666
             - int:
                 id: 9
                 value: 18
@@ -152,16 +158,17 @@ program:
                 kind: null
                 script: burmese
                 span:
-                  lo: 601
-                  hi: 607
+                  lo: 677
+                  hi: 683
             kind_arg: null
             dir: null
             particle: none
             next: then
             is_cmp: true
+            classifier: null
             span:
-              lo: 578
-              hi: 633
+              lo: 654
+              hi: 709
         block:
           stmts:
           - assign:
@@ -170,8 +177,8 @@ program:
                   id: 11
                   name: ဝင်ခွင့်ပြုမည်
                   span:
-                    lo: 729
-                    hi: 771
+                    lo: 808
+                    hi: 850
               value:
                 bool:
                   id: 12
@@ -179,19 +186,19 @@ program:
                   particle: none
                   next: other
                   span:
-                    lo: 782
-                    hi: 797
-              moves: false
+                    lo: 861
+                    hi: 876
               span:
-                lo: 729
-                hi: 823
+                lo: 808
+                hi: 905
           single: false
+          unchecked: false
           span:
-            lo: 649
-            hi: 906
+            lo: 725
+            hi: 988
         span:
-          lo: 562
-          hi: 906
+          lo: 638
+          hi: 988
       - cond:
           verb:
             id: 15
@@ -201,8 +208,8 @@ program:
                 id: 13
                 name: အသက်
                 span:
-                  lo: 950
-                  hi: 962
+                  lo: 1032
+                  hi: 1044
             - int:
                 id: 14
                 value: 60
@@ -210,16 +217,17 @@ program:
                 kind: null
                 script: burmese
                 span:
-                  lo: 973
-                  hi: 979
+                  lo: 1055
+                  hi: 1061
             kind_arg: null
             dir: null
             particle: none
             next: then
             is_cmp: true
+            classifier: null
             span:
-              lo: 950
-              hi: 1002
+              lo: 1032
+              hi: 1084
         block:
           stmts:
           - print:
@@ -229,19 +237,20 @@ program:
                   pieces:
                   - text: ok
                   span:
-                    lo: 1018
-                    hi: 1022
+                    lo: 1100
+                    hi: 1104
               slot: hu
               span:
-                lo: 1018
-                hi: 1048
+                lo: 1100
+                hi: 1133
           single: true
+          unchecked: false
           span:
-            lo: 1018
-            hi: 1048
+            lo: 1100
+            hi: 1133
         span:
-          lo: 907
-          hi: 1048
+          lo: 989
+          hi: 1133
       else_block:
         stmts:
         - print:
@@ -251,19 +260,20 @@ program:
                 pieces:
                 - text: ကြိုဆိုပါသည်
                 span:
-                  lo: 1086
-                  hi: 1124
+                  lo: 1171
+                  hi: 1209
             slot: hu
             span:
-              lo: 1086
-              hi: 1150
+              lo: 1171
+              hi: 1238
         single: true
+        unchecked: false
         span:
-          lo: 1086
-          hi: 1150
+          lo: 1171
+          hi: 1238
       span:
-        lo: 562
-        hi: 1150
+        lo: 638
+        hi: 1238
   - while:
       cond:
         verb:
@@ -274,8 +284,8 @@ program:
               id: 18
               name: ကိန်း
               span:
-                lo: 1151
-                hi: 1166
+                lo: 1239
+                hi: 1254
           - int:
               id: 19
               value: 5
@@ -283,16 +293,17 @@ program:
               kind: null
               script: burmese
               span:
-                lo: 1177
-                hi: 1180
+                lo: 1265
+                hi: 1268
           kind_arg: null
           dir: null
           particle: none
           next: while
           is_cmp: true
+          classifier: null
           span:
-            lo: 1151
-            hi: 1206
+            lo: 1239
+            hi: 1294
       block:
         stmts:
         - print:
@@ -301,25 +312,26 @@ program:
                 id: 21
                 name: ကိန်း
                 span:
-                  lo: 1228
-                  hi: 1243
+                  lo: 1316
+                  hi: 1331
             slot: ko
             span:
-              lo: 1228
-              hi: 1272
+              lo: 1316
+              hi: 1363
         single: true
+        unchecked: false
         span:
-          lo: 1228
-          hi: 1272
+          lo: 1316
+          hi: 1363
       span:
-        lo: 1151
-        hi: 1272
+        lo: 1239
+        hi: 1363
   - counted:
       var:
         name: ကိန်း
         span:
-          lo: 1312
-          hi: 1327
+          lo: 1403
+          hi: 1418
       from:
         int:
           id: 22
@@ -328,8 +340,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 1273
-            hi: 1279
+            lo: 1364
+            hi: 1370
       to:
         int:
           id: 23
@@ -338,8 +350,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 1287
-            hi: 1290
+            lo: 1378
+            hi: 1381
       step:
         int:
           id: 24
@@ -348,8 +360,8 @@ program:
           kind: null
           script: burmese
           span:
-            lo: 1301
-            hi: 1304
+            lo: 1392
+            hi: 1395
       mode: decrease
       block:
         stmts:
@@ -359,27 +371,27 @@ program:
                 id: 25
                 name: ကိန်း
                 span:
-                  lo: 1375
-                  hi: 1390
+                  lo: 1466
+                  hi: 1481
             slot: ko
             span:
-              lo: 1375
-              hi: 1419
+              lo: 1466
+              hi: 1513
         single: true
+        unchecked: false
         span:
-          lo: 1375
-          hi: 1419
+          lo: 1466
+          hi: 1513
       span:
-        lo: 1273
-        hi: 1419
+        lo: 1364
+        hi: 1513
   - generic:
       var:
         name: ကိန်း
         span:
-          lo: 1448
-          hi: 1463
+          lo: 1542
+          hi: 1557
       kind: null
-      classifier: null
       init:
         int:
           id: 26
@@ -390,13 +402,18 @@ program:
             bits: null
             signed: null
             wraps: []
+            classifier:
+              name: ခု
+              span:
+                lo: 1628
+                hi: 1634
             span:
-              lo: 1474
-              hi: 1504
+              lo: 1588
+              hi: 1618
           script: burmese
           span:
-            lo: 1474
-            hi: 1508
+            lo: 1568
+            hi: 1634
       cond:
         verb:
           id: 29
@@ -406,8 +423,8 @@ program:
               id: 27
               name: ကိန်း
               span:
-                lo: 1534
-                hi: 1549
+                lo: 1660
+                hi: 1675
           - int:
               id: 28
               value: 10
@@ -415,16 +432,17 @@ program:
               kind: null
               script: burmese
               span:
-                lo: 1560
-                hi: 1566
+                lo: 1686
+                hi: 1692
           kind_arg: null
           dir: null
           particle: none
           next: while
           is_cmp: true
+          classifier: null
           span:
-            lo: 1534
-            hi: 1592
+            lo: 1660
+            hi: 1718
       update:
         assign:
           target:
@@ -432,8 +450,8 @@ program:
               id: 30
               name: ကိန်း
               span:
-                lo: 1722
-                hi: 1737
+                lo: 1851
+                hi: 1866
           value:
             infix:
               id: 33
@@ -443,8 +461,8 @@ program:
                   id: 31
                   name: ကိန်း
                   span:
-                    lo: 1748
-                    hi: 1763
+                    lo: 1877
+                    hi: 1892
               rhs:
                 int:
                   id: 32
@@ -453,41 +471,40 @@ program:
                   kind: null
                   script: burmese
                   span:
-                    lo: 1766
-                    hi: 1769
+                    lo: 1895
+                    hi: 1898
               span:
-                lo: 1748
-                hi: 1769
-          moves: false
+                lo: 1877
+                hi: 1898
           span:
-            lo: 1722
-            hi: 1795
+            lo: 1851
+            hi: 1927
       block:
         stmts: []
         single: false
+        unchecked: false
         span:
-          lo: 1614
-          hi: 1887
+          lo: 1740
+          hi: 2019
       span:
-        lo: 1420
-        hi: 1887
+        lo: 1514
+        hi: 2019
   - break:
       span:
-        lo: 1888
-        hi: 1941
+        lo: 2020
+        hi: 2076
   - continue:
       span:
-        lo: 1942
-        hi: 2024
+        lo: 2077
+        hi: 2162
   - return:
       value: null
       fault: false
-      good: false
       span:
-        lo: 2025
-        hi: 2055
+        lo: 2163
+        hi: 2196
   units: []
   span:
     lo: 0
-    hi: 2056
+    hi: 2197
 diagnostics: []

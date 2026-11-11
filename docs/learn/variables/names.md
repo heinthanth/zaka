@@ -17,7 +17,7 @@ Upper and lower case are different: `Age` and `age` are two names.
 ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။        // English
 ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၅ ဖြစ်ပါစေ။    // with _ and a digit
 ကိန်းရှင် 🍎 သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။           // emoji
-အသက် + age + အမှတ်_၁ + 🍎 ကို ပြသပါ။
+အသက် + age + အမှတ်_၁ + 🍎 ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -34,7 +34,7 @@ it: `အသက်age` and `age၂` are names too, one word each.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက်age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။  // Burmese, then English
 ကိန်းရှင် age၂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။       // English, then a digit
-အသက်age + age၂ ကို ပြသပါ။
+အသက်age + age၂ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -47,11 +47,11 @@ the name `age` and the particle `ကို`, so the verb finds no particle:
 
 ```zaka-error ZK0206
 ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
-ageကို ပြသပါ။
+ageကို ပြသမည်။
 ```
 
 ```text
-error[ZK0206]: "ပြသပါ" needs "ကို|ဟု" after operand 1, found no particle
+error[ZK0206]: "ပြသမည်" needs "ကို|ဟု" after operand 1, found no particle
   = help: write "age ကို" with a space: a name joined to a particle is read as one word
 ```
 
@@ -68,10 +68,10 @@ name, or a name with spaces in it, wrap it in backticks:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် `ကို ပြသပါ` သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။     // a name made of Zaka words
-ကိန်းရှင် `the total` သည် ကိန်းပြည့် ၉၀ ဖြစ်ပါစေ။      // a name with a space
-`ကို ပြသပါ` ကို ပြသပါ။
-`the total` ကို ပြသပါ။
+ကိန်းရှင် `ကို ပြသမည်` သည် ၇ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။     // a name made of Zaka words
+ကိန်းရှင် `the total` သည် ၉၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။      // a name with a space
+`ကို ပြသမည်` ကို ပြသမည်။
+`the total` ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

@@ -501,12 +501,36 @@ impl<'s> FuncGen<'s>
                 self.host(base, *func, args);
                 self.op(Op::Pop);
             }
+            ExprNode::CField { .. } =>
+            {
+                self.c_field_at(base, value);
+                self.op(Op::Pop);
+            }
             _ =>
             {
                 self.op(base);
                 self.fill_list(value);
             }
         }
+    }
+
+    /// Read a list or text field of a C struct into a block and push the
+    /// address of the block.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - The op that pushes the address of the block.
+    /// * `e` - The [`ExprNode::CField`] expression.
+    fn c_field_at(&mut self, dest: Op, e: &Expr)
+    {
+        let ExprNode::CField { base, offset } = &e.node
+        else
+        {
+            panic!("c_field_at takes a field of a C struct");
+        };
+        self.op(dest);
+        self.expr(base);
+        self.op(Op::CLoad { kind: e.kind, offset: *offset });
     }
 
     /// Make a slice in a block and push the address of the block. The source,
@@ -528,7 +552,8 @@ impl<'s> FuncGen<'s>
         self.expr(source);
         self.expr(start);
         self.expr(len);
-        let cell = e.kind.as_slice().expect("a slice has cells").cell;
+        let cell = tern!(e.kind.is_text(), Some(DataKind::U8), e.kind.cell_kind());
+        let cell = cell.expect("a slice has cells");
         let stride = cell.size(self.shared.platform);
         let from = match from
         {
@@ -540,7 +565,17 @@ impl<'s> FuncGen<'s>
         self.op(Op::MakeSlice { stride, from });
         // A range of text keeps whole characters; the whole text keeps them
         // too.
-        do_if!(e.kind.is_text_view() && !checked, self.op(Op::TextEdges));
+        let text = e.kind.is_text();
+        do_if!(text && !checked, self.op(Op::TextEdges));
+        ret_if!(!e.kind.is_seq() && !e.kind.is_text());
+        // A view of a list or text lends its cells: a room of 0, which `own`
+        // copies.
+        let word = u32::from(self.shared.platform / 8);
+        self.op(Op::Dup);
+        self.op(Op::Push(usize_value(2, self.shared.platform)));
+        self.op(Op::PtrAdd(word));
+        self.op(Op::Push(usize_value(0, self.shared.platform)));
+        self.op(Op::Store(DataKind::USIZE));
     }
 
     /// Write text in a slot and push the address of the slot: static text,
@@ -599,7 +634,7 @@ impl<'s> FuncGen<'s>
         {
             ExprNode::Format(_) => "%text",
             ExprNode::Call { .. } | ExprNode::CallValue { .. } => "%ret",
-            ExprNode::List(_) => "%list",
+            ExprNode::List(_) | ExprNode::Own { .. } => "%list",
             _ => "",
         };
         ret_if!(!fresh_text(e), self.expr(e), None);
@@ -616,6 +651,13 @@ impl<'s> FuncGen<'s>
                 self.call_into(Some(at), Target::Value(callee), args)
             }
             ExprNode::List(cells) => self.build_list(at, e.kind, Some(cells)),
+            ExprNode::CField { .. } => self.c_field_at(at, e),
+            ExprNode::Own { .. } =>
+            {
+                self.op(at.clone());
+                self.put(e);
+                self.op(at);
+            }
             _ => self.text_at(at, e),
         }
         Some((slot, e.kind))
@@ -715,6 +757,8 @@ impl<'s> FuncGen<'s>
     /// The index of the static list, or `None` for each other value.
     fn static_plain(&mut self, value: &Expr) -> Option<u32>
     {
+        // A box is counted and shared, so it never points at static cells.
+        ret_if!(value.kind.is_box(), None);
         let ExprNode::Convert { operand, .. } = &value.node
         else
         {
@@ -1003,6 +1047,17 @@ impl<'s> FuncGen<'s>
                 self.update_dest(dest, |g| g.count(count, Op::Realloc(stride)));
             }
             Stmt::Free { dest, .. } => self.update_dest(dest, |g| g.free()),
+            Stmt::CStore { base, offset, value, .. } =>
+            {
+                self.expr(base);
+                self.expr(value);
+                self.op(Op::CStore { kind: value.kind, offset: *offset });
+            }
+            Stmt::Leave { value, grant, .. } =>
+            {
+                self.expr(value);
+                self.op(tern!(*grant, Op::CLeave(value.kind), Op::CRevoke));
+            }
             Stmt::Blit { src, dst, count, unit, overlap, .. } =>
             {
                 let stride = self.unit_size(*unit);
@@ -1488,7 +1543,7 @@ impl<'s> FuncGen<'s>
                 self.expr(rhs);
                 self.op(Op::Infix(*op));
             }
-            ExprNode::Compare { op, lhs, rhs } if lhs.kind.is_textual() =>
+            ExprNode::Compare { op, lhs, rhs } if lhs.kind.is_text() =>
             {
                 self.expr(lhs);
                 self.expr(rhs);
@@ -1518,32 +1573,55 @@ impl<'s> FuncGen<'s>
             }
             ExprNode::Logic { op, lhs, rhs } => self.logic(*op, lhs, rhs),
             ExprNode::Convert { operand, .. }
-                if e.kind.is_seq() && operand.kind.is_list() && is_known(e) =>
+                if e.kind.is_seq()
+                    && operand.kind.is_list()
+                    && is_known(e)
+                    && !e.kind.is_box() =>
             {
                 self.static_list(e)
             }
             ExprNode::Convert { operand, .. }
                 if e.kind.is_seq() && operand.kind.is_list() =>
             {
-                self.copy_to_heap(e.kind, operand)
+                self.clone_to_heap(e.kind, operand)
             }
-            ExprNode::Own { value } =>
+            ExprNode::Own { value, pin } =>
             {
                 self.expr(value);
                 self.op(Op::Dup);
                 self.op(Op::Own(e.kind));
+                do_if!(*pin, {
+                    self.op(Op::Dup);
+                    self.op(Op::Pin);
+                });
+            }
+            ExprNode::Convert { operand, .. }
+                if operand.kind.as_object().is_some() && e.kind.is_ptr() =>
+            {
+                self.expr(operand);
+                self.op(Op::ObjToPtr);
+            }
+            ExprNode::Convert { operand, .. }
+                if operand.kind.is_ptr() && e.kind.as_object().is_some() =>
+            {
+                let slot = self.temp("%object", e.kind);
+                self.op(Op::LocalAddr(slot));
+                self.expr(operand);
+                self.op(Op::PtrToObj);
+                self.op(Op::LocalAddr(slot));
             }
             ExprNode::Convert { operand, .. } =>
             {
                 self.expr(operand);
-                // A slice of u8s becomes a view of text with the same two
-                // words, once its UTF-8 is checked.
                 let words = e.kind.is_fn()
                     && (operand.kind.is_fn() || operand.kind.is_address());
                 let same = operand.kind == e.kind || e.kind.is_aggregate() || words;
                 do_if!(!same, self.op(Op::Convert(e.kind)));
-                let checked = e.kind.is_text_view() && !operand.kind.is_text_view();
-                do_if!(checked, self.op(Op::CheckUtf8));
+                // A plain list of u8s becomes text once its UTF-8 is checked.
+                do_if!(
+                    e.kind.is_text() && operand.kind.is_seq(),
+                    self.op(Op::CheckUtf8)
+                );
             }
             ExprNode::Call { func, args, .. } => self.call(Target::Fn(*func), args),
             ExprNode::CallValue { callee, args } =>
@@ -1551,16 +1629,21 @@ impl<'s> FuncGen<'s>
                 self.call(Target::Value(callee), args)
             }
             ExprNode::FnAddr { func, .. } => self.op(Op::FnAddr(*func)),
+            ExprNode::CField { .. } if e.kind.is_aggregate() =>
+            {
+                let slot = self.temp("%c", e.kind);
+                self.c_field_at(Op::LocalAddr(slot), e);
+            }
+            ExprNode::CField { base, offset } =>
+            {
+                self.expr(base);
+                self.op(Op::CLoad { kind: e.kind, offset: *offset });
+            }
             ExprNode::Closure { func, record, .. } =>
             {
                 self.expr(record);
                 let kind = record.kind.pointee().expect("a record address");
                 self.op(Op::Closure { func: *func, record: kind });
-            }
-            ExprNode::Plain { value } =>
-            {
-                self.expr(value);
-                self.op(Op::FnPlain);
             }
             ExprNode::Host { func, args } =>
             {
@@ -1587,7 +1670,10 @@ impl<'s> FuncGen<'s>
                 self.expr(addr);
                 self.op(Op::Take(e.kind));
             }
-            ExprNode::Dup { value, lent } => self.dup_value(e.kind, value, *lent),
+            ExprNode::Dup { value, lent, deep } =>
+            {
+                self.dup_value(e.kind, value, *lent, *deep)
+            }
             ExprNode::Lend { operand } => self.expr(operand),
             ExprNode::PtrAdd { base, offset } =>
             {
@@ -1612,6 +1698,15 @@ impl<'s> FuncGen<'s>
                 self.op(Op::Load(e.kind));
                 self.expr(index);
                 self.op(Op::PtrAdd(self.stride(e.kind)));
+            }
+            // The fields of an object sit in cell 0 of its box, which holds
+            // none when the object is the zero word.
+            ExprNode::CellAddr { list, index, len: None, .. }
+                if list.kind.as_object().is_some() =>
+            {
+                self.expr(list);
+                self.expr(index);
+                self.op(Op::ObjectCell { stride: self.stride(e.kind) });
             }
             ExprNode::CellAddr { list, index, len: None, first, .. } =>
             {
@@ -1654,10 +1749,10 @@ impl<'s> FuncGen<'s>
     }
 
     /// Move a list or a struct out of the place at an address: its octets go
-    /// to a slot of their own, the place is zeroed, which leaves `ဗလာ` in each
-    /// owner cell or field, and the address of the new slot is pushed. The
-    /// address is worked out once and kept in a slot of its own, so the
-    /// source is read once.
+    /// to a slot of their own, the place is zeroed, which leaves the zero word
+    /// in each owner cell or field, and the address of the new slot is
+    /// pushed. The address is worked out once and kept in a slot of its
+    /// own, so the source is read once.
     ///
     /// # Arguments
     ///
@@ -1716,7 +1811,7 @@ impl<'s> FuncGen<'s>
     ///
     /// * `kind` - The plain list kind.
     /// * `value` - The counted list, a value of its own.
-    fn copy_to_heap(&mut self, kind: DataKind, value: &Expr)
+    fn clone_to_heap(&mut self, kind: DataKind, value: &Expr)
     {
         let slot = self.temp("%own", kind);
         self.op(Op::LocalAddr(slot));
@@ -1751,7 +1846,8 @@ impl<'s> FuncGen<'s>
     /// * `kind` - The kind of the value.
     /// * `value` - The read of the value.
     /// * `lent` - Whether the value is lent to a parameter for one call.
-    fn dup_value(&mut self, kind: DataKind, value: &Expr, lent: bool)
+    /// * `deep` - Whether each object it reaches gets a duplicate of its own.
+    fn dup_value(&mut self, kind: DataKind, value: &Expr, lent: bool, deep: bool)
     {
         let slot = self.temp("%dup", kind);
         self.op(Op::LocalAddr(slot));
@@ -1759,9 +1855,14 @@ impl<'s> FuncGen<'s>
         // A function value is one word on the stack, not an address.
         let word = !kind.is_aggregate();
         self.op(tern!(word, Op::Store(kind), Op::Blit(kind)));
-        self.op(Op::LocalAddr(slot));
-        let text = kind.holds_text();
-        do_if!(text, self.op(tern!(lent, Op::LendSeqs(kind), Op::DupSeqs(kind))));
+        // The counted blocks inside the duplicate each count one more holder; a
+        // value with none needs no step.
+        let share = tern!(lent, Op::LendSeqs(kind), Op::DupSeqs(kind));
+        if kind.holds_text()
+        {
+            self.op(Op::LocalAddr(slot));
+            self.op(tern!(deep, Op::DeepSeqs(kind), share));
+        }
         self.op(Op::LocalAddr(slot));
         do_if!(word, self.op(Op::Load(kind)));
     }

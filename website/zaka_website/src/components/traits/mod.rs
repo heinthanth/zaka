@@ -32,7 +32,7 @@ struct Trait
 /// The traits, in order.
 const TRAITS: [Trait; 3] = [
     Trait { id: "website.traits.natural", slug: "language/naturalness" },
-    Trait { id: "website.traits.safe", slug: "language/ownership" },
+    Trait { id: "website.traits.safe", slug: "language/objects" },
     Trait { id: "website.traits.portable", slug: "vm" },
 ];
 

@@ -56,9 +56,9 @@ en = "Natural wording"
 [website.traits.safe]
 en = "Safe"
 [website.traits.safe_text]
-en = "The borrow checker catches ownership mistakes before the program runs, and the VM checks each read and write while it runs."
+en = "Values and shared objects free themselves, with no pointer in safe code; pointers wait behind a marker, and the VM checks each read and write while it runs."
 [website.traits.safe_link]
-en = "Ownership and borrowing"
+en = "Values and objects"
 [website.traits.portable]
 en = "Portable"
 [website.traits.portable_text]

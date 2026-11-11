@@ -49,19 +49,19 @@ pub enum Fence
 }
 
 /// What a fence of a Learn page asks of the compiler besides its promise:
-/// `mem-check=warn`, `mem-strict=on`, `no-raw=on`, `overflow=wrap`.
+/// `mem-check=error`, `mem-strict=on`, `no-unsafe=on`, `overflow=wrap`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Builder, Serialize, Deserialize)]
 pub struct FenceOptions
 {
-    /// How the ownership check reports what it finds.
+    /// How the check reports what it finds in marked code.
     #[builder(default)]
     pub check: MemCheck,
     /// Whether the check also reports the accesses it cannot prove safe.
     #[builder(default)]
     pub strict: bool,
-    /// Whether raw addresses are refused.
+    /// Whether marked code is refused.
     #[builder(default)]
-    pub no_raw: bool,
+    pub no_unsafe: bool,
     /// What integer arithmetic does with a result outside its kind.
     #[builder(default)]
     #[serde(default)]
@@ -87,7 +87,7 @@ impl FenceOptions
         {
             ("mem-check", _) => self.check = value.parse().ok()?,
             ("mem-strict", "on") => self.strict = true,
-            ("no-raw", "on") => self.no_raw = true,
+            ("no-unsafe", "on") => self.no_unsafe = true,
             ("overflow", _) => self.overflow = value.parse().ok()?,
             _ => return None,
         }
@@ -221,7 +221,7 @@ pub fn compile(source: &str, options: &FenceOptions, input: &str) -> Compiled
     let emitted = run_phases(
         &file,
         &LexerOptions::default(),
-        &SemcheckOptions::builder().no_raw(options.no_raw).build(),
+        &SemcheckOptions::builder().no_unsafe(options.no_unsafe).build(),
         &FoldOptions::default(),
         &BorrowCheckOptions::builder()
             .check(options.check)

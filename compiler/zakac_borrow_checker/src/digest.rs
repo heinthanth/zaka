@@ -133,12 +133,15 @@ impl Root
     ///
     /// # Returns
     ///
-    /// `true` when this path is a prefix of `loan`; a cell that is not
-    /// known matches each cell.
+    /// `true` when this path is a prefix of `loan` and `loan` goes on into
+    /// no other block: a free of a block leaves the blocks its cells point
+    /// at. A cell that is not known matches each cell.
     pub fn reaches(&self, loan: &Root) -> bool
     {
         ret_false!(self.place != loan.place || self.path.len() > loan.path.len());
-        self.path.iter().zip(&loan.path).all(|(a, b)| same_step(*a, *b))
+        let rest = &loan.path[self.path.len()..];
+        let same = self.path.iter().zip(&loan.path).all(|(a, b)| same_step(*a, *b));
+        same && !(self.path.contains(&Seg::Block) && rest.contains(&Seg::Block))
     }
 
     /// Whether the two paths share a place: one reaches the other.
@@ -259,7 +262,7 @@ pub struct FnDigest
     pub renewed: Vec<Root>,
     /// The paths from the parameters and the globals the function frees
     /// and does not fill again on some path to its exit: the owner there
-    /// can be `ဗလာ` after the call.
+    /// can be null after the call.
     #[builder(default)]
     pub unfilled: Vec<Root>,
     /// The paths from the parameters and the globals the function reads
@@ -414,17 +417,19 @@ mod tests
     use super::*;
 
     #[test]
-    fn block_path_reaches_deeper_paths()
+    fn a_block_path_reaches_its_cells_but_not_the_blocks_in_them()
     {
         let slot = Root::slot(Place::Local(0));
         let block = slot.block();
         let inner = block.block();
         assert!(slot.reaches(&block));
-        assert!(block.reaches(&inner));
+        assert!(slot.reaches(&inner));
+        assert!(block.reaches(&block.cell(None)));
+        assert!(!block.reaches(&inner));
         assert!(!inner.reaches(&block));
         assert!(!block.reaches(&slot));
         assert!(!block.reaches(&Root::slot(Place::Local(1)).block()));
-        assert!(block.overlaps(&inner) && inner.overlaps(&block));
+        assert!(!block.overlaps(&inner) && !inner.overlaps(&block));
     }
 
     #[test]

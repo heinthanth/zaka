@@ -1,5 +1,5 @@
 //! Function kinds: the kind of a function value, its parameters (each with
-//! its edit mark and its mark) and its result.
+//! its `ဒေတာ ပြောင်းလဲရန်` flag and its mark) and its result.
 //!
 //! A function kind writes its short name as `fn(<param>, …) -> <result>`,
 //! each parameter as `[mut ]<kind>[(<mark>)]`. Inside another name (a cell, a
@@ -116,9 +116,9 @@ impl FnKind
     }
 
     /// Whether a function of this kind fits a place of kind `want`: the
-    /// same parameter kinds, edit marks and result, and the same marks when
-    /// `want` has marks. A kind with no marks takes a function with marks
-    /// or without.
+    /// same parameter kinds, `ဒေတာ ပြောင်းလဲရန်` flags and result, and the same
+    /// marks when `want` has marks. A kind with no marks takes a function
+    /// with marks or without.
     ///
     /// # Arguments
     ///

@@ -14,11 +14,11 @@ need to **choose** ("if the score is 40 or more, print *pass*") and to **repeat*
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 
 // choose: if ... then ... otherwise ...
-အကယ်၍ အမှတ် သည် ၄၀ အောက် မငယ်လျှင် "အောင်" ဟု ပြသပါ။
-သို့မဟုတ်ပါက "ကျ" ဟု ပြသပါ။
+အကယ်၍ အမှတ် သည် ၄၀ အောက် မငယ်လျှင် "အောင်" ဟု ပြသမည်။
+သို့မဟုတ်ပါက "ကျ" ဟု ပြသမည်။
 
 // repeat: count from 1 to 3
-၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။
+၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -40,6 +40,6 @@ need to **choose** ("if the score is 40 or more, print *pass*") and to **repeat*
 | [Break and continue](break-continue.md) | leave a loop at once, or skip to its next round |
 
 Each of these runs an *inner part*: either one statement or
-a [block](../variables/scope.md) (`အောက်ပါတို့ကို လုပ်ဆောင်ပါ။ ... လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။`).
+a [block](../variables/scope.md) (`အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ... လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။`).
 
 Next: [If and else](if-else.md).

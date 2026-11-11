@@ -225,7 +225,7 @@ fn a_run_that_is_no_identifier_is_lexed_per_word()
 #[test]
 fn import_and_export_words()
 {
-    let import = "\"က.zaka\" မှ ခ၊ ဂ တို့ကို ထည့်သွင်းပါ။";
+    let import = "\"က.zaka\" မှ ခ၊ ဂ တို့ကို ထည့်သွင်းမည်။";
     let want = [
         TokenKind::Str(0),
         TokenKind::Kw(Kw::From),
@@ -258,16 +258,7 @@ fn failure_words_join_into_their_phrases()
 {
     assert_eq!(kws("လုပ်ဆောင်သော ရလဒ်ကောင်း"), [Kw::CallGoodResult]);
     assert_eq!(kws("မအောင်မြင်ပါက"), [Kw::OnFail]);
-    for text in [
-        "အမှားအယွင်းအဖြစ် ပြန်ပေးပါ",
-        "အမှားအယွင်းအနေဖြင့် ပြန်ပေးပါ",
-        "အမှားအယွင်း အဖြစ် ပြန်ပေးမည်",
-        "အမှားအယွင်းအနေဖြင့် ပြန်ပေးမည်",
-    ]
-    {
-        assert_eq!(kws(text), [Kw::ReturnFault], "{text}");
-    }
-    for text in ["မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ", "မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးမည်"]
+    for text in ["မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်", "မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးမည်"]
     {
         assert_eq!(kws(text), [Kw::PassFault], "{text}");
     }

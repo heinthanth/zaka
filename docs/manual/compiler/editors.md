@@ -12,7 +12,7 @@ program never differ in version.
 
 ## What it shows
 
-- **Errors and warnings** of each stage up to the ownership check, with their codes, as
+- **Errors and warnings** of each stage up to the checker, with their codes, as
   the text changes. A message in a file that the open file imports shows at the start of
   the open file, named after that file, with a link to its place.
 - **Colors** for each word, from the lexer: control words, verbs, operators, particles,

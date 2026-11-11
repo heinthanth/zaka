@@ -1,31 +1,31 @@
 ---
 title: Printing
-description: Show values with ပြသပါ, and choose between ကို and ဟု.
+description: Show values with ပြသမည်, and choose between ကို and ဟု.
 ---
 
 # Printing
 
-`ပြသပါ` ("please show") prints one value and then starts a new line. The value comes
-first, then a small word that marks it, then `ပြသပါ`. That small word is either `ကို` or
+`ပြသမည်` ("please show") prints one value and then starts a new line. The value comes
+first, then a small word that marks it, then `ပြသမည်`. That small word is either `ကို` or
 `ဟု`.
 
 ```zaka
 // ကို: "show this value"
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၄၂ ကို ပြသပါ။
-၃.၁၄ ကို ပြသပါ။
-'က' ကို ပြသပါ။
-၁၀ + ၅ ကို ပြသပါ။
+၄၂ ကို ပြသမည်။
+၃.၁၄ ကို ပြသမည်။
+'က' ကို ပြသမည်။
+၁၀ + ၅ ကို ပြသမည်။
 
 // ဟု: "quote these words", for text in quotes
-"မင်္ဂလာပါ" ဟု ပြသပါ။
+"မင်္ဂလာပါ" ဟု ပြသမည်။
 
 // ဟု also quotes a whole sentence, such as "3 is greater than 2"
-၃ သည် ၂ ထက် ကြီးသည် ဟု ပြသပါ။
+၃ သည် ၂ ထက် ကြီးသည် ဟု ပြသမည်။
 
 // A pair of quotes with nothing inside prints a blank line
-"" ဟု ပြသပါ။
-"ပြီးပါပြီ" ဟု ပြသပါ။
+"" ဟု ပြသမည်။
+"ပြီးပါပြီ" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -47,7 +47,7 @@ The sentence `၃ သည် ၂ ထက် ကြီးသည်` is either true 
 | --- | --- | --- |
 | `ကို` | (marks the object) | a plain value: a number, a character, a sum |
 | `ဟု` | "so", quoting | text in quotes, or a sentence that ends in `သည်` or `ပါ` |
-| `ပြသပါ` | "please show" | print, then go to a new line |
+| `ပြသမည်` | "please show" | print, then go to a new line |
 
 ## How values look when printed
 
@@ -64,7 +64,7 @@ still runs and prints `၅`:
 
 ```zaka-warning ZK0506
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၅ ဟု ပြသပါ။
+၅ ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -74,7 +74,7 @@ warning[ZK0506]: a plain value is marked with "ကို", not quoted with "ဟ�
 
 ```zaka-warning ZK0505
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"မင်္ဂလာပါ" ကို ပြသပါ။
+"မင်္ဂလာပါ" ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

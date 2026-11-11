@@ -149,7 +149,7 @@ fn label_spans_are_relative_and_absolute_again()
     let lo = label.lo.as_u32() as usize;
     let rest = artifact.source.get(lo..).expect("the label starts on a char");
     assert!(rest.starts_with("မိတ္တူ ၏ တန်ဖိုး"), "{rest}");
-    assert_eq!(artifact.source[..lo].lines().count() + 1, 8);
+    assert_eq!(artifact.source[..lo].lines().count() + 1, 9);
     let mut sm = SourceMap::new();
     sm.new_source_file(FileName::Custom("pad".into()), "pad".into());
     let file = artifact.register_source(&mut sm);

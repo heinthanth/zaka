@@ -1,7 +1,7 @@
 # zakac-parse-artifact v1
 name:
   Custom: aliases.zaka
-source: "// kind aliases: the opener with each kind, a bare function kind, an export\nဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်သည်။\nဒေတာအမျိုးအစား လူ ကို ပုဂ္ဂိုလ် ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nအချက်အလက်အမျိုးအစား ၃၂ ဘစ် ကိန်းပြည့် ကို အမှတ် ဟု လည်း မှတ်ယူနိုင်ပါသည်။\nဒေတာအမျိုးအစား ပုဂ္ဂိုလ် စာရင်း ကို လူစု ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nဒေတာအမျိုးအစား (ကိန်းပြည့် ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) ကို ပြချက် ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nကိန်းပြည့်၊ ကိန်းပြည့် တို့ကို လက်ခံပြီး မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား ကို နှိုင်းချက် ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nအများသုံး ဒေတာအမျိုးအစား စာသား ကို အမည် ဟုလည်း မှတ်ယူနိုင်ပါသည်။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် ပုဂ္ဂိုလ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပုဂ္ဂိုလ်(အသက်: ၁) ဖြစ်ပါစေ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+source: "// kind aliases: the opener with each kind, a bare function kind, an export\nလူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။\nဒေတာအမျိုးအစား ပုဂ္ဂိုလ် ကို လူ ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nဒေတာအမျိုးအစား အမှတ် ကို ၃၂ ဘစ် ကိန်းပြည့် ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nဒေတာအမျိုးအစား လူစု ကို ပုဂ္ဂိုလ် စာရင်း ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nဒေတာအမျိုးအစား ပြချက် ကို (ကိန်းပြည့် တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nဒေတာအမျိုးအစား နှိုင်းချက် ကို ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား ဟုလည်း မှတ်ယူနိုင်ပါသည်။\nအများသုံး ဒေတာအမျိုးအစား အမည် ကို စာသား ဟုလည်း မှတ်ယူနိုင်ပါသည်။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် ပုဂ္ဂိုလ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပုဂ္ဂိုလ်(အသက်: ၁) ဖြစ်ပါစေ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 program:
   stmts:
@@ -9,55 +9,65 @@ program:
       name:
         name: လူ
         span:
-          lo: 119
-          hi: 125
+          lo: 76
+          hi: 82
       fields:
       - edit: false
+        fill: false
+        owned: false
         kind:
           base: int
           bits: null
           signed: null
           wraps: []
+          classifier:
+            name: ခု
+            span:
+              lo: 214
+              hi: 220
           span:
-            lo: 139
-            hi: 169
+            lo: 174
+            hi: 204
         name:
           name: အသက်
           span:
-            lo: 170
-            hi: 182
+            lo: 145
+            hi: 157
         mark: null
         span:
-          lo: 139
-          hi: 182
+          lo: 145
+          hi: 220
       classifier: null
       exported: false
+      shared: false
+      external: false
       span:
         lo: 76
-        hi: 223
+        hi: 248
   - alias:
       kind:
         base: named
         name:
           name: လူ
           span:
-            lo: 267
-            hi: 273
+            lo: 330
+            hi: 336
         bits: null
         signed: null
         wraps: []
         span:
-          lo: 267
-          hi: 273
+          lo: 330
+          hi: 336
       name:
         name: ပုဂ္ဂိုလ်
         span:
-          lo: 284
-          hi: 311
+          lo: 292
+          hi: 319
+      classifier: null
       exported: false
       span:
-        lo: 224
-        hi: 382
+        lo: 249
+        hi: 407
   - alias:
       kind:
         base: int
@@ -65,41 +75,43 @@ program:
         signed: null
         wraps: []
         span:
-          lo: 441
-          hi: 488
+          lo: 477
+          hi: 524
       name:
         name: အမှတ်
         span:
-          lo: 499
-          hi: 514
+          lo: 451
+          hi: 466
+      classifier: null
       exported: false
       span:
-        lo: 383
-        hi: 586
+        lo: 408
+        hi: 595
   - alias:
       kind:
         base: named
         name:
           name: ပုဂ္ဂိုလ်
           span:
-            lo: 630
-            hi: 657
+            lo: 662
+            hi: 689
         bits: null
         signed: null
         wraps:
         - list: inferred
         span:
-          lo: 630
-          hi: 676
+          lo: 662
+          hi: 708
       name:
         name: လူစု
         span:
-          lo: 687
-          hi: 699
+          lo: 639
+          hi: 651
+      classifier: null
       exported: false
       span:
-        lo: 587
-        hi: 770
+        lo: 596
+        hi: 779
   - alias:
       kind:
         base: fn
@@ -109,32 +121,39 @@ program:
         sig:
           params:
           - edit: false
+            owned: false
             kind:
               base: int
               bits: null
               signed: null
               wraps: []
+              classifier:
+                name: ခု
+                span:
+                  lo: 893
+                  hi: 899
               span:
-                lo: 815
-                hi: 845
+                lo: 853
+                hi: 883
             name: null
             mark: null
             span:
-              lo: 815
-              hi: 845
+              lo: 853
+              hi: 909
           ret: null
         span:
-          lo: 814
-          hi: 952
+          lo: 852
+          hi: 1006
       name:
         name: ပြချက်
         span:
-          lo: 963
-          hi: 981
+          lo: 823
+          hi: 841
+      classifier: null
       exported: false
       span:
-        lo: 771
-        hi: 1052
+        lo: 780
+        hi: 1077
   - alias:
       kind:
         base: fn
@@ -144,53 +163,71 @@ program:
         sig:
           params:
           - edit: false
+            owned: false
             kind:
               base: int
               bits: null
               signed: null
               wraps: []
+              classifier:
+                name: ခု
+                span:
+                  lo: 1205
+                  hi: 1211
               span:
-                lo: 1053
-                hi: 1083
+                lo: 1165
+                hi: 1195
             name: null
             mark: null
             span:
-              lo: 1053
-              hi: 1083
+              lo: 1165
+              hi: 1221
           - edit: false
+            owned: false
             kind:
               base: int
               bits: null
               signed: null
               wraps: []
+              classifier:
+                name: ခု
+                span:
+                  lo: 1293
+                  hi: 1299
               span:
-                lo: 1087
-                hi: 1117
+                lo: 1253
+                hi: 1283
             name: null
             mark: null
             span:
-              lo: 1087
-              hi: 1117
+              lo: 1253
+              hi: 1309
           ret:
             base: bool
             bits: null
             signed: null
             wraps: []
+            classifier:
+              name: ခု
+              span:
+                lo: 1424
+                hi: 1430
             span:
-              lo: 1168
-              hi: 1213
+              lo: 1369
+              hi: 1414
         span:
-          lo: 1053
-          hi: 1338
+          lo: 1165
+          hi: 1542
       name:
         name: နှိုင်းချက်
         span:
-          lo: 1349
-          hi: 1382
+          lo: 1121
+          hi: 1154
+      classifier: null
       exported: false
       span:
-        lo: 1053
-        hi: 1453
+        lo: 1078
+        hi: 1613
   - alias:
       kind:
         base: text
@@ -198,23 +235,24 @@ program:
         signed: null
         wraps: []
         span:
-          lo: 1525
-          hi: 1540
+          lo: 1708
+          hi: 1723
       name:
         name: အမည်
         span:
-          lo: 1551
-          hi: 1563
+          lo: 1685
+          hi: 1697
+      classifier: null
       exported: true
       span:
-        lo: 1454
-        hi: 1634
+        lo: 1614
+        hi: 1794
   - fn:
       name:
         name: ပရိုဂရမ်
         span:
-          lo: 1636
-          hi: 1660
+          lo: 1796
+          hi: 1820
       params: []
       ret: null
       block:
@@ -223,26 +261,26 @@ program:
             name:
               name: က
               span:
-                lo: 1781
-                hi: 1784
+                lo: 1941
+                hi: 1944
             kind:
               base: named
               name:
                 name: ပုဂ္ဂိုလ်
                 span:
-                  lo: 1795
-                  hi: 1822
+                  lo: 1955
+                  hi: 1982
               bits: null
               signed: null
               wraps: []
+              classifier:
+                name: ခု
+                span:
+                  lo: 1992
+                  hi: 1998
               span:
-                lo: 1795
-                hi: 1822
-            classifier:
-              name: ခု
-              span:
-                lo: 1832
-                hi: 1838
+                lo: 1955
+                hi: 1982
             is_const: false
             init:
               struct:
@@ -250,15 +288,15 @@ program:
                 name:
                   name: ပုဂ္ဂိုလ်
                   span:
-                    lo: 1886
-                    hi: 1913
+                    lo: 2046
+                    hi: 2073
                 classifier: null
                 fields:
                 - field:
                     name: အသက်
                     span:
-                      lo: 1914
-                      hi: 1926
+                      lo: 2074
+                      hi: 2086
                   value:
                     int:
                       id: 0
@@ -267,21 +305,22 @@ program:
                       kind: null
                       script: burmese
                       span:
-                        lo: 1928
-                        hi: 1931
+                        lo: 2088
+                        hi: 2091
                 span:
-                  lo: 1886
-                  hi: 1932
-            moves: false
+                  lo: 2046
+                  hi: 2092
             exported: false
             span:
-              lo: 1753
-              hi: 1960
+              lo: 1913
+              hi: 2120
         single: false
+        unchecked: false
         span:
-          lo: 1670
-          hi: 2031
+          lo: 1830
+          hi: 2191
       exported: false
+      unchecked: false
       start: true
       external: false
       lib: null
@@ -289,10 +328,10 @@ program:
       owned_ret: false
       captures: []
       span:
-        lo: 1636
-        hi: 2031
+        lo: 1796
+        hi: 2191
   units: []
   span:
     lo: 0
-    hi: 2032
+    hi: 2192
 diagnostics: []

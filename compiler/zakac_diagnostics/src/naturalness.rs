@@ -185,6 +185,28 @@ pub fn decl_classifier_mismatch(
     Diagnostic::new(Code::ClassifierMismatch, msg, span).with_help(help)
 }
 
+/// The `တစ်<classifier>လုံး` of a deep duplicate uses a classifier other than
+/// the one of the kind duplicated.
+///
+/// # Arguments
+///
+/// * `span` - The count word.
+/// * `kind` - The kind duplicated, as text.
+/// * `want` - The classifier of the kind.
+/// * `found` - The classifier written.
+///
+/// # Returns
+///
+/// The `ZK0509` diagnostic, with the right count word as a hint.
+pub fn whole_classifier_mismatch(
+    span: Span, kind: &str, want: &str, found: &str,
+) -> Diagnostic
+{
+    let msg = t!("codes.ZK0509.message", k = kind, w = want, f = found);
+    let help = t!("codes.ZK0509.help_whole", w = want);
+    Diagnostic::new(Code::ClassifierMismatch, msg, span).with_help(help)
+}
+
 /// The count of a struct literal uses a classifier other than the struct's
 /// own.
 ///

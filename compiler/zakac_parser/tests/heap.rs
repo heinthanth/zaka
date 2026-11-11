@@ -1,7 +1,6 @@
 mod common;
 
 use common::codes;
-use common::parse_text;
 use common::stmt;
 use zakac_diagnostics::Code;
 
@@ -14,7 +13,7 @@ fn heap_statements()
         "(alloc p 10 isize)"
     );
     assert_eq!(
-        stmt("မင်မိုရီတွင် ကိန်းပြည့် ၏ အရွယ်အစား * ၂ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။"),
+        stmt("မင်မိုရီတွင် ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား * ၂ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။"),
         "(alloc p (* (sizeof isize) 2))"
     );
     assert_eq!(
@@ -37,17 +36,16 @@ fn heap_statements()
     assert_eq!(stmt("လိပ်စာ q ၏ တန်ဖိုး ရှိ မှတ်ဉာဏ်ကို ပြန်လည်စွန့်လွှတ်မည်။"), "(free (deref q))");
 }
 
+/// A size that starts with a kind counts cells of it; a literal with a kind
+/// after it starts with its digits, so it counts octets.
 #[test]
-fn a_kind_prefixed_literal_in_a_size_needs_parentheses()
+fn a_size_reads_its_kind_or_a_literal_with_a_kind()
 {
     let found = codes("မင်မိုရီတွင် ကိန်းပြည့် ၁၀ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။");
     assert_eq!(found, [Code::ExpectedToken]);
-    let diag =
-        &parse_text("မင်မိုရီတွင် ကိန်းပြည့် ၁၀ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။").diagnostics[0];
-    assert!(diag.help.is_some(), "the message suggests parentheses");
     assert_eq!(
-        stmt("မင်မိုရီတွင် (ကိန်းပြည့် ၁၀) ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။"),
-        "(alloc p [10isize])"
+        stmt("မင်မိုရီတွင် ၁၀ ဟူသော ကိန်းပြည့် တစ်ခု ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။"),
+        "(alloc p 10isize)"
     );
 }
 
@@ -83,8 +81,11 @@ fn blits_and_fills()
     // A value with a kind word in front reads as a value: the verb at the end
     // makes the statement a fill.
     assert_eq!(
-        stmt("လိပ်စာ p ရှိ မင်မိုရီကို ၈ ဘစ် ကိန်းပြည့် ၅ ဖြင့် ၈ ဘစ် ကိန်းပြည့် ၄ ခုစာ ဖြည့်မည်။"),
+        stmt("လိပ်စာ p ရှိ မင်မိုရီကို ၅ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြင့် ၈ ဘစ် ကိန်းပြည့် ၄ ခုစာ ဖြည့်မည်။"),
         "(fill p 4 i8 5i8)"
     );
-    assert_eq!(stmt("လိပ်စာ p ရှိ မင်မိုရီကို ကိန်းပြည့် ၁ ဖြင့် ၈ ဘိုက်စာ ဖြည့်မည်။"), "(fill p 8 1isize)");
+    assert_eq!(
+        stmt("လိပ်စာ p ရှိ မင်မိုရီကို ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြင့် ၈ ဘိုက်စာ ဖြည့်မည်။"),
+        "(fill p 8 1isize)"
+    );
 }

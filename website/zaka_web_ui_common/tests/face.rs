@@ -92,7 +92,7 @@ fn burmese_fonts_are_grouped()
     let picked: Vec<Face> = Face::burmese_faces().collect();
     assert_eq!(picked.contains(&Face::Pda10), HAS_CODE_FONT);
     assert!(picked.iter().all(|f| f.group() == BURMESE));
-    assert_eq!(Face::Sabae.family(), "Myanmar Sabae");
+    assert_eq!(Face::Sabae.css_name(), "Myanmar Sabae");
     assert_eq!(Face::Pda10.burmese_alias(), "PDA10 Burmese Mono (Burmese)");
     assert_eq!(Face::Sabae.burmese_alias(), "Myanmar Sabae (Burmese)");
 }
@@ -141,6 +141,6 @@ fn a_fallback_follows_the_burmese_range_of_the_burmese_font()
 fn labels_come_from_the_table()
 {
     assert_eq!(Face::Native.label(), "OS default");
-    assert_eq!(Face::Iosevka.label(), Face::Iosevka.family());
+    assert_eq!(Face::Iosevka.label(), Face::Iosevka.css_name());
     assert_eq!(Face::Noto.group_label(), "Burmese");
 }

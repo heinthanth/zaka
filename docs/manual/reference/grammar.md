@@ -1,0 +1,485 @@
+---
+title: Grammar
+description: The shape of each form of the language, rule after rule, in one place.
+---
+
+# Grammar
+
+This page gives the shape of each form the parser reads. It states shapes alone: what a
+form means, and the checks the compiler adds after the parser, are on the language page
+that each section links to. The reserved words are listed on
+[Reserved words](reserved-words.md), and the order of the operators on
+[Operator precedence](precedence.md).
+
+## The notation
+
+The rules are productions in a small form of EBNF (Extended Backus–Naur Form). A
+nonterminal is a lowercase English name; a terminal is a token, written in quotes:
+
+| Written | Means |
+| --- | --- |
+| `name = ... ;` | a production: the nonterminal `name` derives what is on the right |
+| `"ကို"` | a terminal: a reserved word, a phrase token or punctuation, as it stands in a program |
+| `a b` | concatenation: `a`, then `b` |
+| `a \| b` | alternation: `a` or `b` |
+| `[ a ]` | option: `a`, or nothing |
+| `{ a }` | repetition: `a`, zero or more times |
+| `( a )` | a group |
+| `(* ... *)` | a comment, not part of the production |
+
+The lexer does some of the work before the parser sees the token stream, so the
+productions leave it out:
+
+- **Spaces.** A word made of reserved words alone is split, and the words of a reserved
+  phrase join into one token whether spaces stand between them or not. So
+  `ပရိုဂရမ်သည်` reads as `ပရိုဂရမ် သည်`, `ဒေတာအစုအဝေးတွင်` as `ဒေတာအစုအဝေး တွင်`, and
+  `အောက်ပါတို့ကို လုပ်ဆောင်မည်` is one token. A rule writes each phrase with the spaces
+  the docs teach. A name still needs a space before the particle after it
+  ([Words and spaces](../language/words.md#words-and-spaces)).
+- **`ဒေတာ` and `အချက်အလက်`** are one word to the lexer: `အချက်အလက်အစုအဝေး` is
+  `ဒေတာအစုအဝေး`, and `အချက်အလက်ဆဲလ်` is `ဒေတာဆဲလ်`. The rules write `ဒေတာ`. Alone,
+  `ဒေတာ` is a name, save after `ထဲမှ`, `ထဲတွင်` and `အမှားအယွင်း`, and before
+  `ပြောင်းလဲရန်` and `ထည့်ပေးရန်`.
+- **Endings.** A comparison word, `မဟုတ်`, `မှန်` and `မမှန်` can take an attached
+  ending, `ပါ`, `သည်` or `ပါသည်` (`ကြီးသည်`, `မဟုတ်ပါ`), which the lexer folds into the
+  word. The rules leave the ending out; [Natural wording](../language/naturalness.md)
+  tells which ending reads well where.
+- **Spellings.** Where a word has several spellings, the rule lists each one.
+
+A few rules also depend on what the file declares and on the form around them;
+[Where the rules depend on context](#where-the-rules-depend-on-context) lists them.
+
+## Words and tokens
+
+```text
+name         = word | "`" { character } "`" ;     (* a word that is not reserved, or a raw name *)
+digits       = digit { digit } ;                  (* ၀ to ၉ or 0 to 9, one script in a number *)
+number       = digits [ "." digits ] [ exponent ] ;
+exponent     = ( "e" | "E" ) [ "+" | "-" ] digits ;   (* Western digits *)
+char-lit     = "'" ( character | escape ) "'" ;
+string-lit   = '"' { character | escape | slot } '"' ;
+slot         = "{" expr "}" ;                     (* a template slot *)
+escape       = "\" character | "{{" | "}}"
+             | "{နောက်တစ်ကြောင်း}" | "{ယူနီကုဒ် " hex "}" ;
+comment      = ( "//" | "///" | "မှတ်ချက်" ) { character } ;   (* to the end of the line *)
+count-word   = "တစ်" classifier ;                 (* one word: တစ်ခု, တစ်လုံး, တစ်ယောက် *)
+classifier   = name | "ကွက်" ;
+punctuation  = "၊" | "။" | "၏" | "(" | ")" | "[" | "]" | ":" | "?" ;
+```
+
+See [Source text and words](../language/words.md) and
+[Text](../language/text.md#string-literals).
+
+## Program and files
+
+```text
+file         = { import } { top-item } ;
+top-item     = declaration | start-block ;        (* another statement here is ZK0326 *)
+import       = string-lit "မှ" name { "၊" name } ( "ကို" | "တို့ကို" ) "ထည့်သွင်းမည်" "။" ;
+start-block  = "ပရိုဂရမ်" "သည်" [ params "လက်ခံပြီး" ] fn-open "။"
+               { stmt }
+               "ပရိုဂရမ်" done "။" ;
+done         = "ပြီးဆုံးပါပြီး" | "ပြီးဆုံးပါပြီ" | "ပြီးပါပြီး" | "ပြီးပါပြီ" ;
+```
+
+An import after another statement, or inside a block, is parsed and reported. See
+[Modules](../language/modules.md) and
+[The start block](../language/functions.md#the-start-block).
+
+## Declarations
+
+```text
+declaration  = var-decl | fn-decl | external-fn | struct-decl | handle-decl
+             | enum-decl | alias-decl ;
+
+var-decl     = [ "အများသုံး" ] ( "ကိန်းရှင်" | "ကိန်းသေ" ) name
+               ( "သည်" decl-head "ဖြစ်ပါစေ"
+               | "ထဲသို့" clause "ကို" ( "ကူးထည့်မည်" | "အကုန်ကူးထည့်မည်" ) ) "။" ;
+decl-head    = slot-kind [ "ဖြစ်၍" "တန်ဖိုး" "သည်" clause ]
+             | clause ;                           (* the kind comes from the value *)
+
+fn-decl      = [ "အများသုံး" ] [ "စိတ်မချရသော" ] "လုပ်ဆောင်ချက်" name "သည်"
+               [ params "လက်ခံပြီး" ] fn-open "။"
+               { stmt }
+               block-close "။" ;
+fn-open      = "အောက်ပါတို့ကို လုပ်ဆောင်မည်"
+             | "အောက်ပါတို့ကို လုပ်ဆောင်ကာ" result ;
+result       = slot-kind "ကို" [ "အပိုင်အနေဖြင့်" ] "ပြန်ပေးမည်" ;
+block-close  = "လုပ်ဆောင်စရာများ" done ;
+
+params       = param [ "လည်းကောင်း" ]
+             | param "လည်းကောင်း" param "လည်းကောင်း" { param "လည်းကောင်း" } ;
+param        = name "ဟူသော" listed-kind "ကို" markers ;
+markers      = [ "ဒေတာ ပြောင်းလဲရန်" | "ဒေတာ ထည့်ပေးရန်" ] [ "အပိုင်အနေဖြင့်" ] [ mark ] ;
+mark         = "ဝိဘတ်" string-lit "ကို" "သုံး၍" ;   (* the string holds one name or particle *)
+
+external-fn  = [ "အများသုံး" ] [ "စိတ်မချရသော" ] "လုပ်ဆောင်ချက်" name "သည်"
+               origin "လုပ်ဆောင်ချက်" [ "တစ်ခု" ]
+               ( "ဖြစ်သည်" | "ဖြစ်၍" ext-tail ) "။" ;
+origin       = "ပြင်ပမှလာသော"                     (* a host function *)
+             | string-lit "မှလာသော" ;             (* a C function of that shared lib *)
+ext-tail     = c-params "လက်ခံမည်"                (* no result *)
+             | c-params "လက်ခံပြီး" result
+             | result ;
+c-params     = params
+             | param "လည်းကောင်း" { param "လည်းကောင်း" } "အခြားတန်ဖိုးများနှင့်အတူ" ;
+
+struct-decl  = name "ဟူသော" [ "အများသုံး" ] [ "မျှဝေနိုင်သော" ] "ဒေတာအစုအဝေး" "တွင်"
+               fields closer "။" ;
+handle-decl  = name "ဟူသော" [ "အများသုံး" ] "ပြင်ပမှ လာသော" "ဒေတာအစုအဝေး"
+               ( "ဖြစ်သည်" | "တွင်" fields ( "ပါဝင်သည်" | "တို့ပါဝင်သည်" ) ) "။" ;
+fields       = field { "၊" field } ;
+field        = name "ဟူသော" listed-kind ;
+
+enum-decl    = name "ဟူသော" [ "အများသုံး" ] "ဒေတာအမျိုးအစားကွဲ" "တွင်"
+               variant { "၊" variant } closer "။" ;
+variant      = [ "ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်" ] [ "တန်ဖိုးအနေဖြင့်" expr "ရှိသည့်" ] name ;
+
+closer       = ( "ပါဝင်သည်" | "ပါဝင်ပြီး" word-clause )          (* after one field or variant *)
+             | ( "တို့ပါဝင်သည်" | "တို့ပါဝင်ပြီး" word-clause ) ;  (* after two or more *)
+word-clause  = "မျိုးပြပစ္စည်းမှာ" classifier "ဖြစ်သည်" ;
+
+alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုးအစား" name "ကို" kind
+               ( "ဟုလည်း မှတ်ယူနိုင်ပါသည်" | "ဟုလည်း မှတ်ယူနိုင်ပြီး" word-clause ) "။" ;
+```
+
+- With two or more parameters, each ends in `လည်းကောင်း`; either each parameter has a
+  mark or none has. The two marks before `လုပ်ဆောင်ချက်` can come in either order; the
+  start block takes neither.
+- The kind of an alias takes no measure word. A function, a struct, an enumeration or an
+  alias inside a block is parsed and reported; a function with a block can stand inside
+  another function.
+
+See [Statements](../language/statements.md#declarations),
+[Functions](../language/functions.md), [Structs](../language/structs.md),
+[Enumerations](../language/enums.md), [Kind aliases](../language/aliases.md) and
+[C functions](../language/functions.md#c-functions).
+
+## Statements
+
+```text
+stmt         = var-decl | fn-decl | block | if-stmt | switch-stmt
+             | while-loop | counted-loop | each-loop | generic-loop
+             | break | continue | return | call-stmt | verb-stmt | heap-stmt ;
+
+block        = block-open "။" { stmt } block-close "။" ;
+block-open   = "အောက်ပါတို့ကို လုပ်ဆောင်မည်"
+             | "အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်" ;   (* marked code *)
+branch       = block | stmt ;                     (* one statement in place of a block *)
+
+if-stmt      = "အကယ်၍" expr then branch
+               { "ထိုသို့မဟုတ်ဘဲ" expr then branch }
+               [ "သို့မဟုတ်ပါက" branch ] ;
+then         = "လျှင်" | "ဖြစ်လျှင်" ;
+
+switch-stmt  = value "သည်" cases "ဖြစ်လျှင်" branch
+               { cases "ဖြစ်လျှင်" branch }
+               [ "တခြား" slot-kind "ဖြစ်လျှင်" branch ] ;
+cases        = expr | expr "၊" expr { "၊" expr } "တို့" ;
+
+while-loop   = expr while branch ;
+while        = "နေသရွေ့" | "ဖြစ်နေသရွေ့" ;
+counted-loop = expr "မှ" expr "အထိ" [ expr "စီ" ] name "အနေဖြင့်"
+               ( "ရေတွက်၍" | "တိုး၍" | "လျှော့၍" ) branch ;
+each-loop    = expr "၏" ( "အကွက်တိုင်း" | "စာလုံးတိုင်း" ) "ကို" name "အနေဖြင့်" "ယူ၍" branch ;
+generic-loop = "ကိန်းရှင်" name "သည်" decl-head ( "ဖြစ်ကာ" | "ဖြစ်ပြီး" ) expr while
+               block-open "။" { stmt } [ "ပြီးလျှင်" stmt ] block-close "။" ;
+break        = "ကွင်းဆက်" "ကို" "ရပ်မည်" "။" ;
+continue     = "နောက်တစ်ကြိမ်ဆီသို့" "ကျော်မည်" "။" ;
+
+return       = value "ကို" "ပြန်ပေးမည်" "။"
+             | "ပြန်ပေးမည်" "။"
+             | "လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်" "။"
+             | "လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်" "။" ;
+
+verb-stmt    = value ( "ကို" | "ဟု" ) "ပြသမည်" "။"
+             | value "ကို" value "ဟု" "ထားမည်" "။"
+             | value "ထဲသို့" value "ကို" ( "ထည့်မည်" | "ကူးထည့်မည်" | "အကုန်ကူးထည့်မည်" ) "။"
+             | value "၏" "အရှေ့တွင်" value "ကို" "ထည့်မည်" "။"
+             | value "၏" ( "နောက်ဆုံးအကွက်" | "နောက်ဆုံးစာလုံး" ) "ကို" "ဖျက်မည်" "။"
+             | text-range "ထိ" "ကို" value "ဖြင့်" "အစားထိုးမည်" "။"
+             | value "ကို" "ပြင်ပမှ" "ခေါ်ဆိုခွင့်" ( "ပြုမည်" | "ပြန်လည်ရုပ်သိမ်းမည်" ) "။" ;
+text-range   = value "၏" "အကွက်" notation "မှ" notation
+             | value "၏" notation ordinal "စာလုံး" "မှ" notation ordinal "စာလုံး" ;
+ordinal      = "ခုမြောက်" | "လုံးမြောက်" ;
+
+heap-stmt    = "မင်မိုရီတွင်" size "နေရာယူ၍ လိပ်စာကို" clause "တွင်" "သိမ်းထားမည်" "။"
+             | "လိပ်စာ" clause "ရှိ မင်မိုရီကို" "ပြန်လည်စွန့်လွှတ်မည်" "။"
+             | "လိပ်စာ" clause "ရှိ မင်မိုရီကို" size "ဖြစ်အောင်" "နေရာအချဲ့အချုံ့လုပ်မည်" "။"
+             | "လိပ်စာ" clause "ရှိ မင်မိုရီကို" clause "ဖြင့်" size "ဖြည့်မည်" "။"
+             | "လိပ်စာ" clause "ရှိ" size "မင်မိုရီ" "ကို" "လိပ်စာ" clause "ဆီသို့"
+               ( "ကူးယူမည်" | "ပြောင်းထည့်မည်" ) "။" ;
+size         = clause "ဘိုက်စာ"
+             | kind clause ( "ခုစာ" | "လုံးစာ" | classifier "စာ" ) ;   (* the word of the kind *)
+```
+
+- `မင်မိုရီ` can be written `မှတ်ဉာဏ်`.
+- A one-statement branch inside an `if` arm cannot be another `if`, and one inside a
+  switch arm cannot be an `if` or a switch.
+- The `ပြီးလျှင်` statement of a generic loop comes last in its block. A switch arm after
+  the default arm is parsed and reported.
+- `value` is an operand of a clause, or the value a verb of the clause gives
+  ([Expressions](#expressions)). The operands of a statement verb come in the order the
+  verb lists, and none can be left over before it.
+
+See [Statements](../language/statements.md), [Lists](../language/lists.md),
+[Text](../language/text.md#changing-text), [Switch](../language/enums.md#switch) and
+[Heap statements](../language/unsafe.md#heap-statements).
+
+## Expressions
+
+An expression has three tiers. The logical tier joins clauses; a clause holds operands,
+each with the particle after it, and verbs; an operand is a notation expression with
+signs.
+
+```text
+expr         = and-expr { ( "သို့မဟုတ်" | "||" ) and-expr } ;
+and-expr     = not-expr { ( "ဖြစ်၍" | "&&" ) not-expr } ;
+not-expr     = clause { "မဟုတ်" } ;
+
+clause       = operand { particle operand | verb } ;   (* each verb takes the operands right before it *)
+particle     = "၏" | "နှင့်" | "ကို" | "ဖြင့်" | "သည်" | "ထက်" | "အောက်" | "ဟု"
+             | "ခုမြောက်" | "လုံးမြောက်" | "ထဲသို့" | "ထဲတွင်" ;
+operand      = notation | word-list | join | word-struct
+             | first-call | short-call | marked-call ;   (* a call with a value end *)
+join         = notation "၊" notation { "၊" notation } "တို့ကို" "ဆက်ထားသည့်" "စာသား" ;
+
+notation     = prefix-expr { infix-op prefix-expr } ;
+prefix-expr  = { prefix-op } atom { data-read } ;
+prefix-op    = "-" | "အနုတ်" | "~" | "!" | "*" | "&" ;   (* * and &: the value at an address, an address *)
+infix-op     = "*" | "/" | "%" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|"
+             | "<" | ">" | "<=" | ">=" | "==" | "!=" ;
+atom         = name | "(" expr ")" | literal | fn-value | size-of | long-call | sign-call ;
+data-read    = "ထဲမှ" "ဒေတာ" | "ထဲမှ" "အမှားအယွင်း" "ဒေတာ" ;
+fn-value     = name "ဟူသော" "လုပ်ဆောင်ချက်" ;
+size-of      = slot-kind "၏" "အရွယ်အစား" ;
+```
+
+Each verb of a clause takes the operands right before it, each with the particle it
+wants, and gives a value that can be an operand of a later verb. In these frames,
+`value` is an operand or such a value:
+
+```text
+value "နှင့်" value "၏" ( "ပေါင်းလဒ်" | "နုတ်လဒ်" | "မြှောက်လဒ်" )
+value "နှင့်" value "၏" "ဘစ်အလိုက်" ( "ဆုံလဒ်" | "ပေါင်းစုလဒ်" | "ခြားနားလဒ်" )
+value "၏" "ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်"
+value "ကို" value "ဖြင့်" "စားသော" ( "စားလဒ်" | "စားကြွင်း" )
+value "ကို" ( "ဘယ်သို့" | "ညာသို့" ) value "ဘစ်" "ရွေ့သောရလဒ်"
+value "သည်" value "နှင့်" ( "ညီ" | "မညီ" )
+value "သည်" value "ထက်" ( "ကြီး" | "မကြီး" )
+value "သည်" value "အောက်" ( "ငယ်" | "မငယ်" )
+value "နှင့်" value "သည်" "တစ်ခုတည်း"
+value "ကို" slot-kind "အဖြစ်" "ပြောင်းလဲသော ရလဒ်"
+value "ထဲတွင်" ( "ဒေတာ" | "ရလဒ်ကောင်း" | "အောင်မြင်သည့်သတင်း"
+                | "အမှားအယွင်း" | "မအောင်မြင်သည့်သတင်း" ) ( "ရှိ" | "ရှိနေ" )
+value "ထဲတွင်" "ဒေတာ" ( "မရှိ" | "မရှိနေ" )
+value "ဟူသော အမှားအယွင်း"                         (* an error value *)
+value "၏" name                                     (* a field *)
+value "၏" "အကွက်" notation                         (* a cell, counted from 0 *)
+value "၏" notation ordinal "အကွက်"                 (* a cell, counted from 1 *)
+value "၏" "အကွက်" notation "မှစ၍" notation "ကွက်"   (* a range: its start and its length *)
+value "၏" "စာလုံး" notation                        (* a character, counted from 0 *)
+value "၏" notation ordinal "စာလုံး"                (* a character, counted from 1 *)
+value "၏" ( "အကွက်အရေအတွက်" | "စာလုံးအရေအတွက်" )
+value "၏" "မိတ္တူ"                                 (* a shallow duplicate *)
+value count-word "လုံး" "၏" "မိတ္တူ"               (* a deep duplicate: တစ်ခုလုံး ၏ မိတ္တူ *)
+value "၏" ( "လိပ်စာ" | "တန်ဖိုး" )                  (* marked code: an address, the value at one *)
+```
+
+- A comparison cannot be an operand of another comparison without parentheses, in either
+  tier.
+- A clause used where a value goes, such as the value of a declaration, is one clause:
+  a logical expression there goes in parentheses.
+- `မိတ္တူ` is a name, read as the duplicate word after `၏` alone.
+
+See [Expressions](../language/expressions.md), [Operator precedence](precedence.md),
+[Conversions](../language/conversions.md), [Optional values](../language/optionals.md),
+[Errors and results](../language/error-handling.md) and
+[Values and objects](../language/objects.md#copies-of-an-object).
+
+## Calls
+
+```text
+call         = long-call | first-call | short-call | marked-call | sign-call ;
+
+long-call    = "လုပ်ဆောင်ချက်" callee "ကို" [ args "တို့ဖြင့်" ] long-end ;
+callee       = name { "၏" ... } ;                 (* a name, or a place that holds a function value *)
+args         = expr { "၊" expr } ;
+first-call   = operand { "၊" notation } ( "ကို" | "တို့ကို" ) "သုံး၍"
+               ( name short-end | "လုပ်ဆောင်ချက်" callee "ကို" long-end ) ;
+short-call   = name short-end ;                   (* no arguments *)
+marked-call  = operand mark-word { notation mark-word }
+               ( name short-end | "လုပ်ဆောင်ချက်" name "ကို" long-end ) ;
+sign-call    = name "(" [ args ] ")" [ "?" ] { "(" [ args ] ")" [ "?" ] } ;
+
+long-end     = "လုပ်ဆောင်မည်" | "လုပ်ဆောင်သော ရလဒ်" | "လုပ်ဆောင်သော ရလဒ်ကောင်း" ;
+short-end    = "မည်" | "သည့် ရလဒ်" | "သည့် ရလဒ်ကောင်း" ;
+call-stmt    = call pass-on "။" ;                  (* a call that ends in လုပ်ဆောင်မည် or မည် *)
+pass-on      = [ "၊" "မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်" ] ;
+```
+
+- `လုပ်ဆောင်မည်` and `မည်` end a call statement; the other ends give a value, which can
+  start a clause (`... လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။`). `ရလဒ်ကောင်း` and `?` pass a
+  failure on.
+- A mark word is the word a parameter declares with `ဝိဘတ်`: a name, or a particle other
+  than `သည်`, `ပါ`, `ဖြစ်ကာ`, `ဖြစ်ပြီး`, `ပြီးလျှင်` and `လက်ခံပြီး`; `တွင်` and `ဆီသို့`
+  can be marks too. A marked call is read when a function of that name declares
+  marks and their count fits.
+- In the sign form, `(` touches the name and `?` touches `)`; with a space, `f (က)` is a
+  name, then a group. A `(` right after `)` calls the function value the call gives.
+
+See [Calls](../language/functions.md#calls),
+[Arguments first](../language/functions.md#arguments-first),
+[Marked parameters](../language/functions.md#marked-parameters),
+[Calling a function value](../language/function-values.md#calling-a-function-value) and
+[Passing a failure on](../language/error-handling.md#passing-a-failure-on).
+
+## Literals
+
+```text
+literal      = number-lit | char-lit | string-lit | truth | list-lit | blank-list
+             | struct-lit | member | null-word ;
+number-lit   = [ "အခြေ" digits "ဖြင့်" ] ( number | letters ) [ "ဟူသော" slot-kind ] ;
+truth        = "မှန်" | "မမှန်" ;
+list-lit     = "[" notation { "၊" notation } "]" [ list-kind ] ;
+word-list    = notation { "၊" notation } "တို့ပါသော" "စာရင်း" [ list-kind ] ;
+blank-list   = ( "[" "]" | "စာရင်းအလွတ်" ) [ list-kind ] ;
+list-kind    = "ဟူသော" slot-kind ;                (* a list kind *)
+struct-lit   = name "(" [ name ":" notation { "၊" name ":" notation } ] ")" ;
+word-struct  = name notation { "၊" name notation } ( "ရှိသော" | "ခုရှိသော" ) struct-count ;
+struct-count = name count-word ;                  (* joined, လူတစ်ယောက်, or apart *)
+member       = name "ထဲမှ" name ;                  (* အရောင်များထဲမှ နီ *)
+null-word    = "အလွတ်"                             (* an optional with no data *)
+             | "ကနဦးတန်ဖိုး"                       (* the initial value of the kind *)
+             | "မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ" ;     (* the null address, marked code *)
+```
+
+- `letters` are the digits above 9 (`A` to `Z`, either case), with a base above 10.
+- A number takes a plain number kind after `ဟူသော`, and a list or a blank list takes a
+  list kind. Characters, text and true/false values take none.
+- There is no negative literal: `-` and `အနုတ်` are signs. A kind after the digits
+  belongs to the literal, the sign included: `-၁၂၈ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု`.
+- The member name before `ထဲမှ` can end in `များ`, and can be joined to `ထဲမှ`.
+
+See [Numbers](../language/words.md#numbers),
+[Characters and strings](../language/words.md#characters-and-strings),
+[List literals](../language/lists.md#literals),
+[Struct literals](../language/structs.md#struct-literals),
+[Members](../language/enums.md#members) and
+[Initial values](../language/kinds.md#initial-values).
+
+## Kinds
+
+```text
+kind         = { count } ( core | cell-kind | fn-kind | "(" fn-kind ")" ) { level } ;
+core         = [ sign ] [ digits "ဘစ်" ] base
+             | name                               (* a struct, an enumeration or an alias *)
+             | "လိပ်စာ" ;                          (* an address of no kind *)
+sign         = "လက္ခဏာရှိ" | "လက္ခဏာမဲ့" ;          (* integers alone *)
+base         = "ကိန်းပြည့်" | "ဒဿမကိန်း" | "စာလုံး" | "စာသား"
+             | "မှန်မှားတန်ဖိုး" | "ဘူလီယန်" ;
+count        = "အကွက်" ( digits | notation ) ( "ခုရှိသော" | "ရှိသော" ) ;
+level        = [ "၏" ] "စာရင်း"
+             | [ "၏" ] "လိပ်စာ" ;
+
+cell-kind    = good-side "ရှိကောင်းရှိနိုင်သော" "ဒေတာဆဲလ်"            (* an optional *)
+             | ( good-side | "အောင်မြင်သည့်သတင်း" ) "သို့မဟုတ်"
+               error-side "ရှိနိုင်သော" "ဒေတာဆဲလ်" ;               (* a result *)
+good-side    = core { level } | "(" fn-kind ")" ;
+error-side   = "မအောင်မြင်သည့်သတင်း" | "အမှားအယွင်းအနေဖြင့်" core { level } ;
+
+fn-kind      = "လုပ်ဆောင်ချက် အမျိုးအစား"
+             | sig-params "လက်ခံသော" "လုပ်ဆောင်ချက် အမျိုးအစား"
+             | [ sig-params "လက်ခံပြီး" ] slot-kind "ကို" "ပြန်ပေးသော" "လုပ်ဆောင်ချက် အမျိုးအစား" ;
+sig-params   = sig-param [ "လည်းကောင်း" ]
+             | sig-param "လည်းကောင်း" sig-param "လည်းကောင်း" { sig-param "လည်းကောင်း" } ;
+sig-param    = listed-kind "ကို" [ "ဒေတာ ပြောင်းလဲရန်" ] [ "အပိုင်အနေဖြင့်" ] [ mark ] ;
+
+slot-kind    = kind count-word
+             | struct-count ;                     (* လူတစ်ယောက် *)
+listed-kind  = slot-kind ;                        (* in a list: a function kind with parameters in parentheses *)
+```
+
+- **Measure words.** A kind in a slot takes `တစ်` and its word: declarations, loop heads,
+  parameters, fields, results, the parts of a function kind, conversions, sizes, the
+  default arm of a switch, and the kind after a literal. The word goes after the outermost
+  kind alone. `စာလုံး` counts with `လုံး`, a struct, an enumeration or an alias with its
+  own word, and each other kind with `ခု`; a word that does not fit is ZK0509.
+- **Bits.** An integer kind takes 8, 16, 32, 64 or 128 bits, a decimal kind 16, 32, 64 or
+  128.
+- **Lists.** Each `စာရင်း` takes the count nearest the base that is left, and makes a
+  list of that count of cells; with no count it is a plain list. A count with no list left
+  for it is an error. Counts before an optional or a result go first to the lists of its
+  data, before `ရှိကောင်းရှိနိုင်သော`, then to the levels after `ဒေတာဆဲလ်`.
+- **Pointers.** A bare `လိပ်စာ` follows the base word or a list level; after a pointer
+  level, or after the bare `လိပ်စာ` of no kind, the next level takes `၏`.
+- **Function kinds.** A function kind with parameters stands bare where no list is open:
+  a declaration, a result, a conversion, an alias. In a list of parameters or fields, and
+  among the parameters of another function kind, it stands in parentheses (ZK0239). The
+  result of a function kind is bare `လုပ်ဆောင်ချက် အမျိုးအစား` or a kind in parentheses.
+  `ဒေတာ ထည့်ပေးရန်` on a parameter of a function kind is ZK0243.
+
+See [Kinds and values](../language/kinds.md),
+[Measure words](../language/kinds.md#measure-words), [Lists](../language/lists.md#list-kinds),
+[Optional values](../language/optionals.md#the-optional-kind),
+[Result kinds](../language/error-handling.md#result-kinds),
+[Function values](../language/function-values.md#the-kind) and
+[The pointer kind](../language/unsafe.md#the-pointer-kind).
+
+## Where the rules depend on context
+
+The rules above are written as a context-free grammar, but the language is not
+context-free as a whole: a few productions are chosen with semantic predicates over
+state that the rules do not show. The parser is a hand-written recursive-descent parser
+with no backtracking; where one token does not decide the production, it scans ahead over
+the tokens (unbounded lookahead, so the grammar is not LL(k) for a fixed k) and commits.
+A tool that parses Zaka needs the same state; the EBNF alone is not enough.
+
+**A name table from a pre-pass (the lexer hack).** As a C parser must know which names
+are kind names, Zaka's parser must know which names are declared kinds. Before the main
+pass, the lexer and the parser each walk the token stream of the file once and build three
+tables; `parse_with` merges the kind names and the marked functions an import brings in:
+
+| Table | Holds | Decides |
+| --- | --- | --- |
+| kind names | each struct, enumeration and alias name, the stem of an enumeration name, in both spellings of `ဒေတာ` | whether a name starts a `kind` (`လူ တစ်ယောက်`) or an `expr`; whether `<stem>များထဲမှ` reads a member |
+| classifiers | each word after `မျိုးပြပစ္စည်းမှာ` in the file | the lexer retags `<word>စာ` as the size token (`လူ ၂ ယောက်စာ`); else it stands as a name |
+| marked functions | each function whose header declares marks with `ဝိဘတ်`, and its count of marks | where a marked call ends |
+
+Since the tables come from a pre-pass, a kind can be used above its declaration. The
+classifier table is per file: the retagging runs in the lexer, before imports resolve.
+
+**Parser modes.** Some words are terminators in one context and plain tokens in another.
+The parser keeps a flag per context and tests it before it takes the word:
+
+| Mode (flag) | Set while parsing | Effect |
+| --- | --- | --- |
+| `in_count` | a count, `အကွက် <count> ခုရှိသော` | `ရှိသော` closes the count; no struct literal starts in it |
+| `in_fill` | the value of a fill | `ဖြင့်` after a lone operand closes the value; the size follows |
+| `in_callee` | the place that holds the function of a long call | `ကို` after a lone operand closes the place |
+| `in_list` | a list of parameters or fields | the bare function-kind production is turned off, so a function kind with parameters needs parentheses (`FnForm::NoParams`) |
+
+**Agreement on counts.** A few productions agree with the number of items in a list: one
+field or variant closes with `ပါဝင်သည်`, two or more with `တို့ပါဝင်သည်`; one parameter
+can leave out `လည်းကောင်း`, two or more each end in it; marks go on each parameter or on
+none. These are finite, so a context-free grammar can state them, and the rules above do,
+as separate alternatives.
+
+**Count prefixes.** The count prefixes before a kind bind to its list levels from the
+innermost out, a stack the parser pops as it reads each `စာရင်း`. Which level a count binds
+to therefore depends on the levels that follow it, not on the prefix alone.
+
+**Lexer lookahead.** The lexer joins multi-word reserved phrases longest first (maximal
+munch), whether spaces stand between their words or not, and splits a word made of
+reserved words alone. Two rules look at the neighbours as well: `ဒေတာ` is a reserved word after
+`ထဲမှ`, `ထဲတွင်` and `အမှားအယွင်း` and before `ပြောင်းလဲရန်` and `ထည့်ပေးရန်`, and an
+identifier elsewhere; `ဟူသော လုပ်ဆောင်ချက်` joins into the function-value phrase save when
+`အမျိုးအစား` follows, where `လုပ်ဆောင်ချက် အမျိုးအစား` opens a function kind.
+
+**Order.** Imports come first in a file; the parser keeps a flag, `imports_closed`, and
+reports an import after another top-level statement or inside a block.
+
+**Static semantics, not the grammar.** A measure word that does not fit its kind
+(ZK0509), a statement at the top level (ZK0326), names, scope and the kinds of values are
+checked after parsing; the grammar accepts them. See [Stages](../compiler/stages.md) and
+[The parser](../internals/parser.md).

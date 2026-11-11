@@ -98,6 +98,14 @@ impl ToSexpr for Stmt
                 heap_sexpr("resize", dest, count, *unit)
             }
             Stmt::Free { dest, .. } => list("free", [dest_sexpr(dest)]),
+            Stmt::CStore { base, offset, value, .. } =>
+            {
+                list("c_store", [base.to_sexpr(), offset.to_string(), value.to_sexpr()])
+            }
+            Stmt::Leave { value, grant, .. } =>
+            {
+                list(tern!(*grant, "c_leave", "c_revoke"), [value.to_sexpr()])
+            }
             Stmt::Blit { src, dst, count, unit, overlap, .. } =>
             {
                 let parts = [src.to_sexpr(), dst.to_sexpr(), count.to_sexpr()];
@@ -177,7 +185,6 @@ impl ToSexpr for Expr
             {
                 list("closure", [name.clone(), record.to_sexpr()])
             }
-            ExprNode::Plain { value } => list("plain", [value.to_sexpr()]),
             ExprNode::Foreign { func, args } => foreign_sexpr(*func, args),
             ExprNode::Host { func, args } =>
             {
@@ -190,12 +197,20 @@ impl ToSexpr for Expr
             }
             ExprNode::AddrOf(place) => list("addr", [place.to_string()]),
             ExprNode::Load { addr } => list("load", [addr.to_sexpr()]),
+            ExprNode::CField { base, offset } =>
+            {
+                list("c_field", [base.to_sexpr(), offset.to_string()])
+            }
             ExprNode::Lend { operand } => list("lend", [operand.to_sexpr()]),
             ExprNode::Take { addr } => list("take", [addr.to_sexpr()]),
-            ExprNode::Own { value } => list("own", [value.to_sexpr()]),
-            ExprNode::Dup { value, lent } =>
+            ExprNode::Own { value, pin } =>
             {
-                list(tern!(*lent, "dup_lent", "dup"), [value.to_sexpr()])
+                list(tern!(*pin, "own_pin", "own"), [value.to_sexpr()])
+            }
+            ExprNode::Dup { value, lent, deep } =>
+            {
+                let word = tern!(*deep, "dup_deep", tern!(*lent, "dup_lent", "dup"));
+                list(word, [value.to_sexpr()])
             }
             ExprNode::PtrAdd { base, offset } =>
             {

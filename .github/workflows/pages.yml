@@ -23,16 +23,12 @@ jobs:
       ZAKA_PDA_FONT_SECRET: ${{ secrets.ZAKA_PDA_FONT_SECRET }}
       ZAKA_SITE_ORIGIN: ${{ vars.ZAKA_SITE_ORIGIN }}
       CLOUDFLARE_PAGES_PROJECT: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
+      MISE_ENABLE_TOOLS: rust,bun,cargo-binstall,cargo:trunk,cargo:cargo-leptos
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: trunk@0.22.0,cargo-leptos@0.3.11
+      # mise installs the tools of mise.toml that the site build needs.
+      - uses: jdx/mise-action@v5
 
       - uses: Swatinem/rust-cache@v2
 
@@ -44,34 +40,8 @@ jobs:
           key: web-tools-${{ hashFiles('Cargo.lock', '**/Trunk.toml') }}
           restore-keys: web-tools-
 
-      - name: Fetch the motion libraries
-        working-directory: website/zaka_website/vendor
-        run: trunk build --release
-
-      - name: Fetch the web fonts
-        working-directory: website/zaka_web_ui_common/fonts
-        run: trunk build --release
-
-      - name: Build the website
-        run: |
-          cargo leptos build --project zaka_website --release --split
-          LEPTOS_OUTPUT_NAME=zaka_website LEPTOS_SITE_ROOT=target/website \
-            LEPTOS_SITE_PKG_DIR=pkg LEPTOS_HASH_FILES=true ZAKA_WEBSITE_ONCE=1 \
-            target/release/zaka_website
-
-      - name: Join the site
-        run: |
-          mkdir -p dist
-          cp -R target/website/. dist/
-          cp -R target/vendor dist/vendor
-          mv dist/vendor/monaco dist/explorer/monaco
-          cp -R target/fonts dist/fonts
-
-      - name: Publish to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: >
-            pages deploy dist --project-name=${{ env.CLOUDFLARE_PAGES_PROJECT }}
-            --branch=main --commit-dirty=true
+      - name: Build and publish to Cloudflare Pages
+        run: mise run pages:publish
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

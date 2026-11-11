@@ -99,15 +99,15 @@ pub struct Options
     /// Which foldings rewrite the IR.
     #[builder(default)]
     pub fold: FoldOptions,
-    /// What a pointer mistake the ownership check proves does.
+    /// What a pointer mistake the checker proves does.
     #[builder(default)]
     pub check: MemCheck,
     /// Also warn about a pointer that can be blank.
     #[builder(default)]
     pub strict: bool,
-    /// Reject each kind written with a raw address.
+    /// Refuse each marked function and block.
     #[builder(default)]
-    pub no_raw: bool,
+    pub no_unsafe: bool,
     /// What integer arithmetic does with a result outside its kind.
     #[builder(default)]
     pub overflow: OverflowMode,
@@ -467,7 +467,7 @@ pub struct Compiled
     pub ir_folded_sexpr: String,
     /// Whether lowering ran; it is left out after errors in earlier phases.
     pub lowered: bool,
-    /// Whether the ownership check ran; it is left out after errors in
+    /// Whether the checker ran; it is left out after errors in
     /// earlier phases, folding included.
     pub borrowchecked: bool,
     /// What each function frees, resizes or moves through, one line each.
@@ -602,7 +602,7 @@ impl Compiled
     /// # Returns
     ///
     /// The status; the check is skipped after lexer or parser errors, and
-    /// lowering, the ownership check, code generation and the run after
+    /// lowering, the checker, code generation and the run after
     /// errors in an earlier phase. The run is skipped too when there are no
     /// ops, as with the C target, and code generation fails on a construct
     /// the C target cannot build. The ops do not run here; the pipeline warns
@@ -888,7 +888,7 @@ fn check_program(
 {
     let check_options = SemcheckOptions::builder()
         .platform_bits(options.platform_bits)
-        .no_raw(options.no_raw)
+        .no_unsafe(options.no_unsafe)
         .build();
     let idiom = check(program, &NaturalnessOptions::default());
     (idiom, semcheck(program, &check_options))
@@ -939,7 +939,7 @@ fn lower_and_fold(
     (Some(plain), Some(folded), diags)
 }
 
-/// Run the ownership check over a folded module, which marks the list cells
+/// Run the checker over a folded module, which marks the list cells
 /// it proves in bounds.
 ///
 /// # Arguments

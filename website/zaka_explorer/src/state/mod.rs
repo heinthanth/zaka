@@ -192,7 +192,7 @@ pub struct AppState
     /// The 1-based source lines with a break point. The editor moves them
     /// with the edits; each compile turns them into stops of the debugger.
     pub break_lines: RwSignal<BTreeSet<u32>>,
-    /// The break points set on ops, keyed on where each op comes from in the
+    /// The break points set on ops, indexed on where each op comes from in the
     /// source; a change of the compile options keeps them, an edit of the
     /// text clears them.
     pub op_breaks: RwSignal<BTreeSet<OpSpot>>,

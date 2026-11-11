@@ -22,7 +22,7 @@ const SWING: f64 = 32.0;
 /// it turns up into them, in px.
 const DIP: f64 = 22.0;
 
-/// The farthest a note beside its line may sit from the words it points at,
+/// The farthest a note beside its line can sit from the words it points at,
 /// in px; past it, the arrow would run under most of the line, so the note
 /// goes under the line.
 const MAX_SWEEP: f64 = 260.0;
@@ -248,7 +248,7 @@ fn from_below(note: &DomRect, origin: &DomRect, tip: Point) -> Curve
 }
 
 /// The path of an arrow: its curve, then the two strokes of the head, which
-/// point along the curve as it meets the words, so they line up with the
+/// point along the curve as it meets the words, so the head lines up with the
 /// stroke.
 ///
 /// # Arguments

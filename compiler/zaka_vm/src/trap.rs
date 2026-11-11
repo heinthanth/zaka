@@ -150,15 +150,19 @@ pub enum TrapKind
         /// The number of cells.
         len: u64,
     },
-    /// A call went through a function value that holds no function, `ဗလာ`.
+    /// A call went through a function value that holds no function, the zero
+    /// word.
     NullCall,
-    /// The address of a function that borrows the locals around it went
-    /// where it could outlive them: a field, a cell, a global, a place
-    /// reached through an address, a result or a C function.
+    /// A field was read or written through an object variable that holds no
+    /// object, the zero word.
+    NullObject,
+    /// A handle went to C after a C function that takes it over closed it.
+    ClosedHandle,
+    /// C passed NULL to a callback for a parameter of plain text.
+    NullText,
+    /// C called a closure after the call that gave it ended, with no leave
+    /// from `ခေါ်ဆိုခွင့် ပြုမည်`, or after that leave was taken back.
     ClosureEscape,
-    /// A closure that owns a block was duplicated: two records would free
-    /// the one block.
-    ClosureOwner,
     /// A C function was called in a build of the VM that cannot call C,
     /// such as the one in the browser.
     ForeignCall
@@ -220,12 +224,14 @@ pub enum TrapKind
     /// A result that holds a failure was converted to its good result.
     NotGood
     {
-        /// The error value, as `ပြသပါ` writes it; blank for a failure with
+        /// The error value, as `ပြသမည်` writes it; blank for a failure with
         /// no error value.
         text: String,
     },
     /// A good result was converted to its error value.
     NotFault,
+    /// An optional that holds no data was read.
+    NoData,
     /// A range of cells that passes the end of its list or slice.
     SliceOutOfRange
     {
@@ -312,8 +318,10 @@ impl fmt::Display for TrapKind
                 t!("vm.trap.end_before_start", start = start, end = end)
             }
             TrapKind::NullCall => t!("vm.trap.null_call"),
+            TrapKind::NullObject => t!("vm.trap.null_object"),
+            TrapKind::ClosedHandle => t!("vm.trap.closed_handle"),
+            TrapKind::NullText => t!("vm.trap.null_text"),
             TrapKind::ClosureEscape => t!("vm.trap.closure_escape"),
-            TrapKind::ClosureOwner => t!("vm.trap.closure_owner"),
             TrapKind::ForeignCall { name } => t!("vm.trap.foreign_call", name = name),
             TrapKind::ForeignLink { reason } =>
             {
@@ -336,6 +344,7 @@ impl fmt::Display for TrapKind
             }
             TrapKind::NotGood { text } => t!("vm.trap.not_good", e = text),
             TrapKind::NotFault => t!("vm.trap.not_fault"),
+            TrapKind::NoData => t!("vm.trap.no_data"),
             TrapKind::SliceOutOfRange { start, len, limit } =>
             {
                 t!(
@@ -387,8 +396,10 @@ impl TrapKind
             | TrapKind::CharOutOfRange { .. }
             | TrapKind::EndBeforeStart { .. }
             | TrapKind::NullCall
+            | TrapKind::NullObject
+            | TrapKind::ClosedHandle
+            | TrapKind::NullText
             | TrapKind::ClosureEscape
-            | TrapKind::ClosureOwner
             | TrapKind::ForeignCall { .. }
             | TrapKind::ForeignLink { .. }
             | TrapKind::NoCellToRemove
@@ -397,6 +408,7 @@ impl TrapKind
             | TrapKind::SliceOutOfRange { .. }
             | TrapKind::NotGood { .. }
             | TrapKind::NotFault
+            | TrapKind::NoData
             | TrapKind::Overflow { .. } => None,
         }
     }

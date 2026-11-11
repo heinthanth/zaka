@@ -10,14 +10,19 @@ use zakac_ast::stmt::START_NAME;
 use zakac_ast::verb::Dir;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
+use zakac_ast::visit::Visitor;
+use zakac_ast::visit::walk_block;
+use zakac_ast::visit::walk_fn;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::extract;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::enums::EnumKind;
 use zakac_semcheck::enums::MemberValue;
 use zakac_semcheck::fn_kind::FnKind;
+use zakac_semcheck::foreign;
 use zakac_semcheck::host;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
@@ -53,7 +58,7 @@ use crate::ir::SliceFrom;
 use crate::ir::Slot;
 use crate::ir::Stmt;
 use crate::ir::fn_shape;
-use crate::lends::free_read_lends;
+use crate::ir::fresh_text;
 use crate::value::Value;
 
 mod nested;
@@ -85,7 +90,7 @@ pub fn lower(
     options: &LowerOptions,
 ) -> Module
 {
-    let unit_sigs = collect_sigs(program, structs);
+    let unit_sigs = collect_sigs(program, structs, options.platform_bits);
     let top_count =
         program.stmts.iter().filter(|s| matches!(s, st::Stmt::Fn(_))).count();
     #[rustfmt::skip]
@@ -112,10 +117,43 @@ pub fn lower(
     let ends_in_return = matches!(main.last(), Some(Stmt::Return { .. }));
     do_if!(!ends_in_return, main.extend(lowerer.global_drops(program.span)));
     #[rustfmt::skip]
-    let mut module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
-        .foreign(lowerer.foreign).main(main).imported_inits(imported_inits).host(host).span(program.span).build();
-    free_read_lends(&mut module);
+    let module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
+        .foreign(lowerer.foreign).main(main).imported_inits(imported_inits).host(host)
+        .marked(marked_spans(program)).span(program.span).build();
     module
+}
+
+/// The source regions of marked code in a program.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+///
+/// # Returns
+///
+/// The region of each marked function and each marked block, outer ones
+/// included with the ones inside them.
+fn marked_spans(program: &st::Program) -> Vec<Span>
+{
+    /// Gathers the regions as it walks the tree.
+    struct Marks(Vec<Span>);
+    impl Visitor for Marks
+    {
+        fn visit_fn(&mut self, n: &st::FnDecl)
+        {
+            do_if!(n.unchecked, self.0.push(n.span));
+            walk_fn(self, n);
+        }
+
+        fn visit_block(&mut self, n: &st::BlockStmt)
+        {
+            do_if!(n.unchecked, self.0.push(n.span));
+            walk_block(self, n);
+        }
+    }
+    let mut marks = Marks(Vec::new());
+    marks.visit_program(program);
+    marks.0
 }
 
 /// What the function names of a unit end with: nothing for the file that
@@ -149,6 +187,12 @@ struct Sig
     params: Vec<DataKind>,
     /// Whether the function can change each parameter.
     edits: Vec<bool>,
+    /// Whether the function fills each parameter, `ဒေတာ ထည့်ပေးရန်`: it reads
+    /// nothing the caller left there.
+    fills: Vec<bool>,
+    /// Whether each parameter takes over the block of its argument,
+    /// `အပိုင်အနေဖြင့်`: the caller's place holds the zero word after the call.
+    owned: Vec<bool>,
     /// The result kind, when the function has one; a result kind when it
     /// can fail.
     ret: Option<DataKind>,
@@ -245,6 +289,8 @@ fn value_sig(f: &FnKind) -> Sig
         index: u32::MAX,
         params,
         edits: f.edits(),
+        fills: Vec::new(),
+        owned: Vec::new(),
         ret,
         foreign: None,
         captures: Vec::new(),
@@ -260,12 +306,14 @@ fn value_sig(f: &FnKind) -> Sig
 ///
 /// * `program` - The tree.
 /// * `structs` - The kind of each declared struct.
+/// * `platform` - Bit count of the platform-sized integer kinds.
 ///
 /// # Returns
 ///
 /// The signatures of each unit, one per name.
-fn collect_sigs(program: &st::Program, structs: &StructTable)
--> Vec<HashMap<Name, Sig>>
+fn collect_sigs(
+    program: &st::Program, structs: &StructTable, platform: u16,
+) -> Vec<HashMap<Name, Sig>>
 {
     let mut sigs = vec![HashMap::new(); program.units.len().max(1)];
     let decls = program.stmts.iter().enumerate().filter_map(|(i, s)| {
@@ -276,16 +324,21 @@ fn collect_sigs(program: &st::Program, structs: &StructTable)
         let params: Vec<DataKind> =
             f.params.iter().map(|p| param_kind(p, structs)).collect();
         let edits = f.params.iter().map(|p| p.edit).collect();
+        let fills = f.params.iter().map(|p| p.fill).collect();
+        let owned = f.params.iter().map(|p| p.owned).collect();
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, structs).repr());
         let foreign = f.lib.as_ref().filter(|_| f.variadic).map(|lib| {
             #[rustfmt::skip]
             return ForeignFn::builder().lib(lib.lit.value.clone()).name(f.name.name.to_string())
-                .params(params.clone()).maybe_ret(ret).variadic(true).owned_ret(f.owned_ret).build();
+                .params(params.iter().map(|k| c_param_kind(*k, platform)).collect())
+                .maybe_ret(ret).variadic(true).owned_ret(f.owned_ret).build();
         });
         let sig = Sig {
             index: index as u32,
             params,
             edits,
+            fills,
+            owned,
             ret,
             foreign,
             captures: Vec::new(),
@@ -314,6 +367,79 @@ fn param_kind(p: &st::Param, structs: &StructTable) -> DataKind
     tern!(p.edit, kind.pointer_to().as_borrowed(), kind)
 }
 
+/// The list of numbers a parameter of a C function passes, as
+/// [`param_kind`] sets the parameter out: the list itself, or the address of
+/// the caller's list for one marked `ဒေတာ ပြောင်းလဲရန်`.
+///
+/// # Arguments
+///
+/// * `kind` - The parameter kind.
+/// * `platform` - Bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// The list kind and whether the parameter holds its address, or `None`
+/// for another parameter.
+fn c_list(kind: DataKind, platform: u16) -> Option<(DataKind, bool)>
+{
+    let list = |k: DataKind| foreign::number_cells(k, platform).map(|_| k);
+    ret_if!(let Some(k) = list(kind), Some((k, false)));
+    kind.pointee().and_then(list).map(|k| (k, true))
+}
+
+/// The kind C takes a parameter as: the address of the first cell of a list
+/// of numbers, else the parameter kind.
+///
+/// # Arguments
+///
+/// * `kind` - The parameter kind, as [`param_kind`] sets it out.
+/// * `platform` - Bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// The kind.
+fn c_param_kind(kind: DataKind, platform: u16) -> DataKind
+{
+    ret_if!(kind.as_external().is_some(), DataKind::handle_pointer());
+    let cells =
+        c_list(kind, platform).and_then(|(k, _)| foreign::number_cells(k, platform));
+    cells.map_or(kind, DataKind::pointer_to)
+}
+
+/// The argument C takes for a list of numbers: the address of its first
+/// cell. A list C can write is made to own its cells first, so no duplicate
+/// of it sees the writes; the cells remain in place for the call.
+///
+/// # Arguments
+///
+/// * `arg` - The lowered argument, of the parameter kind.
+/// * `platform` - Bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// The address, or the argument as it is for another parameter.
+fn c_list_arg(arg: Expr, platform: u16) -> Expr
+{
+    let Some((list, edit)) = c_list(arg.kind, platform)
+    else
+    {
+        return arg;
+    };
+    let (kind, span) = (c_param_kind(arg.kind, platform), arg.span);
+    let len = list.as_list().map(|l| l.len);
+    let list = match (edit, list.is_seq())
+    {
+        (true, true) => own(through(arg)),
+        _ => arg,
+    };
+    let usize = DataKind::USIZE.int_kind().expect("usize is an integer");
+    let zero = ExprNode::Const(Value::int(usize, 0, platform));
+    let index = node_expr(DataKind::USIZE, zero, span);
+    #[rustfmt::skip]
+    let node = ExprNode::CellAddr { list: Box::new(list), index: Box::new(index), len, first: 0, checked: true };
+    node_expr(kind, node, span)
+}
+
 /// The function being lowered.
 #[derive(Debug, Default)]
 struct Frame
@@ -330,6 +456,19 @@ struct Frame
     /// The parameter slots the function can change: each holds a borrow of
     /// the caller's place, and each use of the name goes through it.
     edits: HashSet<u32>,
+    /// The slots that hold the box of a variable a closure shares: each use
+    /// of the name reads or writes the cell of the box.
+    boxes: HashSet<u32>,
+    /// The names of the locals that live in a box: a function declared
+    /// inside this one names them.
+    boxed: HashSet<Name>,
+    /// Each parameter marked `ဒေတာ ပြောင်းလဲရန်` that a closure shares, as the
+    /// slot of the caller's address and the box: the value in the box goes
+    /// back to the caller at each exit.
+    write_backs: Vec<(Place, Place)>,
+    /// Whether the result is marked `အပိုင်အနေဖြင့်`: a return hands the block
+    /// over to the caller.
+    owned_ret: bool,
 }
 
 /// The lowering walk.
@@ -405,6 +544,10 @@ struct Lowerer<'k>
     /// end of its scope is sound when the call did not run.
     #[builder(default)]
     pre_init: Vec<Stmt>,
+    /// Statements that run right after the call being lowered: each value a
+    /// parameter marked `ဒေတာ ပြောင်းလဲရန်` changed, copied back to its place.
+    #[builder(default)]
+    post: Vec<Stmt>,
     /// The calls that pass a failure on in the statement being lowered that
     /// are still to lower.
     #[builder(default)]
@@ -526,6 +669,39 @@ impl Lowerer<'_>
     {
         let places = self.drops.iter().skip(depth).rev().flat_map(|s| s.iter().rev());
         places.map(|&(place, kind)| drop_stmt(Dest::Slot(place), kind, span)).collect()
+    }
+
+    /// The statements that leave a function from scope `depth` on: each
+    /// shared parameter marked `ဒေတာ ပြောင်းလဲရန်` copied back to the caller, then
+    /// the drops.
+    ///
+    /// # Arguments
+    ///
+    /// * `depth` - The first scope of the function.
+    /// * `span` - The source region of the exit.
+    ///
+    /// # Returns
+    ///
+    /// The statements.
+    fn exit_drops(&mut self, depth: usize, span: Span) -> Vec<Stmt>
+    {
+        let backs =
+            self.frame.as_ref().map(|f| f.write_backs.clone()).unwrap_or_default();
+        let mut out = Vec::new();
+        for (addr, boxed) in backs
+        {
+            let cell = self.edit_addr(boxed, span);
+            let kind = cell.kind.pointee().expect("a cell address points");
+            let value = node_expr(kind, ExprNode::Load { addr: Box::new(cell) }, span);
+            let value = tern!(kind.holds_text(), dup(value), value);
+            let caller = read(addr, self.slot_kind(addr), span);
+            let dest = Dest::Mem(caller.clone());
+            let value =
+                tern!(kind.holds_text(), self.replace(&dest, value, &mut out), value);
+            out.push(Stmt::Store { addr: caller, value, span });
+        }
+        out.extend(self.drops_from(depth, span));
+        out
     }
 
     /// The drops of each global whose kind holds text, the latest first, for
@@ -844,12 +1020,21 @@ impl Lowerer<'_>
                 let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
                 let args = self.lower_args(&n.args, &sig);
                 out.push(target.stmt(args, n.span));
+                out.append(&mut self.post);
             }
             st::Stmt::Alloc(n) => out.push(self.alloc(n)),
             st::Stmt::Resize(n) => out.push(self.resize(n)),
             st::Stmt::Free(n) =>
             {
                 out.push(Stmt::Free { dest: self.dest(&n.target), span: n.span })
+            }
+            st::Stmt::Leave(n) =>
+            {
+                let value = self.expr(&n.value);
+                let place =
+                    matches!(value.node, ExprNode::Read(_) | ExprNode::Load { .. });
+                let value = tern!(place, value, self.spill(value));
+                out.push(Stmt::Leave { value, grant: n.grant, span: n.span });
             }
             st::Stmt::Blit(n) => out.push(self.blit(n)),
             st::Stmt::Fill(n) => out.push(self.fill(n)),
@@ -881,9 +1066,21 @@ impl Lowerer<'_>
     {
         let kind = self.declared_kind(n.kind.as_ref(), n.init.as_ref());
         let value = self.initial(n.init.as_ref(), kind, n.name.span);
-        let value = tern!(n.moves, move_out(value), value);
         let access = tern!(n.is_const, Access::Const, Access::Var);
+        // A local a closure shares lives in a box, so it outlives this call.
+        if self.is_boxed_name(&n.name.name)
+        {
+            let place = self.declare(&n.name, DataKind::box_of(kind), access);
+            self.mark_box(place);
+            do_if!(n.init.is_none(), self.slot(place).unset = Some(n.span));
+            return Stmt::Set {
+                place,
+                value: self.make_box(value, n.span),
+                span: n.span,
+            };
+        }
         let place = self.declare(&n.name, kind, access);
+        do_if!(n.init.is_none(), self.slot(place).unset = Some(n.span));
         Stmt::Set { place, value, span: n.span }
     }
 
@@ -932,6 +1129,53 @@ impl Lowerer<'_>
         default_constant(kind, span)
     }
 
+    /// The initial value of a kind, `ကနဦးတန်ဖိုး`: zero, `'\0'`, false,
+    /// a pointer that points at nothing, text and plain lists with no cells,
+    /// the blank optional, the marked member of an enumeration, each cell and
+    /// field at its own, and a new object for a shared struct. The check made
+    /// sure the kind has one.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind, an enumeration kept as it is.
+    /// * `span` - The value.
+    ///
+    /// # Returns
+    ///
+    /// The value.
+    fn initial_value(&self, kind: DataKind, span: Span) -> Expr
+    {
+        if kind.is_optional()
+        {
+            let none = Fault::of_kind(kind).expect("an optional is a fault kind");
+            return none.value(true, None, None, self.platform, span);
+        }
+        if let Some(e) = kind.as_enum()
+        {
+            let at = e.initial().expect("the check found the initial member");
+            return member_expr(&e.members()[at].1, e.under(), span);
+        }
+        if let Some(shape) = kind.as_object()
+        {
+            let fields = self.initial_value(DataKind::Struct(shape), span);
+            return self.make_box(fields, span);
+        }
+        let parts: Option<Vec<DataKind>> = match (kind.as_struct(), kind.as_list())
+        {
+            (Some(s), _) => Some(s.fields().iter().map(|(_, k)| *k).collect()),
+            (_, Some(l)) => Some(vec![l.cell; l.len as usize]),
+            _ => None,
+        };
+        let parts = parts.filter(|_| !zero_initial(kind));
+        let Some(parts) = parts
+        else
+        {
+            return default_constant(kind, span);
+        };
+        let cells = parts.into_iter().map(|k| self.initial_value(k, span)).collect();
+        node_expr(kind.repr(), ExprNode::List(cells), span)
+    }
+
     /// Lower an assignment: a store to a slot, or a store at an address
     /// for a dereference target. A place whose kind holds text gets the new
     /// value in a hidden slot first, which can read the old value; then the
@@ -951,6 +1195,11 @@ impl Lowerer<'_>
             let dest = self.dest(text);
             return out.push(Stmt::SetChar { dest, kind, index, first, value, span });
         }
+        if let ast::Expr::Field(f) = &n.target
+            && self.kind_of(&f.base).as_external().is_some()
+        {
+            return self.c_field_store(f, &n.value, out);
+        }
         let dest = self.dest(&n.target);
         let want = match &dest
         {
@@ -958,11 +1207,6 @@ impl Lowerer<'_>
             Dest::Mem(_) => self.kind_of(&n.target),
         };
         let value = self.owned(&n.value, want);
-        let value = tern!(n.moves, move_out(value), value);
-        // A function value kept past the block that made it must be plain.
-        let result = matches!(ungrouped(&n.target), ast::Expr::Name(v) if v.name.as_str() == RESULT_NAME);
-        let kept = result || !matches!(dest, Dest::Slot(Place::Local(_)));
-        let value = tern!(kept, plain(value), value);
         let value = tern!(want.holds_text(), self.replace(&dest, value, out), value);
         out.push(match dest
         {
@@ -1060,7 +1304,7 @@ impl Lowerer<'_>
             return Stmt::AddText { dest, kind, value, span: n.span };
         }
         let cell = kind.cell_kind().expect("an add statement grows a list");
-        let value = plain(self.owned(&n.value, cell));
+        let value = self.owned(&n.value, cell);
         let dest = self.dest(&n.list);
         Stmt::AddCell { dest, kind, value, span: n.span }
     }
@@ -1090,7 +1334,7 @@ impl Lowerer<'_>
         extract!(ast::Expr::Index(cell) = ungrouped(at), "an insert names a cell");
         let kind = self.kind_of(&cell.list);
         let cells = kind.cell_kind().expect("an insert grows a list");
-        let (index, value) = (self.expr(&cell.index), plain(self.owned(value, cells)));
+        let (index, value) = (self.expr(&cell.index), self.owned(value, cells));
         let dest = self.dest(&cell.list);
         Stmt::Insert { dest, kind, index, first: cell.first, value, span }
     }
@@ -1406,10 +1650,11 @@ impl Lowerer<'_>
             Some((v, owner)) => member_expr(v, owner.under(), span),
             None => self.expr(case),
         };
-        let texts = subject.kind.is_textual() && case.kind.is_textual();
+        let texts = subject.kind.is_text() && case.kind.is_text();
         let common =
             tern!(texts, None, Some(concrete(self.common(subject.kind, case.kind))));
-        let side = |e: Expr| common.map_or(e.clone(), |k| coerce_lowered(e, k));
+        let p = self.platform;
+        let side = |e: Expr| common.map_or(e.clone(), |k| coerce_lowered(e, k, p));
         let (lhs, rhs) = (Box::new(side(subject.clone())), Box::new(side(case)));
         let node = ExprNode::Compare { op: CmpOp::Eq, lhs, rhs };
         Expr::builder().kind(DataKind::Bool).node(node).span(span).build()
@@ -1441,21 +1686,40 @@ impl Lowerer<'_>
     /// A loop with no start or update statements.
     fn while_stmt(&mut self, n: &st::WhileStmt) -> Stmt
     {
-        if has_pass(&n.cond)
-        {
-            let block = self.passing_round(&n.cond, &n.block.stmts, n.span);
-            let cond = true_expr(n.span);
-            return Stmt::Loop {
-                init: Vec::new(),
-                cond,
-                update: Vec::new(),
-                block,
-                span: n.span,
-            };
-        }
-        let cond = self.coerce(&n.cond, DataKind::Bool);
-        let block = self.loop_block(&n.block.stmts);
+        let (cond, block) = self.loop_parts(&n.cond, &n.block.stmts, n.span);
         Stmt::Loop { init: Vec::new(), cond, update: Vec::new(), block, span: n.span }
+    }
+
+    /// The test and the round of a loop. A test that needs statements first,
+    /// such as a call that copies values back, runs at the start of each
+    /// round, which it leaves when the test fails.
+    ///
+    /// # Arguments
+    ///
+    /// * `cond` - The test.
+    /// * `stmts` - The statements of the loop.
+    /// * `span` - The loop.
+    ///
+    /// # Returns
+    ///
+    /// The test of the loop and the statements of a round.
+    fn loop_parts(
+        &mut self, cond: &ast::Expr, stmts: &[st::Stmt], span: Span,
+    ) -> (Expr, Vec<Stmt>)
+    {
+        ret_if!(
+            has_pass(cond),
+            (true_expr(span), self.passing_round(cond, stmts, span))
+        );
+        let (pre, test) = self.with_pre(|l| l.coerce(cond, DataKind::Bool));
+        let block = self.loop_block(stmts);
+        ret_if!(pre.is_empty(), (test, block));
+        let stop = node_expr(DataKind::Bool, prefix_node(PrefixOp::Not, test), span);
+        let leave = vec![Stmt::Break { span }];
+        let mut round = pre;
+        round.push(Stmt::If { cond: stop, then: leave, els: Vec::new(), span });
+        round.extend(block);
+        (true_expr(span), round)
     }
 
     /// Lower the round of a loop whose condition passes a failure on: the
@@ -1513,9 +1777,39 @@ impl Lowerer<'_>
         let mut block = Vec::new();
         self.scoped(|l| {
             var = l.declare(&n.var, kind, Access::LoopVar);
-            block = l.loop_block(&n.block.stmts);
+            block = l.counted_block(n, var, kind);
         });
         Stmt::Counted { var, from, to, step, mode: n.mode, block, span: n.span }
+    }
+
+    /// Lower the block of a counted loop. When a closure in it names the
+    /// counter, each round gives the counter a box of its own first, so each
+    /// closure keeps the number of its round.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    /// * `var` - The slot of the counter.
+    /// * `kind` - Its kind.
+    ///
+    /// # Returns
+    ///
+    /// The lowered statements of a round.
+    fn counted_block(
+        &mut self, n: &st::CountedStmt, var: Place, kind: DataKind,
+    ) -> Vec<Stmt>
+    {
+        ret_if!(!self.is_boxed_name(&n.var.name), self.loop_block(&n.block.stmts));
+        self.loops.push(self.scopes.len());
+        let mut out = Vec::new();
+        self.scoped(|l| {
+            l.rebox(&n.var, var, kind, &mut out);
+            do_for!(s in &n.block.stmts, l.stmt(s, &mut out));
+            let leaves = out.last().is_some_and(leaves_scope);
+            do_if!(!leaves, out.extend(l.drops_from(l.drops.len() - 1, n.block.span)));
+        });
+        self.loops.pop();
+        out
     }
 
     /// Lower a generic loop: its declaration becomes the start statement.
@@ -1533,17 +1827,21 @@ impl Lowerer<'_>
         let head = written.or_else(|| n.init.as_ref().map(ast::Expr::span));
         let mut parts = None;
         self.scoped(|l| {
-            let place = l.declare(&n.var, kind, Access::Var);
+            // A closure shares the variable of a generic loop across rounds.
+            let boxed = l.is_boxed_name(&n.var.name);
+            let place = l.declare(
+                &n.var,
+                tern!(boxed, DataKind::box_of(kind), kind),
+                Access::Var,
+            );
+            do_if!(boxed, l.mark_box(place));
+            let value = tern!(boxed, l.make_box(value, n.var.span), value);
             let set = Stmt::Set {
                 place,
                 value,
                 span: n.var.span.to(&head.unwrap_or(n.var.span)),
             };
-            let (cond, block) = tern!(
-                has_pass(&n.cond),
-                (true_expr(n.span), l.passing_round(&n.cond, &n.block.stmts, n.span)),
-                (l.coerce(&n.cond, DataKind::Bool), l.loop_block(&n.block.stmts))
-            );
+            let (cond, block) = l.loop_parts(&n.cond, &n.block.stmts, n.span);
             let mut update = Vec::new();
             do_if!(let Some(u) = &n.update, l.stmt(u, &mut update));
             let after = l.drops_from(l.drops.len() - 1, n.span);
@@ -1675,6 +1973,10 @@ impl Lowerer<'_>
                 block.push(Stmt::Set { place: held, value: width, span });
                 step = read(held, DataKind::USIZE, span);
             }
+            do_if!(
+                l.is_boxed_name(&n.var.name),
+                l.rebox(&n.var, var, cell, &mut block)
+            );
             do_for!(s in &n.block.stmts, l.stmt(s, &mut block));
             let leaves = block.last().is_some_and(leaves_scope);
             let end = l.drops_from(l.drops.len() - 1, n.block.span);
@@ -1708,14 +2010,19 @@ impl Lowerer<'_>
         let ret = whole.or_else(|| fault.map_or(given, |f| f.ok));
         let depth = self.scopes.len();
         #[rustfmt::skip]
-        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, fault, depth, edits: HashSet::new() });
+        let boxed = nested::boxed_in(f);
+        #[rustfmt::skip]
+        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, fault, depth, edits: HashSet::new(), boxes: HashSet::new(), boxed, write_backs: Vec::new(), owned_ret: f.owned_ret });
         let mut block = Vec::new();
         let mut result = None;
         self.scoped(|l| {
             do_for!(p in &f.params, l.declare_param(p));
             do_if!(let Some((name, kind)) = own, l.declare_own(name, kind, f.name.span));
             do_for!((name, kind) in captures, l.declare_capture(*name, *kind, f.name.span));
-            result = ret.map(|k| l.result_slot(f, k, &mut block));
+            do_for!(p in &f.params, l.box_param(p, &mut block));
+            // An external function keeps what the host or C gives in a result
+            // variable; each other function gives each value back at its return.
+            result = ret.filter(|_| f.external).map(|k| l.result_slot(f, k, &mut block));
             match (f.external, &f.lib)
             {
                 // A call names a C function that takes other values itself.
@@ -1729,13 +2036,24 @@ impl Lowerer<'_>
             }
             do_for!(s in &f.block.stmts, l.stmt(s, &mut block));
             let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
-            do_if!(!ends_in_return, block.extend(l.drops_from(depth, f.block.span)));
+            do_if!(!ends_in_return, block.extend(l.exit_drops(depth, f.block.span)));
         });
         let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
         let implicit = result.zip(ret).filter(|_| !ends_in_return);
-        let ret_stmt =
-            implicit.map(|(slot, kind)| read_return(slot, kind, f.block.span));
+        let ret_stmt = implicit.map(|(slot, kind)| {
+            let stmt = read_return(slot, kind, f.block.span);
+            // A result marked `အပိုင်အနေဖြင့်` hands its block over.
+            tern!(f.owned_ret, hand_back(stmt), stmt)
+        });
         block.extend(ret_stmt);
+        // The check proves that each path of a function with a result returns,
+        // so no path reaches its end; the targets still want a value there.
+        let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
+        let unreached = ret.filter(|_| result.is_none() && !ends_in_return);
+        let span = f.block.span;
+        let blank = unreached
+            .map(|k| Stmt::Return { value: Some(default_constant(k, span)), span });
+        block.extend(blank);
         // A function that can fail and ends without a return gives back a
         // good result.
         let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
@@ -1748,8 +2066,8 @@ impl Lowerer<'_>
         #[rustfmt::skip]
         return Func::builder().name(format!("{}{}", f.name.name, self.suffix))
             .params((f.params.len() + usize::from(own.is_some()) + captures.len()) as u32)
-            .maybe_result(result)
-            .maybe_ret(given).locals(frame.locals).block(block).span(f.span).build();
+            .maybe_result(result).owned(f.params.iter().map(|p| p.owned).collect())
+            .owned_ret(f.owned_ret).maybe_ret(given).locals(frame.locals).block(block).span(f.span).build();
     }
 
     /// The one statement of an external function: its result variable takes
@@ -1803,22 +2121,303 @@ impl Lowerer<'_>
         let kinds: Vec<DataKind> =
             f.params.iter().map(|p| param_kind(p, self.structs)).collect();
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
+        let platform = self.platform;
+        let c_kinds = kinds.iter().map(|k| c_param_kind(*k, platform)).collect();
+        // C gives back a handle as its address.
+        let handle_ret = ret
+            .filter(|k| k.as_external().is_some() || foreign::is_c_handle_result(*k));
+        let c_ret = tern!(handle_ret.is_some(), Some(DataKind::handle_pointer()), ret);
         #[rustfmt::skip]
         let def = ForeignFn::builder().lib(lib).name(f.name.name.to_string())
-            .params(kinds.clone()).maybe_ret(ret).owned_ret(f.owned_ret).build();
+            .params(c_kinds).maybe_ret(c_ret).owned_ret(f.owned_ret).build();
         let func = self.foreign_index(def);
+        let params: Vec<(Expr, bool)> = f
+            .params
+            .iter()
+            .zip(&kinds)
+            .map(|(p, k)| (read(self.lookup(&p.name.name), *k, p.span), p.owned))
+            .collect();
+        let handles = params.iter().filter(|(e, _)| e.kind.as_external().is_some());
+        // A closed handle stops the run before C sees its address.
+        let guards: Vec<Stmt> =
+            handles.clone().map(|(e, _)| self.handle_guard(e.clone())).collect();
+        block.extend(guards);
+        // A handle a C function takes over is closed for each value that shares
+        // it.
+        let closes = handles.filter(|(_, owned)| *owned);
+        let closes: Vec<Stmt> =
+            closes.map(|(e, _)| self.handle_close(e.clone())).collect();
         // C keeps no locals alive for a closure.
-        let read_param = |(p, kind): (&st::Param, &DataKind)| {
-            plain(read(self.lookup(&p.name.name), *kind, p.span))
+        let arg = |(e, _): (Expr, bool)| match e.kind.as_external()
+        {
+            Some(_) => self.handle_ptr(e),
+            None => c_list_arg(e, platform),
         };
-        let args = f.params.iter().zip(&kinds).map(read_param).collect();
+        let args = params.into_iter().map(arg).collect();
+        let span = f.span;
         let Some((slot, kind)) = result.zip(ret)
         else
         {
-            return block.push(Stmt::Foreign { func, args, span: f.span });
+            block.push(Stmt::Foreign { func, args, span });
+            return block.extend(closes);
         };
-        let value = node_expr(kind, ExprNode::Foreign { func, args }, f.span);
-        block.push(Stmt::Set { place: Place::Local(slot), value, span: f.span });
+        let place = Place::Local(slot);
+        let called =
+            node_expr(c_ret.unwrap_or(kind), ExprNode::Foreign { func, args }, span);
+        match handle_ret
+        {
+            Some(k) if k.as_external().is_some() =>
+            {
+                self.handle_or_stop(called, k, place, block)
+            }
+            Some(k) => self.handle_or_none(called, k, place, block),
+            None => block.push(Stmt::Set { place, value: called, span }),
+        }
+        block.extend(closes);
+    }
+
+    /// Read a field of the struct C keeps behind a handle. A closed handle
+    /// stops the run first; text, which the read copies, waits in a slot the
+    /// scope drops.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The field expression.
+    /// * `kind` - The kind the check recorded for it.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn c_field_read(&mut self, n: &ast::FieldExpr, kind: DataKind) -> ExprNode
+    {
+        let shape = self.kind_of(&n.base).as_external().expect("the base is a handle");
+        let (_, offset) = shape
+            .c_field(&n.field.name, self.platform)
+            .expect("the check found the field");
+        let handle = self.expr(&n.base);
+        let place = matches!(handle.node, ExprNode::Read(_) | ExprNode::Load { .. });
+        let handle = tern!(place, handle, self.spill(handle));
+        let guard = self.handle_guard(handle.clone());
+        self.pre.push(guard);
+        let base = Box::new(self.handle_ptr(handle));
+        let inner = kind.fallible_parts().and_then(|(ok, _)| ok);
+        let inner = inner.filter(|k| k.as_external().is_some());
+        ret_if!(inner.is_some(), self.c_handle_field(base, offset, kind, n.span));
+        let node = ExprNode::CField { base, offset };
+        ret_if!(!kind.holds_text(), node);
+        let read = node_expr(kind, node, n.span);
+        self.spill(read).node
+    }
+
+    /// Write a field of the struct C keeps behind a handle, in marked code. A
+    /// closed handle stops the run first.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The field.
+    /// * `value` - The value.
+    /// * `out` - The statements so far.
+    fn c_field_store(
+        &mut self, f: &ast::FieldExpr, value: &ast::Expr, out: &mut Vec<Stmt>,
+    )
+    {
+        let shape = self.kind_of(&f.base).as_external().expect("the base is a handle");
+        let found = shape.c_field(&f.field.name, self.platform);
+        let (kind, offset) = found.expect("the check found the field");
+        let handle = self.expr(&f.base);
+        let place = matches!(handle.node, ExprNode::Read(_) | ExprNode::Load { .. });
+        let handle = tern!(place, handle, self.spill(handle));
+        out.push(self.handle_guard(handle.clone()));
+        let base = self.handle_ptr(handle);
+        let value = self.owned(value, kind);
+        out.push(Stmt::CStore { base, offset, value, span: f.span });
+    }
+
+    /// Read a field that points at another struct C keeps: a new handle of
+    /// the address, or the optional with no data for NULL, in a slot the
+    /// scope drops.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The address of the C struct that holds the field.
+    /// * `offset` - The offset of the field.
+    /// * `kind` - The kind of the read: an optional of the handle.
+    /// * `span` - The field expression.
+    ///
+    /// # Returns
+    ///
+    /// The read of the slot.
+    fn c_handle_field(
+        &mut self, base: Box<Expr>, offset: u32, kind: DataKind, span: Span,
+    ) -> ExprNode
+    {
+        let node = ExprNode::CField { base, offset };
+        let called = node_expr(DataKind::handle_pointer(), node, span);
+        let out = self.hidden(kind, span);
+        let blank = default_constant(kind, span);
+        self.pre_init.push(Stmt::Set { place: out, value: blank, span });
+        self.drops.last_mut().expect("a scope is open").push((out, kind));
+        let mut stmts = Vec::new();
+        self.handle_or_none(called, kind, out, &mut stmts);
+        self.pre.extend(stmts);
+        ExprNode::Read(out)
+    }
+
+    /// The address a handle holds: the one field of its box, read checked, so
+    /// a handle that is the zero word stops the program.
+    ///
+    /// # Arguments
+    ///
+    /// * `handle` - The handle.
+    ///
+    /// # Returns
+    ///
+    /// The address.
+    fn handle_ptr(&self, handle: Expr) -> Expr
+    {
+        let span = handle.span;
+        let addr = self.handle_field(handle);
+        node_expr(
+            DataKind::handle_pointer(),
+            ExprNode::Load { addr: Box::new(addr) },
+            span,
+        )
+    }
+
+    /// The address of the one field of the box of a handle.
+    ///
+    /// # Arguments
+    ///
+    /// * `handle` - The handle.
+    ///
+    /// # Returns
+    ///
+    /// The address of the field.
+    fn handle_field(&self, handle: Expr) -> Expr
+    {
+        let span = handle.span;
+        let base = Box::new(self.object_fields(handle));
+        let node = ExprNode::FieldAddr { base, field: 0, offset: 0 };
+        node_expr(DataKind::handle_pointer().pointer_to(), node, span)
+    }
+
+    /// The stop of a call of C with a handle a C function closed: its box
+    /// holds 0.
+    ///
+    /// # Arguments
+    ///
+    /// * `handle` - The handle.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn handle_guard(&self, handle: Expr) -> Stmt
+    {
+        let span = handle.span;
+        let null =
+            node_expr(DataKind::handle_pointer(), ExprNode::Const(Value::NULL), span);
+        let compare = compare_node(CmpOp::Eq, self.handle_ptr(handle), null);
+        let cond = node_expr(DataKind::Bool, compare, span);
+        let halt = Stmt::Halt { cause: HaltCause::ClosedHandle, value: None, span };
+        Stmt::If { cond, then: vec![halt], els: Vec::new(), span }
+    }
+
+    /// Close a handle a C function took over: its box holds 0 from here on,
+    /// so each value that shares it reads as closed.
+    ///
+    /// # Arguments
+    ///
+    /// * `handle` - The handle.
+    ///
+    /// # Returns
+    ///
+    /// The statement.
+    fn handle_close(&self, handle: Expr) -> Stmt
+    {
+        let span = handle.span;
+        let null =
+            node_expr(DataKind::handle_pointer(), ExprNode::Const(Value::NULL), span);
+        Stmt::Store { addr: self.handle_field(handle), value: null, span }
+    }
+
+    /// A new handle of a kind from outside, around an address C gave.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address.
+    /// * `kind` - The kind of the handle.
+    ///
+    /// # Returns
+    ///
+    /// The handle: a new box that holds the address.
+    fn handle_of(&self, addr: Expr, kind: DataKind) -> Expr
+    {
+        let span = addr.span;
+        let shape = kind.as_external().expect("a handle has a kind from outside");
+        let fields =
+            node_expr(DataKind::Struct(shape), ExprNode::List(vec![addr]), span);
+        self.make_box(fields, span)
+    }
+
+    /// Set a handle from C, for a result written with no optional: NULL from
+    /// C stops the run, since the declaration promised a handle.
+    ///
+    /// # Arguments
+    ///
+    /// * `called` - The call of C, which gives an address.
+    /// * `kind` - The handle kind.
+    /// * `place` - The result slot.
+    /// * `block` - The statements so far.
+    fn handle_or_stop(
+        &mut self, called: Expr, kind: DataKind, place: Place, block: &mut Vec<Stmt>,
+    )
+    {
+        let span = called.span;
+        let held = self.hidden(DataKind::handle_pointer(), span);
+        block.push(Stmt::Set { place: held, value: called, span });
+        let addr = read(held, DataKind::handle_pointer(), span);
+        let null =
+            node_expr(DataKind::handle_pointer(), ExprNode::Const(Value::NULL), span);
+        let compare = compare_node(CmpOp::Eq, addr.clone(), null);
+        let cond = node_expr(DataKind::Bool, compare, span);
+        let halt = Stmt::Halt { cause: HaltCause::NullFromC, value: None, span };
+        block.push(Stmt::If { cond, then: vec![halt], els: Vec::new(), span });
+        block.push(Stmt::Set { place, value: self.handle_of(addr, kind), span });
+    }
+
+    /// Set an optional of a handle: NULL from C is the optional with no data.
+    ///
+    /// # Arguments
+    ///
+    /// * `called` - The call of C, which gives an address.
+    /// * `kind` - The result kind.
+    /// * `place` - The result slot.
+    /// * `block` - The statements so far.
+    fn handle_or_none(
+        &mut self, called: Expr, kind: DataKind, place: Place, block: &mut Vec<Stmt>,
+    )
+    {
+        let span = called.span;
+        let fault =
+            Fault::of_kind(kind).expect("the result is an optional of a handle");
+        let ok = fault.ok.expect("the good side is a handle");
+        let held = self.hidden(DataKind::handle_pointer(), span);
+        block.push(Stmt::Set { place: held, value: called, span });
+        let addr = read(held, DataKind::handle_pointer(), span);
+        let null =
+            node_expr(DataKind::handle_pointer(), ExprNode::Const(Value::NULL), span);
+        let cond = node_expr(
+            DataKind::Bool,
+            compare_node(CmpOp::Eq, addr.clone(), null),
+            span,
+        );
+        let platform = self.platform;
+        let failed = fault.value(true, None, None, platform, span);
+        let good =
+            fault.value(false, Some(self.handle_of(addr, ok)), None, platform, span);
+        let then = vec![Stmt::Set { place, value: failed, span }];
+        let els = vec![Stmt::Set { place, value: good, span }];
+        block.push(Stmt::If { cond, then, els, span });
     }
 
     /// The index of a C function among those of the module, added when its
@@ -1847,13 +2446,17 @@ impl Lowerer<'_>
     fn declare_param(&mut self, p: &st::Param)
     {
         let place = self.declare(&p.name, param_kind(p, self.structs), Access::Var);
+        // A parameter marked `ဒေတာ ထည့်ပေးရန်` points at a place the function
+        // must set before it returns, and the caller need not set first.
+        do_if!(p.fill, self.slot(place).unset = Some(p.span));
         let edit = tern!(let Place::Local(n) = place, Some(n), None).filter(|_| p.edit);
         let frame = self.frame.as_mut();
         do_if!(let (Some(n), Some(f)) = (edit, frame), { f.edits.insert(n); });
     }
 
-    /// Whether a place is a parameter the function can change, which holds a
-    /// borrow of the caller's place.
+    /// Whether a place is reached through an address: a parameter the
+    /// function can change, which holds a borrow of the caller's place, or
+    /// the box of a variable a closure shares.
     ///
     /// # Arguments
     ///
@@ -1869,10 +2472,13 @@ impl Lowerer<'_>
         {
             return false;
         };
-        self.frame.as_ref().is_some_and(|f| f.edits.contains(&n))
+        self.frame
+            .as_ref()
+            .is_some_and(|f| f.edits.contains(&n) || f.boxes.contains(&n))
     }
 
-    /// The borrow a parameter the function can change holds.
+    /// The address a place is reached through: the borrow a parameter the
+    /// function can change holds, or the cell of a box.
     ///
     /// # Arguments
     ///
@@ -1881,11 +2487,56 @@ impl Lowerer<'_>
     ///
     /// # Returns
     ///
-    /// The read of the borrow.
+    /// The address.
     fn edit_addr(&mut self, place: Place, span: Span) -> Expr
     {
         let kind = self.slot_kind(place);
-        Expr::builder().kind(kind).node(ExprNode::Read(place)).span(span).build()
+        let held =
+            Expr::builder().kind(kind).node(ExprNode::Read(place)).span(span).build();
+        ret_if!(!self.is_box(place), held);
+        let cell = kind.as_seq().map_or(kind, |s| s.cell);
+        let index = Box::new(self.usize_const(0, span));
+        // A box has one cell, so cell 0 needs no check.
+        #[rustfmt::skip]
+        let node = ExprNode::CellAddr { list: Box::new(held), index, len: None, first: 0, checked: true };
+        node_expr(cell.pointer_to(), node, span)
+    }
+
+    /// Whether a place holds the box of a variable a closure shares.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The place.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn is_box(&self, place: Place) -> bool
+    {
+        let Place::Local(n) = place
+        else
+        {
+            return false;
+        };
+        self.frame.as_ref().is_some_and(|f| f.boxes.contains(&n))
+    }
+
+    /// The kind of the variable a place stands for: the kind of the slot,
+    /// the kind behind the borrow of a parameter the function can change, or
+    /// the kind of the cell of a box.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The place.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    fn reached_kind(&mut self, place: Place) -> DataKind
+    {
+        let kind = self.slot_kind(place);
+        ret_if!(self.is_box(place), kind.as_seq().map_or(kind, |s| s.cell));
+        tern!(self.is_edit(place), kind.pointee().unwrap_or(kind), kind)
     }
 
     /// The read of a name: the slot, or for a parameter the function can
@@ -1929,8 +2580,8 @@ impl Lowerer<'_>
     }
 
     /// Lower a return statement. With places that hold text in scope, the
-    /// value goes to the result variable first, since it can read them; then
-    /// those are dropped and the result variable is returned.
+    /// value goes to a hidden slot first, since it can read them; then those
+    /// are dropped and the slot is returned.
     ///
     /// # Arguments
     ///
@@ -1939,24 +2590,39 @@ impl Lowerer<'_>
     fn return_stmt(&mut self, n: &st::ReturnStmt, out: &mut Vec<Stmt>)
     {
         let span = n.span;
+        // A whole result, such as an error value or `အလွတ်`, leaves as it is.
+        let wrapper = self.frame.as_ref().and_then(|f| f.fault).map(|f| f.wrapper);
+        let whole =
+            n.value.as_ref().zip(wrapper).filter(|(v, w)| self.kind_of(v) == *w);
+        if let Some((v, w)) = whole
+        {
+            let value = self.owned(v, w);
+            return self.leave_with(value, span, out);
+        }
         let ret = self.frame.as_ref().and_then(|f| f.ret);
-        let value = n.value.as_ref().zip(ret).map(|(v, k)| plain(self.owned(v, k)));
+        let value = n.value.as_ref().zip(ret).map(|(v, k)| self.owned(v, k));
+        let handed = self.frame.as_ref().is_some_and(|f| f.owned_ret);
+        let value = value.map(|v| tern!(handed, hand_over(v), v));
         let depth = self.frame.as_ref().map(|f| f.depth);
-        let drops =
-            depth.map_or_else(|| self.global_drops(span), |d| self.drops_from(d, span));
+        let drops = match depth
+        {
+            Some(d) => self.exit_drops(d, span),
+            None => self.global_drops(span),
+        };
         ret_if!(drops.is_empty(), out.push(Stmt::Return { value, span }));
         let result = value.map(|value| {
-            let place = self.lookup(RESULT_NAME);
             let kind = value.kind;
-            let value = tern!(kind.holds_text(), self.replace(&Dest::Slot(place), value, out), value);
+            let place = self.hidden(kind, span);
             out.push(Stmt::Set { place, value, span });
-            tern!(let Place::Local(slot) = place, read_return(slot, kind, span), Stmt::Return { value: None, span })
+            let ret = tern!(let Place::Local(slot) = place, read_return(slot, kind, span), Stmt::Return { value: None, span });
+            // A result marked `အပိုင်အနေဖြင့်` leaves its slot for the caller.
+            tern!(handed, hand_back(ret), ret)
         });
         out.extend(drops);
         out.push(result.unwrap_or(Stmt::Return { value: None, span }));
     }
 
-    /// Lower `... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးပါ။`: the function gives back the
+    /// Lower `... ကို အမှားအယွင်းအဖြစ် ပြန်ပေးမည်။`: the function gives back the
     /// error value with tag 1. The struct is built in a hidden slot before
     /// the places that hold text are dropped, since the value can read them.
     ///
@@ -1985,7 +2651,7 @@ impl Lowerer<'_>
     fn leave_with(&mut self, value: Expr, span: Span, out: &mut Vec<Stmt>)
     {
         let depth = self.frame.as_ref().map_or(0, |f| f.depth);
-        let drops = self.drops_from(depth, span);
+        let drops = self.exit_drops(depth, span);
         ret_if!(drops.is_empty(), out.push(Stmt::Return { value: Some(value), span }));
         let (kind, place) = (value.kind, self.hidden(value.kind, span));
         out.push(Stmt::Set { place, value, span });
@@ -2028,6 +2694,7 @@ impl Lowerer<'_>
         }
         let value = node_expr(fault.wrapper, call, span);
         self.pre.push(Stmt::Set { place: held, value, span });
+        self.pre.append(&mut self.post);
         let err = fault.err.map(|_| fault.field(held, "err", self.platform, span));
         let err = err.map(|e| tern!(e.kind.holds_text(), dup(e), e));
         let own = self.frame.as_ref().and_then(|f| f.fault);
@@ -2043,8 +2710,9 @@ impl Lowerer<'_>
         (held, fault)
     }
 
-    /// Lower `<r> သည် ရလဒ်ကောင်း` or `<r> သည် အမှားအယွင်း`: a test of the tag
-    /// of the result.
+    /// Lower a test of what a result or an optional holds, such as
+    /// `<r> ထဲတွင် ရလဒ်ကောင်း ရှိလျှင်` or `<o> ထဲတွင် ဒေတာ မရှိလျှင်`: a test of
+    /// its tag.
     ///
     /// # Arguments
     ///
@@ -2060,8 +2728,30 @@ impl Lowerer<'_>
         let result = self.expr(value);
         let fault = Fault::of_kind(result.kind).expect("the check found a result");
         let failed = fault.failed_of(result, self.platform, span);
-        ret_if!(op == VerbOp::IsFault, failed.node);
+        ret_if!(matches!(op, VerbOp::IsFault | VerbOp::LacksData), failed.node);
         prefix_node(PrefixOp::Not, failed)
+    }
+
+    /// Lower `<e> ဟူသော အမှားအယွင်း`: the result of the expected kind that
+    /// holds the error value `<e>`, a duplicate of it when it reads text from a
+    /// place.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The error value.
+    /// * `kind` - The result kind.
+    /// * `span` - The expression.
+    ///
+    /// # Returns
+    ///
+    /// The result.
+    fn make_fault(&mut self, value: &ast::Expr, kind: DataKind, span: Span)
+    -> ExprNode
+    {
+        let fault = Fault::of_kind(kind).expect("the check found a result");
+        // The result owns its error value: text read from a place is copied.
+        let err = fault.err.map(|k| self.owned(value, k));
+        fault.value(true, None, err, self.platform, span).node
     }
 
     /// Lower `<r> ကို ရလဒ်ကောင်း အဖြစ် ပြောင်းလဲသော ရလဒ်` or its twin with
@@ -2106,7 +2796,9 @@ impl Lowerer<'_>
             .err
             .filter(|_| good)
             .map(|_| fault.field(held, "err", self.platform, span));
-        let cause = tern!(good, HaltCause::NotGood, HaltCause::NotFault);
+        let lacks =
+            tern!(fault.wrapper.is_optional(), HaltCause::NoData, HaltCause::NotGood);
+        let cause = tern!(good, lacks, HaltCause::NotFault);
         let halt = Stmt::Halt { cause, value: shown, span };
         self.pre.push(Stmt::If {
             cond: wrong,
@@ -2215,9 +2907,7 @@ impl Lowerer<'_>
     fn read_value(&mut self, name: &ast::Ident) -> Expr
     {
         let place = self.lookup(&name.name);
-        let kind = self.slot_kind(place);
-        let edit = self.is_edit(place);
-        let kind = tern!(edit, kind.pointee().unwrap_or(kind), kind);
+        let kind = self.reached_kind(place);
         let node = self.read_name(&name.name, name.span);
         node_expr(kind, node, name.span)
     }
@@ -2234,20 +2924,34 @@ impl Lowerer<'_>
     /// The lowered arguments.
     fn lower_args(&mut self, args: &[ast::Expr], sig: &Sig) -> Vec<Expr>
     {
-        let params = sig.params.iter().zip(&sig.edits);
-        let lower = |(a, (k, edit)): (&ast::Expr, (&DataKind, &bool))| {
-            tern!(*edit, self.edit_arg(a, *k), self.owned(a, *k))
-        };
+        let params = sig.params.iter().zip(&sig.edits).enumerate();
+        let lower =
+            |(a, (at, (k, edit))): (&ast::Expr, (usize, (&DataKind, &bool)))| {
+                let fill = sig.fills.get(at).copied().unwrap_or(false);
+                tern!(*edit, self.edit_arg(a, *k, fill), self.owned(a, *k))
+            };
         let mut lowered: Vec<Expr> = args.iter().zip(params).map(lower).collect();
+        // An argument for a parameter marked `အပိုင်အနေဖြင့်` is handed over:
+        // the caller's place holds the zero word after the call.
+        let handed = lowered.iter_mut().zip(&sig.owned).filter(|(_, o)| **o);
+        handed.for_each(|(e, _)| *e = hand_over(e.clone()));
         // A function value is lent for the call: the callee runs the caller's
         // closure, and its drop of the lent value frees nothing.
         lowered = lowered.into_iter().map(|e| self.hold_fresh_fn(e)).collect();
         lowered.iter_mut().for_each(lend_fn);
-        // C keeps no locals alive for a closure.
-        do_if!(
-            sig.foreign.is_some(),
-            lowered = lowered.into_iter().map(plain).collect()
-        );
+        // C keeps no locals alive for a closure, and takes a list of
+        // numbers as the address of its first cell; a list made for the call
+        // waits in a slot that is dropped after it.
+        if sig.foreign.is_some()
+        {
+            let platform = self.platform;
+            let held = |l: &mut Self, e: Expr| {
+                let fresh = c_list(e.kind, platform).is_some() && fresh_text(&e);
+                tern!(fresh, l.spill(e), e)
+            };
+            lowered = lowered.into_iter().map(|e| held(self, e)).collect();
+            lowered = lowered.into_iter().map(|e| c_list_arg(e, platform)).collect();
+        }
         let rest = args.iter().skip(sig.params.len());
         rest.for_each(|a| lowered.push(self.rest_arg(a)));
         let span = args.first().map_or_else(Span::default, |a| a.span());
@@ -2307,7 +3011,17 @@ impl Lowerer<'_>
     fn rest_arg(&mut self, a: &ast::Expr) -> Expr
     {
         let lowered = self.expr(a);
-        if lowered.kind.is_textual()
+        // A handle goes as the address it holds; a closed one stops the run.
+        if lowered.kind.as_external().is_some()
+        {
+            let place =
+                matches!(lowered.node, ExprNode::Read(_) | ExprNode::Load { .. });
+            let handle = tern!(place, lowered, self.spill(lowered));
+            let guard = self.handle_guard(handle.clone());
+            self.pre.push(guard);
+            return self.handle_ptr(handle);
+        }
+        if lowered.kind.is_text()
         {
             let plain = matches!(
                 lowered.node,
@@ -2320,11 +3034,37 @@ impl Lowerer<'_>
             );
         }
         let want = promoted(lowered.kind, self.platform);
-        plain(coerce_lowered(lowered, want))
+        coerce_lowered(lowered, want, self.platform)
     }
 
-    /// The argument for a parameter the function can change: a borrow of the
-    /// place the caller marks.
+    /// Lower a call that gives a value. A call that copies values back to
+    /// their places runs before the rest of the statement, with the copies,
+    /// so the statement reads the places as the call left them.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The call.
+    /// * `kind` - The kind of its value.
+    ///
+    /// # Returns
+    ///
+    /// The operation.
+    fn call_node(&mut self, n: &ast::CallExpr, kind: DataKind) -> ExprNode
+    {
+        let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
+        let args = self.lower_args(&n.args, &sig);
+        ret_if!(self.post.is_empty(), target.node(args));
+        let held = self.spill(node_expr(kind, target.node(args), n.span));
+        self.pre.append(&mut self.post);
+        tern!(kind.holds_text(), dup(held), held).node
+    }
+
+    /// The argument for a parameter the function can change: the address
+    /// of the place. A place the callee can reach through another path too, a
+    /// global or a variable a closure shares, is copied in to a hidden slot
+    /// whose address goes instead, and copied back after the call
+    /// ([`Self::post`]): the callee never holds an address into cells that
+    /// move under it, and the place it changes is found again after the call.
     ///
     /// # Arguments
     ///
@@ -2334,10 +3074,70 @@ impl Lowerer<'_>
     /// # Returns
     ///
     /// The borrow.
-    fn edit_arg(&mut self, a: &ast::Expr, want: DataKind) -> Expr
+    fn edit_arg(&mut self, a: &ast::Expr, want: DataKind, fill: bool) -> Expr
     {
-        let node = self.addr_of(a);
-        Expr::builder().kind(want).node(node).span(a.span()).build()
+        let span = a.span();
+        let node =
+            tern!(self.reached_elsewhere(a), self.stage_in(a, fill), self.addr_of(a));
+        Expr::builder().kind(want).node(node).span(span).build()
+    }
+
+    /// Whether the callee can reach a place through another path than the
+    /// parameter: its variable is a global or the box a closure shares.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - The place.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a place.
+    fn reached_elsewhere(&self, a: &ast::Expr) -> bool
+    {
+        let Some(name) = place_root(a)
+        else
+        {
+            return false;
+        };
+        let place = self.lookup(name);
+        matches!(place, Place::Global(_)) || self.is_box(place)
+    }
+
+    /// Stage a place in a hidden slot for a call and queue the write back.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - The place.
+    /// * `fill` - Whether the callee fills the place, so the slot starts blank.
+    ///
+    /// # Returns
+    ///
+    /// The address of the hidden slot.
+    fn stage_in(&mut self, a: &ast::Expr, fill: bool) -> ExprNode
+    {
+        let (kind, span) = (self.kind_of(a), a.span());
+        // A place the callee fills hands it nothing: the slot starts blank.
+        let value = tern!(fill, default_constant(kind, span), self.owned(a, kind));
+        let held = self.hidden(kind, span);
+        if kind.holds_text()
+        {
+            let blank = default_constant(kind, span);
+            self.pre_init.push(Stmt::Set { place: held, value: blank, span });
+            self.drops.last_mut().expect("a scope is open").push((held, kind));
+        }
+        self.pre.push(Stmt::Set { place: held, value, span });
+        let dest = self.dest(a);
+        let back = take(read(held, kind, span));
+        let mut post = Vec::new();
+        let back = tern!(kind.holds_text(), self.replace(&dest, back, &mut post), back);
+        post.push(match dest
+        {
+            Dest::Slot(place) => Stmt::Set { place, value: back, span },
+            Dest::Mem(addr) => Stmt::Store { addr, value: back, span },
+        });
+        self.post.extend(post);
+        self.slot(held).addressed = true;
+        ExprNode::AddrOf(held)
     }
 
     /// The common kind of two kinds: the one the other widens to. Two
@@ -2371,7 +3171,7 @@ impl Lowerer<'_>
     fn coerce(&mut self, e: &ast::Expr, want: DataKind) -> Expr
     {
         let lowered = self.expr(e);
-        coerce_lowered(lowered, want)
+        coerce_lowered(lowered, want, self.platform)
     }
 
     /// Lower a value headed for a place of kind `want`. A value of a move
@@ -2392,12 +3192,13 @@ impl Lowerer<'_>
     fn owned(&mut self, e: &ast::Expr, want: DataKind) -> Expr
     {
         let lowered = self.expr(e);
-        ret_if!(self.reads_const(&lowered), coerce_lowered(lowered, want));
-        let moved = lowered.kind.is_move_kind() && want.is_move_kind();
-        ret_if!(moved, coerce_lowered(take(lowered), want));
+        ret_if!(
+            self.reads_const(&lowered),
+            coerce_lowered(lowered, want, self.platform)
+        );
         let read = matches!(lowered.node, ExprNode::Read(_) | ExprNode::Load { .. });
         let copied = read && lowered.kind.holds_text();
-        coerce_lowered(tern!(copied, dup(lowered), lowered), want)
+        coerce_lowered(tern!(copied, dup(lowered), lowered), want, self.platform)
     }
 
     /// Whether a value is read out of a constant: the constant itself, or a
@@ -2427,7 +3228,7 @@ impl Lowerer<'_>
     }
 
     /// Lower an expression with the kind the check recorded for it; a
-    /// `ဗလာ` with no pointer kind around it is a `ptr`.
+    /// `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` with no pointer kind around it is a `ptr`.
     ///
     /// # Arguments
     ///
@@ -2464,8 +3265,7 @@ impl Lowerer<'_>
     fn spill(&mut self, e: Expr) -> Expr
     {
         let read_place = matches!(e.node, ExprNode::Read(_) | ExprNode::Load { .. });
-        let moved = read_place && e.kind.is_move_kind();
-        ret_if!(moved || matches!(e.node, ExprNode::Const(_)), e);
+        ret_if!(matches!(e.node, ExprNode::Const(_)), e);
         let (kind, span, place) = (e.kind, e.span, self.hidden(e.kind, e.span));
         let value = tern!(read_place && kind.holds_text(), dup(e), e);
         if kind.holds_text()
@@ -2504,12 +3304,7 @@ impl Lowerer<'_>
             ast::Expr::Logic(n) => self.logic(n),
             ast::Expr::Verb(n) => self.verb(n, kind),
             ast::Expr::Call(n) if n.pass => self.pass_call(n),
-            ast::Expr::Call(n) =>
-            {
-                let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
-                let args = self.lower_args(&n.args, &sig);
-                target.node(args)
-            }
+            ast::Expr::Call(n) => self.call_node(n, kind),
             ast::Expr::FnAddr(n) if self.nested_named(&n.name.name).is_some() =>
             {
                 self.nested_addr(&n.name).expect("the function is declared")
@@ -2522,17 +3317,30 @@ impl Lowerer<'_>
                 });
                 ExprNode::FnAddr { func: sig.index, name: n.name.name.to_string() }
             }
+            ast::Expr::Null(n) if n.initial =>
+            {
+                self.initial_value(self.shown_kind(e), n.span).node
+            }
+            ast::Expr::Null(n) if n.blank =>
+            {
+                let none = Fault::of_kind(kind).expect("the check found an optional");
+                none.value(true, None, None, self.platform, n.span).node
+            }
             ast::Expr::Null(_) => ExprNode::Const(Value::NULL),
             ast::Expr::SizeOf(n) =>
             {
                 ExprNode::SizeOf(DataKind::from_ast(&n.kind, self.structs))
             }
             ast::Expr::Index(n) => ExprNode::Load { addr: Box::new(self.cell_addr(n)) },
+            ast::Expr::Field(n) if self.kind_of(&n.base).as_external().is_some() =>
+            {
+                self.c_field_read(n, kind)
+            }
             ast::Expr::Field(n) =>
             {
                 ExprNode::Load { addr: Box::new(self.field_addr(n)) }
             }
-            ast::Expr::Range(n) => self.range(n),
+            ast::Expr::Range(n) => self.range(n, kind),
             ast::Expr::List(n) => self.list(n, kind),
             ast::Expr::Struct(n) => self.struct_lit(n, kind),
             ast::Expr::BlankList(_) => ExprNode::BlankList,
@@ -2573,9 +3381,9 @@ impl Lowerer<'_>
         Value::int(k, pattern, self.platform)
     }
 
-    /// Lower a prefix operator. `-` before an integer literal without a
-    /// kind prefix becomes a negative constant; `&` and `*` become address and
-    /// load nodes.
+    /// Lower a prefix operator. `-` before an integer literal becomes a
+    /// negative constant of the literal's kind; `&` and `*` become address
+    /// and load nodes.
     ///
     /// # Arguments
     ///
@@ -2589,10 +3397,7 @@ impl Lowerer<'_>
     {
         let lit = match n.rhs.as_ref()
         {
-            ast::Expr::Int(lit) if lit.kind.is_none() && n.op == ast::PrefixOp::Neg =>
-            {
-                Some(lit)
-            }
+            ast::Expr::Int(lit) if n.op == ast::PrefixOp::Neg => Some(lit),
             _ => None,
         };
         ret_if!(let Some(lit) = lit, ExprNode::Const(self.int_lit(lit, kind, true)));
@@ -2738,7 +3543,7 @@ impl Lowerer<'_>
                 self.slot(at).addressed = true;
                 ExprNode::AddrOf(at)
             }
-            Dest::Mem(addr) => addr.node,
+            Dest::Mem(addr) => pinned(addr).node,
         }
     }
 
@@ -2769,9 +3574,8 @@ impl Lowerer<'_>
     fn list(&mut self, n: &ast::ListLit, kind: DataKind) -> ExprNode
     {
         let cell = kind.cell_kind().expect("a list literal has a list kind");
-        let cells = ExprNode::List(
-            n.cells.iter().map(|c| plain(self.owned(c, cell))).collect(),
-        );
+        let cells =
+            ExprNode::List(n.cells.iter().map(|c| self.owned(c, cell)).collect());
         ret_if!(!kind.is_seq(), cells);
         // A plain list is built as a counted list, whose cells then sit in
         // static data or move to a heap block.
@@ -2794,12 +3598,19 @@ impl Lowerer<'_>
     /// The operation.
     fn struct_lit(&mut self, n: &ast::StructLit, kind: DataKind) -> ExprNode
     {
+        if let Some(s) = kind.as_object()
+        {
+            // An object is a new box that holds the struct.
+            let fields = self.struct_lit(n, DataKind::Struct(s));
+            let value = node_expr(DataKind::Struct(s), fields, n.span);
+            return self.make_box(value, n.span).node;
+        }
         let s = kind.as_struct().expect("a struct literal has a struct kind");
         let init = |name: &str| n.fields.iter().find(|f| f.field.name == name);
         let fields = s.fields().iter().map(|(name, k)| {
             init(name).map_or_else(
                 || default_constant(*k, n.span),
-                |f| plain(self.owned(&f.value, *k)),
+                |f| self.owned(&f.value, *k),
             )
         });
         ExprNode::List(fields.collect())
@@ -2826,75 +3637,30 @@ impl Lowerer<'_>
         Expr::builder().kind(kind).node(node).span(n.span).build()
     }
 
-    /// A range of cells: a slice of a list, a slice, or a block.
+    /// A range of cells: a list or text of its own, with the cells of a
+    /// list, a slice, text or a block copied in. The cells are read through
+    /// a view that lends them (a room of 0), which `own` copies.
     ///
     /// # Arguments
     ///
     /// * `n` - The range.
+    /// * `kind` - Its kind: text, or a plain list.
     ///
     /// # Returns
     ///
-    /// The slice.
-    fn range(&mut self, n: &ast::RangeExpr) -> ExprNode
+    /// The operation.
+    fn range(&mut self, n: &ast::RangeExpr, kind: DataKind) -> ExprNode
     {
         let from = slice_from(self.kind_of(&n.source));
-        let source = Box::new(owned_source(self.expr(&n.source)));
+        let value = self.expr(&n.source);
+        // A value that is no place, such as a literal, waits in a slot.
+        let place = matches!(value.node, ExprNode::Read(_) | ExprNode::Load { .. });
+        let value = tern!(place || value.kind.is_ptr(), value, self.spill(value));
+        let source = Box::new(through(value));
         let start = Box::new(self.coerce(&n.start, DataKind::USIZE));
         let len = Box::new(self.coerce(&n.len, DataKind::USIZE));
-        ExprNode::MakeSlice { source, start, len, from, checked: false }
-    }
-
-    /// A slice of each cell of a list: the lend of a list.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The list.
-    ///
-    /// # Returns
-    ///
-    /// The slice.
-    fn lend_list(&mut self, value: &ast::Expr) -> ExprNode
-    {
-        let from = slice_from(self.kind_of(value));
-        let SliceFrom::List(count) = from
-        else
-        {
-            panic!("a lent list has a count");
-        };
-        let span = value.span();
-        let source = Box::new(self.expr(value));
-        let start = Box::new(self.usize_const(0, span));
-        let len = Box::new(self.usize_const(count, span));
-        ExprNode::MakeSlice { source, start, len, from, checked: true }
-    }
-
-    /// The view of each u8 of a text, or the slice of each cell of a plain
-    /// list: the lend of either. Both start with the two words of a slice,
-    /// so the result is a slice of all of it.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The text or the plain list.
-    ///
-    /// # Returns
-    ///
-    /// The view or the slice.
-    fn lend_whole(&mut self, value: &ast::Expr) -> ExprNode
-    {
-        let span = value.span();
-        let source = Box::new(owned_source(self.expr(value)));
-        let start = Box::new(self.usize_const(0, span));
-        let count = self.cell_count(value);
-        let len = Box::new(
-            Expr::builder().kind(DataKind::USIZE).node(count).span(span).build(),
-        );
-        ExprNode::MakeSlice {
-            source,
-            start,
-            len,
-            from: SliceFrom::Slice,
-            checked: true,
-        }
+        let view = ExprNode::MakeSlice { source, start, len, from, checked: false };
+        ExprNode::Own { value: Box::new(node_expr(kind, view, n.span)), pin: false }
     }
 
     /// A string literal: static text, or text built from its template slots.
@@ -2961,11 +3727,13 @@ impl Lowerer<'_>
     /// When the struct has no such field, which a clean check rules out.
     fn field_addr(&mut self, n: &ast::FieldExpr) -> Expr
     {
-        let shape =
-            self.kind_of(&n.base).as_struct().expect("a field is read from a struct");
+        let of = self.kind_of(&n.base);
+        let shape = of.object_struct().expect("a field is read from a struct");
         let (at, kind) = shape.field(&n.field.name).expect("the check found the field");
         let offset = shape.offset(at, self.platform);
-        let base = Box::new(self.expr(&n.base));
+        let base = self.expr(&n.base);
+        let base =
+            Box::new(tern!(of.as_object().is_some(), self.object_fields(base), base));
         let field = u32::try_from(at).expect("a struct has fewer than 2^32 fields");
         let node = ExprNode::FieldAddr { base, field, offset };
         Expr::builder().kind(kind.repr().pointer_to()).node(node).span(n.span).build()
@@ -3009,7 +3777,7 @@ impl Lowerer<'_>
     }
 
     /// Lower a comparison; both operands take their common kind, which is
-    /// `ptr` for two `ဗလာ`.
+    /// `ptr` for two `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`.
     ///
     /// # Arguments
     ///
@@ -3023,7 +3791,7 @@ impl Lowerer<'_>
     fn compare(&mut self, op: CmpOp, lhs: &ast::Expr, rhs: &ast::Expr) -> ExprNode
     {
         // Text and a view of text compare their u8s, each in its own kind.
-        let texts = self.kind_of(lhs).is_textual() && self.kind_of(rhs).is_textual();
+        let texts = self.kind_of(lhs).is_text() && self.kind_of(rhs).is_text();
         ret_if!(
             texts,
             ExprNode::Compare {
@@ -3038,7 +3806,63 @@ impl Lowerer<'_>
         ExprNode::Compare { op, lhs, rhs }
     }
 
-    /// Lower a logical operator.
+    /// A duplicate of a value. A value is duplicated as it is read; a shallow
+    /// duplicate of an object is a new box that holds a duplicate of its
+    /// struct; a deep duplicate gives each object inside a block of its own,
+    /// each duplicated once.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value.
+    /// * `deep` - Whether the duplicate is deep.
+    ///
+    /// # Returns
+    ///
+    /// The duplicate.
+    fn dup_of(&mut self, value: &ast::Expr, deep: bool) -> ExprNode
+    {
+        let kind = self.kind_of(value);
+        if deep
+        {
+            let read = Box::new(self.expr(value));
+            return ExprNode::Dup { value: read, lent: false, deep: true };
+        }
+        ret_if!(kind.as_object().is_none(), self.owned(value, kind).node);
+        let object = self.expr(value);
+        let fields = dup(self.object_fields(object));
+        self.make_box(fields, value.span()).node
+    }
+
+    /// Lower the sameness verb: two function values compare as words, and two
+    /// objects compare the first words of their boxes, the blocks held there.
+    ///
+    /// # Arguments
+    ///
+    /// * `lhs` - The left operand.
+    /// * `rhs` - The right operand.
+    ///
+    /// # Returns
+    ///
+    /// The comparison.
+    fn same(&mut self, lhs: &ast::Expr, rhs: &ast::Expr) -> ExprNode
+    {
+        let common = concrete(self.common(self.kind_of(lhs), self.kind_of(rhs)));
+        let (l, r) = (self.coerce(lhs, common), self.coerce(rhs, common));
+        let word = |e: Expr| {
+            let span = e.span;
+            let node = ExprNode::FieldAddr { base: Box::new(e), field: 0, offset: 0 };
+            let addr = node_expr(DataKind::OPAQUE.pointer_to(), node, span);
+            node_expr(DataKind::OPAQUE, ExprNode::Load { addr: Box::new(addr) }, span)
+        };
+        let (l, r) = tern!(common.is_fn(), (l, r), (word(l), word(r)));
+        ExprNode::Compare { op: CmpOp::Eq, lhs: Box::new(l), rhs: Box::new(r) }
+    }
+
+    /// Lower a logical operator. A right side that needs statements first,
+    /// such as a call that passes a failure on or copies values back, goes
+    /// through a hidden slot: the left side sets it, and the right side runs
+    /// in an `if` when the left side does not settle the value, and at no
+    /// other time.
     ///
     /// # Arguments
     ///
@@ -3046,35 +3870,18 @@ impl Lowerer<'_>
     ///
     /// # Returns
     ///
-    /// The operation.
+    /// The operation, or the read of the slot.
     fn logic(&mut self, n: &ast::LogicExpr) -> ExprNode
     {
         let op = tern!(n.op == ast::LogicOp::And, LogicOp::And, LogicOp::Or);
-        ret_if!(has_pass(&n.lhs) || has_pass(&n.rhs), self.passing_logic(n, op));
-        let lhs = Box::new(self.coerce(&n.lhs, DataKind::Bool));
-        let rhs = Box::new(self.coerce(&n.rhs, DataKind::Bool));
-        ExprNode::Logic { op, lhs, rhs }
-    }
-
-    /// Lower `နှင့်` or `သို့မဟုတ်` with a call that passes a failure on: the
-    /// left side goes to a hidden slot, and the right side runs in an `if`
-    /// when the left side does not settle the value, and at no other time.
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The expression.
-    /// * `op` - The operator.
-    ///
-    /// # Returns
-    ///
-    /// The read of the slot.
-    fn passing_logic(&mut self, n: &ast::LogicExpr, op: LogicOp) -> ExprNode
-    {
         let span = n.span;
         let lhs = self.coerce(&n.lhs, DataKind::Bool);
+        let (mut then, rhs) = self.with_pre(|l| l.coerce(&n.rhs, DataKind::Bool));
+        let plain =
+            |lhs, rhs| ExprNode::Logic { op, lhs: Box::new(lhs), rhs: Box::new(rhs) };
+        ret_if!(then.is_empty(), plain(lhs, rhs));
         let place = self.hidden(DataKind::Bool, span);
         self.pre.push(Stmt::Set { place, value: lhs, span });
-        let (mut then, rhs) = self.with_pre(|l| l.coerce(&n.rhs, DataKind::Bool));
         then.push(Stmt::Set { place, value: rhs, span });
         let held = read(place, DataKind::Bool, span);
         let not_held =
@@ -3125,6 +3932,7 @@ impl Lowerer<'_>
             _ => None,
         };
         ret_if!(let (Some(cmp), [l, r]) = (cmp, args), self.compare(cmp, l, r));
+        ret_if!(let (VerbOp::Same, [l, r]) = (n.op, args), self.same(l, r));
         if n.op == VerbOp::Join
         {
             let pieces = args.iter().map(|a| FmtPiece::Value(self.expr(a))).collect();
@@ -3158,13 +3966,8 @@ impl Lowerer<'_>
                 octet: false,
             },
             VerbOp::BitNot => prefix_node(PrefixOp::BitNot, self.expr(value)),
-            VerbOp::Lend if self.kind_of(value).is_list() => self.lend_list(value),
-            VerbOp::Lend
-                if self.kind_of(value).is_text() || self.kind_of(value).is_seq() =>
-            {
-                self.lend_whole(value)
-            }
-            VerbOp::Lend => ExprNode::Lend { operand: Box::new(self.expr(value)) },
+            VerbOp::DupOf => self.dup_of(value, false),
+            VerbOp::DeepDupOf => self.dup_of(value, true),
             VerbOp::Cast =>
             {
                 let operand = self.expr(value);
@@ -3172,7 +3975,11 @@ impl Lowerer<'_>
                 ret_if!(operand.kind == kind, operand.node);
                 ExprNode::Convert { operand: Box::new(operand), implicit: false }
             }
-            VerbOp::IsGood | VerbOp::IsFault => self.result_test(n.op, value, n.span),
+            VerbOp::IsGood | VerbOp::IsFault | VerbOp::HasData | VerbOp::LacksData =>
+            {
+                self.result_test(n.op, value, n.span)
+            }
+            VerbOp::MakeFault => self.make_fault(value, kind, n.span),
             VerbOp::Unwrap | VerbOp::UnwrapFault =>
             {
                 self.result_part(n.op, value, n.span)
@@ -3187,6 +3994,7 @@ impl Lowerer<'_>
             | VerbOp::BitXor
             | VerbOp::Shift
             | VerbOp::Eq
+            | VerbOp::Same
             | VerbOp::Ne
             | VerbOp::Gt
             | VerbOp::Le
@@ -3195,10 +4003,8 @@ impl Lowerer<'_>
             | VerbOp::Print
             | VerbOp::Assign
             | VerbOp::DupInto
-            | VerbOp::MoveInto
+            | VerbOp::DeepDupInto
             | VerbOp::Return
-            | VerbOp::ReturnFault
-            | VerbOp::ReturnGood
             | VerbOp::AddCell
             | VerbOp::Replace
             | VerbOp::Cell
@@ -3212,25 +4018,42 @@ impl Lowerer<'_>
     }
 }
 
-/// Convert a lowered expression to `want` when its kind differs. A `ဗလာ`
-/// constant headed for a pointer kind, and an address headed for a kind of
-/// its own shape with another borrow mark, take `want` as their label with
-/// no conversion; other addresses keep their own kind, which pointer math
+/// Convert a lowered expression to `want` when its kind differs. A `မည်သည်ကိုမှ
+/// မညွှန်းသော လိပ်စာ` constant headed for a pointer kind, and an address headed for
+/// a kind of its own shape with another borrow mark, take `want` as their label
+/// with no conversion; other addresses keep their own kind, which pointer math
 /// reads its stride from, under an implicit conversion.
+/// A plain value headed for an optional or a result goes in as the one that
+/// holds it on its good side.
 ///
 /// # Arguments
 ///
 /// * `lowered` - The expression.
 /// * `want` - The kind its place expects.
+/// * `platform` - Bit count of the platform-sized kinds.
 ///
 /// # Returns
 ///
 /// The expression, of kind `want`.
-fn coerce_lowered(lowered: Expr, want: DataKind) -> Expr
+fn coerce_lowered(lowered: Expr, want: DataKind, platform: u16) -> Expr
 {
     let want = want.repr();
     ret_if!(lowered.kind == want, lowered);
     let span = lowered.span;
+    let plain = lowered.kind.fallible_parts().is_none();
+    if let Some(wrap) = Fault::of_kind(want).filter(|f| plain && f.ok.is_some())
+    {
+        let held = wrap.ok.map(|k| coerce_lowered(lowered, k, platform));
+        return wrap.value(false, held, None, platform, span);
+    }
+    // `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` headed for an object is the blank box.
+    let constant = matches!(lowered.node, ExprNode::Const(_));
+    let null_object =
+        constant && lowered.kind.is_address() && want.as_object().is_some();
+    ret_if!(
+        null_object,
+        Expr::builder().kind(want).node(ExprNode::BlankList).span(span).build()
+    );
     let literal = matches!(lowered.node, ExprNode::Const(_));
     let null = literal && lowered.kind.is_ptr() && want.is_ptr();
     let relabel = null || lowered.kind.same_shape(want);
@@ -3306,7 +4129,7 @@ fn take(e: Expr) -> Expr
 fn dup(e: Expr) -> Expr
 {
     let (kind, span) = (e.kind, e.span);
-    let node = ExprNode::Dup { value: Box::new(e), lent: false };
+    let node = ExprNode::Dup { value: Box::new(e), lent: false, deep: false };
     Expr::builder().kind(kind).node(node).span(span).build()
 }
 
@@ -3429,25 +4252,8 @@ fn through(e: Expr) -> Expr
     node_expr(seq, ExprNode::Load { addr: Box::new(e) }, span)
 }
 
-/// The source of a slice: a plain list, or the plain list a pointer points
-/// at, first made to own its block, since a slice can write its cells and
-/// cells in static storage or lent to a parameter must never change. Each
-/// other source as it is.
-///
-/// # Arguments
-///
-/// * `source` - The source.
-///
-/// # Returns
-///
-/// The expression.
-fn owned_source(source: Expr) -> Expr
-{
-    let list = through(source);
-    tern!(list.kind.is_seq(), own(list), list)
-}
-
-/// A plain list made to own its block before a write.
+/// A plain list made to own its block before a write. A box, of an object or
+/// of a variable a closure shares, is shared on purpose, so it remains.
 ///
 /// # Arguments
 ///
@@ -3458,8 +4264,9 @@ fn owned_source(source: Expr) -> Expr
 /// The expression, of the list kind.
 fn own(list: Expr) -> Expr
 {
+    ret_if!(list.kind.is_box(), list);
     let (kind, span) = (list.kind, list.span);
-    node_expr(kind, ExprNode::Own { value: Box::new(list) }, span)
+    node_expr(kind, ExprNode::Own { value: Box::new(list), pin: false }, span)
 }
 
 /// The text, the number and the first number of a character place:
@@ -3595,7 +4402,7 @@ pub fn constant(v: Value, span: Span) -> Expr
 }
 
 /// The default value of a kind as a constant labelled with that kind, so a
-/// pointer slot starts at a `ဗလာ` of its own pointer kind.
+/// pointer slot starts at a the zero word of its own pointer kind.
 ///
 /// # Arguments
 ///
@@ -3615,6 +4422,29 @@ fn default_constant(kind: DataKind, span: Span) -> Expr
         ExprNode::Const(Value::default_of(kind))
     );
     Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// Whether the initial value of a kind is zero octets: a number, a
+/// character, true/false, a pointer, text, a plain list, and a counted list
+/// or a struct of those alone.
+///
+/// # Arguments
+///
+/// * `kind` - The kind.
+///
+/// # Returns
+///
+/// `true` for such a kind.
+fn zero_initial(kind: DataKind) -> bool
+{
+    ret_false!(kind.is_optional() || kind.as_enum().is_some() || kind.is_box());
+    ret_if!(let Some(l) = kind.as_list(), zero_initial(l.cell));
+    let Some(s) = kind.as_struct()
+    else
+    {
+        return !kind.is_fn();
+    };
+    s.fields().iter().all(|(_, k)| zero_initial(*k))
 }
 
 /// A prefix operation node.
@@ -3662,12 +4492,11 @@ fn concrete(kind: DataKind) -> DataKind
 /// When the kind is none of these, which a clean check rules out.
 fn cells_of(kind: DataKind) -> (DataKind, Option<u32>)
 {
-    ret_if!(let Some(s) = kind.as_slice(), (s.cell, None));
     ret_if!(kind.is_text(), (DataKind::U8, None));
     let seq = kind.as_seq().or_else(|| kind.pointee().and_then(DataKind::as_seq));
     ret_if!(let Some(s) = seq, (s.cell, None));
     let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
-    let list = list.expect("a cell operand is a list, a pointer to one, or a slice");
+    let list = list.expect("a cell operand is a list, text or a pointer to a list");
     (list.cell, Some(list.len))
 }
 
@@ -3684,7 +4513,7 @@ fn cells_of(kind: DataKind) -> (DataKind, Option<u32>)
 fn slice_from(kind: DataKind) -> SliceFrom
 {
     let seq = kind.is_seq() || kind.pointee().is_some_and(DataKind::is_seq);
-    ret_if!(kind.is_slice() || kind.is_text() || seq, SliceFrom::Slice);
+    ret_if!(kind.is_text() || seq, SliceFrom::Slice);
     let list = kind.as_list().or_else(|| kind.pointee().and_then(DataKind::as_list));
     list.map_or(SliceFrom::Block, |l| SliceFrom::List(l.len))
 }
@@ -3760,46 +4589,6 @@ fn read_return(slot: u32, kind: DataKind, span: Span) -> Stmt
     Stmt::Return { value: Some(read), span }
 }
 
-/// A function value headed where it can outlive the locals a closure
-/// borrows, checked to be no closure when the program runs. The address of
-/// a top-level function and a constant need no check.
-///
-/// # Arguments
-///
-/// * `e` - The value, of each kind.
-///
-/// # Returns
-///
-/// The value, checked when it is a function value.
-fn plain(e: Expr) -> Expr
-{
-    let known = matches!(e.node, ExprNode::FnAddr { .. } | ExprNode::Const(_));
-    ret_if!(!e.kind.is_fn() || known, e);
-    let (kind, span) = (e.kind, e.span);
-    node_expr(kind, ExprNode::Plain { value: Box::new(e) }, span)
-}
-
-/// The move that `ပြောင်းထည့်မည်` asks for in place of a duplicate: the value
-/// moves out of the place it is read from, which is left blank. A value that
-/// is no duplicate, such as a number, remains as it is.
-///
-/// # Arguments
-///
-/// * `e` - The value, as an assignment lowers it.
-///
-/// # Returns
-///
-/// The value.
-fn move_out(e: Expr) -> Expr
-{
-    let ExprNode::Dup { value, .. } = e.node
-    else
-    {
-        return e;
-    };
-    take(*value)
-}
-
 /// Lend a duplicate of a function value that goes to a parameter.
 ///
 /// # Arguments
@@ -3854,6 +4643,93 @@ fn drop_stmt(dest: Dest, kind: DataKind, span: Span) -> Stmt
 fn leaves_scope(s: &Stmt) -> bool
 {
     matches!(s, Stmt::Return { .. } | Stmt::Break { .. } | Stmt::Continue { .. })
+}
+
+/// An argument handed over to a parameter marked `အပိုင်အနေဖြင့်`: a read
+/// of a place is taken, so the place holds the zero word after it; each other
+/// value is handed over as it is.
+///
+/// # Arguments
+///
+/// * `e` - The lowered argument.
+///
+/// # Returns
+///
+/// The argument.
+fn hand_over(e: Expr) -> Expr
+{
+    let read = matches!(e.node, ExprNode::Read(_) | ExprNode::Load { .. });
+    tern!(read, take(e), e)
+}
+
+/// A return whose value is handed over, as [`hand_over`] gives it.
+///
+/// # Arguments
+///
+/// * `stmt` - The return.
+///
+/// # Returns
+///
+/// The return, or the statement as it is when it gives back no value.
+fn hand_back(stmt: Stmt) -> Stmt
+{
+    let Stmt::Return { value: Some(v), span } = stmt
+    else
+    {
+        return stmt;
+    };
+    Stmt::Return { value: Some(hand_over(v)), span }
+}
+
+/// The address of a cell of text or a plain list, with the block pinned: a
+/// pointer to the cell can write it, so the block is never shared again and
+/// a duplicate of the list copies it. Each other address is as it is.
+///
+/// # Arguments
+///
+/// * `addr` - The address.
+///
+/// # Returns
+///
+/// The address.
+fn pinned(addr: Expr) -> Expr
+{
+    let ExprNode::CellAddr { list, index, len, first, checked } = addr.node
+    else
+    {
+        return addr;
+    };
+    let list = match list.node
+    {
+        ExprNode::Own { value, .. } =>
+        {
+            node_expr(list.kind, ExprNode::Own { value, pin: true }, list.span)
+        }
+        _ => *list,
+    };
+    let node = ExprNode::CellAddr { list: Box::new(list), index, len, first, checked };
+    node_expr(addr.kind, node, addr.span)
+}
+
+/// The variable at the root of a place, through its fields and cells; a
+/// place behind a pointer has none.
+///
+/// # Arguments
+///
+/// * `e` - The place.
+///
+/// # Returns
+///
+/// The name of the variable, or `None`.
+fn place_root(e: &ast::Expr) -> Option<&str>
+{
+    match ungrouped(e)
+    {
+        ast::Expr::Name(n) => Some(n.name.as_str()),
+        ast::Expr::Index(n) => place_root(&n.list),
+        ast::Expr::Field(n) => place_root(&n.base),
+        _ => None,
+    }
 }
 
 /// An expression with each pair of parentheses around it taken off.

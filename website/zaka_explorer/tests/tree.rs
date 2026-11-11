@@ -27,7 +27,8 @@ fn decl_has_name_kind_and_value()
 #[test]
 fn kinds_are_absent_when_the_check_is_skipped()
 {
-    let out = compile("ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။ ;", &Options::default());
+    let out =
+        compile("ကိန်းရှင် အသက် သည် ၁၈ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။ ;", &Options::default());
     assert!(!out.checked);
     assert!(flatten(&out.tree).iter().all(|n| n.kind.is_none()));
 }
@@ -35,7 +36,7 @@ fn kinds_are_absent_when_the_check_is_skipped()
 #[test]
 fn node_ranges_nest()
 {
-    let text = "အကယ်၍ ၁ သည် ၂ ထက် ကြီးလျှင် \"ok\" ကို ပြသပါ။";
+    let text = "အကယ်၍ ၁ သည် ၂ ထက် ကြီးလျှင် \"ok\" ကို ပြသမည်။";
     let out = compile(text, &Options::default());
     for node in flatten(&out.tree).iter().skip(1)
     {

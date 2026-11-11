@@ -1,4 +1,5 @@
 use zakac_i18n::t;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::code::Code;
@@ -16,7 +17,13 @@ use crate::diagnostic::Diagnostic;
 /// The `ZK0301` diagnostic.
 pub fn undeclared_name(span: Span, name: &str) -> Diagnostic
 {
-    Diagnostic::new(Code::UndeclaredName, t!("codes.ZK0301.message", n = name), span)
+    let diag = Diagnostic::new(
+        Code::UndeclaredName,
+        t!("codes.ZK0301.message", n = name),
+        span,
+    );
+    // The implicit result variable of an earlier version is gone.
+    tern!(name == "ရလဒ်", diag.with_help(t!("codes.ZK0301.help_result")), diag)
 }
 
 /// A name is declared twice in one scope.
@@ -205,6 +212,23 @@ pub fn missing_return_value(span: Span, name: &str, kind: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0313.message", n = name, k = kind);
     Diagnostic::new(Code::MissingReturnValue, msg, span)
+}
+
+/// A function with a result can reach the end of its block with no return.
+///
+/// # Arguments
+///
+/// * `span` - The block.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0339` diagnostic.
+pub fn end_without_return(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0339.message", n = name);
+    Diagnostic::new(Code::EndWithoutReturn, msg, span)
+        .with_help(t!("codes.ZK0339.help"))
 }
 
 /// A call passes the wrong number of arguments.
@@ -659,59 +683,4 @@ pub fn c_name_twice(span: Span, name: &str) -> Diagnostic
 {
     Diagnostic::new(Code::CNameTwice, t!("codes.ZK0338.message", n = name), span)
         .with_help(t!("codes.ZK0338.help"))
-}
-
-/// A nested function uses a local of a function around it, or a nested
-/// function with captures, that its capture list leaves out.
-///
-/// # Arguments
-///
-/// * `span` - The name of the nested function.
-/// * `func` - The function name.
-/// * `name` - The name it uses.
-///
-/// # Returns
-///
-/// The `ZK0339` diagnostic.
-pub fn capture_unlisted(span: Span, func: &str, name: &str) -> Diagnostic
-{
-    let message = t!("codes.ZK0339.message", f = func, n = name);
-    Diagnostic::new(Code::CaptureUnlisted, message, span)
-        .with_help(t!("codes.ZK0339.help", n = name))
-}
-
-/// A capture list names what is no local of a function around it.
-///
-/// # Arguments
-///
-/// * `span` - The listed name.
-/// * `func` - The function name.
-/// * `name` - The listed name.
-///
-/// # Returns
-///
-/// The `ZK0340` diagnostic.
-pub fn capture_not_local(span: Span, func: &str, name: &str) -> Diagnostic
-{
-    let message = t!("codes.ZK0340.message", f = func, n = name);
-    Diagnostic::new(Code::CaptureNotLocal, message, span)
-        .with_help(t!("codes.ZK0340.help"))
-}
-
-/// A capture list names a local the function never uses.
-///
-/// # Arguments
-///
-/// * `span` - The listed name.
-/// * `func` - The function name.
-/// * `name` - The listed name.
-///
-/// # Returns
-///
-/// The `ZK0341` diagnostic.
-pub fn capture_unused(span: Span, func: &str, name: &str) -> Diagnostic
-{
-    let message = t!("codes.ZK0341.message", f = func, n = name);
-    Diagnostic::new(Code::CaptureUnused, message, span)
-        .with_help(t!("codes.ZK0341.help", n = name))
 }

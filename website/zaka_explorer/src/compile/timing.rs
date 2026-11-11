@@ -23,7 +23,7 @@ pub struct PhaseTimes
     pub check: Option<Duration>,
     /// Lowering to the IR and folding it.
     pub lower: Option<Duration>,
-    /// The ownership check.
+    /// The checker.
     pub borrow_check: Option<Duration>,
     /// Code generation.
     pub codegen: Option<Duration>,

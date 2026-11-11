@@ -565,8 +565,8 @@ impl Checker
         Value::int(k, pattern, self.platform)
     }
 
-    /// Work out a prefix operator; `-` before an integer literal with no
-    /// kind prefix is a negative literal.
+    /// Work out a prefix operator; `-` before an integer literal is a negative
+    /// literal, whose kind, when written, holds the negated value.
     ///
     /// # Arguments
     ///
@@ -580,7 +580,7 @@ impl Checker
     {
         if let Expr::Int(lit) = n.rhs.as_ref()
         {
-            let negative = lit.kind.is_none() && n.op == AstPrefix::Neg;
+            let negative = n.op == AstPrefix::Neg;
             ret_if!(negative, Ok(self.int_lit(lit, kind, true)));
         }
         let op = match n.op
@@ -716,7 +716,7 @@ impl Checker
     {
         let kind_of = |e: &Expr| self.kinds.get(&e.id()).copied().ok_or(NONE);
         let (a, b) = (kind_of(lhs)?, kind_of(rhs)?);
-        ret_if!(a.is_textual() || b.is_textual(), Err(NONE));
+        ret_if!(a.is_text() || b.is_text(), Err(NONE));
         let common = tern!(a.same_shape(b) || !a.widens_to(b, self.platform), a, b);
         let common = tern!(common == DataKind::Null, DataKind::OPAQUE, common);
         let (l, r) = (self.coerced(lhs, common)?, self.coerced(rhs, common)?);
@@ -801,7 +801,7 @@ impl Checker
         // A count of 0 stands for one still open.
         ret_if!(counted.is_some_and(|l| l.len == 0), Err(Stop::Pending));
         ret_if!(let Some(l) = counted, Ok(count(u128::from(l.len))));
-        ret_if!(!kind.is_seq() || kind.is_textual(), Err(NONE));
+        ret_if!(!kind.is_seq() || kind.is_text(), Err(NONE));
         let Folded::Items(items) = self.folded(list)?
         else
         {

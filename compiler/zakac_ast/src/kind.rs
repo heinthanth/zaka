@@ -45,18 +45,22 @@ pub enum BaseKind
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct SigParam
 {
-    /// Whether `လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော` marks it: the function can
-    /// change the argument.
+    /// Whether `ဒေတာ ပြောင်းလဲရန်` marks it: what the function leaves in it goes
+    /// back to the caller's place.
     #[builder(default)]
     #[serde(default)]
     pub edit: bool,
+    /// Whether `အပိုင်အနေဖြင့်` marks it: the function takes over the block the
+    /// pointer holds.
+    #[builder(default)]
+    #[serde(default)]
+    pub owned: bool,
     /// The kind.
     pub kind: Kind,
     /// The name, when written.
     #[serde(default)]
     pub name: Option<Ident>,
-    /// The word after the argument in a marked call, `(<mark>)` after the
-    /// name.
+    /// The word after the argument in a marked call, `ဝိဘတ် "<mark>" ကို သုံး၍`.
     #[serde(default)]
     pub mark: Option<Ident>,
     /// Source region.
@@ -71,7 +75,8 @@ pub struct FnSig
     #[builder(default)]
     #[serde(default)]
     pub params: Vec<SigParam>,
-    /// The result kind; `None` for a function with no result.
+    /// The result kind, with its measure word; `None` for a function with no
+    /// result.
     #[serde(default)]
     pub ret: Option<Kind>,
 }
@@ -85,6 +90,11 @@ pub struct ResultParts
     pub ok: Option<Kind>,
     /// The kind of the error value.
     pub err: Option<Kind>,
+    /// `true` for an optional kind, `T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`: the good
+    /// side is the data, and an optional with no data holds none.
+    #[builder(default)]
+    #[serde(default)]
+    pub optional: bool,
 }
 
 impl BaseKind
@@ -120,14 +130,8 @@ pub enum Wrap
 {
     /// A pointer level: a bare `လိပ်စာ` or `၏ လိပ်စာ`.
     Ptr,
-    /// A raw pointer level: `လိပ်စာအကြမ်း` or `၏ လိပ်စာအကြမ်း`.
-    RawPtr,
     /// A list level: `စာရင်း` or `၏ စာရင်း`.
     List(Cells),
-    /// A slice level: a count-less `စာရင်း` followed with `တစ်စိတ်တစ်ပိုင်း`.
-    Slice,
-    /// The view of text: `တစ်စိတ်တစ်ပိုင်း` straight after `စာသား`.
-    View,
 }
 
 /// A data kind as written in the source, such as
@@ -157,37 +161,37 @@ pub struct Kind
     /// The parameters and result of a [`BaseKind::Fn`] base.
     #[serde(default)]
     pub sig: Option<Box<FnSig>>,
-    /// Whether the kind starts with the `ငှားထားသော` marker.
-    #[builder(default)]
+    /// The measure word after `တစ်`, written after the outermost kind of a
+    /// slot: `ကိန်းပြည့် စာရင်း တစ်ခု`. A kind inside another kind, and the
+    /// original kind of an alias, have none.
     #[serde(default)]
-    pub borrowed: bool,
-    /// The count of `ငှားထားသော` markers after the first one; a kind
-    /// with more than one is a misplaced borrow that a later phase rejects.
-    #[builder(default)]
+    pub classifier: Option<Ident>,
+    /// The alias the kind was written as, when the loader put the kind of
+    /// the alias in its place and the use adds no levels to it; the measure
+    /// word is the alias's.
     #[serde(default)]
-    pub extra_borrows: u8,
-    /// Source region of the whole kind phrase.
+    pub alias: Option<Ident>,
+    /// Source region of the whole kind phrase, the measure word left out.
     pub span: Span,
 }
 
 impl Serialize for Kind
 {
-    /// Write each field. The text artifacts leave out a name or borrow field
-    /// that holds its default, so older goldens are unchanged. The raw
+    /// Write each field. The text artifacts leave out a name, parts or
+    /// signature field that holds its default. The raw
     /// artifacts are not self-describing: all fields are written.
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error>
     {
         let skip = serializer.is_human_readable();
         let skip_name = skip && self.name.is_none();
-        let skip_borrowed = skip && !self.borrowed;
-        let skip_extra = skip && self.extra_borrows == 0;
         let skip_parts = skip && self.parts.is_none();
         let skip_sig = skip && self.sig.is_none();
-        /// The number of fields, the name, parts, signature and borrow fields
-        /// included.
+        let skip_word = skip && self.classifier.is_none();
+        let skip_alias = skip && self.alias.is_none();
+        /// The number of fields, each that can be left out included.
         const FIELDS: usize = 10;
-        let skipped = [skip_name, skip_borrowed, skip_extra, skip_parts, skip_sig]
-            .map(usize::from);
+        let skipped =
+            [skip_name, skip_parts, skip_sig, skip_word, skip_alias].map(usize::from);
         let n = FIELDS - skipped.iter().sum::<usize>();
         let mut state = serializer.serialize_struct("Kind", n)?;
         state.serialize_field("base", &self.base)?;
@@ -210,14 +214,14 @@ impl Serialize for Kind
             state.serialize_field("sig", &self.sig)?
         );
         tern!(
-            skip_borrowed,
-            state.skip_field("borrowed")?,
-            state.serialize_field("borrowed", &self.borrowed)?
+            skip_word,
+            state.skip_field("classifier")?,
+            state.serialize_field("classifier", &self.classifier)?
         );
         tern!(
-            skip_extra,
-            state.skip_field("extra_borrows")?,
-            state.serialize_field("extra_borrows", &self.extra_borrows)?
+            skip_alias,
+            state.skip_field("alias")?,
+            state.serialize_field("alias", &self.alias)?
         );
         state.serialize_field("span", &self.span)?;
         state.end()
@@ -233,21 +237,14 @@ impl Kind
     /// `true` for a plain value.
     pub fn is_plain(&self) -> bool { self.wraps.is_empty() }
 
-    /// Whether some wrap of the kind is a raw pointer level.
-    ///
-    /// # Returns
-    ///
-    /// `true` when a `လိပ်စာအကြမ်း` level is present.
-    pub fn has_raw(&self) -> bool { self.wraps.contains(&Wrap::RawPtr) }
-
     /// The outermost wrap of the kind when it is a pointer level.
     ///
     /// # Returns
     ///
-    /// `Wrap::Ptr` or `Wrap::RawPtr` for the outer level, `None` when the
-    /// kind is plain or its outer wrap is a list.
+    /// `Wrap::Ptr` for an outer pointer level, `None` when the kind is plain
+    /// or its outer wrap is a list.
     pub fn outer_ptr_wrap(&self) -> Option<Wrap>
     {
-        self.wraps.last().filter(|w| matches!(w, Wrap::Ptr | Wrap::RawPtr)).cloned()
+        self.wraps.last().filter(|w| matches!(w, Wrap::Ptr)).cloned()
     }
 }

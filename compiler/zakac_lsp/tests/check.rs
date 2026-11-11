@@ -8,6 +8,7 @@ use zakac_lsp::check::Buffers;
 use zakac_lsp::check::FileCheck;
 use zakac_lsp::check::check_file;
 use zakac_lsp::complete::completions;
+use zakac_lsp::hints::call_hints;
 use zakac_lsp::hover::hover;
 use zakac_lsp::lines::LineIndex;
 use zakac_lsp::names::definition;
@@ -49,7 +50,7 @@ fn line_index_counts_utf16_columns()
 #[test]
 fn an_unknown_name_gets_its_code_and_range()
 {
-    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nမရှိသောအမည် ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nမရှိသောအမည် ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
     let file = check("unknown.zaka", text, Buffers::default());
     let found = &file.diagnostics[0];
     assert_eq!(found.code, Some(Code::String("ZK0301".into())));
@@ -62,10 +63,11 @@ fn an_unknown_name_gets_its_code_and_range()
 #[test]
 fn an_import_reads_the_unsaved_text()
 {
-    let lib = "အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nအများသုံး ကိန်းရှင် အဆုံး သည် ကိန်းပြည့် \
-               တစ်ခု ဖြစ်ပါစေ။\n";
-    let text = "\"lib/unsaved.zaka\" မှ အကြိမ်၊ အဆုံး တို့ကို ထည့်သွင်းပါ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
-                လုပ်ဆောင်မည်။\nအကြိမ် ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+    let lib = "အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး \
+               ဖြစ်ပါစေ။\nအများသုံး ကိန်းရှင် အဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး \
+               ဖြစ်ပါစေ။\n";
+    let text = "\"lib/unsaved.zaka\" မှ အကြိမ်၊ အဆုံး တို့ကို ထည့်သွင်းမည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+                လုပ်ဆောင်မည်။\nအကြိမ် ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
     let missing = check("main.zaka", text, Buffers::default());
     assert!(!missing.diagnostics.is_empty());
     let mut buffers = Buffers::default();
@@ -141,10 +143,10 @@ fn a_local_goes_to_its_declaration()
 {
     let text = include_str!("../../../samples/basics/text.zaka");
     let file = check("text.zaka", text, Buffers::default());
-    let row = text.lines().nth(7).unwrap();
+    let row = text.lines().nth(8).unwrap();
     let use_at = row[..row.rfind(" န ").unwrap() + 1].encode_utf16().count() as u32;
-    let found = definition(&file, Position { line: 7, character: use_at }).unwrap();
-    assert_eq!(found.range.start, at(text, 5, "န "));
+    let found = definition(&file, Position { line: 8, character: use_at }).unwrap();
+    assert_eq!(found.range.start, at(text, 6, "န "));
 }
 
 #[test]
@@ -219,9 +221,9 @@ fn an_alias_goes_to_its_declaration()
 fn a_constant_above_its_declaration_goes_to_it()
 {
     let text = "ကိန်းရှင် အမှတ်များ သည် အကွက် အရေ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။\nကိန်းသေ အရေ \
-                သည် ၃ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအမှတ်များ ကို ပြသပါ။\nပရိုဂရမ် \
+                သည် ၃ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအမှတ်များ ကို ပြသမည်။\nပရိုဂရမ် \
                 ပြီးဆုံးပါပြီး။\n";
-    let file = check("early.zaka", text, Buffers::default());
+    let file = check("soon.zaka", text, Buffers::default());
     let found = definition(&file, at(text, 0, "အရေ")).unwrap();
     assert_eq!(found.range.start, at(text, 1, "အရေ"));
 }
@@ -236,14 +238,14 @@ fn completion_keeps_to_the_scope_at_the_cursor()
         let names = found.into_iter().filter(|c| c.detail.is_none());
         names.map(|c| c.label).collect()
     };
-    assert_eq!(names(7), ["ကွက်လပ်ရေ", "စာ", "န", "ရလဒ်"]);
-    assert_eq!(names(14), ["ကွက်လပ်ရေ", "နှုတ်ခွန်း"]);
+    assert_eq!(names(7), ["ကွက်လပ်ရေ", "စာ", "န", "အဖြေ"]);
+    assert_eq!(names(15), ["ကွက်လပ်ရေ", "နှုတ်ခွန်း"]);
 }
 
 /// The labels completion offers at the end of line `line` of `text`.
 fn offered_at_end(text: &str, line: usize) -> Vec<String>
 {
-    let file = check("typing.zaka", text, Buffers::default());
+    let file = check("writing.zaka", text, Buffers::default());
     let row = text.lines().nth(line).unwrap();
     let pos =
         Position { line: line as u32, character: row.encode_utf16().count() as u32 };
@@ -253,9 +255,10 @@ fn offered_at_end(text: &str, line: usize) -> Vec<String>
 #[test]
 fn completion_after_ei_offers_the_fields_of_a_chain()
 {
-    let text = "ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။\nဒေတာအမျိုးအစား လူ တွင် \
-                ကိန်းပြည့် အသက်၊ နေရာ အိမ် တို့ ပါဝင်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် \
-                လူ တစ်ခု ဖြစ်ပါစေ။\nက ၏ \nက ၏ အိမ် ၏ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+    let text = "နေရာ ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု \
+                တို့ပါဝင်သည်။\nလူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အိမ် ဟူသော နေရာ တစ်ခု \
+                တို့ပါဝင်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် လူ တစ်ခု ဖြစ်ပါစေ။\nက ၏ \
+                \nက ၏ အိမ် ၏ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
     assert_eq!(offered_at_end(text, 4), ["အသက်", "အိမ်"]);
     assert_eq!(offered_at_end(text, 5), ["x", "y"]);
 }
@@ -263,7 +266,7 @@ fn completion_after_ei_offers_the_fields_of_a_chain()
 #[test]
 fn completion_after_among_offers_the_members()
 {
-    let text = "ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+    let text = "အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
                 လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် အရောင်များထဲမှ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
     assert_eq!(offered_at_end(text, 2), ["နီ", "ဝါ", "စိမ်း"]);
 }
@@ -272,7 +275,7 @@ fn completion_after_among_offers_the_members()
 fn a_kind_from_a_value_gives_fields_while_a_line_does_not_parse()
 {
     let lib = include_str!("../../../samples/modules/lib/point.zaka");
-    let text = "\"lib/point.zaka\" မှ နေရာ၊ ရွှေ့ တို့ကို ထည့်သွင်းပါ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+    let text = "\"lib/point.zaka\" မှ နေရာ၊ ရွှေ့ တို့ကို ထည့်သွင်းမည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
                 လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် နေရာ တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် လုပ်ဆောင်ချက် ရွှေ့ ကို က၊ \
                 က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။\nခ ၏ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
     let mut buffers = Buffers::default();
@@ -287,11 +290,11 @@ fn a_kind_from_a_value_gives_fields_while_a_line_does_not_parse()
 #[test]
 fn completion_after_ei_goes_through_list_cells()
 {
-    let text = "ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။\nဒေတာအမျိုးအစား လူ တွင် \
-                ကိန်းပြည့် အသက်၊ နေရာ အိမ် တို့ ပါဝင်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် \
-                လူများ သည် အကွက် ၃ ခုရှိသော လူ စာရင်း တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် n သည် ၁ \
-                ဖြစ်ပါစေ။\nလူများ ၏ အကွက် n + ၁ ၏ \nလူများ ၏ နောက်ဆုံးအကွက် ၏ အိမ် ၏ \nပရိုဂရမ် \
-                ပြီးဆုံးပါပြီး။\n";
+    let text = "နေရာ ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု \
+                တို့ပါဝင်သည်။\nလူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အိမ် ဟူသော နေရာ တစ်ခု \
+                တို့ပါဝင်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် လူများ သည် အကွက် ၃ ခုရှိသော လူ \
+                စာရင်း တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။\nလူများ ၏ အကွက် n + ၁ ၏ \
+                \nလူများ ၏ နောက်ဆုံးအကွက် ၏ အိမ် ၏ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
     assert_eq!(offered_at_end(text, 5), ["အသက်", "အိမ်"]);
     assert_eq!(offered_at_end(text, 6), ["x", "y"]);
 }
@@ -314,4 +317,51 @@ fn hover_shows_the_doc_lines_above_a_declaration()
         content.value
     );
     assert!(!content.value.contains("ပူဖောင်း"), "{}", content.value);
+}
+
+/// A program with a function that can change its first parameter, and a
+/// marked function that takes a block over.
+const MARKED: &str = "လုပ်ဆောင်ချက် တိုး သည်
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ကို က + ခ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+စိတ်မချရသော လုပ်ဆောင်ချက် ရှင်း သည်
+ပ ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် န သည် ၁ ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် တိုး ကို န၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+
+#[test]
+fn call_hints_mark_the_arguments_a_call_can_change()
+{
+    let file = check("marked.zaka", MARKED, Buffers::default());
+    assert!(file.diagnostics.is_empty(), "{:?}", file.diagnostics);
+    let found = call_hints(&file);
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert_eq!(found[0].position, at(MARKED, 12, "န၊"));
+}
+
+#[test]
+fn hover_shows_the_marks_of_a_function_and_its_parameters()
+{
+    let file = check("marked.zaka", MARKED, Buffers::default());
+    let text = |pos| {
+        let Some(Contents::MarkupContent(c)) = hover(&file, pos).map(|h| h.contents)
+        else
+        {
+            panic!("a hover holds markup")
+        };
+        c.value
+    };
+    let edit = text(at(MARKED, 0, "တိုး"));
+    assert!(edit.contains("က: ဒေတာ ပြောင်းလဲရန် isize"), "{edit}");
+    let owned = text(at(MARKED, 5, "ရှင်း"));
+    assert!(owned.starts_with("```zaka\nစိတ်မချရသော လုပ်ဆောင်ချက် ရှင်း"), "{owned}");
+    assert!(owned.contains("ပ: အပိုင်အနေဖြင့် isize*"), "{owned}");
 }

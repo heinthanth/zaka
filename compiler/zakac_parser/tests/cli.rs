@@ -43,7 +43,7 @@ fn sample(name: &str) -> String
 #[test]
 fn parse_stdin_without_input()
 {
-    let (code, stdout, stderr) = run_cli(&[], "အသက် ကို ပြသပါ။");
+    let (code, stdout, stderr) = run_cli(&[], "အသက် ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Success);
     assert!(stdout.starts_with(TEXT_HEADER));
     assert!(stdout.contains("print"));
@@ -62,7 +62,7 @@ fn parse_input_file()
 #[test]
 fn diagnostics_go_to_stderr_and_fail()
 {
-    let (code, stdout, stderr) = run_cli(&[], "က ကို ကို ပြသပါ။\nခ ကို ပြသပါ။");
+    let (code, stdout, stderr) = run_cli(&[], "က ကို ကို ပြသမည်။\nခ ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Failure);
     assert!(stdout.starts_with(TEXT_HEADER), "the partial tree is still written");
     assert!(stderr.starts_with("error[ZK0207]"), "{stderr}");
@@ -83,7 +83,7 @@ fn output_zkast_writes_raw_artifact()
     let dir = tempfile::tempdir().unwrap();
     let out_path = dir.path().join("out.zkast");
     let (code, stdout, stderr) =
-        run_cli(&["-o", out_path.to_str().unwrap()], "က ကို ပြသပါ။");
+        run_cli(&["-o", out_path.to_str().unwrap()], "က ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Success);
     assert!(stdout.is_empty() && stderr.is_empty());
     assert!(std::fs::read(&out_path).unwrap().starts_with(RAW_ARTIFACT_MAGIC));
@@ -95,7 +95,7 @@ fn output_zkastt_writes_text_artifact()
     let dir = tempfile::tempdir().unwrap();
     let out_path = dir.path().join("out.zkastt");
     let (code, _stdout, stderr) =
-        run_cli(&["-o", out_path.to_str().unwrap()], "က ကို ပြသပါ။");
+        run_cli(&["-o", out_path.to_str().unwrap()], "က ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Success);
     assert!(stderr.is_empty());
     assert!(std::fs::read_to_string(&out_path).unwrap().starts_with(TEXT_HEADER));

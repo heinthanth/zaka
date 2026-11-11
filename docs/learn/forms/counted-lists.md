@@ -21,9 +21,9 @@ changes:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရောင်များ သည် ["နီ"၊ "ဝါ"] ဖြစ်ပါစေ။
 ကိန်းရှင် ရွေး သည် ရောင်များ ဖြစ်ပါစေ။
-ရွေး ထဲသို့ "စိမ်း" ကို ထည့်ပါ။          // the first edit: a heap block of its own
-ရောင်များ ကို ပြသပါ။
-ရွေး ကို ပြသပါ။
+ရွေး ထဲသို့ "စိမ်း" ကို ထည့်မည်။          // the first edit: a heap block of its own
+ရောင်များ ကို ပြသမည်။
+ရွေး ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -47,8 +47,8 @@ of it, so neither runs as the program runs:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ ရက်များ သည် [၃၁၊ ၂၈၊ ၃၁] ဖြစ်ပါစေ။
 ကိန်းသေ ဖေဖော်ဝါရီ သည် ရက်များ ၏ အကွက် ၁ ဖြစ်ပါစေ။
-ဖေဖော်ဝါရီ ကို ပြသပါ။
-ရက်များ ၏ အကွက်အရေအတွက် ကို ပြသပါ။
+ဖေဖော်ဝါရီ ကို ပြသမည်။
+ရက်များ ၏ အကွက်အရေအတွက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -79,11 +79,10 @@ block. A literal of known cells is copied in from static data in one step. Write
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈] ဖြစ်ပါစေ။
-က ကို ပြသပါ။
-ခ ကို ပြသပါ။
-က ကို စာရင်းအလွတ် ဟု ထားပါ။
+က ကို ပြသမည်။
+ခ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -108,12 +107,52 @@ same:
 | `အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း` |
 
 The count is a whole number above zero, written as digits or worked out from constants
-(see [A count from constants](#a-count-from-constants)). A counted list declared with no
-value starts with each cell at its default: `၀` for a number, `မမှန်` for a true/false
-value, `ဗလာ` for an address. On a counted list, `စာရင်းအလွတ်` sets each cell back to its
-default, and the count remains. `[]` is a list with no cells, so it does not fit a
-counted list, save in its declaration, where each cell starts at its default; see [A list
-with no cells in a counted list](#a-list-with-no-cells-in-a-counted-list).
+(see [A count from constants](#a-count-from-constants)). `ကနဦးတန်ဖိုး` gives a counted
+list with each cell at the [initial value](../variables/README.md#the-initial-value) of
+its kind: `၀` for a number, `မမှန်` for a true/false value. `[]` and `စာရင်းအလွတ်` are
+lists with no cells, so neither fits a counted list; see [A list with no cells in a
+counted list](#a-list-with-no-cells-in-a-counted-list).
+
+## Filling the cells one at a time
+
+A counted list declared with no value holds no cells to read until the program sets them.
+The compiler follows each cell: the list counts as set once each cell is, through cell
+numbers written in place or through a counted loop over each cell that writes the cell of its counter:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+က ၏ အကွက် ၀ ကို ၅ ဟု ထားမည်။
+က ၏ အကွက် ၁ ကို ၆ ဟု ထားမည်။
+က ကို ပြသမည်။
+ကိန်းရှင် ခ သည် အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ ခ ၏ အကွက် န ကို န * ၁၀ ဟု ထားမည်။    // each cell, 0 to 3
+ခ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[၅၊ ၆]
+[၀၊ ၁၀၊ ၂၀၊ ၃၀]
+```
+
+A read of a cell that no write has reached is the error ZK0722. When the compiler cannot
+tell which cells a write reaches, as with a cell number in a variable or a loop over some
+of the cells, the read is the warning ZK0723, and the program still runs:
+
+```zaka-warning ZK0723
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+၀ မှ ၁ အထိ န အနေဖြင့် ရေတွက်၍ က ၏ အကွက် န ကို န ဟု ထားမည်။     // cell 2 is never set
+က ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+warning[ZK0723]: "က" can have a cell with no value here; the check cannot tell which cells a write or a read reaches
+```
+
+Fill such a list with `ကနဦးတန်ဖိုး` or a literal first, or loop over each of its cells.
 
 ## A count from constants
 
@@ -126,10 +165,10 @@ field of a constant list or struct, and the cell count of a counted list are fin
 ကိန်းသေ အရွယ် သည် ၃ ဖြစ်ပါစေ။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် အကွက် အရွယ် ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် အကွက် အရွယ် * ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-က ကို ပြသပါ။
-ခ ကို ပြသပါ။
+ကိန်းရှင် က သည် အကွက် အရွယ် ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် အကွက် အရွယ် * ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+က ကို ပြသမည်။
+ခ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -161,10 +200,10 @@ write this kind as `isize[3][2]`.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ဇယား သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်ပါစေ။ // 2 rows of 3
-ဇယား ၏ အကွက် ၁ ၏ အကွက် ၂ ကို ၉ ဟု ထားပါ။                                          // row 1, column 2
-ဇယား ကို ပြသပါ။
-ဇယား ၏ အကွက် ၁ ကို ပြသပါ။
+ကိန်းရှင် ဇယား သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။ // 2 rows of 3
+ဇယား ၏ အကွက် ၁ ၏ အကွက် ၂ ကို ၉ ဟု ထားမည်။                                          // row 1, column 2
+ဇယား ကို ပြသမည်။
+ဇယား ၏ အကွက် ၁ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -179,7 +218,7 @@ counted lists sit one after another, with no gap: Part III walks them with an ad
 
 ## From a counted list to a plain list
 
-A counted list turns into a plain list on its own: its cells are duplicated into a heap
+A counted list turns into a plain list on its own: its cells are copied into a heap
 block. A plain list never turns into a counted list on its own, since nothing promises its
 count:
 
@@ -187,9 +226,9 @@ count:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
-ခ ကို [၄၊ ၅] ဟု ထားပါ။
-က ကို ပြသပါ။
-ခ ကို ပြသပါ။
+ခ ကို [၄၊ ၅] ဟု ထားမည်။
+က ကို ပြသမည်။
+ခ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -205,20 +244,22 @@ lists of different counts, such as `isize[3]` and `isize[2]`.
 
 A counted list parameter or result takes the counted kind, `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း`.
 Its count is part of the kind, so the function takes lists of that count alone. A plain
-list parameter takes a counted list too, which is duplicated into a heap block first.
+list parameter takes a counted list too, which is copied into a heap block first.
 
-A counted result starts with each cell at its default, here `၀`:
+Here the loop sets each cell of the counted result before the return:
 
 ```zaka
 // a function that builds a counted list and gives it back
 လုပ်ဆောင်ချက် နှစ်ထပ်များ သည်
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် ကို ပြန်ပေးမည်။
-၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ ရလဒ် ၏ အကွက် န ကို န * န ဟု ထားပါ။
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် အဖြေ သည် အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အဖြေ ၏ အကွက် န ကို န * န ဟု ထားမည်။
+အဖြေ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် နှစ်ထပ်များ ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
-ကိန်းများ ကို ပြသပါ။
+ကိန်းများ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -229,35 +270,6 @@ A counted result starts with each cell at its default, here `၀`:
 The caller gets a list of its own, as with an assignment: here a plain list, which takes
 the cells of the counted one.
 
-## Slices of counted lists
-
-A write into a plain list can move its cells, so it ends each [slice](../lists/slices.md)
-of the list. A counted list never moves its cells, so a slice of it stands through a write
-of a cell:
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
-ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
-က ၏ အကွက် ၀ ကို ၉ ဟု ထားပါ။
-s ကို ပြသပါ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-[၉၊ ၂၊ ၃]
-```
-
-On a counted list, whose count the compiler knows, a range of constant numbers past the end
-is an error before the program runs:
-
-```zaka-error ZK0605
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
-l ၏ အကွက် ၂ မှစ၍ ၂ ကွက် ကို ပြသပါ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
 ## The size of a counted list
 
 A counted list takes its count times the size of one cell, with no gaps. A plain list is
@@ -265,8 +277,8 @@ three words, whatever its count:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
-ကိန်းပြည့် စာရင်း ၏ အရွယ်အစား ကို ပြသပါ။
+အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
+ကိန်းပြည့် စာရင်း တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -285,7 +297,7 @@ follow. Here the number sits in a variable, and the compiler still works out tha
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-အမှတ်များ ၏ အကွက် န ကို ပြသပါ။            // cells 0, 1 and 2 hold values; 3 does not exist
+အမှတ်များ ၏ အကွက် န ကို ပြသမည်။            // cells 0, 1 and 2 hold values; 3 does not exist
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -293,29 +305,15 @@ follow. Here the number sits in a variable, and the compiler still works out tha
 error[ZK0710]: offset 3 is past the end of a block of 3 elements
 ```
 
-With `--mem-check warn`, or **Warn** in the Explorer, the program runs and the VM
-stops it, with the range the list allows:
-
-```zaka-stop mem-check=warn
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-အမှတ်များ ၏ အကွက် န ကို ပြသပါ။            // cells 0, 1 and 2 hold values; 3 does not exist
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
-```
-
-When the number comes from input, the VM's check is the one that catches it. When the
+This check is an error in each mode. When the number comes from input, the VM's check is
+the one that catches it, and it stops the program. When the
 number is written in place, as a constant, Zaka reports it with another code, in each
 mode. Counting from 1 starts at 1, not 0:
 
 ```zaka-error ZK0603
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅၊ ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-အမှတ်များ ၏ ၀ ခုမြောက်အကွက် ကို ပြသပါ။     // counting from 1 starts at 1
+အမှတ်များ ၏ ၀ ခုမြောက်အကွက် ကို ပြသမည်။     // counting from 1 starts at 1
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -329,7 +327,7 @@ The cell number takes the whole operator expression after `အကွက်`, so 
 ```zaka-error ZK0603
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၊ ၂၀၊ ၃၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ကိန်းများ ၏ အကွက် ၁ + ၂ ကို ပြသပါ။         // cell 3, not cell 1 plus 2
+ကိန်းများ ၏ အကွက် ၁ + ၂ ကို ပြသမည်။         // cell 3, not cell 1 plus 2
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -351,19 +349,19 @@ error[ZK0419]: the kind holds 3 cells, but the list has 2
 
 ## A list with no cells in a counted list
 
-`[]` is a list with no cells. A counted list keeps its count, so `[]` fits it in its
-declaration alone, where each cell starts at its default. Elsewhere, `စာရင်းအလွတ်` sets
-each cell back to its default:
+`[]` and `စာရင်းအလွတ်` are lists with no cells. A counted list keeps its count, so
+neither fits it, in a declaration or elsewhere. `ကနဦးတန်ဖိုး` sets each cell to its
+initial value:
 
 ```zaka-error ZK0436
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈၊ ၉] ဖြစ်ပါစေ။
-က ကို [] ဟု ထားပါ။
+က ကို [] ဟု ထားမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0436]: [] is a list with no cells, and a counted list of isize[3] cannot take it here
+error[ZK0436]: a list with no cells does not fit the counted list isize[3]
 ```
 
 ## A counted list from a plain list
@@ -383,29 +381,30 @@ error[ZK0401]: expected isize[3], found isize[]
 
 ## Adding to a counted list
 
-A counted list keeps its count for good, so `ထည့်ပါ` and `ဖျက်ပါ` do not take it:
+A counted list keeps its count for good, so `ထည့်မည်` and `ဖျက်မည်` do not take it:
 
 ```zaka-error ZK0437
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-အမှတ်များ ထဲသို့ ၇၀ ကို ထည့်ပါ။
+အမှတ်များ ထဲသို့ ၇၀ ကို ထည့်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0437]: isize[3] cannot grow or shrink here: "ထည့်ပါ" takes a plain list or text, "နောက်ဆုံးအကွက်ကို ဖျက်ပါ" a plain list, and "နောက်ဆုံးစာလုံးကို ဖျက်ပါ" text
+error[ZK0437]: isize[3] cannot grow or shrink here: "ထည့်မည်" takes a plain list or text, "နောက်ဆုံးအကွက်ကို ဖျက်မည်" a plain list, and "နောက်ဆုံးစာလုံးကို ဖျက်မည်" text
 ```
 
 Declare the list with no count, `ကိန်းပြည့် စာရင်း`, to add cells to it.
 
 ## Hands on
 
-- Declare a counted list of five decimal numbers with a written count, set the middle one,
-  and print the list.
+- Declare a counted list of five decimal numbers with a written count and
+  `ကနဦးတန်ဖိုး`, set the middle one, and print the list. Then drop `ကနဦးတန်ဖိုး` and set
+  each cell in a counted loop.
 - Read cell 5 of a counted list of 5 cells through a variable, then with a constant number,
   and compare the two messages with the ones a plain list gives.
 - Declare a constant list of three numbers, read its last cell into another constant, and
   print both; then set one of its cells from a variable and read the error.
-- Take a slice of a counted list, write a cell of the list, and print the slice.
+- Take a range of a counted list, write a cell of the range, and print both.
 
 Next: [What a duplicate costs](costs.md).

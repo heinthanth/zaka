@@ -1,49 +1,60 @@
+use zakac_diagnostics::ownership::bad_free;
 use zakac_diagnostics::ownership::borrow_stored;
-use zakac_diagnostics::ownership::freed_borrow;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
-use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::Place;
-use zakac_ir_builder::value::Value;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
-use zakac_rust_sugars::tern;
-use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
 use crate::checks::report;
+use crate::digest::Root;
+use crate::digest::Seg;
 use crate::flow::Flow;
-use crate::roots::field_kind;
 use crate::roots::list_slot;
+use crate::roots::roots_of;
+use crate::state::SlotState;
+use crate::state::State;
 
-/// Report a free, a resize or an allocation whose destination holds a
-/// borrow: an owner alone gives its block back or takes a new one.
+/// Report a free or a resize through a pointer that holds the address of
+/// a variable on each path, not of a heap block: each place it can point at
+/// is a slot, or a cell or field the slot holds in place, with no step into a
+/// block on the path, as `x ၏ လိပ်စာ` and `x ၏ y ၏ လိပ်စာ` give it.
 ///
 /// # Arguments
 ///
 /// * `flow` - The flow.
-/// * `dest` - The destination of the heap statement.
+/// * `dest` - The pointer freed or resized.
 /// * `span` - The statement.
+/// * `state` - The facts before it runs.
 ///
 /// # Returns
 ///
-/// `true` when the destination holds a borrow, so the statement is
-/// rejected.
-pub(crate) fn check_free_dest(flow: &mut Flow, dest: &Dest, span: Span) -> bool
+/// `true` when the statement is rejected.
+pub(crate) fn check_free_dest(
+    flow: &mut Flow, dest: &Dest, span: Span, state: &State,
+) -> bool
 {
-    let kind = match dest
+    let Dest::Slot(place) = dest
+    else
     {
-        Dest::Slot(place) => flow.ctx.kind_of(*place),
-        Dest::Mem(addr) => value_kind_at(addr),
+        return false;
     };
-    let rejected = kind.is_some_and(DataKind::is_borrow);
-    do_if!(rejected, report(flow, freed_borrow(span)));
+    let SlotState::Ptr(info) = state.get(*place)
+    else
+    {
+        return false;
+    };
+    let in_variable = |r: &Root| !r.path.contains(&Seg::Block);
+    let rejected = !info.roots.is_empty() && info.roots.iter().all(in_variable);
+    do_if!(rejected, report(flow, bad_free(span)));
     rejected
 }
 
-/// Report a borrow stored through an address: in mem it could outlast
-/// the block it points into. A cell of a list slot is that slot, so it
-/// follows the rule of a set of the slot.
+/// Report an address of a variable of the function stored through an
+/// address: in a heap block or behind a pointer it could outlast the call.
+/// A cell of a list slot is that slot, so it follows the rule of a set of
+/// the slot.
 ///
 /// # Arguments
 ///
@@ -51,24 +62,23 @@ pub(crate) fn check_free_dest(flow: &mut Flow, dest: &Dest, span: Span) -> bool
 /// * `addr` - The address written to.
 /// * `value` - The value stored.
 /// * `span` - The statement.
+/// * `state` - The facts before the store.
 pub(crate) fn check_stored_borrow(
-    flow: &mut Flow, addr: &Expr, value: &Expr, span: Span,
+    flow: &mut Flow, addr: &Expr, value: &Expr, span: Span, state: &State,
 )
 {
-    ret_if!(!keeps_a_borrow(value));
+    ret_if!(!points_into_local(flow, value, state));
     let Some(place) = list_slot(addr)
     else
     {
         return report(flow, borrow_stored(span));
     };
-    check_global_set(flow, place, value, span);
+    check_global_set(flow, place, value, span, state);
 }
 
-/// Report a borrow a function stores in a global: the global outlasts
-/// the call, and the places the borrow points into can die with it. The
-/// main program can keep borrows in its globals, since those last for the
-/// whole run. Setting it to `ဗလာ` clears it, which cannot leave it
-/// pointing at a dead place.
+/// Report an address of a variable of the function stored in a global from a
+/// function: the global outlasts the call, and the variable dies with it.
+/// The main program keeps its variables for the whole run.
 ///
 /// # Arguments
 ///
@@ -76,99 +86,32 @@ pub(crate) fn check_stored_borrow(
 /// * `place` - The slot set.
 /// * `value` - The value it gets.
 /// * `span` - The statement.
-pub(crate) fn check_global_set(flow: &mut Flow, place: Place, value: &Expr, span: Span)
+/// * `state` - The facts before the set.
+pub(crate) fn check_global_set(
+    flow: &mut Flow, place: Place, value: &Expr, span: Span, state: &State,
+)
 {
     ret_if!(flow.routine.is_main || matches!(place, Place::Local(_)));
-    do_if!(keeps_a_borrow(value), report(flow, borrow_stored(span)));
+    do_if!(points_into_local(flow, value, state), report(flow, borrow_stored(span)));
 }
 
-/// Whether a stored value can keep a borrow: a value of a kind that
-/// holds one, save the constant `ဗလာ`, which points nowhere.
+/// Whether a value can point at a variable of the function: a slot of its
+/// own, or a cell or field the slot holds in place, with no step into a
+/// block on the path. The constant null points nowhere.
 ///
 /// # Arguments
 ///
+/// * `flow` - The flow.
 /// * `value` - The value.
+/// * `state` - The facts where it is read.
 ///
 /// # Returns
 ///
-/// `true` when storing the value can keep a borrow.
-fn keeps_a_borrow(value: &Expr) -> bool
+/// `true` when storing the value can keep the address of a variable.
+fn points_into_local(flow: &Flow, value: &Expr, state: &State) -> bool
 {
-    let cleared = matches!(value.node, ExprNode::Const(Value::NULL));
-    kind_holds_borrow(value.kind) && !cleared
-}
-
-/// Whether a value of a kind carries a borrow: a borrow, or a list whose
-/// cells hold one at some depth.
-///
-/// # Arguments
-///
-/// * `kind` - The kind.
-///
-/// # Returns
-///
-/// `true` when the value cannot go where a borrow cannot live.
-pub(crate) fn kind_holds_borrow(kind: DataKind) -> bool { kind.holds_borrow() }
-
-/// The kind of the value an address names. The kind of a cell address
-/// drops the borrow mark of the cell, so a cell gets the cell kind of its
-/// list; a field address gets the field kind of its struct.
-///
-/// # Arguments
-///
-/// * `addr` - The address.
-///
-/// # Returns
-///
-/// The kind, or `None` for an address of an opaque value.
-fn value_kind_at(addr: &Expr) -> Option<DataKind>
-{
-    ret_if!(let ExprNode::FieldAddr { base, field, .. } = &addr.node, field_kind(base.kind, *field));
-    let ExprNode::CellAddr { list, .. } = &addr.node
-    else
-    {
-        return addr.kind.pointee();
-    };
-    let list_kind = tern!(list.kind.is_list(), Some(list.kind), list.kind.pointee());
-    list_kind?.as_list().map(|l| l.cell)
-}
-
-#[cfg(test)]
-mod tests
-{
-    use zakac_ast::stmt::START_NAME;
-    use zakac_diagnostics::Code;
-    use zakac_ir_builder::ir::Stmt;
-
-    use crate::flow::run_flow;
-    use crate::options::BorrowCheckOptions;
-    use crate::roots::global_roots;
-    use crate::testing::lower;
-    use crate::testing::top;
-
-    #[test]
-    fn a_borrow_stored_through_a_heap_address_is_zk0703()
-    {
-        let mut module = lower(
-            "ကိန်းရှင် ရ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ပပ သည် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် လိပ်စာ ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပပ တွင် သိမ်းထားမည်။
-ပပ ၏ တန်ဖိုး ကို ရ ဟု ထားပါ။
-",
-        );
-        let start = module.funcs.iter_mut().find(|f| f.name == START_NAME);
-        let block = &mut start.expect("a start block").block;
-        let Some(Stmt::Store { value, .. }) =
-            block.iter_mut().rev().find(|s| matches!(s, Stmt::Store { .. }))
-        else
-        {
-            panic!("the start block stores");
-        };
-        value.kind = value.kind.as_borrowed();
-        let roots = global_roots(&module, &[]);
-        let options = BorrowCheckOptions::default();
-        let found = run_flow(&module, top(&module), &[], &roots, &options, 64);
-        let codes: Vec<Code> = found.diags.iter().map(|d| d.code).collect();
-        assert_eq!(codes, [Code::BorrowStored]);
-    }
+    ret_if!(!value.kind.holds_address(), false);
+    let local =
+        |r: &Root| matches!(r.place, Place::Local(_)) && !r.path.contains(&Seg::Block);
+    roots_of(value, state, &flow.ctx).iter().any(local)
 }

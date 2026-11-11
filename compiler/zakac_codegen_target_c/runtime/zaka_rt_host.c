@@ -41,17 +41,16 @@ enum
 static void zk_text_put(unsigned char *at, const void *s, size_t len)
 {
     DONE_IF(len == 0, zk_seq_put(at, NULL, 0, 0));
-    unsigned char *block = malloc(len);
-    DO_IF(!block, zk_out_of_mem(len));
+    unsigned char *block = zk_seq_new(len);
     memcpy(block, s, len);
     zk_seq_put(at, block, len, len);
 }
 
 /**
- * The result of a C function that gives back text, as Zaka holds a result
- * of text or a failure: NULL is the failure; else the zero-ended octets are
- * copied into text of its own, and C keeps what it gave. The tag sits at
- * offset 0.
+ * The result of a C function that gives back text, as Zaka holds an
+ * optional of text: NULL is the optional with no data; else the zero-ended
+ * octets are copied into text of its own, and C keeps what it gave. The tag
+ * sits at offset 0.
  *
  * @param out The result: `size` octets.
  * @param size The size of the result.
@@ -62,11 +61,25 @@ void zk_text_from_c(unsigned char *out, size_t size, size_t ok_at, const char *s
 {
     memset(out, 0, size);
     RET_IF(!s);
+    zk_text_of_c(out + ok_at, s);
+    out[0] = 1;
+}
+
+/**
+ * Text C passed to a function of the program: the zero-ended octets are
+ * copied into text of its own, and C keeps what it passed. NULL stops the
+ * run, as do octets that are not UTF-8.
+ *
+ * @param out Where the text goes.
+ * @param s What C passed.
+ */
+void zk_text_of_c(unsigned char *out, const char *s)
+{
+    DO_IF(!s, zk_plain_trap(ZK_TRAP_NULL_TEXT));
     size_t len = strlen(s);
     const unsigned char *raw = (const unsigned char *)s;
     DO_IF(!zk_is_utf8(raw, len), zk_addr_trap(ZK_TRAP_BAD_UTF8, s));
-    out[0] = 1;
-    zk_text_put(out + ok_at, s, len);
+    zk_text_put(out, s, len);
 }
 
 /**
@@ -260,8 +273,7 @@ void zk_text_list(unsigned char *at, int count, char **items)
 {
     size_t word = sizeof(void *), cell = 3 * word, size = (size_t)count * cell;
     DONE_IF(count <= 0, zk_seq_put(at, NULL, 0, 0));
-    unsigned char *block = malloc(size);
-    DO_IF(!block, zk_out_of_mem(size));
+    unsigned char *block = zk_seq_new(size);
     DO_FOR(i, count) zk_text_put(block + i * cell, items[i], strlen(items[i]));
     zk_seq_put(at, block, (size_t)count, size);
 }

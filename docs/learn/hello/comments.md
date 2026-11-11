@@ -15,11 +15,11 @@ three markers that start a comment. Each runs to the end of its line.
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။ // after a statement
-အရေအတွက် ကို ပြသပါ။ မှတ်ချက် also after a statement
+အရေအတွက် ကို ပြသမည်။ မှတ်ချက် also after a statement
 
 // A comment can switch a line off without deleting it:
-// အရေအတွက် ကို ၀ ဟု ထားပါ။
-အရေအတွက် * ၂ ကို ပြသပါ။
+// အရေအတွက် ကို ၀ ဟု ထားမည်။
+အရေအတွက် * ၂ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

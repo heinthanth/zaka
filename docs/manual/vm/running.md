@@ -11,9 +11,9 @@ what the command does, what it prints, how it ends, and which limits it puts on 
 ## From source to a run
 
 ```text
- program.zaka ──▶ lex ──▶ parse ──▶ check ──▶ borrow check ──▶ code ──▶ VM
-                                                                  ▲
- program.zkc  ──────────────── decode ───────────────────────────┘
+ program.zaka ──▶ lex ──▶ parse ──▶ check ──▶ checker ──▶ code ──▶ VM
+                                                             ▲
+ program.zkc  ──────────────── decode ──────────────────────┘
 ```
 
 1. **Load.** The command reads the input: a file, or standard input when the name is
@@ -74,7 +74,8 @@ what the program prints, in order, in each world.
 ## The options
 
 `zakac run` takes the [compile options](../compiler/commands.md) (`--platform-bits`,
-`--fold`, `--strict-particles`, `--mem-check`, `--mem-strict`, `--no-raw`, `--results`) and these
+`--fold`, `--strict-particles`, `--mem-check`, `--mem-strict`, `--no-unsafe`, `--overflow`,
+`--results`, `--scratch`) and these
 options of the VM:
 
 | Option | Default | Effect |
@@ -99,23 +100,23 @@ the kind of the value:
 | decimal number | the shortest text that reads back, in Burmese digits: `၃.၁၄`, `inf`, `NaN` |
 | character | itself |
 | boolean | `မှန်` or `မမှန်` |
-| address | `0x` and lowercase hex digits; the null address as `ဗလာ` |
+| address | `0x` and lowercase hex digits; the null address as the phrase that writes it, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` |
 | text | itself |
 | list | its cells between `[` and `]`, joined with `၊ `; text in a cell prints in quotes |
 | member of an enumeration | `<stem>များထဲမှ <member>`, as in `အရောင်များထဲမှ နီ`, through its own instruction `print_enum`; see [Enumerations](../language/enums.md#values-of-an-enumeration) |
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၄၂ ကို ပြသပါ။
--၇ ကို ပြသပါ။
-၃.၁၄ ကို ပြသပါ။
-မှန် ကို ပြသပါ။
-'ခ' ကို ပြသပါ။
-"စာသား" ဟု ပြသပါ။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-ပ ကို ပြသပါ။
+၄၂ ကို ပြသမည်။
+-၇ ကို ပြသမည်။
+၃.၁၄ ကို ပြသမည်။
+မှန် ကို ပြသမည်။
+'ခ' ကို ပြသမည်။
+"စာသား" ဟု ပြသမည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ပ ကို ပြသမည်။
 ကိန်းရှင် စာရင်း၁ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-စာရင်း၁ ကို ပြသပါ။
+စာရင်း၁ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -126,7 +127,7 @@ the kind of the value:
 မှန်
 ခ
 စာသား
-ဗလာ
+မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ
 [၁၊ ၂၊ ၃]
 ```
 
@@ -162,11 +163,13 @@ buttons of these pages and the Explorer show the same reason without the place, 
 stops](traps.md).
 
 `--leaks` adds one line on standard error for each heap block still live when `main`
-returns. It does not change the exit code. The warning of the compiler for this program
-(ZK0708) is left out below:
+returns and the ring collector has run. It does not change the exit code. A block that
+safe code made is counted and freed, so the blocks listed are those of the heap
+statements of marked code:
 
 ```console
-$ zakac run --mem-check warn --leaks samples/mistakes/leak.zaka
+$ zakac run --leaks samples/mistakes/leak.zaka
+warning[ZK0708]: the block that "ပ" holds is never given back or handed over on this path
 ၁၀
 ၂၀
 ၃၀
@@ -174,8 +177,9 @@ leak: block at 0x101000, 16 octets
 leak: block at 0x101020, 16 octets
 ```
 
-The compiler finds most lost blocks on its own ([ZK0708](../reference/errors.md)). The
-list of `--leaks` is for the blocks that a top-level variable still holds at the end.
+The compiler finds most lost blocks on its own ([ZK0708](../reference/errors.md)), and
+warns about them. The list of `--leaks` holds the ones it cannot see, such as a block held
+in a top-level variable at the end, or one a C function gave.
 
 ## Limits
 
@@ -185,7 +189,7 @@ Each limit ends a run that would otherwise go on, with a trap that names which o
 | --- | --- | --- |
 | calls waiting to return | `--max-depth` | the next call traps: `more than 4096 nested calls` |
 | instructions run | `--max-steps` | the next instruction traps: `stopped after N ops` |
-| live heap octets | `--max-heap` | an allocate statement leaves `ဗလာ` in its place; a resize traps |
+| live heap octets | `--max-heap` | an allocate statement leaves the null pointer in its place; a resize traps |
 | stack region | `--max-stack` | a call whose locals do not fit traps |
 | address space | `--platform-bits` | a global or a block with no room traps or fails |
 
@@ -195,14 +199,15 @@ the globals leave, so the heap keeps the other half.
 ### A heap that runs out
 
 Running out of heap is a normal event of a program, so the allocate statement does not
-trap. It leaves `ဗလာ` in its place, and a program can test for that:
+trap. It leaves the null pointer, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, in its place, and a
+program can test for that in marked code:
 
 ```text
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-အကယ်၍ ပ သည် ဗလာ နှင့် ညီလျှင် "နေရာ မရပါ" ဟု ပြသပါ။
-သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-"ရပါပြီ" ဟု ပြသပါ။
+အကယ်၍ ပ သည် မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ နှင့် ညီလျှင် "နေရာ မရပါ" ဟု ပြသမည်။
+သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"ရပါပြီ" ဟု ပြသမည်။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
@@ -215,7 +220,7 @@ $ zakac run --max-heap 8 program.zaka
 နေရာ မရပါ
 ```
 
-A resize has no safe place to leave `ဗလာ`, since that would lose the old block, so a
+A resize has no safe place to leave the null pointer, since that would lose the old block, so a
 resize that finds no room traps instead.
 
 ### A platform with few addresses

@@ -14,14 +14,14 @@ use zakac_rust_sugars::do_for;
 #[test]
 fn print_statements()
 {
-    assert_eq!(stmt("အသက် ကို ပြသပါ။"), "(print အသက်)");
-    assert_eq!(stmt("အသက် + ၁ ကို ပြသပါ။"), "(print (+ အသက် 1))");
-    assert_eq!(stmt("\"မင်္ဂလာပါ\" ဟု ပြသပါ။"), "(print \"မင်္ဂလာပါ\")");
-    let logical = "(အသက် သည် ၁၈ အောက် ငယ်သည် မဟုတ်) ကို ပြသပါ။";
+    assert_eq!(stmt("အသက် ကို ပြသမည်။"), "(print အသက်)");
+    assert_eq!(stmt("အသက် + ၁ ကို ပြသမည်။"), "(print (+ အသက် 1))");
+    assert_eq!(stmt("\"မင်္ဂလာပါ\" ဟု ပြသမည်။"), "(print \"မင်္ဂလာပါ\")");
+    let logical = "(အသက် သည် ၁၈ အောက် ငယ်သည် မဟုတ်) ကို ပြသမည်။";
     assert_eq!(stmt(logical), "(print [(not (lt အသက် 18))])");
-    let quoted = "(အသက် သည် ၁၈ အောက် ငယ်သည်) ဟု ပြသပါ။";
+    let quoted = "(အသက် သည် ၁၈ အောက် ငယ်သည်) ဟု ပြသမည်။";
     assert_eq!(stmt(quoted), "(print [(lt အသက် 18)])");
-    assert_eq!(stmt("\"x\" ကို ပြသပါ။"), "(print \"x\")");
+    assert_eq!(stmt("\"x\" ကို ပြသမည်။"), "(print \"x\")");
 }
 
 #[test]
@@ -32,25 +32,25 @@ fn print_records_its_particle()
         Stmt::Print(p) => p.slot,
         other => panic!("{other:?}"),
     };
-    assert_eq!(slot("အသက် ကို ပြသပါ။"), Slot::Ko);
-    assert_eq!(slot("အသက် ဟု ပြသပါ။"), Slot::Hu);
-    assert_eq!(slot("\"x\" ကို ပြသပါ။"), Slot::Ko);
-    assert_eq!(slot("\"x\" ဟု ပြသပါ။"), Slot::Hu);
+    assert_eq!(slot("အသက် ကို ပြသမည်။"), Slot::Ko);
+    assert_eq!(slot("အသက် ဟု ပြသမည်။"), Slot::Hu);
+    assert_eq!(slot("\"x\" ကို ပြသမည်။"), Slot::Ko);
+    assert_eq!(slot("\"x\" ဟု ပြသမည်။"), Slot::Hu);
 }
 
 #[test]
 fn declarations()
 {
     assert_eq!(stmt("ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။"), "(var အသက် isize)");
-    assert_eq!(stmt("ကိန်းရှင် အသက် သည် ကိန်းပြည့် ၁၈ ဖြစ်ပါစေ။"), "(var အသက် _ 18isize)");
-    assert_eq!(stmt("ကိန်းသေ ပိုင် သည် ဒဿမကိန်း ၃.၁၄ ဖြစ်ပါစေ။"), "(const ပိုင် _ 3.14)");
+    assert_eq!(stmt("ကိန်းရှင် အသက် သည် ၁၈ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။"), "(var အသက် _ 18isize)");
+    assert_eq!(stmt("ကိန်းသေ ပိုင် သည် ၃.၁၄ ဟူသော ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။"), "(const ပိုင် _ 3.14)");
     let sized = "ကိန်းရှင် ရေတွက် သည် လက္ခဏာမဲ့ ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(stmt(sized), "(var ရေတွက် u32)");
     let twice = "ကိန်းရှင် နှစ်ဆ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် * ၂ ဖြစ်ပါစေ။";
     assert_eq!(stmt(twice), "(var နှစ်ဆ isize (* အသက် 2))");
     let adult = "ကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (အသက် သည် ၁၈ ထက် ကြီးသည်) ဖြစ်ပါစေ။";
     assert_eq!(stmt(adult), "(var ကြီးသူ bool [(gt အသက် 18)])");
-    let kinded = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၈ ဘစ် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။";
+    let kinded = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(stmt(kinded), "(var က isize 5i8)");
     let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ဖြစ်ပါစေ။";
     assert_eq!(stmt(clause), "(var က isize (add ခ ဂ))");
@@ -63,7 +63,10 @@ fn declarations_count_their_kind_or_take_it_from_the_value()
 {
     let classifier = |text: &str| match &stmts(text)[0]
     {
-        Stmt::Decl(d) => d.classifier.as_ref().map(|c| c.name.to_string()),
+        Stmt::Decl(d) =>
+        {
+            d.kind.as_ref()?.classifier.as_ref().map(|c| c.name.to_string())
+        }
         other => panic!("{other:?}"),
     };
     let letter = "ကိန်းရှင် င သည် စာလုံး တစ်လုံး ဖြစ်ပါစေ။";
@@ -76,14 +79,15 @@ fn declarations_count_their_kind_or_take_it_from_the_value()
     assert_eq!(classifier(named), None);
     assert_eq!(stmt("ကိန်းရှင် ဂ သည် ခ ဖြစ်ပါစေ။"), "(var ဂ _ ခ)");
     assert_eq!(stmt("ကိန်းရှင် ဂ သည် ခ + ၁ ဖြစ်ပါစေ။"), "(var ဂ _ (+ ခ 1))");
-    let person = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။\n";
+    let person =
+        "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။\n";
     let spaced = format!("{person}ကိန်းရှင် စ သည် လူ တစ်ယောက် ဖြစ်ပါစေ။");
     let joined = format!("{person}ကိန်းရှင် စ သည် လူတစ်ယောက် ဖြစ်ပါစေ။");
     assert_eq!(stmts(&spaced)[1].to_sexpr(), stmts(&joined)[1].to_sexpr());
 }
 
-/// A kind with no count word after it is the form of old, and the help names
-/// the count word the kind takes.
+/// A kind with no measure word after it is ZK0234, and the help names the word
+/// the kind takes.
 #[test]
 fn a_kind_without_its_count_word_is_zk0234()
 {
@@ -97,11 +101,11 @@ fn a_kind_without_its_count_word_is_zk0234()
     };
     assert!(help("ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်ပါစေ။").contains("တစ်ခု"));
     assert!(help("ကိန်းရှင် က သည် စာလုံး ဖြစ်ပါစေ။").contains("တစ်လုံး"));
-    let person = "ဒေတာအမျိုးအစား လူ တွင် ကိန်းပြည့် အသက် တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။\n";
+    let person =
+        "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။\n";
     assert!(help(&format!("{person}ကိန်းရှင် က သည် လူ ဖြစ်ပါစေ။")).contains("တစ်ယောက်"));
     help("ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။");
     help("ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာ ပ ဖြစ်ပါစေ။");
-    help("ကိန်းရှင် က သည် ငှားထားသော ကိန်းပြည့် ၅ ဖြစ်ပါစေ။");
 }
 
 #[test]
@@ -122,12 +126,12 @@ fn declarations_with_a_value_clause()
 #[test]
 fn assignments()
 {
-    assert_eq!(stmt("အသက် ကို ၂၄ ဟု ထားပါ။"), "(set အသက် 24)");
+    assert_eq!(stmt("အသက် ကို ၂၄ ဟု ထားမည်။"), "(set အသက် 24)");
     assert_eq!(
-        stmt("ကြီးသူ ကို (အသက် သည် ၁၈ ထက် ကြီးသည်) ဟု ထားပါ။"),
+        stmt("ကြီးသူ ကို (အသက် သည် ၁၈ ထက် ကြီးသည်) ဟု ထားမည်။"),
         "(set ကြီးသူ [(gt အသက် 18)])"
     );
-    assert_eq!(stmt("ဝင်ခွင့်ပြုမည် ကို မမှန် ဟု ထားပါ။"), "(set ဝင်ခွင့်ပြုမည် false)");
+    assert_eq!(stmt("ဝင်ခွင့်ပြုမည် ကို မမှန် ဟု ထားမည်။"), "(set ဝင်ခွင့်ပြုမည် false)");
 }
 
 #[test]
@@ -135,7 +139,7 @@ fn blocks_accept_each_closer_spelling()
 {
     for closer in ["ပြီးပါပြီ", "ပြီးပါပြီး", "ပြီးဆုံးပါပြီ", "ပြီးဆုံးပါပြီး"]
     {
-        let text = format!("အောက်ပါတို့ကို လုပ်ဆောင်ပါ။\nက ကို ပြသပါ။\nလုပ်ဆောင်စရာများ {closer}။");
+        let text = format!("အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို ပြသမည်။\nလုပ်ဆောင်စရာများ {closer}။");
         assert_eq!(stmt(&text), "(block (print က))", "{closer}");
     }
 }
@@ -143,35 +147,35 @@ fn blocks_accept_each_closer_spelling()
 #[test]
 fn conditionals()
 {
-    let text = "အကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ဝင်ခွင့်ပြုမည် ကို မမှန် ဟု ထားပါ။
+    let text = "အကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဝင်ခွင့်ပြုမည် ကို မမှန် ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။
-ထိုသို့မဟုတ်ဘဲ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသပါ။
-သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ဝင်ခွင့်ပြုမည် ကို မှန် ဟု ထားပါ။
+ထိုသို့မဟုတ်ဘဲ အသက် သည် ၆၀ ထက် ကြီးလျှင် \"ok\" ဟု ပြသမည်။
+သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဝင်ခွင့်ပြုမည် ကို မှန် ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let want = "(if (lt အသက် 18) (block (set ဝင်ခွင့်ပြုမည် false)) (gt အသက် 60) (block \
                 (print \"ok\")) else (block (set ဝင်ခွင့်ပြုမည် true)))";
     assert_eq!(stmt(text), want);
-    let then_is = "အကယ်၍ အသက် သည် ၁၈ အောက် မငယ်သည် ဖြစ်လျှင် က ကို ပြသပါ။";
+    let then_is = "အကယ်၍ အသက် သည် ၁၈ အောက် မငယ်သည် ဖြစ်လျှင် က ကို ပြသမည်။";
     assert_eq!(stmt(then_is), "(if (ge အသက် 18) (block (print က)))");
-    let not = "အကယ်၍ ဝင်ခွင့်ပြုမည် မဟုတ်လျှင် လုပ်ဆောင်ချက် ပရိုဂရမ်ပိတ် ကို လုပ်ဆောင်ပါ။";
+    let not = "အကယ်၍ ဝင်ခွင့်ပြုမည် မဟုတ်လျှင် လုပ်ဆောင်ချက် ပရိုဂရမ်ပိတ် ကို လုပ်ဆောင်မည်။";
     assert_eq!(stmt(not), "(if (not ဝင်ခွင့်ပြုမည်) (block (call ပရိုဂရမ်ပိတ်)))");
 }
 
 #[test]
 fn loops()
 {
-    let while_loop = "ကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ ကိန်း ကို ပြသပါ။";
+    let while_loop = "ကိန်း သည် ၅ အောက် ငယ်နေသရွေ့ ကိန်း ကို ပြသမည်။";
     assert_eq!(stmt(while_loop), "(while (lt ကိန်း 5) (block (print ကိန်း)))");
-    let counted = "၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။";
+    let counted = "၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသမည်။";
     assert_eq!(stmt(counted), "(count ကိန်း 1 10 count (block (print ကိန်း)))");
-    let stepped = "၁၀ မှ ၀ အထိ ၂ စီ ကိန်း အနေဖြင့် လျှော့၍ ကိန်း ကို ပြသပါ။";
+    let stepped = "၁၀ မှ ၀ အထိ ၂ စီ ကိန်း အနေဖြင့် လျှော့၍ ကိန်း ကို ပြသမည်။";
     assert_eq!(stmt(stepped), "(count ကိန်း 10 0 step 2 down (block (print ကိန်း)))");
-    let generic = "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို \
-                   လုပ်ဆောင်ပါ။
-ကိန်း ကို ပြသပါ။
-ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။
+    let generic = "ကိန်းရှင် ကိန်း သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပြီး ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ \
+                   အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်း ကို ပြသမည်။
+ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let want =
         "(for ကိန်း isize 0 (lt ကိန်း 10) (block (print ကိန်း)) then (set ကိန်း (+ ကိန်း 1)))";
@@ -179,9 +183,9 @@ fn loops()
         "(for ကိန်း _ 0isize (lt ကိန်း 10) (block (print ကိန်း)) then (set ကိန်း (+ ကိန်း 1)))";
     assert_eq!(stmt(generic), inferred);
     let clause = "ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၁၀ အောက် ငယ်နေသရွေ့ \
-                  အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ကိန်း ကို ပြသပါ။
-ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားပါ။
+                  အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်း ကို ပြသမည်။
+ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     assert_eq!(stmt(clause), want);
 }
@@ -189,10 +193,10 @@ fn loops()
 #[test]
 fn break_continue_and_return()
 {
-    let text = "၁ မှ ၁၀၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-အကယ်၍ ကိန်း % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်ပါ။
-အကယ်၍ ကိန်း သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်ပါ။
-ပြန်ပေးပါ။
+    let text = "၁ မှ ၁၀၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အကယ်၍ ကိန်း % ၂ သည် ၀ နှင့် ညီလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။
+အကယ်၍ ကိန်း သည် ၁၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်မည်။
+ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let want = "(count ကိန်း 1 100 count (block (if (eq (% ကိန်း 2) 0) (block \
                 (continue))) (if (gt ကိန်း 10) (block (break))) (return)))";
@@ -203,32 +207,34 @@ fn break_continue_and_return()
 fn functions_and_calls()
 {
     let text = "လုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်
-ကိန်းပြည့် က၊ ကိန်းပြည့် ခ၊ ကိန်းပြည့် ဂ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-က + ခ + ဂ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ဂ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း \
+                လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က + ခ + ဂ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let want = "(fn နှစ်ဆတိုးပြီးပေါင်း [isize က, isize ခ, isize ဂ] isize (block (return (+ \
                 (+ က ခ) ဂ))))";
     assert_eq!(stmt(text), want);
     let bare = "လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-\"မင်္ဂလာပါ\" ဟု ပြသပါ။
+\"မင်္ဂလာပါ\" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     assert_eq!(stmt(bare), "(fn နှုတ်ဆက် [] - (block (print \"မင်္ဂလာပါ\")))");
-    let one =
-        "လုပ်ဆောင်ချက် f သည် ကိန်းပြည့် က ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    let one = "လုပ်ဆောင်ချက် f သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
+               လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(stmt(one), "(fn f [isize က] - (block))");
-    let ret = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း ရလဒ် ကို ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ \
+    let ret = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း တစ်ခု ကို ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ \
                ပြီးပါပြီ။";
     assert_eq!(stmt(ret), "(fn f [] f64 (block))");
-    let and = "လုပ်ဆောင်ချက် f သည် ကိန်းပြည့် က၊ ကိန်းပြည့် ခ နှင့် စာလုံး ဂ တို့ကို လက်ခံပြီး အောက်ပါတို့ကို \
-               လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး ရလဒ် ကို ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    let and = "လုပ်ဆောင်ချက် f သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို \
+               လည်းကောင်း ဂ ဟူသော စာလုံး တစ်လုံး ကို လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ \
+               မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(stmt(and), "(fn f [isize က, isize ခ, char ဂ] bool (block))");
-    let two = "လုပ်ဆောင်ချက် f သည် ကိန်းပြည့် က နှင့် ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
-               လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    let two = "လုပ်ဆောင်ချက် f သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို \
+               လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(stmt(two), "(fn f [isize က, isize ခ] - (block))");
-    assert_eq!(stmt("လုပ်ဆောင်ချက် ပရိုဂရမ်ပိတ် ကို လုပ်ဆောင်ပါ။"), "(call ပရိုဂရမ်ပိတ်)");
-    let args = "လုပ်ဆောင်ချက် ထုတ်ပြ ကို အသက်၊ အမည် တို့ဖြင့် လုပ်ဆောင်ပါ။";
+    assert_eq!(stmt("လုပ်ဆောင်ချက် ပရိုဂရမ်ပိတ် ကို လုပ်ဆောင်မည်။"), "(call ပရိုဂရမ်ပိတ်)");
+    let args = "လုပ်ဆောင်ချက် ထုတ်ပြ ကို အသက်၊ အမည် တို့ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(stmt(args), "(call ထုတ်ပြ အသက် အမည်)");
 }
 
@@ -236,9 +242,9 @@ fn functions_and_calls()
 fn the_start_block_has_the_parts_of_a_function()
 {
     let text = "ပရိုဂရမ်သည်
-စာသား စာရင်း က နှင့် စာသား စာရင်း ခ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-၀ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+က ဟူသော စာသား စာရင်း တစ်ခု ကို လည်းကောင်း ခ ဟူသော စာသား စာရင်း တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+၀ ကို ပြန်ပေးမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     assert_eq!(
         stmt(text),
@@ -246,7 +252,7 @@ fn the_start_block_has_the_parts_of_a_function()
     );
     let bare = "ပရိုဂရမ် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     assert_eq!(stmt(bare), "(start ပရိုဂရမ် [] - (block))");
-    let nested = "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+    let nested = "အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(nested), [Code::NestedFunction]);
@@ -261,58 +267,58 @@ fn the_start_block_has_the_parts_of_a_function()
 #[test]
 fn statement_spans_cover_the_full_stop()
 {
-    let text = "က ကို ပြသပါ။ ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
+    let text = "က ကို ပြသမည်။ ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     let list = stmts(text);
     let out = parse_text(text);
     let end = |s: &Stmt| (s.span().hi - out.program.span.lo) as usize;
-    assert_eq!(&text[..end(&list[0])], "က ကို ပြသပါ။");
+    assert_eq!(&text[..end(&list[0])], "က ကို ပြသမည်။");
     assert!(text[..end(&list[1])].ends_with("ဖြစ်ပါစေ။"));
 }
 
 #[test]
 fn statement_errors()
 {
-    assert_eq!(codes("သို့မဟုတ်ပါက က ကို ပြသပါ။"), [Code::ElseWithoutIf]);
-    assert_eq!(codes("ပြီးလျှင် က ကို ပြသပါ။"), [Code::UpdateOutsideLoop]);
+    assert_eq!(codes("သို့မဟုတ်ပါက က ကို ပြသမည်။"), [Code::ElseWithoutIf]);
+    assert_eq!(codes("ပြီးလျှင် က ကို ပြသမည်။"), [Code::UpdateOutsideLoop]);
     assert_eq!(codes("လုပ်ဆောင်စရာများ ပြီးပါပြီ။"), [Code::UnmatchedBlockClose]);
-    let nested_if = "အကယ်၍ က လျှင် အကယ်၍ ခ လျှင် ဂ ကို ပြသပါ။";
+    let nested_if = "အကယ်၍ က လျှင် အကယ်၍ ခ လျှင် ဂ ကို ပြသမည်။";
     assert_eq!(codes(nested_if)[0], Code::NestedSingleLineIf);
-    let const_loop = "ကိန်းသေ က သည် ကိန်းပြည့် ၀ ဖြစ်ပြီး က သည် ၁ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို \
-                      လုပ်ဆောင်ပါ။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    let const_loop = "ကိန်းသေ က သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပြီး က သည် ၁ အောက် ငယ်နေသရွေ့ \
+                      အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(const_loop)[0], Code::ConstLoop);
-    let late = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပြီး က သည် ၁ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ပြီးလျှင် က ကို က + ၁ ဟု ထားပါ။
-က ကို ပြသပါ။
+    let late = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပြီး က သည် ၁ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပြီးလျှင် က ကို က + ၁ ဟု ထားမည်။
+က ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(late), [Code::UpdateNotLast]);
     // A function with statements can sit in a block; an external one cannot.
-    let nested_fn = "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+    let nested_fn = "အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert!(codes(nested_fn).is_empty());
-    let nested_c = "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-လုပ်ဆောင်ချက် abs သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ကိန်းပြည့် n ကို လက်ခံမည်။
+    let nested_c = "အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် abs သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ n ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(nested_c), [Code::NestedFunction]);
     let no_result = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(no_result), [Code::ExpectedToken]);
-    assert_eq!(codes("\"x\" ဟု ထားပါ။"), [Code::MissingOperand]);
-    assert_eq!(codes("၁ မှ ၁၀ အထိ ၁ + ၁ အနေဖြင့် ရေတွက်၍ က ကို ပြသပါ။"), [Code::ExpectedToken]);
+    assert_eq!(codes("\"x\" ဟု ထားမည်။"), [Code::MissingOperand]);
+    assert_eq!(codes("၁ မှ ၁၀ အထိ ၁ + ၁ အနေဖြင့် ရေတွက်၍ က ကို ပြသမည်။"), [Code::ExpectedToken]);
 }
 
 #[test]
 fn each_loops()
 {
-    let cells = "l ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသပါ။";
+    let cells = "l ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ x ကို ပြသမည်။";
     assert_eq!(stmt(cells), "(each_cell x l (block (print x)))");
-    let chars = "t ၏ စာလုံးတိုင်း ကို c အနေဖြင့် ယူ၍ c ကို ပြသပါ။";
+    let chars = "t ၏ စာလုံးတိုင်း ကို c အနေဖြင့် ယူ၍ c ကို ပြသမည်။";
     assert_eq!(stmt(chars), "(each_char c t (block (print c)))");
 }
 
 #[test]
 fn counted_variable_joined_to_its_particle_gets_a_hint()
 {
-    let out = parse_text("၁ မှ ၁၀ အထိ ကိန်းအနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသပါ။");
+    let out = parse_text("၁ မှ ၁၀ အထိ ကိန်းအနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသမည်။");
     assert_eq!(out.diagnostics.len(), 1);
     let help = out.diagnostics[0].help.clone().unwrap_or_default();
     assert!(help.contains("ကိန်း အနေဖြင့်"), "{help}");
@@ -321,13 +327,13 @@ fn counted_variable_joined_to_its_particle_gets_a_hint()
 #[test]
 fn errors_recover_at_the_next_statement()
 {
-    let text = "က ကို ကို ပြသပါ။
-ခ ကို ပြသပါ။
-အကယ်၍ + လျှင် အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-ဂ ကို ပြသပါ။
+    let text = "က ကို ကို ပြသမည်။
+ခ ကို ပြသမည်။
+အကယ်၍ + လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဂ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-သို့မဟုတ်ပါက ဃ ကို ပြသပါ။
-င ကို ပြသပါ။";
+သို့မဟုတ်ပါက ဃ ကို ပြသမည်။
+င ကို ပြသမည်။";
     let out = parse_text(text);
     let found: Vec<Code> = out.diagnostics.iter().map(|d| d.code).collect();
     assert_eq!(found, [Code::DoubleParticle, Code::ExpectedOperand]);
@@ -338,11 +344,11 @@ fn errors_recover_at_the_next_statement()
 #[test]
 fn block_errors_do_not_leak()
 {
-    let text = "အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-က ကို ကို ပြသပါ။
-ခ ကို ပြသပါ။
+    let text = "အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ကို ကို ပြသမည်။
+ခ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-ဂ ကို ပြသပါ။";
+ဂ ကို ပြသမည်။";
     let out = parse_text(text);
     assert_eq!(out.diagnostics.len(), 1);
     let shown: Vec<String> = out.program.stmts.iter().map(ToSexpr::to_sexpr).collect();
@@ -352,7 +358,7 @@ fn block_errors_do_not_leak()
 #[test]
 fn unclosed_block_reports_the_end_of_input()
 {
-    assert_eq!(codes("အောက်ပါတို့ကို လုပ်ဆောင်ပါ။ က ကို ပြသပါ။"), [Code::ExpectedToken]);
+    assert_eq!(codes("အောက်ပါတို့ကို လုပ်ဆောင်မည်။ က ကို ပြသမည်။"), [Code::ExpectedToken]);
 }
 
 #[test]
@@ -371,9 +377,9 @@ fn pointer_declarations_and_places()
         stmt("ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် x ၏ လိပ်စာ ဖြစ်ပါစေ။"),
         "(var p isize* (addr x))"
     );
-    assert_eq!(stmt("p ၏ တန်ဖိုး ကို ၅ ဟု ထားပါ။"), "(set (deref p) 5)");
-    assert_eq!(stmt("*p ကို *p + ၁ ဟု ထားပါ။"), "(set (deref p) (+ (deref p) 1))");
-    assert_eq!(stmt("၅ ကို ၆ ဟု ထားပါ။"), "(set 5 6)"); // the checker rejects it, not the parser
+    assert_eq!(stmt("p ၏ တန်ဖိုး ကို ၅ ဟု ထားမည်။"), "(set (deref p) 5)");
+    assert_eq!(stmt("*p ကို *p + ၁ ဟု ထားမည်။"), "(set (deref p) (+ (deref p) 1))");
+    assert_eq!(stmt("၅ ကို ၆ ဟု ထားမည်။"), "(set 5 6)"); // the checker rejects it, not the parser
 }
 
 #[test]
@@ -390,39 +396,6 @@ fn pointer_kinds_keep_the_older_spelling()
     );
 }
 
-#[test]
-fn borrowed_and_raw_kinds()
-{
-    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် q သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
-    assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာ"), "(var q isize&)");
-    assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ"), "(var q isize*&)");
-    assert_eq!(decl("ကိန်းပြည့် လိပ်စာအကြမ်း"), "(var q isize^)");
-    assert_eq!(decl("ကိန်းပြည့် လိပ်စာအကြမ်း ၏ လိပ်စာ"), "(var q isize^*)");
-    assert_eq!(decl("ကိန်းပြည့် ၏ လိပ်စာအကြမ်း"), "(var q isize^)");
-    assert_eq!(decl("လိပ်စာအကြမ်း"), "(var q rawptr)");
-    assert_eq!(decl("ငှားထားသော လိပ်စာ"), "(var q ptr&)");
-    let list = "ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ";
-    assert_eq!(decl(list), "(var q isize[3]&)");
-}
-
-#[test]
-fn misplaced_borrow_markers_parse()
-{
-    let decl = |kind: &str| stmt(&format!("ကိန်းရှင် q သည် {kind} တစ်ခု ဖြစ်ပါစေ။"));
-    assert_eq!(decl("ငှားထားသော ငှားထားသော ကိန်းပြည့် လိပ်စာ"), "(var q isize&&)");
-    assert_eq!(decl("ငှားထားသော ကိန်းပြည့် လိပ်စာအကြမ်း"), "(var q isize^&)");
-    assert_eq!(decl("ငှားထားသော ကိန်းပြည့်"), "(var q isize&)");
-}
-
-#[test]
-fn borrowed_kinds_in_function_headers()
-{
-    let head = "လုပ်ဆောင်ချက် f သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ က နှင့် ကိန်းပြည့် လိပ်စာအကြမ်း ခ တို့ကို \
-                လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော ကိန်းပြည့် လိပ်စာ ရလဒ် ကို ပြန်ပေးမည်။ \
-                လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
-    assert_eq!(stmt(head), "(fn f [isize& က, isize^ ခ] isize& (block))");
-}
-
 /// The arguments-first call and the short call build the tree that the
 /// other call forms build.
 #[test]
@@ -431,28 +404,25 @@ fn arguments_first_calls_match_the_other_forms()
     let pairs = [
         (
             "က၊ ခ တို့ကို သုံး၍ လုပ်ဆောင်ချက် ထုတ်ပြ ကို လုပ်ဆောင်မည်။",
-            "လုပ်ဆောင်ချက် ထုတ်ပြ ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်ပါ။",
+            "လုပ်ဆောင်ချက် ထုတ်ပြ ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်မည်။",
         ),
-        ("က၊ ခ တို့ကိုသုံး၍ ထုတ်ပြ မည်။", "လုပ်ဆောင်ချက် ထုတ်ပြ ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်ပါ။"),
-        ("က ကို သုံး၍ ထုတ်ပြ မည်။", "လုပ်ဆောင်ချက် ထုတ်ပြ ကို က တို့ဖြင့် လုပ်ဆောင်ပါ။"),
-        ("ထုတ်ပြ မည်။", "လုပ်ဆောင်ချက် ထုတ်ပြ ကို လုပ်ဆောင်ပါ။"),
-        ("လုပ်ဆောင်ချက် ထုတ်ပြ ကိုလုပ်ဆောင်မည်။", "လုပ်ဆောင်ချက် ထုတ်ပြ ကို လုပ်ဆောင်ပါ။"),
+        ("က၊ ခ တို့ကိုသုံး၍ ထုတ်ပြ မည်။", "လုပ်ဆောင်ချက် ထုတ်ပြ ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်မည်။"),
+        ("က ကို သုံး၍ ထုတ်ပြ မည်။", "လုပ်ဆောင်ချက် ထုတ်ပြ ကို က တို့ဖြင့် လုပ်ဆောင်မည်။"),
+        ("ထုတ်ပြ မည်။", "လုပ်ဆောင်ချက် ထုတ်ပြ ကို လုပ်ဆောင်မည်။"),
+        ("လုပ်ဆောင်ချက် ထုတ်ပြ ကိုလုပ်ဆောင်မည်။", "လုပ်ဆောင်ချက် ထုတ်ပြ ကို လုပ်ဆောင်မည်။"),
         (
             "က ကို သုံး၍ ထုတ်ပြ မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။",
-            "လုပ်ဆောင်ချက် ထုတ်ပြ ကို က တို့ဖြင့် လုပ်ဆောင်ပါ၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးပါ။",
+            "လုပ်ဆောင်ချက် ထုတ်ပြ ကို က တို့ဖြင့် လုပ်ဆောင်မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။",
         ),
-        ("က ကို သုံး၍ ထုတ်ပြ သည့် ရလဒ် ကို ပြသပါ။", "ထုတ်ပြ(က) ကို ပြသပါ။"),
-        ("က ကို သုံး၍ ထုတ်ပြ သည့်ရလဒ်ကောင်း ကို ပြသပါ။", "ထုတ်ပြ(က)? ကို ပြသပါ။"),
-        ("က ကို သုံး၍ လုပ်ဆောင်ချက် ထုတ်ပြ ကို လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။", "ထုတ်ပြ(က) ကို ပြသပါ။"),
-        ("ထုတ်ပြ သည့် ရလဒ် ကို ပြသပါ။", "ထုတ်ပြ() ကို ပြသပါ။"),
-        ("လုပ်ဆောင်ချက် ထုတ်ပြ ကို လုပ်ဆောင်သော ရလဒ်ကောင်း ကို ပြသပါ။", "ထုတ်ပြ()? ကို ပြသပါ။"),
-        (
-            "က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)၊ ခ တို့ကို သုံး၍ တိုး မည်။",
-            "လုပ်ဆောင်ချက် တိုး ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)၊ ခ တို့ဖြင့် လုပ်ဆောင်ပါ။",
-        ),
+        ("က ကို သုံး၍ ထုတ်ပြ သည့် ရလဒ် ကို ပြသမည်။", "ထုတ်ပြ(က) ကို ပြသမည်။"),
+        ("က ကို သုံး၍ ထုတ်ပြ သည့်ရလဒ်ကောင်း ကို ပြသမည်။", "ထုတ်ပြ(က)? ကို ပြသမည်။"),
+        ("က ကို သုံး၍ လုပ်ဆောင်ချက် ထုတ်ပြ ကို လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။", "ထုတ်ပြ(က) ကို ပြသမည်။"),
+        ("ထုတ်ပြ သည့် ရလဒ် ကို ပြသမည်။", "ထုတ်ပြ() ကို ပြသမည်။"),
+        ("လုပ်ဆောင်ချက် ထုတ်ပြ ကို လုပ်ဆောင်သော ရလဒ်ကောင်း ကို ပြသမည်။", "ထုတ်ပြ()? ကို ပြသမည်။"),
+        ("က၊ ခ တို့ကို သုံး၍ တိုး မည်။", "လုပ်ဆောင်ချက် တိုး ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်မည်။"),
         (
             "ခုနစ် သည့် ရလဒ်၊ က + ၁ တို့ကို သုံး၍ ပေါင်း မည်။",
-            "လုပ်ဆောင်ချက် ပေါင်း ကို ခုနစ်()၊ က + ၁ တို့ဖြင့် လုပ်ဆောင်ပါ။",
+            "လုပ်ဆောင်ချက် ပေါင်း ကို ခုနစ်()၊ က + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။",
         ),
         ("ကိန်းရှင် ခ သည် က ကို သုံး၍ စစ် သည့် ရလဒ်ကောင်း ဖြစ်ပါစေ။", "ကိန်းရှင် ခ သည် စစ်(က)? ဖြစ်ပါစေ။"),
     ];
@@ -460,34 +430,52 @@ fn arguments_first_calls_match_the_other_forms()
 }
 
 /// A statement end of a call stands where a value is needed alone, and the
-/// long form ends in `လုပ်ဆောင်မည်`, not `လုပ်ဆောင်ပါ`.
+/// long form ends in `လုပ်ဆောင်မည်`, not `လုပ်ဆောင်မည်`.
 #[test]
 fn call_ends_follow_the_place_of_the_call()
 {
-    let wrong = [
-        "ကိန်းရှင် x သည် က ကို သုံး၍ ပြ မည် ဖြစ်ပါစေ။",
-        "က ကို သုံး၍ ပြ။",
-        "က ကို သုံး၍ လုပ်ဆောင်ချက် ပြ ကို လုပ်ဆောင်ပါ။",
-    ];
+    let wrong = ["ကိန်းရှင် x သည် က ကို သုံး၍ ပြ မည် ဖြစ်ပါစေ။", "က ကို သုံး၍ ပြ။"];
     do_for!(text in wrong, assert_eq!(codes(text), [Code::ExpectedToken], "{text}"));
 }
 
-/// A parameter the function can change, and the mark at the call.
+/// A parameter the function can change takes `ဒေတာ ပြောင်းလဲရန်` in its item, and
+/// the call writes the argument with no mark.
 #[test]
-fn edit_references_parse_at_both_ends()
+fn edit_parameters_parse_and_calls_bear_no_mark()
 {
     let decl = stmt(
         "လုပ်ဆောင်ချက် တိုး သည်
-လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော ကိန်းပြည့် န ကို လက်ခံပြီး
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-န ကို န + ၁ ဟု ထားပါ။
+န ကို န + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။",
     );
     assert!(decl.contains("edit isize န"), "{decl}");
-    let call = stmt("လုပ်ဆောင်ချက် တိုး ကို က (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)၊ ခ တို့ဖြင့် လုပ်ဆောင်ပါ။");
-    assert_eq!(call, "(call တိုး (edit က) ခ)");
-    let sign = stmt("တိုး(ပ ၏ အသက် (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)) ကို ပြသပါ။");
-    assert!(sign.contains("(call တိုး (edit "), "{sign}");
+    let call = stmt("လုပ်ဆောင်ချက် တိုး ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်မည်။");
+    assert_eq!(call, "(call တိုး က ခ)");
+}
+
+/// The markers of an item come in order: owned, changed, then the mark.
+#[test]
+fn item_markers_parse_in_order()
+{
+    let decl = stmt(
+        "လုပ်ဆောင်ချက် ယူ သည်
+ပ ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် အပိုင်အနေဖြင့် ဝိဘတ် \"ကို\" ကို သုံး၍ လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။",
+    );
+    assert!(decl.contains("own edit "), "{decl}");
+    assert!(decl.contains(" ပ(ကို)"), "{decl}");
+}
+
+/// A mark string must read as one word a mark can be.
+#[test]
+fn a_mark_string_is_one_mark_word()
+{
+    let text = "လုပ်ဆောင်ချက် ရေး သည် စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"က ခ\" ကို သုံး၍ လက်ခံပြီး \
+                အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။";
+    assert_eq!(codes(text), [Code::BadMark]);
 }
 
 /// A list with no count is plain; a written count makes a counted list.
@@ -504,52 +492,52 @@ fn list_forms_parse()
 #[test]
 fn add_and_remove_parse()
 {
-    assert_eq!(stmt("l ထဲသို့ ၃ ကို ထည့်ပါ။"), "(add l 3)");
-    assert_eq!(stmt("s ၏ l ထဲသို့ x + ၁ ကို ထည့်ပါ။"), "(add (field s l) (+ x 1))");
-    assert_eq!(stmt("l ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"), "(remove l)");
-    assert_eq!(stmt("l ၏ အကွက် ၀ ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။"), "(remove (cell l 0))");
-    assert_eq!(stmt("t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။"), "(remove_char t)");
+    assert_eq!(stmt("l ထဲသို့ ၃ ကို ထည့်မည်။"), "(add l 3)");
+    assert_eq!(stmt("s ၏ l ထဲသို့ x + ၁ ကို ထည့်မည်။"), "(add (field s l) (+ x 1))");
+    assert_eq!(stmt("l ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။"), "(remove l)");
+    assert_eq!(stmt("l ၏ အကွက် ၀ ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။"), "(remove (cell l 0))");
+    assert_eq!(stmt("t ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။"), "(remove_char t)");
 }
 
 #[test]
 fn adds_in_front_of_a_cell_or_a_character_parse()
 {
-    let cell = stmt("l ၏ အကွက် ၁ ၏ အရှေ့တွင် ၉ ကို ထည့်ပါ။");
+    let cell = stmt("l ၏ အကွက် ၁ ၏ အရှေ့တွင် ၉ ကို ထည့်မည်။");
     assert!(cell.starts_with("(insert (cell l 1") && cell.ends_with(" 9)"), "{cell}");
-    let joined = stmt("l ၏ အကွက် ၁ ၏အရှေ့တွင် ၉ ကို ထည့်ပါ။");
+    let joined = stmt("l ၏ အကွက် ၁ ၏အရှေ့တွင် ၉ ကို ထည့်မည်။");
     assert_eq!(joined, cell);
-    let nth = stmt("l ၏ ၂ ခုမြောက်အကွက် ၏ အရှေ့တွင် ၉ ကို ထည့်ပါ။");
+    let nth = stmt("l ၏ ၂ ခုမြောက်အကွက် ၏ အရှေ့တွင် ၉ ကို ထည့်မည်။");
     assert!(nth.starts_with("(insert "), "{nth}");
-    let text = stmt("t ၏ စာလုံး ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်ပါ။");
+    let text = stmt("t ၏ စာလုံး ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်မည်။");
     assert!(text.starts_with("(insert ") && text.contains("t"), "{text}");
 }
 
 #[test]
 fn replace_of_a_range_parses()
 {
-    let cells = stmt("t ၏ အကွက် ၀ မှ ၄ ထိကို \"bye\" ဖြင့် အစားထိုးပါ။");
+    let cells = stmt("t ၏ အကွက် ၀ မှ ၄ ထိကို \"bye\" ဖြင့် အစားထိုးမည်။");
     assert_eq!(cells, "(replace t 0 4 \"bye\")");
-    let chars = stmt("t ၏ ၁ လုံးမြောက်စာလုံးမှ i + ၁ လုံးမြောက်စာလုံးထိကို c ဖြင့် အစားထိုးပါ။");
+    let chars = stmt("t ၏ ၁ လုံးမြောက်စာလုံးမှ i + ၁ လုံးမြောက်စာလုံးထိကို c ဖြင့် အစားထိုးမည်။");
     assert_eq!(chars, "(replace_chars t 1 (+ i 1) c)");
-    let spaced = stmt("t ၏ ၁ ခုမြောက်စာလုံး မှ ၂ ခုမြောက်စာလုံး ထိ ကို c ဖြင့် အစားထိုးပါ။");
+    let spaced = stmt("t ၏ ၁ ခုမြောက်စာလုံး မှ ၂ ခုမြောက်စာလုံး ထိ ကို c ဖြင့် အစားထိုးမည်။");
     assert_eq!(spaced, "(replace_chars t 1 2 c)");
-    let field = stmt("s ၏ t ၏ အကွက် ၀ မှ ၁ ထိကို u ၏ အကွက် ၀ ဖြင့် အစားထိုးပါ။");
+    let field = stmt("s ၏ t ၏ အကွက် ၀ မှ ၁ ထိကို u ၏ အကွက် ၀ ဖြင့် အစားထိုးမည်။");
     assert!(field.starts_with("(replace (field s t) 0 1 (cell u 0"), "{field}");
 }
 
 #[test]
 fn a_range_stands_in_a_replace_statement_alone()
 {
-    let printed = codes("t ၏ အကွက် ၀ မှ ၄ ထိကို ပြသပါ။");
+    let printed = codes("t ၏ အကွက် ၀ မှ ၄ ထိကို ပြသမည်။");
     assert_eq!(printed, [Code::SlotMismatch]);
-    let missing = codes("t ၏ အကွက် ၀ မှ ၄ ထိကို \"x\" ကို အစားထိုးပါ။");
+    let missing = codes("t ၏ အကွက် ၀ မှ ၄ ထိကို \"x\" ကို အစားထိုးမည်။");
     assert_eq!(missing, [Code::SlotMismatch]);
 }
 
 #[test]
 fn a_counted_loop_from_a_cell_still_parses()
 {
-    let looped = stmt("l ၏ အကွက် ၀ မှ ၅ အထိ i အနေဖြင့် ရေတွက်၍ i ကို ပြသပါ။");
+    let looped = stmt("l ၏ အကွက် ၀ မှ ၅ အထိ i အနေဖြင့် ရေတွက်၍ i ကို ပြသမည်။");
     assert!(looped.starts_with("(count i (cell l 0) 5 count"), "{looped}");
 }
 
@@ -558,11 +546,13 @@ fn a_counted_loop_from_a_cell_still_parses()
 #[test]
 fn parameters_have_marks()
 {
-    let text = "လုပ်ဆောင်ချက် ရေး သည် စာသား စာ(ကို)၊ စာသား နေရာ(သို့) လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
+    let text = "လုပ်ဆောင်ချက် ရေး သည် စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း နေရာ \
+                ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"သို့\" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
                 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(stmt(text), "(fn ရေး [text စာ(ကို), text နေရာ(သို့)] - (block))");
-    let mixed = "လုပ်ဆောင်ချက် ရေး သည် စာသား စာ(ကို)၊ စာသား နေရာ လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
-                 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    let mixed = "လုပ်ဆောင်ချက် ရေး သည် စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း နေရာ \
+                 ဟူသော စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ \
+                 ပြီးပါပြီ။";
     assert_eq!(codes(mixed), [Code::MixedMarks]);
 }
 
@@ -570,8 +560,9 @@ fn parameters_have_marks()
 fn with_write(rest: &str) -> String
 {
     format!(
-        "လုပ်ဆောင်ချက် ရေး သည် စာသား စာ(ကို)၊ စာသား နေရာ(သို့) လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
-         လုပ်ဆောင်စရာများ ပြီးပါပြီ။\n{rest}"
+        "လုပ်ဆောင်ချက် ရေး သည် စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း နေရာ ဟူသော \
+         စာသား တစ်ခု ကို ဝိဘတ် \"သို့\" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ \
+         ပြီးပါပြီ။\n{rest}"
     )
 }
 
@@ -602,7 +593,7 @@ fn marked_calls_match_the_other_forms()
     let want = |old: &str| second(&with_write(old)).0;
     let marks = vec!["ကို".to_string(), "သို့".to_string()];
     let short = second(&with_write("က ကို ခ သို့ ရေး မည်။"));
-    assert_eq!(short, (want("လုပ်ဆောင်ချက် ရေး ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်ပါ။"), marks.clone()));
+    assert_eq!(short, (want("လုပ်ဆောင်ချက် ရေး ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်မည်။"), marks.clone()));
     let long = second(&with_write("က ကို ခ သို့ လုပ်ဆောင်ချက် ရေး ကို လုပ်ဆောင်မည်။"));
     assert_eq!(long.1, marks);
     let string = second(&with_write("\"a\" ကို \"b\" သို့ ရေး မည်။"));
@@ -616,12 +607,13 @@ fn marked_calls_match_the_other_forms()
 #[test]
 fn other_sentences_keep_their_meaning()
 {
-    let set = "ကိန်းရှင် က သည် ၀ ဖြစ်ပါစေ။\nက ကို ခုနစ် သည့် ရလဒ် ဟု ထားပါ။";
+    let set = "ကိန်းရှင် က သည် ၀ ဖြစ်ပါစေ။\nက ကို ခုနစ် သည့် ရလဒ် ဟု ထားမည်။";
     assert!(stmts(set)[1].to_sexpr().starts_with("(set က"), "{set}");
-    let read = "လုပ်ဆောင်ချက် ဖတ် သည် စာသား လမ်း(၌ရှိသော) လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရလဒ် ကို \
-                ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။\nက ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားပါ။";
+    let read = "လုပ်ဆောင်ချက် ဖတ် သည် လမ်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"၌ရှိသော\" ကို သုံး၍ လက်ခံပြီး \
+                အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။\nက ကို ခ \
+                ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားမည်။";
     assert!(stmts(read)[1].to_sexpr().starts_with("(set က"), "{read}");
-    let import = format!("\"lib.zaka\" မှ ရေး ကို ထည့်သွင်းပါ။\n{}", with_write(""));
+    let import = format!("\"lib.zaka\" မှ ရေး ကို ထည့်သွင်းမည်။\n{}", with_write(""));
     assert!(matches!(stmts(&import)[0], Stmt::Import(_)));
 }
 
@@ -635,33 +627,39 @@ fn external_functions_have_a_header_alone()
     assert_eq!(stmt(bare), "(external က [] -)");
     let apart = "လုပ်ဆောင်ချက် က သည် ပြင်ပ မှ လာသော လုပ်ဆောင်ချက် တစ်ခု ဖြစ်သည်။";
     assert_eq!(stmt(apart), "(external က [] -)");
-    let takes = "လုပ်ဆောင်ချက် ရေး သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား စ(ကို) လက်ခံမည်။";
+    let takes = "လုပ်ဆောင်ချက် ရေး သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \
+                 \"ကို\" ကို သုံး၍ လက်ခံမည်။";
     assert_eq!(stmt(takes), "(external ရေး [text စ(ကို)] -)");
-    let gives = "လုပ်ဆောင်ချက် ဖတ် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား ရလဒ် ကို ပြန်ပေးမည်။";
+    let gives = "လုပ်ဆောင်ချက် ဖတ် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား တစ်ခု ကို ပြန်ပေးမည်။";
     assert_eq!(stmt(gives), "(external ဖတ် [] text)");
-    let both = "လုပ်ဆောင်ချက် ဖတ် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်တစ်ခု ဖြစ်၍ စာသား လမ်း ကို လက်ခံပြီး စာသား \
-                ရလဒ် ကို ပြန်ပေးမည်။";
+    let both = "လုပ်ဆောင်ချက် ဖတ် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်တစ်ခု ဖြစ်၍ လမ်း ဟူသော စာသား တစ်ခု ကို \
+                လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးမည်။";
     assert_eq!(stmt(both), "(external ဖတ် [text လမ်း] text)");
 }
 
 #[test]
 fn c_functions_name_their_lib()
 {
-    let abs = "လုပ်ဆောင်ချက် abs သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ i32 n ကို လက်ခံပြီး i32 ရလဒ် \
-               ကို ပြန်ပေးမည်။";
+    let abs = "လုပ်ဆောင်ချက် abs သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ n ဟူသော i32 တစ်ခု ကို လက်ခံပြီး \
+               i32 တစ်ခု ကို ပြန်ပေးမည်။";
     assert_eq!(stmt(abs), "(external \"libc\" abs [i32 n] i32)");
-    let apart = "လုပ်ဆောင်ချက် rand သည် \"libc\" မှ လာသော လုပ်ဆောင်ချက်ဖြစ်၍ i32 ရလဒ် ကို ပြန်ပေးမည်။";
+    let apart = "လုပ်ဆောင်ချက် rand သည် \"libc\" မှ လာသော လုပ်ဆောင်ချက်ဖြစ်၍ i32 တစ်ခု ကို ပြန်ပေးမည်။";
     assert_eq!(stmt(apart), "(external \"libc\" rand [] i32)");
-    let printf = "လုပ်ဆောင်ချက် printf သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား f နှင့် \
-                  အခြားတန်ဖိုးများ ကို လက်ခံပြီး i32 ရလဒ် ကို ပြန်ပေးမည်။";
+    let printf = "လုပ်ဆောင်ချက် printf သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ f ဟူသော စာသား တစ်ခု \
+                  ကို လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး i32 တစ်ခု ကို ပြန်ပေးမည်။";
     assert_eq!(stmt(printf), "(external \"libc\" printf [text f, ...] i32)");
+    let listed = "လုပ်ဆောင်ချက် printf သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ f ဟူသော စာသား တစ်ခု \
+                  ကို လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး i32 တစ်ခု ကို ပြန်ပေးမည်။";
+    assert_eq!(stmt(listed), "(external \"libc\" printf [text f, ...] i32)");
+    let spaced = listed.replace("များနှင့်", "များ နှင့်");
+    assert_eq!(stmt(&spaced), "(external \"libc\" printf [text f, ...] i32)");
 }
 
 #[test]
 fn a_c_function_can_give_back_its_text_as_the_program_s_own()
 {
-    let owned = "လုပ်ဆောင်ချက် strdup သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စာသား s ကို လက်ခံပြီး \
-                 စာသား ရလဒ် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။";
+    let owned = "လုပ်ဆောင်ချက် strdup သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ s ဟူသော စာသား တစ်ခု ကို \
+                 လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။";
     let list = stmts(owned);
     let zakac_ast::stmt::Stmt::Fn(f) = &list[0]
     else
@@ -676,4 +674,77 @@ fn a_c_function_can_give_back_its_text_as_the_program_s_own()
         panic!("a function");
     };
     assert!(!f.owned_ret);
+}
+
+/// A short parameter list whose one parameter is a function kind with
+/// marks: the `လည်းကောင်း` inside the parentheses belongs to the function
+/// kind, not to the parameter list.
+#[test]
+fn a_function_kind_with_marks_stands_in_a_short_list()
+{
+    let text = "လုပ်ဆောင်ချက် ခေါ် သည် ဖ ဟူသော (စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လက်ခံသော လုပ်ဆောင်ချက် \
+                အမျိုးအစား) တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။";
+    assert_eq!(codes(text), []);
+}
+
+/// `<value> ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။` gives code outside the program leave
+/// to call a function value; `ပြန်လည်ရုပ်သိမ်းမည်` takes it back. `C မှ` is no
+/// such statement.
+#[test]
+fn a_leave_for_outside_code_names_its_value()
+{
+    let grant = stmt("ဖ ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။");
+    assert_eq!(grant, "(c_leave ဖ)");
+    let fused = stmt("ဖ ကို ပြင်ပမှ ခေါ်ဆိုခွင့်ပြုမည်။");
+    assert_eq!(fused, grant);
+    let revoke = stmt("ထည့် ဟူသော လုပ်ဆောင်ချက်ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်။");
+    assert_eq!(revoke, "(c_revoke (fn_addr ထည\u{103a}\u{1037}))");
+    assert!(!codes("ဖ ကို C မှ ခေါ်ဆိုခွင့် ပြုမည်။").is_empty());
+}
+
+/// A kind from outside the program, with no fields and with C fields.
+#[test]
+fn a_kind_from_outside_parses()
+{
+    let bare = stmt("စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။");
+    assert_eq!(bare, "(external_struct စက\u{103a} [])");
+    let fields =
+        stmt("စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ပါဝင်သည်။");
+    assert_eq!(fields, "(external_struct စက\u{103a} [i32 n])");
+}
+
+/// A function kind takes `ဒေတာ ပြောင်းလဲရန်` alone; `ဒေတာ ထည့်ပေးရန်` on one of
+/// its parameters is reported at the mark.
+#[test]
+fn a_filled_parameter_in_a_function_kind_is_zk0243()
+{
+    let text = "လုပ်ဆောင်ချက် သုံး သည်
+ဖ ဟူသော (ကိန်းပြည့် တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။";
+    assert_eq!(codes(text), [Code::FillInFnKind]);
+}
+
+/// One field or one member closes with `ပါဝင်သည်`; `တို့ပါဝင်သည်` is for several.
+#[test]
+fn one_member_closes_without_toh()
+{
+    let one = "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။";
+    assert_eq!(codes(one), []);
+    let named =
+        "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။";
+    assert_eq!(codes(named), []);
+    let colour = "အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် အနီ ပါဝင်သည်။";
+    assert_eq!(codes(colour), []);
+    let several =
+        "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အရပ် ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။";
+    assert_eq!(codes(several), []);
+    let toh_one = [
+        "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။",
+        "အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် အနီ တို့ပါဝင်သည်။",
+        "ဖိုင် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် fd ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။",
+    ];
+    do_for!(text in toh_one, assert_eq!(codes(text), [Code::ExpectedToken], "{text}"));
+    let bare_several = "အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် အနီ၊ အစိမ်း ပါဝင်သည်။";
+    assert_eq!(codes(bare_several), [Code::ExpectedToken]);
 }

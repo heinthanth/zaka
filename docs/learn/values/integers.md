@@ -1,6 +1,6 @@
 ---
 title: Integers
-description: Whole numbers - their sizes, signed and unsigned - and how to write them, with Burmese or Western digits, number bases and kind prefixes.
+description: Whole numbers - their sizes, signed and unsigned - and how to write them, with Burmese or Western digits, number bases and the kind written after a number.
 ---
 
 # Integers
@@ -14,11 +14,11 @@ allowed.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၄၂ ကို ပြသပါ။                                // plain integer: the default kind
-၈ ဘစ် ကိန်းပြည့် ၁၂၇ ကို ပြသပါ။                // 8 bits: -128 up to 127
-လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၂၅၅ ကို ပြသပါ။        // 8 bits, no sign: 0 up to 255
-၃၂ ဘစ် ကိန်းပြည့် ၂၁၄၇၄၈၃၆၄၇ ကို ပြသပါ။         // 32 bits
--၅ ကို ပြသပါ။                                // a negative number
+၄၂ ကို ပြသမည်။                                // plain integer: the default kind
+၁၂၇ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။                // 8 bits: -128 up to 127
+၂၅၅ ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။        // 8 bits, no sign: 0 up to 255
+၂၁၄၇၄၈၃၆၄၇ ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။         // 32 bits
+-၅ ကို ပြသမည်။                                // a negative number
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -30,8 +30,8 @@ allowed.
 -၅
 ```
 
-Writing a kind before the digits, as in `၈ ဘစ် ကိန်းပြည့် ၁၂၇`, fixes the kind of that
-number. Without one, an integer has the default kind `ကိန်းပြည့်`.
+Writing a kind after the digits, as in `၁၂၇ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု` ("127, an
+8-bit integer"), fixes the kind of that number. Without one, an integer has the default kind `ကိန်းပြည့်`.
 
 ## Building an integer kind
 
@@ -64,7 +64,7 @@ When in doubt, use plain `ကိန်းပြည့်`.
 If a number is too big for its kind, the program does not run:
 
 ```zaka-error ZK0220
-လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် ၂၅၆ ကို ပြသပါ။
+၂၅၆ ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။
 ```
 
 ```text
@@ -78,12 +78,12 @@ several forms of integer literal.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁၂၃ ကို ပြသပါ။                                 // Burmese digits
-123 ကို ပြသပါ။                                  // Western digits: the same number
-အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသပါ။                     // base 2: 1010 = ten
-အခြေ ၈ ဖြင့် ၇၇ ကို ပြသပါ။                       // base 8: 77 = 63
-အခြေ ၁၆ ဖြင့် FF ကို ပြသပါ။                       // base 16 (hexadecimal): FF = 255
-အခြေ ၁၆ ဖြင့် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် FF ကို ပြသပါ။  // base and kind together
+၁၂၃ ကို ပြသမည်။                                 // Burmese digits
+123 ကို ပြသမည်။                                  // Western digits: the same number
+အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသမည်။                     // base 2: 1010 = ten
+အခြေ ၈ ဖြင့် ၇၇ ကို ပြသမည်။                       // base 8: 77 = 63
+အခြေ ၁၆ ဖြင့် FF ကို ပြသမည်။                       // base 16 (hexadecimal): FF = 255
+အခြေ ၁၆ ဖြင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။  // base and kind together
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -102,7 +102,7 @@ Use Burmese digits `၀ ၁ ၂ ၃ ၄ ၅ ၆ ၇ ၈ ၉` or Western digits `
 both in one number:
 
 ```zaka-error ZK0103
-၁၂.34 ကို ပြသပါ။
+၁၂.34 ကို ပြသမည်။
 ```
 
 ```text
@@ -125,8 +125,11 @@ is fifteen. The base itself is written in plain base 10.
 A full integer literal has up to three parts, in this fixed order:
 
 1. the base, `အခြေ <n> ဖြင့်` (optional),
-2. the kind, such as `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` (optional),
-3. the digits.
+2. the digits,
+3. the kind, `ဟူသော` and a number kind with its measure word, such as
+   `ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု` (optional).
+
+`အခြေ ၁၆ ဖြင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု` has all three.
 
 ## Negative numbers
 
@@ -136,8 +139,8 @@ program runs, so the difference never shows.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
--၅ ကို ပြသပါ။
-အနုတ် ၅ ကို ပြသပါ။
+-၅ ကို ပြသမည်။
+အနုတ် ၅ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

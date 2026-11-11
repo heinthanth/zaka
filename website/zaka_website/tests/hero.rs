@@ -2,7 +2,7 @@ use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_with;
 use zaka_website::components::hero::LINE;
 use zaka_website::components::hero::PRINTED;
-use zaka_website::components::hero::syllables;
+use zaka_website::components::hero::clusters;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_codegen_target_vm::artifact::run_phases;
 use zakac_codegen_target_vm::options::ResultMode;
@@ -33,9 +33,9 @@ fn the_hero_line_prints_what_the_hero_shows()
 }
 
 #[test]
-fn the_hero_line_is_written_out_in_whole_syllables()
+fn the_hero_line_is_written_out_in_whole_clusters()
 {
-    let pieces = syllables(LINE);
+    let pieces = clusters(LINE);
     assert_eq!(pieces.concat(), LINE);
     assert!(pieces.contains(&"င်္ဂ".to_string()), "{pieces:?}");
     assert!(pieces.contains(&"လာ".to_string()), "{pieces:?}");

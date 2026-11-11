@@ -45,6 +45,11 @@ pub struct Module
     #[builder(default)]
     #[serde(default)]
     pub foreign: Vec<ForeignFn>,
+    /// The source regions of marked code: each function marked
+    /// `စိတ်မချရသော` and each block marked `စိတ်မချရသော်လည်း`.
+    #[builder(default)]
+    #[serde(default)]
+    pub marked: Vec<Span>,
     /// Source region of the whole program.
     pub span: Span,
 }
@@ -121,6 +126,16 @@ pub struct Func
     #[builder(default)]
     #[serde(default)]
     pub shared_params: Vec<u32>,
+    /// Whether each parameter takes over the block of its argument,
+    /// `အပိုင်အနေဖြင့်`.
+    #[builder(default)]
+    #[serde(default)]
+    pub owned: Vec<bool>,
+    /// Whether the result is marked `အပိုင်အနေဖြင့်`: the caller takes over the
+    /// block it points at.
+    #[builder(default)]
+    #[serde(default)]
+    pub owned_ret: bool,
     /// Source region of the declaration.
     pub span: Span,
 }
@@ -159,6 +174,11 @@ pub struct Slot
     #[serde(default)]
     #[builder(default)]
     pub addressed: bool,
+    /// The span of the statement that declares the slot with no value, when
+    /// the program wrote none: the `Set` of that span gives the slot its zero
+    /// octets at run time, but the checker counts the slot as unset there.
+    #[serde(default)]
+    pub unset: Option<Span>,
 }
 
 /// Where a slot lives. Written `g0` for a global and `l0` for a local of the
@@ -362,8 +382,8 @@ pub enum Stmt
         span: Span,
     },
     /// Call the function a function value holds and drop its result. The
-    /// value is read first, then the arguments run; a value of `ဗလာ` stops
-    /// the program.
+    /// value is read first, then the arguments run; a value of the zero word
+    /// stops the program.
     CallValue
     {
         /// The function value, of a function kind.
@@ -416,6 +436,30 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Write a field of the struct C keeps behind a handle: a number, a
+    /// boolean or a counted list, at the address C gave plus an offset.
+    CStore
+    {
+        /// The address of the C struct.
+        base: Expr,
+        /// The offset of the field, in octets.
+        offset: u32,
+        /// The value.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
+    /// Give C leave to call a function value after the call that gave it,
+    /// or take that leave back. A function with no captures needs no leave.
+    Leave
+    {
+        /// The function value, a place or a hidden slot.
+        value: Expr,
+        /// `true` to give the leave, `false` to take it back.
+        grant: bool,
+        /// Source region.
+        span: Span,
+    },
     /// Write the cells at `src` to `dst`.
     Blit
     {
@@ -446,7 +490,7 @@ pub enum Stmt
         span: Span,
     },
     /// Stop the run: a conversion read the part of a result it does not
-    /// hold. The VM shows the value, when there is one, as `ပြသပါ` would.
+    /// hold. The VM shows the value, when there is one, as `ပြသမည်` would.
     Halt
     {
         /// The reason the run stops.
@@ -456,10 +500,11 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
-    /// Free each text the value at `dest` owns on the heap and leave it
-    /// blank: a place whose kind holds text, as its scope ends or before a
-    /// new value replaces it. A text in static storage, or one moved out,
-    /// is left as it is.
+    /// Let go of each counted block the value at `dest` holds and leave it
+    /// blank: a place whose kind holds text, a plain list, an object or a
+    /// function value, as its scope ends or before a new value replaces it.
+    /// The last holder of a block frees it; a block in static storage, or one
+    /// moved out, is left as it is.
     Drop
     {
         /// The place.
@@ -599,6 +644,8 @@ impl Stmt
             | Stmt::Alloc { span, .. }
             | Stmt::Resize { span, .. }
             | Stmt::Free { span, .. }
+            | Stmt::Leave { span, .. }
+            | Stmt::CStore { span, .. }
             | Stmt::Blit { span, .. }
             | Stmt::Fill { span, .. }
             | Stmt::Drop { span, .. }
@@ -711,7 +758,8 @@ pub enum ExprNode
         args: Vec<Expr>,
     },
     /// A call of the function a function value holds. The value is read
-    /// first, then the arguments run; a value of `ဗလာ` stops the program.
+    /// first, then the arguments run; a value of the zero word stops the
+    /// program.
     CallValue
     {
         /// The function value, of a function kind.
@@ -727,13 +775,13 @@ pub enum ExprNode
         /// The function name.
         name: String,
     },
-    /// The address of a function declared inside a function that borrows
-    /// locals: a value of the function kind that runs `func`, a thunk that
-    /// takes the parameters and the address of the record, and passes on the
-    /// addresses the record holds. The record is a list of raw addresses in
-    /// a slot of the caller; its first word belongs to the backend, which
-    /// writes there what it needs to call the thunk, and the borrowed
-    /// addresses follow. The value lives as long as the slot.
+    /// The value of a function declared inside a function with captures: a
+    /// value of the function kind that runs `func`, a thunk that takes the
+    /// parameters and the address of the record, and passes on the boxes the
+    /// record holds. The record is filled in a slot of the caller and moved to
+    /// a counted block; its first word belongs to the backend, which writes
+    /// there what it needs to call the thunk, and the box of each captured
+    /// variable follows, each holding a count.
     Closure
     {
         /// Index into [`Module::funcs`] of the thunk.
@@ -742,15 +790,6 @@ pub enum ExprNode
         name: String,
         /// The address of the record.
         record: Box<Expr>,
-    },
-    /// A function value that must be no [`ExprNode::Closure`], since it goes
-    /// where it can outlive the locals a closure borrows: a field, a cell, a
-    /// global, a place reached through an address, a result or a C
-    /// function. A closure stops the program.
-    Plain
-    {
-        /// The function value.
-        value: Box<Expr>,
     },
     /// The work of a function the host serves, the one statement of an
     /// external function: its result, from the borrowed address of each
@@ -782,6 +821,17 @@ pub enum ExprNode
         /// The address, a pointer.
         addr: Box<Expr>,
     },
+    /// A field of the struct C keeps behind a handle, read at the address C
+    /// gave plus an offset: a number, a boolean or a counted list of numbers
+    /// as C holds it; for an optional of text, the string the field's
+    /// `char *` points at, copied, or the optional with no data for NULL.
+    CField
+    {
+        /// The address of the C struct.
+        base: Box<Expr>,
+        /// The offset of the field, in octets.
+        offset: u32,
+    },
     /// A borrow of an address: the value of `operand` under a borrow mark.
     Lend
     {
@@ -789,27 +839,31 @@ pub enum ExprNode
         operand: Box<Expr>,
     },
     /// The value at an address, moved out: the place is left at the
-    /// default of its kind, `ဗလာ` for an owner. The expression kind is the
-    /// kind of the place.
+    /// default of its kind, the zero word for an owner. The expression kind is
+    /// the kind of the place.
     Take
     {
         /// The address of the place, a pointer.
         addr: Box<Expr>,
     },
-    /// A plain list about to be written through: when its room is 0
-    /// (its cells were lent to it, or it holds none), its cells first move to
-    /// a heap block of its own, each text and list in them duplicated. The
-    /// value is a place, read where it sits; the expression kind is its kind.
+    /// A plain list about to be written through: when its block is shared
+    /// with another holder, or its room is 0 (its cells are static or lent,
+    /// or it holds none), its cells first move to a heap block of its own,
+    /// each text and list in them duplicated. The value is a place, read
+    /// where it sits; the expression kind is its kind.
     Own
     {
         /// The list, a place.
         value: Box<Expr>,
+        /// Whether the block is pinned too: an address of one of its cells
+        /// is taken, so it is never shared again and a duplicate copies it.
+        #[serde(default)]
+        pin: bool,
     },
-    /// A duplicate of a value that holds text or a plain list: the value is
-    /// read, then each text and plain list in it whose cells sit in a heap
-    /// block gets a block of its own, so the place read and the place
-    /// written never share cells. The expression kind is the kind of
-    /// the value.
+    /// A duplicate of a value that holds counted blocks: the value is read,
+    /// then each block in it counts one more holder, so the place read and
+    /// the place written share the cells until one of them writes (a pinned
+    /// block is copied at once). The expression kind is the kind of the value.
     Dup
     {
         /// The value read, of the expression kind.
@@ -820,6 +874,11 @@ pub enum ExprNode
         /// it takes blocks of its own.
         #[serde(default)]
         lent: bool,
+        /// Whether the duplicate is deep: each object inside, and each plain
+        /// list that can hold one, gets a block of its own, each duplicated
+        /// once.
+        #[serde(default)]
+        deep: bool,
     },
     /// An address moved `offset` elements forward; the expression kind is
     /// the kind of `base`.
@@ -951,8 +1010,12 @@ pub fn fresh_text(e: &Expr) -> bool
             | ExprNode::Call { .. }
             | ExprNode::CallValue { .. }
             | ExprNode::List(_)
+            | ExprNode::CField { .. }
     );
-    made && e.kind.holds_text()
+    // A range copies its cells into a block of its own.
+    let range = matches!(&e.node, ExprNode::Own { value, .. }
+        if matches!(value.node, ExprNode::MakeSlice { .. }));
+    (made || range) && e.kind.holds_text()
 }
 
 /// A piece of text built when the program runs.
@@ -1134,6 +1197,13 @@ pub enum HaltCause
     NotGood,
     /// A good result was converted to its error value.
     NotFault,
+    /// A handle a C function closed went to C again.
+    ClosedHandle,
+    /// An optional that holds no data was read.
+    NoData,
+    /// C gave NULL where its declaration promised a value: a handle result
+    /// written with no optional.
+    NullFromC,
 }
 
 /// The name of a function a reader knows: the name the program writes. The

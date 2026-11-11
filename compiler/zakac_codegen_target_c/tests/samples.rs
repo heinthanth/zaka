@@ -21,7 +21,7 @@ const SKIPPED_GROUPS: &[&str] = &["diagnostics", "mistakes"];
 /// The samples the C target does not run, each with the reason.
 const NATIVE_SKIPPED: &[(&str, &str)] = &[
     ("basics/folding", "it uses f16, which the C target refuses with ZK0801"),
-    ("programs/start", "it prints its own path, argument 0, which differs natively"),
+    ("programs/start", "it prints its own path, argument 0, which differs per host"),
 ];
 
 /// The modes each sample builds in: the default, and the fastest. A sound

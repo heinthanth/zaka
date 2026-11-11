@@ -276,10 +276,10 @@ fn fence_words_with_an_equals_sign_are_options()
     assert_eq!(options, FenceOptions::builder().check(MemCheck::Warn).build());
 
     let (fence, options) =
-        Fence::parse("zaka-error ZK0717 no-raw=on").expect("a fence");
-    assert_eq!(fence.codes(), ["ZK0717"]);
-    assert!(options.no_raw);
-    assert_eq!(options.check, MemCheck::Error);
+        Fence::parse("zaka-error ZK0471 no-unsafe=on").expect("a fence");
+    assert_eq!(fence.codes(), ["ZK0471"]);
+    assert!(options.no_unsafe);
+    assert_eq!(options.check, MemCheck::Warn);
 
     let (_, options) = Fence::parse("zaka mem-strict=on").expect("a fence");
     assert!(options.strict);
@@ -288,7 +288,7 @@ fn fence_words_with_an_equals_sign_are_options()
     assert_eq!(plain, FenceOptions::default());
 
     assert_eq!(Fence::parse("zaka-error mem-check=loud"), None);
-    assert_eq!(Fence::parse("zaka no-raw=off"), None);
+    assert_eq!(Fence::parse("zaka no-unsafe=off"), None);
     let (_, options) = Fence::parse("zaka-stop overflow=stop").expect("a fence");
     assert_eq!(options.overflow, zakac_borrow_checker::options::OverflowMode::Stop);
     let (_, options) = Fence::parse("zaka overflow=wrap").expect("a fence");
@@ -306,23 +306,25 @@ fn fence_words_with_an_equals_sign_are_options()
 fn a_warn_fence_runs_a_program_the_check_refuses()
 {
     let source = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-\"အစ\" ဟု ပြသပါ။
-ပ ၏ တန်ဖိုး ကို ပြသပါ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+\"အစ\" ဟု ပြသမည်။
+ပ ၏ တန်ဖိုး ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
-    let (codes, out) = run_to_end(source, &FenceOptions::default(), "");
+    let error = FenceOptions::builder().check(MemCheck::Error).build();
+    let (codes, out) = run_to_end(source, &error, "");
     assert!(codes.contains(&"ZK0709".to_string()), "{codes:?}");
     assert_eq!(out, "");
 
-    let warn = FenceOptions::builder().check(MemCheck::Warn).build();
-    let (codes, out) = run_to_end(source, &warn, "");
+    let (codes, out) = run_to_end(source, &FenceOptions::default(), "");
     assert!(codes.contains(&"ZK0709".to_string()), "{codes:?}");
     assert!(out.starts_with("အစ\n"), "{out}");
     assert!(out.contains("null address"), "{out}");
 }
 
 #[test]
-fn the_pointer_chapter_teaches_owners_borrows_and_raw_addresses()
+fn the_unsafe_chapter_teaches_the_mark_and_owned_pointers()
 {
     let page = page_at(Book::Learn, "pointers/ownership").expect("the page is there");
     let zaka = |b: Block| match b
@@ -336,11 +338,11 @@ fn the_pointer_chapter_teaches_owners_borrows_and_raw_addresses()
         .filter_map(zaka)
         .flat_map(|s| s.fence.codes().to_vec())
         .collect();
-    let wanted = ["ZK0701", "ZK0703", "ZK0711", "ZK0714", "ZK0715", "ZK0717"];
+    let wanted = ["ZK0468", "ZK0471", "ZK0701"];
     let missing: Vec<_> =
         wanted.iter().filter(|c| !codes.contains(&c.to_string())).collect();
     assert!(missing.is_empty(), "codes the page does not show: {missing:?}");
-    let words = ["လိပ်စာအကြမ်း", "တန်ဖိုးအငှား"];
+    let words = ["စိတ်မချရသော", "စိတ်မချရသော်လည်း", "အပိုင်အနေဖြင့်"];
     let absent: Vec<_> = words.iter().filter(|w| !page.text.contains(*w)).collect();
     assert!(absent.is_empty(), "words the page does not teach: {absent:?}");
 }
@@ -417,10 +419,8 @@ const PAST_VALUES: &str = "forms/README.md";
 /// addresses and the heap.
 const LATER_WORDS: &[Kw] = &[
     Kw::Address,
-    Kw::RawAddress,
-    Kw::Borrowed,
-    Kw::Lend,
-    Kw::Part,
+    Kw::Unsafe,
+    Kw::UnsafeBlockOpen,
     Kw::StartingAt,
     Kw::Mem,
     Kw::AllocHead,

@@ -44,7 +44,7 @@ fn no_break_space_is_not_whitespace()
 fn self_delimiting_characters()
 {
     assert_eq!(texts("ရလဒ်၏"), ["ရလဒ်", "၏"]);
-    assert_eq!(texts("ပြသပါ။"), ["ပြသပါ", "။"]);
+    assert_eq!(texts("ပြသမည်။"), ["ပြသမည်", "။"]);
     assert_eq!(texts("က၊ခ"), ["က", "၊", "ခ"]);
     assert_eq!(texts("a+b"), ["a", "+", "b"]);
     assert_eq!(texts("`a b`"), ["`", "a", "b", "`"]);

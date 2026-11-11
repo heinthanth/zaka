@@ -60,8 +60,8 @@ fn clean_groups_have_no_diagnostics()
 #[test]
 fn particle_warnings_belong_to_the_check_stage()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၁ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက သည် ၁ နှင့် \
-                ညီသည် ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let text = "ကိန်းရှင် က သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက \
+                သည် ၁ နှင့် ညီသည် ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     assert!(out.checked);
     assert_eq!(out.count(Level::Warning), 1);
@@ -156,11 +156,11 @@ fn lexer_errors_skip_the_check()
 #[test]
 fn check_errors_are_reported()
 {
-    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nက ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     assert!(out.checked);
     assert_eq!(out.diagnostics[0].code, "ZK0301");
-    let at = text.find("က ကို ပြသပါ။").map(|n| n as u32);
+    let at = text.find("က ကို ပြသမည်။").map(|n| n as u32);
     assert_eq!(out.diagnostics[0].range.map(|r| r.lo), at);
 }
 
@@ -170,7 +170,7 @@ fn diagnostics_hold_their_phase()
     let lexer = compile("က ; ခ", &Options::default());
     assert_eq!(lexer.diagnostics[0].code, "ZK0101");
     assert_eq!(lexer.diagnostics[0].phase, Phase::Lex);
-    let check = compile("က ကို ပြသပါ။", &Options::default());
+    let check = compile("က ကို ပြသမည်။", &Options::default());
     assert!(check.diagnostics.iter().all(|d| d.phase == Phase::Check));
     let parser = compile(
         find_sample("diagnostics/parser_errors").unwrap().text,
@@ -182,7 +182,7 @@ fn diagnostics_hold_their_phase()
 #[test]
 fn phase_status_follows_the_diagnostics()
 {
-    let out = compile("က ကို ပြသပါ။", &Options::default());
+    let out = compile("က ကို ပြသမည်။", &Options::default());
     assert_eq!(out.status(Phase::Segment), Status::Clean);
     assert_eq!(out.status(Phase::Lex), Status::Clean);
     assert_eq!(out.status(Phase::Parse), Status::Clean);
@@ -219,7 +219,7 @@ fn fold_errors_belong_to_the_lowering_stage()
 #[test]
 fn fold_options_change_the_folded_ir()
 {
-    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n(၂ + ၃) * ၄ ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n(၂ + ၃) * ၄ ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let all = compile(text, &Options::default());
     assert!(
         all.ir_folded_sexpr.contains("(print 20:isize)"),
@@ -247,7 +247,7 @@ fn debug_mode_opens_the_last_phase_before_the_first_failure()
     assert_eq!(compile(clean.text, &Options::default()).last_passed(), Phase::Run);
     let lex = compile("က ; ခ", &Options::default());
     assert_eq!(lex.last_passed(), Phase::Segment);
-    let parse = compile("ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ\nက ကို ပြသပါ။", &Options::default());
+    let parse = compile("ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ\nက ကို ပြသမည်။", &Options::default());
     assert_eq!(parse.status(Phase::Parse), Status::Failed);
     assert_eq!(parse.last_passed(), Phase::Lex);
 }
@@ -265,7 +265,7 @@ fn blank_source_lacks_a_start_block()
 #[test]
 fn strings_show_their_value_in_pieces_and_their_source()
 {
-    let out = compile("\"က\\nခ\" ကို ပြသပါ။", &Options::default());
+    let out = compile("\"က\\nခ\" ကို ပြသမည်။", &Options::default());
     let row = &out.strings[0];
     let pieces: Vec<(PartKind, &str)> =
         row.value.iter().map(|p| (p.kind, p.text.as_str())).collect();
@@ -302,7 +302,7 @@ fn clean_samples_generate_ops_that_run()
 fn op_rows_point_at_their_source()
 {
     let text =
-        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"က\" ဟု ပြသပါ။\n၁ + ၂ ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"က\" ဟု ပြသမည်။\n၁ + ၂ ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     let main = out.asm.last().expect("main");
     assert_eq!(main.head(), "f1 main (params 0)");
@@ -310,7 +310,7 @@ fn op_rows_point_at_their_source()
     assert_eq!(start.head(), format!("f0 {START_NAME} (params 0)"));
     assert_eq!(out.texts, ["က"]);
     let first = start.rows[0].range.expect("range");
-    assert_eq!(&text[first.lo as usize..first.hi as usize], "\"က\" ဟု ပြသပါ။");
+    assert_eq!(&text[first.lo as usize..first.hi as usize], "\"က\" ဟု ပြသမည်။");
     assert_eq!(start.rows[0].line, Some(2));
     assert_eq!(start.rows[1].line, Some(3));
     let last = main.rows.last().expect("ret");
@@ -322,7 +322,7 @@ fn op_rows_point_at_their_source()
 fn jump_targets_get_labels()
 {
     let text = "ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
-                လုပ်ဆောင်မည်။\nအကယ်၍ က ဖြစ်လျှင် \"ဟုတ်\" ဟု ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+                လုပ်ဆောင်မည်။\nအကယ်၍ က ဖြစ်လျှင် \"ဟုတ်\" ဟု ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     let main = start_asm(&out);
     let jump = main.rows.iter().find(|r| r.text.starts_with("jump_if_false"));
@@ -346,8 +346,8 @@ fn codegen_skips_after_fold_errors()
 #[test]
 fn compiling_does_not_run_the_ops()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"အရင်\" ဟု \
-                ပြသပါ။\n၁ / သုည ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let text = "ကိန်းရှင် သုည သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+                လုပ်ဆောင်မည်။\n\"အရင်\" ဟု ပြသမည်။\n၁ / သုည ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     let out = compile(text, &Options::default());
     assert_eq!(out.status(Phase::Codegen), Status::Clean);
     assert_eq!(out.status(Phase::Run), Status::Clean);
@@ -356,9 +356,11 @@ fn compiling_does_not_run_the_ops()
 #[test]
 fn pointer_mistakes_fail_the_borrow_check()
 {
+    // The default is warn, so the table asks for the check as an error.
+    let errors = Options::builder().check(MemCheck::Error).build();
     let table: [(&str, &[&str]); 6] = [
         ("bad_free", &["ZK0702"]),
-        ("double_free", &["ZK0704", "ZK0702"]),
+        ("double_free", &["ZK0704"]),
         ("use_after_free", &["ZK0704"]),
         ("leak", &["ZK0708"]),
         ("null_read", &["ZK0709"]),
@@ -367,7 +369,7 @@ fn pointer_mistakes_fail_the_borrow_check()
     for (name, want) in table
     {
         let path = format!("{MISTAKES}/{name}");
-        let out = compile(find_sample(&path).unwrap().text, &Options::default());
+        let out = compile(find_sample(&path).unwrap().text, &errors);
         let codes: Vec<&str> =
             out.diagnostics.iter().map(|d| d.code.as_str()).collect();
         assert_eq!(codes, want, "{path}");
@@ -388,7 +390,8 @@ fn warn_builds_each_mistake_and_off_reports_nothing()
 {
     let warn = Options::builder().check(MemCheck::Warn).build();
     let off = Options::builder().check(MemCheck::Off).build();
-    for sample in SAMPLES.iter().filter(|s| s.group == MISTAKES)
+    let builds = |s: &&Sample| s.group == MISTAKES;
+    for sample in SAMPLES.iter().filter(builds)
     {
         let warned = compile(sample.text, &warn);
         assert!(warned.emitted, "{}", sample.path());
@@ -415,15 +418,15 @@ fn warn_builds_each_mistake_and_off_reports_nothing()
 }
 
 #[test]
-fn no_raw_rejects_a_raw_kind_in_the_check_phase()
+fn no_unsafe_refuses_the_marker_in_the_check_phase()
 {
-    let text = "ကိန်းရှင် r သည် ကိန်းပြည့် လိပ်စာအကြမ်း တစ်ခု ဖြစ်ပါစေ။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
-                လုပ်ဆောင်မည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအောက်ပါတို့ကို စိတ်မချရသော်လည်း \
+                လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     assert!(compile(text, &Options::default()).diagnostics.is_empty());
-    let out = compile(text, &Options::builder().no_raw(true).build());
+    let out = compile(text, &Options::builder().no_unsafe(true).build());
     let codes: Vec<(&str, Phase)> =
         out.diagnostics.iter().map(|d| (d.code.as_str(), d.phase)).collect();
-    assert_eq!(codes, [("ZK0717", Phase::Check)]);
+    assert_eq!(codes, [("ZK0471", Phase::Check)]);
     assert_eq!(out.status(Phase::BorrowCheck), Status::Skipped);
 }
 
@@ -446,19 +449,19 @@ fn clean_samples_pass_the_borrow_check_with_a_digest_for_each_function()
 fn the_borrow_check_labels_the_later_use()
 {
     let text = find_sample("mistakes/use_after_free").unwrap().text;
-    let out = compile(text, &Options::default());
+    let out = compile(text, &Options::builder().check(MemCheck::Error).build());
     let row = out.diagnostics.iter().find(|d| d.code == "ZK0704").expect("ZK0704");
     assert_eq!(row.labels.len(), 1, "{:?}", row.labels);
     let (range, label) = &row.labels[0];
     let line = text[..range.lo as usize].matches('\n').count() + 1;
-    assert_eq!(line, 8);
+    assert_eq!(line, 9);
     assert!(label.contains("used here"), "{label}");
 }
 
 #[test]
 fn an_import_is_refused_since_the_explorer_holds_one_file()
 {
-    let text = "\"က.zaka\" မှ ခ ကို ထည့်သွင်းပါ။\n၁ ကို ပြသပါ။";
+    let text = "\"က.zaka\" မှ ခ ကို ထည့်သွင်းမည်။\n၁ ကို ပြသမည်။";
     let out = compile(text, &Options::default());
     assert!(!out.checked);
     let row = out.diagnostics.iter().find(|d| d.code == "ZK0232").expect("ZK0232");

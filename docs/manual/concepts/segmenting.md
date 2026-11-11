@@ -13,13 +13,13 @@ does instead, in two steps, and what that asks of the person who writes the prog
 ## Two steps, from letters to words
 
 ```text
- text                    အသက်ကို ပြသပါ။
+ text                    အသက်ကို ပြသမည်။
    │  step 1: vannas  (zakac segment)
    ▼
  အ │ သက် │ ကို │ ␣ │ ပြ │ သ │ ပါ │ ။
    │  step 2: words      (zakac lex)
    ▼
- အသက်ကို │ ပြသပါ │ ။          one word per run without a space or a sign
+ အသက်ကို │ ပြသမည် │ ။          one word per run without a space or a sign
    │  step 3: look each word up
    ▼
  name       print    full stop
@@ -89,10 +89,10 @@ Some words cut like this:
 | `မြန်မာ` | `မြန်` `မာ` |
 | `ကျောင်းသား၊` | `ကျောင်း` `သား` `၊` |
 | `ပြန်လည်စွန့်လွှတ်မည်` | `ပြန်` `လည်` `စွန့်` `လွှတ်` `မည်` |
-| `သည်ကျော်ပါ` | `သည်` `ကျော်` `ပါ` |
+| `သည်ကျော်မည်` | `သည်` `ကျော်` `ပါ` |
 
 The last row shows a rule that needed care. In `ကျော်` the asat belongs to the
-vowel, not to a killed consonant, so `ကျော်` is one vanna and `သည်ကျော်ပါ` can still be
+vowel, not to a killed consonant, so `ကျော်` is one vanna and `သည်ကျော်မည်` can still be
 split between `သည်` and `ကျော်`.
 
 ## Step 2: words
@@ -103,7 +103,7 @@ The lexer joins neighbouring vannas into a *word*. A word ends at:
   (U+200B) all count the same. The macOS Burmese input method writes that last one for
   `Shift` + `Space`.
 - **a sign that stands alone.** `၊ ။ ၏`, quotes, brackets and the maths signs are each
-  a word of their own, so `ပြသပါ။` needs no space and nor does `၁+၂`.
+  a word of their own, so `ပြသမည်။` needs no space and nor does `၁+၂`.
 - **a change of script.** `abcက` is two words, and so is `၁၂34`.
 
 So `အသက်ကို` is one word, whatever its meaning to a reader. The lexer cannot know that it
@@ -144,11 +144,11 @@ where the writer meant two, and no cut can fix that:
 
 ```zaka-error ZK0206
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-အသက်ကို ပြသပါ။
+အသက်ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0206]: "ပြသပါ" needs "ကို|ဟု" after operand 1, found no particle
+error[ZK0206]: "ပြသမည်" needs "ကို|ဟု" after operand 1, found no particle
 help: write "အသက် ကို" with a space: a name joined to a particle is read as one word
 ```
 
@@ -158,9 +158,9 @@ The message names the missing particle and gives the fix.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသပါ။      // ထက်ကြီးသည်: three reserved words, joined
-၁+၂ ကို ပြသပါ။                     // no space around the sign
-၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသပါ။      // ၏ stands alone, so no space is needed
+၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသမည်။      // ထက်ကြီးသည်: three reserved words, joined
+၁+၂ ကို ပြသမည်။                     // no space around the sign
+၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသမည်။      // ၏ stands alone, so no space is needed
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

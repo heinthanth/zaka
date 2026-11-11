@@ -69,6 +69,17 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             do_if!(let Some(v) = value, expr(v, f));
             *span = f(*span);
         }
+        Stmt::Leave { value, span, .. } =>
+        {
+            expr(value, f);
+            *span = f(*span);
+        }
+        Stmt::CStore { base, value, span, .. } =>
+        {
+            expr(base, f);
+            expr(value, f);
+            *span = f(*span);
+        }
         Stmt::Print { value, span } =>
         {
             do_if!(let PrintValue::Expr(e) = value, expr(e, f));
@@ -216,8 +227,8 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }
         | ExprNode::Closure { record: operand, .. }
-        | ExprNode::Plain { value: operand }
-        | ExprNode::Own { value: operand } => expr(operand, f),
+        | ExprNode::CField { base: operand, .. }
+        | ExprNode::Own { value: operand, .. } => expr(operand, f),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
         | ExprNode::Logic { lhs, rhs, .. }

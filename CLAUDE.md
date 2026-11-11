@@ -25,7 +25,8 @@ and hosts a compiler explorer that runs in the browser.
 | `stdlib/` | the stdlib modules, in Zaka; the compiler carries each one (`STD_MODULES` in `zakac_parser/src/load.rs`), imported as `"စံကား/<name>"` |
 
 A program passes through: segmenter → lexer → parser → naturalness → names and kinds
-(semcheck) → lower to IR → fold constants → borrow checker → codegen → VM. `zakac build
+(semcheck) → lower to IR → fold constants → checker (flow facts, and the lint of marked
+code) → codegen → VM. `zakac build
 --target vm|c` picks the codegen: ops for the VM (`.zkc` / `.zkct`), or C and a native
 executable.
 
@@ -37,9 +38,10 @@ executable.
 | Test it all | `mise run test` (`cargo nextest run --workspace`) |
 | Test the Learn and Docs pages | `cargo test -p zaka_website --test books` |
 | Format | `mise run format` (rustfmt, then clang-format on the C runtime; run after each edit) |
-| Serve the site | `mise run website:serve` (port 3000, live reload) |
-| Serve the explorer | `mise run explorer:serve` |
-| Build the VS Code extension | `mise run vscode:build` (wasm-pack, npm, vsce) |
+| Serve the site | `mise run website:dev` (port 8000, live reload) |
+| Serve the explorer | `mise run explorer:dev` |
+| Build the VS Code extension | `mise run vscode:build` (wasm-pack, bun, vsce) |
+| Build and publish the site | `mise run pages:publish` (`dist`, then Cloudflare Pages) |
 
 ## Learn and Docs pages
 
@@ -60,7 +62,7 @@ and one set of tests serve both books.
     reads from standard input; the page shows it under the program.
   - `zaka-file` shows one file of a program in several files: painted, never run, and
     it must lex with no error. Start it with a `// <file>.zaka` line.
-  - Options can follow the fence word: `mem-check=warn|off`, `mem-strict=on`, `no-raw=on`,
+  - Options can follow the fence word: `mem-check=error|warn|off`, `mem-strict=on`, `no-unsafe=on`,
     `overflow=stop`.
 - The tests also check that each link reaches a page, each `#mark` reaches a `##` head,
   and each code in `zakac_diagnostics` has a row on `manual/reference/errors.md`.

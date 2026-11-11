@@ -9,7 +9,7 @@ use zakac_diagnostics::Code;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_parser::parser::parse;
-use zakac_parser::wrap::in_start_block;
+use zakac_semcheck::mark::in_marked_code;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_semcheck::semcheck::SemcheckOutput;
 use zakac_semcheck::semcheck::semcheck;
@@ -32,7 +32,7 @@ pub struct Checked
 /// or parser diagnostics.
 pub fn check_with(text: &str, options: &SemcheckOptions) -> Checked
 {
-    check_as_is(&in_start_block(text), options)
+    check_as_is(&in_marked_code(text), options)
 }
 
 /// Lex, parse and check `text` as it stands, with no start block added; panics

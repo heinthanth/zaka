@@ -42,7 +42,107 @@ static unsigned char *zk_grow(unsigned char *p, size_t size)
 }
 
 /**
- * Copy a value of a list or struct kind.
+ * The head in front of the cells of a counted block: text, a plain list, a
+ * box or the record of a closure.
+ */
+typedef struct zk_head
+{
+    /** The count of values that hold the block; the last to let go frees it. */
+    size_t rc;
+    /** The octets of its cells. */
+    size_t size;
+    /** The kind of each cell, so the ring collector can walk what the block
+     * holds; NULL for a block with nothing to walk. */
+    const zk_kind *cell;
+    /** The kind of each cell to drop as the block is freed, or NULL. */
+    const zk_kind *drop_cell;
+    /** The cells to drop as the block is freed. */
+    size_t len;
+    /** The next block in the queue of blocks to free. */
+    unsigned char *next;
+    /** Where the ring collector stands with the block: 0 black, 1 pending,
+     * 2 white. */
+    unsigned char color;
+    /** Whether the block waits in the buffer of the ring collector. */
+    unsigned char buffered;
+    /** Whether an address of one of its cells was taken: the block is never
+     * shared again, so a duplicate copies it. */
+    unsigned char pinned;
+} zk_head;
+
+/**
+ * The octets in front of the cells of a counted block: the head, padded so
+ * the cells keep the alignment malloc gives.
+ */
+#define ZK_SEQ_HEAD ((sizeof(zk_head) + 15) / 16 * 16)
+
+/**
+ * The head of a counted block.
+ *
+ * @param base The first cell of the block.
+ * @return The head, in front of the cells.
+ */
+static zk_head *zk_head_of(unsigned char *base)
+{
+    return (zk_head *)(void *)(base - ZK_SEQ_HEAD);
+}
+
+/**
+ * The count of the values that hold a counted block.
+ *
+ * @param base The first cell of the block.
+ * @return The count, in its head.
+ */
+static size_t *zk_seq_count(unsigned char *base) { return &zk_head_of(base)->rc; }
+
+/**
+ * A new counted block of text or a plain list, with one holder.
+ *
+ * @param size The octets of its cells.
+ * @return The first cell; the run stops when no room is left.
+ */
+unsigned char *zk_seq_new(size_t size)
+{
+    unsigned char *p = malloc(ZK_SEQ_HEAD + size);
+    DO_IF(!p, zk_out_of_mem(size));
+    zk_head *head = (zk_head *)(void *)p;
+    memset(head, 0, sizeof *head);
+    head->rc = 1;
+    head->size = size;
+    return p + ZK_SEQ_HEAD;
+}
+
+/**
+ * A counted block moved to a new size; its count and kind remain.
+ *
+ * @param base The first cell, or NULL for a new block.
+ * @param size The new octets of its cells.
+ * @return The first cell; the run stops when no room is left.
+ */
+static unsigned char *zk_seq_grow(unsigned char *base, size_t size)
+{
+    RET_IF(!base, zk_seq_new(size));
+    unsigned char *p = realloc(base - ZK_SEQ_HEAD, ZK_SEQ_HEAD + size);
+    DO_IF(!p, zk_out_of_mem(size));
+    ((zk_head *)(void *)p)->size = size;
+    return p + ZK_SEQ_HEAD;
+}
+
+/**
+ * Record the kind of each cell of a counted block, so the ring collector
+ * can walk what it holds.
+ *
+ * @param base The first cell of the block.
+ * @param cell The kind of each cell.
+ */
+static void zk_seq_kind(unsigned char *base, const zk_kind *cell)
+{
+    zk_head_of(base)->cell = cell;
+}
+
+void zk_seq_free(unsigned char *base) { DO_IF(base, free(base - ZK_SEQ_HEAD)); }
+/**
+ * Write a value of a list or struct kind.
  *
  * @param to The address written.
  * @param from The address read; the two can overlap.
@@ -117,7 +217,7 @@ unsigned char *zk_realloc(unsigned char *p, zk_umax count, size_t stride)
 }
 
 /**
- * Copy count cells of stride octets.
+ * Move count cells of stride octets.
  *
  * @param src The first cell read.
  * @param count The cell count.
@@ -230,7 +330,8 @@ int zk_fn_bound(zk_fn f) { return zk_fn_kind(f) != NULL; }
  */
 zk_fn zk_closure(unsigned char *record, zk_code thunk, const zk_kind *k)
 {
-    unsigned char *block = zk_block(k->size);
+    unsigned char *block = zk_seq_new(k->size);
+    zk_seq_kind(block, k);
     memcpy(block, record, k->size);
     memset(record, 0, k->size);
     memcpy(block, &thunk, sizeof thunk);
@@ -239,22 +340,9 @@ zk_fn zk_closure(unsigned char *record, zk_code thunk, const zk_kind *k)
 }
 
 /**
- * Check a function value headed where it can outlive the locals a closure
- * borrows: a closure that borrows stops the run.
- *
- * @param f The value.
- * @return The value.
- */
-zk_fn zk_fn_plain(zk_fn f)
-{
-    int borrows = f && zk_fn_bound(f) && zk_fn_kind(f)->holds_borrow;
-    DO_IF(borrows, zk_plain_trap(ZK_TRAP_CLOSURE_ESCAPE));
-    return f;
-}
-
-/**
- * Check a function value headed to C, which calls a bare code address: a
- * closure stops the run.
+ * Check a function value headed to C in a program with no runtime of
+ * closures for C (zaka_cb.c), or of a kind libffi cannot pass: C calls a bare
+ * code address, so a closure stops the run.
  *
  * @param f The value.
  * @return The value.
@@ -266,8 +354,10 @@ zk_fn zk_fn_c(zk_fn f)
 }
 
 /**
- * A duplicate of a function value: a closure gets a new record with the same
- * fields, each value in them duplicated in turn.
+ * A duplicate of a function value: a closure counts one more holder of its
+ * record, so each duplicate runs the one closure and its captures remain
+ * shared. A duplicate of a lent closure holds a count, so it is no longer
+ * lent.
  *
  * @param f The value.
  * @return The duplicate.
@@ -275,17 +365,15 @@ zk_fn zk_fn_c(zk_fn f)
 zk_fn zk_fn_dup(zk_fn f)
 {
     RET_IF(!f || !zk_fn_bound(f), f);
-    const zk_kind *k = zk_fn_kind(f);
-    DO_IF(k->owns, zk_plain_trap(ZK_TRAP_CLOSURE_OWNER));
-    unsigned char *block = zk_block(k->size);
-    memcpy(block, zk_fn_rec(f), k->size);
-    zk_dup_seqs(block, k);
-    return block;
+    unsigned char *rec = zk_fn_rec(f);
+    ++*zk_seq_count(rec);
+    return rec;
 }
 
 /**
  * A function value lent to a call: a closure gets the mark of a loan, so a
- * drop frees nothing and a duplicate copies the record.
+ * drop lets go of nothing, and a duplicate counts one more holder of the
+ * record and is no longer lent.
  *
  * @param f The value.
  * @return The lent value.
@@ -297,38 +385,14 @@ zk_fn zk_fn_lend(zk_fn f)
 }
 
 static const zk_kind *zk_repr(const zk_kind *k);
+static void zk_note_candidate(unsigned char *base);
+static void zk_dispose(unsigned char *base);
 
 /**
- * Free the block of each owner pointer inside a value, through its fields
- * and cells: the record of a closure owns what moved into it.
- *
- * @param at The value.
- * @param k Its kind.
- */
-static void zk_free_owners(unsigned char *at, const zk_kind *k)
-{
-    k = zk_repr(k);
-    RET_IF(!k->owns);
-    if (k->tag == ZK_K_STRUCT || k->tag == ZK_K_FALLIBLE)
-    {
-        DO_FOR(i, k->len) zk_free_owners(at + k->fields[i].offset, k->fields[i].kind);
-        return;
-    }
-    if (k->tag == ZK_K_LIST)
-    {
-        DO_FOR(i, k->len) zk_free_owners(at + i * k->cell->size, k->cell);
-        return;
-    }
-    RET_IF(k->tag != ZK_K_PTR);
-    void *block;
-    memcpy(&block, at, sizeof block);
-    free(block);
-    memset(at, 0, sizeof block);
-}
-
-/**
- * Free the record of the closure a slot holds, with each value its fields
- * own, and leave NULL. A function, or a lent closure, owns no record.
+ * Let go of the record of the closure a slot holds, and leave NULL: the last
+ * holder drops its fields, the boxes of its captures, and frees it. A
+ * function, or a lent
+ * closure, holds no count of a record.
  *
  * @param at The slot.
  */
@@ -337,13 +401,33 @@ static void zk_drop_fn(unsigned char *at)
     zk_fn f;
     memcpy(&f, at, sizeof f);
     int owned = f && !((uintptr_t)f & 1) && zk_fn_bound(f);
-    if (owned)
-    {
-        zk_drop(zk_fn_rec(f), zk_fn_kind(f));
-        zk_free_owners(zk_fn_rec(f), zk_fn_kind(f));
-        free(zk_fn_rec(f));
-    }
     memset(at, 0, sizeof f);
+    RET_IF(!owned);
+    unsigned char *rec = zk_fn_rec(f);
+    DONE_IF(--*zk_seq_count(rec) > 0, zk_note_candidate(rec));
+    zk_drop(rec, zk_fn_kind(f));
+    zk_dispose(rec);
+}
+
+/**
+ * The size of the record of a closure, from the kind in its second word.
+ *
+ * @param f The value, a closure.
+ * @return The size in octets.
+ */
+size_t zk_fn_size(zk_fn f) { return zk_fn_kind(f)->size; }
+
+/**
+ * Let go of one count of the record of a closure: the last holder drops its
+ * fields and frees it.
+ *
+ * @param f The value.
+ */
+void zk_fn_release(zk_fn f)
+{
+    unsigned char slot[sizeof f];
+    memcpy(slot, &f, sizeof f);
+    zk_drop_fn(slot);
 }
 
 /* ---- the words of lists and text ---- */
@@ -489,8 +573,310 @@ static const zk_kind *zk_text_cells(const zk_kind *k)
     return k->cell;
 }
 
+/* ---- the queue of blocks to free, and the ring collector ---- */
+
+/** The blocks let go and still to free; the outermost drop frees them in a
+ * loop, so a long chain needs no deep call stack. */
+static unsigned char *zk_freeing = NULL;
+
+/** Whether a drop is freeing the queue, so an inner drop just queues. */
+static int zk_draining = 0;
+
 /**
- * Free a block a text or plain list owns, with the text of its cells.
+ * Queue a block that nothing holds now.
+ *
+ * @param base The first cell of the block.
+ * @param cell The kind of each cell to drop first, or NULL.
+ * @param len The cells to drop.
+ */
+static void zk_queue_free(unsigned char *base, const zk_kind *cell, size_t len)
+{
+    zk_head *h = zk_head_of(base);
+    h->drop_cell = cell;
+    h->len = len;
+    h->next = zk_freeing;
+    zk_freeing = base;
+}
+
+/**
+ * Free a block that nothing holds; one in the buffer of the ring collector
+ * remains, with a count of 0, until the collector frees it.
+ *
+ * @param base The first cell of the block.
+ */
+static void zk_dispose(unsigned char *base)
+{
+    zk_head *h = zk_head_of(base);
+    DONE_IF(h->buffered, h->rc = 0);
+    zk_seq_free(base);
+}
+
+/** Free each queued block, dropping its cells first; a cell let go joins the
+ * queue. */
+static void zk_drain_frees(void)
+{
+    while (zk_freeing)
+    {
+        unsigned char *base = zk_freeing;
+        zk_head *h = zk_head_of(base);
+        zk_freeing = h->next;
+        const zk_kind *cell = h->drop_cell;
+        DO_IF(cell, DO_FOR(i, h->len) zk_drop(base + i * cell->size, cell));
+        zk_dispose(base);
+    }
+}
+
+/** A list of blocks that grows. */
+typedef struct
+{
+    unsigned char **at;
+    size_t len, cap;
+} zk_blocks;
+
+/**
+ * Add a block to a list.
+ *
+ * @param b The list.
+ * @param x The block.
+ */
+static void zk_blocks_push(zk_blocks *b, unsigned char *x)
+{
+    if (b->len == b->cap)
+    {
+        size_t cap = b->cap ? 2 * b->cap : 64;
+        unsigned char **more = realloc(b->at, cap * sizeof *more);
+        DO_IF(!more, zk_out_of_mem(cap * sizeof *more));
+        b->at = more;
+        b->cap = cap;
+    }
+    b->at[b->len++] = x;
+}
+
+/**
+ * Take the last block off a list.
+ *
+ * @param b The list.
+ * @return The block, or NULL for a list with no blocks.
+ */
+static unsigned char *zk_blocks_pop(zk_blocks *b)
+{
+    return b->len ? b->at[--b->len] : NULL;
+}
+
+/** The count of blocks that wait in the buffer before a collection runs. */
+#define ZK_BUFFER 1024
+
+/** The blocks a release left held that can be part of a ring. */
+static zk_blocks zk_candidates;
+
+/**
+ * Whether a value of a kind can hold a block that holds it back: a box, an
+ * object or a closure, at once or inside a list or a struct.
+ *
+ * @param k The kind.
+ * @return 1 for such a kind, else 0.
+ */
+static int zk_can_ring(const zk_kind *k)
+{
+    k = zk_repr(k);
+    RET_IF(k->boxed || k->tag == ZK_K_FN, 1);
+    RET_IF(k->tag == ZK_K_LIST || k->tag == ZK_K_SEQ, zk_can_ring(k->cell));
+    RET_IF(k->tag != ZK_K_STRUCT && k->tag != ZK_K_FALLIBLE, 0);
+    DO_FOR(i, k->len) RET_IF(zk_can_ring(k->fields[i].kind), 1);
+    return 0;
+}
+
+/** Where zk_note_child writes the blocks it finds. */
+static zk_blocks *zk_child_out;
+
+/**
+ * Note the block a slot holds a count of: the record of a closure that is
+ * not lent, or the block of text or a plain list that owns it.
+ *
+ * @param at The slot.
+ * @param k Its kind.
+ */
+static void zk_note_child(unsigned char *at, const zk_kind *k)
+{
+    if (k->tag == ZK_K_FN)
+    {
+        zk_fn f;
+        memcpy(&f, at, sizeof f);
+        int held = f && !((uintptr_t)f & 1) && zk_fn_bound(f);
+        DO_IF(held, zk_blocks_push(zk_child_out, zk_fn_rec(f)));
+        return;
+    }
+    unsigned char *base = zk_seq_base(at);
+    DO_IF(base && zk_seq_room(at) > 0, zk_blocks_push(zk_child_out, base));
+}
+
+/**
+ * The blocks a counted block holds a count of.
+ *
+ * @param base The first cell of the block.
+ * @param out The list the blocks join.
+ */
+static void zk_children(unsigned char *base, zk_blocks *out)
+{
+    const zk_head *h = zk_head_of(base);
+    RET_IF(!h->cell);
+    size_t stride = h->cell->size ? h->cell->size : 1;
+    zk_child_out = out;
+    DO_FOR(i, h->size / stride)
+        zk_each_block(base + i * stride, h->cell, zk_note_child);
+}
+
+/**
+ * Take off, for a trial, each count a block reached from a root gives
+ * another: paint each such block pending.
+ *
+ * @param root A block of the buffer.
+ */
+static void zk_mark_pending(unsigned char *root)
+{
+    zk_blocks todo = {NULL, 0, 0}, kids = {NULL, 0, 0};
+    zk_blocks_push(&todo, root);
+    for (unsigned char *b; (b = zk_blocks_pop(&todo));)
+    {
+        zk_head *h = zk_head_of(b);
+        NEXT_IF(h->color == 1);
+        h->color = 1;
+        kids.len = 0;
+        zk_children(b, &kids);
+        DO_FOR(i, kids.len)
+        {
+            zk_head *c = zk_head_of(kids.at[i]);
+            DO_IF(c->rc, c->rc--);
+            zk_blocks_push(&todo, kids.at[i]);
+        }
+    }
+    free(todo.at);
+    free(kids.at);
+}
+
+/**
+ * Give a block held from outside, and each block it reaches, the counts the
+ * trial took off, and paint them black.
+ *
+ * @param root The held block.
+ */
+static void zk_scan_black(unsigned char *root)
+{
+    zk_blocks todo = {NULL, 0, 0}, kids = {NULL, 0, 0};
+    zk_head_of(root)->color = 0;
+    zk_blocks_push(&todo, root);
+    for (unsigned char *b; (b = zk_blocks_pop(&todo));)
+    {
+        kids.len = 0;
+        zk_children(b, &kids);
+        DO_FOR(i, kids.len)
+        {
+            zk_head *c = zk_head_of(kids.at[i]);
+            c->rc++;
+            NEXT_IF(c->color == 0);
+            c->color = 0;
+            zk_blocks_push(&todo, kids.at[i]);
+        }
+    }
+    free(todo.at);
+    free(kids.at);
+}
+
+/**
+ * Paint white each pending block that nothing outside holds, and give a held
+ * one and what it reaches their counts back.
+ *
+ * @param root A block of the buffer.
+ */
+static void zk_scan(unsigned char *root)
+{
+    zk_blocks todo = {NULL, 0, 0};
+    zk_blocks_push(&todo, root);
+    for (unsigned char *b; (b = zk_blocks_pop(&todo));)
+    {
+        zk_head *h = zk_head_of(b);
+        NEXT_IF(h->color != 1);
+        if (h->rc > 0)
+        {
+            zk_scan_black(b);
+            continue;
+        }
+        h->color = 2;
+        zk_children(b, &todo);
+    }
+    free(todo.at);
+}
+
+/**
+ * Gather the white blocks a root reaches, painting them black so each is
+ * gathered once.
+ *
+ * @param root A block of the buffer.
+ * @param out The blocks to free.
+ */
+static void zk_collect_white(unsigned char *root, zk_blocks *out)
+{
+    zk_blocks todo = {NULL, 0, 0};
+    zk_blocks_push(&todo, root);
+    for (unsigned char *b; (b = zk_blocks_pop(&todo));)
+    {
+        zk_head *h = zk_head_of(b);
+        NEXT_IF(h->color != 2 || h->buffered);
+        h->color = 0;
+        zk_blocks_push(out, b);
+        zk_children(b, &todo);
+    }
+    free(todo.at);
+}
+
+/** Free each group of blocks in the buffer, or reached from it, that holds
+ * itself alone: trial deletion that halts the program while it runs. */
+static void zk_collect_rings(void)
+{
+    zk_blocks roots = zk_candidates, live = {NULL, 0, 0}, white = {NULL, 0, 0};
+    zk_candidates = (zk_blocks){NULL, 0, 0};
+    DO_FOR(i, roots.len)
+    {
+        zk_head *h = zk_head_of(roots.at[i]);
+        h->buffered = 0;
+        /* A block let go while it waited is freed now. */
+        if (h->rc == 0)
+        {
+            zk_seq_free(roots.at[i]);
+            continue;
+        }
+        zk_blocks_push(&live, roots.at[i]);
+    }
+    DO_FOR(i, live.len) zk_mark_pending(live.at[i]);
+    DO_FOR(i, live.len) zk_scan(live.at[i]);
+    DO_FOR(i, live.len) zk_collect_white(live.at[i], &white);
+    DO_FOR(i, white.len) zk_seq_free(white.at[i]);
+    free(roots.at);
+    free(live.at);
+    free(white.at);
+}
+
+/**
+ * Note a block that a release left held: it can be part of a ring that
+ * nothing outside holds. A full buffer runs a collection.
+ *
+ * @param base The first cell of the block.
+ */
+static void zk_note_candidate(unsigned char *base)
+{
+    zk_head *h = zk_head_of(base);
+    RET_IF(h->buffered || !h->cell || !zk_can_ring(h->cell));
+    /* The program frees each ring left as it ends, as the VM does. */
+    static int at_exit = 0;
+    DO_IF(!at_exit, at_exit = atexit(zk_collect_rings) == 0);
+    h->buffered = 1;
+    zk_blocks_push(&zk_candidates, base);
+    DO_IF(zk_candidates.len >= ZK_BUFFER, zk_collect_rings());
+}
+
+/**
+ * Let go of a text or plain list: the last holder queues its block, and one
+ * still held is noted for the ring collector.
  *
  * @param at The text or plain list.
  * @param k Its kind.
@@ -499,19 +885,21 @@ static void zk_drop_block(unsigned char *at, const zk_kind *k)
 {
     DONE_IF(k->tag == ZK_K_FN, zk_drop_fn(at));
     unsigned char *base = zk_seq_base(at);
-    size_t count = zk_seq_len(at);
-    const zk_kind *cell = zk_text_cells(k);
-    if (zk_seq_room(at) > 0)
-    {
-        DO_IF(cell, DO_FOR(i, count) zk_drop(base + i * cell->size, cell));
-        free(base);
-    }
+    size_t len = zk_seq_len(at);
+    int owned = zk_seq_room(at) > 0;
     memset(at, 0, 3 * ZK_WORD);
+    RET_IF(!owned);
+    DONE_IF(--*zk_seq_count(base) > 0, zk_note_candidate(base));
+    zk_queue_free(base, zk_text_cells(k), len);
 }
 
 void zk_drop(unsigned char *at, const zk_kind *k)
 {
     zk_each_block(at, k, zk_drop_block);
+    RET_IF(zk_draining);
+    zk_draining = 1;
+    zk_drain_frees();
+    zk_draining = 0;
 }
 
 /**
@@ -525,7 +913,8 @@ static void zk_clone_block(unsigned char *at, const zk_kind *k)
 {
     size_t count = zk_seq_len(at), stride = zk_stride(k), size = count * stride;
     DONE_IF(size == 0, zk_seq_put(at, NULL, 0, 0));
-    unsigned char *block = zk_block(size);
+    unsigned char *block = zk_seq_new(size);
+    zk_seq_kind(block, k->cell);
     memcpy(block, zk_seq_base(at), size);
     zk_seq_put(at, block, count, size);
     const zk_kind *cell = zk_text_cells(k);
@@ -548,12 +937,90 @@ static void zk_dup_block(unsigned char *at, const zk_kind *k)
         memcpy(at, &f, sizeof f);
         return;
     }
-    DO_IF(zk_seq_base(at), zk_clone_block(at, k));
+    unsigned char *base = zk_seq_base(at);
+    RET_IF(!base);
+    /* An owned block is shared and counted; a lent or static one (room 0)
+     * holds no count to share, and a pinned one is never shared, so each is
+     * copied. */
+    DONE_IF(zk_seq_room(at) > 0 && !zk_head_of(base)->pinned, ++*zk_seq_count(base));
+    zk_clone_block(at, k);
+}
+
+/**
+ * Give a text or plain list a block of its own when other values share its
+ * block, so a write reaches this value alone.
+ *
+ * @param at The text or plain list, which owns its block.
+ * @param k Its kind.
+ */
+static void zk_unshare(unsigned char *at, const zk_kind *k)
+{
+    unsigned char *base = zk_seq_base(at);
+    RET_IF(!base || *zk_seq_count(base) <= 1);
+    zk_clone_block(at, k);
+    /* The other holders keep the old block, so this never frees it. */
+    --*zk_seq_count(base);
 }
 
 void zk_dup_seqs(unsigned char *at, const zk_kind *k)
 {
     zk_each_block(at, k, zk_dup_block);
+}
+
+/* ---- the deep duplicate ---- */
+
+/** The new blocks whose cells the deep duplicate still visits. */
+static zk_blocks zk_deep_todo;
+
+/** The old objects the deep duplicate gave a new block. While it runs, the
+ * next word of each one's head points at its new block: a live block is in no
+ * queue to free, so the word is free to use, and it is cleared at the end. */
+static zk_blocks zk_deep_seen;
+
+/**
+ * Duplicate one text, plain list or function value inside a deep duplicate:
+ * an object gets its new block, made once; a list that can reach an object
+ * gets a new block whose cells are visited in turn; the rest are shared.
+ *
+ * @param at The slot.
+ * @param k Its kind.
+ */
+static void zk_deep_block(unsigned char *at, const zk_kind *k)
+{
+    DONE_IF(k->tag == ZK_K_FN || !zk_can_ring(k), zk_dup_block(at, k));
+    unsigned char *base = zk_seq_base(at);
+    RET_IF(!base);
+    zk_head *h = zk_head_of(base);
+    if (h->next)
+    {
+        ++*zk_seq_count(h->next);
+        memcpy(at, &h->next, sizeof h->next);
+        return;
+    }
+    size_t count = zk_seq_len(at), size = count * zk_stride(k);
+    DONE_IF(size == 0, zk_seq_put(at, NULL, 0, 0));
+    unsigned char *block = zk_seq_new(size);
+    zk_seq_kind(block, k->cell);
+    memcpy(block, base, size);
+    zk_seq_put(at, block, count, size);
+    zk_blocks_push(&zk_deep_todo, block);
+    RET_IF(!k->boxed);
+    h->next = block;
+    zk_blocks_push(&zk_deep_seen, base);
+}
+
+void zk_deep_seqs(unsigned char *at, const zk_kind *k)
+{
+    zk_each_block(at, k, zk_deep_block);
+    unsigned char *b;
+    while ((b = zk_blocks_pop(&zk_deep_todo)))
+    {
+        const zk_head *h = zk_head_of(b);
+        size_t stride = h->cell->size ? h->cell->size : 1;
+        DO_FOR(i, h->size / stride)
+            zk_each_block(b + i * stride, h->cell, zk_deep_block);
+    }
+    while ((b = zk_blocks_pop(&zk_deep_seen))) zk_head_of(b)->next = NULL;
 }
 
 /**
@@ -590,12 +1057,53 @@ void zk_lend_seqs(unsigned char *at, const zk_kind *k)
 static void zk_own_block(unsigned char *at, const zk_kind *k)
 {
     RET_IF(k->tag == ZK_K_FN);
-    DO_IF(zk_seq_room(at) == 0, zk_clone_block(at, k));
+    DONE_IF(zk_seq_room(at) == 0, zk_clone_block(at, k));
+    zk_unshare(at, k);
 }
 
 unsigned char *zk_own(unsigned char *at, const zk_kind *k)
 {
     zk_each_block(at, k, zk_own_block);
+    return at;
+}
+
+/**
+ * The address of the block of an object, which holds one more count of it.
+ *
+ * @param at The object.
+ * @return The block, or NULL for an object that is the zero word.
+ */
+unsigned char *zk_obj_ptr(const unsigned char *at)
+{
+    unsigned char *base = zk_seq_base(at);
+    DO_IF(base, ++*zk_seq_count(base));
+    return base;
+}
+
+/**
+ * Write the object a pointer to its block names; the object takes the count
+ * the pointer held.
+ *
+ * @param at The slot of the object.
+ * @param base The block, or NULL for the zero word.
+ */
+void zk_ptr_obj(unsigned char *at, unsigned char *base)
+{
+    size_t size = base ? zk_head_of(base)->size : 0;
+    zk_seq_put(at, base, base ? 1 : 0, size);
+}
+
+/**
+ * Pin the block of text or a plain list: an address of one of its cells is
+ * taken, so it is never shared again and a duplicate copies it.
+ *
+ * @param at The text or plain list, which owns its block.
+ * @return at.
+ */
+unsigned char *zk_pin(unsigned char *at)
+{
+    unsigned char *base = zk_seq_base(at);
+    DO_IF(base, zk_head_of(base)->pinned = 1);
     return at;
 }
 
@@ -607,7 +1115,10 @@ void zk_to_heap(
 {
     size_t count = list->len, size = count * list->cell->size;
     DONE_IF(size == 0, zk_seq_put(dst, NULL, 0, 0));
-    unsigned char *block = zk_block(size);
+    /* A fixed list is static, as in the VM: no drop frees it, so it holds
+     * no count. */
+    unsigned char *block = fixed ? zk_block(size) : zk_seq_new(size);
+    DO_IF(!fixed, zk_seq_kind(block, list->cell));
     memcpy(block, src, size);
     zk_seq_put(dst, block, count, fixed ? 0 : size);
 }
@@ -660,6 +1171,19 @@ static size_t zk_place_of(zk_imax index, size_t count, int first)
         zk_range_trap(ZK_TRAP_NO_PLACE_TO_INSERT, index, first, (zk_imax)count + first)
     );
     return (size_t)(index - first);
+}
+
+/**
+ * The address of the fields of an object: cell 0 of its box. An object
+ * variable that holds the zero word has a box with no cell, and the run stops.
+ *
+ * @param at The box.
+ * @return The address of the fields.
+ */
+unsigned char *zk_object_cell(const unsigned char *at)
+{
+    DO_IF(zk_seq_len(at) == 0, zk_plain_trap(ZK_TRAP_NULL_OBJECT));
+    return zk_seq_base(at);
 }
 
 unsigned char *zk_slice_cell(
@@ -740,6 +1264,11 @@ int zk_is_utf8(const unsigned char *s, size_t n)
     return 1;
 }
 
+/**
+ * Stop the run when a plain list of u8s holds no UTF-8.
+ *
+ * @param at The plain list.
+ */
 void zk_check_utf8(const unsigned char *at)
 {
     RET_IF(!ZK_LANG_CHECKS);
@@ -778,7 +1307,8 @@ static void zk_put_cell(
     {
         room = need > 2 * held ? need : 2 * held;
         room = room > 4 * stride ? room : 4 * stride;
-        block = zk_grow(held == 0 ? NULL : block, room);
+        block = zk_seq_grow(held == 0 ? NULL : block, room);
+        zk_seq_kind(block, k->cell);
     }
     DO_IF(
         count > n,
@@ -887,7 +1417,7 @@ static void zk_put_text(unsigned char *at, const unsigned char *s, size_t len)
     {
         room = len > 2 * held ? len : 2 * held;
         room = room > 16 ? room : 16;
-        block = zk_grow(held == 0 ? NULL : block, room);
+        block = zk_seq_grow(held == 0 ? NULL : block, room);
     }
     DO_IF(len, memcpy(block, s, len));
     zk_seq_put(at, block, len, room);
@@ -1045,8 +1575,11 @@ static void zk_remove_char(unsigned char *at)
 void zk_remove_cell(unsigned char *at, const zk_kind *k)
 {
     DONE_IF(k->tag == ZK_K_TEXT, zk_remove_char(at));
-    size_t count = zk_seq_len(at), room = zk_seq_room(at);
+    size_t count = zk_seq_len(at);
     DO_IF(count == 0, zk_plain_trap(ZK_TRAP_NO_CELL_TO_REMOVE));
+    /* The drop writes into the block, so a shared one is copied first. */
+    DO_IF(zk_seq_room(at) > 0, zk_unshare(at, k));
+    size_t room = zk_seq_room(at);
     unsigned char *base = zk_seq_base(at);
     DO_IF(room > 0, zk_drop(base + (count - 1) * k->cell->size, k->cell));
     zk_seq_put(at, base, count - 1, room);
@@ -1088,43 +1621,221 @@ int zk_text_eq(const unsigned char *a, const unsigned char *b)
     return n == 0 || memcmp(zk_seq_base(a), zk_seq_base(b), n) == 0;
 }
 
+/* ---- walks that keep their steps on the heap ---- */
+
+/** What a step of a walk does. */
+enum
+{
+    /** Compare or write a value. */
+    ZK_STEP_VALUE,
+    /** Write a piece of text. */
+    ZK_STEP_PIECE,
+    /** Leave an object the print is inside. */
+    ZK_STEP_LEAVE
+};
+
+/** One step of a walk over a value, kept on the heap so a long chain of
+ * objects takes no C stack. */
+typedef struct zk_step
+{
+    int what;
+    const unsigned char *a, *b;
+    const zk_kind *k;
+    size_t len;
+    int nested;
+} zk_step;
+
+/** The steps still to run, the last one first. */
+typedef struct zk_steps
+{
+    zk_step *at;
+    size_t len, cap;
+} zk_steps;
+
 /**
- * Whether two runs of cells are equal.
+ * Add a step to the steps still to run.
  *
- * @param a The first cell of one.
- * @param b The first cell of the other.
- * @param cell The kind of a cell.
- * @param count The cell count.
- * @return 1 when each cell is equal.
+ * @param s The steps.
+ * @param step The step.
  */
-static int zk_cells_eq(
-    const unsigned char *a, const unsigned char *b, const zk_kind *cell, size_t count
+static void zk_steps_push(zk_steps *s, zk_step step)
+{
+    if (s->len == s->cap)
+    {
+        size_t cap = s->cap ? 2 * s->cap : 64;
+        zk_step *more = realloc(s->at, cap * sizeof *more);
+        DO_IF(!more, zk_out_of_mem(cap * sizeof *more));
+        s->at = more;
+        s->cap = cap;
+    }
+    s->at[s->len++] = step;
+}
+
+/** A set of pairs of addresses: open addressing, with a mark for a pair
+ * taken out. */
+typedef struct zk_set
+{
+    const unsigned char **slots;
+    size_t cap, used;
+} zk_set;
+
+/** The mark of a slot whose pair was taken out. */
+static const unsigned char zk_gone = 0;
+
+/**
+ * The slot of a pair: where it is, or the first free slot on its probe.
+ *
+ * @param set The set; its room is a power of two.
+ * @param a The first address.
+ * @param b The second address.
+ * @return The slot number.
+ */
+static size_t zk_set_slot(
+    const zk_set *set, const unsigned char *a, const unsigned char *b
 )
 {
-    DO_FOR(i, count) RET_IF(!zk_eq(a + i * cell->size, b + i * cell->size, cell), 0);
+    uintptr_t h = ((uintptr_t)a * 2654435761u) ^ ((uintptr_t)b * 40503u);
+    size_t at = (size_t)(h >> 4) & (set->cap - 1);
+    size_t free_at = set->cap;
+    while (set->slots[2 * at])
+    {
+        RET_IF(set->slots[2 * at] == a && set->slots[2 * at + 1] == b, at);
+        DO_IF(set->slots[2 * at] == &zk_gone && free_at == set->cap, free_at = at);
+        at = (at + 1) & (set->cap - 1);
+    }
+    return free_at == set->cap ? at : free_at;
+}
+
+/**
+ * Add a pair to a set.
+ *
+ * @param set The set.
+ * @param a The first address, not NULL.
+ * @param b The second address.
+ * @return 1 when the pair is new, 0 when the set holds it.
+ */
+static int zk_set_add(zk_set *set, const unsigned char *a, const unsigned char *b)
+{
+    if (2 * (set->used + 1) > set->cap)
+    {
+        zk_set grown = {NULL, set->cap ? 2 * set->cap : 64, 0};
+        grown.slots = calloc(2 * grown.cap, sizeof *grown.slots);
+        DO_IF(!grown.slots, zk_out_of_mem(2 * grown.cap * sizeof *grown.slots));
+        DO_FOR(i, set->cap)
+        {
+            const unsigned char *x = set->slots[2 * i];
+            NEXT_IF(!x || x == &zk_gone);
+            size_t at = zk_set_slot(&grown, x, set->slots[2 * i + 1]);
+            grown.slots[2 * at] = x;
+            grown.slots[2 * at + 1] = set->slots[2 * i + 1];
+            grown.used++;
+        }
+        free(set->slots);
+        *set = grown;
+    }
+    size_t at = zk_set_slot(set, a, b);
+    RET_IF(set->slots[2 * at] == a && set->slots[2 * at + 1] == b, 0);
+    DO_IF(!set->slots[2 * at], set->used++);
+    set->slots[2 * at] = a;
+    set->slots[2 * at + 1] = b;
     return 1;
 }
 
-int zk_eq(const unsigned char *a, const unsigned char *b, const zk_kind *k)
+/**
+ * Take a pair out of a set.
+ *
+ * @param set The set.
+ * @param a The first address.
+ * @param b The second address.
+ */
+static void zk_set_drop(zk_set *set, const unsigned char *a, const unsigned char *b)
+{
+    RET_IF(!set->cap);
+    size_t at = zk_set_slot(set, a, b);
+    RET_IF(set->slots[2 * at] != a || set->slots[2 * at + 1] != b);
+    set->slots[2 * at] = &zk_gone;
+    set->slots[2 * at + 1] = NULL;
+}
+
+/**
+ * Add a step that compares or writes a value.
+ *
+ * @param s The steps.
+ * @param a The value, or the first of two.
+ * @param b The second value, or NULL.
+ * @param k The kind.
+ * @param nested 1 when text is written in quotes.
+ */
+static void zk_push_value(
+    zk_steps *s, const unsigned char *a, const unsigned char *b, const zk_kind *k,
+    int nested
+)
+{
+    zk_steps_push(s, (zk_step){ZK_STEP_VALUE, a, b, k, 0, nested});
+}
+
+/**
+ * Add the steps that compare two runs of cells, each to the cell at the
+ * same place.
+ *
+ * @param s The steps.
+ * @param a The first cell of the first run.
+ * @param b The first cell of the second run.
+ * @param cell The kind of a cell.
+ * @param count The cell count of each.
+ */
+static void zk_push_cell_pairs(
+    zk_steps *s, const unsigned char *a, const unsigned char *b, const zk_kind *cell,
+    size_t count
+)
+{
+    DO_FOR(i, count) zk_push_value(s, a + i * cell->size, b + i * cell->size, cell, 0);
+}
+
+/**
+ * Compare one pair of values: scalars and text at once, the parts of a list,
+ * a plain list, an object or a struct as steps. Two objects compared before
+ * count as equal, so a ring ends.
+ *
+ * @param a The first value.
+ * @param b The second value.
+ * @param k The kind.
+ * @param s The steps, added to.
+ * @param seen The pairs of objects met, added to.
+ * @return 0 when the pair differs, else 1.
+ */
+static int zk_eq_step(
+    const unsigned char *a, const unsigned char *b, const zk_kind *k, zk_steps *s,
+    zk_set *seen
+)
 {
     k = zk_repr(k);
     switch (k->tag)
     {
     case ZK_K_TEXT:
-    case ZK_K_VIEW:
         return zk_text_eq(a, b);
     case ZK_K_SEQ:
-    case ZK_K_SLICE:
+        if (k->boxed)
+        {
+            const unsigned char *la = zk_seq_base(a), *lb = zk_seq_base(b);
+            RET_IF(la == lb, 1);
+            RET_IF(!la || !lb, 0);
+            RET_IF(!zk_set_add(seen, la, lb), 1);
+            zk_push_value(s, la, lb, k->cell, 0);
+            return 1;
+        }
         RET_IF(zk_seq_len(a) != zk_seq_len(b), 0);
-        return zk_cells_eq(zk_seq_base(a), zk_seq_base(b), k->cell, zk_seq_len(a));
+        zk_push_cell_pairs(s, zk_seq_base(a), zk_seq_base(b), k->cell, zk_seq_len(a));
+        return 1;
     case ZK_K_LIST:
-        return zk_cells_eq(a, b, k->cell, k->len);
+        zk_push_cell_pairs(s, a, b, k->cell, k->len);
+        return 1;
     case ZK_K_STRUCT:
     case ZK_K_FALLIBLE:
         DO_FOR(i, k->len)
         {
             size_t at = k->fields[i].offset;
-            RET_IF(!zk_eq(a + at, b + at, k->fields[i].kind), 0);
+            zk_push_value(s, a + at, b + at, k->fields[i].kind, 0);
         }
         return 1;
     case ZK_K_FLOAT:
@@ -1133,6 +1844,22 @@ int zk_eq(const unsigned char *a, const unsigned char *b, const zk_kind *k)
     default:
         return memcmp(a, b, k->size) == 0;
     }
+}
+
+int zk_eq(const unsigned char *a, const unsigned char *b, const zk_kind *k)
+{
+    zk_steps steps = {NULL, 0, 0};
+    zk_set seen = {NULL, 0, 0};
+    zk_push_value(&steps, a, b, k, 0);
+    int same = 1;
+    while (same && steps.len)
+    {
+        zk_step step = steps.at[--steps.len];
+        same = zk_eq_step(step.a, step.b, step.k, &steps, &seen);
+    }
+    free(steps.at);
+    free(seen.slots);
+    return same;
 }
 
 /* ---- print ---- */
@@ -1164,44 +1891,6 @@ static void zk_show_text(const unsigned char *at, int nested)
 }
 
 /**
- * Write a run of cells between `[` and `]`.
- *
- * @param base The first cell.
- * @param cell The kind of a cell.
- * @param count The cell count.
- */
-static void zk_show_cells(const unsigned char *base, const zk_kind *cell, size_t count)
-{
-    zk_emit("[", 1);
-    DO_FOR(i, count)
-    {
-        DO_IF(i, zk_emit(zk_sep, sizeof zk_sep - 1));
-        zk_show(base + i * cell->size, cell, 1);
-    }
-    zk_emit("]", 1);
-}
-
-/**
- * Write a struct: its name, then each field as `name: value`.
- *
- * @param at The struct.
- * @param k Its kind.
- */
-static void zk_show_struct(const unsigned char *at, const zk_kind *k)
-{
-    zk_emit(k->name, strlen(k->name));
-    zk_emit("(", 1);
-    DO_FOR(i, k->len)
-    {
-        DO_IF(i, zk_emit(zk_sep, sizeof zk_sep - 1));
-        zk_emit(k->fields[i].name, strlen(k->fields[i].name));
-        zk_emit(": ", 2);
-        zk_show(at + k->fields[i].offset, k->fields[i].kind, 1);
-    }
-    zk_emit(")", 1);
-}
-
-/**
  * The field of a struct with a name.
  *
  * @param k The struct kind.
@@ -1212,27 +1901,6 @@ const zk_field *zk_field_named(const zk_kind *k, const char *name)
 {
     DO_FOR(i, k->len) RET_IF(!strcmp(k->fields[i].name, name), &k->fields[i]);
     return NULL;
-}
-
-/**
- * Write a result that can fail: its good value or its error value, or the
- * word of a side with no value.
- *
- * @param at The result.
- * @param k Its kind.
- */
-static void zk_show_fallible(const unsigned char *at, const zk_kind *k)
-{
-    const zk_field *tag = zk_field_named(k, "tag");
-    int failed = tag && at[tag->offset] == 0;
-    const zk_field *part = zk_field_named(k, failed ? "err" : "ok");
-    const char *bare = failed ? zk_fault_bare : zk_good_bare;
-    DONE_IF(!part, zk_emit(bare, strlen(bare)));
-    const char *word = failed ? zk_fault_text : zk_good_text;
-    zk_emit(word, strlen(word));
-    zk_emit("(", 1);
-    zk_show(at + part->offset, part->kind, 1);
-    zk_emit(")", 1);
 }
 
 /**
@@ -1261,7 +1929,7 @@ static void zk_show_member(const unsigned char *at, const zk_kind *k)
     }
     DO_IF(found, zk_emit(found->shown, strlen(found->shown)));
     DO_IF(!found, zk_emit(value, len));
-    free(zk_seq_base(held));
+    zk_seq_free(zk_seq_base(held));
 }
 
 void zk_put_ptr(const unsigned char *p)
@@ -1335,34 +2003,163 @@ static void zk_show_scalar(const unsigned char *at, const zk_kind *k)
     }
 }
 
-void zk_show(const unsigned char *at, const zk_kind *k, int nested)
+/**
+ * Add a step that writes a piece of text.
+ *
+ * @param s The steps.
+ * @param text The text.
+ * @param len Its length in octets.
+ */
+static void zk_push_piece(zk_steps *s, const char *text, size_t len)
 {
+    zk_steps_push(
+        s, (zk_step){ZK_STEP_PIECE, (const unsigned char *)text, NULL, NULL, len, 0}
+    );
+}
+
+/**
+ * Add the steps that write a run of cells between `[` and `]`, the last
+ * first.
+ *
+ * @param s The steps.
+ * @param base The first cell.
+ * @param cell The kind of a cell.
+ * @param count The cell count.
+ */
+static void zk_push_cells(
+    zk_steps *s, const unsigned char *base, const zk_kind *cell, size_t count
+)
+{
+    zk_push_piece(s, "]", 1);
+    for (size_t i = count; i-- > 0;)
+    {
+        zk_push_value(s, base + i * cell->size, NULL, cell, 1);
+        DO_IF(i, zk_push_piece(s, zk_sep, sizeof zk_sep - 1));
+    }
+    zk_push_piece(s, "[", 1);
+}
+
+/**
+ * Add the steps that write a struct, the last first: its name, then each
+ * field as `name: value`.
+ *
+ * @param s The steps.
+ * @param at The struct.
+ * @param k Its kind.
+ */
+static void zk_push_struct(zk_steps *s, const unsigned char *at, const zk_kind *k)
+{
+    zk_push_piece(s, ")", 1);
+    for (size_t i = k->len; i-- > 0;)
+    {
+        zk_push_value(s, at + k->fields[i].offset, NULL, k->fields[i].kind, 1);
+        zk_push_piece(s, ": ", 2);
+        zk_push_piece(s, k->fields[i].name, strlen(k->fields[i].name));
+        DO_IF(i, zk_push_piece(s, zk_sep, sizeof zk_sep - 1));
+    }
+    zk_push_piece(s, "(", 1);
+    zk_push_piece(s, k->name, strlen(k->name));
+}
+
+/**
+ * Add the steps that write a result that can fail, the last first: its good
+ * value or its error value, or the word of a side with no value. An optional
+ * writes its data, or the word of an optional with no data.
+ *
+ * @param s The steps.
+ * @param at The result.
+ * @param k Its kind.
+ */
+static void zk_push_fallible(zk_steps *s, const unsigned char *at, const zk_kind *k)
+{
+    const zk_field *tag = zk_field_named(k, "tag");
+    int failed = tag && at[tag->offset] == 0;
+    const zk_field *some = zk_field_named(k, "some");
+    DONE_IF(some && failed, zk_push_piece(s, zk_no_data_text, strlen(zk_no_data_text)));
+    const zk_field *part = some ? some : zk_field_named(k, failed ? "err" : "ok");
+    const char *bare = failed ? zk_fault_bare : zk_good_bare;
+    DONE_IF(!part, zk_push_piece(s, bare, strlen(bare)));
+    const char *word = some ? zk_data_text : failed ? zk_fault_text : zk_good_text;
+    zk_push_piece(s, ")", 1);
+    zk_push_value(s, at + part->offset, NULL, part->kind, 1);
+    zk_push_piece(s, "(", 1);
+    zk_push_piece(s, word, strlen(word));
+}
+
+/**
+ * Add the steps that write an object: its struct, or the null text for an
+ * object with no value. An object the print is still inside is written as
+ * an ellipsis.
+ *
+ * @param s The steps.
+ * @param inside The objects the print is inside, added to.
+ * @param at The object: its box.
+ * @param k The object kind.
+ */
+static void zk_push_object(
+    zk_steps *s, zk_set *inside, const unsigned char *at, const zk_kind *k
+)
+{
+    const unsigned char *base = zk_seq_base(at);
+    DONE_IF(!base, zk_push_piece(s, zk_null_text, strlen(zk_null_text)));
+    DONE_IF(!zk_set_add(inside, base, NULL), zk_push_piece(s, "\xe2\x80\xa6", 3));
+    zk_steps_push(s, (zk_step){ZK_STEP_LEAVE, base, NULL, NULL, 0, 0});
+    zk_push_value(s, base, NULL, k->cell, 0);
+}
+
+/**
+ * Run one step of a print: write a piece, leave an object, or write a value,
+ * at once or as further steps.
+ *
+ * @param step The step.
+ * @param s The steps, added to.
+ * @param inside The objects the print is inside.
+ */
+static void zk_show_step(const zk_step *step, zk_steps *s, zk_set *inside)
+{
+    DONE_IF(step->what == ZK_STEP_PIECE, zk_emit(step->a, step->len));
+    DONE_IF(step->what == ZK_STEP_LEAVE, zk_set_drop(inside, step->a, NULL));
+    const unsigned char *at = step->a;
+    const zk_kind *k = step->k;
     switch (k->tag)
     {
     case ZK_K_ENUM:
         zk_show_member(at, k);
         return;
     case ZK_K_STRUCT:
-        zk_show_struct(at, k);
+        zk_push_struct(s, at, k);
         return;
     case ZK_K_FALLIBLE:
-        zk_show_fallible(at, k);
+        zk_push_fallible(s, at, k);
         return;
     case ZK_K_TEXT:
-    case ZK_K_VIEW:
-        zk_show_text(at, nested);
+        zk_show_text(at, step->nested);
         return;
     case ZK_K_SEQ:
-    case ZK_K_SLICE:
-        zk_show_cells(zk_seq_base(at), k->cell, zk_seq_len(at));
+        DONE_IF(k->boxed, zk_push_object(s, inside, at, k));
+        zk_push_cells(s, zk_seq_base(at), k->cell, zk_seq_len(at));
         return;
     case ZK_K_LIST:
-        zk_show_cells(at, k->cell, k->len);
+        zk_push_cells(s, at, k->cell, k->len);
         return;
     default:
         zk_show_scalar(at, k);
         return;
     }
+}
+
+void zk_show(const unsigned char *at, const zk_kind *k, int nested)
+{
+    zk_steps steps = {NULL, 0, 0};
+    zk_set inside = {NULL, 0, 0};
+    zk_push_value(&steps, at, NULL, k, nested);
+    while (steps.len)
+    {
+        zk_step step = steps.at[--steps.len];
+        zk_show_step(&step, &steps, &inside);
+    }
+    free(steps.at);
+    free(inside.slots);
 }
 
 /* ---- results ---- */
@@ -1382,3 +2179,13 @@ _Noreturn void zk_not_good(const unsigned char *at, const zk_kind *k)
 _Noreturn void zk_not_good_bare(void) { zk_plain_trap(ZK_TRAP_NOT_GOOD_BARE); }
 
 _Noreturn void zk_not_fault(void) { zk_plain_trap(ZK_TRAP_NOT_FAULT); }
+
+/**
+ * Stop the run: an optional that holds no data was read.
+ */
+_Noreturn void zk_no_data(void) { zk_plain_trap(ZK_TRAP_NO_DATA); }
+
+/**
+ * Stop the run: a handle a C function closed went to C again.
+ */
+_Noreturn void zk_closed_handle(void) { zk_plain_trap(ZK_TRAP_CLOSED_HANDLE); }

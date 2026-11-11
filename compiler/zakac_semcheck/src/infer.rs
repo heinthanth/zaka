@@ -1,6 +1,7 @@
 use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::FloatLit;
+use zakac_ast::expr::Ident;
 use zakac_ast::expr::InfixExpr;
 use zakac_ast::expr::IntLit;
 use zakac_ast::expr::LogicExpr;
@@ -16,17 +17,20 @@ use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
-use zakac_diagnostics::ownership as od;
+use zakac_diagnostics::kinds::NoInitial;
+use zakac_diagnostics::naturalness as nd;
 use zakac_diagnostics::resolve as rd;
 use zakac_i18n::t;
 use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::token::Kw;
+use zakac_naturalness::classifiers::GENERAL_CLASSIFIER;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::kind::DataKind;
+use crate::kind::InitialGap;
 use crate::list::KindUse;
 use crate::ops::OpClass;
 use crate::ops::Want;
@@ -36,7 +40,6 @@ use crate::ops::kw_label;
 use crate::ops::verb_class;
 use crate::ops::verb_label;
 use crate::place::place_of;
-use crate::place::var_name;
 use crate::proof::result_var;
 use crate::scope::Access;
 use crate::semcheck::Checker;
@@ -88,10 +91,11 @@ impl Checker
             Expr::Logic(n) => self.infer_logic(n),
             Expr::Verb(n) => self.infer_verb(n, expect),
             Expr::Call(n) => self.infer_call(n),
+            Expr::Null(n) if n.blank => self.infer_no_data(n.span, expect),
+            Expr::Null(n) if n.initial => self.infer_initial(n.span, expect),
             Expr::Null(_) =>
             {
-                let takes = |k: &DataKind| k.is_ptr() || k.is_fn();
-                Some(expect.filter(takes).unwrap_or(DataKind::Null))
+                Some(expect.filter(|k| k.is_ptr()).unwrap_or(DataKind::Null))
             }
             Expr::SizeOf(n) =>
             {
@@ -244,12 +248,10 @@ impl Checker
     /// A pointer to the kind of the place, or `None` after an error.
     fn infer_addr_of(&mut self, operand: &Expr) -> Option<DataKind>
     {
+        self.need_unchecked(operand.span(), "\"၏ လိပ်စာ\"");
         let kind = self.infer(operand, None);
         ret_if!(!self.addressable(operand), None);
-        let kind = kind?;
-        let span = operand.span();
-        ret_if!(kind.holds_borrow(), self.report(od::borrow_of_borrow(span)), None);
-        Some(kind.pointer_to().as_borrowed())
+        Some(kind?.pointer_to())
     }
 
     /// Whether an operand is a place whose address can be taken, reporting
@@ -276,55 +278,6 @@ impl Checker
         let diag = fixed.map(|name| kd::fixed_address(operand.span(), name));
         do_if!(let Some(d) = diag, self.report(d));
         true
-    }
-
-    /// Whether an operand is a place whose text can be viewed: a variable,
-    /// a field, a cell or a dereference. A constant counts, since a view of
-    /// text never writes it.
-    ///
-    /// # Arguments
-    ///
-    /// * `operand` - The operand.
-    ///
-    /// # Returns
-    ///
-    /// `true` for such a place; `false` after reporting another operand.
-    pub(crate) fn viewable(&mut self, operand: &Expr) -> bool
-    {
-        let place = place_of(operand).filter(|p| !self.in_temp_list(p));
-        ret_if!(place.is_some(), true);
-        self.report(kd::no_address(operand.span(), &what_of(operand)));
-        false
-    }
-
-    /// Infer a lend: a borrow of the block a pointer holds, or a slice of
-    /// each cell of a list.
-    ///
-    /// # Arguments
-    ///
-    /// * `operand` - The pointer.
-    ///
-    /// # Returns
-    ///
-    /// The pointer kind as a borrow, the slice kind for a list, or `None`
-    /// after an error.
-    pub fn infer_lend(&mut self, operand: &Expr) -> Option<DataKind>
-    {
-        let kind = self.infer(operand, None)?;
-        let span = operand.span();
-        ret_if!(kind.is_raw_ptr(), self.report(od::lend_of_raw(span)), None);
-        ret_if!(kind.is_ptr(), Some(kind.as_borrowed()));
-        ret_if!(let Some(l) = kind.as_list(), self.lend_list(operand, l.cell));
-        ret_if!(let Some(l) = kind.as_seq(), self.lend_list(operand, l.cell));
-        let text = kind.is_text();
-        ret_if!(text, tern!(self.viewable(operand), Some(DataKind::text_view()), None));
-        let found = kind.name();
-        let diag = var_name(operand).map_or_else(
-            || kd::not_a_pointer(span, &found),
-            |name| kd::lend_of_value(span, &found, name),
-        );
-        self.report(diag);
-        None
     }
 
     /// The name of a place that cannot be changed.
@@ -354,6 +307,7 @@ impl Checker
     /// The kind the pointer points at, or `None` after an error.
     fn infer_deref(&mut self, operand: &Expr) -> Option<DataKind>
     {
+        self.need_unchecked(operand.span(), "\"၏ တန်ဖိုး\"");
         let kind = self.infer(operand, None)?;
         let pointee = kind.pointee();
         ret_if!(pointee.is_some(), pointee);
@@ -461,6 +415,30 @@ impl Checker
         self.infer_pair(class, op, &n.lhs, &n.rhs, expect, n.span)
     }
 
+    /// Report the classifier of `တစ်<classifier>လုံး` before a deep duplicate
+    /// when it is not the one of the kind duplicated: the classifier a struct,
+    /// an object or an enumeration declares, `ခု` for each other kind (ZK0509).
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind duplicated.
+    /// * `found` - The classifier written.
+    fn check_whole(&mut self, kind: DataKind, found: &Ident)
+    {
+        let shape = kind.as_object().or_else(|| kind.as_struct());
+        let name = shape.map(|s| &s.name).or_else(|| kind.as_enum().map(|e| &e.name));
+        let own = name.and_then(|n| self.classifiers.get(n)).map(String::as_str);
+        let want = own.unwrap_or(GENERAL_CLASSIFIER).to_string();
+        ret_if!(found.name.as_str() == want);
+        let shown = shape.map_or_else(|| kind.name(), |s| s.name.clone());
+        self.report(nd::whole_classifier_mismatch(
+            found.span,
+            &shown,
+            &want,
+            &found.name,
+        ));
+    }
+
     /// Infer a verb clause.
     ///
     /// # Arguments
@@ -490,21 +468,34 @@ impl Checker
         {
             (OpClass::Cast, [value]) => self.infer_cast(n, value),
             (OpClass::Result, [value]) => self.infer_result_part(n.op, value),
+            (OpClass::MakeFault, [value]) => self.infer_make_fault(value, expect),
             (OpClass::AddrOf, [value]) => self.infer_addr_of(value),
             (OpClass::Deref, [value]) => self.infer_deref(value),
-            (OpClass::Lend, [value]) => self.infer_lend(value),
             (OpClass::CellCount, [value]) => self.infer_cell_count(value),
             (OpClass::BitNot, [value]) =>
             {
                 let kind = self.infer(value, int_expect(expect))?;
                 self.need(kind, Want::Int, &op, value)
             }
+            // A duplicate has the kind of what it duplicates.
+            (OpClass::Dup, [value]) =>
+            {
+                let kind = self.infer(value, expect)?;
+                let handle = kind.as_external();
+                do_if!(let Some(s) = handle, self.report(kd::handle_in_zaka(value.span(), &s.name, kd::HandleUse::Duplicate)));
+                do_if!(let Some(found) = &n.classifier, self.check_whole(kind, found));
+                Some(kind)
+            }
             (OpClass::Shift, [value, distance]) =>
             {
                 self.infer_shift(&op, value, distance, expect)
             }
             (
-                OpClass::Arith | OpClass::Bit | OpClass::Equal | OpClass::Order,
+                OpClass::Arith
+                | OpClass::Bit
+                | OpClass::Equal
+                | OpClass::Order
+                | OpClass::Same,
                 [l, r],
             ) => self.infer_pair(class, &op, l, r, expect, n.span),
             _ => self.infer_all(&n.args),
@@ -532,19 +523,120 @@ impl Checker
             self.report(kd::not_a_result(value.span(), &kind.name()));
             return None;
         };
-        ret_if!(matches!(op, VerbOp::IsGood | VerbOp::IsFault), Some(DataKind::Bool));
+        // An optional is tested for data, and a result for its good side.
+        let tests_data = matches!(op, VerbOp::HasData | VerbOp::LacksData);
+        let tests_result = matches!(op, VerbOp::IsGood | VerbOp::IsFault);
+        let fault_read = op == VerbOp::UnwrapFault;
+        let mismatch = (tests_data && !kind.is_optional())
+            || ((tests_result || fault_read) && kind.is_optional());
+        ret_if!(
+            mismatch,
+            self.report(kd::test_word_mismatch(
+                value.span(),
+                &kind.name(),
+                kind.is_optional()
+            )),
+            None
+        );
+        ret_if!(tests_data || tests_result, Some(DataKind::Bool));
         let proven =
             result_var(value).and_then(|n| self.proven.get(&n).map(|g| (n, *g)));
         let good = op == VerbOp::Unwrap;
         if let Some((name, holds)) = proven.filter(|(_, holds)| *holds != good)
         {
-            self.report(kd::wrong_part_proven(value.span(), &name, holds));
+            let optional = kind.is_optional();
+            self.report(kd::wrong_part_proven(value.span(), &name, holds, optional));
         }
         let no_err = op == VerbOp::UnwrapFault && err.is_none();
         ret_if!(no_err, self.report(kd::no_fault_value(value.span())), None);
         ret_if!(op == VerbOp::UnwrapFault, err);
         ret_if!(ok.is_none(), self.report(kd::no_good_value(value.span())), None);
         ok
+    }
+
+    /// Infer an error value, `<value> ဟူသော အမှားအယွင်း`: the place it goes
+    /// into names the result kind, and the value is its error side.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The error value.
+    /// * `expect` - The kind the place wants.
+    ///
+    /// # Returns
+    ///
+    /// The result kind, or `None` after an error.
+    /// Infer `အလွတ်`: the optional the place expects.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The value.
+    /// * `expect` - The kind the place expects.
+    ///
+    /// # Returns
+    ///
+    /// The optional, or `None` after an error.
+    fn infer_no_data(
+        &mut self, span: Span, expect: Option<DataKind>,
+    ) -> Option<DataKind>
+    {
+        let optional = expect.filter(|k| k.is_optional());
+        do_if!(optional.is_none(), self.report(kd::no_data_needs_optional(span)));
+        optional
+    }
+
+    /// Infer `ကနဦးတန်ဖိုး`, which takes the kind its place wants.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The value.
+    /// * `expect` - The kind the place wants.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or `None` when no kind is known or the kind has no initial
+    /// value.
+    fn infer_initial(
+        &mut self, span: Span, expect: Option<DataKind>,
+    ) -> Option<DataKind>
+    {
+        let Some(kind) = expect
+        else
+        {
+            self.report(kd::initial_needs_kind(span));
+            return None;
+        };
+        let Some(gap) = kind.initial_gap()
+        else
+        {
+            return Some(kind);
+        };
+        let why = match &gap
+        {
+            InitialGap::Function => NoInitial::Function,
+            InitialGap::Handle => NoInitial::Handle,
+            InitialGap::Member(e) => NoInitial::Member(&e.name),
+            InitialGap::Result => NoInitial::Result,
+            InitialGap::Part(p) => NoInitial::Part(p),
+        };
+        self.report(kd::no_initial_value(span, &kind.name(), why));
+        None
+    }
+
+    fn infer_make_fault(
+        &mut self, value: &Expr, expect: Option<DataKind>,
+    ) -> Option<DataKind>
+    {
+        let result = expect.filter(|k| !k.is_optional());
+        let err = result.and_then(DataKind::fallible_parts).and_then(|(_, err)| err);
+        let Some(err) = err
+        else
+        {
+            _ = self.infer(value, None);
+            self.report(kd::fault_needs_result(value.span()));
+            return None;
+        };
+        self.expect_kind(value, Some(err));
+        result
     }
 
     /// Infer a verbal join: each piece must be text, owned or a view.
@@ -612,9 +704,9 @@ impl Checker
         let target = self.written_kind(n.kind_arg.as_ref()?, KindUse::Other);
         let bad = from.filter(|f| !f.cast_allowed(target));
         do_if!(let Some(f) = bad, self.report(cast_report(n.span, f, target)));
-        let keeps_borrow =
-            from.is_some_and(DataKind::is_borrow) && !target.is_raw_ptr();
-        Some(tern!(keeps_borrow, target.as_borrowed(), target))
+        let pointer = target.is_address() || from.is_some_and(DataKind::is_address);
+        do_if!(pointer, self.need_unchecked(n.span, "a pointer conversion"));
+        Some(target)
     }
 
     /// Infer a call expression.
@@ -629,8 +721,7 @@ impl Checker
     fn infer_call(&mut self, n: &CallExpr) -> Option<DataKind>
     {
         let place = n.place.as_deref();
-        let ret =
-            self.check_call(&n.callee, place, &n.args, &n.edits, &n.marks, n.span)?;
+        let ret = self.check_call(&n.callee, place, &n.args, &n.marks, n.span)?;
         self.check_pass(&n.callee, ret, n.pass, false, n.span);
         // Without a pass-on the value is the whole result; with one, the good
         // result.
@@ -657,15 +748,7 @@ impl Checker
 /// The `ZK0408` diagnostic.
 fn cast_report(span: Span, from: DataKind, to: DataKind) -> Diagnostic
 {
-    let (from_name, to_name) = (from.name(), to.name());
-    let raw = to.with_outer_raw().name();
-    ret_if!(
-        from.reads_addresses_as(to),
-        kd::pointer_pun(span, &from_name, &to_name, &raw)
-    );
-    let checked = from.is_int() && to.is_checked_ptr();
-    ret_if!(!checked, kd::invalid_cast(span, &from_name, &to_name));
-    kd::checked_from_int(span, &from_name, &to_name, &raw)
+    kd::invalid_cast(span, &from.name(), &to.name())
 }
 
 /// What an operand without an address is, for a message.

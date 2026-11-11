@@ -21,7 +21,7 @@ fn func_forms(text: &str) -> Vec<String>
 #[test]
 fn literals_lower_to_static_text_or_a_format()
 {
-    let text = "ကိန်းရှင် က သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။\n\"က = {က}\" ဟု ပြသပါ။";
+    let text = "ကိန်းရှင် က သည် ၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n\"က = {က}\" ဟု ပြသမည်။";
     assert_eq!(plain(text)[1], "(print (format \"က = \" g0))");
     let text = "ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။";
     assert_eq!(folded(text)[0], "(set g0 \"ab\")");
@@ -30,17 +30,17 @@ fn literals_lower_to_static_text_or_a_format()
 #[test]
 fn constant_template_slots_and_joins_fold_to_static_text()
 {
-    assert_eq!(folded("\"{၁ + ၁} {မှန်} {'က'}\" ဟု ပြသပါ။"), ["(print \"၂ မှန် က\")"]);
-    assert_eq!(folded("\"a\" + \"b\" + \"{၃}\" ဟု ပြသပါ။"), ["(print \"ab၃\")"]);
-    let text = "ကိန်းသေ က သည် ကိန်းပြည့် ၇ ဖြစ်ပါစေ။\n\"{က}\" ဟု ပြသပါ။";
+    assert_eq!(folded("\"{၁ + ၁} {မှန်} {'က'}\" ဟု ပြသမည်။"), ["(print \"၂ မှန် က\")"]);
+    assert_eq!(folded("\"a\" + \"b\" + \"{၃}\" ဟု ပြသမည်။"), ["(print \"ab၃\")"]);
+    let text = "ကိန်းသေ က သည် ၇ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n\"{က}\" ဟု ပြသမည်။";
     assert_eq!(folded(text)[1], "(print \"၇\")");
     assert_eq!(
-        folded("\"a {\"b {\"c {၁ + ၁}\"}\"} d\" ဟု ပြသပါ။"),
+        folded("\"a {\"b {\"c {၁ + ၁}\"}\"} d\" ဟု ပြသမည်။"),
         ["(print \"a b c ၂ d\")"]
     );
     let off = FoldOptions::none();
     assert_eq!(
-        folded_with("\"a\" + \"{၃}\" ဟု ပြသပါ။", &off),
+        folded_with("\"a\" + \"{၃}\" ဟု ပြသမည်။", &off),
         ["(print (format \"a\" (format 3:isize)))"]
     );
 }
@@ -50,7 +50,7 @@ fn places_that_hold_text_are_dropped_as_their_scope_ends()
 {
     let text = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။
-t ကို \"cd\" ဟု ထားပါ။
+t ကို \"cd\" ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(
         func_forms(text),
@@ -67,9 +67,9 @@ t ကို \"cd\" ဟု ထားပါ။
 #[test]
 fn a_return_keeps_its_value_before_the_drops()
 {
-    let text = "လုပ်ဆောင်ချက် f သည် စာသား t ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-t ၏ အကွက်အရေအတွက် ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+    let text = "လုပ်ဆောင်ချက် f သည် t ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+t ၏ အကွက်အရေအတွက် ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     let forms = func_forms(text);
     let tail = &forms[forms.len() - 3..];
@@ -80,10 +80,10 @@ t ၏ အကွက်အရေအတွက် ကို ကိန်းပြည
 #[test]
 fn a_break_drops_the_text_of_the_loop_block()
 {
-    let text = "ကိန်းရှင် i သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။
-i သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
+    let text = "ကိန်းရှင် i သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+i သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"{i}\" ဖြစ်ပါစေ။
-ကွင်းဆက် ကို ရပ်ပါ။
+ကွင်းဆက် ကို ရပ်မည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     let forms = folded(text);
     assert!(forms[1].contains("(drop l0) (break)"), "{forms:?}");
@@ -95,7 +95,7 @@ const NAMED: &str = "ကိန်းသေ အမည် သည် စာသာ�
 #[test]
 fn text_constants_fold_into_templates_and_chains()
 {
-    let text = format!("{NAMED}\n\"ဟေး {{အမည်}}\" ဟု ပြသပါ။");
+    let text = format!("{NAMED}\n\"ဟေး {{အမည်}}\" ဟု ပြသမည်။");
     assert_eq!(folded(&text)[1], "(print \"ဟေး မမ\")");
     let chain = format!(
         "{NAMED}\nကိန်းသေ ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"{{အမည်}}!\" ဖြစ်ပါစေ။\nကိန်းသေ ဂ သည် \
@@ -119,18 +119,18 @@ fn a_text_constant_holds_static_text_whatever_the_options()
 #[test]
 fn a_text_constant_that_needs_the_program_to_run_is_zk0606()
 {
-    let var = "ကိန်းရှင် n သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။\nကိန်းသေ က သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"x \
-               {n}\" ဖြစ်ပါစေ။";
+    let var = "ကိန်းရှင် n သည် ၃ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nကိန်းသေ က သည် စာသား တစ်ခု ဖြစ်၍ \
+               တန်ဖိုးသည် \"x {n}\" ဖြစ်ပါစေ။";
     assert_eq!(codes(var), [Code::ConstNotKnown]);
     assert_eq!(codes_with(var, &FoldOptions::none()), [Code::ConstNotKnown]);
-    let call = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရလဒ် ကို ပြန်ပေးမည်။\n\"z\" ကို \
-                ရလဒ်အဖြစ် ပြန်ပေးပါ။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nကိန်းသေ ခ သည် စာသား တစ်ခု ဖြစ်၍ \
-                တန်ဖိုးသည် လုပ်ဆောင်ချက် f ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။";
+    let call = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။\n\"z\" ကို \
+                ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nကိန်းသေ ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
+                လုပ်ဆောင်ချက် f ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။";
     assert_eq!(codes(call), [Code::ConstNotKnown]);
 }
 
 /// A variable `i`, known when the program runs and not before.
-const RUN_TIME: &str = "ကိန်းရှင် i သည် ကိန်းပြည့် ၃ ဖြစ်ပါစေ။\n";
+const RUN_TIME: &str = "ကိန်းရှင် i သည် ၃ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n";
 
 /// A constant plain list is static data, as a text constant is: its cells
 /// must fold, whatever the options.
@@ -143,7 +143,7 @@ fn a_constant_plain_list_that_needs_the_program_to_run_is_zk0606()
     assert_eq!(
         codes(
             "ကိန်းသေ l သည် [၁၊ ၂] ဖြစ်ပါစေ။
-l ကို ပြသပါ။"
+l ကို ပြသမည်။"
         ),
         []
     );
@@ -154,17 +154,17 @@ fn a_range_of_known_text_that_cuts_a_character_is_zk0607()
 {
     let text = "ကိန်းသေ t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ကမ္ဘာ\" ဖြစ်ပါစေ။";
     assert_eq!(
-        codes(&format!("{text}\nt ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသပါ။")),
+        codes(&format!("{text}\nt ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသမည်။")),
         [Code::RangeCutsChar]
     );
-    assert!(codes(&format!("{text}\nt ၏ အကွက် ၀ မှစ၍ ၃ ကွက် ကို ပြသပါ။")).is_empty());
+    assert!(codes(&format!("{text}\nt ၏ အကွက် ၀ မှစ၍ ၃ ကွက် ကို ပြသမည်။")).is_empty());
 }
 
 #[test]
 fn characters_lower_to_char_reads()
 {
     let text = "ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"ab\" ဖြစ်ပါစေ။\nt ၏ စာလုံးအရေအတွက် ကို \
-                ပြသပါ။\nt ၏ စာလုံး ၀ ကို ပြသပါ။\nt ၏ ၁ ခုမြောက်စာလုံး ကို ပြသပါ။";
+                ပြသမည်။\nt ၏ စာလုံး ၀ ကို ပြသမည်။\nt ၏ ၁ ခုမြောက်စာလုံး ကို ပြသမည်။";
     let forms = plain(text);
     assert_eq!(
         forms[1..4],
@@ -179,7 +179,7 @@ fn characters_lower_to_char_reads()
 #[test]
 fn a_verbal_join_folds_as_a_join_does()
 {
-    let text = "\"a\"၊ \"{၁}\"၊ \"c\" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသပါ။";
+    let text = "\"a\"၊ \"{၁}\"၊ \"c\" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။";
     assert_eq!(folded(text), ["(print \"a၁c\")"]);
     assert_eq!(
         folded_with(text, &FoldOptions::none()),
@@ -194,12 +194,12 @@ fn a_verbal_join_folds_as_a_join_does()
 fn reads_of_a_constant_list_fold()
 {
     let text = "ကိန်းသေ l သည် [၁၀၊ ၂၀၊ ၃၀] ဖြစ်ပါစေ။\nကိန်းသေ x သည် l ၏ အကွက် ၁ ဖြစ်ပါစေ။\nx ကို \
-                ပြသပါ။\nl ၏ အကွက်အရေအတွက် ကို ပြသပါ။";
+                ပြသမည်။\nl ၏ အကွက်အရေအတွက် ကို ပြသမည်။";
     let forms = folded(text);
     assert_eq!(forms[1], "(set g1 20:isize)");
     assert_eq!(forms[3], "(print 3:usize)");
     let kept = folded_with(text, &FoldOptions::none());
     assert!(kept[1].contains("load"), "{}", kept[1]);
-    let outside = "ကိန်းသေ l သည် [၁၀၊ ၂၀၊ ၃၀] ဖြစ်ပါစေ။\nl ၏ အကွက် ၅ ကို ပြသပါ။";
+    let outside = "ကိန်းသေ l သည် [၁၀၊ ၂၀၊ ၃၀] ဖြစ်ပါစေ။\nl ၏ အကွက် ၅ ကို ပြသမည်။";
     assert_eq!(codes(outside), [Code::CellOutOfRange]);
 }

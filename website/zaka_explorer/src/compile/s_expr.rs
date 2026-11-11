@@ -242,7 +242,7 @@ impl Reader
         do_if!(mark == '\'', self.at += 1);
         do_while!(self.peek().is_some_and(|c| c != mark), self.at += 1);
         self.at = (self.at + 1).min(self.chars.len());
-        // A suffix such as the `:char` of an IR constant stays attached.
+        // A suffix such as the `:char` of an IR constant remains attached.
         do_while!(self.peek().is_some_and(|c| !ends_word(c)), self.at += 1);
         Form::Atom(self.since(lo), Ink::Quote)
     }

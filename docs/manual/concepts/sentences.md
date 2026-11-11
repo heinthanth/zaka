@@ -5,7 +5,7 @@ description: The reason for Burmese sentence order in Zaka, how it maps onto a g
 
 # The case for sentences
 
-Most programming languages borrow their order from English: a verb first, then its
+Most programming languages take their order from English: a verb first, then its
 objects, as in `print(age)`. Burmese puts the verb last. Zaka takes the Burmese order
 as the shape of its grammar, so a statement reads as a Burmese sentence and a Burmese
 reader can read it aloud.
@@ -20,7 +20,7 @@ word, a *particle*, follows each thing and tells its role: `သည်` marks the
 subject, `ကို` the object, `နှင့်` "and" or "with", `ဖြင့်` "using", `၏` "of".
 
 ```text
- အသက်  ကို  ပြသပါ ။
+ အသက်  ကို  ပြသမည် ။
  age   OBJ  show    .
   │     │     │
   │     │     └── the verb ends the sentence and tells what is done
@@ -28,7 +28,7 @@ subject, `ကို` the object, `နှင့်` "and" or "with", `ဖြင�
   └── the thing the sentence is about
 ```
 
-The same pattern covers a statement that commands, `အသက် ကို ပြသပါ`, and a verb that
+The same pattern covers a statement that commands, `အသက် ကို ပြသမည်`, and a verb that
 makes a value, `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` ("the sum of 3 and 4"). A verb that makes a value
 gives an expression. A verb that commands gives a statement, which ends with `။`.
 
@@ -36,15 +36,15 @@ gives an expression. A verb that commands gives a statement, which ends with `�
 
 | Zaka | C-like code | What the Zaka sentence tells |
 | --- | --- | --- |
-| `အသက် ကို ပြသပါ။` | `print(age);` | age, as the object, show |
+| `အသက် ကို ပြသမည်။` | `print(age);` | age, as the object, show |
 | `ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။` | `int age = 20;` | the variable age is an integer, and its value is 20 |
-| `အသက် ကို အသက် + ၁ ဟု ထားပါ။` | `age = age + 1;` | age, as the object, set to "age plus 1" |
+| `အသက် ကို အသက် + ၁ ဟု ထားမည်။` | `age = age + 1;` | age, as the object, set to "age plus 1" |
 | `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` | `3 + 4` | the sum of 3 and 4 |
 | `၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း` | `10 % 3` | 10, divided with 3, the remainder |
 | `အသက် သည် ၁၈ အောက် ငယ်သည်` | `age < 18` | age is smaller than 18 |
 | `အကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် ...` | `if (age < 18) ...` | if age is smaller than 18, then |
 | `လုပ်ဆောင်ချက် နှစ်ဆ ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်` | `twice(k)` | the result of doing the function with k |
-| `ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားပါ။` | `*p = 7;` | the value of p, as the object, set to 7 |
+| `ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားမည်။` | `*p = 7;` | the value of p, as the object, set to 7 |
 | `မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။` | `p = malloc(2 * sizeof(int));` | taking room worth 2 integers, will keep the address in p |
 | `လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။` | `free(p);` | the block at the address in p, will give back |
 
@@ -55,11 +55,11 @@ punctuation would mean. The signs are still there for arithmetic: `၃ + ၄` an
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-အသက် ကို အသက် + ၁ ဟု ထားပါ။
-အသက် ကို ပြသပါ။
-အသက် သည် ၁၈ အောက် ငယ်သည် ဟု ပြသပါ။
-၂ + ၃ * ၄ ကို ပြသပါ။
-၂ နှင့် ၃ နှင့် ၄ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ် ကို ပြသပါ။
+အသက် ကို အသက် + ၁ ဟု ထားမည်။
+အသက် ကို ပြသမည်။
+အသက် သည် ၁၈ အောက် ငယ်သည် ဟု ပြသမည်။
+၂ + ၃ * ၄ ကို ပြသမည်။
+၂ နှင့် ၃ နှင့် ၄ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -110,7 +110,7 @@ moment:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၂ နှင့် ၃ ၏ ပေါင်းလဒ် နှင့် ၄ ၏ မြှောက်လဒ် ကို ပြသပါ။
+၂ နှင့် ၃ ၏ ပေါင်းလဒ် နှင့် ၄ ၏ မြှောက်လဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -130,7 +130,7 @@ particle-and-verb pattern above. The *logical* level joins clauses with `ဖြ�
 particle is found where it is written, with a message that names it:
 
 ```zaka-error ZK0206
-၃ ကို ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။
+၃ ကို ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။
 ```
 
 ```text
@@ -140,17 +140,17 @@ error[ZK0206]: "ပေါင်းလဒ်" needs "နှင့်" after opera
 An operand with no verb to take it is found at the end of the sentence:
 
 ```zaka-error ZK0209
-၃ နှင့် ၄ ကို ပြသပါ။
+၃ နှင့် ၄ ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0209]: operands left over before "ပြသပါ": ၃ (နှင့်)
+error[ZK0209]: operands left over before "ပြသမည်": ၃ (နှင့်)
 ```
 
 **The verb is the last word.** The compiler knows what a sentence does when it reaches
 the verb, and `။` ends the statement. No guess is needed about where one statement stops.
 
-**Expressions and statements are one machine.** `ပေါင်းလဒ်` makes a value and `ပြသပါ`
+**Expressions and statements are one machine.** `ပေါင်းလဒ်` makes a value and `ပြသမည်`
 commands, but both take operands through the same stack. A statement is a clause whose
 verb is a command.
 

@@ -348,11 +348,10 @@ void zk_sink_close(unsigned char *slot)
 {
     zk_buf *buf = zk_into;
     zk_into = buf->prev;
-    unsigned char *data = buf->data;
-    DO_IF(buf->len < buf->cap && buf->len > 0, data = realloc(data, buf->len));
-    DO_IF(!data && buf->len > 0, zk_out_of_mem(buf->len));
-    zk_seq_put(slot, buf->len ? data : NULL, buf->len, buf->len);
-    DO_IF(!buf->len, free(buf->data));
+    unsigned char *block = buf->len ? zk_seq_new(buf->len) : NULL;
+    DO_IF(block, memcpy(block, buf->data, buf->len));
+    free(buf->data);
+    zk_seq_put(slot, block, buf->len, buf->len);
 }
 
 /**

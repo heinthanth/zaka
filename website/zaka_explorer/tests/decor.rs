@@ -3,11 +3,12 @@ use zaka_explorer::compile::compile;
 use zaka_explorer::compile::samples::find_sample;
 use zaka_explorer::monaco::decor::decorations;
 use zaka_explorer::monaco::decor::markers;
+use zakac_borrow_checker::options::MemCheck;
 
 #[test]
 fn decorations_cover_tokens_and_comments_in_order()
 {
-    let out = compile("// note\nက ကို ပြသပါ။", &Options::default());
+    let out = compile("// note\nက ကို ပြသမည်။", &Options::default());
     let marks = decorations(&out);
     assert_eq!(marks.len(), out.tokens.len() + out.comments.len());
     assert!(marks.windows(2).all(|w| w[0].hi <= w[1].lo));
@@ -33,7 +34,7 @@ fn markers_use_monaco_levels()
 fn a_label_shows_as_a_note_marker_beside_its_error()
 {
     let text = find_sample("mistakes/use_after_free").unwrap().text;
-    let out = compile(text, &Options::default());
+    let out = compile(text, &Options::builder().check(MemCheck::Error).build());
     let found = markers(&out);
     let levels: Vec<u32> = found.iter().map(|m| m.level).collect();
     assert_eq!(levels, [8, 2], "an error, then a note");

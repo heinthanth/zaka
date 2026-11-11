@@ -12,7 +12,7 @@ conditional or a function.
 
 ```zaka-error ZK0235
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ တို့ ဖြစ်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ တို့ပါဝင်သည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -23,7 +23,7 @@ error[ZK0235]: enumerations can be declared at the top level and nowhere else
 ## One member name twice
 
 ```zaka-error ZK0328
-ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ နီ တို့ ဖြစ်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ နီ တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -39,7 +39,7 @@ Each member stands for a value of its own. A member with no value written takes 
 of the member before it plus one, which can land on a value written later:
 
 ```zaka-error ZK0457
-ဒေတာအမျိုးအစား အဆင့် ဆိုသည်မှာ နိမ့်၊ အလယ်၊ မြင့် (၁) တို့ ဖြစ်သည်။
+အဆင့် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နိမ့်၊ အလယ်၊ တန်ဖိုးအနေဖြင့် ၁ ရှိသည့် မြင့် တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -49,6 +49,40 @@ of the member before it plus one, which can land on a value written later:
 error[ZK0457]: the member "မြင့်" has the value of "အလယ်"
 ```
 
+## No member marked as the initial one
+
+`ကနဦးတန်ဖိုး` stands for the member marked `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်`. With no member marked, the
+enumeration has no initial value:
+
+```zaka-error ZK0479
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် မီး သည် အရောင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0479]: "အရောင်" has no initial value: no member of "အရောင်" is marked "ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်"
+```
+
+Write the member in full, as `အရောင်များထဲမှ နီ`, or mark one: `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် နီ၊ ဝါ၊ စိမ်း`.
+
+## Two members marked as the initial one
+
+One member alone can be the initial one:
+
+```zaka-error ZK0480
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် နီ၊ ဝါ၊ ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် စိမ်း တို့ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0480]: "အရောင်" marks a second member with "ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်"
+```
+
 ## A member value that is not a constant
 
 A member value is worked out when the program compiles, so it cannot read a variable,
@@ -56,7 +90,7 @@ whose value is known when the program runs:
 
 ```zaka-error ZK0456
 ကိန်းရှင် စတင် သည် ၁၀ ဖြစ်ပါစေ။
-ဒေတာအမျိုးအစား အဆင့် ဆိုသည်မှာ နိမ့် (စတင်)၊ မြင့် တို့ ဖြစ်သည်။
+အဆင့် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် စတင် ရှိသည့် နိမ့်၊ မြင့် တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -72,7 +106,7 @@ Members count on from the member before them when their values are integers. Tex
 each other kind need each value written:
 
 ```zaka-error ZK0461
-ဒေတာအမျိုးအစား အမိန့် ဆိုသည်မှာ သွား ("go")၊ ရပ် တို့ ဖြစ်သည်။
+အမိန့် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် "go" ရှိသည့် သွား၊ ရပ် တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -85,7 +119,7 @@ error[ZK0461]: the member "ရပ်" needs a value: no text value follows the m
 ## A member the enumeration does not have
 
 ```zaka-error ZK0329
-ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ ပြာ ဖြစ်ပါစေ။
@@ -102,7 +136,7 @@ A member takes the enumeration name with `များ` before `ထဲမှ`. T
 spelling to write.
 
 ```zaka-error ZK0330
-ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်ထဲမှ နီ ဖြစ်ပါစေ။
@@ -119,29 +153,29 @@ error[ZK0330]: "အရောင်" before "ထဲမှ" names no enumeration
 A switch over an enumeration names each member in an arm, or ends with the default arm.
 
 ```zaka-error ZK0458
-ဒေတာအမျိုးအစား အရောင် ဆိုသည်မှာ နီ၊ ဝါ၊ စိမ်း တို့ ဖြစ်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ ဝါ ဖြစ်ပါစေ။
-မီး သည် နီ ဖြစ်လျှင် "ရပ်" ဟု ပြသပါ။
-စိမ်း ဖြစ်လျှင် "သွား" ဟု ပြသပါ။
+မီး သည် နီ ဖြစ်လျှင် "ရပ်" ဟု ပြသမည်။
+စိမ်း ဖြစ်လျှင် "သွား" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 error[ZK0458]: no arm of this switch names "ဝါ"
-  = help: name each member in an arm, or add "တခြား အရောင် ဖြစ်လျှင်" last
+  = help: name each member in an arm, or add "တခြား အရောင် တစ်ခု ဖြစ်လျှင်" last
 ```
 
 ## A default arm of the wrong kind
 
-The default arm names the kind of the subject.
+The default arm names the kind of the subject, with its measure word.
 
 ```zaka-error ZK0459
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရက် သည် ၆ ဖြစ်ပါစေ။
-ရက် သည် ၀ ဖြစ်လျှင် "တနင်္ဂနွေ" ဟု ပြသပါ။
-တခြား စာသား ဖြစ်လျှင် "ကြားရက်" ဟု ပြသပါ။
+ရက် သည် ၀ ဖြစ်လျှင် "တနင်္ဂနွေ" ဟု ပြသမည်။
+တခြား စာသား တစ်ခု ဖြစ်လျှင် "ကြားရက်" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -157,14 +191,14 @@ never run.
 ```zaka-error ZK0236
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရက် သည် ၆ ဖြစ်ပါစေ။
-ရက် သည် ၀ ဖြစ်လျှင် "တနင်္ဂနွေ" ဟု ပြသပါ။
-တခြား ကိန်းပြည့် ဖြစ်လျှင် "ကြားရက်" ဟု ပြသပါ။
-၆ ဖြစ်လျှင် "စနေ" ဟု ပြသပါ။
+ရက် သည် ၀ ဖြစ်လျှင် "တနင်္ဂနွေ" ဟု ပြသမည်။
+တခြား ကိန်းပြည့် တစ်ခု ဖြစ်လျှင် "ကြားရက်" ဟု ပြသမည်။
+၆ ဖြစ်လျှင် "စနေ" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0236]: the default arm "တခြား ... ဖြစ်လျှင်" comes last in a switch
+error[ZK0236]: the default arm "တခြား ... တစ်ခု ဖြစ်လျှင်" comes last in a switch
 ```
 
 ## One case twice
@@ -175,8 +209,8 @@ case could never run.
 ```zaka-error ZK0460
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရက် သည် ၆ ဖြစ်ပါစေ။
-ရက် သည် ၆ ဖြစ်လျှင် "စနေ" ဟု ပြသပါ။
-၃ + ၃ ဖြစ်လျှင် "စနေ" ဟု ပြသပါ။
+ရက် သည် ၆ ဖြစ်လျှင် "စနေ" ဟု ပြသမည်။
+၃ + ၃ ဖြစ်လျှင် "စနေ" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -184,4 +218,4 @@ case could never run.
 error[ZK0460]: an arm before this one has this case
 ```
 
-Next: [Modules](../modules/README.md).
+Next: [Functions as values](../function-values/README.md).

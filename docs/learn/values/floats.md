@@ -11,12 +11,12 @@ A *decimal number* has a fraction part: `၃.၁၄`, `၀.၅`, `-၂.၅`. Its
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၃.၁၄ ကို ပြသပါ။                    // a decimal point makes a decimal number
--၂.၅ ကို ပြသပါ။
-ဒဿမကိန်း ၁၀ ကို ပြသပါ။             // the kind prefix makes 10 a decimal number
-1.5e3 ကို ပြသပါ။                   // scientific notation: 1.5 × 10³
-1.5e-3 ကို ပြသပါ။                  // 1.5 × 10⁻³
-၇.၀ / ၂ ကို ပြသပါ။                  // decimal division keeps the fraction
+၃.၁၄ ကို ပြသမည်။                    // a decimal point makes a decimal number
+-၂.၅ ကို ပြသမည်။
+၁၀ ဟူသော ဒဿမကိန်း တစ်ခု ကို ပြသမည်။             // the kind after it makes 10 a decimal number
+1.5e3 ကို ပြသမည်။                   // scientific notation: 1.5 × 10³
+1.5e-3 ကို ပြသမည်။                  // 1.5 × 10⁻³
+၇.၀ / ၂ ကို ပြသမည်။                  // decimal division keeps the fraction
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -51,8 +51,8 @@ last digits show it:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၀.၁ + ၀.၂ ကို ပြသပါ။
-၁၆ ဘစ် ဒဿမကိန်း ၀.၁ ကို ပြသပါ။    // fewer bits, a less close neighbour
+၀.၁ + ၀.၂ ကို ပြသမည်။
+၀.၁ ဟူသော ၁၆ ဘစ် ဒဿမကိန်း တစ်ခု ကို ပြသမည်။    // fewer bits, a less close neighbour
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -71,6 +71,6 @@ This is true of decimal numbers in almost all programming languages, not just Za
 ## Hands on
 
 - Print `၁ / ၃` and then `၁.၀ / ၃`. What is different?
-- Print `၃၂ ဘစ် ဒဿမကိန်း ၀.၁`. Is it closer to 0.1 than the 16-bit one?
+- Print `၀.၁ ဟူသော ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု`. Is it closer to 0.1 than the 16-bit one?
 
 Next: [Characters](characters.md).

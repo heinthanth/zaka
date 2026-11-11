@@ -11,10 +11,10 @@ included.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-'က' ကို ပြသပါ။
-'A' ကို ပြသပါ။
-'春' ကို ပြသပါ။
-'🔥' ကို ပြသပါ။
+'က' ကို ပြသမည်။
+'A' ကို ပြသမည်။
+'春' ကို ပြသမည်။
+'🔥' ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -35,11 +35,11 @@ written as an *escape sequence*. Escape sequences work in characters and in
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-'\'' ကို ပြသပါ။                       // a single quote
-'{ယူနီကုဒ် 1000}' ကို ပြသပါ။            // the character with Unicode number 1000 (hex): က
-"တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသပါ။    // a line break inside text
-"{{ }}" ဟု ပြသပါ။                     // literal braces
-'{{' ကို ပြသပါ။                       // a brace character
+'\'' ကို ပြသမည်။                       // a single quote
+'{ယူနီကုဒ် 1000}' ကို ပြသမည်။            // the character with Unicode number 1000 (hex): က
+"တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသမည်။    // a line break inside text
+"{{ }}" ဟု ပြသမည်။                     // literal braces
+'{{' ကို ပြသမည်။                       // a brace character
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -69,7 +69,7 @@ character as in text: `'{{'` is the character `{`. In a character, a name that Z
 not know is an error:
 
 ```zaka-error ZK0106
-'{မသိ}' ကို ပြသပါ။
+'{မသိ}' ကို ပြသမည်။
 ```
 
 ```text

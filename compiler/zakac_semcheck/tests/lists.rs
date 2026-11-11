@@ -10,7 +10,7 @@ use zakac_rust_sugars::do_for;
 /// `l` a list of three integers, `g` a 2 x 3 grid, `p` a borrow of `l`.
 const LISTS: &str = "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် g သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် p သည် ငှားထားသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ လိပ်စာ ဖြစ်ပါစေ။
+ကိန်းရှင် p သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ လိပ်စာ ဖြစ်ပါစေ။
 ";
 
 /// Join program lines.
@@ -19,13 +19,13 @@ fn lines(parts: &[&str]) -> String { parts.join("\n") }
 #[test]
 fn cells_take_the_cell_kind()
 {
-    let checked = check(&lines(&[LISTS, "l ၏ အကွက် ၀ ကို ပြသပါ။", "g ၏ အကွက် ၁ ကို ပြသပါ။"]));
+    let checked = check(&lines(&[LISTS, "l ၏ အကွက် ၀ ကို ပြသမည်။", "g ၏ အကွက် ၁ ကို ပြသမည်။"]));
     assert!(checked.out.diagnostics.is_empty());
     assert_eq!(kind_at(&checked, "l ၏ အကွက် ၀"), "isize");
     assert_eq!(kind_at(&checked, "g ၏ အကွက် ၁"), "isize[3]");
-    assert_eq!(kind_at(&checked, "l ၏ လိပ်စာ"), "isize[3]&");
-    ok(&lines(&[LISTS, "p ၏ အကွက် ၂ ကို ၅ ဟု ထားပါ။", "p ၏ အကွက်အရေအတွက် ကို ပြသပါ။"]));
-    ok(&lines(&[LISTS, "g ၏ အကွက် ၀ ကို l ဟု ထားပါ။", "l ၏ ၃ ခုမြောက်အကွက် ကို ၁ ဟု ထားပါ။"]));
+    assert_eq!(kind_at(&checked, "l ၏ လိပ်စာ"), "isize[3]*");
+    ok(&lines(&[LISTS, "p ၏ အကွက် ၂ ကို ၅ ဟု ထားမည်။", "p ၏ အကွက်အရေအတွက် ကို ပြသမည်။"]));
+    ok(&lines(&[LISTS, "g ၏ အကွက် ၀ ကို l ဟု ထားမည်။", "l ၏ ၃ ခုမြောက်အကွက် ကို ၁ ဟု ထားမည်။"]));
 }
 
 #[test]
@@ -36,22 +36,26 @@ fn list_counts_must_match()
         decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း"),
         [Code::ListCountMismatch]
     );
-    ok("ကိန်းရှင် a သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။");
-    assert_eq!(codes("စာရင်းအလွတ် ကို ပြသပါ။"), [Code::BlankListKind]);
+    assert_eq!(
+        codes("ကိန်းရှင် a သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။"),
+        [Code::BracketsOnCountedList]
+    );
+    ok("ကိန်းရှင် a သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။");
+    assert_eq!(codes("စာရင်းအလွတ် ကို ပြသမည်။"), [Code::BlankListKind]);
 }
 
 #[test]
 fn cells_need_a_list_and_an_integer()
 {
-    let x = "ကိန်းရှင် x သည် ကိန်းပြည့် ၅ ဖြစ်ပါစေ။";
-    assert_eq!(codes(&lines(&[x, "x ၏ အကွက် ၀ ကို ပြသပါ။"])), [Code::NotAList]);
-    assert_eq!(codes(&lines(&[x, "x ၏ အကွက်အရေအတွက် ကို ပြသပါ။"])), [Code::NotAList]);
+    let x = "ကိန်းရှင် x သည် ၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
+    assert_eq!(codes(&lines(&[x, "x ၏ အကွက် ၀ ကို ပြသမည်။"])), [Code::NotAList]);
+    assert_eq!(codes(&lines(&[x, "x ၏ အကွက်အရေအတွက် ကို ပြသမည်။"])), [Code::NotAList]);
     assert_eq!(
-        codes(&lines(&[LISTS, "l ၏ အကွက် မှန် ကို ပြသပါ။"])),
+        codes(&lines(&[LISTS, "l ၏ အကွက် မှန် ကို ပြသမည်။"])),
         [Code::CellNumberNotInt]
     );
     assert_eq!(
-        codes(&lines(&[LISTS, "l ၏ အကွက် ၁.၅ ကို ပြသပါ။"])),
+        codes(&lines(&[LISTS, "l ၏ အကွက် ၁.၅ ကို ပြသမည်။"])),
         [Code::CellNumberNotInt]
     );
 }
@@ -61,15 +65,15 @@ fn constant_lists_and_list_values_are_not_places()
 {
     let fixed = "ကိန်းသေ c သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း ဖြစ်ပါစေ။";
     assert_eq!(
-        codes(&lines(&[fixed, "c ၏ အကွက် ၀ ကို ၅ ဟု ထားပါ။"])),
+        codes(&lines(&[fixed, "c ၏ အကွက် ၀ ကို ၅ ဟု ထားမည်။"])),
         [Code::AssignToConst]
     );
     assert_eq!(
-        codes(&lines(&[fixed, "c ၏ အကွက် ၀ ၏ လိပ်စာ ကို ပြသပါ။"])),
+        codes(&lines(&[fixed, "c ၏ အကွက် ၀ ၏ လိပ်စာ ကို ပြသမည်။"])),
         [Code::FixedAddress]
     );
-    ok(&lines(&[fixed, "c ၏ အကွက် ၁ ကို ပြသပါ။"]));
-    let temp = "(၁၊ ၂ တို့ပါသော စာရင်း) ၏ အကွက် ၀ ကို ၅ ဟု ထားပါ။";
+    ok(&lines(&[fixed, "c ၏ အကွက် ၁ ကို ပြသမည်။"]));
+    let temp = "(၁၊ ၂ တို့ပါသော စာရင်း) ၏ အကွက် ၀ ကို ၅ ဟု ထားမည်။";
     assert_eq!(codes(temp), [Code::NotAPlace]);
 }
 
@@ -77,40 +81,41 @@ fn constant_lists_and_list_values_are_not_places()
 fn whole_lists_compare_and_duplicate()
 {
     let other = "ကိန်းရှင် m သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။";
-    let checked = check(&lines(&[LISTS, "(l == l) ကို ပြသပါ။"]));
+    let checked = check(&lines(&[LISTS, "(l == l) ကို ပြသမည်။"]));
     assert!(checked.out.diagnostics.is_empty());
-    ok(&lines(&[LISTS, "l သည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း နှင့် ညီသည် ဟု ပြသပါ။"]));
-    ok(&lines(&[LISTS, "l != စာရင်းအလွတ် ကို ပြသပါ။"]));
+    ok(&lines(&[LISTS, "l သည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း နှင့် ညီသည် ဟု ပြသမည်။"]));
     assert_eq!(
-        codes(&lines(&[LISTS, other, "l == m ကို ပြသပါ။"])),
+        codes(&lines(&[LISTS, "l != စာရင်းအလွတ် ကို ပြသမည်။"])),
+        [Code::BracketsOnCountedList]
+    );
+    assert_eq!(
+        codes(&lines(&[LISTS, other, "l == m ကို ပြသမည်။"])),
         [Code::IncompatibleOperands]
     );
-    assert_eq!(codes(&lines(&[LISTS, "l + l ကို ပြသပါ။"])), [Code::OperandKind]);
-    assert_eq!(codes(&lines(&[LISTS, other, "l ကို m ဟု ထားပါ။"])), [Code::KindMismatch]);
+    assert_eq!(codes(&lines(&[LISTS, "l + l ကို ပြသမည်။"])), [Code::OperandKind]);
+    assert_eq!(codes(&lines(&[LISTS, other, "l ကို m ဟု ထားမည်။"])), [Code::KindMismatch]);
 }
 
 #[test]
 fn a_function_takes_and_gives_back_a_list()
 {
-    let takes = "လုပ်ဆောင်ချက် f သည်\nအကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း a ကို လက်ခံပြီး\nအောက်ပါတို့ကို \
-                 လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    ok(&lines(&[takes, "လုပ်ဆောင်ချက် f ကို ၁၊ ၂ တို့ပါသော စာရင်း တို့ဖြင့် လုပ်ဆောင်ပါ။"]));
+    let takes = "လုပ်ဆောင်ချက် f သည်\na ဟူသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ကို \
+                 လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    ok(&lines(&[takes, "လုပ်ဆောင်ချက် f ကို ၁၊ ၂ တို့ပါသော စာရင်း တို့ဖြင့် လုပ်ဆောင်မည်။"]));
     assert_eq!(
-        codes(&lines(&[takes, "လုပ်ဆောင်ချက် f ကို ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း တို့ဖြင့် လုပ်ဆောင်ပါ။"])),
+        codes(&lines(&[takes, "လုပ်ဆောင်ချက် f ကို ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း တို့ဖြင့် လုပ်ဆောင်မည်။"])),
         [Code::ListCountMismatch]
     );
-    let gives = "လုပ်ဆောင်ချက် f သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း ရလဒ် ကို \
-                 ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    let gives = "လုပ်ဆောင်ချက် f သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ကို \
+                 ပြန်ပေးမည်။\nကိန်းရှင် အဖြေ သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။\nအဖြေ \
+                 ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     ok(gives);
-    let borrows = "လုပ်ဆောင်ချက် f သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ငှားထားသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် \
-                   လိပ်စာ စာရင်း ရလဒ် ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    assert_eq!(codes(borrows), [Code::BorrowListResult]);
 }
 
 #[test]
 fn lists_do_not_convert()
 {
-    let cast = "l ကို ကိန်းပြည့် အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသပါ။";
+    let cast = "l ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။";
     assert_eq!(codes(&lines(&[LISTS, cast])), [Code::InvalidCast]);
 }
 
@@ -121,12 +126,10 @@ fn an_open_count_keeps_the_cell_kind_of_its_value()
     let owners = "ကိန်းရှင် ps သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်ပါစေ။";
     let floats = "ကိန်းရှင် fs သည် အကွက် ၂ ခုရှိသော ဒဿမကိန်း စာရင်း တစ်ခု ဖြစ်ပါစေ။";
     let refused = [
-        (ints, "ငှားထားသော ကိန်းပြည့် လိပ်စာ စာရင်း", "ns"),
         (ints, "ကိန်းပြည့် လိပ်စာ စာရင်း", "ns"),
         (ints, "ကိန်းပြည့် လိပ်စာ စာရင်း စာရင်း", "ns တို့ပါသော စာရင်း"),
         (owners, "ကိန်းပြည့် စာရင်း", "ps"),
         (floats, "မှန်မှားတန်ဖိုး စာရင်း", "fs"),
-        (owners, "ငှားထားသော ကိန်းပြည့် လိပ်စာ စာရင်း", "ps"),
         (ints, "၈ ဘစ် ကိန်းပြည့် စာရင်း", "ns"),
     ];
     for (first, kind, value) in refused
@@ -136,7 +139,7 @@ fn an_open_count_keeps_the_cell_kind_of_its_value()
         assert_eq!(codes(&text), [Code::KindMismatch], "{text}");
     }
     let callee = "လုပ်ဆောင်ချက် လွှတ် သည်
-ငှားထားသော အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ က ကို လက်ခံပြီး
+က ဟူသော အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ps သည် ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ တန်ဖိုး ဖြစ်ပါစေ။
 လိပ်စာ ps ၏ အကွက် ၀ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
@@ -168,7 +171,7 @@ fn a_list_mismatch_does_not_offer_a_conversion()
         "ကိန်းရှင် b သည် ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ns ဖြစ်ပါစေ။",
         "ကိန်းရှင် b သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ns ဖြစ်ပါစေ။",
         "ကိန်းရှင် b သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ns ဖြစ်ပါစေ။",
-        "ns ကို ၅ ဟု ထားပါ။",
+        "ns ကို ၅ ဟု ထားမည်။",
         "ကိန်းရှင် b သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။",
     ];
     for line in refused
@@ -179,64 +182,33 @@ fn a_list_mismatch_does_not_offer_a_conversion()
 }
 
 /// `s` a slice of `l`, and `h` a heap block of four integers.
-const SLICES: &str = "ကိန်းရှင် s သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် l ၏ တန်ဖိုးအငှား \
-                      ဖြစ်ပါစေ။
-ကိန်းရှင် h သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-";
-
 #[test]
-fn ranges_and_lends_make_slices()
+fn ranges_make_lists_and_text()
 {
     let checked = check(&lines(&[
         LISTS,
-        SLICES,
-        "l ၏ အကွက် ၁ မှစ၍ ၂ ကွက် ကို ပြသပါ။",
-        "p ၏ အကွက် ၀ မှစ၍ ၃ ကွက် ကို ပြသပါ။",
-        "s ၏ အကွက် ၁ မှစ၍ ၁ ကွက် ကို ပြသပါ။",
-        "h ၏ အကွက် ၀ မှစ၍ ၄ ကွက် ကို ပြသပါ။",
-        "g ၏ တန်ဖိုးအငှား ကို ပြသပါ။",
+        "ကိန်းရှင် t သည် \"abc\" ဖြစ်ပါစေ။",
+        "l ၏ အကွက် ၁ မှစ၍ ၂ ကွက် ကို ပြသမည်။",
+        "p ၏ အကွက် ၀ မှစ၍ ၃ ကွက် ကို ပြသမည်။",
+        "t ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ကို ပြသမည်။",
     ]));
     let msgs: Vec<&str> =
         checked.out.diagnostics.iter().map(|d| d.message.as_str()).collect();
     assert!(msgs.is_empty(), "{msgs:?}");
-    assert_eq!(kind_at(&checked, "l ၏ အကွက် ၁ မှစ၍ ၂ ကွက်"), "isize[][..]");
-    assert_eq!(kind_at(&checked, "p ၏ အကွက် ၀ မှစ၍ ၃ ကွက်"), "isize[][..]");
-    assert_eq!(kind_at(&checked, "h ၏ အကွက် ၀ မှစ၍ ၄ ကွက်"), "isize[][..]");
-    assert_eq!(kind_at(&checked, "g ၏ တန်ဖိုးအငှား"), "isize[3][][..]");
+    assert_eq!(kind_at(&checked, "l ၏ အကွက် ၁ မှစ၍ ၂ ကွက်"), "isize[]");
+    assert_eq!(kind_at(&checked, "p ၏ အကွက် ၀ မှစ၍ ၃ ကွက်"), "isize[]");
+    assert_eq!(kind_at(&checked, "t ၏ အကွက် ၀ မှစ၍ ၁ ကွက်"), "text");
 }
 
 #[test]
-fn slice_cells_and_counts_read_like_lists()
+fn range_mistakes()
 {
-    let checked = check(&lines(&[
-        LISTS,
-        SLICES,
-        "s ၏ အကွက် ၀ ကို ၅ ဟု ထားပါ။",
-        "s ၏ အကွက်အရေအတွက် ကို ပြသပါ။",
-    ]));
-    assert!(checked.out.diagnostics.is_empty());
-    assert_eq!(kind_at(&checked, "s ၏ အကွက်အရေအတွက်"), "usize");
-    ok(&lines(&[LISTS, SLICES, "s ၏ ၁ ခုမြောက်အကွက် ကို ပြသပါ။"]));
-}
-
-#[test]
-fn range_and_lend_mistakes()
-{
-    let at = |line: &str| codes(&lines(&[LISTS, SLICES, line]));
-    assert_eq!(at("၅ ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ကို ပြသပါ။"), [Code::NotAList]);
-    assert_eq!(at("l ၏ အကွက် ၀ မှစ၍ ၁.၅ ကွက် ကို ပြသပါ။"), [Code::CellNumberNotInt]);
-    assert_eq!(at("(l) ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ကို ပြသပါ။").len(), 0);
-    assert_eq!(at("[၁၊ ၂] ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ကို ပြသပါ။"), [Code::NoAddress]);
-    assert_eq!(at("s == s ကို ပြသပါ။"), [Code::OperandKind]);
-    let constant = "ကိန်းသေ c သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။\nc ၏ \
-                    တန်ဖိုးအငှား ကို ပြသပါ။";
-    assert_eq!(at(constant), [Code::FixedAddress]);
-    let borrows = "ကိန်းရှင် b သည် ငှားထားသော ကိန်းပြည့် လိပ်စာ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [(h ၏ \
-                   တန်ဖိုးအငှား)] ဖြစ်ပါစေ။\nb ၏ တန်ဖိုးအငှား ကို ပြသပါ။";
-    assert_eq!(at(borrows), [Code::SliceOfBorrows]);
-    let nested = "ကိန်းရှင် n သည် ကိန်းပြည့် စာရင်း တစ်စိတ်တစ်ပိုင်း စာရင်း တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်ပါစေ။";
-    assert_eq!(at(nested), [Code::SliceOfBorrows]);
-    assert_eq!(at("ကိန်းရှင် x သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် s ဖြစ်ပါစေ။").len(), 1);
+    let at = |line: &str| codes(&lines(&[LISTS, line]));
+    assert_eq!(at("၅ ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ကို ပြသမည်။"), [Code::NotAList]);
+    assert_eq!(at("l ၏ အကွက် ၀ မှစ၍ ၁.၅ ကွက် ကို ပြသမည်။"), [Code::CellNumberNotInt]);
+    assert_eq!(at("(l) ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ကို ပြသမည်။").len(), 0);
+    // A range copies its cells, so a literal can be its source.
+    assert_eq!(at("[၁၊ ၂] ၏ အကွက် ၀ မှစ၍ ၁ ကွက် ကို ပြသမည်။").len(), 0);
 }
 
 /// A counted list converts to a plain list on its own; nothing converts to a
@@ -246,29 +218,39 @@ fn list_forms_convert()
 {
     let lists = "ကိန်းရှင် f သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
 ကိန်းရှင် p သည် [၁၊ ၂] ဖြစ်ပါစေ။
-p ကို ပြသပါ။";
+p ကို ပြသမည်။";
     let checked = check(lists);
     assert_eq!(kind_at(&checked, "p"), "isize[]");
-    ok(&lines(&[lists, "p ကို f ဟု ထားပါ။"]));
-    assert_eq!(codes(&lines(&[lists, "f ကို p ဟု ထားပါ။"])), [Code::KindMismatch]);
+    ok(&lines(&[lists, "p ကို f ဟု ထားမည်။"]));
+    assert_eq!(codes(&lines(&[lists, "f ကို p ဟု ထားမည်။"])), [Code::KindMismatch]);
     assert_eq!(
-        codes(&lines(&[lists, "f == p ကို ပြသပါ။"])),
+        codes(&lines(&[lists, "f == p ကို ပြသမည်။"])),
         [Code::IncompatibleOperands]
     );
 }
 
-/// `[]` has no cells: a counted list takes it in its declaration alone, and
-/// `စာရင်းအလွတ်` in each place.
+/// `[]` has no cells: a counted list takes it in no place, and neither does it
+/// take `စာရင်းအလွတ်`; `ကနဦးတန်ဖိုး` fills it. A plain list takes `[]`.
 #[test]
-fn brackets_fit_a_counted_list_in_its_declaration_alone()
+fn brackets_never_fit_a_counted_list()
 {
-    let counted = "ကိန်းရှင် f သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ။";
-    ok(&lines(&[counted, "f ကို စာရင်းအလွတ် ဟု ထားပါ။"]));
+    let counted = "ကိန်းရှင် f သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။";
+    let filled =
+        "ကိန်းရှင် f သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။";
+    ok(&lines(&[filled, "f ကို ကနဦးတန်ဖိုး ဟု ထားမည်။"]));
+    let declared = counted.replace("ဖြစ်ပါစေ", "ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ");
+    assert_eq!(codes(&declared), [Code::BracketsOnCountedList]);
+    let blank = counted.replace("ဖြစ်ပါစေ", "ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ");
+    assert_eq!(codes(&blank), [Code::BracketsOnCountedList]);
     assert_eq!(
-        codes(&lines(&[counted, "f ကို [] ဟု ထားပါ။"])),
+        codes(&lines(&[counted, "f ကို [] ဟု ထားမည်။"])),
         [Code::BracketsOnCountedList]
     );
-    ok("ကိန်းရှင် p သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ။\np ကို [] ဟု ထားပါ။");
+    assert_eq!(
+        codes(&lines(&[counted, "f ကို စာရင်းအလွတ် ဟု ထားမည်။"])),
+        [Code::BracketsOnCountedList]
+    );
+    ok("ကိန်းရှင် p သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဖြစ်ပါစေ။\np ကို [] ဟု ထားမည်။");
 }
 
 /// A constant keeps the kind its declaration gives: a plain list remains
@@ -276,9 +258,9 @@ fn brackets_fit_a_counted_list_in_its_declaration_alone()
 #[test]
 fn a_constant_list_keeps_its_kind()
 {
-    let text = "ကိန်းသေ c သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\nc ကို ပြသပါ။";
+    let text = "ကိန်းသေ c သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။\nc ကို ပြသမည်။";
     assert_eq!(kind_at(&check(text), "c"), "isize[]");
-    let written = "ကိန်းသေ c သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။\nc ကို ပြသပါ။";
+    let written = "ကိန်းသေ c သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။\nc ကို ပြသမည်။";
     assert_eq!(kind_at(&check(written), "c"), "isize[]");
     let counted = written.replace("သည် ကိန်း", "သည် အကွက် ၂ ခုရှိသော ကိန်း");
     assert_eq!(kind_at(&check(&counted), "c"), "isize[2]");
@@ -289,12 +271,12 @@ fn a_constant_list_keeps_its_kind()
 #[test]
 fn plain_lists_grow_and_shrink()
 {
-    ok("ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။\nl ထဲသို့ ၂ ကို ထည့်ပါ။\nl ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။");
+    ok("ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။\nl ထဲသို့ ၂ ကို ထည့်မည်။\nl ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။");
     let counted = "ကိန်းရှင် f သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။";
-    assert_eq!(codes(&lines(&[counted, "f ထဲသို့ ၂ ကို ထည့်ပါ။"])), [Code::ListCannotGrow]);
-    let text = "ကိန်းရှင် t သည် \"abc\" ဖြစ်ပါစေ။\nt ၏ နောက်ဆုံးအကွက်ကို ဖျက်ပါ။";
+    assert_eq!(codes(&lines(&[counted, "f ထဲသို့ ၂ ကို ထည့်မည်။"])), [Code::ListCannotGrow]);
+    let text = "ကိန်းရှင် t သည် \"abc\" ဖြစ်ပါစေ။\nt ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။";
     assert_eq!(codes(text), [Code::ListCannotGrow]);
-    let wrong = "ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။\nl ထဲသို့ \"x\" ကို ထည့်ပါ။";
+    let wrong = "ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။\nl ထဲသို့ \"x\" ကို ထည့်မည်။";
     assert_eq!(codes(wrong), [Code::KindMismatch]);
 }
 
@@ -304,27 +286,23 @@ fn adds_in_front_of_a_cell_or_a_character_check_their_place()
     let head = "ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။
 ကိန်းရှင် c သည် အကွက် ၁ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
 ကိန်းရှင် t သည် \"ab\" ဖြစ်ပါစေ။
-ကိန်းရှင် v သည် စာသား တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် t ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။";
     let check = |line: &str| codes(&lines(&[head, line]));
     let fine = [
-        "l ၏ အကွက် ၀ ၏ အရှေ့တွင် ၂ ကို ထည့်ပါ။",
-        "l ၏ ၁ ခုမြောက်အကွက် ၏ အရှေ့တွင် ၂ ကို ထည့်ပါ။",
-        "t ၏ စာလုံး ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်ပါ။",
-        "t ၏ စာလုံး ၀ ၏ အရှေ့တွင် 'x' ကို ထည့်ပါ။",
-        "t ၏ စာလုံး ၀ ၏ အရှေ့တွင် v ကို ထည့်ပါ။",
-        "t ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။",
+        "l ၏ အကွက် ၀ ၏ အရှေ့တွင် ၂ ကို ထည့်မည်။",
+        "l ၏ ၁ ခုမြောက်အကွက် ၏ အရှေ့တွင် ၂ ကို ထည့်မည်။",
+        "t ၏ စာလုံး ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်မည်။",
+        "t ၏ စာလုံး ၀ ၏ အရှေ့တွင် 'x' ကို ထည့်မည်။",
+        "t ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။",
     ];
     do_for!(line in fine, assert_eq!(check(line), [], "{line}"));
     let wrong = [
-        ("c ၏ အကွက် ၀ ၏ အရှေ့တွင် ၂ ကို ထည့်ပါ။", Code::ListCannotGrow),
-        ("v ၏ စာလုံး ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်ပါ။", Code::TextCannotChange),
-        ("v ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။", Code::TextCannotChange),
-        ("n ၏ အရှေ့တွင် ၂ ကို ထည့်ပါ။", Code::InsertNotAtCell),
-        ("l ၏ နောက်ဆုံးစာလုံးကို ဖျက်ပါ။", Code::OperandKind),
-        ("l ၏ အကွက် ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်ပါ။", Code::KindMismatch),
-        ("l ၏ အကွက် \"a\" ၏ အရှေ့တွင် ၂ ကို ထည့်ပါ။", Code::CellNumberNotInt),
-        ("t ၏ စာလုံး ၀ ၏ အရှေ့တွင် ၅ ကို ထည့်ပါ။", Code::KindMismatch),
+        ("c ၏ အကွက် ၀ ၏ အရှေ့တွင် ၂ ကို ထည့်မည်။", Code::ListCannotGrow),
+        ("n ၏ အရှေ့တွင် ၂ ကို ထည့်မည်။", Code::InsertNotAtCell),
+        ("l ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။", Code::OperandKind),
+        ("l ၏ အကွက် ၀ ၏ အရှေ့တွင် \"x\" ကို ထည့်မည်။", Code::KindMismatch),
+        ("l ၏ အကွက် \"a\" ၏ အရှေ့တွင် ၂ ကို ထည့်မည်။", Code::CellNumberNotInt),
+        ("t ၏ စာလုံး ၀ ၏ အရှေ့တွင် ၅ ကို ထည့်မည်။", Code::KindMismatch),
     ];
     do_for!((line, code) in wrong, assert_eq!(check(line), [code], "{line}"));
 }
@@ -334,22 +312,41 @@ fn replaces_of_a_range_check_their_text_and_value()
 {
     let head = "ကိန်းရှင် l သည် [၁] ဖြစ်ပါစေ။
 ကိန်းရှင် t သည် \"ab\" ဖြစ်ပါစေ။
-ကိန်းရှင် v သည် စာသား တစ်စိတ်တစ်ပိုင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် t ၏ တန်ဖိုးအငှား ဖြစ်ပါစေ။
 ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။";
     let check = |line: &str| codes(&lines(&[head, line]));
     let fine = [
-        "t ၏ အကွက် ၀ မှ ၁ ထိကို \"x\" ဖြင့် အစားထိုးပါ။",
-        "t ၏ အကွက် n မှ n ထိကို 'x' ဖြင့် အစားထိုးပါ။",
-        "t ၏ ၁ လုံးမြောက်စာလုံးမှ ၂ လုံးမြောက်စာလုံးထိကို v ဖြင့် အစားထိုးပါ။",
-        "t ၏ ၁ ခုမြောက်စာလုံးမှ n ခုမြောက်စာလုံးထိကို \"{n}\" ဖြင့် အစားထိုးပါ။",
+        "t ၏ အကွက် ၀ မှ ၁ ထိကို \"x\" ဖြင့် အစားထိုးမည်။",
+        "t ၏ အကွက် n မှ n ထိကို 'x' ဖြင့် အစားထိုးမည်။",
+        "t ၏ ၁ လုံးမြောက်စာလုံးမှ ၂ လုံးမြောက်စာလုံးထိကို t ဖြင့် အစားထိုးမည်။",
+        "t ၏ ၁ ခုမြောက်စာလုံးမှ n ခုမြောက်စာလုံးထိကို \"{n}\" ဖြင့် အစားထိုးမည်။",
     ];
     do_for!(line in fine, assert_eq!(check(line), [], "{line}"));
     let wrong = [
-        ("l ၏ အကွက် ၀ မှ ၀ ထိကို \"x\" ဖြင့် အစားထိုးပါ။", Code::OperandKind),
-        ("v ၏ အကွက် ၀ မှ ၀ ထိကို \"x\" ဖြင့် အစားထိုးပါ။", Code::TextCannotChange),
-        ("t ၏ အကွက် ၀ မှ ၀ ထိကို ၅ ဖြင့် အစားထိုးပါ။", Code::KindMismatch),
-        ("t ၏ အကွက် \"a\" မှ ၀ ထိကို \"x\" ဖြင့် အစားထိုးပါ။", Code::CellNumberNotInt),
-        ("t ၏ အကွက် ၀ မှ မှန် ထိကို \"x\" ဖြင့် အစားထိုးပါ။", Code::CellNumberNotInt),
+        ("l ၏ အကွက် ၀ မှ ၀ ထိကို \"x\" ဖြင့် အစားထိုးမည်။", Code::OperandKind),
+        ("t ၏ အကွက် ၀ မှ ၀ ထိကို ၅ ဖြင့် အစားထိုးမည်။", Code::KindMismatch),
+        ("t ၏ အကွက် \"a\" မှ ၀ ထိကို \"x\" ဖြင့် အစားထိုးမည်။", Code::CellNumberNotInt),
+        ("t ၏ အကွက် ၀ မှ မှန် ထိကို \"x\" ဖြင့် အစားထိုးမည်။", Code::CellNumberNotInt),
     ];
     do_for!((line, code) in wrong, assert_eq!(check(line), [code], "{line}"));
+}
+
+/// A blank list takes the list kind written after it, in place of the one its
+/// place gives; on a counted list kind it is ZK0436, as anywhere else.
+#[test]
+fn a_blank_list_takes_a_written_kind()
+{
+    let blank = "[] ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု";
+    let full = "[၁] ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု";
+    let checked = check(&format!("{blank} ကို ပြသမည်။\n{full} ကို ပြသမည်။"));
+    assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
+    assert_eq!(kind_at(&checked, blank), kind_at(&checked, full));
+    ok("စာရင်းအလွတ် ဟူသော စာသား စာရင်း တစ်ခု ကို ပြသမည်။");
+    ok("ကိန်းရှင် a သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။");
+    assert_eq!(
+        codes("[] ဟူသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ကို ပြသမည်။"),
+        [Code::BracketsOnCountedList]
+    );
+    let other =
+        "ကိန်းရှင် a သည် စာသား စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [] ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။";
+    assert!(!codes(other).is_empty());
 }

@@ -124,7 +124,7 @@ pub fn diagnostic_pieces(
 /// Write a diagnostic, with color when the writer supports it.
 ///
 /// With color, the rows under spans follow [`terminal_carets`]; without color
-/// they are drawn as in [`format_diagnostic`].
+/// the rows are drawn as in [`format_diagnostic`].
 ///
 /// # Arguments
 ///

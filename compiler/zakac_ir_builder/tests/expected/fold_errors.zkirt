@@ -1,7 +1,7 @@
 # zakac-ir-artifact v1
 name:
   Custom: fold_errors.zaka
-source: "// ကိန်းသေ တွက်ချက်ရာတွင် အမှားများ\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် ၁၂၇ + ၁ ဖြစ်ပါစေ။\n၁ / ၀ ကို ပြသပါ။\n၇ % (၂ - ၂) ကို ပြသပါ။\nကိန်းသေ န သည် လက္ခဏာမဲ့ ကိန်းပြည့် ၇၀ ဖြစ်ပါစေ။\n၁ << န ကို ပြသပါ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+source: "// ကိန်းသေ တွက်ချက်ရာတွင် အမှားများ\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် ၁၂၇ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု + ၁ ဖြစ်ပါစေ။\n၁ / ၀ ကို ပြသမည်။\n၇ % (၂ - ၂) ကို ပြသမည်။\nကိန်းသေ န သည် ၇၀ ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n၁ << န ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 module:
   globals: []
@@ -18,13 +18,15 @@ module:
         lo: 241
         hi: 244
       addressed: false
+      unset: null
     - name: န
       kind: usize
       access: const
       span:
-        lo: 452
-        hi: 455
+        lo: 490
+        hi: 493
       addressed: false
+      unset: null
     block:
     - set:
         place: l0
@@ -39,20 +41,20 @@ module:
                   const: 127:i8
                 span:
                   lo: 255
-                  hi: 309
+                  hi: 341
               rhs:
                 kind: i8
                 node:
                   const: 1:i8
                 span:
-                  lo: 312
-                  hi: 315
+                  lo: 344
+                  hi: 347
           span:
             lo: 255
-            hi: 315
+            hi: 347
         span:
           lo: 213
-          hi: 343
+          hi: 375
     - print:
         value:
           expr:
@@ -65,21 +67,21 @@ module:
                   node:
                     const: 1:isize
                   span:
-                    lo: 344
-                    hi: 347
+                    lo: 376
+                    hi: 379
                 rhs:
                   kind: isize
                   node:
                     const: 0:isize
                   span:
-                    lo: 350
-                    hi: 353
+                    lo: 382
+                    hi: 385
             span:
-              lo: 344
-              hi: 353
+              lo: 376
+              hi: 385
         span:
-          lo: 344
-          hi: 382
+          lo: 376
+          hi: 417
     - print:
         value:
           expr:
@@ -92,21 +94,21 @@ module:
                   node:
                     const: 7:isize
                   span:
-                    lo: 383
-                    hi: 386
+                    lo: 418
+                    hi: 421
                 rhs:
                   kind: isize
                   node:
                     const: 0:isize
                   span:
-                    lo: 390
-                    hi: 399
+                    lo: 425
+                    hi: 434
             span:
-              lo: 383
-              hi: 400
+              lo: 418
+              hi: 435
         span:
-          lo: 383
-          hi: 429
+          lo: 418
+          hi: 467
     - set:
         place: l1
         value:
@@ -114,11 +116,11 @@ module:
           node:
             const: 70:usize
           span:
-            lo: 466
-            hi: 531
+            lo: 504
+            hi: 601
         span:
-          lo: 430
-          hi: 559
+          lo: 468
+          hi: 629
     - print:
         value:
           expr:
@@ -131,25 +133,27 @@ module:
                   node:
                     const: 1:isize
                   span:
-                    lo: 560
-                    hi: 563
+                    lo: 630
+                    hi: 633
                 rhs:
                   kind: usize
                   node:
                     const: 70:usize
                   span:
-                    lo: 567
-                    hi: 570
+                    lo: 637
+                    hi: 640
             span:
-              lo: 560
-              hi: 570
+              lo: 630
+              hi: 640
         span:
-          lo: 560
-          hi: 599
+          lo: 630
+          hi: 672
     shared_params: []
+    owned: []
+    owned_ret: false
     span:
       lo: 96
-      hi: 670
+      hi: 743
   main:
   - call:
       func: 0
@@ -164,35 +168,36 @@ module:
     env: null
     exit: null
   foreign: []
+  marked: []
   span:
     lo: 0
-    hi: 671
+    hi: 744
 diagnostics:
 - code: ZK0601
   level: error
   message: + on these constants does not fit i8
   span:
     lo: 255
-    hi: 315
+    hi: 347
   help: null
 - code: ZK0602
   level: error
   message: / with the constant zero as divisor
   span:
-    lo: 344
-    hi: 353
+    lo: 376
+    hi: 385
   help: null
 - code: ZK0602
   level: error
   message: "% with the constant zero as divisor"
   span:
-    lo: 383
-    hi: 400
+    lo: 418
+    hi: 435
   help: null
 - code: ZK0407
   level: error
   message: shift distance 70 is not below the 64-bit width
   span:
-    lo: 567
-    hi: 570
+    lo: 637
+    hi: 640
   help: null

@@ -41,10 +41,81 @@ pub struct StructKind
     sig: String,
     /// The fields in order, set once each kind the fields name exists.
     fields: OnceLock<Vec<(String, DataKind)>>,
+    /// The fields of the C struct a handle of a kind from outside points at,
+    /// as its declaration writes them, from the start of the C struct.
+    c_fields: OnceLock<Vec<(String, DataKind)>>,
 }
+
+/// The one field of the box of a kind from outside the program: the address
+/// of the struct C keeps, or 0 once a function that takes it over closes it.
+/// No field name a program writes starts with `%`.
+pub const EXTERN_FIELD: &str = "%c";
 
 impl StructKind
 {
+    /// The fields of the C struct a handle points at, for a kind from
+    /// outside; none for each other struct.
+    ///
+    /// # Returns
+    ///
+    /// The fields, each a name and a kind.
+    pub fn c_fields(&self) -> &[(String, DataKind)]
+    {
+        self.c_fields.get().map_or(&[], Vec::as_slice)
+    }
+
+    /// Set the fields of the C struct a handle points at, once.
+    ///
+    /// # Arguments
+    ///
+    /// * `fields` - The fields, each a name and a kind.
+    pub fn set_c_fields(&self, fields: Vec<(String, DataKind)>)
+    {
+        _ = self.c_fields.set(fields);
+    }
+
+    /// The C field with a name, and its offset in the C struct: each field
+    /// starts at the next multiple of its alignment, as C places a struct;
+    /// text is a `char *`, and a handle a pointer.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The field name.
+    /// * `platform` - Bit count of the platform-sized kinds.
+    ///
+    /// # Returns
+    ///
+    /// The kind and the offset, or `None` for a name the C struct does not
+    /// have.
+    pub fn c_field(&self, name: &str, platform: u16) -> Option<(DataKind, u32)>
+    {
+        let word = u32::from(platform) / 8;
+        let pointer = |k: DataKind| k.is_text() || k.as_external().is_some();
+        let size_align = |k: DataKind| {
+            tern!(pointer(k), (word, word), (k.size(platform), k.align(platform)))
+        };
+        let mut at: u32 = 0;
+        for (field, kind) in self.c_fields()
+        {
+            let (size, align) = size_align(*kind);
+            at = at.div_ceil(align.max(1)) * align.max(1);
+            ret_if!(field == name, Some((*kind, at)));
+            at += size;
+        }
+        None
+    }
+
+    /// Whether the struct is the box of a kind from outside the program,
+    /// `ပြင်ပမှ လာသော ဒေတာအမျိုးအစား`, whose one field holds C's address.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn is_external(&self) -> bool
+    {
+        self.fields().first().is_some_and(|(name, _)| name == EXTERN_FIELD)
+    }
+
     /// The signature, which names the kind in artifacts.
     ///
     /// # Returns
@@ -267,7 +338,8 @@ fn resolve(
     ret_if!(let Some(found) = memo.get(name), Some(*found));
     let sig = sig_of(name, defs, &mut Vec::new());
     ret_if!(let Some(found) = made(&sig), Some(found));
-    let fresh = StructKind { name: name.to_string(), sig, fields: OnceLock::new() };
+    #[rustfmt::skip]
+    let fresh = StructKind { name: name.to_string(), sig, fields: OnceLock::new(), c_fields: OnceLock::new() };
     let kind: &'static StructKind = Box::leak(Box::new(fresh));
     memo.insert(name.to_string(), kind);
     let field = |(f, k): &(String, String)| Some((f.clone(), kind_of(k, defs, memo)?));
@@ -360,7 +432,19 @@ fn kind_of(
             Some(k) => Some(kind_of(k, defs, memo)?),
             None => None,
         };
-        return DataKind::wrap_marks(DataKind::fallible(ok, err), split_marks(kind).1);
+        // An optional holds its data in a field `some`.
+        let some = match side("some")
+        {
+            Some(k) => Some(kind_of(k, defs, memo)?),
+            None => None,
+        };
+        let sig = some
+            .map_or_else(|| DataKind::fallible_sig(ok, err), DataKind::optional_sig);
+        let sides =
+            [("tag", Some(DataKind::U8)), ("ok", ok), ("err", err), ("some", some)];
+        let fields = sides.into_iter().filter_map(|(f, k)| Some((f.to_string(), k?)));
+        let made = DataKind::Struct(side_struct(sig, fields.collect(), memo));
+        return DataKind::wrap_marks(made, split_marks(kind).1);
     }
     let (base, marks) = split_marks(kind);
     if is_fn_text(base)
@@ -372,6 +456,34 @@ fn kind_of(
     ret_if!(!defs.contains_key(base), DataKind::parse(kind));
     let inner = DataKind::Struct(resolve(base, defs, memo)?);
     DataKind::wrap_marks(inner, marks)
+}
+
+/// The struct of a result or an optional, made in this run from the kinds of
+/// its sides, which are read before it. A side can hold a struct still being
+/// made, through a shared box; reading the signature again from its text
+/// would make that struct afresh, and so this result again, without end.
+///
+/// # Arguments
+///
+/// * `sig` - The signature.
+/// * `fields` - The tag and each side that holds a value, in that order.
+/// * `memo` - The kinds made in this run.
+///
+/// # Returns
+///
+/// The kind.
+fn side_struct(
+    sig: String, fields: Vec<(String, DataKind)>,
+    memo: &mut HashMap<String, &'static StructKind>,
+) -> &'static StructKind
+{
+    ret_if!(let Some(found) = memo.get(&sig), *found);
+    ret_if!(let Some(found) = made(&sig), found);
+    #[rustfmt::skip]
+    let fresh = StructKind { name: FALLIBLE.to_string(), sig: sig.clone(), fields: OnceLock::from(fields), c_fields: OnceLock::new() };
+    let kind: &'static StructKind = Box::leak(Box::new(fresh));
+    memo.insert(sig, kind);
+    kind
 }
 
 /// Record the fields of a signature and of each struct written out in it,

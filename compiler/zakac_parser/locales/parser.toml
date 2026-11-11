@@ -12,6 +12,9 @@ en = "a name"
 [parser.mark]
 en = "a mark: a name or a particle"
 
+[parser.mark_string]
+en = "the mark in a string, as \"ကို\""
+
 [parser.kind]
 en = "a kind"
 
@@ -26,9 +29,6 @@ en = " or "
 
 [parser.artifact.source_changed]
 en = "source text changed after re-ingest"
-
-[parser.size_parens]
-en = "put a kind-prefixed literal that counts octets in parentheses: (<kind> n) ဘိုက်စာ"
 
 [parser.struct_count]
 en = "a struct name and its count, as in \"လူတစ်ယောက်\""

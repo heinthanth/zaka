@@ -41,48 +41,6 @@ pub fn kind_mismatch_unbridged(span: Span, want: &str, got: &str) -> Diagnostic
     Diagnostic::new(Code::KindMismatch, msg, span)
 }
 
-/// A list or text is given where a slice or a view of its cells is
-/// expected, which a lend gives.
-///
-/// # Arguments
-///
-/// * `span` - The value.
-/// * `want` - The expected kind, as text.
-/// * `got` - The found kind, as text.
-///
-/// # Returns
-///
-/// The `ZK0401` diagnostic, with help naming the lend.
-pub fn lend_wanted(span: Span, want: &str, got: &str) -> Diagnostic
-{
-    let msg = t!("codes.ZK0401.message", want = want, got = got);
-    Diagnostic::new(Code::KindMismatch, msg, span)
-        .with_help(t!("codes.ZK0401.help_lend"))
-}
-
-/// A value does not fit its place, and its block holds addresses in other
-/// places than the block the place expects, which takes a raw address in
-/// between.
-///
-/// # Arguments
-///
-/// * `span` - The value.
-/// * `want` - The expected kind, as text.
-/// * `got` - The found kind, as text.
-/// * `raw` - The raw address kind of the expected shape, as text.
-///
-/// # Returns
-///
-/// The `ZK0401` diagnostic, with help naming the raw step.
-pub fn address_block_mismatch(
-    span: Span, want: &str, got: &str, raw: &str,
-) -> Diagnostic
-{
-    let msg = t!("codes.ZK0401.message", want = want, got = got);
-    let help = t!("codes.ZK0401.help_raw", raw = raw, want = want);
-    Diagnostic::new(Code::KindMismatch, msg, span).with_help(help)
-}
-
 /// A condition is not a boolean.
 ///
 /// # Arguments
@@ -136,6 +94,23 @@ pub fn incompatible_operands(span: Span, lhs: &str, rhs: &str) -> Diagnostic
     Diagnostic::new(Code::IncompatibleOperands, msg, span)
 }
 
+/// The sameness test `X နှင့် Y သည် တစ်ခုတည်း` on kinds that are not shared
+/// objects or function values.
+///
+/// # Arguments
+///
+/// * `span` - The operation.
+/// * `lhs` - Name of the left kind.
+/// * `rhs` - Name of the right kind.
+///
+/// # Returns
+///
+/// The `ZK0404` diagnostic, with a help line.
+pub fn sameness_of_values(span: Span, lhs: &str, rhs: &str) -> Diagnostic
+{
+    incompatible_operands(span, lhs, rhs).with_help(t!("codes.ZK0404.help_same"))
+}
+
 /// A counted-loop bound or step is not an integer.
 ///
 /// # Arguments
@@ -168,7 +143,7 @@ pub fn each_source_wrong(span: Span, got: &str) -> Diagnostic
     Diagnostic::new(Code::EachSourceWrong, t!("codes.ZK0434.message", got = got), span)
 }
 
-/// `[]` is given to a counted list outside its declaration.
+/// `[]` or `စာရင်းအလွတ်` is given to a counted list.
 ///
 /// # Arguments
 ///
@@ -180,11 +155,9 @@ pub fn each_source_wrong(span: Span, got: &str) -> Diagnostic
 /// The `ZK0436` diagnostic.
 pub fn brackets_on_counted_list(span: Span, kind: &str) -> Diagnostic
 {
-    Diagnostic::new(
-        Code::BracketsOnCountedList,
-        t!("codes.ZK0436.message", k = kind),
-        span,
-    )
+    let msg = t!("codes.ZK0436.message", k = kind);
+    Diagnostic::new(Code::BracketsOnCountedList, msg, span)
+        .with_help(t!("codes.ZK0436.help"))
 }
 
 /// An add or a remove statement changes a value that cannot grow or shrink.
@@ -401,22 +374,6 @@ pub fn fault_value_missing(span: Span, kind: &str) -> Diagnostic
         .with_help(t!("codes.ZK0451.help"))
 }
 
-/// An error value from a function whose failure holds none.
-///
-/// # Arguments
-///
-/// * `span` - The statement.
-/// * `name` - The function name.
-///
-/// # Returns
-///
-/// The `ZK0452` diagnostic.
-pub fn fault_value_extra(span: Span, name: &str) -> Diagnostic
-{
-    let msg = t!("codes.ZK0452.message", f = name);
-    Diagnostic::new(Code::FaultValueExtra, msg, span).with_help(t!("codes.ZK0452.help"))
-}
-
 /// A conversion reads the part of a result that the code before it proves
 /// the result does not hold.
 ///
@@ -425,56 +382,22 @@ pub fn fault_value_extra(span: Span, name: &str) -> Diagnostic
 /// * `span` - The conversion.
 /// * `name` - The variable that holds the result.
 /// * `good` - Whether the result is proven good, so the error part is read.
+/// * `optional` - Whether it is an optional, proven to hold no data.
 ///
 /// # Returns
 ///
 /// The `ZK0454` diagnostic.
-pub fn wrong_part_proven(span: Span, name: &str, good: bool) -> Diagnostic
+pub fn wrong_part_proven(
+    span: Span, name: &str, good: bool, optional: bool,
+) -> Diagnostic
 {
-    let msg = tern!(
-        good,
-        t!("codes.ZK0454.message_good", n = name),
-        t!("codes.ZK0454.message_fault", n = name)
-    );
+    let msg = match (good, optional)
+    {
+        (_, true) => t!("codes.ZK0454.message_no_data", n = name),
+        (true, false) => t!("codes.ZK0454.message_good", n = name),
+        (false, false) => t!("codes.ZK0454.message_fault", n = name),
+    };
     Diagnostic::new(Code::WrongPartProven, msg, span).with_help(t!("codes.ZK0454.help"))
-}
-
-/// A return gives back a value with the word of the other sort of function.
-///
-/// # Arguments
-///
-/// * `span` - The return statement.
-/// * `name` - The function name.
-/// * `fails` - Whether the function can fail.
-///
-/// # Returns
-///
-/// The `ZK0455` diagnostic.
-pub fn good_return_word(span: Span, name: &str, fails: bool) -> Diagnostic
-{
-    let msg = tern!(
-        fails,
-        t!("codes.ZK0455.message_fails", f = name),
-        t!("codes.ZK0455.message_sure", f = name)
-    );
-    let help =
-        tern!(fails, t!("codes.ZK0455.help_fails"), t!("codes.ZK0455.help_sure"));
-    Diagnostic::new(Code::GoodReturnWord, msg, span).with_help(help)
-}
-
-/// A character write, an add or a remove changes a view of text.
-///
-/// # Arguments
-///
-/// * `span` - The text.
-/// * `kind` - Its kind, as text.
-///
-/// # Returns
-///
-/// The `ZK0438` diagnostic.
-pub fn text_cannot_change(span: Span, kind: &str) -> Diagnostic
-{
-    Diagnostic::new(Code::TextCannotChange, t!("codes.ZK0438.message", k = kind), span)
 }
 
 /// An integer literal does not fit the kind its place expects.
@@ -527,50 +450,6 @@ pub fn invalid_cast(span: Span, from: &str, to: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0408.message", from = from, to = to);
     Diagnostic::new(Code::InvalidCast, msg, span)
-}
-
-/// An integer is converted straight to an owner or a borrow, which takes
-/// a raw address in between.
-///
-/// # Arguments
-///
-/// * `span` - The conversion.
-/// * `from` - The integer kind, as text.
-/// * `to` - The target kind, as text.
-/// * `raw` - The raw address kind of the same shape, as text.
-///
-/// # Returns
-///
-/// The `ZK0408` diagnostic, with help.
-pub fn checked_from_int(span: Span, from: &str, to: &str, raw: &str) -> Diagnostic
-{
-    invalid_cast(span, from, to).with_help(t!(
-        "codes.ZK0408.help_raw",
-        raw = raw,
-        to = to
-    ))
-}
-
-/// A cast between owners or borrows reads stored addresses as another
-/// kind, which takes a raw address in between.
-///
-/// # Arguments
-///
-/// * `span` - The conversion.
-/// * `from` - The source kind, as text.
-/// * `to` - The target kind, as text.
-/// * `raw` - The raw address kind of the target's shape, as text.
-///
-/// # Returns
-///
-/// The `ZK0408` diagnostic, with help.
-pub fn pointer_pun(span: Span, from: &str, to: &str, raw: &str) -> Diagnostic
-{
-    invalid_cast(span, from, to).with_help(t!(
-        "codes.ZK0408.help_pun",
-        raw = raw,
-        to = to
-    ))
 }
 
 /// A counted-loop step is not positive.
@@ -644,22 +523,6 @@ pub fn fixed_address(span: Span, name: &str) -> Diagnostic
 pub fn not_a_pointer(span: Span, kind: &str) -> Diagnostic
 {
     Diagnostic::new(Code::NotAPointer, t!("codes.ZK0413.message", kind = kind), span)
-}
-
-/// A value that is no pointer is lent where a pointer to it is wanted.
-///
-/// # Arguments
-///
-/// * `span` - The lent operand.
-/// * `kind` - The found kind, as text.
-/// * `name` - The operand name, for the help text.
-///
-/// # Returns
-///
-/// The `ZK0413` diagnostic with a help that shows the address spelling.
-pub fn lend_of_value(span: Span, kind: &str, name: &str) -> Diagnostic
-{
-    not_a_pointer(span, kind).with_help(t!("codes.ZK0413.help", name = name))
 }
 
 /// An opaque pointer is dereferenced or offset.
@@ -807,21 +670,6 @@ pub fn cell_number_not_int(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::CellNumberNotInt, msg, span)
 }
 
-/// A function gives back a list of borrows as its result.
-///
-/// # Arguments
-///
-/// * `span` - The result kind.
-///
-/// # Returns
-///
-/// The `ZK0424` diagnostic.
-pub fn borrow_list_result(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::BorrowListResult, t!("codes.ZK0424.message"), span)
-        .with_help(t!("codes.ZK0424.help"))
-}
-
 /// A list kind is too large for the machine.
 ///
 /// # Arguments
@@ -870,21 +718,6 @@ pub fn struct_holds_itself(span: Span, name: &str) -> Diagnostic
         .with_help(t!("codes.ZK0427.help", n = name))
 }
 
-/// The cells of a slice kind hold borrows.
-///
-/// # Arguments
-///
-/// * `span` - The kind.
-/// * `kind` - The slice kind, as its short name.
-///
-/// # Returns
-///
-/// The `ZK0428` diagnostic.
-pub fn slice_of_borrows(span: Span, kind: &str) -> Diagnostic
-{
-    Diagnostic::new(Code::SliceOfBorrows, t!("codes.ZK0428.message", k = kind), span)
-}
-
 /// A cell of text is the target of an assignment.
 ///
 /// # Arguments
@@ -914,34 +747,6 @@ pub fn kind_not_inferred(span: Span, name: &str) -> Diagnostic
 {
     Diagnostic::new(Code::KindNotInferred, t!("codes.ZK0430.message", n = name), span)
         .with_help(t!("codes.ZK0430.help"))
-}
-
-/// An argument for a parameter the function can change lacks the mark.
-///
-/// # Arguments
-///
-/// * `span` - The argument.
-///
-/// # Returns
-///
-/// The `ZK0431` diagnostic.
-pub fn edit_mark_missing(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::EditMarkMissing, t!("codes.ZK0431.message"), span)
-}
-
-/// An argument for a parameter the function cannot change takes the mark.
-///
-/// # Arguments
-///
-/// * `span` - The argument.
-///
-/// # Returns
-///
-/// The `ZK0432` diagnostic.
-pub fn edit_mark_extra(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::EditMarkExtra, t!("codes.ZK0432.message"), span)
 }
 
 /// A place a call changes through one argument appears in another.
@@ -1000,14 +805,15 @@ pub fn duplicate_member_value(span: Span, name: &str, first: &str) -> Diagnostic
 /// * `span` - The subject.
 /// * `missing` - The members no arm names, joined for the reader.
 /// * `stem` - The stem of the enumeration name, for the default arm.
+/// * `word` - The classifier of the enumeration.
 ///
 /// # Returns
 ///
 /// The `ZK0458` diagnostic, with help to add a default arm.
-pub fn switch_missing(span: Span, missing: &str, stem: &str) -> Diagnostic
+pub fn switch_missing(span: Span, missing: &str, stem: &str, word: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0458.message", m = missing);
-    let help = t!("codes.ZK0458.help", k = stem);
+    let help = t!("codes.ZK0458.help", k = stem, w = word);
     Diagnostic::new(Code::SwitchMissing, msg, span).with_help(help)
 }
 
@@ -1078,6 +884,22 @@ pub fn not_a_function(span: Span, name: &str, kind: &str) -> Diagnostic
     Diagnostic::new(Code::NotAFunction, msg, span)
 }
 
+/// A leave for C to call a value that is no function value.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `kind` - Its kind.
+///
+/// # Returns
+///
+/// The `ZK0462` diagnostic.
+pub fn leave_needs_function(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0462.leave", k = kind);
+    Diagnostic::new(Code::NotAFunction, msg, span)
+}
+
 /// The address of a function of an overloaded name fits no single one.
 ///
 /// # Arguments
@@ -1132,13 +954,14 @@ pub fn kind_not_across_c(span: Span, kind: &str) -> Diagnostic
 /// # Arguments
 ///
 /// * `span` - The name of the function.
+/// * `kind` - The result kind written.
 ///
 /// # Returns
 ///
 /// The `ZK0465` diagnostic, with the result kind to write.
-pub fn text_result_across_c(span: Span) -> Diagnostic
+pub fn text_result_across_c(span: Span, kind: &str) -> Diagnostic
 {
-    Diagnostic::new(Code::KindNotAcrossC, t!("codes.ZK0465.message", k = "text"), span)
+    Diagnostic::new(Code::KindNotAcrossC, t!("codes.ZK0465.message", k = kind), span)
         .with_help(t!("codes.ZK0465.help_text"))
 }
 
@@ -1159,7 +982,7 @@ pub fn owned_not_c_text(span: Span, name: &str) -> Diagnostic
         .with_help(t!("codes.ZK0467.help"))
 }
 
-/// A parameter of a C function carries the edit mark.
+/// A parameter of a C function is marked `ဒေတာ ပြောင်းလဲရန်`.
 ///
 /// # Arguments
 ///
@@ -1173,4 +996,312 @@ pub fn edit_across_c(span: Span, name: &str) -> Diagnostic
 {
     Diagnostic::new(Code::EditAcrossC, t!("codes.ZK0466.message", n = name), span)
         .with_help(t!("codes.ZK0466.help"))
+}
+
+/// An operation that works with pointers stands outside marked code.
+///
+/// # Arguments
+///
+/// * `span` - The operation.
+/// * `what` - The words of the operation, as text.
+///
+/// # Returns
+///
+/// The `ZK0468` diagnostic.
+pub fn unsafe_outside(span: Span, what: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::UnsafeOutside, t!("codes.ZK0468.message", w = what), span)
+        .with_help(t!("codes.ZK0468.help"))
+}
+
+/// A function marked `စိတ်မချရသော` is taken as a value.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `name` - The function.
+///
+/// # Returns
+///
+/// The `ZK0469` diagnostic.
+pub fn unsafe_fn_value(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::UnsafeFnValue, t!("codes.ZK0469.message", n = name), span)
+        .with_help(t!("codes.ZK0469.help"))
+}
+
+/// `အပိုင်အနေဖြင့်` stands on a parameter or result that is no pointer.
+///
+/// # Arguments
+///
+/// * `span` - The parameter or the function name.
+/// * `kind` - The kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0470` diagnostic.
+pub fn owned_not_ptr(span: Span, kind: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::OwnedNotPtr, t!("codes.ZK0470.message", k = kind), span)
+}
+
+/// Marked code where `--no-unsafe` refuses it.
+///
+/// # Arguments
+///
+/// * `span` - The mark.
+///
+/// # Returns
+///
+/// The `ZK0471` diagnostic.
+pub fn unsafe_refused(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::UnsafeRefused, t!("codes.ZK0471.message"), span)
+}
+
+/// A value of a kind from outside the program is made, copied or printed.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `kind` - The kind name.
+/// * `use_` - What the program does with it.
+///
+/// # Returns
+///
+/// The `ZK0473` diagnostic.
+pub fn handle_in_zaka(span: Span, kind: &str, use_: HandleUse) -> Diagnostic
+{
+    let cue = match use_
+    {
+        HandleUse::Make => t!("codes.ZK0473.make"),
+        HandleUse::Duplicate => t!("codes.ZK0473.duplicate"),
+        HandleUse::Print => t!("codes.ZK0473.print"),
+    };
+    let message = t!("codes.ZK0473.message", k = kind, w = cue);
+    Diagnostic::new(Code::HandleInZaka, message, span)
+        .with_help(t!("codes.ZK0473.help"))
+}
+
+/// A field of the C struct a handle points at is written.
+///
+/// # Arguments
+///
+/// * `span` - The field.
+/// * `kind` - The kind from outside.
+///
+/// # Returns
+///
+/// The `ZK0474` diagnostic.
+pub fn c_field_write(span: Span, kind: &str) -> Diagnostic
+{
+    let message = t!("codes.ZK0474.message", k = kind);
+    Diagnostic::new(Code::CFieldWrite, message, span).with_help(t!("codes.ZK0474.help"))
+}
+
+/// A test word that does not fit the kind: `ထဲတွင် ဒေတာ ရှိ` on a result, or
+/// `ထဲတွင် ရလဒ်ကောင်း ရှိ` on an optional.
+///
+/// # Arguments
+///
+/// * `span` - The value tested.
+/// * `kind` - Its kind.
+/// * `optional` - Whether the value is an optional.
+///
+/// # Returns
+///
+/// The `ZK0475` diagnostic.
+pub fn test_word_mismatch(span: Span, kind: &str, optional: bool) -> Diagnostic
+{
+    let msg = tern!(
+        optional,
+        t!("codes.ZK0475.optional", k = kind),
+        t!("codes.ZK0475.result", k = kind)
+    );
+    Diagnostic::new(Code::TestWordMismatch, msg, span)
+}
+
+/// An error value where the place wants no result kind with an error side.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+///
+/// # Returns
+///
+/// The `ZK0476` diagnostic.
+pub fn fault_needs_result(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::FaultNeedsResult, t!("codes.ZK0476.message"), span)
+        .with_help(t!("codes.ZK0476.help"))
+}
+
+/// `အလွတ်` where the place wants no optional kind.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+///
+/// # Returns
+///
+/// The `ZK0477` diagnostic.
+pub fn no_data_needs_optional(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::NoDataNeedsOptional, t!("codes.ZK0477.message"), span)
+        .with_help(t!("codes.ZK0477.help"))
+}
+
+/// `ကနဦးတန်ဖိုး` where no kind can be worked out from its place.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+///
+/// # Returns
+///
+/// The `ZK0478` diagnostic.
+pub fn initial_needs_kind(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::InitialNeedsKind, t!("codes.ZK0478.message"), span)
+        .with_help(t!("codes.ZK0478.help"))
+}
+
+/// The reason a kind has no initial value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NoInitial<'a>
+{
+    /// A function value.
+    Function,
+    /// A handle, which C alone makes.
+    Handle,
+    /// An enumeration with no member marked; the enumeration name.
+    Member(&'a str),
+    /// A result, which must hold its good value or its failure.
+    Result,
+    /// A part inside the kind has none; the name of the part.
+    Part(&'a str),
+}
+
+/// `ကနဦးတန်ဖိုး` for a kind that has none.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `kind` - The name of the kind.
+/// * `why` - The reason the kind has none.
+///
+/// # Returns
+///
+/// The `ZK0479` diagnostic.
+pub fn no_initial_value(span: Span, kind: &str, why: NoInitial<'_>) -> Diagnostic
+{
+    let reason = match why
+    {
+        NoInitial::Function => t!("codes.ZK0479.function"),
+        NoInitial::Handle => t!("codes.ZK0479.handle"),
+        NoInitial::Member(e) => t!("codes.ZK0479.member", e = e),
+        NoInitial::Result => t!("codes.ZK0479.result"),
+        NoInitial::Part(p) => t!("codes.ZK0479.part", p = p),
+    };
+    let msg = t!("codes.ZK0479.message", k = kind, r = reason);
+    Diagnostic::new(Code::NoInitialValue, msg, span).with_help(t!("codes.ZK0479.help"))
+}
+
+/// A second member of an enumeration marked `ကနဦးတန်ဖိုး`.
+///
+/// # Arguments
+///
+/// * `span` - The second marked member.
+/// * `owner` - The enumeration.
+/// * `first` - The member marked first.
+///
+/// # Returns
+///
+/// The `ZK0480` diagnostic.
+pub fn two_initial_members(span: Span, owner: &str, first: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0480.message", e = owner);
+    let help = t!("codes.ZK0480.help", m = first);
+    Diagnostic::new(Code::TwoInitialMembers, msg, span).with_help(help)
+}
+
+/// A kind no program can build, since its fields lead back to it.
+///
+/// # Arguments
+///
+/// * `span` - The declaration of the kind.
+/// * `kind` - The kind.
+/// * `chain` - The loop, as the kinds in order: `က → ခ → က`.
+///
+/// # Returns
+///
+/// The `ZK0481` diagnostic.
+pub fn kind_never_built(span: Span, kind: &str, chain: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0481.message", k = kind, c = chain);
+    Diagnostic::new(Code::KindNeverBuilt, msg, span).with_help(t!("codes.ZK0481.help"))
+}
+
+/// A struct literal that leaves out fields.
+///
+/// # Arguments
+///
+/// * `span` - The literal.
+/// * `kind` - The struct.
+/// * `fields` - The fields left out, each in quotes.
+///
+/// # Returns
+///
+/// The `ZK0482` diagnostic.
+pub fn field_left_out(span: Span, kind: &str, fields: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0482.message", k = kind, f = fields);
+    Diagnostic::new(Code::FieldLeftOut, msg, span).with_help(t!("codes.ZK0482.help"))
+}
+
+/// A global of a module declared with no value.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The global.
+///
+/// # Returns
+///
+/// The `ZK0483` diagnostic.
+pub fn module_global_needs_value(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0483.message", n = name);
+    Diagnostic::new(Code::ModuleGlobalNeedsValue, msg, span)
+        .with_help(t!("codes.ZK0483.help"))
+}
+
+/// What a program does with a handle that C alone can do.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HandleUse
+{
+    /// A literal makes one.
+    Make,
+    /// A duplicate makes a second one.
+    Duplicate,
+    /// A print writes one.
+    Print,
+}
+
+/// A C function with a pointer in its kinds, or a result that can be NULL,
+/// is not marked `စိတ်မချရသော`, so it cannot be called from safe code.
+///
+/// # Arguments
+///
+/// * `span` - The name of the function.
+/// * `name` - The function.
+///
+/// # Returns
+///
+/// The `ZK0472` diagnostic.
+pub fn foreign_needs_mark(span: Span, name: &str) -> Diagnostic
+{
+    let message = t!("codes.ZK0472.message", n = name, w = t!("codes.ZK0472.pointer"));
+    Diagnostic::new(Code::ForeignNeedsMark, message, span)
+        .with_help(t!("codes.ZK0472.help"))
 }

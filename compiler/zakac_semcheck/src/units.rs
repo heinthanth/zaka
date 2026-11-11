@@ -181,7 +181,7 @@ pub(crate) fn start_rules(program: &Program, needs_start: bool) -> Vec<Diagnosti
 /// `true` for a text list with no count and no borrow marker.
 fn is_text_list(kind: &Kind) -> bool
 {
-    kind.base.is_text() && kind.wraps == [Wrap::List(Cells::Inferred)] && !kind.borrowed
+    kind.base.is_text() && kind.wraps == [Wrap::List(Cells::Inferred)]
 }
 
 /// Whether a top-level statement runs where it stands, rather than
@@ -258,6 +258,14 @@ impl Checker
             runs && imported,
             self.report(rd::stmt_in_imported_file(stmt.span(), &name()))
         );
+        let module = imported || self.as_module;
+        let bare = match stmt
+        {
+            Stmt::Decl(d) if d.init.is_none() && module => Some(&d.name),
+            _ => None,
+        };
+        let report = bare.map(|n| kd::module_global_needs_value(n.span, &n.name));
+        do_if!(let Some(d) = report, self.report(d));
         self.visit_stmt(stmt);
     }
 

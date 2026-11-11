@@ -15,7 +15,7 @@ use crate::state::SlotState;
 use crate::state::State;
 
 /// Narrow the facts on one edge of a test, under `and`, `or` and `not`:
-/// the owner state of a slot compared with `ဗလာ`, and, when `ints` gives
+/// the owner state of a slot compared with null, and, when `ints` gives
 /// the platform, the interval of an integer slot compared with a value.
 ///
 /// # Arguments
@@ -112,8 +112,8 @@ fn narrow_ints(op: CmpOp, lhs: &Expr, rhs: &Expr, state: &mut State, platform: u
     do_if!(let Some(pair) = pair, { state.below.insert(pair); });
 }
 
-/// The integer local and the slice local of a test that holds when the
-/// integer is below the count of the slice: `n < s ၏ အကွက်အရေအတွက်`.
+/// The integer local and the list local of a test that holds when the
+/// integer is below the count of the plain list: `n < l ၏ အကွက်အရေအတွက်`.
 ///
 /// # Arguments
 ///
@@ -124,7 +124,7 @@ fn narrow_ints(op: CmpOp, lhs: &Expr, rhs: &Expr, state: &mut State, platform: u
 ///
 /// # Returns
 ///
-/// The integer and the slice, or `None` for another test.
+/// The integer and the list, or `None` for another test.
 fn below_count(
     op: CmpOp, lhs: &Expr, rhs: &Expr, platform: u16,
 ) -> Option<(Place, Place)>
@@ -134,9 +134,9 @@ fn below_count(
     Some((n, count_slot(rhs)?))
 }
 
-/// The slice local whose count an operand reads, under each conversion: a
-/// count that a conversion cuts is still at least each value it compares
-/// below, since the count is a `usize`.
+/// The plain list local whose count an operand reads, under each
+/// conversion: a count that a conversion cuts is still at least each value
+/// it compares below, since the count is a `usize`.
 ///
 /// # Arguments
 ///
@@ -144,7 +144,7 @@ fn below_count(
 ///
 /// # Returns
 ///
-/// The slice, or `None` for another operand.
+/// The list, or `None` for another operand.
 fn count_slot(e: &Expr) -> Option<Place>
 {
     let ExprNode::Load { addr } = &peel_converts(e).node
@@ -158,7 +158,7 @@ fn count_slot(e: &Expr) -> Option<Place>
         return None;
     };
     let read = tern!(let ExprNode::Read(place) = base.node, Some(place), None);
-    read.filter(|p| base.kind.is_slice() && matches!(p, Place::Local(_)))
+    read.filter(|p| base.kind.is_seq() && matches!(p, Place::Local(_)))
 }
 
 /// An expression with each conversion around it taken off.
@@ -300,7 +300,7 @@ fn logic(
     *state = left.join(state);
 }
 
-/// The slot a comparison with `ဗလာ` tests.
+/// The slot a comparison with null tests.
 ///
 /// # Arguments
 ///
@@ -309,7 +309,7 @@ fn logic(
 ///
 /// # Returns
 ///
-/// The slot read on one side when the other side is `ဗလာ`.
+/// The slot read on one side when the other side is null.
 pub(crate) fn null_compared(lhs: &Expr, rhs: &Expr) -> Option<Place>
 {
     ret_if!(is_null(rhs), slot_read(lhs));
@@ -317,7 +317,7 @@ pub(crate) fn null_compared(lhs: &Expr, rhs: &Expr) -> Option<Place>
     None
 }
 
-/// The load of a list cell a comparison with `ဗလာ` tests.
+/// The load of a list cell a comparison with null tests.
 ///
 /// # Arguments
 ///
@@ -327,7 +327,7 @@ pub(crate) fn null_compared(lhs: &Expr, rhs: &Expr) -> Option<Place>
 /// # Returns
 ///
 /// The load of a cell of a list slot on one side, under its conversions,
-/// when the other side is `ဗလာ`.
+/// when the other side is null.
 pub(crate) fn null_compared_cell<'e>(lhs: &'e Expr, rhs: &'e Expr) -> Option<&'e Expr>
 {
     ret_if!(is_null(rhs), cell_load(lhs));
@@ -364,7 +364,7 @@ fn cell_load(e: &Expr) -> Option<&Expr>
     slot.then_some(load)
 }
 
-/// Whether an expression is the constant `ဗလာ`.
+/// Whether an expression is the constant null.
 ///
 /// # Arguments
 ///
@@ -372,7 +372,7 @@ fn cell_load(e: &Expr) -> Option<&Expr>
 ///
 /// # Returns
 ///
-/// `true` for `ဗလာ`, under conversions too.
+/// `true` for null, under conversions too.
 fn is_null(e: &Expr) -> bool { peel(e).as_const() == Some(Value::NULL) }
 
 /// The slot an expression reads.
@@ -418,7 +418,7 @@ fn peel(e: &Expr) -> &Expr
 /// # Arguments
 ///
 /// * `place` - The slot.
-/// * `null_edge` - `true` on the edge where the slot is `ဗလာ`.
+/// * `null_edge` - `true` on the edge where the slot is null.
 /// * `state` - The facts, narrowed in place.
 fn narrow_slot(place: Place, null_edge: bool, state: &mut State)
 {
@@ -452,7 +452,7 @@ mod tests
         Expr::builder().kind(kind).node(node).span(Span::default()).build()
     }
 
-    /// A comparison of global `g` with `ဗလာ`, the constant on the left
+    /// A comparison of global `g` with null, the constant on the left
     /// when `flip` holds.
     fn null_test(op: CmpOp, g: u32, flip: bool) -> Expr
     {

@@ -1,3 +1,4 @@
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
 use crate::token::Kw;
@@ -8,23 +9,13 @@ use crate::token::TokenKind;
 /// the pieces does not matter.
 #[rustfmt::skip]
 pub static PHRASES: &[(&[Kw], Kw)] = &[
-    // လုပ်ဆောင်ချက် ... သည် ... အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-    (&[Kw::Following, Kw::ListKo, Kw::WillDo], Kw::FnOpen),
-    // လုပ်ဆောင်ချက် ... သည် ... အောက်ပါတို့ကို လုပ်ဆောင်ကာ ... ရလဒ် ကို ပြန်ပေးမည်။
+    // အောက်ပါတို့ကို လုပ်ဆောင်မည်။ — opens a block, and the steps of a function
+    (&[Kw::Following, Kw::ListKo, Kw::WillDo], Kw::BlockOpen),
+    // အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။ — opens a block of marked code
+    (&[Kw::Following, Kw::ListKo, Kw::UnsafeThough, Kw::WillDo], Kw::UnsafeBlockOpen),
+    // လုပ်ဆောင်ချက် ... သည် ... အောက်ပါတို့ကို လုပ်ဆောင်ကာ ... တစ်ခု ကို ပြန်ပေးမည်။
     (&[Kw::Following, Kw::ListKo, Kw::DoAnd], Kw::FnOpenRet),
-    // အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-    (&[Kw::Following, Kw::ListKo, Kw::Call], Kw::BlockOpen),
-    // ... ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
-    (&[Kw::Result, Kw::As, Kw::Return], Kw::ReturnValue),
-    // ... ကို ရလဒ်ကောင်းအဖြစ် ပြန်ပေးပါ။
-    (&[Kw::GoodResult, Kw::As, Kw::Return], Kw::ReturnGood),
-    // ... ကို အမှားအယွင်း(အဖြစ်|အနေဖြင့်) ပြန်ပေး(ပါ|မည်)။
-    (&[Kw::Fault, Kw::As, Kw::Return], Kw::ReturnFault),
-    (&[Kw::Fault, Kw::As, Kw::WillReturn], Kw::ReturnFault),
-    (&[Kw::Fault, Kw::CountAs, Kw::Return], Kw::ReturnFault),
-    (&[Kw::Fault, Kw::CountAs, Kw::WillReturn], Kw::ReturnFault),
-    // ... လုပ်ဆောင်ပါ၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေး(ပါ|မည်)။
-    (&[Kw::OnFail, Kw::Fault, Kw::Ko, Kw::Return], Kw::PassFault),
+    // ... လုပ်ဆောင်မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။
     (&[Kw::OnFail, Kw::Fault, Kw::Ko, Kw::WillReturn], Kw::PassFault),
     // လုပ်ဆောင်ချက် (အောင်မြင်သည်|မအောင်မြင်ပါ)ဟု သတ်မှတ်မည်။
     (&[Kw::Function, Kw::Succeeded, Kw::Hu, Kw::WillMark], Kw::MarkSucceeded),
@@ -35,6 +26,18 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     // လိပ်စာ ... ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
     // လိပ်စာ ... ရှိ မင်မိုရီကို ... ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
     (&[Kw::Located, Kw::Mem, Kw::Ko], Kw::HeapHead),
+    // အကုန် ကူးထည့်မည် — the deep duplicate, written apart
+    (&[Kw::All, Kw::WillDupIn], Kw::WillDupAllIn),
+    // <name> ဟူသော <kind> တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် / ဒေတာ ထည့်ပေးရန် — the marks of a parameter
+    (&[Kw::Data, Kw::ToChange], Kw::DataToChange),
+    (&[Kw::Data, Kw::ToFill], Kw::DataToFill),
+    // မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ — the null pointer
+    (&[Kw::Nothing, Kw::PointsAtNo, Kw::Address], Kw::Null),
+    // ... လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး — the rest of a C function
+    (&[Kw::OtherValues, Kw::Along], Kw::WithOtherValues),
+    // ... ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။ / ... ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်။
+    (&[Kw::CallLeave, Kw::WillGrant], Kw::AllowCall),
+    (&[Kw::CallLeave, Kw::WillRevoke], Kw::RevokeCall),
     // လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?။
     (&[Kw::Tasks, Kw::Done], Kw::BlockClose),
     // ပရိုဂရမ် ပြီး(ဆုံး)?ပါပြီ(း)?။
@@ -67,16 +70,35 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Which, Kw::GoodResult], Kw::UsedGoodResult),
     // <parameters> လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား
     (&[Kw::Function, Kw::KindWord], Kw::FnKind),
-    // လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သော <kind> <name>
-    (&[Kw::Function, Kw::From, Kw::EditableAttr], Kw::EditParam),
-    // <name> (လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)
-    (&[Kw::Function, Kw::From, Kw::EditableClaim], Kw::EditArg),
-    // ဒေတာအမျိုးအစား <kind> ကို <alias> ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+    // <name> ဟူသော လုပ်ဆောင်ချက်
+    (&[Kw::Called, Kw::Function], Kw::FnValue),
+    // <value> ဟူသော အမှားအယွင်း — an error value
+    (&[Kw::Called, Kw::Fault], Kw::CalledFault),
+    // <x> ထဲတွင် ဒေတာ (မ)ရှိ(နေ) — whether an optional holds data
+    (&[Kw::Data, Kw::Located], Kw::HasData),
+    (&[Kw::Data, Kw::NotLocated], Kw::LacksData),
+    // <x> ထဲတွင် ရလဒ်ကောင်း / အောင်မြင်သည့်သတင်း ရှိ(နေ) — whether a result is good
+    (&[Kw::GoodResult, Kw::Located], Kw::HasGood),
+    (&[Kw::SuccessNews, Kw::Located], Kw::HasGood),
+    // <x> ထဲတွင် အမှားအယွင်း / မအောင်မြင်သည့်သတင်း ရှိ(နေ) — whether a result failed
+    (&[Kw::Fault, Kw::Located], Kw::HasFault),
+    (&[Kw::FailureNews, Kw::Located], Kw::HasFault),
+    // <x> ထဲမှ အမှားအယွင်း ဒေတာ — the error value of a result
+    (&[Kw::Fault, Kw::Data], Kw::FaultData),
+    // T သို့မဟုတ် အမှားအယွင်းအနေဖြင့် E ရှိနိုင်သော ဒေတာဆဲလ်
+    (&[Kw::Fault, Kw::CountAs], Kw::AsFault),
+    // ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။
     (&[Kw::Hu, Kw::Also, Kw::CanRegard], Kw::AliasClose),
-    // ဒေတာအမျိုးအစား ... တွင် ... တို့ ပါဝင်သည်။
+    // ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ ... ဖြစ်သည်။
+    (&[Kw::Hu, Kw::Also, Kw::CanRegardAnd], Kw::AliasCloseAnd),
+    // <name> ဟူသော ဒေတာအစုအဝေးတွင် ... တို့ပါဝင်သည်။
     (&[Kw::Plural, Kw::Contains], Kw::FieldsClose),
-    // ဒေတာအမျိုးအစား ... တွင် ... တို့ ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ... ဖြစ်သည်။
-    (&[Kw::Plural, Kw::ContainsAnd], Kw::FieldsCloseAnd), ];
+    // <name> ဟူသော ဒေတာအစုအဝေးတွင် ... တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ... ဖြစ်သည်။
+    (&[Kw::Plural, Kw::ContainsAnd], Kw::FieldsCloseAnd),
+    // ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် <variant> — the initial variant
+    (&[Kw::Initial, Kw::CountAs, Kw::ToUse], Kw::InitialMark),
+    // တန်ဖိုးအနေဖြင့် <value> ရှိသည့် <variant> — the value of a variant
+    (&[Kw::Value, Kw::CountAs], Kw::ValueAs), ];
 
 /// Replace each run of tokens that spells a phrase with one token.
 ///
@@ -90,8 +112,9 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
 /// # Returns
 ///
 /// The tokens with phrases joined.
-pub fn join_phrases(tokens: Vec<Token>) -> Vec<Token>
+pub fn join_phrases(mut tokens: Vec<Token>) -> Vec<Token>
 {
+    free_data_words(&mut tokens);
     let mut out = Vec::with_capacity(tokens.len());
     let mut idx = 0;
     while idx < tokens.len()
@@ -131,6 +154,10 @@ fn next_token(tokens: &[Token]) -> (Token, usize)
 /// The number of tokens in the phrase and its joined [`Kw`], or `None`.
 fn phrase_at(tokens: &[Token]) -> Option<(usize, Kw)>
 {
+    // `<name> ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား` keeps `ဟူသော` apart, so the function
+    // kind after it joins on its own.
+    let kind_after = spells(tokens, &[Kw::Called, Kw::Function, Kw::KindWord]);
+    ret_if!(kind_after, None);
     PHRASES
         .iter()
         .find(|(pieces, _)| spells(tokens, pieces))
@@ -171,4 +198,31 @@ fn joined_token(run: &[Token], kw: Kw) -> Token
     return Token::builder()
         .kind(TokenKind::Kw(kw)).span(first.span.to(&last.span))
         .particle(last.particle).joined(first.joined).build();
+}
+
+/// Turn each `ဒေတာ` back into a name, save one after `ထဲမှ`, `ထဲတွင်` or
+/// `အမှားအယွင်း`, where it reads or tests the data of an optional or a result,
+/// and one before `ပြောင်းလဲရန်` or `ထည့်ပေးရန်`, where it marks a parameter.
+/// The word remains reserved for the split of joined words alone, so a program
+/// can still name a variable `ဒေတာ`.
+///
+/// # Arguments
+///
+/// * `tokens` - The tokens, changed in place.
+fn free_data_words(tokens: &mut [Token])
+{
+    let mut prev = None;
+    for at in 0..tokens.len()
+    {
+        let after =
+            matches!(prev, Some(TokenKind::Kw(Kw::Among | Kw::Within | Kw::Fault)));
+        let next = tokens.get(at + 1).map(|t| t.kind);
+        let mark = matches!(next, Some(TokenKind::Kw(Kw::ToChange | Kw::ToFill)));
+        let tok = &mut tokens[at];
+        do_if!(
+            tok.kind == TokenKind::Kw(Kw::Data) && !after && !mark,
+            tok.kind = TokenKind::Ident
+        );
+        prev = Some(tok.kind);
+    }
 }

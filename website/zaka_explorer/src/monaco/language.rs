@@ -11,6 +11,8 @@ use gen_lsp_types::CompletionItem;
 use gen_lsp_types::CompletionItemKind;
 use gen_lsp_types::Contents;
 use gen_lsp_types::DocumentSymbol;
+use gen_lsp_types::InlayHint;
+use gen_lsp_types::Label;
 use gen_lsp_types::Location;
 use gen_lsp_types::Position;
 use gen_lsp_types::Range;
@@ -28,6 +30,7 @@ use zakac_lsp::check::FileCheck;
 use zakac_lsp::check::check_file;
 use zakac_lsp::check::file_uri;
 use zakac_lsp::complete::completions;
+use zakac_lsp::hints::call_hints;
 use zakac_lsp::hover::hover;
 use zakac_lsp::names::definition;
 use zakac_lsp::names::nothing_to_rename;
@@ -67,6 +70,8 @@ extern "C" {
     fn add_rename(language: &str, provider: &Object);
     #[wasm_bindgen(js_namespace = ["monaco", "languages"], js_name = registerDocumentSymbolProvider)]
     fn add_outline(language: &str, provider: &Object);
+    #[wasm_bindgen(js_namespace = ["monaco", "languages"], js_name = registerInlayHintsProvider)]
+    fn add_hints(language: &str, provider: &Object);
 }
 
 thread_local! {
@@ -107,6 +112,86 @@ pub(super) fn add_language()
         LANGUAGE,
         &provider(&[("provideDocumentSymbols", nodes.into_js_value())]),
     );
+    let hints = Closure::<dyn Fn(TextModel) -> JsValue>::new(provide_hints);
+    add_hints(LANGUAGE, &provider(&[("provideInlayHints", hints.into_js_value())]));
+}
+
+/// The inlay hints of the text: one before each argument a call can change
+/// or takes over, as the language server gives them.
+///
+/// # Arguments
+///
+/// * `model` - The model.
+///
+/// # Returns
+///
+/// The hint list, with the `dispose` Monaco calls when it is done with it.
+fn provide_hints(model: TextModel) -> JsValue
+{
+    let found = with_check(&model, |file| call_hints(file));
+    let hint = |h: InlayHint| {
+        let label = match h.label
+        {
+            Label::String(text) => text,
+            Label::InlayHintLabelPartList(parts) =>
+            {
+                parts.into_iter().map(|p| p.value).collect()
+            }
+        };
+        let at = HintPos::builder()
+            .line_number(h.position.line + 1)
+            .column(h.position.character + 1)
+            .build();
+        HintOut::builder()
+            .position(at)
+            .label(label)
+            .kind(PARAMETER_HINT)
+            .padding_right(true)
+            .build()
+    };
+    let out = to_js(
+        &HintList::builder().hints(found.into_iter().map(hint).collect()).build(),
+    );
+    let done = Closure::<dyn Fn()>::new(|| ()).into_js_value();
+    _ = Reflect::set(&out, &JsValue::from_str("dispose"), &done);
+    out
+}
+
+/// The kind Monaco gives a hint that names a parameter.
+const PARAMETER_HINT: u8 = 2;
+
+/// A list of inlay hints, as Monaco takes it.
+#[derive(Debug, Clone, Serialize, Builder)]
+struct HintList
+{
+    /// The hints.
+    hints: Vec<HintOut>,
+}
+
+/// One inlay hint, as Monaco takes it.
+#[derive(Debug, Clone, Serialize, Builder)]
+#[serde(rename_all = "camelCase")]
+struct HintOut
+{
+    /// Where it stands.
+    position: HintPos,
+    /// Its text.
+    label: String,
+    /// What it names: a parameter.
+    kind: u8,
+    /// Whether a space follows it.
+    padding_right: bool,
+}
+
+/// A position of lines and columns, both from 1, as Monaco takes it.
+#[derive(Debug, Clone, Copy, Serialize, Builder)]
+#[serde(rename_all = "camelCase")]
+struct HintPos
+{
+    /// The line.
+    line_number: u32,
+    /// The column.
+    column: u32,
 }
 
 /// A provider function of a model and a position, kept for the life of the
@@ -377,7 +462,7 @@ fn provide_rename(model: TextModel, pos: Pos, name: String) -> JsValue
     }
     let out = Object::new();
     _ = Reflect::set(&out, &"edits".into(), &edits);
-    do_if!(let Some(why) = reason, _ = Reflect::set(&out, &"rejectReason".into(), &why.into()));
+    do_if!(let Some(text) = reason, _ = Reflect::set(&out, &"rejectReason".into(), &text.into()));
     out.into()
 }
 

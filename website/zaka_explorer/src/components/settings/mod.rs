@@ -77,7 +77,7 @@ pub fn settings_modal(open: RwSignal<bool>, on_site: bool) -> impl IntoView
 
 /// The compiler options: the target and, for C, its run-time checks, the
 /// platform bits, the foldings of the IR, the heap limit and the frames of a
-/// run, and the ownership checks. The checks are not stored on the device; the
+/// run, and the checkers. The checks are not stored on the device; the
 /// link carries them.
 ///
 /// # Arguments
@@ -140,9 +140,12 @@ fn compiler_section(state: AppState) -> impl IntoView
             ),
             option_row(
                 state,
-                (t!("explorer.settings.no_raw"), t!("explorer.settings.no_raw_note")),
-                |o| o.no_raw,
-                |o, on| o.no_raw = on,
+                (
+                    t!("explorer.settings.no_unsafe"),
+                    t!("explorer.settings.no_unsafe_note"),
+                ),
+                |o| o.no_unsafe,
+                |o, on| o.no_unsafe = on,
             ),
             option_row(
                 state,
@@ -371,7 +374,7 @@ fn frames_picker(state: AppState) -> impl IntoView
     ))
 }
 
-/// Picker of what a pointer mistake the ownership check proves does.
+/// Picker of what a pointer mistake the checker proves does.
 ///
 /// # Arguments
 ///

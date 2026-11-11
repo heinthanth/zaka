@@ -15,11 +15,11 @@ variable or a constant. Before a statement, or before a declaration inside a blo
 means nothing:
 
 ```zaka-error ZK0229
-အများသုံး ၁ ကို ပြသပါ။
+အများသုံး ၁ ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0229]: "အများသုံး" marks a top-level function, struct, variable or constant, and nothing else
+error[ZK0229]: "အများသုံး" marks a top-level function, struct, enumeration, variable or constant, and nothing else
 ```
 
 ## An import below a statement
@@ -28,8 +28,8 @@ The imports of a file come first. An import below a declaration or a statement, 
 inside a block, is refused:
 
 ```zaka-error ZK0230
-၁ ကို ပြသပါ။
-"math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းပါ။
+၁ ကို ပြသမည်။
+"math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းမည်။
 ```
 
 ```text
@@ -44,15 +44,15 @@ first:
 
 ```zaka-file
 // a.zaka
-"b.zaka" မှ ခ ကို ထည့်သွင်းပါ။
-ခ ကို ပြသပါ။
+"b.zaka" မှ ခ ကို ထည့်သွင်းမည်။
+ခ ကို ပြသမည်။
 ```
 
 ```zaka-file
 // b.zaka
-"a.zaka" မှ က ကို ထည့်သွင်းပါ။
-အများသုံး ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+"a.zaka" မှ က ကို ထည့်သွင်းမည်။
+အများသုံး ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 ```
 
 ```text
@@ -69,22 +69,22 @@ import it from both.
 ```zaka-file
 // math.zaka
 အများသုံး လုပ်ဆောင်ချက် နှစ်ထပ် သည်
-ကိန်းပြည့် က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-က * က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က * က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 လုပ်ဆောင်ချက် သုံးထပ် သည်
-ကိန်းပြည့် က ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-က * က * က ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က * က * က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
 ```zaka-file
 // main.zaka
-"math.zaka" မှ နှစ်ထပ်၊ သုံးထပ် တို့ကို ထည့်သွင်းပါ။
-လုပ်ဆောင်ချက် သုံးထပ် ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+"math.zaka" မှ နှစ်ထပ်၊ သုံးထပ် တို့ကို ထည့်သွင်းမည်။
+လုပ်ဆောင်ချက် သုံးထပ် ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ```
 
 ```text
@@ -104,7 +104,7 @@ each struct its kinds name must be exported too. Here `မူလ` is exported, b
 `နေရာ`, is private to the file:
 
 ```zaka-error ZK0324
-ဒေတာအမျိုးအစား နေရာ တွင် ကိန်းပြည့် x၊ ကိန်းပြည့် y တို့ ပါဝင်သည်။
+နေရာ ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
 အများသုံး ကိန်းရှင် မူလ သည် နေရာ တစ်ခု ဖြစ်ပါစေ။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -127,14 +127,14 @@ would run it at a moment no one chose:
 
 ```zaka-file
 // counter.zaka
-အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-"စတင်ပြီ" ဟု ပြသပါ။
+အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+"စတင်ပြီ" ဟု ပြသမည်။
 ```
 
 ```zaka-file
 // main.zaka
-"counter.zaka" မှ အကြိမ် ကို ထည့်သွင်းပါ။
-အကြိမ် ကို ပြသပါ။
+"counter.zaka" မှ အကြိမ် ကို ထည့်သွင်းမည်။
+အကြိမ် ကို ပြသမည်။
 ```
 
 ```text
@@ -151,17 +151,17 @@ time. A function call is not known then:
 ```zaka-file
 // clock.zaka
 လုပ်ဆောင်ချက် စက္ကန့် သည်
-ကိန်းပြည့် မိနစ် ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-မိနစ် * ၆၀ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+မိနစ် ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+မိနစ် * ၆၀ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 အများသုံး ကိန်းသေ တစ်နာရီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် စက္ကန့် ကို ၆၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 ```
 
 ```zaka-file
 // main.zaka
-"clock.zaka" မှ တစ်နာရီ ကို ထည့်သွင်းပါ။
-တစ်နာရီ ကို ပြသပါ။
+"clock.zaka" မှ တစ်နာရီ ကို ထည့်သွင်းမည်။
+တစ်နာရီ ကို ပြသမည်။
 ```
 
 ```text
@@ -169,8 +169,33 @@ error[ZK0604]: the starting value of "တစ်နာရီ" must be known at co
   = help: literals, constants and operators on them are known; a function call is not, for now
 ```
 
-Write the value out, as `၆၀ * ၆၀`, or give the variable no value and set it from the
-file that is run.
+Write the value out, as `၆၀ * ၆၀`.
+
+## A variable of a module with no value
+
+A file run as a module has no start block, so nothing in it could set a variable later.
+Each of its variables gets a value in its declaration:
+
+```zaka-file
+// counter.zaka
+အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+```
+
+```zaka-file
+// main.zaka
+"counter.zaka" မှ အကြိမ် ကို ထည့်သွင်းမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အကြိမ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0483]: "အကြိမ်" is a global of a module, so it needs its value where it is declared
+  = help: give it a value, such as "ကနဦးတန်ဖိုး"
+```
+
+Write `ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး`, or the value the counter starts from.
 
 ## Imports outside a file
 
@@ -178,10 +203,10 @@ A program on this page, in the compiler explorer or on standard input has no fol
 it cannot import:
 
 ```zaka-error ZK0232
-"math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းပါ။
+"math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် နှစ်ထပ် ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသပါ။
+လုပ်ဆောင်ချက် နှစ်ထပ် ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

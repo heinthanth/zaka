@@ -77,14 +77,13 @@ fn clean_inputs_match_their_expected_output()
 /// The scenarios of the spec, each in a function of its own: a read after
 /// the free, a free through the borrow, a read after the resize, a read
 /// after a move into a call, a lost block and one kept at the end, two
-/// reads of `ဗလာ`, and a counted loop one cell too far.
+/// reads of null, and a counted loop one cell too far.
 #[test]
 fn mistakes_report_one_code_per_scenario()
 {
     let want = [
         (Code::InvalidatedLoan, 7),
         (Code::InvalidatedLoan, 17),
-        (Code::FreedBorrow, 18),
         (Code::InvalidatedLoan, 27),
         (Code::MovedOut, 44),
         (Code::BlockLeaked, 52),

@@ -6,7 +6,7 @@ description: Verb last, particles after each part, and two forms for writing a s
 # Zaka sentences
 
 Zaka follows Burmese word order: first the things the sentence talks about, **then the
-verb**. English puts it as "show 42"; Zaka puts it as "42 show": `၄၂ ကို ပြသပါ။`
+verb**. English puts it as "show 42"; Zaka puts it as "42 show": `၄၂ ကို ပြသမည်။`
 
 The verb comes last and decides what the sentence means. A small word called a
 *particle* follows each part and tells the role of that part.
@@ -14,16 +14,16 @@ The verb comes last and decides what the sentence means. A small word called a
 ```zaka
 // "the sum of 3 and 4" — then show it
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။
+၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။
 
 // "the product of 3 and 4"
-၃ နှင့် ၄ ၏ မြှောက်လဒ် ကို ပြသပါ။
+၃ နှင့် ၄ ၏ မြှောက်လဒ် ကို ပြသမည်။
 
 // "10 over 2: the quotient"
-၁၀ ကို ၂ ဖြင့် စားသော စားလဒ် ကို ပြသပါ။
+၁၀ ကို ၂ ဖြင့် စားသော စားလဒ် ကို ပြသမည်။
 
 // "3 is greater than 2"
-၃ သည် ၂ ထက် ကြီးသည် ဟု ပြသပါ။
+၃ သည် ၂ ထက် ကြီးသည် ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -44,17 +44,17 @@ Read the first line one word at a time:
 | `၏` | "of" | marks the last of the things |
 | `ပေါင်းလဒ်` | "sum" | the verb: adds the two numbers |
 | `ကို` | (object) | marks what the next verb acts on |
-| `ပြသပါ` | "please show" | the verb: print |
+| `ပြသမည်` | "please show" | the verb: print |
 | `။` | full stop | ends the statement |
 
 ## Two kinds of verbs
 
 - A verb that **makes a value** forms an *expression*. `ပေါင်းလဒ်` (sum) and `ကြီး`
   (is greater) are such verbs. An expression is something with a value, like `၃ + ၄`.
-- A verb that **gives a command** forms a *statement*. `ပြသပါ` (show) is one. A statement
+- A verb that **gives a command** forms a *statement*. `ပြသမည်` (show) is one. A statement
   does something and ends with `။`.
 
-An expression can sit inside a statement. In `၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။`, the sum is
+An expression can sit inside a statement. In `၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။`, the sum is
 worked out first. Then its value, `၇`, takes the particle `ကို` and is shown.
 
 ## Words or signs
@@ -64,9 +64,9 @@ the same result, and the two can be mixed:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၃ + ၄ ကို ပြသပါ။                        // signs
-၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။           // words
-၁ + ၂ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသပါ။       // both: the sum of (1 + 2) and 4
+၃ + ၄ ကို ပြသမည်။                        // signs
+၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။           // words
+၁ + ၂ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။       // both: the sum of (1 + 2) and 4
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

@@ -167,7 +167,8 @@ fn run_until_stops_at_a_break_point()
 #[test]
 fn a_trap_is_final()
 {
-    let text = "ကိန်းရှင် သုည သည် ကိန်းပြည့် ၀ ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသပါ။\n၁ / သုည ကို ပြသပါ။";
+    let text =
+        "ကိန်းရှင် သုည သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n\"အရင်\" ဟု ပြသမည်။\n၁ / သုည ကို ပြသမည်။";
     let mut m = machine(compile(text));
     m.run_until(&[]);
     let trap = m.state().trap().cloned().expect("trapped");
@@ -188,7 +189,7 @@ fn a_trap_is_final()
 fn the_op_budget_ends_a_run_until()
 {
     let limits = RunOptions::builder().max_steps(1000).build();
-    let mut m = Machine::new(compile("မှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသပါ။"), limits);
+    let mut m = Machine::new(compile("မှန် ဖြစ်နေသရွေ့ \"ထပ်\" ဟု ပြသမည်။"), limits);
     m.run_until(&[]);
     let kind = m.state().trap().map(|t| t.kind.clone());
     assert_eq!(kind, Some(TrapKind::StepLimit { steps: 1000 }));

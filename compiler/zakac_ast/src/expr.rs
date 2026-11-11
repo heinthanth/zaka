@@ -85,9 +85,9 @@ pub enum Expr
     Verb(VerbExpr),
     /// `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်သော ရလဒ်`
     Call(CallExpr),
-    /// `ဗလာ`, the address that points nowhere.
+    /// `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, the address that points nowhere.
     Null(NullLit),
-    /// `kind ၏ အရွယ်အစား`
+    /// `kind တစ်<classifier> ၏ အရွယ်အစား`
     SizeOf(SizeOfExpr),
     /// `x ၏ အကွက် i` or `x ၏ n ခုမြောက်အကွက်`: one cell of a list.
     Index(IndexExpr),
@@ -107,7 +107,7 @@ pub enum Expr
     Str(StrExpr),
     /// `<enum>များထဲမှ <member>`: one member of an enumeration.
     Member(MemberExpr),
-    /// `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`: the address of a function, a value of a
+    /// `<name> ဟူသော လုပ်ဆောင်ချက်`: the address of a function, a value of a
     /// function kind.
     FnAddr(FnAddrExpr),
 }
@@ -122,11 +122,11 @@ pub struct IntLit
     pub value: u128,
     /// The number base, 10 unless a `အခြေ N ဖြင့်` prefix is written.
     pub base: u8,
-    /// The kind prefix, when written.
+    /// The kind, `<literal> ဟူသော <kind> တစ်ခု`, when written.
     pub kind: Option<Kind>,
     /// The digit script.
     pub script: DigitScript,
-    /// Source region, prefixes included.
+    /// Source region, the base prefix and the kind included.
     pub span: Span,
 }
 
@@ -142,9 +142,9 @@ pub struct FloatLit
     /// later pass can read it at the exact width of its kind.
     #[builder(into)]
     pub text: String,
-    /// The kind prefix, when written.
+    /// The kind, `<literal> ဟူသော <kind> တစ်ခု`, when written.
     pub kind: Option<Kind>,
-    /// Source region, prefix included.
+    /// Source region, the kind included.
     pub span: Span,
 }
 
@@ -243,17 +243,26 @@ pub struct BoolLit
     pub span: Span,
 }
 
-/// `ဗလာ`, the null address.
+/// `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, the null address.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct NullLit
 {
     /// Node number.
     pub id: NodeId,
+    /// `true` for `အလွတ်`, the optional that holds no data.
+    #[builder(default)]
+    #[serde(default)]
+    pub blank: bool,
+    /// `true` for `ကနဦးတန်ဖိုး`, the initial value of the kind its place
+    /// takes.
+    #[builder(default)]
+    #[serde(default)]
+    pub initial: bool,
     /// Source region.
     pub span: Span,
 }
 
-/// `kind ၏ အရွယ်အစား`: the size of a kind, in octets.
+/// `kind တစ်<classifier> ၏ အရွယ်အစား`: the size of a kind, in octets.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct SizeOfExpr
 {
@@ -330,7 +339,10 @@ pub struct ListLit
     /// The cells, in order.
     #[builder(default)]
     pub cells: Vec<Expr>,
-    /// Source region of the whole literal.
+    /// The kind, `<list> ဟူသော <kind> တစ်ခု`, when written.
+    #[serde(default)]
+    pub kind: Option<Kind>,
+    /// Source region of the whole literal, the kind included.
     pub span: Span,
 }
 
@@ -363,8 +375,8 @@ pub struct FieldInit
     pub value: Expr,
 }
 
-/// `စာရင်းအလွတ်` or `[]`: a list with no cells, or a counted list whose cells
-/// all hold their default; the kind comes from the context.
+/// `စာရင်းအလွတ်` or `[]`: a list with no cells. The kind is the one written
+/// after it, `ဟူသော <kind> တစ်<classifier>`, or else the one its place gives.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct BlankListLit
 {
@@ -377,6 +389,9 @@ pub struct BlankListLit
     #[serde(default)]
     #[builder(default)]
     pub brackets: bool,
+    /// The kind written after it, when written.
+    #[serde(default)]
+    pub kind: Option<Kind>,
 }
 
 /// One member of an enumeration: `<enum>များထဲမှ <member>`.
@@ -393,7 +408,7 @@ pub struct MemberExpr
     pub span: Span,
 }
 
-/// The address of a function: `လုပ်ဆောင်ချက် <name> ၏ လိပ်စာ`.
+/// The address of a function: `<name> ဟူသော လုပ်ဆောင်ချက်`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct FnAddrExpr
 {
@@ -684,6 +699,10 @@ pub struct VerbExpr
     pub next: NextCtx,
     /// Whether the verb is a comparison.
     pub is_cmp: bool,
+    /// The classifier of `တစ်<classifier>လုံး` before a deep duplicate, as
+    /// written.
+    #[serde(default)]
+    pub classifier: Option<Ident>,
     /// Source region, from the first operand to the verb.
     pub span: Span,
 }
@@ -705,11 +724,6 @@ pub struct CallExpr
     /// The arguments.
     #[builder(default)]
     pub args: Vec<Expr>,
-    /// Whether `(လုပ်ဆောင်ချက်မှ ပြောင်းလဲနိုင်သည်)` marks each argument, one
-    /// flag for each.
-    #[builder(default)]
-    #[serde(default)]
-    pub edits: Vec<bool>,
     /// `true` for `... ရလဒ်ကောင်း` and `f(a)?`: a failure of the call leaves
     /// the calling function with the same error value, and the value is the
     /// good result.

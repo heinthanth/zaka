@@ -9,7 +9,7 @@ Zaka accepts more spellings than a Burmese speaker would write. A verb at the en
 clause can hold `သည်`, `ပါ`, `ပါသည်` or no ending at all, and a printed operand can be
 marked with `ကို` or `ဟု`. The parser takes each of them. A separate pass, the
 *naturalness check*, runs right after the parser and points out the spellings that read
-unlike Burmese. Its findings are warnings with codes ZK0501 to ZK0508 and ZK0510. A warning never
+unlike Burmese. Its findings are warnings with codes ZK0501 to ZK0510. A warning never
 stops a program and never changes what it does. The Learn book introduces the idea in
 [Natural Zaka](../../learn/natural-zaka/README.md).
 
@@ -40,10 +40,11 @@ When two rules fit one place, the first in the table below alone is reported. So
 | ZK0502 | a verb before an attached `လျှင်` or `နေသရွေ့` | `ကြီးလျှင်`, `ကြီးနေသရွေ့` | `ကြီးသည်လျှင်` |
 | ZK0503 | `မဟုတ်` ("not") | `မဟုတ်ပါ` or `မဟုတ်` | `မဟုတ်သည်` |
 | ZK0504 | a verb before `ဖြစ်၍` ("and") | `ကြီးသည် ဖြစ်၍` | `ကြီးပါ ဖြစ်၍` |
-| ZK0505 | printing a sentence or a string | `"..." ဟု ပြသပါ` | `"..." ကို ပြသပါ` |
-| ZK0506 | printing a plain value | `အသက် ကို ပြသပါ` | `အသက် ဟု ပြသပါ` |
-| ZK0507 | parentheses that change nothing | `အသက် + ၁ ကို ပြသပါ` | `(အသက် + ၁) ကို ပြသပါ` |
+| ZK0505 | printing a sentence or a string | `"..." ဟု ပြသမည်` | `"..." ကို ပြသမည်` |
+| ZK0506 | printing a plain value | `အသက် ကို ပြသမည်` | `အသက် ဟု ပြသမည်` |
+| ZK0507 | parentheses that change nothing | `အသက် + ၁ ကို ပြသမည်` | `(အသက် + ၁) ကို ပြသမည်` |
 | ZK0508 | a sentence used as a value | `... ကြီးသည် ဖြစ်ပါစေ` | `... ကြီးပါ ဖြစ်ပါစေ` |
+| ZK0509 | the measure word after a kind | `ကိန်းပြည့် တစ်ခု`, `လူ တစ်ယောက်` ([Measure words](kinds.md#measure-words)) | `ကိန်းပြည့် တစ်ယောက်` |
 | ZK0510 | the arguments of a call written arguments first | `က ကို သုံး၍`, `က၊ ခ တို့ကို သုံး၍` | `က တို့ကို သုံး၍`, `က၊ ခ ကို သုံး၍` |
 
 The right-hand column is still valid Zaka. It just sounds less natural. The "not" verbs
@@ -56,7 +57,7 @@ Before `သို့မဟုတ်` a negative verb takes `ပါ`.
 ```zaka-warning ZK0501
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-(အသက် သည် ၁၈ အောက် မငယ်သည် သို့မဟုတ် အသက် သည် ၆၀ ထက် ကြီးသည်) ဟု ပြသပါ။
+(အသက် သည် ၁၈ အောက် မငယ်သည် သို့မဟုတ် အသက် သည် ၆၀ ထက် ကြီးသည်) ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -73,7 +74,7 @@ between them is unnatural. To keep the particle, use the `ဖြစ်` forms: `
 ```zaka-warning ZK0502
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-အကယ်၍ အသက် သည် ၁၈ ထက် ကြီးသည်လျှင် "အရွယ်ရောက်" ဟု ပြသပါ။
+အကယ်၍ အသက် သည် ၁၈ ထက် ကြီးသည်လျှင် "အရွယ်ရောက်" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -87,9 +88,9 @@ The same holds for a loop:
 ```zaka-warning ZK0502
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-က သည် ၀ ထက် ကြီးသည်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်ပါ။
-က ကို ပြသပါ။
-က ကို က - ၁ ဟု ထားပါ။
+က သည် ၀ ထက် ကြီးသည်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ကို ပြသမည်။
+က ကို က - ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -106,7 +107,7 @@ grammatical but not idiomatic.
 ```zaka-warning ZK0503
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-(အသက် သည် ၁၈ နှင့် ညီသည် မဟုတ်သည်) ဟု ပြသပါ။
+(အသက် သည် ၁၈ နှင့် ညီသည် မဟုတ်သည်) ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -122,7 +123,7 @@ Before the conjunction `ဖြစ်၍` ("and") a verb takes `သည်`. The `
 ```zaka-warning ZK0504
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-(အသက် သည် ၁၈ ထက် ကြီးပါ ဖြစ်၍ အသက် သည် ၆၀ အောက် ငယ်သည်) ဟု ပြသပါ။
+(အသက် သည် ၁၈ ထက် ကြီးပါ ဖြစ်၍ အသက် သည် ၆၀ အောက် ငယ်သည်) ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -135,13 +136,13 @@ warning[ZK0504]: "ကြီးပါ" before "ဖြစ်၍" reads better as "
 `ကို` marks a *thing*: a name, a number, the result of a sum. `ဟု` quotes a *sentence* or
 a string: a comparison that ends in `သည်` or `ပါ`, a string literal (with template slots or not), or
 a `+` join that holds a string literal. A bare clause with no ending is a thing and keeps
-`ကို`, and so is a text variable: `အမည် ကို ပြသပါ`.
+`ကို`, and so is a text variable: `အမည် ကို ပြသမည်`.
 
 ```zaka-warning ZK0505
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-"နှစ်ဆယ်" ကို ပြသပါ။
-အသက် သည် ၁၈ ထက် ကြီးသည် ကို ပြသပါ။
+"နှစ်ဆယ်" ကို ပြသမည်။
+အသက် သည် ၁၈ ထက် ကြီးသည် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -153,7 +154,7 @@ warning[ZK0505]: a sentence or a string is quoted with "ဟု", not marked with
 ```zaka-warning ZK0506
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-အသက် + ၁ ဟု ပြသပါ။
+အသက် + ၁ ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -175,7 +176,7 @@ more operands.
 ```zaka-warning ZK0507
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-(အသက် + ၁) ကို ပြသပါ။
+(အသက် + ၁) ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -187,7 +188,7 @@ warning[ZK0507]: these parentheses are not needed
 
 A clause that gives a value, as an initial value, a returned value, a call argument or a
 loop bound, names a fact and does not state a sentence, so its last word takes `သည်`. The
-`ပါ` forms belong to quoted sentences (`... ဟု ပြသပါ`, `... ဟု ထားပါ`) and to the place
+`ပါ` forms belong to quoted sentences (`... ဟု ပြသမည်`, `... ဟု ထားမည်`) and to the place
 before `သို့မဟုတ်`.
 
 ```zaka-warning ZK0508
@@ -209,13 +210,13 @@ its objects: `ကို` after one argument, `တို့ကို` after two o
 
 ```zaka-warning ZK0510
 လုပ်ဆောင်ချက် ပေါင်း သည်
-ကိန်းပြည့် က၊ ကိန်းပြည့် ခ တို့ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ရလဒ် ကို ပြန်ပေးမည်။
-က + ခ ကို ရလဒ်အဖြစ် ပြန်ပေးပါ။
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က + ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၃၊ ၄ ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသပါ။
+၃၊ ၄ ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -231,13 +232,13 @@ nothing:
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-(အသက် သည် ၁၈ အောက် မငယ်ပါ သို့မဟုတ် အသက် သည် ၆၀ ထက် ကြီးသည်) ဟု ပြသပါ။
-(အသက် သည် ၁၈ ထက် ကြီးသည် ဖြစ်၍ အသက် သည် ၆၀ အောက် ငယ်သည်) ဟု ပြသပါ။
-(အသက် သည် ၁၈ နှင့် ညီသည် မဟုတ်ပါ) ဟု ပြသပါ။
-အကယ်၍ အသက် သည် ၁၈ ထက် ကြီးလျှင် "အရွယ်ရောက်" ဟု ပြသပါ။
-အသက် + ၁ ကို ပြသပါ။
+(အသက် သည် ၁၈ အောက် မငယ်ပါ သို့မဟုတ် အသက် သည် ၆၀ ထက် ကြီးသည်) ဟု ပြသမည်။
+(အသက် သည် ၁၈ ထက် ကြီးသည် ဖြစ်၍ အသက် သည် ၆၀ အောက် ငယ်သည်) ဟု ပြသမည်။
+(အသက် သည် ၁၈ နှင့် ညီသည် မဟုတ်ပါ) ဟု ပြသမည်။
+အကယ်၍ အသက် သည် ၁၈ ထက် ကြီးလျှင် "အရွယ်ရောက်" ဟု ပြသမည်။
+အသက် + ၁ ကို ပြသမည်။
 ကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီးသည် ဖြစ်ပါစေ။
-ကြီးသူ ကို ပြသပါ။
+ကြီးသူ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

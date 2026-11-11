@@ -2,8 +2,6 @@ use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use zakac_diagnostics::Diagnostic;
-use zakac_diagnostics::ownership::duplicate_made;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
@@ -208,7 +206,8 @@ fn lent_in(stmts: &[Stmt]) -> BTreeSet<Place>
 /// The place, or `None` for each other expression.
 fn dup_of(e: &Expr) -> Option<Place>
 {
-    let ExprNode::Dup { value, .. } = &e.node
+    // A deep duplicate is never a move: it makes objects of its own.
+    let ExprNode::Dup { value, deep: false, .. } = &e.node
     else
     {
         return None;
@@ -248,65 +247,6 @@ fn take_of(e: &Expr) -> Expr
     let addr = Expr::builder().kind(e.kind.pointer_to()).node(at).span(e.span).build();
     let node = ExprNode::Take { addr: Box::new(addr) };
     Expr::builder().kind(e.kind).node(node).span(e.span).build()
-}
-
-/// Report each duplicate left in a module, for `--warn-duplicates`.
-///
-/// # Arguments
-///
-/// * `module` - The module, after [`move_last_uses`].
-///
-/// # Returns
-///
-/// One `ZK0720` warning for each duplicate.
-pub(crate) fn duplicate_reports(module: &Module) -> Vec<Diagnostic>
-{
-    let mut found = Vec::new();
-    let mut scan = |stmts: &[Stmt], locals: &[zakac_ir_builder::ir::Slot]| {
-        let mut note = |e: &Expr| {
-            let ExprNode::Dup { value, lent: false } = &e.node
-            else
-            {
-                return;
-            };
-            let name = root_name(value, module, locals);
-            found.push(duplicate_made(e.span, &name));
-        };
-        each_stmt(stmts, &mut |s| do_for!(e in stmt_exprs(s), each_expr(e, &mut note)));
-    };
-    scan(&module.main, &[]);
-    do_for!(f in &module.funcs, scan(&f.block, &f.locals));
-    found
-}
-
-/// The name of the place a value is read out of: the variable itself, or
-/// the variable whose field or cell it is.
-///
-/// # Arguments
-///
-/// * `value` - The value read.
-/// * `module` - The module.
-/// * `locals` - The local slots of the routine.
-///
-/// # Returns
-///
-/// The name, or `?` when no slot is found.
-fn root_name(
-    value: &Expr, module: &Module, locals: &[zakac_ir_builder::ir::Slot],
-) -> String
-{
-    let mut places = Vec::new();
-    each_expr(value, &mut |sub| match sub.node
-    {
-        ExprNode::Read(place) | ExprNode::AddrOf(place) => places.push(place),
-        _ => (),
-    });
-    let slot = places.first().and_then(|place| match place
-    {
-        Place::Global(n) => module.globals.get(*n as usize),
-        Place::Local(n) => locals.get(*n as usize),
-    });
-    slot.map_or_else(|| "?".to_string(), |s| s.name.clone())
 }
 
 /// Lend each text argument a call does not take: the parameter reads the
@@ -389,7 +329,9 @@ fn lend_args(
         .collect();
     for arg in args.iter_mut()
     {
-        let ExprNode::Dup { value, lent } = &mut arg.node
+        // A box is shared among its holders, so it is never lent.
+        do_if!(arg.kind.is_box(), continue);
+        let ExprNode::Dup { value, lent, deep: false } = &mut arg.node
         else
         {
             continue;
@@ -449,7 +391,7 @@ fn lend_loop_dup(
         {
             continue;
         };
-        let ExprNode::Dup { value: source, lent } = &mut value.node
+        let ExprNode::Dup { value: source, lent, deep: false } = &mut value.node
         else
         {
             continue;
@@ -733,7 +675,7 @@ fn unwritten_params(f: &Func) -> Vec<u32>
         let slot = &f.locals[*n as usize];
         let k = slot.kind;
         let held = k.holds_text() || k.holds_owner_ptr() || k.holds_borrow();
-        k.is_aggregate() && !k.is_slice() && !held && !slot.addressed
+        k.is_aggregate() && !held && !slot.addressed
     };
     (0..f.params)
         .filter(plain)
@@ -850,6 +792,6 @@ fn duplicate_args(func: u32, args: &mut [Expr], kept: &BTreeSet<Place>, calls: &
 /// The duplicate, of the same kind.
 fn plain_dup(e: &Expr) -> Expr
 {
-    let node = ExprNode::Dup { value: Box::new(e.clone()), lent: false };
+    let node = ExprNode::Dup { value: Box::new(e.clone()), lent: false, deep: false };
     Expr::builder().kind(e.kind).node(node).span(e.span).build()
 }

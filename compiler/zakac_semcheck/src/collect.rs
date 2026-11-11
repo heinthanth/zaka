@@ -77,9 +77,10 @@ pub(crate) fn sig_of(decl: &FnDecl, structs: &StructTable, index: usize) -> FnSi
     let params = decl.params.iter().map(|p| kind(&p.kind)).collect();
     let ret = decl.ret.as_ref().map(kind);
     let edits = decl.params.iter().map(|p| p.edit).collect();
+    let closes = decl.params.iter().map(|p| p.owned && decl.lib.is_some()).collect();
     let marks: Option<Vec<_>> =
         decl.params.iter().map(|p| p.mark.as_ref().map(|m| m.name)).collect();
     #[rustfmt::skip]
     return FnSig::builder().params(params).edits(edits).maybe_ret(ret).exported(decl.exported)
-        .external(decl.external).variadic(decl.variadic).maybe_marks(marks).inner(overload_name(decl.name.name, index)).decl(decl.name.span).build();
+        .external(decl.external).unchecked(decl.unchecked).variadic(decl.variadic).maybe_marks(marks).closes(closes).inner(overload_name(decl.name.name, index)).decl(decl.name.span).build();
 }

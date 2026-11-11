@@ -6,9 +6,9 @@ seqs
 fn f0 ပေါင်း (params 1) -> isize
 locals
   l0 ကိန်းများ isize[3]&
-  l1 ရလဒ် isize
+  l1 အဖြေ isize
   l2 န isize
-     0  local_addr l1        ; ရလဒ်
+     0  local_addr l1        ; အဖြေ
      1  push 0:isize
      2  store isize
      3  local_addr l2        ; န
@@ -20,8 +20,8 @@ locals
      9  gt
     10  jump_if_true L1
 L0:
-    11  local_addr l1        ; ရလဒ်
-    12  local_addr l1        ; ရလဒ်
+    11  local_addr l1        ; အဖြေ
+    12  local_addr l1        ; အဖြေ
     13  load isize
     14  local_ref l0         ; ကိန်းများ
     15  local_addr l2        ; န
@@ -46,7 +46,7 @@ L0:
     34  store isize
     35  jump L0
 L1:
-    36  local_addr l1        ; ရလဒ်
+    36  local_addr l1        ; အဖြေ
     37  load isize
     38  ret
 
@@ -56,8 +56,8 @@ locals
   l1 ခ isize[3]
   l2 ဂ isize[3]
   l3 ဇယား isize[3][2]
-  l4 ညွှန်း isize[3]&
-  l5 ပ isize&
+  l4 ညွှန်း isize[3]*
+  l5 ပ isize*
   l6 %dup isize[3]
   l7 %list isize[3]
      0  local_addr l0        ; က
@@ -112,9 +112,9 @@ locals
     49  print_list isize[3][2]
     50  local_addr l4        ; ညွှန်း
     51  local_addr l2        ; ဂ
-    52  store isize[3]&
+    52  store isize[3]*
     53  local_addr l4        ; ညွှန်း
-    54  load isize[3]&
+    54  load isize[3]*
     55  push 1:usize
     56  ptr_add 8
     57  push 20:isize
@@ -123,9 +123,9 @@ locals
     60  local_addr l2        ; ဂ
     61  push 0:usize
     62  ptr_add 8
-    63  store isize&
+    63  store isize*
     64  local_addr l5        ; ပ
-    65  load isize&
+    65  load isize*
     66  push 2:isize
     67  ptr_add 8
     68  load isize
@@ -134,16 +134,15 @@ locals
     71  local_addr l2        ; ဂ
     72  blit isize[3]
     73  local_addr l6        ; %dup
-    74  local_addr l6        ; %dup
-    75  call f0              ; ပေါင်း
-    76  print
-    77  local_addr l7        ; %list
-    78  seq_addr s1
-    79  blit isize[3]
-    80  local_addr l7        ; %list
-    81  call f0              ; ပေါင်း
-    82  print
-    83  ret
+    74  call f0              ; ပေါင်း
+    75  print
+    76  local_addr l7        ; %list
+    77  seq_addr s1
+    78  blit isize[3]
+    79  local_addr l7        ; %list
+    80  call f0              ; ပေါင်း
+    81  print
+    82  ret
 
 fn f2 main (params 0)
      0  call f1              ; ပရိုဂရမ်
