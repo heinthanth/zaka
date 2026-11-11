@@ -14,6 +14,10 @@ COPY . .
 # pass it with --build-arg.
 ARG ZAKA_SITE_ORIGIN
 
+# The address of the source repo, which the footer links to; left out, the
+# footer has no source link.
+ARG ZAKA_REPO_URL
+
 # The website writes its pages once and stops, so the site is plain files.
 # The motion libraries and the web fonts join it under /vendor and /fonts,
 # and Monaco under /explorer, beside the explorer page, placed as

@@ -22,6 +22,7 @@ jobs:
     env:
       ZAKA_PDA_FONT_SECRET: ${{ secrets.ZAKA_PDA_FONT_SECRET }}
       ZAKA_SITE_ORIGIN: ${{ vars.ZAKA_SITE_ORIGIN }}
+      ZAKA_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
       CLOUDFLARE_PAGES_PROJECT: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
       MISE_ENABLE_TOOLS: rust,bun,cargo-binstall,cargo:trunk,cargo:cargo-leptos
     steps:

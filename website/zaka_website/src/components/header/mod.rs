@@ -44,6 +44,21 @@ static SHEET: ComponentStyle = ComponentStyle::global_css("site-header", STYLE_S
 /// Where the explorer lives on the site.
 pub const EXPLORER_URL: &str = zaka_web_ui_common::site::EXPLORER_URL;
 
+/// The address of the source repo, from the `ZAKA_REPO_URL` env var at build
+/// time; CI sets it from the repo it builds. The server and the browser builds
+/// read the same value, so the island hydrates as it rendered.
+const REPO_URL: Option<&str> = option_env!("ZAKA_REPO_URL");
+
+/// The address of the source repo, when the build set one.
+///
+/// # Returns
+///
+/// The address, or `None` when [`REPO_URL`] is unset or blank.
+pub fn repo_url() -> Option<&'static str>
+{
+    REPO_URL.map(str::trim).filter(|url| !url.is_empty())
+}
+
 /// The name of the language in Burmese, written beside the logo.
 const NAME: &str = "စံကား";
 
@@ -70,7 +85,8 @@ const PAPER: &str = "paper";
 /// The view; it renders no element of its own.
 pub fn header_sheet() -> impl IntoView { sheet(&SHEET) }
 
-/// The header: the wordmark, the links to Learn and the Docs, the theme and
+/// The header: the wordmark, the links to Learn, the Docs and the source
+/// repo (when the build set [`REPO_URL`]), the theme and
 /// language pickers, and the explorer; on the explorer page, the settings of
 /// the explorer in its place. It sits over the page and takes the ground and
 /// ink of the chapter under it. An island: the pickers and the chapter
@@ -118,6 +134,13 @@ pub fn SiteHeader(here: String) -> impl IntoView
     };
     let learn = section(LEARN_URL, "website.header.learn");
     let docs = section(DOCS_URL, "website.header.docs");
+    let source = repo_url().map(|url| {
+        a().class(ClassName::HEADER_LINK)
+            .href(url)
+            .attr("target", "_blank")
+            .attr("rel", "noopener noreferrer")
+            .child(t!("website.header.source"))
+    });
     let pickers = div().class(ClassName::HEADER_PICKERS).child((
         theme_icon_picker(theme),
         lang_icon_picker(|| send(EXPLORER_FLUSH_EVENT)),
@@ -129,6 +152,7 @@ pub fn SiteHeader(here: String) -> impl IntoView
     let actions = div().class(ClassName::HEADER_ACTIONS).child((
         learn,
         docs,
+        source,
         pickers,
         action,
         toggle(open),
@@ -261,6 +285,11 @@ fn menu_panel(
             nav().class(ClassName::HEADER_MENU_LINKS).child((
                 link((LEARN_URL, "website.header.learn")),
                 link((DOCS_URL, "website.header.docs")),
+                repo_url().map(|url| {
+                    link((url, "website.header.source"))
+                        .attr("target", "_blank")
+                        .attr("rel", "noopener noreferrer")
+                }),
                 (!on_explorer)
                     .then(|| link((EXPLORER_URL, "website.header.explorer_link"))),
             )),

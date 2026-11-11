@@ -31,6 +31,8 @@ en = "Settings"
 en = "Learn"
 [website.header.docs]
 en = "Docs"
+[website.header.source]
+en = "GitHub"
 
 # ---------------------------------------------------------------- hero
 
@@ -131,6 +133,8 @@ en = "Built on open source"
 en = "Close the credits"
 [website.footer.explorer]
 en = "Explorer"
+[website.footer.source]
+en = "GitHub"
 [website.footer.rights]
 en = "%{author} · %{first} - %{last}"
 
