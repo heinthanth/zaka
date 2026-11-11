@@ -356,7 +356,7 @@ impl FnGen<'_, '_>
         ret_if!(cause == HaltCause::ClosedHandle, self.line("zk_closed_handle();"));
         ret_if!(
             cause == HaltCause::NullFromC,
-            self.line("zk_plain_trap(ZK_TRAP_NULL_TEXT);")
+            self.line("zk_plain_trap(ZK_TRAP_NULL_FROM_C);")
         );
         let Some(e) = value
         else

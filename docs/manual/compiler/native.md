@@ -110,7 +110,7 @@ from native code with no VM between. The build writes one more file, `zaka_ffi.c
   wrapper of the IR halts through `zk_closed_handle` when the box holds 0, which stops the
   run with the closed handle trap, and a C function that takes the handle over leaves the
   box holding 0. A handle result written with no optional promises that C gives no NULL:
-  a NULL there stops the run with the VM's `null text` message, and an optional handle
+  a NULL there stops the run with the VM's `null from C` message, and an optional handle
   result is blank for NULL. A read of a field is a `memcpy` from the address of the C struct plus the
   offset of the field, since that address lies in no block of the runtime; a text field
   goes through `zk_text_from_c`, as a text result does.

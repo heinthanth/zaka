@@ -706,7 +706,7 @@ fn a_list_block_knows_its_cells_in_both_frame_forms()
     let (_, mut s) = session_of("lists/grid");
     s.step();
     let heap = s.heap();
-    let owner = format!("ဇယား of {START_NAME}");
+    let owner = format!("ဇယား@{START_NAME}");
     let grid = heap.blocks.iter().find(|b| b.owner.as_ref() == Some(&owner));
     let grid = grid.expect("the grid");
     assert_eq!(grid.cells, [32, 8], "rows of 4 integers, cells of 8 octets");
@@ -725,7 +725,7 @@ fn a_list_block_knows_its_cells_in_both_frame_forms()
     let rows = frame.rows();
     assert_eq!(rows[0].cells, [8], "the list parameter of the call");
     let rows: Vec<BlockRow> = heap.blocks.iter().flat_map(BlockRow::rows).collect();
-    let owner = format!("မူရင်း of {START_NAME}");
+    let owner = format!("မူရင်း@{START_NAME}");
     let local = rows.iter().find(|r| r.owner.as_ref() == Some(&owner));
     assert_eq!(
         local.map(|r| r.cells.clone()),

@@ -912,9 +912,9 @@ pointer, or the kind gives back nothing. Each parameter of the kind is one of th
 | Parameter | What C passes | What the function gets |
 | --- | --- | --- |
 | a plain struct | the struct, as a whole value | a struct with the same fields |
-| `စာသား` | a `char *` | text copied from the string; NULL stops the program with the trap `null text` |
+| `စာသား` | a `char *` | text copied from the string; NULL stops the program with the trap `null from C` |
 | `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` | a `char *` | an optional: `အလွတ်` for NULL, else the copied text |
-| a kind from outside | the address of a struct C keeps | a new handle around the address; NULL stops the program with the trap `null text`, since the parameter promised a handle |
+| a kind from outside | the address of a struct C keeps | a new handle around the address; NULL stops the program with the trap `null from C`, since the parameter promised a handle |
 | an optional of a kind from outside | the address, or NULL | an optional: `အလွတ်` for NULL, else a new handle |
 
 The kind has no `ဒေတာ ပြောင်းလဲရန်` marker. Each other function kind is ZK0465. The function gets
@@ -1059,7 +1059,7 @@ one is ZK0479.
 one back, and its declaration needs no mark `စိတ်မချရသော`: the program never holds the
 address, so it cannot reach through it. A result written `<kind> တစ်ခု ကို ပြန်ပေးမည်`
 wraps the address C gives. Such a plain result promises that C gives no NULL: when C gives
-NULL all the same, the run stops with the trap [null text](../vm/traps.md#c-functions),
+NULL all the same, the run stops with the trap [null from C](../vm/traps.md#c-functions),
 since no variable holds a NULL handle.
 A result written `<kind> ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်` gives the
 optional with no data for NULL and the handle, as data, for each other address. A handle can also be one of the

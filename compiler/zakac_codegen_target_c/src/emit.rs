@@ -636,7 +636,7 @@ fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_NULL_CALL", t!("target_c.trap.null_call")),
         ("ZK_TRAP_NULL_OBJECT", t!("target_c.trap.null_object")),
         ("ZK_TRAP_CLOSED_HANDLE", t!("target_c.trap.closed_handle")),
-        ("ZK_TRAP_NULL_TEXT", t!("target_c.trap.null_text")),
+        ("ZK_TRAP_NULL_FROM_C", t!("target_c.trap.null_from_c")),
         ("ZK_TRAP_CLOSURE_ESCAPE", t!("target_c.trap.closure_escape")),
         ("ZK_TRAP_NO_CELL_TO_REMOVE", t!("target_c.trap.no_cell_to_remove")),
         ("ZK_TRAP_NO_CHAR_TO_REMOVE", t!("target_c.trap.no_char_to_remove")),

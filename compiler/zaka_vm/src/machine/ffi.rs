@@ -861,7 +861,7 @@ mod with_ffi
         /// once the callback returns: a `char *` is
         /// copied into text, and a struct address C keeps becomes a new
         /// handle. NULL is an optional with no data, a handle that reads as
-        /// closed, or, for plain text, `NullText`.
+        /// closed, or, for plain text, `NullFromC`.
         ///
         /// # Arguments
         ///
@@ -932,10 +932,10 @@ mod with_ffi
         ///
         /// # Returns
         ///
-        /// `Ok`, `NullText`, or `BadUtf8` for octets that are not UTF-8.
+        /// `Ok`, `NullFromC`, or `BadUtf8` for octets that are not UTF-8.
         fn text_arg(&mut self, slot: u64, native: usize) -> Step
         {
-            ret_if!(native == 0, Err(TrapKind::NullText));
+            ret_if!(native == 0, Err(TrapKind::NullFromC));
             // SAFETY: C passes a string that ends in a zero octet, as the
             // function kind declares; C itself must keep to that, as in C.
             let octets = unsafe { std::ffi::CStr::from_ptr(native as *const c_char) };
@@ -957,10 +957,10 @@ mod with_ffi
         ///
         /// # Returns
         ///
-        /// `Ok`, `NullText` for NULL, or `OutOfMem`.
+        /// `Ok`, `NullFromC` for NULL, or `OutOfMem`.
         fn handle_arg(&mut self, slot: u64, kind: DataKind, native: usize) -> Step
         {
-            ret_if!(native == 0, Err(TrapKind::NullText));
+            ret_if!(native == 0, Err(TrapKind::NullFromC));
             let shape = kind.as_external().ok_or_else(|| malformed("a handle"))?;
             let cell = DataKind::Struct(shape);
             let size = u64::from(cell.size(self.module.platform_bits));

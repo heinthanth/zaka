@@ -75,7 +75,7 @@ void zk_text_from_c(unsigned char *out, size_t size, size_t ok_at, const char *s
  */
 void zk_text_of_c(unsigned char *out, const char *s)
 {
-    DO_IF(!s, zk_plain_trap(ZK_TRAP_NULL_TEXT));
+    DO_IF(!s, zk_plain_trap(ZK_TRAP_NULL_FROM_C));
     size_t len = strlen(s);
     const unsigned char *raw = (const unsigned char *)s;
     DO_IF(!zk_is_utf8(raw, len), zk_addr_trap(ZK_TRAP_BAD_UTF8, s));

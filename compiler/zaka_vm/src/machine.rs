@@ -1992,7 +1992,7 @@ impl Machine
             HaltCause::NotFault => TrapKind::NotFault,
             HaltCause::NoData => TrapKind::NoData,
             HaltCause::ClosedHandle => TrapKind::ClosedHandle,
-            HaltCause::NullFromC => TrapKind::NullText,
+            HaltCause::NullFromC => TrapKind::NullFromC,
         })
     }
 

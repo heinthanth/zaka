@@ -323,7 +323,7 @@ fn null_for_a_plain_handle_result_stops_the_run_on_both_targets()
     let path = write_program(dir.path(), &lib, NULL_HANDLE);
     let (out, ran) = vm_run(&path);
     let trap = ran.expect_err("NULL for a plain handle stops the run");
-    assert_eq!(trap.kind, TrapKind::NullText, "{trap}");
+    assert_eq!(trap.kind, TrapKind::NullFromC, "{trap}");
     assert_eq!(out, "before\n");
     let ran = native_run(&cc, &path, &lib);
     let stderr = String::from_utf8_lossy(&ran.stderr);
@@ -510,7 +510,7 @@ fn null_for_plain_text_stops_the_run_on_both_targets()
     let path = write_program(dir.path(), &lib, &format!("{CALLED_BACK}{NULL_TEXT}"));
     let (out, ran) = vm_run(&path);
     let trap = ran.expect_err("NULL for plain text stops the run");
-    assert_eq!(trap.kind, TrapKind::NullText, "{trap}");
+    assert_eq!(trap.kind, TrapKind::NullFromC, "{trap}");
     assert_eq!(out, "plain\n၇\n");
     let ran = native_run(&cc, &path, &lib);
     let stderr = String::from_utf8_lossy(&ran.stderr);
@@ -547,7 +547,7 @@ fn null_for_a_plain_handle_parameter_stops_the_run_on_both_targets()
     let path = write_program(dir.path(), &lib, &text);
     let (out, ran) = vm_run(&path);
     let trap = ran.expect_err("NULL for a plain handle stops the run");
-    assert_eq!(trap.kind, TrapKind::NullText, "{trap}");
+    assert_eq!(trap.kind, TrapKind::NullFromC, "{trap}");
     assert_eq!(out, "၀\n");
     let ran = native_run(&cc, &path, &lib);
     let stderr = String::from_utf8_lossy(&ran.stderr);

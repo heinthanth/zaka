@@ -46,7 +46,7 @@ would refuse numerous programs of this page.
 | null object | a field is read or written through an [object](../language/objects.md) variable that holds no object: a backstop, as for a null call | `the object variable holds no object, so it has no field to read or write` |
 | closed handle | a C function is given a handle that a C function took over and closed, or a field is read through one | `a C function that took the handle over closed it, so it cannot be used again` |
 | closure escape | C calls a closure while no C call that was given it runs and C has no leave to call it | `C called a closure after the call that gave it ended, and C has no leave to call it; give one with "ခေါ်ဆိုခွင့် ပြုမည်"` |
-| null text | C gives NULL where its declaration promised a plain value: a handle result, or a text parameter of a function of the program that C calls | `C gave NULL where its declaration promised a value; declare the result or the parameter as an optional, "T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်", when C can give NULL` |
+| null from C | C gives NULL where its declaration promised a plain value: a handle result, or a text or handle parameter of a function of the program that C calls | `C gave NULL where its declaration promised a value; declare the result or the parameter as an optional, "T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်", when C can give NULL` |
 | no cell to remove | a remove of the last cell finds a list with no cells | `the list holds no cells, so it has no last cell to remove` |
 | no character to remove | a remove of the last character finds text with no characters | `the text holds no characters, so it has no last character to remove` |
 | end before start | a replace names a range whose last cell or character comes before its first | `the range from A to B ends before it starts` |
@@ -693,12 +693,14 @@ Some traps belong to a [C function](../language/functions.md#c-functions). Those
 stop the run before C is entered; C itself does what C does, and the VM has no trap for
 what C does with a block.
 
-**Null text.** C gives NULL where its declaration promised a plain value, and Zaka has no
-NULL outside pointers to hold it. Two places stop the run:
+**Null from C.** C gives NULL where its declaration promised a plain value, and Zaka has no
+NULL outside pointers to hold it. Three places stop the run:
 
 - a C function whose result is a plain handle, written with no optional, gives NULL back;
 - a function of the program that C calls back gets NULL as a `char *` for a parameter of
-  plain text, `စာသား`.
+  plain text, `စာသား`;
+- a function of the program that C calls back gets NULL for a parameter of a plain handle
+  kind.
 
 Declare the result or the parameter as an optional when C can give NULL:
 `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` gets `အလွတ်` for NULL, and so does an optional of a
@@ -744,7 +746,7 @@ the program. A C function that takes one over, with a parameter marked `အပ�
 leaves the box of the handle holding 0, so each variable that shares it reads as closed. A
 call of a C function with a closed handle, and a read of a field through one, stop the run
 before C is entered or read. A handle is never NULL in a variable: a plain handle result
-that C gives as NULL stops the run with `null text` (above). The trap comes from the op `halt`, with the cause `closed_handle`; a native build
+that C gives as NULL stops the run with `null from C` (above). The trap comes from the op `halt`, with the cause `closed_handle`; a native build
 stops with the same message. The C lib that the program needs cannot run in the explorer,
 so the case below is shown as a file:
 

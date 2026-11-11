@@ -251,7 +251,7 @@ void zk_cb_revoke(zk_fn f)
  */
 void zk_cb_handle(unsigned char *out, void *const *addr, const zk_kind *list)
 {
-    DO_IF(!*addr, zk_plain_trap(ZK_TRAP_NULL_TEXT));
+    DO_IF(!*addr, zk_plain_trap(ZK_TRAP_NULL_FROM_C));
     zk_to_heap(out, (const unsigned char *)addr, list, 0);
 }
 

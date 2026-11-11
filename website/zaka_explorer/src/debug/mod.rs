@@ -256,7 +256,7 @@ pub struct BlockRow
     pub origin: Origin,
     /// Whether the block is in use.
     pub state: BlockState,
-    /// What a stack or static block holds, as text, such as `က of ပြ`;
+    /// What a stack or static block holds, as text, such as `က@ပြ`;
     /// `None` for a heap block.
     pub owner: Option<String>,
     /// The first octets of the contents, at most [`DUMP_CAP`]; none once
@@ -288,7 +288,7 @@ pub struct VarRow
     /// Its name.
     #[builder(into)]
     pub name: String,
-    /// What it is, as text, such as `က of ပြ` or `Global x`.
+    /// What it is, as text, such as `က@ပြ` or `Global x`.
     #[builder(into)]
     pub owner: String,
     /// The cell sizes of the list it is, outermost first; none for a

@@ -120,7 +120,7 @@ the one above.
 An optional and a result are the same struct as in the VM (a tag, then `some`, or `ok` and
 `err`). `Stmt::Halt` becomes a call that stops the run: `zk_not_good(at, kind)`, which shows the error value, and
 `zk_not_good_bare()` for `not_good`, `zk_not_fault()` for `not_fault`, `zk_closed_handle()` for a
-closed handle, `zk_plain_trap(ZK_TRAP_NULL_TEXT)` for `null_from_c` (C gave NULL for a plain handle result) and `zk_no_data()` for `no_data`, which stops with `ZK_TRAP_NO_DATA` and the text of the
+closed handle, `zk_plain_trap(ZK_TRAP_NULL_FROM_C)` for `null_from_c` (C gave NULL for a plain handle result) and `zk_no_data()` for `no_data`, which stops with `ZK_TRAP_NO_DATA` and the text of the
 trap `the optional holds no data` from the locale (`target_c.trap.no_data`); `stmts.rs` writes each.
 A print of an optional goes through `zk_push_fallible`, which writes `ဒေတာ(<value>)` for tag 1 and
 `အလွတ်` for tag 0, with the words `zk_data_text` and `zk_no_data_text` that `emit.rs` puts in
@@ -192,7 +192,7 @@ takes (`callback_param`) goes through the bridge, for a plain function too (`zk_
 one libffi closure for it, `kept` for the run): `crossing` picks how each parameter crosses.
 A struct passed as a whole value gets a libffi struct kind (`zk_cbst_<i>`, its elements in
 `zk_cbse_<i>`, a counted list as one element for each cell) and is copied into an aligned
-block; text comes from `zk_text_of_c` (NULL is `ZK_TRAP_NULL_TEXT`); an optional of text from
+block; text comes from `zk_text_of_c` (NULL is `ZK_TRAP_NULL_FROM_C`); an optional of text from
 `zk_text_from_c`; a handle from `zk_cb_handle`, a new box around the address (NULL gives a box
 holding 0); an optional of a handle from `zk_cb_opt_handle`. The function gets a lent
 duplicate (`zk_lend_seqs`, room 0), and the bridge drops the original with `zk_drop` once it

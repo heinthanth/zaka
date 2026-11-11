@@ -11,6 +11,7 @@
 
 target
 docs/*.internal.md
+docs/paper
 
 website/zaka_explorer/dist
 website/zaka_web_ui_common/assets/fonts/*.ttf

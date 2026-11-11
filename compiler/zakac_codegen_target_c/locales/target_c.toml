@@ -69,7 +69,7 @@ en = "the function value holds no function to call"
 [target_c.trap.closed_handle]
 en = "a C function that took the handle over closed it, so it cannot be used again"
 
-[target_c.trap.null_text]
+[target_c.trap.null_from_c]
 en = "C gave NULL where its declaration promised a value; declare the result or the parameter as an optional, \"T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်\", when C can give NULL"
 
 [target_c.trap.null_object]

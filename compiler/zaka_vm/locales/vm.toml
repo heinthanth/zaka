@@ -60,7 +60,7 @@ en = "the function value holds no function to call"
 [vm.trap.closed_handle]
 en = "a C function that took the handle over closed it, so it cannot be used again"
 
-[vm.trap.null_text]
+[vm.trap.null_from_c]
 en = "C gave NULL where its declaration promised a value; declare the result or the parameter as an optional, \"T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်\", when C can give NULL"
 
 [vm.trap.null_object]

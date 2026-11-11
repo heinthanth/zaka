@@ -159,7 +159,7 @@ pub enum TrapKind
     /// A handle went to C after a C function that takes it over closed it.
     ClosedHandle,
     /// C passed NULL to a callback for a parameter of plain text.
-    NullText,
+    NullFromC,
     /// C called a closure after the call that gave it ended, with no leave
     /// from `ခေါ်ဆိုခွင့် ပြုမည်`, or after that leave was taken back.
     ClosureEscape,
@@ -320,7 +320,7 @@ impl fmt::Display for TrapKind
             TrapKind::NullCall => t!("vm.trap.null_call"),
             TrapKind::NullObject => t!("vm.trap.null_object"),
             TrapKind::ClosedHandle => t!("vm.trap.closed_handle"),
-            TrapKind::NullText => t!("vm.trap.null_text"),
+            TrapKind::NullFromC => t!("vm.trap.null_from_c"),
             TrapKind::ClosureEscape => t!("vm.trap.closure_escape"),
             TrapKind::ForeignCall { name } => t!("vm.trap.foreign_call", name = name),
             TrapKind::ForeignLink { reason } =>
@@ -398,7 +398,7 @@ impl TrapKind
             | TrapKind::NullCall
             | TrapKind::NullObject
             | TrapKind::ClosedHandle
-            | TrapKind::NullText
+            | TrapKind::NullFromC
             | TrapKind::ClosureEscape
             | TrapKind::ForeignCall { .. }
             | TrapKind::ForeignLink { .. }
