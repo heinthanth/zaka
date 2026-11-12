@@ -29,6 +29,14 @@ impl Command for ZakacLsp
 
     fn version() -> &'static str { clap::crate_version!() }
 
+    /// Get the section of a config file that holds the defaults of this
+    /// command.
+    ///
+    /// # Returns
+    ///
+    /// The name of its `zakac` subcommand.
+    fn config_section() -> Option<&'static str> { Some("lsp") }
+
     fn configure(setup: CommandSetup, _mode: CommandMode) -> CommandSetup
     {
         setup.with(|cmd| cmd.about(t!("lsp.about")))

@@ -140,3 +140,23 @@ fn a_count_goes_to_the_list_inside_an_optional()
     let both = "အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် စာရင်း";
     ok(&start(&var("ဂ", both, "ကနဦးတန်ဖိုး")));
 }
+
+/// A literal takes the kind of the data of an optional, or of the good value
+/// of a result: a `၈ ဘစ်` optional takes `၁` as it is, and a value outside
+/// the kind inside is ZK0406.
+#[test]
+fn a_literal_takes_the_kind_inside()
+{
+    let narrow = "၈ ဘစ် ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်";
+    let half = "၃၂ ဘစ် ဒဿမကိန်း ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်";
+    let small = "၈ ဘစ် ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်";
+    let stmts = format!(
+        "{}{}{}",
+        var("ခ", narrow, "၁"),
+        var("ဖ", half, "၁.၅"),
+        var("ရ", small, "၁၀၀")
+    );
+    ok(&start(&stmts));
+    let wide = var("ခ", narrow, "၃၀၀");
+    assert_eq!(codes(&start(&wide)), vec![Code::LiteralDoesNotFit]);
+}

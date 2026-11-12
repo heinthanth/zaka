@@ -260,3 +260,38 @@ fn a_start_block_with_no_result_ends_with_0()
     assert_eq!(code, ExitCode::Success, "{stderr}");
     assert_eq!(stdout, "၁\n");
 }
+
+/// A program with a function that stops it.
+const STOPS_IN_A_CALL: &str = "\
+လုပ်ဆောင်ချက် စား သည် န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+၁၀၀ / န ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စား(၀) ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+
+/// A stop names the line of the op, then each call in progress at the line
+/// of its call; the main function the compiler adds is left out.
+#[test]
+fn a_stop_names_its_line_and_the_calls()
+{
+    let (code, _, stderr) = run_vm(&[], STOPS_IN_A_CALL);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stderr.contains("(in စား, at "), "{stderr}");
+    assert!(stderr.contains(":3:1)"), "{stderr}");
+    assert!(stderr.contains("  စား at "), "{stderr}");
+    assert!(stderr.contains(":6:1"), "{stderr}");
+    assert!(!stderr.contains("  main"), "{stderr}");
+}
+
+/// A release build leaves the lines out: a stop names the function and the
+/// op.
+#[test]
+fn a_release_build_names_the_op()
+{
+    let (code, _, stderr) = run_vm(&["--release"], STOPS_IN_A_CALL);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stderr.contains("(in စား, op "), "{stderr}");
+    assert!(stderr.contains("  စား, op "), "{stderr}");
+}

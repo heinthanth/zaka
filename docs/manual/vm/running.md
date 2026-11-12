@@ -56,6 +56,34 @@ $ zakac run program.zkc
 The artifact holds the source and the diagnostics too, so a run from it reports the same
 warnings as a run from source.
 
+## Checking an artifact
+
+An artifact can be cut or edited after `zakac build` wrote it. Before the first
+instruction runs, the VM checks the instructions it decoded:
+
+- Each jump lands on an instruction of its function, and no path runs past the last
+  one.
+- Where two paths meet, the stack holds the same count of values on both.
+- No instruction takes more values than the stack holds, and `ret` leaves the result
+  alone on the stack.
+- An instruction that reads an address, a boolean or a value of a kind finds a value of
+  that sort, where the instructions before it tell the sort.
+- Each call, C call and `host` instruction finds the count of arguments its signature
+  names.
+- Each slot, function, text, static list, format and C call that an instruction names
+  exists.
+- No kind is larger than the larger of `--max-heap` and `--max-stack`, and the
+  top-level variables together fit that size too.
+
+An artifact that fails the check does not run. The command prints
+`failed to decode artifact from F: malformed ops in N, op P: R` and exits with 1.
+Instructions that `zakac run` compiles from source skip the check.
+
+The check cannot tell whether a C function is declared as the lib defines it: a wrong
+declaration can still crash the process, as it can in C. At run time, a value handed to
+C must suit its parameter, an address for a pointer and a number for a number, or the
+run stops with the `malformed` [trap](traps.md).
+
 ## Input, files and the standard streams
 
 The external functions of a program (see
@@ -74,8 +102,8 @@ what the program prints, in order, in each world.
 ## The options
 
 `zakac run` takes the [compile options](../compiler/commands.md) (`--platform-bits`,
-`--fold`, `--strict-particles`, `--mem-check`, `--mem-strict`, `--no-unsafe`, `--overflow`,
-`--results`, `--scratch`) and these
+`--fold`, `--strict-particles`, `--mem-check`, `--mem-strict`, `--allow`, `--warn`, `--error`,
+`--no-unsafe`, `--overflow`, `--results`, `--scratch`, `--release`) and these
 options of the VM:
 
 | Option | Default | Effect |
@@ -152,15 +180,79 @@ A trap reads like this:
 ```console
 $ zakac run samples/mistakes/zero_divide.zaka
 စားမည်
-zaka_vm: the program stopped: integer division or remainder with zero as divisor (in ပရိုဂရမ်, op 7)
+zaka_vm: the program stopped: integer division or remainder with zero as divisor (in ပရိုဂရမ်, at samples/mistakes/zero_divide.zaka:5:1)
 ```
 
-The text after `in` names the function and the index of the instruction that stopped the
-run. When the trap names an address, the message ends with the block that holds it: its
-start, its size, and where it came from (`heap`, or the name of a variable). The Run
-buttons of these pages and the Explorer show the same reason without the place, as
+The text after `in` names the function, and the place in the source of the instruction
+that stopped the run: `at <file>:<line>:<column>`, with the column counted from 1. When
+the trap names an address, the message ends with the block that holds it: its start, its
+size, and where it came from (`heap`, or the name of a variable). The Run buttons of these
+pages and the Explorer show the same reason without the place, as
 `the program stopped: ...`. Each reason is explained in [When a program
 stops](traps.md).
+
+### Stack backtrace
+
+A stop inside a function that was called tells where the calls came from. When more than
+one call is in progress, the lines after the trap are a stack backtrace: each call, the most
+recent first. The first line is the call that stopped, at the line that stopped it; each
+line after it is a caller, at the line of its call:
+
+```console
+$ zakac run calls.zaka
+zaka_vm: the program stopped: integer division or remainder with zero as divisor (in စား, at calls.zaka:4:1)
+stack backtrace (most recent call first):
+  စား at calls.zaka:4:1
+  ခွဲ at calls.zaka:10:1
+  ပရိုဂရမ် at calls.zaka:14:1
+note: set ZAKA_BACKTRACE=full to list each call, or ZAKA_BACKTRACE=0 to leave the calls out
+```
+
+Three rules keep the list short:
+
+- A run of the same call, as in a recursion, shows once, then `  ... the call above, N
+  times more`.
+- Past 16 lines, the rest show as `  ... N calls more`.
+- The main function that the compiler adds around the start block is left out, unless the
+  stop is in it, as with the start value of a global.
+
+When a rule left a call out, a last line tells how to see it. The variable
+`ZAKA_BACKTRACE` sets how much the backtrace lists, as `RUST_BACKTRACE` does for Rust:
+
+| `ZAKA_BACKTRACE` | The backtrace |
+| --- | --- |
+| not set, or another value | short, as the three rules above keep it |
+| `full` | each call, one line each, the compiler's main function too |
+| `0` | none: the line of the stop alone |
+
+`backtrace = "full"` in a [config file](../compiler/configuration.md) does the same
+when `ZAKA_BACKTRACE` is not set.
+
+```console
+$ ZAKA_BACKTRACE=full zakac run calls.zaka
+```
+
+### Release builds
+
+A build keeps the source line of each instruction as a rule. `--release` leaves the lines
+out, as the release profile of Rust leaves out debug info: the artifact has no source
+region for each instruction, no embedded source, no imported files and no diagnostics.
+The trap then names the instruction with its index, and each call is a function and an
+index:
+
+```console
+$ zakac run --release calls.zaka
+zaka_vm: the program stopped: integer division or remainder with zero as divisor (in စား, op 3)
+stack backtrace (most recent call first):
+  စား, op 3
+  ခွဲ, op 2
+  ပရိုဂရမ်, op 1
+note: set ZAKA_BACKTRACE=full to list each call, or ZAKA_BACKTRACE=0 to leave the calls out
+```
+
+`zakac run --release` compiles the source with no lines; `zakac build --release` writes
+the artifact with none. An artifact built without `--release` keeps its lines, so
+`zakac run program.zkct` shows them. See [the commands](../compiler/commands.md).
 
 `--leaks` adds one line on standard error for each heap block still live when `main`
 returns and the ring collector has run. It does not change the exit code. A block that
@@ -230,7 +322,7 @@ block is aligned to 16, with a gap of 16 after it. Nine globals do not fit:
 
 ```console
 $ zakac run --platform-bits 8 nine-globals.zaka
-zaka_vm: the program stopped: no room in the address space for a global of 1 octets (in main, op 0)
+zaka_vm: the program stopped: no room in the address space for a global of 1 octets (in main, at nine-globals.zaka:1:1)
 ```
 
 The code samples of this manual run with a budget of 20 million instructions, and

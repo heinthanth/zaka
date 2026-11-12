@@ -26,11 +26,13 @@ its findings.
 | --- | --- | --- | --- |
 | how the lint is reported | `--mem-check error`, `warn` or `off` | **Ownership check** | `warn` |
 | report what cannot be proved | `--mem-strict` | **Strict ownership check** | off |
+| the level of one group or code | `--allow`, `--warn`, `--error` | | none |
 | refuse marked code | `--no-unsafe` | **Forbid marked code** | off |
 | what overflow does | `--overflow stop` or `wrap` | **Stop on overflow** | `stop` |
 
-`--mem-check`, `--mem-strict` and `--overflow` work on `borrowck`, `build` and `run`, and
-`--no-unsafe` on `irgen` too. See [Commands](commands.md).
+`--mem-check`, `--mem-strict`, `--overflow`, `--allow`, `--warn` and `--error` work on
+`borrowck`, `build` and `run`, and `--no-unsafe` on `irgen` too. See
+[Commands](commands.md). A [config file](configuration.md) can set each of them.
 
 ## What each setting changes
 
@@ -44,6 +46,7 @@ them. The settings change what the *compiler* does with the same finding.
 | `--mem-check error` | each finding of the lint is an error: nothing runs |
 | `--mem-check off` | the lint reports nothing: the VM is the one check left |
 | `--mem-strict` | adds the warnings for what the compiler cannot prove safe (ZK0711) |
+| `--allow`, `--warn`, `--error` | set the level of one group of the lint, or of one code, over `--mem-check`: `--error leaks` makes each leak an error while the rest remain warnings |
 | `--no-unsafe` | each mark `စိတ်မချရသော` is an error (ZK0471) |
 
 The lint holds ZK0702 to ZK0708, ZK0712 and ZK0721 wherever the compiler finds them, and
@@ -99,7 +102,7 @@ warning[ZK0710]: offset 4 is past the end of a block of 4 elements
 6 | ပ + ၄ ၏ တန်ဖိုး ကို ပြသမည်။
   | ^^^^^
 ၀
-zaka_vm: the program stopped: access of 8 octets at 0x101020 lands outside each live block (in ပရိုဂရမ်, op 17); block at 0x101000, 32 octets, heap
+zaka_vm: the program stopped: access of 8 octets at 0x101020 lands outside each live block (in ပရိုဂရမ်, at past.zaka:6:1); block at 0x101000, 32 octets, heap
 ```
 
 With `--mem-check error` the compiler refuses the program and nothing runs:
@@ -294,6 +297,7 @@ See [Addresses and blocks](../vm/blocks.md).
 | --- | --- | --- |
 | `--no-unsafe` | names and kinds | ZK0471, an error |
 | `--mem-check`, `--mem-strict` | the checker | the level of the lint, and ZK0711; never ZK0722 to ZK0724 |
+| `--allow`, `--warn`, `--error` | the checker | the level of the codes of the lint, ZK0719 and ZK0723; never ZK0701, ZK0722 or ZK0724 |
 | `--overflow` | the checker and the code generators | what an overflow does, and ZK0719 |
 | `--frames` | the VM | where the variables sit |
 

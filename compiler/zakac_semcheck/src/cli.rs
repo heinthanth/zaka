@@ -119,6 +119,14 @@ impl Command for ZakacSemcheck
     /// The version of the command.
     fn version() -> &'static str { clap::crate_version!() }
 
+    /// Get the section of a config file that holds the defaults of this
+    /// command.
+    ///
+    /// # Returns
+    ///
+    /// The name of its `zakac` subcommand.
+    fn config_section() -> Option<&'static str> { Some("semcheck") }
+
     /// Customize the [`clap::Command`] for standalone or subcommand use.
     ///
     /// # Arguments

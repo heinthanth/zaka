@@ -13,7 +13,8 @@ use zakac_rust_sugars::tern;
 
 use crate::callbacks::CB_SOURCE;
 use crate::callbacks::ffi_flags;
-use crate::options::Checks;
+use crate::options::RunCheck;
+use crate::options::RunChecks;
 
 /// The compilers tried, in order, when neither `--cc` nor `CC` names one.
 /// Each is a program and the words that come before the C flags.
@@ -204,7 +205,8 @@ pub struct BuildPlan<'a>
     /// The executable to write.
     pub out: &'a Path,
     /// The run-time checks.
-    pub checks: Checks,
+    #[builder(into)]
+    pub checks: RunChecks,
     /// Whether the compiler has the sanitizers.
     pub sanitizers: bool,
     /// Whether the default flags go in.
@@ -285,7 +287,7 @@ fn compile_command(plan: &BuildPlan<'_>, source: &Path, object: &Path) -> Comman
     {
         cmd.args(DEFAULT_FLAGS);
     }
-    if plan.checks == Checks::Mem && plan.sanitizers
+    if plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers
     {
         cmd.args(SANITIZE_FLAGS);
     }
@@ -309,7 +311,7 @@ fn compile_command(plan: &BuildPlan<'_>, source: &Path, object: &Path) -> Comman
 fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Command
 {
     let mut cmd = linker.command();
-    if plan.checks == Checks::Mem && plan.sanitizers
+    if plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers
     {
         cmd.args(SANITIZE_FLAGS);
     }

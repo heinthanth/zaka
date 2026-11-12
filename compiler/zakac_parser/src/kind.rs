@@ -107,7 +107,35 @@ impl Parser<'_>
         self.at_sized_kind(0) || self.at_count_prefix(0)
     }
 
-    /// Whether `N ဘစ် (ကိန်းပြည့်|ဒဿမကိန်း)` starts `n` tokens ahead.
+    /// Whether `N ဘစ် (ကိန်းပြည့်|    /// How far ahead the `)` that closes the `(`
+    /// `at` tokens ahead stands, within the sentence.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead the `(` stands.
+    ///
+    /// # Returns
+    ///
+    /// How far ahead, or `None` when the sentence ends first.
+    pub(crate) fn close_paren_at(&self, at: usize) -> Option<usize>
+    {
+        let mut depth = 0usize;
+        for n in at..
+        {
+            let tok = self.peek_n(n);
+            ret_if!(ends_sentence(&tok), None);
+            match tok.kind
+            {
+                TokenKind::Punct(Punct::LParen) => depth += 1,
+                TokenKind::Punct(Punct::RParen) => depth -= 1,
+                _ => (),
+            }
+            ret_if!(depth == 0, Some(n));
+        }
+        None
+    }
+
+    /// Whether `N ဘစ် (ကိန်းပြည့်|ဒဿမကိန်း)` starts `n` tokens ahead.
     ///
     /// # Arguments
     ///

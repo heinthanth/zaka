@@ -21,7 +21,6 @@ use zakac_span::source_file::SourceFile;
 use crate::emit::CFile;
 use crate::emit::NotBuilt;
 use crate::emit::emit;
-use crate::options::Checks;
 use crate::options::TargetCOptions;
 
 /// The runtime files, written into the cache beside the generated ones.
@@ -31,6 +30,8 @@ pub const RUNTIME: &[(&str, &str)] = &[
     ("zaka_rt.c", include_str!("../runtime/zaka_rt.c")),
     ("zaka_rt_data.c", include_str!("../runtime/zaka_rt_data.c")),
     ("zaka_rt_host.c", include_str!("../runtime/zaka_rt_host.c")),
+    ("zaka_rt_float.h", include_str!("../runtime/zaka_rt_float.h")),
+    ("zaka_rt_float.c", include_str!("../runtime/zaka_rt_float.c")),
 ];
 
 /// The output of the phases up to the C text.
@@ -64,22 +65,22 @@ impl Translated
 /// * `options` - The check options.
 /// * `folding` - The foldings to run.
 /// * `mem` - How the ownership check reports, and the overflow mode.
-/// * `checks` - The run-time checks of the executable.
+/// * `target` - The choices of the C target; its overflow mode and platform
+///   width come from `mem` and `options`.
 ///
 /// # Returns
 ///
 /// The output of each phase.
 pub fn translate(
     loaded: Loaded, sources: &[Arc<SourceFile>], options: &SemcheckOptions,
-    folding: &FoldOptions, mem: &BorrowCheckOptions, checks: Checks,
+    folding: &FoldOptions, mem: &BorrowCheckOptions, target: TargetCOptions,
 ) -> Translated
 {
     let checked =
         zakac_borrow_checker::artifact::run_loaded(loaded, options, folding, mem);
     let clean = !has_errors(&checked.diagnostics);
-    #[rustfmt::skip]
-    let target = TargetCOptions::builder().checks(checks).overflow(mem.overflow)
-        .platform_bits(options.platform_bits).build();
+    let platform_bits = options.platform_bits;
+    let target = TargetCOptions { overflow: mem.overflow, platform_bits, ..target };
     let folded = checked.lowered.folded.as_ref().filter(|_| clean);
     let built = folded.map(|m| emit(m, sources, target));
     let mut checked = checked;

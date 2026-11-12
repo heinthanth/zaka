@@ -25,6 +25,7 @@
   - [Unsafe Zaka](language/unsafe.md)
 - [The compiler](compiler/README.md)
   - [Commands](compiler/commands.md)
+  - [Configuration](compiler/configuration.md)
   - [Stages](compiler/stages.md)
   - [Diagnostics](compiler/diagnostics.md)
   - [Compiler checks](compiler/checks.md)

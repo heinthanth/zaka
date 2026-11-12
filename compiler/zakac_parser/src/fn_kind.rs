@@ -201,6 +201,11 @@ impl Parser<'_>
     pub(crate) fn paren_fn_len(&self, at: usize) -> Option<usize>
     {
         ret_if!(self.peek_n(at).kind != TokenKind::Punct(Punct::LParen), None);
+        // Each function kind ends in `လုပ်ဆောင်ချက် အမျိုးအစား`, so a group whose
+        // last word is another is no kind, and its inside goes unscanned: a
+        // scan of each nested group would cost more at each level.
+        let close = self.close_paren_at(at)?;
+        ret_if!(kw_of(&self.peek_n(close - 1)) != Some(Kw::FnKind), None);
         let inner = self.fn_head_at(at + 1, FnForm::Full)?;
         let close = self.peek_n(at + 1 + inner).kind == TokenKind::Punct(Punct::RParen);
         close.then_some(inner + 2)

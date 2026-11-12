@@ -44,6 +44,7 @@ use crate::decl_head::DeclHead;
 use crate::describe::kw_text;
 use crate::describe::quote;
 use crate::notation::with_place;
+use crate::parser::MAX_NEST;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
@@ -476,6 +477,7 @@ impl Parser<'_>
     /// The block, or a diagnostic.
     pub(crate) fn parse_block(&mut self) -> PResult<BlockStmt>
     {
+        ret_if!(self.depth >= MAX_NEST, Err(self.err_too_deep()));
         let open = self.expect_one_of(&[Kw::BlockOpen, Kw::UnsafeBlockOpen])?;
         let unchecked = open.kind == TokenKind::Kw(Kw::UnsafeBlockOpen);
         self.expect_stop()?;

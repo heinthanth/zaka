@@ -165,6 +165,38 @@ in [Compiler checks](checks.md).
 | `--mem-check <MODE>` | `warn` | how the pointer lint of marked code is reported: `error`, `warn` or `off` |
 | `--mem-strict` | off | also report the accesses that the checker cannot prove safe (ZK0711) |
 | `--overflow <MODE>` | `stop` | what integer arithmetic does with a result outside its kind: `stop` stops the program and warns about an operation that overflows for each value it can see (ZK0719), `wrap` wraps it around; see [Overflow](../language/expressions.md#arithmetic) |
+| `--allow <NAME>` | | leave out each finding of a lint group or code; give it again, or a comma list, for more |
+| `--warn <NAME>` | | report each finding of a lint group or code as a warning |
+| `--error <NAME>` | | report each finding of a lint group or code as an error |
+
+A lint name is a group or a code:
+
+| Group | Codes |
+| --- | --- |
+| `mem` | the pointer lint that `--mem-check` sets: ZK0702 to ZK0704, ZK0706 to ZK0712, ZK0721 |
+| `leaks` | ZK0708 |
+| `frees` | ZK0702, ZK0707 |
+| `borrows` | ZK0703, ZK0704, ZK0706 |
+| `nulls` | ZK0709, ZK0711 |
+| `pointers` | ZK0710, ZK0712, ZK0721 |
+| `doubts` | ZK0711, ZK0723 |
+| `overflow` | ZK0719 |
+
+`--mem-check` sets the level of the whole pointer lint. A group named in `--allow`,
+`--warn` or `--error` wins over it, and a code wins over a group. Between two names of one
+tier, the later flag wins, and a flag on the command line wins over a [config
+file](configuration.md). ZK0709, ZK0710 and ZK0711 take the level inside marked code alone;
+outside it, the three remain errors. The doubtful findings (ZK0711, and the leaks the
+checker cannot prove) show under `--mem-strict` alone: a name sets their level, but does
+not turn them on. A code outside the table, such as ZK0701 or ZK0722, keeps its level:
+those findings keep safe code safe.
+
+```console
+$ zakac run --error leaks leak.zaka
+error[ZK0708]: the block that "ပ" holds is never given back or handed over on this path
+$ zakac run --error mem --allow ZK0708 leak.zaka
+၇
+```
 
 These belong to `build --target vm` and to `run`:
 
@@ -177,6 +209,17 @@ The program prints the same in each mode. `duplicate` costs one more pass over e
 list or struct result. `shared` leaves fewer slots in a frame, and `apart` shows each
 scratch value as a block of its own in the explorer's RAM view. See [Lists and structs
 as results](../language/functions.md#lists-and-structs-as-results).
+
+`--release` also belongs to `build --target vm`, to `build --target c` and to `run`:
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--release` | off | build for release: leave out the source region of each op, the embedded source, the imported files and the diagnostics of the artifact, so a stop names the function and the index of the op, not the line; see [Release builds](../vm/running.md#how-a-run-ends) |
+
+`zakac build --target c --release` writes no table of places and no marks for them, so a stop
+names the function alone (`(in addfee)`) and each backtrace line is a function name; it does not
+change the flags of the C compiler (`-O2`, no `-g`, with or with no `--release`). A `.zkc` or `.zkct` built with no `--release` keeps its
+lines, so `zakac run age.zkct` shows them.
 
 ## segment
 
@@ -282,13 +325,41 @@ differs from the VM.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `--checks <LEVEL>` | `default` | the run-time checks of the executable: `none` (as C, the fastest), `default` (the stops of the language, such as a zero divisor or a cell outside its list), or `mem` (those, null addresses, and the sanitizers of the C compiler) |
+| `--checks <LIST>` | `default` | the run-time checks of the executable: a level, then checks to add (`+name` or `name`) or drop (`-name`), in order, as a comma list or the flag given again; see below |
+| `--max-depth <CALLS>` | `4096` | the most nested calls before the executable stops with `more than N nested calls`, as `--max-depth` of the VM does; counted while the `depth` check is on |
+| `--max-heap <OCTETS>` | `0` | the most heap octets the executable holds, no cap when 0: a counted block (text, a plain list, a box, a closure record) past it stops the run with `no heap room for N octets`, as `--max-heap` of the VM does; a raw allocation of marked code past it gives the null address; see [Native programs](native.md#checks) |
 | `--cache <DIR>` | the cache of the user | the folder for the C files and the objects; when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
-| `--cc <CMD>` | `CC`, then the first of `cc`, `gcc`, `clang` and `zig cc` | the C compiler, with the words before its flags |
+| `--cc <CMD>` | `CC`, then `cc` of a config file, then the first of `cc`, `gcc`, `clang` and `zig cc` | the C compiler, with the words before its flags |
 | `--linker <CMD>` | the C compiler | the program that links the objects, such as `clang -fuse-ld=lld` |
 | `--cc-flag <FLAG>` | | one more flag for the C compiler; give it again for more |
 | `--ld-flag <FLAG>` | | one more flag for the linker; give it again for more |
 | `--no-default-flags` | off | leave out the default C flags `-O2 -w -ffp-contract=off` |
+
+Each run-time check is one kind of stop. A level sets each check: `none` turns all of
+them off (as C, the fastest), `default` turns on the checks of the language, and `mem`
+turns on all of them.
+
+| Check | Stops the program at | In |
+| --- | --- | --- |
+| `divide` | a zero divisor | `default`, `mem` |
+| `shift` | a shift as wide as its kind or wider | `default`, `mem` |
+| `bounds` | a cell, a place, a slice or a range outside its list or its text | `default`, `mem` |
+| `text` | a range of text that cuts a character, and u8s that hold no UTF-8 | `default`, `mem` |
+| `step` | a loop step that is not positive | `default`, `mem` |
+| `depth` | more nested calls than `--max-depth` | `default`, `mem` |
+| `null` | an access through the null address | `mem` |
+| `overlap` | a block copied onto a block it overlaps | `mem` |
+| `sanitizers` | the address and undefined-behavior sanitizers of the C compiler | `mem` |
+
+The list starts from `default` and takes each item in turn, so a level in it starts over:
+
+```console
+$ zakac build --target c --checks mem,-sanitizers,-depth age.zaka
+$ zakac build --target c --checks none,+bounds age.zaka
+$ zakac build --target c --checks=+null age.zaka
+```
+
+Integer overflow is not one of these: `--overflow` picks it.
 
 The flags reach the C compiler in this order: `-std=c11`, the default flags, `CFLAGS`,
 then each `--cc-flag`. The linker gets `-lm`, the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), `-lffi` when the build writes `zaka_cb.c` (a program that gives closures to C), `LDFLAGS`, then each `--ld-flag`. A later
@@ -357,15 +428,27 @@ warning[ZK0708]: the block that "ပ" holds is never given back or handed over o
 leak: block at 0x101000, 8 octets
 ```
 
+## Config file
+
+Each option can also be set in a TOML config file: `zakac.toml` beside the sources, a file
+of the user, `/etc/zakac/config.toml`, or the file `--config <FILE>` names. An option on the
+command line wins over each file. [Configuration](configuration.md) tells where the files
+are, which one wins, and how each option is named in them.
+
 ## Environment
 
 | Name | Meaning |
 | --- | --- |
 | `ZAKAC_CARETS` | the rows under a marked span on a color terminal: `off` leaves them out, `codepoint` draws them with one cell per code point, `cluster` draws them with a consonant and its `ေ`, `ျ` or `ြ` as two cells, `flow` places them where a terminal that draws Burmese text at its natural width puts the text; when unset, the compiler picks one for the terminal it knows, else `off` |
 | `NO_COLOR` | when it is set, color is off |
+| `ZAKA_BACKTRACE` | how much of the stack a stop lists, in `run` and in a native executable: `full` each call, `0` none; when unset or another value, a short backtrace (see [How a run ends](../vm/running.md#how-a-run-ends)) |
 | `CC` | the C compiler of `build --target c` when `--cc` is left out |
 | `CFLAGS`, `LDFLAGS` | flags for the C compiler and the linker of `build --target c`, split on white space; each `--cc-flag` and `--ld-flag` comes after them |
 | `XDG_CACHE_HOME` | the cache folder of the user, where `build --target c` keeps its C files when `--cache` is left out |
+| `XDG_CONFIG_HOME` | the config folder of the user, where the commands look for `zakac/config.toml` |
+
+A [config file](configuration.md#settings-that-variables-hold) can set `ZAKAC_CARETS`, `ZAKA_BACKTRACE`, `NO_COLOR`,
+`CFLAGS` and `LDFLAGS` too; a variable that is set wins over the file.
 
 Terminals do not agree on the cells a Burmese sign takes, so a `^^^^` row can drift from
 the text it points at. On a color terminal the span is marked inside the source line. The
@@ -408,6 +491,8 @@ what it shows and how to set it up.
 | --- | --- |
 | 0 | the stage finished, with warnings at most; for `run`, the program ended |
 | 1 | an error in the program, or the VM stopped the program |
+| 2 | the command line holds a mistake, or a config file gives an option a wrong value |
+| 3 | a file could not be read or written, or a config file holds a mistake |
 | other | for `run`, the result of the start block, its lowest 8 bits |
 
 Messages go to standard error and the artifact or the program output to standard output,

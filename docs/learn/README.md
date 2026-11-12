@@ -17,8 +17,9 @@ needed beforehand. Each page has:
 - a table that glosses the Burmese words used,
 - a **Hands on** section that suggests a small change to make to the program.
 
-Read the pages in order. Each page builds on nothing but what the pages before it have
-shown. The pages run in three parts:
+Read the pages in order. A page builds on the pages before it, and a few pages point
+ahead to a later one, as [Calling C](functions/c.md) does for lists, optionals and
+structs; each such pointer names the page to come back after. The pages run in three parts:
 
 1. **Values**, from [Hello, world](hello/README.md) to the [Example
    programs](programs/README.md): numbers, text, lists, structs, shared objects,

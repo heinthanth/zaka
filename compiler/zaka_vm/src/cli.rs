@@ -24,6 +24,7 @@ use zakac_codegen_target_vm::artifact::run_loaded;
 use zakac_codegen_target_vm::bc::Module;
 use zakac_codegen_target_vm::cli::attach_codegen_args;
 use zakac_codegen_target_vm::cli::emit_options;
+use zakac_codegen_target_vm::cli::release;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::has_errors;
 use zakac_host_errors::Error;
@@ -37,6 +38,7 @@ use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 use zakac_session::artifact::load_artifact;
@@ -47,7 +49,10 @@ use zakac_span::source_map::SourceMap;
 use crate::machine::HostData;
 use crate::machine::RunOptions;
 use crate::machine::run_in;
+use crate::trap::Backtrace;
 use crate::trap::hex;
+use crate::vet::Malformed;
+use crate::vet::vet_module;
 
 /// The flag for the call depth limit.
 const MAX_DEPTH_ARG: &str = "max_depth";
@@ -156,6 +161,14 @@ impl Command for ZakaVm
     ///
     /// The version.
     fn version() -> &'static str { clap::crate_version!() }
+
+    /// Get the section of a config file that holds the defaults of this
+    /// command.
+    ///
+    /// # Returns
+    ///
+    /// The name of its `zakac` subcommand.
+    fn config_section() -> Option<&'static str> { Some("run") }
 
     /// Configure the command.
     ///
@@ -266,9 +279,19 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let _ = report_command_error(
         io,
         &cmd_info,
-        Error::RuntimeTrap { msg: trap.to_string() },
+        Error::RuntimeTrap { msg: trap.report(&source_map, backtrace()) },
     );
     ExitCode::Failure
+}
+
+/// How much of the calls in progress a stop lists, from `ZAKA_BACKTRACE`.
+///
+/// # Returns
+///
+/// The choice.
+fn backtrace() -> Backtrace
+{
+    Backtrace::from_value(std::env::var(Backtrace::VAR).ok().as_deref())
 }
 
 /// The run limits from the command line.
@@ -327,10 +350,12 @@ fn load(
 ) -> zakac_host_errors::Result<Loaded>
 {
     let (_, content) = input.read(io.stdin)?;
+    let options = run_options(matches);
+    let limit = options.max_heap.max(options.max_stack);
     let raw = content.starts_with(RAW_ARTIFACT_MAGIC);
-    ret_if!(raw, decoded(&content, input, ArtifactFormat::Raw, source_map));
     let text = content.starts_with(TEXT_HEADER.as_bytes());
-    ret_if!(text, decoded(&content, input, ArtifactFormat::Text, source_map));
+    let format = tern!(raw, ArtifactFormat::Raw, ArtifactFormat::Text);
+    ret_if!(raw || text, decoded(&content, input, format, limit, source_map));
     let again = match input
     {
         Input::Stdin => Input::Data { name: "<stdin>".to_string(), content },
@@ -345,27 +370,36 @@ fn load(
     compiled(matches, &source, source_map)
 }
 
-/// Decode a codegen artifact and register its source for diagnostics.
+/// Decode a codegen artifact, check its ops, and register its source for
+/// diagnostics. An artifact can be cut or edited, so its ops pass the checks
+/// of [`vet_module`] before the VM runs them.
 ///
 /// # Arguments
 ///
 /// * `content` - The encoded artifact.
 /// * `input` - The input, for error paths.
 /// * `format` - The format.
+/// * `limit` - The most octets one kind, or the globals together, can take.
 /// * `source_map` - The source map.
 ///
 /// # Returns
 ///
-/// The ops and diagnostics, or a decode error.
+/// The ops and diagnostics, or a decode error for an artifact that does not
+/// decode or whose ops are malformed.
 fn decoded(
-    content: &[u8], input: &Input, format: ArtifactFormat, source_map: &mut SourceMap,
+    content: &[u8], input: &Input, format: ArtifactFormat, limit: u64,
+    source_map: &mut SourceMap,
 ) -> zakac_host_errors::Result<Loaded>
 {
-    let artifact: CodegenArtifact =
-        decode_artifact(content, &input.error_path(), format)?;
+    let path = input.error_path();
+    let artifact: CodegenArtifact = decode_artifact(content, &path, format)?;
+    let vetted = artifact.module.as_ref().map(|m| vet_module(m, limit)).transpose();
+    let malformed =
+        |e: Malformed| Error::FailedToDecodeArtifact { path, msg: e.to_string() };
+    vetted.map_err(malformed)?;
     let file = artifact.register_source(source_map);
     let diagnostics = artifact.absolute_diagnostics(&file);
-    Ok(Loaded { module: artifact.module, diagnostics })
+    Ok(Loaded { module: artifact.absolute_module(&file), diagnostics })
 }
 
 /// Compile a source file and the files it imports to ops.
@@ -390,5 +424,7 @@ fn compiled(
     let program = load_program(source, source_map, &LexerOptions::default())?;
     let emitted = run_loaded(program, &options, &folding, &mem, emit_options(matches));
     let diagnostics = emitted.diagnostics().to_vec();
-    Ok(Loaded { module: emitted.module, diagnostics })
+    let mut module = emitted.module;
+    do_if!(release(matches), module.iter_mut().for_each(Module::strip_debug));
+    Ok(Loaded { module, diagnostics })
 }

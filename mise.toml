@@ -42,20 +42,6 @@ run = "clang-format -i compiler/*/runtime/*.c compiler/*/runtime/*.h"
 shell = "bun exec"
 description = "Format the C code with clang-format"
 
-# Paper
-
-[tasks."paper:build"]
-run = "typst compile --root . --font-path website/zaka_web_ui_common/assets/fonts docs/paper/main.typ"
-description = "Build the paper as docs/paper/main.pdf"
-
-[tasks."paper:examples"]
-run = ["cargo build -q -p zakac", "docs/paper/examples/check.sh"]
-description = "Run the examples of the paper and compare their output"
-
-[tasks."paper:bench"]
-run = ["cargo build -q --release -p zakac", "docs/paper/bench/run.sh"]
-description = "Measure the compiler and write the CSV files the paper reads"
-
 # Test
 
 [tasks.test]

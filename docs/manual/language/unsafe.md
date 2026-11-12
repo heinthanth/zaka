@@ -840,6 +840,11 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 error[ZK0472]: "frexp" passes a pointer, so its declaration needs the mark "စိတ်မချရသော"
 ```
 
+In the VM, a pointer that lies in a freed block, passed to a C function, stops the run with
+the use-after-free trap before the call. A null pointer goes to C as NULL, and the contract of
+the C function decides whether NULL is allowed: `frexp` with a NULL address crashes inside
+libm, as it does in C.
+
 A closure can reach C: it is lent to the call, and a leave lets C keep it (see
 [Closures and C](function-values.md#nested-functions-and-closures)). A call from C to a closure with no
 call running and no leave stops the program (the trap `closure escape`).
@@ -874,7 +879,9 @@ can prove wrong. These findings are the *pointer lint*:
 ZK0711 is a warning in the modes `error` and `warn`. ZK0702 to ZK0708, ZK0712 and ZK0721
 come from pointers alone, so the setting moves them wherever the compiler finds them. ZK0709, ZK0710
 and ZK0711 can also come from safe code, from a function value or a list: outside marked code these keep
-their own level whatever the setting, and the setting moves them inside marked code alone.
+their own level whatever the setting, and the setting moves them inside marked code alone. `--allow`, `--warn` and `--error` set
+one group or code of the lint on its own, over `--mem-check`; see
+[Commands](../compiler/commands.md#options-of-the-compile-stages).
 ZK0701 is an error in each mode.
 
 The default runs a program the lint finds fault with, so the VM shows where it goes

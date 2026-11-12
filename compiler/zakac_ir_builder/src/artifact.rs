@@ -242,10 +242,12 @@ fn do_map(module: Option<&mut Module>, f: &impl Fn(Span) -> Span)
 /// The relative span.
 pub fn relative(span: Span, base: Pos) -> Span
 {
+    // A placeholder names no source, so it remains one.
+    ret_if!(span.is_placeholder(), span);
     Span::new(Pos::new(span.lo - base), Pos::new(span.hi - base))
 }
 
-/// Make a relative span absolute against `base`.
+/// Make a relative span absolute against `base`; a placeholder remains one.
 ///
 /// # Arguments
 ///
@@ -257,6 +259,7 @@ pub fn relative(span: Span, base: Pos) -> Span
 /// The absolute span.
 pub fn absolute(span: Span, base: Pos) -> Span
 {
+    ret_if!(span.is_placeholder(), span);
     Span::new(base + span.lo.as_u32() as usize, base + span.hi.as_u32() as usize)
 }
 

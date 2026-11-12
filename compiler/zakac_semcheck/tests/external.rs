@@ -202,3 +202,28 @@ fn marked_code_writes_a_number_field_of_a_handle()
     let text = with_handle(&marked("h ၏ name ကို \"x\" ဟု ထားမည်။"));
     assert_eq!(codes_as_is(&text), [Code::CFieldWrite]);
 }
+
+/// A program that reads the field `field` of a kind from outside whose C
+/// fields are `fields`.
+fn reads_c_field(fields: &str, field: &str) -> String
+{
+    format!(
+        "ရေတွက်စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် {fields} ပါဝင်သည်။
+လုပ်ဆောင်ချက် open_it သည် \"libx\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ရေတွက်စက် တစ်ခု ကို ပြန်ပေးမည်။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် စက် သည် open_it() ဖြစ်ပါစေ။
+စက် ၏ {field} ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။"
+    )
+}
+
+/// Two programs that give one name to two C structs make two kinds: the
+/// second reads its own fields, not those of the first.
+#[test]
+fn one_name_of_two_c_structs_makes_two_kinds()
+{
+    let one = reads_c_field("count ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု", "count");
+    assert_eq!(codes_as_is(&one), []);
+    let fields = "count ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု၊ step ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု တို့";
+    assert_eq!(codes_as_is(&reads_c_field(fields, "step")), []);
+}

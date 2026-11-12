@@ -234,6 +234,11 @@ pub(crate) fn is_number(tok: &Token) -> bool
     matches!(tok.kind, TokenKind::Number(_))
 }
 
+/// The most notation expressions, and the most blocks, that nest inside
+/// one another: deeper input gets a diagnostic, not a stack overflow, in
+/// the editor too, whose stack cannot grow.
+pub(crate) const MAX_NEST: u32 = 128;
+
 /// Parser state: the cursor, the source text and the diagnostics so far.
 #[derive(Builder)]
 pub(crate) struct Parser<'t>
@@ -255,6 +260,9 @@ pub(crate) struct Parser<'t>
     /// The number of blocks that enclose the current statement.
     #[builder(default)]
     pub(crate) depth: u32,
+    /// The number of notation expressions that enclose the current one.
+    #[builder(default)]
+    pub(crate) nest: u32,
     /// The struct names the program declares or imports, each in both
     /// spellings of `ဒေတာ`, so a name can start a kind however it is written.
     #[builder(default)]
@@ -589,6 +597,16 @@ impl<'t> Parser<'t>
         let tok = self.peek();
         ret_if!(tok.kind == TokenKind::Eof, t!("parser.eof").to_string());
         quote(self.text_of(tok.span))
+    }
+
+    /// A `nesting-too-deep` diagnostic at the current token.
+    ///
+    /// # Returns
+    ///
+    /// The diagnostic.
+    pub(crate) fn err_too_deep(&self) -> Diagnostic
+    {
+        diag::nesting_too_deep(self.peek().span, MAX_NEST)
     }
 
     /// An `expected-token` diagnostic at the current token.

@@ -52,6 +52,7 @@ use crate::print::text_at;
 use crate::statics::Placed;
 use crate::statics::seq_octets;
 use crate::trap::Trap;
+use crate::trap::TrapFrame;
 use crate::trap::TrapKind;
 use crate::trap::hex;
 
@@ -1158,8 +1159,42 @@ impl Machine
         let block = kind.addr().and_then(|a| self.block_text(a));
         #[rustfmt::skip]
         let trap = Trap::builder().kind(kind).func(self.func_name(func)).pc(pc)
-            .maybe_block(block).build();
+            .maybe_block(block).frames(self.trap_frames()).build();
         trap
+    }
+
+    /// The calls in progress: the op that ran last, then each caller at the
+    /// op of its call, which comes just before the op it goes on with.
+    ///
+    /// # Returns
+    ///
+    /// The calls, the one that ran first.
+    fn trap_frames(&self) -> Vec<TrapFrame>
+    {
+        let (func, pc) = self.at;
+        let callers = self.frames.iter().rev().skip(1);
+        let callers = callers.map(|f| self.trap_frame(f.func, f.pc.saturating_sub(1)));
+        std::iter::once(self.trap_frame(func, pc)).chain(callers).collect()
+    }
+
+    /// One call in progress, with the source region of its op.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - The function index.
+    /// * `pc` - The op index.
+    ///
+    /// # Returns
+    ///
+    /// The call.
+    fn trap_frame(&self, func: u32, pc: u32) -> TrapFrame
+    {
+        let spans = self.module.funcs.get(func as usize).map(|f| f.spans.as_slice());
+        let span = spans.and_then(|s| s.get(pc as usize)).copied();
+        #[rustfmt::skip]
+        let frame = TrapFrame::builder().func(self.func_name(func)).pc(pc)
+            .maybe_span(span).added(func == self.module.main).build();
+        frame
     }
 
     /// The name of a function.
@@ -1638,7 +1673,8 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// `Ok`, `NullCall` for a value of the zero word, or what entering the
+    /// `Ok`, `NullCall` for a value of the zero word, `Malformed` for a
+    /// function that takes another count of arguments, or what entering the
     /// function gives.
     fn call_value(&mut self, args: u32) -> Step
     {
@@ -1654,6 +1690,14 @@ impl Machine
         let word = record.map_or(Ok(word), |r| self.mem.thunk_word(r))?;
         do_if!(let Some(r) = record, self.push(Value::Ptr(r))?);
         let f = u32::try_from(word - 1).map_err(|_| malformed("no function"))?;
+        // The value can name a function of another signature in a loaded
+        // artifact: it must take the arguments the call passes.
+        let want = args as usize + usize::from(record.is_some());
+        let takes = self.module.funcs.get(f as usize).map(|func| func.params as usize);
+        ret_if!(
+            takes.is_some_and(|n| n != want),
+            Err(malformed("call_value passes another count of arguments"))
+        );
         self.enter(f)
     }
 

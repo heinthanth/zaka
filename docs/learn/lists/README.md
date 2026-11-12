@@ -92,7 +92,9 @@ does:
 
 Setting a list to another value gives it the cells of that value, and their count. The
 count is known when the program runs. A plain list can also grow and shrink a cell at a
-time: see [Adding and removing cells](growing.md).
+time: see [Adding and removing cells](growing.md). The stdlib holds no helper for a table lookup,
+sorting or removing a cell with a given number, so a program writes them: see [What the
+stdlib holds](../../manual/language/io.md#what-the-stdlib-holds).
 
 ## List kinds
 
@@ -123,6 +125,21 @@ lists](../forms/counted-lists.md).
 `အမှတ်များ ၏ အကွက်အရေအတွက်` ("the cell count of the scores") gives the number of cells,
 a `လက္ခဏာမဲ့ ကိန်းပြည့်`. A cell number outside the list stops the program: see [List
 mistakes](mistakes.md).
+
+To test for a list with no cells, compare the count with 0. A word-form value such as
+the count needs parentheses before an operator such as `==` (see
+[Grouping](../operators/grouping.md)):
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။
+(အမှတ်များ ၏ အကွက်အရေအတွက်) == ၀ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မှန်
+```
 
 ## Lists of other kinds
 
@@ -215,16 +232,18 @@ a counted loop. The cell count, in parentheses, gives the last number:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄၊ ၈၊ ၁၅၊ ၁၆ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ စုစုပေါင်း ကို စုစုပေါင်း + (ကိန်းများ ၏ အကွက် န) ဟု ထားမည်။
-စုစုပေါင်း ကို ပြသမည်။
+၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားမည်။
+ကိန်းများ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-၄၃
+[၈၊ ၁၆၊ ၃၀၊ ၃၂]
 ```
+
+A list with no cells makes `အကွက်အရေအတွက် - ၁` stop the program, since the count cannot go
+below 0: see [A list with no cells and the last number](mistakes.md#a-list-with-no-cells-and-the-last-number).
 
 ## Hands on
 

@@ -124,6 +124,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0240 | a kind alias declared inside a block | [Kind aliases](../language/aliases.md#errors) |
 | ZK0241 | a parameter mark string, after `ဝိဘတ်`, that is not one word a mark can be | [Functions](../language/functions.md) |
 | ZK0243 | a parameter of a function kind marked `ဒေတာ ထည့်ပေးရန်` | [Function values](../language/function-values.md) |
+| ZK0244 | nesting of parentheses, operands, calls, lists or blocks more than 128 levels deep | [The nesting limit](../internals/parser.md#the-nesting-limit) |
 
 ### ZK03: names
 
@@ -285,7 +286,10 @@ ZK0706 to ZK0708, ZK0712 and ZK0721 are warnings and the program runs; under
 out. ZK0709 to ZK0711 follow the same mode inside marked code, and in safe code ZK0710, which a
 list gives, keeps its own level. ZK0701, ZK0722 and ZK0724 are errors in each mode, and
 ZK0723 is a warning in each mode: no `--mem-check` level changes the check of set before
-read. See [Unsafe Zaka](../language/unsafe.md).
+read. `--allow`, `--warn` and `--error` set the level of one group or code of these over
+`--mem-check`, ZK0719 and ZK0723 among them, but never that of ZK0701, ZK0722 or ZK0724
+(see [Commands](../compiler/commands.md#options-of-the-compile-stages)). See [Unsafe
+Zaka](../language/unsafe.md).
 
 | Code | Problem | See |
 | --- | --- | --- |
@@ -311,4 +315,4 @@ read. See [Unsafe Zaka](../language/unsafe.md).
 
 | Code | Problem | See |
 | --- | --- | --- |
-| ZK0801 | a kind the C target cannot build, `f16` or `f128`, in a program built with `--target c` | [Native programs](../compiler/native.md) |
+| ZK0801 | not raised at present: the C target builds `f16` and `f128`, and the C compiler stops at an `#error` where it lacks one | [Native programs](../compiler/native.md#what-the-build-needs) |

@@ -1,10 +1,11 @@
+use std::collections::HashMap;
 use std::fmt::Write;
 use std::sync::Arc;
 
 use bon::Builder;
+use strum::IntoEnumIterator;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_diagnostics::Diagnostic;
-use zakac_diagnostics::target::kind_not_for_c;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::Func;
@@ -48,10 +49,27 @@ use crate::kinds::c_kind;
 use crate::kinds::is_blob;
 use crate::kinds::mem_name;
 use crate::kinds::ops_name;
+use crate::options::RunCheck;
 use crate::options::TargetCOptions;
 
+/// The header that picks the run-time checks and the call depth limit;
+/// the runtime includes it, so its own files keep the checks too.
+pub const CHECKS_HEADER: &str = "zaka_checks.h";
 /// The header each generated file includes.
 pub const KINDS_HEADER: &str = "zaka_kinds.h";
+/// The texts of the place of a stop and of its backtrace: the name in the
+/// runtime, then its name in the locale.
+const STOP_TEXTS: [(&str, &str); 8] = [
+    ("zk_where_text", "target_c.where"),
+    ("zk_in_text", "target_c.in"),
+    ("zk_backtrace_text", "target_c.backtrace"),
+    ("zk_call_at_text", "target_c.call_at"),
+    ("zk_call_text", "target_c.call"),
+    ("zk_call_again_text", "target_c.call_again"),
+    ("zk_calls_more_text", "target_c.calls_more"),
+    ("zk_full_hint_text", "target_c.full_hint"),
+];
+
 /// The file of generated descriptors and texts.
 pub const KINDS_SOURCE: &str = "zaka_kinds.c";
 /// The file that holds `main`.
@@ -96,7 +114,9 @@ pub fn emit(
     module: &Module, files: &[Arc<SourceFile>], options: TargetCOptions,
 ) -> Result<Vec<CFile>, NotBuilt>
 {
-    let mut shared = Shared::builder().module(module).options(options).build();
+    #[rustfmt::skip]
+    let mut shared = Shared::builder().module(module).options(options).files(files.to_vec())
+        .build();
     let mut units = vec![String::new(); files.len().max(1)];
     let unit_of = |lo| files.iter().rposition(|f| f.start_pos <= lo).unwrap_or(0);
     for (n, g) in module.globals.iter().enumerate()
@@ -138,6 +158,7 @@ pub fn emit(
             unit_file(n, &name, &text)
         })
         .collect();
+    out.push(CFile::builder().name(CHECKS_HEADER).text(checks_header(options)).build());
     out.push(CFile::builder().name(KINDS_HEADER).text(header).build());
     out.push(CFile::builder().name(KINDS_SOURCE).text(kinds).build());
     out.push(CFile::builder().name(MAIN_SOURCE).text(main).build());
@@ -151,6 +172,33 @@ pub fn emit(
         out.push(CFile::builder().name(CB_SOURCE).text(cb).build())
     );
     Ok(out)
+}
+
+/// The text of the header that picks the run-time checks and the call
+/// depth limit.
+///
+/// # Arguments
+///
+/// * `options` - The choices of the C target.
+///
+/// # Returns
+///
+/// The C text.
+fn checks_header(options: TargetCOptions) -> String
+{
+    let checks: String = RunCheck::iter()
+        .map(|f| {
+            format!("#define {} {}\n", f.macro_name(), u8::from(options.checks.has(f)))
+        })
+        .collect();
+    format!(
+        "/* The run-time checks of the program. */\n#ifndef ZAKA_CHECKS_H\n#define \
+         ZAKA_CHECKS_H\n\n{checks}#define ZK_MAX_DEPTH {}\n#define ZK_DEBUG_INFO \
+         {}\n#define ZK_MAX_HEAP {}u\n\n#endif\n",
+        options.max_depth,
+        u8::from(options.debug_info),
+        options.max_heap
+    )
 }
 
 /// The file of one module.
@@ -264,6 +312,12 @@ pub(crate) struct Shared<'m>
     /// Whether the program holds a 128-bit integer, which C11 lacks.
     #[builder(default)]
     wide: bool,
+    /// Whether the program holds f16, which C11 lacks.
+    #[builder(default)]
+    half: bool,
+    /// Whether the program holds f128, which C11 lacks.
+    #[builder(default)]
+    quad: bool,
     /// The kind descriptors the program needs.
     #[builder(default)]
     pub(crate) descr: Descriptors,
@@ -282,10 +336,44 @@ pub(crate) struct Shared<'m>
     /// Each function kind C can get as a closure; its index names its shape.
     #[builder(default)]
     pub(crate) cb_kinds: Vec<DataKind>,
+    /// The source files, for the line and column of a site.
+    files: Vec<Arc<SourceFile>>,
+    /// Each site a stop can name, as its file, line and column; index 0 names
+    /// none, so the table starts with a blank.
+    #[builder(default = vec![(0, 0, 0)])]
+    sites: Vec<(u32, u32, u32)>,
+    /// The index of each site in `sites`.
+    #[builder(default)]
+    site_index: HashMap<(u32, u32, u32), u32>,
 }
 
 impl Shared<'_>
 {
+    /// The index of the site of a source region in the site table, noted on
+    /// its first use: the file, the line and the column of its start.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The region.
+    ///
+    /// # Returns
+    ///
+    /// The index, or `None` for a placeholder or a region outside each file.
+    pub(crate) fn site_of(&mut self, span: Span) -> Option<u32>
+    {
+        ret_if!(span.is_placeholder(), None);
+        let lo = span.lo;
+        let inside = |f: &&Arc<SourceFile>| f.start_pos <= lo && lo <= f.end_pos();
+        let (n, file) = self.files.iter().enumerate().find(|(_, f)| inside(f))?;
+        let (line, col) = file.lookup_file_pos(&file.relative_position(&lo));
+        let key = (n as u32, line as u32, col.as_u32() + 1);
+        ret_if!(let Some(i) = self.site_index.get(&key), Some(*i));
+        let i = self.sites.len() as u32;
+        self.sites.push(key);
+        self.site_index.insert(key, i);
+        Some(i)
+    }
+
     /// The bit count of the platform-sized kinds.
     ///
     /// # Returns
@@ -346,12 +434,8 @@ impl Shared<'_>
         let platform = self.platform();
         let repr = kind.repr();
         do_if!(repr.is_int() && repr.bits(platform) > 64, self.wide = true);
-        if matches!(repr, DataKind::Float(16 | 128))
-        {
-            let seen = self.diags.last().is_some_and(|d| d.span == self.span);
-            do_if!(!seen, self.diags.push(kind_not_for_c(self.span, &repr.name())));
-            return "double".into();
-        }
+        do_if!(matches!(repr, DataKind::Float(16)), self.half = true);
+        do_if!(matches!(repr, DataKind::Float(128)), self.quad = true);
         ret_if!(is_blob(kind), "unsigned char *".into());
         c_kind(kind, platform).unwrap_or_else(|| {
             self.missing(format!("the kind {}", kind.name()));
@@ -497,7 +581,7 @@ impl Shared<'_>
         format!("{r} (*)({list})")
     }
 
-    /// The shared header: the check level, the runtime, and the
+    /// The shared header: the runtime, and the
     /// declaration of each global, function and descriptor.
     ///
     /// # Returns
@@ -505,11 +589,10 @@ impl Shared<'_>
     /// The C text.
     fn header(&mut self) -> String
     {
-        let level = self.options.checks.macro_name();
         let bits = self.platform();
         let mut out = format!(
             "/* The kinds, globals and functions of the program. */\n#ifndef \
-             ZAKA_KINDS_H\n#define ZAKA_KINDS_H\n\n#define {level} 1\n#include \
+             ZAKA_KINDS_H\n#define ZAKA_KINDS_H\n\n#include \
              \"zaka_rt.h\"\n\n_Static_assert(sizeof(void *) * 8 == {bits}, \
              \"--platform-bits must equal the width of an address\");\n\n"
         );
@@ -545,7 +628,35 @@ impl Shared<'_>
             let _ =
                 writeln!(out, "\n#ifndef __SIZEOF_INT128__\n#error {error}\n#endif");
         }
+        let floats =
+            [(self.half, "ZK_HAS_F16", "f16"), (self.quad, "ZK_HAS_F128", "f128")];
+        for (_, has, name) in floats.iter().filter(|f| f.0)
+        {
+            let error = c_string(&t!("target_c.no_float", kind = name));
+            let _ = writeln!(out, "\n#ifndef {has}\n#error {error}\n#endif");
+        }
         out.push_str("\n#endif\n");
+        out
+    }
+
+    /// The site table and the name of each file it names, for the place of a
+    /// stop in a build with debug info.
+    ///
+    /// # Returns
+    ///
+    /// The C text.
+    fn site_tables(&self) -> String
+    {
+        let mut out = String::from("const char *const zk_site_files[] = {\n");
+        do_for!(f in &self.files, {
+            let name = f.name.virtual_path_string();
+            let _ = writeln!(out, "    {},", c_string(&name));
+        });
+        out.push_str("};\nconst zk_site zk_sites[] = {\n");
+        do_for!((file, line, col) in &self.sites, {
+            let _ = writeln!(out, "    {{{file}, {line}, {col}}},");
+        });
+        out.push_str("};\n");
         out
     }
 
@@ -578,6 +689,12 @@ impl Shared<'_>
         ];
         let stopped = c_string(&t!("target_c.stopped"));
         let _ = writeln!(out, "const char *const zk_stopped_text = {stopped};");
+        for (name, key) in STOP_TEXTS
+        {
+            let key = key.to_string();
+            let _ = writeln!(out, "const char {name}[] = {};", c_string(&t!(&key)));
+        }
+        do_if!(self.options.debug_info, out.push_str(&self.site_tables()));
         do_for!((name, text) in words, {
             let _ = writeln!(out, "const char {name}[] = {};", c_string(text));
         });
@@ -651,6 +768,7 @@ fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_NULL_DEREF", t!("target_c.trap.null_deref")),
         ("ZK_TRAP_OUT_OF_MEM", t!("target_c.trap.out_of_mem")),
         ("ZK_TRAP_OVERLAP", t!("target_c.trap.overlap")),
+        ("ZK_TRAP_TOO_DEEP", t!("target_c.trap.too_deep")),
     ];
     pairs.into_iter().map(|(n, t)| (n, t.to_string())).collect()
 }
@@ -671,6 +789,9 @@ pub(crate) struct FnGen<'s, 'm>
     pub(crate) loops: Vec<u32>,
     /// The number of the next label or local of its own.
     next: u32,
+    /// The site the last statement marked, while no branch or loop came
+    /// between, so a run of statements of one site marks it once.
+    pub(crate) last_site: Option<u32>,
 }
 
 impl<'s, 'm> FnGen<'s, 'm>
@@ -687,7 +808,9 @@ impl<'s, 'm> FnGen<'s, 'm>
     /// The generator.
     fn new(shared: &'s mut Shared<'m>, func: Option<&'m Func>) -> Self
     {
-        FnGen { shared, func, out: String::new(), depth: 1, loops: Vec::new(), next: 0 }
+        #[rustfmt::skip]
+        return FnGen { shared, func, out: String::new(), depth: 1, loops: Vec::new(), next: 0,
+            last_site: None };
     }
 
     /// The bit count of the platform-sized kinds.
@@ -824,15 +947,18 @@ impl<'s, 'm> FnGen<'s, 'm>
             let size = self.shared.size(s.kind);
             do_if!(copied, self.line(&format!("zk_put_block(l{i}, zk_a{i}, {size});")));
         }
+        self.line(&format!("ZK_ENTER({});", n + 1));
         self.block(&f.block);
         let returns = matches!(f.block.last(), Some(Stmt::Return { .. }));
         let result = f.result.filter(|_| !returns && f.ret.is_some());
         do_if!(let Some(r) = result, self.give_back(&format!("l{r}"), f.ret));
+        do_if!(!returns && result.is_none(), self.line("ZK_LEAVE();"));
         format!("/* {} */\n{proto}\n{{\n{}}}\n\n", comment(&f.name), self.out)
     }
 
     /// Hand the result of the function back: a scalar as the C result, a
-    /// list or struct into the slot the caller gave.
+    /// list or struct into the slot the caller gave. The value is computed
+    /// before the call counts as ended, since it can call again.
     ///
     /// # Arguments
     ///
@@ -840,14 +966,38 @@ impl<'s, 'm> FnGen<'s, 'm>
     /// * `ret` - The result kind.
     pub(crate) fn give_back(&mut self, value: &str, ret: Option<DataKind>)
     {
-        let Some(kind) = ret.filter(|k| is_blob(*k))
-        else
+        let inner = self.func.is_some();
+        if let Some(kind) = ret.filter(|k| is_blob(*k))
         {
-            return self.line(&format!("return {value};"));
+            let size = self.shared.size(kind);
+            self.line(&format!("zk_put_block(zk_ret, {value}, {size});"));
+            do_if!(inner, self.line("ZK_LEAVE();"));
+            return self.line("return;");
+        }
+        let held = match ret.filter(|_| inner)
+        {
+            Some(kind) => self.hold_value(kind, value),
+            None => value.to_string(),
         };
-        let size = self.shared.size(kind);
-        self.line(&format!("zk_put_block(zk_ret, {value}, {size});"));
-        self.line("return;");
+        do_if!(inner, self.line("ZK_LEAVE();"));
+        self.line(&format!("return {held};"));
+    }
+
+    /// Put a scalar value in a local of its own.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the value.
+    /// * `value` - The C text of the value.
+    ///
+    /// # Returns
+    ///
+    /// The C name of the local.
+    fn hold_value(&mut self, kind: DataKind, value: &str) -> String
+    {
+        let held = self.temp(kind);
+        self.line(&format!("{held} = {value};"));
+        held
     }
 
     /// Generate `main`: the arguments and the environment of the start
@@ -900,7 +1050,24 @@ impl<'s, 'm> FnGen<'s, 'm>
     pub(crate) fn braced(&mut self, stmts: &[Stmt])
     {
         self.depth += 1;
+        self.last_site = None;
         self.block(stmts);
+        self.last_site = None;
         self.depth -= 1;
+    }
+
+    /// Note the site of a statement in the frame of the call, in a build
+    /// with debug info, unless the statement before it noted the same site.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The source region of the statement.
+    pub(crate) fn mark_site(&mut self, span: Span)
+    {
+        ret_if!(!self.shared.options.debug_info);
+        let site = self.shared.site_of(span);
+        ret_if!(site.is_none() || site == self.last_site);
+        self.last_site = site;
+        self.line(&format!("ZK_AT({});", site.unwrap_or(0)));
     }
 }

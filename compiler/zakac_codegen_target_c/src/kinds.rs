@@ -18,8 +18,10 @@ pub fn c_kind(kind: DataKind, platform: u16) -> Option<String>
     match kind.repr()
     {
         DataKind::Int(k) => Some(int_name(k, platform)),
+        DataKind::Float(16) => Some("zk_half".into()),
         DataKind::Float(32) => Some("float".into()),
         DataKind::Float(64) => Some("double".into()),
+        DataKind::Float(128) => Some("zk_quad".into()),
         DataKind::Char => Some("uint32_t".into()),
         DataKind::Bool => Some("uint8_t".into()),
         DataKind::Ptr(_) | DataKind::Null => Some("unsigned char *".into()),
@@ -56,8 +58,7 @@ pub fn mem_name(kind: DataKind, platform: u16) -> Option<String>
     match kind.repr()
     {
         k @ DataKind::Int(_) => ops_name(k, platform),
-        DataKind::Float(32) => Some("f32".into()),
-        DataKind::Float(64) => Some("f64".into()),
+        DataKind::Float(bits) => Some(format!("f{bits}")),
         DataKind::Char => Some("u32".into()),
         DataKind::Bool => Some("u8".into()),
         DataKind::Ptr(_) | DataKind::Null => Some("p".into()),
@@ -178,6 +179,16 @@ pub fn constant(v: Value, kind: DataKind, platform: u16) -> Option<String>
         Value::Float { bits: 64, raw } =>
         {
             Some(float_text(f64::from_bits(raw as u64), "", &t))
+        }
+        // C11 has no literal of these kinds, so the value comes from its bits.
+        Value::Float { bits: 16, raw } =>
+        {
+            Some(format!("zk_f16_of(UINT16_C({raw:#x}))"))
+        }
+        Value::Float { bits: 128, raw } =>
+        {
+            let (hi, lo) = ((raw >> 64) as u64, raw as u64);
+            Some(format!("zk_f128_of(UINT64_C({hi:#x}), UINT64_C({lo:#x}))"))
         }
         Value::Char(c) => Some(format!("(({t}){:#x})", c as u32)),
         Value::Bool(b) => Some(format!("(({t}){})", u8::from(b))),

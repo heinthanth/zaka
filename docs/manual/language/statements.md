@@ -311,6 +311,28 @@ error[ZK0724]: the call of "ပြ" reads "စုစုပေါင်း", whic
 
 `PLACE ကို VALUE ဟု ထားမည်။` puts the value into the place. The value is worked out first
 with the current contents, then stored, so `အသက် ကို အသက် + ၁ ဟု ထားမည်။` adds one. The
+rule holds for a field and a cell too: the value runs first, then the place takes it. A value
+that reads an optional or a result, passes a failure on with `?`, or calls a function that
+adds to the same list is done before the place is found, so the store lands in the list as
+it stands after the call.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် စာ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ချဲ့ သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+စာ ထဲသို့ ၅၀ ကို ထည့်မည်။                 // the list gains a cell
+၇ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+စာ ၏ အကွက် ၀ ကို လုပ်ဆောင်ချက် ချဲ့ ကို လုပ်ဆောင်သော ရလဒ် ဟု ထားမည်။
+စာ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[၇၊ ၅၀]
+```
+
+The
 place is a variable, a field, a cell of a list (`x ၏ အကွက် i`), in marked code the value
 at a pointer (`p ၏ တန်ဖိုး`), or a character of text (`t ၏ စာလုံး n`, `t ၏ n ခုမြောက်စာလုံး`; see
 [Text](text.md#changing-text)). Another expression is ZK0410. A constant (ZK0306) and a counted-loop counter

@@ -84,6 +84,20 @@ Two words make a value of the kind:
   `ကိန်းပြည့်`, with no word around it: the cell holds it from then on. The same holds for
   an argument, a store with `ထားမည်`, a field and a return.
 
+A literal takes the kind inside the optional, so `၁` is an `၈ ဘစ် ကိန်းပြည့်` where an optional of
+that kind is wanted; a literal outside that kind is ZK0406, as it is for a plain variable.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အသက် သည် ၈ ဘစ် ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+အသက် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ဒေတာ(၁)
+```
+
 The [initial value](kinds.md#initial-values) of an optional, `ကနဦးတန်ဖိုး`, is `အလွတ်`, so
 `ကနဦးတန်ဖိုး` fills a counted list of optionals with blank cells. A declaration with no value
 holds no `အလွတ်`: it is unset, as a variable of each other kind is, and the program gives

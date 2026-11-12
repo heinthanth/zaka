@@ -119,3 +119,32 @@ fn clearing_a_global_borrow_from_a_func_is_fine()
 လုပ်ဆောင်ချက် ရှင်း ကို လုပ်ဆောင်မည်။
 ");
 }
+
+/// The drop the compiler writes for a range of a counted list frees nothing
+/// a variable holds, so it is no bad free.
+#[test]
+fn a_range_of_a_counted_list_is_no_bad_free()
+{
+    ok("\
+ကိန်းရှင် ရက် သည် အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၂၀၊ ၁၅၀၊ ၉၀၊ ၁၈၀] ဖြစ်ပါစေ။
+ကိန်းရှင် ပိတ် သည် ရက် ၏ အကွက် ၂ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
+ပိတ် ၏ အကွက် ၀ ကို ၂၀၀ ဟု ထားမည်။
+ပိတ် ကို ပြသမည်။
+");
+}
+
+/// A field set to the result of a call that changes the struct: the value
+/// runs before the address of the field is taken, so no loan is held across
+/// the call.
+#[test]
+fn a_field_set_from_a_call_holds_no_loan()
+{
+    ok("\
+ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် ချဲ့ သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က ထဲသို့ ၅၀ ကို ထည့်မည်။
+၇ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+က ၏ အကွက် ၀ ကို လုပ်ဆောင်ချက် ချဲ့ ကို လုပ်ဆောင်သော ရလဒ် ဟု ထားမည်။
+");
+}

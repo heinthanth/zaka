@@ -34,6 +34,7 @@ use zakac_semcheck::structs::StructTable;
 use zakac_span::span::Span;
 
 use crate::fault::Fault;
+use crate::fault::has_call;
 use crate::fault::has_pass;
 use crate::fault::stmt_passes;
 use crate::fault::wrap_returns;
@@ -1160,13 +1161,15 @@ impl Lowerer<'_>
             let fields = self.initial_value(DataKind::Struct(shape), span);
             return self.make_box(fields, span);
         }
+        // A blank of zero octets needs no value for each part, and a long list
+        // would make one for each of its cells.
+        ret_if!(zero_initial(kind), default_constant(kind, span));
         let parts: Option<Vec<DataKind>> = match (kind.as_struct(), kind.as_list())
         {
             (Some(s), _) => Some(s.fields().iter().map(|(_, k)| *k).collect()),
             (_, Some(l)) => Some(vec![l.cell; l.len as usize]),
             _ => None,
         };
-        let parts = parts.filter(|_| !zero_initial(kind));
         let Some(parts) = parts
         else
         {
@@ -1208,6 +1211,10 @@ impl Lowerer<'_>
         };
         let value = self.owned(&n.value, want);
         let value = tern!(want.holds_text(), self.replace(&dest, value, out), value);
+        // A call can move the block an address points into, so the value runs
+        // first and the address after it.
+        let held = matches!(dest, Dest::Mem(_)) && !want.holds_text();
+        let value = tern!(held && has_call(&n.value), self.hold(value, out), value);
         out.push(match dest
         {
             Dest::Slot(place) => Stmt::Set { place, value, span },
@@ -1237,6 +1244,43 @@ impl Lowerer<'_>
         take(read)
     }
 
+    /// Keep a value with no heap block in a hidden slot, so it is computed
+    /// before the statement that reads it.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value.
+    /// * `out` - The list the statements go to.
+    ///
+    /// # Returns
+    ///
+    /// The read of the hidden slot.
+    fn hold(&mut self, value: Expr, out: &mut Vec<Stmt>) -> Expr
+    {
+        let (kind, span) = (value.kind, value.span);
+        let new = self.hidden(kind, span);
+        out.push(Stmt::Set { place: new, value, span });
+        read(new, kind, span)
+    }
+
+    /// Lower a place, with spilling off: a place spilled to a hidden duplicate
+    /// would take the store, and the place itself would keep its old value.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The place.
+    ///
+    /// # Returns
+    ///
+    /// The destination.
+    fn dest(&mut self, e: &ast::Expr) -> Dest
+    {
+        let was = std::mem::replace(&mut self.spilling, true);
+        let dest = self.place_dest(e);
+        self.spilling = was;
+        dest
+    }
+
     /// Lower a place: a name to its slot, a dereference to the address it
     /// reads.
     ///
@@ -1251,9 +1295,9 @@ impl Lowerer<'_>
     /// # Panics
     ///
     /// When the expression is not a place, which a clean check rules out.
-    fn dest(&mut self, e: &ast::Expr) -> Dest
+    fn place_dest(&mut self, e: &ast::Expr) -> Dest
     {
-        ret_if!(let ast::Expr::Group(n) = e, self.dest(&n.inner));
+        ret_if!(let ast::Expr::Group(n) = e, self.place_dest(&n.inner));
         ret_if!(let Some(ptr) = deref_operand(e), Dest::Mem(self.expr(ptr)));
         ret_if!(let ast::Expr::Index(n) = e, Dest::Mem(owned_path(self.cell_addr(n))));
         ret_if!(let ast::Expr::Field(n) = e, Dest::Mem(owned_path(self.field_addr(n))));

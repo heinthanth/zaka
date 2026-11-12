@@ -20,6 +20,22 @@ pub fn with_split_hint(diag: Diagnostic, stem: &str, particle: &str) -> Diagnost
     diag.with_help(t!("parser.help_split", s = stem, p = particle))
 }
 
+/// Add the hint for an operator after a value read with a verb, whose
+/// clause takes parentheses.
+///
+/// # Arguments
+///
+/// * `diag` - The diagnostic to extend.
+/// * `op` - The operator.
+///
+/// # Returns
+///
+/// The diagnostic with the hint.
+pub fn with_group_hint(diag: Diagnostic, op: &str) -> Diagnostic
+{
+    diag.with_help(t!("parser.help_group", op = op))
+}
+
 /// A token does not fit the grammar at this point.
 ///
 /// # Arguments
@@ -624,4 +640,21 @@ pub fn fill_in_fn_kind(span: Span) -> Diagnostic
 {
     Diagnostic::new(Code::FillInFnKind, t!("codes.ZK0243.message"), span)
         .with_help(t!("codes.ZK0243.help"))
+}
+
+/// Expressions or blocks nest deeper than the parser follows.
+///
+/// # Arguments
+///
+/// * `span` - The token where the limit was passed.
+/// * `max` - The most levels the parser follows.
+///
+/// # Returns
+///
+/// The `ZK0244` diagnostic.
+pub fn nesting_too_deep(span: Span, max: u32) -> Diagnostic
+{
+    let message = t!("codes.ZK0244.message", max = max);
+    Diagnostic::new(Code::NestingTooDeep, message, span)
+        .with_help(t!("codes.ZK0244.help"))
 }

@@ -18,5 +18,8 @@ en = "How a list or struct result reaches the caller: duplicated out of the call
 [codegen.scratch]
 en = "Where scratch lists, structs and ranges live: each in a slot apart, or shared across statements."
 
+[codegen.release]
+en = "Build for release: leave out the source line of each op, so a stop names the function and the op, not the line."
+
 [codegen.artifact.source_changed]
 en = "source text changed after re-ingest"

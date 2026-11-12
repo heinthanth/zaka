@@ -32,6 +32,7 @@ use zakac_span::span::Span;
 use crate::kind::DataKind;
 use crate::kind::InitialGap;
 use crate::list::KindUse;
+use crate::list::data_of;
 use crate::ops::OpClass;
 use crate::ops::Want;
 use crate::ops::infix_class;
@@ -181,7 +182,8 @@ impl Checker
     ) -> Option<DataKind>
     {
         ret_if!(let Some(kind) = &n.kind, Some(DataKind::from_ast(kind, &self.structs)));
-        let want = expect.filter(|k| k.is_numeric()).unwrap_or(DataKind::ISIZE);
+        let want = expect.map(data_of).filter(|k| k.is_numeric());
+        let want = want.unwrap_or(DataKind::ISIZE);
         let fits = want.is_float() || want.fits_int(n.value, negated, self.platform);
         ret_if!(fits, Some(want));
         let value = tern!(negated, format!("-{}", n.value), n.value.to_string());
@@ -793,5 +795,5 @@ pub(crate) fn what_of(e: &Expr) -> String
 fn float_kind(n: &FloatLit, expect: Option<DataKind>) -> DataKind
 {
     let prefix = n.kind.as_ref().map(|k| DataKind::from_ast(k, &StructTable::new()));
-    prefix.or(expect.filter(|k| k.is_float())).unwrap_or(DataKind::F64)
+    prefix.or(expect.map(data_of).filter(|k| k.is_float())).unwrap_or(DataKind::F64)
 }

@@ -31,6 +31,7 @@ and write an artifact to look at.
 | Page | Covers |
 | --- | --- |
 | [Commands](commands.md) | each `zakac` command and option, with sessions to run |
+| [Configuration](configuration.md) | config files: where the files are, which one wins, and how each option is named in them |
 | [Stages](stages.md) | what each stage takes in and gives out, and one sentence followed through all of them |
 | [Diagnostics](diagnostics.md) | how a message is set out, levels, codes, and what stops the chain |
 | [Pointer checks](checks.md) | the settings that tune how pointer mistakes are reported |
@@ -61,6 +62,7 @@ exit code is 1; the [error messages](../reference/errors.md) page lists each cod
 ## Where to read next
 
 - To use the compiler: [Commands](commands.md), then [Diagnostics](diagnostics.md).
+- To set options once for a project or a user: [Configuration](configuration.md).
 - To see errors and kinds while editing: [Editors](editors.md).
 - To see what happens to a sentence: [Stages](stages.md).
 - To read how a stage is built: the chapter [Inside the compiler](../internals/README.md).

@@ -11,9 +11,12 @@ use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_span::pos::Pos;
 
+use crate::clause::as_verb;
+use crate::notation::infix_of;
 use crate::parser::Parser;
 
-/// Split a name whose last vannas spell a particle, such as `အသက်ကို`.
+/// Split a name whose last vannas spell a particle, such as `အသက်ကို`, or
+/// `ထဲမှ`, which a member read takes after the enumeration.
 ///
 /// # Arguments
 ///
@@ -29,7 +32,8 @@ pub(crate) fn split_particle(text: &str) -> Option<(&str, &str)>
     pieces.iter().skip(1).find_map(|piece| {
         let at = piece.span.lo.as_u32() as usize;
         let tail = &text[at..];
-        lookup(tail).filter(|kw| kw.is_particle()).map(|_| (&text[..at], tail))
+        let split = |kw: &Kw| kw.is_particle() || *kw == Kw::Among;
+        lookup(tail).filter(split).map(|_| (&text[..at], tail))
     })
 }
 
@@ -49,7 +53,7 @@ impl Parser<'_>
             Ok(stmt) => return Some(stmt),
             Err(err) => err,
         };
-        let err = self.hint_split(err);
+        let err = self.hint_group(self.hint_split(err));
         self.diags.push(err);
         self.skip_stmt(start, is_if);
         None
@@ -77,6 +81,26 @@ impl Parser<'_>
             return err;
         };
         diag::with_split_hint(err, stem, particle)
+    }
+
+    /// Add a hint when an operator follows a verb that reads a value, as
+    /// in `xs ၏ အကွက်အရေအတွက် == ၀`: the clause before the operator takes
+    /// parentheses, `(xs ၏ အကွက်အရေအတွက်) == ၀`.
+    ///
+    /// # Arguments
+    ///
+    /// * `err` - The diagnostic.
+    ///
+    /// # Returns
+    ///
+    /// The diagnostic, with the hint when it applies.
+    fn hint_group(&self, err: Diagnostic) -> Diagnostic
+    {
+        ret_if!(err.help.is_some(), err);
+        let op = self.peek();
+        let after_verb = self.cur.back(1).is_some_and(|t| as_verb(&t).is_some());
+        ret_if!(infix_of(&op).is_none() || !after_verb, err);
+        diag::with_group_hint(err, self.text_of(op.span))
     }
 
     /// Skip to just past the full stop that ends the statement, or to a

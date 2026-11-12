@@ -438,7 +438,10 @@ running and no leave stops the run with the trap `closure_escape`.
 
 A struct declared `ပြင်ပမှ လာသော ဒေတာအစုအဝေး` (`StructDecl.external`) is a handle. In
 `struct_check.rs`, `held` gives its struct the one hidden field `%c` (`EXTERN_FIELD`, of
-`DataKind::handle_pointer()`), and the struct is boxed as a shared one is, so copies share
+`DataKind::handle_pointer()`), named `%c` with a 16-hex-digit FNV-1a hash of its C
+fields (each as `name:kind;`), so two programs that give one name to two C structs make two
+kinds: the C fields of the first would stick to the name for the rest of the process
+otherwise. The struct is boxed as a shared one is, so copies share
 the box. `is_external` finds such a struct, and `kind.rs` `as_external` finds it behind
 the box. `set_c_fields` then gives it the fields the declaration names (`c_fields`): a
 number, a boolean, a counted list of numbers or text are read (`foreign::crosses`,

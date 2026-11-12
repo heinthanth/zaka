@@ -36,6 +36,47 @@ for a number written in place. Counting from 1 starts at 1, not 0:
 the program stopped: cell 0 is outside the list, whose cells run from 1 to 3
 ```
 
+## A list with no cells and the last number
+
+A counted loop from `၀` to `အကွက်အရေအတွက် - ၁` runs the cells of a list. A list with no
+cells has a count of 0, and `၀ - ၁` cannot be a count, so the VM stops the program at the
+loop:
+
+```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။
+၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားမည်။
+ကိန်းများ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+the program stopped: the result of - does not fit usize
+```
+
+A loop that just reads the cells needs no count: an each-cell loop does nothing for a
+list with no cells. A loop that changes the cells, or needs their numbers, checks for a list
+with no cells first and leaves the function:
+
+```zaka
+လုပ်ဆောင်ချက် နှစ်ဆတိုး သည်
+ကိန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အကယ်၍ (ကိန်းများ ၏ အကွက်အရေအတွက်) == ၀ ဖြစ်လျှင် ပြန်ပေးမည်။
+၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။
+လုပ်ဆောင်ချက် နှစ်ဆတိုး ကို ကိန်းများ တို့ဖြင့် လုပ်ဆောင်မည်။
+ကိန်းများ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[]
+```
+
 ## A cell number that takes a sum
 
 The cell number takes the whole operator expression after `အကွက်`, so this reads cell

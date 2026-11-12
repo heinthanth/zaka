@@ -436,7 +436,12 @@ Parentheses make an expression an atom, override precedence and move an
 expression between tiers: a clause into a notation expression, and a logical
 expression into a clause. A conversion is a clause, so
 `(က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်) / ၂` needs its parentheses; a call is an atom and
-needs none.
+needs none. A value read with a verb, such as `xs ၏ အကွက်အရေအတွက်`, takes no operator after
+it unless it stands in parentheses: `xs ၏ အကွက်အရေအတွက် == ၀` is ZK0201, and the help
+advises the clause go before `==` in parentheses.
+
+Parentheses, operands, calls, lists and blocks nest up to 128 levels deep; a program that goes
+further gets ZK0244 ([The nesting limit](../internals/parser.md#the-nesting-limit)).
 
 Parentheses around a whole printed, assigned or returned value change nothing unless
 the value is a logical expression. The compiler warns about them (ZK0507), as an editor

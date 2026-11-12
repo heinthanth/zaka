@@ -6,11 +6,19 @@
 /* Round after each float operation, as the VM does: no fused mul-add. */
 #pragma STDC FP_CONTRACT OFF
 
+/* glibc declares the math of _Float128, such as fmodf128, when this is set
+ * before the first include of math.h. */
+#define __STDC_WANT_IEC_60559_TYPES_EXT__ 1
+
+/* The check level and the call depth limit of the build, which the compiler
+ * writes beside the runtime. */
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "zaka_checks.h"
 
 /* 128-bit integers are not C11; the C compilers that have them define
  * __SIZEOF_INT128__. On the rest, the widest integer the runtime prints is
@@ -25,17 +33,8 @@ typedef int64_t zk_imax;
 typedef uint64_t zk_umax;
 #endif
 
-#if defined(ZK_CHECKS_DEFAULT) || defined(ZK_CHECKS_MEM)
-#define ZK_LANG_CHECKS 1
-#else
-#define ZK_LANG_CHECKS 0
-#endif
-
-#if defined(ZK_CHECKS_MEM)
-#define ZK_MEM_CHECKS 1
-#else
-#define ZK_MEM_CHECKS 0
-#endif
+/* zaka_checks.h sets each ZK_CHECK_<FAMILY> to 1 or 0: the run-time stops the
+ * program keeps, each check on its own. */
 
 _Static_assert(sizeof(size_t) == sizeof(void *), "a word holds an address and a count");
 
@@ -70,6 +69,7 @@ enum zk_trap
     ZK_TRAP_NULL_DEREF,
     ZK_TRAP_OUT_OF_MEM,
     ZK_TRAP_OVERLAP,
+    ZK_TRAP_TOO_DEEP,
     ZK_TRAP_COUNT
 };
 
@@ -95,6 +95,90 @@ _Noreturn void zk_shift_too_far(zk_umax distance, unsigned bits);
 _Noreturn void zk_step_not_positive(void);
 /** Stop the run: a result that does not fit its kind. */
 _Noreturn void zk_overflow(const char *op, const char *kind);
+/** Stop the run: more nested calls than the depth limit. */
+_Noreturn void zk_too_deep(void);
+
+/** The count of Zaka calls in progress. */
+extern uint32_t zk_depth;
+
+/**
+ * A place in the source: the index of its file in zk_site_files, its line
+ * and its column, each counted from 1.
+ */
+typedef struct zk_site
+{
+    uint32_t file;
+    uint32_t line;
+    uint32_t col;
+} zk_site;
+
+/**
+ * One call in progress: the number of its function, 0 for main and n + 1 for
+ * index n of zk_fn_names, and the site of the statement it runs, 0 for none.
+ */
+typedef struct zk_frame
+{
+    uint32_t func;
+    uint32_t site;
+} zk_frame;
+
+/** The calls in progress, main at 0 and the last at zk_depth. */
+extern zk_frame zk_frames[ZK_MAX_DEPTH + 1];
+
+#if ZK_DEBUG_INFO
+/** The site of each statement a stop can name; index 0 names none. */
+extern const zk_site zk_sites[];
+/** The name of each source file the sites name. */
+extern const char *const zk_site_files[];
+#endif
+
+/** The texts of the place of a stop and of its backtrace, from the compiler. */
+extern const char zk_where_text[], zk_in_text[], zk_backtrace_text[];
+extern const char zk_call_at_text[], zk_call_text[], zk_call_again_text[];
+extern const char zk_calls_more_text[], zk_full_hint_text[];
+
+/** Whether the calls in progress are kept: for the depth check, or for the
+ * place and the backtrace of a stop in a build with debug info. */
+#define ZK_TRACK (ZK_CHECK_DEPTH || ZK_DEBUG_INFO)
+
+/**
+ * Note a call as it starts: count it, stop the run past the depth limit, and
+ * keep its function; a call past the limit with no depth check is counted
+ * but not kept.
+ *
+ * @param func The number of its function, as zk_frame counts them.
+ */
+static inline void zk_enter(uint32_t func)
+{
+    zk_depth++;
+    if (ZK_CHECK_DEPTH && zk_depth > ZK_MAX_DEPTH) zk_too_deep();
+    if (zk_depth > ZK_MAX_DEPTH) return;
+    zk_frames[zk_depth].func = func;
+    zk_frames[zk_depth].site = 0;
+}
+
+/**
+ * Note a call as it starts, when the calls are kept.
+ *
+ * @param F The number of its function, as zk_frame counts them.
+ */
+/* clang-format off */
+#define ZK_ENTER(F) do { if (ZK_TRACK) zk_enter(F); } while (0)
+/* clang-format on */
+
+/** Note a call as it returns. */
+/* clang-format off */
+#define ZK_LEAVE() do { if (ZK_TRACK) zk_depth--; } while (0)
+/* clang-format on */
+
+/**
+ * Note the site of the statement that runs, in a build with debug info.
+ *
+ * @param S The index of the site in zk_sites.
+ */
+/* clang-format off */
+#define ZK_AT(S) do { if (ZK_DEBUG_INFO && zk_depth <= ZK_MAX_DEPTH) zk_frames[zk_depth].site = (S); } while (0)
+/* clang-format on */
 
 /** Write octets unchanged. */
 void zk_put_raw(const char *s, size_t n);
@@ -253,12 +337,12 @@ _Noreturn void zk_nums_trap(
 _Noreturn void zk_addr_trap(int trap, const void *addr);
 /** Stop the run with a trap that names a text. */
 _Noreturn void zk_text_trap(int trap, const char *e);
-/** Stop the run: an access through a null address (the mem checks). */
+/** Stop the run: an access through a null address (the null check). */
 _Noreturn void zk_null_deref(const void *addr);
 /** Stop the run: no heap room is left for a block. */
 _Noreturn void zk_out_of_mem(zk_umax size);
 
-#if ZK_MEM_CHECKS
+#if ZK_CHECK_NULL
 #define ZK_NULL_CHECK(p) ((p) == NULL ? zk_null_deref(p) : (void)0)
 #else
 #define ZK_NULL_CHECK(p) ((void)0)
@@ -313,9 +397,11 @@ zk_imax zk_ptr_sub(const unsigned char *p, const unsigned char *q, size_t stride
 /** A new block of count cells of stride octets, zeroed; NULL when the size
  * overflows or no room is left. */
 unsigned char *zk_alloc(zk_umax count, size_t stride);
+/** Free a raw block of marked code and give back its octets. */
+void zk_free(void *p);
 /** A block moved to a new size; the run stops when no room is left. */
 unsigned char *zk_realloc(unsigned char *p, zk_umax count, size_t stride);
-/** Move count cells of stride octets; with overlap 0, the mem checks stop
+/** Move count cells of stride octets; with overlap 0, the overlap check stops
  * the run when the two ranges overlap. */
 void zk_blit(
     const unsigned char *src, zk_umax count, unsigned char *dst, size_t stride,
@@ -621,26 +707,26 @@ void zk_text_list(unsigned char *at, int count, char **items);
     static inline T zk_wneg_##N(T a) { return (T)((W)0 - (W)a); }                      \
     static inline T zk_div_##N(T a, T b, int stop, const char *k)                      \
     {                                                                                  \
-        if (ZK_LANG_CHECKS && b == 0) zk_zero_divisor();                               \
+        if (ZK_CHECK_DIVIDE && b == 0) zk_zero_divisor();                              \
         if (b != -1 || a != (MIN)) return (T)(a / b);                                  \
         if (stop) zk_overflow("/", k);                                                 \
         return (MIN);                                                                  \
     }                                                                                  \
     static inline T zk_rem_##N(T a, T b, int stop, const char *k)                      \
     {                                                                                  \
-        if (ZK_LANG_CHECKS && b == 0) zk_zero_divisor();                               \
+        if (ZK_CHECK_DIVIDE && b == 0) zk_zero_divisor();                              \
         if (b != -1) return (T)(a % b);                                                \
         if (stop && a == (MIN)) zk_overflow("%", k);                                   \
         return 0;                                                                      \
     }                                                                                  \
     static inline T zk_shl_##N(T a, zk_umax d)                                         \
     {                                                                                  \
-        if (ZK_LANG_CHECKS && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
+        if (ZK_CHECK_SHIFT && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
         return (T)((W)a << d);                                                         \
     }                                                                                  \
     static inline T zk_shr_##N(T a, zk_umax d)                                         \
     {                                                                                  \
-        if (ZK_LANG_CHECKS && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
+        if (ZK_CHECK_SHIFT && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
         return a < 0 ? (T) ~(~a >> d) : (T)(a >> d);                                   \
     }                                                                                  \
     static inline T zk_f2i_##N(double x)                                               \
@@ -693,24 +779,24 @@ void zk_text_list(unsigned char *at, int count, char **items);
     {                                                                                  \
         (void)stop;                                                                    \
         (void)k;                                                                       \
-        if (ZK_LANG_CHECKS && b == 0) zk_zero_divisor();                               \
+        if (ZK_CHECK_DIVIDE && b == 0) zk_zero_divisor();                              \
         return (T)(a / b);                                                             \
     }                                                                                  \
     static inline T zk_rem_##N(T a, T b, int stop, const char *k)                      \
     {                                                                                  \
         (void)stop;                                                                    \
         (void)k;                                                                       \
-        if (ZK_LANG_CHECKS && b == 0) zk_zero_divisor();                               \
+        if (ZK_CHECK_DIVIDE && b == 0) zk_zero_divisor();                              \
         return (T)(a % b);                                                             \
     }                                                                                  \
     static inline T zk_shl_##N(T a, zk_umax d)                                         \
     {                                                                                  \
-        if (ZK_LANG_CHECKS && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
+        if (ZK_CHECK_SHIFT && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
         return (T)((W)a << d);                                                         \
     }                                                                                  \
     static inline T zk_shr_##N(T a, zk_umax d)                                         \
     {                                                                                  \
-        if (ZK_LANG_CHECKS && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
+        if (ZK_CHECK_SHIFT && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
         return (T)(a >> d);                                                            \
     }                                                                                  \
     static inline T zk_f2i_##N(double x)                                               \
@@ -737,5 +823,7 @@ ZK_UNSIGNED_OPS(u64, uint64_t, uint64_t, UINT64_MAX, 64)
 ZK_SIGNED_OPS(i128, zk_i128, zk_u128, ZK_I128_MIN, ZK_I128_MAX, 128)
 ZK_UNSIGNED_OPS(u128, zk_u128, zk_u128, ZK_U128_MAX, 128)
 #endif
+
+#include "zaka_rt_float.h"
 
 #endif

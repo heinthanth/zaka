@@ -813,7 +813,10 @@ impl<'m> Flow<'m>
             }
             Stmt::Drop { dest, kind, span } =>
             {
-                self.give_back(dest, Invalidation::Freed, *span, state);
+                // A drop the compiler wrote frees no block a variable holds: a
+                // slice of a list on the stack owns none, so the bad-free rule
+                // is left out.
+                check_heap(self, dest, Invalidation::Freed, *span, state);
                 self.forget_freed(dest, state);
                 // The drop frees the text alone: an owner beside it keeps its
                 // block, for the leak checks to find.

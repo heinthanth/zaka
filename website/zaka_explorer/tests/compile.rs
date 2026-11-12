@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
+use strum::IntoEnumIterator;
 use zaka_explorer::compile::Compiled;
 use zaka_explorer::compile::Options;
 use zaka_explorer::compile::PartKind;
@@ -18,6 +19,8 @@ use zaka_explorer::compile::samples::find_sample;
 use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_codegen_target_c::options::Checks;
+use zakac_codegen_target_c::options::RunCheck;
+use zakac_codegen_target_c::options::RunChecks;
 use zakac_diagnostics::Level;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::tern;
@@ -480,10 +483,11 @@ fn c_target_writes_the_files_and_skips_the_run()
         assert_eq!(out.last_passed(), Phase::Codegen, "{sample}");
         out.c_files.iter().map(|f| f.name.clone()).collect::<Vec<_>>()
     };
-    let own = ["m0.c", "zaka_kinds.h", "zaka_kinds.c", "main.c"];
+    let own = ["m0.c", "zaka_checks.h", "zaka_kinds.h", "zaka_kinds.c", "main.c"];
     assert_eq!(names("programs/gcd"), own);
     // A stdlib module the program imports gets a file of its own.
-    let echo = ["m0.c", "m1.c", "zaka_kinds.h", "zaka_kinds.c", "main.c"];
+    let echo =
+        ["m0.c", "m1.c", "zaka_checks.h", "zaka_kinds.h", "zaka_kinds.c", "main.c"];
     assert_eq!(names("io/echo"), echo);
 }
 
@@ -495,8 +499,13 @@ fn c_checks_pick_the_level_of_the_header()
     {
         let options = Options::builder().target(Target::C).c_checks(c_checks).build();
         let out = compile(text, &options);
-        let header = out.c_files.iter().find(|f| f.name == "zaka_kinds.h").unwrap();
-        let define = format!("#define {} 1", c_checks.macro_name());
-        assert!(header.text.contains(&define), "{define}");
+        let header = out.c_files.iter().find(|f| f.name == "zaka_checks.h").unwrap();
+        let checks = RunChecks::from(c_checks);
+        for check in RunCheck::iter()
+        {
+            let on = u8::from(checks.has(check));
+            let define = format!("#define {} {on}", check.macro_name());
+            assert!(header.text.contains(&define), "{define}");
+        }
     }
 }

@@ -547,6 +547,21 @@ In a message the kinds read like `isize result or text error`, `success or text 
 `isize result or failure`. The kind of a variable, a parameter or a field is written in the same
 form, and `တစ်ခု` follows it in a declaration, as it follows each kind.
 
+A literal takes the good kind of a result kind: the value `၁` of a variable of
+`၈ ဘစ် ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်` is an
+`၈ ဘစ် ကိန်းပြည့်`, and a literal that does not fit it is ZK0406.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဖတ်ရလဒ် သည် ၈ ဘစ် ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+ဖတ်ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ရလဒ်ကောင်း(၁)
+```
+
 ```zaka
 ဖိုင်ရလဒ် ဟူသော ဒေတာအစုအဝေးတွင် အရွယ် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 ဖိုင်အမှားအယွင်း ဟူသော ဒေတာအစုအဝေးတွင် စာ ဟူသော စာသား တစ်ခု ပါဝင်သည်။

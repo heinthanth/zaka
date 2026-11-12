@@ -542,7 +542,9 @@ impl Driver<'_, '_>
         ret_if!(end == idx + 1 || word_script(self.words[idx].text).is_some(), None);
         let (span, text) = self.run_text(idx, end);
         ret_if!(!is_ident(text), None);
-        self.push(TokenKind::Ident, span, self.words[idx].joined);
+        let joined = self.words[idx].joined;
+        ret_if!(self.lex_among(span, joined), Some(end));
+        self.push(TokenKind::Ident, span, joined);
         Some(end)
     }
 
@@ -600,25 +602,28 @@ impl Driver<'_, '_>
     {
         let word = self.words[idx];
         ret_if!(!is_ident(word.text), None);
-        ret_if!(self.lex_among(&word), Some(idx + 1));
+        ret_if!(self.lex_among(word.span, word.joined), Some(idx + 1));
         self.push(TokenKind::Ident, word.span, word.joined);
         Some(idx + 1)
     }
 
-    /// Lex a name written joined to `ထဲမှ`, as in `အရောင်များထဲမှ`, as the name
-    /// and [`Kw::Among`]. The reserved split cannot do it, since the name is
-    /// no reserved word.
+    /// Lex a name written joined to `ထဲမှ`, as in `အရောင်များထဲမှ` or
+    /// `Colorများထဲမှ`, as the name and [`Kw::Among`]. The reserved split cannot
+    /// do it, since the name is no reserved word.
     ///
     /// # Arguments
     ///
-    /// * `word` - The word, an identifier.
+    /// * `span` - The identifier, one word or a run of words in two scripts.
+    /// * `joined` - Whether it is joined to the token before it.
     ///
     /// # Returns
     ///
-    /// `true` when the word ends in `ထဲမှ` after a name and both were pushed.
-    fn lex_among(&mut self, word: &Word<'_>) -> bool
+    /// `true` when it ends in `ထဲမှ` after a name and both were pushed.
+    fn lex_among(&mut self, span: Span, joined: bool) -> bool
     {
-        let Some(name) = word.text.strip_suffix(AMONG)
+        let source = self.text;
+        let text = &source[self.offset(span.lo)..self.offset(span.hi)];
+        let Some(name) = text.strip_suffix(AMONG)
         else
         {
             return false;
@@ -626,9 +631,9 @@ impl Driver<'_, '_>
         // a stacked consonant (U+1039 before it) would cut a letter cluster in
         // two
         ret_false!(name.is_empty() || name.ends_with('\u{1039}') || !is_ident(name));
-        let cut = word.span.lo + name.len();
-        self.push(TokenKind::Ident, Span::new(word.span.lo, cut), word.joined);
-        self.push(TokenKind::Kw(Kw::Among), Span::new(cut, word.span.hi), true);
+        let cut = span.lo + name.len();
+        self.push(TokenKind::Ident, Span::new(span.lo, cut), joined);
+        self.push(TokenKind::Kw(Kw::Among), Span::new(cut, span.hi), true);
         true
     }
 

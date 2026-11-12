@@ -503,8 +503,8 @@ impl Checker
     }
 }
 
-/// The kind a list literal takes from its place: the data of an optional, which
-/// the literal fills, or the kind itself.
+/// The kind a literal takes from its place: the data of an optional or the
+/// good value of a result, which the literal fills, or the kind itself.
 ///
 /// # Arguments
 ///
@@ -513,4 +513,7 @@ impl Checker
 /// # Returns
 ///
 /// The kind.
-fn data_of(expect: DataKind) -> DataKind { expect.optional_data().unwrap_or(expect) }
+pub(crate) fn data_of(expect: DataKind) -> DataKind
+{
+    expect.fallible_parts().and_then(|(good, _)| good).unwrap_or(expect)
+}

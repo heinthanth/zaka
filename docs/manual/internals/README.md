@@ -71,7 +71,7 @@ workspace: Zed builds it on its own, with the target folder inside it.
 | `zakac_burmese_alignment` | finds the terminal and how it draws Burmese text; places a caret row where a terminal that flows Burmese text draws the line |
 | `zakac_session` | the artifact envelope (text and raw forms), command input and output |
 | `zakac_host_errors` | errors of the driver (a missing file, a bad artifact); no code is attached |
-| `zakac_cli_common` | the `Command` trait, the shared `main`, helpers for `clap` |
+| `zakac_cli_common` | the `Command` trait, the shared `main`, helpers for `clap`, and the config files (`config.rs`), which set the default of each flag before `clap` parses |
 | `zakac_i18n` | locale set-up for the message texts |
 | `zakac_consts` | build number, licence and author, used in all programs |
 | `zakac_rust_sugars` | one-line control-flow macros used all through the code |
@@ -134,6 +134,11 @@ cargo +nightly fmt                         # format
 formatter. The tasks that serve the explorer and the site with live reload
 (`explorer:dev`, `website:dev`) are Bun Shell scripts in `.mise-tasks/`.
 
+CI (`.github/workflows/test.yml`) runs the workspace on Linux (x86-64), macOS and Windows,
+with a C compiler on the PATH of each (gcc, clang, MinGW gcc). It sets `ZAKA_REQUIRE_CC=1`:
+the tests that build native executables then fail when no C compiler is found, where on a
+host with `ZAKA_REQUIRE_CC` unset the tests note it and pass.
+
 Four kinds of test sit in the repo:
 
 - **Unit and stage tests** in each crate's `tests/` folder, one file per module, with
@@ -151,7 +156,23 @@ Four kinds of test sit in the repo:
 - **The book tests.** `cargo test -p zaka_website --test books` runs each fenced
   `zaka` block of the Learn pages and of this manual and compares the result with what
   the page promises (output, a code, a stop). A link to a page that is not in a
-  `CONTENTS.md` fails the test too.
+  `CONTENTS.md` fails the test too. One more test of `zaka_website` uses the same
+  programs:
+  - `stops_in_c.rs` builds each `zaka-stop` program of the books with the C target (when a
+    C compiler is on the `PATH`) and checks that it prints the same output and the same
+    stop reason as the VM. It leaves out marked code (`စိတ်မချရ`), programs that declare
+    a C function (`မှလာသော`), and the pages under `docs/manual/vm/`, which tell the
+    limits of the VM itself. Addresses (`0x...`) are compared as `0x?`.
+- **The mutants.** `compiler/zakac/tests/mutants.rs` changes the programs of `samples/`
+  and of the Zaka fences of `docs/` a little (a line cut, doubled or moved, a word or a
+  character cut, a piece such as `(` or `။` put in, the end cut off) from a fixed seed,
+  and runs each mutant through each phase, a short VM run (200,000 ops) and the C text of
+  the C target. It fails on a panic or on a run past 20 s. A program that declares a C
+  function is compiled, not run. `ZAKA_MUTANT_SEED` sets the seed, `ZAKA_MUTANT_COUNT`
+  the number of mutants (1000 when left out), and `ZAKA_MUTANT_LAST` names a file that
+  keeps the mutant that is running, to find one that crashed the whole process.
+- **The backtrace.** `compiler/zakac/tests/backtrace.rs` runs `zakac` with
+  `ZAKA_BACKTRACE` unset, `full` and `0`, and checks how much of the stack each stop lists.
 
 A new feature wants a test in each stage it touches, and a sample when a user can see it.
 

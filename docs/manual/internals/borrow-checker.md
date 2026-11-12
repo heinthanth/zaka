@@ -73,6 +73,11 @@ each global and each local, a `SlotState`.
 | `List(PtrInfo)` | a list of pointers, one fact for all its cells |
 | `None` | a slot the check does not follow |
 
+The local slots of a `State` are an `imbl::Vector`, since the checker keeps a state at each
+node of the routine: a node shares each slot it leaves alone with the node before it, and the
+join and the widen of two states change just the slots that differ, so the storage no longer
+grows with the square of the locals.
+
 A `PtrInfo` is `{ state, roots, offset, len, cells }`. `state` is an `OwnerState`, `roots`
 names where a pointer can point when the block is not its own, `offset` is an interval of
 element offsets from the start of the block, and `len` is the element count of the block
@@ -289,6 +294,11 @@ Each file of `checks/` owns some codes. All of them work on a `Flow` and the `St
 | `bounds.rs` | ZK0710, ZK0712 | an offset or cell number proven outside its block; a pointer difference between different blocks |
 | `lists.rs` | | the facts of a list of pointers, one fact for all its cells |
 
+The drop that the compiler writes at the end of a scope (`Stmt::Drop`) does not run the
+bad-free rule of `static_rules.rs`: it frees no block a variable holds, since a range of a
+counted list on the stack owns none, so `week ၏ အကွက် ၂ မှစ၍ ၂ ကွက်` no longer warns ZK0702 at
+the start-block header. A free or a resize that the program writes keeps the rule.
+
 ZK0722 to ZK0724 come from a check outside `checks/`, with facts of its own: see [Set
 before read](#set-before-read).
 
@@ -502,16 +512,20 @@ each other one is, so a place that can be unset there is ZK0722. The function th
 C function holds one statement, the call into C (`calls_c`); the check cannot see what C
 writes, so it trusts the mark and follows none of the filled parameters there.
 
-The diagnostics of this check join the others after `downgrade`, so `--mem-check` never
-changes them: the kinds promise there is no NULL and no hidden default, and that promise
+The diagnostics of this check join the others before `downgrade`, but `--mem-check` never
+changes them, as none of them is in the lint: the kinds promise there is no NULL and no hidden default, and that promise
 holds at each level. A pointer read before it is set also holds the zero octets of its
 declaration, the null address, so the flow can report ZK0709 or ZK0711 at the same read;
 `borrow_check` drops those, and the report of the unset read stands for both.
 
 ## Options
 
-`BorrowCheckOptions { check: MemCheck, strict: bool, overflow }`, chosen with
-`--mem-check`, `--mem-strict` and `--overflow` on `borrowck`, `codegen` and `run`.
+`BorrowCheckOptions { check: MemCheck, strict: bool, overflow, lint: LintLevels }`, chosen
+with `--mem-check`, `--mem-strict`, `--overflow`, and `--allow`, `--warn` and `--error`
+on `borrowck`, `codegen` and `run`. `LintLevels` holds an `Option<MemCheck>` for each code of
+`LINT_CODES`: the lint, ZK0719 and ZK0723. `borrow_check_options` fills it from the three
+flags, the groups (`LintGroup`) first and the codes after them, each in the order of the
+command line; a value from a config file comes before each one on the command line.
 
 | Option | Effect |
 | --- | --- |
@@ -527,7 +541,11 @@ declaration, the null address, so the flow can report ZK0709 or ZK0711 at the sa
 | `LINT` | ZK0702, ZK0703, ZK0704, ZK0706, ZK0707, ZK0708, ZK0712, ZK0721 | follow the mode wherever the check finds them; pointers, which marked code alone works with, give them |
 | `MARKED_LINT` | ZK0709, ZK0710, ZK0711 | follow the mode inside a region of `Module.marked`, and remain errors in safe code, where a cell number past the end of a list gives ZK0710 |
 | the rest | ZK0701, ZK0719 | as their codes define them in each mode |
-| the init check | ZK0722, ZK0723, ZK0724 | added after `downgrade`, so no mode changes them: ZK0722 and ZK0724 are errors and ZK0723 a warning in each mode |
+| the init check | ZK0722, ZK0723, ZK0724 | outside the lint, so no mode changes them: ZK0722 and ZK0724 are errors and ZK0723 a warning in each mode |
+
+A level set through a name wins over the mode. It reaches a `MARKED_LINT` code inside marked
+code alone, and ZK0719 and ZK0723 wherever the check finds them; `NotALint` refuses each
+other code at the command line.
 
 ```zaka-error ZK0704 mem-check=error
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

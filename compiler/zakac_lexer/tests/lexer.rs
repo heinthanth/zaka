@@ -280,3 +280,23 @@ fn news_and_mark_words_lex_as_reserved()
     assert_eq!(kws("လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်"), [Kw::MarkSucceeded]);
     assert_eq!(kws("လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်"), [Kw::MarkFailed]);
 }
+
+/// A name in Latin letters joined to `များထဲမှ` splits as a Burmese one does:
+/// the name, then `ထဲမှ`.
+#[test]
+fn a_latin_name_joined_to_among_splits()
+{
+    let joined = kinds("Deliveryများထဲမှ Moving");
+    let apart = kinds("Deliveryများ ထဲမှ Moving");
+    assert_eq!(joined, apart);
+    assert!(joined.contains(&TokenKind::Kw(Kw::Among)));
+}
+
+/// A long name lexes in time linear in its length: a piece of the reserved
+/// split is no longer than the longest reserved word.
+#[test]
+fn a_long_name_lexes()
+{
+    let name = "က".repeat(20_000);
+    assert_eq!(codes(&name), Vec::<Code>::new());
+}

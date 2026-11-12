@@ -11,7 +11,7 @@ runs it, then the C compiler. [Native programs](../compiler/native.md) tells wha
 sees; this page tells how it is built.
 
 ```text
-ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_kinds.{h,c}, zaka_ffi.c (with C functions), zaka_cb.c (with closures given to C)
+ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_checks.h, zaka_kinds.{h,c}, zaka_ffi.c (with C functions), zaka_cb.c (with closures given to C)
                          + zaka_rt.h, zaka_rt*.c, zaka_c_sugars.h
                          │
                          └──cc -c, then link──▶ executable
@@ -22,7 +22,7 @@ ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_kinds.{h,c}, zaka_ffi
 | File | Job |
 | --- | --- |
 | `cli.rs` | the standalone command; `zakac build` calls its `command_main` for `--target c` |
-| `driver.rs` | the phases, then `emit`; the cache folder; the runtime files, embedded with `include_str!` |
+| `driver.rs` | the phases, then `emit`; the cache folder; the runtime files, embedded with `include_str!`; `translate` takes a `TargetCOptions` (`checks`, `max_depth`, `debug_info`, `max_heap`) |
 | `emit.rs` | the files of a program: a module file for each source file, the shared header, `main.c` |
 | `stmts.rs`, `exprs.rs` | a statement or an expression of the IR as C |
 | `kinds.rs` | the C kind of each scalar kind, and constants as C text |
@@ -104,18 +104,37 @@ right after the statement reads it. `ir::fresh_text` holds that rule for both ba
 | File | Holds |
 | --- | --- |
 | `zaka_rt.h` | the kinds, the descriptors, the trap ids, the checked integer operations of each kind (`zk_add_i32`, `zk_div_u64`, ...), the loads and stores |
-| `zaka_rt.c` | the start and the end of a run, the traps, the print of numbers |
+| `zaka_rt.c` | the start and the end of a run, the traps, the depth count, the print of numbers |
 | `zaka_rt_data.c` | the heap, counted blocks and the ring collector, plain lists, text edits, deep duplicates, `==`, the print of each kind |
 | `zaka_rt_host.c` | standard input, files and output streams, and the arguments and the environment |
 | `zaka_c_sugars.h` | `RET_IF`, `DONE_IF`, `DO_IF`, `NEXT_IF`, `LEAVE_IF`, `DO_FOR` |
 
-`zaka_kinds.h` defines `ZK_CHECKS_NONE`, `ZK_CHECKS_DEFAULT` or `ZK_CHECKS_MEM` before it
-includes `zaka_rt.h`, so the C of a program is the same at each level and a level is a define
-and a few flags. The texts of the traps come from the locale of the compiler, into
-`zaka_kinds.c`. A float prints with the fewest digits that read back, found with `%.*e` and
-`strtod`. When the float lies at the midpoint of two such digit strings, printf keeps the
-even one and Rust the one above, so the runtime turns a tie that printf rounded down into
-the one above.
+`zaka_checks.h` defines one `ZK_CHECK_<NAME>` as 1 or 0 for each run-time check
+(`RunCheck` in `options.rs`: `DIVIDE`, `SHIFT`, `BOUNDS`, `TEXT`, `STEP`, `DEPTH`, `NULL`,
+`OVERLAP`, `SANITIZERS`), `ZK_MAX_DEPTH`, `ZK_MAX_HEAP` (`--max-heap`, as `<n>u`, 0 for no cap) and `ZK_DEBUG_INFO` (1 in a debug build, 0 under `--release`); `zaka_rt.h` includes it, so each file of the
+runtime (`zaka_rt.c`, `zaka_rt_data.c`, `zaka_rt_host.c`) and of the program sees the same
+checks, the C of a program is the same under each set of checks, and a set is a few
+defines and a few flags. `RunChecks` holds the set as bits; `--checks` builds it from a
+level (`Checks`), then each `+name` or `-name`. `ZK_CHECK_SANITIZERS` changes no C: the
+build adds the sanitizer flags when it is on. The texts of the traps come from the locale of the compiler, into
+`zaka_kinds.c`.
+
+`zaka_rt_float.{h,c}` hold the float kinds past C11 and the print of each float kind.
+`zk_half` is `_Float16` where the compiler defines `__FLT16_MANT_DIG__`; `zk_quad` is
+`_Float128` (`__FLT128_MANT_DIG__`), a `long double` of 113 bits, or `__float128`
+(`__SIZEOF_FLOAT128__`). Each sets `ZK_HAS_F16` or `ZK_HAS_F128`, and `zaka_kinds.h` stops
+at an `#error` that names the kind when the program holds one the compiler lacks, as it does
+for `i128`. A constant of either kind comes from its bits (`zk_f16_of`, `zk_f128_of`), since
+C11 has no literal for it; an `f16` operation is cast back to `zk_half`, so it rounds as the
+VM's does; `%` calls `zk_fmod_half` or `zk_fmod_quad` (`fmodl` or `fmodf128`), and an `f128`
+converts to an integer through `zk_q2i_<N>`, not through `double`.
+
+A float prints from its bits (`zk_put_fbits`), with natural numbers of the runtime's own and
+no print from libc, so each host prints the same digits. `f32` and `f64` print the fewest
+digits that read back, as Rust's `{:?}` does: Dragon4 as Rust's `flt2dec` runs it, with the
+same gaps to the neighbours (half the gap below at a power of two) and a tie rounded up.
+`f16` and `f128` print as `rustc_apfloat` writes them, as the VM does: the exact value cut to
+`2 + P * 59 / 196` digits (5 for `f16`, 36 for `f128`), a half rounded up.
 
 An optional and a result are the same struct as in the VM (a tag, then `some`, or `ok` and
 `err`). `Stmt::Halt` becomes a call that stops the run: `zk_not_good(at, kind)`, which shows the error value, and
@@ -125,6 +144,29 @@ trap `the optional holds no data` from the locale (`target_c.trap.no_data`); `st
 A print of an optional goes through `zk_push_fallible`, which writes `ဒေတာ(<value>)` for tag 1 and
 `အလွတ်` for tag 0, with the words `zk_data_text` and `zk_no_data_text` that `emit.rs` puts in
 `zaka_kinds.c`; the null pointer prints as `zk_null_text`, the phrase `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, as in the VM; a result writes `ရလဒ်ကောင်း(...)` or `အမှားအယွင်း(...)`, as in the VM.
+
+`ZK_ENTER(f)` opens each function and `ZK_LEAVE()` closes each return: with `ZK_CHECK_DEPTH`
+on, the pair counts `zk_depth` and calls `zk_too_deep` past `ZK_MAX_DEPTH` (`--max-depth`).
+Frames are kept when the depth check is on or `ZK_DEBUG_INFO` is 1, so `--checks none` still
+names the place in a debug build: the pair then pushes and pops a row of the frame table
+`zk_frames` (one row for each call in progress: the function number and the site). `ZK_AT(site)`
+comes before each statement whose site differs from the last one, and sets the site of the top
+row. The sites (file, line, column of the start of a statement) are the tables `zk_sites` and
+`zk_site_files` in `zaka_kinds.c`; a `--release` build writes neither the tables nor the
+marks. A stop writes the function and the place, then the backtrace from `zk_frames`, with the
+rules of the VM (`ZAKA_BACKTRACE`: unset folds a run of one call to `... the call above, N
+times more` and past 16 lines to `... N calls more`; `full` lists each call; `0` none; the C
+`main` is left out). With the checks of depth and debug info both off, the pair counts nothing.
+
+`--max-heap` counts in the runtime: a counted block adds the size of its cells when it is made,
+and a raw block (`zk_alloc`, `zk_realloc`, `zk_free`) adds the size the allocator gives
+(`malloc_size` on macOS, `malloc_usable_size` on Linux, `_msize` on Windows; another host counts
+no raw block). A counted block past the cap stops the run with the trap `no heap room for N
+octets`; a raw allocation past it gives NULL; a resize past it stops the run. A block that C
+made and the program frees was never counted, so the count stops at 0; a block given to C that
+C frees is never given back. An else-if chain of the IR is written flat as
+`else if`, not as nested blocks, so a chain of thousands of branches builds with each C
+compiler.
 
 The runtime is strict C11 and passes `-pedantic-errors`. 128-bit integers stand behind
 `__SIZEOF_INT128__`, and the GCC and Clang builtin for an overflow test behind `__GNUC__`,
@@ -213,9 +255,10 @@ name that is an absolute path or `@rpath/...`.
 
 | Test | Checks |
 | --- | --- |
-| `tests/samples.rs` | each repo sample prints, as an executable, the output the VM prints for it, at `--checks default` and `--checks none`, under `--overflow stop` and `wrap`; it passes with a note on a host with no C compiler |
+| `tests/samples.rs` | each repo sample prints, as an executable, the output the VM prints for it, at `--checks default` and `--checks none`, under `--overflow stop` and `wrap`; it passes with a note on a host with no C compiler, unless `ZAKA_REQUIRE_CC=1` makes that a failure, as on CI |
 | `tests/text.rs` | the runtime writes thousands of floats and the ends of 128-bit integers as the VM writes them |
 | `tests/traps.rs` | a zero divisor and an overflow stop with the VM's message and status 1 |
+| `zaka_website/tests/stops_in_c.rs` | each `zaka-stop` program of the books, built with this target, prints the output and the stop reason of the VM (see [Build, test and format](README.md#build-test-and-format)); a stop here names no source line and no calls in progress, which the VM names |
 
 Each test builds and runs its program in a folder of its own, so a sample that writes a
 file writes it there.

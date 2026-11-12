@@ -34,7 +34,7 @@ en = "failed to decode artifact from %{p}: %{e}"
 en = "the program stopped: %{e}"
 
 [errors.no_c_compiler]
-en = "no C compiler found: set CC, pass --cc, or put gcc, clang or zig on the PATH (on Windows, llvm-mingw, w64devkit or Zig need no Visual Studio)"
+en = "no C compiler found: set CC, pass --cc, set cc in a config file, or put gcc, clang or zig on the PATH (on Windows, llvm-mingw, w64devkit or Zig need no Visual Studio)"
 
 [errors.flag_not_for_target]
 en = "%{flag} does not go with --target %{target}"
@@ -47,3 +47,21 @@ en = "the build step of %{cc} failed"
 
 [errors.not_for_target_c]
 en = "the C target cannot build %{what} at present"
+
+[errors.config_not_toml]
+en = "the config file %{p} is not valid TOML: %{e}"
+
+[errors.config_unknown_name]
+en = "the config file %{p} sets %{name}, which no command here takes"
+
+[errors.config_bad_value]
+en = "the config file %{p} gives %{name} a value of the wrong form: use text, a number, true or false, or a list of these"
+
+[errors.unknown_lint_name]
+en = "%{name} names no lint: give a group (mem, leaks, frees, borrows, nulls, pointers, doubts, overflow) or a code such as ZK0708"
+
+[errors.not_a_lint]
+en = "%{code} is not a lint: its level cannot change"
+
+[errors.unknown_check]
+en = "%{name} names no run-time check: give none, default, mem, or a check (divide, shift, bounds, text, step, depth, null, overlap, sanitizers), with + or - in front to add or drop it"

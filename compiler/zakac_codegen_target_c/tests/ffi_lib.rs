@@ -14,6 +14,7 @@ use std::process::Stdio;
 use common::c_files;
 use common::cc;
 use common::root;
+use common::stop_line;
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_and_keep;
@@ -519,7 +520,7 @@ fn null_for_plain_text_stops_the_run_on_both_targets()
     let line = "the program stopped: C gave NULL where its declaration promised a \
                 value; declare the result or the parameter as an optional, \"T \
                 ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်\", when C can give NULL\n";
-    assert!(stderr.ends_with(line), "stderr: {stderr}");
+    assert_eq!(stop_line(&stderr), line, "stderr: {stderr}");
 }
 
 /// A program that has C pass NULL for a parameter of a plain handle.

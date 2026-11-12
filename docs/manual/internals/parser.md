@@ -617,9 +617,17 @@ The parser owns the `ZK02` codes. The main ones: `ZK0201` (a token that was expe
 is missing), `ZK0202` (no operand), `ZK0203` (no statement verb), `ZK0205` (too few
 operands for a verb), `ZK0206` (an operand has the wrong particle), `ZK0207` (two
 particles in a row), `ZK0208` (operands left unclosed), `ZK0209` (operands left over after
-a statement verb), `ZK0210` (a chained comparison). The full list is in
+a statement verb), `ZK0210` (a chained comparison), `ZK0244` (nesting past the [limit](#the-nesting-limit)). The full list is in
 [Error messages](../reference/errors.md). Each has a constructor in
 `zakac_diagnostics::parser` from rendered text, so that crate never needs the parser.
+
+## The nesting limit
+
+The parser counts how deep notation expressions (parentheses, operands, calls, lists) and
+blocks nest. Past 128 levels it reports `ZK0244` and skips the sentence, in place of
+recursing until the stack is gone. A template slot (`"{...}"`) is not counted. Each `zakac`
+command also runs on a thread with a 256 MB stack, so a deep but legal program, such as a
+sum of five thousand terms (`၁ + ၁ + ...`), still compiles.
 
 ## Artifacts, tests and extending
 

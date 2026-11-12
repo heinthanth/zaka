@@ -17,6 +17,9 @@ jobs:
   test:
     name: Run the tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    env:
+      # A host with no C compiler fails the native build tests; it does not skip them.
+      ZAKA_REQUIRE_CC: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +28,34 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
+
+      # ubuntu-latest is x86-64 and has gcc; closures given to C link libffi,
+      # which needs its dev package. macos-latest has clang and the SDK libffi.
+      - name: Install libffi (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libffi-dev pkg-config
+
+      # windows-latest has no gcc on the PATH: MinGW from MSYS2 gives the C
+      # target a compiler and libffi, and no Visual Studio is involved.
+      - name: Install MinGW (Windows)
+        if: runner.os == 'Windows'
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: false
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-libffi
+
+      # The ucrt64 folder alone joins the PATH, so `cc` and `gcc` are found
+      # and the MSYS tools do not shadow the Windows ones.
+      - name: Put MinGW on the PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bin = Join-Path '${{ steps.msys2.outputs.msys2-location }}' 'ucrt64\bin'
+          Add-Content -Path $env:GITHUB_PATH -Value $bin
 
       - uses: taiki-e/install-action@v2
         with:

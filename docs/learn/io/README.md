@@ -113,5 +113,44 @@ terminal does; with `zakac run`, it is what the terminal gives:
 နာမည်: မင်္ဂလာပါ ဟိန်း
 ```
 
+The line comes without its line break, so a blank line is the text with no characters, and it is
+a good result like each other line. At the end of the input there is no next line, and the
+call fails with `အဝင်အချက်အလက်အဆုံးကိုရောက်ခြင်း`; each later read fails alike.
+
 The [Input and output](../../manual/language/io.md) page of the manual lists each name of
 the module.
+
+## Reading to the end of the input
+
+A program that is not told the number of lines reads until the end. The loop runs while
+the result is a good result, and the test after it tells the end of the input from each
+other failure. This program counts three lines, one of them blank:
+
+```zaka
+"စံကား/အဝင်အထွက်" မှ စာကြောင်းတစ်ကြောင်းဖတ်၊ စံပြုအဝင်၊ အချက်အလက်အဝင်အထွက်အမှားအယွင်း တို့ကို ထည့်သွင်းမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
+ကိန်းရှင် လိုင်း သည် စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ် သည့် ရလဒ် ဖြစ်ပါစေ။
+လိုင်း ထဲတွင် ရလဒ်ကောင်း ရှိနေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အရေအတွက် ကို အရေအတွက် + ၁ ဟု ထားမည်။
+လိုင်း ကို စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ် သည့် ရလဒ် ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+အကယ်၍ လိုင်း ထဲမှ အမှားအယွင်း ဒေတာ == အချက်အလက်အဝင်အထွက်အမှားအယွင်းများထဲမှ အဝင်အချက်အလက်အဆုံးကိုရောက်ခြင်း ဖြစ်လျှင် "{အရေအတွက်} လိုင်း" ဟု ပြသမည်။
+သို့မဟုတ်ပါက "ဖတ်၍မရ" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```stdin
+က
+
+ခ
+```
+
+```text
+၃ လိုင်း
+```
+
+The second line is blank, and the loop counts it. When the loop stops, `လိုင်း` holds the
+failure; if it is the end of the input, the count is complete, and each other failure
+prints `ဖတ်၍မရ`.

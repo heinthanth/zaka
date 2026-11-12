@@ -62,11 +62,14 @@ pub(crate) fn collect_structs(
         names.iter().copied().chain(enums.keys().map(|n| n.as_str())).collect();
     do_for!(decl in decls.values(), check_fields(decl, &known, diags));
     do_for!(f in program.stmts.iter().filter_map(as_fn_name), report_clash(f, &names, diags));
-    // A kind from outside holds C's address alone; its written fields are C's.
-    let held = |decl: &StructDecl| match decl.external
-    {
-        true => vec![(EXTERN_FIELD.to_string(), DataKind::handle_pointer().sig_name())],
-        false => field_texts(decl, &names, &shared, enums),
+    // A kind from outside holds C's address alone; its written fields are C's,
+    // and their names and kinds go into the name of that one field, so two
+    // programs that give one name to two C structs make two kinds.
+    let held = |decl: &StructDecl| {
+        let texts = field_texts(decl, &names, &shared, enums);
+        ret_if!(!decl.external, texts);
+        let field = extern_field(&texts);
+        vec![(field, DataKind::handle_pointer().sig_name())]
     };
     let mut defs: StructDefs =
         decls.iter().map(|(name, decl)| (name.to_string(), held(decl))).collect();
@@ -83,6 +86,26 @@ pub(crate) fn collect_structs(
     let external = decls.values().filter(|d| d.external);
     do_for!(decl in external, set_c_fields(decl, &table, diags));
     table
+}
+
+/// The name of the one field of the box of a kind from outside:
+/// [`EXTERN_FIELD`], then a hash of the name and kind of each C field, which
+/// is the same in each run.
+///
+/// # Arguments
+///
+/// * `fields` - The C fields, each a name and a kind in text form.
+///
+/// # Returns
+///
+/// The name.
+fn extern_field(fields: &[(String, String)]) -> String
+{
+    // FNV-1a over the fields, each as `name:kind;`.
+    let text: String = fields.iter().map(|(f, k)| format!("{f}:{k};")).collect();
+    let fnv = |h: u64, b: &u8| (h ^ u64::from(*b)).wrapping_mul(0x0100_0000_01b3);
+    let hash = text.as_bytes().iter().fold(0xcbf2_9ce4_8422_2325, fnv);
+    format!("{EXTERN_FIELD}{hash:016x}")
 }
 
 /// Give the struct of a kind from outside its C fields: numbers, booleans,

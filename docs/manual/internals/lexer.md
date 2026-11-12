@@ -207,7 +207,9 @@ pass-on just when it touches the `)` of a call (`joined`).
 A name joined to `ထဲမှ`, as in `အရောင်များထဲမှ`, has a non-reserved part, so
 `split_reserved` cannot split it. `lex_ident` does: a name word that ends in `ထဲမှ`, with a
 name before it, becomes an `Ident` and `Kw::Among` (`lex_among`). The `ထဲမှ` must start a
-vanna of its own, so a stacked consonant before it keeps the word whole. A struct
+vanna of its own, so a stacked consonant before it keeps the word whole. A name in Latin
+letters, or in two scripts (`Deliveryများထဲမှ`), is a run of words, and `lex_among` takes the text
+of the whole run, so it splits just as a Burmese name does. A struct
 declaration has the word `ဒေတာအစုအဝေး` (`StructWord`) and an enumeration
 `ဒေတာအမျိုးအစားကွဲ` (`EnumWord`), each one whole word in the table, so the longest
 match wins over `ဒေတာအမျိုးအစား` and `အမျိုးအစား` inside it; a joined `တွင်` splits off

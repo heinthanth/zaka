@@ -27,6 +27,7 @@ use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
 use zakac_reporter::render::write_diagnostics;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_session::artifact::ArtifactFormat;
@@ -56,6 +57,9 @@ const EMIT_ARG: &str = "emit";
 const RESULTS_ARG: &str = "results";
 /// The flag that picks where the scratch values of a function live.
 const SCRATCH_ARG: &str = "scratch";
+/// The flag of a release build, which leaves out the source region of each
+/// op, as a release build in Rust leaves out its debug info.
+const RELEASE_ARG: &str = "release";
 
 /// The `zakac_codegen_target_vm` command: the VM target on its own.
 /// `zakac build --target vm` runs the same build.
@@ -128,7 +132,26 @@ pub fn attach_codegen_args(cmd: clap::Command) -> clap::Command
         .help(t!("codegen.scratch"))
         .value_parser(PossibleValuesParser::new(words))
         .default_value(<&'static str>::from(ScratchMode::default()));
-    cmd.arg(results).arg(scratch)
+    let release = Arg::new(RELEASE_ARG)
+        .long("release")
+        .help(t!("codegen.release"))
+        .action(clap::ArgAction::SetTrue);
+    cmd.arg(results).arg(scratch).arg(release)
+}
+
+/// Whether the command line asks for a release build, which leaves out the
+/// source region of each op.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+///
+/// # Returns
+///
+/// `true` for a release build.
+pub fn release(matches: &ArgMatches) -> bool
+{
+    matches.try_get_one::<bool>(RELEASE_ARG).ok().flatten().copied().unwrap_or(false)
 }
 
 /// The code generation choices from the command line.
@@ -177,6 +200,14 @@ impl Command for ZakacTargetVm
     ///
     /// The version.
     fn version() -> &'static str { clap::crate_version!() }
+
+    /// Get the section of a config file that holds the defaults of this
+    /// command.
+    ///
+    /// # Returns
+    ///
+    /// The name of its `zakac` subcommand.
+    fn config_section() -> Option<&'static str> { Some("build") }
 
     /// Configure the command.
     ///
@@ -300,7 +331,7 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let result = tern!(
         asm,
         write_listing(io, output_arg, &emitted),
-        write_artifact(io, resolved, &source, emitted)
+        write_artifact(io, resolved, &source, emitted, release(matches))
     );
     ret_if!(let Err(error) = result, report_command_error(io, &cmd_info, error));
     tern!(failed, ExitCode::Failure, ExitCode::Success)
@@ -359,6 +390,7 @@ fn artifact_format(emit: Emit) -> Option<ArtifactFormat>
 /// * `io` - The standard streams.
 /// * `output_arg` - The output path; `None` or `-` for stdout.
 /// * `emitted` - The output of the phases.
+/// * `release` - Whether to leave out what a release build does not keep.
 ///
 /// # Returns
 ///
@@ -387,10 +419,11 @@ fn write_listing(
 /// The result of the write.
 fn write_artifact(
     io: &mut CommandIO<'_>, resolved: ResolvedArtifactOutput, source: &SourceFile,
-    emitted: Emitted,
+    emitted: Emitted, release: bool,
 ) -> zakac_host_errors::Result<()>
 {
-    let artifact = CodegenArtifact::from_emitted(source, emitted);
+    let mut artifact = CodegenArtifact::from_emitted(source, emitted);
+    do_if!(release, artifact.strip_debug());
     let mut output = resolved.output;
     dump_artifact(&mut output, io.stdout, &artifact, resolved.format)
 }

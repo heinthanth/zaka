@@ -122,6 +122,161 @@ static void zk_fill_template(
     }
 }
 
+/** The most lines of calls a short backtrace shows, as in the VM. */
+#define ZK_SHOWN_CALLS 16
+
+/**
+ * The last call in progress that the frame table keeps.
+ *
+ * @return Its index in zk_frames.
+ */
+static uint32_t zk_top(void)
+{
+    return zk_depth > ZK_MAX_DEPTH ? ZK_MAX_DEPTH : zk_depth;
+}
+
+/**
+ * The name of the function of a call.
+ *
+ * @param func Its number, as zk_frame counts them.
+ * @return The name; `main` for the main function.
+ */
+static const char *zk_frame_name(uint32_t func)
+{
+    RET_IF(func == 0 || func > zk_fn_count, "main");
+    return zk_fn_names[func - 1].name;
+}
+
+/**
+ * Write a site as `<file>:<line>:<column>`.
+ *
+ * @param site The index of the site, 0 for none.
+ * @param buf Where the text goes.
+ * @param size The room in buf.
+ * @return 1 when the build keeps the site, else 0.
+ */
+static int zk_place(uint32_t site, char *buf, size_t size)
+{
+#if ZK_DEBUG_INFO
+    RET_IF(site == 0, 0);
+    zk_site s = zk_sites[site];
+    unsigned long line = s.line, col = s.col;
+    snprintf(buf, size, "%s:%lu:%lu", zk_site_files[s.file], line, col);
+    return 1;
+#else
+    (void)site;
+    (void)buf;
+    (void)size;
+    return 0;
+#endif
+}
+
+/**
+ * Write one line of a call: its function, and its site when the build keeps
+ * it.
+ *
+ * @param f The call.
+ */
+static void zk_call_line(zk_frame f)
+{
+    char place[512];
+    const char *names[] = {"func", "place"};
+    const char *values[] = {zk_frame_name(f.func), place};
+    int known = zk_place(f.site, place, sizeof place);
+    zk_fill_template(
+        known ? zk_call_at_text : zk_call_text, known ? 2 : 1, names, values
+    );
+    fputc('\n', stderr);
+}
+
+/**
+ * Write a line of a template with one count in it.
+ *
+ * @param tmpl The template, which names the count `n`.
+ * @param n The count.
+ */
+static void zk_count_line(const char *tmpl, zk_umax n);
+
+/**
+ * Write the place of a stop after its reason: ` (in <func>, at <place>)`, or
+ * ` (in <func>)` when the build keeps no sites; nothing when the calls are
+ * not kept.
+ */
+static void zk_where(void)
+{
+    RET_IF(!ZK_TRACK);
+    zk_frame f = zk_frames[zk_top()];
+    char place[512];
+    const char *names[] = {"func", "place"};
+    const char *values[] = {zk_frame_name(f.func), place};
+    int known = zk_place(f.site, place, sizeof place);
+    fputc(' ', stderr);
+    zk_fill_template(known ? zk_where_text : zk_in_text, known ? 2 : 1, names, values);
+}
+
+/**
+ * Whether a short backtrace leaves a call out: the main function, unless the
+ * stop is in it.
+ *
+ * @param i The index of the call.
+ * @param top The index of the last call.
+ * @return 1 when it is left out.
+ */
+static int zk_hidden_call(uint32_t i, uint32_t top)
+{
+    return i != top && zk_frames[i].func == 0;
+}
+
+/**
+ * Write the backtrace of a stop, as much of it as `ZAKA_BACKTRACE` asks:
+ * `full` each call, `0` none; else a run of one call once, the first
+ * ZK_SHOWN_CALLS lines, and a last line that tells how to see the rest. A
+ * backtrace of one call is left out.
+ */
+static void zk_backtrace(void)
+{
+    RET_IF(!ZK_TRACK);
+    const char *mode = getenv("ZAKA_BACKTRACE");
+    RET_IF(mode && strcmp(mode, "0") == 0);
+    int full = mode && strcmp(mode, "full") == 0;
+    uint32_t top = zk_top();
+    uint32_t shown = 0;
+    DO_FOR(k, top + 1) shown += full || !zk_hidden_call((uint32_t)k, top);
+    RET_IF(shown < 2);
+    fputs(zk_backtrace_text, stderr);
+    fputc('\n', stderr);
+    zk_umax runs = 0, hidden = 0;
+    int left_out = 0;
+    for (uint32_t i = top + 1; i-- > 0;)
+    {
+        zk_frame f = zk_frames[i];
+        int skip = !full && zk_hidden_call(i, top);
+        left_out |= skip;
+        NEXT_IF(skip);
+        zk_umax n = 1;
+        while (!full && i > 0 && zk_frames[i - 1].func == f.func &&
+               zk_frames[i - 1].site == f.site)
+        {
+            i--;
+            n++;
+        }
+        int past = !full && runs >= ZK_SHOWN_CALLS;
+        DO_IF(past, hidden += n);
+        NEXT_IF(past);
+        runs++;
+        zk_call_line(f);
+        DO_IF(n > 1, zk_count_line(zk_call_again_text, n - 1));
+        left_out |= n > 1;
+    }
+    DO_IF(hidden, zk_count_line(zk_calls_more_text, hidden));
+    left_out |= hidden > 0;
+    RET_IF(full || !left_out);
+    const char *names[] = {"var"};
+    const char *values[] = {"ZAKA_BACKTRACE"};
+    zk_fill_template(zk_full_hint_text, 1, names, values);
+    fputc('\n', stderr);
+}
+
 /**
  * Stop the run, as the VM does: write what is buffered, then the trap line
  * `<executable>: the program stopped: <trap>`, then leave with status 1.
@@ -141,7 +296,9 @@ static _Noreturn void zk_stop(
     DO_IF(at, fwrite(zk_stopped_text, 1, (size_t)(at - zk_stopped_text), stderr));
     zk_fill_template(zk_trap_text[trap], n, names, values);
     DO_IF(at, fputs(at + 4, stderr));
+    zk_where();
     fputc('\n', stderr);
+    zk_backtrace();
     fflush(stderr);
     exit(1);
 }
@@ -160,6 +317,15 @@ static const char *zk_dec(zk_umax v, char buf[48])
     do *--p = (char)('0' + (int)(v % 10));
     while (v /= 10);
     return p;
+}
+
+static void zk_count_line(const char *tmpl, zk_umax n)
+{
+    char buf[48];
+    const char *names[] = {"n"};
+    const char *values[] = {zk_dec(n, buf)};
+    zk_fill_template(tmpl, 1, names, values);
+    fputc('\n', stderr);
 }
 
 /** Stop the run: an integer division or remainder had zero as divisor. */
@@ -196,6 +362,21 @@ _Noreturn void zk_overflow(const char *op, const char *kind)
     const char *names[] = {"op", "kind"};
     const char *values[] = {op, kind};
     zk_stop(ZK_TRAP_OVERFLOW, 2, names, values);
+}
+
+/** The count of Zaka calls in progress, which ZK_ENTER and ZK_LEAVE keep. */
+uint32_t zk_depth = 0;
+
+/** The calls in progress, main at 0; ZK_ENTER and ZK_AT keep it. */
+zk_frame zk_frames[ZK_MAX_DEPTH + 1];
+
+/** Stop the run: more nested calls than the depth limit of the build. */
+_Noreturn void zk_too_deep(void)
+{
+    char a[48];
+    const char *names[] = {"depth"};
+    const char *values[] = {zk_dec(ZK_MAX_DEPTH, a)};
+    zk_stop(ZK_TRAP_TOO_DEEP, 1, names, values);
 }
 
 /**
@@ -372,7 +553,7 @@ void zk_put_line(void) { zk_emit("\n", 1); }
  *
  * @param s The text, NUL at its end.
  */
-static void zk_put_burmese(const char *s)
+void zk_put_burmese(const char *s)
 {
     for (; *s; s++)
     {
@@ -434,175 +615,6 @@ void zk_put_char(uint32_t c)
     octets[0] = (char)(lead[n] | c);
     zk_emit(octets, n);
 }
-
-/**
- * The text of a float that needs no digits.
- *
- * @param v The float.
- * @return `NaN`, `inf`, `-inf`, `0.0` or `-0.0`, or NULL for each other float.
- */
-static const char *zk_special(double v)
-{
-    RET_IF(v != v, "NaN");
-    RET_IF(isinf(v), v < 0 ? "-inf" : "inf");
-    RET_IF(v == 0, signbit(v) ? "-0.0" : "0.0");
-    return NULL;
-}
-
-/**
- * Whether digits in exponent form read back to a float.
- *
- * @param sci The digits, as printf writes them with %e.
- * @param v The float.
- * @param single 1 when it reads back as an f32.
- * @return@return 1 when the digits read back to v.
- */
-static int zk_reads_back(const char *sci, double v, int single)
-{
-    return single ? strtof(sci, NULL) == (float)v : strtod(sci, NULL) == v;
-}
-
-/**
- * Round a tie up, as Rust does. When the float lies at the midpoint of
- * the digits printf picked and the next ones up, printf keeps the even digit;
- * Rust takes the ones up when those read back too.
- *
- * @param v The float, above zero and finite.
- * @param single 1 when it reads back as an f32.
- * @param sci The digits printf picked, in exponent form; edited in place.
- * @param p Their count.
- */
-static void zk_tie_up(double v, int single, char *sci, int p)
-{
-    char *last = strchr(sci, 'e') - 1;
-    /* A tie rounded to even leaves an even digit, so the digit up never carries. */
-    RET_IF(((*last - '0') & 1) != 0);
-    /* A double has at most 767 significant digits, so this print is exact. */
-    char exact[800];
-    snprintf(exact, sizeof exact, "%.770e", v);
-    /* d.ddd: digit 0 sits at index 0, and digit k > 0 at index k + 1 */
-    char *tail = exact + p + 1;
-    RET_IF(*tail != '5');
-    /* A kept digit that differs from the exact one was rounded up before. */
-    RET_IF(exact[p == 1 ? 0 : p] != *last);
-    for (tail++; *tail == '0'; tail++);
-    RET_IF(*tail != 'e');
-    (*last)++;
-    DO_IF(!zk_reads_back(sci, v, single), (*last)--);
-}
-
-/**
- * The fewest digits of a positive float that read back to it, the nearest
- * ones of that count, with a tie rounded up.
- * shortcut: at a power of two a farther digit string of the shortest count
- * can also read back, which Rust would pick when nearer. Move to a Ryu port
- * if a sample ever shows the difference.
- *
- * @param v The float, above zero and finite.
- * @param single 1 when it is an f32 widened to double, so it reads back as
- *        an f32.
- * @param digits Where the digits go, NUL at their end.
- * @param exp Where the power of ten of the first digit goes.
- * @return The count of digits.
- */
-static int zk_shortest(double v, int single, char digits[24], int *exp)
-{
-    char sci[48];
-    int p = 1;
-    for (; p <= 17; p++)
-    {
-        snprintf(sci, sizeof sci, "%.*e", p - 1, v);
-        LEAVE_IF(zk_reads_back(sci, v, single));
-    }
-    zk_tie_up(v, single, sci, p);
-    /* sci is d[.ddd]e(+|-)xx */
-    int n = 0;
-    const char *s = sci;
-    for (; *s != 'e'; s++) DO_IF(*s != '.', digits[n++] = *s);
-    digits[n] = 0;
-    *exp = atoi(s + 1);
-    return n;
-}
-
-/**
- * Write digits with an exponent, such as 1.5e-5.
- *
- * @param t Where the text goes.
- * @param digits The digits, NUL at their end.
- * @param n Their count.
- * @param exp The power of ten of the first digit.
- * @return The end of the text written.
- */
-static char *zk_exp_form(char *t, const char *digits, int n, int exp)
-{
-    *t++ = digits[0];
-    DO_IF(n > 1, t += sprintf(t, ".%s", digits + 1));
-    return t + sprintf(t, "e%d", exp);
-}
-
-/**
- * Write digits as a plain number with a point, such as 0.001, 12.5 or
- * 100.0.
- *
- * @param t Where the text goes.
- * @param digits The digits, NUL at their end.
- * @param n Their count.
- * @param exp The power of ten of the first digit.
- * @return The end of the text written.
- */
-static char *zk_plain_form(char *t, const char *digits, int n, int exp)
-{
-    int point = exp + 1;
-    if (point <= 0)
-    {
-        t += sprintf(t, "0.");
-        DO_FOR(i, -point) *t++ = '0';
-        return t + sprintf(t, "%s", digits);
-    }
-    DO_FOR(i, point) *t++ = (int)i < n ? digits[i] : '0';
-    *t++ = '.';
-    RET_IF(n <= point, t + sprintf(t, "0"));
-    return t + sprintf(t, "%s", digits + point);
-}
-
-/**
- * Write a float as Rust writes it with {:?}: the fewest digits that read
- * back, in plain form from 1e-4 up to 1e16 and with an exponent outside
- * that. The bounds are compared in the width of the float.
- *
- * @param v The float.
- * @param single 1 when it is an f32 widened to double.
- */
-static void zk_put_float(double v, int single)
-{
-    const char *special = zk_special(v);
-    DONE_IF(special, zk_put_burmese(special));
-    double mag = fabs(v);
-    char digits[24], text[64];
-    int exp;
-    int n = zk_shortest(mag, single, digits, &exp);
-    int far = single ? ((float)mag < 1e-4f || (float)mag >= 1e16f)
-                     : (mag < 1e-4 || mag >= 1e16);
-    char *t = text;
-    DO_IF(v < 0, *t++ = '-');
-    t = far ? zk_exp_form(t, digits, n, exp) : zk_plain_form(t, digits, n, exp);
-    *t = 0;
-    zk_put_burmese(text);
-}
-
-/**
- * Write an f32.
- *
- * @param v The value.
- */
-void zk_put_f32(float v) { zk_put_float((double)v, 1); }
-
-/**
- * Write an f64.
- *
- * @param v The value.
- */
-void zk_put_f64(double v) { zk_put_float(v, 0); }
 
 /* ---- conversions ---- */
 

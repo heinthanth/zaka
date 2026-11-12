@@ -85,6 +85,36 @@ pub enum Error
     {
         what: String
     },
+    #[error("{}", t!("errors.config_not_toml", p = path, e = msg))]
+    ConfigNotToml
+    {
+        path: String, msg: String
+    },
+    #[error("{}", t!("errors.config_unknown_name", p = path, name = name))]
+    ConfigUnknownName
+    {
+        path: String, name: String
+    },
+    #[error("{}", t!("errors.config_bad_value", p = path, name = name))]
+    ConfigBadValue
+    {
+        path: String, name: String
+    },
+    #[error("{}", t!("errors.unknown_lint_name", name = name))]
+    UnknownLintName
+    {
+        name: String
+    },
+    #[error("{}", t!("errors.not_a_lint", code = code))]
+    NotALint
+    {
+        code: String
+    },
+    #[error("{}", t!("errors.unknown_check", name = name))]
+    UnknownCheck
+    {
+        name: String
+    },
 }
 
 /// An action performed on an IO resource.

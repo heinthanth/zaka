@@ -10,6 +10,17 @@ times and not at others. Zaka writes it as an *optional*: a data cell that might
 value, and its kind declares so. An optional is a kind of its own, with its own tests and
 reads; it tells nothing about the reason the cell holds nothing.
 
+A [result](../error-handling/kinds.md) is the other kind that a call can give back when it
+finds no value, and the two differ in what each holds:
+
+| | Optional | Result |
+| --- | --- | --- |
+| Written | `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` | `ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်` |
+| Holds, when no value | `အလွတ်`, with no reason | an error value, which gives the reason |
+| Test | `န ထဲတွင် ဒေတာ ရှိ` or `မရှိ` | `ရ ထဲတွင် ရလဒ်ကောင်း ရှိ` or `ရ ထဲတွင် အမှားအယွင်း ရှိ` |
+| Read | `န ထဲမှ ဒေတာ` | `ရ ထဲမှ ဒေတာ`, or `ရ ထဲမှ အမှားအယွင်း ဒေတာ` for the error |
+| Passed on with `?` | no, since nothing failed (ZK0444) | a failure goes on to the caller |
+
 ## A function that might find nothing
 
 The kind of an optional is the kind of the value, then `ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, which
@@ -163,6 +174,8 @@ mistake](../../manual/language/optionals.md#null-is-a-mistake).
 
 ## Hands on
 
+- Write a function that gives back half of a number as an optional, and `အလွတ်` for an odd
+  number. Print both cases with a test in `အကယ်၍`.
 - Write a function that looks a number up in a list and gives back an optional: the index of
   the number, or `အလွတ်`. Print both cases with a test in `အကယ်၍`.
 - Keep three optionals in a list of optionals, and print the data of each cell that holds

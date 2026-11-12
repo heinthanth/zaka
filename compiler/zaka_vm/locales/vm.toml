@@ -30,6 +30,27 @@ en = "leak: block at %{addr}, %{size} octets"
 [vm.trap.at]
 en = "%{what} (in %{func}, op %{pc})"
 
+[vm.trap.at_line]
+en = "%{what} (in %{func}, at %{place})"
+
+[vm.trap.backtrace]
+en = "stack backtrace (most recent call first):"
+
+[vm.trap.call_at]
+en = "  %{func} at %{place}"
+
+[vm.trap.call_op]
+en = "  %{func}, op %{pc}"
+
+[vm.trap.call_again]
+en = "  ... the call above, %{n} times more"
+
+[vm.trap.calls_more]
+en = "  ... %{n} calls more"
+
+[vm.trap.full_hint]
+en = "note: set %{var}=full to list each call, or %{var}=0 to leave the calls out"
+
 [vm.trap.zero_divisor]
 en = "integer division or remainder with zero as divisor"
 
@@ -187,3 +208,12 @@ en = "globals"
 en = "static text t%{n}"
 [vm.trap.static_list]
 en = "static list s%{n}"
+
+[vm.vet.op]
+en = "malformed ops in %{func}, op %{pc}: %{reason}"
+
+[vm.vet.func]
+en = "malformed ops in %{func}: %{reason}"
+
+[vm.vet.module]
+en = "malformed ops: %{reason}"

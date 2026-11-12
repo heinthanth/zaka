@@ -241,7 +241,7 @@ writes `၉` one box past it, and the program prints `ခ`:
 ```console
 $ zakac run program.zaka
 warning[ZK0710]: offset 1 is past the end of a block of 1 elements
-zaka_vm: the program stopped: access of 8 octets at 0x1008 lands outside each live block (in ပရိုဂရမ်, op 12); block at 0x1000, 8 octets, global က
+zaka_vm: the program stopped: access of 8 octets at 0x1008 lands outside each live block (in ပရိုဂရမ်, at program.zaka:6:1); block at 0x1000, 8 octets, global က
 $ zakac run --frames packed program.zaka
 warning[ZK0710]: offset 1 is past the end of a block of 1 elements
 ၉

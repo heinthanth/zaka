@@ -504,6 +504,10 @@ mod with_ffi
         ) -> Result<Cell, TrapKind>
         {
             let platform = self.module.platform_bits;
+            ret_if!(
+                !suits(v, kind),
+                Err(malformed(&format!("foreign takes no {v:?} for {}", kind.name())))
+            );
             if let Some(f) = kind.as_fn()
             {
                 let native = self.callback(v, f)?;
@@ -524,11 +528,11 @@ mod with_ffi
                 let addr =
                     v.as_ptr().ok_or_else(|| malformed("foreign needs an address"))?;
                 let mut raw = self.mem.octets(addr, u64::from(kind.size(platform)))?;
-                self.to_native(kind, &mut raw, 0);
+                self.to_native(kind, &mut raw, 0)?;
                 return Ok(Cell::of(&raw));
             }
             let mut raw = to_raw(v, platform);
-            self.to_native(kind, &mut raw, 0);
+            self.to_native(kind, &mut raw, 0)?;
             Ok(Cell::of(&raw))
         }
 
@@ -1041,21 +1045,40 @@ mod with_ffi
             self.mem.octets(at, len)
         }
 
-        /// Make each address in octets of a kind native.
+        /// Make each address in octets of a kind native. Null, and an
+        /// address in no block of the VM, such as one C gave, goes unchanged.
         ///
         /// # Arguments
         ///
         /// * `kind` - The kind of the value.
         /// * `raw` - The octets of the value.
         /// * `at` - Where the value starts in them.
-        fn to_native(&mut self, kind: DataKind, raw: &mut [u8], at: usize)
+        ///
+        /// # Returns
+        ///
+        /// `Ok`, or the trap for an address in a freed block, which C would
+        /// read as a number no block holds, or for octets too short for the
+        /// kind.
+        fn to_native(
+            &mut self, kind: DataKind, raw: &mut [u8], at: usize,
+        ) -> Result<(), TrapKind>
         {
             let mem = &mut self.mem;
+            let mut trap = None;
             walk_ptrs(kind, at, self.module.platform_bits, &mut |at| {
+                if at + size_of::<usize>() > raw.len()
+                {
+                    trap.get_or_insert(malformed("octets short of the kind"));
+                    return;
+                }
                 let word = read_word(raw, at);
-                let native = mem.native_at(word as u64).unwrap_or(word);
+                let addr = word as u64;
+                let freed = mem.block_near(addr).is_some_and(|b| !b.live);
+                do_if!(freed, _ = trap.get_or_insert(TrapKind::UseAfterFree { addr }));
+                let native = mem.native_at(addr).unwrap_or(word);
                 write_word(raw, at, native);
             });
+            trap.map_or(Ok(()), Err)
         }
 
         /// Make each native address in octets of a kind that lies in a live
@@ -1139,7 +1162,11 @@ mod with_ffi
             return;
         };
         let mut raw = to_raw(value, platform);
-        machine.to_native(kind, &mut raw, 0);
+        if let Err(trap) = machine.to_native(kind, &mut raw, 0)
+        {
+            machine.callbacks.trap.get_or_insert(trap);
+            return;
+        }
         let negative = kind.int_kind().is_some_and(|k| k.signed)
             && raw.last().is_some_and(|b| *b >= 0x80);
         let mut word = [tern!(negative, 0xff, 0); 8];
@@ -1176,6 +1203,32 @@ mod with_ffi
         fields.for_each(|(i, (_, k))| {
             walk_ptrs(*k, at + s.offset(i, platform) as usize, platform, each)
         });
+    }
+
+    /// Whether a value of the stack suits a parameter of C: an address for an
+    /// address, a function, text, a list or a struct, and a number, a
+    /// character or a boolean of the same sort for each other kind. A value of
+    /// another sort means the ops are malformed, and C must not read it.
+    ///
+    /// # Arguments
+    ///
+    /// * `v` - The value.
+    /// * `kind` - The kind of the parameter.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the value suits the kind.
+    fn suits(v: Value, kind: DataKind) -> bool
+    {
+        let kind = kind.repr();
+        match v
+        {
+            Value::Ptr(_) => kind.is_address() || kind.is_fn() || kind.is_aggregate(),
+            Value::Int { .. } => kind.is_int(),
+            Value::Float { .. } => kind.is_float(),
+            Value::Char(_) => kind == DataKind::Char,
+            Value::Bool(_) => kind == DataKind::Bool,
+        }
     }
 
     /// The native word at an offset of octets.

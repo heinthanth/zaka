@@ -43,6 +43,21 @@ impl FnGen<'_, '_>
     pub(crate) fn stmt(&mut self, s: &Stmt)
     {
         self.shared.span = s.span();
+        self.mark_site(s.span());
+        self.stmt_body(s);
+        // A branch or a loop leaves the frame at a site of its own statements.
+        let nested =
+            matches!(s, Stmt::If { .. } | Stmt::Loop { .. } | Stmt::Counted { .. });
+        do_if!(nested, self.last_site = None);
+    }
+
+    /// Generate the C of one statement, its site noted.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The statement.
+    fn stmt_body(&mut self, s: &Stmt)
+    {
         match s
         {
             Stmt::Set { place, value, .. } => self.set(*place, value),
@@ -249,6 +264,7 @@ impl FnGen<'_, '_>
         let Some(e) = value
         else
         {
+            do_if!(self.func.is_some(), self.line("ZK_LEAVE();"));
             return self.line("return;");
         };
         let v = self.expr(e);
@@ -293,8 +309,10 @@ impl FnGen<'_, '_>
         {
             DataKind::Int(k) if k.signed => "zk_put_i",
             DataKind::Int(_) => "zk_put_u",
+            DataKind::Float(16) => "zk_put_f16",
             DataKind::Float(32) => "zk_put_f32",
             DataKind::Float(64) => "zk_put_f64",
+            DataKind::Float(128) => "zk_put_f128",
             DataKind::Bool => "zk_put_bool",
             DataKind::Char => "zk_put_char",
             DataKind::Ptr(_) | DataKind::Null => "zk_put_ptr",
@@ -565,7 +583,7 @@ impl FnGen<'_, '_>
     fn free(&mut self, dest: &Dest)
     {
         let (read, write, close) = self.pointer_at(dest);
-        self.line(&format!("free({read});"));
+        self.line(&format!("zk_free({read});"));
         self.line(&format!("{write}NULL{close}"));
     }
 
@@ -743,7 +761,9 @@ impl FnGen<'_, '_>
         });
     }
 
-    /// Generate an `if`; an `else if` chain nests in the `else`.
+    /// Generate an `if` and its `else if` chain. A branch whose condition
+    /// needs no setup lines remains flat as `else if`; one that needs them
+    /// nests in an `else` block, which closes after the chain.
     ///
     /// # Arguments
     ///
@@ -753,15 +773,76 @@ impl FnGen<'_, '_>
     fn if_stmt(&mut self, cond: &Expr, then: &[Stmt], els: &[Stmt])
     {
         let cond = self.expr(cond);
-        self.line(&format!("if ({cond})"));
-        self.line("{");
-        self.braced(then);
-        self.line("}");
-        ret_if!(els.is_empty());
+        let open = self.if_chain(cond, then, els);
+        for _ in 0..open
+        {
+            self.depth -= 1;
+            self.line("}");
+        }
+    }
+
+    /// Generate the branches of an `if` chain; see [`Self::if_stmt`].
+    ///
+    /// # Arguments
+    ///
+    /// * `cond` - The C text of the first condition.
+    /// * `then` - Statements when it holds.
+    /// * `els` - Statements when it does not.
+    ///
+    /// # Returns
+    ///
+    /// The count of `else` blocks left open.
+    fn if_chain(&mut self, cond: String, then: &[Stmt], els: &[Stmt]) -> usize
+    {
+        let (mut cond, mut then, mut els) = (cond, then, els);
+        let (mut lead, mut open) = ("if", 0);
+        loop
+        {
+            self.line(&format!("{lead} ({cond})"));
+            self.line("{");
+            self.braced(then);
+            self.line("}");
+            ret_if!(els.is_empty(), open);
+            let Some((next, inner, rest)) = else_if(els)
+            else
+            {
+                self.line("else");
+                self.line("{");
+                self.braced(els);
+                self.line("}");
+                return open;
+            };
+            let flat = self.else_cond(next, &mut cond);
+            (lead, open) = tern!(flat, ("else if", open), ("if", open + 1));
+            (then, els) = (inner, rest);
+        }
+    }
+
+    /// Open an `else` block and generate the next condition in it; when the
+    /// condition wrote no setup lines, take the block back.
+    ///
+    /// # Arguments
+    ///
+    /// * `next` - The condition.
+    /// * `cond` - Where its C text goes.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the block was taken back, so the branch remains flat.
+    fn else_cond(&mut self, next: &Expr, cond: &mut String) -> bool
+    {
+        let mark = self.out.len();
         self.line("else");
         self.line("{");
-        self.braced(els);
-        self.line("}");
+        self.depth += 1;
+        let start = self.out.len();
+        *cond = self.expr(next);
+        let flat = self.out.len() == start;
+        do_if!(flat, {
+            self.out.truncate(mark);
+            self.depth -= 1;
+        });
+        flat
     }
 
     /// Generate a loop: `init` once, then the test, the statements and the
@@ -775,11 +856,16 @@ impl FnGen<'_, '_>
     /// * `block` - The loop statements.
     fn loop_stmt(&mut self, init: &[Stmt], cond: &Expr, update: &[Stmt], block: &[Stmt])
     {
+        let span = self.shared.span;
         self.block(init);
         let label = self.fresh();
         self.line("for (;;)");
         self.line("{");
         self.depth += 1;
+        // Each round tests at the site of the loop, after the statements of the
+        // round before marked theirs.
+        self.last_site = None;
+        self.mark_site(span);
         let cond = self.expr(cond);
         self.line(&format!("if (!({cond})) break;"));
         self.in_loop(label, block);
@@ -844,9 +930,8 @@ impl FnGen<'_, '_>
             None => constant(one, kind, platform).unwrap_or_default(),
         };
         let fixed = step.is_none_or(|s| s.as_const().is_some());
-        let check = format!(
-            "if (ZK_LANG_CHECKS && !({step_text} > 0)) zk_step_not_positive();"
-        );
+        let check =
+            format!("if (ZK_CHECK_STEP && !({step_text} > 0)) zk_step_not_positive();");
         do_if!(!fixed, self.line(&check));
         let up = match mode
         {
@@ -944,4 +1029,24 @@ pub(crate) fn node_name(node: &impl std::fmt::Debug) -> String
 {
     let text = format!("{node:?}");
     text.split(|c: char| !c.is_alphanumeric()).next().unwrap_or_default().to_string()
+}
+
+/// The parts of an `else` branch that is one `if` alone: its condition,
+/// its statements and its own `else` statements.
+///
+/// # Arguments
+///
+/// * `els` - The statements of the branch.
+///
+/// # Returns
+///
+/// The parts, or `None` for another branch.
+fn else_if(els: &[Stmt]) -> Option<(&Expr, &[Stmt], &[Stmt])>
+{
+    let [Stmt::If { cond, then, els, .. }] = els
+    else
+    {
+        return None;
+    };
+    Some((cond, then, els))
 }

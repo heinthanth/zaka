@@ -10,6 +10,7 @@ use zakac_cli_common::clap::ArgAction;
 use zakac_cli_common::clap::ArgMatches;
 use zakac_cli_common::clap::builder::PossibleValuesParser;
 use zakac_cli_common::clap::crate_name;
+use zakac_cli_common::clap::parser::ValueSource;
 use zakac_cli_common::clap_utils::CommandInfo;
 use zakac_cli_common::clap_utils::attach_common_io_args;
 use zakac_cli_common::clap_utils::report_command_error;
@@ -19,6 +20,7 @@ use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
 use zakac_diagnostics::has_errors;
+use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
@@ -37,9 +39,13 @@ use zakac_span::source_map::SourceMap;
 
 use crate::artifact::BorrowCheckArtifact;
 use crate::artifact::run_loaded;
+use crate::options::BadLintName;
 use crate::options::BorrowCheckOptions;
+use crate::options::LintGroup;
+use crate::options::LintLevels;
 use crate::options::MemCheck;
 use crate::options::OverflowMode;
+use crate::options::lint_codes;
 
 /// Extension of a raw artifact.
 pub const BORROW_CHECK_RAW_EXTENSION: &str = ".zkbck";
@@ -47,6 +53,10 @@ pub const BORROW_CHECK_RAW_EXTENSION: &str = ".zkbck";
 pub const BORROW_CHECK_TEXT_EXTENSION: &str = ".zkbckt";
 const MEM_CHECK_ARG: &str = "mem_check";
 const MEM_STRICT_ARG: &str = "mem_strict";
+/// The flags that set the level of a lint group or code, each with its
+/// level.
+const LINT_ARGS: [(&str, MemCheck); 3] =
+    [("allow", MemCheck::Off), ("warn", MemCheck::Warn), ("error", MemCheck::Error)];
 /// The flag that picks what integer arithmetic does on overflow.
 const OVERFLOW_ARG: &str = "overflow";
 /// The flag that names each statement that duplicates text or a list.
@@ -104,7 +114,71 @@ pub fn attach_borrow_check_args(cmd: clap::Command) -> clap::Command
         .help(t!("borrow_check.overflow"))
         .value_parser(PossibleValuesParser::new(words))
         .default_value(<&'static str>::from(OverflowMode::default()));
-    cmd.arg(check).arg(strict).arg(overflow)
+    let lint = |(id, _): (&'static str, MemCheck), help| {
+        Arg::new(id)
+            .long(id)
+            .value_name("NAME")
+            .help(help)
+            .action(ArgAction::Append)
+            .value_delimiter(',')
+            .value_parser(lint_name)
+    };
+    let [allow, warn, error] = LINT_ARGS;
+    #[rustfmt::skip]
+    return cmd.arg(check).arg(strict).arg(overflow)
+        .arg(lint(allow, t!("borrow_check.allow"))).arg(lint(warn, t!("borrow_check.warn")))
+        .arg(lint(error, t!("borrow_check.error")));
+}
+
+/// Check one name of `--allow`, `--warn` or `--error`.
+///
+/// # Arguments
+///
+/// * `name` - A group, or a code such as `ZK0708`.
+///
+/// # Returns
+///
+/// The name, or the error that tells what is wrong with it.
+fn lint_name(name: &str) -> Result<String, String>
+{
+    let error = |bad| match bad
+    {
+        BadLintName::Unknown => Error::UnknownLintName { name: name.into() },
+        BadLintName::NotALint => Error::NotALint { code: name.into() },
+    };
+    lint_codes(name).map(|_| name.to_string()).map_err(|bad| error(bad).to_string())
+}
+
+/// The levels `--allow`, `--warn` and `--error` set: the groups first, then
+/// the codes, so a code wins over a group; within each, a flag on the
+/// command line wins over a config file, and the later flag wins.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+///
+/// # Returns
+///
+/// The levels.
+fn lint_levels(matches: &ArgMatches) -> LintLevels
+{
+    let given = |(id, level): (&'static str, MemCheck)| {
+        // A value from a config file is a default, which clap places after
+        // the command line, so it gets no place: it comes first.
+        let on_line = matches.value_source(id) == Some(ValueSource::CommandLine);
+        let at = matches.indices_of(id).filter(|_| on_line);
+        let at: Vec<usize> = at.map(Iterator::collect).unwrap_or_default();
+        let names = matches.get_many::<String>(id).into_iter().flatten();
+        let placed =
+            names.enumerate().map(move |(i, n)| (at.get(i).copied(), level, n));
+        placed.collect::<Vec<_>>()
+    };
+    let mut all: Vec<_> = LINT_ARGS.into_iter().flat_map(given).collect();
+    all.sort_by_key(|(at, _, name)| (name.parse::<LintGroup>().is_err(), *at));
+    let set = |levels: LintLevels, (_, level, name): &(_, MemCheck, &String)| {
+        levels.with(name, *level).unwrap_or(levels)
+    };
+    all.iter().fold(LintLevels::default(), set)
 }
 
 /// The checker options from the command line.
@@ -123,7 +197,9 @@ pub fn borrow_check_options(matches: &ArgMatches) -> BorrowCheckOptions
     let strict = matches.get_flag(MEM_STRICT_ARG);
     let word = matches.get_one::<String>(OVERFLOW_ARG);
     let overflow = word.and_then(|w| w.parse().ok()).unwrap_or_default();
-    BorrowCheckOptions::builder().check(check).strict(strict).overflow(overflow).build()
+    #[rustfmt::skip]
+    return BorrowCheckOptions::builder().check(check).strict(strict).overflow(overflow)
+        .lint(lint_levels(matches)).build();
 }
 
 impl Command for ZakacBorrowChecker
@@ -155,6 +231,14 @@ impl Command for ZakacBorrowChecker
     ///
     /// The version.
     fn version() -> &'static str { clap::crate_version!() }
+
+    /// Get the section of a config file that holds the defaults of this
+    /// command.
+    ///
+    /// # Returns
+    ///
+    /// The name of its `zakac` subcommand.
+    fn config_section() -> Option<&'static str> { Some("borrowck") }
 
     /// Configure the command.
     ///

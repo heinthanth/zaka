@@ -18,12 +18,16 @@ the program stopped: access through a null address at 0x0
 ```
 
 ```console
-zaka_vm: the program stopped: access through a null address at 0x0 (in ပရိုဂရမ်, op 5)
+zaka_vm: the program stopped: access through a null address at 0x0 (in ပရိုဂရမ်, at nul2.zaka:4:1)
 ```
 
-The command line adds the function and the index of the instruction. When the trap names
-an address, it also adds the block that holds the address or ends just before it:
-`block at 0x101040, 16 octets, heap`, or the variable the block belongs to.
+The command line adds the function and the place of the instruction in the source
+(`file:line:column`). When more than one call is in progress, it lists the calls too,
+the last first; [How a run ends](running.md#how-a-run-ends) shows the list and the rules
+that shorten it. A build made with `--release` has no lines: the place reads `op N`, the
+index of the instruction. When the trap names an address, it also adds the block that
+holds the address or ends just before it: `block at 0x101040, 16 octets, heap`, or the
+variable the block belongs to.
 
 Numerous traps have a twin in the compiler. The [compiler checks](../compiler/checks.md)
 report a mistake that can be proved from the text; the VM reports the same mistake when
@@ -413,7 +417,7 @@ the program stopped: access at 0x1020 inside a freed block
 
 ```console
 $ zakac run program.zaka
-zaka_vm: the program stopped: access at 0x1020 inside a freed block (in ပရိုဂရမ်, op 5); block at 0x1020, 8 octets, ပမာဏ of ဒေသ
+zaka_vm: the program stopped: access at 0x1020 inside a freed block (in ပရိုဂရမ်, at program.zaka:10:1); block at 0x1020, 8 octets, ပမာဏ of ဒေသ
 ```
 
 ### Giving a block back twice
@@ -530,7 +534,7 @@ the program stopped: write at 0x1000 inside static data, which cannot change
 ```
 
 ```console
-zaka_vm: the program stopped: write at 0x1000 inside static data, which cannot change (in ပရိုဂရမ်, op 15); block at 0x1000, 3 octets, static text t0
+zaka_vm: the program stopped: write at 0x1000 inside static data, which cannot change (in ပရိုဂရမ်, at program.zaka:6:1); block at 0x1000, 3 octets, static text t0
 ```
 
 ## Room
@@ -611,7 +615,7 @@ a loop that never ends:
 
 ```console
 $ zakac run --max-steps 50 samples/mistakes/endless_loop.zaka
-zaka_vm: the program stopped: stopped after 50 ops (in ပရိုဂရမ်, op 12)
+zaka_vm: the program stopped: stopped after 50 ops (in ပရိုဂရမ်, at samples/mistakes/endless_loop.zaka:4:41)
 ```
 
 **Static full.** On a platform with few addresses, the globals and the static texts can
@@ -619,12 +623,14 @@ fill the space before `main` starts. The message reads `global` for a static tex
 
 ```console
 $ zakac run --platform-bits 8 nine-globals.zaka
-zaka_vm: the program stopped: no room in the address space for a global of 1 octets (in main, op 0)
+zaka_vm: the program stopped: no room in the address space for a global of 1 octets (in main, at nine-globals.zaka:1:1)
 ```
 
 **Malformed** and **write**. A module read from a damaged artifact can hold instructions
-that break the rules of the code generator, such as a slot that does not exist. The
-VM traps with `malformed ops: ...` and does not crash. A `write` trap happens when
+that break the rules of the code generator, such as a slot that does not exist. The VM
+[checks an artifact](running.md#checking-an-artifact) before it runs, and rejects most
+such faults there. A fault the check cannot see, such as a value handed to C that does
+not suit its parameter, traps with `malformed ops: ...`; the VM does not crash. A `write` trap happens when
 the output cannot be written, such as a pipe that has been closed.
 
 ## A whole result read as the wrong part

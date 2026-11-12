@@ -59,9 +59,13 @@ features = [
 [dev-dependencies]
 toml = { workspace = true }
 
-# The book tests run the C examples, which need a VM that calls C.
+# The book tests run the C examples, which need a VM that calls C, and build
+# each program that stops with the C target too.
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tempfile = { workspace = true }
 zaka_vm = { workspace = true, features = ["ffi"] }
+zakac_codegen_target_c = { workspace = true }
+zakac_parser = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }

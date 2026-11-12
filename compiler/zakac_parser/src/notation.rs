@@ -35,6 +35,7 @@ use crate::clause::ClauseOut;
 use crate::clause::Mode;
 use crate::describe::kw_text;
 use crate::describe::quote;
+use crate::parser::MAX_NEST;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
@@ -52,7 +53,7 @@ const PREFIX_BP: u8 = 120;
 /// # Returns
 ///
 /// The operator and powers, or `None` for another token.
-fn infix_of(tok: &Token) -> Option<(InfixOp, u8, u8)>
+pub(crate) fn infix_of(tok: &Token) -> Option<(InfixOp, u8, u8)>
 {
     let TokenKind::Punct(punct) = tok.kind
     else
@@ -156,6 +157,25 @@ impl Parser<'_>
     ///
     /// The expression, or a diagnostic.
     fn notation_bp(&mut self, min: u8) -> PResult<Expr>
+    {
+        ret_if!(self.nest >= MAX_NEST, Err(self.err_too_deep()));
+        self.nest += 1;
+        let parsed = self.notation_rest(min);
+        self.nest -= 1;
+        parsed
+    }
+
+    /// Parse an expression of operators once its depth is counted; see
+    /// [`Self::notation_bp`].
+    ///
+    /// # Arguments
+    ///
+    /// * `min` - The lowest left binding power to take.
+    ///
+    /// # Returns
+    ///
+    /// The expression, or a diagnostic.
+    fn notation_rest(&mut self, min: u8) -> PResult<Expr>
     {
         let mut lhs = self.parse_prefix()?;
         while let Some((op, _, rbp)) =

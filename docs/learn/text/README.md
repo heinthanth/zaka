@@ -215,6 +215,9 @@ variable, not even with a character write or an add. When the first variable is 
 hands its text over to the second. Part II tells what copies cost: see
 [What a duplicate costs](../forms/costs.md).
 
+The stdlib holds no helper to split text, so a program writes that for now: see
+[What the stdlib holds](../../manual/language/io.md#what-the-stdlib-holds).
+
 ## Hands on
 
 - Print a short poem, one line per `ပြသမည်`.

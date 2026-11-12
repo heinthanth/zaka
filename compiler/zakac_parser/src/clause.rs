@@ -209,7 +209,10 @@ fn as_shift_dir(tok: &Token) -> Option<Dir>
 /// # Returns
 ///
 /// The row, or `None` for another token.
-fn as_verb(tok: &Token) -> Option<&'static Verb> { kw_of(tok).and_then(verb_for) }
+pub(crate) fn as_verb(tok: &Token) -> Option<&'static Verb>
+{
+    kw_of(tok).and_then(verb_for)
+}
 
 /// The value of an operand whose slot is not the conversion slot.
 ///
@@ -692,6 +695,8 @@ impl Parser<'_>
         for n in from..
         {
             let kind = self.peek_n(n).kind;
+            // An unclosed `(` leaves the depth above zero to the end of input.
+            ret_if!(kind == TokenKind::Eof, false);
             ret_if!(parens == 0 && close(self, n), true);
             ret_if!(parens == 0 && ends_list_scan(kind), false);
             match kind

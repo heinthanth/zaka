@@ -82,6 +82,10 @@ pub struct ForeignCall
 
 impl Module
 {
+    /// Leave out the source region of each op, as a release build does: a
+    /// stop then names the function and the op, not the line.
+    pub fn strip_debug(&mut self) { self.map_spans(&|_| Span::PLACEHOLDER); }
+
     /// Move the source region of each op.
     ///
     /// # Arguments

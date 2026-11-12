@@ -175,6 +175,22 @@ reads "`<member>` from among the `<stem>`s": `အရောင်များထ�
   no name of a program ends in `ထဲမှ`.
 - A member is a constant: it can give a `ကိန်းသေ` its value, and the folder works it out.
 
+A name in Latin letters, or in mixed scripts, splits from `ထဲမှ` just as a
+Burmese name does:
+
+```zaka
+Delivery ဟူသော ဒေတာအမျိုးအစားကွဲတွင် Waiting၊ Moving၊ Arrived တို့ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် state သည် Deliveryများထဲမှ Moving ဖြစ်ပါစေ။
+state ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+Deliveryများထဲမှ Moving
+```
+
 ## Values of an enumeration
 
 - A value of an enumeration holds the value of its member, as a value of the value

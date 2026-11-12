@@ -504,7 +504,9 @@ distinct text once: string literals, folded formats and printed text; `print_tex
 a static text or `FmtArg::Value(kind)` for a value from the stack; `format` names one through
 its index, and the listing shows them in a `formats` section (`fmt0 t0 isize t1`). `spans`
 runs parallel to `code` and tells the source region of each op, which is how the VM
-and the explorer point at the line being run. The generator can add locals of its own,
+and the explorer point at the line being run, and how a trap names its line (see [The
+VM](#the-vm)). `Module::strip_debug` replaces each region with `Span::PLACEHOLDER`, the
+span of no source, which is what a release build keeps (`--release`). The generator can add locals of its own,
 named with a `%`: `%to`, `%step` and `%dir` for a counted loop, `%list`, `%slice`,
 `%ret` and `%at` for the lists, structs and ranges a statement builds, `%text` for
 text with no slot to go to, such as a printed format, and `%cell` for the value of an add. `EmitOptions`
@@ -702,6 +704,19 @@ the IR and the digests, and `zakac build` the ops (`.zkct`, `.zkc`) or, with
 `ZKAR` envelope with Postcard inside. `zakac run` takes Zaka source, which it compiles,
 or the ops of `zakac build` in either form, which it knows from the first octets.
 
+An artifact keeps its spans relative to the start of its own source, so the spans do not
+depend on where the source map placed the file. A decoded artifact registers its embedded source
+and its imported files again, then makes its spans absolute against that registered file
+(`absolute_module`, `absolute_diagnostics`). `relative` and `absolute` in
+`zakac_ir_builder` leave a placeholder span as it is, since it names no source and a
+shift would turn it into a region. `CodegenArtifact::strip_debug` is the release form of
+an artifact: it calls `Module::strip_debug`, then clears the embedded source, the
+imported files and the diagnostics, whose regions point into that source. `zakac build
+--release` calls it before the artifact is written, and `zakac run --release` calls
+`Module::strip_debug` on the module it compiles. An artifact built with no `--release`
+keeps its regions, so `zakac run x.zkct` still names lines; `--target c` refuses the
+flag.
+
 ## The VM
 
 `zaka_vm::machine::Machine` owns a `bc::Module` and runs it one op at a time: `step()`
@@ -786,6 +801,20 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
 - **Limits.** `RunOptions` has `max_depth`, `max_steps`, `max_heap`, `max_stack`, the
   frame mode, and `leaks`. A trap is not a `ZK` diagnostic, since it belongs to the run of
   a program and not to the compiler.
+- **The trap.** A `Trap` holds the `kind`, the `func` and `pc` of the op that stopped,
+  the `block` text of an address trap, and `frames: Vec<TrapFrame>`, the calls in
+  progress with the innermost first. A `TrapFrame { func, pc, span }` is a function name,
+  the index of its op (for a caller, the op of its call, which is the return address
+  less one) and the source region of that op, `None` when the module has none.
+  `Machine::trap_frames` builds the list from the frame stack and leaves out the
+  function `main` that the compiler adds, unless the stop is inside it. `Trap::report`
+  writes the head line with the line of the first frame (`file:line:column`, the column
+  from 1, through the source map), or `(in <func>, op <N>)` when the region is a
+  placeholder; then, when more than one frame exists, the line `calls in progress, the
+  last first:` and one line for each call. `backtrace` folds a run of frames of one op
+  into the line and `... the call above, N times more`, and keeps `SHOWN_CALLS` (16)
+  lines before `... N calls more`. The short form that the Run buttons show,
+  `the program stopped: <reason>`, has no place and no calls.
 
 The pages [Running a program](../vm/running.md), [Instructions](../vm/instructions.md),
 [Addresses and blocks](../vm/blocks.md) and [When a program stops](../vm/traps.md)

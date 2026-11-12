@@ -106,6 +106,13 @@ impl CommandBuilder
             .required(false)
             .global(true);
 
+        let g_config_flag = Arg::new(crate::config::CONFIG_FLAG)
+            .help(t!("cli.config"))
+            .long(crate::config::CONFIG_FLAG)
+            .value_name("FILE")
+            .required(false)
+            .global(true);
+
         let cmd = clap::Command::new(name)
             .version(version)
             .propagate_version(true)
@@ -113,7 +120,8 @@ impl CommandBuilder
             .disable_help_subcommand(true)
             .disable_version_flag(true)
             .arg(g_help_flag)
-            .arg(g_version_flag);
+            .arg(g_version_flag)
+            .arg(g_config_flag);
 
         Self { cmd }
     }
@@ -253,6 +261,21 @@ pub trait Command: 'static
     fn version() -> &'static str
     where
         Self: Sized;
+
+    /// Get the section of a config file that holds the defaults of this
+    /// command when it runs as an executable of its own: the name of its
+    /// `zakac` subcommand, so `zakac_lexer` reads `[lex]` as `zakac lex`
+    /// does.
+    ///
+    /// # Returns
+    ///
+    /// The section, or `None` for a command whose flags sit at the top.
+    fn config_section() -> Option<&'static str>
+    where
+        Self: Sized,
+    {
+        None
+    }
 
     /// Customize the [`clap::Command`] for standalone or subcommand use.
     ///

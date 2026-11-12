@@ -84,6 +84,9 @@ en = "write \"%{new}\""
 [parser.help_split]
 en = "write \"%{s} %{p}\" with a space: a name joined to a particle is read as one word"
 
+[parser.help_group]
+en = "put the clause before \"%{op}\" in parentheses: a value read with a verb takes no operator unless it stands in parentheses"
+
 [codes.ZK0201.title]
 en = "unexpected token"
 [codes.ZK0201.message]
@@ -1327,6 +1330,15 @@ en = "a parameter of a function kind cannot be marked \"ဒေတာ ထည်�
 en = "mark it \"ဒေတာ ပြောင်းလဲရန်\"; a function that fills the parameter still fits the kind"
 [codes.ZK0243.explain]
 en = """A call through a function value runs whichever function the value holds, so it cannot count on the place being filled: the caller sets it first. A function kind therefore takes `ဒေတာ ပြောင်းလဲရန်` alone, and a function whose parameter is `ဒေတာ ထည့်ပေးရန်` fits such a kind."""
+
+[codes.ZK0244.title]
+en = "nesting too deep"
+[codes.ZK0244.message]
+en = "this nests more than %{max} levels deep"
+[codes.ZK0244.help]
+en = "put an inner part in a variable or a function of its own"
+[codes.ZK0244.explain]
+en = """The compiler follows parentheses, operands, calls, lists, templates and blocks to a fixed depth, so that a program nested without end cannot use up the stack of the compiler or of the editor. Real programs keep far below it; an inner part with a name of its own is easier to read too."""
 
 [codes.ZK0472.title]
 en = "C function needs the mark"

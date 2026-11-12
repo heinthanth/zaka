@@ -46,9 +46,10 @@ pub struct StructKind
     c_fields: OnceLock<Vec<(String, DataKind)>>,
 }
 
-/// The one field of the box of a kind from outside the program: the address
-/// of the struct C keeps, or 0 once a function that takes it over closes it.
-/// No field name a program writes starts with `%`.
+/// The start of the name of the one field of the box of a kind from outside
+/// the program, which holds the address of the struct C keeps, or 0 once a
+/// function that takes it over closes it; a hash of the C fields follows. No
+/// field name a program writes starts with `%`.
 pub const EXTERN_FIELD: &str = "%c";
 
 impl StructKind
@@ -113,7 +114,7 @@ impl StructKind
     /// `true` for such a kind.
     pub fn is_external(&self) -> bool
     {
-        self.fields().first().is_some_and(|(name, _)| name == EXTERN_FIELD)
+        self.fields().first().is_some_and(|(name, _)| name.starts_with(EXTERN_FIELD))
     }
 
     /// The signature, which names the kind in artifacts.

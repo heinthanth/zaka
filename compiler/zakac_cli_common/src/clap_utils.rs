@@ -135,8 +135,9 @@ pub(crate) fn command_info(cmd: &clap::Command, args: &[String]) -> CommandInfo
 /// # Returns
 ///
 /// The active command.
-fn active_command<'a>(mut cmd: &'a clap::Command, args: &[String])
--> &'a clap::Command
+pub(crate) fn active_command<'a>(
+    mut cmd: &'a clap::Command, args: &[String],
+) -> &'a clap::Command
 {
     let terminator_flags = ["-h", "--help", "-V", "--version", "--"];
 

@@ -80,6 +80,10 @@ One more verb puts a value into a variable: `ကူးထည့်မည်` ("w
 [မောင်] [မောင်]
 ```
 
+A name in braces inside a string, as `{အမည်}`, is a *template slot*: the string holds the
+value of the variable in its place. The [Text](../text/README.md#template-literals) page
+shows slots in full.
+
 | Zaka | Reads as |
 | --- | --- |
 | `မိတ္တူ ထဲသို့` | "into the duplicate" |

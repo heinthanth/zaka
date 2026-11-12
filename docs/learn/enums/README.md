@@ -57,6 +57,22 @@ Inside text, a template slot such as `{မီး}` writes it so too:
 မှန်
 ```
 
+A name in Latin letters is written in the same form, as is a name that mixes scripts; the
+lexer splits `Deliveryများထဲမှ` at the `များ`:
+
+```zaka
+Delivery ဟူသော ဒေတာအမျိုးအစားကွဲတွင် Waiting၊ Moving၊ Arrived တို့ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် state သည် Deliveryများထဲမှ Moving ဖြစ်ပါစေ။
+state ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+Deliveryများထဲမှ Moving
+```
+
 Two members of one enumeration compare with `==` and `!=`. `<` and `>` do not take
 members: colors have no order.
 

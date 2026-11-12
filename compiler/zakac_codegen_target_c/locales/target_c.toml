@@ -16,7 +16,40 @@ en = "The folder for the generated C (default: zakac/<folder>/<input>-<hash> in 
 en = "What to make: an executable (bin), or the C files alone (c) (default: bin)."
 
 [target_c.checks]
-en = "The run-time checks of the executable: none, the language checks (default), or those and mem checks (mem)."
+en = "The run-time checks of the executable: a level (none, default, mem), then checks to add (+name) or drop (-name): divide, shift, bounds, text, step, depth, null, overlap, sanitizers."
+
+[target_c.max_depth]
+en = "The most nested calls before the executable stops, under the language checks."
+
+[target_c.max_heap]
+en = "The most octets of heap blocks the executable holds at once; 0 for no cap."
+
+[target_c.release]
+en = "Build for release: leave out the source line of each statement, so a stop names the function, not the line."
+
+[target_c.where]
+en = "(in %{func}, at %{place})"
+
+[target_c.in]
+en = "(in %{func})"
+
+[target_c.backtrace]
+en = "stack backtrace (most recent call first):"
+
+[target_c.call_at]
+en = "  %{func} at %{place}"
+
+[target_c.call]
+en = "  %{func}"
+
+[target_c.call_again]
+en = "  ... the call above, %{n} times more"
+
+[target_c.calls_more]
+en = "  ... %{n} calls more"
+
+[target_c.full_hint]
+en = "note: set %{var}=full to list each call, or %{var}=0 to leave the calls out"
 
 [target_c.cc]
 en = "The C compiler, with the words before its flags (default: CC, then cc, gcc, clang or zig cc from the PATH)."
@@ -34,7 +67,7 @@ en = "One more flag for the linker, after LDFLAGS; repeat it for more."
 en = "Leave out the default C flags (-O2 -w -ffp-contract=off); -std=c11 stands, since the generated C is written for it."
 
 [target_c.no_sanitizers]
-en = "the C compiler has no sanitizers, so the mem checks cover null addresses alone"
+en = "the C compiler has no sanitizers, so the build goes on without them"
 
 [target_c.stopped]
 en = "the program stopped: %{e}"
@@ -53,6 +86,9 @@ en = "the result of %{op} does not fit %{kind}"
 
 [target_c.no_int128]
 en = "the program holds i128 or u128, and this C compiler has no 128-bit integers"
+
+[target_c.no_float]
+en = "the program holds %{kind}, and this C compiler has no float of that width"
 
 [target_c.trap.index_out_of_range]
 en = "cell %{index} is outside the list, whose cells run from %{lo} to %{hi}"
@@ -116,3 +152,6 @@ en = "no heap room for %{size} octets"
 
 [target_c.trap.overlap]
 en = "the cells at %{addr} overlap their source; \"ပြောင်းထည့်မည်\" allows that"
+
+[target_c.trap.too_deep]
+en = "more than %{depth} nested calls"

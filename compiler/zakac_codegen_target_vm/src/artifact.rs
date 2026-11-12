@@ -193,6 +193,17 @@ impl CodegenArtifact
             .maybe_module(module).diagnostics(diagnostics).build();
     }
 
+    /// Leave out what a release build does not keep: the source region of
+    /// each op, the embedded source, the imported files and the diagnostics,
+    /// whose regions point into that source.
+    pub fn strip_debug(&mut self)
+    {
+        self.module.iter_mut().for_each(Module::strip_debug);
+        self.source.clear();
+        self.imports.clear();
+        self.diagnostics.clear();
+    }
+
     /// Add the embedded source, then the imported files, to a source map.
     ///
     /// # Arguments

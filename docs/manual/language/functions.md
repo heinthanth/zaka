@@ -1233,7 +1233,9 @@ locals.
 ```
 
 The VM allows 4096 calls that wait to return at one time; the next call stops the
-program. `zakac run --max-depth <calls>` sets another limit. A recursion without a base
+program. `zakac run --max-depth <calls>` sets another limit. A native program, built with
+`zakac build --target c`, counts calls just so under the default checks and takes
+`--max-depth` too ([Native programs](../compiler/native.md#checks)). A recursion without a base
 case meets this limit:
 
 ```zaka-stop
@@ -1347,6 +1349,7 @@ Two changed parameters swap two variables, and a changed list grows in the calle
 လုပ်ဆောင်ချက် နှစ်ဆတိုး သည်
 ကိန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အကယ်၍ (ကိန်းများ ၏ အကွက်အရေအတွက်) == ၀ ဖြစ်လျှင် ပြန်ပေးမည်။
 ၀ မှ (ကိန်းများ ၏ အကွက်အရေအတွက်) - ၁ အထိ န အနေဖြင့် ရေတွက်၍ ကိန်းများ ၏ အကွက် န ကို (ကိန်းများ ၏ အကွက် န) * ၂ ဟု ထားမည်။
 ကိန်းများ ထဲသို့ ၀ ကို ထည့်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။

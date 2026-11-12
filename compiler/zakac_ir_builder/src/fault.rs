@@ -295,6 +295,41 @@ pub(crate) fn has_pass(e: &ast::Expr) -> bool
     count.0 > 0
 }
 
+/// Finds a call in the expressions a statement runs itself, leaving out
+/// the blocks inside it.
+#[derive(Default)]
+struct CallFind(bool);
+
+impl Visitor for CallFind
+{
+    fn visit_block(&mut self, _: &st::BlockStmt) {}
+
+    fn visit_fn(&mut self, _: &st::FnDecl) {}
+
+    fn visit_call_expr(&mut self, n: &ast::CallExpr)
+    {
+        self.0 = true;
+        walk_call_expr(self, n);
+    }
+}
+
+/// Whether an expression holds a call, which can change a list or a
+/// struct that another part of the statement points into.
+///
+/// # Arguments
+///
+/// * `e` - The expression.
+///
+/// # Returns
+///
+/// `true` if it does.
+pub(crate) fn has_call(e: &ast::Expr) -> bool
+{
+    let mut find = CallFind::default();
+    find.visit_expr(e);
+    find.0
+}
+
 /// The default value of a kind, as the IR spells it.
 ///
 /// # Arguments

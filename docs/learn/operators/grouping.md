@@ -114,6 +114,9 @@ error[ZK0203]: this statement does not end in a statement verb, found "*"
 ၁၀
 ```
 
+The same goes for a value read with a verb, with a sign or a comparison after it: write
+`(xs ၏ အကွက်အရေအတွက်) == ၀`, not `xs ၏ အကွက်အရေအတွက် == ၀`. The help of the compiler gives that advice.
+
 Parentheses also wrap a [logical expression](logic.md) used as a value, as in
 `(က ဖြစ်၍ ခ) ကို ပြသမည်။`
 

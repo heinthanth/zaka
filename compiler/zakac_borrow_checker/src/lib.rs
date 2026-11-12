@@ -6,7 +6,6 @@ use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::Module;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
-use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::digest::FnDigest;
@@ -102,7 +101,7 @@ pub fn borrow_check(
     // the proofs rest on need not hold.
     let trusted = !has_errors(&all) && !uses_raw(read);
     do_if!(trusted, mark_checked(module, &proofs.proven()));
-    let mut diagnostics = downgrade(all, options.check, &module.marked);
+    let mut diagnostics = all;
     // A pointer read before it is set holds the zero octets its declaration
     // gave it, so the null check sees it too; the report of the unset read
     // stands for both.
@@ -111,6 +110,7 @@ pub fn borrow_check(
         |d: &Diagnostic| matches!(d.code, Code::NullDeref | Code::NullDerefPossible);
     diagnostics.retain(|d| !(null(d) && unset_at.iter().any(|s| s.overlaps(&d.span))));
     diagnostics.extend(unset);
+    let mut diagnostics = downgrade(diagnostics, options, &module.marked);
     diagnostics.sort_by_key(|d| d.span.lo);
     BorrowCheckOutput::builder().diagnostics(diagnostics).digests(digests).build()
 }
@@ -152,36 +152,46 @@ fn roots_and_digests(
     }
 }
 
-/// The diagnostics as the mode wants them.
+/// The diagnostics at the levels the options want.
 ///
 /// # Arguments
 ///
 /// * `diags` - What the check found.
-/// * `mode` - How to report the pointer lint.
+/// * `options` - `--mem-check` and the named levels.
 /// * `marked` - The source regions of marked code.
 ///
 /// # Returns
 ///
-/// Each finding of the pointer lint as the mode wants it: an error for
-/// [`MemCheck::Error`], a warning for [`MemCheck::Warn`], none for
-/// [`MemCheck::Off`]. The lint holds each [`LINT`] finding, and each
-/// [`MARKED_LINT`] finding inside marked code. Each other finding remains as
-/// it is.
-fn downgrade(diags: Vec<Diagnostic>, mode: MemCheck, marked: &[Span])
--> Vec<Diagnostic>
+/// Each finding at its level: an error for [`MemCheck::Error`], a warning
+/// for [`MemCheck::Warn`], none for [`MemCheck::Off`]. The pointer lint holds
+/// each [`LINT`] finding, and each [`MARKED_LINT`] finding inside marked
+/// code; `--mem-check` sets its level, and a named level wins. A
+/// [`MARKED_LINT`] finding outside marked code remains an error, and a finding
+/// that no name and no lint covers remains as it is.
+fn downgrade(
+    diags: Vec<Diagnostic>, options: &BorrowCheckOptions, marked: &[Span],
+) -> Vec<Diagnostic>
 {
     let inside =
         |d: &Diagnostic| marked.iter().any(|m| m.lo <= d.span.lo && d.span.hi <= m.hi);
     let lint = |d: &Diagnostic| {
         LINT.contains(&d.code) || (MARKED_LINT.contains(&d.code) && inside(d))
     };
-    let level = |d: Diagnostic| match mode
-    {
-        MemCheck::Warn => Some(d.with_level(Level::Warning)),
-        MemCheck::Off => None,
-        MemCheck::Error => Some(d),
+    let named = |d: &Diagnostic| {
+        let open = lint(d) || !MARKED_LINT.contains(&d.code);
+        options.lint.get(d.code).filter(|_| open)
     };
-    diags.into_iter().filter_map(|d| tern!(lint(&d), level(d), Some(d))).collect()
+    let level = |d: Diagnostic| {
+        let set = named(&d);
+        match set.or_else(|| lint(&d).then_some(options.check))
+        {
+            Some(MemCheck::Off) => None,
+            Some(MemCheck::Warn) => Some(d.with_level(Level::Warning)),
+            Some(MemCheck::Error) if set.is_some() => Some(d.with_level(Level::Error)),
+            _ => Some(d),
+        }
+    };
+    diags.into_iter().filter_map(level).collect()
 }
 
 /// The findings that are lint inside marked code and errors outside it,

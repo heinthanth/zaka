@@ -30,18 +30,47 @@ the SDK on macOS, a dev package such as `libffi-dev` on Linux. A program with no
 closure never links it.
 
 `i128` and `u128` need a C compiler with 128-bit integers, as GCC and Clang have; another
-compiler stops at an `#error`. `f16` and `f128` have no C kind that each compiler holds, so
-the build refuses them with ZK0801.
+compiler stops at an `#error`. `f16` and `f128` are not C11 either: `f16` needs `_Float16`
+(Clang, and GCC on arm64, or on x86-64 from GCC 12), and `f128` needs `_Float128`, `__float128` or
+a 113-bit `long double` (GCC on Linux; Clang on macOS has none). A program that holds one of
+them stops at an `#error` that names the kind where the compiler lacks it; a program that
+holds neither builds on each compiler.
+
+Floats print as the VM prints them, digit for digit, on each host: the runtime works out
+the digits from the bits of the float, with no print from libc.
 
 ## Checks
 
-The executable keeps the checks `--checks` names:
+The executable keeps the checks `--checks` names. Its three levels:
 
 | `--checks` | What the executable checks | Cost |
 | --- | --- | --- |
 | `none` | nothing that C itself lacks: a zero divisor, a cell outside its list or a shift too far does what C does with it | the fastest |
 | `default` | the checks of the language, each with the VM's message: a zero divisor, a shift too far, a counted loop whose step is not positive, a cell or a range outside its list, a range of text that cuts a character, octets that are not UTF-8, a call through a function value that holds no function (a backstop: a function value is never null), and the wrong part of a result | a compare or two for each check |
 | `mem` | those, a check for the null address on each read and write through an address, and the address and undefined-behavior sanitizers of the C compiler | far slower; for finding a mistake |
+
+After the level, `--checks` takes checks to add or drop one at a time: `divide`,
+`shift`, `bounds`, `text`, `step`, `depth`, `null`, `overlap` and `sanitizers`, as
+`--checks mem,-sanitizers` or `--checks none,+bounds`. [Commands](commands.md#build)
+lists what each one stops.
+
+With the `depth` check on, as under `default` and `mem`, the executable counts nested
+calls and stops when more than `--max-depth` (default 4096) wait to return, with `the
+program stopped: more than N nested calls`, as the VM does. Without it, as under `--checks
+none`, nothing is counted, so a recursion with no base overflows the native stack, as it
+does in C. A debug build, the default, still keeps the list of calls in progress, so
+`--checks none` names the place of a stop; `--release` drops that list.
+
+`--max-heap <OCTETS>` caps the heap, as the VM's flag of that name does (default 0, no cap).
+The executable counts the heap octets it holds: a counted block (text, a plain list, a box,
+a closure record) at the size of its cells, and a raw block of marked code (`zk_alloc`,
+`zk_realloc`, and `zk_free` for the free statement) at the size the allocator gives
+(`malloc_size` on macOS, `malloc_usable_size` on Linux, `_msize` on Windows; a raw block on
+another host is not counted). A counted block past the cap stops the run with the VM's
+message, `the program stopped: no heap room for N octets`; a raw allocation past the cap
+gives the null address, as in the VM; a resize past it stops the run. A block that C made
+and the program frees was never counted, so the count stops at 0 there; a block the program
+gave to C, which C frees, is never given back.
 
 `--overflow` works as it does for the VM: `stop`, the default, stops the program when a
 result does not fit its kind, and `wrap` wraps it around. A check the compiler proves never
@@ -59,8 +88,26 @@ its exit status is 1, as in the VM. The line starts with the name of the executa
 ```console
 $ ./divide
 စားမည်
-divide: the program stopped: integer division or remainder with zero as divisor
+divide: the program stopped: integer division or remainder with zero as divisor (in ပရိုဂရမ်, at divide.zaka:5:1)
 ```
+
+A debug build, the default, names the function and the place of the statement that
+stopped, and lists the calls in progress as the VM does: when more than one call waits,
+the lines after the trap are a stack backtrace, the most recent call first. The place is
+the start of the statement, where the VM names the instruction, so the VM's column can be
+later in the line. `ZAKA_BACKTRACE` works as for the VM (see [How a run
+ends](../vm/running.md#how-a-run-ends)): unset, a short backtrace; `full`, each call; `0`,
+none. The C of `main` is left out of the list.
+
+```console
+$ zakac build --target c --release divide.zaka
+$ ./divide
+စားမည်
+divide: the program stopped: integer division or remainder with zero as divisor (in ပရိုဂရမ်)
+```
+
+A `--release` build keeps no table of places: a stop names the function alone, and each
+backtrace line is a function name with no place.
 
 ## Where the output differs from the VM
 
@@ -68,7 +115,8 @@ divide: the program stopped: integer division or remainder with zero as divisor
   the VM.
 - **Argument 0.** The first text of the start block's arguments is the path of the
   executable, where the VM gives the path of the source file.
-- **The trap line** names no function and no op: native code has no op numbers.
+- **The trap line** names the statement where the VM names the instruction, so a column can differ; a `--release` build names the function alone; native code has no op numbers.
+- **Deep recursion.** Both stop at `--max-depth` calls under the language checks; native code with `--checks none` counts no calls and runs out of the native stack.
 
 Each other value prints the same: integers in Burmese digits, floats with the fewest digits
 that read back, text, lists, structs, members of an enumeration and results. Floats round
@@ -210,6 +258,7 @@ A program with a `zaka_cb.c` in `gen/` links `-lffi` as well.
 | --- | --- |
 | `m0.c`, `m1.c`, ... | the globals and functions of each module |
 | `main.c` | `main`: the arguments, the start block, the exit status |
+| `zaka_checks.h` | the run-time checks, one `ZK_CHECK_<NAME>` set to 1 or 0 for each (`ZK_CHECK_DIVIDE`, `ZK_CHECK_NULL`, ...), and `ZK_MAX_DEPTH`; each file of the runtime and of the program includes it |
 | `zaka_kinds.h` | the declaration of each global, function and kind |
 | `zaka_kinds.c` | the description of each kind, and the texts of the messages |
 | `zaka_ffi.c` | the wrappers of the C functions of the program; written when it has some |

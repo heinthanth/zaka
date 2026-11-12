@@ -50,6 +50,9 @@ This is the *start block*. Each program has one and no more, and each statement 
 runs goes inside it. The examples on these pages all start like this; [Where a program
 starts](../programs/start.md) shows what more a start block can do.
 
+The closer has other accepted spellings, such as `ပရိုဂရမ် ပြီးပါပြီ။`: see [Four closing
+forms](../variables/scope.md#four-closing-forms).
+
 ## Running it
 
 1. Open the [Zaka Explorer](/explorer/), paste the program, and

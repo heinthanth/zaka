@@ -2,9 +2,11 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
 use bon::Builder;
+use imbl::Vector;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::Slot;
+use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -441,9 +443,11 @@ pub(crate) struct State
 {
     /// The global slots, in module order.
     pub(crate) globals: Vec<SlotState>,
-    /// The local slots of the routine, in slot order.
+    /// The local slots of the routine, in slot order. The check keeps a
+    /// state for each node, so the slots share what a node leaves alone:
+    /// a plain list of them would cost the slot count at each node.
     #[builder(default)]
-    pub(crate) locals: Vec<SlotState>,
+    pub(crate) locals: Vector<SlotState>,
     /// The paths from a parameter or a global that a free, in the routine
     /// or in a call, left without a block on some path here, and no
     /// allocation filled again: the owner there can be null.
@@ -612,7 +616,7 @@ impl State
         };
         State::builder()
             .globals(both(&self.globals, &other.globals))
-            .locals(both(&self.locals, &other.locals))
+            .locals(merged(&self.locals, &other.locals, SlotState::join))
             .unfilled(self.unfilled.union(&other.unfilled).cloned().collect())
             .below(self.below.intersection(&other.below).copied().collect())
             .closures(join_closures(&self.closures, &other.closures))
@@ -636,12 +640,38 @@ impl State
         };
         State::builder()
             .globals(both(&self.globals, &older.globals))
-            .locals(both(&self.locals, &older.locals))
+            .locals(merged(&self.locals, &older.locals, SlotState::widen))
             .unfilled(self.unfilled.clone())
             .below(self.below.clone())
             .closures(self.closures.clone())
             .build()
     }
+}
+
+/// The slots of two states put together one slot at a time, sharing each slot
+/// that is the same in both.
+///
+/// # Arguments
+///
+/// * `a` - The slots of one state.
+/// * `b` - The slots of the other.
+/// * `pair` - How two facts of one slot go together.
+///
+/// # Returns
+///
+/// The slots.
+fn merged(
+    a: &Vector<SlotState>, b: &Vector<SlotState>,
+    pair: impl Fn(&SlotState, &SlotState) -> SlotState,
+) -> Vector<SlotState>
+{
+    let mut out = a.clone();
+    let differ =
+        a.iter().zip(b.iter()).enumerate().filter(|(_, (mine, theirs))| mine != theirs);
+    let changes: Vec<(usize, SlotState)> =
+        differ.map(|(n, (mine, theirs))| (n, pair(mine, theirs))).collect();
+    do_for!((n, fact) in changes, out.set(n, fact));
+    out
 }
 
 /// The roots of a borrow parameter: what the argument points into, which

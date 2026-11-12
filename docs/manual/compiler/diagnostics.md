@@ -40,7 +40,7 @@ the main span and each label span are marked inside the source line, in the colo
 level. Terminals do not agree on the cells a Burmese sign takes, so a row can drift from
 the text it points at: the rows are drawn when the compiler knows how the terminal draws
 Burmese text, and left out otherwise. Without the rows, each span is also underlined, and
-a label shows its text alone on the line under its source line. `ZAKAC_CARETS` overrides the choice (see
+a label shows its text alone on the line under its source line. `ZAKAC_CARETS`, or `carets` in a [config file](configuration.md), overrides the choice (see
 [Environment](commands.md#environment)). The explorer draws the rows in each font: a row
 repeats the text above it, hidden, so the browser sets the marks out under the span.
 
@@ -77,7 +77,8 @@ Two settings move the level:
 - `--strict-particles` makes each ZK05 warning an error.
 - `--mem-check` sets the level of the pointer lint of marked code (ZK0702 to ZK0712 and
   ZK0721): `warn`, the default, makes each finding a warning, `error` an error, and `off`
-  drops them. See [Compiler checks](checks.md).
+  drops them. `--allow`, `--warn` and `--error` set one group or code of it on its own,
+  as `--error leaks`. See [Compiler checks](checks.md).
 
 ## Codes
 
@@ -174,7 +175,7 @@ warning[ZK0709]: "ပ" points at nothing here, so there is nothing to read or wr
   |
 4 | ပ ၏ တန်ဖိုး ကို ပြသမည်။
   | ^
-zaka_vm: the program stopped: access through a null address at 0x0 (in ပရိုဂရမ်, op 5)
+zaka_vm: the program stopped: access through a null address at 0x0 (in ပရိုဂရမ်, at nul2.zaka:4:1)
 ```
 
 Here the compiler warned (ZK0709) and the VM stopped the program at the same place.

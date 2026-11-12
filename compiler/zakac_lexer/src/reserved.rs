@@ -262,6 +262,12 @@ pub static OLD_ENDINGS: &[(&str, &str, Kw)] = &[
 static LOOKUP: LazyLock<HashMap<&'static str, Kw>> =
     LazyLock::new(|| RESERVED.iter().copied().collect());
 
+/// The length in u8s of the longest reserved word. A spelling that
+/// [`canonical`] turns into a reserved word is no longer than it, so no
+/// piece of more pre-tokens than this is reserved.
+static LONGEST: LazyLock<usize> =
+    LazyLock::new(|| RESERVED.iter().map(|(text, _)| text.len()).max().unwrap_or(0));
+
 /// Look up a whole word in the reserved table, with `ဒေတာ` read as
 /// `အချက်အလက်`.
 ///
@@ -331,7 +337,9 @@ pub fn split_reserved(word: &Word<'_>) -> Option<Pieces>
     best[0] = Some(Vec::new());
     for end in 1..=n
     {
-        best[end] = (0..end)
+        // A piece is at most as long as the longest reserved word, which
+        // keeps a long name linear.
+        best[end] = (end.saturating_sub(*LONGEST)..end)
             .filter_map(|start| extend(&best[start], word, start, end))
             .min_by_key(Vec::len);
     }

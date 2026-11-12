@@ -154,6 +154,8 @@ BadMark = ("ZK0241", Level::Error),
 /// `ဒေတာ ထည့်ပေးရန်` on a parameter of a function kind, where a call through
 /// the value cannot know the place is filled.
 FillInFnKind = ("ZK0243", Level::Error),
+/// Expressions or blocks nest deeper than the parser follows.
+NestingTooDeep = ("ZK0244", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

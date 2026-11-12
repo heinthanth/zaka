@@ -75,7 +75,7 @@ error[ZK0465]: a C function cannot take or give back a value of the kind "text"
 ```
 
 The form the help line names is an [optional](../optionals/README.md): the text, or `အလွတ်`
-when C gives NULL. It needs no mark, since Zaka copies the text and the program never
+when C gives NULL. Come back to this part after [Optional values](../optionals/README.md). It needs no mark, since Zaka copies the text and the program never
 holds the address. A test reads it as for each optional:
 
 ```zaka
@@ -97,6 +97,8 @@ name ဟူသော စာသား တစ်ခု ကို လက်ခံ�
 
 ## Lists of numbers
 
+Come back to this section after [Lists](../lists/README.md).
+
 A list whose cells are integers of up to 64 bits or decimal numbers goes to C as the
 address of its first cell, as C passes the cells of a list. A list of other cells, such as a list of
 text, is refused (ZK0465):
@@ -117,6 +119,8 @@ s ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပ�
 ```
 
 ## C writes into a list
+
+Come back to this section after [Lists](../lists/README.md).
 
 C writes a list parameter marked
 [`ဒေတာ ပြောင်းလဲရန်`](parameters.md#changing-the-callers-variable) in place, as a C function writes
@@ -203,6 +207,8 @@ fmt ဟူသော စာသား တစ်ခု ကို လည်းကေ
 
 ## A function C keeps
 
+Come back to this section after [Closures](../function-values/closures.md).
+
 A function of the program that has captures, a [closure](../function-values/closures.md),
 goes to a C function as a function value too. Some C functions keep the function and call
 it later: `signal` keeps a handler, and `raise` makes the signal come. A closure that C
@@ -246,6 +252,8 @@ the program. A handle that C passed is C's, so the function cannot close it outs
 code. The [Docs](../../manual/language/functions.md#c-functions) list each kind.
 
 ## A struct C keeps
+
+Come back to this section after [Structs](../structs/README.md).
 
 Some libs keep a struct of their own and give the program a pointer to it: a counter, a
 database connection. Zaka names such a struct with a kind that comes from outside, and a

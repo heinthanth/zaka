@@ -121,6 +121,26 @@ and Docs pages give a world in storage: the input their `stdin` fence holds, and
 that last as long as the run. The explorer asks for each line on its output panel, as a
 terminal does (see [Running a program](../vm/running.md#input-files-and-the-standard-streams)). See [Running a program](../vm/running.md#input-files-and-the-standard-streams).
 
+## What the stdlib holds
+
+The stdlib has one module so far, `"စံကား/အဝင်အထွက်"` (the file `io.zaka` of the stdlib
+folder), which is the module this page lists. It holds streams, files and the failures of
+each; it holds no helper for text, lists or tables. A program writes these itself, for
+now:
+
+- splitting text at a separator, or into lines or words;
+- looking a value up in a table, as of names and scores;
+- sorting a list: the Learn page [Passing a
+  function](../../learn/function-values/README.md#passing-a-function) writes one that takes
+  the order as a function value;
+- removing a cell with a given number: a plain list removes its last cell
+  ([Lists](lists.md)), so a loop moves back the cells after the one to remove.
+
+The Learn pages on [Lists](../../learn/lists/growing.md) and
+[Text](../../learn/text/changing.md) show the forms that do exist, and
+[Scores](../../learn/programs/scores.md) shows a program that walks a list and builds
+another.
+
 ## The rules
 
 - An import path that starts with `စံကား/` names a module of the stdlib, which the

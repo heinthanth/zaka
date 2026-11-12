@@ -7,12 +7,58 @@
 #include "zaka_c_sugars.h"
 #include "zaka_rt.h"
 
+/* The size the allocator gave a raw block, so --max-heap can give it back
+ * when the block is freed; a host with no such call counts no raw block. */
+#if ZK_MAX_HEAP && defined(__APPLE__)
+#include <malloc/malloc.h>
+#define ZK_RAW_SIZE(p) malloc_size(p)
+#elif ZK_MAX_HEAP && defined(__linux__)
+#include <malloc.h>
+#define ZK_RAW_SIZE(p) malloc_usable_size(p)
+#elif ZK_MAX_HEAP && defined(_WIN32)
+#include <malloc.h>
+#define ZK_RAW_SIZE(p) _msize(p)
+#else
+#define ZK_RAW_SIZE(p) ((size_t)0)
+#endif
+
 /** The octets of a word: an address or a count. */
 #define ZK_WORD sizeof(void *)
 /** No limit on the cells of a slice source. */
 #define ZK_NO_LIMIT SIZE_MAX
 
 /* ---- storage ---- */
+
+/** The heap octets the program holds now, which --max-heap caps. */
+static size_t zk_heap_live = 0;
+
+/**
+ * Count octets the program takes from the heap, under the cap of
+ * --max-heap; with no cap each take fits.
+ *
+ * @param size The octets.
+ * @return 1 when the octets fit and are counted, else 0.
+ */
+static int zk_heap_take(size_t size)
+{
+    RET_IF(!ZK_MAX_HEAP, 1);
+    size_t cap = (size_t)ZK_MAX_HEAP;
+    RET_IF(size > cap || zk_heap_live > cap - size, 0);
+    zk_heap_live += size;
+    return 1;
+}
+
+/**
+ * Give back octets the program held. A block C made and the program frees
+ * was never counted, so the count stops at 0.
+ *
+ * @param size The octets.
+ */
+static void zk_heap_give(size_t size)
+{
+    RET_IF(!ZK_MAX_HEAP);
+    zk_heap_live = size > zk_heap_live ? 0 : zk_heap_live - size;
+}
 
 /**
  * A new heap block, or a stop of the run when no room is left.
@@ -103,6 +149,7 @@ static size_t *zk_seq_count(unsigned char *base) { return &zk_head_of(base)->rc;
  */
 unsigned char *zk_seq_new(size_t size)
 {
+    DO_IF(!zk_heap_take(size), zk_out_of_mem(size));
     unsigned char *p = malloc(ZK_SEQ_HEAD + size);
     DO_IF(!p, zk_out_of_mem(size));
     zk_head *head = (zk_head *)(void *)p;
@@ -122,6 +169,9 @@ unsigned char *zk_seq_new(size_t size)
 static unsigned char *zk_seq_grow(unsigned char *base, size_t size)
 {
     RET_IF(!base, zk_seq_new(size));
+    size_t old = zk_head_of(base)->size;
+    DO_IF(size > old && !zk_heap_take(size - old), zk_out_of_mem(size));
+    DO_IF(size < old, zk_heap_give(old - size));
     unsigned char *p = realloc(base - ZK_SEQ_HEAD, ZK_SEQ_HEAD + size);
     DO_IF(!p, zk_out_of_mem(size));
     ((zk_head *)(void *)p)->size = size;
@@ -140,7 +190,12 @@ static void zk_seq_kind(unsigned char *base, const zk_kind *cell)
     zk_head_of(base)->cell = cell;
 }
 
-void zk_seq_free(unsigned char *base) { DO_IF(base, free(base - ZK_SEQ_HEAD)); }
+void zk_seq_free(unsigned char *base)
+{
+    RET_IF(!base);
+    zk_heap_give(zk_head_of(base)->size);
+    free(base - ZK_SEQ_HEAD);
+}
 /**
  * Write a value of a list or struct kind.
  *
@@ -167,7 +222,7 @@ void zk_put_block(unsigned char *to, const unsigned char *from, size_t size)
  */
 unsigned char *zk_ptr_add(unsigned char *p, zk_imax count, size_t stride)
 {
-    DO_IF(ZK_MEM_CHECKS && !p && count != 0, zk_null_deref(p));
+    DO_IF(ZK_CHECK_NULL && !p && count != 0, zk_null_deref(p));
     uintptr_t moved = (uintptr_t)p + (uintptr_t)((zk_umax)count * (zk_umax)stride);
     return (unsigned char *)moved;
 }
@@ -198,7 +253,23 @@ unsigned char *zk_alloc(zk_umax count, size_t stride)
 {
     RET_IF(stride && count > SIZE_MAX / stride, NULL);
     size_t size = (size_t)count * stride;
-    return calloc(size ? size : 1, 1);
+    unsigned char *p = calloc(size ? size : 1, 1);
+    RET_IF(!p || zk_heap_take(ZK_RAW_SIZE(p)), p);
+    /* Past the cap of --max-heap the program gets no block, as from malloc. */
+    free(p);
+    return NULL;
+}
+
+/**
+ * Free a raw block of marked code and give back its octets.
+ *
+ * @param p The block, or NULL.
+ */
+void zk_free(void *p)
+{
+    RET_IF(!p);
+    zk_heap_give(ZK_RAW_SIZE(p));
+    free(p);
 }
 
 /**
@@ -213,7 +284,12 @@ unsigned char *zk_alloc(zk_umax count, size_t stride)
 unsigned char *zk_realloc(unsigned char *p, zk_umax count, size_t stride)
 {
     DO_IF(stride && count > SIZE_MAX / stride, zk_out_of_mem((zk_umax)-1));
-    return zk_grow(p, (size_t)count * stride);
+    size_t old = p ? ZK_RAW_SIZE(p) : 0;
+    unsigned char *moved = zk_grow(p, (size_t)count * stride);
+    size_t now = ZK_RAW_SIZE(moved);
+    DO_IF(now > old && !zk_heap_take(now - old), zk_out_of_mem(now));
+    DO_IF(now < old, zk_heap_give(old - now));
+    return moved;
 }
 
 /**
@@ -235,7 +311,7 @@ void zk_blit(
     RET_IF(len == 0);
     uintptr_t s = (uintptr_t)src, d = (uintptr_t)dst;
     int apart = s + len <= d || d + len <= s;
-    DO_IF(ZK_MEM_CHECKS && !overlap && !apart, zk_addr_trap(ZK_TRAP_OVERLAP, dst));
+    DO_IF(ZK_CHECK_OVERLAP && !overlap && !apart, zk_addr_trap(ZK_TRAP_OVERLAP, dst));
     ZK_NULL_CHECK(src);
     ZK_NULL_CHECK(dst);
     memmove(dst, src, len);
@@ -1129,7 +1205,7 @@ size_t zk_cell_of(zk_imax index, size_t len, int first)
 {
     int outside = index < first || index >= (zk_imax)len + first;
     DO_IF(
-        ZK_LANG_CHECKS && outside,
+        ZK_CHECK_BOUNDS && outside,
         zk_range_trap(
             ZK_TRAP_INDEX_OUT_OF_RANGE, index, first, (zk_imax)len + first - 1
         )
@@ -1149,7 +1225,7 @@ static size_t zk_char_index(zk_imax index, size_t len, int first)
 {
     int outside = index < first || index >= (zk_imax)len + first;
     DO_IF(
-        ZK_LANG_CHECKS && outside,
+        ZK_CHECK_BOUNDS && outside,
         zk_range_trap(ZK_TRAP_CHAR_OUT_OF_RANGE, index, first, (zk_imax)len + first - 1)
     );
     return (size_t)(index - first);
@@ -1167,7 +1243,7 @@ static size_t zk_place_of(zk_imax index, size_t count, int first)
 {
     int outside = index < first || index > (zk_imax)count + first;
     DO_IF(
-        ZK_LANG_CHECKS && outside,
+        ZK_CHECK_BOUNDS && outside,
         zk_range_trap(ZK_TRAP_NO_PLACE_TO_INSERT, index, first, (zk_imax)count + first)
     );
     return (size_t)(index - first);
@@ -1212,13 +1288,13 @@ void zk_make_slice(
 {
     zk_umax end = start + len;
     int past = limit != ZK_NO_LIMIT && (end < start || end > limit);
-    if (ZK_LANG_CHECKS && past)
+    if (ZK_CHECK_BOUNDS && past)
     {
         const char *names[] = {"len", "start", "limit"};
         zk_imax nums[] = {(zk_imax)len, (zk_imax)start, (zk_imax)limit};
         zk_nums_trap(ZK_TRAP_SLICE_OUT_OF_RANGE, 3, names, nums);
     }
-    int edges = ZK_LANG_CHECKS && text && limit != ZK_NO_LIMIT && base;
+    int edges = ZK_CHECK_TEXT && text && limit != ZK_NO_LIMIT && base;
     DO_IF(edges && start < limit, zk_edge_check(base, (size_t)start));
     DO_IF(edges && end < limit, zk_edge_check(base, (size_t)end));
     unsigned char *at = zk_ptr_add(base, (zk_imax)start, stride);
@@ -1271,7 +1347,7 @@ int zk_is_utf8(const unsigned char *s, size_t n)
  */
 void zk_check_utf8(const unsigned char *at)
 {
-    RET_IF(!ZK_LANG_CHECKS);
+    RET_IF(!ZK_CHECK_TEXT);
     const unsigned char *base = zk_seq_base(at);
     size_t count = zk_seq_len(at), i = 0;
     while (i < count)
@@ -1524,7 +1600,7 @@ static void zk_span(
     size_t len = zk_seq_len(at), count = chars ? zk_chars_in(base, len) : len;
     size_t lo = chars ? zk_char_index(start, count, 1) : zk_cell_of(start, count, 0);
     size_t hi = chars ? zk_char_index(end, count, 1) : zk_cell_of(end, count, 0);
-    if (ZK_LANG_CHECKS && hi < lo)
+    if (ZK_CHECK_BOUNDS && hi < lo)
     {
         const char *names[] = {"start", "end"};
         zk_imax nums[] = {(zk_imax)lo + chars, (zk_imax)hi + chars};
@@ -1532,7 +1608,7 @@ static void zk_span(
     }
     range[0] = chars ? zk_char_start(base, len, lo) : lo;
     range[1] = chars ? zk_char_start(base, len, hi + 1) : hi + 1;
-    RET_IF(chars || !ZK_LANG_CHECKS);
+    RET_IF(chars || !ZK_CHECK_TEXT);
     DO_IF(range[0] < len, zk_edge_check(base, range[0]));
     DO_IF(range[1] < len, zk_edge_check(base, range[1]));
 }
@@ -1606,7 +1682,7 @@ uint32_t zk_char_at_octet(const unsigned char *at, zk_umax index)
     int outside = index >= len;
     uint32_t c = outside ? 0xFFFD : zk_decode(base + index, len - (size_t)index);
     DO_IF(
-        ZK_LANG_CHECKS && (outside || c == 0xFFFD),
+        ZK_CHECK_BOUNDS && (outside || c == 0xFFFD),
         zk_range_trap(ZK_TRAP_CHAR_OUT_OF_RANGE, (zk_imax)index, 0, (zk_imax)len - 1)
     );
     return c;
@@ -1839,6 +1915,12 @@ static int zk_eq_step(
         }
         return 1;
     case ZK_K_FLOAT:
+#ifdef ZK_HAS_F16
+        RET_IF(k->size == 2, zk_ld_f16(a) == zk_ld_f16(b));
+#endif
+#ifdef ZK_HAS_F128
+        RET_IF(k->size == 16, zk_ld_f128(a) == zk_ld_f128(b));
+#endif
         RET_IF(k->size == 4, zk_ld_f32(a) == zk_ld_f32(b));
         return zk_ld_f64(a) == zk_ld_f64(b);
     default:
@@ -1983,6 +2065,12 @@ static void zk_show_scalar(const unsigned char *at, const zk_kind *k)
 #endif
         return;
     case ZK_K_FLOAT:
+#ifdef ZK_HAS_F16
+        DONE_IF(k->size == 2, zk_put_f16(zk_ld_f16(at)));
+#endif
+#ifdef ZK_HAS_F128
+        DONE_IF(k->size == 16, zk_put_f128(zk_ld_f128(at)));
+#endif
         DONE_IF(k->size == 4, zk_put_f32(zk_ld_f32(at)));
         DONE_IF(k->size == 8, zk_put_f64(zk_ld_f64(at)));
         return;
