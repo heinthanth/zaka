@@ -585,20 +585,20 @@ fn ranges_of_text_are_replaced_in_each_mode() { runs_in_each_mode(REPLACES, REPL
 /// List counts worked out from constants: a struct field, a parameter, a
 /// local constant and a size.
 const COUNTED_BY_CONSTANTS: &str = "ကိန်းသေ N သည် ၂ ဖြစ်ပါစေ။
-ဇယား ဟူသော ဒေတာအစုအဝေးတွင် အမှတ် ဟူသော အကွက် N * ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ပါဝင်သည်။
+ဂရစ် ဟူသော ဒေတာအစုအဝေးတွင် အမှတ် ဟူသော အကွက် N * ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ပါဝင်သည်။
 လုပ်ဆောင်ချက် ပြ သည်
 l ဟူသော အကွက် N + ၁ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 l ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 ကိန်းသေ M သည် (N + ၁) * ၂ ဖြစ်ပါစေ။
-ဇယား(အမှတ်: ကနဦးတန်ဖိုး) ကို ပြသမည်။
+ဂရစ်(အမှတ်: ကနဦးတန်ဖိုး) ကို ပြသမည်။
 လုပ်ဆောင်ချက် ပြ ကို [၁၊ ၂၊ ၃] တို့ဖြင့် လုပ်ဆောင်မည်။
 အကွက် M ခုရှိသော ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
 ";
 
 /// What [`COUNTED_BY_CONSTANTS`] prints.
-const COUNTED_BY_CONSTANTS_OUT: &str = "ဇယား(အမှတ်: [၀၊ ၀၊ ၀၊ ၀])\n[၁၊ ၂၊ ၃]\n၆\n";
+const COUNTED_BY_CONSTANTS_OUT: &str = "ဂရစ်(အမှတ်: [၀၊ ၀၊ ၀၊ ၀])\n[၁၊ ၂၊ ၃]\n၆\n";
 
 #[test]
 fn counts_from_constants_in_each_mode()

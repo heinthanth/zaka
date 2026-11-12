@@ -102,6 +102,9 @@ pub enum Expr
     Struct(StructLit),
     /// `စာရင်းအလွတ်`, a list with each cell at its default.
     BlankList(BlankListLit),
+    /// `<index> အနေဖြင့် <value>၊ … တို့ပါသော ဇယား`, `[<index>: <value>၊ …]`,
+    /// `ဇယားအလွတ်` or `[:]`: a ဇယား written out one row at a time.
+    Table(TableLit),
     /// Text in double quotes, with a value in place of each `{...}` template
     /// slot.
     Str(StrExpr),
@@ -340,6 +343,34 @@ pub struct ListLit
     #[builder(default)]
     pub cells: Vec<Expr>,
     /// The kind, `<list> ဟူသော <kind> တစ်ခု`, when written.
+    #[serde(default)]
+    pub kind: Option<Kind>,
+    /// Source region of the whole literal, the kind included.
+    pub span: Span,
+}
+
+/// One row of a ဇယား literal.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct TableRow
+{
+    /// The index.
+    pub index: Expr,
+    /// The value.
+    pub value: Expr,
+}
+
+/// `<index> အနေဖြင့် <value>၊ … တို့ပါသော ဇယား` or `[<index>: <value>၊ …]`: a
+/// ဇယား written out one row at a time; `ဇယားအလွတ်` and `[:]` write none.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct TableLit
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The rows, in order; a later row with the index of an earlier one
+    /// gives that row its value.
+    #[builder(default)]
+    pub rows: Vec<TableRow>,
+    /// The kind, `<literal> ဟူသော <kind> တစ်ခု`, when written.
     #[serde(default)]
     pub kind: Option<Kind>,
     /// Source region of the whole literal, the kind included.
@@ -717,7 +748,7 @@ pub struct CallExpr
     /// a [`CallExpr::place`], the first name of that place.
     pub callee: Ident,
     /// The value that holds the function: a field, a cell or a read through
-    /// a pointer in a long call form, `လုပ်ဆောင်ချက် ဇယား ၏ အကွက် i ကို …`, or
+    /// a pointer in a long call form, `လုပ်ဆောင်ချက် ဂရစ် ၏ အကွက် i ကို …`, or
     /// the call before it in a sign-form chain, `f(a)(b)`.
     #[serde(default)]
     pub place: Option<Box<Expr>>,
@@ -784,6 +815,7 @@ impl Expr
             Expr::List(n) => n.id,
             Expr::Struct(n) => n.id,
             Expr::BlankList(n) => n.id,
+            Expr::Table(n) => n.id,
             Expr::Str(n) => n.id,
             Expr::Member(n) => n.id,
             Expr::FnAddr(n) => n.id,

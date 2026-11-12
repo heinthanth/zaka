@@ -770,6 +770,9 @@ impl Paths<'_, '_>
             {
                 self.kinded(kind, &[A, A], Some(Class::Bool))
             }
+            Op::RowFind(kind) => self.kinded(kind, &[A, A], Some(I)),
+            Op::SetRow(kind) => self.kinded(kind, &[A, A, A], None),
+            Op::RemoveRow(kind) => self.kinded(kind, &[A, A], None),
             Op::Halt { kind: None, .. } => Ok(effect(&[], None)),
             Op::Halt { kind: Some(kind), .. } =>
             {

@@ -14,6 +14,7 @@
   - [Errors and results](language/error-handling.md)
   - [Optional values](language/optionals.md)
   - [Lists](language/lists.md)
+  - [Tables](language/tables.md)
   - [Text](language/text.md)
   - [Structs](language/structs.md)
   - [Values and objects](language/objects.md)

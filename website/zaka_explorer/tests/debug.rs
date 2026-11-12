@@ -706,7 +706,7 @@ fn a_list_block_knows_its_cells_in_both_frame_forms()
     let (_, mut s) = session_of("lists/grid");
     s.step();
     let heap = s.heap();
-    let owner = format!("ဇယား@{START_NAME}");
+    let owner = format!("ဂရစ်@{START_NAME}");
     let grid = heap.blocks.iter().find(|b| b.owner.as_ref() == Some(&owner));
     let grid = grid.expect("the grid");
     assert_eq!(grid.cells, [32, 8], "rows of 4 integers, cells of 8 octets");

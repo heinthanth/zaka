@@ -11,11 +11,13 @@ use crate::expr::VerbExpr;
 use crate::kind::BaseKind;
 use crate::kind::Cells;
 use crate::kind::Kind;
+use crate::kind::TableParts;
 use crate::kind::Wrap;
 use crate::stmt::AliasDecl;
 use crate::stmt::BlockStmt;
 use crate::stmt::CountedStmt;
 use crate::stmt::DeclStmt;
+use crate::stmt::EachPart;
 use crate::stmt::EnumDecl;
 use crate::stmt::FnDecl;
 use crate::stmt::GenericStmt;
@@ -111,6 +113,12 @@ impl ToSexpr for Expr
                 [n.source.to_sexpr(), n.start.to_sexpr(), n.len.to_sexpr()],
             ),
             Expr::List(n) => list("list", n.cells.iter().map(ToSexpr::to_sexpr)),
+            Expr::Table(n) => list(
+                "table",
+                n.rows
+                    .iter()
+                    .map(|r| list("row", [r.index.to_sexpr(), r.value.to_sexpr()])),
+            ),
             Expr::Struct(n) =>
             {
                 let fields =
@@ -143,11 +151,16 @@ impl ToSexpr for Stmt
             Stmt::Counted(s) => counted_sexpr(s),
             Stmt::Each(s) =>
             {
-                let head = tern!(s.chars, "each_char", "each_cell");
-                list(
-                    head,
-                    [s.var.name.to_string(), s.source.to_sexpr(), s.block.to_sexpr()],
-                )
+                let head = match s.part
+                {
+                    EachPart::Cell => "each_cell",
+                    EachPart::Char => "each_char",
+                    EachPart::Index => "each_index",
+                    EachPart::Row => "each_row",
+                };
+                let place = s.place.iter().map(|p| p.name.to_string());
+                let names = place.chain([s.var.name.to_string()]);
+                list(head, names.chain([s.source.to_sexpr(), s.block.to_sexpr()]))
             }
             Stmt::Generic(s) => generic_sexpr(s),
             Stmt::Break(_) => "(break)".into(),
@@ -315,6 +328,13 @@ fn base_name(k: &Kind) -> String
             format!("({ok} ! {err})")
         }
         BaseKind::Fn => fn_kind_sexpr(k),
+        BaseKind::Table =>
+        {
+            let side = |f: fn(&TableParts) -> &Kind| {
+                k.table.as_deref().map_or("-".to_string(), |t| f(t).to_sexpr())
+            };
+            format!("(map {} {})", side(|t| &t.index), side(|t| &t.value))
+        }
         BaseKind::Char | BaseKind::Bool | BaseKind::Text | BaseKind::Opaque =>
         {
             k.base.as_ref().to_string()

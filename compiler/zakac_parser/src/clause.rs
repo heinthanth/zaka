@@ -6,6 +6,7 @@ use zakac_ast::expr::IndexExpr;
 use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::RangeExpr;
+use zakac_ast::expr::TableRow;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AddStmt;
@@ -305,9 +306,19 @@ impl Parser<'_>
             // `ထဲမှ ဒေတာ` reads an optional or a result, and `ဟူသော အမှားအယွင်း`
             // makes an error value, of the operand before it.
             let bare = stack.last().is_some_and(|i| i.slot.is_none());
+            if bare && self.at_row_read(0)
+            {
+                let table = into_expr(stack.pop().expect("an operand comes first"));
+                stack.push(Item::expr(self.parse_row(table)?));
+                continue;
+            }
             if let Some(op) = self.data_read_at(0).filter(|_| bare)
             {
                 self.push_postfix(&mut stack, op, 2);
+                do_if!(
+                    op == VerbOp::Unwrap && self.at_fallback(),
+                    self.push_fallback(&mut stack)?
+                );
                 continue;
             }
             if bare && tok.kind == TokenKind::Kw(Kw::CalledFault)
@@ -466,6 +477,31 @@ impl Parser<'_>
         let span = value.span().to(&last.span);
         let made = self.dup_expr(op, value, span, last.particle);
         stack.push(Item::expr(made));
+    }
+
+    /// Turn the read of an optional on top of the stack into the read with a
+    /// fallback, `၊ မရှိလျှင် <value>`, which comes next.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack; its top is the read.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic from the fallback.
+    fn push_fallback(&mut self, stack: &mut Vec<Item>) -> PResult<()>
+    {
+        let read = into_expr(stack.pop().expect("the read comes first"));
+        let optional = match read
+        {
+            Expr::Verb(v) =>
+            {
+                v.args.into_iter().next().expect("a read has its optional")
+            }
+            other => other,
+        };
+        stack.push(Item::expr(self.parse_fallback(optional)?));
+        Ok(())
     }
 
     /// A duplicate of a value.
@@ -657,6 +693,7 @@ impl Parser<'_>
     {
         ret_if!(self.at_struct_lit(), self.parse_struct_lit());
         let first = self.parse_notation()?;
+        ret_if!(self.at_table_rest(), self.parse_table(first));
         ret_if!(self.at_join_rest(), self.parse_join(first));
         ret_if!(!self.at_list_rest(), Ok(first));
         self.parse_list(first)
@@ -674,6 +711,53 @@ impl Parser<'_>
         ret_if!(self.at_list_close(0), true);
         ret_if!(!self.at_punct(Punct::ListSep), false);
         self.close_ahead(1, Self::at_list_close)
+    }
+
+    /// Whether the rest of a ဇယား literal comes next, after its first index:
+    /// `အနေဖြင့်`, with `တို့ပါသော ဇယား` ahead of the next `တို့ဖြင့်`,
+    /// `တို့ကို`, `)` or `။` outside parentheses.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_table_rest(&self) -> bool
+    {
+        let close = |p: &Self, n: usize| {
+            p.at_list_close(n) && p.peek_n(n + 1).kind == TokenKind::Kw(Kw::Table)
+        };
+        self.peek().kind == TokenKind::Kw(Kw::CountAs) && self.close_ahead(1, close)
+    }
+
+    /// Parse the rest of a ဇယား literal after its first index:
+    /// `အနေဖြင့် <value> (၊ <index> အနေဖြင့် <value>)* တို့ပါသော ဇယား`, and its kind
+    /// when `ဟူသော <kind> တစ်<classifier>` follows.
+    ///
+    /// # Arguments
+    ///
+    /// * `first` - The first index.
+    ///
+    /// # Returns
+    ///
+    /// The literal, or a diagnostic.
+    fn parse_table(&mut self, first: Expr) -> PResult<Expr>
+    {
+        let start = first.span();
+        let mut rows = Vec::new();
+        let mut index = first;
+        loop
+        {
+            self.expect(Kw::CountAs)?;
+            let value = self.parse_notation()?;
+            rows.push(TableRow::builder().index(index).value(value).build());
+            if !self.eat_punct(Punct::ListSep)
+            {
+                break;
+            }
+            index = self.parse_notation()?;
+        }
+        self.expect(Kw::ListOf)?;
+        self.expect(Kw::Table)?;
+        self.table_rest(start, rows)
     }
 
     /// Whether `close` holds for a token from `from` on, outside parentheses,
@@ -1152,6 +1236,12 @@ impl Parser<'_>
                 Ok(assign_stmt(first, Some(copied), span))
             }
             VerbOp::Print => Ok(print_stmt(first, slot, span)),
+            VerbOp::RemoveRow =>
+            {
+                let node =
+                    RemoveStmt::builder().list(first).row(true).span(span).build();
+                Ok(Stmt::Remove(node))
+            }
             VerbOp::AddCell =>
             {
                 let value = args.next().expect("an add statement takes two operands");

@@ -33,8 +33,9 @@ marked code a pointer's value), `WORD` the classifier of the kind, and `BODY` a 
 | switch | `VALUE သည် CASE ဖြစ်လျှင် BODY` then `[CASE၊ CASE တို့ ဖြစ်လျှင် BODY]` then `[တခြား KIND တစ်WORD ဖြစ်လျှင် BODY]` (see [Enumerations](enums.md#switch)) |
 | while | `COND နေသရွေ့ BODY` |
 | counted loop | `FROM မှ TO အထိ [STEP စီ] NAME အနေဖြင့် ရေတွက်၍ BODY` |
-| each cell | `LIST ၏ အကွက်တိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` |
-| each character | `TEXT ၏ စာလုံးတိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` |
+| each cell | `LIST ၏ အကွက်တိုင်း ကို [NAME နှင့်] NAME အနေဖြင့် ယူ၍ BODY` |
+| each character | `TEXT ၏ စာလုံးတိုင်း ကို [NAME နှင့်] NAME အနေဖြင့် ယူ၍ BODY` |
+| each row of a ဇယား | `TABLE ၏ အညွှန်းတိုင်း|အတန်းတိုင်း ကို [NAME နှင့်] NAME အနေဖြင့် ယူ၍ BODY` (see [Tables](tables.md#counting-and-walking-the-rows)) |
 | generic loop | `ကိန်းရှင် NAME သည် KIND တစ်WORD [ဖြစ်၍ တန်ဖိုးသည် VALUE]`, or `ကိန်းရှင် NAME သည် VALUE`, then `ဖြစ်ကာ COND နေသရွေ့` and a block with `[ပြီးလျှင် STATEMENT]` last |
 | break | `ကွင်းဆက် ကို ရပ်မည်။` |
 | continue | `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။` |
@@ -45,6 +46,8 @@ marked code a pointer's value), `WORD` the classifier of the kind, and `BODY` a 
 | add a cell | `PLACE ထဲသို့ VALUE ကို ထည့်မည်။` (see [Lists](lists.md#adding-and-removing-cells)) |
 | add to text | `TEXT ထဲသို့ VALUE ကို ထည့်မည်။` (see [Text](text.md#changing-text)) |
 | remove a cell | `PLACE ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။` |
+| set a row | `TABLE ထဲမှ အညွှန်း INDEX ၏ တန်ဖိုး ကို VALUE ဟု ထားမည်။` (see [Tables](tables.md#setting-and-removing-rows)) |
+| remove a row | `TABLE ထဲမှ အညွှန်း INDEX ကို ဖျက်မည်။` |
 | replace part of text | `TEXT ၏ အကွက် START မှ END ထိကို VALUE ဖြင့် အစားထိုးမည်။`, or `TEXT ၏ START လုံးမြောက်စာလုံးမှ END လုံးမြောက်စာလုံးထိကို VALUE ဖြင့် အစားထိုးမည်။` (see [Text](text.md#changing-text)) |
 | heap, in marked code | `မင်မိုရီတွင် SIZE နေရာယူ၍ လိပ်စာကို PLACE တွင် သိမ်းထားမည်။` and two more (below) |
 
@@ -520,6 +523,34 @@ is not text, is ZK0434.
 [၇၀၊ ၈၅၊ ၉၀]
 a
 ၁
+```
+
+**Two names, and the parts of a ဇယား.** The word before `ကို` names the part each round
+takes, and two names, `PLACE နှင့် NAME`, take where the item sits and then the item:
+
+| Part | Walks | One name takes | Two names take |
+| --- | --- | --- | --- |
+| `အကွက်တိုင်း` | a list | the cell | the cell number from 0, a `usize`, then the cell |
+| `စာလုံးတိုင်း` | text | the character | the character number from 0, a `usize`, then the character |
+| `အညွှန်းတိုင်း` | a ဇယား | the index | the index, then the value |
+| `အတန်းတိုင်း` | a ဇယား | the value | the index, then the value |
+
+`ကို` stands joined to the part word or after a space. A part that does not fit the value is
+ZK0434 for a list or text and ZK0484 for a ဇယား; the loop over the rows of a ဇယား is on
+[Tables](tables.md#counting-and-walking-the-rows).
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+["နီ"၊ "ပြာ"] ၏ အကွက်တိုင်း ကို န နှင့် အရောင် အနေဖြင့် ယူ၍ "{န}: {အရောင်}" ဟု ပြသမည်။
+"ကခ" ၏ စာလုံးတိုင်း ကို န နှင့် စ အနေဖြင့် ယူ၍ "{န}: {စ}" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၀: နီ
+၁: ပြာ
+၀: က
+၁: ခ
 ```
 
 **Generic loop.** `ကိန်းရှင် NAME သည် KIND [VALUE] ဖြစ်ကာ COND နေသရွေ့` opens a block.

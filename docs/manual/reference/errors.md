@@ -201,7 +201,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0429 | a write to a cell (a u8) of text | [Text](../language/text.md) |
 | ZK0430 | a declaration with no kind whose value is the null address | [Statements](../language/statements.md) |
 | ZK0433 | one place given to two `ဒေတာ ပြောင်းလဲရန်` parameters of one call, or a place a call changes in another argument of the same call | [Functions](../language/functions.md) |
-| ZK0434 | an each loop over a value it cannot walk: no list for an each-cell loop, or no text for an each-character loop | [Statements](../language/statements.md) |
+| ZK0434 | an each loop over a value it cannot walk: no list for an each-cell loop, or no text for an each-character loop, such as a ဇယား | [Statements](../language/statements.md#loops) |
 | ZK0436 | `[]` or `စာရင်းအလွတ်` given to a counted list | [Static data and counted lists](../../learn/forms/counted-lists.md#a-list-with-no-cells-in-a-counted-list) |
 | ZK0437 | an add or a remove on a counted list, or `နောက်ဆုံးအကွက်` on text | [Static data and counted lists](../../learn/forms/counted-lists.md#adding-to-a-counted-list) |
 | ZK0439 | `၏ အရှေ့တွင်` after a value that is no cell of a list and no character of text | [Lists](../language/lists.md) |
@@ -246,6 +246,11 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0481 | a kind no program can build: its fields lead back to it with no optional or plain list on the loop | [Kinds no program can build](../language/objects.md#kinds-no-program-can-build) |
 | ZK0482 | a struct literal that leaves out a field | [Struct literals](../language/structs.md#struct-literals), [Struct mistakes](../../learn/structs/mistakes.md#a-field-left-out) |
 | ZK0483 | a global of a module declared with no value | [Globals of a module](../language/modules.md#globals-of-a-module), [Module mistakes](../../learn/modules/mistakes.md#a-variable-of-a-module-with-no-value) |
+| ZK0484 | a row read, `အညွှန်းအရေအတွက်`, `အညွှန်းတိုင်း` or `အတန်းတိုင်း` on a value that is no ဇယား | [Tables](../language/tables.md#reading-a-row) |
+| ZK0485 | a ဇယား kind whose index kind holds a part that cannot be hashed and compared as a whole value: an object, a function value, a pointer, an optional, a result or a ဇယား | [Index kinds](../language/tables.md#index-kinds) |
+| ZK0486 | `ဇယားအလွတ်` or `[:]` with no ဇယား kind from its place | [Tables](../language/tables.md#literals) |
+| ZK0487 | a warning: a ဇယား kind whose index kind holds a decimal number, which rounding can split into two rows | [Decimal indexes](../language/tables.md#decimal-indexes) |
+| ZK0488 | `ကို ဖျက်မည်` after a value that is no row of a ဇယား | [Tables](../language/tables.md#setting-and-removing-rows) |
 
 ### ZK05: natural Zaka (warnings)
 

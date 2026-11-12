@@ -395,6 +395,19 @@ FieldLeftOut = ("ZK0482", Level::Error),
 /// A global of a module declared with no value: a module has no start block
 /// to set it in.
 ModuleGlobalNeedsValue = ("ZK0483", Level::Error),
+/// A row read, a row count or a row loop on a value that is no ဇယား.
+NotATable = ("ZK0484", Level::Error),
+/// A ဇယား kind whose index kind holds a part that cannot be hashed and
+/// compared as a whole value: an object, a function value, a pointer, an
+/// optional, a result or a ဇယား.
+BadIndexKind = ("ZK0485", Level::Error),
+/// `ဇယားအလွတ်` or `[:]` where no ဇယား kind can be worked out from its place.
+TableNeedsKind = ("ZK0486", Level::Error),
+/// A ဇယား kind whose index kind holds a decimal number, which rounding can
+/// split into two rows.
+DecimalIndex = ("ZK0487", Level::Warning),
+/// `ကို ဖျက်မည်` after a value that is no row of a ဇယား.
+RemoveNeedsRow = ("ZK0488", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

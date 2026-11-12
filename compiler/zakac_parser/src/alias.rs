@@ -19,6 +19,7 @@ use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::VisitorMut;
 use zakac_ast::visit::walk_expr_mut;
 use zakac_ast::visit::walk_sig_mut;
+use zakac_ast::visit::walk_table_mut;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::resolve as rd;
 use zakac_lexer::reserved::PLURAL;
@@ -267,6 +268,7 @@ impl VisitorMut for Swap<'_>
         let target = alias.and_then(|ident| self.expanded(ident.name));
         do_if!(let Some(target) = target, *n = spliced(target, n));
         do_if!(let Some(sig) = &mut n.sig, walk_sig_mut(self, sig));
+        do_if!(let Some(t) = &mut n.table, walk_table_mut(self, t));
         let parts = n.parts.as_deref_mut();
         let sides = parts.into_iter().flat_map(|p| [p.ok.as_mut(), p.err.as_mut()]);
         do_for!(side in sides.flatten(), self.visit_kind_mut(side));

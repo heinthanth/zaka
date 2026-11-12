@@ -79,6 +79,7 @@ would refuse numerous programs of this page.
 | not good | the good result is read from a [whole result](../language/error-handling.md#reading-a-whole-result) that holds an error value, or a failure with no value | `the result holds an error, not a good result: V`, or `the result holds a failure, not a good result` |
 | not fault | the error value is read from a whole result that holds a good result | `the result is a good result, not an error` |
 | no data | the data is read from an [optional](../language/optionals.md) that holds none | `the optional holds no data` |
+| no row | a statement writes inside the value of a row of a [ဇယား](../language/tables.md#writing-inside-a-row) that no row holds | `no row of the ဇယား has this index` |
 | write | the output cannot be written | `cannot write the output: E` |
 | C function not run | a C function is called in a VM built with no `ffi`, such as the explorer's | `the C function N runs in "zakac run" and in native builds, not in this VM` |
 | C link | the first call of a C function finds a lib that does not open, a C name that no lib holds, or addresses of a size the host does not have | `the C functions of the program cannot be reached: R` |
@@ -691,6 +692,29 @@ from the op `halt`, with the cause `no_data`, which has no kind and no operand:
 ```text
 အစ
 the program stopped: the optional holds no data
+```
+
+## A write through a missing row
+
+A read of a row of a ဇယား gives an optional and never stops the run, but a statement that
+writes inside the value of a row needs the row: a field or a cell of it, an add to it or a
+remove from it. When no row holds the index, the run stops with the trap `no row`, which has no
+value to show; a set of the whole value adds the row instead. The trap comes from the op `halt`,
+with the cause `no_row`:
+
+```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အုပ် သည် စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် စာရင်း ဇယား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [:] ဖြစ်ပါစေ။
+အုပ် ထဲမှ အညွှန်း "က" ၏ တန်ဖိုး ကို [၁] ဟု ထားမည်။
+အုပ် ထဲမှ အညွှန်း "က" ၏ တန်ဖိုး ထဲသို့ ၂ ကို ထည့်မည်။
+အုပ် ကို ပြသမည်။
+အုပ် ထဲမှ အညွှန်း "ခ" ၏ တန်ဖိုး ထဲသို့ ၃ ကို ထည့်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+["က": [၁၊ ၂]]
+the program stopped: no row of the ဇယား has this index
 ```
 
 ## C functions

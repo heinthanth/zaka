@@ -88,7 +88,7 @@ fn needs_of<'a>(
 fn required<'a>(kind: &'a Kind, decls: &BTreeMap<&str, &StructDecl>)
 -> Option<&'a str>
 {
-    ret_if!(kind.parts.is_some() || kind.sig.is_some(), None);
+    ret_if!(kind.parts.is_some() || kind.sig.is_some() || kind.table.is_some(), None);
     let ends = |w: &Wrap| matches!(w, Wrap::Ptr | Wrap::List(Cells::Inferred));
     ret_if!(kind.base != BaseKind::Named || kind.wraps.iter().any(ends), None);
     let name = kind.name.as_ref()?.name.as_str();

@@ -518,6 +518,13 @@ holds at each level. A pointer read before it is set also holds the zero octets 
 declaration, the null address, so the flow can report ZK0709 or ZK0711 at the same read;
 `borrow_check` drops those, and the report of the unset read stands for both.
 
+### ဇယား statements
+
+`set_row` and `remove_row` count as edits of a list on the ဇယား the statement changes, as an add and an
+insert do: the rows can move, so each loan into them ends, and the ဇယား is written for the
+checks of last uses, of liveness and of set before read. The address of a row is never lent:
+a write inside a row reaches it through the rows, as a cell write does.
+
 ## Options
 
 `BorrowCheckOptions { check: MemCheck, strict: bool, overflow, lint: LintLevels }`, chosen

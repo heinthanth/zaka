@@ -63,8 +63,10 @@ use crate::ir::fresh_text;
 use crate::value::Value;
 
 mod nested;
+mod table;
 
 use nested::Nested;
+use table::row_place;
 
 /// Lower a checked program to the IR. Names become slots, blocks are
 /// flattened, operators get one spelling, and widening conversions become
@@ -1040,6 +1042,7 @@ impl Lowerer<'_>
             st::Stmt::Blit(n) => out.push(self.blit(n)),
             st::Stmt::Fill(n) => out.push(self.fill(n)),
             st::Stmt::Add(n) => out.push(self.add_cell(n)),
+            st::Stmt::Remove(n) if n.row => out.push(self.remove_row(n)),
             st::Stmt::Remove(n) =>
             {
                 let kind = self.kind_of(&n.list);
@@ -1203,6 +1206,10 @@ impl Lowerer<'_>
         {
             return self.c_field_store(f, &n.value, out);
         }
+        if let Some(row) = row_place(&n.target)
+        {
+            return out.push(self.set_row(row, &n.value, span));
+        }
         let dest = self.dest(&n.target);
         let want = match &dest
         {
@@ -1301,6 +1308,7 @@ impl Lowerer<'_>
         ret_if!(let Some(ptr) = deref_operand(e), Dest::Mem(self.expr(ptr)));
         ret_if!(let ast::Expr::Index(n) = e, Dest::Mem(owned_path(self.cell_addr(n))));
         ret_if!(let ast::Expr::Field(n) = e, Dest::Mem(owned_path(self.field_addr(n))));
+        ret_if!(let Some(row) = row_place(e), Dest::Mem(owned_path(self.row_addr(row))));
         let ast::Expr::Name(n) = e
         else
         {
@@ -1907,8 +1915,10 @@ impl Lowerer<'_>
     /// * `out` - The list the statements go to.
     fn each(&mut self, n: &st::EachStmt, out: &mut Vec<Stmt>)
     {
+        ret_if!(n.part.is_row(), self.each_rows(n, out));
+        let chars = n.part == st::EachPart::Char;
         let given = self.kind_of(&n.source);
-        let kind = each_list(given, n.chars);
+        let kind = each_list(given, chars);
         let span = n.source.span();
         let source = tern!(
             kind == given,
@@ -1921,15 +1931,18 @@ impl Lowerer<'_>
             let each = l.declare(&name, kind, Access::Var);
             let at = l.hidden(DataKind::USIZE, span);
             let zero = l.usize_const(0, span);
-            let init = vec![
+            let mut init = vec![
                 Stmt::Set { place: each, value: source, span },
-                Stmt::Set { place: at, value: zero, span },
+                Stmt::Set { place: at, value: zero.clone(), span },
             ];
+            // Characters step over u8s, so their numbers count apart.
+            let nth = (chars && n.place.is_some()).then(|| l.hidden(DataKind::USIZE, span));
+            do_if!(let Some(nth) = nth, init.push(Stmt::Set { place: nth, value: zero, span }));
             let count = l.each_count(each, kind, span);
             let at_read = read(at, DataKind::USIZE, span);
             let test = compare_node(CmpOp::Lt, at_read.clone(), count);
             let cond = node_expr(DataKind::Bool, test, span);
-            let (block, step) = l.each_round(n, each, at);
+            let (block, step) = l.each_round(n, each, at, nth);
             let next = node_expr(
                 DataKind::USIZE,
                 infix_node(InfixOp::Add, at_read, step),
@@ -1994,23 +2007,37 @@ impl Lowerer<'_>
     ///
     /// The round, and the step to the next cell or character.
     fn each_round(
-        &mut self, n: &st::EachStmt, each: Place, at: Place,
+        &mut self, n: &st::EachStmt, each: Place, at: Place, nth: Option<Place>,
     ) -> (Vec<Stmt>, Expr)
     {
         let kind = self.slot_kind(each);
         let span = n.var.span;
         let mut block = Vec::new();
         let mut step = self.usize_const(1, span);
+        let chars = n.part == st::EachPart::Char;
         self.loops.push(self.scopes.len());
         self.scoped(|l| {
             let (value, cell) = tern!(
-                n.chars,
+                chars,
                 each_char(each, kind, at, span),
                 each_cell(each, kind, at, span)
             );
+            if let Some(place) = &n.place
+            {
+                let number = read(nth.unwrap_or(at), DataKind::USIZE, span);
+                l.bind(place, number, &mut block);
+            }
+            if let Some(nth) = nth
+            {
+                let one = l.usize_const(1, span);
+                let next =
+                    infix_node(InfixOp::Add, read(nth, DataKind::USIZE, span), one);
+                let next = node_expr(DataKind::USIZE, next, span);
+                block.push(Stmt::Set { place: nth, value: next, span });
+            }
             let var = l.declare(&n.var, cell, Access::Var);
             block.push(Stmt::Set { place: var, value, span });
-            if n.chars
+            if chars
             {
                 let held = l.hidden(DataKind::USIZE, span);
                 let width = char_width(read(var, cell, span));
@@ -3388,6 +3415,7 @@ impl Lowerer<'_>
             ast::Expr::List(n) => self.list(n, kind),
             ast::Expr::Struct(n) => self.struct_lit(n, kind),
             ast::Expr::BlankList(_) => ExprNode::BlankList,
+            ast::Expr::Table(n) => self.table_lit(n, kind),
             ast::Expr::Str(n) => self.str_node(n),
             ast::Expr::Member(n) =>
             {
@@ -3982,6 +4010,8 @@ impl Lowerer<'_>
             let pieces = args.iter().map(|a| FmtPiece::Value(self.expr(a))).collect();
             return ExprNode::Format(pieces);
         }
+        ret_if!(n.op == VerbOp::RowValue, self.row_value(n, kind));
+        ret_if!(n.op == VerbOp::OrElse, self.or_else(n, kind));
         if let (VerbOp::CharAt | VerbOp::CharNth, [text, index]) = (n.op, args)
         {
             let (text, index) = (self.expr(text), self.expr(index));
@@ -4003,6 +4033,7 @@ impl Lowerer<'_>
             VerbOp::AddrOf => self.addr_of(value),
             VerbOp::Deref => self.load(value),
             VerbOp::CellCount => self.cell_count(value),
+            VerbOp::RowCount => self.row_count(value),
             VerbOp::CharCount => ExprNode::Chars {
                 text: Box::new(self.expr(value)),
                 index: None,
@@ -4054,7 +4085,11 @@ impl Lowerer<'_>
             | VerbOp::Cell
             | VerbOp::CharAt
             | VerbOp::CharNth
-            | VerbOp::Join =>
+            | VerbOp::Join
+            | VerbOp::Row
+            | VerbOp::RowValue
+            | VerbOp::OrElse
+            | VerbOp::RemoveRow =>
             {
                 panic!("verb {} is no one-operand value", n.op.as_ref())
             }

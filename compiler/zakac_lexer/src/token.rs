@@ -318,6 +318,10 @@ pub enum Kw
     EachCell,
     /// `စာလုံးတိုင်း`, "each character"
     EachChar,
+    /// `အညွှန်းတိုင်း`, "each index" of a ဇယား
+    EachIndex,
+    /// `အတန်းတိုင်း`, "each row" of a ဇယား
+    EachRow,
     /// `ယူ၍`, "taking": opens the block of an each-cell loop
     Taking,
     /// `ပြောင်းလဲရန်`, "in order to change": the second word of
@@ -687,6 +691,19 @@ pub enum Kw
     Upto,
     /// `ကွက်`, after the length of a range
     CellWord,
+
+    // tables
+    /// `ဇယား`, "table": ends a ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind>
+    /// ဇယား`
+    Table,
+    /// `ဇယားအလွတ်`, "blank table": a ဇယား with no rows
+    BlankTable,
+    /// `ညွှန်းသော`, "indexed": in a ဇယား kind, after `<index kind> ဖြင့်`
+    Indexed,
+    /// `အညွှန်း`, "index": in `<ဇယား> ထဲမှ အညွှန်း <index>`, the row with that index
+    IndexWord,
+    /// `အညွှန်းအရေအတွက်`, "index count": the number of rows of a ဇယား
+    IndexCount,
 
     // structs
     /// `အချက်အလက်အမျိုးအစား`, also written `ဒေတာအမျိုးအစား`: opens a kind alias

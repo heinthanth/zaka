@@ -66,6 +66,7 @@ enum zk_trap
     ZK_TRAP_NOT_GOOD_BARE,
     ZK_TRAP_NOT_FAULT,
     ZK_TRAP_NO_DATA,
+    ZK_TRAP_NO_ROW,
     ZK_TRAP_NULL_DEREF,
     ZK_TRAP_OUT_OF_MEM,
     ZK_TRAP_OVERLAP,
@@ -597,6 +598,19 @@ _Noreturn void zk_not_good_bare(void);
 _Noreturn void zk_not_fault(void);
 /** Stop the run: an optional that holds no data was read. */
 _Noreturn void zk_no_data(void);
+
+/* ---- tables ---- */
+
+/** The number of the row of a ဇယား that holds an index, or -1. */
+zk_imax zk_row_find(
+    const unsigned char *at, const zk_kind *k, const unsigned char *index
+);
+/** Give the row of an index its value, or add a new last row; both move in. */
+void zk_set_row(
+    unsigned char *at, const zk_kind *k, unsigned char *index, unsigned char *src
+);
+/** Remove the row of a ဇယား that holds an index, when one does. */
+void zk_remove_row(unsigned char *at, const zk_kind *k, const unsigned char *index);
 /** Stop the run: a handle a C function closed went to C again. */
 _Noreturn void zk_closed_handle(void);
 

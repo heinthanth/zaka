@@ -159,6 +159,12 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             dest(d, f);
             *span = f(*span);
         }
+        Stmt::RemoveRow { dest: d, index, span, .. } =>
+        {
+            dest(d, f);
+            expr(index, f);
+            *span = f(*span);
+        }
         Stmt::Replace { dest: d, start, end, value, span, .. } =>
         {
             dest(d, f);
@@ -168,7 +174,8 @@ fn stmt(s: &mut Stmt, f: &impl Fn(Span) -> Span)
             *span = f(*span);
         }
         Stmt::SetChar { dest: d, index, value, span, .. }
-        | Stmt::Insert { dest: d, index, value, span, .. } =>
+        | Stmt::Insert { dest: d, index, value, span, .. }
+        | Stmt::SetRow { dest: d, index, value, span, .. } =>
         {
             dest(d, f);
             expr(index, f);
@@ -219,6 +226,11 @@ fn expr(e: &mut Expr, f: &impl Fn(Span) -> Span)
         {
             expr(text, f);
             do_if!(let Some(i) = index, expr(i, f));
+        }
+        ExprNode::RowFind { table, index } =>
+        {
+            expr(table, f);
+            expr(index, f);
         }
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }

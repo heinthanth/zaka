@@ -238,6 +238,9 @@ pub enum TrapKind
     NotFault,
     /// An optional that holds no data was read.
     NoData,
+    /// A statement wrote through the value of a row of a ဇယား, and no row had
+    /// the index.
+    NoRow,
     /// A range of cells that passes the end of its list or slice.
     SliceOutOfRange
     {
@@ -351,6 +354,7 @@ impl fmt::Display for TrapKind
             TrapKind::NotGood { text } => t!("vm.trap.not_good", e = text),
             TrapKind::NotFault => t!("vm.trap.not_fault"),
             TrapKind::NoData => t!("vm.trap.no_data"),
+            TrapKind::NoRow => t!("vm.trap.no_row"),
             TrapKind::SliceOutOfRange { start, len, limit } =>
             {
                 t!(
@@ -415,6 +419,7 @@ impl TrapKind
             | TrapKind::NotGood { .. }
             | TrapKind::NotFault
             | TrapKind::NoData
+            | TrapKind::NoRow
             | TrapKind::Overflow { .. } => None,
         }
     }

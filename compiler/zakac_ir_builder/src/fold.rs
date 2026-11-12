@@ -417,11 +417,17 @@ impl Folder
                 self.drop_value(value);
             }
             Stmt::SetChar { dest, index, value, .. }
-            | Stmt::Insert { dest, index, value, .. } =>
+            | Stmt::Insert { dest, index, value, .. }
+            | Stmt::SetRow { dest, index, value, .. } =>
             {
                 self.dest(dest);
                 self.drop_value(index);
                 self.drop_value(value);
+            }
+            Stmt::RemoveRow { dest, index, .. } =>
+            {
+                self.dest(dest);
+                self.drop_value(index);
             }
             Stmt::Replace { dest, start, end, value, .. } =>
             {
@@ -560,6 +566,12 @@ impl Folder
             {
                 self.drop_value(text);
                 do_if!(let Some(i) = index, self.drop_value(i));
+                (None, None)
+            }
+            ExprNode::RowFind { table, index } =>
+            {
+                self.drop_value(table);
+                self.drop_value(index);
                 (None, None)
             }
             ExprNode::Format(_) => unreachable!("a format is folded above"),

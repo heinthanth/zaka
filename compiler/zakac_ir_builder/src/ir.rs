@@ -602,6 +602,36 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Give the row of the ဇယား at `dest` with an index its value: the row
+    /// that holds the index takes the value, and its old value is dropped,
+    /// with the index given; with no such row, a new last row holds both. A
+    /// ဇယား whose rows or slots are shared takes blocks of its own first.
+    SetRow
+    {
+        /// The ဇယား.
+        dest: Dest,
+        /// The ဇယား kind.
+        kind: DataKind,
+        /// The index, owned, of the index kind.
+        index: Expr,
+        /// The value, owned, of the value kind.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
+    /// Remove the row of the ဇယား at `dest` with an index, dropping its index
+    /// and its value; with no such row, nothing happens.
+    RemoveRow
+    {
+        /// The ဇယား.
+        dest: Dest,
+        /// The ဇယား kind.
+        kind: DataKind,
+        /// The index, read where it is, of the index kind.
+        index: Expr,
+        /// Source region.
+        span: Span,
+    },
     /// Add text, a view of text or a character at the end of the text at
     /// `dest`. Text with a room of 0 takes a block of its own first, and a
     /// full block moves to a larger one.
@@ -655,7 +685,9 @@ impl Stmt
             | Stmt::SetChar { span, .. }
             | Stmt::Insert { span, .. }
             | Stmt::Replace { span, .. }
-            | Stmt::AddText { span, .. } => *span,
+            | Stmt::AddText { span, .. }
+            | Stmt::SetRow { span, .. }
+            | Stmt::RemoveRow { span, .. } => *span,
         }
     }
 }
@@ -961,6 +993,16 @@ pub enum ExprNode
         #[serde(default)]
         octet: bool,
     },
+    /// The number of the row of a ဇယား with an index, an `isize`, or -1 when
+    /// no row has it. A row keeps its number until a remove or an add lets
+    /// the rows move.
+    RowFind
+    {
+        /// The ဇယား, read where it is.
+        table: Box<Expr>,
+        /// The index, read where it is, of the index kind.
+        index: Box<Expr>,
+    },
     /// The address of one field of a struct; the expression kind is a
     /// pointer to the field kind.
     FieldAddr
@@ -1204,6 +1246,9 @@ pub enum HaltCause
     /// C gave NULL where its declaration promised a value: a handle result
     /// written with no optional.
     NullFromC,
+    /// A statement wrote through the value of a row of a ဇယား, and no row had
+    /// the index.
+    NoRow,
 }
 
 /// The name of a function a reader knows: the name the program writes. The

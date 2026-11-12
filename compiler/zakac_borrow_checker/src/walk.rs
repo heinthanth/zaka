@@ -43,7 +43,8 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         | ExprNode::Logic { lhs, rhs, .. }
         | ExprNode::PtrAdd { base: lhs, offset: rhs }
         | ExprNode::PtrSub { lhs, rhs }
-        | ExprNode::CellAddr { list: lhs, index: rhs, .. } =>
+        | ExprNode::CellAddr { list: lhs, index: rhs, .. }
+        | ExprNode::RowFind { table: lhs, index: rhs } =>
         {
             vec![lhs.as_ref(), rhs.as_ref()]
         }
@@ -112,9 +113,14 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
             dest_expr(dest).into_iter().chain([value]).collect()
         }
         Stmt::SetChar { dest, index, value, .. }
-        | Stmt::Insert { dest, index, value, .. } =>
+        | Stmt::Insert { dest, index, value, .. }
+        | Stmt::SetRow { dest, index, value, .. } =>
         {
             dest_expr(dest).into_iter().chain([index, value]).collect()
+        }
+        Stmt::RemoveRow { dest, index, .. } =>
+        {
+            dest_expr(dest).into_iter().chain([index]).collect()
         }
         Stmt::Replace { dest, start, end, value, .. } =>
         {
@@ -190,7 +196,8 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         | ExprNode::Logic { lhs, rhs, .. }
         | ExprNode::PtrAdd { base: lhs, offset: rhs }
         | ExprNode::PtrSub { lhs, rhs }
-        | ExprNode::CellAddr { list: lhs, index: rhs, .. } =>
+        | ExprNode::CellAddr { list: lhs, index: rhs, .. }
+        | ExprNode::RowFind { table: lhs, index: rhs } =>
         {
             vec![lhs.as_mut(), rhs.as_mut()]
         }
@@ -261,9 +268,14 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
             dest_expr_mut(d).into_iter().chain([value]).collect()
         }
         Stmt::SetChar { dest: d, index, value, .. }
-        | Stmt::Insert { dest: d, index, value, .. } =>
+        | Stmt::Insert { dest: d, index, value, .. }
+        | Stmt::SetRow { dest: d, index, value, .. } =>
         {
             dest_expr_mut(d).into_iter().chain([index, value]).collect()
+        }
+        Stmt::RemoveRow { dest: d, index, .. } =>
+        {
+            dest_expr_mut(d).into_iter().chain([index]).collect()
         }
         Stmt::Replace { dest: d, start, end, value, .. } =>
         {

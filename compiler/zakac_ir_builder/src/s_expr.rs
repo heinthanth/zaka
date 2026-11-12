@@ -134,6 +134,14 @@ impl ToSexpr for Stmt
             {
                 list("insert", [dest_sexpr(dest), index.to_sexpr(), value.to_sexpr()])
             }
+            Stmt::SetRow { dest, index, value, .. } =>
+            {
+                list("set_row", [dest_sexpr(dest), index.to_sexpr(), value.to_sexpr()])
+            }
+            Stmt::RemoveRow { dest, index, .. } =>
+            {
+                list("remove_row", [dest_sexpr(dest), index.to_sexpr()])
+            }
             Stmt::Replace { dest, start, end, chars, value, .. } =>
             {
                 let word = tern!(*chars, "replace_chars", "replace");
@@ -251,6 +259,10 @@ impl ToSexpr for Expr
             ExprNode::Chars { text, index: None, .. } =>
             {
                 list("chars", [text.to_sexpr()])
+            }
+            ExprNode::RowFind { table, index } =>
+            {
+                list("row_find", [table.to_sexpr(), index.to_sexpr()])
             }
             ExprNode::Chars { text, index: Some(i), first, octet } =>
             {

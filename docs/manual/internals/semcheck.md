@@ -495,6 +495,20 @@ and the literal takes it.
 - Bitwise operators and shifts pass an expectation on just when it is an integer kind, so
   a float place does not turn `၁` in `၁ << ၂` into a float.
 
+### ဇယား kinds
+
+A ဇယား is the struct `DataKind::table` makes: `%map{%rows:%row{%hash:u64,%live:bool,%index:K,%value:V}[],%slots:u32[],%live:usize}`.
+As a result's struct does, its signature lists its fields in full and never takes a name in
+another signature, so two ဇယား kinds in one signature never clash, and a struct that holds a ဇယား
+of itself reads back. No field a program writes starts with `%`. `is_table`, `table_row` and
+`table_parts` read a ဇယား kind; the name in messages is `map<K, V>`.
+
+A read of a row is an optional of the value kind, but the base of a place a statement writes
+through has the value kind itself: `place_kind` marks each `row_value` at the base of its
+target first (`mark_row_write`), a ဇယား in a row of another included, and the IR builder reads
+the kind it recorded to tell the two apart. Each written kind is checked for an index kind
+that cannot be hashed (ZK0485, `index_gap`) and warns on one with a decimal number (ZK0487).
+
 ## Marked code, pointers and lists
 
 `Checker::unchecked` holds whether the walk is inside marked code: `visit_fn` sets it for a

@@ -218,6 +218,21 @@ as well.
 | `ထိ` | "up to", after the last cell or character of the range a replace changes: `<start> မှ <end> ထိကို` | [Text](../../learn/text/changing.md#replacing-part-of-text) |
 | `ကွက်` | "cells", after the length of a range; a struct can also name it as its classifier | [Ranges](../language/lists.md#ranges) |
 
+## Tables
+
+| Word | Reads as | Page |
+| --- | --- | --- |
+| `ဇယား` | "table": ends a ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`; `တို့ပါသော ဇယား` closes a ဇယား literal | [Tables](../language/tables.md) |
+| `ဇယားအလွတ်` | "blank table": a ဇယား with no rows, as `[:]` is | [Tables](../language/tables.md#literals) |
+| `ညွှန်းသော` | "indexed", after `<index kind> ဖြင့်` in a ဇယား kind; `မညွှန်းသော` of the null address is a word of its own | [Tables](../language/tables.md) |
+| `အညွှန်း` | "index": `<table> ထဲမှ အညွှန်း <index>` is the row of the index, and `၏ တန်ဖိုး` after it its value | [Tables](../language/tables.md#reading-a-row) |
+| `အညွှန်းအရေအတွက်` | "index count", in `<table> ၏ အညွှန်းအရေအတွက်`: the number of rows | [Tables](../language/tables.md#counting-and-walking-the-rows) |
+| `အညွှန်းတိုင်း`, `အတန်းတိုင်း` | "each index", "each row": the loops over the rows of a ဇယား | [Tables](../language/tables.md#counting-and-walking-the-rows) |
+
+`ထဲမှ` and `အနေဖြင့်` take part in a ဇယား too, in `<table> ထဲမှ အညွှန်း <index>` and in the row
+`<index> အနေဖြင့် <value>` of a literal. `မရှိလျှင်` (`မရှိ`, `လျှင်`) after `ထဲမှ ဒေတာ၊` gives the
+fallback of an optional ([Optional values](../language/optionals.md#a-fallback)).
+
 ## Structs
 
 | Word | Reads as | Page |

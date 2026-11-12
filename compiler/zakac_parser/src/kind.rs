@@ -2,6 +2,7 @@ use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::ResultParts;
+use zakac_ast::kind::TableParts;
 use zakac_ast::kind::Wrap;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
@@ -135,7 +136,7 @@ impl Parser<'_>
         None
     }
 
-    /// Whether `N ဘစ် (ကိန်းပြည့်|ဒဿမကိန်း)` starts `n` tokens ahead.
+    /// Whether `N ဘစ် (ကိန်းပြည့်|ဒဿမကိန်း)` starts `n` tokens ahead.
     ///
     /// # Arguments
     ///
@@ -178,6 +179,7 @@ impl Parser<'_>
     pub(crate) fn kind_len_at(&self, at: usize, form: FnForm) -> Option<usize>
     {
         let levels = |core: usize| core + self.scan_suffixes(at + core, true).0;
+        ret_if!(let Some(core) = self.table_kind_len(at, form), Some(levels(core)));
         ret_if!(let Some(core) = self.fn_head_at(at, form), Some(levels(core)));
         let pre = self.count_prefixes_len(at);
         // A function kind in parentheses can be the good side of a result kind.
@@ -186,6 +188,34 @@ impl Parser<'_>
         let fn_core = self.paren_fn_len(at + pre).or(prefixed);
         ret_if!(let Some(core) = fn_core, Some(levels(pre + core)));
         self.plain_kind_len(at)
+    }
+
+    /// The number of tokens in a ဇယား kind that starts `at` tokens ahead,
+    /// `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`, its levels after
+    /// `ဇယား` left out. The index kind is a kind with no result sides; the
+    /// value kind is each kind, a ဇယား kind included.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    /// * `form` - The bare function kinds the value kind can be.
+    ///
+    /// # Returns
+    ///
+    /// The token count, or `None` when no ဇယား kind starts there.
+    fn table_kind_len(&self, at: usize, form: FnForm) -> Option<usize>
+    {
+        let kw = |n: usize| kw_of(&self.peek_n(n));
+        let cell = |n: usize| {
+            self.cell_kind_len(n).map(|len| len + self.scan_suffixes(n + len, true).0)
+        };
+        let index = cell(at).or_else(|| self.plain_kind_len(at))?;
+        let head = kw(at + index) == Some(Kw::Hpjint)
+            && kw(at + index + 1) == Some(Kw::Indexed);
+        ret_if!(!head, None);
+        let value = self.kind_len_at(at + index + 2, form)?;
+        let end = at + index + 2 + value;
+        (kw(end) == Some(Kw::Table)).then_some(end + 1 - at)
     }
 
     /// The number of tokens in an optional or a result kind that ends in
@@ -418,6 +448,12 @@ impl Parser<'_>
     pub(crate) fn parse_kind_with(&mut self, form: FnForm) -> PResult<Kind>
     {
         let start = self.peek().span;
+        if self.table_kind_len(0, form).is_some()
+        {
+            let mut kind = self.parse_table_kind(form, start)?;
+            self.parse_levels(&mut kind, Vec::new(), true, start)?;
+            return Ok(kind);
+        }
         if self.fn_head_at(0, form).is_some()
         {
             let mut kind = self.parse_fn_head(form)?;
@@ -437,6 +473,40 @@ impl Parser<'_>
         let mut kind = self.parse_cell_kind(start, &mut counts)?;
         self.parse_levels(&mut kind, counts, true, start)?;
         Ok(kind)
+    }
+
+    /// Parse a ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`,
+    /// without the levels after it; [`Parser::table_kind_len`] found one here.
+    ///
+    /// # Arguments
+    ///
+    /// * `form` - The bare function kinds the value kind can be.
+    /// * `start` - Where the kind phrase starts.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or a diagnostic.
+    fn parse_table_kind(&mut self, form: FnForm, start: Span) -> PResult<Kind>
+    {
+        // An optional or a result index parses, so the check can refuse it.
+        let index = match self.cell_kind_len(0).is_some()
+        {
+            true =>
+            {
+                let mut kind = self.parse_cell_kind(start, &mut Vec::new())?;
+                self.parse_levels(&mut kind, Vec::new(), true, start)?;
+                kind
+            }
+            false => self.parse_plain_kind()?,
+        };
+        self.expect(Kw::Hpjint)?;
+        self.expect(Kw::Indexed)?;
+        let value = self.parse_kind_with(form)?;
+        self.expect(Kw::Table)?;
+        let parts = TableParts::builder().index(index).value(value).build();
+        let span = start.to(&self.prev_span());
+        #[rustfmt::skip]
+        return Ok(Kind::builder().base(BaseKind::Table).table(Box::new(parts)).span(span).build());
     }
 
     /// Parse a function kind after count prefixes, or in parentheses, then

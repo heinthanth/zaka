@@ -141,6 +141,22 @@ impl FnGen<'_, '_>
                 let k = self.shared.descr.of(*kind);
                 self.line(&format!("zk_remove_cell({at}, {k});"));
             }
+            Stmt::SetRow { dest, kind, index, value, .. } =>
+            {
+                let index = self.cell_temp(index);
+                let cell = self.cell_temp(value);
+                let at = self.dest_addr(dest);
+                let k = self.shared.descr.of(*kind);
+                self.line(&format!("zk_set_row({at}, {k}, {index}, {cell});"));
+            }
+            Stmt::RemoveRow { dest, kind, index, .. } =>
+            {
+                let at = self.dest_addr(dest);
+                let (held, v) = self.index_at(index);
+                let k = self.shared.descr.of(*kind);
+                self.line(&format!("zk_remove_row({at}, {k}, {held});"));
+                self.drop_fresh(index, &v);
+            }
             _ => self.text_edit(s),
         }
     }
@@ -371,6 +387,7 @@ impl FnGen<'_, '_>
     {
         ret_if!(cause == HaltCause::NotFault, self.line("zk_not_fault();"));
         ret_if!(cause == HaltCause::NoData, self.line("zk_no_data();"));
+        ret_if!(cause == HaltCause::NoRow, self.line("zk_plain_trap(ZK_TRAP_NO_ROW);"));
         ret_if!(cause == HaltCause::ClosedHandle, self.line("zk_closed_handle();"));
         ret_if!(
             cause == HaltCause::NullFromC,
@@ -460,6 +477,26 @@ impl FnGen<'_, '_>
         let cell = self.blob_temp(value.kind);
         self.put_at(&cell, &v, value.kind);
         cell
+    }
+
+    /// The address of an index read where it is: a list, a struct or text
+    /// as it is, each other value put in a block of its own.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index.
+    ///
+    /// # Returns
+    ///
+    /// The address, and the C text of the value, which a fresh value is
+    /// dropped through.
+    pub(crate) fn index_at(&mut self, index: &Expr) -> (String, String)
+    {
+        let v = self.expr(index);
+        ret_if!(is_blob(index.kind), (v.clone(), v));
+        let held = self.blob_temp(index.kind);
+        self.put_at(&held, &v, index.kind);
+        (held, v)
     }
 
     /// A block of its own the size of a kind, zeroed, even for a scalar

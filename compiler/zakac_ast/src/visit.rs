@@ -26,10 +26,12 @@ use crate::expr::RangeExpr;
 use crate::expr::SizeOfExpr;
 use crate::expr::StrExpr;
 use crate::expr::StructLit;
+use crate::expr::TableLit;
 use crate::expr::UsingMark;
 use crate::expr::VerbExpr;
 use crate::kind::FnSig;
 use crate::kind::Kind;
+use crate::kind::TableParts;
 use crate::stmt::AddStmt;
 use crate::stmt::AliasDecl;
 use crate::stmt::AllocStmt;
@@ -163,6 +165,7 @@ RangeExpr => "range", visit_range;
 ListLit => "list", visit_list;
 StructLit => "struct_lit", visit_struct_lit;
 BlankListLit => "blank_list", visit_blank_list;
+TableLit => "table", visit_table;
 StrExpr => "str_lit", visit_str_expr;
 MemberExpr => "member", visit_member;
 FnAddrExpr => "fn_addr", visit_fn_addr;
@@ -246,6 +249,7 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::List(e) => e,
         Expr::Struct(e) => e,
         Expr::BlankList(e) => e,
+        Expr::Table(e) => e,
         Expr::Str(e) => e,
         Expr::Member(e) => e,
         Expr::FnAddr(e) => e,
@@ -399,6 +403,8 @@ pub trait Visitor
     fn visit_struct_lit(&mut self, n: &StructLit) { walk_struct_lit(self, n) }
     /// Visit a blank list.
     fn visit_blank_list(&mut self, n: &BlankListLit) { walk_blank_list(self, n) }
+    /// Visit a ဇယား literal.
+    fn visit_table(&mut self, n: &TableLit) { walk_table(self, n) }
     /// Visit a string literal.
     fn visit_str_expr(&mut self, n: &StrExpr) { walk_str_expr(self, n) }
     /// Visit a member of an enumeration.
@@ -529,6 +535,7 @@ pub fn walk_each<V: Visitor + ?Sized>(v: &mut V, n: &EachStmt)
 {
     v.enter(n);
     v.visit_expr(&n.source);
+    do_if!(let Some(place) = &n.place, v.visit_ident(place));
     v.visit_ident(&n.var);
     v.visit_block(&n.block);
     v.leave(n);
@@ -803,6 +810,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::List(e) => v.visit_list(e),
         Expr::Struct(e) => v.visit_struct_lit(e),
         Expr::BlankList(e) => v.visit_blank_list(e),
+        Expr::Table(e) => v.visit_table(e),
         Expr::Str(e) => v.visit_str_expr(e),
         Expr::Member(e) => v.visit_member(e),
         Expr::FnAddr(e) => v.visit_fn_addr(e),
@@ -990,6 +998,20 @@ pub fn walk_struct_lit<V: Visitor + ?Sized>(v: &mut V, n: &StructLit)
     v.leave(n);
 }
 
+/// Visit the index and the value of each row of a ဇယား literal, then its
+/// written kind.
+pub fn walk_table<V: Visitor + ?Sized>(v: &mut V, n: &TableLit)
+{
+    v.enter(n);
+    for row in &n.rows
+    {
+        v.visit_expr(&row.index);
+        v.visit_expr(&row.value);
+    }
+    do_if!(let Some(kind) = &n.kind, v.visit_kind(kind));
+    v.leave(n);
+}
+
 /// Visit a blank list and its written kind.
 pub fn walk_blank_list<V: Visitor + ?Sized>(v: &mut V, n: &BlankListLit)
 {
@@ -1045,6 +1067,7 @@ pub trait VisitorMut
         self.visit_span_mut(&mut n.span);
         do_if!(let Some(name) = &mut n.name, self.visit_ident_mut(name));
         do_if!(let Some(sig) = &mut n.sig, walk_sig_mut(self, sig));
+        do_if!(let Some(t) = &mut n.table, walk_table_mut(self, t));
         do_if!(let Some(word) = &mut n.classifier, self.visit_ident_mut(word));
     }
     /// Visit a heap allocation.
@@ -1063,6 +1086,13 @@ pub trait VisitorMut
     fn visit_null_mut(&mut self, n: &mut NullLit) { self.visit_span_mut(&mut n.span) }
     /// Visit a size expression.
     fn visit_size_of_mut(&mut self, n: &mut SizeOfExpr) { walk_size_of_mut(self, n) }
+}
+
+/// Visit the index kind and the value kind of a ဇယား kind.
+pub fn walk_table_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut TableParts)
+{
+    v.visit_kind_mut(&mut n.index);
+    v.visit_kind_mut(&mut n.value);
 }
 
 /// Visit the parameters and the result of a function kind.
@@ -1212,6 +1242,7 @@ pub fn walk_each_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut EachStmt)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_expr_mut(&mut n.source);
+    do_if!(let Some(place) = &mut n.place, v.visit_ident_mut(place));
     v.visit_ident_mut(&mut n.var);
     v.visit_block_mut(&mut n.block);
 }
@@ -1425,6 +1456,16 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         Expr::BlankList(e) =>
         {
             v.visit_span_mut(&mut e.span);
+            opt_kind_mut(v, &mut e.kind);
+        }
+        Expr::Table(e) =>
+        {
+            v.visit_span_mut(&mut e.span);
+            for row in &mut e.rows
+            {
+                v.visit_expr_mut(&mut row.index);
+                v.visit_expr_mut(&mut row.value);
+            }
             opt_kind_mut(v, &mut e.kind);
         }
         Expr::Str(e) =>

@@ -9,6 +9,7 @@ use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountMode;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
+use zakac_ast::stmt::EachPart;
 use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::EnumDecl;
 use zakac_ast::stmt::EnumMember;
@@ -333,8 +334,8 @@ impl Parser<'_>
         Ok(Stmt::Counted(node))
     }
 
-    /// Whether `၏ အကွက်တိုင်း` or `၏ စာလုံးတိုင်း` comes next: the head of an
-    /// each-cell or each-character loop.
+    /// Whether `၏ <part>တိုင်း` comes next: the head of an each loop over the
+    /// cells of a list, the characters of text, or the rows of a ဇယား.
     ///
     /// # Returns
     ///
@@ -342,11 +343,11 @@ impl Parser<'_>
     pub(crate) fn at_each_head(&self) -> bool
     {
         let word = kw_of(&self.peek_n(1));
-        self.at_punct(Punct::Ei) && matches!(word, Some(Kw::EachCell | Kw::EachChar))
+        self.at_punct(Punct::Ei) && word.and_then(each_part).is_some()
     }
 
-    /// Parse `၏ အကွက်တိုင်း|စာလုံးတိုင်း ကို <name> အနေဖြင့် ယူ၍ <block>` after
-    /// the list or the text an each-cell loop walks.
+    /// Parse `၏ <part>တိုင်း ကို [<place> နှင့်] <name> အနေဖြင့် ယူ၍ <block>`
+    /// after the list, the text or the ဇယား an each loop walks.
     ///
     /// # Arguments
     ///
@@ -358,15 +359,20 @@ impl Parser<'_>
     fn parse_each_tail(&mut self, source: Expr) -> PResult<Stmt>
     {
         self.bump();
-        let chars = self.bump().kind == TokenKind::Kw(Kw::EachChar);
+        let part = kw_of(&self.bump()).and_then(each_part).unwrap_or_default();
         self.expect(Kw::Ko)?;
-        let var = self.parse_ident()?;
+        let first = self.parse_ident()?;
+        let (place, var) = match self.eat(Kw::Hnint)
+        {
+            true => (Some(first), self.parse_ident()?),
+            false => (None, first),
+        };
         self.expect(Kw::CountAs)?;
         self.expect(Kw::Taking)?;
         let block = self.parse_branch(true)?;
         let span = source.span().to(&block.span);
         #[rustfmt::skip]
-        let node = EachStmt::builder().source(source).chars(chars).var(var).block(block).span(span).build();
+        let node = EachStmt::builder().source(source).part(part).maybe_place(place).var(var).block(block).span(span).build();
         Ok(Stmt::Each(node))
     }
 
@@ -1583,5 +1589,26 @@ fn member_closers(count: usize, classifier_ok: bool) -> &'static [Kw]
         (true, false) => &[Kw::FieldsClose],
         (false, true) => &[Kw::Contains, Kw::ContainsAnd],
         (false, false) => &[Kw::Contains],
+    }
+}
+
+/// The part an each loop walks, from the word before `ကို`.
+///
+/// # Arguments
+///
+/// * `kw` - The reserved word.
+///
+/// # Returns
+///
+/// The part, or `None` for a word that names none.
+fn each_part(kw: Kw) -> Option<EachPart>
+{
+    match kw
+    {
+        Kw::EachCell => Some(EachPart::Cell),
+        Kw::EachChar => Some(EachPart::Char),
+        Kw::EachIndex => Some(EachPart::Index),
+        Kw::EachRow => Some(EachPart::Row),
+        _ => None,
     }
 }

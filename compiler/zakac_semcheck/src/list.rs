@@ -10,6 +10,7 @@ use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::RangeExpr;
 use zakac_ast::expr::StructLit;
 use zakac_ast::kind::Kind;
+use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
@@ -84,6 +85,7 @@ impl Checker
     {
         self.work_out_counts(written);
         let kind = DataKind::from_ast(written, &self.structs);
+        self.check_table_kinds(written);
         let span = written.span;
         let names = self.structs.keys().map(|n| n.as_str()).collect();
         do_if!(let Some(d) = unknown_name(written, &names), self.report(d));
@@ -456,6 +458,10 @@ impl Checker
             Expr::Group(n) => self.owner_name(&n.inner),
             Expr::Index(n) if self.holds_list(&n.list) => self.owner_name(&n.list),
             Expr::Field(n) => self.owner_name(&n.base),
+            Expr::Verb(n) if n.op == VerbOp::RowValue =>
+            {
+                self.owner_name(n.args.first()?)
+            }
             _ => None,
         }
     }

@@ -486,6 +486,21 @@ condition `12 > 10` is true, so the `if` is gone and its branch stands in its pl
                     const: 12:isize
 ```
 
+### ဇယား values
+
+Three IR nodes hold a ဇယား: the expression `row_find`, the number of the row of an index or
+-1, and the statements `set_row` and `remove_row`. The rest lowers to the nodes above:
+
+- A read finds the row into a hidden slot, then a test builds the optional from the row,
+  read through the rows as a cell is, or the optional with no data.
+- A write inside a row finds the row, halts with `no_row` when it gives -1, and writes at the
+  address of the value through the rows, with `own` on the path as for a cell write.
+- A set of the whole value is `set_row`; a literal sets each row into a hidden ဇယား in turn.
+- The count reads the field of live rows. A loop walks a duplicate over its rows and skips
+  each removed row with `continue`.
+- The fallback of an optional keeps the optional in a hidden slot, and an `if` moves its data,
+  or puts the fallback, into a second slot; the fallback runs in its arm alone.
+
 ## The ops
 
 `zakac_codegen_target_vm::emit(module, platform_bits, options)` turns the folded IR into a

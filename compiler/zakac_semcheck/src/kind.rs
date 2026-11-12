@@ -33,6 +33,23 @@ pub const FALLIBLE: &str = "%fallible";
 /// The name of the struct kind of a closure record.
 pub const CLOSURE: &str = "%closure";
 
+/// The name of the struct that holds a ဇယား. Its signature lists its fields
+/// in full, as a result's does, so it never takes a name of its own in a
+/// signature, and two ဇယား kinds written out in one signature never clash.
+pub const TABLE: &str = "%map";
+
+/// The name of the struct of one row of a ဇယား, written out in full as
+/// [`TABLE`] is.
+pub const ROW: &str = "%row";
+
+/// The fields of the struct of a ဇယား, in order: its rows in add order, its
+/// slots, and its count of live rows.
+pub const TABLE_FIELDS: [&str; 3] = ["%rows", "%slots", "%live"];
+
+/// The fields of the struct of a row, in order: the hash of its index,
+/// whether it is live, its index and its value.
+pub const ROW_FIELDS: [&str; 4] = ["%hash", "%live", "%index", "%value"];
+
 /// Bit counts an integer kind can have.
 const INT_BITS: &[u16] = &[8, 16, 32, 64, 128];
 /// Bit counts a floating-point kind can have.
@@ -376,6 +393,9 @@ impl DataKind
             BaseKind::Opaque => Base::Opaque,
             BaseKind::Named | BaseKind::Result => named_base(kind, structs),
             BaseKind::Fn => Base::Fn(fn_base(kind, structs)),
+            // A ဇယား is the struct `DataKind::table` makes, and its levels
+            // wrap that struct, as a result kind's do.
+            BaseKind::Table => Base::Int(IntKind::new(true, width)),
         };
         let skip = usize::from(kind.base == BaseKind::Opaque);
         // A result kind is the struct `DataKind::fallible` makes, and its
@@ -387,7 +407,14 @@ impl DataKind
             (true, Some(some)) => DataKind::optional(some),
             _ => DataKind::fallible(side(&p.ok), side(&p.err)),
         });
+        let table = kind.table.as_deref().map(|t| {
+            DataKind::table(
+                DataKind::from_ast(&t.index, structs),
+                DataKind::from_ast(&t.value, structs),
+            )
+        });
         let plain = result
+            .or(table)
             .unwrap_or_else(|| DataKind::over(base, u8::try_from(skip).unwrap_or(1)));
         kind.wraps.iter().skip(skip).fold(plain, |inner, w| match w
         {
@@ -862,6 +889,150 @@ impl DataKind
         format!("{FALLIBLE}{{tag:u8,some:{}}}", some.spell_inner(true))
     }
 
+    /// The kind of a ဇယား, `<index> ဖြင့် ညွှန်းသော <value> ဇယား`: a struct of
+    /// its rows (a plain list of row structs, in add order), its slots (a
+    /// plain list of `u32`, 0 for a slot that was never used, 1 for one whose
+    /// row was removed, and 2 more than the row number for each other), and
+    /// its count of live rows. The blank struct is a ဇယား with no rows.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index kind.
+    /// * `value` - The value kind.
+    ///
+    /// # Returns
+    ///
+    /// The struct kind.
+    pub fn table(index: DataKind, value: DataKind) -> DataKind
+    {
+        let shape = parse_sig(&DataKind::table_sig(index, value));
+        DataKind::Struct(shape.expect("the signature of a ဇယား reads back"))
+    }
+
+    /// The signature of the struct [`DataKind::table`] makes.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index kind.
+    /// * `value` - The value kind.
+    ///
+    /// # Returns
+    ///
+    /// The signature.
+    fn table_sig(index: DataKind, value: DataKind) -> String
+    {
+        table_text(&index.spell_inner(true), &value.spell_inner(true))
+    }
+
+    /// Whether the kind is a ဇယား.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a ဇယား.
+    pub fn is_table(self) -> bool { self.as_struct().is_some_and(|s| s.name == TABLE) }
+
+    /// The kind of each row of a ဇယား.
+    ///
+    /// # Returns
+    ///
+    /// The row struct kind, or `None` for a kind that is no ဇယား.
+    pub fn table_row(self) -> Option<DataKind>
+    {
+        let shape = self.as_struct().filter(|s| s.name == TABLE)?;
+        shape.field(TABLE_FIELDS[0]).and_then(|(_, k)| k.cell_kind())
+    }
+
+    /// The index kind and the value kind of a ဇယား.
+    ///
+    /// # Returns
+    ///
+    /// The two kinds, or `None` for a kind that is no ဇယား.
+    pub fn table_parts(self) -> Option<(DataKind, DataKind)>
+    {
+        let row = self.table_row()?.as_struct()?;
+        let part = |name| row.field(name).map(|(_, k)| k);
+        Some((part(ROW_FIELDS[2])?, part(ROW_FIELDS[3])?))
+    }
+
+    /// The reason a kind cannot index the rows of a ဇယား: a part that cannot
+    /// be hashed or compared as a whole value.
+    ///
+    /// # Returns
+    ///
+    /// The name of the kind that fails, or `None` for an index kind.
+    pub fn index_gap(self) -> Option<String> { self.index_gap_in(&mut Vec::new()) }
+
+    /// [`DataKind::index_gap`], with the structs the walk is inside.
+    ///
+    /// # Arguments
+    ///
+    /// * `inside` - The structs the walk is inside; one met again adds nothing.
+    ///
+    /// # Returns
+    ///
+    /// The name of the kind that fails, or `None`.
+    fn index_gap_in(self, inside: &mut Vec<&'static StructKind>) -> Option<String>
+    {
+        let kind = self.repr();
+        let whole = kind.is_table() || kind.fallible_parts().is_some();
+        let shared = kind.is_fn() || kind.is_ptr() || kind.is_box();
+        ret_if!(whole || shared, Some(kind.name()));
+        let cell = kind.cell_kind().filter(|_| !kind.is_text());
+        ret_if!(let Some(cell) = cell, cell.index_gap_in(inside));
+        let shape = kind.as_struct()?;
+        ret_if!(inside.iter().any(|s| std::ptr::eq(*s, shape)), None);
+        inside.push(shape);
+        let gap = shape.fields().iter().find_map(|(_, k)| k.index_gap_in(inside));
+        inside.pop();
+        gap
+    }
+
+    /// Whether a kind that can index a ဇယား holds a decimal number, whose
+    /// rounding can make two written values one row or two.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn holds_float(self) -> bool { self.holds_float_in(&mut Vec::new()) }
+
+    /// [`DataKind::holds_float`], with the structs the walk is inside.
+    ///
+    /// # Arguments
+    ///
+    /// * `inside` - The structs the walk is inside; one met again adds nothing.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    fn holds_float_in(self, inside: &mut Vec<&'static StructKind>) -> bool
+    {
+        let kind = self.repr();
+        ret_true!(matches!(kind, DataKind::Float(_)));
+        let cell = kind.cell_kind().filter(|_| !kind.is_text());
+        ret_if!(let Some(cell) = cell, cell.holds_float_in(inside));
+        let Some(shape) = kind.as_struct()
+        else
+        {
+            return false;
+        };
+        ret_false!(inside.iter().any(|s| std::ptr::eq(*s, shape)));
+        inside.push(shape);
+        let found = shape.fields().iter().any(|(_, k)| k.holds_float_in(inside));
+        inside.pop();
+        found
+    }
+
+    /// The name of a ဇယား kind, for a message: `map<text, isize>`.
+    ///
+    /// # Returns
+    ///
+    /// The name, or `None` for a kind that is no ဇယား.
+    fn table_name(self) -> Option<String>
+    {
+        let (index, value) = self.table_parts()?;
+        Some(format!("map<{}, {}>", index.name(), value.name()))
+    }
+
     /// The reason the kind has no initial value, `ကနဦးတန်ဖိုး`: a kind has one
     /// when each of its parts has one. An optional stops the walk with its
     /// blank value, a plain list with no cells; a shared struct met again
@@ -1008,6 +1179,10 @@ impl DataKind
             DataKind::Null => "null".to_string(),
             DataKind::List(l) => list_name(l, full),
             DataKind::Struct(s) if !full && s.name == FALLIBLE => self.fallible_name(),
+            DataKind::Struct(s) if !full && s.name == TABLE =>
+            {
+                self.table_name().unwrap_or_else(|| s.name.clone())
+            }
             DataKind::Struct(s) => tern!(full, s.sig(), &s.name).to_string(),
             DataKind::Seq(s) if s.text => "text".to_string(),
             DataKind::Seq(s) if s.boxed => format!("{}@", s.cell.spell_inner(full)),
@@ -1836,4 +2011,23 @@ impl TryFrom<String> for DataKind
     {
         DataKind::parse(&name).ok_or_else(|| format!("unknown data kind {name}"))
     }
+}
+
+/// The signature of the struct of a ဇယား, from the text of its index kind
+/// and its value kind.
+///
+/// # Arguments
+///
+/// * `index` - The index kind in text form.
+/// * `value` - The value kind in text form.
+///
+/// # Returns
+///
+/// The signature.
+pub(crate) fn table_text(index: &str, value: &str) -> String
+{
+    let [hash, live, at, data] = ROW_FIELDS;
+    let row = format!("{ROW}{{{hash}:u64,{live}:bool,{at}:{index},{data}:{value}}}");
+    let [rows, slots, count] = TABLE_FIELDS;
+    format!("{TABLE}{{{rows}:{row}[],{slots}:u32[],{count}:usize}}")
 }

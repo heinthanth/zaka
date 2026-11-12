@@ -274,6 +274,16 @@ separator. The site and the explorer color a token after its role, and the langu
 server sends the role to the editor; a new reserved word gets its role in
 `role::kw_role`.
 
+### The words of a ဇယား
+
+`ဇယား`, `ဇယားအလွတ်`, `ညွှန်းသော`, `အညွှန်း`, `အညွှန်းအရေအတွက်`, `အညွှန်းတိုင်း` and `အတန်းတိုင်း` are
+reserved words ([Tables](../language/tables.md)). `မညွှန်းသော` of the null address is a word of
+its own: the whole word is looked up before a split, so it never reads as `မ` and
+`ညွှန်းသော`. A joined `ဖြင့်ညွှန်းသော` splits into `ဖြင့်` and `ညွှန်းသော`, and a name that ends
+in a reserved word, such as `ဖိုင်အညွှန်း`, remains a name, since `ဖိုင်` is no reserved word.
+The fallback of an optional, `၊ မရှိလျှင်`, takes no word of its own: `မရှိ` and `လျှင်` are there
+in place for the tests of an optional.
+
 ## Particles
 
 A comparison verb, `မဟုတ်` and the two boolean words can end a sentence with `သည်`, `ပါ` or

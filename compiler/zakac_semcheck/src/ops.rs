@@ -216,7 +216,11 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         | VerbOp::CharCount
         | VerbOp::CharAt
         | VerbOp::CharNth
-        | VerbOp::Join => OpClass::CellCount,
+        | VerbOp::Join
+        | VerbOp::Row
+        | VerbOp::RowValue
+        | VerbOp::OrElse
+        | VerbOp::RowCount => OpClass::CellCount,
         VerbOp::IsGood
         | VerbOp::IsFault
         | VerbOp::HasData
@@ -230,7 +234,8 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         | VerbOp::DeepDupInto
         | VerbOp::Return
         | VerbOp::AddCell
-        | VerbOp::Replace => OpClass::Stmt,
+        | VerbOp::Replace
+        | VerbOp::RemoveRow => OpClass::Stmt,
     }
 }
 
@@ -283,7 +288,7 @@ pub(crate) fn is_flexible(e: &Expr) -> bool
         }
         Expr::Infix(n) => infix_flexible(infix_class(n.op), &n.lhs, &n.rhs),
         Expr::Verb(n) => verb_flexible(verb_class(n.op), &n.args),
-        Expr::List(_) | Expr::BlankList(_) => true,
+        Expr::List(_) | Expr::BlankList(_) | Expr::Table(_) => true,
         _ => false,
     }
 }

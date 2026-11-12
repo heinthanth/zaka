@@ -58,6 +58,7 @@ use crate::trap::hex;
 
 mod collector;
 mod deep;
+mod table;
 
 /// The kind of a pointer difference.
 const ISIZE: IntKind = IntKind::new(true, Width::Platform);
@@ -1401,6 +1402,9 @@ impl Machine
                 let at = self.pop_ptr("remove_cell")?;
                 self.remove_cell(at, kind)
             }
+            Op::RowFind(kind) => self.row_find(kind),
+            Op::SetRow(kind) => self.set_row(kind),
+            Op::RemoveRow(kind) => self.remove_row(kind),
             Op::SeqEq(kind) => self.seq_eq(kind),
             Op::CharCount => self.char_count(),
             Op::CharAt { first } => self.char_at(first),
@@ -2035,6 +2039,7 @@ impl Machine
             HaltCause::NotGood => TrapKind::NotGood { text: shown },
             HaltCause::NotFault => TrapKind::NotFault,
             HaltCause::NoData => TrapKind::NoData,
+            HaltCause::NoRow => TrapKind::NoRow,
             HaltCause::ClosedHandle => TrapKind::ClosedHandle,
             HaltCause::NullFromC => TrapKind::NullFromC,
         })
@@ -3260,6 +3265,7 @@ impl Machine
         let kind = kind.repr();
         let platform = self.module.platform_bits;
         ret_if!(kind.is_text(), Ok(text_at(&self.mem, l)? == text_at(&self.mem, r)?));
+        ret_if!(kind.is_table(), self.table_equal(l, r, kind, work));
         if let Some(seq) = kind.as_seq()
         {
             let ((lb, lc), (rb, rc)) =

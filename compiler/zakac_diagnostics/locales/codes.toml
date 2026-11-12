@@ -890,7 +890,7 @@ en = "each loop over a value it cannot walk"
 [codes.ZK0434.message]
 en = "this each loop cannot walk %{got}"
 [codes.ZK0434.explain]
-en = """An each-cell loop (\"အကွက်တိုင်း\") walks a list, a range of one, or the list a pointer points at: the loop variable holds a duplicate of each cell. An each-character loop (\"စာလုံးတိုင်း\") walks text or a range of text. To walk the cells of text as u8 numbers, use a counted loop over its cell count."""
+en = """An each-cell loop (\"အကွက်တိုင်း\") walks a list, a range of one, or the list a pointer points at: the loop variable holds a duplicate of each cell. An each-character loop (\"စာလုံးတိုင်း\") walks text or a range of text. To walk the cells of text as u8 numbers, use a counted loop over its cell count. A ဇယား is walked with \"အညွှန်းတိုင်း\" or \"အတန်းတိုင်း\"."""
 [codes.ZK0436.title]
 en = "a blank list given to a counted list"
 [codes.ZK0436.message]
@@ -1312,6 +1312,51 @@ en = "\"%{n}\" is a global of a module, so it needs its value where it is declar
 en = "give it a value, such as \"ကနဦးတန်ဖိုး\""
 [codes.ZK0483.explain]
 en = """A global declared with no value holds none until the program sets it, and the check follows the start block to prove each global set before a function reads it. A module has no start block of its own, so nothing in it can set the global first: it takes its value where it is declared."""
+
+[codes.ZK0484.title]
+en = "not a ဇယား"
+[codes.ZK0484.message]
+en = "%{k} is no ဇယား, so it has no rows"
+[codes.ZK0484.help]
+en = "a row is read as \"<ဇယား> ထဲမှ အညွှန်း <index> ၏ တန်ဖိုး\""
+[codes.ZK0484.explain]
+en = """\"ထဲမှ အညွှန်း\", \"၏ အညွှန်းအရေအတွက်\" and the loops \"အညွှန်းတိုင်း\" and \"အတန်းတိုင်း\" work on a ဇယား, a value of a kind written \"<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား\". A list is reached through its cell numbers instead, as in \"<list> ၏ အကွက် <number>\"."""
+
+[codes.ZK0485.title]
+en = "a kind that cannot index a ဇယား"
+[codes.ZK0485.message]
+en = "%{k} cannot index the rows of a ဇယား: %{part} cannot be hashed and compared as a whole value"
+[codes.ZK0485.help]
+en = "index the rows with numbers, characters, true/false, text, enumerations, or lists and structs built from them"
+[codes.ZK0485.explain]
+en = """A ဇယား finds a row through the hash of its index and then compares the two indexes as whole values. Numbers, characters, true/false, text and enumerations can be hashed so, and so can lists and structs whose parts all can. A shared object, a function value, a pointer, an optional, a result or another ဇယား cannot: each stands for something that can change, or has no single value to compare."""
+
+[codes.ZK0486.title]
+en = "blank ဇယား with no kind"
+[codes.ZK0486.message]
+en = "a blank ဇယား needs a ဇယား kind from its place"
+[codes.ZK0486.help]
+en = "declare the variable with a ဇယား kind first, or write \"[:] ဟူသော <kind> တစ်ခု\""
+[codes.ZK0486.explain]
+en = """\"ဇယားအလွတ်\" and [:] are a ဇယား with no rows, but its index kind and value kind come from the place around it: a declared variable, a parameter, or the other side of a comparison. Here nothing gives them."""
+
+[codes.ZK0487.title]
+en = "a decimal number in an index"
+[codes.ZK0487.message]
+en = "%{k} holds a decimal number, so two values that round apart are two rows"
+[codes.ZK0487.help]
+en = "index the rows with an integer, such as the value scaled and rounded"
+[codes.ZK0487.explain]
+en = """Two decimal indexes are one row when their values are equal after rounding, so \"၀.၁ + ၀.၂\" and \"၀.၃\" name two rows. Each NaN names one row, and -0.0 and 0.0 name one row, as JS Map treats them; \"==\" on decimal numbers is not changed. An index that counts in whole steps, such as cents for a price, keeps the rows apart as written."""
+
+[codes.ZK0488.title]
+en = "a remove of no row"
+[codes.ZK0488.message]
+en = "\"ကို ဖျက်မည်\" here removes a row of a ဇယား, written \"<ဇယား> ထဲမှ အညွှန်း <index>\""
+[codes.ZK0488.help]
+en = "a list loses its last cell through \"<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်\""
+[codes.ZK0488.explain]
+en = """\"<ဇယား> ထဲမှ အညွှန်း <index> ကို ဖျက်မည်\" removes the row with that index, and does nothing when no row has it. A list and text lose their last cell or character through \"နောက်ဆုံးအကွက်ကို ဖျက်မည်\" and \"နောက်ဆုံးစာလုံးကို ဖျက်မည်\"."""
 
 [codes.ZK0725.title]
 en = "a return before a parameter is filled"

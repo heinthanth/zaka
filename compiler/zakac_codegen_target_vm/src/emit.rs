@@ -1083,6 +1083,17 @@ impl<'s> FuncGen<'s>
                 self.dest_addr(dest);
                 self.op(Op::RemoveCell(*kind));
             }
+            Stmt::SetRow { dest, kind, index, value, .. } =>
+            {
+                self.set_row(dest, *kind, index, value)
+            }
+            Stmt::RemoveRow { dest, kind, index, .. } =>
+            {
+                self.dest_addr(dest);
+                let fresh = self.index_addr(index);
+                self.op(Op::RemoveRow(*kind));
+                do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
+            }
             Stmt::SetChar { dest, index, first, value, .. } =>
             {
                 self.dest_addr(dest);
@@ -1158,6 +1169,51 @@ impl<'s> FuncGen<'s>
         self.dest_addr(dest);
         self.op(Op::LocalAddr(slot));
         self.op(Op::AddCell(kind));
+    }
+
+    /// Give a row of a ဇယား its value. The index and the value are worked
+    /// out first, each in a slot of its own, so both read the ဇယား as it was
+    /// before the set; the op moves both out of their slots.
+    ///
+    /// # Arguments
+    ///
+    /// * `dest` - The ဇယား.
+    /// * `kind` - The ဇယား kind.
+    /// * `index` - The index, owned.
+    /// * `value` - The value, owned.
+    fn set_row(&mut self, dest: &Dest, kind: DataKind, index: &Expr, value: &Expr)
+    {
+        let at = self.temp("%cell", index.kind);
+        self.op(Op::LocalAddr(at));
+        self.put(index);
+        let cell = self.temp("%cell", value.kind);
+        self.op(Op::LocalAddr(cell));
+        self.put(value);
+        self.dest_addr(dest);
+        self.op(Op::LocalAddr(at));
+        self.op(Op::LocalAddr(cell));
+        self.op(Op::SetRow(kind));
+    }
+
+    /// Push the address of an index read where it is: an aggregate is read in
+    /// place, or built in a slot when it is fresh; each other value is put in
+    /// a slot of its own.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index.
+    ///
+    /// # Returns
+    ///
+    /// The slot of a fresh value, which the caller drops after the op.
+    fn index_addr(&mut self, index: &Expr) -> Option<(u32, DataKind)>
+    {
+        ret_if!(index.kind.is_aggregate(), self.read_operand(index));
+        let slot = self.temp("%cell", index.kind);
+        self.op(Op::LocalAddr(slot));
+        self.put(index);
+        self.op(Op::LocalAddr(slot));
+        None
     }
 
     /// Push an element count, then add a heap op that takes it.
@@ -1727,6 +1783,13 @@ impl<'s> FuncGen<'s>
             {
                 let slot = self.temp("%text", e.kind);
                 self.text_at(Op::LocalAddr(slot), e)
+            }
+            ExprNode::RowFind { table, index } =>
+            {
+                self.expr(table);
+                let fresh = self.index_addr(index);
+                self.op(Op::RowFind(table.kind));
+                do_if!(let Some((slot, kind)) = fresh, self.drop_local(slot, kind));
             }
             ExprNode::Chars { text, index, first, octet } =>
             {

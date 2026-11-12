@@ -801,7 +801,13 @@ impl<'m> Flow<'m>
                 self.value(value, state);
                 self.edit_list(dest, *span, state);
             }
-            Stmt::Insert { dest, index, value, span, .. } =>
+            Stmt::RemoveRow { dest, index, span, .. } =>
+            {
+                self.value(index, state);
+                self.edit_list(dest, *span, state);
+            }
+            Stmt::Insert { dest, index, value, span, .. }
+            | Stmt::SetRow { dest, index, value, span, .. } =>
             {
                 self.value(index, state);
                 self.edit_list(dest, *span, state);

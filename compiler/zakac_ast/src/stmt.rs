@@ -288,16 +288,50 @@ pub struct CountedStmt
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct EachStmt
 {
-    /// The list, the slice or the text walked.
+    /// The list, the slice, the text or the ဇယား walked.
     pub source: Expr,
-    /// `true` for each character, `false` for each cell.
-    pub chars: bool,
-    /// The variable that holds a duplicate of each cell or character.
+    /// The part of the source each round takes.
+    #[builder(default)]
+    #[serde(default)]
+    pub part: EachPart,
+    /// The first of two names, `<place> နှင့် <var>`: the number of each cell
+    /// or character from 0, or the index of each row; `None` for one name.
+    #[serde(default)]
+    pub place: Option<Ident>,
+    /// The variable that holds a duplicate of each item: the cell, the
+    /// character, the index of a row (`အညွှန်းတိုင်း` with one name) or the
+    /// value of a row.
     pub var: Ident,
     /// The loop block.
     pub block: BlockStmt,
     /// Source region.
     pub span: Span,
+}
+
+/// The part of a value an each loop walks: `<part>တိုင်း`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EachPart
+{
+    /// `အကွက်တိုင်း`: each cell of a list.
+    #[default]
+    Cell,
+    /// `စာလုံးတိုင်း`: each character of text.
+    Char,
+    /// `အညွှန်းတိုင်း`: each row of a ဇယား, one name taking its index.
+    Index,
+    /// `အတန်းတိုင်း`: each row of a ဇယား, one name taking its value.
+    Row,
+}
+
+impl EachPart
+{
+    /// Whether the part is a row of a ဇယား.
+    ///
+    /// # Returns
+    ///
+    /// `true` for [`EachPart::Index`] and [`EachPart::Row`].
+    pub fn is_row(self) -> bool { matches!(self, EachPart::Index | EachPart::Row) }
 }
 
 /// Generic loop, like a C `for`.
@@ -671,6 +705,11 @@ pub struct RemoveStmt
     #[serde(default)]
     #[builder(default)]
     pub chars: bool,
+    /// Whether it removes a row of a ဇယား, `<row> ကို ဖျက်မည်။`: the list field
+    /// then holds the row, `<ဇယား> ထဲမှ အညွှန်း <index>`.
+    #[serde(default)]
+    #[builder(default)]
+    pub row: bool,
     /// Source region.
     pub span: Span,
 }

@@ -55,7 +55,7 @@ locals
   l0 က isize[3]
   l1 ခ isize[3]
   l2 ဂ isize[3]
-  l3 ဇယား isize[3][2]
+  l3 ဂရစ် isize[3][2]
   l4 ညွှန်း isize[3]*
   l5 ပ isize*
   l6 %dup isize[3]
@@ -94,21 +94,21 @@ locals
     31  list_eq isize[3]
     32  not
     33  print
-    34  local_addr l3        ; ဇယား
+    34  local_addr l3        ; ဂရစ်
     35  zero isize[3][2]
-    36  local_addr l3        ; ဇယား
+    36  local_addr l3        ; ဂရစ်
     37  push 1:usize
     38  ptr_add 24
     39  push 2:usize
     40  ptr_add 8
     41  push 9:isize
     42  store isize
-    43  local_addr l3        ; ဇယား
+    43  local_addr l3        ; ဂရစ်
     44  push 0:usize
     45  ptr_add 24
     46  local_addr l2        ; ဂ
     47  blit isize[3]
-    48  local_addr l3        ; ဇယား
+    48  local_addr l3        ; ဂရစ်
     49  print_list isize[3][2]
     50  local_addr l4        ; ညွှန်း
     51  local_addr l2        ; ဂ

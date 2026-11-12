@@ -1305,3 +1305,83 @@ pub fn foreign_needs_mark(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::ForeignNeedsMark, message, span)
         .with_help(t!("codes.ZK0472.help"))
 }
+
+/// A row read, a row count or a row loop on a value that is no ဇယား.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `kind` - Its kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0484` diagnostic.
+pub fn not_a_table(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0484.message", k = kind);
+    Diagnostic::new(Code::NotATable, msg, span).with_help(t!("codes.ZK0484.help"))
+}
+
+/// A ဇယား kind whose index kind holds a part that cannot be hashed and
+/// compared as a whole value.
+///
+/// # Arguments
+///
+/// * `span` - The kind.
+/// * `kind` - The index kind, as text.
+/// * `part` - The part that fails, as text.
+///
+/// # Returns
+///
+/// The `ZK0485` diagnostic.
+pub fn bad_index_kind(span: Span, kind: &str, part: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0485.message", k = kind, part = part);
+    Diagnostic::new(Code::BadIndexKind, msg, span).with_help(t!("codes.ZK0485.help"))
+}
+
+/// `ဇယားအလွတ်` or `[:]` where no ဇယား kind can be worked out from its place.
+///
+/// # Arguments
+///
+/// * `span` - The blank ဇယား.
+///
+/// # Returns
+///
+/// The `ZK0486` diagnostic.
+pub fn table_needs_kind(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0486.message");
+    Diagnostic::new(Code::TableNeedsKind, msg, span).with_help(t!("codes.ZK0486.help"))
+}
+
+/// A ဇယား kind whose index kind holds a decimal number.
+///
+/// # Arguments
+///
+/// * `span` - The kind, or the literal it comes from.
+/// * `kind` - The index kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0487` warning.
+pub fn decimal_index(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0487.message", k = kind);
+    Diagnostic::new(Code::DecimalIndex, msg, span).with_help(t!("codes.ZK0487.help"))
+}
+
+/// `ကို ဖျက်မည်` after a value that is no row of a ဇယား.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+///
+/// # Returns
+///
+/// The `ZK0488` diagnostic.
+pub fn remove_needs_row(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0488.message");
+    Diagnostic::new(Code::RemoveNeedsRow, msg, span).with_help(t!("codes.ZK0488.help"))
+}

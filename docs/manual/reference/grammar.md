@@ -181,7 +181,8 @@ while-loop   = expr while branch ;
 while        = "နေသရွေ့" | "ဖြစ်နေသရွေ့" ;
 counted-loop = expr "မှ" expr "အထိ" [ expr "စီ" ] name "အနေဖြင့်"
                ( "ရေတွက်၍" | "တိုး၍" | "လျှော့၍" ) branch ;
-each-loop    = expr "၏" ( "အကွက်တိုင်း" | "စာလုံးတိုင်း" ) "ကို" name "အနေဖြင့်" "ယူ၍" branch ;
+each-loop    = expr "၏" each-part "ကို" [ name "နှင့်" ] name "အနေဖြင့်" "ယူ၍" branch ;
+each-part    = "အကွက်တိုင်း" | "စာလုံးတိုင်း" | "အညွှန်းတိုင်း" | "အတန်းတိုင်း" ;
 generic-loop = "ကိန်းရှင်" name "သည်" decl-head ( "ဖြစ်ကာ" | "ဖြစ်ပြီး" ) expr while
                block-open "။" { stmt } [ "ပြီးလျှင်" stmt ] block-close "။" ;
 break        = "ကွင်းဆက်" "ကို" "ရပ်မည်" "။" ;
@@ -197,6 +198,7 @@ verb-stmt    = value ( "ကို" | "ဟု" ) "ပြသမည်" "။"
              | value "ထဲသို့" value "ကို" ( "ထည့်မည်" | "ကူးထည့်မည်" | "အကုန်ကူးထည့်မည်" ) "။"
              | value "၏" "အရှေ့တွင်" value "ကို" "ထည့်မည်" "။"
              | value "၏" ( "နောက်ဆုံးအကွက်" | "နောက်ဆုံးစာလုံး" ) "ကို" "ဖျက်မည်" "။"
+             | value "ထဲမှ" "အညွှန်း" notation "ကို" "ဖျက်မည်" "။"
              | text-range "ထိ" "ကို" value "ဖြင့်" "အစားထိုးမည်" "။"
              | value "ကို" "ပြင်ပမှ" "ခေါ်ဆိုခွင့်" ( "ပြုမည်" | "ပြန်လည်ရုပ်သိမ်းမည်" ) "။" ;
 text-range   = value "၏" "အကွက်" notation "မှ" notation
@@ -222,7 +224,7 @@ size         = clause "ဘိုက်စာ"
   ([Expressions](#expressions)). The operands of a statement verb come in the order the
   verb lists, and none can be left over before it.
 
-See [Statements](../language/statements.md), [Lists](../language/lists.md),
+See [Statements](../language/statements.md), [Lists](../language/lists.md), [Tables](../language/tables.md),
 [Text](../language/text.md#changing-text), [Switch](../language/enums.md#switch) and
 [Heap statements](../language/unsafe.md#heap-statements).
 
@@ -240,7 +242,7 @@ not-expr     = clause { "မဟုတ်" } ;
 clause       = operand { particle operand | verb } ;   (* each verb takes the operands right before it *)
 particle     = "၏" | "နှင့်" | "ကို" | "ဖြင့်" | "သည်" | "ထက်" | "အောက်" | "ဟု"
              | "ခုမြောက်" | "လုံးမြောက်" | "ထဲသို့" | "ထဲတွင်" ;
-operand      = notation | word-list | join | word-struct
+operand      = notation | word-list | word-table | join | word-struct
              | first-call | short-call | marked-call ;   (* a call with a value end *)
 join         = notation "၊" notation { "၊" notation } "တို့ကို" "ဆက်ထားသည့်" "စာသား" ;
 
@@ -250,7 +252,9 @@ prefix-op    = "-" | "အနုတ်" | "~" | "!" | "*" | "&" ;   (* * and &: t
 infix-op     = "*" | "/" | "%" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|"
              | "<" | ">" | "<=" | ">=" | "==" | "!=" ;
 atom         = name | "(" expr ")" | literal | fn-value | size-of | long-call | sign-call ;
-data-read    = "ထဲမှ" "ဒေတာ" | "ထဲမှ" "အမှားအယွင်း" "ဒေတာ" ;
+data-read    = "ထဲမှ" "ဒေတာ" [ fallback ] | "ထဲမှ" "အမှားအယွင်း" "ဒေတာ"
+             | "ထဲမှ" "အညွှန်း" notation [ "၏" "တန်ဖိုး" ] ;   (* a row of a ဇယား, or its value *)
+fallback     = "၊" "မရှိလျှင်" prefix-expr ;
 fn-value     = name "ဟူသော" "လုပ်ဆောင်ချက်" ;
 size-of      = slot-kind "၏" "အရွယ်အစား" ;
 ```
@@ -280,7 +284,7 @@ value "၏" notation ordinal "အကွက်"                 (* a cell, counte
 value "၏" "အကွက်" notation "မှစ၍" notation "ကွက်"   (* a range: its start and its length *)
 value "၏" "စာလုံး" notation                        (* a character, counted from 0 *)
 value "၏" notation ordinal "စာလုံး"                (* a character, counted from 1 *)
-value "၏" ( "အကွက်အရေအတွက်" | "စာလုံးအရေအတွက်" )
+value "၏" ( "အကွက်အရေအတွက်" | "စာလုံးအရေအတွက်" | "အညွှန်းအရေအတွက်" )
 value "၏" "မိတ္တူ"                                 (* a shallow duplicate *)
 value count-word "လုံး" "၏" "မိတ္တူ"               (* a deep duplicate: တစ်ခုလုံး ၏ မိတ္တူ *)
 value "၏" ( "လိပ်စာ" | "တန်ဖိုး" )                  (* marked code: an address, the value at one *)
@@ -338,13 +342,16 @@ See [Calls](../language/functions.md#calls),
 
 ```text
 literal      = number-lit | char-lit | string-lit | truth | list-lit | blank-list
-             | struct-lit | member | null-word ;
+             | table-lit | blank-table | struct-lit | member | null-word ;
 number-lit   = [ "အခြေ" digits "ဖြင့်" ] ( number | letters ) [ "ဟူသော" slot-kind ] ;
 truth        = "မှန်" | "မမှန်" ;
 list-lit     = "[" notation { "၊" notation } "]" [ list-kind ] ;
 word-list    = notation { "၊" notation } "တို့ပါသော" "စာရင်း" [ list-kind ] ;
 blank-list   = ( "[" "]" | "စာရင်းအလွတ်" ) [ list-kind ] ;
 list-kind    = "ဟူသော" slot-kind ;                (* a list kind *)
+table-lit    = "[" notation ":" notation { "၊" notation ":" notation } "]" [ list-kind ] ;
+word-table   = notation "အနေဖြင့်" notation { "၊" notation "အနေဖြင့်" notation } "တို့ပါသော" "ဇယား" [ list-kind ] ;
+blank-table  = ( "[" ":" "]" | "ဇယားအလွတ်" ) [ list-kind ] ;   (* list-kind: a ဇယား kind here *)
 struct-lit   = name "(" [ name ":" notation { "၊" name ":" notation } ] ")" ;
 word-struct  = name notation { "၊" name notation } ( "ရှိသော" | "ခုရှိသော" ) struct-count ;
 struct-count = name count-word ;                  (* joined, လူတစ်ယောက်, or apart *)
@@ -364,6 +371,7 @@ null-word    = "အလွတ်"                             (* an optional with
 See [Numbers](../language/words.md#numbers),
 [Characters and strings](../language/words.md#characters-and-strings),
 [List literals](../language/lists.md#literals),
+[ဇယား literals](../language/tables.md#literals),
 [Struct literals](../language/structs.md#struct-literals),
 [Members](../language/enums.md#members) and
 [Initial values](../language/kinds.md#initial-values).
@@ -371,7 +379,8 @@ See [Numbers](../language/words.md#numbers),
 ## Kinds
 
 ```text
-kind         = { count } ( core | cell-kind | fn-kind | "(" fn-kind ")" ) { level } ;
+kind         = { count } ( core | cell-kind | table-kind | fn-kind | "(" fn-kind ")" ) { level } ;
+table-kind   = ( core { level } | cell-kind ) "ဖြင့်" "ညွှန်းသော" kind "ဇယား" ;
 core         = [ sign ] [ digits "ဘစ်" ] base
              | name                               (* a struct, an enumeration or an alias *)
              | "လိပ်စာ" ;                          (* an address of no kind *)
@@ -422,6 +431,7 @@ listed-kind  = slot-kind ;                        (* in a list: a function kind 
 See [Kinds and values](../language/kinds.md),
 [Measure words](../language/kinds.md#measure-words), [Lists](../language/lists.md#list-kinds),
 [Optional values](../language/optionals.md#the-optional-kind),
+[Tables](../language/tables.md),
 [Result kinds](../language/error-handling.md#result-kinds),
 [Function values](../language/function-values.md#the-kind) and
 [The pointer kind](../language/unsafe.md#the-pointer-kind).

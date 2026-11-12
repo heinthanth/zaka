@@ -109,6 +109,7 @@ impl Checker
             Expr::List(n) => self.infer_list(n, expect),
             Expr::Struct(n) => self.infer_struct_lit(n),
             Expr::BlankList(n) => self.infer_blank(n, expect),
+            Expr::Table(n) => self.infer_table(n, expect),
             Expr::Str(n) => self.infer_str(n),
             Expr::Member(n) => self.infer_member(n),
             Expr::FnAddr(n) => self.infer_fn_addr(n, expect),
@@ -459,6 +460,15 @@ impl Checker
         match (n.op, n.args.as_slice())
         {
             (VerbOp::CharCount, [text]) => return self.infer_chars(text, None),
+            (VerbOp::Row | VerbOp::RowValue, [table, index]) =>
+            {
+                return self.infer_row(n, table, index);
+            }
+            (VerbOp::OrElse, [optional, fallback]) =>
+            {
+                return self.infer_or_else(optional, fallback);
+            }
+            (VerbOp::RowCount, [table]) => return self.infer_row_count(table),
             (VerbOp::Join, pieces) => return self.infer_join(pieces),
             (VerbOp::CharAt | VerbOp::CharNth, [text, index]) =>
             {
@@ -516,7 +526,9 @@ impl Checker
     /// # Returns
     ///
     /// The kind, or `None` after an error.
-    fn infer_result_part(&mut self, op: VerbOp, value: &Expr) -> Option<DataKind>
+    pub(crate) fn infer_result_part(
+        &mut self, op: VerbOp, value: &Expr,
+    ) -> Option<DataKind>
     {
         let kind = self.infer(value, None)?;
         let Some((ok, err)) = kind.fallible_parts()

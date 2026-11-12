@@ -172,6 +172,15 @@ The runtime is strict C11 and passes `-pedantic-errors`. 128-bit integers stand 
 `__SIZEOF_INT128__`, and the GCC and Clang builtin for an overflow test behind `__GNUC__`,
 each with a C11 path beside it.
 
+### ဇယား values
+
+`zk_row_find`, `zk_set_row` and `zk_remove_row` in `zaka_rt_data.c` hold the same table the VM
+holds: rows in add order, slots of `uint32_t` in a power of two, a rebuild when a third of the
+slots would no longer be free, FNV-1a over the parts of an index. A ဇယား keeps the struct tag
+in its kind, and `zk_is_table` knows it through its name, `%map`, so the walks that drop, duplicate
+and own a struct need no change; `zk_eq` and `zk_show` call the ဇယား steps first. The trap of a
+missing row is `ZK_TRAP_NO_ROW`.
+
 ## C functions
 
 `emit` writes `zaka_ffi.c` when `Module::foreign` has rows. The file includes

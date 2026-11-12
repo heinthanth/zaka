@@ -1868,6 +1868,11 @@ static void zk_push_cell_pairs(
     DO_FOR(i, count) zk_push_value(s, a + i * cell->size, b + i * cell->size, cell, 0);
 }
 
+static int zk_is_table(const zk_kind *k);
+static int zk_table_eq_step(
+    const unsigned char *a, const unsigned char *b, const zk_kind *k, zk_steps *s
+);
+
 /**
  * Compare one pair of values: scalars and text at once, the parts of a list,
  * a plain list, an object or a struct as steps. Two objects compared before
@@ -1908,6 +1913,7 @@ static int zk_eq_step(
         return 1;
     case ZK_K_STRUCT:
     case ZK_K_FALLIBLE:
+        RET_IF(zk_is_table(k), zk_table_eq_step(a, b, k, s));
         DO_FOR(i, k->len)
         {
             size_t at = k->fields[i].offset;
@@ -2195,6 +2201,460 @@ static void zk_push_object(
     zk_push_value(s, base, NULL, k->cell, 0);
 }
 
+/* ---- tables ---- */
+
+/*
+ * A ဇယား is a struct of its rows, a plain list in add order, its slots, a
+ * plain list of uint32_t whose count is a power of two, and its count of
+ * live rows. A slot holds 0 when no row ever used it, 1 when its row was
+ * removed, and 2 more than the number of its row otherwise. An index goes
+ * to the slot its hash names, or the first one after it that holds no other
+ * row of the same index; at least a third of the slots hold 0, so each
+ * search ends. A removed row is dropped and left as zero octets until a
+ * rebuild moves the live rows together.
+ */
+
+/** The first state of the 64-bit FNV-1a hash. */
+#define ZK_FNV_OFFSET 0xcbf29ce484222325u
+/** The multiplier of the 64-bit FNV-1a hash. */
+#define ZK_FNV_PRIME 0x100000001b3u
+/** The fewest slots a ဇယား with rows holds. */
+#define ZK_MIN_SLOTS 8u
+
+/** Where the parts of a ဇယား and of its rows sit, and their kinds. */
+typedef struct
+{
+    /** The rows, the slots and the count of live rows, in the ဇယား. */
+    unsigned char *rows, *slots, *live;
+    /** The kinds of the rows, the slots, a row, an index and a value. */
+    const zk_kind *rows_k, *slots_k, *row, *index_k, *value_k;
+    /** The size of a row, and the offsets of its parts. */
+    size_t stride, hash, alive, index, value;
+} zk_tab;
+
+/**
+ * Whether a kind is a ဇယား.
+ *
+ * @param k The kind.
+ * @return 1 for a ဇယား.
+ */
+static int zk_is_table(const zk_kind *k)
+{
+    return k->tag == ZK_K_STRUCT && k->name && strcmp(k->name, "%map") == 0;
+}
+
+/**
+ * Where the parts of a ဇယား sit.
+ *
+ * @param at The ဇယား.
+ * @param k Its kind.
+ * @return The parts.
+ */
+static zk_tab zk_tab_of(const unsigned char *at, const zk_kind *k)
+{
+    unsigned char *p = (unsigned char *)at;
+    zk_tab t;
+    t.rows = p + k->fields[0].offset;
+    t.slots = p + k->fields[1].offset;
+    t.live = p + k->fields[2].offset;
+    t.rows_k = k->fields[0].kind;
+    t.slots_k = k->fields[1].kind;
+    t.row = t.rows_k->cell;
+    t.stride = t.row->size;
+    t.hash = t.row->fields[0].offset;
+    t.alive = t.row->fields[1].offset;
+    t.index = t.row->fields[2].offset;
+    t.value = t.row->fields[3].offset;
+    t.index_k = t.row->fields[2].kind;
+    t.value_k = t.row->fields[3].kind;
+    return t;
+}
+
+/**
+ * Mix octets into a 64-bit FNV-1a hash.
+ *
+ * @param h The hash so far.
+ * @param p The octets.
+ * @param n Their count.
+ * @return The hash.
+ */
+static uint64_t zk_mix(uint64_t h, const unsigned char *p, size_t n)
+{
+    DO_FOR(i, n) h = (h ^ p[i]) * ZK_FNV_PRIME;
+    return h;
+}
+
+/**
+ * How an index compares a decimal number: each NaN is one NaN, and -0.0 is
+ * 0.0; each other value counts through its octets.
+ *
+ * @param at The number.
+ * @param size Its octets.
+ * @return 0 for a zero, 1 for a NaN, 2 for each other value.
+ */
+static int zk_float_class(const unsigned char *at, size_t size)
+{
+#ifdef ZK_HAS_F16
+    if (size == 2)
+    {
+        zk_half v = zk_ld_f16(at);
+        return v != v ? 1 : v == 0 ? 0 : 2;
+    }
+#endif
+#ifdef ZK_HAS_F128
+    if (size == 16)
+    {
+        zk_quad v = zk_ld_f128(at);
+        return v != v ? 1 : v == 0 ? 0 : 2;
+    }
+#endif
+    if (size == 4)
+    {
+        float v = zk_ld_f32(at);
+        return v != v ? 1 : v == 0 ? 0 : 2;
+    }
+    double v = zk_ld_f64(at);
+    return v != v ? 1 : v == 0 ? 0 : 2;
+}
+
+/**
+ * Mix an index into a hash: its parts in order, decimals folded, text and
+ * plain lists through their content.
+ *
+ * @param h The hash so far.
+ * @param at The index.
+ * @param k Its kind.
+ * @return The hash.
+ */
+static uint64_t zk_index_hash(uint64_t h, const unsigned char *at, const zk_kind *k)
+{
+    static const unsigned char end = 0xff;
+    k = zk_repr(k);
+    switch (k->tag)
+    {
+    case ZK_K_TEXT:
+        return zk_mix(zk_mix(h, zk_seq_base(at), zk_seq_len(at)), &end, 1);
+    case ZK_K_SEQ:
+    {
+        size_t n = zk_seq_len(at);
+        const unsigned char *base = zk_seq_base(at);
+        h = zk_mix(h, (const unsigned char *)&n, sizeof n);
+        DO_FOR(i, n) h = zk_index_hash(h, base + i * k->cell->size, k->cell);
+        return h;
+    }
+    case ZK_K_LIST:
+        DO_FOR(i, k->len) h = zk_index_hash(h, at + i * k->cell->size, k->cell);
+        return h;
+    case ZK_K_STRUCT:
+    case ZK_K_FALLIBLE:
+        DO_FOR(i, k->len)
+        {
+            h = zk_index_hash(h, at + k->fields[i].offset, k->fields[i].kind);
+        }
+        return h;
+    case ZK_K_FLOAT:
+    {
+        unsigned char c = (unsigned char)zk_float_class(at, k->size);
+        return c == 2 ? zk_mix(h, at, k->size) : zk_mix(h, &c, 1);
+    }
+    default:
+        return zk_mix(h, at, k->size);
+    }
+}
+
+/**
+ * Whether two indexes are one: equal parts, each NaN equal to each other
+ * one, and -0.0 equal to 0.0.
+ *
+ * @param a The first index.
+ * @param b The second index.
+ * @param k The index kind.
+ * @return 1 when the two are one, else 0.
+ */
+static int zk_index_eq(const unsigned char *a, const unsigned char *b, const zk_kind *k)
+{
+    k = zk_repr(k);
+    switch (k->tag)
+    {
+    case ZK_K_TEXT:
+        return zk_text_eq(a, b);
+    case ZK_K_SEQ:
+    {
+        RET_IF(zk_seq_len(a) != zk_seq_len(b), 0);
+        const unsigned char *la = zk_seq_base(a), *lb = zk_seq_base(b);
+        size_t stride = k->cell->size;
+        DO_FOR(i, zk_seq_len(a))
+        {
+            RET_IF(!zk_index_eq(la + i * stride, lb + i * stride, k->cell), 0);
+        }
+        return 1;
+    }
+    case ZK_K_LIST:
+        DO_FOR(i, k->len)
+        {
+            size_t at = i * k->cell->size;
+            RET_IF(!zk_index_eq(a + at, b + at, k->cell), 0);
+        }
+        return 1;
+    case ZK_K_STRUCT:
+    case ZK_K_FALLIBLE:
+        DO_FOR(i, k->len)
+        {
+            size_t at = k->fields[i].offset;
+            RET_IF(!zk_index_eq(a + at, b + at, k->fields[i].kind), 0);
+        }
+        return 1;
+    case ZK_K_FLOAT:
+    {
+        int ca = zk_float_class(a, k->size), cb = zk_float_class(b, k->size);
+        RET_IF(ca != cb, 0);
+        return ca != 2 || memcmp(a, b, k->size) == 0;
+    }
+    default:
+        return memcmp(a, b, k->size) == 0;
+    }
+}
+
+/**
+ * The count of live rows of a ဇယား.
+ *
+ * @param t The parts.
+ * @return The count.
+ */
+static size_t zk_tab_live(const zk_tab *t)
+{
+    size_t n;
+    memcpy(&n, t->live, sizeof n);
+    return n;
+}
+
+/**
+ * Find the row of a ဇယား that holds an index.
+ *
+ * @param t The parts.
+ * @param index The index.
+ * @param slot Where the number of its slot goes, or NULL.
+ * @return The number of the row, or -1 when no row holds the index.
+ */
+static zk_imax zk_tab_find(const zk_tab *t, const unsigned char *index, size_t *slot)
+{
+    size_t count = zk_seq_len(t->slots);
+    RET_IF(count == 0, -1);
+    const unsigned char *slots = zk_seq_base(t->slots), *rows = zk_seq_base(t->rows);
+    uint64_t h = zk_index_hash(ZK_FNV_OFFSET, index, t->index_k);
+    size_t mask = count - 1, at = (size_t)(h & mask);
+    for (size_t n = 0; n < count; n++, at = (at + 1) & mask)
+    {
+        uint32_t s = zk_ld_u32(slots + 4 * at);
+        RET_IF(s == 0, -1);
+        NEXT_IF(s == 1);
+        const unsigned char *row = rows + (size_t)(s - 2) * t->stride;
+        NEXT_IF(zk_ld_u64(row + t->hash) != h);
+        NEXT_IF(!zk_index_eq(row + t->index, index, t->index_k));
+        DO_IF(slot, *slot = at);
+        return (zk_imax)(s - 2);
+    }
+    return -1;
+}
+
+zk_imax zk_row_find(
+    const unsigned char *at, const zk_kind *k, const unsigned char *index
+)
+{
+    zk_tab t = zk_tab_of(at, k);
+    return zk_tab_find(&t, index, NULL);
+}
+
+/**
+ * Point a free slot at a row: the slot its hash names, or the first free one
+ * after it.
+ *
+ * @param t The parts.
+ * @param h The hash of the index of the row.
+ * @param row The number of the row.
+ */
+static void zk_tab_place(const zk_tab *t, uint64_t h, size_t row)
+{
+    size_t count = zk_seq_len(t->slots);
+    unsigned char *slots = zk_seq_base(t->slots);
+    size_t mask = count - 1, at = (size_t)(h & mask);
+    while (zk_ld_u32(slots + 4 * at) > 1) at = (at + 1) & mask;
+    zk_st_u32(slots + 4 * at, (uint32_t)(row + 2));
+}
+
+/**
+ * Move the live rows of a ဇယား together, in their order, and give it a new
+ * block of slots, each pointing at its row again.
+ *
+ * @param t The parts; the ဇယား owns its blocks.
+ * @param count The new count of slots, a power of two.
+ */
+static void zk_tab_rebuild(const zk_tab *t, size_t count)
+{
+    unsigned char *rows = zk_seq_base(t->rows);
+    size_t used = zk_seq_len(t->rows), kept = 0;
+    DO_FOR(n, used)
+    {
+        unsigned char *row = rows + n * t->stride;
+        NEXT_IF(!row[t->alive]);
+        if (kept != n)
+        {
+            memcpy(rows + kept * t->stride, row, t->stride);
+            memset(row, 0, t->stride);
+        }
+        kept++;
+    }
+    zk_seq_put(t->rows, rows, kept, zk_seq_room(t->rows));
+    zk_drop(t->slots, t->slots_k);
+    unsigned char *block = zk_seq_new(4 * count);
+    zk_seq_kind(block, t->slots_k->cell);
+    memset(block, 0, 4 * count);
+    zk_seq_put(t->slots, block, count, 4 * count);
+    DO_FOR(n, kept) zk_tab_place(t, zk_ld_u64(rows + n * t->stride + t->hash), n);
+}
+
+/**
+ * Add a new last row to a ဇယား, moving its index and its value in.
+ *
+ * @param t The parts; the ဇယား owns its blocks.
+ * @param h The hash of the index.
+ * @param index The index, moved out and zeroed.
+ * @param src The value, moved out and zeroed.
+ * @return The number of the new row.
+ */
+static size_t zk_tab_push(
+    const zk_tab *t, uint64_t h, unsigned char *index, unsigned char *src
+)
+{
+    unsigned char *block = zk_seq_base(t->rows);
+    size_t count = zk_seq_len(t->rows), held = zk_seq_room(t->rows), room = held;
+    size_t need = (count + 1) * t->stride;
+    if (need > held)
+    {
+        room = need > 2 * held ? need : 2 * held;
+        room = room > 4 * t->stride ? room : 4 * t->stride;
+        block = zk_seq_grow(held == 0 ? NULL : block, room);
+        zk_seq_kind(block, t->row);
+    }
+    unsigned char *row = block + count * t->stride;
+    memset(row, 0, t->stride);
+    zk_st_u64(row + t->hash, h);
+    row[t->alive] = 1;
+    memcpy(row + t->index, index, t->index_k->size);
+    zk_zero(index, t->index_k->size);
+    memcpy(row + t->value, src, t->value_k->size);
+    zk_zero(src, t->value_k->size);
+    zk_seq_put(t->rows, block, count + 1, room);
+    return count;
+}
+
+void zk_set_row(
+    unsigned char *at, const zk_kind *k, unsigned char *index, unsigned char *src
+)
+{
+    zk_tab t = zk_tab_of(at, k);
+    zk_own(t.rows, t.rows_k);
+    zk_own(t.slots, t.slots_k);
+    zk_imax found = zk_tab_find(&t, index, NULL);
+    if (found >= 0)
+    {
+        unsigned char *value = zk_seq_base(t.rows) + (size_t)found * t.stride + t.value;
+        zk_drop(value, t.value_k);
+        memcpy(value, src, t.value_k->size);
+        zk_zero(src, t.value_k->size);
+        zk_drop(index, t.index_k);
+        return;
+    }
+    uint64_t h = zk_index_hash(ZK_FNV_OFFSET, index, t.index_k);
+    size_t live = zk_tab_live(&t), want = ZK_MIN_SLOTS;
+    while (want < 2 * (live + 1)) want *= 2;
+    /* Each row, live or removed, holds a slot until a rebuild, and a third
+     * of the slots remain free. */
+    DO_IF(
+        (zk_seq_len(t.rows) + 1) * 3 > zk_seq_len(t.slots) * 2, zk_tab_rebuild(&t, want)
+    );
+    zk_tab_place(&t, h, zk_tab_push(&t, h, index, src));
+    live++;
+    memcpy(t.live, &live, sizeof live);
+}
+
+void zk_remove_row(unsigned char *at, const zk_kind *k, const unsigned char *index)
+{
+    zk_tab t = zk_tab_of(at, k);
+    size_t slot = 0;
+    zk_imax found = zk_tab_find(&t, index, &slot);
+    RET_IF(found < 0);
+    zk_own(t.rows, t.rows_k);
+    zk_own(t.slots, t.slots_k);
+    unsigned char *row = zk_seq_base(t.rows) + (size_t)found * t.stride;
+    zk_drop(row, t.row);
+    memset(row, 0, t.stride);
+    zk_st_u32(zk_seq_base(t.slots) + 4 * slot, 1);
+    size_t live = zk_tab_live(&t) - 1;
+    /* A ဇယား left with no live row gives back its blocks. */
+    DONE_IF(live == 0, zk_drop(at, k));
+    memcpy(t.live, &live, sizeof live);
+}
+
+/**
+ * Compare two ဇယား values: equal counts of live rows, and for each live row
+ * of the first, a row of the second with one index, whose values the steps
+ * compare.
+ *
+ * @param a The first.
+ * @param b The second.
+ * @param k The ဇယား kind.
+ * @param s The steps, added to.
+ * @return 0 when the two differ so far, else 1.
+ */
+static int zk_table_eq_step(
+    const unsigned char *a, const unsigned char *b, const zk_kind *k, zk_steps *s
+)
+{
+    zk_tab ta = zk_tab_of(a, k), tb = zk_tab_of(b, k);
+    RET_IF(zk_tab_live(&ta) != zk_tab_live(&tb), 0);
+    const unsigned char *rows = zk_seq_base(ta.rows), *other = zk_seq_base(tb.rows);
+    DO_FOR(n, zk_seq_len(ta.rows))
+    {
+        const unsigned char *row = rows + n * ta.stride;
+        NEXT_IF(!row[ta.alive]);
+        zk_imax found = zk_tab_find(&tb, row + ta.index, NULL);
+        RET_IF(found < 0, 0);
+        const unsigned char *there = other + (size_t)found * tb.stride + tb.value;
+        zk_push_value(s, row + ta.value, there, ta.value_k, 0);
+    }
+    return 1;
+}
+
+/**
+ * Add the steps that write a ဇယား, the last first: each live row as
+ * `index: value`, in add order, joined with the separator between `[` and
+ * `]`; `[:]` for one with no rows.
+ *
+ * @param s The steps.
+ * @param at The ဇယား.
+ * @param k Its kind.
+ */
+static void zk_push_table(zk_steps *s, const unsigned char *at, const zk_kind *k)
+{
+    zk_tab t = zk_tab_of(at, k);
+    DONE_IF(zk_tab_live(&t) == 0, zk_push_piece(s, "[:]", 3));
+    const unsigned char *rows = zk_seq_base(t.rows);
+    int later = 0;
+    zk_push_piece(s, "]", 1);
+    for (size_t n = zk_seq_len(t.rows); n-- > 0;)
+    {
+        const unsigned char *row = rows + n * t.stride;
+        NEXT_IF(!row[t.alive]);
+        DO_IF(later, zk_push_piece(s, zk_sep, sizeof zk_sep - 1));
+        zk_push_value(s, row + t.value, NULL, t.value_k, 1);
+        zk_push_piece(s, ": ", 2);
+        zk_push_value(s, row + t.index, NULL, t.index_k, 1);
+        later = 1;
+    }
+    zk_push_piece(s, "[", 1);
+}
+
 /**
  * Run one step of a print: write a piece, leave an object, or write a value,
  * at once or as further steps.
@@ -2215,6 +2675,7 @@ static void zk_show_step(const zk_step *step, zk_steps *s, zk_set *inside)
         zk_show_member(at, k);
         return;
     case ZK_K_STRUCT:
+        DONE_IF(zk_is_table(k), zk_push_table(s, at, k));
         zk_push_struct(s, at, k);
         return;
     case ZK_K_FALLIBLE:

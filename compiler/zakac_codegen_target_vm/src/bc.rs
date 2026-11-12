@@ -464,6 +464,20 @@ pub enum Op
     /// when it holds no cells, else drop its last cell when the list owns its
     /// block, and take one from its count.
     RemoveCell(DataKind),
+    /// Pop the address of an index, then the address of a ဇယား of this kind;
+    /// push the number of the row that holds the index, an `isize`, or -1
+    /// when no row holds it.
+    RowFind(DataKind),
+    /// Pop the address of a value, then the address of an index, then the
+    /// address of a ဇယား of this kind; give the ဇယား blocks of its own, then
+    /// move the value into the row that holds the index, dropping its old
+    /// value and the index given, or move both into a new last row. Each
+    /// address given is left at the default of its kind.
+    SetRow(DataKind),
+    /// Pop the address of an index, then the address of a ဇယား of this kind;
+    /// when a row holds the index, give the ဇယား blocks of its own and remove
+    /// the row, dropping its index and its value.
+    RemoveRow(DataKind),
     /// Pop a character, then a character number, then the address of text;
     /// stop the program when the number is outside the text, else give the
     /// text a block of its own and put the character in place of that one.
@@ -646,6 +660,9 @@ impl Op
             | Op::ToHeap(kind)
             | Op::AddCell(kind)
             | Op::RemoveCell(kind)
+            | Op::RowFind(kind)
+            | Op::SetRow(kind)
+            | Op::RemoveRow(kind)
             | Op::AddText(kind)
             | Op::SeqEq(kind)
             | Op::MemFill(kind)

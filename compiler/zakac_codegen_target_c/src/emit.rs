@@ -765,6 +765,7 @@ fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_NOT_GOOD_BARE", t!("target_c.trap.not_good_bare")),
         ("ZK_TRAP_NOT_FAULT", t!("target_c.trap.not_fault")),
         ("ZK_TRAP_NO_DATA", t!("target_c.trap.no_data")),
+        ("ZK_TRAP_NO_ROW", t!("target_c.trap.no_row")),
         ("ZK_TRAP_NULL_DEREF", t!("target_c.trap.null_deref")),
         ("ZK_TRAP_OUT_OF_MEM", t!("target_c.trap.out_of_mem")),
         ("ZK_TRAP_OVERLAP", t!("target_c.trap.overlap")),

@@ -217,6 +217,16 @@ impl FnGen<'_, '_>
             {
                 self.chars(text, index.as_deref(), *first, *octet, e.kind)
             }
+            ExprNode::RowFind { table, index } =>
+            {
+                let t = self.expr(table);
+                let (held, v) = self.index_at(index);
+                let k = self.shared.descr.of(table.kind);
+                let found =
+                    self.spill(e.kind, format!("zk_row_find({t}, {k}, {held})"));
+                self.drop_fresh(index, &v);
+                found
+            }
             ExprNode::Host { func, args } =>
             {
                 let t = self.temp(e.kind);

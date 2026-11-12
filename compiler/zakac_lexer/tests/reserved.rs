@@ -234,6 +234,28 @@ fn list_words_lex_and_split()
 }
 
 #[test]
+fn table_words_lex_and_split()
+{
+    assert_eq!(lookup("ဇယား"), Some(Kw::Table));
+    assert_eq!(lookup("ဇယားအလွတ်"), Some(Kw::BlankTable));
+    assert_eq!(lookup("ညွှန်းသော"), Some(Kw::Indexed));
+    assert_eq!(lookup("အညွှန်း"), Some(Kw::IndexWord));
+    assert_eq!(lookup("အညွှန်းအရေအတွက်"), Some(Kw::IndexCount));
+    assert_eq!(lookup("အညွှန်းတိုင်း"), Some(Kw::EachIndex));
+    assert_eq!(lookup("အတန်းတိုင်း"), Some(Kw::EachRow));
+    // The null pointer word keeps its own token.
+    assert_eq!(lookup("မညွှန်းသော"), Some(Kw::PointsAtNo));
+    let kws = |w: &str| -> Vec<Kw> {
+        split(w).expect("splits").iter().map(|(kw, _)| *kw).collect()
+    };
+    assert_eq!(kws("ဖြင့်ညွှန်းသော"), [Kw::Hpjint, Kw::Indexed]);
+    assert_eq!(kws("အညွှန်းတိုင်းကို"), [Kw::EachIndex, Kw::Ko]);
+    assert_eq!(kws("အတန်းတိုင်းကို"), [Kw::EachRow, Kw::Ko]);
+    // A name that ends in a reserved word remains a name.
+    assert_eq!(split("ဖိုင်အညွှန်း"), None);
+}
+
+#[test]
 fn replace_words_lex_and_split()
 {
     assert_eq!(lookup("အစားထိုးမည်"), Some(Kw::Replace));

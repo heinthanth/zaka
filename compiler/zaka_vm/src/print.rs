@@ -13,6 +13,7 @@ use zakac_semcheck::enums::EnumKind;
 use zakac_semcheck::enums::MemberValue;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::FALLIBLE;
+use zakac_semcheck::kind::TABLE;
 use zakac_semcheck::structs::StructKind;
 
 use crate::mem::Mem;
@@ -374,6 +375,7 @@ fn struct_tasks(
     mem: &Mem, addr: u64, s: &StructKind, tasks: &mut Vec<Task>,
 ) -> Result<(), TrapKind>
 {
+    ret_if!(s.name == TABLE, table_tasks(mem, addr, s, tasks));
     let platform = mem.platform();
     let at = |i: usize| addr + u64::from(s.offset(i, platform));
     if s.name == FALLIBLE
@@ -419,5 +421,55 @@ fn struct_tasks(
         )));
     }
     tasks.push(Task::Piece(format!("{}(", s.name)));
+    Ok(())
+}
+
+/// Add the tasks that write a ဇယား: each live row as `index: value`, in add
+/// order, joined with `၊ ` between `[` and `]`; `[:]` for one with no rows.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the ဇယား.
+/// * `addr` - The address of the ဇယား.
+/// * `s` - Its struct.
+/// * `tasks` - The tasks, added to, last first.
+///
+/// # Returns
+///
+/// `Ok`, or the trap a read of a row hits.
+fn table_tasks(
+    mem: &Mem, addr: u64, s: &StructKind, tasks: &mut Vec<Task>,
+) -> Result<(), TrapKind>
+{
+    let platform = mem.platform();
+    let bad = || TrapKind::BadValue { addr, kind: s.name.clone() };
+    let row = s.fields().first().and_then(|(_, k)| k.cell_kind()).ok_or_else(bad)?;
+    let fields = row.as_struct().ok_or_else(bad)?;
+    let off = |i: usize| u64::from(fields.offset(i, platform));
+    let (base, used) = slice_parts(mem, addr + u64::from(s.offset(0, platform)))?;
+    let stride = u64::from(row.size(platform));
+    let mut live = Vec::new();
+    for n in 0..used
+    {
+        let at = base + n * stride;
+        do_if!(
+            mem.load(at + off(1), DataKind::Bool)? == Value::Bool(true),
+            live.push(at)
+        );
+    }
+    ret_if!(live.is_empty(), {
+        tasks.push(Task::Piece("[:]".to_string()));
+        Ok(())
+    });
+    let (index, value) = (fields.fields()[2].1, fields.fields()[3].1);
+    tasks.push(Task::Piece("]".to_string()));
+    for (n, at) in live.iter().enumerate().rev()
+    {
+        tasks.push(Task::Show { addr: at + off(3), kind: value, quoted: true });
+        tasks.push(Task::Piece(": ".to_string()));
+        tasks.push(Task::Show { addr: at + off(2), kind: index, quoted: true });
+        do_if!(n > 0, tasks.push(Task::Piece("၊ ".to_string())));
+    }
+    tasks.push(Task::Piece("[".to_string()));
     Ok(())
 }

@@ -359,6 +359,16 @@ impl IrTree<'_>
                 node.children.push(self.expr(value));
                 node
             }
+            Stmt::SetRow { dest, index, value, .. } =>
+            {
+                let mut node = self.heap("set_row", dest, Some(index), None, span);
+                node.children.push(self.expr(value));
+                node
+            }
+            Stmt::RemoveRow { dest, index, .. } =>
+            {
+                self.heap("remove_row", dest, Some(index), None, span)
+            }
             Stmt::Replace { dest, start, end, chars, value, .. } =>
             {
                 let name = tern!(*chars, "replace_chars", "replace");
@@ -545,6 +555,10 @@ impl IrTree<'_>
                 };
                 let parts = std::iter::once(text.as_ref()).chain(index.as_deref());
                 (label, String::new(), parts.map(|e| self.expr(e)).collect())
+            }
+            ExprNode::RowFind { table, index } =>
+            {
+                ("row_find", String::new(), vec![self.expr(table), self.expr(index)])
             }
             ExprNode::Format(pieces) =>
             {

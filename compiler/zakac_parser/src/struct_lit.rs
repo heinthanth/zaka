@@ -49,6 +49,7 @@ fn starts_value(kind: TokenKind) -> bool
                     | Kw::False
                     | Kw::Null
                     | Kw::BlankList
+                    | Kw::BlankTable
                     | Kw::Function
                     | Kw::Base
                     | Kw::Negate

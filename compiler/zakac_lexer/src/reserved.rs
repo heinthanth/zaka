@@ -77,6 +77,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ပြောင်းလဲသော", Kw::ConvertHead),
     ("အကွက်တိုင်း", Kw::EachCell),
     ("စာလုံးတိုင်း", Kw::EachChar),
+    ("အညွှန်းတိုင်း", Kw::EachIndex),
+    ("အတန်းတိုင်း", Kw::EachRow),
     ("ယူ၍", Kw::Taking),
     ("ပြောင်းလဲရန်", Kw::ToChange),
     ("ထည့်ပေးရန်", Kw::ToFill),
@@ -217,6 +219,12 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("မှစ၍", Kw::StartingAt),
     ("ထိ", Kw::Upto),
     ("ကွက်", Kw::CellWord),
+    // tables
+    ("ဇယား", Kw::Table),
+    ("ဇယားအလွတ်", Kw::BlankTable),
+    ("ညွှန်းသော", Kw::Indexed),
+    ("အညွှန်း", Kw::IndexWord),
+    ("အညွှန်းအရေအတွက်", Kw::IndexCount),
     // structs, enumerations and kind aliases
     ("အချက်အလက်အမျိုးအစား", Kw::DataKindOpen),
     ("အချက်အလက်အစုအဝေး", Kw::StructWord),

@@ -136,11 +136,17 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 expr_places(value, out);
             }
             Stmt::SetChar { dest, index, value, .. }
-            | Stmt::Insert { dest, index, value, .. } =>
+            | Stmt::Insert { dest, index, value, .. }
+            | Stmt::SetRow { dest, index, value, .. } =>
             {
                 dest_places(dest, out);
                 expr_places(index, out);
                 expr_places(value, out);
+            }
+            Stmt::RemoveRow { dest, index, .. } =>
+            {
+                dest_places(dest, out);
+                expr_places(index, out);
             }
             Stmt::Replace { dest, start, end, value, .. } =>
             {
@@ -195,7 +201,8 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         | ExprNode::Logic { lhs, rhs, .. }
         | ExprNode::PtrAdd { base: lhs, offset: rhs }
         | ExprNode::PtrSub { lhs, rhs }
-        | ExprNode::CellAddr { list: lhs, index: rhs, .. } =>
+        | ExprNode::CellAddr { list: lhs, index: rhs, .. }
+        | ExprNode::RowFind { table: lhs, index: rhs } =>
         {
             expr_places(lhs, out);
             expr_places(rhs, out);

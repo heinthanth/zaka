@@ -72,7 +72,8 @@ fn raw_expr(e: &Expr) -> bool
         | ExprNode::Logic { lhs, rhs, .. }
         | ExprNode::PtrAdd { base: lhs, offset: rhs }
         | ExprNode::PtrSub { lhs, rhs }
-        | ExprNode::CellAddr { list: lhs, index: rhs, .. } =>
+        | ExprNode::CellAddr { list: lhs, index: rhs, .. }
+        | ExprNode::RowFind { table: lhs, index: rhs } =>
         {
             raw_expr(lhs) || raw_expr(rhs)
         }
@@ -150,10 +151,12 @@ fn raw_stmt(s: &Stmt) -> bool
             raw_dest(dest) || raw_expr(value)
         }
         Stmt::SetChar { dest, index, value, .. }
-        | Stmt::Insert { dest, index, value, .. } =>
+        | Stmt::Insert { dest, index, value, .. }
+        | Stmt::SetRow { dest, index, value, .. } =>
         {
             raw_dest(dest) || raw_expr(index) || raw_expr(value)
         }
+        Stmt::RemoveRow { dest, index, .. } => raw_dest(dest) || raw_expr(index),
         Stmt::Replace { dest, start, end, value, .. } =>
         {
             raw_dest(dest) || [start, end, value].into_iter().any(raw_expr)

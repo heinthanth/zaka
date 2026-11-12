@@ -150,6 +150,7 @@ fn in_notation(kw: Kw) -> bool
             | Kw::False
             | Kw::Null
             | Kw::BlankList
+            | Kw::BlankTable
             | Kw::Negate
             | Kw::UsedResult
             | Kw::UsedGoodResult

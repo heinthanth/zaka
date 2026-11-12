@@ -156,6 +156,9 @@ en = "the result is a good result, not an error"
 [vm.trap.no_data]
 en = "the optional holds no data"
 
+[vm.trap.no_row]
+en = "no row of the ဇယား has this index"
+
 [vm.trap.text_cut]
 en = "a range of text at %{addr} starts or ends inside a character"
 

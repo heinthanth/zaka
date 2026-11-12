@@ -498,6 +498,26 @@ is: after the first piece, a `၊` with `တို့ကို ဆက်ထာ�
 and `parse_join` reads the pieces, then `တို့ကို`, `ဆက်ထားသည့်` and `စာသား`, into a `VerbExpr`
 with `VerbOp::Join`.
 
+### ဇယား kinds, rows and the fallback
+
+A ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`, is the first form `kind_len_at` and
+`parse_kind_with` test. The index kind is a kind with no ဇယား of its own at its start, so the
+search ends; an optional or a result index parses, so the check can refuse it. The value
+kind is each kind, a ဇယား included, and the levels after `ဇယား` wrap the ဇယား.
+
+A row is a postfix of an operand, as `ထဲမှ ဒေတာ` is: `ထဲမှ အညွှန်း <notation>` builds the
+verb `row`, and `၏ တန်ဖိုး` right after it makes it `row_value`. The index is a notation
+expression, so it ends before the `၏`. `၊ မရှိလျှင် <prefix operand>` after `ထဲမှ ဒေတာ` builds the
+verb `or_else` over the optional itself; the fallback is one operand, so a read binds tighter
+than an operator. The postfixes run in `data_reads`, after each atom, and again in the clause
+loop for an operand a clause built.
+
+`[k: v၊ …]` and `[:]` are bracket literals, told from a list through the `:` after the first
+cell; `k အနေဖြင့် v၊ … တို့ပါသော ဇယား` is a sentence literal, told from a counted loop through the
+`တို့ပါသော ဇယား` ahead. `<row> ကို ဖျက်မည်` reduces through a verb row of its own into a remove
+statement marked `row`. An each loop reads its part, `အကွက်တိုင်း`, `စာလုံးတိုင်း`, `အညွှန်းတိုင်း`
+or `အတန်းတိုင်း`, and a first name before `နှင့်` when there are two.
+
 ## Reading the imports
 
 An import whose path starts with `စံကား/` (`STD_PREFIX`) reads a module of the stdlib

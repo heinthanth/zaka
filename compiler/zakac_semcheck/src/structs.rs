@@ -17,6 +17,8 @@ use crate::fn_kind::split_top;
 use crate::fn_kind::unwrap_parens;
 use crate::kind::DataKind;
 use crate::kind::FALLIBLE;
+use crate::kind::ROW;
+use crate::kind::TABLE;
 use crate::kind::split_marks;
 
 /// The struct kind of each declared name.
@@ -398,6 +400,12 @@ fn expand(kind: &str, defs: &StructDefs, around: &mut Vec<String>) -> String
         let parts: Vec<String> = sides.iter().map(side).collect();
         return format!("{FALLIBLE}{{{}}}{}", parts.join(","), split_marks(kind).1);
     }
+    if let Some((name, sides)) = table_sides(split_marks(kind).0)
+    {
+        let side = |(f, k): &(&str, &str)| format!("{f}:{}", expand(k, defs, around));
+        let parts: Vec<String> = sides.iter().map(side).collect();
+        return format!("{name}{{{}}}{}", parts.join(","), split_marks(kind).1);
+    }
     let (base, marks) = split_marks(kind);
     let inner = defs.contains_key(base) && !around.iter().any(|n| n == base);
     ret_if!(!inner, kind.to_string());
@@ -444,7 +452,22 @@ fn kind_of(
         let sides =
             [("tag", Some(DataKind::U8)), ("ok", ok), ("err", err), ("some", some)];
         let fields = sides.into_iter().filter_map(|(f, k)| Some((f.to_string(), k?)));
-        let made = DataKind::Struct(side_struct(sig, fields.collect(), memo));
+        let made = DataKind::Struct(side_struct(FALLIBLE, sig, fields.collect(), memo));
+        return DataKind::wrap_marks(made, split_marks(kind).1);
+    }
+    if let Some((name, sides)) = table_sides(split_marks(kind).0)
+    {
+        let mut fields = Vec::with_capacity(sides.len());
+        for (f, k) in sides
+        {
+            fields.push((f.to_string(), kind_of(k, defs, memo)?));
+        }
+        let text = |(f, k): &(String, DataKind)| format!("{f}:{}", k.spell_inner(true));
+        let sig = format!(
+            "{name}{{{}}}",
+            fields.iter().map(text).collect::<Vec<_>>().join(",")
+        );
+        let made = DataKind::Struct(side_struct(name, sig, fields, memo));
         return DataKind::wrap_marks(made, split_marks(kind).1);
     }
     let (base, marks) = split_marks(kind);
@@ -459,29 +482,31 @@ fn kind_of(
     DataKind::wrap_marks(inner, marks)
 }
 
-/// The struct of a result or an optional, made in this run from the kinds of
-/// its sides, which are read before it. A side can hold a struct still being
-/// made, through a shared box; reading the signature again from its text
-/// would make that struct afresh, and so this result again, without end.
+/// The struct of a result, an optional, a ဇယား or a row of one, made in this
+/// run from the kinds of its fields, which are read before it. A side can hold
+/// a struct still being made, through a shared box; reading the signature again
+/// from its text would make that struct afresh, and so this result again,
+/// without end.
 ///
 /// # Arguments
 ///
+/// * `name` - The struct name: [`FALLIBLE`], [`TABLE`] or [`ROW`].
 /// * `sig` - The signature.
-/// * `fields` - The tag and each side that holds a value, in that order.
+/// * `fields` - The fields, in order.
 /// * `memo` - The kinds made in this run.
 ///
 /// # Returns
 ///
 /// The kind.
 fn side_struct(
-    sig: String, fields: Vec<(String, DataKind)>,
+    name: &str, sig: String, fields: Vec<(String, DataKind)>,
     memo: &mut HashMap<String, &'static StructKind>,
 ) -> &'static StructKind
 {
     ret_if!(let Some(found) = memo.get(&sig), *found);
     ret_if!(let Some(found) = made(&sig), found);
     #[rustfmt::skip]
-    let fresh = StructKind { name: FALLIBLE.to_string(), sig: sig.clone(), fields: OnceLock::from(fields), c_fields: OnceLock::new() };
+    let fresh = StructKind { name: name.to_string(), sig: sig.clone(), fields: OnceLock::from(fields), c_fields: OnceLock::new() };
     let kind: &'static StructKind = Box::leak(Box::new(fresh));
     memo.insert(sig, kind);
     kind
@@ -529,6 +554,7 @@ fn collect_kind(kind: &str, defs: &mut StructDefs) -> Option<String>
     // A result kind is no struct of its own: `kind_of` and `expand` read its
     // sides, so a result inside another one never takes its name.
     ret_if!(fallible_sides(base).is_some(), Some(kind.to_string()));
+    ret_if!(table_sides(base).is_some(), Some(kind.to_string()));
     if is_fn_text(base)
     {
         let text = map_fn_text(base, &mut |k| collect_kind(k, defs))?;
@@ -563,4 +589,23 @@ fn fallible_sides(kind: &str) -> Option<Vec<(&str, &str)>>
 {
     let inner = kind.strip_prefix(FALLIBLE)?.strip_prefix('{')?.strip_suffix('}')?;
     top_level_parts(inner).into_iter().map(|p| p.split_once(':')).collect()
+}
+
+/// The name and the fields of the struct of a ဇယား, or of a row of one, in
+/// text form, as `(field, kind)` pairs.
+///
+/// # Arguments
+///
+/// * `kind` - The text.
+///
+/// # Returns
+///
+/// The name and the fields, or `None` for text of another kind.
+fn table_sides(kind: &str) -> Option<(&'static str, Vec<(&str, &str)>)>
+{
+    let name =
+        [TABLE, ROW].into_iter().find(|n| kind.starts_with(&format!("{n}{{")))?;
+    let inner = kind.strip_prefix(name)?.strip_prefix('{')?.strip_suffix('}')?;
+    let fields = top_level_parts(inner).into_iter().map(|p| p.split_once(':'));
+    Some((name, fields.collect::<Option<_>>()?))
 }

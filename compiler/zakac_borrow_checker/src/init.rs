@@ -1105,6 +1105,8 @@ fn dest_slot(s: &Stmt) -> Option<(Place, Span)>
         | Stmt::RemoveCell { dest: Dest::Slot(place), span, .. }
         | Stmt::SetChar { dest: Dest::Slot(place), span, .. }
         | Stmt::Insert { dest: Dest::Slot(place), span, .. }
+        | Stmt::SetRow { dest: Dest::Slot(place), span, .. }
+        | Stmt::RemoveRow { dest: Dest::Slot(place), span, .. }
         | Stmt::Replace { dest: Dest::Slot(place), span, .. }
         | Stmt::AddText { dest: Dest::Slot(place), span, .. } => Some((*place, *span)),
         _ => None,

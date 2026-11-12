@@ -17,15 +17,21 @@ use zakac_ast::expr::NullLit;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp;
 use zakac_ast::expr::SizeOfExpr;
+use zakac_ast::expr::TableLit;
+use zakac_ast::expr::TableRow;
+use zakac_ast::expr::VerbExpr;
+use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::Wrap;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
 use zakac_lexer::token::Kw;
+use zakac_lexer::token::Particle;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -222,7 +228,7 @@ impl Parser<'_>
         else
         {
             let atom = self.parse_atom()?;
-            return Ok(self.data_reads(atom));
+            return self.data_reads(atom);
         };
         self.bump();
         let rhs = self.notation_bp(PREFIX_BP)?;
@@ -261,7 +267,8 @@ impl Parser<'_>
             }
             TokenKind::Ident
                 if self.peek_n(1).kind == TokenKind::Kw(Kw::Among)
-                    && !self.at_data_read(1) =>
+                    && !self.at_data_read(1)
+                    && !self.at_row_read(1) =>
             {
                 self.parse_member()
             }
@@ -277,6 +284,11 @@ impl Parser<'_>
             TokenKind::Kw(Kw::True | Kw::False) => Ok(self.parse_bool()),
             TokenKind::Kw(Kw::Null | Kw::NoData | Kw::Initial) => Ok(self.parse_null()),
             TokenKind::Kw(Kw::BlankList) => self.parse_blank_list(),
+            TokenKind::Kw(Kw::BlankTable) =>
+            {
+                let tok = self.bump();
+                self.table_rest(tok.span, Vec::new())
+            }
             TokenKind::Char(value) => Ok(self.parse_char(value)),
             TokenKind::Number(_) | TokenKind::Kw(Kw::Base) if !self.at_size_of() =>
             {
@@ -317,7 +329,17 @@ impl Parser<'_>
             self.bump();
             return self.blank_list_rest(open.span, true);
         }
-        let mut cells = vec![self.parse_notation()?];
+        if self.eat_punct(Punct::Colon)
+        {
+            self.expect_punct(Punct::RBracket)?;
+            return self.table_rest(open.span, Vec::new());
+        }
+        let first = self.parse_notation()?;
+        ret_if!(
+            self.at_punct(Punct::Colon),
+            self.parse_bracket_table(open.span, first)
+        );
+        let mut cells = vec![first];
         while self.eat_punct(Punct::ListSep)
         {
             cells.push(self.parse_notation()?);
@@ -328,6 +350,67 @@ impl Parser<'_>
         let id = self.new_id();
         #[rustfmt::skip]
         return Ok(Expr::List(ListLit::builder().id(id).cells(cells).maybe_kind(kind).span(span).build()));
+    }
+
+    /// Parse the rest of `[<index>: <value>၊ …]` after its first index.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the literal starts.
+    /// * `first` - The first index.
+    ///
+    /// # Returns
+    ///
+    /// The literal, or a diagnostic.
+    fn parse_bracket_table(&mut self, start: Span, first: Expr) -> PResult<Expr>
+    {
+        let mut rows = Vec::new();
+        let mut index = first;
+        loop
+        {
+            self.expect_punct(Punct::Colon)?;
+            let value = self.parse_notation()?;
+            rows.push(TableRow::builder().index(index).value(value).build());
+            ret_if!(!self.eat_punct(Punct::ListSep), {
+                self.expect_punct(Punct::RBracket)?;
+                self.table_rest(start, rows)
+            });
+            index = self.parse_notation()?;
+        }
+    }
+
+    /// Finish a ဇယား literal once its rows are read: its kind when
+    /// `ဟူသော <kind> တစ်<classifier>` follows.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the literal starts.
+    /// * `rows` - The rows.
+    ///
+    /// # Returns
+    ///
+    /// The literal, or a `bad-literal-kind` diagnostic for a kind that is no
+    /// ဇယား.
+    pub(crate) fn table_rest(
+        &mut self, start: Span, rows: Vec<TableRow>,
+    ) -> PResult<Expr>
+    {
+        let kind = match self.at_literal_kind()
+        {
+            true =>
+            {
+                self.bump();
+                let kind = self.parse_slot_kind()?;
+                let table = kind.base == BaseKind::Table && kind.wraps.is_empty();
+                ret_if!(!table, Err(diag::bad_literal_kind(kind.span)));
+                Some(kind)
+            }
+            false => None,
+        };
+        let span = start.to(&self.prev_span());
+        let id = self.new_id();
+        #[rustfmt::skip]
+        return Ok(Expr::Table(TableLit::builder().id(id).rows(rows).maybe_kind(kind).span(span).build()));
     }
 
     /// Parse `ဟူသော <kind> တစ်<classifier>` after a list literal, a list kind.
@@ -431,6 +514,94 @@ impl Parser<'_>
         }
     }
 
+    /// Whether the row of a ဇယား starts `n` tokens ahead: `ထဲမှ အညွှန်း`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead `ထဲမှ` stands.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    pub(crate) fn at_row_read(&self, n: usize) -> bool
+    {
+        self.peek_n(n).kind == TokenKind::Kw(Kw::Among)
+            && kw_of(&self.peek_n(n + 1)) == Some(Kw::IndexWord)
+    }
+
+    /// Whether the fallback of a read of an optional comes next:
+    /// `၊ မရှိလျှင်`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn at_fallback(&self) -> bool
+    {
+        self.at_punct(Punct::ListSep)
+            && kw_of(&self.peek_n(1)) == Some(Kw::NotLocated)
+            && kw_of(&self.peek_n(2)) == Some(Kw::Then)
+    }
+
+    /// Parse `ထဲမှ အညွှန်း <index>` after a ဇယား, and the `၏ တန်ဖိုး` that
+    /// reads the value of the row when it follows. The index is a notation
+    /// expression, so it ends before the `၏`.
+    ///
+    /// # Arguments
+    ///
+    /// * `table` - The ဇယား.
+    ///
+    /// # Returns
+    ///
+    /// The row, or the value of the row, or a diagnostic.
+    pub(crate) fn parse_row(&mut self, table: Expr) -> PResult<Expr>
+    {
+        self.bump();
+        self.bump();
+        let index = self.parse_notation()?;
+        let value =
+            self.at_punct(Punct::Ei) && kw_of(&self.peek_n(1)) == Some(Kw::Value);
+        let (op, end, particle) = match value
+        {
+            true =>
+            {
+                self.bump();
+                let tok = self.bump();
+                (VerbOp::RowValue, tok.span, tok.particle)
+            }
+            false => (VerbOp::Row, index.span(), Particle::None),
+        };
+        let span = table.span().to(&end);
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = VerbExpr::builder().id(id).op(op).args(vec![table, index]).particle(particle)
+            .is_cmp(false).span(span).build();
+        Ok(Expr::Verb(node))
+    }
+
+    /// Parse `၊ မရှိလျှင် <value>` after the read of an optional: the data, or
+    /// the value when the optional holds none. The value is one operand, a
+    /// prefix operator and its operand included, as a read binds tighter than
+    /// an operator: `<x> ထဲမှ ဒေတာ၊ မရှိလျှင် ၀ + ၁` adds 1 to either.
+    ///
+    /// # Arguments
+    ///
+    /// * `optional` - The optional read.
+    ///
+    /// # Returns
+    ///
+    /// The read with its fallback, or a diagnostic.
+    pub(crate) fn parse_fallback(&mut self, optional: Expr) -> PResult<Expr>
+    {
+        do_for!(_ in 0..3, self.bump());
+        let fallback = self.parse_prefix()?;
+        let span = optional.span().to(&fallback.span());
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = VerbExpr::builder().id(id).op(VerbOp::OrElse).args(vec![optional, fallback])
+            .particle(Particle::None).is_cmp(false).span(span).build();
+        Ok(Expr::Verb(node))
+    }
+
     /// Whether a read of an optional or a result starts `n` tokens ahead.
     ///
     /// # Arguments
@@ -452,16 +623,30 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The value under its reads.
-    fn data_reads(&mut self, mut value: Expr) -> Expr
+    fn data_reads(&mut self, mut value: Expr) -> PResult<Expr>
     {
-        while let Some(op) = self.data_read_at(0)
+        loop
         {
+            if self.at_row_read(0)
+            {
+                value = self.parse_row(value)?;
+                continue;
+            }
+            let Some(op) = self.data_read_at(0)
+            else
+            {
+                return Ok(value);
+            };
             self.bump();
             let last = self.bump();
             let span = value.span().to(&last.span);
-            value = self.dup_expr(op, value, span, last.particle);
+            let fallback = op == VerbOp::Unwrap && self.at_fallback();
+            value = match fallback
+            {
+                true => self.parse_fallback(value)?,
+                false => self.dup_expr(op, value, span, last.particle),
+            };
         }
-        value
     }
 
     /// Parse `စာရင်းအလွတ်`, which is the current token, and its kind when
@@ -713,7 +898,7 @@ impl Parser<'_>
     }
 
     /// Parse the function of a long call form, before its `ကို`: a name, or
-    /// a place that holds a function value, such as `ဇယား ၏ အကွက် i`.
+    /// a place that holds a function value, such as `ဂရစ် ၏ အကွက် i`.
     ///
     /// # Returns
     ///

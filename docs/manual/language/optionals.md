@@ -214,6 +214,37 @@ the program stopped: the optional holds no data
 The read of a [result](error-handling.md#reading-a-whole-result) has the same spelling, and it reads the good
 value. An optional has no error side, so `<x> ထဲမှ အမှားအယွင်း ဒေတာ` on one is ZK0475.
 
+### A fallback
+
+```text
+<x> ထဲမှ ဒေတာ၊ မရှိလျှင် <value>
+```
+
+is the data the optional holds, or the value when it holds none ("if none, the value"). The
+value runs when the optional holds no data, and at no other time, and it converts to the kind
+of the data. It is one operand, a prefix operator and its operand included, as a read binds
+tighter than an operator: `x ထဲမှ ဒေတာ၊ မရှိလျှင် ၀ + ၁` adds 1 to the data or to 0, and a
+clause goes in parentheses. On a result, the fallback stands in for the error.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အလွတ် ဖြစ်ပါစေ။
+က ထဲမှ ဒေတာ၊ မရှိလျှင် ၀ ကို ပြသမည်။
+ခ ထဲမှ ဒေတာ၊ မရှိလျှင် ၀ ကို ပြသမည်။
+ခ ထဲမှ ဒေတာ၊ မရှိလျှင် -၁ + ၁၀ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၇
+၀
+၉
+```
+
+A ဇယား gives an optional for each row it reads, so the fallback fills the gap of a missing row
+([Tables](tables.md#reading-a-row)).
+
 ### A read a test ruled out
 
 A test proves what an optional holds, for as long as nothing changes the variable. A read of

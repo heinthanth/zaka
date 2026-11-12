@@ -25,6 +25,7 @@ pub mod semcheck;
 mod struct_check;
 pub mod structs;
 mod switch_check;
+mod table;
 mod units;
 pub mod value;
 

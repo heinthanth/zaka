@@ -144,6 +144,9 @@ en = "the result is a good result, not an error"
 [target_c.trap.no_data]
 en = "the optional holds no data"
 
+[target_c.trap.no_row]
+en = "no row of the ဇယား has this index"
+
 [target_c.trap.null_deref]
 en = "access through a null address at %{addr}"
 

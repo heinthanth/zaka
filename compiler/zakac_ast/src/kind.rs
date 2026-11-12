@@ -38,6 +38,19 @@ pub enum BaseKind
     /// A function value, with its parameters and result in [`Kind::sig`]:
     /// `<params> လက်ခံပြီး <kind> ရလဒ် ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား`.
     Fn,
+    /// A ဇယား, with its index kind and value kind in [`Kind::table`]:
+    /// `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`.
+    Table,
+}
+
+/// The two kinds of a ဇယား kind.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct TableParts
+{
+    /// The kind of the index of each row.
+    pub index: Kind,
+    /// The kind of the value of each row.
+    pub value: Kind,
 }
 
 /// One parameter of a function kind: its kind, with the name and the mark
@@ -161,6 +174,9 @@ pub struct Kind
     /// The parameters and result of a [`BaseKind::Fn`] base.
     #[serde(default)]
     pub sig: Option<Box<FnSig>>,
+    /// The index kind and the value kind of a [`BaseKind::Table`] base.
+    #[serde(default)]
+    pub table: Option<Box<TableParts>>,
     /// The measure word after `တစ်`, written after the outermost kind of a
     /// slot: `ကိန်းပြည့် စာရင်း တစ်ခု`. A kind inside another kind, and the
     /// original kind of an alias, have none.
@@ -186,12 +202,14 @@ impl Serialize for Kind
         let skip_name = skip && self.name.is_none();
         let skip_parts = skip && self.parts.is_none();
         let skip_sig = skip && self.sig.is_none();
+        let skip_table = skip && self.table.is_none();
         let skip_word = skip && self.classifier.is_none();
         let skip_alias = skip && self.alias.is_none();
         /// The number of fields, each that can be left out included.
-        const FIELDS: usize = 10;
+        const FIELDS: usize = 11;
         let skipped =
-            [skip_name, skip_parts, skip_sig, skip_word, skip_alias].map(usize::from);
+            [skip_name, skip_parts, skip_sig, skip_table, skip_word, skip_alias]
+                .map(usize::from);
         let n = FIELDS - skipped.iter().sum::<usize>();
         let mut state = serializer.serialize_struct("Kind", n)?;
         state.serialize_field("base", &self.base)?;
@@ -212,6 +230,11 @@ impl Serialize for Kind
             skip_sig,
             state.skip_field("sig")?,
             state.serialize_field("sig", &self.sig)?
+        );
+        tern!(
+            skip_table,
+            state.skip_field("table")?,
+            state.serialize_field("table", &self.table)?
         );
         tern!(
             skip_word,

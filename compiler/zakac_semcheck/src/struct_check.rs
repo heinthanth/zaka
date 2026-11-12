@@ -24,6 +24,7 @@ use crate::foreign;
 use crate::kind::DataKind;
 use crate::kind::FALLIBLE;
 use crate::kind::split_marks;
+use crate::kind::table_text;
 use crate::structs::EXTERN_FIELD;
 use crate::structs::StructDefs;
 use crate::structs::StructTable;
@@ -231,6 +232,10 @@ pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagno
         let side = |k: &Option<Kind>| k.as_ref().and_then(|k| unknown_name(k, names));
         return side(&parts.ok).or_else(|| side(&parts.err));
     }
+    if let Some(t) = kind.table.as_deref()
+    {
+        return unknown_name(&t.index, names).or_else(|| unknown_name(&t.value, names));
+    }
     let name = kind.name.as_ref()?;
     ret_if!(names.contains(name.name.as_str()), None);
     Some(rd::unknown_kind_name(name.span, &name.name))
@@ -298,6 +303,13 @@ fn field_text(
         let (ok, err) = (side(ok_name, &parts.ok), side("err", &parts.err));
         let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
         return format!("{FALLIBLE}{{tag:u8{ok}{err}}}{}", split_marks(&marks).1);
+    }
+    if let Some(t) = kind.table.as_deref()
+    {
+        let text = |k: &Kind| field_text(k, names, shared, enums);
+        let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
+        let table = table_text(&text(&t.index), &text(&t.value));
+        return format!("{table}{}", split_marks(&marks).1);
     }
     let plain = DataKind::from_ast(kind, enums).sig_name();
     let name = kind.name.as_ref().map(|n| n.name.as_str());

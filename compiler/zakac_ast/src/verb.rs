@@ -219,6 +219,26 @@ pub enum VerbOp
     /// text in order. The parser builds it from the list of pieces.
     #[strum(serialize = "join")]
     Join,
+    /// `<ဇယား> ထဲမှ အညွှန်း <index>`: the row of a ဇယား, which
+    /// `ကို ဖျက်မည်` removes. The parser builds it; no verb word stands for it.
+    #[strum(serialize = "row")]
+    Row,
+    /// `<ဇယား> ထဲမှ အညွှန်း <index> ၏ တန်ဖိုး`: the value of a row, an
+    /// optional when read, the value itself when written through. The parser
+    /// builds it; no verb word stands for it.
+    #[strum(serialize = "row_value")]
+    RowValue,
+    /// `<optional> ထဲမှ ဒေတာ၊ မရှိလျှင် <value>`: the data of an optional, or the
+    /// value when it holds none. The parser builds it; no verb word stands
+    /// for it.
+    #[strum(serialize = "or_else")]
+    OrElse,
+    /// `၏ အညွှန်းအရေအတွက်`: the number of rows of a ဇယား.
+    #[strum(serialize = "row_count")]
+    RowCount,
+    /// `<row> ကို ဖျက်မည်`: remove a row of a ဇယား.
+    #[strum(serialize = "remove_row")]
+    RemoveRow,
 }
 
 /// One row of the valence table: a verb, the particles its operands hold,
@@ -289,6 +309,8 @@ pub static VERBS: &[Verb] = &[
     row(Kw::Cell, VerbOp::Cell, &[Slot::Ei, Slot::Ordinal], false, false),
     row(Kw::CellCount, VerbOp::CellCount, &[Slot::Ei], false, false),
     row(Kw::CharCount, VerbOp::CharCount, &[Slot::Ei], false, false),
+    row(Kw::IndexCount, VerbOp::RowCount, &[Slot::Ei], false, false),
+    row(Kw::Remove, VerbOp::RemoveRow, &[Slot::Ko], true, false),
 ];
 
 /// Find the valence table row of a verb token.

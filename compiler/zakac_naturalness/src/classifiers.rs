@@ -165,6 +165,8 @@ impl Sizes<'_>
         let parts = kind.parts.as_deref();
         let sides = parts.into_iter().flat_map(|p| p.ok.iter().chain(&p.err));
         do_for!(side in sides, self.check_kind(side));
+        let table = kind.table.as_deref().into_iter();
+        do_for!(k in table.flat_map(|t| [&t.index, &t.value]), self.check_kind(k));
     }
 
     /// Report a size whose count word has another classifier than its kind.

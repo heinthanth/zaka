@@ -19,6 +19,7 @@ use zakac_ast::stmt::CallStmt;
 use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
+use zakac_ast::stmt::EachPart;
 use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::EnumDecl;
 use zakac_ast::stmt::FillStmt;
@@ -395,6 +396,10 @@ pub(crate) struct Checker
     /// The structs whose size waits for a count still open.
     #[builder(default)]
     pub open_structs: HashSet<Name>,
+    /// The reads of a row that stand at the base of a place a statement
+    /// writes through, which have the value kind and not an optional.
+    #[builder(default)]
+    pub row_writes: HashSet<NodeId>,
     /// The value of each constant list or struct this run found.
     #[builder(default)]
     pub aggs: Vec<Folded>,
@@ -1129,11 +1134,17 @@ impl Checker
     /// # Returns
     ///
     /// The kind, or `None` after a report.
-    fn each_var_kind(&mut self, kind: DataKind, n: &EachStmt) -> Option<DataKind>
+    fn each_var_kind(
+        &mut self, kind: DataKind, n: &EachStmt,
+    ) -> Option<(Option<DataKind>, DataKind)>
     {
-        let cell = each_list(kind, n.chars).cell_kind();
-        let walked = tern!(n.chars, kind.is_text().then_some(DataKind::Char), cell);
-        ret_if!(walked.is_some(), walked);
+        ret_if!(n.part.is_row(), self.row_var_kinds(kind, n));
+        let chars = n.part == EachPart::Char;
+        let cell = each_list(kind, chars).cell_kind();
+        let walked = tern!(chars, kind.is_text().then_some(DataKind::Char), cell);
+        // The first of two names counts the cells or characters from 0.
+        let place = n.place.as_ref().map(|_| DataKind::USIZE);
+        ret_if!(let Some(walked) = walked, Some((place, walked)));
         self.report(kd::each_source_wrong(n.source.span(), &kind.name()));
         None
     }
@@ -1185,8 +1196,9 @@ impl Checker
     ///
     /// The kind of the place, or `None` after an error or for an unknown
     /// kind.
-    fn place_kind(&mut self, target: &Expr) -> Option<DataKind>
+    pub(crate) fn place_kind(&mut self, target: &Expr) -> Option<DataKind>
     {
+        self.mark_row_write(target);
         let Some(place) = place_of(target)
         else
         {
@@ -1687,6 +1699,7 @@ impl Visitor for Checker
 
     fn visit_remove(&mut self, n: &RemoveStmt)
     {
+        ret_if!(n.row, self.remove_row(&n.list));
         let kind = self.place_kind(&n.list);
         ret_if!(n.chars, do_if!(let Some(k) = kind, self.shrinking_text(&n.list, k)));
         do_if!(let Some(k) = kind, { _ = self.growing_cells(&n.list, k); });
@@ -1814,9 +1827,10 @@ impl Visitor for Checker
 
     fn visit_each(&mut self, n: &EachStmt)
     {
-        let kind = self.infer(&n.source, None).and_then(|k| self.each_var_kind(k, n));
+        let kinds = self.infer(&n.source, None).and_then(|k| self.each_var_kind(k, n));
         self.scopes.push();
-        self.declare(&n.var, kind, Access::Var);
+        do_if!(let Some(place) = &n.place, self.declare(place, kinds.and_then(|(p, _)| p), Access::Var));
+        self.declare(&n.var, kinds.map(|(_, k)| k), Access::Var);
         let changed = self.changed(&n.block.stmts);
         self.proven_loop(changed, None, |c| {
             c.in_loop(|c| c.scan_loop_block(&n.block, None))

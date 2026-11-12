@@ -90,6 +90,8 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Counting
         | Kw::EachCell
         | Kw::EachChar
+        | Kw::EachIndex
+        | Kw::EachRow
         | Kw::Taking
         | Kw::Increasing
         | Kw::Decreasing
@@ -230,6 +232,8 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::SizeOf
         | Kw::Cell
         | Kw::CellCount
+        | Kw::IndexWord
+        | Kw::IndexCount
         | Kw::LastCell
         | Kw::LastChar
         | Kw::Before
@@ -304,6 +308,8 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::FnValue
         | Kw::Octets
         | Kw::Items
+        | Kw::Table
+        | Kw::Indexed
         | Kw::List => TokenRole::Kind,
         Kw::True
         | Kw::False
@@ -311,6 +317,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Nothing
         | Kw::PointsAtNo
         | Kw::BlankList
+        | Kw::BlankTable
         | Kw::Initial => TokenRole::Truth,
     }
 }
