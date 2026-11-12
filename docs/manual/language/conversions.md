@@ -62,7 +62,7 @@ A conversion is allowed between the pairs below, and in no other pair (ZK0408):
 
 An integer is never turned into a true/false value. Test it with a comparison instead:
 `n != ၀`. Conversions between pointers and integers, between pointer kinds, and between
-a shared object and a pointer, have rules of their own and need marked code (ZK0468
+a shared object and a pointer, have rules of their own and need unsafe code (ZK0468
 outside it), in [Unsafe Zaka](unsafe.md). The conversion verb takes one list: a plain
 list of `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` converts to text, and the VM checks that its u8s are
 UTF-8, stopping the program when the u8s are not ([Text](text.md)). Each other list is
@@ -147,7 +147,6 @@ Characters, true/false values and decimal numbers of other widths:
 'က' ကို ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 မမှန် ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 ၁၆၇၇၇၂၁၇ ကို ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
-၁.၁ ကို ၁၆ ဘစ် ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -157,7 +156,6 @@ A
 ၀
 ၀
 ၁၆၇၇၇၂၁၆.၀
-၁.၀၉၉၆
 ```
 
 ## Widening: the change that needs no words
@@ -170,7 +168,7 @@ operands of an operator (the next section). The cases:
 | From | To | When |
 | --- | --- | --- |
 | integer | integer | the target is wider and no sign is lost: signed to wider signed, unsigned to wider unsigned, unsigned to wider signed |
-| integer | decimal number | the integer's width is at most the bits of the float's significand: 11 for `f16`, 24 for `f32`, 53 for `f64`, 113 for `f128` |
+| integer | decimal number | the integer's width is at most the bits of the float's significand: 24 for `f32`, 53 for `f64` |
 | decimal number | decimal number | the target is wider |
 
 So `u8` goes into `i16`, `i16` into `f32`, `i32` into `f64`, and `f32` into `f64`.

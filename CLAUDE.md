@@ -184,8 +184,8 @@ comments that state the rule.
 
 - The runtime and the C the compiler writes are strict C11 (`-std=c11
   -pedantic-errors` builds them): no statement expressions or other GNU forms.
-  128-bit integers stand behind `__SIZEOF_INT128__`, and GCC and Clang builtins
-  behind `__GNUC__`, each with a C11 path beside it.
+  GCC and Clang builtins stand behind `__GNUC__`, each with a C11 path beside
+  it.
 - Doc comments are Doxygen: `/** ... */` on each function and function-like
   macro, with `@param` and `@return`. A header gives each declaration one line;
   `zaka_rt.c` holds the full doc of each function.

@@ -40,7 +40,7 @@ An integer kind is made of up to three parts, in this order:
 | Part | Words | Meaning |
 | --- | --- | --- |
 | sign (optional) | `လက္ခဏာရှိ` / `လက္ခဏာမဲ့` | "with sign" (can be negative) / "without sign" (zero or more) |
-| size (optional) | `၈ ဘစ်`, `၁၆ ဘစ်`, `၃၂ ဘစ်`, `၆၄ ဘစ်`, `၁၂၈ ဘစ်` | 8, 16, 32, 64 or 128 bits |
+| size (optional) | `၈ ဘစ်`, `၁၆ ဘစ်`, `၃၂ ဘစ်`, `၆၄ ဘစ်` | 8, 16, 32 or 64 bits |
 | kind | `ကိန်းပြည့်` | integer |
 
 Leave out the sign and the integer is signed. Leave out the size and it uses the

@@ -257,7 +257,7 @@ the artifact with none. An artifact built without `--release` keeps its lines, s
 `--leaks` adds one line on standard error for each heap block still live when `main`
 returns and the ring collector has run. It does not change the exit code. A block that
 safe code made is counted and freed, so the blocks listed are those of the heap
-statements of marked code:
+statements of unsafe code:
 
 ```console
 $ zakac run --leaks samples/mistakes/leak.zaka
@@ -292,7 +292,7 @@ the globals leave, so the heap keeps the other half.
 
 Running out of heap is a normal event of a program, so the allocate statement does not
 trap. It leaves the null pointer, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, in its place, and a
-program can test for that in marked code:
+program can test for that in unsafe code:
 
 ```text
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။

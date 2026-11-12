@@ -56,7 +56,7 @@ fn c_functions_take_kinds_c_passes_whole()
     assert_eq!(codes_as_is(&program(pair)), []);
 }
 
-/// A C function that passes a pointer needs the mark, and one that gives back
+/// A C function that passes a pointer must be unsafe, and one that gives back
 /// text that can be NULL does not: its result is an optional. A list of numbers
 /// passes as the address of its first cell, and C can change one marked
 /// `ဒေတာ ပြောင်းလဲရန်`.
@@ -66,7 +66,7 @@ fn c_functions_with_pointers_need_the_mark_and_lists_of_numbers_do_not()
     let frexp = "လုပ်ဆောင်ချက် frexp သည် \"libm\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ x ဟူသော ဒဿမကိန်း တစ်ခု ကို \
                  လည်းကောင်း e ဟူသော ၃၂ ဘစ် ကိန်းပြည့် ၏ လိပ်စာ တစ်ခု ကို လည်းကောင်း လက်ခံပြီး ဒဿမကိန်း တစ်ခု \
                  ကို ပြန်ပေးမည်။";
-    assert_eq!(codes_as_is(&program(frexp)), [Code::ForeignNeedsMark]);
+    assert_eq!(codes_as_is(&program(frexp)), [Code::ForeignNeedsUnsafe]);
     let getenv = "လုပ်ဆောင်ချက် getenv သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ n ဟူသော စာသား တစ်ခု \
                   ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။";
     assert_eq!(codes_as_is(&program(getenv)), []);
@@ -125,19 +125,20 @@ fn c_functions_take_text_and_other_values()
     let puts =
         "လုပ်ဆောင်ချက် puts သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ s ဟူသော စာသား တစ်ခု ကို လက်ခံမည်။";
     assert_eq!(codes_as_is(&program(puts)), []);
-    let call = "လုပ်ဆောင်ချက် printf ကို \"%s %ld\\n\"၊ \"က\"၊ ၄၂ တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let call = "printf ဟူသော လုပ်ဆောင်ချက်ကို \"%s %ld\\n\"၊ \"က\"၊ ၄၂ တို့ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(codes_as_is(&printing("", call)), []);
-    let bare = "လုပ်ဆောင်ချက် printf ကို \"က\\n\" တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let bare = "printf ဟူသော လုပ်ဆောင်ချက်ကို \"က\\n\" တို့ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(codes_as_is(&printing("", bare)), []);
 }
 
 #[test]
 fn other_values_have_their_rules()
 {
-    let none = "လုပ်ဆောင်ချက် printf ကို လုပ်ဆောင်မည်။";
+    let none = "printf ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။";
     assert_eq!(codes_as_is(&printing("", none)), [Code::ArgCountMismatch]);
     let pair = "စုံ ဟူသော ဒေတာအစုအဝေးတွင် က ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။";
-    let call = "ကိန်းရှင် တ သည် စုံ တစ်ခု ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် printf ကို \"%d\"၊ တ တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let call =
+        "ကိန်းရှင် တ သည် စုံ တစ်ခု ဖြစ်ပါစေ။\nprintf ဟူသော လုပ်ဆောင်ချက်ကို \"%d\"၊ တ တို့ဖြင့် လုပ်ဆောင်မည်။";
     // C reads a struct through `...` as it reads a struct parameter.
     assert_eq!(codes_as_is(&printing(pair, call)), []);
     let host = "လုပ်ဆောင်ချက် ရေး သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ စ ဟူသော စာသား တစ်ခု ကို လည်းကောင်း \
@@ -158,16 +159,16 @@ k ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခ�
 fn with_handle(steps: &str) -> String
 {
     format!(
-        "{HANDLES}\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် h သည် လုပ်ဆောင်ချက် open_it ကို ၁ တို့ဖြင့် \
-         လုပ်ဆောင်သော ရလဒ် ထဲမှ ဒေတာ ဖြစ်ပါစေ။\n{steps}\nပရိုဂရမ် ပြီးဆုံးပါပြီး။"
+        "{HANDLES}\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် h သည် open_it ဟူသော လုပ်ဆောင်ချက်ကို ၁ \
+         တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ထဲမှ ဒေတာ ဖြစ်ပါစေ။\n{steps}\nပရိုဂရမ် ပြီးဆုံးပါပြီး။"
     )
 }
 
 #[test]
 fn a_handle_passes_reads_and_closes_from_safe_code()
 {
-    let steps = "ကိန်းရှင် m သည် h ၏ n ဖြစ်ပါစေ။\nကိန်းရှင် s သည် h ၏ name ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် \
-                 close_it ကို h တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let steps = "ကိန်းရှင် m သည် h ၏ n ဖြစ်ပါစေ။\nကိန်းရှင် s သည် h ၏ name ဖြစ်ပါစေ။\nclose_it \
+                 ဟူသော လုပ်ဆောင်ချက်ကို h တို့ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(codes_as_is(&with_handle(steps)), []);
 }
 
@@ -190,7 +191,7 @@ fn a_c_field_of_a_kind_c_cannot_hold_is_refused()
     assert_eq!(codes_as_is(&program(decl)), [Code::KindNotAcrossC]);
 }
 
-/// Marked code writes a number field of a handle; a text field is a pointer
+/// Unsafe code writes a number field of a handle; a text field is a pointer
 /// C owns, so no code writes it.
 #[test]
 fn marked_code_writes_a_number_field_of_a_handle()

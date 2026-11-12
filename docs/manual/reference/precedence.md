@@ -11,7 +11,7 @@ first. Parentheses come before all else. From **tightest** to **loosest**:
 | Order | Operators | Groups | Notes |
 | --- | --- | --- | --- |
 | 1 | literals, names, `( ... )`, function calls | | the building blocks |
-| 2 | `-` `အနုတ်` `~` `!` in front of a value; `*` and `&` in front of a value in [marked code](../language/unsafe.md#reading-and-writing-through-a-pointer) | right to left | `-က * ခ` is `(-က) * ခ`; `*ပ + ၁` is `(*ပ) + ၁` |
+| 2 | `-` `အနုတ်` `~` `!` in front of a value; `*` and `&` in front of a value in [unsafe code](../language/unsafe.md#reading-and-writing-through-a-pointer) | right to left | `-က * ခ` is `(-က) * ခ`; `*ပ + ၁` is `(*ပ) + ၁` |
 | 3 | `*` `/` `%` | left to right | |
 | 4 | `+` `-` | left to right | |
 | 5 | `<<` `>>` | left to right | |

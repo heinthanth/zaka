@@ -67,6 +67,7 @@ thanks to all of these projects.
 | [fontdb](https://github.com/RazrFalcon/fontdb) | 0.24.0 | MIT |
 | [gen-lsp-types](https://github.com/ribru17/gen-lsp-types) | 0.11.0 | MIT |
 | [headless_chrome](https://github.com/rust-headless-chrome/rust-headless-chrome) | 1.0.22 | MIT |
+| [imbl](https://github.com/jneem/imbl) | 7.0.2 | MPL-2.0+ |
 | [js-sys](https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys) | 0.3.105 | MIT OR Apache-2.0 |
 | [leptos](https://github.com/leptos-rs/leptos) | 0.8.22 | MIT |
 | [leptos-scoped-style](https://github.com/PulanDev/leptos-style) | 0.1.1 | MIT OR Apache-2.0 |
@@ -92,7 +93,6 @@ thanks to all of these projects.
 | [pulldown-cmark](https://github.com/raphlinus/pulldown-cmark) | 0.13.5 | MIT |
 | [pulldown-cmark-escape](https://github.com/raphlinus/pulldown-cmark) | 0.11.0 | MIT |
 | [rust-i18n](https://github.com/longbridge/rust-i18n) | 4.2.2 | MIT |
-| [rustc_apfloat](https://github.com/rust-lang/rustc_apfloat) | 0.2.3+llvm-462a31f5a5ab | Apache-2.0 WITH LLVM-exception |
 | [rustix](https://github.com/bytecodealliance/rustix) | 1.1.5 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
 | [rustybuzz](https://github.com/harfbuzz/rustybuzz) | 0.20.1 | MIT |
 | [serde](https://github.com/serde-rs/serde) | 1.0.229 | MIT OR Apache-2.0 |

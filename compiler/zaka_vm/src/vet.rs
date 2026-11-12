@@ -29,7 +29,7 @@ use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 
 /// The platform widths the compiler builds for.
-const PLATFORM_WIDTHS: &[u16] = &[8, 16, 32, 64, 128];
+const PLATFORM_WIDTHS: &[u16] = &[8, 16, 32, 64];
 
 /// The reason a loaded artifact cannot run: where the fault lies and what it
 /// is.

@@ -998,7 +998,7 @@ pub fn edit_across_c(span: Span, name: &str) -> Diagnostic
         .with_help(t!("codes.ZK0466.help"))
 }
 
-/// An operation that works with pointers stands outside marked code.
+/// An operation that works with pointers stands outside unsafe code.
 ///
 /// # Arguments
 ///
@@ -1014,7 +1014,7 @@ pub fn unsafe_outside(span: Span, what: &str) -> Diagnostic
         .with_help(t!("codes.ZK0468.help"))
 }
 
-/// A function marked `စိတ်မချရသော` is taken as a value.
+/// An unsafe function, `စိတ်မချရသော`, is taken as a value.
 ///
 /// # Arguments
 ///
@@ -1045,7 +1045,7 @@ pub fn owned_not_ptr(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::OwnedNotPtr, t!("codes.ZK0470.message", k = kind), span)
 }
 
-/// Marked code where `--no-unsafe` refuses it.
+/// Unsafe code where `--no-unsafe` refuses it.
 ///
 /// # Arguments
 ///
@@ -1289,7 +1289,7 @@ pub enum HandleUse
 }
 
 /// A C function with a pointer in its kinds, or a result that can be NULL,
-/// is not marked `စိတ်မချရသော`, so it cannot be called from safe code.
+/// is not declared `စိတ်မချရသော`, so it cannot be called from safe code.
 ///
 /// # Arguments
 ///
@@ -1302,7 +1302,7 @@ pub enum HandleUse
 pub fn foreign_needs_mark(span: Span, name: &str) -> Diagnostic
 {
     let message = t!("codes.ZK0472.message", n = name, w = t!("codes.ZK0472.pointer"));
-    Diagnostic::new(Code::ForeignNeedsMark, message, span)
+    Diagnostic::new(Code::ForeignNeedsUnsafe, message, span)
         .with_help(t!("codes.ZK0472.help"))
 }
 

@@ -39,7 +39,7 @@ use zakac_span::span::Span;
 
 use crate::clause::ClauseOut;
 use crate::clause::Mode;
-use crate::describe::kw_text;
+use crate::clause::as_verb;
 use crate::describe::quote;
 use crate::parser::MAX_NEST;
 use crate::parser::PResult;
@@ -251,6 +251,10 @@ impl Parser<'_>
         let tok = self.peek();
         match tok.kind
         {
+            TokenKind::Punct(Punct::LParen) if self.at_long_call() =>
+            {
+                self.parse_call_expr()
+            }
             TokenKind::Punct(Punct::LParen) => self.parse_group(),
             TokenKind::Punct(Punct::LBracket) => self.parse_bracket_list(),
             TokenKind::Ident if self.at_call_struct_lit() =>
@@ -272,6 +276,10 @@ impl Parser<'_>
             {
                 self.parse_member()
             }
+            TokenKind::Ident | TokenKind::RawIdent if self.at_long_call() =>
+            {
+                self.parse_call_expr()
+            }
             TokenKind::Ident | TokenKind::RawIdent if self.at_fn_value() =>
             {
                 self.parse_fn_value()
@@ -280,7 +288,6 @@ impl Parser<'_>
             {
                 Ok(self.parse_name())
             }
-            TokenKind::Kw(Kw::Function) => self.parse_call_expr(),
             TokenKind::Kw(Kw::True | Kw::False) => Ok(self.parse_bool()),
             TokenKind::Kw(Kw::Null | Kw::NoData | Kw::Initial) => Ok(self.parse_null()),
             TokenKind::Kw(Kw::BlankList) => self.parse_blank_list(),
@@ -715,7 +722,7 @@ impl Parser<'_>
         Expr::Char(CharLit::builder().id(id).value(value).span(tok.span).build())
     }
 
-    /// Parse `လုပ်ဆောင်ချက် f ကို (args တို့ဖြင့်)? လုပ်ဆောင်သော ရလဒ်`, or
+    /// Parse `f ဟူသော လုပ်ဆောင်ချက်ကို (args တို့ဖြင့်)? လုပ်ဆောင်သော ရလဒ်`, or
     /// `... ရလဒ်ကောင်း`, which passes a failure on.
     ///
     /// # Returns
@@ -728,6 +735,55 @@ impl Parser<'_>
         let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
         let call = self.call_expr(start.to(&end.span), callee, args, pass);
         Ok(with_place(call, place))
+    }
+
+    /// Whether the function of a long call starts here: a name or a place
+    /// in parentheses, then `ဟူသော လုပ်ဆောင်ချက်ကို` (or `မည့်` for `ဟူသော`). A
+    /// verb right after the `ကို` makes the function value the object of that
+    /// verb instead, as in `f ဟူသော လုပ်ဆောင်ချက်ကို ပြန်ပေးမည်။`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn at_long_call(&self) -> bool
+    {
+        let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
+        let after = tern!(named, Some(1), self.group_end());
+        let Some(n) = after
+        else
+        {
+            return false;
+        };
+        let head = [n, n + 1].map(|at| kw_of(&self.peek_n(at)));
+        ret_if!(head != [Some(Kw::FnValue), Some(Kw::Ko)], false);
+        let next = self.peek_n(n + 2);
+        let object = kw_of(&next) == Some(Kw::Outside) || as_verb(&next).is_some();
+        !object
+    }
+
+    /// How far ahead the token after the `)` that closes the group opening
+    /// here is.
+    ///
+    /// # Returns
+    ///
+    /// The distance, or `None` when no group opens here or it does not close
+    /// before the end of the sentence.
+    fn group_end(&self) -> Option<usize>
+    {
+        ret_if!(!self.at_punct(Punct::LParen), None);
+        let mut depth = 0usize;
+        for n in 0..
+        {
+            match self.peek_n(n).kind
+            {
+                TokenKind::Punct(Punct::LParen) => depth += 1,
+                TokenKind::Punct(Punct::RParen) if depth == 1 => return Some(n + 1),
+                TokenKind::Punct(Punct::RParen) => depth -= 1,
+                TokenKind::Punct(Punct::FullStop) | TokenKind::Eof => return None,
+                _ => (),
+            }
+        }
+        None
     }
 
     /// Whether a function value starts here: `<name> ဟူသော လုပ်ဆောင်ချက်`.
@@ -769,7 +825,7 @@ impl Parser<'_>
     }
 
     /// Parse the sign form of a call, `f(a၊ b)` or `f()`: the same node as
-    /// `လုပ်ဆောင်ချက် f ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`. A `?` right after
+    /// `f ဟူသော လုပ်ဆောင်ချက်ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`. A `?` right after
     /// the `)` passes a failure on, as `... ရလဒ်ကောင်း` does.
     ///
     /// # Returns
@@ -881,44 +937,59 @@ impl Parser<'_>
         Expr::Call(node)
     }
 
-    /// Parse `လုပ်ဆောင်ချက် f ကို (args တို့ဖြင့်)?`, shared between call
+    /// Parse `f ဟူသော လုပ်ဆောင်ချက်ကို (args တို့ဖြင့်)?`, shared between call
     /// expressions and call statements.
     ///
     /// # Returns
     ///
-    /// The span of `လုပ်ဆောင်ချက်`, the function name and the arguments with
-    /// their marks.
+    /// The span of the function, the function name, the place that holds it
+    /// and the arguments with their marks.
     pub(crate) fn parse_call_head(&mut self) -> PResult<CallHead>
     {
-        let start = self.bump().span;
-        let (callee, place) = self.parse_callee()?;
-        self.expect(Kw::Ko)?;
+        let start = self.peek().span;
+        let (callee, place) = self.parse_long_callee()?;
         let args = self.parse_call_args()?;
         Ok((start, callee, place, args))
     }
 
-    /// Parse the function of a long call form, before its `ကို`: a name, or
-    /// a place that holds a function value, such as `ဂရစ် ၏ အကွက် i`.
+    /// Parse the function of a long call form with the words after it,
+    /// `ဟူသော လုပ်ဆောင်ချက်ကို`: a name, or a place that holds a function value
+    /// in parentheses, such as `(ဂရစ် ၏ အကွက် i)`.
     ///
     /// # Returns
     ///
     /// The name, the first name of the place, and the place when one is
     /// written; or a diagnostic.
-    pub(crate) fn parse_callee(&mut self) -> PResult<(Ident, Option<Box<Expr>>)>
+    pub(crate) fn parse_long_callee(&mut self) -> PResult<(Ident, Option<Box<Expr>>)>
     {
+        let callee = self.parse_callee()?;
+        self.expect(Kw::FnValue)?;
+        self.expect(Kw::Ko)?;
+        Ok(callee)
+    }
+
+    /// Parse a name, or a place in parentheses that starts with a name.
+    ///
+    /// # Returns
+    ///
+    /// The name, the first name of the place, and the place when it is more
+    /// than the name; or a diagnostic.
+    fn parse_callee(&mut self) -> PResult<(Ident, Option<Box<Expr>>)>
+    {
+        let open = self.eat_punct(Punct::LParen);
         let callee = self.parse_ident()?;
-        ret_if!(!self.at_punct(Punct::Ei), Ok((callee, None)));
+        ret_if!(!open, Ok((callee, None)));
         let id = self.new_id();
         let name = NameExpr::builder().id(id).name(callee.name).span(callee.span);
-        let outer = std::mem::replace(&mut self.in_callee, true);
-        let read = self.parse_clause_from(Expr::Name(name.build()), Mode::Expr);
-        self.in_callee = outer;
-        let ClauseOut::Expr(place) = read?
+        let read = self.parse_clause_from(Expr::Name(name.build()), Mode::Expr)?;
+        self.expect_punct(Punct::RParen)?;
+        let ClauseOut::Expr(place) = read
         else
         {
-            return Err(self.err_expected(&quote(&kw_text(Kw::Ko))));
+            return Err(self.err_expected(&quote(")")));
         };
-        Ok((callee, Some(Box::new(place))))
+        let bare = matches!(place, Expr::Name(_));
+        Ok((callee, tern!(bare, None, Some(Box::new(place)))))
     }
 
     /// Parse `expr (၊ expr)* တို့ဖြင့်`, or nothing when the call word comes

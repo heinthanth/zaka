@@ -29,13 +29,6 @@ A program that gives closures to C also needs libffi, where the C compiler looks
 the SDK on macOS, a dev package such as `libffi-dev` on Linux. A program with no such
 closure never links it.
 
-`i128` and `u128` need a C compiler with 128-bit integers, as GCC and Clang have; another
-compiler stops at an `#error`. `f16` and `f128` are not C11 either: `f16` needs `_Float16`
-(Clang, and GCC on arm64, or on x86-64 from GCC 12), and `f128` needs `_Float128`, `__float128` or
-a 113-bit `long double` (GCC on Linux; Clang on macOS has none). A program that holds one of
-them stops at an `#error` that names the kind where the compiler lacks it; a program that
-holds neither builds on each compiler.
-
 Floats print as the VM prints them, digit for digit, on each host: the runtime works out
 the digits from the bits of the float, with no print from libc.
 
@@ -63,7 +56,7 @@ does in C. A debug build, the default, still keeps the list of calls in progress
 
 `--max-heap <OCTETS>` caps the heap, as the VM's flag of that name does (default 0, no cap).
 The executable counts the heap octets it holds: a counted block (text, a plain list, a box,
-a closure record) at the size of its cells, and a raw block of marked code (`zk_alloc`,
+a closure record) at the size of its cells, and a raw block of unsafe code (`zk_alloc`,
 `zk_realloc`, and `zk_free` for the free statement) at the size the allocator gives
 (`malloc_size` on macOS, `malloc_usable_size` on Linux, `_msize` on Windows; a raw block on
 another host is not counted). A counted block past the cap stops the run with the VM's
@@ -79,7 +72,7 @@ fails costs nothing, at each level.
 The checks of storage remain in the compiler. What it proves before the run holds in
 native code too, and safe code counts its blocks there as in the VM, with the same ring
 collector. A mistake the VM alone would catch, such as a read past the end of a block
-through a pointer in marked code, does what it does in C, unless `--checks mem` is on. [Checks in the VM and in native code](../concepts/checked.md)
+through a pointer in unsafe code, does what it does in C, unless `--checks mem` is on. [Checks in the VM and in native code](../concepts/checked.md)
 sorts each mistake.
 
 A program that stops writes what it printed so far, then one line on standard error, and
@@ -200,7 +193,7 @@ A [function value](../language/function-values.md) is one word in the C, of the 
 
 - Each function has a static record `zk_r<n>`, `{code, NULL}`, declared in
   `zaka_kinds.h` and defined in `zaka_kinds.c`. The address of function `n` is `&zk_r<n>`.
-  A function value is never NULL; a word of 0 in a heap block of marked code holds no
+  A function value is never NULL; a word of 0 in a heap block of unsafe code holds no
   function, and a call through it stops with the VM's message.
 - A closure, the function value of a [nested function](../language/function-values.md#nested-functions-and-closures)
   with captures, is a counted record on the heap. Where the function is declared,

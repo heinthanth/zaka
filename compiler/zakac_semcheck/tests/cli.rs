@@ -6,7 +6,7 @@ use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
 use zakac_semcheck::cli::ZakacSemcheck;
-use zakac_semcheck::mark::in_marked_code;
+use zakac_semcheck::unsafe_code::in_unsafe_code;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 
 const TEXT_HEADER: &str = "# zakac-semcheck-artifact v1\n";
@@ -22,7 +22,7 @@ fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
     argv.extend(args.iter().map(|arg| (*arg).to_string()));
 
     let command = ZakacSemcheck::create_as_standalone();
-    let mut stdin = Cursor::new(in_marked_code(stdin));
+    let mut stdin = Cursor::new(in_unsafe_code(stdin));
     let mut stdout = Buffer::no_color();
     let mut stderr = Buffer::no_color();
     let mut io = CommandIO::builder()

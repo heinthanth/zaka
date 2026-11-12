@@ -1,25 +1,16 @@
 /* Float text as the VM writes it, worked out on the bits with natural numbers
- * of our own, so no print or read of floats from libc takes part.
- *
- * - f32 and f64 print the fewest digits that read back, the digits Rust's
- *   {:?} writes: Dragon4 in the form of Steele and White, as Rust's flt2dec
- *   runs it, with a tie rounded up.
- * - f16 and f128 print as rustc_apfloat writes them: the exact decimal
- *   value, cut to 2 + P * 59 / 196 digits (P the bits of the significand)
- *   with a half rounded up. */
+ * of our own, so no print or read of floats from libc takes part: f32 and f64
+ * print the fewest digits that read back, the digits Rust's {:?} writes:
+ * Dragon4 in the form of Steele and White, as Rust's flt2dec runs it, with a
+ * tie rounded up. */
 
 #include <stdio.h>
 
 #include "zaka_c_sugars.h"
 #include "zaka_rt.h"
 
-/** Limbs of a small natural number: f32 and f64 need about 1100 bits. */
+/** Limbs of a natural number: f32 and f64 need about 1100 bits. */
 #define ZK_SMALL_LIMBS 48
-/** Limbs of a large natural number: the least f128 needs 113 + 16494 * log2(5)
- * bits, 38410 in all. */
-#define ZK_LARGE_LIMBS 1216
-/** Decimal digits of a large natural number, at most. */
-#define ZK_LARGE_DIGITS 11600
 
 /** A natural number in 32-bit limbs, the low limb first, no zero limb on top. */
 typedef struct
@@ -42,11 +33,9 @@ typedef struct
     /** The largest value of the exponent field: inf and NaN. */
     int top;
     /** The significand, the hidden bit set for a normal float. */
-    uint64_t sig_hi, sig_lo;
+    uint64_t sig;
     /** The power of two of the low significand bit. */
     int exp;
-    /** The bits of the significand, the hidden bit counted. */
-    int precision;
     /** 1 when the fraction field is zero. */
     int frac_zero;
 } zk_fparts;
@@ -97,59 +86,20 @@ static int zk_limbs_shl(uint32_t *d, int n, int s)
 }
 
 /**
- * Scale limbs up, times a power of a small base, a chunk at a time.
+ * Scale limbs up, times a power of ten, a chunk at a time.
  *
  * @param d The limbs, room for the product.
  * @param n Their count.
- * @param base The base, 5 or 10.
  * @param e The power.
  * @return The new count.
  */
-static int zk_limbs_pow(uint32_t *d, int n, uint32_t base, int e)
+static int zk_limbs_pow10(uint32_t *d, int n, int e)
 {
-    /* 5^13 and 10^9 are the largest powers below 2^32. */
-    int step = base == 5 ? 13 : 9;
-    uint32_t chunk = base == 5 ? 1220703125u : 1000000000u;
-    for (; e >= step; e -= step) n = zk_limbs_mul(d, n, chunk);
+    /* 10^9 is the largest power of ten below 2^32. */
+    for (; e >= 9; e -= 9) n = zk_limbs_mul(d, n, 1000000000u);
     uint32_t rest = 1;
-    DO_FOR(i, e) rest *= base;
+    DO_FOR(i, e) rest *= 10;
     return rest == 1 ? n : zk_limbs_mul(d, n, rest);
-}
-
-/**
- * Divide limbs in place, with a small divisor.
- *
- * @param d The limbs.
- * @param n Their count; changed to the count of the quotient.
- * @param m The divisor.
- * @return The remainder.
- */
-static uint32_t zk_limbs_div(uint32_t *d, int *n, uint32_t m)
-{
-    uint64_t rem = 0;
-    for (int i = *n - 1; i >= 0; i--)
-    {
-        uint64_t cur = (rem << 32) | d[i];
-        d[i] = (uint32_t)(cur / m);
-        rem = cur % m;
-    }
-    while (*n > 0 && d[*n - 1] == 0) (*n)--;
-    return (uint32_t)rem;
-}
-
-/**
- * The count of bits up to the highest set one.
- *
- * @param d The limbs.
- * @param n Their count.
- * @return The bit count, 0 for zero.
- */
-static int zk_limbs_bits(const uint32_t *d, int n)
-{
-    RET_IF(n == 0, 0);
-    int bits = (n - 1) * 32;
-    for (uint32_t top = d[n - 1]; top; top >>= 1) bits++;
-    return bits;
 }
 
 /**
@@ -240,38 +190,22 @@ static void zk_big_tens(zk_big *a, zk_big *b, zk_big *c)
 /**
  * Cut the bit pattern of an IEEE 754 float into its fields.
  *
- * @param bits The width of the float: 16, 32, 64 or 128.
- * @param hi The high 64 bits of the pattern, for f128.
- * @param lo The low 64 bits of the pattern.
+ * @param bits The width of the float: 32 or 64.
+ * @param raw The pattern, in the low `bits` bits.
  * @return The fields.
  */
-static zk_fparts zk_fparts_of(int bits, uint64_t hi, uint64_t lo)
+static zk_fparts zk_fparts_of(int bits, uint64_t raw)
 {
-    static const int precision_of[] = {11, 24, 53, 113};
     zk_fparts f;
-    f.precision = precision_of[bits == 16 ? 0 : bits == 32 ? 1 : bits == 64 ? 2 : 3];
-    int frac_bits = f.precision - 1, exp_bits = bits - f.precision;
+    int frac_bits = bits == 32 ? 23 : 52, exp_bits = bits - 1 - frac_bits;
     f.top = (1 << exp_bits) - 1;
-    if (bits == 128)
-    {
-        f.negative = (int)(hi >> 63);
-        f.field = (int)((hi >> 48) & 0x7fff);
-        f.sig_hi = hi & ((UINT64_C(1) << 48) - 1);
-        f.sig_lo = lo;
-    }
-    else
-    {
-        f.negative = (int)((lo >> (bits - 1)) & 1);
-        f.field = (int)((lo >> frac_bits) & (uint64_t)f.top);
-        f.sig_hi = 0;
-        f.sig_lo = lo & ((UINT64_C(1) << frac_bits) - 1);
-    }
-    f.frac_zero = f.sig_hi == 0 && f.sig_lo == 0;
+    f.negative = (int)((raw >> (bits - 1)) & 1);
+    f.field = (int)((raw >> frac_bits) & (uint64_t)f.top);
+    f.sig = raw & ((UINT64_C(1) << frac_bits) - 1);
+    f.frac_zero = f.sig == 0;
     int bias = (1 << (exp_bits - 1)) - 1;
     f.exp = (f.field == 0 ? 1 : f.field) - bias - frac_bits;
-    RET_IF(f.field == 0, f);
-    DO_IF(bits == 128, f.sig_hi |= UINT64_C(1) << 48);
-    DO_IF(bits != 128, f.sig_lo |= UINT64_C(1) << frac_bits);
+    DO_IF(f.field != 0, f.sig |= UINT64_C(1) << frac_bits);
     return f;
 }
 
@@ -289,7 +223,7 @@ static const char *zk_special(const zk_fparts *f)
     return NULL;
 }
 
-/* ---- the shortest digits: f32 and f64 ---- */
+/* ---- the shortest digits ---- */
 
 /**
  * A first guess at the power of ten above a value, as Rust's flt2dec makes
@@ -383,12 +317,12 @@ static int zk_dragon(
         hi.n = zk_limbs_shl(hi.d, hi.n, exp);
     }
     if (*k >= 0)
-        s[0].n = zk_limbs_pow(s[0].d, s[0].n, 10, *k);
+        s[0].n = zk_limbs_pow10(s[0].d, s[0].n, *k);
     else
     {
-        m.n = zk_limbs_pow(m.d, m.n, 10, -*k);
-        lo.n = zk_limbs_pow(lo.d, lo.n, 10, -*k);
-        hi.n = zk_limbs_pow(hi.d, hi.n, 10, -*k);
+        m.n = zk_limbs_pow10(m.d, m.n, -*k);
+        lo.n = zk_limbs_pow10(lo.d, lo.n, -*k);
+        hi.n = zk_limbs_pow10(hi.d, hi.n, -*k);
     }
     zk_big top = zk_big_sum(&m, &hi);
     if (zk_big_cmp(&s[0], &top) < edge)
@@ -429,7 +363,7 @@ static int zk_dragon(
  */
 static int zk_shortest(const zk_fparts *f, char *digits, int *exp)
 {
-    uint64_t mant = f->sig_lo;
+    uint64_t mant = f->sig;
     int k, n, e = f->exp;
     /* Rust decodes a subnormal as mant * 2 at one power of two less, so it
      * counts as even and its gaps are 1 each. */
@@ -503,173 +437,31 @@ static void zk_shortest_text(const zk_fparts *f, int far, char *t)
     *t = 0;
 }
 
-/* ---- the fixed digits: f16 and f128 ---- */
-
-/**
- * The decimal digits of a finite float other than zero, low digit first, as
- * rustc_apfloat finds them: each digit of the exact value, less a count of
- * low ones it drops unread, and less the zeros at the low end.
- *
- * @param f The fields of the float.
- * @param keep The count of digits the text keeps.
- * @param all Where the digits go, room for ZK_LARGE_DIGITS.
- * @param exp Where the power of ten of the low digit goes.
- * @param n Where the count of digits goes.
- * @return The first kept digit, within `all`.
- */
-static char *zk_exact_digits(const zk_fparts *f, int keep, char *all, int *exp, int *n)
-{
-    uint32_t d[ZK_LARGE_LIMBS];
-    uint64_t hi = f->sig_hi, lo = f->sig_lo;
-    int e = f->exp;
-    for (; (lo & 1) == 0; e++) lo = (lo >> 1) | (hi << 63), hi >>= 1;
-    uint64_t words[2] = {lo, hi};
-    int len = 0;
-    DO_FOR(i, 4) d[i] = (uint32_t)(words[i / 2] >> (i % 2 * 32));
-    DO_FOR(i, 4) DO_IF(d[i], len = (int)i + 1);
-    /* N * 2^-e is N * 5^e * 10^-e, so the power of two turns into one of ten. */
-    if (e > 0)
-        len = zk_limbs_shl(d, len, e);
-    else
-        len = zk_limbs_pow(d, len, 5, -e);
-    *exp = e > 0 ? 0 : e;
-    /* 196 / 59 is a little above log2(10). */
-    int required = (keep * 196 + 58) / 59, bits = zk_limbs_bits(d, len);
-    int drop = bits > required ? (bits - required) * 59 / 196 : 0;
-    int count = 0;
-    while (len > 0)
-    {
-        uint32_t rem = zk_limbs_div(d, &len, 1000000000u);
-        for (int i = 0; i < 9 && (len > 0 || rem); i++, rem /= 10)
-            all[count++] = (char)('0' + rem % 10);
-    }
-    int at = drop < count ? drop : count;
-    for (; at < count && all[at] == '0'; at++);
-    *exp += at;
-    *n = count - at;
-    return all + at;
-}
-
-/**
- * Cut digits to a count, a half rounded up, as rustc_apfloat does.
- *
- * @param b The digits, low first; the result starts within them.
- * @param n Their count; changed to the count left.
- * @param keep The count to keep at most.
- * @param exp The power of ten of the low digit; changed.
- * @return The digits left, low first.
- */
-static char *zk_cut_digits(char *b, int *n, int keep, int *exp)
-{
-    RET_IF(*n <= keep, b);
-    int first = *n - keep;
-    if (b[first - 1] < '5')
-        for (; first < *n && b[first] == '0'; first++);
-    else
-    {
-        /* Nines turn to zeros, which the cut drops with them. */
-        for (; first < *n && b[first] == '9'; first++);
-        DO_IF(first < *n, b[first]++);
-    }
-    *exp += first;
-    *n -= first;
-    b += first;
-    RET_IF(*n > 0, b);
-    /* Each digit was a nine, so one 1 is left. */
-    b[-1] = '1';
-    *n = 1;
-    return b - 1;
-}
-
-/**
- * The text of a finite f16 or f128 other than zero, as the VM writes it from
- * rustc_apfloat's Display: plain while the low digit lies at most three
- * places above the point and the first at most three below, with an exponent
- * outside that, then a `.0` on a whole number.
- *
- * @param f The fields of the float.
- * @param t Where the text goes, after the sign.
- */
-static void zk_fixed_text(const zk_fparts *f, char *t)
-{
-    char all[ZK_LARGE_DIGITS];
-    int keep = 2 + f->precision * 59 / 196, exp, n;
-    char *b = zk_exact_digits(f, keep, all, &exp, &n);
-    b = zk_cut_digits(b, &n, keep, &exp);
-    int lead = exp + n - 1;
-    int far = exp >= 0 ? exp > 3 || n + exp > keep : lead < -3;
-    if (far)
-    {
-        *t++ = b[n - 1];
-        DO_IF(n > 1, *t++ = '.');
-        for (int i = n - 2; i >= 0; i--) *t++ = b[i];
-        sprintf(t, "e%d", lead);
-        return;
-    }
-    if (exp >= 0)
-    {
-        for (int i = n - 1; i >= 0; i--) *t++ = b[i];
-        DO_FOR(i, exp) *t++ = '0';
-        strcpy(t, ".0");
-        return;
-    }
-    int unit = -exp;
-    if (unit >= n)
-    {
-        t += sprintf(t, "0.");
-        DO_FOR(i, unit - n) *t++ = '0';
-    }
-    for (int i = n - 1; i >= 0; i--)
-    {
-        *t++ = b[i];
-        DO_IF(i == unit && unit < n, *t++ = '.');
-    }
-    *t = 0;
-}
-
 /* ---- prints ---- */
 
 /**
  * Write a float from its bit pattern, as the VM writes it.
  *
- * @param bits The width: 16, 32, 64 or 128.
- * @param hi The high 64 bits of the pattern, for f128.
- * @param lo The low 64 bits of the pattern.
- * @param far For f32 and f64, 1 when the float lies outside the plain range
- *        of {:?}, from 1e-4 up to 1e16.
+ * @param bits The width: 32 or 64.
+ * @param raw The pattern, in the low `bits` bits.
  */
-static void zk_put_float(int bits, uint64_t hi, uint64_t lo, int far)
+void zk_put_fbits(int bits, uint64_t raw)
 {
-    zk_fparts f = zk_fparts_of(bits, hi, lo);
+    zk_fparts f = zk_fparts_of(bits, raw);
     const char *special = zk_special(&f);
     DONE_IF(special, zk_put_burmese(special));
-    char text[80];
-    text[0] = '-';
-    char *t = text + f.negative;
-    if (bits == 32 || bits == 64)
-        zk_shortest_text(&f, far, t);
-    else
-        zk_fixed_text(&f, t);
-    zk_put_burmese(text);
-}
-
-/**
- * Write a float from its bit pattern, as the VM writes it.
- *
- * @param bits The width: 16, 32, 64 or 128.
- * @param hi The high 64 bits of the pattern, for f128.
- * @param lo The low 64 bits of the pattern.
- */
-void zk_put_fbits(int bits, uint64_t hi, uint64_t lo)
-{
     double mag = 0;
-    DO_IF(bits == 64, (memcpy(&mag, &lo, 8), mag = fabs(mag)));
+    DO_IF(bits == 64, (memcpy(&mag, &raw, 8), mag = fabs(mag)));
     float single = 0;
-    uint32_t low = (uint32_t)lo;
+    uint32_t low = (uint32_t)raw;
     DO_IF(bits == 32, (memcpy(&single, &low, 4), single = fabsf(single)));
+    /* {:?} writes the plain form from 1e-4 up to 1e16, in the float's width. */
     int far =
         bits == 32 ? single < 1e-4f || single >= 1e16f : mag < 1e-4 || mag >= 1e16;
-    zk_put_float(bits, hi, lo, far);
+    char text[80];
+    text[0] = '-';
+    zk_shortest_text(&f, far, text + f.negative);
+    zk_put_burmese(text);
 }
 
 /**
@@ -681,7 +473,7 @@ void zk_put_f32(float v)
 {
     uint32_t b;
     memcpy(&b, &v, 4);
-    zk_put_fbits(32, 0, b);
+    zk_put_fbits(32, b);
 }
 
 /**
@@ -693,37 +485,5 @@ void zk_put_f64(double v)
 {
     uint64_t b;
     memcpy(&b, &v, 8);
-    zk_put_fbits(64, 0, b);
+    zk_put_fbits(64, b);
 }
-
-#ifdef ZK_HAS_F16
-/**
- * Write an f16.
- *
- * @param v The value.
- */
-void zk_put_f16(zk_half v)
-{
-    uint16_t b;
-    memcpy(&b, &v, 2);
-    zk_put_fbits(16, 0, b);
-}
-#endif
-
-#ifdef ZK_HAS_F128
-/**
- * Write an f128.
- *
- * @param v The value.
- */
-void zk_put_f128(zk_quad v)
-{
-    uint64_t w[2];
-    memcpy(w, &v, 16);
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    zk_put_fbits(128, w[0], w[1]);
-#else
-    zk_put_fbits(128, w[1], w[0]);
-#endif
-}
-#endif

@@ -67,7 +67,7 @@ pub struct Link
 /// `8.64.7.error.0.in-place.apart.vm.default.lower.tree.folded.…`. The foldings
 /// are a digit from 0 to 7: 1 for expressions, 2 for constants, 4 for branches.
 /// The mem flags are a digit from 0 to 7: 1 for the strict check, 2 to forbid
-/// marked code, 4 to stop on overflow; formats before 7 hold 0 to 3.
+/// unsafe code, 4 to stop on overflow; formats before 7 hold 0 to 3.
 ///
 /// # Arguments
 ///

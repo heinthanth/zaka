@@ -566,8 +566,7 @@ void zk_put_burmese(const char *s)
 }
 
 /**
- * Write an unsigned integer as wide as `zk_umax`: 128 bits where the
- * compiler has them, 64 elsewhere.
+ * Write an unsigned integer as wide as `zk_umax`.
  *
  * @param v The value.
  */
@@ -578,8 +577,7 @@ void zk_put_u(zk_umax v)
 }
 
 /**
- * Write a signed integer as wide as `zk_imax`: 128 bits where the compiler
- * has them, 64 elsewhere.
+ * Write a signed integer as wide as `zk_imax`.
  *
  * @param v The value.
  */

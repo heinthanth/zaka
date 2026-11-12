@@ -44,7 +44,7 @@ const NO_UNSAFE_ARG: &str = "no-unsafe";
 /// Words the fold flag takes.
 const FOLD_WORDS: &[&str] = &["all", "none", "exprs", "consts", "branches"];
 /// Bit counts the platform-sized integer kinds can have.
-const PLATFORM_WIDTHS: &[&str] = &["8", "16", "32", "64", "128"];
+const PLATFORM_WIDTHS: &[&str] = &["8", "16", "32", "64"];
 
 /// The `zakac_ir_builder` command, `zakac irgen` (or `zakac mkir`) as a
 /// subcommand.

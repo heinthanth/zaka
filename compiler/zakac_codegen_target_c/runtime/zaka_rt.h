@@ -6,10 +6,6 @@
 /* Round after each float operation, as the VM does: no fused mul-add. */
 #pragma STDC FP_CONTRACT OFF
 
-/* glibc declares the math of _Float128, such as fmodf128, when this is set
- * before the first include of math.h. */
-#define __STDC_WANT_IEC_60559_TYPES_EXT__ 1
-
 /* The check level and the call depth limit of the build, which the compiler
  * writes beside the runtime. */
 #include <math.h>
@@ -20,18 +16,10 @@
 
 #include "zaka_checks.h"
 
-/* 128-bit integers are not C11; the C compilers that have them define
- * __SIZEOF_INT128__. On the rest, the widest integer the runtime prints is
- * 64 bits wide, and a program with i128 or u128 stops at an #error. */
-#ifdef __SIZEOF_INT128__
-__extension__ typedef __int128 zk_i128;
-__extension__ typedef unsigned __int128 zk_u128;
-typedef zk_i128 zk_imax;
-typedef zk_u128 zk_umax;
-#else
+/* The widest integer kinds: each Zaka integer kind converts to one of them
+ * with no loss. */
 typedef int64_t zk_imax;
 typedef uint64_t zk_umax;
-#endif
 
 /* zaka_checks.h sets each ZK_CHECK_<FAMILY> to 1 or 0: the run-time stops the
  * program keeps, each check on its own. */
@@ -383,10 +371,6 @@ ZK_MEM_OPS(f32, float)
 ZK_MEM_OPS(f64, double)
 ZK_MEM_OPS(p, unsigned char *)
 ZK_MEM_OPS(fn, zk_fn)
-#ifdef __SIZEOF_INT128__
-ZK_MEM_OPS(i128, zk_i128)
-ZK_MEM_OPS(u128, zk_u128)
-#endif
 
 /** Write a value of a list or struct kind to an address; the two can
  * overlap. */
@@ -398,7 +382,7 @@ zk_imax zk_ptr_sub(const unsigned char *p, const unsigned char *q, size_t stride
 /** A new block of count cells of stride octets, zeroed; NULL when the size
  * overflows or no room is left. */
 unsigned char *zk_alloc(zk_umax count, size_t stride);
-/** Free a raw block of marked code and give back its octets. */
+/** Free a raw block that unsafe code made and give back its octets. */
 void zk_free(void *p);
 /** A block moved to a new size; the run stops when no room is left. */
 unsigned char *zk_realloc(unsigned char *p, zk_umax count, size_t stride);
@@ -829,14 +813,6 @@ ZK_UNSIGNED_OPS(u8, uint8_t, uint64_t, UINT8_MAX, 8)
 ZK_UNSIGNED_OPS(u16, uint16_t, uint64_t, UINT16_MAX, 16)
 ZK_UNSIGNED_OPS(u32, uint32_t, uint64_t, UINT32_MAX, 32)
 ZK_UNSIGNED_OPS(u64, uint64_t, uint64_t, UINT64_MAX, 64)
-
-#ifdef __SIZEOF_INT128__
-#define ZK_U128_MAX (~(zk_u128)0)
-#define ZK_I128_MAX ((zk_i128)(ZK_U128_MAX >> 1))
-#define ZK_I128_MIN (-ZK_I128_MAX - 1)
-ZK_SIGNED_OPS(i128, zk_i128, zk_u128, ZK_I128_MIN, ZK_I128_MAX, 128)
-ZK_UNSIGNED_OPS(u128, zk_u128, zk_u128, ZK_U128_MAX, 128)
-#endif
 
 #include "zaka_rt_float.h"
 

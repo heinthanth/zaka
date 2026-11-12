@@ -359,17 +359,17 @@ KindNotAcrossC = ("ZK0465", Level::Error),
 EditAcrossC = ("ZK0466", Level::Error),
 /// `အပိုင်အနေဖြင့်` on a result that is no text from a C function.
 OwnedNotCText = ("ZK0467", Level::Error),
-/// An operation that works with pointers stands outside marked code.
+/// An operation that works with pointers stands outside unsafe code.
 UnsafeOutside = ("ZK0468", Level::Error),
-/// A function marked `စိတ်မချရသော` is taken as a value.
+/// An unsafe function, `စိတ်မချရသော`, is taken as a value.
 UnsafeFnValue = ("ZK0469", Level::Error),
 /// `အပိုင်အနေဖြင့်` stands on a parameter or result that is no pointer.
 OwnedNotPtr = ("ZK0470", Level::Error),
-/// Marked code where `--no-unsafe` refuses it.
+/// Unsafe code where `--no-unsafe` refuses it.
 UnsafeRefused = ("ZK0471", Level::Error),
 /// A C function with a pointer in its kinds, or a result that can be NULL,
-/// is not marked `စိတ်မချရသော`.
-ForeignNeedsMark = ("ZK0472", Level::Error),
+/// is not declared `စိတ်မချရသော`.
+ForeignNeedsUnsafe = ("ZK0472", Level::Error),
 /// A value of a kind from outside the program is made, copied or printed
 /// in Zaka.
 HandleInZaka = ("ZK0473", Level::Error),
@@ -482,10 +482,7 @@ ReadUnsetDoubt = ("ZK0723", Level::Warning),
 /// A call of a function that reads a global that can be unset at the call.
 GlobalUnsetAtCall = ("ZK0724", Level::Error),
 /// A return that can leave a parameter marked `ဒေတာ ထည့်ပေးရန်` unset.
-FillUnsetAtReturn = ("ZK0725", Level::Error),
-// targets: ZK08xx
-/// A kind the C target cannot build: `f16` or `f128`.
-KindNotForC = ("ZK0801", Level::Error) }
+FillUnsetAtReturn = ("ZK0725", Level::Error) }
 
 impl Code
 {

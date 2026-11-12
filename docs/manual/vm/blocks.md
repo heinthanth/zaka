@@ -45,7 +45,7 @@ laid out upward from address 0:
   points into the one block, so a write would change them all. The compiler forbids such a
   write ([Text](../language/text.md)), and an edit of text or of a plain list, or the
   address of one of its cells, first copies static cells into a heap block; a pointer made
-  from an integer in marked code alone can reach one.
+  from an integer in unsafe code alone can reach one.
 - **Stack region.** It opens right after the statics. Its size is `--max-stack` or half
   of the room left, whichever is smaller; the heap starts at its end.
 - **Heap.** New blocks go above all the blocks made so far.
@@ -232,10 +232,10 @@ $ zakac run --frames packed program.zaka
 ```
 
 Here `program.zaka` declares two integers `က` and `ခ` one after the other at its top
-level, and a marked block in its start block prints `က ၏ လိပ်စာ` and `ခ ၏ လိပ်စာ`. The checked run leaves 24 addresses between them, and the packed run
+level, and an unsafe block in its start block prints `က ၏ လိပ်စာ` and `ခ ၏ လိပ်စာ`. The checked run leaves 24 addresses between them, and the packed run
 leaves none.
 
-The difference shows when a mistake is made. A marked block takes the address of `က`,
+The difference shows when a mistake is made. An unsafe block takes the address of `က`,
 writes `၉` one box past it, and the program prints `ခ`:
 
 ```console

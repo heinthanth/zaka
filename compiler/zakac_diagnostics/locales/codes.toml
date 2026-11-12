@@ -201,7 +201,7 @@ en = "invalid bit count"
 [codes.ZK0216.message]
 en = "%{n} is not a valid bit count here; use %{a}"
 [codes.ZK0216.explain]
-en = """Integer kinds come in 8, 16, 32, 64 and 128 bits, floating-point kinds in 16, 32, 64 and 128 bits. The bit count is written in decimal before \"ဘစ်\", in Burmese or Western digits."""
+en = """Integer kinds come in 8, 16, 32 and 64 bits, floating-point kinds in 32 and 64 bits. The bit count is written in decimal before \"ဘစ်\", in Burmese or Western digits."""
 
 [codes.ZK0217.title]
 en = "sign word on a kind that is not an integer"
@@ -687,7 +687,7 @@ en = "expected %{want}, found %{got}"
 [codes.ZK0401.help]
 en = "convert the value with \"ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်\""
 [codes.ZK0401.explain]
-en = """A value must fit the kind its place expects without losing data. Conversions happen on their own when no data can be lost: a narrower integer to a wider one of the same sign, an unsigned integer to a wider signed one, an integer to a float with enough fraction bits, and a narrower float to a wider one. Characters and booleans never convert on their own. Use the conversion verb for the others. In marked code, a pointer also converts on its own to and from the opaque \"လိပ်စာ\" when its block holds no address. A pointer whose block holds addresses, such as a pointer to a pointer, to text or to a plain list, converts with the verb alone, so a stored address is never read as other data without a conversion written out."""
+en = """A value must fit the kind its place expects without losing data. Conversions happen on their own when no data can be lost: a narrower integer to a wider one of the same sign, an unsigned integer to a wider signed one, an integer to a float with enough fraction bits, and a narrower float to a wider one. Characters and booleans never convert on their own. Use the conversion verb for the others. In unsafe code, a pointer also converts on its own to and from the opaque \"လိပ်စာ\" when its block holds no address. A pointer whose block holds addresses, such as a pointer to a pointer, to text or to a plain list, converts with the verb alone, so a stored address is never read as other data without a conversion written out."""
 
 [codes.ZK0402.title]
 en = "condition is not a boolean"
@@ -740,7 +740,7 @@ en = "invalid conversion"
 [codes.ZK0408.message]
 en = "cannot convert %{from} to %{to}"
 [codes.ZK0408.explain]
-en = """The conversion verb converts between numbers of all kinds, between characters and integers, and from booleans to integers. Floats and characters do not convert into each other, and nothing converts into a boolean: compare the value instead, for example \"က သည် ၀ နှင့် မညီ\". In marked code it also converts between addresses, between an address and an integer, between an object and an address, and a plain list of u8s into text once its UTF-8 is checked."""
+en = """The conversion verb converts between numbers of all kinds, between characters and integers, and from booleans to integers. Floats and characters do not convert into each other, and nothing converts into a boolean: compare the value instead, for example \"က သည် ၀ နှင့် မညီ\". In unsafe code it also converts between addresses, between an address and an integer, between an object and an address, and a plain list of u8s into text once its UTF-8 is checked."""
 
 [codes.ZK0409.title]
 en = "loop step is not positive"
@@ -1126,7 +1126,7 @@ en = "the C function cannot change the parameter \"%{n}\" in place"
 [codes.ZK0466.help]
 en = "drop \"ဒေတာ ပြောင်းလဲရန်\", or pass a list of numbers or a struct, which C writes in place"
 [codes.ZK0466.explain]
-en = """A C function takes each parameter as a whole value, so it cannot change the caller's place through \"ဒေတာ ပြောင်းလဲရန်\". A list of numbers and a struct of values that cross are the exceptions: C takes the address of the first cell, or of the struct, and writes it in place. To let C write another value back, pass its address from marked code."""
+en = """A C function takes each parameter as a whole value, so it cannot change the caller's place through \"ဒေတာ ပြောင်းလဲရန်\". A list of numbers and a struct of values that cross are the exceptions: C takes the address of the first cell, or of the struct, and writes it in place. To let C write another value back, pass its address from unsafe code."""
 
 [codes.ZK0467.title]
 en = "own result of no C text"
@@ -1138,22 +1138,22 @@ en = "write \"အပိုင်အနေဖြင့်\" on a C function whose
 en = """\"အပိုင်အနေဖြင့် ပြန်ပေးမည်\" tells that a C function hands its string over, as strdup does: the program takes the octets into text of its own and then frees the string with the free of libc. It stands on a C function whose result is text or a failure alone. Without it, C keeps the string, as getenv and strstr want; a Zaka function and each other result kind have nothing to hand over."""
 
 [codes.ZK0468.title]
-en = "pointer work outside marked code"
+en = "pointer work outside unsafe code"
 [codes.ZK0468.message]
-en = "%{w} needs marked code"
+en = "%{w} needs unsafe code"
 [codes.ZK0468.help]
-en = "put it in a block \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\", or in a function marked \"စိတ်မချရသော\""
+en = "put it in a block \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\", or in an unsafe function, declared with \"စိတ်မချရသော\""
 [codes.ZK0468.explain]
-en = """Safe Zaka never reads or writes through a pointer, so a mistake there cannot reach mem. Reading or writing through a pointer, pointer arithmetic, taking an address, a heap statement, a conversion to or from a pointer, and a call of a function marked \"စိတ်မချရသော\" each need marked code: a function marked \"စိတ်မချရသော\", or a block that opens with \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\". A pointer value itself can pass through safe code: held, copied, or compared with \"မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ\"."""
+en = """Safe Zaka never reads or writes through a pointer, so a mistake there cannot reach mem. Reading or writing through a pointer, pointer arithmetic, taking an address, a heap statement, a conversion to or from a pointer, and a call of an unsafe function each need unsafe code: an unsafe function, declared with \"စိတ်မချရသော\", or an unsafe block that opens with \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\". A pointer value itself can pass through safe code: held, copied, or compared with \"မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ\"."""
 
 [codes.ZK0469.title]
-en = "marked function as a value"
+en = "unsafe function as a value"
 [codes.ZK0469.message]
-en = "\"%{n}\" is marked \"စိတ်မချရသော\", so it cannot be a function value"
+en = "\"%{n}\" is an unsafe function, declared with \"စိတ်မချရသော\", so it cannot be a function value"
 [codes.ZK0469.help]
-en = "take a function that calls it inside a marked block"
+en = "take a function that calls it inside an unsafe block"
 [codes.ZK0469.explain]
-en = """A call through a function value is a plain call, which safe code can make. A function marked \"စိတ်မချရသော\" needs marked code at each call, so it cannot hide behind a value. Write a function with no mark that calls it inside a block marked \"စိတ်မချရသော်လည်း\", and take that function as the value."""
+en = """A call through a function value is a plain call, which safe code can make. An unsafe function, declared with \"စိတ်မချရသော\", needs unsafe code at each call, so it cannot hide behind a value. Write a safe function that calls it inside an unsafe block, \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\", and take that function as the value."""
 
 [codes.ZK0470.title]
 en = "owned mark on no pointer"
@@ -1163,11 +1163,11 @@ en = "\"အပိုင်အနေဖြင့်\" hands over a block, and \"%
 en = """\"အပိုင်အနေဖြင့်\" states that a parameter takes over the block its pointer holds, or that a result gives a block to the caller. Other values are copied or shared, so those hand nothing over: leave the mark out."""
 
 [codes.ZK0471.title]
-en = "marked code refused"
+en = "unsafe code refused"
 [codes.ZK0471.message]
-en = "this program keeps to safe Zaka, so it cannot mark code \"စိတ်မချရသော\""
+en = "this program keeps to safe Zaka, so it cannot hold unsafe code (\"စိတ်မချရသော\")"
 [codes.ZK0471.explain]
-en = """The \"--no-unsafe\" option refuses each function and each block marked \"စိတ်မချရသော\", so a lesson or a project keeps to safe Zaka, where no mistake can reach mem. Leave the option out to work with pointers."""
+en = """The \"--no-unsafe\" option refuses each unsafe function and each unsafe block (\"စိတ်မချရသော\"), so a lesson or a project keeps to safe Zaka, where no mistake can reach mem. Leave the option out to work with pointers."""
 
 [codes.ZK0473.title]
 en = "a value from outside"
@@ -1189,9 +1189,9 @@ en = "a field C owns"
 [codes.ZK0474.message]
 en = "a field of \"%{k}\" belongs to the struct C keeps, so Zaka reads it but cannot write it"
 [codes.ZK0474.help]
-en = "write a number, a boolean or a counted list in marked code, or call a C function that changes the struct"
+en = "write a number, a boolean or a counted list in unsafe code, or call a C function that changes the struct"
 [codes.ZK0474.explain]
-en = """The fields a kind from outside names are read from the struct C keeps, each time the program reads one. C owns that struct, so safe code changes it through a C function. Marked code can write a field of a number, a boolean or a counted list in place; a text or a handle field is a pointer C owns, which no program writes."""
+en = """The fields a kind from outside names are read from the struct C keeps, each time the program reads one. C owns that struct, so safe code changes it through a C function. Unsafe code can write a field of a number, a boolean or a counted list in place; a text or a handle field is a pointer C owns, which no program writes."""
 
 [codes.ZK0475.title]
 en = "a test that does not fit"
@@ -1386,15 +1386,15 @@ en = "put an inner part in a variable or a function of its own"
 en = """The compiler follows parentheses, operands, calls, lists, templates and blocks to a fixed depth, so that a program nested without end cannot use up the stack of the compiler or of the editor. Real programs keep far below it; an inner part with a name of its own is easier to read too."""
 
 [codes.ZK0472.title]
-en = "C function needs the mark"
+en = "C function must be unsafe"
 [codes.ZK0472.message]
-en = "\"%{n}\" %{w}, so its declaration needs the mark \"စိတ်မချရသော\""
+en = "\"%{n}\" %{w}, so its declaration must be unsafe, with \"စိတ်မချရသော\""
 [codes.ZK0472.help]
-en = "write \"စိတ်မချရသော\" before \"လုပ်ဆောင်ချက်\", and call it from marked code"
+en = "write \"စိတ်မချရသော\" before \"လုပ်ဆောင်ချက်\", and call it from unsafe code"
 [codes.ZK0472.pointer]
 en = "passes a pointer"
 [codes.ZK0472.explain]
-en = """Safe code can call a C function whose parameters are numbers, true or false, text, lists of numbers, plain structs or function values, and whose result is nothing, a number, a plain struct, or an optional of text or of a handle, where NULL is the optional with no data. A C function that takes or gives a pointer can reach mem that Zaka does not check, so its declaration carries the mark \"စိတ်မချရသော\", and marked code alone can call it."""
+en = """Safe code can call a C function whose parameters are numbers, true or false, text, lists of numbers, plain structs or function values, and whose result is nothing, a number, a plain struct, or an optional of text or of a handle, where NULL is the optional with no data. A C function that takes or gives a pointer can reach mem that Zaka does not check, so its declaration carries \"စိတ်မချရသော\", and a call of it needs unsafe code."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 
@@ -1563,7 +1563,7 @@ en = "free of a variable's address"
 [codes.ZK0702.message]
 en = "this pointer holds the address of a variable, not of a heap block, so it cannot be freed or resized"
 [codes.ZK0702.explain]
-en = """A heap statement frees or resizes a block that \"မင်မိုရီတွင် ... နေရာယူ၍\" made. A pointer that holds the address of a variable, from \"x ၏ လိပ်စာ\", points at storage the VM gives back on its own, so it cannot be freed or resized. In marked code this is a warning unless a flag sets otherwise, and the VM stops the free when it runs."""
+en = """A heap statement frees or resizes a block that \"မင်မိုရီတွင် ... နေရာယူ၍\" made. A pointer that holds the address of a variable, from \"x ၏ လိပ်စာ\", points at storage the VM gives back on its own, so it cannot be freed or resized. In unsafe code this is a warning unless a flag sets otherwise, and the VM stops the free when it runs."""
 
 [codes.ZK0703.title]
 en = "address stored where it can outlast its place"
@@ -1608,7 +1608,7 @@ en = "block not freed"
 [codes.ZK0708.message]
 en = "the block that \"%{name}\" holds is never given back or handed over on this path"
 [codes.ZK0708.explain]
-en = """A block made in marked code must be accounted for before the variable it was made in goes out of scope: given back with \"ပြန်လည်စွန့်လွှတ်မည်\", handed to a parameter marked \"အပိုင်အနေဖြင့်\", returned through a result marked \"အပိုင်အနေဖြင့်\", or stored in a heap block, a global or a field. Otherwise the block is leaked. A duplicate of its address into another variable counts as stored, since either can give it back. The finding is a warning; \"--mem-check error\" makes it an error."""
+en = """A block made in unsafe code must be accounted for before the variable it was made in goes out of scope: given back with \"ပြန်လည်စွန့်လွှတ်မည်\", handed to a parameter marked \"အပိုင်အနေဖြင့်\", returned through a result marked \"အပိုင်အနေဖြင့်\", or stored in a heap block, a global or a field. Otherwise the block is leaked. A duplicate of its address into another variable counts as stored, since either can give it back. The finding is a warning; \"--mem-check error\" makes it an error."""
 [codes.ZK0708.help_result]
 en = "the caller takes this block: mark the result \"<kind> တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်\""
 
@@ -1657,12 +1657,3 @@ en = "the source and the destination of \"ကူးယူမည်\" share %{n} 
 en = "write \"ပြောင်းထည့်မည်\", which reads the source in full before it writes"
 [codes.ZK0721.explain]
 en = """\"ကူးယူမည်\" is the memcpy of C: it writes the cells in order, so cells it writes can be cells it has still to read, and in C the result is undefined. When both addresses point into the same block at offsets the check knows, and the count is known, the overlap is an error before the program runs; else the VM stops the program with the trap \"overlap\". \"ပြောင်းထည့်မည်\" allows ranges that overlap."""
-
-[codes.ZK0801.title]
-en = "kind not for the C target"
-[codes.ZK0801.message]
-en = "the C target cannot build %{kind}"
-[codes.ZK0801.help]
-en = "use f32 or f64, or build for the VM with --target vm"
-[codes.ZK0801.explain]
-en = """C has no kind for a 16-bit or a 128-bit float that each C compiler holds, and no print that writes one as the VM writes it. A program built with --target c holds f32 and f64 alone; the VM runs each float kind."""

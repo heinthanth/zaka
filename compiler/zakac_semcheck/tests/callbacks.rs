@@ -80,12 +80,13 @@ fn closer(close: &str) -> String
 #[test]
 fn closing_a_handle_parameter_needs_marked_code()
 {
-    let call = "လုပ်ဆောင်ချက် box_close ကို b တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let call = "box_close ဟူသော လုပ်ဆောင်ချက်ကို b တို့ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(codes_as_is(&program(&closer(call), "")), [Code::UnsafeOutside]);
     let marked =
         format!("အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\n{call}\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။");
     assert_eq!(codes_as_is(&program(&closer(&marked), "")), []);
     // A handle the program made itself closes in safe code.
-    let own = "ကိန်းရှင် ဘ သည် box_open() ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် box_close ကို ဘ တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let own =
+        "ကိန်းရှင် ဘ သည် box_open() ဖြစ်ပါစေ။\nbox_close ဟူသော လုပ်ဆောင်ချက်ကို ဘ တို့ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(codes_as_is(&program("", own)), []);
 }

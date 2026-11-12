@@ -325,10 +325,8 @@ impl FnGen<'_, '_>
         {
             DataKind::Int(k) if k.signed => "zk_put_i",
             DataKind::Int(_) => "zk_put_u",
-            DataKind::Float(16) => "zk_put_f16",
             DataKind::Float(32) => "zk_put_f32",
             DataKind::Float(64) => "zk_put_f64",
-            DataKind::Float(128) => "zk_put_f128",
             DataKind::Bool => "zk_put_bool",
             DataKind::Char => "zk_put_char",
             DataKind::Ptr(_) | DataKind::Null => "zk_put_ptr",

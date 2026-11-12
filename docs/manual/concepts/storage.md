@@ -32,7 +32,7 @@ mistakes follow:
 | leak | the last pointer to a block is lost before the block is given back | never at once; the program grows |
 
 In safe Zaka none of the three can happen: no name holds an address, and the block goes
-when nothing reaches it. In marked code the checks of the VM find the first two when a run
+when nothing reaches it. In unsafe code the checks of the VM find the first two when a run
 reaches them ([When a program stops](../vm/traps.md)), and the compiler warns about each
 of the three it can prove ([Compiler checks](../compiler/checks.md)).
 
@@ -42,10 +42,10 @@ of the three it can prove ([Compiler checks](../compiler/checks.md)).
 | --- | --- | --- | --- |
 | who gives a block back | the programmer, with a call | the runtime, after nothing can reach the block | the runtime, when the count reaches zero |
 | when | at the call to `free` | at a time the runtime picks | at once, at a known point; a ring when the collector next runs |
-| use after free, double free | possible, silent | impossible | impossible in safe code; stopped at run time in marked code |
-| leak | silent | rare: a block still reachable is kept | none in safe code; `--leaks` lists the blocks of marked code |
+| use after free, double free | possible, silent | impossible | impossible in safe code; stopped at run time in unsafe code |
+| leak | silent | rare: a block still reachable is kept | none in safe code; `--leaks` lists the blocks of unsafe code |
 | cost at run time | none | the collector's work, and blocks kept longer | a count change per shared reference, and the ring collector |
-| cost to the writer | remembers each rule | little | little: values and objects, and a mark on unsafe code |
+| cost to the writer | remembers each rule | little | little: values and objects, and the word `စိတ်မချရသော` on unsafe code |
 
 Tracing collection frees a block at a time the runtime picks. C frees it at a time the
 programmer picks, and trusts the programmer. Counting frees it the moment the last
@@ -108,19 +108,19 @@ method of PHP and CPython:
 
 Two jobs need addresses: talking to C, whose functions take and return pointers, and
 code that manages its own blocks, such as an allocator that hands out pieces of one large
-block. Safe Zaka has no address, so these live in **marked code**: a function or a block
-marked `စိတ်မချရသော`. Inside it a program can hold a pointer, read and write through it,
+block. Safe Zaka has no address, so these live in **unsafe code**: a function or a block
+that carries `စိတ်မချရသော`. Inside it a program can hold a pointer, read and write through it,
 and allocate and free blocks with the heap statements.
 
-Marked code gives up the promise of the safe tier, not the checks:
+Unsafe code gives up the promise of the safe tier, not the checks:
 
 - The VM still checks each access through a pointer, and stops the program at a use after
   free, a double free or an access out of bounds. Unsafe never means undefined in the VM.
-- The compiler follows the pointers of marked code and warns about each mistake it can
+- The compiler follows the pointers of unsafe code and warns about each mistake it can
   prove: a leak, a use after free, a double free, a local's address that escapes.
   `--mem-check` turns the warnings into errors or off.
 - A search for `စိတ်မချရ` finds each unchecked place, calls included, and `--no-unsafe`
-  refuses marked code for a lesson or a project that keeps to the safe tier.
+  refuses unsafe code for a lesson or a project that keeps to the safe tier.
 
 ## What it costs
 
@@ -135,7 +135,7 @@ Marked code gives up the promise of the safe tier, not the checks:
 
 ## What it promises
 
-A program with no marked code never reaches a use after free, a double free or a bad free,
+A program with no unsafe code never reaches a use after free, a double free or a bad free,
 never leaks a block, and never holds an address into a frame that has returned. That holds
 on the VM and in native code alike.
 
@@ -150,6 +150,6 @@ native code](checked.md) sorts them all.
 ## Where to go next
 
 - [Values and objects](../language/objects.md) states the rules of the safe tier.
-- [Unsafe Zaka](../language/unsafe.md) states the rules of marked code.
+- [Unsafe Zaka](../language/unsafe.md) states the rules of unsafe code.
 - [The flow checker](../internals/borrow-checker.md) tells how the compiler follows
-  pointers in marked code.
+  pointers in unsafe code.

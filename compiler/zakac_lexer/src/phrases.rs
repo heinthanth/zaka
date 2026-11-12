@@ -11,7 +11,7 @@ use crate::token::TokenKind;
 pub static PHRASES: &[(&[Kw], Kw)] = &[
     // အောက်ပါတို့ကို လုပ်ဆောင်မည်။ — opens a block, and the steps of a function
     (&[Kw::Following, Kw::ListKo, Kw::WillDo], Kw::BlockOpen),
-    // အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။ — opens a block of marked code
+    // အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။ — opens an unsafe block
     (&[Kw::Following, Kw::ListKo, Kw::UnsafeThough, Kw::WillDo], Kw::UnsafeBlockOpen),
     // လုပ်ဆောင်ချက် ... သည် ... အောက်ပါတို့ကို လုပ်ဆောင်ကာ ... တစ်ခု ကို ပြန်ပေးမည်။
     (&[Kw::Following, Kw::ListKo, Kw::DoAnd], Kw::FnOpenRet),
@@ -58,9 +58,9 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::ShiftHead, Kw::Result], Kw::Shift),
     // ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်
     (&[Kw::ConvertHead, Kw::Result], Kw::Convert),
-    // လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်
+    // ... ဟူသော လုပ်ဆောင်ချက်ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်
     (&[Kw::CallHead, Kw::Result], Kw::CallResult),
-    // လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်ကောင်း
+    // ... ဟူသော လုပ်ဆောင်ချက်ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်ကောင်း
     (&[Kw::CallHead, Kw::GoodResult], Kw::CallGoodResult),
     // ... ကို သုံး၍ <fn> သည့် ရလဒ်
     (&[Kw::Which, Kw::Result], Kw::UsedResult),
@@ -70,8 +70,9 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Which, Kw::GoodResult], Kw::UsedGoodResult),
     // <parameters> လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား
     (&[Kw::Function, Kw::KindWord], Kw::FnKind),
-    // <name> ဟူသော လုပ်ဆောင်ချက်
+    // <name> ဟူသော လုပ်ဆောင်ချက် / <name> မည့် လုပ်ဆောင်ချက်
     (&[Kw::Called, Kw::Function], Kw::FnValue),
+    (&[Kw::Named, Kw::Function], Kw::FnValue),
     // <value> ဟူသော အမှားအယွင်း — an error value
     (&[Kw::Called, Kw::Fault], Kw::CalledFault),
     // <x> ထဲတွင် ဒေတာ (မ)ရှိ(နေ) — whether an optional holds data

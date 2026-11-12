@@ -332,7 +332,7 @@ comment showing the sentence shape:
 ပရိုဂရမ် ပြီး(ဆုံး)?ပါပြီ(း)?။                         → ProgramClose
 ... ကို ... ဖြင့် စားသော စားလဒ် | စားကြွင်း              → Divide | Remainder
 ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်                    → Convert
-လုပ်ဆောင်ချက် ... ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်    → CallResult
+... ဟူသော လုပ်ဆောင်ချက်ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်    → CallResult
 ... ရလဒ်ကောင်း (after the call head)                  → CallGoodResult
 ... ကို သုံး၍ <name> သည့် ရလဒ်                        → UsedResult
 ... ကို သုံး၍ <name> သည့် ရလဒ်ကောင်း                   → UsedGoodResult
@@ -348,6 +348,7 @@ T သို့မဟုတ် အမှားအယွင်းအနေဖြ�
 လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်                  → MarkFailed
 လုပ်ဆောင်ချက် အမျိုးအစား                                 → FnKind
 <name> ဟူသော လုပ်ဆောင်ချက်                               → FnValue
+<name> မည့် လုပ်ဆောင်ချက်                                → FnValue
 မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ                            → Null
 <name> ဟူသော <kind> တစ်ခု ကို ဒေတာ ပြောင်းလဲရန်            → DataToChange
 <name> ဟူသော <kind> တစ်ခု ကို ဒေတာ ထည့်ပေးရန်              → DataToFill
@@ -359,7 +360,8 @@ T သို့မဟုတ် အမှားအယွင်းအနေဖြ�
 ```
 
 `FnKind` closes a [function kind](../language/function-values.md), and `FnValue` after a
-name makes the function a value. A run `ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား` does not join
+name makes the function a value, or with `ကို` after it opens a long call; `မည့်`
+(`Named`) is a second spelling of `ဟူသော` (`Called`) in this phrase alone. A run `ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား` does not join
 into `FnValue`: `phrase_at` keeps `ဟူသော` as `Called` there, so the next two words join into
 `FnKind`, the kind of a parameter or a field, `ဖ ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု`. `Null` is the null pointer, "an address that points at
 nothing": the reserved words `မည်သည်ကိုမှ` (`Nothing`) and `မညွှန်းသော` (`PointsAtNo`)

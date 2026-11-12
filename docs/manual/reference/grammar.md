@@ -144,7 +144,7 @@ alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုး
 ```
 
 - With two or more parameters, each ends in `လည်းကောင်း`; either each parameter has a
-  mark or none has. The two marks before `လုပ်ဆောင်ချက်` can come in either order; the
+  mark or none has. The two words before `လုပ်ဆောင်ချက်`, `အများသုံး` and `စိတ်မချရသော`, can come in either order; the
   start block takes neither.
 - The kind of an alias takes no measure word. A function, a struct, an enumeration or an
   alias inside a block is parsed and reported; a function with a block can stand inside
@@ -164,7 +164,7 @@ stmt         = var-decl | fn-decl | block | if-stmt | switch-stmt
 
 block        = block-open "။" { stmt } block-close "။" ;
 block-open   = "အောက်ပါတို့ကို လုပ်ဆောင်မည်"
-             | "အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်" ;   (* marked code *)
+             | "အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်" ;   (* unsafe code *)
 branch       = block | stmt ;                     (* one statement in place of a block *)
 
 if-stmt      = "အကယ်၍" expr then branch
@@ -287,7 +287,7 @@ value "၏" notation ordinal "စာလုံး"                (* a character,
 value "၏" ( "အကွက်အရေအတွက်" | "စာလုံးအရေအတွက်" | "အညွှန်းအရေအတွက်" )
 value "၏" "မိတ္တူ"                                 (* a shallow duplicate *)
 value count-word "လုံး" "၏" "မိတ္တူ"               (* a deep duplicate: တစ်ခုလုံး ၏ မိတ္တူ *)
-value "၏" ( "လိပ်စာ" | "တန်ဖိုး" )                  (* marked code: an address, the value at one *)
+value "၏" ( "လိပ်စာ" | "တန်ဖိုး" )                  (* unsafe code: an address, the value at one *)
 ```
 
 - A comparison cannot be an operand of another comparison without parentheses, in either
@@ -306,14 +306,15 @@ See [Expressions](../language/expressions.md), [Operator precedence](precedence.
 ```text
 call         = long-call | first-call | short-call | marked-call | sign-call ;
 
-long-call    = "လုပ်ဆောင်ချက်" callee "ကို" [ args "တို့ဖြင့်" ] long-end ;
-callee       = name { "၏" ... } ;                 (* a name, or a place that holds a function value *)
+long-call    = long-head [ args "တို့ဖြင့်" ] long-end ;
+long-head    = callee ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" ;
+callee       = name | "(" name "၏" ... ")" ;      (* a name, or a place that holds a function value *)
 args         = expr { "၊" expr } ;
 first-call   = operand { "၊" notation } ( "ကို" | "တို့ကို" ) "သုံး၍"
-               ( name short-end | "လုပ်ဆောင်ချက်" callee "ကို" long-end ) ;
+               ( name short-end | long-head long-end ) ;
 short-call   = name short-end ;                   (* no arguments *)
 marked-call  = operand mark-word { notation mark-word }
-               ( name short-end | "လုပ်ဆောင်ချက်" name "ကို" long-end ) ;
+               ( name short-end | name ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" long-end ) ;
 sign-call    = name "(" [ args ] ")" [ "?" ] { "(" [ args ] ")" [ "?" ] } ;
 
 long-end     = "လုပ်ဆောင်မည်" | "လုပ်ဆောင်သော ရလဒ်" | "လုပ်ဆောင်သော ရလဒ်ကောင်း" ;
@@ -325,6 +326,9 @@ pass-on      = [ "၊" "မအောင်မြင်ပါက အမှား�
 - `လုပ်ဆောင်မည်` and `မည်` end a call statement; the other ends give a value, which can
   start a clause (`... လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။`). `ရလဒ်ကောင်း` and `?` pass a
   failure on.
+- `<name> ဟူသော လုပ်ဆောင်ချက်` is also the function as a value. After its `ကို`, a verb
+  (`ပြန်ပေးမည်`, `ပြသမည်`, `ထည့်မည်`, `ပြင်ပမှ ခေါ်ဆိုခွင့် ...`) makes the value the object of
+  that verb; each other word makes a long call.
 - A mark word is the word a parameter declares with `ဝိဘတ်`: a name, or a particle other
   than `သည်`, `ပါ`, `ဖြစ်ကာ`, `ဖြစ်ပြီး`, `ပြီးလျှင်` and `လက်ခံပြီး`; `တွင်` and `ဆီသို့`
   can be marks too. A marked call is read when a function of that name declares
@@ -358,7 +362,7 @@ struct-count = name count-word ;                  (* joined, လူတစ်ယ�
 member       = name "ထဲမှ" name ;                  (* အရောင်များထဲမှ နီ *)
 null-word    = "အလွတ်"                             (* an optional with no data *)
              | "ကနဦးတန်ဖိုး"                       (* the initial value of the kind *)
-             | "မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ" ;     (* the null address, marked code *)
+             | "မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ" ;     (* the null address, unsafe code *)
 ```
 
 - `letters` are the digits above 9 (`A` to `Z`, either case), with a base above 10.
@@ -414,8 +418,7 @@ listed-kind  = slot-kind ;                        (* in a list: a function kind 
   default arm of a switch, and the kind after a literal. The word goes after the outermost
   kind alone. `စာလုံး` counts with `လုံး`, a struct, an enumeration or an alias with its
   own word, and each other kind with `ခု`; a word that does not fit is ZK0509.
-- **Bits.** An integer kind takes 8, 16, 32, 64 or 128 bits, a decimal kind 16, 32, 64 or
-  128.
+- **Bits.** An integer kind takes 8, 16, 32 or 64 bits, a decimal kind 32 or 64.
 - **Lists.** Each `စာရင်း` takes the count nearest the base that is left, and makes a
   list of that count of cells; with no count it is a plain list. A count with no list left
   for it is an error. Counts before an optional or a result go first to the lists of its
@@ -466,7 +469,6 @@ The parser keeps a flag per context and tests it before it takes the word:
 | --- | --- | --- |
 | `in_count` | a count, `အကွက် <count> ခုရှိသော` | `ရှိသော` closes the count; no struct literal starts in it |
 | `in_fill` | the value of a fill | `ဖြင့်` after a lone operand closes the value; the size follows |
-| `in_callee` | the place that holds the function of a long call | `ကို` after a lone operand closes the place |
 | `in_list` | a list of parameters or fields | the bare function-kind production is turned off, so a function kind with parameters needs parentheses (`FnForm::NoParams`) |
 
 **Agreement on counts.** A few productions agree with the number of items in a list: one
@@ -483,8 +485,14 @@ to therefore depends on the levels that follow it, not on the prefix alone.
 munch), whether spaces stand between their words or not, and splits a word made of
 reserved words alone. Two rules look at the neighbours as well: `ဒေတာ` is a reserved word after
 `ထဲမှ`, `ထဲတွင်` and `အမှားအယွင်း` and before `ပြောင်းလဲရန်` and `ထည့်ပေးရန်`, and an
-identifier elsewhere; `ဟူသော လုပ်ဆောင်ချက်` joins into the function-value phrase save when
-`အမျိုးအစား` follows, where `လုပ်ဆောင်ချက် အမျိုးအစား` opens a function kind.
+identifier elsewhere; `ဟူသော လုပ်ဆောင်ချက်` and `မည့် လုပ်ဆောင်ချက်` join into the
+function-value phrase save when `အမျိုးအစား` follows, where `လုပ်ဆောင်ချက် အမျိုးအစား` opens a
+function kind.
+
+**The long call.** A long call opens with the function value phrase,
+`<name> ဟူသော လုပ်ဆောင်ချက်ကို`, or with a place in parentheses before it. The parser looks
+past the `ကို` at one token: a verb there makes the function value an object, and each
+other token makes a call. For a place, it scans to the `)` that closes the group first.
 
 **Order.** Imports come first in a file; the parser keeps a flag, `imports_closed`, and
 reports an import after another top-level statement or inside a block.

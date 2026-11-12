@@ -1,6 +1,6 @@
 ---
 title: C functions and addresses
-description: Mark a C function that takes or gives an address, call it from marked code, and read the text that C gives back.
+description: Declare a C function that takes or gives an address unsafe, call it from unsafe code, and read the text that C gives back.
 ---
 
 # C functions and addresses
@@ -8,8 +8,8 @@ description: Mark a C function that takes or gives an address, call it from mark
 [Calling C](../functions/c.md) declares C functions that safe code can call: their
 parameters are numbers, structs of numbers, text, lists of numbers and function
 values, and their results are numbers or plain structs. A C function outside that is
-marked `စိတ်မချရသော`, and its calls go in marked code: a parameter or a result that holds a
-pointer. Text that C gives back needs no mark, since Zaka copies it
+declared `စိတ်မချရသော`, and its calls go in unsafe code: a parameter or a result that holds a
+pointer. Text that C gives back needs no such word, since Zaka copies it
 ([below](#text-that-c-gives-back)).
 
 ## Writing through an address
@@ -26,7 +26,7 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ထပ်ကိန်း သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် frexp ကို ၈.၀၊ ထပ်ကိန်း ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+frexp ဟူသော လုပ်ဆောင်ချက်ကို ၈.၀၊ ထပ်ကိန်း ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ထပ်ကိန်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -38,8 +38,8 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 ```
 
 8.0 is 0.5 times 2 to the power 4, so the call gives `၀.၅` and `ထပ်ကိန်း` holds `၄` after
-it. [Calling C](../functions/c.md#c-writes-into-a-list) does the same with no mark, through
-a `ဒေတာ ထည့်ပေးရန်` list of one cell. A declaration with a pointer and no mark is an error:
+it. [Calling C](../functions/c.md#c-writes-into-a-list) does the same in safe code, through
+a `ဒေတာ ထည့်ပေးရန်` list of one cell. A declaration with a pointer that is not declared unsafe is an error:
 
 ```zaka-error ZK0472
 လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -50,14 +50,14 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 ```
 
 ```text
-error[ZK0472]: "frexp" passes a pointer, so its declaration needs the mark "စိတ်မချရသော"
+error[ZK0472]: "frexp" passes a pointer, so its declaration must be unsafe, with "စိတ်မချရသော"
 ```
 
 ## Text that C gives back
 
 Text comes back as an [optional](../optionals/README.md): C gives NULL when it has no
 text, and that is the blank optional `အလွတ်`. Zaka copies the text into a new one of its
-own, and C keeps what it gave. The declaration needs no mark, and neither does its call,
+own, and C keeps what it gave. The declaration needs no `စိတ်မချရသော`, and neither does its call,
 since the program never holds the address. `strstr` finds a part in a text and gives the
 rest, or NULL when the part is absent:
 
@@ -66,8 +66,8 @@ rest, or NULL when the part is absent:
 s ဟူသော စာသား တစ်ခု ကို လည်းကောင်း part ဟူသော စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် strstr ကို "မင်္ဂလာပါ ကမ္ဘာ"၊ "ကမ္ဘာ" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
-လုပ်ဆောင်ချက် strstr ကို "abc"၊ "x" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+strstr ဟူသော လုပ်ဆောင်ချက်ကို "မင်္ဂလာပါ ကမ္ဘာ"၊ "ကမ္ဘာ" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+strstr ဟူသော လုပ်ဆောင်ချက်ကို "abc"၊ "x" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -85,7 +85,7 @@ the string with C's `free` once it holds the text:
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် strdup ကို "စံကား" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+strdup ဟူသော လုပ်ဆောင်ချက်ကို "စံကား" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -95,8 +95,8 @@ s ဟူသော စာသား တစ်ခု ကို လက်ခံပ�
 
 Leave the word out for a string C hands over, and the string is never freed; write it for
 a string C keeps, and the program frees what is not its own. A function that also takes a
-pointer is marked, and a safe wrapper, a plain function with the marked call inside, gives
-the rest of the program the result with no mark, as on
+pointer is unsafe, and a safe wrapper, a plain function with the unsafe call inside, gives
+the rest of the program the result in safe code, as on
 [Owned pointers](ownership.md#a-safe-wrapper).
 
 ## A closure for a call
@@ -124,7 +124,7 @@ compare ဟူသော (ကိန်းပြည့် လိပ်စာ တ�
 ၀ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ကိန်းရှင် ကိန်းများ သည် [၅၊ ၃၊ ၉၊ ၁] ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် qsort ကို ကိန်းများ၊ ၄၊ ၈၊ နှိုင်း ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
+qsort ဟူသော လုပ်ဆောင်ချက်ကို ကိန်းများ၊ ၄၊ ၈၊ နှိုင်း ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
 ကိန်းများ ကို ပြသမည်။
 နှိုင်းကြိမ် > ၀ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။

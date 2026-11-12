@@ -1,10 +1,10 @@
-//! Move the pointer work of a program into marked code, for tools and tests
-//! that hold programs written before pointers needed the mark. Statements at
+//! Move the pointer work of a program into unsafe code, for tools and tests
+//! that hold programs written before pointers needed unsafe code. Statements at
 //! the top level move into a start block first, as `in_start_block` moves
 //! them, with each variable no function uses. Then each top-level
-//! function that works with pointers is marked `စိတ်မချရသော`, and the
-//! statements of a start block that does go into a block marked
-//! `စိတ်မချရသော်လည်း`. The spellings that left the language go too:
+//! function that works with pointers becomes an unsafe function, and the
+//! statements of a start block that does go into an unsafe
+//! block. The spellings that left the language go too:
 //! `ငှားထားသော`, `လိပ်စာအကြမ်း` and `၏ တန်ဖိုးအငှား`.
 
 use std::collections::BTreeSet;
@@ -25,12 +25,12 @@ use zakac_span::source_map::SourceMap;
 use crate::semcheck::SemcheckOptions;
 use crate::semcheck::semcheck;
 
-/// The most rounds the check runs: each round marks the functions
-/// that the marks of the round before made callers of marked code.
+/// The most rounds the check runs: each round makes unsafe the functions
+/// that the round before made callers of unsafe code.
 const ROUNDS: usize = 16;
 
-/// The mark of a function.
-const MARK: &str = "စိတ်မချရသော ";
+/// The word of an unsafe function.
+const UNSAFE_WORD: &str = "စိတ်မချရသော ";
 
 /// The word that opens a function header.
 const FUNCTION: &str = "လုပ်ဆောင်ချက် ";
@@ -44,13 +44,13 @@ const START: &str = "ပရိုဂရမ်သည်";
 /// The closer of a start block.
 const START_CLOSE: &str = "ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
 
-/// The opener of a marked block.
-const MARKED_OPEN: &str = "အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။";
+/// The opener of an unsafe block.
+const UNSAFE_OPEN: &str = "အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။";
 
 /// The closer of a block.
 const BLOCK_CLOSE: &str = "လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။";
 
-/// Move the pointer work of a program into marked code.
+/// Move the pointer work of a program into unsafe code.
 ///
 /// # Arguments
 ///
@@ -58,11 +58,11 @@ const BLOCK_CLOSE: &str = "လုပ်ဆောင်စရာများ ပ�
 ///
 /// # Returns
 ///
-/// The program; as it is when it needs no mark or does not parse.
-pub fn in_marked_code(text: &str) -> String { in_marked_code_lines(text).text }
+/// The program; as it is when it needs no unsafe code or does not parse.
+pub fn in_unsafe_code(text: &str) -> String { in_unsafe_code_lines(text).text }
 
-/// [`in_marked_code`], with the line each new line comes from. A mark keeps
-/// each line in its place, so the lines are those the start block gives.
+/// [`in_unsafe_code`], with the line each new line comes from. The rewrite
+/// keeps each line in its place, so the lines are those the start block gives.
 ///
 /// # Arguments
 ///
@@ -71,7 +71,7 @@ pub fn in_marked_code(text: &str) -> String { in_marked_code_lines(text).text }
 /// # Returns
 ///
 /// The new program and its lines.
-pub fn in_marked_code_lines(text: &str) -> Wrapped
+pub fn in_unsafe_code_lines(text: &str) -> Wrapped
 {
     // A variable whose value works with pointers moves into the start block,
     // which a mark can reach, unless a function uses it. Its value can call a
@@ -81,9 +81,9 @@ pub fn in_marked_code_lines(text: &str) -> Wrapped
     for _ in 0..ROUNDS
     {
         let wrapped = wrap(text, &names);
-        let text = marked(wrapped.text);
+        let text = made_unsafe(wrapped.text);
         let lines: Vec<&str> = text.split('\n').collect();
-        let more: BTreeSet<String> = unmarked_lines(&text)
+        let more: BTreeSet<String> = lines_outside_unsafe(&text)
             .into_iter()
             .filter(|&n| owner(&lines, n).is_none())
             .filter_map(|n| var_name(lines[n]))
@@ -92,11 +92,11 @@ pub fn in_marked_code_lines(text: &str) -> Wrapped
         names.extend(more);
     }
     let wrapped = wrap(text, &names);
-    Wrapped { text: marked(wrapped.text), lines: wrapped.lines }
+    Wrapped { text: made_unsafe(wrapped.text), lines: wrapped.lines }
 }
 
-/// Mark the functions and the start block of a program, round after round,
-/// until each line of pointer work stands in marked code or a round
+/// Make unsafe the functions and the start block of a program, round after
+/// round, until each line of pointer work stands in unsafe code or a round
 /// changes nothing.
 ///
 /// # Arguments
@@ -105,14 +105,14 @@ pub fn in_marked_code_lines(text: &str) -> Wrapped
 ///
 /// # Returns
 ///
-/// The marked program.
-fn marked(mut text: String) -> String
+/// The rewritten program.
+fn made_unsafe(mut text: String) -> String
 {
     for _ in 0..ROUNDS
     {
-        let lines = unmarked_lines(&text);
+        let lines = lines_outside_unsafe(&text);
         do_if!(lines.is_empty(), break);
-        let next = mark_lines(&text, &lines);
+        let next = make_unsafe(&text, &lines);
         do_if!(next == text, break);
         text = next;
     }
@@ -160,8 +160,8 @@ fn var_name(line: &str) -> Option<String>
     words.next().map(str::to_string)
 }
 
-/// The lines, from 0, where the check finds pointer work outside marked
-/// code, or a C function that needs the mark.
+/// The lines, from 0, where the check finds pointer work outside unsafe
+/// code, or a C function that needs the unsafe word.
 ///
 /// # Arguments
 ///
@@ -170,7 +170,7 @@ fn var_name(line: &str) -> Option<String>
 /// # Returns
 ///
 /// The lines; none when the program does not parse.
-fn unmarked_lines(text: &str) -> Vec<usize>
+fn lines_outside_unsafe(text: &str) -> Vec<usize>
 {
     let mut sm = SourceMap::new();
     let file =
@@ -186,13 +186,13 @@ fn unmarked_lines(text: &str) -> Vec<usize>
     let line = |lo: usize| {
         text[..lo.saturating_sub(base).min(text.len())].matches('\n').count()
     };
-    let marks = [Code::UnsafeOutside, Code::ForeignNeedsMark];
+    let marks = [Code::UnsafeOutside, Code::ForeignNeedsUnsafe];
     let found = out.diagnostics.iter().filter(|d| marks.contains(&d.code));
     found.map(|d| line(d.span.lo.as_u32() as usize)).collect()
 }
 
-/// Mark the top-level function of each line, or wrap the statements of the
-/// start block in a marked block.
+/// Make the top-level function of each line unsafe, or wrap the statements of
+/// the start block in an unsafe block.
 ///
 /// # Arguments
 ///
@@ -202,7 +202,7 @@ fn unmarked_lines(text: &str) -> Vec<usize>
 /// # Returns
 ///
 /// The program with the marks.
-fn mark_lines(text: &str, lines: &[usize]) -> String
+fn make_unsafe(text: &str, lines: &[usize]) -> String
 {
     let mut out: Vec<String> = text.split('\n').map(str::to_string).collect();
     let owners: BTreeSet<usize> =
@@ -212,7 +212,7 @@ fn mark_lines(text: &str, lines: &[usize]) -> String
     for at in fns
     {
         let head = export_len(&out[at]);
-        out[at].insert_str(head, MARK);
+        out[at].insert_str(head, UNSAFE_WORD);
     }
     do_if!(!starts.is_empty(), wrap_start(&mut out));
     out.join("\n")
@@ -267,7 +267,7 @@ fn is_header(line: &str) -> bool
     words.next() == Some("သည်")
 }
 
-/// Put the statements of the start block in a marked block, once. The
+/// Put the statements of the start block in an unsafe block, once. The
 /// opener joins the line of the start block's header and the closer the line
 /// of its closer, so each line keeps its number.
 ///
@@ -281,12 +281,12 @@ fn wrap_start(lines: &mut [String])
     {
         return;
     };
-    ret_if!(lines[head].ends_with(MARKED_OPEN));
+    ret_if!(lines[head].ends_with(UNSAFE_OPEN));
     let Some(close) = lines.iter().rposition(|l| l.starts_with(START_CLOSE))
     else
     {
         return;
     };
-    lines[head] = format!("{} {MARKED_OPEN}", lines[head]);
+    lines[head] = format!("{} {UNSAFE_OPEN}", lines[head]);
     lines[close] = format!("{BLOCK_CLOSE} {}", lines[close]);
 }

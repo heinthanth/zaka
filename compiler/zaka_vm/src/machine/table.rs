@@ -82,21 +82,15 @@ fn mix(h: u64, raw: &[u8]) -> u64
 /// # Returns
 ///
 /// The folded pattern.
-fn float_bits(bits: u16, raw: u128) -> u128
+fn float_bits(bits: u16, raw: u64) -> u128
 {
-    let (exp, man) = match bits
-    {
-        16 => (5u32, 10u32),
-        32 => (8, 23),
-        64 => (11, 52),
-        _ => (15, 112),
-    };
-    let sign = 1u128 << (exp + man);
+    let (exp, man) = tern!(bits == 32, (8u32, 23u32), (11, 52));
+    let sign = 1u64 << (exp + man);
     let magnitude = raw & (sign - 1);
-    let exp_mask = ((1u128 << exp) - 1) << man;
-    let nan = magnitude & exp_mask == exp_mask && magnitude & ((1u128 << man) - 1) != 0;
-    ret_if!(nan, exp_mask | (1u128 << (man - 1)));
-    tern!(magnitude == 0, 0, raw)
+    let exp_mask = ((1u64 << exp) - 1) << man;
+    let nan = magnitude & exp_mask == exp_mask && magnitude & ((1u64 << man) - 1) != 0;
+    ret_if!(nan, u128::from(exp_mask | (1u64 << (man - 1))));
+    u128::from(tern!(magnitude == 0, 0, raw))
 }
 
 /// The bits of a scalar as an index compares and hashes them.

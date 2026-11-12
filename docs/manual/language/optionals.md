@@ -30,9 +30,9 @@ it. This page states the rules in full. The Learn book teaches the kind in
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပြ ကို ရှာ(၁) တို့ဖြင့် လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပြ ကို ရှာ(၂) တို့ဖြင့် လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပြ ကို "ဟယ်လို" တို့ဖြင့် လုပ်ဆောင်မည်။
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို ရှာ(၁) တို့ဖြင့် လုပ်ဆောင်မည်။
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို ရှာ(၂) တို့ဖြင့် လုပ်ဆောင်မည်။
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို "ဟယ်လို" တို့ဖြင့် လုပ်ဆောင်မည်။
 ကိန်းရှင် လ သည် လူ(အမည်: "မောင်"၊ အသက်: အလွတ်) ဖြစ်ပါစေ။
 လ ကို ပြသမည်။
 လ ၏ အသက် ကို ၃၀ ဟု ထားမည်။
@@ -66,7 +66,7 @@ kind (the measure word has to fit the kind, ZK0509).
 | `ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် စာရင်း` | a plain list of optionals |
 | `အကွက် ၂ ခုရှိသော ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် စာရင်း` | a list of 2 optionals |
 | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` | a list of 3 integers, or nothing |
-| `ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် လိပ်စာ` | a pointer to an optional, for [marked code](unsafe.md) |
+| `ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် လိပ်စာ` | a pointer to an optional, for [unsafe code](unsafe.md) |
 
 List and pointer levels come after `ဒေတာဆဲလ်`, and wrap the whole optional, as the levels of a
 [result kind](error-handling.md#result-kinds) wrap the whole result. Counts written before the
@@ -343,8 +343,8 @@ So safe Zaka holds no NULL. Each kind but the pointer holds a value on each read
 
 The one NULL left is the null address of a pointer, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`
 ("the address that points at nothing"), and it lives where a program works at a low level:
-reading through a pointer needs [marked code](unsafe.md#the-null-address), and the check of
-marked code looks for the null address there.
+reading through a pointer needs [unsafe code](unsafe.md#the-null-address), and the check of
+unsafe code looks for the null address there.
 
 The optional is also what Zaka gives for a NULL that C hands back. A C function whose text or
 handle result can be NULL declares an optional, and NULL reads as the optional with no data.

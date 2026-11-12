@@ -341,6 +341,8 @@ pub enum Kw
     MarkWord,
     /// `ဟူသော`, "called": before `လုပ်ဆောင်ချက်` in a function value
     Called,
+    /// `မည့်`, "named": before `လုပ်ဆောင်ချက်`, the same as `ဟူသော`
+    Named,
     /// `လုပ်ဆောင်သော`
     CallHead,
     /// `အောက်ပါ`
@@ -379,8 +381,9 @@ pub enum Kw
     ReturningRel,
     /// `လုပ်ဆောင်ချက် အမျိုးအစား`, "function kind": closes a function kind
     FnKind,
-    /// `ဟူသော လုပ်ဆောင်ချက်`, "the function called": after a name, the
-    /// function of that name as a value
+    /// `ဟူသော လုပ်ဆောင်ချက်` or `မည့် လုပ်ဆောင်ချက်`, "the function called":
+    /// after a name, the function of that name as a value; with `ကို` after
+    /// it, the head of a long call
     FnValue,
     /// `လုပ်ဆောင်ကာ`
     DoAnd,
@@ -428,8 +431,8 @@ pub enum Kw
     MarkFailed,
     /// `အောက်ပါ တို့ကို လုပ်ဆောင်မည်`: opens a block, or the steps of a function
     BlockOpen,
-    /// `အောက်ပါ တို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်`: opens a block of marked
-    /// code
+    /// `အောက်ပါ တို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်`: opens an unsafe
+    /// block
     UnsafeBlockOpen,
     /// `နေရာယူ၍ လိပ်စာ ကို`
     AllocTarget,
@@ -590,11 +593,12 @@ pub enum Kw
     Export,
     /// `မျှဝေနိုင်သော`, which marks a struct whose values are shared objects
     Shareable,
-    /// `စိတ်မချရသော`, "not to be trusted": marks a function whose statements
-    /// can work with pointers, and which marked code alone can call
+    /// `စိတ်မချရသော`, "not to be trusted": declares a function unsafe: its
+    /// statements can work with pointers, and a call of it needs unsafe
+    /// code
     Unsafe,
     /// `စိတ်မချရသော်လည်း`, "though not to be trusted": in the phrase that
-    /// opens a block of marked code
+    /// opens an unsafe block
     UnsafeThough,
 
     // pointers and the heap

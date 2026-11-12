@@ -85,7 +85,7 @@ head's next word maps an old block to its new one while the work runs), and
 `zk_collect_rings` runs trial deletion when 1,024 blocks wait and at the end of the run,
 as the VM does. `zk_obj_ptr` and `zk_ptr_obj` turn an object into a pointer and back,
 `zk_check_utf8` checks a list of u8s that becomes text. The blocks of the heap statements
-of marked code remain plain `zk_alloc` blocks with no head, and the two are never mixed. A
+of unsafe code remain plain `zk_alloc` blocks with no head, and the two are never mixed. A
 counted list moved to the heap (`to_heap`) remains uncounted.
 
 ## The order of a run
@@ -119,22 +119,12 @@ level (`Checks`), then each `+name` or `-name`. `ZK_CHECK_SANITIZERS` changes no
 build adds the sanitizer flags when it is on. The texts of the traps come from the locale of the compiler, into
 `zaka_kinds.c`.
 
-`zaka_rt_float.{h,c}` hold the float kinds past C11 and the print of each float kind.
-`zk_half` is `_Float16` where the compiler defines `__FLT16_MANT_DIG__`; `zk_quad` is
-`_Float128` (`__FLT128_MANT_DIG__`), a `long double` of 113 bits, or `__float128`
-(`__SIZEOF_FLOAT128__`). Each sets `ZK_HAS_F16` or `ZK_HAS_F128`, and `zaka_kinds.h` stops
-at an `#error` that names the kind when the program holds one the compiler lacks, as it does
-for `i128`. A constant of either kind comes from its bits (`zk_f16_of`, `zk_f128_of`), since
-C11 has no literal for it; an `f16` operation is cast back to `zk_half`, so it rounds as the
-VM's does; `%` calls `zk_fmod_half` or `zk_fmod_quad` (`fmodl` or `fmodf128`), and an `f128`
-converts to an integer through `zk_q2i_<N>`, not through `double`.
-
-A float prints from its bits (`zk_put_fbits`), with natural numbers of the runtime's own and
-no print from libc, so each host prints the same digits. `f32` and `f64` print the fewest
-digits that read back, as Rust's `{:?}` does: Dragon4 as Rust's `flt2dec` runs it, with the
-same gaps to the neighbours (half the gap below at a power of two) and a tie rounded up.
-`f16` and `f128` print as `rustc_apfloat` writes them, as the VM does: the exact value cut to
-`2 + P * 59 / 196` digits (5 for `f16`, 36 for `f128`), a half rounded up.
+`zaka_rt_float.{h,c}` hold the print of each float kind. A float prints from its bits
+(`zk_put_fbits(bits, raw)`, where `raw` is the 32- or 64-bit pattern), with natural numbers of
+the runtime's own and no print from libc, so each host prints the same digits. `f32` and `f64`
+print the fewest digits that read back, as Rust's `{:?}` does: Dragon4 as Rust's `flt2dec`
+runs it, with the same gaps to the neighbours (half the gap below at a power of two) and a tie
+rounded up.
 
 An optional and a result are the same struct as in the VM (a tag, then `some`, or `ok` and
 `err`). `Stmt::Halt` becomes a call that stops the run: `zk_not_good(at, kind)`, which shows the error value, and
@@ -168,9 +158,8 @@ C frees is never given back. An else-if chain of the IR is written flat as
 `else if`, not as nested blocks, so a chain of thousands of branches builds with each C
 compiler.
 
-The runtime is strict C11 and passes `-pedantic-errors`. 128-bit integers stand behind
-`__SIZEOF_INT128__`, and the GCC and Clang builtin for an overflow test behind `__GNUC__`,
-each with a C11 path beside it.
+The runtime is strict C11 and passes `-pedantic-errors`. The GCC and Clang builtin for an
+overflow test stands behind `__GNUC__`, with a C11 path beside it.
 
 ### ဇယား values
 
@@ -265,7 +254,7 @@ name that is an absolute path or `@rpath/...`.
 | Test | Checks |
 | --- | --- |
 | `tests/samples.rs` | each repo sample prints, as an executable, the output the VM prints for it, at `--checks default` and `--checks none`, under `--overflow stop` and `wrap`; it passes with a note on a host with no C compiler, unless `ZAKA_REQUIRE_CC=1` makes that a failure, as on CI |
-| `tests/text.rs` | the runtime writes thousands of floats and the ends of 128-bit integers as the VM writes them |
+| `tests/text.rs` | the runtime writes thousands of floats and the ends of 64-bit integers as the VM writes them |
 | `tests/traps.rs` | a zero divisor and an overflow stop with the VM's message and status 1 |
 | `zaka_website/tests/stops_in_c.rs` | each `zaka-stop` program of the books, built with this target, prints the output and the stop reason of the VM (see [Build, test and format](README.md#build-test-and-format)); a stop here names no source line and no calls in progress, which the VM names |
 

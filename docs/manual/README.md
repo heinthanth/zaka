@@ -28,7 +28,7 @@ Zaka: [words](language/words.md), [kinds](language/kinds.md),
 [lists](language/lists.md), [text](language/text.md), [structs](language/structs.md),
 [values and objects](language/objects.md), [modules](language/modules.md) and [natural
 wording](language/naturalness.md). The last page, [Unsafe Zaka](language/unsafe.md),
-states the rules of marked code: pointers, the heap and the checks on them.
+states the rules of unsafe code: pointers, the heap and the checks on them.
 
 The reference pages at the end list the [reserved words](reference/reserved-words.md),
 the [operator precedence](reference/precedence.md), the [grammar](reference/grammar.md) and

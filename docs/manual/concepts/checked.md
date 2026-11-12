@@ -22,7 +22,7 @@ the details. LLVM comes later.
           │
           │  the compiler reads each path, runs nothing
           ▼
-   ┌─────────────┐   a mistake it can prove is a warning in marked
+   ┌─────────────┐   a mistake it can prove is a warning in unsafe
    │ compile time │   code, or stops the build (ZK0701 to ZK0712)
    └──────┬──────┘
           │ the program that remains
@@ -48,7 +48,7 @@ and the VM frees each block it makes, rings of objects included. It holds no NUL
 a shared object and a function value hold a value at each point, and the compiler proves that each
 variable, field and cell is set before a read, as an error in each mode (ZK0722; see
 [Statements](../language/statements.md#set-before-read)). Each row is a mistake of
-[marked code](../language/unsafe.md), where the compiler's findings are warnings, and
+[unsafe code](../language/unsafe.md), where the compiler's findings are warnings, and
 errors under `--mem-check error`.
 
 | Mistake | Before the run | In the VM | In native code (`--checks default`) |
@@ -74,7 +74,7 @@ is run. The other rows depend on a check that the VM alone makes.
 
 ## A mistake that the VM alone sees
 
-The compiler gives this marked function a block and a count. It cannot know that the
+The compiler gives this unsafe function a block and a count. It cannot know that the
 block holds 4 boxes while the loop goes to box 4:
 
 ```zaka-stop
@@ -90,7 +90,7 @@ block holds 4 boxes while the loop goes to box 4:
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 "အစ" ဟု ပြသမည်။
-လုပ်ဆောင်ချက် ဖြည့် ကို ပ၊ ၄ တို့ဖြင့် လုပ်ဆောင်မည်။
+ဖြည့် ဟူသော လုပ်ဆောင်ချက်ကို ပ၊ ၄ တို့ဖြင့် လုပ်ဆောင်မည်။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -126,9 +126,9 @@ not, for two reasons:
   cannot know, it reports nothing and leaves the check to the VM, instead of guessing.
   A check that guessed wrong in the other direction would refuse good programs.
 - A pointer can come from C, from an integer, or from an object turned into an address.
-  Marked code is the exit for work that shares storage in its own fashion, such as an
+  Unsafe code is the exit for work that shares storage in its own fashion, such as an
   arena, and the compiler does not attempt to follow each such pointer. It warns about what it
-  can see, and `--no-unsafe` forbids marked code when a lesson must not step around the
+  can see, and `--no-unsafe` forbids unsafe code when a lesson must not step around the
   checks.
 
 What is proved is a smaller set, and the proof is sound for that set. A program that
@@ -158,7 +158,7 @@ The VM remains as it is, and the C target adds a second means to run the same pr
   of the C compiler.
 
 For this reason the split matters. Safe code needs no check of storage at run time: the
-counts free each block, and no pointer reaches it. Marked code is the small part of a
+counts free each block, and no pointer reaches it. Unsafe code is the small part of a
 program where the VM's checks are gone in a native build, and the compiler's warnings
 point at it.
 
@@ -166,11 +166,11 @@ point at it.
 
 | Option | What changes |
 | --- | --- |
-| `--mem-check warn` | a proved mistake in marked code is a warning; the program runs, and the VM stops it; the default |
-| `--mem-check error` | the compiler refuses programs with a proved mistake in marked code |
+| `--mem-check warn` | a proved mistake in unsafe code is a warning; the program runs, and the VM stops it; the default |
+| `--mem-check error` | the compiler refuses programs with a proved mistake in unsafe code |
 | `--mem-check off` | the compiler reports none of them |
 | `--mem-strict` | also warn about a pointer that can point at nothing, which the compiler cannot prove safe |
-| `--no-unsafe` | refuse marked code |
+| `--no-unsafe` | refuse unsafe code |
 | `--frames packed` | the VM places variables next to each other, as C does |
 | `--checks none`, `default`, `mem` | for `zakac build --target c`: no check past what C has, the checks of the language, or those and the mem checks |
 

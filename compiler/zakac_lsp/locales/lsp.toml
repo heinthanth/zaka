@@ -28,7 +28,7 @@ en = "ဒေတာ ထည့်ပေးရန်:"
 en = "အပိုင်အနေဖြင့်:"
 
 [lsp.hover_unsafe]
-en = "marked: marked code alone can call it"
+en = "unsafe: a call of it needs unsafe code"
 
 [lsp.hover_shared]
 en = "shared: a duplicate of the value names the one object"

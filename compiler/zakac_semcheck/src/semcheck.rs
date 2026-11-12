@@ -106,7 +106,7 @@ const HEAP_WORK: &str = "a heap statement";
 /// The implicit result variable of a function with a result.
 pub const RESULT_NAME: &str = "ရလဒ်";
 
-/// What marked code alone can do with a handle a function got as a
+/// What needs unsafe code, with a handle a function got as a
 /// parameter: close it, since the caller, or C that called back, still
 /// holds it.
 const CLOSE_PARAM: &str = "closing a handle the function got as a parameter";
@@ -144,7 +144,7 @@ pub struct SemcheckOptions
     /// Report particle idiom warnings as errors.
     #[builder(default)]
     pub strict_particles: bool,
-    /// Refuse each function and block marked `စိတ်မချရသော`.
+    /// Refuse each unsafe function and each unsafe block.
     #[builder(default)]
     pub no_unsafe: bool,
     /// Check the file as a module that another file imports, as an editor
@@ -373,12 +373,11 @@ pub(crate) struct Checker
     /// far, in each file.
     #[builder(default)]
     pub c_names: HashMap<String, (Vec<DataKind>, Option<DataKind>)>,
-    /// Whether marked code is refused.
+    /// Whether unsafe code is refused.
     #[builder(default)]
     pub no_unsafe: bool,
-    /// Whether the statements checked now are marked code: a function marked
-    /// `စိတ်မချရသော`, a block marked `စိတ်မချရသော်လည်း`, or a function inside
-    /// either.
+    /// Whether the statements checked now are unsafe code: an unsafe function,
+    /// an unsafe block, or a function inside either.
     #[builder(default)]
     pub unchecked: bool,
     /// Whether the program is checked as a module, with no start block.
@@ -628,8 +627,7 @@ impl Checker
             return None;
         };
         self.refer(&callee.name, callee.span, sig.decl);
-        let call =
-            format!("a call of \"{}\", a function marked \"စိတ်မချရသော\",", callee.name);
+        let call = format!("a call of \"{}\", an unsafe function,", callee.name);
         do_if!(sig.unchecked, self.need_unchecked(span, &call));
         let (want, got) = (sig.params.len(), args.len());
         let bad_count = rd::arg_count_mismatch(span, &callee.name, want, got);
@@ -693,7 +691,7 @@ impl Checker
     /// Check a C function: its name is a C name (ZK0337), each parameter and
     /// the result cross to C (ZK0465), no parameter but a list of numbers is
     /// marked `ဒေတာ ပြောင်းလဲရန်` (ZK0466), a function that passes a pointer or
-    /// gives back text that can be NULL is marked `စိတ်မချရသော` (ZK0472), and
+    /// gives back text that can be NULL is declared `စိတ်မချရသော` (ZK0472), and
     /// each declaration of the name gives the same kinds (ZK0338).
     ///
     /// # Arguments
@@ -968,7 +966,7 @@ impl Checker
     }
 
     /// Check a write of a field of the struct C keeps behind a handle:
-    /// marked code can write a number, a boolean or a counted list; text and
+    /// unsafe code can write a number, a boolean or a counted list; text and
     /// a handle are pointers C owns, and safe code writes no field.
     ///
     /// # Arguments
@@ -1047,7 +1045,7 @@ impl Checker
         name.is_some_and(|n| handles.contains(&n))
     }
 
-    /// Report an operation that works with pointers outside marked code.
+    /// Report an operation that works with pointers outside unsafe code.
     ///
     /// # Arguments
     ///
@@ -1462,7 +1460,7 @@ impl Checker
     }
 
     /// Check the statements of a loop block, and the update of a generic
-    /// loop after them: marked code when the block opens with
+    /// loop after them: unsafe code when the block opens with
     /// `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။`.
     ///
     /// # Arguments
@@ -1522,7 +1520,7 @@ fn non_positive_literal(e: &Expr) -> bool
 /// turns a pointer the compiler lends into one that owns its block, or
 /// back, so a mismatch of the two gets no help. Each other mismatch names
 /// the conversion verb when it can turn the value into the wanted kind, as
-/// for a pointer whose block holds addresses, which marked code converts
+/// for a pointer whose block holds addresses, which unsafe code converts
 /// with the verb; it gets no help when the verb cannot, as for a list.
 ///
 /// # Arguments
@@ -1873,7 +1871,7 @@ impl Visitor for Checker
         // names, and the walk of the outer one goes on after it.
         let nested = self.func.is_some();
         do_if!(n.unchecked && self.no_unsafe, self.report(kd::unsafe_refused(n.span)));
-        // A function inside marked code is marked code too.
+        // A function inside unsafe code is unsafe code too.
         let outer_unchecked = self.unchecked;
         self.unchecked = n.unchecked || (nested && outer_unchecked);
         do_if!(nested, self.declare_nested(n));

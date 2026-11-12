@@ -54,7 +54,7 @@ what sharing changes.
   several, is ZK0201.
 - A field kind is each kind there is: a number, a true/false value, a character, text, a
   list, another struct, a shared object, a function value or a pointer. Safe code can hold
-  a pointer field, while reading through it needs marked code ([Unsafe Zaka](unsafe.md)).
+  a pointer field, while reading through it needs unsafe code ([Unsafe Zaka](unsafe.md)).
 - A struct name is declared once in the whole program (ZK0316), and the field names of
   one struct differ from each other (ZK0317).
 - A struct name cannot also name a variable, a constant, a parameter, a field or a
@@ -80,7 +80,7 @@ none is counted with `ခု`, like each other kind.
 The classifier is the word after `တစ်` in a [struct literal](#struct-literals),
 `လူတစ်ယောက်`, and the measure word after each kind written in a declaration, a parameter,
 a field, a result, a conversion, a size, a default arm or after a literal:
-`ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်ပါစေ။` ([Kinds](kinds.md#measure-words)). In marked
+`ကိန်းရှင် ကျော် သည် လူ တစ်ယောက် ဖြစ်ပါစေ။` ([Kinds](kinds.md#measure-words)). In unsafe
 code it is also the word in a heap size, `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...`
 ([Unsafe Zaka](unsafe.md)):
 
@@ -146,7 +146,7 @@ A struct name stands wherever a kind does:
 | a field of another struct | `ပိုင်ရှင် ဟူသော လူ တစ်ယောက်` |
 | a size | `လူ တစ်ယောက် ၏ အရွယ်အစား` |
 | a pointer kind | `လူ လိပ်စာ တစ်ခု` |
-| a heap size, in marked code | `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...` |
+| a heap size, in unsafe code | `မင်မိုရီတွင် လူ ၃ ယောက်စာ နေရာယူ၍ ...` |
 
 A variable of a struct kind takes a struct literal, another struct of the same kind, or
 `ကနဦးတန်ဖိုး`, the [initial value](kinds.md#initial-values), which sets each field to the
@@ -257,7 +257,7 @@ starts with a struct name and `(`, or with a name, `(`, a field name and `:`.
 ## Fields
 
 `<value> ၏ <field>` is a field. It is a place: it can be read, printed, assigned to, and
-passed to a `ဒေတာ ပြောင်းလဲရန်` parameter ([Functions](functions.md)). In marked code its
+passed to a `ဒေတာ ပြောင်းလဲရန်` parameter ([Functions](functions.md)). In unsafe code its
 address can be taken.
 
 | Written | Means |
@@ -266,8 +266,8 @@ address can be taken.
 | `ကျော် ၏ အသက် ကို ၂၀ ဟု ထားမည်။` | write the field |
 | `က ၏ ခ ၏ ဂ` | a field of a field, one `၏` for each step |
 | `xs ၏ အကွက် ၀ ၏ x` | a field of a list cell |
-| `p ၏ တန်ဖိုး ၏ အသက်` | in marked code, the field of the struct a pointer points at |
-| `ကျော် ၏ အသက် ၏ လိပ်စာ` | in marked code, the address of the field, a pointer to the kind of the field |
+| `p ၏ တန်ဖိုး ၏ အသက်` | in unsafe code, the field of the struct a pointer points at |
+| `ကျော် ၏ အသက် ၏ လိပ်စာ` | in unsafe code, the address of the field, a pointer to the kind of the field |
 
 - A field is looked up in the struct on its name. A name the struct does not have is
   ZK0320.
@@ -290,7 +290,7 @@ address can be taken.
 က ၏ ဆုံး ၏ x ကို ၃ ဟု ထားမည်။
 ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော အမှတ် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 အမှတ်များ ၏ အကွက် ၁ ၏ y ကို ၇ ဟု ထားမည်။
-လုပ်ဆောင်ချက် ကိုး ကို က ၏ စ ၏ y တို့ဖြင့် လုပ်ဆောင်မည်။
+ကိုး ဟူသော လုပ်ဆောင်ချက်ကို က ၏ စ ၏ y တို့ဖြင့် လုပ်ဆောင်မည်။
 က ကို ပြသမည်။
 အမှတ်များ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -394,7 +394,7 @@ struct with no mark. A struct given back from a function follows the same rules;
 ကိန်းရှင် က သည် အမှတ်(x: ၁၊ y: ၂) ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် က ဖြစ်ပါစေ။
 ခ ၏ y ကို ၉ ဟု ထားမည်။
-လုပ်ဆောင်ချက် ရွှေ့ ကို က တို့ဖြင့် လုပ်ဆောင်မည်။
+ရွှေ့ ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်မည်။
 က ကို ပြသမည်။
 ခ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -447,7 +447,7 @@ as a C struct:
 ၇၂
 ```
 
-In marked code, the address of a struct is a pointer to it, so adding 1 to it steps over
+In unsafe code, the address of a struct is a pointer to it, so adding 1 to it steps over
 one whole struct, and a heap block of `n` structs holds `n` times the size. See [Unsafe
 Zaka](unsafe.md).
 

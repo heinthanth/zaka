@@ -7,7 +7,7 @@ use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
 use zakac_codegen_target_vm::cli::ZakacTargetVm;
-use zakac_semcheck::mark::in_marked_code;
+use zakac_semcheck::unsafe_code::in_unsafe_code;
 
 const SUM: &str = "(၂ + ၃) * ၄ ကို ပြသမည်။\n\"ပြီး\" ဟု ပြသမည်။";
 
@@ -39,7 +39,7 @@ fn run_vm(args: &[&str], stdin: &str) -> (ExitCode, String, String)
         ZakaVm::create_as_standalone(),
         ZakaVm::standalone_name(),
         args,
-        in_marked_code(stdin).as_bytes(),
+        in_unsafe_code(stdin).as_bytes(),
     )
 }
 
@@ -65,7 +65,7 @@ fn codegen_artifacts_run_raw_or_text()
             codegen,
             name,
             &["-o", path.to_str().unwrap()],
-            in_marked_code(SUM).as_bytes(),
+            in_unsafe_code(SUM).as_bytes(),
         );
         assert_eq!(code, ExitCode::Success);
         let (code, stdout, stderr) = run_vm(&[path.to_str().unwrap()], "");

@@ -764,7 +764,7 @@ mod with_ffi
             let native = (base as usize).wrapping_add(offset as usize);
             let n = raw.len().min(size);
             // SAFETY: the declaration names the fields of the C struct from
-            // its start, the handle is open, as the guard checks, and marked
+            // its start, the handle is open, as the guard checks, and unsafe
             // code writes the field.
             unsafe {
                 std::ptr::copy_nonoverlapping(raw.as_ptr(), native as *mut u8, n)

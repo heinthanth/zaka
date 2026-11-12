@@ -53,7 +53,7 @@ const VAR: &str = "ကိန်းရှင်";
 const CONST: &str = "ကိန်းသေ";
 /// The word of a function.
 const FUNCTION: &str = "လုပ်ဆောင်ချက်";
-/// The mark of a function marked as unsafe.
+/// The word of an unsafe function.
 const UNSAFE: &str = "စိတ်မချရသော";
 /// The mark of a shared struct.
 const SHARED: &str = "မျှဝေနိုင်သော";

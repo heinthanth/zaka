@@ -7,7 +7,7 @@ description: The mistakes pointers make possible, the warnings the compiler give
 
 Pointers are powerful because each one reaches straight into RAM, and that same power
 makes them simple to misuse. In a lot of other languages, a RAM mistake corrupts the
-program without warning. Zaka catches these mistakes twice. In marked code, the compiler
+program without warning. Zaka catches these mistakes twice. In unsafe code, the compiler
 warns about each one it can prove from the text of the program. The Zaka VM checks each
 read and write through a pointer while the program runs, stops the program at the first
 mistake, and tells what went wrong.
@@ -139,7 +139,7 @@ give-back and at the later use:
 the program stopped: access at 0x101000 inside a freed block
 ```
 
-Swap the last two lines of the marked block, so the read comes before the give-back, and
+Swap the last two lines of the unsafe block, so the read comes before the give-back, and
 the program prints `၇`. Resizing the block while a duplicate of its address is still in use is
 the same mistake, since the block can move.
 
@@ -205,7 +205,7 @@ x ၏ လိပ်စာ ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် လုပ်ဆောင်ချက် မှား ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် မှား ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 ပ ၏ တန်ဖိုး ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -237,7 +237,7 @@ does no harm at once:
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် စမ်း ကို လုပ်ဆောင်မည်။
+စမ်း ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -270,8 +270,8 @@ Text, lists, shared objects and closures never show here: the compiler frees the
 
 ## Mistakes the compiler catches
 
-The ZK04 codes are about kinds and marks, and are errors in each mode. The ZK07 codes come
-from the pointer check: in marked code each follows `--mem-check`, and in safe code each
+The ZK04 codes are about kinds and unsafe code, and are errors in each mode. The ZK07 codes come
+from the pointer check: in unsafe code each follows `--mem-check`, and in safe code each
 is an error.
 
 | Code | Mistake |
@@ -284,11 +284,11 @@ is an error.
 | ZK0415 | using an operator such as `*` or `/` on a pointer |
 | ZK0416 | comparing or subtracting pointers of different kinds |
 | ZK0417 | a heap statement given something other than a pointer |
-| ZK0468 | pointer work, or a call of a marked function, outside marked code |
-| ZK0469 | a marked function as a function value |
+| ZK0468 | pointer work, or a call of an unsafe function, outside unsafe code |
+| ZK0469 | an unsafe function as a function value |
 | ZK0470 | `အပိုင်အနေဖြင့်` on a kind that is not a pointer |
-| ZK0471 | a mark under `--no-unsafe` |
-| ZK0472 | a C function with a pointer, declared with no mark |
+| ZK0471 | unsafe code under `--no-unsafe` |
+| ZK0472 | a C function with a pointer, not declared unsafe |
 | ZK0701 | reading a variable after it handed its block to an `အပိုင်အနေဖြင့်` parameter: an error in each mode |
 | ZK0702 | giving back or resizing the address of a variable |
 | ZK0703 | keeping the address of a variable in a heap block, behind a pointer, or in a top-level variable from a function |
@@ -322,7 +322,7 @@ error[ZK0413]: isize is not a pointer and cannot be dereferenced
 - Run the "past a variable" program with `--frames packed`. Then write `၉` through
   `ပ + ၁` and print `ခ`. Which variable changed?
 - Step through each program on this page in the Explorer to the line where the VM stops it.
-- Write a marked function that asks for a block and returns its address. What must its
+- Write an unsafe function that asks for a block and returns its address. What must its
   result header hold? (`အပိုင်အနေဖြင့်`: the caller owns the block from then on.)
 
 This is the last page of Learn. The [Docs](../../manual/README.md) give the full rules of

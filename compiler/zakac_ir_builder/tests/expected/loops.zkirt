@@ -380,7 +380,7 @@ module:
     env: null
     exit: null
   foreign: []
-  marked: []
+  unsafe_spans: []
   span:
     lo: 0
     hi: 2167

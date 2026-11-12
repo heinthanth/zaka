@@ -305,8 +305,8 @@ pub(crate) struct FnSig
     /// function value can hold.
     #[builder(default)]
     pub external: bool,
-    /// `true` for a function marked `စိတ်မချရသော`, which marked code alone
-    /// can call.
+    /// `true` for an unsafe function, `စိတ်မချရသော`, whose calls need
+    /// unsafe code.
     #[builder(default)]
     pub unchecked: bool,
     /// `true` for a C function that takes more arguments than it names,

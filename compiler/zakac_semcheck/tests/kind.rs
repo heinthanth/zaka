@@ -72,18 +72,14 @@ fn names_round_trip()
         "i16",
         "i32",
         "i64",
-        "i128",
         "isize",
         "u8",
         "u16",
         "u32",
         "u64",
-        "u128",
         "usize",
-        "f16",
         "f32",
         "f64",
-        "f128",
         "char",
         "bool",
         "i32*",
@@ -130,7 +126,6 @@ fn platform_kinds_take_the_platform_width()
     assert!(widens("i32", "isize"));
     assert!(!widens("i64", "isize"));
     assert!(!widens("isize", "i64"));
-    assert!(widens("isize", "i128"));
     assert!(widens("u32", "usize"));
     assert!(!k("i32").widens_to(k("isize"), 32));
     assert!(k("i16").widens_to(k("isize"), 32));
@@ -141,12 +136,11 @@ fn platform_kinds_take_the_platform_width()
 #[test]
 fn integers_widen_to_floats_without_loss()
 {
-    assert!(widens("i8", "f16"));
     assert!(widens("i8", "f32"));
-    assert!(!widens("i16", "f16"));
+    assert!(widens("i16", "f32"));
+    assert!(!widens("i32", "f32"));
     assert!(widens("i32", "f64"));
     assert!(!widens("i64", "f64"));
-    assert!(widens("i64", "f128"));
     assert!(!widens("isize", "f64"));
     assert!(!widens("f32", "i64"));
 }
@@ -179,8 +173,10 @@ fn literals_fit_their_range()
     assert!(!k("u8").fits_int(256, false, 64));
     assert!(!k("u8").fits_int(1, true, 64));
     assert!(k("u8").fits_int(0, true, 64));
-    assert!(k("u128").fits_int(u128::MAX, false, 64));
-    assert!(k("i128").fits_int(1 << 127, true, 64));
+    assert!(k("u64").fits_int(u128::from(u64::MAX), false, 64));
+    assert!(!k("u64").fits_int(1 << 64, false, 64));
+    assert!(k("i64").fits_int(1 << 63, true, 64));
+    assert!(!k("i64").fits_int(1 << 63, false, 64));
     assert!(!k("isize").fits_int(1 << 40, false, 32));
     assert!(k("isize").fits_int(1 << 40, false, 64));
     assert!(!k("f64").fits_int(1, false, 64));

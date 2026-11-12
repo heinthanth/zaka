@@ -75,7 +75,7 @@ A code has one level of its own: ZK0101 is an error at all times and ZK0502 a wa
 Two settings move the level:
 
 - `--strict-particles` makes each ZK05 warning an error.
-- `--mem-check` sets the level of the pointer lint of marked code (ZK0702 to ZK0712 and
+- `--mem-check` sets the level of the pointer lint of unsafe code (ZK0702 to ZK0712 and
   ZK0721): `warn`, the default, makes each finding a warning, `error` an error, and `off`
   drops them. `--allow`, `--warn` and `--error` set one group or code of it on its own,
   as `--error leaks`. See [Compiler checks](checks.md).
@@ -90,7 +90,7 @@ problem, as the table tells; the last two number the problems of that stage.
 | ZK01 | lexer | a character Zaka does not use; a malformed number |
 | ZK02 | parser | a missing `။`; a particle in the wrong place |
 | ZK03 | names | a name never declared; a name declared twice |
-| ZK04 | kinds | a value of the wrong kind; pointer work outside marked code |
+| ZK04 | kinds | a value of the wrong kind; pointer work outside unsafe code |
 | ZK05 | naturalness | `ကြီးသည်လျှင်` for `ကြီးလျှင်` (warnings) |
 | ZK06 | constant folding | a constant sum that does not fit; a divisor of zero |
 | ZK07 | the checker | a read through the null pointer; a value read before it is set; a block used after it was given back |

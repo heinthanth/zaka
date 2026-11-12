@@ -2,13 +2,6 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
 
-use rustc_apfloat::Float;
-use rustc_apfloat::FloatConvert;
-use rustc_apfloat::Round;
-use rustc_apfloat::ieee::Double;
-use rustc_apfloat::ieee::Half;
-use rustc_apfloat::ieee::Quad;
-use rustc_apfloat::ieee::Single;
 use serde::Deserialize;
 use serde::Serialize;
 use zakac_rust_sugars::ret_if;
@@ -21,35 +14,28 @@ use crate::const_op::PrefixOp;
 use crate::kind::DataKind;
 use crate::kind::IntKind;
 
-/// Rounding of all float operations: to nearest, ties to even.
-const NEAREST: Round = Round::NearestTiesToEven;
-
-/// Run `$code` with `$f` naming the float format of `$bits` bits.
+/// Run `$code` with `$f` naming the Rust float of `$bits` bits: `f32` for 32
+/// bits, `f64` for 64. Rust floats round to nearest, ties to even, as the
+/// float kinds do.
 macro_rules! per_width {
     ($bits:expr, $f:ident => $code:expr) => {
-        match $bits
+        if $bits == 32
         {
-            16 =>
-            {
-                type $f = Half;
-                $code
-            }
-            32 =>
-            {
-                type $f = Single;
-                $code
-            }
-            64 =>
-            {
-                type $f = Double;
-                $code
-            }
-            _ =>
-            {
-                type $f = Quad;
-                $code
-            }
+            type $f = f32;
+            $code
         }
+        else
+        {
+            type $f = f64;
+            $code
+        }
+    };
+}
+
+/// Read the low bits of a pattern as a float of format `$f`.
+macro_rules! from_bits {
+    ($f:ty, $raw:expr) => {
+        <$f>::from_bits($raw as _)
     };
 }
 
@@ -62,7 +48,8 @@ pub enum Value
 {
     /// An integer. `raw` holds the value's two's-complement bits: sign
     /// extended to 128 bits for a signed kind, zero extended for an
-    /// unsigned one. It lies in the range of the kind.
+    /// unsigned one. It lies in the range of the kind; the bits past 64
+    /// leave room to work out a 64-bit result before checking its range.
     Int
     {
         /// The kind.
@@ -73,10 +60,10 @@ pub enum Value
     /// An IEEE 754 float of `bits` bits, stored as its bit pattern.
     Float
     {
-        /// The bit count of the format.
+        /// The bit count of the format: 32 or 64.
         bits: u16,
-        /// The bit pattern.
-        raw: u128,
+        /// The bit pattern, in the low `bits` bits.
+        raw: u64,
     },
     /// A character.
     Char(char),
@@ -152,7 +139,7 @@ impl Value
     /// The value rounded to nearest, or `None` for text that is no number.
     pub fn float(text: &str, bits: u16) -> Option<Value>
     {
-        let raw = per_width!(bits, F => parse_float::<F>(text)?.to_bits());
+        let raw = per_width!(bits, F => u64::from(parse_float::<F>(text)?.to_bits()));
         Some(Value::Float { bits, raw })
     }
 
@@ -236,7 +223,8 @@ impl Value
     {
         match self
         {
-            Value::Int { raw, .. } | Value::Float { raw, .. } => raw,
+            Value::Int { raw, .. } => raw,
+            Value::Float { raw, .. } => u128::from(raw),
             Value::Char(c) => u128::from(c),
             Value::Bool(b) => u128::from(b),
             Value::Ptr(a) => u128::from(a),
@@ -258,7 +246,6 @@ impl Value
 fn wrap(kind: IntKind, platform: u16, pattern: u128) -> u128
 {
     let bits = kind.bits(platform);
-    ret_if!(bits >= 128, pattern);
     let mask = (1u128 << bits) - 1;
     let low = pattern & mask;
     let negative = kind.signed && (low >> (bits - 1)) & 1 == 1;
@@ -277,7 +264,6 @@ fn wrap(kind: IntKind, platform: u16, pattern: u128) -> u128
 /// `true` if it fits.
 fn signed_fits(v: i128, bits: u16) -> bool
 {
-    ret_if!(bits >= 128, true);
     let half = 1i128 << (bits - 1);
     -half <= v && v < half
 }
@@ -292,7 +278,7 @@ fn signed_fits(v: i128, bits: u16) -> bool
 /// # Returns
 ///
 /// `true` if it fits.
-fn unsigned_fits(v: u128, bits: u16) -> bool { bits >= 128 || v >> bits == 0 }
+fn unsigned_fits(v: u128, bits: u16) -> bool { v >> bits == 0 }
 
 /// The smallest value of a signed width.
 ///
@@ -303,10 +289,7 @@ fn unsigned_fits(v: u128, bits: u16) -> bool { bits >= 128 || v >> bits == 0 }
 /// # Returns
 ///
 /// The value.
-fn signed_min(bits: u16) -> i128
-{
-    tern!(bits >= 128, i128::MIN, -(1i128 << (bits - 1)))
-}
+fn signed_min(bits: u16) -> i128 { -(1i128 << (bits - 1)) }
 
 /// Work out a prefix operator to a constant.
 ///
@@ -326,7 +309,7 @@ pub fn prefix(op: PrefixOp, v: Value, platform: u16) -> Result<Value, EvalError>
         (PrefixOp::Neg, Value::Int { kind, raw }) => int_neg(kind, raw, platform),
         (PrefixOp::Neg, Value::Float { bits, raw }) =>
         {
-            let raw = per_width!(bits, F => (-F::from_bits(raw)).to_bits());
+            let raw = per_width!(bits, F => u64::from((-from_bits!(F, raw)).to_bits()));
             Ok(Value::Float { bits, raw })
         }
         (PrefixOp::BitNot, Value::Int { kind, raw }) =>
@@ -391,7 +374,10 @@ pub fn infix(op: InfixOp, l: Value, r: Value, platform: u16)
         (Value::Float { bits, raw: a }, Value::Float { bits: b_bits, raw: b })
             if bits == b_bits =>
         {
-            let raw = per_width!(bits, F => float_op::<F>(op, a, b)?);
+            let raw = per_width!(bits, F => {
+                let v = float_op(op, from_bits!(F, a), from_bits!(F, b))?;
+                u64::from(v.to_bits())
+            });
             Ok(Value::Float { bits, raw })
         }
         _ => Err(EvalError::Mismatch),
@@ -616,25 +602,28 @@ fn shift_int(op: InfixOp, l: Value, r: Value, platform: u16)
 /// # Arguments
 ///
 /// * `op` - The operator.
-/// * `a` - The left bit pattern.
-/// * `b` - The right bit pattern.
+/// * `a` - The left value.
+/// * `b` - The right value.
 ///
 /// # Returns
 ///
-/// The bit pattern of the result, rounded to nearest.
-fn float_op<F: Float>(op: InfixOp, a: u128, b: u128) -> Result<u128, EvalError>
+/// The result, rounded to nearest; the remainder takes the sign of `a`, as
+/// C's `fmod` does.
+fn float_op<F>(op: InfixOp, a: F, b: F) -> Result<F, EvalError>
+where
+    F: std::ops::Add<Output = F> + std::ops::Sub<Output = F>,
+    F: std::ops::Mul<Output = F> + std::ops::Div<Output = F>,
+    F: std::ops::Rem<Output = F>,
 {
-    let (a, b) = (F::from_bits(a), F::from_bits(b));
-    let v = match op
+    match op
     {
-        InfixOp::Add => a.add_r(b, NEAREST).value,
-        InfixOp::Sub => a.sub_r(b, NEAREST).value,
-        InfixOp::Mul => a.mul_r(b, NEAREST).value,
-        InfixOp::Div => a.div_r(b, NEAREST).value,
-        InfixOp::Rem => a.c_fmod(b).value,
-        _ => return Err(EvalError::Mismatch),
-    };
-    Ok(v.to_bits())
+        InfixOp::Add => Ok(a + b),
+        InfixOp::Sub => Ok(a - b),
+        InfixOp::Mul => Ok(a * b),
+        InfixOp::Div => Ok(a / b),
+        InfixOp::Rem => Ok(a % b),
+        _ => Err(EvalError::Mismatch),
+    }
 }
 
 /// Compare two constants of one kind.
@@ -660,7 +649,7 @@ pub fn compare(op: CmpOp, l: Value, r: Value) -> Result<bool, EvalError>
         }
         (Value::Float { bits, raw: a }, Value::Float { raw: b, .. }) =>
         {
-            per_width!(bits, F => F::from_bits(a).partial_cmp(&F::from_bits(b)))
+            per_width!(bits, F => from_bits!(F, a).partial_cmp(&from_bits!(F, b)))
         }
         (Value::Char(a), Value::Char(b)) => Some(a.cmp(&b)),
         (Value::Bool(a), Value::Bool(b)) => Some(a.cmp(&b)),
@@ -743,18 +732,23 @@ pub fn convert(v: Value, to: DataKind, platform: u16) -> Result<Value, EvalError
         (Value::Int { raw, .. }, DataKind::Int(k)) => Ok(Value::int(k, raw, platform)),
         (Value::Int { kind, raw }, DataKind::Float(bits)) =>
         {
-            let raw = per_width!(bits, F => int_to_float::<F>(kind.signed, raw));
+            // Rust rounds an integer to the nearest float, ties to even.
+            let raw = per_width!(bits, F => u64::from(tern!(
+                kind.signed,
+                (raw as i128) as F,
+                raw as F
+            ).to_bits()));
             Ok(Value::Float { bits, raw })
         }
-        (Value::Float { bits, raw }, DataKind::Float(to_bits)) =>
+        (Value::Float { .. }, DataKind::Float(to_bits)) =>
         {
-            let raw = per_width!(bits, F => widen_or_narrow::<F>(to_bits, raw));
+            let wide = float_value(v);
+            let raw = per_width!(to_bits, F => u64::from((wide as F).to_bits()));
             Ok(Value::Float { bits: to_bits, raw })
         }
-        (Value::Float { bits, raw }, DataKind::Int(k)) =>
+        (Value::Float { .. }, DataKind::Int(k)) =>
         {
-            let width = usize::from(k.bits(platform));
-            let raw = per_width!(bits, F => float_to_int::<F>(raw, k.signed, width));
+            let raw = float_to_int(float_value(v), k.signed, k.bits(platform));
             Ok(Value::Int { kind: k, raw })
         }
         (Value::Char(c), DataKind::Int(k)) =>
@@ -837,7 +831,7 @@ pub fn from_raw(kind: DataKind, raw: &[u8], platform: u16) -> Result<Value, RawE
     match kind
     {
         DataKind::Int(k) => Ok(Value::int(k, pattern, platform)),
-        DataKind::Float(bits) => Ok(Value::Float { bits, raw: pattern }),
+        DataKind::Float(bits) => Ok(Value::Float { bits, raw: pattern as u64 }),
         DataKind::Char => u32::try_from(pattern)
             .ok()
             .and_then(char::from_u32)
@@ -859,77 +853,45 @@ pub fn from_raw(kind: DataKind, raw: &[u8], platform: u16) -> Result<Value, RawE
     }
 }
 
-/// Convert an integer to a float of format `F`.
+/// The value of a float constant as an `f64`; a 32-bit float widens
+/// exactly.
 ///
 /// # Arguments
 ///
-/// * `signed` - Whether the bits are signed.
-/// * `raw` - The bits.
+/// * `v` - The value, a float.
 ///
 /// # Returns
 ///
-/// The bit pattern, rounded to nearest.
-fn int_to_float<F: Float>(signed: bool, raw: u128) -> u128
+/// The number, or 0 for a value that is no float.
+fn float_value(v: Value) -> f64
 {
-    let v = tern!(
-        signed,
-        F::from_i128_r(raw as i128, NEAREST).value,
-        F::from_u128_r(raw, NEAREST).value
-    );
-    v.to_bits()
+    match v
+    {
+        Value::Float { bits: 32, raw } => f64::from(f32::from_bits(raw as u32)),
+        Value::Float { raw, .. } => f64::from_bits(raw),
+        _ => 0.0,
+    }
 }
 
-/// Convert a float of format `F` to the format of `bits` bits.
+/// Convert a float to an integer: the fraction is dropped, values past the
+/// range saturate, NaN gives zero.
 ///
 /// # Arguments
 ///
-/// * `bits` - The bit count of the target format.
-/// * `raw` - The bit pattern.
-///
-/// # Returns
-///
-/// The bit pattern, rounded to nearest.
-fn widen_or_narrow<F>(bits: u16, raw: u128) -> u128
-where
-    F: FloatConvert<Half> + FloatConvert<Single> + FloatConvert<Double>,
-    F: FloatConvert<Quad>,
-{
-    per_width!(bits, G => float_to_float::<F, G>(raw))
-}
-
-/// Convert a float of format `F` to format `G`.
-///
-/// # Arguments
-///
-/// * `raw` - The bit pattern.
-///
-/// # Returns
-///
-/// The bit pattern, rounded to nearest.
-fn float_to_float<F: FloatConvert<G>, G: Float>(raw: u128) -> u128
-{
-    let mut loses = false;
-    let v: G = F::from_bits(raw).convert_r(NEAREST, &mut loses).value;
-    v.to_bits()
-}
-
-/// Convert a float of format `F` to an integer: the fraction is dropped,
-/// values past the range saturate, NaN gives zero.
-///
-/// # Arguments
-///
-/// * `raw` - The bit pattern.
+/// * `v` - The number.
 /// * `signed` - Whether the target is signed.
-/// * `width` - The bit width of the target.
+/// * `width` - The bit width of the target, 64 at most.
 ///
 /// # Returns
 ///
-/// The bits of the integer.
-fn float_to_int<F: Float>(raw: u128, signed: bool, width: usize) -> u128
+/// The bits of the integer, sign extended for a signed target.
+fn float_to_int(v: f64, signed: bool, width: u16) -> u128
 {
-    let v = F::from_bits(raw);
-    ret_if!(v.is_nan(), 0);
-    tern!(signed, v.to_i128(width).value as u128, v.to_u128(width).value)
+    // Rust's casts drop the fraction, saturate and send NaN to zero; the
+    // 128-bit casts leave room to clamp to the width after.
+    ret_if!(!signed, (v as u128).min(u128::MAX >> (128 - width)));
+    let half = 1i128 << (width - 1);
+    (v as i128).clamp(-half, half - 1) as u128
 }
 
 /// The character with an integer's value as its scalar value.
@@ -949,7 +911,7 @@ fn int_to_char(kind: IntKind, raw: u128) -> char
     scalar.and_then(char::from_u32).unwrap_or(char::REPLACEMENT_CHARACTER)
 }
 
-/// Read float text in format `F`.
+/// Read float text in format `F`, rounded to nearest.
 ///
 /// # Arguments
 ///
@@ -958,38 +920,10 @@ fn int_to_char(kind: IntKind, raw: u128) -> char
 /// # Returns
 ///
 /// The value, or `None` for text that is no number.
-fn parse_float<F: Float>(text: &str) -> Option<F>
-{
-    match text
-    {
-        "inf" => Some(F::INFINITY),
-        "-inf" => Some(-F::INFINITY),
-        "NaN" => Some(F::NAN),
-        _ => F::from_str_r(text, NEAREST).ok().map(|v| v.value),
-    }
-}
+fn parse_float<F: FromStr>(text: &str) -> Option<F> { text.parse().ok() }
 
-/// Write a float in format `F` as text that reads back to the same value,
-/// as Rust writes `f64`: `3.0`, `0.1`, `1e300`.
-///
-/// # Arguments
-///
-/// * `v` - The value.
-///
-/// # Returns
-///
-/// The text, `inf`, `-inf` or `NaN`.
-fn float_text<F: Float>(v: F) -> String
-{
-    ret_if!(v.is_nan(), "NaN".to_string());
-    ret_if!(v.is_infinite(), tern!(v.is_negative(), "-inf", "inf").to_string());
-    let text = v.to_string().replace("E+", "e").replace('E', "e").replace(".0e", "e");
-    let whole = text.chars().all(|c| c.is_ascii_digit() || c == '-');
-    tern!(whole, format!("{text}.0"), text)
-}
-
-/// Write a float pattern as text. The 32- and 64-bit formats use the
-/// shortest text that reads back; the others use enough digits to do so.
+/// Write a float pattern as text: the shortest text that reads back, as
+/// Rust writes it: `3.0`, `0.1`, `1e300`, `inf`, `NaN`.
 ///
 /// # Arguments
 ///
@@ -999,14 +933,9 @@ fn float_text<F: Float>(v: F) -> String
 /// # Returns
 ///
 /// The text.
-pub fn float_pattern_text(bits: u16, raw: u128) -> String
+pub fn float_pattern_text(bits: u16, raw: u64) -> String
 {
-    match bits
-    {
-        32 => format!("{:?}", f32::from_bits(raw as u32)),
-        64 => format!("{:?}", f64::from_bits(raw as u64)),
-        _ => per_width!(bits, F => float_text(F::from_bits(raw))),
-    }
+    per_width!(bits, F => format!("{:?}", from_bits!(F, raw)))
 }
 
 impl fmt::Display for Value

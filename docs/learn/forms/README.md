@@ -41,6 +41,6 @@ The pages of this part:
 - [What a duplicate costs](costs.md): when a duplicate is made, and when it is not.
 
 Part III, [Unsafe Zaka](../pointers/README.md), follows: pointers, the heap and C, in
-code marked as unchecked.
+unsafe code.
 
 Next: [Ranges](ranges.md).

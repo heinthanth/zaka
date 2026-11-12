@@ -16,7 +16,7 @@ math functions. Zaka can call them. The header of the function names the lib in 
 n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် abs ကို -၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+abs ဟူသော လုပ်ဆောင်ချက်ကို -၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -50,7 +50,7 @@ duplicate of the text with a zero octet at its end, and drops the duplicate once
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် strlen ကို "မောင်" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+strlen ဟူသော လုပ်ဆောင်ချက်ကို "မောင်" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -75,7 +75,7 @@ error[ZK0465]: a C function cannot take or give back a value of the kind "text"
 ```
 
 The form the help line names is an [optional](../optionals/README.md): the text, or `အလွတ်`
-when C gives NULL. Come back to this part after [Optional values](../optionals/README.md). It needs no mark, since Zaka copies the text and the program never
+when C gives NULL. Come back to this part after [Optional values](../optionals/README.md). It needs no unsafe code, since Zaka copies the text and the program never
 holds the address. A test reads it as for each optional:
 
 ```zaka
@@ -83,7 +83,7 @@ holds the address. A test reads it as for each optional:
 name ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ရှာတွေ့ချက် သည် လုပ်ဆောင်ချက် getenv ကို "ZAKA_NO_SUCH_NAME" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် ရှာတွေ့ချက် သည် getenv ဟူသော လုပ်ဆောင်ချက်ကို "ZAKA_NO_SUCH_NAME" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 အကယ်၍ ရှာတွေ့ချက် ထဲတွင် ဒေတာ မရှိလျှင် "မရှိပါ" ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -110,7 +110,7 @@ s ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပ�
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၄၊ ၁၀၅၊ ၀] ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် strlen ကို စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+strlen ဟူသော လုပ်ဆောင်ချက်ကို စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -135,7 +135,7 @@ b ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပ�
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် မိတ္တူ သည် စာ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် memset ကို စာ၊ ၇၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+memset ဟူသော လုပ်ဆောင်ချက်ကို စာ၊ ၇၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
 စာ ကို ပြသမည်။
 မိတ္တူ ကို ပြသမည်။                 // stands as it was
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -158,7 +158,7 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ထပ်ကိန်း သည် အကွက် ၁ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် frexp ကို ၈.၀၊ ထပ်ကိန်း တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+frexp ဟူသော လုပ်ဆောင်ချက်ကို ၈.၀၊ ထပ်ကိန်း တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ထပ်ကိန်း ၏ အကွက် ၀ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -185,7 +185,7 @@ then the values:
 fmt ဟူသော စာသား တစ်ခု ကို လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် printf ကို "%s is %ld\n"၊ "x"၊ ၄၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+printf ဟူသော လုပ်ဆောင်ချက်ကို "%s is %ld\n"၊ "x"၊ ၄၂ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -227,8 +227,8 @@ sig ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခ
 ဖမ်းကြိမ် ကို ဖမ်းကြိမ် + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ဖမ်း ဟူသော လုပ်ဆောင်ချက်ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။
-လုပ်ဆောင်ချက် signal ကို ၁၅၊ ဖမ်း ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် raise ကို ၁၅ တို့ဖြင့် လုပ်ဆောင်မည်။
+signal ဟူသော လုပ်ဆောင်ချက်ကို ၁၅၊ ဖမ်း ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
+raise ဟူသော လုပ်ဆောင်ချက်ကို ၁၅ တို့ဖြင့် လုပ်ဆောင်မည်။
 ဖမ်းကြိမ် ကို ပြသမည်။
 ဖမ်း ဟူသော လုပ်ဆောင်ချက်ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -248,7 +248,7 @@ C can call back with more than numbers. A parameter of the function can be a pla
 which C passes as a whole value; text, copied from the `char *` C passes; or a handle around a
 struct C keeps. When C can pass NULL, write the parameter as an optional, such as
 `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, and test it before reading it: a NULL for plain text stops
-the program. A handle that C passed is C's, so the function cannot close it outside marked
+the program. A handle that C passed is C's, so the function cannot close it outside unsafe
 code. The [Docs](../../manual/language/functions.md#c-functions) list each kind.
 
 ## A struct C keeps
@@ -273,11 +273,11 @@ c ဟူသော ရေတွက်စက် တစ်ခု ကို လက�
 c ဟူသော ရေတွက်စက် တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် စက် သည် လုပ်ဆောင်ချက် counter_open ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ထဲမှ ဒေတာ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် counter_next ကို စက် တို့ဖြင့် လုပ်ဆောင်မည်။
+ကိန်းရှင် စက် သည် counter_open ဟူသော လုပ်ဆောင်ချက်ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ထဲမှ ဒေတာ ဖြစ်ပါစေ။
+counter_next ဟူသော လုပ်ဆောင်ချက်ကို စက် တို့ဖြင့် လုပ်ဆောင်မည်။
 "{စက် ၏ count} {စက် ၏ step}" ဟု ပြသမည်။
 စက် ၏ label ကို ပြသမည်။
-လုပ်ဆောင်ချက် counter_close ကို စက် တို့ဖြင့် လုပ်ဆောင်မည်။
+counter_close ဟူသော လုပ်ဆောင်ချက်ကို စက် တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -285,7 +285,7 @@ The program opens a counter, steps it once, reads two fields and its label, and 
 
 - `counter_open` gives a handle, or `အလွတ်` when C gives NULL: its result is an
   optional of the handle. A plain `ရေတွက်စက်` result would promise that C never gives
-  NULL, so a NULL would stop the run. No mark is needed on these C functions, since the
+  NULL, so a NULL would stop the run. These C functions need no `စိတ်မချရသော`, since the
   program never holds the address.
 - `စက် ၏ count` reads the field from C's storage each time, so it shows what C holds now.
 - `စက် ၏ label` is an optional of text, since a `char *` can be NULL.
@@ -310,8 +310,8 @@ program file.
 
 ## Addresses
 
-A C function whose parameters or result hold an address needs a mark, and its calls go in
-marked code. [C functions and addresses](../pointers/c.md) teaches them in the last part
+A C function whose parameters or result hold an address is declared unsafe, and its calls go in
+unsafe code. [C functions and addresses](../pointers/c.md) teaches them in the last part
 of Learn.
 
 ## Where the call runs

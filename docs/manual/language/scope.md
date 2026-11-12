@@ -175,7 +175,7 @@ variable can be read and assigned to. A constant (`ကိန်းသေ`) can b
 assignment is ZK0306, and a constant must be given its value where it is declared
 (ZK0308). The counter of a counted loop can be read alone as well (ZK0307). Neither can
 go to a `ဒေတာ ပြောင်းလဲရန်` parameter, which writes the argument back (ZK0306, ZK0307; [Functions](functions.md)),
-nor have its address taken in marked code (ZK0412), since a pointer could write through
+nor have its address taken in unsafe code (ZK0412), since a pointer could write through
 it.
 
 ```zaka-error ZK0306
@@ -204,8 +204,8 @@ program: assigning to such a variable changes it for the whole program.
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၅ တို့ဖြင့် လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပေါင်းထည့် ကို ၇ တို့ဖြင့် လုပ်ဆောင်မည်။
+ပေါင်းထည့် ဟူသော လုပ်ဆောင်ချက်ကို ၅ တို့ဖြင့် လုပ်ဆောင်မည်။
+ပေါင်းထည့် ဟူသော လုပ်ဆောင်ချက်ကို ၇ တို့ဖြင့် လုပ်ဆောင်မည်။
 စုစုပေါင်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```

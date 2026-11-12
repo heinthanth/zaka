@@ -11,7 +11,7 @@ reaches the one object, and a change through one name is seen through the others
 of the two a kind is depends on its declaration alone, never on what sits inside it.
 
 The VM frees each block when its last use goes, so safe code never frees a block itself
-and holds no address. Pointers and the heap statements live in marked code, in [Unsafe
+and holds no address. Pointers and the heap statements live in unsafe code, in [Unsafe
 Zaka](unsafe.md). The reasons for this design are in [Storage,
 explained](../concepts/storage.md).
 
@@ -23,7 +23,7 @@ explained](../concepts/storage.md).
 | text, lists, structs, enumerations, results | copied, and the cells are shared until one side writes | when the last duplicate goes |
 | a shared object (`မျှဝေနိုင်သော ဒေတာအစုအဝေး`) | shared: the same object | when the last name for it goes, or when the ring collector runs |
 | a function value, a closure | shared | when the last name for it goes, or when the ring collector runs |
-| a pointer (`<kind> လိပ်စာ`) | the address is copied | in marked code, with a heap statement |
+| a pointer (`<kind> လိပ်စာ`) | the address is copied | in unsafe code, with a heap statement |
 
 ## Values are copied
 
@@ -47,7 +47,7 @@ after the duplicate is never copied at all.
 ခ ၏ အကွက် ၀ ကို ၉ ဟု ထားမည်။               // this write copies the cells first
 က ကို ပြသမည်။
 ခ ကို ပြသမည်။
-လုပ်ဆောင်ချက် ပြင် ကို က တို့ဖြင့် လုပ်ဆောင်မည်။   // ပြင် changes its own duplicate
+ပြင် ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်မည်။   // ပြင် changes its own duplicate
 က ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -109,7 +109,7 @@ alone differs. `အများသုံး` goes after `ဟူသော`, befor
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် အကောင့်(အမည်: "မမ"၊ လက်ကျန်: ၁၀၀) ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် က ဖြစ်ပါစေ။                               // one account, two names
-လုပ်ဆောင်ချက် အပ်ငွေ ကို ခ၊ ၅၀ တို့ဖြင့် လုပ်ဆောင်မည်။
+အပ်ငွေ ဟူသော လုပ်ဆောင်ချက်ကို ခ၊ ၅၀ တို့ဖြင့် လုပ်ဆောင်မည်။
 က ၏ လက်ကျန် ကို ပြသမည်။
 က ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -407,7 +407,7 @@ reference to the next. The VM and the native runtime also run a **ring collector
   inside a ring is freed when the collector next runs.
 
 So safe code cannot leave a block behind: `zakac run --leaks` lists nothing for a program
-with no marked code.
+with no unsafe code.
 
 ### Printing a ring
 

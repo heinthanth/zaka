@@ -29,30 +29,30 @@ fn with(line: &str) -> Vec<Code> { codes(&format!("{FNS}{line}")) }
 #[test]
 fn a_place_is_changed()
 {
-    ok(&format!("{FNS}လုပ်ဆောင်ချက် တိုး ကို က တို့ဖြင့် လုပ်ဆောင်မည်။"));
+    ok(&format!("{FNS}တိုး ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်မည်။"));
 }
 
 #[test]
 fn a_call_writes_no_mark()
 {
-    ok(&format!("{FNS}လုပ်ဆောင်ချက် ပြ ကို က တို့ဖြင့် လုပ်ဆောင်မည်။"));
+    ok(&format!("{FNS}ပြ ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်မည်။"));
 }
 
 #[test]
 fn a_changed_argument_is_a_writable_place_of_the_same_kind()
 {
-    let value = "လုပ်ဆောင်ချက် တိုး ကို က + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let value = "တိုး ဟူသော လုပ်ဆောင်ချက်ကို က + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(with(value), [Code::NotAPlace]);
-    let constant = "ကိန်းသေ ဂ သည် ၅ ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် တိုး ကို ဂ တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let constant = "ကိန်းသေ ဂ သည် ၅ ဖြစ်ပါစေ။\nတိုး ဟူသော လုပ်ဆောင်ချက်ကို ဂ တို့ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(with(constant), [Code::AssignToConst]);
-    let narrow =
-        "ကိန်းရှင် ဃ သည် ၅ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nလုပ်ဆောင်ချက် တိုး ကို ဃ တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let narrow = "ကိန်းရှင် ဃ သည် ၅ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\nတိုး ဟူသော လုပ်ဆောင်ချက်ကို ဃ \
+                  တို့ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(with(narrow), [Code::KindMismatch]);
 }
 
 #[test]
 fn a_changed_place_appears_in_no_other_argument()
 {
-    let twice = "လုပ်ဆောင်ချက် နှစ်ခု ကို က၊ က + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let twice = "နှစ်ခု ဟူသော လုပ်ဆောင်ချက်ကို က၊ က + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(with(twice), [Code::EditShared]);
 }

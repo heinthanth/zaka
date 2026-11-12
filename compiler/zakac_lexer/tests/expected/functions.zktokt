@@ -1,7 +1,7 @@
 # zakac-lex-artifact v1
 name:
   Custom: functions.zaka
-source: "လုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်\nက ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ဂ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\nက ကို က * ၂ ဟု ထားမည်။\nခ ကို ခ * ၂ ဟု ထားမည်။\nဂ ကို ဂ * ၂ ဟု ထားမည်။\nက + ခ + ဂ ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ဟု ပြသမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် ထုတ်ပြ ကို အသက်၊ အမည် တို့ဖြင့် လုပ်ဆောင်မည်။\n"
+source: "လုပ်ဆောင်ချက် နှစ်ဆတိုးပြီးပေါင်း သည်\nက ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ဂ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\nက ကို က * ၂ ဟု ထားမည်။\nခ ကို ခ * ၂ ဟု ထားမည်။\nဂ ကို ဂ * ၂ ဟု ထားမည်။\nက + ခ + ဂ ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ဟု ပြသမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nထုတ်ပြ ဟူသော လုပ်ဆောင်ချက်ကို အသက်၊ အမည် တို့ဖြင့် လုပ်ဆောင်မည်။\n"
 tokens:
 - kind:
     kw: function
@@ -508,70 +508,70 @@ tokens:
     hi: 1230
   particle: none
   joined: true
-- kind:
-    kw: function
-  span:
-    lo: 1232
-    hi: 1271
-  particle: none
-  joined: false
 - kind: ident
   span:
-    lo: 1272
-    hi: 1290
+    lo: 1232
+    hi: 1250
+  particle: none
+  joined: false
+- kind:
+    kw: fn_value
+  span:
+    lo: 1251
+    hi: 1306
   particle: none
   joined: false
 - kind:
     kw: ko
   span:
-    lo: 1291
-    hi: 1300
+    lo: 1306
+    hi: 1315
   particle: none
-  joined: false
+  joined: true
 - kind: ident
   span:
-    lo: 1301
-    hi: 1313
+    lo: 1316
+    hi: 1328
   particle: none
   joined: false
 - kind:
     punct: list_sep
   span:
-    lo: 1313
-    hi: 1316
+    lo: 1328
+    hi: 1331
   particle: none
   joined: true
 - kind: ident
   span:
-    lo: 1317
-    hi: 1329
+    lo: 1332
+    hi: 1344
   particle: none
   joined: false
 - kind:
     kw: list_with
   span:
-    lo: 1330
-    hi: 1357
+    lo: 1345
+    hi: 1372
   particle: none
   joined: false
 - kind:
     kw: will_do
   span:
-    lo: 1358
-    hi: 1394
+    lo: 1373
+    hi: 1409
   particle: none
   joined: false
 - kind:
     punct: full_stop
   span:
-    lo: 1394
-    hi: 1397
+    lo: 1409
+    hi: 1412
   particle: none
   joined: true
 - kind: eof
   span:
-    lo: 1398
-    hi: 1398
+    lo: 1413
+    hi: 1413
   particle: none
   joined: false
 comments: []

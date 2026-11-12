@@ -246,16 +246,15 @@ impl Interval
     ///
     /// # Returns
     ///
-    /// The range; an unsigned 128-bit kind stops at [`i128::MAX`].
+    /// The range.
     pub(crate) fn of_int_kind(kind: IntKind, platform: u16) -> Interval
     {
-        let shift = 128 - u32::from(kind.bits(platform)).clamp(1, 128);
+        let shift = 128 - u32::from(kind.bits(platform)).clamp(1, 64);
         ret_if!(
             kind.signed,
             Interval { lo: i128::MIN >> shift, hi: i128::MAX >> shift }
         );
-        let hi = i128::try_from(u128::MAX >> shift).unwrap_or(i128::MAX);
-        Interval { lo: 0, hi }
+        Interval { lo: 0, hi: (u128::MAX >> shift) as i128 }
     }
 
     /// This interval when a value of `kind` holds each of its values, or
@@ -953,10 +952,10 @@ mod tests
             Interval::point(1 << 31).fit(isize_kind, 64),
             Interval::point(1 << 31)
         );
-        let u128_kind = DataKind::Int(IntKind::new(false, Width::Bits(128)));
+        let u64_kind = DataKind::Int(IntKind::new(false, Width::Bits(64)));
         assert_eq!(
-            Interval::of_int_kind(u128_kind.int_kind().unwrap(), 64).hi,
-            i128::MAX
+            Interval::of_int_kind(u64_kind.int_kind().unwrap(), 64).hi,
+            i128::from(u64::MAX)
         );
     }
 

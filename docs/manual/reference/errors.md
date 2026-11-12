@@ -42,10 +42,10 @@ for `စာရင်း`, and `@` after the name of a shared object kind.
 | Short name | Zaka kind |
 | --- | --- |
 | `isize` | `ကိန်းပြည့်` |
-| `i8`, `i16`, `i32`, `i64`, `i128` | `၈ ဘစ် ကိန်းပြည့်` ... `၁၂၈ ဘစ် ကိန်းပြည့်` |
+| `i8`, `i16`, `i32`, `i64` | `၈ ဘစ် ကိန်းပြည့်` ... `၆၄ ဘစ် ကိန်းပြည့်` |
 | `usize` | `လက္ခဏာမဲ့ ကိန်းပြည့်` |
-| `u8`, `u16`, `u32`, `u64`, `u128` | `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` ... |
-| `f16`, `f32`, `f64`, `f128` | `၁၆ ဘစ် ဒဿမကိန်း` ... ; `f64` is plain `ဒဿမကိန်း` |
+| `u8`, `u16`, `u32`, `u64` | `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` ... |
+| `f32`, `f64` | `၃၂ ဘစ် ဒဿမကိန်း` ... ; `f64` is plain `ဒဿမကိန်း` |
 | `char` | `စာလုံး` |
 | `bool` | `မှန်မှားတန်ဖိုး` |
 | `isize*`, `u8*`, `isize**`, ... | `ကိန်းပြည့် လိပ်စာ`, ... ; one more `*` for each `၏ လိပ်စာ` after it |
@@ -230,13 +230,13 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0465 | a parameter or the result of a C function with a kind C cannot take: a bare text result, a function kind with a struct, text or `ဒေတာ ပြောင်းလဲရန်` in it, a list of other than numbers | [Functions](../language/functions.md) |
 | ZK0466 | `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်` on a parameter of a C function that is no list of numbers and no struct that crosses | [Functions](../language/functions.md) |
 | ZK0467 | `အပိုင်အနေဖြင့်` on a C function's result that is no text | [Functions](../language/functions.md) |
-| ZK0468 | reading or writing through a pointer, pointer arithmetic, an address, a heap statement, a pointer conversion or a call of a marked function, outside marked code | [Unsafe Zaka](../language/unsafe.md) |
-| ZK0469 | a function marked `စိတ်မချရသော` named as a function value | [Unsafe Zaka](../language/unsafe.md) |
+| ZK0468 | reading or writing through a pointer, pointer arithmetic, an address, a heap statement, a pointer conversion or a call of an unsafe function, outside unsafe code | [Unsafe Zaka](../language/unsafe.md) |
+| ZK0469 | an unsafe function (`စိတ်မချရသော`) named as a function value | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0470 | `အပိုင်အနေဖြင့်` on a parameter or result that is no pointer (a handle parameter of a C function is allowed) | [Unsafe Zaka](../language/unsafe.md) |
-| ZK0471 | the mark `စိတ်မချရသော`, on a function or a block, under `--no-unsafe` | [Unsafe Zaka](../language/unsafe.md) |
+| ZK0471 | `စိတ်မချရသော`, on a function or a block, under `--no-unsafe` | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0472 | a C function whose kinds hold a pointer, declared without `စိတ်မချရသော` | [Functions](../language/functions.md), [Unsafe Zaka](../language/unsafe.md) |
 | ZK0473 | a value of a kind from outside the program, `ပြင်ပမှ လာသော ဒေတာအစုအဝေး`, that the program makes, duplicates or prints | [Functions](../language/functions.md#c-functions) |
-| ZK0474 | a write to a field of a kind from outside the program outside marked code, or to a text or a handle field: the struct belongs to C | [Functions](../language/functions.md#c-functions) |
+| ZK0474 | a write to a field of a kind from outside the program outside unsafe code, or to a text or a handle field: the struct belongs to C | [Functions](../language/functions.md#c-functions) |
 | ZK0475 | a test word that does not fit the kind: `ဒေတာ` on a result, or `ရလဒ်ကောင်း` or `အမှားအယွင်း` on an optional | [Optionals](../language/optionals.md) |
 | ZK0476 | `<value> ဟူသော အမှားအယွင်း` where no result kind with an error side is wanted | [Error handling](../language/error-handling.md) |
 | ZK0477 | `အလွတ်` where no optional kind is wanted | [Optionals](../language/optionals.md) |
@@ -249,7 +249,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0484 | a row read, `အညွှန်းအရေအတွက်`, `အညွှန်းတိုင်း` or `အတန်းတိုင်း` on a value that is no ဇယား | [Tables](../language/tables.md#reading-a-row) |
 | ZK0485 | a ဇယား kind whose index kind holds a part that cannot be hashed and compared as a whole value: an object, a function value, a pointer, an optional, a result or a ဇယား | [Index kinds](../language/tables.md#index-kinds) |
 | ZK0486 | `ဇယားအလွတ်` or `[:]` with no ဇယား kind from its place | [Tables](../language/tables.md#literals) |
-| ZK0487 | a warning: a ဇယား kind whose index kind holds a decimal number, which rounding can split into two rows | [Decimal indexes](../language/tables.md#decimal-indexes) |
+| ZK0487 | a warning: a ဇယား kind whose index kind holds a decimal number, which rounding can split into two rows | [Index kinds](../language/tables.md#index-kinds) |
 | ZK0488 | `ကို ဖျက်မည်` after a value that is no row of a ဇယား | [Tables](../language/tables.md#setting-and-removing-rows) |
 
 ### ZK05: natural Zaka (warnings)
@@ -288,7 +288,7 @@ The [checks](../compiler/checks.md) that follow pointers, the null address, cell
 integer ranges and unset values through the program. Under `--mem-check warn`, the default, ZK0702 to ZK0704,
 ZK0706 to ZK0708, ZK0712 and ZK0721 are warnings and the program runs; under
 `--mem-check error` the compiler reports them as errors, and under `--mem-check off` the compiler leaves them
-out. ZK0709 to ZK0711 follow the same mode inside marked code, and in safe code ZK0710, which a
+out. ZK0709 to ZK0711 follow the same mode inside unsafe code, and in safe code ZK0710, which a
 list gives, keeps its own level. ZK0701, ZK0722 and ZK0724 are errors in each mode, and
 ZK0723 is a warning in each mode: no `--mem-check` level changes the check of set before
 read. `--allow`, `--warn` and `--error` set the level of one group or code of these over
@@ -304,7 +304,7 @@ Zaka](../language/unsafe.md).
 | ZK0704 | giving back, resizing or editing a block while a pointer into it is still in use | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0706 | a function that gives back the address of its own local or parameter | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0707 | a call that can give back a block through one argument while another argument reaches it | [Unsafe Zaka](../language/unsafe.md) |
-| ZK0708 | a block made in marked code that is not given back, handed over, returned as an owned result, or stored | [Unsafe Zaka](../language/unsafe.md) |
+| ZK0708 | a block made in unsafe code that is not given back, handed over, returned as an owned result, or stored | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0709 | reading or writing through a pointer that is the null address on each path | [The null address](../language/unsafe.md#the-null-address) |
 | ZK0710 | a box or cell number past the end of its block | [Compiler checks](../compiler/checks.md) |
 | ZK0711 | a warning, with `--mem-strict` alone: a read or a write through a pointer that can be the null address | [Compiler checks](../compiler/checks.md) |
@@ -315,9 +315,3 @@ Zaka](../language/unsafe.md).
 | ZK0723 | a warning: a read of a counted list whose cells the check cannot prove set | [Set before read](../language/statements.md#set-before-read), [Static data and counted lists](../../learn/forms/counted-lists.md#filling-the-cells-one-at-a-time) |
 | ZK0724 | a call of a function that reads a global that can be unset at the call | [Globals and calls](../language/statements.md#globals-and-calls) |
 | ZK0725 | a return that can leave a parameter marked `ဒေတာ ထည့်ပေးရန်` unset | [Filled parameters](../language/functions.md#filled-parameters) |
-
-### ZK08: building for a target
-
-| Code | Problem | See |
-| --- | --- | --- |
-| ZK0801 | not raised at present: the C target builds `f16` and `f128`, and the C compiler stops at an `#error` where it lacks one | [Native programs](../compiler/native.md#what-the-build-needs) |

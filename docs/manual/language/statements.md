@@ -14,7 +14,7 @@ decides what the statement does. A statement does something and has no value; an
 
 In the shapes below, `NAME` is a name, `KIND` a [kind](kinds.md), `VALUE` and `COND`
 expressions, `PLACE` something that can be assigned to (a name, a field or a cell, or in
-marked code a pointer's value), `WORD` the classifier of the kind, and `BODY` a block or one statement. Square brackets mark what can be left out.
+unsafe code a pointer's value), `WORD` the classifier of the kind, and `BODY` a block or one statement. Square brackets mark what can be left out.
 
 | Statement | Shape |
 | --- | --- |
@@ -28,7 +28,7 @@ marked code a pointer's value), `WORD` the classifier of the kind, and `BODY` a 
 | set a character | `TEXT ၏ စာလုံး N ကို CHAR ဟု ထားမည်။` or `TEXT ၏ N ခုမြောက်စာလုံး ကို CHAR ဟု ထားမည်။` |
 | print | `VALUE ကို ပြသမည်။` or `VALUE ဟု ပြသမည်။` |
 | block | `အောက်ပါတို့ကို လုပ်ဆောင်မည်။` statements `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` |
-| marked block | `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။` statements `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` (see [Unsafe Zaka](unsafe.md)) |
+| unsafe block | `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။` statements `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` (see [Unsafe Zaka](unsafe.md)) |
 | if | `အကယ်၍ COND လျှင် BODY` then `[ထိုသို့မဟုတ်ဘဲ COND လျှင် BODY]` then `[သို့မဟုတ်ပါက BODY]` |
 | switch | `VALUE သည် CASE ဖြစ်လျှင် BODY` then `[CASE၊ CASE တို့ ဖြစ်လျှင် BODY]` then `[တခြား KIND တစ်WORD ဖြစ်လျှင် BODY]` (see [Enumerations](enums.md#switch)) |
 | while | `COND နေသရွေ့ BODY` |
@@ -39,7 +39,7 @@ marked code a pointer's value), `WORD` the classifier of the kind, and `BODY` a 
 | generic loop | `ကိန်းရှင် NAME သည် KIND တစ်WORD [ဖြစ်၍ တန်ဖိုးသည် VALUE]`, or `ကိန်းရှင် NAME သည် VALUE`, then `ဖြစ်ကာ COND နေသရွေ့` and a block with `[ပြီးလျှင် STATEMENT]` last |
 | break | `ကွင်းဆက် ကို ရပ်မည်။` |
 | continue | `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။` |
-| call | `လုပ်ဆောင်ချက် NAME ကို [ARGS တို့ဖြင့်] လုပ်ဆောင်မည်။` |
+| call | `NAME ဟူသော လုပ်ဆောင်ချက်ကို [ARGS တို့ဖြင့်] လုပ်ဆောင်မည်။` |
 | return | `VALUE ကို ပြန်ပေးမည်။` or `ပြန်ပေးမည်။` |
 | function | `လုပ်ဆောင်ချက် NAME သည် ...` (see [Functions](functions.md)) |
 | start block | `ပရိုဂရမ်သည် ...`, at most one (see [Functions](functions.md#the-start-block)) |
@@ -49,7 +49,7 @@ marked code a pointer's value), `WORD` the classifier of the kind, and `BODY` a 
 | set a row | `TABLE ထဲမှ အညွှန်း INDEX ၏ တန်ဖိုး ကို VALUE ဟု ထားမည်။` (see [Tables](tables.md#setting-and-removing-rows)) |
 | remove a row | `TABLE ထဲမှ အညွှန်း INDEX ကို ဖျက်မည်။` |
 | replace part of text | `TEXT ၏ အကွက် START မှ END ထိကို VALUE ဖြင့် အစားထိုးမည်။`, or `TEXT ၏ START လုံးမြောက်စာလုံးမှ END လုံးမြောက်စာလုံးထိကို VALUE ဖြင့် အစားထိုးမည်။` (see [Text](text.md#changing-text)) |
-| heap, in marked code | `မင်မိုရီတွင် SIZE နေရာယူ၍ လိပ်စာကို PLACE တွင် သိမ်းထားမည်။` and two more (below) |
+| heap, in unsafe code | `မင်မိုရီတွင် SIZE နေရာယူ၍ လိပ်စာကို PLACE တွင် သိမ်းထားမည်။` and two more (below) |
 
 Some words have alternatives: `လျှင်` or `ဖြစ်လျှင်`; `နေသရွေ့` or `ဖြစ်နေသရွေ့`;
 `ဖြစ်ကာ` or `ဖြစ်ပြီး`; `ရေတွက်၍`, `တိုး၍` or `လျှော့၍`; the four spellings of the
@@ -241,7 +241,7 @@ The rules:
   paths join, the variable is set when it is set on both. The block of a loop can run no
   times, so a write inside a `နေသရွေ့` loop sets nothing for the code after the loop.
 - A read is each use of the value: printing it, an operand, an argument, a call through
-  it, a field or a cell of it, an add to a list, and, in marked code, its address.
+  it, a field or a cell of it, an add to a list, and, in unsafe code, its address.
 - The rule holds for each kind, and no kind has a hidden default: a number, text and a
   plain list as much as a shared object or a function value.
 - **Structs.** A struct counts as set once each field is set on each path. A struct inside
@@ -262,7 +262,7 @@ The rules:
   and the program runs. Such a cell holds zero octets until the program writes it
   ([Lists](lists.md#list-kinds)).
 - The check runs at each `--mem-check` level, and the level never changes it: these are
-  errors of safe code, not findings about marked code.
+  errors of safe code, not findings about unsafe code.
 - `ကနဦးတန်ဖိုး` is the value to write when the program wants a kind's
   [initial value](kinds.md#initial-values) and has no other.
 
@@ -302,7 +302,7 @@ a call made while the global can be unset is ZK0724.
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပြ ကို လုပ်ဆောင်မည်။
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -326,7 +326,7 @@ it stands after the call.
 စာ ထဲသို့ ၅၀ ကို ထည့်မည်။                 // the list gains a cell
 ၇ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-စာ ၏ အကွက် ၀ ကို လုပ်ဆောင်ချက် ချဲ့ ကို လုပ်ဆောင်သော ရလဒ် ဟု ထားမည်။
+စာ ၏ အကွက် ၀ ကို ချဲ့ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဟု ထားမည်။
 စာ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -336,7 +336,7 @@ it stands after the call.
 ```
 
 The
-place is a variable, a field, a cell of a list (`x ၏ အကွက် i`), in marked code the value
+place is a variable, a field, a cell of a list (`x ၏ အကွက် i`), in unsafe code the value
 at a pointer (`p ၏ တန်ဖိုး`), or a character of text (`t ၏ စာလုံး n`, `t ၏ n ခုမြောက်စာလုံး`; see
 [Text](text.md#changing-text)). Another expression is ZK0410. A constant (ZK0306) and a counted-loop counter
 (ZK0307) cannot be assigned to. The value must widen to the kind of the place
@@ -386,7 +386,7 @@ tells them apart.
 ဘူး(အမည်: "ဘူး"၊ တန်: ၂)
 ```
 
-`ပြောင်းထည့်မည်` is no longer a statement of its own; in marked code it names the block
+`ပြောင်းထည့်မည်` is no longer a statement of its own; in unsafe code it names the block
 duplicate that allows overlap ([Unsafe Zaka](unsafe.md)).
 
 ## Printing
@@ -426,10 +426,10 @@ A block is a run of statements between `အောက်ပါတို့ကိ�
 `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။`. Names declared inside it end at the closer
 ([Names and scope](scope.md)). A closer with no opener is ZK0226.
 
-A **marked block** opens with `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။` ("do the
+An **unsafe block** opens with `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။` ("do the
 following, although it is unsafe") and closes as a block does. Inside it, pointer work
-and calls of marked functions are allowed ([Unsafe Zaka](unsafe.md)). A start block
-cannot be marked itself (ZK0201); a marked block goes inside it.
+and calls of unsafe functions are allowed ([Unsafe Zaka](unsafe.md)). A start block
+cannot be unsafe itself (ZK0201); an unsafe block goes inside it.
 
 Wherever the shape of a statement has `BODY`, a block or one single statement can stand.
 A single statement is a short form of a block of one: `အကယ်၍ ... လျှင် ၁ ကို ပြသမည်။`. A
@@ -491,7 +491,7 @@ names declared in the inner part share one scope, so the inner part cannot decla
 equal to the counter's (ZK0302).
 
 **Each cell and each character.** `LIST ၏ အကွက်တိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` runs
-the `BODY` once for each cell of a list, the first cell first; in marked code, for a
+the `BODY` once for each cell of a list, the first cell first; in unsafe code, for a
 pointer to a list it walks the list the pointer points at, as a cell read does.
 `TEXT ၏ စာလုံးတိုင်း ကို NAME အနေဖြင့် ယူ၍ BODY` runs it once for each character of text,
 and walks the u8s of the text once. The value in front of `၏` is worked out once, before
@@ -624,7 +624,7 @@ loop the update runs first. Outside a loop these are ZK0309 and ZK0310.
 
 ## Calls and returns
 
-`လုပ်ဆောင်ချက် f ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။` runs a function and drops its result.
+`f ဟူသော လုပ်ဆောင်ချက်ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။` runs a function and drops its result.
 `VALUE ကို ပြန်ပေးမည်။` ends a function with a value, and `ပြန်ပေးမည်။` ends it
 with none. A return outside a function is ZK0311. [Functions](functions.md) has the rest.
 
@@ -637,7 +637,7 @@ block runs.
 
 Three statements ask for room on the heap, change it and give it back, and three more
 write the cells of a block. Each works on a pointer, which names the block, and each needs
-marked code: outside it each is ZK0468. [Unsafe Zaka](unsafe.md) states their rules; the
+unsafe code: outside it each is ZK0468. [Unsafe Zaka](unsafe.md) states their rules; the
 shapes are:
 
 | Statement | Shape |
@@ -676,7 +676,7 @@ same.
 ```
 
 ```text
-error[ZK0468]: a heap statement needs marked code
+error[ZK0468]: a heap statement needs unsafe code
 ```
 
 ## Errors of statements
@@ -692,7 +692,7 @@ error[ZK0468]: a heap statement needs marked code
 | ZK0309, ZK0310, ZK0311 | break, continue or return outside its home |
 | ZK0402, ZK0405, ZK0409 | a condition that is no true/false value, a bound that is no integer, a step of zero or below |
 | ZK0434 | an each loop over a value it cannot walk |
-| ZK0468 | a heap statement outside marked code |
+| ZK0468 | a heap statement outside unsafe code |
 | ZK0722 | a read of a variable, a field or a cell that a path reaches with no value given |
 | ZK0723 | a warning: a read of a counted list whose cells the check cannot prove set |
 | ZK0724 | a call of a function that reads a global that can be unset at the call |

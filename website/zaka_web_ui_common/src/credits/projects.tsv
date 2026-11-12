@@ -12,6 +12,7 @@ crate	etcetera	0.11.0	MIT OR Apache-2.0	https://github.com/lunacookies/etcetera
 crate	fontdb	0.24.0	MIT	https://github.com/RazrFalcon/fontdb
 crate	gen-lsp-types	0.11.0	MIT	https://github.com/ribru17/gen-lsp-types
 crate	headless_chrome	1.0.22	MIT	https://github.com/rust-headless-chrome/rust-headless-chrome
+crate	imbl	7.0.2	MPL-2.0+	https://github.com/jneem/imbl
 crate	js-sys	0.3.105	MIT OR Apache-2.0	https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys
 crate	leptos	0.8.22	MIT	https://github.com/leptos-rs/leptos
 crate	leptos-scoped-style	0.1.1	MIT OR Apache-2.0	https://github.com/PulanDev/leptos-style
@@ -37,7 +38,6 @@ crate	postcard	1.1.3	MIT OR Apache-2.0	https://github.com/jamesmunns/postcard
 crate	pulldown-cmark	0.13.5	MIT	https://github.com/raphlinus/pulldown-cmark
 crate	pulldown-cmark-escape	0.11.0	MIT	https://github.com/raphlinus/pulldown-cmark
 crate	rust-i18n	4.2.2	MIT	https://github.com/longbridge/rust-i18n
-crate	rustc_apfloat	0.2.3+llvm-462a31f5a5ab	Apache-2.0 WITH LLVM-exception	https://github.com/rust-lang/rustc_apfloat
 crate	rustix	1.1.5	Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT	https://github.com/bytecodealliance/rustix
 crate	rustybuzz	0.20.1	MIT	https://github.com/harfbuzz/rustybuzz
 crate	serde	1.0.229	MIT OR Apache-2.0	https://github.com/serde-rs/serde

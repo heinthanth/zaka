@@ -339,13 +339,15 @@ fn declaration_words_lex_joined_and_apart()
 }
 
 /// `ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား` keeps `ဟူသော` apart from the function kind
-/// after it, and `ဟူသော လုပ်ဆောင်ချက်` alone is the function value.
+/// after it, and `ဟူသော လုပ်ဆောင်ချက်` alone is the function value, as is
+/// `မည့် လုပ်ဆောင်ချက်`.
 #[test]
 fn called_before_a_function_kind_keeps_apart()
 {
     let kind = kw_alone("ဖ ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု");
     assert_eq!(kind, [Kw::Called, Kw::FnKind]);
     assert_eq!(kw_alone("ဖ ဟူသော လုပ်ဆောင်ချက်"), [Kw::FnValue]);
+    assert_eq!(kw_alone("ဖ မည့် လုပ်ဆောင်ချက်ကို"), [Kw::FnValue, Kw::Ko]);
 }
 
 #[test]

@@ -38,8 +38,8 @@ fn zero_divisor_at_run_time_traps_after_earlier_output()
 #[test]
 fn endless_recursion_hits_the_depth_limit()
 {
-    let text = "လုပ်ဆောင်ချက် ထပ် ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်ချက် ထပ် သည်\nအောက်ပါတို့ကို \
-                လုပ်ဆောင်မည်။\nလုပ်ဆောင်ချက် ထပ် ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
+    let text = "ထပ် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်ချက် ထပ် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nထပ် \
+                ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
     let options = RunOptions::builder().max_depth(64).build();
     let (_, kind, func) = trapped(text, &options);
     assert_eq!(kind, TrapKind::StackOverflow { depth: 64 });

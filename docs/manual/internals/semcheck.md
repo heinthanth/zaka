@@ -58,7 +58,7 @@ a count still open is ZK0227 (a count that waits on itself among them). A progra
 count expression is checked once.
 
 `SemcheckArtifact` is the reloadable form (text header `# zakac-semcheck-artifact v1`,
-files `.zksemt` and `.zksem`). The command takes `--platform-bits` (8 to 128, default 64),
+files `.zksemt` and `.zksem`). The command takes `--platform-bits` (8 to 64, default 64),
 `--strict-particles` and `--no-unsafe`; these become `SemcheckOptions { platform_bits,
 strict_particles, no_unsafe }`, and the later stages receive the same options. One more
 option, `as_module`, has no flag: the language server sets it for an open module, and the
@@ -154,9 +154,9 @@ on a parameter that is no list of numbers and no struct that crosses (ZK0466;
 `edit_crosses`, with `number_cells`, which finds the integer of up to 64 bits, `f32` or
 `f64` cells of a plain or counted list). A declaration whose parameters
 or result hold a pointer (`holds_ptr`: a pointer, or a struct or counted list with one
-inside), needs the mark `စိတ်မချရသော` (ZK0472), and calls to it then need marked code, as
-calls to each marked function do. A text or handle result holds no pointer for the program, so it
-needs no mark: a text result is an optional, which NULL leaves blank, and a handle result
+inside), must be declared `စိတ်မချရသော` (ZK0472), and calls to it then need unsafe code, as
+calls to each unsafe function do. A text or handle result holds no pointer for the program, so it
+needs no `စိတ်မချရသော`: a text result is an optional, which NULL leaves blank, and a handle result
 is a handle or an optional of one. `Checker::c_names` maps each C name to its parameter and result
 kinds, so a second declaration of the name, in another file or among overloads, with
 other kinds is ZK0338. Its address is refused as for each external function (ZK0464).
@@ -168,7 +168,7 @@ struct, text, an optional of text, a handle or an optional of a handle), or a li
 numbers; a result and an optional are no C struct, so `crosses` refuses them as cells of
 Zaka. A call that gives a handle parameter of the function around it (`FnCtx::handles`), as
 it is or read out of its optional, to a C parameter marked `အပိုင်အနေဖြင့်` (`FnSig::closes`)
-needs marked code (ZK0468, `is_handle_param`): the caller, or C that called back, still holds
+needs unsafe code (ZK0468, `is_handle_param`): the caller, or C that called back, still holds
 the handle; a
 result is a kind `crosses` takes, or an optional of text or of a handle
 (`crosses_back`, with `is_c_text_result`: `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, and `is_c_handle_result`,
@@ -297,9 +297,9 @@ looks for it in the other files and adds help that names the file that declares 
 | Form | Holds |
 | --- | --- |
 | `Int(IntKind)` | a sign and a `Width`, which is `Platform` or `Bits(n)` |
-| `Float(bits)` | 16, 32, 64 or 128 |
+| `Float(bits)` | 32 or 64 |
 | `Char`, `Bool` | |
-| `Ptr(PtrKind)` | levels of address over a base: the one pointer kind of marked code |
+| `Ptr(PtrKind)` | levels of address over a base: the one pointer kind of unsafe code |
 | `Null` | the kind of the null pointer `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, which converts to each pointer kind and to nothing else |
 | `List(&'static ListKind)` | a counted list: a count of cells of one kind, inline; list kinds are interned so the form remains `Copy` |
 | `Seq(&'static SeqKind)` | a plain list or text, three words (address, count, room); `SeqKind { cell, text, boxed }`: `text` marks UTF-8 text, `DataKind::TEXT`, whose cells are `u8`, and `boxed` a box (below). Plain lists are interned through `seq_of`. `is_text` reads the flag, and `as_seq`, `is_seq` and `cell_kind` see plain lists alone, so each rule of text remains apart from the rules of lists; `holds_seq` holds for a plain list and for each counted list or struct with one inside; `holds_text` holds for text and plain lists and for each list or struct with one inside, so each is counted, dropped and duplicated alike |
@@ -328,7 +328,7 @@ to give back. Each pointer kind the program writes is a plain one.
 `kind` of `None` means an error left it unknown, which silences follow-on messages.
 
 **`FnSigs`** maps a function name to `FnSig { params, ret, unchecked, .. }`; `unchecked`
-marks a function declared `စိတ်မချရသော`. `Scopes` also keeps the functions each scope
+holds that a function is declared `စိတ်မချရသော`. `Scopes` also keeps the functions each scope
 declares, beside its names (`declare_fn`, `lookup_fn`, `index_of`, `fn_index_of`,
 `is_local`), and a stack of function frames (`enter_fn`, `leave_fn`): a lookup that finds
 a local of an enclosing function, or `lookup_fn` that finds a closure declared in one,
@@ -373,7 +373,7 @@ An implicit conversion (`widens_to`) never loses data:
 | From | To | When |
 | --- | --- | --- |
 | integer | integer | the target is wider and no sign is lost (an unsigned kind can go to a wider signed one) |
-| integer | float | the integer width is at most the significand of the float: 11, 24, 53, 113 bits for 16, 32, 64, 128 |
+| integer | float | the integer width is at most the significand of the float: 24 and 53 bits for 32 and 64 |
 | float | float | the target is wider |
 | the null pointer | pointer | in each case |
 | function kind | function kind | the same parameter kinds, `ဒေတာ ပြောင်းလဲရန်` markers and result, and the same marks when the target has marks |
@@ -385,7 +385,7 @@ An implicit conversion (`widens_to`) never loses data:
 The conversion verb (`cast_allowed`) is wider: number to number, char to integer and back,
 bool or an enumeration to integer, a plain list of u8s to text (the VM checks that the u8s
 are UTF-8, `check_utf8`), an object to a pointer and back, address to address, and address
-to integer and back. Each conversion that makes or reads an address needs marked code
+to integer and back. Each conversion that makes or reads an address needs unsafe code
 (ZK0468). An object turned into a pointer keeps a count on the object until the pointer
 turns back into an object.
 
@@ -413,7 +413,7 @@ passes a failure on as a direct call does. `infer_fn_addr` gives the function ki
 `NAME ဟူသော လုပ်ဆောင်ချက်` (`sig_kind`); with overloads it keeps the one whose kind fits the
 place (ZK0463 when none or several do) and records it in `chosen`, so `write_overloads`
 gives the value its inner name. An external function has no value (ZK0464), and a function
-marked `စိတ်မချရသော` cannot be one either (ZK0469). `==` and `!=` take two function values
+unsafe (`စိတ်မချရသော`) cannot be one either (ZK0469). `==` and `!=` take two function values
 one kind takes (`fn_pair`), and so does the test of one object, `X နှင့်
 Y သည် တစ်ခုတည်း` (`same_pair`), which takes two objects or two function values.
 
@@ -448,7 +448,7 @@ number, a boolean, a counted list of numbers or text are read (`foreign::crosses
 `number_cells`); another kind is ZK0465. `c_field(name, platform)` gives the kind and the
 offset of a field, each at the next multiple of its alignment, a text field being a pointer.
 
-A C function takes a handle as a parameter and gives one back with no mark:
+A C function takes a handle as a parameter and gives one back with no `စိတ်မချရသော`:
 `crosses_param` and `crosses_back` accept it, `is_c_handle_result` accepts the result
 `<kind> ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` for one (an optional of a handle: NULL is the optional with no data; a plain handle result promises that C gives no NULL, and a NULL there stops the run, as the [code generator](codegen.md) arranges), and `check_rest_arg` refuses a handle
 as an other value of a variadic function (ZK0465). `check_owned` lets `အပိုင်အနေဖြင့်`
@@ -509,25 +509,25 @@ target first (`mark_row_write`), a ဇယား in a row of another included, an
 the kind it recorded to tell the two apart. Each written kind is checked for an index kind
 that cannot be hashed (ZK0485, `index_gap`) and warns on one with a decimal number (ZK0487).
 
-## Marked code, pointers and lists
+## Unsafe code, pointers and lists
 
-`Checker::unchecked` holds whether the walk is inside marked code: `visit_fn` sets it for a
+`Checker::unchecked` holds whether the walk is inside unsafe code: `visit_fn` sets it for a
 function declared `စိတ်မချရသော`, and a nested function takes it from the function around
 it; `visit_block` adds a block that opens with `UnsafeBlockOpen` (`BlockStmt.unchecked`)
-and puts the old value back after it. `need_unchecked` reports ZK0468 outside marked code
+and puts the old value back after it. `need_unchecked` reports ZK0468 outside unsafe code
 for each operation that needs it: `၏ တန်ဖိုး` on a pointer, pointer arithmetic,
 `x ၏ လိပ်စာ`, the heap statements (`HEAP_WORK`), a conversion that makes or reads an address,
-and a call of a marked function or of a C function that needs the mark. A pointer value
+and a call of an unsafe function or of a C function declared unsafe. A pointer value
 itself can pass through safe code: held, copied, compared with the null pointer. Under `--no-unsafe`
-each mark, on a function or a block, is ZK0471. `အပိုင်အနေဖြင့်` on a parameter or a result
+each use of `စိတ်မချရသော`, on a function or a block, is ZK0471. `အပိုင်အနေဖြင့်` on a parameter or a result
 that is no pointer is ZK0470 (`owned_not_ptr`; a C function's parameter that is a handle passes); on a C function's result it keeps its older
 meaning, text that C hands over, and each other result there is ZK0467. `place_of` finds the
 place that a target or an address operand names, for `၏ လိပ်စာ`, `၏ တန်ဖိုး` and list cells.
 
 These codes are errors in each mode of `--mem-check`: the walk decides them here, from kinds and
-marks alone. The rules that need a flow through the program belong to [the flow
-checker](borrow-checker.md). `mark.rs` (`in_marked_code`) is a tool for programs written
-before the mark: it puts the pointer work of such a program into marked code, as tests and
+the words alone. The rules that need a flow through the program belong to [the flow
+checker](borrow-checker.md). `unsafe_code.rs` (`in_unsafe_code`) is a tool for programs written
+before unsafe code was stated in words: it puts the pointer work of such a program into unsafe code, as tests and
 the migration of the samples need.
 
 Lists are checked in `list.rs`: the cell kind, the written count, a cell number that is an
@@ -563,7 +563,7 @@ ZK0403.
 | ZK0339 | a function with a result whose block can reach its end with no return (`returns_on_each_path`) |
 | ZK0475 to ZK0477 | optionals and error values: a test word that does not fit the kind (ZK0475), `<e> ဟူသော အမှားအယွင်း` where no result kind with an error side is wanted (ZK0476), `အလွတ်` where no optional is wanted (ZK0477) |
 | ZK05 | wording warnings |
-| ZK0468 to ZK0472 | marked code: an unsafe operation or call outside it, a marked function as a value, an owned marker on no pointer, the mark under `--no-unsafe`, a C function that needs the mark |
+| ZK0468 to ZK0472 | unsafe code: an unsafe operation or call outside it, an unsafe function as a value, an owned marker on no pointer, unsafe code under `--no-unsafe`, a C function that needs `စိတ်မချရသော` |
 | ZK0473 and ZK0474 | kinds from outside the program: a handle made, duplicated or printed; a write to a field C keeps |
 
 Each code has a constructor in `zakac_diagnostics` (`resolve.rs`, `kinds.rs`,

@@ -84,6 +84,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ထည့်ပေးရန်", Kw::ToFill),
     ("ဝိဘတ်", Kw::MarkWord),
     ("ဟူသော", Kw::Called),
+    ("မည့်", Kw::Named),
     ("လုပ်ဆောင်သော", Kw::CallHead),
     ("အောက်ပါ", Kw::Following),
     ("လုပ်ဆောင်မည်", Kw::WillDo),

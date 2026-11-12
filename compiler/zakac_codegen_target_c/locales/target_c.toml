@@ -84,12 +84,6 @@ en = "counted loop step is not positive"
 [target_c.trap.overflow]
 en = "the result of %{op} does not fit %{kind}"
 
-[target_c.no_int128]
-en = "the program holds i128 or u128, and this C compiler has no 128-bit integers"
-
-[target_c.no_float]
-en = "the program holds %{kind}, and this C compiler has no float of that width"
-
 [target_c.trap.index_out_of_range]
 en = "cell %{index} is outside the list, whose cells run from %{lo} to %{hi}"
 

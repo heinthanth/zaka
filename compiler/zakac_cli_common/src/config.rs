@@ -248,6 +248,12 @@ pub fn check_file(
         Value::Table(inner) =>
         {
             let found = section_command(cmd, section, name);
+            // A table under the name of a flag is a value of the wrong form,
+            // not a section.
+            ret_if!(
+                found.is_none() && takes(cmd, name),
+                check_value(name, value, path)
+            );
             check_section(name, inner, found, whole, path)
         }
         _ if whole && !takes(cmd, name) => Err(unknown(path, name)),

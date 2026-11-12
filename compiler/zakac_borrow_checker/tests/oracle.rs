@@ -203,7 +203,7 @@ enum Outcome
     Trapped(String),
 }
 
-/// Check one program with the findings of marked code as errors and, when it
+/// Check one program with the findings of unsafe code as errors and, when it
 /// passes with no raw kind, run it.
 fn outcome(path: &Path) -> Outcome
 {

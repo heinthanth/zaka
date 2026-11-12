@@ -58,9 +58,9 @@ workspace: Zed builds it on its own, with the target folder inside it.
 | `zakac_ast` | the tree: statements, expressions, kinds, the verb table, visitors, the S-expression form |
 | `zakac_parser` | tokens to tree; carries on after a bad sentence |
 | `zakac_naturalness` | warnings about wording that is allowed but not natural (ZK05) |
-| `zakac_semcheck` | name resolution, scopes, kinds, literal fitting, captures, marked code and the pointer kind |
+| `zakac_semcheck` | name resolution, scopes, kinds, literal fitting, captures, unsafe code and the pointer kind |
 | `zakac_ir_builder` | the IR, lowering from the tree, constant folding |
-| `zakac_borrow_checker` | the flow check over the IR, and the lint on marked code (ZK07); the crate keeps its old name |
+| `zakac_borrow_checker` | the flow check over the IR, and the lint on unsafe code (ZK07); the crate keeps its old name |
 | `zakac_codegen_target_vm` | the ops of the VM, and the asm listing |
 | `zakac_codegen_target_c` | the C of each module and its runtime (`runtime/`), and the build of an executable with a C compiler |
 | `zakac_lsp` | the language server: checks the files an editor holds open and sends back errors, colors, hovers, completions, definitions, uses, renames and the outline; the `lsp` subcommand, behind the feature `server`, which `zakac` turns on; without it the crate builds for the browser, and the explorer uses it |
@@ -160,7 +160,7 @@ Four kinds of test sit in the repo:
   programs:
   - `stops_in_c.rs` builds each `zaka-stop` program of the books with the C target (when a
     C compiler is on the `PATH`) and checks that it prints the same output and the same
-    stop reason as the VM. It leaves out marked code (`စိတ်မချရ`), programs that declare
+    stop reason as the VM. It leaves out unsafe code (`စိတ်မချရ`), programs that declare
     a C function (`မှလာသော`), and the pages under `docs/manual/vm/`, which tell the
     limits of the VM itself. Addresses (`0x...`) are compared as `0x?`.
 - **The mutants.** `compiler/zakac/tests/mutants.rs` changes the programs of `samples/`

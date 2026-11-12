@@ -38,10 +38,8 @@ Like integers, decimal numbers come in sizes. More bits mean more correct digits
 
 | Kind | Bits | Correct digits (about) |
 | --- | --- | --- |
-| `၁၆ ဘစ် ဒဿမကိန်း` | 16 | 3 |
 | `၃၂ ဘစ် ဒဿမကိန်း` | 32 | 7 |
 | `ဒဿမကိန်း`, `၆၄ ဘစ် ဒဿမကိန်း` | 64 | 15 (the default) |
-| `၁၂၈ ဘစ် ဒဿမကိန်း` | 128 | 33 |
 
 ## Close, not exact
 
@@ -52,13 +50,13 @@ last digits show it:
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၀.၁ + ၀.၂ ကို ပြသမည်။
-၀.၁ ဟူသော ၁၆ ဘစ် ဒဿမကိန်း တစ်ခု ကို ပြသမည်။    // fewer bits, a less close neighbour
+၁ ဟူသော ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု / ၃ ကို ပြသမည်။    // fewer bits, a less close neighbour
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 ၀.၃၀၀၀၀၀၀၀၀၀၀၀၀၀၀၀၄
-၀.၀၉၉၉၇၆
+၀.၃၃၃၃၃၃၃၄
 ```
 
 This is true of decimal numbers in almost all programming languages, not just Zaka.

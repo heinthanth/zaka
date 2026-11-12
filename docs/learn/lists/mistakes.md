@@ -68,7 +68,7 @@ with no cells first and leaves the function:
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် နှစ်ဆတိုး ကို ကိန်းများ တို့ဖြင့် လုပ်ဆောင်မည်။
+နှစ်ဆတိုး ဟူသော လုပ်ဆောင်ချက်ကို ကိန်းများ တို့ဖြင့် လုပ်ဆောင်မည်။
 ကိန်းများ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -175,4 +175,4 @@ numbered with a variable named `အရေအတွက်`.
 - Remove the last cell of a list of two cells three times, and see which remove stops the
   program.
 
-Next: [Structs](../structs/README.md).
+Next: [Tables](../tables/README.md).

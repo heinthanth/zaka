@@ -53,13 +53,13 @@ pub enum Fence
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Builder, Serialize, Deserialize)]
 pub struct FenceOptions
 {
-    /// How the check reports what it finds in marked code.
+    /// How the check reports what it finds in unsafe code.
     #[builder(default)]
     pub check: MemCheck,
     /// Whether the check also reports the accesses it cannot prove safe.
     #[builder(default)]
     pub strict: bool,
-    /// Whether marked code is refused.
+    /// Whether unsafe code is refused.
     #[builder(default)]
     pub no_unsafe: bool,
     /// What integer arithmetic does with a result outside its kind.

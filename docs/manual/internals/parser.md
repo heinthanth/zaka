@@ -265,14 +265,15 @@ token:
 | --- | --- | --- |
 | `အကယ်၍` | `parse_if` | arms of `ထိုသို့မဟုတ်ဘဲ` and `သို့မဟုတ်ပါက` are read here |
 | `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | shared start `NAME သည်`, then the head (`parse_decl_head` in `decl_head.rs`): `kind တစ်WORD` (`parse_slot_kind`), with `ဖြစ်၍ တန်ဖိုးသည် VALUE` for a value, or a value alone; a kind with no count word after it is ZK0234 (`needs_word`), and a kind with its word and then `၏ အရွယ်အစား` (`size_at`) is a value, a size; then `ဖြစ်ပါစေ` is a declaration and `ဖြစ်ပြီး` a generic loop |
-| `လုပ်ဆောင်ချက်` | `parse_fn_or_call` | `NAME သည်` two tokens ahead is a declaration; else a call, which heads a statement or an expression |
+| `လုပ်ဆောင်ချက်` | `parse_fn_decl` | a function declaration, `လုပ်ဆောင်ချက် NAME သည်`; a call never starts with this word |
+| a name or a group, then `ဟူသော လုပ်ဆောင်ချက်ကို` | `parse_first` (`clause.rs`) | the long call at the start of a statement (`at_long_call`): `parse_call_head`, then `finish_using` ends it as a statement after `လုပ်ဆောင်မည်` or as a value the clause goes on from |
 | `ပရိုဂရမ်` | `parse_fn_decl` | the start block: the header of a function with no name, which gets the name `ပရိုဂရမ်` and `start: true`; its statements end at `ပရိုဂရမ် ပြီးဆုံးပါပြီး` (`ProgramClose`, a joined phrase of `ပရိုဂရမ်` and the done word) where other blocks end at `BlockClose` |
 | a block opener | `parse_block` | opener, `။`, statements until the closer, closer, `။` |
 | `ကွင်းဆက်`, `နောက်တစ်ကြိမ်ဆီသို့` | break, continue | |
 | `ပြန်ပေးမည်` | a bare return | |
 | an operand, then `ကို`, `ပြင်ပ`, `မှ` and `ခေါ်ဆိုခွင့်` | `at_leave`, `finish_leave` (`clause.rs`) | the leave statement `f ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်` or `... ပြန်လည်ရုပ်သိမ်းမည်`: the lexer joins `ခေါ်ဆိုခွင့်` with `ပြုမည်` (`Kw::WillGrant`) or `ပြန်လည်ရုပ်သိမ်းမည်` (`Kw::WillRevoke`) into `Kw::AllowCall` or `Kw::RevokeCall`, the fused spelling too; `at_leave` looks past the `ကို` for `ပြင်ပ` (`Kw::Outside`) and `မှ`, so the value is read alone. The clause engine builds `Stmt::Leave(LeaveStmt { value, grant, span })`, so the statement also works as the inline block of an `if` |
-| a call statement, then `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်` | `finish_call_stmt` | sets `CallStmt::pass`; the words after the `၊` are the phrase `PassFault`. Each call statement form ends here: `လုပ်ဆောင်မည်` and `လုပ်ဆောင်မည်` after `parse_fn_or_call`, `မည်` and `လုပ်ဆောင်မည်` after the forms of `using.rs` |
-| an operand, then `ကို သုံး၍` or `တို့ကို သုံး၍` | `parse_using` (`using.rs`) | the arguments-first call: `parse_head` in `clause.rs` reads the first operand of a clause and hands it over when `at_using_rest` sees `(၊ ARG)* (တို့)?ကို သုံး၍` ahead. The arguments after the first are notation expressions; then `လုပ်ဆောင်ချက် NAME ကို` (long) or `NAME` (short). The end decides the node: `လုပ်ဆောင်မည်` or `မည်` gives a `CallStmt`, and stands at the start of a statement alone; `လုပ်ဆောင်သော ရလဒ်(ကောင်း)` or `သည့် ရလဒ်(ကောင်း)` gives a `CallExpr`, which the clause goes on from |
+| a call statement, then `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်` | `finish_call_stmt` | sets `CallStmt::pass`; the words after the `၊` are the phrase `PassFault`. Each call statement form ends here: `လုပ်ဆောင်မည်` after `parse_first`, `မည်` and `လုပ်ဆောင်မည်` after the forms of `using.rs` |
+| an operand, then `ကို သုံး၍` or `တို့ကို သုံး၍` | `parse_using` (`using.rs`) | the arguments-first call: `parse_head` in `clause.rs` reads the first operand of a clause and hands it over when `at_using_rest` sees `(၊ ARG)* (တို့)?ကို သုံး၍` ahead. The arguments after the first are notation expressions; then `NAME ဟူသော လုပ်ဆောင်ချက်ကို` (long) or `NAME` (short). The end decides the node: `လုပ်ဆောင်မည်` or `မည်` gives a `CallStmt`, and stands at the start of a statement alone; `လုပ်ဆောင်သော ရလဒ်(ကောင်း)` or `သည့် ရလဒ်(ကောင်း)` gives a `CallExpr`, which the clause goes on from |
 | a name, then `မည်` or `သည့် ရလဒ်` | `parse_short_after` (`using.rs`) | the short call with no arguments, read where `parse_head` reads a first operand and where `parse_using` reads an argument |
 | `ပြင်ပမှလာသော` after `လုပ်ဆောင်ချက် NAME သည်` | `parse_external` (`stmt.rs`) | the header of an external function: `လုပ်ဆောင်ချက်(တစ်ခု)?` (`parse_one_function`: the word `လုပ်ဆောင်ချက်တစ်ခု`, or `လုပ်ဆောင်ချက်` with an optional `တစ်ခု` name), then `ဖြစ်သည်` (nothing more) or `ဖြစ်၍`; parameters come when `at_param` sees `NAME ဟူသော` (`parse_params`, ending in `လက်ခံပြီး` or `လက်ခံမည်`), and the result clause after `လက်ခံပြီး` or alone. `FnDecl::external` is set and the block holds no statements. The lexer joins `ပြင်ပ မှ လာသော` into `External` |
 | a text then `မှလာသော` after `လုပ်ဆောင်ချက် NAME သည်` | `parse_external`, through `at_lib` and `parse_origin` (`stmt.rs`) | the header of a C function: the same header as an external function, with the text of a lib where `ပြင်ပ` stood. The lexer has no joined word for it: the text is a `Str` token, then `မှ` (`Kw::From`) and `လာသော` (`Kw::Coming`). `parse_origin` gives `FnDecl::lib`, a `StrArg` of the text (`None` for the host form); the s-expression form is `(external "libm" name [params] ret)`. `parse_params(ends, rest)` takes `rest` for an external header: `အခြားတန်ဖိုးများနှင့်အတူ` (`Kw::WithOtherValues`, the lexer joins `Kw::OtherValues` and `နှင့်အတူ`, `Kw::Along`, written apart) after the last `လည်းကောင်း`, before the end word, sets `FnDecl::variadic` (the s-expression writes `...` among the parameters), and each parameter before it ends in `လည်းကောင်း`. A C function can use it; a host function that has it is ZK0334 |
@@ -370,11 +371,11 @@ duplicate is deep (`VerbOp::DeepDupOf`). The classifier itself is not kept in th
 test of one object `X နှင့် Y သည် တစ်ခုတည်း ဖြစ်…` is the comparison row of `Kw::SameOne`
 (`VerbOp::Same`), with the slots `နှင့်` and `သည်`.
 
-Three marks stand in front of a declaration, each read with a function of its own that
+Three words stand in front of a declaration, each read with a function of its own that
 parses the next statement and sets a flag: `အများသုံး` (`parse_exported`, the field
 `exported`), `မျှဝေနိုင်သော` (`parse_shared`, `StructDecl.shared`, on a struct alone) and
 `စိတ်မချရသော` (`parse_unchecked`, `FnDecl.unchecked`, on a function that is not the start
-block). A marked block opens with the joined token `UnsafeBlockOpen`, which `parse_block`
+block). An unsafe block opens with the joined token `UnsafeBlockOpen`, which `parse_block`
 takes as it takes `BlockOpen`, and sets `BlockStmt.unchecked`.
 
 The pass-on forms of a call set `CallExpr::pass`: the word form ends in `ရလဒ်ကောင်း`
@@ -440,23 +441,26 @@ written `fn(<params>) -> <ret>` in an S-expression.
 phrase `ဟူသော လုပ်ဆောင်ချက်` after a name is one token, `Kw::FnValue`, so the word right
 after the name tells a value from a call. Before `အမျိုးအစား` the lexer keeps `ဟူသော`
 apart (`Kw::Called`, then `Kw::FnKind`), so `NAME ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု` is a
-parameter or a field of the bare function kind. It is read where a call expression starts and, through `parse_fn_or_call`, at the start of a statement. The long
-call forms read their function with `parse_callee`: a name, or, when `၏` follows it, a place
-that the clause engine reads with `Parser::in_callee` set, so a `ကို` after a lone operand
-closes it; the place goes into `CallExpr::place` or `CallStmt::place`, and `callee` keeps
-its first name. A parameter or a variable declared with a function kind that has marks
+parameter or a field of the bare function kind. The same token, then `ကို`, opens a long
+call: `at_long_call` looks one token past the `ကို`, and a verb there (`as_verb`, or
+`ပြင်ပ` of a leave) keeps the function value as the object of that verb; each other token
+makes a call. A call expression is read as an atom (`parse_atom`), and at the start of a
+statement through `parse_first`. The long call forms read their function with
+`parse_long_callee`: a name, or a place in parentheses that starts with a name, then
+`Kw::FnValue` and `ကို`; for a group, `group_end` scans to its `)` first. The place goes into
+`CallExpr::place` or `CallStmt::place`, and `callee` keeps its first name. A parameter or a variable declared with a function kind that has marks
 joins `Parser::marked` under its name (`note_marked_value`), so a marked call through it
 reads; `marked_header` counts the marks of a header outside parentheses alone, so the
 marks of a function kind in it do not count.
 
 Kinds and literals have their own modules. `kind.rs` reads `(လက္ခဏာရှိ|လက္ခဏာမဲ့)? (N ဘစ်)?
-base`, and checks the bit counts (8, 16, 32, 64, 128 for integers; 16 and up for floats).
+base`, and checks the bit counts (8, 16, 32, 64 for integers; 32 and 64 for floats).
 `literal.rs` reads `(အခြေ N ဖြင့်)? digits (ဟူသော kind တစ်WORD)?` (`at_literal_kind`,
 `parse_literal_kind`): it converts one digit after the other in the given base, checks the
 range of the kind (ZK0220) and the digits against the base (ZK0219); a kind that is not a
 plain number kind is ZK0222. A list literal, `[...]` or `... တို့ပါသော စာရင်း`, takes
 `ဟူသော kind တစ်WORD` after it as well (`parse_list_kind`, a list kind or ZK0222), kept in
-`ListLit::kind`. A literal with no kind is limited to 128 bits here; the kind check gives it the
+`ListLit::kind`. A literal with no kind is limited to 64 bits here (a larger one is reported as not fitting); the kind check gives it the
 kind of its place and checks the range there. In `kind.rs`, the base word `စာသား` gives
 the base `text`. The levels after a base are `Wrap::List` (`စာရင်း`, with a count before it or
 none) and `Wrap::Ptr` (`လိပ်စာ`, the pointer kind); there is no other level.

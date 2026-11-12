@@ -66,11 +66,11 @@ inside parentheses.
   declared where it is used is ZK0301 ([Names and scope](scope.md)). A function has no
   variable of its own for its result: it gives the value back with `ကို ပြန်ပေးမည်`.
 - **Parentheses**, `( ... )`, around an expression of each kind.
-- **Calls**, `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်သော ရလဒ်` ([Functions](functions.md)).
+- **Calls**, `f ဟူသော လုပ်ဆောင်ချက်ကို ... လုပ်ဆောင်သော ရလဒ်` ([Functions](functions.md)).
 - **String literals**, of the kind `စာသား`, with template slots that hold expressions
   ([Text](text.md)).
 - **Places and ranges**: list literals, `x ၏ အကွက် i` and ranges ([Lists](lists.md)),
-  fields ([Structs](structs.md)), and in marked code `p ၏ တန်ဖိုး` and `x ၏ လိပ်စာ`
+  fields ([Structs](structs.md)), and in unsafe code `p ၏ တန်ဖိုး` and `x ၏ လိပ်စာ`
   ([Unsafe Zaka](unsafe.md)).
 - **Function values**, `f ဟူသော လုပ်ဆောင်ချက်` ([Function values](function-values.md)).
 - **Copies**, `x ၏ မိတ္တူ` and the deep `x တစ်ခုလုံး ၏ မိတ္တူ` ([Values and
@@ -316,9 +316,9 @@ tell where it ends (ZK0204).
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-(မမှန် ဖြစ်၍ လုပ်ဆောင်ချက် စစ် ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသမည်။
-(မှန် သို့မဟုတ် လုပ်ဆောင်ချက် စစ် ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသမည်။
-(မှန် ဖြစ်၍ လုပ်ဆောင်ချက် စစ် ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသမည်။
+(မမှန် ဖြစ်၍ စစ် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသမည်။
+(မှန် သို့မဟုတ် စစ် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသမည်။
+(မှန် ဖြစ်၍ စစ် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ်) ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

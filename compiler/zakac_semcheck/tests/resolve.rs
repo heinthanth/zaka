@@ -84,14 +84,14 @@ fn block_names_end_with_the_block()
 #[test]
 fn functions_can_be_called_before_their_declaration()
 {
-    ok(&lines(&["လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်မည်။", GREET]));
-    ok(&lines(&["လုပ်ဆောင်ချက် နှစ်ဆ ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။", TWICE]));
+    ok(&lines(&["နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။", GREET]));
+    ok(&lines(&["နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။", TWICE]));
 }
 
 #[test]
 fn undeclared_functions_are_reported()
 {
-    assert_eq!(codes("လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်မည်။"), [Code::UndeclaredFunction]);
+    assert_eq!(codes("နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။"), [Code::UndeclaredFunction]);
 }
 
 #[test]
@@ -235,15 +235,15 @@ fn the_old_result_variable_is_an_undeclared_name()
 #[test]
 fn calls_pass_one_argument_per_parameter()
 {
-    let text = lines(&[TWICE, "လုပ်ဆောင်ချက် နှစ်ဆ ကို လုပ်ဆောင်မည်။"]);
+    let text = lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။"]);
     assert_eq!(codes(&text), [Code::ArgCountMismatch]);
-    let text = lines(&[TWICE, "လုပ်ဆောင်ချက် နှစ်ဆ ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။"]);
+    let text = lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။"]);
     assert_eq!(codes(&text), [Code::ArgCountMismatch]);
 }
 
 #[test]
 fn functions_without_a_result_are_no_values()
 {
-    let text = lines(&[GREET, "လုပ်ဆောင်ချက် နှုတ်ဆက် ကို လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။"]);
+    let text = lines(&[GREET, "နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။"]);
     assert_eq!(codes(&text), [Code::ValueFromVoidFunction]);
 }

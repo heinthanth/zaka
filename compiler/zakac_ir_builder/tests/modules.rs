@@ -8,8 +8,8 @@ use zakac_ir_builder::artifact::run_loaded;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
-use zakac_semcheck::mark::in_marked_code;
 use zakac_semcheck::semcheck::SemcheckOptions;
+use zakac_semcheck::unsafe_code::in_unsafe_code;
 use zakac_span::file_loader::MemFileLoader;
 use zakac_span::source_map::SourceMap;
 
@@ -17,7 +17,7 @@ use zakac_span::source_map::SourceMap;
 fn lower_pair(main: &str, lib: &str) -> Lowered
 {
     let mut loader = MemFileLoader::new();
-    loader.insert("/m/main.zaka", in_marked_code(main));
+    loader.insert("/m/main.zaka", in_unsafe_code(main));
     loader.insert("/m/lib.zaka", lib);
     let mut sm = SourceMap::with_loader(Arc::new(loader));
     let file = sm.load_file(Path::new("/m/main.zaka")).unwrap();
@@ -59,7 +59,7 @@ fn an_imported_value_from_a_call_is_zk0604()
 လုပ်ဆောင်ချက် တစ် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 ၁ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် တစ် ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် တစ် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
 ";
     let main = "\"lib.zaka\" မှ က ကို ထည့်သွင်းမည်။\nက ကို ပြသမည်။";
@@ -75,7 +75,7 @@ fn the_file_that_is_run_keeps_values_from_calls()
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 ";
     let main = "\"lib.zaka\" မှ တစ် ကို ထည့်သွင်းမည်။
-ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် တစ် ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် တစ် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 က ကို ပြသမည်။";
     let lowered = lower_pair(main, lib);
     assert!(lowered.diagnostics.is_empty(), "{:?}", lowered.diagnostics);
@@ -91,7 +91,7 @@ fn the_check_of_imported_values_does_not_hang_on_the_fold_options()
     let lib = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ * ၃ ဖြစ်ပါစေ။";
     let main = "\"lib.zaka\" မှ က ကို ထည့်သွင်းမည်။\nက ကို ပြသမည်။";
     let mut loader = MemFileLoader::new();
-    loader.insert("/m/main.zaka", in_marked_code(main));
+    loader.insert("/m/main.zaka", in_unsafe_code(main));
     loader.insert("/m/lib.zaka", lib);
     let mut sm = SourceMap::with_loader(Arc::new(loader));
     let file = sm.load_file(Path::new("/m/main.zaka")).unwrap();

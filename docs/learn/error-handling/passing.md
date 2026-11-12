@@ -55,8 +55,8 @@ A pass-on has three forms:
 | Form | Written |
 | --- | --- |
 | sign form | `စားခွဲ(က၊ ခ)?` |
-| word form | `လုပ်ဆောင်ချက် စားခွဲ ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်ကောင်း` |
-| call statement | `လုပ်ဆောင်ချက် ပြ ကို ၁၀၀၊ ၅၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။` |
+| word form | `စားခွဲ ဟူသော လုပ်ဆောင်ချက်ကို က၊ ခ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်ကောင်း` |
+| call statement | `ပြ ဟူသော လုပ်ဆောင်ချက်ကို ၁၀၀၊ ၅၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။` |
 
 `ရလဒ်ကောင်း` means "the good result". The first two give a value and the third is a
 statement, for a function with no result or one whose result is dropped. A call that
@@ -165,7 +165,7 @@ with no word. Leaving the end of the statement out is an error, so a failure is 
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် စစ် ကို ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
+စစ် ဟူသော လုပ်ဆောင်ချက်ကို ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

@@ -248,7 +248,7 @@ the program stopped: no row of the ဇယား has this index
   through a cell does.
 - A ဇယား held in a row is written the same: `ဇ ထဲမှ အညွှန်း "က" ၏ တန်ဖိုး ထဲမှ အညွှန်း "ခ" ၏ တန်ဖိုး ကို ၁ ဟု ထားမည်။`
   sets a row of the ဇယား in the row `"က"`.
-- No address of a row can be taken in marked code, so no row is ever pinned.
+- No address of a row can be taken in unsafe code, so no row is ever pinned.
 
 ## Counting and walking the rows
 

@@ -1,3 +1,4 @@
+use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
 use zakac_semcheck::value::Value;
@@ -18,10 +19,8 @@ pub fn c_kind(kind: DataKind, platform: u16) -> Option<String>
     match kind.repr()
     {
         DataKind::Int(k) => Some(int_name(k, platform)),
-        DataKind::Float(16) => Some("zk_half".into()),
         DataKind::Float(32) => Some("float".into()),
         DataKind::Float(64) => Some("double".into()),
-        DataKind::Float(128) => Some("zk_quad".into()),
         DataKind::Char => Some("uint32_t".into()),
         DataKind::Bool => Some("uint8_t".into()),
         DataKind::Ptr(_) | DataKind::Null => Some("unsigned char *".into()),
@@ -76,17 +75,11 @@ pub fn mem_name(kind: DataKind, platform: u16) -> Option<String>
 ///
 /// # Returns
 ///
-/// The C kind name, such as `int32_t` or `zk_u128`.
+/// The C kind name, such as `int32_t` or `uint64_t`.
 fn int_name(k: IntKind, platform: u16) -> String
 {
-    let bits = k.bits(platform);
-    match (k.signed, bits)
-    {
-        (true, 128) => "zk_i128".into(),
-        (false, 128) => "zk_u128".into(),
-        (true, n) => format!("int{n}_t"),
-        (false, n) => format!("uint{n}_t"),
-    }
+    let sign = tern!(k.signed, "", "u");
+    format!("{sign}int{}_t", k.bits(platform))
 }
 
 /// The name of an integer kind in the names of the runtime functions of its
@@ -133,15 +126,7 @@ pub fn same_unsigned(kind: DataKind, platform: u16) -> Option<String>
 /// # Returns
 ///
 /// The C text.
-fn pattern(t: &str, raw: u128) -> String
-{
-    let (hi, lo) = ((raw >> 64) as u64, raw as u64);
-    match hi
-    {
-        0 => format!("(({t})UINT64_C({lo:#x}))"),
-        _ => format!("(({t})(((zk_u128)UINT64_C({hi:#x}) << 64) | UINT64_C({lo:#x})))"),
-    }
-}
+fn pattern(t: &str, raw: u64) -> String { format!("(({t})UINT64_C({raw:#x}))") }
 
 /// A constant as C text.
 ///
@@ -169,27 +154,14 @@ pub fn constant(v: Value, kind: DataKind, platform: u16) -> Option<String>
         Value::Int { kind: k, raw } =>
         {
             let bits = k.bits(platform);
-            let mask = u128::MAX >> (128 - bits);
-            Some(pattern(&t, raw & mask))
+            let mask = u64::MAX >> (64 - bits);
+            Some(pattern(&t, raw as u64 & mask))
         }
         Value::Float { bits: 32, raw } =>
         {
             Some(float_text(f64::from(f32::from_bits(raw as u32)), "f", &t))
         }
-        Value::Float { bits: 64, raw } =>
-        {
-            Some(float_text(f64::from_bits(raw as u64), "", &t))
-        }
-        // C11 has no literal of these kinds, so the value comes from its bits.
-        Value::Float { bits: 16, raw } =>
-        {
-            Some(format!("zk_f16_of(UINT16_C({raw:#x}))"))
-        }
-        Value::Float { bits: 128, raw } =>
-        {
-            let (hi, lo) = ((raw >> 64) as u64, raw as u64);
-            Some(format!("zk_f128_of(UINT64_C({hi:#x}), UINT64_C({lo:#x}))"))
-        }
+        Value::Float { bits: 64, raw } => Some(float_text(f64::from_bits(raw), "", &t)),
         Value::Char(c) => Some(format!("(({t}){:#x})", c as u32)),
         Value::Bool(b) => Some(format!("(({t}){})", u8::from(b))),
         Value::Ptr(0) => Some(format!("(({t})0)")),

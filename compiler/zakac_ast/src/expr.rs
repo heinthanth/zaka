@@ -83,7 +83,7 @@ pub enum Expr
     Logic(LogicExpr),
     /// A clause closed with a verb-noun or comparison verb.
     Verb(VerbExpr),
-    /// `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်သော ရလဒ်`
+    /// `f ဟူသော လုပ်ဆောင်ချက်ကို ... လုပ်ဆောင်သော ရလဒ်`
     Call(CallExpr),
     /// `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, the address that points nowhere.
     Null(NullLit),
@@ -738,7 +738,7 @@ pub struct VerbExpr
     pub span: Span,
 }
 
-/// `လုပ်ဆောင်ချက် f ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`
+/// `f ဟူသော လုပ်ဆောင်ချက်ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct CallExpr
 {
@@ -748,7 +748,7 @@ pub struct CallExpr
     /// a [`CallExpr::place`], the first name of that place.
     pub callee: Ident,
     /// The value that holds the function: a field, a cell or a read through
-    /// a pointer in a long call form, `လုပ်ဆောင်ချက် ဂရစ် ၏ အကွက် i ကို …`, or
+    /// a pointer in a long call form, `(ဂရစ် ၏ အကွက် i) ဟူသော လုပ်ဆောင်ချက်ကို …`, or
     /// the call before it in a sign-form chain, `f(a)(b)`.
     #[serde(default)]
     pub place: Option<Box<Expr>>,

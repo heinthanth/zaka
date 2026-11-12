@@ -276,8 +276,8 @@ fn a_kind_from_a_value_gives_fields_while_a_line_does_not_parse()
 {
     let lib = include_str!("../../../samples/modules/lib/point.zaka");
     let text = "\"lib/point.zaka\" မှ နေရာ၊ ရွှေ့ တို့ကို ထည့်သွင်းမည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
-                လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် နေရာ တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် လုပ်ဆောင်ချက် ရွှေ့ ကို က၊ \
-                က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။\nခ ၏ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+                လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် နေရာ တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ရွှေ့ ဟူသော \
+                လုပ်ဆောင်ချက်ကို က၊ က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။\nခ ၏ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
     let mut buffers = Buffers::default();
     buffers.open.insert(folder().join("lib").join("point.zaka"), lib.into());
     let file = check("value.zaka", text, buffers);
@@ -304,7 +304,7 @@ fn hover_shows_the_doc_lines_above_a_declaration()
 {
     let text = include_str!("../../../samples/lists/sort.zaka");
     let file = check("sort.zaka", text, Buffers::default());
-    let line = text.lines().position(|l| l.contains("အစဉ်လိုက်စီ ကို")).unwrap();
+    let line = text.lines().position(|l| l.contains("အစဉ်လိုက်စီ ဟူသော လုပ်ဆောင်ချက်ကို")).unwrap();
     let found = hover(&file, at(text, line, "အစဉ်လိုက်စီ")).unwrap();
     let Contents::MarkupContent(content) = found.contents
     else
@@ -319,8 +319,8 @@ fn hover_shows_the_doc_lines_above_a_declaration()
     assert!(!content.value.contains("ပူဖောင်း"), "{}", content.value);
 }
 
-/// A program with a function that can change its first parameter, and a
-/// marked function that takes a block over.
+/// A program with a function that can change its first parameter, and an
+/// unsafe function that takes a block over.
 const MARKED: &str = "လုပ်ဆောင်ချက် တိုး သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -333,7 +333,7 @@ const MARKED: &str = "လုပ်ဆောင်ချက် တိုး သ�
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် န သည် ၁ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် တိုး ကို န၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+တိုး ဟူသော လုပ်ဆောင်ချက်ကို န၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ";
 

@@ -100,7 +100,7 @@ pub enum Stmt
     Fn(FnDecl),
     /// `v ကို ပြန်ပေးမည်။` or `ပြန်ပေးမည်။`
     Return(ReturnStmt),
-    /// `လုပ်ဆောင်ချက် f ကို ... လုပ်ဆောင်မည်။`
+    /// `f ဟူသော လုပ်ဆောင်ချက်ကို ... လုပ်ဆောင်မည်။`
     Call(CallStmt),
     /// Heap allocation into a place.
     Alloc(AllocStmt),
@@ -198,7 +198,7 @@ pub struct BlockStmt
     /// block phrases.
     #[builder(default)]
     pub single: bool,
-    /// `true` for a block of marked code,
+    /// `true` for an unsafe block,
     /// `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။`: its statements can work
     /// with pointers.
     #[builder(default)]
@@ -457,8 +457,8 @@ pub struct FnDecl
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
-    /// `true` for a function marked `စိတ်မချရသော`: its statements can work
-    /// with pointers, and marked code alone can call it.
+    /// `true` for an unsafe function, `စိတ်မချရသော`: its statements can work
+    /// with pointers, and a call of it needs unsafe code.
     #[builder(default)]
     #[serde(default)]
     pub unchecked: bool,

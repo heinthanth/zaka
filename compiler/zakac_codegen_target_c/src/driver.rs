@@ -19,7 +19,6 @@ use zakac_span::hash::SourceFileHashAlgorithm;
 use zakac_span::source_file::SourceFile;
 
 use crate::emit::CFile;
-use crate::emit::NotBuilt;
 use crate::emit::emit;
 use crate::options::TargetCOptions;
 
@@ -82,19 +81,7 @@ pub fn translate(
     let platform_bits = options.platform_bits;
     let target = TargetCOptions { overflow: mem.overflow, platform_bits, ..target };
     let folded = checked.lowered.folded.as_ref().filter(|_| clean);
-    let built = folded.map(|m| emit(m, sources, target));
-    let mut checked = checked;
-    let files = match built
-    {
-        Some(Err(NotBuilt::Kinds(diags))) =>
-        {
-            checked.diagnostics.extend(diags);
-            None
-        }
-        Some(Err(NotBuilt::Missing(error))) => Some(Err(error)),
-        Some(Ok(files)) => Some(Ok(files)),
-        None => None,
-    };
+    let files = folded.map(|m| emit(m, sources, target));
     Translated::builder().borrowchecked(checked).maybe_files(files).build()
 }
 

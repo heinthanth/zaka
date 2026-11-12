@@ -62,13 +62,13 @@ a command, such as `ပြသမည်`, forms a *statement*. The compiler reads
 | [Kind aliases](aliases.md) | a second name for a kind: the alias sentence and where the name can stand |
 | [Modules](modules.md) | a program in several files: the export mark, the import sentence and names across files |
 | [Natural wording](naturalness.md) | which particle and which ending read well, and the warnings for the others |
-| [Unsafe Zaka](unsafe.md) | marked code, the pointer kind, the heap, owned markers and the checks on marked code |
+| [Unsafe Zaka](unsafe.md) | unsafe code, the pointer kind, the heap, owned markers and the checks on unsafe code |
 
 The pages climb from values to storage. The pages from words to natural wording state
 the rules of safe Zaka: numbers, text, lists, structs, shared objects, functions and
 loops. Each value copies, each shared object is shared, and the VM frees each block when
 its last use goes, so no page before the last speaks of an address. The last page,
-[Unsafe Zaka](unsafe.md), states the rules of marked code: the pointer kind, the heap
+[Unsafe Zaka](unsafe.md), states the rules of unsafe code: the pointer kind, the heap
 statements, owned markers and the checks the compiler runs on that code.
 
 Where a rule has a gentler introduction, the page links to the [Learn

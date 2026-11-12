@@ -1,6 +1,6 @@
 ---
 title: The flow checker
-description: How the checker follows pointers, integers and unset values through the IR, the facts it keeps, the check that each value is set before it is read, the lint it runs on marked code, and the options that change what it reports.
+description: How the checker follows pointers, integers and unset values through the IR, the facts it keeps, the check that each value is set before it is read, the lint it runs on unsafe code, and the options that change what it reports.
 ---
 
 # The flow checker
@@ -9,7 +9,7 @@ The checker finds mistakes before the program runs. On each part of a program it
 values that are not set, cell numbers and integer ranges: a read of a variable, a field or
 a cell before the program gives it a value, a cell number past the end of a list, an
 operation that overflows on each run. On
-marked code it also runs a *lint* on pointers: a block read after it was given back, a
+unsafe code it also runs a *lint* on pointers: a block read after it was given back, a
 block given back twice, a block that is never given back, a pointer read after an owned
 hand-over. The rules, as a user meets them, are in [Unsafe Zaka](../language/unsafe.md)
 and [Compiler checks](../compiler/checks.md), and the reasons in [Storage,
@@ -37,8 +37,8 @@ The IR is the right input because it has made explicit, before this stage, what 
 checker needs. Names are slots (`g0` for a global, `l1` for a local), blocks are
 flattened, widening is a `Convert`, a hand-over out of a place is a `Take`, a heap
 sentence is an `Alloc`, `Resize` or `Free` with a destination, and the end of a counted
-place is a `Drop`. `Module.marked` holds the source regions of marked code: the bodies of
-marked functions and of marked blocks. For this program:
+place is a `Drop`. `Module.unsafe_spans` holds the source regions of unsafe code: the bodies of
+unsafe functions and of unsafe blocks. For this program:
 
 ```text
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
@@ -206,7 +206,7 @@ message.
 A free, a resize or a hand-over is a *loss* of a block (`Loss`, with the paths that lose
 it). When a node ends, `check_losses` takes each loss and asks whether a *live* pointer
 slot has a root that the lost path reaches. If so: ZK0704, with a second label on the
-witness read from the liveness pass. Here is the program from above in marked code, as the
+witness read from the liveness pass. Here is the program from above in unsafe code, as the
 compiler reports it:
 
 ```zaka-warning ZK0704
@@ -316,7 +316,7 @@ it as it follows each other statement:
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-လုပ်ဆောင်ချက် ရှင်းပစ် ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။
+ရှင်းပစ် ဟူသော လုပ်ဆောင်ချက်ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပ ၏ တန်ဖိုး ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -545,12 +545,12 @@ command line; a value from a config file comes before each one on the command li
 
 | Set | Codes | Under `--mem-check` |
 | --- | --- | --- |
-| `LINT` | ZK0702, ZK0703, ZK0704, ZK0706, ZK0707, ZK0708, ZK0712, ZK0721 | follow the mode wherever the check finds them; pointers, which marked code alone works with, give them |
-| `MARKED_LINT` | ZK0709, ZK0710, ZK0711 | follow the mode inside a region of `Module.marked`, and remain errors in safe code, where a cell number past the end of a list gives ZK0710 |
+| `LINT` | ZK0702, ZK0703, ZK0704, ZK0706, ZK0707, ZK0708, ZK0712, ZK0721 | follow the mode wherever the check finds them; pointers, which unsafe code alone works with, give them |
+| `UNSAFE_LINT` | ZK0709, ZK0710, ZK0711 | follow the mode inside a region of `Module.unsafe_spans`, and remain errors in safe code, where a cell number past the end of a list gives ZK0710 |
 | the rest | ZK0701, ZK0719 | as their codes define them in each mode |
 | the init check | ZK0722, ZK0723, ZK0724 | outside the lint, so no mode changes them: ZK0722 and ZK0724 are errors and ZK0723 a warning in each mode |
 
-A level set through a name wins over the mode. It reaches a `MARKED_LINT` code inside marked
+A level set through a name wins over the mode. It reaches a `UNSAFE_LINT` code inside unsafe
 code alone, and ZK0719 and ZK0723 wherever the check finds them; `NotALint` refuses each
 other code at the command line.
 
@@ -567,9 +567,9 @@ q ၏ တန်ဖိုး ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
-The rules of marked code itself (ZK0468 to ZK0472: an unsafe operation outside marked
-code, a marked function as a value, an owned marker on a non-pointer, `--no-unsafe`, a C
-declaration that needs the mark) are decided in [the kind check](semcheck.md) and are
+The rules of unsafe code itself (ZK0468 to ZK0472: an unsafe operation outside unsafe
+code, an unsafe function as a value, an owned marker on a non-pointer, `--no-unsafe`, a C
+declaration that needs `စိတ်မချရသော`) are decided in [the kind check](semcheck.md) and are
 errors in each mode. The choice to mark proofs is made before `downgrade`, on the raw
 findings, so a program with a finding keeps all its run-time checks, whatever the mode. A
 hand-over leaves the null pointer behind in each mode, so a program does the same thing whichever
@@ -586,7 +586,7 @@ of the earlier model and wait to be rewritten around blocks.
 
 - **A new mistake**: a check in `checks/`, called from the right place in `Flow::stmt` or
   `node_outs`; a `ZK07` code, texts and a constructor in `zakac_diagnostics`; its place in
-  `LINT` or `MARKED_LINT` when it is a lint; a test that fires it and a test that a correct
+  `LINT` or `UNSAFE_LINT` when it is a lint; a test that fires it and a test that a correct
   close program remains clean.
 - **A new fact**: a field of `PtrInfo` or a form of `SlotState`, joined in `join` and
   `widen`, or the pass will not end.

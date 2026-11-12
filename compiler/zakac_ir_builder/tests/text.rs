@@ -124,8 +124,8 @@ fn a_text_constant_that_needs_the_program_to_run_is_zk0606()
     assert_eq!(codes(var), [Code::ConstNotKnown]);
     assert_eq!(codes_with(var, &FoldOptions::none()), [Code::ConstNotKnown]);
     let call = "လုပ်ဆောင်ချက် f သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။\n\"z\" ကို \
-                ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nကိန်းသေ ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
-                လုပ်ဆောင်ချက် f ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။";
+                ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nကိန်းသေ ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် f \
+                ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။";
     assert_eq!(codes(call), [Code::ConstNotKnown]);
 }
 

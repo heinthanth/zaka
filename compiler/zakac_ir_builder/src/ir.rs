@@ -45,11 +45,11 @@ pub struct Module
     #[builder(default)]
     #[serde(default)]
     pub foreign: Vec<ForeignFn>,
-    /// The source regions of marked code: each function marked
-    /// `စိတ်မချရသော` and each block marked `စိတ်မချရသော်လည်း`.
+    /// The source regions of unsafe code: each unsafe function
+    /// (`စိတ်မချရသော`) and each unsafe block (`စိတ်မချရသော်လည်း`).
     #[builder(default)]
     #[serde(default)]
-    pub marked: Vec<Span>,
+    pub unsafe_spans: Vec<Span>,
     /// Source region of the whole program.
     pub span: Span,
 }

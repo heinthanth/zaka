@@ -7,8 +7,8 @@ use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::artifact::check_loaded;
-use zakac_semcheck::mark::in_marked_code;
 use zakac_semcheck::semcheck::SemcheckOptions;
+use zakac_semcheck::unsafe_code::in_unsafe_code;
 use zakac_span::file_loader::MemFileLoader;
 use zakac_span::source_map::SourceMap;
 
@@ -18,7 +18,7 @@ fn check(files: &[(&str, &str)]) -> Vec<Diagnostic>
     let mut loader = MemFileLoader::new();
     files.iter().for_each(|(path, text)| {
         let text =
-            tern!(*path == "/m/main.zaka", in_marked_code(text), text.to_string());
+            tern!(*path == "/m/main.zaka", in_unsafe_code(text), text.to_string());
         loader.insert(*path, &text);
     });
     let mut sm = SourceMap::with_loader(Arc::new(loader));
@@ -46,7 +46,7 @@ const LIB: &str = "\
 အများသုံး လုပ်ဆောင်ချက် ပေါင်း သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-(လုပ်ဆောင်ချက် နှစ်ဆ ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်) + ခ ကို ပြန်ပေးမည်။
+(နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်) + ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 ";
 
@@ -54,7 +54,7 @@ const LIB: &str = "\
 fn exported_names_reach_the_importer()
 {
     let main = "\"lib.zaka\" မှ ပေါင်း၊ အများဆုံး တို့ကို ထည့်သွင်းမည်။
-လုပ်ဆောင်ချက် ပေါင်း ကို အများဆုံး၊ ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
+ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို အများဆုံး၊ ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
     assert_eq!(codes(&[("/m/main.zaka", main), ("/m/lib.zaka", LIB)]), []);
 }
 
@@ -67,7 +67,7 @@ fn two_files_can_each_have_a_private_function_of_one_name()
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
 က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-လုပ်ဆောင်ချက် နှစ်ဆ ကို မှန် တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
+နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို မှန် တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
     assert_eq!(codes(&[("/m/main.zaka", main), ("/m/lib.zaka", LIB)]), []);
 }
 
@@ -85,8 +85,8 @@ fn importing_a_private_name_is_zk0322_with_help()
 #[test]
 fn a_name_that_is_not_imported_is_unknown_with_help()
 {
-    let main = "\"lib.zaka\" မှ ပေါင်း ကို ထည့်သွင်းမည်။\nဝှက် ကို ပြသမည်။\nလုပ်ဆောင်ချက် နှစ်ဆ ကို ၁ တို့ဖြင့် \
-                လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
+    let main = "\"lib.zaka\" မှ ပေါင်း ကို ထည့်သွင်းမည်။\nဝှက် ကို ပြသမည်။\nနှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၁ \
+                တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
     let found = check(&[("/m/main.zaka", main), ("/m/lib.zaka", LIB)]);
     let codes: Vec<Code> = found.iter().map(|d| d.code).collect();
     assert_eq!(codes, [Code::UndeclaredName, Code::UndeclaredFunction]);

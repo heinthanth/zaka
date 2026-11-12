@@ -110,7 +110,7 @@ pub fn borrow_check(
         |d: &Diagnostic| matches!(d.code, Code::NullDeref | Code::NullDerefPossible);
     diagnostics.retain(|d| !(null(d) && unset_at.iter().any(|s| s.overlaps(&d.span))));
     diagnostics.extend(unset);
-    let mut diagnostics = downgrade(diagnostics, options, &module.marked);
+    let mut diagnostics = downgrade(diagnostics, options, &module.unsafe_spans);
     diagnostics.sort_by_key(|d| d.span.lo);
     BorrowCheckOutput::builder().diagnostics(diagnostics).digests(digests).build()
 }
@@ -158,27 +158,28 @@ fn roots_and_digests(
 ///
 /// * `diags` - What the check found.
 /// * `options` - `--mem-check` and the named levels.
-/// * `marked` - The source regions of marked code.
+/// * `unsafe_spans` - The source regions of unsafe code.
 ///
 /// # Returns
 ///
 /// Each finding at its level: an error for [`MemCheck::Error`], a warning
 /// for [`MemCheck::Warn`], none for [`MemCheck::Off`]. The pointer lint holds
-/// each [`LINT`] finding, and each [`MARKED_LINT`] finding inside marked
+/// each [`LINT`] finding, and each [`UNSAFE_LINT`] finding inside unsafe
 /// code; `--mem-check` sets its level, and a named level wins. A
-/// [`MARKED_LINT`] finding outside marked code remains an error, and a finding
+/// [`UNSAFE_LINT`] finding outside unsafe code remains an error, and a finding
 /// that no name and no lint covers remains as it is.
 fn downgrade(
-    diags: Vec<Diagnostic>, options: &BorrowCheckOptions, marked: &[Span],
+    diags: Vec<Diagnostic>, options: &BorrowCheckOptions, unsafe_spans: &[Span],
 ) -> Vec<Diagnostic>
 {
-    let inside =
-        |d: &Diagnostic| marked.iter().any(|m| m.lo <= d.span.lo && d.span.hi <= m.hi);
+    let inside = |d: &Diagnostic| {
+        unsafe_spans.iter().any(|m| m.lo <= d.span.lo && d.span.hi <= m.hi)
+    };
     let lint = |d: &Diagnostic| {
-        LINT.contains(&d.code) || (MARKED_LINT.contains(&d.code) && inside(d))
+        LINT.contains(&d.code) || (UNSAFE_LINT.contains(&d.code) && inside(d))
     };
     let named = |d: &Diagnostic| {
-        let open = lint(d) || !MARKED_LINT.contains(&d.code);
+        let open = lint(d) || !UNSAFE_LINT.contains(&d.code);
         options.lint.get(d.code).filter(|_| open)
     };
     let level = |d: Diagnostic| {
@@ -194,13 +195,13 @@ fn downgrade(
     diags.into_iter().filter_map(level).collect()
 }
 
-/// The findings that are lint inside marked code and errors outside it,
+/// The findings that are lint inside unsafe code and errors outside it,
 /// where an object or a list gives them: a read of null, a step past the
 /// end of a block, and a read that can meet null.
-const MARKED_LINT: &[Code] =
+const UNSAFE_LINT: &[Code] =
     &[Code::NullDeref, Code::OffsetPastEnd, Code::NullDerefPossible];
 
-/// The findings that come from pointer work, which marked code
+/// The findings that come from pointer work, which unsafe code
 /// alone does: a block given back twice or through the wrong pointer, a
 /// block kept or freed while a pointer still reads it, a local's address
 /// that escapes, an argument another one frees, a leaked block, pointers

@@ -1,6 +1,6 @@
 ---
 title: Lists
-description: The list kinds, literals, cell numbers, adding and removing cells, lists of lists, passing and comparing, ranges, then the plain and counted forms, static data, how a list is stored, addresses in marked code, and the mistakes with cell numbers.
+description: The list kinds, literals, cell numbers, adding and removing cells, lists of lists, passing and comparing, ranges, then the plain and counted forms, static data, how a list is stored, addresses in unsafe code, and the mistakes with cell numbers.
 ---
 
 # Lists
@@ -185,7 +185,7 @@ error[ZK0436]: a list with no cells does not fit the counted list isize[3]
 | `အမှတ်များ ၏ ၃ ခုမြောက်အကွက်` | the third |
 | `အမှတ်များ ၏ အကွက်အရေအတွက်` | the number of cells, a `လက္ခဏာမဲ့ ကိန်းပြည့်`: a constant for a counted list, known when the program runs for a plain list |
 
-A cell is a place: it can be read, printed and assigned to, and marked code can take its
+A cell is a place: it can be read, printed and assigned to, and unsafe code can take its
 address ([Unsafe Zaka](unsafe.md)). The cell number is an integer (ZK0423), and the value
 in front of `၏` has to be a list or a pointer to one (ZK0422).
 
@@ -273,7 +273,7 @@ last cell off. No statement gives a value back.
 ```
 
 - The list is a place that can be set: a variable, a field, a cell of another list, or,
-  in marked code, `ပ ၏ တန်ဖိုး` through a pointer `ပ`. A constant is ZK0306, as for a set.
+  in unsafe code, `ပ ၏ တန်ဖိုး` through a pointer `ပ`. A constant is ZK0306, as for a set.
   A pointer to a list is no list: add to `ပ ၏ တန်ဖိုး`, not to `ပ`.
 - The list is a plain list. A counted list keeps its count: an add or a remove on it is
   ZK0437. An add to text is the [add to
@@ -300,7 +300,7 @@ last cell off. No statement gives a value back.
   no last cell to remove" (see [When a program stops](../vm/traps.md#all-the-traps)).
 - A remove drops the value in the last cell when the list holds its block alone: text
   in it is let go.
-- An add can move the cells to a larger block, so a pointer that marked code took into
+- An add can move the cells to a larger block, so a pointer that unsafe code took into
   the cells can be left pointing at freed cells; see [Edits and pinned
   cells](#edits-and-pinned-cells).
 
@@ -465,7 +465,7 @@ argument, since a parameter is a new variable:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မူရင်း သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် ပွား သည် မူရင်း ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် နှစ်ဆတိုး ကို မူရင်း တို့ဖြင့် လုပ်ဆောင်မည်။
+နှစ်ဆတိုး ဟူသော လုပ်ဆောင်ချက်ကို မူရင်း တို့ဖြင့် လုပ်ဆောင်မည်။
 မူရင်း ကို ပြသမည်။     // changed through the parameter
 ပွား ကို ပြသမည်။       // a copied list of its own: unchanged
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -488,7 +488,7 @@ argument, since a parameter is a new variable:
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပေါင်း ကို ၁၀၀၊ (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း) တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၁၀၀၊ (၁၊ ၂၊ ၃ တို့ပါသော စာရင်း) တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -562,7 +562,7 @@ either one leaves the other as it was. A range of text is text; see
 [၁၊ ၉၊ ၃၊ ၄၊ ၅]
 ```
 
-- The cells are counted from 0. The source is a list of either form, or, in marked code, a
+- The cells are counted from 0. The source is a list of either form, or, in unsafe code, a
   pointer to a list or into a heap block; another value is ZK0422. A range of a plain list
   of `isize` cells is an `isize[]`, whatever the form of its source.
 - The source must be a place: a variable, a field, a cell or a parameter. A literal, a
@@ -590,7 +590,7 @@ either one leaves the other as it was. A range of text is text; see
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် l သည် [၁၊ ၂၊ ၃၊ ၄] ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် အလယ်ပိုင်း ကို l တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+အလယ်ပိုင်း ဟူသော လုပ်ဆောင်ချက်ကို l တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 (l ၏ အကွက် ၀ မှစ၍ ၂ ကွက်) == [၁၊ ၂] ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -809,10 +809,10 @@ heap block:
 ၂၄
 ```
 
-## Lists in marked code
+## Lists in unsafe code
 
 The rules of pointers are in [Unsafe Zaka](unsafe.md); this section gives the ones that
-touch lists. Each example runs inside a marked block.
+touch lists. Each example runs inside an unsafe block.
 
 The address of a cell is a pointer to the cell, so the cell after it can be reached with
 pointer arithmetic. In a table of counted lists, the cell after the last of a row is the
@@ -873,7 +873,7 @@ through the pointer never reaches the copied list.
 
 A pin does not hold the cells in place. An add can move them to a larger block, and a
 write into the whole list replaces them, so a pointer taken before the edit is left
-pointing at freed cells. The checker reports such a use as ZK0704, a warning in marked code
+pointing at freed cells. The checker reports such a use as ZK0704, a warning in unsafe code
 unless `--mem-check` sets another level ([Compiler checks](../compiler/checks.md)), and the VM stops the program at the
 access. The cells of a counted list never move.
 
@@ -975,7 +975,7 @@ the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
 
 When the compiler proves that a cell number is inside the list, the VM does not
 repeat the check for that access. A proof is given up whenever something the compiler
-cannot follow could change the number, for example a counter whose address marked code
+cannot follow could change the number, for example a counter whose address unsafe code
 takes; then the VM checks as before.
 
 The other mistakes with lists, in one table:
@@ -1000,7 +1000,7 @@ The other mistakes with lists, in one table:
 | ZK0603 | a constant cell number outside the list |
 | ZK0605 | a range with a constant start and length past the end of its counted list |
 | ZK0606 | a constant plain list whose value needs the program to run |
-| ZK0704 | in marked code, a pointer into a plain list used after an add or a write that can move its cells |
+| ZK0704 | in unsafe code, a pointer into a plain list used after an add or a write that can move its cells |
 | ZK0710 | a cell number proven past the end |
 
 The text of each message is in [Error messages](../reference/errors.md).

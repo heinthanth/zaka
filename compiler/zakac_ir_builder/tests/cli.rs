@@ -6,7 +6,7 @@ use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
 use zakac_ir_builder::cli::ZakacIrBuilder;
-use zakac_semcheck::mark::in_marked_code;
+use zakac_semcheck::unsafe_code::in_unsafe_code;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 
 const TEXT_HEADER: &str = "# zakac-ir-artifact v1\n";
@@ -21,7 +21,7 @@ fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
     argv.extend(args.iter().map(|arg| (*arg).to_string()));
 
     let command = ZakacIrBuilder::create_as_standalone();
-    let mut stdin = Cursor::new(in_marked_code(stdin));
+    let mut stdin = Cursor::new(in_unsafe_code(stdin));
     let mut stdout = Buffer::no_color();
     let mut stderr = Buffer::no_color();
     let mut io = CommandIO::builder()
@@ -120,7 +120,7 @@ fn output_extensions_pick_the_format()
 }
 
 #[test]
-fn no_unsafe_refuses_marked_code()
+fn no_unsafe_refuses_unsafe_code()
 {
     let source = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\nကိန်းရှင် \
                   က သည် ၁ ဖြစ်ပါစေ။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";

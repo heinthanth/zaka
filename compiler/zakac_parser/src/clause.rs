@@ -42,6 +42,7 @@ use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
 use crate::struct_lit::ONE;
+use crate::using::CallParts;
 use crate::using::Head;
 
 /// Whether statement verbs are allowed in a clause.
@@ -284,13 +285,6 @@ impl Parser<'_>
                 self.attach_before(&mut stack)?;
                 continue;
             }
-            // `ကို` after the place that holds the function of a long call
-            // closes the place.
-            let callee_end = self.in_callee && tok.kind == TokenKind::Kw(Kw::Ko);
-            ret_if!(
-                callee_end && stack.len() == 1 && stack[0].slot.is_none(),
-                self.finish_clause(stack)
-            );
             let fill_end = self.in_fill && tok.kind == TokenKind::Kw(Kw::Hpjint);
             ret_if!(
                 fill_end && stack.len() == 1 && stack[0].slot.is_none(),
@@ -655,8 +649,9 @@ impl Parser<'_>
     }
 
     /// Parse the first operand of a clause, or a call written with its
-    /// arguments first (`<args> ကို သုံး၍ ...`) or with no arguments
-    /// (`<fn> မည်`, `<fn> သည့် ရလဒ်`).
+    /// arguments first (`<args> ကို သုံး၍ ...`), with no arguments
+    /// (`<fn> မည်`, `<fn> သည့် ရလဒ်`), or in the long form as a statement
+    /// (`<fn> ဟူသော လုပ်ဆောင်ချက်ကို ... လုပ်ဆောင်မည်။`).
     ///
     /// # Arguments
     ///
@@ -667,7 +662,11 @@ impl Parser<'_>
     /// The operand or the call statement, or a diagnostic.
     fn parse_head(&mut self, mode: Mode) -> PResult<Head>
     {
-        let first = self.parse_plain_operand()?;
+        let first = match self.parse_first(mode)?
+        {
+            Head::Expr(first) => first,
+            stmt => return Ok(stmt),
+        };
         let first = match self.parse_short_after(first, mode)?
         {
             Head::Expr(first) => first,
@@ -681,6 +680,28 @@ impl Parser<'_>
             return Ok(Head::Expr(first));
         };
         self.attempt_marked(first, end, mode)
+    }
+
+    /// Parse the first operand of a clause. At the start of a statement a
+    /// long call can end in `လုပ်ဆောင်မည်` and be the whole statement; each
+    /// other operand is a plain one.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - Whether a call statement can stand here.
+    ///
+    /// # Returns
+    ///
+    /// The operand or the call statement, or a diagnostic.
+    fn parse_first(&mut self, mode: Mode) -> PResult<Head>
+    {
+        let stmt = mode == Mode::Stmt && self.at_long_call();
+        ret_if!(!stmt, self.parse_plain_operand().map(Head::Expr));
+        let (start, callee, place, args) = self.parse_call_head()?;
+        #[rustfmt::skip]
+        let parts = CallParts::builder().start(start).callee(callee).maybe_place(place)
+            .args(args).build();
+        self.finish_using(parts, true, mode)
     }
 
     /// Parse an operand of a clause that is no call: a struct literal, a

@@ -100,7 +100,7 @@ fn fits(value: u128, kind: Option<&Kind>, based: bool) -> bool
     let bits = kind.bits.map_or(64, u32::from);
     let signed = kind.signed != Some(false);
     ret_if!(signed && !based, value <= 1u128 << (bits - 1));
-    bits >= 128 || value < 1u128 << bits
+    value < 1u128 << bits
 }
 
 /// The text of a float literal with Burmese digits made Western.

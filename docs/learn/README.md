@@ -27,7 +27,7 @@ structs; each such pointer names the page to come back after. The pages run in t
    or shares an object, and the program frees nothing itself.
 2. **Copies and storage**, from [Copies and storage](forms/README.md): ranges, where the
    cells of a value live, the counted list, and what a duplicate costs.
-3. **Unsafe Zaka**, from [Unsafe Zaka](pointers/README.md): marked code, pointers, blocks
+3. **Unsafe Zaka**, from [Unsafe Zaka](pointers/README.md): unsafe code, pointers, blocks
    of the heap, and C functions that take addresses. This part is for advanced work.
 
 A program from an earlier part keeps its meaning in the later ones. The first part is

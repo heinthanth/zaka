@@ -44,7 +44,6 @@ use crate::clause::Mode;
 use crate::decl_head::DeclHead;
 use crate::describe::kw_text;
 use crate::describe::quote;
-use crate::notation::with_place;
 use crate::parser::MAX_NEST;
 use crate::parser::PResult;
 use crate::parser::Parser;
@@ -135,8 +134,7 @@ impl Parser<'_>
                 Err(diag::else_without_if(tok.span, self.text_of(tok.span)))
             }
             Kw::Var | Kw::Const => self.parse_decl_or_loop(),
-            Kw::Function => self.parse_fn_or_call(),
-            Kw::Program => self.parse_fn_decl(),
+            Kw::Function | Kw::Program => self.parse_fn_decl(),
             Kw::DataKindOpen => self.parse_alias_decl(),
             Kw::Export => self.parse_exported(),
             Kw::Unsafe => self.parse_unchecked(),
@@ -266,9 +264,9 @@ impl Parser<'_>
         Ok(stmt)
     }
 
-    /// Parse a function marked `စိတ်မချရသော`: its statements can work with
-    /// pointers, and marked code alone can call it. The start block takes no
-    /// mark.
+    /// Parse an unsafe function, `စိတ်မချရသော`: its statements can work with
+    /// pointers, and a call of it needs unsafe code. The start block takes no
+    /// such word.
     ///
     /// # Returns
     ///
@@ -708,37 +706,6 @@ impl Parser<'_>
         ret_if!(self.at_close() || self.at_eof());
         let span = start.to(&self.prev_span());
         self.diags.push(diag::update_not_last(span));
-    }
-
-    /// Parse a function declaration, or a statement that starts with a call:
-    /// `လုပ်ဆောင်ချက် f သည်` declares, `လုပ်ဆောင်ချက် f ကို` calls.
-    ///
-    /// # Returns
-    ///
-    /// The statement, or a diagnostic.
-    fn parse_fn_or_call(&mut self) -> PResult<Stmt>
-    {
-        let is_decl = self.peek_n(2).kind == TokenKind::Kw(Kw::Thi);
-        ret_if!(is_decl, self.parse_fn_decl());
-        let (start, callee, place, args) = self.parse_call_head()?;
-        let ends = [Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
-        let end = self.expect_one_of(&ends)?;
-        ret_if!(
-            matches!(kw_of(&end), Some(Kw::WillDo)),
-            self.finish_call_stmt(
-                CallParts::builder()
-                    .start(start)
-                    .callee(callee)
-                    .maybe_place(place)
-                    .args(args)
-                    .build()
-            )
-        );
-        let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
-        let call = self.call_expr(start.to(&end.span), callee, args, pass);
-        let call = with_place(call, place);
-        let clause = self.parse_clause_from(call, Mode::Stmt)?;
-        self.finish_expr_headed(clause)
     }
 
     /// Finish a call statement after its end word: the pass-on

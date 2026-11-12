@@ -584,10 +584,6 @@ impl FnGen<'_, '_>
         let address = |k: DataKind| k.is_ptr() || k == DataKind::Null;
         match (from, to)
         {
-            (DataKind::Float(128), DataKind::Int(_)) =>
-            {
-                format!("zk_q2i_{}({a})", self.shared.ops(to))
-            }
             (DataKind::Float(_), DataKind::Int(_)) =>
             {
                 format!("zk_f2i_{}({a})", self.shared.ops(to))
@@ -965,7 +961,7 @@ fn cell_addr(
 /// # Arguments
 ///
 /// * `op` - The operator.
-/// * `t` - The C kind: `zk_half`, `float`, `double` or `zk_quad`.
+/// * `t` - The C kind: `float` or `double`.
 /// * `a` - The left operand.
 /// * `b` - The right operand.
 ///
@@ -974,21 +970,10 @@ fn cell_addr(
 /// The C text.
 fn float_op(op: InfixOp, t: &str, a: &str, b: &str) -> String
 {
-    let fmod = match t
-    {
-        "float" => "fmodf".into(),
-        "double" => "fmod".into(),
-        _ => format!("zk_fmod_{}", t.trim_start_matches("zk_")),
-    };
+    let fmod = tern!(t == "float", "fmodf", "fmod");
     ret_if!(op == InfixOp::Rem, format!("{fmod}({a}, {b})"));
     let mark: &str = op.into();
-    // A cast drops the wider range C can compute f16 in, so each operation
-    // rounds to f16 as the VM's does.
-    tern!(
-        t == "zk_half",
-        format!("(({t})({a} {mark} {b}))"),
-        format!("({a} {mark} {b})")
-    )
+    format!("({a} {mark} {b})")
 }
 
 /// Whether an operand must go into a local before the operands after it

@@ -28,7 +28,7 @@ function that doubles its parameter, and a start block that calls it:
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၁ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် နှစ်ဆ ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -247,7 +247,7 @@ value below the top minus the top. Decimal numbers follow IEEE 754 with ties to 
 
 Each of these checks its address as described in [blocks](blocks.md), and can trap. The
 compiler emits `ptr_add`, `ptr_sub`, the heap ops and the `load` and `store` through a
-pointer for marked code alone ([Unsafe Zaka](../language/unsafe.md)); the VM checks
+pointer for unsafe code alone ([Unsafe Zaka](../language/unsafe.md)); the VM checks
 them all the same.
 `ptr_add` also traps on a step off the null pointer and on a step out of the block it starts in.
 `mem_blit`, `mem_move` and `mem_fill` check that the source range lies in one live block and
@@ -292,7 +292,7 @@ a heap block. A heap block of text or of a plain list counts the values that sha
 | `deep_seqs k` | addr → | give the value of kind `k` a copied set of each shared object it reaches, at each depth, each object copied once (a table maps old objects to new ones), so a ring keeps its shape; text, plain lists and function values are shared as `dup_seqs` shares them |
 | `lend_seqs k` | addr → | give each text and each plain list inside the value of kind `k` a room of 0, and set the lowest bit of each closure, so a parameter reads the caller's cells and runs the caller's closure with no count, and its drop frees nothing |
 | `own k` | addr → | give each text and each plain list inside the value of kind `k` a block that it holds alone: one with cells and a room of 0, or whose block holds a count above 1, gets a new heap block with the same cells, the cells copied in turn. The op runs before each write, so a write never reaches a value that another place shares. The block of an object is never copied so |
-| `pin` | addr → | mark the block of the text or plain list at `addr` as pinned, after `own`: marked code took the address of one of its cells. A later `dup_seqs` copies a pinned block, so a write through the pointer never reaches a copied value; a resize keeps the mark |
+| `pin` | addr → | mark the block of the text or plain list at `addr` as pinned, after `own`: unsafe code took the address of one of its cells. A later `dup_seqs` copies a pinned block, so a write through the pointer never reaches a copied value; a resize keeps the mark |
 | `obj_to_ptr` | addr → ptr | push the address of the block of the object at `addr`, as a pointer that holds one more count of it: the conversion of an object to a pointer |
 | `ptr_to_obj` | slot ptr → slot | write the object whose block the pointer names into the slot, which takes over the count the pointer held: the conversion of a pointer back to an object |
 | `text_eq` | addr addr → b | whether two texts hold the same u8s |
@@ -342,7 +342,7 @@ write into one traps ([When a program stops](traps.md)).
 | `host h` | slot addrs → slot | serve host function `h` (`read_line`, `read_file`, `write_file`, `write_stream`), the one op of an external function: pop the address of each parameter, with the address of the result slot under them, write the result there and leave its address. The VM reads each value through its address and frees none. `zakac run` serves it from the terminal and the files on disk; the books and the explorer serve it from storage (see [Host functions](../internals/codegen.md#host-functions)) |
 | `foreign c` | values → result | make C call `c` of the table of C calls of the module (`foreign_calls`), the op of a [C function](../language/functions.md#c-functions) (`--emit asm` writes `foreign c0`, `foreign c1`, ...). A call row names the C function and the kind of each of its other values, so a C function that takes other values has a row for each shape of call. Pop the value of each parameter and then of each other value, the last on top, where a struct or a text is the address of its value (a text goes to C as a copied set of its u8s that ends in a zero octet, freed when the call ends). The generator passes a list of numbers as the address of its first cell, a plain pointer, so C reads or writes the cells in place. A struct result goes to the slot whose address lies under the values, and the address remains; another result is pushed; a function with no result pushes nothing. An address that lies in a live block reaches C as the native address of that octet. The first call opens each lib; a VM built with no `ffi`, such as the one in the explorer, stops at the call with the trap `C function not run` (see [When a program stops](traps.md#c-functions)) |
 | `c_leave k` | fn → | give C leave to call the [closure](../language/function-values.md#nested-functions-and-closures) of the function value on top, a function of kind `k`, after the call that gave it: make the native closure of its record, once, and hold a count of the record until the leave ends. A leave of a value that holds a leave, and of a function with no captures does nothing |
-| `c_store k at o` | addr value → | write a field of kind `k` at offset `o` of the struct C keeps, from marked code: a number or a boolean as it is, a counted list from the block whose address is the value. A guard has checked that the handle is open |
+| `c_store k at o` | addr value → | write a field of kind `k` at offset `o` of the struct C keeps, from unsafe code: a number or a boolean as it is, a counted list from the block whose address is the value. A guard has checked that the handle is open |
 | `c_load k at o` | addr → value | read a field of kind `k` at offset `o` of the struct C keeps at the address on top, the address a [handle](../language/functions.md#c-functions) holds, in C's storage. A number or a boolean is pushed. For a counted list of numbers, the op pops the address of a block under it, writes the cells there, and pushes that address; for a text field, a `char *`, it does the same with the string copied up to its zero octet, as an optional of text, with no data for NULL. A guard of the wrapper has checked that the handle is open (`halt closed_handle`) |
 | `c_revoke` | fn → | take back the leave of the function value on top and the count it held; a revoke of a closure with no leave does nothing. |
 | `ret` | | leave the function; a result remains on the stack |
@@ -384,7 +384,7 @@ How each value reads is in [Running a program](running.md#printing).
 | `x ၏ မိတ္တူ` (an object) | the fields of `x` (`object_cell`) into a slot, `dup_seqs` on them, then `to_heap` into a new object |
 | `x တစ်ခုလုံး ၏ မိတ္တူ` | `blit k` into a slot, then `deep_seqs k` |
 | `x ၏ အကွက် s မှစ၍ n ကွက်` | `slot; x; s; n; make_slice …`, the room word set to 0, then `own k` |
-| `l ၏ အကွက် i ၏ လိပ်စာ` (marked code) | `l; dup; own k; dup; pin; i; slice_cell s` |
+| `l ၏ အကွက် i ၏ လိပ်စာ` (unsafe code) | `l; dup; own k; dup; pin; i; slice_cell s` |
 | an object converted to a pointer, and back | `x; obj_to_ptr`, and `slot; p; ptr_to_obj` |
 | `p ၏ တန်ဖိုး` | `p; load k` |
 | `p + i` | `p; i; ptr_add s` |
@@ -424,8 +424,8 @@ distance for ends of each sign, and steps with `wrap add` or `wrap sub`, so
 
 ### A heap block in instructions
 
-A block from the heap, written to, read and given back in a marked block (see [Unsafe
-Zaka](../language/unsafe.md)), and the instructions of its start block. A marked block
+A block from the heap, written to, read and given back in an unsafe block (see [Unsafe
+Zaka](../language/unsafe.md)), and the instructions of its start block. An unsafe block
 adds no instruction of its own:
 
 ```zaka

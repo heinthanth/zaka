@@ -261,7 +261,7 @@ unsigned char *zk_alloc(zk_umax count, size_t stride)
 }
 
 /**
- * Free a raw block of marked code and give back its octets.
+ * Free a raw block that unsafe code made and give back its octets.
  *
  * @param p The block, or NULL.
  */
@@ -1921,12 +1921,6 @@ static int zk_eq_step(
         }
         return 1;
     case ZK_K_FLOAT:
-#ifdef ZK_HAS_F16
-        RET_IF(k->size == 2, zk_ld_f16(a) == zk_ld_f16(b));
-#endif
-#ifdef ZK_HAS_F128
-        RET_IF(k->size == 16, zk_ld_f128(a) == zk_ld_f128(b));
-#endif
         RET_IF(k->size == 4, zk_ld_f32(a) == zk_ld_f32(b));
         return zk_ld_f64(a) == zk_ld_f64(b);
     default:
@@ -2057,26 +2051,14 @@ static void zk_show_scalar(const unsigned char *at, const zk_kind *k)
         DONE_IF(k->size == 2, zk_put_i(zk_ld_i16(at)));
         DONE_IF(k->size == 4, zk_put_i(zk_ld_i32(at)));
         DONE_IF(k->size == 8, zk_put_i(zk_ld_i64(at)));
-#ifdef __SIZEOF_INT128__
-        DONE_IF(k->size == 16, zk_put_i(zk_ld_i128(at)));
-#endif
         return;
     case ZK_K_UINT:
         DONE_IF(k->size == 1, zk_put_u(zk_ld_u8(at)));
         DONE_IF(k->size == 2, zk_put_u(zk_ld_u16(at)));
         DONE_IF(k->size == 4, zk_put_u(zk_ld_u32(at)));
         DONE_IF(k->size == 8, zk_put_u(zk_ld_u64(at)));
-#ifdef __SIZEOF_INT128__
-        DONE_IF(k->size == 16, zk_put_u(zk_ld_u128(at)));
-#endif
         return;
     case ZK_K_FLOAT:
-#ifdef ZK_HAS_F16
-        DONE_IF(k->size == 2, zk_put_f16(zk_ld_f16(at)));
-#endif
-#ifdef ZK_HAS_F128
-        DONE_IF(k->size == 16, zk_put_f128(zk_ld_f128(at)));
-#endif
         DONE_IF(k->size == 4, zk_put_f32(zk_ld_f32(at)));
         DONE_IF(k->size == 8, zk_put_f64(zk_ld_f64(at)));
         return;
@@ -2294,20 +2276,6 @@ static uint64_t zk_mix(uint64_t h, const unsigned char *p, size_t n)
  */
 static int zk_float_class(const unsigned char *at, size_t size)
 {
-#ifdef ZK_HAS_F16
-    if (size == 2)
-    {
-        zk_half v = zk_ld_f16(at);
-        return v != v ? 1 : v == 0 ? 0 : 2;
-    }
-#endif
-#ifdef ZK_HAS_F128
-    if (size == 16)
-    {
-        zk_quad v = zk_ld_f128(at);
-        return v != v ? 1 : v == 0 ? 0 : 2;
-    }
-#endif
     if (size == 4)
     {
         float v = zk_ld_f32(at);

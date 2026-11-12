@@ -16,4 +16,4 @@ en = "Report particle idiom warnings as errors."
 en = "Foldings to run: all, none, or a comma list of exprs, consts and branches. Errors in constant operations are reported whatever this holds."
 
 [ir.no_unsafe]
-en = "Refuse marked code (စိတ်မချရသော), for lessons and projects that keep to safe Zaka."
+en = "Refuse unsafe code (စိတ်မချရသော), for lessons and projects that keep to safe Zaka."

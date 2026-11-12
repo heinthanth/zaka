@@ -143,9 +143,9 @@ en = "Strict pointer check"
 [explorer.settings.mem_strict_note]
 en = "Also warn about a pointer that can be null, such as a fresh allocation never compared with the null pointer (မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ)."
 [explorer.settings.no_unsafe]
-en = "Forbid marked code"
+en = "Forbid unsafe code"
 [explorer.settings.no_unsafe_note]
-en = "Refuse each function and block marked စိတ်မချရသော, so a lesson keeps to safe Zaka."
+en = "Refuse each unsafe function and unsafe block (စိတ်မချရသော), so a lesson keeps to safe Zaka."
 [explorer.settings.overflow]
 en = "Stop on overflow"
 [explorer.settings.overflow_note]

@@ -13,7 +13,7 @@ scenario, and names the cost.
 | --- | --- |
 | [The case for sentences](sentences.md) | What is the reason a program reads as Burmese sentences, with the verb last? |
 | [Finding words in Burmese](segmenting.md) | Burmese has no spaces between words. How does the compiler find where a word ends? |
-| [Storage, explained](storage.md) | How are values and objects counted and freed, what does the ring collector do, and what is left to marked code? |
+| [Storage, explained](storage.md) | How are values and objects counted and freed, what does the ring collector do, and what is left to unsafe code? |
 | [Checks in the VM and in native code](checked.md) | Which mistakes are found before the run, which during it, and which once a native build exists? |
 
 ```text
@@ -26,7 +26,7 @@ scenario, and names the cost.
 ```
 
 The pages can be read in a free order. The last two go together: counted storage is what keeps safe
-code free of storage mistakes, and the checks page tells what the compiler finds in marked
+code free of storage mistakes, and the checks page tells what the compiler finds in unsafe
 code before the run and what is left for the VM.
 
 For the rules themselves, see [the language](../language/README.md); for the VM

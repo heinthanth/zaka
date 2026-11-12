@@ -63,7 +63,7 @@ pub const LINT_CODES: [Code; 13] = [
 #[strum(serialize_all = "kebab-case")]
 pub enum LintGroup
 {
-    /// The pointer lint of marked code, which `--mem-check` sets.
+    /// The pointer lint of unsafe code, which `--mem-check` sets.
     Mem,
     /// A block that is never given back.
     Leaks,

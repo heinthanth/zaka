@@ -25,7 +25,7 @@ An integer kind is built from three parts in a fixed order:
 
 - The sign is `လက္ခဏာရှိ` (signed) or `လက္ခဏာမဲ့` (unsigned). Without a sign word the
   integer is signed. Signed integers use two's complement.
-- The size is 8, 16, 32, 64 or 128 bits, written with Burmese or Western digits. Another
+- The size is 8, 16, 32 or 64 bits, written with Burmese or Western digits. Another
   count is ZK0216. Without a size the integer has the *platform size*.
 - A sign word can stand before `ကိန်းပြည့်` and no other kind (ZK0217).
 
@@ -39,15 +39,13 @@ An integer kind is built from three parts in a fixed order:
 | `လက္ခဏာမဲ့ ၃၂ ဘစ် ကိန်းပြည့်` | `u32` | 0 | 4,294,967,295 |
 | `၆၄ ဘစ် ကိန်းပြည့်` | `i64` | -2^63 | 2^63 - 1 |
 | `လက္ခဏာမဲ့ ၆၄ ဘစ် ကိန်းပြည့်` | `u64` | 0 | 2^64 - 1 |
-| `၁၂၈ ဘစ် ကိန်းပြည့်` | `i128` | -2^127 | 2^127 - 1 |
-| `လက္ခဏာမဲ့ ၁၂၈ ဘစ် ကိန်းပြည့်` | `u128` | 0 | 2^128 - 1 |
 | `ကိန်းပြည့်`, `လက္ခဏာရှိ ကိန်းပြည့်` | `isize` | as the platform size | |
 | `လက္ခဏာမဲ့ ကိန်းပြည့်` | `usize` | as the platform size | |
 
 ### The platform size
 
 `isize` and `usize` take their width from the platform: 64 bits unless set otherwise.
-`zakac run --platform-bits N` (and `semcheck`) picks 8, 16, 32, 64 or 128 instead. Plain
+`zakac run --platform-bits N` (and `semcheck`) picks 8, 16, 32 or 64 instead. Plain
 `ကိန်းပြည့်` is the right choice when no size matters, and it is the kind that an
 integer literal gets when its place asks for nothing else.
 
@@ -72,16 +70,14 @@ zakac run --platform-bits 32 program.zaka
 
 ## Decimal number kinds
 
-A decimal number kind is `ဒဿမကိန်း` with an optional size: 16, 32, 64 or 128 bits.
+A decimal number kind is `ဒဿမကိန်း` with an optional size: 32 or 64 bits.
 Without a size it has 64 bits. These are the IEEE 754 formats of base 2. There is no
 unsigned decimal kind.
 
 | Kind | Short name | Sign / exponent / fraction bits | Correct digits | Largest finite |
 | --- | --- | --- | --- | --- |
-| `၁၆ ဘစ် ဒဿမကိန်း` | `f16` | 1 / 5 / 10 | about 3 | 65,504 |
 | `၃၂ ဘစ် ဒဿမကိန်း` | `f32` | 1 / 8 / 23 | about 7 | about 3.4 × 10^38 |
 | `ဒဿမကိန်း`, `၆၄ ဘစ် ဒဿမကိန်း` | `f64` | 1 / 11 / 52 | about 15 | about 1.8 × 10^308 |
-| `၁၂၈ ဘစ် ဒဿမကိန်း` | `f128` | 1 / 15 / 112 | about 33 | about 1.2 × 10^4932 |
 
 A decimal number can also be `inf`, `-inf` or `NaN`. These come from arithmetic, such as
 a division with a zero divisor, and do not stop the program. A literal that is too big for its float
@@ -96,7 +92,7 @@ an exponent when its size is far from 1.
 သုည / သုည ကို ပြသမည်။
 သုည / သုည == သုည / သုည ကို ပြသမည်။
 1e30 ကို ပြသမည်။
-၇၀၀၀၀ ဟူသော ၁၆ ဘစ် ဒဿမကိန်း တစ်ခု ကို ပြသမည်။
+1e39 ဟူသော ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -164,7 +160,7 @@ error[ZK0406]: the literal 256 does not fit u8
 ```
 
 ```text
-error[ZK0216]: ၇ is not a valid bit count here; use 8, 16, 32, 64, 128
+error[ZK0216]: ၇ is not a valid bit count here; use 8, 16, 32, 64
 ```
 
 ## Kinds do not mix on their own
@@ -248,7 +244,7 @@ value, it writes `ကနဦးတန်ဖိုး` ("the initial value"), and 
 | a field of a struct literal | `လူ(အမည်: "မောင်"၊ အသက်: ကနဦးတန်ဖိုး)` |
 | a cell of a list literal | `[လူ(အမည်: "မောင်"၊ အသက်: ၁)၊ ကနဦးတန်ဖိုး]` |
 | a return | `ကနဦးတန်ဖိုး ကို ပြန်ပေးမည်။` |
-| an argument | `လုပ်ဆောင်ချက် ပြ ကို ကနဦးတန်ဖိုး တို့ဖြင့် လုပ်ဆောင်မည်။` |
+| an argument | `ပြ ဟူသော လုပ်ဆောင်ချက်ကို ကနဦးတန်ဖိုး တို့ဖြင့် လုပ်ဆောင်မည်။` |
 
 Where nothing gives a kind, as in `ကနဦးတန်ဖိုး ကို ပြသမည်။` or
 `ကိန်းရှင် က သည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။`, it is ZK0478.
@@ -338,7 +334,7 @@ pointers](#lists-objects-and-pointers), below:
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၈ ဘစ် ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
-၁၆ ဘစ် ဒဿမကိန်း တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
+၃၂ ဘစ် ဒဿမကိန်း တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
 စာလုံး တစ်လုံး ၏ အရွယ်အစား ကို ပြသမည်။
 မှန်မှားတန်ဖိုး တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
 ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
@@ -349,7 +345,7 @@ pointers](#lists-objects-and-pointers), below:
 
 ```text
 ၁
-၂
+၄
 ၄
 ၁
 ၈
@@ -383,7 +379,7 @@ after it, since a value of the kind is a reference to the object. A pointer and 
 reference take the platform size.
 
 Safe code can hold a pointer, pass it on and compare it with the null address
-`မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`; reading or writing through it, and making one, need marked
+`မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`; reading or writing through it, and making one, need unsafe
 code ([Unsafe Zaka](unsafe.md)). The pointer is the one kind that can hold NULL: a shared
 object and a function value hold an object or a function at each point, and a value that can be
 missing is an [optional](optionals.md).

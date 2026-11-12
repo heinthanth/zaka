@@ -1,20 +1,20 @@
 ---
 title: Owned pointers
-description: Mark a function စိတ်မချရသော, wrap it in a safe function, hand a block over with အပိုင်အနေဖြင့်, and set how the compiler reports pointer mistakes.
+description: Declare a function စိတ်မချရသော, wrap it in a safe function, hand a block over with အပိုင်အနေဖြင့်, and set how the compiler reports pointer mistakes.
 ---
 
 # Owned pointers
 
 A block from the heap should be given back once, and no pointer should use it after that.
 When pointers pass between functions, the headers tell which function gives each block
-back. This page shows those headers, the safe functions that wrap marked ones, and the
+back. This page shows those headers, the safe functions that wrap unsafe ones, and the
 settings of the compiler's pointer checks.
 
-## Marked functions
+## Unsafe functions
 
-A function whose header starts with `စိတ်မချရသော` is marked: each line of it is marked code,
-and so is each function declared inside it. A call of a marked function is unsafe too, so
-it needs marked code, as in Rust:
+A function whose header starts with `စိတ်မချရသော` is unsafe: each line of it is unsafe code,
+and so is each function declared inside it. A call of an unsafe function is unsafe too, so
+it needs unsafe code, as in Rust:
 
 ```zaka-error ZK0468
 // number: a new block that holds 5
@@ -27,21 +27,21 @@ it needs marked code, as in Rust:
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် လုပ်ဆောင်ချက် ဂဏန်း ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။   // outside marked code
+ကိန်းရှင် ပ သည် ဂဏန်း ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။   // outside unsafe code
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0468]: a call of "ဂဏန်း", a function marked "စိတ်မချရသော", needs marked code
+error[ZK0468]: a call of "ဂဏန်း", an unsafe function, needs unsafe code
 ```
 
-A marked function cannot be a [function value](../function-values/README.md) either
-(ZK0469), since a call through the value would not show the mark.
+An unsafe function cannot be a [function value](../function-values/README.md) either
+(ZK0469), since a call through the value would not show that it is unsafe.
 
 ## A safe wrapper
 
-A function with no mark and a marked block inside is a *safe wrapper*: its callers need
-no mark. The function promises that it uses its pointers right, and the VM still checks
+A safe function with an unsafe block inside is a *safe wrapper*: its callers need
+no unsafe code. The function promises that it uses its pointers right, and the VM still checks
 each access:
 
 ```zaka
@@ -61,19 +61,19 @@ each access:
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-// five: a safe wrapper, a plain function with a marked block inside
+// five: a safe wrapper, a plain function with an unsafe block inside
 လုပ်ဆောင်ချက် ငါး သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 ကိန်းရှင် အဖြေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် လုပ်ဆောင်ချက် ဂဏန်း ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ဂဏန်း ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 အဖြေ ကို ပ ၏ တန်ဖိုး ဟု ထားမည်။
-လုပ်ဆောင်ချက် ရှင်း ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။      // ပ points at nothing from here on
+ရှင်း ဟူသော လုပ်ဆောင်ချက်ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။      // ပ points at nothing from here on
 အဖြေ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ငါး ကို လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။     // safe code: no mark
+ငါး ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။     // safe code
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -107,7 +107,7 @@ null address, and a read of it is an error, in each mode:
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-လုပ်ဆောင်ချက် ရှင်း ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။       // hands the block over
+ရှင်း ဟူသော လုပ်ဆောင်ချက်ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။       // hands the block over
 ပ ၏ တန်ဖိုး ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -140,12 +140,12 @@ warning[ZK0708]: the block that "အဖြေ" holds is never given back or hand
 
 ## How the checks report
 
-In marked code, the compiler reports the pointer mistakes it can prove as warnings, and
+In unsafe code, the compiler reports the pointer mistakes it can prove as warnings, and
 the program runs; the VM then stops it at the bad access. In safe code, such as a read of a
 variable before the program sets it, each finding remains an error. The option `--mem-check` sets the
-level for marked code:
+level for unsafe code:
 
-| Option | In the Explorer's settings | Effect in marked code |
+| Option | In the Explorer's settings | Effect in unsafe code |
 | --- | --- | --- |
 | `--mem-check warn` | **Ownership check**: **Warn** | the default: each mistake is a warning, and the program runs |
 | `--mem-check error` | **Ownership check**: **Error** | each mistake is an error, and nothing runs |
@@ -173,8 +173,8 @@ warning[ZK0711]: "ပ" can point at nothing here; compare it with "မည်သ�
 
 ## Keeping to safe Zaka
 
-A lesson or a project can refuse marked code with `zakac run --no-unsafe`, or **Forbid
-marked code** in the Explorer. Each mark is then an error:
+A lesson or a project can refuse unsafe code with `zakac run --no-unsafe`, or **Forbid
+unsafe code** in the Explorer. Each use of it is then an error:
 
 ```zaka-error ZK0471 no-unsafe=on
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -186,7 +186,7 @@ marked code** in the Explorer. Each mark is then an error:
 ```
 
 ```text
-error[ZK0471]: this program keeps to safe Zaka, so it cannot mark code "စိတ်မချရသော"
+error[ZK0471]: this program keeps to safe Zaka, so it cannot hold unsafe code ("စိတ်မချရသော")
 ```
 
 ## Hands on

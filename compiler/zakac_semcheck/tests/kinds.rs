@@ -200,10 +200,10 @@ fn conversions_follow_the_table()
 fn calls_check_argument_and_return_kinds()
 {
     let checked =
-        check(&lines(&[TWICE, "လုပ်ဆောင်ချက် နှစ်ဆ ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။"]));
+        check(&lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။"]));
     assert!(checked.out.diagnostics.is_empty());
-    assert_eq!(kind_at(&checked, "လုပ်ဆောင်ချက် နှစ်ဆ ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်"), "isize");
-    let bad_arg = lines(&[TWICE, "လုပ်ဆောင်ချက် နှစ်ဆ ကို 'က' တို့ဖြင့် လုပ်ဆောင်မည်။"]);
+    assert_eq!(kind_at(&checked, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်"), "isize");
+    let bad_arg = lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို 'က' တို့ဖြင့် လုပ်ဆောင်မည်။"]);
     assert_eq!(codes(&bad_arg), [Code::KindMismatch]);
     let bad_return = lines(&[
         "လုပ်ဆောင်ချက် ဂဏန်း သည်",
@@ -227,19 +227,33 @@ fn one_mistake_gives_one_diagnostic()
 #[test]
 fn integer_operators_ignore_a_float_context()
 {
-    let checked = check("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ << ၂ ဖြစ်ပါစေ။");
-    assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
+    // An integer operator keeps its integer kind in a float context, and
+    // no float kind holds each value of `isize`.
+    let checked = check("ကိန်းရှင် က သည် ၆၄ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ << ၂ ဖြစ်ပါစေ။");
+    let found: Vec<Code> = checked.out.diagnostics.iter().map(|d| d.code).collect();
+    assert_eq!(found, [Code::KindMismatch]);
     assert_eq!(kind_at(&checked, "၁ << ၂"), "isize");
-    ok("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၆ & ၃ ဖြစ်ပါစေ။");
-    ok("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ~၆ ဖြစ်ပါစေ။");
-    ok("ကိန်းရှင် က သည် ၁၂၈ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၆ ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ် ဖြစ်ပါစေ။");
+    assert_eq!(
+        codes("ကိန်းရှင် က သည် ၆၄ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၆ & ၃ ဖြစ်ပါစေ။"),
+        [Code::KindMismatch]
+    );
+    assert_eq!(
+        codes("ကိန်းရှင် က သည် ၆၄ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ~၆ ဖြစ်ပါစေ။"),
+        [Code::KindMismatch]
+    );
+    assert_eq!(
+        codes(
+            "ကိန်းရှင် က သည် ၆၄ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၆ ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ် \
+             ဖြစ်ပါစေ။"
+        ),
+        [Code::KindMismatch]
+    );
 }
 
 #[test]
 fn unprefixed_literals_reach_the_full_range_of_their_kind()
 {
     ok("ကိန်းရှင် က သည် 18446744073709551615 ဟူသော လက္ခဏာမဲ့ ၆၄ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။");
-    ok("ကိန်းရှင် က သည် 1180591620717411303424 ဟူသော ၁၂၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။");
     assert_eq!(codes("18446744073709551615 ကို ပြသမည်။"), [Code::LiteralDoesNotFit]);
 }
 

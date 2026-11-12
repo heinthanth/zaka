@@ -265,6 +265,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::DataToFill
         | Kw::MarkWord
         | Kw::Called
+        | Kw::Named
         | Kw::ListOf
         | Kw::StartingAt
         | Kw::Upto

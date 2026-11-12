@@ -32,7 +32,7 @@ variable the block belongs to.
 Numerous traps have a twin in the compiler. The [compiler checks](../compiler/checks.md)
 report a mistake that can be proved from the text; the VM reports the same mistake when
 it happens in a run, which covers the paths and the numbers the compiler cannot see. The
-pointer work on this page sits in marked code ([Unsafe Zaka](../language/unsafe.md)),
+pointer work on this page sits in unsafe code ([Unsafe Zaka](../language/unsafe.md)),
 where the findings of the checker are warnings under the default `--mem-check warn`, so
 each program runs and the VM's own check shows. With `--mem-check error` the compiler
 would refuse numerous programs of this page.
@@ -212,7 +212,7 @@ the program stopped: access through a null address at 0x0
 A function value is never null in safe code: a variable of a function kind gets a function
 before each read, as the check of [unset values](../language/statements.md#set-before-read)
 proves. The trap remains as a backstop for the cases the check cannot see. One is a heap
-block in marked code, which starts at zero octets, and zero octets hold no function:
+block in unsafe code, which starts at zero octets, and zero octets hold no function:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -221,7 +221,7 @@ block in marked code, which starts at zero octets, and zero octets hold no funct
 မင်မိုရီတွင် (ကိန်းပြည့် တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
 ကိန်းရှင် လ သည် ပ ၏ တန်ဖိုး ဖြစ်ပါစေ။ // a new block holds zero octets
 "အစ" ဟု ပြသမည်။
-လုပ်ဆောင်ချက် လ ကို ၅ တို့ဖြင့် လုပ်ဆောင်မည်။
+လ ဟူသော လုပ်ဆောင်ချက်ကို ၅ တို့ဖြင့် လုပ်ဆောင်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -258,9 +258,9 @@ sig ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခ
 ဖမ်းကြိမ် ကို ဖမ်းကြိမ် + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ဖမ်း ဟူသော လုပ်ဆောင်ချက်ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။
-လုပ်ဆောင်ချက် signal ကို ၁၅၊ ဖမ်း ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
+signal ဟူသော လုပ်ဆောင်ချက်ကို ၁၅၊ ဖမ်း ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
 ဖမ်း ဟူသော လုပ်ဆောင်ချက်ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်။
-လုပ်ဆောင်ချက် raise ကို ၁၅ တို့ဖြင့် လုပ်ဆောင်မည်။
+raise ဟူသော လုပ်ဆောင်ချက်ကို ၁၅ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -406,7 +406,7 @@ long form names the variable:
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် လုပ်ဆောင်ချက် ဒေသ ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ဒေသ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 ပ ၏ တန်ဖိုး ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -488,7 +488,7 @@ A `ကူးယူမည်` writes cells like the `memcpy` of C, so its source 
 must not share an octet. When the ranges do, the VM stops the program before it writes, and
 names the block of the destination. When both addresses point into one block at offsets
 the compiler knows, and the count is known, the checker reports the overlap first
-(ZK0721, a warning in marked code under the default `--mem-check warn`). `ပြောင်းထည့်မည်` allows the overlap: it reads the
+(ZK0721, a warning in unsafe code under the default `--mem-check warn`). `ပြောင်းထည့်မည်` allows the overlap: it reads the
 source in full before it writes. The other checks of these statements stop the program as
 an access does (out of bounds, use after free, a null address, a write into static text),
 a count of 0 is checked for nothing, and a count whose product with the size of a cell
@@ -515,7 +515,7 @@ the program stopped: the cells at 0x101008 overlap their source; "ပြော�
 Each static text sits in a frozen block, which each literal of the same text shares
 ([Addresses and blocks](blocks.md#the-address-space)). The compiler refuses a write
 to a cell of text (ZK0429), and a character write or an add first copies static text into
-a heap block of its own, so a pointer in marked code is the one road to such a write. The long
+a heap block of its own, so a pointer in unsafe code is the one road to such a write. The long
 form names the block as `static text t0`, the index in the `texts` table of the
 listing:
 
@@ -576,7 +576,7 @@ The locals of a call live in the stack region, 1 MiB at most, with the default l
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "အစ" ဟု ပြသမည်။
-လုပ်ဆောင်ချက် ကြီးမား ကို လုပ်ဆောင်မည်။
+ကြီးမား ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -594,11 +594,11 @@ limit first. The limit is 4096 calls waiting to return:
 လုပ်ဆောင်ချက် အဆုံးမဲ့ သည်
 န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို န + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
+အဆုံးမဲ့ ဟူသော လုပ်ဆောင်ချက်ကို န + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
+အဆုံးမဲ့ ဟူသော လုပ်ဆောင်ချက်ကို ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -763,7 +763,7 @@ other than the host's (`--platform-bits`). The reason follows the colon:
 လုပ်ဆောင်ချက် nosuchfn သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် nosuchfn ကို ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+nosuchfn ဟူသော လုပ်ဆောင်ချက်ကို ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -790,9 +790,9 @@ step ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်�
 c ဟူသော ရေတွက်စက် တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် စက် သည် လုပ်ဆောင်ချက် counter_open ကို ၃ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် စက် သည် counter_open ဟူသော လုပ်ဆောင်ချက်ကို ၃ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 ကိန်းရှင် တူ သည် စက် ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် counter_close ကို စက် တို့ဖြင့် လုပ်ဆောင်မည်။
+counter_close ဟူသော လုပ်ဆောင်ချက်ကို စက် တို့ဖြင့် လုပ်ဆောင်မည်။
 // တူ shares the box that counter_close emptied
 တူ ၏ count ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -817,5 +817,5 @@ The message tells what went wrong and where. A good order of work:
 2. Look at the instruction index with `zakac build --emit asm`, which lists the operations of
    each function with their index and the name of the variable each touches. See
    [Instructions](instructions.md).
-3. Check the compile-time diagnostics: the warnings of the checker on marked code point
+3. Check the compile-time diagnostics: the warnings of the checker on unsafe code point
    at numerous traps of this page, and `--mem-check error` turns them into errors. The codes are in [Error messages](../reference/errors.md).

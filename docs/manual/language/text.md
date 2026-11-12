@@ -69,7 +69,7 @@ the line where it opens (ZK0104).
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် ချီးမွမ်း ကို "မြမြ"၊ ၉၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ချီးမွမ်း ဟူသော လုပ်ဆောင်ချက်ကို "မြမြ"၊ ၉၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 စာ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -455,7 +455,7 @@ therefore copies the text a few times, not once for each add.
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် "မမ" ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် အော် ကို အမည် တို့ဖြင့် လုပ်ဆောင်မည်။
+အော် ဟူသော လုပ်ဆောင်ချက်ကို အမည် တို့ဖြင့် လုပ်ဆောင်မည်။
 အမည် ကို ပြသမည်။
 ကိန်းရှင် l သည် ["ab"၊ "cd"] ဖြစ်ပါစေ။
 l ၏ အကွက် ၁ ၏ စာလုံး ၀ ကို 'X' ဟု ထားမည်။
@@ -646,7 +646,7 @@ When the place read is not read again, the compiler moves the text instead, and 
 count does not change: the new place takes the block, and the old one is left blank. The
 move is never seen, since nothing reads the old place. It is not made for a parameter,
 whose text can belong to the caller; for a global read inside a function; for a global
-that a call of the same statement sets; for a place whose address marked code takes; or
+that a call of the same statement sets; for a place whose address unsafe code takes; or
 for a place the same statement reads twice.
 
 Text given to a function that is still read after the call is lent to the parameter with
@@ -655,7 +655,7 @@ count does not change. The function sees a value of its own all the same. Settin
 parameter gives it new text, an edit of it first copies the caller's u8s into a block of
 its own, and returning it, storing it or setting another place from it makes a copied text
 there. The text is shared through the count at the call instead when the function, or a
-call inside the same arguments, sets the global given, or when marked code takes the
+call inside the same arguments, sets the global given, or when unsafe code takes the
 address of the place.
 
 ```zaka
@@ -691,7 +691,7 @@ template slot, is dropped right after its use. A drop takes one off the count of
 block, and frees the block when the count reaches 0. It leaves alone static text (room 0)
 and text that was moved out. `zakac run --leaks` lists none of these blocks. A pointer
 beside the text in a struct or a list is not dropped: the block behind it, if it came from
-a heap statement, is for marked code to give back ([Unsafe Zaka](unsafe.md)).
+a heap statement, is for unsafe code to give back ([Unsafe Zaka](unsafe.md)).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -721,7 +721,7 @@ nothing is copied.
 
 A write inside a frozen block stops the program. The compiler forbids a cell write
 (ZK0429), and a character write or an add first moves text with a room of 0 to a block
-of its own, so a pointer that marked code takes around the check is the one road to it:
+of its own, so a pointer that unsafe code takes around the check is the one road to it:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

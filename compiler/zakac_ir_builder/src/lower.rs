@@ -122,11 +122,11 @@ pub fn lower(
     #[rustfmt::skip]
     let module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
         .foreign(lowerer.foreign).main(main).imported_inits(imported_inits).host(host)
-        .marked(marked_spans(program)).span(program.span).build();
+        .unsafe_spans(unsafe_spans(program)).span(program.span).build();
     module
 }
 
-/// The source regions of marked code in a program.
+/// The source regions of unsafe code in a program.
 ///
 /// # Arguments
 ///
@@ -134,9 +134,9 @@ pub fn lower(
 ///
 /// # Returns
 ///
-/// The region of each marked function and each marked block, outer ones
+/// The region of each unsafe function and each unsafe block, outer ones
 /// included with the ones inside them.
-fn marked_spans(program: &st::Program) -> Vec<Span>
+fn unsafe_spans(program: &st::Program) -> Vec<Span>
 {
     /// Gathers the regions as it walks the tree.
     struct Marks(Vec<Span>);
@@ -2280,7 +2280,7 @@ impl Lowerer<'_>
         self.spill(read).node
     }
 
-    /// Write a field of the struct C keeps behind a handle, in marked code. A
+    /// Write a field of the struct C keeps behind a handle, in unsafe code. A
     /// closed handle stops the run first.
     ///
     /// # Arguments

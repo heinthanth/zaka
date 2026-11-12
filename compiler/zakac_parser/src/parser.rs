@@ -289,10 +289,6 @@ pub(crate) struct Parser<'t>
     /// parameters then stands in parentheses.
     #[builder(default)]
     pub(crate) in_list: bool,
-    /// Whether the place that holds the function of a long call is being
-    /// parsed: a `ကို` after a lone operand closes the place.
-    #[builder(default)]
-    pub(crate) in_callee: bool,
     /// Whether a statement other than an import has been parsed at the top
     /// level, so a later import is out of place.
     #[builder(default)]

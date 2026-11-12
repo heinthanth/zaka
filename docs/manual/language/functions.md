@@ -19,7 +19,7 @@ travel into a call, and the errors the compiler reports. For a gentle start, see
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် နှစ်ထပ် ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက်ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -135,7 +135,7 @@ param := <name> ဟူသော <kind> တစ်<word> ကို [ဒေတာ �
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် သေး သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ပြ ကို သေး တို့ဖြင့် လုပ်ဆောင်မည်။       // 32 bits widens to the full width
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို သေး တို့ဖြင့် လုပ်ဆောင်မည်။       // 32 bits widens to the full width
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -225,19 +225,46 @@ error[ZK0313]: function "တစ်" returns isize, but no value is returned
 ## Calls
 
 A call has three forms here, and [Arguments first](#arguments-first) gives two more. The two
-word forms name the function after `လုပ်ဆောင်ချက်`, and both close the argument list with
-`တို့ဖြင့်` ("with these"), one argument or several. A function with no parameters has no
-argument list. The sign form writes the arguments in parentheses after the name.
+word forms name the function first, then `ဟူသော လုပ်ဆောင်ချက်ကို` ("the function called …"),
+and both close the argument list with `တို့ဖြင့်` ("with these"), one argument or several. A
+function with no parameters has no argument list. The sign form writes the arguments in
+parentheses after the name.
 
 | Form | Written | Is |
 | --- | --- | --- |
-| statement | `လုပ်ဆောင်ချက် <name> ကို <arguments> တို့ဖြင့် လုပ်ဆောင်မည်။` (or `လုပ်ဆောင်မည်`) | a statement; a result, if there is one, is dropped |
-| expression | `လုပ်ဆောင်ချက် <name> ကို <arguments> တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်` | a value |
+| statement | `<name> ဟူသော လုပ်ဆောင်ချက်ကို <arguments> တို့ဖြင့် လုပ်ဆောင်မည်။` (or `လုပ်ဆောင်မည်`) | a statement; a result, if there is one, is dropped |
+| expression | `<name> ဟူသော လုပ်ဆောင်ချက်ကို <arguments> တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်` | a value |
 | sign form | `<name>(<arguments>)` | a value, the same call as the expression form |
 
+`မည့်` can stand for `ဟူသော`: `<name> မည့် လုပ်ဆောင်ချက်ကို …` is the same call.
+
+`<name> ဟူသော လုပ်ဆောင်ချက်` alone is the function as a value
+([Function values](function-values.md)), so the word after `ကို` tells the two apart. A
+verb there makes the value the object of that verb: `နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက်ကို ပြန်ပေးမည်။`
+gives back the function. An argument or a call word (`လုပ်ဆောင်မည်`, `လုပ်ဆောင်သော ရလဒ်`) there
+makes a call.
+
 The name can also be a variable, a parameter or a constant that holds a function value,
-and the word forms can name a field or a cell that holds one; see
+and the word forms can name a field or a cell that holds one, in parentheses; see
 [Function values](function-values.md#calling-a-function-value).
+
+```zaka
+လုပ်ဆောင်ချက် နှစ်ဆ သည်
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က * ၂ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+နှစ်ဆ မည့် လုပ်ဆောင်ချက်ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၈
+၁၀
+```
 
 A function whose result clause names a result kind can fail. A call to it
 passes the failure on, with `… လုပ်ဆောင်သော ရလဒ်ကောင်း` in place of `… လုပ်ဆောင်သော ရလဒ်`, a `?` after the `)`, or
@@ -261,7 +288,7 @@ An argument is a full expression, and `၊` ends it, so an argument needs no par
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် အစီအစဉ် ကို ၁ + ၁၊ ၂ * ၅ တို့ဖြင့် လုပ်ဆောင်မည်။
+အစီအစဉ် ဟူသော လုပ်ဆောင်ချက်ကို ၁ + ၁၊ ၂ * ၅ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -312,7 +339,7 @@ expression that begins with a call is written with that call in parentheses; see
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပြ ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -328,7 +355,7 @@ error[ZK0314]: function "ပြ" takes 1 arguments, 2 given
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပြ ကို မှန် တို့ဖြင့် လုပ်ဆောင်မည်။
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို မှန် တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -345,7 +372,7 @@ short form, and each ends as a statement or as a value:
 
 | Form | Statement | Value |
 | --- | --- | --- |
-| long | `<arguments> ကို သုံး၍ လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်မည်။` | `<arguments> ကို သုံး၍ လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်သော ရလဒ်` |
+| long | `<arguments> ကို သုံး၍ <name> ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။` | `<arguments> ကို သုံး၍ <name> ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ်` |
 | short | `<arguments> ကို သုံး၍ <name> မည်။` | `<arguments> ကို သုံး၍ <name> သည့် ရလဒ်` |
 
 For a function with no parameters, leave out the arguments and `ကို သုံး၍`: `<name> မည်။`,
@@ -374,7 +401,7 @@ failure passes on as it does there: `ရလဒ်ကောင်း` in place of
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၃၊ ၄ တို့ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။
 ၅ ကို သုံး၍ ပြ မည်။
-၆ ကို သုံး၍ လုပ်ဆောင်ချက် ပြ ကို လုပ်ဆောင်မည်။
+၆ ကို သုံး၍ ပြ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
 ခုနစ် သည့် ရလဒ်၊ ၁ တို့ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -428,8 +455,8 @@ sentence, each argument with its mark after it and the function last:
 
 The call ends as the
 [arguments-first](#arguments-first) forms do: `<name> မည်` or
-`လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်မည်` for a statement, `<name> သည့် ရလဒ်` or
-`လုပ်ဆောင်ချက် <name> ကို လုပ်ဆောင်သော ရလဒ်` for a value, with `ရလဒ်ကောင်း` and the pass-on
+`<name> ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်` for a statement, `<name> သည့် ရလဒ်` or
+`<name> ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ်` for a value, with `ရလဒ်ကောင်း` and the pass-on
 tail as there. A function with marks takes the other call forms too.
 
 ```zaka
@@ -448,9 +475,9 @@ tail as there. A function with marks takes the other call forms too.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ" ကို "စာအုပ်" သို့ ရေး မည်။
 "ဇာတ်လမ်း" ၌ရှိသော ဖတ် သည့် ရလဒ် ကို ပြသမည်။
-ကိန်းရှင် စာ သည် "ကဗျာ" ၌ရှိသော လုပ်ဆောင်ချက် ဖတ် ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် စာ သည် "ကဗျာ" ၌ရှိသော ဖတ် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 စာ ကို ပြသမည်။
-လုပ်ဆောင်ချက် ရေး ကို "ဟယ်လို"၊ "မှတ်စု" တို့ဖြင့် လုပ်ဆောင်မည်။
+ရေး ဟူသော လုပ်ဆောင်ချက်ကို "ဟယ်လို"၊ "မှတ်စု" တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -575,7 +602,7 @@ The rules of functions that share a name:
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ပြ ကို "ဟယ်လို" တို့ဖြင့် လုပ်ဆောင်မည်။
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို "ဟယ်လို" တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -653,7 +680,7 @@ marks of its parameters included, and a call is a call like each other.
 n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် abs ကို -၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+abs ဟူသော လုပ်ဆောင်ချက်ကို -၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -664,7 +691,7 @@ n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခ�
 C takes each parameter and gives its result as a whole value, laid out as in C, so the
 kinds that cross are those C has:
 
-| Kind | In C | The mark |
+| Kind | In C | `စိတ်မချရသော` |
 | --- | --- | --- |
 | integers of 8 to 64 bits, `ကိန်းပြည့်` | `int8_t` to `int64_t`, `uint8_t` to `uint64_t` | not needed |
 | `၃၂ ဘစ် ဒဿမကိန်း`, `ဒဿမကိန်း` | `float`, `double` | not needed |
@@ -678,15 +705,15 @@ kinds that cross are those C has:
 | a pointer, `<kind> လိပ်စာ`, or a struct that holds one | a pointer | needed |
 | `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, as a result | `const char *`, NULL for the optional with no data | not needed |
 
-### The mark on a C function
+### Unsafe C functions
 
 A C function that takes or gives a pointer can reach
-storage that Zaka does not check, so its declaration carries the mark `စိတ်မချရသော`, as a
-function of the program can ([Unsafe Zaka](unsafe.md)). Without the mark it is ZK0472.
-Each call of a marked C function then needs marked code: a marked function, or a block
-marked `စိတ်မချရသော်လည်း` (ZK0468 elsewhere).
+storage that Zaka does not check, so it is declared unsafe with `စိတ်မချရသော`, as a
+function of the program can be ([Unsafe Zaka](unsafe.md)). Without the word it is ZK0472.
+Each call of an unsafe C function then needs unsafe code: an unsafe function, or an unsafe
+block opened with `စိတ်မချရသော်လည်း` (ZK0468 elsewhere).
 
-A C function with none of these kinds needs no mark, and safe code calls it: its
+A C function with none of these kinds is not declared unsafe, and safe code calls it: its
 parameters are numbers, true or false, text, lists of numbers, plain structs, function
 values or handles of a kind from outside the program, and its result is nothing, a
 number, a plain struct, such a handle, or an optional of text or of such a handle (C gives
@@ -701,7 +728,7 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 ```
 
 ```text
-error[ZK0472]: "frexp" passes a pointer, so its declaration needs the mark "စိတ်မချရသော"
+error[ZK0472]: "frexp" passes a pointer, so its declaration must be unsafe, with "စိတ်မချရသော"
 ```
 
 ```zaka-error ZK0468
@@ -710,12 +737,12 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ထပ်ကိန်း သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် frexp ကို ၈.၀၊ ထပ်ကိန်း ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+frexp ဟူသော လုပ်ဆောင်ချက်ကို ၈.၀၊ ထပ်ကိန်း ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0468]: a call of "frexp", a function marked "စိတ်မချရသော", needs marked code
+error[ZK0468]: a call of "frexp", an unsafe function, needs unsafe code
 ```
 
 ### Text
@@ -730,7 +757,7 @@ inside the text ends the string there for C.
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် strlen ကို "မောင်" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+strlen ဟူသော လုပ်ဆောင်ချက်ကို "မောင်" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -791,12 +818,12 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၄၊ ၁၀၅၊ ၀] ဖြစ်ပါစေ။
 ကိန်းရှင် ပွား သည် စာ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် strlen ကို စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
-လုပ်ဆောင်ချက် memset ကို စာ၊ ၇၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+strlen ဟူသော လုပ်ဆောင်ချက်ကို စာ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+memset ဟူသော လုပ်ဆောင်ချက်ကို စာ၊ ၇၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
 // ပွား keeps the cells it had
 "{စာ} {ပွား}" ဟု ပြသမည်။
 ကိန်းရှင် ထပ်ကိန်း သည် အကွက် ၁ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် frexp ကို ၈.၀၊ ထပ်ကိန်း တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+frexp ဟူသော လုပ်ဆောင်ချက်ကို ၈.၀၊ ထပ်ကိန်း တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ထပ်ကိန်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -826,7 +853,7 @@ past the last cell harms the run, as it would harm a C program.
 ### Text as a result
 
 A C function that gives back a string writes its result as `စာသား ရှိကောင်းရှိနိုင်သော
-ဒေတာဆဲလ် တစ်ခု` (an [optional](optionals.md)), and its declaration needs no mark: the program
+ဒေတာဆဲလ် တစ်ခု` (an [optional](optionals.md)), and its declaration needs no `စိတ်မချရသော`: the program
 gets a duplicate and never the address. NULL is the optional with no data, `အလွတ်`; each other
 address is the text, as its data. Zaka copies the string up to its zero octet into new text of
 its own. The old form, `စာသား သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ်`, is ZK0465, and
@@ -854,9 +881,9 @@ s ဟူသော စာသား တစ်ခု ကို လည်းကေ�
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် strstr ကို "မင်္ဂလာပါ ကမ္ဘာ"၊ "ကမ္ဘာ" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
-လုပ်ဆောင်ချက် strstr ကို "abc"၊ "x" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
-လုပ်ဆောင်ချက် strdup ကို "စံကား" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+strstr ဟူသော လုပ်ဆောင်ချက်ကို "မင်္ဂလာပါ ကမ္ဘာ"၊ "ကမ္ဘာ" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+strstr ဟူသော လုပ်ဆောင်ချက်ကို "abc"၊ "x" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+strdup ဟူသော လုပ်ဆောင်ချက်ကို "စံကား" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -886,11 +913,11 @@ p ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပ�
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် လုပ်ဆောင်ချက် strdup ကို "zaka" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
-ကိန်းရှင် ရေ သည် လုပ်ဆောင်ချက် strlen ကို ပ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် strdup ဟူသော လုပ်ဆောင်ချက်ကို "zaka" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် ရေ သည် strlen ဟူသော လုပ်ဆောင်ချက်ကို ပ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 ကိန်းရှင် ဘောင် သည် အကွက် ၆၄ ခုရှိသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
-ကိန်းရှင် ပြန် သည် လုပ်ဆောင်ချက် memcpy ကို ဘောင်၊ ပ၊ ရေ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် free ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။
+ကိန်းရှင် ပြန် သည် memcpy ဟူသော လုပ်ဆောင်ချက်ကို ဘောင်၊ ပ၊ ရေ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+free ဟူသော လုပ်ဆောင်ချက်ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။
 (ဘောင် ၏ အကွက် ၀ မှစ၍ ရေ ကွက်) ကို စာသား တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -921,7 +948,7 @@ The kind has no `ဒေတာ ပြောင်းလဲရန်` marker. Each
 each of these values lent, as a call of the program lends its arguments: C keeps the
 string and the struct it passed, and the copies go once the function returns. A handle
 that C passed belongs to C, so the function cannot close it in safe code: giving a handle
-parameter to a C function that takes it over with `အပိုင်အနေဖြင့်` is ZK0468 outside marked
+parameter to a C function that takes it over with `အပိုင်အနေဖြင့်` is ZK0468 outside unsafe
 code.
 
 ```zaka-file
@@ -963,7 +990,7 @@ compare ဟူသော (၃၂ ဘစ် ကိန်းပြည့် လိ�
 ကိန်းရှင် ကိန်းများ သည် အကွက် ၅ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၅၊ ၂၊ ၉၊ ၁၊ ၇] ဖြစ်ပါစေ။
 ကိန်းရှင် အရွယ် သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား ဖြစ်ပါစေ။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် qsort ကို ကိန်းများ ၏ အကွက် ၀ ၏ လိပ်စာ၊ ၅၊ အရွယ်၊ ငယ်စဉ် ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
+qsort ဟူသော လုပ်ဆောင်ချက်ကို ကိန်းများ ၏ အကွက် ၀ ၏ လိပ်စာ၊ ၅၊ အရွယ်၊ ငယ်စဉ် ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ကိန်းများ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -1021,7 +1048,7 @@ fmt ဟူသော စာသား တစ်ခု ကို လည်းကေ
 ၁ မှ ၃၂ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ဘောင် ထဲသို့ ၀ ကို ထည့်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ကိန်းရှင် ရေ သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လုပ်ဆောင်ချက် snprintf ကို ဘောင်၊ ၃၂၊ "%s=%ld"၊ "x"၊ ၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+ကိန်းရှင် ရေ သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် snprintf ဟူသော လုပ်ဆောင်ချက်ကို ဘောင်၊ ၃၂၊ "%s=%ld"၊ "x"၊ ၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 (ဘောင် ၏ အကွက် ၀ မှစ၍ ရေ ကွက်) ကို စာသား တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -1056,7 +1083,7 @@ variable is ([Set before read](statements.md#set-before-read)), and a handle has
 one is ZK0479.
 
 **What C functions take and give.** A C function can take a handle as a parameter and give
-one back, and its declaration needs no mark `စိတ်မချရသော`: the program never holds the
+one back, and its declaration needs no `စိတ်မချရသော`: the program never holds the
 address, so it cannot reach through it. A result written `<kind> တစ်ခု ကို ပြန်ပေးမည်`
 wraps the address C gives. Such a plain result promises that C gives no NULL: when C gives
 NULL all the same, the run stops with the trap [null from C](../vm/traps.md#c-functions),
@@ -1099,7 +1126,7 @@ kind from outside reads as an optional of a new handle, `<kind>
 program closes it, when C asks for that, through the C function that closes it.
 
 Safe code writes no field: C owns the struct, so a program changes it through a C
-function, and a write is ZK0474. [Marked code](unsafe.md) can write a field of a number, a
+function, and a write is ZK0474. [Unsafe code](unsafe.md) can write a field of a number, a
 boolean or a counted list with `… ၏ <field> ကို … ဟု ထားမည်။`; the value goes into C's
 storage in place, after the same check that the handle is open. A text field or a handle
 field is a pointer C owns, so no code writes it (ZK0474).
@@ -1122,11 +1149,11 @@ c ဟူသော ရေတွက်စက် တစ်ခု ကို လက�
 c ဟူသော ရေတွက်စက် တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် စက် သည် လုပ်ဆောင်ချက် counter_open ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ထဲမှ ဒေတာ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် counter_next ကို စက် တို့ဖြင့် လုပ်ဆောင်မည်။
+ကိန်းရှင် စက် သည် counter_open ဟူသော လုပ်ဆောင်ချက်ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ထဲမှ ဒေတာ ဖြစ်ပါစေ။
+counter_next ဟူသော လုပ်ဆောင်ချက်ကို စက် တို့ဖြင့် လုပ်ဆောင်မည်။
 "{စက် ၏ count} {စက် ၏ step}" ဟု ပြသမည်။
 စက် ၏ label ကို ပြသမည်။
-လုပ်ဆောင်ချက် counter_close ကို စက် တို့ဖြင့် လုပ်ဆောင်မည်။
+counter_close ဟူသော လုပ်ဆောင်ချက်ကို စက် တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -1211,19 +1238,19 @@ locals.
 န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
 အကယ်၍ န သည် ၀ နှင့် ညီလျှင် မှန် ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် မကိန်းလား ကို န - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
+မကိန်းလား ဟူသော လုပ်ဆောင်ချက်ကို န - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 လုပ်ဆောင်ချက် မကိန်းလား သည်
 န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
 အကယ်၍ န သည် ၀ နှင့် ညီလျှင် မမှန် ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် စုံသလား ကို န - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
+စုံသလား ဟူသော လုပ်ဆောင်ချက်ကို န - ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် စုံသလား ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
-လုပ်ဆောင်ချက် စုံသလား ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+စုံသလား ဟူသော လုပ်ဆောင်ချက်ကို ၁၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+စုံသလား ဟူသော လုပ်ဆောင်ချက်ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -1242,11 +1269,11 @@ case meets this limit:
 လုပ်ဆောင်ချက် အဆုံးမဲ့ သည်
 န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို န + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
+အဆုံးမဲ့ ဟူသော လုပ်ဆောင်ချက်ကို န + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် အဆုံးမဲ့ ကို ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
+အဆုံးမဲ့ ဟူသော လုပ်ဆောင်ချက်ကို ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -1279,8 +1306,8 @@ x က၊ y ခ ရှိသော နေရာတစ်ခု ကို ပြ�
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် နေရာသစ် ကို ၃၊ ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
-လုပ်ဆောင်ချက် အစဉ် ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+နေရာသစ် ဟူသော လုပ်ဆောင်ချက်ကို ၃၊ ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+အစဉ် ဟူသော လုပ်ဆောင်ချက်ကို ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -1323,8 +1350,8 @@ a hint.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် ပ သည် လူ(အသက်: ၃၀) ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် တိုး ကို က တို့ဖြင့် လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် တိုး ကို ပ ၏ အသက် တို့ဖြင့် လုပ်ဆောင်မည်။
+တိုး ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်မည်။
+တိုး ဟူသော လုပ်ဆောင်ချက်ကို ပ ၏ အသက် တို့ဖြင့် လုပ်ဆောင်မည်။
 က ကို ပြသမည်။
 ပ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -1357,10 +1384,10 @@ Two changed parameters swap two variables, and a changed list grows in the calle
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပထမ သည် ၁ ဖြစ်ပါစေ။
 ကိန်းရှင် ဒုတိယ သည် ၂ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် လဲလှယ် ကို ပထမ၊ ဒုတိယ တို့ဖြင့် လုပ်ဆောင်မည်။
+လဲလှယ် ဟူသော လုပ်ဆောင်ချက်ကို ပထမ၊ ဒုတိယ တို့ဖြင့် လုပ်ဆောင်မည်။
 "{ပထမ} {ဒုတိယ}" ဟု ပြသမည်။
 ကိန်းရှင် မူရင်း သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် နှစ်ဆတိုး ကို မူရင်း တို့ဖြင့် လုပ်ဆောင်မည်။
+နှစ်ဆတိုး ဟူသော လုပ်ဆောင်ချက်ကို မူရင်း တို့ဖြင့် လုပ်ဆောင်မည်။
 မူရင်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -1387,7 +1414,7 @@ cell after the call.
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် ချဲ့ ကို ဂရစ် ၏ အကွက် ၀ တို့ဖြင့် လုပ်ဆောင်မည်။
+ချဲ့ ဟူသော လုပ်ဆောင်ချက်ကို ဂရစ် ၏ အကွက် ၀ တို့ဖြင့် လုပ်ဆောင်မည်။
 ဂရစ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -1428,7 +1455,7 @@ value. A changed parameter suits a function that changes several places at once.
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် တိုး ကို ၅ တို့ဖြင့် လုပ်ဆောင်မည်။
+တိုး ဟူသော လုပ်ဆောင်ချက်ကို ၅ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -1445,7 +1472,7 @@ error[ZK0410]: this cannot be assigned to; a target must be a variable or a dere
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ထား ကို က၊ က + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
+ထား ဟူသော လုပ်ဆောင်ချက်ကို က၊ က + ၁ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -1471,7 +1498,7 @@ function gives back more than one value so, each in a place of its own:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် လ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။          // no value: the call sets it
 ကိန်းရှင် ကျ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ခွဲ ကို ၁၀၊ လ၊ ကျ တို့ဖြင့် လုပ်ဆောင်မည်။
+ခွဲ ဟူသော လုပ်ဆောင်ချက်ကို ၁၀၊ လ၊ ကျ တို့ဖြင့် လုပ်ဆောင်မည်။
 "{လ} {ကျ}" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -1522,7 +1549,7 @@ set from another stores its value. What that store does depends on the kind:
 | text, plain list, counted list, struct, result | copies the value; text and plain lists share their cells until the first write | no |
 | shared object | shares the object | it can: a change to its fields is seen through each name |
 | function value | shares the function | no; a closure's captures are shared with each holder |
-| pointer, in marked code | copies the address | through the address; with `အပိုင်အနေဖြင့်`, the caller's place holds the null address after the call |
+| pointer, in unsafe code | copies the address | through the address; with `အပိုင်အနေဖြင့်`, the caller's place holds the null address after the call |
 | a parameter marked `ဒေတာ ပြောင်းလဲရန်` | copies in, and copies the value out at the return | it can: the value goes back to the caller's place |
 | a parameter marked `ဒေတာ ထည့်ပေးရန်` | starts unset, and copies the value out at the return | it does: the function sets the caller's place on each path |
 
@@ -1552,10 +1579,10 @@ moves in. See [Values and objects](objects.md).
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စ သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် နှစ်ဆ ကို စ တို့ဖြင့် လုပ်ဆောင်မည်။
+နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို စ တို့ဖြင့် လုပ်ဆောင်မည်။
 စ ကို ပြသမည်။
 ကိန်းရှင် က သည် အကောင့်(အမည်: "မမ"၊ လက်ကျန်: ၁၀၀) ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် အပ်ငွေ ကို က၊ ၅၀ တို့ဖြင့် လုပ်ဆောင်မည်။
+အပ်ငွေ ဟူသော လုပ်ဆောင်ချက်ကို က၊ ၅၀ တို့ဖြင့် လုပ်ဆောင်မည်။
 က ၏ လက်ကျန် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -1568,7 +1595,7 @@ moves in. See [Values and objects](objects.md).
 
 A function that must change the caller's value takes it as a
 [changed parameter](#changed-parameters), or takes a shared object. Pointers, the heap,
-and the owned marker `အပိုင်အနေဖြင့်` on parameters and results belong to marked code; their
+and the owned marker `အပိုင်အနေဖြင့်` on parameters and results belong to unsafe code; their
 rules are in [Unsafe Zaka](unsafe.md).
 
 ## The start block
@@ -1641,8 +1668,8 @@ start block holds.
 
 Inside, the start block follows the rules of a function: it has its own variables, and a
 return statement ends it. It can change its two lists as it can each list
-parameter. The start block itself cannot hold the mark `စိတ်မချရသော`: pointer work goes in
-a block marked `စိတ်မချရသော်လည်း` inside it, or in a marked function
+parameter. The start block itself cannot be unsafe: pointer work goes in
+an unsafe block (`စိတ်မချရသော်လည်း`) inside it, or in an unsafe function
 ([Unsafe Zaka](unsafe.md)).
 
 ### Where a start block stands
@@ -1737,11 +1764,11 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 | ZK0465 | a parameter or a result of a C function with a kind C cannot take |
 | ZK0466 | `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်` on a parameter of a C function that is no list of numbers and no struct that crosses |
 | ZK0467 | `အပိုင်အနေဖြင့်` on a result that is no text from a C function |
-| ZK0468 | a call of a marked function, a C one included, outside marked code |
+| ZK0468 | a call of an unsafe function, a C one included, outside unsafe code |
 | ZK0470 | `အပိုင်အနေဖြင့်` on a parameter or a result that holds no pointer |
-| ZK0472 | a C function with a pointer in its kinds, with no mark `စိတ်မချရသော` |
+| ZK0472 | a C function with a pointer in its kinds, not declared `စိတ်မချရသော` |
 | ZK0473 | a value of a kind from outside the program that the program makes, duplicates or prints |
-| ZK0474 | a write to a field of a kind from outside the program, outside marked code or of a text or a handle field |
+| ZK0474 | a write to a field of a kind from outside the program, outside unsafe code or of a text or a handle field |
 | ZK0722 | an argument of a changed parameter that can be unset, or a filled parameter read before the function sets it |
 | ZK0725 | a return that a path reaches with a filled parameter unset |
 | ZK0443 to ZK0449 | the failing-function mistakes of [Errors and results](error-handling.md#errors) |

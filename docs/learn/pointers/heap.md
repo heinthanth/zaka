@@ -1,6 +1,6 @@
 ---
 title: The heap
-description: Ask for heap room in marked code, use it through a pointer, and give it back.
+description: Ask for heap room in unsafe code, use it through a pointer, and give it back.
 ---
 
 # The heap
@@ -8,7 +8,7 @@ description: Ask for heap room in marked code, use it through a pointer, and giv
 A variable lasts as long as its block or function. Sometimes a program needs room that
 remains until *the programmer* decides to let it go, as C does with `malloc` and `free`.
 That room comes from the *heap*: ask for a block of it, use it through a pointer, and
-give it back when done. Each heap statement needs marked code. Text, lists and shared
+give it back when done. Each heap statement needs unsafe code. Text, lists and shared
 objects need none of this: the compiler frees them.
 
 ```zaka

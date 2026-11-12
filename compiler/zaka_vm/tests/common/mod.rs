@@ -17,8 +17,8 @@ use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
-use zakac_semcheck::mark::in_marked_code;
 use zakac_semcheck::semcheck::SemcheckOptions;
+use zakac_semcheck::unsafe_code::in_unsafe_code;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
@@ -91,7 +91,7 @@ fn compile_with(
 {
     let mut sm = SourceMap::new();
     let file =
-        sm.new_source_file(FileName::Custom("t.zaka".into()), in_marked_code(text));
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_unsafe_code(text));
     let folding = FoldOptions::default();
     let lexer = LexerOptions::default();
     let emitted = run_phases(&file, &lexer, options, &folding, mem, results);
@@ -110,7 +110,7 @@ pub fn compile_text(
 {
     let mut sm = SourceMap::new();
     let file =
-        sm.new_source_file(FileName::Custom("t.zaka".into()), in_marked_code(text));
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_unsafe_code(text));
     let (lexer, options) = (LexerOptions::default(), SemcheckOptions::default());
     let mem = BorrowCheckOptions::default();
     let emitted = run_phases(&file, &lexer, &options, folding, &mem, emit_options);

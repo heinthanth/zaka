@@ -26,7 +26,7 @@ parser        builds the tree of sentences         ZK02          zkast
     ▼
 naturalness   warns about unnatural wording        ZK05  ┐
 names, kinds  resolves names, works out kinds,     ZK03  ├─────  zksem
-              checks the marks of unsafe code      ZK04  ┘
+              checks unsafe code                   ZK04  ┘
     │
     ▼
 IR builder    lowers the tree to the IR                          zkir
@@ -160,9 +160,9 @@ above has none. See [Natural wording](../language/naturalness.md).
 
 `zakac semcheck` resolves each name to its declaration, works out the *kind* of each
 expression, and checks that the kinds fit. It owns **ZK03** (names and scopes) and
-**ZK04** (kinds), the rules of marked code among them: pointer work outside marked code
-(ZK0468), a marked function as a value (ZK0469), an owned marker on no pointer (ZK0470),
-a mark under `--no-unsafe` (ZK0471) and a C declaration that passes or gives a pointer, with no mark (ZK0472). The
+**ZK04** (kinds), the rules of unsafe code among them: pointer work outside unsafe code
+(ZK0468), an unsafe function as a value (ZK0469), an owned marker on no pointer (ZK0470),
+unsafe code under `--no-unsafe` (ZK0471) and a C declaration that passes or gives a pointer, not declared unsafe (ZK0472). The
 artifact keeps the tree and adds a table from each expression to its kind:
 
 ```text
@@ -195,7 +195,7 @@ kind, a division with the constant zero as divisor, a constant cell number outsi
 
 `zakac borrowck` follows the values of the program through the IR and reports **ZK07**.
 Its flow checks run on each program: a read of a value before it is set, a read past the
-end of a block, an operation that overflows for each value. Its pointer lint runs on marked code: a
+end of a block, an operation that overflows for each value. Its pointer lint runs on unsafe code: a
 block used after it was given back, a block never given back, the address of a local that
 escapes, and a read of a place after an owned hand-over. The sentence above holds no
 pointer, so there is nothing to find. The artifact adds a *digest* of each function: what

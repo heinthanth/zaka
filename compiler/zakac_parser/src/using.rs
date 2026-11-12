@@ -2,8 +2,8 @@
 //! with no arguments, `<fn> မည်` and `<fn> သည့် ရလဒ်`.
 //!
 //! Each form ends as a statement or as a value. The long form names the
-//! function as `လုပ်ဆောင်ချက် <fn> ကို`, then ends with `လုပ်ဆောင်မည်` (a statement) or
-//! `လုပ်ဆောင်သော ရလဒ်(ကောင်း)?` (a value). The short form names the function
+//! function as `<fn> ဟူသော လုပ်ဆောင်ချက်ကို`, then ends with `လုပ်ဆောင်မည်` (a statement)
+//! or `လုပ်ဆောင်သော ရလဒ်(ကောင်း)?` (a value). The short form names the function
 //! alone, then ends with `မည်` (a statement) or `သည့် ရလဒ်(ကောင်း)?` (a value).
 //! Each builds the call node that the other call forms build.
 //!
@@ -255,7 +255,7 @@ impl Parser<'_>
 
     /// The end of a call of a function that declares marks, `n` tokens
     /// ahead: `<fn> မည်`, `<fn> သည့် ရလဒ်(ကောင်း)`, or
-    /// `လုပ်ဆောင်ချက် <fn> ကို` with `လုပ်ဆောင်မည်` or `လုပ်ဆောင်သော ရလဒ်(ကောင်း)`.
+    /// `<fn> ဟူသော လုပ်ဆောင်ချက်ကို` with `လုပ်ဆောင်မည်` or `လုပ်ဆောင်သော ရလဒ်(ကောင်း)`.
     ///
     /// # Arguments
     ///
@@ -267,10 +267,9 @@ impl Parser<'_>
     /// `None`.
     fn call_end_at(&self, n: usize) -> Option<(usize, bool)>
     {
-        let long = kw_of(&self.peek_n(n)) == Some(Kw::Function)
+        let long = kw_of(&self.peek_n(n + 1)) == Some(Kw::FnValue)
             && kw_of(&self.peek_n(n + 2)) == Some(Kw::Ko);
-        let name = tern!(long, n + 1, n);
-        ret_if!(!self.is_marked_fn(name), None);
+        ret_if!(!self.is_marked_fn(n), None);
         let word = kw_of(&self.peek_n(tern!(long, n + 3, n + 1)))?;
         let len = tern!(long, 4, 2);
         match word
@@ -377,8 +376,8 @@ impl Parser<'_>
             args.push(arg);
             marks.push(self.parse_mark()?);
         }
-        let long = self.eat(Kw::Function);
         let callee = self.parse_ident()?;
+        let long = self.eat(Kw::FnValue);
         do_if!(long, _ = self.expect(Kw::Ko)?);
         #[rustfmt::skip]
         let parts = CallParts::builder().start(start).callee(callee).args(args).marks(marks)
@@ -428,10 +427,10 @@ impl Parser<'_>
         let plural = close.kind == TokenKind::Kw(Kw::ListKo);
         let using = UsingMark::builder().plural(plural).span(close.span).build();
         self.expect(Kw::Using)?;
-        let long = self.eat(Kw::Function);
+        let long =
+            self.at_punct(Punct::LParen) || kw_of(&self.peek_n(1)) == Some(Kw::FnValue);
         let (callee, place) =
-            tern!(long, self.parse_callee()?, (self.parse_ident()?, None));
-        do_if!(long, _ = self.expect(Kw::Ko)?);
+            tern!(long, self.parse_long_callee()?, (self.parse_ident()?, None));
         let parts = CallParts::builder().start(start).callee(callee).maybe_place(place);
         let parts = parts.args(args).using(using);
         let parts = parts.build();
@@ -488,13 +487,13 @@ impl Parser<'_>
     /// # Arguments
     ///
     /// * `parts` - What the call holds so far.
-    /// * `long` - Whether the function came as `လုပ်ဆောင်ချက် <fn> ကို`.
+    /// * `long` - Whether the function came as `<fn> ဟူသော လုပ်ဆောင်ချက်ကို`.
     /// * `mode` - Whether the call can be a statement.
     ///
     /// # Returns
     ///
     /// The call, or a diagnostic.
-    fn finish_using(
+    pub(crate) fn finish_using(
         &mut self, parts: CallParts, long: bool, mode: Mode,
     ) -> PResult<Head>
     {

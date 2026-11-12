@@ -132,7 +132,7 @@ These options belong to `semcheck` and the stages after it, and to `run`.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `--platform-bits <BITS>` | `64` | the bit count of the platform-sized integer kinds, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်`: 8, 16, 32, 64 or 128 |
+| `--platform-bits <BITS>` | `64` | the bit count of the platform-sized integer kinds, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်`: 8, 16, 32 or 64 |
 | `--strict-particles` | off | report the [natural wording](../language/naturalness.md) warnings (ZK05) as errors |
 
 These belong to `irgen` and the stages after it, and to `run`:
@@ -140,7 +140,7 @@ These belong to `irgen` and the stages after it, and to `run`:
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `--fold <LIST>` | `all` | the foldings to run: `all`, `none`, or a comma list of `exprs`, `consts` and `branches` |
-| `--no-unsafe` | off | refuse each mark `စိတ်မချရသော`, on a function or a block, with ZK0471 |
+| `--no-unsafe` | off | refuse each use of `စိတ်မချရသော`, on a function or a block, with ZK0471 |
 
 `--fold` changes the IR, not what the program does. `exprs` replaces an operation on
 constants with its value, `consts` replaces a read of a `ကိန်းသေ` that was set to a
@@ -162,7 +162,7 @@ in [Compiler checks](checks.md).
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `--mem-check <MODE>` | `warn` | how the pointer lint of marked code is reported: `error`, `warn` or `off` |
+| `--mem-check <MODE>` | `warn` | how the pointer lint of unsafe code is reported: `error`, `warn` or `off` |
 | `--mem-strict` | off | also report the accesses that the checker cannot prove safe (ZK0711) |
 | `--overflow <MODE>` | `stop` | what integer arithmetic does with a result outside its kind: `stop` stops the program and warns about an operation that overflows for each value it can see (ZK0719), `wrap` wraps it around; see [Overflow](../language/expressions.md#arithmetic) |
 | `--allow <NAME>` | | leave out each finding of a lint group or code; give it again, or a comma list, for more |
@@ -185,7 +185,7 @@ A lint name is a group or a code:
 `--mem-check` sets the level of the whole pointer lint. A group named in `--allow`,
 `--warn` or `--error` wins over it, and a code wins over a group. Between two names of one
 tier, the later flag wins, and a flag on the command line wins over a [config
-file](configuration.md). ZK0709, ZK0710 and ZK0711 take the level inside marked code alone;
+file](configuration.md). ZK0709, ZK0710 and ZK0711 take the level inside unsafe code alone;
 outside it, the three remain errors. The doubtful findings (ZK0711, and the leaks the
 checker cannot prove) show under `--mem-strict` alone: a name sets their level, but does
 not turn them on. A code outside the table, such as ZK0701 or ZK0722, keeps its level:
@@ -327,7 +327,7 @@ differs from the VM.
 | --- | --- | --- |
 | `--checks <LIST>` | `default` | the run-time checks of the executable: a level, then checks to add (`+name` or `name`) or drop (`-name`), in order, as a comma list or the flag given again; see below |
 | `--max-depth <CALLS>` | `4096` | the most nested calls before the executable stops with `more than N nested calls`, as `--max-depth` of the VM does; counted while the `depth` check is on |
-| `--max-heap <OCTETS>` | `0` | the most heap octets the executable holds, no cap when 0: a counted block (text, a plain list, a box, a closure record) past it stops the run with `no heap room for N octets`, as `--max-heap` of the VM does; a raw allocation of marked code past it gives the null address; see [Native programs](native.md#checks) |
+| `--max-heap <OCTETS>` | `0` | the most heap octets the executable holds, no cap when 0: a counted block (text, a plain list, a box, a closure record) past it stops the run with `no heap room for N octets`, as `--max-heap` of the VM does; a raw allocation of unsafe code past it gives the null address; see [Native programs](native.md#checks) |
 | `--cache <DIR>` | the cache of the user | the folder for the C files and the objects; when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
 | `--cc <CMD>` | `CC`, then `cc` of a config file, then the first of `cc`, `gcc`, `clang` and `zig cc` | the C compiler, with the words before its flags |
 | `--linker <CMD>` | the C compiler | the program that links the objects, such as `clang -fuse-ld=lld` |
@@ -419,7 +419,7 @@ $ printf 'က\nခ\n' | zakac run echo.zaka
 `--leaks` writes one line to standard error for each block that was never given back.
 The VM frees each counted block on its own, text, lists and shared objects among them,
 and runs the ring collector at the end, so the blocks that show here are those of the
-[heap statements](../language/unsafe.md#heap-statements) that marked code never gave back:
+[heap statements](../language/unsafe.md#heap-statements) that unsafe code never gave back:
 
 ```console
 $ zakac run --leaks leak.zaka

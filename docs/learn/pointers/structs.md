@@ -50,7 +50,7 @@ reads and writes the caller's struct itself:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကျော် သည် လူ(အသက်: ၂၀၊ အတန်း: ၇) ဖြစ်ပါစေ။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် အသက်ကြီး ကို ကျော် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်မည်။
+အသက်ကြီး ဟူသော လုပ်ဆောင်ချက်ကို ကျော် ၏ လိပ်စာ တို့ဖြင့် လုပ်ဆောင်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ကျော် ၏ အသက် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -60,7 +60,7 @@ reads and writes the caller's struct itself:
 ၂၁
 ```
 
-`အသက်ကြီး` is marked, so its call needs marked code too. A field is not reached through
+`အသက်ကြီး` is an unsafe function, so its call needs unsafe code too. A field is not reached through
 the pointer itself. `သူ ၏ အသက်`, with no `တန်ဖိုး`, reads a field of the address, and an
 address has none:
 
@@ -274,11 +274,11 @@ the program gives back each node itself:
 
 A duplicate of a struct that holds a pointer copies the address, not the block it points at,
 so two structs can then reach one block. The same list built from a [shared
-object](../structs/objects.md) needs no marked code and frees itself.
+object](../structs/objects.md) needs no unsafe code and frees itself.
 
 ## Hands on
 
-- Write a marked function that takes the address of a `လူ` and sets both of its fields,
+- Write an unsafe function that takes the address of a `လူ` and sets both of its fields,
   then compare it with a `ဒေတာ ပြောင်းလဲရန်` parameter.
 - Ask the heap for room for two structs, set a field of each, and print both.
 - Add a function to the linked list that sums the `တန်ဖိုးရင်း` of each node.

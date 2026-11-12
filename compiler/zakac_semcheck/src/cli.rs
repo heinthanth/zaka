@@ -39,7 +39,7 @@ const SEMCHECK_TEXT_EXTENSION: &str = ".zksemt";
 const PLATFORM_BITS_ARG: &str = "platform_bits";
 const STRICT_PARTICLES_ARG: &str = "strict_particles";
 /// Bit counts the platform-sized integer kinds can have.
-const PLATFORM_WIDTHS: &[&str] = &["8", "16", "32", "64", "128"];
+const PLATFORM_WIDTHS: &[&str] = &["8", "16", "32", "64"];
 
 /// The `zakac-semcheck` command, `zakac semcheck` as a subcommand.
 pub struct ZakacSemcheck

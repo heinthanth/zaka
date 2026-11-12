@@ -38,9 +38,9 @@ enum Suffix
 }
 
 /// Bit counts of integer kinds.
-const INT_BITS: &[u16] = &[8, 16, 32, 64, 128];
+const INT_BITS: &[u16] = &[8, 16, 32, 64];
 /// Bit counts of floating-point kinds.
-const FLOAT_BITS: &[u16] = &[16, 32, 64, 128];
+const FLOAT_BITS: &[u16] = &[32, 64];
 
 /// The base kind a kind word names.
 ///

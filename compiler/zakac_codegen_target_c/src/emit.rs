@@ -5,7 +5,6 @@ use std::sync::Arc;
 use bon::Builder;
 use strum::IntoEnumIterator;
 use zakac_borrow_checker::options::OverflowMode;
-use zakac_diagnostics::Diagnostic;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::Func;
@@ -86,17 +85,6 @@ pub struct CFile
     pub text: String,
 }
 
-/// The reason a program was not written as C.
-#[derive(Debug)]
-pub enum NotBuilt
-{
-    /// The program holds a kind the C target cannot build, at these
-    /// places.
-    Kinds(Vec<Diagnostic>),
-    /// A construct the C target cannot build at present.
-    Missing(Error),
-}
-
 /// Translate a checked program to C: a file for each module, the shared
 /// header, the file of generated descriptors and texts, and `main.c`.
 ///
@@ -109,10 +97,10 @@ pub enum NotBuilt
 ///
 /// # Returns
 ///
-/// The files, or the reason the program was not written as C.
+/// The files, or the construct the C target cannot build at present.
 pub fn emit(
     module: &Module, files: &[Arc<SourceFile>], options: TargetCOptions,
-) -> Result<Vec<CFile>, NotBuilt>
+) -> Result<Vec<CFile>, Error>
 {
     #[rustfmt::skip]
     let mut shared = Shared::builder().module(module).options(options).files(files.to_vec())
@@ -146,9 +134,7 @@ pub fn emit(
     let kinds = shared.kinds_source();
     let ffi =
         ffi_source(&module.foreign, &shared.ffi_calls, &shared.cb_kinds, platform);
-    ret_if!(!shared.diags.is_empty(), Err(NotBuilt::Kinds(shared.diags)));
-    let missing =
-        shared.missing.map(|what| NotBuilt::Missing(Error::NotForTargetC { what }));
+    let missing = shared.missing.map(|what| Error::NotForTargetC { what });
     ret_if!(let Some(reason) = missing, Err(reason));
     let mut out: Vec<CFile> = units
         .into_iter()
@@ -309,24 +295,14 @@ pub(crate) struct Shared<'m>
     pub(crate) options: TargetCOptions,
     /// The first construct the C target cannot build at present.
     pub(crate) missing: Option<String>,
-    /// Whether the program holds a 128-bit integer, which C11 lacks.
-    #[builder(default)]
-    wide: bool,
-    /// Whether the program holds f16, which C11 lacks.
-    #[builder(default)]
-    half: bool,
-    /// Whether the program holds f128, which C11 lacks.
-    #[builder(default)]
-    quad: bool,
+
     /// The kind descriptors the program needs.
     #[builder(default)]
     pub(crate) descr: Descriptors,
     /// The place in the source of the statement or slot being written.
     #[builder(default)]
     pub(crate) span: Span,
-    /// A ZK0801 for each place that holds a kind the C target cannot build.
-    #[builder(default)]
-    diags: Vec<Diagnostic>,
+
     /// Each C call shape met so far; its index names its wrapper.
     #[builder(default)]
     pub(crate) ffi_calls: Vec<FfiCall>,
@@ -432,10 +408,6 @@ impl Shared<'_>
     pub(crate) fn kind(&mut self, kind: DataKind) -> String
     {
         let platform = self.platform();
-        let repr = kind.repr();
-        do_if!(repr.is_int() && repr.bits(platform) > 64, self.wide = true);
-        do_if!(matches!(repr, DataKind::Float(16)), self.half = true);
-        do_if!(matches!(repr, DataKind::Float(128)), self.quad = true);
         ret_if!(is_blob(kind), "unsigned char *".into());
         c_kind(kind, platform).unwrap_or_else(|| {
             self.missing(format!("the kind {}", kind.name()));
@@ -622,19 +594,6 @@ impl Shared<'_>
         out.push_str(&self.descr.declarations());
         let shapes = (0..self.cb_kinds.len()).map(shape_name);
         shapes.for_each(|s| _ = writeln!(out, "extern const zk_cb_shape {s};"));
-        if self.wide
-        {
-            let error = c_string(&t!("target_c.no_int128"));
-            let _ =
-                writeln!(out, "\n#ifndef __SIZEOF_INT128__\n#error {error}\n#endif");
-        }
-        let floats =
-            [(self.half, "ZK_HAS_F16", "f16"), (self.quad, "ZK_HAS_F128", "f128")];
-        for (_, has, name) in floats.iter().filter(|f| f.0)
-        {
-            let error = c_string(&t!("target_c.no_float", kind = name));
-            let _ = writeln!(out, "\n#ifndef {has}\n#error {error}\n#endif");
-        }
         out.push_str("\n#endif\n");
         out
     }

@@ -51,9 +51,9 @@ pub const TABLE_FIELDS: [&str; 3] = ["%rows", "%slots", "%live"];
 pub const ROW_FIELDS: [&str; 4] = ["%hash", "%live", "%index", "%value"];
 
 /// Bit counts an integer kind can have.
-const INT_BITS: &[u16] = &[8, 16, 32, 64, 128];
+const INT_BITS: &[u16] = &[8, 16, 32, 64];
 /// Bit counts a floating-point kind can have.
-const FLOAT_BITS: &[u16] = &[16, 32, 64, 128];
+const FLOAT_BITS: &[u16] = &[32, 64];
 
 /// Width of an integer kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -1691,7 +1691,7 @@ impl DataKind
     /// plain list of u8s to text, between an object and a pointer, from a
     /// boolean or an enumeration to an integer, between addresses, between
     /// an address and an integer, and for the same kind. Each conversion that
-    /// makes or reads an address needs marked code.
+    /// makes or reads an address needs unsafe code.
     pub fn cast_allowed(self, to: DataKind) -> bool
     {
         // a member turns into its value, and a scalar value on as such a
@@ -1972,10 +1972,8 @@ fn precision(bits: u16) -> u16
 {
     match bits
     {
-        16 => 11,
         32 => 24,
         64 => 53,
-        128 => 113,
         _ => 0,
     }
 }

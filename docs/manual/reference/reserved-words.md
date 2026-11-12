@@ -108,7 +108,7 @@ in its help line, and reads on as if the `မည်` spelling stood there.
 | Word | Reads as | Page |
 | --- | --- | --- |
 | `အောက်ပါတို့ကို လုပ်ဆောင်မည်` | "will do the following": opens a block, and the bodies of functions, loops and `if` | [Blocks and scope](../../learn/variables/scope.md) |
-| `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်` | "will do the following, though it cannot be trusted": opens a marked block | [Unsafe Zaka](../language/unsafe.md) |
+| `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်` | "will do the following, though it cannot be trusted": opens an unsafe block | [Unsafe Zaka](../language/unsafe.md) |
 | `အောက်ပါတို့ကို လုပ်ဆောင်ကာ` | "doing the following, ..." | [Results](../../learn/functions/results.md) |
 | `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး` | "the tasks are done" (four spellings) | [Blocks and scope](../../learn/variables/scope.md) |
 | `ပရိုဂရမ် ပြီးဆုံးပါပြီး` | "the program is done": closes the start block (four spellings) | [Hello, world](../../learn/hello/README.md#where-the-program-starts) |
@@ -142,7 +142,8 @@ in its help line, and reads on as if the `မည်` spelling stood there.
 | `ပြောင်းလဲရန်` | "in order to change": the second word of the phrase `ဒေတာ ပြောင်းလဲရန်`; alone it marks nothing | [Changed parameters](../language/functions.md#changed-parameters) |
 | `ထည့်ပေးရန်` | "in order to put in": the second word of the phrase `ဒေတာ ထည့်ပေးရန်`; alone it marks nothing | [Filled parameters](../language/functions.md#filled-parameters) |
 | `ဝိဘတ်` | "particle": `ဝိဘတ် "<mark>" ကို သုံး၍`, last among the markers of a parameter, gives the parameter its mark | [Functions](../language/functions.md) |
-| `ဟူသော` | "called": after a name or a literal, the word after it decides. `<name> ဟူသော လုပ်ဆောင်ချက်`, "the function called `<name>`", is the function as a value; `<e> ဟူသော အမှားအယွင်း` is an error value; `<name> ဟူသော <kind> တစ်<word>` names a parameter or a field; `<name> ဟူသော ... ဒေတာအစုအဝေး` and `... ဒေတာအမျိုးအစားကွဲ` open a struct and an enumeration; `<literal> ဟူသော <kind> တစ်<word>` gives a number or a list literal its kind | [Function values](../language/function-values.md), [Measure words](../language/kinds.md#measure-words) |
+| `ဟူသော` | "called": after a name or a literal, the word after it decides. `<name> ဟူသော လုပ်ဆောင်ချက်`, "the function called `<name>`", is the function as a value, and with `ကို` and no verb after it, the head of a long call; `<e> ဟူသော အမှားအယွင်း` is an error value; `<name> ဟူသော <kind> တစ်<word>` names a parameter or a field; `<name> ဟူသော ... ဒေတာအစုအဝေး` and `... ဒေတာအမျိုးအစားကွဲ` open a struct and an enumeration; `<literal> ဟူသော <kind> တစ်<word>` gives a number or a list literal its kind | [Function values](../language/function-values.md), [Measure words](../language/kinds.md#measure-words) |
+| `မည့်` | "named": the same as `ဟူသော` before `လုပ်ဆောင်ချက်`, as in `<name> မည့် လုပ်ဆောင်ချက်ကို ... လုပ်ဆောင်မည်။` | [Functions](../language/functions.md#calls) |
 | `လည်းကောင်း` | "and also": ends each parameter, after `ကို` and its markers, when there are two or more | [Functions](../language/functions.md) |
 | `လုပ်ဆောင်ချက် အမျိုးအစား` | "function kind": closes a function kind | [Function values](../language/function-values.md) |
 | `လက်ခံသော` | "that accepts": ends the parameters of a function kind with no result | [Function values](../language/function-values.md) |
@@ -171,12 +172,12 @@ in its help line, and reads on as if the `မည်` spelling stood there.
 
 ## Unsafe code, pointers and the heap
 
-The words of this section belong to marked code; see [Unsafe Zaka](../language/unsafe.md).
+The words of this section belong to unsafe code; see [Unsafe Zaka](../language/unsafe.md).
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `စိတ်မချရသော` | "that cannot be trusted": in front of `လုပ်ဆောင်ချက်`, marks a function or a C function declaration | [Unsafe Zaka](../language/unsafe.md) |
-| `စိတ်မချရသော်လည်း` | "though it cannot be trusted": in `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်`, opens a marked block | [Unsafe Zaka](../language/unsafe.md) |
+| `စိတ်မချရသော` | "that cannot be trusted": in front of `လုပ်ဆောင်ချက်`, makes a function or a C function declaration unsafe | [Unsafe Zaka](../language/unsafe.md) |
+| `စိတ်မချရသော်လည်း` | "though it cannot be trusted": in `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်`, opens an unsafe block | [Unsafe Zaka](../language/unsafe.md) |
 | `လိပ်စာ` | "address": after `<kind>` it makes the pointer kind (`<kind> လိပ်စာ`, then `၏ လိပ်စာ` for each further level); on its own it is the opaque pointer kind; after a name (`x ၏ လိပ်စာ`, or `&x`) it takes the address | [Unsafe Zaka](../language/unsafe.md) |
 | `တန်ဖိုး` | "value": reads or writes through a pointer, as in `p ၏ တန်ဖိုး` (or `*p`); also `တန်ဖိုးသည်` in a declaration | [Unsafe Zaka](../language/unsafe.md), [Variables](../../learn/variables/README.md) |
 | `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` | "the address that points at nothing": the null address of a pointer, the one NULL of Zaka; safe code can hold it and compare with it | [The null address](../language/unsafe.md#the-null-address) |
@@ -231,7 +232,7 @@ as well.
 
 `ထဲမှ` and `အနေဖြင့်` take part in a ဇယား too, in `<table> ထဲမှ အညွှန်း <index>` and in the row
 `<index> အနေဖြင့် <value>` of a literal. `မရှိလျှင်` (`မရှိ`, `လျှင်`) after `ထဲမှ ဒေတာ၊` gives the
-fallback of an optional ([Optional values](../language/optionals.md#a-fallback)).
+fallback of an optional ([Optional values](../language/optionals.md#reading)).
 
 ## Structs
 

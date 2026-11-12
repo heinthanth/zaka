@@ -26,9 +26,9 @@ use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
-/// The word of marked code. Mistakes in marked pointer code are allowed to
+/// The word of unsafe code. Mistakes in unsafe pointer code are allowed to
 /// differ between the VM and native code, so such programs are left out.
-const MARKED: &str = "စိတ်မချရ";
+const UNSAFE: &str = "စိတ်မချရ";
 
 /// The words of a C function. The VM links a C function when the program
 /// first calls it, a native build when it links, so a missing one stops the
@@ -52,7 +52,7 @@ fn stops() -> Vec<(&'static str, Sample)>
             Block::Prose(_) => None,
         })
     });
-    let shared = |s: &Sample| ![MARKED, FOREIGN].iter().any(|w| s.source.contains(w));
+    let shared = |s: &Sample| ![UNSAFE, FOREIGN].iter().any(|w| s.source.contains(w));
     let kept = |(p, s): &(&str, Sample)| {
         s.fence == Fence::Stop && shared(s) && !p.starts_with(VM_PAGES)
     };

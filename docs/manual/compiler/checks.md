@@ -1,6 +1,6 @@
 ---
 title: Compiler checks
-description: What the flow checks find in each program, the check that each value is set before it is read, how the pointer lint of marked code is reported, and the settings that tune them, with one program shown under each setting.
+description: What the flow checks find in each program, the check that each value is set before it is read, how the pointer lint of unsafe code is reported, and the settings that tune them, with one program shown under each setting.
 ---
 
 # Compiler checks
@@ -15,7 +15,7 @@ two sets of findings:
   tell); a call that reads a global no path to it has set (ZK0724); a cell or an offset
   past the end; and an operation that overflows for each value it can see. These are
   errors, save ZK0723 and the overflow, which are warnings.
-- **The pointer lint**, on marked code: the mistakes that pointers alone can make, such
+- **The pointer lint**, on unsafe code: the mistakes that pointers alone can make, such
   as a use after a give-back, a leak, or the address of a local that escapes. These follow
   `--mem-check`, and are warnings unless the setting asks for errors.
 
@@ -27,7 +27,7 @@ its findings.
 | how the lint is reported | `--mem-check error`, `warn` or `off` | **Ownership check** | `warn` |
 | report what cannot be proved | `--mem-strict` | **Strict ownership check** | off |
 | the level of one group or code | `--allow`, `--warn`, `--error` | | none |
-| refuse marked code | `--no-unsafe` | **Forbid marked code** | off |
+| refuse unsafe code | `--no-unsafe` | **Forbid unsafe code** | off |
 | what overflow does | `--overflow stop` or `wrap` | **Stop on overflow** | `stop` |
 
 `--mem-check`, `--mem-strict`, `--overflow`, `--allow`, `--warn` and `--error` work on
@@ -47,14 +47,14 @@ them. The settings change what the *compiler* does with the same finding.
 | `--mem-check off` | the lint reports nothing: the VM is the one check left |
 | `--mem-strict` | adds the warnings for what the compiler cannot prove safe (ZK0711) |
 | `--allow`, `--warn`, `--error` | set the level of one group of the lint, or of one code, over `--mem-check`: `--error leaks` makes each leak an error while the rest remain warnings |
-| `--no-unsafe` | each mark `စိတ်မချရသော` is an error (ZK0471) |
+| `--no-unsafe` | each use of `စိတ်မချရသော` is an error (ZK0471) |
 
 The lint holds ZK0702 to ZK0708, ZK0712 and ZK0721 wherever the compiler finds them, and
-ZK0709, ZK0710 and ZK0711 when it finds them inside marked code. Outside marked code, the last three
+ZK0709, ZK0710 and ZK0711 when it finds them inside unsafe code. Outside unsafe code, the last three
 come from the flow checks and keep their own level: ZK0709 and ZK0710 are errors, ZK0711 a
 warning, in each mode. ZK0701, a read after an owned hand-over, is an error in each mode
 too, since the place it reads holds the null pointer for certain. ZK0722, ZK0723 and ZK0724
-never move with the mode, in marked code or out of it: the kinds of Zaka promise that no
+never move with the mode, in unsafe code or out of it: the kinds of Zaka promise that no
 value is read before it is set.
 
 ## One program, three modes
@@ -165,14 +165,14 @@ reach, and the VM's check alone can catch it.
 
 ## Safe code keeps its errors
 
-Outside marked code, a finding of the flow checks does not move with `--mem-check`. A
+Outside unsafe code, a finding of the flow checks does not move with `--mem-check`. A
 function value is never null, so a variable of a function kind that a path reaches with no
 function given is a read of an unset value, ZK0722, even under `--mem-check off`:
 
 ```zaka-error ZK0722 mem-check=off
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဖ သည် (လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ဖ ကို လုပ်ဆောင်မည်။
+ဖ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -241,7 +241,7 @@ that does not.
 
 ## Safe Zaka alone
 
-For a lesson or a project that must keep to safe Zaka, `--no-unsafe` refuses each mark
+For a lesson or a project that must keep to safe Zaka, `--no-unsafe` refuses each use of
 `စိတ်မချရသော`, on a function or on a block:
 
 ```zaka
@@ -265,13 +265,13 @@ For a lesson or a project that must keep to safe Zaka, `--no-unsafe` refuses eac
 ```
 
 ```console
-$ zakac run --no-unsafe marked.zaka
-error[ZK0471]: this program keeps to safe Zaka, so it cannot mark code "စိတ်မချရသော"
- --> marked.zaka:2:1
+$ zakac run --no-unsafe unsafe.zaka
+error[ZK0471]: this program keeps to safe Zaka, so it cannot hold unsafe code ("စိတ်မချရသော")
+ --> unsafe.zaka:2:1
 ```
 
 The refusal is an error in each `--mem-check` mode, because it is a rule of the language,
-read with names and kinds. Each mark is spelled with `စိတ်မချရ`, so a search for that
+read with names and kinds. Each use is spelled with `စိတ်မချရ`, so a search for that
 word finds each place the compiler does not vouch for.
 
 ## Overflow

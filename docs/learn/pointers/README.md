@@ -1,6 +1,6 @@
 ---
 title: Unsafe Zaka
-description: Part III of Learn - mark code as unchecked with စိတ်မချရသော, then hold the address of a variable and read and change the variable through it.
+description: Part III of Learn - declare code unsafe with စိတ်မချရသော, then hold the address of a variable and read and change the variable through it.
 ---
 
 # Unsafe Zaka
@@ -10,10 +10,10 @@ free nothing in code, and most programs never leave them. Part III adds *pointer
 that hold the address of a place in RAM, and blocks of the heap that the program asks for
 and gives back itself. That is the work of C, and of code that calls C.
 
-The compiler cannot prove such code safe, so the code tells the reader: it sits in *marked code*.
-The mark is `စိတ်မချရသော` ("not to be trusted"). A block that starts with
+The compiler cannot prove such code safe, so the code tells the reader: it sits in *unsafe code*.
+The word for it is `စိတ်မချရသော` ("not to be trusted"). A block that starts with
 `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။` ("will do the following, though it is not
-to be trusted") is marked, and so is a function whose header starts with the word.
+to be trusted") is an unsafe block, and so is a function whose header starts with the word.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -46,12 +46,12 @@ variable through the pointer `ညွှန်း` ("the pointer").
 
 Unsafe means that *the compiler* stops proving each pointer right; it never means that
 the rules are off. The Zaka VM still checks each read and write through a pointer, and stops
-the program at the first bad one, as [Pointer mistakes](mistakes.md) shows. Inside marked
+the program at the first bad one, as [Pointer mistakes](mistakes.md) shows. Inside unsafe
 code, the compiler reports the pointer mistakes it can see as warnings, and the program
 runs.
 
-A search for `စိတ်မချရ` finds each marked place of a program. The start block itself cannot
-be marked, so a marked block goes inside it, as above. Outside marked code, the work of
+A search for `စိတ်မချရ` finds each unsafe place of a program. The start block itself cannot
+be unsafe, so an unsafe block goes inside it, as above. Outside unsafe code, the work of
 pointers is an error (ZK0468):
 
 ```zaka-error ZK0468
@@ -62,16 +62,16 @@ pointers is an error (ZK0468):
 ```
 
 ```text
-error[ZK0468]: "၏ လိပ်စာ" needs marked code
-  = help: put it in a block "အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။", or in a function marked "စိတ်မချရသော"
+error[ZK0468]: "၏ လိပ်စာ" needs unsafe code
+  = help: put it in a block "အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။", or in an unsafe function, declared with "စိတ်မချရသော"
 ```
 
-These need marked code:
+These need unsafe code:
 
 - `x ၏ လိပ်စာ`, reading or writing through a pointer with `၏ တန်ဖိုး`, and pointer
   arithmetic;
 - the heap statements of the next pages, and conversions to and from pointers;
-- a call of a marked function, or of a C function that takes or gives addresses.
+- a call of an unsafe function, or of a C function that takes or gives addresses.
 
 A pointer value itself can pass through safe code: held in a variable or a field, copied,
 printed, and compared with the null address.
@@ -114,7 +114,7 @@ A pointer that points nowhere holds the null address, `မည်သည်ကိ�
 nothing"). It prints as that phrase, and it is the [initial
 value](../variables/README.md#the-initial-value) of each pointer kind. It is the one NULL
 in Zaka: text, objects and function values never hold one. A pointer is not true or false,
-so compare it with the null address to test it. Neither needs marked code:
+so compare it with the null address to test it. Neither needs unsafe code:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -188,7 +188,7 @@ column next to each variable gives the address of its block.
 
 - Declare two integers and one pointer. Point at the first, change it through the
   pointer, then point at the second and change that one.
-- Move the line `ညွှန်း ၏ တန်ဖိုး ကို ပြသမည်။` out of the marked block, and read the message.
+- Move the line `ညွှန်း ၏ တန်ဖိုး ကို ပြသမည်။` out of the unsafe block, and read the message.
 - Declare a pointer to a pointer, `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ`, that points at a
   `ကိန်းပြည့် လိပ်စာ` variable, and print `၏ တန်ဖိုး ၏ တန်ဖိုး` through it.
 

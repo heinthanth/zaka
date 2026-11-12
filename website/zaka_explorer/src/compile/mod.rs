@@ -18,7 +18,6 @@ use zakac_burmese_segmenter::segmenter::PreLexicalToken;
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
 use zakac_codegen_target_c::emit::CFile;
-use zakac_codegen_target_c::emit::NotBuilt;
 use zakac_codegen_target_c::options::Checks;
 use zakac_codegen_target_c::options::TargetCOptions;
 use zakac_codegen_target_vm::bc;
@@ -87,7 +86,7 @@ use crate::compile::tree::build_tree;
 pub const FILE_NAME: &str = "explorer.zaka";
 
 /// Platform bit counts the check accepts.
-pub const PLATFORM_BITS: [u16; 5] = [8, 16, 32, 64, 128];
+pub const PLATFORM_BITS: [u16; 4] = [8, 16, 32, 64];
 
 /// Options of a compile run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
@@ -105,7 +104,7 @@ pub struct Options
     /// Also warn about a pointer that can be blank.
     #[builder(default)]
     pub strict: bool,
-    /// Refuse each marked function and block.
+    /// Refuse each unsafe function and block.
     #[builder(default)]
     pub no_unsafe: bool,
     /// What integer arithmetic does with a result outside its kind.
@@ -766,14 +765,13 @@ pub fn compile(source: &str, options: &Options) -> Compiled
             (Some(bc::Module { overflow: options.overflow, ..emitted }), None)
         }
     });
-    let (c_files, c_diags, c_missing) = c_parts(c_built);
+    let (c_files, c_missing) = c_parts(c_built);
     let tagged = [
         (Phase::Lex, &lexed.diagnostics),
         (Phase::Parse, &parse_diags),
         (Phase::Check, &idiom),
         (Phase::Lower, &fold_diags),
         (Phase::BorrowCheck, &owner_diags),
-        (Phase::Codegen, &c_diags),
     ];
     let ir_tree = |m: &Option<Module>| {
         m.as_ref().map(|m| build_ir_tree(&file, source, m)).unwrap_or_default()
@@ -829,8 +827,8 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         .build()
 }
 
-/// The parts of what the C target made: the files, the diagnostics of the
-/// kinds it cannot build, and the construct it cannot build at present.
+/// The parts of what the C target made: the files, and the construct it
+/// cannot build at present.
 ///
 /// # Arguments
 ///
@@ -838,19 +836,15 @@ pub fn compile(source: &str, options: &Options) -> Compiled
 ///
 /// # Returns
 ///
-/// The files, the diagnostics and the construct as text.
-fn c_parts(
-    built: Option<Result<Vec<CFile>, NotBuilt>>,
-) -> (Vec<CFile>, Vec<Diagnostic>, Option<String>)
+/// The files and the construct as text.
+fn c_parts<E: ToString>(
+    built: Option<Result<Vec<CFile>, E>>,
+) -> (Vec<CFile>, Option<String>)
 {
     match built
     {
-        Some(Ok(files)) => (files, Vec::new(), None),
-        Some(Err(NotBuilt::Kinds(diags))) => (Vec::new(), diags, None),
-        Some(Err(NotBuilt::Missing(error))) =>
-        {
-            (Vec::new(), Vec::new(), Some(error.to_string()))
-        }
+        Some(Ok(files)) => (files, None),
+        Some(Err(error)) => (Vec::new(), Some(error.to_string())),
         None => Default::default(),
     }
 }

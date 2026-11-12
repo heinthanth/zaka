@@ -69,21 +69,6 @@ fn next(state: &mut u64) -> u64
     *state
 }
 
-/// A 128-bit pattern as C text.
-///
-/// # Arguments
-///
-/// * `raw` - The bits.
-///
-/// # Returns
-///
-/// The C text, of the kind `zk_u128`.
-fn c_u128(raw: u128) -> String
-{
-    let (hi, lo) = ((raw >> 64) as u64, raw as u64);
-    format!("(((zk_u128)UINT64_C({hi:#x}) << 64) | UINT64_C({lo:#x}))")
-}
-
 /// The probe program and the text the VM prints for each line of it.
 ///
 /// # Returns
@@ -103,7 +88,7 @@ fn probe() -> (String, String)
         doubles.chain((0..3000).map(|_| next(&mut state))).collect();
     for raw in doubles
     {
-        let v = Value::Float { bits: 64, raw: u128::from(raw) };
+        let v = Value::Float { bits: 64, raw };
         put(format!("zk_put_f64(zk_d(UINT64_C({raw:#x})))"), v);
     }
     let singles = TRICKY_F64.iter().map(|v| (*v as f32).to_bits());
@@ -111,17 +96,17 @@ fn probe() -> (String, String)
         singles.chain((0..3000).map(|_| next(&mut state) as u32)).collect();
     for raw in singles
     {
-        let v = Value::Float { bits: 32, raw: u128::from(raw) };
+        let v = Value::Float { bits: 32, raw: u64::from(raw) };
         put(format!("zk_put_f32(zk_f(UINT32_C({raw:#x})))"), v);
     }
-    let i128_kind = IntKind::new(true, Width::Bits(128));
-    let u128_kind = IntKind::new(false, Width::Bits(128));
-    for raw in [0, 1, u128::MAX, 1 << 127, (1 << 127) - 1, 12_345]
+    let i64_kind = IntKind::new(true, Width::Bits(64));
+    let u64_kind = IntKind::new(false, Width::Bits(64));
+    for raw in [0, 1, u64::MAX, 1 << 63, (1 << 63) - 1, 12_345]
     {
-        let int = Value::Int { kind: i128_kind, raw };
-        put(format!("zk_put_i((zk_i128){})", c_u128(raw)), int);
-        let uint = Value::Int { kind: u128_kind, raw };
-        put(format!("zk_put_u({})", c_u128(raw)), uint);
+        let int = Value::int(i64_kind, u128::from(raw), 64);
+        put(format!("zk_put_i((int64_t)UINT64_C({raw:#x}))"), int);
+        let uint = Value::int(u64_kind, u128::from(raw), 64);
+        put(format!("zk_put_u(UINT64_C({raw:#x}))"), uint);
     }
     let main = format!(
         "#include \"zaka_kinds.h\"\nstatic double zk_d(uint64_t b) {{ double v; \

@@ -32,8 +32,8 @@ fn text_round_trips()
         "-5:i8",
         "255:u8",
         "-128:i8",
-        "-170141183460469231731687303715884105728:i128",
-        "340282366920938463463374607431768211455:u128",
+        "-9223372036854775808:i64",
+        "18446744073709551615:u64",
         "-1:isize",
         "1.5:f32",
         "0.1:f64",
@@ -48,11 +48,6 @@ fn text_round_trips()
     ]
     {
         assert_eq!(v(text).to_string(), text);
-    }
-    for text in ["0.1:f16", "0.1:f128", "-2.5:f16", "inf:f128"]
-    {
-        let once = v(text);
-        assert_eq!(v(&once.to_string()), once, "{text}");
     }
 }
 
@@ -74,10 +69,11 @@ fn integer_arithmetic_checks_the_range()
     assert_eq!(op(InfixOp::Mul, "16:i8", "8:i8"), Err(EvalError::Overflow));
     assert_eq!(op(InfixOp::Mul, "-16:i8", "8:i8"), Ok("-128:i8".into()));
     assert_eq!(op(InfixOp::Add, "255:u8", "0:u8"), Ok("255:u8".into()));
-    let max = "340282366920938463463374607431768211455:u128";
-    assert_eq!(op(InfixOp::Add, max, "1:u128"), Err(EvalError::Overflow));
-    let min = "-170141183460469231731687303715884105728:i128";
-    assert_eq!(op(InfixOp::Sub, min, "1:i128"), Err(EvalError::Overflow));
+    let max = "18446744073709551615:u64";
+    assert_eq!(op(InfixOp::Add, max, "1:u64"), Err(EvalError::Overflow));
+    assert_eq!(op(InfixOp::Mul, max, "2:u64"), Err(EvalError::Overflow));
+    let min = "-9223372036854775808:i64";
+    assert_eq!(op(InfixOp::Sub, min, "1:i64"), Err(EvalError::Overflow));
     assert_eq!(
         op(InfixOp::Add, "9223372036854775807:isize", "1:isize"),
         Err(EvalError::Overflow)
@@ -96,8 +92,8 @@ fn division_truncates_and_rejects_zero()
     assert_eq!(op(InfixOp::Rem, "7:i32", "0:i32"), Err(EvalError::ZeroDivisor));
     assert_eq!(op(InfixOp::Div, "-128:i8", "-1:i8"), Err(EvalError::Overflow));
     assert_eq!(op(InfixOp::Rem, "-128:i8", "-1:i8"), Err(EvalError::Overflow));
-    let min = "-170141183460469231731687303715884105728:i128";
-    assert_eq!(op(InfixOp::Div, min, "-1:i128"), Err(EvalError::Overflow));
+    let min = "-9223372036854775808:i64";
+    assert_eq!(op(InfixOp::Div, min, "-1:i64"), Err(EvalError::Overflow));
 }
 
 #[test]
@@ -112,10 +108,7 @@ fn bitwise_and_shifts()
     assert_eq!(op(InfixOp::Shr, "128:u8", "7:u8"), Ok("1:u8".into()));
     let far = EvalError::ShiftTooFar { distance: 8, bits: 8 };
     assert_eq!(op(InfixOp::Shl, "1:i8", "8:usize"), Err(far));
-    assert_eq!(
-        op(InfixOp::Shl, "1:i128", "127:u8"),
-        Ok(i128::MIN.to_string() + ":i128")
-    );
+    assert_eq!(op(InfixOp::Shl, "1:i64", "63:u8"), Ok(i64::MIN.to_string() + ":i64"));
     assert_eq!(prefix(PrefixOp::BitNot, v("0:u8"), P), Ok(v("255:u8")));
     assert_eq!(prefix(PrefixOp::BitNot, v("0:i8"), P), Ok(v("-1:i8")));
 }
@@ -125,7 +118,7 @@ fn negation()
 {
     assert_eq!(prefix(PrefixOp::Neg, v("5:i8"), P), Ok(v("-5:i8")));
     assert_eq!(prefix(PrefixOp::Neg, v("-128:i8"), P), Err(EvalError::Overflow));
-    assert_eq!(prefix(PrefixOp::Neg, v("1.5:f16"), P), Ok(v("-1.5:f16")));
+    assert_eq!(prefix(PrefixOp::Neg, v("1.5:f32"), P), Ok(v("-1.5:f32")));
     assert_eq!(prefix(PrefixOp::Not, v("true:bool"), P), Ok(v("false:bool")));
     assert_eq!(prefix(PrefixOp::Not, v("1:i8"), P), Err(EvalError::Mismatch));
 }
@@ -137,30 +130,36 @@ fn floats_round_at_their_own_width()
         |k: &str| op(InfixOp::Div, &format!("1:{k}"), &format!("3:{k}")).unwrap();
     assert_eq!(third("f64"), "0.3333333333333333:f64");
     assert_eq!(third("f32"), "0.33333334:f32");
-    let half_third = v(&third("f16"));
-    let Value::Float { raw, .. } = half_third
+    let single = v(&third("f32"));
+    let Value::Float { raw, .. } = single
     else
     {
         panic!("not a float")
     };
-    assert_eq!(raw, 0x3555);
-    let quad = v(&third("f128"));
-    let wide = convert(quad, kind("f64"), P).unwrap();
-    assert_eq!(wide, v("0.3333333333333333:f64"));
-    assert_ne!(convert(wide, kind("f128"), P).unwrap(), quad);
+    assert_eq!(raw, 0x3eaa_aaab);
+    let wide = convert(v(&third("f64")), kind("f32"), P).unwrap();
+    assert_eq!(wide, single);
+    assert_ne!(convert(single, kind("f64"), P).unwrap(), v(&third("f64")));
     assert_eq!(op(InfixOp::Div, "1:f64", "0:f64"), Ok("inf:f64".into()));
     assert_eq!(op(InfixOp::Rem, "-7.5:f64", "2:f64"), Ok("-1.5:f64".into()));
-    assert_eq!(op(InfixOp::Add, "65504:f16", "65504:f16"), Ok("inf:f16".into()));
+    let max = "340282350000000000000000000000000000000:f32";
+    assert_eq!(op(InfixOp::Add, max, max), Ok("inf:f32".into()));
 }
 
 #[test]
-fn f128_literals_keep_more_than_53_bits()
+fn floats_convert_to_integers_by_dropping_the_fraction()
 {
-    let exact = Value::float("9007199254740993", 128).unwrap();
     let inexact = Value::float("9007199254740993", 64).unwrap();
-    let back = convert(exact, kind("u64"), P).unwrap();
-    assert_eq!(back, v("9007199254740993:u64"));
     assert_eq!(convert(inexact, kind("u64"), P).unwrap(), v("9007199254740992:u64"));
+    assert_eq!(convert(v("-2.75:f64"), kind("i8"), P).unwrap(), v("-2:i8"));
+    assert_eq!(
+        convert(v("1e30:f32"), kind("i64"), P).unwrap(),
+        v("9223372036854775807:i64")
+    );
+    assert_eq!(convert(v("-1.5:f64"), kind("u32"), P).unwrap(), v("0:u32"));
+    assert_eq!(convert(v("NaN:f64"), kind("i32"), P).unwrap(), v("0:i32"));
+    let big = v("18446744073709551615:u64");
+    assert_eq!(convert(big, kind("f32"), P).unwrap(), v("18446744000000000000.0:f32"));
 }
 
 #[test]
@@ -223,11 +222,11 @@ fn defaults_and_literals()
 }
 
 #[test]
-fn wide_and_narrow_floats_print_like_f64()
+fn f32_prints_its_own_shortest_digits()
 {
-    assert_eq!(v("-3:f16").to_string(), "-3.0:f16");
-    assert_eq!(v("1e30:f128").to_string(), "1e30:f128");
-    assert_eq!(v("0.5:f128").to_string(), "0.5:f128");
+    assert_eq!(v("-3:f32").to_string(), "-3.0:f32");
+    assert_eq!(v("1e30:f32").to_string(), "1e30:f32");
+    assert_eq!(v("0.1:f32").to_string(), "0.1:f32");
 }
 
 fn wrapping(o: InfixOp, l: &str, r: &str) -> Result<String, EvalError>
@@ -245,11 +244,11 @@ fn wrapping_ops_wrap_to_the_width()
     assert_eq!(w(InfixOp::Mul, "200:u8", "2:u8"), "144:u8");
     assert_eq!(w(InfixOp::Div, "-128:i8", "-1:i8"), "-128:i8");
     assert_eq!(w(InfixOp::Rem, "-128:i8", "-1:i8"), "0:i8");
-    let max = "340282366920938463463374607431768211455:u128";
-    assert_eq!(w(InfixOp::Add, max, "1:u128"), "0:u128");
-    let min = "-170141183460469231731687303715884105728:i128";
-    assert_eq!(w(InfixOp::Div, min, "-1:i128"), min.to_string());
-    assert_eq!(w(InfixOp::Sub, min, "1:i128"), format!("{}:i128", i128::MAX));
+    let max = "18446744073709551615:u64";
+    assert_eq!(w(InfixOp::Add, max, "1:u64"), "0:u64");
+    let min = "-9223372036854775808:i64";
+    assert_eq!(w(InfixOp::Div, min, "-1:i64"), min.to_string());
+    assert_eq!(w(InfixOp::Sub, min, "1:i64"), format!("{}:i64", i64::MAX));
 }
 
 #[test]
@@ -298,8 +297,8 @@ fn wrapping_negation()
 #[test]
 fn float_text_is_public()
 {
-    assert_eq!(float_pattern_text(64, 0.1f64.to_bits() as u128), "0.1");
-    assert_eq!(float_pattern_text(32, 3.0f32.to_bits() as u128), "3.0");
+    assert_eq!(float_pattern_text(64, 0.1f64.to_bits()), "0.1");
+    assert_eq!(float_pattern_text(32, u64::from(3.0f32.to_bits())), "3.0");
 }
 
 #[test]
