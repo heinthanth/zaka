@@ -50,7 +50,7 @@ A written count comes first, then the kind of each cell, then `စာရင်�
 - The count is a whole number above zero (ZK0227): digits, or each expression the
   compiler [folds](../compiler/stages.md#one-sentence-through-each-stage) to an integer. That takes literals, constants
   (`ကိန်းသေ`), the arithmetic, bitwise and shift operators in each spelling (`N << ၂`,
-  `N နှင့် ၂ ၏ ပေါင်းလဒ်`), comparisons, conversions (`… ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော
+  `N နှင့် ၂ ကို ပေါင်းသည့်ရလဒ်`), comparisons, conversions (`… ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော
   ရလဒ်`), sizes (`ဂရစ် တစ်ခု ၏ အရွယ်အစား`), cells and fields of constant lists and structs
   (`L ၏ အကွက် ၁`, `P ၏ x`), the cell count of a constant plain list, and the cell count of
   each counted list (`l ၏ အကွက်အရေအတွက်`, from its kind), each in the kinds the program

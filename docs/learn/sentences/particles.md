@@ -18,10 +18,10 @@ Zaka the particles do it.
 ၁၀ သည် ၃ အောက် ငယ်သည် ဟု ပြသမည်။           // 10 is less than 3
 
 // နှင့် marks the first operand, ၏ ("of") the last
-၁၀ နှင့် ၃ ၏ နုတ်လဒ် ကို ပြသမည်။            // the difference of 10 and 3
+၁၀ နှင့် ၃ ကို နုတ်သည့်ရလဒ် ကို ပြသမည်။            // the difference of 10 and 3
 
 // ကို marks the object, ဖြင့် means "with"
-၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း ကို ပြသမည်။  // the remainder of 10 ÷ 3
+၁၀ ကို ၃ ဖြင့် အကြွင်းရှာသည့်ရလဒ် ကို ပြသမည်။  // the remainder of 10 ÷ 3
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -38,9 +38,9 @@ Zaka the particles do it.
 | --- | --- | --- | --- |
 | `သည်` | (subject) | `က သည် ခ ထက် ကြီး` | k is greater than kh |
 | `ကို` | (object) | `က ကို ပြသမည်` | show k |
-| `နှင့်` | "and", "with" | `က နှင့် ခ ၏ ပေါင်းလဒ်` | the sum of k and kh |
+| `နှင့်` | "and", "with" | `က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်` | the sum of k and kh |
 | `၏` | "of" | `က ၏ ...` | closes a list of operands |
-| `ဖြင့်` | "with", "using" | `က ကို ခ ဖြင့် စားသော စားလဒ်` | k ÷ kh |
+| `ဖြင့်` | "with", "using" | `က ကို ခ ဖြင့် စားသည့်ရလဒ်` | k ÷ kh |
 | `ထက်` | "than" | `က သည် ခ ထက် ကြီး` | k is greater than kh |
 | `အောက်` | "below" | `က သည် ခ အောက် ငယ်` | k is less than kh |
 | `ဟု` | "so" (quoting) | `"..." ဟု ပြသမည်` | show "..." |
@@ -74,6 +74,6 @@ next. [Natural Zaka](../natural-zaka/README.md) gives the rules.
 ## Hands on
 
 - Print whether 7 is less than 9, using `အောက်` and `ငယ်သည်`.
-- Print what is left over when 5 goes into 17, with `ဖြင့်` and `စားကြွင်း`.
+- Print what is left over when 5 goes into 17, with `ဖြင့်` and `အကြွင်းရှာသည့်ရလဒ်`.
 
 Next: [Spaces between words](spacing.md).

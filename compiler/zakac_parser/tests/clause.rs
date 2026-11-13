@@ -9,43 +9,43 @@ use crate::common::stmt;
 #[test]
 fn nested_frames_reduce_on_the_inner_verb_first()
 {
-    assert_eq!(expr("က နှင့် ခ နှင့် ဂ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ်"), "(add က (mul ခ ဂ))");
+    assert_eq!(expr("က နှင့် ခ နှင့် ဂ ကို မြှောက်သည့်ရလဒ် ကို ပေါင်းသည့်ရလဒ်"), "(add က (mul ခ ဂ))");
 }
 
 #[test]
 fn a_verb_result_takes_the_next_particle()
 {
-    assert_eq!(expr("က နှင့် ခ ၏ ပေါင်းလဒ် နှင့် ဂ ၏ မြှောက်လဒ်"), "(mul (add က ခ) ဂ)");
+    assert_eq!(expr("က နှင့် ခ ကို ပေါင်းသည့်ရလဒ် နှင့် ဂ ကို မြှောက်သည့်ရလဒ်"), "(mul (add က ခ) ဂ)");
 }
 
 #[test]
 fn operands_are_maximal_notation_expressions()
 {
-    assert_eq!(expr("က + ၁ သည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ထက် ကြီးသည်"), "(gt (+ က 1) (add ခ ဂ))");
-    assert_eq!(expr("က * ခ နှင့် ဂ ၏ ပေါင်းလဒ်"), "(add (* က ခ) ဂ)");
+    assert_eq!(expr("က + ၁ သည် ခ နှင့် ဂ ကို ပေါင်းသည့်ရလဒ် ထက် ကြီးသည်"), "(gt (+ က 1) (add ခ ဂ))");
+    assert_eq!(expr("က * ခ နှင့် ဂ ကို ပေါင်းသည့်ရလဒ်"), "(add (* က ခ) ဂ)");
 }
 
 #[test]
 fn divide_and_remainder_frames()
 {
-    let text = "၁၆ ကို ၄ ဖြင့် စားသော စားလဒ် နှင့် ၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း ၏ ပေါင်းလဒ်";
+    let text = "၁၆ ကို ၄ ဖြင့် စားသည့်ရလဒ် နှင့် ၁၀ ကို ၃ ဖြင့် အကြွင်းရှာသည့်ရလဒ် ကို ပေါင်းသည့်ရလဒ်";
     assert_eq!(expr(text), "(add (div 16 4) (rem 10 3))");
 }
 
 #[test]
 fn shift_distance_is_not_read_as_a_kind()
 {
-    assert_eq!(expr("၄ ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ်"), "(shr 4 2)");
-    assert_eq!(expr("၁ ကို ဘယ်သို့ က ဘစ် ရွေ့သော ရလဒ်"), "(shl 1 က)");
+    assert_eq!(expr("၄ ကို ၂ ဖြင့် ဘစ်ညာရွေ့သည့်ရလဒ်"), "(shr 4 2)");
+    assert_eq!(expr("၁ ကို က ဖြင့် ဘစ်ဘယ်ရွေ့သည့်ရလဒ်"), "(shl 1 က)");
 }
 
 #[test]
 fn bitwise_frames()
 {
-    assert_eq!(expr("က နှင့် ခ ၏ ဘစ်အလိုက် ဆုံလဒ်"), "(bitand က ခ)");
-    assert_eq!(expr("က နှင့် ခ ၏ ဘစ်အလိုက် ပေါင်းစုလဒ်"), "(bitor က ခ)");
-    assert_eq!(expr("က နှင့် ခ ၏ ဘစ်အလိုက် ခြားနားလဒ်"), "(bitxor က ခ)");
-    assert_eq!(expr("က ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်"), "(bitnot က)");
+    assert_eq!(expr("က နှင့် ခ ကို ဘစ်ဆုံသည့်ရလဒ်"), "(bitand က ခ)");
+    assert_eq!(expr("က နှင့် ခ ကို ဘစ်ပေါင်းစုသည့်ရလဒ်"), "(bitor က ခ)");
+    assert_eq!(expr("က နှင့် ခ ကို ဘစ်ခြားနားသည့်ရလဒ်"), "(bitxor က ခ)");
+    assert_eq!(expr("က ကို ဘစ်ပြောင်းပြန်သည့်ရလဒ်"), "(bitnot က)");
 }
 
 #[test]
@@ -74,9 +74,9 @@ fn conversion_takes_a_kind_operand()
 #[test]
 fn statement_verbs_close_the_clause()
 {
-    let text = "အသက် ကို အသက် နှင့် ၁ ၏ ပေါင်းလဒ် ဟု ထားမည်။";
+    let text = "အသက် ကို အသက် နှင့် ၁ ကို ပေါင်းသည့်ရလဒ် ဟု ထားမည်။";
     assert_eq!(stmt(text), "(set အသက် (add အသက် 1))");
-    assert_eq!(stmt("က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်။"), "(print (add က ခ))");
+    assert_eq!(stmt("က နှင့် ခ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။"), "(print (add က ခ))");
     assert_eq!(stmt("က + ခ + ဂ ကို ပြန်ပေးမည်။"), "(return (+ (+ က ခ) ဂ))");
     assert_eq!(stmt("ရလဒ် ကို (က + ခ) * ၂ ဟု ထားမည်။"), "(set ရလဒ် (* [(+ က ခ)] 2))");
 }
@@ -86,7 +86,7 @@ fn a_call_can_head_a_statement()
 {
     let text = "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၁ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
     assert_eq!(stmt(text), "(print (call နှစ်ဆ 1))");
-    let sum = "f ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် နှင့် ၁ ၏ ပေါင်းလဒ် ကို ပြသမည်။";
+    let sum = "f ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် နှင့် ၁ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။";
     assert_eq!(stmt(sum), "(print (add (call f) 1))");
 }
 
@@ -94,9 +94,9 @@ fn a_call_can_head_a_statement()
 fn particle_errors()
 {
     assert_eq!(expr_err("က ကို ကို"), Code::DoubleParticle);
-    assert_eq!(expr_err("က ၏ ပေါင်းလဒ်"), Code::MissingOperand);
-    assert_eq!(expr_err("က ကို ခ ၏ ပေါင်းလဒ်"), Code::SlotMismatch);
-    assert_eq!(expr_err("က နှင့် ခ ပေါင်းလဒ်"), Code::SlotMismatch);
+    assert_eq!(expr_err("က ကို ပေါင်းသည့်ရလဒ်"), Code::MissingOperand);
+    assert_eq!(expr_err("က ကို ခ ကို ပေါင်းသည့်ရလဒ်"), Code::SlotMismatch);
+    assert_eq!(expr_err("က နှင့် ခ ကြီး"), Code::SlotMismatch);
     assert_eq!(expr_err("က နှင့် ခ"), Code::UnclosedClause);
     assert_eq!(expr_err("က ကို ပြသမည်"), Code::StmtVerbInExpr);
 }

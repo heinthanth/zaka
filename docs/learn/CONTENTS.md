@@ -62,6 +62,7 @@
 - [Modules](modules/README.md)
   - [Module mistakes](modules/mistakes.md)
 - [Input and output](io/README.md)
+- [The stdlib](stdlib/README.md)
 - [Natural Zaka](natural-zaka/README.md)
 - [Example programs](programs/README.md)
   - [FizzBuzz](programs/fizzbuzz.md)

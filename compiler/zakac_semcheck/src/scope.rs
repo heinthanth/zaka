@@ -192,17 +192,18 @@ impl Scopes
     ///
     /// # Returns
     ///
-    /// `Ok`, or the earlier function when the scope holds the name.
-    pub fn declare_fn(&mut self, name: Name, sig: FnSig) -> Result<(), FnSig>
+    /// `false` when the scope holds the name already, and the function is not
+    /// declared.
+    pub fn declare_fn(&mut self, name: Name, sig: FnSig) -> bool
     {
         let Some(inner) = self.fns.last_mut()
         else
         {
-            return Ok(());
+            return true;
         };
-        ret_if!(let Some(prior) = inner.get(&name), Err(prior.clone()));
+        ret_if!(inner.contains_key(&name), false);
         inner.insert(name, sig);
-        Ok(())
+        true
     }
 
     /// Find a function declared inside a function, innermost scope first. A
@@ -313,8 +314,9 @@ pub(crate) struct FnSig
     /// `နှင့် အခြားတန်ဖိုးများ`.
     #[builder(default)]
     pub variadic: bool,
-    /// The mark of each parameter, when the parameters have marks.
-    pub marks: Option<Vec<Name>>,
+    /// The preposition of each parameter, when the parameters have
+    /// prepositions.
+    pub prepositions: Option<Vec<Name>>,
     /// Whether the function takes each parameter over and closes it: a
     /// parameter of a C function marked `အပိုင်အနေဖြင့်`.
     #[builder(default)]
@@ -341,8 +343,8 @@ pub(crate) struct FnSig
 
 impl FnSig
 {
-    /// Whether two functions take the same parameters with the same marks, so
-    /// no call can tell them apart.
+    /// Whether two functions take the same parameters with the same
+    /// prepositions, so no call can tell them apart.
     ///
     /// # Arguments
     ///
@@ -353,7 +355,7 @@ impl FnSig
     /// `true` when both match.
     pub fn same_params(&self, other: &FnSig) -> bool
     {
-        self.params == other.params && self.marks == other.marks
+        self.params == other.params && self.prepositions == other.prepositions
     }
 }
 

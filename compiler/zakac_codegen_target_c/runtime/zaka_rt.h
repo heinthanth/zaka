@@ -619,6 +619,30 @@ void zk_host_write_stream(
     unsigned char *slot, const zk_kind *ret, const unsigned char *text,
     const unsigned char *stream, const zk_kind *stream_kind
 );
+/** Add text at the end of a file, making the file when it is not there. */
+void zk_host_append_file(
+    unsigned char *slot, const zk_kind *ret, const unsigned char *text,
+    const unsigned char *path
+);
+/** Remove a file, or a folder that holds nothing. */
+void zk_host_remove(unsigned char *slot, const zk_kind *ret, const unsigned char *path);
+/** Make a folder and each folder above it that is not there. */
+void zk_host_make_folder(
+    unsigned char *slot, const zk_kind *ret, const unsigned char *path
+);
+/** The names a folder holds, sorted, into a result. */
+void zk_host_list_folder(
+    unsigned char *slot, const zk_kind *ret, const unsigned char *path
+);
+/** What a path holds, a file, a folder or another thing, into a result. */
+void zk_host_path_kind(
+    unsigned char *slot, const zk_kind *ret, const unsigned char *path
+);
+/** Move a file or a folder, replacing what the target holds. */
+void zk_host_rename(
+    unsigned char *slot, const zk_kind *ret, const unsigned char *from,
+    const unsigned char *to
+);
 /** Fill a list of text with C strings: the arguments or the environment. */
 void zk_text_list(unsigned char *at, int count, char **items);
 

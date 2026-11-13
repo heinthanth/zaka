@@ -7,7 +7,7 @@ use zakac_span::span::Span;
 
 use crate::expr::Expr;
 use crate::expr::Ident;
-use crate::expr::UsingMark;
+use crate::expr::UsingParticle;
 use crate::kind::Kind;
 use crate::verb::Slot;
 
@@ -131,6 +131,9 @@ pub enum Stmt
     Switch(SwitchStmt),
     /// `ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
     Alias(AliasDecl),
+    /// `<kind> သည် [ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်]
+    /// ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။`
+    BuiltinKind(BuiltinKindDecl),
     /// `<name> ဟူသည့် ဂုဏ်သတ္တိ သည် … ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။ …`
     Trait(TraitDecl),
     /// `<kind> တွင် <trait> ဂုဏ်သတ္တိရှိစေရန် အောက်ပါလုပ်ဆောင်ချက်များ ကို ထည့်သွင်းမည်။ …`
@@ -400,10 +403,10 @@ pub struct Param
     pub kind: Kind,
     /// The parameter name.
     pub name: Ident,
-    /// The mark, `ဝိဘတ် "<mark>" ကို သုံး၍`: the word a marked call writes after
-    /// this argument.
+    /// The preposition, `ဝိဘတ် "<preposition>" ကို သုံး၍`: the word a
+    /// preposition call writes after this argument.
     #[serde(default)]
-    pub mark: Option<Ident>,
+    pub preposition: Option<Ident>,
     /// Source region.
     pub span: Span,
 }
@@ -475,6 +478,13 @@ pub struct FnDecl
     /// name it.
     #[builder(default)]
     pub start: bool,
+    /// `true` for a function the compiler gives, marked
+    /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` after `သည်`: it has no block, and a
+    /// sentence of the language stands for each call of it, as `ပြသမည်` for
+    /// `ပြသ`.
+    #[builder(default)]
+    #[serde(default)]
+    pub builtin: bool,
     /// `true` for a function that comes from outside, `ပြင်ပမှလာသော`: the
     /// host serves it, and its block holds no statements.
     #[builder(default)]
@@ -562,12 +572,12 @@ pub struct CallStmt
     pub pass: bool,
     /// `ကို` or `တို့ကို` before `သုံး၍`, when the arguments come first.
     #[serde(default)]
-    pub using: Option<UsingMark>,
-    /// The word after each argument of a marked call, one for each; blank
-    /// for the other call forms.
+    pub using: Option<UsingParticle>,
+    /// The preposition after each argument of a preposition call, one for
+    /// each; blank for the other call forms.
     #[builder(default)]
     #[serde(default)]
-    pub marks: Vec<Ident>,
+    pub prepositions: Vec<Ident>,
     /// Source region.
     pub span: Span,
 }
@@ -932,6 +942,28 @@ pub struct TraitDecl
     #[serde(default)]
     pub builtin: bool,
     /// Source region, the closer included.
+    pub span: Span,
+}
+
+/// A built-in kind as the prelude names it, for its doc comment:
+/// `<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။`, with
+/// the kind parameters of a list or a table between `သည်` and the mark.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct BuiltinKindDecl
+{
+    /// The name of the kind: `ကိန်းပြည့်`, or the word of a list or a table,
+    /// `စာရင်း` or `ဇယား`.
+    pub name: Ident,
+    /// The kind parameters: the kind of the cells of a list, the kinds of the
+    /// indexes and the values of a table.
+    #[builder(default)]
+    #[serde(default)]
+    pub kind_params: Vec<KindParam>,
+    /// `true` when `အများသုံး` stands before `ဒေတာအမျိုးအစား`.
+    #[builder(default)]
+    #[serde(default)]
+    pub exported: bool,
+    /// Source region, the full stop included.
     pub span: Span,
 }
 

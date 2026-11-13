@@ -30,7 +30,7 @@ pub enum TokenKind
 {
     /// Identifier; the text comes from the span.
     Ident,
-    /// Identifier in backticks; the span covers the backticks.
+    /// Identifier in braces, `{name}`; the span covers the braces.
     RawIdent,
     /// Number literal; the digits come from the span, the parser checks them.
     Number(NumberShape),
@@ -262,20 +262,10 @@ pub enum Kw
     Being,
     /// `ပြီးလျှင်`
     WhenDone,
-    /// `ဘယ်သို့`
-    ShiftLeft,
-    /// `ညာသို့`
-    ShiftRight,
     /// `ဘစ်`
     Bit,
 
     // verb-nouns and verbs
-    /// `ပေါင်းလဒ်`
-    Sum,
-    /// `နုတ်လဒ်`
-    Difference,
-    /// `မြှောက်လဒ်`
-    Product,
     /// `ညီ`
     Equal,
     /// `တစ်ခုတည်း`, "one and the same": whether two names hold one object
@@ -298,24 +288,6 @@ pub enum Kw
     Or,
 
     // phrase pieces
-    /// `စားသော`
-    DivideHead,
-    /// `စားလဒ်`
-    QuotientTail,
-    /// `စားကြွင်း`
-    RemainderTail,
-    /// `ဘစ်အလိုက်`
-    BitwiseHead,
-    /// `ဆုံလဒ်`
-    MeetTail,
-    /// `ပေါင်းစုလဒ်`
-    UnionTail,
-    /// `ခြားနားလဒ်`
-    DifferTail,
-    /// `ပြောင်းပြန်ပြောင်းလဒ်`
-    InvertTail,
-    /// `ရွေ့သော`
-    ShiftHead,
     /// `ပြောင်းလဲသော`
     ConvertHead,
     /// `အကွက်တိုင်း`, "each cell"
@@ -341,12 +313,19 @@ pub enum Kw
     /// and never reads first, which the caller need not set; it counts as set
     /// after the call
     DataToFill,
-    /// `ဝိဘတ်`, "particle": opens the mark of a parameter, `ဝိဘတ် "<mark>" ဖြင့်`
-    MarkWord,
+    /// `ဝိဘတ်`, "preposition": opens the preposition of a parameter, `ဝိဘတ်
+    /// "<preposition>" ဖြင့်`
+    PrepositionWord,
     /// `ဟူသော`, "called": before `လုပ်ဆောင်ချက်` in a function value
     Called,
     /// `မည့်`, "named": before `လုပ်ဆောင်ချက်`, the same as `ဟူသော`
     Named,
+    /// `ပြောင်းလဲသော ရလဒ်ကောင်း`: a conversion through a function that can fail,
+    /// passing the failure on
+    ConvertGood,
+    /// `သော`, "that": in `<fn> သော ရလဒ်`, the end of a short call with a value,
+    /// the same as `သည့် ရလဒ်`
+    That,
     /// `လုပ်ဆောင်သော`
     CallHead,
     /// `အောက်ပါ`
@@ -397,20 +376,6 @@ pub enum Kw
     Done,
 
     // joined phrases
-    /// `စားသော စားလဒ်`
-    Divide,
-    /// `စားသော စားကြွင်း`
-    Remainder,
-    /// `ဘစ်အလိုက် ဆုံလဒ်`
-    BitAnd,
-    /// `ဘစ်အလိုက် ပေါင်းစုလဒ်`
-    BitOr,
-    /// `ဘစ်အလိုက် ခြားနားလဒ်`
-    BitXor,
-    /// `ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်`
-    BitNot,
-    /// `ရွေ့သော ရလဒ်`
-    Shift,
     /// `ပြောင်းလဲသော ရလဒ်`
     Convert,
     /// `လုပ်ဆောင်သော ရလဒ်`
@@ -839,8 +804,6 @@ impl Kw
                 | Kw::CountAs
                 | Kw::Being
                 | Kw::WhenDone
-                | Kw::ShiftLeft
-                | Kw::ShiftRight
                 | Kw::Bit
                 | Kw::ListOf
                 | Kw::ItemOf
@@ -850,7 +813,7 @@ impl Kw
     /// Whether this word takes a sentence-final particle written attached to
     /// it: the comparison verbs, `မဟုတ်` and the boolean literals.
     ///
-    /// Verb-nouns do not: in `ပေါင်းလဒ်သည်` the `သည်` is a subject marker.
+    /// Other words do not: in `ပြောင်းလဲသော ရလဒ် သည်` the `သည်` is a subject marker.
     ///
     /// # Returns
     ///

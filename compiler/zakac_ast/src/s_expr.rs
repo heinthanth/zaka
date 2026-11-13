@@ -237,6 +237,11 @@ impl ToSexpr for Stmt
             Stmt::Alias(s) => exported(s.exported, alias_sexpr(s)),
             Stmt::Trait(s) => exported(s.exported, trait_sexpr(s)),
             Stmt::TraitBlock(s) => trait_block_sexpr(s),
+            Stmt::BuiltinKind(s) =>
+            {
+                let name = s.name.name.to_string() + &kind_params_text(&s.kind_params);
+                list("builtin_kind", [name])
+            }
         }
     }
 }
@@ -361,7 +366,7 @@ fn base_name(k: &Kind) -> String
 }
 
 /// A function kind as `fn(<param>, …) -> <result>`, each parameter with its
-/// owned and edit flags, its name and its mark when written.
+/// owned and edit flags, its name and its preposition when written.
 ///
 /// # Arguments
 ///
@@ -381,8 +386,9 @@ fn fn_kind_sexpr(k: &Kind) -> String
         let owned = tern!(p.owned, "own ", "");
         let edit = tern!(p.edit, "mut ", "");
         let name = p.name.as_ref().map_or(String::new(), |n| format!(" {}", n.name));
-        let mark = p.mark.as_ref().map_or(String::new(), |m| format!("({})", m.name));
-        format!("{owned}{edit}{}{name}{mark}", p.kind.to_sexpr())
+        let preposition =
+            p.preposition.as_ref().map_or(String::new(), |m| format!("({})", m.name));
+        format!("{owned}{edit}{}{name}{preposition}", p.kind.to_sexpr())
     };
     let params: Vec<String> = sig.params.iter().map(param).collect();
     let ret =
@@ -739,8 +745,9 @@ fn param_sexpr(p: &Param) -> String
 {
     let owned = tern!(p.owned, "own ", "");
     let edit = tern!(p.edit, "edit ", "");
-    let mark = p.mark.as_ref().map(|m| format!("({})", m.name)).unwrap_or_default();
-    format!("{owned}{edit}{} {}{mark}", p.kind.to_sexpr(), p.name.name)
+    let preposition =
+        p.preposition.as_ref().map(|m| format!("({})", m.name)).unwrap_or_default();
+    format!("{owned}{edit}{} {}{preposition}", p.kind.to_sexpr(), p.name.name)
 }
 
 /// Name of a verb operation; a shift takes the name of its direction.

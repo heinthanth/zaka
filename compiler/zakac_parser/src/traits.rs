@@ -18,6 +18,7 @@ use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::BlockStmt;
+use zakac_ast::stmt::BuiltinKindDecl;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::KindParam;
 use zakac_ast::stmt::Stmt;
@@ -95,8 +96,9 @@ impl Parser<'_>
         let name = self.parse_ident()?;
         let mut params = self.parse_notation_params()?;
         self.expect(Kw::CalledRel)?;
-        let exported = self.eat(Kw::Export);
+        // `အများသုံး` stands right before `ဂုဏ်သတ္တိ`, after the compiler mark.
         let builtin = self.eat_builtin_mark()?;
+        let exported = self.eat(Kw::Export);
         self.expect(Kw::Trait)?;
         if params.is_empty()
         {
@@ -237,6 +239,94 @@ impl Parser<'_>
             return Err(self.err_expected("လုပ်ဆောင်ချက်"));
         };
         Ok(decl)
+    }
+
+    /// Parse the rest of the head of a function the compiler gives, after
+    /// `လုပ်ဆောင်ချက် <name> သည်`, as an external function's:
+    /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက် ဖြစ်သည်။`, or `… ဖြစ်၍` then
+    /// the parameters ending in `လက်ခံမည်` or `လက်ခံပြီး` and the result clause.
+    /// No block follows: a sentence of the language stands for each call.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the declaration starts.
+    /// * `name` - The function name.
+    /// * `kind_params` - The kind parameters of a generic function.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    pub(crate) fn parse_builtin_fn(
+        &mut self, start: Span, name: Ident, kind_params: Vec<KindParam>,
+    ) -> PResult<Stmt>
+    {
+        self.eat_builtin_mark()?;
+        self.expect(Kw::Function)?;
+        let bare =
+            self.expect_one_of(&[Kw::And, Kw::Is])?.kind == TokenKind::Kw(Kw::Is);
+        let ends = [Kw::Accepting, Kw::WillAccept];
+        let outer = std::mem::replace(&mut self.in_builtin, true);
+        let read =
+            tern!(bare, Ok((Vec::new(), None, false)), self.parse_params(&ends, false));
+        self.in_builtin = outer;
+        let (params, end, _) = read?;
+        let no_ret = bare || end == Some(Kw::WillAccept);
+        let ret = tern!(no_ret, Default::default(), self.parse_ret_clause(true)?);
+        let stop = self.expect_stop()?;
+        let span = start.to(&stop.span);
+        do_if!(self.depth > 0, self.diags.push(diag::nested_function(span)));
+        let block = BlockStmt::builder().span(stop.span).build();
+        #[rustfmt::skip]
+        let node = FnDecl::builder().name(name).kind_params(kind_params).params(params)
+            .maybe_ret(ret.kind).owned_ret(ret.owned).block(block).builtin(true).span(span)
+            .build();
+        Ok(Stmt::Fn(node))
+    }
+
+    /// Whether a built-in kind of the prelude is declared here: a kind name,
+    /// `စာရင်း` or `ဇယား`, then `သည်`, then the compiler mark or the kind
+    /// parameters.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one is.
+    pub(crate) fn at_builtin_kind(&self) -> bool
+    {
+        let head = self.peek();
+        let named = head.kind == TokenKind::Ident
+            || matches!(kw_of(&head), Some(Kw::List | Kw::Table));
+        let next = kw_of(&self.peek_n(2));
+        named
+            && kw_of(&self.peek_n(1)) == Some(Kw::Thi)
+            && matches!(next, Some(Kw::InCompiler | Kw::GenericKind))
+    }
+
+    /// Parse a built-in kind of the prelude: `<kind> သည် ကွန်ပိုင်လာထဲတွင်
+    /// တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။`, or for
+    /// a list or a table, `<word> သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍
+    /// ၎င်းသည် ကွန်ပိုင်လာထဲတွင် …`.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    pub(crate) fn parse_builtin_kind(&mut self) -> PResult<Stmt>
+    {
+        let head = self.bump();
+        let word = self.text_of(head.span).to_string();
+        let name = Ident::builder().name(word.as_str()).span(head.span).build();
+        self.expect(Kw::Thi)?;
+        let kind_params = self.parse_word_params()?;
+        do_if!(!kind_params.is_empty(), _ = self.expect(Kw::Thi)?);
+        self.expect(Kw::InCompiler)?;
+        self.expect(Kw::IncludedWith)?;
+        let exported = self.eat(Kw::Export);
+        self.expect(Kw::DataKindOpen)?;
+        self.expect(Kw::Is)?;
+        let span = head.span.to(&self.expect_stop()?.span);
+        #[rustfmt::skip]
+        let node = BuiltinKindDecl::builder().name(name).kind_params(kind_params)
+            .exported(exported).span(span).build();
+        Ok(Stmt::BuiltinKind(node))
     }
 
     /// Read the mark of a declaration the compiler gives,

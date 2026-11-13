@@ -24,7 +24,7 @@ pub struct NodeId(pub u32);
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct Ident
 {
-    /// The name text, without backticks for a raw identifier.
+    /// The name text, without the braces of a raw identifier.
     #[builder(into)]
     pub name: Name,
     /// Source region of the name.
@@ -202,7 +202,7 @@ impl StrExpr
     {
         self.pieces
             .iter()
-            .filter_map(|p| tern!(let StrPiece::TemplateSlot(e) = p, Some(e), None))
+            .filter_map(|p| tern!(let StrPiece::TemplateSlot(e) = p, Some(&**e), None))
     }
 
     /// The expression of each template slot, in source order, to change.
@@ -212,9 +212,9 @@ impl StrExpr
     /// The expressions.
     pub fn template_slots_mut(&mut self) -> impl Iterator<Item = &mut Expr>
     {
-        self.pieces
-            .iter_mut()
-            .filter_map(|p| tern!(let StrPiece::TemplateSlot(e) = p, Some(e), None))
+        self.pieces.iter_mut().filter_map(
+            |p| tern!(let StrPiece::TemplateSlot(e) = p, Some(&mut **e), None),
+        )
     }
 }
 
@@ -226,7 +226,7 @@ pub enum StrPiece
     /// Decoded text.
     Text(String),
     /// A `{...}` template slot: its value, as text, takes its place.
-    TemplateSlot(Expr),
+    TemplateSlot(Box<Expr>),
 }
 
 /// Boolean literal.
@@ -328,6 +328,11 @@ pub struct FieldExpr
     pub base: Box<Expr>,
     /// The field name.
     pub field: Ident,
+    /// Whether the field name is written in braces, `x ၏ {f}`: a field read
+    /// alone, never the call `f(x)`.
+    #[builder(default)]
+    #[serde(default)]
+    pub braced: bool,
     /// Source region, from the struct to the field name.
     pub span: Span,
 }
@@ -718,7 +723,7 @@ pub struct LogicExpr
 }
 
 /// A clause closed with a verb-noun or a comparison verb, such as
-/// `က နှင့် ခ ၏ ပေါင်းလဒ်`.
+/// `က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct VerbExpr
 {
@@ -740,6 +745,10 @@ pub struct VerbExpr
     pub next: NextCtx,
     /// Whether the verb is a comparison.
     pub is_cmp: bool,
+    /// Whether a conversion passes a failure on, `ပြောင်းလဲသော ရလဒ်ကောင်း`.
+    #[builder(default)]
+    #[serde(default)]
+    pub pass: bool,
     /// The classifier of `တစ်<classifier>လုံး` before a deep duplicate, as
     /// written.
     #[serde(default)]
@@ -778,12 +787,12 @@ pub struct CallExpr
     pub pass: bool,
     /// `ကို` or `တို့ကို` before `သုံး၍`, when the arguments come first.
     #[serde(default)]
-    pub using: Option<UsingMark>,
-    /// The word after each argument of a marked call, one for each; blank
-    /// for the other call forms.
+    pub using: Option<UsingParticle>,
+    /// The preposition after each argument of a preposition call, one for
+    /// each; blank for the other call forms.
     #[builder(default)]
     #[serde(default)]
-    pub marks: Vec<Ident>,
+    pub prepositions: Vec<Ident>,
     /// Source region.
     pub span: Span,
 }
@@ -791,7 +800,7 @@ pub struct CallExpr
 /// The particle that closes the arguments of a call written arguments first:
 /// `ကို` after one argument, `တို့ကို` after several.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Builder)]
-pub struct UsingMark
+pub struct UsingParticle
 {
     /// Whether the particle is `တို့ကို`.
     pub plural: bool,

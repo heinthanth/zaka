@@ -101,7 +101,7 @@ impl Checker
             .params(f.param_kinds())
             .edits(f.edits())
             .maybe_ret(f.ret)
-            .maybe_marks(f.marks())
+            .maybe_prepositions(f.prepositions())
             .inner(name);
         Some(vec![sig.build()])
     }
@@ -169,7 +169,7 @@ impl Checker
             sigs.len() > 1,
             _ = self.chosen.insert((self.top, name.span), one.inner)
         );
-        self.name_foreign(one, name.span);
+        self.name_foreign(one, name.span, &sigs);
         self.refer(&name.name, name.span, one.decl);
         Some(DataKind::Fn(sig_kind(one)))
     }
@@ -206,11 +206,8 @@ impl Checker
     {
         let mut sig = sig_of(n, &self.structs, 0, None);
         (sig.closure, sig.borrows) = (false, false);
-        let prior = self.scopes.declare_fn(n.name.name, sig);
-        do_if!(
-            prior.is_err(),
-            self.report(rd::duplicate_function(n.name.span, &n.name.name))
-        );
+        let fresh = self.scopes.declare_fn(n.name.name, sig);
+        do_if!(!fresh, self.report(rd::duplicate_function(n.name.span, &n.name.name)));
     }
 
     /// Note the locals and closures a function declared inside a function
@@ -242,12 +239,12 @@ impl Checker
 /// The kind, its parameters with their `ဒေတာ ပြောင်းလဲရန်` flags and marks.
 pub(crate) fn sig_kind(sig: &FnSig) -> &'static FnKind
 {
-    let mark = |n: usize| sig.marks.as_ref().and_then(|m| m.get(n).copied());
+    let mark = |n: usize| sig.prepositions.as_ref().and_then(|m| m.get(n).copied());
     let edit = |n: usize| sig.edits.get(n).copied().unwrap_or(false);
     let param = |(n, kind): (usize, &DataKind)| FnParam {
         kind: *kind,
         edit: edit(n),
-        mark: mark(n),
+        preposition: mark(n),
     };
     FnKind::make(sig.params.iter().enumerate().map(param).collect(), sig.ret)
 }

@@ -94,8 +94,7 @@ tokens:
     hi: 192
   particle: none
   joined: true
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 193
     hi: 211

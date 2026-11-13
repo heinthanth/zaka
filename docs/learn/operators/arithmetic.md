@@ -19,11 +19,11 @@ description: Addition, subtraction, multiplication, division, remainder and nega
 -က ကို ပြသမည်။             // negate
 
 // Words
-က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်။
-က နှင့် ခ ၏ နုတ်လဒ် ကို ပြသမည်။
-က နှင့် ခ ၏ မြှောက်လဒ် ကို ပြသမည်။
-က ကို ခ ဖြင့် စားသော စားလဒ် ကို ပြသမည်။
-က ကို ခ ဖြင့် စားသော စားကြွင်း ကို ပြသမည်။
+က နှင့် ခ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။
+က နှင့် ခ ကို နုတ်သည့်ရလဒ် ကို ပြသမည်။
+က နှင့် ခ ကို မြှောက်သည့်ရလဒ် ကို ပြသမည်။
+က ကို ခ ဖြင့် စားသည့်ရလဒ် ကို ပြသမည်။
+က ကို ခ ဖြင့် အကြွင်းရှာသည့်ရလဒ် ကို ပြသမည်။
 အနုတ် က ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -45,11 +45,11 @@ description: Addition, subtraction, multiplication, division, remainder and nega
 
 | Sign | Words | Reads as | Operation |
 | --- | --- | --- | --- |
-| `a + b` | `a နှင့် b ၏ ပေါင်းလဒ်` | "the sum of a and b" | addition |
-| `a - b` | `a နှင့် b ၏ နုတ်လဒ်` | "the difference of a and b" | subtraction |
-| `a * b` | `a နှင့် b ၏ မြှောက်လဒ်` | "the product of a and b" | multiplication |
-| `a / b` | `a ကို b ဖြင့် စားသော စားလဒ်` | "a over b: the quotient" | division |
-| `a % b` | `a ကို b ဖြင့် စားသော စားကြွင်း` | "a over b: the remainder" | remainder |
+| `a + b` | `a နှင့် b ကို ပေါင်းသည့်ရလဒ်` | "the sum of a and b" | addition |
+| `a - b` | `a နှင့် b ကို နုတ်သည့်ရလဒ်` | "the difference of a and b" | subtraction |
+| `a * b` | `a နှင့် b ကို မြှောက်သည့်ရလဒ်` | "the product of a and b" | multiplication |
+| `a / b` | `a ကို b ဖြင့် စားသည့်ရလဒ်` | "a over b: the quotient" | division |
+| `a % b` | `a ကို b ဖြင့် အကြွင်းရှာသည့်ရလဒ်` | "a over b: the remainder" | remainder |
 | `-a` | `အနုတ် a` | "minus a" | negation |
 
 ## Dividing integers

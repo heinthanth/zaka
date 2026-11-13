@@ -7,6 +7,7 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 
 use bon::Builder;
+use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::Program;
@@ -38,6 +39,7 @@ use crate::alias::AliasRefs;
 use crate::alias::expand_aliases;
 use crate::parser::parse;
 use crate::parser::parse_with;
+use crate::using::Functions;
 
 /// A program read with its imports.
 #[derive(Debug, Clone, PartialEq, Builder)]
@@ -72,8 +74,28 @@ macro_rules! std_module {
 /// source tree, and the source, which the compiler carries, so a program read
 /// from storage imports them too. Each name is in normalized spelling, as an
 /// import path is.
-pub static STD_MODULES: &[(&str, &str, &str)] =
-    &[std_module!("စံကား/အဝင်အထွက်", "io.zaka"), std_module!(PRELUDE, "prelude.zaka")];
+pub static STD_MODULES: &[(&str, &str, &str)] = &[
+    std_module!("စံကား/အဝင်အထွက်", "io.zaka"),
+    std_module!("စံကား/စာသား", "text.zaka"),
+    std_module!("စံကား/လမ်းကြောင်း", "path.zaka"),
+    std_module!("စံကား/စာရင်း", "list.zaka"),
+    // The prelude is written in parts, `core_<part>.zaka`, joined here into
+    // one module; a replica of it holds the joined text.
+    (
+        PRELUDE,
+        "prelude.zaka",
+        concat!(
+            include_str!("../../../stdlib/core_kinds.zaka"),
+            "\n",
+            include_str!("../../../stdlib/core_traits.zaka"),
+            "\n",
+            include_str!("../../../stdlib/core_verbs.zaka"),
+        ),
+    ),
+];
+
+/// The start of the file name of a part of the prelude in the `stdlib` folder.
+const PRELUDE_PART: &str = "core_";
 
 /// The folder of the replicas of the stdlib that a language server writes, so
 /// an editor can open a declaration of the stdlib: `zakac/stdlib/<version>`
@@ -92,8 +114,8 @@ pub fn std_replicas(cache: &Path) -> PathBuf
 }
 
 /// The module of the stdlib a file holds when it is a file of the source tree
-/// or a replica in [`std_replicas`], so a check of `stdlib/prelude.zaka` in an
-/// editor reads it as `စံကား/အခြေခံအုတ်မြစ်`, compiler marks and all.
+/// or a replica in [`std_replicas`], so a check of `stdlib/core_verbs.zaka`
+/// in an editor reads it as `စံကား/အခြေခံအုတ်မြစ်`, compiler marks and all.
 ///
 /// # Arguments
 ///
@@ -110,6 +132,8 @@ fn std_module_at(path: &Path) -> Option<&'static str>
     let folder = path.parent()?;
     ret_if!(folder != tree && !folder.ends_with(std_replicas(Path::new(""))), None);
     let file = path.file_name()?;
+    let part = file.to_str().is_some_and(|f| f.starts_with(PRELUDE_PART));
+    ret_if!(part, Some(PRELUDE));
     STD_MODULES.iter().find(|(_, f, _)| file == *f).map(|(module, ..)| *module)
 }
 
@@ -277,10 +301,10 @@ struct Loader<'a>
     /// The struct names each unit exports.
     #[builder(default)]
     structs: Vec<HashSet<String>>,
-    /// The functions each unit exports that declare marks, with the number
-    /// of marks of each.
+    /// The functions each unit exports that declare prepositions, with the
+    /// number of prepositions of each.
     #[builder(default)]
-    marked: Vec<Marked>,
+    prepositions: Vec<Prepositions>,
     /// The unit of each file read so far, indexed on its path.
     #[builder(default)]
     done: HashMap<PathBuf, u32>,
@@ -326,6 +350,9 @@ impl Loader<'_>
     ) -> zakac_host_errors::Result<u32>
     {
         let lexed = lex(&file, self.options);
+        // A part of the prelude opened on its own reads as the prelude, so the
+        // whole prelude, read too, would declare its names twice.
+        self.prelude_read |= path == Path::new(PRELUDE);
         self.wants_prelude |= uses_prelude(&file, &lexed);
         // The imports do not hang on struct names, so a first parse finds
         // them; the second parse knows the struct names those imports bring.
@@ -343,8 +370,9 @@ impl Loader<'_>
         // a file of its own ahead of that file.
         do_if!(self.wants_prelude, self.read_prelude());
         let structs = imported_structs(&imports, &targets, &self.structs);
-        let marked = imported_marked(&imports, &targets, &self.marked);
-        let parsed = parse_with(&file, &lexed, self.next_id, &structs, &marked);
+        let prepositions =
+            imported_prepositions(&imports, &targets, &self.prepositions);
+        let parsed = parse_with(&file, &lexed, self.next_id, &structs, &prepositions);
         self.next_id = parsed.next_id;
         self.diagnostics.extend(lexed.diagnostics);
         self.diagnostics.extend(parsed.diagnostics);
@@ -356,7 +384,7 @@ impl Loader<'_>
         let first_stmt = self.stmts.len() as u32;
         self.units.push(Unit::builder().name(name).first_stmt(first_stmt).build());
         self.structs.push(exported_structs(&program));
-        self.marked.push(exported_marked(&program));
+        self.prepositions.push(exported_prepositions(&program));
         self.stmts.extend(program.stmts);
         self.done.insert(path, unit);
         Ok(unit)
@@ -522,24 +550,25 @@ fn imported_structs(
     names.collect()
 }
 
-/// Functions that declare marks, each name with the number of marks of each
-/// function of that name.
-type Marked = HashMap<String, Vec<usize>>;
+/// The functions of a file, each name with the prepositions of each function of
+/// that name.
+type Prepositions = Functions;
 
-/// The imported names that are exported functions that declare marks.
+/// The imported names that are exported functions, with their prepositions. A
+/// name imported from several files brings the functions of each.
 ///
 /// # Arguments
 ///
 /// * `imports` - The imports of the file.
 /// * `targets` - The unit each import reads.
-/// * `exports` - The marked functions each unit exports.
+/// * `exports` - The functions each unit exports.
 ///
 /// # Returns
 ///
-/// The imported marked functions.
-fn imported_marked(
-    imports: &[ImportStmt], targets: &[Option<u32>], exports: &[Marked],
-) -> Marked
+/// The imported functions.
+fn imported_prepositions(
+    imports: &[ImportStmt], targets: &[Option<u32>], exports: &[Prepositions],
+) -> Prepositions
 {
     let pairs = imports.iter().zip(targets);
     let pairs = pairs.filter_map(|(n, t)| Some((n, &exports[(*t)? as usize])));
@@ -547,10 +576,12 @@ fn imported_marked(
         let named = n.names.iter().filter_map(|i| set.get_key_value(i.name.as_str()));
         named.map(|(k, v)| (k.clone(), v.clone())).collect::<Vec<_>>()
     });
-    found.collect()
+    let mut merged = Prepositions::new();
+    found.for_each(|(name, lists)| merged.entry(name).or_default().extend(lists));
+    merged
 }
 
-/// The exported functions of a file that declare marks.
+/// The exported functions of a file, with the prepositions of each.
 ///
 /// # Arguments
 ///
@@ -559,20 +590,19 @@ fn imported_marked(
 /// # Returns
 ///
 /// The functions.
-fn exported_marked(program: &Program) -> Marked
+fn exported_prepositions(program: &Program) -> Prepositions
 {
-    let mut found = Marked::new();
+    let mut found = Prepositions::new();
     let decls = program.stmts.iter().filter_map(|s| match s
     {
-        Stmt::Fn(d) if d.exported && d.params.iter().any(|p| p.mark.is_some()) =>
-        {
-            Some(d)
-        }
+        Stmt::Fn(d) if d.exported => Some(d),
         _ => None,
     });
     for d in decls
     {
-        found.entry(d.name.name.to_string()).or_default().push(d.params.len());
+        let prepositions = d.params.iter().filter_map(|p| p.preposition.as_ref());
+        let prepositions = prepositions.map(|m| m.name.to_string()).collect();
+        found.entry(d.name.name.to_string()).or_default().push(prepositions);
     }
     found
 }
@@ -733,17 +763,48 @@ fn prelude_names() -> &'static HashSet<String>
 {
     static NAMES: OnceLock<HashSet<String>> = OnceLock::new();
     NAMES.get_or_init(|| {
-        let src =
-            STD_MODULES.iter().find(|(m, ..)| *m == PRELUDE).map_or("", |(.., s)| *s);
-        let mut sm = SourceMap::new();
-        let file =
-            sm.new_source_file(FileName::Custom(PRELUDE.to_string()), src.to_string());
-        let parsed = parse(&file, &lex(&file, &LexerOptions::default()));
-        let traits = parsed.program.stmts.iter().filter_map(|s| match s
+        let traits = prelude_stmts().iter().filter_map(|s| match s
         {
             Stmt::Trait(d) => Some(d.name.name.to_string()),
             _ => None,
         });
         traits.collect()
+    })
+}
+
+/// The functions the prelude declares with the compiler mark, which a
+/// program sees whether it reads the prelude or not.
+///
+/// # Returns
+///
+/// The declarations, read from the prelude once.
+pub fn prelude_builtin_fns() -> &'static [FnDecl]
+{
+    static FNS: OnceLock<Vec<FnDecl>> = OnceLock::new();
+    FNS.get_or_init(|| {
+        let marked = prelude_stmts().iter().filter_map(|s| match s
+        {
+            Stmt::Fn(d) if d.builtin => Some(d.clone()),
+            _ => None,
+        });
+        marked.collect()
+    })
+}
+
+/// The statements of the prelude, parsed once on their own.
+///
+/// # Returns
+///
+/// The statements.
+fn prelude_stmts() -> &'static [Stmt]
+{
+    static STMTS: OnceLock<Vec<Stmt>> = OnceLock::new();
+    STMTS.get_or_init(|| {
+        let src =
+            STD_MODULES.iter().find(|(m, ..)| *m == PRELUDE).map_or("", |(.., s)| *s);
+        let mut sm = SourceMap::new();
+        let file =
+            sm.new_source_file(FileName::Custom(PRELUDE.to_string()), src.to_string());
+        parse(&file, &lex(&file, &LexerOptions::default())).program.stmts
     })
 }

@@ -1,7 +1,7 @@
 //! Function kinds: `<params> လက်ခံပြီး <kind> တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက်
 //! အမျိုးအစား`, `<params> လက်ခံသော …`, `<kind> တစ်ခု ကို ပြန်ပေးသော …`, and
 //! `လုပ်ဆောင်ချက် အမျိုးအစား` alone. Each parameter is
-//! `<kind> တစ်<classifier> ကို [marks] [လည်းကောင်း]`, with no name.
+//! `<kind> တစ်<classifier> ကို [prepositions] [လည်းကောင်း]`, with no name.
 //!
 //! In a list of parameters or fields the parameters of the kind would run
 //! into the items around it, so a function kind with parameters stands bare
@@ -125,7 +125,7 @@ impl Parser<'_>
     /// The token count of the parameters of a function kind that start `at`
     /// tokens ahead, up to `လက်ခံပြီး` or `လက်ခံသော`: items that each read
     /// `<kind> တစ်<classifier> ကို [ဒေတာ ပြောင်းလဲရန် | ဒေတာ ထည့်ပေးရန်]
-    /// [အပိုင်အနေဖြင့်] [ဝိဘတ် "<mark>" ကို သုံး၍] [လည်းကောင်း]`. An item with no
+    /// [အပိုင်အနေဖြင့်] [ဝိဘတ် "<preposition>" ကို သုံး၍] [လည်းကောင်း]`. An item with no
     /// `လည်းကောင်း` ends the list.
     ///
     /// # Arguments
@@ -169,8 +169,8 @@ impl Parser<'_>
         Some((n + usize::from(more), more))
     }
 
-    /// The token count of the marks of a parameter that start `at` tokens
-    /// ahead, after its `ကို`.
+    /// The token count of the prepositions of a parameter that start `at`
+    /// tokens ahead, after its `ကို`.
     ///
     /// # Arguments
     ///
@@ -184,8 +184,8 @@ impl Parser<'_>
         let is = |n: usize, kw: Kw| kw_of(&self.peek_n(at + n)) == Some(kw);
         let mut n = usize::from(is(0, Kw::DataToChange) || is(0, Kw::DataToFill));
         n += usize::from(is(n, Kw::AsOwned));
-        // A mark is four tokens: `ဝိဘတ်`, the string, `ကို` and `သုံး၍`.
-        n + tern!(is(n, Kw::MarkWord), 4, 0)
+        // A preposition is four tokens: `ဝိဘတ်`, the string, `ကို` and `သုံး၍`.
+        n + tern!(is(n, Kw::PrepositionWord), 4, 0)
     }
 
     /// The token count of a function kind in parentheses that starts `at`
@@ -277,7 +277,7 @@ impl Parser<'_>
 
     /// Parse the parameters of a function kind, up to the `လက်ခံ…` after
     /// them. With more than one, each ends in `လည်းကောင်း`; either each has a
-    /// mark or none has.
+    /// preposition or none has.
     ///
     /// # Returns
     ///
@@ -295,11 +295,11 @@ impl Parser<'_>
         }
         let open = params.len() > 1 && closed.contains(&false);
         ret_if!(open, Err(self.err_as_well_as()));
-        let marked = params.iter().filter(|p| p.mark.is_some()).count();
+        let given = params.iter().filter(|p| p.preposition.is_some()).count();
         let span = params[0].span.to(&params[params.len() - 1].span);
         do_if!(
-            marked > 0 && marked < params.len(),
-            self.diags.push(diag::mixed_marks(span))
+            given > 0 && given < params.len(),
+            self.diags.push(diag::mixed_prepositions(span))
         );
         Ok(params)
     }
@@ -327,50 +327,54 @@ impl Parser<'_>
         let kind = self.parse_slot_kind_with(FnForm::NoParams)?;
         self.expect(Kw::Ko)?;
         let fill = self.peek_n(0).kind == TokenKind::Kw(Kw::DataToFill);
-        let (owned, edit, _, mark) = self.parse_item_markers(fill)?;
+        let (owned, edit, _, preposition) = self.parse_item_markers(fill)?;
         do_if!(fill, self.diags.push(diag::fill_in_fn_kind(self.prev_span())));
         let span = start.to(&self.prev_span());
         #[rustfmt::skip]
-        return Ok(SigParam::builder().owned(owned).edit(edit).kind(kind).maybe_mark(mark)
+        return Ok(SigParam::builder().owned(owned).edit(edit).kind(kind).maybe_preposition(preposition)
             .span(span).build());
     }
 
     /// Register the name of a parameter or a variable whose kind is a
-    /// function kind with marks, so a marked call through it can be read.
+    /// function kind with prepositions, so a preposition call through it can be
+    /// read.
     ///
     /// # Arguments
     ///
     /// * `name` - The name.
     /// * `kind` - Its kind.
-    pub(crate) fn note_marked_value(&mut self, name: &str, kind: &Kind)
+    pub(crate) fn note_preposition_value(&mut self, name: &str, kind: &Kind)
     {
         let Some(sig) = kind.sig.as_deref().filter(|_| kind.wraps.is_empty())
         else
         {
             return;
         };
-        let count = sig.params.iter().filter(|p| p.mark.is_some()).count();
-        ret_if!(count == 0);
-        self.marked.entry(name.to_string()).or_default().push(count);
+        let prepositions = sig.params.iter().filter_map(|p| p.preposition.as_ref());
+        let prepositions: Vec<String> =
+            prepositions.map(|m| m.name.to_string()).collect();
+        ret_if!(prepositions.is_empty());
+        self.add_function(name, vec![prepositions]);
     }
 
     /// Register a variable that starts as the address of a function with
-    /// marks, `ကိန်းရှင် <name> သည် <fn> ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။`, with the
-    /// marks of that function, so a marked call through it can be read.
+    /// prepositions, `ကိန်းရှင် <name> သည် <fn> ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။`, with the
+    /// prepositions of that function, so a preposition call through it can be
+    /// read.
     ///
     /// # Arguments
     ///
     /// * `name` - The variable.
     /// * `init` - Its starting value.
-    pub(crate) fn note_marked_addr(&mut self, name: &str, init: &Expr)
+    pub(crate) fn note_preposition_addr(&mut self, name: &str, init: &Expr)
     {
         let Expr::FnAddr(addr) = init
         else
         {
             return;
         };
-        let counts = self.marked.get(addr.name.name.as_str()).cloned();
-        do_if!(let Some(counts) = counts, self.marked.entry(name.to_string()).or_default().extend(counts));
+        let lists = self.functions.get(addr.name.name.as_str()).cloned();
+        do_if!(let Some(lists) = lists, self.add_function(name, lists));
     }
 
     /// Report a function kind with parameters that stands bare while a list

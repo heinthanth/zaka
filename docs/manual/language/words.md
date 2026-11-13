@@ -80,7 +80,7 @@ clusters), digits and single other characters; it joins the pieces that touch in
   word that holds just particles (such as `ကိုကို`) is not split.
 - **A word with a vanna that is not reserved is a name.** `အသက်ကို` is one name, not
   `အသက်` then `ကို`.
-- **The words of a reserved phrase** such as `စားသော စားလဒ်` or `အောက်ပါတို့ကို လုပ်ဆောင်မည်`
+- **The words of a reserved phrase** such as `စားသည့်ရလဒ်` or `အောက်ပါတို့ကို လုပ်ဆောင်မည်`
   can have white space between the words or none; both read the same.
 
 ```text
@@ -155,14 +155,19 @@ reserved word or a row of reserved words.
 
 ### Raw names
 
-A name written between backticks is a *raw name*. It can hold reserved words, spaces
-and signs. It cannot hold a backtick or a line break, and it cannot be blank.
+A name written between braces, `{name}`, is a *raw name*. It can hold reserved words,
+spaces and signs. It cannot hold a `}` or a line break, and it cannot be blank. A raw
+name is a name in each place: it never reads as a reserved word, as a word of a preposition, or as a
+function with a call end glued to it, and after `၏` it reads a field alone (see [What
+the flexible grammar costs](functions.md#what-the-flexible-grammar-costs)). Inside a
+string, `{…}` is a template slot, and a slot holds an expression, so `"{ {ကို ပြသမည်} }"`
+prints the value of the raw name. A backtick outside a string is ZK0101.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် `ကို ပြသမည်` သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
-ကိန်းရှင် `the total` သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၉ ဖြစ်ပါစေ။
-`ကို ပြသမည်` + `the total` ကို ပြသမည်။
+ကိန်းရှင် {ကို ပြသမည်} သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
+ကိန်းရှင် {the total} သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၉ ဖြစ်ပါစေ။
+{ကို ပြသမည်} + {the total} ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -170,11 +175,11 @@ and signs. It cannot hold a backtick or a line break, and it cannot be blank.
 ၁၆
 ```
 
-A raw name with no closing backtick on its line is ZK0108, and two backticks in a row
-are ZK0109. Writing a plain reserved word as a name gives ZK0201 ("expected a name").
+A raw name with no closing `}` on its line is ZK0108, and `{}` with nothing between is
+ZK0109. Writing a plain reserved word as a name gives ZK0201 ("expected a name").
 
 ```zaka-error ZK0109
-ကိန်းရှင် `` သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် {} သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ```
 
 ### Two spellings of one word
@@ -351,7 +356,7 @@ of a struct and its values, the members of an enumeration (`ပါဝင်သ�
 and the cases of a switch arm. A list without its `နှင့်` is ZK0245, and a closing word that
 does not fit the count is ZK0246.
 
-An item that holds a `နှင့်` of its own, such as the sum `က နှင့် ခ ၏ ပေါင်းလဒ်`, stands in
+An item that holds a `နှင့်` of its own, such as the sum `က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်`, stands in
 parentheses, so the `နှင့်` of the list is never read as part of it. Lists in notation,
 `[က၊ ခ]` and `f(က၊ ခ)`, keep plain `၊`, and so do the parameters that end in `လည်းကောင်း`.
 
@@ -365,7 +370,7 @@ parentheses, so the `နှင့်` of the list is never read as part of it. L
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ၁၊ ၂ နှင့် ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းများ ကို ပြသမည်။
-ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၃ နှင့် (၁ နှင့် ၂ ၏ ပေါင်းလဒ်) တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၃ နှင့် (၁ နှင့် ၂ ကို ပေါင်းသည့်ရလဒ်) တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ကိန်းရှင် စာ သည် "က"၊ "ခ" နှင့် "ဂ" တို့ကို ဆက်ထားသည့် စာသား ဖြစ်ပါစေ။
 စာ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -381,7 +386,7 @@ parentheses, so the `နှင့်` of the list is never read as part of it. L
 
 The words that Zaka gives a meaning to cannot be used as names. [Reserved
 words](../reference/reserved-words.md) lists each of them. To use a reserved word as a
-name, put it between backticks.
+name, put it between braces.
 
 Each diagnostic of this page has a code from `ZK0101` to `ZK0109`. [Error
 messages](../reference/errors.md) lists them with the others.

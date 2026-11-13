@@ -1,11 +1,11 @@
 //! Function kinds: the kind of a function value, its parameters (each with
-//! its `ဒေတာ ပြောင်းလဲရန်` flag and its mark) and its result.
+//! its `ဒေတာ ပြောင်းလဲရန်` flag and its preposition) and its result.
 //!
 //! A function kind writes its short name as `fn(<param>, …) -> <result>`,
-//! each parameter as `[mut ]<kind>[(<mark>)]`. Inside another name (a cell, a
-//! pointer base, a parameter, a result or a field) it stands in parentheses,
-//! `(fn(isize) -> bool)[]`, so the levels after it never read as levels of
-//! its result.
+//! each parameter as `[mut ]<kind>[(<preposition>)]`. Inside another name (a
+//! cell, a pointer base, a parameter, a result or a field) it stands in
+//! parentheses, `(fn(isize) -> bool)[]`, so the levels after it never read as
+//! levels of its result.
 
 use std::collections::HashSet;
 use std::sync::Mutex;
@@ -26,9 +26,9 @@ pub struct FnParam
     pub kind: DataKind,
     /// Whether the function can change the argument.
     pub edit: bool,
-    /// The word after the argument in a marked call, when the parameters
-    /// have marks.
-    pub mark: Option<Name>,
+    /// The preposition after the argument in a preposition call, when the
+    /// parameters have prepositions.
+    pub preposition: Option<Name>,
 }
 
 /// A function kind: the parameters and the result of a function value. A
@@ -93,32 +93,32 @@ impl FnKind
     /// One flag for each parameter.
     pub fn edits(&self) -> Vec<bool> { self.params.iter().map(|p| p.edit).collect() }
 
-    /// The marks of the parameters, when each has one.
+    /// The prepositions of the parameters, when each has one.
     ///
     /// # Returns
     ///
-    /// The marks in order, or `None` when the parameters have none.
-    pub fn marks(&self) -> Option<Vec<Name>>
+    /// The prepositions in order, or `None` when the parameters have none.
+    pub fn prepositions(&self) -> Option<Vec<Name>>
     {
         ret_if!(self.params.is_empty(), None);
-        self.params.iter().map(|p| p.mark).collect()
+        self.params.iter().map(|p| p.preposition).collect()
     }
 
-    /// The kind with each mark dropped.
+    /// The kind with each preposition dropped.
     ///
     /// # Returns
     ///
-    /// The kind whose parameters have no marks.
-    pub fn unmarked(&self) -> &'static FnKind
+    /// The kind whose parameters have no prepositions.
+    pub fn without_prepositions(&self) -> &'static FnKind
     {
-        let drop = |p: &FnParam| FnParam { mark: None, ..p.clone() };
+        let drop = |p: &FnParam| FnParam { preposition: None, ..p.clone() };
         FnKind::make(self.params.iter().map(drop).collect(), self.ret)
     }
 
     /// Whether a function of this kind fits a place of kind `want`: the
     /// same parameter kinds, `ဒေတာ ပြောင်းလဲရန်` flags and result, and the same
-    /// marks when `want` has marks. A kind with no marks takes a function
-    /// with marks or without.
+    /// prepositions when `want` has prepositions. A kind with no prepositions
+    /// takes a function with prepositions or without.
     ///
     /// # Arguments
     ///
@@ -130,8 +130,8 @@ impl FnKind
     pub fn fits(&self, want: &FnKind) -> bool
     {
         ret_if!(self == want, true);
-        let marked = want.params.iter().any(|p| p.mark.is_some());
-        !marked && std::ptr::eq(self.unmarked(), want.unmarked())
+        let given = want.params.iter().any(|p| p.preposition.is_some());
+        !given && std::ptr::eq(self.without_prepositions(), want.without_prepositions())
     }
 
     /// The short name of the kind: `fn(<param>, …) -> <result>`.
@@ -147,8 +147,8 @@ impl FnKind
     {
         let param = |p: &FnParam| {
             let edit = tern!(p.edit, "mut ", "");
-            let mark = p.mark.map_or(String::new(), |m| format!("({m})"));
-            format!("{edit}{}{mark}", p.kind.spell_inner(full))
+            let preposition = p.preposition.map_or(String::new(), |m| format!("({m})"));
+            format!("{edit}{}{preposition}", p.kind.spell_inner(full))
         };
         let params: Vec<String> = self.params.iter().map(param).collect();
         let ret = self
@@ -301,7 +301,8 @@ fn matching_close(text: &str) -> Option<usize>
     None
 }
 
-/// Split one parameter of a function kind name: `[mut ]<kind>[(<mark>)]`.
+/// Split one parameter of a function kind name: `[mut
+/// ]<kind>[(<preposition>)]`.
 ///
 /// # Arguments
 ///
@@ -321,7 +322,7 @@ fn split_param(text: &str) -> (bool, &str, Option<&str>)
     (edit, &text[..open], Some(&text[open + 1..text.len() - 1]))
 }
 
-/// The place of the `(` of a mark at the end of a parameter: a `)` last,
+/// The place of the `(` of a preposition at the end of a parameter: a `)` last,
 /// whose `(` does not open the parameter.
 ///
 /// # Arguments
@@ -330,12 +331,12 @@ fn split_param(text: &str) -> (bool, &str, Option<&str>)
 ///
 /// # Returns
 ///
-/// The octet offset of the `(`, or `None` for a parameter with no mark.
+/// The octet offset of the `(`, or `None` for a parameter with no preposition.
 fn mark_open(text: &str) -> Option<usize>
 {
     ret_if!(!text.ends_with(')'), None);
     let open = text.rfind('(')?;
-    // A mark is a word with no brackets in it.
+    // A preposition is a word with no brackets in it.
     let word = &text[open + 1..text.len() - 1];
     let plain = !word.contains(['(', ')', '{', '}', '<', '>', '[', ']']);
     (open > 0 && plain && !text[..open].ends_with("fn")).then_some(open)
@@ -352,9 +353,9 @@ fn mark_open(text: &str) -> Option<usize>
 /// The name.
 pub fn join_fn(parts: &FnText<'_>) -> String
 {
-    let param = |(edit, kind, mark): &(bool, &str, Option<&str>)| {
-        let mark = mark.map_or(String::new(), |m| format!("({m})"));
-        format!("{}{kind}{mark}", tern!(*edit, "mut ", ""))
+    let param = |(edit, kind, preposition): &(bool, &str, Option<&str>)| {
+        let preposition = preposition.map_or(String::new(), |m| format!("({m})"));
+        format!("{}{kind}{preposition}", tern!(*edit, "mut ", ""))
     };
     let params: Vec<String> = parts.params.iter().map(param).collect();
     let ret = parts.ret.map_or(String::new(), |r| format!("{ARROW}{r}"));
@@ -377,10 +378,14 @@ pub fn parse_fn_with(
 {
     let parts = split_fn(text)?;
     let mut params = Vec::new();
-    for (edit, kind, mark) in &parts.params
+    for (edit, kind, preposition) in &parts.params
     {
         let kind = read(kind)?;
-        params.push(FnParam { kind, edit: *edit, mark: mark.map(Name::new) });
+        params.push(FnParam {
+            kind,
+            edit: *edit,
+            preposition: preposition.map(Name::new),
+        });
     }
     let ret = match parts.ret
     {
@@ -418,9 +423,9 @@ pub fn map_fn_text(
 {
     let parts = split_fn(unwrap_parens(text))?;
     let mut params = Vec::new();
-    for (edit, kind, mark) in &parts.params
+    for (edit, kind, preposition) in &parts.params
     {
-        params.push((*edit, f(kind)?, *mark));
+        params.push((*edit, f(kind)?, *preposition));
     }
     let ret = match parts.ret
     {

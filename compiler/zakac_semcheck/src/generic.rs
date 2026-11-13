@@ -79,7 +79,7 @@ pub(crate) fn is_template(stmt: &Stmt) -> bool
 {
     match stmt
     {
-        Stmt::Fn(d) => !d.kind_params.is_empty(),
+        Stmt::Fn(d) => !d.kind_params.is_empty() && !d.builtin,
         Stmt::Struct(d) => !d.kind_params.is_empty(),
         _ => false,
     }
@@ -405,8 +405,8 @@ pub(crate) fn kind_ast(kind: DataKind, span: Span) -> Option<Kind>
     }
 }
 
-/// [`kind_ast`] for a function kind: each parameter with its marks, and the
-/// result.
+/// [`kind_ast`] for a function kind: each parameter with its prepositions, and
+/// the result.
 ///
 /// # Arguments
 ///
@@ -419,13 +419,14 @@ pub(crate) fn kind_ast(kind: DataKind, span: Span) -> Option<Kind>
 fn fn_ast(f: &FnKind, span: Span) -> Option<Kind>
 {
     let param = |p: &FnParam| -> Option<SigParam> {
-        let mark = p.mark.map(|m| Ident::builder().name(m).span(span).build());
+        let preposition =
+            p.preposition.map(|m| Ident::builder().name(m).span(span).build());
         let kind = kind_ast(p.kind, span)?;
         Some(
             SigParam::builder()
                 .edit(p.edit)
                 .kind(kind)
-                .maybe_mark(mark)
+                .maybe_preposition(preposition)
                 .span(span)
                 .build(),
         )
@@ -846,12 +847,18 @@ impl Checker
     ///
     /// * `sig` - The function.
     /// * `span` - The name at the use.
-    pub(crate) fn name_foreign(&mut self, sig: &FnSig, span: Span)
+    /// * `sigs` - Each function of the name; when the functions come from
+    ///   several files, as a name imported from each, the name takes its file
+    ///   too.
+    pub(crate) fn name_foreign(&mut self, sig: &FnSig, span: Span, sigs: &[FnSig])
     {
         let from_prelude = |u: &u32| Some(*u) == self.prelude_unit;
-        let foreign = sig
-            .unit
-            .filter(|u| *u != self.unit && (self.in_instance || from_prelude(u)));
+        let mut units: Vec<u32> = sigs.iter().filter_map(|s| s.unit).collect();
+        units.dedup();
+        let spread = units.len() > 1;
+        let foreign = sig.unit.filter(|u| {
+            *u != self.unit && (self.in_instance || from_prelude(u) || spread)
+        });
         let Some(unit) = foreign
         else
         {

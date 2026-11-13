@@ -485,9 +485,17 @@ fn c_target_writes_the_files_and_skips_the_run()
     };
     let own = ["m0.c", "zaka_checks.h", "zaka_kinds.h", "zaka_kinds.c", "main.c"];
     assert_eq!(names("programs/gcd"), own);
-    // A stdlib module the program imports gets a file of its own.
-    let echo =
-        ["m0.c", "m1.c", "zaka_checks.h", "zaka_kinds.h", "zaka_kinds.c", "main.c"];
+    // A stdlib module the program imports gets a file of its own, and so does
+    // the path module the io module imports.
+    let echo = [
+        "m0.c",
+        "m1.c",
+        "m2.c",
+        "zaka_checks.h",
+        "zaka_kinds.h",
+        "zaka_kinds.c",
+        "main.c",
+    ];
     assert_eq!(names("io/echo"), echo);
 }
 

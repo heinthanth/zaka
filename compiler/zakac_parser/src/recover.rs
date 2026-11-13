@@ -4,6 +4,7 @@ use zakac_burmese_segmenter::segmenter::segment_at;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_lexer::reserved::lookup;
+use zakac_lexer::role::builtin_count;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
@@ -98,7 +99,11 @@ impl Parser<'_>
     {
         ret_if!(err.help.is_some(), err);
         let op = self.peek();
-        let after_verb = self.cur.back(1).is_some_and(|t| as_verb(&t).is_some());
+        let before = |n: usize| self.cur.back(n);
+        let count = before(1)
+            .is_some_and(|t| builtin_count(self.text_of(t.span)).is_some())
+            && before(2).is_some_and(|t| t.kind == TokenKind::Punct(Punct::Ei));
+        let after_verb = before(1).is_some_and(|t| as_verb(&t).is_some()) || count;
         ret_if!(infix_of(&op).is_none() || !after_verb, err);
         diag::with_group_hint(err, self.text_of(op.span))
     }

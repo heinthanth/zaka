@@ -67,7 +67,7 @@ UnknownEscape = ("ZK0106", Level::Error),
 BadCharLength = ("ZK0107", Level::Error),
 /// A raw identifier reaches the end of the line.
 UnterminatedRawIdentifier = ("ZK0108", Level::Error),
-/// A raw identifier has nothing between its backticks.
+/// A raw identifier has nothing between its braces.
 BlankRawIdentifier = ("ZK0109", Level::Error),
 /// A statement verb ends in `ပါ`; statements end in `မည်`.
 OldEnding = ("ZK0110", Level::Error),
@@ -141,16 +141,16 @@ DeclNeedsClassifier = ("ZK0234", Level::Error),
 NestedEnum = ("ZK0235", Level::Error),
 /// A switch arm follows the default arm.
 ArmAfterDefault = ("ZK0236", Level::Error),
-/// Some parameters of a header have a mark and some do not.
-MixedMarks = ("ZK0237", Level::Error),
+/// Some parameters of a header have a preposition and some do not.
+MixedPrepositions = ("ZK0237", Level::Error),
 /// An import names a module the stdlib does not have.
 UnknownStdModule = ("ZK0238", Level::Error),
 /// A function kind with parameters stands bare in a parameter or field list.
 FnKindNeedsParens = ("ZK0239", Level::Error),
 /// A kind alias is declared inside a block.
 NestedAlias = ("ZK0240", Level::Error),
-/// The mark string of a parameter is not one word a mark can be.
-BadMark = ("ZK0241", Level::Error),
+/// The preposition string of a parameter is not one word a preposition can be.
+BadPreposition = ("ZK0241", Level::Error),
 /// `ဒေတာ ထည့်ပေးရန်` on a parameter of a function kind, where a call through
 /// the value cannot know the place is filled.
 FillInFnKind = ("ZK0243", Level::Error),
@@ -166,6 +166,12 @@ ListWordCount = ("ZK0246", Level::Error),
 NestedTrait = ("ZK0247", Level::Error),
 /// A constraint in a notes block names no kind parameter of its declaration.
 NoteNamesNoParam = ("ZK0248", Level::Error),
+/// A preposition that starts with `၏` on a parameter other than the last.
+PrepositionEiNotLast = ("ZK0249", Level::Error),
+/// A declared name is a word of the preposition of a function the file sees.
+NameIsPrepositionWord = ("ZK0250", Level::Warning),
+/// A declared name reads as a function the file sees with a glued call end.
+NameReadsAsCall = ("ZK0251", Level::Warning),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -174,7 +180,7 @@ UndeclaredName = ("ZK0301", Level::Error),
 Redeclaration = ("ZK0302", Level::Error),
 /// A call names a function that is not declared.
 UndeclaredFunction = ("ZK0303", Level::Error),
-/// Two functions of one name take the same parameters and marks.
+/// Two functions of one name take the same parameters and prepositions.
 DuplicateFunction = ("ZK0304", Level::Error),
 /// Two parameters of one function share a name.
 DuplicateParam = ("ZK0305", Level::Error),
@@ -228,8 +234,8 @@ DuplicateMember = ("ZK0328", Level::Error),
 UnknownMember = ("ZK0329", Level::Error),
 /// The name before `ထဲမှ` is no enumeration written with `များ`.
 UnknownEnum = ("ZK0330", Level::Error),
-/// An argument of a marked call carries a mark other than its parameter's.
-WrongMark = ("ZK0331", Level::Error),
+/// An argument of a preposition call carries a preposition other than its parameter's.
+WrongPreposition = ("ZK0331", Level::Error),
 /// No function of a name takes the arguments of a call.
 NoOverloadFits = ("ZK0332", Level::Error),
 /// More than one function of a name takes the arguments of a call.
@@ -271,6 +277,9 @@ TraitFnTwice = ("ZK0347", Level::Error),
 TraitBlockPlace = ("ZK0348", Level::Error),
 /// The mark of a declaration the compiler gives stands outside the stdlib.
 BuiltinOutsidePrelude = ("ZK0349", Level::Error),
+/// A function of a file has the name, the kinds and the prepositions of a function
+/// the compiler gives in the prelude.
+SameAsPrelude = ("ZK0350", Level::Warning),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

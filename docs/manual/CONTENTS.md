@@ -24,6 +24,7 @@
   - [The prelude](language/prelude.md)
   - [Modules](language/modules.md)
   - [Input and output](language/io.md)
+  - [The stdlib](language/stdlib.md)
   - [Natural wording](language/naturalness.md)
   - [Unsafe Zaka](language/unsafe.md)
 - [The compiler](compiler/README.md)

@@ -34,7 +34,7 @@ program:
           span:
             lo: 109
             hi: 112
-        mark: null
+        preposition: null
         span:
           lo: 109
           hi: 185
@@ -59,7 +59,7 @@ program:
           span:
             lo: 217
             hi: 220
-        mark: null
+        preposition: null
         span:
           lo: 217
           hi: 293
@@ -84,7 +84,7 @@ program:
           span:
             lo: 325
             hi: 328
-        mark: null
+        preposition: null
         span:
           lo: 325
           hi: 401
@@ -256,6 +256,7 @@ program:
       exported: false
       unchecked: false
       start: false
+      builtin: false
       external: false
       lib: null
       variadic: false
@@ -293,7 +294,7 @@ program:
           span:
             lo: 1019
             hi: 1022
-        mark: null
+        preposition: null
         span:
           lo: 1019
           hi: 1106
@@ -318,7 +319,7 @@ program:
           span:
             lo: 1138
             hi: 1141
-        mark: null
+        preposition: null
         span:
           lo: 1138
           hi: 1228
@@ -394,6 +395,7 @@ program:
       exported: false
       unchecked: false
       start: false
+      builtin: false
       external: false
       lib: null
       variadic: false
@@ -440,6 +442,7 @@ program:
       exported: false
       unchecked: false
       start: false
+      builtin: false
       external: false
       lib: null
       variadic: false
@@ -470,7 +473,7 @@ program:
             args: []
             pass: false
             using: null
-            marks: []
+            prepositions: []
             span:
               lo: 2072
               hi: 2201
@@ -515,7 +518,7 @@ program:
                       hi: 2355
                 pass: false
                 using: null
-                marks: []
+                prepositions: []
                 span:
                   lo: 2202
                   hi: 2433
@@ -531,6 +534,7 @@ program:
       exported: false
       unchecked: false
       start: true
+      builtin: false
       external: false
       lib: null
       variadic: false

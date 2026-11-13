@@ -6,6 +6,7 @@ use zakac_ast::stmt::Stmt;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
@@ -423,11 +424,12 @@ impl Parser<'_>
             {
                 Ok(Head::Expr(with_kind_args(e, kind_args, Some(start))))
             }
-            Head::Stmt(Stmt::Call(mut s)) =>
+            Head::Stmt(mut stmt) if matches!(*stmt, Stmt::Call(_)) =>
             {
+                extract!(Stmt::Call(s) = &mut *stmt);
                 s.kind_args = kind_args;
                 s.span = start.to(&s.span);
-                Ok(Head::Stmt(Stmt::Call(s)))
+                Ok(Head::Stmt(stmt))
             }
             _ => Err(self.err_expected(&quote(&kw_text(Kw::FnValue)))),
         }

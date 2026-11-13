@@ -543,25 +543,26 @@ pub fn private_in_export(span: Span, name: &str, private: &str) -> Diagnostic
     Diagnostic::new(Code::PrivateInExport, msg, span).with_help(help)
 }
 
-/// An argument of a marked call carries a mark other than its parameter's.
+/// An argument of a preposition call carries a preposition other than its
+/// parameter's.
 ///
 /// # Arguments
 ///
-/// * `span` - The mark written.
+/// * `span` - The preposition written.
 /// * `name` - The function.
 /// * `index` - The argument, counted from 1.
-/// * `found` - The mark written.
-/// * `want` - The mark of the parameter.
+/// * `found` - The preposition written.
+/// * `want` - The preposition of the parameter.
 ///
 /// # Returns
 ///
-/// The `ZK0331` diagnostic, with the right mark as a hint.
-pub fn wrong_mark(
+/// The `ZK0331` diagnostic, with the right preposition as a hint.
+pub fn wrong_preposition(
     span: Span, name: &str, index: usize, found: &str, want: &str,
 ) -> Diagnostic
 {
     let msg = t!("codes.ZK0331.message", i = index, n = name, f = found, w = want);
-    Diagnostic::new(Code::WrongMark, msg, span)
+    Diagnostic::new(Code::WrongPreposition, msg, span)
         .with_help(t!("codes.ZK0331.help", w = want))
 }
 
@@ -867,4 +868,22 @@ pub fn builtin_outside_prelude(span: Span) -> Diagnostic
     let msg = t!("codes.ZK0349.message");
     Diagnostic::new(Code::BuiltinOutsidePrelude, msg, span)
         .with_help(t!("codes.ZK0349.help"))
+}
+
+/// A function of a file has the name, the kinds and the prepositions of a
+/// function the compiler gives in the prelude, so it takes each sentence of
+/// that function in the file.
+///
+/// # Arguments
+///
+/// * `span` - The name of the function.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0350` diagnostic.
+pub fn same_as_prelude(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0350.message", n = name);
+    Diagnostic::new(Code::SameAsPrelude, msg, span).with_help(t!("codes.ZK0350.help"))
 }

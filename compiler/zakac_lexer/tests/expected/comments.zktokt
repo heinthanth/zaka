@@ -16,8 +16,7 @@ tokens:
     hi: 288
   particle: none
   joined: false
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 289
     hi: 307
@@ -44,8 +43,7 @@ tokens:
     hi: 364
   particle: none
   joined: true
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 365
     hi: 383

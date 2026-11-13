@@ -7,7 +7,7 @@ description: Literals, names and the operators in each group - arithmetic, compa
 
 An *expression* is a piece of program that has a value. It can be a literal, a name, or
 operators applied to other expressions. Most operators have two spellings that mean the
-same, a sign (`+`) and a Burmese phrase (`နှင့် ... ၏ ပေါင်းလဒ်`), and the two can be mixed in
+same, a sign (`+`) and a Burmese phrase (`နှင့် ... ကို ပေါင်းသည့်ရလဒ်`), and the two can be mixed in
 one expression. The compiler works out the kind of each expression before the program
 runs ([Kinds and values](kinds.md)).
 
@@ -17,7 +17,7 @@ The grammar of an expression has three tiers, from the tightest to the loosest:
 
 ```text
 notation   က + ခ * ၂       -ဂ        (က - ခ)         signs, prefix signs, parentheses
-clause     က နှင့် ခ ၏ ပေါင်းလဒ်     က သည် ခ ထက် ကြီး     operands with particles, closed with a verb
+clause     က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်     က သည် ခ ထက် ကြီး     operands with particles, closed with a verb
 logical    A ဖြစ်၍ B     A သို့မဟုတ် B     A မဟုတ်        joins truth values
 ```
 
@@ -38,9 +38,9 @@ inside parentheses.
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 က + ခ * ၂ ကို ပြသမည်။
-က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်။
-က + ခ နှင့် ၁၀ ၏ မြှောက်လဒ် ကို ပြသမည်။
-(က နှင့် ခ ၏ ပေါင်းလဒ်) * ၁၀ ကို ပြသမည်။
+က နှင့် ခ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။
+က + ခ နှင့် ၁၀ ကို မြှောက်သည့်ရလဒ် ကို ပြသမည်။
+(က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်) * ၁၀ ကို ပြသမည်။
 (က သည် ခ အောက် ငယ်သည် ဖြစ်၍ ခ သည် ၅ အောက် ငယ်သည်) ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -80,11 +80,11 @@ inside parentheses.
 
 | Sign | Words | Operation |
 | --- | --- | --- |
-| `a + b` | `a နှင့် b ၏ ပေါင်းလဒ်` | addition |
-| `a - b` | `a နှင့် b ၏ နုတ်လဒ်` | subtraction |
-| `a * b` | `a နှင့် b ၏ မြှောက်လဒ်` | multiplication |
-| `a / b` | `a ကို b ဖြင့် စားသော စားလဒ်` | division (quotient) |
-| `a % b` | `a ကို b ဖြင့် စားသော စားကြွင်း` | remainder |
+| `a + b` | `a နှင့် b ကို ပေါင်းသည့်ရလဒ်` | addition |
+| `a - b` | `a နှင့် b ကို နုတ်သည့်ရလဒ်` | subtraction |
+| `a * b` | `a နှင့် b ကို မြှောက်သည့်ရလဒ်` | multiplication |
+| `a / b` | `a ကို b ဖြင့် စားသည့်ရလဒ်` | division (quotient) |
+| `a % b` | `a ကို b ဖြင့် အကြွင်းရှာသည့်ရလဒ်` | remainder |
 | `-a` | `အနုတ် a` | negation |
 
 The operands are numbers (integers or decimal numbers) of one common kind, which is the
@@ -338,12 +338,12 @@ tell where it ends (ZK0204).
 
 | Sign | Words | Operation |
 | --- | --- | --- |
-| `a & b` | `a နှင့် b ၏ ဘစ်အလိုက် ဆုံလဒ်` | and |
-| `a \| b` | `a နှင့် b ၏ ဘစ်အလိုက် ပေါင်းစုလဒ်` | or |
-| `a ^ b` | `a နှင့် b ၏ ဘစ်အလိုက် ခြားနားလဒ်` | exclusive or |
-| `~a` | `a ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်` | not (each bit flips) |
-| `a << n` | `a ကို ဘယ်သို့ n ဘစ် ရွေ့သောရလဒ်` | shift left |
-| `a >> n` | `a ကို ညာသို့ n ဘစ် ရွေ့သောရလဒ်` | shift right |
+| `a & b` | `a နှင့် b ကို ဘစ်ဆုံသည့်ရလဒ်` | and |
+| `a \| b` | `a နှင့် b ကို ဘစ်ပေါင်းစုသည့်ရလဒ်` | or |
+| `a ^ b` | `a နှင့် b ကို ဘစ်ခြားနားသည့်ရလဒ်` | exclusive or |
+| `~a` | `a ကို ဘစ်ပြောင်းပြန်သည့်ရလဒ်` | not (each bit flips) |
+| `a << n` | `a ကို n ဖြင့် ဘစ်ဘယ်ရွေ့သည့်ရလဒ်` | shift left |
+| `a >> n` | `a ကို n ဖြင့် ဘစ်ညာရွေ့သည့်ရလဒ်` | shift right |
 
 The operands of `&`, `|`, `^` and `~` are integers of one common kind. A shift keeps the
 kind of its left operand. The distance is an unsigned integer (a flexible literal becomes
@@ -360,7 +360,7 @@ repeats the sign bit, so `-၈ >> ၁` is `-၄`.
 ~က ကို ပြသမည်။
 က << ၂ ကို ပြသမည်။
 ခ >> ၁ ကို ပြသမည်။
-က ကို ညာသို့ ၄ ဘစ် ရွေ့သောရလဒ် ကို ပြသမည်။
+က ကို ၄ ဖြင့် ဘစ်ညာရွေ့သည့်ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -403,7 +403,7 @@ operators of one level group from left to right. From the tightest to the looses
 4. `<<`, `>>`;
 5. `&`, then `^`, then `|`;
 6. `<`, `>`, `<=`, `>=`, and then `==`, `!=` (none of these chain);
-7. a word clause (`... ၏ ပေါင်းလဒ်`, `... ထက် ကြီး`, ...);
+7. a word clause (`... ကို ပေါင်းသည့်ရလဒ်`, `... ထက် ကြီး`, ...);
 8. `မဟုတ်` after a value;
 9. `ဖြစ်၍`, `&&`;
 10. `သို့မဟုတ်`, `||`.
@@ -450,7 +450,7 @@ flags a double space; see [Natural wording](naturalness.md).
 ```zaka-error ZK0203
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-က နှင့် ခ ၏ ပေါင်းလဒ် * ၂ ကို ပြသမည်။
+က နှင့် ခ ကို ပေါင်းသည့်ရလဒ် * ၂ ကို ပြသမည်။
 ```
 
 ```text

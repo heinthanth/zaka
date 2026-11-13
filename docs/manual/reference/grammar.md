@@ -137,8 +137,8 @@ block-close  = "လုပ်ဆောင်စရာများ" done ;
 params       = param [ "လည်းကောင်း" ]
              | param "လည်းကောင်း" param "လည်းကောင်း" { param "လည်းကောင်း" } ;
 param        = name "ဟူသော" listed-kind "ကို" markers ;
-markers      = [ "ဒေတာ ပြောင်းလဲရန်" | "ဒေတာ ထည့်ပေးရန်" ] [ "အပိုင်အနေဖြင့်" ] [ mark ] ;
-mark         = "ဝိဘတ်" string-lit "ကို" "သုံး၍" ;   (* the string holds one name or particle *)
+markers      = [ "ဒေတာ ပြောင်းလဲရန်" | "ဒေတာ ထည့်ပေးရန်" ] [ "အပိုင်အနေဖြင့်" ] [ preposition ] ;
+preposition  = "ဝိဘတ်" string-lit "ကို" "သုံး၍" ;   (* the string holds names and particles *)
 
 external-fn  = [ "အများသုံး" ] [ "စိတ်မချရသော" ] "လုပ်ဆောင်ချက်" name "သည်"
                origin "လုပ်ဆောင်ချက်" [ "တစ်ခု" ]
@@ -173,7 +173,7 @@ alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုး
 ```
 
 - With two or more parameters, each ends in `လည်းကောင်း`; either each parameter has a
-  mark or none has. The two words before `လုပ်ဆောင်ချက်`, `အများသုံး` and `စိတ်မချရသော`, can come in either order; the
+  preposition or none has. The two words before `လုပ်ဆောင်ချက်`, `အများသုံး` and `စိတ်မချရသော`, can come in either order; the
   start block takes neither.
 - The kind of an alias takes no measure word. A function, a struct, an enumeration or an
   alias inside a block is parsed and reported; a function with a block can stand inside
@@ -277,7 +277,7 @@ clause       = operand { particle operand | verb } ;   (* each verb takes the op
 particle     = "၏" | "နှင့်" | "ကို" | "ဖြင့်" | "သည်" | "ထက်" | "အောက်" | "ဟု"
              | "ခုမြောက်" | "လုံးမြောက်" | "ထဲသို့" | "ထဲတွင်" ;
 operand      = notation | word-list | word-table | join | word-struct
-             | first-call | short-call | marked-call ;   (* a call with a value end *)
+             | first-call | short-call | preposition-call ;   (* a call with a value end *)
 join         = notation { "၊" notation } "နှင့်" notation "တို့ကို" "ဆက်ထားသည့်" "စာသား" ;
 
 notation     = prefix-expr { infix-op prefix-expr } ;
@@ -298,11 +298,10 @@ wants, and gives a value that can be an operand of a later verb. In these frames
 `value` is an operand or such a value:
 
 ```text
-value "နှင့်" value "၏" ( "ပေါင်းလဒ်" | "နုတ်လဒ်" | "မြှောက်လဒ်" )
-value "နှင့်" value "၏" "ဘစ်အလိုက်" ( "ဆုံလဒ်" | "ပေါင်းစုလဒ်" | "ခြားနားလဒ်" )
-value "၏" "ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်"
-value "ကို" value "ဖြင့်" "စားသော" ( "စားလဒ်" | "စားကြွင်း" )
-value "ကို" ( "ဘယ်သို့" | "ညာသို့" ) value "ဘစ်" "ရွေ့သောရလဒ်"
+value "နှင့်" value "ကို" ( "ပေါင်း" | "နုတ်" | "မြှောက်" | "ဘစ်ဆုံ" | "ဘစ်ပေါင်းစု" | "ဘစ်ခြားနား" ) value-end
+value "ကို" "ဘစ်ပြောင်းပြန်" value-end
+value "ကို" value "ဖြင့်" ( "စား" | "အကြွင်းရှာ" | "ဘစ်ဘယ်ရွေ့" | "ဘစ်ညာရွေ့" ) value-end
+value-end = ( "သည့်" | "မည့်" | "သော" ) ( "ရလဒ်" | "ရလဒ်ကောင်း" ), glued or spaced
 value "သည်" value "နှင့်" ( "ညီ" | "မညီ" )
 value "သည်" value "ထက်" ( "ကြီး" | "မကြီး" )
 value "သည်" value "အောက်" ( "ငယ်" | "မငယ်" )
@@ -338,7 +337,7 @@ See [Expressions](../language/expressions.md), [Operator precedence](precedence.
 ## Calls
 
 ```text
-call         = long-call | first-call | short-call | marked-call | sign-call ;
+call         = long-call | first-call | short-call | preposition-call | sign-call ;
 
 long-call    = long-head [ items(expr) ( "ဖြင့်" | "တို့ဖြင့်" ) ] long-end ;
 long-head    = [ word-kinds "အစားထိုးအသုံးပြုသည့်" ] callee ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" ;
@@ -349,7 +348,7 @@ first-call   = [ word-kinds "အစားထိုးအသုံးပြု၍
                operand [ { "၊" notation } "နှင့်" notation ] ( "ကို" | "တို့ကို" ) "သုံး၍"
                ( name short-end | long-head long-end ) ;
 short-call   = name short-end ;                   (* no arguments *)
-marked-call  = operand mark-word { notation mark-word }
+preposition-call = operand preposition-word { notation preposition-word }
                ( name short-end | name ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" long-end ) ;
 sign-call    = name [ "::" kind-args ] "(" [ args ] ")" [ "?" ] { "(" [ args ] ")" [ "?" ] } ;
 kind-args    = "<" kind { "၊" kind } ">" ;       (* ">>" closes two *)
@@ -366,10 +365,10 @@ pass-on      = [ "၊" "မအောင်မြင်ပါက အမှား�
 - `<name> ဟူသော လုပ်ဆောင်ချက်` is also the function as a value. After its `ကို`, a verb
   (`ပြန်ပေးမည်`, `ပြသမည်`, `ထည့်မည်`, `ပြင်ပမှ ခေါ်ဆိုခွင့် ...`) makes the value the object of
   that verb; each other word makes a long call.
-- A mark word is the word a parameter declares with `ဝိဘတ်`: a name, or a particle other
+- A preposition word is the word a parameter declares with `ဝိဘတ်`: a name, or a particle other
   than `သည်`, `ပါ`, `ဖြစ်ကာ`, `ဖြစ်ပြီး`, `ပြီးလျှင်` and `လက်ခံပြီး`; `တွင်` and `ဆီသို့`
-  can be marks too. A marked call is read when a function of that name declares
-  marks and their count fits.
+  can be prepositions too. A preposition call is read when a function of that name declares
+  prepositions and their count fits.
 - In the sign form, `(` touches the name and `?` touches `)`; with a space, `f (က)` is a
   name, then a group. A `(` right after `)` calls the function value the call gives.
 - Kinds for a generic function stand after `::` in the sign form and before the name in
@@ -378,7 +377,7 @@ pass-on      = [ "၊" "မအောင်မြင်ပါက အမှား�
 
 See [Calls](../language/functions.md#calls),
 [Arguments first](../language/functions.md#arguments-first),
-[Marked parameters](../language/functions.md#marked-parameters),
+[Prepositions](../language/functions.md#prepositions),
 [Calling a function value](../language/function-values.md#calling-a-function-value) and
 [Passing a failure on](../language/error-handling.md#passing-a-failure-on).
 
@@ -448,7 +447,7 @@ fn-kind      = "လုပ်ဆောင်ချက် အမျိုးအစ
              | [ sig-params "လက်ခံပြီး" ] slot-kind "ကို" "ပြန်ပေးသော" "လုပ်ဆောင်ချက် အမျိုးအစား" ;
 sig-params   = sig-param [ "လည်းကောင်း" ]
              | sig-param "လည်းကောင်း" sig-param "လည်းကောင်း" { sig-param "လည်းကောင်း" } ;
-sig-param    = listed-kind "ကို" [ "ဒေတာ ပြောင်းလဲရန်" ] [ "အပိုင်အနေဖြင့်" ] [ mark ] ;
+sig-param    = listed-kind "ကို" [ "ဒေတာ ပြောင်းလဲရန်" ] [ "အပိုင်အနေဖြင့်" ] [ preposition ] ;
 
 slot-kind    = kind count-word
              | struct-count ;                     (* လူတစ်ယောက် *)
@@ -493,13 +492,13 @@ A tool that parses Zaka needs the same state; the EBNF alone is not enough.
 **A name table from a pre-pass (the lexer hack).** As a C parser must know which names
 are kind names, Zaka's parser must know which names are declared kinds. Before the main
 pass, the lexer and the parser each walk the token stream of the file once and build three
-tables; `parse_with` merges the kind names and the marked functions an import brings in:
+tables; `parse_with` merges the kind names and the functions with prepositions an import brings in:
 
 | Table | Holds | Decides |
 | --- | --- | --- |
 | kind names | each struct, enumeration and alias name, the stem of an enumeration name, in both spellings of `ဒေတာ` | whether a name starts a `kind` (`လူ တစ်ယောက်`) or an `expr`; whether `<stem>များထဲမှ` reads a member |
 | classifiers | each word after `မျိုးပြပစ္စည်းမှာ` in the file | the lexer retags `<word>စာ` as the size token (`လူ ၂ ယောက်စာ`); else it stands as a name |
-| marked functions | each function whose header declares marks with `ဝိဘတ်`, and its count of marks | where a marked call ends |
+| functions with prepositions | each function whose header declares prepositions with `ဝိဘတ်`, and the prepositions of each overload | where a preposition call ends |
 
 Since the tables come from a pre-pass, a kind can be used above its declaration. The
 classifier table is per file: the retagging runs in the lexer, before imports resolve.
@@ -519,7 +518,7 @@ field or variant closes with `ပါဝင်သည်`, two or more with `တ�
 takes its closing word without `တို့` after one item and with it after two or more
 (`ကို` and `တို့ကို`, `ဖြင့်` and `တို့ဖြင့်`, `ပါသော` and `တို့ပါသော`), and joins its last
 item with `နှင့်`; one parameter can leave out `လည်းကောင်း`, two or more each end in it;
-marks go on each parameter or on none. These are finite, so a context-free grammar can
+prepositions go on each parameter or on none. These are finite, so a context-free grammar can
 state them, and the rules above do, as separate alternatives.
 
 **Count prefixes.** The count prefixes before a kind bind to its list levels from the

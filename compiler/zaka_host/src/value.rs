@@ -8,6 +8,8 @@ pub enum HostValue
     Stream(u32),
     /// A member of an enumeration, counted from 0.
     Member(u32),
+    /// A plain list of text.
+    Texts(Vec<String>),
     /// A good result, with its value when it holds one.
     Good(Option<Box<HostValue>>),
     /// A failed result, with its error value.

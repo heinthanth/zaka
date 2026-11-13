@@ -148,7 +148,7 @@ impl HostData
 /// # Returns
 ///
 /// `Ok` when the main function returns, or the trap that stopped it.
-pub fn run(module: &Module, out: &mut dyn Write) -> Result<(), Trap>
+pub fn run(module: &Module, out: &mut dyn Write) -> Result<(), Box<Trap>>
 {
     run_with(module, out, &RunOptions::default())
 }
@@ -166,7 +166,7 @@ pub fn run(module: &Module, out: &mut dyn Write) -> Result<(), Trap>
 /// `Ok` when the main function returns, or the trap that stopped it.
 pub fn run_with(
     module: &Module, out: &mut dyn Write, options: &RunOptions,
-) -> Result<(), Trap>
+) -> Result<(), Box<Trap>>
 {
     run_and_keep(module, out, options, &HostData::default()).1
 }
@@ -184,10 +184,11 @@ pub fn run_with(
 /// # Returns
 ///
 /// The machine where the run stopped, and `Ok` when the main function
-/// returned or the trap that stopped it.
+/// returned or the trap that stopped it, boxed: a trap is made once, when a run
+/// stops.
 pub fn run_and_keep(
     module: &Module, out: &mut dyn Write, options: &RunOptions, host: &HostData,
-) -> (Machine, Result<(), Trap>)
+) -> (Machine, Result<(), Box<Trap>>)
 {
     run_in(module, out, options, host, Box::new(MemWorld::default()))
 }
@@ -210,7 +211,7 @@ pub fn run_and_keep(
 pub fn run_in(
     module: &Module, out: &mut dyn Write, options: &RunOptions, host: &HostData,
     world: Box<dyn World>,
-) -> (Machine, Result<(), Trap>)
+) -> (Machine, Result<(), Box<Trap>>)
 {
     let mut machine = Machine::new(module.clone(), *options);
     machine.set_host(host);
@@ -229,14 +230,14 @@ pub fn run_in(
 /// # Returns
 ///
 /// `Ok` when the main function returns, or the trap that stopped it.
-fn drive(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Trap>
+fn drive(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Box<Trap>>
 {
     while machine.running()
     {
         machine.step();
         drain(machine, out)?;
     }
-    machine.state().trap().cloned().map_or(Ok(()), Err)
+    machine.state().trap().cloned().map_or(Ok(()), |t| Err(Box::new(t)))
 }
 
 /// Write what the machine printed since the last call, and clear it.
@@ -249,7 +250,7 @@ fn drive(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Trap>
 /// # Returns
 ///
 /// `Ok`, or a trap at the op that printed when the write fails.
-fn drain(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Trap>
+fn drain(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Box<Trap>>
 {
     // shortcut: standard error goes to the process's own; give the run a
     // writer for it when a caller needs to catch it.
@@ -260,7 +261,7 @@ fn drain(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Trap>
     ret_if!(machine.out.is_empty(), Ok(()));
     let written = out.write_all(machine.out.as_bytes());
     machine.out.clear();
-    written.map_err(|e| machine.trap(TrapKind::Write { msg: e.to_string() }))
+    written.map_err(|e| Box::new(machine.trap(TrapKind::Write { msg: e.to_string() })))
 }
 
 /// A call in progress.
@@ -937,6 +938,22 @@ impl Machine
     {
         let slot = self.globals.get(global as usize).copied();
         let slot = slot.ok_or_else(|| malformed("no host global"))?;
+        self.place_text_list(slot, texts)
+    }
+
+    /// Put a plain list of texts at an address, each text and the list in a
+    /// heap block of its own.
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - Where the header of the list goes.
+    /// * `texts` - The texts.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `OutOfMem` when the heap has no room.
+    pub(crate) fn place_text_list(&mut self, slot: u64, texts: &[String]) -> Step
+    {
         let stride = u64::from(DataKind::TEXT.size(self.module.platform_bits));
         let count = texts.len() as u64;
         let size = count * stride;

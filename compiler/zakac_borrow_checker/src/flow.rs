@@ -1695,15 +1695,15 @@ impl<'m> Flow<'m>
         // them is checked and their effects join.
         for &func in funcs
         {
-            check_call(self, func, &roots, span, state);
-            note_unfilled(self, func, &roots, state);
-            lift_reads(self, func, &roots);
+            check_call(self, func, roots, span, state);
+            note_unfilled(self, func, roots, state);
+            lift_reads(self, func, roots);
         }
-        let back = |f: &u32| given_back(self, *f, &roots);
+        let back = |f: &u32| given_back(self, *f, roots);
         let given: BTreeSet<Place> =
             funcs.iter().flat_map(back).filter_map(|r| own_block(&r)).collect();
         let resized: Roots =
-            funcs.iter().flat_map(|f| all_given_back(self, *f, &roots)).collect();
+            funcs.iter().flat_map(|f| all_given_back(self, *f, roots)).collect();
         let globals = self.named.iter().copied();
         let addressed = args.iter().filter_map(bare_address);
         let pointed = roots.iter().flatten().filter(|r| !r.path.contains(&Seg::Block));

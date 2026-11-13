@@ -16,8 +16,7 @@ tokens:
     hi: 22
   particle: none
   joined: false
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 23
     hi: 41
@@ -243,8 +242,7 @@ tokens:
     hi: 532
   particle: none
   joined: false
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 533
     hi: 551
@@ -458,8 +456,7 @@ tokens:
     hi: 1111
   particle: none
   joined: false
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 1112
     hi: 1130
@@ -493,8 +490,7 @@ tokens:
     hi: 1216
   particle: none
   joined: false
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 1217
     hi: 1235
@@ -565,8 +561,7 @@ tokens:
     hi: 1341
   particle: none
   joined: false
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 1342
     hi: 1360
@@ -666,8 +661,7 @@ tokens:
     hi: 1491
   particle: none
   joined: false
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 1492
     hi: 1510

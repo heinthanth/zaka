@@ -88,6 +88,6 @@ fn a_start_result_that_is_no_integer_is_zk0441()
 #[test]
 fn no_call_names_the_start_block()
 {
-    let text = format!("{}\n`ပရိုဂရမ်` ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။", start("", ""));
+    let text = format!("{}\n{{ပရိုဂရမ်}} ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။", start("", ""));
     assert_eq!(codes(&text), [Code::TopLevelStmt, Code::UndeclaredFunction]);
 }

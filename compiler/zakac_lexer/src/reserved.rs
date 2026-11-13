@@ -86,13 +86,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ဖြစ်ပြီး", Kw::Being),
     ("ဖြစ်ကာ", Kw::Being),
     ("ပြီးလျှင်", Kw::WhenDone),
-    ("ဘယ်သို့", Kw::ShiftLeft),
-    ("ညာသို့", Kw::ShiftRight),
     ("ဘစ်", Kw::Bit),
     // verb-nouns and verbs
-    ("ပေါင်းလဒ်", Kw::Sum),
-    ("နုတ်လဒ်", Kw::Difference),
-    ("မြှောက်လဒ်", Kw::Product),
     ("ညီ", Kw::Equal),
     ("တစ်ခုတည်း", Kw::SameOne),
     ("မညီ", Kw::NotEqual),
@@ -104,15 +99,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ဖြစ်၍", Kw::And),
     ("သို့မဟုတ်", Kw::Or),
     // phrase pieces
-    ("စားသော", Kw::DivideHead),
-    ("စားလဒ်", Kw::QuotientTail),
-    ("စားကြွင်း", Kw::RemainderTail),
-    ("ဘစ်အလိုက်", Kw::BitwiseHead),
-    ("ဆုံလဒ်", Kw::MeetTail),
-    ("ပေါင်းစုလဒ်", Kw::UnionTail),
-    ("ခြားနားလဒ်", Kw::DifferTail),
-    ("ပြောင်းပြန်ပြောင်းလဒ်", Kw::InvertTail),
-    ("ရွေ့သော", Kw::ShiftHead),
     ("ပြောင်းလဲသော", Kw::ConvertHead),
     ("အကွက်တိုင်း", Kw::EachCell),
     ("စာလုံးတိုင်း", Kw::EachChar),
@@ -121,9 +107,10 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ယူ၍", Kw::Taking),
     ("ပြောင်းလဲရန်", Kw::ToChange),
     ("ထည့်ပေးရန်", Kw::ToFill),
-    ("ဝိဘတ်", Kw::MarkWord),
+    ("ဝိဘတ်", Kw::PrepositionWord),
     ("ဟူသော", Kw::Called),
     ("မည့်", Kw::Named),
+    ("သော", Kw::That),
     ("လုပ်ဆောင်သော", Kw::CallHead),
     ("အောက်ပါ", Kw::Following),
     ("လုပ်ဆောင်မည်", Kw::WillDo),
@@ -146,16 +133,12 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ပြီးပါပြီး", Kw::Done),
     ("ပြီးပါပြီ", Kw::Done),
     // statement verbs
-    ("ပြသမည်", Kw::Print),
     ("ထားမည်", Kw::Assign),
     ("ပြန်ပေးမည်", Kw::WillReturn),
     ("ဖြစ်ပါစေ", Kw::Let),
     ("ရပ်မည်", Kw::Stop),
     ("ကျော်မည်", Kw::Skip),
     ("ထည့်သွင်းမည်", Kw::Import),
-    ("ထည့်မည်", Kw::Add),
-    ("ဖျက်မည်", Kw::Remove),
-    ("အစားထိုးမည်", Kw::Replace),
     // control
     ("အကယ်၍", Kw::If),
     ("လျှင်", Kw::Then),
@@ -238,11 +221,9 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("စာရင်း", Kw::List),
     ("စာရင်းအလွတ်", Kw::BlankList),
     ("အကွက်", Kw::Cell),
-    ("အကွက်အရေအတွက်", Kw::CellCount),
     ("နောက်ဆုံးအကွက်", Kw::LastCell),
     ("နောက်ဆုံးစာလုံး", Kw::LastChar),
     ("အရှေ့တွင်", Kw::Before),
-    ("စာလုံးအရေအတွက်", Kw::CharCount),
     ("ဆက်ထားသည့်", Kw::Joined),
     ("ခုမြောက်", Kw::Ordinal),
     ("လုံးမြောက်", Kw::Ordinal),
@@ -259,7 +240,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ဇယားအလွတ်", Kw::BlankTable),
     ("ညွှန်းသော", Kw::Indexed),
     ("အညွှန်း", Kw::IndexWord),
-    ("အညွှန်းအရေအတွက်", Kw::IndexCount),
     // structs, enumerations and kind aliases
     ("အချက်အလက်အမျိုးအစား", Kw::DataKindOpen),
     ("ယေဘုယျအချက်အလက်အမျိုးအစား", Kw::GenericKind),
@@ -382,6 +362,21 @@ fn extend(
     Some(pieces)
 }
 
+/// Whether each piece of a split is a particle.
+///
+/// # Arguments
+///
+/// * `pieces` - The split.
+///
+/// # Returns
+///
+/// `true` when each piece is a particle.
+fn all_particles(pieces: &Pieces) -> bool
+{
+    let particle = |(kind, _): &(TokenKind, Span)| matches!(kind, TokenKind::Kw(kw) if kw.is_particle());
+    pieces.iter().all(particle)
+}
+
 /// Split a word into reserved words and kind names.
 ///
 /// Splits happen at pre-token (vanna) boundaries. The split with the fewest
@@ -407,13 +402,14 @@ pub fn split_reserved(word: &Word<'_>) -> Option<Pieces>
     {
         // A piece is at most as long as the longest reserved word, which
         // keeps a long name linear.
+        // Of the splits with the fewest pieces, one that is not all particles
+        // wins, so `အောက်ပါ` + `သော` beats `အောက်` + `ပါသော`.
         best[end] = (end.saturating_sub(*LONGEST)..end)
             .filter_map(|start| extend(&best[start], word, start, end))
-            .min_by_key(Vec::len);
+            .min_by_key(|p| (p.len(), all_particles(p)));
     }
 
     let pieces = best[n].take()?;
-    let particle = |(kind, _): &(TokenKind, Span)| matches!(kind, TokenKind::Kw(kw) if kw.is_particle());
-    ret_if!(pieces.len() < 2 || pieces.iter().all(particle), None);
+    ret_if!(pieces.len() < 2 || all_particles(&pieces), None);
     Some(pieces)
 }

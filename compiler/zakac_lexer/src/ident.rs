@@ -24,7 +24,7 @@ pub fn is_whitespace(ch: char) -> bool { WHITESPACE.contains(&ch) }
 /// Whether `ch` is a self-delimiting character: it is a word on its own.
 ///
 /// These are `၊ ။ ၏` and the ASCII punctuation except `_`: the quotes and
-/// operator characters, the backtick (raw identifiers), `.` (number
+/// operator characters, the braces (raw identifiers), `.` (number
 /// fractions), and the rest, so an invalid character is reported on its own
 /// instead of spoiling the word next to it.
 ///

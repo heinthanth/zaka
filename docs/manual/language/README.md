@@ -15,7 +15,7 @@ sentence means.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်။
+က နှင့် ခ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -26,18 +26,18 @@ sentence means.
 The last sentence of the program is built like this:
 
 ```text
-က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည် ။
+က နှင့် ခ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည် ။
 statement
 ├── clause (makes a value)
 │   ├── operand က, then the particle နှင့်   (first of two)
 │   ├── operand ခ, then the particle ၏       (closes the operands)
-│   └── verb ပေါင်းလဒ်                       (sum)
+│   └── verb ပေါင်းသည့်ရလဒ်                  (sum)
 ├── particle ကို                             (marks the value to show)
 ├── verb ပြသမည်                               (print: makes the statement)
 └── ။                                        (ends the sentence)
 ```
 
-A verb that makes a value, such as `ပေါင်းလဒ်`, forms an *expression*. A verb that gives
+A verb that makes a value, such as `ပေါင်းသည့်ရလဒ်`, forms an *expression*. A verb that gives
 a command, such as `ပြသမည်`, forms a *statement*. The compiler reads both with one set of rules.
 
 ## The pages of this chapter

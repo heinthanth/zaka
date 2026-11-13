@@ -27,7 +27,11 @@ macro_rules! per_width {
         else
         {
             type $f = f64;
-            $code
+            // The code widens the bits of an `f32` to `u64`; on an `f64` they
+            // are `u64` already.
+            #[allow(clippy::useless_conversion)]
+            let out = $code;
+            out
         }
     };
 }

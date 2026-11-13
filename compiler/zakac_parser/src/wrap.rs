@@ -115,7 +115,7 @@ pub fn wrap_in_start(
         .filter(|t| matches!(t.kind, TokenKind::Ident | TokenKind::RawIdent))
         .map(|t| range(t.span.lo.as_u32(), t.span.hi.as_u32()))
         .filter(|&r| in_fn(r))
-        .map(|(lo, hi)| file.src[lo..hi].trim_matches('`'))
+        .map(|(lo, hi)| file.src[lo..hi].trim_matches(['{', '}']))
         .collect();
     let mut seen = false;
     let moves: Vec<bool> = stmts

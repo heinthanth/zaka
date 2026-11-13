@@ -13,7 +13,9 @@ use crate::kinds::NO_PERMISSION;
 use crate::kinds::NOT_FOUND;
 use crate::kinds::OTHER;
 use crate::kinds::OUTPUT_STREAM;
+use crate::kinds::PATH_KIND;
 use crate::kinds::TEXT;
+use crate::kinds::TEXT_LIST;
 use crate::value::Args;
 use crate::value::HostValue;
 use crate::world::Effects;
@@ -67,6 +69,20 @@ host_fns! {
     /// Write text to an output stream, with no line break: the text, then the
     /// stream.
     WriteStream = "ရေး"(TEXT, OUTPUT_STREAM) -> None, write_stream;
+    /// Add text at the end of a file, making the file when it is not there:
+    /// the text, then the path.
+    AppendFile = "နောက်ဆုံးမှဆက်ရေး"(TEXT, TEXT) -> None, append_file;
+    /// Remove a file, or a folder that holds nothing.
+    Remove = "ဖျက်"(TEXT) -> None, remove;
+    /// Make a folder and each folder above it that is not there.
+    MakeFolder = "ဖိုင်တွဲတစ်ခုပြုလုပ်"(TEXT) -> None, make_folder;
+    /// The names a folder holds, sorted.
+    ListFolder = "စု"(TEXT) -> Some(TEXT_LIST), list_folder;
+    /// What a path holds: a file, a folder or another thing.
+    PathKind = "အမျိုးအစားခွဲ"(TEXT) -> Some(PATH_KIND), path_kind;
+    /// Move a file or a folder, replacing what the target holds: the old
+    /// path, then the new one.
+    Rename = "ရွှေ့"(TEXT, TEXT) -> None, rename;
 }
 
 /// Run [`HostFn::ReadLine`].
@@ -94,6 +110,44 @@ fn write_file(args: &Args, e: &mut Effects<'_>) -> HostValue
 fn write_stream(args: &Args, e: &mut Effects<'_>) -> HostValue
 {
     nothing_or_fault(e.write(args.stream(1), args.text(0)))
+}
+
+/// Run [`HostFn::AppendFile`].
+fn append_file(args: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    nothing_or_fault(e.world.append_file(args.text(1), args.text(0)))
+}
+
+/// Run [`HostFn::Remove`].
+fn remove(args: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    nothing_or_fault(e.world.remove(args.text(0)))
+}
+
+/// Run [`HostFn::MakeFolder`].
+fn make_folder(args: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    nothing_or_fault(e.world.make_folder(args.text(0)))
+}
+
+/// Run [`HostFn::ListFolder`].
+fn list_folder(args: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    let names = e.world.list_folder(args.text(0));
+    names.map_or_else(fault, |n| HostValue::Good(Some(Box::new(HostValue::Texts(n)))))
+}
+
+/// Run [`HostFn::PathKind`].
+fn path_kind(args: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    let kind = e.world.path_kind(args.text(0));
+    kind.map_or_else(fault, |k| HostValue::Good(Some(Box::new(HostValue::Member(k)))))
+}
+
+/// Run [`HostFn::Rename`].
+fn rename(args: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    nothing_or_fault(e.world.rename(args.text(0), args.text(1)))
 }
 
 impl HostFn
@@ -213,6 +267,8 @@ fn fault(e: io::Error) -> HostValue
 mod tests
 {
     use super::*;
+    use crate::kinds::IS_FILE;
+    use crate::kinds::IS_FOLDER;
     use crate::kinds::STDIN;
     use crate::kinds::STDOUT;
     use crate::world::MemWorld;
@@ -227,6 +283,40 @@ mod tests
         let mut effects =
             Effects { world, out: &mut out, err: &mut err, blocked: false };
         (func.serve(&Args(args), &mut effects), out)
+    }
+
+    #[test]
+    fn files_and_folders_live_in_a_world_in_storage()
+    {
+        let text = |t: &str| HostValue::Text(t.to_string());
+        let good = |v: Option<HostValue>| HostValue::Good(v.map(Box::new));
+        let fails = |m: u32| HostValue::Fault(Box::new(HostValue::Member(m)));
+        let names = |n: &[&str]| {
+            good(Some(HostValue::Texts(n.iter().map(|s| s.to_string()).collect())))
+        };
+        let mut world = MemWorld::default();
+        let mut call = |f: HostFn, args: Vec<HostValue>| run(f, args, &mut world).0;
+        assert_eq!(call(HostFn::MakeFolder, vec![text("d/e")]), good(None));
+        let append = vec![text("ab"), text("d/a.txt")];
+        assert_eq!(call(HostFn::AppendFile, append.clone()), good(None));
+        assert_eq!(call(HostFn::AppendFile, append), good(None));
+        assert_eq!(
+            call(HostFn::ReadFile, vec![text("d/a.txt")]),
+            good(Some(text("abab")))
+        );
+        assert_eq!(call(HostFn::ListFolder, vec![text("d")]), names(&["a.txt", "e"]));
+        let kind = |k: u32| good(Some(HostValue::Member(k)));
+        assert_eq!(call(HostFn::PathKind, vec![text("d/a.txt")]), kind(IS_FILE));
+        assert_eq!(call(HostFn::PathKind, vec![text("d/e")]), kind(IS_FOLDER));
+        assert_eq!(call(HostFn::PathKind, vec![text("x")]), fails(NOT_FOUND));
+        let rename = vec![text("d/a.txt"), text("d/e/b.txt")];
+        assert_eq!(call(HostFn::Rename, rename), good(None));
+        assert_eq!(call(HostFn::ListFolder, vec![text("d/e")]), names(&["b.txt"]));
+        assert_eq!(call(HostFn::Remove, vec![text("d/e")]), fails(OTHER));
+        assert_eq!(call(HostFn::Remove, vec![text("d/e/b.txt")]), good(None));
+        assert_eq!(call(HostFn::Remove, vec![text("d/e")]), good(None));
+        assert_eq!(call(HostFn::ListFolder, vec![text("d")]), names(&[]));
+        assert_eq!(call(HostFn::ListFolder, vec![text("none")]), fails(NOT_FOUND));
     }
 
     #[test]

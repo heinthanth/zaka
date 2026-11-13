@@ -34,7 +34,7 @@ program:
           span:
             lo: 108
             hi: 111
-        mark: null
+        preposition: null
         span:
           lo: 108
           hi: 184
@@ -59,7 +59,7 @@ program:
           span:
             lo: 216
             hi: 219
-        mark: null
+        preposition: null
         span:
           lo: 216
           hi: 292
@@ -84,7 +84,7 @@ program:
           span:
             lo: 324
             hi: 327
-        mark: null
+        preposition: null
         span:
           lo: 324
           hi: 400
@@ -256,6 +256,7 @@ program:
       exported: false
       unchecked: false
       start: false
+      builtin: false
       external: false
       lib: null
       variadic: false
@@ -296,6 +297,7 @@ program:
       exported: false
       unchecked: false
       start: false
+      builtin: false
       external: false
       lib: null
       variadic: false
@@ -327,7 +329,7 @@ program:
             hi: 1357
       pass: false
       using: null
-      marks: []
+      prepositions: []
       span:
         lo: 1232
         hi: 1425

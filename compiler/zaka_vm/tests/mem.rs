@@ -218,3 +218,22 @@ fn live_blocks_map_to_native_addresses_and_back()
     m.free(a).unwrap();
     assert_eq!(m.native_at(a), None, "a freed block maps to nothing");
 }
+
+/// An allocation the host makes beside the blocks, as C makes a struct behind
+/// a handle, never reads as an address of the VM: the end of each block lies
+/// in its own allocation, so nothing else starts there. The blocks and the
+/// structs share a size class of the host's allocator, which packs them side
+/// by side.
+#[test]
+fn a_native_allocation_never_reads_as_the_end_of_a_block()
+{
+    let mut m = mem();
+    let mut native: Vec<Box<[u8; 40]>> = Vec::new();
+    for _ in 0..256
+    {
+        m.alloc(48, Origin::Heap, 0).expect("room for the block");
+        native.push(Box::new([0; 40]));
+    }
+    let mapped = native.iter().filter(|b| m.vm_addr(b.as_ptr() as usize).is_some());
+    assert_eq!(mapped.count(), 0);
+}

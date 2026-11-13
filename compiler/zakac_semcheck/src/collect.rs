@@ -45,7 +45,7 @@ pub(crate) fn collect_fns(
     }
     let decls = program.stmts.iter().enumerate().filter_map(|(i, s)| {
         let decl = tern!(let Stmt::Fn(decl) = s, Some(decl), None)?;
-        let plain = !decl.start && decl.kind_params.is_empty();
+        let plain = !decl.start && decl.kind_params.is_empty() && !decl.builtin;
         tern!(plain, Some((program.unit_of(i) as usize, decl)), None)
     });
     do_for!((unit, decl) in decls, add_fn(&mut fns[unit], decl, structs, diags, Some(unit as u32)));
@@ -59,8 +59,8 @@ pub(crate) fn collect_fns(
 /// * `fns` - The functions so far.
 /// * `decl` - The declaration.
 /// * `structs` - The kind of each declared struct.
-/// * `diags` - Where to report a function whose parameters and marks another
-///   function of its name has.
+/// * `diags` - Where to report a function whose parameters and prepositions
+///   another function of its name has.
 /// * `unit` - The file that declares it.
 fn add_fn(
     fns: &mut FnSigs, decl: &FnDecl, structs: &StructTable,
@@ -97,9 +97,9 @@ pub(crate) fn sig_of(
     let ret = decl.ret.as_ref().map(kind);
     let edits = decl.params.iter().map(|p| p.edit).collect();
     let closes = decl.params.iter().map(|p| p.owned && decl.lib.is_some()).collect();
-    let marks: Option<Vec<_>> =
-        decl.params.iter().map(|p| p.mark.as_ref().map(|m| m.name)).collect();
+    let prepositions: Option<Vec<_>> =
+        decl.params.iter().map(|p| p.preposition.as_ref().map(|m| m.name)).collect();
     #[rustfmt::skip]
     return FnSig::builder().params(params).edits(edits).maybe_ret(ret).exported(decl.exported)
-        .external(decl.external).unchecked(decl.unchecked).variadic(decl.variadic).maybe_marks(marks).closes(closes).inner(overload_name(decl.name.name, index)).decl(decl.name.span).maybe_unit(unit).build();
+        .external(decl.external).unchecked(decl.unchecked).variadic(decl.variadic).maybe_prepositions(prepositions).closes(closes).inner(overload_name(decl.name.name, index)).decl(decl.name.span).maybe_unit(unit).build();
 }

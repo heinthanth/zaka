@@ -125,7 +125,7 @@ pub fn run_module(module: &Module, options: &RunOptions) -> (String, Result<(), 
 {
     let mut out = Vec::new();
     let result = run_with(module, &mut out, options);
-    (String::from_utf8(out).unwrap(), result)
+    (String::from_utf8(out).unwrap(), result.map_err(|t| *t))
 }
 
 /// Compile and run a source text with limits.

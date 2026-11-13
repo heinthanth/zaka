@@ -319,7 +319,9 @@ fn value_sig(f: &FnKind) -> Sig
     }
 }
 
-/// Whether a function is generic: a template the check made instances of.
+/// Whether a function has no code of its own to lower: a generic, a template
+/// the check made instances of, or one the compiler gives, which a sentence
+/// stands for.
 ///
 /// # Arguments
 ///
@@ -327,8 +329,8 @@ fn value_sig(f: &FnKind) -> Sig
 ///
 /// # Returns
 ///
-/// `true` when it has kind parameters.
-fn is_generic(f: &st::FnDecl) -> bool { !f.kind_params.is_empty() }
+/// `true` when it has kind parameters or the compiler mark.
+fn is_generic(f: &st::FnDecl) -> bool { !f.kind_params.is_empty() || f.builtin }
 
 /// The signatures of the top-level functions of each file, numbered in
 /// source order across the files; the first of two with one name in a file
@@ -1097,7 +1099,8 @@ impl Lowerer<'_>
             | st::Stmt::Enum(_)
             | st::Stmt::Alias(_)
             | st::Stmt::Trait(_)
-            | st::Stmt::TraitBlock(_) => (),
+            | st::Stmt::TraitBlock(_)
+            | st::Stmt::BuiltinKind(_) => (),
             st::Stmt::Import(n) => self.import(n),
             st::Stmt::Switch(n) => self.switch_stmt(n, out),
         }

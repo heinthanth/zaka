@@ -7,7 +7,7 @@ description: Each word Zaka gives a meaning to, with an English reading.
 
 These words have a fixed meaning in Zaka, so a program cannot use them as names. A word
 made of nothing but reserved words, such as `ထက်ကြီးသည်` or `တန်ဖိုးကို`, is split into
-them. To use one of these as a name all the same, wrap it in backticks (`` `ကြီး` ``);
+them. To use one of these as a name all the same, wrap it in braces (`{ကြီး}`);
 see [Names](../../learn/variables/names.md).
 
 The names of the built-in kinds, `ကိန်းပြည့်`, `ဒဿမကိန်း`, `စာလုံး`, `စာသား`,
@@ -35,36 +35,29 @@ and a file can declare a kind of its own under one of them. A word glued from th
 | `အခြားတန်ဖိုးများနှင့်အတူ` (`အခြားတန်ဖိုးများ`, `နှင့်အတူ`) | "together with other values": `... လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး` ends the parameters of a C function that takes more arguments than it names, as a C `...` does | [C functions](../language/functions.md) |
 | `အပိုင်အနေဖြင့်` | "as its own": after `ကို` in a parameter, after `ဒေတာ ပြောင်းလဲရန်` when both stand, a pointer parameter the function takes over; in `<kind> တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်`, a pointer result the caller takes over, or the string a C function hands over, which Zaka frees with libc's `free` | [Unsafe Zaka](../language/unsafe.md), [Functions](../language/functions.md) |
 | `လုပ်ဆောင်ချက်တစ်ခု` | "a function", in the header of an external function | [Functions](../language/functions.md) |
-| `သုံး၍` | "using": after `ကို` or `တို့ကို`, closes the arguments of a call written before its function; in `ဝိဘတ် "<mark>" ကို သုံး၍`, closes the mark of a parameter | [Parameters](../../learn/functions/parameters.md#arguments-first) |
+| `သုံး၍` | "using": after `ကို` or `တို့ကို`, closes the arguments of a call written before its function; in `ဝိဘတ် "<preposition>" ကို သုံး၍`, closes the preposition of a parameter | [Parameters](../../learn/functions/parameters.md#arguments-first) |
 | `ထဲသို့` | "into", after the list or the text in `l ထဲသို့ v ကို ထည့်မည်` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `မှ`, `အထိ`, `စီ`, `အနေဖြင့်` | "from", "up to", "each", "as" | [Counted loops](../../learn/control-flow/counted-loops.md) |
 | `ဖြစ်ကာ`, `ဖြစ်ပြီး` | "being ... and" | [Generic loops](../../learn/control-flow/generic-loops.md) |
 | `ပြီးလျှင်` | "when done" | [Generic loops](../../learn/control-flow/generic-loops.md) |
-| `ဘယ်သို့`, `ညာသို့` | "to the left", "to the right" | [Bitwise operators](../../learn/operators/bitwise.md) |
 | `ဘစ်` | "bit" | [Integers](../../learn/values/integers.md), [Bitwise operators](../../learn/operators/bitwise.md) |
 
 ## Verbs that make a value
 
 | Word | Reads as | Operator | Page |
 | --- | --- | --- | --- |
-| `ပေါင်းလဒ်` | "sum" | `+` | [Arithmetic](../../learn/operators/arithmetic.md) |
-| `နုတ်လဒ်` | "difference" | `-` | [Arithmetic](../../learn/operators/arithmetic.md) |
-| `မြှောက်လဒ်` | "product" | `*` | [Arithmetic](../../learn/operators/arithmetic.md) |
-| `စားသော စားလဒ်` | "quotient" | `/` | [Arithmetic](../../learn/operators/arithmetic.md) |
-| `စားသော စားကြွင်း` | "remainder" | `%` | [Arithmetic](../../learn/operators/arithmetic.md) |
-| `ဘစ်အလိုက် ဆုံလဒ်` | "bitwise meeting" | `&` | [Bitwise operators](../../learn/operators/bitwise.md) |
-| `ဘစ်အလိုက် ပေါင်းစုလဒ်` | "bitwise union" | `\|` | [Bitwise operators](../../learn/operators/bitwise.md) |
-| `ဘစ်အလိုက် ခြားနားလဒ်` | "bitwise difference" | `^` | [Bitwise operators](../../learn/operators/bitwise.md) |
-| `ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်` | "bitwise flip" | `~` | [Bitwise operators](../../learn/operators/bitwise.md) |
-| `ရွေ့သောရလဒ်` | "moved result" | `<<`, `>>` | [Bitwise operators](../../learn/operators/bitwise.md) |
+| `ပေါင်း`, `နုတ်`, `မြှောက်`, `စား`, `အကြွင်းရှာ` with a value end, as `ပေါင်းသည့်ရလဒ်` | "the result that adds", "… subtracts", "… multiplies", "… divides", "… finds the remainder": calls of the operator functions of the prelude, not reserved words; on a struct each calls the function of the struct, as the sign does | `+`, `-`, `*`, `/`, `%` | [Arithmetic](../../learn/operators/arithmetic.md) |
+| `ဘစ်ဆုံ`, `ဘစ်ပေါင်းစု`, `ဘစ်ခြားနား`, `ဘစ်ပြောင်းပြန်`, `ဘစ်ဘယ်ရွေ့`, `ဘစ်ညာရွေ့` with a value end | the bit operators, called in the same form | `&`, `\|`, `^`, `~`, `<<`, `>>` | [Bitwise operators](../../learn/operators/bitwise.md) |
 | `ညီ`, `မညီ` | "equal", "not equal": compares contents, deep into lists, structs and shared objects | `==`, `!=` | [Comparison](../../learn/operators/comparison.md) |
 | `တစ်ခုတည်း` | "one and the same": `X နှင့် Y သည် တစ်ခုတည်း ဖြစ်လျှင်` asks whether two shared objects, or two function values, are one | | [Values and objects](../language/objects.md) |
 | `ကြီး`, `မကြီး` | "greater", "not greater" | `>`, `<=` | [Comparison](../../learn/operators/comparison.md) |
 | `ငယ်`, `မငယ်` | "less", "not less" | `<`, `>=` | [Comparison](../../learn/operators/comparison.md) |
 | `ပြောင်းလဲသော ရလဒ်` | "changed result" | | [Converting between kinds](../../learn/operators/conversion.md) |
+| `ပြောင်းလဲသော ရလဒ်ကောင်း` | "good changed result": a conversion through a function that can fail passes the failure on | | [Conversions](../language/conversions.md#conversions-through-functions) |
 | `လုပ်ဆောင်သော ရလဒ်` | "result of running" | | [Results](../../learn/functions/results.md) |
 | `သည့် ရလဒ်` | "the result that ...": ends the short call `<arguments> ကို သုံး၍ <name> သည့် ရလဒ်` | | [Results](../../learn/functions/results.md#arguments-first-with-a-result) |
 | `သည့် ရလဒ်ကောင်း` | "the good result that ...": the short call passes a failure on | `?` after a call | [Functions](../language/functions.md) |
+| `မည့် ရလဒ်`, `သော ရလဒ်` (`မည့်`, `သော`) | the same as `သည့် ရလဒ်`, each with a `ရလဒ်ကောင်း` form; each end can be glued to a function the file sees, `ပေါင်းသည့်ရလဒ်` | | [Functions](../language/functions.md#arguments-first) |
 | `လုပ်ဆောင်သော ရလဒ်ကောင်း` | "good result of running": the call passes a failure on | `?` after a call | [Errors and results](../../learn/error-handling/README.md) |
 | `ဖြစ်၍` | "and"; also joins the kind and the value in a declaration | `&&` | [Logic](../../learn/operators/logic.md), [Variables](../../learn/variables/README.md) |
 | `သို့မဟုတ်` | "or" | `\|\|` | [Logic](../../learn/operators/logic.md) |
@@ -80,7 +73,7 @@ objects](../language/objects.md).
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `ပြသမည်` | "will show" | [Printing](../../learn/hello/printing.md) |
+| `ပြသမည်` | "will show", a call of the prelude's function `ပြသ` with `မည်` (not a reserved word) | [Printing](../../learn/hello/printing.md) |
 | `ထားမည်` | "will set" | [Changing a variable](../../learn/variables/assignment.md) |
 | `ဖြစ်ပါစေ` | "let it be" | [Variables](../../learn/variables/README.md) |
 | `လုပ်ဆောင်မည်` | "will run": ends a call statement, and the long arguments-first call | [Functions](../language/functions.md) |
@@ -92,9 +85,9 @@ objects](../language/objects.md).
 | `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` | "mark the function as not succeeded": ends it with a failure that holds no error value | [Writing result kinds](../../learn/error-handling/kinds.md) |
 | `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်` | "if it fails, give back the error value": ends a call statement that passes a failure on | [Errors and results](../../learn/error-handling/README.md) |
 | `ရပ်မည်` | "will stop" | [Break and continue](../../learn/control-flow/break-continue.md) |
-| `ထည့်မည်` | "will add": `l ထဲသို့ v ကို ထည့်မည်` adds `v` as a new last cell of `l`, or, when `l` is text, adds the text or character `v` at its end; `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်မည်` puts it in front of cell `i` | [Adding and removing cells](../../learn/lists/growing.md) |
-| `ဖျက်မည်` | "will remove": `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်` removes the last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
-| `အစားထိုးမည်` | "will replace": `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးမည်` puts `v` in place of cells `a` to `b` of text `t` | [Text](../../learn/text/changing.md#replacing-part-of-text) |
+| `ထည့်မည်` | "will add", a call of the prelude's function `ထည့်` with `မည်` (not a reserved word): `l ထဲသို့ v ကို ထည့်မည်` adds `v` as a new last cell of `l`, or, when `l` is text, adds the text or character `v` at its end; `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်မည်` puts it in front of cell `i` | [Adding and removing cells](../../learn/lists/growing.md) |
+| `ဖျက်မည်` | "will remove", a call of the prelude's function `ဖျက်` with `မည်` (not a reserved word): `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်` removes the last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
+| `အစားထိုးမည်` | "will replace", a call of the prelude's function `အစားထိုး` with `မည်` (not a reserved word): `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးမည်` puts `v` in place of cells `a` to `b` of text `t` | [Text](../../learn/text/changing.md#replacing-part-of-text) |
 | `ကျော်မည်` | "will skip" | [Break and continue](../../learn/control-flow/break-continue.md) |
 | `ခေါ်ဆိုခွင့် ပြုမည်` (`ခေါ်ဆိုခွင့်`, `ပြုမည်`) | "will grant leave to call": `f ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်` gives code outside the program, such as a C function, leave to call the function value `f` after the call that gave it. The fused spelling `ခေါ်ဆိုခွင့်ပြုမည်` is the same | [Function values](../language/function-values.md#nested-functions-and-closures), [Calling C](../../learn/functions/c.md) |
 | `ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်` (`ခေါ်ဆိုခွင့်`, `ပြန်လည်ရုပ်သိမ်းမည်`) | "will take back leave to call": `f ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်` ends that leave | [Function values](../language/function-values.md#nested-functions-and-closures), [Calling C](../../learn/functions/c.md) |
@@ -141,7 +134,7 @@ in its help line, and reads on as if the `မည်` spelling stood there.
 | `ဒေတာ ထည့်ပေးရန်` | "to put the data in": right after `ကို` in a parameter, a parameter the function writes and never reads first; the caller need not set the place, and it counts as set after the call. A function kind does not take it | [Filled parameters](../language/functions.md#filled-parameters) |
 | `ပြောင်းလဲရန်` | "in order to change": the second word of the phrase `ဒေတာ ပြောင်းလဲရန်`; alone it marks nothing | [Changed parameters](../language/functions.md#changed-parameters) |
 | `ထည့်ပေးရန်` | "in order to put in": the second word of the phrase `ဒေတာ ထည့်ပေးရန်`; alone it marks nothing | [Filled parameters](../language/functions.md#filled-parameters) |
-| `ဝိဘတ်` | "particle": `ဝိဘတ် "<mark>" ကို သုံး၍`, last among the markers of a parameter, gives the parameter its mark | [Functions](../language/functions.md) |
+| `ဝိဘတ်` | "preposition": `ဝိဘတ် "<preposition>" ကို သုံး၍`, last among the markers of a parameter, gives the parameter its preposition | [Functions](../language/functions.md) |
 | `ဟူသော` | "called": after a name or a literal, the word after it decides. `<name> ဟူသော လုပ်ဆောင်ချက်`, "the function called `<name>`", is the function as a value, and with `ကို` and no verb after it, the head of a long call; `<e> ဟူသော အမှားအယွင်း` is an error value; `<name> ဟူသော <kind> တစ်<word>` names a parameter or a field; `<name> ဟူသော ... ဒေတာအစုအဝေး` and `... ဒေတာအမျိုးအစားကွဲ` open a struct and an enumeration; `<literal> ဟူသော <kind> တစ်<word>` gives a number or a list literal its kind | [Function values](../language/function-values.md), [Measure words](../language/kinds.md#measure-words) |
 | `မည့်` | "named": the same as `ဟူသော` before `လုပ်ဆောင်ချက်`, as in `<name> မည့် လုပ်ဆောင်ချက်ကို ... လုပ်ဆောင်မည်။` | [Functions](../language/functions.md#calls) |
 | `လည်းကောင်း` | "and also": ends each parameter, after `ကို` and its markers, when there are two or more | [Functions](../language/functions.md) |
@@ -207,12 +200,12 @@ as well.
 | `အကွက်` | "cell": `x ၏ အကွက် i` is cell `i`, counted from 0; `အကွက် n ခုရှိသော` gives the count of a counted list kind | [Lists](../../learn/lists/README.md) |
 | `ခုမြောက်`, `လုံးမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1, and `t ၏ n ခုမြောက်စာလုံး` or `t ၏ n လုံးမြောက်စာလုံး` character `n` of text | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Static data and counted lists](../../learn/forms/counted-lists.md#counted-lists) |
-| `အကွက်အရေအတွက်` | "cell count", in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
+| `အကွက်အရေအတွက်` | "cell count", a function of the prelude read after `၏` (not a reserved word), in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `နောက်ဆုံးအကွက်` | "last cell", right after `၏` and before `ကို ဖျက်မည်` alone | [Adding and removing cells](../../learn/lists/growing.md) |
 | `နောက်ဆုံးစာလုံး` | "last character", right after `၏` and before `ကို ဖျက်မည်` alone: `t ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်` removes the last character of text | [Text](../../learn/text/changing.md#adding-in-the-middle-and-removing-the-end) |
 | `အရှေ့တွင်` | "in front of", after `<cell> ၏` or `<character> ၏` in an add: `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်မည်` | [Adding and removing cells](../../learn/lists/growing.md#adding-in-the-middle) |
 | `ဆက်ထားသည့်` | "that joins", in `a နှင့် b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/text/README.md#joining-text) |
-| `စာလုံးအရေအတွက်` | "character count", in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/text/characters.md#characters) |
+| `စာလုံးအရေအတွက်` | "character count", a function of the prelude read after `၏` (not a reserved word), in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/text/characters.md#characters) |
 | `စာရင်းအလွတ်` | "blank list": a plain list with no cells; a counted list cannot take it (ZK0436) | [Lists](../../learn/lists/README.md) |
 | `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../../learn/lists/README.md#list-kinds) |
 | `ပါသော` | "that holds", before `စာရင်း` or `ဇယား` in a literal of one cell or row | [Lists in words](../language/words.md#lists-in-words) |
@@ -228,7 +221,7 @@ as well.
 | `ဇယားအလွတ်` | "blank table": a ဇယား with no rows, as `[:]` is | [Tables](../language/tables.md#literals) |
 | `ညွှန်းသော` | "indexed", after `<index kind> ဖြင့်` in a ဇယား kind; `မညွှန်းသော` of the null address is a word of its own | [Tables](../language/tables.md) |
 | `အညွှန်း` | "index": `<table> ထဲမှ အညွှန်း <index>` is the row of the index, and `၏ တန်ဖိုး` after it its value | [Tables](../language/tables.md#reading-a-row) |
-| `အညွှန်းအရေအတွက်` | "index count", in `<table> ၏ အညွှန်းအရေအတွက်`: the number of rows | [Tables](../language/tables.md#counting-and-walking-the-rows) |
+| `အညွှန်းအရေအတွက်` | "index count", a function of the prelude read after `၏` (not a reserved word), in `<table> ၏ အညွှန်းအရေအတွက်`: the number of rows | [Tables](../language/tables.md#counting-and-walking-the-rows) |
 | `အညွှန်းတိုင်း`, `အတန်းတိုင်း` | "each index", "each row": the loops over the rows of a ဇယား | [Tables](../language/tables.md#counting-and-walking-the-rows) |
 
 `ထဲမှ` and `အနေဖြင့်` take part in a ဇယား too, in `<table> ထဲမှ အညွှန်း <index>` and in the row
@@ -293,7 +286,7 @@ The pieces of the closers, `လည်း` ("also"), `မှတ်ယူနို
 | `အစားထိုးအသုံးပြု၍` | "putting in place": after the kinds of a call written arguments first | [Generics and traits](../language/generics.md#calls) |
 | `::` | the kinds of a generic in the sign form, `f::<ကိန်းပြည့်>(၁)` | [Generics and traits](../language/generics.md#calls) |
 | `ဟူသည့်` | "called": after the name of a trait in its declaration, `<name> ဟူသည့် ဂုဏ်သတ္တိ` | [Generics and traits](../language/generics.md#traits) |
-| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": marks a trait of the prelude, where `ပြင်ပမှလာသော` marks an external one | [The prelude](../language/prelude.md#the-compiler-mark) |
+| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": marks a kind, a trait or a function of the prelude, where `ပြင်ပမှလာသော` marks an external one | [The prelude](../language/prelude.md#the-compiler-mark) |
 | `ဂုဏ်သတ္တိ` | "trait": after the name of a trait, in its declaration, its closer, a constraint and a trait block | [Traits](../../learn/generics/traits.md) |
 | `ပါဝင်ရမည်` | "must hold": closes the head of a trait, `… အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။` | [Generics and traits](../language/generics.md#traits) |
 | `လုပ်ဆောင်ချက်များ` | "functions": in the heads and closers of traits and trait blocks | [Generics and traits](../language/generics.md#traits) |
@@ -312,3 +305,22 @@ words: a name a program declares hides the prelude's.
 | --- | --- | --- |
 | `အများသုံး` | "for common use": exports a top-level declaration | [Modules](../../learn/modules/README.md#sharing-names) |
 | `ထည့်သွင်းမည်` | "will bring in": ends an import, after `"<file>" မှ <name> ကို` | [Modules](../../learn/modules/README.md#importing-names) |
+
+## Words a file reserves for itself
+
+Two rules reserve words in a file beside the ones above, from the functions the file
+sees; [What the flexible grammar costs](../language/functions.md#what-the-flexible-grammar-costs)
+states them in full.
+
+- Each word of a preposition of a function the file declares or imports reads as that preposition
+  where a preposition can stand. A name declared with such a word is the warning ZK0250. The
+  stdlib modules add these words: `ဖိုင်ကို`, `ဖိုင်တွဲအတွင်းရှိ`, `အမည်များကို` and
+  `နေရာတွင်` in a file that imports from `"စံကား/အဝင်အထွက်"`; the other modules use
+  reserved words alone.
+- A function name with a call end glued to it (`fမည်`, `fသည့်ရလဒ်`, `fမည့်ရလဒ်`,
+  `fသောရလဒ်`, the `ရလဒ်ကောင်း` forms, `fသည်`, `fပါ`) reads as a call of the function
+  `f` the file sees. A name declared so is the warning ZK0251. The prelude's operator
+  functions and verbs are seen in each file, so `ပေါင်းမည်`, `စားသည့်ရလဒ်` and `ပြသမည်` are
+  no names.
+
+A name in braces, `{name}`, is read as neither.

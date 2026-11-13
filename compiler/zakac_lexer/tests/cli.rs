@@ -46,7 +46,7 @@ fn lex_stdin_without_input()
     let (code, stdout, stderr) = run_cli(&[], "အသက် ကို ပြသမည်။");
     assert_eq!(code, ExitCode::Success);
     assert!(stdout.starts_with(TEXT_HEADER));
-    assert!(stdout.contains("kw: print"));
+    assert!(stdout.contains("kw: ko"));
     assert!(stderr.is_empty());
 }
 

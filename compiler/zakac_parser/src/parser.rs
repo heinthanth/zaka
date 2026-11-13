@@ -1,14 +1,19 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::sync::OnceLock;
 
 use bon::Builder;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::NodeId;
+use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::Program;
+use zakac_ast::verb::operator_verb;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
+use zakac_lexer::lexer::LexerOptions;
+use zakac_lexer::lexer::lex_at;
 use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::spelling::canonical;
 use zakac_lexer::spelling::spellings;
@@ -22,6 +27,7 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
+use zakac_rust_sugars::tern;
 use zakac_span::pos::Pos;
 use zakac_span::source_file::SourceFile;
 use zakac_span::span::Span;
@@ -31,6 +37,11 @@ use crate::describe::kw_text;
 use crate::describe::one_of;
 use crate::describe::quote;
 use crate::generics::angle_len_with;
+use crate::glued::clash_warnings;
+use crate::glued::split_glued;
+use crate::load::STD_MODULES;
+use crate::using::Functions;
+use crate::using::preposition_words;
 
 /// Result of a parse step; the error is the diagnostic to report.
 pub(crate) type PResult<T> = Result<T, Diagnostic>;
@@ -75,30 +86,133 @@ pub fn parse(source: &SourceFile, lexed: &LexOutput) -> ParseOutput
 ///   each file of the program get different numbers.
 /// * `structs` - The struct names the file imports, so each of them can start a
 ///   kind as the names it declares do.
-/// * `marked` - The functions the file imports that declare marks, with the
-///   number of marks of each, so a marked call of each can be read.
+/// * `functions` - The functions the file imports, with the prepositions of
+///   each, so a preposition call of each can be read and a glued call end
+///   splits off.
 ///
 /// # Returns
 ///
 /// The program and the parser diagnostics, with absolute spans.
 pub fn parse_with(
     source: &SourceFile, lexed: &LexOutput, first_id: u32, structs: &HashSet<String>,
-    marked: &HashMap<String, Vec<usize>>,
+    functions: &Functions,
 ) -> ParseOutput
 {
     let (text, base) = (source.src.as_str(), source.start_pos);
     let span = Span::new(base, base + text.len());
     ret_if!(lexed.tokens.is_empty(), blank_output(span));
-    let mut parser = Parser::new(text, base, lexed);
+    let mut known = declared_functions(text, base, lexed);
+    let imported = functions.iter().flat_map(|(name, lists)| {
+        spellings(name).into_iter().map(move |n| (n, lists.clone()))
+    });
+    imported.for_each(|(name, lists)| known.entry(name).or_default().extend(lists));
+    with_prelude(&mut known);
+    let split = split_glued(text, base, lexed, &known);
+    let mut parser = Parser::new(text, base, &split);
     parser.next_id = first_id;
     parser.structs.extend(structs.iter().flat_map(|s| spellings(s)));
-    let marked = marked.iter().flat_map(|(name, counts)| {
-        spellings(name).into_iter().map(move |n| (n, counts.clone()))
-    });
-    marked.for_each(|(name, counts)| {
-        parser.marked.entry(name).or_default().extend(counts)
-    });
+    parser.diags.extend(clash_warnings(text, base, lexed, &known));
+    parser.set_functions(known);
     finish(parser, span)
+}
+
+/// Add the functions of the prelude that a file does not declare or import
+/// itself: each file sees them, and a function of its own hides one.
+///
+/// # Arguments
+///
+/// * `known` - The functions of the file.
+fn with_prelude(known: &mut Functions)
+{
+    // A word operator of the prelude, and a function the compiler gives, is
+    // a verb of the clause engine, not a preposition call, so its prepositions
+    // remain outside the preposition calls of the file.
+    let verb =
+        |name: &str| operator_verb(name).is_some() || prelude_builtins().contains(name);
+    let lists = |name: &str, lists: &Vec<Vec<String>>| {
+        tern!(verb(name), vec![Vec::new()], lists.clone())
+    };
+    let prelude = prelude_functions().iter();
+    prelude
+        .for_each(|(name, l)| _ = known.entry(name.clone()).or_insert(lists(name, l)));
+}
+
+/// The names of the functions the prelude declares with the compiler mark,
+/// read once from its tokens: each header from `လုပ်ဆောင်ချက်` to its full stop
+/// that holds `ကွန်ပိုင်လာထဲတွင်`.
+///
+/// # Returns
+///
+/// The names.
+pub(crate) fn prelude_builtins() -> &'static HashSet<String>
+{
+    static NAMES: OnceLock<HashSet<String>> = OnceLock::new();
+    NAMES.get_or_init(|| {
+        let src =
+            STD_MODULES.iter().find(|(m, ..)| *m == PRELUDE).map_or("", |(.., s)| *s);
+        let lexed = lex_at(src, Pos::ZERO, &LexerOptions::default());
+        let tokens = &lexed.tokens;
+        let word = |t: &Token| {
+            src[(t.span.lo - Pos::ZERO) as usize..(t.span.hi - Pos::ZERO) as usize]
+                .to_string()
+        };
+        let heads = tokens
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| t.kind == TokenKind::Kw(Kw::Function));
+        let marked = heads.filter_map(|(at, _)| {
+            let header = tokens[at..]
+                .iter()
+                .take_while(|t| t.kind != TokenKind::Punct(Punct::FullStop));
+            let builtin =
+                header.clone().any(|t| t.kind == TokenKind::Kw(Kw::InCompiler));
+            let name = tokens.get(at + 1).filter(|t| t.kind == TokenKind::Ident);
+            name.filter(|_| builtin).map(word)
+        });
+        marked.collect()
+    })
+}
+
+/// The functions the prelude declares, with their prepositions, read once.
+///
+/// # Returns
+///
+/// The functions.
+fn prelude_functions() -> &'static Functions
+{
+    static FNS: OnceLock<Functions> = OnceLock::new();
+    FNS.get_or_init(|| {
+        let src =
+            STD_MODULES.iter().find(|(m, ..)| *m == PRELUDE).map_or("", |(.., s)| *s);
+        let lexed = lex_at(src, Pos::ZERO, &LexerOptions::default());
+        declared_functions(src, Pos::ZERO, &lexed)
+    })
+}
+
+/// The functions a file declares, with the prepositions of each.
+///
+/// # Arguments
+///
+/// * `text` - The normalized source text.
+/// * `base` - Absolute position of `text`.
+/// * `lexed` - The lexer output for `text`.
+///
+/// # Returns
+///
+/// The functions, each name in both spellings of `ဒေတာ`.
+fn declared_functions(text: &str, base: Pos, lexed: &LexOutput) -> Functions
+{
+    let parser = Parser::new(text, base, lexed);
+    let heads = lexed.tokens.iter().enumerate();
+    let heads = heads.filter(|(_, t)| t.kind == TokenKind::Kw(Kw::Function));
+    let heads = heads.filter_map(|(at, _)| parser.fn_header(&lexed.tokens, at));
+    let mut found = Functions::new();
+    for (name, prepositions) in heads
+    {
+        let names = spellings(&name).into_iter();
+        names.for_each(|n| found.entry(n).or_default().push(prepositions.clone()));
+    }
+    found
 }
 
 /// Parse the program of a parser and collect its output.
@@ -135,7 +249,13 @@ pub fn parse_at(text: &str, base: Pos, lexed: &LexOutput) -> ParseOutput
 {
     let span = Span::new(base, base + text.len());
     ret_if!(lexed.tokens.is_empty(), blank_output(span));
-    finish(Parser::new(text, base, lexed), span)
+    let mut known = declared_functions(text, base, lexed);
+    with_prelude(&mut known);
+    let split = split_glued(text, base, lexed, &known);
+    let mut parser = Parser::new(text, base, &split);
+    parser.diags.extend(clash_warnings(text, base, lexed, &known));
+    parser.set_functions(known);
+    finish(parser, span)
 }
 
 /// Parse `text` as one expression that takes all of its tokens.
@@ -155,7 +275,11 @@ pub fn parse_lone_expr(
 {
     let at_base = Span::new(base, base);
     ret_if!(lexed.tokens.is_empty(), Err(diag::expected_operand(at_base, "")));
-    let mut parser = Parser::new(text, base, lexed);
+    let mut known = Functions::new();
+    with_prelude(&mut known);
+    let split = split_glued(text, base, lexed, &known);
+    let mut parser = Parser::new(text, base, &split);
+    parser.set_functions(known);
     let expr = parser.parse_expr()?;
     ret_if!(!parser.at_eof(), Err(parser.err_expected(&t!("parser.eof"))));
     Ok(expr)
@@ -277,11 +401,25 @@ pub(crate) struct Parser<'t>
     /// leaves it out.
     #[builder(default)]
     pub(crate) classifiers: HashMap<String, &'t str>,
-    /// The functions the program declares or imports that declare marks,
-    /// each name in both spellings of `ဒေတာ`, with the number of marks of
-    /// each function of that name, so those names alone end a marked call.
+    /// The functions the program declares or imports, each name in both
+    /// spellings of `ဒေတာ`, with the prepositions of each function of that
+    /// name, so the names of functions with prepositions end a preposition
+    /// call.
     #[builder(default)]
-    pub(crate) marked: HashMap<String, Vec<usize>>,
+    pub(crate) functions: Functions,
+    /// Each word of a preposition of a function in [`Self::functions`].
+    #[builder(default)]
+    pub(crate) preposition_words: HashSet<String>,
+    /// The first word of each preposition of a function in [`Self::functions`],
+    /// and so each word a preposition call can go on from after an
+    /// argument.
+    #[builder(default)]
+    pub(crate) first_words: HashSet<String>,
+    /// Whether the header of a function the compiler gives is being parsed:
+    /// its prepositions spell the words of a sentence, so the places of `၏` and
+    /// of `ကို သုံး၍` are not checked.
+    #[builder(default)]
+    pub(crate) in_builtin: bool,
     /// Whether a list count is being parsed: its `ရှိသော` closes the count,
     /// so no struct literal starts inside it.
     #[builder(default)]
@@ -350,22 +488,12 @@ impl<'t> Parser<'t>
             .map(|(name, word)| (canonical(name).into_owned(), word))
             .collect();
         parser.classifiers = found;
-        let heads = lexed.tokens.iter().enumerate();
-        let heads = heads.filter(|(_, t)| t.kind == TokenKind::Kw(Kw::Function));
-        let heads: Vec<(&str, usize)> = heads
-            .filter_map(|(at, _)| parser.marked_header(&lexed.tokens, at))
-            .collect();
-        for (name, count) in heads
-        {
-            let names = spellings(name).into_iter();
-            names.for_each(|n| parser.marked.entry(n).or_default().push(count));
-        }
         parser
     }
 
-    /// The name and the number of marks of the function declaration whose
-    /// `လုပ်ဆောင်ချက်` sits at token `at`, when its parameters have marks:
-    /// each `ဝိဘတ်` before the full stop of the header.
+    /// The name and the prepositions of the function declaration whose
+    /// `လုပ်ဆောင်ချက်` sits at token `at`: the string after each `ဝိဘတ်`
+    /// before the full stop of the header, read as its words.
     ///
     /// # Arguments
     ///
@@ -374,22 +502,29 @@ impl<'t> Parser<'t>
     ///
     /// # Returns
     ///
-    /// The pair, or `None` for a call, or a header with no marks.
-    fn marked_header(&self, tokens: &[Token], at: usize) -> Option<(&'t str, usize)>
+    /// The pair, with no prepositions for a header with none, or `None` for a
+    /// call.
+    pub(crate) fn fn_header(
+        &self, tokens: &[Token], at: usize,
+    ) -> Option<(String, Vec<String>)>
     {
         let tokens = tokens.get(at..)?;
-        let name = tokens.get(1).filter(|t| t.kind == TokenKind::Ident)?;
+        let name = tokens.get(1)?;
+        let raw = name.kind == TokenKind::RawIdent;
+        ret_if!(name.kind != TokenKind::Ident && !raw, None);
         ret_if!(tokens.get(2)?.kind != TokenKind::Kw(Kw::Thi), None);
         let stop = TokenKind::Punct(Punct::FullStop);
         let header: Vec<&Token> =
             tokens.iter().take_while(|t| t.kind != stop).collect();
-        // A mark at depth 0 marks the header; one inside the parentheses of a
-        // function kind marks a parameter of that kind.
+        // A preposition at depth 0 prepositions the header; one inside the
+        // parentheses of a function kind prepositions a parameter of
+        // that kind.
         let mut depth = 0usize;
-        let mut count = 0;
-        for tok in header
+        let mut prepositions = Vec::new();
+        for (n, tok) in header.iter().enumerate()
         {
-            count += usize::from(depth == 0 && tok.kind == TokenKind::Kw(Kw::MarkWord));
+            let given = depth == 0 && tok.kind == TokenKind::Kw(Kw::PrepositionWord);
+            do_if!(given, prepositions.extend(self.preposition_at(header.get(n + 1))));
             match tok.kind
             {
                 TokenKind::Punct(Punct::LParen) => depth += 1,
@@ -397,7 +532,60 @@ impl<'t> Parser<'t>
                 _ => (),
             }
         }
-        (count > 0).then(|| (self.text_of(name.span), count))
+        let name = unquote_raw(raw, self.text_of(name.span)).to_string();
+        Some((name, prepositions))
+    }
+
+    /// The preposition a string token after `ဝိဘတ်` holds, its words joined with
+    /// one space.
+    ///
+    /// # Arguments
+    ///
+    /// * `tok` - The token after `ဝိဘတ်`.
+    ///
+    /// # Returns
+    ///
+    /// The preposition, or `None` for no string.
+    fn preposition_at(&self, tok: Option<&&Token>) -> Option<String>
+    {
+        let TokenKind::Str(idx) = tok?.kind
+        else
+        {
+            return None;
+        };
+        let text = &self.strings[idx as usize].value;
+        Some(preposition_words(text).map_or_else(|| text.clone(), |w| w.join(" ")))
+    }
+
+    /// Add functions of a name to the ones the parser knows, with the words
+    /// of their prepositions.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    /// * `lists` - The prepositions of each function.
+    pub(crate) fn add_function(&mut self, name: &str, lists: Vec<Vec<String>>)
+    {
+        let mut functions = std::mem::take(&mut self.functions);
+        functions.entry(name.to_string()).or_default().extend(lists);
+        self.set_functions(functions);
+    }
+
+    /// Take the functions the parser knows, and the words of their
+    /// prepositions.
+    ///
+    /// # Arguments
+    ///
+    /// * `functions` - The functions.
+    pub(crate) fn set_functions(&mut self, functions: Functions)
+    {
+        let prepositions = functions.values().flatten().flatten();
+        let words = prepositions.clone().flat_map(|m| m.split(' ').map(str::to_string));
+        self.preposition_words = words.collect();
+        let firsts =
+            prepositions.filter_map(|m| m.split(' ').next().map(str::to_string));
+        self.first_words = firsts.collect();
+        self.functions = functions;
     }
 
     /// The name and the classifier of the struct, enumeration or alias
@@ -699,7 +887,7 @@ impl<'t> Parser<'t>
     ///
     /// # Returns
     ///
-    /// The name without backticks, or an `expected-token` diagnostic.
+    /// The name without its braces, or an `expected-token` diagnostic.
     pub(crate) fn parse_ident(&mut self) -> PResult<Ident>
     {
         let tok = self.peek();
@@ -717,7 +905,7 @@ impl<'t> Parser<'t>
 ///
 /// # Arguments
 ///
-/// * `raw` - Whether the text is a raw identifier with backticks.
+/// * `raw` - Whether the text is a raw identifier in braces.
 /// * `text` - The token text.
 ///
 /// # Returns
@@ -726,5 +914,5 @@ impl<'t> Parser<'t>
 pub(crate) fn unquote_raw(raw: bool, text: &str) -> &str
 {
     ret_if!(!raw, text);
-    text.strip_prefix('`').and_then(|t| t.strip_suffix('`')).unwrap_or(text)
+    text.strip_prefix('{').and_then(|t| t.strip_suffix('}')).unwrap_or(text)
 }

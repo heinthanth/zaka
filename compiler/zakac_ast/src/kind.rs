@@ -56,8 +56,9 @@ pub struct TableParts
     pub value: Kind,
 }
 
-/// One parameter of a function kind: its kind, with the name and the mark
-/// when written. The name documents the kind and takes no part in a match.
+/// One parameter of a function kind: its kind, with the name and the
+/// preposition when written. The name documents the kind and takes no part in a
+/// match.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct SigParam
 {
@@ -76,9 +77,10 @@ pub struct SigParam
     /// The name, when written.
     #[serde(default)]
     pub name: Option<Ident>,
-    /// The word after the argument in a marked call, `ဝိဘတ် "<mark>" ကို သုံး၍`.
+    /// The preposition after the argument in a preposition call,
+    /// `ဝိဘတ် "<preposition>" ကို သုံး၍`.
     #[serde(default)]
-    pub mark: Option<Ident>,
+    pub preposition: Option<Ident>,
     /// Source region.
     pub span: Span,
 }

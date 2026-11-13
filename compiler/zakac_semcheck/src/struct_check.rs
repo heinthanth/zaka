@@ -295,7 +295,9 @@ fn field_text(
         let params: Vec<(bool, String, Option<&str>)> = sig
             .params
             .iter()
-            .map(|p| (p.edit, text(&p.kind), p.mark.as_ref().map(|m| m.name.as_str())))
+            .map(|p| {
+                (p.edit, text(&p.kind), p.preposition.as_ref().map(|m| m.name.as_str()))
+            })
             .collect();
         let ret = sig.ret.as_ref().map(text);
         let params = params.iter().map(|(e, k, m)| (*e, k.as_str(), *m)).collect();

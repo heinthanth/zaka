@@ -150,13 +150,13 @@ fn char_literals()
 #[test]
 fn raw_identifiers()
 {
-    let scan = scan_raw_ident("`ကို ပြသမည် + 1` x", 0, Pos::ZERO);
-    assert_eq!((scan.end, scan.diags.len()), ("`ကို ပြသမည် + 1`".len(), 0));
+    let scan = scan_raw_ident("{ကို ပြသမည် + 1} x", 0, Pos::ZERO);
+    assert_eq!((scan.end, scan.diags.len()), ("{ကို ပြသမည် + 1}".len(), 0));
     assert_eq!(
-        scan_raw_ident("``", 0, Pos::ZERO).diags[0].code,
+        scan_raw_ident("{}", 0, Pos::ZERO).diags[0].code,
         Code::BlankRawIdentifier
     );
-    let scan = scan_raw_ident("`abc\n`", 0, Pos::ZERO);
+    let scan = scan_raw_ident("{abc\n}", 0, Pos::ZERO);
     assert_eq!((scan.end, scan.diags[0].code), (4, Code::UnterminatedRawIdentifier));
 }
 
@@ -166,7 +166,7 @@ fn literals_in_the_token_stream()
     let kinds = kinds("\"၁၈ နှစ်အောက် ဝင်ခွင့်မပြုပါ\" ဟု ပြသမည်။");
     assert_eq!(kinds[0], TokenKind::Str(0));
     assert_eq!(kinds.len(), 4);
-    assert_eq!(super_kind("`a b`"), TokenKind::RawIdent);
+    assert_eq!(super_kind("{a b}"), TokenKind::RawIdent);
     assert_eq!(super_kind("'က'"), TokenKind::Char('က'));
 }
 

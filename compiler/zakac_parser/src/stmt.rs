@@ -52,10 +52,11 @@ use crate::parser::Parser;
 use crate::parser::kw_of;
 use crate::traits::expand_local_kinds;
 use crate::using::CallParts;
-use crate::using::is_mark_text;
+use crate::using::EI;
+use crate::using::preposition_words;
 
 /// The markers of a parameter item: owned, changed, written alone, and its
-/// particle mark.
+/// preposition.
 pub(crate) type ItemMarkers = (bool, bool, bool, Option<Ident>);
 
 /// A parameter clause: the parameters, the word that ended it, and whether it
@@ -135,6 +136,7 @@ impl Parser<'_>
     pub(crate) fn parse_stmt(&mut self) -> PResult<Stmt>
     {
         ret_if!(self.at_kind_decl(), self.parse_kind_decl());
+        ret_if!(self.at_builtin_kind(), self.parse_builtin_kind());
         ret_if!(self.at_trait_decl(), self.parse_trait_decl());
         ret_if!(self.at_trait_block(), self.parse_trait_block());
         let tok = self.peek();
@@ -182,8 +184,11 @@ impl Parser<'_>
         let is_str = matches!(self.peek().kind, TokenKind::Str(_));
         let from = self.peek_n(1).kind == TokenKind::Kw(Kw::From);
         // A string with `မှ` after it opens an import, unless it is the first
-        // argument of a marked call.
-        ret_if!(is_str && from && self.marked_end(1).is_none(), self.parse_import());
+        // argument of a preposition call.
+        ret_if!(
+            is_str && from && self.preposition_end(1).is_none(),
+            self.parse_import()
+        );
         let clause = self.parse_clause(Mode::Stmt)?;
         self.finish_expr_headed(clause)
     }
@@ -203,8 +208,9 @@ impl Parser<'_>
         let first = match clause
         {
             ClauseOut::Stmt(stmt) => return Ok(*stmt),
-            ClauseOut::Switch(subject, case) =>
+            ClauseOut::Switch(pair) =>
             {
+                let (subject, case) = *pair;
                 return self.parse_switch(subject, case);
             }
             ClauseOut::Expr(first) => first,
@@ -584,8 +590,8 @@ impl Parser<'_>
         }
         self.expect(Kw::Thi)?;
         let head = self.parse_decl_head()?;
-        do_if!(let Some(kind) = &head.kind, self.note_marked_value(&name.name, kind));
-        do_if!(let Some(init) = &head.init, self.note_marked_addr(&name.name, init));
+        do_if!(let Some(kind) = &head.kind, self.note_preposition_value(&name.name, kind));
+        do_if!(let Some(init) = &head.init, self.note_preposition_addr(&name.name, init));
         if self.at(Kw::Being)
         {
             ret_if!(is_const, Err(diag::const_loop(word.span)));
@@ -734,7 +740,7 @@ impl Parser<'_>
     /// The statement, or a diagnostic.
     pub(crate) fn finish_call_stmt(&mut self, parts: CallParts) -> PResult<Stmt>
     {
-        let CallParts { start, callee, place, args, using, marks } = parts;
+        let CallParts { start, callee, place, args, using, prepositions } = parts;
         let pass = self.at_punct(Punct::ListSep)
             && kw_of(&self.peek_n(1)) == Some(Kw::PassFault);
         do_if!(pass, {
@@ -745,7 +751,7 @@ impl Parser<'_>
         let span = start.to(&stop.span);
         #[rustfmt::skip]
         let node = CallStmt::builder().callee(callee).maybe_place(place).args(args).pass(pass)
-            .maybe_using(using).marks(marks).span(span).build();
+            .maybe_using(using).prepositions(prepositions).span(span).build();
         Ok(Stmt::Call(node))
     }
 
@@ -774,6 +780,13 @@ impl Parser<'_>
         }
         let external = self.at(Kw::External) || self.at_lib();
         ret_if!(external && !is_start, self.parse_external(start, name));
+        if self.at(Kw::InCompiler) && !is_start
+        {
+            let added = self.add_kind_names(&kind_params);
+            let parsed = self.parse_builtin_fn(start, name, kind_params);
+            self.drop_kind_names(added);
+            return parsed;
+        }
         let added = self.add_kind_names(&kind_params);
         let parsed = self.parse_fn_rest(start, name, is_start, kind_params);
         self.drop_kind_names(added);
@@ -986,8 +999,9 @@ impl Parser<'_>
         let name = self.parse_ident()?;
         let kind_params = self.parse_notation_params()?;
         self.expect(Kw::Called)?;
-        let exported = self.eat(Kw::Export);
+        // `အများသုံး` stands after `ပြင်ပမှ လာသော`, right before the noun.
         let external = self.eat(Kw::External);
+        let exported = self.eat(Kw::Export);
         let shared = !external && self.eat(Kw::Shareable);
         let word = tern!(
             external || shared,
@@ -1072,7 +1086,7 @@ impl Parser<'_>
     }
 
     /// Parse a kind that comes from outside the program, after
-    /// `<name> ဟူသော [အများသုံး] ပြင်ပမှ လာသော ဒေတာအစုအဝေး`: `ဖြစ်သည်။`, or
+    /// `<name> ဟူသော ပြင်ပမှ လာသော [အများသုံး] ဒေတာအစုအဝေး`: `ဖြစ်သည်။`, or
     /// `တွင် <field>၊ ... နှင့် <field> တို့ပါဝင်သည်။` (one field: `ပါဝင်သည်`) with the
     /// fields of the C struct a value points at, from its start.
     ///
@@ -1406,8 +1420,8 @@ impl Parser<'_>
 
     /// Parse the parameter clause of a header, when one is written: each
     /// parameter, then one of `ends`. With more than one parameter, each
-    /// ends in `လည်းကောင်း`; either each has a mark or none has. With `rest`,
-    /// `အခြားတန်ဖိုးများနှင့်အတူ` can stand before the end word, after
+    /// ends in `လည်းကောင်း`; either each has a preposition or none has. With
+    /// `rest`, `အခြားတန်ဖိုးများနှင့်အတူ` can stand before the end word, after
     /// parameters that each end in `လည်းကောင်း`, as for a C function.
     ///
     /// # Arguments
@@ -1430,13 +1444,41 @@ impl Parser<'_>
         self.in_list = outer;
         let (params, variadic) = read?;
         let end = self.expect_one_of(ends)?;
-        let marked = params.iter().filter(|p| p.mark.is_some()).count();
+        let given = params.iter().filter(|p| p.preposition.is_some()).count();
         let span = params[0].span.to(&params[params.len() - 1].span);
         do_if!(
-            marked > 0 && marked < params.len(),
-            self.diags.push(diag::mixed_marks(span))
+            given > 0 && given < params.len(),
+            self.diags.push(diag::mixed_prepositions(span))
         );
+        self.check_preposition_places(&params);
         Ok((params, kw_of(&end), variadic))
+    }
+
+    /// Check where the prepositions of a header stand: a preposition that
+    /// starts with `၏` prepositions the last parameter alone (ZK0249), and
+    /// the first preposition is no `ကို သုံး၍`, which starts the
+    /// arguments-first call (ZK0241).
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - The parameters of the header.
+    fn check_preposition_places(&mut self, params: &[Param])
+    {
+        ret_if!(self.in_builtin);
+        let prepositions: Vec<&Ident> =
+            params.iter().filter_map(|p| p.preposition.as_ref()).collect();
+        let before_last =
+            prepositions.iter().take(prepositions.len().saturating_sub(1));
+        let ei_prepositions = before_last.filter(|m| m.name.starts_with(EI));
+        ei_prepositions.for_each(|m| {
+            self.diags.push(diag::preposition_ei_not_last(m.span, &m.name))
+        });
+        let opens_using = |m: &&&Ident| {
+            let words: Vec<&str> = m.name.split(' ').take(2).collect();
+            matches!(words.as_slice(), ["ကို" | "တို့ကို", "သုံး၍"])
+        };
+        let first = prepositions.first().filter(opens_using);
+        do_if!(let Some(m) = first, self.diags.push(diag::bad_preposition(m.span, &m.name)));
     }
 
     /// Parse the parameters of a parameter clause, with the list open, up
@@ -1473,7 +1515,7 @@ impl Parser<'_>
 
     /// Parse the markers of a parameter after its `ကို`, each one optional and
     /// in this order: `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်`, `အပိုင်အနေဖြင့်`,
-    /// and `ဝိဘတ် "<mark>" ကို သုံး၍`.
+    /// and `ဝိဘတ် "<preposition>" ကို သုံး၍`.
     ///
     /// # Arguments
     ///
@@ -1483,26 +1525,31 @@ impl Parser<'_>
     /// # Returns
     ///
     /// Whether the item is owned, whether the function can change it,
-    /// whether it writes it alone, and its mark; or a diagnostic.
+    /// whether it writes it alone, and its preposition; or a diagnostic.
     pub(crate) fn parse_item_markers(&mut self, fill_ok: bool) -> PResult<ItemMarkers>
     {
         let fill = fill_ok && self.eat(Kw::DataToFill);
         let edit = fill || self.eat(Kw::DataToChange);
         let owned = self.eat(Kw::AsOwned);
-        ret_if!(!self.eat(Kw::MarkWord), Ok((owned, edit, fill, None)));
+        ret_if!(!self.eat(Kw::PrepositionWord), Ok((owned, edit, fill, None)));
         let tok = self.peek();
         let TokenKind::Str(idx) = tok.kind
         else
         {
-            return Err(self.err_expected(&t!("parser.mark_string")));
+            return Err(self.err_expected(&t!("parser.preposition_string")));
         };
         self.bump();
         let text = self.strings[idx as usize].value.clone();
-        do_if!(!is_mark_text(&text), self.diags.push(diag::bad_mark(tok.span, &text)));
+        let words = preposition_words(&text);
+        do_if!(
+            words.is_none(),
+            self.diags.push(diag::bad_preposition(tok.span, &text))
+        );
+        let text = words.map_or(text, |w| w.join(" "));
         self.expect(Kw::Ko)?;
         self.expect(Kw::Using)?;
-        let mark = Ident::builder().name(text).span(tok.span).build();
-        Ok((owned, edit, fill, Some(mark)))
+        let preposition = Ident::builder().name(text).span(tok.span).build();
+        Ok((owned, edit, fill, Some(preposition)))
     }
 
     /// Parse one parameter: `<name> ဟူသော <kind> တစ်<classifier> ကို`, then its
@@ -1516,11 +1563,11 @@ impl Parser<'_>
         let start = self.peek().span;
         let (kind, name) = self.parse_name_and_kind()?;
         self.expect(Kw::Ko)?;
-        let (owned, edit, fill, mark) = self.parse_item_markers(true)?;
+        let (owned, edit, fill, preposition) = self.parse_item_markers(true)?;
         let span = start.to(&self.prev_span());
         #[rustfmt::skip]
         return Ok(Param::builder().owned(owned).edit(edit).fill(fill).kind(kind).name(name)
-            .maybe_mark(mark).span(span).build());
+            .maybe_preposition(preposition).span(span).build());
     }
 
     /// Parse the name and the kind of a parameter or field,
@@ -1536,7 +1583,7 @@ impl Parser<'_>
         self.expect(Kw::Called)?;
         let bare = self.at_bare_listed_kind();
         let kind = tern!(bare, self.parse_bare_listed_kind()?, self.parse_slot_kind()?);
-        self.note_marked_value(&name.name, &kind);
+        self.note_preposition_value(&name.name, &kind);
         Ok((kind, name))
     }
 

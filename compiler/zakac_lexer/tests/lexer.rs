@@ -208,8 +208,8 @@ fn a_word_in_two_scripts_is_one_identifier()
 #[test]
 fn a_two_script_identifier_keeps_its_neighbours()
 {
-    let text = "ဖြစ်ရပ်_၁ သို့မဟုတ် ဖြစ်ရပ်_၂၏ ပေါင်းလဒ်";
-    let want = ["ဖြစ်ရပ်_၁", "သို့မဟုတ်", "ဖြစ်ရပ်_၂", "၏", "ပေါင်းလဒ်"];
+    let text = "ဖြစ်ရပ်_၁ သို့မဟုတ် ဖြစ်ရပ်_၂၏ အမည်";
+    let want = ["ဖြစ်ရပ်_၁", "သို့မဟုတ်", "ဖြစ်ရပ်_၂", "၏", "အမည်"];
     assert_eq!(common::lexemes(text), want);
     assert!(codes(text).is_empty());
 }

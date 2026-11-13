@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use zakac_ast::expr::BlankListLit;
+use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::FieldExpr;
 use zakac_ast::expr::Ident;
@@ -10,6 +11,7 @@ use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::RangeExpr;
 use zakac_ast::expr::StructLit;
 use zakac_ast::kind::Kind;
+use zakac_ast::name::Name;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::kinds as kd;
@@ -313,6 +315,9 @@ impl Checker
     {
         let base = self.infer(&n.base, None)?;
         let field = &n.field;
+        // A function that takes the value wins over a field of the same name;
+        // the name in braces, `x ၏ {f}`, reads the field.
+        ret_if!(!n.braced && self.fits_method(n), self.infer_method(n));
         let Some(s) = base.object_struct()
         else
         {
@@ -338,6 +343,45 @@ impl Checker
         );
         self.refer_field(&s.name, field);
         found
+    }
+
+    /// Whether `x ၏ f` is a call of `f`: a generic `f`, or a plain one that
+    /// takes `x` alone.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The read.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a call.
+    fn fits_method(&mut self, n: &FieldExpr) -> bool
+    {
+        let name = &n.field.name;
+        ret_if!(self.template_named(&Name::from(name.as_str())).is_some(), true);
+        let sigs = self.fns.get(name).cloned().unwrap_or_default();
+        let args = [(*n.base).clone()];
+        sigs.iter().any(|s| self.fits_call(s, &args, &[]))
+    }
+
+    /// Check a field read with no field as the call it stands for: `x ၏ f`
+    /// is `f(x)`, and the call takes the node of the read.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The read.
+    ///
+    /// # Returns
+    ///
+    /// The result kind of the call, or `None` after an error.
+    fn infer_method(&mut self, n: &FieldExpr) -> Option<DataKind>
+    {
+        #[rustfmt::skip]
+        let call = CallExpr::builder().id(n.id).callee(n.field.clone())
+            .args(vec![(*n.base).clone()]).span(n.span).build();
+        let kind = self.infer_call(&call);
+        self.op_calls.methods.insert(n.id, call);
+        kind
     }
 
     /// Record a field name with the field it names.

@@ -58,16 +58,16 @@ en = """A character literal holds one Unicode scalar value between its quotes: o
 [codes.ZK0108.title]
 en = "unterminated raw identifier"
 [codes.ZK0108.message]
-en = "raw identifier is missing its closing backtick before the end of the line"
+en = "raw identifier is missing its closing brace before the end of the line"
 [codes.ZK0108.explain]
-en = """A raw identifier is written between backticks on one line and can hold spaces, reserved words and operator characters. The lexer reached the end of the line without finding the closing backtick. Add it, or remove the opening one."""
+en = """A raw identifier is written between braces on one line, `{name}`, and can hold spaces, reserved words and operator characters. The lexer reached the end of the line without finding the closing brace. Add it, or remove the opening one."""
 
 [codes.ZK0109.title]
 en = "blank raw identifier"
 [codes.ZK0109.message]
-en = "raw identifier between backticks is blank"
+en = "raw identifier between braces is blank"
 [codes.ZK0109.explain]
-en = """Two backticks with nothing between them do not name a variable. A raw identifier needs at least one character between the backticks."""
+en = """Two braces with nothing between them do not name a variable. A raw identifier needs at least one character between the braces."""
 
 [codes.ZK0110.title]
 en = "old statement ending"
@@ -122,14 +122,14 @@ en = "too few operands"
 [codes.ZK0205.message]
 en = "\"%{v}\" needs %{n} operands, found %{m}"
 [codes.ZK0205.explain]
-en = """Each verb takes a fixed number of operands, each followed with its particle: \"ပေါင်းလဒ်\" takes two (\"a နှင့် b ၏\"), \"ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်\" takes one (\"a ၏\"), and \"ထားမည်\" takes two (\"x ကို v ဟု\"). The clause before this verb holds fewer operands than the verb needs."""
+en = """Each verb takes a fixed number of operands, each followed with its particle: \"ကြီး\" takes two (\"a သည် b ထက်\"), \"ပြသမည်\" takes one (\"a ကို\"), and \"ထားမည်\" takes two (\"x ကို v ဟု\"). The clause before this verb holds fewer operands than the verb needs."""
 
 [codes.ZK0206.title]
 en = "wrong particle for the verb"
 [codes.ZK0206.message]
 en = "\"%{v}\" needs \"%{e}\" after operand %{i}, found %{f}"
 [codes.ZK0206.explain]
-en = """A verb checks the particle that follows each of its operands. \"ပေါင်းလဒ်\" wants \"a နှင့် b ၏\", \"စားသော စားလဒ်\" wants \"a ကို b ဖြင့်\", the comparisons want \"a သည် b\" then \"နှင့်\", \"ထက်\" or \"အောက်\", and \"ထားမည်\" wants \"x ကို v ဟု\". The operand named in the message carries a different particle, or none."""
+en = """A verb checks the particle that follows each of its operands. \"ပြောင်းလဲသော ရလဒ်\" wants \"a ကို <kind> အဖြစ်\", the comparisons want \"a သည် b\" then \"နှင့်\", \"ထက်\" or \"အောက်\", and \"ထားမည်\" wants \"x ကို v ဟု\". The operand named in the message carries a different particle, or none."""
 
 [codes.ZK0207.title]
 en = "two particles on one operand"
@@ -327,13 +327,13 @@ en = "the default arm \"တခြား ... တစ်ခု ဖြစ်လျ�
 en = """A switch runs the first arm whose case equals its subject, and the default arm \"တခြား <kind> တစ်<classifier> ဖြစ်လျှင်\" when none does. An arm after the default arm could never run, so the default arm must be the last. Move this arm above the default arm."""
 
 [codes.ZK0237.title]
-en = "parameters marked in part"
+en = "prepositions on some parameters alone"
 [codes.ZK0237.message]
-en = "some parameters have a mark and some do not"
+en = "some parameters have a preposition and some do not"
 [codes.ZK0237.help]
-en = "give each parameter a mark, as \"<name> ဟူသော <kind> တစ်ခု ကို ဝိဘတ် \"<mark>\" ကို သုံး၍ လည်းကောင်း\", or leave out each mark"
+en = "give each parameter a preposition, as \"<name> ဟူသော <kind> တစ်ခု ကို ဝိဘတ် \"<preposition>\" ကို သုံး၍ လည်းကောင်း\", or leave out each preposition"
 [codes.ZK0237.explain]
-en = """A parameter can have a mark, the word a marked call writes after its argument: \"လမ်းကြောင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"၌ရှိသော\" ကို သုံး၍ လည်းကောင်း\". A marked call gives each argument with its mark, so a header marks each parameter or none of them."""
+en = """A parameter can have a preposition, the word a preposition call writes after its argument: \"လမ်းကြောင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"၌ရှိသော\" ကို သုံး၍ လည်းကောင်း\". A preposition call gives each argument with its preposition, so a header gives each parameter a preposition or none of them."""
 
 [codes.ZK0238.title]
 en = "unknown stdlib module"
@@ -361,13 +361,13 @@ en = "kind aliases can be declared at the top level and nowhere else"
 en = """A kind alias, \"ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။\", cannot appear inside a block, a loop, a conditional or a function. Move it to the top level of the file; an alias can be used before its declaration."""
 
 [codes.ZK0241.title]
-en = "bad parameter mark"
+en = "bad parameter preposition"
 [codes.ZK0241.message]
-en = "\"%{m}\" cannot be a mark"
+en = "\"%{m}\" cannot be a preposition"
 [codes.ZK0241.help]
-en = "a mark is one name, or one particle such as \"ကို\" or \"သို့\""
+en = "a preposition is names and particles, as \"ကို\" or \"ရှိ ဖိုင်ကို\""
 [codes.ZK0241.explain]
-en = """The string after \"ဝိဘတ်\" is the word a marked call writes after the argument, so it must read as one word a mark can be: a name, or a particle other than the endings \"သည်\", \"ပါ\", \"ဖြစ်ကာ\", \"ပြီးလျှင်\" and \"လက်ခံပြီး\". Spaces, signs and several words cannot be a mark."""
+en = """The string after \"ဝိဘတ်\" is the word a preposition call writes after the argument, so its words must be ones a preposition can hold: names, and particles other than the endings \"သည်\", \"ပါ\", \"ဖြစ်ကာ\", \"ပြီးလျှင်\" and \"လက်ခံပြီး\". A preposition can hold several such words, one space apart; a sign, a literal or a call end cannot stand in it."""
 
 # -------------------------------------------------------------- resolve ZK03xx
 
@@ -401,7 +401,7 @@ en = "function declared twice"
 [codes.ZK0304.message]
 en = "function \"%{n}\" is declared twice"
 [codes.ZK0304.explain]
-en = """Two top-level declarations give a function the same name and the same parameter kinds and marks, so no call can tell them apart. A file can declare several functions of one name when their parameter kinds or their marks differ; a call then runs the one its arguments fit. Rename one of the two functions, or change its parameters. A name a file imports cannot also be declared in that file."""
+en = """Two top-level declarations give a function the same name and the same parameter kinds and prepositions, so no call can tell them apart. A file can declare several functions of one name when their parameter kinds or their prepositions differ; a call then runs the one its arguments fit. Rename one of the two functions, or change its parameters. A name a file imports cannot also be declared in that file."""
 
 [codes.ZK0305.title]
 en = "duplicate parameter"
@@ -600,13 +600,13 @@ en = "write \"%{f}ထဲမှ\""
 en = """A member is written \"<name>များထဲမှ <member>\", \"<member> from among the <name>s\": the enumeration name, then \"များ\", then \"ထဲမှ\". A name that ends in \"များ\" takes no second \"များ\". The name before \"ထဲမှ\" here is no enumeration, or lacks its \"များ\"."""
 
 [codes.ZK0331.title]
-en = "wrong mark"
+en = "wrong preposition"
 [codes.ZK0331.message]
-en = "argument %{i} of \"%{n}\" is marked \"%{f}\", not \"%{w}\""
+en = "argument %{i} of \"%{n}\" has the preposition \"%{f}\", not \"%{w}\""
 [codes.ZK0331.help]
 en = "write \"%{w}\" after the argument"
 [codes.ZK0331.explain]
-en = """A marked call writes each argument with the mark its parameter declares, in the order of the parameters: for `ဒေတာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း လမ်းကြောင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း`, the call is \"<data> ကို <path> သို့ <name> မည်\". The mark after this argument is another word."""
+en = """A preposition call writes each argument with the preposition its parameter declares, in the order of the parameters: for `ဒေတာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း လမ်းကြောင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း`, the call is \"<data> ကို <path> သို့ <name> မည်\". The preposition after this argument is another word."""
 
 [codes.ZK0332.title]
 en = "no function fits"
@@ -615,16 +615,16 @@ en = "no function \"%{n}\" takes these arguments"
 [codes.ZK0332.help]
 en = "the functions of this name take %{l}"
 [codes.ZK0332.explain]
-en = """A file can declare several functions of one name, each with other parameter kinds or other marks. A call runs the one whose parameters its arguments fit: an argument for each parameter, the marks of the parameters when the call writes marks, and each argument of the kind of its parameter. No function of this name fits the arguments of this call."""
+en = """A file can declare several functions of one name, each with other parameter kinds or other prepositions. A call runs the one whose parameters its arguments fit: an argument for each parameter, the prepositions of the parameters when the call writes prepositions, and each argument of the kind of its parameter. No function of this name fits the arguments of this call."""
 
 [codes.ZK0333.title]
 en = "call fits more than one function"
 [codes.ZK0333.message]
 en = "more than one function \"%{n}\" takes these arguments"
 [codes.ZK0333.help]
-en = "write the marks of the function meant, or give each argument the kind of its parameter"
+en = "write the prepositions of the function meant, or give each argument the kind of its parameter"
 [codes.ZK0333.explain]
-en = """A file can declare several functions of one name, each with other parameter kinds or other marks. A call runs the one whose parameters its arguments fit, and here two or more fit: a number with no kind fits each integer kind, and a call with no marks fits functions that differ in their marks alone. Write the marks of the function meant, or a kind on the number, such as \"(၈ ဘစ် ကိန်းပြည့် ၅)\"."""
+en = """A file can declare several functions of one name, each with other parameter kinds or other prepositions. A call runs the one whose parameters its arguments fit, and here two or more fit: a number with no kind fits each integer kind, and a call with no prepositions fits functions that differ in their prepositions alone. Write the prepositions of the function meant, or a kind on the number, such as \"(၈ ဘစ် ကိန်းပြည့် ၅)\"."""
 
 [codes.ZK0334.title]
 en = "unknown external function"
@@ -760,6 +760,15 @@ en = "\"ကွန်ပိုင်လာထဲတွင် တစ်ပါတ�
 en = "write the declaration with no mark, and give it its code"
 [codes.ZK0349.explain]
 en = """The compiler gives the meaning and the code of a declaration marked \"ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော\", and it knows the ones of the stdlib modules, the prelude \"စံကား/အခြေခံအုတ်မြစ်\" among them, alone. A program declares its own functions, kinds and traits with their code and their rules written out."""
+
+[codes.ZK0350.title]
+en = "function the same as the prelude's"
+[codes.ZK0350.message]
+en = "\"%{n}\" has the kinds and the prepositions of the prelude's \"%{n}\", so it takes over each sentence of it in this file"
+[codes.ZK0350.help]
+en = "give the function other kinds or prepositions to add an overload, or another name"
+[codes.ZK0350.explain]
+en = """A file can declare a function named after a verb or a count the compiler gives, such as \"ပြသ\", to add an overload: when it takes the operands of a sentence, the sentence calls it. A function with the same kinds and prepositions as the prelude's own takes each such sentence, so the built-in meaning is lost in that file."""
 
 [codes.ZK0338.title]
 en = "C function declared twice with other kinds"
@@ -1484,7 +1493,7 @@ en = "a list of two or more items joins its last item with \"နှင့်\""
 [codes.ZK0245.help]
 en = "write \"နှင့်\" in place of the last \"၊\", as in \"က၊ ခ နှင့် ဂ\"; an item with a \"နှင့်\" of its own goes in parentheses"
 [codes.ZK0245.explain]
-en = """A list written in words puts \"၊\" between its items and \"နှင့်\" before the last one, as Burmese prose joins a list: \"က ကို\", \"က နှင့် ခ တို့ကို\", \"က၊ ခ နှင့် ဂ တို့ကို\". The \"နှင့်\" is required, and a \"၊\" after it is an error too. An item that holds a \"နှင့်\" of its own, such as \"(က နှင့် ခ ၏ ပေါင်းလဒ်)\", stands in parentheses. Lists in notation, such as \"[က၊ ခ]\" and \"f(က၊ ခ)\", keep plain \"၊\"."""
+en = """A list written in words puts \"၊\" between its items and \"နှင့်\" before the last one, as Burmese prose joins a list: \"က ကို\", \"က နှင့် ခ တို့ကို\", \"က၊ ခ နှင့် ဂ တို့ကို\". The \"နှင့်\" is required, and a \"၊\" after it is an error too. An item that holds a \"နှင့်\" of its own, such as \"(က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်)\", stands in parentheses. Lists in notation, such as \"[က၊ ခ]\" and \"f(က၊ ခ)\", keep plain \"၊\"."""
 
 [codes.ZK0246.title]
 en = "list word does not fit the count"
@@ -1510,6 +1519,33 @@ en = "\"%{n}\" is no kind parameter of this declaration"
 en = "a constraint \"<name> တွင် … ဂုဏ်သတ္တိ ရှိသည်\" names one of the kind parameters the declaration takes"
 [codes.ZK0248.explain]
 en = """The notes block after the head of a generic function or a trait gives a kind parameter the traits it needs. The name before \"တွင်\" must be one of the kind parameters of the declaration."""
+
+[codes.ZK0249.title]
+en = "\"၏\" preposition before the last parameter"
+[codes.ZK0249.message]
+en = "the preposition \"%{m}\" starts with \"၏\", but its parameter is not the last"
+[codes.ZK0249.help]
+en = "a preposition that starts with \"၏\" can stand on the last parameter alone, right before the function name"
+[codes.ZK0249.explain]
+en = """A preposition call reads \"x ၏ f\" as a call when the function and its call end come right after \"၏\". Elsewhere \"x ၏ f\" reads the field \"f\" of \"x\", so a preposition that starts with \"၏\" belongs to the last parameter."""
+
+[codes.ZK0250.title]
+en = "name is a word of a preposition"
+[codes.ZK0250.message]
+en = "\"%{n}\" is a word of the preposition \"%{m}\" of \"%{f}\""
+[codes.ZK0250.help]
+en = "write {%{n}} where the name is meant, or pick another name"
+[codes.ZK0250.explain]
+en = """Each word of a preposition that a file declares or imports reads as that preposition where a preposition can stand, so a variable, constant, parameter or function of the same name can read as a preposition in a preposition call. A name in braces remains a name. Fields are not checked: a field never stands where a preposition can."""
+
+[codes.ZK0251.title]
+en = "name reads as a glued call"
+[codes.ZK0251.message]
+en = "\"%{n}\" can read as \"%{f}\" and \"%{e}\""
+[codes.ZK0251.help]
+en = "write {%{n}} where the name is meant, or pick another name"
+[codes.ZK0251.explain]
+en = """When a file sees a function \"f\", a word that is \"f\" with a call end glued to it (\"မည်\", \"မည့်ရလဒ်\", \"သည့်ရလဒ်\", \"သောရလဒ်\", their \"ကောင်း\" forms, \"သည်\" or \"ပါ\") reads as a call of \"f\". A name that is spelled so reads as that call wherever it is not being declared; a name in braces remains a name."""
 
 [codes.ZK0472.title]
 en = "C function must be unsafe"

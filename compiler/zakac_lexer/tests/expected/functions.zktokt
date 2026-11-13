@@ -476,8 +476,7 @@ tokens:
     hi: 1125
   particle: none
   joined: false
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 1126
     hi: 1144

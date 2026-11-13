@@ -92,7 +92,7 @@ each access:
 | parameter `ပ ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို` | "I look at the block, and can write it. The caller keeps it." |
 
 The word stands after the `ကို` of the parameter, as the marks of
-[marked arguments](../functions/parameters.md#marked-arguments) do, and it goes on pointer
+[marked arguments](../functions/parameters.md#prepositions) do, and it goes on pointer
 kinds alone (ZK0470). After a call that hands a block over, the caller's variable holds the
 null address, and a read of it is an error, in each mode:
 

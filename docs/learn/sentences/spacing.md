@@ -40,7 +40,7 @@ help: write "အသက် ကို" with a space: a name joined to a particle i
 - **Between Zaka's own words.** The compiler splits a run made of reserved words alone.
   `ထက်ကြီးသည်` is `ထက်` + `ကြီး` + `သည်`.
 - **Around signs.** `။`, `၊`, `၏`, `(`, `)`, quotes, and maths signs such as `+` and
-  `<` are words on their own in all cases. `၁+၂`, `ပြသမည်။` and `၏ပေါင်းလဒ်` are fine.
+  `<` are words on their own in all cases. `၁+၂`, `ပြသမည်။` and `ကို ပေါင်းသည့်ရလဒ်` are fine.
 - **How much space.** One space, several spaces, a tab, or a line break all count the
   same.
 
@@ -48,7 +48,7 @@ help: write "အသက် ကို" with a space: a name joined to a particle i
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသမည်။      // reserved words joined
 ၁+၂ ကို ပြသမည်။                     // no spaces around +
-၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသမည်။      // ၏ needs no space
+၁ နှင့် ၂ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။      // ၏ needs no space
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -64,6 +64,6 @@ space". Zaka counts it as a space too.
 ## Hands on
 
 - Remove the space between `အသက်` and `ကို` in the first example and read the message.
-- Write `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` with as few spaces as possible while it still runs.
+- Write `၃ နှင့် ၄ ကို ပေါင်းသည့်ရလဒ်` with as few spaces as possible while it still runs.
 
 Next: [Scalar values](../values/README.md).

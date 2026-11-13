@@ -403,9 +403,9 @@ and the pointer kind tells the size in octets. These operations alone exist on p
 
 | Form | Kinds | Gives |
 | --- | --- | --- |
-| `ပ + န`, `န + ပ`, `ပ နှင့် န ၏ ပေါင်းလဒ်` | a pointer and an integer | a pointer of the same kind, `န` values on |
-| `ပ - န`, `ပ နှင့် န ၏ နုတ်လဒ်` | a pointer and an integer | a pointer of the same kind, `န` values back |
-| `ပ - မ`, `ပ နှင့် မ ၏ နုတ်လဒ်` | two pointers of one kind | the distance in values, a `ကိန်းပြည့်` |
+| `ပ + န`, `န + ပ`, `ပ နှင့် န ကို ပေါင်းသည့်ရလဒ်` | a pointer and an integer | a pointer of the same kind, `န` values on |
+| `ပ - န`, `ပ နှင့် န ကို နုတ်သည့်ရလဒ်` | a pointer and an integer | a pointer of the same kind, `န` values back |
+| `ပ - မ`, `ပ နှင့် မ ကို နုတ်သည့်ရလဒ်` | two pointers of one kind | the distance in values, a `ကိန်းပြည့်` |
 | `ပ သည် မ နှင့် ညီ`, `မညီ` | two pointers of one kind, or a pointer and the null address | whether both hold the same address |
 | `ပ သည် မ အောက် ငယ်` and the other orders | two pointers of one kind | which address is lower |
 
@@ -664,7 +664,7 @@ The rules:
   `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` when the size is `N ဘိုက်စာ`; with another kind it is ZK0401.
   A struct value fills as well: `အမှတ်(ဒေါင်: ၁၊ အလျား: ၂) ဖြင့် အမှတ် ၃ ခုစာ`.
 - A `ဖြင့်` right after a lone value ends the value, while one inside a phrase such as a
-  division belongs to it: in `က ကို ၂ ဖြင့် စားသော စားလဒ် ဖြင့် ၁ ဘိုက်စာ` the value is the
+  division belongs to it: in `က ကို ၂ ဖြင့် စားသည့်ရလဒ် ဖြင့် ၁ ဘိုက်စာ` the value is the
   quotient.
 - A count of 0 does nothing, and neither the compiler nor the VM checks the addresses.
   Else the VM checks that the source range lies in one live block and the destination

@@ -7,17 +7,20 @@
 //! alone, then ends with `မည်` (a statement) or `သည့် ရလဒ်(ကောင်း)?` (a value).
 //! Each builds the call node that the other call forms build.
 //!
-//! The marked call, `<arg> <mark> (<arg> <mark>)* <fn> <end>`, gives each
-//! argument with the mark its parameter declares, `<kind> <name>(<mark>)`. The
-//! parser knows which functions declare marks (`Parser::marked`), and those
-//! names alone end a marked call, and a value of another call keeps its
-//! meaning: `က ကို ခ သည့် ရလဒ် ဟု ထားမည်။` still sets `က`.
+//! The preposition call, `<arg> <preposition> (<arg> <preposition>)* <fn>
+//! <end>`, gives each argument with the preposition its parameter declares,
+//! `<kind> <name>(<preposition>)`. The parser knows which functions declare
+//! prepositions (`Parser::functions`), and those names alone end a preposition
+//! call, and a value of another call keeps its meaning: `က ကို ခ သည့် ရလဒ် ဟု ထားမည်။`
+//! still sets `က`.
+
+use std::collections::HashMap;
 
 use bon::Builder;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::NameExpr;
-use zakac_ast::expr::UsingMark;
+use zakac_ast::expr::UsingParticle;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Node;
 use zakac_i18n::t;
@@ -56,15 +59,22 @@ pub(crate) struct CallParts
     pub(crate) args: Args,
     /// The particle that closes the arguments of a call written arguments
     /// first.
-    pub(crate) using: Option<UsingMark>,
-    /// The word after each argument of a marked call.
+    pub(crate) using: Option<UsingParticle>,
+    /// The word after each argument of a preposition call.
     #[builder(default)]
-    pub(crate) marks: Vec<Ident>,
+    pub(crate) prepositions: Vec<Ident>,
 }
 
-/// Whether a token can be a mark: a name, or a particle other than the
-/// endings and closers `သည်`, `ပါ`, `ဖြစ်ကာ`, `ပြီးလျှင်` and `လက်ခံပြီး`, or
-/// `တွင်` and `ဆီသို့`.
+/// The prepositions of each function the parser knows, under its name: one list
+/// for each function of the name, each preposition its words joined with one
+/// space. A function with no prepositions has a blank list.
+pub type Functions = HashMap<String, Vec<Vec<String>>>;
+
+/// Whether a token can be a word of a preposition: a name, `၏`, or a reserved
+/// word that is no call end, no `ဟူသော`, and no word that starts an operand. A
+/// closer (`သည်`, `ပါ`, `ဖြစ်ကာ`, `ပြီးလျှင်`, `လက်ခံပြီး`) can stand in a preposition
+/// before another word of it, as `ပါ` in `ပါရှိသော`, and [`preposition_words`]
+/// checks that.
 ///
 /// # Arguments
 ///
@@ -73,20 +83,74 @@ pub(crate) struct CallParts
 /// # Returns
 ///
 /// `true` for such a token.
-pub(crate) fn is_mark(tok: &Token) -> bool
+fn is_preposition_word(tok: &Token) -> bool
+{
+    match tok.kind
+    {
+        TokenKind::Ident | TokenKind::Punct(Punct::Ei) => true,
+        TokenKind::Kw(kw) => is_closer(kw) || !refused_in_preposition(kw),
+        _ => false,
+    }
+}
+
+/// Whether a reserved word closes a sentence or a part of it: `သည်`, `ပါ`,
+/// `ဖြစ်ကာ`, `ပြီးလျှင်` or `လက်ခံပြီး`.
+///
+/// # Arguments
+///
+/// * `kw` - The reserved word.
+///
+/// # Returns
+///
+/// `true` for a closer.
+fn is_closer(kw: Kw) -> bool
+{
+    matches!(kw, Kw::Thi | Kw::Pa | Kw::Being | Kw::WhenDone | Kw::Accepting)
+}
+
+/// Whether a reserved word cannot stand in a preposition: a call end, a closer,
+/// `ဟူသော`, or a word that starts an operand.
+///
+/// # Arguments
+///
+/// * `kw` - The reserved word.
+///
+/// # Returns
+///
+/// `true` for such a word.
+fn refused_in_preposition(kw: Kw) -> bool
+{
+    let closer = is_closer(kw);
+    let end = matches!(
+        kw,
+        Kw::Will | Kw::WillDo | Kw::CallResult | Kw::CallGoodResult | Kw::Called
+    );
+    closer || end || kw == Kw::FnValue || in_notation(kw)
+}
+
+/// Whether a token is a particle a preposition can hold: not a closer, or `တွင်`
+/// and `ဆီသို့`.
+///
+/// # Arguments
+///
+/// * `tok` - The token.
+///
+/// # Returns
+///
+/// `true` for such a token.
+fn is_plain_particle(tok: &Token) -> bool
 {
     let TokenKind::Kw(kw) = tok.kind
     else
     {
-        return matches!(tok.kind, TokenKind::Ident | TokenKind::RawIdent);
+        return false;
     };
-    let closer =
-        matches!(kw, Kw::Thi | Kw::Pa | Kw::Being | Kw::WhenDone | Kw::Accepting);
-    (kw.is_particle() && !closer) || matches!(kw, Kw::At | Kw::Toward)
+    (kw.is_particle() && !refused_in_preposition(kw))
+        || matches!(kw, Kw::At | Kw::Toward)
 }
 
-/// Whether the text of a mark string can be a mark: it reads as one token
-/// that [`is_mark`] takes.
+/// The words of a preposition string as the lexer reads them, so a glued
+/// preposition and a spaced one that lex the same are one preposition.
 ///
 /// # Arguments
 ///
@@ -94,45 +158,32 @@ pub(crate) fn is_mark(tok: &Token) -> bool
 ///
 /// # Returns
 ///
-/// `true` for such a text.
-pub(crate) fn is_mark_text(text: &str) -> bool
+/// The words, or `None` when the text is no preposition: blank, lexed with an
+/// error, with a word a preposition cannot hold, with `၏` after its first word,
+/// or with a closer as its last word.
+pub(crate) fn preposition_words(text: &str) -> Option<Vec<String>>
 {
     let lexed = lex_at(text, Pos::default(), &LexerOptions::default());
-    let [tok, end] = lexed.tokens.as_slice()
-    else
-    {
-        return false;
+    ret_if!(!lexed.diagnostics.is_empty(), None);
+    let toks = lexed.tokens.iter().filter(|t| t.kind != TokenKind::Eof);
+    let toks: Vec<&Token> = toks.collect();
+    ret_if!(toks.is_empty() || !toks.iter().all(|t| is_preposition_word(t)), None);
+    let late_ei = toks.iter().skip(1).any(|t| t.kind == TokenKind::Punct(Punct::Ei));
+    ret_if!(late_ei, None);
+    let closes = |t: &&&Token| matches!(t.kind, TokenKind::Kw(kw) if is_closer(kw));
+    ret_if!(toks.last().is_some_and(|t| closes(&t)), None);
+    let word = |t: &&Token| {
+        let (lo, hi) = (t.span.lo - Pos::default(), t.span.hi - Pos::default());
+        text[lo as usize..hi as usize].to_string()
     };
-    lexed.diagnostics.is_empty() && end.kind == TokenKind::Eof && is_mark(tok)
+    Some(toks.iter().map(word).collect())
 }
 
-/// Whether the scan for the end of a marked call stops at a token: the end
-/// of the sentence, a `)` that closes no group of the call, or, outside
-/// parentheses, a `၊` or a reserved word that is neither a mark nor a word
-/// a notation argument can hold.
-///
-/// # Arguments
-///
-/// * `tok` - The token.
-/// * `depth` - The number of groups of the call left open.
-///
-/// # Returns
-///
-/// `true` where the scan stops.
-fn stops_marked_scan(tok: &Token, depth: usize) -> bool
-{
-    let deep = depth > 0;
-    match tok.kind
-    {
-        TokenKind::Punct(Punct::FullStop) | TokenKind::Eof => true,
-        TokenKind::Punct(Punct::RParen) => !deep,
-        TokenKind::Punct(Punct::ListSep) => !deep,
-        TokenKind::Kw(kw) => !deep && !is_mark(tok) && !in_notation(kw),
-        _ => false,
-    }
-}
+/// The preposition text that starts with `၏`, which the last parameter alone
+/// can take.
+pub(crate) const EI: &str = "၏";
 
-/// Whether a notation argument of a marked call can hold a reserved word:
+/// Whether a notation argument of a preposition call can hold a reserved word:
 /// a literal word, `အနုတ်`, or the end of a short call with no arguments.
 ///
 /// # Arguments
@@ -158,13 +209,16 @@ fn in_notation(kw: Kw) -> bool
 }
 
 /// What the start of a clause gave: a value, or a whole call statement.
+// The value, the common case, stays unboxed: a box would cost an allocation
+// for each clause.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub(crate) enum Head
 {
     /// A value; the clause goes on from it.
     Expr(Expr),
     /// A call statement, its full stop included.
-    Stmt(Stmt),
+    Stmt(Box<Stmt>),
 }
 
 impl Parser<'_>
@@ -212,47 +266,50 @@ impl Parser<'_>
         )
     }
 
-    /// How far ahead the end of a marked call is, when one starts `from`
-    /// tokens ahead (the mark after the first argument): the end of a call of
-    /// a function that declares marks. A value end with a mark after it can be
-    /// an argument of a later call, so the scan goes on past it, and keeps it
-    /// when no later end comes.
+    /// How far ahead the end of a preposition call is, when one starts `from`
+    /// tokens ahead (the preposition after the first argument): the end of a
+    /// call of a function that declares prepositions. A value end with a
+    /// preposition after it can be an argument of a later call, so the scan
+    /// goes on past it, and keeps it when no later end comes.
     ///
     /// # Arguments
     ///
-    /// * `from` - Where the first mark is.
+    /// * `from` - Where the first preposition is.
     ///
     /// # Returns
     ///
-    /// The distance to the first token of the end, or `None` with no marked
-    /// call here.
-    pub(crate) fn marked_end(&self, from: usize) -> Option<usize>
+    /// The distance to the first token of the end, or `None` with no
+    /// preposition call here.
+    pub(crate) fn preposition_end(&self, from: usize) -> Option<usize>
     {
-        ret_if!(!is_mark(&self.peek_n(from)), None);
+        ret_if!(!self.starts_preposition(&self.peek_n(from)), None);
         let (mut n, mut depth, mut found) = (from, 0usize, None);
         loop
         {
             let end = tern!(depth == 0, self.call_end_at(n), None);
             if let Some((len, value)) = end
             {
-                ret_if!(!value || !is_mark(&self.peek_n(n + len)), Some(n));
+                ret_if!(
+                    !value || !self.starts_preposition(&self.peek_n(n + len)),
+                    Some(n)
+                );
                 found = Some(n);
                 n += len;
                 continue;
             }
             let tok = self.peek_n(n);
-            ret_if!(stops_marked_scan(&tok, depth), found);
+            ret_if!(self.stops_preposition_scan(&tok, depth), found);
             match tok.kind
             {
-                TokenKind::Punct(Punct::LParen) => depth += 1,
-                TokenKind::Punct(Punct::RParen) => depth -= 1,
+                TokenKind::Punct(Punct::LParen | Punct::LBracket) => depth += 1,
+                TokenKind::Punct(Punct::RParen | Punct::RBracket) => depth -= 1,
                 _ => (),
             }
             n += 1;
         }
     }
 
-    /// The end of a call of a function that declares marks, `n` tokens
+    /// The end of a call of a function that declares prepositions, `n` tokens
     /// ahead: `<fn> မည်`, `<fn> သည့် ရလဒ်(ကောင်း)`, or
     /// `<fn> ဟူသော လုပ်ဆောင်ချက်ကို` with `လုပ်ဆောင်မည်` or `လုပ်ဆောင်သော ရလဒ်(ကောင်း)`.
     ///
@@ -268,7 +325,7 @@ impl Parser<'_>
     {
         let long = kw_of(&self.peek_n(n + 1)) == Some(Kw::FnValue)
             && kw_of(&self.peek_n(n + 2)) == Some(Kw::Ko);
-        ret_if!(!self.is_marked_fn(n), None);
+        ret_if!(!self.is_preposition_fn(n), None);
         let word = kw_of(&self.peek_n(tern!(long, n + 3, n + 1)))?;
         let len = tern!(long, 4, 2);
         match word
@@ -281,7 +338,9 @@ impl Parser<'_>
         }
     }
 
-    /// Whether the token `n` ahead names a function that declares marks.
+    /// Whether the token `n` ahead names a function that declares prepositions:
+    /// a name, a name in braces, or a reserved word that such a function
+    /// was declared with in braces (`{စီ}`).
     ///
     /// # Arguments
     ///
@@ -290,16 +349,104 @@ impl Parser<'_>
     /// # Returns
     ///
     /// `true` for such a name.
-    fn is_marked_fn(&self, n: usize) -> bool
+    fn is_preposition_fn(&self, n: usize) -> bool
     {
         let tok = self.peek_n(n);
-        tok.kind == TokenKind::Ident && self.marked.contains_key(self.text_of(tok.span))
+        let named = matches!(
+            tok.kind,
+            TokenKind::Ident | TokenKind::RawIdent | TokenKind::Kw(_)
+        );
+        named && self.fn_prepositions(&self.callee_text(&tok)).next().is_some()
     }
 
-    /// Read a marked call after its first argument, and keep it when the
-    /// number of its marks fits a function of its name; otherwise go back,
-    /// so the sentence reads as it would with no marked call, such as
-    /// `က ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားမည်။` with `ဖတ်` taking one mark.
+    /// The text of a token as the name of a function: a name in braces
+    /// without its braces.
+    ///
+    /// # Arguments
+    ///
+    /// * `tok` - The token.
+    ///
+    /// # Returns
+    ///
+    /// The text.
+    pub(crate) fn callee_text(&self, tok: &Token) -> String
+    {
+        let raw = tok.kind == TokenKind::RawIdent;
+        unquote_raw(raw, self.text_of(tok.span)).to_string()
+    }
+
+    /// The preposition lists of the functions of a name that declare
+    /// prepositions.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    ///
+    /// # Returns
+    ///
+    /// Each list, one for each such function.
+    fn fn_prepositions<'a>(
+        &'a self, name: &str,
+    ) -> impl Iterator<Item = &'a Vec<String>>
+    {
+        let lists = self.functions.get(name).into_iter().flatten();
+        lists.filter(|prepositions| !prepositions.is_empty())
+    }
+
+    /// Whether a token can start a preposition of a visible function, so a
+    /// preposition call can go on from it.
+    ///
+    /// # Arguments
+    ///
+    /// * `tok` - The token.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a token.
+    pub(crate) fn starts_preposition(&self, tok: &Token) -> bool
+    {
+        is_preposition_word(tok) && self.first_words.contains(self.text_of(tok.span))
+    }
+
+    /// Whether the scan for the end of a preposition call stops at a token: the
+    /// end of the sentence, a `)` or `]` that closes no group of the call, or,
+    /// outside parentheses, a `၊` or a reserved word that is neither a word
+    /// of a visible preposition, a particle, nor a word a notation argument can
+    /// hold.
+    ///
+    /// # Arguments
+    ///
+    /// * `tok` - The token.
+    /// * `depth` - The number of groups of the call left open.
+    ///
+    /// # Returns
+    ///
+    /// `true` where the scan stops.
+    fn stops_preposition_scan(&self, tok: &Token, depth: usize) -> bool
+    {
+        let deep = depth > 0;
+        // A particle that is no preposition goes on too, so a call with a wrong
+        // preposition still reads, and the check names the preposition
+        // it expects.
+        let in_preposition = || {
+            self.preposition_words.contains(self.text_of(tok.span))
+                || is_plain_particle(tok)
+        };
+        match tok.kind
+        {
+            TokenKind::Punct(Punct::FullStop) | TokenKind::Eof => true,
+            TokenKind::Punct(Punct::RParen | Punct::RBracket) => !deep,
+            TokenKind::Punct(Punct::ListSep) => !deep,
+            TokenKind::Kw(kw) => !deep && !in_preposition() && !in_notation(kw),
+            _ => false,
+        }
+    }
+
+    /// Read a preposition call after its first argument, and keep it when the
+    /// number of its prepositions fits a function of its name; otherwise go
+    /// back, so the sentence reads as it would with no preposition call,
+    /// such as `က ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားမည်။` with `ဖတ်` taking one
+    /// preposition.
     ///
     /// # Arguments
     ///
@@ -310,21 +457,21 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The call, or the first operand as it was.
-    pub(crate) fn attempt_marked(
+    pub(crate) fn attempt_preposition_call(
         &mut self, first: Expr, end: usize, mode: Mode,
     ) -> PResult<Head>
     {
         let (cur, diags, next_id) = (self.cur, self.diags.len(), self.next_id);
-        let read = self.parse_marked(first.clone(), end, mode);
-        ret_if!(read.as_ref().is_ok_and(|head| self.fits_marks(head)), read);
+        let read = self.parse_preposition_call(first.clone(), end, mode);
+        ret_if!(read.as_ref().is_ok_and(|head| self.fits_prepositions(head)), read);
         self.cur = cur;
         self.diags.truncate(diags);
         self.next_id = next_id;
         Ok(Head::Expr(first))
     }
 
-    /// Whether the number of marks of a marked call matches the parameters
-    /// of a function of its name.
+    /// Whether the number of prepositions of a preposition call matches the
+    /// parameters of a function of its name.
     ///
     /// # Arguments
     ///
@@ -333,22 +480,23 @@ impl Parser<'_>
     /// # Returns
     ///
     /// `true` when the numbers match.
-    fn fits_marks(&self, head: &Head) -> bool
+    fn fits_prepositions(&self, head: &Head) -> bool
     {
-        let (callee, count) = match head
+        let stmt = tern!(let Head::Stmt(s) = head, Some(&**s), None);
+        let (callee, count) = match (head, stmt)
         {
-            Head::Stmt(Stmt::Call(n)) => (&n.callee, n.marks.len()),
-            Head::Expr(Expr::Call(n)) => (&n.callee, n.marks.len()),
+            (_, Some(Stmt::Call(n))) => (&n.callee, n.prepositions.len()),
+            (Head::Expr(Expr::Call(n)), _) => (&n.callee, n.prepositions.len()),
             _ => return false,
         };
-        self.marked
-            .get(callee.name.as_str())
-            .is_some_and(|counts| counts.contains(&count))
+        self.fn_prepositions(callee.name.as_str())
+            .any(|prepositions| prepositions.len() == count)
     }
 
-    /// Parse the rest of a marked call after its first argument: the mark of
-    /// each argument, the arguments after the first (notation expressions),
-    /// then the function and the end, which [`Self::marked_end`] found.
+    /// Parse the rest of a preposition call after its first argument: the
+    /// preposition of each argument, the arguments after the first
+    /// (notation expressions), then the function and the end, which
+    /// [`Self::preposition_end`] found.
     ///
     /// # Arguments
     ///
@@ -359,43 +507,79 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The call, or a diagnostic.
-    pub(crate) fn parse_marked(
+    pub(crate) fn parse_preposition_call(
         &mut self, first: Expr, end: usize, mode: Mode,
     ) -> PResult<Head>
     {
-        let end_at = self.peek_n(end).span.lo;
+        let callee_tok = self.peek_n(end);
+        let end_at = callee_tok.span.lo;
+        let name = self.callee_text(&callee_tok);
+        let known: Vec<String> =
+            self.fn_prepositions(&name).flatten().cloned().collect();
         let start = first.span();
         let mut args = Args::default();
         args.push(first);
-        let mut marks = vec![self.parse_mark()?];
+        let mut prepositions = vec![self.parse_preposition(&known)?];
         while self.peek().span.lo < end_at
         {
             let arg = self.parse_notation()?;
             extract!(Head::Expr(arg) = self.parse_short_after(arg, Mode::Expr)?);
             args.push(arg);
-            marks.push(self.parse_mark()?);
+            prepositions.push(self.parse_preposition(&known)?);
         }
-        let callee = self.parse_ident()?;
+        self.bump();
+        let callee = Ident::builder().name(name).span(callee_tok.span).build();
         let long = self.eat(Kw::FnValue);
         do_if!(long, _ = self.expect(Kw::Ko)?);
         #[rustfmt::skip]
-        let parts = CallParts::builder().start(start).callee(callee).args(args).marks(marks)
+        let parts = CallParts::builder().start(start).callee(callee).args(args).prepositions(prepositions)
             .build();
         self.finish_using(parts, long, mode)
     }
 
-    /// Read a mark: a name, or a particle a mark can be.
+    /// Read a preposition: the longest of the known prepositions that the next
+    /// words spell, or else one word a preposition can hold, so a call with
+    /// another preposition still reads and the check reports the
+    /// preposition.
+    ///
+    /// # Arguments
+    ///
+    /// * `known` - The prepositions of the functions the call can be of.
     ///
     /// # Returns
     ///
-    /// The mark as a name, or an `expected-token` diagnostic.
-    pub(crate) fn parse_mark(&mut self) -> PResult<Ident>
+    /// The preposition as a name (its words joined with one space), or an
+    /// `expected-token` diagnostic.
+    pub(crate) fn parse_preposition(&mut self, known: &[String]) -> PResult<Ident>
     {
-        let tok = self.peek();
-        ret_if!(!is_mark(&tok), Err(self.err_expected(&t!("parser.mark"))));
-        self.bump();
-        let text = unquote_raw(tok.kind == TokenKind::RawIdent, self.text_of(tok.span));
-        Ok(Ident::builder().name(text).span(tok.span).build())
+        let spelled = known.iter().filter_map(|m| self.spells_preposition(m)).max();
+        let len = spelled.unwrap_or(1);
+        let first = self.peek();
+        ret_if!(
+            !is_preposition_word(&first),
+            Err(self.err_expected(&t!("parser.preposition")))
+        );
+        let toks: Vec<Token> = (0..len).map(|n| self.peek_n(n)).collect();
+        (0..len).for_each(|_| _ = self.bump());
+        let words: Vec<&str> = toks.iter().map(|t| self.text_of(t.span)).collect();
+        let span = first.span.to(&toks[len - 1].span);
+        Ok(Ident::builder().name(words.join(" ")).span(span).build())
+    }
+
+    /// The count of words a preposition takes when the next words spell it.
+    ///
+    /// # Arguments
+    ///
+    /// * `preposition` - The preposition, its words joined with one space.
+    ///
+    /// # Returns
+    ///
+    /// The number of its words, or `None` when the next words differ.
+    fn spells_preposition(&self, preposition: &str) -> Option<usize>
+    {
+        let words: Vec<&str> = preposition.split(' ').collect();
+        let at = |(n, w): (usize, &&str)| self.text_of(self.peek_n(n).span) == *w;
+        words.iter().enumerate().all(at).then_some(words.len())
     }
 
     /// Parse the rest of an arguments-first call after its first argument:
@@ -422,7 +606,7 @@ impl Parser<'_>
         })?;
         let close = self.expect_list_word(args.len(), Kw::Ko, Kw::ListKo)?;
         let plural = close.kind == TokenKind::Kw(Kw::ListKo);
-        let using = UsingMark::builder().plural(plural).span(close.span).build();
+        let using = UsingParticle::builder().plural(plural).span(close.span).build();
         self.expect(Kw::Using)?;
         let long =
             self.at_punct(Punct::LParen) || kw_of(&self.peek_n(1)) == Some(Kw::FnValue);
@@ -505,15 +689,15 @@ impl Parser<'_>
         let kw = kw_of(&end);
         ret_if!(
             matches!(kw, Some(Kw::WillDo | Kw::Will)),
-            self.finish_call_stmt(parts).map(Head::Stmt)
+            self.finish_call_stmt(parts).map(|s| Head::Stmt(Box::new(s)))
         );
         let pass = matches!(kw, Some(Kw::CallGoodResult | Kw::UsedGoodResult));
-        let CallParts { start, callee, place, args, using, marks } = parts;
+        let CallParts { start, callee, place, args, using, prepositions } = parts;
         let call = self.call_expr(start.to(&end.span), callee, args, pass);
         let mut call = crate::notation::with_place(call, place);
         extract!(Expr::Call(node) = &mut call);
         node.using = using;
-        node.marks = marks;
+        node.prepositions = prepositions;
         Ok(Head::Expr(call))
     }
 }

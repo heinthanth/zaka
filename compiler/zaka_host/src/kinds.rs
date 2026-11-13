@@ -5,6 +5,22 @@
 /// Text.
 pub const TEXT: &str = "text";
 
+/// A plain list of text.
+pub const TEXT_LIST: &str = "text[]";
+
+/// The enumeration of what a path holds, as the stdlib declares it: a file,
+/// a folder, or another thing.
+pub const PATH_KIND: &str = "ဖိုင်စနစ်ပစ္စည်း";
+
+/// The member of [`PATH_KIND`] for a file, `ဖိုင်`.
+pub const IS_FILE: u32 = 0;
+
+/// The member of [`PATH_KIND`] for a folder, `ဖိုင်တွဲ`.
+pub const IS_FOLDER: u32 = 1;
+
+/// The member of [`PATH_KIND`] for another thing, `တခြားပစ္စည်း`.
+pub const IS_OTHER: u32 = 2;
+
 /// The struct of an input stream, as the stdlib declares it.
 pub const INPUT_STREAM: &str = "အချက်အလက်အဝင်စီးကြောင်း";
 

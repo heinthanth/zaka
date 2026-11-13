@@ -1,6 +1,6 @@
 ---
 title: Names
-description: What a variable name can contain, and names in backticks.
+description: What a variable name can contain, and names in braces.
 ---
 
 # Names
@@ -66,14 +66,14 @@ name; `ကြီးသူ` can. `တန်ဖိုးကို` reads as the tw
 [Reserved words](../../manual/reference/reserved-words.md) page lists them all. The names of
 the built-in kinds, such as `ကိန်းပြည့်` and `စာသား`, are not reserved: a program can
 declare a struct under one of them, and then that name means the struct in the file. To use a
-reserved word as a name, or a name with spaces in it, wrap it in backticks:
+reserved word as a name, or a name with spaces in it, wrap it in braces:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် `ကို ပြသမည်` သည် ၇ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။     // a name made of Zaka words
-ကိန်းရှင် `the total` သည် ၉၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။      // a name with a space
-`ကို ပြသမည်` ကို ပြသမည်။
-`the total` ကို ပြသမည်။
+ကိန်းရှင် {ကို ပြသမည်} သည် ၇ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။     // a name made of Zaka words
+ကိန်းရှင် {the total} သည် ၉၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။      // a name with a space
+{ကို ပြသမည်} ကို ပြသမည်။
+{the total} ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

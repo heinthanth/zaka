@@ -236,7 +236,7 @@ The word `မှတ်ချက်` is both the comment marker (rule 1 sees it f
 
 The words of v2 each have a row: `ပြောင်းလဲရန်` (`ToChange`) and `ထည့်ပေးရန်` (`ToFill`), the
 second words of the parameter marks `ဒေတာ ပြောင်းလဲရန်` and `ဒေတာ ထည့်ပေးရန်`, and `ဝိဘတ်`
-(`MarkWord`) mark a parameter, `ဟူသော` (`Called`) follows a name or a literal (the word
+(`PrepositionWord`) mark a parameter, `ဟူသော` (`Called`) follows a name or a literal (the word
 after it decides what it starts: a kind, the function value, the error value, or the
 words of a struct or an enumeration), and the statement verbs end in
 `မည်` (`ပြသမည်` is `Print`, `လုပ်ဆောင်မည်` is `WillDo`, `ပြန်ပေးမည်` is `WillReturn`, and so
@@ -340,7 +340,7 @@ comment showing the sentence shape:
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ                           → FnOpenRet
 လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?။                  → BlockClose
 ပရိုဂရမ် ပြီး(ဆုံး)?ပါပြီ(း)?။                         → ProgramClose
-... ကို ... ဖြင့် စားသော စားလဒ် | စားကြွင်း              → Divide | Remainder
+... ကို ... ဖြင့် စားသည့်ရလဒ် | စားကြွင်း              → Divide | Remainder
 ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်                    → Convert
 ... ဟူသော လုပ်ဆောင်ချက်ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်    → CallResult
 ... ရလဒ်ကောင်း (after the call head)                  → CallGoodResult

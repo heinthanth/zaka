@@ -165,6 +165,7 @@ program:
             particle: none
             next: then
             is_cmp: true
+            pass: false
             classifier: null
             span:
               lo: 654
@@ -224,6 +225,7 @@ program:
             particle: none
             next: then
             is_cmp: true
+            pass: false
             classifier: null
             span:
               lo: 1032
@@ -300,6 +302,7 @@ program:
           particle: none
           next: while
           is_cmp: true
+          pass: false
           classifier: null
           span:
             lo: 1239
@@ -439,6 +442,7 @@ program:
           particle: none
           next: while
           is_cmp: true
+          pass: false
           classifier: null
           span:
             lo: 1660

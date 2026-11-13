@@ -528,11 +528,11 @@ mod with_ffi
                 let addr =
                     v.as_ptr().ok_or_else(|| malformed("foreign needs an address"))?;
                 let mut raw = self.mem.octets(addr, u64::from(kind.size(platform)))?;
-                self.to_native(kind, &mut raw, 0)?;
+                self.write_native(kind, &mut raw, 0)?;
                 return Ok(Cell::of(&raw));
             }
             let mut raw = to_raw(v, platform);
-            self.to_native(kind, &mut raw, 0)?;
+            self.write_native(kind, &mut raw, 0)?;
             Ok(Cell::of(&raw))
         }
 
@@ -1059,7 +1059,7 @@ mod with_ffi
         /// `Ok`, or the trap for an address in a freed block, which C would
         /// read as a number no block holds, or for octets too short for the
         /// kind.
-        fn to_native(
+        fn write_native(
             &mut self, kind: DataKind, raw: &mut [u8], at: usize,
         ) -> Result<(), TrapKind>
         {
@@ -1162,7 +1162,7 @@ mod with_ffi
             return;
         };
         let mut raw = to_raw(value, platform);
-        if let Err(trap) = machine.to_native(kind, &mut raw, 0)
+        if let Err(trap) = machine.write_native(kind, &mut raw, 0)
         {
             machine.callbacks.trap.get_or_insert(trap);
             return;

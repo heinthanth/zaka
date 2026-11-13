@@ -95,38 +95,43 @@ fn show(
 ) -> Result<(), TrapKind>
 {
     let (addr, kind, quoted) = value;
-    let piece = |t: String| Task::Piece(t);
-    ret_if!(let Some(e) = kind.as_enum(), Ok(tasks.push(piece(member_text(mem, addr, e)?))));
+    let done = |tasks: &mut Vec<Task>, t: String| {
+        tasks.push(Task::Piece(t));
+        Ok(())
+    };
+    ret_if!(let Some(e) = kind.as_enum(), done(tasks, member_text(mem, addr, e)?));
     if kind.is_fn()
     {
         let v = mem.load(addr, kind)?;
-        return Ok(tasks.push(piece(fn_value_text(mem, v))));
+        return done(tasks, fn_value_text(mem, v));
     }
     if kind.is_text()
     {
         let t = text_at(mem, addr)?;
-        return Ok(tasks.push(piece(tern!(quoted, quoted_text(&t), t))));
+        return done(tasks, tern!(quoted, quoted_text(&t), t));
     }
     ret_if!(let Some(s) = kind.as_struct(), struct_tasks(mem, addr, s, tasks));
     if let Some(s) = kind.as_object()
     {
         let (base, _) = slice_parts(mem, addr)?;
-        ret_if!(base == 0, Ok(tasks.push(piece(NULL_TEXT.to_string()))));
-        ret_if!(!inside.insert(base), Ok(tasks.push(piece("…".to_string()))));
+        ret_if!(base == 0, done(tasks, NULL_TEXT.to_string()));
+        ret_if!(!inside.insert(base), done(tasks, "…".to_string()));
         tasks.push(Task::Leave(base));
         return struct_tasks(mem, base, s, tasks);
     }
     if let Some(cell) = kind.as_seq().map(|s| s.cell)
     {
         let (base, count) = slice_parts(mem, addr)?;
-        return Ok(cell_tasks(mem, base, cell, count, tasks));
+        cell_tasks(mem, base, cell, count, tasks);
+        return Ok(());
     }
     let Some(list) = kind.as_list()
     else
     {
-        return Ok(tasks.push(piece(mem.load(addr, kind).map(text)?)));
+        return done(tasks, mem.load(addr, kind).map(text)?);
     };
-    Ok(cell_tasks(mem, addr, list.cell, u64::from(list.len), tasks))
+    cell_tasks(mem, addr, list.cell, u64::from(list.len), tasks);
+    Ok(())
 }
 
 /// Push the tasks of a run of cells, between `[` and `]` and joined with

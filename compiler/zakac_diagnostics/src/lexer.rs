@@ -117,7 +117,7 @@ pub fn bad_char_length(span: Span, count: usize) -> Diagnostic
 ///
 /// # Arguments
 ///
-/// * `span` - From the opening backtick to the end of the line.
+/// * `span` - From the opening brace to the end of the line.
 ///
 /// # Returns
 ///
@@ -127,11 +127,11 @@ pub fn unterminated_raw_identifier(span: Span) -> Diagnostic
     Diagnostic::new(Code::UnterminatedRawIdentifier, t!("codes.ZK0108.message"), span)
 }
 
-/// A raw identifier has nothing between its backticks.
+/// A raw identifier has nothing between its braces.
 ///
 /// # Arguments
 ///
-/// * `span` - The two backticks.
+/// * `span` - The two braces.
 ///
 /// # Returns
 ///

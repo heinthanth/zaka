@@ -27,7 +27,7 @@ use crate::expr::SizeOfExpr;
 use crate::expr::StrExpr;
 use crate::expr::StructLit;
 use crate::expr::TableLit;
-use crate::expr::UsingMark;
+use crate::expr::UsingParticle;
 use crate::expr::VerbExpr;
 use crate::kind::FnSig;
 use crate::kind::Kind;
@@ -39,6 +39,7 @@ use crate::stmt::AssignStmt;
 use crate::stmt::BlitStmt;
 use crate::stmt::BlockStmt;
 use crate::stmt::BreakStmt;
+use crate::stmt::BuiltinKindDecl;
 use crate::stmt::CallStmt;
 use crate::stmt::ContinueStmt;
 use crate::stmt::CountedStmt;
@@ -145,6 +146,7 @@ EnumDecl => "enum", visit_enum;
 AliasDecl => "alias", visit_alias;
 TraitDecl => "trait", visit_trait;
 TraitBlock => "trait_block", visit_trait_block;
+BuiltinKindDecl => "builtin_kind", visit_builtin_kind;
 EnumMember => "enum_member", visit_enum_member;
 SwitchStmt => "switch", visit_switch;
 SwitchArm => "switch_arm", visit_switch_arm;
@@ -219,6 +221,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Alias(s) => s,
         Stmt::Trait(s) => s,
         Stmt::TraitBlock(s) => s,
+        Stmt::BuiltinKind(s) => s,
     }
 }
 
@@ -359,6 +362,12 @@ pub trait Visitor
     fn visit_trait(&mut self, n: &TraitDecl) { walk_trait(self, n) }
     /// Visit a trait block.
     fn visit_trait_block(&mut self, n: &TraitBlock) { walk_trait_block(self, n) }
+    /// Visit a built-in kind of the prelude.
+    fn visit_builtin_kind(&mut self, n: &BuiltinKindDecl)
+    {
+        self.enter(n);
+        self.leave(n);
+    }
     /// Visit a member of an enumeration declaration.
     fn visit_enum_member(&mut self, n: &EnumMember) { walk_enum_member(self, n) }
     /// Visit a switch.
@@ -470,6 +479,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Alias(s) => v.visit_alias(s),
         Stmt::Trait(s) => v.visit_trait(s),
         Stmt::TraitBlock(s) => v.visit_trait_block(s),
+        Stmt::BuiltinKind(s) => v.visit_builtin_kind(s),
     }
 }
 
@@ -1141,7 +1151,7 @@ pub fn walk_sig_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FnSig)
         v.visit_span_mut(&mut p.span);
         v.visit_kind_mut(&mut p.kind);
         do_if!(let Some(name) = &mut p.name, v.visit_ident_mut(name));
-        do_if!(let Some(mark) = &mut p.mark, v.visit_ident_mut(mark));
+        do_if!(let Some(preposition) = &mut p.preposition, v.visit_ident_mut(preposition));
     }
     opt_kind_mut(v, &mut n.ret);
 }
@@ -1234,6 +1244,11 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
             let bounds = s.kind_params.iter_mut().flat_map(|p| &mut p.bounds);
             do_for!(b in bounds, v.visit_kind_mut(b));
             do_for!(f in &mut s.fns, walk_fn_mut(v, f));
+        }
+        Stmt::BuiltinKind(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            v.visit_ident_mut(&mut s.name);
         }
         Stmt::TraitBlock(s) =>
         {
@@ -1334,7 +1349,7 @@ pub fn walk_fn_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FnDecl)
         v.visit_span_mut(&mut p.span);
         v.visit_kind_mut(&mut p.kind);
         v.visit_ident_mut(&mut p.name);
-        do_if!(let Some(mark) = &mut p.mark, v.visit_ident_mut(mark));
+        do_if!(let Some(preposition) = &mut p.preposition, v.visit_ident_mut(preposition));
     }
     for c in &mut n.captures
     {
@@ -1417,7 +1432,7 @@ pub fn walk_call_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallStmt)
     do_for!(k in &mut n.kind_args, v.visit_kind_mut(k));
     do_if!(let Some(place) = &mut n.place, v.visit_expr_mut(place));
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
-    call_marks_mut(v, &mut n.using, &mut n.marks);
+    call_prepositions_mut(v, &mut n.using, &mut n.prepositions);
 }
 
 /// Visit the size, then the target, of a heap allocation.
@@ -1585,22 +1600,22 @@ pub fn walk_call_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallExpr)
     do_for!(k in &mut n.kind_args, v.visit_kind_mut(k));
     do_if!(let Some(place) = &mut n.place, v.visit_expr_mut(place));
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
-    call_marks_mut(v, &mut n.using, &mut n.marks);
+    call_prepositions_mut(v, &mut n.using, &mut n.prepositions);
 }
 
-/// Visit the particle before `သုံး၍` and the marks of a call.
+/// Visit the particle before `သုံး၍` and the prepositions of a call.
 ///
 /// # Arguments
 ///
 /// * `v` - The visitor.
 /// * `using` - The particle, when the arguments come first.
-/// * `marks` - The word after each argument of a marked call.
-fn call_marks_mut<V: VisitorMut + ?Sized>(
-    v: &mut V, using: &mut Option<UsingMark>, marks: &mut [Ident],
+/// * `prepositions` - The word after each argument of a preposition call.
+fn call_prepositions_mut<V: VisitorMut + ?Sized>(
+    v: &mut V, using: &mut Option<UsingParticle>, prepositions: &mut [Ident],
 )
 {
-    do_if!(let Some(mark) = using, v.visit_span_mut(&mut mark.span));
-    do_for!(mark in marks, v.visit_ident_mut(mark));
+    do_if!(let Some(particle) = using, v.visit_span_mut(&mut particle.span));
+    do_for!(preposition in prepositions, v.visit_ident_mut(preposition));
 }
 
 /// Visit the cells of a list literal.

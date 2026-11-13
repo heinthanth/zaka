@@ -51,7 +51,7 @@ fn declarations()
     assert_eq!(stmt(adult), "(var ကြီးသူ bool [(gt အသက် 18)])");
     let kinded = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(stmt(kinded), "(var က isize 5i8)");
-    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ဖြစ်ပါစေ။";
+    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ကို ပေါင်းသည့်ရလဒ် ဖြစ်ပါစေ။";
     assert_eq!(stmt(clause), "(var က isize (add ခ ဂ))");
 }
 
@@ -129,7 +129,7 @@ fn declarations_with_a_value_clause()
     assert_eq!(stmt(age), "(var အသက် isize 18)");
     let spaced = "ကိန်းသေ ပိုင် သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုး သည် ၃.၁၄ ဖြစ်ပါစေ။";
     assert_eq!(stmt(spaced), "(const ပိုင် f64 3.14)");
-    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ဖြစ်ပါစေ။";
+    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ကို ပေါင်းသည့်ရလဒ် ဖြစ်ပါစေ။";
     assert_eq!(stmt(clause), "(var က isize (add ခ ဂ))");
     let adult = "ကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီး ဖြစ်ပါစေ။";
     assert_eq!(stmt(adult), "(var ကြီးသူ bool (gt အသက် 18))");
@@ -469,7 +469,7 @@ fn edit_parameters_parse_and_calls_bear_no_mark()
     assert_eq!(call, "(call တိုး က ခ)");
 }
 
-/// The markers of an item come in order: owned, changed, then the mark.
+/// The markers of an item come in order: owned, changed, then the preposition.
 #[test]
 fn item_markers_parse_in_order()
 {
@@ -483,13 +483,39 @@ fn item_markers_parse_in_order()
     assert!(decl.contains(" ပ(ကို)"), "{decl}");
 }
 
-/// A mark string must read as one word a mark can be.
+/// A preposition string holds words a preposition can hold.
 #[test]
-fn a_mark_string_is_one_mark_word()
+fn a_preposition_holds_words_a_preposition_can_hold()
 {
-    let text = "လုပ်ဆောင်ချက် ရေး သည် စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"က ခ\" ကို သုံး၍ လက်ခံပြီး \
-                အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။";
-    assert_eq!(codes(text), [Code::BadMark]);
+    let header = |preposition: &str| {
+        format!(
+            "လုပ်ဆောင်ချက် ရေး သည် စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"{preposition}\" ကို သုံး၍ လက်ခံပြီး \
+             အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။"
+        )
+    };
+    // a preposition of several words, and a glued preposition that lexes as
+    // several
+    assert_eq!(codes(&header("က ခ")), []);
+    assert_eq!(codes(&header("ရှိ ဖိုင်ကို")), []);
+    assert_eq!(codes(&header("၏")), []);
+    // a call end, a closer, a sign, and `၏` after the first word
+    assert_eq!(codes(&header("ခ မည်")), [Code::BadPreposition]);
+    assert_eq!(codes(&header("သည်")), [Code::BadPreposition]);
+    assert_eq!(codes(&header("+")), [Code::BadPreposition]);
+    assert_eq!(codes(&header("က ၏")), [Code::BadPreposition]);
+    // `ကို သုံး၍` cannot start the first preposition: it starts the arguments-first
+    // call
+    assert_eq!(codes(&header("ကိုသုံး၍")), [Code::BadPreposition]);
+}
+
+/// A preposition that starts with `၏` goes on the last parameter alone.
+#[test]
+fn an_ei_preposition_goes_on_the_last_parameter()
+{
+    let text = "လုပ်ဆောင်ချက် ရေး သည် က ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"၏\" ကို သုံး၍ လည်းကောင်း ခ ဟူသော \
+                စာသား တစ်ခု ကို ဝိဘတ် \"သို့\" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို \
+                လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။";
+    assert_eq!(codes(text), [Code::PrepositionEiNotLast]);
 }
 
 /// A list with no count is plain; a written count makes a counted list.
@@ -555,10 +581,10 @@ fn a_counted_loop_from_a_cell_still_parses()
     assert!(looped.starts_with("(count i (cell l 0) 5 count"), "{looped}");
 }
 
-/// A parameter carries its mark in parentheses after its name; with marks
-/// the parameters end in `လက်ခံပြီး` straight after the last.
+/// A parameter carries its preposition in parentheses after its name; with
+/// prepositions the parameters end in `လက်ခံပြီး` straight after the last.
 #[test]
-fn parameters_have_marks()
+fn parameters_have_prepositions()
 {
     let text = "လုပ်ဆောင်ချက် ရေး သည် စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း နေရာ \
                 ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"သို့\" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
@@ -567,10 +593,10 @@ fn parameters_have_marks()
     let mixed = "လုပ်ဆောင်ချက် ရေး သည် စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း နေရာ \
                  ဟူသော စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ \
                  ပြီးပါပြီ။";
-    assert_eq!(codes(mixed), [Code::MixedMarks]);
+    assert_eq!(codes(mixed), [Code::MixedPrepositions]);
 }
 
-/// The function `ရေး`, whose two parameters have marks, before `rest`.
+/// The function `ရေး`, whose two parameters have prepositions, before `rest`.
 fn with_write(rest: &str) -> String
 {
     format!(
@@ -580,18 +606,18 @@ fn with_write(rest: &str) -> String
     )
 }
 
-/// The second statement of a program, as a tree, and its call marks.
+/// The second statement of a program, as a tree, and its call prepositions.
 fn second(text: &str) -> (String, Vec<String>)
 {
     let list = stmts(text);
-    let marks =
+    let prepositions =
         |m: &[zakac_ast::expr::Ident]| m.iter().map(|i| i.name.to_string()).collect();
     let found = match &list[1]
     {
-        Stmt::Call(n) => marks(&n.marks),
+        Stmt::Call(n) => prepositions(&n.prepositions),
         Stmt::Decl(d) => match d.init.as_ref()
         {
-            Some(zakac_ast::expr::Expr::Call(n)) => marks(&n.marks),
+            Some(zakac_ast::expr::Expr::Call(n)) => prepositions(&n.prepositions),
             _ => Vec::new(),
         },
         _ => Vec::new(),
@@ -599,28 +625,29 @@ fn second(text: &str) -> (String, Vec<String>)
     (list[1].to_sexpr(), found)
 }
 
-/// A marked call gives each argument with its mark and builds the call the
-/// other forms build.
+/// A preposition call gives each argument with its preposition and builds the
+/// call the other forms build.
 #[test]
-fn marked_calls_match_the_other_forms()
+fn preposition_calls_match_the_other_forms()
 {
     let want = |old: &str| second(&with_write(old)).0;
-    let marks = vec!["ကို".to_string(), "သို့".to_string()];
+    let prepositions = vec!["ကို".to_string(), "သို့".to_string()];
     let short = second(&with_write("က ကို ခ သို့ ရေး မည်။"));
     assert_eq!(
         short,
-        (want("ရေး ဟူသော လုပ်ဆောင်ချက်ကို က နှင့် ခ တို့ဖြင့် လုပ်ဆောင်မည်။"), marks.clone())
+        (want("ရေး ဟူသော လုပ်ဆောင်ချက်ကို က နှင့် ခ တို့ဖြင့် လုပ်ဆောင်မည်။"), prepositions.clone())
     );
     let long = second(&with_write("က ကို ခ သို့ ရေး ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။"));
-    assert_eq!(long.1, marks);
+    assert_eq!(long.1, prepositions);
     let string = second(&with_write("\"a\" ကို \"b\" သို့ ရေး မည်။"));
-    assert_eq!(string.1, marks);
+    assert_eq!(string.1, prepositions);
     let value = second(&with_write("ကိန်းရှင် ဂ သည် က ကို ခ သို့ ရေး သည့် ရလဒ် ဖြစ်ပါစေ။"));
-    assert_eq!(value.1, marks);
+    assert_eq!(value.1, prepositions);
 }
 
-/// A name that declares no marks ends no marked call, and a call whose marks
-/// do not fit its function reads as the sentence it was before.
+/// A name that declares no prepositions ends no preposition call, and a call
+/// whose prepositions do not fit its function reads as the sentence it was
+/// before.
 #[test]
 fn other_sentences_keep_their_meaning()
 {
@@ -694,10 +721,10 @@ fn a_c_function_can_give_back_its_text_as_the_program_s_own()
 }
 
 /// A short parameter list whose one parameter is a function kind with
-/// marks: the `လည်းကောင်း` inside the parentheses belongs to the function
+/// prepositions: the `လည်းကောင်း` inside the parentheses belongs to the function
 /// kind, not to the parameter list.
 #[test]
-fn a_function_kind_with_marks_stands_in_a_short_list()
+fn a_function_kind_with_prepositions_stands_in_a_short_list()
 {
     let text = "လုပ်ဆောင်ချက် ခေါ် သည် ဖ ဟူသော (စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လက်ခံသော လုပ်ဆောင်ချက် \
                 အမျိုးအစား) တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။";
@@ -728,6 +755,11 @@ fn a_kind_from_outside_parses()
     let fields =
         stmt("စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ပါဝင်သည်။");
     assert_eq!(fields, "(external_struct စက\u{103a} [i32 n])");
+    // `အများသုံး` stands right before the noun, after the external mark.
+    let shown = "စက် ဟူသော ပြင်ပမှ လာသော အများသုံး ဒေတာအစုအဝေး ဖြစ်သည်။";
+    assert_eq!(codes(shown), []);
+    assert!(stmt(shown).contains("export"), "{}", stmt(shown));
+    assert!(!codes("စက် ဟူသော အများသုံး ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။").is_empty());
 }
 
 /// A function kind takes `ဒေတာ ပြောင်းလဲရန်` alone; `ဒေတာ ထည့်ပေးရန်` on one of

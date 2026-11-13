@@ -6,6 +6,8 @@ use zakac_lexer::reserved::OLD_ENDINGS;
 use zakac_lexer::reserved::RESERVED;
 use zakac_lexer::reserved::lookup;
 use zakac_lexer::reserved::split_reserved;
+use zakac_lexer::role::builtin_count;
+use zakac_lexer::role::builtin_verb;
 use zakac_lexer::spelling::canonical;
 use zakac_lexer::spelling::spellings;
 use zakac_lexer::token::Kw;
@@ -112,7 +114,6 @@ fn spec_compounds_split()
         ("အောက်ငယ်လျှင်", &[Kw::Auk, Kw::Less, Kw::Then]),
         ("အောက်ပါတို့ကို", &[Kw::Following, Kw::ListKo]),
         ("ရလဒ်အဖြစ်", &[Kw::Result, Kw::As]),
-        ("ရွေ့သောရလဒ်", &[Kw::ShiftHead, Kw::Result]),
         ("မငယ်ပါ", &[Kw::NotLess, Kw::Pa]),
         ("မှတ်ချက်ကို", &[Kw::Note, Kw::Ko]),
         ("လိပ်စာကို", &[Kw::Address, Kw::Ko]),
@@ -237,7 +238,9 @@ fn list_words_lex_and_split()
 {
     assert_eq!(lookup("စာရင်း"), Some(Kw::List));
     assert_eq!(lookup("စာရင်းအလွတ်"), Some(Kw::BlankList));
-    assert_eq!(lookup("အကွက်အရေအတွက်"), Some(Kw::CellCount));
+    // The count is a name the prelude declares, read as the count after `၏`.
+    assert_eq!(lookup("အကွက်အရေအတွက်"), None);
+    assert_eq!(builtin_count("အကွက်အရေအတွက်"), Some(Kw::CellCount));
     assert_eq!(lookup("ခုရှိသော"), Some(Kw::Having));
     assert_eq!(lookup("ရှိသော"), Some(Kw::Having));
     assert_eq!(lookup("တို့ပါသော"), Some(Kw::ListOf));
@@ -253,7 +256,8 @@ fn table_words_lex_and_split()
     assert_eq!(lookup("ဇယားအလွတ်"), Some(Kw::BlankTable));
     assert_eq!(lookup("ညွှန်းသော"), Some(Kw::Indexed));
     assert_eq!(lookup("အညွှန်း"), Some(Kw::IndexWord));
-    assert_eq!(lookup("အညွှန်းအရေအတွက်"), Some(Kw::IndexCount));
+    assert_eq!(lookup("အညွှန်းအရေအတွက်"), None);
+    assert_eq!(builtin_count("အညွှန်းအရေအတွက်"), Some(Kw::IndexCount));
     assert_eq!(lookup("အညွှန်းတိုင်း"), Some(Kw::EachIndex));
     assert_eq!(lookup("အတန်းတိုင်း"), Some(Kw::EachRow));
     // The null pointer word keeps its own token.
@@ -271,7 +275,9 @@ fn table_words_lex_and_split()
 #[test]
 fn replace_words_lex_and_split()
 {
-    assert_eq!(lookup("အစားထိုးမည်"), Some(Kw::Replace));
+    // The verb is a function the prelude declares: `အစားထိုး` and `မည်`.
+    assert_eq!(lookup("အစားထိုးမည်"), None);
+    assert_eq!(builtin_verb("အစားထိုး"), Some(Kw::Replace));
     assert_eq!(lookup("လုံးမြောက်"), Some(Kw::Ordinal));
     assert_eq!(lookup("ထိ"), Some(Kw::Upto));
     let kws = |word| {
@@ -358,7 +364,7 @@ fn declaration_words_lex_joined_and_apart()
         ("ရှိသည့်", &[Kw::HavingRel]),
         ("ဟုလည်း မှတ်ယူနိုင်ပါသည်", &[Kw::AliasClose]),
         ("ဟုလည်း မှတ်ယူနိုင်ပြီး", &[Kw::AliasCloseAnd]),
-        ("ဝိဘတ် \"x\" ကို သုံး၍", &[Kw::MarkWord, Kw::Ko, Kw::Using]),
+        ("ဝိဘတ် \"x\" ကို သုံး၍", &[Kw::PrepositionWord, Kw::Ko, Kw::Using]),
         ("လုံးစာ", &[Kw::Items]),
     ];
     do_for!((text, want) in cases, assert_eq!(kw_alone(text), *want, "{text}"));
@@ -387,6 +393,10 @@ fn an_old_ending_is_reported_and_read_as_the_new_verb()
         assert_eq!(common::kws(old), [*kw], "{old}");
         let (out, _) = common::lex_text(new);
         assert!(out.diagnostics.is_empty(), "{new}");
-        assert_eq!(common::kws(new), [*kw], "{new}");
+        // A verb of a function the prelude declares lexes as a name, which the
+        // parser reads as the function and `မည်`.
+        let declared = new.strip_suffix("မည်").and_then(builtin_verb) == Some(*kw);
+        do_if!(declared, assert_eq!(out.tokens[0].kind, TokenKind::Ident, "{new}"));
+        do_if!(!declared, assert_eq!(common::kws(new), [*kw], "{new}"));
     }
 }

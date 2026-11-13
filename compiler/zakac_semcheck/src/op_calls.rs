@@ -18,15 +18,21 @@ use zakac_ast::expr::NodeId;
 use zakac_ast::expr::NullLit;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp;
+use zakac_ast::expr::VerbExpr;
 use zakac_ast::name::Name;
+use zakac_ast::stmt::CallStmt;
 use zakac_ast::stmt::Program;
+use zakac_ast::stmt::Stmt;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
+use zakac_ast::visit::Visitor;
 use zakac_ast::visit::VisitorMut;
 use zakac_ast::visit::walk_expr_mut;
+use zakac_ast::visit::walk_stmt_mut;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_span::span::Span;
 
 use crate::kind::DataKind;
 use crate::scope::FnSig;
@@ -85,6 +91,102 @@ pub(crate) struct OpCalls
     pairs: HashMap<NodeId, OpCall>,
     /// The function each printed value or template slot goes through.
     wraps: HashMap<NodeId, Name>,
+    /// The call each field read stands for when no field fits, `x ၏ f` for
+    /// `f(x)`, and each conversion that goes through a function, under the node
+    /// of the read or the conversion.
+    pub(crate) methods: HashMap<NodeId, CallExpr>,
+    /// The call each statement of a verb the compiler gives stands for when
+    /// a function of the file of that name takes its operands, `l ကို ပြသမည်။`
+    /// for `ပြသ(l)`, under the span of the statement.
+    pub(crate) verbs: HashMap<Span, CallStmt>,
+}
+
+/// The name of the function of the prelude a count stands for.
+///
+/// # Arguments
+///
+/// * `op` - The verb of the count.
+///
+/// # Returns
+///
+/// The name, or `None` for a verb that is no count.
+pub(crate) fn count_fn(op: VerbOp) -> Option<&'static str>
+{
+    match op
+    {
+        VerbOp::CellCount => Some("အကွက်အရေအတွက်"),
+        VerbOp::CharCount => Some("စာလုံးအရေအတွက်"),
+        VerbOp::RowCount => Some("အညွှန်းအရေအတွက်"),
+        _ => None,
+    }
+}
+
+impl Checker
+{
+    /// Check a statement of a verb the compiler gives as the call of a
+    /// function of the file of that name, when one takes the operands: a
+    /// function of the file joins the overloads of the prelude's.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the verb's function, `ပြသ`.
+    /// * `args` - The operands, in the order of the function's parameters.
+    /// * `span` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// `true` when a function of the file took the statement.
+    pub(crate) fn own_verb(&mut self, name: &str, args: &[Expr], span: Span) -> bool
+    {
+        ret_if!(!self.own_fits(name, args), false);
+        let callee = Ident::builder().name(name).span(span).build();
+        let call =
+            CallStmt::builder().callee(callee).args(args.to_vec()).span(span).build();
+        self.visit_call_stmt(&call);
+        self.op_calls.verbs.insert(span, call);
+        true
+    }
+
+    /// The kind of a count read as the call of a function of the file of its
+    /// name, `x ၏ အကွက်အရေအတွက်` for `အကွက်အရေအတွက်(x)`, when one takes `x`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The count.
+    ///
+    /// # Returns
+    ///
+    /// The kind of the call, or `None` when no function of the file takes it:
+    /// the count keeps its built-in rule.
+    pub(crate) fn own_count(&mut self, n: &VerbExpr) -> Option<Option<DataKind>>
+    {
+        let name = count_fn(n.op)?;
+        ret_if!(!self.own_fits(name, &n.args), None);
+        let callee = Ident::builder().name(name).span(n.span).build();
+        #[rustfmt::skip]
+        let call = CallExpr::builder().id(n.id).callee(callee).args(n.args.clone())
+            .span(n.span).build();
+        let kind = self.infer_call(&call);
+        self.op_calls.methods.insert(n.id, call);
+        Some(kind)
+    }
+
+    /// Whether a function the file sees of a name takes these arguments; the
+    /// functions the compiler gives are not among them.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    /// * `args` - The arguments.
+    ///
+    /// # Returns
+    ///
+    /// `true` when one takes them.
+    fn own_fits(&mut self, name: &str, args: &[Expr]) -> bool
+    {
+        let sigs = self.fns.get(&Name::from(name)).cloned().unwrap_or_default();
+        sigs.iter().any(|s| self.fits_call(s, args, &[]))
+    }
 }
 
 /// The function a two-operand operator calls, and whether the call is
@@ -391,5 +493,50 @@ impl VisitorMut for Writer<'_>
         let id = n.id();
         do_if!(let Some(call) = self.calls.pairs.get(&id).copied(), self.pair(n, call));
         do_if!(let Some(callee) = self.calls.wraps.get(&id).copied(), self.wrap(n, callee));
+    }
+}
+
+/// Put the call of each field read that stands for one, `x ၏ f` for `f(x)`,
+/// in place of the read, before the overloads take their inner names.
+///
+/// # Arguments
+///
+/// * `program` - The program, checked with no error.
+/// * `calls` - The calls the check recorded.
+pub(crate) fn write_methods(program: &mut Program, calls: &OpCalls)
+{
+    ret_if!(calls.methods.is_empty() && calls.verbs.is_empty());
+    MethodWriter { methods: &calls.methods, verbs: &calls.verbs }
+        .visit_program_mut(program);
+}
+
+/// The walker that puts a call in place of a field read.
+struct MethodWriter<'a>
+{
+    /// The call of each read, under its node.
+    methods: &'a HashMap<NodeId, CallExpr>,
+    /// The call of each verb statement, under its span.
+    verbs: &'a HashMap<Span, CallStmt>,
+}
+
+impl VisitorMut for MethodWriter<'_>
+{
+    fn visit_stmt_mut(&mut self, n: &mut Stmt)
+    {
+        let verb = matches!(
+            n,
+            Stmt::Print(_) | Stmt::Add(_) | Stmt::Remove(_) | Stmt::Replace(_)
+        );
+        let call = tern!(verb, self.verbs.get(&n.span()), None);
+        do_if!(let Some(call) = call, *n = Stmt::Call(call.clone()));
+        walk_stmt_mut(self, n);
+    }
+
+    fn visit_expr_mut(&mut self, n: &mut Expr)
+    {
+        let replaced = matches!(n, Expr::Field(_) | Expr::Verb(_));
+        let call = tern!(replaced, self.methods.get(&n.id()), None);
+        do_if!(let Some(call) = call, *n = Expr::Call(call.clone()));
+        walk_expr_mut(self, n);
     }
 }

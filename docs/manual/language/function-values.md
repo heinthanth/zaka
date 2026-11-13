@@ -54,15 +54,15 @@ A function kind repeats the header of a function, with `သော` ("that") in f
 
 - The parameters are written as in a [header](functions.md#parameters), with no names:
   each is `<kind> တစ်<word> ကို`, then its markers, and with two or more each ends in
-  `လည်းကောင်း`: `(<kind> တစ်<word> ကို [ဒေတာ ပြောင်းလဲရန်] [အပိုင်အနေဖြင့်] [ဝိဘတ် "<mark>" ကို သုံး၍] [လည်းကောင်း] … လက်ခံပြီး <kind> တစ်<word> ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား)`.
+  `လည်းကောင်း`: `(<kind> တစ်<word> ကို [ဒေတာ ပြောင်းလဲရန်] [အပိုင်အနေဖြင့်] [ဝိဘတ် "<preposition>" ကို သုံး၍] [လည်းကောင်း] … လက်ခံပြီး <kind> တစ်<word> ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား)`.
 - Each parameter and the result count their kind with its measure word, as in a header:
   `ကိန်းပြည့် တစ်ခု`, `စာလုံး တစ်လုံး`, a struct with the classifier it declares. A missing
   word is ZK0234; another word is the warning ZK0509, wherever the function kind stands:
   a variable, a parameter, a field, the result of another function kind, or inside an
   optional.
-- A [mark](functions.md#marked-parameters) stands after `ကို`:
+- A [preposition](functions.md#prepositions) stands after `ကို`:
   `(စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား)`; each
-  parameter has a mark, or none has (ZK0237).
+  parameter has a preposition, or none has (ZK0237).
 - `ဒေတာ ပြောင်းလဲရန်` after `ကို` lets the function change the argument, as in a
   [header](functions.md#changed-parameters). A function kind takes that marker alone:
   `ဒေတာ ထည့်ပေးရန်` in one is ZK0243. A function whose parameter is
@@ -77,7 +77,7 @@ A function kind repeats the header of a function, with `သော` ("that") in f
   and `လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု` for the kind with neither parameters nor result.
 
 Messages write a function kind as `fn(<parameters>) -> <result>`, each parameter as its
-short name with `mut ` in front of a changed one and its mark after it:
+short name with `mut ` in front of a changed one and its preposition after it:
 `fn(isize, isize) -> bool`, `fn(text(ကို), text(သို့))`, `fn()`. Inside another short
 name, such as a list of function values, it stands in parentheses: `(fn(isize))[]`. See
 [Short names for kinds](../reference/errors.md#short-names-for-kinds).
@@ -216,10 +216,10 @@ constant of a function kind, and the call runs the function the value holds:
 | value | `ဖ ဟူသော လုပ်ဆောင်ချက်ကို ၁ ဖြင့် လုပ်ဆောင်သော ရလဒ်` |
 | sign form | `ဖ(၁)` |
 | arguments first | `၁ ကို သုံး၍ ဖ သည့် ရလဒ်`, `၁ ကို သုံး၍ ဖ မည်။` |
-| marked | `<argument> <mark> … ဖ မည်။`, when the kind has marks |
+| marked | `<argument> <preposition> … ဖ မည်။`, when the kind has prepositions |
 
 The arguments check against the function kind as against a header: their count
-(ZK0314), the kind of each (ZK0401), and the marks and `ဒေတာ ပြောင်းလဲရန်` markers. With `ရလဒ်ကောင်း`, `?`
+(ZK0314), the kind of each (ZK0401), and the prepositions and `ဒေတာ ပြောင်းလဲရန်` markers. With `ရလဒ်ကောင်း`, `?`
 or the pass-on tail, a call through a value of a kind whose result can fail passes the
 failure on, as a direct call does. The call works left to right as it is written: the
 function value is read first, then the arguments run, so an argument that changes the
@@ -464,20 +464,20 @@ through `ပြသမည်`, a template slot, and inside a list or a struct:
 အလွတ်
 ```
 
-## Marks and changed parameters
+## Prepositions and changed parameters
 
 A function kind compares its parameter kinds, its `ဒေတာ ပြောင်းလဲရန်` markers and its result as written,
-with no widening. Marks are words of a call sentence, not part of what the function
-does, so a kind with none takes a function with marks:
+with no widening. Prepositions are words of a call sentence, not part of what the function
+does, so a kind with none takes a function with prepositions:
 
 | The kind | Takes |
 | --- | --- |
-| no marks | a function with marks or without, when the rest matches |
-| marks | a function with the same marks, in the same order, alone |
+| no prepositions | a function with prepositions or without, when the rest matches |
+| prepositions | a function with the same prepositions, in the same order, alone |
 
-A call through a value uses the marks of its kind. Through a kind with marks, the call
-reads as a sentence. A variable reads so when its declaration writes a kind with marks,
-or when it starts as a function with marks:
+A call through a value uses the prepositions of its kind. Through a kind with prepositions, the call
+reads as a sentence. A variable reads so when its declaration writes a kind with prepositions,
+or when it starts as a function with prepositions:
 
 ```zaka
 လုပ်ဆောင်ချက် ရေး သည်

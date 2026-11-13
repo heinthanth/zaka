@@ -128,7 +128,7 @@ pub(super) fn add_language()
 /// The hint list, with the `dispose` Monaco calls when it is done with it.
 fn provide_hints(model: TextModel) -> JsValue
 {
-    let found = with_check(&model, |file| call_hints(file));
+    let found = with_check(&model, call_hints);
     let hint = |h: InlayHint| {
         let label = match h.label
         {

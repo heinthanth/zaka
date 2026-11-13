@@ -562,7 +562,7 @@ pub fn decl_needs_classifier(span: Span, kind: &str, classifier: &str) -> Diagno
         .with_help(t!("codes.ZK0234.help", k = kind, c = classifier))
 }
 
-/// Some parameters of a header have a mark and some do not.
+/// Some parameters of a header have a preposition and some do not.
 ///
 /// # Arguments
 ///
@@ -571,9 +571,9 @@ pub fn decl_needs_classifier(span: Span, kind: &str, classifier: &str) -> Diagno
 /// # Returns
 ///
 /// The `ZK0237` diagnostic.
-pub fn mixed_marks(span: Span) -> Diagnostic
+pub fn mixed_prepositions(span: Span) -> Diagnostic
 {
-    Diagnostic::new(Code::MixedMarks, t!("codes.ZK0237.message"), span)
+    Diagnostic::new(Code::MixedPrepositions, t!("codes.ZK0237.message"), span)
         .with_help(t!("codes.ZK0237.help"))
 }
 
@@ -611,20 +611,24 @@ pub fn fn_kind_needs_parens(span: Span) -> Diagnostic
         .with_help(t!("codes.ZK0239.help"))
 }
 
-/// The mark string of a parameter is not one word a mark can be.
+/// The preposition string of a parameter is not one word a preposition can be.
 ///
 /// # Arguments
 ///
 /// * `span` - The string.
-/// * `mark` - Its text.
+/// * `preposition` - Its text.
 ///
 /// # Returns
 ///
 /// The `ZK0241` diagnostic.
-pub fn bad_mark(span: Span, mark: &str) -> Diagnostic
+pub fn bad_preposition(span: Span, preposition: &str) -> Diagnostic
 {
-    Diagnostic::new(Code::BadMark, t!("codes.ZK0241.message", m = mark), span)
-        .with_help(t!("codes.ZK0241.help"))
+    Diagnostic::new(
+        Code::BadPreposition,
+        t!("codes.ZK0241.message", m = preposition),
+        span,
+    )
+    .with_help(t!("codes.ZK0241.help"))
 }
 
 /// `ဒေတာ ထည့်ပေးရန်` on a parameter of a function kind.
@@ -724,4 +728,66 @@ pub fn note_names_no_param(span: Span, name: &str) -> Diagnostic
     let msg = t!("codes.ZK0248.message", n = name);
     Diagnostic::new(Code::NoteNamesNoParam, msg, span)
         .with_help(t!("codes.ZK0248.help"))
+}
+
+/// A preposition that starts with `၏` on a parameter other than the last.
+///
+/// # Arguments
+///
+/// * `span` - The preposition.
+/// * `preposition` - The preposition text.
+///
+/// # Returns
+///
+/// The `ZK0249` diagnostic.
+pub fn preposition_ei_not_last(span: Span, preposition: &str) -> Diagnostic
+{
+    Diagnostic::new(
+        Code::PrepositionEiNotLast,
+        t!("codes.ZK0249.message", m = preposition),
+        span,
+    )
+    .with_help(t!("codes.ZK0249.help"))
+}
+
+/// A declared name that is a word of the preposition of a function the file
+/// sees.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The name text.
+/// * `preposition` - The preposition.
+/// * `func` - The function with the preposition.
+///
+/// # Returns
+///
+/// The `ZK0250` diagnostic.
+pub fn name_is_preposition_word(
+    span: Span, name: &str, preposition: &str, func: &str,
+) -> Diagnostic
+{
+    let msg = t!("codes.ZK0250.message", n = name, m = preposition, f = func);
+    Diagnostic::new(Code::NameIsPrepositionWord, msg, span)
+        .with_help(t!("codes.ZK0250.help", n = name))
+}
+
+/// A declared name that reads as a function the file sees with a glued call
+/// end.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The name text.
+/// * `func` - The function it starts with.
+/// * `end` - The call end it ends with.
+///
+/// # Returns
+///
+/// The `ZK0251` diagnostic.
+pub fn name_reads_as_call(span: Span, name: &str, func: &str, end: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0251.message", n = name, f = func, e = end);
+    Diagnostic::new(Code::NameReadsAsCall, msg, span)
+        .with_help(t!("codes.ZK0251.help", n = name))
 }

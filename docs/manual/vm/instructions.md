@@ -375,7 +375,7 @@ How each value reads is in [Running a program](running.md#printing).
 | read a variable | `x; load k` |
 | `x ကို v ဟု ထားမည်` | `x; v; store k` |
 | address of a variable | `x` |
-| `a နှင့် b ၏ ပေါင်းလဒ်` | `a; b; add` |
+| `a နှင့် b ကို ပေါင်းသည့်ရလဒ်` | `a; b; add` |
 | `v ကို ပြသမည်` | `v; print` |
 | call as a statement | `args; call f`, and `pop` when the callee gives a result no one uses |
 | call through a function value | `fn; args; call_value n` |

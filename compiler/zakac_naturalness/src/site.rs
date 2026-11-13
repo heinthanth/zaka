@@ -101,6 +101,10 @@ pub enum Inner
     /// does: as an argument it keeps its parentheses, whose `နှင့်` would join
     /// the next argument without them.
     Joined,
+    /// A function value, `f ဟူသော လုပ်ဆောင်ချက်`, whose `ဟူသော လုပ်ဆောင်ချက် ကို`
+    /// would start a long call without the parentheses, as before the mark
+    /// `ကိုသုံး၍`.
+    FnValue,
     /// An operand that stands on its own: a value, a notation or a clause.
     Plain,
 }
@@ -124,6 +128,7 @@ impl Inner
             Expr::Logic(_) | Expr::Not(_) => Inner::Logical,
             Expr::List(_) | Expr::Struct(_) => Inner::List,
             Expr::Verb(v) if joins_operands(v.op) => Inner::Joined,
+            Expr::FnAddr(_) => Inner::FnValue,
             _ => Inner::Plain,
         }
     }

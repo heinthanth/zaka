@@ -1,0 +1,28 @@
+// စံကား/အခြေခံအုတ်မြစ်, part one: the kinds the compiler gives. The compiler
+// joins the files `core_*.zaka` of this folder into one module: the kinds, the
+// traits, then the verbs.
+
+/// ကိန်းပြည့်: an integer. `လက္ခဏာမဲ့` before it makes it unsigned, and
+/// `<n> ဘစ်` gives it 8, 16, 32 or 64 bits; with none it has the bits of the
+/// platform.
+ကိန်းပြည့် သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်သည်။
+
+/// ဒဿမကိန်း: a decimal number, 64 bits, or 32 with `၃၂ ဘစ်` before it.
+ဒဿမကိန်း သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်သည်။
+
+/// စာလုံး: one character, counted with `လုံး`.
+စာလုံး သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်သည်။
+
+/// စာသား: text, its cells the u8s of its UTF-8.
+စာသား သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်သည်။
+
+/// မှန်မှားတန်ဖိုး: `မှန်` or `မမှန်`.
+မှန်မှားတန်ဖိုး သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်သည်။
+
+/// စာရင်း: a list, written `A စာရင်း`: cells of the kind A, counted from 0,
+/// that grow at the end.
+စာရင်း သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်သည်။
+
+/// ဇယား: a table, written `K ဖြင့် ညွှန်းသော V ဇယား`: values of the kind V, each
+/// reached through an index of the kind K.
+ဇယား သည် ယေဘုယျဒေတာအမျိုးအစား K နှင့် ယေဘုယျဒေတာအမျိုးအစား V တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်သည်။

@@ -8,27 +8,8 @@ use crate::common::lex_text;
 
 #[rustfmt::skip]
 const CASES: &[(&[&str], Kw)] = &[
-    (&["စားသော စားလဒ်", 
-        "စားသောစားလဒ်"], 
-        Kw::Divide),
-    (&["စားသော စားကြွင်း", 
-        "စားသောစားကြွင်း"], 
-        Kw::Remainder),
-    (&["ဘစ်အလိုက် ဆုံလဒ်", 
-        "ဘစ်အလိုက်ဆုံလဒ်"],
-        Kw::BitAnd),
-    (&["ဘစ်အလိုက် ပေါင်းစုလဒ်", 
-        "ဘစ်အလိုက်ပေါင်းစုလဒ်"],
-        Kw::BitOr),
-    (&["ဘစ်အလိုက် ခြားနားလဒ်", 
-        "ဘစ်အလိုက်ခြားနားလဒ်"],
-        Kw::BitXor),
-    (&["ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်", 
-    "ဘစ်အလိုက်ပြောင်းပြန်ပြောင်းလဒ်"],
-        Kw::BitNot),
-    (&["ရွေ့သော ရလဒ်", 
-        "ရွေ့သောရလဒ်"],
-        Kw::Shift),
+    (&["သည့် ရလဒ်", "သည့်ရလဒ်", "မည့် ရလဒ်", "မည့်ရလဒ်", "သော ရလဒ်", "သောရလဒ်"],
+        Kw::UsedResult),
     (&["ပြောင်းလဲသော ရလဒ်", 
         "ပြောင်းလဲသောရလဒ်"],
         Kw::Convert),
@@ -97,7 +78,7 @@ fn phrase_span_covers_all_pieces()
 #[test]
 fn lone_pieces_remain_pieces()
 {
-    assert_eq!(kws("ဘစ်အလိုက်"), [Kw::BitwiseHead]);
+    assert_eq!(kws("မည့်"), [Kw::Named]);
     assert_eq!(kws("ရလဒ် ကို"), [Kw::Result, Kw::Ko]);
 }
 
@@ -132,9 +113,7 @@ fn spaced_particles_remain_markers()
 {
     // `ညီ သည်` with a space is a verb and a subject marker
     assert_eq!(kws("ညီ သည်"), [Kw::Equal, Kw::Thi]);
-    assert_eq!(kws("ပေါင်းလဒ် သည်"), [Kw::Sum, Kw::Thi]);
-    // verb-nouns never absorb, even attached
-    assert_eq!(kws("ပေါင်းလဒ်သည်"), [Kw::Sum, Kw::Thi]);
+    assert_eq!(kws("ပြောင်းလဲသော ရလဒ် သည်"), [Kw::Convert, Kw::Thi]);
 }
 
 #[test]

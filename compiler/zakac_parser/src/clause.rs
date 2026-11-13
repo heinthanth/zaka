@@ -1,4 +1,5 @@
 use bon::Builder;
+use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::FieldExpr;
 use zakac_ast::expr::Ident;
@@ -21,12 +22,15 @@ use zakac_ast::verb::Dir;
 use zakac_ast::verb::Slot;
 use zakac_ast::verb::Verb;
 use zakac_ast::verb::VerbOp;
+use zakac_ast::verb::operator_verb;
 use zakac_ast::verb::verb_for;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
 use zakac_lexer::reserved::CHAR_NAME;
 use zakac_lexer::reserved::TEXT_NAME;
+use zakac_lexer::role::builtin_count;
+use zakac_lexer::role::builtin_verb;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Particle;
 use zakac_lexer::token::Punct;
@@ -42,6 +46,7 @@ use zakac_span::span::Span;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
+use crate::parser::prelude_builtins;
 use crate::struct_lit::ONE;
 use crate::using::CallParts;
 use crate::using::Head;
@@ -57,6 +62,9 @@ pub(crate) enum Mode
 }
 
 /// What a clause produced.
+// The value, the common case, stays unboxed: a box would cost an allocation
+// for each clause.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub(crate) enum ClauseOut
 {
@@ -66,7 +74,7 @@ pub(crate) enum ClauseOut
     Stmt(Box<Stmt>),
     /// The head of a switch, `<subject> သည် <case>`, before its first
     /// `ဖြစ်လျှင်`.
-    Switch(Expr, Expr),
+    Switch(Box<(Expr, Expr)>),
 }
 
 /// A stack operand: a value, or the target kind of a conversion.
@@ -184,25 +192,6 @@ fn as_slot(tok: &Token) -> Option<Slot>
     }
 }
 
-/// The shift direction a token spells.
-///
-/// # Arguments
-///
-/// * `tok` - The token.
-///
-/// # Returns
-///
-/// The direction, or `None` for another token.
-fn as_shift_dir(tok: &Token) -> Option<Dir>
-{
-    match kw_of(tok)?
-    {
-        Kw::ShiftLeft => Some(Dir::Left),
-        Kw::ShiftRight => Some(Dir::Right),
-        _ => None,
-    }
-}
-
 /// The valence table row of a verb token.
 ///
 /// # Arguments
@@ -234,6 +223,35 @@ fn into_expr(item: Item) -> Expr
 
 impl Parser<'_>
 {
+    /// The verb at token `n` ahead and the number of its tokens: a reserved
+    /// verb, `<name> မည်` of a function the compiler gives (`ပြသ မည်`, which a
+    /// glued `ပြသမည်` splits into), or, right after `၏`, a count the compiler
+    /// gives (`အကွက်အရေအတွက်`).
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The verb row and its tokens, or `None`.
+    pub(crate) fn verb_at(&self, n: usize) -> Option<(&'static Verb, usize)>
+    {
+        let tok = self.peek_n(n);
+        ret_if!(let Some(verb) = as_verb(&tok), Some((verb, 1)));
+        ret_if!(tok.kind != TokenKind::Ident, None);
+        let name = self.text_of(tok.span);
+        ret_if!(!prelude_builtins().contains(name), None);
+        let ends = kw_of(&self.peek_n(n + 1)) == Some(Kw::Will);
+        let verb = builtin_verb(name).filter(|_| ends);
+        ret_if!(let Some(kw) = verb, verb_for(kw).map(|v| (v, 2)));
+        let after_ei = n.checked_sub(1).map_or_else(
+            || self.cur.back(1).is_some_and(|t| t.kind == TokenKind::Punct(Punct::Ei)),
+            |b| self.peek_n(b).kind == TokenKind::Punct(Punct::Ei),
+        );
+        builtin_count(name).filter(|_| after_ei).and_then(verb_for).map(|v| (v, 1))
+    }
+
     /// Parse a clause that starts with a notation expression.
     ///
     /// # Arguments
@@ -247,7 +265,7 @@ impl Parser<'_>
     {
         let first = match self.parse_head(mode)?
         {
-            Head::Stmt(stmt) => return Ok(ClauseOut::Stmt(Box::new(stmt))),
+            Head::Stmt(stmt) => return Ok(ClauseOut::Stmt(stmt)),
             Head::Expr(first) => first,
         };
         self.parse_clause_from(first, mode)
@@ -337,11 +355,6 @@ impl Parser<'_>
                 self.attach_slot(&mut stack, slot)?;
                 continue;
             }
-            if let Some(dir) = as_shift_dir(&tok)
-            {
-                self.push_shift(&mut stack, dir)?;
-                continue;
-            }
             if tok.kind == TokenKind::Kw(Kw::Cell) && holds_ei(&stack)
             {
                 self.push_index(&mut stack)?;
@@ -357,7 +370,12 @@ impl Parser<'_>
                 self.push_char_nth(&mut stack)?;
                 continue;
             }
-            let Some(verb) = as_verb(&tok)
+            if let Some((verb, dir)) = self.operator_at()
+            {
+                self.reduce_operator(&mut stack, verb, dir)?;
+                continue;
+            }
+            let Some((verb, words)) = self.verb_at(0)
             else
             {
                 let at_arm = tok.kind == TokenKind::Kw(Kw::ThenIs)
@@ -366,7 +384,7 @@ impl Parser<'_>
                 ret_if!(let Some(head) = switch_head(&mut stack, at_arm, mode), Ok(head));
                 return self.finish_clause(stack);
             };
-            ret_if!(let Some(stmt) = self.reduce(&mut stack, verb, mode)?, Ok(ClauseOut::Stmt(Box::new(stmt))));
+            ret_if!(let Some(stmt) = self.reduce(&mut stack, verb, mode, words)?, Ok(ClauseOut::Stmt(Box::new(stmt))));
         }
     }
 
@@ -454,7 +472,7 @@ impl Parser<'_>
     ///
     /// `Ok`, or a `double-particle` diagnostic for an operand that holds a
     /// particle at this point.
-    fn mark_whole(&mut self, stack: &mut Vec<Item>, glued: bool) -> PResult<()>
+    fn mark_whole(&mut self, stack: &mut [Item], glued: bool) -> PResult<()>
     {
         let tok = self.bump();
         let first = stack.last().and_then(|top| top.slot).map(|(_, at)| at);
@@ -574,7 +592,7 @@ impl Parser<'_>
             return Ok(());
         }
         let tok = self.peek();
-        ret_if!(as_verb(&tok).is_some() || as_shift_dir(&tok).is_some(), Ok(()));
+        ret_if!(self.verb_at(0).is_some() || self.operator_at().is_some(), Ok(()));
         let char_word = self.name_at(0, CHAR_NAME);
         ret_if!(char_word && matches!(slot, Slot::Ei | Slot::Ordinal), Ok(()));
         let after_ei =
@@ -588,6 +606,7 @@ impl Parser<'_>
         let item = match expr
         {
             Expr::Name(n) if is_field => self.field_of(stack, n),
+            Expr::Call(c) if is_field && is_sign_call(&c) => self.method_of(stack, c),
             expr if is_field && reads_a_name(&expr) => self.read_of_field(stack, expr),
             expr => expr,
         };
@@ -645,6 +664,25 @@ impl Parser<'_>
         Expr::Verb(read)
     }
 
+    /// Take the top operand, which holds `၏`, as the first argument of the
+    /// sign-form call after it: `x ၏ f(a)` is `f(x, a)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack.
+    /// * `call` - The call after `၏`.
+    ///
+    /// # Returns
+    ///
+    /// The call.
+    fn method_of(&mut self, stack: &mut Vec<Item>, mut call: CallExpr) -> Expr
+    {
+        let base = into_expr(stack.pop().expect("the top operand holds ၏"));
+        call.span = base.span().to(&call.span);
+        call.args.insert(0, base);
+        Expr::Call(call)
+    }
+
     /// Take the top operand, which holds `၏`, as the struct of a field.
     ///
     /// # Arguments
@@ -659,9 +697,11 @@ impl Parser<'_>
     {
         let base = into_expr(stack.pop().expect("the top operand holds ၏"));
         let span = base.span().to(&name.span);
+        let braced = self.text_of(name.span).starts_with('{');
         let field = Ident::builder().name(name.name).span(name.span).build();
         let id = self.new_id();
-        let node = FieldExpr::builder().id(id).base(base).field(field).span(span);
+        let node = FieldExpr::builder().id(id).base(base).field(field).braced(braced);
+        let node = node.span(span);
         Expr::Field(node.build())
     }
 
@@ -711,13 +751,13 @@ impl Parser<'_>
             stmt => return Ok(stmt),
         };
         ret_if!(self.at_using_rest(), self.parse_using(first, mode));
-        let end = self.marked_end(0);
+        let end = self.preposition_end(0);
         let Some(end) = end
         else
         {
             return Ok(Head::Expr(first));
         };
-        self.attempt_marked(first, end, mode)
+        self.attempt_preposition_call(first, end, mode)
     }
 
     /// Parse the first operand of a clause. At the start of a statement a
@@ -1089,26 +1129,6 @@ impl Parser<'_>
         Expr::Index(node)
     }
 
-    /// Push `ဘယ်သို့|ညာသို့ <distance> ဘစ်`; the direction word is current.
-    ///
-    /// # Arguments
-    ///
-    /// * `stack` - The operand stack.
-    /// * `dir` - The direction.
-    ///
-    /// # Returns
-    ///
-    /// `Ok`, or a diagnostic.
-    fn push_shift(&mut self, stack: &mut Vec<Item>, dir: Dir) -> PResult<()>
-    {
-        self.bump();
-        let dist = self.parse_notation()?;
-        let bit = self.expect(Kw::Bit)?;
-        let item = Item::builder().operand(Operand::Expr(dist));
-        stack.push(item.slot((Slot::Bit(dir), bit.span)).build());
-        Ok(())
-    }
-
     /// Reduce the operand stack on a verb, which is the current token.
     ///
     /// # Arguments
@@ -1122,10 +1142,13 @@ impl Parser<'_>
     /// The statement for a statement verb, `None` after pushing a value, or
     /// a diagnostic.
     fn reduce(
-        &mut self, stack: &mut Vec<Item>, verb: &'static Verb, mode: Mode,
+        &mut self, stack: &mut Vec<Item>, verb: &'static Verb, mode: Mode, words: usize,
     ) -> PResult<Option<Stmt>>
     {
         let tok = self.peek();
+        // `ပြသ မည်` of a function the compiler gives is two tokens; the second
+        // goes with the first.
+        let tok = Token { span: tok.span.to(&self.peek_n(words - 1).span), ..tok };
         let name = self.text_of(tok.span);
         let in_expr = verb.is_stmt && mode == Mode::Expr;
         ret_if!(in_expr, Err(diag::stmt_verb_in_expr(tok.span, name)));
@@ -1135,11 +1158,53 @@ impl Parser<'_>
         let args = stack.split_off(have - need);
         self.check_slots(&args, verb, name)?;
         self.check_non_assoc(&args, verb, tok)?;
-        self.bump();
+        (0..words).for_each(|_| _ = self.bump());
         ret_if!(verb.is_stmt, self.build_stmt(stack, args, verb, tok).map(Some));
         let expr = self.build_verb_expr(args, verb, tok);
         stack.push(Item::expr(expr));
         Ok(None)
+    }
+
+    /// The word operator of the prelude at the current token: its function
+    /// name with a value end after it, `ပေါင်း သည့် ရလဒ်`. It is the operator, so
+    /// on a struct it calls the function of the struct, as `+` does.
+    ///
+    /// # Returns
+    ///
+    /// The verb row and the shift direction, or `None`.
+    pub(crate) fn operator_at(&self) -> Option<(&'static Verb, Option<Dir>)>
+    {
+        let tok = self.peek();
+        ret_if!(tok.kind != TokenKind::Ident, None);
+        let name = self.text_of(tok.span);
+        let end =
+            matches!(kw_of(&self.peek_n(1)), Some(Kw::UsedResult | Kw::UsedGoodResult));
+        ret_if!(!end, None);
+        operator_verb(name)
+    }
+
+    /// Reduce the operand stack on a word operator of the prelude, then read
+    /// its value end.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack.
+    /// * `verb` - The verb row.
+    /// * `dir` - The direction of a shift.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic.
+    fn reduce_operator(
+        &mut self, stack: &mut Vec<Item>, verb: &'static Verb, dir: Option<Dir>,
+    ) -> PResult<()>
+    {
+        // The name and its end, `ပေါင်း` and `သည့်ရလဒ်`, are one verb, so a
+        // message names the whole word.
+        self.reduce(stack, verb, Mode::Expr, 2)?;
+        let top = stack.last_mut().expect("the reduce pushes the operation");
+        do_if!(let Operand::Expr(Expr::Verb(node)) = &mut top.operand, node.dir = dir);
+        Ok(())
     }
 
     /// Check that each operand carries the particle its verb wants.
@@ -1207,11 +1272,6 @@ impl Parser<'_>
             let [list, index] = <[Item; 2]>::try_from(args).expect("slots are checked");
             return self.index_expr(into_expr(list), into_expr(index), 1, span);
         }
-        let dir = args.iter().find_map(|e| match e.slot
-        {
-            Some((Slot::Bit(dir), _)) => Some(dir),
-            _ => None,
-        });
         let (mut exprs, mut kind_arg) = (Vec::new(), None);
         for item in args
         {
@@ -1227,8 +1287,17 @@ impl Parser<'_>
         }
         let id = self.new_id();
         #[rustfmt::skip]
-        let node = VerbExpr::builder().id(id).op(verb.op).args(exprs).maybe_kind_arg(kind_arg)
-            .maybe_dir(dir).particle(tok.particle).is_cmp(verb.is_cmp).span(span).build();
+        let pass = tok.kind == TokenKind::Kw(Kw::ConvertGood);
+        let node = VerbExpr::builder()
+            .id(id)
+            .op(verb.op)
+            .args(exprs)
+            .maybe_kind_arg(kind_arg)
+            .pass(pass)
+            .particle(tok.particle)
+            .is_cmp(verb.is_cmp)
+            .span(span)
+            .build();
         Expr::Verb(node)
     }
 
@@ -1310,12 +1379,35 @@ impl Parser<'_>
         let chars = tok.kind == TokenKind::Kw(Kw::LastChar);
         let list = into_expr(stack.pop().expect("the top operand holds ၏"));
         self.expect(Kw::Ko)?;
-        let verb = self.expect(Kw::Remove)?;
+        let verb = self.expect_verb(Kw::Remove)?;
         ret_if!(!stack.is_empty(), Err(self.dangling(&stack, verb)));
         let stop = self.expect_stop()?;
         let span = list.span().to(&stop.span);
         let node = RemoveStmt::builder().list(list).chars(chars).span(span).build();
         Ok(ClauseOut::Stmt(Box::new(Stmt::Remove(node))))
+    }
+
+    /// Read a verb: its reserved word, or `<name> မည်` of the function the
+    /// compiler gives for it.
+    ///
+    /// # Arguments
+    ///
+    /// * `kw` - The reserved word of the verb.
+    ///
+    /// # Returns
+    ///
+    /// The first token of the verb, or an `expected-token` diagnostic.
+    fn expect_verb(&mut self, kw: Kw) -> PResult<Token>
+    {
+        let found = self.verb_at(0).filter(|(v, _)| v.kw == kw);
+        let Some((_, words)) = found
+        else
+        {
+            return self.expect(kw);
+        };
+        let first = self.bump();
+        let last = tern!(words == 2, self.bump(), first);
+        Ok(Token { span: first.span.to(&last.span), ..first })
     }
 
     /// Whether `ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်` or
@@ -1452,7 +1544,7 @@ fn switch_head(stack: &mut Vec<Item>, at_arm: bool, mode: Mode) -> Option<Clause
     ret_if!(!at_arm || !shape, None);
     let case = into_expr(stack.pop()?);
     let subject = into_expr(stack.pop()?);
-    Some(ClauseOut::Switch(subject, case))
+    Some(ClauseOut::Switch(Box::new((subject, case))))
 }
 
 /// Build a replace statement from its range and its value.
@@ -1619,4 +1711,19 @@ fn reads_a_name(expr: &Expr) -> bool
     let read =
         matches!(v.op, VerbOp::Unwrap | VerbOp::UnwrapFault) && v.args.len() == 1;
     read && matches!(&v.args[0], Expr::Name(_)) || read && reads_a_name(&v.args[0])
+}
+
+/// Whether a call is in the sign form, `f(a, b)`: no prepositions, no place and
+/// no particle that closes arguments written first.
+///
+/// # Arguments
+///
+/// * `call` - The call.
+///
+/// # Returns
+///
+/// `true` for such a call.
+fn is_sign_call(call: &CallExpr) -> bool
+{
+    call.using.is_none() && call.prepositions.is_empty() && call.place.is_none()
 }

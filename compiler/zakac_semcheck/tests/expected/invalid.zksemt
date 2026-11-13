@@ -240,6 +240,7 @@ program:
                 particle: none
                 next: other
                 is_cmp: false
+                pass: false
                 classifier: null
                 span:
                   lo: 842
@@ -268,6 +269,7 @@ program:
       exported: false
       unchecked: false
       start: true
+      builtin: false
       external: false
       lib: null
       variadic: false

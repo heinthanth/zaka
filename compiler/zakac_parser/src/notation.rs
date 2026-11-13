@@ -39,7 +39,6 @@ use zakac_span::span::Span;
 
 use crate::clause::ClauseOut;
 use crate::clause::Mode;
-use crate::clause::as_verb;
 use crate::describe::quote;
 use crate::parser::MAX_NEST;
 use crate::parser::PResult;
@@ -768,7 +767,7 @@ impl Parser<'_>
         let head = [n, n + 1].map(|at| kw_of(&self.peek_n(at)));
         ret_if!(head != [Some(Kw::FnValue), Some(Kw::Ko)], false);
         let next = self.peek_n(n + 2);
-        let object = kw_of(&next) == Some(Kw::Outside) || as_verb(&next).is_some();
+        let object = kw_of(&next) == Some(Kw::Outside) || self.verb_at(n + 2).is_some();
         !object
     }
 
@@ -901,7 +900,7 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The arguments with their marks, or a diagnostic.
+    /// The arguments with their prepositions, or a diagnostic.
     fn parse_sign_args(&mut self) -> PResult<Args>
     {
         let mut args = Args::default();
@@ -935,7 +934,7 @@ impl Parser<'_>
     ///
     /// * `span` - The whole call.
     /// * `callee` - The function name.
-    /// * `args` - The arguments, with the mark of each.
+    /// * `args` - The arguments, with the preposition of each.
     /// * `pass` - Whether a failure of the call passes on.
     ///
     /// # Returns
@@ -958,7 +957,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The span of the function, the function name, the place that holds it
-    /// and the arguments with their marks.
+    /// and the arguments with their prepositions.
     pub(crate) fn parse_call_head(&mut self) -> PResult<CallHead>
     {
         let start = self.peek().span;
@@ -1015,7 +1014,7 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// The arguments with their marks, or a diagnostic.
+    /// The arguments with their prepositions, or a diagnostic.
     fn parse_call_args(&mut self) -> PResult<Args>
     {
         let ends = [Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];

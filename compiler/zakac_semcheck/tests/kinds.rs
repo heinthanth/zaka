@@ -74,8 +74,8 @@ fn a_literal_operand_takes_the_other_operand_kind()
     assert!(checked.out.diagnostics.is_empty());
     assert_eq!(kind_at(&checked, "ခ + ၁"), "u8");
     assert_eq!(kind_at(&checked, "၁"), "u8");
-    let verbal = check(&lines(&[I8_U8, "ခ နှင့် ၁ ၏ ပေါင်းလဒ် ကို ပြသမည်။"]));
-    assert_eq!(kind_at(&verbal, "ခ နှင့် ၁ ၏ ပေါင်းလဒ်"), "u8");
+    let verbal = check(&lines(&[I8_U8, "ခ နှင့် ၁ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။"]));
+    assert_eq!(kind_at(&verbal, "ခ နှင့် ၁ ကို ပေါင်းသည့်ရလဒ်"), "u8");
 }
 
 #[test]
@@ -176,7 +176,7 @@ fn shifts_take_an_unsigned_distance()
     assert_eq!(kind_at(&checked, "၁ << ၃"), "isize");
     assert_eq!(codes("၁ << ၆၄ ကို ပြသမည်။"), [Code::ShiftTooFar]);
     assert_eq!(codes(&lines(&[I8_U8, "၁ << က ကို ပြသမည်။"])), [Code::OperandKind]);
-    ok("၄ ကို ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ် ကို ပြသမည်။");
+    ok("၄ ကို ၂ ဖြင့် ဘစ်ညာရွေ့သည့်ရလဒ် ကို ပြသမည်။");
 }
 
 #[test]
@@ -242,10 +242,7 @@ fn integer_operators_ignore_a_float_context()
         [Code::KindMismatch]
     );
     assert_eq!(
-        codes(
-            "ကိန်းရှင် က သည် ၆၄ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၆ ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ် \
-             ဖြစ်ပါစေ။"
-        ),
+        codes("ကိန်းရှင် က သည် ၆၄ ဘစ် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၆ ကို ဘစ်ပြောင်းပြန်သည့်ရလဒ် ဖြစ်ပါစေ။"),
         [Code::KindMismatch]
     );
 }

@@ -1,11 +1,17 @@
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::fmt::Debug;
 use std::io;
 use std::io::BufRead;
 
 use bon::Builder;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
+use crate::kinds::IS_FILE;
+use crate::kinds::IS_FOLDER;
+use crate::kinds::IS_OTHER;
 use crate::kinds::STDERR;
 use crate::kinds::STDIN;
 use crate::kinds::STDOUT;
@@ -45,6 +51,74 @@ pub trait World: Debug + Send + Sync
     ///
     /// `Ok`, or the error.
     fn write_file(&mut self, path: &str, data: &str) -> io::Result<()>;
+
+    /// Add text at the end of a file, making the file when it is not there.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path of the file.
+    /// * `data` - The text.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the error.
+    fn append_file(&mut self, path: &str, data: &str) -> io::Result<()>;
+
+    /// Remove a file, or a folder that holds nothing.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the error.
+    fn remove(&mut self, path: &str) -> io::Result<()>;
+
+    /// Make a folder and each folder above it that is not there.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path of the folder.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the error.
+    fn make_folder(&mut self, path: &str) -> io::Result<()>;
+
+    /// The names a folder holds, sorted.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path of the folder.
+    ///
+    /// # Returns
+    ///
+    /// The names, or the error.
+    fn list_folder(&mut self, path: &str) -> io::Result<Vec<String>>;
+
+    /// What a path holds: [`IS_FILE`], [`IS_FOLDER`] or [`IS_OTHER`].
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path.
+    ///
+    /// # Returns
+    ///
+    /// The member, or the error for a path that holds nothing.
+    fn path_kind(&mut self, path: &str) -> io::Result<u32>;
+
+    /// Move a file or a folder, replacing what the target holds.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - The old path.
+    /// * `to` - The new path.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the error.
+    fn rename(&mut self, from: &str, to: &str) -> io::Result<()>;
 
     /// Give standard input more text, as a terminal does when a line is
     /// entered. A world that cannot take more does nothing.
@@ -194,6 +268,60 @@ pub struct MemWorld
     /// waits ([`io::ErrorKind::WouldBlock`]) instead of failing with its end.
     #[builder(default)]
     pub open: bool,
+    /// Each folder made with no file in it so far; a folder that holds a file
+    /// is there through the path of the file.
+    #[builder(default)]
+    pub folders: BTreeSet<String>,
+}
+
+// shortcut: MemWorld stores paths as written, with no `.`, `..` or `\` handled;
+// normalize them when the explorer grows a view of its files.
+impl MemWorld
+{
+    /// Whether a path names a folder: one made, or one above a file or a
+    /// folder made.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path, with no `/` at its end.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a folder.
+    fn is_folder(&self, path: &str) -> bool
+    {
+        ret_if!(path.is_empty(), true);
+        let prefix = format!("{path}/");
+        let names = self.files.keys().chain(self.folders.iter());
+        self.folders.contains(path) || names.into_iter().any(|k| k.starts_with(&prefix))
+    }
+
+    /// Each path the world holds, files and folders made.
+    ///
+    /// # Returns
+    ///
+    /// The paths.
+    fn paths(&self) -> impl Iterator<Item = &String>
+    {
+        self.files.keys().chain(self.folders.iter())
+    }
+}
+
+/// A path with no `/` at its end and no `./` at its start, as [`MemWorld`]
+/// stores it.
+///
+/// # Arguments
+///
+/// * `path` - The path.
+///
+/// # Returns
+///
+/// The stored path.
+fn mem_path(path: &str) -> String
+{
+    let path = path.strip_prefix("./").unwrap_or(path);
+    let path = path.trim_end_matches('/');
+    tern!(path == ".", String::new(), path.to_string())
 }
 
 impl World for MemWorld
@@ -219,6 +347,95 @@ impl World for MemWorld
     fn write_file(&mut self, path: &str, data: &str) -> io::Result<()>
     {
         self.files.insert(path.to_string(), data.to_string());
+        Ok(())
+    }
+
+    fn append_file(&mut self, path: &str, data: &str) -> io::Result<()>
+    {
+        self.files.entry(mem_path(path)).or_default().push_str(data);
+        Ok(())
+    }
+
+    fn remove(&mut self, path: &str) -> io::Result<()>
+    {
+        let stored = mem_path(path);
+        ret_if!(self.files.remove(&stored).is_some(), Ok(()));
+        ret_if!(!self.is_folder(&stored), Err(io::ErrorKind::NotFound.into()));
+        let prefix = format!("{stored}/");
+        let held = self.paths().any(|p| p.starts_with(&prefix));
+        ret_if!(held, Err(io::Error::other(format!("the folder {path} is not empty"))));
+        self.folders.remove(&stored);
+        Ok(())
+    }
+
+    fn make_folder(&mut self, path: &str) -> io::Result<()>
+    {
+        let stored = mem_path(path);
+        let a_file = self.files.contains_key(&stored);
+        ret_if!(a_file, Err(io::Error::other(format!("{path} is a file"))));
+        // Each folder above it is made too, as on disk.
+        let ends = stored.match_indices('/').map(|(at, _)| at).chain([stored.len()]);
+        let made: Vec<String> =
+            ends.filter(|at| *at > 0).map(|at| stored[..at].to_string()).collect();
+        self.folders.extend(made);
+        Ok(())
+    }
+
+    fn list_folder(&mut self, path: &str) -> io::Result<Vec<String>>
+    {
+        let stored = mem_path(path);
+        ret_if!(!self.is_folder(&stored), Err(io::ErrorKind::NotFound.into()));
+        let prefix = tern!(stored.is_empty(), String::new(), format!("{stored}/"));
+        let under = self.paths().filter_map(|p| p.strip_prefix(&prefix));
+        let names =
+            under.filter_map(|rest| rest.split('/').next()).filter(|n| !n.is_empty());
+        let names: BTreeSet<String> = names.map(str::to_string).collect();
+        Ok(names.into_iter().collect())
+    }
+
+    fn path_kind(&mut self, path: &str) -> io::Result<u32>
+    {
+        let stored = mem_path(path);
+        ret_if!(self.files.contains_key(&stored), Ok(IS_FILE));
+        ret_if!(self.is_folder(&stored), Ok(IS_FOLDER));
+        Err(io::ErrorKind::NotFound.into())
+    }
+
+    fn rename(&mut self, from: &str, to: &str) -> io::Result<()>
+    {
+        let (from, to) = (mem_path(from), mem_path(to));
+        if let Some(data) = self.files.remove(&from)
+        {
+            self.files.insert(to, data);
+            return Ok(());
+        }
+        ret_if!(!self.is_folder(&from), Err(io::ErrorKind::NotFound.into()));
+        let prefix = format!("{from}/");
+        let moved =
+            |p: &String| p.strip_prefix(&prefix).map(|rest| format!("{to}/{rest}"));
+        let files: Vec<(String, String)> = self
+            .files
+            .iter()
+            .filter(|(k, _)| k.starts_with(&prefix))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        for (old, data) in files
+        {
+            self.files.remove(&old);
+            do_if!(let Some(new) = moved(&old), _ = self.files.insert(new, data));
+        }
+        let folders: Vec<String> = self
+            .folders
+            .iter()
+            .filter(|f| **f == from || f.starts_with(&prefix))
+            .cloned()
+            .collect();
+        for old in folders
+        {
+            self.folders.remove(&old);
+            let new = tern!(old == from, to.clone(), moved(&old).unwrap_or_default());
+            self.folders.insert(new);
+        }
         Ok(())
     }
 
@@ -253,6 +470,51 @@ impl World for TermWorld
     fn write_file(&mut self, path: &str, data: &str) -> io::Result<()>
     {
         std::fs::write(path, data)
+    }
+
+    fn append_file(&mut self, path: &str, data: &str) -> io::Result<()>
+    {
+        use std::io::Write;
+        let mut file =
+            std::fs::OpenOptions::new().create(true).append(true).open(path)?;
+        file.write_all(data.as_bytes())
+    }
+
+    fn remove(&mut self, path: &str) -> io::Result<()>
+    {
+        let folder = std::fs::symlink_metadata(path)?.is_dir();
+        tern!(folder, std::fs::remove_dir(path), std::fs::remove_file(path))
+    }
+
+    fn make_folder(&mut self, path: &str) -> io::Result<()>
+    {
+        std::fs::create_dir_all(path)
+    }
+
+    fn list_folder(&mut self, path: &str) -> io::Result<Vec<String>>
+    {
+        let text = |e: std::fs::DirEntry| {
+            let name = e.file_name().into_string();
+            name.map_err(|_| io::Error::from(io::ErrorKind::InvalidData))
+        };
+        let entries = std::fs::read_dir(path)?;
+        let names = entries.map(|e| e.and_then(text));
+        let mut names = names.collect::<io::Result<Vec<String>>>()?;
+        names.sort();
+        Ok(names)
+    }
+
+    fn path_kind(&mut self, path: &str) -> io::Result<u32>
+    {
+        let meta = std::fs::metadata(path)?;
+        let kind =
+            tern!(meta.is_dir(), IS_FOLDER, tern!(meta.is_file(), IS_FILE, IS_OTHER));
+        Ok(kind)
+    }
+
+    fn rename(&mut self, from: &str, to: &str) -> io::Result<()>
+    {
+        std::fs::rename(from, to)
     }
 
     fn boxed(&self) -> Box<dyn World> { Box::new(*self) }

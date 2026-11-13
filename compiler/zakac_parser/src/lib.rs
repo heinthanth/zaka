@@ -7,6 +7,7 @@ mod decl_head;
 pub mod describe;
 mod fn_kind;
 mod generics;
+mod glued;
 mod heap;
 mod kind;
 mod literal;
@@ -19,7 +20,7 @@ mod stmt;
 mod str_lit;
 mod struct_lit;
 mod traits;
-mod using;
+pub mod using;
 mod word_list;
 pub mod wrap;
 

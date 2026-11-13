@@ -77,8 +77,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0105 | a character literal with no closing `'` on its line | [Characters](../../learn/values/characters.md) |
 | ZK0106 | unknown `\` escape, a lone brace, or an unknown `{...}` in a character | [Characters](../../learn/values/characters.md) |
 | ZK0107 | a character literal with more than one character | [Characters](../../learn/values/characters.md) |
-| ZK0108 | a name in backticks with no closing backtick on its line | [Names](../../learn/variables/names.md) |
-| ZK0109 | a name in backticks with nothing between them | [Names](../../learn/variables/names.md) |
+| ZK0108 | a name in braces with no closing brace on its line | [Names](../../learn/variables/names.md) |
+| ZK0109 | a name in braces with nothing between them | [Names](../../learn/variables/names.md) |
 | ZK0110 | a statement verb that ends in `ပါ`; statements end in `မည်` | [Sentences](../../learn/sentences/README.md) |
 
 ### ZK02: reading the sentences
@@ -118,17 +118,20 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0234 | a kind with no `တစ်<classifier>` after it, in a declaration, a parameter, a field, a result, a function kind, a conversion, a size, a default arm or after a literal | [Measure words](../language/kinds.md#measure-words) |
 | ZK0235 | an enumeration declared inside a block | [Enumeration mistakes](../../learn/enums/mistakes.md#an-enumeration-declared-inside-a-block) |
 | ZK0236 | a switch arm after the default arm | [Enumeration mistakes](../../learn/enums/mistakes.md#an-arm-after-the-default-arm) |
-| ZK0237 | a header that marks some parameters and not the others | [Functions](../language/functions.md) |
+| ZK0237 | a header that gives some parameters a preposition and not the others | [Functions](../language/functions.md) |
 | ZK0238 | an import from `စံကား/` that names no module of the stdlib | [Input and output](../language/io.md) |
 | ZK0239 | a function kind with parameters inside a list of parameters or fields, not in parentheses | [Function values](../language/function-values.md) |
 | ZK0240 | a kind alias declared inside a block | [Kind aliases](../language/aliases.md#errors) |
-| ZK0241 | a parameter mark string, after `ဝိဘတ်`, that is not one word a mark can be | [Functions](../language/functions.md) |
+| ZK0241 | a parameter preposition string, after `ဝိဘတ်`, that holds a word a preposition cannot hold, or a first preposition that starts with `ကို သုံး၍` | [Functions](../language/functions.md) |
 | ZK0243 | a parameter of a function kind marked `ဒေတာ ထည့်ပေးရန်` | [Function values](../language/function-values.md) |
 | ZK0244 | nesting of parentheses, operands, calls, lists or blocks more than 128 levels deep | [The nesting limit](../internals/parser.md#the-nesting-limit) |
 | ZK0245 | a list in words of two or more items without `နှင့်` before the last item, or with a `၊` after it | [Lists in words](../language/words.md#lists-in-words) |
 | ZK0246 | the word that closes a list in words does not fit its count: `တို့` after one item, or none after two or more | [Lists in words](../language/words.md#lists-in-words) |
 | ZK0247 | a trait or a trait block inside a block | [Generics and traits](../language/generics.md) |
 | ZK0248 | a note in a notes block on a name that is no kind parameter of its declaration | [Generics and traits](../language/generics.md) |
+| ZK0249 | a preposition that starts with `၏` on a parameter other than the last | [Functions](../language/functions.md#prepositions) |
+| ZK0250 | warning: a declared name that is a word of the preposition of a function the file sees | [Functions](../language/functions.md#what-the-flexible-grammar-costs) |
+| ZK0251 | warning: a declared name that reads as a function the file sees with a glued call end | [Functions](../language/functions.md#what-the-flexible-grammar-costs) |
 
 ### ZK03: names
 
@@ -137,7 +140,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0301 | a name that was never declared, or is out of scope | [Blocks and scope](../../learn/variables/scope.md) |
 | ZK0302 | the same name declared twice in one block | [Names](../../learn/variables/names.md) |
 | ZK0303 | calling a function that does not exist | [Functions](../../learn/functions/README.md) |
-| ZK0304 | two functions with one name and the same parameter kinds and marks, or a function of a name the file imports | [Functions](../language/functions.md) |
+| ZK0304 | two functions with one name and the same parameter kinds and prepositions, or a function of a name the file imports | [Functions](../language/functions.md) |
 | ZK0305 | two parameters of one function with one name | [Parameters](../../learn/functions/parameters.md) |
 | ZK0306 | changing a constant | [Constants](../../learn/variables/constants.md) |
 | ZK0307 | changing a counted loop's counter | [Counted loops](../../learn/control-flow/counted-loops.md) |
@@ -164,7 +167,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0328 | a member name used twice in one enumeration | [Enumeration mistakes](../../learn/enums/mistakes.md#one-member-name-twice) |
 | ZK0329 | a member the enumeration does not have | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-the-enumeration-does-not-have) |
 | ZK0330 | a name before `ထဲမှ` that is no enumeration with `များ` | [Enumeration mistakes](../../learn/enums/mistakes.md#a-member-written-without-the-plural-mark) |
-| ZK0331 | an argument of a marked call with a mark other than its parameter's | [Functions](../language/functions.md) |
+| ZK0331 | an argument of a preposition call with a preposition other than its parameter's | [Functions](../language/functions.md) |
 | ZK0332 | a call that no function of its name fits | [Functions](../language/functions.md) |
 | ZK0333 | a call that more than one function of its name fits | [Functions](../language/functions.md) |
 | ZK0334 | an external function that is none of the functions the VM serves | [Functions](../language/functions.md) |
@@ -183,6 +186,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0347 | two functions that give a kind one function of a trait | [Generics and traits](../language/generics.md) |
 | ZK0348 | a trait block outside the file of its kind and of its trait | [Generics and traits](../language/generics.md) |
 | ZK0349 | the compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` outside the modules of the stdlib | [The prelude](../language/prelude.md) |
+| ZK0350 | warning: a function with the name, the kinds and the prepositions of a function the prelude gives, which then takes over each sentence of it | [The prelude](../language/prelude.md#verbs-on-structs) |
 
 ### ZK04: kinds
 

@@ -905,6 +905,18 @@ impl FnGen<'_, '_>
                 let s = stream(1);
                 format!("zk_host_write_stream({slot}, {r}, {}, {}, {s})", v[0], v[1])
             }
+            HostFn::AppendFile =>
+            {
+                format!("zk_host_append_file({slot}, {r}, {}, {})", v[0], v[1])
+            }
+            HostFn::Remove => format!("zk_host_remove({slot}, {r}, {})", v[0]),
+            HostFn::MakeFolder => format!("zk_host_make_folder({slot}, {r}, {})", v[0]),
+            HostFn::ListFolder => format!("zk_host_list_folder({slot}, {r}, {})", v[0]),
+            HostFn::PathKind => format!("zk_host_path_kind({slot}, {r}, {})", v[0]),
+            HostFn::Rename =>
+            {
+                format!("zk_host_rename({slot}, {r}, {}, {})", v[0], v[1])
+            }
         };
         self.line(&format!("{call};"));
     }

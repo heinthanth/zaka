@@ -29,7 +29,7 @@ subject, `ကို` the object, `နှင့်` "and" or "with", `ဖြင�
 ```
 
 The same pattern covers a statement that commands, `အသက် ကို ပြသမည်`, and a verb that
-makes a value, `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` ("the sum of 3 and 4"). A verb that makes a value
+makes a value, `၃ နှင့် ၄ ကို ပေါင်းသည့်ရလဒ်` ("the sum of 3 and 4"). A verb that makes a value
 gives an expression. A verb that commands gives a statement, which ends with `။`.
 
 ## Compared with C
@@ -39,8 +39,8 @@ gives an expression. A verb that commands gives a statement, which ends with `�
 | `အသက် ကို ပြသမည်။` | `print(age);` | age, as the object, show |
 | `ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။` | `int age = 20;` | the variable age is an integer, and its value is 20 |
 | `အသက် ကို အသက် + ၁ ဟု ထားမည်။` | `age = age + 1;` | age, as the object, set to "age plus 1" |
-| `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` | `3 + 4` | the sum of 3 and 4 |
-| `၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း` | `10 % 3` | 10, divided with 3, the remainder |
+| `၃ နှင့် ၄ ကို ပေါင်းသည့်ရလဒ်` | `3 + 4` | the sum of 3 and 4 |
+| `၁၀ ကို ၃ ဖြင့် အကြွင်းရှာသည့်ရလဒ်` | `10 % 3` | 10, divided with 3, the remainder |
 | `အသက် သည် ၁၈ အောက် ငယ်သည်` | `age < 18` | age is smaller than 18 |
 | `အကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် ...` | `if (age < 18) ...` | if age is smaller than 18, then |
 | `နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်သော ရလဒ်` | `twice(k)` | the result of doing the function with k |
@@ -50,7 +50,7 @@ gives an expression. A verb that commands gives a statement, which ends with `�
 
 Where C-like code uses punctuation, a Zaka sentence uses a word that tells what the
 punctuation would mean. The signs are still there for arithmetic: `၃ + ၄` and
-`၃ နှင့် ၄ ၏ ပေါင်းလဒ်` mean the same, and the two forms can be mixed in one line.
+`၃ နှင့် ၄ ကို ပေါင်းသည့်ရလဒ်` mean the same, and the two forms can be mixed in one line.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -59,7 +59,7 @@ punctuation would mean. The signs are still there for arithmetic: `၃ + ၄` an
 အသက် ကို ပြသမည်။
 အသက် သည် ၁၈ အောက် ငယ်သည် ဟု ပြသမည်။
 ၂ + ၃ * ၄ ကို ပြသမည်။
-၂ နှင့် ၃ နှင့် ၄ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ် ကို ပြသမည်။
+၂ နှင့် ၃ နှင့် ၄ ကို မြှောက်သည့်ရလဒ် ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -89,28 +89,28 @@ operands it needs from the top, checks their particles, and puts its result back
 result carries the particle that follows the verb, so clauses nest:
 
 ```text
- ၂ နှင့် ၃ နှင့် ၄ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ်
+ ၂ နှင့် ၃ နှင့် ၄ ကို မြှောက်သည့်ရလဒ် ကို ပေါင်းသည့်ရလဒ်
 
   read ၂ [နှင့်]                   waiting: ၂[နှင့်]
   read ၃ [နှင့်]                   waiting: ၂[နှင့်] ၃[နှင့်]
-  read ၄ [၏]                      waiting: ၂[နှင့်] ၃[နှင့်] ၄[၏]
-  verb မြှောက်လဒ်: takes ၃ and ၄   waiting: ၂[နှင့်] (၃*၄)[၏]
-  verb ပေါင်းလဒ်: takes both       result: ၂ + (၃*၄) = ၁၄
+  read ၄ [ကို]                     waiting: ၂[နှင့်] ၃[နှင့်] ၄[ကို]
+  verb မြှောက်: takes ၃ and ၄      waiting: ၂[နှင့်] (၃*၄)[ကို]
+  verb ပေါင်း: takes both          result: ၂ + (၃*၄) = ၁၄
 ```
 
 Moving one verb changes the meaning, because the verb takes what is waiting at that
 moment:
 
 ```text
- ၂ နှင့် ၃ ၏ ပေါင်းလဒ် နှင့် ၄ ၏ မြှောက်လဒ်
+ ၂ နှင့် ၃ ကို ပေါင်းသည့်ရလဒ် နှင့် ၄ ကို မြှောက်သည့်ရလဒ်
 
-  ၂[နှင့်] ၃[၏]   ပေါင်းလဒ်: (၂+၃)[နှင့်]
-  ၄[၏]            မြှောက်လဒ်: (၂+၃) * ၄ = ၂၀
+  ၂[နှင့်] ၃[ကို]   ပေါင်း: (၂+၃)[နှင့်]
+  ၄[ကို]            မြှောက်: (၂+၃) * ၄ = ၂၀
 ```
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၂ နှင့် ၃ ၏ ပေါင်းလဒ် နှင့် ၄ ၏ မြှောက်လဒ် ကို ပြသမည်။
+၂ နှင့် ၃ ကို ပေါင်းသည့်ရလဒ် နှင့် ၄ ကို မြှောက်သည့်ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -130,11 +130,11 @@ particle-and-verb pattern above. The *logical* level joins clauses with `ဖြ�
 particle is found where it is written, with a message that names it:
 
 ```zaka-error ZK0206
-၃ ကို ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။
+၃ ကို ၄ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0206]: "ပေါင်းလဒ်" needs "နှင့်" after operand 1, found ကို
+error[ZK0206]: "ပေါင်း" needs "နှင့်" after operand 1, found ကို
 ```
 
 An operand with no verb to take it is found at the end of the sentence:
@@ -150,7 +150,7 @@ error[ZK0209]: operands left over before "ပြသမည်": ၃ (နှင်
 **The verb is the last word.** The compiler knows what a sentence does when it reaches
 the verb, and `။` ends the statement. No guess is needed about where one statement stops.
 
-**Expressions and statements are one machine.** `ပေါင်းလဒ်` makes a value and `ပြသမည်`
+**Expressions and statements are one machine.** `ပေါင်းသည့်ရလဒ်` makes a value and `ပြသမည်`
 commands, but both take operands through the same stack. A statement is a clause whose
 verb is a command.
 
@@ -160,7 +160,7 @@ in Burmese](segmenting.md) tells how that works when the text has no spaces.
 
 ## What it costs
 
-- **Longer lines.** `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` is longer than `3 + 4`. The signs are kept for
+- **Longer lines.** `၃ နှင့် ၄ ကို ပေါင်းသည့်ရလဒ်` is longer than `3 + 4`. The signs are kept for
   arithmetic, so a long sum need not be nested in words, and a line can mix both forms.
 - **Spaces matter more.** Burmese is written without spaces between words, and the
   compiler has no word list, so a name must be separated from the particle after it:

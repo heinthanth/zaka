@@ -654,7 +654,7 @@ impl<'s> FuncGen<'s>
             ExprNode::CField { .. } => self.c_field_at(at, e),
             ExprNode::Own { .. } =>
             {
-                self.op(at.clone());
+                self.op(at);
                 self.put(e);
                 self.op(at);
             }

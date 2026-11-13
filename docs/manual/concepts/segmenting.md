@@ -160,7 +160,7 @@ The message names the missing particle and gives the fix.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသမည်။      // ထက်ကြီးသည်: three reserved words, joined
 ၁+၂ ကို ပြသမည်။                     // no space around the sign
-၁ နှင့် ၂ ၏ပေါင်းလဒ် ကို ပြသမည်။      // ၏ stands alone, so no space is needed
+၁ နှင့် ၂ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။      // ၏ stands alone, so no space is needed
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

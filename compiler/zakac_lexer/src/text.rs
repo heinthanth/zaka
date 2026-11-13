@@ -98,12 +98,12 @@ pub fn scan_char(text: &str, open: usize, base: Pos) -> Scan<char>
         .build()
 }
 
-/// Scan a raw identifier: text up to the next backtick on the same line.
+/// Scan a raw identifier: text up to the next `}` on the same line.
 ///
 /// # Arguments
 ///
 /// * `text` - The source text.
-/// * `open` - Offset of the opening backtick.
+/// * `open` - Offset of the opening `{`.
 /// * `base` - Absolute position of `text`.
 ///
 /// # Returns
@@ -112,7 +112,7 @@ pub fn scan_char(text: &str, open: usize, base: Pos) -> Scan<char>
 pub fn scan_raw_ident(text: &str, open: usize, base: Pos) -> Scan<()>
 {
     let eol = scan_to_eol(text, open);
-    let close = text[open + 1..eol].find('`').map(|off| open + 1 + off);
+    let close = text[open + 1..eol].find('}').map(|off| open + 1 + off);
     let Some(close) = close
     else
     {

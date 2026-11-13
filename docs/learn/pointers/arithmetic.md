@@ -100,8 +100,8 @@ at the start, to give the block back at the end.
 
 | Form | Gives |
 | --- | --- |
-| `ပ + ၂`, `ပ နှင့် ၂ ၏ ပေါင်းလဒ်` | a pointer two boxes on |
-| `ပ - ၂`, `ပ နှင့် ၂ ၏ နုတ်လဒ်` | a pointer two boxes back |
+| `ပ + ၂`, `ပ နှင့် ၂ ကို ပေါင်းသည့်ရလဒ်` | a pointer two boxes on |
+| `ပ - ၂`, `ပ နှင့် ၂ ကို နုတ်သည့်ရလဒ်` | a pointer two boxes back |
 | `ပ - မ` | the number of boxes from `မ` to `ပ` |
 | `ပ သည် မ အောက် ငယ်` | whether `ပ` comes before `မ` |
 | `ပ သည် မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ နှင့် ညီ` | whether `ပ` is null |

@@ -25,7 +25,10 @@ const BLOCK_ALIGN: u64 = 16;
 /// never lands in the next one.
 pub const RED_ZONE: u64 = 16;
 
-/// A run of zero octets, when the host has room for it.
+/// A run of zero octets, when the host has room for it. The run holds one
+/// spare octet past its end, so the native address just past its last octet
+/// lies in its own allocation and never starts another, such as a struct C
+/// allocates: [`Mem::vm_addr`] reads that address as the end of the block.
 ///
 /// # Arguments
 ///
@@ -39,7 +42,7 @@ fn zeros(size: u64) -> Option<Vec<u8>>
 {
     let len = usize::try_from(size).ok()?;
     let mut data = Vec::new();
-    data.try_reserve_exact(len).ok()?;
+    data.try_reserve_exact(len.checked_add(1)?).ok()?;
     data.resize(len, 0);
     Some(data)
 }
@@ -768,7 +771,8 @@ impl Mem
         let inside =
             |b: &&Block| live(b) && (base(b)..base(b) + b.data.len()).contains(&native);
         // An address one past the end of a block counts for that block, unless
-        // it lies inside another, whose octets can start right there.
+        // it lies inside another, whose octets can start right there. The spare
+        // octet of each block keeps an allocation of C from starting there.
         let end = |b: &&Block| live(b) && base(b) + b.data.len() == native;
         let blocks = || self.table.values();
         let block = blocks().find(inside).or_else(|| blocks().find(end))?;

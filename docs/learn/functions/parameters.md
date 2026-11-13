@@ -110,13 +110,13 @@ An argument here is a name, a literal, a sum or a sign-form call. A sentence tha
 value goes in parentheses. The [Results](results.md) page shows the form of this call
 that gives back a value.
 
-## Marked arguments
+## Prepositions
 
-A parameter can also name the word that follows its argument in a call, its *mark*, with
-`ဝိဘတ် "<mark>" ကို သုံး၍` ("using the particle …") after its `ကို`, and a call reads as a Burmese sentence, with no `သုံး၍`:
+A parameter can also name the word that follows its argument in a call, its *preposition*, with
+`ဝိဘတ် "<preposition>" ကို သုံး၍` ("using the particle …") after its `ကို`, and a call reads as a Burmese sentence, with no `သုံး၍`:
 
 ```zaka
-// "Function write, accepting a text (marked ကို) and a place (marked သို့)"
+// "Function write, accepting a text (preposition ကို) and a place (preposition သို့)"
 လုပ်ဆောင်ချက် ရေး သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း နေရာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -139,13 +139,107 @@ A parameter can also name the word that follows its argument in a call, its *mar
 | `နေရာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး` | "a text called `နေရာ`, written with `သို့`; having accepted" |
 | `"မင်္ဂလာပါ" ကို "မှတ်စု" သို့ ရေး မည်` | "will write 'hello' to the notebook" |
 
-Each argument takes the mark of its parameter, in the order of the parameters. Mark each
-parameter or none of them. The [Functions](../../manual/language/functions.md#marked-parameters)
+Each argument takes the preposition of its parameter, in the order of the parameters. Give each
+parameter a preposition or none of them. The [Functions](../../manual/language/functions.md#prepositions)
 page of the manual has the full rules.
+
+## Prepositions of several words
+
+A preposition can be several words, as Burmese often puts a phrase after a noun:
+`"ရန်ကုန်" မှ စ၍` is "starting from Yangon". Write the words in the string of `ဝိဘတ်`,
+with the spaces of the sentence:
+
+```zaka
+// "Function show trip: a start (preposition မှ စ၍) and an end (preposition အထိ)"
+လုပ်ဆောင်ချက် ခရီးစဉ်ပြ သည်
+စ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "မှ စ၍" ကို သုံး၍ လည်းကောင်း ဆုံး ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "အထိ" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"{စ} → {ဆုံး}" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+// "(I) will show the trip starting from Yangon up to Mandalay"
+"ရန်ကုန်" မှ စ၍ "မန္တလေး" အထိ ခရီးစဉ်ပြမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ရန်ကုန် → မန္တလေး
+```
+
+The call also glues `မည်` to the name: `ခရီးစဉ်ပြမည်` reads as `ခရီးစဉ်ပြ မည်`, since the
+file has a function `ခရီးစဉ်ပြ`. The endings that give a value glue alike, as
+`တွဲသည့်ရလဒ်` below.
+
+The last preposition can start with `၏`, so a call reads "at the end of the text":
+
+```zaka
+// "Function join: a piece (preposition ကို) at the end of a text (preposition ၏ နောက်ဆုံးတွင်)"
+လုပ်ဆောင်ချက် တွဲ သည်
+ပိုင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "၏ နောက်ဆုံးတွင်" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"{စာ}{ပိုင်း}" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+// "Show the result of joining 'pa' at the end of 'mingala'"
+"ပါ" ကို "မင်္ဂလာ" ၏ နောက်ဆုံးတွင် တွဲသည့်ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မင်္ဂလာပါ
+```
+
+`၏` starts the last preposition alone; before another parameter it is ZK0249, and
+elsewhere `x ၏ y` reads a field, as before. A call reads the longest preposition of the
+function that the words after an argument spell, so `မှ စ၍` is one preposition, not `မှ`
+and then a name.
+
+## Names that read as calls
+
+Gluing has a cost. In a file with a function `နာ` ("hurt"), the word `နာမည်` ("name") can
+read as `နာ` and `မည်`. Declaring a variable of that name is the warning ZK0251:
+
+```zaka-warning ZK0251
+// "Function hurt": with it in the file, နာမည် ("name") can read as နာ + မည်
+လုပ်ဆောင်ချက် နာ သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"အား" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် နာမည် သည် "မောင်" ဖြစ်ပါစေ။
+{နာမည်} ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+A name in braces is a name and nothing else. Declare it as `{နာမည်}`, write `{နာမည်}`
+where the name is meant, and the bare word stands for the call:
+
+```zaka
+လုပ်ဆောင်ချက် နာ သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"အား" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် {နာမည်} သည် "မောင်" ဖြစ်ပါစေ။
+{နာမည်} ကို ပြသမည်။
+နာမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မောင်
+အား
+```
+
+A file that has no function `နာ` reads `နာမည်` as a name, with no warning. The
+[Functions](../../manual/language/functions.md#what-the-flexible-grammar-costs) page of the
+manual lists each cost of these forms.
 
 ## One name, several functions
 
-Two functions can share a name when their parameter kinds or their marks differ. A call
+Two functions can share a name when their parameter kinds or their prepositions differ. A call
 runs the one its arguments fit:
 
 ```zaka

@@ -28,7 +28,7 @@ pub enum TokenRole
     Truth,
     /// An identifier.
     Ident,
-    /// An identifier in backticks.
+    /// An identifier in braces, `{name}`.
     Raw,
     /// A number literal.
     Number,
@@ -82,7 +82,70 @@ pub fn token_role(kind: &TokenKind) -> TokenRole
 pub fn role_with_text(kind: &TokenKind, text: &str) -> TokenRole
 {
     ret_if!(*kind == TokenKind::Ident && is_kind_name(text), TokenRole::Kind);
+    ret_if!(*kind == TokenKind::Ident && is_operator_word(text), TokenRole::Op);
+    ret_if!(*kind == TokenKind::Ident && is_builtin_verb_word(text), TokenRole::Verb);
+    ret_if!(*kind == TokenKind::Ident && builtin_count(text).is_some(), TokenRole::Op);
     token_role(kind)
+}
+
+/// The functions of the prelude the compiler gives whose sentence ends in
+/// `<name> မည်`, with the reserved word of the verb each stands for.
+pub const BUILTIN_VERBS: &[(&str, Kw)] = &[
+    ("ပြသ", Kw::Print),
+    ("ထည့်", Kw::Add),
+    ("ဖျက်", Kw::Remove),
+    ("အစားထိုး", Kw::Replace),
+];
+
+/// The functions of the prelude the compiler gives that are read right after
+/// `၏`, with the reserved word of the reading each stands for.
+pub const BUILTIN_COUNTS: &[(&str, Kw)] = &[
+    ("အကွက်အရေအတွက်", Kw::CellCount),
+    ("စာလုံးအရေအတွက်", Kw::CharCount),
+    ("အညွှန်းအရေအတွက်", Kw::IndexCount),
+];
+
+/// The verb a function the compiler gives stands for.
+///
+/// # Arguments
+///
+/// * `name` - The name of the function.
+///
+/// # Returns
+///
+/// The reserved word of the verb, or `None`.
+pub fn builtin_verb(name: &str) -> Option<Kw>
+{
+    BUILTIN_VERBS.iter().find(|(w, _)| *w == name).map(|(_, kw)| *kw)
+}
+
+/// The reading a count the compiler gives stands for.
+///
+/// # Arguments
+///
+/// * `name` - The name of the count.
+///
+/// # Returns
+///
+/// The reserved word of the reading, or `None`.
+pub fn builtin_count(name: &str) -> Option<Kw>
+{
+    BUILTIN_COUNTS.iter().find(|(w, _)| *w == name).map(|(_, kw)| *kw)
+}
+
+/// Whether a word is the name of a verb the compiler gives with `မည်` glued
+/// to it, `ပြသမည်`, so it is painted as a verb.
+///
+/// # Arguments
+///
+/// * `text` - The word.
+///
+/// # Returns
+///
+/// `true` for a glued verb.
+fn is_builtin_verb_word(text: &str) -> bool
+{
+    text.strip_suffix("မည်").and_then(builtin_verb).is_some()
 }
 
 /// The role of a reserved word in a sentence: control word, statement verb,
@@ -225,10 +288,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Remove
         | Kw::Replace
         | Kw::Import => TokenRole::Verb,
-        Kw::Sum
-        | Kw::Difference
-        | Kw::Product
-        | Kw::Equal
+        Kw::Equal
         | Kw::SameOne
         | Kw::NotEqual
         | Kw::Greater
@@ -239,27 +299,10 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::And
         | Kw::Or
         | Kw::Negate
-        | Kw::ShiftLeft
-        | Kw::ShiftRight
-        | Kw::DivideHead
-        | Kw::QuotientTail
-        | Kw::RemainderTail
-        | Kw::BitwiseHead
-        | Kw::MeetTail
-        | Kw::UnionTail
-        | Kw::DifferTail
-        | Kw::InvertTail
-        | Kw::ShiftHead
         | Kw::ConvertHead
         | Kw::CallHead
-        | Kw::Divide
-        | Kw::Remainder
-        | Kw::BitAnd
-        | Kw::BitOr
-        | Kw::BitXor
-        | Kw::BitNot
-        | Kw::Shift
         | Kw::Convert
+        | Kw::ConvertGood
         | Kw::CallResult
         | Kw::CallGoodResult
         | Kw::Which
@@ -299,9 +342,10 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::ToFill
         | Kw::DataToChange
         | Kw::DataToFill
-        | Kw::MarkWord
+        | Kw::PrepositionWord
         | Kw::Called
         | Kw::Named
+        | Kw::That
         | Kw::ListOf
         | Kw::ItemOf
         | Kw::StartingAt
@@ -371,4 +415,41 @@ pub fn punct_role(punct: Punct) -> TokenRole
         Punct::ListSep | Punct::FullStop | Punct::Ei | Punct::LParen | Punct::RParen
     );
     tern!(delim, TokenRole::Delim, TokenRole::Op)
+}
+
+/// The functions of the prelude that the word operators call, as
+/// `က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်` calls `ပေါင်း`.
+pub const OPERATOR_NAMES: &[&str] = &[
+    "ပေါင်း",
+    "နုတ်",
+    "မြှောက်",
+    "စား",
+    "အကြွင်းရှာ",
+    "ဘစ်ဆုံ",
+    "ဘစ်ပေါင်းစု",
+    "ဘစ်ခြားနား",
+    "ဘစ်ပြောင်းပြန်",
+    "ဘစ်ဘယ်ရွေ့",
+    "ဘစ်ညာရွေ့",
+];
+
+/// The value ends a word operator can have glued to it.
+const VALUE_ENDS: &[&str] =
+    &["သည့်ရလဒ်ကောင်း", "မည့်ရလဒ်ကောင်း", "သောရလဒ်ကောင်း", "သည့်ရလဒ်", "မည့်ရလဒ်", "သောရလဒ်"];
+
+/// Whether a name is a word operator: the name of a function of
+/// [`OPERATOR_NAMES`], alone or with a value end glued to it, so it is painted
+/// as an operator.
+///
+/// # Arguments
+///
+/// * `text` - The name.
+///
+/// # Returns
+///
+/// `true` for a word operator.
+pub fn is_operator_word(text: &str) -> bool
+{
+    let stem = VALUE_ENDS.iter().find_map(|end| text.strip_suffix(end));
+    OPERATOR_NAMES.contains(&stem.unwrap_or(text))
 }

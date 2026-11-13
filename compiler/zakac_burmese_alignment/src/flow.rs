@@ -594,7 +594,7 @@ fn span_of(placed: &[Placed], cells: &[Cell], grid: Grid, marked: usize) -> (f64
     let mut runs = placed.iter().filter(|run| run.part == marked);
     if let Some(first) = runs.next()
     {
-        let last = runs.last().unwrap_or(first);
+        let last = runs.next_back().unwrap_or(first);
         return (first.start, last.end);
     }
     let col: usize =

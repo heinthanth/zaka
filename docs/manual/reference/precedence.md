@@ -20,7 +20,7 @@ first. Parentheses come before all else. From **tightest** to **loosest**:
 | 8 | `\|` | left to right | |
 | 9 | `<` `>` `<=` `>=` | not chainable | `က < ခ < ဂ` is an error |
 | 10 | `==` `!=` | not chainable | |
-| 11 | word phrases: `... ၏ ပေါင်းလဒ်`, `... ထက် ကြီး`, `... အဖြစ် ပြောင်းလဲသော ရလဒ်`, ... | with particles | each part is a whole operator expression |
+| 11 | word phrases: `... ကို ပေါင်းသည့်ရလဒ်`, `... ထက် ကြီး`, `... အဖြစ် ပြောင်းလဲသော ရလဒ်`, ... | with particles | each part is a whole operator expression |
 | 12 | `မဟုတ်` after a value | | `က == ခ မဟုတ်ပါ` is `!(က == ခ)` |
 | 13 | `ဖြစ်၍` `&&` | left to right | |
 | 14 | `သို့မဟုတ်` `\|\|` | left to right | |
@@ -31,7 +31,7 @@ first. Parentheses come before all else. From **tightest** to **loosest**:
 | --- | --- |
 | `၂ + ၃ * ၄` | `၂ + (၃ * ၄)` = 14 |
 | `၁၀ - ၃ - ၂` | `(၁၀ - ၃) - ၂` = 5 |
-| `က + ခ နှင့် ဂ ၏ မြှောက်လဒ်` | `(က + ခ) * ဂ` |
+| `က + ခ နှင့် ဂ ကို မြှောက်သည့်ရလဒ်` | `(က + ခ) * ဂ` |
 | `!က == ခ` | `(!က) == ခ` |
 | `က == ခ မဟုတ်ပါ` | `!(က == ခ)` |
 | `က သို့မဟုတ် ခ ဖြစ်၍ ဂ` | `က သို့မဟုတ် (ခ ဖြစ်၍ ဂ)` |
@@ -39,7 +39,7 @@ first. Parentheses come before all else. From **tightest** to **loosest**:
 ## Moving between levels
 
 - A word phrase inside an operator expression needs parentheses:
-  `(က နှင့် ခ ၏ ပေါင်းလဒ်) * ဂ`.
+  `(က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်) * ဂ`.
 - A logical expression (`ဖြစ်၍`, `သို့မဟုတ်`, `&&`, `||`, `မဟုတ်`) used as a value to print
   needs parentheses: `(က ဖြစ်၍ ခ) ကို ပြသမည်။`
 

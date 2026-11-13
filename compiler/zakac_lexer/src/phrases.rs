@@ -42,28 +42,21 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Tasks, Kw::Done], Kw::BlockClose),
     // ပရိုဂရမ် ပြီး(ဆုံး)?ပါပြီ(း)?။
     (&[Kw::Program, Kw::Done], Kw::ProgramClose),
-    // ... ကို ... ဖြင့် စားသော စားလဒ်
-    (&[Kw::DivideHead, Kw::QuotientTail], Kw::Divide),
-    // ... ကို ... ဖြင့် စားသော စားကြွင်း
-    (&[Kw::DivideHead, Kw::RemainderTail], Kw::Remainder),
-    // ... နှင့် ... ၏ ဘစ်အလိုက် ဆုံလဒ်
-    (&[Kw::BitwiseHead, Kw::MeetTail], Kw::BitAnd),
-    // ... နှင့် ... ၏ ဘစ်အလိုက် ပေါင်းစုလဒ်
-    (&[Kw::BitwiseHead, Kw::UnionTail], Kw::BitOr),
-    // ... နှင့် ... ၏ ဘစ်အလိုက် ခြားနားလဒ်
-    (&[Kw::BitwiseHead, Kw::DifferTail], Kw::BitXor),
-    // ... ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်
-    (&[Kw::BitwiseHead, Kw::InvertTail], Kw::BitNot),
-    // ... ကို ဘယ်သို့|ညာသို့ ... ဘစ် ရွေ့သောရလဒ်
-    (&[Kw::ShiftHead, Kw::Result], Kw::Shift),
     // ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်
     (&[Kw::ConvertHead, Kw::Result], Kw::Convert),
+    // ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်ကောင်း
+    (&[Kw::ConvertHead, Kw::GoodResult], Kw::ConvertGood),
     // ... ဟူသော လုပ်ဆောင်ချက်ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်
     (&[Kw::CallHead, Kw::Result], Kw::CallResult),
     // ... ဟူသော လုပ်ဆောင်ချက်ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်ကောင်း
     (&[Kw::CallHead, Kw::GoodResult], Kw::CallGoodResult),
     // ... ကို သုံး၍ <fn> သည့် ရလဒ်
     (&[Kw::Which, Kw::Result], Kw::UsedResult),
+    // <fn> မည့် ရလဒ် / <fn> သော ရလဒ် — the same end as သည့် ရလဒ်
+    (&[Kw::Named, Kw::Result], Kw::UsedResult),
+    (&[Kw::That, Kw::Result], Kw::UsedResult),
+    (&[Kw::Named, Kw::GoodResult], Kw::UsedGoodResult),
+    (&[Kw::That, Kw::GoodResult], Kw::UsedGoodResult),
     // လုပ်ဆောင်ချက် <fn> သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်(တစ်ခု)?ဖြစ်(၍|သည်) ...
     (&[Kw::Outside, Kw::From, Kw::Coming], Kw::External),
     // ... ကို သုံး၍ <fn> သည့် ရလဒ်ကောင်း

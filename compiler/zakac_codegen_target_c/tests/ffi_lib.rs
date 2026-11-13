@@ -181,7 +181,7 @@ fn vm_run(path: &Path) -> (String, Result<(), Trap>)
     let mut out = Vec::new();
     let host = HostData::program("main.zaka");
     let ran = run_and_keep(&module, &mut out, &RunOptions::default(), &host).1;
-    (String::from_utf8(out).unwrap(), ran)
+    (String::from_utf8(out).unwrap(), ran.map_err(|t| *t))
 }
 
 /// Build the program as an executable linked to the lib, and run it.

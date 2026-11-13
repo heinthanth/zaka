@@ -8,6 +8,7 @@ use zakac_lexer::token::StrPart;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
+use crate::glued::split_glued;
 use crate::parser::PResult;
 use crate::parser::Parser;
 
@@ -39,7 +40,7 @@ impl Parser<'_>
                 StrPart::Escape(ch) => StrPiece::Text(ch.to_string()),
                 StrPart::TemplateSlot { span, .. } =>
                 {
-                    StrPiece::TemplateSlot(self.parse_template_slot(*span)?)
+                    StrPiece::TemplateSlot(Box::new(self.parse_template_slot(*span)?))
                 }
             };
             push_piece(&mut pieces, piece);
@@ -63,10 +64,11 @@ impl Parser<'_>
         let lexed = lex_at(text, span.lo, &LexerOptions::default());
         ret_if!(let Some(d) = lexed.diagnostics.first(), Err(d.clone()));
         ret_if!(text.trim().is_empty(), Err(diag::expected_operand(span, "}")));
+        let lexed = split_glued(text, span.lo, &lexed, &self.functions);
         let mut inner = Parser::new(text, span.lo, &lexed);
         inner.next_id = self.next_id;
         inner.structs.extend(self.structs.iter().cloned());
-        inner.marked.extend(self.marked.iter().map(|(k, v)| (k.clone(), v.clone())));
+        inner.set_functions(self.functions.clone());
         let expr = inner.parse_expr();
         let rest = (!inner.at_eof()).then(|| inner.err_expected("}"));
         self.next_id = inner.next_id;

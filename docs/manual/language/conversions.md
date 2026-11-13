@@ -34,7 +34,7 @@ error value, as [Errors and results](error-handling.md) states.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
-က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် နှင့် ၂.၅ ၏ ပေါင်းလဒ် ကို ပြသမည်။
+က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် နှင့် ၂.၅ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။
 (က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်) / ၄ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -93,6 +93,56 @@ hi
 
 ```text
 error[ZK0408]: cannot convert isize to bool
+```
+
+## Conversions through functions
+
+```text
+<value> ကို <kind> တစ်<word> အဖြစ် ပြောင်းလဲသော ရလဒ်
+<value> ကို <kind> တစ်<word> အဖြစ် ပြောင်းလဲသော ရလဒ်ကောင်း
+```
+
+When the table above has no pair for two kinds, a conversion goes through a function the
+file sees: one whose name ends in `အဖြစ်ပြောင်း`, that takes one value of the source kind,
+and gives the target kind, or a result whose good side is the target kind. The
+stdlib names such a function `<K>အဖြစ်ပြောင်း`, with the word of the target kind
+for `K`. The conversion is then the call of that function: its value is the result of the
+call, and `ပြောင်းလဲသော ရလဒ်ကောင်း` passes a failure on, as `သည့် ရလဒ်ကောင်း` does for a
+call. `ပြောင်းလဲသော ရလဒ်ကောင်း` on a pair the table converts is ZK0444, since that conversion
+cannot fail. With no such function, the conversion is ZK0408, as before.
+
+- `"စံကား/စာသား"` gives `ကိန်းပြည့်အဖြစ်ပြောင်း`, which reads text as an integer: an optional
+  `-`, then the digits `0`-`9` or `၀`-`၉`. Its failure is a member of
+  `ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း`: `ဗလာစာသား` (blank text),
+  `ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း` (a character that is no digit) or
+  `အကန့်အသတ်ကျော်ခြင်း` (a number past the largest `ကိန်းပြည့်`).
+- `"စံကား/လမ်းကြောင်း"` gives `ဖိုင်လမ်းကြောင်းအဖြစ်ပြောင်း`, text to a path, and
+  `စာသားအဖြစ်ပြောင်း`, a path to text.
+- A struct converts through a function of its own of the same shape, and a kind alias
+  converts as the kind it names.
+
+```zaka
+"စံကား/စာသား" မှ ကိန်းပြည့်အဖြစ်ပြောင်း နှင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း တို့ကို ထည့်သွင်းမည်။
+
+လုပ်ဆောင်ချက် နှစ်ဆ သည် စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် န သည် စ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်ကောင်း ဖြစ်ပါစေ။
+န * ၂ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"-၁၂" ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+"12a" ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+နှစ်ဆ("၂၁") ကို ပြသမည်။
+နှစ်ဆ("") ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ရလဒ်ကောင်း(-၁၂)
+အမှားအယွင်း(ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်းများထဲမှ ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း)
+ရလဒ်ကောင်း(၄၂)
+အမှားအယွင်း(ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်းများထဲမှ ဗလာစာသား)
 ```
 
 ## What happens to the value
@@ -254,7 +304,7 @@ Convert one side to join two kinds that do not widen:
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀၀ ဖြစ်ပါစေ။
-က နှင့် ခ ကို ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ၏ ပေါင်းလဒ် ကို ပြသမည်။
+က နှင့် ခ ကို ၁၆ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

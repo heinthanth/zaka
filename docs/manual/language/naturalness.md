@@ -170,7 +170,7 @@ read as far as it goes, so the parentheses add nothing.
 Parentheses are needed, and left alone, around a logical expression (one with `ဖြစ်၍`,
 `သို့မဟုတ်` or `မဟုတ်`) in an operand place, and inside an operator chain or a clause with
 more operands. Parentheses are needed around a verb that joins its operands with `နှင့်`, such as
-`(က နှင့် ခ ၏ ပေါင်းလဒ်)`, too: as an item of a list in words, its `နှင့်` would join the
+`(က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်)`, too: as an item of a list in words, its `နှင့်` would join the
 next item without them ([Lists in words](words.md#lists-in-words)).
 
 ```zaka-warning ZK0507

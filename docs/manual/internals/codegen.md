@@ -863,7 +863,7 @@ To add a host function:
 2. When it needs an effect outside the VM that `World` lacks, add a `World` method and
    write it for `MemWorld` (the browser and the tests) and `TermWorld` (the terminal).
    A new kind of argument or result needs a case in `machine/host.rs`.
-3. Declare it in the stdlib with its marks.
+3. Declare it in the stdlib with its prepositions.
 
 A `MemWorld` holds the input lines given before the run and a map of files; a
 `TermWorld` reads the standard input of the process and the files on disk. `zakac run`
@@ -897,8 +897,11 @@ both once the function returns. It runs the function in the VM until it returns;
 
 An address that lies in a live block becomes the native address of that octet
 (`Mem::native_at`), for a parameter and for an address field of a struct, so C reads and
-writes the block in place. An address C gives back that lies in a block maps back
-(`Mem::vm_addr`); another passes as it is and cannot be read through in the VM. A build
+writes the block in place. An address C gives back that lies in a block, or just past its end,
+maps back (`Mem::vm_addr`); another passes as it is and cannot be read through in the VM.
+The octets of each block hold one spare octet of room past their end (`zeros`), so the
+address just past a block lies in that block's own allocation and is never the start of
+a struct C allocates: such a struct, behind a handle, stays a native address. A build
 with no feature `ffi` (the explorer) holds `without_ffi::call_c`, which gives the trap
 `ForeignCall`; a lib that does not open, a missing C name and a platform size that is not
 the host's give `ForeignLink`. The zakac and book-test builds turn `ffi` on.

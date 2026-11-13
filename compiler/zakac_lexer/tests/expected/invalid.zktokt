@@ -1,7 +1,7 @@
 # zakac-lex-artifact v1
 name:
   Custom: invalid.zaka
-source: "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ဘစ် ဖြစ်ပါစေ။\nက၊ ခ, ဂ\n\"unterminated\n'ab' ကို ပြသမည်။\n\"{မသိ}\" ဟု ပြသမည်။\n`raw\n၁၂.34 ; $\n"
+source: "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ဘစ် ဖြစ်ပါစေ။\nက၊ ခ, ဂ\n\"unterminated\n'ab' ကို ပြသမည်။\n\"{မသိ}\" ဟု ပြသမည်။\n{raw\n၁၂.34 ; $\n"
 tokens:
 - kind:
     kw: var
@@ -116,8 +116,7 @@ tokens:
     hi: 224
   particle: none
   joined: false
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 225
     hi: 243
@@ -144,8 +143,7 @@ tokens:
     hi: 267
   particle: none
   joined: false
-- kind:
-    kw: print
+- kind: ident
   span:
     lo: 268
     hi: 286
@@ -224,7 +222,7 @@ diagnostics:
   help: null
 - code: ZK0108
   level: error
-  message: raw identifier is missing its closing backtick before the end of the line
+  message: raw identifier is missing its closing brace before the end of the line
   span:
     lo: 290
     hi: 294

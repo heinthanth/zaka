@@ -65,7 +65,7 @@ called.
   declarations does not matter there, and two functions can call each other.
 - A file can declare several functions of one name when their parameters differ (see
   [One name, several functions](#one-name-several-functions)); a second function with
-  the same name, parameter kinds and marks is ZK0304. Nested functions of one scope have
+  the same name, parameter kinds and prepositions is ZK0304. Nested functions of one scope have
   no overloads: a second one of a name is ZK0304.
 - A call to a name that no function has is ZK0303.
 
@@ -105,10 +105,10 @@ this order:
 | `ဒေတာ ပြောင်းလဲရန်` | the function reads and changes the caller's place, which the caller sets first; see [Changed parameters](#changed-parameters) |
 | `ဒေတာ ထည့်ပေးရန်` | the function writes the caller's place, which the caller need not set; see [Filled parameters](#filled-parameters) |
 | `အပိုင်အနေဖြင့်` | the function takes over the block a pointer names: pointers alone, see [Unsafe Zaka](unsafe.md) |
-| `ဝိဘတ် "<mark>" ကို သုံး၍` | the word that follows the argument in a call; see [Marked parameters](#marked-parameters) |
+| `ဝိဘတ် "<preposition>" ကို သုံး၍` | the word that follows the argument in a call; see [Prepositions](#prepositions) |
 
 ```text
-param := <name> ဟူသော <kind> တစ်<word> ကို [ဒေတာ ပြောင်းလဲရန် | ဒေတာ ထည့်ပေးရန်] [အပိုင်အနေဖြင့်] [ဝိဘတ် "<mark>" ကို သုံး၍]
+param := <name> ဟူသော <kind> တစ်<word> ကို [ဒေတာ ပြောင်းလဲရန် | ဒေတာ ထည့်ပေးရန်] [အပိုင်အနေဖြင့်] [ဝိဘတ် "<preposition>" ကို သုံး၍]
 
 <param> လည်းကောင်း <param> လည်းကောင်း … လက်ခံပြီး      (two or more)
 <param> [လည်းကောင်း] လက်ခံပြီး                          (one)
@@ -421,8 +421,12 @@ The rules of these forms:
 - An argument is a notation expression: a name, a literal, a sum, a sign-form call, or a
   short call with no arguments. A sentence that gives a value, another arguments-first
   call included, goes in parentheses.
-- `မည်` and `သည့်` are words of their own, with a space between each and the name:
-  `ပြမည်` is one name, not a call of `ပြ`.
+- The value end can also be written `မည့် ရလဒ်` or `သော ရလဒ်`, the same as `သည့် ရလဒ်`,
+  each with its `ရလဒ်ကောင်း` form.
+- `မည်` and `သည့်` are words of their own, with a space between each and the name, unless
+  the file sees a function of that name: `ပြမည်` is one name, but a file that sees a
+  function `ပြ` reads it as `ပြ မည်`, and `ပေါင်းသည့်ရလဒ်` as `ပေါင်း သည့် ရလဒ်` (see
+  [What the flexible grammar costs](#what-the-flexible-grammar-costs)).
 - The arguments are a list in words: `ကို` closes one argument, and `တို့ကို` closes two or
   more, with `နှင့်` before the last; the other particle is ZK0246, and a list without its
   `နှင့်` is ZK0245 ([Lists in words](words.md#lists-in-words)).
@@ -445,23 +449,23 @@ The rules of these forms:
 error[ZK0201]: expected "သည့် ရလဒ်" or "သည့် ရလဒ်ကောင်း", found "မည်"
 ```
 
-## Marked parameters
+## Prepositions
 
-A parameter can name the word that follows its argument in a call, its *mark*, with
-`ဝိဘတ် "<mark>" ကို သုံး၍` ("using the particle …") after its `ကို`:
+A parameter can name the word that follows its argument in a call, its *preposition*, with
+`ဝိဘတ် "<preposition>" ကို သုံး၍` ("using the particle …") after its `ကို`:
 `လမ်းကြောင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "၌ရှိသော" ကို သုံး၍`. A call then reads as a Burmese
-sentence, each argument with its mark after it and the function last:
+sentence, each argument with its preposition after it and the function last:
 
 ```text
-လုပ်ဆောင်ချက် <name> သည် <param> ဟူသော <kind> တစ်<word> ကို ဝိဘတ် "<mark>" ကို သုံး၍ လည်းကောင်း ... လက်ခံပြီး ...
-<argument> <mark> <argument> <mark> <name> မည်။
+လုပ်ဆောင်ချက် <name> သည် <param> ဟူသော <kind> တစ်<word> ကို ဝိဘတ် "<preposition>" ကို သုံး၍ လည်းကောင်း ... လက်ခံပြီး ...
+<argument> <preposition> <argument> <preposition> <name> မည်။
 ```
 
 The call ends as the
 [arguments-first](#arguments-first) forms do: `<name> မည်` or
 `<name> ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်` for a statement, `<name> သည့် ရလဒ်` or
 `<name> ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ်` for a value, with `ရလဒ်ကောင်း` and the pass-on
-tail as there. A function with marks takes the other call forms too.
+tail as there. A function with prepositions takes the other call forms too.
 
 ```zaka
 လုပ်ဆောင်ချက် ရေး သည်
@@ -492,20 +496,32 @@ tail as there. A function with marks takes the other call forms too.
 မှတ်စု: ဟယ်လို
 ```
 
-The rules of marks:
+The rules of prepositions:
 
-- A mark is one word, written in the string: a name, or a particle such as `ကို`, `မှ`,
-  `ဖြင့်`, `နှင့်`, `ထဲသို့`, `တွင်`. `သည်`, `ပါ`, `ဖြစ်ကာ`, `ပြီးလျှင်` and `လက်ခံပြီး` cannot be
-  marks, and neither can `၏`. A mark of two words needs them glued: `၌ရှိသော`, not
-  `၌ ရှိသော`. A string that is not one such word is ZK0241.
-- A header marks each parameter or none of them; marks on some alone are ZK0237.
-- A call gives the arguments in the order of the parameters, each with the mark of its
-  parameter. Another mark is ZK0331.
+- A preposition is written in the string, as one word or as several: names, particles such as
+  `ကို`, `မှ`, `ဖြင့်`, `နှင့်`, `ထဲသို့` and `တွင်`, and other reserved words, as in
+  `ရှိ ဖိုင်ကို` or `ကြိမ်မြောက်အကွက်ကို`. The compiler reads the string as the lexer reads a
+  sentence, so `ကိုသုံး၍` and `ကို သုံး၍` are one preposition, and `၌ရှိသော` and `၌ ရှိသော` are one
+  too. A preposition cannot hold a call end (`မည်`, `သည့် ရလဒ်`, …), `ဟူသော`, a literal word,
+  `အနုတ်`, a sign, `၊` or `။`, and it cannot end in the closers `သည်`, `ပါ`, `ဖြစ်ကာ`,
+  `ပြီးလျှင်` and `လက်ခံပြီး`: such a string is ZK0241. A closer before another word of
+  the preposition is fine, as `ပါ` in `ပါရှိသော`.
+- `၏` can start the last preposition, right before the function:
+  `p ၏ ဖိုင်အမည်နောက်တွဲ သည့် ရလဒ်`. On another parameter it is ZK0249, and after the first
+  word of a preposition it is ZK0241. Elsewhere `x ၏ f` reads a field, as before.
+- The first preposition cannot start with `ကို သုံး၍` or `တို့ကို သုံး၍`, which start the
+  arguments-first call (ZK0241).
+- A call reads the longest preposition of the function that the words after an argument spell,
+  so `ရှိ ဖိုင်ကို` is one preposition, not `ရှိ` and then a name.
+- A header gives each parameter a preposition or none of them; prepositions on some alone are
+  ZK0237.
+- A call gives the arguments in the order of the parameters, each with the preposition of its
+  parameter. Another preposition is ZK0331.
 - An argument is a notation expression, as in the arguments-first call; a sentence that
-  gives a value, another marked call included, goes in parentheses.
-- A marked call ends at a call of a function that declares marks, when the number of
-  marks fits the function, and nowhere else. So a sentence that holds no such call keeps its
-  meaning: `က ကို ခုနစ် သည့် ရလဒ် ဟု ထားမည်။` sets `က` when `ခုနစ်` declares no marks.
+  gives a value, another preposition call included, goes in parentheses.
+- A preposition call ends at a call of a function that declares prepositions, when the number of
+  prepositions fits the function, and nowhere else. So a sentence that holds no such call keeps its
+  meaning: `က ကို ခုနစ် သည့် ရလဒ် ဟု ထားမည်။` sets `က` when `ခုနစ်` declares no prepositions.
 
 ```zaka-error ZK0331
 လုပ်ဆောင်ချက် ရေး သည်
@@ -520,7 +536,7 @@ The rules of marks:
 ```
 
 ```text
-error[ZK0331]: argument 2 of "ရေး" is marked "ထဲသို့", not "သို့"
+error[ZK0331]: argument 2 of "ရေး" has the preposition "ထဲသို့", not "သို့"
 ```
 
 ```zaka-error ZK0237
@@ -535,17 +551,17 @@ error[ZK0331]: argument 2 of "ရေး" is marked "ထဲသို့", not "�
 ```
 
 ```text
-error[ZK0237]: some parameters have a mark and some do not
+error[ZK0237]: some parameters have a preposition and some do not
 ```
 
 ## One name, several functions
 
 A file can declare several functions of one name when their parameter kinds or their
-marks differ. One function for each kind, written once, is a
+prepositions differ. One function for each kind, written once, is a
 [generic](generics.md) instead. A call runs the one its arguments fit: an argument for each parameter, the
-marks of the parameters when the call writes marks, and each argument fit for the kind of
-its parameter, under the rules a call to a single function follows. The marks can tell two
-functions apart on their own, so a marked call chooses with the words written too.
+prepositions of the parameters when the call writes prepositions, and each argument fit for the kind of
+its parameter, under the rules a call to a single function follows. The prepositions can tell two
+functions apart on their own, so a preposition call chooses with the words written too.
 
 ```zaka
 လုပ်ဆောင်ချက် ပြ သည်
@@ -581,15 +597,17 @@ functions apart on their own, so a marked call chooses with the words written to
 
 The rules of functions that share a name:
 
-- Two functions of one name with the same parameter kinds and the same marks in one file
+- Two functions of one name with the same parameter kinds and the same prepositions in one file
   are ZK0304.
 - A call that no function of the name fits is ZK0332; the help lists the parameters of
   each.
 - A call that two or more fit is ZK0333. A number with no kind fits each integer kind,
-  and a call with no marks fits functions that differ in their marks alone: write a kind
-  on the number, or the marks of the function meant.
-- An import of the name brings each exported function of it. A file cannot declare a
-  function of a name it imports (ZK0304).
+  and a call with no prepositions fits functions that differ in their prepositions alone: write a kind
+  on the number, or the prepositions of the function meant.
+- An import of the name brings each exported function of it. Imports of one name from
+  several files join into one set, so `ပါမပါစစ်` of text and `ပါမပါစစ်` of lists can both be
+  imported; two functions with the same parameter kinds and prepositions, from one file or from
+  two, are ZK0304. A file cannot declare a function of a name it imports (ZK0304).
 - Inside the compiler, the second function of a name is `<name>#2`, the third
   `<name>#3`; the IR, the flow checker and the VM listing show these names.
 
@@ -637,6 +655,116 @@ error[ZK0333]: more than one function "ပြ" takes these arguments
 error[ZK0332]: no function "ပြ" takes these arguments
 ```
 
+## Calls on a value
+
+```text
+<value> ၏ <function>
+<value> ၏ <function>(<arguments>)
+```
+
+`x ၏ f` is the call `f(x)` when the file sees a function `f` that takes the kind of `x`,
+and `x ၏ f(a)` is the call `f(x, a)`: the value before `၏` comes first, as the subject of a
+Burmese sentence does. The function is chosen as for a sign-form call with `x` first, and
+prepositions take no part. With no such function, `x ၏ f` reads the field `f` of `x`. Reads chain
+from the left: `x ၏ a ၏ f` is `f(x ၏ a)`.
+
+- A function wins: when a function `f` takes `x`, `x ၏ f` calls it, even where the struct
+  has a field `f`.
+- `x ၏ {f}`, with the name in braces, reads the field alone, never a call. Braces are the
+  last resort: write them where a function `f` that takes `x` hides the field, as below,
+  and nowhere else.
+- A reading the language gives after `၏`, such as `အကွက် n` or `မိတ္တူ`, wins over a
+  function of that name.
+
+```zaka
+လူ ဟူသော ဒေတာအစုအဝေးတွင် အမည် ဟူသော စာသား တစ်ခု ပါဝင်သည်။
+
+လုပ်ဆောင်ချက် နှုတ်ဆက်စာ သည် လ ဟူသော လူ တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"မင်္ဂလာပါ { လ ၏ {အမည်} }" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် အမည် သည် လ ဟူသော လူ တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"the function" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် နှစ်ဆ သည် စ ဟူသော စာသား တစ်ခု ကို လည်းကောင်း န ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"{စ}{စ}{န}" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် လ သည် လူ(အမည်: "မောင်") ဖြစ်ပါစေ။
+လ ၏ နှုတ်ဆက်စာ ကို ပြသမည်။              // the call နှုတ်ဆက်စာ(လ)
+လ ၏ အမည် ကို ပြသမည်။                  // the function wins: အမည်(လ)
+လ ၏ {အမည်} ကို ပြသမည်။                // the field
+"ab" ၏ နှစ်ဆ(၃) ကို ပြသမည်။              // နှစ်ဆ("ab", ၃)
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မင်္ဂလာပါ မောင်
+the function
+မောင်
+abab၃
+```
+
+## What the flexible grammar costs
+
+Prepositions of several words, call ends glued to a name, and calls after `၏` let a call read as
+a Burmese sentence. Each comes at a cost, stated here, and braces take a name back from
+each.
+
+- **Braces.** `{x}` is the name `x`, whatever it spells: never a reserved word, a preposition, a
+  call, or a name with a call end glued to it. `x ၏ {f}` reads the field `f` alone. A name
+  in braces can hold spaces and signs too ([Names](words.md#names)).
+- **Words of a preposition read as the preposition.** A word of a preposition that a file declares or imports
+  reads as that preposition where a preposition can stand. Declaring a variable, constant, parameter or
+  function of such a name is the warning ZK0250; write `{name}` where the name is meant.
+  Fields are not checked, since a field never stands where a preposition can.
+- **A function name glued to a call end is a call.** When the file sees a function `f`,
+  the words `fမည်`, `fမည့်ရလဒ်`, `fသည့်ရလဒ်`, `fသောရလဒ်` (with their `ရလဒ်ကောင်း` forms),
+  `fသည်` and `fပါ` read as `f` and that end. Declaring a name spelled so is the warning
+  ZK0251, and the name, unbraced, reads as the call wherever it is not being declared. The
+  split looks at the functions the file sees, not at the end of each word, so `အမည်`
+  ("name") stands as a name unless the file sees a function `အ`. An import that brings a
+  new function can change how an unbraced name reads; the warning at the declaration
+  shows it.
+- **A function hides a field.** `x ၏ f` calls a function `f` that takes `x` before it
+  reads a field `f`; `x ၏ {f}` reads the field. A reading the language gives after `၏`
+  wins over both ([Calls on a value](#calls-on-a-value)).
+- **Signatures a header cannot have:**
+
+| Signature | Reason | Code |
+| --- | --- | --- |
+| a preposition that holds a call end, `ဟူသော`, a literal word, `အနုတ်`, a sign, `၊` or `။`, or ends in a closer | the call could not end, or an argument could not start | ZK0241 |
+| `၏` in a preposition other than at the start of the last one | elsewhere `x ၏ f` reads a field | ZK0249, ZK0241 |
+| a first preposition that starts with `ကို သုံး၍` or `တို့ကို သုံး၍` | it starts the arguments-first call | ZK0241 |
+| prepositions on some parameters alone | a call could not tell where each argument ends | ZK0237 |
+| two functions of one name with the same parameter kinds and prepositions, in one file or across imports | no call could tell them apart | ZK0304 |
+
+A reserved word declared in braces can name a function: `လုပ်ဆောင်ချက် {စီ} သည် …` is called
+as `l ကို စီ မည်။`, the word bare, right before a call end. Elsewhere the word keeps its
+meaning in the grammar.
+
+```zaka-warning ZK0251
+လုပ်ဆောင်ချက် ပေါင်း သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို ဝိဘတ် "နှင့်" ကို သုံး၍ လည်းကောင်း
+ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က + ခ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၂ နှင့် ၃ ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။
+ကိန်းရှင် ပေါင်းမည် သည် ၅ ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+warning[ZK0251]: "ပေါင်းမည်" can read as "ပေါင်း" and "မည်"
+```
+
 ## External functions
 
 A function can come from outside the program, `ပြင်ပမှလာသော`: its header names its
@@ -652,7 +780,7 @@ the program runs. The header is one sentence:
 
 `လုပ်ဆောင်ချက်` can take `တစ်ခု` after it (`လုပ်ဆောင်ချက်တစ်ခုဖြစ်၍`), and `ပြင်ပမှလာသော`
 can be written apart (`ပြင်ပ မှ လာသော`). The parameters are those of a regular header,
-marks included, and so is the result kind. A call of an external function is a call
+prepositions included, and so is the result kind. A call of an external function is a call
 like each other, in each call form.
 
 The VM serves a fixed set of functions, so an external function must be one of them: the
@@ -678,7 +806,7 @@ A text with the name of a shared lib in place of `ပြင်ပ` makes a C fun
 `"libm" မှလာသော`. The function is the C function of its name in that lib, so its name is a
 C name: ASCII letters, digits and `_`, not starting with a digit (ZK0337). Each C function
 names its lib, libc too (`"libc"`). The header has the forms of the table above, the
-marks of its parameters included, and a call is a call like each other.
+prepositions of its parameters included, and a call is a call like each other.
 
 ```zaka
 လုပ်ဆောင်ချက် abs သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -1073,8 +1201,8 @@ back to C and nothing more; the second lists the fields of the C struct that the
 reads:
 
 ```text
-ဒေတာဘေ့စ် ဟူသော [အများသုံး] ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။
-ရက်စွဲ ဟူသော [အများသုံး] ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ … နှင့် … တို့ပါဝင်သည်။
+ဒေတာဘေ့စ် ဟူသော ပြင်ပမှ လာသော [အများသုံး] ဒေတာအစုအဝေး ဖြစ်သည်။
+ရက်စွဲ ဟူသော ပြင်ပမှ လာသော [အများသုံး] ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ … နှင့် … တို့ပါဝင်သည်။
 ```
 
 A lone field closes with `ပါဝင်သည်`, with no `တို့`, as in a struct.
@@ -1745,8 +1873,8 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 | Code | Mistake |
 | --- | --- |
 | ZK0214 | an external function, a C function or the start block declared inside a block or a function |
-| ZK0237 | a header that marks some parameters and not the others |
-| ZK0241 | a mark string that is not one word a mark can be |
+| ZK0237 | a header that gives some parameters a preposition and not the others |
+| ZK0241 | a preposition string with a word a preposition cannot hold |
 | ZK0303 | a call to a function that is not declared |
 | ZK0304 | two functions with one name |
 | ZK0305 | one parameter name listed twice |

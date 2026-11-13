@@ -84,6 +84,7 @@ use crate::host::IO_ERROR;
 use crate::kind::DataKind;
 use crate::list::KindUse;
 use crate::op_calls::OpCalls;
+use crate::op_calls::write_methods;
 use crate::op_calls::write_op_calls;
 use crate::ops::Want;
 use crate::overloads::Chosen;
@@ -107,6 +108,7 @@ use crate::structs::StructTable;
 use crate::traits::Traits;
 use crate::traits::traits;
 use crate::units::StructHomes;
+use crate::units::prelude_twins;
 use crate::units::private_in_exports;
 use crate::units::start_rules;
 use crate::units::struct_homes;
@@ -278,6 +280,7 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
                     true
                 }
             });
+            write_methods(program, &op_calls);
             write_overloads(program, &chosen);
             let next = generic::next_id(program);
             write_op_calls(program, &op_calls, &mut out.kinds, next);
@@ -343,6 +346,7 @@ fn check_once(
     let decls = KindDecls::of(program);
     diags.extend(private_in_exports(program, &homes));
     diags.extend(start_rules(program, !options.as_module));
+    diags.extend(prelude_twins(program));
     #[rustfmt::skip]
     let mut checker = Checker::builder().fns(unit_fns[0].clone()).unit_fns(unit_fns)
         .homes(homes).unit_names(unit_names(program)).structs(structs)
@@ -729,7 +733,7 @@ impl Checker
     /// * `kind_args` - The kinds written for a generic function.
     /// * `place` - The place that holds the function value, when written.
     /// * `args` - The arguments.
-    /// * `marks` - The word after each argument of a marked call.
+    /// * `prepositions` - The word after each argument of a preposition call.
     /// * `span` - The call.
     ///
     /// # Returns
@@ -738,7 +742,7 @@ impl Checker
     /// `None` when the call names no function it can run.
     pub fn check_call(
         &mut self, callee: &Ident, kind_args: &[Kind], place: Option<&Expr>,
-        args: &[Expr], marks: &[Ident], span: Span,
+        args: &[Expr], prepositions: &[Ident], span: Span,
     ) -> Option<Option<DataKind>>
     {
         let expect = self.call_expect.take();
@@ -750,7 +754,14 @@ impl Checker
                 let sig = self.generic_callee(&t, callee, kind_args, args, expect);
                 sig.map(|s| vec![s])
             }
-            None => self.plain_callee(callee, kind_args, place),
+            None => self.plain_or_generic(
+                callee,
+                kind_args,
+                place,
+                args,
+                prepositions,
+                expect,
+            ),
         };
         let Some(sigs) = target
         else
@@ -758,13 +769,13 @@ impl Checker
             self.infer_all(args);
             return None;
         };
-        let Some(sig) = self.choose(callee, args, marks, &sigs, span)
+        let Some(sig) = self.choose(callee, args, prepositions, &sigs, span)
         else
         {
             self.infer_all(args);
             return None;
         };
-        self.name_foreign(&sig, callee.span);
+        self.name_foreign(&sig, callee.span, &sigs);
         self.refer(&callee.name, callee.span, sig.decl);
         let call = format!("a call of \"{}\", an unsafe function,", callee.name);
         do_if!(sig.unchecked, self.need_unchecked(span, &call));
@@ -785,7 +796,7 @@ impl Checker
             );
         }
         self.check_edits_apart(args, &sig.edits);
-        self.check_marks(callee, marks, sig.marks.as_deref());
+        self.check_prepositions(callee, prepositions, sig.prepositions.as_deref());
         ret
     }
 
@@ -875,16 +886,17 @@ impl Checker
     }
 
     /// Choose the function a call runs among the functions of its name: the
-    /// one there is, or the one overload whose parameter count, marks (when
-    /// the call writes marks) and parameter kinds the arguments fit, as the
-    /// check of an argument against its parameter accepts it. No fit is
-    /// ZK0332 and more than one is ZK0333.
+    /// one there is, or the one overload whose parameter count, prepositions
+    /// (when the call writes prepositions) and parameter kinds the
+    /// arguments fit, as the check of an argument against its parameter
+    /// accepts it. No fit is ZK0332 and more than one is ZK0333.
     ///
     /// # Arguments
     ///
     /// * `callee` - The function name at the call.
     /// * `args` - The arguments.
-    /// * `marks` - The marks written; blank for the other call forms.
+    /// * `prepositions` - The prepositions written; blank for the other call
+    ///   forms.
     /// * `sigs` - The functions of the name.
     /// * `span` - The call.
     ///
@@ -892,13 +904,13 @@ impl Checker
     ///
     /// The function, or `None` after a report.
     fn choose(
-        &mut self, callee: &Ident, args: &[Expr], marks: &[Ident], sigs: &[FnSig],
-        span: Span,
+        &mut self, callee: &Ident, args: &[Expr], prepositions: &[Ident],
+        sigs: &[FnSig], span: Span,
     ) -> Option<FnSig>
     {
         ret_if!(sigs.len() == 1, sigs.first().cloned());
         let fits: Vec<&FnSig> =
-            sigs.iter().filter(|s| self.fits_call(s, args, marks)).collect();
+            sigs.iter().filter(|s| self.fits_call(s, args, prepositions)).collect();
         let list = || sigs.iter().map(params_text).collect::<Vec<_>>().join(" / ");
         match fits.as_slice()
         {
@@ -920,26 +932,69 @@ impl Checker
         }
     }
 
+    /// The functions a call of a name with plain functions can run: the plain
+    /// ones, or a generic function of the name, imported beside them from
+    /// another file, when no plain one fits the call, as `ပါမပါစစ်` of lists
+    /// beside `ပါမပါစစ်` of text.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function name.
+    /// * `kind_args` - The kinds written for a generic function.
+    /// * `place` - The place that holds the function value, when written.
+    /// * `args` - The arguments.
+    /// * `prepositions` - The word after each argument of a preposition call.
+    /// * `expect` - The kind the place of the call expects.
+    ///
+    /// # Returns
+    ///
+    /// The functions, or `None` after a report.
+    fn plain_or_generic(
+        &mut self, callee: &Ident, kind_args: &[Kind], place: Option<&Expr>,
+        args: &[Expr], prepositions: &[Ident], expect: Option<DataKind>,
+    ) -> Option<Vec<FnSig>>
+    {
+        let generic = self.templates.fns.get(&callee.name).cloned();
+        let generic =
+            generic.filter(|_| place.is_none() && self.fns.contains_key(&callee.name));
+        let Some(template) = generic
+        else
+        {
+            return self.plain_callee(callee, kind_args, place);
+        };
+        let plain = self.fns.get(&callee.name).cloned().unwrap_or_default();
+        let fits = plain.iter().any(|s| self.fits_call(s, args, prepositions));
+        ret_if!(fits, self.plain_callee(callee, kind_args, place));
+        let sig = self.generic_callee(&template, callee, kind_args, args, expect);
+        sig.map(|s| vec![s])
+    }
+
     /// Whether a call fits a function: an argument for each parameter, the
-    /// marks of the parameters when the call writes marks, and each argument
-    /// fit for its parameter with no report, which the check gives back.
+    /// prepositions of the parameters when the call writes prepositions, and
+    /// each argument fit for its parameter with no report, which the check
+    /// gives back.
     ///
     /// # Arguments
     ///
     /// * `sig` - The function.
     /// * `args` - The arguments.
-    /// * `marks` - The marks written.
+    /// * `prepositions` - The prepositions written.
     ///
     /// # Returns
     ///
     /// `true` when it fits.
-    fn fits_call(&mut self, sig: &FnSig, args: &[Expr], marks: &[Ident]) -> bool
+    pub(crate) fn fits_call(
+        &mut self, sig: &FnSig, args: &[Expr], prepositions: &[Ident],
+    ) -> bool
     {
         let short = args.len() < sig.params.len();
         ret_false!(tern!(sig.variadic, short, sig.params.len() != args.len()));
-        let named =
-            |want: &Vec<Name>| marks.iter().map(|m| m.name).eq(want.iter().copied());
-        ret_false!(!marks.is_empty() && !sig.marks.as_ref().is_some_and(named));
+        let named = |want: &Vec<Name>| {
+            prepositions.iter().map(|m| m.name).eq(want.iter().copied())
+        };
+        ret_false!(
+            !prepositions.is_empty() && !sig.prepositions.as_ref().is_some_and(named)
+        );
         let before = self.diags.len();
         args.iter()
             .zip(&sig.params)
@@ -949,25 +1004,34 @@ impl Checker
         clean
     }
 
-    /// Check that each argument of a marked call carries the mark of its
-    /// parameter.
+    /// Check that each argument of a preposition call carries the preposition
+    /// of its parameter.
     ///
     /// # Arguments
     ///
     /// * `callee` - The function name.
-    /// * `marks` - The marks written; blank for the other call forms.
-    /// * `want` - The marks of the parameters, when the parameters have marks.
-    fn check_marks(&mut self, callee: &Ident, marks: &[Ident], want: Option<&[Name]>)
+    /// * `prepositions` - The prepositions written; blank for the other call
+    ///   forms.
+    /// * `want` - The prepositions of the parameters, when the parameters have
+    ///   prepositions.
+    fn check_prepositions(
+        &mut self, callee: &Ident, prepositions: &[Ident], want: Option<&[Name]>,
+    )
     {
         let Some(want) = want
         else
         {
             return;
         };
-        let wrong =
-            marks.iter().zip(want).enumerate().filter(|(_, (m, w))| m.name != **w);
+        let wrong = prepositions
+            .iter()
+            .zip(want)
+            .enumerate()
+            .filter(|(_, (m, w))| m.name != **w);
         let found: Vec<Diagnostic> = wrong
-            .map(|(n, (m, w))| rd::wrong_mark(m.span, &callee.name, n + 1, &m.name, w))
+            .map(|(n, (m, w))| {
+                rd::wrong_preposition(m.span, &callee.name, n + 1, &m.name, w)
+            })
             .collect();
         do_for!(diag in found, self.report(diag));
     }
@@ -1827,6 +1891,8 @@ impl Visitor for Checker
 
     fn visit_add(&mut self, n: &AddStmt)
     {
+        let args = [n.list.clone(), n.value.clone()];
+        ret_if!(self.own_verb("ထည့်", &args, n.span));
         ret_if!(n.before, self.insert(&n.list, &n.value));
         let kind = self.place_kind(&n.list);
         ret_if!(kind.is_some_and(|k| k.is_text()), self.text_add(&n.value));
@@ -1836,6 +1902,10 @@ impl Visitor for Checker
 
     fn visit_remove(&mut self, n: &RemoveStmt)
     {
+        // A row is `<ဇယား> ထဲမှ အညွှန်း <index>`, the table and the index.
+        let row = extract_row(&n.list).filter(|_| n.row);
+        let args = row.unwrap_or_else(|| vec![n.list.clone()]);
+        ret_if!(self.own_verb("ဖျက်", &args, n.span));
         ret_if!(n.row, self.remove_row(&n.list));
         let kind = self.place_kind(&n.list);
         ret_if!(n.chars, do_if!(let Some(k) = kind, self.shrinking_text(&n.list, k)));
@@ -1844,6 +1914,8 @@ impl Visitor for Checker
 
     fn visit_replace(&mut self, n: &ReplaceStmt)
     {
+        let args = [n.text.clone(), n.start.clone(), n.end.clone(), n.value.clone()];
+        ret_if!(self.own_verb("အစားထိုး", &args, n.span));
         let kind = self.place_kind(&n.text);
         self.cell_number(&n.start);
         self.cell_number(&n.end);
@@ -1854,6 +1926,7 @@ impl Visitor for Checker
 
     fn visit_print(&mut self, n: &PrintStmt)
     {
+        ret_if!(self.own_verb("ပြသ", std::slice::from_ref(&n.value), n.span));
         let kind = self.infer(&n.value, None);
         self.struct_text(&n.value, kind);
         // An optional of a handle prints its handle when it holds one.
@@ -2096,8 +2169,14 @@ impl Visitor for Checker
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
         let place = n.place.as_deref();
-        let ret =
-            self.check_call(&n.callee, &n.kind_args, place, &n.args, &n.marks, n.span);
+        let ret = self.check_call(
+            &n.callee,
+            &n.kind_args,
+            place,
+            &n.args,
+            &n.prepositions,
+            n.span,
+        );
         do_if!(let Some(ret) = ret, self.check_pass(&n.callee, ret, n.pass, true, n.span));
     }
 
@@ -2105,6 +2184,25 @@ impl Visitor for Checker
     {
         do_for!(f in &n.fields, self.work_out_counts(&f.kind));
     }
+}
+
+/// The table and the index of a row, `<ဇယား> ထဲမှ အညွှန်း <index>`.
+///
+/// # Arguments
+///
+/// * `row` - The row.
+///
+/// # Returns
+///
+/// The table and the index, or `None` for another expression.
+fn extract_row(row: &Expr) -> Option<Vec<Expr>>
+{
+    let Expr::Verb(v) = row
+    else
+    {
+        return None;
+    };
+    matches!(v.op, VerbOp::Row | VerbOp::RowValue).then(|| v.args.clone())
 }
 
 /// The text and the number of the character an assignment writes, when its
@@ -2178,10 +2276,13 @@ fn err_name(err: Option<DataKind>) -> String
 /// The text.
 fn params_text(sig: &FnSig) -> String
 {
-    let mark = |n: usize| {
-        sig.marks.as_ref().map(|m| format!("({})", m[n])).unwrap_or_default()
+    let preposition = |n: usize| {
+        sig.prepositions.as_ref().map(|m| format!("({})", m[n])).unwrap_or_default()
     };
-    let each =
-        sig.params.iter().enumerate().map(|(n, k)| format!("{}{}", k.name(), mark(n)));
+    let each = sig
+        .params
+        .iter()
+        .enumerate()
+        .map(|(n, k)| format!("{}{}", k.name(), preposition(n)));
     format!("({})", each.collect::<Vec<_>>().join(", "))
 }

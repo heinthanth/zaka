@@ -1,7 +1,7 @@
 # zakac-parse-artifact v1
 name:
   Custom: lists.zaka
-source: "// စာရင်းများ - ကြေညာခြင်း၊ အကွက်များ၊ ကူးယူခြင်း နှင့် နှိုင်းယှဉ်ခြင်း\nကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။\nကိန်းရှင် ဂ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ နှင့် ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။\nဂ ၏ အကွက် ၀ ကို ၁၀ ဟု ထားမည်။\nဂ ၏ ၂ ခုမြောက်အကွက် ကို ပြသမည်။\nဂ ၏ အကွက်အရေအတွက် ကို ပြသမည်။\nဂ ကို ပြသမည်။\nက ကို ဂ ဟု ထားမည်။\nက သည် ဂ နှင့် ညီသည် ဟု ပြသမည်။\nခ != က ကို ပြသမည်။\n\n// အကွက် ၂ x ၃ ဂရစ်\nကိန်းရှင် ဂရစ် သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်ပါစေ။\nဂရစ် ၏ အကွက် ၁ ၏ အကွက် ၂ ကို ၉ ဟု ထားမည်။\nဂရစ် ၏ အကွက် ၀ ကို ဂ ဟု ထားမည်။\nဂရစ် ကို ပြသမည်။\n\n// လိပ်စာမှတစ်ဆင့် စာရင်းကို ငှားခြင်း\nကိန်းရှင် ညွှန်း သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဂ ၏ လိပ်စာ ဖြစ်ပါစေ။\nညွှန်း ၏ အကွက် ၁ ကို ၂၀ ဟု ထားမည်။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဂ ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။\nပ + ၂ ၏ တန်ဖိုး ကို ပြသမည်။\n\n/// အကွက်များ၏ ပေါင်းလဒ်ကို ပြန်ပေးသည်\nလုပ်ဆောင်ချက် ပေါင်း သည်\nကိန်းများ ဟူသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\nကိန်းရှင် အဖြေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ အဖြေ ကို အဖြေ + (ကိန်းများ ၏ အကွက် န) ဟု ထားမည်။\nအဖြေ ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ဂ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။\nပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၄၊ ၅ နှင့် ၆ တို့ပါသော စာရင်း ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။\n"
+source: "// စာရင်းများ - ကြေညာခြင်း၊ အကွက်များ၊ ကူးယူခြင်း နှင့် နှိုင်းယှဉ်ခြင်း\nကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စာရင်းအလွတ် ဖြစ်ပါစေ။\nကိန်းရှင် ဂ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ နှင့် ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။\nဂ ၏ အကွက် ၀ ကို ၁၀ ဟု ထားမည်။\nဂ ၏ ၂ ခုမြောက်အကွက် ကို ပြသမည်။\nဂ ၏ အကွက်အရေအတွက် ကို ပြသမည်။\nဂ ကို ပြသမည်။\nက ကို ဂ ဟု ထားမည်။\nက သည် ဂ နှင့် ညီသည် ဟု ပြသမည်။\nခ != က ကို ပြသမည်။\n\n// အကွက် ၂ x ၃ ဂရစ်\nကိန်းရှင် ဂရစ် သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်ပါစေ။\nဂရစ် ၏ အကွက် ၁ ၏ အကွက် ၂ ကို ၉ ဟု ထားမည်။\nဂရစ် ၏ အကွက် ၀ ကို ဂ ဟု ထားမည်။\nဂရစ် ကို ပြသမည်။\n\n// လိပ်စာမှတစ်ဆင့် စာရင်းကို ငှားခြင်း\nကိန်းရှင် ညွှန်း သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဂ ၏ လိပ်စာ ဖြစ်ပါစေ။\nညွှန်း ၏ အကွက် ၁ ကို ၂၀ ဟု ထားမည်။\nကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဂ ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။\nပ + ၂ ၏ တန်ဖိုး ကို ပြသမည်။\n\n/// အကွက်များကို ပေါင်းသည့်ရလဒ်ကို ပြန်ပေးသည်\nလုပ်ဆောင်ချက် ပေါင်း သည်\nကိန်းများ ဟူသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\nကိန်းရှင် အဖြေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။\n၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ အဖြေ ကို အဖြေ + (ကိန်းများ ၏ အကွက် န) ဟု ထားမည်။\nအဖြေ ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။\n\nပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ဂ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။\nပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၄၊ ၅ နှင့် ၆ တို့ပါသော စာရင်း ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။\n"
 imports: []
 program:
   stmts:
@@ -211,6 +211,7 @@ program:
           particle: none
           next: other
           is_cmp: false
+          pass: false
           classifier: null
           span:
             lo: 1102
@@ -272,6 +273,7 @@ program:
           particle: thi
           next: other
           is_cmp: true
+          pass: false
           classifier: null
           span:
             lo: 1265
@@ -476,6 +478,7 @@ program:
           particle: none
           next: other
           is_cmp: false
+          pass: false
           classifier: null
           span:
             lo: 2253
@@ -576,6 +579,7 @@ program:
           particle: none
           next: other
           is_cmp: false
+          pass: false
           classifier: null
           span:
             lo: 2552
@@ -618,6 +622,7 @@ program:
           particle: none
           next: other
           is_cmp: false
+          pass: false
           classifier: null
           span:
             lo: 2631
@@ -630,8 +635,8 @@ program:
       name:
         name: ပေါင်း
         span:
-          lo: 2843
-          hi: 2861
+          lo: 2864
+          hi: 2882
       kind_params: []
       params:
       - edit: false
@@ -647,20 +652,20 @@ program:
           classifier:
             name: ခု
             span:
-              lo: 3020
-              hi: 3026
+              lo: 3041
+              hi: 3047
           span:
-            lo: 2916
-            hi: 3010
+            lo: 2937
+            hi: 3031
         name:
           name: ကိန်းများ
           span:
-            lo: 2872
-            hi: 2899
-        mark: null
+            lo: 2893
+            hi: 2920
+        preposition: null
         span:
-          lo: 2872
-          hi: 3036
+          lo: 2893
+          hi: 3057
       ret:
         base: int
         bits: null
@@ -669,19 +674,19 @@ program:
         classifier:
           name: ခု
           span:
-            lo: 3182
-            hi: 3188
+            lo: 3203
+            hi: 3209
         span:
-          lo: 3142
-          hi: 3172
+          lo: 3163
+          hi: 3193
       block:
         stmts:
         - decl:
             name:
               name: အဖြေ
               span:
-                lo: 3261
-                hi: 3273
+                lo: 3282
+                hi: 3294
             kind:
               base: int
               bits: null
@@ -690,23 +695,23 @@ program:
               classifier:
                 name: ခု
                 span:
-                  lo: 3324
-                  hi: 3330
+                  lo: 3345
+                  hi: 3351
               span:
-                lo: 3284
-                hi: 3314
+                lo: 3305
+                hi: 3335
             is_const: false
             init: null
             exported: false
             span:
-              lo: 3233
-              hi: 3358
+              lo: 3254
+              hi: 3379
         - counted:
             var:
               name: န
               span:
-                lo: 3384
-                hi: 3387
+                lo: 3405
+                hi: 3408
             from:
               int:
                 id: 48
@@ -715,8 +720,8 @@ program:
                 kind: null
                 script: burmese
                 span:
-                  lo: 3359
-                  hi: 3362
+                  lo: 3380
+                  hi: 3383
             to:
               int:
                 id: 49
@@ -725,8 +730,8 @@ program:
                 kind: null
                 script: burmese
                 span:
-                  lo: 3370
-                  hi: 3373
+                  lo: 3391
+                  hi: 3394
             step: null
             mode: count
             block:
@@ -737,8 +742,8 @@ program:
                       id: 51
                       name: အဖြေ
                       span:
-                        lo: 3435
-                        hi: 3447
+                        lo: 3456
+                        hi: 3468
                   value:
                     infix:
                       id: 57
@@ -748,8 +753,8 @@ program:
                           id: 52
                           name: အဖြေ
                           span:
-                            lo: 3458
-                            hi: 3470
+                            lo: 3479
+                            hi: 3491
                       rhs:
                         group:
                           id: 56
@@ -761,64 +766,65 @@ program:
                                   id: 53
                                   name: ကိန်းများ
                                   span:
-                                    lo: 3474
-                                    hi: 3501
+                                    lo: 3495
+                                    hi: 3522
                               index:
                                 name:
                                   id: 54
                                   name: န
                                   span:
-                                    lo: 3522
-                                    hi: 3525
+                                    lo: 3543
+                                    hi: 3546
                               first: 0
                               span:
-                                lo: 3474
-                                hi: 3525
+                                lo: 3495
+                                hi: 3546
                           span:
-                            lo: 3473
-                            hi: 3526
+                            lo: 3494
+                            hi: 3547
                       span:
-                        lo: 3458
-                        hi: 3526
+                        lo: 3479
+                        hi: 3547
                   span:
-                    lo: 3435
-                    hi: 3555
+                    lo: 3456
+                    hi: 3576
               single: true
               unchecked: false
               span:
-                lo: 3435
-                hi: 3555
+                lo: 3456
+                hi: 3576
             span:
-              lo: 3359
-              hi: 3555
+              lo: 3380
+              hi: 3576
         - return:
             value:
               name:
                 id: 58
                 name: အဖြေ
                 span:
-                  lo: 3556
-                  hi: 3568
+                  lo: 3577
+                  hi: 3589
             fault: false
             span:
-              lo: 3556
-              hi: 3612
+              lo: 3577
+              hi: 3633
         single: false
         unchecked: false
         span:
-          lo: 3065
-          hi: 3695
+          lo: 3086
+          hi: 3716
       exported: false
       unchecked: false
       start: false
+      builtin: false
       external: false
       lib: null
       variadic: false
       owned_ret: false
       captures: []
       span:
-        lo: 2803
-        hi: 3695
+        lo: 2824
+        hi: 3716
   - print:
       value:
         call:
@@ -826,8 +832,8 @@ program:
           callee:
             name: ပေါင်း
             span:
-              lo: 3697
-              hi: 3715
+              lo: 3718
+              hi: 3736
           kind_args: []
           place: null
           args:
@@ -835,18 +841,18 @@ program:
               id: 59
               name: ဂ
               span:
-                lo: 3781
-                hi: 3784
+                lo: 3802
+                hi: 3805
           pass: false
           using: null
-          marks: []
+          prepositions: []
           span:
-            lo: 3697
-            hi: 3850
+            lo: 3718
+            hi: 3871
       slot: ko
       span:
-        lo: 3697
-        hi: 3882
+        lo: 3718
+        hi: 3903
   - print:
       value:
         call:
@@ -854,8 +860,8 @@ program:
           callee:
             name: ပေါင်း
             span:
-              lo: 3883
-              hi: 3901
+              lo: 3904
+              hi: 3922
           kind_args: []
           place: null
           args:
@@ -869,8 +875,8 @@ program:
                   kind: null
                   script: burmese
                   span:
-                    lo: 3967
-                    hi: 3970
+                    lo: 3988
+                    hi: 3991
               - int:
                   id: 62
                   value: 5
@@ -878,8 +884,8 @@ program:
                   kind: null
                   script: burmese
                   span:
-                    lo: 3974
-                    hi: 3977
+                    lo: 3995
+                    hi: 3998
               - int:
                   id: 63
                   value: 6
@@ -887,24 +893,24 @@ program:
                   kind: null
                   script: burmese
                   span:
-                    lo: 3994
-                    hi: 3997
+                    lo: 4015
+                    hi: 4018
               kind: null
               span:
-                lo: 3967
-                hi: 4044
+                lo: 3988
+                hi: 4065
           pass: false
           using: null
-          marks: []
+          prepositions: []
           span:
-            lo: 3883
-            hi: 4110
+            lo: 3904
+            hi: 4131
       slot: ko
       span:
-        lo: 3883
-        hi: 4142
+        lo: 3904
+        hi: 4163
   units: []
   span:
     lo: 0
-    hi: 4143
+    hi: 4164
 diagnostics: []

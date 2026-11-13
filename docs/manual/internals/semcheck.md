@@ -116,17 +116,17 @@ A first walk over the top-level statements records the signature of each functio
 kinds of its parameters, of its result and of its error value, and its export mark), so a call can come before
 the declaration. The table holds one map for each file of the program: the first
 declaration of a name in a file wins, and a second in the same file is ZK0304. Two files
-can each hold a function of one name. A signature keeps the mark of each parameter
-(`FnSig::marks`, `None` with no marks); `check_marks` compares the marks of a marked call
+can each hold a function of one name. A signature keeps the preposition of each parameter
+(`FnSig::prepositions`, `None` with no prepositions); `check_prepositions` compares the prepositions of a preposition call
 with it, one argument after another, after the count check (ZK0314), and reports another word
 as ZK0331.
 
 A file can declare several functions of one name: `FnSigs` maps a name to its overloads in
-the order of their declarations, and the same parameter kinds and marks twice are ZK0304.
+the order of their declarations, and the same parameter kinds and prepositions twice are ZK0304.
 Each signature carries its inner name (`FnSig::inner`, from `overload_name`): the written
 name for the first, `<name>#<n>` for the n-th. `check_call` runs `choose`: with more than
-one function of the name, `fits_call` keeps the ones whose count, marks (when the call
-writes marks) and parameter kinds fit, with a trial of `expect_kind` on each argument that puts
+one function of the name, `fits_call` keeps the ones whose count, prepositions (when the call
+writes prepositions) and parameter kinds fit, with a trial of `expect_kind` on each argument that puts
 the diagnostics back; one fit is recorded in `Checker::chosen` under the span of the name
 at the call, none is ZK0332, more is ZK0333. After the last run, `write_overloads`
 (`overloads.rs`) writes the inner names into the program: each later declaration of a name,
@@ -339,7 +339,7 @@ it. `FnSig::closure` marks a nested function with captures.
 
 ```text
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-အသက် ကို အသက် နှင့် ၁ ၏ ပေါင်းလဒ် ဟု ထားမည်။
+အသက် ကို အသက် နှင့် ၁ ကို ပေါင်းသည့်ရလဒ် ဟု ထားမည်။
 အကယ်၍ အသက် သည် ၁၈ ထက် ကြီးလျှင် အသက် ကို ပြသမည်။
 ```
 
@@ -374,7 +374,7 @@ An implicit conversion (`widens_to`) never loses data:
 | integer | float | the integer width is at most the significand of the float: 24 and 53 bits for 32 and 64 |
 | float | float | the target is wider |
 | the null pointer | pointer | in each case |
-| function kind | function kind | the same parameter kinds, `ဒေတာ ပြောင်းလဲရန်` markers and result, and the same marks when the target has marks |
+| function kind | function kind | the same parameter kinds, `ဒေတာ ပြောင်းလဲရန်` markers and result, and the same prepositions when the target has prepositions |
 | pointer | pointer | the same shape, or one is the opaque `လိပ်စာ` |
 | counted list | plain list of the same cell kind | when the counted list has cells; lowering moves the cells to a heap block (`to_heap`) |
 | plain list | counted list | never: the count of a counted list is part of its kind (ZK0401) |
@@ -390,13 +390,13 @@ turns back into an object.
 ### Function values
 
 `DataKind::Fn(&'static FnKind)` is a function kind (`fn_kind.rs`): the kind, the `ဒေတာ ပြောင်းလဲရန်` marker
-and the mark of each parameter, and the result. Each kind is made once (`FnKind::make`),
+and the preposition of each parameter, and the result. Each kind is made once (`FnKind::make`),
 as a list kind is. `FnKind::fits` takes a function into a place of a kind with the same
-parameter kinds, `ဒေတာ ပြောင်းလဲရန်` markers and result, and with the same marks when the place names
-marks: a kind with none takes a function with marks or without. No value widens to a
+parameter kinds, `ဒေတာ ပြောင်းလဲရန်` markers and result, and with the same prepositions when the place names
+prepositions: a kind with none takes a function with prepositions or without. No value widens to a
 function kind but a function: a function value is never NULL, and a missing one is an
 optional function value. The short name is
-`fn(<params>) -> <ret>`, each parameter `[mut ]<kind>[(<mark>)]`; inside another name it
+`fn(<params>) -> <ret>`, each parameter `[mut ]<kind>[(<preposition>)]`; inside another name it
 stands in parentheses (`spell_inner`), so `split_marks` and the struct signatures
 (`split_top`, `bracket_step`, which skips the `>` of `->`) read it back. A struct field of a
 function kind writes its parts with each struct as its bare name (`field_text`,
@@ -600,6 +600,19 @@ fresh node numbers and their kinds. A name a file declares, or a variable, hides
 generic of the prelude (`template_named`); a template or a trait of a file hides one of
 the prelude. The compiler mark outside the prelude is ZK0349.
 
+## Calls a node stands for
+
+- **`x ၏ f`.** A field read that finds no field, and no brace on the name, checks the
+  call `f(x)` instead (`infer_method`); a conversion with no built-in pair checks the call
+  of a function the file sees whose name ends in `အဖြစ်ပြောင်း`, that takes the source kind
+  and gives the target kind or a result with it (`conversion_fn`). Each records its call in
+  `OpCalls::methods`, and `write_methods` puts it in place of the node before the overloads
+  take their inner names.
+- **Imports.** A name imported from several files is one overload set (`import_fn`); the
+  call of one that another file declares takes the name of that file, `<name>@<stem>`
+  (`name_foreign`). A generic function imported beside plain functions of its name takes a
+  call that no plain one fits (`plain_or_generic`).
+
 ## Codes
 
 | Range | Stage |
@@ -627,7 +640,7 @@ Each code has a constructor in `zakac_diagnostics` (`resolve.rs`, `kinds.rs`,
 the kind recorded for the first expression whose source text is `text`. The files are
 `kind.rs` (each widening row, the conversion table), `resolve.rs` (each ZK03 code,
 scopes, calls before declarations), `kinds.rs` (each ZK04 code, flexible literals),
-`lists.rs`, `pointers.rs`, `unsafe.rs`, `nested.rs`, `edits.rs`, `marks.rs`, and `samples.rs` (golden `.zksemt` files).
+`lists.rs`, `pointers.rs`, `unsafe.rs`, `nested.rs`, `edits.rs`, `prepositions.rs`, and `samples.rs` (golden `.zksemt` files).
 
 - **A statement form**: override its `visit_*` method in `semcheck.rs`; infer each
   expression once, with `expect_kind` or `expect_bool` when the place fixes a kind.

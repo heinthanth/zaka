@@ -59,7 +59,6 @@ const LINT_ARGS: [(&str, MemCheck); 3] =
     [("allow", MemCheck::Off), ("warn", MemCheck::Warn), ("error", MemCheck::Error)];
 /// The flag that picks what integer arithmetic does on overflow.
 const OVERFLOW_ARG: &str = "overflow";
-/// The flag that names each statement that duplicates text or a list.
 
 /// The `zakac_borrow_checker` command, `zakac borrowck` (or `zakac mkbck`)
 /// as a subcommand.

@@ -24,12 +24,12 @@ Feel free to skip this page and come back later.
 က >> ၄ ကို ပြသမည်။         // shift right 4: 00001100 = 12
 
 // Words
-က နှင့် ခ ၏ ဘစ်အလိုက် ဆုံလဒ် ကို ပြသမည်။
-က နှင့် ခ ၏ ဘစ်အလိုက် ပေါင်းစုလဒ် ကို ပြသမည်။
-က နှင့် ခ ၏ ဘစ်အလိုက် ခြားနားလဒ် ကို ပြသမည်။
-က ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ် ကို ပြသမည်။
-က ကို ဘယ်သို့ ၂ ဘစ် ရွေ့သောရလဒ် ကို ပြသမည်။
-က ကို ညာသို့ ၄ ဘစ် ရွေ့သောရလဒ် ကို ပြသမည်။
+က နှင့် ခ ကို ဘစ်ဆုံသည့်ရလဒ် ကို ပြသမည်။
+က နှင့် ခ ကို ဘစ်ပေါင်းစုသည့်ရလဒ် ကို ပြသမည်။
+က နှင့် ခ ကို ဘစ်ခြားနားသည့်ရလဒ် ကို ပြသမည်။
+က ကို ဘစ်ပြောင်းပြန်သည့်ရလဒ် ကို ပြသမည်။
+က ကို ၂ ဖြင့် ဘစ်ဘယ်ရွေ့သည့်ရလဒ် ကို ပြသမည်။
+က ကို ၄ ဖြင့် ဘစ်ညာရွေ့သည့်ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -50,14 +50,15 @@ Feel free to skip this page and come back later.
 
 | Sign | Words | Reads as | Each result bit is 1 when |
 | --- | --- | --- | --- |
-| `a & b` | `a နှင့် b ၏ ဘစ်အလိုက် ဆုံလဒ်` | "bitwise meeting" | both bits are 1 |
-| `a \| b` | `a နှင့် b ၏ ဘစ်အလိုက် ပေါင်းစုလဒ်` | "bitwise union" | either bit is 1 |
-| `a ^ b` | `a နှင့် b ၏ ဘစ်အလိုက် ခြားနားလဒ်` | "bitwise difference" | the bits differ |
-| `~a` | `a ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်` | "bitwise flip" | the bit was 0 |
-| `a << n` | `a ကို ဘယ်သို့ n ဘစ် ရွေ့သောရလဒ်` | "a moved n bits to the left" | (bits move left) |
-| `a >> n` | `a ကို ညာသို့ n ဘစ် ရွေ့သောရလဒ်` | "a moved n bits to the right" | (bits move right) |
+| `a & b` | `a နှင့် b ကို ဘစ်ဆုံသည့်ရလဒ်` | "bitwise meeting" | both bits are 1 |
+| `a \| b` | `a နှင့် b ကို ဘစ်ပေါင်းစုသည့်ရလဒ်` | "bitwise union" | either bit is 1 |
+| `a ^ b` | `a နှင့် b ကို ဘစ်ခြားနားသည့်ရလဒ်` | "bitwise difference" | the bits differ |
+| `~a` | `a ကို ဘစ်ပြောင်းပြန်သည့်ရလဒ်` | "bitwise flip" | the bit was 0 |
+| `a << n` | `a ကို n ဖြင့် ဘစ်ဘယ်ရွေ့သည့်ရလဒ်` | "a moved n bits to the left" | (bits move left) |
+| `a >> n` | `a ကို n ဖြင့် ဘစ်ညာရွေ့သည့်ရလဒ်` | "a moved n bits to the right" | (bits move right) |
 
-`ဘစ်အလိုက်` means "bit after bit". `ဘယ်သို့` is "to the left", and `ညာသို့` is "to the right".
+Each word is a function of the prelude with `သည့်ရလဒ်` glued to it: `ဘစ်ဆုံ` is "bits
+meet", `ဘစ်ဘယ်ရွေ့` is "bits move to the left", and `ဘစ်ညာရွေ့` is "bits move to the right".
 
 ## Rules
 
@@ -67,7 +68,7 @@ Feel free to skip this page and come back later.
 ```zaka-error ZK0407
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-ခ ကို ဘယ်သို့ ၈ ဘစ် ရွေ့သောရလဒ် ကို ပြသမည်။
+ခ ကို ၈ ဖြင့် ဘစ်ဘယ်ရွေ့သည့်ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

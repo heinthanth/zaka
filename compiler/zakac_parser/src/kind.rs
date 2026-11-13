@@ -94,9 +94,8 @@ impl Parser<'_>
     /// Whether a kind phrase starts at the current token.
     ///
     /// A number starts one when `ဘစ်` and an integer or float kind word
-    /// follow it, so the distance in `ညာသို့ ၂ ဘစ် ရွေ့သောရလဒ်` is not read
-    /// as a kind. A bare `လိပ်စာ` starts one too, and so does a count prefix
-    /// such as `အကွက် ၃ ခုရှိသော`.
+    /// follow it, as in `၈ ဘစ် ကိန်းပြည့်`. A bare `လိပ်စာ` starts one too, and so
+    /// does a count prefix such as `အကွက် ၃ ခုရှိသော`.
     ///
     /// # Returns
     ///

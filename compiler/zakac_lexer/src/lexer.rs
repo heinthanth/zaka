@@ -368,7 +368,7 @@ impl Driver<'_, '_>
         {
             '"' => Some(self.lex_string(idx, open)),
             '\'' => Some(self.lex_char(idx, open)),
-            '`' => Some(self.lex_raw_ident(idx, open)),
+            '{' => Some(self.lex_raw_ident(idx, open)),
             _ => None,
         }
     }
@@ -411,8 +411,8 @@ impl Driver<'_, '_>
     ///
     /// # Arguments
     ///
-    /// * `idx` - Index of the opening backtick word.
-    /// * `open` - Offset of the opening backtick.
+    /// * `idx` - Index of the opening brace word.
+    /// * `open` - Offset of the opening brace.
     ///
     /// # Returns
     ///

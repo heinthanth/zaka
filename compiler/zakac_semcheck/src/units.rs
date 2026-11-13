@@ -5,8 +5,11 @@ use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::Wrap;
 use zakac_ast::name::Name;
+use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::ImportStmt;
+use zakac_ast::stmt::KindParam;
+use zakac_ast::stmt::Param;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Node;
@@ -14,6 +17,7 @@ use zakac_ast::visit::Visitor;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
+use zakac_parser::load::prelude_builtin_fns;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -173,6 +177,74 @@ pub(crate) fn start_rules(program: &Program, needs_start: bool) -> Vec<Diagnosti
     diags
 }
 
+/// The functions of the files outside the stdlib with the name, the kinds and
+/// the prepositions of a function the compiler gives in the prelude: each is
+/// the warning ZK0350, since it takes over each sentence of that function.
+///
+/// # Arguments
+///
+/// * `program` - The program.
+///
+/// # Returns
+///
+/// The diagnostics.
+pub(crate) fn prelude_twins(program: &Program) -> Vec<Diagnostic>
+{
+    let builtins = prelude_builtin_fns();
+    let stmts = program.stmts.iter().enumerate();
+    let own = stmts.filter(|(i, _)| !in_stdlib(program, program.unit_of(*i)));
+    let fns = own.filter_map(|(_, s)| tern!(let Stmt::Fn(d) = s, Some(d), None));
+    let twins = fns.filter(|d| !d.builtin && builtins.iter().any(|b| same_head(b, d)));
+    twins.map(|d| rd::same_as_prelude(d.name.span, &d.name.name)).collect()
+}
+
+/// Whether two function heads have one name, and parameters of the same
+/// kinds, prepositions and modes; kind parameters match by their place.
+///
+/// # Arguments
+///
+/// * `a` - One head.
+/// * `b` - The other.
+///
+/// # Returns
+///
+/// `true` when they match.
+fn same_head(a: &FnDecl, b: &FnDecl) -> bool
+{
+    let sizes =
+        a.params.len() == b.params.len() && a.kind_params.len() == b.kind_params.len();
+    ret_if!(a.name.name != b.name.name || !sizes, false);
+    let preposition = |p: &Param| p.preposition.as_ref().map(|m| m.name);
+    let same = |(p, q): (&Param, &Param)| {
+        preposition(p) == preposition(q)
+            && (p.edit, p.fill, p.owned) == (q.edit, q.fill, q.owned)
+            && kind_shape(&p.kind, &a.kind_params)
+                == kind_shape(&q.kind, &b.kind_params)
+    };
+    a.params.iter().zip(&b.params).all(same)
+}
+
+/// A kind as text, with each kind parameter written as its place, `#0`.
+///
+/// # Arguments
+///
+/// * `kind` - The kind.
+/// * `params` - The kind parameters of its function.
+///
+/// # Returns
+///
+/// The text.
+fn kind_shape(kind: &Kind, params: &[KindParam]) -> String
+{
+    let text = kind.to_sexpr();
+    let apart = |c: char| c.is_ascii_punctuation() || c.is_whitespace() || c == '၊';
+    let place = |word: &str| params.iter().position(|p| p.name.name == word);
+    let named =
+        |word: &str| place(word).map_or_else(|| word.to_string(), |i| format!("#{i}"));
+    let seps = text.matches(apart).chain([""]);
+    text.split(apart).zip(seps).map(|(word, sep)| named(word) + sep).collect()
+}
+
 /// Whether a written kind is a plain list of text, `စာသား စာရင်း`.
 ///
 /// # Arguments
@@ -210,6 +282,7 @@ fn runs_in_place(stmt: &Stmt) -> bool
             | Stmt::Import(_)
             | Stmt::Trait(_)
             | Stmt::TraitBlock(_)
+            | Stmt::BuiltinKind(_)
     )
 }
 
@@ -260,11 +333,14 @@ impl Checker
         let marked = match stmt
         {
             Stmt::Trait(d) => d.builtin,
+            Stmt::BuiltinKind(_) => true,
+            Stmt::Fn(d) => d.builtin,
             _ => false,
         };
         let outside = marked && !in_stdlib(program, unit);
         do_if!(outside, self.report(rd::builtin_outside_prelude(stmt.span())));
-        ret_if!(is_template(stmt));
+        // A function the compiler gives has no code: a sentence stands for it.
+        ret_if!(is_template(stmt) || matches!(stmt, Stmt::Fn(d) if d.builtin));
         self.top = top_name(stmt);
         let outer = self.open_instance(stmt);
         let from = self.diags.len();
@@ -398,7 +474,9 @@ impl Checker
     }
 
     /// Bring the exported functions of an imported name into scope, each
-    /// overload of it. A name the file declares or imports before is ZK0304.
+    /// overload of it. A name imported from several files is one overload
+    /// set; a function with the kinds and prepositions of one there before, or
+    /// a name the file declares itself, is ZK0304.
     ///
     /// # Arguments
     ///
@@ -406,12 +484,14 @@ impl Checker
     /// * `sigs` - The functions of that name.
     fn import_fn(&mut self, name: &Ident, sigs: Vec<FnSig>)
     {
-        let taken = self.fns.contains_key(&name.name);
+        let own = self.unit_fns[self.unit as usize].contains_key(&name.name);
+        let held = self.fns.get(&name.name).cloned().unwrap_or_default();
+        let twice = sigs.iter().any(|s| held.iter().any(|h| h.same_params(s)));
         let diag = rd::duplicate_function(name.span, &name.name);
-        ret_if!(taken, self.report(diag));
+        ret_if!(own || twice, self.report(diag));
         do_if!(let Some(first) = sigs.first(), self.refer(&name.name, name.span, first.decl));
         let sigs = sigs.into_iter().map(|sig| FnSig { exported: false, ..sig });
-        self.fns.insert(name.name, sigs.collect());
+        self.fns.entry(name.name).or_default().extend(sigs);
     }
 
     /// Bring an imported variable or constant into scope.

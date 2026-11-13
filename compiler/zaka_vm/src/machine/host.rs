@@ -140,6 +140,7 @@ impl Machine
         match value
         {
             HostValue::Text(text) => self.place_text(at, &text),
+            HostValue::Texts(texts) => self.place_text_list(at, &texts),
             HostValue::Member(n) =>
             {
                 self.mem.store(at, Value::int(ISIZE, n.into(), platform))

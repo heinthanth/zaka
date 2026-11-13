@@ -9,11 +9,11 @@ en = "end of input"
 [parser.name]
 en = "a name"
 
-[parser.mark]
-en = "a mark: a name or a particle"
+[parser.preposition]
+en = "a preposition: a name or a particle"
 
-[parser.mark_string]
-en = "the mark in a string, as \"ကို\""
+[parser.preposition_string]
+en = "the preposition in a string, as \"ကို\""
 
 [parser.kind]
 en = "a kind"

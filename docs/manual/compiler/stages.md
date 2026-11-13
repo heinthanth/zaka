@@ -122,7 +122,7 @@ eof
 
 Each token also tells whether it is `joined` to the one before, with no space between.
 The lexer owns **ZK01**: a character Zaka does not use, a malformed number, text with no
-closing quote, an unknown escape, a name in backticks that does not close. See [The
+closing quote, an unknown escape, a name in braces that does not close. See [The
 lexer](../internals/lexer.md).
 
 ### Parser

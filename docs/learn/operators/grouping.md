@@ -34,7 +34,7 @@ From first to last (tightest to loosest):
 7. `|`
 8. `<`, `>`, `<=`, `>=`
 9. `==`, `!=`
-10. word phrases (`... ၏ ပေါင်းလဒ်`, `... ထက် ကြီး`, and so on)
+10. word phrases (`... ကို ပေါင်းသည့်ရလဒ်`, `... ထက် ကြီး`, and so on)
 11. `မဟုတ်` (not)
 12. `ဖြစ်၍`, `&&` (and)
 13. `သို့မဟုတ်`, `||` (or)
@@ -45,14 +45,14 @@ Operators on the same line go left to right: `၁၀ - ၃ - ၂` is `(၁၀ - 
 ## Word phrases take whole sums
 
 A part of a word phrase can be a whole sum written with signs. In
-`က + ခ နှင့် ဂ ၏ မြှောက်လဒ်`, the first part is `က + ခ`. It reads "the product of (k + kh) and g":
+`က + ခ နှင့် ဂ ကို မြှောက်သည့်ရလဒ်`, the first part is `က + ခ`. It reads "the product of (k + kh) and g":
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
-က + ခ နှင့် ဂ ၏ မြှောက်လဒ် ကို ပြသမည်။         // (2 + 3) × 4
+က + ခ နှင့် ဂ ကို မြှောက်သည့်ရလဒ် ကို ပြသမည်။         // (2 + 3) × 4
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -72,10 +72,10 @@ that hold the particles it needs, and its result joins the sentence:
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
 
 // k and (the product of kh and g): the sum      → 2 + (3 × 4)
-က နှင့် ခ နှင့် ဂ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ် ကို ပြသမည်။
+က နှင့် ခ နှင့် ဂ ကို မြှောက်သည့်ရလဒ် ကို ပေါင်းသည့်ရလဒ် ကို ပြသမည်။
 
 // (the sum of k and kh) and g: the product      → (2 + 3) × 4
-က နှင့် ခ ၏ ပေါင်းလဒ် နှင့် ဂ ၏ မြှောက်လဒ် ကို ပြသမည်။
+က နှင့် ခ ကို ပေါင်းသည့်ရလဒ် နှင့် ဂ ကို မြှောက်သည့်ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -84,8 +84,8 @@ that hold the particles it needs, and its result joins the sentence:
 ၂၀
 ```
 
-In the first line, `မြှောက်လဒ်` takes `ခ နှင့်` and `ဂ ၏`, the two parts just before it.
-A `၏` follows its result, so `ပေါင်းလဒ်` then takes `က နှင့်` and that result.
+In the first line, `မြှောက်သည့်ရလဒ်` takes `ခ နှင့်` and `ဂ ကို`, the two parts just before
+it. A `ကို` follows its result, so `ပေါင်းသည့်ရလဒ်` then takes `က နှင့်` and that result.
 
 ## Parentheses move a phrase into a sum
 
@@ -95,7 +95,7 @@ put it in parentheses:
 ```zaka-error ZK0203
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-က နှင့် ခ ၏ ပေါင်းလဒ် * ၂ ကို ပြသမည်။
+က နှင့် ခ ကို ပေါင်းသည့်ရလဒ် * ၂ ကို ပြသမည်။
 ```
 
 ```text
@@ -106,7 +106,7 @@ error[ZK0203]: this statement does not end in a statement verb, found "*"
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-(က နှင့် ခ ၏ ပေါင်းလဒ်) * ၂ ကို ပြသမည်။
+(က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်) * ၂ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

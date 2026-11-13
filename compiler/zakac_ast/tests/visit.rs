@@ -85,7 +85,7 @@ fn ten_isize() -> SizeArg
     SizeArg::builder().count(int(2, 10, 0)).unit(unit).span(sp(0, 4)).build()
 }
 
-/// `x ကို 1 နှင့် 2 ၏ ပေါင်းလဒ် ဟု ထားမည်။` written out in full.
+/// `x ကို 1 နှင့် 2 ကို ပေါင်းသည့်ရလဒ် ဟု ထားမည်။` written out in full.
 fn sample() -> Program
 {
     let sum = VerbExpr::builder()
@@ -210,10 +210,8 @@ fn valence_table_has_one_row_per_verb()
 }
 
 #[test]
-fn shift_slots_match_either_direction()
+fn a_slot_fills_itself_alone()
 {
-    use zakac_ast::verb::Dir;
-    assert!(Slot::Bit(Dir::Right).fills(Slot::Bit(Dir::Left)));
     assert!(Slot::Ko.fills(Slot::Ko));
     assert!(!Slot::Ko.fills(Slot::Hu));
 }
@@ -310,4 +308,12 @@ fn places_are_names_and_derefs()
     assert!(!int(1, 7, 0).is_place());
     assert_eq!(star.to_sexpr(), "(deref p)");
     assert_eq!(amp.to_sexpr(), "(addr p)");
+}
+
+#[test]
+fn the_word_operators_paint_as_the_parser_reads_them()
+{
+    let names: Vec<&str> =
+        zakac_ast::verb::OPERATOR_VERBS.iter().map(|(n, ..)| *n).collect();
+    assert_eq!(names, zakac_lexer::role::OPERATOR_NAMES);
 }
