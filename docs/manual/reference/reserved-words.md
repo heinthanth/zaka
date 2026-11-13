@@ -288,7 +288,7 @@ The pieces of the closers, `လည်း` ("also"), `မှတ်ယူနို
 | --- | --- | --- |
 | `ယေဘုယျဒေတာအမျိုးအစား`, `ယေဘုယျအချက်အလက်အမျိုးအစား` | "general data kind": names a kind parameter in the word form, `ယေဘုယျဒေတာအမျိုးအစား T` | [Generics](../../learn/generics/README.md) |
 | `အစားထိုးသုံးနိုင်၍` | "can be put in place, and": after the kind parameters of the word form, `… ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်` | [Generics and traits](../language/generics.md#kind-parameters) |
-| `၎င်း` | "it": the declaration again, after its kind parameters, `၎င်းသည်` or `၎င်းတွင်` | [Generics and traits](../language/generics.md#kind-parameters) |
+| `၎င်း` | "it": the declaration again, after its kind parameters, `၎င်းသည်`, `၎င်းတွင်` or `၎င်းကို` | [Generics and traits](../language/generics.md#kind-parameters) |
 | `အစားထိုးအသုံးပြုသည့်` | "that puts in place": after the kinds of a generic in the word form, before its name | [Generics and traits](../language/generics.md#kinds-at-a-use) |
 | `အစားထိုးအသုံးပြု၍` | "putting in place": after the kinds of a call written arguments first | [Generics and traits](../language/generics.md#calls) |
 | `::` | the kinds of a generic in the sign form, `f::<ကိန်းပြည့်>(၁)` | [Generics and traits](../language/generics.md#calls) |

@@ -195,7 +195,8 @@ pub(crate) fn kw_of(tok: &Token) -> Option<Kw>
 
 /// Whether the token at `at` is the name of a kind declaration: a struct or
 /// an enumeration, `<name> ဟူသော [marks] ဒေတာအစုအဝေး|ဒေတာအမျိုးအစားကွဲ`, or an
-/// alias, `ဒေတာအမျိုးအစား <name> ကို`.
+/// alias, `ဒေတာအမျိုးအစား <name> ကို`, or `ဒေတာအမျိုးအစား <name> သည်` before
+/// its kind parameters in the word form.
 ///
 /// # Arguments
 ///
@@ -217,7 +218,7 @@ fn declares_kind(tokens: &[Token], at: usize) -> bool
     let kind_at = |n: usize| tokens.get(n).map_or(TokenKind::Eof, |t| t.kind);
     let next = at + 1 + angle_len_with(at + 1, kind_at).unwrap_or(0);
     let alias = at > 0 && kw(at - 1) == Some(Kw::DataKindOpen);
-    ret_true!(alias && kw(next) == Some(Kw::Ko));
+    ret_true!(alias && matches!(kw(next), Some(Kw::Ko | Kw::Thi)));
     ret_false!(kw(next) != Some(Kw::Called));
     let marks = [Kw::Export, Kw::Shareable, Kw::External];
     let word = (next + 1..).map(kw).find(|k| !k.is_some_and(|k| marks.contains(&k)));

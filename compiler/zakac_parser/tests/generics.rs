@@ -42,6 +42,10 @@ fn declarations_take_kind_parameters_in_the_word_form()
     let s = "အတွဲ ဟူသော ဒေတာအစုအဝေးသည် ယေဘုယျဒေတာအမျိုးအစား က နှင့် ယေဘုယျဒေတာအမျိုးအစား ခ \
              တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် ပထမ ဟူသော က တစ်ခု နှင့် ဒုတိယ ဟူသော ခ တစ်ခု တို့ပါဝင်သည်။\n";
     assert!(trees(s).contains("အတွဲ<က ခ>"), "{}", trees(s));
+    let alias = "ဒေတာအမျိုးအစား ပြန်တွဲ သည် ယေဘုယျဒေတာအမျိုးအစား K နှင့် ယေဘုယျဒေတာအမျိုးအစား V \
+                 တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းကို V နှင့် K တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ ဟုလည်း မှတ်ယူနိုင်ပါသည်။\n";
+    let alias = trees(&format!("{PAIR}{alias}"));
+    assert!(alias.contains("ပြန်တွဲ<K V>"), "{alias}");
 }
 
 /// A kind takes its kind arguments in the sign form, nested as written, or

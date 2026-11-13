@@ -167,7 +167,8 @@ closer       = ( "ပါဝင်သည်" | "ပါဝင်ပြီး" word
              | ( "တို့ပါဝင်သည်" | "တို့ပါဝင်ပြီး" word-clause ) ;  (* after two or more *)
 word-clause  = "မျိုးပြပစ္စည်းမှာ" classifier "ဖြစ်သည်" ;
 
-alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုးအစား" name [ sign-params ] "ကို" kind
+alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုးအစား" name
+               ( [ sign-params ] "ကို" | "သည်" word-params "ကို" ) kind
                ( "ဟုလည်း မှတ်ယူနိုင်ပါသည်" | "ဟုလည်း မှတ်ယူနိုင်ပြီး" word-clause ) "။" ;
 ```
 

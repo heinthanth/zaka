@@ -920,7 +920,9 @@ impl Parser<'_>
     /// Parse a kind alias:
     /// `ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`, or with its
     /// own classifier, `... ဟုလည်း မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။`.
-    /// The kind takes no measure word.
+    /// The kind takes no measure word. Kind parameters follow the alias in the
+    /// sign form, `<alias><T> ကို`, or in the word form,
+    /// `<alias> သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းကို`.
     ///
     /// # Returns
     ///
@@ -930,7 +932,11 @@ impl Parser<'_>
     {
         let start = self.bump().span;
         let name = self.parse_ident()?;
-        let kind_params = self.parse_notation_params()?;
+        let mut kind_params = self.parse_notation_params()?;
+        if kind_params.is_empty() && self.eat(Kw::Thi)
+        {
+            kind_params = self.parse_word_params()?;
+        }
         self.expect(Kw::Ko)?;
         let added = self.add_kind_names(&kind_params);
         let kind = self.parse_kind();

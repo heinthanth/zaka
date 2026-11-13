@@ -9,7 +9,7 @@ A function that gives back the first cell of a list does the same work for a lis
 numbers and for a list of text. Written with a *kind parameter*, it is written once:
 
 ```zaka
-လုပ်ဆောင်ချက် ပထမကွက်<T> သည်
+လုပ်ဆောင်ချက် ပထမကွက် သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
 ကိန်းများ ဟူသော T စာရင်း တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ T တစ်ခု ကို ပြန်ပေးမည်။
 ကိန်းများ ၏ အကွက် ၀ ကို ပြန်ပေးမည်။
@@ -26,17 +26,21 @@ numbers and for a list of text. Written with a *kind parameter*, it is written o
 နီ
 ```
 
-`<T>` after the name tells that `T` stands for a kind. Inside the function `T` is a kind
-like the others, counted with `ခု`. Each call gives `T` the kind of its argument: the
-first call makes a function for `ကိန်းပြည့်`, the second one for `စာသား`. The compiler
-checks each of them as if it were written out.
+`ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်` after `သည်` reads "the general
+data kind T can be put in place, and it ...": it tells that `T` stands for a kind.
+Inside the function `T` is a kind like the others, counted with `ခု`. Each call gives
+`T` the kind of its argument: the first call makes a function for `ကိန်းပြည့်`, the
+second one for `စာသား`. The compiler checks each of them as if it were written out.
 
-## The word form
+Two parameters are a list in words:
+`ယေဘုယျဒေတာအမျိုးအစား A နှင့် ယေဘုယျဒေတာအမျိုးအစား B တို့ကိုအစားထိုးသုံးနိုင်၍`.
 
-The kind parameters can be written in words after `သည်` too:
+## The sign form
+
+A shorter form puts the kind parameters in `<` and `>` after the name:
 
 ```zaka
-လုပ်ဆောင်ချက် ထပ် သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
+လုပ်ဆောင်ချက် ထပ်<T> သည်
 က ဟူသော T တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ T တစ်ခု ကို ပြန်ပေးမည်။
 က ကို ပြန်ပေးမည်။
@@ -51,25 +55,23 @@ The kind parameters can be written in words after `သည်` too:
 က
 ```
 
-`ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်` reads "the general data kind T
-can be put in place, and it ...". Two parameters are a list in words:
-`ယေဘုယျဒေတာအမျိုးအစား A နှင့် ယေဘုယျဒေတာအမျိုးအစား B တို့ကိုအစားထိုးသုံးနိုင်၍`.
+The two forms make the same function. The examples on these pages write the word form.
 
 ## Writing the kinds
 
-A call can name its kinds: after `::` in the sign form, or before the function in the
-word forms, with `အစားထိုးအသုံးပြုသည့်` ("that puts ... in place"):
+A call can name its kinds before the function, with `အစားထိုးအသုံးပြုသည့်` ("that puts
+... in place"), or after `::` in the sign form:
 
 ```zaka
-လုပ်ဆောင်ချက် ထပ်<T> သည်
+လုပ်ဆောင်ချက် ထပ် သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
 က ဟူသော T တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ T တစ်ခု ကို ပြန်ပေးမည်။
 က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ထပ်::<ဒဿမကိန်း>(၂) ကို ပြသမည်။
-ဒဿမကိန်း ကို အစားထိုးအသုံးပြုသည့် ထပ် ဟူသော လုပ်ဆောင်ချက်ကို ၃ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ဒဿမကိန်း ကို အစားထိုးအသုံးပြုသည့် ထပ် ဟူသော လုပ်ဆောင်ချက်ကို ၂ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ထပ်::<ဒဿမကိန်း>(၃) ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -83,7 +85,7 @@ names comes from the kind the place of the call expects, and with no such place 
 compiler asks for the kinds:
 
 ```zaka-error ZK0341
-လုပ်ဆောင်ချက် ဗလာ<T> သည်
+လုပ်ဆောင်ချက် ဗလာ သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ T တစ်ခု ကို ပြန်ပေးမည်။
 ကနဦးတန်ဖိုး ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
@@ -93,29 +95,32 @@ compiler asks for the kinds:
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
-`ဗလာ::<ကိန်းပြည့်>()` fixes it, and so does a declared kind:
+Kinds written before the name fix it,
+`ကိန်းပြည့် ကို အစားထိုးအသုံးပြုသည့် ဗလာ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ်`, and so does a
+declared kind:
 `ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဗလာ() ဖြစ်ပါစေ။`
 
 ## Generic structs
 
-A struct can take kind parameters too. Its values take the kinds from their fields, or
-from the kind their place declares:
+A struct can take kind parameters too. Its head then ends in `ဒေတာအစုအဝေးသည်`, and
+`၎င်းတွင်` opens the fields. Its values take the kinds from their fields, or from the
+kind their place declares:
 
 ```zaka
-အတွဲ<က၊ ခ> ဟူသော ဒေတာအစုအဝေးတွင်
+အတွဲ ဟူသော ဒေတာအစုအဝေးသည် ယေဘုယျဒေတာအမျိုးအစား က နှင့် ယေဘုယျဒေတာအမျိုးအစား ခ တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင်
 ပထမ ဟူသော က တစ်ခု နှင့် ဒုတိယ ဟူသော ခ တစ်ခု
 တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ တွဲ ဖြစ်သည်။
 
-လုပ်ဆောင်ချက် လှည့်<A၊ B> သည်
-တွဲ ဟူသော အတွဲ<A၊ B> တစ်တွဲ ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ အတွဲ<B၊ A> တစ်တွဲ ကို ပြန်ပေးမည်။
-အတွဲ(ပထမ: (တွဲ ၏ ဒုတိယ)၊ ဒုတိယ: (တွဲ ၏ ပထမ)) ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် လှည့် သည် ယေဘုယျဒေတာအမျိုးအစား A နှင့် ယေဘုယျဒေတာအမျိုးအစား B တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
+တွဲ ဟူသော A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ တစ်တွဲ ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ B နှင့် A တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ တစ်တွဲ ကို ပြန်ပေးမည်။
+ပထမ အနေဖြင့် (တွဲ ၏ ဒုတိယ) နှင့် ဒုတိယ အနေဖြင့် (တွဲ ၏ ပထမ) ရှိသော အတွဲ တစ်တွဲ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် လူ သည် အတွဲ(ပထမ: "မောင်မောင်"၊ ဒုတိယ: ၂၄) ဖြစ်ပါစေ။
+ကိန်းရှင် လူ သည် ပထမ အနေဖြင့် "မောင်မောင်" နှင့် ဒုတိယ အနေဖြင့် ၂၄ ရှိသော အတွဲ တစ်တွဲ ဖြစ်ပါစေ။
 လှည့်(လူ) ၏ ပထမ ကို ပြသမည်။
-ကိန်းရှင် အမှတ် သည် အတွဲ<ဒဿမကိန်း၊ ဒဿမကိန်း> တစ်တွဲ ဖြစ်၍ တန်ဖိုးသည် အတွဲ(ပထမ: ၁၊ ဒုတိယ: ၂) ဖြစ်ပါစေ။
+ကိန်းရှင် အမှတ် သည် ဒဿမကိန်း နှင့် ဒဿမကိန်း တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ တစ်တွဲ ဖြစ်၍ တန်ဖိုးသည် ပထမ အနေဖြင့် ၁ နှင့် ဒုတိယ အနေဖြင့် ၂ ရှိသော အတွဲ တစ်တွဲ ဖြစ်ပါစေ။
 အမှတ် ၏ ဒုတိယ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -125,10 +130,12 @@ from the kind their place declares:
 ၂.၀
 ```
 
-`အတွဲ<A၊ B>` names the struct with its kinds; in words it reads
-`A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ`. `လှည့်` works its kinds out through the
-struct: its argument is an `အတွဲ<text၊ isize>`, so `A` is `စာသား` and `B` is
+`A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ` ("the pair that puts A and B in place")
+names the struct with its kinds; in signs it reads `အတွဲ<A၊ B>`. `လှည့်` works its
+kinds out through the struct: its argument is an `အတွဲ<text၊ isize>`, so `A` is `စာသား` and `B` is
 `ကိန်းပြည့်`.
+
+`အတွဲ<က၊ ခ> ဟူသော ဒေတာအစုအဝေးတွင် …` declares the same struct in the sign form.
 
 ## Local kinds
 
@@ -136,11 +143,11 @@ Long kinds in a header read better with a short name. A notes block after the he
 `ဤနေရာတွင် သတိပြုရန်မှာ` ("here, to note:"), names them:
 
 ```zaka
-အတွဲ<က၊ ခ> ဟူသော ဒေတာအစုအဝေးတွင်
+အတွဲ ဟူသော ဒေတာအစုအဝေးသည် ယေဘုယျဒေတာအမျိုးအစား က နှင့် ယေဘုယျဒေတာအမျိုးအစား ခ တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင်
 ပထမ ဟူသော က တစ်ခု နှင့် ဒုတိယ ဟူသော ခ တစ်ခု
 တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ တွဲ ဖြစ်သည်။
 
-လုပ်ဆောင်ချက် လှည့်<A၊ B> သည်
+လုပ်ဆောင်ချက် လှည့် သည် ယေဘုယျဒေတာအမျိုးအစား A နှင့် ယေဘုယျဒေတာအမျိုးအစား B တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
 တွဲ ဟူသော C တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ D တစ်ခု ကို ပြန်ပေးမည်။
 ဤနေရာတွင် သတိပြုရန်မှာ
 C သည် A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ တစ်တွဲ ဖြစ်သည်။
@@ -150,7 +157,8 @@ D သည် B နှင့် A တို့ကို အစားထိုး�
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လှည့်(အတွဲ(ပထမ: "မြမြ"၊ ဒုတိယ: ၉၀)) ၏ ပထမ ကို ပြသမည်။
+ကိန်းရှင် ရမှတ် သည် ပထမ အနေဖြင့် "မြမြ" နှင့် ဒုတိယ အနေဖြင့် ၉၀ ရှိသော အတွဲ တစ်တွဲ ဖြစ်ပါစေ။
+လှည့်(ရမှတ်) ၏ ပထမ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -163,9 +171,29 @@ them nothing. Like a kind parameter, a local kind counts with `ခု`.
 
 ## Generic aliases
 
-An alias can take kind parameters as well:
-`ဒေတာအမျိုးအစား အမည်တွဲ<T> ကို စာသား နှင့် T တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
-makes `အမည်တွဲ<ကိန်းပြည့်>` a name for `အတွဲ<စာသား၊ ကိန်းပြည့်>`.
+An alias can take kind parameters as well. Its parameters follow `သည်` as in a function, and
+`၎င်းကို` ("it") goes on to the kind the alias names:
+
+```zaka
+အတွဲ ဟူသော ဒေတာအစုအဝေးသည် ယေဘုယျဒေတာအမျိုးအစား က နှင့် ယေဘုယျဒေတာအမျိုးအစား ခ တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင်
+ပထမ ဟူသော က တစ်ခု နှင့် ဒုတိယ ဟူသော ခ တစ်ခု
+တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ တွဲ ဖြစ်သည်။
+ဒေတာအမျိုးအစား အမည်တွဲ သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍
+၎င်းကို စာသား နှင့် T တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ရမှတ် သည် ကိန်းပြည့် ကို အစားထိုးအသုံးပြုသည့် အမည်တွဲ တစ်တွဲ ဖြစ်၍ တန်ဖိုးသည် ပထမ အနေဖြင့် "မြမြ" နှင့် ဒုတိယ အနေဖြင့် ၉၀ ရှိသော အတွဲ တစ်တွဲ ဖြစ်ပါစေ။
+ရမှတ် ၏ ဒုတိယ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၉၀
+```
+
+`ကိန်းပြည့် ကို အစားထိုးအသုံးပြုသည့် အမည်တွဲ` is a name for
+`စာသား နှင့် ကိန်းပြည့် တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ`. In the sign form the alias reads
+`ဒေတာအမျိုးအစား အမည်တွဲ<T> ကို …`.
 
 Kinds can also need traits: functions a kind must have before a generic takes it.
 [Generics and traits](../../manual/language/generics.md) holds the full rules.
