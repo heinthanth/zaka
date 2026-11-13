@@ -216,6 +216,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ခုရှိသော", Kw::Having),
     ("ရှိသော", Kw::Having),
     ("တို့ပါသော", Kw::ListOf),
+    ("ပါသော", Kw::ItemOf),
     // slices
     ("မှစ၍", Kw::StartingAt),
     ("ထိ", Kw::Upto),

@@ -71,7 +71,7 @@ does:
   and a conversion, each with its measure word. The levels written after the alias go around the levels of the kind it
   names: with the alias above, `အတန်းသားများ ၏ လိပ်စာ` is `လူ စာရင်း ၏ လိပ်စာ`.
 - For a struct, in a struct literal of each form, `ကျောင်းသား(အသက်: ၁၂)` and
-  `အသက် ၁၂ ရှိသော ကျောင်းသားတစ်ခု`. The literal counts with the classifier of the struct.
+  `အသက် အနေဖြင့် ၁၂ ရှိသော ကျောင်းသားတစ်ခု`. The literal counts with the classifier of the struct.
 - For an enumeration, before `ထဲမှ` in a member, `<alias>များထဲမှ <member>`, and in the
   default arm of a switch, `တခြား <alias> တစ်<word> ဖြစ်လျှင်`.
 
@@ -79,7 +79,7 @@ A function kind with parameters stands in parentheses in a list of parameters or
 (ZK0239). Its alias is one word, so it needs none:
 
 ```zaka
-အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
 ဒေတာအမျိုးအစား မီးရောင် ကို အရောင် ဟုလည်း မှတ်ယူနိုင်ပါသည်။
 ဒေတာအမျိုးအစား ပြောင်းချက် ကို ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား ဟုလည်း မှတ်ယူနိုင်ပါသည်။
 
@@ -97,7 +97,7 @@ A function kind with parameters stands in parentheses in a list of parameters or
 ကိန်းရှင် မီး သည် မီးရောင်များထဲမှ စိမ်း ဖြစ်ပါစေ။
 မီး သည် နီ ဖြစ်လျှင် "ရပ်" ဟု ပြသမည်။
 တခြား မီးရောင် တစ်ခု ဖြစ်လျှင် "{မီး}" ဟု ပြသမည်။
-နှစ်ခါ ဟူသော လုပ်ဆောင်ချက်ကို နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်၊ ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+နှစ်ခါ ဟူသော လုပ်ဆောင်ချက်ကို နှစ်ဆ ဟူသော လုပ်ဆောင်ချက် နှင့် ၅ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

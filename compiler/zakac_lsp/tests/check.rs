@@ -66,7 +66,7 @@ fn an_import_reads_the_unsaved_text()
     let lib = "အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး \
                ဖြစ်ပါစေ။\nအများသုံး ကိန်းရှင် အဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး \
                ဖြစ်ပါစေ။\n";
-    let text = "\"lib/unsaved.zaka\" မှ အကြိမ်၊ အဆုံး တို့ကို ထည့်သွင်းမည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+    let text = "\"lib/unsaved.zaka\" မှ အကြိမ် နှင့် အဆုံး တို့ကို ထည့်သွင်းမည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
                 လုပ်ဆောင်မည်။\nအကြိမ် ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
     let missing = check("main.zaka", text, Buffers::default());
     assert!(!missing.diagnostics.is_empty());
@@ -162,7 +162,7 @@ fn a_struct_name_and_a_field_go_to_their_declarations()
 {
     let (file, text) = points();
     let kind = definition(&file, at(text, 3, "နေရာ")).unwrap();
-    let field = definition(&file, at(text, 3, "x ၃")).unwrap();
+    let field = definition(&file, at(text, 3, "x အနေဖြင့် ၃")).unwrap();
     assert!(kind.uri.path().ends_with("lib/point.zaka"));
     assert_eq!((kind.range.start.line, field.range.start.line), (2, 2));
 }
@@ -255,8 +255,8 @@ fn offered_at_end(text: &str, line: usize) -> Vec<String>
 #[test]
 fn completion_after_ei_offers_the_fields_of_a_chain()
 {
-    let text = "နေရာ ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု \
-                တို့ပါဝင်သည်။\nလူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အိမ် ဟူသော နေရာ တစ်ခု \
+    let text = "နေရာ ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ကိန်းပြည့် တစ်ခု \
+                တို့ပါဝင်သည်။\nလူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် အိမ် ဟူသော နေရာ တစ်ခု \
                 တို့ပါဝင်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် လူ တစ်ခု ဖြစ်ပါစေ။\nက ၏ \
                 \nက ၏ အိမ် ၏ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
     assert_eq!(offered_at_end(text, 4), ["အသက်", "အိမ်"]);
@@ -266,7 +266,7 @@ fn completion_after_ei_offers_the_fields_of_a_chain()
 #[test]
 fn completion_after_among_offers_the_members()
 {
-    let text = "အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+    let text = "အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
                 လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် အရောင်များထဲမှ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
     assert_eq!(offered_at_end(text, 2), ["နီ", "ဝါ", "စိမ်း"]);
 }
@@ -275,9 +275,10 @@ fn completion_after_among_offers_the_members()
 fn a_kind_from_a_value_gives_fields_while_a_line_does_not_parse()
 {
     let lib = include_str!("../../../samples/modules/lib/point.zaka");
-    let text = "\"lib/point.zaka\" မှ နေရာ၊ ရွှေ့ တို့ကို ထည့်သွင်းမည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
+    let text = "\"lib/point.zaka\" မှ နေရာ နှင့် ရွှေ့ တို့ကို ထည့်သွင်းမည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို \
                 လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် နေရာ တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် ရွှေ့ ဟူသော \
-                လုပ်ဆောင်ချက်ကို က၊ က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။\nခ ၏ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+                လုပ်ဆောင်ချက်ကို က နှင့် က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။\nခ ၏ \nပရိုဂရမ် \
+                ပြီးဆုံးပါပြီး။\n";
     let mut buffers = Buffers::default();
     buffers.open.insert(folder().join("lib").join("point.zaka"), lib.into());
     let file = check("value.zaka", text, buffers);
@@ -290,8 +291,8 @@ fn a_kind_from_a_value_gives_fields_while_a_line_does_not_parse()
 #[test]
 fn completion_after_ei_goes_through_list_cells()
 {
-    let text = "နေရာ ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု \
-                တို့ပါဝင်သည်။\nလူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အိမ် ဟူသော နေရာ တစ်ခု \
+    let text = "နေရာ ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ကိန်းပြည့် တစ်ခု \
+                တို့ပါဝင်သည်။\nလူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် အိမ် ဟူသော နေရာ တစ်ခု \
                 တို့ပါဝင်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် လူများ သည် အကွက် ၃ ခုရှိသော လူ \
                 စာရင်း တစ်ခု ဖြစ်ပါစေ။\nကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။\nလူများ ၏ အကွက် n + ၁ ၏ \
                 \nလူများ ၏ နောက်ဆုံးအကွက် ၏ အိမ် ၏ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
@@ -333,7 +334,7 @@ const MARKED: &str = "လုပ်ဆောင်ချက် တိုး သ�
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် န သည် ၁ ဖြစ်ပါစေ။
-တိုး ဟူသော လုပ်ဆောင်ချက်ကို န၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+တိုး ဟူသော လုပ်ဆောင်ချက်ကို န နှင့် ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ";
 
@@ -344,7 +345,7 @@ fn call_hints_mark_the_arguments_a_call_can_change()
     assert!(file.diagnostics.is_empty(), "{:?}", file.diagnostics);
     let found = call_hints(&file);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert_eq!(found[0].position, at(MARKED, 12, "န၊"));
+    assert_eq!(found[0].position, at(MARKED, 12, "န နှင့်"));
 }
 
 #[test]

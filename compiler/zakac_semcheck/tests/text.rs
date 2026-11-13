@@ -121,10 +121,10 @@ fn characters_and_the_utf8_conversion_take_their_kinds()
 #[test]
 fn a_verbal_join_takes_text_alone()
 {
-    let checked = check(&lines(&[TEXT, "t၊ v၊ \"!\" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။"]));
+    let checked = check(&lines(&[TEXT, "t၊ v နှင့် \"!\" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။"]));
     assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
-    assert_eq!(kind_at(&checked, "t၊ v၊ \"!\" တို့ကို ဆက်ထားသည့် စာသား"), "text");
-    assert_eq!(codes("\"a\"၊ ၁ တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။"), [Code::OperandKind]);
+    assert_eq!(kind_at(&checked, "t၊ v နှင့် \"!\" တို့ကို ဆက်ထားသည့် စာသား"), "text");
+    assert_eq!(codes("\"a\" နှင့် ၁ တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။"), [Code::OperandKind]);
 }
 
 /// A character of text is a place, and text takes an add; a view of text

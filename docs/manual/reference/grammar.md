@@ -25,6 +25,7 @@ nonterminal is a lowercase English name; a terminal is a token, written in quote
 | `[ a ]` | option: `a`, or nothing |
 | `{ a }` | repetition: `a`, zero or more times |
 | `( a )` | a group |
+| `items(x)` | a list in words of `x`: `x`, or `x { "၊" x } "နှင့်" x`; one item takes the closing word with no `တို့`, two or more take it with `တို့` ([Lists in words](../language/words.md#lists-in-words)) |
 | `(* ... *)` | a comment, not part of the production |
 
 The lexer does some of the work before the parser sees the token stream, so the
@@ -75,7 +76,7 @@ See [Source text and words](../language/words.md) and
 ```text
 file         = { import } { top-item } ;
 top-item     = declaration | start-block ;        (* another statement here is ZK0326 *)
-import       = string-lit "မှ" name { "၊" name } ( "ကို" | "တို့ကို" ) "ထည့်သွင်းမည်" "။" ;
+import       = string-lit "မှ" items(name) ( "ကို" | "တို့ကို" ) "ထည့်သွင်းမည်" "။" ;
 start-block  = "ပရိုဂရမ်" "သည်" [ params "လက်ခံပြီး" ] fn-open "။"
                { stmt }
                "ပရိုဂရမ်" done "။" ;
@@ -128,11 +129,11 @@ struct-decl  = name "ဟူသော" [ "အများသုံး" ] [ "မ�
                fields closer "။" ;
 handle-decl  = name "ဟူသော" [ "အများသုံး" ] "ပြင်ပမှ လာသော" "ဒေတာအစုအဝေး"
                ( "ဖြစ်သည်" | "တွင်" fields ( "ပါဝင်သည်" | "တို့ပါဝင်သည်" ) ) "။" ;
-fields       = field { "၊" field } ;
+fields       = items(field) ;
 field        = name "ဟူသော" listed-kind ;
 
 enum-decl    = name "ဟူသော" [ "အများသုံး" ] "ဒေတာအမျိုးအစားကွဲ" "တွင်"
-               variant { "၊" variant } closer "။" ;
+               items(variant) closer "။" ;
 variant      = [ "ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်" ] [ "တန်ဖိုးအနေဖြင့်" expr "ရှိသည့်" ] name ;
 
 closer       = ( "ပါဝင်သည်" | "ပါဝင်ပြီး" word-clause )          (* after one field or variant *)
@@ -175,7 +176,7 @@ then         = "လျှင်" | "ဖြစ်လျှင်" ;
 switch-stmt  = value "သည်" cases "ဖြစ်လျှင်" branch
                { cases "ဖြစ်လျှင်" branch }
                [ "တခြား" slot-kind "ဖြစ်လျှင်" branch ] ;
-cases        = expr | expr "၊" expr { "၊" expr } "တို့" ;
+cases        = expr | expr { "၊" expr } "နှင့်" expr "တို့" ;
 
 while-loop   = expr while branch ;
 while        = "နေသရွေ့" | "ဖြစ်နေသရွေ့" ;
@@ -244,7 +245,7 @@ particle     = "၏" | "နှင့်" | "ကို" | "ဖြင့်" | "�
              | "ခုမြောက်" | "လုံးမြောက်" | "ထဲသို့" | "ထဲတွင်" ;
 operand      = notation | word-list | word-table | join | word-struct
              | first-call | short-call | marked-call ;   (* a call with a value end *)
-join         = notation "၊" notation { "၊" notation } "တို့ကို" "ဆက်ထားသည့်" "စာသား" ;
+join         = notation { "၊" notation } "နှင့်" notation "တို့ကို" "ဆက်ထားသည့်" "စာသား" ;
 
 notation     = prefix-expr { infix-op prefix-expr } ;
 prefix-expr  = { prefix-op } atom { data-read } ;
@@ -306,11 +307,11 @@ See [Expressions](../language/expressions.md), [Operator precedence](precedence.
 ```text
 call         = long-call | first-call | short-call | marked-call | sign-call ;
 
-long-call    = long-head [ args "တို့ဖြင့်" ] long-end ;
+long-call    = long-head [ items(expr) ( "ဖြင့်" | "တို့ဖြင့်" ) ] long-end ;
 long-head    = callee ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" ;
 callee       = name | "(" name "၏" ... ")" ;      (* a name, or a place that holds a function value *)
 args         = expr { "၊" expr } ;
-first-call   = operand { "၊" notation } ( "ကို" | "တို့ကို" ) "သုံး၍"
+first-call   = operand [ { "၊" notation } "နှင့်" notation ] ( "ကို" | "တို့ကို" ) "သုံး၍"
                ( name short-end | long-head long-end ) ;
 short-call   = name short-end ;                   (* no arguments *)
 marked-call  = operand mark-word { notation mark-word }
@@ -350,14 +351,15 @@ literal      = number-lit | char-lit | string-lit | truth | list-lit | blank-lis
 number-lit   = [ "အခြေ" digits "ဖြင့်" ] ( number | letters ) [ "ဟူသော" slot-kind ] ;
 truth        = "မှန်" | "မမှန်" ;
 list-lit     = "[" notation { "၊" notation } "]" [ list-kind ] ;
-word-list    = notation { "၊" notation } "တို့ပါသော" "စာရင်း" [ list-kind ] ;
+word-list    = items(notation) ( "ပါသော" | "တို့ပါသော" ) "စာရင်း" [ list-kind ] ;
 blank-list   = ( "[" "]" | "စာရင်းအလွတ်" ) [ list-kind ] ;
 list-kind    = "ဟူသော" slot-kind ;                (* a list kind *)
 table-lit    = "[" notation ":" notation { "၊" notation ":" notation } "]" [ list-kind ] ;
-word-table   = notation "အနေဖြင့်" notation { "၊" notation "အနေဖြင့်" notation } "တို့ပါသော" "ဇယား" [ list-kind ] ;
+word-table   = items(table-row) ( "ပါသော" | "တို့ပါသော" ) "ဇယား" [ list-kind ] ;
+table-row    = notation "အနေဖြင့်" notation ;
 blank-table  = ( "[" ":" "]" | "ဇယားအလွတ်" ) [ list-kind ] ;   (* list-kind: a ဇယား kind here *)
 struct-lit   = name "(" [ name ":" notation { "၊" name ":" notation } ] ")" ;
-word-struct  = name notation { "၊" name notation } ( "ရှိသော" | "ခုရှိသော" ) struct-count ;
+word-struct  = items(name "အနေဖြင့်" notation) ( "ရှိသော" | "ခုရှိသော" ) struct-count ;
 struct-count = name count-word ;                  (* joined, လူတစ်ယောက်, or apart *)
 member       = name "ထဲမှ" name ;                  (* အရောင်များထဲမှ နီ *)
 null-word    = "အလွတ်"                             (* an optional with no data *)
@@ -470,12 +472,15 @@ The parser keeps a flag per context and tests it before it takes the word:
 | `in_count` | a count, `အကွက် <count> ခုရှိသော` | `ရှိသော` closes the count; no struct literal starts in it |
 | `in_fill` | the value of a fill | `ဖြင့်` after a lone operand closes the value; the size follows |
 | `in_list` | a list of parameters or fields | the bare function-kind production is turned off, so a function kind with parameters needs parentheses (`FnForm::NoParams`) |
+| `in_word_list` | an item of a list in words | a `နှင့်` outside parentheses ends the item, and so does `ဖြင့်` after a lone operand before the end of a long call; parentheses turn it off |
 
 **Agreement on counts.** A few productions agree with the number of items in a list: one
-field or variant closes with `ပါဝင်သည်`, two or more with `တို့ပါဝင်သည်`; one parameter
-can leave out `လည်းကောင်း`, two or more each end in it; marks go on each parameter or on
-none. These are finite, so a context-free grammar can state them, and the rules above do,
-as separate alternatives.
+field or variant closes with `ပါဝင်သည်`, two or more with `တို့ပါဝင်သည်`; a list in words
+takes its closing word without `တို့` after one item and with it after two or more
+(`ကို` and `တို့ကို`, `ဖြင့်` and `တို့ဖြင့်`, `ပါသော` and `တို့ပါသော`), and joins its last
+item with `နှင့်`; one parameter can leave out `လည်းကောင်း`, two or more each end in it;
+marks go on each parameter or on none. These are finite, so a context-free grammar can
+state them, and the rules above do, as separate alternatives.
 
 **Count prefixes.** The count prefixes before a kind bind to its list levels from the
 innermost out, a stack the parser pops as it reads each `စာရင်း`. Which level a count binds

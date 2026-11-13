@@ -7,7 +7,7 @@ use crate::common::codes;
 use crate::common::stmts;
 
 const DECL: &str =
-    "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အတန်း ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။\n";
+    "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် အတန်း ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။\n";
 
 /// The tree of the print statement that shows `value`, after [`DECL`].
 fn shown(value: &str) -> String
@@ -38,34 +38,36 @@ fn count_of(value: &str) -> (String, String)
 fn a_struct_literal_pairs_each_field_with_its_value()
 {
     assert_eq!(
-        shown("အသက် ၂၀၊ အတန်း ၁ + ၂ ရှိသော လူတစ်ခု"),
+        shown("အသက် အနေဖြင့် ၂၀ နှင့် အတန်း အနေဖြင့် ၁ + ၂ ရှိသော လူတစ်ခု"),
         "(print (struct လူ (အသက် 20) (အတန်း (+ 1 2))))"
     );
-    assert_eq!(shown("အတန်း -၃ ရှိသော လူတစ်ခု"), "(print (struct လူ (အတန်း (neg 3))))");
+    assert_eq!(shown("အတန်း အနေဖြင့် -၃ ရှိသော လူတစ်ခု"), "(print (struct လူ (အတန်း (neg 3))))");
 }
 
 #[test]
 fn the_count_is_one_word_or_two()
 {
     let joined = ("လူ".to_string(), "ယောက်".to_string());
-    assert_eq!(count_of("အသက် ၂၀ ရှိသော လူတစ်ယောက်"), joined);
-    assert_eq!(count_of("အသက် ၂၀ ရှိသော လူ တစ်ယောက်"), joined);
+    assert_eq!(count_of("အသက် အနေဖြင့် ၂၀ ရှိသော လူတစ်ယောက်"), joined);
+    assert_eq!(count_of("အသက် အနေဖြင့် ၂၀ ရှိသော လူ တစ်ယောက်"), joined);
 }
 
 #[test]
 fn an_undeclared_name_splits_at_one_for_the_checker()
 {
     let unknown = ("ကျား".to_string(), "ကောင်".to_string());
-    assert_eq!(count_of("အသက် ၂၀ ရှိသော ကျားတစ်ကောင်"), unknown);
-    assert_eq!(count_of("အသက် ၂၀ ရှိသော ကျား တစ်ကောင်"), unknown);
+    assert_eq!(count_of("အသက် အနေဖြင့် ၂၀ ရှိသော ကျားတစ်ကောင်"), unknown);
+    assert_eq!(count_of("အသက် အနေဖြင့် ၂၀ ရှိသော ကျား တစ်ကောင်"), unknown);
 }
 
 #[test]
 fn a_literal_inside_a_literal_takes_parentheses()
 {
-    let text = "မျဉ်း ဟူသော ဒေတာအစုအဝေးတွင် စ ဟူသော လူ တစ်ခု၊ ဆုံး ဟူသော လူ တစ်ခု တို့ပါဝင်သည်။\n";
-    let program =
-        format!("{text}စ (အသက် ၁ ရှိသော လူတစ်ခု)၊ ဆုံး (အတန်း ၂ ရှိသော လူတစ်ခု) ရှိသော မျဉ်းတစ်ခု");
+    let text = "မျဉ်း ဟူသော ဒေတာအစုအဝေးတွင် စ ဟူသော လူ တစ်ခု နှင့် ဆုံး ဟူသော လူ တစ်ခု တို့ပါဝင်သည်။\n";
+    let program = format!(
+        "{text}စ အနေဖြင့် (အသက် အနေဖြင့် ၁ ရှိသော လူတစ်ခု) နှင့် ဆုံး အနေဖြင့် (အတန်း အနေဖြင့် ၂ ရှိသော \
+         လူတစ်ခု) ရှိသော မျဉ်းတစ်ခု"
+    );
     assert_eq!(
         shown(&program),
         "(print (struct မျဉ်း (စ [(struct လူ (အသက် 1))]) (ဆုံး [(struct လူ (အတန်း 2))])))"
@@ -94,13 +96,13 @@ fn a_struct_literal_takes_the_notation_form()
 #[test]
 fn a_notation_literal_needs_no_parentheses_inside_another()
 {
-    let text = "မျဉ်း ဟူသော ဒေတာအစုအဝေးတွင် စ ဟူသော လူ တစ်ခု၊ ဆုံး ဟူသော လူ တစ်ခု တို့ပါဝင်သည်။\n";
+    let text = "မျဉ်း ဟူသော ဒေတာအစုအဝေးတွင် စ ဟူသော လူ တစ်ခု နှင့် ဆုံး ဟူသော လူ တစ်ခု တို့ပါဝင်သည်။\n";
     assert_eq!(
-        shown(&format!("{text}စ လူ(အသက်: ၁) ရှိသော မျဉ်းတစ်ခု")),
+        shown(&format!("{text}စ အနေဖြင့် လူ(အသက်: ၁) ရှိသော မျဉ်းတစ်ခု")),
         "(print (struct မျဉ်း (စ (struct လူ (အသက် 1)))))"
     );
     assert_eq!(
-        shown(&format!("{text}မျဉ်း(စ: လူ(အသက်: ၁)၊ ဆုံး: (အတန်း ၂ ရှိသော လူတစ်ခု))")),
+        shown(&format!("{text}မျဉ်း(စ: လူ(အသက်: ၁)၊ ဆုံး: (အတန်း အနေဖြင့် ၂ ရှိသော လူတစ်ခု))")),
         "(print (struct မျဉ်း (စ (struct လူ (အသက် 1))) (ဆုံး [(struct လူ (အတန်း 2))])))"
     );
 }
@@ -132,7 +134,10 @@ fn a_notation_literal_pairs_each_field_with_a_colon()
 #[test]
 fn a_literal_needs_its_count()
 {
-    assert_eq!(codes(&format!("{DECL}အသက် ၂၀ ရှိသော လူ ကို ပြသမည်။")), [Code::ExpectedToken]);
-    let no_word = format!("{DECL}အသက် ၂၀ ရှိသော လူတစ် ကို ပြသမည်။");
+    assert_eq!(
+        codes(&format!("{DECL}အသက် အနေဖြင့် ၂၀ ရှိသော လူ ကို ပြသမည်။")),
+        [Code::ExpectedToken]
+    );
+    let no_word = format!("{DECL}အသက် အနေဖြင့် ၂၀ ရှိသော လူတစ် ကို ပြသမည်။");
     assert_eq!(codes(&no_word), [Code::ExpectedToken]);
 }

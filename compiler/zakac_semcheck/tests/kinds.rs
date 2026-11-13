@@ -200,10 +200,10 @@ fn conversions_follow_the_table()
 fn calls_check_argument_and_return_kinds()
 {
     let checked =
-        check(&lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။"]));
+        check(&lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၂ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။"]));
     assert!(checked.out.diagnostics.is_empty());
-    assert_eq!(kind_at(&checked, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်"), "isize");
-    let bad_arg = lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို 'က' တို့ဖြင့် လုပ်ဆောင်မည်။"]);
+    assert_eq!(kind_at(&checked, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၂ ဖြင့် လုပ်ဆောင်သော ရလဒ်"), "isize");
+    let bad_arg = lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို 'က' ဖြင့် လုပ်ဆောင်မည်။"]);
     assert_eq!(codes(&bad_arg), [Code::KindMismatch]);
     let bad_return = lines(&[
         "လုပ်ဆောင်ချက် ဂဏန်း သည်",

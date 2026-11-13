@@ -215,7 +215,7 @@ pub enum VerbOp
     /// from 1. The parser builds it; no verb word stands for it.
     #[strum(serialize = "char1")]
     CharNth,
-    /// `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins each piece of
+    /// `a နှင့် b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins each piece of
     /// text in order. The parser builds it from the list of pieces.
     #[strum(serialize = "join")]
     Join,

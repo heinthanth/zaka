@@ -30,7 +30,7 @@ out as `[<index>: <value>၊ …]`, and `[:]` is one with no rows:
 ```
 
 The sentence form names each row as `<index> အနေဖြင့် <value>`:
-`"မမ" အနေဖြင့် ၉၅၁၁၁၊ "ကို" အနေဖြင့် ၉၅၂၂၂ တို့ပါသော ဇယား` is the same ဇယား.
+`"မမ" အနေဖြင့် ၉၅၁၁၁ နှင့် "ကို" အနေဖြင့် ၉၅၂၂၂ တို့ပါသော ဇယား` is the same ဇယား.
 
 ## Reading a row
 

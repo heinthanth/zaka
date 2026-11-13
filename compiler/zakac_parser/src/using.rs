@@ -170,8 +170,8 @@ pub(crate) enum Head
 impl Parser<'_>
 {
     /// Whether the rest of an arguments-first call comes after its first
-    /// argument: `ကို` or `တို့ကို`, then `သုံး၍`; or `၊` with those ahead,
-    /// outside parentheses.
+    /// argument: `ကို` or `တို့ကို`, then `သုံး၍`; or `၊` or `နှင့်` with those
+    /// ahead, outside parentheses, before a word that no argument holds.
     ///
     /// # Returns
     ///
@@ -179,8 +179,7 @@ impl Parser<'_>
     pub(crate) fn at_using_rest(&self) -> bool
     {
         ret_true!(self.at_using_close(0));
-        self.peek_n(0).kind == TokenKind::Punct(Punct::ListSep)
-            && self.close_ahead(1, Self::at_using_close)
+        self.at_list_join() && self.word_list_ahead(1, Self::at_using_close)
     }
 
     /// Whether `ကို` or `တို့ကို` starts `n` tokens ahead, with `သုံး၍` after
@@ -400,9 +399,10 @@ impl Parser<'_>
     }
 
     /// Parse the rest of an arguments-first call after its first argument:
-    /// `(၊ <arg>)* (တို့)?ကို သုံး၍`, then the function and the end. Each
-    /// argument is a notation expression, so a sentence that gives a value
-    /// goes inside parentheses.
+    /// the arguments as a list in words, then `ကို` after one or `တို့ကို`
+    /// after two or more, `သုံး၍`, the function and the end. Each argument is
+    /// a notation expression, so a sentence that gives a value goes inside
+    /// parentheses.
     ///
     /// # Arguments
     ///
@@ -415,15 +415,12 @@ impl Parser<'_>
     pub(crate) fn parse_using(&mut self, first: Expr, mode: Mode) -> PResult<Head>
     {
         let start = first.span();
-        let mut args = Args::default();
-        args.push(first);
-        while self.eat_punct(Punct::ListSep)
-        {
-            let arg = self.parse_notation()?;
-            extract!(Head::Expr(arg) = self.parse_short_after(arg, Mode::Expr)?);
-            args.push(arg);
-        }
-        let close = self.expect_one_of(&[Kw::Ko, Kw::ListKo])?;
+        let args = self.parse_word_list_from(first, |p| {
+            let arg = p.parse_notation()?;
+            extract!(Head::Expr(arg) = p.parse_short_after(arg, Mode::Expr)?);
+            Ok(arg)
+        })?;
+        let close = self.expect_list_word(args.len(), Kw::Ko, Kw::ListKo)?;
         let plural = close.kind == TokenKind::Kw(Kw::ListKo);
         let using = UsingMark::builder().plural(plural).span(close.span).build();
         self.expect(Kw::Using)?;

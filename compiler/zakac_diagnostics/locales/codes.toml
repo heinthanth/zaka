@@ -1385,6 +1385,24 @@ en = "put an inner part in a variable or a function of its own"
 [codes.ZK0244.explain]
 en = """The compiler follows parentheses, operands, calls, lists, templates and blocks to a fixed depth, so that a program nested without end cannot use up the stack of the compiler or of the editor. Real programs keep far below it; an inner part with a name of its own is easier to read too."""
 
+[codes.ZK0245.title]
+en = "list without နှင့်"
+[codes.ZK0245.message]
+en = "a list of two or more items joins its last item with \"နှင့်\""
+[codes.ZK0245.help]
+en = "write \"နှင့်\" in place of the last \"၊\", as in \"က၊ ခ နှင့် ဂ\"; an item with a \"နှင့်\" of its own goes in parentheses"
+[codes.ZK0245.explain]
+en = """A list written in words puts \"၊\" between its items and \"နှင့်\" before the last one, as Burmese prose joins a list: \"က ကို\", \"က နှင့် ခ တို့ကို\", \"က၊ ခ နှင့် ဂ တို့ကို\". The \"နှင့်\" is required, and a \"၊\" after it is an error too. An item that holds a \"နှင့်\" of its own, such as \"(က နှင့် ခ ၏ ပေါင်းလဒ်)\", stands in parentheses. Lists in notation, such as \"[က၊ ခ]\" and \"f(က၊ ခ)\", keep plain \"၊\"."""
+
+[codes.ZK0246.title]
+en = "list word does not fit the count"
+[codes.ZK0246.message]
+en = "a list of %{n} takes \"%{w}\" here, not \"%{f}\""
+[codes.ZK0246.help]
+en = "one item takes the word with no \"တို့\"; two or more take the word with \"တို့\""
+[codes.ZK0246.explain]
+en = """The word that closes a list tells the count of its items: \"ကို\", \"ဖြင့်\", \"ပါသော\" and \"ပါဝင်\" follow one item, and \"တို့ကို\", \"တို့ဖြင့်\", \"တို့ပါသော\" and \"တို့ ပါဝင်\" follow two or more."""
+
 [codes.ZK0472.title]
 en = "C function must be unsafe"
 [codes.ZK0472.message]
@@ -1484,17 +1502,6 @@ en = "write \"တစ်%{w}လုံး\""
 en = "write \"တစ်%{w}\""
 [codes.ZK0509.explain]
 en = """Burmese counts things with a classifier that fits them: people with \"ယောက်\", most other things with \"ခု\". A struct or an enumeration names its classifier with \"... တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\", and an alias with \"... ဟုလည်း မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\"; an alias with no word of its own counts with the word of its kind, \"စာလုံး\" counts with \"လုံး\", and each other kind with \"ခု\". The word follows \"တစ်\" after each kind written in a declaration, a parameter, a field, a result, a conversion, a size and a literal, and at the end of a struct literal; \"<word>စာ\" counts the cells of a heap block. The size and the value are the same whichever word is written, so the program still compiles."""
-
-[codes.ZK0510.title]
-en = "arguments closed with the wrong particle"
-[codes.ZK0510.message]
-en = "%{n} arguments close with \"တို့ကို\", not \"ကို\""
-[codes.ZK0510.message_one]
-en = "one argument closes with \"ကို\", not \"တို့ကို\""
-[codes.ZK0510.help]
-en = "write \"%{w}\" before \"သုံး၍\""
-[codes.ZK0510.explain]
-en = """A call that gives its arguments before its function closes them with \"ကို\" after one argument and with \"တို့ကို\" after two or more, as a Burmese sentence marks one object apart from several. The call is the same whichever word is written, so the program still compiles."""
 
 # -------------------------------------------------------------- folding ZK06xx
 

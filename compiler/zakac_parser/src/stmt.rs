@@ -200,7 +200,7 @@ impl Parser<'_>
         Err(diag::expected_stmt_verb(self.peek().span, &self.found()))
     }
 
-    /// Parse `"<file>" မှ <name> (၊ <name>)* (တို့ကို|ကို) ထည့်သွင်းမည်။`. An
+    /// Parse `"<file>" မှ <name> [(၊ <name>)* နှင့် <name>] (တို့ကို|ကို) ထည့်သွင်းမည်။`. An
     /// import after another statement or inside a block is parsed and
     /// reported.
     ///
@@ -216,12 +216,8 @@ impl Parser<'_>
             unreachable!("the current token is a string");
         };
         self.bump();
-        let mut names = vec![self.parse_ident()?];
-        while self.eat_punct(Punct::ListSep)
-        {
-            names.push(self.parse_ident()?);
-        }
-        self.expect_one_of(&[Kw::ListKo, Kw::Ko])?;
+        let names = self.parse_word_list(Self::parse_ident)?;
+        self.expect_list_word(names.len(), Kw::Ko, Kw::ListKo)?;
         self.expect(Kw::Import)?;
         let stop = self.expect_stop()?;
         let span = tok.span.to(&stop.span);
@@ -953,7 +949,7 @@ impl Parser<'_>
     }
 
     /// Parse a struct declaration after `<name> ဟူသော ... ဒေတာအစုအဝေး`:
-    /// `တွင် <field>၊ ... <field> တို့ပါဝင်သည်။`, or with one field
+    /// `တွင် <field>၊ ... နှင့် <field> တို့ပါဝင်သည်။`, or with one field
     /// `တွင် <field> ပါဝင်သည်။`; `…ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်။`
     /// at the end gives its classifier. Each field is
     /// `<name> ဟူသော <kind> တစ်<classifier>`.
@@ -1003,8 +999,8 @@ impl Parser<'_>
 
     /// Parse a kind that comes from outside the program, after
     /// `<name> ဟူသော [အများသုံး] ပြင်ပမှ လာသော ဒေတာအစုအဝေး`: `ဖြစ်သည်။`, or
-    /// `တွင် <field>၊ ... တို့ပါဝင်သည်။` (one field: `ပါဝင်သည်`) with the fields of the
-    /// C struct a value points at, from its start.
+    /// `တွင် <field>၊ ... နှင့် <field> တို့ပါဝင်သည်။` (one field: `ပါဝင်သည်`) with the
+    /// fields of the C struct a value points at, from its start.
     ///
     /// # Arguments
     ///
@@ -1050,19 +1046,14 @@ impl Parser<'_>
     }
 
     /// Parse the fields of a struct declaration, with the list open:
-    /// `<field> (၊ <field>)*`.
+    /// `<field> [(၊ <field>)* နှင့် <field>]`.
     ///
     /// # Returns
     ///
     /// The fields, or a diagnostic.
     fn parse_fields(&mut self) -> PResult<Vec<Param>>
     {
-        let mut fields = vec![self.parse_field()?];
-        while self.eat_punct(Punct::ListSep)
-        {
-            fields.push(self.parse_field()?);
-        }
-        Ok(fields)
+        self.parse_word_list(Self::parse_field)
     }
 
     /// Parse one field: `<name> ဟူသော <kind> တစ်<classifier>`.
@@ -1080,7 +1071,7 @@ impl Parser<'_>
 
     /// Parse an enumeration declaration after
     /// `<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲ`:
-    /// `တွင် <member>၊ ... <member> တို့ပါဝင်သည်။`, or with one member
+    /// `တွင် <member>၊ ... နှင့် <member> တို့ပါဝင်သည်။`, or with one member
     /// `တွင် <member> ပါဝင်သည်။`; the `ပြီး` form of the closer, then
     /// `မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်`, gives its classifier.
     ///
@@ -1096,11 +1087,7 @@ impl Parser<'_>
     fn parse_enum_decl(&mut self, start: Span, name: Ident) -> PResult<Stmt>
     {
         self.expect(Kw::At)?;
-        let mut members = vec![self.parse_enum_member()?];
-        while self.eat_punct(Punct::ListSep)
-        {
-            members.push(self.parse_enum_member()?);
-        }
+        let members = self.parse_word_list(Self::parse_enum_member)?;
         self.expect_one_of(member_closers(members.len(), true))?;
         let (classifier, span) = self.parse_decl_end(start)?;
         do_if!(self.depth > 0, self.diags.push(diag::nested_enum(span)));
@@ -1156,14 +1143,14 @@ impl Parser<'_>
         let mut arms = vec![self.parse_switch_arm(case)?];
         while self.at_switch_arm()
         {
-            let case = self.parse_expr()?;
+            let case = self.inside_word_list(Self::parse_expr)?;
             arms.push(self.parse_switch_arm(case)?);
         }
         let default =
             tern!(self.at(Kw::Other), Some(self.parse_switch_default()?), None);
         while default.is_some() && self.at_switch_arm()
         {
-            let case = self.parse_expr()?;
+            let case = self.inside_word_list(Self::parse_expr)?;
             self.diags.push(diag::arm_after_default(case.span()));
             self.parse_switch_arm(case)?;
         }
@@ -1174,8 +1161,8 @@ impl Parser<'_>
         Ok(Stmt::Switch(node))
     }
 
-    /// Parse the rest of a switch arm after its first case: each case after
-    /// a `၊`, then `တို့` when there are several, then `ဖြစ်လျှင် <block>`.
+    /// Parse the rest of a switch arm after its first case: the cases as a list
+    /// in words, then `တို့` when there are several, then `ဖြစ်လျှင် <block>`.
     ///
     /// # Arguments
     ///
@@ -1187,11 +1174,7 @@ impl Parser<'_>
     fn parse_switch_arm(&mut self, case: Expr) -> PResult<SwitchArm>
     {
         let start = case.span();
-        let mut cases = vec![case];
-        while self.eat_punct(Punct::ListSep)
-        {
-            cases.push(self.parse_expr()?);
-        }
+        let cases = self.parse_word_list_from(case, Self::parse_expr)?;
         do_if!(cases.len() > 1, {
             self.expect(Kw::Plural)?;
         });

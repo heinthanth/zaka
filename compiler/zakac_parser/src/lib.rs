@@ -18,6 +18,7 @@ mod stmt;
 mod str_lit;
 mod struct_lit;
 mod using;
+mod word_list;
 pub mod wrap;
 
 zakac_i18n::init!();

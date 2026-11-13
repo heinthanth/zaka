@@ -156,6 +156,12 @@ BadMark = ("ZK0241", Level::Error),
 FillInFnKind = ("ZK0243", Level::Error),
 /// Expressions or blocks nest deeper than the parser follows.
 NestingTooDeep = ("ZK0244", Level::Error),
+/// A list of two or more items in words does not join its last item with
+/// `နှင့်`, or has a `၊` after the `နှင့်`.
+ListNeedsAnd = ("ZK0245", Level::Error),
+/// The word that closes a list does not fit the count of its items: one item
+/// takes the word with no `တို့`, two or more the word with `တို့`.
+ListWordCount = ("ZK0246", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -426,9 +432,7 @@ RedundantGroup = ("ZK0507", Level::Warning),
 PaInValue = ("ZK0508", Level::Warning),
 /// A count word uses a classifier other than the kind's own.
 ClassifierMismatch = ("ZK0509", Level::Warning),
-/// The arguments of a call written arguments first close with `ကို` after
-/// several, or with `တို့ကို` after one.
-UsingParticleCount = ("ZK0510", Level::Warning),
+
 // constant folding: ZK06xx
 /// An operation on constants gives a value outside its kind.
 ConstantOverflow = ("ZK0601", Level::Error),

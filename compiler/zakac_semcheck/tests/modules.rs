@@ -46,15 +46,15 @@ const LIB: &str = "\
 အများသုံး လုပ်ဆောင်ချက် ပေါင်း သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-(နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်) + ခ ကို ပြန်ပေးမည်။
+(နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်သော ရလဒ်) + ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
 ";
 
 #[test]
 fn exported_names_reach_the_importer()
 {
-    let main = "\"lib.zaka\" မှ ပေါင်း၊ အများဆုံး တို့ကို ထည့်သွင်းမည်။
-ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို အများဆုံး၊ ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
+    let main = "\"lib.zaka\" မှ ပေါင်း နှင့် အများဆုံး တို့ကို ထည့်သွင်းမည်။
+ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို အများဆုံး နှင့် ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
     assert_eq!(codes(&[("/m/main.zaka", main), ("/m/lib.zaka", LIB)]), []);
 }
 
@@ -67,14 +67,14 @@ fn two_files_can_each_have_a_private_function_of_one_name()
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
 က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို မှန် တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
+နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို မှန် ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
     assert_eq!(codes(&[("/m/main.zaka", main), ("/m/lib.zaka", LIB)]), []);
 }
 
 #[test]
 fn importing_a_private_name_is_zk0322_with_help()
 {
-    let main = "\"lib.zaka\" မှ နှစ်ဆ၊ ဝှက်၊ ပျောက် တို့ကို ထည့်သွင်းမည်။";
+    let main = "\"lib.zaka\" မှ နှစ်ဆ၊ ဝှက် နှင့် ပျောက် တို့ကို ထည့်သွင်းမည်။";
     let found = check(&[("/m/main.zaka", main), ("/m/lib.zaka", LIB)]);
     let codes: Vec<Code> = found.iter().map(|d| d.code).collect();
     assert_eq!(codes, [Code::ImportNotFound; 3]);
@@ -86,7 +86,7 @@ fn importing_a_private_name_is_zk0322_with_help()
 fn a_name_that_is_not_imported_is_unknown_with_help()
 {
     let main = "\"lib.zaka\" မှ ပေါင်း ကို ထည့်သွင်းမည်။\nဝှက် ကို ပြသမည်။\nနှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၁ \
-                တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
+                ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
     let found = check(&[("/m/main.zaka", main), ("/m/lib.zaka", LIB)]);
     let codes: Vec<Code> = found.iter().map(|d| d.code).collect();
     assert_eq!(codes, [Code::UndeclaredName, Code::UndeclaredFunction]);

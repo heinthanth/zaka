@@ -43,7 +43,7 @@ gives an expression. A verb that commands gives a statement, which ends with `�
 | `၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း` | `10 % 3` | 10, divided with 3, the remainder |
 | `အသက် သည် ၁၈ အောက် ငယ်သည်` | `age < 18` | age is smaller than 18 |
 | `အကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် ...` | `if (age < 18) ...` | if age is smaller than 18, then |
-| `နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်` | `twice(k)` | the result of doing the function with k |
+| `နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်သော ရလဒ်` | `twice(k)` | the result of doing the function with k |
 | `ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားမည်။` | `*p = 7;` | the value of p, as the object, set to 7 |
 | `မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။` | `p = malloc(2 * sizeof(int));` | taking room worth 2 integers, will keep the address in p |
 | `လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။` | `free(p);` | the block at the address in p, will give back |

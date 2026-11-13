@@ -1,5 +1,4 @@
 use zakac_i18n::t;
-use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::code::Code;
@@ -227,27 +226,4 @@ pub fn literal_classifier_mismatch(
     let msg = t!("codes.ZK0509.message", k = kind, w = want, f = found);
     let help = t!("codes.ZK0509.help_literal", k = kind, w = want);
     Diagnostic::new(Code::ClassifierMismatch, msg, span).with_help(help)
-}
-
-/// The arguments of a call written arguments first close with `ကို` after
-/// several, or with `တို့ကို` after one.
-///
-/// # Arguments
-///
-/// * `span` - The particle.
-/// * `count` - The number of arguments.
-///
-/// # Returns
-///
-/// The `ZK0510` diagnostic, with the right particle as a hint.
-pub fn using_particle_count(span: Span, count: usize) -> Diagnostic
-{
-    let one = count == 1;
-    let msg = tern!(
-        one,
-        t!("codes.ZK0510.message_one"),
-        t!("codes.ZK0510.message", n = count)
-    );
-    let help = t!("codes.ZK0510.help", w = tern!(one, "ကို", "တို့ကို"));
-    Diagnostic::new(Code::UsingParticleCount, msg, span).with_help(help)
 }

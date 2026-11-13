@@ -123,9 +123,9 @@ pub enum Stmt
     Replace(ReplaceStmt),
     /// `<name> ဟူသော ဒေတာအစုအဝေးတွင် ... တို့ပါဝင်သည်။`
     Struct(StructDecl),
-    /// `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းမည်။`
+    /// `"<file>" မှ <name>၊ ... နှင့် <name> တို့ကို ထည့်သွင်းမည်။`
     Import(ImportStmt),
-    /// `<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် <member>၊ ... တို့ပါဝင်သည်။`
+    /// `<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် <member>၊ ... နှင့် <member> တို့ပါဝင်သည်။`
     Enum(EnumDecl),
     /// `<subject> သည် <case> ဖြစ်လျှင် ... တခြား <kind> တစ်ခု ဖြစ်လျှင် ...`
     Switch(SwitchStmt),
@@ -715,8 +715,9 @@ pub struct RemoveStmt
 }
 
 /// Struct declaration:
-/// `<name> ဟူသော ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ ... တို့ပါဝင်သည်။`,
-/// with an optional classifier clause `တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`.
+/// `<name> ဟူသော ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ ... နှင့် ...
+/// တို့ပါဝင်သည်။`, with an optional classifier clause `တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word>
+/// ဖြစ်သည်`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct StructDecl
 {
@@ -765,7 +766,7 @@ pub struct EnumMember
 }
 
 /// Enumeration declaration:
-/// `<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် <member>၊ ... တို့ပါဝင်သည်။`, with an
+/// `<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် <member>၊ ... နှင့် <member> တို့ပါဝင်သည်။`, with an
 /// optional classifier clause `တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct EnumDecl
@@ -807,7 +808,7 @@ pub struct AliasDecl
 }
 
 /// One arm of a switch: `<case> ဖြစ်လျှင် <block>`, or with several cases,
-/// `<case>၊ <case> တို့ ဖြစ်လျှင် <block>`.
+/// `<case> နှင့် <case> တို့ ဖြစ်လျှင် <block>`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct SwitchArm
 {
@@ -849,7 +850,7 @@ pub struct SwitchStmt
     pub span: Span,
 }
 
-/// Import: `"<file>" မှ <name>၊ ... တို့ကို ထည့်သွင်းမည်။`, or with one name,
+/// Import: `"<file>" မှ <name>၊ ... နှင့် <name> တို့ကို ထည့်သွင်းမည်။`, or with one name,
 /// `"<file>" မှ <name> ကို ထည့်သွင်းမည်။`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct ImportStmt

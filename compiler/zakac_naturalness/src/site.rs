@@ -1,4 +1,3 @@
-use bon::Builder;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::InfixOp;
 use zakac_ast::expr::NextCtx;
@@ -25,21 +24,6 @@ pub enum Site
     /// A clause that gives a value: an initial value, a returned value, a
     /// call argument or a loop bound.
     Value(ValueSite),
-    /// The particle that closes the arguments of a call written arguments
-    /// first.
-    Using(UsingSite),
-}
-
-/// The particle before `သုံး၍` and the arguments it closes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
-pub struct UsingSite
-{
-    /// Whether the particle is `တို့ကို`.
-    pub plural: bool,
-    /// The number of arguments.
-    pub count: usize,
-    /// The particle.
-    pub span: Span,
 }
 
 /// A clause used as a value.
@@ -96,6 +80,10 @@ pub enum Place
     /// The whole condition of a branch or a loop, which takes a logical
     /// expression as it is.
     Condition,
+    /// An argument of a call. In a call written in words the arguments are a
+    /// list in words, so a verb that joins its operands with the joining word
+    /// keeps its parentheses there.
+    Argument,
     /// Straight inside another group.
     Nested,
 }
@@ -109,6 +97,10 @@ pub enum Inner
     /// A list or struct literal, whose `၊` would join the values around it
     /// without the parentheses.
     List,
+    /// A verb whose frame joins two operands with `နှင့်`, as a sum or `ညီ`
+    /// does: as an argument it keeps its parentheses, whose `နှင့်` would join
+    /// the next argument without them.
+    Joined,
     /// An operand that stands on its own: a value, a notation or a clause.
     Plain,
 }
@@ -131,6 +123,7 @@ impl Inner
             Expr::Group(n) => Inner::of(&n.inner),
             Expr::Logic(_) | Expr::Not(_) => Inner::Logical,
             Expr::List(_) | Expr::Struct(_) => Inner::List,
+            Expr::Verb(v) if joins_operands(v.op) => Inner::Joined,
             _ => Inner::Plain,
         }
     }
@@ -345,4 +338,30 @@ fn is_text(expr: &Expr) -> bool
         Expr::Infix(n) if n.op == InfixOp::Add => is_text(&n.lhs) || is_text(&n.rhs),
         _ => false,
     }
+}
+
+/// Whether a verb joins its two operands with `နှင့်`: the sum, the
+/// difference, the product, the bitwise words, `ညီ`, `မညီ` and `တစ်ခုတည်း`.
+///
+/// # Arguments
+///
+/// * `op` - The verb.
+///
+/// # Returns
+///
+/// `true` for such a verb.
+fn joins_operands(op: VerbOp) -> bool
+{
+    matches!(
+        op,
+        VerbOp::Add
+            | VerbOp::Sub
+            | VerbOp::Mul
+            | VerbOp::BitAnd
+            | VerbOp::BitOr
+            | VerbOp::BitXor
+            | VerbOp::Eq
+            | VerbOp::Ne
+            | VerbOp::Same
+    )
 }

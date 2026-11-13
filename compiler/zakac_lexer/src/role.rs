@@ -267,6 +267,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Called
         | Kw::Named
         | Kw::ListOf
+        | Kw::ItemOf
         | Kw::StartingAt
         | Kw::Upto
         | Kw::Having

@@ -23,7 +23,7 @@ shows the same rules with examples.
 // main.zaka
 "math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းမည်။
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက်ကို ၇ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက်ကို ၇ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -69,7 +69,7 @@ shows the same rules with examples.
 
 ```text
 "<file>" မှ <name> ကို ထည့်သွင်းမည်။
-"<file>" မှ <name>၊ <name>၊ ... တို့ကို ထည့်သွင်းမည်။
+"<file>" မှ <name>၊ ... နှင့် <name> တို့ကို ထည့်သွင်းမည်။
 ```
 
 - The file is a string. Its path is relative to the folder of the importing file, with

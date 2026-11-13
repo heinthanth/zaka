@@ -506,7 +506,7 @@ pub enum Kw
     TextKind,
     /// `စာလုံးအရေအတွက်`
     CharCount,
-    /// `ဆက်ထားသည့်`, in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`
+    /// `ဆက်ထားသည့်`, in `a နှင့် b တို့ကို ဆက်ထားသည့် စာသား`
     Joined,
     /// `မှန်မှားတန်ဖိုး`
     BoolKind,
@@ -688,6 +688,8 @@ pub enum Kw
     Having,
     /// `တို့ပါသော`, before `စာရင်း` in a list literal
     ListOf,
+    /// `ပါသော`, before `စာရင်း` or `ဇယား` in a literal of one cell or row
+    ItemOf,
     /// `မှစ၍`, between the start and the length of a range
     StartingAt,
     /// `ထိ`, after the last cell or character of the range a replace
@@ -806,6 +808,7 @@ impl Kw
                 | Kw::ShiftRight
                 | Kw::Bit
                 | Kw::ListOf
+                | Kw::ItemOf
         )
     }
 

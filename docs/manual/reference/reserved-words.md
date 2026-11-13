@@ -16,7 +16,7 @@ see [Names](../../learn/variables/names.md).
 | --- | --- | --- |
 | `သည်` | (subject); also a polite ending | [Particles](../../learn/sentences/particles.md) |
 | `ကို` | (object) | [Particles](../../learn/sentences/particles.md) |
-| `နှင့်` | "and", "with" | [Arithmetic](../../learn/operators/arithmetic.md), [Comparison](../../learn/operators/comparison.md) |
+| `နှင့်` | "and", "with"; before the last item of a list in words (`က၊ ခ နှင့် ဂ`) | [Arithmetic](../../learn/operators/arithmetic.md), [Comparison](../../learn/operators/comparison.md), [Lists in words](../language/words.md#lists-in-words) |
 | `၏` | "of" | [Arithmetic](../../learn/operators/arithmetic.md) |
 | `ဖြင့်` | "with", "through" | [Arithmetic](../../learn/operators/arithmetic.md), [Integers](../../learn/values/integers.md) |
 | `ထက်` | "than" | [Comparison](../../learn/operators/comparison.md) |
@@ -211,10 +211,11 @@ as well.
 | `နောက်ဆုံးအကွက်` | "last cell", right after `၏` and before `ကို ဖျက်မည်` alone | [Adding and removing cells](../../learn/lists/growing.md) |
 | `နောက်ဆုံးစာလုံး` | "last character", right after `၏` and before `ကို ဖျက်မည်` alone: `t ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်` removes the last character of text | [Text](../../learn/text/changing.md#adding-in-the-middle-and-removing-the-end) |
 | `အရှေ့တွင်` | "in front of", after `<cell> ၏` or `<character> ၏` in an add: `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်မည်` | [Adding and removing cells](../../learn/lists/growing.md#adding-in-the-middle) |
-| `ဆက်ထားသည့်` | "that joins", in `a၊ b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/text/README.md#joining-text) |
+| `ဆက်ထားသည့်` | "that joins", in `a နှင့် b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/text/README.md#joining-text) |
 | `စာလုံးအရေအတွက်` | "character count", in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/text/characters.md#characters) |
 | `စာရင်းအလွတ်` | "blank list": a plain list with no cells; a counted list cannot take it (ZK0436) | [Lists](../../learn/lists/README.md) |
 | `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../../learn/lists/README.md#list-kinds) |
+| `ပါသော` | "that holds", before `စာရင်း` or `ဇယား` in a literal of one cell or row | [Lists in words](../language/words.md#lists-in-words) |
 | `မှစ၍` | "starting at", in the range `x ၏ အကွက် <start> မှစ၍ <length> ကွက်`, a new list or text that holds duplicates of those cells | [Ranges](../language/lists.md#ranges) |
 | `ထိ` | "up to", after the last cell or character of the range a replace changes: `<start> မှ <end> ထိကို` | [Text](../../learn/text/changing.md#replacing-part-of-text) |
 | `ကွက်` | "cells", after the length of a range; a struct can also name it as its classifier | [Ranges](../language/lists.md#ranges) |

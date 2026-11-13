@@ -225,7 +225,7 @@ fn a_run_that_is_no_identifier_is_lexed_per_word()
 #[test]
 fn import_and_export_words()
 {
-    let import = "\"က.zaka\" မှ ခ၊ ဂ တို့ကို ထည့်သွင်းမည်။";
+    let import = "\"က.zaka\" မှ ခ နှင့် ဂ တို့ကို ထည့်သွင်းမည်။";
     let want = [
         TokenKind::Str(0),
         TokenKind::Kw(Kw::From),

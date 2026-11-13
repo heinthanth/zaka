@@ -89,8 +89,7 @@ A visitor over the tree. The parser accepts each particle on a verb, and either 
 `ဟု` after a printed operand; this pass names which wording is natural, and reports the
 rest as warnings. A warning never fails a build, and `--strict-particles` raises them to
 errors. The pass reads just the tree: the `particle` and `next` fields the parser kept on
-verbs, boolean words and `မဟုတ်`, the `slot` of a print, and the `using` mark of a call
-written arguments first (`ကို` or `တို့ကို` before `သုံး၍`).
+verbs, boolean words and `မဟုတ်`, and the `slot` of a print.
 
 `site.rs` turns a node into a `Site` (a clause-final word, a group in parentheses, a
 value, a print operand, the particle before `သုံး၍`). `rules.rs` is a table `RULES` of `{ code, fires }`; the first row
@@ -106,7 +105,6 @@ that fires at a site gives the code, so order matters when two rules overlap.
 | ZK0506 | a plain value printed with `ဟု` | `ကို` |
 | ZK0507 | parentheses that add nothing | none |
 | ZK0508 | a clause that gives a value ends in `ပါ` or `ပါသည်` | `သည်` |
-| ZK0510 | `တို့ကို` before `သုံး၍` after one argument, or `ကို` after several | `ကို` for one, `တို့ကို` for several |
 
 A run of `"မင်္ဂလာပါ" ကို ပြသမည်။` gives `warning[ZK0505]` with the help `write "... ဟု
 ပြသမည်။"`. The natural wording is a matter of the language, and is told in

@@ -315,7 +315,7 @@ impl Parser<'_>
     fn parse_group(&mut self) -> PResult<Expr>
     {
         let open = self.bump();
-        let inner = self.parse_expr()?;
+        let inner = self.outside_word_list(Self::parse_expr)?;
         let close = self.expect_punct(Punct::RParen)?;
         let span = open.span.to(&close.span);
         let id = self.new_id();
@@ -825,7 +825,7 @@ impl Parser<'_>
     }
 
     /// Parse the sign form of a call, `f(a၊ b)` or `f()`: the same node as
-    /// `f ဟူသော လုပ်ဆောင်ချက်ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`. A `?` right after
+    /// `f ဟူသော လုပ်ဆောင်ချက်ကို a နှင့် b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`. A `?` right after
     /// the `)` passes a failure on, as `... ရလဒ်ကောင်း` does.
     ///
     /// # Returns
@@ -873,7 +873,11 @@ impl Parser<'_>
         let start = value.as_ref().map_or(callee.span, |v| v.span());
         self.bump();
         let bare = self.at_punct(Punct::RParen);
-        let args = tern!(bare, Args::default(), self.parse_sign_args()?);
+        let args = tern!(
+            bare,
+            Args::default(),
+            self.outside_word_list(Self::parse_sign_args)?
+        );
         let close = self.expect_punct(Punct::RParen)?;
         let mark = self.peek();
         let pass = mark.kind == TokenKind::Punct(Punct::Question) && mark.joined;
@@ -981,7 +985,9 @@ impl Parser<'_>
         ret_if!(!open, Ok((callee, None)));
         let id = self.new_id();
         let name = NameExpr::builder().id(id).name(callee.name).span(callee.span);
-        let read = self.parse_clause_from(Expr::Name(name.build()), Mode::Expr)?;
+        let place = Expr::Name(name.build());
+        let read =
+            self.outside_word_list(|p| p.parse_clause_from(place, Mode::Expr))?;
         self.expect_punct(Punct::RParen)?;
         let ClauseOut::Expr(place) = read
         else
@@ -992,8 +998,9 @@ impl Parser<'_>
         Ok((callee, tern!(bare, None, Some(Box::new(place)))))
     }
 
-    /// Parse `expr (၊ expr)* တို့ဖြင့်`, or nothing when the call word comes
-    /// next.
+    /// Parse the arguments of a long call as a list in words, then `ဖြင့်`
+    /// after one or `တို့ဖြင့်` after two or more; or nothing when the call word
+    /// comes next. An argument with a `နှင့်` of its own stands in parentheses.
     ///
     /// # Returns
     ///
@@ -1002,8 +1009,8 @@ impl Parser<'_>
     {
         let ends = [Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
         ret_if!(ends.iter().any(|kw| self.at(*kw)), Ok(Args::default()));
-        let args = self.parse_sign_args()?;
-        self.expect(Kw::ListWith)?;
+        let args = self.parse_word_list(Self::parse_expr)?;
+        self.expect_list_word(args.len(), Kw::Hpjint, Kw::ListWith)?;
         Ok(args)
     }
 }

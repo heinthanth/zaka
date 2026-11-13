@@ -32,7 +32,7 @@ fn list_counts_must_match()
 {
     let decl = |rest: &str| codes(&format!("ကိန်းရှင် a သည် {rest} ဖြစ်ပါစေ။"));
     assert_eq!(
-        decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း"),
+        decl("အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ နှင့် ၂ တို့ပါသော စာရင်း"),
         [Code::ListCountMismatch]
     );
     assert_eq!(
@@ -62,7 +62,7 @@ fn cells_need_a_list_and_an_integer()
 #[test]
 fn constant_lists_and_list_values_are_not_places()
 {
-    let fixed = "ကိန်းသေ c သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း ဖြစ်ပါစေ။";
+    let fixed = "ကိန်းသေ c သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ နှင့် ၂ တို့ပါသော စာရင်း ဖြစ်ပါစေ။";
     assert_eq!(
         codes(&lines(&[fixed, "c ၏ အကွက် ၀ ကို ၅ ဟု ထားမည်။"])),
         [Code::AssignToConst]
@@ -72,7 +72,7 @@ fn constant_lists_and_list_values_are_not_places()
         [Code::FixedAddress]
     );
     ok(&lines(&[fixed, "c ၏ အကွက် ၁ ကို ပြသမည်။"]));
-    let temp = "(၁၊ ၂ တို့ပါသော စာရင်း) ၏ အကွက် ၀ ကို ၅ ဟု ထားမည်။";
+    let temp = "(၁ နှင့် ၂ တို့ပါသော စာရင်း) ၏ အကွက် ၀ ကို ၅ ဟု ထားမည်။";
     assert_eq!(codes(temp), [Code::NotAPlace]);
 }
 
@@ -82,7 +82,7 @@ fn whole_lists_compare_and_duplicate()
     let other = "ကိန်းရှင် m သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။";
     let checked = check(&lines(&[LISTS, "(l == l) ကို ပြသမည်။"]));
     assert!(checked.out.diagnostics.is_empty());
-    ok(&lines(&[LISTS, "l သည် ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း နှင့် ညီသည် ဟု ပြသမည်။"]));
+    ok(&lines(&[LISTS, "l သည် ၁၊ ၂ နှင့် ၃ တို့ပါသော စာရင်း နှင့် ညီသည် ဟု ပြသမည်။"]));
     assert_eq!(
         codes(&lines(&[LISTS, "l != စာရင်းအလွတ် ကို ပြသမည်။"])),
         [Code::BracketsOnCountedList]
@@ -100,11 +100,11 @@ fn a_function_takes_and_gives_back_a_list()
 {
     let takes = "လုပ်ဆောင်ချက် f သည်\na ဟူသော အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ကို \
                  လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီး။";
-    ok(&lines(&[takes, "f ဟူသော လုပ်ဆောင်ချက်ကို ၁၊ ၂ တို့ပါသော စာရင်း တို့ဖြင့် လုပ်ဆောင်မည်။"]));
+    ok(&lines(&[takes, "f ဟူသော လုပ်ဆောင်ချက်ကို ၁ နှင့် ၂ တို့ပါသော စာရင်း ဖြင့် လုပ်ဆောင်မည်။"]));
     assert_eq!(
         codes(&lines(&[
             takes,
-            "f ဟူသော လုပ်ဆောင်ချက်ကို ၁၊ ၂၊ ၃ တို့ပါသော စာရင်း တို့ဖြင့် လုပ်ဆောင်မည်။"
+            "f ဟူသော လုပ်ဆောင်ချက်ကို ၁၊ ၂ နှင့် ၃ တို့ပါသော စာရင်း ဖြင့် လုပ်ဆောင်မည်။"
         ])),
         [Code::ListCountMismatch]
     );
@@ -129,7 +129,7 @@ fn an_open_count_keeps_the_cell_kind_of_its_value()
     let floats = "ကိန်းရှင် fs သည် အကွက် ၂ ခုရှိသော ဒဿမကိန်း စာရင်း တစ်ခု ဖြစ်ပါစေ။";
     let refused = [
         (ints, "ကိန်းပြည့် လိပ်စာ စာရင်း", "ns"),
-        (ints, "ကိန်းပြည့် လိပ်စာ စာရင်း စာရင်း", "ns တို့ပါသော စာရင်း"),
+        (ints, "ကိန်းပြည့် လိပ်စာ စာရင်း စာရင်း", "ns ပါသော စာရင်း"),
         (owners, "ကိန်းပြည့် စာရင်း", "ps"),
         (floats, "မှန်မှားတန်ဖိုး စာရင်း", "fs"),
         (ints, "၈ ဘစ် ကိန်းပြည့် စာရင်း", "ns"),
@@ -150,7 +150,7 @@ fn an_open_count_keeps_the_cell_kind_of_its_value()
     let same = [
         (ints, "ကိန်းပြည့် စာရင်း", "ns"),
         (owners, "ကိန်းပြည့် လိပ်စာ စာရင်း", "ps"),
-        (ints, "ကိန်းပြည့် စာရင်း စာရင်း", "ns တို့ပါသော စာရင်း"),
+        (ints, "ကိန်းပြည့် စာရင်း စာရင်း", "ns ပါသော စာရင်း"),
     ];
     for (first, kind, value) in same
     {

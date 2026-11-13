@@ -84,7 +84,7 @@ fn statement_verbs_close_the_clause()
 #[test]
 fn a_call_can_head_a_statement()
 {
-    let text = "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၁ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
+    let text = "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၁ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
     assert_eq!(stmt(text), "(print (call နှစ်ဆ 1))");
     let sum = "f ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် နှင့် ၁ ၏ ပေါင်းလဒ် ကို ပြသမည်။";
     assert_eq!(stmt(sum), "(print (add (call f) 1))");

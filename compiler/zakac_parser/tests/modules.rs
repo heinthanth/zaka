@@ -52,7 +52,7 @@ impl Visitor for Ids
 #[test]
 fn import_sentences()
 {
-    let several = "\"ဂဏန်း.zaka\" မှ ပေါင်း၊ နုတ် တို့ကို ထည့်သွင်းမည်။";
+    let several = "\"ဂဏန်း.zaka\" မှ ပေါင်း နှင့် နုတ် တို့ကို ထည့်သွင်းမည်။";
     assert_eq!(stmt(several), "(import \"ဂဏန်း.zaka\" ပေါင်း နုတ်)");
     let one = "\"ဂဏန်း.zaka\" မှ ပေါင်း ကို ထည့်သွင်းမည်။";
     assert_eq!(stmt(one), "(import \"ဂဏန်း.zaka\" ပေါင်း)");

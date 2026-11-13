@@ -15,7 +15,7 @@ fn lists_lower_to_list_nodes_and_cell_addresses()
     assert_eq!(forms[1], "(store (cell@ g0 1:usize 3) 5:isize)");
     assert_eq!(forms[2], "(print g0)");
     let lit = plain(
-        "ကိန်းရှင် l သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၊ ၂ တို့ပါသော စာရင်း \
+        "ကိန်းရှင် l သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ နှင့် ၂ တို့ပါသော စာရင်း \
          ဖြစ်ပါစေ။",
     );
     assert_eq!(lit, ["(set g0 (list 1:isize 2:isize))"]);

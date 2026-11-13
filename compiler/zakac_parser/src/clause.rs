@@ -31,7 +31,6 @@ use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_if;
-use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
@@ -290,6 +289,12 @@ impl Parser<'_>
                 fill_end && stack.len() == 1 && stack[0].slot.is_none(),
                 self.finish_clause(stack)
             );
+            // In an item of a list in words, a joining word ends the item.
+            ret_if!(self.at_item_end(&stack), self.finish_clause(stack));
+            // A joining word after the first case of a switch arm, with the
+            // arm's then-word ahead, goes on with the next case.
+            let and_arm = self.at(Kw::Hnint) && self.reaches_then_is();
+            ret_if!(let Some(head) = switch_head(&mut stack, and_arm, mode), Ok(head));
             // `၏ မိတ္တူ` copies the operand; `တစ်<classifier>လုံး` before the `၏`
             // makes the duplicate deep.
             if holds_ei(&stack) && self.at_dup_word()
@@ -361,6 +366,29 @@ impl Parser<'_>
             };
             ret_if!(let Some(stmt) = self.reduce(&mut stack, verb, mode)?, Ok(ClauseOut::Stmt(Box::new(stmt))));
         }
+    }
+
+    /// Whether an item of a list in words ends here: at `နှင့်`, which joins
+    /// the next item, or at `ဖြင့်` after a lone operand with the call word
+    /// after it, which closes the one argument of a long call.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack` - The operand stack of the item.
+    ///
+    /// # Returns
+    ///
+    /// `true` where the item ends.
+    fn at_item_end(&self, stack: &[Item]) -> bool
+    {
+        ret_if!(!self.in_word_list, false);
+        ret_if!(self.at(Kw::Hnint), true);
+        let lone = stack.len() == 1 && stack[0].slot.is_none();
+        let call_word = matches!(
+            kw_of(&self.peek_n(1)),
+            Some(Kw::WillDo | Kw::CallResult | Kw::CallGoodResult)
+        );
+        lone && self.at(Kw::Hpjint) && call_word
     }
 
     /// Attach the current particle to the top operand, then push the operand
@@ -720,9 +748,9 @@ impl Parser<'_>
         self.parse_list(first)
     }
 
-    /// Whether the rest of a list literal comes next: `တို့ပါသော`, or `၊` with
-    /// `တို့ပါသော` ahead of the next `တို့ဖြင့်`, `တို့ကို`, `)` or `။` outside
-    /// parentheses.
+    /// Whether the rest of a list literal comes next: `ပါသော` or `တို့ပါသော`,
+    /// or `၊` or `နှင့်` with `တို့ပါသော` ahead, outside parentheses, before a
+    /// word that no cell holds.
     ///
     /// # Returns
     ///
@@ -730,13 +758,13 @@ impl Parser<'_>
     fn at_list_rest(&self) -> bool
     {
         ret_if!(self.at_list_close(0), true);
-        ret_if!(!self.at_punct(Punct::ListSep), false);
-        self.close_ahead(1, Self::at_list_close)
+        ret_if!(!self.at_list_join(), false);
+        self.word_list_ahead(1, Self::at_list_close)
     }
 
     /// Whether the rest of a ဇယား literal comes next, after its first index:
-    /// `အနေဖြင့်`, with `တို့ပါသော ဇယား` ahead of the next `တို့ဖြင့်`,
-    /// `တို့ကို`, `)` or `။` outside parentheses.
+    /// `အနေဖြင့်`, with `ပါသော ဇယား` or `တို့ပါသော ဇယား` ahead, outside
+    /// parentheses, before a word that no row holds.
     ///
     /// # Returns
     ///
@@ -746,12 +774,13 @@ impl Parser<'_>
         let close = |p: &Self, n: usize| {
             p.at_list_close(n) && p.peek_n(n + 1).kind == TokenKind::Kw(Kw::Table)
         };
-        self.peek().kind == TokenKind::Kw(Kw::CountAs) && self.close_ahead(1, close)
+        self.peek().kind == TokenKind::Kw(Kw::CountAs) && self.word_list_ahead(1, close)
     }
 
     /// Parse the rest of a ဇယား literal after its first index:
-    /// `အနေဖြင့် <value> (၊ <index> အနေဖြင့် <value>)* တို့ပါသော ဇယား`, and its kind
-    /// when `ဟူသော <kind> တစ်<classifier>` follows.
+    /// `အနေဖြင့် <value> ပါသော ဇယား` for one row, or the rows as a list in
+    /// words, `<index> အနေဖြင့် <value>` each, then `တို့ပါသော ဇယား`; and its
+    /// kind when `ဟူသော <kind> တစ်<classifier>` follows.
     ///
     /// # Arguments
     ///
@@ -763,67 +792,43 @@ impl Parser<'_>
     fn parse_table(&mut self, first: Expr) -> PResult<Expr>
     {
         let start = first.span();
-        let mut rows = Vec::new();
-        let mut index = first;
-        loop
-        {
-            self.expect(Kw::CountAs)?;
-            let value = self.parse_notation()?;
-            rows.push(TableRow::builder().index(index).value(value).build());
-            if !self.eat_punct(Punct::ListSep)
-            {
-                break;
-            }
-            index = self.parse_notation()?;
-        }
-        self.expect(Kw::ListOf)?;
+        let first = self.table_row(first)?;
+        let rows = self.parse_word_list_from(first, |p| {
+            let index = p.parse_notation()?;
+            p.table_row(index)
+        })?;
+        self.expect_list_word(rows.len(), Kw::ItemOf, Kw::ListOf)?;
         self.expect(Kw::Table)?;
         self.table_rest(start, rows)
     }
 
-    /// Whether `close` holds for a token from `from` on, outside parentheses,
-    /// before the next `တို့ဖြင့်`, `တို့ကို`, `)` or `။`.
+    /// Parse the rest of a row of a ဇယား literal after its index:
+    /// `အနေဖြင့် <value>`.
     ///
     /// # Arguments
     ///
-    /// * `from` - How far ahead the scan starts.
-    /// * `close` - The test, given the parser and how far ahead.
+    /// * `index` - The index.
     ///
     /// # Returns
     ///
-    /// `true` if it holds.
-    pub(crate) fn close_ahead(
-        &self, from: usize, close: fn(&Self, usize) -> bool,
-    ) -> bool
+    /// The row, or a diagnostic.
+    fn table_row(&mut self, index: Expr) -> PResult<TableRow>
     {
-        let mut parens = 0usize;
-        for n in from..
-        {
-            let kind = self.peek_n(n).kind;
-            // An unclosed `(` leaves the depth above zero to the end of input.
-            ret_if!(kind == TokenKind::Eof, false);
-            ret_if!(parens == 0 && close(self, n), true);
-            ret_if!(parens == 0 && ends_list_scan(kind), false);
-            match kind
-            {
-                TokenKind::Punct(Punct::LParen) => parens += 1,
-                TokenKind::Punct(Punct::RParen) => parens -= 1,
-                _ => (),
-            }
-        }
-        false
+        self.expect(Kw::CountAs)?;
+        let value = self.parse_notation()?;
+        Ok(TableRow::builder().index(index).value(value).build())
     }
 
-    /// Whether the rest of a verbal join comes next: `၊` with
-    /// `တို့ကို ဆက်ထားသည့်` ahead of the next `တို့ဖြင့်`, `)` or `။` outside
-    /// parentheses.
+    /// Whether the rest of a verbal join comes next: `၊` or `နှင့်`, with
+    /// `တို့ကို ဆက်ထားသည့်` ahead, outside parentheses, before a word that no
+    /// piece holds.
     ///
     /// # Returns
     ///
     /// `true` if it does.
     fn at_join_rest(&self) -> bool
     {
-        self.at_punct(Punct::ListSep) && self.close_ahead(1, Self::at_join_close)
+        self.at_list_join() && self.word_list_ahead(1, Self::at_join_close)
     }
 
     /// Whether `တို့ကို ဆက်ထားသည့်` starts `n` tokens ahead.
@@ -841,8 +846,8 @@ impl Parser<'_>
         self.peek_n(n).kind == TokenKind::Kw(Kw::ListKo) && joined
     }
 
-    /// Parse the rest of a verbal join after its first piece:
-    /// `(၊ <text>)+ တို့ကို ဆက်ထားသည့် စာသား`.
+    /// Parse the rest of a verbal join after its first piece: the pieces as a
+    /// list in words, then `တို့ကို ဆက်ထားသည့် စာသား`.
     ///
     /// # Arguments
     ///
@@ -853,9 +858,8 @@ impl Parser<'_>
     /// The join, or a diagnostic.
     fn parse_join(&mut self, first: Expr) -> PResult<Expr>
     {
-        let mut pieces = vec![first];
-        do_while!(self.eat_punct(Punct::ListSep), pieces.push(self.parse_notation()?));
-        self.expect(Kw::ListKo)?;
+        let pieces = self.parse_word_list_from(first, Self::parse_notation)?;
+        self.expect_list_word(pieces.len(), Kw::Ko, Kw::ListKo)?;
         self.expect(Kw::Joined)?;
         let end = self.expect(Kw::TextKind)?;
         let span = pieces[0].span().to(&end.span);
@@ -866,7 +870,7 @@ impl Parser<'_>
         Ok(Expr::Verb(node))
     }
 
-    /// Whether `တို့ပါသော` is the token `n` ahead.
+    /// Whether `ပါသော` or `တို့ပါသော` is the token `n` ahead.
     ///
     /// # Arguments
     ///
@@ -877,11 +881,12 @@ impl Parser<'_>
     /// `true` if it does.
     fn at_list_close(&self, n: usize) -> bool
     {
-        self.peek_n(n).kind == TokenKind::Kw(Kw::ListOf)
+        matches!(self.peek_n(n).kind, TokenKind::Kw(Kw::ListOf | Kw::ItemOf))
     }
 
-    /// Parse the rest of a list literal after its first cell:
-    /// `(၊ cell)* တို့ပါသော စာရင်း`, and its kind when `ဟူသော <kind>
+    /// Parse the rest of a list literal after its first cell: the cells as a
+    /// list in words, then `ပါသော စာရင်း` after one cell or `တို့ပါသော
+    /// စာရင်း` after two or more, and its kind when `ဟူသော <kind>
     /// တစ်<classifier>` follows.
     ///
     /// # Arguments
@@ -893,12 +898,8 @@ impl Parser<'_>
     /// The literal, or a diagnostic.
     fn parse_list(&mut self, first: Expr) -> PResult<Expr>
     {
-        let mut cells = vec![first];
-        while self.eat_punct(Punct::ListSep)
-        {
-            cells.push(self.parse_notation()?);
-        }
-        self.expect(Kw::ListOf)?;
+        let cells = self.parse_word_list_from(first, Self::parse_notation)?;
+        self.expect_list_word(cells.len(), Kw::ItemOf, Kw::ListOf)?;
         self.expect(Kw::List)?;
         let kind = tern!(self.at_literal_kind(), Some(self.parse_list_kind()?), None);
         let span = cells[0].span().to(&self.prev_span());
@@ -1497,25 +1498,6 @@ fn holds_ordinal(stack: &[Item]) -> bool
         return false;
     };
     matches!((under.slot, top.slot), (Some((Slot::Ei, _)), Some((Slot::Ordinal, _))))
-}
-
-/// Whether a token ends the scan for the rest of a list literal.
-///
-/// # Arguments
-///
-/// * `kind` - The token kind.
-///
-/// # Returns
-///
-/// `true` for `တို့ဖြင့်`, `တို့ကို`, `)`, `။` and the end of the file.
-fn ends_list_scan(kind: TokenKind) -> bool
-{
-    matches!(
-        kind,
-        TokenKind::Kw(Kw::ListWith | Kw::ListKo)
-            | TokenKind::Punct(Punct::RParen | Punct::FullStop)
-            | TokenKind::Eof
-    )
 }
 
 /// Build a print statement.

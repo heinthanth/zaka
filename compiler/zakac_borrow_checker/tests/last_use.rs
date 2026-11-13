@@ -114,16 +114,14 @@ const SET: &str = "လုပ်ဆောင်ချက် ထား သည်
 #[test]
 fn text_a_call_reads_is_lent_to_it()
 {
-    let module =
-        ir(&format!("{SHOW}ပြ ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်မည်။\nက ကို ပြသမည်။\n"));
+    let module = ir(&format!("{SHOW}ပြ ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်မည်။\nက ကို ပြသမည်။\n"));
     assert!(module.contains("(dup_lent g1)"), "{module}");
 }
 
 #[test]
 fn a_global_the_callee_sets_is_duplicated()
 {
-    let module =
-        ir(&format!("{SET}ထား ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်မည်။\nက ကို ပြသမည်။\n"));
+    let module = ir(&format!("{SET}ထား ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်မည်။\nက ကို ပြသမည်။\n"));
     assert!(module.contains("(dup g1)"), "{module}");
     assert!(!module.contains("(dup_lent g1)"), "{module}");
 }
@@ -132,7 +130,7 @@ fn a_global_the_callee_sets_is_duplicated()
 fn a_global_the_callee_sets_is_not_moved_into_it()
 {
     let text = format!(
-        "{SET}ထား ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်မည်။\nက ကို \"ပြီး\" ဟု ထားမည်။\nက ကို ပြသမည်။\n"
+        "{SET}ထား ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်မည်။\nက ကို \"ပြီး\" ဟု ထားမည်။\nက ကို ပြသမည်။\n"
     );
     let module = ir(&text);
     assert!(!module.contains("(take (addr g1))"), "{module}");
@@ -145,9 +143,9 @@ fn a_lent_parameter_is_lent_on()
         "{SHOW}လုပ်ဆောင်ချက် ဆင့် သည်
 စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ပြ ဟူသော လုပ်ဆောင်ချက်ကို စ တို့ဖြင့် လုပ်ဆောင်မည်။
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို စ ဖြင့် လုပ်ဆောင်မည်။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။
-ဆင့် ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်မည်။
+ဆင့် ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်မည်။
 က ကို ပြသမည်။
 "
     ));
@@ -157,7 +155,7 @@ fn a_lent_parameter_is_lent_on()
 #[test]
 fn lent_text_leaves_no_duplicate()
 {
-    let lent = format!("{HEAP}{SHOW}ပြ ဟူသော လုပ်ဆောင်ချက်ကို က တို့ဖြင့် လုပ်ဆောင်မည်။\nက ကို ပြသမည်။\n");
+    let lent = format!("{HEAP}{SHOW}ပြ ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်မည်။\nက ကို ပြသမည်။\n");
     assert_eq!(dups(&lent), 0);
 }
 
@@ -217,7 +215,7 @@ fn a_struct_parameter_the_function_never_writes_is_read_in_place()
 fn a_global_the_callee_sets_is_duplicated_for_a_shared_parameter()
 {
     let text = format!(
-        "{PEOPLE}ထား ဟူသော လုပ်ဆောင်ချက်ကို ပ တို့ဖြင့် လုပ်ဆောင်မည်။\nဖတ် ဟူသော လုပ်ဆောင်ချက်ကို ပ တို့ဖြင့် \
+        "{PEOPLE}ထား ဟူသော လုပ်ဆောင်ချက်ကို ပ ဖြင့် လုပ်ဆောင်မည်။\nဖတ် ဟူသော လုပ်ဆောင်ချက်ကို ပ ဖြင့် \
          လုပ်ဆောင်မည်။\n"
     );
     let module = checked(&text).to_sexpr();
@@ -233,7 +231,7 @@ fn a_list_lent_twice_before_its_last_read_is_never_duplicated()
     let text = "လုပ်ဆောင်ချက် ပြ သည်\nက ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို \
                 လုပ်ဆောင်မည်။\nက ၏ အကွက် ၀ ကို ပြသမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။\nကိန်းရှင် ခ သည် \
                 ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။\nပြ ဟူသော လုပ်ဆောင်ချက်ကို ခ \
-                တို့ဖြင့် လုပ်ဆောင်မည်။\nပြ ဟူသော လုပ်ဆောင်ချက်ကို ခ တို့ဖြင့် လုပ်ဆောင်မည်။\n";
+                ဖြင့် လုပ်ဆောင်မည်။\nပြ ဟူသော လုပ်ဆောင်ချက်ကို ခ ဖြင့် လုပ်ဆောင်မည်။\n";
     assert_eq!(dups(text), 0);
 }
 

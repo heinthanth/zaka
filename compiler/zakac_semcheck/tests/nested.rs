@@ -172,7 +172,7 @@ fn c_functions_take_callbacks_and_give_optional_text()
          လက်ခံမည်။\n{}",
         start(&format!(
             "ကိန်းရှင် ထပ် သည် ၁ ဖြစ်ပါစေ။\n{ADD}\ncall_with ဟူသော လုပ်ဆောင်ချက်ကို ထည့် ဟူသော \
-             လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။"
+             လုပ်ဆောင်ချက် ဖြင့် လုပ်ဆောင်မည်။"
         ))
     );
     assert_eq!(codes_as_is(&closure), []);

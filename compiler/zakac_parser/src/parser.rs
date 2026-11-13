@@ -289,6 +289,11 @@ pub(crate) struct Parser<'t>
     /// parameters then stands in parentheses.
     #[builder(default)]
     pub(crate) in_list: bool,
+    /// Whether an item of a list in words is being parsed: a `နှင့်` outside
+    /// parentheses ends the item, so an item with a `နှင့်` of its own stands in
+    /// parentheses.
+    #[builder(default)]
+    pub(crate) in_word_list: bool,
     /// Whether a statement other than an import has been parsed at the top
     /// level, so a later import is out of place.
     #[builder(default)]

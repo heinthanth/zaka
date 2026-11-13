@@ -133,10 +133,10 @@ fn redundant_parentheses_around_a_whole_operand()
     assert_eq!(warns(init), [Code::RedundantGroup]);
     let bound = "(က + ၁) မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသမည်။";
     assert_eq!(warns(bound), [Code::RedundantGroup]);
-    let arg = "f ဟူသော လုပ်ဆောင်ချက်ကို (က + ၁) တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let arg = "f ဟူသော လုပ်ဆောင်ချက်ကို (က + ၁) ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(warns(arg), [Code::RedundantGroup]);
     clean("(က ဖြစ်၍ ခ) ကို ပြသမည်။");
-    clean("f ဟူသော လုပ်ဆောင်ချက်ကို က၊ (၁၊ ၂ တို့ပါသော စာရင်း) တို့ဖြင့် လုပ်ဆောင်မည်။");
+    clean("f ဟူသော လုပ်ဆောင်ချက်ကို က နှင့် (၁ နှင့် ၂ တို့ပါသော စာရင်း) တို့ဖြင့် လုပ်ဆောင်မည်။");
     clean("(က သည် ၁ နှင့် ညီသည် မဟုတ်) ကို ပြသမည်။");
     clean("က ကို (ခ သို့မဟုတ် ဂ) ဟု ထားမည်။");
 }
@@ -190,7 +190,7 @@ fn a_clause_used_as_a_value_wants_thi()
     let ret = "က သည် ၁ နှင့် မညီပါသည် ကို ပြန်ပေးမည်။";
     assert_eq!(warns(ret), [Code::PaInValue]);
     clean("က သည် ၁ နှင့် မညီသည် ကို ပြန်ပေးမည်။");
-    let arg = "f ဟူသော လုပ်ဆောင်ချက်ကို က သည် ၁ နှင့် မညီပါ တို့ဖြင့် လုပ်ဆောင်မည်။";
+    let arg = "f ဟူသော လုပ်ဆောင်ချက်ကို (က သည် ၁ နှင့် မညီပါ) ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(warns(arg), [Code::PaInValue]);
     let logical =
         "ကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (က မဟုတ် သို့မဟုတ် က သည် ၁ နှင့် မညီပါ) ဖြစ်ပါစေ။";
@@ -198,21 +198,6 @@ fn a_clause_used_as_a_value_wants_thi()
     clean("ခ ကို က သည် ၄၀ အောက် မငယ်ပါ ဟု ထားမည်။");
     clean("က သည် ၄၀ အောက် မငယ်ပါ ဟု ပြသမည်။");
     clean("ကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။");
-}
-
-/// The particle before `သုံး၍` is `ကို` after one argument and `တို့ကို`
-/// after several, in a statement and in a value alike.
-#[test]
-fn arguments_first_take_the_particle_of_their_count()
-{
-    assert_eq!(warns("က၊ ခ ကို သုံး၍ ပြ မည်။"), [Code::UsingParticleCount]);
-    assert_eq!(warns("က တို့ကို သုံး၍ ပြ မည်။"), [Code::UsingParticleCount]);
-    let value = "က၊ ခ ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။";
-    assert_eq!(warns(value), [Code::UsingParticleCount]);
-    clean("က၊ ခ တို့ကို သုံး၍ ပြ မည်။");
-    clean("က ကို သုံး၍ ပြ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။");
-    clean("က၊ ခ တို့ကို သုံး၍ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။");
-    clean("ပြ မည်။");
 }
 
 /// The result of a function kind takes the classifier of its kind, as a

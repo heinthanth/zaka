@@ -280,7 +280,7 @@ token:
 | an operand, then a mark | `attempt_marked` (`using.rs`) | the marked call. `Parser::marked` holds the functions that declare marks, with the number of marks of each: `Parser::new` finds them in the headers of the file (`marked_header`), and the loader passes the ones a file imports to `parse_with`. `marked_end` scans for the end of a call of such a function, outside parentheses, past marks and notation words; a value end with a mark after it can be an argument, so the scan goes on past it and keeps it when no later end comes. `parse_marked` then reads argument, mark, argument, mark, up to that end, and `attempt_marked` keeps the call when its marks count as the parameters of a function of that name; otherwise it puts the cursor, the diagnostics and the node number back, and the sentence reads as before (`က ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားမည်။` remains a set). The `"<file>" မှ` start of an import is read as an import unless `marked_end` finds a marked call |
 | `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
 | `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ`, then a size before `မင်မိုရီကို` for a blit (`parse_blit_end`: `ကူးယူမည်` or `ပြောင်းထည့်မည်`); else after `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` for a release, a fill (`parse_fill_end`) when `ဖြည့်မည်` comes before the `။` (`ends_in_fill`), or a size for a resize. A size with a kind is `KIND N WORDစာ` (`parse_size_arg`): the text of the count word before its `စာ` becomes the measure word of the unit kind, `Kind::classifier`. The value of a fill is read with `in_fill` set, so a `ဖြင့်` right after a lone value ends it |
-| a string, then `မှ` | `parse_import` | `STR မှ NAME (၊ NAME)* (တို့ကို\|ကို) ထည့်သွင်းမည်။`; after another statement or inside a block it is parsed and reported (ZK0230) |
+| a string, then `မှ` | `parse_import` | `STR မှ NAME ကို`, or the names as a list in words then `တို့ကို`, then `ထည့်သွင်းမည်။`; after another statement or inside a block it is parsed and reported (ZK0230) |
 | a name, then `ဟူသော`, the marks `အများသုံး`, `မျှဝေနိုင်သော` or `ပြင်ပမှ လာသော`, then `ဒေတာအစုအဝေး` or `ဒေတာအမျိုးအစားကွဲ` | `parse_kind_decl` | checked first (`at_kind_decl`); the marks set `exported`, `shared` and `external`. `ဒေတာအစုအဝေး` (`Kw::StructWord`) then `တွင်` reads a struct (`parse_struct_decl`): fields with `၊` between them, each `NAME ဟူသော KIND တစ်WORD` (`parse_field`), then `တို့ပါဝင်သည်` (`FieldsClose`) or `တို့ပါဝင်ပြီး` (`FieldsCloseAnd`) and the classifier clause (`parse_decl_end`). With `ပြင်ပမှ လာသော` (`Kw::External`) it reads a kind from outside the program (`parse_external_kind`): `ဖြစ်သည်` (`Kw::Is`) ends a declaration with no field, and `တွင်` goes on to the fields and `တို့ပါဝင်သည်`; the node is a `StructDecl` with `shared` and `external` set (s-expression head `external_struct`). `ဒေတာအမျိုးအစားကွဲ` (`Kw::EnumWord`) then `တွင်` reads an enumeration (`parse_enum_decl`): members with `၊` between them, each `[ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် VALUE ရှိသည့်] NAME` (`parse_enum_member`; the lexer joins the mark into `Kw::InitialMark` and the opener of the value into `Kw::ValueAs`, `HavingRel` closes it; `EnumMember::initial` marks the one [initial member](../language/enums.md#the-initial-member)), then `တို့ပါဝင်သည်`, or `ပါဝင်သည်` after a lone member, or the `...ပြီး` closers and a classifier clause (`EnumDecl::classifier`). A declaration inside a block is parsed and reported (ZK0228, ZK0235) |
 | `အချက်အလက်အမျိုးအစား` | `parse_alias_decl` | the alias name, `ကို`, the kind (`parse_kind`, with no measure word), then `ဟုလည်း မှတ်ယူနိုင်ပါသည်` (`Kw::AliasClose`), or `ဟုလည်း မှတ်ယူနိုင်ပြီး` (`Kw::AliasCloseAnd`) and a classifier clause (`AliasDecl::classifier`); inside a block it is parsed and reported (ZK0240). The S-expression is `(alias NAME KIND)` |
 | `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, kind alias or top-level declaration; on another statement or the start block it is ZK0229. A struct and an enumeration hold the mark after `ဟူသော` instead |
@@ -497,10 +497,32 @@ the kind word `စာလုံး` and a number build `VerbOp::CharAt` (`push_ch
 `VerbExpr` (`char_verb`). The count `စာလုံးအရေအတွက်` is a verb of the valence table, as
 `အကွက်အရေအတွက်` is.
 
-The verbal join `a၊ b တို့ကို ဆက်ထားသည့် စာသား` is read in `parse_operand`, as a list literal
-is: after the first piece, a `၊` with `တို့ကို ဆက်ထားသည့်` ahead (`at_join_rest`) starts it,
-and `parse_join` reads the pieces, then `တို့ကို`, `ဆက်ထားသည့်` and `စာသား`, into a `VerbExpr`
-with `VerbOp::Join`.
+The verbal join `a နှင့် b တို့ကို ဆက်ထားသည့် စာသား` is read in `parse_operand`, as a list literal
+is: after the first piece, a `၊` or `နှင့်` with `တို့ကို ဆက်ထားသည့်` ahead (`at_join_rest`)
+starts it, and `parse_join` reads the pieces as a list in words, then `တို့ကို`,
+`ဆက်ထားသည့်` and `စာသား`, into a `VerbExpr` with `VerbOp::Join`.
+
+### Lists in words
+
+Each list written in words, the cells of a list or a ဇယား, the pieces of a join, the
+pairs of a struct literal, the arguments of a long call or of an arguments-first call,
+imported names, fields, members and switch cases, goes through one helper in
+`word_list.rs`: `parse_word_list` (or `parse_word_list_from`, after a first item read
+before) reads the items with `၊` between them and `နှင့်` before the last, and ZK0245
+reports a list of two or more without the `နှင့်` or with a `၊` after it.
+`expect_list_word` then takes the closing word of the count, such as `ကို` after one item
+and `တို့ကို` after two or more; the word of the other count is ZK0246.
+
+While an item is read, `Parser::in_word_list` is set, and the clause loop ends the item at a
+`နှင့်` outside parentheses (`at_item_end`), and at `ဖြင့်` after a lone operand right before
+the end of a long call, which closes its one argument. A group, the arguments of a sign-form
+call and a callee place in parentheses clear the flag (`outside_word_list`), so an item that
+joins its own operands with `နှင့်`, as `(က နှင့် ခ ၏ ပေါင်းလဒ်)` does, stands in parentheses.
+A switch arm of two or more cases starts at its `နှင့်` too, with the then-word ahead.
+
+The scan that tells a list from a clause, `word_list_ahead`, walks the tokens outside
+parentheses and brackets to the closing word, and stops at a particle, `၏` or the full
+stop, which no item holds; so `က နှင့် ခ ၏ ပေါင်းလဒ်` is never taken for the start of a list.
 
 ### ဇယား kinds, rows and the fallback
 
@@ -517,7 +539,7 @@ than an operator. The postfixes run in `data_reads`, after each atom, and again 
 loop for an operand a clause built.
 
 `[k: v၊ …]` and `[:]` are bracket literals, told from a list through the `:` after the first
-cell; `k အနေဖြင့် v၊ … တို့ပါသော ဇယား` is a sentence literal, told from a counted loop through the
+cell; `k အနေဖြင့် v နှင့် … တို့ပါသော ဇယား` is a sentence literal, told from a counted loop through the
 `တို့ပါသော ဇယား` ahead. `<row> ကို ဖျက်မည်` reduces through a verb row of its own into a remove
 statement marked `row`. An each loop reads its part, `အကွက်တိုင်း`, `စာလုံးတိုင်း`, `အညွှန်းတိုင်း`
 or `အတန်းတိုင်း`, and a first name before `နှင့်` when there are two.

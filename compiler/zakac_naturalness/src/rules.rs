@@ -37,7 +37,6 @@ pub static RULES: &[Rule] = &[
     Rule { code: Code::PrintValueWithHu, fires: print_value_with_hu },
     Rule { code: Code::RedundantGroup, fires: redundant_group },
     Rule { code: Code::PaInValue, fires: pa_in_value },
-    Rule { code: Code::UsingParticleCount, fires: using_particle_count },
 ];
 
 /// The first rule that fires at a site.
@@ -164,7 +163,8 @@ fn redundant_group(site: &Site) -> bool
     match n.place
     {
         Place::Nested | Place::Condition => true,
-        Place::Operand => n.inner == Inner::Plain,
+        Place::Operand => matches!(n.inner, Inner::Plain | Inner::Joined),
+        Place::Argument => n.inner == Inner::Plain,
     }
 }
 
@@ -187,16 +187,4 @@ fn pa_in_value(site: &Site) -> bool
         return false;
     };
     matches!(n.tail, Particle::Pa | Particle::PaThi)
-}
-
-/// The arguments of a call written arguments first close with `ကို` after
-/// several, or with `တို့ကို` after one.
-fn using_particle_count(site: &Site) -> bool
-{
-    let Site::Using(n) = site
-    else
-    {
-        return false;
-    };
-    n.plural != (n.count > 1)
 }

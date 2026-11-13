@@ -1,7 +1,7 @@
 # zakac-ir-artifact v1
 name:
   Custom: faults.zaka
-source: "လုပ်ဆောင်ချက် စစ် သည်\nန ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။\nအကယ်၍ န သည် ၀ နှင့် ညီလျှင် \"သုည\" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။\nန ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် ပေါင်း သည်\nက ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။\nက + စစ်(ခ)? ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် လှည့် သည်\nန ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။\nအကယ်၍ န သည် ၀ နှင့် ညီလျှင် \"သုည\" ဟု ပြသမည်။\nထိုသို့မဟုတ်ဘဲ စစ်(န)? သည် ၁ နှင့် ညီလျှင် \"တစ်\" ဟု ပြသမည်။\nစစ်(န)? သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nန ကို န + ၁ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n(န == ၀ || စစ်(န)? == ၁) ကို ပြသမည်။\nစစ် ဟူသော လုပ်ဆောင်ချက်ကို န တို့ဖြင့် လုပ်ဆောင်မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\nပေါင်း(၁၊ ၂) ထဲမှ ဒေတာ ကို ပြန်ပေးမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+source: "လုပ်ဆောင်ချက် စစ် သည်\nန ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။\nအကယ်၍ န သည် ၀ နှင့် ညီလျှင် \"သုည\" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။\nန ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် ပေါင်း သည်\nက ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။\nက + စစ်(ခ)? ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nလုပ်ဆောင်ချက် လှည့် သည်\nန ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။\nအကယ်၍ န သည် ၀ နှင့် ညီလျှင် \"သုည\" ဟု ပြသမည်။\nထိုသို့မဟုတ်ဘဲ စစ်(န)? သည် ၁ နှင့် ညီလျှင် \"တစ်\" ဟု ပြသမည်။\nစစ်(န)? သည် ၅ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nန ကို န + ၁ ဟု ထားမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n(န == ၀ || စစ်(န)? == ၁) ကို ပြသမည်။\nစစ် ဟူသော လုပ်ဆောင်ချက်ကို န ဖြင့် လုပ်ဆောင်မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\nပေါင်း(၁၊ ၂) ထဲမှ ဒေတာ ကို ပြန်ပေးမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
 imports: []
 module:
   globals:
@@ -9,8 +9,8 @@ module:
     kind: isize
     access: var
     span:
-      lo: 3148
-      hi: 3172
+      lo: 3136
+      hi: 3160
     addressed: false
     unset: null
   funcs:
@@ -531,7 +531,7 @@ module:
       access: var
       span:
         lo: 2788
-        hi: 3051
+        hi: 3039
       addressed: false
       unset: null
     - name: "%new"
@@ -539,7 +539,7 @@ module:
       access: var
       span:
         lo: 2788
-        hi: 3051
+        hi: 3039
       addressed: false
       unset: null
     block:
@@ -1380,24 +1380,24 @@ module:
                 const: 1:u8
               span:
                 lo: 2788
-                hi: 3051
+                hi: 3039
             - kind: isize
               node:
                 const: 0:isize
               span:
                 lo: 2788
-                hi: 3051
+                hi: 3039
             - kind: text
               node: blank_list
               span:
                 lo: 2788
-                hi: 3051
+                hi: 3039
           span:
             lo: 2788
-            hi: 3051
+            hi: 3039
         span:
           lo: 2788
-          hi: 3051
+          hi: 3039
     - set:
         place: l10
         value:
@@ -1415,10 +1415,10 @@ module:
                   hi: 2866
           span:
             lo: 2788
-            hi: 3051
+            hi: 3039
         span:
           lo: 2788
-          hi: 3051
+          hi: 3039
     - if:
         cond:
           kind: bool
@@ -1439,25 +1439,25 @@ module:
                               read: l10
                             span:
                               lo: 2788
-                              hi: 3051
+                              hi: 3039
                           field: 0
                           offset: 0
                       span:
                         lo: 2788
-                        hi: 3051
+                        hi: 3039
                 span:
                   lo: 2788
-                  hi: 3051
+                  hi: 3039
               rhs:
                 kind: u8
                 node:
                   const: 0:u8
                 span:
                   lo: 2788
-                  hi: 3051
+                  hi: 3039
           span:
             lo: 2788
-            hi: 3051
+            hi: 3039
         then:
         - set:
             place: l11
@@ -1470,7 +1470,7 @@ module:
                     const: 0:u8
                   span:
                     lo: 2788
-                    hi: 3051
+                    hi: 3039
                 - kind: text
                   node:
                     dup:
@@ -1488,47 +1488,47 @@ module:
                                       read: l10
                                     span:
                                       lo: 2788
-                                      hi: 3051
+                                      hi: 3039
                                   field: 2
                                   offset: 16
                               span:
                                 lo: 2788
-                                hi: 3051
+                                hi: 3039
                         span:
                           lo: 2788
-                          hi: 3051
+                          hi: 3039
                       lent: false
                       deep: false
                   span:
                     lo: 2788
-                    hi: 3051
+                    hi: 3039
               span:
                 lo: 2788
-                hi: 3051
+                hi: 3039
             span:
               lo: 2788
-              hi: 3051
+              hi: 3039
         - drop:
             dest:
               slot: l10
             kind: "%fallible{tag:u8,ok:isize,err:text}"
             span:
               lo: 2788
-              hi: 3051
+              hi: 3039
         - drop:
             dest:
               slot: l7
             kind: "%fallible{tag:u8,ok:isize,err:text}"
             span:
               lo: 2788
-              hi: 3051
+              hi: 3039
         - drop:
             dest:
               slot: l2
             kind: "%fallible{tag:u8,ok:isize,err:text}"
             span:
               lo: 2788
-              hi: 3051
+              hi: 3039
         - return:
             value:
               kind: "%fallible{tag:u8,err:text}"
@@ -1536,36 +1536,36 @@ module:
                 read: l11
               span:
                 lo: 2788
-                hi: 3051
+                hi: 3039
             span:
               lo: 2788
-              hi: 3051
+              hi: 3039
         els:
         []
         span:
           lo: 2788
-          hi: 3051
+          hi: 3039
     - drop:
         dest:
           slot: l10
         kind: "%fallible{tag:u8,ok:isize,err:text}"
         span:
           lo: 1791
-          hi: 3146
+          hi: 3134
     - drop:
         dest:
           slot: l7
         kind: "%fallible{tag:u8,ok:isize,err:text}"
         span:
           lo: 1791
-          hi: 3146
+          hi: 3134
     - drop:
         dest:
           slot: l2
         kind: "%fallible{tag:u8,ok:isize,err:text}"
         span:
           lo: 1791
-          hi: 3146
+          hi: 3134
     - return:
         value:
           kind: "%fallible{tag:u8,err:text}"
@@ -1576,25 +1576,25 @@ module:
                 const: 1:u8
               span:
                 lo: 1791
-                hi: 3146
+                hi: 3134
             - kind: text
               node: blank_list
               span:
                 lo: 1791
-                hi: 3146
+                hi: 3134
           span:
             lo: 1791
-            hi: 3146
+            hi: 3134
         span:
           lo: 1791
-          hi: 3146
+          hi: 3134
     shared_params: []
     owned:
     - false
     owned_ret: false
     span:
       lo: 1620
-      hi: 3146
+      hi: 3134
   - name: ပရိုဂရမ်
     params: 0
     result: null
@@ -1604,16 +1604,16 @@ module:
       kind: "%fallible{tag:u8,ok:isize,err:text}"
       access: var
       span:
-        lo: 3350
-        hi: 3406
+        lo: 3338
+        hi: 3394
       addressed: false
       unset: null
     - name: "%new"
       kind: isize
       access: var
       span:
-        lo: 3350
-        hi: 3450
+        lo: 3338
+        hi: 3438
       addressed: false
       unset: null
     block:
@@ -1627,25 +1627,25 @@ module:
               node:
                 const: 1:u8
               span:
-                lo: 3350
-                hi: 3406
+                lo: 3338
+                hi: 3394
             - kind: isize
               node:
                 const: 0:isize
               span:
-                lo: 3350
-                hi: 3406
+                lo: 3338
+                hi: 3394
             - kind: text
               node: blank_list
               span:
-                lo: 3350
-                hi: 3406
+                lo: 3338
+                hi: 3394
           span:
-            lo: 3350
-            hi: 3406
+            lo: 3338
+            hi: 3394
         span:
-          lo: 3350
-          hi: 3406
+          lo: 3338
+          hi: 3394
     - set:
         place: l0
         value:
@@ -1659,20 +1659,20 @@ module:
                 node:
                   const: 1:isize
                 span:
-                  lo: 3369
-                  hi: 3372
+                  lo: 3357
+                  hi: 3360
               - kind: isize
                 node:
                   const: 2:isize
                 span:
-                  lo: 3376
-                  hi: 3379
+                  lo: 3364
+                  hi: 3367
           span:
-            lo: 3350
-            hi: 3380
+            lo: 3338
+            hi: 3368
         span:
-          lo: 3350
-          hi: 3406
+          lo: 3338
+          hi: 3394
     - if:
         cond:
           kind: bool
@@ -1692,26 +1692,26 @@ module:
                             node:
                               read: l0
                             span:
-                              lo: 3350
-                              hi: 3406
+                              lo: 3338
+                              hi: 3394
                           field: 0
                           offset: 0
                       span:
-                        lo: 3350
-                        hi: 3406
+                        lo: 3338
+                        hi: 3394
                 span:
-                  lo: 3350
-                  hi: 3406
+                  lo: 3338
+                  hi: 3394
               rhs:
                 kind: u8
                 node:
                   const: 0:u8
                 span:
-                  lo: 3350
-                  hi: 3406
+                  lo: 3338
+                  hi: 3394
           span:
-            lo: 3350
-            hi: 3406
+            lo: 3338
+            hi: 3394
         then:
         - halt:
             cause: not_good
@@ -1728,24 +1728,24 @@ module:
                           node:
                             read: l0
                           span:
-                            lo: 3350
-                            hi: 3406
+                            lo: 3338
+                            hi: 3394
                         field: 2
                         offset: 16
                     span:
-                      lo: 3350
-                      hi: 3406
+                      lo: 3338
+                      hi: 3394
               span:
-                lo: 3350
-                hi: 3406
+                lo: 3338
+                hi: 3394
             span:
-              lo: 3350
-              hi: 3406
+              lo: 3338
+              hi: 3394
         els:
         []
         span:
-          lo: 3350
-          hi: 3406
+          lo: 3338
+          hi: 3394
     - set:
         place: l1
         value:
@@ -1761,43 +1761,43 @@ module:
                       node:
                         read: l0
                       span:
-                        lo: 3350
-                        hi: 3406
+                        lo: 3338
+                        hi: 3394
                     field: 1
                     offset: 8
                 span:
-                  lo: 3350
-                  hi: 3406
+                  lo: 3338
+                  hi: 3394
           span:
-            lo: 3350
-            hi: 3406
+            lo: 3338
+            hi: 3394
         span:
-          lo: 3350
-          hi: 3450
+          lo: 3338
+          hi: 3438
     - drop:
         dest:
           slot: l0
         kind: "%fallible{tag:u8,ok:isize,err:text}"
         span:
-          lo: 3350
-          hi: 3450
+          lo: 3338
+          hi: 3438
     - return:
         value:
           kind: isize
           node:
             read: l1
           span:
-            lo: 3350
-            hi: 3450
+            lo: 3338
+            hi: 3438
         span:
-          lo: 3350
-          hi: 3450
+          lo: 3338
+          hi: 3438
     shared_params: []
     owned: []
     owned_ret: false
     span:
-      lo: 3148
-      hi: 3521
+      lo: 3136
+      hi: 3509
   main:
   - set:
       place: g0
@@ -1809,11 +1809,11 @@ module:
             name: ပရိုဂရမ်
             args: []
         span:
-          lo: 3148
-          hi: 3172
+          lo: 3136
+          hi: 3160
       span:
-        lo: 3148
-        hi: 3172
+        lo: 3136
+        hi: 3160
   imported_inits: 0
   host:
     args: null
@@ -1823,5 +1823,5 @@ module:
   unsafe_spans: []
   span:
     lo: 0
-    hi: 3522
+    hi: 3510
 diagnostics: []

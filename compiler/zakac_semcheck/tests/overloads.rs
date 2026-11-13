@@ -63,7 +63,7 @@ fn a_call_runs_the_function_its_arguments_fit()
 fn no_fit_is_zk0332_and_two_fits_are_zk0333()
 {
     assert_eq!(codes_as_is(&program("မှန် ကို ပြ မည်။")), [Code::NoOverloadFits]);
-    let plain = program("ပြ ဟူသော လုပ်ဆောင်ချက်ကို \"x\" တို့ဖြင့် လုပ်ဆောင်မည်။");
+    let plain = program("ပြ ဟူသော လုပ်ဆောင်ချက်ကို \"x\" ဖြင့် လုပ်ဆောင်မည်။");
     assert_eq!(codes_as_is(&plain), [Code::OverloadUnclear]);
 }
 

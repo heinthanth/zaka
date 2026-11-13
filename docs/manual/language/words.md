@@ -50,7 +50,7 @@ is used between arguments, parameters and the cells of a list literal; a comma i
 Zaka character.
 
 ```zaka-error ZK0101
-ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁, ၂ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁, ၂ ပါသော စာရင်း ဖြစ်ပါစေ။
 ```
 
 ```text
@@ -330,6 +330,51 @@ error[ZK0107]: a character literal must hold one character, found 3
 
 ```zaka-error ZK0104
 "မပိတ်ထားသော စာ ဟု ပြသမည်။
+```
+
+## Lists in words
+
+A list written in words puts `၊` between its items and `နှင့်` before the last one, as
+Burmese prose joins a list. The word that closes the list tells the count: one item takes
+the word alone, and two or more take it with `တို့`.
+
+| Items | Form |
+| --- | --- |
+| one | `က ကို` |
+| two | `က နှင့် ခ တို့ကို` |
+| three or more | `က၊ ခ နှင့် ဂ တို့ကို` |
+
+The rule holds for each list in words: the cells of a word list (`ပါသော စာရင်း`, `တို့ပါသော
+စာရင်း`), the rows of a ဇယား, the pieces of a joined text, the arguments of a call (`ဖြင့်`
+and `တို့ဖြင့်`, or `ကို` and `တို့ကို` before `သုံး၍`), the names of an import, the fields
+of a struct and its values, the members of an enumeration (`ပါဝင်သည်` and `တို့ပါဝင်သည်`),
+and the cases of a switch arm. A list without its `နှင့်` is ZK0245, and a closing word that
+does not fit the count is ZK0246.
+
+An item that holds a `နှင့်` of its own, such as the sum `က နှင့် ခ ၏ ပေါင်းလဒ်`, stands in
+parentheses, so the `နှင့်` of the list is never read as part of it. Lists in notation,
+`[က၊ ခ]` and `f(က၊ ခ)`, keep plain `၊`, and so do the parameters that end in `လည်းကောင်း`.
+
+```zaka
+လုပ်ဆောင်ချက် ပေါင်း သည်
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က + ခ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကိန်းများ သည် ၁၊ ၂ နှင့် ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
+ကိန်းများ ကို ပြသမည်။
+ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၃ နှင့် (၁ နှင့် ၂ ၏ ပေါင်းလဒ်) တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ကိန်းရှင် စာ သည် "က"၊ "ခ" နှင့် "ဂ" တို့ကို ဆက်ထားသည့် စာသား ဖြစ်ပါစေ။
+စာ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[၁၊ ၂၊ ၃]
+၆
+ကခဂ
 ```
 
 ## Reserved words

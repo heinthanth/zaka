@@ -37,6 +37,7 @@ fn starts_value(kind: TokenKind) -> bool
             | TokenKind::RawIdent
             | TokenKind::Number(_)
             | TokenKind::Char(_)
+            | TokenKind::Str(_)
             | TokenKind::Punct(
                 Punct::LParen
                     | Punct::LBracket
@@ -76,9 +77,11 @@ pub(crate) fn part_ident(text: &str, word: Span, at: usize) -> Ident
 
 impl Parser<'_>
 {
-    /// Whether a struct literal starts here: a field name with a value right
-    /// after it, and `ရှိသော` ahead before the end of the clause. None starts
-    /// inside a list count, whose `ရှိသော` closes the count.
+    /// Whether a struct literal starts here: a field name, `အနေဖြင့်` and a
+    /// value, with `ရှိသော` ahead before a word that no field value holds and
+    /// before the `ပါသော` or `တို့ပါသော` of a ဇယား literal, whose rows start
+    /// alike. None starts inside a list count, whose `ရှိသော` closes the
+    /// count.
     ///
     /// # Returns
     ///
@@ -86,12 +89,21 @@ impl Parser<'_>
     pub(crate) fn at_struct_lit(&self) -> bool
     {
         let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
-        ret_if!(self.in_count || !named || !starts_value(self.peek_n(1).kind), false);
-        self.close_ahead(2, |p, n| p.peek_n(n).kind == TokenKind::Kw(Kw::Having))
+        let as_word = self.peek_n(1).kind == TokenKind::Kw(Kw::CountAs);
+        ret_if!(self.in_count || !named || !as_word, false);
+        ret_if!(!starts_value(self.peek_n(2).kind), false);
+        let close = |p: &Self, n: usize| {
+            matches!(
+                p.peek_n(n).kind,
+                TokenKind::Kw(Kw::Having | Kw::ListOf | Kw::ItemOf)
+            )
+        };
+        self.word_list_end(3, close)
+            .is_some_and(|n| self.peek_n(n).kind == TokenKind::Kw(Kw::Having))
     }
 
-    /// Parse `<field> <value> (၊ <field> <value>)* ရှိသော
-    /// <struct>တစ်<classifier>`.
+    /// Parse `<field> အနေဖြင့် <value>` pairs as a list in words, then
+    /// `ရှိသော <struct>တစ်<classifier>`.
     ///
     /// # Returns
     ///
@@ -99,11 +111,7 @@ impl Parser<'_>
     pub(crate) fn parse_struct_lit(&mut self) -> PResult<Expr>
     {
         let start = self.peek().span;
-        let mut fields = vec![self.parse_field_init()?];
-        while self.eat_punct(Punct::ListSep)
-        {
-            fields.push(self.parse_field_init()?);
-        }
+        let fields = self.parse_word_list(Self::parse_field_init)?;
         self.expect(Kw::Having)?;
         let (name, classifier) = self.parse_struct_count()?;
         let span = start.to(&classifier.span);
@@ -177,7 +185,7 @@ impl Parser<'_>
         Ok(FieldInit::builder().field(field).value(value).build())
     }
 
-    /// Parse one `<field> <value>` pair.
+    /// Parse one `<field> အနေဖြင့် <value>` pair.
     ///
     /// # Returns
     ///
@@ -185,6 +193,7 @@ impl Parser<'_>
     fn parse_field_init(&mut self) -> PResult<FieldInit>
     {
         let field = self.parse_ident()?;
+        self.expect(Kw::CountAs)?;
         let value = self.parse_notation()?;
         Ok(FieldInit::builder().field(field).value(value).build())
     }

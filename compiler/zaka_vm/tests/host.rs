@@ -16,7 +16,7 @@ use crate::common::compile_checked;
 
 /// The import of each name of the stdlib module of input and output.
 const IMPORT: &str = "\"စံကား/အဝင်အထွက်\" မှ အချက်အလက်အဝင်အထွက်အမှားအယွင်း၊ စံပြုအဝင်၊ စံပြုအထွက်၊ \
-                      စံပြုအမှား၊ စာကြောင်းတစ်ကြောင်းဖတ်၊ ဖိုင်ကိုဖတ်၊ ရေး တို့ကို ထည့်သွင်းမည်။";
+                      စံပြုအမှား၊ စာကြောင်းတစ်ကြောင်းဖတ်၊ ဖိုင်ကိုဖတ် နှင့် ရေး တို့ကို ထည့်သွင်းမည်။";
 
 /// A function that can fail, which does each host call once, and a start
 /// block that prints its whole result.

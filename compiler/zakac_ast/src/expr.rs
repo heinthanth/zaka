@@ -95,14 +95,14 @@ pub enum Expr
     Field(FieldExpr),
     /// `x ၏ အကွက် <start> မှစ၍ <length> ကွက်`: a slice of cells.
     Range(RangeExpr),
-    /// `a၊ b၊ c တို့ပါသော စာရင်း` or `[a၊ b၊ c]`
+    /// `a၊ b နှင့် c တို့ပါသော စာရင်း` or `[a၊ b၊ c]`
     List(ListLit),
     /// `<field> <value>၊ … ရှိသော <struct>တစ်<classifier>` or
     /// `<struct>(<field>: <value>၊ …)`
     Struct(StructLit),
     /// `စာရင်းအလွတ်`, a list with each cell at its default.
     BlankList(BlankListLit),
-    /// `<index> အနေဖြင့် <value>၊ … တို့ပါသော ဇယား`, `[<index>: <value>၊ …]`,
+    /// `<index> အနေဖြင့် <value>၊ … နှင့် … တို့ပါသော ဇယား`, `[<index>: <value>၊ …]`,
     /// `ဇယားအလွတ်` or `[:]`: a ဇယား written out one row at a time.
     Table(TableLit),
     /// Text in double quotes, with a value in place of each `{...}` template
@@ -332,7 +332,7 @@ pub struct FieldExpr
     pub span: Span,
 }
 
-/// `a၊ b၊ c တို့ပါသော စာရင်း` or `[a၊ b၊ c]`: a list written out one cell at a
+/// `a၊ b နှင့် c တို့ပါသော စာရင်း` or `[a၊ b၊ c]`: a list written out one cell at a
 /// time.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct ListLit
@@ -359,7 +359,7 @@ pub struct TableRow
     pub value: Expr,
 }
 
-/// `<index> အနေဖြင့် <value>၊ … တို့ပါသော ဇယား` or `[<index>: <value>၊ …]`: a
+/// `<index> အနေဖြင့် <value>၊ … နှင့် … တို့ပါသော ဇယား` or `[<index>: <value>၊ …]`: a
 /// ဇယား written out one row at a time; `ဇယားအလွတ်` and `[:]` write none.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct TableLit
@@ -738,7 +738,7 @@ pub struct VerbExpr
     pub span: Span,
 }
 
-/// `f ဟူသော လုပ်ဆောင်ချက်ကို a၊ b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`
+/// `f ဟူသော လုပ်ဆောင်ချက်ကို a နှင့် b တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct CallExpr
 {

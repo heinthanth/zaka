@@ -143,13 +143,13 @@ A text constant built from a variable is an error (ZK0606): declare such text wi
 မင်္ဂလာပါ မောင်မောင်!
 ```
 
-Several pieces join in one sentence too, with `တို့ကို ဆက်ထားသည့် စာသား` ("the text that
-joins these"):
+Several pieces join in one sentence too: `၊` between them, `နှင့်` before the last, and
+`တို့ကို ဆက်ထားသည့် စာသား` ("the text that joins these") after it:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
-"မင်္ဂလာပါ "၊ အမည်၊ "!" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။
+"မင်္ဂလာပါ "၊ အမည် နှင့် "!" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

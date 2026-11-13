@@ -15,4 +15,5 @@ mod samples;
 mod spec;
 mod stmt;
 mod struct_lits;
+mod word_lists;
 mod wrap;

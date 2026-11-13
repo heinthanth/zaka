@@ -11,7 +11,7 @@ another. The Learn book starts in small steps with
 [Enumerations and switches](../../learn/enums/README.md).
 
 ```zaka
-အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ ဝါ ဖြစ်ပါစေ။
@@ -28,8 +28,8 @@ another. The Learn book starts in small steps with
 ## Declaring an enumeration
 
 ```text
-<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲတွင် <member>၊ … <member> တို့ပါဝင်သည်။
-<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲတွင် <member>၊ … <member> တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
+<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲတွင် <member>၊ … နှင့် <member> တို့ပါဝင်သည်။
+<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲတွင် <member> နှင့် … <member> တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
 <name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲတွင် <member> ပါဝင်သည်။
 
 member := [ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် <value> ရှိသည့်] <name>
@@ -41,9 +41,11 @@ member := [ကနဦးတန်ဖိုးအနေဖြင့် သုံ�
 - A declaration stands at the top level of a file. Inside a block, a loop, a conditional
   or a function it is ZK0235. An enumeration can be used above its declaration, since the
   declarations are read first.
-- An enumeration has at least one member. The members are names with `၊` between them,
-  and the list closes with `တို့ပါဝင်သည်`; a lone member closes with `ပါဝင်သည်`.
-  `တို့` after one member, or none after several, is ZK0201.
+- An enumeration has at least one member. The members are a
+  [list in words](words.md#lists-in-words): names with `၊` between them and `နှင့်` before
+  the last, and the list closes with `တို့ပါဝင်သည်`; a lone member closes with `ပါဝင်သည်`.
+  `တို့` after one member, or none after several, is ZK0201, and a list without its
+  `နှင့်` is ZK0245.
 - `တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်` at the end, or `ပါဝင်ပြီး ...` after a lone
   member, names the classifier the enumeration counts with, as a struct does; with none it
   counts with `ခု` ([Measure words](kinds.md#measure-words)).
@@ -57,8 +59,8 @@ member := [ကနဦးတန်ဖိုးအနေဖြင့် သုံ�
 
 ```zaka
 ကိန်းသေ အခြေခံ သည် ၁၀၀ ဖြစ်ပါစေ။
-အမှားများ ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် အခြေခံ + ၄ ရှိသည့် မတွေ့၊ ပိတ်ထား၊ တန်ဖိုးအနေဖြင့် အခြေခံ * ၂ ရှိသည့် ပြည့်နေ တို့ပါဝင်သည်။
-အမိန့် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် "go" ရှိသည့် သွား၊ တန်ဖိုးအနေဖြင့် "stop" ရှိသည့် ရပ် တို့ပါဝင်သည်။
+အမှားများ ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် အခြေခံ + ၄ ရှိသည့် မတွေ့၊ ပိတ်ထား နှင့် တန်ဖိုးအနေဖြင့် အခြေခံ * ၂ ရှိသည့် ပြည့်နေ တို့ပါဝင်သည်။
+အမိန့် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် "go" ရှိသည့် သွား နှင့် တန်ဖိုးအနေဖြင့် "stop" ရှိသည့် ရပ် တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အမှားများထဲမှ ပိတ်ထား ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
@@ -98,7 +100,7 @@ kind: the member that `ကနဦးတန်ဖိုး` gives, and the one tha
 holding the enumeration takes when it is filled with `ကနဦးတန်ဖိုး`.
 
 ```text
-အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် ၁ ရှိသည့် နီ၊ ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် တန်ဖိုးအနေဖြင့် ၀ ရှိသည့် စိမ်း၊ တန်ဖိုးအနေဖြင့် ၂ ရှိသည့် ပြာ တို့ပါဝင်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် ၁ ရှိသည့် နီ၊ ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် တန်ဖိုးအနေဖြင့် ၀ ရှိသည့် စိမ်း နှင့် တန်ဖိုးအနေဖြင့် ၂ ရှိသည့် ပြာ တို့ပါဝင်သည်။
 ```
 
 - The mark goes on one member at most: a second mark is ZK0480. With a value, the mark
@@ -110,8 +112,8 @@ holding the enumeration takes when it is filled with `ကနဦးတန်ဖ�
 - `ကနဦးတန်ဖိုး` is a reserved word, so no member takes it as a name.
 
 ```zaka
-အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် ဝါ၊ စိမ်း တို့ပါဝင်သည်။
-မီးပွိုင့် ဟူသော ဒေတာအစုအဝေးတွင် အမှတ် ဟူသော ကိန်းပြည့် တစ်ခု၊ ရောင် ဟူသော အရောင် တစ်ခု တို့ပါဝင်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
+မီးပွိုင့် ဟူသော ဒေတာအစုအဝေးတွင် အမှတ် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် ရောင် ဟူသော အရောင် တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
@@ -129,7 +131,7 @@ holding the enumeration takes when it is filled with `ကနဦးတန်ဖ�
 ```
 
 ```zaka-error ZK0480
-အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် နီ၊ ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် စိမ်း တို့ပါဝင်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် နီ နှင့် ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် စိမ်း တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -140,7 +142,7 @@ error[ZK0480]: "အရောင်" marks a second member with "ကနဦးတ�
 ```
 
 ```zaka-error ZK0479
-အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ စိမ်း တို့ပါဝင်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ နှင့် စိမ်း တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
@@ -179,7 +181,7 @@ A name in Latin letters, or in mixed scripts, splits from `ထဲမှ` just as
 Burmese name does:
 
 ```zaka
-Delivery ဟူသော ဒေတာအမျိုးအစားကွဲတွင် Waiting၊ Moving၊ Arrived တို့ပါဝင်သည်။
+Delivery ဟူသော ဒေတာအမျိုးအစားကွဲတွင် Waiting၊ Moving နှင့် Arrived တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် state သည် Deliveryများထဲမှ Moving ဖြစ်ပါစေ။
@@ -216,8 +218,8 @@ Deliveryများထဲမှ Moving
   value.
 
 ```zaka
-အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
-မီးပွိုင့် ဟူသော ဒေတာအစုအဝေးတွင် အမှတ် ဟူသော ကိန်းပြည့် တစ်ခု၊ ရောင် ဟူသော အရောင် တစ်ခု တို့ပါဝင်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
+မီးပွိုင့် ဟူသော ဒေတာအစုအဝေးတွင် အမှတ် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် ရောင် ဟူသော အရောင် တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပွိုင့် သည် မီးပွိုင့်(အမှတ်: ၃၊ ရောင်: အရောင်များထဲမှ စိမ်း) ဖြစ်ပါစေ။
@@ -237,7 +239,7 @@ Deliveryများထဲမှ Moving
 
 ```text
 <subject> သည် <case> ဖြစ်လျှင် <block>
-<case>၊ <case> တို့ ဖြစ်လျှင် <block>
+<case> နှင့် <case> တို့ ဖြစ်လျှင် <block>
 တခြား <kind> တစ်<word> ဖြစ်လျှင် <block>
 ```
 
@@ -248,7 +250,7 @@ out once.
 
 - An arm takes one case, or several with `၊` between them and `တို့` after the last; it
   runs when the subject equals one of them. A list literal is one case in each form:
-  `[a၊ b]`, `a၊ b တို့ပါသော စာရင်း`, or either in parentheses.
+  `[a၊ b]`, `a နှင့် b တို့ပါသော စာရင်း`, or either in parentheses.
 - The first arm names the subject with `သည်`; each arm after it is a case alone. The block
   of an arm is one statement or a block, as in a conditional. A one-statement arm cannot be a
   conditional or another switch (ZK0215), so each arm after it belongs to one switch.
@@ -270,7 +272,7 @@ out once.
   other kinds, the default arm can be left out.
 
 ```zaka
-အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ၊ စိမ်း တို့ပါဝင်သည်။
+အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
 
 လုပ်ဆောင်ချက် လုပ်ရန် သည်
 ယခု ဟူသော အရောင် တစ်ခု ကို လက်ခံပြီး
@@ -281,7 +283,7 @@ out once.
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ရန် ဟူသော လုပ်ဆောင်ချက်ကို အရောင်များထဲမှ စိမ်း တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ရန် ဟူသော လုပ်ဆောင်ချက်ကို အရောင်များထဲမှ စိမ်း ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ကိန်းရှင် အက္ခရာ သည် 'ခ' ဖြစ်ပါစေ။
 အက္ခရာ သည် 'က' ဖြစ်လျှင် "ပထမ" ဟု ပြသမည်။
 'ခ' ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

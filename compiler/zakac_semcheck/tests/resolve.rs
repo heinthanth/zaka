@@ -84,7 +84,7 @@ fn block_names_end_with_the_block()
 fn functions_can_be_called_before_their_declaration()
 {
     ok(&lines(&["နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။", GREET]));
-    ok(&lines(&["နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။", TWICE]));
+    ok(&lines(&["နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၂ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။", TWICE]));
 }
 
 #[test]
@@ -236,7 +236,7 @@ fn calls_pass_one_argument_per_parameter()
 {
     let text = lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။"]);
     assert_eq!(codes(&text), [Code::ArgCountMismatch]);
-    let text = lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။"]);
+    let text = lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၁ နှင့် ၂ တို့ဖြင့် လုပ်ဆောင်မည်။"]);
     assert_eq!(codes(&text), [Code::ArgCountMismatch]);
 }
 

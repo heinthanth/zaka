@@ -125,6 +125,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0241 | a parameter mark string, after `ဝိဘတ်`, that is not one word a mark can be | [Functions](../language/functions.md) |
 | ZK0243 | a parameter of a function kind marked `ဒေတာ ထည့်ပေးရန်` | [Function values](../language/function-values.md) |
 | ZK0244 | nesting of parentheses, operands, calls, lists or blocks more than 128 levels deep | [The nesting limit](../internals/parser.md#the-nesting-limit) |
+| ZK0245 | a list in words of two or more items without `နှင့်` before the last item, or with a `၊` after it | [Lists in words](../language/words.md#lists-in-words) |
+| ZK0246 | the word that closes a list in words does not fit its count: `တို့` after one item, or none after two or more | [Lists in words](../language/words.md#lists-in-words) |
 
 ### ZK03: names
 
@@ -268,7 +270,6 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | ZK0507 | parentheses that change nothing | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 | ZK0508 | a sentence used as a value that ends in `ပါ` | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 | ZK0509 | a warning: a kind, a heap size or a struct literal counted with a word that is not the classifier of its kind | [Measure words](../language/kinds.md#measure-words), [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
-| ZK0510 | a warning: the arguments of a call written arguments first close with `ကို` after several, or with `တို့ကို` after one | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 
 ### ZK06: working out constants
 

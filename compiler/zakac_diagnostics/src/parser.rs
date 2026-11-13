@@ -658,3 +658,39 @@ pub fn nesting_too_deep(span: Span, max: u32) -> Diagnostic
     Diagnostic::new(Code::NestingTooDeep, message, span)
         .with_help(t!("codes.ZK0244.help"))
 }
+
+/// A list of two or more items in words does not join its last item with
+/// `နှင့်`, or has a `၊` after the `နှင့်`.
+///
+/// # Arguments
+///
+/// * `span` - The token where the `နှင့်` is missing, or the `၊` after it.
+///
+/// # Returns
+///
+/// The `ZK0245` diagnostic.
+pub fn list_needs_and(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::ListNeedsAnd, t!("codes.ZK0245.message"), span)
+        .with_help(t!("codes.ZK0245.help"))
+}
+
+/// The word that closes a list does not fit the count of its items.
+///
+/// # Arguments
+///
+/// * `span` - The word.
+/// * `count` - The number of items.
+/// * `want` - The word the count takes.
+/// * `found` - The word written.
+///
+/// # Returns
+///
+/// The `ZK0246` diagnostic.
+pub fn list_word_count(span: Span, count: usize, want: &str, found: &str)
+-> Diagnostic
+{
+    let message = t!("codes.ZK0246.message", n = count, w = want, f = found);
+    Diagnostic::new(Code::ListWordCount, message, span)
+        .with_help(t!("codes.ZK0246.help"))
+}

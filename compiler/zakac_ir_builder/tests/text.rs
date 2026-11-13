@@ -178,7 +178,7 @@ fn characters_lower_to_char_reads()
 #[test]
 fn a_verbal_join_folds_as_a_join_does()
 {
-    let text = "\"a\"၊ \"{၁}\"၊ \"c\" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။";
+    let text = "\"a\"၊ \"{၁}\" နှင့် \"c\" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။";
     assert_eq!(folded(text), ["(print \"a၁c\")"]);
     assert_eq!(
         folded_with(text, &FoldOptions::none()),

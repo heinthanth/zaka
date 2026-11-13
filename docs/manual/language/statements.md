@@ -30,7 +30,7 @@ unsafe code a pointer's value), `WORD` the classifier of the kind, and `BODY` a 
 | block | `အောက်ပါတို့ကို လုပ်ဆောင်မည်။` statements `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` |
 | unsafe block | `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။` statements `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` (see [Unsafe Zaka](unsafe.md)) |
 | if | `အကယ်၍ COND လျှင် BODY` then `[ထိုသို့မဟုတ်ဘဲ COND လျှင် BODY]` then `[သို့မဟုတ်ပါက BODY]` |
-| switch | `VALUE သည် CASE ဖြစ်လျှင် BODY` then `[CASE၊ CASE တို့ ဖြစ်လျှင် BODY]` then `[တခြား KIND တစ်WORD ဖြစ်လျှင် BODY]` (see [Enumerations](enums.md#switch)) |
+| switch | `VALUE သည် CASE ဖြစ်လျှင် BODY` then `[CASE နှင့် CASE တို့ ဖြစ်လျှင် BODY]` then `[တခြား KIND တစ်WORD ဖြစ်လျှင် BODY]` (see [Enumerations](enums.md#switch)) |
 | while | `COND နေသရွေ့ BODY` |
 | counted loop | `FROM မှ TO အထိ [STEP စီ] NAME အနေဖြင့် ရေတွက်၍ BODY` |
 | each cell | `LIST ၏ အကွက်တိုင်း ကို [NAME နှင့်] NAME အနေဖြင့် ယူ၍ BODY` |
@@ -363,7 +363,7 @@ of both depths. `ထဲသို့ VALUE ကို ထည့်မည်` remai
 tells them apart.
 
 ```zaka
-ဘူး ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် အမည် ဟူသော စာသား တစ်ခု၊ တန် ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+ဘူး ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် အမည် ဟူသော စာသား တစ်ခု နှင့် တန် ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် "စံ" ဖြစ်ပါစေ။
@@ -408,7 +408,7 @@ A logical expression needs parentheses (ZK0204).
 "မင်္ဂလာပါ" ဟု ပြသမည်။
 ၃ သည် ၂ ထက် ကြီးသည် ဟု ပြသမည်။
 'က' ကို ပြသမည်။
-၁၊ ၂၊ ၃ တို့ပါသော စာရင်း ကို ပြသမည်။
+၁၊ ၂ နှင့် ၃ တို့ပါသော စာရင်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -624,7 +624,7 @@ loop the update runs first. Outside a loop these are ZK0309 and ZK0310.
 
 ## Calls and returns
 
-`f ဟူသော လုပ်ဆောင်ချက်ကို ၁၊ ၂ တို့ဖြင့် လုပ်ဆောင်မည်။` runs a function and drops its result.
+`f ဟူသော လုပ်ဆောင်ချက်ကို ၁ နှင့် ၂ တို့ဖြင့် လုပ်ဆောင်မည်။` runs a function and drops its result.
 `VALUE ကို ပြန်ပေးမည်။` ends a function with a value, and `ပြန်ပေးမည်။` ends it
 with none. A return outside a function is ZK0311. [Functions](functions.md) has the rest.
 
