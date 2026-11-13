@@ -2,6 +2,7 @@
 name = "zakac_burmese_segmenter"
 version = "0.1.0"
 edition = "2024"
+autotests = false
 
 [[bin]]
 name = "zakac_burmese_segmenter"
@@ -24,3 +25,7 @@ zakac_session = { workspace = true }
 zakac_reporter = { workspace = true }
 zakac_rust_sugars = { workspace = true }
 zakac_span = { workspace = true }
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"

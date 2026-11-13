@@ -3,18 +3,12 @@
 //! back with numbers, text, structs and handles. It prints the same in the
 //! VM, which opens the lib through libffi, and as an executable linked to it.
 
-mod common;
-
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::process::Output;
 use std::process::Stdio;
 
-use common::c_files;
-use common::cc;
-use common::root;
-use common::stop_line;
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_and_keep;
@@ -34,6 +28,11 @@ use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::source_map::SourceMap;
+
+use crate::common::c_files;
+use crate::common::cc;
+use crate::common::root;
+use crate::common::stop_line;
 
 /// The program; `{LIB}` stands for the path of the lib, beside it.
 const PROGRAM: &str = "\

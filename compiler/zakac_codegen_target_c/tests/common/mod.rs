@@ -28,6 +28,13 @@ pub fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 /// The repo samples folder.
 pub fn samples() -> PathBuf { root().join("../../samples") }
 
+/// The store of runtime objects the native builds of the tests share, kept
+/// across test runs.
+pub fn runtime_objects() -> PathBuf
+{
+    PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("zaka_rt_objects")
+}
+
 /// The C compiler on this host, or `None`; a test with no compiler notes it
 /// and passes, so a developer host without one keeps passing. When
 /// `ZAKA_REQUIRE_CC` is `1`, as on CI, a host with no compiler fails instead.
@@ -124,9 +131,10 @@ pub fn compile_and_run(cc: &Tool, files: &[CFile], checks: Checks) -> Run
     let dir = tempfile::tempdir().unwrap();
     let sources = write_cache(dir.path(), files).unwrap();
     let exe = dir.path().join(format!("program{}", std::env::consts::EXE_SUFFIX));
+    let store = runtime_objects();
     #[rustfmt::skip]
     let plan = BuildPlan::builder().cc(cc).sources(&sources).out(&exe).checks(checks)
-        .sanitizers(false).build();
+        .sanitizers(false).runtime_objects(&store).build();
     let built = toolchain::build(&plan).unwrap();
     let errors: Vec<_> =
         built.outputs.iter().map(|o| String::from_utf8_lossy(&o.stderr)).collect();

@@ -1,9 +1,6 @@
-mod common;
-
 use std::io;
 use std::io::Write;
 
-use common::compile;
 use zaka_vm::machine::Held;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
@@ -17,6 +14,8 @@ use zakac_codegen_target_vm::bc::Slot;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::value::Value;
 use zakac_semcheck::kind::DataKind;
+
+use crate::common::compile;
 
 fn v(t: &str) -> Value { t.parse().unwrap_or_else(|e| panic!("{e}")) }
 

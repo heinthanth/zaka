@@ -1,8 +1,7 @@
-mod common;
-
-use common::codes;
-use common::parse_text;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
+use crate::common::parse_text;
 
 /// Run a check on a thread with room for deep recursion: frames of a debug
 /// build are larger than those the limit is set for.

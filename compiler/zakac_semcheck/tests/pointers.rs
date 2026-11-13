@@ -1,10 +1,9 @@
-mod common;
-
-use common::check;
-use common::codes;
-use common::kind_at;
-use common::ok;
 use zakac_diagnostics::Code;
+
+use crate::common::check;
+use crate::common::codes;
+use crate::common::kind_at;
+use crate::common::ok;
 
 /// `x` an integer, `p` a borrow of it, `q` an opaque address, `b` an `i8*`.
 const PTRS: &str = "ကိန်းရှင် x သည် ၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။

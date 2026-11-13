@@ -1,11 +1,5 @@
-mod common;
-
 use std::fmt::Write;
 
-use common::c_files;
-use common::cc;
-use common::compile_and_run;
-use common::samples;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen_target_c::emit::CFile;
 use zakac_codegen_target_c::emit::MAIN_SOURCE;
@@ -14,6 +8,11 @@ use zakac_semcheck::kind::IntKind;
 use zakac_semcheck::kind::Width;
 use zakac_semcheck::value::Value;
 use zakac_semcheck::value::value_text;
+
+use crate::common::c_files;
+use crate::common::cc;
+use crate::common::compile_and_run;
+use crate::common::samples;
 
 /// Floats whose text is hard to get right: thresholds of the plain form,
 /// powers of two, the ends of the range, signed zeros and the specials.

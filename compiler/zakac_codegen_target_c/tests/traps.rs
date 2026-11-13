@@ -1,17 +1,16 @@
-mod common;
-
 use std::path::Path;
 
-use common::c_files;
-use common::c_files_with;
-use common::cc;
-use common::compile_and_run;
-use common::root;
-use common::samples;
-use common::stop_line;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen_target_c::options::Checks;
 use zakac_codegen_target_c::options::TargetCOptions;
+
+use crate::common::c_files;
+use crate::common::c_files_with;
+use crate::common::cc;
+use crate::common::compile_and_run;
+use crate::common::root;
+use crate::common::samples;
+use crate::common::stop_line;
 
 /// Build a program that stops, and check what it printed before the stop
 /// and the trap line after it.

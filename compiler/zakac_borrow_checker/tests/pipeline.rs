@@ -1,12 +1,11 @@
-mod common;
-
-use common::ok;
-use common::run;
 use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::digest::FnDigest;
 use zakac_borrow_checker::digest::Root;
 use zakac_borrow_checker::digest::Seg;
 use zakac_ir_builder::ir::Place;
+
+use crate::common::ok;
+use crate::common::run;
 
 #[test]
 fn a_start_block_alone_runs_through_borrow_check_with_one_digest()

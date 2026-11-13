@@ -1,8 +1,5 @@
-mod common;
-
 use std::path::PathBuf;
 
-use common::lines;
 use zakac_borrow_checker::artifact::BorrowCheckArtifact;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_diagnostics::Code;
@@ -13,6 +10,8 @@ use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::PhaseArtifact;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
+
+use crate::common::lines;
 
 /// Inputs that must pass the check with no diagnostic.
 const CLEAN_INPUTS: [&str; 3] = ["loans", "calls", "lists"];

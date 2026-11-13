@@ -1,13 +1,12 @@
 //! `ကနဦးတန်ဖိုး`, the written initial value, and the kinds no program can
 //! build.
 
-mod common;
-
-use common::check;
-use common::codes;
-use common::kind_at;
-use common::ok;
 use zakac_diagnostics::Code;
+
+use crate::common::check;
+use crate::common::codes;
+use crate::common::kind_at;
+use crate::common::ok;
 
 /// An enumeration with a marked member, a struct with an optional, a shared
 /// struct, and a struct with a function field.

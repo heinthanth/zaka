@@ -1,6 +1,4 @@
-mod common;
-
-use common::codes;
+use crate::common::codes;
 
 /// The kind of a number or a text error.
 const RESULT: &str = "ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်";

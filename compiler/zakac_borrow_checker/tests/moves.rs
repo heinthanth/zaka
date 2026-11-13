@@ -1,9 +1,9 @@
-mod common;
-
-use common::lines;
-use common::ok;
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Level;
+
+use crate::common;
+use crate::common::lines;
+use crate::common::ok;
 
 #[test]
 fn a_read_after_an_owned_hand_over_is_zk0701()

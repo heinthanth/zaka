@@ -1,16 +1,15 @@
-mod common;
-
-use common::codes_with;
-use common::lines;
-use common::lines_with;
-use common::ok;
-use common::run;
-use common::run_with;
-use common::strict;
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Level;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::tern;
+
+use crate::common::codes_with;
+use crate::common::lines;
+use crate::common::lines_with;
+use crate::common::ok;
+use crate::common::run;
+use crate::common::run_with;
+use crate::common::strict;
 
 #[test]
 fn second_alloc_loses_first_is_zk0708_and_exit_too()

@@ -2,6 +2,7 @@
 name = "zaka_website"
 version = "0.1.0"
 edition.workspace = true
+autotests = false
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -130,3 +131,7 @@ browser_targets = ["defaults"]
 [package.metadata.turf-dev.class_names]
 template = "<original_name>-<style_sheet_hash_short>"
 excludes = ["^tok-"]
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"

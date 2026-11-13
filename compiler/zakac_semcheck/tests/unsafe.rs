@@ -1,9 +1,8 @@
-mod common;
-
-use common::check_as_is;
-use common::codes_as_is;
 use zakac_diagnostics::Code;
 use zakac_semcheck::semcheck::SemcheckOptions;
+
+use crate::common::check_as_is;
+use crate::common::codes_as_is;
 
 /// A program whose start block holds `steps`, after the declarations `decls`.
 fn program(decls: &str, steps: &str) -> String

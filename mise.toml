@@ -48,6 +48,10 @@ description = "Format the C code with clang-format"
 run = "cargo nextest run --workspace"
 description = "Run the tests"
 
+[tasks."test:compiler"]
+run = "cargo nextest run -p 'zakac*' -p zaka_vm -p zaka_host"
+description = "Run the tests of the compiler and the VM, not the web crates"
+
 [tasks."test:benches"]
 run = "cargo nextest run --workspace --benches"
 description = "Run the benchmark code as tests"

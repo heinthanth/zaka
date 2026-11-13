@@ -1,7 +1,6 @@
-mod common;
-
-use common::codes;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
 
 /// A struct counted with `ယောက်`, and a value of it.
 const PERSON: &str = "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ \

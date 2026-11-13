@@ -1,13 +1,12 @@
-mod common;
-
-use common::label_line;
-use common::lines;
-use common::ok;
-use common::old_line;
-use common::run;
 use zakac_borrow_checker::digest::Root;
 use zakac_diagnostics::Code;
 use zakac_ir_builder::ir::Place;
+
+use crate::common::label_line;
+use crate::common::lines;
+use crate::common::ok;
+use crate::common::old_line;
+use crate::common::run;
 
 /// A function that reads through its second hook and frees the block on
 /// its first.

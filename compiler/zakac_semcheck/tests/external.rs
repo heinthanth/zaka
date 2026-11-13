@@ -1,7 +1,6 @@
-mod common;
-
-use common::codes_as_is;
 use zakac_diagnostics::Code;
+
+use crate::common::codes_as_is;
 
 /// The error enumeration and an input stream, as the stdlib
 /// declares them.

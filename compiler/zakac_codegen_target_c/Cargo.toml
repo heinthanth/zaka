@@ -2,6 +2,7 @@
 name = "zakac_codegen_target_c"
 version = "0.1.0"
 edition.workspace = true
+autotests = false
 
 [[bin]]
 name = "zakac_codegen_target_c"
@@ -12,6 +13,7 @@ bon = { workspace = true }
 etcetera = { workspace = true }
 rust-i18n = { workspace = true }
 strum = { workspace = true }
+xxhash-rust = { workspace = true }
 zakac_ast = { workspace = true }
 zakac_borrow_checker = { workspace = true }
 zakac_cli_common = { workspace = true }
@@ -34,3 +36,7 @@ zakac_codegen_target_vm = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"

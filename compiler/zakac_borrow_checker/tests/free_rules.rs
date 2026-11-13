@@ -1,8 +1,7 @@
-mod common;
-
-use common::lines;
-use common::ok;
 use zakac_diagnostics::Code;
+
+use crate::common::lines;
+use crate::common::ok;
 
 #[test]
 fn local_address_free_is_zk0702()

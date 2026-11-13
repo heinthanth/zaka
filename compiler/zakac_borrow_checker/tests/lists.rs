@@ -1,8 +1,7 @@
-mod common;
-
-use common::lines;
-use common::ok;
 use zakac_diagnostics::Code;
+
+use crate::common::lines;
+use crate::common::ok;
 
 /// A function with a local list of borrows: a store into cell 0 lends the
 /// block of `ပ`, the block is freed, and cell 1 is read.

@@ -1,13 +1,12 @@
-mod common;
-
-use common::check_as_is;
-use common::codes_as_is;
 use zakac_ast::stmt::CaptureMode;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_fn;
 use zakac_diagnostics::Code;
 use zakac_semcheck::semcheck::SemcheckOptions;
+
+use crate::common::check_as_is;
+use crate::common::codes_as_is;
 
 /// A start block around `stmts`.
 fn start(stmts: &str) -> String

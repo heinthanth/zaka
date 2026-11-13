@@ -153,7 +153,7 @@ Four kinds of test sit in the repo:
   fail on purpose and are skipped there. The flow checker has an oracle test: each
   sample that passes the check without raw addresses must run with no use after free,
   double free or bad free.
-- **The book tests.** `cargo test -p zaka_website --test books` runs each fenced
+- **The book tests.** `cargo test -p zaka_website --test tests books::` runs each fenced
   `zaka` block of the Learn pages and of this manual and compares the result with what
   the page promises (output, a code, a stop). A link to a page that is not in a
   `CONTENTS.md` fails the test too. One more test of `zaka_website` uses the same

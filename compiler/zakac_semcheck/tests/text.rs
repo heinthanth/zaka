@@ -1,11 +1,10 @@
-mod common;
-
-use common::check;
-use common::codes;
-use common::kind_at;
-use common::ok;
 use zakac_diagnostics::Code;
 use zakac_semcheck::kind::DataKind;
+
+use crate::common::check;
+use crate::common::codes;
+use crate::common::kind_at;
+use crate::common::ok;
 
 /// A text and a view of it.
 const TEXT: &str = "ကိန်းရှင် t သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \"က {၁ + ၁} ခ\" ဖြစ်ပါစေ။

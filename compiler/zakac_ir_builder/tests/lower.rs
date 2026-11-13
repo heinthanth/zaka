@@ -1,8 +1,3 @@
-mod common;
-
-use common::folded;
-use common::plain;
-use common::run;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::START_NAME;
 use zakac_ir_builder::ir::Access;
@@ -14,6 +9,11 @@ use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::PrintValue;
 use zakac_ir_builder::ir::Stmt;
 use zakac_semcheck::kind::DataKind;
+
+use crate::common;
+use crate::common::folded;
+use crate::common::plain;
+use crate::common::run;
 
 fn module(text: &str) -> Module
 {

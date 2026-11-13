@@ -1,12 +1,11 @@
-mod common;
-
-use common::check;
-use common::codes;
-use common::kind_at;
-use common::ok;
 use zakac_diagnostics::Code;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::structs::parse_sig;
+
+use crate::common::check;
+use crate::common::codes;
+use crate::common::kind_at;
+use crate::common::ok;
 
 /// `လူ` with a padded field, and `အဆစ်`, which points at itself.
 const STRUCTS: &str = "လူ ဟူသော ဒေတာအစုအဝေးတွင် အဆင့် ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု၊ အသက် ဟူသော ကိန်းပြည့် \

@@ -1,15 +1,15 @@
-mod common;
-
-use common::codes;
-use common::codes_with;
-use common::lines;
-use common::main_forms;
-use common::ok;
-use common::run;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_diagnostics::Code;
 use zakac_ir_builder::ir::Module;
+
+use crate::common;
+use crate::common::codes;
+use crate::common::codes_with;
+use crate::common::lines;
+use crate::common::main_forms;
+use crate::common::ok;
+use crate::common::run;
 
 /// The text of a repo file.
 fn repo_file(path: &str) -> String

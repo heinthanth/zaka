@@ -1,11 +1,10 @@
-mod common;
-
-use common::kws;
-use common::lex_text;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Particle;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
+
+use crate::common::kws;
+use crate::common::lex_text;
 
 #[rustfmt::skip]
 const CASES: &[(&[&str], Kw)] = &[

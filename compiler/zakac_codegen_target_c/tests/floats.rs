@@ -1,17 +1,16 @@
-mod common;
-
 use std::fmt::Write;
 
-use common::c_files;
-use common::cc;
-use common::compile_and_run;
-use common::samples;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen_target_c::emit::CFile;
 use zakac_codegen_target_c::emit::MAIN_SOURCE;
 use zakac_codegen_target_c::options::Checks;
 use zakac_semcheck::value::Value;
 use zakac_semcheck::value::value_text;
+
+use crate::common::c_files;
+use crate::common::cc;
+use crate::common::compile_and_run;
+use crate::common::samples;
 
 /// The seed of the xorshift sequence that the probe and the test share.
 const SEED: u64 = 0x2545_f491_4f6c_dd1d;

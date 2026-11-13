@@ -1,15 +1,14 @@
-mod common;
-
-use common::codes;
-use common::parse_text;
-use common::stmt;
-use common::stmts;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::verb::Slot;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::Code;
 use zakac_rust_sugars::do_for;
+
+use crate::common::codes;
+use crate::common::parse_text;
+use crate::common::stmt;
+use crate::common::stmts;
 
 #[test]
 fn print_statements()

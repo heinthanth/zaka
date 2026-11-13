@@ -1,16 +1,15 @@
-mod common;
-
-use common::main_forms;
-use common::off;
-use common::run;
-use common::run_with;
-use common::strict;
-use common::warn;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Level;
 use zakac_diagnostics::has_errors;
+
+use crate::common::main_forms;
+use crate::common::off;
+use crate::common::run;
+use crate::common::run_with;
+use crate::common::strict;
+use crate::common::warn;
 
 /// A borrow read after its block is freed. Strict mode
 /// doubts the store into the fresh allocation and the read through the

@@ -328,7 +328,7 @@ differs from the VM.
 | `--checks <LIST>` | `default` | the run-time checks of the executable: a level, then checks to add (`+name` or `name`) or drop (`-name`), in order, as a comma list or the flag given again; see below |
 | `--max-depth <CALLS>` | `4096` | the most nested calls before the executable stops with `more than N nested calls`, as `--max-depth` of the VM does; counted while the `depth` check is on |
 | `--max-heap <OCTETS>` | `0` | the most heap octets the executable holds, no cap when 0: a counted block (text, a plain list, a box, a closure record) past it stops the run with `no heap room for N octets`, as `--max-heap` of the VM does; a raw allocation of unsafe code past it gives the null address; see [Native programs](native.md#checks) |
-| `--cache <DIR>` | the cache of the user | the folder for the C files and the objects; when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
+| `--cache <DIR>` | the cache of the user | the folder for the C files and the objects; the objects of the runtime remain there for later builds with the same compiler, flags and checks; when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
 | `--cc <CMD>` | `CC`, then `cc` of a config file, then the first of `cc`, `gcc`, `clang` and `zig cc` | the C compiler, with the words before its flags |
 | `--linker <CMD>` | the C compiler | the program that links the objects, such as `clang -fuse-ld=lld` |
 | `--cc-flag <FLAG>` | | one more flag for the C compiler; give it again for more |

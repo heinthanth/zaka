@@ -1,10 +1,9 @@
 //! The check that each value is set before it is read: fields of structs
 //! inside structs, and earlier cells of a counted loop that fills its list.
 
-mod common;
-
-use common::codes;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
 
 /// A point inside a line, so a struct holds a struct.
 const KINDS: &str = "အမှတ် ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု၊ y ဟူသော ကိန်းပြည့် တစ်ခု \

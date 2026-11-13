@@ -1,6 +1,3 @@
-mod common;
-
-use common::compile_text;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::HostData;
@@ -11,6 +8,9 @@ use zakac_codegen_target_vm::options::EmitOptions;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
+
+use crate::common;
+use crate::common::compile_text;
 
 /// A text constant set into a variable, given to a function and read
 /// again: each read duplicates the static text.

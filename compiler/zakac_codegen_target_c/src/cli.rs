@@ -495,7 +495,7 @@ fn build(
     let plan = BuildPlan::builder().cc(&cc).maybe_linker(linker.as_ref())
         .sources(&sources).out(job.out).checks(job.checks).sanitizers(sanitizers)
         .defaults(!matches.get_flag(NO_DEFAULT_FLAGS_ARG)).cflags(&cflags)
-        .ldflags(&ldflags).libs(job.libs).build();
+        .ldflags(&ldflags).libs(job.libs).runtime_objects(job.cache).build();
     let built = toolchain::build(&plan)?;
     for output in &built.outputs
     {

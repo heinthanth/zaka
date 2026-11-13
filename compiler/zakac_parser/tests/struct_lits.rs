@@ -1,11 +1,10 @@
-mod common;
-
-use common::codes;
-use common::stmts;
 use zakac_ast::expr::Expr;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::Stmt;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
+use crate::common::stmts;
 
 const DECL: &str =
     "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု၊ အတန်း ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။\n";

@@ -1,14 +1,13 @@
-mod common;
-
 use std::path::Path;
 use std::path::PathBuf;
 
-use common::file_codes;
-use common::lines;
-use common::ok;
-use common::repo_root;
-use common::zaka_files;
 use zakac_diagnostics::Code;
+
+use crate::common::file_codes;
+use crate::common::lines;
+use crate::common::ok;
+use crate::common::repo_root;
+use crate::common::zaka_files;
 
 /// The text of a repo file.
 fn repo_file(path: &str) -> String

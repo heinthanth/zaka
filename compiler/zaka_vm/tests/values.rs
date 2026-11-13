@@ -1,7 +1,3 @@
-mod common;
-
-use common::compile_text;
-use common::run_source_with;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::HostData;
@@ -11,6 +7,9 @@ use zakac_codegen_target_vm::options::EmitOptions;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_ir_builder::ir::FoldOptions;
+
+use crate::common::compile_text;
+use crate::common::run_source_with;
 
 /// Text built while the program runs, copied into a variable, a struct, a
 /// list, a parameter the function changes, and a result: each duplicate is

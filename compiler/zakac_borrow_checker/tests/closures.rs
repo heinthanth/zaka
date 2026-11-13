@@ -1,8 +1,7 @@
-mod common;
-
-use common::codes;
-use common::ok;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
+use crate::common::ok;
 
 /// `ခေါ်` calls the function it gets, and `နှစ်ခု` calls it while it holds a
 /// block handed over to it.

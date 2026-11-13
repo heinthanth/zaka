@@ -2,6 +2,7 @@
 name = "zakac"
 version = "0.1.0"
 edition.workspace = true
+autotests = false
 
 [dependencies]
 bon = { workspace = true }
@@ -27,3 +28,7 @@ zakac_span = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"

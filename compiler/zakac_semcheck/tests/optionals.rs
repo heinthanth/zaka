@@ -1,8 +1,7 @@
-mod common;
-
-use common::codes;
-use common::ok;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
+use crate::common::ok;
 
 /// The kind of an optional number.
 const MAYBE: &str = "ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်";

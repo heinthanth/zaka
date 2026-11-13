@@ -1,8 +1,7 @@
-mod common;
-
-use common::codes;
-use common::stmt;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
+use crate::common::stmt;
 
 #[test]
 fn heap_statements()

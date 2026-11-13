@@ -2,6 +2,7 @@
 name = "zakac_burmese_alignment"
 version = "0.1.0"
 edition.workspace = true
+autotests = false
 
 [dependencies]
 bon = { workspace = true }
@@ -12,3 +13,7 @@ zakac_rust_sugars = { workspace = true }
 fontdb = { workspace = true }
 rustix = { workspace = true }
 rustybuzz = { workspace = true }
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"

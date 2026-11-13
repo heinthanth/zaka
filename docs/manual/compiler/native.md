@@ -238,7 +238,11 @@ A [function value](../language/function-values.md) is one word in the C, of the 
 The build writes the C into a cache folder. With no `--cache`, it is
 `zakac/<folder>/<name>-<hash>` in the cache folder of the user (`XDG_CACHE_HOME`, or
 `~/.cache`; `%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that
-folder cannot be made. `--emit c` stops there, so a C compiler can build the files at a later time:
+folder cannot be made. The build then compiles the C files at once and links them. The
+objects of the runtime remain in the cache, named after a hash of the compiler, the flags,
+the runtime and `zaka_checks.h`; a later build with the same compiler, flags and checks
+links them and does not compile the runtime again. `--emit c` stops after the C is
+written, so a C compiler can build the files at a later time:
 
 ```console
 $ zakac build --target c --emit c --cache gen/ app.zaka

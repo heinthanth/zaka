@@ -1,9 +1,6 @@
-mod common;
-
 use std::path::Path;
 use std::path::PathBuf;
 
-use common::compile_file;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::HostData;
@@ -15,6 +12,8 @@ use zakac_codegen_target_vm::options::EmitOptions;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_rust_sugars::do_for;
+
+use crate::common::compile_file;
 
 /// Sample groups that hold programs with errors on purpose: those that do
 /// not compile and those that go wrong at run time.

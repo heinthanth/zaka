@@ -2,6 +2,7 @@
 name = "zakac_borrow_checker"
 version = "0.1.0"
 edition.workspace = true
+autotests = false
 
 [[bin]]
 name = "zakac_borrow_checker"
@@ -36,3 +37,7 @@ zakac_codegen_target_vm = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"

@@ -1,18 +1,17 @@
-mod common;
-
 use std::mem::discriminant;
 use std::path::PathBuf;
 
-use common::compile;
-use common::output;
-use common::run_module;
-use common::run_source;
-use common::run_source_with;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::trap::Trap;
 use zaka_vm::trap::TrapKind;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen_target_vm::bc::Module;
+
+use crate::common::compile;
+use crate::common::output;
+use crate::common::run_module;
+use crate::common::run_source;
+use crate::common::run_source_with;
 
 /// The trap kind and function of a source text that must trap.
 fn trapped(text: &str, options: &RunOptions) -> (String, TrapKind, String)

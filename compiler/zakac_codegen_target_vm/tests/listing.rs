@@ -1,9 +1,8 @@
-mod common;
-
-use common::emit_text;
 use zakac_codegen_target_vm::listing::LISTING_HEADER;
 use zakac_codegen_target_vm::listing::listing;
 use zakac_codegen_target_vm::listing::quote;
+
+use crate::common::emit_text;
 
 #[test]
 fn listing_names_labels_slots_and_calls()

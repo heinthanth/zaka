@@ -1,9 +1,8 @@
-mod common;
-
-use common::codes;
-use common::folded;
-use common::plain;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
+use crate::common::folded;
+use crate::common::plain;
 
 /// `l` a list of three integers.
 const LIST: &str = "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။\n";

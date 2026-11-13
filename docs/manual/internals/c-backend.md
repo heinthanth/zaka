@@ -29,7 +29,7 @@ ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_checks.h, zaka_kinds.
 | `descriptors.rs` | the description of each kind the runtime walks: `zk_kind` in `zaka_kinds.c` |
 | `ffi.rs` | `zaka_ffi.c`: the structs, declarations and wrappers of the C functions; the `-lX` flags of their libs |
 | `callbacks.rs` | `zaka_cb.c`: the runtime `zaka_rt_cb.c`, then a bridge and a `zk_cb_shape` (`zk_cbs_<n>`) for each function kind that goes to C; the `-lffi` flag |
-| `toolchain.rs` | finding the compiler, the flags, the compile and the link |
+| `toolchain.rs` | finding the compiler, the flags, the compiles (started at once) and the link; the objects of the runtime kept in a store (`runtime_objects`), named after a hash of the compiler, the flags, the runtime and `zaka_checks.h` |
 | `runtime/` | the runtime: hand-written C11 |
 
 A function or a global goes into the module file of the source file its span starts in.

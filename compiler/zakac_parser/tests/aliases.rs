@@ -1,10 +1,6 @@
-mod common;
-
 use std::path::Path;
 use std::sync::Arc;
 
-use common::codes;
-use common::stmt;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_diagnostics::Code;
 use zakac_lexer::lexer::LexerOptions;
@@ -13,6 +9,9 @@ use zakac_parser::load::load as load_root;
 use zakac_span::file_loader::MemFileLoader;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
+
+use crate::common::codes;
+use crate::common::stmt;
 
 /// The declarations the programs below share.
 const DECLS: &str = "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ \

@@ -1,14 +1,13 @@
-mod common;
-
-use common::expr;
-use common::expr_err;
-use common::parse_expr;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::NextCtx;
 use zakac_diagnostics::Code;
 use zakac_lexer::token::DigitScript;
 use zakac_lexer::token::Particle;
 use zakac_span::pos::Pos;
+
+use crate::common::expr;
+use crate::common::expr_err;
+use crate::common::parse_expr;
 
 #[test]
 fn notation_precedence_follows_c()

@@ -1,8 +1,7 @@
-mod common;
-
-use common::kinds;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::TokenKind;
+
+use crate::common::kinds;
 
 const DECL: &str =
     "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။";

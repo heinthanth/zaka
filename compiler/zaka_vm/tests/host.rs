@@ -1,8 +1,5 @@
-mod common;
-
 use std::collections::HashSet;
 
-use common::compile_checked;
 use zaka_host::HOST_FNS;
 use zaka_host::HostFn;
 use zaka_host::MemWorld;
@@ -14,6 +11,8 @@ use zaka_vm::machine::run_in;
 use zakac_codegen_target_vm::bc::Op;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::tern;
+
+use crate::common::compile_checked;
 
 /// The import of each name of the stdlib module of input and output.
 const IMPORT: &str = "\"စံကား/အဝင်အထွက်\" မှ အချက်အလက်အဝင်အထွက်အမှားအယွင်း၊ စံပြုအဝင်၊ စံပြုအထွက်၊ \

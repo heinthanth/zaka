@@ -1,6 +1,3 @@
-mod common;
-
-use common::run_module;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::trap::TrapKind;
 use zakac_codegen_target_vm::bc::Func;
@@ -11,6 +8,8 @@ use zakac_ir_builder::ir::CmpOp;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::value::Value;
 use zakac_semcheck::kind::DataKind;
+
+use crate::common::run_module;
 
 fn v(t: &str) -> Value { t.parse().unwrap_or_else(|e| panic!("{e}")) }
 

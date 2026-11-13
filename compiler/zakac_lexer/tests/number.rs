@@ -1,12 +1,11 @@
-mod common;
-
-use common::codes;
-use common::kinds;
-use common::lexemes;
 use zakac_diagnostics::Code;
 use zakac_lexer::token::DigitScript;
 use zakac_lexer::token::NumberShape;
 use zakac_lexer::token::TokenKind;
+
+use crate::common::codes;
+use crate::common::kinds;
+use crate::common::lexemes;
 
 /// The one number token in `text`, with its lexeme.
 fn number(text: &str) -> (NumberShape, String)

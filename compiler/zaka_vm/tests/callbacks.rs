@@ -4,14 +4,13 @@
 //! it on the thread that runs the program.
 #![cfg(all(feature = "ffi", unix))]
 
-mod common;
-
-use common::compile;
-use common::run_source_with;
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_and_keep;
 use zaka_vm::trap::TrapKind;
+
+use crate::common::compile;
+use crate::common::run_source_with;
 
 /// `signal` and `raise` of libc, then a start block that holds `steps`, with
 /// a counter `ကြိမ်` and a handler `ဖမ်း` that adds one to it.

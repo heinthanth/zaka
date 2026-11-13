@@ -1,9 +1,8 @@
-mod common;
-
-use common::codes;
-use common::expr;
-use common::stmt;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
+use crate::common::expr;
+use crate::common::stmt;
 
 #[test]
 fn list_kinds_take_each_spelling()

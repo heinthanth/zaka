@@ -1,12 +1,12 @@
-mod common;
-
-use common::check;
-use common::check_with;
-use common::codes;
-use common::kind_at;
-use common::ok;
 use zakac_diagnostics::Code;
 use zakac_semcheck::semcheck::SemcheckOptions;
+
+use crate::common;
+use crate::common::check;
+use crate::common::check_with;
+use crate::common::codes;
+use crate::common::kind_at;
+use crate::common::ok;
 
 /// A function with one integer parameter and an integer result.
 const TWICE: &str = "လုပ်ဆောင်ချက် နှစ်ဆ သည်

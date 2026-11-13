@@ -1,7 +1,3 @@
-mod common;
-
-use common::output;
-use common::output_on;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::Held;
 use zaka_vm::machine::Machine;
@@ -12,6 +8,10 @@ use zaka_vm::mem::Origin;
 use zaka_vm::print::burmese_digits;
 use zaka_vm::trap::TrapKind;
 use zakac_rust_sugars::do_while;
+
+use crate::common;
+use crate::common::output;
+use crate::common::output_on;
 
 #[test]
 fn swap_through_pointers()

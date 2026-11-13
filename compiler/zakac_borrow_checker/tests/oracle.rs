@@ -1,11 +1,7 @@
-mod common;
-
 use std::mem::discriminant;
 use std::path::Path;
 use std::path::PathBuf;
 
-use common::repo_root;
-use common::zaka_files;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::run_with;
 use zaka_vm::trap::TrapKind;
@@ -29,6 +25,9 @@ use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
+
+use crate::common::repo_root;
+use crate::common::zaka_files;
 
 /// Whether a kind has a raw address level, at whatever depth, or is a
 /// list or a struct whose cells or fields have one.

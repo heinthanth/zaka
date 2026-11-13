@@ -1,10 +1,9 @@
-mod common;
-
-use common::codes;
-use common::codes_as_is;
-use common::ok;
 use zakac_diagnostics::Code;
 use zakac_rust_sugars::tern;
+
+use crate::common::codes;
+use crate::common::codes_as_is;
+use crate::common::ok;
 
 /// A start block with `params` after its header word and `ret` as its result
 /// clause, or no result when `ret` is blank.

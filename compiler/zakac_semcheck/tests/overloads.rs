@@ -1,10 +1,9 @@
-mod common;
-
-use common::check_as_is;
-use common::codes_as_is;
 use zakac_ast::stmt::Stmt;
 use zakac_diagnostics::Code;
 use zakac_semcheck::semcheck::SemcheckOptions;
+
+use crate::common::check_as_is;
+use crate::common::codes_as_is;
 
 /// Three functions of one name: an integer marked `ကို`, text marked `ကို`,
 /// and text marked `ထဲသို့`.

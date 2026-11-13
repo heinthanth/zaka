@@ -1,12 +1,6 @@
-mod common;
-
 use std::io::Cursor;
 use std::path::PathBuf;
 
-use common::codes;
-use common::kinds;
-use common::kws;
-use common::lex_text;
 use zakac_diagnostics::Code;
 use zakac_lexer::artifact::LexArtifact;
 use zakac_lexer::lexer::LexerOptions;
@@ -20,6 +14,12 @@ use zakac_session::artifact::PhaseArtifact;
 use zakac_session::config::Input;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
+
+use crate::common;
+use crate::common::codes;
+use crate::common::kinds;
+use crate::common::kws;
+use crate::common::lex_text;
 
 /// Inputs that must lex without diagnostics.
 const CLEAN_INPUTS: &[&str] =
@@ -230,7 +230,7 @@ fn import_and_export_words()
         TokenKind::Str(0),
         TokenKind::Kw(Kw::From),
         TokenKind::Ident,
-        TokenKind::Punct(Punct::ListSep),
+        TokenKind::Kw(Kw::Hnint),
         TokenKind::Ident,
         TokenKind::Kw(Kw::ListKo),
         TokenKind::Kw(Kw::Import),

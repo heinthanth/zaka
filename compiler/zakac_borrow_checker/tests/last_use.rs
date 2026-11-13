@@ -1,8 +1,7 @@
-mod common;
-
-use common::repo_root;
-use common::run;
 use zakac_ast::s_expr::ToSexpr;
+
+use crate::common::repo_root;
+use crate::common::run;
 
 /// A text built while the program runs, in `g1`.
 const HEAP: &str = "ကိန်းရှင် i သည် ၇ ဖြစ်ပါစေ။\nကိန်းရှင် က သည် \"{i}\" ဖြစ်ပါစေ။\n";

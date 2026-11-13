@@ -36,7 +36,8 @@ executable.
 | --- | --- |
 | Run a program | `cargo run -q -p zakac -- run program.zaka` |
 | Test it all | `mise run test` (`cargo nextest run --workspace`) |
-| Test the Learn and Docs pages | `cargo test -p zaka_website --test books` |
+| Test the compiler and the VM, not the web crates | `mise run test:compiler` |
+| Test the Learn and Docs pages | `cargo test -p zaka_website --test tests books::` |
 | Format | `mise run format` (rustfmt, then clang-format on the C runtime; run after each edit) |
 | Serve the site | `mise run website:dev` (port 8000, live reload) |
 | Serve the explorer | `mise run explorer:dev` |

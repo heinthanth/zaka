@@ -1,14 +1,13 @@
-mod common;
-
-use common::codes;
-use common::codes_with;
-use common::folded;
-use common::folded_with;
-use common::plain;
-use common::run;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_diagnostics::Code;
 use zakac_ir_builder::ir::FoldOptions;
+
+use crate::common::codes;
+use crate::common::codes_with;
+use crate::common::folded;
+use crate::common::folded_with;
+use crate::common::plain;
+use crate::common::run;
 
 /// The statements of the first function of `text`, folded.
 fn func_forms(text: &str) -> Vec<String>

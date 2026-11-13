@@ -1,11 +1,7 @@
-mod common;
-
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
-use common::codes;
-use common::stmt;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::NodeId;
 use zakac_ast::s_expr::ToSexpr;
@@ -20,6 +16,9 @@ use zakac_parser::load::load;
 use zakac_span::file_loader::MemFileLoader;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
+
+use crate::common::codes;
+use crate::common::stmt;
 
 /// Read `root` and its imports from files held in RAM.
 fn load_files(files: &[(&str, &str)], root: &str) -> zakac_host_errors::Result<Loaded>

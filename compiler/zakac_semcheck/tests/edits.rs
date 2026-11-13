@@ -1,8 +1,7 @@
-mod common;
-
-use common::codes;
-use common::ok;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
+use crate::common::ok;
 
 /// A function that can change its integer parameter, and one that cannot.
 const FNS: &str = "လုပ်ဆောင်ချက် တိုး သည်

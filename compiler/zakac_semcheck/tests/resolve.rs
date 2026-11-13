@@ -1,9 +1,8 @@
-mod common;
-
-use common::codes;
-use common::codes_as_is;
-use common::ok;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
+use crate::common::codes_as_is;
+use crate::common::ok;
 
 /// A function without parameters or result.
 const GREET: &str = "လုပ်ဆောင်ချက် နှုတ်ဆက် သည်

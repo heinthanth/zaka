@@ -1,12 +1,11 @@
-mod common;
-
-use common::label_line;
-use common::lines;
-use common::ok;
-use common::run;
 use zakac_borrow_checker::digest::Root;
 use zakac_diagnostics::Code;
 use zakac_ir_builder::ir::Place;
+
+use crate::common::label_line;
+use crate::common::lines;
+use crate::common::ok;
+use crate::common::run;
 
 #[test]
 fn use_after_free_is_zk0704()

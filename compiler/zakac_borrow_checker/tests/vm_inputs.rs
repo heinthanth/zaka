@@ -1,10 +1,9 @@
-mod common;
-
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
-use common::codes;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
 
 /// The dir of the VM's heap trap inputs.
 fn heap_inputs() -> PathBuf

@@ -1,11 +1,3 @@
-mod common;
-
-use common::emit_mode;
-use common::emit_text;
-use common::in_start;
-use common::main_func;
-use common::main_ops;
-use common::ops;
 use zakac_ast::stmt::START_NAME;
 use zakac_codegen_target_vm::bc::Op;
 use zakac_codegen_target_vm::bc::TrapCode;
@@ -13,6 +5,13 @@ use zakac_codegen_target_vm::emit::MAIN_NAME;
 use zakac_codegen_target_vm::options::EmitOptions;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
+
+use crate::common::emit_mode;
+use crate::common::emit_text;
+use crate::common::in_start;
+use crate::common::main_func;
+use crate::common::main_ops;
+use crate::common::ops;
 
 const FLAGS: &str = "ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။\nကိန်းရှင် ခ သည် \
                      မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။\n";

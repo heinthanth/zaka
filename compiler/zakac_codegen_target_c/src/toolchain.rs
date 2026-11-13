@@ -1,9 +1,14 @@
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::Child;
 use std::process::Command;
 use std::process::Output;
+use std::process::Stdio;
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 
 use bon::Builder;
+use xxhash_rust::xxh3::Xxh3;
 use zakac_host_errors::Error;
 use zakac_host_errors::errors::IOErrorAction;
 use zakac_host_errors::errors::IOErrorContext;
@@ -13,6 +18,8 @@ use zakac_rust_sugars::tern;
 
 use crate::callbacks::CB_SOURCE;
 use crate::callbacks::ffi_flags;
+use crate::driver::RUNTIME;
+use crate::emit::CHECKS_HEADER;
 use crate::options::RunCheck;
 use crate::options::RunChecks;
 
@@ -221,7 +228,39 @@ pub struct BuildPlan<'a>
     /// The link flag of each lib the C functions of the program come from.
     #[builder(default)]
     pub libs: &'a [String],
+    /// The folder that keeps the objects of the runtime from one build to the
+    /// next, each named after a hash of the compiler, the flags, the runtime
+    /// and its checks header; `None` compiles the runtime in each build.
+    pub runtime_objects: Option<&'a Path>,
 }
+
+/// A C file of a build: where its object is written, and where the object
+/// is kept for later builds when it is a runtime file.
+#[derive(Builder)]
+struct Unit
+{
+    /// The C file.
+    source: PathBuf,
+    /// The object the compiler writes.
+    out: PathBuf,
+    /// The kept object, for a runtime file with a store.
+    kept: Option<PathBuf>,
+}
+
+impl Unit
+{
+    /// Whether an earlier build left the object, so the file needs no
+    /// compile.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the kept object exists.
+    fn is_kept(&self) -> bool { self.kept.as_ref().is_some_and(|k| k.exists()) }
+}
+
+/// The number of objects this process has started to write into a store, so
+/// two builds at once never write the same temp file.
+static WRITES: AtomicUsize = AtomicUsize::new(0);
 
 /// What a build ran: the output of each step, and the tool of the step that
 /// failed.
@@ -235,10 +274,11 @@ pub struct Built
     pub failed: Option<String>,
 }
 
-/// Build the generated C into an executable: compile each C file to an
-/// object beside it, then link the objects. The user flags come after the
-/// flags of the C target, so a flag the user gives wins where the compiler
-/// takes the last one.
+/// Build the generated C into an executable: compile the C files at once,
+/// each to an object beside it, then link the objects. A runtime file whose
+/// object the store keeps from an earlier build is not compiled again. The
+/// user flags come after the flags of the C target, so a flag the user gives
+/// wins where the compiler takes the last one.
 ///
 /// # Arguments
 ///
@@ -249,17 +289,24 @@ pub struct Built
 /// What ran, or the error when a tool cannot start.
 pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
 {
-    let mut outputs = Vec::new();
-    let mut objects = Vec::new();
-    for source in plan.sources
+    let units: Vec<Unit> = plan.sources.iter().map(|s| unit_of(plan, s)).collect();
+    // shortcut: each compile starts at once, with no cap; cap them at the core
+    // count if programs reach hundreds of files.
+    let started = units.iter().filter(|u| !u.is_kept()).map(|u| {
+        let cmd = compile_command(plan, &u.source, &u.out);
+        start(plan.cc, cmd)
+    });
+    let started = started.collect::<zakac_host_errors::Result<Vec<Child>>>()?;
+    let finished = started.into_iter().map(|child| finish(plan.cc, child));
+    let mut outputs = finished.collect::<zakac_host_errors::Result<Vec<Output>>>()?;
+    if outputs.iter().any(|o| !o.status.success())
     {
-        let object = source.with_extension("o");
-        let output = run(plan.cc, compile_command(plan, source, &object))?;
-        let ok = output.status.success();
-        outputs.push(output);
-        ret_if!(!ok, Ok(failed(outputs, plan.cc)));
-        objects.push(object);
+        // A temp object in the store is never kept after a failed build.
+        let temps = units.iter().filter(|u| u.kept.is_some() && !u.is_kept());
+        temps.for_each(|u| _ = std::fs::remove_file(&u.out));
+        return Ok(failed(outputs, plan.cc));
     }
+    let objects: Vec<PathBuf> = units.iter().map(settle).collect();
     let linker = plan.linker.unwrap_or(plan.cc);
     let output = run(linker, link_command(plan, linker, &objects))?;
     let ok = output.status.success();
@@ -282,19 +329,150 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
 fn compile_command(plan: &BuildPlan<'_>, source: &Path, object: &Path) -> Command
 {
     let mut cmd = plan.cc.command();
-    cmd.arg(STD_FLAG);
-    if plan.defaults
-    {
-        cmd.args(DEFAULT_FLAGS);
-    }
-    if plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers
-    {
-        cmd.args(SANITIZE_FLAGS);
-    }
-    let callbacks = source.file_name() == Some(CB_SOURCE.as_ref());
-    do_if!(callbacks, _ = cmd.args(&ffi_flags().0));
-    cmd.args(plan.cflags).arg("-c").arg(source).arg("-o").arg(object);
+    cmd.args(compile_flags(plan, source)).arg("-c").arg(source).arg("-o").arg(object);
     cmd
+}
+
+/// The flags that compile one C file, before its paths.
+///
+/// # Arguments
+///
+/// * `plan` - What to build.
+/// * `source` - The C file.
+///
+/// # Returns
+///
+/// The flags.
+fn compile_flags(plan: &BuildPlan<'_>, source: &Path) -> Vec<String>
+{
+    let mut flags = vec![STD_FLAG.to_owned()];
+    let words = |list: &[&str]| list.iter().map(|f| f.to_string()).collect::<Vec<_>>();
+    do_if!(plan.defaults, flags.extend(words(DEFAULT_FLAGS)));
+    let sanitized = plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers;
+    do_if!(sanitized, flags.extend(words(SANITIZE_FLAGS)));
+    let callbacks = source.file_name() == Some(CB_SOURCE.as_ref());
+    do_if!(callbacks, flags.extend(ffi_flags().0.iter().cloned()));
+    flags.extend(plan.cflags.iter().cloned());
+    flags
+}
+
+/// A C file of the build, with the object it compiles to.
+///
+/// # Arguments
+///
+/// * `plan` - What to build.
+/// * `source` - The C file.
+///
+/// # Returns
+///
+/// The unit: a runtime file with a store compiles to a temp file in the
+/// store, and each other file to an object beside it.
+fn unit_of(plan: &BuildPlan<'_>, source: &Path) -> Unit
+{
+    let unit = Unit::builder().source(source.to_path_buf());
+    let Some(kept) = kept_object(plan, source)
+    else
+    {
+        return unit.out(source.with_extension("o")).build();
+    };
+    let n = WRITES.fetch_add(1, Ordering::Relaxed);
+    let temp = format!("{}.{}-{n}.part", kept.display(), std::process::id());
+    unit.out(PathBuf::from(temp)).kept(kept).build()
+}
+
+/// Where the store keeps the object of a runtime file: named after a hash of
+/// each input of the compile, so a change to the compiler, the flags, the
+/// runtime or the checks gives a new name.
+///
+/// # Arguments
+///
+/// * `plan` - What to build.
+/// * `source` - The C file.
+///
+/// # Returns
+///
+/// The path, or `None` for a file that is not a runtime file, for a plan
+/// with no store, or when the store or the checks header cannot be reached.
+fn kept_object(plan: &BuildPlan<'_>, source: &Path) -> Option<PathBuf>
+{
+    let store = plan.runtime_objects?;
+    let name = source.file_name()?.to_str()?;
+    let stem = name.strip_suffix(".c")?;
+    ret_if!(!RUNTIME.iter().any(|(n, _)| *n == name), None);
+    let checks = std::fs::read(source.with_file_name(CHECKS_HEADER)).ok()?;
+    std::fs::create_dir_all(store).ok()?;
+    let mut hash = Xxh3::new();
+    for word in std::iter::once(plan.cc.shown()).chain(compile_flags(plan, source))
+    {
+        hash.update(word.as_bytes());
+        hash.update(&[0]);
+    }
+    RUNTIME.iter().for_each(|(_, text)| hash.update(text.as_bytes()));
+    hash.update(&checks);
+    Some(store.join(format!("{stem}-{:032x}.o", hash.digest128())))
+}
+
+/// The object a unit links with: a fresh runtime object moves into the store
+/// for later builds.
+///
+/// # Arguments
+///
+/// * `unit` - The unit, compiled or kept.
+///
+/// # Returns
+///
+/// The object.
+fn settle(unit: &Unit) -> PathBuf
+{
+    let Some(kept) = &unit.kept
+    else
+    {
+        return unit.out.clone();
+    };
+    ret_if!(!unit.out.exists(), kept.clone());
+    match std::fs::rename(&unit.out, kept)
+    {
+        Ok(()) => kept.clone(),
+        // Another build stored the same object first; Windows will not
+        // rename over it.
+        Err(_) if kept.exists() =>
+        {
+            let _ = std::fs::remove_file(&unit.out);
+            kept.clone()
+        }
+        Err(_) => unit.out.clone(),
+    }
+}
+
+/// Start a compile, with its output piped.
+///
+/// # Arguments
+///
+/// * `tool` - The tool, for the error when it cannot start.
+/// * `cmd` - The command.
+///
+/// # Returns
+///
+/// The running compile, or the error when it cannot start.
+fn start(tool: &Tool, mut cmd: Command) -> zakac_host_errors::Result<Child>
+{
+    cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
+    cmd.spawn().map_err(|e| start_error(tool, e))
+}
+
+/// Wait for a compile to end.
+///
+/// # Arguments
+///
+/// * `tool` - The tool, for the error when the wait fails.
+/// * `child` - The running compile.
+///
+/// # Returns
+///
+/// Its output, or the error of the wait.
+fn finish(tool: &Tool, child: Child) -> zakac_host_errors::Result<Output>
+{
+    child.wait_with_output().map_err(|e| start_error(tool, e))
 }
 
 /// The command that links the objects into the executable.
@@ -342,12 +520,22 @@ fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Com
 /// Its output, or the error when it cannot start.
 fn run(tool: &Tool, mut cmd: Command) -> zakac_host_errors::Result<Output>
 {
-    cmd.output().map_err(|e| {
-        Error::from_io(
-            e,
-            IOErrorContext::new(tool.program.clone(), IOErrorAction::Read),
-        )
-    })
+    cmd.output().map_err(|e| start_error(tool, e))
+}
+
+/// The error of a tool that cannot start or be waited for.
+///
+/// # Arguments
+///
+/// * `tool` - The tool.
+/// * `e` - The error of the host.
+///
+/// # Returns
+///
+/// The error.
+fn start_error(tool: &Tool, e: std::io::Error) -> Error
+{
+    Error::from_io(e, IOErrorContext::new(tool.program.clone(), IOErrorAction::Read))
 }
 
 /// A build that stopped at a step.

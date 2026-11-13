@@ -6433,6 +6433,7 @@ dependencies = [
  "rust-i18n",
  "strum",
  "tempfile",
+ "xxhash-rust",
  "zaka_vm",
  "zakac_ast",
  "zakac_borrow_checker",

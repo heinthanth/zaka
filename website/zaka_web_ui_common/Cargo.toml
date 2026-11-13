@@ -2,6 +2,7 @@
 name = "zaka_web_ui_common"
 version = "0.1.0"
 edition.workspace = true
+autotests = false
 
 [dependencies]
 bon = { workspace = true }
@@ -67,3 +68,7 @@ minify = true
 
 [package.metadata.turf-dev.class_names]
 template = "<original_name>-<style_sheet_hash_short>"
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"

@@ -2,6 +2,7 @@
 name = "zaka_explorer"
 version = "0.1.0"
 edition.workspace = true
+autotests = false
 
 [lib]
 path = "src/lib.rs"
@@ -105,3 +106,11 @@ minify = true
 [package.metadata.turf-dev.class_names]
 template = "<original_name>-<style_sheet_hash_short>"
 excludes = ["^tok-"]
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"
+
+[[test]]
+name = "locale_init"
+path = "tests/locale_init.rs"

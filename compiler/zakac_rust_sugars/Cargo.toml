@@ -3,5 +3,10 @@ name = "zakac_rust_sugars"
 description = "Rust sugars and macros used in Zaka's Rust code"
 version = "0.1.0"
 edition.workspace = true
+autotests = false
 
 [dependencies]
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"

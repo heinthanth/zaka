@@ -1,5 +1,3 @@
-mod common;
-
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment;
 use zakac_diagnostics::Code;
@@ -19,6 +17,8 @@ use zakac_rust_sugars::tern;
 use zakac_span::filename::FileName;
 use zakac_span::pos::Pos;
 use zakac_span::source_map::SourceMap;
+
+use crate::common;
 
 /// Split `text`, which must be one word, and return the piece texts.
 fn split(text: &str) -> Option<Vec<(Kw, String)>>

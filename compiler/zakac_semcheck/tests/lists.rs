@@ -1,11 +1,10 @@
-mod common;
-
-use common::check;
-use common::codes;
-use common::kind_at;
-use common::ok;
 use zakac_diagnostics::Code;
 use zakac_rust_sugars::do_for;
+
+use crate::common::check;
+use crate::common::codes;
+use crate::common::kind_at;
+use crate::common::ok;
 
 /// `l` a list of three integers, `g` a 2 x 3 grid, `p` a borrow of `l`.
 const LISTS: &str = "ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။

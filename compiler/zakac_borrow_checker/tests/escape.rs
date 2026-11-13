@@ -1,9 +1,8 @@
-mod common;
-
-use common::lines;
-use common::ok;
-use common::run;
 use zakac_diagnostics::Code;
+
+use crate::common::lines;
+use crate::common::ok;
+use crate::common::run;
 
 #[test]
 fn local_borrow_returned_is_zk0706()

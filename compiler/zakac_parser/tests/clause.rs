@@ -1,10 +1,10 @@
-mod common;
-
-use common::codes;
-use common::expr;
-use common::expr_err;
-use common::stmt;
 use zakac_diagnostics::Code;
+
+use crate::common;
+use crate::common::codes;
+use crate::common::expr;
+use crate::common::expr_err;
+use crate::common::stmt;
 
 #[test]
 fn nested_frames_reduce_on_the_inner_verb_first()

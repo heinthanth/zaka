@@ -1,7 +1,6 @@
-mod common;
-
-use common::codes_as_is;
 use zakac_diagnostics::Code;
+
+use crate::common::codes_as_is;
 
 /// A plain struct, a kind from outside, and C functions that call back a
 /// function with each of them, with text and with an optional of text.

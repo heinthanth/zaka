@@ -1,18 +1,16 @@
-mod common;
-
 use std::path::Path;
 use std::path::PathBuf;
 
-use common::c_files;
-use common::cc;
-use common::compile_and_run;
-use common::root;
-use common::samples;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen_target_c::options::Checks;
 use zakac_codegen_target_c::toolchain::Tool;
 use zakac_host_errors::Error;
-use zakac_rust_sugars::do_if;
+
+use crate::common::c_files;
+use crate::common::cc;
+use crate::common::compile_and_run;
+use crate::common::root;
+use crate::common::samples;
 
 /// Sample groups that hold programs with errors on purpose: those that do
 /// not compile and those that go wrong at run time.
@@ -87,8 +85,47 @@ fn check_sample(cc: &Tool, file: &Path, want: &str, name: &str) -> Option<String
     None
 }
 
+/// The name of a sample, `<group>/<stem>`.
+///
+/// # Arguments
+///
+/// * `group` - The group of the sample.
+/// * `file` - The sample.
+///
+/// # Returns
+///
+/// The name.
+fn sample_name(group: &str, file: &Path) -> String
+{
+    format!("{group}/{}", file.file_stem().unwrap().to_string_lossy())
+}
+
+/// Build one sample and compare what it prints with the output of the VM.
+///
+/// # Arguments
+///
+/// * `cc` - The C compiler.
+/// * `group` - The group of the sample.
+/// * `file` - The sample.
+///
+/// # Returns
+///
+/// `None` when it built and printed the expected output, or the sample with
+/// the construct the C target cannot build at present.
+fn check_listed(cc: &Tool, group: &str, file: &Path) -> Option<String>
+{
+    let name = sample_name(group, file);
+    let stem = file.file_stem().unwrap().to_string_lossy();
+    let expected = root()
+        .join("../zaka_vm/tests/expected")
+        .join(group)
+        .join(format!("{stem}.out"));
+    let want = std::fs::read_to_string(&expected).unwrap();
+    check_sample(cc, file, &want, &name).map(|what| format!("{name}: {what}"))
+}
+
 /// Each repo sample the C target builds prints, as an executable, the output
-/// the VM prints for it.
+/// the VM prints for it. The samples build on each core at once.
 #[test]
 fn repo_samples_print_their_expected_output_when_built()
 {
@@ -97,25 +134,30 @@ fn repo_samples_print_their_expected_output_when_built()
     {
         return;
     };
-    let mut built = 0;
-    let mut not_built = Vec::new();
-    for (group, file) in sample_files()
-    {
-        let stem = file.file_stem().unwrap().to_string_lossy().to_string();
-        let skipped =
-            NATIVE_SKIPPED.iter().any(|(s, _)| *s == format!("{group}/{stem}"));
-        do_if!(skipped, continue);
-        let expected = root()
-            .join("../zaka_vm/tests/expected")
-            .join(&group)
-            .join(format!("{stem}.out"));
-        let want = std::fs::read_to_string(&expected).unwrap();
-        match check_sample(&cc, &file, &want, &format!("{group}/{stem}"))
-        {
-            Some(what) => not_built.push(format!("{group}/{stem}: {what}")),
-            None => built += 1,
-        }
-    }
+    let listed = |(group, file): &(String, PathBuf)| {
+        let name = sample_name(group, file);
+        !NATIVE_SKIPPED.iter().any(|(s, _)| *s == name)
+    };
+    let files: Vec<(String, PathBuf)> =
+        sample_files().into_iter().filter(listed).collect();
+    let threads = std::thread::available_parallelism().map_or(1, |n| n.get());
+    // Thread `i` takes samples `i`, `i + threads`, ...; a failed assert in a
+    // thread fails the test with its own message.
+    let results: Vec<Option<String>> = std::thread::scope(|s| {
+        let (cc, files) = (&cc, &files);
+        let work = |i: usize| {
+            let mine = files.iter().skip(i).step_by(threads);
+            mine.map(|(group, file)| check_listed(cc, group, file)).collect::<Vec<_>>()
+        };
+        let workers: Vec<_> = (0..threads).map(|i| s.spawn(move || work(i))).collect();
+        let joined = workers.into_iter().map(|w| w.join());
+        joined
+            .flat_map(|r| r.unwrap_or_else(|e| std::panic::resume_unwind(e)))
+            .collect()
+    });
+    let built = results.iter().filter(|r| r.is_none()).count();
+    let mut not_built: Vec<String> = results.into_iter().flatten().collect();
+    not_built.sort();
     let list = not_built.join("\n  ");
     assert!(not_built.is_empty(), "the C target cannot build:\n  {list}");
     assert!(built >= 70, "built {built} samples");

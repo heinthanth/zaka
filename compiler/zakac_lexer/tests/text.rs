@@ -1,8 +1,3 @@
-mod common;
-
-use common::codes;
-use common::kinds;
-use common::lex_text;
 use zakac_diagnostics::Code;
 use zakac_lexer::text::scan_char;
 use zakac_lexer::text::scan_raw_ident;
@@ -11,6 +6,10 @@ use zakac_lexer::token::StrPart;
 use zakac_lexer::token::TokenKind;
 use zakac_span::pos::Pos;
 use zakac_span::span::Span;
+
+use crate::common::codes;
+use crate::common::kinds;
+use crate::common::lex_text;
 
 /// Decoded value and diagnostic codes of the string literal at the start of
 /// `text`.

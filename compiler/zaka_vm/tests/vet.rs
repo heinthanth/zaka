@@ -1,9 +1,6 @@
-mod common;
-
 use std::path::Path;
 use std::path::PathBuf;
 
-use common::compile_file;
 use strum::IntoEnumIterator;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::vet::Malformed;
@@ -16,6 +13,8 @@ use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::value::Value;
+
+use crate::common::compile_file;
 
 /// Sample groups that hold programs with errors on purpose.
 const SKIPPED_GROUPS: &[&str] = &["diagnostics", "mistakes"];

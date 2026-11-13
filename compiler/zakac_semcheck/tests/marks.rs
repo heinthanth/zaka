@@ -1,8 +1,7 @@
-mod common;
-
-use common::codes;
-use common::ok;
 use zakac_diagnostics::Code;
+
+use crate::common::codes;
+use crate::common::ok;
 
 /// A function whose parameters have marks.
 const WRITE: &str = "\

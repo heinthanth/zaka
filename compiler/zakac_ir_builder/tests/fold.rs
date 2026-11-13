@@ -1,13 +1,13 @@
-mod common;
-
-use common::codes;
-use common::codes_with;
-use common::folded;
-use common::folded_with;
-use common::run;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_diagnostics::Code;
 use zakac_ir_builder::ir::FoldOptions;
+
+use crate::common;
+use crate::common::codes;
+use crate::common::codes_with;
+use crate::common::folded;
+use crate::common::folded_with;
+use crate::common::run;
 
 fn just(exprs: bool, consts: bool, branches: bool) -> FoldOptions
 {

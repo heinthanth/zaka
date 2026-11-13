@@ -1,12 +1,12 @@
-mod common;
-
-use common::codes;
-use common::codes_with;
-use common::lines;
-use common::run_with;
-use common::strict;
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Level;
+
+use crate::common;
+use crate::common::codes;
+use crate::common::codes_with;
+use crate::common::lines;
+use crate::common::run_with;
+use crate::common::strict;
 
 /// A read straight after an allocation, with no test against null.
 const UNTESTED: &str = "\
