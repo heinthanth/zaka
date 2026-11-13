@@ -1,6 +1,8 @@
 use strum::IntoStaticStr;
+use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::reserved::is_kind_name;
 use crate::token::Kw;
 use crate::token::Punct;
 use crate::token::TokenKind;
@@ -64,6 +66,23 @@ pub fn token_role(kind: &TokenKind) -> TokenRole
         TokenKind::Punct(punct) => punct_role(*punct),
         TokenKind::Eof => TokenRole::Plain,
     }
+}
+
+/// The role of a token, read with its text: a kind name the compiler gives,
+/// such as `ကိန်းပြည့်`, is an identifier painted as a kind.
+///
+/// # Arguments
+///
+/// * `kind` - The token kind.
+/// * `text` - The token text.
+///
+/// # Returns
+///
+/// The role.
+pub fn role_with_text(kind: &TokenKind, text: &str) -> TokenRole
+{
+    ret_if!(*kind == TokenKind::Ident && is_kind_name(text), TokenRole::Kind);
+    token_role(kind)
 }
 
 /// The role of a reserved word in a sentence: control word, statement verb,
@@ -289,13 +308,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Upto
         | Kw::Having
         | Kw::HavingRel => TokenRole::Particle,
-        Kw::IntKind
-        | Kw::FloatKind
-        | Kw::CharKind
-        | Kw::TextKind
-        | Kw::BoolKind
-        | Kw::BoolKindLoan
-        | Kw::Signed
+        Kw::Signed
         | Kw::Unsigned
         | Kw::Bit
         | Kw::Base

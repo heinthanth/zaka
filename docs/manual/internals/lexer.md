@@ -170,15 +170,23 @@ see one name for both spellings. The parser matches struct names against source 
 that is not canonical (a struct name glued to its count word), so its set of struct
 names holds each name in both spellings (`spelling::spellings`).
 
+The names of the built-in kinds (`reserved::KIND_NAMES`: `ကိန်းပြည့်`, `ဒဿမကိန်း`,
+`စာလုံး`, `စာသား`, `မှန်မှားတန်ဖိုး`, `ဘူလီယန်`) are not in the table: a whole word of one
+of them is an identifier, which the parser reads as the kind (see
+[The parser](parser.md)).
+
 Burmese is written without spaces, so a word made just of reserved words is lexed as
 those words: `တန်ဖိုးကို` is `တန်ဖိုး` then `ကို` (`value` then `ko` in the dump). The
-function `split_reserved` does this with a small table over vanna borders:
+function `split_reserved` does this with a small table over vanna borders, and counts a
+kind name as a piece too, which it gives back as an `Ident`: `လုံးမြောက်စာလုံးမှ` is
+`Ordinal`, the name `စာလုံး`, then `From`.
 
 ```text
 best[0] = the blank split
 for end in 1..=n:
     best[end] = the shortest of  best[start] + piece(start..end)
                 for each start < end where pre[start..end] is a reserved word
+                                         or a kind name
 answer = best[n]; refused with fewer than two pieces, or with particles alone
 ```
 
@@ -188,7 +196,8 @@ Three consequences follow:
 - The split with the fewest pieces wins. `အောက်ပါတို့ကို` is two pieces, `Following`
   and `ListKo`, not three.
 - A split that is made of particles alone is refused, so `ကိုကို` remains a name. And a
-  word with one non-reserved vanna cannot split at all: `အသက်ကို` is one identifier. This
+  word with one vanna that is neither reserved nor a kind name cannot split at all:
+  `အသက်ကို` is one identifier. This
   is the rule behind the need for a space between a name and a particle, and the parser
   adds a hint for it (see [The parser](parser.md)).
 
@@ -263,7 +272,7 @@ parser reads a lexeme through the span when it needs one.
 (`Sum`, `Equal`, `Not`, `And`, ...), statement words (`Print`, `Assign`, `Add`, `Remove`,
 `Replace`, `If`, `While`), list words (`Cell`, `CellCount`, `LastCell`, `LastChar`,
 `Before`, `Upto`; `Ordinal` for both `ခုမြောက်` and `လုံးမြောက်`),
-kind names (`IntKind`), pieces that exist so the phrase joiner can see them (`*Head`,
+kind words (`Signed`, `Bit`, `List`), pieces that exist so the phrase joiner can see them (`*Head`,
 `*Tail`), and joined phrases (`Divide`, `BitAnd`, `Shift`, `Convert`, `CallResult`,
 `BlockOpen`, `UnsafeBlockOpen`, `FnValue`, `BlockClose`, ...) that the joiner alone
 makes.
@@ -272,7 +281,8 @@ makes.
 operator, a particle, a kind noun, a truth value, a name, a number, a char, a string or a
 separator. The site and the explorer color a token after its role, and the language
 server sends the role to the editor; a new reserved word gets its role in
-`role::kw_role`.
+`role::kw_role`. `role::role_with_text` reads the text as well, so an identifier that is
+a built-in kind name takes the role of a kind noun.
 
 ### The words of a ဇယား
 

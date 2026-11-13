@@ -14,7 +14,7 @@ fn struct_declaration_lexes_to_its_words()
     #[rustfmt::skip]
     let want = [
         ident, kw(Kw::Called), kw(Kw::StructWord), kw(Kw::At), ident, kw(Kw::Called),
-        kw(Kw::IntKind), ident, kw(Kw::FieldsCloseAnd), kw(Kw::ClassifierIs), ident, kw(Kw::Is),
+        ident, ident, kw(Kw::FieldsCloseAnd), kw(Kw::ClassifierIs), ident, kw(Kw::Is),
         TokenKind::Punct(zakac_lexer::token::Punct::FullStop),
     ];
     assert_eq!(kinds(DECL), want);

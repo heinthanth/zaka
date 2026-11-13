@@ -42,8 +42,11 @@ their meaning and their code.
 - A marked trait: the built-in kinds have it through the compiler's rule, and each
   kind a program declares has it through its functions, with the rule of
   [Traits](generics.md#traits).
-- A marked kind names a built-in kind for its doc comment; the kind word remains a
-  reserved word.
+- A marked kind names a built-in kind for its doc comment. Its name is a name, not a
+  reserved word: a struct, an enumeration, an alias or a kind parameter of that name
+  in a file hides the built-in kind there, and a variable can take the name. The sign
+  words and `N ဘစ်` before it remain grammar, and a built-in kind name where a value
+  must stand is ZK0202.
 - The mark belongs to the modules of the stdlib, the prelude among them: in another
   file it is ZK0349.
 

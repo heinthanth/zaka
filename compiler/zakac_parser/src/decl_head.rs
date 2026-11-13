@@ -295,7 +295,7 @@ impl Parser<'_>
         let span = self.peek().span.to(&self.peek_n(len.max(1) - 1).span);
         let text = self.text_of(span);
         let alone = len == 1;
-        let char_kind = alone && kw_of(&self.peek()) == Some(Kw::CharKind);
+        let char_kind = alone && self.builtin_at(0) == Some(BaseKind::Char);
         let own =
             self.classifiers.get(canonical(text).as_ref()).copied().filter(|_| alone);
         let word = own.unwrap_or(tern!(char_kind, CHARACTER, GENERAL));

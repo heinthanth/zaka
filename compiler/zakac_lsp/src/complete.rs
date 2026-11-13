@@ -24,6 +24,7 @@ use zakac_ast::visit::walk_each;
 use zakac_ast::visit::walk_fn;
 use zakac_ast::visit::walk_generic;
 use zakac_lexer::phrases::PHRASES;
+use zakac_lexer::reserved::KIND_NAMES;
 use zakac_lexer::reserved::RESERVED;
 use zakac_lexer::role::TokenRole;
 use zakac_lexer::role::kw_role;
@@ -66,8 +67,12 @@ pub fn completions(file: Option<&FileCheck>, pos: Position) -> Vec<CompletionIte
     let phrases = PHRASES
         .iter()
         .filter_map(|(pieces, kw)| Some(reserved_item(spell(pieces)?, *kw)));
+    let kind_role: &'static str = TokenRole::Kind.into();
+    let kinds = KIND_NAMES
+        .iter()
+        .map(|name| item(name.to_string(), CompletionItemKind::Struct, kind_role));
     let names = file.map(|f| names_in_scope(f, pos)).unwrap_or_default();
-    words.chain(phrases).chain(names).collect()
+    words.chain(phrases).chain(kinds).chain(names).collect()
 }
 
 /// A reserved word or phrase as an item, with its role as the detail.

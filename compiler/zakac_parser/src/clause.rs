@@ -25,6 +25,8 @@ use zakac_ast::verb::verb_for;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
+use zakac_lexer::reserved::CHAR_NAME;
+use zakac_lexer::reserved::TEXT_NAME;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Particle;
 use zakac_lexer::token::Punct;
@@ -345,12 +347,12 @@ impl Parser<'_>
                 self.push_index(&mut stack)?;
                 continue;
             }
-            if tok.kind == TokenKind::Kw(Kw::CharKind) && holds_ei(&stack)
+            if self.name_at(0, CHAR_NAME) && holds_ei(&stack)
             {
                 self.push_char_at(&mut stack)?;
                 continue;
             }
-            if tok.kind == TokenKind::Kw(Kw::CharKind) && holds_ordinal(&stack)
+            if self.name_at(0, CHAR_NAME) && holds_ordinal(&stack)
             {
                 self.push_char_nth(&mut stack)?;
                 continue;
@@ -573,7 +575,7 @@ impl Parser<'_>
         }
         let tok = self.peek();
         ret_if!(as_verb(&tok).is_some() || as_shift_dir(&tok).is_some(), Ok(()));
-        let char_word = tok.kind == TokenKind::Kw(Kw::CharKind);
+        let char_word = self.name_at(0, CHAR_NAME);
         ret_if!(char_word && matches!(slot, Slot::Ei | Slot::Ordinal), Ok(()));
         let after_ei =
             matches!(tok.kind, TokenKind::Kw(Kw::LastCell | Kw::LastChar | Kw::Before));
@@ -869,7 +871,7 @@ impl Parser<'_>
         let pieces = self.parse_word_list_from(first, Self::parse_notation)?;
         self.expect_list_word(pieces.len(), Kw::Ko, Kw::ListKo)?;
         self.expect(Kw::Joined)?;
-        let end = self.expect(Kw::TextKind)?;
+        let end = self.expect_name(TEXT_NAME)?;
         let span = pieces[0].span().to(&end.span);
         let id = self.new_id();
         #[rustfmt::skip]
@@ -1036,7 +1038,7 @@ impl Parser<'_>
         self.bump();
         let end = self.parse_notation()?;
         do_if!(chars, _ = self.expect(Kw::Ordinal)?);
-        do_if!(chars, _ = self.expect(Kw::CharKind)?);
+        do_if!(chars, _ = self.expect_name(CHAR_NAME)?);
         let upto = self.expect(Kw::Upto)?;
         let ko = self.expect(Kw::Ko)?;
         let span = text.span().to(&upto.span);

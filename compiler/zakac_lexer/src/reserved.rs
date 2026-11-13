@@ -6,6 +6,7 @@ use zakac_span::span::Span;
 
 use crate::spelling::canonical;
 use crate::token::Kw;
+use crate::token::TokenKind;
 use crate::words::Word;
 
 /// Text of the comment marker word.
@@ -17,6 +18,44 @@ pub const AMONG: &str = "ထဲမှ";
 /// The ending `များ` an enumeration name can end in; its stem is the name
 /// without it, so `အရောင်များ` and `အရောင်` name one enumeration.
 pub const PLURAL: &str = "များ";
+
+/// `ကိန်းပြည့်`, the name of the integer kind.
+pub const INT_NAME: &str = "ကိန်းပြည့်";
+
+/// `ဒဿမကိန်း`, the name of the float kind.
+pub const FLOAT_NAME: &str = "ဒဿမကိန်း";
+
+/// `စာလုံး`, the name of the character kind, and the noun of one character
+/// of a text (`စာ ၏ ၂ လုံးမြောက် စာလုံး`).
+pub const CHAR_NAME: &str = "စာလုံး";
+
+/// `စာသား`, the name of the text kind, and the noun at the end of a join
+/// (`က နှင့် ခ တို့ကို ဆက်ထားသည့် စာသား`).
+pub const TEXT_NAME: &str = "စာသား";
+
+/// `မှန်မှားတန်ဖိုး`, the name of the boolean kind.
+pub const BOOL_NAME: &str = "မှန်မှားတန်ဖိုး";
+
+/// `ဘူလီယန်`, the loanword name of the boolean kind.
+pub const BOOL_LOAN_NAME: &str = "ဘူလီယန်";
+
+/// The names of the kinds the compiler gives, which the prelude declares.
+/// These are names, not reserved words: a file can declare a kind of its own
+/// under one of them. A word glued from these names and reserved words still
+/// splits, and each name in it lexes as an identifier.
+pub static KIND_NAMES: &[&str] =
+    &[INT_NAME, FLOAT_NAME, CHAR_NAME, TEXT_NAME, BOOL_NAME, BOOL_LOAN_NAME];
+
+/// Whether a word is the name of a kind the compiler gives.
+///
+/// # Arguments
+///
+/// * `text` - The word, in normalized spelling.
+///
+/// # Returns
+///
+/// `true` if it is in [`KIND_NAMES`].
+pub fn is_kind_name(text: &str) -> bool { KIND_NAMES.contains(&text) }
 
 /// Reserved words, in normalized spelling. Several spellings can
 /// map to one [`Kw`].
@@ -131,12 +170,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ကွင်းဆက်", Kw::Loop),
     ("နောက်တစ်ကြိမ်ဆီသို့", Kw::NextIteration),
     // nouns
-    ("ကိန်းပြည့်", Kw::IntKind),
-    ("ဒဿမကိန်း", Kw::FloatKind),
-    ("စာလုံး", Kw::CharKind),
-    ("စာသား", Kw::TextKind),
-    ("မှန်မှားတန်ဖိုး", Kw::BoolKind),
-    ("ဘူလီယန်", Kw::BoolKindLoan),
     ("လက္ခဏာရှိ", Kw::Signed),
     ("လက္ခဏာမဲ့", Kw::Unsigned),
     ("အခြေ", Kw::Base),
@@ -291,11 +324,14 @@ pub static OLD_ENDINGS: &[(&str, &str, Kw)] = &[
 static LOOKUP: LazyLock<HashMap<&'static str, Kw>> =
     LazyLock::new(|| RESERVED.iter().copied().collect());
 
-/// The length in u8s of the longest reserved word. A spelling that
-/// [`canonical`] turns into a reserved word is no longer than it, so no
+/// The length in u8s of the longest reserved word or kind name. A spelling
+/// that [`canonical`] turns into a reserved word is no longer than it, so no
 /// piece of more pre-tokens than this is reserved.
-static LONGEST: LazyLock<usize> =
-    LazyLock::new(|| RESERVED.iter().map(|(text, _)| text.len()).max().unwrap_or(0));
+static LONGEST: LazyLock<usize> = LazyLock::new(|| {
+    let words =
+        RESERVED.iter().map(|(text, _)| *text).chain(KIND_NAMES.iter().copied());
+    words.map(str::len).max().unwrap_or(0)
+});
 
 /// Look up a whole word in the reserved table, with `ဒေတာ` read as
 /// `အချက်အလက်`.
@@ -312,8 +348,9 @@ pub fn lookup(text: &str) -> Option<Kw>
     LOOKUP.get(canonical(text).as_ref()).copied()
 }
 
-/// A split of a word prefix into reserved words.
-type Pieces = Vec<(Kw, Span)>;
+/// A split of a word prefix into reserved words and kind names: each piece
+/// as its token kind, a reserved word or an identifier.
+type Pieces = Vec<(TokenKind, Span)>;
 
 /// Extend a prefix split with the piece `pre[start..end]`.
 ///
@@ -327,7 +364,7 @@ type Pieces = Vec<(Kw, Span)>;
 /// # Returns
 ///
 /// The extended split, or `None` when there is no prefix split or the piece
-/// is not reserved.
+/// is neither a reserved word nor a kind name.
 fn extend(
     prefix: &Option<Pieces>, word: &Word<'_>, start: usize, end: usize,
 ) -> Option<Pieces>
@@ -337,13 +374,15 @@ fn extend(
     let lo = (span.lo - word.span.lo) as usize;
     let hi = (span.hi - word.span.lo) as usize;
 
-    let kw = lookup(&word.text[lo..hi])?;
+    let text = &word.text[lo..hi];
+    let kind = lookup(text).map(TokenKind::Kw);
+    let kind = kind.or_else(|| is_kind_name(text).then_some(TokenKind::Ident))?;
     let mut pieces = prefix.clone();
-    pieces.push((kw, span));
+    pieces.push((kind, span));
     Some(pieces)
 }
 
-/// Split a word into reserved words.
+/// Split a word into reserved words and kind names.
 ///
 /// Splits happen at pre-token (vanna) boundaries. The split with the fewest
 /// pieces wins; a split made of particles alone is rejected, so `ကိုကို` remains
@@ -374,6 +413,7 @@ pub fn split_reserved(word: &Word<'_>) -> Option<Pieces>
     }
 
     let pieces = best[n].take()?;
-    ret_if!(pieces.len() < 2 || pieces.iter().all(|(kw, _)| kw.is_particle()), None);
+    let particle = |(kind, _): &(TokenKind, Span)| matches!(kind, TokenKind::Kw(kw) if kw.is_particle());
+    ret_if!(pieces.len() < 2 || pieces.iter().all(particle), None);
     Some(pieces)
 }

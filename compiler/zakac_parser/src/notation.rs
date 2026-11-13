@@ -273,6 +273,13 @@ impl Parser<'_>
             {
                 self.parse_size_of()
             }
+            // A kind name the compiler gives stands for no value: it starts
+            // a size, or nothing.
+            TokenKind::Ident if self.builtin_at(0).is_some() =>
+            {
+                ret_if!(self.at_size_of(), self.parse_size_of());
+                Err(diag::expected_operand(tok.span, &self.found()))
+            }
             TokenKind::Ident
                 if self.peek_n(1).kind == TokenKind::Kw(Kw::Among)
                     && !self.at_data_read(1)

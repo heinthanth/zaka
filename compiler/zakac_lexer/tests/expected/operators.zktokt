@@ -693,8 +693,7 @@ tokens:
     hi: 1027
   particle: none
   joined: false
-- kind:
-    kw: int_kind
+- kind: ident
   span:
     lo: 1028
     hi: 1058

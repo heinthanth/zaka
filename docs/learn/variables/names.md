@@ -63,8 +63,10 @@ words](../sentences/spacing.md)).
 A name cannot be made of Zaka's reserved words alone. Short words such as `ကြီး`
 (greater), `ငယ်` (less) and `ညီ` (equal) are reserved verbs, so `ကြီး` alone cannot be a
 name; `ကြီးသူ` can. `တန်ဖိုးကို` reads as the two reserved words `တန်ဖိုး` + `ကို`. The
-[Reserved words](../../manual/reference/reserved-words.md) page lists them all. To use such a
-name, or a name with spaces in it, wrap it in backticks:
+[Reserved words](../../manual/reference/reserved-words.md) page lists them all. The names of
+the built-in kinds, such as `ကိန်းပြည့်` and `စာသား`, are not reserved: a program can
+declare a struct under one of them, and then that name means the struct in the file. To use a
+reserved word as a name, or a name with spaces in it, wrap it in backticks:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

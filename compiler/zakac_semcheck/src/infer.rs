@@ -21,6 +21,7 @@ use zakac_diagnostics::kinds::NoInitial;
 use zakac_diagnostics::naturalness as nd;
 use zakac_diagnostics::resolve as rd;
 use zakac_i18n::t;
+use zakac_lexer::reserved::CHAR_NAME;
 use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::token::Kw;
 use zakac_naturalness::classifiers::GENERAL_CLASSIFIER;
@@ -712,7 +713,7 @@ impl Checker
         do_if!(let Some((i, k)) = bad, self.report(kd::cell_number_not_int(i.span(), &k.name())));
         let label = tern!(
             index.is_some(),
-            kw_label(Kw::CharKind),
+            CHAR_NAME.to_string(),
             verb_label(VerbOp::CharCount)
         );
         self.need(kind?, Want::Text, &label, text)?;

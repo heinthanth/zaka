@@ -1,6 +1,7 @@
 use gen_lsp_types::SemanticToken;
 use zakac_lexer::role::TokenRole;
-use zakac_lexer::role::token_role;
+use zakac_lexer::role::role_with_text;
+use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::tern;
 use zakac_span::text_range::Range;
@@ -66,7 +67,10 @@ pub fn semantic_tokens(file: &FileCheck) -> Vec<SemanticToken>
 {
     let lexed = &file.lexed;
     let live = lexed.tokens.iter().filter(|t| t.kind != TokenKind::Eof);
-    let tokens = live.map(|t| (t.span, token_role(&t.kind)));
+    let (src, base) = (file.root.src.as_str(), file.root.start_pos);
+    let text =
+        |t: &Token| &src[(t.span.lo - base) as usize..(t.span.hi - base) as usize];
+    let tokens = live.map(|t| (t.span, role_with_text(&t.kind, text(t))));
     let comments = lexed.comments.iter().map(|c| (c.span, TokenRole::Comment));
     let mut marks: Vec<(Range, u32)> = tokens
         .chain(comments)

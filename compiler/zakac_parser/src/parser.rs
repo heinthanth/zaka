@@ -547,6 +547,39 @@ impl<'t> Parser<'t>
         self.expect_one_of(&[kw])
     }
 
+    /// Whether the token `n` places ahead is the identifier `word`: a kind
+    /// name the compiler gives that the grammar also reads as a noun, as
+    /// `စာလုံး` in `စာ ၏ ၂ လုံးမြောက် စာလုံး`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    /// * `word` - The name.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it is.
+    pub(crate) fn name_at(&self, n: usize, word: &str) -> bool
+    {
+        let tok = self.peek_n(n);
+        tok.kind == TokenKind::Ident && self.text_of(tok.span) == word
+    }
+
+    /// Move past the identifier `word` the grammar reads as a noun, or fail.
+    ///
+    /// # Arguments
+    ///
+    /// * `word` - The name.
+    ///
+    /// # Returns
+    ///
+    /// The token, or an `expected-token` diagnostic that names it.
+    pub(crate) fn expect_name(&mut self, word: &str) -> PResult<Token>
+    {
+        ret_if!(self.name_at(0, word), Ok(self.bump()));
+        Err(self.err_expected(&quote(word)))
+    }
+
     /// Move past one of the reserved words `kws`, or fail.
     ///
     /// # Arguments

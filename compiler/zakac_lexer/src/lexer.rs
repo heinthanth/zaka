@@ -519,8 +519,26 @@ impl Driver<'_, '_>
         ret_if!(let Some(kw) = lookup(word.text), self.push_kw(kw, word.span, word.joined), Some(idx + 1));
         let pieces = split_reserved(&word)?;
         #[rustfmt::skip]
-        do_for!((n, (kw, span)) in pieces.into_iter().enumerate(), self.push_kw(kw, span, n > 0 || word.joined));
+        do_for!((n, (kind, span)) in pieces.into_iter().enumerate(), self.push_piece(kind, span, n > 0 || word.joined));
         Some(idx + 1)
+    }
+
+    /// Push one piece of a split word: a reserved word through
+    /// [`Self::push_kw`], a kind name as an identifier.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The token kind of the piece.
+    /// * `span` - Its span.
+    /// * `joined` - Whether it is joined to the previous token.
+    fn push_piece(&mut self, kind: TokenKind, span: Span, joined: bool)
+    {
+        let TokenKind::Kw(kw) = kind
+        else
+        {
+            return self.push(kind, span, joined);
+        };
+        self.push_kw(kw, span, joined);
     }
 
     /// Lex an identifier written in two scripts, such as `ဖြစ်ရပ်_၁`, `က_ခ` or

@@ -6,6 +6,12 @@ use zakac_ast::kind::TableParts;
 use zakac_ast::kind::Wrap;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
+use zakac_lexer::reserved::BOOL_LOAN_NAME;
+use zakac_lexer::reserved::BOOL_NAME;
+use zakac_lexer::reserved::CHAR_NAME;
+use zakac_lexer::reserved::FLOAT_NAME;
+use zakac_lexer::reserved::INT_NAME;
+use zakac_lexer::reserved::TEXT_NAME;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
@@ -42,24 +48,24 @@ const INT_BITS: &[u16] = &[8, 16, 32, 64];
 /// Bit counts of floating-point kinds.
 const FLOAT_BITS: &[u16] = &[32, 64];
 
-/// The base kind a kind word names.
+/// The base kind a kind name the compiler gives stands for.
 ///
 /// # Arguments
 ///
-/// * `kw` - The reserved word.
+/// * `text` - The name.
 ///
 /// # Returns
 ///
-/// The base kind, or `None` for another word.
-fn base_kind(kw: Kw) -> Option<BaseKind>
+/// The base kind, or `None` for another name.
+fn builtin_kind(text: &str) -> Option<BaseKind>
 {
-    match kw
+    match text
     {
-        Kw::IntKind => Some(BaseKind::Int),
-        Kw::FloatKind => Some(BaseKind::Float),
-        Kw::CharKind => Some(BaseKind::Char),
-        Kw::TextKind => Some(BaseKind::Text),
-        Kw::BoolKind | Kw::BoolKindLoan => Some(BaseKind::Bool),
+        INT_NAME => Some(BaseKind::Int),
+        FLOAT_NAME => Some(BaseKind::Float),
+        CHAR_NAME => Some(BaseKind::Char),
+        TEXT_NAME => Some(BaseKind::Text),
+        BOOL_NAME | BOOL_LOAN_NAME => Some(BaseKind::Bool),
         _ => None,
     }
 }
@@ -98,12 +104,10 @@ impl Parser<'_>
     pub(crate) fn starts_kind(&self) -> bool
     {
         let kw = kw_of(&self.peek());
-        let starts = |kw| {
-            base_kind(kw).is_some()
-                || sign_of(kw).is_some()
-                || matches!(kw, Kw::Address | Kw::SuccessNews)
-        };
+        let starts =
+            |kw| sign_of(kw).is_some() || matches!(kw, Kw::Address | Kw::SuccessNews);
         ret_true!(kw.is_some_and(starts) || self.is_struct_at(0));
+        ret_true!(self.builtin_at(0).is_some());
         ret_true!(kw == Some(Kw::FnKind) || self.paren_fn_len(0).is_some());
         self.at_sized_kind(0) || self.at_count_prefix(0)
     }
@@ -147,10 +151,30 @@ impl Parser<'_>
     /// `true` if it does.
     fn at_sized_kind(&self, n: usize) -> bool
     {
-        let base = kw_of(&self.peek_n(n + 2));
+        let base = self.builtin_at(n + 2);
         is_number(&self.peek_n(n))
             && kw_of(&self.peek_n(n + 1)) == Some(Kw::Bit)
-            && matches!(base, Some(Kw::IntKind | Kw::FloatKind))
+            && matches!(base, Some(BaseKind::Int | BaseKind::Float))
+    }
+
+    /// The base kind of the kind name the compiler gives that stands `n`
+    /// tokens ahead. A name the file declares as a struct, an enumeration,
+    /// an alias or a kind parameter hides the compiler's kind of that name.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The base kind, or `None` when no such name stands there.
+    pub(crate) fn builtin_at(&self, n: usize) -> Option<BaseKind>
+    {
+        let tok = self.peek_n(n);
+        ret_if!(tok.kind != TokenKind::Ident, None);
+        let text = self.text_of(tok.span);
+        ret_if!(self.structs.contains(text), None);
+        builtin_kind(text)
     }
 
     /// The number of tokens in the kind phrase at the cursor, its borrow
@@ -275,7 +299,7 @@ impl Parser<'_>
         let n = n + tern!(self.at_sized_kind(at + n), 2, 0);
         let word = kw_of(&self.peek_n(at + n));
         let named = n == pre && self.is_struct_at(at + n);
-        let is_base = word.and_then(base_kind).is_some() || named;
+        let is_base = self.builtin_at(at + n).is_some() || named;
         let bare = n == pre && word == Some(Kw::Address);
         ret_if!(!is_base && !bare, None);
         let angle = tern!(named, self.angle_len(at + n + 1).unwrap_or(0), 0);
@@ -747,9 +771,10 @@ impl Parser<'_>
             let kind = Kind::builder().base(BaseKind::Opaque).wraps(vec![wrap]);
             return Ok(kind.span(start).build());
         }
-        // Where a kind must stand, each name is read as a struct name; the
-        // check reports one that no struct declares.
-        if self.peek().kind == TokenKind::Ident
+        // Where a kind must stand, each name but a kind name the compiler
+        // gives is read as a struct name; the check reports one that no
+        // struct declares.
+        if self.peek().kind == TokenKind::Ident && self.builtin_at(0).is_none()
         {
             let name = self.parse_ident()?;
             // `<name><A၊ B>`: the kind arguments of a generic kind.
@@ -804,7 +829,7 @@ impl Parser<'_>
     /// The base kind, or an `expected-token` diagnostic.
     fn parse_base_kind(&mut self, sized: bool) -> PResult<BaseKind>
     {
-        let base = kw_of(&self.peek()).and_then(base_kind);
+        let base = self.builtin_at(0);
         let numeric = matches!(base, Some(BaseKind::Int | BaseKind::Float));
         ret_if!(sized && !numeric, Err(self.err_expected(&sized_kind_words())));
         let Some(base) = base
@@ -845,10 +870,7 @@ impl Parser<'_>
 /// # Returns
 ///
 /// `"ကိန်းပြည့်" or "ဒဿမကိန်း"`.
-fn sized_kind_words() -> String
-{
-    one_of(&[quote(&kw_text(Kw::IntKind)), quote(&kw_text(Kw::FloatKind))])
-}
+fn sized_kind_words() -> String { one_of(&[quote(INT_NAME), quote(FLOAT_NAME)]) }
 
 /// Whether a token ends a sentence: the full stop, or the end of the file.
 ///

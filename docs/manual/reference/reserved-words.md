@@ -10,6 +10,12 @@ made of nothing but reserved words, such as `ထက်ကြီးသည်` or 
 them. To use one of these as a name all the same, wrap it in backticks (`` `ကြီး` ``);
 see [Names](../../learn/variables/names.md).
 
+The names of the built-in kinds, `ကိန်းပြည့်`, `ဒဿမကိန်း`, `စာလုံး`, `စာသား`,
+`မှန်မှားတန်ဖိုး` and `ဘူလီယန်`, are not reserved words: the
+[prelude](../language/prelude.md) declares them, and a file can declare a kind of its own
+under one of them. A word glued from them and reserved words, such as
+`လုံးမြောက်စာလုံးမှ`, still splits.
+
 ## Particles
 
 | Word | Reads as | Used in |
@@ -126,11 +132,6 @@ in its help line, and reads on as if the `မည်` spelling stood there.
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `ကိန်းပြည့်` | "integer" | [Integers](../../learn/values/integers.md) |
-| `ဒဿမကိန်း` | "decimal number" | [Decimal numbers](../../learn/values/floats.md) |
-| `စာလုံး` | "character" | [Characters](../../learn/values/characters.md) |
-| `မှန်မှားတန်ဖိုး`, `ဘူလီယန်` | "true/false value", "boolean" | [True and false](../../learn/values/booleans.md) |
-| `စာသား` | "text" | [Text](../../learn/text/README.md) |
 | `လက္ခဏာရှိ`, `လက္ခဏာမဲ့` | "signed", "unsigned" | [Integers](../../learn/values/integers.md) |
 | `အခြေ` | "base" | [Integers](../../learn/values/integers.md) |
 | `ကိန်းရှင်` | "variable" | [Variables](../../learn/variables/README.md) |

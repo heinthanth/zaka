@@ -500,22 +500,10 @@ pub enum Kw
     NextIteration,
 
     // nouns
-    /// `ကိန်းပြည့်`
-    IntKind,
-    /// `ဒဿမကိန်း`
-    FloatKind,
-    /// `စာလုံး`
-    CharKind,
-    /// `စာသား`
-    TextKind,
     /// `စာလုံးအရေအတွက်`
     CharCount,
     /// `ဆက်ထားသည့်`, in `a နှင့် b တို့ကို ဆက်ထားသည့် စာသား`
     Joined,
-    /// `မှန်မှားတန်ဖိုး`
-    BoolKind,
-    /// `ဘူလီယန်`
-    BoolKindLoan,
     /// `လက္ခဏာရှိ`
     Signed,
     /// `လက္ခဏာမဲ့`

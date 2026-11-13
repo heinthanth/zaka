@@ -1018,7 +1018,7 @@ fn token_row(unit: &Unit, token: &Token) -> TokenRow
         .range(unit.range(&token.span))
         .line(line)
         .col(col)
-        .class(token_class(&token.kind))
+        .class(token_class(&token.kind, &unit.text(&token.span)))
         .build()
 }
 

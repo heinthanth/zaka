@@ -35,6 +35,13 @@ fn words_take_the_color_of_their_role()
 }
 
 #[test]
+fn kind_names_take_the_color_of_a_kind()
+{
+    let found = classes("ဘစ်ကိန်းပြည့် အသက်");
+    assert_eq!(found, ["tok-kind", "tok-kind", "tok-ident"]);
+}
+
+#[test]
 fn comments_are_painted_as_comments()
 {
     assert_eq!(classes("// မှတ်ချက်"), [COMMENT_CLASS]);

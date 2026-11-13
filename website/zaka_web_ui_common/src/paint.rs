@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_lexer::role::TokenRole;
-use zakac_lexer::role::token_role;
+use zakac_lexer::role::role_with_text;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_if;
 use zakac_span::filename::FileName;
@@ -45,12 +45,14 @@ pub fn paint(source: &str) -> Vec<Piece>
     let file = sm.new_source_file(FileName::Custom("paint.zaka".into()), source.into());
     let lexed = lex(&file, &LexerOptions::default());
     let live = lexed.tokens.iter().filter(|t| t.kind != TokenKind::Eof);
-    let tokens = live.map(|t| (t.span, token_class(&t.kind)));
+    let base = file.start_pos.as_u32() as usize;
+    let text = file.src.as_str();
+    let lexeme =
+        |s: Span| &text[s.lo.as_u32() as usize - base..s.hi.as_u32() as usize - base];
+    let tokens = live.map(|t| (t.span, token_class(&t.kind, lexeme(t.span))));
     let comments = lexed.comments.iter().map(|c| (c.span, COMMENT_CLASS));
     let mut marks: Vec<(Span, &'static str)> = tokens.chain(comments).collect();
     marks.sort_by_key(|(span, _)| span.lo.as_u32());
-    let base = file.start_pos.as_u32() as usize;
-    let text = file.src.as_str();
     let mut pieces = Vec::new();
     let end = marks.iter().fold(0, |at, (span, class)| {
         let range =
@@ -114,18 +116,20 @@ pub fn painted(source: &str) -> impl IntoView + use<>
     paint(source).into_iter().map(view).collect_view()
 }
 
-/// CSS class that colors a token kind: `tok-` and the name of its role.
+/// CSS class that colors a token: `tok-` and the name of its role.
 ///
 /// # Arguments
 ///
 /// * `kind` - The token kind.
+/// * `text` - The token text, so a kind name such as `ကိန်းပြည့်` takes the color
+///   of a kind.
 ///
 /// # Returns
 ///
 /// The class.
-pub fn token_class(kind: &TokenKind) -> &'static str
+pub fn token_class(kind: &TokenKind, text: &str) -> &'static str
 {
-    match token_role(kind)
+    match role_with_text(kind, text)
     {
         TokenRole::Control => "tok-kw",
         TokenRole::Verb => "tok-verb",

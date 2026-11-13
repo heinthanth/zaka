@@ -23,8 +23,7 @@ tokens:
     hi: 41
   particle: none
   joined: false
-- kind:
-    kw: int_kind
+- kind: ident
   span:
     lo: 42
     hi: 72

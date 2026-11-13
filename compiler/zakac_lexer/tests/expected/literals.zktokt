@@ -43,8 +43,7 @@ tokens:
     hi: 32
   particle: none
   joined: false
-- kind:
-    kw: int_kind
+- kind: ident
   span:
     lo: 33
     hi: 63
@@ -99,8 +98,7 @@ tokens:
     hi: 144
   particle: none
   joined: false
-- kind:
-    kw: int_kind
+- kind: ident
   span:
     lo: 145
     hi: 175
@@ -198,8 +196,7 @@ tokens:
     hi: 309
   particle: none
   joined: false
-- kind:
-    kw: int_kind
+- kind: ident
   span:
     lo: 310
     hi: 340
@@ -309,8 +306,7 @@ tokens:
     hi: 435
   particle: none
   joined: false
-- kind:
-    kw: float_kind
+- kind: ident
   span:
     lo: 436
     hi: 460

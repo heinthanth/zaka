@@ -55,6 +55,21 @@ fn declarations()
     assert_eq!(stmt(clause), "(var က isize (add ခ ဂ))");
 }
 
+/// The kind names the compiler gives are names, not reserved words: a kind
+/// the file declares under one of them hides the compiler's, a variable can
+/// take one, and one standing for a value is still reported.
+#[test]
+fn kind_names_are_names()
+{
+    let decl = "ဒဿမကိန်း ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။";
+    let var = "ကိန်းရှင် က သည် ဒဿမကိန်း တစ်ခု ဖြစ်ပါစေ။";
+    let list = stmts(&format!("{decl}\n{var}"));
+    assert_eq!(list[1].to_sexpr(), "(var က ဒဿမကိန်း)");
+    assert_eq!(stmt("ကိန်းရှင် ဒဿမကိန်း သည် ၃ ဖြစ်ပါစေ။"), "(var ဒဿမကိန်း _ 3)");
+    let value = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ကိန်းပြည့် ကို ပြသမည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    assert_eq!(codes(value), [Code::ExpectedOperand]);
+}
+
 /// A declaration writes its kind as `<kind> တစ်<classifier>`, or writes a value
 /// alone, whose kind the checker takes.
 #[test]

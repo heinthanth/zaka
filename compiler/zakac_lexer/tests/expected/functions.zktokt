@@ -36,8 +36,7 @@ tokens:
     hi: 127
   particle: none
   joined: false
-- kind:
-    kw: int_kind
+- kind: ident
   span:
     lo: 128
     hi: 158
@@ -76,8 +75,7 @@ tokens:
     hi: 235
   particle: none
   joined: false
-- kind:
-    kw: int_kind
+- kind: ident
   span:
     lo: 236
     hi: 266
@@ -116,8 +114,7 @@ tokens:
     hi: 343
   particle: none
   joined: false
-- kind:
-    kw: int_kind
+- kind: ident
   span:
     lo: 344
     hi: 374
@@ -157,8 +154,7 @@ tokens:
     hi: 536
   particle: none
   joined: false
-- kind:
-    kw: int_kind
+- kind: ident
   span:
     lo: 537
     hi: 567

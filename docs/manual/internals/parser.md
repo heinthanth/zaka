@@ -309,6 +309,14 @@ the alias names, which `Parser::new` finds in each declaration (`declares_kind`:
 can start a kind; `is_struct_at` refuses a name with `ထဲမှ` after it, which
 names a member instead.
 
+The names of the built-in kinds reach the parser as identifiers. `builtin_at` reads one
+as its base kind (`ကိန်းပြည့်` as `BaseKind::Int`, and so on) when the set of struct
+names does not hold it, so a struct, an enumeration, an alias or a kind parameter of that
+name hides the built-in kind. `starts_kind`, `plain_kind_len`, `at_sized_kind` and
+`parse_core` all ask `builtin_at`, so the AST holds the same kind as before, and the
+stages after the parser see no change. In a value's place, a built-in kind name starts
+a size (`ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား`), or is ZK0202.
+
 A remove has no verb row, since its list comes before `၏`. When the clause engine meets
 `နောက်ဆုံးအကွက်` (`Kw::LastCell`) after an operand that holds `၏`, `finish_remove` takes
 that operand as the list, expects `ကို`, `ဖျက်မည်` and `။`, and builds a `RemoveStmt`; in an
@@ -491,7 +499,7 @@ template literal of its own; `parse_template_slot` reads that literal as each ot
 and the nesting needs nothing more.
 
 The characters of text are read in the clause engine. After an operand that holds `၏`,
-the kind word `စာလုံး` and a number build `VerbOp::CharAt` (`push_char_at`, counted from
+the name `စာလုံး` (matched on its text, `name_at`) and a number build `VerbOp::CharAt` (`push_char_at`, counted from
 0); after `<text> ၏ <number> ခုမြောက်`, the word `စာလုံး` builds `VerbOp::CharNth`
 (`push_char_nth`, counted from 1). Neither has a verb word, so both are built in place as a
 `VerbExpr` (`char_verb`). The count `စာလုံးအရေအတွက်` is a verb of the valence table, as

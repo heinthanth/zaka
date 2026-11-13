@@ -20,17 +20,30 @@ use zakac_span::source_map::SourceMap;
 
 use crate::common;
 
-/// Split `text`, which must be one word, and return the piece texts.
-fn split(text: &str) -> Option<Vec<(Kw, String)>>
+/// Split `text`, which must be one word, and return each piece as its token
+/// kind and its text.
+fn split_kinds(text: &str) -> Option<Vec<(TokenKind, String)>>
 {
     let pre = segment(text, &SegmenterOptions::default());
     let words = build_words(text, Pos::ZERO, &pre);
     assert_eq!(words.len(), 1, "not one word: {text}");
     let pieces = split_reserved(&words[0])?;
-    let piece_text = |(kw, span): (Kw, zakac_span::span::Span)| {
-        (kw, text[span.lo.as_u32() as usize..span.hi.as_u32() as usize].to_string())
+    let piece_text = |(kind, span): (TokenKind, zakac_span::span::Span)| {
+        (kind, text[span.lo.as_u32() as usize..span.hi.as_u32() as usize].to_string())
     };
     Some(pieces.into_iter().map(piece_text).collect())
+}
+
+/// Split `text`, which must be one word of reserved words alone, and return
+/// the piece texts.
+fn split(text: &str) -> Option<Vec<(Kw, String)>>
+{
+    let kw = |(kind, piece): (TokenKind, String)| match kind
+    {
+        TokenKind::Kw(kw) => (kw, piece),
+        _ => panic!("{piece} in {text} is no reserved word"),
+    };
+    Some(split_kinds(text)?.into_iter().map(kw).collect())
 }
 
 #[test]
@@ -264,9 +277,22 @@ fn replace_words_lex_and_split()
     let kws = |word| {
         split(word).expect("splits").iter().map(|(kw, _)| *kw).collect::<Vec<Kw>>()
     };
-    assert_eq!(kws("လုံးမြောက်စာလုံးမှ"), [Kw::Ordinal, Kw::CharKind, Kw::From]);
-    assert_eq!(kws("လုံးမြောက်စာလုံးထိကို"), [Kw::Ordinal, Kw::CharKind, Kw::Upto, Kw::Ko]);
     assert_eq!(kws("ထိကို"), [Kw::Upto, Kw::Ko]);
+}
+
+#[test]
+fn kind_names_split_out_as_names()
+{
+    let kinds = |word| -> Vec<TokenKind> {
+        split_kinds(word).expect("splits").into_iter().map(|(k, _)| k).collect()
+    };
+    let (kw, name) = (TokenKind::Kw, TokenKind::Ident);
+    assert_eq!(lookup("ကိန်းပြည့်"), None);
+    assert_eq!(kinds("လုံးမြောက်စာလုံးမှ"), [kw(Kw::Ordinal), name, kw(Kw::From)]);
+    #[rustfmt::skip]
+    assert_eq!(kinds("လုံးမြောက်စာလုံးထိကို"), [kw(Kw::Ordinal), name, kw(Kw::Upto), kw(Kw::Ko)]);
+    assert_eq!(kinds("ဘစ်ကိန်းပြည့်"), [kw(Kw::Bit), name]);
+    assert_eq!(split_kinds("ကိန်းပြည့်တစ်ခု"), None);
 }
 
 #[test]

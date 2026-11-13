@@ -52,7 +52,7 @@ use zakac_ast::visit::walk_stmt;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
-use zakac_lexer::token::Kw;
+use zakac_lexer::reserved::CHAR_NAME;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_false;
@@ -86,7 +86,6 @@ use crate::list::KindUse;
 use crate::op_calls::OpCalls;
 use crate::op_calls::write_op_calls;
 use crate::ops::Want;
-use crate::ops::kw_label;
 use crate::overloads::Chosen;
 use crate::overloads::write_overloads;
 use crate::place::place_of;
@@ -1472,7 +1471,7 @@ impl Checker
     fn is_text_place(&mut self, kind: DataKind, text: &Expr) -> bool
     {
         ret_true!(kind.is_text());
-        let label = kw_label(Kw::CharKind);
+        let label = CHAR_NAME.to_string();
         _ = self.need(kind, Want::Text, &label, text);
         false
     }
