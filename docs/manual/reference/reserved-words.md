@@ -11,9 +11,8 @@ them. To use one of these as a name all the same, wrap it in backticks (`` `က�
 see [Names](../../learn/variables/names.md).
 
 The names of the built-in kinds, `ကိန်းပြည့်`, `ဒဿမကိန်း`, `စာလုံး`, `စာသား`,
-`မှန်မှားတန်ဖိုး` and `ဘူလီယန်`, are not reserved words: the
-[prelude](../language/prelude.md) declares them, and a file can declare a kind of its own
-under one of them. A word glued from them and reserved words, such as
+`မှန်မှားတန်ဖိုး` and `ဘူလီယန်`, are not reserved words: the compiler knows them as names,
+and a file can declare a kind of its own under one of them. A word glued from them and reserved words, such as
 `လုံးမြောက်စာလုံးမှ`, still splits.
 
 ## Particles
@@ -294,7 +293,7 @@ The pieces of the closers, `လည်း` ("also"), `မှတ်ယူနို
 | `အစားထိုးအသုံးပြု၍` | "putting in place": after the kinds of a call written arguments first | [Generics and traits](../language/generics.md#calls) |
 | `::` | the kinds of a generic in the sign form, `f::<ကိန်းပြည့်>(၁)` | [Generics and traits](../language/generics.md#calls) |
 | `ဟူသည့်` | "called": after the name of a trait in its declaration, `<name> ဟူသည့် ဂုဏ်သတ္တိ` | [Generics and traits](../language/generics.md#traits) |
-| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": marks a declaration of the prelude, where `ပြင်ပမှလာသော` marks an external one | [The prelude](../language/prelude.md#the-compiler-mark) |
+| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": marks a trait of the prelude, where `ပြင်ပမှလာသော` marks an external one | [The prelude](../language/prelude.md#the-compiler-mark) |
 | `ဂုဏ်သတ္တိ` | "trait": after the name of a trait, in its declaration, its closer, a constraint and a trait block | [Traits](../../learn/generics/traits.md) |
 | `ပါဝင်ရမည်` | "must hold": closes the head of a trait, `… အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။` | [Generics and traits](../language/generics.md#traits) |
 | `လုပ်ဆောင်ချက်များ` | "functions": in the heads and closers of traits and trait blocks | [Generics and traits](../language/generics.md#traits) |
@@ -304,8 +303,8 @@ The pieces of the closers, `လည်း` ("also"), `မှတ်ယူနို
 | `သတိပြုစရာများ` | "the notes": opens the closer of a notes block | [Generics and traits](../language/generics.md#the-notes-block) |
 | `ရှိသည်` | "has": closes a constraint in a notes block, `A တွင် … ဂုဏ်သတ္တိ ရှိသည်။` | [Generics and traits](../language/generics.md#the-notes-block) |
 
-The names the [prelude](../language/prelude.md) declares, its traits and its functions,
-are no reserved words: a name a program declares hides the prelude's.
+The names of the traits the [prelude](../language/prelude.md) declares are not reserved
+words: a name a program declares hides the prelude's.
 
 ## Modules
 

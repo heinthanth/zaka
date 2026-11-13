@@ -591,7 +591,10 @@ An operator on two values of one struct a file declares calls the function its t
 names, when the file of the use or of the struct has one with those parameter kinds
 (`op_calls.rs`): `infer_infix` and `infer_verb` leave the operator in `pending_op`,
 `infer_pair` takes it before the operands, and `struct_operator` records the call.
-`ပြသမည်` and a template slot record a call of `စာသားအဖြစ်ပြောင်း`. Once the check
+`~`, the `-` of one operand and the shifts, whose operands are not two values of one
+struct, record theirs through `struct_call` (`infer_prefix`, `infer_neg`,
+`infer_shift`): one parameter for the first two, the struct and the unsigned distance
+for a shift. `ပြသမည်` and a template slot record a call of `စာသားအဖြစ်ပြောင်း`. Once the check
 settles, `write_op_calls` puts each call into the tree, `!` around a negated one, with
 fresh node numbers and their kinds. A name a file declares, or a variable, hides a
 generic of the prelude (`template_named`); a template or a trait of a file hides one of

@@ -1,5 +1,6 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::InfixOp;
+use zakac_ast::expr::NodeId;
 use zakac_ast::expr::PrefixOp;
 use zakac_ast::verb::VERBS;
 use zakac_ast::verb::VerbOp;
@@ -765,11 +766,13 @@ impl Checker
         None
     }
 
-    /// Infer a shift: the value keeps its kind, the distance is unsigned.
+    /// Infer a shift: the value keeps its kind, the distance is unsigned. A
+    /// struct value calls its function of the shift with the distance.
     ///
     /// # Arguments
     ///
     /// * `op` - The operator spelling.
+    /// * `call` - The node of the shift and the function a struct gives for it.
     /// * `value` - The shifted value.
     /// * `distance` - The distance.
     /// * `expect` - The kind the place of the shift expects.
@@ -778,11 +781,15 @@ impl Checker
     ///
     /// The kind of the value, or `None` after an error.
     pub fn infer_shift(
-        &mut self, op: &str, value: &Expr, distance: &Expr, expect: Option<DataKind>,
+        &mut self, op: &str, call: (NodeId, &'static str), value: &Expr,
+        distance: &Expr, expect: Option<DataKind>,
     ) -> Option<DataKind>
     {
         let k = self.infer(value, int_expect(expect));
         let d = self.infer(distance, Some(DataKind::USIZE));
+        let called =
+            k.zip(d).and_then(|(k, d)| self.struct_call(call.0, call.1, &[k, d]));
+        ret_if!(called.is_some(), called);
         let k = k.and_then(|k| self.need(k, Want::Int, op, value));
         d.and_then(|d| self.need(d, Want::Unsigned, op, distance))?;
         let k = k?;

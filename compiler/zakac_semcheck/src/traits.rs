@@ -42,6 +42,24 @@ pub const ADDABLE: &str = "ပေါင်းနိုင်သော";
 /// The built-in traits of the kinds that take `-`, `*` and `/`: the numbers.
 pub const NUMBER_OPS: [&str; 3] = ["နုတ်နိုင်သော", "မြှောက်နိုင်သော", "စားနိုင်သော"];
 
+/// The built-in trait of the kinds that take `%`: the numbers.
+pub const REMAINDER: &str = "အကြွင်းရှာနိုင်သော";
+
+/// The built-in traits of the kinds that take `&`, `|`, `^`, `~`, `<<` and
+/// `>>`: the integers.
+pub const INT_OPS: [&str; 6] = [
+    "ဘစ်ဆုံနိုင်သော",
+    "ဘစ်ပေါင်းစုနိုင်သော",
+    "ဘစ်ခြားနားနိုင်သော",
+    "ဘစ်ပြောင်းပြန်ပြောင်းလဲနိုင်သော",
+    "ဘစ်ဘယ်ရွေ့နိုင်သော",
+    "ဘစ်ညာရွေ့နိုင်သော",
+];
+
+/// The built-in trait of the kinds that take the `-` of one operand: the
+/// signed numbers.
+pub const NEGATABLE: &str = "အနုတ်ပြောင်းနိုင်သော";
+
 /// The built-in trait of the kinds that take `< > <= >=`: the numbers and
 /// the characters.
 pub const ORDERED: &str = "နှိုင်းယှဉ်နိုင်သော";
@@ -104,6 +122,9 @@ fn builtin(name: &str, kind: DataKind) -> Option<bool>
         NUMBER_LIKE => Some(Want::Number.accepts(kind)),
         ADDABLE => Some(Want::Number.accepts(kind) || kind.is_text()),
         _ if NUMBER_OPS.contains(&name) => Some(Want::Number.accepts(kind)),
+        REMAINDER => Some(Want::Number.accepts(kind)),
+        _ if INT_OPS.contains(&name) => Some(Want::Int.accepts(kind)),
+        NEGATABLE => Some(Want::Signed.accepts(kind)),
         ORDERED => Some(Want::Ordered.accepts(kind)),
         EQUAL => Some(true),
         PRINTABLE => Some(kind.as_external().is_none()),

@@ -77,8 +77,7 @@ shows the same rules with examples.
 - The file is a string. Its path is relative to the folder of the importing file, with
   `/` between folders; `..` names the folder above.
 - A path that starts with `စံကား/` names a module of the stdlib, such as
-  `"စံကား/အဝင်အထွက်"` ([Input and output](io.md)), `"စံကား/စာရင်း"` and `"စံကား/စာသား"`
-  ([The prelude](prelude.md#marked-functions-of-other-modules)): the compiler carries its source, so
+  `"စံကား/အဝင်အထွက်"` ([Input and output](io.md)): the compiler carries its source, so
   it is never read from disk, and a program read from storage can import it too.
   Another name after `စံကား/` is ZK0238.
 - The imports of a file come first. An import after a declaration or a statement, or

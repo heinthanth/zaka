@@ -18,7 +18,6 @@ use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::BlockStmt;
-use zakac_ast::stmt::BuiltinKindDecl;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::KindParam;
 use zakac_ast::stmt::Stmt;
@@ -37,7 +36,6 @@ use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::describe::kw_text;
-use crate::fn_kind::FnForm;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
@@ -252,81 +250,6 @@ impl Parser<'_>
         ret_if!(!self.eat(Kw::InCompiler), Ok(false));
         self.expect(Kw::IncludedWith)?;
         Ok(true)
-    }
-
-    /// Parse the rest of the head of a function the compiler gives, after
-    /// `လုပ်ဆောင်ချက် <name> သည်`, as an external function's:
-    /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက် ဖြစ်သည်။`, or `… ဖြစ်၍` then
-    /// the parameters ending in `လက်ခံမည်` or `လက်ခံပြီး` and the result clause,
-    /// or the result clause alone. No block follows: the compiler gives the
-    /// code.
-    ///
-    /// # Arguments
-    ///
-    /// * `start` - Where the declaration starts.
-    /// * `name` - The function name.
-    /// * `kind_params` - The kind parameters of a generic function.
-    ///
-    /// # Returns
-    ///
-    /// The declaration, or a diagnostic.
-    pub(crate) fn parse_builtin_fn(
-        &mut self, start: Span, name: Ident, kind_params: Vec<KindParam>,
-    ) -> PResult<Stmt>
-    {
-        self.eat_builtin_mark()?;
-        self.expect(Kw::Function)?;
-        let bare =
-            self.expect_one_of(&[Kw::And, Kw::Is])?.kind == TokenKind::Kw(Kw::Is);
-        let ends = [Kw::Accepting, Kw::WillAccept];
-        let (params, end, _) =
-            tern!(bare, (Vec::new(), None, false), self.parse_params(&ends, false)?);
-        let no_ret = bare || end == Some(Kw::WillAccept);
-        let ret = tern!(no_ret, Default::default(), self.parse_ret_clause(true)?);
-        let stop = self.expect_stop()?;
-        let span = start.to(&stop.span);
-        do_if!(self.depth > 0, self.diags.push(diag::nested_function(span)));
-        let block = BlockStmt::builder().span(stop.span).build();
-        #[rustfmt::skip]
-        let node = FnDecl::builder().name(name).kind_params(kind_params).params(params)
-            .maybe_ret(ret.kind).owned_ret(ret.owned).block(block).builtin(true).span(span)
-            .build();
-        Ok(Stmt::Fn(node))
-    }
-
-    /// Whether a built-in kind of the prelude is declared here:
-    /// `<kind> သည် ကွန်ပိုင်လာထဲတွင်`.
-    ///
-    /// # Returns
-    ///
-    /// `true` if one is.
-    pub(crate) fn at_builtin_kind(&self) -> bool
-    {
-        let Some(n) = self.kind_len_at(0, FnForm::NoParams)
-        else
-        {
-            return false;
-        };
-        kw_of(&self.peek_n(n)) == Some(Kw::Thi)
-            && kw_of(&self.peek_n(n + 1)) == Some(Kw::InCompiler)
-    }
-
-    /// Parse a built-in kind of the prelude:
-    /// `<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဒေတာအမျိုးအစား ဖြစ်သည်။`.
-    ///
-    /// # Returns
-    ///
-    /// The declaration, or a diagnostic.
-    pub(crate) fn parse_builtin_kind(&mut self) -> PResult<Stmt>
-    {
-        let start = self.peek().span;
-        let kind = self.parse_kind()?;
-        self.expect(Kw::Thi)?;
-        self.eat_builtin_mark()?;
-        self.expect(Kw::DataKindOpen)?;
-        self.expect(Kw::Is)?;
-        let span = start.to(&self.expect_stop()?.span);
-        Ok(Stmt::BuiltinKind(BuiltinKindDecl::builder().kind(kind).span(span).build()))
     }
 
     /// Parse a trait as a constraint or a trait block names it: its name,

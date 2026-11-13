@@ -1,7 +1,9 @@
-//! Operators on structs. A struct takes `+ - * /`, the comparisons, `==` and
-//! `!=` through functions of its own, the ones the traits of the prelude
-//! name: `+` on two values of a struct calls its `ပေါင်း`, `<` its
-//! `ငယ်မငယ်စစ်`, `>=` the negation of its `ငယ်မငယ်စစ်`, and so on. Printing
+//! Operators on structs. A struct takes `+ - * / %`, the bit operators, the
+//! shifts, the `-` of one operand, the comparisons, `==` and `!=` through
+//! functions of its own, the ones the traits of the prelude name: `+` on two
+//! values of a struct calls its `ပေါင်း`, `<` its `ငယ်မငယ်စစ်`, `>=` the
+//! negation of its `ငယ်မငယ်စစ်`, `<<` its `ဘစ်ဘယ်ရွေ့` with the distance, and so
+//! on. Printing
 //! and a template slot call its `စာသားအဖြစ်ပြောင်း`. The check records each
 //! such operator, and once it settles writes the call into the tree, so the
 //! later stages see a plain call.
@@ -39,6 +41,22 @@ pub const SUB_FN: &str = "နုတ်";
 pub const MUL_FN: &str = "မြှောက်";
 /// The function `/` calls.
 pub const DIV_FN: &str = "စား";
+/// The function `%` calls.
+pub const REM_FN: &str = "အကြွင်းရှာ";
+/// The function `&` calls.
+pub const BIT_AND_FN: &str = "ဘစ်ဆုံ";
+/// The function `|` calls.
+pub const BIT_OR_FN: &str = "ဘစ်ပေါင်းစု";
+/// The function `^` calls.
+pub const BIT_XOR_FN: &str = "ဘစ်ခြားနား";
+/// The function `~` calls.
+pub const BIT_NOT_FN: &str = "ဘစ်ပြောင်းပြန်";
+/// The function `<<` calls, with the distance.
+pub const SHL_FN: &str = "ဘစ်ဘယ်ရွေ့";
+/// The function `>>` calls, with the distance.
+pub const SHR_FN: &str = "ဘစ်ညာရွေ့";
+/// The function the `-` of one operand calls.
+pub const NEG_FN: &str = "အနုတ်ပြောင်း";
 /// The function `<` calls, and `>=` negates.
 pub const LESS_FN: &str = "ငယ်မငယ်စစ်";
 /// The function `>` calls, and `<=` negates.
@@ -63,7 +81,7 @@ pub(crate) struct OpCall
 #[derive(Debug, Clone, Default)]
 pub(crate) struct OpCalls
 {
-    /// The call each operator takes, on its two operands.
+    /// The call each operator takes, on its operands.
     pairs: HashMap<NodeId, OpCall>,
     /// The function each printed value or template slot goes through.
     wraps: HashMap<NodeId, Name>,
@@ -78,23 +96,27 @@ pub(crate) struct OpCalls
 ///
 /// # Returns
 ///
-/// The function name and the negation, or `None` for an operator a struct
-/// does not take.
-pub(crate) fn infix_fn(op: InfixOp) -> Option<(&'static str, bool)>
+/// The function name and the negation.
+pub(crate) fn infix_fn(op: InfixOp) -> (&'static str, bool)
 {
     match op
     {
-        InfixOp::Add => Some((ADD_FN, false)),
-        InfixOp::Sub => Some((SUB_FN, false)),
-        InfixOp::Mul => Some((MUL_FN, false)),
-        InfixOp::Div => Some((DIV_FN, false)),
-        InfixOp::Lt => Some((LESS_FN, false)),
-        InfixOp::Ge => Some((LESS_FN, true)),
-        InfixOp::Gt => Some((GREATER_FN, false)),
-        InfixOp::Le => Some((GREATER_FN, true)),
-        InfixOp::Eq => Some((EQUAL_FN, false)),
-        InfixOp::Ne => Some((EQUAL_FN, true)),
-        _ => None,
+        InfixOp::Add => (ADD_FN, false),
+        InfixOp::Sub => (SUB_FN, false),
+        InfixOp::Mul => (MUL_FN, false),
+        InfixOp::Div => (DIV_FN, false),
+        InfixOp::Rem => (REM_FN, false),
+        InfixOp::BitAnd => (BIT_AND_FN, false),
+        InfixOp::BitOr => (BIT_OR_FN, false),
+        InfixOp::BitXor => (BIT_XOR_FN, false),
+        InfixOp::Shl => (SHL_FN, false),
+        InfixOp::Shr => (SHR_FN, false),
+        InfixOp::Lt => (LESS_FN, false),
+        InfixOp::Ge => (LESS_FN, true),
+        InfixOp::Gt => (GREATER_FN, false),
+        InfixOp::Le => (GREATER_FN, true),
+        InfixOp::Eq => (EQUAL_FN, false),
+        InfixOp::Ne => (EQUAL_FN, true),
     }
 }
 
@@ -115,6 +137,10 @@ pub(crate) fn verb_fn(op: VerbOp) -> Option<(&'static str, bool)>
         VerbOp::Sub => Some((SUB_FN, false)),
         VerbOp::Mul => Some((MUL_FN, false)),
         VerbOp::Div => Some((DIV_FN, false)),
+        VerbOp::Rem => Some((REM_FN, false)),
+        VerbOp::BitAnd => Some((BIT_AND_FN, false)),
+        VerbOp::BitOr => Some((BIT_OR_FN, false)),
+        VerbOp::BitXor => Some((BIT_XOR_FN, false)),
         VerbOp::Lt => Some((LESS_FN, false)),
         VerbOp::Ge => Some((LESS_FN, true)),
         VerbOp::Gt => Some((GREATER_FN, false)),
@@ -146,10 +172,35 @@ impl Checker
         let (id, (name, negate)) = op;
         ret_if!(l != r || l.as_struct().is_none() || self.kind_home(l).is_none(), None);
         let sig = self.struct_fn(name, &[l, l])?;
-        let test = name != ADD_FN && name != SUB_FN && name != MUL_FN && name != DIV_FN;
+        let test = matches!(name, LESS_FN | GREATER_FN | EQUAL_FN);
         ret_if!(test && sig.ret != Some(DataKind::Bool), None);
         let callee = self.known_name(&sig);
         self.op_calls.pairs.insert(id, OpCall { callee, negate });
+        sig.ret
+    }
+
+    /// The kind of an operator whose first operand is a struct with the
+    /// function the operator stands for, called with these operand kinds: the
+    /// `-` of one operand, `~`, or a shift with its distance.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The node of the operation.
+    /// * `name` - The function.
+    /// * `operands` - The operand kinds; the first is the struct.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or `None` when the operator keeps its built-in rule.
+    pub(crate) fn struct_call(
+        &mut self, id: NodeId, name: &'static str, operands: &[DataKind],
+    ) -> Option<DataKind>
+    {
+        let first = operands[0];
+        ret_if!(first.as_struct().is_none() || self.kind_home(first).is_none(), None);
+        let sig = self.struct_fn(name, operands)?;
+        let callee = self.known_name(&sig);
+        self.op_calls.pairs.insert(id, OpCall { callee, negate: false });
         sig.ret
     }
 
@@ -289,6 +340,7 @@ impl Writer<'_>
         let args = match std::mem::replace(n, placeholder)
         {
             Expr::Infix(e) => vec![*e.lhs, *e.rhs],
+            Expr::Prefix(e) => vec![*e.rhs],
             Expr::Verb(v) => v.args,
             other => return *n = other,
         };

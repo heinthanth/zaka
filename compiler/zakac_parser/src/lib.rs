@@ -1,6 +1,5 @@
 pub mod alias;
 pub mod artifact;
-mod builtin;
 mod clause;
 pub mod cli;
 mod cursor;

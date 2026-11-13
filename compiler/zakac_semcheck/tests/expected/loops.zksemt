@@ -482,7 +482,6 @@ program:
           hi: 2166
       exported: false
       unchecked: false
-      builtin: false
       start: true
       external: false
       lib: null

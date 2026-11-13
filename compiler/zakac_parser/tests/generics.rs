@@ -141,20 +141,11 @@ fn a_notes_block_names_local_kinds_and_traits()
     assert_eq!(codes(&other), [Code::NoteNamesNoParam]);
 }
 
-/// The prelude marks the declarations the compiler gives, in the slot of
-/// `ပြင်ပမှလာသော`: a function head with no block, a trait, and a built-in kind.
+/// The prelude marks the traits the compiler gives, in the slot of
+/// `ပြင်ပမှလာသော`: a trait.
 #[test]
 fn the_compiler_mark_stands_where_an_external_mark_stands()
 {
-    let f = "အများသုံး လုပ်ဆောင်ချက် ပေါင်း<T> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက် ဖြစ်၍\nက \
-             ဟူသော T တစ်ခု ကို လည်းကောင်း ခ ဟူသော T တစ်ခု ကို လည်းကောင်း\nလက်ခံပြီး T တစ်ခု ကို ပြန်ပေးမည်။\n";
-    let list = stmts(f);
-    let [Stmt::Fn(decl)] = list.as_slice()
-    else
-    {
-        panic!("{list:?}");
-    };
-    assert!(decl.builtin && decl.exported && decl.block.stmts.is_empty());
     let t = "ပြနိုင်သော ဟူသည့် အများသုံး ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား \
              A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။\nဂုဏ်သတ္တိတွင် ပါသော \
              လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။\n";
@@ -163,6 +154,4 @@ fn the_compiler_mark_stands_where_an_external_mark_stands()
         matches!(list.as_slice(), [Stmt::Trait(d)] if d.builtin && d.exported),
         "{list:?}"
     );
-    let k = "ကိန်းပြည့် သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဒေတာအမျိုးအစား ဖြစ်သည်။\n";
-    assert!(matches!(stmts(k).as_slice(), [Stmt::BuiltinKind(_)]));
 }

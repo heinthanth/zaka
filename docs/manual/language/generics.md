@@ -337,6 +337,10 @@ functions, which its operators then call.
 | `ပေါင်းနိုင်သော` | the numbers and text, which `+` takes, and each kind with `ပေါင်း` |
 | `နုတ်နိုင်သော`, `မြှောက်နိုင်သော`, `စားနိုင်သော` | the numbers, and each kind with `နုတ်`, `မြှောက်` or `စား` |
 | `နံပါတ်နှင့်တူသော` | the kinds with the four traits above |
+| `အကြွင်းရှာနိုင်သော` | the numbers, which `%` takes, and each kind with `အကြွင်းရှာ` |
+| `ဘစ်ဆုံနိုင်သော`, `ဘစ်ပေါင်းစုနိုင်သော`, `ဘစ်ခြားနားနိုင်သော`, `ဘစ်ပြောင်းပြန်ပြောင်းလဲနိုင်သော` | the integers, which `&`, `\|`, `^` and `~` take, and each kind with `ဘစ်ဆုံ`, `ဘစ်ပေါင်းစု`, `ဘစ်ခြားနား` or `ဘစ်ပြောင်းပြန်` |
+| `ဘစ်ဘယ်ရွေ့နိုင်သော`, `ဘစ်ညာရွေ့နိုင်သော` | the integers, which `<<` and `>>` take, and each kind with `ဘစ်ဘယ်ရွေ့` or `ဘစ်ညာရွေ့` |
+| `အနုတ်ပြောင်းနိုင်သော` | the signed numbers, which the `-` of one operand takes, and each kind with `အနုတ်ပြောင်း` |
 | `နှိုင်းယှဉ်နိုင်သော` | the numbers and the characters, and each kind with `ငယ်မငယ်စစ်` and `ကြီးမကြီးစစ်` |
 | `တူမတူစစ်ဆေးနိုင်သော` | each kind, as `==` and `!=` take two values of one kind |
 | `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | each kind but a handle of a kind from outside, as `ပြသမည်` prints |

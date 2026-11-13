@@ -91,8 +91,7 @@ An import after another statement, or inside a block, is parsed and reported. Se
 
 ```text
 declaration  = var-decl | fn-decl | external-fn | struct-decl | handle-decl
-             | enum-decl | alias-decl | trait-decl | trait-block
-             | builtin-fn | builtin-kind ;
+             | enum-decl | alias-decl | trait-decl | trait-block ;
 
 var-decl     = [ "အများသုံး" ] ( "ကိန်းရှင်" | "ကိန်းသေ" ) name
                ( "သည်" decl-head "ဖြစ်ပါစေ"
@@ -126,9 +125,6 @@ trait-decl   = name [ sign-params ] "ဟူသည့်" [ "အများသ�
 fn-head      = "လုပ်ဆောင်ချက်" name "သည်"
                ( params ( "လက်ခံမည်" | "လက်ခံပြီး" result ) | result ) "။" ;
 compiler-mark = "ကွန်ပိုင်လာထဲတွင်" "တစ်ပါတည်းပါဝင်သော" ;   (* the prelude alone, ZK0349 *)
-builtin-fn   = [ "အများသုံး" ] "လုပ်ဆောင်ချက်" name [ sign-params ] "သည်" compiler-mark
-               "လုပ်ဆောင်ချက်" ( "ဖြစ်သည်" | "ဖြစ်၍" ext-tail ) "။" ;
-builtin-kind = [ "အများသုံး" ] kind "သည်" compiler-mark "ဒေတာအမျိုးအစား" "ဖြစ်သည်" "။" ;
 trait-block  = kind "တွင်" trait-ref "ဂုဏ်သတ္တိ" "ရှိစေရန်" "အောက်ပါ" "လုပ်ဆောင်ချက်များ"
                "ကို" "ထည့်သွင်းမည်" "။"
                { fn-decl }

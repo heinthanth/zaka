@@ -295,6 +295,26 @@ fn built_in_traits_follow_the_operators()
     assert!(codes(&decls, "ငယ်ရာ(၃၊ ၅) ကို ပြသမည်။").contains(&Code::UnknownTrait));
 }
 
+/// The traits of `%`, the bit operators and the `-` of one operand follow the
+/// kinds each operator takes: `%` the numbers, `&` the integers, `-` the
+/// signed numbers.
+#[test]
+fn the_traits_of_more_operators_follow_their_kinds()
+{
+    let same = |bound: &str| {
+        format!(
+            "လုပ်ဆောင်ချက် တူ<T: {bound}> သည်\nက ဟူသော T တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ T \
+             တစ်ခု ကို ပြန်ပေးမည်။\nက ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n"
+        )
+    };
+    let (float, int, text) = ("တူ(၁.၅) ကို ပြသမည်။", "တူ(၃) ကို ပြသမည်။", "တူ(\"က\") ကို ပြသမည်။");
+    assert!(codes(&same("အကြွင်းရှာနိုင်သော"), float).is_empty());
+    assert!(codes(&same("ဘစ်ဆုံနိုင်သော"), int).is_empty());
+    assert_eq!(codes(&same("ဘစ်ဆုံနိုင်သော"), float), [Code::BoundNotMet]);
+    assert!(codes(&same("အနုတ်ပြောင်းနိုင်သော"), float).is_empty());
+    assert_eq!(codes(&same("အနုတ်ပြောင်းနိုင်သော"), text), [Code::BoundNotMet]);
+}
+
 /// A trait block holds each function of its trait with the kinds the trait
 /// gives it: one left out is ZK0345, one that is not the trait's ZK0346.
 #[test]
@@ -360,9 +380,9 @@ fn a_function_kind_is_a_kind_argument()
 #[test]
 fn the_compiler_mark_outside_the_prelude_is_zk0349()
 {
-    let marked = "လုပ်ဆောင်ချက် ပေါင်း<T> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက် ဖြစ်၍\nက \
-                  ဟူသော T တစ်ခု ကို လည်းကောင်း ခ ဟူသော T တစ်ခု ကို လည်းကောင်း\nလက်ခံပြီး T တစ်ခု ကို \
-                  ပြန်ပေးမည်။\n";
+    let marked = "ပြနိုင်သော ဟူသည့် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A \
+                  ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။\nဂုဏ်သတ္တိတွင် ပါသော \
+                  လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။\n";
     assert_eq!(codes(marked, "၁ ကို ပြသမည်။"), [Code::BuiltinOutsidePrelude]);
 }
 

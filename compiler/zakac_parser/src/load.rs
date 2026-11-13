@@ -36,7 +36,6 @@ use zakac_span::source_map::SourceMap;
 
 use crate::alias::AliasRefs;
 use crate::alias::expand_aliases;
-use crate::builtin::give_bodies;
 use crate::parser::parse;
 use crate::parser::parse_with;
 
@@ -73,12 +72,8 @@ macro_rules! std_module {
 /// source tree, and the source, which the compiler carries, so a program read
 /// from storage imports them too. Each name is in normalized spelling, as an
 /// import path is.
-pub static STD_MODULES: &[(&str, &str, &str)] = &[
-    std_module!("စံကား/အဝင်အထွက်", "io.zaka"),
-    std_module!(PRELUDE, "prelude.zaka"),
-    std_module!("စံကား/စာရင်း", "list.zaka"),
-    std_module!("စံကား/စာသား", "text.zaka"),
-];
+pub static STD_MODULES: &[(&str, &str, &str)] =
+    &[std_module!("စံကား/အဝင်အထွက်", "io.zaka"), std_module!(PRELUDE, "prelude.zaka")];
 
 /// The folder of the replicas of the stdlib that a language server writes, so
 /// an editor can open a declaration of the stdlib: `zakac/stdlib/<version>`
@@ -97,8 +92,8 @@ pub fn std_replicas(cache: &Path) -> PathBuf
 }
 
 /// The module of the stdlib a file holds when it is a file of the source tree
-/// or a replica in [`std_replicas`], so a check of `stdlib/list.zaka` in an
-/// editor reads it as `စံကား/စာရင်း`, compiler marks and all.
+/// or a replica in [`std_replicas`], so a check of `stdlib/prelude.zaka` in an
+/// editor reads it as `စံကား/အခြေခံအုတ်မြစ်`, compiler marks and all.
 ///
 /// # Arguments
 ///
@@ -348,35 +343,12 @@ impl Loader<'_>
         // a file of its own ahead of that file.
         do_if!(self.wants_prelude, self.read_prelude());
         let structs = imported_structs(&imports, &targets, &self.structs);
-        let mut marked = imported_marked(&imports, &targets, &self.marked);
-        // Each file sees the marked functions of the prelude, as if it
-        // imported them; a name it imports hides the prelude's.
-        let prelude = self
-            .done
-            .get(Path::new(PRELUDE))
-            .and_then(|u| self.marked.get(*u as usize));
-        for (name, marks) in prelude.into_iter().flatten()
-        {
-            marked.entry(name.clone()).or_insert_with(|| marks.clone());
-        }
+        let marked = imported_marked(&imports, &targets, &self.marked);
         let parsed = parse_with(&file, &lexed, self.next_id, &structs, &marked);
         self.next_id = parsed.next_id;
         self.diagnostics.extend(lexed.diagnostics);
         self.diagnostics.extend(parsed.diagnostics);
         let mut program = parsed.program;
-        if path.to_str().is_some_and(|p| p.starts_with(STD_PREFIX))
-        {
-            let module = path.to_string_lossy().into_owned();
-            let (diags, files) = give_bodies(
-                &mut program,
-                &module,
-                self.source_map,
-                self.options,
-                &mut self.next_id,
-            );
-            self.diagnostics.extend(diags);
-            self.imports.extend(files);
-        }
         set_targets(&mut program, &imports, &targets);
         do_if!(self.disk, lib_paths_from(&mut program, &path));
         let unit = self.units.len() as u32;
@@ -714,7 +686,7 @@ fn lib_paths_from(program: &mut Program, file: &Path)
 }
 
 /// Whether the words of a file name a declaration of the prelude: one of
-/// its functions or traits, and no name the file declares itself, which
+/// its traits, and no name the file declares itself, which
 /// hides the prelude's.
 ///
 /// # Arguments
@@ -752,7 +724,7 @@ fn uses_prelude(file: &SourceFile, lexed: &LexOutput) -> bool
     idents.into_iter().any(|t| names.contains(t) && !declared.contains(t))
 }
 
-/// The names the prelude declares: its functions and its traits.
+/// The names of the traits the prelude declares.
 ///
 /// # Returns
 ///
@@ -767,12 +739,11 @@ fn prelude_names() -> &'static HashSet<String>
         let file =
             sm.new_source_file(FileName::Custom(PRELUDE.to_string()), src.to_string());
         let parsed = parse(&file, &lex(&file, &LexerOptions::default()));
-        let named = parsed.program.stmts.iter().filter_map(|s| match s
+        let traits = parsed.program.stmts.iter().filter_map(|s| match s
         {
-            Stmt::Fn(d) => Some(d.name.name.to_string()),
             Stmt::Trait(d) => Some(d.name.name.to_string()),
             _ => None,
         });
-        named.collect()
+        traits.collect()
     })
 }

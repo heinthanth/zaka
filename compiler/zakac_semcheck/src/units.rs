@@ -210,7 +210,6 @@ fn runs_in_place(stmt: &Stmt) -> bool
             | Stmt::Import(_)
             | Stmt::Trait(_)
             | Stmt::TraitBlock(_)
-            | Stmt::BuiltinKind(_)
     )
 }
 
@@ -260,9 +259,7 @@ impl Checker
         // A generic function is checked through each of its instances.
         let marked = match stmt
         {
-            Stmt::Fn(d) => d.builtin,
             Stmt::Trait(d) => d.builtin,
-            Stmt::BuiltinKind(_) => true,
             _ => false,
         };
         let outside = marked && !in_stdlib(program, unit);
@@ -328,25 +325,6 @@ impl Checker
         }
         self.fns = self.unit_fns[unit as usize].clone();
         self.unit = unit;
-        self.see_prelude();
-    }
-
-    /// Let the file being checked see the exported functions of the prelude,
-    /// as if it imported each one; a name the file has hides the prelude's.
-    fn see_prelude(&mut self)
-    {
-        let Some(prelude) = self.prelude_unit.filter(|p| *p != self.unit)
-        else
-        {
-            return;
-        };
-        let theirs = self.unit_fns.get(prelude as usize).cloned().unwrap_or_default();
-        for (name, sigs) in theirs
-        {
-            let shown: Vec<FnSig> = sigs.into_iter().filter(|s| s.exported).collect();
-            let fresh = !shown.is_empty() && !self.fns.contains_key(&name);
-            do_if!(fresh, _ = self.fns.insert(name, shown));
-        }
     }
 
     /// Bring the names of an import into the scope of its file.

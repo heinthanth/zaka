@@ -196,7 +196,6 @@ program:
           hi: 1089
       exported: false
       unchecked: false
-      builtin: false
       start: false
       external: false
       lib: null
@@ -943,7 +942,6 @@ program:
           hi: 4732
       exported: false
       unchecked: false
-      builtin: false
       start: true
       external: false
       lib: null

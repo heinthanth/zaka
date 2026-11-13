@@ -131,8 +131,6 @@ pub enum Stmt
     Switch(SwitchStmt),
     /// `ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
     Alias(AliasDecl),
-    /// `<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဒေတာအမျိုးအစား ဖြစ်သည်။`
-    BuiltinKind(BuiltinKindDecl),
     /// `<name> ဟူသည့် ဂုဏ်သတ္တိ သည် … ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။ …`
     Trait(TraitDecl),
     /// `<kind> တွင် <trait> ဂုဏ်သတ္တိရှိစေရန် အောက်ပါလုပ်ဆောင်ချက်များ ကို ထည့်သွင်းမည်။ …`
@@ -473,12 +471,6 @@ pub struct FnDecl
     #[builder(default)]
     #[serde(default)]
     pub unchecked: bool,
-    /// `true` for a function the compiler gives, marked
-    /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` after `သည်`: it has no block of its
-    /// own, and an operator or a verb stands for it.
-    #[builder(default)]
-    #[serde(default)]
-    pub builtin: bool,
     /// `true` for the start block, where the program starts; no call can
     /// name it.
     #[builder(default)]
@@ -940,21 +932,6 @@ pub struct TraitDecl
     #[serde(default)]
     pub builtin: bool,
     /// Source region, the closer included.
-    pub span: Span,
-}
-
-/// A built-in kind as the prelude names it, for its documentation:
-/// `<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဒေတာအမျိုးအစား ဖြစ်သည်။`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
-pub struct BuiltinKindDecl
-{
-    /// The kind.
-    pub kind: Kind,
-    /// `true` when `အများသုံး` marks it.
-    #[builder(default)]
-    #[serde(default)]
-    pub exported: bool,
-    /// Source region, the full stop included.
     pub span: Span,
 }
 

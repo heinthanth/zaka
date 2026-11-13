@@ -330,7 +330,6 @@ program:
           hi: 2191
       exported: false
       unchecked: false
-      builtin: false
       start: true
       external: false
       lib: null

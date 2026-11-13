@@ -237,7 +237,6 @@ impl ToSexpr for Stmt
             Stmt::Alias(s) => exported(s.exported, alias_sexpr(s)),
             Stmt::Trait(s) => exported(s.exported, trait_sexpr(s)),
             Stmt::TraitBlock(s) => trait_block_sexpr(s),
-            Stmt::BuiltinKind(s) => list("builtin_kind", [s.kind.to_sexpr()]),
         }
     }
 }

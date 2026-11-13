@@ -13,6 +13,7 @@ use zakac_ast::expr::PrefixOp;
 use zakac_ast::expr::StrExpr;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::name::Name;
+use zakac_ast::verb::Dir;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::Diagnostic;
@@ -34,6 +35,10 @@ use crate::kind::DataKind;
 use crate::kind::InitialGap;
 use crate::list::KindUse;
 use crate::list::data_of;
+use crate::op_calls::BIT_NOT_FN;
+use crate::op_calls::NEG_FN;
+use crate::op_calls::SHL_FN;
+use crate::op_calls::SHR_FN;
 use crate::op_calls::infix_fn;
 use crate::op_calls::verb_fn;
 use crate::ops::OpClass;
@@ -246,6 +251,8 @@ impl Checker
             PrefixOp::BitNot =>
             {
                 let kind = self.infer(&n.rhs, int_expect(expect))?;
+                let called = self.struct_call(n.id, BIT_NOT_FN, &[kind]);
+                ret_if!(called.is_some(), called);
                 self.need(kind, Want::Int, n.op.as_ref(), &n.rhs)
             }
             PrefixOp::Not => self.infer_bool(&n.rhs, n.op.as_ref()),
@@ -356,6 +363,8 @@ impl Checker
         };
         ret_if!(let Some(lit) = lit, self.infer_neg_lit(lit, expect));
         let kind = self.infer(&n.rhs, expect)?;
+        let called = self.struct_call(n.id, NEG_FN, &[kind]);
+        ret_if!(called.is_some(), called);
         self.need(kind, Want::Signed, "-", &n.rhs)
     }
 
@@ -428,8 +437,12 @@ impl Checker
     {
         let op = n.op.as_ref();
         let class = infix_class(n.op);
-        ret_if!(class == OpClass::Shift, self.infer_shift(op, &n.lhs, &n.rhs, expect));
-        self.pending_op = infix_fn(n.op).map(|f| (n.id, f));
+        let (name, negate) = infix_fn(n.op);
+        ret_if!(
+            class == OpClass::Shift,
+            self.infer_shift(op, (n.id, name), &n.lhs, &n.rhs, expect)
+        );
+        self.pending_op = Some((n.id, (name, negate)));
         self.infer_pair(class, op, &n.lhs, &n.rhs, expect, n.span)
     }
 
@@ -502,6 +515,8 @@ impl Checker
             (OpClass::BitNot, [value]) =>
             {
                 let kind = self.infer(value, int_expect(expect))?;
+                let called = self.struct_call(n.id, BIT_NOT_FN, &[kind]);
+                ret_if!(called.is_some(), called);
                 self.need(kind, Want::Int, &op, value)
             }
             // A duplicate has the kind of what it duplicates.
@@ -515,7 +530,8 @@ impl Checker
             }
             (OpClass::Shift, [value, distance]) =>
             {
-                self.infer_shift(&op, value, distance, expect)
+                let name = tern!(n.dir == Some(Dir::Right), SHR_FN, SHL_FN);
+                self.infer_shift(&op, (n.id, name), value, distance, expect)
             }
             (
                 OpClass::Arith

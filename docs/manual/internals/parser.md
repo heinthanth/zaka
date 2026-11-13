@@ -572,14 +572,10 @@ their place (`expand_local_kinds`), marked in `Kind.alias` to count with `ခု
 ## The prelude
 
 The loader reads the prelude, `"စံကား/အခြေခံအုတ်မြစ်"` (`stdlib/prelude.zaka`, in
-`STD_MODULES`), as a file of the program once a file names one of its functions or
-traits that the file does not declare itself (`uses_prelude`), ahead of that file. The
-compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` stands where `ပြင်ပမှလာသော` stands:
-after `သည်` on a function head with no block (`parse_builtin_fn`), after `ဟူသည့်` on a
-trait, and after `<kind> သည်` on a built-in kind (`parse_builtin_kind`). The loader
-gives each marked function of the prelude its statements, written in Zaka in
-`zakac_parser/src/builtin.rs` and parsed from files of their own, which artifacts embed
-beside the prelude.
+`STD_MODULES`), as a file of the program once a file names one of its traits that the
+file does not declare itself (`uses_prelude`), ahead of that file. The compiler mark
+`ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` stands where `ပြင်ပမှလာသော` stands, after `ဟူသည့်` on a
+trait; it heads no other declaration.
 
 ## Reading the imports
 

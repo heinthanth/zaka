@@ -810,7 +810,6 @@ program:
           hi: 3695
       exported: false
       unchecked: false
-      builtin: false
       start: false
       external: false
       lib: null

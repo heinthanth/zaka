@@ -192,11 +192,11 @@ fn an_imported_struct_name_starts_a_kind()
 #[test]
 fn a_stdlib_file_read_from_storage_reads_as_its_module()
 {
-    let tree = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../stdlib/list.zaka");
+    let tree = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../stdlib/prelude.zaka");
     let mut sm = SourceMap::new();
     let file = sm.load_file(&tree).unwrap();
     let loaded = load(&file, &mut sm, &LexerOptions::default()).unwrap();
     let names: Vec<&str> =
         loaded.program.units.iter().map(|u| u.name.as_str()).collect();
-    assert_eq!(names.last(), Some(&"စံကား/စာရင်း"));
+    assert_eq!(names.last(), Some(&"စံကား/အခြေခံအုတ်မြစ်"));
 }

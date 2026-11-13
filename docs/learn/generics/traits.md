@@ -97,6 +97,10 @@ the module each file sees with no import:
 | `ပေါင်းနိုင်သော` | numbers and text, which `+` takes |
 | `နုတ်နိုင်သော`, `မြှောက်နိုင်သော`, `စားနိုင်သော` | numbers, which `-`, `*` and `/` take |
 | `နံပါတ်နှင့်တူသော` | the kinds with the four above |
+| `အကြွင်းရှာနိုင်သော` | numbers, which `%` takes |
+| `ဘစ်ဆုံနိုင်သော`, `ဘစ်ပေါင်းစုနိုင်သော`, `ဘစ်ခြားနားနိုင်သော`, `ဘစ်ပြောင်းပြန်ပြောင်းလဲနိုင်သော` | integers, which `&`, `\|`, `^` and `~` take |
+| `ဘစ်ဘယ်ရွေ့နိုင်သော`, `ဘစ်ညာရွေ့နိုင်သော` | integers, which `<<` and `>>` take |
+| `အနုတ်ပြောင်းနိုင်သော` | signed numbers, which the `-` of one operand takes |
 | `နှိုင်းယှဉ်နိုင်သော` | numbers and characters, which `< >` take |
 | `တူမတူစစ်ဆေးနိုင်သော` | each kind, as `==` takes two values of one kind |
 | `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | each kind `ပြသမည်` prints |

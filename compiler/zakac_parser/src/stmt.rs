@@ -135,7 +135,6 @@ impl Parser<'_>
     pub(crate) fn parse_stmt(&mut self) -> PResult<Stmt>
     {
         ret_if!(self.at_kind_decl(), self.parse_kind_decl());
-        ret_if!(self.at_builtin_kind(), self.parse_builtin_kind());
         ret_if!(self.at_trait_decl(), self.parse_trait_decl());
         ret_if!(self.at_trait_block(), self.parse_trait_block());
         let tok = self.peek();
@@ -265,7 +264,6 @@ impl Parser<'_>
             Stmt::Fn(n) if !n.start => Some((&mut n.exported, &mut n.span)),
             Stmt::Alias(n) => Some((&mut n.exported, &mut n.span)),
             Stmt::Decl(n) => Some((&mut n.exported, &mut n.span)),
-            Stmt::BuiltinKind(n) => Some((&mut n.exported, &mut n.span)),
             _ => None,
         };
         let top = self.depth == 0;
@@ -776,13 +774,6 @@ impl Parser<'_>
         }
         let external = self.at(Kw::External) || self.at_lib();
         ret_if!(external && !is_start, self.parse_external(start, name));
-        if self.at(Kw::InCompiler) && !is_start
-        {
-            let added = self.add_kind_names(&kind_params);
-            let parsed = self.parse_builtin_fn(start, name, kind_params);
-            self.drop_kind_names(added);
-            return parsed;
-        }
         let added = self.add_kind_names(&kind_params);
         let parsed = self.parse_fn_rest(start, name, is_start, kind_params);
         self.drop_kind_names(added);

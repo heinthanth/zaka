@@ -660,7 +660,6 @@ program:
           hi: 2921
       exported: false
       unchecked: false
-      builtin: false
       start: true
       external: false
       lib: null

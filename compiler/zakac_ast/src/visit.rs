@@ -39,7 +39,6 @@ use crate::stmt::AssignStmt;
 use crate::stmt::BlitStmt;
 use crate::stmt::BlockStmt;
 use crate::stmt::BreakStmt;
-use crate::stmt::BuiltinKindDecl;
 use crate::stmt::CallStmt;
 use crate::stmt::ContinueStmt;
 use crate::stmt::CountedStmt;
@@ -146,7 +145,6 @@ EnumDecl => "enum", visit_enum;
 AliasDecl => "alias", visit_alias;
 TraitDecl => "trait", visit_trait;
 TraitBlock => "trait_block", visit_trait_block;
-BuiltinKindDecl => "builtin_kind", visit_builtin_kind;
 EnumMember => "enum_member", visit_enum_member;
 SwitchStmt => "switch", visit_switch;
 SwitchArm => "switch_arm", visit_switch_arm;
@@ -221,7 +219,6 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Alias(s) => s,
         Stmt::Trait(s) => s,
         Stmt::TraitBlock(s) => s,
-        Stmt::BuiltinKind(s) => s,
     }
 }
 
@@ -362,13 +359,6 @@ pub trait Visitor
     fn visit_trait(&mut self, n: &TraitDecl) { walk_trait(self, n) }
     /// Visit a trait block.
     fn visit_trait_block(&mut self, n: &TraitBlock) { walk_trait_block(self, n) }
-    /// Visit a built-in kind of the prelude.
-    fn visit_builtin_kind(&mut self, n: &BuiltinKindDecl)
-    {
-        self.enter(n);
-        self.visit_kind(&n.kind);
-        self.leave(n);
-    }
     /// Visit a member of an enumeration declaration.
     fn visit_enum_member(&mut self, n: &EnumMember) { walk_enum_member(self, n) }
     /// Visit a switch.
@@ -480,7 +470,6 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Alias(s) => v.visit_alias(s),
         Stmt::Trait(s) => v.visit_trait(s),
         Stmt::TraitBlock(s) => v.visit_trait_block(s),
-        Stmt::BuiltinKind(s) => v.visit_builtin_kind(s),
     }
 }
 
@@ -1245,11 +1234,6 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
             let bounds = s.kind_params.iter_mut().flat_map(|p| &mut p.bounds);
             do_for!(b in bounds, v.visit_kind_mut(b));
             do_for!(f in &mut s.fns, walk_fn_mut(v, f));
-        }
-        Stmt::BuiltinKind(s) =>
-        {
-            v.visit_span_mut(&mut s.span);
-            v.visit_kind_mut(&mut s.kind);
         }
         Stmt::TraitBlock(s) =>
         {

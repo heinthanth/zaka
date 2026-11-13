@@ -194,7 +194,6 @@ program:
           hi: 1079
       exported: false
       unchecked: true
-      builtin: false
       start: false
       external: false
       lib: null
